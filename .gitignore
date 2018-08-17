@@ -1,0 +1,8 @@
+# editor cruft
+.\#*
+
+# build cruft
+build/
+
+# OSX cruft
+.DS_Store
