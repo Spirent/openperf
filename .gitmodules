@@ -10,3 +10,6 @@
 [submodule "deps/civetweb"]
 	path = deps/civetweb
 	url = https://github.com/civetweb/civetweb.git
+[submodule "deps/lwip"]
+	path = deps/lwip
+	url = git://git.savannah.gnu.org/lwip.git

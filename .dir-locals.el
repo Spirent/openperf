@@ -47,5 +47,6 @@
                                      (concat root "deps/dpdk/lib/librte_table")
                                      (concat root "deps/dpdk/lib/librte_timer")
                                      (concat root "deps/dpdk/lib/librte_vhost")
-                                     (concat root "src/include/dpdk")
-                                     (concat root "src/include"))))))))
+                                     (concat root "src/framework")
+                                     (concat root "src/packetio/dpdk/include")
+                                     )))))))

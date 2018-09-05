@@ -9,10 +9,12 @@ icp_check_var =	$(if $(value $1),,$(error $(1) is not set))
 icp_check_vars = $(foreach var,$1,$(call icp_check_var,$(var)))
 
 # Initialize global variables
+ICP_AR := gcc-ar
+ICP_ARFLAGS := rcD
 ICP_CC := clang
 ICP_CXX := clang++
 ICP_COPTS :=
-ICP_CFLAGS :=
+ICP_CFLAGS := -std=gnu11
 ICP_CPPFLAGS := -Wall -Wextra -Wpedantic -Wshadow -Wno-gnu \
 	-MMD -MP -fstack-protector-strong
 ICP_CXXFLAGS :=

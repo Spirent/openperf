@@ -1,23 +1,25 @@
 #
-# Makefile to build devtest
+# Makefile to build stack
 #
 
 ICP_ROOT := $(realpath ../../)
-ICP_TARGET := devtest
+ICP_TARGET := stack
 include $(ICP_ROOT)/mk/bootstrap.mk
-
-ICP_DPDK_TARGET := default-linuxicp-clang
 
 BUILD_DIR := $(ICP_BUILD_ROOT)/obj
 TARGET_DIR := $(ICP_BUILD_ROOT)/bin
 
-SOURCES := main.c
+SOURCES := \
+	main.c
+
 OBJECTS := $(patsubst %, $(BUILD_DIR)/%, \
 	$(patsubst %.c, %.o, $(filter %.c, $(SOURCES))))
 SRC_DEPENDS := $(OBJECTS:.o=.d)
-BLD_DEPENDS := dpdk libzmq cJSON civetweb
 
-all: devtest
+BLD_DEPENDS := framework packetio
+ICP_PACKETIO := dpdk
+
+all: devstack
 
 # Pull in dependencies
 -include $(SRC_DEPENDS)
@@ -35,15 +37,14 @@ $(BUILD_DIR)/%.o: %.c
 	@mkdir -p $(dir $@)
 	$(strip $(ICP_CC) -o $@ -c $(ICP_CPPFLAGS) $(ICP_CFLAGS) $(ICP_COPTS) $(ICP_DEFINES) $<)
 
-$(TARGET_DIR)/devtest: $(OBJECTS)
-	$(info $(TARGET_DIR))
+$(TARGET_DIR)/devstack: $(OBJECTS) $(BLD_DEPENDS)
 	@mkdir -p $(dir $@)
 	$(strip $(ICP_CXX) -o $@ $(ICP_LDOPTS) $(ICP_LDFLAGS) $(OBJECTS) $(ICP_LDLIBS))
 
-.PHONY: devtest
-devtest: $(TARGET_DIR)/devtest
+.PHONY: devstack
+devstack: $(TARGET_DIR)/devstack
 
-.PHONY: clean_devtest
-clean_devtest:
-	@$(strip rm -f $(TARGET_DIR)/devtest $(OBJECTS:%.o=%.[doP]))
-clean: clean_devtest
+.PHONY: clean_devstack
+clean_devstack:
+	@$(strip rm -f $(TARGET_DIR)/devstack $(OBJECTS:%.o=%.[doP]))
+clean: clean_devstack

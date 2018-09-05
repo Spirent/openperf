@@ -24,9 +24,12 @@ CWEB_CFLAGS := -Wall -Wextra -Wshadow -Wformat-security -Winit-self \
 CWEB_CFLAGS += -Wno-unknown-warning-option
 
 CWEB_DEFINES := \
-	WITH_IPV6 \
-	WITH_WEBSOCKET \
+	NO_FILES \
 	NO_SSL \
+	NO_CGI \
+	USE_IPV6 \
+	USE_WEBSOCKET \
+	NO_CACHING \
 	USE_STACK_SIZE=102400
 
 ifeq ($(PLATFORM),"linux")
@@ -34,6 +37,7 @@ ifeq ($(PLATFORM),"linux")
 endif
 
 CWEB_DEFINES := $(addprefix -D,$(CWEB_DEFINES))
+ICP_DEFINES += $(CWEB_DEFINES)
 
 $(CWEB_OBJ_DIR)/civetweb.o: $(CWEB_SRC_DIR)/src/civetweb.c
 	@mkdir -p $(dir $@)
