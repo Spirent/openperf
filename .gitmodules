@@ -4,12 +4,6 @@
 [submodule "deps/libzmq"]
 	path = deps/libzmq
 	url = https://github.com/zeromq/libzmq.git
-[submodule "deps/cJSON"]
-	path = deps/cJSON
-	url = https://github.com/DaveGamble/cJSON.git
-[submodule "deps/civetweb"]
-	path = deps/civetweb
-	url = https://github.com/civetweb/civetweb.git
 [submodule "deps/lwip"]
 	path = deps/lwip
 	url = git://git.savannah.gnu.org/lwip.git
