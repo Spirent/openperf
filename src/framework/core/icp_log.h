@@ -31,15 +31,29 @@ enum icp_log_level icp_log_level_get(void) __attribute__((pure));
 void icp_log_level_set(enum icp_log_level level);
 
 /**
+ * Retrieve the log level from the command line
+ *
+ * @param[in] argc
+ *   The number of cli arguments
+ * @param[in] argv
+ *   Array of cli strings
+ *
+ * @return
+ *   log level found in cli arguments (may be ICP_LOG_NONE)
+ */
+enum icp_log_level icp_log_level_find(int argc, char *argv[]);
+
+
+/**
  * Possibly write a message to the log
  *
  * @param level
  *   The level of the message
  * @param format
- *   The printf format string, followed by  variable arguments
+ *   The printf format string, followed by variable arguments
  * @return
- *   - 0: Success
- *   - < 0: Error
+ *   -  0: Success
+ *   - !0: Error
  */
 #define icp_log(level, format, ...)                             \
     do {                                                        \

@@ -1,4 +1,6 @@
 #include <assert.h>
+#include <ctype.h>
+#include <getopt.h>
 #include <pthread.h>
 #include <stdarg.h>
 #include <stdatomic.h>
@@ -13,6 +15,7 @@
 #include "core/icp_common.h"
 #include "core/icp_list.h"
 #include "core/icp_log.h"
+#include "core/icp_options.h"
 #include "core/icp_socket.h"
 #include "core/icp_thread.h"
 
@@ -26,6 +29,15 @@ static __thread void *_log_socket = NULL;
 static atomic_bool _log_thread_ready = ATOMIC_VAR_INIT(false);
 
 #define THREAD_LENGTH ICP_THREAD_NAME_MAX_LENGTH
+
+static char * _log_level_strings[] = {
+    "NONE",
+    "CRITICAL",
+    "ERROR",
+    "WARNING",
+    "INFO",
+    "DEBUG"
+};
 
 /**
  * Structure for sending messages to the logging thread
@@ -71,6 +83,75 @@ void icp_log_level_set(enum icp_log_level level)
 {
     if ((ICP_LOG_NONE <= level) && (level <= ICP_LOG_MAX))
         icp_log_level = level;
+}
+
+enum icp_log_level _parse_log_optarg(const char *arg)
+{
+    /* Check for a number */
+    long level = strtol(arg, NULL, 10);
+    if (level) {
+        /* we found a number; clamp and return */
+        if (level <= ICP_LOG_NONE) {
+            return (ICP_LOG_CRITICAL);
+        } else if (level >= ICP_LOG_MAX) {
+            return (ICP_LOG_DEBUG);
+        } else {
+            return ((enum icp_log_level)level);
+        }
+        /* Guess it's garbage */
+        return (ICP_LOG_NONE);
+    }
+
+    /* Normalize optarg */
+    static size_t MAX_LEVEL_LENGTH = 8;
+    char normal_arg[MAX_LEVEL_LENGTH];
+    for (size_t i = 0; i < icp_min(strlen(arg), MAX_LEVEL_LENGTH); i++) {
+        normal_arg[i] = islower(arg[i]) ? toupper(arg[i]) : arg[i];
+    }
+
+    /* Look for known strings */
+    for (enum icp_log_level ll = ICP_LOG_NONE; ll < ICP_LOG_MAX; ll++) {
+        const char *ref = _log_level_strings[ll];
+        if (strncmp(normal_arg, ref, icp_min(strlen(ref), MAX_LEVEL_LENGTH)) == 0) {
+            return (ll);
+        }
+    }
+
+    return (ICP_LOG_NONE);
+}
+
+enum icp_log_level icp_log_level_find(int argc, char *argv[])
+{
+    enum icp_log_level to_return = ICP_LOG_NONE;
+
+    struct option log_options[] = {
+        {"log-level", required_argument, NULL, 'l'},
+        {0, 0, 0, 0}
+    };
+
+    optind = 1; /* make sure getopt is in the proper frame of mind */
+    opterr = 0;
+
+    for (;;) {
+        int option_index = 0;
+        int opt = getopt_long(argc, argv, "l:", log_options, &option_index);
+        if (opt == -1) {
+            break;
+        }
+        switch (opt) {
+        case 'l':
+            to_return = _parse_log_optarg(optarg);
+            break;
+        default:
+            /*
+             * We're only looking for the 'verbose' option, so don't bother
+             * with any other characters or errors.
+             */
+            continue;
+        }
+    }
+
+    return (to_return);
 }
 
 /**
@@ -190,19 +271,11 @@ void icp_log_write(const struct icp_log_message *msg, FILE *file, void *socket)
 
     switch(msg->level) {
     case ICP_LOG_DEBUG:
-        level = "DEBUG";
-        break;
     case ICP_LOG_INFO:
-        level = "INFO";
-        break;
     case ICP_LOG_WARNING:
-        level = "WARNING";
-        break;
     case ICP_LOG_ERROR:
-        level = "ERROR";
-        break;
     case ICP_LOG_CRITICAL:
-        level = "CRITICAL";
+        level = _log_level_strings[msg->level];
         break;
     default:
         /* yikes! */
@@ -380,3 +453,22 @@ int icp_log_init(void *context, const char *logging_endpoint)
 
     return (0);
 }
+
+/*
+ * Register the log-level option.
+ * Note: we don't register any callbacks because we parse them before the
+ * normal call to icp_potion_parse.  This is so we can set the proper log
+ * level before doing any real work.
+ */
+static struct icp_options_data log_level_option = {
+    .name = "log-level",
+    .init = NULL,
+    .callback = NULL,
+    .data = NULL,
+    .options = {
+        { "Specify the log level; takes a number (1-5) or level", "log-level", 'l', 0 },
+        { 0, 0, 0, 0 },
+    }
+};
+
+REGISTER_OPTIONS(log_level_option)
