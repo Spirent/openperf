@@ -1,6 +1,7 @@
 #include "core/icp_common.h"
 #include "core/icp_init.h"
 #include "core/icp_log.h"
+#include "core/icp_modules.h"
 #include "core/icp_options.h"
 
 void icp_init(void *context, int argc, char *argv[])
@@ -20,5 +21,10 @@ void icp_init(void *context, int argc, char *argv[])
     if (icp_options_init() != 0
         || icp_options_parse(argc, argv) != 0) {
         icp_exit("Option parsing failed!");
+    }
+
+    /* Initialize all modules */
+    if (icp_modules_init(context) != 0) {
+        icp_exit("Module initialization failed!");
     }
 }

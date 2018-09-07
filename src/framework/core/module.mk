@@ -7,6 +7,7 @@ FW_SOURCES += \
 	core/icp_init.c \
 	core/icp_list.c \
 	core/icp_log.c \
+	core/icp_modules.c \
 	core/icp_options.c \
 	core/icp_reference.c \
 	core/icp_socket.c \

@@ -17,6 +17,7 @@
 #include "core/icp_init.h"
 #include "core/icp_list.h"
 #include "core/icp_log.h"
+#include "core/icp_modules.h"
 #include "core/icp_options.h"
 #include "core/icp_reference.h"
 #include "core/icp_socket.h"
