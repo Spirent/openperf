@@ -68,11 +68,6 @@ paths:
           description: Filter by IPv4 address
           required: false
           type: string
-        - name: ipv6_address
-          in: query
-          description: Filter by IPv4 address
-          required: false
-          type: string
       responses:
         200:
           description: Success
@@ -332,7 +327,7 @@ definitions:
             type: array
             description: >
               A stack of protocol configurations, beginning with the outermost
-              protocol (i.e. closest to the port)
+              protocol (i.e. closest to the physical port)
             items:
               $ref: "#/definitions/InterfaceProtocolConfig"
             minItems: 1

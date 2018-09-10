@@ -51,7 +51,7 @@ public:
     /// Interface_config members
 
     /// <summary>
-    /// A stack of protocol configurations, beginning with the outermost protocol (i.e. closest to the port) 
+    /// A stack of protocol configurations, beginning with the outermost protocol (i.e. closest to the physical port) 
     /// </summary>
     std::vector<std::shared_ptr<InterfaceProtocolConfig>>& getProtocols();
     
