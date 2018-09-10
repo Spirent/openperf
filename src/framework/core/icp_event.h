@@ -23,7 +23,7 @@ struct icp_event_data {
     int type;                     /**< internal type */
 };
 
-typedef int (icp_event_callback)(const struct icp_event_data *data, void *private);
+typedef int (icp_event_callback)(const struct icp_event_data *data, void *arg);
 
 /**
  * Event callback structure

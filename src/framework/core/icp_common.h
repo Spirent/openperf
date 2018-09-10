@@ -5,6 +5,10 @@
  * @file
  */
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <assert.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -164,5 +168,9 @@ void icp_exit(const char *format, ...)
             icp_exit(fmt, ##__VA_ARGS__);       \
         }                                       \
     } while (0)
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

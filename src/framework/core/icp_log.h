@@ -1,6 +1,10 @@
 #ifndef _ICP_LOG_H_
 #define _ICP_LOG_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdarg.h>
 #include <stdint.h>
 
@@ -43,7 +47,6 @@ void icp_log_level_set(enum icp_log_level level);
  */
 enum icp_log_level icp_log_level_find(int argc, char *argv[]);
 
-
 /**
  * Possibly write a message to the log
  *
@@ -79,5 +82,9 @@ int icp_vlog(enum icp_log_level level, const char *function,
  *   -!0: Error
  */
 int icp_log_init(void *context, const char *logging_endpoint);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

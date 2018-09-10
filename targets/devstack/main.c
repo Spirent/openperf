@@ -30,14 +30,7 @@ int main(int argc, char* argv[])
         icp_exit("Could not initialize ZeroMQ context!");
     }
 
-    icp_log_level_set(ICP_LOG_INFO);
-    int ret = icp_log_init(context, NULL);
-    if (ret != 0) {
-        icp_exit("Logging initialization failed!");
-    }
-
-    /* Aborts on error */
-    packetio_init(argc, argv);
+    icp_init(context, argc, argv);
 
     /* Install our signal handler so we can property shut ourselves down */
     struct sigaction s;

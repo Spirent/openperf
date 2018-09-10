@@ -17,7 +17,7 @@ OBJECTS := $(patsubst %, $(BUILD_DIR)/%, \
 SRC_DEPENDS := $(OBJECTS:.o=.d)
 
 BLD_DEPENDS := framework packetio
-ICP_PACKETIO := dpdk
+ICP_PACKETIO_DRIVER := dpdk
 
 all: devstack
 

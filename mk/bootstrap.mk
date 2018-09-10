@@ -17,7 +17,7 @@ ICP_COPTS :=
 ICP_CFLAGS := -std=gnu11
 ICP_CPPFLAGS := -Wall -Wextra -Wpedantic -Wshadow -Wno-gnu \
 	-MMD -MP -fstack-protector-strong
-ICP_CXXFLAGS :=
+ICP_CXXFLAGS := -Wno-c11-extensions -Wno-nested-anon-types -Wno-c99-extensions -std=c++14
 ICP_DEFINES :=
 ICP_LDFLAGS :=
 ICP_LDLIBS :=

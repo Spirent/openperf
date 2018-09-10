@@ -5,6 +5,10 @@
  * @file
  */
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <sys/queue.h>
 
 TAILQ_HEAD(icp_modules_list, icp_module);
@@ -49,5 +53,9 @@ int icp_modules_init(void *context);
     {                                                                   \
         icp_modules_register(&m);                                       \
     }
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* _ICP_MODULES_H_ */
