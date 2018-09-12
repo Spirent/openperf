@@ -34,7 +34,6 @@ ICP_INC_DIRS += $(PIO_INC_DIRS)
 ICP_LIB_DIRS += $(PIO_LIB_DIR)
 ICP_LDLIBS += -Wl,--whole-archive -l$(PIO_LIBRARY) -Wl,--no-whole-archive $(PIO_LIBS)
 
-$(info $(PIO_OBJECTS))
 # Load packet-io dependencies
 $(foreach DEP,$(PIO_DEPENDS),$(eval include $(ICP_ROOT)/mk/$(DEP).mk))
 
