@@ -7,3 +7,9 @@
 [submodule "deps/lwip"]
 	path = deps/lwip
 	url = git://git.savannah.gnu.org/lwip.git
+[submodule "deps/pistache"]
+	path = deps/pistache
+	url = https://github.com/oktal/pistache.git
+[submodule "deps/json"]
+	path = deps/json
+	url = https://github.com/nlohmann/json.git
