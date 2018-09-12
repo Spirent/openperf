@@ -153,7 +153,7 @@ paths:
           description: Success
           schema:
             type: object
-            title: BulkdCreateInterfacesResponse
+            title: BulkCreateInterfacesResponse
             properties:
               items:
                 type: array

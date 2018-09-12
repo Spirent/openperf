@@ -11,28 +11,28 @@
 */
 
 
-#include "BulkdCreateInterfacesResponse.h"
+#include "BulkCreateInterfacesResponse.h"
 
 namespace icp {
 namespace api {
 namespace v1 {
 namespace model {
 
-BulkdCreateInterfacesResponse::BulkdCreateInterfacesResponse()
+BulkCreateInterfacesResponse::BulkCreateInterfacesResponse()
 {
     
 }
 
-BulkdCreateInterfacesResponse::~BulkdCreateInterfacesResponse()
+BulkCreateInterfacesResponse::~BulkCreateInterfacesResponse()
 {
 }
 
-void BulkdCreateInterfacesResponse::validate()
+void BulkCreateInterfacesResponse::validate()
 {
     // TODO: implement validation
 }
 
-nlohmann::json BulkdCreateInterfacesResponse::toJson() const
+nlohmann::json BulkCreateInterfacesResponse::toJson() const
 {
     nlohmann::json val = nlohmann::json::object();
 
@@ -49,7 +49,7 @@ nlohmann::json BulkdCreateInterfacesResponse::toJson() const
     return val;
 }
 
-void BulkdCreateInterfacesResponse::fromJson(nlohmann::json& val)
+void BulkCreateInterfacesResponse::fromJson(nlohmann::json& val)
 {
     {
         m_Items.clear();
@@ -74,7 +74,7 @@ void BulkdCreateInterfacesResponse::fromJson(nlohmann::json& val)
 }
 
 
-std::vector<std::shared_ptr<Interface>>& BulkdCreateInterfacesResponse::getItems()
+std::vector<std::shared_ptr<Interface>>& BulkCreateInterfacesResponse::getItems()
 {
     return m_Items;
 }

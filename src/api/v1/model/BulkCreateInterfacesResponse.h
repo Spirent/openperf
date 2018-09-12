@@ -10,13 +10,13 @@
 * Do not edit the class manually.
 */
 /*
- * BulkdCreateInterfacesResponse.h
+ * BulkCreateInterfacesResponse.h
  *
  * 
  */
 
-#ifndef BulkdCreateInterfacesResponse_H_
-#define BulkdCreateInterfacesResponse_H_
+#ifndef BulkCreateInterfacesResponse_H_
+#define BulkCreateInterfacesResponse_H_
 
 
 #include "ModelBase.h"
@@ -32,12 +32,12 @@ namespace model {
 /// <summary>
 /// 
 /// </summary>
-class  BulkdCreateInterfacesResponse
+class  BulkCreateInterfacesResponse
     : public ModelBase
 {
 public:
-    BulkdCreateInterfacesResponse();
-    virtual ~BulkdCreateInterfacesResponse();
+    BulkCreateInterfacesResponse();
+    virtual ~BulkCreateInterfacesResponse();
 
     /////////////////////////////////////////////
     /// ModelBase overrides
@@ -48,7 +48,7 @@ public:
     void fromJson(nlohmann::json& json) override;
 
     /////////////////////////////////////////////
-    /// BulkdCreateInterfacesResponse members
+    /// BulkCreateInterfacesResponse members
 
     /// <summary>
     /// List of network interfaces
@@ -65,4 +65,4 @@ protected:
 }
 }
 
-#endif /* BulkdCreateInterfacesResponse_H_ */
+#endif /* BulkCreateInterfacesResponse_H_ */
