@@ -8,7 +8,7 @@ $(call icp_check_vars,$(JSON_REQ_VARS))
 
 JSON_SRC_DIR := $(ICP_ROOT)/deps/json
 
-ICP_INC_DIRS += $(JSON_SRC_DIR)/single_include/json
+ICP_INC_DIRS += $(JSON_SRC_DIR)/single_include/nlohmann
 
 ###
 # No build rules; header only

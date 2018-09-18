@@ -24,7 +24,8 @@ void icp_init(void *context, int argc, char *argv[])
     }
 
     /* Initialize all modules */
-    if (icp_modules_init(context) != 0) {
+    if (icp_modules_init(context) != 0
+        || icp_modules_start(context) != 0) {
         icp_exit("Module initialization failed!");
     }
 }

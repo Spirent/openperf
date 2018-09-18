@@ -36,7 +36,8 @@ static char * _log_level_strings[] = {
     "ERROR",
     "WARNING",
     "INFO",
-    "DEBUG"
+    "DEBUG",
+    "TRACE"
 };
 
 /**
@@ -57,6 +58,14 @@ struct icp_log_message {
 static void _zmq_buffer_free(void *data, void *hint __attribute__((unused)))
 {
     free(data);
+}
+
+/**
+ * Signature changing wrapper for zmq_close.  Have int(void *), need void(void *).
+ */
+static void _close_zmq_socket(void *socket)
+{
+    zmq_close(socket);
 }
 
 /**
@@ -154,6 +163,82 @@ enum icp_log_level icp_log_level_find(int argc, char *argv[])
     return (to_return);
 }
 
+static const char * _skip_keywords(const char *begin, const char *end)
+{
+    /* Various words that precede or modify the type that should also be skipped */
+    static const char* keywords[] = {
+        "unsigned",
+        "signed",
+        "static"
+    };
+
+    const char *cursor = begin;
+    size_t length = end - begin;
+    for (size_t i = 0; i < icp_count_of(keywords); i++) {
+        const char *keyword = keywords[i];
+        if (length > strlen(keyword) && strncmp(cursor, keyword, strlen(keyword)) == 0) {
+            size_t adjust = strlen(keyword) + 1;
+            cursor += adjust;
+            assert(length >= adjust);
+            length -= adjust;
+        }
+    }
+
+    /* We might have some c++ code, so handle templates, too */
+    size_t template_level = 0;
+    while (cursor <= end) {
+        if (*cursor == ' ' && template_level == 0) {
+            break;
+        }
+        if (*cursor == '<') {
+            template_level++;
+        }
+        if (*cursor == '>' && template_level > 0) {
+            template_level--;
+        }
+        cursor++;
+    }
+
+    return (cursor);
+}
+
+void icp_log_function_name(const char *signature, char *function)
+{
+    char const *cursor = signature;
+    char const *end = signature + strlen(signature);
+
+    /* Skip over the return type */
+    cursor = _skip_keywords(cursor, end);
+    if (cursor == end) {
+        cursor = signature;
+        goto function_name_exit;
+    }
+
+    /* Skip the space after the keywords */
+    cursor++;
+    if (*cursor == '(') {
+        /* Found a function; skip the function's return type */
+        cursor = _skip_keywords(++cursor, end);
+
+        /* Skip the space (again) */
+        cursor++;
+        if (cursor == end) {
+            cursor = signature;
+            goto function_name_exit;
+        }
+    }
+
+    /*
+     * Should be at the beginning of the actual function name.  Look for
+     * the first opening '(' which marks the end of the function name.
+     */
+    end = strchr(cursor, '(');
+
+function_name_exit:
+    memcpy(function, cursor, end - cursor);
+    function[end - cursor] = 0; /* null terminate string */
+}
+
 /**
  * Retrieve the logging socket for the calling thread.
  * If we don't have one, then create it and add it to our list of sockets.
@@ -181,12 +266,6 @@ void * _get_thread_log_socket(void)
     }
 
     return (_log_socket);
-}
-
-static
-void _close_zmq_socket(void *socket)
-{
-    zmq_close(socket);
 }
 
 /**
@@ -265,11 +344,17 @@ icp_log_exit:
     return (ret);
 }
 
+static const char * _shift_right(const char *s, size_t width)
+{
+    return (strlen(s) > width ? s + strlen(s) - width : s);
+}
+
 void icp_log_write(const struct icp_log_message *msg, FILE *file, void *socket)
 {
     char *level = NULL;
 
     switch(msg->level) {
+    case ICP_LOG_TRACE:
     case ICP_LOG_DEBUG:
     case ICP_LOG_INFO:
     case ICP_LOG_WARNING:
@@ -290,9 +375,10 @@ void icp_log_write(const struct icp_log_message *msg, FILE *file, void *socket)
         char txt_time[32];
 
         strftime(txt_time, sizeof(txt_time), "%FT%TZ", gmtime(&msg->time));
-        error = asprintf(&log_msg, "%20s|%8s|%15s|%24.24s| %s",
+        error = asprintf(&log_msg, "%20s|%8s|%15s|%32.32s| %s",
                          txt_time, level, msg->thread,
-                         msg->function, msg->message);
+                         _shift_right(msg->function, 32),
+                         msg->message);
 
         if (error == -1) {
             /* Eek!  No message to log! */

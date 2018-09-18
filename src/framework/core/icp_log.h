@@ -1,3 +1,4 @@
+
 #ifndef _ICP_LOG_H_
 #define _ICP_LOG_H_
 
@@ -7,6 +8,7 @@ extern "C" {
 
 #include <stdarg.h>
 #include <stdint.h>
+#include <string.h>
 
 enum icp_log_level {
     ICP_LOG_NONE = 0,
@@ -15,6 +17,7 @@ enum icp_log_level {
     ICP_LOG_WARNING,      /**< Unexpected event or condition */
     ICP_LOG_INFO,         /**< Informational messages */
     ICP_LOG_DEBUG,        /**< Debugging messages */
+    ICP_LOG_TRACE,        /**< Trace level messages */
     ICP_LOG_MAX,
 };
 
@@ -30,7 +33,7 @@ enum icp_log_level icp_log_level_get(void) __attribute__((pure));
  * Set the application log level
  *
  * @param level
- *   A value between ICP_LOG_ERROR (1) and ICP_LOG_DEBUG (5)
+ *   A value between ICP_LOG_ERROR (1) and ICP_LOG_TRACE (6)
  */
 void icp_log_level_set(enum icp_log_level level);
 
@@ -48,6 +51,16 @@ void icp_log_level_set(enum icp_log_level level);
 enum icp_log_level icp_log_level_find(int argc, char *argv[]);
 
 /**
+ * Get the full function name from the full function signature string
+ *
+ * @param[in] signature
+ *   The full function signature
+ * @parma[out] function
+ *   Buffer for function name; should be at least as long as signature
+ */
+void icp_log_function_name(const char *signature, char *function);
+
+/**
  * Possibly write a message to the log
  *
  * @param level
@@ -58,11 +71,13 @@ enum icp_log_level icp_log_level_find(int argc, char *argv[]);
  *   -  0: Success
  *   - !0: Error
  */
-#define icp_log(level, format, ...)                             \
-    do {                                                        \
-        if (level <= icp_log_level_get()) {                     \
-            _icp_log(level, __func__, format, ##__VA_ARGS__);   \
-        }                                                       \
+#define icp_log(level, format, ...)                                     \
+    do {                                                                \
+        if (level <= icp_log_level_get()) {                             \
+            char function[strlen(__PRETTY_FUNCTION__)];                 \
+            icp_log_function_name(__PRETTY_FUNCTION__, function);       \
+            _icp_log(level, function, format, ##__VA_ARGS__);           \
+        }                                                               \
     } while (0)
 
 int _icp_log(enum icp_log_level level, const char *function,

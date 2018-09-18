@@ -16,9 +16,9 @@
 #include "core/icp_core.h"
 #include "drivers/dpdk/dpdk.h"
 
+namespace icp {
 namespace packetio {
 namespace driver {
-namespace dpdk {
 
 typedef std::vector<std::string> args_container;
 static args_container cli_args;
@@ -30,7 +30,8 @@ static std::unordered_map<enum icp_log_level, std::string> log_level_map = {
     {ICP_LOG_ERROR, "4"},    /* RTE_LOG_ERR */
     {ICP_LOG_WARNING, "5"},  /* RTE_LOG_WARNING */
     {ICP_LOG_INFO, "7"},     /* RTE_LOG_INFO */
-    {ICP_LOG_DEBUG, "8"}     /* RTE_LOG_DEBUG */
+    {ICP_LOG_DEBUG, "8"},    /* RTE_LOG_DEBUG */
+    {ICP_LOG_TRACE, "8"}
 };
 
 static int init_options(args_container &args)
@@ -206,19 +207,19 @@ extern "C" {
 int dpdk_option_init(void *opt_data)
 {
     (void)opt_data;
-    return packetio::driver::dpdk::init_options(packetio::driver::dpdk::cli_args);
+    return icp::packetio::driver::init_options(icp::packetio::driver::cli_args);
 }
 
 int dpdk_option_handler(int opt, const char *opt_arg, void *opt_data)
 {
     (void)opt_data;
-    return packetio::driver::dpdk::handle_options(opt, opt_arg,
-                                                  packetio::driver::dpdk::cli_args);
+    return icp::packetio::driver::handle_options(opt, opt_arg,
+                                                 icp::packetio::driver::cli_args);
 }
 
 int dpdk_driver_init(void *context)
 {
-    return packetio::driver::dpdk::init(context);
+    return icp::packetio::driver::init(context);
 }
 
 }

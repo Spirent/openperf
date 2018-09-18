@@ -11,20 +11,21 @@ extern "C" {
 
 #include <sys/queue.h>
 
-TAILQ_HEAD(icp_modules_list, icp_module);
+STAILQ_HEAD(icp_modules_list, icp_module);
 
 /**
  * Signature for module initialization function
  */
-typedef int (icp_module_init_fn)(void *context);
+typedef int (icp_module_callback_fn)(void *context);
 
 /**
  * Structure describing a module to initialize
  */
 struct icp_module {
-    TAILQ_ENTRY(icp_module) next;
+    STAILQ_ENTRY(icp_module) next;
     const char *name;
-    icp_module_init_fn *init;
+    icp_module_callback_fn *init;
+    icp_module_callback_fn *start;
 };
 
 /**
@@ -35,8 +36,9 @@ struct icp_module {
  */
 void icp_modules_register(struct icp_module *module);
 
+
 /**
- * Initialize all registered modules
+ * Invoke init callback for all registered modules
  *
  * @param[in] context
  *   ZeroMQ context for message passing
@@ -46,6 +48,18 @@ void icp_modules_register(struct icp_module *module);
  *   - !0: Error
  */
 int icp_modules_init(void *context);
+
+/**
+ * Invoke start callback for all registered modules
+ *
+ * @param[in] context
+ *   ZeroMQ context for message passing
+ *
+ * @return
+ *   -  0: Success
+ *   - !0: Error
+ */
+int icp_modules_start(void *context);
 
 #define REGISTER_MODULE(m)                                              \
     void icp_modules_register_ ## m(void);                              \

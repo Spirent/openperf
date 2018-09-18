@@ -35,6 +35,8 @@ HTTP_COMMON_SOURCES := \
 	common/http_headers.cc \
 	common/mime.cc \
 	common/net.cc \
+	common/os.cc \
+	common/peer.cc \
 	common/reactor.cc \
 	common/stream.cc \
 	common/tcp.cc \
