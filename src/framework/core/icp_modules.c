@@ -20,7 +20,7 @@ int icp_modules_init(void *context)
         if (!module->init) {
             continue;
         }
-        int ret = module->init(context);
+        int ret = module->init(context, module->state);
         errors += !!(ret != 0);
         icp_log(ICP_LOG_INFO, "Initializing %s module: %s\n",
                 module->name, ret ? "Failed" : "OK");
@@ -38,7 +38,7 @@ int icp_modules_start(void *context)
         if (!module->start) {
             continue;
         }
-        int ret = module->start(context);
+        int ret = module->start(context, module->state);
         errors += !!(ret != 0);
         icp_log(ICP_LOG_INFO, "Starting %s module: %s\n",
                 module->name, ret ? "Failed" : "OK");

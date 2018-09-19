@@ -139,7 +139,7 @@ static void log_dpdk_port_info(uint16_t port_idx)
     }
 }
 
-int init(void *context)
+int init(void *context, void *state __attribute__((unused)))
 {
     (void)context;
     /* Check to see if we have permissions to launch DPDK */
@@ -217,9 +217,9 @@ int dpdk_option_handler(int opt, const char *opt_arg, void *opt_data)
                                                  icp::packetio::driver::cli_args);
 }
 
-int dpdk_driver_init(void *context)
+int dpdk_driver_init(void *context, void *state)
 {
-    return icp::packetio::driver::init(context);
+    return icp::packetio::driver::init(context, state);
 }
 
 }

@@ -14,12 +14,3 @@ struct icp_options_data api_options = {
 };
 
 REGISTER_OPTIONS(api_options)
-
-extern int api_service_init(void *context);
-
-struct icp_module api_service = {
-    .name = "API service",
-    .init = api_service_init,
-};
-
-REGISTER_MODULE(api_service)

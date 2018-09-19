@@ -16,7 +16,7 @@ STAILQ_HEAD(icp_modules_list, icp_module);
 /**
  * Signature for module initialization function
  */
-typedef int (icp_module_callback_fn)(void *context);
+typedef int (icp_module_callback_fn)(void *context, void *state);
 
 /**
  * Structure describing a module to initialize
@@ -24,6 +24,7 @@ typedef int (icp_module_callback_fn)(void *context);
 struct icp_module {
     STAILQ_ENTRY(icp_module) next;
     const char *name;
+    void *state;
     icp_module_callback_fn *init;
     icp_module_callback_fn *start;
 };
