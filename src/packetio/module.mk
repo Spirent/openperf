@@ -9,3 +9,5 @@ PIO_SOURCES += \
 	packetio_port_server.cpp
 
 include $(PIO_SRC_DIR)/drivers/module.mk
+include $(PIO_SRC_DIR)/memory/module.mk
+include $(PIO_SRC_DIR)/stack/module.mk

@@ -50,5 +50,6 @@
                                      (concat root "deps/json/single_include/nlohmann")
                                      (concat root "src/")
                                      (concat root "src/framework")
-                                     (concat root "src/packetio/dpdk/include")
+                                     (concat root "src/packetio")
+                                     (concat root "src/packetio/stack/include")
                                      )))))))

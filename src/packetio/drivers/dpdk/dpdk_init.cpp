@@ -25,13 +25,13 @@ static args_container cli_args;
 
 /* Map ICP log levels to DPDK log levels */
 static std::unordered_map<enum icp_log_level, std::string> log_level_map = {
-    {ICP_LOG_NONE, "1"},     /* RTE_LOG_EMERG */
-    {ICP_LOG_CRITICAL, "3"}, /* RTE_LOG_CRIT */
-    {ICP_LOG_ERROR, "4"},    /* RTE_LOG_ERR */
-    {ICP_LOG_WARNING, "5"},  /* RTE_LOG_WARNING */
-    {ICP_LOG_INFO, "7"},     /* RTE_LOG_INFO */
-    {ICP_LOG_DEBUG, "8"},    /* RTE_LOG_DEBUG */
-    {ICP_LOG_TRACE, "8"}
+    {ICP_LOG_NONE,     "1"},  /* RTE_LOG_EMERG */
+    {ICP_LOG_CRITICAL, "3"},  /* RTE_LOG_CRIT */
+    {ICP_LOG_ERROR,    "4"},  /* RTE_LOG_ERR */
+    {ICP_LOG_WARNING,  "5"},  /* RTE_LOG_WARNING */
+    {ICP_LOG_INFO,     "7"},  /* RTE_LOG_INFO */
+    {ICP_LOG_DEBUG,    "8"},  /* RTE_LOG_DEBUG */
+    {ICP_LOG_TRACE,    "8"}
 };
 
 static int init_options(args_container &args)
@@ -65,8 +65,8 @@ struct named_cap_flag {
 };
 
 static struct named_cap_flag cap_permissions[] = {
-    {"cap_ipc_lock", CAP_IPC_LOCK},
-    {"cap_net_raw", CAP_NET_RAW},
+    { "cap_ipc_lock", CAP_IPC_LOCK },
+    { "cap_net_raw",  CAP_NET_RAW  },
 };
 
 static bool sufficient_permissions()

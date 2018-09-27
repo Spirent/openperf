@@ -40,19 +40,18 @@ $(foreach DEP,$(PIO_DEPENDS),$(eval include $(ICP_ROOT)/mk/$(DEP).mk))
 ###
 # Load stack info; always required for now
 ###
-#LWIP_SOURCES :=
-#LWIP_INCLUDES :=
+LWIP_SOURCES :=
+LWIP_INCLUDES :=
 
-#LWIP_SRC_DIR := $(ICP_ROOT)/deps/lwip
-#LWIP_OBJ_DIR := $(PIO_OBJ_DIR)/lwip
+LWIP_SRC_DIR := $(ICP_ROOT)/deps/lwip
+LWIP_OBJ_DIR := $(PIO_OBJ_DIR)/lwip
 
-#include $(ICP_ROOT)/mk/lwip.mk
+include $(ICP_ROOT)/mk/lwip.mk
 
-#LWIP_OBJECTS := $(patsubst %, $(LWIP_OBJ_DIR)/%, \
-#	$(patsubst %.c, %.o, $(LWIP_SOURCES)))
-#LWIP_CPPFLAGS := $(addprefix -I,$(addprefix $(LWIP_SRC_DIR)/,$(LWIP_INCLUDES)))
-#PIO_CPPFLAGS += $(LWIP_CPPFLAGS)
-#PIO_CPPFLAGS += $(addprefix -I,$(DPDK_INC_DIR))
+LWIP_OBJECTS := $(patsubst %, $(LWIP_OBJ_DIR)/%, \
+	$(patsubst %.c, %.o, $(LWIP_SOURCES)))
+LWIP_CPPFLAGS := $(addprefix -I,$(addprefix $(LWIP_SRC_DIR)/,$(LWIP_INCLUDES)))
+PIO_CPPFLAGS += $(LWIP_CPPFLAGS)
 
 $(LWIP_OBJ_DIR)/%.o: $(LWIP_SRC_DIR)/%.c
 	@mkdir -p $(dir $@)
@@ -60,7 +59,7 @@ $(LWIP_OBJ_DIR)/%.o: $(LWIP_SRC_DIR)/%.c
 
 # Pull in object dependencies, maybe
 -include $(PIO_OBJECTS:.o=.d)
-#-include $(LWIP_OBJECTS:.o=.d)
+-include $(LWIP_OBJECTS:.o=.d)
 
 ###
 # Build rules
