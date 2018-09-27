@@ -11,7 +11,7 @@ $(call icp_check_vars,$(ICP_REQ_VARS))
 FW_SRC_DIR := $(ICP_ROOT)/src/framework
 FW_OBJ_DIR := $(ICP_BUILD_ROOT)/obj/framework
 FW_INC_DIR := $(ICP_ROOT)/src/framework
-FW_LIB_DIR := $(ICP_BUILD_ROOT)/framework
+FW_LIB_DIR := $(ICP_BUILD_ROOT)/lib
 
 # We explicitly state our includes, e.g. include module/<header.h>
 ICP_INC_DIRS += $(FW_INC_DIR)
@@ -22,7 +22,7 @@ FW_OBJECTS :=
 FW_DEPENDS :=
 FW_LDLIBS  :=
 
-FW_MODULES := core
+FW_MODULES := api core
 
 # Load each module's module.mk file
 include $(patsubst %, $(FW_SRC_DIR)/%/module.mk, $(FW_MODULES))
@@ -31,6 +31,11 @@ include $(patsubst %, $(FW_SRC_DIR)/%/module.mk, $(FW_MODULES))
 # and translate the path from the SRC to the BUILD directory
 FW_OBJECTS += $(patsubst %, $(FW_OBJ_DIR)/%, \
 	$(patsubst %.c, %.o, $(filter %.c, $(FW_SOURCES))))
+
+FW_OBJECTS += $(patsubst %, $(FW_OBJ_DIR)/%, \
+	$(patsubst %.cpp, %.o, $(filter %.cpp, $(FW_SOURCES))))
+
+FW_TARGET := $(FW_LIB_DIR)/libframework.a
 
 ###
 # Pull in dependencies, maybe...
@@ -54,14 +59,18 @@ $(FW_OBJ_DIR)/%.o: $(FW_SRC_DIR)/%.c
 	@mkdir -p $(dir $@)
 	$(strip $(ICP_CC) -o $@ -c $(ICP_CPPFLAGS) $(ICP_CFLAGS) $(ICP_COPTS) $(ICP_DEFINES) $<)
 
-$(FW_LIB_DIR)/libframework.a: $(FW_OBJECTS)
+$(FW_OBJ_DIR)/%.o: $(FW_SRC_DIR)/%.cpp
+	@mkdir -p $(dir $@)
+	$(strip $(ICP_CXX) -o $@ -c $(ICP_CPPFLAGS) $(ICP_CXXFLAGS) $(ICP_COPTS) $(ICP_DEFINES) $<)
+
+$(FW_TARGET): $(FW_OBJECTS)
 	@mkdir -p $(dir $@)
 	$(strip $(ICP_AR) $(ICP_ARFLAGS) $@ $(FW_OBJECTS))
 
 .PHONY: framework
-framework: $(FW_LIB_DIR)/libframework.a
+framework: $(FW_TARGET)
 
 .PHONY: clean_framework
 clean_framework:
-	@rm -rf $(FW_OBJ_DIR) $(FW_LIB_DIR)
+	@rm -rf $(FW_OBJ_DIR) $(FW_TARGET)
 clean: clean_framework

@@ -184,10 +184,18 @@ static const char * _skip_keywords(const char *begin, const char *end)
         }
     }
 
-    /* We might have some c++ code, so handle templates, too */
+    /*
+     * We might have some c++ code, so handle templates and ctors/dtors, which
+     * don't have return types.
+     */
     size_t template_level = 0;
+    const char *to_return = cursor;
     while (cursor <= end) {
+        if (*cursor == '(' && template_level == 0) {
+            break;
+        }
         if (*cursor == ' ' && template_level == 0) {
+            to_return = cursor;
             break;
         }
         if (*cursor == '<') {
@@ -199,7 +207,7 @@ static const char * _skip_keywords(const char *begin, const char *end)
         cursor++;
     }
 
-    return (cursor);
+    return (to_return);
 }
 
 void icp_log_function_name(const char *signature, char *function)
@@ -213,7 +221,6 @@ void icp_log_function_name(const char *signature, char *function)
         cursor = signature;
         goto function_name_exit;
     }
-
     /* Skip the space after the keywords */
     cursor++;
     if (*cursor == '(') {

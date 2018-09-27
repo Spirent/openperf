@@ -15,7 +15,7 @@ PIO_LIBS :=
 
 PIO_SRC_DIR := $(ICP_ROOT)/src/packetio
 PIO_OBJ_DIR := $(ICP_BUILD_ROOT)/obj/packetio
-PIO_LIB_DIR := $(ICP_BUILD_ROOT)/packetio
+PIO_LIB_DIR := $(ICP_BUILD_ROOT)/lib
 
 include $(PIO_SRC_DIR)/module.mk
 
@@ -65,7 +65,7 @@ $(LWIP_OBJ_DIR)/%.o: $(LWIP_SRC_DIR)/%.c
 ###
 # Build rules
 ###
-$(PIO_OBJECTS): $(DPDK_TARGET)
+$(PIO_OBJECTS): | $(PIO_DEPENDS)
 
 $(PIO_OBJ_DIR)/%.o: $(PIO_SRC_DIR)/%.c
 	@mkdir -p $(dir $@)
@@ -84,5 +84,5 @@ packetio: $(PIO_TARGET)
 
 .PHONY: clean_packetio
 clean_packetio:
-	@rm -rf $(PIO_OBJ_DIR) $(PIO_LIB_DIR) $(PIO_SRC_DIR)/lwip
+	@rm -rf $(PIO_OBJ_DIR) $(PIO_TARGET) $(PIO_SRC_DIR)/lwip
 clean: clean_packetio

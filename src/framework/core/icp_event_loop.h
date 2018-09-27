@@ -7,6 +7,10 @@
 
 #include "core/icp_event.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * Allocate an event loop structure.
  *
@@ -254,5 +258,9 @@ int icp_event_loop_del_timer(struct icp_event_loop *loop, uint32_t timeout_id);
              uint32_t: icp_event_loop_del_timer,      \
              const uint32_t: icp_event_loop_del_timer \
         )(loop, thing)
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* _ICP_EVENT_LOOP_H_ */

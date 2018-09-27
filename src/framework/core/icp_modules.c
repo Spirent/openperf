@@ -11,6 +11,24 @@ void icp_modules_register(struct icp_module *module)
     STAILQ_INSERT_TAIL(&_modules_list, module, next);
 }
 
+int icp_modules_pre_init(void *context)
+{
+    struct icp_module *module = NULL;
+    int errors = 0;
+
+    STAILQ_FOREACH(module, &_modules_list, next) {
+        if (!module->pre_init) {
+            continue;
+        }
+        int ret = module->pre_init(context, module->state);
+        errors += !!(ret != 0);
+        icp_log(ICP_LOG_INFO, "Pre-initializing %s module: %s\n",
+                module->name, ret ? "Failed" : "OK");
+    }
+
+    return (errors);
+}
+
 int icp_modules_init(void *context)
 {
     struct icp_module *module = NULL;
@@ -29,7 +47,25 @@ int icp_modules_init(void *context)
     return (errors);
 }
 
-int icp_modules_start(void *context)
+int icp_modules_post_init(void *context)
+{
+    struct icp_module *module = NULL;
+    int errors = 0;
+
+    STAILQ_FOREACH(module, &_modules_list, next) {
+        if (!module->post_init) {
+            continue;
+        }
+        int ret = module->post_init(context, module->state);
+        errors += !!(ret != 0);
+        icp_log(ICP_LOG_INFO, "Post-initializing %s module: %s\n",
+                module->name, ret ? "Failed" : "OK");
+    }
+
+    return (errors);
+}
+
+int icp_modules_start()
 {
     struct icp_module *module = NULL;
     int errors = 0;
@@ -38,7 +74,7 @@ int icp_modules_start(void *context)
         if (!module->start) {
             continue;
         }
-        int ret = module->start(context, module->state);
+        int ret = module->start(module->state);
         errors += !!(ret != 0);
         icp_log(ICP_LOG_INFO, "Starting %s module: %s\n",
                 module->name, ret ? "Failed" : "OK");

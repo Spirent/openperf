@@ -16,7 +16,9 @@ STAILQ_HEAD(icp_modules_list, icp_module);
 /**
  * Signature for module initialization function
  */
-typedef int (icp_module_callback_fn)(void *context, void *state);
+typedef int (icp_module_init_fn)(void *context, void *state);
+
+typedef int (icp_module_start_fn)(void *state);
 
 /**
  * Structure describing a module to initialize
@@ -25,8 +27,10 @@ struct icp_module {
     STAILQ_ENTRY(icp_module) next;
     const char *name;
     void *state;
-    icp_module_callback_fn *init;
-    icp_module_callback_fn *start;
+    icp_module_init_fn *pre_init;
+    icp_module_init_fn *init;
+    icp_module_init_fn *post_init;
+    icp_module_start_fn *start;
 };
 
 /**
@@ -37,6 +41,17 @@ struct icp_module {
  */
 void icp_modules_register(struct icp_module *module);
 
+/**
+ * Invoke pre init callback for all registered modules
+ *
+ * @param[in] context
+ *   ZeroMQ context for message passing
+ *
+ * @return
+ *   -  0: Success
+ *   - !0: Error
+ */
+int icp_modules_pre_init(void *context);
 
 /**
  * Invoke init callback for all registered modules
@@ -51,6 +66,18 @@ void icp_modules_register(struct icp_module *module);
 int icp_modules_init(void *context);
 
 /**
+ * Invoke post init callback for all registered modules
+ *
+ * @param[in] context
+ *   ZeroMQ context for message passing
+ *
+ * @return
+ *   -  0: Success
+ *   - !0: Error
+ */
+int icp_modules_post_init(void *context);
+
+/**
  * Invoke start callback for all registered modules
  *
  * @param[in] context
@@ -60,7 +87,7 @@ int icp_modules_init(void *context);
  *   -  0: Success
  *   - !0: Error
  */
-int icp_modules_start(void *context);
+int icp_modules_start();
 
 #define REGISTER_MODULE(m)                                              \
     void icp_modules_register_ ## m(void);                              \

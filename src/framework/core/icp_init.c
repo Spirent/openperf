@@ -24,8 +24,14 @@ void icp_init(void *context, int argc, char *argv[])
     }
 
     /* Initialize all modules */
-    if (icp_modules_init(context) != 0
-        || icp_modules_start(context) != 0) {
+    if (icp_modules_pre_init(context) != 0
+        || icp_modules_init(context) != 0
+        || icp_modules_post_init(context) != 0) {
         icp_exit("Module initialization failed!");
+    }
+
+    /* Finally, start anything that needs explicit starting */
+    if (icp_modules_start(context) != 0) {
+        icp_exit("Failed to start some modules!");
     }
 }

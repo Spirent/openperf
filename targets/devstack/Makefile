@@ -16,7 +16,7 @@ OBJECTS := $(patsubst %, $(BUILD_DIR)/%, \
 	$(patsubst %.c, %.o, $(filter %.c, $(SOURCES))))
 SRC_DEPENDS := $(OBJECTS:.o=.d)
 
-BLD_DEPENDS := framework packetio api
+BLD_DEPENDS := framework packetio
 ICP_PACKETIO_DRIVER := dpdk
 
 all: devstack

@@ -9,6 +9,10 @@
  * Convenience header to pull in all icp_core headers
  */
 
+#ifdef __cplusplus
+#include "core/icp_event_loop.hpp"
+#endif
+
 #include "core/icp_common.h"
 #include "core/icp_cpuset.h"
 #include "core/icp_event.h"

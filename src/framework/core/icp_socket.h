@@ -3,6 +3,10 @@
 
 #include <stdbool.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void icp_socket_cleanup(void **s);
 #define SCOPED_ZMQ_SOCKET(s) void *s __attribute__((cleanup(icp_socket_cleanup)))
 
@@ -31,5 +35,20 @@ void *icp_socket_get_client_subscription(void *context,
 int icp_socket_add_subscription(void *socket, const char *key);
 
 bool icp_socket_has_messages(void *socket);
+
+#ifdef __cplusplus
+}
+
+/**
+ * Provide a deleter struct for ZeroMQ sockets.  This is needed for anything
+ * trying to use std::unique_ptr with a socket.
+ */
+struct icp_socket_deleter {
+    void operator()(void *s) const {
+        icp_socket_close(s);
+    }
+};
+
+#endif
 
 #endif
