@@ -12,10 +12,8 @@ namespace api {
 using namespace Pistache;
 using json = nlohmann::json;
 
-
 json submit_request(void *socket, json& request)
 {
-
     auto type = request["type"].get<request_type>();
     switch (type) {
     case request_type::GET_PORT:
@@ -50,14 +48,13 @@ json submit_request(void *socket, json& request)
     return json::from_cbor(reply_buffer);
 }
 
-
 class handler : public icp::api::route::handler::registrar<handler> {
 public:
     handler(void *context, Rest::Router &router);
 
-    Rest::Route::Result list_ports(const Rest::Request &request, Http::ResponseWriter response);
+    Rest::Route::Result  list_ports(const Rest::Request &request, Http::ResponseWriter response);
     Rest::Route::Result create_port(const Rest::Request &request, Http::ResponseWriter response);
-    Rest::Route::Result get_port(const Rest::Request &request, Http::ResponseWriter response);
+    Rest::Route::Result    get_port(const Rest::Request &request, Http::ResponseWriter response);
     Rest::Route::Result update_port(const Rest::Request &request, Http::ResponseWriter response);
     Rest::Route::Result delete_port(const Rest::Request &request, Http::ResponseWriter response);
 
@@ -98,7 +95,7 @@ Rest::Route::Result handler::list_ports(const Rest::Request &request,
         response.send(Http::Code::Ok, api_reply["data"].get<std::string>());
     } else {
         response.send(Http::Code::Internal_Server_Error,
-                      api_reply["data"].get<std::string>());
+                      api_reply["error"].get<std::string>());
     }
 
     return (Rest::Route::Result::Ok);

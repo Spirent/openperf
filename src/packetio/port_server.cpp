@@ -171,7 +171,7 @@ static int _handle_rpc_request(const icp_event_data *data,
             break;
         default:
             reply["code"] = reply_code::ERROR;
-            reply["data"] = "Unsupported request type, " + std::to_string(static_cast<int>(type));
+            reply["error"] = json_error(ENOSYS, "Request type not implemented in packtio port server");
         }
 
         std::vector<uint8_t> reply_buffer = json::to_cbor(reply);

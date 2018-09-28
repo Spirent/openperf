@@ -20,14 +20,17 @@ namespace api {
 /**
  * List of supported server requests.
  */
-enum class request_type : unsigned char { NONE = 0,
-                                          LIST_INTERFACES,
-                                          CREATE_INTERFACE,
-                                          GET_INTERFACE,
-                                          DELETE_INTERFACE };
+enum class request_type { NONE = 0,
+                          LIST_INTERFACES,
+                          CREATE_INTERFACE,
+                          GET_INTERFACE,
+                          DELETE_INTERFACE };
 
-enum class reply_code : unsigned char { NONE = 0,
-                                        OK };
+enum class reply_code { NONE = 0,
+                        OK,
+                        NO_INTERFACE,
+                        BAD_INPUT,
+                        ERROR };
 
 const std::string& get_request_type(request_type type);
 const std::string& get_reply_code(reply_code code);

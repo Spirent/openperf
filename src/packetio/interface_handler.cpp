@@ -12,6 +12,41 @@ namespace api {
 using namespace Pistache;
 using json = nlohmann::json;
 
+json submit_request(void *socket, json& request)
+{
+    auto type = request["type"].get<request_type>();
+    switch (type) {
+    case request_type::GET_INTERFACE:
+    case request_type::DELETE_INTERFACE:
+        icp_log(ICP_LOG_TRACE, "Sending %s request for interface %d\n",
+                get_request_type(type).c_str(),
+                request["id"].get<int>());
+        break;
+    default:
+        icp_log(ICP_LOG_TRACE, "Sending %s request\n", get_request_type(type).c_str());
+    }
+
+    std::vector<uint8_t> request_buffer = json::to_cbor(request);
+    zmq_msg_t reply_msg;
+    if (zmq_msg_init(&reply_msg) == -1
+        || zmq_send(socket, request_buffer.data(), request_buffer.size(), 0) != static_cast<int>(request_buffer.size())
+        || zmq_msg_recv(&reply_msg, socket, 0) == -1) {
+        return {
+            { "code", reply_code::ERROR },
+            { "error", json_error(errno, zmq_strerror(errno)) }
+        };
+    }
+
+    icp_log(ICP_LOG_TRACE, "Received %s reply\n", get_request_type(type).c_str());
+
+    std::vector<uint8_t> reply_buffer(static_cast<uint8_t *>(zmq_msg_data(&reply_msg)),
+                                      static_cast<uint8_t *>(zmq_msg_data(&reply_msg)) + zmq_msg_size(&reply_msg));
+
+    zmq_msg_close(&reply_msg);
+
+    return json::from_cbor(reply_buffer);
+}
+
 class handler : public icp::api::route::handler::registrar<handler> {
 public:
     handler(void *context, Rest::Router &router);
@@ -41,28 +76,98 @@ handler::handler(void *context, Rest::Router &router)
 Rest::Route::Result handler::list_interfaces(const Rest::Request &request,
                                              Http::ResponseWriter response)
 {
-    response.send(Http::Code::Not_Implemented);
+    json api_request = {
+        {"type", request_type::LIST_INTERFACES }
+    };
+
+    /* Check for supported parameters */
+    for (auto &s : { "port", "eth_mac_address", "ipv4_address" } ) {
+        if (request.query().has(s)) {
+            api_request[s] = request.query().get(s).get();
+        }
+    }
+
+    json api_reply = submit_request(socket.get(), api_request);
+
+    response.headers().add<Http::Header::ContentType>(MIME(Application, Json));
+    if (api_reply["code"].get<reply_code>() == reply_code::OK) {
+        response.send(Http::Code::Ok, api_reply["data"].get<std::string>());
+    } else {
+        response.send(Http::Code::Internal_Server_Error,
+                      api_reply["error"].get<std::string>());
+    }
+
     return (Rest::Route::Result::Ok);
 }
 
 Rest::Route::Result handler::create_interface(const Rest::Request &request,
                                               Http::ResponseWriter response)
 {
-    response.send(Http::Code::Not_Implemented);
+    json api_request = {
+        { "type", request_type::CREATE_INTERFACE },
+        { "data", request.body() }
+    };
+
+    json api_reply = submit_request(socket.get(), api_request);
+
+    response.headers().add<Http::Header::ContentType>(MIME(Application, Json));
+    switch (api_reply["code"].get<reply_code>()) {
+    case reply_code::OK:
+        response.send(Http::Code::Ok,
+                      api_reply["data"].get<std::string>());
+        break;
+    case reply_code::BAD_INPUT:
+        response.send(Http::Code::Bad_Request,
+                      api_reply["error"].get<std::string>());
+        break;
+    default:
+        response.send(Http::Code::Internal_Server_Error,
+                      api_reply["error"].get<std::string>());
+    }
+
     return (Rest::Route::Result::Ok);
 }
 
 Rest::Route::Result handler::get_interface(const Rest::Request &request,
                                            Http::ResponseWriter response)
 {
-    response.send(Http::Code::Not_Implemented);
+    json api_request = {
+        { "type", request_type::GET_INTERFACE },
+        { "id", request.param(":id").as<int>() }
+    };
+
+    json api_reply = submit_request(socket.get(), api_request);
+
+    switch (api_reply["code"].get<reply_code>()) {
+    case reply_code::OK:
+        response.headers().add<Http::Header::ContentType>(MIME(Application, Json));
+        response.send(Http::Code::Ok,
+                      api_reply["data"].get<std::string>());
+        break;
+    case reply_code::NO_INTERFACE:
+        response.send(Http::Code::Not_Found);
+        break;
+    default:
+        response.headers().add<Http::Header::ContentType>(MIME(Application, Json));
+        response.send(Http::Code::Internal_Server_Error,
+                      api_reply["error"].get<std::string>());
+    }
+
     return (Rest::Route::Result::Ok);
 }
 
 Rest::Route::Result handler::delete_interface(const Rest::Request &request,
                                               Http::ResponseWriter response)
 {
-    response.send(Http::Code::Not_Implemented);
+    json api_request = {
+        { "type", request_type::DELETE_INTERFACE },
+        { "id", request.param(":id").as<int>() }
+    };
+
+    /* We don't care about any reply, here */
+    submit_request(socket.get(), api_request);
+    response.send(Http::Code::No_Content);
+
     return (Rest::Route::Result::Ok);
 }
 
