@@ -11,6 +11,7 @@
 
 #ifdef __cplusplus
 #include "core/icp_event_loop.hpp"
+#include "core/icp_init_factory.hpp"
 #endif
 
 #include "core/icp_common.h"

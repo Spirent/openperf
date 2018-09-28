@@ -63,7 +63,7 @@ public:
     }
 
     int post_init(void *context) {
-        route::handler::make_all_handlers(_handlers, context, _router);
+        route::handler::make_all(_handlers, context, _router);
         return (0);
     }
 

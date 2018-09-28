@@ -7,8 +7,6 @@
 
 #include "json.hpp"
 
-#include "core/icp_core.h"
-
 namespace swagger {
 namespace v1 {
 namespace model {
@@ -65,15 +63,6 @@ void delete_port(int port_idx);
 }
 
 extern const std::string endpoint;
-
-class server
-{
-public:
-    server(void *context, icp::core::event_loop &loop);
-
-private:
-    std::unique_ptr<void, icp_socket_deleter> socket;
-};
 
 }
 }

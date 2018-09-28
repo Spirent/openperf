@@ -1,10 +1,11 @@
 #include <cstring>
 #include <memory>
 #include <thread>
+#include <vector>
 
 #include <zmq.h>
 
-#include "packetio/packetio_port_api.h"
+#include "packetio/api_server.h"
 #include "core/icp_core.h"
 
 namespace icp {
@@ -19,7 +20,7 @@ struct service {
 
     void init(void *context) {
         loop.reset(new icp::core::event_loop());
-        port_server.reset(new port::api::server(context, *loop));
+        api::server::make_all(servers, context, *loop);
     }
 
     void start()
@@ -31,7 +32,7 @@ struct service {
     }
 
     std::unique_ptr<icp::core::event_loop> loop;
-    std::unique_ptr<port::api::server> port_server;
+    std::vector<std::unique_ptr<api::server>> servers;
     std::thread worker;
 };
 
@@ -39,7 +40,7 @@ struct service {
 }
 extern "C" {
 
-int packetio_init(void *context, void *state)
+int icp_packetio_init(void *context, void *state)
 {
     icp::packetio::service *s = reinterpret_cast<icp::packetio::service *>(state);
     s->init(context);
@@ -50,7 +51,7 @@ int packetio_init(void *context, void *state)
 struct icp_module packetio = {
     .name = "packetio",
     .state = new icp::packetio::service(),
-    .init = packetio_init,
+    .init = icp_packetio_init,
 };
 
 REGISTER_MODULE(packetio)

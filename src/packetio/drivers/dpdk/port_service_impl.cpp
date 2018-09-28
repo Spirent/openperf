@@ -8,7 +8,7 @@
 
 #include "core/icp_core.h"
 #include "swagger/v1/model/Port.h"
-#include "packetio/packetio_port_api.h"
+#include "packetio/port_api.h"
 #include "drivers/dpdk/dpdk.h"
 
 using namespace swagger::v1::model;

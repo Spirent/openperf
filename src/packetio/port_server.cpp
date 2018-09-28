@@ -1,8 +1,10 @@
 #include <unordered_map>
 
 #include "zmq.h"
+
 #include "core/icp_core.h"
-#include "packetio/packetio_port_api.h"
+#include "packetio/api_server.h"
+#include "packetio/port_api.h"
 #include "swagger/v1/model/Port.h"
 
 namespace icp {
@@ -186,14 +188,19 @@ static int _handle_rpc_request(const icp_event_data *data,
     return (((recv_or_err < 0 || send_or_err < 0) && errno == ETERM) ? -1 : 0);
 }
 
-server::server(void *context, icp::core::event_loop &loop)
-    : socket(icp_socket_get_server(context, ZMQ_REP, endpoint.c_str()))
-{
-    struct icp_event_callbacks callbacks = {
-        .on_read = _handle_rpc_request
-    };
-    loop.add(socket.get(), &callbacks, nullptr);
-}
+class server : public icp::packetio::api::server::registrar<server> {
+public:
+    server(void *context, icp::core::event_loop &loop)
+        : socket(icp_socket_get_server(context, ZMQ_REP, endpoint.c_str()))
+    {
+        struct icp_event_callbacks callbacks = {
+            .on_read = _handle_rpc_request
+        };
+        loop.add(socket.get(), &callbacks, nullptr);
+    }
+private:
+    std::unique_ptr<void, icp_socket_deleter> socket;
+};
 
 }
 }

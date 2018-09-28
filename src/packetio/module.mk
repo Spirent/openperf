@@ -4,9 +4,11 @@
 PIO_DEPENDS += swagger_model
 
 PIO_SOURCES += \
-	packetio_init.cpp \
-	packetio_port_handler.cpp \
-	packetio_port_server.cpp
+	init.cpp \
+	interface_handler.cpp \
+	interface_server.cpp \
+	port_handler.cpp \
+	port_server.cpp
 
 include $(PIO_SRC_DIR)/drivers/module.mk
 include $(PIO_SRC_DIR)/memory/module.mk
