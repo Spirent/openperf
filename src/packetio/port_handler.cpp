@@ -45,6 +45,8 @@ json submit_request(void *socket, json& request)
     std::vector<uint8_t> reply_buffer(static_cast<uint8_t *>(zmq_msg_data(&reply_msg)),
                                       static_cast<uint8_t *>(zmq_msg_data(&reply_msg)) + zmq_msg_size(&reply_msg));
 
+    zmq_msg_close(&reply_msg);
+
     return json::from_cbor(reply_buffer);
 }
 

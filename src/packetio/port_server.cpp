@@ -185,6 +185,8 @@ static int _handle_rpc_request(const icp_event_data *data,
         }
     }
 
+    zmq_msg_close(&request_msg);
+
     return (((recv_or_err < 0 || send_or_err < 0) && errno == ETERM) ? -1 : 0);
 }
 
