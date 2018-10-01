@@ -56,6 +56,10 @@ public:
     Rest::Route::Result    get_interface(const Rest::Request &request, Http::ResponseWriter response);
     Rest::Route::Result delete_interface(const Rest::Request &request, Http::ResponseWriter response);
 
+    /* Bulk interface options */
+    Rest::Route::Result bulk_create_interfaces(const Rest::Request &request, Http::ResponseWriter response);
+    Rest::Route::Result bulk_delete_interfaces(const Rest::Request &request, Http::ResponseWriter response);
+
 private:
     std::unique_ptr<void, icp_socket_deleter> socket;
 };
@@ -71,6 +75,11 @@ handler::handler(void *context, Rest::Router &router)
                       Rest::Routes::bind(&handler::get_interface, this));
     Rest::Routes::Delete(router, "/interfaces/:id",
                          Rest::Routes::bind(&handler::delete_interface, this));
+
+    Rest::Routes::Post(router, "interfaces/x/bulk-create",
+                       Rest::Routes::bind(&handler::bulk_create_interfaces, this));
+    Rest::Routes::Post(router, "interfaces/x/bulk-delete",
+                       Rest::Routes::bind(&handler::bulk_delete_interfaces, this));
 }
 
 Rest::Route::Result handler::list_interfaces(const Rest::Request &request,
@@ -167,6 +176,65 @@ Rest::Route::Result handler::delete_interface(const Rest::Request &request,
     /* We don't care about any reply, here */
     submit_request(socket.get(), api_request);
     response.send(Http::Code::No_Content);
+
+    return (Rest::Route::Result::Ok);
+}
+
+Rest::Route::Result handler::bulk_create_interfaces(const Rest::Request &request,
+                                                    Http::ResponseWriter response)
+{
+    response.headers().add<Http::Header::ContentType>(MIME(Application, Json));
+
+    try {
+        json body = json::parse(request.body());
+
+        if (body.find("items") != body.end()) {
+            json api_request = {
+                { "type", request_type::BULK_CREATE_INTERFACES },
+                { "items", body["items"] }
+            };
+
+            json api_reply = submit_request(socket.get(), api_request);
+
+            switch (api_reply["code"].get<reply_code>()) {
+            case reply_code::OK:
+                response.send(Http::Code::Ok,
+                              api_reply["data"].get<std::string>());
+                break;
+            case reply_code::BAD_INPUT:
+                response.send(Http::Code::Bad_Request,
+                      api_reply["error"].get<std::string>());
+                break;
+            default:
+                response.send(Http::Code::Internal_Server_Error,
+                              api_reply["error"].get<std::string>());
+            }
+        }
+    } catch (const json::parse_error &e) {
+        response.send(Http::Code::Bad_Request, json_error(e.id, e.what()));
+    }
+
+    return (Rest::Route::Result::Ok);
+}
+
+Rest::Route::Result handler::bulk_delete_interfaces(const Rest::Request &request,
+                                                    Http::ResponseWriter response)
+{
+    try {
+        json body = json::parse(request.body());
+
+        if (body.find("ids") != body.end()) {
+            json api_request = {
+                { "type", request_type::BULK_DELETE_INTERFACES },
+                { "ids", body["ids"] }
+            };
+            submit_request(socket.get(), api_request);
+        }
+        response.send(Http::Code::No_Content);
+    } catch (const json::parse_error &e) {
+        response.headers().add<Http::Header::ContentType>(MIME(Application, Json));
+        response.send(Http::Code::Bad_Request, json_error(e.id, e.what()));
+    }
 
     return (Rest::Route::Result::Ok);
 }

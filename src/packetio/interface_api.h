@@ -24,7 +24,9 @@ enum class request_type { NONE = 0,
                           LIST_INTERFACES,
                           CREATE_INTERFACE,
                           GET_INTERFACE,
-                          DELETE_INTERFACE };
+                          DELETE_INTERFACE,
+                          BULK_CREATE_INTERFACES,
+                          BULK_DELETE_INTERFACES };
 
 enum class reply_code { NONE = 0,
                         OK,

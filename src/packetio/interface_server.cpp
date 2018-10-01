@@ -26,11 +26,13 @@ typedef std::map<unsigned, std::shared_ptr<Interface>> interface_map;
 const std::string & get_request_type(request_type type)
 {
     const static std::unordered_map<request_type, std::string> request_types = {
-        { request_type::LIST_INTERFACES,  "LIST_INTERFACES"  },
-        { request_type::CREATE_INTERFACE, "CREATE_INTERFACE" },
-        { request_type::GET_INTERFACE,    "GET_INTERFACE"    },
-        { request_type::DELETE_INTERFACE, "DELETE_INTERFACE" },
-        { request_type::NONE,             "UNKNOWN"     }  /* Overloaded */
+        { request_type::LIST_INTERFACES,        "LIST_INTERFACES"        },
+        { request_type::CREATE_INTERFACE,       "CREATE_INTERFACE"       },
+        { request_type::GET_INTERFACE,          "GET_INTERFACE"          },
+        { request_type::DELETE_INTERFACE,       "DELETE_INTERFACE"       },
+        { request_type::BULK_CREATE_INTERFACES, "BULD_CREATE_INTERFACES" },
+        { request_type::BULK_DELETE_INTERFACES, "BULD_DELETE_INTERFACES" },
+        { request_type::NONE,                   "UNKNOWN"                }  /* Overloaded */
     };
 
     return (request_types.find(type) == request_types.end()
@@ -66,11 +68,11 @@ static void _handle_list_interfaces_request(json &request, json& reply, interfac
     reply["data"] = jints.dump();
 }
 
+static int interface_idx = 0;
+
 static void _handle_create_interface_request(json& request, json&reply, interface_map& map)
 {
-    static int interface_idx = 0;
     try {
-        //auto input = json::parse(request["data"].get<std::string>());
         auto iface = std::make_shared<Interface>();
         *iface = json::parse(request["data"].get<std::string>());
         iface->setId(std::to_string(interface_idx));
@@ -101,6 +103,43 @@ static void _handle_delete_interface_request(json& request, json& reply, interfa
     int id = request["id"].get<int>();
     if (map.find(id) != map.end()) {
         map.erase(id);
+    }
+    reply["code"] = reply_code::OK;
+}
+
+static void _handle_bulk_create_interface_request(json& request, json& reply, interface_map& map)
+{
+    std::vector<int> ids;
+    try {
+        auto data = json::array();
+        for (auto& item : request["items"]) {
+            auto iface = std::make_shared<Interface>();
+            *iface = item;
+            iface->setId(std::to_string(interface_idx));
+            ids.push_back(interface_idx);  /* store the id in case we encounter a subsequent error */
+            map[interface_idx++] = iface;
+            data.push_back(iface->toJson());
+        }
+        reply["code"] = reply_code::OK;
+        reply["data"] = data.dump();
+    } catch (const json::parse_error &e) {
+        /* Delete any interfaces we successfully created */
+        for (int id : ids) {
+            if (map.find(id) != map.end()) {
+                map.erase(id);
+            }
+        }
+        reply["code"] = reply_code::BAD_INPUT;
+        reply["error"] = json_error(e.id, e.what());
+    }
+}
+
+static void _handle_bulk_delete_interface_request(json& request, json& reply, interface_map& map)
+{
+    for (int id : request["ids"]) {
+        if (map.find(id) != map.end()) {
+            map.erase(id);
+        }
     }
     reply["code"] = reply_code::OK;
 }
@@ -146,6 +185,12 @@ static int _handle_rpc_request(const icp_event_data *data, void *arg)
             break;
         case request_type::DELETE_INTERFACE:
             _handle_delete_interface_request(request, reply, *map);
+            break;
+        case request_type::BULK_CREATE_INTERFACES:
+            _handle_bulk_create_interface_request(request, reply, *map);
+            break;
+        case request_type::BULK_DELETE_INTERFACES:
+            _handle_bulk_delete_interface_request(request, reply, *map);
             break;
         default:
             reply["code"] = reply_code::ERROR;
