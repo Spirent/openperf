@@ -15,12 +15,3 @@ struct icp_options_data dpdk_options = {
 };
 
 REGISTER_OPTIONS(dpdk_options)
-
-extern int dpdk_driver_init(void *context, void *state);
-
-struct icp_module dpdk_driver = {
-    .name = "packetio (DPDK driver)",
-    .init = dpdk_driver_init,
-};
-
-REGISTER_MODULE(dpdk_driver)

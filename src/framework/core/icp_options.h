@@ -5,6 +5,10 @@
  * @file
  */
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdbool.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -70,8 +74,11 @@ int icp_options_parse(int argc, char *argv[]);
     void icp_options_register_ ## o(void);                              \
     void __attribute__((constructor)) icp_options_register_ ## o(void)  \
     {                                                                   \
-        icp_options_register(&o);                                       \
+        icp_options_register((struct icp_options_data *)&o);            \
     }
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* _ICP_OPTIONS_H_ */

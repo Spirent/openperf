@@ -1,5 +1,4 @@
 #include <assert.h>
-#include <stdatomic.h>
 #include <stdbool.h>
 #include <stdio.h>
 
@@ -10,36 +9,32 @@
 #include "drivers/dpdk/dpdk.h"
 #include "memory/dpdk/memp.h"
 
-extern struct rte_mbuf * packetio_memp_pbuf_to_mbuf(const struct pbuf *pbuf);
-extern struct pbuf * packetio_memp_mbuf_to_pbuf(const struct rte_mbuf *mbuf);
+namespace icp {
+namespace packetio {
+namespace memory {
 
-static struct rte_mempool* get_default_mempool()
+static rte_mempool* get_default_mempool()
 {
-    static atomic_flag have_mp = ATOMIC_FLAG_INIT;
-    static struct rte_mempool* default_mp = NULL;
-    if (!atomic_flag_test_and_set(&have_mp)) {
-        default_mp = rte_mempool_lookup(memp_default_mempool);
-    }
-    assert(default_mp);
+    static rte_mempool* default_mp = rte_mempool_lookup(memp_default_mempool);
     return (default_mp);
 }
 
-static struct rte_mempool* get_ref_rom_mempool()
+static rte_mempool* get_ref_rom_mempool()
 {
-    static atomic_flag have_mp = ATOMIC_FLAG_INIT;
-    static struct rte_mempool* ref_rom_mp = NULL;
-    if (!atomic_flag_test_and_set(&have_mp)) {
-        ref_rom_mp = rte_mempool_lookup(memp_ref_rom_mempool);
-    }
-    assert(ref_rom_mp);
+    static rte_mempool* ref_rom_mp = rte_mempool_lookup(memp_ref_rom_mempool);
     return (ref_rom_mp);
 }
 
-void memp_init()
-{
-    get_default_mempool();
-    get_ref_rom_mempool();
 }
+}
+}
+
+extern "C" {
+
+//extern struct rte_mbuf * packetio_memp_pbuf_to_mbuf(const struct pbuf *pbuf);
+//extern struct pbuf * packetio_memp_mbuf_to_pbuf(const struct rte_mbuf *mbuf);
+
+void memp_init() {}
 
 void * memp_malloc(memp_t type)
 {
@@ -47,13 +42,13 @@ void * memp_malloc(memp_t type)
     struct rte_mbuf *mbuf = NULL;
     switch (type) {
     case MEMP_PBUF:
-        mbuf = rte_pktmbuf_alloc(get_default_mempool());
+        mbuf = rte_pktmbuf_alloc(icp::packetio::memory::get_default_mempool());
         if (mbuf) {
             to_return = packetio_memp_mbuf_to_pbuf(mbuf);
         }
         break;
     case MEMP_PBUF_POOL:
-        mbuf = rte_pktmbuf_alloc(get_ref_rom_mempool());
+        mbuf = rte_pktmbuf_alloc(icp::packetio::memory::get_ref_rom_mempool());
         if (mbuf) {
             to_return = packetio_memp_mbuf_to_pbuf(mbuf);
         }
@@ -91,4 +86,6 @@ void memp_free(memp_t type, void *mem)
     struct memp_desc *desc = memp_pools[type];
     desc->stats->used--;
 #endif
+}
+
 }

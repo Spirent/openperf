@@ -1,10 +1,10 @@
 ICP_DPDK_TARGET ?= default-linuxicp-clang
 
-PIO_DEPENDS += dpdk
+PIO_DEPENDS += dpdk tinyfsm
 
 PIO_DRIVER_SOURCES += \
-	dpdk_init.cpp \
-	dpdk_register.c \
-	port_service_impl.cpp
+	eal.cpp \
+	port_service_impl.cpp \
+	register_options.c
 
 PIO_LIBS += -lcap

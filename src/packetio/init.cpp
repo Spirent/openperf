@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <cstring>
 #include <memory>
 #include <thread>
@@ -6,6 +7,7 @@
 #include <zmq.h>
 
 #include "packetio/api_server.h"
+#include "packetio/component.h"
 #include "core/icp_core.h"
 
 namespace icp {
@@ -21,6 +23,7 @@ struct service {
     void init(void *context) {
         loop.reset(new icp::core::event_loop());
         api::server::make_all(servers, context, *loop);
+        component::make_all(components);
     }
 
     void start()
@@ -33,6 +36,7 @@ struct service {
 
     std::unique_ptr<icp::core::event_loop> loop;
     std::vector<std::unique_ptr<api::server>> servers;
+    std::vector<std::unique_ptr<component>> components;
     std::thread worker;
 };
 

@@ -2,7 +2,7 @@
 
 extern int api_option_handler(int opt, const char *opt_arg, void *opt_data);
 
-struct icp_options_data api_options = {
+static struct icp_options_data api_options = {
     .name = "API",
     .init = NULL,
     .callback = api_option_handler,

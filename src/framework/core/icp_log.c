@@ -148,9 +148,13 @@ enum icp_log_level icp_log_level_find(int argc, char *argv[])
             break;
         }
         switch (opt) {
-        case 'l':
-            to_return = _parse_log_optarg(optarg);
+        case 'l': {
+            enum icp_log_level tmp = _parse_log_optarg(optarg);
+            if (tmp != ICP_LOG_NONE) {
+                to_return = tmp;
+            }
             break;
+        }
         default:
             /*
              * We're only looking for the 'verbose' option, so don't bother
@@ -559,7 +563,7 @@ static struct icp_options_data log_level_option = {
     .callback = NULL,
     .data = NULL,
     .options = {
-        { "Specify the log level; takes a number (1-5) or level", "log-level", 'l', 0 },
+        { "Specify the log level; takes a number (1-6) or level", "log-level", 'l', true },
         { 0, 0, 0, 0 },
     }
 };

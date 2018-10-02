@@ -1,11 +1,9 @@
-#include <errno.h>
-#include <inttypes.h>
-#include <stdlib.h>
+#include <cerrno>
+#include <cstdlib>
 
 #include <net/if.h>
 #include <sys/capability.h>
 
-#include <regex>
 #include <iostream>
 #include <numeric>
 #include <sstream>
@@ -15,49 +13,85 @@
 
 #include "core/icp_core.h"
 #include "drivers/dpdk/dpdk.h"
+#include "packetio/component.h"
 
 namespace icp {
 namespace packetio {
 namespace driver {
 
-typedef std::vector<std::string> args_container;
-static args_container cli_args;
+template <typename T>
+class singleton {
+public:
+    static T& instance()
+    {
+        static T instance;
+        return instance;
+    }
 
-/* Map ICP log levels to DPDK log levels */
-static std::unordered_map<enum icp_log_level, std::string> log_level_map = {
-    {ICP_LOG_NONE,     "1"},  /* RTE_LOG_EMERG */
-    {ICP_LOG_CRITICAL, "3"},  /* RTE_LOG_CRIT */
-    {ICP_LOG_ERROR,    "4"},  /* RTE_LOG_ERR */
-    {ICP_LOG_WARNING,  "5"},  /* RTE_LOG_WARNING */
-    {ICP_LOG_INFO,     "7"},  /* RTE_LOG_INFO */
-    {ICP_LOG_DEBUG,    "8"},  /* RTE_LOG_DEBUG */
-    {ICP_LOG_TRACE,    "8"}
+    singleton(const singleton&) = delete;
+    singleton& operator= (const singleton) = delete;
+
+protected:
+    singleton() {};
 };
 
-static int init_options(args_container &args)
+struct arg_parser : public singleton<arg_parser>
 {
-    /* Initialize some arguments we always want */
-    args.push_back("icp_eal");     /* DPDK requires a program name */
-    return (0);
-}
-
-static int handle_options(int opt, const char *opt_arg, args_container &args)
-{
-    if (opt != 'd' || optarg == nullptr) {
-        return (-EINVAL);
+    int init(const char *name)
+    {
+        args.clear();
+        args.push_back(std::string(name));
+        return (0);
     }
 
-    /* Assume optarg is a comma seperated list of DPDK/EAL options */
-    std::string input(opt_arg);
-    std::string delimiters(" ,=");
-    size_t beg = 0, pos = 0;
-    while ((beg = input.find_first_not_of(delimiters, pos)) != std::string::npos) {
-        pos = input.find_first_of(delimiters, beg + 1);
-        args.emplace_back(input.substr(beg, pos-beg));
+    int parse(int opt, const char *opt_arg)
+    {
+        if (opt != 'd' || opt_arg == nullptr) {
+            return (-EINVAL);
+        }
+
+        /* Assume optarg is a comma seperated list of DPDK/EAL options */
+        std::string input(opt_arg);
+        std::string delimiters(" ,=");
+        size_t beg = 0, pos = 0;
+        while ((beg = input.find_first_not_of(delimiters, pos)) != std::string::npos) {
+            pos = input.find_first_of(delimiters, beg + 1);
+            args.emplace_back(input.substr(beg, pos-beg));
+        }
+
+        return (0);
     }
 
-    return (0);
-}
+    /* Check if the 'log-level' argument has been added to the arguments vector */
+    bool have_log_level_arg()
+    {
+        for (const auto &s : args) {
+            if (s == "--log-level") {
+                return (true);
+            }
+        }
+        return (false);
+    }
+
+    void add_log_level_arg(enum icp_log_level level)
+    {
+        /* Map ICP log levels to DPDK log levels */
+        static std::unordered_map<enum icp_log_level, std::string> log_level_map = {
+            {ICP_LOG_NONE,     "1"},  /* RTE_LOG_EMERG */
+            {ICP_LOG_CRITICAL, "3"},  /* RTE_LOG_CRIT */
+            {ICP_LOG_ERROR,    "4"},  /* RTE_LOG_ERR */
+            {ICP_LOG_WARNING,  "5"},  /* RTE_LOG_WARNING */
+            {ICP_LOG_INFO,     "7"},  /* RTE_LOG_INFO */
+            {ICP_LOG_DEBUG,    "8"},  /* RTE_LOG_DEBUG */
+            {ICP_LOG_TRACE,    "8"}
+        };
+
+        args.push_back("--log-level");
+        args.push_back(log_level_map[level]);
+    }
+
+    std::vector<std::string> args;
+};
 
 struct named_cap_flag {
     const char *name;
@@ -95,18 +129,7 @@ static bool sufficient_permissions()
     return (have_permissions);
 }
 
-/* Check if the 'log-level' argument has been added to the arguments vector */
-static bool have_log_level_arg(std::vector<std::string> &args)
-{
-    for (const auto &s : args) {
-        if (s == "--log-level") {
-            return (true);
-        }
-    }
-    return (false);
-}
-
-static void log_dpdk_port_info(uint16_t port_idx)
+static void log_port_info(uint16_t port_idx)
 {
     struct rte_eth_dev_info info;
     rte_eth_dev_info_get(port_idx, &info);
@@ -139,13 +162,11 @@ static void log_dpdk_port_info(uint16_t port_idx)
     }
 }
 
-int init(void *context, void *state __attribute__((unused)))
+static void init()
 {
-    (void)context;
     /* Check to see if we have permissions to launch DPDK */
     if (!sufficient_permissions()) {
-        icp_log(ICP_LOG_ERROR, "Insufficient permissions to initialize DPDK");
-        return (-1);
+        throw std::runtime_error("Insufficient permissions to initialize DPDK");
     }
 
     /* DPDK uses getopt to parse command line options, so reset getopt */
@@ -153,27 +174,32 @@ int init(void *context, void *state __attribute__((unused)))
     opterr = 0;
 
     /* See if we should add a log-level argument */
-    if (!have_log_level_arg(cli_args)) {
-        cli_args.push_back("--log-level");
-        cli_args.push_back(log_level_map[icp_log_level_get()]);
+    auto& parser = arg_parser::instance();
+    if (!parser.have_log_level_arg()) {
+        parser.add_log_level_arg(icp_log_level_get());
     }
 
     /* Convert args to c-strings */
     std::vector<char *> dpdk_args;
-    for (const auto& arg : cli_args) {
+    for (const auto& arg : parser.args) {
         dpdk_args.push_back(const_cast<char *>(arg.data()));
     }
     dpdk_args.push_back(nullptr);
 
     icp_log(ICP_LOG_DEBUG, "Initializing DPDK with \"%s\"\n",
-            std::accumulate(cli_args.begin(), cli_args.end(), std::string(),
+            std::accumulate(begin(parser.args), end(parser.args), std::string(),
                             [](const std::string &a, const std::string &b) -> std::string {
                                 return a + (a.length() > 0 ? " " : "") + b;
                             }).c_str());
 
     int ret = rte_eal_init(dpdk_args.size() - 1, dpdk_args.data());
     if (ret < 0) {
-        icp_exit("Failed to initialize DPDK.");
+        throw std::runtime_error("Failed to initialize DPDK");
+    }
+
+    uint16_t port_idx = 0;
+    RTE_ETH_FOREACH_DEV(port_idx) {
+        log_port_info(port_idx);
     }
 
     /*
@@ -186,40 +212,45 @@ int init(void *context, void *state __attribute__((unused)))
     } else {
         icp_log(ICP_LOG_DEBUG, "DPDK initialized\n");
     }
-
-    /* No longer needed */
-    cli_args.clear();
-
-    uint16_t port_idx = 0;
-    RTE_ETH_FOREACH_DEV(port_idx) {
-        log_dpdk_port_info(port_idx);
-    }
-
-    return (0);
 }
 
+class eal : public icp::packetio::component::registrar<eal> {
+public:
+    eal() { init(); }
+
+    ~eal()
+    {
+        /* Shut up clang's warning about this being an unstable ABI function */
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+        rte_eal_cleanup();
+#pragma clang diagnostic pop
+    };
+
+private:
+    constexpr static int priority = 10;
 };
-};
-};
+
+}
+}
+}
 
 extern "C" {
 
-int dpdk_option_init(void *opt_data)
+using namespace icp::packetio::driver;
+
+int dpdk_option_init(void *opt_data __attribute__((unused)))
 {
-    (void)opt_data;
-    return icp::packetio::driver::init_options(icp::packetio::driver::cli_args);
+    /* Arguments need to start with the program name */
+    auto& parser = arg_parser::instance();
+    return (parser.init("icp_eal"));
 }
 
-int dpdk_option_handler(int opt, const char *opt_arg, void *opt_data)
+int dpdk_option_handler(int opt, const char *opt_arg,
+                       void *opt_data __attribute__((unused)))
 {
-    (void)opt_data;
-    return icp::packetio::driver::handle_options(opt, opt_arg,
-                                                 icp::packetio::driver::cli_args);
-}
-
-int dpdk_driver_init(void *context, void *state)
-{
-    return icp::packetio::driver::init(context, state);
+    auto& parser = arg_parser::instance();
+    return (parser.parse(opt, opt_arg));
 }
 
 }
