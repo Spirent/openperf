@@ -129,7 +129,7 @@ enum icp_log_level _parse_log_optarg(const char *arg)
     return (ICP_LOG_NONE);
 }
 
-enum icp_log_level icp_log_level_find(int argc, char *argv[])
+enum icp_log_level icp_log_level_find(int argc, char * const argv[])
 {
     enum icp_log_level to_return = ICP_LOG_NONE;
 

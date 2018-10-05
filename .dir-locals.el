@@ -2,7 +2,7 @@
 ;;; Oh, DPDK...  What is wrong with you?
 ((nil . ((eval . (let ((root (projectile-project-root)))
                    (setq-local flycheck-clang-include-path
-                               (list (concat root "deps/lwip/src/include")
+                               (list (concat root "deps/catch/include")
                                      (concat root "deps/dpdk/lib/librte_acl")
                                      (concat root "deps/dpdk/lib/librte_bbdev")
                                      (concat root "deps/dpdk/lib/librte_bitratestats")
@@ -45,9 +45,10 @@
                                      (concat root "deps/dpdk/lib/librte_table")
                                      (concat root "deps/dpdk/lib/librte_timer")
                                      (concat root "deps/dpdk/lib/librte_vhost")
-                                     (concat root "deps/pistache/include")
                                      (concat root "deps/json/single_include")
                                      (concat root "deps/json/single_include/nlohmann")
+                                     (concat root "deps/lwip/src/include")
+                                     (concat root "deps/pistache/include")
                                      (concat root "src/")
                                      (concat root "src/framework")
                                      (concat root "src/packetio")

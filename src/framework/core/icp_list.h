@@ -18,6 +18,10 @@
  * by Maged M. Michael.
  */
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdbool.h>
 #include <stddef.h>
 
@@ -338,5 +342,9 @@ bool icp_list_delete_node(struct icp_list *list,
  *   - !0: Error
  */
 int icp_list_snapshot(struct icp_list *list, void **itemsp[], size_t *nb_items);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* _ICP_LIST_H_ */
