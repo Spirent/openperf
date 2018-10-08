@@ -53,9 +53,9 @@ paths:
         The `interfaces` endpoint returns all network interfaces that are
         available for use as stack entry/exit points.
       parameters:
-        - name: port
+        - name: port_id
           in: query
-          description: Filter by port
+          description: Filter by port id
           required: false
           type: string
         - name: eth_mac_address
@@ -319,6 +319,9 @@ definitions:
       id:
         type: string
         description: Unique interface identifier
+      port_id:
+        type: string
+        description: Port identifier
       config:
         type: object
         description: Interface configuration
@@ -337,6 +340,7 @@ definitions:
         $ref: "#/definitions/InterfaceStats"
     required:
       - id
+      - port_id
       - config
       - stats
 
@@ -443,8 +447,6 @@ definitions:
           - dpdk
           - host
           - bond
-      driver:
-        $ref: "#/definitions/PortDriver"
       config:
         $ref: "#/definitions/PortConfig"
       status:
@@ -454,7 +456,6 @@ definitions:
     required:
       - id
       - kind
-      - driver
       - config
       - status
       - stats
@@ -501,79 +502,6 @@ definitions:
         required:
           - mode
           - ports
-
-  PortDriver:
-    type: object
-    description: Port driver information
-    properties:
-      dpdk:
-        type: object
-        description: DPDK-specific driver information
-        properties:
-          driver_name:
-            type: string
-            description: Port driver name
-          pci_address:
-            type: string
-            description: PCI address of port hardware
-          min_rx_buffer_size:
-            type: integer
-            description: Minimum receive buffer size
-            format: int32
-          max_rx_packet_length:
-            type: integer
-            description: Minimum receive packet length
-            format: int32
-          max_rx_queues:
-            type: integer
-            description: Maximum receive queues
-            format: int32
-          max_tx_queues:
-            type: integer
-            description: Maximum transmit queues
-            format: int32
-          max_mac_addresses:
-            type: integer
-            description: Maximum MAC addresses
-            format: int32
-          rx_offloads:
-            type: array
-            description: Available receive-side offloads
-            items:
-              type: string
-          tx_offloads:
-            type: array
-            description: Available transmit-side offloads
-            items:
-              type: string
-        required:
-          - driver_name
-          - pci_address
-          - min_rx_buffer_size
-          - max_rx_packet_length
-          - max_rx_queues
-          - max_tx_queues
-          - max_mac_addresses
-          - rx_offloads
-          - tx_offloads
-      host:
-        type: object
-        description: Host-specific driver information
-        properties:
-          device_name:
-            type: string
-            description: Host device name
-        required:
-          - device_name
-      bond:
-        type: object
-        description: Bond-specific driver information
-        properties:
-          driver_name:
-            type: string
-            description: Bond driver name
-        required:
-          - driver_name
 
   PortStats:
     type: object

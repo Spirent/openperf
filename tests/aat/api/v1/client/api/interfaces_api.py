@@ -538,7 +538,7 @@ class InterfacesApi(object):
         >>> result = thread.get()
 
         :param async bool
-        :param str port: Filter by port
+        :param str port_id: Filter by port id
         :param str eth_mac_address: Filter by Ethernet MAC address
         :param str ipv4_address: Filter by IPv4 address
         :return: list[Interface]
@@ -562,7 +562,7 @@ class InterfacesApi(object):
         >>> result = thread.get()
 
         :param async bool
-        :param str port: Filter by port
+        :param str port_id: Filter by port id
         :param str eth_mac_address: Filter by Ethernet MAC address
         :param str ipv4_address: Filter by IPv4 address
         :return: list[Interface]
@@ -570,7 +570,7 @@ class InterfacesApi(object):
                  returns the request thread.
         """
 
-        all_params = ['port', 'eth_mac_address', 'ipv4_address']  # noqa: E501
+        all_params = ['port_id', 'eth_mac_address', 'ipv4_address']  # noqa: E501
         all_params.append('async')
         all_params.append('_return_http_data_only')
         all_params.append('_preload_content')
@@ -591,8 +591,8 @@ class InterfacesApi(object):
         path_params = {}
 
         query_params = []
-        if 'port' in params:
-            query_params.append(('port', params['port']))  # noqa: E501
+        if 'port_id' in params:
+            query_params.append(('port_id', params['port_id']))  # noqa: E501
         if 'eth_mac_address' in params:
             query_params.append(('eth_mac_address', params['eth_mac_address']))  # noqa: E501
         if 'ipv4_address' in params:

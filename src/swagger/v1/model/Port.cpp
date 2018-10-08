@@ -39,7 +39,6 @@ nlohmann::json Port::toJson() const
 
     val["id"] = ModelBase::toJson(m_Id);
     val["kind"] = ModelBase::toJson(m_Kind);
-    val["driver"] = ModelBase::toJson(m_Driver);
     val["config"] = ModelBase::toJson(m_Config);
     val["status"] = ModelBase::toJson(m_Status);
     val["stats"] = ModelBase::toJson(m_Stats);
@@ -72,15 +71,6 @@ std::string Port::getKind() const
 void Port::setKind(std::string value)
 {
     m_Kind = value;
-    
-}
-std::shared_ptr<PortDriver> Port::getDriver() const
-{
-    return m_Driver;
-}
-void Port::setDriver(std::shared_ptr<PortDriver> value)
-{
-    m_Driver = value;
     
 }
 std::shared_ptr<PortConfig> Port::getConfig() const

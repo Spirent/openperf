@@ -18,10 +18,10 @@ ICP_INC_DIRS += $(HTTP_INC_DIR)
 ICP_LIB_DIRS += $(HTTP_LIB_DIR)
 ICP_LDLIBS += -lpistache
 
-HTTP_CPPFLAGS := $(addprefix -I,$(HTTP_INC_DIRS))
+HTTP_CPPFLAGS := $(addprefix -I,$(HTTP_INC_DIR))
 # Pistache shadows variables regularly; just silence those warnings since we're not going
 # to fix them
-HTTP_CXXFLAGS := -Wno-shadow -std=c++11
+HTTP_CXXFLAGS := -Wno-shadow $(ICP_CXXSTD)
 
 ###
 # Sources, objects, targets, and dependencies

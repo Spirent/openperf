@@ -1,6 +1,6 @@
 TOP_DIR		= ../..
 SRC_OUTPUT_DIR	= $(TOP_DIR)/src/swagger
-AAT_OUTPUT_DIR	= $(TOP_DIR)/aat/api
+AAT_OUTPUT_DIR	= $(TOP_DIR)/tests/aat/api
 SWAGGER_CODEGEN	= $(TOP_DIR)/deps/swagger-codegen/swagger-codegen
 SWAGGER_SPECS	= $(wildcard v*/*.yaml)
 

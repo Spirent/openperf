@@ -14,10 +14,12 @@ ICP_ARFLAGS := rcD
 ICP_CC := clang
 ICP_CXX := clang++
 ICP_COPTS :=
-ICP_CFLAGS := -std=gnu11
+ICP_CSTD := -std=gnu11  # c++11 with GNU extensions
+ICP_CXXSTD := -std=c++17
+ICP_CFLAGS := $(ICP_CSTD)
 ICP_CPPFLAGS := -Wall -Wextra -Wpedantic -Wshadow -Wno-gnu \
 	-MMD -MP -fstack-protector-strong
-ICP_CXXFLAGS := -Wno-c11-extensions -Wno-nested-anon-types -Wno-c99-extensions -std=c++14
+ICP_CXXFLAGS := -Wno-c11-extensions -Wno-nested-anon-types -Wno-c99-extensions $(ICP_CXXSTD)
 ICP_DEFINES :=
 ICP_LDFLAGS :=
 ICP_LDLIBS :=

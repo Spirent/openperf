@@ -129,42 +129,16 @@ enum icp_log_level _parse_log_optarg(const char *arg)
     return (ICP_LOG_NONE);
 }
 
-enum icp_log_level icp_log_level_find(int argc, char *argv[])
+enum icp_log_level icp_log_level_find(int argc, char * const argv[])
 {
-    enum icp_log_level to_return = ICP_LOG_NONE;
-
-    struct option log_options[] = {
-        {"log-level", required_argument, NULL, 'l'},
-        {0, 0, 0, 0}
-    };
-
-    optind = 1; /* make sure getopt is in the proper frame of mind */
-    opterr = 0;
-
-    for (;;) {
-        int option_index = 0;
-        int opt = getopt_long(argc, argv, "l:", log_options, &option_index);
-        if (opt == -1) {
-            break;
-        }
-        switch (opt) {
-        case 'l': {
-            enum icp_log_level tmp = _parse_log_optarg(optarg);
-            if (tmp != ICP_LOG_NONE) {
-                to_return = tmp;
-            }
-            break;
-        }
-        default:
-            /*
-             * We're only looking for the 'verbose' option, so don't bother
-             * with any other characters or errors.
-             */
-            continue;
+    for (int idx = 0; idx < argc - 1; idx++) {
+        if (strcmp(argv[idx], "--log-level") == 0
+            || strcmp(argv[idx], "-l") == 0) {
+            return _parse_log_optarg(argv[idx + 1]);
         }
     }
 
-    return (to_return);
+    return (ICP_LOG_NONE);
 }
 
 static const char * _skip_keywords(const char *begin, const char *end)

@@ -48,7 +48,7 @@ void icp_log_level_set(enum icp_log_level level);
  * @return
  *   log level found in cli arguments (may be ICP_LOG_NONE)
  */
-enum icp_log_level icp_log_level_find(int argc, char *argv[]);
+enum icp_log_level icp_log_level_find(int argc, char * const argv[]);
 
 /**
  * Get the full function name from the full function signature string
