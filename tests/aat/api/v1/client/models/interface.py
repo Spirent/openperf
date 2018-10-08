@@ -35,25 +35,29 @@ class Interface(object):
     """
     swagger_types = {
         'id': 'str',
+        'port_id': 'str',
         'config': 'InterfaceConfig',
         'stats': 'InterfaceStats'
     }
 
     attribute_map = {
         'id': 'id',
+        'port_id': 'port_id',
         'config': 'config',
         'stats': 'stats'
     }
 
-    def __init__(self, id=None, config=None, stats=None):  # noqa: E501
+    def __init__(self, id=None, port_id=None, config=None, stats=None):  # noqa: E501
         """Interface - a model defined in Swagger"""  # noqa: E501
 
         self._id = None
+        self._port_id = None
         self._config = None
         self._stats = None
         self.discriminator = None
 
         self.id = id
+        self.port_id = port_id
         self.config = config
         self.stats = stats
 
@@ -81,6 +85,31 @@ class Interface(object):
             raise ValueError("Invalid value for `id`, must not be `None`")  # noqa: E501
 
         self._id = id
+
+    @property
+    def port_id(self):
+        """Gets the port_id of this Interface.  # noqa: E501
+
+        Port identifier  # noqa: E501
+
+        :return: The port_id of this Interface.  # noqa: E501
+        :rtype: str
+        """
+        return self._port_id
+
+    @port_id.setter
+    def port_id(self, port_id):
+        """Sets the port_id of this Interface.
+
+        Port identifier  # noqa: E501
+
+        :param port_id: The port_id of this Interface.  # noqa: E501
+        :type: str
+        """
+        if port_id is None:
+            raise ValueError("Invalid value for `port_id`, must not be `None`")  # noqa: E501
+
+        self._port_id = port_id
 
     @property
     def config(self):

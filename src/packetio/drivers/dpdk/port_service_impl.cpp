@@ -70,43 +70,6 @@ void list_ports(std::vector<std::shared_ptr<Port>> &ports, std::string &kind)
     }
 }
 
-static std::shared_ptr<PortDriver> get_port_driver(int id)
-{
-    assert(rte_eth_dev_is_valid_port(id));
-
-    auto dpdk_driver = std::make_shared<PortDriver_dpdk>();
-
-    struct rte_eth_dev_info info;
-    rte_eth_dev_info_get(id, &info);
-
-    dpdk_driver->setDriverName(info.driver_name);
-
-    // TODO: pci address
-
-    dpdk_driver->setMinRxBufferSize(info.min_rx_bufsize);
-    dpdk_driver->setMaxRxPacketLength(info.max_rx_pktlen);
-    dpdk_driver->setMaxRxQueues(info.max_rx_queues);
-    dpdk_driver->setMaxTxQueues(info.max_tx_queues);
-    dpdk_driver->setMaxMacAddresses(info.max_mac_addrs);
-
-    for (auto &pair : rx_offloads) {
-        if (info.rx_offload_capa & pair.first) {
-            dpdk_driver->getRxOffloads().push_back(pair.second);
-        }
-    }
-
-    for (auto &pair : tx_offloads) {
-        if (info.tx_offload_capa & pair.first) {
-            dpdk_driver->getTxOffloads().push_back(pair.second);
-        }
-    }
-
-    auto driver = std::make_shared<PortDriver>();
-    driver->setDpdk(dpdk_driver);
-
-    return (driver);
-}
-
 static std::shared_ptr<PortConfig> get_port_config(int id)
 {
     assert(rte_eth_dev_is_valid_port(id));
@@ -166,7 +129,6 @@ std::shared_ptr<Port> get_port(int id)
 
     port->setId(std::to_string(id));
     port->setKind("dpdk");
-    port->setDriver(get_port_driver(id));
     port->setConfig(get_port_config(id));
     port->setStatus(get_port_status(id));
     port->setStats(get_port_stats(id));

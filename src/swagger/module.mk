@@ -18,10 +18,6 @@ MODEL_SOURCES := \
 	PortConfig.cpp \
 	PortConfig_dpdk.cpp \
 	Port.cpp \
-	PortDriver_bond.cpp \
-	PortDriver.cpp \
-	PortDriver_dpdk.cpp \
-	PortDriver_host.cpp \
 	PortStats.cpp \
 	PortStatus.cpp \
 	Stack.cpp \
