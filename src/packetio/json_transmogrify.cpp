@@ -32,12 +32,6 @@ void from_json(const json& j, Port& port)
         port.fromJson(const_cast<json&>(j));
     }
 
-    if (j.find("driver") != j.end()) {
-        auto driver = std::make_shared<PortDriver>();
-        driver->fromJson(const_cast<json&>(j.at("driver")));
-        port.setDriver(driver);
-    }
-
     if (j.find("config") != j.end()) {
         auto config = std::make_shared<PortConfig>();
         config->fromJson(const_cast<json&>(j.at("config")));

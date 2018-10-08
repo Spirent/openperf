@@ -56,6 +56,11 @@ public:
     std::string getId() const;
     void setId(std::string value);
         /// <summary>
+    /// Port identifier
+    /// </summary>
+    std::string getPortId() const;
+    void setPortId(std::string value);
+        /// <summary>
     /// 
     /// </summary>
     std::shared_ptr<Interface_config> getConfig() const;
@@ -68,6 +73,8 @@ public:
     
 protected:
     std::string m_Id;
+
+    std::string m_Port_id;
 
     std::shared_ptr<Interface_config> m_Config;
 

@@ -25,7 +25,6 @@
 #include "PortConfig.h"
 #include "PortStats.h"
 #include <string>
-#include "PortDriver.h"
 
 namespace swagger {
 namespace v1 {
@@ -65,11 +64,6 @@ public:
         /// <summary>
     /// 
     /// </summary>
-    std::shared_ptr<PortDriver> getDriver() const;
-    void setDriver(std::shared_ptr<PortDriver> value);
-        /// <summary>
-    /// 
-    /// </summary>
     std::shared_ptr<PortConfig> getConfig() const;
     void setConfig(std::shared_ptr<PortConfig> value);
         /// <summary>
@@ -87,8 +81,6 @@ protected:
     std::string m_Id;
 
     std::string m_Kind;
-
-    std::shared_ptr<PortDriver> m_Driver;
 
     std::shared_ptr<PortConfig> m_Config;
 

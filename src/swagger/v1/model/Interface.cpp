@@ -20,6 +20,7 @@ namespace model {
 Interface::Interface()
 {
     m_Id = "";
+    m_Port_id = "";
     
 }
 
@@ -37,6 +38,7 @@ nlohmann::json Interface::toJson() const
     nlohmann::json val = nlohmann::json::object();
 
     val["id"] = ModelBase::toJson(m_Id);
+    val["port_id"] = ModelBase::toJson(m_Port_id);
     val["config"] = ModelBase::toJson(m_Config);
     val["stats"] = ModelBase::toJson(m_Stats);
     
@@ -47,6 +49,7 @@ nlohmann::json Interface::toJson() const
 void Interface::fromJson(nlohmann::json& val)
 {
     setId(val.at("id"));
+    setPortId(val.at("port_id"));
     
 }
 
@@ -58,6 +61,15 @@ std::string Interface::getId() const
 void Interface::setId(std::string value)
 {
     m_Id = value;
+    
+}
+std::string Interface::getPortId() const
+{
+    return m_Port_id;
+}
+void Interface::setPortId(std::string value)
+{
+    m_Port_id = value;
     
 }
 std::shared_ptr<Interface_config> Interface::getConfig() const

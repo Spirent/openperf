@@ -17,7 +17,6 @@ import re  # noqa: F401
 import six
 
 from client.models.port_config import PortConfig  # noqa: F401,E501
-from client.models.port_driver import PortDriver  # noqa: F401,E501
 from client.models.port_stats import PortStats  # noqa: F401,E501
 from client.models.port_status import PortStatus  # noqa: F401,E501
 
@@ -38,7 +37,6 @@ class Port(object):
     swagger_types = {
         'id': 'str',
         'kind': 'str',
-        'driver': 'PortDriver',
         'config': 'PortConfig',
         'status': 'PortStatus',
         'stats': 'PortStats'
@@ -47,18 +45,16 @@ class Port(object):
     attribute_map = {
         'id': 'id',
         'kind': 'kind',
-        'driver': 'driver',
         'config': 'config',
         'status': 'status',
         'stats': 'stats'
     }
 
-    def __init__(self, id=None, kind=None, driver=None, config=None, status=None, stats=None):  # noqa: E501
+    def __init__(self, id=None, kind=None, config=None, status=None, stats=None):  # noqa: E501
         """Port - a model defined in Swagger"""  # noqa: E501
 
         self._id = None
         self._kind = None
-        self._driver = None
         self._config = None
         self._status = None
         self._stats = None
@@ -66,7 +62,6 @@ class Port(object):
 
         self.id = id
         self.kind = kind
-        self.driver = driver
         self.config = config
         self.status = status
         self.stats = stats
@@ -126,29 +121,6 @@ class Port(object):
             )
 
         self._kind = kind
-
-    @property
-    def driver(self):
-        """Gets the driver of this Port.  # noqa: E501
-
-
-        :return: The driver of this Port.  # noqa: E501
-        :rtype: PortDriver
-        """
-        return self._driver
-
-    @driver.setter
-    def driver(self, driver):
-        """Sets the driver of this Port.
-
-
-        :param driver: The driver of this Port.  # noqa: E501
-        :type: PortDriver
-        """
-        if driver is None:
-            raise ValueError("Invalid value for `driver`, must not be `None`")  # noqa: E501
-
-        self._driver = driver
 
     @property
     def config(self):

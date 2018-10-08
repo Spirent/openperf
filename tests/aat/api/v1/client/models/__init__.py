@@ -30,10 +30,6 @@ from client.models.port import Port
 from client.models.port_config import PortConfig
 from client.models.port_config_bond import PortConfigBond
 from client.models.port_config_dpdk import PortConfigDpdk
-from client.models.port_driver import PortDriver
-from client.models.port_driver_bond import PortDriverBond
-from client.models.port_driver_dpdk import PortDriverDpdk
-from client.models.port_driver_host import PortDriverHost
 from client.models.port_stats import PortStats
 from client.models.port_status import PortStatus
 from client.models.stack import Stack
