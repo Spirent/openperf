@@ -32,7 +32,7 @@ ICP_CPPFLAGS += $(addprefix -I,$(ICP_INC_DIRS))
 ICP_LDFLAGS += $(addprefix -L,$(ICP_LIB_DIRS))
 
 # Build rules
-$(BUILD_DIR)/%.o: %.cpp
+$(BUILD_DIR)/%.o: %.cpp | $(BLD_DEPENDS)
 	@mkdir -p $(dir $@)
 	$(strip $(ICP_CXX) -o $@ -c $(ICP_CPPFLAGS) $(ICP_CXXFLAGS) $(ICP_COPTS) $(ICP_DEFINES) $<)
 
