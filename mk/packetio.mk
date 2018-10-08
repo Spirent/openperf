@@ -38,6 +38,14 @@ ICP_LDLIBS += -Wl,--whole-archive -l$(PIO_LIBRARY) -Wl,--no-whole-archive $(PIO_
 $(foreach DEP,$(PIO_DEPENDS),$(eval include $(ICP_ROOT)/mk/$(DEP).mk))
 
 ###
+# DPDK Hack.
+# This should really come from the dpdk.mk include, but that will require some
+# clever makefile hackery... Just do this for now.
+# DPDK users the keyword register, which isn't c++17 compliant
+###
+PIO_CXXFLAGS += -Wno-register
+
+###
 # Load stack info; always required for now
 ###
 LWIP_SOURCES :=
@@ -72,7 +80,7 @@ $(PIO_OBJ_DIR)/%.o: $(PIO_SRC_DIR)/%.c
 
 $(PIO_OBJ_DIR)/%.o: $(PIO_SRC_DIR)/%.cpp
 	@mkdir -p $(dir $@)
-	$(strip $(ICP_CXX) -o $@ -c $(PIO_CPPFLAGS) $(ICP_CPPFLAGS) $(ICP_CXXFLAGS) $(ICP_COPTS) $<)
+	$(strip $(ICP_CXX) -o $@ -c $(PIO_CPPFLAGS) $(ICP_CPPFLAGS) $(PIO_CXXFLAGS) $(ICP_CXXFLAGS) $(ICP_COPTS) $<)
 
 $(PIO_TARGET): $(PIO_OBJECTS) $(LWIP_OBJECTS)
 	@mkdir -p $(dir $@)
