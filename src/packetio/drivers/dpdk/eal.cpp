@@ -1,97 +1,25 @@
 #include <cerrno>
 #include <cstdlib>
+#include <algorithm>
+#include <iostream>
+#include <numeric>
+#include <string>
+#include <vector>
 
 #include <net/if.h>
 #include <sys/capability.h>
 
-#include <iostream>
-#include <numeric>
-#include <sstream>
-#include <string>
-#include <vector>
-#include <unordered_map>
+#include "tl/expected.hpp"
 
 #include "core/icp_core.h"
 #include "drivers/dpdk/dpdk.h"
-#include "packetio/component.h"
+#include "drivers/dpdk/eal.h"
+#include "drivers/dpdk/model/physical_port.h"
+#include "packetio/generic_port.h"
 
 namespace icp {
 namespace packetio {
-namespace driver {
-
-template <typename T>
-class singleton {
-public:
-    static T& instance()
-    {
-        static T instance;
-        return instance;
-    }
-
-    singleton(const singleton&) = delete;
-    singleton& operator= (const singleton) = delete;
-
-protected:
-    singleton() {};
-};
-
-struct arg_parser : public singleton<arg_parser>
-{
-    int init(const char *name)
-    {
-        args.clear();
-        args.push_back(std::string(name));
-        return (0);
-    }
-
-    int parse(int opt, const char *opt_arg)
-    {
-        if (opt != 'd' || opt_arg == nullptr) {
-            return (-EINVAL);
-        }
-
-        /* Assume optarg is a comma seperated list of DPDK/EAL options */
-        std::string input(opt_arg);
-        std::string delimiters(" ,=");
-        size_t beg = 0, pos = 0;
-        while ((beg = input.find_first_not_of(delimiters, pos)) != std::string::npos) {
-            pos = input.find_first_of(delimiters, beg + 1);
-            args.emplace_back(input.substr(beg, pos-beg));
-        }
-
-        return (0);
-    }
-
-    /* Check if the 'log-level' argument has been added to the arguments vector */
-    bool have_log_level_arg()
-    {
-        for (const auto &s : args) {
-            if (s == "--log-level") {
-                return (true);
-            }
-        }
-        return (false);
-    }
-
-    void add_log_level_arg(enum icp_log_level level)
-    {
-        /* Map ICP log levels to DPDK log levels */
-        static std::unordered_map<enum icp_log_level, std::string> log_level_map = {
-            {ICP_LOG_NONE,     "1"},  /* RTE_LOG_EMERG */
-            {ICP_LOG_CRITICAL, "3"},  /* RTE_LOG_CRIT */
-            {ICP_LOG_ERROR,    "4"},  /* RTE_LOG_ERR */
-            {ICP_LOG_WARNING,  "5"},  /* RTE_LOG_WARNING */
-            {ICP_LOG_INFO,     "7"},  /* RTE_LOG_INFO */
-            {ICP_LOG_DEBUG,    "8"},  /* RTE_LOG_DEBUG */
-            {ICP_LOG_TRACE,    "8"}
-        };
-
-        args.push_back("--log-level");
-        args.push_back(log_level_map[level]);
-    }
-
-    std::vector<std::string> args;
-};
+namespace dpdk {
 
 struct named_cap_flag {
     const char *name;
@@ -129,18 +57,15 @@ static bool sufficient_permissions()
     return (have_permissions);
 }
 
-static void log_port_info(uint16_t port_idx)
+static void log_port(uint16_t port_idx, struct rte_eth_dev_info &info)
 {
-    struct rte_eth_dev_info info;
-    rte_eth_dev_info_get(port_idx, &info);
-
     struct ether_addr mac_addr;
     rte_eth_macaddr_get(port_idx, &mac_addr);
 
     if (info.if_index > 0) {
         char if_name[IF_NAMESIZE];
         if_indextoname(info.if_index, if_name);
-        icp_log(ICP_LOG_INFO, "  dpdk%d: %02x:%02x:%02x:%02x:%02x:%02x (%s) attached to %s\n",
+        icp_log(ICP_LOG_DEBUG, "  dpdk%d: %02x:%02x:%02x:%02x:%02x:%02x (%s) attached to %s\n",
                 port_idx,
                 mac_addr.addr_bytes[0],
                 mac_addr.addr_bytes[1],
@@ -150,7 +75,7 @@ static void log_port_info(uint16_t port_idx)
                 mac_addr.addr_bytes[5],
                 info.driver_name, if_name);
     } else {
-        icp_log(ICP_LOG_INFO, "  dpdk%d: %02x:%02x:%02x:%02x:%02x:%02x (%s)\n",
+        icp_log(ICP_LOG_DEBUG, "  dpdk%d: %02x:%02x:%02x:%02x:%02x:%02x (%s)\n",
                 port_idx,
                 mac_addr.addr_bytes[0],
                 mac_addr.addr_bytes[1],
@@ -162,95 +87,159 @@ static void log_port_info(uint16_t port_idx)
     }
 }
 
-static void init()
+eal::eal(std::vector<std::string> args)
+    : m_initialized(false)
 {
     /* Check to see if we have permissions to launch DPDK */
     if (!sufficient_permissions()) {
         throw std::runtime_error("Insufficient permissions to initialize DPDK");
     }
 
-    /* DPDK uses getopt to parse command line options, so reset getopt */
-    optind = 0;
-    opterr = 0;
-
-    /* See if we should add a log-level argument */
-    auto& parser = arg_parser::instance();
-    if (!parser.have_log_level_arg()) {
-        parser.add_log_level_arg(icp_log_level_get());
-    }
-
-    /* Convert args to c-strings */
-    std::vector<char *> dpdk_args;
-    for (const auto& arg : parser.args) {
-        dpdk_args.push_back(const_cast<char *>(arg.data()));
-    }
-    dpdk_args.push_back(nullptr);
+    /* Convert args to c-strings for DPDK consumption */
+    std::vector<char *> eal_args;
+    eal_args.reserve(args.size() + 1);
+    std::transform(begin(args), end(args), std::back_inserter(eal_args),
+                   [](std::string &s) { return s.data(); });
+    eal_args.push_back(nullptr); /* null terminator */
 
     icp_log(ICP_LOG_DEBUG, "Initializing DPDK with \"%s\"\n",
-            std::accumulate(begin(parser.args), end(parser.args), std::string(),
+            std::accumulate(begin(args), end(args), std::string(),
                             [](const std::string &a, const std::string &b) -> std::string {
                                 return a + (a.length() > 0 ? " " : "") + b;
                             }).c_str());
 
-    int ret = rte_eal_init(dpdk_args.size() - 1, dpdk_args.data());
-    if (ret < 0) {
+    int parsed_or_err = rte_eal_init(eal_args.size() - 1, eal_args.data());
+    if (parsed_or_err < 0) {
         throw std::runtime_error("Failed to initialize DPDK");
     }
 
-    uint16_t port_idx = 0;
-    RTE_ETH_FOREACH_DEV(port_idx) {
-        log_port_info(port_idx);
-    }
+    m_initialized = true;
 
     /*
      * rte_eal_init returns the number of parsed arguments; warn if some arguments were
      * unparsed.  We subtract two to account for the trailing null and the program name.
      */
-    if (ret != static_cast<int>(dpdk_args.size() - 2)) {
+    if (parsed_or_err != static_cast<int>(eal_args.size() - 2)) {
         icp_log(ICP_LOG_ERROR, "DPDK initialization routine only parsed %d of %" PRIu64 " arguments\n",
-                ret, dpdk_args.size() - 2);
+                parsed_or_err, eal_args.size() - 2);
     } else {
         icp_log(ICP_LOG_DEBUG, "DPDK initialized\n");
     }
+
+    /*
+     * Loop through our available ports and...
+     * 1. Log the MAC/driver to the console
+     * 2. Generate a port_info vector
+     */
+    uint16_t port_idx = 0;
+    std::vector<model::port_info> port_info;
+    RTE_ETH_FOREACH_DEV(port_idx) {
+        struct rte_eth_dev_info info;
+        rte_eth_dev_info_get(port_idx, &info);
+        log_port(port_idx, info);
+        port_info.emplace_back(model::port_info(info.driver_name));
+    }
+
+    /* Use the port_info vector to allocate our default memory pools */
+    m_allocator = std::make_unique<pool_allocator>(pool_allocator(port_info));
 }
 
-class eal : public icp::packetio::component::registrar<eal> {
-public:
-    eal() { init(); }
+eal::~eal()
+{
+    if (!m_initialized) {
+        return;
+    }
 
-    ~eal()
-    {
-        /* Shut up clang's warning about this being an unstable ABI function */
+    /* Shut up clang's warning about this being an unstable ABI function */
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
-        rte_eal_cleanup();
+    rte_eal_cleanup();
 #pragma clang diagnostic pop
-    };
-
-private:
-    constexpr static int priority = 10;
 };
 
-}
-}
-}
-
-extern "C" {
-
-using namespace icp::packetio::driver;
-
-int dpdk_option_init(void *opt_data __attribute__((unused)))
+std::vector<int> eal::port_ids()
 {
-    /* Arguments need to start with the program name */
-    auto& parser = arg_parser::instance();
-    return (parser.init("icp_eal"));
+    uint16_t port_idx = 0;
+    std::vector<int> port_ids;
+    RTE_ETH_FOREACH_DEV(port_idx) {
+        port_ids.emplace_back(port_idx);
+    }
+
+    return (port_ids);
 }
 
-int dpdk_option_handler(int opt, const char *opt_arg,
-                       void *opt_data __attribute__((unused)))
+std::optional<port::generic_port> eal::port(int id)
 {
-    auto& parser = arg_parser::instance();
-    return (parser.parse(opt, opt_arg));
+    return (rte_eth_dev_is_valid_port(id)
+            ? std::make_optional(port::generic_port(model::physical_port(id)))
+            : std::nullopt);
 }
 
+tl::expected<int, std::string> eal::create_port(const port::config_data& config)
+{
+    static int idx = 0;
+
+    /* Sanity check input */
+    if (!std::holds_alternative<port::bond_config>(config)) {
+        return tl::make_unexpected("Missing bond configuration data");
+    }
+
+    /* Make sure that all ports in the vector actually exist */
+    for (auto id : std::get<port::bond_config>(config).ports) {
+        if (!rte_eth_dev_is_valid_port(id)) {
+            return tl::make_unexpected("Port id " + std::to_string(id) + " is invalid");
+        }
+    }
+
+    /* Well all right.  Let's create a port, shall we? */
+    std::string name = "bond" + std::to_string(idx++);
+    int id_or_error = rte_eth_bond_create(name.c_str(),
+                                          BONDING_MODE_8023AD,
+                                          SOCKET_ID_ANY);
+    if (id_or_error < 0) {
+        return tl::make_unexpected(rte_strerror(id_or_error));
+    }
+
+    std::vector<int> success_record;
+    for(auto id : std::get<port::bond_config>(config).ports) {
+        int error = rte_eth_bond_slave_add(id_or_error, id);
+        if (error) {
+            for (auto added_id : success_record) {
+                rte_eth_bond_slave_remove(id_or_error, added_id);
+            }
+            rte_eth_bond_free(name.c_str());
+            return tl::make_unexpected(rte_strerror(error));
+        }
+        success_record.push_back(id);
+    }
+
+    m_bond_ports[id_or_error] = name;
+    return (id_or_error);
+}
+
+void eal::delete_port(int id)
+{
+    if (m_bond_ports.find(id) != m_bond_ports.end()) {
+        /*
+         * There is apparently no way to query the number of slaves a port has,
+         * so resort to brute force here.
+         */
+        std::vector<uint16_t> slaves;
+        slaves.reserve(RTE_MAX_ETHPORTS);
+        int length_or_err = rte_eth_bond_slaves_get(id, slaves.data(), slaves.capacity());
+        if (length_or_err < 0) {
+            /* Not sure what else we can do here... */
+            icp_log(ICP_LOG_ERROR, "Could not retrieve slave port ids from bonded port %d\n", id);
+        } else if (length_or_err > 0) {
+            for (auto slave_id : slaves) {
+                rte_eth_bond_slave_remove(id, slave_id);
+            }
+        }
+        rte_eth_bond_free(m_bond_ports[id].c_str());
+        m_bond_ports.erase(id);
+    }
+}
+
+}
+}
 }

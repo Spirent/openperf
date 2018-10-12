@@ -20,11 +20,11 @@ json submit_request(void *socket, json& request)
     case request_type::UPDATE_PORT:
     case request_type::DELETE_PORT:
         icp_log(ICP_LOG_TRACE, "Sending %s request for port %d\n",
-                get_request_type(type).c_str(),
+                to_string(type).c_str(),
                 request["port_idx"].get<int>());
         break;
     default:
-        icp_log(ICP_LOG_TRACE, "Sending %s request\n", get_request_type(type).c_str());
+        icp_log(ICP_LOG_TRACE, "Sending %s request\n", to_string(type).c_str());
     }
 
     std::vector<uint8_t> request_buffer = json::to_cbor(request);
@@ -38,7 +38,7 @@ json submit_request(void *socket, json& request)
         };
     }
 
-    icp_log(ICP_LOG_TRACE, "Received %s reply\n", get_request_type(type).c_str());
+    icp_log(ICP_LOG_TRACE, "Received %s reply\n", to_string(type).c_str());
 
     std::vector<uint8_t> reply_buffer(static_cast<uint8_t *>(zmq_msg_data(&reply_msg)),
                                       static_cast<uint8_t *>(zmq_msg_data(&reply_msg)) + zmq_msg_size(&reply_msg));
@@ -106,7 +106,6 @@ Rest::Route::Result handler::create_port(const Rest::Request &request,
 {
     json api_request = {
         { "type", request_type::CREATE_PORT },
-        { "port_idx", request.param(":id").as<int>() },
         { "data", request.body() }
     };
 

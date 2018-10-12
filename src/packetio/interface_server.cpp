@@ -4,12 +4,10 @@
 #include <zmq.h>
 
 #include "core/icp_core.h"
-#include "packetio/api_server.h"
+#include "swagger/v1/model/Interface.h"
 #include "packetio/interface_api.h"
 #include "packetio/json_transmogrify.h"
-#include "swagger/v1/model/Interface.h"
-
-#include <iostream>
+#include "packetio/interface_server.h"
 
 namespace icp {
 namespace packetio {
@@ -23,7 +21,7 @@ using json = nlohmann::json;
 
 typedef std::map<unsigned, std::shared_ptr<Interface>> interface_map;
 
-const std::string & get_request_type(request_type type)
+std::string to_string(request_type type)
 {
     const static std::unordered_map<request_type, std::string> request_types = {
         { request_type::LIST_INTERFACES,        "LIST_INTERFACES"        },
@@ -40,7 +38,7 @@ const std::string & get_request_type(request_type type)
             : request_types.at(type));
 }
 
-const std::string & get_reply_code(reply_code code)
+std::string to_string(reply_code code)
 {
     const static std::unordered_map<reply_code, std::string> reply_codes = {
         { reply_code::OK,           "OK"           },
@@ -166,11 +164,11 @@ static int _handle_rpc_request(const icp_event_data *data, void *arg)
         case request_type::GET_INTERFACE:
         case request_type::DELETE_INTERFACE:
             icp_log(ICP_LOG_TRACE, "Received %s request for interface %d\n",
-                    get_request_type(type).c_str(),
+                    to_string(type).c_str(),
                     request["id"].get<int>());
             break;
         default:
-            icp_log(ICP_LOG_TRACE, "Received %s request\n", get_request_type(type).c_str());
+            icp_log(ICP_LOG_TRACE, "Received %s request\n", to_string(type).c_str());
         }
 
         switch (type) {
@@ -203,8 +201,8 @@ static int _handle_rpc_request(const icp_event_data *data, void *arg)
             icp_log(ICP_LOG_ERROR, "Request reply failed: %s\n", zmq_strerror(errno));
         } else {
             icp_log(ICP_LOG_TRACE, "Sent %s reply to %s request\n",
-                    get_reply_code(reply["code"]).c_str(),
-                    get_request_type(type).c_str());
+                    to_string(reply["code"].get<reply_code>()).c_str(),
+                    to_string(type).c_str());
         }
     }
 
@@ -213,24 +211,14 @@ static int _handle_rpc_request(const icp_event_data *data, void *arg)
     return (((recv_or_err < 0 || send_or_err < 0) && errno == ETERM) ? -1 : 0);
 }
 
-class server : public icp::packetio::api::server::registrar<server> {
-public:
-    server(void *context, icp::core::event_loop &loop)
-        : _socket(icp_socket_get_server(context, ZMQ_REP, endpoint.c_str()))
-    {
-        struct icp_event_callbacks callbacks = {
-            .on_read = _handle_rpc_request
-        };
-        loop.add(socket(), &callbacks, &interfaces());
-    }
-
-    interface_map& interfaces() { return _interfaces; }
-    void* socket() { return _socket.get(); }
-
-private:
-    std::unique_ptr<void, icp_socket_deleter> _socket;
-    interface_map _interfaces;
-};
+server::server(void *context, icp::core::event_loop& loop)
+    : m_socket(icp_socket_get_server(context, ZMQ_REP, endpoint.c_str()))
+{
+    struct icp_event_callbacks callbacks = {
+        .on_read = _handle_rpc_request
+    };
+    loop.add(m_socket.get(), &callbacks, &m_interfaces);
+}
 
 }
 }

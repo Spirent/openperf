@@ -1,4 +1,4 @@
 PIO_MEMORY_SOURCES += \
-	memory.cpp \
+	pool_allocator.cpp \
 	memp.c \
 	pbuf.c

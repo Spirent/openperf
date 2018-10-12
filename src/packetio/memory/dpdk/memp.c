@@ -3,15 +3,60 @@
 #include <stdbool.h>
 #include <stdio.h>
 
+#include "lwip/def.h"
 #include "lwip/memp.h"
 #include "lwip/sys.h"
 #include "lwip/stats.h"
 
+/* Make sure we include everything we need for size calculation required by memp_std.h */
+#include "lwip/pbuf.h"
+#include "lwip/raw.h"
+#include "lwip/udp.h"
+#include "lwip/tcp.h"
+#include "lwip/priv/tcp_priv.h"
+#include "lwip/ip4_frag.h"
+#include "lwip/netbuf.h"
+#include "lwip/api.h"
+#include "lwip/priv/tcpip_priv.h"
+#include "lwip/priv/api_msg.h"
+#include "lwip/sockets.h"
+#include "lwip/netifapi.h"
+#include "lwip/etharp.h"
+#include "lwip/igmp.h"
+#include "lwip/timeouts.h"
+/* needed by default MEMP_NUM_SYS_TIMEOUT */
+#include "netif/ppp/ppp_opts.h"
+#include "lwip/netdb.h"
+#include "lwip/dns.h"
+#include "lwip/priv/nd6_priv.h"
+#include "lwip/ip6_frag.h"
+#include "lwip/mld6.h"
+
 #include "drivers/dpdk/dpdk.h"
 #include "memory/dpdk/memp.h"
 
+/* Compile time sanity checks */
+#if MEMP_OVERFLOW_CHECK
+#warn "MEMP_OVERFLOW_CHECK is ignored."
+#endif
+
+#if MEMP_USE_POOLS
+#error "MEMP_MEM_POOLS is not supported; FIX ME if you want."
+#endif
+
 extern struct rte_mbuf * packetio_memp_pbuf_to_mbuf(const struct pbuf *pbuf);
 extern struct pbuf * packetio_memp_mbuf_to_pbuf(const struct rte_mbuf *mbuf);
+
+const char memp_default_mempool[] = "DEFAULT";
+const char memp_ref_rom_mempool[] = "REF_ROM";
+
+#define LWIP_MEMPOOL(name,num,size,desc) LWIP_MEMPOOL_DECLARE(name,num,size,desc)
+#include "lwip/priv/memp_std.h"
+
+const struct memp_desc * const memp_pools[MEMP_MAX] = {
+#define LWIP_MEMPOOL(name, num, size, desc) &memp_ ## name,
+#include "lwip/priv/memp_std.h"
+};
 
 static struct rte_mempool* get_default_mempool()
 {
@@ -39,6 +84,14 @@ void memp_init()
 {
     get_default_mempool();
     get_ref_rom_mempool();
+
+    /* Initialize stats, maybe */
+    for (unsigned i = 0; i < LWIP_ARRAYSIZE(memp_pools); i++) {
+#if LWIP_STATS && MEMP_STATS
+        memp_pools[i]->stats->name = memp_pools[i]->desc;
+        lwip_stats.memp[i] = memp_pools[i]->stats;
+#endif
+    }
 }
 
 void * memp_malloc(memp_t type)

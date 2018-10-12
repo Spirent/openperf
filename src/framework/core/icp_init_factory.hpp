@@ -19,11 +19,11 @@ namespace core {
  * derived client objects to register their constructors with the factory
  * before main is called.
  */
-template <class Derived, class... Args>
+template <class Base, class... Args>
 class init_factory {
 public:
     template <class ... T>
-    static void make_all(std::vector<std::unique_ptr<Derived>> &objects, T&&... args)
+    static void make_all(std::vector<std::unique_ptr<Base>> &objects, T&&... args)
     {
         // Sort into priority order
         std::sort(begin(ctors()), end(ctors()),
@@ -35,7 +35,7 @@ public:
         }
     }
 
-    template <class T> struct registrar : Derived {
+    template <class T> struct registrar : Base {
         friend T;
 
         static bool registerT()
@@ -43,7 +43,7 @@ public:
             init_factory::ctors().emplace_back(
                 std::make_pair(
                     Priority<T>::value,
-                    [](Args... args) -> std::unique_ptr<Derived> {
+                    [](Args... args) -> std::unique_ptr<Base> {
                         return std::make_unique<T>(std::forward<Args>(args)...);
                     }));
             return (true);
@@ -52,10 +52,10 @@ public:
         static bool registered;
 
     private:
-        registrar() : Derived(Key{}) { (void)registered; }
+        registrar() : Base(Key{}) { (void)registered; }
     };
 
-    friend Derived;
+    friend Base;
 
 private:
     class Key {
@@ -64,8 +64,9 @@ private:
     };
 
     /*
-     * Use SFINAE to determine if the derived object has a priority value.
-     * If so, we use it to determine the order of object initialization.
+     * Use SFINAE to determine if the derived object has a static, public
+     * priority value.  If so, we use it to determine the order of object
+     * initialization.
      */
     template <class T>
     class Priority
@@ -83,7 +84,7 @@ private:
 
     init_factory() = default;
 
-    typedef std::pair<int, std::function<std::unique_ptr<Derived>(Args...)>> ranked_ctor;
+    typedef std::pair<int, std::function<std::unique_ptr<Base>(Args...)>> ranked_ctor;
 
     static auto &ctors() {
         static std::vector<ranked_ctor> ctors;
@@ -91,10 +92,10 @@ private:
     }
 };
 
-template <class Derived, class... Args>
+template <class Base, class... Args>
 template <class T>
-bool init_factory<Derived, Args...>::registrar<T>::registered =
-    init_factory<Derived, Args...>::registrar<T>::registerT();
+bool init_factory<Base, Args...>::registrar<T>::registered =
+    init_factory<Base, Args...>::registrar<T>::registerT();
 
 }
 }
