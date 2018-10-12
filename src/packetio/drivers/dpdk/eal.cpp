@@ -202,12 +202,25 @@ tl::expected<int, std::string> eal::create_port(const port::config_data& config)
     }
 
     /* Well all right.  Let's create a port, shall we? */
-    std::string name = "bond" + std::to_string(idx++);
+    /*
+     * XXX: DPDK uses the prefix of the name to find the proper driver;
+     * ergo, this name cannot change.
+     */
+    std::string name = "net_bonding" + std::to_string(idx++);
+    /**
+     * XXX: The 3rd parameter _should_ be SOCKET_ID_ANY, since we don't care
+     * about NUMA yet, however, the DPDK function signature's are screwed up.
+     * This create function takes a uint8_t for the socket id, but the rest of
+     * the DPDK code uses an int for the socket id.
+     * So... we have to use 0 here so that we don't attempt to allocate memory
+     * from NUMA socket 255.
+     */
     int id_or_error = rte_eth_bond_create(name.c_str(),
                                           BONDING_MODE_8023AD,
-                                          SOCKET_ID_ANY);
+                                          0);
     if (id_or_error < 0) {
-        return tl::make_unexpected(rte_strerror(id_or_error));
+        return tl::make_unexpected("Failed to create bond port: "
+                                   + std::string(rte_strerror(std::abs(id_or_error))));
     }
 
     std::vector<int> success_record;
@@ -218,7 +231,9 @@ tl::expected<int, std::string> eal::create_port(const port::config_data& config)
                 rte_eth_bond_slave_remove(id_or_error, added_id);
             }
             rte_eth_bond_free(name.c_str());
-            return tl::make_unexpected(rte_strerror(error));
+            return tl::make_unexpected("Failed to add slave port " + std::to_string(id)
+                                       + "to bond port " + std::to_string(id_or_error)
+                                       + ": " + std::string(rte_strerror(std::abs(error))));
         }
         success_record.push_back(id);
     }
@@ -234,15 +249,14 @@ void eal::delete_port(int id)
          * There is apparently no way to query the number of slaves a port has,
          * so resort to brute force here.
          */
-        std::vector<uint16_t> slaves;
-        slaves.reserve(RTE_MAX_ETHPORTS);
-        int length_or_err = rte_eth_bond_slaves_get(id, slaves.data(), slaves.capacity());
+        uint16_t slaves[RTE_MAX_ETHPORTS] = {};
+        int length_or_err = rte_eth_bond_slaves_get(id, slaves, RTE_MAX_ETHPORTS);
         if (length_or_err < 0) {
             /* Not sure what else we can do here... */
             icp_log(ICP_LOG_ERROR, "Could not retrieve slave port ids from bonded port %d\n", id);
         } else if (length_or_err > 0) {
-            for (auto slave_id : slaves) {
-                rte_eth_bond_slave_remove(id, slave_id);
+            for (int i = 0; i < length_or_err; i++) {
+                rte_eth_bond_slave_remove(id, i);
             }
         }
         rte_eth_bond_free(m_bond_ports[id].c_str());
