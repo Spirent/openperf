@@ -48,6 +48,8 @@ enum class link_speed { SPEED_UNKNOWN =      0,
                         SPEED_100G    = 100000,
                         SPEED_200G    = 200000 };
 
+std::string to_string(const link_speed&);
+
 struct stats_data {
     int64_t rx_packets;
     int64_t tx_packets;

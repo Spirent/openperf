@@ -142,6 +142,16 @@ eal::eal(std::vector<std::string> args)
 
     /* Use the port_info vector to allocate our default memory pools */
     m_allocator = std::make_unique<pool_allocator>(pool_allocator(port_info));
+
+    /* Now use a pool from the pool allocator to configure our ports */
+    port_idx = 0;
+    RTE_ETH_FOREACH_DEV(port_idx) {
+        auto port = model::physical_port(port_idx, m_allocator->rx_mempool());
+        auto result = port.low_level_config();
+        if (!result) {
+            throw std::runtime_error(result.error());
+        }
+    }
 }
 
 eal::~eal()
@@ -168,10 +178,10 @@ std::vector<int> eal::port_ids()
     return (port_ids);
 }
 
-std::optional<port::generic_port> eal::port(int id)
+std::optional<port::generic_port> eal::port(int id) const
 {
     return (rte_eth_dev_is_valid_port(id)
-            ? std::make_optional(port::generic_port(model::physical_port(id)))
+            ? std::make_optional(port::generic_port(model::physical_port(id, m_allocator->rx_mempool())))
             : std::nullopt);
 }
 

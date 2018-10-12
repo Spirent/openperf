@@ -1,3 +1,4 @@
+#include <cerrno>
 #include <optional>
 #include <unordered_map>
 
@@ -87,13 +88,13 @@ static void _handle_create_port_request(generic_driver& driver, json& request, j
                 reply["data"] = make_swagger_port(*driver.port(result.value()))->toJson().dump();
             } else {
                 reply["code"] = reply_code::BAD_INPUT;
-                reply["error"] = result.error();
+                reply["error"] = json_error(EINVAL, result.error().c_str());
             }
         } else {
             reply["code"] = reply_code::BAD_INPUT;
             reply["error"] = "No configuration data for port";
         }
-    } catch (const json::parse_error &e) {
+    } catch (const json::exception &e) {
         reply["code"] = reply_code::BAD_INPUT;
         reply["error"] = json_error(e.id, e.what());
     }
@@ -128,13 +129,13 @@ static void _handle_update_port_request(generic_driver& driver, json& request, j
             auto result = port->config(*config);
             if (!result) {
                 reply["code"] = reply_code::BAD_INPUT;
-                reply["error"] = result.error();
+                reply["error"] = json_error(EINVAL, result.error().c_str());
                 return;
             }
         }
         reply["code"] = reply_code::OK;
         reply["data"] = make_swagger_port(*port)->toJson().dump();
-    } catch (const json::parse_error &e) {
+    } catch (const json::exception &e) {
         reply["code"] = reply_code::BAD_INPUT;
         reply["error"] = json_error(e.id, e.what());
     }

@@ -47,8 +47,7 @@ public:
     eal& operator=(const eal&&) = delete;
 
     static std::vector<int> port_ids();
-    static std::optional<port::generic_port> port(int id);
-    static tl::expected<void, std::string> update_port(int id, const port::config_data& config);
+    std::optional<port::generic_port> port(int id) const;
     tl::expected<int, std::string> create_port(const port::config_data& config);
     void delete_port(int id);
 

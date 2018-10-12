@@ -35,6 +35,11 @@ std::string to_string(const link_duplex& duplex)
     }
 }
 
+std::string to_string(const link_speed &speed)
+{
+    return std::to_string(static_cast<int>(speed)) + " Mbps";
+}
+
 std::string to_string(const lag_mode& mode)
 {
     switch (mode) {
