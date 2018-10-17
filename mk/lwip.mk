@@ -42,7 +42,9 @@ LWIP_CORE6_SOURCES := \
   src/core/ipv6/nd6.c
 
 LWIP_API_SOURCES := \
-	src/api/err.c
+	src/api/err.c \
+	src/api/netifapi.c \
+	src/api/tcpip.c
 
 LWIP_SOURCES := \
 	$(LWIP_CORE_SOURCES) \

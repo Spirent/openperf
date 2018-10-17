@@ -17,7 +17,7 @@ namespace api {
 class server
 {
 public:
-    server(void *context, core::event_loop &loop, driver::generic_driver &driver);
+    server(void* context, core::event_loop& loop, driver::generic_driver& driver);
 
 private:
     std::unique_ptr<void, icp_socket_deleter> m_socket;

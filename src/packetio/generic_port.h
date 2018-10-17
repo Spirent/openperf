@@ -45,8 +45,7 @@ enum class link_speed { SPEED_UNKNOWN =      0,
                         SPEED_40G     =  40000,
                         SPEED_50G     =  50000,
                         SPEED_56G     =  56000,
-                        SPEED_100G    = 100000,
-                        SPEED_200G    = 200000 };
+                        SPEED_100G    = 100000 };
 
 std::string to_string(const link_speed&);
 

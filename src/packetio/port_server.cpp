@@ -92,7 +92,8 @@ static void _handle_create_port_request(generic_driver& driver, json& request, j
             }
         } else {
             reply["code"] = reply_code::BAD_INPUT;
-            reply["error"] = "No configuration data for port";
+            reply["error"] = json_error(EINVAL,
+                                        "No configuration data for port");
         }
     } catch (const json::exception &e) {
         reply["code"] = reply_code::BAD_INPUT;
@@ -149,7 +150,7 @@ static void _handle_delete_port_request(generic_driver& driver, json& request, j
 
 static int _handle_rpc_request(const icp_event_data *data, void *arg)
 {
-    generic_driver &driver = *(reinterpret_cast<generic_driver *>(arg));
+    generic_driver& driver = *(reinterpret_cast<generic_driver *>(arg));
     int recv_or_err = 0;
     int send_or_err = 0;
     zmq_msg_t request_msg;
@@ -213,9 +214,9 @@ static int _handle_rpc_request(const icp_event_data *data, void *arg)
     return (((recv_or_err < 0 || send_or_err < 0) && errno == ETERM) ? -1 : 0);
 }
 
-server::server(void *context,
-               icp::core::event_loop &loop,
-               generic_driver &driver)
+server::server(void* context,
+               icp::core::event_loop& loop,
+               generic_driver& driver)
     : m_socket(icp_socket_get_server(context, ZMQ_REP, endpoint.c_str()))
 {
     struct icp_event_callbacks callbacks = {

@@ -75,7 +75,6 @@ void from_json(const nlohmann::json& j, config_data& c)
     }
 }
 
-
 /**
  * Functions to transmogrify generic_ports to swagger ports
  */

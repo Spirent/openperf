@@ -8,6 +8,7 @@
 
 #include "core/icp_core.h"
 #include "packetio/generic_driver.h"
+#include "packetio/generic_stack.h"
 #include "packetio/interface_server.h"
 #include "packetio/port_server.h"
 
@@ -23,9 +24,10 @@ struct service {
 
     void init(void *context) {
         m_driver = driver::make();
+        m_stack = stack::make(*m_driver);
         m_loop = std::make_unique<icp::core::event_loop>();
         m_port_server = std::make_unique<port::api::server>(context, *m_loop, *m_driver);
-        m_if_server = std::make_unique<interface::api::server>(context, *m_loop);
+        m_if_server = std::make_unique<interface::api::server>(context, *m_loop, *m_stack);
     }
 
     void start()
@@ -38,6 +40,7 @@ struct service {
 
     std::unique_ptr<icp::core::event_loop> m_loop;
     std::unique_ptr<driver::generic_driver> m_driver;
+    std::unique_ptr<stack::generic_stack> m_stack;
     std::unique_ptr<interface::api::server> m_if_server;
     std::unique_ptr<port::api::server> m_port_server;
     std::thread m_worker;

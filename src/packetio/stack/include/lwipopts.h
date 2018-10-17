@@ -8,22 +8,32 @@
  */
 
 /* Build minimal, lockless stack */
-#define NO_SYS 1
+#define NO_SYS 0
 #define LWIP_SOCKET 0
 #define LWIP_NETCONN 0
 #define SYS_LIGHTWEIGHT_PROT 0
 #define LWIP_TCPIP_CORE_LOCKING 0
+#define LWIP_NETIF_API 1
+#define LWIP_ERRNO_INCLUDE <errno.h>
+
+/* Network Interface options */
+#define LWIP_NETIF_HOSTNAME 1
+#define LWIP_NETIF_LINK_CALLBACK 1
+#define LWIP_NETIF_TX_SINGLE_PBUF 1
 
 /* Protocol support */
 #define LWIP_DHCP 1
+#define LWIP_AUTOIP 1
+#define LWIP_DHCP_AUTOIP_COOP 1
+#define LWIP_DHCP_CHECK_LINK_UP 1
 
 /* Use appropriate thread names */
 #define TCPIP_THREAD_NAME "icp_stack"
 #define DEFAULT_THREAD_NAME "icp_stack_misc"
 
 /* Miscellaneous options */
-#define LWIP_STATS_DISPLAY 1
-#define LWIP_NETIF_TX_SINGLE_PBUF 1
+#define LWIP_STATS 1
+#define MIB2_STATS 1
 
 /* Memory allocation options */
 #define MEM_ALIGNMENT 8
@@ -39,7 +49,7 @@
 #define LWIP_DONT_PROVIDE_BYTEORDER_FUNCTIONS 1
 
 /* Debugging options */
-//#define LWIP_DEBUG 0
+#define LWIP_DEBUG 1
 
 //#define ETHARP_DEBUG     LWIP_DBG_ON
 //#define NETIF_DEBUG      LWIP_DBG_ON

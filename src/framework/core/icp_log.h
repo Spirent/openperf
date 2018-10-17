@@ -74,9 +74,9 @@ void icp_log_function_name(const char *signature, char *function);
 #define icp_log(level, format, ...)                                     \
     do {                                                                \
         if (level <= icp_log_level_get()) {                             \
-            char function[strlen(__PRETTY_FUNCTION__)];                 \
-            icp_log_function_name(__PRETTY_FUNCTION__, function);       \
-            _icp_log(level, function, format, ##__VA_ARGS__);           \
+            char _function[strlen(__PRETTY_FUNCTION__)];                \
+            icp_log_function_name(__PRETTY_FUNCTION__, _function);      \
+            _icp_log(level, _function, format, ##__VA_ARGS__);          \
         }                                                               \
     } while (0)
 

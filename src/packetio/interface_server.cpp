@@ -5,8 +5,8 @@
 
 #include "core/icp_core.h"
 #include "swagger/v1/model/Interface.h"
+#include "packetio/generic_interface.h"
 #include "packetio/interface_api.h"
-#include "packetio/json_transmogrify.h"
 #include "packetio/interface_server.h"
 
 namespace icp {
@@ -18,6 +18,7 @@ const std::string endpoint = "inproc://icp_packetio_interface";
 
 using namespace swagger::v1::model;
 using json = nlohmann::json;
+using generic_stack = icp::packetio::stack::generic_stack;
 
 typedef std::map<unsigned, std::shared_ptr<Interface>> interface_map;
 
@@ -53,99 +54,149 @@ std::string to_string(reply_code code)
             : reply_codes.at(code));
 }
 
-static void _handle_list_interfaces_request(json &request, json& reply, interface_map& map)
+static void _handle_list_interfaces_request(generic_stack& stack, json &request, json& reply)
 {
-    // TODO: filters
-    (void)request;
+    /* Grab optional user supplied filters */
+    auto port_id = get_optional_key<int>(request, "port_id");
+    auto mac_addr = get_optional_key<std::string>(request, "eth_mac_addres");
+    auto ipv4_addr = get_optional_key<std::string>(request, "ipv4_address");
 
     json jints = json::array();
-    for (auto &item : map) {
-        jints.push_back(item.second->toJson());
+
+    for (int id : stack.interface_ids()) {
+        auto intf = stack.interface(id);
+        if ((!port_id && !mac_addr && !ipv4_addr)
+            || (port_id && port_id == intf->port_id())
+            || (mac_addr && mac_addr == intf->mac_address())
+            || (ipv4_addr && ipv4_addr == intf->ipv4_address())) {
+            jints.emplace_back(make_swagger_interface(*intf)->toJson());
+        }
     }
+
     reply["code"] = reply_code::OK;
     reply["data"] = jints.dump();
 }
 
-static int interface_idx = 0;
-
-static void _handle_create_interface_request(json& request, json&reply, interface_map& map)
+static void _handle_create_interface_request(generic_stack& stack, json& request, json& reply)
 {
     try {
-        auto iface = std::make_shared<Interface>();
-        *iface = json::parse(request["data"].get<std::string>());
-        iface->setId(std::to_string(interface_idx));
-        map[interface_idx++] = iface;
+        auto j_data = json::parse(request["data"].get<std::string>());
+        auto config = get_optional_key<interface::config_data>(j_data, "config");
 
-        reply["code"] = reply_code::OK;
-        reply["data"] = iface->toJson().dump();
-    } catch (const json::parse_error &e) {
+        if (!config) {
+            reply["code"] = reply_code::BAD_INPUT;
+            reply["error"] = json_error(EINVAL,
+                                        "No configuration data specified for interface");
+            return;
+        }
+
+        auto port_id = get_optional_key<int>(j_data, "port_id");
+        if (!port_id) {
+            reply["code"] = reply_code::BAD_INPUT;
+            reply["error"] = json_error(EINVAL,
+                                        "No port_id specified for interface");
+            return;
+        }
+
+        auto result = stack.create_interface(*port_id, *config);
+        if (result) {
+            reply["code"] = reply_code::OK;
+            reply["data"] = make_swagger_interface(
+                *stack.interface(result.value()))->toJson().dump();
+        } else {
+            reply["code"] = reply_code::BAD_INPUT;
+            reply["error"] = json_error(EINVAL, result.error().c_str());
+        }
+
+    } catch (const json::exception& e) {
         reply["code"] = reply_code::BAD_INPUT;
         reply["error"] = json_error(e.id, e.what());
+    } catch (const std::runtime_error& e) {
+        reply["code"] = reply_code::BAD_INPUT;
+        reply["error"] = json_error(EINVAL, e.what());
     }
 }
 
-static void _handle_get_interface_request(json& request, json& reply, interface_map& map)
+static void _handle_get_interface_request(generic_stack& stack, json& request, json& reply)
 {
     int id = request["id"].get<int>();
-    auto item = map.find(id);
-    if (item == map.end()) {
-        reply["code"] = reply_code::NO_INTERFACE;
-    } else {
+    auto intf = stack.interface(id);
+    if (intf) {
         reply["code"] = reply_code::OK;
-        reply["data"] = item->second->toJson().dump();
+        reply["data"] = make_swagger_interface(*intf)->toJson().dump();
+    } else {
+        reply["code"] = reply_code::NO_INTERFACE;
     }
 }
 
-static void _handle_delete_interface_request(json& request, json& reply, interface_map& map)
+static void _handle_delete_interface_request(generic_stack& stack, json& request, json& reply)
 {
-    int id = request["id"].get<int>();
-    if (map.find(id) != map.end()) {
-        map.erase(id);
-    }
+    stack.delete_interface(request["id"].get<int>());
     reply["code"] = reply_code::OK;
 }
 
-static void _handle_bulk_create_interface_request(json& request, json& reply, interface_map& map)
+static void _handle_bulk_create_interface_request(generic_stack& stack, json& request, json& reply)
 {
-    std::vector<int> ids;
+    /* Check input */
+    std::vector<int> success_list;
     try {
-        auto data = json::array();
+        size_t invalid_configs = 0;
+        size_t invalid_ports = 0;
         for (auto& item : request["items"]) {
-            auto iface = std::make_shared<Interface>();
-            *iface = item;
-            iface->setId(std::to_string(interface_idx));
-            ids.push_back(interface_idx);  /* store the id in case we encounter a subsequent error */
-            map[interface_idx++] = iface;
-            data.push_back(iface->toJson());
+            auto config = get_optional_key<interface::config_data>(item, "config");
+            invalid_configs += !config;
+
+            auto port_id = get_optional_key<int>(item, "port_id");
+            invalid_ports += !port_id;
         }
-        reply["code"] = reply_code::OK;
-        reply["data"] = data.dump();
-    } catch (const json::parse_error &e) {
-        /* Delete any interfaces we successfully created */
-        for (int id : ids) {
-            if (map.find(id) != map.end()) {
-                map.erase(id);
+
+        if (invalid_configs) {
+            reply["code"] = reply_code::BAD_INPUT;
+            reply["error"] = json_error(EINVAL,
+                                        "Some interfaces lack configuration data");
+        } else if (invalid_ports) {
+            reply["code"] = reply_code::BAD_INPUT;
+            reply["error"] = json_error(EINVAL,
+                                        "Some interfaces lack port ids");
+        } else {
+            auto j_interfaces = json::array();
+            for (auto& item : request["items"]) {
+                auto config = get_optional_key<interface::config_data>(item, "config");
+                auto port_id = get_optional_key<int>(item, "port_id");
+                auto result = stack.create_interface(*port_id, *config);
+                if (!result) {
+                    throw std::runtime_error("Failed to create interface with config = "
+                                             + item["config"].get<std::string>()
+                                             + " on port " + item["port_id"].get<std::string>());
+                }
+
+                success_list.push_back(result.value());
+                j_interfaces.emplace_back(make_swagger_interface(
+                                              *stack.interface(result.value()))->toJson());
             }
+            reply["code"] = reply_code::OK;
+            reply["data"] = j_interfaces.dump();
         }
+    } catch (const json::exception& e) {
         reply["code"] = reply_code::BAD_INPUT;
         reply["error"] = json_error(e.id, e.what());
+    } catch (const std::runtime_error& e) {
+        reply["code"] = reply_code::BAD_INPUT;
+        reply["error"] = json_error(EINVAL, e.what());
     }
 }
 
-static void _handle_bulk_delete_interface_request(json& request, json& reply, interface_map& map)
+static void _handle_bulk_delete_interface_request(generic_stack& stack, json& request, json& reply)
 {
     for (int id : request["ids"]) {
-        if (map.find(id) != map.end()) {
-            map.erase(id);
-        }
+        stack.delete_interface(id);
     }
     reply["code"] = reply_code::OK;
 }
 
 static int _handle_rpc_request(const icp_event_data *data, void *arg)
 {
-    interface_map *map = reinterpret_cast<interface_map *>(arg);
-
+    generic_stack& stack = *(reinterpret_cast<generic_stack *>(arg));
     int recv_or_err = 0;
     int send_or_err = 0;
     zmq_msg_t request_msg;
@@ -173,22 +224,22 @@ static int _handle_rpc_request(const icp_event_data *data, void *arg)
 
         switch (type) {
         case request_type::LIST_INTERFACES:
-            _handle_list_interfaces_request(request, reply, *map);
+            _handle_list_interfaces_request(stack, request, reply);
             break;
         case request_type::CREATE_INTERFACE:
-            _handle_create_interface_request(request, reply, *map);
+            _handle_create_interface_request(stack, request, reply);
             break;
         case request_type::GET_INTERFACE:
-            _handle_get_interface_request(request, reply, *map);
+            _handle_get_interface_request(stack, request, reply);
             break;
         case request_type::DELETE_INTERFACE:
-            _handle_delete_interface_request(request, reply, *map);
+            _handle_delete_interface_request(stack, request, reply);
             break;
         case request_type::BULK_CREATE_INTERFACES:
-            _handle_bulk_create_interface_request(request, reply, *map);
+            _handle_bulk_create_interface_request(stack, request, reply);
             break;
         case request_type::BULK_DELETE_INTERFACES:
-            _handle_bulk_delete_interface_request(request, reply, *map);
+            _handle_bulk_delete_interface_request(stack, request, reply);
             break;
         default:
             reply["code"] = reply_code::ERROR;
@@ -211,13 +262,15 @@ static int _handle_rpc_request(const icp_event_data *data, void *arg)
     return (((recv_or_err < 0 || send_or_err < 0) && errno == ETERM) ? -1 : 0);
 }
 
-server::server(void *context, icp::core::event_loop& loop)
+server::server(void* context,
+               icp::core::event_loop& loop,
+               generic_stack& stack)
     : m_socket(icp_socket_get_server(context, ZMQ_REP, endpoint.c_str()))
 {
     struct icp_event_callbacks callbacks = {
         .on_read = _handle_rpc_request
     };
-    loop.add(m_socket.get(), &callbacks, &m_interfaces);
+    loop.add(m_socket.get(), &callbacks, &stack);
 }
 
 }

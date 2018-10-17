@@ -17,7 +17,7 @@ class port_info;
 class physical_port
 {
 public:
-    physical_port(int id, rte_mempool *rx_pool);
+    physical_port(int id, rte_mempool *rx_pool = nullptr);
 
     int id() const;
 
