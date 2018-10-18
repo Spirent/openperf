@@ -22,7 +22,7 @@ FW_OBJECTS :=
 FW_DEPENDS :=
 FW_LDLIBS  :=
 
-FW_MODULES := api core
+FW_MODULES := api core net
 
 # Load each module's module.mk file
 include $(patsubst %, $(FW_SRC_DIR)/%/module.mk, $(FW_MODULES))
