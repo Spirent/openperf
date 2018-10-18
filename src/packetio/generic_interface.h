@@ -9,6 +9,8 @@
 #include "json.hpp"
 #include "tl/expected.hpp"
 
+#include "net/net_types.h"
+
 namespace swagger {
 namespace v1 {
 namespace model {
@@ -30,29 +32,8 @@ struct stats_data {
     int64_t tx_errors;
 };
 
-struct mac_address {
-    uint8_t octets[6];
-
-    mac_address(const std::string&);
-    mac_address(const uint8_t[]);
-    mac_address();
-};
-
-std::string to_string(const mac_address& mac);
-
-union ipv4_address {
-    uint8_t  uint8[4];
-    uint32_t uint32;
-
-    ipv4_address(const std::string&);
-    ipv4_address(uint32_t);
-    ipv4_address();
-} __attribute__((packed));
-
-std::string to_string(const ipv4_address&);
-
 struct eth_protocol_config {
-    mac_address address;
+    net::mac_address address;
 };
 
 struct ipv4_dhcp_protocol_config {
@@ -61,8 +42,8 @@ struct ipv4_dhcp_protocol_config {
 };
 
 struct ipv4_static_protocol_config {
-    std::optional<ipv4_address> gateway;
-    ipv4_address address;
+    std::optional<net::ipv4_address> gateway;
+    net::ipv4_address address;
     uint8_t prefix_length;
 };
 
@@ -76,7 +57,7 @@ struct config_data {
     std::vector<protocol_config> protocols;
 };
 
-tl::expected<void, std::string> validate(config_data&);
+bool is_valid(config_data&, std::vector<std::string>&);
 
 void from_json(const nlohmann::json&, config_data&);
 

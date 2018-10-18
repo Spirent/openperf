@@ -1,84 +1,160 @@
 #include <cstdio>
+#include <limits>
 #include <memory>
 #include <string>
+#include <typeinfo>
 
 #include <arpa/inet.h>
 
 #include "swagger/v1/model/Interface.h"
 #include "packetio/generic_interface.h"
 
+#include <iostream>
 namespace icp {
 namespace packetio {
 namespace interface {
 
 using namespace swagger::v1::model;
 
-mac_address::mac_address(const std::string& input)
+struct validate_ipv4_protocol
 {
-    std::string delimiters("-:.");
-    size_t beg = 0, pos = 0, idx = 0;
-    while((beg = input.find_first_not_of(delimiters, pos)) != std::string::npos) {
-        if (idx == 6) {
-            throw std::runtime_error("Too many octets in MAC address " + input);
+    std::vector<std::string>& m_errors;
+    validate_ipv4_protocol(std::vector<std::string>& errors)
+        : m_errors(errors)
+    {}
+
+    void operator()(const ipv4_dhcp_protocol_config& dhcp __attribute__((unused)))
+    {
+        /* DHCP config is always valid */
+    }
+
+    void operator()(const ipv4_static_protocol_config& ipv4)
+    {
+        if (ipv4.prefix_length > 32) {
+            m_errors.emplace_back("Prefix length (" + std::to_string(ipv4.prefix_length)
+                                  + ") is too big.");
         }
-        pos = input.find_first_of(delimiters, beg + 1);
-        auto value = std::strtol(input.substr(beg, pos-beg).c_str(), nullptr, 16);
-        if (value < 0 || 0xff < value) {
-            throw std::runtime_error("MAC address octet " + input.substr(beg, pos-beg)
-                                     + " is not between 0x00 and 0xff");
+        if (ipv4.address.is_loopback()) {
+            m_errors.emplace_back("Cannot use loopback address (" + net::to_string(ipv4.address)
+                                  + ") for interface.");
+        } else if (ipv4.address.is_multicast()) {
+            m_errors.emplace_back("Cannot use multicast address (" + net::to_string(ipv4.address)
+                                  + ") for interface.");
         }
-        octets[idx++] = value;
+
+        /* check optional gateway */
+        if (ipv4.gateway) {
+            if (ipv4.gateway->is_loopback()) {
+                m_errors.emplace_back("Cannot use loopback address (" + net::to_string(*ipv4.gateway)
+                                      + ") for gateway.");
+            } else if (ipv4.gateway->is_multicast()) {
+                m_errors.emplace_back("Cannot use multicast address (" + net::to_string(*ipv4.gateway)
+                                      + ") for gateway.");
+            } else if (net::ipv4_network(*ipv4.gateway, ipv4.prefix_length) !=
+                       net::ipv4_network(ipv4.address, ipv4.prefix_length)) {
+                m_errors.emplace_back("Gateway address (" + net::to_string(*ipv4.gateway)
+                                      + ") is not in the same broadcast domain as interface ("
+                                      + net::to_string(net::ipv4_network(ipv4.address, ipv4.prefix_length))
+                                      + ").");
+            }
+        }
     }
-}
+};
 
-mac_address::mac_address(const uint8_t addr[])
-    : octets{addr[0], addr[1], addr[2], addr[3], addr[4], addr[5]}
-{}
-
-mac_address::mac_address()
-    : octets{0, 0, 0, 0, 0, 0}
-{}
-
-std::string to_string(const mac_address& mac)
+struct validate_protocol
 {
-    /* Sometimes, C++ is just too cumbersome for it's own good */
-    char buffer[18];
-    sprintf(buffer, "%02x:%02x:%02x:%02x:%02x:%02x",
-            mac.octets[0], mac.octets[1], mac.octets[2],
-            mac.octets[3], mac.octets[4], mac.octets[5]);
-    return (std::string(buffer));
-}
+    std::vector<std::string>& m_errors;
+    validate_protocol(std::vector<std::string>& errors)
+        : m_errors(errors)
+    {}
 
-ipv4_address::ipv4_address(const std::string& input)
-{
-    if (inet_pton(AF_INET, input.c_str(), &uint32) == 0) {
-        throw std::runtime_error("Invalid IPv4 address: " + input);
+    void operator()(const eth_protocol_config& eth)
+    {
+        if (eth.address.is_broadcast()) {
+            m_errors.emplace_back("Broadcast MAC address (" + net::to_string(eth.address) + ") is not allowed.");
+        } else if (eth.address.is_multicast()) {
+            m_errors.emplace_back("Multicast MAC address (" + net::to_string(eth.address) + ") is not allowed.");
+        }
     }
-}
 
-ipv4_address::ipv4_address(uint32_t addr)
-    : uint32(addr)
-{}
-
-ipv4_address::ipv4_address()
-    : uint32(0)
-{}
-
-std::string to_string(const ipv4_address& ipv4)
-{
-    char buffer[INET6_ADDRSTRLEN];
-    const char *p = inet_ntop(AF_INET, &ipv4, buffer, INET6_ADDRSTRLEN);
-    if (p == NULL) {
-        throw std::runtime_error("Invalid IPv4 address structure");
+    void operator()(const ipv4_protocol_config& ipv4)
+    {
+        std::visit(validate_ipv4_protocol(m_errors), ipv4);
     }
-    return (std::string(p));
+};
+
+/**
+ * This is a wrapper around a simple std::unordered_map to allow
+ * us to count types.
+ */
+class type_info_counter
+{
+public:
+    using type_info_ref = std::reference_wrapper<const std::type_info>;
+
+    int& operator[](type_info_ref ref) { return m_counts[ref]; }
+
+private:
+    struct hasher
+    {
+        size_t operator()(type_info_ref code) const
+        {
+            return code.get().hash_code();
+        }
+    };
+
+    struct equals
+    {
+        bool operator()(type_info_ref lhs, type_info_ref rhs) const
+        {
+            return (lhs.get() == rhs.get());
+        }
+    };
+
+    std::unordered_map<type_info_ref, int, hasher, equals> m_counts;
+};
+
+bool is_valid(config_data& config, std::vector<std::string>& errors)
+{
+    type_info_counter protocol_counter;
+    for (auto& protocol : config.protocols) {
+        /*
+         * Use std::visit to count the type instances in the protocol_config
+         * variant.
+         */
+        std::visit([&protocol_counter](auto&& arg) {
+                       protocol_counter[typeid(arg)]++;
+                   }, protocol);
+
+        /*
+         * Use the same approach for validating the data within each protocol_config
+         * variant.
+         */
+        std::visit(validate_protocol(errors), protocol);
+    }
+
+    /* Currently we only allow 1 of each protocol */
+    if (auto count = protocol_counter[typeid(eth_protocol_config)]; count != 1) {
+        errors.emplace_back("At " + std::string(count == 0 ? "least" : "most") + " one Ethernet "
+                            + "protocol configuration is required per interface.");
+    }
+    if (auto count = protocol_counter[typeid(ipv4_protocol_config)]; count > 1) {
+        errors.emplace_back("At most one IPv4 protocol configuration is allowed per interface, not "
+                            + std::to_string(count) + ".");
+    }
+
+    /*
+     * XXX: swagger specs says we care about order, but at this point, our configuration
+     * is unambiguous, so don't bother.
+     */
+
+    return (errors.size() == 0);
 }
 
 void from_json(const nlohmann::json& j, eth_protocol_config& config)
 {
-    config.address = mac_address(j["mac_address"].get<std::string>());
+    config.address = net::mac_address(j["mac_address"].get<std::string>());
 }
-
 
 void from_json(const nlohmann::json& j, ipv4_dhcp_protocol_config& config)
 {
@@ -90,15 +166,11 @@ void from_json(const nlohmann::json& j, ipv4_static_protocol_config& config)
 {
     auto gw = get_optional_key<std::string>(j, "gateway");
     if (gw) {
-        config.gateway = std::make_optional(ipv4_address(*gw));
+        config.gateway = std::make_optional(net::ipv4_address(*gw));
     }
-    config.address = ipv4_address(j["address"].get<std::string>());
-    auto length = j["prefix_length"].get<int32_t>();
-    if (length < 0 || 32 < length) {
-        throw std::runtime_error("Prefix length of " + j["prefix_length"].get<std::string>()
-                                 + " is invalid for IPv4");
-    }
-    config.prefix_length = length;
+    config.address = net::ipv4_address(j["address"].get<std::string>());
+    /* XXX: Swagger spec doesn't allow smaller ints? */
+    config.prefix_length = j["prefix_length"].get<int32_t>() & std::numeric_limits<uint8_t>::max();
 }
 
 void from_json(const nlohmann::json& j, ipv4_protocol_config& config)
@@ -123,6 +195,14 @@ void from_json(const nlohmann::json& j, config_data& config)
 {
     for (auto& protocol : j["protocols"]) {
         config.protocols.emplace_back(protocol);
+    }
+
+    std::vector<std::string> errors;
+    if (!is_valid(config, errors)) {
+        throw std::runtime_error(std::accumulate(begin(errors), end(errors), std::string(),
+                                                 [](const std::string &a, const std::string &b) -> std::string {
+                                                     return a + (a.length() > 0 ? " " : "") + b;
+                                                 }));
     }
 }
 

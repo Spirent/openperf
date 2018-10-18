@@ -29,8 +29,8 @@ std::string to_string(request_type type)
         { request_type::CREATE_INTERFACE,       "CREATE_INTERFACE"       },
         { request_type::GET_INTERFACE,          "GET_INTERFACE"          },
         { request_type::DELETE_INTERFACE,       "DELETE_INTERFACE"       },
-        { request_type::BULK_CREATE_INTERFACES, "BULD_CREATE_INTERFACES" },
-        { request_type::BULK_DELETE_INTERFACES, "BULD_DELETE_INTERFACES" },
+        { request_type::BULK_CREATE_INTERFACES, "BULK_CREATE_INTERFACES" },
+        { request_type::BULK_DELETE_INTERFACES, "BULK_DELETE_INTERFACES" },
         { request_type::NONE,                   "UNKNOWN"                }  /* Overloaded */
     };
 
@@ -81,33 +81,16 @@ static void _handle_create_interface_request(generic_stack& stack, json& request
 {
     try {
         auto j_data = json::parse(request["data"].get<std::string>());
-        auto config = get_optional_key<interface::config_data>(j_data, "config");
+        auto config = j_data.at("config").get<interface::config_data>();
+        auto port_id = j_data.at("port_id").get<int>();
 
-        if (!config) {
-            reply["code"] = reply_code::BAD_INPUT;
-            reply["error"] = json_error(EINVAL,
-                                        "No configuration data specified for interface");
-            return;
+        auto result = stack.create_interface(port_id, config);
+        if (!result) {
+            throw std::runtime_error(result.error());
         }
-
-        auto port_id = get_optional_key<int>(j_data, "port_id");
-        if (!port_id) {
-            reply["code"] = reply_code::BAD_INPUT;
-            reply["error"] = json_error(EINVAL,
-                                        "No port_id specified for interface");
-            return;
-        }
-
-        auto result = stack.create_interface(*port_id, *config);
-        if (result) {
-            reply["code"] = reply_code::OK;
-            reply["data"] = make_swagger_interface(
-                *stack.interface(result.value()))->toJson().dump();
-        } else {
-            reply["code"] = reply_code::BAD_INPUT;
-            reply["error"] = json_error(EINVAL, result.error().c_str());
-        }
-
+        reply["code"] = reply_code::OK;
+        reply["data"] = make_swagger_interface(
+            *stack.interface(result.value()))->toJson().dump();
     } catch (const json::exception& e) {
         reply["code"] = reply_code::BAD_INPUT;
         reply["error"] = json_error(e.id, e.what());
@@ -140,49 +123,32 @@ static void _handle_bulk_create_interface_request(generic_stack& stack, json& re
     /* Check input */
     std::vector<int> success_list;
     try {
-        size_t invalid_configs = 0;
-        size_t invalid_ports = 0;
+        auto j_interfaces = json::array();
         for (auto& item : request["items"]) {
-            auto config = get_optional_key<interface::config_data>(item, "config");
-            invalid_configs += !config;
-
-            auto port_id = get_optional_key<int>(item, "port_id");
-            invalid_ports += !port_id;
-        }
-
-        if (invalid_configs) {
-            reply["code"] = reply_code::BAD_INPUT;
-            reply["error"] = json_error(EINVAL,
-                                        "Some interfaces lack configuration data");
-        } else if (invalid_ports) {
-            reply["code"] = reply_code::BAD_INPUT;
-            reply["error"] = json_error(EINVAL,
-                                        "Some interfaces lack port ids");
-        } else {
-            auto j_interfaces = json::array();
-            for (auto& item : request["items"]) {
-                auto config = get_optional_key<interface::config_data>(item, "config");
-                auto port_id = get_optional_key<int>(item, "port_id");
-                auto result = stack.create_interface(*port_id, *config);
-                if (!result) {
-                    throw std::runtime_error("Failed to create interface with config = "
-                                             + item["config"].get<std::string>()
-                                             + " on port " + item["port_id"].get<std::string>());
-                }
-
-                success_list.push_back(result.value());
-                j_interfaces.emplace_back(make_swagger_interface(
-                                              *stack.interface(result.value()))->toJson());
+            auto config = item.at("config").get<interface::config_data>();
+            auto port_id = item.at("port_id").get<int>();
+            auto result = stack.create_interface(port_id, config);
+            if (!result) {
+                throw std::runtime_error(result.error());
             }
-            reply["code"] = reply_code::OK;
-            reply["data"] = j_interfaces.dump();
+            success_list.push_back(result.value());
+            j_interfaces.emplace_back(make_swagger_interface(
+                                          *stack.interface(result.value()))->toJson());
         }
+        reply["code"] = reply_code::OK;
+        reply["data"] = j_interfaces.dump();
+        return;
     } catch (const json::exception& e) {
         reply["code"] = reply_code::BAD_INPUT;
         reply["error"] = json_error(e.id, e.what());
     } catch (const std::runtime_error& e) {
         reply["code"] = reply_code::BAD_INPUT;
         reply["error"] = json_error(EINVAL, e.what());
+    }
+
+    /* If we get here, then we encountered an error; clean up created interfaces */
+    for (int id : success_list) {
+        stack.delete_interface(id);
     }
 }
 

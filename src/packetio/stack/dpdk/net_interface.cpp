@@ -140,7 +140,9 @@ static err_t net_interface_dpdk_init(netif* netif)
     netif->hwaddr_len = ETH_HWADDR_LEN;
     auto config = ifp->config();
     auto eth_config = get_eth_protocol_config(config);
-    memcpy(netif->hwaddr, &eth_config.address.octets, ETH_HWADDR_LEN);
+    for (size_t i = 0; i < ETH_HWADDR_LEN; i++) {
+        netif->hwaddr[i] = eth_config.address[i];
+    }
 
     uint16_t mtu;
     rte_eth_dev_get_mtu(ifp->port_id(), &mtu);
@@ -157,7 +159,7 @@ static err_t net_interface_dpdk_init(netif* netif)
 
 #if LWIP_IPV6 && LWIP_IPV6_MLD
     netif->flags |= NETIF_FLAG_MLD6;
-    /* IPv6 setup */
+    /* TODO: IPv6 setup */
 #endif
 
     /* Finally, check link status and set UP flag if needed */
@@ -200,9 +202,9 @@ net_interface::net_interface(int id, int port_id, const interface::config_data& 
         if (has_static_ipv4(m_config)) {
             auto ipv4_config = std::get<interface::ipv4_static_protocol_config>(
                 *get_ipv4_protocol_config(m_config));
-            ip4_addr address = { ipv4_config.address.uint32 };
+            ip4_addr address = { ipv4_config.address.data() };
             ip4_addr netmask = { to_netmask(ipv4_config.prefix_length) };
-            ip4_addr gateway = { ipv4_config.gateway ? ipv4_config.gateway->uint32 : 0 };
+            ip4_addr gateway = { ipv4_config.gateway ? ipv4_config.gateway->data() : 0 };
             netif_error = (netifapi_netif_add(&m_netif,
                                               &address, &netmask, &gateway,
                                               this, net_interface_dpdk_init, ip_input)
@@ -274,12 +276,12 @@ int net_interface::port_id() const
 
 std::string net_interface::mac_address() const
 {
-    return (to_string(interface::mac_address(m_netif.hwaddr)));
+    return (net::to_string(net::mac_address(m_netif.hwaddr)));
 }
 
 std::string net_interface::ipv4_address() const
 {
-    return (to_string(interface::ipv4_address(m_netif.ip_addr.addr)));
+    return (net::to_string(net::ipv4_address(m_netif.ip_addr.addr)));
 }
 
 interface::stats_data net_interface::stats() const
