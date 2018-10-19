@@ -21,7 +21,7 @@ json submit_request(void *socket, json& request)
     case request_type::DELETE_PORT:
         icp_log(ICP_LOG_TRACE, "Sending %s request for port %d\n",
                 to_string(type).c_str(),
-                request["port_idx"].get<int>());
+                request["id"].get<int>());
         break;
     default:
         icp_log(ICP_LOG_TRACE, "Sending %s request\n", to_string(type).c_str());
@@ -52,11 +52,11 @@ class handler : public icp::api::route::handler::registrar<handler> {
 public:
     handler(void *context, Rest::Router &router);
 
-    Rest::Route::Result  list_ports(const Rest::Request &request, Http::ResponseWriter response);
-    Rest::Route::Result create_port(const Rest::Request &request, Http::ResponseWriter response);
-    Rest::Route::Result    get_port(const Rest::Request &request, Http::ResponseWriter response);
-    Rest::Route::Result update_port(const Rest::Request &request, Http::ResponseWriter response);
-    Rest::Route::Result delete_port(const Rest::Request &request, Http::ResponseWriter response);
+    void  list_ports(const Rest::Request &request, Http::ResponseWriter response);
+    void create_port(const Rest::Request &request, Http::ResponseWriter response);
+    void    get_port(const Rest::Request &request, Http::ResponseWriter response);
+    void update_port(const Rest::Request &request, Http::ResponseWriter response);
+    void delete_port(const Rest::Request &request, Http::ResponseWriter response);
 
 private:
     std::unique_ptr<void, icp_socket_deleter> socket;
@@ -77,8 +77,7 @@ handler::handler(void *context, Rest::Router &router)
                          Rest::Routes::bind(&handler::delete_port, this));
 }
 
-Rest::Route::Result handler::list_ports(const Rest::Request &request,
-                                        Http::ResponseWriter response)
+void handler::list_ports(const Rest::Request &request, Http::ResponseWriter response)
 {
     json api_request = {
         {"type", request_type::LIST_PORTS }
@@ -97,12 +96,9 @@ Rest::Route::Result handler::list_ports(const Rest::Request &request,
         response.send(Http::Code::Internal_Server_Error,
                       api_reply["error"].get<std::string>());
     }
-
-    return (Rest::Route::Result::Ok);
 }
 
-Rest::Route::Result handler::create_port(const Rest::Request &request,
-                                         Http::ResponseWriter response)
+void handler::create_port(const Rest::Request &request, Http::ResponseWriter response)
 {
     json api_request = {
         { "type", request_type::CREATE_PORT },
@@ -125,16 +121,33 @@ Rest::Route::Result handler::create_port(const Rest::Request &request,
         response.send(Http::Code::Internal_Server_Error,
                       api_reply["error"].get<std::string>());
     }
-
-    return (Rest::Route::Result::Ok);
 }
 
-Rest::Route::Result handler::get_port(const Rest::Request &request,
-                                      Http::ResponseWriter response)
+/**
+ * Our id might not be an int.  In that case, the Pistache request will throw
+ * an exception.  This macro handles catching the exception and returning
+ * the appropriate response.  Unfortunately, we cannot make this a function
+ * because the response is an unmovable object.
+ */
+
+#define SAFE_GET_ID(id_, response_, code_)                              \
+    do {                                                                \
+        try {                                                           \
+            id_ = request.param(":id").as<int>();                       \
+        } catch (const std::runtime_error&) {                           \
+            response_.send(code_);                                      \
+            return;                                                     \
+        }                                                               \
+    } while (0)
+
+void handler::get_port(const Rest::Request &request, Http::ResponseWriter response)
 {
+    int id = -1;
+    SAFE_GET_ID(id, response, Http::Code::Not_Found);
+
     json api_request = {
         {"type", request_type::GET_PORT},
-        {"port_idx", request.param(":id").as<int>() }
+        {"id", id }
     };
 
     json api_reply = submit_request(socket.get(), api_request);
@@ -153,16 +166,16 @@ Rest::Route::Result handler::get_port(const Rest::Request &request,
         response.send(Http::Code::Internal_Server_Error,
                       api_reply["error"].get<std::string>());
     }
-
-    return (Rest::Route::Result::Ok);
 }
 
-Rest::Route::Result handler::update_port(const Rest::Request &request,
-                                         Http::ResponseWriter response)
+void handler::update_port(const Rest::Request &request, Http::ResponseWriter response)
 {
+    int id = -1;
+    SAFE_GET_ID(id, response, Http::Code::Not_Found);
+
     json api_request = {
         { "type", request_type::UPDATE_PORT },
-        { "port_idx", request.param(":id").as<int>() },
+        { "id", id },
         { "data", request.body() }
     };
 
@@ -187,16 +200,16 @@ Rest::Route::Result handler::update_port(const Rest::Request &request,
         response.send(Http::Code::Internal_Server_Error,
                       api_reply["error"].get<std::string>());
     }
-
-    return (Rest::Route::Result::Ok);
 }
 
-Rest::Route::Result handler::delete_port(const Rest::Request &request,
-                                         Http::ResponseWriter response)
+void handler::delete_port(const Rest::Request &request, Http::ResponseWriter response)
 {
+    int id = -1;
+    SAFE_GET_ID(id, response, Http::Code::No_Content);
+
     json api_request = {
         { "type", request_type::DELETE_PORT },
-        { "port_idx", request.param(":id").as<int>() }
+        { "id", request.param(":id").as<int>() }
     };
 
     /* We don't care about any reply, here */
@@ -215,8 +228,6 @@ Rest::Route::Result handler::delete_port(const Rest::Request &request,
         response.send(Http::Code::Internal_Server_Error,
                       api_reply["error"].get<std::string>());
     }
-
-    return (Rest::Route::Result::Ok);
 }
 
 }

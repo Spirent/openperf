@@ -103,7 +103,7 @@ static void _handle_create_port_request(generic_driver& driver, json& request, j
 
 static void _handle_get_port_request(generic_driver& driver, json& request, json& reply)
 {
-    int id = request["port_idx"].get<int>();
+    int id = request["id"].get<int>();
     auto port = driver.port(id);
     if (port) {
         reply["code"] = reply_code::OK;
@@ -115,7 +115,7 @@ static void _handle_get_port_request(generic_driver& driver, json& request, json
 
 static void _handle_update_port_request(generic_driver& driver, json& request, json& reply)
 {
-    int id = request["port_idx"].get<int>();
+    int id = request["id"].get<int>();
     auto port = driver.port(id);
     if (!port) {
         reply["code"] = reply_code::NO_PORT;
@@ -144,7 +144,7 @@ static void _handle_update_port_request(generic_driver& driver, json& request, j
 
 static void _handle_delete_port_request(generic_driver& driver, json& request, json& reply)
 {
-    auto result = driver.delete_port(request["port_idx"].get<int>());
+    auto result = driver.delete_port(request["id"].get<int>());
     if (result) {
         reply["code"] = reply_code::OK;
     } else {
@@ -176,7 +176,7 @@ static int _handle_rpc_request(const icp_event_data *data, void *arg)
         case request_type::DELETE_PORT:
             icp_log(ICP_LOG_TRACE, "Received %s request for port %d\n",
                     to_string(type).c_str(),
-                    request["port_idx"].get<int>());
+                    request["id"].get<int>());
             break;
         default:
             icp_log(ICP_LOG_TRACE, "Received %s request\n", to_string(type).c_str());

@@ -51,14 +51,14 @@ class handler : public icp::api::route::handler::registrar<handler> {
 public:
     handler(void *context, Rest::Router &router);
 
-    Rest::Route::Result  list_interfaces(const Rest::Request &request, Http::ResponseWriter response);
-    Rest::Route::Result create_interface(const Rest::Request &request, Http::ResponseWriter response);
-    Rest::Route::Result    get_interface(const Rest::Request &request, Http::ResponseWriter response);
-    Rest::Route::Result delete_interface(const Rest::Request &request, Http::ResponseWriter response);
+    void  list_interfaces(const Rest::Request &request, Http::ResponseWriter response);
+    void create_interface(const Rest::Request &request, Http::ResponseWriter response);
+    void    get_interface(const Rest::Request &request, Http::ResponseWriter response);
+    void delete_interface(const Rest::Request &request, Http::ResponseWriter response);
 
     /* Bulk interface options */
-    Rest::Route::Result bulk_create_interfaces(const Rest::Request &request, Http::ResponseWriter response);
-    Rest::Route::Result bulk_delete_interfaces(const Rest::Request &request, Http::ResponseWriter response);
+    void bulk_create_interfaces(const Rest::Request &request, Http::ResponseWriter response);
+    void bulk_delete_interfaces(const Rest::Request &request, Http::ResponseWriter response);
 
 private:
     std::unique_ptr<void, icp_socket_deleter> socket;
@@ -82,8 +82,8 @@ handler::handler(void *context, Rest::Router &router)
                        Rest::Routes::bind(&handler::bulk_delete_interfaces, this));
 }
 
-Rest::Route::Result handler::list_interfaces(const Rest::Request &request,
-                                             Http::ResponseWriter response)
+void handler::list_interfaces(const Rest::Request &request,
+                              Http::ResponseWriter response)
 {
     json api_request = {
         {"type", request_type::LIST_INTERFACES }
@@ -105,12 +105,10 @@ Rest::Route::Result handler::list_interfaces(const Rest::Request &request,
         response.send(Http::Code::Internal_Server_Error,
                       api_reply["error"].get<std::string>());
     }
-
-    return (Rest::Route::Result::Ok);
 }
 
-Rest::Route::Result handler::create_interface(const Rest::Request &request,
-                                              Http::ResponseWriter response)
+void handler::create_interface(const Rest::Request &request,
+                               Http::ResponseWriter response)
 {
     json api_request = {
         { "type", request_type::CREATE_INTERFACE },
@@ -133,16 +131,34 @@ Rest::Route::Result handler::create_interface(const Rest::Request &request,
         response.send(Http::Code::Internal_Server_Error,
                       api_reply["error"].get<std::string>());
     }
-
-    return (Rest::Route::Result::Ok);
 }
 
-Rest::Route::Result handler::get_interface(const Rest::Request &request,
-                                           Http::ResponseWriter response)
+/**
+ * Our id might not be an int.  In that case, the Pistache request will throw
+ * an exception.  This macro handles catching the exception and returning
+ * the appropriate response.  Unfortunately, we cannot make this a function
+ * because the response is an unmovable object.
+ */
+
+#define SAFE_GET_ID(id_, response_, code_)                              \
+    do {                                                                \
+        try {                                                           \
+            id_ = request.param(":id").as<int>();                       \
+        } catch (const std::runtime_error&) {                           \
+            response_.send(code_);                                      \
+            return;                                                     \
+        }                                                               \
+    } while (0)
+
+void handler::get_interface(const Rest::Request &request,
+                            Http::ResponseWriter response)
 {
+    int id = -1;
+    SAFE_GET_ID(id, response, Http::Code::Not_Found);
+
     json api_request = {
         { "type", request_type::GET_INTERFACE },
-        { "id", request.param(":id").as<int>() }
+        { "id", id }
     };
 
     json api_reply = submit_request(socket.get(), api_request);
@@ -161,27 +177,26 @@ Rest::Route::Result handler::get_interface(const Rest::Request &request,
         response.send(Http::Code::Internal_Server_Error,
                       api_reply["error"].get<std::string>());
     }
-
-    return (Rest::Route::Result::Ok);
 }
 
-Rest::Route::Result handler::delete_interface(const Rest::Request &request,
-                                              Http::ResponseWriter response)
+void handler::delete_interface(const Rest::Request &request,
+                               Http::ResponseWriter response)
 {
+    int id = -1;
+    SAFE_GET_ID(id, response, Http::Code::No_Content);
+
     json api_request = {
         { "type", request_type::DELETE_INTERFACE },
-        { "id", request.param(":id").as<int>() }
+        { "id", id }
     };
 
     /* We don't care about any reply, here */
     submit_request(socket.get(), api_request);
     response.send(Http::Code::No_Content);
-
-    return (Rest::Route::Result::Ok);
 }
 
-Rest::Route::Result handler::bulk_create_interfaces(const Rest::Request &request,
-                                                    Http::ResponseWriter response)
+void handler::bulk_create_interfaces(const Rest::Request &request,
+                                     Http::ResponseWriter response)
 {
     response.headers().add<Http::Header::ContentType>(MIME(Application, Json));
 
@@ -213,12 +228,10 @@ Rest::Route::Result handler::bulk_create_interfaces(const Rest::Request &request
     } catch (const json::parse_error &e) {
         response.send(Http::Code::Bad_Request, json_error(e.id, e.what()));
     }
-
-    return (Rest::Route::Result::Ok);
 }
 
-Rest::Route::Result handler::bulk_delete_interfaces(const Rest::Request &request,
-                                                    Http::ResponseWriter response)
+void handler::bulk_delete_interfaces(const Rest::Request &request,
+                                     Http::ResponseWriter response)
 {
     try {
         json body = json::parse(request.body());
@@ -235,8 +248,6 @@ Rest::Route::Result handler::bulk_delete_interfaces(const Rest::Request &request
         response.headers().add<Http::Header::ContentType>(MIME(Application, Json));
         response.send(Http::Code::Bad_Request, json_error(e.id, e.what()));
     }
-
-    return (Rest::Route::Result::Ok);
 }
 
 }
