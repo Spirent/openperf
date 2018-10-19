@@ -40,7 +40,7 @@ public:
 
     void delete_interface(int id)
     {
-        return m_self->delete_interface(id);
+        m_self->delete_interface(id);
     }
 
 private:
@@ -77,7 +77,7 @@ private:
 
         void delete_interface(int id)
         {
-            return m_stack.delete_interface(id);
+            m_stack.delete_interface(id);
         }
 
         Stack m_stack;
