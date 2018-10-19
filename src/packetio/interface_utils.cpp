@@ -9,79 +9,93 @@
 #include "swagger/v1/model/Interface.h"
 #include "packetio/generic_interface.h"
 
-#include <iostream>
 namespace icp {
 namespace packetio {
 namespace interface {
 
 using namespace swagger::v1::model;
 
-struct validate_ipv4_protocol
+/**
+ * This struct is magic.  Use templates and parameter packing to provide
+ * some syntactic sugar for creating visitor objects for std::visit.
+ */
+template<typename ...Ts>
+struct overloaded_visitor : Ts...
 {
-    std::vector<std::string>& m_errors;
-    validate_ipv4_protocol(std::vector<std::string>& errors)
-        : m_errors(errors)
+    overloaded_visitor(const Ts&... args)
+        : Ts(args)...
     {}
 
-    void operator()(const ipv4_dhcp_protocol_config& dhcp __attribute__((unused)))
-    {
-        /* DHCP config is always valid */
-    }
-
-    void operator()(const ipv4_static_protocol_config& ipv4)
-    {
-        if (ipv4.prefix_length > 32) {
-            m_errors.emplace_back("Prefix length (" + std::to_string(ipv4.prefix_length)
-                                  + ") is too big.");
-        }
-        if (ipv4.address.is_loopback()) {
-            m_errors.emplace_back("Cannot use loopback address (" + net::to_string(ipv4.address)
-                                  + ") for interface.");
-        } else if (ipv4.address.is_multicast()) {
-            m_errors.emplace_back("Cannot use multicast address (" + net::to_string(ipv4.address)
-                                  + ") for interface.");
-        }
-
-        /* check optional gateway */
-        if (ipv4.gateway) {
-            if (ipv4.gateway->is_loopback()) {
-                m_errors.emplace_back("Cannot use loopback address (" + net::to_string(*ipv4.gateway)
-                                      + ") for gateway.");
-            } else if (ipv4.gateway->is_multicast()) {
-                m_errors.emplace_back("Cannot use multicast address (" + net::to_string(*ipv4.gateway)
-                                      + ") for gateway.");
-            } else if (net::ipv4_network(*ipv4.gateway, ipv4.prefix_length) !=
-                       net::ipv4_network(ipv4.address, ipv4.prefix_length)) {
-                m_errors.emplace_back("Gateway address (" + net::to_string(*ipv4.gateway)
-                                      + ") is not in the same broadcast domain as interface ("
-                                      + net::to_string(net::ipv4_network(ipv4.address, ipv4.prefix_length))
-                                      + ").");
-            }
-        }
-    }
+    using Ts::operator()...;
 };
 
-struct validate_protocol
+static void validate(const eth_protocol_config& eth,
+                     std::vector<std::string>& errors)
 {
-    std::vector<std::string>& m_errors;
-    validate_protocol(std::vector<std::string>& errors)
-        : m_errors(errors)
-    {}
+    if (eth.address.is_broadcast()) {
+        errors.emplace_back("Broadcast MAC address (" + net::to_string(eth.address)
+                            + ") is not allowed.");
+    } else if (eth.address.is_multicast()) {
+        errors.emplace_back("Multicast MAC address (" + net::to_string(eth.address)
+                            + ") is not allowed.");
+    }
+}
 
-    void operator()(const eth_protocol_config& eth)
-    {
-        if (eth.address.is_broadcast()) {
-            m_errors.emplace_back("Broadcast MAC address (" + net::to_string(eth.address) + ") is not allowed.");
-        } else if (eth.address.is_multicast()) {
-            m_errors.emplace_back("Multicast MAC address (" + net::to_string(eth.address) + ") is not allowed.");
+static void validate(const ipv4_dhcp_protocol_config&,
+                     std::vector<std::string>&)
+{
+    /* DHCP config is always valid */
+}
+
+static void validate(const ipv4_static_protocol_config& ipv4,
+                     std::vector<std::string>& errors)
+{
+    if (ipv4.prefix_length > 32) {
+        errors.emplace_back("Prefix length (" + std::to_string(ipv4.prefix_length)
+                            + ") is too big.");
+    }
+    if (ipv4.address.is_loopback()) {
+        errors.emplace_back("Cannot use loopback address (" + net::to_string(ipv4.address)
+                            + ") for interface.");
+    } else if (ipv4.address.is_multicast()) {
+        errors.emplace_back("Cannot use multicast address (" + net::to_string(ipv4.address)
+                            + ") for interface.");
+    }
+
+    /* check optional gateway */
+    if (ipv4.gateway) {
+        if (ipv4.gateway->is_loopback()) {
+            errors.emplace_back("Cannot use loopback address ("
+                                + net::to_string(*ipv4.gateway)
+                                + ") for gateway.");
+        } else if (ipv4.gateway->is_multicast()) {
+            errors.emplace_back("Cannot use multicast address ("
+                                + net::to_string(*ipv4.gateway)
+                                + ") for gateway.");
+        } else if (net::ipv4_network(*ipv4.gateway, ipv4.prefix_length) !=
+                   net::ipv4_network(ipv4.address, ipv4.prefix_length)) {
+            errors.emplace_back("Gateway address (" + net::to_string(*ipv4.gateway)
+                                + ") is not in the same broadcast domain as interface ("
+                                + net::to_string(net::ipv4_network(ipv4.address,
+                                                                   ipv4.prefix_length))
+                                + ").");
         }
     }
+}
 
-    void operator()(const ipv4_protocol_config& ipv4)
-    {
-        std::visit(validate_ipv4_protocol(m_errors), ipv4);
-    }
-};
+static void validate(const ipv4_protocol_config& ipv4,
+                     std::vector<std::string>& errors)
+{
+    auto visitor = overloaded_visitor(
+        [&](const ipv4_dhcp_protocol_config& dhcp_ipv4) {
+            validate(dhcp_ipv4, errors);
+        },
+        [&](const ipv4_static_protocol_config& static_ipv4) {
+            validate(static_ipv4, errors);
+        });
+
+    std::visit(visitor, ipv4);
+}
 
 /**
  * This is a wrapper around a simple std::unordered_map to allow
@@ -116,31 +130,33 @@ private:
 
 bool is_valid(config_data& config, std::vector<std::string>& errors)
 {
+    /*
+     * We use the protocol counter to tally the protocol types we have in
+     * our configuration vector.
+     */
     type_info_counter protocol_counter;
-    for (auto& protocol : config.protocols) {
-        /*
-         * Use std::visit to count the type instances in the protocol_config
-         * variant.
-         */
-        std::visit([&protocol_counter](auto&& arg) {
-                       protocol_counter[typeid(arg)]++;
-                   }, protocol);
+    auto protocol_visitor = overloaded_visitor(
+        [&](const eth_protocol_config& eth) {
+            protocol_counter[typeid(eth)]++;
+            validate(eth, errors);
+        },
+        [&](const ipv4_protocol_config& ipv4) {
+            protocol_counter[typeid(ipv4)]++;
+            validate(ipv4, errors);
+        });
 
-        /*
-         * Use the same approach for validating the data within each protocol_config
-         * variant.
-         */
-        std::visit(validate_protocol(errors), protocol);
+    for (auto& protocol : config.protocols) {
+        std::visit(protocol_visitor, protocol);
     }
 
-    /* Currently we only allow 1 of each protocol */
+    /* Currently we require 1 Ethernet protocol config and at most 1 IPv4 protocol config */
     if (auto count = protocol_counter[typeid(eth_protocol_config)]; count != 1) {
         errors.emplace_back("At " + std::string(count == 0 ? "least" : "most") + " one Ethernet "
                             + "protocol configuration is required per interface.");
     }
     if (auto count = protocol_counter[typeid(ipv4_protocol_config)]; count > 1) {
-        errors.emplace_back("At most one IPv4 protocol configuration is allowed per interface, not "
-                            + std::to_string(count) + ".");
+        errors.emplace_back("At most one IPv4 protocol configuration is allowed per interface, "
+                            "not " + std::to_string(count) + ".");
     }
 
     /*
@@ -170,7 +186,8 @@ void from_json(const nlohmann::json& j, ipv4_static_protocol_config& config)
     }
     config.address = net::ipv4_address(j["address"].get<std::string>());
     /* XXX: Swagger spec doesn't allow smaller ints? */
-    config.prefix_length = j["prefix_length"].get<int32_t>() & std::numeric_limits<uint8_t>::max();
+    config.prefix_length = (j["prefix_length"].get<int32_t>()
+                            & std::numeric_limits<uint8_t>::max());
 }
 
 void from_json(const nlohmann::json& j, ipv4_protocol_config& config)
@@ -199,14 +216,17 @@ void from_json(const nlohmann::json& j, config_data& config)
 
     std::vector<std::string> errors;
     if (!is_valid(config, errors)) {
-        throw std::runtime_error(std::accumulate(begin(errors), end(errors), std::string(),
-                                                 [](const std::string &a, const std::string &b) -> std::string {
-                                                     return a + (a.length() > 0 ? " " : "") + b;
-                                                 }));
+        throw std::runtime_error(
+            std::accumulate(begin(errors), end(errors), std::string(),
+                            [](const std::string &a, const std::string &b) -> std::string {
+                                return a + (a.length() > 0 ? " " : "") + b;
+                            }));
     }
 }
 
-static std::shared_ptr<InterfaceProtocolConfig_eth> make_swagger_eth_protocol_config(const eth_protocol_config& eth)
+static
+std::shared_ptr<InterfaceProtocolConfig_eth>
+make_swagger_protocol_config(const eth_protocol_config& eth)
 {
     auto config = std::make_shared<InterfaceProtocolConfig_eth>();
 
@@ -215,56 +235,79 @@ static std::shared_ptr<InterfaceProtocolConfig_eth> make_swagger_eth_protocol_co
     return (config);
 }
 
-static std::shared_ptr<InterfaceProtocolConfig_ipv4> make_swagger_ipv4_protocol_config(const ipv4_protocol_config& ipv4)
+static
+std::shared_ptr<InterfaceProtocolConfig_ipv4_dhcp>
+make_swagger_protocol_config(const ipv4_dhcp_protocol_config& dhcp_ipv4)
+{
+    auto config = std::make_shared<InterfaceProtocolConfig_ipv4_dhcp>();
+    if (dhcp_ipv4.hostname) {
+        config->setHostname(*dhcp_ipv4.hostname);
+    }
+    if (dhcp_ipv4.client) {
+        config->setClient(*dhcp_ipv4.client);
+    }
+
+    return (config);
+}
+
+static
+std::shared_ptr<InterfaceProtocolConfig_ipv4_static>
+make_swagger_protocol_config(const ipv4_static_protocol_config& static_ipv4)
+{
+    auto config = std::make_shared<InterfaceProtocolConfig_ipv4_static>();
+
+    if (static_ipv4.gateway) {
+        config->setGateway(to_string(*static_ipv4.gateway));
+    }
+    config->setAddress(to_string(static_ipv4.address));
+    config->setPrefixLength(static_ipv4.prefix_length);
+
+    return (config);
+}
+
+static
+std::shared_ptr<InterfaceProtocolConfig_ipv4>
+make_swagger_protocol_config(const ipv4_protocol_config& ipv4)
 {
     auto config = std::make_shared<InterfaceProtocolConfig_ipv4>();
 
-    if (std::holds_alternative<ipv4_static_protocol_config>(ipv4)) {
-        auto static_config = std::make_shared<InterfaceProtocolConfig_ipv4_static>();
-        auto& static_ipv4 = std::get<ipv4_static_protocol_config>(ipv4);
+    auto visitor = overloaded_visitor(
+        [&](const ipv4_dhcp_protocol_config &dhcp_ipv4) {
+            config->setDhcp(make_swagger_protocol_config(dhcp_ipv4));
+            config->setMethod("static");
+        },
+        [&](const ipv4_static_protocol_config &static_ipv4) {
+            config->setStatic(make_swagger_protocol_config(static_ipv4));
+            config->setMethod("static");
+        });
 
-        if (static_ipv4.gateway) {
-            static_config->setGateway(to_string(*static_ipv4.gateway));
-        }
-        static_config->setAddress(to_string(static_ipv4.address));
-        static_config->setPrefixLength(static_ipv4.prefix_length);
-
-        config->setStatic(static_config);
-        config->setMethod("static");
-    } else if (std::holds_alternative<ipv4_dhcp_protocol_config>(ipv4)) {
-        auto dhcp_config = std::make_shared<InterfaceProtocolConfig_ipv4_dhcp>();
-        auto& dhcp_ipv4 = std::get<ipv4_dhcp_protocol_config>(ipv4);
-
-        if (dhcp_ipv4.hostname) {
-            dhcp_config->setHostname(*dhcp_ipv4.hostname);
-        }
-        if (dhcp_ipv4.client) {
-            dhcp_config->setClient(*dhcp_ipv4.client);
-        }
-
-        config->setDhcp(dhcp_config);
-        config->setMethod("dhcp");
-    }
+    std::visit(visitor, ipv4);
 
     return (config);
 }
 
-static std::shared_ptr<InterfaceProtocolConfig> make_swagger_protocol_config(const protocol_config& protocol)
+static
+std::shared_ptr<InterfaceProtocolConfig>
+make_swagger_protocol_config(const protocol_config& protocol)
 {
     auto config = std::make_shared<InterfaceProtocolConfig>();
 
-    if (std::holds_alternative<eth_protocol_config>(protocol)) {
-        config->setEth(make_swagger_eth_protocol_config(
-                           std::get<eth_protocol_config>(protocol)));
-    } else if (std::holds_alternative<ipv4_protocol_config>(protocol)) {
-        config->setIpv4(make_swagger_ipv4_protocol_config(
-                            std::get<ipv4_protocol_config>(protocol)));
-    }
+    auto visitor = overloaded_visitor(
+        [&](const eth_protocol_config& eth) {
+            config->setEth(make_swagger_protocol_config(eth));
+        },
+        [&](const ipv4_protocol_config& ipv4) {
+            config->setIpv4(make_swagger_protocol_config(ipv4));
+        });
+
+    std::visit(visitor, protocol);
 
     return (config);
 }
 
-static std::shared_ptr<Interface_config> make_swagger_interface_config(const config_data& in_config)
+static
+std::shared_ptr<Interface_config>
+make_swagger_interface_config(const config_data& in_config)
 {
     auto config = std::make_shared<Interface_config>();
     for (auto& protocol : in_config.protocols) {
@@ -273,7 +316,9 @@ static std::shared_ptr<Interface_config> make_swagger_interface_config(const con
     return (config);
 }
 
-static std::shared_ptr<InterfaceStats> make_swagger_interface_stats(const generic_interface& intf)
+static
+std::shared_ptr<InterfaceStats>
+make_swagger_interface_stats(const generic_interface& intf)
 {
     auto stats = std::make_shared<InterfaceStats>();
     auto in_stats = intf.stats();
