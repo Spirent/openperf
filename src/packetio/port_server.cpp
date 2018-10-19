@@ -144,8 +144,13 @@ static void _handle_update_port_request(generic_driver& driver, json& request, j
 
 static void _handle_delete_port_request(generic_driver& driver, json& request, json& reply)
 {
-    driver.delete_port(request["port_idx"].get<int>());
-    reply["code"] = reply_code::OK;
+    auto result = driver.delete_port(request["port_idx"].get<int>());
+    if (result) {
+        reply["code"] = reply_code::OK;
+    } else {
+        reply["code"] = reply_code::BAD_INPUT;
+        reply["error"] = json_error(EINVAL, result.error().c_str());
+    }
 }
 
 static int _handle_rpc_request(const icp_event_data *data, void *arg)

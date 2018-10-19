@@ -242,26 +242,36 @@ tl::expected<int, std::string> eal::create_port(const port::config_data& config)
     return (id_or_error);
 }
 
-void eal::delete_port(int id)
+tl::expected<void, std::string> eal::delete_port(int id)
 {
-    if (m_bond_ports.find(id) != m_bond_ports.end()) {
-        /*
-         * There is apparently no way to query the number of slaves a port has,
-         * so resort to brute force here.
-         */
-        uint16_t slaves[RTE_MAX_ETHPORTS] = {};
-        int length_or_err = rte_eth_bond_slaves_get(id, slaves, RTE_MAX_ETHPORTS);
-        if (length_or_err < 0) {
-            /* Not sure what else we can do here... */
-            icp_log(ICP_LOG_ERROR, "Could not retrieve slave port ids from bonded port %d\n", id);
-        } else if (length_or_err > 0) {
-            for (int i = 0; i < length_or_err; i++) {
-                rte_eth_bond_slave_remove(id, i);
-            }
-        }
-        rte_eth_bond_free(m_bond_ports[id].c_str());
-        m_bond_ports.erase(id);
+    if (!rte_eth_dev_is_valid_port(id)) {
+        /* Deleting a non-existent port is fine */
+        return {};
     }
+
+    /* Port exists */
+    if (m_bond_ports.find(id) == m_bond_ports.end()) {
+        /* but it's not one we can delete */
+        return tl::unexpected("Port " + std::to_string(id) + " cannot be deleted");
+    }
+
+    /*
+     * There is apparently no way to query the number of slaves a port has,
+     * so resort to brute force here.
+     */
+    uint16_t slaves[RTE_MAX_ETHPORTS] = {};
+    int length_or_err = rte_eth_bond_slaves_get(id, slaves, RTE_MAX_ETHPORTS);
+    if (length_or_err < 0) {
+        /* Not sure what else we can do here... */
+        icp_log(ICP_LOG_ERROR, "Could not retrieve slave port ids from bonded port %d\n", id);
+    } else if (length_or_err > 0) {
+        for (int i = 0; i < length_or_err; i++) {
+            rte_eth_bond_slave_remove(id, i);
+        }
+    }
+    rte_eth_bond_free(m_bond_ports[id].c_str());
+    m_bond_ports.erase(id);
+    return {};
 }
 
 }

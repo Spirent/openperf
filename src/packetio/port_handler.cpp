@@ -200,8 +200,21 @@ Rest::Route::Result handler::delete_port(const Rest::Request &request,
     };
 
     /* We don't care about any reply, here */
-    submit_request(socket.get(), api_request);
-    response.send(Http::Code::No_Content);
+    json api_reply = submit_request(socket.get(), api_request);
+    switch (api_reply["code"].get<reply_code>()) {
+    case reply_code::OK:
+        response.send(Http::Code::No_Content);
+        break;
+    case reply_code::BAD_INPUT:
+        response.headers().add<Http::Header::ContentType>(MIME(Application, Json));
+        response.send(Http::Code::Bad_Request,
+                      api_reply["error"].get<std::string>());
+        break;
+    default:
+        response.headers().add<Http::Header::ContentType>(MIME(Application, Json));
+        response.send(Http::Code::Internal_Server_Error,
+                      api_reply["error"].get<std::string>());
+    }
 
     return (Rest::Route::Result::Ok);
 }

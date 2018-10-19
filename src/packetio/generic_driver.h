@@ -35,7 +35,7 @@ public:
         return m_self->create_port(config);
     }
 
-    void delete_port(int id)
+    tl::expected<void, std::string> delete_port(int id)
     {
         return m_self->delete_port(id);
     }
@@ -46,7 +46,7 @@ private:
         virtual std::vector<int> port_ids() const = 0;
         virtual std::optional<port::generic_port> port(int id) const = 0;
         virtual tl::expected<int, std::string> create_port(const port::config_data& config) = 0;
-        virtual void delete_port(int id) = 0;
+        virtual tl::expected<void, std::string> delete_port(int id) = 0;
     };
 
     template <typename Driver>
@@ -70,9 +70,9 @@ private:
             return m_driver.create_port(config);
         }
 
-        void delete_port(int id) override
+        tl::expected<void, std::string> delete_port(int id) override
         {
-            m_driver.delete_port(id);
+            return m_driver.delete_port(id);
         }
 
         Driver m_driver;

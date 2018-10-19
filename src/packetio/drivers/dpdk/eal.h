@@ -49,7 +49,7 @@ public:
     static std::vector<int> port_ids();
     std::optional<port::generic_port> port(int id) const;
     tl::expected<int, std::string> create_port(const port::config_data& config);
-    void delete_port(int id);
+    tl::expected<void, std::string>  delete_port(int id);
 
 private:
     bool m_initialized;
