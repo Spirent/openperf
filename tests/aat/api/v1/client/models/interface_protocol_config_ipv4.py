@@ -79,15 +79,6 @@ class InterfaceProtocolConfigIpv4(object):
         :param method: The method of this InterfaceProtocolConfigIpv4.  # noqa: E501
         :type: str
         """
-        if method is None:
-            raise ValueError("Invalid value for `method`, must not be `None`")  # noqa: E501
-        allowed_values = ["static", "dhcp"]  # noqa: E501
-        if method not in allowed_values:
-            raise ValueError(
-                "Invalid value for `method` ({0}), must be one of {1}"  # noqa: E501
-                .format(method, allowed_values)
-            )
-
         self._method = method
 
     @property
@@ -108,7 +99,6 @@ class InterfaceProtocolConfigIpv4(object):
         :param static: The static of this InterfaceProtocolConfigIpv4.  # noqa: E501
         :type: InterfaceProtocolConfigIpv4Static
         """
-
         self._static = static
 
     @property
@@ -129,7 +119,6 @@ class InterfaceProtocolConfigIpv4(object):
         :param dhcp: The dhcp of this InterfaceProtocolConfigIpv4.  # noqa: E501
         :type: InterfaceProtocolConfigIpv4Dhcp
         """
-
         self._dhcp = dhcp
 
     def to_dict(self):

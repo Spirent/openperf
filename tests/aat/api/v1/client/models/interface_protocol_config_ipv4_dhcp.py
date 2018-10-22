@@ -72,7 +72,6 @@ class InterfaceProtocolConfigIpv4Dhcp(object):
         :param hostname: The hostname of this InterfaceProtocolConfigIpv4Dhcp.  # noqa: E501
         :type: str
         """
-
         self._hostname = hostname
 
     @property
@@ -95,7 +94,6 @@ class InterfaceProtocolConfigIpv4Dhcp(object):
         :param client: The client of this InterfaceProtocolConfigIpv4Dhcp.  # noqa: E501
         :type: str
         """
-
         self._client = client
 
     def to_dict(self):

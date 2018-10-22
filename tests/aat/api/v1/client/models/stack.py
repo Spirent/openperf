@@ -72,9 +72,6 @@ class Stack(object):
         :param id: The id of this Stack.  # noqa: E501
         :type: str
         """
-        if id is None:
-            raise ValueError("Invalid value for `id`, must not be `None`")  # noqa: E501
-
         self._id = id
 
     @property
@@ -95,9 +92,6 @@ class Stack(object):
         :param stats: The stats of this Stack.  # noqa: E501
         :type: StackStats
         """
-        if stats is None:
-            raise ValueError("Invalid value for `stats`, must not be `None`")  # noqa: E501
-
         self._stats = stats
 
     def to_dict(self):

@@ -110,9 +110,6 @@ class StackProtocolStats(object):
         :param tx_packets: The tx_packets of this StackProtocolStats.  # noqa: E501
         :type: int
         """
-        if tx_packets is None:
-            raise ValueError("Invalid value for `tx_packets`, must not be `None`")  # noqa: E501
-
         self._tx_packets = tx_packets
 
     @property
@@ -135,9 +132,6 @@ class StackProtocolStats(object):
         :param rx_packets: The rx_packets of this StackProtocolStats.  # noqa: E501
         :type: int
         """
-        if rx_packets is None:
-            raise ValueError("Invalid value for `rx_packets`, must not be `None`")  # noqa: E501
-
         self._rx_packets = rx_packets
 
     @property
@@ -160,9 +154,6 @@ class StackProtocolStats(object):
         :param forwarded_packets: The forwarded_packets of this StackProtocolStats.  # noqa: E501
         :type: int
         """
-        if forwarded_packets is None:
-            raise ValueError("Invalid value for `forwarded_packets`, must not be `None`")  # noqa: E501
-
         self._forwarded_packets = forwarded_packets
 
     @property
@@ -185,9 +176,6 @@ class StackProtocolStats(object):
         :param dropped_packets: The dropped_packets of this StackProtocolStats.  # noqa: E501
         :type: int
         """
-        if dropped_packets is None:
-            raise ValueError("Invalid value for `dropped_packets`, must not be `None`")  # noqa: E501
-
         self._dropped_packets = dropped_packets
 
     @property
@@ -210,9 +198,6 @@ class StackProtocolStats(object):
         :param checksum_errors: The checksum_errors of this StackProtocolStats.  # noqa: E501
         :type: int
         """
-        if checksum_errors is None:
-            raise ValueError("Invalid value for `checksum_errors`, must not be `None`")  # noqa: E501
-
         self._checksum_errors = checksum_errors
 
     @property
@@ -235,9 +220,6 @@ class StackProtocolStats(object):
         :param length_errors: The length_errors of this StackProtocolStats.  # noqa: E501
         :type: int
         """
-        if length_errors is None:
-            raise ValueError("Invalid value for `length_errors`, must not be `None`")  # noqa: E501
-
         self._length_errors = length_errors
 
     @property
@@ -260,9 +242,6 @@ class StackProtocolStats(object):
         :param memory_errors: The memory_errors of this StackProtocolStats.  # noqa: E501
         :type: int
         """
-        if memory_errors is None:
-            raise ValueError("Invalid value for `memory_errors`, must not be `None`")  # noqa: E501
-
         self._memory_errors = memory_errors
 
     @property
@@ -285,9 +264,6 @@ class StackProtocolStats(object):
         :param routing_errors: The routing_errors of this StackProtocolStats.  # noqa: E501
         :type: int
         """
-        if routing_errors is None:
-            raise ValueError("Invalid value for `routing_errors`, must not be `None`")  # noqa: E501
-
         self._routing_errors = routing_errors
 
     @property
@@ -310,9 +286,6 @@ class StackProtocolStats(object):
         :param protocol_errors: The protocol_errors of this StackProtocolStats.  # noqa: E501
         :type: int
         """
-        if protocol_errors is None:
-            raise ValueError("Invalid value for `protocol_errors`, must not be `None`")  # noqa: E501
-
         self._protocol_errors = protocol_errors
 
     @property
@@ -335,9 +308,6 @@ class StackProtocolStats(object):
         :param option_errors: The option_errors of this StackProtocolStats.  # noqa: E501
         :type: int
         """
-        if option_errors is None:
-            raise ValueError("Invalid value for `option_errors`, must not be `None`")  # noqa: E501
-
         self._option_errors = option_errors
 
     @property
@@ -360,9 +330,6 @@ class StackProtocolStats(object):
         :param misc_errors: The misc_errors of this StackProtocolStats.  # noqa: E501
         :type: int
         """
-        if misc_errors is None:
-            raise ValueError("Invalid value for `misc_errors`, must not be `None`")  # noqa: E501
-
         self._misc_errors = misc_errors
 
     @property
@@ -385,9 +352,6 @@ class StackProtocolStats(object):
         :param cache_hits: The cache_hits of this StackProtocolStats.  # noqa: E501
         :type: int
         """
-        if cache_hits is None:
-            raise ValueError("Invalid value for `cache_hits`, must not be `None`")  # noqa: E501
-
         self._cache_hits = cache_hits
 
     def to_dict(self):

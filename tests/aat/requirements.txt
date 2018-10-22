@@ -1,2 +1,6 @@
 ./api/v1
+durationpy
+expects
 mamba
+pyyaml
+validators

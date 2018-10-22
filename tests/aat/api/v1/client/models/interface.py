@@ -81,9 +81,6 @@ class Interface(object):
         :param id: The id of this Interface.  # noqa: E501
         :type: str
         """
-        if id is None:
-            raise ValueError("Invalid value for `id`, must not be `None`")  # noqa: E501
-
         self._id = id
 
     @property
@@ -106,9 +103,6 @@ class Interface(object):
         :param port_id: The port_id of this Interface.  # noqa: E501
         :type: str
         """
-        if port_id is None:
-            raise ValueError("Invalid value for `port_id`, must not be `None`")  # noqa: E501
-
         self._port_id = port_id
 
     @property
@@ -129,9 +123,6 @@ class Interface(object):
         :param config: The config of this Interface.  # noqa: E501
         :type: InterfaceConfig
         """
-        if config is None:
-            raise ValueError("Invalid value for `config`, must not be `None`")  # noqa: E501
-
         self._config = config
 
     @property
@@ -152,9 +143,6 @@ class Interface(object):
         :param stats: The stats of this Interface.  # noqa: E501
         :type: InterfaceStats
         """
-        if stats is None:
-            raise ValueError("Invalid value for `stats`, must not be `None`")  # noqa: E501
-
         self._stats = stats
 
     def to_dict(self):

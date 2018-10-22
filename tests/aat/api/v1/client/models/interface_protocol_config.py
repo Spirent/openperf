@@ -73,7 +73,6 @@ class InterfaceProtocolConfig(object):
         :param eth: The eth of this InterfaceProtocolConfig.  # noqa: E501
         :type: InterfaceProtocolConfigEth
         """
-
         self._eth = eth
 
     @property
@@ -94,7 +93,6 @@ class InterfaceProtocolConfig(object):
         :param ipv4: The ipv4 of this InterfaceProtocolConfig.  # noqa: E501
         :type: InterfaceProtocolConfigIpv4
         """
-
         self._ipv4 = ipv4
 
     def to_dict(self):

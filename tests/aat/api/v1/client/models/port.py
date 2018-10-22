@@ -86,9 +86,6 @@ class Port(object):
         :param id: The id of this Port.  # noqa: E501
         :type: str
         """
-        if id is None:
-            raise ValueError("Invalid value for `id`, must not be `None`")  # noqa: E501
-
         self._id = id
 
     @property
@@ -111,15 +108,6 @@ class Port(object):
         :param kind: The kind of this Port.  # noqa: E501
         :type: str
         """
-        if kind is None:
-            raise ValueError("Invalid value for `kind`, must not be `None`")  # noqa: E501
-        allowed_values = ["dpdk", "host", "bond"]  # noqa: E501
-        if kind not in allowed_values:
-            raise ValueError(
-                "Invalid value for `kind` ({0}), must be one of {1}"  # noqa: E501
-                .format(kind, allowed_values)
-            )
-
         self._kind = kind
 
     @property
@@ -140,9 +128,6 @@ class Port(object):
         :param config: The config of this Port.  # noqa: E501
         :type: PortConfig
         """
-        if config is None:
-            raise ValueError("Invalid value for `config`, must not be `None`")  # noqa: E501
-
         self._config = config
 
     @property
@@ -163,9 +148,6 @@ class Port(object):
         :param status: The status of this Port.  # noqa: E501
         :type: PortStatus
         """
-        if status is None:
-            raise ValueError("Invalid value for `status`, must not be `None`")  # noqa: E501
-
         self._status = status
 
     @property
@@ -186,9 +168,6 @@ class Port(object):
         :param stats: The stats of this Port.  # noqa: E501
         :type: PortStats
         """
-        if stats is None:
-            raise ValueError("Invalid value for `stats`, must not be `None`")  # noqa: E501
-
         self._stats = stats
 
     def to_dict(self):

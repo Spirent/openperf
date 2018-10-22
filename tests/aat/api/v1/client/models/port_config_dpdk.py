@@ -76,9 +76,6 @@ class PortConfigDpdk(object):
         :param auto_negotiation: The auto_negotiation of this PortConfigDpdk.  # noqa: E501
         :type: bool
         """
-        if auto_negotiation is None:
-            raise ValueError("Invalid value for `auto_negotiation`, must not be `None`")  # noqa: E501
-
         self._auto_negotiation = auto_negotiation
 
     @property
@@ -101,7 +98,6 @@ class PortConfigDpdk(object):
         :param speed: The speed of this PortConfigDpdk.  # noqa: E501
         :type: int
         """
-
         self._speed = speed
 
     @property
@@ -124,13 +120,6 @@ class PortConfigDpdk(object):
         :param duplex: The duplex of this PortConfigDpdk.  # noqa: E501
         :type: str
         """
-        allowed_values = ["full", "half"]  # noqa: E501
-        if duplex not in allowed_values:
-            raise ValueError(
-                "Invalid value for `duplex` ({0}), must be one of {1}"  # noqa: E501
-                .format(duplex, allowed_values)
-            )
-
         self._duplex = duplex
 
     def to_dict(self):

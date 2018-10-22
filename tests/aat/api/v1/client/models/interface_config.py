@@ -68,9 +68,6 @@ class InterfaceConfig(object):
         :param protocols: The protocols of this InterfaceConfig.  # noqa: E501
         :type: list[InterfaceProtocolConfig]
         """
-        if protocols is None:
-            raise ValueError("Invalid value for `protocols`, must not be `None`")  # noqa: E501
-
         self._protocols = protocols
 
     def to_dict(self):

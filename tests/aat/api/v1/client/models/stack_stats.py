@@ -132,9 +132,6 @@ class StackStats(object):
         :param arp: The arp of this StackStats.  # noqa: E501
         :type: StackProtocolStats
         """
-        if arp is None:
-            raise ValueError("Invalid value for `arp`, must not be `None`")  # noqa: E501
-
         self._arp = arp
 
     @property
@@ -155,9 +152,6 @@ class StackStats(object):
         :param ipv4: The ipv4 of this StackStats.  # noqa: E501
         :type: StackProtocolStats
         """
-        if ipv4 is None:
-            raise ValueError("Invalid value for `ipv4`, must not be `None`")  # noqa: E501
-
         self._ipv4 = ipv4
 
     @property
@@ -178,9 +172,6 @@ class StackStats(object):
         :param ipv4_frag: The ipv4_frag of this StackStats.  # noqa: E501
         :type: StackProtocolStats
         """
-        if ipv4_frag is None:
-            raise ValueError("Invalid value for `ipv4_frag`, must not be `None`")  # noqa: E501
-
         self._ipv4_frag = ipv4_frag
 
     @property
@@ -201,9 +192,6 @@ class StackStats(object):
         :param icmpv4: The icmpv4 of this StackStats.  # noqa: E501
         :type: StackProtocolStats
         """
-        if icmpv4 is None:
-            raise ValueError("Invalid value for `icmpv4`, must not be `None`")  # noqa: E501
-
         self._icmpv4 = icmpv4
 
     @property
@@ -224,9 +212,6 @@ class StackStats(object):
         :param igmp: The igmp of this StackStats.  # noqa: E501
         :type: StackProtocolStats
         """
-        if igmp is None:
-            raise ValueError("Invalid value for `igmp`, must not be `None`")  # noqa: E501
-
         self._igmp = igmp
 
     @property
@@ -247,9 +232,6 @@ class StackStats(object):
         :param nd: The nd of this StackStats.  # noqa: E501
         :type: StackProtocolStats
         """
-        if nd is None:
-            raise ValueError("Invalid value for `nd`, must not be `None`")  # noqa: E501
-
         self._nd = nd
 
     @property
@@ -270,9 +252,6 @@ class StackStats(object):
         :param ipv6: The ipv6 of this StackStats.  # noqa: E501
         :type: StackProtocolStats
         """
-        if ipv6 is None:
-            raise ValueError("Invalid value for `ipv6`, must not be `None`")  # noqa: E501
-
         self._ipv6 = ipv6
 
     @property
@@ -293,9 +272,6 @@ class StackStats(object):
         :param ipv6_frag: The ipv6_frag of this StackStats.  # noqa: E501
         :type: StackProtocolStats
         """
-        if ipv6_frag is None:
-            raise ValueError("Invalid value for `ipv6_frag`, must not be `None`")  # noqa: E501
-
         self._ipv6_frag = ipv6_frag
 
     @property
@@ -316,9 +292,6 @@ class StackStats(object):
         :param icmpv6: The icmpv6 of this StackStats.  # noqa: E501
         :type: StackProtocolStats
         """
-        if icmpv6 is None:
-            raise ValueError("Invalid value for `icmpv6`, must not be `None`")  # noqa: E501
-
         self._icmpv6 = icmpv6
 
     @property
@@ -339,9 +312,6 @@ class StackStats(object):
         :param mld: The mld of this StackStats.  # noqa: E501
         :type: StackProtocolStats
         """
-        if mld is None:
-            raise ValueError("Invalid value for `mld`, must not be `None`")  # noqa: E501
-
         self._mld = mld
 
     @property
@@ -362,9 +332,6 @@ class StackStats(object):
         :param udp: The udp of this StackStats.  # noqa: E501
         :type: StackProtocolStats
         """
-        if udp is None:
-            raise ValueError("Invalid value for `udp`, must not be `None`")  # noqa: E501
-
         self._udp = udp
 
     @property
@@ -385,9 +352,6 @@ class StackStats(object):
         :param tcp: The tcp of this StackStats.  # noqa: E501
         :type: StackProtocolStats
         """
-        if tcp is None:
-            raise ValueError("Invalid value for `tcp`, must not be `None`")  # noqa: E501
-
         self._tcp = tcp
 
     @property
@@ -408,9 +372,6 @@ class StackStats(object):
         :param heap: The heap of this StackStats.  # noqa: E501
         :type: StackMemoryStats
         """
-        if heap is None:
-            raise ValueError("Invalid value for `heap`, must not be `None`")  # noqa: E501
-
         self._heap = heap
 
     @property
@@ -431,9 +392,6 @@ class StackStats(object):
         :param pools: The pools of this StackStats.  # noqa: E501
         :type: list[StackMemoryStats]
         """
-        if pools is None:
-            raise ValueError("Invalid value for `pools`, must not be `None`")  # noqa: E501
-
         self._pools = pools
 
     @property
@@ -454,9 +412,6 @@ class StackStats(object):
         :param sems: The sems of this StackStats.  # noqa: E501
         :type: StackElementStats
         """
-        if sems is None:
-            raise ValueError("Invalid value for `sems`, must not be `None`")  # noqa: E501
-
         self._sems = sems
 
     @property
@@ -477,9 +432,6 @@ class StackStats(object):
         :param mutexes: The mutexes of this StackStats.  # noqa: E501
         :type: StackElementStats
         """
-        if mutexes is None:
-            raise ValueError("Invalid value for `mutexes`, must not be `None`")  # noqa: E501
-
         self._mutexes = mutexes
 
     @property
@@ -500,9 +452,6 @@ class StackStats(object):
         :param mboxes: The mboxes of this StackStats.  # noqa: E501
         :type: StackElementStats
         """
-        if mboxes is None:
-            raise ValueError("Invalid value for `mboxes`, must not be `None`")  # noqa: E501
-
         self._mboxes = mboxes
 
     def to_dict(self):

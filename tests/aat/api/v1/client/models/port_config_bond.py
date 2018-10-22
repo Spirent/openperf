@@ -70,15 +70,6 @@ class PortConfigBond(object):
         :param mode: The mode of this PortConfigBond.  # noqa: E501
         :type: str
         """
-        if mode is None:
-            raise ValueError("Invalid value for `mode`, must not be `None`")  # noqa: E501
-        allowed_values = ["lag_802_3_ad"]  # noqa: E501
-        if mode not in allowed_values:
-            raise ValueError(
-                "Invalid value for `mode` ({0}), must be one of {1}"  # noqa: E501
-                .format(mode, allowed_values)
-            )
-
         self._mode = mode
 
     @property
@@ -101,9 +92,6 @@ class PortConfigBond(object):
         :param ports: The ports of this PortConfigBond.  # noqa: E501
         :type: list[str]
         """
-        if ports is None:
-            raise ValueError("Invalid value for `ports`, must not be `None`")  # noqa: E501
-
         self._ports = ports
 
     def to_dict(self):

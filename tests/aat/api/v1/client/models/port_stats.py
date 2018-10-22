@@ -86,9 +86,6 @@ class PortStats(object):
         :param rx_packets: The rx_packets of this PortStats.  # noqa: E501
         :type: int
         """
-        if rx_packets is None:
-            raise ValueError("Invalid value for `rx_packets`, must not be `None`")  # noqa: E501
-
         self._rx_packets = rx_packets
 
     @property
@@ -111,9 +108,6 @@ class PortStats(object):
         :param tx_packets: The tx_packets of this PortStats.  # noqa: E501
         :type: int
         """
-        if tx_packets is None:
-            raise ValueError("Invalid value for `tx_packets`, must not be `None`")  # noqa: E501
-
         self._tx_packets = tx_packets
 
     @property
@@ -136,9 +130,6 @@ class PortStats(object):
         :param rx_bytes: The rx_bytes of this PortStats.  # noqa: E501
         :type: int
         """
-        if rx_bytes is None:
-            raise ValueError("Invalid value for `rx_bytes`, must not be `None`")  # noqa: E501
-
         self._rx_bytes = rx_bytes
 
     @property
@@ -161,9 +152,6 @@ class PortStats(object):
         :param tx_bytes: The tx_bytes of this PortStats.  # noqa: E501
         :type: int
         """
-        if tx_bytes is None:
-            raise ValueError("Invalid value for `tx_bytes`, must not be `None`")  # noqa: E501
-
         self._tx_bytes = tx_bytes
 
     @property
@@ -186,9 +174,6 @@ class PortStats(object):
         :param rx_errors: The rx_errors of this PortStats.  # noqa: E501
         :type: int
         """
-        if rx_errors is None:
-            raise ValueError("Invalid value for `rx_errors`, must not be `None`")  # noqa: E501
-
         self._rx_errors = rx_errors
 
     @property
@@ -211,9 +196,6 @@ class PortStats(object):
         :param tx_errors: The tx_errors of this PortStats.  # noqa: E501
         :type: int
         """
-        if tx_errors is None:
-            raise ValueError("Invalid value for `tx_errors`, must not be `None`")  # noqa: E501
-
         self._tx_errors = tx_errors
 
     def to_dict(self):

@@ -2,10 +2,12 @@ TOP_DIR			= ..
 API_SUBDIR		= api/v1
 ENV_SUBDIR		= env
 ENV_REQUIREMENTS	= requirements.txt
+SPEC_SUBDIRS		= spec
 
 .PHONY: all setup clean
 
-all:
+all: setup
+	$(ENV_SUBDIR)/bin/mamba $(SPEC_SUBDIRS)
 
 setup: $(ENV_SUBDIR)/
 

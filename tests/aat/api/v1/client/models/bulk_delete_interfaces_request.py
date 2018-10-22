@@ -66,9 +66,6 @@ class BulkDeleteInterfacesRequest(object):
         :param ids: The ids of this BulkDeleteInterfacesRequest.  # noqa: E501
         :type: list[str]
         """
-        if ids is None:
-            raise ValueError("Invalid value for `ids`, must not be `None`")  # noqa: E501
-
         self._ids = ids
 
     def to_dict(self):

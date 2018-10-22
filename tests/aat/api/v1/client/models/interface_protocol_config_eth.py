@@ -66,9 +66,6 @@ class InterfaceProtocolConfigEth(object):
         :param mac_address: The mac_address of this InterfaceProtocolConfigEth.  # noqa: E501
         :type: str
         """
-        if mac_address is None:
-            raise ValueError("Invalid value for `mac_address`, must not be `None`")  # noqa: E501
-
         self._mac_address = mac_address
 
     def to_dict(self):

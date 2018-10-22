@@ -74,9 +74,6 @@ class StackElementStats(object):
         :param used: The used of this StackElementStats.  # noqa: E501
         :type: int
         """
-        if used is None:
-            raise ValueError("Invalid value for `used`, must not be `None`")  # noqa: E501
-
         self._used = used
 
     @property
@@ -99,9 +96,6 @@ class StackElementStats(object):
         :param max: The max of this StackElementStats.  # noqa: E501
         :type: int
         """
-        if max is None:
-            raise ValueError("Invalid value for `max`, must not be `None`")  # noqa: E501
-
         self._max = max
 
     @property
@@ -124,9 +118,6 @@ class StackElementStats(object):
         :param errors: The errors of this StackElementStats.  # noqa: E501
         :type: int
         """
-        if errors is None:
-            raise ValueError("Invalid value for `errors`, must not be `None`")  # noqa: E501
-
         self._errors = errors
 
     def to_dict(self):

@@ -75,9 +75,6 @@ class InterfaceProtocolConfigIpv4Static(object):
         :param address: The address of this InterfaceProtocolConfigIpv4Static.  # noqa: E501
         :type: str
         """
-        if address is None:
-            raise ValueError("Invalid value for `address`, must not be `None`")  # noqa: E501
-
         self._address = address
 
     @property
@@ -100,9 +97,6 @@ class InterfaceProtocolConfigIpv4Static(object):
         :param prefix_length: The prefix_length of this InterfaceProtocolConfigIpv4Static.  # noqa: E501
         :type: int
         """
-        if prefix_length is None:
-            raise ValueError("Invalid value for `prefix_length`, must not be `None`")  # noqa: E501
-
         self._prefix_length = prefix_length
 
     @property
@@ -125,7 +119,6 @@ class InterfaceProtocolConfigIpv4Static(object):
         :param gateway: The gateway of this InterfaceProtocolConfigIpv4Static.  # noqa: E501
         :type: str
         """
-
         self._gateway = gateway
 
     def to_dict(self):

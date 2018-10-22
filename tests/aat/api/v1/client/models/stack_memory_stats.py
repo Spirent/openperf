@@ -86,9 +86,6 @@ class StackMemoryStats(object):
         :param name: The name of this StackMemoryStats.  # noqa: E501
         :type: str
         """
-        if name is None:
-            raise ValueError("Invalid value for `name`, must not be `None`")  # noqa: E501
-
         self._name = name
 
     @property
@@ -111,9 +108,6 @@ class StackMemoryStats(object):
         :param available: The available of this StackMemoryStats.  # noqa: E501
         :type: int
         """
-        if available is None:
-            raise ValueError("Invalid value for `available`, must not be `None`")  # noqa: E501
-
         self._available = available
 
     @property
@@ -136,9 +130,6 @@ class StackMemoryStats(object):
         :param used: The used of this StackMemoryStats.  # noqa: E501
         :type: int
         """
-        if used is None:
-            raise ValueError("Invalid value for `used`, must not be `None`")  # noqa: E501
-
         self._used = used
 
     @property
@@ -161,9 +152,6 @@ class StackMemoryStats(object):
         :param max: The max of this StackMemoryStats.  # noqa: E501
         :type: int
         """
-        if max is None:
-            raise ValueError("Invalid value for `max`, must not be `None`")  # noqa: E501
-
         self._max = max
 
     @property
@@ -186,9 +174,6 @@ class StackMemoryStats(object):
         :param errors: The errors of this StackMemoryStats.  # noqa: E501
         :type: int
         """
-        if errors is None:
-            raise ValueError("Invalid value for `errors`, must not be `None`")  # noqa: E501
-
         self._errors = errors
 
     @property
@@ -211,9 +196,6 @@ class StackMemoryStats(object):
         :param illegal: The illegal of this StackMemoryStats.  # noqa: E501
         :type: int
         """
-        if illegal is None:
-            raise ValueError("Invalid value for `illegal`, must not be `None`")  # noqa: E501
-
         self._illegal = illegal
 
     def to_dict(self):

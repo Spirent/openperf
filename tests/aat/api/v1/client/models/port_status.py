@@ -74,15 +74,6 @@ class PortStatus(object):
         :param link: The link of this PortStatus.  # noqa: E501
         :type: str
         """
-        if link is None:
-            raise ValueError("Invalid value for `link`, must not be `None`")  # noqa: E501
-        allowed_values = ["up", "down", "unknown"]  # noqa: E501
-        if link not in allowed_values:
-            raise ValueError(
-                "Invalid value for `link` ({0}), must be one of {1}"  # noqa: E501
-                .format(link, allowed_values)
-            )
-
         self._link = link
 
     @property
@@ -105,9 +96,6 @@ class PortStatus(object):
         :param speed: The speed of this PortStatus.  # noqa: E501
         :type: int
         """
-        if speed is None:
-            raise ValueError("Invalid value for `speed`, must not be `None`")  # noqa: E501
-
         self._speed = speed
 
     @property
@@ -130,15 +118,6 @@ class PortStatus(object):
         :param duplex: The duplex of this PortStatus.  # noqa: E501
         :type: str
         """
-        if duplex is None:
-            raise ValueError("Invalid value for `duplex`, must not be `None`")  # noqa: E501
-        allowed_values = ["full", "half", "unknown"]  # noqa: E501
-        if duplex not in allowed_values:
-            raise ValueError(
-                "Invalid value for `duplex` ({0}), must be one of {1}"  # noqa: E501
-                .format(duplex, allowed_values)
-            )
-
         self._duplex = duplex
 
     def to_dict(self):

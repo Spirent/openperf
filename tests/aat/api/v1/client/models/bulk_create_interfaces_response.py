@@ -68,9 +68,6 @@ class BulkCreateInterfacesResponse(object):
         :param items: The items of this BulkCreateInterfacesResponse.  # noqa: E501
         :type: list[Interface]
         """
-        if items is None:
-            raise ValueError("Invalid value for `items`, must not be `None`")  # noqa: E501
-
         self._items = items
 
     def to_dict(self):

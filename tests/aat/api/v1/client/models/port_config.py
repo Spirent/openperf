@@ -73,7 +73,6 @@ class PortConfig(object):
         :param dpdk: The dpdk of this PortConfig.  # noqa: E501
         :type: PortConfigDpdk
         """
-
         self._dpdk = dpdk
 
     @property
@@ -94,7 +93,6 @@ class PortConfig(object):
         :param bond: The bond of this PortConfig.  # noqa: E501
         :type: PortConfigBond
         """
-
         self._bond = bond
 
     def to_dict(self):

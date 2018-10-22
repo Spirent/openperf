@@ -1,8 +1,10 @@
-TOP_DIR		= ../..
-SRC_OUTPUT_DIR	= $(TOP_DIR)/src/swagger
-AAT_OUTPUT_DIR	= $(TOP_DIR)/tests/aat/api
-SWAGGER_CODEGEN	= $(TOP_DIR)/deps/swagger-codegen/swagger-codegen
-SWAGGER_SPECS	= $(wildcard v*/*.yaml)
+TOP_DIR			= ../..
+SRC_OUTPUT_DIR		= $(TOP_DIR)/src/swagger
+AAT_DIR			= $(TOP_DIR)/tests/aat
+AAT_TEMPLATE_DIR	= $(AAT_DIR)/template
+AAT_OUTPUT_DIR		= $(AAT_DIR)/api
+SWAGGER_CODEGEN		= $(TOP_DIR)/deps/swagger-codegen/swagger-codegen
+SWAGGER_SPECS		= $(wildcard v*/*.yaml)
 
 .PHONY: all generate
 
@@ -30,4 +32,4 @@ generate/%: %.yaml
 	echo "git_push.sh" >> $(aat_ignore_file)
 	echo "test-requirements.txt" >> $(aat_ignore_file)
 	echo "tox.ini" >> $(aat_ignore_file)
-	$(SWAGGER_CODEGEN) generate -DapiTests=false -DapiDocs=false -DmodelTests=false -DmodelDocs=false -i $< -l python --additional-properties packageName=client -o $(aat_output_dir)
+	$(SWAGGER_CODEGEN) generate -DapiTests=false -DmodelTests=false -i $< -l python -t $(AAT_TEMPLATE_DIR) --additional-properties packageName=client -o $(aat_output_dir)
