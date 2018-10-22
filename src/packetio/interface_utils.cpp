@@ -128,7 +128,7 @@ private:
     std::unordered_map<type_info_ref, int, hasher, equals> m_counts;
 };
 
-bool is_valid(config_data& config, std::vector<std::string>& errors)
+static bool is_valid(config_data& config, std::vector<std::string>& errors)
 {
     /*
      * We use the protocol counter to tally the protocol types we have in
@@ -143,6 +143,9 @@ bool is_valid(config_data& config, std::vector<std::string>& errors)
         [&](const ipv4_protocol_config& ipv4) {
             protocol_counter[typeid(ipv4)]++;
             validate(ipv4, errors);
+        },
+        [&](auto&&) {
+            errors.emplace_back("No valid interface protocol configuration found.");
         });
 
     for (auto& protocol : config.protocols) {
@@ -167,61 +170,97 @@ bool is_valid(config_data& config, std::vector<std::string>& errors)
     return (errors.size() == 0);
 }
 
-void from_json(const nlohmann::json& j, eth_protocol_config& config)
+static eth_protocol_config from_swagger(std::shared_ptr<InterfaceProtocolConfig_eth> config)
 {
-    config.address = net::mac_address(j["mac_address"].get<std::string>());
+    return (eth_protocol_config{ .address = net::mac_address(config->getMacAddress()) });
 }
 
-void from_json(const nlohmann::json& j, ipv4_dhcp_protocol_config& config)
+static ipv4_dhcp_protocol_config from_swagger(std::shared_ptr<InterfaceProtocolConfig_ipv4_dhcp> config)
 {
-    config.hostname = get_optional_key<std::string>(j, "hostname");
-    config.client = get_optional_key<std::string>(j, "client");
-}
+    ipv4_dhcp_protocol_config to_return;
 
-void from_json(const nlohmann::json& j, ipv4_static_protocol_config& config)
-{
-    auto gw = get_optional_key<std::string>(j, "gateway");
-    if (gw) {
-        config.gateway = std::make_optional(net::ipv4_address(*gw));
+    if (config->hostnameIsSet()) {
+        to_return.hostname = std::make_optional(config->getHostname());
     }
-    config.address = net::ipv4_address(j["address"].get<std::string>());
-    /* XXX: Swagger spec doesn't allow smaller ints? */
-    config.prefix_length = (j["prefix_length"].get<int32_t>()
-                            & std::numeric_limits<uint8_t>::max());
-}
 
-void from_json(const nlohmann::json& j, ipv4_protocol_config& config)
-{
-    if (j.find("static") != j.end()) {
-        config = j["static"].get<ipv4_static_protocol_config>();
-    } else if (j.find("dhcp") != j.end()) {
-        config = j["dhcp"].get<ipv4_dhcp_protocol_config>();
+    if (config->clientIsSet()) {
+        to_return.client = std::make_optional(config->getClient());
     }
+
+    return (to_return);
+
 }
 
-void from_json(const nlohmann::json& j, protocol_config& config)
+static ipv4_static_protocol_config from_swagger(std::shared_ptr<InterfaceProtocolConfig_ipv4_static> config)
 {
-    if (j.find("eth") != j.end()) {
-        config = j["eth"].get<eth_protocol_config>();
-    } else if (j.find("ipv4") != j.end()) {
-        config = j["ipv4"].get<ipv4_protocol_config>();
+    ipv4_static_protocol_config to_return;
+
+    if (config->gatewayIsSet()) {
+        to_return.gateway = std::make_optional(net::ipv4_address(config->getGateway()));
     }
+
+    to_return.address = net::ipv4_address(config->getAddress());
+    /* XXX: Can't use small ints in swagger, so cut this value down. */
+    to_return.prefix_length = config->getPrefixLength() & std::numeric_limits<uint8_t>::max();
+
+    return (to_return);
 }
 
-void from_json(const nlohmann::json& j, config_data& config)
+static ipv4_protocol_config from_swagger(std::shared_ptr<InterfaceProtocolConfig_ipv4> config)
 {
-    for (auto& protocol : j["protocols"]) {
-        config.protocols.emplace_back(protocol);
+    ipv4_protocol_config to_return;
+
+    if (config->staticIsSet()) {
+        to_return = from_swagger(config->getStatic());
+    } else if (config->dhcpIsSet()) {
+        to_return = from_swagger(config->getDhcp());
+    }
+
+    return (to_return);
+}
+
+static protocol_config from_swagger(std::shared_ptr<InterfaceProtocolConfig> config)
+{
+    protocol_config to_return;
+
+    if (config->ethIsSet()) {
+        to_return = from_swagger(config->getEth());
+    } else if (config->ipv4IsSet()) {
+        to_return = from_swagger(config->getIpv4());
+    }
+
+    return (to_return);
+}
+
+config_data make_config_data(const Interface& interface)
+{
+    config_data to_return;
+
+    auto config = interface.getConfig();
+    if (config) {
+        for (auto& protocol : config->getProtocols()) {
+            to_return.protocols.emplace_back(from_swagger(protocol));
+        }
     }
 
     std::vector<std::string> errors;
-    if (!is_valid(config, errors)) {
+
+    /* Check port_id value, which must be a non-negative integer */
+    auto port_id = std::strtol(interface.getPortId().c_str(), nullptr, 10);
+    if (port_id == 0 && interface.getPortId() != "0") {
+        errors.emplace_back("Port ID '" + interface.getPortId() + "' is invalid.");
+    }
+
+    /* Now check the actual configuration data */
+    if (!is_valid(to_return, errors)) {
         throw std::runtime_error(
             std::accumulate(begin(errors), end(errors), std::string(),
                             [](const std::string &a, const std::string &b) -> std::string {
                                 return a + (a.length() > 0 ? " " : "") + b;
                             }));
     }
+
+    return (to_return);
 }
 
 static

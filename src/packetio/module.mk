@@ -8,6 +8,7 @@ PIO_SOURCES += \
 	interface_handler.cpp \
 	interface_server.cpp \
 	interface_utils.cpp \
+	json_transmogrify.cpp \
 	port_handler.cpp \
 	port_server.cpp \
 	port_utils.cpp

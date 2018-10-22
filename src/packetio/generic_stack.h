@@ -32,10 +32,9 @@ public:
         return m_self->interface(id);
     }
 
-    tl::expected<int, std::string> create_interface(int port_id,
-                                                    const interface::config_data& config)
+    tl::expected<int, std::string> create_interface(const interface::config_data& config)
     {
-        return m_self->create_interface(port_id, config);
+        return m_self->create_interface(config);
     }
 
     void delete_interface(int id)
@@ -48,8 +47,7 @@ private:
         virtual ~stack_concept() = default;
         virtual std::vector<int> interface_ids() const = 0;
         virtual std::optional<interface::generic_interface> interface(int id) const = 0;
-        virtual tl::expected<int, std::string> create_interface(int port_id,
-                                                                const interface::config_data& config) = 0;
+        virtual tl::expected<int, std::string> create_interface(const interface::config_data& config) = 0;
         virtual void delete_interface(int id) = 0;
     };
 
@@ -69,10 +67,9 @@ private:
             return m_stack.interface(id);
         }
 
-        tl::expected<int, std::string> create_interface(int port_id,
-                                                        const interface::config_data& config)
+        tl::expected<int, std::string> create_interface(const interface::config_data& config)
         {
-            return m_stack.create_interface(port_id, config);
+            return m_stack.create_interface(config);
         }
 
         void delete_interface(int id)

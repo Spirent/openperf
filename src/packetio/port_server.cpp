@@ -6,6 +6,7 @@
 
 #include "core/icp_core.h"
 #include "swagger/v1/model/Port.h"
+#include "packetio/json_transmogrify.h"
 #include "packetio/port_api.h"
 #include "packetio/port_server.h"
 
@@ -55,9 +56,9 @@ std::string to_string(reply_code code)
 template<typename T>
 static std::optional<T> get_optional_key(json& j, const char * key)
 {
-    return (j.find(key) == j.end()
-            ? std::nullopt
-            : std::make_optional(j[key].get<T>()));
+    return (j.find(key) != j.end() && !j[key].is_null()
+            ? std::make_optional(j[key].get<T>())
+            : std::nullopt);
 }
 
 static void _handle_list_ports_request(generic_driver& driver, json& request, json& reply)
@@ -79,25 +80,19 @@ static void _handle_list_ports_request(generic_driver& driver, json& request, js
 static void _handle_create_port_request(generic_driver& driver, json& request, json& reply)
 {
     try {
-        auto j_data = json::parse(request["data"].get<std::string>());
-        auto config = get_optional_key<port::config_data>(j_data, "config");
-        if (config) {
-            auto result = driver.create_port(*config);
-            if (result) {
-                reply["code"] = reply_code::OK;
-                reply["data"] = make_swagger_port(*driver.port(result.value()))->toJson().dump();
-            } else {
-                reply["code"] = reply_code::BAD_INPUT;
-                reply["error"] = json_error(EINVAL, result.error().c_str());
-            }
-        } else {
-            reply["code"] = reply_code::BAD_INPUT;
-            reply["error"] = json_error(EINVAL,
-                                        "No configuration data for port");
+        auto port_model = json::parse(request["data"].get<std::string>()).get<Port>();
+        auto result = driver.create_port(make_config_data(port_model));
+        if (!result) {
+            throw std::runtime_error(result.error().c_str());
         }
-    } catch (const json::exception &e) {
+        reply["code"] = reply_code::OK;
+        reply["data"] = make_swagger_port(*driver.port(result.value()))->toJson().dump();
+    } catch (const json::exception& e) {
         reply["code"] = reply_code::BAD_INPUT;
         reply["error"] = json_error(e.id, e.what());
+    } catch (const std::runtime_error& e) {
+        reply["code"] = reply_code::BAD_INPUT;
+        reply["error"] = json_error(EINVAL, e.what());
     }
 }
 
@@ -123,22 +118,19 @@ static void _handle_update_port_request(generic_driver& driver, json& request, j
     }
 
     try {
-        auto j_data = json::parse(request["data"].get<std::string>());
-        auto config = get_optional_key<port::config_data>(j_data, "config");
-        if (config) {
-            /* No news is good news... */
-            auto result = port->config(*config);
-            if (!result) {
-                reply["code"] = reply_code::BAD_INPUT;
-                reply["error"] = json_error(EINVAL, result.error().c_str());
-                return;
-            }
+        auto port_model = json::parse(request["data"].get<std::string>()).get<Port>();
+        auto result = port->config(make_config_data(port_model));
+        if (!result) {
+            throw std::runtime_error(result.error().c_str());
         }
         reply["code"] = reply_code::OK;
         reply["data"] = make_swagger_port(*port)->toJson().dump();
-    } catch (const json::exception &e) {
+    } catch (const json::exception& e) {
         reply["code"] = reply_code::BAD_INPUT;
         reply["error"] = json_error(e.id, e.what());
+    } catch (const std::runtime_error& e) {
+        reply["code"] = reply_code::BAD_INPUT;
+        reply["error"] = json_error(EINVAL, e.what());
     }
 }
 

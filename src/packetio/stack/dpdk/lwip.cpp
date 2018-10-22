@@ -39,12 +39,11 @@ std::optional<interface::generic_interface> lwip::interface(int id) const
             : std::nullopt);
 }
 
-tl::expected<int, std::string> lwip::create_interface(int port_id,
-                                                      const interface::config_data& config)
+tl::expected<int, std::string> lwip::create_interface(const interface::config_data& config)
 {
     try {
         auto item = m_interfaces.emplace(
-            std::make_pair(m_idx, std::make_unique<net_interface>(m_idx, port_id, config)));
+            std::make_pair(m_idx, std::make_unique<net_interface>(m_idx, config)));
         m_idx++;
         return (item.first->first);
     } catch (const std::runtime_error &e) {

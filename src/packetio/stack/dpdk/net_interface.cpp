@@ -189,9 +189,8 @@ static int net_interface_link_status_change(uint16_t port_id,
             : netifapi_netif_set_link_down(netif));
 }
 
-net_interface::net_interface(int id, int port_id, const interface::config_data& config)
+net_interface::net_interface(int id, const interface::config_data& config)
     : m_config(config)
-    , m_portid(port_id)
     , m_id(id)
 {
     m_netif.state = this;
@@ -235,7 +234,7 @@ net_interface::net_interface(int id, int port_id, const interface::config_data& 
     }
 
     /* Setup callbacks to allow the interface to interact with the port state */
-    int dpdk_error = rte_eth_dev_callback_register(m_portid,
+    int dpdk_error = rte_eth_dev_callback_register(m_config.port_id,
                                                    RTE_ETH_EVENT_INTR_LSC,
                                                    net_interface_link_status_change,
                                                    &m_netif);
@@ -246,7 +245,7 @@ net_interface::net_interface(int id, int port_id, const interface::config_data& 
 
 net_interface::~net_interface()
 {
-    rte_eth_dev_callback_unregister(m_portid,
+    rte_eth_dev_callback_unregister(m_config.port_id,
                                     RTE_ETH_EVENT_INTR_LSC,
                                     net_interface_link_status_change,
                                     &m_netif);
@@ -271,7 +270,7 @@ int net_interface::id() const
 
 int net_interface::port_id() const
 {
-    return (m_portid);
+    return (m_config.port_id);
 }
 
 std::string net_interface::mac_address() const

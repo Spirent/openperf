@@ -14,7 +14,7 @@ namespace dpdk {
 
 class net_interface {
 public:
-    net_interface(int id, int port_id, const interface::config_data& config);
+    net_interface(int id, const interface::config_data& config);
     ~net_interface();
 
     int id() const;
@@ -27,7 +27,6 @@ public:
 private:
     interface::config_data m_config;
     netif m_netif;
-    int m_portid;
     int m_id;
 };
 

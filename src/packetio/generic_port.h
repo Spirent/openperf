@@ -80,7 +80,7 @@ enum class config_type { DPDK = 0,
 typedef std::variant<dpdk_config,
                      bond_config> config_data;
 
-void from_json(const nlohmann::json&, config_data&);
+config_data make_config_data(const swagger::v1::model::Port&);
 
 /**
  * A type erasing definition of a port.
@@ -199,7 +199,7 @@ private:
     std::shared_ptr<port_concept> m_self;
 };
 
-std::shared_ptr<swagger::v1::model::Port> make_swagger_port(const generic_port& port);
+std::shared_ptr<swagger::v1::model::Port> make_swagger_port(const generic_port&);
 
 }
 }

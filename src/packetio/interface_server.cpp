@@ -6,6 +6,7 @@
 #include "core/icp_core.h"
 #include "swagger/v1/model/Interface.h"
 #include "packetio/generic_interface.h"
+#include "packetio/json_transmogrify.h"
 #include "packetio/interface_api.h"
 #include "packetio/interface_server.h"
 
@@ -80,11 +81,8 @@ static void _handle_list_interfaces_request(generic_stack& stack, json &request,
 static void _handle_create_interface_request(generic_stack& stack, json& request, json& reply)
 {
     try {
-        auto j_data = json::parse(request["data"].get<std::string>());
-        auto config = j_data.at("config").get<interface::config_data>();
-        auto port_id = j_data.at("port_id").get<int>();
-
-        auto result = stack.create_interface(port_id, config);
+        auto interface_model = json::parse(request["data"].get<std::string>()).get<Interface>();
+        auto result = stack.create_interface(make_config_data(interface_model));
         if (!result) {
             throw std::runtime_error(result.error());
         }
@@ -125,9 +123,8 @@ static void _handle_bulk_create_interface_request(generic_stack& stack, json& re
     try {
         auto j_interfaces = json::array();
         for (auto& item : request["items"]) {
-            auto config = item.at("config").get<interface::config_data>();
-            auto port_id = item.at("port_id").get<int>();
-            auto result = stack.create_interface(port_id, config);
+            auto interface_model = json::parse(item.get<std::string>()).get<Interface>();
+            auto result = stack.create_interface(make_config_data(interface_model));
             if (!result) {
                 throw std::runtime_error(result.error());
             }

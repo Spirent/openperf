@@ -55,11 +55,10 @@ typedef std::variant<eth_protocol_config,
 
 struct config_data {
     std::vector<protocol_config> protocols;
+    int port_id;
 };
 
-bool is_valid(config_data&, std::vector<std::string>&);
-
-void from_json(const nlohmann::json&, config_data&);
+config_data make_config_data(const swagger::v1::model::Interface&);
 
 class generic_interface {
 public:
@@ -151,14 +150,14 @@ private:
     std::shared_ptr<interface_concept> m_self;
 };
 
-std::shared_ptr<swagger::v1::model::Interface> make_swagger_interface(const generic_interface& intf);
+std::shared_ptr<swagger::v1::model::Interface> make_swagger_interface(const generic_interface&);
 
 template <typename T>
 std::optional<T> get_optional_key(const nlohmann::json& j, const char *key)
 {
-    return (j.find(key) == j.end()
-            ? std::nullopt
-            : std::make_optional(j[key].get<T>()));
+    return (j.find(key) != j.end() && !j[key].is_null()
+            ? std::make_optional(j[key].get<T>())
+            : std::nullopt);
 }
 
 }
