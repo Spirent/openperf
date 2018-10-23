@@ -144,7 +144,7 @@ static bool is_valid(config_data& config, std::vector<std::string>& errors)
             protocol_counter[typeid(ipv4)]++;
             validate(ipv4, errors);
         },
-        [&](auto&&) {
+        [&](const std::monostate&) {
             errors.emplace_back("No valid interface protocol configuration found.");
         });
 
@@ -337,6 +337,10 @@ make_swagger_protocol_config(const protocol_config& protocol)
         },
         [&](const ipv4_protocol_config& ipv4) {
             config->setIpv4(make_swagger_protocol_config(ipv4));
+        },
+        [](const std::monostate&)
+        {
+            /* Nothing to do */
         });
 
     std::visit(visitor, protocol);

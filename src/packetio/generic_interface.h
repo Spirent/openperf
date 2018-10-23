@@ -50,7 +50,8 @@ struct ipv4_static_protocol_config {
 typedef std::variant<ipv4_static_protocol_config,
                      ipv4_dhcp_protocol_config> ipv4_protocol_config;
 
-typedef std::variant<eth_protocol_config,
+typedef std::variant<std::monostate,
+                     eth_protocol_config,
                      ipv4_protocol_config> protocol_config;
 
 struct config_data {

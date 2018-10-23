@@ -77,7 +77,8 @@ struct bond_config {
 enum class config_type { DPDK = 0,
                          BOND = 1 };
 
-typedef std::variant<dpdk_config,
+typedef std::variant<std::monostate,
+                     dpdk_config,
                      bond_config> config_data;
 
 config_data make_config_data(const swagger::v1::model::Port&);

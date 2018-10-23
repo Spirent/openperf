@@ -121,7 +121,7 @@ static bool is_valid(config_data& config, std::vector<std::string>& errors)
         [&](const dpdk_config& dpdk) {
             validate(dpdk, errors);
         },
-        [&](auto&&) {
+        [&](const std::monostate&) {
             errors.emplace_back("No valid port configuration found.");
         });
 
