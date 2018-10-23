@@ -12,6 +12,13 @@ deps:
 devstack: deps
 	@cd targets/devstack && $(MAKE)
 
+.PHONY: test
+test: test_aat
+
+.PHONY: test_aat
+test_aat:
+	@cd tests/aat && $(MAKE)
+
 .PHONY: clean
 clean:
 	@cd targets/devstack && $(MAKE) clean
