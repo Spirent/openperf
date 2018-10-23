@@ -18,13 +18,39 @@ with description('Ports,') as self:
         self.ports = client.api.PortsApi(service.client())
 
     with description('list,'):
-        with it('succeeds'):
-            ps = self.ports.list_ports()
-            expect(ps).not_to(be_empty)
-            [ expect(p).to(be_valid_port) for p in ps ]
+        with description('unfiltered,'):
+            with it('returns valid ports'):
+                ps = self.ports.list_ports()
+                expect(ps).not_to(be_empty)
+                for p in ps:
+                    expect(p).to(be_valid_port)
+
+        with description('filtered,'):
+            with description('known existing kind,'):
+                with it('returns valid ports of that kind'):
+                    ps = self.ports.list_ports(kind='dpdk')
+                    expect(ps).not_to(be_empty)
+                    for p in ps:
+                        expect(p).to(be_valid_port)
+                        expect(p.kind).to(equal('dpdk'))
+
+            with description('known non-existent kind,'):
+                with it('returns no ports'):
+                    ps = self.ports.list_ports(kind='host')
+                    expect(ps).to(be_empty)
+
+            with description('invalid kind,'):
+                with it('returns no ports'):
+                    ps = self.ports.list_ports(kind='foo')
+                    expect(ps).to(be_empty)
+
+            with description('missing kind,'):
+                with it('returns no ports'):
+                    ps = self.ports.list_ports(kind='')
+                    expect(ps).to(be_empty)
 
     with description('get,'):
-        with description('valid port,'):
+        with description('known existing port,'):
             with it('succeeds'):
                 expect(self.ports.get_port('0')).to(be_valid_port)
 
@@ -62,9 +88,10 @@ with description('Ports,') as self:
 
                 with description('valid port list,'):
                     with before.each:
-                        ps = self.ports.list_ports() # TODO: filter?
+                        ps = self.ports.list_ports(kind='dpdk')
                         expect(ps).not_to(be_empty)
                         self.port.config.bond.ports = [ p.id for p in ps ]
+                        expect(self.port.config.bond.ports).not_to(be_empty)
 
                     with it('succeeds'):
                         p = self.ports.create_port(self.port)
@@ -117,12 +144,13 @@ with description('Ports,') as self:
     with description('delete,'):
         with description('valid port,'):
             with before.each:
-                ps = self.ports.list_ports() # TODO: filter?
+                ps = self.ports.list_ports(kind='dpdk')
                 self.port = client.models.Port()
                 self.port.kind = 'bond'
                 self.port.config=client.models.PortConfig(bond=client.models.PortConfigBond())
                 self.port.config.bond.mode = 'lag_802_3_ad'
                 self.port.config.bond.ports = [ p.id for p in ps ]
+                expect(self.port.config.bond.ports).not_to(be_empty)
                 p = self.ports.create_port(self.port)
                 expect(p).to(be_valid_port)
                 self.cleanup = p
