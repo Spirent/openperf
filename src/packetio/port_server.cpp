@@ -166,12 +166,12 @@ static int _handle_rpc_request(const icp_event_data *data, void *arg)
         case request_type::GET_PORT:
         case request_type::UPDATE_PORT:
         case request_type::DELETE_PORT:
-            icp_log(ICP_LOG_TRACE, "Received %s request for port %d\n",
+            ICP_LOG(ICP_LOG_TRACE, "Received %s request for port %d\n",
                     to_string(type).c_str(),
                     request["id"].get<int>());
             break;
         default:
-            icp_log(ICP_LOG_TRACE, "Received %s request\n", to_string(type).c_str());
+            ICP_LOG(ICP_LOG_TRACE, "Received %s request\n", to_string(type).c_str());
         }
 
         switch (type) {
@@ -198,9 +198,9 @@ static int _handle_rpc_request(const icp_event_data *data, void *arg)
         std::vector<uint8_t> reply_buffer = json::to_cbor(reply);
         if ((send_or_err = zmq_send(data->socket, reply_buffer.data(), reply_buffer.size(), 0))
             != static_cast<int>(reply_buffer.size())) {
-            icp_log(ICP_LOG_ERROR, "Request reply failed: %s\n", zmq_strerror(errno));
+            ICP_LOG(ICP_LOG_ERROR, "Request reply failed: %s\n", zmq_strerror(errno));
         } else {
-            icp_log(ICP_LOG_TRACE, "Sent %s reply to %s request\n",
+            ICP_LOG(ICP_LOG_TRACE, "Sent %s reply to %s request\n",
                     to_string(reply["code"].get<reply_code>()).c_str(),
                     to_string(type).c_str());
         }

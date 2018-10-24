@@ -77,10 +77,10 @@ int icp_task_launch(task_fn *task,
     iargs->original_task = task;
     iargs->original_args = task_args;
 
-    icp_log(ICP_LOG_DEBUG, "Creating new thread for %s task...\n", task_name);
+    ICP_LOG(ICP_LOG_DEBUG, "Creating new thread for %s task...\n", task_name);
 
     if ((err = pthread_create(&thread, &thread_attr, icp_task_launcher_task, iargs)) != 0) {
-        icp_log(ICP_LOG_ERROR, "Failed to launch task %s: %d\n",
+        ICP_LOG(ICP_LOG_ERROR, "Failed to launch task %s: %d\n",
                 task_name, err);
         goto error_and_free;
     }
@@ -88,7 +88,7 @@ int icp_task_launch(task_fn *task,
     icp_task_sync_block_and_warn(&notify, 1, 1000,
                                  "Still waiting on acknowledgment from %s task\n",
                                  task_name);
-    icp_log(ICP_LOG_DEBUG, "Task %s started!\n", task_name);
+    ICP_LOG(ICP_LOG_DEBUG, "Task %s started!\n", task_name);
 
     return (0);
 

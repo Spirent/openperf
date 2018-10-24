@@ -61,7 +61,9 @@ enum icp_log_level icp_log_level_find(int argc, char * const argv[]);
 void icp_log_function_name(const char *signature, char *function);
 
 /**
- * Possibly write a message to the log
+ * Macro to possibly write a message to the log
+ * Note: this is the preferred way to do logging, since logging arguments will
+ * not be evaluated unless they will actually get logged.
  *
  * @param level
  *   The level of the message
@@ -71,17 +73,30 @@ void icp_log_function_name(const char *signature, char *function);
  *   -  0: Success
  *   - !0: Error
  */
-#define icp_log(level, format, ...)                                     \
+#define ICP_LOG(level, format, ...)                                     \
     do {                                                                \
         if (level <= icp_log_level_get()) {                             \
             char function_[strlen(__PRETTY_FUNCTION__)];                \
             icp_log_function_name(__PRETTY_FUNCTION__, function_);      \
-            _icp_log(level, function_, format, ##__VA_ARGS__);          \
+            icp_log(level, function_, format, ##__VA_ARGS__);           \
         }                                                               \
     } while (0)
 
-int _icp_log(enum icp_log_level level, const char *tag,
-             const char *format, ...)
+/**
+ * Write a message to the log
+ *
+ * @param level
+ *   The level of the message
+ * @param tag
+ *   Additional information to add to message
+ * @param format
+ *   The printf format string, followed by variable arguments
+ * @return
+ *   -  0: Success
+ *   - !0: Error
+ */
+int icp_log(enum icp_log_level level, const char *tag,
+            const char *format, ...)
     __attribute__((format(printf, 3, 4)));
 
 int icp_vlog(enum icp_log_level level, const char *tag,

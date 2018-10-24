@@ -260,8 +260,8 @@ static void * get_thread_log_socket(void)
  * thread.  Not sure what to do about errors in this function, as the
  * inability to log messages probably ought to be fatal...
  */
-int _icp_log(enum icp_log_level level, const char *tag,
-             const char *format, ...)
+int icp_log(enum icp_log_level level, const char *tag,
+            const char *format, ...)
 {
     va_list argp;
     va_start(argp, format);

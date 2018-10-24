@@ -45,14 +45,14 @@ void *icp_socket_get_server(void *context, int type, const char *endpoint)
 
     const int ipv6 = 1;
     if (zmq_setsockopt(server, ZMQ_IPV6, &ipv6, sizeof(ipv6)) != 0) {
-        icp_log(ICP_LOG_ERROR, "Failed to enable ZMQ IPv6 on %s: %s\n",
+        ICP_LOG(ICP_LOG_ERROR, "Failed to enable ZMQ IPv6 on %s: %s\n",
                 endpoint, zmq_strerror(errno));
     }
 
     if (type == ZMQ_REP) {
         const int timeout = 1000;  /* milliseconds */
         if (zmq_setsockopt(server, ZMQ_SNDTIMEO, &timeout, sizeof(timeout)) != 0)
-            icp_log(ICP_LOG_WARNING, "Unable to set socket timeout on %s: %s\n",
+            ICP_LOG(ICP_LOG_WARNING, "Unable to set socket timeout on %s: %s\n",
                     endpoint, zmq_strerror(errno));
     }
 
@@ -105,7 +105,7 @@ void *icp_socket_get_client_identified(void *context, int type,
 
         const int ipv6 = 1;
         if (zmq_setsockopt(client, ZMQ_IPV6, &ipv6, sizeof(ipv6)) != 0) {
-            icp_log(ICP_LOG_ERROR, "Failed to enable ZMQ IPv6 on %s: %s\n",
+            ICP_LOG(ICP_LOG_ERROR, "Failed to enable ZMQ IPv6 on %s: %s\n",
                     endpoint, zmq_strerror(errno));
         }
     }

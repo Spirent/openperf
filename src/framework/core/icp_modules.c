@@ -22,7 +22,7 @@ int icp_modules_pre_init(void *context)
         }
         int ret = module->pre_init(context, module->state);
         errors += !!(ret != 0);
-        icp_log(ICP_LOG_INFO, "Pre-initializing %s module: %s\n",
+        ICP_LOG(ICP_LOG_INFO, "Pre-initializing %s module: %s\n",
                 module->name, ret ? "Failed" : "OK");
     }
 
@@ -40,7 +40,7 @@ int icp_modules_init(void *context)
         }
         int ret = module->init(context, module->state);
         errors += !!(ret != 0);
-        icp_log(ICP_LOG_INFO, "Initializing %s module: %s\n",
+        ICP_LOG(ICP_LOG_INFO, "Initializing %s module: %s\n",
                 module->name, ret ? "Failed" : "OK");
     }
 
@@ -58,7 +58,7 @@ int icp_modules_post_init(void *context)
         }
         int ret = module->post_init(context, module->state);
         errors += !!(ret != 0);
-        icp_log(ICP_LOG_INFO, "Post-initializing %s module: %s\n",
+        ICP_LOG(ICP_LOG_INFO, "Post-initializing %s module: %s\n",
                 module->name, ret ? "Failed" : "OK");
     }
 
@@ -76,7 +76,7 @@ int icp_modules_start()
         }
         int ret = module->start(module->state);
         errors += !!(ret != 0);
-        icp_log(ICP_LOG_INFO, "Starting %s module: %s\n",
+        ICP_LOG(ICP_LOG_INFO, "Starting %s module: %s\n",
                 module->name, ret ? "Failed" : "OK");
     }
 

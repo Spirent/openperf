@@ -208,7 +208,7 @@ tl::expected<void, std::string> physical_port::start()
                                    + ": " + rte_strerror(error));
     }
 
-    icp_log(ICP_LOG_DEBUG, "Successfully started DPDK physical port %d\n", m_id);
+    ICP_LOG(ICP_LOG_DEBUG, "Successfully started DPDK physical port %d\n", m_id);
 
     return {};
 }
@@ -247,7 +247,7 @@ tl::expected<void, std::string> physical_port::stop()
         return {};
     }
 
-    icp_log(ICP_LOG_DEBUG, "Successfully stopped DPDK physical port %d\n", m_id);
+    ICP_LOG(ICP_LOG_DEBUG, "Successfully stopped DPDK physical port %d\n", m_id);
 
     return (tl::make_unexpected(
                 std::accumulate(begin(errors), end(errors), std::string(),
@@ -310,7 +310,7 @@ tl::expected<void, std::string> physical_port::apply_port_config(port_info& defa
         }
     }
 
-    icp_log(ICP_LOG_DEBUG, "Successfully configured DPDK physical port %d "
+    ICP_LOG(ICP_LOG_DEBUG, "Successfully configured DPDK physical port %d "
             "(rxq=%d, txq=%d, pool=%s, speed=0x%x)\n", m_id, defaults.rx_queue_count(),
             defaults.tx_queue_count(), m_pool->name, port_conf.link_speeds);
 

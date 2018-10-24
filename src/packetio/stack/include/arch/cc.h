@@ -16,9 +16,9 @@
 #define STRIP_PARENS(X) X
 #define PASS_PARAMETERS(X) STRIP_PARENS( _Args X )
 
-#define LWIP_PLATFORM_DIAG(x)                       \
-    do {                                            \
-        icp_log(ICP_LOG_DEBUG, PASS_PARAMETERS(x)); \
+#define LWIP_PLATFORM_DIAG(x)                               \
+    do {                                                    \
+        icp_log(ICP_LOG_DEBUG, "lwip", PASS_PARAMETERS(x)); \
     } while (0)
 
 #define LWIP_PLATFORM_ASSERT(x)                 \

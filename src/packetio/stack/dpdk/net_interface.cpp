@@ -122,7 +122,7 @@ static err_t net_interface_tx(netif* netif, pbuf *p)
         return (ERR_OK);
     }
 
-    icp_log(ICP_LOG_INFO, "Tx called for pbuf %p on netif %p\n",
+    ICP_LOG(ICP_LOG_INFO, "Tx called for pbuf %p on netif %p\n",
             (void *)p, (void *)netif);
     return (ERR_OK);
 }

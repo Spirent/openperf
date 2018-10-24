@@ -35,7 +35,7 @@ static bool sufficient_permissions()
 {
     cap_t caps = cap_get_proc();
     if (!caps) {
-        icp_log(ICP_LOG_ERROR, "Could not retrieve any capabilities.\n");
+        ICP_LOG(ICP_LOG_ERROR, "Could not retrieve any capabilities.\n");
         return (false);
     }
 
@@ -43,11 +43,11 @@ static bool sufficient_permissions()
     for(auto &item : cap_permissions) {
         cap_flag_value_t flag;
         if (cap_get_flag(caps, item.flag, CAP_EFFECTIVE, &flag) == -1) {
-            icp_log(ICP_LOG_ERROR, "cap_get_flag returned error for %s.\n", item.name);
+            ICP_LOG(ICP_LOG_ERROR, "cap_get_flag returned error for %s.\n", item.name);
             have_permissions = false;
             break;
         } else if (!flag) {
-            icp_log(ICP_LOG_INFO, "Missing required DPDK capability: %s\n", item.name);
+            ICP_LOG(ICP_LOG_INFO, "Missing required DPDK capability: %s\n", item.name);
             have_permissions = false;
         }
     }
@@ -65,7 +65,7 @@ static void log_port(uint16_t port_idx, struct rte_eth_dev_info &info)
     if (info.if_index > 0) {
         char if_name[IF_NAMESIZE];
         if_indextoname(info.if_index, if_name);
-        icp_log(ICP_LOG_INFO, "  dpdk%d: %02x:%02x:%02x:%02x:%02x:%02x (%s) attached to %s\n",
+        ICP_LOG(ICP_LOG_INFO, "  dpdk%d: %02x:%02x:%02x:%02x:%02x:%02x (%s) attached to %s\n",
                 port_idx,
                 mac_addr.addr_bytes[0],
                 mac_addr.addr_bytes[1],
@@ -75,7 +75,7 @@ static void log_port(uint16_t port_idx, struct rte_eth_dev_info &info)
                 mac_addr.addr_bytes[5],
                 info.driver_name, if_name);
     } else {
-        icp_log(ICP_LOG_INFO, "  dpdk%d: %02x:%02x:%02x:%02x:%02x:%02x (%s)\n",
+        ICP_LOG(ICP_LOG_INFO, "  dpdk%d: %02x:%02x:%02x:%02x:%02x:%02x (%s)\n",
                 port_idx,
                 mac_addr.addr_bytes[0],
                 mac_addr.addr_bytes[1],
@@ -177,9 +177,9 @@ static ssize_t eal_log_write(void* cookie __attribute__((unused)),
      * We can't grab the right function with a macro, so call the
      * actual function and provide the logtype instead.
      */
-    _icp_log(dpdk_loglevel(rte_log_cur_msg_loglevel()),
-             dpdk_logtype(rte_log_cur_msg_logtype()),
-             format, static_cast<int>(size), buf);
+    icp_log(dpdk_loglevel(rte_log_cur_msg_loglevel()),
+            dpdk_logtype(rte_log_cur_msg_logtype()),
+            format, static_cast<int>(size), buf);
 
     return (size);
 }
@@ -199,7 +199,7 @@ eal::eal(std::vector<std::string> args)
                    [](std::string &s) { return s.data(); });
     eal_args.push_back(nullptr); /* null terminator */
 
-    icp_log(ICP_LOG_INFO, "Initializing DPDK with \\\"%s\\\"\n",
+    ICP_LOG(ICP_LOG_INFO, "Initializing DPDK with \\\"%s\\\"\n",
             std::accumulate(begin(args), end(args), std::string(),
                             [](const std::string &a, const std::string &b) -> std::string {
                                 return a + (a.length() > 0 ? " " : "") + b;
@@ -227,10 +227,10 @@ eal::eal(std::vector<std::string> args)
      * unparsed.  We subtract two to account for the trailing null and the program name.
      */
     if (parsed_or_err != static_cast<int>(eal_args.size() - 2)) {
-        icp_log(ICP_LOG_ERROR, "DPDK initialization routine only parsed %d of %" PRIu64 " arguments\n",
+        ICP_LOG(ICP_LOG_ERROR, "DPDK initialization routine only parsed %d of %" PRIu64 " arguments\n",
                 parsed_or_err, eal_args.size() - 2);
     } else {
-        icp_log(ICP_LOG_INFO, "DPDK initialized\n");
+        ICP_LOG(ICP_LOG_INFO, "DPDK initialized\n");
     }
 
     /*
@@ -370,7 +370,7 @@ tl::expected<void, std::string> eal::delete_port(int id)
     int length_or_err = rte_eth_bond_slaves_get(id, slaves, RTE_MAX_ETHPORTS);
     if (length_or_err < 0) {
         /* Not sure what else we can do here... */
-        icp_log(ICP_LOG_ERROR, "Could not retrieve slave port ids from bonded port %d\n", id);
+        ICP_LOG(ICP_LOG_ERROR, "Could not retrieve slave port ids from bonded port %d\n", id);
     } else if (length_or_err > 0) {
         for (int i = 0; i < length_or_err; i++) {
             rte_eth_bond_slave_remove(id, i);

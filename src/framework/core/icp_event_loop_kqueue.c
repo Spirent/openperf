@@ -564,7 +564,7 @@ int _do_event_handling(struct icp_event_loop *loop,
             }
             break;
         default:
-            icp_log(ICP_LOG_ERROR, "Unsupported kqueue filter type: %d\n",
+            ICP_LOG(ICP_LOG_ERROR, "Unsupported kqueue filter type: %d\n",
                     kev->filter);
             SLIST_INSERT_IF_MISSING(&loop->remove_list, event, remove_link);
             break;
@@ -619,7 +619,7 @@ size_t _do_event_removals(struct icp_event_loop *loop)
 
     /* Drop all pending events */
     if (idx && kevent(loop->poll_fd, kevents, idx, NULL, 0, NULL) == -1) {
-        icp_log(ICP_LOG_ERROR,
+        ICP_LOG(ICP_LOG_ERROR,
                 "Failed to delete %zu events from kqueue %d: %s\n",
                 idx, loop->poll_fd, strerror(errno));
     }

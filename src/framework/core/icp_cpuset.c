@@ -100,7 +100,7 @@ void icp_cpuset_to_string(icp_cpuset_t cpuset, char *buf, size_t buflen)
 
     tlen = snprintf(buf+off, buflen-off, "0x");
     if (tlen < 0) {
-        icp_log(ICP_LOG_ERROR, "%s %s\n", __FUNCTION__, strerror(errno));
+        ICP_LOG(ICP_LOG_ERROR, "%s %s\n", __FUNCTION__, strerror(errno));
         return;
     }
     off += tlen;
@@ -111,7 +111,7 @@ void icp_cpuset_to_string(icp_cpuset_t cpuset, char *buf, size_t buflen)
         if (nonzero) {
             tlen = snprintf(buf+off, buflen-off, "%" PRIx64, val);
             if (tlen < 0) {
-                icp_log(ICP_LOG_ERROR, "%s %s\n", __FUNCTION__, strerror(errno));
+                ICP_LOG(ICP_LOG_ERROR, "%s %s\n", __FUNCTION__, strerror(errno));
                 return;
             }
             off += tlen;
@@ -128,7 +128,7 @@ void icp_cpuset_to_string(icp_cpuset_t cpuset, char *buf, size_t buflen)
                 tlen = snprintf(buf+off, buflen-off, "%" PRIx64, val);
             }
             if (tlen < 0) {
-                icp_log(ICP_LOG_ERROR, "%s %s\n", __FUNCTION__, strerror(errno));
+                ICP_LOG(ICP_LOG_ERROR, "%s %s\n", __FUNCTION__, strerror(errno));
                 return;
             }
             off += tlen;

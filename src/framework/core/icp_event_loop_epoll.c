@@ -479,7 +479,7 @@ size_t _do_event_updates(struct icp_event_loop *loop)
             int error = _epoll_add_or_mod(loop, _event_key(event), &epevent);
             if (error != 0) {
                 SLIST_INSERT_IF_MISSING(&loop->remove_list, event, remove_link);
-                icp_log(ICP_LOG_WARNING, "Failed to update timer fd %d in epoll %d: %s\n",
+                ICP_LOG(ICP_LOG_WARNING, "Failed to update timer fd %d in epoll %d: %s\n",
                         _event_key(event), loop->poll_fd, strerror(errno));
             } else {
                 nb_events++;
@@ -502,7 +502,7 @@ size_t _do_event_updates(struct icp_event_loop *loop)
             int error = _epoll_add_or_mod(loop, _event_key(event), &epevent);
             if (error != 0) {
                 SLIST_INSERT_IF_MISSING(&loop->remove_list, event, remove_link);
-                icp_log(ICP_LOG_WARNING, "Failed to update fd %d in epoll %d: %s\n",
+                ICP_LOG(ICP_LOG_WARNING, "Failed to update fd %d in epoll %d: %s\n",
                         _event_key(event), loop->poll_fd, strerror(errno));
             } else {
                 nb_events++;

@@ -11,7 +11,7 @@ namespace dpdk {
 
 static void tcpip_init_done(void *arg __attribute__((unused)))
 {
-    icp_log(ICP_LOG_DEBUG, "TCP/IP thread running on logical core %u\n",
+    ICP_LOG(ICP_LOG_DEBUG, "TCP/IP thread running on logical core %u\n",
             rte_lcore_id());
 }
 
@@ -47,7 +47,7 @@ tl::expected<int, std::string> lwip::create_interface(const interface::config_da
         m_idx++;
         return (item.first->first);
     } catch (const std::runtime_error &e) {
-        icp_log(ICP_LOG_ERROR, "Interface creation failed: %s\n", e.what());
+        ICP_LOG(ICP_LOG_ERROR, "Interface creation failed: %s\n", e.what());
         return (tl::make_unexpected(e.what()));
     }
 }

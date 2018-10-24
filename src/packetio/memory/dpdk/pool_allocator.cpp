@@ -80,7 +80,7 @@ static uint32_t _mbuf_length_adjust(uint32_t length)
 
 static void log_mempool(const struct rte_mempool *mpool)
 {
-    icp_log(ICP_LOG_DEBUG, "%s: %u bytes, %u of %u mbufs available\n",
+    ICP_LOG(ICP_LOG_DEBUG, "%s: %u bytes, %u of %u mbufs available\n",
             mpool->name,
             rte_pktmbuf_data_room_size((struct rte_mempool *)mpool),
             rte_mempool_avail_count(mpool), mpool->size);

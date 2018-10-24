@@ -35,7 +35,7 @@ port_info::port_info(const char *name)
     }
 
     if (!_data) {
-        icp_log(ICP_LOG_WARNING, "No explicit configuration found for driver = %s."
+        ICP_LOG(ICP_LOG_WARNING, "No explicit configuration found for driver = %s."
                 "  Using defaults.\n", name);
     }
 }

@@ -34,7 +34,7 @@ int icp_options_init()
     LIST_FOREACH(opt_data, &_options_list, next) {
         if (opt_data->init) {
             if (opt_data->init(opt_data->data) != 0) {
-                icp_log(ICP_LOG_ERROR, "Failed to initialize %s options\n", opt_data->name);
+                ICP_LOG(ICP_LOG_ERROR, "Failed to initialize %s options\n", opt_data->name);
             }
         }
     }
