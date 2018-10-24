@@ -74,9 +74,6 @@ struct bond_config {
     std::vector<int> ports;
 };
 
-enum class config_type { DPDK = 0,
-                         BOND = 1 };
-
 typedef std::variant<std::monostate,
                      dpdk_config,
                      bond_config> config_data;
