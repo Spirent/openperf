@@ -199,7 +199,7 @@ eal::eal(std::vector<std::string> args)
                    [](std::string &s) { return s.data(); });
     eal_args.push_back(nullptr); /* null terminator */
 
-    icp_log(ICP_LOG_INFO, "Initializing DPDK with \"%s\"\n",
+    icp_log(ICP_LOG_INFO, "Initializing DPDK with \\\"%s\\\"\n",
             std::accumulate(begin(args), end(args), std::string(),
                             [](const std::string &a, const std::string &b) -> std::string {
                                 return a + (a.length() > 0 ? " " : "") + b;

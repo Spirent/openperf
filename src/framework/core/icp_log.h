@@ -74,17 +74,17 @@ void icp_log_function_name(const char *signature, char *function);
 #define icp_log(level, format, ...)                                     \
     do {                                                                \
         if (level <= icp_log_level_get()) {                             \
-            char _function[strlen(__PRETTY_FUNCTION__)];                \
-            icp_log_function_name(__PRETTY_FUNCTION__, _function);      \
-            _icp_log(level, _function, format, ##__VA_ARGS__);          \
+            char function_[strlen(__PRETTY_FUNCTION__)];                \
+            icp_log_function_name(__PRETTY_FUNCTION__, function_);      \
+            _icp_log(level, function_, format, ##__VA_ARGS__);          \
         }                                                               \
     } while (0)
 
-int _icp_log(enum icp_log_level level, const char *function,
+int _icp_log(enum icp_log_level level, const char *tag,
              const char *format, ...)
     __attribute__((format(printf, 3, 4)));
 
-int icp_vlog(enum icp_log_level level, const char *function,
+int icp_vlog(enum icp_log_level level, const char *tag,
              const char *format, va_list argp);
 
 /**
