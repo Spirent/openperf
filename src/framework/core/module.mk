@@ -14,6 +14,7 @@ FW_SOURCES += \
 	core/icp_task.c
 
 ifeq ($(PLATFORM), linux)
+	FW_LDLIBS += -rdynamic
 	FW_SOURCES += \
 	core/icp_event_loop_epoll.c \
 	core/icp_exit_backtrace.c \
