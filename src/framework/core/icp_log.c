@@ -344,7 +344,7 @@ void icp_log_write(const struct icp_log_message *msg, FILE *file, void *socket)
     strftime(txt_time, sizeof(txt_time), "%FT%TZ", gmtime(&msg->time));
     /* Note: we use the length to trim the trailing '\n' from the message */
     error = asprintf(&log_msg,
-                     "{\"time\": \"%s\", \"level\": \"%s\", \"thread\": \"%s\","
+                     "{\"time\": \"%s\", \"level\": \"%s\", \"thread\": \"%s\", "
                      "\"tag\": \"%s\", \"message\": \"%.*s\"}\n",
                      txt_time, log_level_string(msg->level), msg->thread, msg->tag,
                      msg->message[msg->length - 1] == '\n' ? msg->length - 1 : msg->length,
