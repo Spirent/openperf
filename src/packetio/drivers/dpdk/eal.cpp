@@ -65,7 +65,7 @@ static void log_port(uint16_t port_idx, struct rte_eth_dev_info &info)
     if (info.if_index > 0) {
         char if_name[IF_NAMESIZE];
         if_indextoname(info.if_index, if_name);
-        icp_log(ICP_LOG_DEBUG, "  dpdk%d: %02x:%02x:%02x:%02x:%02x:%02x (%s) attached to %s\n",
+        icp_log(ICP_LOG_INFO, "  dpdk%d: %02x:%02x:%02x:%02x:%02x:%02x (%s) attached to %s\n",
                 port_idx,
                 mac_addr.addr_bytes[0],
                 mac_addr.addr_bytes[1],
@@ -75,7 +75,7 @@ static void log_port(uint16_t port_idx, struct rte_eth_dev_info &info)
                 mac_addr.addr_bytes[5],
                 info.driver_name, if_name);
     } else {
-        icp_log(ICP_LOG_DEBUG, "  dpdk%d: %02x:%02x:%02x:%02x:%02x:%02x (%s)\n",
+        icp_log(ICP_LOG_INFO, "  dpdk%d: %02x:%02x:%02x:%02x:%02x:%02x (%s)\n",
                 port_idx,
                 mac_addr.addr_bytes[0],
                 mac_addr.addr_bytes[1],
@@ -85,6 +85,103 @@ static void log_port(uint16_t port_idx, struct rte_eth_dev_info &info)
                 mac_addr.addr_bytes[5],
                 info.driver_name);
     }
+}
+
+__attribute__((const))
+static const char* dpdk_logtype(int logtype)
+{
+    /* Current as of DPDK release 18.08 */
+    static const char* logtype_strings[] = {
+        "lib.eal",
+        "lib.malloc",
+        "lib.ring",
+        "lib.mempool",
+        "lib.timer",
+        "pmd",
+        "lib.hash",
+        "lib.lpm",
+        "lib.kni",
+        "lib.acl",
+        "lib.power",
+        "lib.meter",
+        "lib.sched",
+        "lib.port",
+        "lib.table",
+        "lib.pipeline",
+        "lib.mbuf",
+        "lib.cryptodev",
+        "lib.efd",
+        "lib.eventdev",
+        "lib.gso"
+        "reserved1",
+        "reserved2",
+        "reserved3",
+        "user1",
+        "user2",
+        "user3",
+        "user4",
+        "user5",
+        "user6",
+        "user7",
+        "user8"
+    };
+
+    return ((logtype >= 0 && logtype < static_cast<int>(icp_count_of(logtype_strings)))
+            ? logtype_strings[logtype]
+            : "unknown");
+}
+
+__attribute__((const))
+static enum icp_log_level dpdk_loglevel(int loglevel)
+{
+    /*
+     * This should be kept in sync with the inferred log levels found in the
+     * argument parser.
+     */
+    switch (loglevel) {
+    case RTE_LOG_EMERG:
+        return ICP_LOG_CRITICAL;
+    case RTE_LOG_ALERT:
+        return ICP_LOG_ERROR;
+    case RTE_LOG_CRIT:
+        return ICP_LOG_WARNING;
+    case RTE_LOG_ERR:
+        return ICP_LOG_INFO;
+    case RTE_LOG_WARNING:
+    case RTE_LOG_NOTICE:
+    case RTE_LOG_INFO:
+        return ICP_LOG_DEBUG;
+    case RTE_LOG_DEBUG:
+        return ICP_LOG_TRACE;
+    default:
+        return ICP_LOG_NONE;
+    }
+}
+
+static ssize_t eal_log_write(void* cookie __attribute__((unused)),
+                             const char* buf, size_t size)
+{
+    /*
+     * The manpage says size == 0 is an error (by corollary) but dare
+     * we not check?
+     */
+    if (size == 0) return (0);
+
+    /*
+     * icp_log needs all of the messages to be terminated with a new-line, so fix up
+     * any messages that lack such niceties.
+     */
+    const char *format = (buf[size-1] == '\n') ? "%.*s" : "%.*s\n";
+
+    /*
+     * We can't grab the right function with a macro, so call the
+     * actual function and provide the logtype instead.
+     */
+    _icp_log(dpdk_loglevel(rte_log_cur_msg_loglevel()),
+             dpdk_logtype(rte_log_cur_msg_logtype()),
+             format, static_cast<int>(size), buf);
+
+    return (size);
 }
 
 eal::eal(std::vector<std::string> args)
@@ -102,11 +199,21 @@ eal::eal(std::vector<std::string> args)
                    [](std::string &s) { return s.data(); });
     eal_args.push_back(nullptr); /* null terminator */
 
-    icp_log(ICP_LOG_DEBUG, "Initializing DPDK with \"%s\"\n",
+    icp_log(ICP_LOG_INFO, "Initializing DPDK with \"%s\"\n",
             std::accumulate(begin(args), end(args), std::string(),
                             [](const std::string &a, const std::string &b) -> std::string {
                                 return a + (a.length() > 0 ? " " : "") + b;
                             }).c_str());
+
+    /* Create a stream for the EAL to use that forwards its messages to our logger */
+    cookie_io_functions_t stream_functions = {
+        .write = eal_log_write
+    };
+
+    auto stream = fopencookie(nullptr, "w+", stream_functions);
+    if (!stream || rte_openlog_stream(stream) < 0) {
+        throw std::runtime_error("Failed to set DPDK log stream");
+    }
 
     int parsed_or_err = rte_eal_init(eal_args.size() - 1, eal_args.data());
     if (parsed_or_err < 0) {
@@ -123,7 +230,7 @@ eal::eal(std::vector<std::string> args)
         icp_log(ICP_LOG_ERROR, "DPDK initialization routine only parsed %d of %" PRIu64 " arguments\n",
                 parsed_or_err, eal_args.size() - 2);
     } else {
-        icp_log(ICP_LOG_DEBUG, "DPDK initialized\n");
+        icp_log(ICP_LOG_INFO, "DPDK initialized\n");
     }
 
     /*
