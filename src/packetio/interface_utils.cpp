@@ -246,8 +246,8 @@ config_data make_config_data(const Interface& interface)
     std::vector<std::string> errors;
 
     /* Check port_id value, which must be a non-negative integer */
-    auto port_id = std::strtol(interface.getPortId().c_str(), nullptr, 10);
-    if (port_id == 0 && interface.getPortId() != "0") {
+    to_return.port_id = std::strtol(interface.getPortId().c_str(), nullptr, 10);
+    if (to_return.port_id == 0 && interface.getPortId() != "0") {
         errors.emplace_back("Port ID '" + interface.getPortId() + "' is invalid.");
     }
 
@@ -313,7 +313,7 @@ make_swagger_protocol_config(const ipv4_protocol_config& ipv4)
     auto visitor = overloaded_visitor(
         [&](const ipv4_dhcp_protocol_config &dhcp_ipv4) {
             config->setDhcp(make_swagger_protocol_config(dhcp_ipv4));
-            config->setMethod("static");
+            config->setMethod("dhcp");
         },
         [&](const ipv4_static_protocol_config &static_ipv4) {
             config->setStatic(make_swagger_protocol_config(static_ipv4));
