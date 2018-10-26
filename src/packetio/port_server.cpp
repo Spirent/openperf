@@ -20,7 +20,6 @@ const std::string endpoint = "inproc://icp_packetio_port";
 using namespace swagger::v1::model;
 using json = nlohmann::json;
 using generic_driver = icp::packetio::driver::generic_driver;
-using generic_port = icp::packetio::port::generic_port;
 
 std::string to_string(request_type type)
 {

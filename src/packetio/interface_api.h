@@ -5,14 +5,7 @@
 
 #include "json.hpp"
 
-#include "core/icp_core.h"
-
 namespace icp {
-
-namespace core {
-class event_loop;
-}
-
 namespace packetio {
 namespace interface {
 namespace api {

@@ -303,7 +303,7 @@ tl::expected<void, std::string> physical_port::apply_port_config(port_info& defa
         if ((error = rte_eth_rx_queue_setup(m_id, q,
                                             defaults.rx_desc_count(),
                                             SOCKET_ID_ANY, &rx_conf,
-                                            m_pool)) != 0) {
+                                            const_cast<rte_mempool*>(m_pool))) != 0) {
             return (tl::make_unexpected("Failed to setup RX queue " + std::to_string(q)
                                         + " on port " + std::to_string(m_id) + ": "
                                         + rte_strerror(error)));

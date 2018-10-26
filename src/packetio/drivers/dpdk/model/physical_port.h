@@ -38,8 +38,8 @@ public:
     tl::expected<void, std::string> low_level_config();
 
 private:
-    int m_id;
-    rte_mempool *m_pool;
+    const int m_id;
+    const rte_mempool *m_pool;
 
     tl::expected<void, std::string> apply_port_config(port_info& defaults,
                                                       rte_eth_dev_info &info,
