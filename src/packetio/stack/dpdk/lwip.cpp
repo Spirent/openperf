@@ -131,9 +131,9 @@ std::unordered_map<std::string, stack::stats_data> lwip::stats() const
      * compilation options.  Hence, we use the following macro + #include
      * to generate our memory statistics.
      */
-#define LWIP_MEMPOOL(pool_name, ...)                                  \
-    stats[memp_pools[MEMP_##pool_name]->desc] =                       \
-        make_memory_stats_data(memp_pools[MEMP_##pool_name]);
+#define LWIP_MEMPOOL(pool_name, ...)                                    \
+    stats.emplace(memp_pools[MEMP_##pool_name]->desc,                   \
+                  make_memory_stats_data(memp_pools[MEMP_##pool_name]));
 #include "lwip/priv/memp_std.h"
 
 #if ETHARP_STATS
