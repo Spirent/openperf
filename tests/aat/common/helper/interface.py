@@ -4,13 +4,18 @@ import client.api
 import client.models
 
 
-def example_interface(api_client):
+def empty_interface(api_client):
     ports = client.api.PortsApi(api_client)
     ps = ports.list_ports(kind='dpdk')
     expect(ps).not_to(be_empty)
     i = client.models.Interface()
     i.port_id = ps[0].id
     i.config = client.models.InterfaceConfig()
+    return i
+
+
+def example_interface(api_client):
+    i = empty_interface(api_client)
     i.config.protocols = map(as_interface_protocol, [
         client.models.InterfaceProtocolConfigEth(mac_address='00:00:00:00:00:01'),
         client.models.InterfaceProtocolConfigIpv4(method='static', static=client.models.InterfaceProtocolConfigIpv4Static(address='1.1.1.1', prefix_length=24)),
