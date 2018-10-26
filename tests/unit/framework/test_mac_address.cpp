@@ -16,6 +16,7 @@ TEST_CASE("mac_address functionality checks", "[mac_address]")
         REQUIRE_THROWS(mac_address("01-02-03-04"));           /* too short */
         REQUIRE_THROWS(mac_address("01-02-03-04-05-06-07"));  /* too long */
         REQUIRE_THROWS(mac_address("01:02:03:04:05:300"));    /* value too big */
+        REQUIRE_THROWS(mac_address("00:00:00:00:00:fh"));     /* not hex */
     }
 
     SECTION("access by index") {

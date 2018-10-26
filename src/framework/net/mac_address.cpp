@@ -3,6 +3,7 @@
 
 #include "net/mac_address.h"
 
+#include <iostream>
 namespace icp {
 namespace net {
 
@@ -12,18 +13,29 @@ mac_address::mac_address()
 
 mac_address::mac_address(const std::string& input)
 {
-    std::string delimiters("-:.");
+    /* Sanity check input */
+    static const std::string delimiters("-:.");
+    static const std::string hex_digits = "0123456789abcdefABCDEF" + delimiters;
+    for (size_t i = 0; i < input.length(); i++) {
+        if (hex_digits.find(input.at(i)) == std::string::npos) {
+            throw std::runtime_error(std::string(&input.at(i))
+                                     + " is not a valid hexadecimal character");
+        }
+    }
+
     size_t beg = 0, pos = 0, idx = 0;
     while((beg = input.find_first_not_of(delimiters, pos)) != std::string::npos) {
         if (idx == 6) {
             throw std::runtime_error("Too many octets in MAC address " + input);
         }
+
         pos = input.find_first_of(delimiters, beg + 1);
         auto value = std::strtol(input.substr(beg, pos-beg).c_str(), nullptr, 16);
         if (value < 0 || 0xff < value) {
             throw std::runtime_error("MAC address octet " + input.substr(beg, pos-beg)
                                      + " is not between 0x00 and 0xff");
         }
+
         m_octets[idx++] = value;
     }
     if (idx != 6) {
