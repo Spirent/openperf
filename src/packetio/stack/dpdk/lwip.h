@@ -13,6 +13,7 @@
 
 #include "packetio/generic_driver.h"
 #include "packetio/generic_interface.h"
+#include "packetio/generic_stack.h"
 #include "packetio/stack/dpdk/net_interface.h"
 
 namespace icp {
@@ -47,10 +48,13 @@ public:
     lwip(const lwip&) = delete;
     lwip& operator=(const lwip&&) = delete;
 
+    int id() const { return 0; }  /* only 1 stack for now */
     std::vector<int> interface_ids() const;
     std::optional<interface::generic_interface> interface(int id) const;
     tl::expected<int, std::string> create_interface(const interface::config_data& config);
     void delete_interface(int id);
+
+    std::unordered_map<std::string, stack::stats_data> stats() const;
 
 private:
     driver::generic_driver& m_driver;

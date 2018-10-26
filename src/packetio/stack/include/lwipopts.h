@@ -33,6 +33,8 @@
 
 /* Miscellaneous options */
 #define LWIP_STATS 1
+#define LWIP_STATS_DISPLAY 1
+#define MEMP_STATS 1
 #define MIB2_STATS 1
 
 /* Memory allocation options */

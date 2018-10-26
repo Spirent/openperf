@@ -11,7 +11,10 @@ PIO_SOURCES += \
 	json_transmogrify.cpp \
 	port_handler.cpp \
 	port_server.cpp \
-	port_utils.cpp
+	port_utils.cpp \
+	stack_handler.cpp \
+	stack_server.cpp \
+	stack_utils.cpp
 
 include $(PIO_SRC_DIR)/drivers/module.mk
 include $(PIO_SRC_DIR)/memory/module.mk
