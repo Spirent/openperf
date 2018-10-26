@@ -90,7 +90,7 @@ void handler::list_interfaces(const Rest::Request &request,
     };
 
     /* Check for supported parameters */
-    for (auto &s : { "port", "eth_mac_address", "ipv4_address" } ) {
+    for (auto &s : { "port_id", "eth_mac_address", "ipv4_address" } ) {
         if (request.query().has(s)) {
             api_request[s] = request.query().get(s).get();
         }
