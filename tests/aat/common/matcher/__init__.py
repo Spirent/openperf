@@ -8,3 +8,6 @@ from common.matcher.interface import be_valid_interface
 
 # port.py
 from common.matcher.port import be_valid_port
+
+# stack.py
+from common.matcher.stack import be_valid_stack
