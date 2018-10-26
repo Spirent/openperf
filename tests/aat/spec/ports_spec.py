@@ -5,7 +5,7 @@ import os
 import client.api
 import client.models
 from common import Config, Service
-from matchers import be_valid_port, raise_api_exception
+from common.matcher import be_valid_port, raise_api_exception
 
 
 CONFIG = Config(os.path.join(os.path.dirname(__file__), 'config.yaml'))
@@ -147,16 +147,18 @@ with description('Ports,') as self:
                 ps = self.ports.list_ports(kind='dpdk')
                 self.port = client.models.Port()
                 self.port.kind = 'bond'
-                self.port.config=client.models.PortConfig(bond=client.models.PortConfigBond())
+                self.port.config = client.models.PortConfig(bond=client.models.PortConfigBond())
                 self.port.config.bond.mode = 'lag_802_3_ad'
                 self.port.config.bond.ports = [ p.id for p in ps ]
                 expect(self.port.config.bond.ports).not_to(be_empty)
                 p = self.ports.create_port(self.port)
                 expect(p).to(be_valid_port)
-                self.cleanup = p
+                self.port, self.cleanup = p, p
 
             with it('succeeds'):
-                self.ports.delete_port(self.cleanup.id)
+                self.ports.delete_port(self.port.id)
+                expect(lambda: self.ports.get_port(self.port.id)).to(raise_api_exception(404))
+                self.cleanup = None
 
         with description('protected port,'):
             with it('returns 400'):

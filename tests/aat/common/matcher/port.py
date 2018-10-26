@@ -1,10 +1,12 @@
 from expects import *
 from expects.matchers import Matcher
 
+import client.models
+
 
 class _be_valid_port(Matcher):
     def _match(self, p):
-        expect(p).not_to(be_none)
+        expect(p).to(be_a(client.models.Port))
         expect(p.id).not_to(be_empty)
         expect(['dpdk', 'host', 'bond']).to(contain(p.kind))
         expect(p.config).not_to(be_none)
