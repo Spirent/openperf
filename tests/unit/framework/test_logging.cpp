@@ -25,18 +25,18 @@ TEST_CASE("exercise logging thread functionality", "[logging]")
     REQUIRE(icp_log_init(context.get(), NULL) == 0);
 
     SECTION("verify log message submission") {
-        REQUIRE(_icp_log(ICP_LOG_CRITICAL, __PRETTY_FUNCTION__,
-                         "This is a critical message\n") == 0);
-        REQUIRE(_icp_log(ICP_LOG_ERROR, __PRETTY_FUNCTION__,
-                         "This is a error message\n") == 0);
-        REQUIRE(_icp_log(ICP_LOG_WARNING, __PRETTY_FUNCTION__,
-                         "This is a warning message\n") == 0);
-        REQUIRE(_icp_log(ICP_LOG_INFO, __PRETTY_FUNCTION__,
-                         "This is a info message\n") == 0);
-        REQUIRE(_icp_log(ICP_LOG_DEBUG, __PRETTY_FUNCTION__,
-                         "This is a debug message\n") == 0);
-        REQUIRE(_icp_log(ICP_LOG_TRACE, __PRETTY_FUNCTION__,
-                         "This is a trace message\n") == 0);
+        REQUIRE(icp_log(ICP_LOG_CRITICAL, __PRETTY_FUNCTION__,
+                        "This is a critical message\n") == 0);
+        REQUIRE(icp_log(ICP_LOG_ERROR, __PRETTY_FUNCTION__,
+                        "This is a error message\n") == 0);
+        REQUIRE(icp_log(ICP_LOG_WARNING, __PRETTY_FUNCTION__,
+                        "This is a warning message\n") == 0);
+        REQUIRE(icp_log(ICP_LOG_INFO, __PRETTY_FUNCTION__,
+                        "This is a info message\n") == 0);
+        REQUIRE(icp_log(ICP_LOG_DEBUG, __PRETTY_FUNCTION__,
+                        "This is a debug message\n") == 0);
+        REQUIRE(icp_log(ICP_LOG_TRACE, __PRETTY_FUNCTION__,
+                        "This is a trace message\n") == 0);
     }
 }
 
