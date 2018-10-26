@@ -82,6 +82,21 @@ handler::handler(void *context, Rest::Router &router)
                        Rest::Routes::bind(&handler::bulk_delete_interfaces, this));
 }
 
+static std::string simple_url_decode(const std::string& input)
+{
+    std::ostringstream out;
+    for (size_t i = 0; i < input.length(); i++) {
+        if (input.at(i) == '%' && i + 2 < input.length()) {
+            auto hex = std::strtol(input.substr(i+1, 2).c_str(), nullptr, 16);
+            out << static_cast<unsigned char>(hex);
+            i += 2;
+        } else {
+            out << input.at(i);
+        }
+    }
+    return out.str();
+}
+
 void handler::list_interfaces(const Rest::Request &request,
                               Http::ResponseWriter response)
 {
@@ -89,10 +104,14 @@ void handler::list_interfaces(const Rest::Request &request,
         {"type", request_type::LIST_INTERFACES }
     };
 
-    /* Check for supported parameters */
+    /**
+     * Check for supported parameters
+     * Note: MAC addresses have ':' characters, and so might be URL encoded;
+     * just decode everything that comes in.
+     */
     for (auto &s : { "port_id", "eth_mac_address", "ipv4_address" } ) {
         if (request.query().has(s)) {
-            api_request[s] = request.query().get(s).get();
+            api_request[s] = simple_url_decode(request.query().get(s).get());
         }
     }
 

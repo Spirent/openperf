@@ -38,33 +38,28 @@ with description('Interfaces,') as self:
                     _is = self.interfaces.list_interfaces(port_id=self.intf.port_id)
                     expect([ i for i in _is if i.id == self.intf.id ]).not_to(be_empty)
 
-            # TCP
-            with _description('invalid port,'):
+            with description('invalid port,'):
                 with it('returns no interfaces'):
                     _is = self.interfaces.list_interfaces(port_id='foo')
                     expect(_is).to(be_empty)
 
-            # TCP
-            with _description('missing port,'):
+            with description('missing port,'):
                 with it('returns no interfaces'):
                     _is = self.interfaces.list_interfaces(port_id='')
                     expect(_is).to(be_empty)
 
-            # TCP
-            with _description('known existing Ethernet MAC address,'):
+            with description('known existing Ethernet MAC address,'):
                 with it('returns exactly one interface'):
                     _is = self.interfaces.list_interfaces(eth_mac_address=self.intf.config.protocols[0].eth.mac_address)
                     expect(_is).to(have_len(1))
                     expect(_is[0].id).to(equal(self.intf.id))
 
-            # TCP
-            with _description('invalid Ethernet MAC address,'):
+            with description('invalid Ethernet MAC address,'):
                 with it('returns no interfaces'):
                     _is = self.interfaces.list_interfaces(eth_mac_address='foo')
                     expect(_is).to(be_empty)
 
-            # TCP
-            with _description('missing Ethernet MAC address,'):
+            with description('missing Ethernet MAC address,'):
                 with it('returns no interfaces'):
                     _is = self.interfaces.list_interfaces(eth_mac_address='')
                     expect(_is).to(be_empty)
