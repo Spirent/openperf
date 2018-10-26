@@ -58,14 +58,14 @@ void lwip::delete_interface(int id)
 }
 
 /**
- * LwIP stats are all guarded by ifdef blocks, so we need to do the
- * same to make sure our stats retrieval functions match our compilation
- * options.
- * Ifdef'ing the functions is to prevent the compiler warning us about
- * unused functions.
+ * The rest of this file is pretty ugly.
+ * The LwIP code guards all stats via ifdef blocks.  We need to do the same
+ * here so that our retrieval code matches what actually exists.
+ * Additionally, the ifdef guards around the functions prevent the compiler
+ * from whining about unused functions.
  */
 
-
+#if LWIP_STATS
 #if SYS_STATS
 static stack::element_stats_data make_element_stats_data(const stats_syselem* syselem)
 {
@@ -75,6 +75,7 @@ static stack::element_stats_data make_element_stats_data(const stats_syselem* sy
 }
 #endif
 
+#if MEMP_STATS
 static stack::memory_stats_data make_memory_stats_data(const memp_desc* mem)
 {
     return { .name      = mem->desc,
@@ -84,6 +85,7 @@ static stack::memory_stats_data make_memory_stats_data(const memp_desc* mem)
              .errors    = mem->stats->err,
              .illegal   = mem->stats->illegal };
 }
+#endif
 
 #if IGMP_STATS || MLD6_STATS
 static stack::protocol_stats_data make_protocol_stats_data(const stats_igmp *igmp)
@@ -113,17 +115,20 @@ static stack::protocol_stats_data make_protocol_stats_data(const stats_proto* pr
              .misc_errors       = proto->err,
              .cache_hits        = proto->cachehit };
 }
+#endif /* LWIP_STATS */
 
 std::unordered_map<std::string, stack::stats_data> lwip::stats() const
 {
     std::unordered_map<std::string, stack::stats_data> stats;
 
+#if LWIP_STATS
 #if SYS_STATS
-    stats.emplace("sems",    make_element_stats_data(&lwip_stats.sys.sem));
-    stats.emplace("mutexes", make_element_stats_data(&lwip_stats.sys.mutex));
-    stats.emplace("mboxes",  make_element_stats_data(&lwip_stats.sys.mbox));
+    stats.emplace("sems",      make_element_stats_data(&lwip_stats.sys.sem));
+    stats.emplace("mutexes",   make_element_stats_data(&lwip_stats.sys.mutex));
+    stats.emplace("mboxes",    make_element_stats_data(&lwip_stats.sys.mbox));
 #endif
 
+#if MEMP_STATS
     /**
      * The mem_std.h file contains a LWIP_MEMPOOL() entry for every mempool
      * used by the stack.  Additionally, those mempool/macro blocks are
@@ -135,6 +140,7 @@ std::unordered_map<std::string, stack::stats_data> lwip::stats() const
     stats.emplace(memp_pools[MEMP_##pool_name]->desc,                   \
                   make_memory_stats_data(memp_pools[MEMP_##pool_name]));
 #include "lwip/priv/memp_std.h"
+#endif
 
 #if ETHARP_STATS
     stats.emplace("arp",       make_protocol_stats_data(&lwip_stats.etharp));
@@ -183,6 +189,7 @@ std::unordered_map<std::string, stack::stats_data> lwip::stats() const
 #if TCP_STATS
     stats.emplace("tcp",       make_protocol_stats_data(&lwip_stats.tcp));
 #endif
+#endif /* LWIP_STATS */
 
     return (stats);
 }
