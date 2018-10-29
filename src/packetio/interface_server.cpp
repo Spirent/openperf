@@ -121,19 +121,21 @@ static void _handle_bulk_create_interface_request(generic_stack& stack, json& re
     /* Check input */
     std::vector<int> success_list;
     try {
-        auto j_interfaces = json::array();
+        json response = {
+            {"items", json::array()}
+        };
         for (auto& item : request["items"]) {
-            auto interface_model = json::parse(item.get<std::string>()).get<Interface>();
+            auto interface_model = item.get<Interface>();
             auto result = stack.create_interface(make_config_data(interface_model));
             if (!result) {
                 throw std::runtime_error(result.error());
             }
             success_list.push_back(result.value());
-            j_interfaces.emplace_back(make_swagger_interface(
-                                          *stack.interface(result.value()))->toJson());
+            response["items"].emplace_back(make_swagger_interface(
+                                               *stack.interface(result.value()))->toJson());
         }
         reply["code"] = reply_code::OK;
-        reply["data"] = j_interfaces.dump();
+        reply["data"] = response.dump();
         return;
     } catch (const json::exception& e) {
         reply["code"] = reply_code::BAD_INPUT;
@@ -151,8 +153,13 @@ static void _handle_bulk_create_interface_request(generic_stack& stack, json& re
 
 static void _handle_bulk_delete_interface_request(generic_stack& stack, json& request, json& reply)
 {
-    for (int id : request["ids"]) {
-        stack.delete_interface(id);
+    for (std::string request_id : request["ids"]) {
+        /* id should be a number; ignore if not */
+        if (int id = strtol(request_id.c_str(), nullptr, 10);
+            id != 0 || request_id == "0") {  /* strtol returns 0 on error, so make sure the user
+                                              * really wants to delete 0 before doing so */
+            stack.delete_interface(id);
+        }
     }
     reply["code"] = reply_code::OK;
 }

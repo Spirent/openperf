@@ -3,7 +3,6 @@
 
 #include "net/mac_address.h"
 
-#include <iostream>
 namespace icp {
 namespace net {
 
