@@ -8,55 +8,55 @@ from common import Config, Service
 from common.matcher import be_valid_port, raise_api_exception
 
 
-CONFIG = Config(os.path.join(os.path.dirname(__file__), 'config.yaml'))
+CONFIG = Config(os.path.join(os.path.dirname(__file__), os.environ.get('MAMBA_CONFIG', 'config.yaml')))
 
 
 with description('Ports,') as self:
     with before.all:
         service = Service(CONFIG.service())
         self.process = service.start()
-        self.ports = client.api.PortsApi(service.client())
+        self.api = client.api.PortsApi(service.client())
 
     with description('list,'):
         with description('unfiltered,'):
             with it('returns valid ports'):
-                ps = self.ports.list_ports()
-                expect(ps).not_to(be_empty)
-                for p in ps:
-                    expect(p).to(be_valid_port)
+                ports = self.api.list_ports()
+                expect(ports).not_to(be_empty)
+                for port in ports:
+                    expect(port).to(be_valid_port)
 
         with description('filtered,'):
             with description('known existing kind,'):
                 with it('returns valid ports of that kind'):
-                    ps = self.ports.list_ports(kind='dpdk')
-                    expect(ps).not_to(be_empty)
-                    for p in ps:
-                        expect(p).to(be_valid_port)
-                        expect(p.kind).to(equal('dpdk'))
+                    ports = self.api.list_ports(kind='dpdk')
+                    expect(ports).not_to(be_empty)
+                    for port in ports:
+                        expect(port).to(be_valid_port)
+                        expect(port.kind).to(equal('dpdk'))
 
             with description('known non-existent kind,'):
                 with it('returns no ports'):
-                    ps = self.ports.list_ports(kind='host')
-                    expect(ps).to(be_empty)
+                    ports = self.api.list_ports(kind='host')
+                    expect(ports).to(be_empty)
 
             with description('invalid kind,'):
                 with it('returns no ports'):
-                    ps = self.ports.list_ports(kind='foo')
-                    expect(ps).to(be_empty)
+                    ports = self.api.list_ports(kind='foo')
+                    expect(ports).to(be_empty)
 
             with description('missing kind,'):
                 with it('returns no ports'):
-                    ps = self.ports.list_ports(kind='')
-                    expect(ps).to(be_empty)
+                    ports = self.api.list_ports(kind='')
+                    expect(ports).to(be_empty)
 
     with description('get,'):
         with description('known existing port,'):
             with it('succeeds'):
-                expect(self.ports.get_port('0')).to(be_valid_port)
+                expect(self.api.get_port('0')).to(be_valid_port)
 
         with description('non-existent port,'):
             with it('returns 404'):
-                expect(lambda: self.ports.get_port('foo')).to(raise_api_exception(404))
+                expect(lambda: self.api.get_port('foo')).to(raise_api_exception(404))
 
     with description('create,'):
         with before.each:
@@ -68,14 +68,14 @@ with description('Ports,') as self:
                 self.port.config = client.models.PortConfig(dpdk=client.models.PortConfigDpdk())
 
             with it('returns 400'):
-                expect(lambda: self.ports.delete_port('0')).to(raise_api_exception(400))
+                expect(lambda: self.api.delete_port('0')).to(raise_api_exception(400))
 
         with description('host kind,'):
             with before.each:
                 self.port.kind ='host'
 
             with it('returns 400'):
-                expect(lambda: self.ports.delete_port('0')).to(raise_api_exception(400))
+                expect(lambda: self.api.delete_port('0')).to(raise_api_exception(400))
 
         with description('bond kind,'):
             with before.each:
@@ -88,91 +88,91 @@ with description('Ports,') as self:
 
                 with description('valid port list,'):
                     with before.each:
-                        ps = self.ports.list_ports(kind='dpdk')
-                        expect(ps).not_to(be_empty)
-                        self.port.config.bond.ports = [ p.id for p in ps ]
+                        ports = self.api.list_ports(kind='dpdk')
+                        expect(ports).not_to(be_empty)
+                        self.port.config.bond.ports = [ p.id for p in ports ]
                         expect(self.port.config.bond.ports).not_to(be_empty)
 
                     with it('succeeds'):
-                        p = self.ports.create_port(self.port)
-                        expect(p).to(be_valid_port)
-                        self.cleanup = p
+                        port = self.api.create_port(self.port)
+                        expect(port).to(be_valid_port)
+                        self.cleanup = port
                         # TODO: no bond type in back end, at present
-                        #expect(p.kind).to(equal(self.port.kind))
-                        #expect(p.config.bond.mode).to(equal(self.port.config.bond.mode))
+                        #expect(port.kind).to(equal(self.port.kind))
+                        #expect(port.config.bond.mode).to(equal(self.port.config.bond.mode))
 
                 with description('invalid port list,'):
                     with before.each:
                         self.port.config.bond.ports = ['foo']
 
                     with it('returns 400'):
-                        expect(lambda: self.ports.create_port(self.port)).to(raise_api_exception(400))
+                        expect(lambda: self.api.create_port(self.port)).to(raise_api_exception(400))
 
                 with description('empty port list,'):
                     with before.each:
                         self.port.config.bond.ports = []
 
                     with it('returns 400'):
-                        expect(lambda: self.ports.create_port(self.port)).to(raise_api_exception(400))
+                        expect(lambda: self.api.create_port(self.port)).to(raise_api_exception(400))
 
                 with description('missing port list,'):
                     with it('returns 400'):
-                        expect(lambda: self.ports.create_port(self.port)).to(raise_api_exception(400))
+                        expect(lambda: self.api.create_port(self.port)).to(raise_api_exception(400))
 
             with description('invalid mode,'):
                 with before.each:
                     self.port.config.bond.mode = 'foo'
 
                 with it('returns 400'):
-                    expect(lambda: self.ports.create_port(self.port)).to(raise_api_exception(400))
+                    expect(lambda: self.api.create_port(self.port)).to(raise_api_exception(400))
 
             with description('missing mode,'):
                 with it('returns 400'):
-                    expect(lambda: self.ports.create_port(self.port)).to(raise_api_exception(400))
+                    expect(lambda: self.api.create_port(self.port)).to(raise_api_exception(400))
 
         with description('invalid kind,'):
             with before.each:
                 self.port.kind = 'foo'
 
             with it('returns 400'):
-                expect(lambda: self.ports.create_port(self.port)).to(raise_api_exception(400))
+                expect(lambda: self.api.create_port(self.port)).to(raise_api_exception(400))
 
         with description('missing kind,'):
             with it('returns 400'):
-                expect(lambda: self.ports.create_port(self.port)).to(raise_api_exception(400))
+                expect(lambda: self.api.create_port(self.port)).to(raise_api_exception(400))
 
     with description('delete,'):
         with description('valid port,'):
             with before.each:
-                ps = self.ports.list_ports(kind='dpdk')
+                ports = self.api.list_ports(kind='dpdk')
                 self.port = client.models.Port()
                 self.port.kind = 'bond'
                 self.port.config = client.models.PortConfig(bond=client.models.PortConfigBond())
                 self.port.config.bond.mode = 'lag_802_3_ad'
-                self.port.config.bond.ports = [ p.id for p in ps ]
+                self.port.config.bond.ports = [ p.id for p in ports ]
                 expect(self.port.config.bond.ports).not_to(be_empty)
-                p = self.ports.create_port(self.port)
-                expect(p).to(be_valid_port)
-                self.port, self.cleanup = p, p
+                port = self.api.create_port(self.port)
+                expect(port).to(be_valid_port)
+                self.port, self.cleanup = port, port
 
             with it('succeeds'):
-                self.ports.delete_port(self.port.id)
-                expect(lambda: self.ports.get_port(self.port.id)).to(raise_api_exception(404))
+                self.api.delete_port(self.port.id)
+                expect(lambda: self.api.get_port(self.port.id)).to(raise_api_exception(404))
                 self.cleanup = None
 
         with description('protected port,'):
             with it('returns 400'):
-                expect(lambda: self.ports.delete_port('0')).to(raise_api_exception(400))
+                expect(lambda: self.api.delete_port('0')).to(raise_api_exception(400))
 
         with description('non-existent port,'):
             with it('succeeds'):
-                self.ports.delete_port('foo')
+                self.api.delete_port('foo')
 
     with after.each:
         try:
             if self.cleanup is not None:
                 try:
-                    self.ports.delete_port(self.cleanup.id)
+                    self.api.delete_port(self.cleanup.id)
                 except:
                     pass
                 self.cleanup = None
