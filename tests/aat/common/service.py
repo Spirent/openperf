@@ -1,5 +1,6 @@
 import client
 from datetime import datetime
+from distutils.util import strtobool
 import logging
 import os
 import subprocess
@@ -13,6 +14,7 @@ class Service(object):
         # Create an API client using the service's base URL
         cconfig = client.Configuration()
         cconfig.host = self.config.base_url
+        cconfig.debug = strtobool(os.environ.get('MAMBA_DEBUG', 'False'))
         return client.ApiClient(cconfig)
 
     def start(self):
