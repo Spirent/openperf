@@ -1,195 +1,175 @@
+#include <algorithm>
 #include <limits>
 
 #include "core/icp_core.h"
-#include "drivers/dpdk/model/port_info.h"
+#include "packetio/drivers/dpdk/dpdk.h"
+#include "packetio/drivers/dpdk/model/port_info.h"
 
 namespace icp {
 namespace packetio {
 namespace dpdk {
 namespace model {
 
-port_info_flag operator | (port_info_flag a, port_info_flag b)
+template <typename T>
+static T get_info_field(int id, T rte_eth_dev_info::*field)
 {
-    return static_cast<port_info_flag>(static_cast<int>(a) | static_cast<int>(b));
+    rte_eth_dev_info info;
+    rte_eth_dev_info_get(id, &info);
+    return (info.*field);
 }
 
-port_info_flag operator & (port_info_flag a, port_info_flag b)
+static uint16_t operator "" _S(unsigned long long value)
 {
-    return static_cast<port_info_flag>(static_cast<int>(a) & static_cast<int>(b));
+    return static_cast<uint16_t>(value);
 }
 
-port_info::port_info(const char *name)
+port_info::port_info(uint16_t port_id)
+    : m_id(port_id)
 {
-    /**
-     * Bwa ha ha!  This is very not efficient.
-     */
-    bool found = false;
-    std::vector<std::unique_ptr<port_info_data>> all_info;
-    port_info_data::make_all(all_info);
-    for (auto& info : all_info) {
-        if (info->name == name) {
-            found = true;
-            _data = std::move(info);
-            break;
-        }
+    if (!rte_eth_dev_is_valid_port(m_id)) {
+        throw std::runtime_error("Port id " + std::to_string(m_id) + " is invalid");
     }
+}
 
-    if (!_data) {
-        ICP_LOG(ICP_LOG_WARNING, "No explicit configuration found for driver = %s."
-                "  Using defaults.\n", name);
+uint16_t port_info::id() const
+{
+    return (m_id);
+}
+
+const char* port_info::driver_name() const
+{
+    return (get_info_field(m_id, &rte_eth_dev_info::driver_name));
+}
+
+unsigned port_info::if_index() const
+{
+    return (get_info_field(m_id, &rte_eth_dev_info::if_index));
+}
+
+uint32_t port_info::max_rx_pktlen() const
+{
+    return (get_info_field(m_id, &rte_eth_dev_info::max_rx_pktlen));
+}
+
+uint32_t port_info::speeds() const
+{
+    return (get_info_field(m_id, &rte_eth_dev_info::speed_capa));
+}
+
+uint32_t port_info::max_speed() const
+{
+    auto speed_capa = get_info_field(m_id, &rte_eth_dev_info::speed_capa);
+
+    if (speed_capa & ETH_LINK_SPEED_100G) {
+        return (ETH_SPEED_NUM_100G);
+    } else if (speed_capa & ETH_LINK_SPEED_56G) {
+        return (ETH_SPEED_NUM_56G);
+    } else if (speed_capa & ETH_LINK_SPEED_50G) {
+        return (ETH_SPEED_NUM_50G);
+    } else if (speed_capa & ETH_LINK_SPEED_40G) {
+        return (ETH_SPEED_NUM_40G);
+    } else if (speed_capa & ETH_LINK_SPEED_25G) {
+        return (ETH_SPEED_NUM_25G);
+    } else if (speed_capa & ETH_LINK_SPEED_20G) {
+        return (ETH_SPEED_NUM_20G);
+    } else if (speed_capa & ETH_LINK_SPEED_10G) {
+        return (ETH_SPEED_NUM_10G);
+    } else if (speed_capa & ETH_LINK_SPEED_5G) {
+        return (ETH_SPEED_NUM_5G);
+    } else if (speed_capa & ETH_LINK_SPEED_2_5G) {
+        return (ETH_SPEED_NUM_2_5G);
+    } else if (speed_capa & ETH_LINK_SPEED_1G) {
+        return (ETH_SPEED_NUM_1G);
+    } else if (speed_capa & ETH_LINK_SPEED_100M
+               || speed_capa & ETH_LINK_SPEED_100M_HD) {
+        return (ETH_SPEED_NUM_100M);
+    } else if (speed_capa & ETH_LINK_SPEED_10M
+               || speed_capa & ETH_LINK_SPEED_10M_HD) {
+        return (ETH_SPEED_NUM_10M);
+    } else {
+        return (ETH_SPEED_NUM_NONE);
     }
+}
+
+uint64_t port_info::rx_offloads() const
+{
+    return (get_info_field(m_id, &rte_eth_dev_info::rx_offload_capa));
+}
+
+uint64_t port_info::tx_offloads() const
+{
+    return (get_info_field(m_id, &rte_eth_dev_info::tx_offload_capa));
+}
+
+uint64_t port_info::rss_offloads() const
+{
+    return (get_info_field(m_id, &rte_eth_dev_info::flow_type_rss_offloads));
 }
 
 uint16_t port_info::rx_queue_count() const
 {
-    return (_data ? _data->nb_rx_queues : std::numeric_limits<uint16_t>::max());
+    return (get_info_field(m_id, &rte_eth_dev_info::nb_rx_queues));
+}
+
+uint16_t port_info::rx_queue_max() const
+{
+    return (get_info_field(m_id, &rte_eth_dev_info::max_rx_queues));
+}
+
+uint16_t port_info::rx_queue_default() const
+{
+    return (std::max(1_S, get_info_field(m_id, &rte_eth_dev_info::default_rxportconf).nb_queues));
 }
 
 uint16_t port_info::tx_queue_count() const
 {
-    return (_data ? _data->nb_tx_queues : std::numeric_limits<uint16_t>::max());
+    return (get_info_field(m_id, &rte_eth_dev_info::nb_tx_queues));
+}
+
+uint16_t port_info::tx_queue_max() const
+{
+    return (get_info_field(m_id, &rte_eth_dev_info::max_tx_queues));
+}
+
+uint16_t port_info::tx_queue_default() const
+{
+    return (std::max(1_S, get_info_field(m_id, &rte_eth_dev_info::default_txportconf).nb_queues));
 }
 
 uint16_t port_info::rx_desc_count() const
 {
-    return (_data ? _data->nb_rx_desc : 1024);
+    return (get_info_field(m_id, &rte_eth_dev_info::rx_desc_lim).nb_max);
 }
 
 uint16_t port_info::tx_desc_count() const
 {
-    return (_data ? _data->nb_tx_desc : 256);
+    return (get_info_field(m_id, &rte_eth_dev_info::tx_desc_lim).nb_max);
+}
+
+rte_eth_rxconf port_info::default_rxconf() const
+{
+    return (get_info_field(m_id, &rte_eth_dev_info::default_rxconf));
+}
+
+rte_eth_txconf port_info::default_txconf() const
+{
+    return (get_info_field(m_id, &rte_eth_dev_info::default_txconf));
 }
 
 bool port_info::lsc_interrupt() const
 {
-    return (_data ?
-            (_data->flags & port_info_flag::LSC_INTR) == port_info_flag::LSC_INTR
-            : false);
+    return (*(get_info_field(m_id, &rte_eth_dev_info::dev_flags)) & RTE_ETH_DEV_INTR_LSC);
 }
 
 bool port_info::rxq_interrupt() const
 {
-    return (_data ?
-            (_data->flags & port_info_flag::RXQ_INTR) == port_info_flag::RXQ_INTR
-            : false);
+    /*
+     * There seems to be no programatic way to determine whether a device supports
+     * rx queue interrupts or not, so just enable them on everything, and let
+     * runtime errors modify our behavior.
+     */
+    return (true);
 }
-
-struct af_packet_config : public port_info_data::registrar<af_packet_config>
-{
-    af_packet_config()
-    {
-        name = "net_af_packet";
-        nb_tx_queues = std::numeric_limits<uint16_t>::max();
-        nb_rx_queues = std::numeric_limits<uint16_t>::max();
-        nb_rx_desc = 0;
-        nb_tx_desc = 0;
-        flags = port_info_flag::NONE;
-    }
-};
-
-struct ring_config : public port_info_data::registrar<ring_config>
-{
-    ring_config()
-    {
-        name = "net_ring";
-        nb_tx_queues = 1;
-        nb_rx_queues = 1;
-        nb_rx_desc = 0;
-        nb_tx_desc = 0;
-        flags = port_info_flag::NONE;
-    }
-};
-
-struct virtio_config : public port_info_data::registrar<virtio_config>
-{
-    virtio_config()
-    {
-        name = "net_virtio";
-        nb_tx_queues = 1;
-        nb_rx_queues = 1;
-        nb_rx_desc = 256;
-        nb_tx_desc = 256;
-        flags = port_info_flag::LSC_INTR | port_info_flag::RXQ_INTR;
-    }
-};
-
-struct vmxnet3_config : public port_info_data::registrar<vmxnet3_config>
-{
-    vmxnet3_config()
-    {
-        name = "net_vmxnet3";
-        nb_tx_queues = 2;
-        nb_rx_queues = 2;
-        nb_rx_desc = 2048;
-        nb_tx_desc = 512;
-        flags = port_info_flag::NONE;
-    }
-};
-
-struct em_config : public port_info_data::registrar<em_config>
-{
-    em_config()
-    {
-        name = "net_e1000_em";
-        nb_tx_queues = 1;
-        nb_rx_queues = 1;
-        nb_rx_desc = 1024;
-        nb_tx_desc = 256;
-        flags = port_info_flag::NONE;
-    }
-};
-
-struct igb_config : public port_info_data::registrar<igb_config>
-{
-    igb_config()
-    {
-        name = "net_e1000_igb";
-        nb_tx_queues = 1;
-        nb_rx_queues = 1;
-        nb_rx_desc = 1024;
-        nb_tx_desc = 256;
-        flags = port_info_flag::LSC_INTR | port_info_flag::RXQ_INTR;
-    }
-};
-
-struct igb_vf_config : public port_info_data::registrar<igb_vf_config>
-{
-    igb_vf_config()
-    {
-        name = "net_e1000_igb_vf";
-        nb_tx_queues = 1;
-        nb_rx_queues = 1;
-        nb_rx_desc = 1024;
-        nb_tx_desc = 256;
-        flags = port_info_flag::RXQ_INTR;
-    }
-};
-
-struct ixgbe_config : public port_info_data::registrar<ixgbe_config>
-{
-    ixgbe_config()
-    {
-        name= "net_ixgbe";
-        nb_tx_queues = 2;
-        nb_rx_queues = 2;
-        nb_rx_desc = 2048;
-        nb_tx_desc = 256;
-        flags = port_info_flag::LSC_INTR | port_info_flag::RXQ_INTR;
-     }
-};
-
-struct ixgbe_vf_config : public port_info_data::registrar<ixgbe_vf_config>
-{
-    ixgbe_vf_config()
-    {
-        name = "net_ixgbe_vf";
-        nb_tx_queues = 2;
-        nb_rx_queues = 2;
-        nb_rx_desc = 2048;
-        nb_tx_desc = 256;
-        flags = port_info_flag::RXQ_INTR;
-    }
-};
 
 }
 }

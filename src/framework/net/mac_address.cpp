@@ -95,6 +95,11 @@ uint8_t mac_address::operator[](size_t idx) const
     return m_octets[idx];
 }
 
+const uint8_t* mac_address::data() const
+{
+    return (&m_octets[0]);
+}
+
 std::string to_string(const mac_address& mac)
 {
     char buffer[18];

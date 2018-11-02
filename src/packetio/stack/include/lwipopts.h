@@ -26,10 +26,7 @@
 #define LWIP_AUTOIP 1
 #define LWIP_DHCP_AUTOIP_COOP 1
 #define LWIP_DHCP_CHECK_LINK_UP 1
-
-/* Use appropriate thread names */
-#define TCPIP_THREAD_NAME "icp_stack"
-#define DEFAULT_THREAD_NAME "icp_stack_misc"
+#define DHCP_DOES_ARP_CHECK 1  /* let's be a good net-citizen */
 
 /* Miscellaneous options */
 #define LWIP_STATS 1

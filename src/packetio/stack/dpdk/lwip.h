@@ -59,7 +59,7 @@ public:
 private:
     driver::generic_driver& m_driver;
     std::unordered_map<size_t, std::unique_ptr<net_interface>> m_interfaces;
-    int m_idx;
+    size_t m_idx;
 };
 
 }

@@ -4,6 +4,10 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define ICP_TASK_ARGS_NAME_MAX 16
 
 /**
@@ -108,5 +112,9 @@ __attribute__((format(printf, 5, 6)));
  *  !0: Error
  */
 int icp_task_sync_ping(void *context, const char *endpoint);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

@@ -3,6 +3,7 @@
 
 #include "core/icp_core.h"
 #include "packetio/drivers/dpdk/dpdk.h"
+#include "packetio/stack/dpdk/netif_wrapper.h"
 #include "packetio/stack/dpdk/lwip.h"
 
 namespace icp {
@@ -32,19 +33,25 @@ std::vector<int> lwip::interface_ids() const
     return (ids);
 }
 
+static netif_wrapper make_netif_wrapper(const std::unique_ptr<net_interface>& ifp)
+{
+    return (netif_wrapper(ifp->id(), ifp->data(), ifp->config()));
+}
+
 std::optional<interface::generic_interface> lwip::interface(int id) const
 {
     return (m_interfaces.find(id) != m_interfaces.end()
-            ? std::make_optional(interface::generic_interface(*m_interfaces.at(id).get()))
+            ? std::make_optional(interface::generic_interface(
+                                     make_netif_wrapper(m_interfaces.at(id))))
             : std::nullopt);
 }
 
 tl::expected<int, std::string> lwip::create_interface(const interface::config_data& config)
 {
     try {
-        auto item = m_interfaces.emplace(
-            std::make_pair(m_idx, std::make_unique<net_interface>(m_idx, config)));
-        m_idx++;
+        auto ifp = std::make_unique<net_interface>(m_idx, config);
+        m_driver.add_interface(ifp->port_id(), ifp->data());
+        auto item = m_interfaces.emplace(std::make_pair(m_idx++, std::move(ifp)));
         return (item.first->first);
     } catch (const std::runtime_error &e) {
         ICP_LOG(ICP_LOG_ERROR, "Interface creation failed: %s\n", e.what());
@@ -54,7 +61,11 @@ tl::expected<int, std::string> lwip::create_interface(const interface::config_da
 
 void lwip::delete_interface(int id)
 {
-    m_interfaces.erase(id);
+    if (m_interfaces.find(id) != m_interfaces.end()) {
+        auto& ifp = m_interfaces.at(id);
+        m_driver.del_interface(ifp->port_id(), std::make_any<netif*>(ifp->data()));
+        m_interfaces.erase(id);
+    }
 }
 
 /**

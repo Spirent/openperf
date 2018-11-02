@@ -17,17 +17,22 @@ public:
     net_interface(int id, const interface::config_data& config);
     ~net_interface();
 
+    static void *operator new(size_t);
+    static void operator delete(void*);
+
+    net_interface(const net_interface&) = delete;
+    net_interface& operator= (const net_interface&) = delete;
+
+    netif* data();
+
     int id() const;
     int port_id() const;
-    std::string mac_address() const;
-    std::string ipv4_address() const;
-    interface::stats_data stats() const;
     interface::config_data config() const;
 
 private:
-    interface::config_data m_config;
-    netif m_netif;
-    int m_id;
+    const interface::config_data m_config;
+    const int m_id;
+    alignas(64) netif m_netif;  /**< This member is for another thread to use */
 };
 
 }

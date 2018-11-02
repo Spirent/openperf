@@ -3,8 +3,6 @@
 #include "swagger/v1/model/Stack.h"
 #include "packetio/generic_stack.h"
 
-#include <iostream>
-
 namespace icp {
 namespace packetio {
 namespace stack {

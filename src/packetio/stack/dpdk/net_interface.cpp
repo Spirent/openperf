@@ -1,10 +1,13 @@
 #include <optional>
 #include <variant>
 
+#include "arpa/inet.h"
+
 #include "lwip/netifapi.h"
 #include "lwip/snmp.h"
 
 #include "packetio/drivers/dpdk/dpdk.h"
+#include "packetio/memory/dpdk/memp.h"
 #include "packetio/stack/dpdk/net_interface.h"
 
 namespace icp {
@@ -14,52 +17,29 @@ namespace dpdk {
 constexpr static char ifname_0 = 'i';
 constexpr static char ifname_1 = 'o';
 
-static std::optional<interface::ipv4_protocol_config>
-get_ipv4_protocol_config(interface::config_data& config)
+template<typename ...Ts>
+struct overloaded_visitor : Ts...
+{
+    overloaded_visitor(const Ts&... args)
+        : Ts(args)...
+    {}
+
+    using Ts::operator()...;
+};
+
+/**
+ * Retrieve the first instance of a protocol in the configuration vector.
+ */
+template <typename T>
+static std::optional<T> get_protocol_config(const interface::config_data& config)
 {
     for (auto& p : config.protocols) {
-        if (std::holds_alternative<interface::ipv4_protocol_config>(p)) {
-            return std::make_optional(std::get<interface::ipv4_protocol_config>(p));
+        if (std::holds_alternative<T>(p)) {
+            return std::make_optional(std::get<T>(p));
         }
     }
+
     return std::nullopt;
-}
-
-static interface::eth_protocol_config
-get_eth_protocol_config(interface::config_data& config)
-{
-    for (auto& p : config.protocols) {
-        if (std::holds_alternative<interface::eth_protocol_config>(p)) {
-            return std::get<interface::eth_protocol_config>(p);
-        }
-    }
-
-    throw std::runtime_error("No Ethernet protocol configuration found!");
-}
-
-static bool is_dhcp(interface::config_data& config)
-{
-    auto ipv4_config = get_ipv4_protocol_config(config);
-    if (ipv4_config
-        && std::holds_alternative<interface::ipv4_dhcp_protocol_config>(*ipv4_config)) {
-        return true;
-    }
-    return false;
-}
-
-static bool has_ipv4(interface::config_data& config)
-{
-    for (auto& p : config.protocols) {
-        if (std::holds_alternative<interface::ipv4_protocol_config>(p)) {
-            return true;
-        }
-    }
-    return false;
-}
-
-static bool has_static_ipv4(interface::config_data& config)
-{
-    return (has_ipv4(config) && !is_dhcp(config));
 }
 
 static uint32_t to_netmask(int prefix_length)
@@ -115,16 +95,46 @@ static uint32_t dpdk_port_speed(uint16_t port_id)
     }
 }
 
-/* TODO */
+/**
+ * Quick and dirty transmit function.
+ * XXX: Assumes tx queue 0 exists.
+ * TODO: Queue this to a dedicated tx thread/worker for bulk tx
+ */
 static err_t net_interface_tx(netif* netif, pbuf *p)
 {
     if (!p) {
         return (ERR_OK);
     }
 
-    ICP_LOG(ICP_LOG_INFO, "Tx called for pbuf %p on netif %p\n",
-            (void *)p, (void *)netif);
-    return (ERR_OK);
+    net_interface *ifp = reinterpret_cast<net_interface*>(netif->state);
+    rte_mbuf *pkts[] = { packetio_memp_pbuf_to_mbuf(p) };
+
+    MIB2_STATS_NETIF_ADD(netif, ifoutoctets, p->tot_len);
+    if ((static_cast<uint8_t*>(p->payload)[0] & 1) == 0) {
+        MIB2_STATS_NETIF_INC(netif, ifoutucastpkts);
+    } else {
+        MIB2_STATS_NETIF_INC(netif, ifoutnucastpkts);
+    }
+
+    ICP_LOG(ICP_LOG_TRACE, "Transmitting packet from %c%c%u on %d:%d\n",
+            netif->name[0], netif->name[1], netif->num, ifp->port_id(), 0);
+    err_t error = rte_eth_tx_burst(ifp->port_id(), 0, pkts, 1) == 1 ? ERR_OK : ERR_BUF;
+    if (error) {
+        MIB2_STATS_NETIF_INC(netif, ifouterrors);
+    }
+    return (error);
+}
+
+static err_t net_interface_rx(pbuf *p, netif* netif)
+{
+    MIB2_STATS_NETIF_ADD(netif, ifinoctets, p->tot_len);
+    if ((static_cast<uint8_t*>(p->payload)[0] & 1) == 0) {
+        MIB2_STATS_NETIF_INC(netif, ifinnucastpkts);
+    } else {
+        MIB2_STATS_NETIF_INC(netif, ifinucastpkts);
+    }
+
+    return (tcpip_input(p, netif));
 }
 
 static err_t net_interface_dpdk_init(netif* netif)
@@ -139,9 +149,9 @@ static err_t net_interface_dpdk_init(netif* netif)
 
     netif->hwaddr_len = ETH_HWADDR_LEN;
     auto config = ifp->config();
-    auto eth_config = get_eth_protocol_config(config);
+    auto eth_config = get_protocol_config<interface::eth_protocol_config>(config);
     for (size_t i = 0; i < ETH_HWADDR_LEN; i++) {
-        netif->hwaddr[i] = eth_config.address[i];
+        netif->hwaddr[i] = eth_config->address[i];
     }
 
     uint16_t mtu;
@@ -166,7 +176,7 @@ static err_t net_interface_dpdk_init(netif* netif)
     rte_eth_link link;
     rte_eth_link_get_nowait(ifp->port_id(), &link);
     if (link.link_status == ETH_LINK_UP) {
-        netif->flags |= NETIF_FLAG_UP;
+        netif->flags |= NETIF_FLAG_LINK_UP;
     }
 
     return (ERR_OK);
@@ -189,6 +199,61 @@ static int net_interface_link_status_change(uint16_t port_id,
             : netifapi_netif_set_link_down(netif));
 }
 
+static err_t setup_ipv4_interface(const std::optional<interface::ipv4_protocol_config> ipv4_config,
+                                  netif& netif)
+{
+    err_t netif_error = ERR_OK;
+
+    if (ipv4_config) {
+        /* Explicit IPv4 config; so use it */
+        std::visit(overloaded_visitor(
+                       [&](const interface::ipv4_static_protocol_config& ipv4) {
+                           ip4_addr address = { htonl(ipv4.address.data()) };
+                           ip4_addr netmask = { htonl(to_netmask(ipv4.prefix_length)) };
+                           ip4_addr gateway = { ipv4.gateway ? htonl(ipv4.gateway->data()) : 0 };
+                           netif_error = (netifapi_netif_add(&netif,
+                                                             &address, &netmask, &gateway,
+                                                             netif.state,
+                                                             net_interface_dpdk_init,
+                                                             net_interface_rx)
+                                          || netifapi_netif_set_up(&netif));
+                       },
+                       [&](const interface::ipv4_dhcp_protocol_config& dhcp) {
+                           if (dhcp.hostname) {
+                               netif_set_hostname(&netif, dhcp.hostname.value().c_str());
+                           }
+                           netif_error = (netifapi_netif_add(&netif,
+                                                             nullptr, nullptr, nullptr,
+                                                             netif.state,
+                                                             net_interface_dpdk_init,
+                                                             net_interface_rx)
+                                          || netifapi_netif_set_up(&netif)
+                                          || netifapi_dhcp_start(&netif));
+                       }),
+                   *ipv4_config);
+    } else {
+        /* No explicit IPv4 config; use AutoIP to pick a link-local IPv4 address */
+        netif_error = (netifapi_netif_add(&netif,
+                                          nullptr, nullptr, nullptr,
+                                          netif.state, net_interface_dpdk_init, net_interface_rx)
+                       || netifapi_netif_set_up(&netif)
+                       || netifapi_autoip_start(&netif));
+    }
+
+    return (netif_error);
+}
+
+static void unset_ipv4_interface(const std::optional<interface::ipv4_protocol_config> ipv4,
+                                 netif& netif)
+{
+    if (ipv4 && std::holds_alternative<interface::ipv4_dhcp_protocol_config>(*ipv4)) {
+        netifapi_dhcp_release(&netif);
+        netifapi_dhcp_stop(&netif);
+    } else if (!ipv4) {
+        netifapi_autoip_stop(&netif);
+    }
+}
+
 net_interface::net_interface(int id, const interface::config_data& config)
     : m_config(config)
     , m_id(id)
@@ -196,39 +261,8 @@ net_interface::net_interface(int id, const interface::config_data& config)
     m_netif.state = this;
 
     /* Setup the stack interface */
-    err_t netif_error;
-    if (has_ipv4(m_config)) {
-        if (has_static_ipv4(m_config)) {
-            auto ipv4_config = std::get<interface::ipv4_static_protocol_config>(
-                *get_ipv4_protocol_config(m_config));
-            ip4_addr address = { ipv4_config.address.data() };
-            ip4_addr netmask = { to_netmask(ipv4_config.prefix_length) };
-            ip4_addr gateway = { ipv4_config.gateway ? ipv4_config.gateway->data() : 0 };
-            netif_error = (netifapi_netif_add(&m_netif,
-                                              &address, &netmask, &gateway,
-                                              this, net_interface_dpdk_init, ip_input)
-                           || netifapi_netif_set_up(&m_netif));
-        } else {
-            /* DHCP controlled interface */
-            auto dhcp_config = std::get<interface::ipv4_dhcp_protocol_config>(
-                *get_ipv4_protocol_config(m_config));
-            if (dhcp_config.hostname) {
-                netif_set_hostname(&m_netif, dhcp_config.hostname.value().c_str());
-            }
-            netif_error = (netifapi_netif_add(&m_netif,
-                                              nullptr, nullptr, nullptr,
-                                              this, net_interface_dpdk_init, ip_input)
-                           || netifapi_netif_set_up(&m_netif)
-                           || netifapi_dhcp_start(&m_netif));
-        }
-    } else {
-        netif_error = (netifapi_netif_add(&m_netif,
-                                          nullptr, nullptr, nullptr,
-                                          this, net_interface_dpdk_init, ip_input)
-                       || netifapi_netif_set_up(&m_netif)
-                       || netifapi_autoip_start(&m_netif));
-    }
-
+    err_t netif_error = setup_ipv4_interface(get_protocol_config<interface::ipv4_protocol_config>(m_config),
+                                             m_netif);
     if (netif_error) {
         throw std::runtime_error(lwip_strerr(netif_error));
     }
@@ -250,17 +284,20 @@ net_interface::~net_interface()
                                     net_interface_link_status_change,
                                     &m_netif);
 
-    if (has_ipv4(m_config)) {
-        if (is_dhcp(m_config)) {
-            netifapi_dhcp_release(&m_netif);
-            netifapi_dhcp_stop(&m_netif);
-        }
-    } else {
-        netifapi_autoip_stop(&m_netif);
-    }
-
+    unset_ipv4_interface(get_protocol_config<interface::ipv4_protocol_config>(m_config),
+                         m_netif);
     netifapi_netif_set_down(&m_netif);
     netifapi_netif_remove(&m_netif);
+}
+
+void* net_interface::operator new(size_t size)
+{
+    return (rte_zmalloc("net_interface", size, 0));
+}
+
+void net_interface::operator delete(void* ifp)
+{
+    rte_free(ifp);
 }
 
 int net_interface::id() const
@@ -273,30 +310,9 @@ int net_interface::port_id() const
     return (m_config.port_id);
 }
 
-std::string net_interface::mac_address() const
+netif* net_interface::data()
 {
-    return (net::to_string(net::mac_address(m_netif.hwaddr)));
-}
-
-std::string net_interface::ipv4_address() const
-{
-    return (net::to_string(net::ipv4_address(m_netif.ip_addr.addr)));
-}
-
-interface::stats_data net_interface::stats() const
-{
-    return { .rx_packets = (m_netif.mib2_counters.ifinucastpkts
-                            + m_netif.mib2_counters.ifinnucastpkts),
-             .tx_packets = (m_netif.mib2_counters.ifoutucastpkts
-                            + m_netif.mib2_counters.ifoutnucastpkts),
-             .rx_bytes = m_netif.mib2_counters.ifinoctets,
-             .tx_bytes = m_netif.mib2_counters.ifoutoctets,
-             .rx_errors = (m_netif.mib2_counters.ifindiscards
-                           + m_netif.mib2_counters.ifinerrors
-                           + m_netif.mib2_counters.ifinunknownprotos),
-             .tx_errors = (m_netif.mib2_counters.ifoutdiscards
-                           + m_netif.mib2_counters.ifouterrors)
-    };
+    return (&m_netif);
 }
 
 interface::config_data net_interface::config() const

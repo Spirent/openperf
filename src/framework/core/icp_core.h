@@ -27,6 +27,7 @@
 #include "core/icp_reference.h"
 #include "core/icp_socket.h"
 #include "core/icp_string.h"
+#include "core/icp_task.h"
 #include "core/icp_thread.h"
 
 #endif /* _ICP_CORE_H */

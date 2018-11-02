@@ -1,6 +1,7 @@
 #ifndef _ICP_PACKETIO_DPDK_MODEL_PHYSICAL_PORT_H_
 #define _ICP_PACKETIO_DPDK_MODEL_PHYSICAL_PORT_H_
 
+#include "net/net_types.h"
 #include "packetio/generic_port.h"
 
 struct rte_eth_conf;
@@ -35,15 +36,19 @@ public:
     tl::expected<void, std::string> start();
     tl::expected<void, std::string> stop();
 
-    tl::expected<void, std::string> low_level_config();
+    tl::expected<void, std::string> low_level_config(uint16_t nb_rxqs,
+                                                     uint16_t nb_txqs);
+
+    void add_mac_address(const net::mac_address& mac);
+    void del_mac_address(const net::mac_address& mac);
 
 private:
     const int m_id;
     const rte_mempool *m_pool;
 
-    tl::expected<void, std::string> apply_port_config(port_info& defaults,
-                                                      rte_eth_dev_info &info,
-                                                      rte_eth_conf& conf);
+    tl::expected<void, std::string> apply_port_config(port_info&, rte_eth_conf&,
+                                                      uint16_t nb_rxqs = 0,
+                                                      uint16_t nb_txqs = 0);
 };
 
 }

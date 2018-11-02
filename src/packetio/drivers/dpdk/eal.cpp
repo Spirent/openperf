@@ -1,7 +1,7 @@
 #include <cerrno>
 #include <cstdlib>
 #include <algorithm>
-#include <iostream>
+#include <map>
 #include <numeric>
 #include <string>
 #include <vector>
@@ -9,12 +9,15 @@
 #include <net/if.h>
 #include <sys/capability.h>
 
+#include "lwip/netif.h"
 #include "tl/expected.hpp"
 
 #include "core/icp_core.h"
-#include "drivers/dpdk/dpdk.h"
-#include "drivers/dpdk/eal.h"
-#include "drivers/dpdk/model/physical_port.h"
+#include "packetio/drivers/dpdk/dpdk.h"
+#include "packetio/drivers/dpdk/eal.h"
+#include "packetio/drivers/dpdk/queue_utils.h"
+#include "packetio/drivers/dpdk/worker_api.h"
+#include "packetio/drivers/dpdk/model/physical_port.h"
 #include "packetio/generic_port.h"
 
 namespace icp {
@@ -57,14 +60,14 @@ static bool sufficient_permissions()
     return (have_permissions);
 }
 
-static void log_port(uint16_t port_idx, struct rte_eth_dev_info &info)
+static void log_port(uint16_t port_idx, model::port_info& info)
 {
     struct ether_addr mac_addr;
     rte_eth_macaddr_get(port_idx, &mac_addr);
 
-    if (info.if_index > 0) {
+    if (auto if_index = info.if_index(); if_index > 0) {
         char if_name[IF_NAMESIZE];
-        if_indextoname(info.if_index, if_name);
+        if_indextoname(if_index, if_name);
         ICP_LOG(ICP_LOG_INFO, "  dpdk%d: %02x:%02x:%02x:%02x:%02x:%02x (%s) attached to %s\n",
                 port_idx,
                 mac_addr.addr_bytes[0],
@@ -73,7 +76,7 @@ static void log_port(uint16_t port_idx, struct rte_eth_dev_info &info)
                 mac_addr.addr_bytes[3],
                 mac_addr.addr_bytes[4],
                 mac_addr.addr_bytes[5],
-                info.driver_name, if_name);
+                info.driver_name(), if_name);
     } else {
         ICP_LOG(ICP_LOG_INFO, "  dpdk%d: %02x:%02x:%02x:%02x:%02x:%02x (%s)\n",
                 port_idx,
@@ -83,8 +86,27 @@ static void log_port(uint16_t port_idx, struct rte_eth_dev_info &info)
                 mac_addr.addr_bytes[3],
                 mac_addr.addr_bytes[4],
                 mac_addr.addr_bytes[5],
-                info.driver_name);
+                info.driver_name());
     }
+}
+
+static int log_link_status_change(uint16_t port_id,
+                                  rte_eth_event_type event __attribute__((unused)),
+                                  void *cb_arg __attribute__((unused)),
+                                  void *ret_param __attribute__((unused)))
+{
+    assert(event == RTE_ETH_EVENT_INTR_LSC);
+    struct rte_eth_link link;
+    rte_eth_link_get_nowait(port_id, &link);
+    if (link.link_status == ETH_LINK_UP) {
+        ICP_LOG(ICP_LOG_INFO, "Port %u Link Up - speed %u Mbps - %s-duplex\n",
+                port_id, link.link_speed,
+                link.link_duplex == ETH_LINK_FULL_DUPLEX ? "full" : "half");
+    } else {
+        ICP_LOG(ICP_LOG_INFO, "Port %u Link Down\n", port_id);
+    }
+
+    return (0);
 }
 
 __attribute__((const))
@@ -184,8 +206,88 @@ static ssize_t eal_log_write(void* cookie __attribute__((unused)),
     return (size);
 }
 
-eal::eal(std::vector<std::string> args)
+static __attribute__((const)) int eal_workers()
+{
+    int count = 0;
+    unsigned i = 0;
+    RTE_LCORE_FOREACH_SLAVE(i) {
+        if (rte_lcore_is_enabled(i)) {
+            count++;
+        }
+    }
+    return (count);
+}
+
+struct queue_count {
+    uint16_t rx;
+    uint16_t tx;
+};
+
+static std::map<int, queue_count> get_port_queue_counts(const std::vector<queue::descriptor>& descriptors)
+{
+    std::map<int, queue_count> port_queue_counts;
+
+    for (auto& d : descriptors) {
+        if (port_queue_counts.find(d.port_id) == port_queue_counts.end()) {
+            port_queue_counts.emplace(d.port_id, queue_count());
+        }
+
+        auto& queue_count = port_queue_counts[d.port_id];
+
+        switch (d.mode) {
+        case queue::queue_mode::RX:
+            queue_count.rx++;
+            break;
+        case queue::queue_mode::TX:
+            queue_count.tx++;
+            break;
+        case queue::queue_mode::RXTX:
+            queue_count.tx++;
+            queue_count.rx++;
+            break;
+        default:
+            break;
+        }
+    }
+
+    return (port_queue_counts);
+}
+
+static void configure_all_ports(const std::map<int, queue_count>& port_queue_counts,
+                                rte_mempool* rx_mempool)
+{
+    uint16_t port_id = 0;
+    RTE_ETH_FOREACH_DEV(port_id) {
+        auto port = model::physical_port(port_id, rx_mempool);
+        auto result = port.low_level_config(port_queue_counts.at(port_id).rx,
+                                            port_queue_counts.at(port_id).tx);
+        if (!result) {
+            throw std::runtime_error(result.error());
+        }
+    }
+}
+
+static int get_waiting_lcore()
+{
+    int i = 0;
+    RTE_LCORE_FOREACH_SLAVE(i) {
+        switch (rte_eal_get_lcore_state(i)) {
+        case FINISHED:
+            rte_eal_wait_lcore(i);
+            break;
+        case WAIT:
+            return (i);
+        default:
+            continue;
+        }
+    }
+
+    return (-1);
+}
+
+eal::eal(void* context, std::vector<std::string> args)
     : m_initialized(false)
+    , m_switch(std::make_shared<vif_switch<netif*>>())
 {
     /* Check to see if we have permissions to launch DPDK */
     if (!sufficient_permissions()) {
@@ -230,7 +332,7 @@ eal::eal(std::vector<std::string> args)
         ICP_LOG(ICP_LOG_ERROR, "DPDK initialization routine only parsed %d of %" PRIu64 " arguments\n",
                 parsed_or_err, eal_args.size() - 2);
     } else {
-        ICP_LOG(ICP_LOG_INFO, "DPDK initialized\n");
+        ICP_LOG(ICP_LOG_INFO, "DPDK initialized (%d workers available)\n", eal_workers());
     }
 
     /*
@@ -238,27 +340,65 @@ eal::eal(std::vector<std::string> args)
      * 1. Log the MAC/driver to the console
      * 2. Generate a port_info vector
      */
-    uint16_t port_idx = 0;
+    uint16_t port_id = 0;
     std::vector<model::port_info> port_info;
-    RTE_ETH_FOREACH_DEV(port_idx) {
-        struct rte_eth_dev_info info;
-        rte_eth_dev_info_get(port_idx, &info);
-        log_port(port_idx, info);
-        port_info.emplace_back(model::port_info(info.driver_name));
+    RTE_ETH_FOREACH_DEV(port_id) {
+        port_info.emplace_back(model::port_info(port_id));
+        log_port(port_id, port_info.back());
     }
 
     /* Use the port_info vector to allocate our default memory pools */
     m_allocator = std::make_unique<pool_allocator>(pool_allocator(port_info));
 
-    /* Now use a pool from the pool allocator to configure our ports */
-    port_idx = 0;
-    RTE_ETH_FOREACH_DEV(port_idx) {
-        auto port = model::physical_port(port_idx, m_allocator->rx_mempool());
-        auto result = port.low_level_config();
-        if (!result) {
-            throw std::runtime_error(result.error());
-        }
+    /* And determine how we should distribute port queues to workers */
+    auto descriptors = queue::distribute_queues(port_info, eal_workers() - 1);
+
+    /* Use the queue descriptors to configure all of our ports */
+    configure_all_ports(get_port_queue_counts(descriptors),
+                        m_allocator->rx_mempool());
+
+
+    /* Finally, launch work threads on all of our available worker cores */
+    m_workers = std::make_unique<worker::client>(context, eal_workers() - 1);
+    static std::string_view sync_endpoint = "inproc://eal_worker_sync";
+    auto sync = icp_task_sync_socket(context, sync_endpoint.data());
+    struct worker::args worker_args = {
+        .context = context,
+        .endpoint = sync_endpoint.data(),
+        .vif = m_switch
+    };
+
+    std::unordered_map<int, int> worker_lcore_map;
+    for (int i = 0; i < eal_workers() - 1; i++) {
+        /* Generate a map from worker index to lcore id; we'll use this later */
+        worker_lcore_map[i] = get_waiting_lcore();
+        rte_eal_remote_launch(worker::main, &worker_args, worker_lcore_map[i]);
     }
+
+    /*
+     * Wait until all workers have pinged us back.  If we send out the configuration
+     * before all of the workers are ready, they could miss it.
+     */
+    icp_task_sync_block(&sync, eal_workers() - 1);
+
+    /*
+     * Update our descriptor configuration so that the worker id points to the actual,
+     * in-use ids instead of our theoretical fantasy ones.
+     */
+    for (auto& d : descriptors) {
+        d.worker_id = worker_lcore_map[d.worker_id];
+    }
+    m_workers->configure(descriptors);
+
+    /* Finally, register a callback to log link status changes and start our ports. */
+    if (int error = rte_eth_dev_callback_register(RTE_ETH_ALL, RTE_ETH_EVENT_INTR_LSC,
+                                                  log_link_status_change, nullptr);
+        error != 0) {
+        ICP_LOG(ICP_LOG_WARNING, "Could not register link status change callback: %s\n",
+                strerror(std::abs(error)));
+    }
+
+    start();
 }
 
 eal::~eal()
@@ -267,12 +407,35 @@ eal::~eal()
         return;
     }
 
+    stop();
+
+    rte_eth_dev_callback_unregister(RTE_ETH_ALL, RTE_ETH_EVENT_INTR_LSC,
+                                    log_link_status_change, nullptr);
+
     /* Shut up clang's warning about this being an unstable ABI function */
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
     rte_eal_cleanup();
 #pragma clang diagnostic pop
 };
+
+void eal::start()
+{
+    uint16_t port_id = 0;
+    RTE_ETH_FOREACH_DEV(port_id) {
+        model::physical_port(port_id).start();
+    }
+    m_workers->start();
+}
+
+void eal::stop()
+{
+    m_workers->stop();
+    uint16_t port_id = 0;
+    RTE_ETH_FOREACH_DEV(port_id) {
+        model::physical_port(port_id).stop();
+    }
+}
 
 std::vector<int> eal::port_ids()
 {
@@ -379,6 +542,47 @@ tl::expected<void, std::string> eal::delete_port(int id)
     rte_eth_bond_free(m_bond_ports[id].c_str());
     m_bond_ports.erase(id);
     return {};
+}
+
+void eal::add_interface(int id, std::any interface)
+{
+    if (!rte_eth_dev_is_valid_port(id)) {
+        throw std::runtime_error("Port id " + std::to_string(id) + " is invalid");
+    }
+
+    /* We really only expect one type here */
+    auto ifp = std::any_cast<netif*>(interface);
+    auto mac = net::mac_address(ifp->hwaddr);
+
+    m_workers->stop();
+    model::physical_port(id).add_mac_address(mac);
+    m_switch->insert(id, mac, ifp);
+    m_workers->start();
+
+    if (!m_switch->unicast_find(id, ifp->hwaddr)) {
+        throw std::runtime_error("Could not find interface mac in switch");
+    }
+
+    ICP_LOG(ICP_LOG_DEBUG, "Added interface with mac = %s to port %d\n",
+            net::to_string(net::mac_address(ifp->hwaddr)).c_str(), id);
+}
+
+void eal::del_interface(int id, std::any interface)
+{
+    if (!rte_eth_dev_is_valid_port(id)) {
+        throw std::runtime_error("Port id " + std::to_string(id) + " is invalid");
+    }
+
+    /* We really only expect one type here */
+    auto ifp = std::any_cast<netif*>(interface);
+    auto mac = net::mac_address(ifp->hwaddr);
+    m_workers->stop();
+    model::physical_port(id).del_mac_address(mac);
+    m_switch->erase(id, mac, ifp);
+    m_workers->start();
+
+    ICP_LOG(ICP_LOG_DEBUG, "Deleted interface with mac = %s from port %d\n",
+            net::to_string(net::mac_address(ifp->hwaddr)).c_str(), id);
 }
 
 }
