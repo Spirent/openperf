@@ -133,14 +133,15 @@ static void _icp_task_unbind_socket(void *socket)
     }
 }
 
-int icp_task_sync_block(void **socketp, size_t responses)
+int icp_task_sync_block(void **socketp, size_t expected)
 {
     void *socket = *socketp;
-
-    for (size_t i = 0; i < responses; i++) {
-        while (zmq_recv(socket, NULL, 0, 0) < 0 && errno != ETERM) {
-            continue;
-        }
+    size_t responses = 0;
+    uint8_t buffer[16];
+    while (responses < expected
+           && zmq_recv(socket, buffer, sizeof(buffer), 0) >= 0
+           && errno != ETERM) {
+        responses++;
     }
 
     _icp_task_unbind_socket(socket);
