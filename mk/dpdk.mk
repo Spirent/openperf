@@ -41,7 +41,7 @@ $(DPDK_BLD_DIR)/.config:
 	cd $(DPDK_SRC_DIR) && $(MAKE) config T=$(ARCH)-$(ICP_DPDK_TARGET) O=$(DPDK_BLD_DIR)
 
 $(DPDK_TARGET): $(DPDK_BLD_DIR)/.config
-	cd $(DPDK_BLD_DIR) && $(MAKE) EXTRA_CFLAGS="$(ICP_COPTS)"
+	cd $(DPDK_BLD_DIR) && $(MAKE) EXTRA_CFLAGS="$(strip $(ICP_CSTD) $(ICP_COPTS))"
 
 .PHONY: dpdk
 dpdk: $(DPDK_TARGET)
