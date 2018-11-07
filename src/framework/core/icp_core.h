@@ -19,6 +19,7 @@
 #include "core/icp_event.h"
 #include "core/icp_event_loop.h"
 #include "core/icp_event_loop_utils.h"
+#include "core/icp_hashtab.h"
 #include "core/icp_init.h"
 #include "core/icp_list.h"
 #include "core/icp_log.h"

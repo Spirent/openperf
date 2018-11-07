@@ -13,6 +13,7 @@ TARGET_DIR := $(ICP_BUILD_ROOT)/bin
 
 SOURCES := \
 	test_main.cpp \
+	framework/test_hashtab.cpp \
 	framework/test_init_factory.cpp \
 	framework/test_list.cpp \
 	framework/test_logging.cpp \
