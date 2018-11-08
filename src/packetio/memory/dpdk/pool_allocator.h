@@ -14,7 +14,7 @@ namespace dpdk {
 
 class pool_allocator {
 public:
-    pool_allocator(std::vector<model::port_info>&);
+    pool_allocator(const std::vector<model::port_info>&);
 
     rte_mempool * rx_mempool() { return default_pool.get(); }
 

@@ -93,7 +93,13 @@ TEST_CASE("check logging function signature --> string function", "[logging]")
     std::vector<std::pair<const char *, const char *>> signatures = {
         { "int simple_function()",     "simple_function" },
         { "unsigned int ns::simple()", "ns::simple"      },
-        { "std::vector<int>& crazy()", "crazy"           }
+        { "std::vector<int>& crazy()", "crazy"           },
+        { "void some::class<some::type_a, some::type_b>::function(int x)",
+          "some::class<some::type_a, some::type_b>::function" },
+        { "void some::class<some::type_a, some::type_b>::function(int x) [CLASS = some::other_class]",
+          "some::class<some::type_a, some::type_b>::function" },
+        { "void icp::packetio::dpdk::worker::finite_state_machine<icp::packetio::dpdk::worker::worker, std::variant<icp::packetio::dpdk::worker::state_init, icp::packetio::dpdk::worker::state_armed, icp::packetio::dpdk::worker::state_running>, std::variant<icp::packetio::dpdk::worker::start_msg, icp::packetio::dpdk::worker::stop_msg, icp::packetio::dpdk::worker::configure_msg> >::dispatch(const EventVariant &) [Derived = icp::packetio::dpdk::worker::worker, StateVariant = std::variant<icp::packetio::dpdk::worker::state_init, icp::packetio::dpdk::worker::state_armed, icp::packetio::dpdk::worker::state_running>, EventVariant = std::variant<icp::packetio::dpdk::worker::start_msg, icp::packetio::dpdk::worker::stop_msg, icp::packetio::dpdk::worker::configure_msg>]",
+          "icp::packetio::dpdk::worker::finite_state_machine<icp::packetio::dpdk::worker::worker, std::variant<icp::packetio::dpdk::worker::state_init, icp::packetio::dpdk::worker::state_armed, icp::packetio::dpdk::worker::state_running>, std::variant<icp::packetio::dpdk::worker::start_msg, icp::packetio::dpdk::worker::stop_msg, icp::packetio::dpdk::worker::configure_msg> >::dispatch" }
     };
 
     for(auto &pair : signatures) {

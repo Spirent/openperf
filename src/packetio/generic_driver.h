@@ -1,6 +1,7 @@
 #ifndef _ICP_PACKETIO_GENERIC_DRIVER_H_
 #define _ICP_PACKETIO_GENERIC_DRIVER_H_
 
+#include <any>
 #include <memory>
 #include <optional>
 #include <vector>
@@ -40,6 +41,16 @@ public:
         return m_self->delete_port(id);
     }
 
+    void add_interface(int id, std::any interface)
+    {
+        m_self->add_interface(id, std::move(interface));
+    }
+
+    void del_interface(int id, std::any interface)
+    {
+        m_self->del_interface(id, std::move(interface));
+    }
+
 private:
     struct driver_concept {
         virtual ~driver_concept() = default;
@@ -47,6 +58,8 @@ private:
         virtual std::optional<port::generic_port> port(int id) const = 0;
         virtual tl::expected<int, std::string> create_port(const port::config_data& config) = 0;
         virtual tl::expected<void, std::string> delete_port(int id) = 0;
+        virtual void add_interface(int id, std::any interface) = 0;
+        virtual void del_interface(int id, std::any interface) = 0;
     };
 
     template <typename Driver>
@@ -75,13 +88,23 @@ private:
             return m_driver.delete_port(id);
         }
 
+        void add_interface(int id, std::any interface) override
+        {
+            return m_driver.add_interface(id, std::move(interface));
+        }
+
+        void del_interface(int id, std::any interface) override
+        {
+            return m_driver.del_interface(id, std::move(interface));
+        }
+
         Driver m_driver;
     };
 
     std::unique_ptr<driver_concept> m_self;
 };
 
-std::unique_ptr<generic_driver> make();
+std::unique_ptr<generic_driver> make(void*);
 
 }
 }

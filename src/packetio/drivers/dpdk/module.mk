@@ -7,6 +7,11 @@ PIO_DRIVER_SOURCES += \
 	arg_parser_register.c \
 	driver.cpp \
 	eal.cpp \
+	queue_poller.cpp \
+	queue_utils.cpp \
+	vif_map_impl.cpp \
+	worker.cpp \
+	worker_client.cpp \
 	model/physical_port.cpp \
 	model/port_info.cpp
 

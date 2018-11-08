@@ -108,7 +108,7 @@ static rte_mempool* _create_pbuf_mempool(const char* name, size_t size,
     return (mp);
 }
 
-pool_allocator::pool_allocator(std::vector<model::port_info> &info)
+pool_allocator::pool_allocator(const std::vector<model::port_info> &info)
     : ref_rom_pool(_create_pbuf_mempool(memp_ref_rom_mempool, MEMP_NUM_PBUF, false, false))
 {
     /* Base default pool size on the number and types of ports */

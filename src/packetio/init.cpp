@@ -24,7 +24,7 @@ struct service {
     }
 
     void init(void *context) {
-        m_driver = driver::make();
+        m_driver = driver::make(context);
         m_stack = stack::make(*m_driver);
         m_loop = std::make_unique<icp::core::event_loop>();
         m_port_server = std::make_unique<port::api::server>(context, *m_loop, *m_driver);

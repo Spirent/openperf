@@ -3,3 +3,4 @@
 #
 
 ICP_COPTS += -Os -g
+ICP_CPPFLAGS += -fstack-check

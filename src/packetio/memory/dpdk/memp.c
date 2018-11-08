@@ -100,23 +100,23 @@ void * memp_malloc(memp_t type)
     struct rte_mbuf *mbuf = NULL;
     switch (type) {
     case MEMP_PBUF:
-        mbuf = rte_pktmbuf_alloc(get_default_mempool());
-        if (mbuf) {
-            to_return = packetio_memp_mbuf_to_pbuf(mbuf);
-        }
-        break;
-    case MEMP_PBUF_POOL:
         mbuf = rte_pktmbuf_alloc(get_ref_rom_mempool());
         if (mbuf) {
             to_return = packetio_memp_mbuf_to_pbuf(mbuf);
         }
         break;
+    case MEMP_PBUF_POOL:
+        mbuf = rte_pktmbuf_alloc(get_default_mempool());
+        if (mbuf) {
+            to_return = packetio_memp_mbuf_to_pbuf(mbuf);
+        }
+        break;
     default:
-        to_return = malloc(memp_pools[type]->size);
+        to_return = rte_malloc(memp_pools[type]->desc, memp_pools[type]->size, 0);
     }
 
 #if MEMP_STATS
-    struct memp_desc *desc = memp_pools[type];
+    const struct memp_desc * const desc = memp_pools[type];
     if (to_return) {
         desc->stats->max = icp_max(++desc->stats->used, desc->stats->max);
     } else {
@@ -137,11 +137,11 @@ void memp_free(memp_t type, void *mem)
         rte_pktmbuf_free_seg(packetio_memp_pbuf_to_mbuf((struct pbuf *)mem));
         break;
     default:
-        free(mem);
+        rte_free(mem);
     }
 
 #if MEMP_STATS
-    struct memp_desc *desc = memp_pools[type];
+    const struct memp_desc * const desc = memp_pools[type];
     desc->stats->used--;
 #endif
 }

@@ -4,6 +4,7 @@ FW_LDLIBS += -pthread
 FW_SOURCES += \
 	core/icp_cpuset.c \
 	core/icp_event_loop_utils.c \
+	core/icp_hashtab.c \
 	core/icp_init.c \
 	core/icp_list.c \
 	core/icp_log.c \

@@ -1,13 +1,17 @@
 #ifndef _ICP_PACKETIO_DPDK_EAL_H_
 #define _ICP_PACKETIO_DPDK_EAL_H_
 
+#include <any>
 #include <memory>
 #include <string>
 #include <vector>
 #include <unordered_map>
 
 #include "packetio/generic_port.h"
-#include "memory/dpdk/pool_allocator.h"
+#include "packetio/vif_map.h"
+#include "packetio/drivers/dpdk/model/port_info.h"
+#include "packetio/drivers/dpdk/worker_api.h"
+#include "packetio/memory/dpdk/pool_allocator.h"
 
 namespace icp {
 namespace packetio {
@@ -21,7 +25,7 @@ namespace dpdk {
 class eal
 {
 public:
-    eal(std::vector<std::string> args);
+    eal(void *context, std::vector<std::string> args);
     ~eal();
 
     /* environment is movable */
@@ -31,29 +35,43 @@ public:
             m_initialized = other.m_initialized;
             other.m_initialized = false;
             m_allocator = std::move(other.m_allocator);
+            m_workers = std::move(other.m_workers);
+            m_switch = std::move(other.m_switch);
+            m_bond_ports = std::move(other.m_bond_ports);
         }
         return (*this);
     }
 
     eal (eal&& other)
+        : m_initialized(other.m_initialized)
+        , m_allocator(std::move(other.m_allocator))
+        , m_workers(std::move(other.m_workers))
+        , m_switch(std::move(other.m_switch))
+        , m_bond_ports(std::move(other.m_bond_ports))
     {
-        m_initialized = other.m_initialized;
         other.m_initialized = false;
-        m_allocator = std::move(other.m_allocator);
     }
 
     /* environment is non-copyable */
     eal(const eal&) = delete;
     eal& operator=(const eal&&) = delete;
 
+    void start();
+    void stop();
+
     static std::vector<int> port_ids();
     std::optional<port::generic_port> port(int id) const;
     tl::expected<int, std::string> create_port(const port::config_data& config);
-    tl::expected<void, std::string>  delete_port(int id);
+    tl::expected<void, std::string> delete_port(int id);
+
+    void add_interface(int id, std::any interface);
+    void del_interface(int id, std::any interface);
 
 private:
     bool m_initialized;
     std::unique_ptr<pool_allocator> m_allocator;
+    std::unique_ptr<worker::client> m_workers;
+    std::shared_ptr<vif_map<netif>> m_switch;
     std::unordered_map<int, std::string> m_bond_ports;
 };
 

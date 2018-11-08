@@ -13,12 +13,14 @@ TARGET_DIR := $(ICP_BUILD_ROOT)/bin
 
 SOURCES := \
 	test_main.cpp \
+	framework/test_hashtab.cpp \
 	framework/test_init_factory.cpp \
 	framework/test_list.cpp \
 	framework/test_logging.cpp \
 	framework/test_mac_address.cpp \
 	framework/test_ipv4_address.cpp \
-	framework/test_ipv4_network.cpp
+	framework/test_ipv4_network.cpp \
+	framework/test_task.cpp
 
 OBJECTS := $(patsubst %, $(BUILD_DIR)/%, \
 	$(patsubst %.cpp, %.o, $(SOURCES)))

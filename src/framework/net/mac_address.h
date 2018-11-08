@@ -22,6 +22,7 @@ public:
     bool is_local_admin() const;
 
     uint8_t operator[](size_t idx) const;
+    const uint8_t* data() const;
 
     friend int compare(const mac_address&, const mac_address&);
 

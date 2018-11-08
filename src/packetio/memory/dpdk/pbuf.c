@@ -394,6 +394,10 @@ uint8_t pbuf_free(struct pbuf *p)
     while (p) {
         struct pbuf *q = NULL;
 
+        if (p->type == PBUF_POOL || p->type == PBUF_RAM) {
+            rte_pktmbuf_refcnt_update(packetio_memp_pbuf_to_mbuf(p), -1);
+        }
+
         if (atomic_fetch_sub_explicit((atomic_ushort *)&p->ref, 1,
                                       memory_order_acq_rel) == 1) {
             q = p->next;
