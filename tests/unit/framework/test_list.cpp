@@ -5,6 +5,7 @@
 #include "catch.hpp"
 
 #include "core/icp_core.h"
+#include "core/icp_list.hpp"
 
 struct icp_list_deleter {
     void operator()(icp_list *list) const {
@@ -144,5 +145,45 @@ TEST_CASE("icp_list functionality checks", "[list]")
 
         REQUIRE(icp_list_purge(list.get()) == 0);
         REQUIRE(icp_list_length(list.get()) == 0);  /* empty after purge */
+    }
+}
+
+TEST_CASE("icp list cpp wrapper functionality")
+{
+    SECTION("can create, ") {
+        auto list = icp::list<int>();
+
+        SECTION("can insert, ") {
+            int test_value = 4814;
+            bool inserted = list.insert(&test_value);
+            REQUIRE(inserted);
+
+            SECTION("can count, ") {
+                REQUIRE(list.size() == 1);
+            }
+
+            SECTION("can iterate, ") {
+                size_t count = 0;
+                for(auto item : list) {
+                    REQUIRE(*item == test_value);
+                    count++;
+                }
+                REQUIRE(count == list.size());
+            }
+
+            SECTION("can delete, ") {
+                bool removed = list.remove(&test_value);
+                REQUIRE(removed);
+
+                REQUIRE(list.size() == 0);
+
+                SECTION("can iterate empty list, ") {
+                    for (auto item : list) {
+                        (void)item;
+                        REQUIRE(false);
+                    }
+                }
+            }
+        }
     }
 }
