@@ -346,7 +346,7 @@ void physical_port::add_mac_address(const net::mac_address& mac)
                                          0);
     if ((error == -ENOTSUP || error == -ENOSPC)
         && !rte_eth_promiscuous_get(m_id)) {
-        ICP_LOG(ICP_LOG_DEBUG, "Enabling promiscuous mode on port %d\n", m_id);
+        ICP_LOG(ICP_LOG_INFO, "Enabling promiscuous mode on port %d\n", m_id);
         rte_eth_promiscuous_enable(m_id);
     }
 }

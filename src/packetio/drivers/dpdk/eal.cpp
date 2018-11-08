@@ -285,9 +285,47 @@ static int get_waiting_lcore()
     return (-1);
 }
 
+static void launch_and_configure_workers(void* context,
+                                         std::unique_ptr<worker::client>& workers,
+                                         std::vector<queue::descriptor>& descriptors,
+                                         std::shared_ptr<vif_map<netif>>& vif)
+{
+    /* Launch work threads on all of our available worker cores */
+    static std::string_view sync_endpoint = "inproc://eal_worker_sync";
+    auto sync = icp_task_sync_socket(context, sync_endpoint.data());
+    struct worker::args worker_args = {
+        .context = context,
+        .endpoint = sync_endpoint.data(),
+        .vif = vif
+    };
+
+    std::unordered_map<int, int> worker_lcore_map;
+    for (int i = 0; i < eal_workers() - 1; i++) {
+        /* Generate a map from worker index to lcore id; we'll use this later */
+        worker_lcore_map[i] = get_waiting_lcore();
+        rte_eal_remote_launch(worker::main, &worker_args, worker_lcore_map[i]);
+    }
+
+    /*
+     * Wait until all workers have pinged us back.  If we send out the configuration
+     * before all of the workers are ready, they could miss it.
+     */
+    icp_task_sync_block(&sync, eal_workers() - 1);
+
+    /*
+     * Update our descriptor configuration so that the worker id points to the actual,
+     * in-use ids instead of our theoretical fantasy ones.
+     */
+    for (auto& d : descriptors) {
+        d.worker_id = worker_lcore_map[d.worker_id];
+    }
+    workers->configure(descriptors);
+
+}
+
 eal::eal(void* context, std::vector<std::string> args)
     : m_initialized(false)
-    , m_switch(std::make_shared<vif_switch<netif*>>())
+    , m_switch(std::make_shared<vif_map<netif>>())
 {
     /* Check to see if we have permissions to launch DPDK */
     if (!sufficient_permissions()) {
@@ -350,45 +388,23 @@ eal::eal(void* context, std::vector<std::string> args)
     /* Use the port_info vector to allocate our default memory pools */
     m_allocator = std::make_unique<pool_allocator>(pool_allocator(port_info));
 
-    /* And determine how we should distribute port queues to workers */
-    auto descriptors = queue::distribute_queues(port_info, eal_workers() - 1);
-
-    /* Use the queue descriptors to configure all of our ports */
-    configure_all_ports(get_port_queue_counts(descriptors),
-                        m_allocator->rx_mempool());
-
-
-    /* Finally, launch work threads on all of our available worker cores */
+    /* Create our client so that we can communicate with worker threads */
     m_workers = std::make_unique<worker::client>(context, eal_workers() - 1);
-    static std::string_view sync_endpoint = "inproc://eal_worker_sync";
-    auto sync = icp_task_sync_socket(context, sync_endpoint.data());
-    struct worker::args worker_args = {
-        .context = context,
-        .endpoint = sync_endpoint.data(),
-        .vif = m_switch
-    };
 
-    std::unordered_map<int, int> worker_lcore_map;
-    for (int i = 0; i < eal_workers() - 1; i++) {
-        /* Generate a map from worker index to lcore id; we'll use this later */
-        worker_lcore_map[i] = get_waiting_lcore();
-        rte_eal_remote_launch(worker::main, &worker_args, worker_lcore_map[i]);
+    /* The rest of our start up depends on whether we have worker threads or not */
+    if (eal_workers() == 1) {
+        ICP_LOG(ICP_LOG_WARNING, "No hardware threads available to service port queues\n");
+    } else {
+        /* And determine how we should distribute port queues to workers */
+        auto descriptors = queue::distribute_queues(port_info, eal_workers() - 1);
+
+        /* Use the queue descriptors to configure all of our ports */
+        configure_all_ports(get_port_queue_counts(descriptors),
+                            m_allocator->rx_mempool());
+
+        /* and all of our workers */
+        launch_and_configure_workers(context, m_workers, descriptors, m_switch);
     }
-
-    /*
-     * Wait until all workers have pinged us back.  If we send out the configuration
-     * before all of the workers are ready, they could miss it.
-     */
-    icp_task_sync_block(&sync, eal_workers() - 1);
-
-    /*
-     * Update our descriptor configuration so that the worker id points to the actual,
-     * in-use ids instead of our theoretical fantasy ones.
-     */
-    for (auto& d : descriptors) {
-        d.worker_id = worker_lcore_map[d.worker_id];
-    }
-    m_workers->configure(descriptors);
 
     /* Finally, register a callback to log link status changes and start our ports. */
     if (int error = rte_eth_dev_callback_register(RTE_ETH_ALL, RTE_ETH_EVENT_INTR_LSC,
@@ -435,6 +451,12 @@ void eal::stop()
     RTE_ETH_FOREACH_DEV(port_id) {
         model::physical_port(port_id).stop();
     }
+
+    /*
+     * We can't safely do this while workers are actively using it, so now
+     * is a good time to garbage collect any deleted interfaces.
+     */
+    m_switch->shrink_to_fit();
 }
 
 std::vector<int> eal::port_ids()
@@ -554,12 +576,10 @@ void eal::add_interface(int id, std::any interface)
     auto ifp = std::any_cast<netif*>(interface);
     auto mac = net::mac_address(ifp->hwaddr);
 
-    m_workers->stop();
     model::physical_port(id).add_mac_address(mac);
     m_switch->insert(id, mac, ifp);
-    m_workers->start();
 
-    if (!m_switch->unicast_find(id, ifp->hwaddr)) {
+    if (!m_switch->find(id, ifp->hwaddr)) {
         throw std::runtime_error("Could not find interface mac in switch");
     }
 
@@ -576,10 +596,9 @@ void eal::del_interface(int id, std::any interface)
     /* We really only expect one type here */
     auto ifp = std::any_cast<netif*>(interface);
     auto mac = net::mac_address(ifp->hwaddr);
-    m_workers->stop();
+
     model::physical_port(id).del_mac_address(mac);
-    m_switch->erase(id, mac, ifp);
-    m_workers->start();
+    m_switch->remove(id, mac, ifp);
 
     ICP_LOG(ICP_LOG_DEBUG, "Deleted interface with mac = %s from port %d\n",
             net::to_string(net::mac_address(ifp->hwaddr)).c_str(), id);

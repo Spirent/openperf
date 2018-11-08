@@ -9,8 +9,8 @@
 
 #include "core/icp_core.h"
 #include "net/net_types.h"
+#include "packetio/vif_map.h"
 #include "packetio/drivers/dpdk/queue_utils.h"
-#include "packetio/drivers/dpdk/vif_switch.h"
 
 struct netif;
 
@@ -79,7 +79,7 @@ private:
 struct args {
     void* context;
     std::string_view endpoint;
-    std::shared_ptr<const vif_switch<netif*>> vif;
+    std::shared_ptr<const vif_map<netif>> vif;
 };
 
 int main(void*);

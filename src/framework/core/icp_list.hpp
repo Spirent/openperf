@@ -81,6 +81,8 @@ public:
         return list_iterator<Item*>(m_list.get(), nullptr);
     }
 
+    void shrink_to_fit() { icp_list_garbage_collect(m_list.get()); }
+
 private:
     struct icp_list_deleter {
         void operator()(icp_list *list) const {

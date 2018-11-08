@@ -22,7 +22,7 @@ namespace packetio {
 namespace dpdk {
 namespace worker {
 
-using switch_t = std::shared_ptr<const vif_switch<netif*>>;
+using switch_t = std::shared_ptr<const vif_map<netif>>;
 
 const std::string endpoint = "inproc://icp_packetio_workers_control";
 
@@ -172,20 +172,13 @@ static void rx_burst(const switch_t& vif, const queue_id& q)
                     n, n > 1 ? "s" : "", q.first, q.second);
         }
 
-        if (!vif->have_port_interfaces(q.first)) {
-            for (int i = 0; i < n; i++) {
-                rte_pktmbuf_free(incoming[i]);
-            }
-            continue;
-        }
-
         auto lengths = partition_mbufs(incoming.data(), n,
                                        unicast.data(), nunicast.data());
 
         /* Lookup interfaces for unicast packets ... */
         for (size_t i = 0; i < lengths.first; i++) {
             auto eth = rte_pktmbuf_mtod(unicast[i], struct ether_hdr *);
-            auto ifp = vif->unicast_find(q.first, eth->d_addr.addr_bytes);
+            auto ifp = vif->find(q.first, eth->d_addr.addr_bytes);
             interfaces[i] = ifp ? *ifp : nullptr;
         }
 
@@ -202,11 +195,12 @@ static void rx_burst(const switch_t& vif, const queue_id& q)
         }
 
         for (size_t i = 0; i < lengths.second; i++) {
-            for (auto ifp : vif->nunicast_find(q.first)) {
-                auto clone = rte_pktmbuf_clone(nunicast[i], nunicast[i]->pool);
+            auto pbuf = packetio_pbuf_synchronize(nunicast[i]);
+            for (auto ifp : vif->find(q.first)) {
                 ICP_LOG(ICP_LOG_TRACE, "Dispatching non-unicast packet to %c%c%u\n",
                         ifp->name[0], ifp->name[1], ifp->num);
-                ifp->input(packetio_pbuf_synchronize(clone), ifp);
+                rte_pktmbuf_refcnt_update(nunicast[i], 1);
+                ifp->input(pbuf, ifp);
             }
             rte_pktmbuf_free(nunicast[i]);
         }
