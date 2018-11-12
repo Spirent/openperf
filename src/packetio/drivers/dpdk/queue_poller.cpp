@@ -10,6 +10,11 @@ namespace icp {
 namespace packetio {
 namespace dpdk {
 
+queue_poller::queue_poller()
+{
+    m_events.reserve(max_queues);
+}
+
 bool queue_poller::add(uint16_t port_id, uint16_t queue_id)
 {
     uintptr_t data = (port_id << 16) | queue_id;
@@ -68,9 +73,9 @@ bool queue_poller::disable(uint16_t port_id, uint16_t queue_id)
 }
 
 
-std::vector<std::pair<uint16_t, uint16_t>> queue_poller::poll(int timeout_ms)
+const std::vector<std::pair<uint16_t, uint16_t>>& queue_poller::poll(int timeout_ms)
 {
-    std::vector<std::pair<uint16_t, uint16_t>> to_return;
+    m_events.clear();
 
     std::array<struct rte_epoll_event, max_queues> events;
     int n = rte_epoll_wait(RTE_EPOLL_PER_THREAD, events.data(), max_queues, timeout_ms);
@@ -79,10 +84,10 @@ std::vector<std::pair<uint16_t, uint16_t>> queue_poller::poll(int timeout_ms)
         uint16_t port_id = data >> 16;
         uint16_t queue_id = data & std::numeric_limits<uint16_t>::max();
         disable(port_id, queue_id);
-        to_return.emplace_back(port_id, queue_id);
+        m_events.emplace_back(port_id, queue_id);
     }
 
-    return (to_return);
+    return (m_events);
 }
 
 }

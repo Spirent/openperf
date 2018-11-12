@@ -167,10 +167,8 @@ static void rx_burst(const switch_t& vif, const queue_id& q)
     std::array<netif*, rx_burst_size> interfaces;
 
     while (auto n = rte_eth_rx_burst(q.first, q.second, incoming.data(), rx_burst_size)) {
-        if (n) {
-            ICP_LOG(ICP_LOG_TRACE, "Received %d packet%s on %d:%d\n",
-                    n, n > 1 ? "s" : "", q.first, q.second);
-        }
+        ICP_LOG(ICP_LOG_TRACE, "Received %d packet%s on %d:%d\n",
+                n, n > 1 ? "s" : "", q.first, q.second);
 
         auto lengths = partition_mbufs(incoming.data(), n,
                                        unicast.data(), nunicast.data());
@@ -195,14 +193,18 @@ static void rx_burst(const switch_t& vif, const queue_id& q)
         }
 
         for (size_t i = 0; i < lengths.second; i++) {
+            /*
+             * After we synchronize, use pbuf functions only so that we
+             * can keep the mbuf/pbuf synchronized.
+             */
             auto pbuf = packetio_pbuf_synchronize(nunicast[i]);
             for (auto ifp : vif->find(q.first)) {
                 ICP_LOG(ICP_LOG_TRACE, "Dispatching non-unicast packet to %c%c%u\n",
                         ifp->name[0], ifp->name[1], ifp->num);
-                rte_pktmbuf_refcnt_update(nunicast[i], 1);
+                pbuf_ref(pbuf);
                 ifp->input(pbuf, ifp);
             }
-            rte_pktmbuf_free(nunicast[i]);
+            pbuf_free(pbuf);
         }
     }
 }
