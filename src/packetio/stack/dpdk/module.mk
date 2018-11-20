@@ -3,4 +3,5 @@ PIO_STACK_SOURCES += \
 	net_interface.cpp \
 	netif_wrapper.cpp \
 	stack.cpp \
-	sys_arch.c
+	sys_arch.cpp \
+	sys_mailbox.cpp

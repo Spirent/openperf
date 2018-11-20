@@ -6,6 +6,7 @@
  * the host platform and is included from <lwip>/src/include/lwip/arch.h
  */
 
+#include <sys/time.h>
 #include "core/icp_core.h"
 
 /*
