@@ -13,7 +13,7 @@
 #include "lwip/opt.h"
 #include "lwip/stats.h"
 
-#include "drivers/dpdk/dpdk.h"
+#include "packetio/drivers/dpdk/dpdk.h"
 
 #ifndef EFD_SEMAPHORE
 #define EFD_SEMAPHORE 1

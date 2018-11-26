@@ -2,12 +2,12 @@
 # Makefile component for API code
 #
 
-FW_DEPENDS += pistache json
+API_DEPENDS += pistache json
 
-FW_SOURCES += \
-	api/api_init.cpp \
-	api/api_register.c \
-	api/api_version.cpp
+API_SOURCES += \
+	api_init.cpp \
+	api_register.c \
+	api_version.cpp
 
 # Tag the build with the git commit version
 GIT_COMMIT := $(shell git rev-parse --verify HEAD)
@@ -22,9 +22,9 @@ BUILD_NUMBER = 0
 $(warning No BUILD_NUMBER defined in environment, using 0)
 endif
 
-.PHONY: $(FW_SRC_DIR)/api/api_version.cpp
-$(FW_OBJ_DIR)/api/api_version.o: TIMESTAMP := $(shell date -u +%Y-%m-%dT%H:%M:%S%Z)
-$(FW_OBJ_DIR)/api/api_version.o: ICP_CPPFLAGS += \
+.PHONY: $(API_SRC_DIR)/api_version.cpp
+$(API_OBJ_DIR)/api_version.o: TIMESTAMP := $(shell date -u +%Y-%m-%dT%H:%M:%S%Z)
+$(API_OBJ_DIR)/api_version.o: ICP_CPPFLAGS += \
 	-DVERSION_COMMIT="\"$(GIT_COMMIT)\"" \
 	-DVERSION_NUMBER="\"$(BUILD_NUMBER)\"" \
 	-DVERSION_TIMESTAMP="\"$(TIMESTAMP)\""

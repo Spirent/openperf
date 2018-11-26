@@ -22,7 +22,7 @@ FW_OBJECTS :=
 FW_DEPENDS :=
 FW_LDLIBS  :=
 
-FW_MODULES := api core net
+FW_MODULES := allocator core net
 
 # Load each module's module.mk file
 include $(patsubst %, $(FW_SRC_DIR)/%/module.mk, $(FW_MODULES))
@@ -35,7 +35,8 @@ FW_OBJECTS += $(patsubst %, $(FW_OBJ_DIR)/%, \
 FW_OBJECTS += $(patsubst %, $(FW_OBJ_DIR)/%, \
 	$(patsubst %.cpp, %.o, $(filter %.cpp, $(FW_SOURCES))))
 
-FW_TARGET := $(FW_LIB_DIR)/libframework.a
+FW_LIBRARY := icp_framework
+FW_TARGET := $(FW_LIB_DIR)/lib$(FW_LIBRARY).a
 
 ###
 # Pull in dependencies, maybe...
@@ -45,7 +46,7 @@ FW_TARGET := $(FW_LIB_DIR)/libframework.a
 
 # Update library build options before loading dependencies. That way
 # archive ordering should be correct.
-ICP_LDLIBS += -Wl,--whole-archive -lframework -Wl,--no-whole-archive $(FW_LDLIBS)
+ICP_LDLIBS += -Wl,--whole-archive -l$(FW_LIBRARY) -Wl,--no-whole-archive $(FW_LDLIBS)
 
 # Load external dependencies, too
 $(foreach DEP, $(FW_DEPENDS), $(eval include $(ICP_ROOT)/mk/$(DEP).mk))

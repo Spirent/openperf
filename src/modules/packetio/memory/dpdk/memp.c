@@ -32,8 +32,8 @@
 #include "lwip/ip6_frag.h"
 #include "lwip/mld6.h"
 
-#include "drivers/dpdk/dpdk.h"
-#include "memory/dpdk/memp.h"
+#include "packetio/drivers/dpdk/dpdk.h"
+#include "packetio/memory/dpdk/memp.h"
 
 /* Compile time sanity checks */
 #if MEMP_OVERFLOW_CHECK

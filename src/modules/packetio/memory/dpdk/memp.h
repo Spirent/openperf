@@ -2,7 +2,7 @@
 #define _ICP_PACKETIO_MEMORY_DPDK_MEMP_H_
 
 #include "lwip/pbuf.h"
-#include "drivers/dpdk/dpdk.h"
+#include "packetio/drivers/dpdk/dpdk.h"
 
 #ifdef __cplusplus
 extern "C" {

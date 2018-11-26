@@ -5,8 +5,8 @@
 #include <vector>
 
 #include "core/icp_core.h"
-#include "drivers/dpdk/dpdk.h"
-#include "drivers/dpdk/model/port_info.h"
+#include "packetio/drivers/dpdk/dpdk.h"
+#include "packetio/drivers/dpdk/model/port_info.h"
 
 namespace icp {
 namespace packetio {

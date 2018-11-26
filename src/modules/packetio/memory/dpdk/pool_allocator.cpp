@@ -2,10 +2,10 @@
 #include <numeric>
 
 #include "core/icp_core.h"
-#include "drivers/dpdk/dpdk.h"
-#include "drivers/dpdk/model/port_info.h"
-#include "memory/dpdk/memp.h"
-#include "memory/dpdk/pool_allocator.h"
+#include "packetio/drivers/dpdk/dpdk.h"
+#include "packetio/drivers/dpdk/model/port_info.h"
+#include "packetio/memory/dpdk/memp.h"
+#include "packetio/memory/dpdk/pool_allocator.h"
 
 namespace icp {
 namespace packetio {
