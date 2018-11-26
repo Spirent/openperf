@@ -113,18 +113,20 @@ void * memp_malloc(memp_t type)
         break;
     default:
         to_return = rte_malloc(memp_pools[type]->desc, memp_pools[type]->size, 0);
-    }
 
 #if MEMP_STATS
-    const struct memp_desc * const desc = memp_pools[type];
-    if (to_return) {
-        desc->stats->max = icp_max(++desc->stats->used, desc->stats->max);
-    } else {
-        LWIP_DEBUGF(MEMP_DEBUG | LWIP_DBG_LEVEL_SERIOUS,
-                    ("memp_malloc: out of memory in pool %s\n", desc->desc));
-        desc->stats->err++;
-    }
+        {
+            const struct memp_desc * const desc = memp_pools[type];
+            if (to_return) {
+                desc->stats->max = icp_max(++desc->stats->used, desc->stats->max);
+            } else {
+                LWIP_DEBUGF(MEMP_DEBUG | LWIP_DBG_LEVEL_SERIOUS,
+                            ("memp_malloc: out of memory in pool %s\n", desc->desc));
+                desc->stats->err++;
+            }
+        }
 #endif
+    }
 
     return (to_return);
 }
@@ -138,10 +140,13 @@ void memp_free(memp_t type, void *mem)
         break;
     default:
         rte_free(mem);
-    }
 
 #if MEMP_STATS
-    const struct memp_desc * const desc = memp_pools[type];
-    desc->stats->used--;
+        {
+            const struct memp_desc * const desc = memp_pools[type];
+            LWIP_ASSERT("free before alloc?", desc->stats->used != 0);
+            desc->stats->used--;
+        }
 #endif
+    }
 }
