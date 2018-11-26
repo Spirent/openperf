@@ -43,9 +43,9 @@
 #include "lwip/pbuf.h"
 #include "lwip/sys.h"
 
-#include "drivers/dpdk/dpdk.h"
-#include "memory/dpdk/memp.h"
-#include "memory/dpdk/pbuf.h"
+#include "packetio/drivers/dpdk/dpdk.h"
+#include "packetio/memory/dpdk/memp.h"
+#include "packetio/memory/dpdk/pbuf.h"
 
 extern struct pbuf *packetio_pbuf_synchronize(struct rte_mbuf *m_head);
 

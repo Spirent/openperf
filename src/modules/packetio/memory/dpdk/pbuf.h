@@ -2,8 +2,8 @@
 #define _ICP_PACKETIO_MEMORY_DPDK_PBUF_H_
 
 #include "lwip/pbuf.h"
-#include "drivers/dpdk/dpdk.h"
-#include "memory/dpdk/memp.h"
+#include "packetio/drivers/dpdk/dpdk.h"
+#include "packetio/memory/dpdk/memp.h"
 
 /*
  * Update the pbuf headers inside the given mbuf chain so that the

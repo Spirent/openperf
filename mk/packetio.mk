@@ -13,8 +13,8 @@ PIO_INCLUDES :=
 PIO_DEPENDS :=
 PIO_LIBS :=
 
-PIO_SRC_DIR := $(ICP_ROOT)/src/packetio
-PIO_OBJ_DIR := $(ICP_BUILD_ROOT)/obj/packetio
+PIO_SRC_DIR := $(ICP_ROOT)/src/modules/packetio
+PIO_OBJ_DIR := $(ICP_BUILD_ROOT)/obj/modules/packetio
 PIO_LIB_DIR := $(ICP_BUILD_ROOT)/lib
 
 include $(PIO_SRC_DIR)/module.mk
@@ -25,9 +25,9 @@ PIO_OBJECTS := $(patsubst %, $(PIO_OBJ_DIR)/%, \
 PIO_OBJECTS += $(patsubst %, $(PIO_OBJ_DIR)/%, \
 	$(patsubst %.cpp, %.o, $(filter %.cpp, $(PIO_SOURCES))))
 
-PIO_INC_DIRS := $(PIO_SRC_DIR) $(addprefix $(PIO_SRC_DIR)/,$(PIO_INCLUDES))
+PIO_INC_DIRS := $(dir $(PIO_SRC_DIR)) $(addprefix $(PIO_SRC_DIR)/,$(PIO_INCLUDES))
 PIO_CPPFLAGS := $(addprefix -I,$(PIO_INC_DIRS))
-PIO_LIBRARY := packetio-$(ICP_PACKETIO_DRIVER)
+PIO_LIBRARY := ipc_packetio-$(ICP_PACKETIO_DRIVER)
 PIO_TARGET := $(PIO_LIB_DIR)/lib$(PIO_LIBRARY).a
 
 ICP_INC_DIRS += $(PIO_INC_DIRS)

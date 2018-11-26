@@ -12,7 +12,7 @@
 #include <sys/eventfd.h>
 
 #include "core/icp_core.h"
-#include "drivers/dpdk/dpdk.h"
+#include "packetio/drivers/dpdk/dpdk.h"
 
 #ifndef EFD_SEMAPHORE
 #define EFD_SEMAPHORE 1

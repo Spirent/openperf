@@ -1,7 +1,7 @@
 #include <unordered_map>
 
 #include "core/icp_core.h"
-#include "drivers/dpdk/arg_parser.h"
+#include "packetio/drivers/dpdk/arg_parser.h"
 
 namespace icp {
 namespace packetio {
