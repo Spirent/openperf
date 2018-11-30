@@ -18,7 +18,13 @@ struct sys_mbox;
 typedef struct sys_mbox * sys_mbox_t;
 #define sys_mbox_valid(mbox)            (((mbox) != NULL) && (*(mbox) != NULL))
 
+int sys_mbox_fd(sys_mbox_t *);  /* retrieve the fd of the underlying mbox */
+void sys_mbox_clear_notifications(sys_mbox_t *);
+
 struct sys_thread;
 typedef struct sys_thread * sys_thread_t;
+
+void sys_check_timeouts();
+u32_t sys_timeouts_sleeptime();
 
 #endif /* _ICP_PACKETIO_STACK_SYS_ARCH_H_ */

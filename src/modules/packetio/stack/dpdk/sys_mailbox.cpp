@@ -49,6 +49,9 @@ public:
     sys_mbox(int size, int flags = 0);
     ~sys_mbox();
 
+    int fd() const;
+    void clear_notifications();
+
     void post(void *msg);
     bool trypost(void *msg);
 
@@ -79,6 +82,19 @@ sys_mbox::sys_mbox(int size, int flags)
 sys_mbox::~sys_mbox()
 {
     close(m_fd);
+}
+
+int sys_mbox::fd() const
+{
+    return (m_fd);
+}
+
+void sys_mbox::clear_notifications()
+{
+    assert(rte_ring_empty(m_ring.get()));
+
+    uint64_t counter = 0;
+    eventfd_read(m_fd, &counter);
 }
 
 void sys_mbox::post(void *msg)
@@ -124,20 +140,34 @@ std::optional<void*> sys_mbox::tryfetch()
 
 extern "C" {
 
-err_t sys_mbox_new(sys_mbox** mbox, int size)
+err_t sys_mbox_new(sys_mbox** mboxp, int size)
 {
-    assert(mbox);
+    assert(mboxp);
     sys_mbox *m = new sys_mbox(size);
     SYS_STATS_INC_USED(mbox);
-    *mbox = m;
+    *mboxp = m;
     return (ERR_OK);
 }
 
-void sys_mbox_free(sys_mbox** mbox)
+void sys_mbox_free(sys_mbox** mboxp)
 {
-    assert(*mbox);
-    delete *mbox;
-    *mbox = nullptr;
+    assert(*mboxp);
+    delete *mboxp;
+    *mboxp = nullptr;
+}
+
+int sys_mbox_fd(sys_mbox** mboxp)
+{
+    assert(mboxp);
+    sys_mbox* mbox = *mboxp;
+    return (mbox->fd());
+}
+
+void sys_mbox_clear_notifications(sys_mbox** mboxp)
+{
+    assert(mboxp);
+    sys_mbox* mbox = *mboxp;
+    mbox->clear_notifications();
 }
 
 err_t sys_mbox_trypost(sys_mbox** mboxp, void* msg)

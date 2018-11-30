@@ -36,8 +36,6 @@
 #define MEMP_STATS 1
 #define MIB2_STATS 1
 
-#define TCPIP_THREAD_NAME "icp_tcpip"
-
 /* Memory allocation options */
 #define MEM_ALIGNMENT 8
 #define MEM_LIBC_MALLOC 1
