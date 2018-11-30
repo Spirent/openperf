@@ -49,19 +49,6 @@ inline std::string json_error(int code, const char *message)
     return (nlohmann::json({ {"code", code }, {"message", message} }).dump());
 }
 
-/**
- * Backend API functions
- */
-namespace impl {
-
-bool is_valid_port(int port_idx);
-void list_ports(std::vector<std::shared_ptr<swagger::v1::model::Port>> &ports,
-                std::string &kind);
-std::shared_ptr<swagger::v1::model::Port> get_port(int port_idx);
-
-void delete_port(int port_idx);
-}
-
 extern const std::string endpoint;
 
 }
