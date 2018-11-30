@@ -27,6 +27,7 @@ PIO_OBJECTS += $(patsubst %, $(PIO_OBJ_DIR)/%, \
 
 PIO_INC_DIRS := $(dir $(PIO_SRC_DIR)) $(addprefix $(PIO_SRC_DIR)/,$(PIO_INCLUDES))
 PIO_CPPFLAGS := $(addprefix -I,$(PIO_INC_DIRS))
+
 PIO_LIBRARY := icp_packetio-$(ICP_PACKETIO_DRIVER)
 PIO_TARGET := $(PIO_LIB_DIR)/lib$(PIO_LIBRARY).a
 
