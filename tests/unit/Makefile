@@ -20,6 +20,7 @@ SOURCES := \
 	framework/test_mac_address.cpp \
 	framework/test_ipv4_address.cpp \
 	framework/test_ipv4_network.cpp \
+	framework/test_std_allocator.cpp \
 	framework/test_task.cpp
 
 OBJECTS := $(patsubst %, $(BUILD_DIR)/%, \

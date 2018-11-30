@@ -22,7 +22,7 @@ FW_OBJECTS :=
 FW_DEPENDS :=
 FW_LDLIBS  :=
 
-FW_MODULES := allocator core net
+FW_MODULES := core memory net
 
 # Load each module's module.mk file
 include $(patsubst %, $(FW_SRC_DIR)/%/module.mk, $(FW_MODULES))
