@@ -52,6 +52,6 @@
                                      (concat root "deps/pistache/include")
                                      (concat root "src/")
                                      (concat root "src/framework")
-                                     (concat root "src/packetio")
-                                     (concat root "src/packetio/stack/include")
+                                     (concat root "src/modules")
+                                     (concat root "src/modules/packetio/stack/include")
                                      )))))))

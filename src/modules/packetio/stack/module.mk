@@ -5,6 +5,7 @@
 $(call icp_check_vars, ICP_PACKETIO_DRIVER)
 
 PIO_INCLUDES += stack/include
+PIO_DEPENDS += sock_server
 
 PIO_STACK_DIR := $(PIO_SRC_DIR)/stack/$(ICP_PACKETIO_DRIVER)
 

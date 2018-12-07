@@ -24,9 +24,9 @@ public:
     shared_segment(const shared_segment&) = delete;
     shared_segment& operator=(const shared_segment&&) = delete;
 
-    std::string_view name() { return (m_path); }
-    size_t size() { return (m_size); }
-    void* get() { return (m_ptr); }
+    std::string_view name() const { return (m_path); }
+    size_t size() const { return (m_size); }
+    void* get() const { return (m_ptr); }
 };
 
 }

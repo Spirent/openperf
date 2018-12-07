@@ -7,8 +7,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-#include "core/icp_core.h"
-#include "memory/shared_segment.h"
+#include "socket/shared_segment.h"
 
 namespace icp {
 namespace memory {
@@ -26,17 +25,16 @@ static void* do_mapping(const std::string_view path, size_t size,
                                  + strerror(errno));
     }
 
-    ftruncate(fd, size);
+    if (shm_flags & O_CREAT) {
+        ftruncate(fd, size);
+    }
 
     auto ptr = mmap(const_cast<void*>(addr), size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
     close(fd);  /* done with this regardless of outcome... */
     if (ptr == MAP_FAILED) {
-        throw std::runtime_error("Could not "
-                                 " map shared memory segment " + std::string(path) + ": "
-                                 + strerror(errno));
+        throw std::runtime_error("Could not map shared memory segment "
+                                 + std::string(path) + ": " + strerror(errno));
     }
-
-    ICP_LOG(ICP_LOG_DEBUG, "Created shared memory segment %s at %p\n", path.data(), ptr);
 
     return (ptr);
 }
@@ -59,7 +57,7 @@ shared_segment::shared_segment(const std::string_view path, size_t size, const v
     , m_size(size)
     , m_initialized(false)
 {
-    m_ptr = do_mapping(path, size, false, ptr);
+    m_ptr = do_mapping(path, size, O_RDWR, ptr);
     if (m_ptr != ptr) {
         /* two chars per byte + terminating null */
         static constexpr size_t ptr_buf_length = sizeof(void*) * 2 + 1;
@@ -94,7 +92,7 @@ shared_segment& shared_segment::operator=(shared_segment&& other)
 shared_segment::~shared_segment()
 {
     if (!m_initialized) return;
-    ICP_LOG(ICP_LOG_DEBUG, "Unlinking shared memory segment %s\n", m_path.data());
+    munmap(m_ptr, m_size);
     shm_unlink(m_path.data());
 }
 

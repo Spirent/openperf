@@ -56,6 +56,7 @@
 #include "netif/ethernet.h"
 
 #include "core/icp_core.h"
+#include "socket/server.h"
 
 #define TCPIP_MSG_VAR_REF(name)     API_VAR_REF(name)
 #define TCPIP_MSG_VAR_DECLARE(name) API_VAR_DECLARE(struct tcpip_msg, name)
@@ -194,6 +195,8 @@ tcpip_thread(void *arg)
     LWIP_UNUSED_ARG(arg);
 
     icp::core::event_loop tcpip_loop;
+
+    icp::sock::server sock_serv(tcpip_loop);
 
     struct icp_event_callbacks msg_callbacks = {
         .on_read = handle_tcpip_msg,
