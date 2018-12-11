@@ -121,16 +121,9 @@ int client::socket(int domain, int type, int protocol)
 
     /* Record socket data for future use */
     auto result = m_sockets.emplace(s.fd_pair.client_fd,
-                                    client_socket{
-                                        .queue = {
-                                            .tx = &s.queue_pair->txq,
-                                            .rx = &s.queue_pair->rxq
-                                        },
-                                        .fd = {
-                                            .client = s.fd_pair.client_fd,
-                                            .server = s.fd_pair.server_fd,
-                                        },
-                                        .id = s.sockid});
+                                    client_socket(s.sockid, s.client_q, s.fd_pair.client_fd,
+                                                  s.server_q, s.fd_pair.server_fd));
+
     if (!result.second) {
         errno = ENOBUFS;
         return (-1);
@@ -161,8 +154,8 @@ int client::close(int s)
     }
 
     /* XXX: libc close */
-    close(sock.fd.client);
-    close(sock.fd.server);
+    close(sock.client_fd());
+    close(sock.server_fd());
 
     m_sockets.erase(result);
     return (0);
@@ -177,9 +170,8 @@ int client::io_ping(int s)
     }
 
     auto& sock = result->second;
-    eventfd_write(sock.fd.server, 1);
+    eventfd_write(sock.server_fd(), 1);
     return (0);
 }
-
 }
 }

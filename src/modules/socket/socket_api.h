@@ -41,8 +41,8 @@ constexpr size_t shared_memory_name_length = 32;
 typedef spsc_queue<iovec, socket_queue_length> socket_queue;
 
 struct socket_queue_pair {
-    socket_queue txq;
-    socket_queue rxq;
+    socket_queue client_q;
+    socket_queue server_q;
 };
 
 struct socket_fd_pair {
@@ -61,7 +61,8 @@ struct reply_init {
 };
 
 struct reply_socket {
-    socket_queue_pair* queue_pair;
+    socket_queue* client_q;
+    socket_queue* server_q;
     socket_fd_pair fd_pair;
     int sockid;
 };

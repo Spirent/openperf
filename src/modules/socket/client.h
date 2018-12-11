@@ -7,6 +7,7 @@
 #include <sys/un.h>
 #include <unordered_map>
 
+#include "socket/eventfd_queue.h"
 #include "socket/shared_segment.h"
 #include "socket/socket_api.h"
 #include "socket/unix_socket.h"
@@ -37,18 +38,22 @@ class client : public thread_singleton<client>
     unix_socket m_sock;
 
     struct client_socket {
-        struct {
-            api::socket_queue* tx;
-            api::socket_queue* rx;
-        } queue;
-        struct {
-            int client;
-            int server;
-        } fd;
+        eventfd_receiver<iovec, api::socket_queue_length> receiver;
+        eventfd_sender<iovec, api::socket_queue_length>   sender;
         int id;
+
+        client_socket(int sockid,
+                      api::socket_queue* client_q, int client_fd,
+                      api::socket_queue* server_q, int server_fd)
+            : receiver(server_q, server_fd, client_fd)
+            , sender(client_q, client_fd, server_fd)
+            , id(sockid)
+        {}
+        int client_fd() { return (receiver.m_waitfd); }
+        int server_fd() { return (receiver.m_signalfd); }
     };
 
-    /* XXX: need a multi-threaded in case fd's jump threads */
+    /* XXX: need a multi-threaded solution in case fd's jump threads */
     std::unordered_map<int, client_socket> m_sockets;
     std::unique_ptr<memory::shared_segment> m_shm;
 
@@ -59,7 +64,6 @@ public:
     int socket(int domain, int type, int protocol);
     int close(int s);
     //int write(const char *buffer, size_t length);
-
     int io_ping(int s);
 
 #if 0

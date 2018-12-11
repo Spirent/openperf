@@ -9,6 +9,7 @@
 namespace icp {
 namespace sock {
 
+
 server_api_handler::server_api_handler(icp::core::event_loop& loop,
                                        icp::memory::allocator::pool& pool)
     : m_loop(loop)
@@ -69,15 +70,16 @@ static int handle_socket_read(const struct icp_event_data *data __attribute__((u
                               void *arg)
 {
     auto socket = *(reinterpret_cast<std::shared_ptr<server_socket>*>(arg));
-    return (socket->process_reads());
+    ICP_LOG(ICP_LOG_INFO, "Read request for socket %d\n", socket->id());
+    socket->read();
+    return (0);
 }
 
 static int handle_socket_delete(const struct icp_event_data *data __attribute__((unused)),
                                 void *arg)
 {
-    auto socket = *(reinterpret_cast<std::shared_ptr<server_socket>*>(arg));
-    assert(socket.use_count() > 0);
-    socket.reset();
+    auto socket = (reinterpret_cast<std::shared_ptr<server_socket>*>(arg));
+    delete socket;
     return (0);
 }
 
@@ -126,8 +128,6 @@ api::reply_msg server_api_handler::handle_request_close(const api::request_close
 
     auto& s = result->second;
     m_loop.del(s->server_fd());
-    m_ids.release(request.sockid);
-    release_queues(m_pool, s->queues());
     m_sockets.erase(result);
     return (api::reply_success());
 }
@@ -155,7 +155,11 @@ api::reply_msg server_api_handler::handle_request_socket(const api::request_sock
         return (tl::make_unexpected(ENOBUFS));
     }
 
-    auto result = m_sockets.emplace(*id, std::make_shared<server_socket>(queues));
+    auto result = m_sockets.emplace(*id, std::make_shared<server_socket>(
+                                        *id, queues, [this, id, queues](){
+                                                         m_ids.release(*id);
+                                                         release_queues(m_pool, queues);
+                                                     }));
     if (!result.second) {
         m_ids.release(*id);
         release_queues(m_pool, queues);
@@ -169,12 +173,14 @@ api::reply_msg server_api_handler::handle_request_socket(const api::request_sock
         .on_read   = handle_socket_read,
         .on_delete = handle_socket_delete
     };
+
     m_loop.add(s->server_fd(), &socket_callbacks,
                reinterpret_cast<void*>(new std::shared_ptr(s)));  /* bump ref count on ptr */
 
     return (api::reply_socket{
             .sockid = *id,
-            .queue_pair = s->queues(),
+            .client_q = s->client_q(),
+            .server_q = s->server_q(),
             .fd_pair = {
                 .client_fd = s->client_fd(),
                 .server_fd = s->server_fd(),

@@ -6,7 +6,6 @@ SOCK_COMMON += \
 
 SOCKSRV_SOURCES += \
 	$(SOCK_COMMON) \
-	eventfd_wrapper.cpp \
 	server_api_handler.cpp \
 	server_socket.cpp \
 	server.cpp \
