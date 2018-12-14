@@ -3,31 +3,22 @@
 #include <sys/un.h>
 
 #include "memory/allocator/pool.h"
-#include "socket/server_api_handler.h"
+#include "socket/server/api_handler.h"
+#include "socket/server/socket.h"
 #include "core/icp_core.h"
 
 namespace icp {
-namespace sock {
+namespace socket {
+namespace server {
 
-
-server_api_handler::server_api_handler(icp::core::event_loop& loop,
-                                       icp::memory::allocator::pool& pool)
+api_handler::api_handler(icp::core::event_loop& loop,
+                         icp::memory::allocator::pool& pool,
+                         pid_t pid)
     : m_loop(loop)
     , m_pool(pool)
+    , m_pid(pid)
+    , m_next_socket_id(0)
 {}
-
-static
-api::socket_queue_pair* acquire_queues(icp::memory::allocator::pool& pool)
-{
-    return (reinterpret_cast<api::socket_queue_pair*>(pool.acquire()));
-}
-
-static
-void release_queues(icp::memory::allocator::pool& pool,
-                    const api::socket_queue_pair* queues)
-{
-    pool.release(reinterpret_cast<const void*>(queues));
-}
 
 static ssize_t send_reply(int sockfd, const sockaddr_un& client, const api::reply_msg& reply)
 {
@@ -69,104 +60,51 @@ static ssize_t send_reply(int sockfd, const sockaddr_un& client, const api::repl
 static int handle_socket_read(const struct icp_event_data *data __attribute__((unused)),
                               void *arg)
 {
-    auto socket = *(reinterpret_cast<std::shared_ptr<server_socket>*>(arg));
-    ICP_LOG(ICP_LOG_INFO, "Read request for socket %d\n", socket->id());
-    socket->read();
+    auto socket = *(reinterpret_cast<std::shared_ptr<server::socket>*>(arg));
+    ICP_LOG(ICP_LOG_INFO, "Read request for socket %p\n", (void *)socket.get());
+    //socket->read();
     return (0);
 }
 
 static int handle_socket_delete(const struct icp_event_data *data __attribute__((unused)),
                                 void *arg)
 {
-    auto socket = (reinterpret_cast<std::shared_ptr<server_socket>*>(arg));
+    auto socket = (reinterpret_cast<std::shared_ptr<server::socket>*>(arg));
     delete socket;
     return (0);
 }
 
-api::reply_msg server_api_handler::handle_request_accept(const api::request_accept& request)
+api::reply_msg api_handler::handle_request_accept(const api::request_accept& request)
 {
     return (tl::make_unexpected(ENOSYS));
 }
 
-api::reply_msg server_api_handler::handle_request_bind(const api::request_bind& request)
-{
-    return (tl::make_unexpected(ENOSYS));
-}
-
-api::reply_msg server_api_handler::handle_request_shutdown(const api::request_shutdown& request)
-{
-    return (tl::make_unexpected(ENOSYS));
-}
-
-api::reply_msg server_api_handler::handle_request_getpeername(const api::request_getpeername& request)
-{
-    return (tl::make_unexpected(ENOSYS));
-}
-
-api::reply_msg server_api_handler::handle_request_getsockname(const api::request_getsockname& request)
-{
-    return (tl::make_unexpected(ENOSYS));
-}
-
-api::reply_msg server_api_handler::handle_request_getsockopt(const api::request_getsockopt& request)
-{
-    return (tl::make_unexpected(ENOSYS));
-}
-
-api::reply_msg server_api_handler::handle_request_setsockopt(const api::request_setsockopt& request)
-{
-    return (tl::make_unexpected(ENOSYS));
-}
-
-api::reply_msg server_api_handler::handle_request_close(const api::request_close& request)
+api::reply_msg api_handler::handle_request_close(const api::request_close& request)
 {
     /* lookup socket to close */
-    auto result = m_sockets.find(request.sockid);
+    auto result = m_sockets.find(request.id);
     if (result == m_sockets.end()) {
         return (tl::make_unexpected(EINVAL));
     }
 
     auto& s = result->second;
-    m_loop.del(s->server_fd());
+    m_loop.del(s->channel()->server_fd());
     m_sockets.erase(result);
     return (api::reply_success());
 }
 
-api::reply_msg server_api_handler::handle_request_connect(const api::request_connect& request)
+api::reply_msg api_handler::handle_request_socket(const api::request_socket& request)
 {
-    return (tl::make_unexpected(ENOSYS));
-}
+    auto id = api::socket_id{ {m_pid, m_next_socket_id++} };
+    auto result = m_sockets.emplace(
+        id, std::make_shared<server::socket>(m_pool, request.domain, request.type, request.protocol));
 
-api::reply_msg server_api_handler::handle_request_listen(const api::request_listen& request)
-{
-    return (tl::make_unexpected(ENOSYS));
-}
-
-api::reply_msg server_api_handler::handle_request_socket(const api::request_socket& request)
-{
-    auto id = m_ids.acquire();
-    if (!id) {
-        return (tl::make_unexpected(EMFILE));
-    }
-
-    auto queues = acquire_queues(m_pool);
-    if (!queues) {
-        m_ids.release(*id);
-        return (tl::make_unexpected(ENOBUFS));
-    }
-
-    auto result = m_sockets.emplace(*id, std::make_shared<server_socket>(
-                                        *id, queues, [this, id, queues](){
-                                                         m_ids.release(*id);
-                                                         release_queues(m_pool, queues);
-                                                     }));
     if (!result.second) {
-        m_ids.release(*id);
-        release_queues(m_pool, queues);
         return (tl::make_unexpected(ENOMEM));
     }
 
-    auto& s = result.first->second;
+    auto& socket = result.first->second;
+    auto channel = socket->channel();
 
     /* Add I/O callback for socket writes from client to stack */
     struct icp_event_callbacks socket_callbacks = {
@@ -174,21 +112,20 @@ api::reply_msg server_api_handler::handle_request_socket(const api::request_sock
         .on_delete = handle_socket_delete
     };
 
-    m_loop.add(s->server_fd(), &socket_callbacks,
-               reinterpret_cast<void*>(new std::shared_ptr(s)));  /* bump ref count on ptr */
+    m_loop.add(channel->server_fd(), &socket_callbacks,
+               reinterpret_cast<void*>(new std::shared_ptr(socket)));  /* bump ref count on ptr */
 
     return (api::reply_socket{
-            .sockid = *id,
-            .client_q = s->client_q(),
-            .server_q = s->server_q(),
+            .id = id,
+            .channel = reinterpret_cast<icp::socket::io_channel*>(channel),
             .fd_pair = {
-                .client_fd = s->client_fd(),
-                .server_fd = s->server_fd(),
+                .client_fd = channel->client_fd(),
+                .server_fd = channel->server_fd(),
             }
         });
 }
 
-int server_api_handler::handle_requests(const struct icp_event_data *data)
+int api_handler::handle_requests(const struct icp_event_data *data)
 {
     api::request_msg request;
     ssize_t recv_or_err = 0;
@@ -211,27 +148,27 @@ int server_api_handler::handle_requests(const struct icp_event_data *data)
                                     },
                                     [&](const api::request_bind& request) -> api::reply_msg {
                                         ICP_LOG(ICP_LOG_TRACE, "bind request received\n");
-                                        return (handle_request_bind(request));
+                                        return (handle_request_generic(request));
                                     },
                                     [&](const api::request_shutdown& request) -> api::reply_msg {
                                         ICP_LOG(ICP_LOG_TRACE, "shutdown request received\n");
-                                        return (handle_request_shutdown(request));
+                                        return (handle_request_generic(request));
                                     },
                                     [&](const api::request_getpeername& request) -> api::reply_msg {
                                         ICP_LOG(ICP_LOG_TRACE, "getpeername request received\n");
-                                        return (handle_request_getpeername(request));
+                                        return (handle_request_generic(request));
                                     },
                                     [&](const api::request_getsockname& request) -> api::reply_msg {
                                         ICP_LOG(ICP_LOG_TRACE, "getsockname request received\n");
-                                        return (handle_request_getsockname(request));
+                                        return (handle_request_generic(request));
                                     },
                                     [&](const api::request_getsockopt& request) -> api::reply_msg {
                                         ICP_LOG(ICP_LOG_TRACE, "getsockopt request received\n");
-                                        return (handle_request_getsockopt(request));
+                                        return (handle_request_generic(request));
                                     },
                                     [&](const api::request_setsockopt& request) -> api::reply_msg {
                                         ICP_LOG(ICP_LOG_TRACE, "setsockopt request received\n");
-                                        return (handle_request_setsockopt(request));
+                                        return (handle_request_generic(request));
                                     },
                                     [&](const api::request_close& request) -> api::reply_msg {
                                         ICP_LOG(ICP_LOG_TRACE, "close request received\n");
@@ -239,11 +176,11 @@ int server_api_handler::handle_requests(const struct icp_event_data *data)
                                     },
                                     [&](const api::request_connect& request) -> api::reply_msg {
                                         ICP_LOG(ICP_LOG_TRACE, "connect request received\n");
-                                        return (handle_request_connect(request));
+                                        return (handle_request_generic(request));
                                     },
                                     [&](const api::request_listen& request) -> api::reply_msg {
                                         ICP_LOG(ICP_LOG_TRACE, "listen request received\n");
-                                        return (handle_request_listen(request));
+                                        return (handle_request_generic(request));
                                     },
                                     [&](const api::request_socket& request) -> api::reply_msg {
                                         ICP_LOG(ICP_LOG_TRACE, "socket request received\n");
@@ -260,5 +197,6 @@ int server_api_handler::handle_requests(const struct icp_event_data *data)
     return (recv_or_err == 0 ? -1 : 0);
 }
 
+}
 }
 }

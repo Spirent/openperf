@@ -1,11 +1,11 @@
-#ifndef _ICP_SOCK_UUID_H_
-#define _ICP_SOCK_UUID_H_
+#ifndef _ICP_SOCKET_UUID_H_
+#define _ICP_SOCKET_UUID_H_
 
 #include <cstdint>
 #include <string>
 
 namespace icp {
-namespace sock {
+namespace socket {
 
 class uuid
 {
@@ -31,9 +31,9 @@ std::string to_string(const uuid&);
 namespace std {
 
 template <>
-struct hash<icp::sock::uuid>
+struct hash<icp::socket::uuid>
 {
-    size_t operator()(const icp::sock::uuid& uuid) const noexcept
+    size_t operator()(const icp::socket::uuid& uuid) const noexcept
     {
         auto data = reinterpret_cast<const uint64_t*>(uuid.data());
         auto h1 = std::hash<uint64_t>{}(data[0]);
@@ -43,4 +43,4 @@ struct hash<icp::sock::uuid>
 };
 
 }
-#endif /* _ICP_SOCK_UUID_H_ */
+#endif /* _ICP_SOCKET_UUID_H_ */

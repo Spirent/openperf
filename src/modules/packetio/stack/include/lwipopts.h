@@ -18,6 +18,9 @@
 #define LWIP_NETCONN 0
 #define LWIP_NETCONN_SEM_PER_THREAD 1
 
+#define LWIP_IPV6 1
+#define IPV6_FRAG_COPYHEADER 1
+
 /* Network Interface options */
 #define LWIP_NETIF_HOSTNAME 1
 #define LWIP_NETIF_LINK_CALLBACK 1

@@ -15,35 +15,15 @@
 #include "socket/uuid.h"
 
 namespace icp {
-namespace sock {
-
-/**
- * This struct is magic.  Use templates and parameter packing to provide
- * some syntactic sugar for creating visitor objects for std::visit.
- */
-template<typename ...Ts>
-struct overloaded_visitor : Ts...
-{
-    overloaded_visitor(const Ts&... args)
-        : Ts(args)...
-    {}
-
-    using Ts::operator()...;
-};
-
+namespace socket {
+struct io_channel;
 namespace api {
 
-constexpr int    socket_fd_offset = std::numeric_limits<int>::max() / 2;
 constexpr size_t max_sockets = 512;
 constexpr size_t socket_queue_length = 32;
 constexpr size_t shared_memory_name_length = 32;
 
 typedef spsc_queue<iovec, socket_queue_length> socket_queue;
-
-struct socket_queue_pair {
-    socket_queue client_q;
-    socket_queue server_q;
-};
 
 struct socket_fd_pair {
     int client_fd;
@@ -56,15 +36,39 @@ struct shared_memory_descriptor {
     size_t size;
 };
 
+union socket_id {
+    struct {
+        pid_t pid;
+        uint32_t sid;
+    };
+    uint64_t uint64;
+
+    bool operator==(const socket_id& other) const
+    {
+        return (uint64 == other.uint64);
+    }
+};
+
 struct reply_init {
+    pid_t pid;
     std::optional<shared_memory_descriptor> shm_info;
 };
 
-struct reply_socket {
-    socket_queue* client_q;
-    socket_queue* server_q;
+struct reply_accept {
+    socket_id id;
+    io_channel *channel;
     socket_fd_pair fd_pair;
-    int sockid;
+    socklen_t addrlen;
+};
+
+struct reply_socket {
+    socket_id id;
+    io_channel *channel;
+    socket_fd_pair fd_pair;
+};
+
+struct reply_socklen {
+    socklen_t length;
 };
 
 struct reply_success {};
@@ -75,36 +79,36 @@ struct request_init {
 };
 
 struct request_accept {
-    int sockid;
+    socket_id id;
     const struct sockaddr *addr;
     socklen_t addrlen;
 };
 
 struct request_bind {
-    int sockid;
+    socket_id id;
     const struct sockaddr *name;
     socklen_t namelen;
 };
 
 struct request_shutdown {
-    int sockid;
+    socket_id id;
     int how;
 };
 
 struct request_getpeername {
-    int sockid;
+    socket_id id;
     struct sockaddr *name;
     socklen_t namelen;
 };
 
 struct request_getsockname {
-    int sockid;
+    socket_id id;
     struct sockaddr *name;
     socklen_t namelen;
 };
 
 struct request_getsockopt {
-    int sockid;
+    socket_id id;
     int level;
     int optname;
     void *optval;
@@ -112,7 +116,7 @@ struct request_getsockopt {
 };
 
 struct request_setsockopt {
-    int sockid;
+    socket_id id;
     int level;
     int optname;
     const void *optval;
@@ -120,22 +124,21 @@ struct request_setsockopt {
 };
 
 struct request_close {
-    int sockid;
+    socket_id id;
 };
 
 struct request_connect {
-    int sockid;
+    socket_id id;
     const struct sockaddr *name;
     socklen_t namelen;
 };
 
 struct request_listen {
-    int sockid;
+    socket_id id;
     int backlog;
 };
 
 struct request_socket {
-    int sockid;
     int domain;
     int type;
     int protocol;
@@ -154,9 +157,11 @@ typedef std::variant<request_init,
                      request_listen,
                      request_socket> request_msg;
 
-typedef std::variant<reply_success,
+typedef std::variant<reply_init,
+                     reply_accept,
                      reply_socket,
-                     reply_init> reply_ok;
+                     reply_socklen,
+                     reply_success> reply_ok;
 
 typedef tl::expected<reply_ok, int> reply_msg;  /* either the reply or an error code */
 
@@ -169,10 +174,24 @@ std::string client_socket(const std::string_view id);
 std::string server_socket();
 
 std::optional<socket_fd_pair> get_message_fds(const api::reply_msg&);
-void set_message_fds(api::reply_msg&, socket_fd_pair& fd_pair);
+void set_message_fds(api::reply_msg&, const socket_fd_pair& fd_pair);
+
 
 }
 }
+}
+
+namespace std {
+
+template <>
+struct hash<icp::socket::api::socket_id>
+{
+    size_t operator()(const icp::socket::api::socket_id& id) const noexcept
+    {
+        return (std::hash<uint64_t>{}(id.uint64));
+    }
+};
+
 }
 
 #endif /* _ICP_SOCKET_API_H_ */

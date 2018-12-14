@@ -4,7 +4,7 @@
 #include <string>
 
 namespace icp {
-namespace sock {
+namespace socket {
 
 class unix_socket
 {

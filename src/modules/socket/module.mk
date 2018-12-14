@@ -6,15 +6,19 @@ SOCK_COMMON += \
 
 SOCKSRV_SOURCES += \
 	$(SOCK_COMMON) \
-	server_api_handler.cpp \
-	server_socket.cpp \
-	server.cpp \
+	server/api_handler.cpp \
+	server/io_channel.cpp \
+	server/socket.cpp \
+	server/api_server.cpp \
+	server/tcp_socket.cpp \
+	server/udp_socket.cpp
 
 SOCKSRV_LDLIBS += -lrt
 
 SOCKCLI_SOURCES += \
 	$(SOCK_COMMON) \
-	client.cpp
+	client/api_client.cpp \
+	client/io_channel.cpp
 
 SOCKCLI_DEPENDS += expected
 

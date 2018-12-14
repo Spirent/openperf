@@ -16,7 +16,7 @@ OBJECTS := $(patsubst %, $(BUILD_DIR)/%, \
 	$(patsubst %.cpp, %.o, $(filter %.cpp, $(SOURCES))))
 SRC_DEPENDS := $(OBJECTS:.o=.d)
 
-BLD_DEPENDS := sock_client
+BLD_DEPENDS := socket_client
 
 all: devclient
 

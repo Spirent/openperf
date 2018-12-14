@@ -12,14 +12,18 @@
 #include <sys/un.h>
 
 #include "memory/allocator/pool.h"
-#include "socket/server_api_handler.h"
-#include "socket/socket_api.h"
+#include "socket/api.h"
+#include "socket/io_channel.h"
 #include "socket/uuid.h"
-#include "socket/server.h"
+#include "socket/server/api_handler.h"
+#include "socket/server/api_server.h"
 #include "core/icp_core.h"
 
 namespace icp {
-namespace sock {
+namespace socket {
+namespace api {
+
+using api_handler = icp::socket::server::api_handler;
 
 static __attribute__((const)) bool power_of_two(uint64_t x) {
     return !(x & (x - 1));
@@ -66,28 +70,28 @@ extern "C" {
 static int handle_api_accept(const struct icp_event_data *data __attribute__((unused)),
                              void *arg)
 {
-    auto server = reinterpret_cast<icp::sock::server*>(arg);
+    auto server = reinterpret_cast<icp::socket::api::server*>(arg);
     return (server->handle_accept_requests());
 }
 
 static int handle_api_init(const struct icp_event_data *data,
                            void *arg)
 {
-    auto server = reinterpret_cast<icp::sock::server*>(arg);
+    auto server = reinterpret_cast<icp::socket::api::server*>(arg);
     return (server->handle_init_requests(data));
 }
 
 static int handle_api_requests(const struct icp_event_data *data,
                                void *arg)
 {
-    auto handler = *(reinterpret_cast<std::shared_ptr<icp::sock::server_api_handler>*>(arg));
+    auto handler = *(reinterpret_cast<std::shared_ptr<api_handler>*>(arg));
     return (handler->handle_requests(data));
 }
 
 static int delete_api_requests(const struct icp_event_data *data __attribute__((unused)),
                                void *arg)
 {
-    auto handler = *(reinterpret_cast<std::shared_ptr<icp::sock::server_api_handler>*>(arg));
+    auto handler = *(reinterpret_cast<std::shared_ptr<api_handler>*>(arg));
     handler.reset();
     return (0);
 }
@@ -103,7 +107,7 @@ static int close_fd(const struct icp_event_data *data,
 
 server::server(icp::core::event_loop& loop)
     : m_sock(api::server_socket(), api::socket_type)
-    , m_shm(create_shared_memory_pool(align_up(sizeof(api::socket_queue_pair), 64),
+    , m_shm(create_shared_memory_pool(align_up(sizeof(io_channel), 64),
                                       api::max_sockets))
     , m_loop(loop)
 {
@@ -180,7 +184,7 @@ int server::handle_init_requests(const struct icp_event_data *data)
             ICP_LOG(ICP_LOG_INFO, "New connection received from pid %d, %s\n",
                     init.pid, to_string(init.tid).c_str());
             m_handlers.emplace(init.pid,
-                               std::make_shared<server_api_handler>(m_loop, *(pool())));
+                               std::make_shared<api_handler>(m_loop, *(pool()), init.pid));
             auto shm_info = api::shared_memory_descriptor{
                 .base = m_shm.get(),
                 .size = m_shm.size()
@@ -188,6 +192,7 @@ int server::handle_init_requests(const struct icp_event_data *data)
             strncpy(shm_info.name, m_shm.name().data(),
                     api::shared_memory_name_length);
             reply = api::reply_init{
+                .pid = getpid(),
                 .shm_info = std::make_optional(shm_info)
             };
         } else {
@@ -197,6 +202,7 @@ int server::handle_init_requests(const struct icp_event_data *data)
              * data, don't return it again.
              */
             reply = api::reply_init{
+                .pid = getpid(),
                 .shm_info = std::nullopt
             };
         }
@@ -232,5 +238,6 @@ int server::handle_init_requests(const struct icp_event_data *data)
     return (0);
 }
 
+}
 }
 }

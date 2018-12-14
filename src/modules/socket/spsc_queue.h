@@ -6,7 +6,7 @@
 #include <optional>
 
 namespace icp {
-namespace sock {
+namespace socket {
 
 /**
  * This simple queue is a lock-free Single Producer / Single Consumer queue

@@ -5,7 +5,7 @@
 #include "modules/socket/uuid.h"
 
 namespace icp {
-namespace sock {
+namespace socket {
 
 uuid::uuid()
     : m_octets{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}

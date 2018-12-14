@@ -10,7 +10,7 @@
 #include "socket/unix_socket.h"
 
 namespace icp {
-namespace sock {
+namespace socket {
 
 void check_and_create_path(const std::string_view path)
 {
@@ -40,7 +40,7 @@ void check_and_create_path(const std::string_view path)
 
 unix_socket::unix_socket(const std::string_view path, int type)
     : m_path(path)
-    , m_fd(socket(AF_UNIX, type, 0))
+    , m_fd(::socket(AF_UNIX, type, 0))
 {
     if (m_fd == -1) {
         throw std::runtime_error("Could not create unix socket: "

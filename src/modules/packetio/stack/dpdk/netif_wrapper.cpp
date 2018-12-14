@@ -30,7 +30,7 @@ std::string netif_wrapper::mac_address() const
 
 std::string netif_wrapper::ipv4_address() const
 {
-    return (net::to_string(net::ipv4_address(m_netif->ip_addr.addr)));
+    return (net::to_string(net::ipv4_address(ip_2_ip4(&m_netif->ip_addr)->addr)));
 }
 
 interface::stats_data netif_wrapper::stats() const

@@ -27,7 +27,7 @@ SOCKSRV_OBJECTS += $(patsubst %, $(SOCKSRV_OBJ_DIR)/%, \
 
 SOCKSRV_CPPFLAGS := -I$(ICP_ROOT)/deps/lwip/src/include
 
-SOCKSRV_LIBRARY := icpsock_server
+SOCKSRV_LIBRARY := icpsocket_server
 SOCKSRV_TARGET := $(SOCKSRV_LIB_DIR)/lib$(SOCKSRV_LIBRARY).a
 
 -include $(SOCKSRV_OBJECTS:.o=.d)
@@ -41,20 +41,20 @@ $(SOCKSRV_OBJECTS): | $(SOCKSRV_DEPENDS)
 
 $(SOCKSRV_OBJ_DIR)/%.o: $(SOCKSRV_SRC_DIR)/%.c
 	@mkdir -p $(dir $@)
-	$(strip $(ICP_CC) -o $@ -c $(ICP_CPPFLAGS) $(ICP_CFLAGS) $(ICP_COPTS) $(ICP_DEFINES) $<)
+	$(strip $(ICP_CC) -o $@ -c $(ICP_CPPFLAGS) $(SOCKSRV_CPPFLAGS) $(ICP_CFLAGS) $(ICP_COPTS) $(ICP_DEFINES) $<)
 
 $(SOCKSRV_OBJ_DIR)/%.o: $(SOCKSRV_SRC_DIR)/%.cpp
 	@mkdir -p $(dir $@)
-	$(strip $(ICP_CXX) -o $@ -c $(ICP_CPPFLAGS) $(ICP_CXXFLAGS) $(ICP_COPTS) $(ICP_DEFINES) $<)
+	$(strip $(ICP_CXX) -o $@ -c $(ICP_CPPFLAGS) $(SOCKSRV_CPPFLAGS) $(ICP_CXXFLAGS) $(ICP_COPTS) $(ICP_DEFINES) $<)
 
 $(SOCKSRV_TARGET): $(SOCKSRV_OBJECTS)
 	@mkdir -p $(dir $@)
 	$(strip $(ICP_AR) $(ICP_ARFLAGS) $@ $(SOCKSRV_OBJECTS))
 
-.PHONY: sock_server
-sock_server: $(SOCKSRV_TARGET)
+.PHONY: socket_server
+socket_server: $(SOCKSRV_TARGET)
 
-.PHONY: clean_sock_server
-clean_sock_server:
+.PHONY: clean_socket_server
+clean_socket_server:
 	@rm -rf $(SOCKSRV_OBJ_DIR) $(SOCKSRV_TARGET)
-clean: clean_sock_server
+clean: clean_socket_server

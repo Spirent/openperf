@@ -1,5 +1,5 @@
-#ifndef _ICP_SOCKET_CLIENT_H_
-#define _ICP_SOCKET_CLIENT_H_
+#ifndef _ICP_SOCKET_API_CLIENT_H_
+#define _ICP_SOCKET_API_CLIENT_H_
 
 #include <memory>
 #include <string>
@@ -7,14 +7,15 @@
 #include <sys/un.h>
 #include <unordered_map>
 
-#include "socket/eventfd_queue.h"
+#include "socket/api.h"
+#include "socket/client/io_channel.h"
 #include "socket/shared_segment.h"
-#include "socket/socket_api.h"
 #include "socket/unix_socket.h"
 #include "socket/uuid.h"
 
 namespace icp {
-namespace sock {
+namespace socket {
+namespace api {
 
 template <typename T>
 class thread_singleton {
@@ -37,36 +38,29 @@ class client : public thread_singleton<client>
     uuid m_uuid;
     unix_socket m_sock;
 
-    struct client_socket {
-        eventfd_receiver<iovec, api::socket_queue_length> receiver;
-        eventfd_sender<iovec, api::socket_queue_length>   sender;
-        int id;
-
-        client_socket(int sockid,
-                      api::socket_queue* client_q, int client_fd,
-                      api::socket_queue* server_q, int server_fd)
-            : receiver(server_q, server_fd, client_fd)
-            , sender(client_q, client_fd, server_fd)
-            , id(sockid)
-        {}
-        int client_fd() { return (receiver.m_waitfd); }
-        int server_fd() { return (receiver.m_signalfd); }
+    /* XXX: need a multi-threaded solution in case fd's jump threads */
+    struct io_channel_deleter {
+        void operator()(socket::client::io_channel *c) {
+            c->~io_channel();
+        }
     };
 
-    /* XXX: need a multi-threaded solution in case fd's jump threads */
-    std::unordered_map<int, client_socket> m_sockets;
+    typedef std::unique_ptr<socket::client::io_channel, io_channel_deleter> channel_ptr;
+
+    struct ided_channel {
+        socket_id id;
+        channel_ptr channel;
+    };
+    std::unordered_map<int, ided_channel> m_channels;
+
     std::unique_ptr<memory::shared_segment> m_shm;
+    pid_t m_server_pid;
 
 public:
     client();
 
     void init();
-    int socket(int domain, int type, int protocol);
-    int close(int s);
-    //int write(const char *buffer, size_t length);
-    int io_ping(int s);
 
-#if 0
     int accept(int s, struct sockaddr *addr, socklen_t *addrlen);
     int bind(int s, const struct sockaddr *name, socklen_t namelen);
     int shutdown(int s, int how);
@@ -89,10 +83,10 @@ public:
     int writev(int s, const struct iovec *iov, int iovcnt);
 
     int ioctl(int s, long cmd, void *argp);
-#endif
-
 };
 
 }
 }
-#endif /* _ICP_SOCKET_CLIENT_H_ */
+}
+
+#endif /* _ICP_SOCKET_API_CLIENT_H_ */

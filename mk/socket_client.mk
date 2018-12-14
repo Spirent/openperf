@@ -27,7 +27,7 @@ SOCKCLI_OBJECTS += $(patsubst %, $(SOCKCLI_OBJ_DIR)/%, \
 
 SOCKCLI_CPPFLAGS := -I$(ICP_ROOT)/deps/lwip/src/include
 
-SOCKCLI_LIBRARY := icpsock_client
+SOCKCLI_LIBRARY := icpsocket_client
 SOCKCLI_TARGET := $(SOCKCLI_LIB_DIR)/lib$(SOCKCLI_LIBRARY).a
 
 -include $(SOCKCLI_OBJECTS:.o=.d)
@@ -56,10 +56,10 @@ $(SOCKCLI_TARGET): $(SOCKCLI_OBJECTS)
 	@mkdir -p $(dir $@)
 	$(strip $(ICP_AR) $(ICP_ARFLAGS) $@ $(SOCKCLI_OBJECTS))
 
-.PHONY: sock_client
-sock_client: $(SOCKCLI_TARGET)
+.PHONY: socket_client
+socket_client: $(SOCKCLI_TARGET)
 
-.PHONY: clean_sock_client
-clean_sock_client:
+.PHONY: clean_socket_client
+clean_socket_client:
 	@rm -rf $(SOCKCLI_OBJ_DIR) $(SOCKCLI_TARGET)
-clean: clean_sock_client
+clean: clean_socket_client
