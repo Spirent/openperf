@@ -58,6 +58,7 @@ struct reply_accept {
     socket_id id;
     io_channel *channel;
     socket_fd_pair fd_pair;
+    struct sockaddr *addr;
     socklen_t addrlen;
 };
 

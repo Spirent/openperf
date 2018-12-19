@@ -1,6 +1,7 @@
 #ifndef _ICP_SOCKET_SERVER_IO_CHANNEL_H_
 #define _ICP_SOCKET_SERVER_IO_CHANNEL_H_
 
+#include <array>
 #include "socket/io_channel.h"
 
 struct pbuf;
@@ -28,10 +29,17 @@ public:
     int server_fd();
 
     bool send(const pbuf*);
+    bool send(const pbuf*, const io_ip_addr*, in_port_t);
     void send_wait();
 
-    std::optional<iovec> recv();
-    void recv_clear();
+    struct recv_reply {
+        size_t nb_items;
+        std::optional<io_channel_addr> dest;
+    };
+    recv_reply recv(std::array<iovec, api::socket_queue_length>&);
+    void recv_ack();
+
+    void garbage_collect();
 };
 
 }

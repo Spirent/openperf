@@ -1,7 +1,12 @@
 #ifndef _ICP_SOCKET_SERVER_SOCKET_UTILS_H_
 #define _ICP_SOCKET_SERVER_SOCKET_UTILS_H_
 
+#include <optional>
+#include <arpa/inet.h>
+
 #include "socket/api.h"
+#include "core/icp_log.h"
+#include "lwip/ip_addr.h"
 
 namespace icp {
 namespace socket {
@@ -36,16 +41,35 @@ public:
     {
         Derived& child = static_cast<Derived&>(*this);
         auto [msg, next_state] = std::visit(
-            [&](auto& s) -> on_request_reply {
-                return (child.on_request(s, request));
+            [&](const auto& msg, const auto& s) -> on_request_reply {
+                return (child.on_request(msg, s));
             },
-            m_state);
+            request, m_state);
         if (next_state) {
+            ICP_LOG(ICP_LOG_TRACE, "Socket %p: %s --> %s\n",
+                    reinterpret_cast<void*>(this), to_string(m_state),
+                    to_string(*next_state));
             m_state = *std::move(next_state);
         }
         return (msg);
     }
 };
+
+std::optional<ip_addr_t> get_address(const sockaddr_storage&);
+
+std::optional<in_port_t> get_port(const sockaddr_storage&);
+
+tl::expected<void, int> copy_in(struct sockaddr_storage& dst,
+                                pid_t src_pid, const sockaddr* src_ptr,
+                                socklen_t length);
+
+tl::expected<int, int> copy_in(pid_t src_pid, const int *src_int);
+
+tl::expected<void, int> copy_out(pid_t dst_pid, sockaddr* dst_ptr,
+                                 const struct sockaddr_storage& src,
+                                 socklen_t length);
+
+tl::expected<void, int> copy_out(pid_t dst_pid, void* dst_ptr, int src);
 
 }
 }

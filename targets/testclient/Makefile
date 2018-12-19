@@ -3,22 +3,23 @@
 #
 
 ICP_ROOT := $(realpath ../../)
-ICP_TARGET := client
+ICP_TARGET := testclient
 include $(ICP_ROOT)/mk/bootstrap.mk
 
 BUILD_DIR := $(ICP_BUILD_ROOT)/obj
 TARGET_DIR := $(ICP_BUILD_ROOT)/bin
 
 SOURCES := \
-	main.cpp
+	main.cpp \
+	test_udp_socket.cpp
 
 OBJECTS := $(patsubst %, $(BUILD_DIR)/%, \
 	$(patsubst %.cpp, %.o, $(filter %.cpp, $(SOURCES))))
 SRC_DEPENDS := $(OBJECTS:.o=.d)
 
-BLD_DEPENDS := socket_client
+BLD_DEPENDS := catch socket_client
 
-all: devclient
+all: testclient
 
 # Pull in dependencies
 -include $(SRC_DEPENDS)
@@ -36,14 +37,14 @@ $(BUILD_DIR)/%.o: %.cpp
 	@mkdir -p $(dir $@)
 	$(strip $(ICP_CXX) -o $@ -c $(ICP_CPPFLAGS) $(ICP_CXXFLAGS) $(ICP_COPTS) $(ICP_DEFINES) $<)
 
-$(TARGET_DIR)/devclient: $(OBJECTS) $(BLD_DEPENDS)
+$(TARGET_DIR)/testclient: $(OBJECTS) $(BLD_DEPENDS)
 	@mkdir -p $(dir $@)
 	$(strip $(ICP_CXX) -o $@ $(ICP_LDOPTS) $(ICP_LDFLAGS) $(OBJECTS) $(ICP_LDLIBS))
 
-.PHONY: devclient
-devclient: $(TARGET_DIR)/devclient
+.PHONY: testclient
+testclient: $(TARGET_DIR)/testclient
 
-.PHONY: clean_devclient
-clean_devclient:
-	@$(strip rm -f $(TARGET_DIR)/devclient $(OBJECTS:%.o=%.[doP]))
-clean: clean_devclient
+.PHONY: clean_testclient
+clean_testclient:
+	@$(strip rm -f $(TARGET_DIR)/testclient $(OBJECTS:%.o=%.[doP]))
+clean: clean_testclient

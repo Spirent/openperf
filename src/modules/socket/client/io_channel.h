@@ -1,6 +1,7 @@
 #ifndef _ICP_SOCKET_CLIENT_IO_CHANNEL_H_
 #define _ICP_SOCKET_CLIENT_IO_CHANNEL_H_
 
+#include <array>
 #include "socket/io_channel.h"
 
 namespace icp {
@@ -22,11 +23,15 @@ public:
     io_channel(io_channel&&) = default;
     io_channel& operator=(io_channel&&) = default;
 
-    bool send(const iovec& iov);
-    void send_wait();
+    int send(const iovec iov[], size_t iovcnt, const sockaddr *to);
 
-    std::optional<iovec> recv();
-    void recv_clear();
+    struct recv_reply {
+        size_t nb_items;
+        std::optional<sockaddr_storage> from;
+        socklen_t fromlen;
+    };
+    recv_reply recv(std::array<iovec, api::socket_queue_length>&);
+    int recv_clear();
 };
 
 }

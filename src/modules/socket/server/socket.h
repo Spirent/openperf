@@ -34,9 +34,9 @@ class socket
     typedef std::unique_ptr<icp::socket::server::io_channel, io_channel_deleter> channel_ptr;
     channel_ptr m_channel;
     socket_variant m_socket;
-
+    pid_t m_pid;  /* client pid */
 public:
-    socket(icp::memory::allocator::pool& pool,
+    socket(icp::memory::allocator::pool& pool, pid_t pid,
            int domain, int type, int protocol);
 
     socket(const socket&) = delete;
@@ -45,6 +45,8 @@ public:
     icp::socket::server::io_channel* channel();
 
     api::reply_msg handle_request(const api::request_msg& request);
+
+    void handle_transmit();
 };
 
 }

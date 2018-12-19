@@ -1,6 +1,7 @@
 #include <cassert>
 #include <cerrno>
 #include <cstring>
+#include <numeric>
 #include <stdexcept>
 #include <sys/socket.h>
 #include <sys/types.h>
@@ -421,6 +422,141 @@ int client::ioctl(int s, long cmd, void *argp)
     /* XXX: not yet */
     errno = ENOSYS;
     return (-1);
+}
+
+/***
+ * Receive functions
+ ***/
+ssize_t client::read(int s, void *mem, size_t len)
+{
+    return (recv(s, mem, len, 0));
+}
+
+ssize_t client::readv(int s, struct iovec *iov, int iovcnt)
+{
+    auto msg = msghdr{
+        .msg_iov = iov,
+        .msg_iovlen = static_cast<decltype(msghdr::msg_iovlen)>(iovcnt)
+    };
+
+    return (recvmsg(s, &msg, 0));
+}
+
+ssize_t client::recv(int s, void *mem, size_t len, int flags)
+{
+    return (recvfrom(s, mem, len, flags, nullptr, nullptr));
+}
+
+ssize_t client::recvfrom(int s, void *mem, size_t len, int flags,
+                 struct sockaddr *from, socklen_t *fromlen)
+{
+    auto iov = iovec{
+        .iov_base = mem,
+        .iov_len = len
+    };
+
+    auto msg = msghdr{
+        .msg_name = from,
+        .msg_namelen = (fromlen ? *fromlen : 0),
+        .msg_iov = &iov,
+        .msg_iovlen = 1
+    };
+
+    auto to_return = recvmsg(s, &msg, flags);
+    if (fromlen && to_return != -1) *fromlen = msg.msg_namelen;
+    return (to_return);
+
+}
+
+ssize_t client::recvmsg(int s, struct msghdr *message, int flags)
+{
+    (void)flags;  /* TODO */
+
+    auto result = m_channels.find(s);
+    if (result == m_channels.end()) {
+        errno = EINVAL;
+        return (-1);
+    }
+
+    auto& [id, channel] = result->second;
+    if (channel->recv_clear() == -1) {
+        return (-1);
+    }
+
+    std::array<iovec, api::socket_queue_length> items;
+    auto [nb_items, from, fromlen] = channel->recv(items);
+    if (!nb_items) return (0);
+
+    if (from && message->msg_name) {
+        std::memcpy(message->msg_name, &*from, std::min(message->msg_namelen, fromlen));
+        message->msg_namelen = std::max(message->msg_namelen, fromlen);
+    }
+
+    return (process_vm_readv(m_server_pid, message->msg_iov, message->msg_iovlen,
+                             items.data(), nb_items, 0));
+}
+
+/***
+ * Transmit functions
+ ***/
+ssize_t client::send(int s, const void *dataptr, size_t len, int flags)
+{
+    return (sendto(s, dataptr, len, flags, nullptr, 0));
+}
+
+ssize_t client::sendmsg(int s, const struct msghdr *message, int flags)
+{
+    (void)flags; /* TODO */
+
+    auto result = m_channels.find(s);
+    if (result == m_channels.end()) {
+        errno = EINVAL;
+        return (-1);
+    }
+
+    auto& [id, channel] = result->second;
+    errno = channel->send(message->msg_iov, message->msg_iovlen,
+                          reinterpret_cast<const sockaddr*>(message->msg_name));
+
+    return (errno ? -1 : std::accumulate(message->msg_iov,
+                                         message->msg_iov + message->msg_iovlen,
+                                         0,
+                                         [](int x, const iovec& iov) {
+                                             return (x + iov.iov_len);
+                                         }));
+}
+
+ssize_t client::sendto(int s, const void *dataptr, size_t len, int flags,
+                       const struct sockaddr *to, socklen_t tolen)
+{
+    auto iov = iovec{
+        .iov_base = const_cast<void*>(dataptr),
+        .iov_len = len
+    };
+
+    auto msg = msghdr{
+        .msg_name = const_cast<sockaddr*>(to),
+        .msg_namelen = tolen,
+        .msg_iov = &iov,
+        .msg_iovlen = 1
+    };
+
+    return (sendmsg(s, &msg, flags));
+}
+
+ssize_t client::write(int s, const void *dataptr, size_t len)
+{
+    return (send(s, dataptr, len, 0));
+}
+
+ssize_t client::writev(int s, const struct iovec *iov, int iovcnt)
+{
+    auto msg = msghdr{
+        .msg_iov = const_cast<iovec*>(iov),
+        .msg_iovlen = static_cast<decltype(msghdr::msg_iovlen)>(iovcnt)
+    };
+
+    return (sendmsg(s, &msg, 0));
 }
 
 }

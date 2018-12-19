@@ -22,9 +22,9 @@ class spsc_queue
     alignas(cache_line_size) std::atomic_size_t m_write;
     alignas(cache_line_size) std::array<T, N> m_data;
 
-    size_t read()  { return m_read.load(std::memory_order_relaxed); }
-    size_t write() { return m_write.load(std::memory_order_relaxed); }
-    size_t mask(size_t value)  { return (value & (N - 1)); }
+    size_t read()  const { return m_read.load(std::memory_order_relaxed); }
+    size_t write() const { return m_write.load(std::memory_order_relaxed); }
+    size_t mask(size_t value) const { return (value & (N - 1)); }
 
 public:
     spsc_queue()
@@ -35,9 +35,10 @@ public:
         static_assert(N != 0 && (N & (N - 1)) == 0);
     }
 
-    bool   full()  { return (size() == N); }
-    bool   empty() { return (read() == write()); }
-    size_t size()  { return (write() - read()); }
+    bool   full()     const { return (size() == N); }
+    bool   empty()    const { return (read() == write()); }
+    size_t size()     const { return (write() - read()); }
+    size_t capacity() const { return (N - size()); }
 
     bool push(T&& value)
     {

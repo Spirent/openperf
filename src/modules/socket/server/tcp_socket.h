@@ -12,6 +12,8 @@ namespace icp {
 namespace socket {
 namespace server {
 
+class io_channel;
+
 struct tcp_init {};
 
 typedef std::variant<tcp_init> tcp_socket_state;
@@ -21,7 +23,7 @@ class tcp_socket : public socket_state_machine<tcp_socket, tcp_socket_state>
     tcp_pcb* m_pcb;
 
 public:
-    tcp_socket();
+    tcp_socket(io_channel*);
     ~tcp_socket();
 
     tcp_socket(const tcp_socket&) = delete;
@@ -34,7 +36,10 @@ public:
         return {tl::make_unexpected(EINVAL), std::nullopt};
     }
 
+    void handle_transmit(pid_t pid, io_channel* channel);
 };
+
+const char * to_string(const tcp_socket_state&);
 
 }
 }

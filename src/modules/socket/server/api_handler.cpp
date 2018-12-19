@@ -46,8 +46,8 @@ static ssize_t send_reply(int sockfd, const sockaddr_un& client, const api::repl
 
         struct cmsghdr *cmsg = CMSG_FIRSTHDR(&msg);
         cmsg->cmsg_level = SOL_SOCKET;
-        cmsg->cmsg_type = SCM_RIGHTS;
-        cmsg->cmsg_len = CMSG_LEN(sizeof(*fd_pair));
+        cmsg->cmsg_type  = SCM_RIGHTS;
+        cmsg->cmsg_len   = CMSG_LEN(sizeof(*fd_pair));
         memcpy(CMSG_DATA(cmsg), &(*fd_pair), sizeof(*fd_pair));
 
         ICP_LOG(ICP_LOG_INFO, "Sending client_fd = %d, server_fd = %d\n",
@@ -57,12 +57,15 @@ static ssize_t send_reply(int sockfd, const sockaddr_un& client, const api::repl
     return (sendmsg(sockfd, &msg, 0));
 }
 
+/**
+ * Read data from clients to transmit to the stack.
+ */
 static int handle_socket_read(const struct icp_event_data *data __attribute__((unused)),
                               void *arg)
 {
     auto socket = *(reinterpret_cast<std::shared_ptr<server::socket>*>(arg));
-    ICP_LOG(ICP_LOG_INFO, "Read request for socket %p\n", (void *)socket.get());
-    //socket->read();
+    ICP_LOG(ICP_LOG_INFO, "Transmit request for socket %p\n", (void *)socket.get());
+    socket->handle_transmit();
     return (0);
 }
 
@@ -88,6 +91,7 @@ api::reply_msg api_handler::handle_request_close(const api::request_close& reque
     }
 
     auto& s = result->second;
+    s->handle_transmit();  /* flush the tx queue */
     m_loop.del(s->channel()->server_fd());
     m_sockets.erase(result);
     return (api::reply_success());
@@ -97,7 +101,7 @@ api::reply_msg api_handler::handle_request_socket(const api::request_socket& req
 {
     auto id = api::socket_id{ {m_pid, m_next_socket_id++} };
     auto result = m_sockets.emplace(
-        id, std::make_shared<server::socket>(m_pool, request.domain, request.type, request.protocol));
+        id, std::make_shared<server::socket>(m_pool, m_pid, request.domain, request.type, request.protocol));
 
     if (!result.second) {
         return (tl::make_unexpected(ENOMEM));

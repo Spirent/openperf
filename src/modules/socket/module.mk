@@ -9,6 +9,7 @@ SOCKSRV_SOURCES += \
 	server/api_handler.cpp \
 	server/io_channel.cpp \
 	server/socket.cpp \
+	server/socket_utils.cpp \
 	server/api_server.cpp \
 	server/tcp_socket.cpp \
 	server/udp_socket.cpp
