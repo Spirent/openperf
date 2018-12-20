@@ -4,6 +4,7 @@
 #include <cerrno>
 #include <memory>
 #include <unordered_map>
+#include <unordered_set>
 
 #include "tl/expected.hpp"
 
@@ -37,6 +38,7 @@ class api_handler {
     /* sockets by id */
     std::unordered_map<api::socket_id,
                        std::shared_ptr<server::socket>> m_sockets;
+    std::unordered_set<int> m_server_fds;
 
     api::reply_msg handle_request_init(const api::request_init& request);
     api::reply_msg handle_request_accept(const api::request_accept& request);
@@ -57,6 +59,7 @@ class api_handler {
 
 public:
     api_handler(icp::core::event_loop& loop, icp::memory::allocator::pool& pool, pid_t pid);
+    ~api_handler();
 
     int handle_requests(const struct icp_event_data* data);
 };

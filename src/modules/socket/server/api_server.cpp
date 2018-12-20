@@ -71,29 +71,28 @@ static int handle_api_accept(const struct icp_event_data *data __attribute__((un
                              void *arg)
 {
     auto server = reinterpret_cast<icp::socket::api::server*>(arg);
-    return (server->handle_accept_requests());
+    return (server->handle_api_accept_requests());
 }
 
 static int handle_api_init(const struct icp_event_data *data,
                            void *arg)
 {
     auto server = reinterpret_cast<icp::socket::api::server*>(arg);
-    return (server->handle_init_requests(data));
+    return (server->handle_api_init_requests(data));
 }
 
-static int handle_api_requests(const struct icp_event_data *data,
-                               void *arg)
+static int handle_api_read(const struct icp_event_data *data,
+                           void *arg)
 {
-    auto handler = *(reinterpret_cast<std::shared_ptr<api_handler>*>(arg));
-    return (handler->handle_requests(data));
+    auto server = reinterpret_cast<icp::socket::api::server*>(arg);
+    return (server->handle_api_read_requests(data));
 }
 
-static int delete_api_requests(const struct icp_event_data *data __attribute__((unused)),
-                               void *arg)
+static int handle_api_delete(const struct icp_event_data *data,
+                             void *arg)
 {
-    auto handler = *(reinterpret_cast<std::shared_ptr<api_handler>*>(arg));
-    handler.reset();
-    return (0);
+    auto server = reinterpret_cast<icp::socket::api::server*>(arg);
+    return (server->handle_api_delete_requests(data));
 }
 
 static int close_fd(const struct icp_event_data *data,
@@ -123,7 +122,9 @@ server::server(icp::core::event_loop& loop)
     m_loop.add(m_sock.get(), &callbacks, this);
 }
 
-int server::handle_accept_requests()
+server::~server() {}
+
+int server::handle_api_accept_requests()
 {
     /**
      * Every connection represents a new thread that wants to access our
@@ -154,7 +155,7 @@ int server::handle_accept_requests()
     return (0);
 }
 
-int server::handle_init_requests(const struct icp_event_data *data)
+int server::handle_api_init_requests(const struct icp_event_data *data)
 {
     for (;;) {
         api::request_msg request;
@@ -184,7 +185,7 @@ int server::handle_init_requests(const struct icp_event_data *data)
             ICP_LOG(ICP_LOG_INFO, "New connection received from pid %d, %s\n",
                     init.pid, to_string(init.tid).c_str());
             m_handlers.emplace(init.pid,
-                               std::make_shared<api_handler>(m_loop, *(pool()), init.pid));
+                               std::make_unique<api_handler>(m_loop, *(pool()), init.pid));
             auto shm_info = api::shared_memory_descriptor{
                 .base = m_shm.get(),
                 .size = m_shm.size()
@@ -225,14 +226,66 @@ int server::handle_init_requests(const struct icp_event_data *data)
         }
         m_loop.del(data->fd);
 
+        m_pids.emplace(newfd, init.pid);
+
         struct icp_event_callbacks callbacks = {
-            .on_read   = handle_api_requests,
-            .on_delete = delete_api_requests,
+            .on_read   = handle_api_read,
+            .on_delete = handle_api_delete,
             .on_close  = close_fd
         };
 
-        m_loop.add(newfd, &callbacks, &m_handlers[init.pid]);
+        m_loop.add(newfd, &callbacks, this);
         send(newfd, &reply, sizeof(reply), 0);
+    }
+
+    return (0);
+}
+
+int server::handle_api_read_requests(const struct icp_event_data *data)
+{
+    /* Find the appropriate handler for this fd */
+    auto pid_result = m_pids.find(data->fd);
+    if (pid_result == m_pids.end()) {
+        ICP_LOG(ICP_LOG_ERROR, "Could not locate pid for fd = %d\n", data->fd);
+        return (-1);
+    }
+
+    auto pid = pid_result->second;
+    auto handler_result = m_handlers.find(pid);
+    if (handler_result == m_handlers.end()) {
+        ICP_LOG(ICP_LOG_ERROR, "Could not locate handler for pid = %d\n", pid);
+        return (-1);
+    }
+
+    auto& handler = handler_result->second;
+    return (handler->handle_requests(data));
+}
+
+int server::handle_api_delete_requests(const struct icp_event_data *data)
+{
+    auto pid_result = m_pids.find(data->fd);
+    if (pid_result == m_pids.end()) {
+        ICP_LOG(ICP_LOG_ERROR, "Could not locate pid for fd = %d\n", data->fd);
+        return (-1);
+    }
+    auto pid = pid_result->second;
+
+    /* Remove fd, pid pair from our map */
+    m_pids.erase(pid_result);
+
+    /* Check and see if this was the last fd for this pid. */
+    bool found = false;
+    for (auto& kv : m_pids) {
+        if (pid == kv.second) {
+            found = true;
+            break;
+        }
+    }
+
+    if (!found) {
+        /* All connections for this handler are gone; delete it */
+        ICP_LOG(ICP_LOG_INFO, "All connections from pid %d are gone; cleaning up\n", pid);
+        m_handlers.erase(pid);
     }
 
     return (0);

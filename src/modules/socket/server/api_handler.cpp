@@ -20,6 +20,14 @@ api_handler::api_handler(icp::core::event_loop& loop,
     , m_next_socket_id(0)
 {}
 
+api_handler::~api_handler()
+{
+    /* Remove any remaining fds in our loop that the client didn't explicitly close. */
+    for (auto fd : m_server_fds) {
+        m_loop.del(fd);
+    }
+}
+
 static ssize_t send_reply(int sockfd, const sockaddr_un& client, const api::reply_msg& reply)
 {
     struct iovec iov = {
@@ -50,7 +58,7 @@ static ssize_t send_reply(int sockfd, const sockaddr_un& client, const api::repl
         cmsg->cmsg_len   = CMSG_LEN(sizeof(*fd_pair));
         memcpy(CMSG_DATA(cmsg), &(*fd_pair), sizeof(*fd_pair));
 
-        ICP_LOG(ICP_LOG_INFO, "Sending client_fd = %d, server_fd = %d\n",
+        ICP_LOG(ICP_LOG_DEBUG, "Sending client_fd = %d, server_fd = %d\n",
                 fd_pair->client_fd, fd_pair->server_fd);
     }
 
@@ -93,6 +101,7 @@ api::reply_msg api_handler::handle_request_close(const api::request_close& reque
     auto& s = result->second;
     s->handle_transmit();  /* flush the tx queue */
     m_loop.del(s->channel()->server_fd());
+    m_server_fds.erase(s->channel()->server_fd());
     m_sockets.erase(result);
     return (api::reply_success());
 }
@@ -116,6 +125,7 @@ api::reply_msg api_handler::handle_request_socket(const api::request_socket& req
         .on_delete = handle_socket_delete
     };
 
+    m_server_fds.emplace(channel->server_fd());
     m_loop.add(channel->server_fd(), &socket_callbacks,
                reinterpret_cast<void*>(new std::shared_ptr(socket)));  /* bump ref count on ptr */
 

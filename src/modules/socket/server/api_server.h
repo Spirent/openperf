@@ -31,15 +31,18 @@ class server
     unix_socket m_sock;
     icp::memory::shared_segment m_shm;
     icp::core::event_loop& m_loop;
-    std::unordered_map<pid_t, std::shared_ptr<socket::server::api_handler>> m_handlers;
-
+    std::unordered_map<pid_t, std::unique_ptr<socket::server::api_handler>> m_handlers;
+    std::unordered_multimap<int, pid_t> m_pids;
     icp::memory::allocator::pool* pool() const;
 
 public:
     server(icp::core::event_loop& loop);
+    ~server();  /* Explicit destructor needed to avoid pulling in api_handler header */
 
-    int handle_accept_requests();
-    int handle_init_requests(const struct icp_event_data*);
+    int handle_api_accept_requests();
+    int handle_api_init_requests(const struct icp_event_data*);
+    int handle_api_read_requests(const struct icp_event_data*);
+    int handle_api_delete_requests(const struct icp_event_data*);
 };
 
 }
