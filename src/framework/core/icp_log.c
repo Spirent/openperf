@@ -536,7 +536,6 @@ static struct icp_options_data log_level_option = {
     .name = "log-level",
     .init = NULL,
     .callback = NULL,
-    .data = NULL,
     .options = {
         { "Specify the log level; takes a number (1-6) or level", "log-level", 'l', true },
         { 0, 0, 0, 0 },

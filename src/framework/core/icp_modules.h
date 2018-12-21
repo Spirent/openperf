@@ -11,8 +11,6 @@ extern "C" {
 
 #include <sys/queue.h>
 
-STAILQ_HEAD(icp_modules_list, icp_module);
-
 /**
  * Signature for module initialization function
  */
@@ -24,7 +22,7 @@ typedef int (icp_module_start_fn)(void *state);
  * Structure describing a module to initialize
  */
 struct icp_module {
-    STAILQ_ENTRY(icp_module) next;
+    SLIST_ENTRY(icp_module) next;
     const char *name;
     void *state;
     icp_module_init_fn *pre_init;
@@ -89,9 +87,28 @@ int icp_modules_post_init(void *context);
  */
 int icp_modules_start();
 
-#define REGISTER_MODULE(m)                                              \
-    void icp_modules_register_ ## m(void);                              \
-    void __attribute__((constructor)) icp_modules_register_ ## m(void)  \
+/**
+ * Macro hackery for ensuring that the module struct is initialized *before*
+ * we insert it into our list of modules.  If the struct is initialized
+ * after it is inserted, then the next ptr will be changed back to NULL,
+ * which would obviously cause items to be dropped from the list.
+ * This is mainly a problem when state has a constructor of some sort.
+ */
+#define REGISTER_MODULE(m, name_, state_, pre_init_, init_, post_init_, start_) \
+    static struct icp_module m;                                         \
+    __attribute__((constructor (100)))                                  \
+    void icp_modules_init_ ## m(void)                                   \
+    {                                                                   \
+        m = { .name = name_,                                            \
+              .state = state_,                                          \
+              .pre_init = pre_init_,                                    \
+              .init = init_,                                            \
+              .post_init = post_init_,                                  \
+              .start = start_                                           \
+        };                                                              \
+    }                                                                   \
+    __attribute__((constructor (200))) \
+    void icp_modules_register_ ## m(void)                               \
     {                                                                   \
         icp_modules_register(&m);                                       \
     }

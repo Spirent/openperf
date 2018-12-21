@@ -84,15 +84,14 @@ extern "C" {
 
 using namespace icp::packetio::dpdk;
 
-int dpdk_arg_parse_init(void *opt_data __attribute__((unused)))
+int dpdk_arg_parse_init()
 {
     /* Arguments need to start with the program name */
     auto& parser = arg_parser::instance();
     return (parser.init("icp_eal"));
 }
 
-int dpdk_arg_parse_handler(int opt, const char *opt_arg,
-                           void *opt_data __attribute__((unused)))
+int dpdk_arg_parse_handler(int opt, const char *opt_arg)
 {
     auto& parser = arg_parser::instance();
     return (parser.parse(opt, opt_arg));

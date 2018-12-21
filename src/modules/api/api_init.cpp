@@ -98,7 +98,7 @@ private:
 
 extern "C" {
 
-int api_option_handler(int opt, const char *opt_arg, void *opt_data __attribute__((unused)))
+int api_option_handler(int opt, const char *opt_arg)
 {
     return (icp::api::handle_options(opt, opt_arg));
 }
@@ -110,7 +110,7 @@ int api_service_pre_init(void *context, void *state)
     return (s->pre_init());
 }
 
-int api_server_post_init(void *context, void *state)
+int api_service_post_init(void *context, void *state)
 {
     icp::api::service *s = reinterpret_cast<icp::api::service *>(state);
     return (s->post_init(context));
@@ -122,14 +122,11 @@ int api_service_start(void *state)
     return (s->start());
 }
 
-struct icp_module api_service = {
-    .name = "API service",
-    .state = new icp::api::service(),
-    .pre_init = api_service_pre_init,
-    .post_init = api_server_post_init,
-    .start = api_service_start,
-};
-
-REGISTER_MODULE(api_service)
-
+REGISTER_MODULE(api_service,
+                "API service",
+                new icp::api::service(),
+                api_service_pre_init,
+                nullptr,
+                api_service_post_init,
+                api_service_start)
 }

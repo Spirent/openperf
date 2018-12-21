@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <errno.h>
 #include <getopt.h>
 #include <stdlib.h>
@@ -6,7 +7,8 @@
 #include "core/icp_log.h"
 #include "core/icp_options.h"
 
-static struct icp_options_data_list _options_list = LIST_HEAD_INITIALIZER(_options_list);
+static SLIST_HEAD(icp_options_data_head, icp_options_data) icp_options_data_head =
+    SLIST_HEAD_INITIALIZER(icp_options_data_head);
 
 static void __attribute__((noreturn)) _usage(const char *program_name)
 {
@@ -16,7 +18,7 @@ static void __attribute__((noreturn)) _usage(const char *program_name)
     fprintf(output, "Options:\n");
 
     struct icp_options_data *opt_data = NULL;
-    LIST_FOREACH(opt_data, &_options_list, next) {
+    SLIST_FOREACH(opt_data, &icp_options_data_head, next) {
         for (const struct icp_option *curr = opt_data->options;
              curr->description != NULL;
              curr++) {
@@ -31,9 +33,9 @@ static void __attribute__((noreturn)) _usage(const char *program_name)
 int icp_options_init()
 {
     struct icp_options_data *opt_data = NULL;
-    LIST_FOREACH(opt_data, &_options_list, next) {
+    SLIST_FOREACH(opt_data, &icp_options_data_head, next) {
         if (opt_data->init) {
-            if (opt_data->init(opt_data->data) != 0) {
+            if (opt_data->init() != 0) {
                 ICP_LOG(ICP_LOG_ERROR, "Failed to initialize %s options\n", opt_data->name);
             }
         }
@@ -45,7 +47,7 @@ int icp_options_init()
 struct icp_options_data * _find_options_data(int opt)
 {
     struct icp_options_data *opt_data = NULL;
-    LIST_FOREACH(opt_data, &_options_list, next) {
+    SLIST_FOREACH(opt_data, &icp_options_data_head, next) {
         for (const struct icp_option *curr = opt_data->options;
              curr->description != NULL;
              curr++) {
@@ -62,7 +64,7 @@ int _allocate_optstring(char **optstringp)
     /* Figure out necessary string length */
     int length = 1;  /* include trailing null */
     struct icp_options_data *opt_data = NULL;
-    LIST_FOREACH(opt_data, &_options_list, next) {
+    SLIST_FOREACH(opt_data, &icp_options_data_head, next) {
         for (const struct icp_option *curr = opt_data->options;
              curr->description != NULL;
              curr++) {
@@ -78,7 +80,7 @@ int _allocate_optstring(char **optstringp)
 
     /* Fill in string */
     unsigned idx = 0;
-    LIST_FOREACH(opt_data, &_options_list, next) {
+    SLIST_FOREACH(opt_data, &icp_options_data_head, next) {
         for (const struct icp_option *curr = opt_data->options;
              curr->description != NULL;
              curr++) {
@@ -98,7 +100,7 @@ int _allocate_longopts(struct option **longoptsp)
     /* Figure out necessary longopts length */
     int nb_opts = 1;  /* include null terminated ending */
     struct icp_options_data *opt_data = NULL;
-    LIST_FOREACH(opt_data, &_options_list, next) {
+    SLIST_FOREACH(opt_data, &icp_options_data_head, next) {
         for (const struct icp_option *curr = opt_data->options;
              curr->description != NULL;
              curr++) {
@@ -113,7 +115,7 @@ int _allocate_longopts(struct option **longoptsp)
 
     /* Fill in longopts */
     unsigned idx = 0;
-    LIST_FOREACH(opt_data, &_options_list, next) {
+    SLIST_FOREACH(opt_data, &icp_options_data_head, next) {
         for (const struct icp_option *curr = opt_data->options;
              curr->description != NULL;
              curr++) {
@@ -159,7 +161,7 @@ int icp_options_parse(int argc, char *argv[])
         }
         struct icp_options_data *opt_data = _find_options_data(opt);
         if (opt_data->callback) {
-            opt_data->callback(opt, optarg, opt_data->data);
+            opt_data->callback(opt, optarg);
         }
     }
 
@@ -170,7 +172,8 @@ int icp_options_parse(int argc, char *argv[])
 
 void icp_options_register(struct icp_options_data *opt_data)
 {
-    LIST_INSERT_HEAD(&_options_list, opt_data, next);
+    assert(opt_data->name);  /* catch init ordering problems */
+    SLIST_INSERT_HEAD(&icp_options_data_head, opt_data, next);
 }
 
 /*
@@ -183,7 +186,6 @@ static struct icp_options_data help_option = {
     .name = "help",
     .init = NULL,
     .callback = NULL,
-    .data = NULL,
     .options = {
         { "Print this message.", "help", 'h', 0 },
         { 0, 0, 0, 0 },

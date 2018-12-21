@@ -62,12 +62,12 @@ int icp_packetio_init(void *context, void *state)
     return (0);
 }
 
-struct icp_module packetio = {
-    .name = "packetio",
-    .state = new icp::packetio::service(),
-    .init = icp_packetio_init,
-};
-
-REGISTER_MODULE(packetio)
+REGISTER_MODULE(packetio,
+                "packetio",
+                new icp::packetio::service(),
+                nullptr,
+                icp_packetio_init,
+                nullptr,
+                nullptr);
 
 }
