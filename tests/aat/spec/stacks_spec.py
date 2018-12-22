@@ -1,25 +1,25 @@
 from mamba import description, before, after, it
-from common import Config, Service
-from common.matcher import be_valid_stack, raise_api_exception
 from expects import expect, be_empty
+import os
 
 import client.api
 import client.models
-import os
+from common import Config, Service
+from common.matcher import be_valid_stack, raise_api_exception
 
 
-CONFIG = Config(os.path.join(os.path.dirname(__file__), 'config.yaml'))
+CONFIG = Config(os.path.join(os.path.dirname(__file__), os.environ.get('MAMBA_CONFIG', 'config.yaml')))
 
 
 with description('Stacks,') as self:
     with before.all:
         service = Service(CONFIG.service())
         self.process = service.start()
-        self.stacks = client.api.StacksApi(service.client())
+        self.api = client.api.StacksApi(service.client())
 
     with description('list,'):
         with it('returns valid stacks'):
-            stacks = self.stacks.list_stacks()
+            stacks = self.api.list_stacks()
             expect(stacks).not_to(be_empty)
             for stack in stacks:
                 expect(stack).to(be_valid_stack)
@@ -27,8 +27,15 @@ with description('Stacks,') as self:
     with description('get,'):
         with description('known existing stack,'):
             with it('succeeds'):
-                expect(self.stacks.get_stack('0')).to(be_valid_stack)
+                expect(self.api.get_stack('0')).to(be_valid_stack)
 
         with description('non-existent stack,'):
             with it('returns 404'):
-                expect(lambda: self.stacks.get_stack('foo')).to(raise_api_exception(404))
+                expect(lambda: self.api.get_stack('foo')).to(raise_api_exception(404))
+
+    with after.all:
+        try:
+            self.process.kill()
+            self.process.wait()
+        except AttributeError:
+            pass
