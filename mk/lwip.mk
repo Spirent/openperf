@@ -16,7 +16,6 @@ LWIP_CORE_SOURCES := \
   src/core/tcp.c \
   src/core/tcp_in.c \
   src/core/tcp_out.c \
-  src/core/timeouts.c \
   src/core/udp.c \
 	src/netif/ethernet.c
 
@@ -43,8 +42,7 @@ LWIP_CORE6_SOURCES := \
 
 LWIP_API_SOURCES := \
 	src/api/err.c \
-	src/api/netifapi.c \
-	src/api/tcpip.c
+	src/api/netifapi.c
 
 LWIP_SOURCES := \
 	$(LWIP_CORE_SOURCES) \

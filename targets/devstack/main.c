@@ -51,7 +51,7 @@ int main(int argc, char* argv[])
     }
 
     /* ... then clean up and exit. */
-    zmq_ctx_term(context);
+    icp_halt(context);
 
     exit(EXIT_SUCCESS);
 }
