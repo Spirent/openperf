@@ -77,7 +77,7 @@ struct icp_event_loop * icp_event_loop_allocate(void)
     sigset_t mask;
     sigemptyset(&mask);
     sigaddset(&mask, SIGINT);
-    sigaddset(&mask, SIGQUIT);
+    sigaddset(&mask, SIGTERM);
 
     if ((loop->signal_fd = signalfd(-1, &mask, 0)) == -1) {
         close(loop->poll_fd);

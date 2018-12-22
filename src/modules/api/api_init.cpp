@@ -1,5 +1,6 @@
 #include <cerrno>
 #include <cstdlib>
+#include <csignal>
 #include <thread>
 
 #include <netinet/in.h>
@@ -48,27 +49,27 @@ Rest::Route::Result NotFound(const Rest::Request &request __attribute__((unused)
 class service {
 public:
     service() {};
-    ~service()
-    {
-        if (_service.joinable()) {
-            _service.join();
-        }
-    };
 
     int pre_init() {
         // Return 404 for anything we don't explicitly handle
-        Rest::Routes::NotFound(_router, NotFound);
+        Rest::Routes::NotFound(m_router, NotFound);
 
         return (0);
     }
 
     int post_init(void *context) {
-        route::handler::make_all(_handlers, context, _router);
+        route::handler::make_all(m_handlers, context, m_router);
         return (0);
     }
 
     int start() {
-        _service = std::thread([this]() { run(service_port); });
+        /*
+         * XXX: The pistache server doesn't always shutdown, so just
+         * detach from the thread so we won't be blocked on it when we
+         * shutdown ourselves.
+         */
+        auto thread = std::thread([this]() { run(service_port); });
+        thread.detach();
         return (0);
     }
 
@@ -80,17 +81,23 @@ public:
             .threads(1)
             .flags(Tcp::Options::ReuseAddr);
 
-        Http::Endpoint *server = new Http::Endpoint(addr);
-        server->init(opts);
-        server->setHandler(_router.handler());
-        server->serve();  // blocks
-        server->shutdown();
+        m_server = std::make_unique<Http::Endpoint>(addr);
+        m_server->init(opts);
+        m_server->setHandler(m_router.handler());
+        m_server->serve();        // blocks
+    }
+
+    void stop() {
+        if (m_server) {
+            m_server->shutdown();
+            m_server.reset();
+        }
     }
 
 private:
-    Rest::Router _router;
-    std::thread _service;
-    std::vector<std::unique_ptr<route::handler>> _handlers;
+    Rest::Router m_router;
+    std::vector<std::unique_ptr<route::handler>> m_handlers;
+    std::unique_ptr<Http::Endpoint> m_server;
 };
 
 }
@@ -122,11 +129,19 @@ int api_service_start(void *state)
     return (s->start());
 }
 
+void api_service_fini(void *state)
+{
+    icp::api::service *s = reinterpret_cast<icp::api::service *>(state);
+    s->stop();
+    delete s;
+}
+
 REGISTER_MODULE(api_service,
                 "API service",
                 new icp::api::service(),
                 api_service_pre_init,
                 nullptr,
                 api_service_post_init,
-                api_service_start)
+                api_service_start,
+                api_service_fini)
 }

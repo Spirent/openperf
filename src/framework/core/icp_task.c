@@ -170,23 +170,19 @@ int _icp_task_sync_block_and_warn(void **socketp, size_t expected,
 
             zmq_pollitem_t item = {
                 .socket = socket,
-                .events = ZMQ_POLLIN,
+                .events = ZMQ_POLLIN | ZMQ_POLLERR,
             };
 
-            if (zmq_poll(&item, 1, interval - waited) == 1) {
+            if (zmq_poll(&item, 1, interval - waited) == -1) {
+                errno = -errno;
+                goto _icp_task_sync_block_and_warn_out;
+            } else {
                 if (zmq_recv(socket, NULL, 0, 0) == -1) {
-                    if (errno == ETERM) {
-                        /* we need to bail */
-                        error = -errno;
-                        goto _icp_task_sync_block_and_warn_out;
-                    }
-                    continue;
-                } else {
-                    /* assume we got a response */
-                    if (++responses == expected) {
-                        break;
-                    }
+                    error = -errno;
+                    goto _icp_task_sync_block_and_warn_out;
                 }
+                /* assume we got a response */
+                if (++responses == expected) break;
             }
 
             gettimeofday(&stop, NULL);

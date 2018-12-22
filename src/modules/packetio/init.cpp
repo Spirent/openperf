@@ -62,12 +62,18 @@ int icp_packetio_init(void *context, void *state)
     return (0);
 }
 
+void icp_packetio_fini(void *state)
+{
+    icp::packetio::service *s = reinterpret_cast<icp::packetio::service*>(state);
+    delete s;
+}
+
 REGISTER_MODULE(packetio,
                 "packetio",
                 new icp::packetio::service(),
                 nullptr,
                 icp_packetio_init,
                 nullptr,
-                nullptr);
-
+                nullptr,
+                icp_packetio_fini);
 }

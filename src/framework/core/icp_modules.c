@@ -84,3 +84,14 @@ int icp_modules_start()
 
     return (errors);
 }
+
+void icp_modules_finish()
+{
+    struct icp_module *module = NULL;
+    SLIST_FOREACH(module, &icp_modules_list_head, next) {
+        if (!module->finish) {
+            continue;
+        }
+        module->finish(module->state);
+    }
+}

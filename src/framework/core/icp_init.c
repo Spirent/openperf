@@ -1,3 +1,5 @@
+#include "zmq.h"
+
 #include "core/icp_common.h"
 #include "core/icp_init.h"
 #include "core/icp_log.h"
@@ -34,4 +36,11 @@ void icp_init(void *context, int argc, char *argv[])
     if (icp_modules_start(context) != 0) {
         icp_exit("Failed to start some modules!");
     }
+}
+
+void icp_halt(void *context)
+{
+    zmq_ctx_shutdown(context);
+    icp_modules_finish();
+    zmq_ctx_term(context);
 }

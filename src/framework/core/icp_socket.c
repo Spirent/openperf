@@ -156,5 +156,7 @@ bool icp_socket_has_messages(void *socket)
 
     int error = zmq_getsockopt(socket, ZMQ_EVENTS, &flags, &flag_size);
 
-    return (error == 0 ? flags & ZMQ_POLLIN : false);
+    return (error == 0 ? flags & ZMQ_POLLIN
+            : errno == ETERM ? true  /* socket context is gone, force a read so client knows */
+            : false);
 }

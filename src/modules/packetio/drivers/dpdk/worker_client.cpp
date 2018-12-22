@@ -83,8 +83,10 @@ static void send_message(void *socket, zmq_msg_t& msg)
     int length_or_err = zmq_msg_send(&msg, socket, 0);
     if (length_or_err == -1) {
         zmq_msg_close(&msg);
-        throw std::runtime_error("Could not send 0MQ message: "
-                                 + std::string(zmq_strerror(errno)));
+        if (errno != ETERM) {
+            throw std::runtime_error("Could not send 0MQ message: "
+                                     + std::string(zmq_strerror(errno)));
+        }
     }
 }
 
