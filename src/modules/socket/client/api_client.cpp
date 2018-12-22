@@ -108,6 +108,11 @@ void client::init()
     }
 }
 
+bool client::is_socket(int s)
+{
+    return (m_channels.count(s));
+}
+
 int client::accept(int s, struct sockaddr *addr, socklen_t *addrlen)
 {
     auto result = m_channels.find(s);
@@ -432,10 +437,10 @@ ssize_t client::read(int s, void *mem, size_t len)
     return (recv(s, mem, len, 0));
 }
 
-ssize_t client::readv(int s, struct iovec *iov, int iovcnt)
+ssize_t client::readv(int s, const struct iovec *iov, int iovcnt)
 {
     auto msg = msghdr{
-        .msg_iov = iov,
+        .msg_iov = const_cast<iovec*>(iov),
         .msg_iovlen = static_cast<decltype(msghdr::msg_iovlen)>(iovcnt)
     };
 

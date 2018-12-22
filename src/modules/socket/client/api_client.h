@@ -61,6 +61,8 @@ public:
 
     void init();
 
+    bool is_socket(int s);
+
     /* General socket functions */
     int accept(int s, struct sockaddr *addr, socklen_t *addrlen);
     int bind(int s, const struct sockaddr *name, socklen_t namelen);
@@ -77,7 +79,7 @@ public:
 
     /* Receive functions */
     ssize_t read(int s, void *mem, size_t len);
-    ssize_t readv(int s, struct iovec *iov, int iovcnt);
+    ssize_t readv(int s, const struct iovec *iov, int iovcnt);
     ssize_t recv(int s, void *mem, size_t len, int flags);
     ssize_t recvfrom(int s, void *mem, size_t len, int flags,
                      struct sockaddr *from, socklen_t *fromlen);
