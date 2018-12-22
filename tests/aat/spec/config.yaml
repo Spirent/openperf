@@ -1,7 +1,7 @@
 ---
 services:
   default:
-    command: 'sudo ../../build/stack-linux-x86_64-testing/bin/devstack --dpdk="--no-huge,--vdev=eth_ring0,--vdev=eth_ring1" -p 9000'
+    command: 'sudo ../../build/stack-linux-x86_64-testing/bin/devstack --dpdk="--no-pci,--no-huge,-c=0x3,--vdev=eth_ring0,--vdev=eth_ring1" -p 9000'
     base_url: http://127.0.0.1:9000
     init_url: http://127.0.0.1:9000/version
     init_timeout: 15s
