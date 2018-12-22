@@ -28,8 +28,8 @@ $(LIBZMQ_OBJ_DIR)/Makefile: $(LIBZMQ_SRC_DIR)/configure
 	@mkdir -p $(LIBZMQ_OBJ_DIR)
 	cd $(LIBZMQ_OBJ_DIR) && $(LIBZMQ_SRC_DIR)/configure $(ICP_CONFIG_OPTS) \
 		--enable-drafts=no --prefix="$(LIBZMQ_BLD_DIR)" \
-		CC="$(ICP_CC)" CFLAGS="$(ICP_COPTS)" \
-		CXX="$(ICP_CXX)" CXXFLAGS="$(ICP_CXXOPTS)"
+		CC="$(CC)" CFLAGS="$(ICP_COPTS)" \
+		CXX="$(CXX)" CXXFLAGS="$(ICP_CXXOPTS)"
 
 $(LIBZMQ_LIB_DIR)/libzmq.la: $(LIBZMQ_OBJ_DIR)/Makefile
 	cd $(LIBZMQ_OBJ_DIR) && $(MAKE) install
