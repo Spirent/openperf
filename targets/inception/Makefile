@@ -19,7 +19,7 @@ SRC_DEPENDS := $(OBJECTS:.o=.d)
 BLD_DEPENDS := api framework packetio
 ICP_PACKETIO_DRIVER := dpdk
 
-all: devstack
+all: inception
 
 # Pull in dependencies
 -include $(SRC_DEPENDS)
@@ -37,14 +37,14 @@ $(BUILD_DIR)/%.o: %.c
 	@mkdir -p $(dir $@)
 	$(strip $(ICP_CC) -o $@ -c $(ICP_CPPFLAGS) $(ICP_CFLAGS) $(ICP_COPTS) $(ICP_DEFINES) $<)
 
-$(TARGET_DIR)/devstack: $(OBJECTS) $(BLD_DEPENDS)
+$(TARGET_DIR)/inception: $(OBJECTS) $(BLD_DEPENDS)
 	@mkdir -p $(dir $@)
 	$(strip $(ICP_CXX) -o $@ $(ICP_LDOPTS) $(ICP_LDFLAGS) $(OBJECTS) $(ICP_LDLIBS))
 
-.PHONY: devstack
-devstack: $(TARGET_DIR)/devstack
+.PHONY: inception
+inception: $(TARGET_DIR)/inception
 
-.PHONY: clean_devstack
-clean_devstack:
-	@$(strip rm -f $(TARGET_DIR)/devstack $(OBJECTS:%.o=%.[doP]))
-clean: clean_devstack
+.PHONY: clean_inception
+clean_inception:
+	@$(strip rm -f $(TARGET_DIR)/inception $(OBJECTS:%.o=%.[doP]))
+clean: clean_inception
