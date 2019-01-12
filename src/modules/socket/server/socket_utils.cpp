@@ -1,8 +1,36 @@
+#include <cerrno>
+
+#include "socket/server/generic_socket.h"
+#include "socket/server/tcp_socket.h"
+#include "socket/server/udp_socket.h"
 #include "socket/server/socket_utils.h"
+
+#include "core/icp_log.h"
 
 namespace icp {
 namespace socket {
 namespace server {
+
+tl::expected<generic_socket, int> make_socket(icp::memory::allocator::pool& pool, pid_t pid,
+                                              int domain, int type,
+                                              int protocol __attribute__((unused)))
+{
+    if (domain != AF_INET && domain != AF_INET6) {
+        return (tl::make_unexpected(EAFNOSUPPORT));
+    }
+
+    /*
+     * XXX: Linux overloads type type to include various flags; ignore for now.
+     */
+    switch (type & 0xff) {
+    case SOCK_DGRAM:
+        return (generic_socket(udp_socket(pool, pid)));
+    case SOCK_STREAM:
+        return (generic_socket(tcp_socket(pool, pid)));
+    default:
+        return (tl::make_unexpected(EPROTONOSUPPORT));
+    }
+}
 
 std::optional<ip_addr_t> get_address(const sockaddr_storage& sstorage)
 {
@@ -136,6 +164,34 @@ tl::expected<void, int> copy_out(pid_t dst_pid, void* dst_ptr, int src)
     }
 
     return {};
+}
+
+api::io_channel api_channel(channel_variant& channel)
+{
+    return (std::visit(overloaded_visitor(
+                           [](dgram_channel* ptr) -> api::io_channel {
+                               return (reinterpret_cast<icp::socket::dgram_channel*>(ptr));
+                           },
+                           [](stream_channel* ptr) -> api::io_channel {
+                               return (reinterpret_cast<icp::socket::stream_channel*>(ptr));
+                           }),
+                       channel));
+}
+
+int client_fd(channel_variant& channel)
+{
+    auto client_fd_visitor = [](auto channel_ptr) -> int {
+                                 return (channel_ptr->client_fd());
+                             };
+    return (std::visit(client_fd_visitor, channel));
+}
+
+int server_fd(channel_variant& channel)
+{
+    auto server_fd_visitor = [](auto channel_ptr) -> int {
+                                 return (channel_ptr->server_fd());
+                             };
+    return (std::visit(server_fd_visitor, channel));
 }
 
 }

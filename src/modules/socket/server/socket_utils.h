@@ -5,6 +5,7 @@
 #include <arpa/inet.h>
 
 #include "socket/api.h"
+
 #include "core/icp_log.h"
 #include "lwip/ip_addr.h"
 
@@ -53,6 +54,10 @@ public:
         }
         return (msg);
     }
+
+    const StateVariant& state() { return (m_state); }
+
+    void state(StateVariant&& state) { m_state = std::move(state); }
 };
 
 std::optional<ip_addr_t> get_address(const sockaddr_storage&);

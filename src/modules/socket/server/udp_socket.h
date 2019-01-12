@@ -2,12 +2,15 @@
 #define _ICP_SOCKET_SERVER_UDP_SOCKET_H_
 
 #include <cerrno>
+#include <memory>
 #include <optional>
 #include <utility>
 #include <variant>
 
 #include "tl/expected.hpp"
 
+#include "socket/server/dgram_channel.h"
+#include "socket/server/generic_socket.h"
 #include "socket/server/socket_utils.h"
 
 struct udp_pcb;
@@ -16,8 +19,6 @@ struct pbuf;
 namespace icp {
 namespace socket {
 namespace server {
-
-class io_channel;
 
 struct udp_init {};
 struct udp_bound {};
@@ -32,14 +33,36 @@ typedef std::variant<udp_init,
                      udp_closed> udp_socket_state;
 
 class udp_socket : public socket_state_machine<udp_socket, udp_socket_state> {
-    udp_pcb *m_pcb;
+    struct udp_pcb_deleter {
+        void operator()(udp_pcb *pcb);
+    };
+
+    dgram_channel_ptr m_channel;                      /* shared memory io channel */
+    std::unique_ptr<udp_pcb, udp_pcb_deleter> m_pcb;  /* lwIP pcb */
+    pid_t m_pid;                                      /* client pid */
 
 public:
-    udp_socket(io_channel*);
-    ~udp_socket();
+    udp_socket(icp::memory::allocator::pool& pool, pid_t pid);
+    ~udp_socket() = default;
 
     udp_socket(const udp_socket&) = delete;
     udp_socket& operator=(const udp_socket&&) = delete;
+
+    udp_socket& operator=(udp_socket&& other) = default;
+    udp_socket(udp_socket&& other) = default;
+
+    /***
+     * Generic socket functions
+     ***/
+    channel_variant channel() const;
+
+    tl::expected<generic_socket, int> handle_accept();
+
+    void handle_transmit();
+
+    /***
+     * Socket state machine functions
+     ***/
 
     /* bind handlers */
     on_request_reply on_request(const api::request_bind&, const udp_init&);
@@ -71,7 +94,7 @@ public:
     template <typename State>
     on_request_reply on_request(const api::request_getsockopt& opt, const State&)
     {
-        auto result = do_udp_getsockopt(m_pcb, opt);
+        auto result = do_udp_getsockopt(m_pcb.get(), opt);
         if (!result) return {tl::make_unexpected(result.error()), std::nullopt};
         return {api::reply_socklen{*result}, std::nullopt};
     }
@@ -82,7 +105,7 @@ public:
     template <typename State>
     on_request_reply on_request(const api::request_setsockopt& opt, const State&)
     {
-        auto result = do_udp_setsockopt(m_pcb, opt);
+        auto result = do_udp_setsockopt(m_pcb.get(), opt);
         if (!result) return {tl::make_unexpected(result.error()), std::nullopt};
         return {api::reply_success(), std::nullopt};
     }
@@ -93,8 +116,6 @@ public:
     {
         return {tl::make_unexpected(EINVAL), std::nullopt};
     }
-
-    void handle_transmit(pid_t pid, io_channel* channel);
 };
 
 const char * to_string(const udp_socket_state&);

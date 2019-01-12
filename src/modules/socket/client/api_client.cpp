@@ -14,8 +14,6 @@ namespace icp {
 namespace socket {
 namespace api {
 
-using io_channel = icp::socket::client::io_channel;
-
 client::client()
     : m_uuid(uuid::random())
     , m_sock(api::client_socket(to_string(m_uuid)), api::socket_type)
@@ -31,7 +29,6 @@ client::client()
                                  + std::string(strerror(errno)));
     }
 }
-
 
 static api::reply_msg submit_request(int sockfd,
                                      const api::request_msg& request)
@@ -139,9 +136,10 @@ int client::accept(int s, struct sockaddr *addr, socklen_t *addrlen)
     /* Record socket data for future use */
     auto newresult = m_channels.emplace(
         accept.fd_pair.client_fd,
-        ided_channel{accept.id, channel_ptr(
-                new (accept.channel) io_channel(accept.fd_pair.client_fd, accept.fd_pair.server_fd),
-                io_channel_deleter())});
+        ided_channel{accept.id,
+                     io_channel_wrapper(accept.channel,
+                                        accept.fd_pair.client_fd,
+                                        accept.fd_pair.server_fd)});
 
     if (!newresult.second) {
         errno = ENOBUFS;
@@ -403,9 +401,10 @@ int client::socket(int domain, int type, int protocol)
     /* Record socket data for future use */
     auto result = m_channels.emplace(
         socket.fd_pair.client_fd,
-        ided_channel{socket.id, channel_ptr(
-                new (socket.channel) io_channel(socket.fd_pair.client_fd, socket.fd_pair.server_fd),
-                io_channel_deleter())});
+        ided_channel{socket.id,
+                     io_channel_wrapper(socket.channel,
+                                        socket.fd_pair.client_fd,
+                                        socket.fd_pair.server_fd)});
 
     if (!result.second) {
         errno = ENOBUFS;
@@ -484,21 +483,19 @@ ssize_t client::recvmsg(int s, struct msghdr *message, int flags)
     }
 
     auto& [id, channel] = result->second;
-    if (channel->recv_clear() == -1) {
+    if (channel.recv_clear() == -1) {
         return (-1);
     }
 
-    std::array<iovec, api::socket_queue_length> items;
-    auto [nb_items, from, fromlen] = channel->recv(items);
-    if (!nb_items) return (0);
-
-    if (from && message->msg_name) {
-        std::memcpy(message->msg_name, &*from, std::min(message->msg_namelen, fromlen));
-        message->msg_namelen = std::max(message->msg_namelen, fromlen);
+    auto recv_result = channel.recv(m_server_pid, message->msg_iov, message->msg_iovlen,
+                                    reinterpret_cast<sockaddr*>(message->msg_name),
+                                    &message->msg_namelen);
+    if (!recv_result) {
+        errno = recv_result.error();
+        return (-1);
     }
 
-    return (process_vm_readv(m_server_pid, message->msg_iov, message->msg_iovlen,
-                             items.data(), nb_items, 0));
+    return (*recv_result);
 }
 
 /***
@@ -520,15 +517,14 @@ ssize_t client::sendmsg(int s, const struct msghdr *message, int flags)
     }
 
     auto& [id, channel] = result->second;
-    errno = channel->send(message->msg_iov, message->msg_iovlen,
-                          reinterpret_cast<const sockaddr*>(message->msg_name));
+    auto send_result = channel.send(m_server_pid, message->msg_iov, message->msg_iovlen,
+                                    reinterpret_cast<const sockaddr*>(message->msg_name));
+    if (!send_result) {
+        errno = send_result.error();
+        return (-1);
+    }
 
-    return (errno ? -1 : std::accumulate(message->msg_iov,
-                                         message->msg_iov + message->msg_iovlen,
-                                         0,
-                                         [](int x, const iovec& iov) {
-                                             return (x + iov.iov_len);
-                                         }));
+    return (*send_result);
 }
 
 ssize_t client::sendto(int s, const void *dataptr, size_t len, int flags,

@@ -5,7 +5,7 @@
 #include <sys/eventfd.h>
 #include <sys/uio.h>
 
-#include "socket/server/io_channel.h"
+#include "socket/server/dgram_channel.h"
 #include "lwip/pbuf.h"
 
 namespace icp {
@@ -21,7 +21,7 @@ static void clear_pbuf_queue(Queue& queue)
     }
 }
 
-io_channel::io_channel()
+dgram_channel::dgram_channel()
 {
     if ((server_fds.client_fd = eventfd(0, 0)) == -1
         || (server_fds.server_fd = eventfd(0, 0)) == -1) {
@@ -30,11 +30,15 @@ io_channel::io_channel()
     }
 }
 
-io_channel::~io_channel()
+dgram_channel::~dgram_channel()
 {
     clear_pbuf_queue(freeq);
     while (!recvq.empty()) {
-        (void)recvq.pop();
+        auto item = recvq.pop();
+        if (std::holds_alternative<dgram_channel_buf>(*item)) {
+            auto& buf = std::get<dgram_channel_buf>(*item);
+            pbuf_free(const_cast<pbuf*>(buf.pbuf()));
+        }
     }
     while (!sendq.empty()) {
         (void)sendq.pop();
@@ -44,49 +48,52 @@ io_channel::~io_channel()
     close(server_fds.server_fd);
 }
 
-int io_channel::client_fd()
+int dgram_channel::client_fd()
 {
     return (server_fds.client_fd);
 }
 
-int io_channel::server_fd()
+int dgram_channel::server_fd()
 {
     return (server_fds.server_fd);
 }
 
-/* Push all pbufs in the chain onto the io_channel */
-bool io_channel::send(const pbuf *p)
+void dgram_channel::notify()
+{
+    eventfd_write(server_fds.client_fd, 1);
+}
+
+/* Push all pbufs in the chain onto the dgram_channel */
+bool dgram_channel::send(const pbuf *p)
 {
     assert(p->next == nullptr);  /* let's not drop data */
     bool empty = recvq.empty();
-    bool pushed = recvq.push(io_channel_buf(p, p->payload, p->len));
-    if (pushed && empty) {
-        eventfd_write(server_fds.client_fd, 1);
-    }
+    bool pushed = recvq.push(dgram_channel_buf(p, p->payload, p->len));
+    if (pushed && empty) notify();
     return (pushed);
 }
 
-bool io_channel::send(const pbuf *p, const io_ip_addr* addr, in_port_t port)
+bool dgram_channel::send(const pbuf *p, const dgram_ip_addr* addr, in_port_t port)
 {
     assert(p->next == nullptr);  /* scream if we drop data */
     bool empty = recvq.empty();
-    bool pushed = recvq.push(io_channel_buf(p, p->payload, p->len, true));
+    bool pushed = recvq.push(dgram_channel_buf(p, p->payload, p->len, true));
     if (!pushed) return (false);
-    pushed |= recvq.push(io_channel_addr(addr, port));
+    pushed |= recvq.push(dgram_channel_addr(addr, port));
     if (!pushed) {
         recvq.pop();
         return (false);
     }
-    if (empty) eventfd_write(server_fds.client_fd, 1);
+    if (empty) notify();
     return (true);
 }
 
-void io_channel::send_wait()
+void dgram_channel::send_wait()
 {
     eventfd_write(server_fds.client_fd, eventfd_max);
 }
 
-io_channel::recv_reply io_channel::recv(std::array<iovec, api::socket_queue_length>& items)
+dgram_channel::recv_reply dgram_channel::recv(std::array<iovec, api::socket_queue_length>& items)
 {
     bool full = sendq.full();
 
@@ -97,13 +104,13 @@ io_channel::recv_reply io_channel::recv(std::array<iovec, api::socket_queue_leng
 
     while (auto item = sendq.pop()) {
         std::visit(overloaded_visitor(
-                       [&](io_channel_buf& buf) {
+                       [&](dgram_channel_buf& buf) {
                            items[to_return.nb_items++] = iovec{
                                .iov_base = const_cast<void*>(buf.payload()),
                                .iov_len = buf.length()
                            };
                        },
-                       [&](io_channel_addr& addr) {
+                       [&](dgram_channel_addr& addr) {
                            to_return.dest = std::make_optional(addr);
                        }),
                    *item);
@@ -115,13 +122,13 @@ io_channel::recv_reply io_channel::recv(std::array<iovec, api::socket_queue_leng
     return (to_return);
 }
 
-void io_channel::recv_ack()
+void dgram_channel::recv_ack()
 {
     uint64_t counter = 0;
     eventfd_read(server_fds.server_fd, &counter);
 }
 
-void io_channel::garbage_collect()
+void dgram_channel::garbage_collect()
 {
     clear_pbuf_queue(freeq);
 }

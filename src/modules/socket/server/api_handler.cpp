@@ -4,7 +4,7 @@
 
 #include "memory/allocator/pool.h"
 #include "socket/server/api_handler.h"
-#include "socket/server/socket.h"
+#include "socket/server/socket_utils.h"
 #include "core/icp_core.h"
 
 namespace icp {
@@ -71,8 +71,8 @@ static ssize_t send_reply(int sockfd, const sockaddr_un& client, const api::repl
 static int handle_socket_read(const struct icp_event_data *data __attribute__((unused)),
                               void *arg)
 {
-    auto socket = *(reinterpret_cast<std::shared_ptr<server::socket>*>(arg));
-    ICP_LOG(ICP_LOG_INFO, "Transmit request for socket %p\n", (void *)socket.get());
+    auto socket = (reinterpret_cast<generic_socket*>(arg));
+    ICP_LOG(ICP_LOG_TRACE, "Transmit request for socket %p\n", (void*)socket);
     socket->handle_transmit();
     return (0);
 }
@@ -80,14 +80,62 @@ static int handle_socket_read(const struct icp_event_data *data __attribute__((u
 static int handle_socket_delete(const struct icp_event_data *data __attribute__((unused)),
                                 void *arg)
 {
-    auto socket = (reinterpret_cast<std::shared_ptr<server::socket>*>(arg));
+    auto socket = (reinterpret_cast<generic_socket*>(arg));
     delete socket;
     return (0);
 }
 
 api::reply_msg api_handler::handle_request_accept(const api::request_accept& request)
 {
-    return (tl::make_unexpected(ENOSYS));
+    auto lookup = m_sockets.find(request.id);
+    if (lookup == m_sockets.end()) {
+        return (tl::make_unexpected(ENOTSOCK));
+    }
+
+    auto& listen_socket = lookup->second;
+    auto new_sock = listen_socket.handle_accept();
+    if (!new_sock) {
+        return (tl::make_unexpected(new_sock.error()));
+    }
+
+    auto id = api::socket_id{ {m_pid, m_next_socket_id++} };
+    auto stored = m_sockets.emplace(id, std::move(*new_sock));
+
+    if (!stored.second) {
+        return (tl::make_unexpected(ENOMEM));
+    }
+
+    auto& accept_socket = stored.first->second;
+    auto channel = accept_socket.channel();
+
+    struct icp_event_callbacks socket_callbacks = {
+        .on_read   = handle_socket_read,
+        .on_delete = handle_socket_delete
+    };
+
+    m_server_fds.emplace(server_fd(channel));
+    m_loop.add(server_fd(channel), &socket_callbacks,
+               reinterpret_cast<void*>(new generic_socket(accept_socket)));
+
+    /* We need the peer name as well */
+    auto addr_request = api::request_getpeername{
+        .id = id,
+        .name = request.addr,
+        .namelen = request.addrlen
+    };
+
+    auto reply = accept_socket.handle_request(addr_request);
+    assert(reply);  /* this should never fail */
+
+    return (api::reply_accept{
+            .id = id,
+            .channel = api_channel(channel),
+            .fd_pair = {
+                .client_fd = client_fd(channel),
+                .server_fd = server_fd(channel),
+            },
+            .addrlen = std::get<api::reply_socklen>(*reply).length
+    });
 }
 
 api::reply_msg api_handler::handle_request_close(const api::request_close& request)
@@ -98,10 +146,12 @@ api::reply_msg api_handler::handle_request_close(const api::request_close& reque
         return (tl::make_unexpected(EINVAL));
     }
 
-    auto& s = result->second;
-    s->handle_transmit();  /* flush the tx queue */
-    m_loop.del(s->channel()->server_fd());
-    m_server_fds.erase(s->channel()->server_fd());
+    auto& socket = result->second;
+    socket.handle_transmit();  /* flush the tx queue */
+
+    auto channel = socket.channel();
+    m_loop.del(server_fd(channel));
+    m_server_fds.erase(server_fd(channel));
     m_sockets.erase(result);
     return (api::reply_success());
 }
@@ -109,15 +159,15 @@ api::reply_msg api_handler::handle_request_close(const api::request_close& reque
 api::reply_msg api_handler::handle_request_socket(const api::request_socket& request)
 {
     auto id = api::socket_id{ {m_pid, m_next_socket_id++} };
-    auto result = m_sockets.emplace(
-        id, std::make_shared<server::socket>(m_pool, m_pid, request.domain, request.type, request.protocol));
+    auto socket = make_socket(m_pool, m_pid, request.domain, request.type, request.protocol);
+    if (!socket) {
+        return (tl::make_unexpected(socket.error()));
+    }
 
+    auto result = m_sockets.emplace(id, *socket);
     if (!result.second) {
         return (tl::make_unexpected(ENOMEM));
     }
-
-    auto& socket = result.first->second;
-    auto channel = socket->channel();
 
     /* Add I/O callback for socket writes from client to stack */
     struct icp_event_callbacks socket_callbacks = {
@@ -125,16 +175,17 @@ api::reply_msg api_handler::handle_request_socket(const api::request_socket& req
         .on_delete = handle_socket_delete
     };
 
-    m_server_fds.emplace(channel->server_fd());
-    m_loop.add(channel->server_fd(), &socket_callbacks,
-               reinterpret_cast<void*>(new std::shared_ptr(socket)));  /* bump ref count on ptr */
+    auto channel = socket->channel();
+    m_server_fds.emplace(server_fd(channel));
+    m_loop.add(server_fd(channel), &socket_callbacks,
+               reinterpret_cast<void*>(new generic_socket(*socket)));  /* bump ref count on ptr */
 
     return (api::reply_socket{
             .id = id,
-            .channel = reinterpret_cast<icp::socket::io_channel*>(channel),
+            .channel = api_channel(channel),
             .fd_pair = {
-                .client_fd = channel->client_fd(),
-                .server_fd = channel->server_fd(),
+                .client_fd = client_fd(channel),
+                .server_fd = server_fd(channel),
             }
         });
 }

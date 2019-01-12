@@ -12,6 +12,8 @@
 #define SYS_LIGHTWEIGHT_PROT 0
 #define LWIP_TCPIP_CORE_LOCKING 0
 #define LWIP_NETIF_API 1
+#define LWIP_CALLBACK_API 0
+#define LWIP_EVENT_API 1
 #define LWIP_ERRNO_INCLUDE <errno.h>
 
 #define LWIP_SOCKET 0
@@ -46,7 +48,10 @@
 #define MEMP_MEM_MALLOC 1
 #define MEMP_USE_CUSTOM_POOLS 0
 
-/* Performance options */
+/* TCP options */
+#define TCP_LISTEN_BACKLOG 1
+#define TCP_SND_BUF 65535
+#define TCP_SND_QUEUELEN ((2 * (TCP_SND_BUF) + (TCP_MSS - 1))/(TCP_MSS))
 #define TCP_MSS 1500
 
 /* We've already got these */

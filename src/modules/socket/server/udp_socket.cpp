@@ -5,7 +5,6 @@
 #include <sys/socket.h>
 #include <sys/uio.h>
 
-#include "socket/server/io_channel.h"
 #include "socket/server/udp_socket.h"
 #include "lwip/memp.h"
 #include "lwip/udp.h"
@@ -35,30 +34,80 @@ const char * to_string(const udp_socket_state& state)
                        state));
 }
 
+void udp_socket::udp_pcb_deleter::operator()(udp_pcb *pcb)
+{
+    udp_remove(pcb);
+}
+
 void udp_receive(void* arg, udp_pcb* pcb, pbuf* p, const ip_addr_t* addr, in_port_t port)
 {
     (void)pcb;
     assert(addr != nullptr);
-    auto channel = reinterpret_cast<io_channel*>(arg);
-    if (!channel->send(p, reinterpret_cast<const io_ip_addr*>(addr), port)) {
+    auto channel = reinterpret_cast<dgram_channel*>(arg);
+    if (!channel->send(p, reinterpret_cast<const dgram_ip_addr*>(addr), port)) {
         pbuf_free(p);
     }
     channel->garbage_collect();
 }
 
-udp_socket::udp_socket(io_channel* channel)
-    : m_pcb(udp_new())
+udp_socket::udp_socket(icp::memory::allocator::pool& pool, pid_t pid)
+    : m_channel(new (pool.acquire()) dgram_channel(), dgram_channel_deleter(&pool))
+    , m_pcb(udp_new())
+    , m_pid(pid)
 {
     if (!m_pcb) {
         throw std::runtime_error("Out of UDP pcb's!");
     }
 
-    udp_recv(m_pcb, &udp_receive, channel);
+    udp_recv(m_pcb.get(), &udp_receive, m_channel.get());
 }
 
-udp_socket::~udp_socket()
+channel_variant udp_socket::channel() const
 {
-    udp_remove(m_pcb);
+    return (m_channel.get());
+}
+
+tl::expected<generic_socket, int> udp_socket::handle_accept()
+{
+    /* Can't accept on a UDP socket */
+    return (tl::make_unexpected(EOPNOTSUPP));
+}
+
+void udp_socket::handle_transmit()
+{
+    std::array<iovec, api::socket_queue_length> items;
+    auto [nb_items, dest] = m_channel->recv(items);
+    m_channel->recv_ack();
+    if (!nb_items) return;
+
+    /* Allocate a pbuf chain long enough to handle all of our items */
+    auto length = std::accumulate(std::begin(items), std::begin(items) + nb_items, 0UL,
+                                  [](size_t x, const iovec& iov) -> size_t {
+                                      return (x + iov.iov_len);
+                                  });
+    pbuf* p_head = pbuf_alloc(PBUF_TRANSPORT, length, PBUF_POOL);
+    if (!p_head) {
+        ICP_LOG(ICP_LOG_WARNING, "Could not get %zu bytes for TX buffers\n", length);
+        return;
+    }
+
+    assert(pbuf_clen(p_head) < api::socket_queue_length);  /* XXX: fix me! */
+    std::array<iovec, api::socket_queue_length> pbufs;
+    size_t nb_pbufs = 0;
+    auto p = p_head;
+    while (p != nullptr) {
+        pbufs[nb_pbufs++] = { .iov_base = p->payload,
+                              .iov_len = p->len };
+        p = p->next;
+    }
+
+    /* Copy the data into the pbufs */
+    if (process_vm_readv(m_pid, pbufs.data(), nb_pbufs, items.data(), nb_items, 0) == -1) {
+        return;
+    }
+
+    if (dest) udp_sendto(m_pcb.get(), p_head, reinterpret_cast<const ip_addr_t*>(&dest->addr()), dest->port());
+    else      udp_send(m_pcb.get(), p_head);
 }
 
 static tl::expected<void, int> do_udp_bind(udp_pcb* pcb, const api::request_bind& bind)
@@ -88,7 +137,6 @@ static tl::expected<void, int> do_udp_bind(udp_pcb* pcb, const api::request_bind
 /* provide udp_disconnect a return type so that it's less cumbersome to use */
 static err_t do_udp_disconnect(udp_pcb* pcb)
 {
-    ICP_LOG(ICP_LOG_INFO, "do_udp_disconnect\n");
     udp_disconnect(pcb);
     return (ERR_OK);
 }
@@ -219,7 +267,7 @@ tl::expected<void, int> udp_socket::do_udp_setsockopt(udp_pcb* pcb,
 udp_socket::on_request_reply udp_socket::on_request(const api::request_bind& bind,
                                                     const udp_init&)
 {
-    auto result = do_udp_bind(m_pcb, bind);
+    auto result = do_udp_bind(m_pcb.get(), bind);
     if (!result) return {tl::make_unexpected(result.error()), std::nullopt};
     return {api::reply_success(), udp_bound()};
 }
@@ -227,7 +275,7 @@ udp_socket::on_request_reply udp_socket::on_request(const api::request_bind& bin
 udp_socket::on_request_reply udp_socket::on_request(const api::request_bind& bind,
                                                     const udp_connected&)
 {
-    auto result = do_udp_bind(m_pcb, bind);
+    auto result = do_udp_bind(m_pcb.get(), bind);
     if (!result) return {tl::make_unexpected(result.error()), std::nullopt};
     return {api::reply_success(), udp_bound_and_connected()};
 }
@@ -235,7 +283,7 @@ udp_socket::on_request_reply udp_socket::on_request(const api::request_bind& bin
 udp_socket::on_request_reply udp_socket::on_request(const api::request_connect& connect,
                                                     const udp_init&)
 {
-    auto result = do_udp_connect(m_pcb, connect);
+    auto result = do_udp_connect(m_pcb.get(), connect);
     if (!result) return {tl::make_unexpected(result.error()), std::nullopt};
     if (!*result) return {api::reply_success(), std::nullopt};  /* still not connected */
     return {api::reply_success(), udp_connected()};
@@ -244,7 +292,7 @@ udp_socket::on_request_reply udp_socket::on_request(const api::request_connect& 
 udp_socket::on_request_reply udp_socket::on_request(const api::request_connect& connect,
                                                     const udp_bound&)
 {
-    auto result = do_udp_connect(m_pcb, connect);
+    auto result = do_udp_connect(m_pcb.get(), connect);
     if (!result) return {tl::make_unexpected(result.error()), std::nullopt};
     if (!*result) return {api::reply_success(), std::nullopt};  /* still not connected */
     return {api::reply_success(), udp_bound_and_connected()};
@@ -253,7 +301,7 @@ udp_socket::on_request_reply udp_socket::on_request(const api::request_connect& 
 udp_socket::on_request_reply udp_socket::on_request(const api::request_connect& connect,
                                                     const udp_connected&)
 {
-    auto result = do_udp_connect(m_pcb, connect);
+    auto result = do_udp_connect(m_pcb.get(), connect);
     if (!result) return {tl::make_unexpected(result.error()), std::nullopt};
     if (!*result) return {api::reply_success(), udp_init()}; /* disconnected */
     return {api::reply_success(), std::nullopt};  /* still connected */
@@ -262,7 +310,7 @@ udp_socket::on_request_reply udp_socket::on_request(const api::request_connect& 
 udp_socket::on_request_reply udp_socket::on_request(const api::request_connect& connect,
                                                     const udp_bound_and_connected&)
 {
-    auto result = do_udp_connect(m_pcb, connect);
+    auto result = do_udp_connect(m_pcb.get(), connect);
     if (!result) return {tl::make_unexpected(result.error()), std::nullopt};
     if (!*result) return {api::reply_success(), udp_bound()}; /* disconnected */
     return {api::reply_success(), udp_bound_and_connected()};
@@ -302,43 +350,6 @@ udp_socket::on_request_reply udp_socket::on_request(const api::request_getsockna
                                   getsockname);
     if (!result) return {tl::make_unexpected(result.error()), std::nullopt};
     return {api::reply_socklen{*result}, std::nullopt};
-}
-
-void udp_socket::handle_transmit(pid_t pid, io_channel* channel)
-{
-    std::array<iovec, api::socket_queue_length> items;
-    auto [nb_items, dest] = channel->recv(items);
-
-    if (!nb_items) return;
-
-    /* Allocate a pbuf chain long enough to handle all of our items */
-    auto length = std::accumulate(std::begin(items), std::begin(items) + nb_items, 0UL,
-                                  [](size_t x, const iovec& iov) -> size_t {
-                                      return (x + iov.iov_len);
-                                  });
-    pbuf* p_head = pbuf_alloc(PBUF_TRANSPORT, length, PBUF_POOL);
-    if (!p_head) {
-        ICP_LOG(ICP_LOG_WARNING, "Could not get %zu bytes for TX buffers\n", length);
-        return;
-    }
-
-    assert(pbuf_clen(p_head) < api::socket_queue_length);  /* XXX: fix me! */
-    std::array<iovec, api::socket_queue_length> pbufs;
-    size_t nb_pbufs = 0;
-    auto p = p_head;
-    while (p != nullptr) {
-        pbufs[nb_pbufs++] = { .iov_base = p->payload,
-                              .iov_len = p->len };
-        p = p->next;
-    }
-
-    /* Copy the data into the pbufs */
-    if (process_vm_readv(pid, pbufs.data(), nb_pbufs, items.data(), nb_items, 0) == -1) {
-        return;
-    }
-
-    if (dest) udp_sendto(m_pcb, p_head, reinterpret_cast<const ip_addr_t*>(&dest->addr()), dest->port());
-    else      udp_send(m_pcb, p_head);
 }
 
 }

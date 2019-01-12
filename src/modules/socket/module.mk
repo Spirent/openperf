@@ -1,4 +1,5 @@
 SOCK_COMMON += \
+	circular_buffer.cpp \
 	common.cpp \
 	shared_segment.cpp \
 	unix_socket.cpp \
@@ -7,8 +8,9 @@ SOCK_COMMON += \
 SOCKSRV_SOURCES += \
 	$(SOCK_COMMON) \
 	server/api_handler.cpp \
-	server/io_channel.cpp \
-	server/socket.cpp \
+	server/dgram_channel.cpp \
+	server/lwip_tcp_event.cpp \
+	server/stream_channel.cpp \
 	server/socket_utils.cpp \
 	server/api_server.cpp \
 	server/tcp_socket.cpp \
@@ -19,7 +21,9 @@ SOCKSRV_LDLIBS += -lrt
 SOCKCLI_SOURCES += \
 	$(SOCK_COMMON) \
 	client/api_client.cpp \
-	client/io_channel.cpp
+	client/io_channel_wrapper.cpp \
+	client/dgram_channel.cpp \
+	client/stream_channel.cpp
 
 SOCKCLI_DEPENDS += expected
 

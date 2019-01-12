@@ -13,7 +13,8 @@
 
 #include "memory/allocator/pool.h"
 #include "socket/api.h"
-#include "socket/io_channel.h"
+#include "socket/dgram_channel.h"
+#include "socket/stream_channel.h"
 #include "socket/uuid.h"
 #include "socket/server/api_handler.h"
 #include "socket/server/api_server.h"
@@ -24,6 +25,9 @@ namespace socket {
 namespace api {
 
 using api_handler = icp::socket::server::api_handler;
+
+static constexpr size_t io_channel_size = std::max(sizeof(dgram_channel),
+                                                   sizeof(stream_channel));
 
 static __attribute__((const)) bool power_of_two(uint64_t x) {
     return !(x & (x - 1));
@@ -106,7 +110,7 @@ static int close_fd(const struct icp_event_data *data,
 
 server::server(icp::core::event_loop& loop)
     : m_sock(api::server_socket(), api::socket_type)
-    , m_shm(create_shared_memory_pool(align_up(sizeof(io_channel), 64),
+    , m_shm(create_shared_memory_pool(align_up(io_channel_size, 64),
                                       api::max_sockets))
     , m_loop(loop)
 {

@@ -8,7 +8,7 @@
 #include <unordered_map>
 
 #include "socket/api.h"
-#include "socket/client/io_channel.h"
+#include "socket/client/io_channel_wrapper.h"
 #include "socket/shared_segment.h"
 #include "socket/unix_socket.h"
 #include "socket/uuid.h"
@@ -35,21 +35,14 @@ protected:
 
 class client : public thread_singleton<client>
 {
+    using io_channel_wrapper = icp::socket::client::io_channel_wrapper;
+
     uuid m_uuid;
     unix_socket m_sock;
 
-    /* XXX: need a multi-threaded solution in case fd's jump threads */
-    struct io_channel_deleter {
-        void operator()(socket::client::io_channel *c) {
-            c->~io_channel();
-        }
-    };
-
-    typedef std::unique_ptr<socket::client::io_channel, io_channel_deleter> channel_ptr;
-
     struct ided_channel {
         socket_id id;
-        channel_ptr channel;
+        io_channel_wrapper channel;
     };
     std::unordered_map<int, ided_channel> m_channels;
 
