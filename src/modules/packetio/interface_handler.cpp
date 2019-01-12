@@ -76,9 +76,9 @@ handler::handler(void *context, Rest::Router &router)
     Rest::Routes::Delete(router, "/interfaces/:id",
                          Rest::Routes::bind(&handler::delete_interface, this));
 
-    Rest::Routes::Post(router, "interfaces/x/bulk-create",
+    Rest::Routes::Post(router, "/interfaces/x/bulk-create",
                        Rest::Routes::bind(&handler::bulk_create_interfaces, this));
-    Rest::Routes::Post(router, "interfaces/x/bulk-delete",
+    Rest::Routes::Post(router, "/interfaces/x/bulk-delete",
                        Rest::Routes::bind(&handler::bulk_delete_interfaces, this));
 }
 

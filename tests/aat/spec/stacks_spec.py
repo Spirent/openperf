@@ -5,7 +5,7 @@ import os
 import client.api
 import client.models
 from common import Config, Service
-from common.matcher import be_valid_stack, raise_api_exception
+from common.matcher import be_valid_stack, raise_api_exception, raise_api_exception_extended
 
 
 CONFIG = Config(os.path.join(os.path.dirname(__file__), os.environ.get('MAMBA_CONFIG', 'config.yaml')))
@@ -24,6 +24,11 @@ with description('Stacks,') as self:
             for stack in stacks:
                 expect(stack).to(be_valid_stack)
 
+        with description('unsupported method'):
+            with it('returns 405'):
+                expect(lambda: self.api.api_client.call_api('/stacks', 'PUT')).to(raise_api_exception_extended(
+                    {'status': 405, 'headers': {'Allow': "GET"}}))
+
     with description('get,'):
         with description('known existing stack,'):
             with it('succeeds'):
@@ -32,6 +37,11 @@ with description('Stacks,') as self:
         with description('non-existent stack,'):
             with it('returns 404'):
                 expect(lambda: self.api.get_stack('foo')).to(raise_api_exception(404))
+
+        with description('unsupported method'):
+            with it('returns 405'):
+                expect(lambda: self.api.api_client.call_api('/stacks/0', 'PUT')).to(raise_api_exception_extended(
+                    {'status': 405, 'headers': {'Allow': "GET"}}))
 
     with after.all:
         try:
