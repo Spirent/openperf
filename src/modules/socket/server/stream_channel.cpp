@@ -1,4 +1,5 @@
 #include <cerrno>
+#include <numeric>
 #include <sys/eventfd.h>
 
 #include "socket/server/stream_channel.h"
@@ -9,17 +10,9 @@ namespace icp {
 namespace socket {
 namespace server {
 
-template <typename Queue>
-static void clear_pbuf_queue(Queue& queue)
-{
-    while (auto item = queue.pop()) {
-        pbuf_free(const_cast<pbuf*>(
-                      reinterpret_cast<const pbuf*>(*item)));
-    }
-}
-
 stream_channel::stream_channel()
     : sendq(circular_buffer::server())
+    , recvq(circular_buffer::client())
 {
     if ((server_fds.client_fd = eventfd(0, 0)) == -1
         || (server_fds.server_fd = eventfd(0, 0)) == -1) {
@@ -30,11 +23,6 @@ stream_channel::stream_channel()
 
 stream_channel::~stream_channel()
 {
-    clear_pbuf_queue(freeq);
-    while (!recvq.empty()) {
-        auto buf = recvq.pop();
-        pbuf_free(const_cast<pbuf*>(buf->pbuf()));
-    }
     close(server_fds.client_fd);
     close(server_fds.server_fd);
 }
@@ -54,13 +42,33 @@ void stream_channel::notify()
     eventfd_write(server_fds.client_fd, 1);
 }
 
-bool stream_channel::send(const pbuf *p)
+void stream_channel::ack()
 {
-    assert(p->next == nullptr);  /* let's not drop data */
-    bool empty = recvq.empty();
-    bool pushed = recvq.push(stream_channel_buf(p, p->payload, p->len));
-    if (pushed && empty) notify();
-    return (pushed);
+    uint64_t counter;
+    eventfd_read(server_fds.server_fd, &counter);
+}
+
+bool stream_channel::send(pid_t pid, const iovec iov[], size_t iovcnt)
+{
+    auto buf_available = recvq.writable();
+
+    auto iov_length = std::accumulate(iov, iov + iovcnt, 0UL,
+                                      [](size_t x, const iovec& iov) {
+                                          return (x + iov.iov_len);
+                                      });
+
+    if (buf_available < iov_length) {
+        return (false);
+    }
+
+    bool empty = (buf_available == recvq.size());
+    auto written = recvq.write(pid, iov, iovcnt);
+    if (*written != iov_length) {
+        ICP_LOG(ICP_LOG_ERROR, "written = %zu, iov_length = %zu\n",
+                *written, iov_length);
+    }
+    if (empty) notify();
+    return (true);
 }
 
 void stream_channel::send_wait()
@@ -68,19 +76,13 @@ void stream_channel::send_wait()
     eventfd_write(server_fds.client_fd, eventfd_max);
 }
 
-iovec stream_channel::recv()
+iovec stream_channel::recv_peek()
 {
     return (iovec{ .iov_base = sendq.peek(),
                    .iov_len = sendq.readable() });
 }
 
-void stream_channel::recv_ack()
-{
-    uint64_t counter;
-    eventfd_read(server_fds.server_fd, &counter);
-}
-
-void stream_channel::ack(size_t length)
+void stream_channel::recv_skip(size_t length)
 {
     auto adjust = sendq.skip(length);
     assert(adjust == length);  /* should always be true for us */

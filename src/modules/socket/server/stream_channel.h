@@ -29,13 +29,13 @@ public:
     int server_fd();
 
     void notify();
+    void ack();
 
-    bool send(const pbuf*);
+    bool send(pid_t pid, const iovec iov[], size_t iovcnt);
     void send_wait();
 
-    iovec recv();
-    void recv_ack();
-    void ack(size_t length);
+    iovec recv_peek();
+    void  recv_skip(size_t length);
 };
 
 struct stream_channel_deleter {

@@ -2,6 +2,7 @@
 #include <numeric>
 
 #include "socket/server/tcp_socket.h"
+#include "lwip/pbuf.h"
 #include "lwip/tcp.h"
 
 namespace icp {
@@ -164,12 +165,11 @@ int tcp_socket::do_lwip_recv(pbuf *p, int err)
         return (ERR_OK);
     }
 
-    if (!m_channel->send(p)) {
-        pbuf_free(p);
-        return (ERR_MEM);
-    }
-
-    return (ERR_OK);
+    auto sendvec = iovec{ .iov_base = p->payload,
+                          .iov_len = p->len };
+    auto success = m_channel->send(m_pid, &sendvec, 1);
+    pbuf_free(p);
+    return (success ? ERR_OK : ERR_MEM);
 }
 
 int tcp_socket::do_lwip_connected(int err)
@@ -189,9 +189,9 @@ int tcp_socket::do_lwip_poll()
     /* need to check idle time and close if necessary */
 
     /* need to check if we can send more data */
-    auto [ptr, length] = m_channel->recv();
+    auto [ptr, length] = m_channel->recv_peek();
     if (length) {
-        m_channel->ack(do_tcp_transmit(m_pcb.get(), ptr, length));
+        m_channel->recv_skip(do_tcp_transmit(m_pcb.get(), ptr, length));
     }
 
     return (ERR_OK);
@@ -226,11 +226,11 @@ tl::expected<generic_socket, int> tcp_socket::handle_accept()
 
 void tcp_socket::handle_transmit()
 {
-    m_channel->recv_ack();
-    auto [ptr, length] = m_channel->recv();
+    m_channel->ack();
+    auto [ptr, length] = m_channel->recv_peek();
     if (!length) return;
 
-    m_channel->ack(do_tcp_transmit(m_pcb.get(), ptr, length));
+    m_channel->recv_skip(do_tcp_transmit(m_pcb.get(), ptr, length));
 }
 
 tcp_socket::on_request_reply tcp_socket::on_request(const api::request_bind& bind,

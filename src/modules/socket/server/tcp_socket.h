@@ -4,13 +4,12 @@
 #include <cerrno>
 #include <list>
 #include <queue>
-//#include <memory>
-//#include "tl/expected.hpp"
 
 #include "socket/server/generic_socket.h"
 #include "socket/server/socket_utils.h"
 #include "socket/server/stream_channel.h"
 
+struct pbuf;
 struct tcp_pcb;
 
 namespace icp {
