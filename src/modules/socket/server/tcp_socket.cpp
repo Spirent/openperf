@@ -65,9 +65,17 @@ static std::string to_string(tcp_pcb* pcb)
 
 static size_t do_tcp_transmit(tcp_pcb* pcb, void* ptr, size_t length)
 {
-    auto to_write = std::min(static_cast<uint16_t>(length), tcp_sndbuf(pcb));
-    auto error = tcp_write(pcb, ptr, to_write, TCP_WRITE_FLAG_COPY);
-    return (error == ERR_OK ? to_write : 0);
+    auto to_write = std::min(length, static_cast<size_t>(tcp_sndbuf(pcb)));
+    if (tcp_write(pcb, ptr, to_write, TCP_WRITE_FLAG_COPY) != ERR_OK) {
+        return (0);
+    }
+
+    if (to_write == length) {
+        /* If we wrote everything we were asked to write, then trigger a transmission */
+        tcp_output(pcb);
+    }
+
+    return (to_write);
 }
 
 void tcp_socket::tcp_pcb_deleter::operator()(tcp_pcb *pcb)
@@ -146,9 +154,11 @@ int tcp_socket::do_lwip_accept(tcp_pcb *newpcb, int err)
     return (ERR_OK);
 }
 
-int tcp_socket::do_lwip_sent(uint16_t size __attribute__((unused)))
+int tcp_socket::do_lwip_sent(uint16_t size)
 {
-    // noop
+    auto [ptr, length] = m_channel->recv_peek();
+    auto to_send = std::min(length, static_cast<size_t>(size));
+    m_channel->recv_skip(do_tcp_transmit(m_pcb.get(), ptr, to_send));
     return (ERR_OK);
 }
 

@@ -40,8 +40,7 @@ err_t lwip_tcp_event(void *arg, struct tcp_pcb *pcb, enum lwip_event event,
     case LWIP_EVENT_ACCEPT:
         return (socket->do_lwip_accept(pcb, err));
     case LWIP_EVENT_SENT:
-        /* this is how the stack acknowledges that data is sent; we don't need it */
-        return (ERR_OK);
+        return (socket->do_lwip_sent(size));
     case LWIP_EVENT_RECV:
         return (socket->do_lwip_recv(p, err));
     case LWIP_EVENT_CONNECTED:
