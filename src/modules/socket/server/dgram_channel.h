@@ -7,8 +7,6 @@
 #include "memory/allocator/pool.h"
 #include "socket/dgram_channel.h"
 
-struct pbuf;
-
 namespace icp {
 namespace socket {
 namespace server {
@@ -32,19 +30,13 @@ public:
     int server_fd();
 
     void notify();
+    void ack();
 
     bool send(const pbuf*);
     bool send(const pbuf*, const dgram_ip_addr*, in_port_t);
     void send_wait();
 
-    struct recv_reply {
-        size_t nb_items;
-        std::optional<dgram_channel_addr> dest;
-    };
-    recv_reply recv(std::array<iovec, api::socket_queue_length>&);
-    void recv_ack();
-
-    void garbage_collect();
+    size_t recv(dgram_channel_item items[], size_t max_items);
 };
 
 struct dgram_channel_deleter {

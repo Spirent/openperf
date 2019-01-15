@@ -2,7 +2,7 @@
 #define _ICP_SOCKET_DGRAM_CHANNEL_H_
 
 #include <netinet/in.h>
-#include <socket/spsc_queue.h>
+#include <socket/bipartite_ring.h>
 #include <socket/api.h>
 
 struct pbuf;
@@ -71,63 +71,54 @@ public:
     in_port_t port() const { return (m_port); }
 };
 
-class dgram_channel_buf
+class dgram_channel_data
 {
-    const pbuf* m_pbuf;
-    const void* m_payload;
-    uint32_t m_length:31;
-    uint32_t m_more:1;
+    /*
+     * We store the length in the upper byte of the pbuf and payload pointers.
+     * When machines use more than 48 bits for addressing we can update this. :)
+     */
+    static constexpr uintptr_t ptr_mask = 0xffffffffffff;
+    static constexpr int ptr_shift = 56;
+    pbuf* m_pbuf;
+    void* m_payload;
 
 public:
-    dgram_channel_buf()
-        : m_pbuf(nullptr)
-        , m_payload(nullptr)
-        , m_length(0)
-        , m_more(false)
-    {}
+    dgram_channel_data() {};
 
-    dgram_channel_buf(const pbuf* pbuf, const void* payload, size_t length, bool more = false)
+    dgram_channel_data(pbuf* pbuf, void* payload, uint16_t len)
         : m_pbuf(pbuf)
         , m_payload(payload)
-        , m_length(length)
-        , m_more(more)
-    {}
+    {
+        length(len);
+    }
 
-    dgram_channel_buf(const void* payload, size_t length, bool more = false)
-        : m_pbuf(nullptr)
-        , m_payload(payload)
-        , m_length(length)
-        , m_more(more)
-    {}
+    pbuf* pbuf() { return (reinterpret_cast<struct pbuf*>(reinterpret_cast<uintptr_t>(m_pbuf) & ptr_mask)); }
+    void* payload() { return (reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(m_payload) & ptr_mask)); }
+    uint16_t length() { return (static_cast<uint16_t>(
+                                    (reinterpret_cast<uintptr_t>(m_pbuf) >> ptr_shift) << 8
+                                    | (reinterpret_cast<uintptr_t>(m_payload) >> ptr_shift))); }
 
-    const pbuf* pbuf() const { return (m_pbuf); }
-    const void* payload() const { return (m_payload); }
-    size_t length() const { return (m_length); }
-    bool more() const { return (m_more); }
+    void length(uint16_t length)
+    {
+        m_pbuf = reinterpret_cast<struct pbuf*>(((static_cast<uint64_t>(length) >> 8) << ptr_shift)
+                                                | (reinterpret_cast<uintptr_t>(m_pbuf) & ptr_mask));
+        m_payload = reinterpret_cast<void*>(((static_cast<uint64_t>(length) & 0xff) << ptr_shift)
+                                            | (reinterpret_cast<uintptr_t>(m_payload) & ptr_mask));
+    }
+
 };
 
-typedef std::variant<dgram_channel_buf, dgram_channel_addr> dgram_channel_item;
+struct dgram_channel_item {
+    std::optional<dgram_channel_addr> address;
+    dgram_channel_data data;
+};
 
-inline bool more(const dgram_channel_item& item)
-{
-    return (std::visit(overloaded_visitor(
-                           [](const dgram_channel_addr&) -> bool {
-                               return (false);
-                           },
-                           [](const dgram_channel_buf& buf) -> bool {
-                               return (buf.more());
-                           }),
-                       item));
-}
+typedef bipartite_ring<dgram_channel_item, api::socket_queue_length> dgram_ring;
 
-#define DGRAM_CHANNEL_MEMBERS                                      \
-    spsc_queue<dgram_channel_item,   /* from stack to client */    \
-               api::socket_queue_length> recvq;                    \
-    spsc_queue<dgram_channel_item,   /* from client to stack */    \
-               api::socket_queue_length> sendq;                    \
-    spsc_queue<const pbuf*,          /* pbuf pointers to free */   \
-               api::socket_queue_length> freeq;                    \
-    api::socket_fd_pair client_fds;                                \
+#define DGRAM_CHANNEL_MEMBERS                                       \
+    dgram_ring recvq;  /* from stack to client */                   \
+    dgram_ring sendq;  /* from client to stack */                   \
+    api::socket_fd_pair client_fds;                                 \
     api::socket_fd_pair server_fds;
 
 struct dgram_channel {

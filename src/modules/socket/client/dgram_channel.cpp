@@ -66,6 +66,8 @@ static socklen_t length_of(const sockaddr_storage& sstorage)
 }
 
 dgram_channel::dgram_channel(int client_fd, int server_fd)
+    : recvq(dgram_ring::client())
+    , sendq(dgram_ring::client())
 {
     client_fds.client_fd = client_fd;
     client_fds.server_fd = server_fd;
@@ -77,34 +79,34 @@ dgram_channel::~dgram_channel()
     close(client_fds.server_fd);
 }
 
-tl::expected<size_t, int> dgram_channel::send(pid_t pid __attribute__((unused)),
+tl::expected<size_t, int> dgram_channel::send(pid_t pid,
                                               const iovec iov[], size_t iovcnt,
                                               const sockaddr *to)
 {
-    if (iovcnt + (to ? 1 : 0) > sendq.capacity()) return (ENOBUFS);
+    if (!sendq.available()) return (ENOBUFS);
 
-    auto dst = to_addr(to);
-    if (to && !dst) return (tl::make_unexpected(EINVAL));
+    bool empty = !sendq.ready();
 
-    bool empty = sendq.empty();
+    auto item = sendq.unpack();
+    assert(item);
+    item->address = to_addr(to);
+    if (to && !item->address) return (tl::make_unexpected(EINVAL));
 
-    for (size_t i = 0; i < iovcnt; i++) {
-        sendq.push(dgram_channel_buf(iov[i].iov_base,
-                                  iov[i].iov_len,
-                                  dst ? true : i < iovcnt - 1));
+    iovec writevec = iovec{ .iov_base = const_cast<void*>(item->data.payload()),
+                            .iov_len = item->data.length() };
+    auto result = process_vm_writev(pid, iov, iovcnt, &writevec, 1, 0);
+    if (result == -1) {
+        return (tl::make_unexpected(errno));
     }
-    if (dst) {
-        sendq.push(*dst);
-    }
+
+    item->data.length(result);
+    sendq.repack();
 
     if (empty) {
         eventfd_write(client_fds.server_fd, 1);
     }
 
-    return (std::accumulate(iov, iov + iovcnt, 0UL,
-                            [](size_t x, const iovec &iov) -> size_t {
-                                return (x + iov.iov_len);
-                            }));
+    return (result);
 }
 
 tl::expected<size_t, int> dgram_channel::recv(pid_t pid, iovec iov[], size_t iovcnt,
@@ -112,39 +114,32 @@ tl::expected<size_t, int> dgram_channel::recv(pid_t pid, iovec iov[], size_t iov
 {
     bool full = recvq.full();
 
-    size_t nb_items;
-    size_t item_len = 0;
-    std::array<iovec, api::socket_queue_length> items;
+    auto item = recvq.unpack();
+    if (!item) return (tl::make_unexpected(EWOULDBLOCK));
 
-    while (auto item = recvq.pop()) {
-        std::visit(overloaded_visitor(
-                       [&](dgram_channel_buf& buf) {
-                           items[nb_items++] = iovec{
-                               .iov_base = const_cast<void*>(buf.payload()),
-                               .iov_len = buf.length()
-                           };
-                           if (!freeq.push(buf.pbuf())) {
-                               fprintf(stderr, "Could not return pbuf %p to stack\n",
-                                       reinterpret_cast<const void*>(buf.pbuf()));
-                           }
-                       },
-                       [&](dgram_channel_addr& addr) {
-                           auto src = to_sockaddr(addr);
-                           if (src && from && fromlen) {
-                               auto srclen = length_of(*src);
-                               std::memcpy(from, &*src, std::min(*fromlen, srclen));
-                               *fromlen = std::max(*fromlen, srclen);
-                           }
-                       }),
-                   *item);
-        if (!more(*item) || nb_items == api::socket_queue_length) break;
+    if (item->address) {
+        auto src = to_sockaddr(*item->address);
+        if (src && from && fromlen) {
+            auto srclen = length_of(*src);
+            std::memcpy(from, &*src, std::min(*fromlen, srclen));
+            *fromlen = std::max(*fromlen, srclen);
+        }
     }
 
-    if (nb_items && full) {
+    auto readvec = iovec { .iov_base = const_cast<void*>(item->data.payload()),
+                           .iov_len = item->data.length() };
+    auto result = process_vm_readv(pid, iov, iovcnt, &readvec, 1, 0);
+    if (result == -1) {
+        return (tl::make_unexpected(errno));
+    }
+
+    recvq.repack();
+
+    if (full) {
         eventfd_write(client_fds.server_fd, 1);
     }
 
-    return (process_vm_readv(pid, iov, iovcnt, items.data(), nb_items, 0));
+    return (result);
 }
 
 int dgram_channel::recv_clear()

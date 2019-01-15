@@ -47,7 +47,6 @@ void udp_receive(void* arg, udp_pcb* pcb, pbuf* p, const ip_addr_t* addr, in_por
     if (!channel->send(p, reinterpret_cast<const dgram_ip_addr*>(addr), port)) {
         pbuf_free(p);
     }
-    channel->garbage_collect();
 }
 
 udp_socket::udp_socket(icp::memory::allocator::pool& pool, pid_t pid)
@@ -75,39 +74,15 @@ tl::expected<generic_socket, int> udp_socket::handle_accept()
 
 void udp_socket::handle_transmit()
 {
-    std::array<iovec, api::socket_queue_length> items;
-    auto [nb_items, dest] = m_channel->recv(items);
-    m_channel->recv_ack();
-    if (!nb_items) return;
-
-    /* Allocate a pbuf chain long enough to handle all of our items */
-    auto length = std::accumulate(std::begin(items), std::begin(items) + nb_items, 0UL,
-                                  [](size_t x, const iovec& iov) -> size_t {
-                                      return (x + iov.iov_len);
-                                  });
-    pbuf* p_head = pbuf_alloc(PBUF_TRANSPORT, length, PBUF_POOL);
-    if (!p_head) {
-        ICP_LOG(ICP_LOG_WARNING, "Could not get %zu bytes for TX buffers\n", length);
-        return;
+    m_channel->ack();
+    std::array<dgram_channel_item, api::socket_queue_length> items;
+    auto nb_items = m_channel->recv(items.data(), items.size());
+    for (size_t idx = 0; idx < nb_items; idx++) {
+        auto& [dest, data] = items[idx];
+        if (dest) udp_sendto(m_pcb.get(), const_cast<pbuf*>(data.pbuf()),
+                             reinterpret_cast<const ip_addr_t*>(&dest->addr()), dest->port());
+        else      udp_send(m_pcb.get(), const_cast<pbuf*>(data.pbuf()));
     }
-
-    assert(pbuf_clen(p_head) < api::socket_queue_length);  /* XXX: fix me! */
-    std::array<iovec, api::socket_queue_length> pbufs;
-    size_t nb_pbufs = 0;
-    auto p = p_head;
-    while (p != nullptr) {
-        pbufs[nb_pbufs++] = { .iov_base = p->payload,
-                              .iov_len = p->len };
-        p = p->next;
-    }
-
-    /* Copy the data into the pbufs */
-    if (process_vm_readv(m_pid, pbufs.data(), nb_pbufs, items.data(), nb_items, 0) == -1) {
-        return;
-    }
-
-    if (dest) udp_sendto(m_pcb.get(), p_head, reinterpret_cast<const ip_addr_t*>(&dest->addr()), dest->port());
-    else      udp_send(m_pcb.get(), p_head);
 }
 
 static tl::expected<void, int> do_udp_bind(udp_pcb* pcb, const api::request_bind& bind)

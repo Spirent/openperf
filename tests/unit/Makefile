@@ -28,6 +28,7 @@ SOURCES := \
 	framework/test_ipv4_network.cpp \
 	framework/test_std_allocator.cpp \
 	framework/test_task.cpp \
+	modules/socket/test_bipartite_ring.cpp \
 	modules/socket/test_circular_buffer.cpp \
 	modules/socket/test_uuid.cpp
 
