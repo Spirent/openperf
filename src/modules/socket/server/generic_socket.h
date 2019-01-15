@@ -37,9 +37,9 @@ public:
         return (m_self->handle_request(request));
     }
 
-    tl::expected<generic_socket, int> handle_accept()
+    tl::expected<generic_socket, int> handle_accept(int flags)
     {
-        return (m_self->handle_accept());
+        return (m_self->handle_accept(flags));
     }
 
     void handle_transmit()
@@ -52,7 +52,7 @@ private:
         virtual ~socket_concept() = default;
         virtual channel_variant channel() const = 0;
         virtual api::reply_msg handle_request(const api::request_msg&) = 0;
-        virtual tl::expected<generic_socket, int> handle_accept() = 0;
+        virtual tl::expected<generic_socket, int> handle_accept(int) = 0;
         virtual void handle_transmit() = 0;
     };
 
@@ -72,9 +72,9 @@ private:
             return (m_socket.handle_request(request));
         }
 
-        tl::expected<generic_socket, int> handle_accept() override
+        tl::expected<generic_socket, int> handle_accept(int flags) override
         {
-            return (m_socket.handle_accept());
+            return (m_socket.handle_accept(flags));
         }
 
         void handle_transmit() override

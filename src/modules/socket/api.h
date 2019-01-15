@@ -83,6 +83,7 @@ struct request_init {
 
 struct request_accept {
     socket_id id;
+    int flags;
     struct sockaddr *addr;
     socklen_t addrlen;
 };

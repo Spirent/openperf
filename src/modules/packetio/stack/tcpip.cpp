@@ -297,6 +297,14 @@ tcpip_input(struct pbuf *p, struct netif *inp)
 err_t
 tcpip_api_call(tcpip_api_call_fn fn, struct tcpip_api_call_data *call)
 {
+    /*
+     * XXX: Shutdown can cause a race on this value, so don't proceed if we've
+     * already destroyed the mbox.
+     */
+    if (!sys_mbox_valid_val(mbox)) {
+        return (-1);
+    }
+
 #if LWIP_TCPIP_CORE_LOCKING
     err_t err;
     LOCK_TCPIP_CORE();
@@ -312,8 +320,6 @@ tcpip_api_call(tcpip_api_call_fn fn, struct tcpip_api_call_data *call)
         return err;
     }
 #endif /* LWIP_NETCONN_SEM_PER_THREAD */
-
-    LWIP_ASSERT("Invalid mbox", sys_mbox_valid_val(mbox));
 
     TCPIP_MSG_VAR_ALLOC(msg);
     TCPIP_MSG_VAR_REF(msg).type = TCPIP_MSG_API_CALL;

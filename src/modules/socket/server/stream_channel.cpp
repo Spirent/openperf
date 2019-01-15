@@ -10,11 +10,15 @@ namespace icp {
 namespace socket {
 namespace server {
 
-stream_channel::stream_channel()
+stream_channel::stream_channel(int socket_flags)
     : sendq(circular_buffer::server())
     , recvq(circular_buffer::client())
 {
-    if ((server_fds.client_fd = eventfd(0, 0)) == -1
+    int event_flags = 0;
+    if (socket_flags & SOCK_CLOEXEC)  event_flags |= EFD_CLOEXEC;
+    if (socket_flags & SOCK_NONBLOCK) event_flags |= EFD_NONBLOCK;
+
+    if ((server_fds.client_fd = eventfd(0, event_flags)) == -1
         || (server_fds.server_fd = eventfd(0, 0)) == -1) {
         throw std::runtime_error("Could not create eventfd: "
                                  + std::string(strerror(errno)));

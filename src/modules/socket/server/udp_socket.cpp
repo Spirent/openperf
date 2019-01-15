@@ -49,8 +49,8 @@ void udp_receive(void* arg, udp_pcb* pcb, pbuf* p, const ip_addr_t* addr, in_por
     }
 }
 
-udp_socket::udp_socket(icp::memory::allocator::pool& pool, pid_t pid)
-    : m_channel(new (pool.acquire()) dgram_channel(), dgram_channel_deleter(&pool))
+udp_socket::udp_socket(icp::memory::allocator::pool& pool, pid_t pid, int flags)
+    : m_channel(new (pool.acquire()) dgram_channel(flags), dgram_channel_deleter(&pool))
     , m_pcb(udp_new())
     , m_pid(pid)
 {
@@ -66,7 +66,7 @@ channel_variant udp_socket::channel() const
     return (m_channel.get());
 }
 
-tl::expected<generic_socket, int> udp_socket::handle_accept()
+tl::expected<generic_socket, int> udp_socket::handle_accept(int)
 {
     /* Can't accept on a UDP socket */
     return (tl::make_unexpected(EOPNOTSUPP));
@@ -198,7 +198,8 @@ tl::expected<socklen_t, int> udp_socket::do_udp_getsockopt(udp_pcb* pcb,
         slength = sizeof(opt);
         break;
     }
-    case SO_REUSEADDR: {
+    case SO_REUSEADDR:
+    case SO_REUSEPORT: {
         int opt = !!ip_get_option(pcb, SOF_REUSEADDR);
         auto result = copy_out(getsockopt.id.pid, getsockopt.optval, opt);
         if (!result) return (tl::make_unexpected(result.error()));
@@ -224,7 +225,8 @@ tl::expected<void, int> udp_socket::do_udp_setsockopt(udp_pcb* pcb,
         else      ip_reset_option(pcb, SOF_BROADCAST);
         break;
     }
-    case SO_REUSEADDR: {
+    case SO_REUSEADDR:
+    case SO_REUSEPORT: {
         auto opt = copy_in(setsockopt.id.pid,
                            reinterpret_cast<const int*>(setsockopt.optval));
         if (!opt) return (tl::make_unexpected(opt.error()));

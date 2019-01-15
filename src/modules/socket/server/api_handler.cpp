@@ -93,7 +93,7 @@ api::reply_msg api_handler::handle_request_accept(const api::request_accept& req
     }
 
     auto& listen_socket = lookup->second;
-    auto new_sock = listen_socket.handle_accept();
+    auto new_sock = listen_socket.handle_accept(request.flags);
     if (!new_sock) {
         return (tl::make_unexpected(new_sock.error()));
     }

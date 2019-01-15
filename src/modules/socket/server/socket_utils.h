@@ -55,9 +55,10 @@ public:
         return (msg);
     }
 
-    const StateVariant& state() { return (m_state); }
+    const StateVariant& state() const { return (m_state); }
 
     void state(StateVariant&& state) { m_state = std::move(state); }
+    void state(const StateVariant& state) { m_state = state; }
 };
 
 std::optional<ip_addr_t> get_address(const sockaddr_storage&);

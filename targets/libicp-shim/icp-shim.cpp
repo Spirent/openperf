@@ -1,4 +1,6 @@
 #include <atomic>
+#include <functional>
+#include <iostream>
 
 #include "socket/client/api_client.h"
 #include "libc_wrapper.h"
@@ -20,11 +22,28 @@ void icp_shim_init()
     client.init();
     client_initialized = true;
 }
+
+template <class T>
+void expand(std::initializer_list<T>) {}
+
+template <typename Function, typename Object, typename... Args>
+auto call_and_log_function(const char* function_name, Function&& f, Object&& o, Args&&... args)
+{
+    std::cerr << function_name << "(";
+    expand({(std::cerr << args << ",", 0)...});
+    auto result = std::invoke(std::forward<Function>(f), std::forward<Object>(o), std::forward<Args>(args)...);
+    std::cerr << ") = " << result << std::endl;
+    return (result);
+}
+
+#define client_call_and_log(function, ...)                              \
+    call_and_log_function(#function, &icp::socket::api::client::function, client, __VA_ARGS__)
+
 extern "C" {
 
 int accept(int s, struct sockaddr *addr, socklen_t *addrlen)
 {
-    SHIM_TRACE("accept(%d, %p, %u)n", s, (void*)addr, addrlen ? *addrlen : 0);
+    SHIM_TRACE("accept(%d, %p, %u)\n", s, (void*)addr, addrlen ? *addrlen : 0);
 
     auto& libc = icp::socket::libc::wrapper::instance();
     if (!client_initialized) {
@@ -33,7 +52,22 @@ int accept(int s, struct sockaddr *addr, socklen_t *addrlen)
 
     auto& client = icp::socket::api::client::instance();
     return (client.is_socket(s)
-            ? client.accept(s, addr, addrlen)
+            ? client_call_and_log(accept, s, addr, addrlen, 0)
+            : libc.accept(s, addr, addrlen));
+}
+
+int accept4(int s, struct sockaddr *addr, socklen_t *addrlen, int flags)
+{
+    SHIM_TRACE("accept4(%d, %p, %u, %d)\n", s, (void*)addr, addrlen ? *addrlen : 0, flags);
+
+    auto& libc = icp::socket::libc::wrapper::instance();
+    if (!client_initialized) {
+        return (libc.accept(s, addr, addrlen));
+    }
+
+    auto& client = icp::socket::api::client::instance();
+    return (client.is_socket(s)
+            ? client_call_and_log(accept, s, addr, addrlen, flags)
             : libc.accept(s, addr, addrlen));
 }
 
@@ -48,7 +82,7 @@ int bind(int s, const struct sockaddr *name, socklen_t namelen)
 
     auto& client = icp::socket::api::client::instance();
     return (client.is_socket(s)
-            ? client.bind(s, name, namelen)
+            ? client_call_and_log(bind, s, name, namelen)
             : libc.bind(s, name, namelen));
 }
 
@@ -63,7 +97,7 @@ int shutdown(int s, int how)
 
     auto& client = icp::socket::api::client::instance();
     return (client.is_socket(s)
-            ? client.shutdown(s, how)
+            ? client_call_and_log(shutdown, s, how)
             : libc.shutdown(s, how));
 }
 
@@ -78,7 +112,7 @@ int getpeername(int s, struct sockaddr *name, socklen_t *namelen)
 
     auto& client = icp::socket::api::client::instance();
     return (client.is_socket(s)
-            ? client.getpeername(s, name, namelen)
+            ? client_call_and_log(getpeername, s, name, namelen)
             : libc.getpeername(s, name, namelen));
 }
 
@@ -93,7 +127,7 @@ int getsockname(int s, struct sockaddr *name, socklen_t *namelen)
 
     auto& client = icp::socket::api::client::instance();
     return (client.is_socket(s)
-            ? client.getsockname(s, name, namelen)
+            ? client_call_and_log(getsockname, s, name, namelen)
             : libc.getsockname(s, name, namelen));
 }
 
@@ -109,7 +143,7 @@ int getsockopt(int s, int level, int optname, void *optval, socklen_t *optlen)
 
     auto& client = icp::socket::api::client::instance();
     return (client.is_socket(s)
-            ? client.getsockopt(s, level, optname, optval, optlen)
+            ? client_call_and_log(getsockopt, s, level, optname, optval, optlen)
             : libc.getsockopt(s, level, optname, optval, optlen));
 }
 
@@ -124,7 +158,7 @@ int setsockopt(int s, int level, int optname, const void *optval, socklen_t optl
 
     auto& client = icp::socket::api::client::instance();
     return (client.is_socket(s)
-            ? client.setsockopt(s, level, optname, optval, optlen)
+            ? client_call_and_log(setsockopt, s, level, optname, optval, optlen)
             : libc.setsockopt(s, level, optname, optval, optlen));
 }
 
@@ -139,7 +173,7 @@ int close(int s)
 
     auto& client = icp::socket::api::client::instance();
     return (client.is_socket(s)
-            ? client.close(s)
+            ? client_call_and_log(close, s)
             : libc.close(s));
 }
 
@@ -154,7 +188,7 @@ int connect(int s, const struct sockaddr *name, socklen_t namelen)
 
     auto& client = icp::socket::api::client::instance();
     return (client.is_socket(s)
-            ? client.connect(s, name, namelen)
+            ? client_call_and_log(connect, s, name, namelen)
             : libc.connect(s, name, namelen));
 }
 
@@ -169,7 +203,7 @@ int listen(int s, int backlog)
 
     auto& client = icp::socket::api::client::instance();
     return (client.is_socket(s)
-            ? client.listen(s, backlog)
+            ? client_call_and_log(listen, s, backlog)
             : libc.listen(s, backlog));
 }
 
@@ -190,7 +224,7 @@ int socket(int domain, int type, int protocol)
     SHIM_TRACE("socket(%d, %d, %d)\n", domain, type, protocol);
 
     auto& client = icp::socket::api::client::instance();
-    return (client.socket(domain, type, protocol));
+    return (client_call_and_log(socket, domain, type, protocol));
 }
 
 int ioctl(int s, long cmd, void *argp)
@@ -204,7 +238,7 @@ int ioctl(int s, long cmd, void *argp)
 
     auto& client = icp::socket::api::client::instance();
     return (client.is_socket(s)
-            ? client.ioctl(s, cmd, argp)
+            ? client_call_and_log(ioctl, s, cmd, argp)
             : libc.ioctl(s, cmd, argp));
 }
 
@@ -220,7 +254,7 @@ ssize_t read(int s, void *mem, size_t len)
 
     auto& client = icp::socket::api::client::instance();
     return (client.is_socket(s)
-            ? client.read(s, mem, len)
+            ? client_call_and_log(read, s, mem, len)
             : libc.read(s, mem, len));
 }
 
@@ -235,7 +269,7 @@ ssize_t readv(int s, const struct iovec *iov, int iovcnt)
 
     auto& client = icp::socket::api::client::instance();
     return (client.is_socket(s)
-            ? client.readv(s, iov, iovcnt)
+            ? client_call_and_log(readv, s, iov, iovcnt)
             : libc.readv(s, iov, iovcnt));
 }
 
@@ -250,7 +284,7 @@ ssize_t recv(int s, void *mem, size_t len, int flags)
 
     auto& client = icp::socket::api::client::instance();
     return (client.is_socket(s)
-            ? client.recv(s, mem, len, flags)
+            ? client_call_and_log(recv, s, mem, len, flags)
             : libc.recv(s, mem, len, flags));
 }
 
@@ -267,7 +301,7 @@ ssize_t recvfrom(int s, void *mem, size_t len, int flags,
 
     auto& client = icp::socket::api::client::instance();
     return (client.is_socket(s)
-            ? client.recvfrom(s, mem, len, flags, from, fromlen)
+            ? client_call_and_log(recvfrom, s, mem, len, flags, from, fromlen)
             : libc.recvfrom(s, mem, len, flags, from, fromlen));
 }
 
@@ -282,7 +316,7 @@ ssize_t recvmsg(int s, struct msghdr *message, int flags)
 
     auto& client = icp::socket::api::client::instance();
     return (client.is_socket(s)
-            ? client.recvmsg(s, message, flags)
+            ? client_call_and_log(recvmsg, s, message, flags)
             : libc.recvmsg(s, message, flags));
 }
 
@@ -298,7 +332,7 @@ ssize_t send(int s, const void *dataptr, size_t len, int flags)
 
     auto& client = icp::socket::api::client::instance();
     return (client.is_socket(s)
-            ? client.send(s, dataptr, len, flags)
+            ? client_call_and_log(send, s, dataptr, len, flags)
             : libc.send(s, dataptr, len, flags));
 }
 
@@ -313,7 +347,7 @@ ssize_t sendmsg(int s, const struct msghdr *message, int flags)
 
     auto& client = icp::socket::api::client::instance();
     return (client.is_socket(s)
-            ? client.sendmsg(s, message, flags)
+            ? client_call_and_log(sendmsg, s, message, flags)
             : libc.sendmsg(s, message, flags));
 }
 
@@ -329,7 +363,7 @@ ssize_t sendto(int s, const void *dataptr, size_t len, int flags,
 
     auto& client = icp::socket::api::client::instance();
     return (client.is_socket(s)
-            ? client.sendto(s, dataptr, len, flags, to, tolen)
+            ? client_call_and_log(sendto, s, dataptr, len, flags, to, tolen)
             : libc.sendto(s, dataptr, len, flags, to, tolen));
 }
 
@@ -344,7 +378,7 @@ ssize_t write(int s, const void *dataptr, size_t len)
 
     auto& client = icp::socket::api::client::instance();
     return (client.is_socket(s)
-            ? client.write(s, dataptr, len)
+            ? client_call_and_log(write, s, dataptr, len)
             : libc.write(s, dataptr, len));
 }
 
@@ -359,7 +393,7 @@ ssize_t writev(int s, const struct iovec *iov, int iovcnt)
 
     auto& client = icp::socket::api::client::instance();
     return (client.is_socket(s)
-            ? client.writev(s, iov, iovcnt)
+            ? client_call_and_log(writev, s, iov, iovcnt)
             : libc.writev(s, iov, iovcnt));
 }
 

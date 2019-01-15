@@ -57,7 +57,7 @@ public:
     bool is_socket(int s);
 
     /* General socket functions */
-    int accept(int s, struct sockaddr *addr, socklen_t *addrlen);
+    int accept(int s, struct sockaddr *addr, socklen_t *addrlen, int flags = 0);
     int bind(int s, const struct sockaddr *name, socklen_t namelen);
     int shutdown(int s, int how);
     int getpeername(int s, struct sockaddr *name, socklen_t *namelen);

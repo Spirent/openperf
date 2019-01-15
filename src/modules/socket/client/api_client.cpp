@@ -110,7 +110,7 @@ bool client::is_socket(int s)
     return (m_channels.count(s));
 }
 
-int client::accept(int s, struct sockaddr *addr, socklen_t *addrlen)
+int client::accept(int s, struct sockaddr *addr, socklen_t *addrlen, int flags)
 {
     auto result = m_channels.find(s);
     if (result == m_channels.end()) {
@@ -119,8 +119,14 @@ int client::accept(int s, struct sockaddr *addr, socklen_t *addrlen)
     }
 
     auto& [id, channel] = result->second;
+    if (channel.recv_clear() == -1) {
+        errno = EWOULDBLOCK;
+        return (-1);
+    }
+
     api::request_msg request = api::request_accept{
         .id = id,
+        .flags = flags,
         .addr = addr,
         .addrlen = (addrlen ? *addrlen : 0)
     };
@@ -484,6 +490,7 @@ ssize_t client::recvmsg(int s, struct msghdr *message, int flags)
 
     auto& [id, channel] = result->second;
     if (channel.recv_clear() == -1) {
+        errno = EWOULDBLOCK;
         return (-1);
     }
 

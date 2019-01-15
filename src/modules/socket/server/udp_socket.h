@@ -42,7 +42,7 @@ class udp_socket : public socket_state_machine<udp_socket, udp_socket_state> {
     pid_t m_pid;                                      /* client pid */
 
 public:
-    udp_socket(icp::memory::allocator::pool& pool, pid_t pid);
+    udp_socket(icp::memory::allocator::pool& pool, pid_t pid, int flags);
     ~udp_socket() = default;
 
     udp_socket(const udp_socket&) = delete;
@@ -56,7 +56,7 @@ public:
      ***/
     channel_variant channel() const;
 
-    tl::expected<generic_socket, int> handle_accept();
+    tl::expected<generic_socket, int> handle_accept(int);
 
     void handle_transmit();
 

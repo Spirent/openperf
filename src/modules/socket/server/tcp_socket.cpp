@@ -92,8 +92,8 @@ icp::memory::allocator::pool* tcp_socket::channel_pool()
     return (deleter->pool_);
 }
 
-tcp_socket::tcp_socket(icp::memory::allocator::pool* pool, pid_t pid, tcp_pcb* pcb)
-    : m_channel(new (pool->acquire()) stream_channel(), stream_channel_deleter(pool))
+tcp_socket::tcp_socket(icp::memory::allocator::pool* pool, pid_t pid, int flags, tcp_pcb* pcb)
+    : m_channel(new (pool->acquire()) stream_channel(flags), stream_channel_deleter(pool))
     , m_pcb(pcb)
     , m_pid(pid)
 {
@@ -102,8 +102,8 @@ tcp_socket::tcp_socket(icp::memory::allocator::pool* pool, pid_t pid, tcp_pcb* p
     state(tcp_connected());
 }
 
-tcp_socket::tcp_socket(icp::memory::allocator::pool& pool, pid_t pid)
-    : m_channel(new (pool.acquire()) stream_channel(), stream_channel_deleter(&pool))
+tcp_socket::tcp_socket(icp::memory::allocator::pool& pool, pid_t pid, int flags)
+    : m_channel(new (pool.acquire()) stream_channel(flags), stream_channel_deleter(&pool))
     , m_pcb(tcp_new())
     , m_pid(pid)
 {
@@ -123,6 +123,7 @@ tcp_socket& tcp_socket::operator=(tcp_socket&& other) noexcept
         m_pid = other.m_pid;
         m_acceptq = std::move(other.m_acceptq);
         ::tcp_arg(m_pcb.get(), this);
+        state(other.state());
     }
     return (*this);
 }
@@ -133,6 +134,7 @@ tcp_socket::tcp_socket(tcp_socket&& other) noexcept
     , m_pid(other.m_pid)
     , m_acceptq(std::move(other.m_acceptq))
 {
+    state(other.state());
     ::tcp_arg(m_pcb.get(), this);
 }
 
@@ -147,9 +149,9 @@ int tcp_socket::do_lwip_accept(tcp_pcb *newpcb, int err)
         return (ERR_VAL);
     }
 
-    m_acceptq.emplace(tcp_socket(channel_pool(), m_pid, newpcb));
+    m_acceptq.emplace(newpcb);
+    tcp_backlog_delayed(newpcb);
     m_channel->notify();
-    tcp_backlog_delayed(m_pcb.get());
 
     return (ERR_OK);
 }
@@ -218,7 +220,7 @@ int tcp_socket::do_lwip_error(int err)
     return (ERR_OK);
 }
 
-tl::expected<generic_socket, int> tcp_socket::handle_accept()
+tl::expected<generic_socket, int> tcp_socket::handle_accept(int flags)
 {
     if (!std::holds_alternative<tcp_listening>(state())) {
         return (tl::make_unexpected(EINVAL));
@@ -228,10 +230,10 @@ tl::expected<generic_socket, int> tcp_socket::handle_accept()
         return (tl::make_unexpected(EAGAIN));
     }
 
-    auto& socket = m_acceptq.front();
+    auto pcb = m_acceptq.front();
     m_acceptq.pop();
-    tcp_backlog_accepted(m_pcb.get());
-    return (generic_socket(std::move(socket)));
+    tcp_backlog_accepted(pcb);
+    return (generic_socket(tcp_socket(channel_pool(), m_pid, flags, pcb)));
 }
 
 void tcp_socket::handle_transmit()
@@ -438,7 +440,8 @@ tl::expected<socklen_t, int> tcp_socket::do_tcp_getsockopt(tcp_pcb* pcb,
         slength = sizeof(opt);
         break;
     }
-    case SO_REUSEADDR: {
+    case SO_REUSEADDR:
+    case SO_REUSEPORT: {
         int opt = !!ip_get_option(pcb, SOF_REUSEADDR);
         auto result = copy_out(getsockopt.id.pid, getsockopt.optval, opt);
         if (!result) return (tl::make_unexpected(result.error()));
@@ -464,7 +467,8 @@ tl::expected<void, int> tcp_socket::do_tcp_setsockopt(tcp_pcb* pcb,
         else      ip_reset_option(pcb, SOF_BROADCAST);
         break;
     }
-    case SO_REUSEADDR: {
+    case SO_REUSEADDR:
+    case SO_REUSEPORT: {
         auto opt = copy_in(setsockopt.id.pid,
                            reinterpret_cast<const int*>(setsockopt.optval));
         if (!opt) return (tl::make_unexpected(opt.error()));

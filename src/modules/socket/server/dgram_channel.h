@@ -17,7 +17,7 @@ class dgram_channel
     DGRAM_CHANNEL_MEMBERS
 
 public:
-    dgram_channel();
+    dgram_channel(int socket_flags);
     ~dgram_channel();
 
     dgram_channel(const dgram_channel&) = delete;

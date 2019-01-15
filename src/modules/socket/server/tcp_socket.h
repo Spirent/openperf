@@ -47,14 +47,14 @@ class tcp_socket : public socket_state_machine<tcp_socket, tcp_socket_state>
     stream_channel_ptr m_channel;
     tcp_pcb_ptr m_pcb;
     pid_t m_pid;
-    std::queue<tcp_socket, std::list<tcp_socket>> m_acceptq;
+    std::queue<tcp_pcb*, std::list<tcp_pcb*>> m_acceptq;
 
     icp::memory::allocator::pool* channel_pool();
 
-    tcp_socket(icp::memory::allocator::pool* pool, pid_t pid, tcp_pcb* pcb);
+    tcp_socket(icp::memory::allocator::pool* pool, pid_t pid, int flags, tcp_pcb* pcb);
 
 public:
-    tcp_socket(icp::memory::allocator::pool& pool, pid_t pid);
+    tcp_socket(icp::memory::allocator::pool& pool, pid_t pid, int flags);
     ~tcp_socket() = default;
 
     tcp_socket(const tcp_socket&) = delete;
@@ -78,7 +78,7 @@ public:
      ***/
     channel_variant channel() const;
 
-    tl::expected<generic_socket, int> handle_accept();
+    tl::expected<generic_socket, int> handle_accept(int);
 
     void handle_transmit();
 

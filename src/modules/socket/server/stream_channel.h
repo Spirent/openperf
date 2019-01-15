@@ -16,7 +16,7 @@ class stream_channel
     STREAM_CHANNEL_MEMBERS
 
 public:
-    stream_channel();
+    stream_channel(int socket_flags);
     ~stream_channel();
 
     stream_channel(const stream_channel&) = delete;

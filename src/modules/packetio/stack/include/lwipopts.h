@@ -54,6 +54,9 @@
 #define TCP_SND_QUEUELEN ((2 * (TCP_SND_BUF) + (TCP_MSS - 1))/(TCP_MSS))
 #define TCP_MSS 1500
 
+/* Socket options */
+#define SO_REUSE 1
+
 /* We've already got these */
 #define LWIP_DONT_PROVIDE_BYTEORDER_FUNCTIONS 1
 

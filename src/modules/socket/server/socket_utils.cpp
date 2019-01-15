@@ -5,8 +5,6 @@
 #include "socket/server/udp_socket.h"
 #include "socket/server/socket_utils.h"
 
-#include "core/icp_log.h"
-
 namespace icp {
 namespace socket {
 namespace server {
@@ -19,14 +17,12 @@ tl::expected<generic_socket, int> make_socket(icp::memory::allocator::pool& pool
         return (tl::make_unexpected(EAFNOSUPPORT));
     }
 
-    /*
-     * XXX: Linux overloads type type to include various flags; ignore for now.
-     */
+    /* Mask out the options included with the type */
     switch (type & 0xff) {
     case SOCK_DGRAM:
-        return (generic_socket(udp_socket(pool, pid)));
+        return (generic_socket(udp_socket(pool, pid, type)));
     case SOCK_STREAM:
-        return (generic_socket(tcp_socket(pool, pid)));
+        return (generic_socket(tcp_socket(pool, pid, type)));
     default:
         return (tl::make_unexpected(EPROTONOSUPPORT));
     }
