@@ -10,6 +10,7 @@ SOCKSRV_SOURCES += \
 	server/api_handler.cpp \
 	server/dgram_channel.cpp \
 	server/lwip_tcp_event.cpp \
+	server/lwip_utils.cpp \
 	server/stream_channel.cpp \
 	server/socket_utils.cpp \
 	server/api_server.cpp \

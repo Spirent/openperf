@@ -77,6 +77,10 @@ tl::expected<void, int> copy_out(pid_t dst_pid, sockaddr* dst_ptr,
 
 tl::expected<void, int> copy_out(pid_t dst_pid, void* dst_ptr, int src);
 
+tl::expected<void, int> copy_out(pid_t dst_pid,
+                                 void* dst_ptr, const void* src_ptr,
+                                 socklen_t length);
+
 }
 }
 }

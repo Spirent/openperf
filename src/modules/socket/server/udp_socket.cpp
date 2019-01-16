@@ -5,6 +5,7 @@
 #include <sys/socket.h>
 #include <sys/uio.h>
 
+#include "socket/server/lwip_utils.h"
 #include "socket/server/udp_socket.h"
 #include "lwip/memp.h"
 #include "lwip/udp.h"
@@ -186,59 +187,30 @@ static tl::expected<socklen_t, int> do_udp_get_name(const ip_addr_t& ip_addr,
     return (slength);
 }
 
-tl::expected<socklen_t, int> udp_socket::do_udp_getsockopt(udp_pcb* pcb,
-                                                           const api::request_getsockopt& getsockopt)
+tl::expected<socklen_t, int> udp_socket::do_getsockopt(const udp_pcb* pcb,
+                                                       const api::request_getsockopt& getsockopt)
 {
-    socklen_t slength = 0;
-    switch (getsockopt.optname) {
-    case SO_BROADCAST: {
-        int opt = !!ip_get_option(pcb, SOF_BROADCAST);
-        auto result = copy_out(getsockopt.id.pid, getsockopt.optval, opt);
-        if (!result) return (tl::make_unexpected(result.error()));
-        slength = sizeof(opt);
-        break;
-    }
-    case SO_REUSEADDR:
-    case SO_REUSEPORT: {
-        int opt = !!ip_get_option(pcb, SOF_REUSEADDR);
-        auto result = copy_out(getsockopt.id.pid, getsockopt.optval, opt);
-        if (!result) return (tl::make_unexpected(result.error()));
-        slength = sizeof(opt);
-        break;
-    }
+    switch (getsockopt.level) {
+    case SOL_SOCKET:
+        return (do_sock_getsockopt(reinterpret_cast<const ip_pcb*>(pcb), getsockopt));
+    case IPPROTO_IP:
+        return (do_ip_getsockopt(reinterpret_cast<const ip_pcb*>(pcb), getsockopt));
     default:
         return (tl::make_unexpected(ENOPROTOOPT));
     }
-
-    return (slength);
 }
 
-tl::expected<void, int> udp_socket::do_udp_setsockopt(udp_pcb* pcb,
-                                                      const api::request_setsockopt& setsockopt)
+tl::expected<void, int> udp_socket::do_setsockopt(udp_pcb* pcb,
+                                                  const api::request_setsockopt& setsockopt)
 {
-    switch (setsockopt.optname) {
-    case SO_BROADCAST: {
-        auto opt = copy_in(setsockopt.id.pid,
-                           reinterpret_cast<const int*>(setsockopt.optval));
-        if (!opt) return (tl::make_unexpected(opt.error()));
-        if (*opt) ip_set_option(pcb, SOF_BROADCAST);
-        else      ip_reset_option(pcb, SOF_BROADCAST);
-        break;
-    }
-    case SO_REUSEADDR:
-    case SO_REUSEPORT: {
-        auto opt = copy_in(setsockopt.id.pid,
-                           reinterpret_cast<const int*>(setsockopt.optval));
-        if (!opt) return (tl::make_unexpected(opt.error()));
-        if (*opt) ip_set_option(pcb, SOF_REUSEADDR);
-        else      ip_reset_option(pcb, SOF_REUSEADDR);
-        break;
-    }
+    switch (setsockopt.level) {
+    case SOL_SOCKET:
+        return (do_sock_setsockopt(reinterpret_cast<ip_pcb*>(pcb), setsockopt));
+    case IPPROTO_IP:
+        return (do_ip_setsockopt(reinterpret_cast<ip_pcb*>(pcb), setsockopt));
     default:
         return (tl::make_unexpected(ENOPROTOOPT));
     }
-
-    return {};
 }
 
 udp_socket::on_request_reply udp_socket::on_request(const api::request_bind& bind,

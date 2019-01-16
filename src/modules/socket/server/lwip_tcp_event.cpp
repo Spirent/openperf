@@ -29,6 +29,11 @@ extern "C" {
 err_t lwip_tcp_event(void *arg, struct tcp_pcb *pcb, enum lwip_event event,
                      struct pbuf *p, uint16_t size, err_t err)
 {
+    if (arg == nullptr) {
+        /* Nothing to do; our socket has been destroyed */
+        return (ERR_OK);
+    }
+
     using tcp_socket = icp::socket::server::tcp_socket;
     auto socket = reinterpret_cast<tcp_socket*>(arg);
 

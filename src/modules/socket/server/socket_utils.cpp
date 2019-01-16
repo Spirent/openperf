@@ -162,6 +162,28 @@ tl::expected<void, int> copy_out(pid_t dst_pid, void* dst_ptr, int src)
     return {};
 }
 
+tl::expected<void, int> copy_out(pid_t dst_pid,
+                                 void* dst_ptr, const void* src_ptr,
+                                 socklen_t length)
+{
+    auto local = iovec{
+        .iov_base = const_cast<void*>(src_ptr),
+        .iov_len = length
+    };
+
+    auto remote = iovec {
+        .iov_base = dst_ptr,
+        .iov_len = length
+    };
+
+    auto size = process_vm_writev(dst_pid, &local, 1, &remote, 1, 0);
+    if (size == -1) {
+        return (tl::make_unexpected(errno));
+    }
+
+    return {};
+}
+
 api::io_channel api_channel(channel_variant& channel)
 {
     return (std::visit(overloaded_visitor(

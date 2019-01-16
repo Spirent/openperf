@@ -89,23 +89,23 @@ public:
     on_request_reply on_request(const api::request_getsockname&, const udp_bound_and_connected&);
 
     /* getsockopt handlers */
-    static tl::expected<socklen_t, int> do_udp_getsockopt(udp_pcb*, const api::request_getsockopt&);
+    static tl::expected<socklen_t, int> do_getsockopt(const udp_pcb*, const api::request_getsockopt&);
 
     template <typename State>
     on_request_reply on_request(const api::request_getsockopt& opt, const State&)
     {
-        auto result = do_udp_getsockopt(m_pcb.get(), opt);
+        auto result = do_getsockopt(m_pcb.get(), opt);
         if (!result) return {tl::make_unexpected(result.error()), std::nullopt};
         return {api::reply_socklen{*result}, std::nullopt};
     }
 
     /* setsockopt handlers */
-    static tl::expected<void, int> do_udp_setsockopt(udp_pcb*, const api::request_setsockopt&);
+    static tl::expected<void, int> do_setsockopt(udp_pcb*, const api::request_setsockopt&);
 
     template <typename State>
     on_request_reply on_request(const api::request_setsockopt& opt, const State&)
     {
-        auto result = do_udp_setsockopt(m_pcb.get(), opt);
+        auto result = do_setsockopt(m_pcb.get(), opt);
         if (!result) return {tl::make_unexpected(result.error()), std::nullopt};
         return {api::reply_success(), std::nullopt};
     }

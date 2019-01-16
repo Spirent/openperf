@@ -55,7 +55,7 @@ class tcp_socket : public socket_state_machine<tcp_socket, tcp_socket_state>
 
 public:
     tcp_socket(icp::memory::allocator::pool& pool, pid_t pid, int flags);
-    ~tcp_socket() = default;
+    ~tcp_socket();
 
     tcp_socket(const tcp_socket&) = delete;
     tcp_socket& operator=(const tcp_socket&&) = delete;
@@ -117,7 +117,8 @@ public:
     }
 
     /* getsockname handlers */
-    static tl::expected<socklen_t, int> do_tcp_getsockname(tcp_pcb*, const api::request_getsockname&);
+    static tl::expected<socklen_t, int> do_tcp_getsockname(const tcp_pcb*,
+                                                           const api::request_getsockname&);
 
     template <typename State>
     on_request_reply on_request(const api::request_getsockname& name, const State&)
@@ -128,23 +129,24 @@ public:
     }
 
     /* getsockopt handlers */
-    static tl::expected<socklen_t, int> do_tcp_getsockopt(tcp_pcb*, const api::request_getsockopt&);
+    static tl::expected<socklen_t, int> do_getsockopt(const tcp_pcb*,
+                                                      const api::request_getsockopt&);
 
     template <typename State>
     on_request_reply on_request(const api::request_getsockopt& name, const State&)
     {
-        auto result = do_tcp_getsockopt(m_pcb.get(), name);
+        auto result = do_getsockopt(m_pcb.get(), name);
         if (!result) return {tl::make_unexpected(result.error()), std::nullopt};
         return {api::reply_socklen{*result}, std::nullopt};
     }
 
     /* setsockopt handlers */
-    static tl::expected<void, int> do_tcp_setsockopt(tcp_pcb*, const api::request_setsockopt&);
+    static tl::expected<void, int> do_setsockopt(tcp_pcb*, const api::request_setsockopt&);
 
     template <typename State>
     on_request_reply on_request(const api::request_setsockopt& name, const State&)
     {
-        auto result = do_tcp_setsockopt(m_pcb.get(), name);
+        auto result = do_setsockopt(m_pcb.get(), name);
         if (!result) return {tl::make_unexpected(result.error()), std::nullopt};
         return {api::reply_success(), std::nullopt};
     }

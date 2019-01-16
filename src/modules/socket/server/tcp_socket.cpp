@@ -1,6 +1,8 @@
 #include <cstring>
 #include <numeric>
 
+#include "socket/server/compat/linux/tcp.h"
+#include "socket/server/lwip_utils.h"
 #include "socket/server/tcp_socket.h"
 #include "lwip/pbuf.h"
 #include "lwip/tcp.h"
@@ -42,6 +44,7 @@ const char * to_string(const tcp_socket_state& state)
                        state));
 }
 
+#if 0
 static std::string to_string(tcp_pcb* pcb)
 {
     std::string s;
@@ -62,6 +65,7 @@ static std::string to_string(tcp_pcb* pcb)
 
     return (s);
 }
+#endif
 
 static size_t do_tcp_transmit(tcp_pcb* pcb, void* ptr, size_t length)
 {
@@ -109,6 +113,16 @@ tcp_socket::tcp_socket(icp::memory::allocator::pool& pool, pid_t pid, int flags)
 {
     ::tcp_arg(m_pcb.get(), this);
     ::tcp_poll(m_pcb.get(), nullptr, 2U);
+}
+
+tcp_socket::~tcp_socket()
+{
+    /*
+     * Disassociate ourselves from our pcb.  The pcb might still exist in
+     * the stack after this point, but we don't want it attempting to use
+     * this socket to handle its callbacks...
+     */
+    ::tcp_arg(m_pcb.get(), nullptr);
 }
 
 /**
@@ -422,30 +436,50 @@ tcp_socket::on_request_reply tcp_socket::on_request(const api::request_getpeerna
     return {api::reply_socklen{*result}, std::nullopt};
 }
 
-tl::expected<socklen_t, int> tcp_socket::do_tcp_getsockname(tcp_pcb* pcb,
+tl::expected<socklen_t, int> tcp_socket::do_tcp_getsockname(const tcp_pcb* pcb,
                                                             const api::request_getsockname& getsockname)
 {
     return (do_tcp_get_name(pcb->local_ip, pcb->local_port, getsockname));
 }
 
-tl::expected<socklen_t, int> tcp_socket::do_tcp_getsockopt(tcp_pcb* pcb,
-                                                           const api::request_getsockopt& getsockopt)
+static
+tl::expected<socklen_t, int> do_tcp_getsockopt(const tcp_pcb* pcb,
+                                               const api::request_getsockopt& getsockopt)
 {
+    assert(getsockopt.level == IPPROTO_TCP);
+
     socklen_t slength = 0;
     switch (getsockopt.optname) {
-    case SO_BROADCAST: {
-        int opt = !!ip_get_option(pcb, SOF_BROADCAST);
+    case LINUX_TCP_NODELAY: {
+        int opt = !!tcp_nagle_disabled(pcb);
         auto result = copy_out(getsockopt.id.pid, getsockopt.optval, opt);
         if (!result) return (tl::make_unexpected(result.error()));
         slength = sizeof(opt);
         break;
     }
-    case SO_REUSEADDR:
-    case SO_REUSEPORT: {
-        int opt = !!ip_get_option(pcb, SOF_REUSEADDR);
-        auto result = copy_out(getsockopt.id.pid, getsockopt.optval, opt);
+    case LINUX_TCP_MAXSEG: {
+        int mss = tcp_mss(pcb);
+        auto result = copy_out(getsockopt.id.pid, getsockopt.optval, mss);
         if (!result) return (tl::make_unexpected(result.error()));
-        slength = sizeof(opt);
+        slength = sizeof(mss);
+        break;
+    }
+    case LINUX_TCP_INFO: {
+        auto info = tcp_info{};
+        get_tcp_info(pcb, info);
+        auto result = copy_out(getsockopt.id.pid, getsockopt.optval,
+                               reinterpret_cast<void*>(&info),
+                               std::min(sizeof(info), static_cast<size_t>(getsockopt.optlen)));
+        if (!result) return (tl::make_unexpected(result.error()));
+        slength = sizeof(info);
+        break;
+    }
+    case LINUX_TCP_CONGESTION: {
+        std::string_view cc = "reno";
+        auto result = copy_out(getsockopt.id.pid, getsockopt.optval, cc.data(),
+                               std::min(cc.length(), static_cast<size_t>(getsockopt.optlen)));
+        if (!result) return (tl::make_unexpected(result.error()));
+        slength = sizeof(cc.length());
         break;
     }
     default:
@@ -455,25 +489,42 @@ tl::expected<socklen_t, int> tcp_socket::do_tcp_getsockopt(tcp_pcb* pcb,
     return (slength);
 }
 
-tl::expected<void, int> tcp_socket::do_tcp_setsockopt(tcp_pcb* pcb,
-                                                      const api::request_setsockopt& setsockopt)
+tl::expected<socklen_t, int> tcp_socket::do_getsockopt(const tcp_pcb* pcb,
+                                                       const api::request_getsockopt& getsockopt)
 {
+    switch (getsockopt.level) {
+    case SOL_SOCKET:
+        return (do_sock_getsockopt(reinterpret_cast<const ip_pcb*>(pcb), getsockopt));
+    case IPPROTO_IP:
+        return (do_ip_getsockopt(reinterpret_cast<const ip_pcb*>(pcb), getsockopt));
+    case IPPROTO_TCP:
+        return (do_tcp_getsockopt(pcb, getsockopt));
+    default:
+        return (tl::make_unexpected(ENOPROTOOPT));
+    }
+}
+
+static
+tl::expected<void, int> do_tcp_setsockopt(tcp_pcb* pcb,
+                                          const api::request_setsockopt& setsockopt)
+{
+    assert(setsockopt.level == IPPROTO_TCP);
+
     switch (setsockopt.optname) {
-    case SO_BROADCAST: {
+    case LINUX_TCP_NODELAY: {
         auto opt = copy_in(setsockopt.id.pid,
                            reinterpret_cast<const int*>(setsockopt.optval));
         if (!opt) return (tl::make_unexpected(opt.error()));
-        if (*opt) ip_set_option(pcb, SOF_BROADCAST);
-        else      ip_reset_option(pcb, SOF_BROADCAST);
+        if (*opt) tcp_nagle_disable(pcb);
+        else      tcp_nagle_enable(pcb);
         break;
     }
-    case SO_REUSEADDR:
-    case SO_REUSEPORT: {
-        auto opt = copy_in(setsockopt.id.pid,
+    case LINUX_TCP_MAXSEG: {
+        auto mss = copy_in(setsockopt.id.pid,
                            reinterpret_cast<const int*>(setsockopt.optval));
-        if (!opt) return (tl::make_unexpected(opt.error()));
-        if (*opt) ip_set_option(pcb, SOF_REUSEADDR);
-        else      ip_reset_option(pcb, SOF_REUSEADDR);
+        if (!mss) return (tl::make_unexpected(mss.error()));
+        if (*mss < 536) return (tl::make_unexpected(EINVAL));
+        tcp_mss(pcb) = *mss;
         break;
     }
     default:
@@ -481,6 +532,21 @@ tl::expected<void, int> tcp_socket::do_tcp_setsockopt(tcp_pcb* pcb,
     }
 
     return {};
+}
+
+tl::expected<void, int> tcp_socket::do_setsockopt(tcp_pcb* pcb,
+                                                  const api::request_setsockopt& setsockopt)
+{
+    switch (setsockopt.level) {
+    case SOL_SOCKET:
+        return (do_sock_setsockopt(reinterpret_cast<ip_pcb*>(pcb), setsockopt));
+    case IPPROTO_IP:
+        return (do_ip_setsockopt(reinterpret_cast<ip_pcb*>(pcb), setsockopt));
+    case IPPROTO_TCP:
+        return (do_tcp_setsockopt(pcb, setsockopt));
+    default:
+        return (tl::make_unexpected(ENOPROTOOPT));
+    }
 }
 
 }
