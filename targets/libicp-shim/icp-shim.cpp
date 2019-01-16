@@ -18,10 +18,11 @@ void icp_shim_init()
     client.init(&client_initialized);
 }
 
+#ifdef SHIM_TRACE
+
 template <class T>
 void expand(std::initializer_list<T>) {}
 
-#ifdef SHIM_TRACE
 template <typename Function, typename Object, typename... Args>
 auto call_and_log_function(const char* function_name, Function&& f, Object&& o, Args&&... args)
 {
