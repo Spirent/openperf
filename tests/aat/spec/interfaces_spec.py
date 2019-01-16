@@ -9,7 +9,7 @@ from common.helper import (empty_interface,
                            example_interface,
                            as_interface_protocol,
                            ipv4_interface)
-from common.matcher import be_valid_interface, raise_api_exception, raise_api_exception_extended
+from common.matcher import be_valid_interface, raise_api_exception
 
 
 CONFIG = Config(os.path.join(os.path.dirname(__file__), os.environ.get('MAMBA_CONFIG', 'config.yaml')))
@@ -95,8 +95,7 @@ with description('Interfaces,') as self:
                 expect(self.api.get_interface(self.intf.id)).to(be_valid_interface)
 
             with it('returns 405'):
-                expect(lambda: self.api.api_client.call_api('/interfaces', 'PUT')).to(raise_api_exception_extended(
-                    {'status': 405, 'headers': {'Allow': "GET, POST"}}))
+                expect(lambda: self.api.api_client.call_api('/interfaces', 'PUT')).to(raise_api_exception(405, headers={'Allow': "GET, POST"}))
 
         with description('non-existent interface,'):
             with it('returns 404'):
@@ -274,14 +273,14 @@ with description('Interfaces,') as self:
 
             with description('unsupported method,'):
                 with it('returns 405'):
-                    expect(lambda: self.api.api_client.call_api('/interfaces/%s' % self.intf.id, 'PUT')).to(raise_api_exception_extended(
-                        {'status': 405, 'headers': {'Allow': "DELETE, GET"}}))
+                    expect(lambda: self.api.api_client.call_api('/interfaces/%s' % self.intf.id, 'PUT')).to(raise_api_exception(
+                        405, headers={'Allow': "DELETE, GET"}))
 
         with description('non-existent interface,'):
             with description('unsupported method,'):
                 with it('returns 405'):
-                    expect(lambda: self.api.api_client.call_api('/interfaces/foo', 'PUT')).to(raise_api_exception_extended(
-                        {'status': 405, 'headers': {'Allow': "DELETE, GET"}}))
+                    expect(lambda: self.api.api_client.call_api('/interfaces/foo', 'PUT')).to(raise_api_exception(
+                        405, headers={'Allow': "DELETE, GET"}))
 
     with description('delete,'):
         with description('valid interface,'):
@@ -335,8 +334,7 @@ with description('Interfaces,') as self:
 
         with description('unsupported method, '):
             with it('returns 405'):
-                expect(lambda: self.api.api_client.call_api('/interfaces/x/bulk-create', 'GET')).to(raise_api_exception_extended(
-                    {'status': 405, 'headers': {'Allow': "POST"}}))
+                expect(lambda: self.api.api_client.call_api('/interfaces/x/bulk-create', 'GET')).to(raise_api_exception(405, headers={'Allow': "POST"}))
 
     with description('bulk-delete,'):
         with before.each:
@@ -370,8 +368,8 @@ with description('Interfaces,') as self:
 
         with description('unsupported method, '):
             with it('returns 405'):
-                expect(lambda: self.api.api_client.call_api('/interfaces/x/bulk-delete', 'GET')).to(raise_api_exception_extended(
-                    {'status': 405, 'headers': {'Allow': "POST"}}))
+                expect(lambda: self.api.api_client.call_api('/interfaces/x/bulk-delete', 'GET')).to(raise_api_exception(
+                    405, headers={'Allow': "POST"}))
 
     with after.each:
         try:

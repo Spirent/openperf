@@ -5,7 +5,7 @@ import os
 import client.api
 import client.models
 from common import Config, Service
-from common.matcher import be_valid_port, raise_api_exception, raise_api_exception_extended
+from common.matcher import be_valid_port, raise_api_exception
 
 
 CONFIG = Config(os.path.join(os.path.dirname(__file__), os.environ.get('MAMBA_CONFIG', 'config.yaml')))
@@ -51,8 +51,8 @@ with description('Ports,') as self:
 
         with description('unsupported method,'):
             with it('returns 405'):
-                expect(lambda: self.api.api_client.call_api('/ports', 'PUT')).to(raise_api_exception_extended(
-                    {'status': 405, 'headers': {'Allow': "GET, POST"}}))
+                expect(lambda: self.api.api_client.call_api('/ports', 'PUT')).to(raise_api_exception(
+                    405, headers={'Allow': "GET, POST"}))
 
     with description('get,'):
         with description('known existing port,'):
@@ -65,8 +65,8 @@ with description('Ports,') as self:
 
         with description('unsupported method,'):
             with it('returns 405'):
-                expect(lambda: self.api.api_client.call_api('/ports/0', 'POST')).to(raise_api_exception_extended(
-                    {'status': 405, 'headers': {'Allow': "PUT, DELETE, GET"}}))
+                expect(lambda: self.api.api_client.call_api('/ports/0', 'POST')).to(raise_api_exception(
+                    405, headers={'Allow': "PUT, DELETE, GET"}))
 
     with description('create,'):
         with before.each:
