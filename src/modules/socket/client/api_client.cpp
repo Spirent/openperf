@@ -30,6 +30,11 @@ client::client()
     }
 }
 
+client::~client()
+{
+    *m_init_flag = false;
+}
+
 static api::reply_msg submit_request(int sockfd,
                                      const api::request_msg& request)
 {
@@ -81,7 +86,7 @@ static api::reply_msg submit_request(int sockfd,
 }
 
 /* Send a hello message to server; wait for reply */
-void client::init()
+void client::init(std::atomic_bool* init_flag)
 {
     api::request_msg request = api::request_init{
         .pid = getpid(),
@@ -103,6 +108,9 @@ void client::init()
                                                shm_info.size,
                                                shm_info.base));
     }
+
+    m_init_flag = init_flag;
+    *m_init_flag = true;
 }
 
 bool client::is_socket(int s)

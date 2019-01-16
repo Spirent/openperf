@@ -9,42 +9,45 @@ static void icp_shim_init() __attribute__((constructor));
 
 static std::atomic_bool client_initialized = ATOMIC_VAR_INIT(false);
 
-//#define SHIM_TRACE(format, ...) fprintf(stderr, format, ##__VA_ARGS__);
-
-#define SHIM_TRACE(fomat, ...)
-
 void icp_shim_init()
 {
     auto& libc = icp::socket::libc::wrapper::instance();
     libc.init();
 
     auto& client = icp::socket::api::client::instance();
-    client.init();
-    client_initialized = true;
+    client.init(&client_initialized);
 }
 
 template <class T>
 void expand(std::initializer_list<T>) {}
 
+#ifdef SHIM_TRACE
 template <typename Function, typename Object, typename... Args>
 auto call_and_log_function(const char* function_name, Function&& f, Object&& o, Args&&... args)
 {
     std::cerr << function_name << "(";
     expand({(std::cerr << args << ",", 0)...});
-    auto result = std::invoke(std::forward<Function>(f), std::forward<Object>(o), std::forward<Args>(args)...);
+    auto result = std::invoke(std::forward<Function>(f), std::forward<Object>(o),
+                              std::forward<Args>(args)...);
     std::cerr << ") = " << result << std::endl;
     return (result);
 }
 
-#define client_call_and_log(function, ...)                              \
-    call_and_log_function(#function, &icp::socket::api::client::function, client, __VA_ARGS__)
+#define client_call(function, ...)                                      \
+    call_and_log_function(#function,                                    \
+                          &icp::socket::api::client::function,          \
+                          client, __VA_ARGS__)
+
+#else
+
+#define client_call(function, ...) client.function(__VA_ARGS__)
+
+#endif /* SHIM_TRACE */
 
 extern "C" {
 
 int accept(int s, struct sockaddr *addr, socklen_t *addrlen)
 {
-    SHIM_TRACE("accept(%d, %p, %u)\n", s, (void*)addr, addrlen ? *addrlen : 0);
-
     auto& libc = icp::socket::libc::wrapper::instance();
     if (!client_initialized) {
         return (libc.accept(s, addr, addrlen));
@@ -52,14 +55,12 @@ int accept(int s, struct sockaddr *addr, socklen_t *addrlen)
 
     auto& client = icp::socket::api::client::instance();
     return (client.is_socket(s)
-            ? client_call_and_log(accept, s, addr, addrlen, 0)
+            ? client_call(accept, s, addr, addrlen, 0)
             : libc.accept(s, addr, addrlen));
 }
 
 int accept4(int s, struct sockaddr *addr, socklen_t *addrlen, int flags)
 {
-    SHIM_TRACE("accept4(%d, %p, %u, %d)\n", s, (void*)addr, addrlen ? *addrlen : 0, flags);
-
     auto& libc = icp::socket::libc::wrapper::instance();
     if (!client_initialized) {
         return (libc.accept(s, addr, addrlen));
@@ -67,14 +68,12 @@ int accept4(int s, struct sockaddr *addr, socklen_t *addrlen, int flags)
 
     auto& client = icp::socket::api::client::instance();
     return (client.is_socket(s)
-            ? client_call_and_log(accept, s, addr, addrlen, flags)
+            ? client_call(accept, s, addr, addrlen, flags)
             : libc.accept(s, addr, addrlen));
 }
 
 int bind(int s, const struct sockaddr *name, socklen_t namelen)
 {
-    SHIM_TRACE("bind(%d, %p, %d)\n", s, (void*)name, namelen);
-
     auto& libc = icp::socket::libc::wrapper::instance();
     if (!client_initialized) {
         return (libc.bind(s, name, namelen));
@@ -82,14 +81,12 @@ int bind(int s, const struct sockaddr *name, socklen_t namelen)
 
     auto& client = icp::socket::api::client::instance();
     return (client.is_socket(s)
-            ? client_call_and_log(bind, s, name, namelen)
+            ? client_call(bind, s, name, namelen)
             : libc.bind(s, name, namelen));
 }
 
 int shutdown(int s, int how)
 {
-    SHIM_TRACE("shutdown(%d, %d)\n", s, how);
-
     auto& libc = icp::socket::libc::wrapper::instance();
     if (!client_initialized) {
         return (libc.shutdown(s, how));
@@ -97,14 +94,12 @@ int shutdown(int s, int how)
 
     auto& client = icp::socket::api::client::instance();
     return (client.is_socket(s)
-            ? client_call_and_log(shutdown, s, how)
+            ? client_call(shutdown, s, how)
             : libc.shutdown(s, how));
 }
 
 int getpeername(int s, struct sockaddr *name, socklen_t *namelen)
 {
-    SHIM_TRACE("getpeername(%d, %p, %u)\n", s, (void*)name, namelen ? *namelen : 0);
-
     auto& libc = icp::socket::libc::wrapper::instance();
     if (!client_initialized) {
         return (libc.getpeername(s, name, namelen));
@@ -112,14 +107,12 @@ int getpeername(int s, struct sockaddr *name, socklen_t *namelen)
 
     auto& client = icp::socket::api::client::instance();
     return (client.is_socket(s)
-            ? client_call_and_log(getpeername, s, name, namelen)
+            ? client_call(getpeername, s, name, namelen)
             : libc.getpeername(s, name, namelen));
 }
 
 int getsockname(int s, struct sockaddr *name, socklen_t *namelen)
 {
-    SHIM_TRACE("getsockname(%d, %p, %u)\n", s, (void*)name, *namelen);
-
     auto& libc = icp::socket::libc::wrapper::instance();
     if (!client_initialized) {
         return (libc.getsockname(s, name, namelen));
@@ -127,15 +120,12 @@ int getsockname(int s, struct sockaddr *name, socklen_t *namelen)
 
     auto& client = icp::socket::api::client::instance();
     return (client.is_socket(s)
-            ? client_call_and_log(getsockname, s, name, namelen)
+            ? client_call(getsockname, s, name, namelen)
             : libc.getsockname(s, name, namelen));
 }
 
 int getsockopt(int s, int level, int optname, void *optval, socklen_t *optlen)
 {
-    SHIM_TRACE("getsockopt(%d, %d, %d, %p, %u)\n", s, level, optname, optval,
-               optlen ? *optlen : 0);
-
     auto& libc = icp::socket::libc::wrapper::instance();
     if (!client_initialized) {
         return (libc.getsockopt(s, level, optname, optval, optlen));
@@ -143,14 +133,12 @@ int getsockopt(int s, int level, int optname, void *optval, socklen_t *optlen)
 
     auto& client = icp::socket::api::client::instance();
     return (client.is_socket(s)
-            ? client_call_and_log(getsockopt, s, level, optname, optval, optlen)
+            ? client_call(getsockopt, s, level, optname, optval, optlen)
             : libc.getsockopt(s, level, optname, optval, optlen));
 }
 
 int setsockopt(int s, int level, int optname, const void *optval, socklen_t optlen)
 {
-    SHIM_TRACE("setsockopt(%d, %d, %d, %p, %u)\n", s, level, optname, optval, optlen);
-
     auto& libc = icp::socket::libc::wrapper::instance();
     if (!client_initialized) {
         return (libc.setsockopt(s, level, optname, optval, optlen));
@@ -158,14 +146,12 @@ int setsockopt(int s, int level, int optname, const void *optval, socklen_t optl
 
     auto& client = icp::socket::api::client::instance();
     return (client.is_socket(s)
-            ? client_call_and_log(setsockopt, s, level, optname, optval, optlen)
+            ? client_call(setsockopt, s, level, optname, optval, optlen)
             : libc.setsockopt(s, level, optname, optval, optlen));
 }
 
 int close(int s)
 {
-    SHIM_TRACE("close(%d)\n", s);
-
     auto& libc = icp::socket::libc::wrapper::instance();
     if (!client_initialized) {
         return (libc.close(s));
@@ -173,14 +159,12 @@ int close(int s)
 
     auto& client = icp::socket::api::client::instance();
     return (client.is_socket(s)
-            ? client_call_and_log(close, s)
+            ? client_call(close, s)
             : libc.close(s));
 }
 
 int connect(int s, const struct sockaddr *name, socklen_t namelen)
 {
-    SHIM_TRACE("connect(%d, %p, %d)\n", s, (void*)name, namelen);
-
     auto& libc = icp::socket::libc::wrapper::instance();
     if (!client_initialized) {
         return (libc.connect(s, name, namelen));
@@ -188,14 +172,12 @@ int connect(int s, const struct sockaddr *name, socklen_t namelen)
 
     auto& client = icp::socket::api::client::instance();
     return (client.is_socket(s)
-            ? client_call_and_log(connect, s, name, namelen)
+            ? client_call(connect, s, name, namelen)
             : libc.connect(s, name, namelen));
 }
 
 int listen(int s, int backlog)
 {
-    SHIM_TRACE("listen(%d, %d)\n", s, backlog);
-
     auto& libc = icp::socket::libc::wrapper::instance();
     if (!client_initialized) {
         return (libc.listen(s, backlog));
@@ -203,14 +185,12 @@ int listen(int s, int backlog)
 
     auto& client = icp::socket::api::client::instance();
     return (client.is_socket(s)
-            ? client_call_and_log(listen, s, backlog)
+            ? client_call(listen, s, backlog)
             : libc.listen(s, backlog));
 }
 
 int libc_socket(int domain, int type, int protocol)
 {
-    SHIM_TRACE("libc_socket(%d, %d, %d)\n", domain, type, protocol);
-
     auto& libc = icp::socket::libc::wrapper::instance();
     return (libc.socket(domain, type, protocol));
 }
@@ -221,16 +201,12 @@ int socket(int domain, int type, int protocol)
         return (libc_socket(domain, type, protocol));
     }
 
-    SHIM_TRACE("socket(%d, %d, %d)\n", domain, type, protocol);
-
     auto& client = icp::socket::api::client::instance();
-    return (client_call_and_log(socket, domain, type, protocol));
+    return (client_call(socket, domain, type, protocol));
 }
 
 int ioctl(int s, long cmd, void *argp)
 {
-    SHIM_TRACE("ioctl(%d, %ld, %p)\n", s, cmd, argp);
-
     auto& libc = icp::socket::libc::wrapper::instance();
     if (!client_initialized) {
         return (libc.ioctl(s, cmd, argp));
@@ -238,15 +214,13 @@ int ioctl(int s, long cmd, void *argp)
 
     auto& client = icp::socket::api::client::instance();
     return (client.is_socket(s)
-            ? client_call_and_log(ioctl, s, cmd, argp)
+            ? client_call(ioctl, s, cmd, argp)
             : libc.ioctl(s, cmd, argp));
 }
 
 /* Receive functions */
 ssize_t read(int s, void *mem, size_t len)
 {
-    SHIM_TRACE("read(%d, %p, %zu)\n", s, mem, len);
-
     auto& libc = icp::socket::libc::wrapper::instance();
     if (!client_initialized) {
         return (libc.read(s, mem, len));
@@ -254,14 +228,12 @@ ssize_t read(int s, void *mem, size_t len)
 
     auto& client = icp::socket::api::client::instance();
     return (client.is_socket(s)
-            ? client_call_and_log(read, s, mem, len)
+            ? client_call(read, s, mem, len)
             : libc.read(s, mem, len));
 }
 
 ssize_t readv(int s, const struct iovec *iov, int iovcnt)
 {
-    SHIM_TRACE("readv(%d, %p, %d)\n", s, (void*)iov, iovcnt);
-
     auto& libc = icp::socket::libc::wrapper::instance();
     if (!client_initialized) {
         return (libc.readv(s, iov, iovcnt));
@@ -269,14 +241,12 @@ ssize_t readv(int s, const struct iovec *iov, int iovcnt)
 
     auto& client = icp::socket::api::client::instance();
     return (client.is_socket(s)
-            ? client_call_and_log(readv, s, iov, iovcnt)
+            ? client_call(readv, s, iov, iovcnt)
             : libc.readv(s, iov, iovcnt));
 }
 
 ssize_t recv(int s, void *mem, size_t len, int flags)
 {
-    SHIM_TRACE("recv(%d, %p, %zu, %d)\n", s, mem, len, flags);
-
     auto& libc = icp::socket::libc::wrapper::instance();
     if (!client_initialized) {
         return (libc.recv(s, mem, len, flags));
@@ -284,16 +254,13 @@ ssize_t recv(int s, void *mem, size_t len, int flags)
 
     auto& client = icp::socket::api::client::instance();
     return (client.is_socket(s)
-            ? client_call_and_log(recv, s, mem, len, flags)
+            ? client_call(recv, s, mem, len, flags)
             : libc.recv(s, mem, len, flags));
 }
 
 ssize_t recvfrom(int s, void *mem, size_t len, int flags,
                  struct sockaddr *from, socklen_t *fromlen)
 {
-    SHIM_TRACE("recvfrom(%d, %p, %zu, %d, %p, %u)\n", s, mem, len, flags, (void*)from,
-               fromlen ? *fromlen : 0);
-
     auto& libc = icp::socket::libc::wrapper::instance();
     if (!client_initialized) {
         return (libc.recvfrom(s, mem, len, flags, from, fromlen));
@@ -301,14 +268,12 @@ ssize_t recvfrom(int s, void *mem, size_t len, int flags,
 
     auto& client = icp::socket::api::client::instance();
     return (client.is_socket(s)
-            ? client_call_and_log(recvfrom, s, mem, len, flags, from, fromlen)
+            ? client_call(recvfrom, s, mem, len, flags, from, fromlen)
             : libc.recvfrom(s, mem, len, flags, from, fromlen));
 }
 
 ssize_t recvmsg(int s, struct msghdr *message, int flags)
 {
-    SHIM_TRACE("recvmsg(%d, %p, %d)\n", s, (void*)message, flags);
-
     auto& libc = icp::socket::libc::wrapper::instance();
     if (!client_initialized) {
         return (libc.recvmsg(s, message, flags));
@@ -316,15 +281,13 @@ ssize_t recvmsg(int s, struct msghdr *message, int flags)
 
     auto& client = icp::socket::api::client::instance();
     return (client.is_socket(s)
-            ? client_call_and_log(recvmsg, s, message, flags)
+            ? client_call(recvmsg, s, message, flags)
             : libc.recvmsg(s, message, flags));
 }
 
 /* Transmit functions */
 ssize_t send(int s, const void *dataptr, size_t len, int flags)
 {
-    SHIM_TRACE("send(%d, %p, %zu, %d)\n", s, dataptr, len, flags);
-
     auto& libc = icp::socket::libc::wrapper::instance();
     if (!client_initialized) {
         return (libc.send(s, dataptr, len, flags));
@@ -332,14 +295,12 @@ ssize_t send(int s, const void *dataptr, size_t len, int flags)
 
     auto& client = icp::socket::api::client::instance();
     return (client.is_socket(s)
-            ? client_call_and_log(send, s, dataptr, len, flags)
+            ? client_call(send, s, dataptr, len, flags)
             : libc.send(s, dataptr, len, flags));
 }
 
 ssize_t sendmsg(int s, const struct msghdr *message, int flags)
 {
-    SHIM_TRACE("sendsg(%d, %p, %d)\n", s, (void*)message, flags);
-
     auto& libc = icp::socket::libc::wrapper::instance();
     if (!client_initialized) {
         return (libc.sendmsg(s, message, flags));
@@ -347,15 +308,13 @@ ssize_t sendmsg(int s, const struct msghdr *message, int flags)
 
     auto& client = icp::socket::api::client::instance();
     return (client.is_socket(s)
-            ? client_call_and_log(sendmsg, s, message, flags)
+            ? client_call(sendmsg, s, message, flags)
             : libc.sendmsg(s, message, flags));
 }
 
 ssize_t sendto(int s, const void *dataptr, size_t len, int flags,
                const struct sockaddr *to, socklen_t tolen)
 {
-    SHIM_TRACE("sendto(%d, %p, %zu, %d, %p, %u)\n", s, dataptr, len, flags, (void*)to, tolen);
-
     auto& libc = icp::socket::libc::wrapper::instance();
     if (!client_initialized) {
         return (libc.sendto(s, dataptr, len, flags, to, tolen));
@@ -363,14 +322,12 @@ ssize_t sendto(int s, const void *dataptr, size_t len, int flags,
 
     auto& client = icp::socket::api::client::instance();
     return (client.is_socket(s)
-            ? client_call_and_log(sendto, s, dataptr, len, flags, to, tolen)
+            ? client_call(sendto, s, dataptr, len, flags, to, tolen)
             : libc.sendto(s, dataptr, len, flags, to, tolen));
 }
 
 ssize_t write(int s, const void *dataptr, size_t len)
 {
-    SHIM_TRACE("write(%d, %p, %zu)\n", s, (void*)dataptr, len);
-
     auto& libc = icp::socket::libc::wrapper::instance();
     if (!client_initialized) {
         return (libc.write(s, dataptr, len));
@@ -378,14 +335,12 @@ ssize_t write(int s, const void *dataptr, size_t len)
 
     auto& client = icp::socket::api::client::instance();
     return (client.is_socket(s)
-            ? client_call_and_log(write, s, dataptr, len)
+            ? client_call(write, s, dataptr, len)
             : libc.write(s, dataptr, len));
 }
 
 ssize_t writev(int s, const struct iovec *iov, int iovcnt)
 {
-    SHIM_TRACE("writev(%d, %p, %d)\n", s, (void*)iov, iovcnt);
-
     auto& libc = icp::socket::libc::wrapper::instance();
     if (!client_initialized) {
         return (libc.writev(s, iov, iovcnt));
@@ -393,7 +348,7 @@ ssize_t writev(int s, const struct iovec *iov, int iovcnt)
 
     auto& client = icp::socket::api::client::instance();
     return (client.is_socket(s)
-            ? client_call_and_log(writev, s, iov, iovcnt)
+            ? client_call(writev, s, iov, iovcnt)
             : libc.writev(s, iov, iovcnt));
 }
 
