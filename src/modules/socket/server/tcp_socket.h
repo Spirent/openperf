@@ -25,7 +25,7 @@ struct tcp_connecting {};
 struct tcp_connected {};
 struct tcp_closing {};
 struct tcp_closed {};
-struct tcp_error{ int error; };
+struct tcp_error{ int value; };
 
 typedef std::variant<tcp_init,
                      tcp_bound,
@@ -91,15 +91,18 @@ public:
 
     /* listen handlers */
     on_request_reply on_request(const api::request_listen&, const tcp_bound&);
+    on_request_reply on_request(const api::request_listen&, const tcp_error&);
 
     /* connection handlers */
     on_request_reply on_request(const api::request_connect&, const tcp_init&);
     on_request_reply on_request(const api::request_connect&, const tcp_bound&);
     on_request_reply on_request(const api::request_connect&, const tcp_connecting&);
     on_request_reply on_request(const api::request_connect&, const tcp_connected&);
+    on_request_reply on_request(const api::request_connect&, const tcp_error&);
 
     /* shutdown handlers */
     on_request_reply on_request(const api::request_shutdown&, const tcp_connected&);
+    on_request_reply on_request(const api::request_shutdown&, const tcp_error&);
 
     template <typename State>
     on_request_reply on_request(const api::request_shutdown&, const State&)
@@ -109,6 +112,7 @@ public:
 
     /* getpeername handlers */
     on_request_reply on_request(const api::request_getpeername&, const tcp_connected&);
+    on_request_reply on_request(const api::request_getpeername&, const tcp_error&);
 
     template <typename State>
     on_request_reply on_request(const api::request_getpeername&, const State&)
@@ -117,6 +121,8 @@ public:
     }
 
     /* getsockname handlers */
+    on_request_reply on_request(const api::request_getsockname&, const tcp_error&);
+
     static tl::expected<socklen_t, int> do_tcp_getsockname(const tcp_pcb*,
                                                            const api::request_getsockname&);
 
@@ -129,6 +135,8 @@ public:
     }
 
     /* getsockopt handlers */
+    on_request_reply on_request(const api::request_getsockopt&, const tcp_error& error);
+
     static tl::expected<socklen_t, int> do_getsockopt(const tcp_pcb*,
                                                       const api::request_getsockopt&);
 
@@ -141,6 +149,8 @@ public:
     }
 
     /* setsockopt handlers */
+    on_request_reply on_request(const api::request_setsockopt&, const tcp_error& error);
+
     static tl::expected<void, int> do_setsockopt(tcp_pcb*, const api::request_setsockopt&);
 
     template <typename State>
@@ -151,9 +161,9 @@ public:
         return {api::reply_success(), std::nullopt};
     }
 
-    /* Generic handler */
-    template <typename State, typename Request>
-    on_request_reply on_request(State&, const Request&)
+    /* Generic handlers */
+    template <typename Request, typename State>
+    on_request_reply on_request(const Request&, const State&)
     {
         return {tl::make_unexpected(EINVAL), std::nullopt};
     }

@@ -188,6 +188,7 @@ int tcp_socket::do_lwip_recv(pbuf *p, int err)
 
     if (p == nullptr) {
         state(tcp_closed());
+        m_channel->notify();
         return (ERR_OK);
     }
 
@@ -225,7 +226,7 @@ int tcp_socket::do_lwip_poll()
 
 int tcp_socket::do_lwip_error(int err)
 {
-    state(tcp_error{ .error = err_to_errno(err) });
+    state(tcp_error{ .value = err_to_errno(err) });
     /*
      * lwIP will "conveniently" free the pbuf for us before this callback is
      * triggered, so make sure we don't.
@@ -252,6 +253,8 @@ tl::expected<generic_socket, int> tcp_socket::handle_accept(int flags)
 
 void tcp_socket::handle_transmit()
 {
+    if (!m_pcb) return;  /* can be closed on error */
+
     m_channel->ack();
     auto [ptr, length] = m_channel->recv_peek();
     if (!length) return;
@@ -306,6 +309,12 @@ tcp_socket::on_request_reply tcp_socket::on_request(const api::request_listen& l
     return {api::reply_success(), tcp_listening()};
 }
 
+tcp_socket::on_request_reply tcp_socket::on_request(const api::request_listen&,
+                                                    const tcp_error& error)
+{
+    return {tl::make_unexpected(error.value), std::nullopt};
+}
+
 static tl::expected<void, int> do_tcp_connect(tcp_pcb *pcb, const api::request_connect& connect)
 {
     sockaddr_storage sstorage;
@@ -358,6 +367,12 @@ tcp_socket::on_request_reply tcp_socket::on_request(const api::request_connect&,
     return {tl::make_unexpected(EISCONN), std::nullopt};
 }
 
+tcp_socket::on_request_reply tcp_socket::on_request(const api::request_connect&,
+                                                    const tcp_error& error)
+{
+    return {tl::make_unexpected(error.value), std::nullopt};
+}
+
 tcp_socket::on_request_reply tcp_socket::on_request(const api::request_shutdown& shutdown,
                                                     const tcp_connected&)
 {
@@ -383,6 +398,12 @@ tcp_socket::on_request_reply tcp_socket::on_request(const api::request_shutdown&
     }
 
     return {api::reply_success(), std::nullopt};
+}
+
+tcp_socket::on_request_reply tcp_socket::on_request(const api::request_shutdown&,
+                                                    const tcp_error& error)
+{
+    return {tl::make_unexpected(error.value), std::nullopt};
 }
 
 template <typename NameRequest>
@@ -436,10 +457,22 @@ tcp_socket::on_request_reply tcp_socket::on_request(const api::request_getpeerna
     return {api::reply_socklen{*result}, std::nullopt};
 }
 
+tcp_socket::on_request_reply tcp_socket::on_request(const api::request_getpeername&,
+                                                    const tcp_error& error)
+{
+    return {tl::make_unexpected(error.value), std::nullopt};
+}
+
 tl::expected<socklen_t, int> tcp_socket::do_tcp_getsockname(const tcp_pcb* pcb,
                                                             const api::request_getsockname& getsockname)
 {
     return (do_tcp_get_name(pcb->local_ip, pcb->local_port, getsockname));
+}
+
+tcp_socket::on_request_reply tcp_socket::on_request(const api::request_getsockname&,
+                                                    const tcp_error& error)
+{
+    return {tl::make_unexpected(error.value), std::nullopt};
 }
 
 static
@@ -504,6 +537,12 @@ tl::expected<socklen_t, int> tcp_socket::do_getsockopt(const tcp_pcb* pcb,
     }
 }
 
+tcp_socket::on_request_reply tcp_socket::on_request(const api::request_getsockopt&,
+                                                    const tcp_error& error)
+{
+    return {tl::make_unexpected(error.value), std::nullopt};
+}
+
 static
 tl::expected<void, int> do_tcp_setsockopt(tcp_pcb* pcb,
                                           const api::request_setsockopt& setsockopt)
@@ -547,6 +586,12 @@ tl::expected<void, int> tcp_socket::do_setsockopt(tcp_pcb* pcb,
     default:
         return (tl::make_unexpected(ENOPROTOOPT));
     }
+}
+
+tcp_socket::on_request_reply tcp_socket::on_request(const api::request_setsockopt&,
+                                                    const tcp_error& error)
+{
+    return {tl::make_unexpected(error.value), std::nullopt};
 }
 
 }
