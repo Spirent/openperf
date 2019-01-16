@@ -389,7 +389,6 @@ uint8_t pbuf_free(struct pbuf *p)
 
     /* de-allocate all consecutive pbufs from the head of the chain that
      * obtain a zero reference count after decrementing*/
-
     uint8_t count = 0;
     while (p) {
         struct pbuf *q = NULL;
@@ -454,7 +453,8 @@ pbuf_ref(struct pbuf *p)
         switch (p->type) {
         case PBUF_POOL:
         case PBUF_RAM:
-            rte_pktmbuf_refcnt_update(packetio_memp_pbuf_to_mbuf(p), 1);
+            rte_mbuf_refcnt_update(packetio_memp_pbuf_to_mbuf(p), 1);
+            LWIP_ASSERT("mbuf ref overlow", rte_mbuf_refcnt_read(packetio_memp_pbuf_to_mbuf(p)) > 0);
             /* fall through */
         case PBUF_ROM:
         case PBUF_REF:

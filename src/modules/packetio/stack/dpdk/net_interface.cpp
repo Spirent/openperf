@@ -107,7 +107,6 @@ static err_t net_interface_tx(netif* netif, pbuf *p)
     }
 
     net_interface *ifp = reinterpret_cast<net_interface*>(netif->state);
-    rte_mbuf *pkts[] = { packetio_memp_pbuf_to_mbuf(p) };
 
     MIB2_STATS_NETIF_ADD(netif, ifoutoctets, p->tot_len);
     if ((static_cast<uint8_t*>(p->payload)[0] & 1) == 0) {
@@ -118,6 +117,16 @@ static err_t net_interface_tx(netif* netif, pbuf *p)
 
     ICP_LOG(ICP_LOG_TRACE, "Transmitting packet from %c%c%u on %d:%d\n",
             netif->name[0], netif->name[1], netif->num, ifp->port_id(), 0);
+
+    /*
+     * Bump the reference count on the mbuf before transmitting; when this
+     * function returns, the stack will free the pbuf.  We don't want the
+     * mbuf to be freed with it.
+     */
+    auto mbuf = packetio_memp_pbuf_to_mbuf(p);
+    rte_mbuf_refcnt_update(mbuf, 1);
+
+    rte_mbuf *pkts[] = { mbuf };
     err_t error = rte_eth_tx_burst(ifp->port_id(), 0, pkts, 1) == 1 ? ERR_OK : ERR_BUF;
     if (error) {
         MIB2_STATS_NETIF_INC(netif, ifouterrors);
