@@ -30,9 +30,9 @@ public:
 
     void notify();
     void ack();
+    void unblock();
 
     bool send(pid_t pid, const iovec iov[], size_t iovcnt);
-    void send_wait();
 
     iovec recv_peek();
     void  recv_skip(size_t length);

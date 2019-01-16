@@ -1,5 +1,6 @@
 #include <cerrno>
 #include <numeric>
+#include <poll.h>
 #include <sys/eventfd.h>
 
 #include "socket/server/stream_channel.h"
@@ -52,32 +53,41 @@ void stream_channel::ack()
     eventfd_read(server_fds.server_fd, &counter);
 }
 
+static bool is_readable(int fd)
+{
+    struct pollfd to_poll = { .fd = fd,
+                              .events = POLLIN };
+    auto n = poll(&to_poll, 1, 0);
+    return (n == 1
+            ? to_poll.revents & POLLIN
+            : false);
+}
+
+void stream_channel::unblock()
+{
+    if (is_readable(server_fds.client_fd)) {
+        uint64_t counter;
+        eventfd_read(server_fds.client_fd, &counter);
+    }
+}
+
 bool stream_channel::send(pid_t pid, const iovec iov[], size_t iovcnt)
 {
-    auto buf_available = recvq.writable();
-
     auto iov_length = std::accumulate(iov, iov + iovcnt, 0UL,
                                       [](size_t x, const iovec& iov) {
                                           return (x + iov.iov_len);
                                       });
 
-    if (buf_available < iov_length) {
+    if (recvq.writable() < iov_length) {
         return (false);
     }
 
-    bool empty = (buf_available == recvq.size());
+    auto empty = recvq.empty();
     auto written = recvq.write(pid, iov, iovcnt);
-    if (*written != iov_length) {
-        ICP_LOG(ICP_LOG_ERROR, "written = %zu, iov_length = %zu\n",
-                *written, iov_length);
-    }
+    assert(*written == iov_length);
     if (empty) notify();
-    return (true);
-}
 
-void stream_channel::send_wait()
-{
-    eventfd_write(server_fds.client_fd, eventfd_max);
+    return (true);
 }
 
 iovec stream_channel::recv_peek()
@@ -88,8 +98,10 @@ iovec stream_channel::recv_peek()
 
 void stream_channel::recv_skip(size_t length)
 {
+    auto full = sendq.full();
     auto adjust = sendq.skip(length);
     assert(adjust == length);  /* should always be true for us */
+    if (full) unblock();
 }
 
 }

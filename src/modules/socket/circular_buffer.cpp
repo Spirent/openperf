@@ -1,3 +1,4 @@
+#include <cassert>
 #include <cerrno>
 #include <cstring>
 #include <numeric>
@@ -117,7 +118,17 @@ size_t circular_buffer::readable() const
 
 size_t circular_buffer::writable() const
 {
-    return (m_size - readable());
+    return (m_size - readable() - 1);
+}
+
+bool circular_buffer::empty() const
+{
+    return (read() == write());
+}
+
+bool circular_buffer::full() const
+{
+    return (read() == (write() + 1));
 }
 
 void* circular_buffer::peek()
@@ -218,8 +229,7 @@ tl::expected<size_t, int> circular_buffer::write(pid_t pid, const iovec iov[], s
     auto cursor = write();
     iovec writevec = {
         .iov_base = m_buffer + cursor,
-        //.iov_len = writable()
-        .iov_len = 32
+        .iov_len = writable()
     };
 
     auto result = process_vm_writev(pid, iov, iovcnt, &writevec, 1, 0);

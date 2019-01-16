@@ -1,4 +1,5 @@
 #include <cerrno>
+#include <cstring>
 #include <unistd.h>
 #include <numeric>
 #include <sys/eventfd.h>
@@ -27,14 +28,16 @@ tl::expected<size_t, int> stream_channel::send(pid_t pid,
                                                const iovec iov[], size_t iovcnt,
                                                const sockaddr *to __attribute__((unused)))
 {
-    auto buf_available = sendq.writable();
-    if (!buf_available) {
-        return (tl::make_unexpected(EAGAIN));
+    size_t buf_available = 0;
+    while ((buf_available = sendq.writable()) == 0) {
+        /* try to block on the fd */
+        auto result = eventfd_write(client_fds.client_fd, eventfd_max);
+        if (result == -1) return (tl::make_unexpected(errno));
     }
 
-    bool empty = (buf_available == sendq.size());
+    bool empty = sendq.empty();
     auto written = sendq.write(pid, iov, iovcnt);
-    if (empty) eventfd_write(client_fds.server_fd, 1);
+    if (written && empty) eventfd_write(client_fds.server_fd, 1);
     return (written);
 }
 
@@ -45,12 +48,19 @@ tl::expected<size_t, int> stream_channel::recv(pid_t pid __attribute__((unused))
 {
     auto buf_readable = recvq.readable();
     if (!buf_readable) {
-        return (tl::make_unexpected(EAGAIN));
+        return (0);
     }
 
-    bool full = (buf_readable == recvq.size());
+    bool full = (recvq.full());
     auto read = recvq.read(iov, iovcnt);
     if (full) eventfd_write(client_fds.server_fd, 1);
+
+    /*
+     * We didn't read all available data, so make sure the client knows
+     * to come back.
+     */
+    if (read < buf_readable) eventfd_write(client_fds.client_fd, 1);
+
     return (read);
 }
 

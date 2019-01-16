@@ -41,7 +41,8 @@ public:
 
     size_t writable() const;
     size_t readable() const;
-    size_t size() const { return (m_size); }
+    bool   empty() const;
+    bool   full() const;
 
     /***
      * Server side methods

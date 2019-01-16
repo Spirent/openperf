@@ -15,6 +15,7 @@ TEST_CASE("basic functionality for circular_buffer", "[circular_buffer]")
         auto cb = circular_buffer::server(test_size);
         REQUIRE(cb.writable() >= test_size);
         REQUIRE(cb.readable() == 0);
+        REQUIRE(cb.empty() == true);
 
         SECTION("can write data, ") {
             static constexpr std::string_view test_string = "This is a silly test string.";
@@ -42,6 +43,20 @@ TEST_CASE("basic functionality for circular_buffer", "[circular_buffer]")
                 REQUIRE(count == test_string.length());
             }
         }
+
+        SECTION("can fill buffer with data, ") {
+            std::array<uint8_t, 2048> buffer;
+            buffer.fill('a');
+
+            size_t written = 0;
+            while (cb.writable() > 0) {
+                written += cb.write(buffer.data(), std::min(cb.writable(), buffer.size()));
+            }
+
+            REQUIRE(cb.writable() == 0);
+            REQUIRE(cb.full() == 0);
+            REQUIRE(cb.readable() == written);
+        }
     }
 
     SECTION("can wrap around, ") {
@@ -50,9 +65,9 @@ TEST_CASE("basic functionality for circular_buffer", "[circular_buffer]")
          */
         static constexpr size_t test_size = 4096;
         auto cb = circular_buffer::server(test_size);
-        REQUIRE(cb.writable() == test_size);
+        REQUIRE(cb.writable() == test_size - 1);
 
-        static constexpr size_t vec_size = test_size / 2 - 1;
+        static constexpr size_t vec_size = test_size / 2 + 1;
         for (auto value : {1, 2, 3, 4, 5, 6, 7, 8}) {
             std::vector<uint8_t> data(vec_size, value);
             std::array<uint8_t, vec_size>  buffer;
