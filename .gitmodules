@@ -9,7 +9,8 @@
 	url = git://git.savannah.gnu.org/lwip.git
 [submodule "deps/pistache"]
 	path = deps/pistache
-	url = https://github.com/oktal/pistache.git
+	url = http://github.com/SpirentOrion/pistache.git
+        branch = master
 [submodule "deps/json"]
 	path = deps/json
 	url = https://github.com/nlohmann/json.git
