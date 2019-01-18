@@ -26,13 +26,11 @@
 /* Network Interface options */
 #define LWIP_NETIF_HOSTNAME 1
 #define LWIP_NETIF_LINK_CALLBACK 1
-#define LWIP_NETIF_TX_SINGLE_PBUF 0
 
 /* Protocol support */
 #define LWIP_DHCP 1
 #define LWIP_AUTOIP 1
 #define LWIP_DHCP_AUTOIP_COOP 1
-#define LWIP_DHCP_CHECK_LINK_UP 1
 #define DHCP_DOES_ARP_CHECK 1  /* let's be a good net-citizen */
 
 /* Miscellaneous options */
@@ -49,10 +47,14 @@
 #define MEMP_USE_CUSTOM_POOLS 0
 
 /* TCP options */
+#define LWIP_TCP_SACK_OUT 1
+#define LWIP_WND_SCALE 1
+
 #define TCP_LISTEN_BACKLOG 1
 #define TCP_SND_BUF 65535
 #define TCP_MSS 1460
-#define TCP_WND 65535
+#define TCP_WND (64 * TCP_MSS)
+#define TCP_RCV_SCALE 8
 
 /* Socket options */
 #define SO_REUSE 1
