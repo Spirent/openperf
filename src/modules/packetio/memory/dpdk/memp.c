@@ -94,29 +94,15 @@ void memp_init()
     }
 }
 
-/*
- * We need to return the mbuf to the memory pool with a refcnt of 1.
- * Since we increment/decrement both the pbuf and mbuf refcnt's in
- * sync, we need to start the mbuf refcnt at 2. Hence, when the pbuf
- * gets a refcnt of 0 and is freed, the mbuf will still have a refcnt
- * of 1.
- */
-static struct rte_mbuf* memp_mbuf_alloc(struct rte_mempool* pool)
-{
-    struct rte_mbuf* m = rte_pktmbuf_alloc(pool);
-    if (m) rte_mbuf_refcnt_update(m, 1);
-    return (m);
-}
-
 void * memp_malloc(memp_t type)
 {
     void *to_return = NULL;
     switch (type) {
     case MEMP_PBUF:
-        to_return = packetio_memp_mbuf_to_pbuf(memp_mbuf_alloc(get_ref_rom_mempool()));
+        to_return = packetio_memp_mbuf_to_pbuf(rte_pktmbuf_alloc(get_ref_rom_mempool()));
         break;
     case MEMP_PBUF_POOL:
-        to_return = packetio_memp_mbuf_to_pbuf(memp_mbuf_alloc(get_default_mempool()));
+        to_return = packetio_memp_mbuf_to_pbuf(rte_pktmbuf_alloc(get_default_mempool()));
         break;
     default:
         to_return = rte_malloc(memp_pools[type]->desc, memp_pools[type]->size, 0);

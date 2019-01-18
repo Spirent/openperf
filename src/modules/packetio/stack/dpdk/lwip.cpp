@@ -82,7 +82,7 @@ static stack::element_stats_data make_element_stats_data(const stats_syselem* sy
 {
     return { .used   = syselem->used,
              .max    = syselem->max,
-             .errors = syselem->max };
+             .errors = syselem->err };
 }
 #endif
 

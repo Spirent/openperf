@@ -12,6 +12,7 @@ namespace packetio {
 namespace dpdk {
 
 static const uint32_t MBUF_LENGTH_ALIGN = 64;
+static const size_t SIZEOF_STRUCT_PBUF = LWIP_MEM_ALIGN_SIZE(sizeof(struct pbuf));
 
 /*
  * Per the DPDK documentation, cache size should be a divisor of pool
@@ -23,6 +24,10 @@ static const uint32_t MBUF_LENGTH_ALIGN = 64;
 
 #if RTE_MEMPOOL_CACHE_MAX_SIZE < 512
 #error "RTE_MEMPOOL_CACHE_MAX_SIZE must be at least 512"
+#endif
+
+#if RTE_MBUF_PRIV_ALIGN != MEM_ALIGNMENT
+#error "RTE_MBUF_PRIV_ALIGN and lwip's MEM_ALIGNMENT msut be equal"
 #endif
 
 static struct cache_size_map {
@@ -95,8 +100,8 @@ static rte_mempool* _create_pbuf_mempool(const char* name, size_t size,
         name,
         nb_mbufs,
         cached ? _get_cache_size(nb_mbufs) : 0,
-        RTE_ALIGN(sizeof(struct pbuf), RTE_MBUF_PRIV_ALIGN),
-        direct ? _mbuf_length_adjust(PBUF_POOL_BUFSIZE) : 0,
+        SIZEOF_STRUCT_PBUF,
+        direct ? _mbuf_length_adjust(RTE_MBUF_DEFAULT_DATAROOM) : 0,
         SOCKET_ID_ANY);
 
     if (!mp) {

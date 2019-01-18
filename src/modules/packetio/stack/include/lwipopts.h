@@ -26,7 +26,7 @@
 /* Network Interface options */
 #define LWIP_NETIF_HOSTNAME 1
 #define LWIP_NETIF_LINK_CALLBACK 1
-#define LWIP_NETIF_TX_SINGLE_PBUF 1
+#define LWIP_NETIF_TX_SINGLE_PBUF 0
 
 /* Protocol support */
 #define LWIP_DHCP 1
@@ -51,8 +51,8 @@
 /* TCP options */
 #define TCP_LISTEN_BACKLOG 1
 #define TCP_SND_BUF 65535
-#define TCP_SND_QUEUELEN ((2 * (TCP_SND_BUF) + (TCP_MSS - 1))/(TCP_MSS))
-#define TCP_MSS 1500
+#define TCP_MSS 1460
+#define TCP_WND 65535
 
 /* Socket options */
 #define SO_REUSE 1

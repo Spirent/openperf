@@ -1,6 +1,7 @@
 #ifndef _ICP_PACKETIO_MEMORY_DPDK_PBUF_H_
 #define _ICP_PACKETIO_MEMORY_DPDK_PBUF_H_
 
+#include "lwip/netif.h"
 #include "lwip/pbuf.h"
 #include "packetio/drivers/dpdk/dpdk.h"
 #include "packetio/memory/dpdk/memp.h"
@@ -20,13 +21,28 @@ inline struct pbuf *packetio_pbuf_synchronize(struct rte_mbuf *m_head)
         p->payload = rte_pktmbuf_mtod(m, void *);
         p->tot_len = rte_pktmbuf_pkt_len(m);
         p->len = rte_pktmbuf_data_len(m);
-        p->type = PBUF_POOL;
+        p->type_internal = (uint8_t)PBUF_POOL;
         p->flags = 0;
-        p->ref = atomic_fetch_add_explicit((atomic_short*)&m->refcnt_atomic, 1,
-                                           memory_order_relaxed);
+        p->ref = 1;
+        p->if_idx = NETIF_NO_INDEX;
     } while ((m = m->next) != NULL);
 
     return (packetio_memp_mbuf_to_pbuf(m_head));
+}
+
+inline struct rte_mbuf* packetio_mbuf_synchronize(struct pbuf* p_head)
+{
+    struct pbuf* p = p_head;
+    do {
+        struct rte_mbuf* m = packetio_memp_pbuf_to_mbuf(p);
+        m->data_off = (uintptr_t)(p->payload) - (uintptr_t)(m->buf_addr);
+        m->next = (p->next == NULL ? NULL : packetio_memp_pbuf_to_mbuf(p->next));
+        m->nb_segs = pbuf_clen(p);
+        rte_pktmbuf_pkt_len(m) = p->tot_len;
+        rte_pktmbuf_data_len(m) = p->len;
+    } while ((p = p->next) != NULL);
+
+    return (packetio_memp_pbuf_to_mbuf(p_head));
 }
 
 #endif /* _ICP_PACKETIO_MEMORY_DPDK_PBUF_H_ */

@@ -8,6 +8,7 @@
 
 #include "packetio/drivers/dpdk/dpdk.h"
 #include "packetio/memory/dpdk/memp.h"
+#include "packetio/memory/dpdk/pbuf.h"
 #include "packetio/stack/dpdk/net_interface.h"
 
 namespace icp {
@@ -123,7 +124,8 @@ static err_t net_interface_tx(netif* netif, pbuf *p)
      * function returns, the stack will free the pbuf.  We don't want the
      * mbuf to be freed with it.
      */
-    auto mbuf = packetio_memp_pbuf_to_mbuf(p);
+    assert(p->next == NULL);
+    auto mbuf = packetio_mbuf_synchronize(p);
     rte_mbuf_refcnt_update(mbuf, 1);
 
     rte_mbuf *pkts[] = { mbuf };
