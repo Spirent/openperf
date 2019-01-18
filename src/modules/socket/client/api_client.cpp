@@ -497,11 +497,6 @@ ssize_t client::recvmsg(int s, struct msghdr *message, int flags)
     }
 
     auto& [id, channel] = result->second;
-    if (channel.recv_clear() == -1) {
-        errno = EWOULDBLOCK;
-        return (-1);
-    }
-
     auto recv_result = channel.recv(m_server_pid, message->msg_iov, message->msg_iovlen,
                                     reinterpret_cast<sockaddr*>(message->msg_name),
                                     &message->msg_namelen);

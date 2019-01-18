@@ -28,11 +28,12 @@ public:
     int client_fd();
     int server_fd();
 
-    void notify();
     void ack();
-    void unblock();
+    void notify();
+    void error(int);
 
     bool send(pid_t pid, const iovec iov[], size_t iovcnt);
+    size_t send_ack();
 
     iovec recv_peek();
     void  recv_skip(size_t length);

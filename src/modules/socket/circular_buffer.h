@@ -16,7 +16,7 @@ class circular_buffer
 {
     static constexpr size_t cache_line_size = 64;
     static constexpr size_t page_size = 4096;
-    static constexpr size_t default_size = page_size * 12;
+    static constexpr size_t default_size = page_size * 16;
 
     uint8_t* m_buffer;
     size_t m_size;

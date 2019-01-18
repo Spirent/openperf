@@ -188,15 +188,27 @@ int tcp_socket::do_lwip_recv(pbuf *p, int err)
 
     if (p == nullptr) {
         state(tcp_closed());
-        m_channel->notify();
+        m_channel->error(EOF);
         return (ERR_OK);
     }
 
-    auto sendvec = iovec{ .iov_base = p->payload,
-                          .iov_len = p->len };
-    auto success = m_channel->send(m_pid, &sendvec, 1);
+    std::array<iovec, 1024> iovecs;
+    size_t iovcnt = 0;
+
+    auto p_current = p;
+    while (p_current != nullptr) {
+        iovecs[iovcnt++] = iovec{ .iov_base = p_current->payload,
+                                  .iov_len = p_current->len };
+        p_current = p_current->next;
+    }
+    assert(iovcnt == pbuf_clen(p));
+
+    if (!m_channel->send(m_pid, iovecs.data(), iovcnt)) {
+        return (ERR_MEM);
+    }
+
     pbuf_free(p);
-    return (success ? ERR_OK : ERR_MEM);
+    return (ERR_OK);
 }
 
 int tcp_socket::do_lwip_connected(int err)
@@ -226,6 +238,7 @@ int tcp_socket::do_lwip_poll()
 
 int tcp_socket::do_lwip_error(int err)
 {
+    m_channel->error(err_to_errno(err));
     state(tcp_error{ .value = err_to_errno(err) });
     /*
      * lwIP will "conveniently" free the pbuf for us before this callback is
@@ -256,6 +269,11 @@ void tcp_socket::handle_transmit()
     if (!m_pcb) return;  /* can be closed on error */
 
     m_channel->ack();
+
+    if (auto to_ack = m_channel->send_ack(); to_ack != 0) {
+        tcp_recved(m_pcb.get(), to_ack);
+    }
+
     auto [ptr, length] = m_channel->recv_peek();
     if (!length) return;
 

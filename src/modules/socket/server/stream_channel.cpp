@@ -14,6 +14,7 @@ namespace server {
 stream_channel::stream_channel(int socket_flags)
     : sendq(circular_buffer::server())
     , recvq(circular_buffer::client())
+    , socket_error(0)
 {
     int event_flags = 0;
     if (socket_flags & SOCK_CLOEXEC)  event_flags |= EFD_CLOEXEC;
@@ -42,15 +43,15 @@ int stream_channel::server_fd()
     return (server_fds.server_fd);
 }
 
-void stream_channel::notify()
-{
-    eventfd_write(server_fds.client_fd, 1);
-}
-
-void stream_channel::ack()
+static void do_read(int fd)
 {
     uint64_t counter;
-    eventfd_read(server_fds.server_fd, &counter);
+    eventfd_read(fd, &counter);
+}
+
+static void do_write(int fd)
+{
+    eventfd_write(fd, 1);
 }
 
 static bool is_readable(int fd)
@@ -63,12 +64,41 @@ static bool is_readable(int fd)
             : false);
 }
 
-void stream_channel::unblock()
+static bool is_writable(int fd)
 {
-    if (is_readable(server_fds.client_fd)) {
-        uint64_t counter;
-        eventfd_read(server_fds.client_fd, &counter);
+    struct pollfd to_poll = { .fd = fd,
+                              .events = POLLOUT };
+    auto n = poll(&to_poll, 1, 0);
+    return (n == 1
+            ? to_poll.revents & POLLOUT
+            : false);
+}
+
+static void unblock(int fd)
+{
+    if (is_readable(fd)) {
+        do_read(fd);
     }
+}
+
+void stream_channel::notify()
+{
+    auto fd = client_fd();
+    if (!is_writable(fd)) {
+        do_read(fd);
+    }
+    do_write(fd);
+}
+
+void stream_channel::ack()
+{
+    do_read(server_fd());
+}
+
+void stream_channel::error(int error)
+{
+    socket_error.store(error, std::memory_order_relaxed);
+    if (recvq.empty()) notify();
 }
 
 bool stream_channel::send(pid_t pid, const iovec iov[], size_t iovcnt)
@@ -82,12 +112,16 @@ bool stream_channel::send(pid_t pid, const iovec iov[], size_t iovcnt)
         return (false);
     }
 
-    auto empty = recvq.empty();
     auto written = recvq.write(pid, iov, iovcnt);
     assert(*written == iov_length);
-    if (empty) notify();
+    notify();
 
     return (true);
+}
+
+size_t stream_channel::send_ack()
+{
+    return (read_counter.exchange(0, std::memory_order_acq_rel));
 }
 
 iovec stream_channel::recv_peek()
@@ -101,7 +135,7 @@ void stream_channel::recv_skip(size_t length)
     auto full = sendq.full();
     auto adjust = sendq.skip(length);
     assert(adjust == length);  /* should always be true for us */
-    if (full) unblock();
+    if (full) unblock(client_fd());
 }
 
 }

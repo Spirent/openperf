@@ -37,7 +37,7 @@ err_t lwip_tcp_event(void *arg, struct tcp_pcb *pcb, enum lwip_event event,
     using tcp_socket = icp::socket::server::tcp_socket;
     auto socket = reinterpret_cast<tcp_socket*>(arg);
 
-    ICP_LOG(ICP_LOG_DEBUG, "Received tcp %s event: socket = %p, pcb = %p, "
+    ICP_LOG(ICP_LOG_TRACE, "Received tcp %s event: socket = %p, pcb = %p, "
             "pbuf = %p, size = %u, err = %d\n",
             to_string(event), (void*)socket, (void*)pcb, (void*)p, size, err);
 

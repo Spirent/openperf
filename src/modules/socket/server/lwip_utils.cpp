@@ -175,7 +175,7 @@ void get_tcp_info(const tcp_pcb* pcb, tcp_info& info)
 
 #if LWIP_WND_SCALE
     info.tcpi_snd_wscale = pcb->snd_scale;
-    info.tcpi_rcv_wscale = pcb->rcv_wscale;
+    info.tcpi_rcv_wscale = pcb->rcv_scale;
 #endif
 
     info.tcpi_rto = pcb->rto;
