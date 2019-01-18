@@ -53,7 +53,6 @@ void unload_and_free_all_pbufs(BipartiteRing& ring)
     free_spent_pbufs(ring);
 }
 
-
 dgram_channel::dgram_channel(int socket_flags)
     : recvq(dgram_ring::server())
     , sendq(dgram_ring::server())
@@ -98,6 +97,9 @@ void dgram_channel::ack()
 {
     uint64_t counter = 0;
     eventfd_read(server_fds.server_fd, &counter);
+
+    /* Now is a good time to garbage collect the recvq, too */
+    free_spent_pbufs(recvq);
 }
 
 /* Push all pbufs in the chain onto the dgram_channel */
@@ -127,11 +129,6 @@ bool dgram_channel::send(const pbuf *p, const dgram_ip_addr* addr, in_port_t por
     return (pushed);
 }
 
-void dgram_channel::send_wait()
-{
-    eventfd_write(server_fds.client_fd, eventfd_max);
-}
-
 size_t dgram_channel::recv(dgram_channel_item items[], size_t max_items)
 {
     size_t to_dequeue = std::min(sendq.ready(), max_items);
@@ -146,8 +143,7 @@ size_t dgram_channel::recv(dgram_channel_item items[], size_t max_items)
         auto& [address, data] = items[idx];
         pbuf_realloc(data.pbuf(), data.length());
     }
-    auto available = sendq.available();
-    if (load_fresh_pbufs(sendq) && !available) notify();
+    load_fresh_pbufs(sendq);
     return (dequeued);
 }
 

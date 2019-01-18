@@ -112,10 +112,15 @@ tl::expected<size_t, int> dgram_channel::send(pid_t pid,
 tl::expected<size_t, int> dgram_channel::recv(pid_t pid, iovec iov[], size_t iovcnt,
                                               sockaddr *from, socklen_t *fromlen)
 {
+    while (!recvq.available()) {
+        uint64_t counter = 0;
+        auto error = eventfd_read(client_fds.client_fd, &counter);
+        if (error == -1) return (tl::make_unexpected(errno));
+    }
+
     bool full = recvq.full();
 
     auto item = recvq.unpack();
-    if (!item) return (tl::make_unexpected(EWOULDBLOCK));
 
     if (item->address) {
         auto src = to_sockaddr(*item->address);

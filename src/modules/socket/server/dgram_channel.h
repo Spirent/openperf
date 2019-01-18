@@ -34,7 +34,6 @@ public:
 
     bool send(const pbuf*);
     bool send(const pbuf*, const dgram_ip_addr*, in_port_t);
-    void send_wait();
 
     size_t recv(dgram_channel_item items[], size_t max_items);
 };

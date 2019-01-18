@@ -26,9 +26,6 @@ const char * to_string(const udp_socket_state& state)
                            [](const udp_connected&) -> const char* {
                                return ("connected");
                            },
-                           [](const udp_bound_and_connected&) -> const char* {
-                               return ("bound_and_connected");
-                           },
                            [](const udp_closed&) -> const char * {
                                return ("closed");
                            }),
@@ -221,14 +218,6 @@ udp_socket::on_request_reply udp_socket::on_request(const api::request_bind& bin
     return {api::reply_success(), udp_bound()};
 }
 
-udp_socket::on_request_reply udp_socket::on_request(const api::request_bind& bind,
-                                                    const udp_connected&)
-{
-    auto result = do_udp_bind(m_pcb.get(), bind);
-    if (!result) return {tl::make_unexpected(result.error()), std::nullopt};
-    return {api::reply_success(), udp_bound_and_connected()};
-}
-
 udp_socket::on_request_reply udp_socket::on_request(const api::request_connect& connect,
                                                     const udp_init&)
 {
@@ -244,38 +233,20 @@ udp_socket::on_request_reply udp_socket::on_request(const api::request_connect& 
     auto result = do_udp_connect(m_pcb.get(), connect);
     if (!result) return {tl::make_unexpected(result.error()), std::nullopt};
     if (!*result) return {api::reply_success(), std::nullopt};  /* still not connected */
-    return {api::reply_success(), udp_bound_and_connected()};
+    return {api::reply_success(), udp_connected()};
 }
 
 udp_socket::on_request_reply udp_socket::on_request(const api::request_connect& connect,
                                                     const udp_connected&)
-{
-    auto result = do_udp_connect(m_pcb.get(), connect);
-    if (!result) return {tl::make_unexpected(result.error()), std::nullopt};
-    if (!*result) return {api::reply_success(), udp_init()}; /* disconnected */
-    return {api::reply_success(), std::nullopt};  /* still connected */
-}
-
-udp_socket::on_request_reply udp_socket::on_request(const api::request_connect& connect,
-                                                    const udp_bound_and_connected&)
 {
     auto result = do_udp_connect(m_pcb.get(), connect);
     if (!result) return {tl::make_unexpected(result.error()), std::nullopt};
     if (!*result) return {api::reply_success(), udp_bound()}; /* disconnected */
-    return {api::reply_success(), udp_bound_and_connected()};
+    return {api::reply_success(), udp_connected()};
 }
 
 udp_socket::on_request_reply udp_socket::on_request(const api::request_getpeername& getpeername,
                                                     const udp_connected&)
-{
-    auto result = do_udp_get_name(m_pcb->remote_ip, m_pcb->remote_port,
-                                  getpeername);
-    if (!result) return {tl::make_unexpected(result.error()), std::nullopt};
-    return {api::reply_socklen{*result}, std::nullopt};
-}
-
-udp_socket::on_request_reply udp_socket::on_request(const api::request_getpeername& getpeername,
-                                                    const udp_bound_and_connected&)
 {
     auto result = do_udp_get_name(m_pcb->remote_ip, m_pcb->remote_port,
                                   getpeername);
@@ -293,7 +264,7 @@ udp_socket::on_request_reply udp_socket::on_request(const api::request_getsockna
 }
 
 udp_socket::on_request_reply udp_socket::on_request(const api::request_getsockname& getsockname,
-                                                    const udp_bound_and_connected&)
+                                                    const udp_connected&)
 {
     auto result = do_udp_get_name(m_pcb->local_ip, m_pcb->local_port,
                                   getsockname);

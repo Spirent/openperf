@@ -23,13 +23,11 @@ namespace server {
 struct udp_init {};
 struct udp_bound {};
 struct udp_connected {};
-struct udp_bound_and_connected {};
 struct udp_closed {};
 
 typedef std::variant<udp_init,
                      udp_bound,
                      udp_connected,
-                     udp_bound_and_connected,
                      udp_closed> udp_socket_state;
 
 class udp_socket : public socket_state_machine<udp_socket, udp_socket_state> {
@@ -66,17 +64,14 @@ public:
 
     /* bind handlers */
     on_request_reply on_request(const api::request_bind&, const udp_init&);
-    on_request_reply on_request(const api::request_bind&, const udp_connected&);
 
     /* connect handlers */
     on_request_reply on_request(const api::request_connect&, const udp_init&);
     on_request_reply on_request(const api::request_connect&, const udp_bound&);
-    on_request_reply on_request(const api::request_connect&, const udp_bound_and_connected&);
     on_request_reply on_request(const api::request_connect&, const udp_connected&);
 
     /* getpeername handlers */
     on_request_reply on_request(const api::request_getpeername&, const udp_connected&);
-    on_request_reply on_request(const api::request_getpeername&, const udp_bound_and_connected&);
 
     template <typename State>
     on_request_reply on_request(const api::request_getpeername&, const State&)
@@ -86,7 +81,7 @@ public:
 
     /* getsockname handlers */
     on_request_reply on_request(const api::request_getsockname&, const udp_bound&);
-    on_request_reply on_request(const api::request_getsockname&, const udp_bound_and_connected&);
+    on_request_reply on_request(const api::request_getsockname&, const udp_connected&);
 
     /* getsockopt handlers */
     static tl::expected<socklen_t, int> do_getsockopt(const udp_pcb*, const api::request_getsockopt&);
