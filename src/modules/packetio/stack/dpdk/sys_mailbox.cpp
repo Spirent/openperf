@@ -91,40 +91,40 @@ int sys_mbox::fd() const
 
 void sys_mbox::clear_notifications()
 {
-    assert(rte_ring_empty(m_ring.get()));
-
     uint64_t counter = 0;
     eventfd_read(m_fd, &counter);
 }
 
 void sys_mbox::post(void *msg)
 {
+    bool empty = rte_ring_empty(m_ring.get());
     while (rte_ring_enqueue(m_ring.get(), msg) == -ENOBUFS) {
-        eventfd_write(m_fd, eventfd_max);
+        rte_pause();
     }
-    eventfd_write(m_fd, static_cast<uint64_t>(1));
+    if (empty) eventfd_write(m_fd, static_cast<uint64_t>(1));
 }
 
 bool sys_mbox::trypost(void *msg)
 {
+    bool empty = rte_ring_empty(m_ring.get());
     if (rte_ring_enqueue(m_ring.get(), msg) != 0) return (false);
-    eventfd_write(m_fd, static_cast<uint64_t>(1));
+    if (empty) eventfd_write(m_fd, static_cast<uint64_t>(1));
     return (true);
+}
+
+static bool is_readable(int fd, u32_t timeout) {
+    struct pollfd to_poll = { .fd = fd,
+                              .events = POLLIN };
+    int n = poll(&to_poll, 1, timeout == 0 ? -1 : timeout);
+    return (n == 1
+            ? to_poll.revents & POLLIN
+            : false);
 }
 
 std::optional<void*> sys_mbox::fetch(u32_t timeout)
 {
     while (rte_ring_empty(m_ring.get())) {
-        struct pollfd pfd = {
-            .fd = m_fd,
-            .events = POLLIN
-        };
-        int n = poll(&pfd, 1, timeout == 0 ? -1 : timeout);
-        if (n == 0) break;  /* timeout */
-        if (n == 1) {
-            uint64_t counter = 0;
-            eventfd_read(m_fd, &counter);
-        }
+        if (!is_readable(m_fd, timeout)) break;
     }
 
     return (tryfetch());
