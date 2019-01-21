@@ -49,6 +49,11 @@ with description('Ports,') as self:
                     ports = self.api.list_ports(kind='')
                     expect(ports).to(be_empty)
 
+        with description('unsupported method,'):
+            with it('returns 405'):
+                expect(lambda: self.api.api_client.call_api('/ports', 'PUT')).to(raise_api_exception(
+                    405, headers={'Allow': "GET, POST"}))
+
     with description('get,'):
         with description('known existing port,'):
             with it('succeeds'):
@@ -57,6 +62,11 @@ with description('Ports,') as self:
         with description('non-existent port,'):
             with it('returns 404'):
                 expect(lambda: self.api.get_port('foo')).to(raise_api_exception(404))
+
+        with description('unsupported method,'):
+            with it('returns 405'):
+                expect(lambda: self.api.api_client.call_api('/ports/0', 'POST')).to(raise_api_exception(
+                    405, headers={'Allow': "PUT, DELETE, GET"}))
 
     with description('create,'):
         with before.each:

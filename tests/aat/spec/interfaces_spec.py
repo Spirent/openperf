@@ -94,6 +94,9 @@ with description('Interfaces,') as self:
             with it('succeeds'):
                 expect(self.api.get_interface(self.intf.id)).to(be_valid_interface)
 
+            with it('returns 405'):
+                expect(lambda: self.api.api_client.call_api('/interfaces', 'PUT')).to(raise_api_exception(405, headers={'Allow': "GET, POST"}))
+
         with description('non-existent interface,'):
             with it('returns 404'):
                 expect(lambda: self.api.get_interface('foo')).to(raise_api_exception(404))
@@ -261,20 +264,23 @@ with description('Interfaces,') as self:
                             expect(intf).to(be_valid_interface)
                             self.cleanup = intf
 
-    # TCP
-    with _description('update,'):
+    with description('update,'):
         with description('valid interface,'):
             with before.each:
                 intf = self.api.create_interface(example_interface(self.api.api_client))
                 expect(intf).to(be_valid_interface)
                 self.intf, self.cleanup = intf, intf
 
-            with it('returns 405'):
-                expect(lambda: self.api.api_client.call_api('/interfaces/%s' % self.intf.id, 'PUT')).to(raise_api_exception(405))
+            with description('unsupported method,'):
+                with it('returns 405'):
+                    expect(lambda: self.api.api_client.call_api('/interfaces/%s' % self.intf.id, 'PUT')).to(raise_api_exception(
+                        405, headers={'Allow': "DELETE, GET"}))
 
         with description('non-existent interface,'):
-            with it('returns 405'):
-                expect(lambda: self.api.api_client.call_api('/interfaces/foo', 'PUT')).to(raise_api_exception(405))
+            with description('unsupported method,'):
+                with it('returns 405'):
+                    expect(lambda: self.api.api_client.call_api('/interfaces/foo', 'PUT')).to(raise_api_exception(
+                        405, headers={'Allow': "DELETE, GET"}))
 
     with description('delete,'):
         with description('valid interface,'):
@@ -326,6 +332,10 @@ with description('Interfaces,') as self:
                         expect(intf).to(be_valid_interface)
                     self.cleanup = resp.items
 
+        with description('unsupported method, '):
+            with it('returns 405'):
+                expect(lambda: self.api.api_client.call_api('/interfaces/x/bulk-create', 'GET')).to(raise_api_exception(405, headers={'Allow': "POST"}))
+
     with description('bulk-delete,'):
         with before.each:
             self.intfs = [ ipv4_interface(self.api.api_client) for i in range(BULK_OP_SIZE) ]
@@ -355,6 +365,11 @@ with description('Interfaces,') as self:
                 expect(lambda: self.api.get_interface(self.intfs[0].id)).to(raise_api_exception(404))
                 for x in [ i.id for i in self.intfs[1:] ]:
                     expect(self.api.get_interface(x)).to(be_valid_interface)
+
+        with description('unsupported method, '):
+            with it('returns 405'):
+                expect(lambda: self.api.api_client.call_api('/interfaces/x/bulk-delete', 'GET')).to(raise_api_exception(
+                    405, headers={'Allow': "POST"}))
 
     with after.each:
         try:

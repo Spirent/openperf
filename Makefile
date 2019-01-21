@@ -2,15 +2,15 @@
 # Top level Makefile for inception-core
 #
 
-all: devstack
+all: inception
 
 .PHONY: deps
 deps:
 	@git submodule init && git submodule update
 
-.PHONY: devstack
-devstack: deps
-	@cd targets/devstack && $(MAKE)
+.PHONY: inception
+inception: deps
+	@cd targets/inception && $(MAKE)
 
 .PHONY: test
 test: test_aat
@@ -21,4 +21,4 @@ test_aat:
 
 .PHONY: clean
 clean:
-	@cd targets/devstack && $(MAKE) clean
+	@cd targets/inception && $(MAKE) clean
