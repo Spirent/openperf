@@ -88,9 +88,11 @@ static int
 handle_tcpip_timeout(const struct icp_event_data *data,
                      void *arg __attribute__((unused)))
 {
-    sys_check_timeouts();
-
-    auto sleeptime = std::chrono::milliseconds(sys_timeouts_sleeptime());
+    std::chrono::milliseconds sleeptime;
+    do {
+        sys_check_timeouts();
+        sleeptime = std::chrono::milliseconds(sys_timeouts_sleeptime());
+    } while (sleeptime.count() == 0);
 
     icp_event_loop_update(data->loop, tcpip_timeout_id,
                           std::chrono::duration_cast<loop_ns>(sleeptime).count());
@@ -170,7 +172,7 @@ handle_tcpip_msg(const struct icp_event_data *data, void *arg)
         LWIP_TCPIP_THREAD_ALIVE();
     }
 
-    return(0);
+    return (0);
 }
 
 extern "C" {

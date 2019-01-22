@@ -46,7 +46,7 @@ struct sys_mbox
     int m_fd;
 
 public:
-    sys_mbox(int size, int flags = 0);
+    sys_mbox(int size, int flags = RING_F_SC_DEQ);
     ~sys_mbox();
 
     int fd() const;
@@ -89,10 +89,27 @@ int sys_mbox::fd() const
     return (m_fd);
 }
 
-void sys_mbox::clear_notifications()
+static bool is_readable(int fd, u32_t timeout)
+{
+    struct pollfd to_poll = { .fd = fd,
+                              .events = POLLIN };
+    int n = poll(&to_poll, 1, timeout);
+    return (n == 1
+            ? to_poll.revents & POLLIN
+            : false);
+}
+
+static void do_read(int fd)
 {
     uint64_t counter = 0;
-    eventfd_read(m_fd, &counter);
+    auto error = eventfd_read(fd, &counter);
+    if (error) ICP_LOG(ICP_LOG_ERROR, "Could not read fd %d: %s\n",
+                       fd, strerror(errno));
+}
+
+void sys_mbox::clear_notifications()
+{
+    if (is_readable(m_fd, 0)) do_read(m_fd);
 }
 
 void sys_mbox::post(void *msg)
@@ -101,30 +118,23 @@ void sys_mbox::post(void *msg)
     while (rte_ring_enqueue(m_ring.get(), msg) == -ENOBUFS) {
         rte_pause();
     }
-    if (empty) eventfd_write(m_fd, static_cast<uint64_t>(1));
+    if (empty) eventfd_write(m_fd, 1UL);
 }
 
 bool sys_mbox::trypost(void *msg)
 {
     bool empty = rte_ring_empty(m_ring.get());
     if (rte_ring_enqueue(m_ring.get(), msg) != 0) return (false);
-    if (empty) eventfd_write(m_fd, static_cast<uint64_t>(1));
+    if (empty) eventfd_write(m_fd, 1UL);
     return (true);
-}
-
-static bool is_readable(int fd, u32_t timeout) {
-    struct pollfd to_poll = { .fd = fd,
-                              .events = POLLIN };
-    int n = poll(&to_poll, 1, timeout == 0 ? -1 : timeout);
-    return (n == 1
-            ? to_poll.revents & POLLIN
-            : false);
 }
 
 std::optional<void*> sys_mbox::fetch(u32_t timeout)
 {
     while (rte_ring_empty(m_ring.get())) {
-        if (!is_readable(m_fd, timeout)) break;
+        auto lwip_to = (timeout == 0 ? -1 : timeout);
+        if (!is_readable(m_fd, lwip_to)) break;
+        clear_notifications();
     }
 
     return (tryfetch());
@@ -167,6 +177,10 @@ void sys_mbox_clear_notifications(sys_mbox** mboxp)
 {
     assert(mboxp);
     sys_mbox* mbox = *mboxp;
+
+    LWIP_DEBUGF(SYS_DEBUG, ("sys_mbox_clear_notification: mbox %p fd %d\n",
+                            (void*)mbox, mbox->fd()));
+
     mbox->clear_notifications();
 }
 
@@ -177,8 +191,8 @@ err_t sys_mbox_trypost(sys_mbox** mboxp, void* msg)
 
     sys_mbox* mbox = *mboxp;
 
-    LWIP_DEBUGF(SYS_DEBUG, ("sys_mbox_trypost: mbox %p msg %p\n",
-                            (void *)mbox, (void *)msg));
+    LWIP_DEBUGF(SYS_DEBUG, ("sys_mbox_trypost: mbox %p fd %d msg %p\n",
+                            (void *)mbox, mbox->fd(), msg));
 
     return (mbox->trypost(msg) ? ERR_OK : ERR_BUF);
 }
@@ -190,8 +204,8 @@ void sys_mbox_post(sys_mbox** mboxp, void* msg)
 
     sys_mbox* mbox = *mboxp;
 
-    LWIP_DEBUGF(SYS_DEBUG, ("sys_mbox_post: mbox %p msg %p\n",
-                            (void *)mbox, (void *)msg));
+    LWIP_DEBUGF(SYS_DEBUG, ("sys_mbox_post: mbox %p fd %d msg %p\n",
+                            (void *)mbox, mbox->fd(), msg));
 
     mbox->post(msg);
 }
@@ -207,8 +221,8 @@ u32_t sys_arch_mbox_tryfetch(sys_mbox** mboxp, void** msgp)
     if (!msg) return (SYS_MBOX_EMPTY);
 
     *msgp = *msg;
-    LWIP_DEBUGF(SYS_DEBUG, ("sys_mbox_tryfetch: mbox %p msg %p\n",
-                            (void *)mbox, *msgp));
+    LWIP_DEBUGF(SYS_DEBUG, ("sys_mbox_tryfetch: mbox %p fd %d msg %p\n",
+                            (void *)mbox, mbox->fd(), *msgp));
     return (0);
 }
 
@@ -227,8 +241,8 @@ u32_t sys_arch_mbox_fetch(sys_mbox** mboxp, void** msgp, u32_t timeout)
         std::chrono::steady_clock::now() - start).count();
     *msgp = *msg;
 
-    LWIP_DEBUGF(SYS_DEBUG, ("sys_mbox_fetch: mbox %p msg %p duration %lu\n",
-                            (void *)mbox, *msgp, duration));
+    LWIP_DEBUGF(SYS_DEBUG, ("sys_mbox_fetch: mbox %p fd %d msg %p duration %lu\n",
+                            (void *)mbox, mbox->fd(), *msgp, duration));
     return (duration);
 }
 

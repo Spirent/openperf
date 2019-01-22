@@ -69,6 +69,13 @@ static std::string to_string(tcp_pcb* pcb)
 
 static size_t do_tcp_transmit(tcp_pcb* pcb, void* ptr, size_t length)
 {
+    if (length == 0
+        || tcp_sndbuf(pcb) <= TCP_SNDLOWAT
+        || tcp_sndqueuelen(pcb) >= TCP_SNDQUEUELOWAT) {
+        /* skip transmitting at this time... */
+        return (0);
+    }
+
     auto to_write = std::min(length, static_cast<size_t>(tcp_sndbuf(pcb)));
     if (tcp_write(pcb, ptr, to_write, TCP_WRITE_FLAG_COPY) != ERR_OK) {
         return (0);
@@ -172,6 +179,10 @@ int tcp_socket::do_lwip_accept(tcp_pcb *newpcb, int err)
 
 int tcp_socket::do_lwip_sent(uint16_t size)
 {
+    /*
+     * Size bytes just cleared the TCP send buffer.  Let's see
+     * if we have up to size bytes more to send.
+     */
     auto [ptr, length] = m_channel->recv_peek();
     auto to_send = std::min(length, static_cast<size_t>(size));
     m_channel->recv_skip(do_tcp_transmit(m_pcb.get(), ptr, to_send));
@@ -229,9 +240,7 @@ int tcp_socket::do_lwip_poll()
 
     /* need to check if we can send more data */
     auto [ptr, length] = m_channel->recv_peek();
-    if (length) {
-        m_channel->recv_skip(do_tcp_transmit(m_pcb.get(), ptr, length));
-    }
+    m_channel->recv_skip(do_tcp_transmit(m_pcb.get(), ptr, length));
 
     return (ERR_OK);
 }
@@ -275,8 +284,6 @@ void tcp_socket::handle_transmit()
     }
 
     auto [ptr, length] = m_channel->recv_peek();
-    if (!length) return;
-
     m_channel->recv_skip(do_tcp_transmit(m_pcb.get(), ptr, length));
 }
 

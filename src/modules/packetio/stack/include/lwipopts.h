@@ -36,6 +36,7 @@
 /* Miscellaneous options */
 #define LWIP_STATS 1
 #define LWIP_STATS_DISPLAY 1
+#define LWIP_STATS_LARGE 1
 #define MEMP_STATS 1
 #define MIB2_STATS 1
 
@@ -51,10 +52,10 @@
 #define LWIP_WND_SCALE 1
 
 #define TCP_LISTEN_BACKLOG 1
-#define TCP_SND_BUF 65535
+#define TCP_SND_BUF (64 * TCP_MSS)
 #define TCP_MSS 1460
 #define TCP_WND (64 * TCP_MSS)
-#define TCP_RCV_SCALE 8
+#define TCP_RCV_SCALE 6
 
 /* Socket options */
 #define SO_REUSE 1

@@ -170,29 +170,31 @@ static void rx_burst(const switch_t& vif, const queue_id& q)
         ICP_LOG(ICP_LOG_TRACE, "Received %d packet%s on %d:%d\n",
                 n, n > 1 ? "s" : "", q.first, q.second);
 
-        auto lengths = partition_mbufs(incoming.data(), n,
-                                       unicast.data(), nunicast.data());
+        auto [nb_ucast, nb_nucast] = partition_mbufs(incoming.data(), n,
+                                                     unicast.data(), nunicast.data());
 
         /* Lookup interfaces for unicast packets ... */
-        for (size_t i = 0; i < lengths.first; i++) {
+        for (size_t i = 0; i < nb_ucast; i++) {
             auto eth = rte_pktmbuf_mtod(unicast[i], struct ether_hdr *);
             auto ifp = vif->find(q.first, eth->d_addr.addr_bytes);
             interfaces[i] = ifp ? *ifp : nullptr;
         }
 
         /* ... and dispatch */
-        for (size_t i = 0; i < lengths.first; i++) {
-            if (interfaces[i]) {
-                ICP_LOG(ICP_LOG_TRACE, "Dispatching unicast packet to %c%c%u\n",
-                        interfaces[i]->name[0], interfaces[i]->name[1], interfaces[i]->num);
-                interfaces[i]->input(packetio_pbuf_synchronize(unicast[i]),
-                                     interfaces[i]);
-            } else {
-                rte_pktmbuf_free(unicast[i]);
+        for (size_t i = 0; i < nb_ucast; i++) {
+            if (!interfaces[i]) rte_pktmbuf_free(unicast[i]);
+
+            ICP_LOG(ICP_LOG_TRACE, "Dispatching unicast packet to %c%c%u\n",
+                    interfaces[i]->name[0], interfaces[i]->name[1], interfaces[i]->num);
+
+            auto pbuf = packetio_pbuf_synchronize(unicast[i]);
+            if (interfaces[i]->input(pbuf, interfaces[i]) != ERR_OK) {
+                pbuf_free(pbuf);
             }
         }
 
-        for (size_t i = 0; i < lengths.second; i++) {
+        /* Dispatch all non-unicast packets to all interfaces */
+        for (size_t i = 0; i < nb_nucast; i++) {
             /*
              * After we synchronize, use pbuf functions only so that we
              * can keep the mbuf/pbuf synchronized.
@@ -201,8 +203,11 @@ static void rx_burst(const switch_t& vif, const queue_id& q)
             for (auto ifp : vif->find(q.first)) {
                 ICP_LOG(ICP_LOG_TRACE, "Dispatching non-unicast packet to %c%c%u\n",
                         ifp->name[0], ifp->name[1], ifp->num);
+
                 pbuf_ref(pbuf);
-                ifp->input(pbuf, ifp);
+                if (ifp->input(pbuf, ifp) != ERR_OK) {
+                    pbuf_free(pbuf);
+                }
             }
             pbuf_free(pbuf);
         }

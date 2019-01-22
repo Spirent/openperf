@@ -136,6 +136,7 @@ void stream_channel::recv_skip(size_t length)
     auto adjust = sendq.skip(length);
     assert(adjust == length);  /* should always be true for us */
     if (full) unblock(client_fd());
+    if (sendq.readable()) do_write(server_fd());  /* not done reading */
 }
 
 }

@@ -7,10 +7,13 @@
 
 #include "packetio/generic_interface.h"
 
+struct pbuf;
+struct rte_ring;
+extern void rte_ring_free(struct rte_ring*);
+
 namespace icp {
 namespace packetio {
 namespace dpdk {
-
 
 class net_interface {
 public:
@@ -29,10 +32,23 @@ public:
     int port_id() const;
     interface::config_data config() const;
 
+    int handle_rx(struct pbuf*);
+    int handle_tx(struct pbuf*);
+    void handle_input();
+
 private:
+    struct rte_ring_deleter {
+        void operator()(rte_ring *ring) {
+            rte_ring_free(ring);
+        }
+    };
+
+    static constexpr unsigned recvq_size = 256;
+
     const interface::config_data m_config;
     const int m_id;
-    alignas(64) netif m_netif;  /**< This member is for another thread to use */
+    netif m_netif;
+    std::unique_ptr<rte_ring, rte_ring_deleter> m_recvq;
 };
 
 }

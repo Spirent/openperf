@@ -191,7 +191,7 @@ void get_tcp_info(const tcp_pcb* pcb, tcp_info& info)
 
     info.tcpi_rtt = pcb->rttest * 500;
     info.tcpi_snd_ssthresh = pcb->ssthresh;
-    info.tcpi_snd_cwnd = pcb->cwnd;
+    info.tcpi_snd_cwnd = pcb->cwnd / tcp_mss(pcb);  /* in units of segments */
 
     info.tcpi_notsent_bytes = (pcb->unsent ? pcb->unsent->len : 0);
 }

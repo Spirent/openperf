@@ -31,7 +31,7 @@ err_t lwip_tcp_event(void *arg, struct tcp_pcb *pcb, enum lwip_event event,
 {
     if (arg == nullptr) {
         /* Nothing to do; our socket has been destroyed */
-        return (ERR_OK);
+        return (ERR_RST);
     }
 
     using tcp_socket = icp::socket::server::tcp_socket;

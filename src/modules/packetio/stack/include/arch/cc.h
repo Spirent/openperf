@@ -24,7 +24,7 @@
 
 #define LWIP_PLATFORM_ASSERT(x)                 \
     do {                                        \
-        icp_exit(x);                            \
+        assert(x);                              \
     } while (0)
 
 #endif /* _ICP_PACKETIO_STACK_ARCH_CC_H_ */
