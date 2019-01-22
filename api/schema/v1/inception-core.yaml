@@ -311,6 +311,21 @@ paths:
           schema:
             $ref: "#/definitions/Stack"
 
+  /modules:
+    get:
+      operationId: ListModules
+      tags:
+        - Modules
+      summary: List Modules
+      description: The `modules` endpoint returns all configured modules.
+      responses:
+        200:
+          description: Success
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/Module"
+
 definitions:
   Interface:
     type: object
@@ -759,3 +774,29 @@ definitions:
       - sems
       - mutexes
       - mboxes
+
+  Module:
+    type: object
+    description: Program Module
+    properties:
+      id:
+        type: string
+        description: Unique module identifier
+      name:
+        type: string
+        description: Short name
+      descr:
+        type: string
+        description: Description of module functionality
+      version:
+        type: string
+        description: Module version
+      linkage:
+        type: string
+        description: Linkage type
+        enum:
+          - static
+          - dynamic
+      path:
+        type: string
+        description: Path to module binary
