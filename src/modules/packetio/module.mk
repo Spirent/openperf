@@ -19,3 +19,9 @@ PIO_SOURCES += \
 include $(PIO_SRC_DIR)/drivers/module.mk
 include $(PIO_SRC_DIR)/memory/module.mk
 include $(PIO_SRC_DIR)/stack/module.mk
+
+.PHONY: $(PIO_SRC_DIR)/init.cpp
+$(PIO_OBJ_DIR)/init.o: ICP_CPPFLAGS += \
+	-DBUILD_COMMIT="\"$(GIT_COMMIT)\"" \
+	-DBUILD_NUMBER="\"$(BUILD_NUMBER)\"" \
+	-DBUILD_TIMESTAMP="\"$(TIMESTAMP)\""

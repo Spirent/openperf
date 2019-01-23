@@ -1,5 +1,7 @@
 #include <assert.h>
 #include <stddef.h>
+#include <ctype.h>
+#include <regex.h>
 
 #include "core/icp_log.h"
 #include "core/icp_modules.h"
@@ -7,10 +9,28 @@
 static SLIST_HEAD(icp_modules_list, icp_module) icp_modules_list_head =
     SLIST_HEAD_INITIALIZER(icp_modules_list_head);
 
+static int icp_loaded_module_count = 0;
+
 void icp_modules_register(struct icp_module *module)
 {
-    assert(module->name);  /* try to catch init order problems */
+    /* Verify required module information fields are provided. */
+    assert(module->info.id); /* also try to catch init order problems */
+    assert(module->info.description);
+    assert(module->info.linkage);
+
+    /**
+     * Since we allow end users to get module information by
+     *  id via a URI, make sure module id is valid
+     *  for inclusion in a URI.
+     * For simplicity this is a subset of what RFC-3986 allows.
+     */
+    regex_t regex;
+    assert(!regcomp(&regex, ICP_MODULE_ID_REGEX, REG_EXTENDED));
+    assert(!regexec(&regex, module->info.id, 0, NULL, 0));
+    regfree(&regex);
+
     SLIST_INSERT_HEAD(&icp_modules_list_head, module, next);
+    icp_loaded_module_count++;
 }
 
 int icp_modules_pre_init(void *context)
@@ -25,7 +45,7 @@ int icp_modules_pre_init(void *context)
         int ret = module->pre_init(context, module->state);
         errors += !!(ret != 0);
         ICP_LOG(ICP_LOG_INFO, "Pre-initializing %s module: %s\n",
-                module->name, ret ? "Failed" : "OK");
+                module->info.id, ret ? "Failed" : "OK");
     }
 
     return (errors);
@@ -43,7 +63,7 @@ int icp_modules_init(void *context)
         int ret = module->init(context, module->state);
         errors += !!(ret != 0);
         ICP_LOG(ICP_LOG_INFO, "Initializing %s module: %s\n",
-                module->name, ret ? "Failed" : "OK");
+                module->info.id, ret ? "Failed" : "OK");
     }
 
     return (errors);
@@ -61,7 +81,7 @@ int icp_modules_post_init(void *context)
         int ret = module->post_init(context, module->state);
         errors += !!(ret != 0);
         ICP_LOG(ICP_LOG_INFO, "Post-initializing %s module: %s\n",
-                module->name, ret ? "Failed" : "OK");
+                module->info.id, ret ? "Failed" : "OK");
     }
 
     return (errors);
@@ -79,7 +99,7 @@ int icp_modules_start()
         int ret = module->start(module->state);
         errors += !!(ret != 0);
         ICP_LOG(ICP_LOG_INFO, "Starting %s module: %s\n",
-                module->name, ret ? "Failed" : "OK");
+                module->info.id, ret ? "Failed" : "OK");
     }
 
     return (errors);
@@ -94,4 +114,46 @@ void icp_modules_finish()
         }
         module->finish(module->state);
     }
+}
+
+int icp_get_loaded_module_count()
+{
+    return icp_loaded_module_count;
+}
+
+const struct icp_module_info * icp_get_module_info_by_id(const char * module_id)
+{
+    if(!module_id)
+        return NULL;
+
+    struct icp_module *module = NULL;
+    SLIST_FOREACH(module, &icp_modules_list_head, next) {
+
+        if (strncmp(module_id, module->info.id, ICP_MAX_MODULE_ID_LENGTH) == 0) {
+            return &module->info;
+        }
+    }
+
+    return NULL;
+}
+
+int icp_get_module_info_list(const struct icp_module_info * info[], int max_entries)
+{
+    if (!info)
+        return -1;
+
+    if (max_entries <= 0)
+        return -1;
+
+    int module_list_count = 0;
+    struct icp_module *module = NULL;
+    SLIST_FOREACH(module, &icp_modules_list_head, next) {
+        info[module_list_count] = &module->info;
+        module_list_count++;
+
+        if (module_list_count == max_entries)
+            return module_list_count;
+    }
+
+    return module_list_count;
 }

@@ -16,6 +16,8 @@
 namespace icp {
 namespace packetio {
 
+static int module_version = 1;
+
 struct service {
     ~service() {
         if (m_worker.joinable()) {
@@ -69,7 +71,16 @@ void icp_packetio_fini(void *state)
 }
 
 REGISTER_MODULE(packetio,
-                "packetio",
+                INIT_MODULE_INFO(
+                                 "packetio",
+                                 "Module to handle packetIO operations.",
+                                 icp::packetio::module_version,
+                                 BUILD_NUMBER,
+                                 BUILD_TIMESTAMP,
+                                 BUILD_COMMIT,
+                                 "static",
+                                 ""
+                                 ),
                 new icp::packetio::service(),
                 nullptr,
                 icp_packetio_init,

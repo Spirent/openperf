@@ -17,6 +17,7 @@ PIO_SRC_DIR := $(ICP_ROOT)/src/modules/packetio
 PIO_OBJ_DIR := $(ICP_BUILD_ROOT)/obj/modules/packetio
 PIO_LIB_DIR := $(ICP_BUILD_ROOT)/lib
 
+include $(ICP_ROOT)/mk/versions.mk
 include $(PIO_SRC_DIR)/module.mk
 
 PIO_OBJECTS := $(patsubst %, $(PIO_OBJ_DIR)/%, \

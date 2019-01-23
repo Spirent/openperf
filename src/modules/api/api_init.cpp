@@ -16,6 +16,8 @@ namespace api {
 
 static in_port_t service_port = 8080;
 
+static int module_version = 1;
+
 using namespace Pistache;
 
 static int handle_options(int opt, const char *opt_arg)
@@ -137,7 +139,16 @@ void api_service_fini(void *state)
 }
 
 REGISTER_MODULE(api_service,
-                "API service",
+                INIT_MODULE_INFO(
+                                 "API_service",
+                                 "Module to handle API services",
+                                 icp::api::module_version,
+                                 BUILD_NUMBER,
+                                 BUILD_TIMESTAMP,
+                                 BUILD_COMMIT,
+                                 "static",
+                                 ""
+                                 ),
                 new icp::api::service(),
                 api_service_pre_init,
                 nullptr,

@@ -20,6 +20,7 @@ API_OBJECTS :=
 API_DEPENDS :=
 API_LDLIBS  :=
 
+include $(ICP_ROOT)/mk/versions.mk
 include $(API_SRC_DIR)/module.mk
 
 # Generate a list of object files from the API_SOURCES variable
