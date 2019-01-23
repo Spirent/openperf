@@ -222,9 +222,7 @@ paths:
         200:
           description: Success
           schema:
-            type: array
-            items:
-              $ref: "#/definitions/Module"
+            $ref: "#/definitions/Module"
 
   /ports:
     get:
@@ -472,10 +470,6 @@ definitions:
         type: string
         description: Unique module identifier
         readOnly: true
-      name:
-        type: string
-        description: Short name
-        readOnly: true
       description:
         type: string
         description: Description of module functionality
@@ -495,7 +489,6 @@ definitions:
         readOnly: true
     required:
       - id
-      - name
       - description
       - version
       - linkage
@@ -506,19 +499,19 @@ definitions:
     properties:
       version:
         type: integer
-        description: Module capability version
+        description: Module version number
         format: int32
         readOnly: true
-      build:
+      build_number:
         type: string
         description: Module build version
         readOnly: true
-      date:
+      build_date:
         type: string
         description: Module build date
         format: date-time
         readOnly: true
-      commit:
+      source_commit:
         type: string
         description: Module version control revision
         readOnly: true
@@ -851,4 +844,3 @@ definitions:
       - sems
       - mutexes
       - mboxes
-
