@@ -36,6 +36,7 @@ parameters:
 
 tags:
   - name: Interfaces
+  - name: Modules
   - name: Ports
   - name: Stacks
 
@@ -195,6 +196,36 @@ paths:
         204:
           description: No Content
 
+  /modules:
+    get:
+      operationId: ListModules
+      tags:
+        - Modules
+      summary: List Modules
+      description: The `modules` endpoint returns all loaded modules.
+      responses:
+        200:
+          description: Success
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/Module"
+
+  /modules/{id}:
+    get:
+      operationId: GetModule
+      tags:
+        - Modules
+      summary: Get a module
+      description: Returns a module, by id.
+      responses:
+        200:
+          description: Success
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/Module"
+
   /ports:
     get:
       operationId: ListPorts
@@ -310,21 +341,6 @@ paths:
           description: Success
           schema:
             $ref: "#/definitions/Stack"
-
-  /modules:
-    get:
-      operationId: ListModules
-      tags:
-        - Modules
-      summary: List Modules
-      description: The `modules` endpoint returns all configured modules.
-      responses:
-        200:
-          description: Success
-          schema:
-            type: array
-            items:
-              $ref: "#/definitions/Module"
 
 definitions:
   Interface:
@@ -447,6 +463,67 @@ definitions:
       - tx_bytes
       - rx_errors
       - tx_errors
+
+  Module:
+    type: object
+    description: A test module that has been statically linked or dynamically loaded into the process
+    properties:
+      id:
+        type: string
+        description: Unique module identifier
+        readOnly: true
+      name:
+        type: string
+        description: Short name
+        readOnly: true
+      description:
+        type: string
+        description: Description of module functionality
+        readOnly: true
+      version:
+        $ref: "#/definitions/ModuleVersion"
+      linkage:
+        type: string
+        description: Linkage type
+        readOnly: true
+        enum:
+          - static
+          - dynamic
+      path:
+        type: string
+        description: Path to module binary (dynamically-loaded modules only).
+        readOnly: true
+    required:
+      - id
+      - name
+      - description
+      - version
+      - linkage
+
+  ModuleVersion:
+    type: object
+    description: Module version information
+    properties:
+      version:
+        type: integer
+        description: Module capability version
+        format: int32
+        readOnly: true
+      build:
+        type: string
+        description: Module build version
+        readOnly: true
+      date:
+        type: string
+        description: Module build date
+        format: date-time
+        readOnly: true
+      commit:
+        type: string
+        description: Module version control revision
+        readOnly: true
+    required:
+      - version
 
   Port:
     type: object
@@ -775,28 +852,3 @@ definitions:
       - mutexes
       - mboxes
 
-  Module:
-    type: object
-    description: Program Module
-    properties:
-      id:
-        type: string
-        description: Unique module identifier
-      name:
-        type: string
-        description: Short name
-      descr:
-        type: string
-        description: Description of module functionality
-      version:
-        type: string
-        description: Module version
-      linkage:
-        type: string
-        description: Linkage type
-        enum:
-          - static
-          - dynamic
-      path:
-        type: string
-        description: Path to module binary
