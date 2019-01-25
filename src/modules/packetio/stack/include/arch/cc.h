@@ -6,8 +6,9 @@
  * the host platform and is included from <lwip>/src/include/lwip/arch.h
  */
 
+#include <assert.h>
 #include <sys/time.h>
-#include "core/icp_core.h"
+#include "core/icp_log.h"
 
 /*
  * Macro shenanigans to remove the enclosing parentheses from existing

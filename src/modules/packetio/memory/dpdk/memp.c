@@ -32,6 +32,7 @@
 #include "lwip/ip6_frag.h"
 #include "lwip/mld6.h"
 
+#include "core/icp_common.h"
 #include "packetio/drivers/dpdk/dpdk.h"
 #include "packetio/memory/dpdk/memp.h"
 

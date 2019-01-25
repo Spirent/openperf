@@ -1,3 +1,4 @@
+#include <cassert>
 #include <cerrno>
 #include <numeric>
 #include <poll.h>
