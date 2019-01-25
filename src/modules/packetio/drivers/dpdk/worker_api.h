@@ -2,6 +2,7 @@
 #define _ICP_PACKETIO_DPDK_WORKER_API_H_
 
 #include <memory>
+#include <optional>
 #include <string>
 #include <variant>
 
@@ -17,7 +18,23 @@ struct netif;
 namespace icp {
 namespace packetio {
 namespace dpdk {
+
+class rx_queue;
+class tx_queue;
+
 namespace worker {
+
+struct descriptor {
+    uint16_t worker_id;
+    rx_queue* rxq;
+    tx_queue* txq;
+
+    descriptor(uint16_t id_, rx_queue* rxq_, tx_queue* txq_)
+        : worker_id(id_)
+        , rxq(rxq_)
+        , txq(txq_)
+    {}
+};
 
 struct start_msg {
     std::string endpoint;
@@ -28,7 +45,7 @@ struct stop_msg {
 };
 
 struct configure_msg {
-    const std::vector<queue::descriptor> descriptors;
+    const std::vector<worker::descriptor> descriptors;
 };
 
 enum class message_type { NONE = 0,
@@ -53,7 +70,7 @@ struct message {
         };
         struct {
             size_t descriptors_size;
-            const queue::descriptor descriptors[];
+            const worker::descriptor descriptors[];
         };
     };
 };
@@ -68,7 +85,7 @@ public:
 
     void start();
     void stop();
-    void configure(const std::vector<queue::descriptor>&);
+    void configure(const std::vector<worker::descriptor>&);
 
 private:
     const void*  m_context;

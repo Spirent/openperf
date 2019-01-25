@@ -45,12 +45,12 @@ static zmq_msg_t create_message(const stop_msg& stop)
 
 static zmq_msg_t create_message(const configure_msg& config)
 {
-    auto descriptors_bytes = sizeof(queue::descriptor) * config.descriptors.size();
+    auto descriptors_bytes = sizeof(descriptor) * config.descriptors.size();
     zmq_msg_t msg = make_message(descriptors_bytes);
     message *m = reinterpret_cast<message*>(zmq_msg_data(&msg));
     m->type = message_type::CONFIG;
     m->descriptors_size = config.descriptors.size();
-    std::memcpy(const_cast<queue::descriptor*>(m->descriptors),
+    std::memcpy(const_cast<descriptor*>(m->descriptors),
                 config.descriptors.data(), descriptors_bytes);
 
     return (msg);
@@ -122,7 +122,7 @@ void client::stop()
                                  "(syncpoint = %s)\n", syncpoint.c_str());
 }
 
-void client::configure(const std::vector<queue::descriptor>& descriptors)
+void client::configure(const std::vector<descriptor>& descriptors)
 {
     auto msg = create_message(configure_msg{ .descriptors = descriptors });
     send_message(m_socket.get(), msg);

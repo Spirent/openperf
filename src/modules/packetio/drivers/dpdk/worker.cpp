@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <array>
+#include <chrono>
 #include <cstdio>
 #include <cstring>
 #include <memory>
@@ -10,7 +11,7 @@
 #include <zmq.h>
 #include "lwip/netif.h"
 
-#include "core/icp_core.h"
+#include "core/icp_log.h"
 #include "packetio/drivers/dpdk/dpdk.h"
 #include "packetio/drivers/dpdk/queue_poller.h"
 #include "packetio/drivers/dpdk/queue_utils.h"
@@ -27,12 +28,10 @@ using switch_t = std::shared_ptr<const vif_map<netif>>;
 const std::string endpoint = "inproc://icp_packetio_workers_control";
 
 static constexpr uint16_t rx_burst_size = 32;
+static constexpr uint16_t tx_burst_size = 32;
 
-/*
- * Convenience definition for identifying queues, which contain a port
- * and queue id.
-*/
-using queue_id = std::pair<uint16_t, uint16_t>;
+using namespace std::chrono_literals;
+static constexpr auto poll_timeout = 250ms;
 
 /**
  * Our worker implements a simple finite state machine with
@@ -52,6 +51,20 @@ struct state_armed {};
 struct state_running {};
 
 using state = std::variant<state_init, state_armed, state_running>;
+
+/**
+ * This struct is magic.  Use templates and parameter packing to provide
+ * some syntactic sugar for creating visitor objects for std::visit.
+ */
+template<typename ...Ts>
+struct overloaded_visitor : Ts...
+{
+    overloaded_visitor(const Ts&... args)
+        : Ts(args)...
+    {}
+
+    using Ts::operator()...;
+};
 
 /**
  * This CRTP based class provides a simple finite state machine framework
@@ -76,14 +89,23 @@ public:
     }
 };
 
-static bool all_pollable(const std::vector<queue_id>& queues)
+static bool all_pollable(const std::vector<queue_ptr>& queues)
 {
     queue_poller poller;
+
+    auto add_visitor = [&](auto q) -> bool {
+                           return (poller.add(q));
+                       };
+
+    auto del_visitor = [&](auto q) {
+                           poller.del(q);
+                       };
+
     for (auto& q : queues) {
-        if (!poller.add(q.first, q.second)) {
+        if (!std::visit(add_visitor, q)) {
             return (false);
         }
-        poller.del(q.first, q.second);
+        std::visit(del_visitor, q);
     }
     return (true);
 }
@@ -157,7 +179,7 @@ static std::pair<size_t, size_t> partition_mbufs(rte_mbuf* incoming[], int lengt
     return std::make_pair(ucast_idx, mcast_idx);
 }
 
-static void rx_burst(const switch_t& vif, const queue_id& q)
+static void rx_burst(const switch_t& vif, const rx_queue* rxq)
 {
     /*
      * We pull packets from the port and put them in the receive array.
@@ -166,17 +188,19 @@ static void rx_burst(const switch_t& vif, const queue_id& q)
     std::array<rte_mbuf*, rx_burst_size> incoming, unicast, nunicast;
     std::array<netif*, rx_burst_size> interfaces;
 
-    while (auto n = rte_eth_rx_burst(q.first, q.second, incoming.data(), rx_burst_size)) {
+    while (auto n = rte_eth_rx_burst(rxq->port_id(), rxq->queue_id(),
+                                     incoming.data(), rx_burst_size)) {
         ICP_LOG(ICP_LOG_TRACE, "Received %d packet%s on %d:%d\n",
-                n, n > 1 ? "s" : "", q.first, q.second);
+                n, n > 1 ? "s" : "", rxq->port_id(), rxq->queue_id());
 
         auto [nb_ucast, nb_nucast] = partition_mbufs(incoming.data(), n,
-                                                     unicast.data(), nunicast.data());
+                                                     unicast.data(),
+                                                     nunicast.data());
 
         /* Lookup interfaces for unicast packets ... */
         for (size_t i = 0; i < nb_ucast; i++) {
             auto eth = rte_pktmbuf_mtod(unicast[i], struct ether_hdr *);
-            auto ifp = vif->find(q.first, eth->d_addr.addr_bytes);
+            auto ifp = vif->find(rxq->port_id(), eth->d_addr.addr_bytes);
             interfaces[i] = ifp ? *ifp : nullptr;
         }
 
@@ -185,7 +209,8 @@ static void rx_burst(const switch_t& vif, const queue_id& q)
             if (!interfaces[i]) rte_pktmbuf_free(unicast[i]);
 
             ICP_LOG(ICP_LOG_TRACE, "Dispatching unicast packet to %c%c%u\n",
-                    interfaces[i]->name[0], interfaces[i]->name[1], interfaces[i]->num);
+                    interfaces[i]->name[0], interfaces[i]->name[1],
+                    interfaces[i]->num);
 
             auto pbuf = packetio_pbuf_synchronize(unicast[i]);
             if (interfaces[i]->input(pbuf, interfaces[i]) != ERR_OK) {
@@ -200,7 +225,7 @@ static void rx_burst(const switch_t& vif, const queue_id& q)
              * can keep the mbuf/pbuf synchronized.
              */
             auto pbuf = packetio_pbuf_synchronize(nunicast[i]);
-            for (auto ifp : vif->find(q.first)) {
+            for (auto ifp : vif->find(rxq->port_id())) {
                 ICP_LOG(ICP_LOG_TRACE, "Dispatching non-unicast packet to %c%c%u\n",
                         ifp->name[0], ifp->name[1], ifp->num);
 
@@ -214,35 +239,89 @@ static void rx_burst(const switch_t& vif, const queue_id& q)
     }
 }
 
-static void run_pollable(void* control, const switch_t& vif,
-                         const std::vector<queue_id>& queues)
+static void tx_burst(const tx_queue* txq)
 {
+    std::array<rte_mbuf*, tx_burst_size> outgoing;
+
+    while (!rte_ring_empty(txq->ring())) {
+        auto to_send = rte_ring_dequeue_burst(txq->ring(),
+                                              reinterpret_cast<void**>(outgoing.data()),
+                                              outgoing.size(), nullptr);
+
+        auto sent = rte_eth_tx_burst(txq->port_id(), txq->queue_id(),
+                                     outgoing.data(), to_send);
+
+        ICP_LOG(ICP_LOG_TRACE, "Transmitted %u of %u packet%s on %u:%u\n",
+                sent, to_send, sent > 1 ? "s" : "", txq->port_id(), txq->queue_id());
+
+        size_t retries = 0;
+        while (sent < to_send) {
+            rte_pause();
+            retries++;
+            sent += rte_eth_tx_burst(txq->port_id(), txq->queue_id(),
+                                     outgoing.data() + sent,
+                                     to_send - sent);
+        }
+
+        if (retries) {
+            ICP_LOG(ICP_LOG_DEBUG, "Transmission required %zu retries on %u:%u\n",
+                    retries, txq->port_id(), txq->queue_id());
+        }
+    }
+}
+
+static void run_pollable(void* control, const switch_t& vif,
+                         const std::vector<queue_ptr>& queues)
+{
+    auto enable_visitor = [](auto q) {
+                              q->enable();
+                          };
+
     queue_poller poller;
     for (auto& q : queues) {
-        poller.add(q.first, q.second);
-        poller.enable(q.first, q.second);
+        poller.add(q);
+        std::visit(enable_visitor, q);
     }
 
     do {
-        for (auto& q : poller.poll(250)) {
-            rx_burst(vif, q);
-            poller.enable(q.first, q.second);
+        for (auto& q : poller.poll(poll_timeout.count())) {
+            std::visit(overloaded_visitor(
+                           [&](rx_queue* rxq) {
+                               rx_burst(vif, rxq);
+                               rxq->enable();
+                           },
+                           [](tx_queue* txq) {
+                               tx_burst(txq);
+                               txq->enable();
+                           }),
+                       q);
         }
     } while (!icp_socket_has_messages(control));
 }
 
 static void run_spinning(void* control, const switch_t& vif,
-                         const std::vector<queue_id>& queues)
+                         const std::vector<queue_ptr>& queues)
 {
     do {
-        for (auto& q : queues) {
-            rx_burst(vif, q);
-        }
+        using clock = std::chrono::steady_clock;
+        auto start = clock::now();
+        do {
+            for (auto& q : queues) {
+                std::visit(overloaded_visitor(
+                               [&](rx_queue* rxq) {
+                                   rx_burst(vif, rxq);
+                               },
+                               [](tx_queue* txq) {
+                                   tx_burst(txq);
+                               }),
+                           q);
+            }
+        } while (clock::now() - start > poll_timeout);
     } while (!icp_socket_has_messages(control));
 }
 
 static void run(void* control, const switch_t& vif,
-                const std::vector<queue_id>& queues)
+                const std::vector<queue_ptr>& queues)
 {
     if (all_pollable(queues)) {
         run_pollable(control, vif, queues);
@@ -253,32 +332,28 @@ static void run(void* control, const switch_t& vif,
 
 class worker : public finite_state_machine<worker, state, command_msg>
 {
-    std::vector<queue_id> m_rxqs;
-    std::vector<queue_id> m_txqs;
-
+    std::vector<queue_ptr> m_queues;
     void* m_context;
     void* m_control;
     switch_t m_switch;
 
-    void update_config(const std::vector<queue::descriptor>& descriptors)
+    void update_config(const std::vector<descriptor>& descriptors)
     {
-        m_rxqs.clear();
-        m_txqs.clear();
+        m_queues.clear();
 
         for (auto& d: descriptors) {
-            if (d.worker_id == rte_lcore_id()) {
-                if (d.mode == queue::queue_mode::RX
-                    || d.mode == queue::queue_mode::RXTX) {
-                    ICP_LOG(ICP_LOG_TRACE, "Enabling RX port queue %d:%d\n",
-                            d.port_id, d.queue_id);
-                    m_rxqs.emplace_back(d.port_id, d.queue_id);
-                }
-                if (d.mode == queue::queue_mode::TX
-                    || d.mode == queue::queue_mode::RXTX) {
-                    m_txqs.emplace_back(d.port_id, d.queue_id);
-                    ICP_LOG(ICP_LOG_TRACE, "Enabling TX port queue %d:%d\n",
-                            d.port_id, d.queue_id);
-                }
+            if (d.worker_id != rte_lcore_id()) continue;
+
+            if (d.rxq != nullptr) {
+                ICP_LOG(ICP_LOG_DEBUG, "Enabling RX port queue %u:%u\n",
+                        d.rxq->port_id(), d.rxq->queue_id());
+                m_queues.emplace_back(d.rxq);
+            }
+
+            if (d.txq != nullptr) {
+                ICP_LOG(ICP_LOG_DEBUG, "Enabling TX port queue %u:%u\n",
+                        d.txq->port_id(), d.txq->queue_id());
+                m_queues.emplace_back(d.txq);
             }
         }
     }
@@ -302,7 +377,7 @@ public:
     std::optional<state> on_event(state_armed&, const start_msg &start)
     {
         icp_task_sync_ping(m_context, start.endpoint.data());
-        run(m_control, m_switch, m_rxqs);
+        run(m_control, m_switch, m_queues);
         return (std::make_optional(state_running()));
     }
 
@@ -326,7 +401,7 @@ public:
         if (msg.descriptors.empty()) {
             return (std::make_optional(state_init()));
         }
-        run(m_control, m_switch, m_rxqs);
+        run(m_control, m_switch, m_queues);
         return (std::make_optional(state_running()));
     }
 
@@ -367,7 +442,7 @@ static std::optional<command_msg> get_command_msg(void *socket, int flags = 0)
     auto m = reinterpret_cast<message*>(zmq_msg_data(&msg));
     switch (m->type) {
     case message_type::CONFIG: {
-        std::vector<queue::descriptor> descriptors;
+        std::vector<descriptor> descriptors;
         for (size_t i = 0; i < m->descriptors_size; i++) {
             descriptors.emplace_back(m->descriptors[i]);
         }

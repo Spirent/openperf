@@ -277,9 +277,11 @@ static std::string recvq_name(int id)
     return (std::string("io") + std::to_string(id) + "_recvq");
 }
 
-net_interface::net_interface(int id, const interface::config_data& config)
-    : m_config(config)
-    , m_id(id)
+net_interface::net_interface(int id, const interface::config_data& config,
+                             driver::tx_burst tx)
+    : m_id(id)
+    , m_config(config)
+    , m_transmit(tx)
     , m_recvq(rte_ring_create(recvq_name(id).c_str(), recvq_size, SOCKET_ID_ANY, RING_F_SC_DEQ))
 {
     m_netif.state = this;
@@ -326,11 +328,6 @@ int net_interface::handle_rx(struct pbuf* p)
     return (ERR_OK);
 }
 
-/**
- * Quick and dirty transmit function.
- * XXX: Assumes tx queue 0 exists.
- * TODO: Queue this to a dedicated tx thread/worker for bulk tx
- */
 int net_interface::handle_tx(struct pbuf* p)
 {
     /*
@@ -343,7 +340,7 @@ int net_interface::handle_tx(struct pbuf* p)
     rte_mbuf_refcnt_update(mbuf, 1);
 
     rte_mbuf *pkts[] = { mbuf };
-    return (rte_eth_tx_burst(port_id(), 0, pkts, 1) == 1 ? ERR_OK : ERR_BUF);
+    return (m_transmit(port_id(), 0, reinterpret_cast<void**>(pkts), 1) == 1 ? ERR_OK : ERR_BUF);
 }
 
 void net_interface::handle_input()

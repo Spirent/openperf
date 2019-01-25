@@ -5,6 +5,7 @@
 
 #include "lwip/netifapi.h"
 
+#include "packetio/generic_driver.h"
 #include "packetio/generic_interface.h"
 
 struct pbuf;
@@ -17,7 +18,8 @@ namespace dpdk {
 
 class net_interface {
 public:
-    net_interface(int id, const interface::config_data& config);
+    net_interface(int id, const interface::config_data& config,
+                  driver::tx_burst tx);
     ~net_interface();
 
     static void *operator new(size_t);
@@ -45,8 +47,9 @@ private:
 
     static constexpr unsigned recvq_size = 256;
 
-    const interface::config_data m_config;
     const int m_id;
+    const interface::config_data m_config;
+    const driver::tx_burst m_transmit;
     netif m_netif;
     std::unique_ptr<rte_ring, rte_ring_deleter> m_recvq;
 };
