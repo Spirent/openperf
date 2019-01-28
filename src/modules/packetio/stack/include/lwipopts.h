@@ -52,9 +52,10 @@
 #define LWIP_WND_SCALE 1
 
 #define TCP_LISTEN_BACKLOG 1
-#define TCP_SND_BUF (64 * TCP_MSS)
+#define TCP_SND_BUF (1024 * TCP_MSS)
+#define TCP_SNDLOWAT (0xFFFF - (4 * TCP_MSS) - 1)
 #define TCP_MSS 1460
-#define TCP_WND (64 * TCP_MSS)
+#define TCP_WND (1024 * TCP_MSS)
 #define TCP_RCV_SCALE 6
 
 /* Socket options */

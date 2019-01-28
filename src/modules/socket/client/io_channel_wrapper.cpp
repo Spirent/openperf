@@ -42,6 +42,22 @@ io_channel_wrapper& io_channel_wrapper::operator=(io_channel_wrapper&& other)
     return (*this);
 }
 
+int io_channel_wrapper::flags()
+{
+    auto flags_visitor = [](auto channel) -> int {
+                             return (channel->flags());
+                         };
+    return (std::visit(flags_visitor, m_channel));
+}
+
+int io_channel_wrapper::flags(int new_flags)
+{
+    auto flags_visitor = [&](auto channel) -> int {
+                             return (channel->flags(new_flags));
+                         };
+    return (std::visit(flags_visitor, m_channel));
+}
+
 tl::expected<size_t, int> io_channel_wrapper::send(pid_t pid,
                                                    const iovec iov[], size_t iovcnt,
                                                    const sockaddr *to)

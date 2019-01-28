@@ -70,7 +70,7 @@ public:
     int connect(int s, const struct sockaddr *name, socklen_t namelen);
     int listen(int s, int backlog);
     int socket(int domain, int type, int protocol);
-    int ioctl(int s, long cmd, void *argp);
+    int fcntl(int fd, int cmd, ...);
 
     /* Receive functions */
     ssize_t read(int s, void *mem, size_t len);

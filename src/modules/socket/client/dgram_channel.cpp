@@ -79,6 +79,17 @@ dgram_channel::~dgram_channel()
     close(client_fds.server_fd);
 }
 
+int dgram_channel::flags()
+{
+    return (socket_flags.load(std::memory_order_acquire));
+}
+
+int dgram_channel::flags(int flags)
+{
+    socket_flags.store(flags, std::memory_order_release);
+    return (0);
+}
+
 tl::expected<size_t, int> dgram_channel::send(pid_t pid,
                                               const iovec iov[], size_t iovcnt,
                                               const sockaddr *to)

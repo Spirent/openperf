@@ -12,6 +12,11 @@ class stream_channel
     static constexpr uint64_t eventfd_max = std::numeric_limits<uint64_t>::max() - 1;
     STREAM_CHANNEL_MEMBERS
 
+    int client_fd();
+    int server_fd();
+
+    void clear_event_flags();
+
 public:
     stream_channel(int client_fd, int server_fd);
     ~stream_channel();
@@ -21,6 +26,9 @@ public:
 
     stream_channel(stream_channel&&) = default;
     stream_channel& operator=(stream_channel&&) = default;
+
+    int flags();
+    int flags(int);
 
     tl::expected<size_t, int> send(pid_t pid, const iovec iov[], size_t iovcnt,
                                    const sockaddr *to);

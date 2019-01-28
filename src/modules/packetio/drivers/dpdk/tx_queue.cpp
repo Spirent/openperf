@@ -28,7 +28,7 @@ static long get_wake_up_delay(uint16_t port_id)
     struct rte_eth_link link;
     rte_eth_link_get_nowait(port_id, &link);
     auto delay = (link.link_speed  /* speed is in Mbps */
-                  ? (2 * (10000000 / link.link_speed))
+                  ? 10000000 / link.link_speed  /* 1 us delay at 10 Gbps */
                   : 10000);
     return (delay);
 }
@@ -55,7 +55,8 @@ tx_queue::tx_queue(uint16_t port_id, uint16_t queue_id)
     , m_enabled(false)
     , m_ring(rte_ring_create(get_ring_name(port_id, queue_id).c_str(),
                              tx_queue_size,
-                             SOCKET_ID_ANY, RING_F_SC_DEQ))
+                             SOCKET_ID_ANY,
+                             RING_F_SP_ENQ | RING_F_SC_DEQ))
 {
     if (m_fd == -1) {
         throw std::runtime_error("Could not create timerfd: "
@@ -150,7 +151,7 @@ uint16_t tx_queue::enqueue(rte_mbuf* const mbufs[], uint16_t nb_mbufs)
         && !m_armed.test_and_set(std::memory_order_acquire)) {
         auto alarm = itimerspec{
             .it_interval = { 0, 0 },
-            .it_value    = { 0, get_wake_up_delay(m_port) }  /* 2 us; XXX: should base on port speed */
+            .it_value    = { 0, get_wake_up_delay(m_port) }
         };
         if (timerfd_settime(m_fd, 0, &alarm, nullptr) == -1) {
             ICP_LOG(ICP_LOG_ERROR, "Could not arm timerfd for tx queue on %u:%u: %s\n",

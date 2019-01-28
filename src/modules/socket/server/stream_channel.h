@@ -29,14 +29,15 @@ public:
     int server_fd();
 
     void ack();
-    void notify();
     void error(int);
 
-    bool send(pid_t pid, const iovec iov[], size_t iovcnt);
-    size_t send_ack();
+    void maybe_notify();
+    void maybe_unblock();
+
+    size_t send(pid_t pid, const iovec iov[], size_t iovcnt);
 
     iovec recv_peek();
-    void  recv_skip(size_t length);
+    size_t recv_clear(size_t length);
 };
 
 struct stream_channel_deleter {

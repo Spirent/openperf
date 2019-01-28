@@ -70,15 +70,21 @@ static std::string to_string(tcp_pcb* pcb)
 
 static size_t do_tcp_transmit(tcp_pcb* pcb, void* ptr, size_t length)
 {
-    if (length == 0
-        || tcp_sndbuf(pcb) <= TCP_SNDLOWAT
-        || tcp_sndqueuelen(pcb) >= TCP_SNDQUEUELOWAT) {
-        /* skip transmitting at this time... */
+    /*
+     * Don't bother invoking TCP machinery to write nothing.
+     * That includes skipping writes if we can't send a full MSS
+     * worth of data.
+     */
+    if (length == 0 || pcb->snd_wnd < TCP_MSS) {
         return (0);
     }
 
     auto to_write = std::min(length, static_cast<size_t>(tcp_sndbuf(pcb)));
-    if (tcp_write(pcb, ptr, to_write, TCP_WRITE_FLAG_COPY) != ERR_OK) {
+    uint8_t flags = (to_write == length
+                     ? TCP_WRITE_FLAG_COPY
+                     : TCP_WRITE_FLAG_COPY | TCP_WRITE_FLAG_MORE);
+
+    if (tcp_write(pcb, ptr, to_write, flags) != ERR_OK) {
         return (0);
     }
 
@@ -173,20 +179,23 @@ int tcp_socket::do_lwip_accept(tcp_pcb *newpcb, int err)
 
     m_acceptq.emplace(newpcb);
     tcp_backlog_delayed(newpcb);
-    m_channel->notify();
+    m_channel->maybe_notify();
 
     return (ERR_OK);
 }
 
-int tcp_socket::do_lwip_sent(uint16_t size)
+int tcp_socket::do_lwip_sent(uint16_t size __attribute__((unused)))
 {
     /*
      * Size bytes just cleared the TCP send buffer.  Let's see
      * if we have up to size bytes more to send.
      */
-    auto [ptr, length] = m_channel->recv_peek();
-    auto to_send = std::min(length, static_cast<size_t>(size));
-    m_channel->recv_skip(do_tcp_transmit(m_pcb.get(), ptr, to_send));
+    auto loop_sent = 0;
+    do {
+        auto [ptr, length] = m_channel->recv_peek();
+        loop_sent = m_channel->recv_clear(do_tcp_transmit(m_pcb.get(), ptr, length));
+    } while (loop_sent != 0);
+
     return (ERR_OK);
 }
 
@@ -204,22 +213,22 @@ int tcp_socket::do_lwip_recv(pbuf *p, int err)
         return (ERR_OK);
     }
 
-    std::array<iovec, 1024> iovecs;
-    size_t iovcnt = 0;
+    /* Store the incoming pbuf in our buffer */
+    m_recvq.push(p);
 
-    auto p_current = p;
-    while (p_current != nullptr) {
-        iovecs[iovcnt++] = iovec{ .iov_base = p_current->payload,
-                                  .iov_len = p_current->len };
-        p_current = p_current->next;
+    /*
+     * Initiate a copy to the client's buffer if the TCP sender sent a
+     * PUSH flag or they've filled up a significant portion of the receive
+     * window.
+     */
+    if (p->flags & PBUF_FLAG_PUSH
+        || m_recvq.length() > (m_pcb->rcv_wnd / 2)) {
+        std::array<iovec, 64> iovecs;
+        auto iovcnt = m_recvq.iovecs(iovecs.data(), iovecs.size());
+        tcp_recved(m_pcb.get(),
+                   m_recvq.clear(m_channel->send(m_pid, iovecs.data(), iovcnt)));
     }
-    assert(iovcnt == pbuf_clen(p));
 
-    if (!m_channel->send(m_pid, iovecs.data(), iovcnt)) {
-        return (ERR_MEM);
-    }
-
-    pbuf_free(p);
     return (ERR_OK);
 }
 
@@ -240,8 +249,11 @@ int tcp_socket::do_lwip_poll()
     /* need to check idle time and close if necessary */
 
     /* need to check if we can send more data */
-    auto [ptr, length] = m_channel->recv_peek();
-    m_channel->recv_skip(do_tcp_transmit(m_pcb.get(), ptr, length));
+    size_t loop_sent = 0;
+    do {
+        auto [ptr, length] = m_channel->recv_peek();
+        loop_sent = m_channel->recv_clear(do_tcp_transmit(m_pcb.get(), ptr, length));
+    } while (loop_sent != 0);
 
     return (ERR_OK);
 }
@@ -280,12 +292,18 @@ void tcp_socket::handle_transmit()
 
     m_channel->ack();
 
-    if (auto to_ack = m_channel->send_ack(); to_ack != 0) {
-        tcp_recved(m_pcb.get(), to_ack);
+    if (m_recvq.bufs()) {
+        std::array<iovec, 64> iovecs;
+        auto iovcnt = m_recvq.iovecs(iovecs.data(), iovecs.size());
+        tcp_recved(m_pcb.get(),
+                   m_recvq.clear(m_channel->send(m_pid, iovecs.data(), iovcnt)));
     }
 
-    auto [ptr, length] = m_channel->recv_peek();
-    m_channel->recv_skip(do_tcp_transmit(m_pcb.get(), ptr, length));
+    size_t loop_sent = 0;
+    do {
+        auto [ptr, length] = m_channel->recv_peek();
+        loop_sent = m_channel->recv_clear(do_tcp_transmit(m_pcb.get(), ptr, length));
+    } while (loop_sent != 0);
 }
 
 tcp_socket::on_request_reply tcp_socket::on_request(const api::request_bind& bind,

@@ -15,8 +15,10 @@ namespace socket {
     circular_buffer recvq;                      \
     api::socket_fd_pair client_fds;             \
     api::socket_fd_pair server_fds;             \
-    std::atomic_int read_counter;               \
-    std::atomic_int socket_error;
+    std::atomic_flag notify_event_flag;         \
+    std::atomic_flag block_event_flag;          \
+    std::atomic_int socket_error;               \
+    std::atomic_int socket_flags;
 
 struct stream_channel {
     STREAM_CHANNEL_MEMBERS

@@ -23,8 +23,8 @@ class circular_buffer
     alignas(cache_line_size) std::atomic_uintptr_t m_read;
     alignas(cache_line_size) std::atomic_uintptr_t m_write;
 
-    size_t read()  const { return m_read.load(std::memory_order_relaxed); }
-    size_t write() const { return m_write.load(std::memory_order_relaxed); }
+    size_t read()  const { return m_read.load(std::memory_order_acquire); }
+    size_t write() const { return m_write.load(std::memory_order_acquire); }
 
     circular_buffer(size_t initial_size);
     circular_buffer();

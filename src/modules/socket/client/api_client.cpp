@@ -1,6 +1,7 @@
 #include <cassert>
 #include <cerrno>
 #include <cstring>
+#include <fcntl.h>
 #include <numeric>
 #include <stdexcept>
 #include <sys/socket.h>
@@ -429,7 +430,7 @@ int client::socket(int domain, int type, int protocol)
     return (socket.fd_pair.client_fd);
 }
 
-int client::ioctl(int s, long cmd, void *argp)
+int client::fcntl(int s, int cmd, ...)
 {
     auto result = m_channels.find(s);
     if (result == m_channels.end()) {
@@ -437,9 +438,34 @@ int client::ioctl(int s, long cmd, void *argp)
         return (-1);
     }
 
-    /* XXX: not yet */
-    errno = ENOSYS;
-    return (-1);
+    auto& [id, channel] = result->second;
+
+    va_list ap;
+    va_start(ap, cmd);
+
+    int to_return = 0;
+
+    switch (cmd) {
+    case F_GETFL:
+        to_return = channel.flags();
+        break;
+    case F_SETFL:
+        to_return = channel.flags(va_arg(ap, int));
+        break;
+    case F_GETFD:
+    case F_GETOWN:
+        to_return = ::fcntl(s, cmd);
+    case F_DUPFD:
+    case F_DUPFD_CLOEXEC:
+    case F_SETFD:
+    case F_SETOWN:
+        to_return = ::fcntl(s, cmd, va_arg(ap, int));
+    default:
+        to_return = ::fcntl(s, cmd, va_arg(ap, void*));
+    }
+
+    va_end(ap);
+    return (to_return);
 }
 
 /***

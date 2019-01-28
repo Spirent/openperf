@@ -6,6 +6,7 @@
 #include <queue>
 
 #include "socket/server/generic_socket.h"
+#include "socket/server/pbuf_queue.h"
 #include "socket/server/socket_utils.h"
 #include "socket/server/stream_channel.h"
 
@@ -48,6 +49,7 @@ class tcp_socket : public socket_state_machine<tcp_socket, tcp_socket_state>
     tcp_pcb_ptr m_pcb;
     pid_t m_pid;
     std::queue<tcp_pcb*, std::list<tcp_pcb*>> m_acceptq;
+    pbuf_queue m_recvq;
 
     icp::memory::allocator::pool* channel_pool();
 

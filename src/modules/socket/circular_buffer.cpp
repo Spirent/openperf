@@ -89,8 +89,8 @@ circular_buffer& circular_buffer::operator=(circular_buffer&& other)
 {
     if (this != &other) {
         m_size = other.m_size;
-        m_read.store(other.m_read.load(std::memory_order_relaxed), std::memory_order_relaxed);
-        m_write.store(other.m_write.load(std::memory_order_relaxed), std::memory_order_relaxed);
+        m_read.store(other.m_read.load(std::memory_order_acquire), std::memory_order_release);
+        m_write.store(other.m_write.load(std::memory_order_acquire), std::memory_order_release);
         m_buffer = other.m_buffer;
         other.m_buffer = nullptr;
     }
@@ -100,8 +100,8 @@ circular_buffer& circular_buffer::operator=(circular_buffer&& other)
 circular_buffer::circular_buffer(circular_buffer&& other)
     : m_buffer(other.m_buffer)
     , m_size(other.m_size)
-    , m_read(other.m_read.load(std::memory_order_relaxed))
-    , m_write(other.m_write.load(std::memory_order_relaxed))
+    , m_read(other.m_read.load(std::memory_order_acquire))
+    , m_write(other.m_write.load(std::memory_order_acquire))
 {
     other.m_buffer = nullptr;
 }
@@ -133,7 +133,7 @@ bool circular_buffer::full() const
 
 void* circular_buffer::peek()
 {
-    return (reinterpret_cast<void*>(m_buffer + m_read.load(std::memory_order_relaxed)));
+    return (reinterpret_cast<void*>(m_buffer + m_read.load(std::memory_order_acquire)));
 }
 
 size_t circular_buffer::skip(size_t length)
@@ -143,11 +143,11 @@ size_t circular_buffer::skip(size_t length)
         return (0);
     }
 
-    auto cursor = m_read.load(std::memory_order_relaxed);
+    auto cursor = m_read.load(std::memory_order_acquire);
     m_read.store((cursor + to_skip > m_size
                   ? cursor + to_skip - m_size
                   : cursor + to_skip),
-                 std::memory_order_relaxed);
+                 std::memory_order_release);
     return (to_skip);
 }
 
@@ -158,12 +158,12 @@ size_t circular_buffer::read(void* ptr, size_t length)
         return (0);
     }
 
-    auto cursor = m_read.load(std::memory_order_relaxed);
+    auto cursor = m_read.load(std::memory_order_acquire);
     memcpy(ptr, m_buffer + cursor, to_read);
     m_read.store((cursor + to_read > m_size
                   ? cursor + to_read - m_size
                   : cursor + to_read),
-                 std::memory_order_relaxed);
+                 std::memory_order_release);
 
     return (to_read);
 }
@@ -193,7 +193,7 @@ tl::expected<size_t, int> circular_buffer::read(pid_t pid, iovec iov[], size_t i
     m_read.store((cursor + result > m_size
                   ? cursor + result - m_size
                   : cursor + result),
-                 std::memory_order_relaxed);
+                 std::memory_order_release);
     return (result);
 }
 
@@ -209,7 +209,7 @@ size_t circular_buffer::write(const void* ptr, size_t length)
     m_write.store((cursor + to_write > m_size
                    ? cursor + to_write - m_size
                    : cursor + to_write),
-                  std::memory_order_relaxed);
+                  std::memory_order_release);
     return (to_write);
 }
 
@@ -238,7 +238,7 @@ tl::expected<size_t, int> circular_buffer::write(pid_t pid, const iovec iov[], s
     m_write.store((cursor + result > m_size
                    ? cursor + result - m_size
                    : cursor + result),
-                  std::memory_order_relaxed);
+                  std::memory_order_release);
     return (result);
 }
 

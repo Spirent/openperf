@@ -1,5 +1,6 @@
 #include <cassert>
 #include <cerrno>
+#include <fcntl.h>
 #include <numeric>
 #include <poll.h>
 #include <sys/eventfd.h>
@@ -12,20 +13,29 @@ namespace icp {
 namespace socket {
 namespace server {
 
-stream_channel::stream_channel(int socket_flags)
+stream_channel::stream_channel(int flags)
     : sendq(circular_buffer::server())
     , recvq(circular_buffer::client())
+    , notify_event_flag(false)
+    , block_event_flag(false)
     , socket_error(0)
+    , socket_flags(0)
 {
+    /* make sure we can use these interchangeably */
+    static_assert(O_NONBLOCK == EFD_NONBLOCK);
+    static_assert(O_CLOEXEC == EFD_CLOEXEC);
+
     int event_flags = 0;
-    if (socket_flags & SOCK_CLOEXEC)  event_flags |= EFD_CLOEXEC;
-    if (socket_flags & SOCK_NONBLOCK) event_flags |= EFD_NONBLOCK;
+    if (flags & SOCK_CLOEXEC)  event_flags |= EFD_CLOEXEC;
+    if (flags & SOCK_NONBLOCK) event_flags |= EFD_NONBLOCK;
 
     if ((server_fds.client_fd = eventfd(0, event_flags)) == -1
         || (server_fds.server_fd = eventfd(0, 0)) == -1) {
         throw std::runtime_error("Could not create eventfd: "
                                  + std::string(strerror(errno)));
     }
+
+    socket_flags.store(event_flags, std::memory_order_release);
 }
 
 stream_channel::~stream_channel()
@@ -55,40 +65,30 @@ static void do_write(int fd)
     eventfd_write(fd, 1);
 }
 
-static bool is_readable(int fd)
-{
-    struct pollfd to_poll = { .fd = fd,
-                              .events = POLLIN };
-    auto n = poll(&to_poll, 1, 0);
-    return (n == 1
-            ? to_poll.revents & POLLIN
-            : false);
-}
-
-static bool is_writable(int fd)
-{
-    struct pollfd to_poll = { .fd = fd,
-                              .events = POLLOUT };
-    auto n = poll(&to_poll, 1, 0);
-    return (n == 1
-            ? to_poll.revents & POLLOUT
-            : false);
-}
-
-static void unblock(int fd)
-{
-    if (is_readable(fd)) {
-        do_read(fd);
-    }
-}
-
-void stream_channel::notify()
+void stream_channel::maybe_notify()
 {
     auto fd = client_fd();
-    if (!is_writable(fd)) {
-        do_read(fd);
+
+    maybe_unblock();
+
+    if (!notify_event_flag.test_and_set(std::memory_order_acquire)) {
+        do_write(fd);
     }
-    do_write(fd);
+
+    /* notify flag is set */
+}
+
+void stream_channel::maybe_unblock()
+{
+    auto fd = client_fd();
+
+    if (block_event_flag.test_and_set(std::memory_order_acquire)) {
+        do_read(fd);
+        notify_event_flag.clear(std::memory_order_release);
+    }
+    block_event_flag.clear(std::memory_order_release);
+
+    /* block flag is unset */
 }
 
 void stream_channel::ack()
@@ -99,30 +99,21 @@ void stream_channel::ack()
 void stream_channel::error(int error)
 {
     socket_error.store(error, std::memory_order_relaxed);
-    if (recvq.empty()) notify();
+    maybe_notify();
 }
 
-bool stream_channel::send(pid_t pid, const iovec iov[], size_t iovcnt)
+size_t stream_channel::send(pid_t pid, const iovec iov[], size_t iovcnt)
 {
-    auto iov_length = std::accumulate(iov, iov + iovcnt, 0UL,
-                                      [](size_t x, const iovec& iov) {
-                                          return (x + iov.iov_len);
-                                      });
-
-    if (recvq.writable() < iov_length) {
-        return (false);
+    auto written = recvq.write(pid, iov, iovcnt);
+    if (!written) {
+        ICP_LOG(ICP_LOG_ERROR, "Could not write to client receive socket: %s\n",
+                strerror(written.error()));
+        return (0);
     }
 
-    auto written = recvq.write(pid, iov, iovcnt);
-    assert(*written == iov_length);
-    notify();
+    maybe_notify();
 
-    return (true);
-}
-
-size_t stream_channel::send_ack()
-{
-    return (read_counter.exchange(0, std::memory_order_acq_rel));
+    return (*written);
 }
 
 iovec stream_channel::recv_peek()
@@ -131,13 +122,14 @@ iovec stream_channel::recv_peek()
                    .iov_len = sendq.readable() });
 }
 
-void stream_channel::recv_skip(size_t length)
+size_t stream_channel::recv_clear(size_t length)
 {
-    auto full = sendq.full();
     auto adjust = sendq.skip(length);
     assert(adjust == length);  /* should always be true for us */
-    if (full) unblock(client_fd());
-    if (sendq.readable()) do_write(server_fd());  /* not done reading */
+
+    maybe_unblock();
+
+    return (length);
 }
 
 }

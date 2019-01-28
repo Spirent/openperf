@@ -1,6 +1,8 @@
 #ifndef _ICP_SOCKET_DGRAM_CHANNEL_H_
 #define _ICP_SOCKET_DGRAM_CHANNEL_H_
 
+#include <atomic>
+
 #include <netinet/in.h>
 #include <socket/bipartite_ring.h>
 #include <socket/api.h>
@@ -119,7 +121,8 @@ typedef bipartite_ring<dgram_channel_item, api::socket_queue_length> dgram_ring;
     dgram_ring recvq;  /* from stack to client */                   \
     dgram_ring sendq;  /* from client to stack */                   \
     api::socket_fd_pair client_fds;                                 \
-    api::socket_fd_pair server_fds;
+    api::socket_fd_pair server_fds;                                 \
+    std::atomic_int socket_flags;
 
 struct dgram_channel {
     DGRAM_CHANNEL_MEMBERS

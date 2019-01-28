@@ -138,8 +138,7 @@ uint16_t port_info::tx_queue_default() const
 
 uint16_t port_info::rx_desc_count() const
 {
-    return std::min((get_info_field(m_id, &rte_eth_dev_info::rx_desc_lim).nb_max),
-                    static_cast<uint16_t>(2048));
+    return (get_info_field(m_id, &rte_eth_dev_info::rx_desc_lim).nb_max);
 }
 
 uint16_t port_info::tx_desc_count() const

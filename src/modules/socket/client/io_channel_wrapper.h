@@ -29,6 +29,9 @@ public:
     io_channel_wrapper(io_channel_wrapper&&);
     io_channel_wrapper& operator=(io_channel_wrapper&&);
 
+    int flags();
+    int flags(int);
+
     tl::expected<size_t, int> send(pid_t pid, const iovec iov[], size_t iovcnt,
                                    const sockaddr *to);
 
