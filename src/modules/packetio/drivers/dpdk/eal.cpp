@@ -320,6 +320,12 @@ static uint16_t eal_tx_burst_function(int id, uint32_t hash, struct rte_mbuf* mb
     return (eal_port_queues[id]->tx(hash)->enqueue(mbufs, nb_mbufs));
 }
 
+static uint16_t eal_tx_dummy_function(int, uint32_t, struct rte_mbuf**, uint16_t)
+{
+    ICP_LOG(ICP_LOG_WARNING, "Dummy TX function called; no packet transmitted!\n");
+    return (0);
+}
+
 static int get_waiting_lcore()
 {
     int i = 0;
@@ -567,7 +573,9 @@ driver::tx_burst eal::tx_burst_function() const
      * The reinterpret cast is necessary due to using a (void*) for the
      * buffer parameter in the generic type signature.
      */
-    return (reinterpret_cast<driver::tx_burst>(eal_tx_burst_function));
+    return (reinterpret_cast<driver::tx_burst>(eal_workers() == 1
+                                               ? eal_tx_dummy_function
+                                               : eal_tx_burst_function));
 }
 
 tl::expected<int, std::string> eal::create_port(const port::config_data& config)
