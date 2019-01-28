@@ -36,7 +36,7 @@ struct wrapper : singleton<wrapper>
     int (*connect)(int s, const struct sockaddr *name, socklen_t namelen);
     int (*listen)(int s, int backlog);
     int (*socket)(int domain, int type, int protocol);
-    int (*ioctl)(int s, long cmd, void *argp);
+    int (*fcntl)(int s, int cmd, ...);
     ssize_t (*read)(int s, void *mem, size_t len);
     ssize_t (*readv)(int s, const struct iovec *iov, int iovcnt);
     ssize_t (*recv)(int s, void *mem, size_t len, int flags);

@@ -1,4 +1,6 @@
 #include <atomic>
+#include <cassert>
+#include <fcntl.h>
 #include <functional>
 #include <iostream>
 
@@ -18,6 +20,7 @@ void icp_shim_init()
     client.init(&client_initialized);
 }
 
+//#define SHIM_TRACE 1
 #ifdef SHIM_TRACE
 
 template <class T>
@@ -28,6 +31,7 @@ auto call_and_log_function(const char* function_name, Function&& f, Object&& o, 
 {
     std::cerr << function_name << "(";
     expand({(std::cerr << args << ",", 0)...});
+    std::cerr << std::flush;
     auto result = std::invoke(std::forward<Function>(f), std::forward<Object>(o),
                               std::forward<Args>(args)...);
     std::cerr << ") = " << result << std::endl;
@@ -206,17 +210,54 @@ int socket(int domain, int type, int protocol)
     return (client_call(socket, domain, type, protocol));
 }
 
-int ioctl(int s, long cmd, void *argp)
+int fcntl(int s, int cmd, ...)
 {
+    /*
+     * XXX: this cmd list is incomplete as Linux has a lot of wonky
+     * options.
+     * Also...  if you can think of a concise, clean way to handle
+     * all of these options and the variable argument list without
+     * duplication while avoiding the use of _goto_, please do so!
+     */
+
+    int result = 0;
+    va_list ap;
+    va_start(ap, cmd);
+
     auto& libc = icp::socket::libc::wrapper::instance();
     if (!client_initialized) {
-        return (libc.ioctl(s, cmd, argp));
+    libc_fcntl:
+        switch (cmd) {
+        case F_GETFD:
+        case F_GETFL:
+        case F_GETOWN:
+            result = libc.fcntl(s, cmd);
+            break;
+        case F_DUPFD:
+        case F_DUPFD_CLOEXEC:
+        case F_SETFD:
+        case F_SETFL:
+        case F_SETOWN:
+            result = libc.fcntl(s, cmd, va_arg(ap, int));
+            break;
+        default:
+            result = libc.fcntl(s, cmd, va_arg(ap, void*));
+        }
+        va_end(ap);
+        return (result);
     }
 
     auto& client = icp::socket::api::client::instance();
-    return (client.is_socket(s)
-            ? client_call(ioctl, s, cmd, argp)
-            : libc.ioctl(s, cmd, argp));
+    if (!client.is_socket(s)
+        || (cmd != F_GETFL && cmd != F_SETFL)) {
+        goto libc_fcntl;
+    }
+
+    result = (cmd == F_GETFL
+             ? client_call(fcntl, s, cmd)
+             : client_call(fcntl, s, cmd, va_arg(ap, int)));
+    va_end(ap);
+    return (result);
 }
 
 /* Receive functions */
