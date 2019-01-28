@@ -45,12 +45,15 @@ private:
         }
     };
 
-    static constexpr unsigned recvq_size = 256;
+    /* XXX: Determine based on NIC speed */
+    static constexpr unsigned recvq_size = 1024;
 
     const int m_id;
     const interface::config_data m_config;
     const driver::tx_burst m_transmit;
+
     netif m_netif;
+    std::atomic_flag m_notify;
     std::unique_ptr<rte_ring, rte_ring_deleter> m_recvq;
 };
 

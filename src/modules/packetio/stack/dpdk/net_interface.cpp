@@ -282,6 +282,7 @@ net_interface::net_interface(int id, const interface::config_data& config,
     : m_id(id)
     , m_config(config)
     , m_transmit(tx)
+    , m_notify(false)
     , m_recvq(rte_ring_create(recvq_name(id).c_str(), recvq_size, SOCKET_ID_ANY, RING_F_SC_DEQ))
 {
     m_netif.state = this;
@@ -318,13 +319,14 @@ net_interface::~net_interface()
 
 int net_interface::handle_rx(struct pbuf* p)
 {
-    auto empty = rte_ring_empty(m_recvq.get());
     if (rte_ring_enqueue(m_recvq.get(), p) != 0) {
         ICP_LOG(ICP_LOG_WARNING, "Receive queue full on %c%c%u\n",
                 m_netif.name[0], m_netif.name[1], m_netif.num);
         return (ERR_BUF);
     }
-    if (empty) tcpip_inpkt(p, &m_netif, net_interface_input);
+    if (!m_notify.test_and_set(std::memory_order_acquire)) {
+        tcpip_inpkt(p, &m_netif, net_interface_input);
+    }
     return (ERR_OK);
 }
 
@@ -357,6 +359,8 @@ void net_interface::handle_input()
             ethernet_input(pbufs[i], &m_netif);
         }
     } while (!rte_ring_empty(m_recvq.get()));
+
+    m_notify.clear(std::memory_order_release);
 }
 
 void* net_interface::operator new(size_t size)
