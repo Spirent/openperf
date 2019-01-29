@@ -27,6 +27,8 @@ public:
     bool del(queue_ptr q);
 
     const std::vector<queue_ptr>& poll(int timeout_ms = -1);
+
+    bool wait_for_interrupt(int timeout_ms = -1);
 };
 
 }
