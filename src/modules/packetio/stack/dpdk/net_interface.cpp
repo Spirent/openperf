@@ -8,9 +8,11 @@
 #include "netif/ethernet.h"
 
 #include "packetio/drivers/dpdk/dpdk.h"
+#include "packetio/drivers/dpdk/model/port_info.h"
 #include "packetio/memory/dpdk/memp.h"
 #include "packetio/memory/dpdk/pbuf_utils.h"
 #include "packetio/stack/dpdk/net_interface.h"
+#include "packetio/stack/dpdk/offload_utils.h"
 
 namespace icp {
 namespace packetio {
@@ -18,6 +20,9 @@ namespace dpdk {
 
 constexpr static char ifname_0 = 'i';
 constexpr static char ifname_1 = 'o';
+
+constexpr static uint16_t netif_rx_chksum_mask = 0xFF00;
+constexpr static uint16_t netif_tx_chksum_mask = 0x00FF;
 
 template<typename ...Ts>
 struct overloaded_visitor : Ts...
@@ -49,52 +54,50 @@ static uint32_t to_netmask(int prefix_length)
     return (static_cast<uint32_t>(~0) << (32 - prefix_length));
 }
 
-static uint32_t dpdk_port_speed(uint16_t port_id)
+static uint16_t to_checksum_check_flags(uint64_t rx_offloads)
 {
-    /* If the port has link, return the current speed */
-    struct rte_eth_link link;
-    rte_eth_link_get_nowait(port_id, &link);
-    if (link.link_status == ETH_LINK_UP) {
-        return (link.link_speed);
+    /*
+     * The netif flags control what the stack needs to check, so
+     * start with all flags enabled and then disable what we can.
+     */
+    uint16_t flags = netif_rx_chksum_mask;
+
+    if (rx_offloads & DEV_RX_OFFLOAD_IPV4_CKSUM) {
+        flags &= ~NETIF_CHECKSUM_CHECK_IP;
     }
 
-    /* If there is no link, see if the port knows about it's speeds */
-    struct rte_eth_dev_info info;
-    rte_eth_dev_info_get(port_id, &info);
-
-    if (info.speed_capa & ETH_LINK_SPEED_100G) {
-        return (ETH_SPEED_NUM_100G);
-    } else if (info.speed_capa & ETH_LINK_SPEED_56G) {
-        return (ETH_SPEED_NUM_56G);
-    } else if (info.speed_capa & ETH_LINK_SPEED_50G) {
-        return (ETH_SPEED_NUM_50G);
-    } else if (info.speed_capa & ETH_LINK_SPEED_40G) {
-        return (ETH_SPEED_NUM_40G);
-    } else if (info.speed_capa & ETH_LINK_SPEED_25G) {
-        return (ETH_SPEED_NUM_25G);
-    } else if (info.speed_capa & ETH_LINK_SPEED_20G) {
-        return (ETH_SPEED_NUM_20G);
-    } else if (info.speed_capa & ETH_LINK_SPEED_10G) {
-        return (ETH_SPEED_NUM_10G);
-    } else if (info.speed_capa & ETH_LINK_SPEED_5G) {
-        return (ETH_SPEED_NUM_5G);
-    } else if (info.speed_capa & ETH_LINK_SPEED_2_5G) {
-        return (ETH_SPEED_NUM_2_5G);
-    } else if (info.speed_capa & ETH_LINK_SPEED_1G) {
-        return (ETH_SPEED_NUM_1G);
-    } else if (info.speed_capa & ETH_LINK_SPEED_100M
-               || info.speed_capa & ETH_LINK_SPEED_100M_HD) {
-        return (ETH_SPEED_NUM_100M);
-    } else if (info.speed_capa & ETH_LINK_SPEED_10M
-               || info.speed_capa & ETH_LINK_SPEED_10M_HD) {
-        return (ETH_SPEED_NUM_10M);
-    } else {
-        /*
-         * If we don't have any speed capabilities, return the link speed.
-         * It might be hard coded.
-         */
-        return (link.link_speed ? link.link_speed : ETH_SPEED_NUM_NONE);
+    if (rx_offloads & DEV_RX_OFFLOAD_UDP_CKSUM) {
+        flags &= ~NETIF_CHECKSUM_CHECK_UDP;
     }
+
+    if (rx_offloads & DEV_RX_OFFLOAD_TCP_CKSUM) {
+        flags &= ~NETIF_CHECKSUM_CHECK_TCP;
+    }
+
+    return (flags);
+}
+
+static uint16_t to_checksum_gen_flags(uint64_t tx_offloads)
+{
+    uint16_t flags = netif_tx_chksum_mask;
+
+    /*
+     * The netif flags control what the stack needs to check, so
+     * start with all flags enabled and then disable what we can.
+     */
+    if (tx_offloads & DEV_TX_OFFLOAD_IPV4_CKSUM) {
+        flags &= ~NETIF_CHECKSUM_GEN_IP;
+    }
+
+    if (tx_offloads & DEV_TX_OFFLOAD_UDP_CKSUM) {
+        flags &= ~NETIF_CHECKSUM_GEN_UDP;
+    }
+
+    if (tx_offloads & DEV_TX_OFFLOAD_TCP_CKSUM) {
+        flags &= ~NETIF_CHECKSUM_GEN_TCP;
+    }
+
+    return (flags);
 }
 
 static err_t net_interface_tx(netif* netif, pbuf *p)
@@ -135,6 +138,28 @@ static err_t net_interface_rx(pbuf *p, netif* netif)
         MIB2_STATS_NETIF_INC(netif, ifinucastpkts);
     }
 
+    /* Validate checksums; drop if invalid */
+    auto mbuf = packetio_memory_pbuf_to_mbuf(p);
+    /* XXX: might not always be true */
+    assert(mbuf->packet_type);
+    if (!(mbuf->ol_flags & PKT_RX_IP_CKSUM_GOOD)) {
+        IP_STATS_INC(ip.chkerr);
+        pbuf_free(p);
+        return (ERR_OK);
+    } else if (!(mbuf->ol_flags & PKT_RX_L4_CKSUM_GOOD)) {
+        if (mbuf->packet_type & RTE_PTYPE_L4_TCP) {
+            TCP_STATS_INC(tcp.chkerr);
+        } else if (mbuf->packet_type & RTE_PTYPE_L4_UDP) {
+            UDP_STATS_INC(udp.chkerr);
+        } else {
+            /* what is this?!?! */
+            ICP_LOG(ICP_LOG_WARNING, "Unrecognized L4 packet type: %s\n",
+                    rte_get_ptype_l4_name(mbuf->packet_type));
+        }
+        pbuf_free(p);
+        return (ERR_OK);
+    }
+
     ICP_LOG(ICP_LOG_TRACE, "Receiving packet for %c%c%u\n",
             netif->name[0], netif->name[1], netif->num);
 
@@ -159,8 +184,10 @@ static err_t net_interface_dpdk_init(netif* netif)
 {
     net_interface *ifp = reinterpret_cast<net_interface*>(netif->state);
 
+    auto info = model::port_info(ifp->port_id());
+
     /* Initialize the snmp variables and counters in the netif struct */
-    MIB2_INIT_NETIF(netif, snmp_ifType_ethernet_csmacd, dpdk_port_speed(ifp->port_id()));
+    MIB2_INIT_NETIF(netif, snmp_ifType_ethernet_csmacd, info.max_speed());
 
     netif->name[0] = ifname_0;
     netif->name[1] = ifname_1;
@@ -175,6 +202,12 @@ static err_t net_interface_dpdk_init(netif* netif)
     uint16_t mtu;
     rte_eth_dev_get_mtu(ifp->port_id(), &mtu);
     netif->mtu = mtu;
+
+    netif->chksum_flags = (to_checksum_check_flags(info.rx_offloads())
+                           | to_checksum_gen_flags(info.tx_offloads()));
+
+    ICP_LOG(ICP_LOG_DEBUG, "Interface %c%c%u: mtu = %u, offloads = 0x%x\n",
+            netif->name[0], netif->name[1], netif->num, netif->mtu, netif->chksum_flags);
 
     netif->flags = (NETIF_FLAG_BROADCAST
                     | NETIF_FLAG_ETHERNET
@@ -340,6 +373,11 @@ int net_interface::handle_tx(struct pbuf* p)
     assert(p->next == NULL);
     auto mbuf = packetio_memory_mbuf_synchronize(p);
     rte_mbuf_refcnt_update(mbuf, 1);
+
+    /* Setup tx offload metadata if offloads are enabled. */
+    if (~(m_netif.chksum_flags & netif_tx_chksum_mask)) {
+        set_tx_offload_metadata(mbuf);
+    }
 
     rte_mbuf *pkts[] = { mbuf };
     return (m_transmit(port_id(), 0, reinterpret_cast<void**>(pkts), 1) == 1 ? ERR_OK : ERR_BUF);
