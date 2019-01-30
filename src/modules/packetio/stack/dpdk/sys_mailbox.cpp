@@ -41,7 +41,6 @@ struct sys_mbox
     };
 
     static std::atomic_size_t m_idx;
-    static constexpr uint64_t eventfd_max = std::numeric_limits<uint64_t>::max() - 1;
     std::unique_ptr<rte_ring, rte_ring_deleter> m_ring;
     std::atomic_flag m_armed;
     int m_fd;

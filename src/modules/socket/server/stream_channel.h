@@ -12,7 +12,6 @@ namespace server {
 
 class stream_channel
 {
-    static constexpr uint64_t eventfd_max = std::numeric_limits<uint64_t>::max() - 1;
     STREAM_CHANNEL_MEMBERS
 
 public:
