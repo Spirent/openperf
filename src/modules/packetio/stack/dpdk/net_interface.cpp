@@ -5,9 +5,11 @@
 
 #include "lwip/netifapi.h"
 #include "lwip/snmp.h"
+#include "netif/ethernet.h"
 
 #include "packetio/drivers/dpdk/dpdk.h"
 #include "packetio/memory/dpdk/memp.h"
+#include "packetio/memory/dpdk/pbuf.h"
 #include "packetio/stack/dpdk/net_interface.h"
 
 namespace icp {
@@ -95,19 +97,12 @@ static uint32_t dpdk_port_speed(uint16_t port_id)
     }
 }
 
-/**
- * Quick and dirty transmit function.
- * XXX: Assumes tx queue 0 exists.
- * TODO: Queue this to a dedicated tx thread/worker for bulk tx
- */
 static err_t net_interface_tx(netif* netif, pbuf *p)
 {
-    if (!p) {
-        return (ERR_OK);
-    }
+    assert(netif);
+    assert(p);
 
     net_interface *ifp = reinterpret_cast<net_interface*>(netif->state);
-    rte_mbuf *pkts[] = { packetio_memp_pbuf_to_mbuf(p) };
 
     MIB2_STATS_NETIF_ADD(netif, ifoutoctets, p->tot_len);
     if ((static_cast<uint8_t*>(p->payload)[0] & 1) == 0) {
@@ -116,17 +111,23 @@ static err_t net_interface_tx(netif* netif, pbuf *p)
         MIB2_STATS_NETIF_INC(netif, ifoutnucastpkts);
     }
 
-    ICP_LOG(ICP_LOG_TRACE, "Transmitting packet from %c%c%u on %d:%d\n",
-            netif->name[0], netif->name[1], netif->num, ifp->port_id(), 0);
-    err_t error = rte_eth_tx_burst(ifp->port_id(), 0, pkts, 1) == 1 ? ERR_OK : ERR_BUF;
-    if (error) {
-        MIB2_STATS_NETIF_INC(netif, ifouterrors);
+    ICP_LOG(ICP_LOG_TRACE, "Transmitting packet from %c%c%u\n",
+            netif->name[0], netif->name[1], netif->num);
+
+    auto error = ifp->handle_tx(p);
+    if (error != ERR_OK) {
+        MIB2_STATS_NETIF_INC(netif, ifoutdiscards);
     }
     return (error);
 }
 
 static err_t net_interface_rx(pbuf *p, netif* netif)
 {
+    assert(p);
+    assert(netif);
+
+    net_interface *ifp = reinterpret_cast<net_interface*>(netif->state);
+
     MIB2_STATS_NETIF_ADD(netif, ifinoctets, p->tot_len);
     if ((static_cast<uint8_t*>(p->payload)[0] & 1) == 0) {
         MIB2_STATS_NETIF_INC(netif, ifinnucastpkts);
@@ -134,7 +135,24 @@ static err_t net_interface_rx(pbuf *p, netif* netif)
         MIB2_STATS_NETIF_INC(netif, ifinucastpkts);
     }
 
-    return (tcpip_input(p, netif));
+    ICP_LOG(ICP_LOG_TRACE, "Receiving packet for %c%c%u\n",
+            netif->name[0], netif->name[1], netif->num);
+
+    auto error = ifp->handle_rx(p);
+    if (error != ERR_OK) {
+        MIB2_STATS_NETIF_INC(netif, ifindiscards);
+    }
+    return (error);
+}
+
+static err_t net_interface_input(pbuf *p, netif* netif)
+{
+    assert(p);
+    assert(netif);
+
+    net_interface *ifp = reinterpret_cast<net_interface*>(netif->state);
+    ifp->handle_input();
+    return (ERR_OK);
 }
 
 static err_t net_interface_dpdk_init(netif* netif)
@@ -254,9 +272,18 @@ static void unset_ipv4_interface(const std::optional<interface::ipv4_protocol_co
     }
 }
 
-net_interface::net_interface(int id, const interface::config_data& config)
-    : m_config(config)
-    , m_id(id)
+static std::string recvq_name(int id)
+{
+    return (std::string("io") + std::to_string(id) + "_recvq");
+}
+
+net_interface::net_interface(int id, const interface::config_data& config,
+                             driver::tx_burst tx)
+    : m_id(id)
+    , m_config(config)
+    , m_transmit(tx)
+    , m_notify(false)
+    , m_recvq(rte_ring_create(recvq_name(id).c_str(), recvq_size, SOCKET_ID_ANY, RING_F_SC_DEQ))
 {
     m_netif.state = this;
 
@@ -288,6 +315,52 @@ net_interface::~net_interface()
                          m_netif);
     netifapi_netif_set_down(&m_netif);
     netifapi_netif_remove(&m_netif);
+}
+
+int net_interface::handle_rx(struct pbuf* p)
+{
+    if (rte_ring_enqueue(m_recvq.get(), p) != 0) {
+        ICP_LOG(ICP_LOG_WARNING, "Receive queue full on %c%c%u\n",
+                m_netif.name[0], m_netif.name[1], m_netif.num);
+        return (ERR_BUF);
+    }
+    if (!m_notify.test_and_set(std::memory_order_acquire)) {
+        tcpip_inpkt(p, &m_netif, net_interface_input);
+    }
+    return (ERR_OK);
+}
+
+int net_interface::handle_tx(struct pbuf* p)
+{
+    /*
+     * Bump the reference count on the mbuf before transmitting; when this
+     * function returns, the stack will free the pbuf.  We don't want the
+     * mbuf to be freed with it.
+     */
+    assert(p->next == NULL);
+    auto mbuf = packetio_mbuf_synchronize(p);
+    rte_mbuf_refcnt_update(mbuf, 1);
+
+    rte_mbuf *pkts[] = { mbuf };
+    return (m_transmit(port_id(), 0, reinterpret_cast<void**>(pkts), 1) == 1 ? ERR_OK : ERR_BUF);
+}
+
+void net_interface::handle_input()
+{
+    static constexpr size_t rx_burst_size = 32;
+    std::array<pbuf*, rx_burst_size> pbufs;
+
+    do {
+        auto nb_pbufs = rte_ring_dequeue_burst(m_recvq.get(),
+                                               reinterpret_cast<void**>(pbufs.data()),
+                                               rx_burst_size, nullptr);
+
+        for (size_t i = 0; i < nb_pbufs; i++) {
+            ethernet_input(pbufs[i], &m_netif);
+        }
+    } while (!rte_ring_empty(m_recvq.get()));
+
+    m_notify.clear(std::memory_order_release);
 }
 
 void* net_interface::operator new(size_t size)

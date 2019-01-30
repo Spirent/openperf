@@ -6,8 +6,9 @@
  * the host platform and is included from <lwip>/src/include/lwip/arch.h
  */
 
+#include <assert.h>
 #include <sys/time.h>
-#include "core/icp_core.h"
+#include "core/icp_log.h"
 
 /*
  * Macro shenanigans to remove the enclosing parentheses from existing
@@ -24,7 +25,7 @@
 
 #define LWIP_PLATFORM_ASSERT(x)                 \
     do {                                        \
-        icp_exit(x);                            \
+        assert(x);                              \
     } while (0)
 
 #endif /* _ICP_PACKETIO_STACK_ARCH_CC_H_ */

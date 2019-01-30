@@ -9,10 +9,13 @@ icp_check_var =	$(if $(value $1),,$(error $(1) is not set))
 icp_check_vars = $(foreach var,$1,$(call icp_check_var,$(var)))
 
 # Initialize global variables
-ICP_AR := gcc-ar
-ICP_ARFLAGS := rcD
-ICP_CC := clang
-ICP_CXX := clang++
+CC := clang
+CXX := clang++
+
+ICP_AR := llvm-ar
+ICP_ARFLAGS := rcs
+ICP_CC := $(CC) -flto
+ICP_CXX := $(CXX) -flto
 ICP_COPTS :=
 ICP_CSTD := -std=gnu11  # c++11 with GNU extensions
 ICP_CXXSTD := -std=c++17
@@ -23,7 +26,7 @@ ICP_CXXFLAGS := -Wno-c11-extensions -Wno-nested-anon-types -Wno-c99-extensions $
 ICP_DEFINES :=
 ICP_LDFLAGS :=
 ICP_LDLIBS :=
-ICP_LDOPTS :=
+ICP_LDOPTS := -fuse-ld=gold
 ICP_INC_DIRS := $(ICP_ROOT)/src
 ICP_LIB_DIRS :=
 ICP_CONFIG_OPTS :=

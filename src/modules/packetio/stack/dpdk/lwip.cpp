@@ -49,7 +49,7 @@ std::optional<interface::generic_interface> lwip::interface(int id) const
 tl::expected<int, std::string> lwip::create_interface(const interface::config_data& config)
 {
     try {
-        auto ifp = std::make_unique<net_interface>(m_idx, config);
+        auto ifp = std::make_unique<net_interface>(m_idx, config, m_driver.tx_burst_function());
         m_driver.add_interface(ifp->port_id(), ifp->data());
         auto item = m_interfaces.emplace(std::make_pair(m_idx++, std::move(ifp)));
         return (item.first->first);
@@ -82,7 +82,7 @@ static stack::element_stats_data make_element_stats_data(const stats_syselem* sy
 {
     return { .used   = syselem->used,
              .max    = syselem->max,
-             .errors = syselem->max };
+             .errors = syselem->err };
 }
 #endif
 

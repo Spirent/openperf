@@ -16,14 +16,17 @@
 
 namespace icp {
 namespace socket {
-struct io_channel;
+
+struct dgram_channel;
+struct stream_channel;
+
 namespace api {
 
 constexpr size_t max_sockets = 512;
 constexpr size_t socket_queue_length = 32;
 constexpr size_t shared_memory_name_length = 32;
 
-typedef spsc_queue<iovec, socket_queue_length> socket_queue;
+typedef std::variant<dgram_channel*, stream_channel*> io_channel;
 
 struct socket_fd_pair {
     int client_fd;
@@ -56,15 +59,14 @@ struct reply_init {
 
 struct reply_accept {
     socket_id id;
-    io_channel *channel;
+    io_channel channel;
     socket_fd_pair fd_pair;
-    struct sockaddr *addr;
     socklen_t addrlen;
 };
 
 struct reply_socket {
     socket_id id;
-    io_channel *channel;
+    io_channel channel;
     socket_fd_pair fd_pair;
 };
 
@@ -81,7 +83,8 @@ struct request_init {
 
 struct request_accept {
     socket_id id;
-    const struct sockaddr *addr;
+    int flags;
+    struct sockaddr *addr;
     socklen_t addrlen;
 };
 
@@ -176,7 +179,6 @@ std::string server_socket();
 
 std::optional<socket_fd_pair> get_message_fds(const api::reply_msg&);
 void set_message_fds(api::reply_msg&, const socket_fd_pair& fd_pair);
-
 
 }
 }

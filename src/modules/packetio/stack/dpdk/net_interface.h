@@ -5,16 +5,21 @@
 
 #include "lwip/netifapi.h"
 
+#include "packetio/generic_driver.h"
 #include "packetio/generic_interface.h"
+
+struct pbuf;
+struct rte_ring;
+extern void rte_ring_free(struct rte_ring*);
 
 namespace icp {
 namespace packetio {
 namespace dpdk {
 
-
 class net_interface {
 public:
-    net_interface(int id, const interface::config_data& config);
+    net_interface(int id, const interface::config_data& config,
+                  driver::tx_burst tx);
     ~net_interface();
 
     static void *operator new(size_t);
@@ -29,10 +34,27 @@ public:
     int port_id() const;
     interface::config_data config() const;
 
+    int handle_rx(struct pbuf*);
+    int handle_tx(struct pbuf*);
+    void handle_input();
+
 private:
-    const interface::config_data m_config;
+    struct rte_ring_deleter {
+        void operator()(rte_ring *ring) {
+            rte_ring_free(ring);
+        }
+    };
+
+    /* XXX: Determine based on NIC speed */
+    static constexpr unsigned recvq_size = 1024;
+
     const int m_id;
-    alignas(64) netif m_netif;  /**< This member is for another thread to use */
+    const interface::config_data m_config;
+    const driver::tx_burst m_transmit;
+
+    netif m_netif;
+    std::atomic_flag m_notify;
+    std::unique_ptr<rte_ring, rte_ring_deleter> m_recvq;
 };
 
 }

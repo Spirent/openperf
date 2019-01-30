@@ -32,6 +32,7 @@
 #include "lwip/ip6_frag.h"
 #include "lwip/mld6.h"
 
+#include "core/icp_common.h"
 #include "packetio/drivers/dpdk/dpdk.h"
 #include "packetio/memory/dpdk/memp.h"
 
@@ -97,19 +98,12 @@ void memp_init()
 void * memp_malloc(memp_t type)
 {
     void *to_return = NULL;
-    struct rte_mbuf *mbuf = NULL;
     switch (type) {
     case MEMP_PBUF:
-        mbuf = rte_pktmbuf_alloc(get_ref_rom_mempool());
-        if (mbuf) {
-            to_return = packetio_memp_mbuf_to_pbuf(mbuf);
-        }
+        to_return = packetio_memp_mbuf_to_pbuf(rte_pktmbuf_alloc(get_ref_rom_mempool()));
         break;
     case MEMP_PBUF_POOL:
-        mbuf = rte_pktmbuf_alloc(get_default_mempool());
-        if (mbuf) {
-            to_return = packetio_memp_mbuf_to_pbuf(mbuf);
-        }
+        to_return = packetio_memp_mbuf_to_pbuf(rte_pktmbuf_alloc(get_default_mempool()));
         break;
     default:
         to_return = rte_malloc(memp_pools[type]->desc, memp_pools[type]->size, 0);

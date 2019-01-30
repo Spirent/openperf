@@ -1,6 +1,7 @@
 #include <cassert>
 #include <cerrno>
 #include <cstring>
+#include <fcntl.h>
 #include <numeric>
 #include <stdexcept>
 #include <sys/socket.h>
@@ -13,8 +14,6 @@
 namespace icp {
 namespace socket {
 namespace api {
-
-using io_channel = icp::socket::client::io_channel;
 
 client::client()
     : m_uuid(uuid::random())
@@ -32,6 +31,10 @@ client::client()
     }
 }
 
+client::~client()
+{
+    *m_init_flag = false;
+}
 
 static api::reply_msg submit_request(int sockfd,
                                      const api::request_msg& request)
@@ -84,7 +87,7 @@ static api::reply_msg submit_request(int sockfd,
 }
 
 /* Send a hello message to server; wait for reply */
-void client::init()
+void client::init(std::atomic_bool* init_flag)
 {
     api::request_msg request = api::request_init{
         .pid = getpid(),
@@ -106,6 +109,9 @@ void client::init()
                                                shm_info.size,
                                                shm_info.base));
     }
+
+    m_init_flag = init_flag;
+    *m_init_flag = true;
 }
 
 bool client::is_socket(int s)
@@ -113,7 +119,7 @@ bool client::is_socket(int s)
     return (m_channels.count(s));
 }
 
-int client::accept(int s, struct sockaddr *addr, socklen_t *addrlen)
+int client::accept(int s, struct sockaddr *addr, socklen_t *addrlen, int flags)
 {
     auto result = m_channels.find(s);
     if (result == m_channels.end()) {
@@ -122,8 +128,14 @@ int client::accept(int s, struct sockaddr *addr, socklen_t *addrlen)
     }
 
     auto& [id, channel] = result->second;
+    if (channel.recv_clear() == -1) {
+        errno = EWOULDBLOCK;
+        return (-1);
+    }
+
     api::request_msg request = api::request_accept{
         .id = id,
+        .flags = flags,
         .addr = addr,
         .addrlen = (addrlen ? *addrlen : 0)
     };
@@ -139,9 +151,10 @@ int client::accept(int s, struct sockaddr *addr, socklen_t *addrlen)
     /* Record socket data for future use */
     auto newresult = m_channels.emplace(
         accept.fd_pair.client_fd,
-        ided_channel{accept.id, channel_ptr(
-                new (accept.channel) io_channel(accept.fd_pair.client_fd, accept.fd_pair.server_fd),
-                io_channel_deleter())});
+        ided_channel{accept.id,
+                     io_channel_wrapper(accept.channel,
+                                        accept.fd_pair.client_fd,
+                                        accept.fd_pair.server_fd)});
 
     if (!newresult.second) {
         errno = ENOBUFS;
@@ -403,9 +416,10 @@ int client::socket(int domain, int type, int protocol)
     /* Record socket data for future use */
     auto result = m_channels.emplace(
         socket.fd_pair.client_fd,
-        ided_channel{socket.id, channel_ptr(
-                new (socket.channel) io_channel(socket.fd_pair.client_fd, socket.fd_pair.server_fd),
-                io_channel_deleter())});
+        ided_channel{socket.id,
+                     io_channel_wrapper(socket.channel,
+                                        socket.fd_pair.client_fd,
+                                        socket.fd_pair.server_fd)});
 
     if (!result.second) {
         errno = ENOBUFS;
@@ -416,7 +430,7 @@ int client::socket(int domain, int type, int protocol)
     return (socket.fd_pair.client_fd);
 }
 
-int client::ioctl(int s, long cmd, void *argp)
+int client::fcntl(int s, int cmd, ...)
 {
     auto result = m_channels.find(s);
     if (result == m_channels.end()) {
@@ -424,9 +438,34 @@ int client::ioctl(int s, long cmd, void *argp)
         return (-1);
     }
 
-    /* XXX: not yet */
-    errno = ENOSYS;
-    return (-1);
+    auto& [id, channel] = result->second;
+
+    va_list ap;
+    va_start(ap, cmd);
+
+    int to_return = 0;
+
+    switch (cmd) {
+    case F_GETFL:
+        to_return = channel.flags();
+        break;
+    case F_SETFL:
+        to_return = channel.flags(va_arg(ap, int));
+        break;
+    case F_GETFD:
+    case F_GETOWN:
+        to_return = ::fcntl(s, cmd);
+    case F_DUPFD:
+    case F_DUPFD_CLOEXEC:
+    case F_SETFD:
+    case F_SETOWN:
+        to_return = ::fcntl(s, cmd, va_arg(ap, int));
+    default:
+        to_return = ::fcntl(s, cmd, va_arg(ap, void*));
+    }
+
+    va_end(ap);
+    return (to_return);
 }
 
 /***
@@ -484,21 +523,15 @@ ssize_t client::recvmsg(int s, struct msghdr *message, int flags)
     }
 
     auto& [id, channel] = result->second;
-    if (channel->recv_clear() == -1) {
+    auto recv_result = channel.recv(m_server_pid, message->msg_iov, message->msg_iovlen,
+                                    reinterpret_cast<sockaddr*>(message->msg_name),
+                                    &message->msg_namelen);
+    if (!recv_result) {
+        errno = recv_result.error();
         return (-1);
     }
 
-    std::array<iovec, api::socket_queue_length> items;
-    auto [nb_items, from, fromlen] = channel->recv(items);
-    if (!nb_items) return (0);
-
-    if (from && message->msg_name) {
-        std::memcpy(message->msg_name, &*from, std::min(message->msg_namelen, fromlen));
-        message->msg_namelen = std::max(message->msg_namelen, fromlen);
-    }
-
-    return (process_vm_readv(m_server_pid, message->msg_iov, message->msg_iovlen,
-                             items.data(), nb_items, 0));
+    return (*recv_result);
 }
 
 /***
@@ -520,15 +553,14 @@ ssize_t client::sendmsg(int s, const struct msghdr *message, int flags)
     }
 
     auto& [id, channel] = result->second;
-    errno = channel->send(message->msg_iov, message->msg_iovlen,
-                          reinterpret_cast<const sockaddr*>(message->msg_name));
+    auto send_result = channel.send(m_server_pid, message->msg_iov, message->msg_iovlen,
+                                    reinterpret_cast<const sockaddr*>(message->msg_name));
+    if (!send_result) {
+        errno = send_result.error();
+        return (-1);
+    }
 
-    return (errno ? -1 : std::accumulate(message->msg_iov,
-                                         message->msg_iov + message->msg_iovlen,
-                                         0,
-                                         [](int x, const iovec& iov) {
-                                             return (x + iov.iov_len);
-                                         }));
+    return (*send_result);
 }
 
 ssize_t client::sendto(int s, const void *dataptr, size_t len, int flags,

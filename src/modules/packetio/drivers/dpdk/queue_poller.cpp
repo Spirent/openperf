@@ -1,90 +1,87 @@
-#include <array>
+#include <cassert>
 
-#include <sys/epoll.h>
-
-#include "core/icp_core.h"
-#include "packetio/drivers/dpdk/dpdk.h"
 #include "packetio/drivers/dpdk/queue_poller.h"
 
 namespace icp {
 namespace packetio {
 namespace dpdk {
 
-queue_poller::queue_poller()
+enum class queue_type:uint16_t { NO_QUEUE = 0,
+                                 RX_QUEUE = 1,
+                                 TX_QUEUE = 2 };
+union epoll_key {
+    struct {
+        uint16_t port_id;
+        uint16_t queue_id;
+        queue_type type;
+    };
+    uintptr_t value;
+};
+
+union epoll_key to_epoll_key(queue_ptr& q)
 {
-    m_events.reserve(max_queues);
+    auto port_visitor = [](auto q) -> uint16_t {
+                            return (q->port_id());
+                        };
+
+    auto queue_visitor = [](auto q) -> uint16_t {
+                             return (q->queue_id());
+                         };
+
+    return (epoll_key {
+            .port_id = std::visit(port_visitor, q),
+            .queue_id = std::visit(queue_visitor, q),
+            .type = (std::holds_alternative<rx_queue*>(q)
+                     ? queue_type::RX_QUEUE
+                     : queue_type::TX_QUEUE) });
 }
 
-bool queue_poller::add(uint16_t port_id, uint16_t queue_id)
+bool queue_poller::add(queue_ptr q)
 {
-    uintptr_t data = (port_id << 16) | queue_id;
-    int error = rte_eth_dev_rx_intr_ctl_q(port_id, queue_id,
-                                          RTE_EPOLL_PER_THREAD,
-                                          RTE_INTR_EVENT_ADD,
-                                          reinterpret_cast<void*>(data));
+    auto key = to_epoll_key(q);
+    auto add_visitor = [&](auto q) -> bool {
+                           return (q->add(RTE_EPOLL_PER_THREAD,
+                                          reinterpret_cast<void*>(key.value)));
+                       };
 
-    if (error) {
-        ICP_LOG(ICP_LOG_ERROR, "Could not add interrupt event for port queue %d:%d: %s\n",
-                port_id, queue_id, strerror(std::abs(error)));
-        return (false);
-    }
+    if (!std::visit(add_visitor, q)) return (false);
 
-    m_queues.emplace_back(port_id, queue_id);
+    m_queues.emplace(key.value, q);
+    m_events.reserve(m_queues.size());
+
     return (true);
 }
 
-bool queue_poller::del(uint16_t port_id, uint16_t queue_id)
+bool queue_poller::del(queue_ptr q)
 {
-    uintptr_t data = (port_id << 16) | queue_id;
-    int error = rte_eth_dev_rx_intr_ctl_q(port_id, queue_id,
-                                          RTE_EPOLL_PER_THREAD,
-                                          RTE_INTR_EVENT_DEL,
-                                          reinterpret_cast<void*>(data));
+    auto key = to_epoll_key(q);
+    auto del_visitor = [&](auto q) -> bool {
+                           return (q->del(RTE_EPOLL_PER_THREAD,
+                                          reinterpret_cast<void*>(key.value)));
+                       };
 
-    if (error) {
-        ICP_LOG(ICP_LOG_ERROR, "Could not delete interrupt event for port queue %d:%d %s\n",
-                port_id, queue_id, strerror(std::abs(error)));
-        return (false);
-    }
+    if (!std::visit(del_visitor, q)) return (false);
 
-    m_queues.erase(std::remove(std::begin(m_queues), std::end(m_queues),
-                               std::make_pair(port_id, queue_id)), std::end(m_queues));
+    m_queues.erase(key.value);
+    m_events.reserve(m_queues.size());
+
     return (true);
 }
 
-bool queue_poller::enable(uint16_t port_id, uint16_t queue_id)
-{
-    int error = rte_eth_dev_rx_intr_enable(port_id, queue_id);
-    if (error) {
-        ICP_LOG(ICP_LOG_ERROR, "Could not enable interrupt for port queue %d:%d: %s\n",
-                port_id, queue_id, strerror(std::abs(error)));
-    }
-    return (!error);
-}
-
-bool queue_poller::disable(uint16_t port_id, uint16_t queue_id)
-{
-    int error = rte_eth_dev_rx_intr_disable(port_id, queue_id);
-    if (error) {
-        ICP_LOG(ICP_LOG_ERROR, "Could not disable interrupt for port queue %d:%d: %s\n",
-                port_id, queue_id, strerror(std::abs(error)));
-    }
-    return (!error);
-}
-
-
-const std::vector<std::pair<uint16_t, uint16_t>>& queue_poller::poll(int timeout_ms)
+const std::vector<queue_ptr>& queue_poller::poll(int timeout_ms)
 {
     m_events.clear();
 
-    std::array<struct rte_epoll_event, max_queues> events;
-    int n = rte_epoll_wait(RTE_EPOLL_PER_THREAD, events.data(), max_queues, timeout_ms);
+    auto disable_visitor = [](auto q) { q->disable(); };
+
+    std::array<struct rte_epoll_event, max_events> events;
+    auto n = rte_epoll_wait(RTE_EPOLL_PER_THREAD, events.data(), events.size(), timeout_ms);
     for (int i = 0; i < n; i++) {
-        auto data = reinterpret_cast<uintptr_t>(events[i].epdata.data);
-        uint16_t port_id = data >> 16;
-        uint16_t queue_id = data & std::numeric_limits<uint16_t>::max();
-        disable(port_id, queue_id);
-        m_events.emplace_back(port_id, queue_id);
+        auto result = m_queues.find(reinterpret_cast<uintptr_t>(events[i].epdata.data));
+        assert(result != m_queues.end());  /* should never happen */
+        auto queue = result->second;
+        std::visit(disable_visitor, queue);
+        m_events.emplace_back(queue);
     }
 
     return (m_events);

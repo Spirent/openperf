@@ -12,13 +12,13 @@
 #include "lwip/netif.h"
 #include "tl/expected.hpp"
 
-#include "core/icp_core.h"
 #include "packetio/drivers/dpdk/dpdk.h"
 #include "packetio/drivers/dpdk/eal.h"
 #include "packetio/drivers/dpdk/queue_utils.h"
 #include "packetio/drivers/dpdk/worker_api.h"
 #include "packetio/drivers/dpdk/model/physical_port.h"
 #include "packetio/generic_port.h"
+#include "core/icp_log.h"
 
 namespace icp {
 namespace packetio {
@@ -253,6 +253,30 @@ static std::map<int, queue_count> get_port_queue_counts(const std::vector<queue:
     return (port_queue_counts);
 }
 
+using port_queues = rxtx_queue_container<rx_queue, tx_queue>;
+using port_queues_ptr = std::unique_ptr<port_queues>;
+
+static std::vector<worker::descriptor>
+to_worker_descriptors(const std::vector<port_queues_ptr>& queues,
+                      const std::vector<queue::descriptor>& descriptors)
+{
+    std::vector<worker::descriptor> wds;
+
+    for (auto& d : descriptors) {
+        assert(d.mode != queue::queue_mode::NONE);
+        auto rxq = (d.mode == queue::queue_mode::TX
+                    ? nullptr
+                    : queues[d.port_id]->rx(d.queue_id));
+        auto txq = (d.mode == queue::queue_mode::RX
+                    ? nullptr
+                    : queues[d.port_id]->tx(d.queue_id));
+
+        wds.emplace_back(d.worker_id, rxq, txq);
+    }
+
+    return (wds);
+}
+
 static void configure_all_ports(const std::map<int, queue_count>& port_queue_counts,
                                 rte_mempool* rx_mempool)
 {
@@ -265,6 +289,41 @@ static void configure_all_ports(const std::map<int, queue_count>& port_queue_cou
             throw std::runtime_error(result.error());
         }
     }
+}
+
+/*
+ * In order to provide a generic transmit function, we need to have access
+ * to information about our transmit queues.  Instead of encapsulating
+ * that data in a std::function, we instead store it locally in this
+ * compilation unit so that we can provide a function pointer to clients.
+ * The EAL is a big nasty singleton, so take advantage of that fact.
+ */
+static port_queues* eal_port_queues[RTE_MAX_ETHPORTS];
+
+static void create_port_queues(const std::map<int, queue_count>& port_queue_counts,
+                               std::vector<port_queues_ptr>& queues)
+{
+    uint16_t port_id = 0;
+    RTE_ETH_FOREACH_DEV(port_id) {
+        queues.push_back(std::make_unique<port_queues>(port_id,
+                                                       port_queue_counts.at(port_id).rx,
+                                                       port_queue_counts.at(port_id).tx));
+
+        eal_port_queues[port_id] = queues.back().get();
+    }
+}
+
+static uint16_t eal_tx_burst_function(int id, uint32_t hash, struct rte_mbuf* mbufs[], uint16_t nb_mbufs)
+{
+    assert(eal_port_queues[id]);
+
+    return (eal_port_queues[id]->tx(hash)->enqueue(mbufs, nb_mbufs));
+}
+
+static uint16_t eal_tx_dummy_function(int, uint32_t, struct rte_mbuf**, uint16_t)
+{
+    ICP_LOG(ICP_LOG_WARNING, "Dummy TX function called; no packet transmitted!\n");
+    return (0);
 }
 
 static int get_waiting_lcore()
@@ -287,7 +346,7 @@ static int get_waiting_lcore()
 
 static void launch_and_configure_workers(void* context,
                                          std::unique_ptr<worker::client>& workers,
-                                         std::vector<queue::descriptor>& descriptors,
+                                         std::vector<worker::descriptor>& descriptors,
                                          std::shared_ptr<vif_map<netif>>& vif)
 {
     /* Launch work threads on all of our available worker cores */
@@ -396,14 +455,20 @@ eal::eal(void* context, std::vector<std::string> args)
         ICP_LOG(ICP_LOG_WARNING, "No hardware threads available to service port queues\n");
     } else {
         /* And determine how we should distribute port queues to workers */
-        auto descriptors = queue::distribute_queues(port_info, eal_workers() - 1);
+        auto q_descriptors = queue::distribute_queues(port_info, eal_workers() - 1);
 
         /* Use the queue descriptors to configure all of our ports */
-        configure_all_ports(get_port_queue_counts(descriptors),
+        configure_all_ports(get_port_queue_counts(q_descriptors),
                             m_allocator->rx_mempool());
 
-        /* and all of our workers */
-        launch_and_configure_workers(context, m_workers, descriptors, m_switch);
+        /* And create our port queues */
+        create_port_queues(get_port_queue_counts(q_descriptors), m_port_queues);
+
+        /* Translate queue::descriptors into worker::descriptors */
+        auto w_descriptors = to_worker_descriptors(m_port_queues, q_descriptors);
+
+        /* and launch them */
+        launch_and_configure_workers(context, m_workers, w_descriptors, m_switch);
     }
 
     /* Finally, register a callback to log link status changes and start our ports. */
@@ -434,6 +499,31 @@ eal::~eal()
     rte_eal_cleanup();
 #pragma clang diagnostic pop
 };
+
+eal::eal(eal&& other)
+    : m_initialized(other.m_initialized)
+    , m_allocator(std::move(other.m_allocator))
+    , m_workers(std::move(other.m_workers))
+    , m_switch(std::move(other.m_switch))
+    , m_bond_ports(std::move(other.m_bond_ports))
+    , m_port_queues(std::move(other.m_port_queues))
+{
+    other.m_initialized = false;
+}
+
+eal& eal::operator=(eal&& other)
+{
+    if (this != &other) {
+        m_initialized = other.m_initialized;
+        other.m_initialized = false;
+        m_allocator = std::move(other.m_allocator);
+        m_workers = std::move(other.m_workers);
+        m_switch = std::move(other.m_switch);
+        m_bond_ports = std::move(other.m_bond_ports);
+        m_port_queues = std::move(other.m_port_queues);
+    }
+    return (*this);
+}
 
 void eal::start()
 {
@@ -475,6 +565,17 @@ std::optional<port::generic_port> eal::port(int id) const
     return (rte_eth_dev_is_valid_port(id)
             ? std::make_optional(port::generic_port(model::physical_port(id, m_allocator->rx_mempool())))
             : std::nullopt);
+}
+
+driver::tx_burst eal::tx_burst_function() const
+{
+    /*
+     * The reinterpret cast is necessary due to using a (void*) for the
+     * buffer parameter in the generic type signature.
+     */
+    return (reinterpret_cast<driver::tx_burst>(eal_workers() == 1
+                                               ? eal_tx_dummy_function
+                                               : eal_tx_burst_function));
 }
 
 tl::expected<int, std::string> eal::create_port(const port::config_data& config)

@@ -7,11 +7,14 @@
 #include <vector>
 #include <unordered_map>
 
+#include "packetio/generic_driver.h"
 #include "packetio/generic_port.h"
-#include "packetio/vif_map.h"
-#include "packetio/drivers/dpdk/model/port_info.h"
+#include "packetio/drivers/dpdk/rxtx_queue_container.h"
+#include "packetio/drivers/dpdk/rx_queue.h"
+#include "packetio/drivers/dpdk/tx_queue.h"
 #include "packetio/drivers/dpdk/worker_api.h"
 #include "packetio/memory/dpdk/pool_allocator.h"
+#include "packetio/vif_map.h"
 
 namespace icp {
 namespace packetio {
@@ -29,28 +32,8 @@ public:
     ~eal();
 
     /* environment is movable */
-    eal& operator=(eal&& other)
-    {
-        if (this != &other) {
-            m_initialized = other.m_initialized;
-            other.m_initialized = false;
-            m_allocator = std::move(other.m_allocator);
-            m_workers = std::move(other.m_workers);
-            m_switch = std::move(other.m_switch);
-            m_bond_ports = std::move(other.m_bond_ports);
-        }
-        return (*this);
-    }
-
-    eal (eal&& other)
-        : m_initialized(other.m_initialized)
-        , m_allocator(std::move(other.m_allocator))
-        , m_workers(std::move(other.m_workers))
-        , m_switch(std::move(other.m_switch))
-        , m_bond_ports(std::move(other.m_bond_ports))
-    {
-        other.m_initialized = false;
-    }
+    eal& operator=(eal&& other);
+    eal(eal&& other);
 
     /* environment is non-copyable */
     eal(const eal&) = delete;
@@ -61,6 +44,9 @@ public:
 
     static std::vector<int> port_ids();
     std::optional<port::generic_port> port(int id) const;
+
+    driver::tx_burst tx_burst_function() const;
+
     tl::expected<int, std::string> create_port(const port::config_data& config);
     tl::expected<void, std::string> delete_port(int id);
 
@@ -73,6 +59,11 @@ private:
     std::unique_ptr<worker::client> m_workers;
     std::shared_ptr<vif_map<netif>> m_switch;
     std::unordered_map<int, std::string> m_bond_ports;
+
+    typedef rxtx_queue_container<rx_queue, tx_queue> port_queues;
+    typedef std::unique_ptr<port_queues> port_queues_ptr;
+    std::vector<port_queues_ptr> m_port_queues;
+
 };
 
 }

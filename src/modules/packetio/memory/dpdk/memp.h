@@ -20,16 +20,20 @@ extern const char memp_ref_rom_mempool[];
  */
 inline struct rte_mbuf * packetio_memp_pbuf_to_mbuf(const struct pbuf *pbuf)
 {
-    return ((struct rte_mbuf *)((uintptr_t)(pbuf) - sizeof(struct rte_mbuf)));
+    return (pbuf != NULL
+            ? (struct rte_mbuf *)((uintptr_t)(pbuf) - sizeof(struct rte_mbuf))
+            : NULL);
 }
 
 inline struct pbuf * packetio_memp_mbuf_to_pbuf(const struct rte_mbuf *mbuf)
 {
-    return ((struct pbuf *)((uintptr_t)(mbuf) + sizeof(struct rte_mbuf)));
+    return (mbuf != NULL
+            ? (struct pbuf *)((uintptr_t)(mbuf) + sizeof(struct rte_mbuf))
+            : NULL);
 }
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* _ICP_PACKETIO_MEMORY_DPDK_MEPM_H_ */
+#endif /* _ICP_PACKETIO_MEMORY_DPDK_MEMP_H_ */

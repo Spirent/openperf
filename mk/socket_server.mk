@@ -32,7 +32,11 @@ SOCKSRV_TARGET := $(SOCKSRV_LIB_DIR)/lib$(SOCKSRV_LIBRARY).a
 
 -include $(SOCKSRV_OBJECTS:.o=.d)
 
+ICP_INC_DIRS += $(SOCKSRV_INC_DIR)
 ICP_LDLIBS += -l$(SOCKSRV_LIBRARY) $(SOCKSRV_LDLIBS)
+
+# Load external dependencies, too
+$(foreach DEP, $(SOCKSRV_DEPENDS), $(eval include $(ICP_ROOT)/mk/$(DEP).mk))
 
 ###
 # Build rules

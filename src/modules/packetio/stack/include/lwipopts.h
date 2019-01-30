@@ -12,6 +12,8 @@
 #define SYS_LIGHTWEIGHT_PROT 0
 #define LWIP_TCPIP_CORE_LOCKING 0
 #define LWIP_NETIF_API 1
+#define LWIP_CALLBACK_API 0
+#define LWIP_EVENT_API 1
 #define LWIP_ERRNO_INCLUDE <errno.h>
 
 #define LWIP_SOCKET 0
@@ -24,18 +26,17 @@
 /* Network Interface options */
 #define LWIP_NETIF_HOSTNAME 1
 #define LWIP_NETIF_LINK_CALLBACK 1
-#define LWIP_NETIF_TX_SINGLE_PBUF 1
 
 /* Protocol support */
 #define LWIP_DHCP 1
 #define LWIP_AUTOIP 1
 #define LWIP_DHCP_AUTOIP_COOP 1
-#define LWIP_DHCP_CHECK_LINK_UP 1
 #define DHCP_DOES_ARP_CHECK 1  /* let's be a good net-citizen */
 
 /* Miscellaneous options */
 #define LWIP_STATS 1
 #define LWIP_STATS_DISPLAY 1
+#define LWIP_STATS_LARGE 1
 #define MEMP_STATS 1
 #define MIB2_STATS 1
 
@@ -46,8 +47,19 @@
 #define MEMP_MEM_MALLOC 1
 #define MEMP_USE_CUSTOM_POOLS 0
 
-/* Performance options */
-#define TCP_MSS 1500
+/* TCP options */
+#define LWIP_TCP_SACK_OUT 1
+#define LWIP_WND_SCALE 1
+
+#define TCP_LISTEN_BACKLOG 1
+#define TCP_SND_BUF (1024 * TCP_MSS)
+#define TCP_SNDLOWAT (0xFFFF - (4 * TCP_MSS) - 1)
+#define TCP_MSS 1460
+#define TCP_WND (1024 * TCP_MSS)
+#define TCP_RCV_SCALE 6
+
+/* Socket options */
+#define SO_REUSE 1
 
 /* We've already got these */
 #define LWIP_DONT_PROVIDE_BYTEORDER_FUNCTIONS 1

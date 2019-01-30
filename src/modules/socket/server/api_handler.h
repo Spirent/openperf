@@ -8,7 +8,7 @@
 
 #include "tl/expected.hpp"
 
-#include "socket/api.h"
+#include "socket/server/generic_socket.h"
 
 struct icp_event_data;
 
@@ -36,8 +36,7 @@ class api_handler {
     uint32_t m_next_socket_id;             /* socket id counter */
 
     /* sockets by id */
-    std::unordered_map<api::socket_id,
-                       std::shared_ptr<server::socket>> m_sockets;
+    std::unordered_map<api::socket_id, generic_socket> m_sockets;
     std::unordered_set<int> m_server_fds;
 
     api::reply_msg handle_request_init(const api::request_init& request);
@@ -50,11 +49,11 @@ class api_handler {
     {
         auto result = m_sockets.find(request.id);
         if (result == m_sockets.end()) {
-            return (tl::make_unexpected(EINVAL));
+            return (tl::make_unexpected(ENOTSOCK));
         }
 
         auto& socket = result->second;
-        return (socket->handle_request(request));
+        return (socket.handle_request(request));
     }
 
 public:

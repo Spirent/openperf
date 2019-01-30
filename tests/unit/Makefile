@@ -2,7 +2,7 @@
 # Makefile to build unit tests
 #
 
-all: tests
+all: test_inception
 
 ICP_ROOT := $(realpath ../../)
 ICP_TARGET := tests
@@ -11,6 +11,12 @@ include $(ICP_ROOT)/mk/bootstrap.mk
 BUILD_DIR := $(ICP_BUILD_ROOT)/obj/unit
 TARGET_DIR := $(ICP_BUILD_ROOT)/bin
 
+SRC_DEPENDS :=
+BLD_DEPENDS := catch
+
+###
+# Framework test files
+###
 SOURCES := \
 	test_main.cpp \
 	framework/test_hashtab.cpp \
@@ -21,13 +27,15 @@ SOURCES := \
 	framework/test_ipv4_address.cpp \
 	framework/test_ipv4_network.cpp \
 	framework/test_std_allocator.cpp \
-	framework/test_task.cpp
+	framework/test_task.cpp \
+	modules/socket/test_bipartite_ring.cpp \
+	modules/socket/test_circular_buffer.cpp \
+	modules/socket/test_uuid.cpp
 
 OBJECTS := $(patsubst %, $(BUILD_DIR)/%, \
 	$(patsubst %.cpp, %.o, $(SOURCES)))
-SRC_DEPENDS := $(OBJECTS:.o=.d)
-
-BLD_DEPENDS := catch framework
+SRC_DEPENDS += $(OBJECTS:.o=.d)
+BLD_DEPENDS += framework socket_test
 
 # Pull in dependencies
 -include $(SRC_DEPENDS)
@@ -46,8 +54,8 @@ $(TARGET_DIR)/test_inception: $(OBJECTS) $(BLD_DEPENDS)
 	@mkdir -p $(dir $@)
 	$(strip $(ICP_CXX) -o $@ $(ICP_LDOPTS) $(ICP_LDFLAGS) $(OBJECTS) $(ICP_LDLIBS))
 
-.PHONY: tests
-tests: $(TARGET_DIR)/test_inception
+.PHONY: test_inception
+test_inception: $(TARGET_DIR)/test_inception
 	$(TARGET_DIR)/test_inception
 
 .PHONY: clean_tests
