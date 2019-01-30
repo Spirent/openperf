@@ -16,7 +16,7 @@
 #include "packetio/drivers/dpdk/queue_poller.h"
 #include "packetio/drivers/dpdk/queue_utils.h"
 #include "packetio/drivers/dpdk/worker_api.h"
-#include "packetio/memory/dpdk/pbuf.h"
+#include "packetio/memory/dpdk/pbuf_utils.h"
 
 namespace icp {
 namespace packetio {
@@ -28,6 +28,7 @@ using switch_t = std::shared_ptr<const vif_map<netif>>;
 const std::string endpoint = "inproc://icp_packetio_workers_control";
 
 static constexpr uint16_t pkt_burst_size = 32;
+static constexpr int mbuf_prefetch_offset = 4;
 
 using namespace std::chrono_literals;
 static constexpr auto poll_timeout = 250ms;
@@ -112,7 +113,6 @@ static bool all_pollable(const std::vector<queue_ptr>& queues)
 static std::pair<size_t, size_t> partition_mbufs(rte_mbuf* incoming[], int length,
                                                  rte_mbuf* unicast[], rte_mbuf* multicast[])
 {
-    static constexpr int mbuf_prefetch_offset = 4;
     size_t ucast_idx = 0, mcast_idx = 0;
     int i = 0;
 
@@ -190,7 +190,7 @@ static uint16_t rx_burst(const switch_t& vif, const rx_queue* rxq)
                 interfaces[i]->name[0], interfaces[i]->name[1],
                 interfaces[i]->num);
 
-        auto pbuf = packetio_pbuf_synchronize(unicast[i]);
+        auto pbuf = packetio_memory_pbuf_synchronize(unicast[i]);
         if (interfaces[i]->input(pbuf, interfaces[i]) != ERR_OK) {
             pbuf_free(pbuf);
         }
@@ -202,7 +202,7 @@ static uint16_t rx_burst(const switch_t& vif, const rx_queue* rxq)
          * After we synchronize, use pbuf functions only so that we
          * can keep the mbuf/pbuf synchronized.
          */
-        auto pbuf = packetio_pbuf_synchronize(nunicast[i]);
+        auto pbuf = packetio_memory_pbuf_synchronize(nunicast[i]);
         for (auto ifp : vif->find(rxq->port_id())) {
             ICP_LOG(ICP_LOG_TRACE, "Dispatching non-unicast packet to %c%c%u\n",
                     ifp->name[0], ifp->name[1], ifp->num);
@@ -405,14 +405,14 @@ class worker : public finite_state_machine<worker, state, command_msg>
             if (d.worker_id != rte_lcore_id()) continue;
 
             if (d.rxq != nullptr) {
-                ICP_LOG(ICP_LOG_DEBUG, "Enabling RX port queue %u:%u\n",
-                        d.rxq->port_id(), d.rxq->queue_id());
+                ICP_LOG(ICP_LOG_DEBUG, "Enabling RX port queue %u:%u on logical core %u\n",
+                        d.rxq->port_id(), d.rxq->queue_id(), rte_lcore_id());
                 m_queues.emplace_back(d.rxq);
             }
 
             if (d.txq != nullptr) {
-                ICP_LOG(ICP_LOG_DEBUG, "Enabling TX port queue %u:%u\n",
-                        d.txq->port_id(), d.txq->queue_id());
+                ICP_LOG(ICP_LOG_DEBUG, "Enabling TX port queue %u:%u on logical core %u\n",
+                        d.txq->port_id(), d.txq->queue_id(), rte_lcore_id());
                 m_queues.emplace_back(d.txq);
             }
         }

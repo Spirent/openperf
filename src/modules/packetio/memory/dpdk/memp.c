@@ -35,6 +35,7 @@
 #include "core/icp_common.h"
 #include "packetio/drivers/dpdk/dpdk.h"
 #include "packetio/memory/dpdk/memp.h"
+#include "packetio/memory/dpdk/pbuf_utils.h"
 
 /* Compile time sanity checks */
 #if MEMP_OVERFLOW_CHECK
@@ -44,9 +45,6 @@
 #if MEMP_USE_POOLS
 #error "MEMP_MEM_POOLS is not supported; FIX ME if you want."
 #endif
-
-extern struct rte_mbuf * packetio_memp_pbuf_to_mbuf(const struct pbuf *pbuf);
-extern struct pbuf * packetio_memp_mbuf_to_pbuf(const struct rte_mbuf *mbuf);
 
 const char memp_default_mempool[] = "DEFAULT";
 const char memp_ref_rom_mempool[] = "REF_ROM";
@@ -100,10 +98,10 @@ void * memp_malloc(memp_t type)
     void *to_return = NULL;
     switch (type) {
     case MEMP_PBUF:
-        to_return = packetio_memp_mbuf_to_pbuf(rte_pktmbuf_alloc(get_ref_rom_mempool()));
+        to_return = packetio_memory_mbuf_to_pbuf(rte_pktmbuf_alloc(get_ref_rom_mempool()));
         break;
     case MEMP_PBUF_POOL:
-        to_return = packetio_memp_mbuf_to_pbuf(rte_pktmbuf_alloc(get_default_mempool()));
+        to_return = packetio_memory_mbuf_to_pbuf(rte_pktmbuf_alloc(get_default_mempool()));
         break;
     default:
         to_return = rte_malloc(memp_pools[type]->desc, memp_pools[type]->size, 0);
@@ -130,7 +128,7 @@ void memp_free(memp_t type, void *mem)
     switch (type) {
     case MEMP_PBUF:
     case MEMP_PBUF_POOL:
-        rte_pktmbuf_free_seg(packetio_memp_pbuf_to_mbuf((struct pbuf *)mem));
+        rte_pktmbuf_free_seg(packetio_memory_pbuf_to_mbuf((struct pbuf *)mem));
         break;
     default:
         rte_free(mem);

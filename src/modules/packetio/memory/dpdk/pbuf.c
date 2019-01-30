@@ -91,8 +91,7 @@
 #include "lwip/inet_chksum.h"
 #endif
 
-#include <string.h>
-#include "packetio/memory/dpdk/memp.h"
+#include "packetio/memory/dpdk/pbuf_utils.h"
 
 #define SIZEOF_STRUCT_PBUF        LWIP_MEM_ALIGN_SIZE(sizeof(struct pbuf))
 /* Since the pool is created in memp, PBUF_POOL_BUFSIZE will be automatically
@@ -259,7 +258,7 @@ pbuf_alloc(pbuf_layer layer, u16_t length, pbuf_type type)
           /* bail out unsuccessfully */
           return NULL;
         }
-        struct rte_mbuf *m = packetio_memp_pbuf_to_mbuf(q);
+        struct rte_mbuf *m = packetio_memory_pbuf_to_mbuf(q);
         qlen = LWIP_MIN(rem_len, (u16_t)(m->buf_len - LWIP_MEM_ALIGN_SIZE(offset)));
         pbuf_init_alloced_pbuf(q, LWIP_MEM_ALIGN((void *)((u8_t *)q + SIZEOF_STRUCT_PBUF + offset)),
                                rem_len, qlen, type, 0);

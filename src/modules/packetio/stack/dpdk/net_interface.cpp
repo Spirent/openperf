@@ -9,7 +9,7 @@
 
 #include "packetio/drivers/dpdk/dpdk.h"
 #include "packetio/memory/dpdk/memp.h"
-#include "packetio/memory/dpdk/pbuf.h"
+#include "packetio/memory/dpdk/pbuf_utils.h"
 #include "packetio/stack/dpdk/net_interface.h"
 
 namespace icp {
@@ -338,7 +338,7 @@ int net_interface::handle_tx(struct pbuf* p)
      * mbuf to be freed with it.
      */
     assert(p->next == NULL);
-    auto mbuf = packetio_mbuf_synchronize(p);
+    auto mbuf = packetio_memory_mbuf_synchronize(p);
     rte_mbuf_refcnt_update(mbuf, 1);
 
     rte_mbuf *pkts[] = { mbuf };
