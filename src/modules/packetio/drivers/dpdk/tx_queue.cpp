@@ -1,4 +1,5 @@
 #include <cerrno>
+#include <chrono>
 #include <memory>
 #include <string>
 #include <time.h>
@@ -16,21 +17,13 @@ namespace icp {
 namespace packetio {
 namespace dpdk {
 
+using namespace std::chrono_literals;
+static constexpr auto tcp_transmit_delay = 50us;
+
 static std::string get_ring_name(uint16_t port_id, uint16_t queue_id)
 {
     return (std::string("tx_ring_") + std::to_string(port_id)
             + "_" + std::to_string(queue_id));
-}
-
-/* Calculate a wake up delay based on port speed, in ns */
-static long get_wake_up_delay(uint16_t port_id)
-{
-    struct rte_eth_link link;
-    rte_eth_link_get_nowait(port_id, &link);
-    auto delay = (link.link_speed  /* speed is in Mbps */
-                  ? 10000000 / link.link_speed  /* 1 us delay at 10 Gbps */
-                  : 10000);
-    return (delay);
 }
 
 /* Read the fd to clear it */
@@ -53,6 +46,8 @@ tx_queue::tx_queue(uint16_t port_id, uint16_t queue_id)
     , m_queue(queue_id)
     , m_fd(timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK))
     , m_enabled(false)
+    , m_armed(false)
+    , m_flushed(false)
     , m_ring(rte_ring_create(get_ring_name(port_id, queue_id).c_str(),
                              tx_queue_size,
                              SOCKET_ID_ANY,
@@ -136,6 +131,7 @@ bool tx_queue::disable()
         }
     }
     m_enabled.store(false, std::memory_order_release);
+    m_flushed.clear(std::memory_order_release);
     m_armed.clear(std::memory_order_release);
     return (true);
 }
@@ -145,19 +141,43 @@ uint16_t tx_queue::enqueue(rte_mbuf* const mbufs[], uint16_t nb_mbufs)
     auto queued = rte_ring_enqueue_burst(ring(),
                                          reinterpret_cast<void* const*>(mbufs),
                                          nb_mbufs, nullptr);
-    if (!queued) return (0);
+    if (!queued) {
+        ICP_LOG(ICP_LOG_WARNING, "tx queue %u:%u full\n", port_id(), queue_id());
+        return (0);
+    };
 
-    if (m_enabled.load(std::memory_order_acquire)
-        && !m_armed.test_and_set(std::memory_order_acquire)) {
-        auto alarm = itimerspec{
-            .it_interval = { 0, 0 },
-            .it_value    = { 0, get_wake_up_delay(m_port) }
-        };
-        if (timerfd_settime(m_fd, 0, &alarm, nullptr) == -1) {
-            ICP_LOG(ICP_LOG_ERROR, "Could not arm timerfd for tx queue on %u:%u: %s\n",
-                    port_id(), queue_id(), strerror(errno));
-            m_armed.clear(std::memory_order_release);  /* not armed */
-            return (false);
+    if (m_enabled.load(std::memory_order_acquire)) {
+        if (!m_armed.test_and_set(std::memory_order_acquire)) {
+            /*
+             * If we haven't armed the timer, do so.  We need to let the tx worker
+             * know it has packets to send.  The small delay is to hopefully allow
+             * the worker to send a burst of packets.
+             */
+            auto ns_delay = std::chrono::duration_cast<std::chrono::nanoseconds>(tcp_transmit_delay);
+            auto alarm = itimerspec{
+                .it_interval = { 0, 0 },
+                .it_value    = { 0, ns_delay.count() }
+            };
+            if (timerfd_settime(m_fd, 0, &alarm, nullptr) == -1) {
+                ICP_LOG(ICP_LOG_ERROR, "Could not arm timerfd for tx queue on %u:%u: %s\n",
+                        port_id(), queue_id(), strerror(errno));
+                m_armed.clear(std::memory_order_release);  /* not armed */
+            }
+        } else if (rte_ring_count(ring()) > (tx_queue_size / 4)
+            && !m_flushed.test_and_set(std::memory_order_acquire)) {
+            /*
+             * If the ring is filling up and we haven't setup a flush timer, do so.
+             * We need to get this buffer transmitted before it fills up.
+             */
+            auto flush = itimerspec{
+                .it_interval = { 0, 0},
+                .it_value = { 0, 1}
+            };
+            if (timerfd_settime(m_fd, 0, &flush, nullptr) == -1) {
+                ICP_LOG(ICP_LOG_ERROR, "Could not flush timerfd for tx queue on %u:%u: %s\n",
+                        port_id(), queue_id(), strerror(errno));
+                m_flushed.clear(std::memory_order_release);
+            }
         }
     }
 
