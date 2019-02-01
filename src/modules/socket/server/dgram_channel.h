@@ -13,7 +13,6 @@ namespace server {
 
 class dgram_channel
 {
-    static constexpr uint64_t eventfd_max = std::numeric_limits<uint64_t>::max() - 1;
     DGRAM_CHANNEL_MEMBERS
 
 public:

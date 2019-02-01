@@ -89,12 +89,11 @@ tl::expected<size_t, int> stream_channel::send(pid_t pid,
                     do_read(client_fd());
                 }
                 /* no current notifications and no blocks; stuff up the pipe */
-                if (eventfd_write(client_fd(), eventfd_max - 1) == -1) {
+                if (eventfd_write(client_fd(), eventfd_max) == -1) {
                     clear_event_flags();
                     return (tl::make_unexpected(errno));
                 }
             }
-
             return (tl::make_unexpected(EWOULDBLOCK));
         }
 
@@ -113,6 +112,8 @@ tl::expected<size_t, int> stream_channel::send(pid_t pid,
             return (tl::make_unexpected(error));
         }
     }
+
+    assert(buf_available);
 
     bool empty = sendq.empty();
     auto written = sendq.write(pid, iov, iovcnt);
@@ -176,7 +177,6 @@ tl::expected<size_t, int> stream_channel::recv(pid_t pid __attribute__((unused))
 
 int stream_channel::recv_clear()
 {
-    fprintf(stderr, "recv_clear fd %d\n", server_fds.client_fd);
     return (do_read(client_fd()));
 }
 

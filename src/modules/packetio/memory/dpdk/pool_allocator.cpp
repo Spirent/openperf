@@ -1,6 +1,8 @@
 #include <memory>
 #include <numeric>
 
+#include "lwip/pbuf.h"
+
 #include "core/icp_core.h"
 #include "packetio/drivers/dpdk/dpdk.h"
 #include "packetio/drivers/dpdk/model/port_info.h"

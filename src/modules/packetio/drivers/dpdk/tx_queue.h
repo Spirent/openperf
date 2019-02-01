@@ -22,11 +22,12 @@ class tx_queue {
     int m_fd;
     std::atomic_bool m_enabled;
     std::atomic_flag m_armed;
+    std::atomic_flag m_flushed;
     std::unique_ptr<rte_ring, rte_ring_deleter> m_ring;
     struct rte_epoll_event m_event;
 
     /* XXX: calculate a value based on port speed and queue count? */
-    static constexpr uint16_t tx_queue_size = 256;
+    static constexpr uint16_t tx_queue_size = 512;
 
 public:
     tx_queue(uint16_t port_id, uint16_t queue_id);

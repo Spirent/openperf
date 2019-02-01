@@ -87,6 +87,13 @@ const std::vector<queue_ptr>& queue_poller::poll(int timeout_ms)
     return (m_events);
 }
 
+bool queue_poller::wait_for_interrupt(int timeout_ms)
+{
+    std::array<struct rte_epoll_event, max_events> events;
+    auto n = rte_epoll_wait(RTE_EPOLL_PER_THREAD, events.data(), events.size(), timeout_ms);
+    return (n > 0);
+}
+
 }
 }
 }

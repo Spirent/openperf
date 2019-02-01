@@ -16,7 +16,7 @@
 #include "packetio/drivers/dpdk/queue_poller.h"
 #include "packetio/drivers/dpdk/queue_utils.h"
 #include "packetio/drivers/dpdk/worker_api.h"
-#include "packetio/memory/dpdk/pbuf.h"
+#include "packetio/memory/dpdk/pbuf_utils.h"
 
 namespace icp {
 namespace packetio {
@@ -27,8 +27,8 @@ using switch_t = std::shared_ptr<const vif_map<netif>>;
 
 const std::string endpoint = "inproc://icp_packetio_workers_control";
 
-static constexpr uint16_t rx_burst_size = 32;
-static constexpr uint16_t tx_burst_size = 32;
+static constexpr uint16_t pkt_burst_size = 32;
+static constexpr int mbuf_prefetch_offset = 4;
 
 using namespace std::chrono_literals;
 static constexpr auto poll_timeout = 250ms;
@@ -113,7 +113,6 @@ static bool all_pollable(const std::vector<queue_ptr>& queues)
 static std::pair<size_t, size_t> partition_mbufs(rte_mbuf* incoming[], int length,
                                                  rte_mbuf* unicast[], rte_mbuf* multicast[])
 {
-    static constexpr int mbuf_prefetch_offset = 4;
     size_t ucast_idx = 0, mcast_idx = 0;
     int i = 0;
 
@@ -123,40 +122,16 @@ static std::pair<size_t, size_t> partition_mbufs(rte_mbuf* incoming[], int lengt
      * with pending data.
      */
 
-    /* First, prefetch some mbufs. */
+    /* First, prefetch some mbuf payloads. */
     for (i = 0; i < mbuf_prefetch_offset && i < length; i++) {
-        rte_prefetch0(incoming[i]);
-    }
-
-    /*
-     * Now load the payloads from the prefetched mbufs and continue to
-     * prefetch new mbufs.
-     */
-    for (i = 0; i < (2 * mbuf_prefetch_offset) && i < length; i++) {
-        rte_prefetch0(incoming[i + mbuf_prefetch_offset]);
         rte_prefetch0(rte_pktmbuf_mtod(incoming[i], void*));
     }
 
     /*
-     * Now we should have mbuf payloads in the local cache, so parse them.
-     * Continue prefetching both mbufs and payloads ahead of use.
+     * Continue pre-fetching the packet data while partitioning the packets
+     * based on data that should now be in the local CPU cache.
      */
-    for (i = 0; i < (length - (2 * mbuf_prefetch_offset)); i++) {
-        rte_prefetch0(incoming[i + (2 * mbuf_prefetch_offset)]);
-        rte_prefetch0(rte_pktmbuf_mtod(incoming[i + mbuf_prefetch_offset], void*));
-        auto eth = rte_pktmbuf_mtod(incoming[i], struct ether_hdr*);
-        if (is_unicast_ether_addr(&eth->d_addr)) {
-            unicast[ucast_idx++] = incoming[i];
-        } else {
-            multicast[mcast_idx++] = incoming[i];
-        }
-    }
-
-     /*
-     * All mbufs have been prefetched.  Continue to prefetch payloads while
-     * parsing the remaining mbufs.
-     */
-    for (; i < length - mbuf_prefetch_offset; i++) {
+    for (i = 0; i < (length - mbuf_prefetch_offset); i++) {
         rte_prefetch0(rte_pktmbuf_mtod(incoming[i + mbuf_prefetch_offset], void*));
         auto eth = rte_pktmbuf_mtod(incoming[i], struct ether_hdr*);
         if (is_unicast_ether_addr(&eth->d_addr)) {
@@ -179,145 +154,230 @@ static std::pair<size_t, size_t> partition_mbufs(rte_mbuf* incoming[], int lengt
     return std::make_pair(ucast_idx, mcast_idx);
 }
 
-static void rx_burst(const switch_t& vif, const rx_queue* rxq)
+static uint16_t rx_burst(const switch_t& vif, const rx_queue* rxq)
 {
     /*
      * We pull packets from the port and put them in the receive array.
      * We then sort them into unicast and multicast types.
      */
-    std::array<rte_mbuf*, rx_burst_size> incoming, unicast, nunicast;
-    std::array<netif*, rx_burst_size> interfaces;
+    std::array<rte_mbuf*, pkt_burst_size> incoming, unicast, nunicast;
+    std::array<netif*, pkt_burst_size> interfaces;
 
-    while (auto n = rte_eth_rx_burst(rxq->port_id(), rxq->queue_id(),
-                                     incoming.data(), rx_burst_size)) {
-        ICP_LOG(ICP_LOG_TRACE, "Received %d packet%s on %d:%d\n",
-                n, n > 1 ? "s" : "", rxq->port_id(), rxq->queue_id());
+    auto n = rte_eth_rx_burst(rxq->port_id(), rxq->queue_id(),
+                              incoming.data(), pkt_burst_size);
 
-        auto [nb_ucast, nb_nucast] = partition_mbufs(incoming.data(), n,
-                                                     unicast.data(),
-                                                     nunicast.data());
+    if (!n) return (0);
 
-        /* Lookup interfaces for unicast packets ... */
-        for (size_t i = 0; i < nb_ucast; i++) {
-            auto eth = rte_pktmbuf_mtod(unicast[i], struct ether_hdr *);
-            auto ifp = vif->find(rxq->port_id(), eth->d_addr.addr_bytes);
-            interfaces[i] = ifp ? *ifp : nullptr;
-        }
+    ICP_LOG(ICP_LOG_TRACE, "Received %d packet%s on %d:%d\n",
+            n, n > 1 ? "s" : "", rxq->port_id(), rxq->queue_id());
 
-        /* ... and dispatch */
-        for (size_t i = 0; i < nb_ucast; i++) {
-            if (!interfaces[i]) rte_pktmbuf_free(unicast[i]);
+    auto [nb_ucast, nb_nucast] = partition_mbufs(incoming.data(), n,
+                                                 unicast.data(),
+                                                 nunicast.data());
 
-            ICP_LOG(ICP_LOG_TRACE, "Dispatching unicast packet to %c%c%u\n",
-                    interfaces[i]->name[0], interfaces[i]->name[1],
-                    interfaces[i]->num);
+    /* Lookup interfaces for unicast packets ... */
+    for (size_t i = 0; i < nb_ucast; i++) {
+        auto eth = rte_pktmbuf_mtod(unicast[i], struct ether_hdr *);
+        auto ifp = vif->find(rxq->port_id(), eth->d_addr.addr_bytes);
+        interfaces[i] = ifp ? *ifp : nullptr;
+    }
 
-            auto pbuf = packetio_pbuf_synchronize(unicast[i]);
-            if (interfaces[i]->input(pbuf, interfaces[i]) != ERR_OK) {
-                pbuf_free(pbuf);
-            }
-        }
+    /* ... and dispatch */
+    for (size_t i = 0; i < nb_ucast; i++) {
+        if (!interfaces[i]) rte_pktmbuf_free(unicast[i]);
 
-        /* Dispatch all non-unicast packets to all interfaces */
-        for (size_t i = 0; i < nb_nucast; i++) {
-            /*
-             * After we synchronize, use pbuf functions only so that we
-             * can keep the mbuf/pbuf synchronized.
-             */
-            auto pbuf = packetio_pbuf_synchronize(nunicast[i]);
-            for (auto ifp : vif->find(rxq->port_id())) {
-                ICP_LOG(ICP_LOG_TRACE, "Dispatching non-unicast packet to %c%c%u\n",
-                        ifp->name[0], ifp->name[1], ifp->num);
+        ICP_LOG(ICP_LOG_TRACE, "Dispatching unicast packet to %c%c%u\n",
+                interfaces[i]->name[0], interfaces[i]->name[1],
+                interfaces[i]->num);
 
-                pbuf_ref(pbuf);
-                if (ifp->input(pbuf, ifp) != ERR_OK) {
-                    pbuf_free(pbuf);
-                }
-            }
+        auto pbuf = packetio_memory_pbuf_synchronize(unicast[i]);
+        if (interfaces[i]->input(pbuf, interfaces[i]) != ERR_OK) {
             pbuf_free(pbuf);
         }
     }
+
+    /* Dispatch all non-unicast packets to all interfaces */
+    for (size_t i = 0; i < nb_nucast; i++) {
+        /*
+         * After we synchronize, use pbuf functions only so that we
+         * can keep the mbuf/pbuf synchronized.
+         */
+        auto pbuf = packetio_memory_pbuf_synchronize(nunicast[i]);
+        for (auto ifp : vif->find(rxq->port_id())) {
+            ICP_LOG(ICP_LOG_TRACE, "Dispatching non-unicast packet to %c%c%u\n",
+                    ifp->name[0], ifp->name[1], ifp->num);
+
+            pbuf_ref(pbuf);
+            if (ifp->input(pbuf, ifp) != ERR_OK) {
+                pbuf_free(pbuf);
+            }
+        }
+        pbuf_free(pbuf);
+    }
+
+    return (n);
 }
 
-static void tx_burst(const tx_queue* txq)
+static uint16_t tx_burst(const tx_queue* txq)
 {
-    std::array<rte_mbuf*, tx_burst_size> outgoing;
+    std::array<rte_mbuf*, pkt_burst_size> outgoing;
 
-    while (!rte_ring_empty(txq->ring())) {
-        auto to_send = rte_ring_dequeue_burst(txq->ring(),
-                                              reinterpret_cast<void**>(outgoing.data()),
-                                              outgoing.size(), nullptr);
+    auto to_send = rte_ring_dequeue_burst(txq->ring(),
+                                          reinterpret_cast<void**>(outgoing.data()),
+                                          outgoing.size(), nullptr);
 
-        auto sent = rte_eth_tx_burst(txq->port_id(), txq->queue_id(),
-                                     outgoing.data(), to_send);
+    if (!to_send) return (0);
 
-        ICP_LOG(ICP_LOG_TRACE, "Transmitted %u of %u packet%s on %u:%u\n",
-                sent, to_send, sent > 1 ? "s" : "", txq->port_id(), txq->queue_id());
+    auto sent = rte_eth_tx_burst(txq->port_id(), txq->queue_id(),
+                                 outgoing.data(), to_send);
 
-        size_t retries = 0;
-        while (sent < to_send) {
-            rte_pause();
-            retries++;
-            sent += rte_eth_tx_burst(txq->port_id(), txq->queue_id(),
-                                     outgoing.data() + sent,
-                                     to_send - sent);
-        }
+    ICP_LOG(ICP_LOG_TRACE, "Transmitted %u of %u packet%s on %u:%u\n",
+            sent, to_send, sent > 1 ? "s" : "", txq->port_id(), txq->queue_id());
 
-        if (retries) {
-            ICP_LOG(ICP_LOG_DEBUG, "Transmission required %zu retries on %u:%u\n",
-                    retries, txq->port_id(), txq->queue_id());
-        }
+    size_t retries = 0;
+    while (sent < to_send) {
+        rte_pause();
+        retries++;
+        sent += rte_eth_tx_burst(txq->port_id(), txq->queue_id(),
+                                 outgoing.data() + sent,
+                                 to_send - sent);
     }
+
+    if (retries) {
+        ICP_LOG(ICP_LOG_DEBUG, "Transmission required %zu retries on %u:%u\n",
+                retries, txq->port_id(), txq->queue_id());
+    }
+
+    return (sent);
+}
+
+static uint16_t service_queue(const switch_t& vif, const queue_ptr& queue)
+{
+    return (std::visit(overloaded_visitor(
+                           [&](const rx_queue* rxq) -> uint16_t {
+                               return (rx_burst(vif, rxq));
+                           },
+                           [](const tx_queue* txq) -> uint16_t {
+                               return (tx_burst(txq));
+                           }),
+                       queue));
+}
+
+static void enable_queue_interrupt(const queue_ptr& queue)
+{
+    auto enable_visitor = [](auto q) { q->enable(); };
+    std::visit(enable_visitor, queue);
+}
+
+static void disable_queue_interrupt(const queue_ptr& queue)
+{
+    auto disable_visitor = [](auto q) { q->disable(); };
+    std::visit(disable_visitor, queue);
 }
 
 static void run_pollable(void* control, const switch_t& vif,
                          const std::vector<queue_ptr>& queues)
 {
-    auto enable_visitor = [](auto q) {
-                              q->enable();
-                          };
-
     queue_poller poller;
     for (auto& q : queues) {
         poller.add(q);
-        std::visit(enable_visitor, q);
     }
 
-    do {
-        for (auto& q : poller.poll(poll_timeout.count())) {
-            std::visit(overloaded_visitor(
-                           [&](rx_queue* rxq) {
-                               rx_burst(vif, rxq);
-                               rxq->enable();
-                           },
-                           [](tx_queue* txq) {
-                               tx_burst(txq);
-                               txq->enable();
-                           }),
-                       q);
+    uint16_t max_burst = 0;
+    uint16_t idle_queues = 0;
+    uint16_t idle_loops = 0;
+
+    while (!icp_socket_has_messages(control)) {
+    loop_start:
+        do {
+            /*
+             * Service our queues as fast as possible if at least one of them
+             * is full.
+             */
+            max_burst = 0;
+            idle_queues = 0;
+
+            for (auto& q : queues) {
+                auto burst_size = service_queue(vif, q);
+                max_burst = std::max(max_burst, burst_size);
+                if (!burst_size) idle_queues++;
+            }
+        } while (max_burst == pkt_burst_size);
+
+         /* None of our queues are full, so check to see if they are all idle. */
+        if (idle_queues < queues.size()) {
+            /* Nope; continue servicing our queues */
+            idle_loops = 0;
+            goto loop_start;  /* bypass socket check */
+        } else {
+            /*
+             * All queues are idle; start pausing the CPU instead of
+             * spinning needlessly.
+             */
+            assert(idle_queues == queues.size());
+            idle_loops++;
+
+            if (idle_loops < 10) {
+                rte_delay_us(1);
+            } else if (idle_loops < 100) {
+                rte_delay_us(5);
+            } else {
+                /*
+                 * We haven't seen a packet for at least half a millisecond;
+                 * go to sleep until we have something to do.
+                 */
+                for (auto& q : queues) {
+                    enable_queue_interrupt(q);
+                }
+                auto events = poller.wait_for_interrupt(poll_timeout.count());
+                for (auto& q : queues) {
+                    disable_queue_interrupt(q);
+                }
+                /*
+                 * Note: don't reset idle_loops.  We want a spurious wake-up to send
+                 * us back to sleep.
+                 */
+                if (events) {
+                    goto loop_start; /* bypass socket check, we have things to do! */
+                }
+            }
         }
-    } while (!icp_socket_has_messages(control));
+    }
+
+    for (auto& q : queues) {
+        poller.del(q);
+    }
 }
 
 static void run_spinning(void* control, const switch_t& vif,
                          const std::vector<queue_ptr>& queues)
 {
-    do {
+    while (!icp_socket_has_messages(control)) {
+        /*
+         * Check the time before servicing any queues.  We want to query our control
+         * socket periodically for messages without hammering it.
+         */
         using clock = std::chrono::steady_clock;
         auto start = clock::now();
+
         do {
-            for (auto& q : queues) {
-                std::visit(overloaded_visitor(
-                               [&](rx_queue* rxq) {
-                                   rx_burst(vif, rxq);
-                               },
-                               [](tx_queue* txq) {
-                                   tx_burst(txq);
-                               }),
-                           q);
-            }
+            uint16_t idle_queues = 0;
+
+            /* Service queues as fast as possible if any of them have packets. */
+            do {
+                idle_queues = 0;
+                for (auto& q : queues) {
+                    auto burst_size = service_queue(vif, q);
+                    if (!burst_size) idle_queues++;
+                }
+            } while (idle_queues < queues.size());
+
+            /* All queues are idle; take a break from polling */
+            rte_delay_us(1);
+
+            /* Keep doing this until we need to query our control socket */
         } while (clock::now() - start > poll_timeout);
-    } while (!icp_socket_has_messages(control));
+    }
 }
 
 static void run(void* control, const switch_t& vif,
@@ -345,14 +405,14 @@ class worker : public finite_state_machine<worker, state, command_msg>
             if (d.worker_id != rte_lcore_id()) continue;
 
             if (d.rxq != nullptr) {
-                ICP_LOG(ICP_LOG_DEBUG, "Enabling RX port queue %u:%u\n",
-                        d.rxq->port_id(), d.rxq->queue_id());
+                ICP_LOG(ICP_LOG_DEBUG, "Enabling RX port queue %u:%u on logical core %u\n",
+                        d.rxq->port_id(), d.rxq->queue_id(), rte_lcore_id());
                 m_queues.emplace_back(d.rxq);
             }
 
             if (d.txq != nullptr) {
-                ICP_LOG(ICP_LOG_DEBUG, "Enabling TX port queue %u:%u\n",
-                        d.txq->port_id(), d.txq->queue_id());
+                ICP_LOG(ICP_LOG_DEBUG, "Enabling TX port queue %u:%u on logical core %u\n",
+                        d.txq->port_id(), d.txq->queue_id(), rte_lcore_id());
                 m_queues.emplace_back(d.txq);
             }
         }

@@ -67,12 +67,10 @@ static void do_write(int fd)
 
 void stream_channel::maybe_notify()
 {
-    auto fd = client_fd();
-
-    maybe_unblock();
+    if (sendq.empty()) maybe_unblock();
 
     if (!notify_event_flag.test_and_set(std::memory_order_acquire)) {
-        do_write(fd);
+        do_write(client_fd());
     }
 
     /* notify flag is set */
@@ -80,10 +78,8 @@ void stream_channel::maybe_notify()
 
 void stream_channel::maybe_unblock()
 {
-    auto fd = client_fd();
-
     if (block_event_flag.test_and_set(std::memory_order_acquire)) {
-        do_read(fd);
+        do_read(client_fd());
         notify_event_flag.clear(std::memory_order_release);
     }
     block_event_flag.clear(std::memory_order_release);
@@ -127,7 +123,7 @@ size_t stream_channel::recv_clear(size_t length)
     auto adjust = sendq.skip(length);
     assert(adjust == length);  /* should always be true for us */
 
-    maybe_unblock();
+    if (sendq.empty()) maybe_unblock();
 
     return (length);
 }
