@@ -140,14 +140,9 @@ void api_service_fini(void *state)
 
 REGISTER_MODULE(api_service,
                 INIT_MODULE_INFO(
-                                 "API_service",
+                                 "api",
                                  "Module to handle API services",
-                                 icp::api::module_version,
-                                 BUILD_NUMBER,
-                                 BUILD_TIMESTAMP,
-                                 BUILD_COMMIT,
-                                 "static",
-                                 ""
+                                 icp::api::module_version
                                  ),
                 new icp::api::service(),
                 api_service_pre_init,

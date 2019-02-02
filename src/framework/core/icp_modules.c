@@ -9,8 +9,6 @@
 static SLIST_HEAD(icp_modules_list, icp_module) icp_modules_list_head =
     SLIST_HEAD_INITIALIZER(icp_modules_list_head);
 
-static int icp_loaded_module_count = 0;
-
 void icp_modules_register(struct icp_module *module)
 {
     /* Verify required module information fields are provided. */
@@ -25,12 +23,13 @@ void icp_modules_register(struct icp_module *module)
      * For simplicity this is a subset of what RFC-3986 allows.
      */
     regex_t regex;
-    assert(!regcomp(&regex, ICP_MODULE_ID_REGEX, REG_EXTENDED));
-    assert(!regexec(&regex, module->info.id, 0, NULL, 0));
+    int regresult = regcomp(&regex, ICP_MODULE_ID_REGEX, REG_EXTENDED);
+    assert(!regresult);
+    regresult = regexec(&regex, module->info.id, 0, NULL, 0);
+    assert(!regresult);
     regfree(&regex);
 
     SLIST_INSERT_HEAD(&icp_modules_list_head, module, next);
-    icp_loaded_module_count++;
 }
 
 int icp_modules_pre_init(void *context)
@@ -118,7 +117,14 @@ void icp_modules_finish()
 
 int icp_get_loaded_module_count()
 {
-    return icp_loaded_module_count;
+    int loaded_module_count = 0;
+    struct icp_module * module = NULL;
+
+    SLIST_FOREACH(module, &icp_modules_list_head, next) {
+        loaded_module_count++;
+    }
+
+    return loaded_module_count;
 }
 
 const struct icp_module_info * icp_get_module_info_by_id(const char * module_id)
@@ -142,8 +148,10 @@ int icp_get_module_info_list(const struct icp_module_info * info[], int max_entr
     if (!info)
         return -1;
 
-    if (max_entries <= 0)
+    if (max_entries < 0)
         return -1;
+    else if (max_entries == 0)
+        return icp_get_loaded_module_count();
 
     int module_list_count = 0;
     struct icp_module *module = NULL;

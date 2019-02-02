@@ -13,10 +13,14 @@ class _be_valid_module(Matcher):
         #version
         expect(m.version).to(be_a(client.models.ModuleVersion))
         expect(m.version.version).to(be_above_or_equal(0))
-        #not required version properties. make sure they are sent though.
-        expect(m.version).to(have_property('build_number'))
-        expect(m.version).to(have_property('build_date'))
-        expect(m.version).to(have_property('source_commit'))
+
+        if hasattr(m, 'build_number'):
+            expect(m.version.build_number).to_not(be_empty())
+        if hasattr(m, 'build_date'):
+            expect(m.version.build_date).to_not(be_empty())
+        if hasattr(m, 'source_commit'):
+            expect(m.version.source_commit).to_not(be_empty())
+
 
         #linkage
         expect(['static', 'dynamic']).to(contain(m.linkage))

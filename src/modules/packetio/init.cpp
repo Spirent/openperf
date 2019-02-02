@@ -73,13 +73,8 @@ void icp_packetio_fini(void *state)
 REGISTER_MODULE(packetio,
                 INIT_MODULE_INFO(
                                  "packetio",
-                                 "Module to handle packetIO operations.",
-                                 icp::packetio::module_version,
-                                 BUILD_NUMBER,
-                                 BUILD_TIMESTAMP,
-                                 BUILD_COMMIT,
-                                 "static",
-                                 ""
+                                 "Core module comprising TCP/IP stack functionality, virtual interfaces, and DPDK",
+                                 icp::packetio::module_version
                                  ),
                 new icp::packetio::service(),
                 nullptr,

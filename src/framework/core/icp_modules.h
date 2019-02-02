@@ -24,7 +24,8 @@ typedef int (icp_module_start_fn)(void *state);
  * Structure describing details of a module
  */
 #define ICP_MAX_MODULE_ID_LENGTH 80
-#define ICP_MODULE_ID_REGEX "^[a-zA-Z0-9\\-_.]+$"
+#define ICP_MODULE_ID_REGEX "^[a-z0-9.\\-]+$"
+enum icp_module_linkage_type { NONE, DYNAMIC, STATIC, MAX };
 struct icp_module_info {
     const char *id;
     const char *description;
@@ -36,7 +37,7 @@ struct icp_module_info {
         const char *source_commit;
     } version;
 
-    const char *linkage;
+    enum icp_module_linkage_type linkage;
     const char *path;
 };
 
@@ -142,11 +143,12 @@ const struct icp_module_info * icp_get_module_info_by_id(const char * module_id)
  * @param info
  *   pointer to an array of const pointers to module info structs
  * @param max_entries
- *   maximum number of entries in the array pointed to by info
+ *   maximum number of entries in the array pointed to by info.
+ *   a value of 0 will return the current loaded module count. info[] would not be modified.
  *
  * @return
  *   on success return the actual number of modules info now points to
- *   otherwise -1
+ *   otherwise -1. except if max_entries is 0, then return current loaded module count.
  */
 int icp_get_module_info_list(const struct icp_module_info * info[], int max_entries);
 
@@ -156,19 +158,17 @@ int icp_get_module_info_list(const struct icp_module_info * info[], int max_entr
  * arguments to the REGISTER_MODULE macro itself.
  */
 
-#define INIT_MODULE_INFO(id_, description_, version_,                   \
-                         build_number_, build_date_, source_commit_,    \
-                         linkage_, path_)                               \
+#define INIT_MODULE_INFO(id_, description_, version_)                   \
     { .id = id_,                                                        \
       .description = description_,                                      \
       .version = {                                                      \
             .version = version_,                                        \
-            .build_number = build_number_,                              \
-            .build_date = build_date_,                                  \
-            .source_commit = source_commit_                             \
+            .build_number = BUILD_NUMBER,                               \
+            .build_date = BUILD_TIMESTAMP,                              \
+            .source_commit = BUILD_COMMIT                               \
        },                                                               \
-       .linkage = linkage_,                                             \
-       .path = path_                                                    \
+       .linkage = STATIC,                                               \
+       .path = ""                                                       \
     }                                                                   \
 
 /**

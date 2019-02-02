@@ -32,17 +32,16 @@ with description('Modules, ') as self:
 
     with description('get, '):
         with description('known module, '):
-            with it('succeeds (packetio)'):
-                module = self.api.get_module('packetio')
-                expect(module).to(be_valid_module)
-
-            with it('succeeds (api)'):
-                module = self.api.get_module('API_service')
-                expect(module).to(be_valid_module)
+            with description('packetio'):
+                with it('succeeds'):
+                    module = self.api.get_module('packetio')
+                    expect(module).to(be_valid_module)
+                    expect(module.id).to(equal('packetio'))
+                    expect(module.version.version).to(equal(1))
 
         with description('non-existent module, '):
             with it('returns 404'):
-                expect(lambda: self.api.get_module('Non')).to(raise_api_exception(404))
+                expect(lambda: self.api.get_module('insertnotfoundmodulenamehere')).to(raise_api_exception(404))
 
         with description('unsupported method, '):
             with it('returns 405'):

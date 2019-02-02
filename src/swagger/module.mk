@@ -14,8 +14,8 @@ MODEL_SOURCES := \
 	InterfaceProtocolConfig_ipv4_static.cpp \
 	InterfaceStats.cpp \
 	ModelBase.cpp \
-        Module.cpp \
-        ModuleVersion.cpp \
+	Module.cpp \
+	ModuleVersion.cpp \
 	PortConfig_bond.cpp \
 	PortConfig.cpp \
 	PortConfig_dpdk.cpp \

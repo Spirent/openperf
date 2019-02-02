@@ -18,13 +18,13 @@ using namespace swagger::v1::model;
 class handler : public icp::api::route::handler::registrar<handler> {
 public:
     handler(void *context, Rest::Router& router);
-    void list_modules(const Rest::Request &request, Http::ResponseWriter response);
+    void list_modules(const Rest::Request& request, Http::ResponseWriter response);
     void   get_module(const Rest::Request& request, Http::ResponseWriter response);
 
 private:
     auto create_json_module_info(const struct icp_module_info *module_info);
+    auto to_string(enum icp_module_linkage_type);
 };
-
 handler::handler(void *context __attribute__((unused)), Rest::Router& router)
 {
     Rest::Routes::Get(router, "/modules",
@@ -34,12 +34,25 @@ handler::handler(void *context __attribute__((unused)), Rest::Router& router)
                       Rest::Routes::bind(&handler::get_module, this));
 }
 
+auto handler::to_string(enum icp_module_linkage_type type)
+{
+    switch (type)
+    {
+    case DYNAMIC:
+        return std::make_shared<std::string>("dynamic");
+    case STATIC:
+        return std::make_shared<std::string>("static");
+    default:
+        return std::make_shared<std::string>("");
+    }
+}
+
 auto handler::create_json_module_info(const struct icp_module_info *module_info)
 {
     auto out_mod = std::make_shared<Module>();
     out_mod->setId(module_info->id);
     out_mod->setDescription(module_info->description);
-    out_mod->setLinkage(module_info->linkage);
+    out_mod->setLinkage(*to_string(module_info->linkage));
     if (module_info->path)
         out_mod->setPath(module_info->path);
 
@@ -60,9 +73,9 @@ auto handler::create_json_module_info(const struct icp_module_info *module_info)
 void handler::list_modules(const Rest::Request &request __attribute__((unused)),
                            Http::ResponseWriter response)
 {
-    int module_count = icp_get_loaded_module_count();
+    auto module_count = icp_get_loaded_module_count();
     const struct icp_module_info * modules[module_count];
-    int returned_module_count = icp_get_module_info_list(modules, module_count);
+    auto returned_module_count = icp_get_module_info_list(modules, module_count);
     if (returned_module_count < 0)
     {
         response.send(Http::Code::Internal_Server_Error);
@@ -95,7 +108,7 @@ void handler::get_module(const Rest::Request& request, Http::ResponseWriter resp
     const std::regex id_regex(ICP_MODULE_ID_REGEX);
     if (!std::regex_match(id, id_regex))
     {
-        response.send(Http::Code::Bad_Request);
+        response.send(Http::Code::Bad_Request, "Invalid characters detected in request. Only a-z, 0-9, -, and . are allowed.");
         return;
     }
 
@@ -111,7 +124,6 @@ void handler::get_module(const Rest::Request& request, Http::ResponseWriter resp
     response.headers().add<Http::Header::ContentType>(MIME(Application, Json));
     response.send(Http::Code::Ok, out_mod->toJson().dump());
 }
-
 
 } //namespace modules
 } //namespace api
