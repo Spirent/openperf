@@ -21,10 +21,8 @@ public:
     void list_modules(const Rest::Request& request, Http::ResponseWriter response);
     void   get_module(const Rest::Request& request, Http::ResponseWriter response);
 
-private:
-    auto create_json_module_info(const struct icp_module_info *module_info);
-    auto to_string(enum icp_module_linkage_type);
 };
+
 handler::handler(void *context __attribute__((unused)), Rest::Router& router)
 {
     Rest::Routes::Get(router, "/modules",
@@ -34,25 +32,25 @@ handler::handler(void *context __attribute__((unused)), Rest::Router& router)
                       Rest::Routes::bind(&handler::get_module, this));
 }
 
-auto handler::to_string(enum icp_module_linkage_type type)
+static auto to_string(enum icp_module_linkage_type type)
 {
     switch (type)
     {
     case DYNAMIC:
-        return std::make_shared<std::string>("dynamic");
+        return "dynamic";
     case STATIC:
-        return std::make_shared<std::string>("static");
+        return "static";
     default:
-        return std::make_shared<std::string>("");
+        return "fixme";
     }
 }
 
-auto handler::create_json_module_info(const struct icp_module_info *module_info)
+static auto create_json_module_info(const struct icp_module_info *module_info)
 {
     auto out_mod = std::make_shared<Module>();
     out_mod->setId(module_info->id);
     out_mod->setDescription(module_info->description);
-    out_mod->setLinkage(*to_string(module_info->linkage));
+    out_mod->setLinkage(to_string(module_info->linkage));
     if (module_info->path)
         out_mod->setPath(module_info->path);
 
@@ -73,26 +71,27 @@ auto handler::create_json_module_info(const struct icp_module_info *module_info)
 void handler::list_modules(const Rest::Request &request __attribute__((unused)),
                            Http::ResponseWriter response)
 {
-    auto module_count = icp_get_loaded_module_count();
-    const struct icp_module_info * modules[module_count];
-    auto returned_module_count = icp_get_module_info_list(modules, module_count);
+    auto module_count = icp_modules_get_loaded_count();
+    std::vector<const struct icp_module_info *> modules(module_count);
+    auto returned_module_count = icp_modules_get_info_list(modules.data(), module_count);
     if (returned_module_count < 0)
     {
         response.send(Http::Code::Internal_Server_Error);
         return;
     }
-    else if (returned_module_count == 0)
+
+    if (returned_module_count == 0)
     {
         response.send(Http::Code::Ok);
         return;
     }
 
     json jmodules = json::array();
-    for (int i = 0; i < returned_module_count; i++)
+    for (auto module: modules)
     {
-        if (modules[i])
+        if (module)
         {
-            auto out_mod = create_json_module_info(modules[i]);
+            auto out_mod = create_json_module_info(module);
             jmodules.emplace_back(out_mod->toJson());
         }
     }
@@ -112,7 +111,7 @@ void handler::get_module(const Rest::Request& request, Http::ResponseWriter resp
         return;
     }
 
-    auto module_info = icp_get_module_info_by_id(id.c_str());
+    auto module_info = icp_modules_get_info_by_id(id.c_str());
     if (!module_info)
     {
         response.send(Http::Code::Not_Found);

@@ -2,9 +2,11 @@
 #include <stddef.h>
 #include <ctype.h>
 #include <regex.h>
+#include <errno.h>
 
 #include "core/icp_log.h"
 #include "core/icp_modules.h"
+#include "core/icp_common.h"
 
 static SLIST_HEAD(icp_modules_list, icp_module) icp_modules_list_head =
     SLIST_HEAD_INITIALIZER(icp_modules_list_head);
@@ -23,10 +25,17 @@ void icp_modules_register(struct icp_module *module)
      * For simplicity this is a subset of what RFC-3986 allows.
      */
     regex_t regex;
-    int regresult = regcomp(&regex, ICP_MODULE_ID_REGEX, REG_EXTENDED);
-    assert(!regresult);
-    regresult = regexec(&regex, module->info.id, 0, NULL, 0);
-    assert(!regresult);
+
+    if(regcomp(&regex, ICP_MODULE_ID_REGEX, REG_EXTENDED))
+    {
+        icp_exit("Module registration id validation regex failed to compile: %s\n", strerror(errno));
+    }
+
+    if(regexec(&regex, module->info.id, 0, NULL, 0))
+    {
+        icp_exit("During Module registration found invalid id %s: %s\n", module->info.id, strerror(errno));
+    }
+
     regfree(&regex);
 
     SLIST_INSERT_HEAD(&icp_modules_list_head, module, next);
@@ -115,7 +124,7 @@ void icp_modules_finish()
     }
 }
 
-int icp_get_loaded_module_count()
+size_t icp_modules_get_loaded_count()
 {
     int loaded_module_count = 0;
     struct icp_module * module = NULL;
@@ -127,7 +136,7 @@ int icp_get_loaded_module_count()
     return loaded_module_count;
 }
 
-const struct icp_module_info * icp_get_module_info_by_id(const char * module_id)
+const struct icp_module_info * icp_modules_get_info_by_id(const char * module_id)
 {
     if(!module_id)
         return NULL;
@@ -135,7 +144,7 @@ const struct icp_module_info * icp_get_module_info_by_id(const char * module_id)
     struct icp_module *module = NULL;
     SLIST_FOREACH(module, &icp_modules_list_head, next) {
 
-        if (strncmp(module_id, module->info.id, ICP_MAX_MODULE_ID_LENGTH) == 0) {
+        if (strcmp(module_id, module->info.id) == 0) {
             return &module->info;
         }
     }
@@ -143,17 +152,15 @@ const struct icp_module_info * icp_get_module_info_by_id(const char * module_id)
     return NULL;
 }
 
-int icp_get_module_info_list(const struct icp_module_info * info[], int max_entries)
+int icp_modules_get_info_list(const struct icp_module_info * info[], size_t max_entries)
 {
     if (!info)
         return -1;
 
-    if (max_entries < 0)
-        return -1;
-    else if (max_entries == 0)
-        return icp_get_loaded_module_count();
+    if (max_entries == 0)
+        return icp_modules_get_loaded_count();
 
-    int module_list_count = 0;
+    size_t module_list_count = 0;
     struct icp_module *module = NULL;
     SLIST_FOREACH(module, &icp_modules_list_head, next) {
         info[module_list_count] = &module->info;

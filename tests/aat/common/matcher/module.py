@@ -27,7 +27,7 @@ class _be_valid_module(Matcher):
         if m.linkage == 'dynamic':
             expect(m.path).not_to(be_empty)
         else:
-            expect(m.path).to(equal(''))
+            expect(m.path).to(be(None))
 
         return True, ['is valid module']
 

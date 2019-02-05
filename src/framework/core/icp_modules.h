@@ -10,6 +10,7 @@ extern "C" {
 #endif
 
 #include <sys/queue.h>
+#include <stddef.h>
 
 /**
  * Signature for module init/start/stop functions
@@ -23,7 +24,6 @@ typedef int (icp_module_start_fn)(void *state);
 /**
  * Structure describing details of a module
  */
-#define ICP_MAX_MODULE_ID_LENGTH 80
 #define ICP_MODULE_ID_REGEX "^[a-z0-9.\\-]+$"
 enum icp_module_linkage_type { NONE, DYNAMIC, STATIC, MAX };
 struct icp_module_info {
@@ -123,7 +123,7 @@ void icp_modules_finish();
  * @return
  *   Number of currently loaded modules.
  */
-int icp_get_loaded_module_count();
+size_t icp_modules_get_loaded_count();
 
 /**
  * Find a loaded module by id (name).
@@ -134,7 +134,7 @@ int icp_get_loaded_module_count();
  * @return
  *   if located, module information struct otherwise NULL
  */
-const struct icp_module_info * icp_get_module_info_by_id(const char * module_id);
+const struct icp_module_info * icp_modules_get_info_by_id(const char * module_id);
 
 /**
  * Get a list of module information structs for all modules currently
@@ -150,7 +150,7 @@ const struct icp_module_info * icp_get_module_info_by_id(const char * module_id)
  *   on success return the actual number of modules info now points to
  *   otherwise -1. except if max_entries is 0, then return current loaded module count.
  */
-int icp_get_module_info_list(const struct icp_module_info * info[], int max_entries);
+int icp_modules_get_info_list(const struct icp_module_info * info[], size_t max_entries);
 
 /**
  * Workaround for preprocessor not exactly understanding initializer lists.
@@ -168,7 +168,7 @@ int icp_get_module_info_list(const struct icp_module_info * info[], int max_entr
             .source_commit = BUILD_COMMIT                               \
        },                                                               \
        .linkage = STATIC,                                               \
-       .path = ""                                                       \
+       .path = NULL                                                     \
     }                                                                   \
 
 /**
