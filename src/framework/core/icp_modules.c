@@ -39,9 +39,7 @@ void icp_modules_register(struct icp_module *module)
     regresult = regexec(&regex, module->info.id, 0, NULL, 0);
     if(regresult == REG_NOMATCH)
     {
-        char error_string[icp_modules_err_str_max_len];
-        size_t error_string_len = regerror(regresult, &regex, error_string, icp_modules_err_str_max_len);
-        icp_exit("During Module registration found invalid id %s: %s%s\n", module->info.id, error_string, error_string_len == icp_modules_err_str_max_len ? "(truncated)" : "");
+        icp_exit("During Module registration found invalid id %s.\n", module->info.id);
     }
 
     regfree(&regex);
