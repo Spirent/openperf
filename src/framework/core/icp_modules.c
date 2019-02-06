@@ -11,6 +11,8 @@
 static SLIST_HEAD(icp_modules_list, icp_module) icp_modules_list_head =
     SLIST_HEAD_INITIALIZER(icp_modules_list_head);
 
+static const size_t icp_modules_err_str_max_len = 144;
+
 void icp_modules_register(struct icp_module *module)
 {
     /* Verify required module information fields are provided. */
@@ -26,14 +28,20 @@ void icp_modules_register(struct icp_module *module)
      */
     regex_t regex;
 
-    if(regcomp(&regex, ICP_MODULE_ID_REGEX, REG_EXTENDED))
+    int regresult = regcomp(&regex, ICP_MODULE_ID_REGEX, REG_EXTENDED);
+    if(regresult)
     {
-        icp_exit("Module registration id validation regex failed to compile: %s\n", strerror(errno));
+        char error_string[icp_modules_err_str_max_len];
+        size_t error_string_len = regerror(regresult, &regex, error_string, icp_modules_err_str_max_len);
+        icp_exit("Module registration id validation regex failed to compile: %s%s\n", error_string, error_string_len == icp_modules_err_str_max_len ? "(truncated)" : "");
     }
 
-    if(regexec(&regex, module->info.id, 0, NULL, 0))
+    regresult = regexec(&regex, module->info.id, 0, NULL, 0);
+    if(regresult == REG_NOMATCH)
     {
-        icp_exit("During Module registration found invalid id %s: %s\n", module->info.id, strerror(errno));
+        char error_string[icp_modules_err_str_max_len];
+        size_t error_string_len = regerror(regresult, &regex, error_string, icp_modules_err_str_max_len);
+        icp_exit("During Module registration found invalid id %s: %s%s\n", module->info.id, error_string, error_string_len == icp_modules_err_str_max_len ? "(truncated)" : "");
     }
 
     regfree(&regex);
