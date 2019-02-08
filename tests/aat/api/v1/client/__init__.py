@@ -17,6 +17,7 @@ from __future__ import absolute_import
 
 # import apis into sdk package
 from client.api.interfaces_api import InterfacesApi
+from client.api.modules_api import ModulesApi
 from client.api.ports_api import PortsApi
 from client.api.stacks_api import StacksApi
 
@@ -35,6 +36,8 @@ from client.models.interface_protocol_config_ipv4 import InterfaceProtocolConfig
 from client.models.interface_protocol_config_ipv4_dhcp import InterfaceProtocolConfigIpv4Dhcp
 from client.models.interface_protocol_config_ipv4_static import InterfaceProtocolConfigIpv4Static
 from client.models.interface_stats import InterfaceStats
+from client.models.module import Module
+from client.models.module_version import ModuleVersion
 from client.models.port import Port
 from client.models.port_config import PortConfig
 from client.models.port_config_bond import PortConfigBond
