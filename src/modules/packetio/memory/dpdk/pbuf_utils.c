@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <stdbool.h>
 
 #include "lwip/netif.h"
@@ -68,17 +69,46 @@ static bool pbuf_has_next(const struct pbuf* p)
     return (p->tot_len != p->len && p->next);
 }
 
+static uint16_t pbuf_actual_clen(const struct pbuf* p)
+{
+    uint16_t count = 0;
+    do {
+        count++;
+    } while ((p = (pbuf_has_next(p) ? p->next : NULL)) != NULL);
+
+    return (count);
+}
+
 struct rte_mbuf * packetio_memory_mbuf_synchronize(struct pbuf *p_head)
 {
     struct pbuf* p = p_head;
+    uint16_t nb_segs = pbuf_actual_clen(p);
     do {
         struct rte_mbuf* m = packetio_memory_pbuf_to_mbuf(p);
         m->data_off = (uintptr_t)(p->payload) - (uintptr_t)(m->buf_addr);
         m->next = (pbuf_has_next(p) ? packetio_memory_pbuf_to_mbuf(p->next) : NULL);
-        m->nb_segs = pbuf_clen(p);
+        m->nb_segs = nb_segs--;
         rte_pktmbuf_pkt_len(m) = p->tot_len;
         rte_pktmbuf_data_len(m) = p->len;
     } while ((p = (pbuf_has_next(p) ? p->next : NULL)) != NULL);
 
+    assert(nb_segs == 0);
+
     return (packetio_memory_pbuf_to_mbuf(p_head));
+}
+
+uint16_t packetio_memory_pbuf_data_available(const struct pbuf *p)
+{
+    struct rte_mbuf* m = packetio_memory_pbuf_to_mbuf(p);
+    uint16_t headroom = packetio_memory_pbuf_header_available(p);
+    return (m->buf_len > headroom
+            ? m->buf_len - headroom
+            : 0);
+}
+
+uint16_t packetio_memory_pbuf_header_available(const struct pbuf *p)
+{
+    struct rte_mbuf* m = packetio_memory_pbuf_to_mbuf(p);
+    uint16_t payload_offset = (uintptr_t)(p->payload) - (uintptr_t)(m->buf_addr);
+    return (payload_offset);
 }

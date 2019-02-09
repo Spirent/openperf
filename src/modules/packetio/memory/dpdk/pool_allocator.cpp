@@ -13,7 +13,6 @@ namespace icp {
 namespace packetio {
 namespace dpdk {
 
-static const uint32_t MBUF_LENGTH_ALIGN = 64;
 static const size_t SIZEOF_STRUCT_PBUF = LWIP_MEM_ALIGN_SIZE(sizeof(struct pbuf));
 
 /*
@@ -75,16 +74,6 @@ static uint32_t _pool_size_adjust(uint32_t nb_mbufs)
             : rte_align32pow2(nb_mbufs) - 1);
 }
 
-/*
- * Adjust length to the next largest multiple of our alignment after
- * adding in DPDK overhead.
- */
-__attribute__((const))
-static uint32_t _mbuf_length_adjust(uint32_t length)
-{
-    return ((length + RTE_PKTMBUF_HEADROOM + (MBUF_LENGTH_ALIGN - 1)) & ~(MBUF_LENGTH_ALIGN - 1));
-}
-
 static void log_mempool(const struct rte_mempool *mpool)
 {
     ICP_LOG(ICP_LOG_DEBUG, "%s: %u bytes, %u of %u mbufs available\n",
@@ -103,7 +92,7 @@ static rte_mempool* _create_pbuf_mempool(const char* name, size_t size,
         nb_mbufs,
         cached ? _get_cache_size(nb_mbufs) : 0,
         SIZEOF_STRUCT_PBUF,
-        direct ? _mbuf_length_adjust(RTE_MBUF_DEFAULT_DATAROOM) : 0,
+        direct ? PBUF_POOL_BUFSIZE : 0,
         SOCKET_ID_ANY);
 
     if (!mp) {

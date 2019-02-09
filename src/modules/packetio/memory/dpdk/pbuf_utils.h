@@ -16,6 +16,10 @@ struct rte_mbuf* packetio_memory_pbuf_to_mbuf(const struct pbuf*);
 struct pbuf* packetio_memory_pbuf_synchronize(struct rte_mbuf*);
 struct rte_mbuf* packetio_memory_mbuf_synchronize(struct pbuf*);
 
+/* Report the amount of space after/before the payload pointer, respectively */
+uint16_t packetio_memory_pbuf_data_available(const struct pbuf*);
+uint16_t packetio_memory_pbuf_header_available(const struct pbuf*);
+
 #ifdef __cplusplus
 }
 #endif

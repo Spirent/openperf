@@ -41,6 +41,8 @@ public:
     rte_eth_rxconf default_rxconf() const;
     rte_eth_txconf default_txconf() const;
 
+    uint16_t tx_tso_segment_max() const;
+
     bool     lsc_interrupt()  const;
     bool     rxq_interrupt()  const;
 
