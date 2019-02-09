@@ -100,6 +100,14 @@ static uint16_t to_checksum_gen_flags(uint64_t tx_offloads)
     return (flags);
 }
 
+static uint32_t net_interface_max_gso_length(int port_id)
+{
+    auto info = model::port_info(port_id);
+    return (info.tx_offloads() & DEV_TX_OFFLOAD_TCP_TSO
+            ? info.tx_tso_segment_max() * TCP_MSS
+            : TCP_MSS);
+}
+
 static err_t net_interface_tx(netif* netif, pbuf *p)
 {
     assert(netif);
@@ -314,6 +322,7 @@ static std::string recvq_name(int id)
 net_interface::net_interface(int id, const interface::config_data& config,
                              driver::tx_burst tx)
     : m_id(id)
+    , m_max_gso_length(net_interface_max_gso_length(config.port_id))
     , m_config(config)
     , m_transmit(tx)
     , m_notify(false)
@@ -378,7 +387,7 @@ int net_interface::handle_tx(struct pbuf* p)
 
     /* Setup tx offload metadata if offloads are enabled. */
     if (~(m_netif.chksum_flags & netif_tx_chksum_mask)) {
-        set_tx_offload_metadata(m_head);
+        set_tx_offload_metadata(m_head, m_netif.mtu);
     }
 
     rte_mbuf *pkts[] = { m_head };
@@ -426,6 +435,11 @@ int net_interface::port_id() const
 netif* net_interface::data()
 {
     return (&m_netif);
+}
+
+unsigned net_interface::max_gso_length() const
+{
+    return (m_max_gso_length);
 }
 
 interface::config_data net_interface::config() const

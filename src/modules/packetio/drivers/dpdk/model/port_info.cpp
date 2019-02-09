@@ -139,13 +139,18 @@ uint16_t port_info::tx_queue_default() const
 uint16_t port_info::rx_desc_count() const
 {
     return std::min((get_info_field(m_id, &rte_eth_dev_info::rx_desc_lim).nb_max),
-                    static_cast<uint16_t>(2048));
+                    static_cast<uint16_t>(4096));
 }
 
 uint16_t port_info::tx_desc_count() const
 {
     return std::min((get_info_field(m_id, &rte_eth_dev_info::tx_desc_lim).nb_max),
-                    static_cast<uint16_t>(1024));
+                    static_cast<uint16_t>(512));
+}
+
+uint16_t port_info::tx_tso_segment_max() const
+{
+    return (get_info_field(m_id, &rte_eth_dev_info::tx_desc_lim).nb_seg_max);
 }
 
 rte_eth_rxconf port_info::default_rxconf() const

@@ -231,7 +231,7 @@ struct pbuf *
 pbuf_alloc(pbuf_layer layer, u16_t length, pbuf_type type)
 {
   struct pbuf *p;
-  u16_t offset = (u16_t)layer;
+  u16_t offset = LWIP_MAX(layer, RTE_PKTMBUF_HEADROOM);
   LWIP_DEBUGF(PBUF_DEBUG | LWIP_DBG_TRACE, ("pbuf_alloc(length=%"U16_F")\n", length));
 
   switch (type) {
@@ -275,7 +275,6 @@ pbuf_alloc(pbuf_layer layer, u16_t length, pbuf_type type)
         }
         last = q;
         rem_len = (u16_t)(rem_len - qlen);
-        offset = 0;
       } while (rem_len > 0);
       break;
     }
