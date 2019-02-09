@@ -75,7 +75,9 @@ static size_t do_tcp_transmit(tcp_pcb* pcb, void* ptr, size_t length)
      * That includes skipping writes if we can't send a full MSS
      * worth of data.
      */
-    if (length == 0 || pcb->snd_wnd < TCP_MSS) {
+    if (length == 0
+        || tcp_sndbuf(pcb) == 0
+        || pcb->snd_wnd < TCP_MSS) {
         return (0);
     }
 

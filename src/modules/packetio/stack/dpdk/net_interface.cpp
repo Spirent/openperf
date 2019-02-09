@@ -378,7 +378,7 @@ int net_interface::handle_tx(struct pbuf* p)
 
     /* Setup tx offload metadata if offloads are enabled. */
     if (~(m_netif.chksum_flags & netif_tx_chksum_mask)) {
-        set_tx_offload_metadata(m_head);
+        set_tx_offload_metadata(m_head, m_netif.mtu);
     }
 
     rte_mbuf *pkts[] = { m_head };
