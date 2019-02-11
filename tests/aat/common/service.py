@@ -18,9 +18,25 @@ class Service(object):
         return client.ApiClient(cconfig)
 
     def start(self):
+        # Check for stale files from a previous run.
+        # NOTE: This will NOT verify if another copy of inception is running.
+        files_to_clean = ['/dev/shm/com.spirent.inception.memory', '/tmp/.com.spirent.inception/server']
+        for file_name in files_to_clean:
+            if os.path.exists(file_name):
+                os.remove(file_name)
+
         # Start the service as a subprocess
+        command = self.config.command + " " + self.config.command_args
+
+        # Check if sufficient capabilities exist to run as non-root user. Else use sudo.
+        if not self._check_capabilities(self.config.command):
+            command = "sudo " + command
+
+        # Uncomment the next line to get a unique log file per invocation of inception.
+        #with open("%s-%s.%s.%s.log" % (self.config.name, datetime.now().minute,datetime.now().second, datetime.now().microsecond), "w+") as log:
         with open("%s.log" % self.config.name, "w+") as log:
-            p = subprocess.Popen(self.config.command, stdout=log, stderr=subprocess.STDOUT, shell=True)
+            p = subprocess.Popen(command, stdout=log, stderr=subprocess.STDOUT, shell=True)
+
 
         # Wait for the service to initialize
         try:
@@ -69,3 +85,18 @@ class Service(object):
                     raise Exception('timed out waiting for %s service to initialize: last error was %s' % (self.config.name, err))
                 else:
                     raise Exception('timed out waiting for %s service to initialize: last status from %s was %s' % (self.config.name, cconfig.host, resp[1]))
+
+    def _check_capabilities(self, binary):
+        required_capabilities = ['CAP_IPC_LOCK', 'CAP_NET_RAW', 'CAP_SYS_RAWIO', 'CAP_IPC_OWNER', 'CAP_NET_BIND_SERVICE', 'CAP_SETUID', 'CAP_SYS_ADMIN', 'CAP_FOWNER', 'CAP_DAC_OVERRIDE']
+
+        cap_str = ','.join(required_capabilities) + "=epi"
+
+        try:
+            subprocess.check_output(['setcap', '-v', cap_str, binary])
+        except subprocess.CalledProcessError:
+            warning = "Warning: suggested capabilities not found on file " + binary + ". "
+            warning += "Falling back on sudo method, which can leave test environment in an unclean state."
+            print warning
+            return False
+
+        return True

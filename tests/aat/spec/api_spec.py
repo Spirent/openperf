@@ -51,3 +51,10 @@ with description('Modules, ') as self:
         with description('invalid module name, '):
             with it('returns 400'):
                 expect(lambda: self.api.get_module('and&').to(raise_api_exception(400)))
+
+    with after.all:
+        try:
+            self.process.terminate()
+            self.process.wait()
+        except AttributeError:
+            pass

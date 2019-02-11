@@ -45,7 +45,7 @@ with description('Stacks,') as self:
 
     with after.all:
         try:
-            self.process.kill()
+            self.process.terminate()
             self.process.wait()
         except AttributeError:
             pass
