@@ -19,7 +19,7 @@ BULK_OP_SIZE = 4
 with description('Interfaces,') as self:
     with before.all:
         service = Service(CONFIG.service())
-        self.process = service.start(log_file_name="interfaces_spec")
+        self.process = service.start()
         self.api = client.api.InterfacesApi(service.client())
 
     with description('list,'):

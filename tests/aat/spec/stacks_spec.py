@@ -14,7 +14,7 @@ CONFIG = Config(os.path.join(os.path.dirname(__file__), os.environ.get('MAMBA_CO
 with description('Stacks,') as self:
     with before.all:
         service = Service(CONFIG.service())
-        self.process = service.start(log_file_name="stacks_spec")
+        self.process = service.start()
         self.api = client.api.StacksApi(service.client())
 
     with description('list,'):

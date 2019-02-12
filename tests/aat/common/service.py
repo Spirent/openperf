@@ -17,17 +17,17 @@ class Service(object):
         cconfig.debug = strtobool(os.environ.get('MAMBA_DEBUG', 'False'))
         return client.ApiClient(cconfig)
 
-    def start(self, **kwargs):
+    def start(self):
         # Check for stale files from a previous run.
         # NOTE: This will NOT verify if another copy of inception is running.
+        # FIXME: Shift this into the inception binary itself. This is a hacky, temporary workaround for reliability.
         files_to_clean = ['/dev/shm/com.spirent.inception.memory', '/tmp/.com.spirent.inception/server']
         for file_name in files_to_clean:
             if os.path.exists(file_name):
                 os.remove(file_name)
 
         # Start the service as a subprocess
-        with open("%s.log" % kwargs.get('log_file_name', self.config.name), "w+") as log:
-            p = subprocess.Popen(shlex.split(self.config.command), stdout=log, stderr=subprocess.STDOUT)
+        p = subprocess.Popen(self.config.command, shell=True)
 
         # Wait for the service to initialize
         try:
@@ -76,18 +76,3 @@ class Service(object):
                     raise Exception('timed out waiting for %s service to initialize: last error was %s' % (self.config.name, err))
                 else:
                     raise Exception('timed out waiting for %s service to initialize: last status from %s was %s' % (self.config.name, cconfig.host, resp[1]))
-
-    def _check_capabilities(self, binary):
-        required_capabilities = ['CAP_IPC_LOCK', 'CAP_NET_RAW', 'CAP_SYS_RAWIO', 'CAP_IPC_OWNER', 'CAP_NET_BIND_SERVICE', 'CAP_SETUID', 'CAP_SYS_ADMIN', 'CAP_FOWNER', 'CAP_DAC_OVERRIDE']
-
-        cap_str = ','.join(required_capabilities) + "=epi"
-
-        try:
-            subprocess.check_output(['setcap', '-v', cap_str, binary])
-        except subprocess.CalledProcessError:
-            warning = "Warning: suggested capabilities not found on file " + binary + ". "
-            warning += "Falling back on sudo method, which can leave test environment in an unclean state."
-            print warning
-            return False
-
-        return True

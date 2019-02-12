@@ -14,7 +14,7 @@ CONFIG = Config(os.path.join(os.path.dirname(__file__), os.environ.get('MAMBA_CO
 with description('Ports,') as self:
     with before.all:
         service = Service(CONFIG.service())
-        self.process = service.start(log_file_name="ports_spec")
+        self.process = service.start()
         self.api = client.api.PortsApi(service.client())
 
     with description('list,'):
