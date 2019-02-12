@@ -14,7 +14,7 @@ CONFIG = Config(os.path.join(os.path.dirname(__file__), os.environ.get('MAMBA_CO
 with description('Modules, ') as self:
     with before.all:
         service = Service(CONFIG.service())
-        self.process = service.start()
+        self.process = service.start(log_file_name='api_spec')
         self.api = client.api.ModulesApi(service.client())
 
     with description('list, '):

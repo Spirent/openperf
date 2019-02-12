@@ -4,7 +4,7 @@ from distutils.util import strtobool
 import logging
 import os
 import subprocess
-
+import shlex
 
 class Service(object):
     def __init__(self, config):
@@ -17,7 +17,7 @@ class Service(object):
         cconfig.debug = strtobool(os.environ.get('MAMBA_DEBUG', 'False'))
         return client.ApiClient(cconfig)
 
-    def start(self):
+    def start(self, **kwargs):
         # Check for stale files from a previous run.
         # NOTE: This will NOT verify if another copy of inception is running.
         files_to_clean = ['/dev/shm/com.spirent.inception.memory', '/tmp/.com.spirent.inception/server']
@@ -26,17 +26,8 @@ class Service(object):
                 os.remove(file_name)
 
         # Start the service as a subprocess
-        command = self.config.command + " " + self.config.command_args
-
-        # Check if sufficient capabilities exist to run as non-root user. Else use sudo.
-        if not self._check_capabilities(self.config.command):
-            command = "sudo " + command
-
-        # Uncomment the next line to get a unique log file per invocation of inception.
-        #with open("%s-%s.%s.%s.log" % (self.config.name, datetime.now().minute,datetime.now().second, datetime.now().microsecond), "w+") as log:
-        with open("%s.log" % self.config.name, "w+") as log:
-            p = subprocess.Popen(command, stdout=log, stderr=subprocess.STDOUT, shell=True)
-
+        with open("%s.log" % kwargs.get('log_file_name', self.config.name), "w+") as log:
+            p = subprocess.Popen(shlex.split(self.config.command), stdout=log, stderr=subprocess.STDOUT)
 
         # Wait for the service to initialize
         try:
