@@ -4,7 +4,6 @@ from distutils.util import strtobool
 import logging
 import os
 import subprocess
-import shlex
 
 class Service(object):
     def __init__(self, config):
