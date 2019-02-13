@@ -14,8 +14,8 @@ CXX := clang++
 
 ICP_AR := llvm-ar
 ICP_ARFLAGS := rcs
-ICP_CC := $(CC) -flto
-ICP_CXX := $(CXX) -flto
+ICP_CC := $(CC) -flto=thin
+ICP_CXX := $(CXX) -flto=thin
 ICP_COPTS :=
 ICP_CSTD := -std=gnu11  # c++11 with GNU extensions
 ICP_CXXSTD := -std=c++17

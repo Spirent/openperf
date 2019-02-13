@@ -6,8 +6,10 @@
  * the host platform and is included from <lwip>/src/include/lwip/arch.h
  */
 
-#include <assert.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <sys/time.h>
+
 #include "core/icp_log.h"
 
 /*
@@ -23,9 +25,12 @@
         icp_log(ICP_LOG_DEBUG, "lwip", PASS_PARAMETERS(x)); \
     } while (0)
 
-#define LWIP_PLATFORM_ASSERT(x)                 \
-    do {                                        \
-        assert(x);                              \
+#define LWIP_PLATFORM_ASSERT(x)                                         \
+    do {                                                                \
+        fprintf(stderr, "Assertion \"%s\" failed at line %d in %s\n",   \
+                x, __LINE__, __FILE__);                                 \
+        fflush(stderr);                                                 \
+        abort();                                                        \
     } while (0)
 
 #endif /* _ICP_PACKETIO_STACK_ARCH_CC_H_ */
