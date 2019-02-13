@@ -26,7 +26,7 @@ class Service(object):
                 os.remove(file_name)
 
         # Start the service as a subprocess
-        p = subprocess.Popen(self.config.command, shell=True)
+        p = subprocess.Popen("exec " + self.config.command, shell=True)
 
         # Wait for the service to initialize
         try:
