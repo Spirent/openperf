@@ -77,14 +77,14 @@ static size_t do_tcp_transmit(tcp_pcb* pcb, void* ptr, size_t length)
      */
     if (length == 0
         || tcp_sndbuf(pcb) == 0
-        || pcb->snd_wnd < TCP_MSS) {
+        || pcb->snd_wnd < tcp_mss(pcb)) {
         return (0);
     }
 
     auto to_write = std::min(length, static_cast<size_t>(tcp_sndbuf(pcb)));
-    uint8_t flags = (to_write == length
-                     ? TCP_WRITE_FLAG_COPY
-                     : TCP_WRITE_FLAG_COPY | TCP_WRITE_FLAG_MORE);
+    uint8_t flags = (to_write < length
+                     ? TCP_WRITE_FLAG_COPY | TCP_WRITE_FLAG_MORE
+                     : TCP_WRITE_FLAG_COPY);
 
     if (tcp_write(pcb, ptr, to_write, flags) != ERR_OK) {
         return (0);
@@ -117,7 +117,7 @@ tcp_socket::tcp_socket(icp::memory::allocator::pool* pool, pid_t pid, int flags,
     , m_pcb(pcb)
     , m_pid(pid)
 {
-    ::tcp_arg(pcb, this);
+    ::tcp_arg(m_pcb.get(), this);
     ::tcp_poll(m_pcb.get(), nullptr, 2U);
     state(tcp_connected());
 }
@@ -138,7 +138,7 @@ tcp_socket::~tcp_socket()
      * the stack after this point, but we don't want it attempting to use
      * this socket to handle its callbacks...
      */
-    ::tcp_arg(m_pcb.get(), nullptr);
+    if (m_pcb) ::tcp_arg(m_pcb.get(), nullptr);
 }
 
 /**
@@ -164,8 +164,8 @@ tcp_socket::tcp_socket(tcp_socket&& other) noexcept
     , m_pid(other.m_pid)
     , m_acceptq(std::move(other.m_acceptq))
 {
-    state(other.state());
     ::tcp_arg(m_pcb.get(), this);
+    state(other.state());
 }
 
 channel_variant tcp_socket::channel() const
@@ -179,6 +179,12 @@ int tcp_socket::do_lwip_accept(tcp_pcb *newpcb, int err)
         return (ERR_VAL);
     }
 
+    /*
+     * XXX: Clear the argument from the newpcb. lwIP helpfully(?) sets this
+     * to the same value as the listening socket. Since our argument points
+     * to the c++ socket wrapper, that behavior is very unhelpful for us.
+     */
+    ::tcp_arg(newpcb, nullptr);
     m_acceptq.emplace(newpcb);
     tcp_backlog_delayed(newpcb);
     m_channel->maybe_notify();
@@ -340,17 +346,20 @@ tcp_socket::on_request_reply tcp_socket::on_request(const api::request_listen& l
      * The lwIP listen function deallocates the original pcb and replaces it with
      * a smaller one.  However, it can also fail to allocate the new pcb, in which case
      * it returns null and doesn't deallocate the original.  Because of this, we have
-     * to be careful with pcb ownership here.
+     * to be careful with pcb ownership and the callback argument here.
      */
     auto orig_pcb = m_pcb.release();
+    ::tcp_arg(orig_pcb, nullptr);
     auto listen_pcb = tcp_listen_with_backlog(orig_pcb, listen.backlog);
 
     if (!listen_pcb) {
         m_pcb.reset(orig_pcb);
+        ::tcp_arg(orig_pcb, this);
         return {tl::make_unexpected(ENOMEM), std::nullopt};
     }
 
     m_pcb.reset(listen_pcb);
+    ::tcp_arg(listen_pcb, this);
 
     return {api::reply_success(), tcp_listening()};
 }

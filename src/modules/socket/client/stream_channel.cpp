@@ -129,24 +129,23 @@ tl::expected<size_t, int> stream_channel::recv(pid_t pid __attribute__((unused))
                                                sockaddr *from __attribute__((unused)),
                                                socklen_t *fromlen __attribute__((unused)))
 {
-    if (auto error = socket_error.load(std::memory_order_acquire); error != 0) {
-        if (error == EOF) return (0);
-        return (tl::make_unexpected(error));
-    }
-
+    /*
+     * Note: we only check for errors if there is nothing to read in the buffer.
+     * This ensures clients clear out all data before we report an error.
+     */
     size_t buf_readable = 0;
     while ((buf_readable = recvq.readable()) == 0) {
+        /* Check for an error before sleeping or after waking up with an empty buffer */
+        if (auto error = socket_error.load(std::memory_order_acquire); error != 0) {
+            if (error == EOF) return (0);
+            return (tl::make_unexpected(error));
+        }
+
         auto result = do_read(client_fd());
         if (result == -1) return (tl::make_unexpected(errno));
 
         /* we read something; clear all flags */
         clear_event_flags();
-
-        /* check if an error woke us up */
-        if (auto error = socket_error.load(std::memory_order_acquire); error != 0) {
-            if (error == EOF) return (0);
-            return (tl::make_unexpected(error));
-        }
     }
 
     assert(buf_readable);
@@ -177,7 +176,13 @@ tl::expected<size_t, int> stream_channel::recv(pid_t pid __attribute__((unused))
 
 int stream_channel::recv_clear()
 {
-    return (do_read(client_fd()));
+    auto result = do_read(client_fd());
+    if (result == -1) return (-1);
+
+    /* we read something; clear all flags */
+    clear_event_flags();
+
+    return (result);
 }
 
 }
