@@ -64,7 +64,7 @@ $(call icp_check_vars,$(LWIP_REQ_VARS))
 ###
 # Build rules
 ###
-$(PIO_OBJECTS): | $(PIO_DEPENDS)
+$(PIO_OBJECTS): | $(PIO_DEPENDS) libzmq
 
 $(PIO_OBJ_DIR)/%.o: $(PIO_SRC_DIR)/%.c
 	@mkdir -p $(dir $@)
