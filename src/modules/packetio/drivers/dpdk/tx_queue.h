@@ -22,7 +22,6 @@ class tx_queue {
     int m_fd;
     std::atomic_bool m_enabled;
     std::atomic_flag m_armed;
-    std::atomic_flag m_flushed;
     std::unique_ptr<rte_ring, rte_ring_deleter> m_ring;
     struct rte_epoll_event m_event;
 
