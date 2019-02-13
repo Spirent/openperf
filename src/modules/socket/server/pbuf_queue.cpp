@@ -1,4 +1,4 @@
-#include <stdio.h>
+#include <cassert>
 
 #include "lwip/pbuf.h"
 #include "socket/server/pbuf_queue.h"
