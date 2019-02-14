@@ -361,7 +361,8 @@ int packetio_stack_gso_segment_split(struct tcp_pcb *pcb, struct tcp_seg* seg,
         auto p = next_seg->p;
         while (p->next != nullptr) p = p->next;
         LWIP_ASSERT("found last p", p->next == nullptr);
-        next_seg->oversize_left = packetio_stack_gso_pbuf_data_available(p, p->len);
+        next_seg->oversize_left = LWIP_MIN(packetio_stack_gso_pbuf_data_available(p, p->len),
+                                           TCP_MSS);
         pcb->unsent_oversize = next_seg->oversize_left;
     }
 #endif /* TCP_OVERSIZE */
