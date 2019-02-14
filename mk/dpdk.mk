@@ -46,8 +46,8 @@ $(DPDK_TARGET): $(DPDK_BLD_DIR)/.config
 .PHONY: dpdk
 dpdk: $(DPDK_TARGET)
 
-.PHONY: dpdk_clean
-dpdk_clean:
+.PHONY: clean_dpdk
+clean_dpdk:
 	@rm -f $(DPDK_SRC_DIR)/config/$(notdir $(DPDK_DEFCONFIG))
 	@rm -rf $(DPDK_BLD_DIR)
-clean: dpdk_clean
+clean: clean_dpdk
