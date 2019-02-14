@@ -271,7 +271,9 @@ tcp_pbuf_prealloc(pbuf_layer layer, u16_t length, u16_t max_length,
   if (p == NULL) {
     return NULL;
   }
-  *oversize = alloc - length;
+  /* We might have more than a MSS worth of oversize, however various stack
+   * assertions insist that we should not.  Hence, clamp our oversize value. */
+  *oversize = LWIP_MIN(alloc - length, TCP_MSS);
   /* trim p->len to the currently used size */
   if (*oversize) {
       uint16_t length_left = length;
