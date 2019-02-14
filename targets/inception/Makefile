@@ -40,6 +40,7 @@ $(BUILD_DIR)/%.o: %.c
 $(TARGET_DIR)/inception: $(OBJECTS) $(BLD_DEPENDS)
 	@mkdir -p $(dir $@)
 	$(strip $(ICP_CXX) -o $@ $(ICP_LDOPTS) $(ICP_LDFLAGS) $(OBJECTS) $(ICP_LDLIBS))
+	-sudo -n /sbin/setcap CAP_IPC_LOCK,CAP_NET_RAW,CAP_SYS_RAWIO,CAP_IPC_OWNER,CAP_NET_BIND_SERVICE,CAP_SETUID,CAP_SYS_ADMIN,CAP_FOWNER,CAP_DAC_OVERRIDE=epi $@
 
 .PHONY: inception
 inception: $(TARGET_DIR)/inception
