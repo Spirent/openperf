@@ -5,7 +5,6 @@ import logging
 import os
 import subprocess
 
-
 class Service(object):
     def __init__(self, config):
         self.config = config
@@ -18,9 +17,16 @@ class Service(object):
         return client.ApiClient(cconfig)
 
     def start(self):
+        # Check for stale files from a previous run.
+        # NOTE: This will NOT verify if another copy of inception is running.
+        # FIXME: Shift this into the inception binary itself. This is a hacky, temporary workaround for reliability.
+        files_to_clean = ['/dev/shm/com.spirent.inception.memory', '/tmp/.com.spirent.inception/server']
+        for file_name in files_to_clean:
+            if os.path.exists(file_name):
+                os.remove(file_name)
+
         # Start the service as a subprocess
-        with open("%s.log" % self.config.name, "w+") as log:
-            p = subprocess.Popen(self.config.command, stdout=log, stderr=subprocess.STDOUT, shell=True)
+        p = subprocess.Popen("exec " + self.config.command, shell=True)
 
         # Wait for the service to initialize
         try:
