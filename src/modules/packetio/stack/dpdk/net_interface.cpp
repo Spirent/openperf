@@ -148,13 +148,15 @@ static err_t net_interface_rx(pbuf *p, netif* netif)
 
     /* Validate checksums; drop if invalid */
     auto mbuf = packetio_memory_pbuf_to_mbuf(p);
-    if (!(mbuf->ol_flags & PKT_RX_IP_CKSUM_GOOD)) {
+    if (mbuf->ol_flags & PKT_RX_IP_CKSUM_MASK
+        && !(mbuf->ol_flags & PKT_RX_IP_CKSUM_GOOD)) {
         IP_STATS_INC(ip.chkerr);
         pbuf_free(p);
         return (ERR_OK);
     }
 
-    if (!(mbuf->ol_flags & PKT_RX_L4_CKSUM_GOOD)) {
+    if (mbuf->ol_flags & PKT_RX_L4_CKSUM_MASK
+        && !(mbuf->ol_flags & PKT_RX_L4_CKSUM_GOOD)) {
         /* XXX: might not always be true? */
         assert(mbuf->packet_type);
 
