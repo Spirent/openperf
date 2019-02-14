@@ -38,7 +38,7 @@ void check_and_create_path(const std::string_view path)
     }
 }
 
-unix_socket::unix_socket(const std::string_view path, int type)
+unix_socket::unix_socket(const std::string_view path, int type, bool unlink_first)
     : m_path(path)
     , m_fd(::socket(AF_UNIX, type, 0))
 {
@@ -51,6 +51,10 @@ unix_socket::unix_socket(const std::string_view path, int type)
 
     struct sockaddr_un addr = { .sun_family = AF_UNIX };
     std::strncpy(addr.sun_path, m_path.c_str(), sizeof(addr.sun_path));
+
+    if (unlink_first) {
+        unlink(path.data());
+    }
 
     if (bind(m_fd, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) == -1) {
         throw std::runtime_error("Could not bind to unix socket "

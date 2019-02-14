@@ -1,6 +1,9 @@
 #include <signal.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <fcntl.h>
+#include <stdio.h>
+#include <dirent.h>
 
 #include "core/icp_core.h"
 
@@ -12,10 +15,85 @@ void signal_handler(int signo __attribute__((unused)))
     _icp_done = true;
 }
 
+static char * icp_pid_file_path_name = "/tmp/.com.spirent.inception/inception.pid";
+static int icp_max_proc_path_length = 12;
+int find_running_inception(int pid) {
+    assert(pid > 0);
+    char proc_path[icp_max_proc_path_length];
+    snprintf(proc_path, icp_max_proc_path_length, "%d", pid);
+
+    DIR * proc_dir = opendir(proc_path);
+    if (proc_dir) {
+        /* Process exists. */
+        closedir(proc_dir);
+        return 0;
+    }
+
+    if (errno == ENOENT) {
+        /* Directory does not exist. Not an error in this context. */
+        return 1;
+    }
+
+    fprintf(stderr, "Error encountered while searching /proc for PID %d (%s).\n", pid, strerror(errno));
+    return -1;
+}
+
+void handle_pid_file(void)
+{
+    int pid_fd = -1;
+    FILE * pid_file = NULL;
+    if ((pid_fd = open(icp_pid_file_path_name, O_CREAT | O_EXCL | O_RDWR)) < 0)
+    {
+        if (errno == EEXIST) {
+            pid_file = fopen(icp_pid_file_path_name, "r");
+            assert(pid_file);
+
+            int previous_pid = 0;
+            errno = 0;
+            if (fscanf(pid_file, "%d", &previous_pid) != 1) {
+                /* Log error and exit. Something screwy with the PID file. */
+                icp_exit("Issue with inception PID file (%s): %s\n", icp_pid_file_path_name,
+                         errno ? strerror(errno) : "Invalid data found");
+            }
+
+            switch (find_running_inception(previous_pid)) {
+            case 0:
+                /* Process exists. Log and exit. */
+                icp_exit("Error: inception already running as PID %d\n", previous_pid);
+                break;
+            case 1:
+                /* Process does not exist. Output warning about unclean shutdown and continue. */
+                /* This early in the game ICP_LOG() isn't yet available. */
+                printf("Warning: Previous instance of inception did not shut down cleanly.\n");
+                break;
+            case -1:
+            default:
+                /* No idea what happened. Log error and exit. */
+                icp_exit("Error encountered while searching for existing instances of inception.\n");
+                break;
+            }
+
+            pid_file = freopen(icp_pid_file_path_name, "w+", pid_file);
+        } else {
+            /* Log error and exit. Something screwy with the PID file. */
+            icp_exit("Error encountered while accessing %s: (%s).\n", icp_pid_file_path_name, strerror(errno));
+        }
+    } else {
+        pid_file = fdopen(pid_fd, "w+");
+    }
+
+    assert(pid_file);
+
+    fprintf(pid_file, "%d\n", getpid());
+    fclose(pid_file);
+}
+
 extern int packetio_init(int argc, char *argv[]);
 
 int main(int argc, char* argv[])
 {
+    handle_pid_file();
+
     icp_thread_setname("icp_main");
 
     /* Block child threads from intercepting SIGINT or SIGTERM */
@@ -52,6 +130,8 @@ int main(int argc, char* argv[])
 
     /* ... then clean up and exit. */
     icp_halt(context);
+
+    unlink(icp_pid_file_path_name);
 
     exit(EXIT_SUCCESS);
 }

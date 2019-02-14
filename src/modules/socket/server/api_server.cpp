@@ -55,7 +55,9 @@ static icp::memory::shared_segment create_shared_memory_pool(size_t size, size_t
     auto pool_size = align_up(sizeof(icp::memory::allocator::pool), 64);
     auto total_size = next_power_of_two(pool_size + (size * count));
     auto segment = icp::memory::shared_segment(std::string(api::key) + ".memory",
-                                               total_size, true);
+                                               total_size,
+                                               true, /* create */
+                                               true); /* unlink first */
     /* Construct a pool in our shared memory segment */
     new (segment.get()) icp::memory::allocator::pool(
         reinterpret_cast<uintptr_t>(segment.get()) + pool_size,
@@ -109,7 +111,7 @@ static int close_fd(const struct icp_event_data *data,
 }
 
 server::server(icp::core::event_loop& loop)
-    : m_sock(api::server_socket(), api::socket_type)
+    : m_sock(api::server_socket(), api::socket_type, true)
     , m_shm(create_shared_memory_pool(align_up(io_channel_size, 64),
                                       api::max_sockets))
     , m_loop(loop)

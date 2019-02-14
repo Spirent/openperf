@@ -39,7 +39,7 @@ static void* do_mapping(const std::string_view path, size_t size,
     return (ptr);
 }
 
-shared_segment::shared_segment(const std::string_view path, size_t size, bool create)
+shared_segment::shared_segment(const std::string_view path, size_t size, bool create, bool unlink_first)
     : m_path(path)
     , m_size(size)
     , m_initialized(false)
@@ -47,6 +47,9 @@ shared_segment::shared_segment(const std::string_view path, size_t size, bool cr
     auto flags = O_RDWR;
     if (create) {
         flags |= O_CREAT | O_EXCL;
+    }
+    if (unlink_first) {
+        shm_unlink(path.data());
     }
     m_ptr = do_mapping(path, size, flags);
     m_initialized = create;

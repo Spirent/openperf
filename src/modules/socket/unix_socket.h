@@ -12,7 +12,7 @@ class unix_socket
     int m_fd;
 
 public:
-    unix_socket(const std::string_view path, int type);
+    unix_socket(const std::string_view path, int type, bool unlink_first = false);
     ~unix_socket();
     int get();
 };
