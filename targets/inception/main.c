@@ -15,8 +15,8 @@ void signal_handler(int signo __attribute__((unused)))
     _icp_done = true;
 }
 
-static char * icp_pid_file_path_name = "/tmp/.com.spirent.inception/inception.pid";
-static int icp_max_proc_path_length = 12;
+static const char * icp_pid_file_path_name = "/tmp/.com.spirent.inception/inception.pid";
+static const int icp_max_proc_path_length = 12;
 int find_running_inception(int pid) {
     assert(pid > 0);
     char proc_path[icp_max_proc_path_length];
