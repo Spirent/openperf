@@ -20,7 +20,7 @@ static const int icp_max_proc_path_length = 12;
 int find_running_inception(int pid) {
     assert(pid > 0);
     char proc_path[icp_max_proc_path_length];
-    snprintf(proc_path, icp_max_proc_path_length, "%d", pid);
+    snprintf(proc_path, icp_max_proc_path_length, "/proc/%d", pid);
 
     DIR * proc_dir = opendir(proc_path);
     if (proc_dir) {
