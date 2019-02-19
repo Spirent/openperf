@@ -189,7 +189,10 @@ static uint16_t rx_burst(const switch_t& vif, const rx_queue* rxq)
 
     /* ... and dispatch */
     for (size_t i = 0; i < nb_ucast; i++) {
-        if (!interfaces[i]) rte_pktmbuf_free(unicast[i]);
+        if (!interfaces[i]) {
+            rte_pktmbuf_free(unicast[i]);
+            continue;
+        }
 
         ICP_LOG(ICP_LOG_TRACE, "Dispatching unicast packet to %c%c%u\n",
                 interfaces[i]->name[0], interfaces[i]->name[1],
