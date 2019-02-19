@@ -156,6 +156,9 @@ static std::pair<size_t, size_t> partition_mbufs(rte_mbuf* incoming[], int lengt
 
 static uint16_t rx_burst(const switch_t& vif, const rx_queue* rxq)
 {
+    static const rte_gro_param gro_params = { .gro_types = RTE_GRO_TCP_IPV4,
+                                              .max_flow_num = pkt_burst_size,
+                                              .max_item_per_flow = pkt_burst_size };
     /*
      * We pull packets from the port and put them in the receive array.
      * We then sort them into unicast and multicast types.
@@ -167,6 +170,8 @@ static uint16_t rx_burst(const switch_t& vif, const rx_queue* rxq)
                               incoming.data(), pkt_burst_size);
 
     if (!n) return (0);
+
+    n = rte_gro_reassemble_burst(incoming.data(), n, &gro_params);
 
     ICP_LOG(ICP_LOG_TRACE, "Received %d packet%s on %d:%d\n",
             n, n > 1 ? "s" : "", rxq->port_id(), rxq->queue_id());
@@ -184,7 +189,10 @@ static uint16_t rx_burst(const switch_t& vif, const rx_queue* rxq)
 
     /* ... and dispatch */
     for (size_t i = 0; i < nb_ucast; i++) {
-        if (!interfaces[i]) rte_pktmbuf_free(unicast[i]);
+        if (!interfaces[i]) {
+            rte_pktmbuf_free(unicast[i]);
+            continue;
+        }
 
         ICP_LOG(ICP_LOG_TRACE, "Dispatching unicast packet to %c%c%u\n",
                 interfaces[i]->name[0], interfaces[i]->name[1],

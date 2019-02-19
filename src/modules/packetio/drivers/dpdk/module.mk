@@ -1,4 +1,8 @@
+ifeq ($(MODE),debug)
+ICP_DPDK_TARGET ?= default-linuxicp-clang-debug
+else
 ICP_DPDK_TARGET ?= default-linuxicp-clang
+endif
 
 PIO_DEPENDS += dpdk
 

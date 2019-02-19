@@ -100,6 +100,14 @@ static uint16_t to_checksum_gen_flags(uint64_t tx_offloads)
     return (flags);
 }
 
+static uint32_t net_interface_max_gso_length(int port_id)
+{
+    auto info = model::port_info(port_id);
+    return (info.tx_offloads() & DEV_TX_OFFLOAD_TCP_TSO
+            ? info.tx_tso_segment_max() * TCP_MSS
+            : TCP_MSS);
+}
+
 static err_t net_interface_tx(netif* netif, pbuf *p)
 {
     assert(netif);
@@ -140,13 +148,18 @@ static err_t net_interface_rx(pbuf *p, netif* netif)
 
     /* Validate checksums; drop if invalid */
     auto mbuf = packetio_memory_pbuf_to_mbuf(p);
-    /* XXX: might not always be true */
-    assert(mbuf->packet_type);
-    if (!(mbuf->ol_flags & PKT_RX_IP_CKSUM_GOOD)) {
+    if (mbuf->ol_flags & PKT_RX_IP_CKSUM_MASK
+        && !(mbuf->ol_flags & PKT_RX_IP_CKSUM_GOOD)) {
         IP_STATS_INC(ip.chkerr);
         pbuf_free(p);
         return (ERR_OK);
-    } else if (!(mbuf->ol_flags & PKT_RX_L4_CKSUM_GOOD)) {
+    }
+
+    if (mbuf->ol_flags & PKT_RX_L4_CKSUM_MASK
+        && !(mbuf->ol_flags & PKT_RX_L4_CKSUM_GOOD)) {
+        /* XXX: might not always be true? */
+        assert(mbuf->packet_type);
+
         if (mbuf->packet_type & RTE_PTYPE_L4_TCP) {
             TCP_STATS_INC(tcp.chkerr);
         } else if (mbuf->packet_type & RTE_PTYPE_L4_UDP) {
@@ -199,9 +212,7 @@ static err_t net_interface_dpdk_init(netif* netif)
         netif->hwaddr[i] = eth_config->address[i];
     }
 
-    uint16_t mtu;
-    rte_eth_dev_get_mtu(ifp->port_id(), &mtu);
-    netif->mtu = mtu;
+    rte_eth_dev_get_mtu(ifp->port_id(), &netif->mtu);
 
     netif->chksum_flags = (to_checksum_check_flags(info.rx_offloads())
                            | to_checksum_gen_flags(info.tx_offloads()));
@@ -313,6 +324,7 @@ static std::string recvq_name(int id)
 net_interface::net_interface(int id, const interface::config_data& config,
                              driver::tx_burst tx)
     : m_id(id)
+    , m_max_gso_length(net_interface_max_gso_length(config.port_id))
     , m_config(config)
     , m_transmit(tx)
     , m_notify(false)
@@ -366,20 +378,21 @@ int net_interface::handle_rx(struct pbuf* p)
 int net_interface::handle_tx(struct pbuf* p)
 {
     /*
-     * Bump the reference count on the mbuf before transmitting; when this
-     * function returns, the stack will free the pbuf.  We don't want the
-     * mbuf to be freed with it.
+     * Bump the reference count on the mbuf chain before transmitting; when this
+     * function returns, the stack will free the pbuf chain.  We don't want the
+     * mbufs to be freed with it.
      */
-    assert(p->next == NULL);
-    auto mbuf = packetio_memory_mbuf_synchronize(p);
-    rte_mbuf_refcnt_update(mbuf, 1);
+    auto m_head = packetio_memory_mbuf_synchronize(p);
+    for (auto m = m_head; m != nullptr; m = m->next) {
+        rte_mbuf_refcnt_update(m, 1);
+    }
 
     /* Setup tx offload metadata if offloads are enabled. */
     if (~(m_netif.chksum_flags & netif_tx_chksum_mask)) {
-        set_tx_offload_metadata(mbuf);
+        set_tx_offload_metadata(m_head, m_netif.mtu);
     }
 
-    rte_mbuf *pkts[] = { mbuf };
+    rte_mbuf *pkts[] = { m_head };
     return (m_transmit(port_id(), 0, reinterpret_cast<void**>(pkts), 1) == 1 ? ERR_OK : ERR_BUF);
 }
 
@@ -424,6 +437,11 @@ int net_interface::port_id() const
 netif* net_interface::data()
 {
     return (&m_netif);
+}
+
+unsigned net_interface::max_gso_length() const
+{
+    return (m_max_gso_length);
 }
 
 interface::config_data net_interface::config() const

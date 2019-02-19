@@ -34,6 +34,8 @@ public:
     int port_id() const;
     interface::config_data config() const;
 
+    unsigned max_gso_length() const;
+
     int handle_rx(struct pbuf*);
     int handle_tx(struct pbuf*);
     void handle_input();
@@ -49,6 +51,7 @@ private:
     static constexpr unsigned recvq_size = 1024;
 
     const int m_id;
+    const unsigned m_max_gso_length;
     const interface::config_data m_config;
     const driver::tx_burst m_transmit;
 

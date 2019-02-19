@@ -48,16 +48,32 @@
 #define MEMP_MEM_MALLOC 1
 #define MEMP_USE_CUSTOM_POOLS 0
 
+#define PBUF_POOL_BUFSIZE (2048 + 128)  /* DPDK default MBUF buffer size */
+
+/* IP options */
+#define IP_FRAG 0
+
 /* TCP options */
 #define LWIP_TCP_SACK_OUT 1
 #define LWIP_WND_SCALE 1
 
-#define TCP_LISTEN_BACKLOG 1
-#define TCP_SND_BUF (1024 * TCP_MSS)
-#define TCP_SNDLOWAT (0xFFFF - (4 * TCP_MSS) - 1)
+/*
+ * Internally, lwIP enforces a relationship between the queue length and size,
+ * specifically TCP_SND_QUEUELEN >= (2 * (TCP_SND_BUF / TCP_MSS)).
+ * However, most of our NICs can use TSO, so that queue length refers to
+ * segment chains instead of single MSS sized buffers.  As a result, we reverse
+ * the default lwIP behavior and pick a reasonable queue length and calculate a
+ * buffer size to match.
+ */
+#define TCP_SND_QUEUELEN 1024
+#define TCP_SND_BUF ((TCP_SND_QUEUELEN * TCP_MSS) / 2)
+
+#define TCP_SNDLOWAT 1
 #define TCP_MSS 1460
-#define TCP_WND (1024 * TCP_MSS)
+#define TCP_WND (2 * 1024 * 1024) /* 2 MB */
 #define TCP_RCV_SCALE 6
+#define TCP_OVERSIZE TCP_MSS
+#define TCP_LISTEN_BACKLOG 1
 
 /* Socket options */
 #define SO_REUSE 1
@@ -67,6 +83,7 @@
 
 /* Debugging options */
 #define LWIP_DEBUG 1
+#define LWIP_DBG_MIN_LEVEL LWIP_DBG_LEVEL_WARNING
 
 //#define ETHARP_DEBUG     LWIP_DBG_ON
 //#define NETIF_DEBUG      LWIP_DBG_ON
@@ -100,7 +117,5 @@
 //#define AUTOIP_DEBUG     LWIP_DBG_ON
 //#define DNS_DEBUG        LWIP_DBG_ON
 //#define IP6_DEBUG        LWIP_DBG_ON
-
-/* Internal structure limits */
 
 #endif /* _ICP_PACKETIO_STACK_LWIPOPTS_H_ */

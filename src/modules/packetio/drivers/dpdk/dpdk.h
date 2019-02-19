@@ -38,5 +38,6 @@
 #include "rte_errno.h"
 #include "rte_version.h"
 #include "rte_ether.h"
+#include "rte_gro.h"
 
 #endif /* _PACKETIO_DRIVER_DPDK_H_ */

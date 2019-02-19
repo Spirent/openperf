@@ -119,6 +119,7 @@ static __attribute__((const))
 uint64_t filter_rx_offloads(uint64_t rx_capa)
 {
     return (rx_capa & (DEV_RX_OFFLOAD_CHECKSUM
+                       | DEV_RX_OFFLOAD_TCP_LRO
                        | DEV_RX_OFFLOAD_SCATTER
                        | DEV_RX_OFFLOAD_KEEP_CRC));
 }
@@ -129,6 +130,7 @@ uint64_t filter_tx_offloads(uint64_t tx_capa)
     return (tx_capa & (DEV_TX_OFFLOAD_IPV4_CKSUM
                        | DEV_TX_OFFLOAD_UDP_CKSUM
                        | DEV_TX_OFFLOAD_TCP_CKSUM
+                       | DEV_TX_OFFLOAD_TCP_TSO
                        | DEV_TX_OFFLOAD_MULTI_SEGS));
 }
 

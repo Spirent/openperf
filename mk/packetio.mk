@@ -26,6 +26,9 @@ PIO_OBJECTS := $(patsubst %, $(PIO_OBJ_DIR)/%, \
 PIO_OBJECTS += $(patsubst %, $(PIO_OBJ_DIR)/%, \
 	$(patsubst %.cpp, %.o, $(filter %.cpp, $(PIO_SOURCES))))
 
+# Pull in object dependencies, maybe
+-include $(PIO_OBJECTS:.o=.d)
+
 PIO_INC_DIRS := $(dir $(PIO_SRC_DIR)) $(addprefix $(PIO_SRC_DIR)/,$(PIO_INCLUDES))
 PIO_CPPFLAGS := $(addprefix -I,$(PIO_INC_DIRS))
 
@@ -48,33 +51,21 @@ $(foreach DEP,$(PIO_DEPENDS),$(eval include $(ICP_ROOT)/mk/$(DEP).mk))
 PIO_CXXFLAGS += -Wno-register
 
 ###
-# Load stack info; always required for now
+# We link the lwip compilation objects directly into the packetio target.  At the
+# moment, packetio can't really function without lwIP and the lwIP configuration
+# file is part of the packetio module, so the two are *very* tightly coupled.
 ###
-LWIP_SOURCES :=
-LWIP_INCLUDES :=
-
-LWIP_SRC_DIR := $(ICP_ROOT)/deps/lwip
-LWIP_OBJ_DIR := $(PIO_OBJ_DIR)/lwip
 
 include $(ICP_ROOT)/mk/lwip.mk
 
-LWIP_OBJECTS := $(patsubst %, $(LWIP_OBJ_DIR)/%, \
-	$(patsubst %.c, %.o, $(LWIP_SOURCES)))
-LWIP_CPPFLAGS := $(addprefix -I,$(addprefix $(LWIP_SRC_DIR)/,$(LWIP_INCLUDES)))
-PIO_CPPFLAGS += $(LWIP_CPPFLAGS)
-
-$(LWIP_OBJ_DIR)/%.o: $(LWIP_SRC_DIR)/%.c
-	@mkdir -p $(dir $@)
-	$(strip $(ICP_CC) -o $@ -c $(PIO_CPPFLAGS) $(LWIP_CPPFLAGS) $(ICP_CPPFLAGS) $(ICP_COPTS) $<)
-
-# Pull in object dependencies, maybe
--include $(PIO_OBJECTS:.o=.d)
--include $(LWIP_OBJECTS:.o=.d)
+LWIP_REQ_VARS := \
+	LWIP_OBJECTS
+$(call icp_check_vars,$(LWIP_REQ_VARS))
 
 ###
 # Build rules
 ###
-$(PIO_OBJECTS): | $(PIO_DEPENDS)
+$(PIO_OBJECTS): | $(PIO_DEPENDS) libzmq
 
 $(PIO_OBJ_DIR)/%.o: $(PIO_SRC_DIR)/%.c
 	@mkdir -p $(dir $@)
@@ -92,6 +83,6 @@ $(PIO_TARGET): $(PIO_OBJECTS) $(LWIP_OBJECTS)
 packetio: $(PIO_TARGET)
 
 .PHONY: clean_packetio
-clean_packetio:
-	@rm -rf $(PIO_OBJ_DIR) $(PIO_TARGET) $(PIO_SRC_DIR)/lwip
+clean_packetio: clean_lwip
+	@rm -rf $(PIO_OBJ_DIR) $(PIO_TARGET)
 clean: clean_packetio
