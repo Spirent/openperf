@@ -35,14 +35,430 @@ parameters:
     required: true
 
 tags:
+  - name: Analyzers
+  - name: Captures
+  - name: Frames
+  - name: Generators
   - name: Interfaces
   - name: Modules
   - name: Ports
   - name: Stacks
+  - name: Streams
 
 basePath: /
 
 paths:
+
+  /analyzers:
+    get:
+      operationId: ListAnalyzers
+      tags:
+        - Analyzers
+      summary: List signature traffic analyzers
+      description: >
+        The `analyzers` endpoint returns all signature traffic analyzers
+        that are configured to collect and report test traffic statistics.
+      parameters:
+        - name: port_id
+          in: query
+          description: Filter by port id
+          required: false
+          type: string
+        - name: interface_id
+          description: Filter by interface id
+          required: false
+          type: string
+      responses:
+        200:
+          description: Success
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/Analyzer"
+    post:
+      operationId: CreateAnalyzer
+      tags:
+        - Analyzers
+      summary: Create a signature traffic analyzer
+      description: Create a new signature traffic analyzer
+      parameters:
+        - name: config
+          in: body
+          description: New signature traffic analyzer configuration
+          required: true
+          schema:
+            $ref: "#/definitions/AnalyzerConfig"
+      responses:
+        201:
+          description: Success
+          schema:
+            $ref: "#/definitions/Analyzer"
+
+  /analyzers/{id}:
+    get:
+      operationId: GetAnalyzer
+      tags:
+        - Analyzers
+      summary: Get a signature traffic analyzer
+      description: Returns a signature traffic analyzer by analyzer id.
+      parameters:
+        - $ref: "#/parameters/id"
+      responses:
+        200:
+          description: Success
+          schema:
+            $ref: "#/definitions/Analyzer"
+    delete:
+      operationId: DeleteAnalyzer
+      tags:
+        - Analyzers
+      summary: Delete a signature traffic analyzer by analyzer id. Idempotent.
+      parameters:
+        - $ref: "#/parameters/id"
+      responses:
+        204:
+          description: No Content
+
+  /analyzers/{id}/start:
+    post:
+      operationId: StartAnalyzer
+      tags:
+        - Analyzers
+      summary: Tell an analyzer to start processing received signature traffic
+      description: Used to start a non-running analyzer.
+      parameters:
+        - name: duration
+          in: body
+          description: Duration to run the signature traffic analyzer
+          required: false
+          schema:
+            $ref: "#/definitions/DurationConfig"
+      responses:
+        202:
+          description: Accepted
+          schema:
+            type: string
+            description: URL to analyzer results object
+
+  /analyzers/{id}/stop:
+    post:
+      operationId: StopAnalyzer
+      tags:
+        - Analyzers
+      summary: Tell an analyzer to stop processing received signature traffic.
+      description: Used to halt a running analyzer. Idempotent.
+      responses:
+        204:
+          description: No Content
+
+  /analyzer-results/{id}:
+    get:
+      operationId: GetAnalyzerResult
+      tags:
+        - Analyzers
+      summary: Get results from a signature traffic analyzer
+      description: Returns results from a signature traffic analyzer by result id.
+      parameters:
+        - $ref: "#/parameters/id"
+      responses:
+        200:
+          description: Success
+          schema:
+            $ref: "#/definitions/AnalyzerResult"
+    delete:
+      operationId: DeleteAnalyzerResult
+      tags:
+        - Analyzers
+      summary: >
+        Delete results from a signature traffic analyzer. Also deletes all child
+        rx-stream objects. Idempotent.
+      parameters:
+        - $ref: "#/parameters/id"
+      responses:
+        204:
+          description: No Content
+
+  /captures:
+    get:
+      operationId: ListCaptures
+      tags:
+        - Capture
+      summary: List capture configurations
+      description: The `captures` endpoint returns all capture configurations.
+      parameters:
+        - name: port_id
+          in: query
+          description: Filter by port id
+          required: false
+          type: string
+        - name: interface_id
+          in: query
+          description: Filter by interface id
+          required: false
+      responses:
+        200:
+          description: Success
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/Capture"
+    post:
+      operationId: CreateCapture
+      tags:
+        - Capture
+      summary: Create a capture object
+      description: Create a new capture object
+      parameters:
+        - name: config
+          in: body
+          description: New capture configuration
+          required: true
+          schema:
+            $ref: "#/definitions/CaptureConfig"
+      responses:
+        201:
+          description: Success
+          schema:
+            $ref: "#/definitions/Capture"
+
+  /captures/{id}/start:
+    post:
+      operationId: StartCapture
+      tags:
+        - Captures
+      summary: Tell a capture object to start capturing packets.
+      description: Used to start a non-running capture.
+      parameters:
+        - name: duration
+          in: body
+          description: Duration to run the traffic capture
+          required: false
+          schema:
+            $ref: "#/definitions/DurationConfig"
+      responses:
+        202:
+          description: Accepted
+          schema:
+            type: string
+            description: URL to capture results object
+
+  /captures/{id}/stop:
+    post:
+      operationId: StopCapture
+      tags:
+        - Captures
+      summary: Tell a capture object to stop capturing packets.
+      description: Used to halt a running capture. Idempotent.
+      responses:
+        204:
+          description: No Content
+
+  /capture-results/{id}:
+    get:
+      operationId: GetCaptureResult
+      tags:
+        - Captures
+      summary: Get a packet capture result
+      description: Returns results of a packet capture by capture id.
+      parameters:
+        - $ref: "#/parameters/id"
+      responses:
+        200:
+          description: Success
+          schema:
+            $ref: "#/definitions/CaptureResult"
+    delete:
+      operationId: DeleteCaptureResult
+      tags:
+        - Captures
+      summary: >
+        Delete results from a packet capture. Also delete the corresponding
+        capture file in `capture-files`.  Idempotent.
+      parameters:
+        - $ref: "#/parameters/id"
+      responses:
+        204:
+          description: No Content
+
+  /capture-files:
+    get:
+      operationId: ListCaptureFiles
+      tags:
+        - Captures
+      summary: List packet captures
+      description: >
+        The `capture-files` endpoint returns all packet captures that have been
+        created by capture instances.
+      parameters:
+        - name: port_id
+          in: query
+          description: Filter by capture port id
+          required: false
+          type: string
+        - name: interface_id
+          in: query
+          description: Filter by capture interface id
+          required: false
+          type: string
+        - name: capture_id
+          in: query
+          description: Filter by capture configuration id
+          required: false
+          type: string
+      responses:
+        200:
+          description: Success
+          schema:
+            type: array
+            items:
+              $ref: "#/definitons/CaptureFile"
+
+  /capture-files/{id}:
+    get:
+      operationId: GetCaptureFile
+      tags:
+        - Capture
+      summary: Get a packet capture file
+      description: Returns a file containing capture data
+      parameters:
+        - $ref: "#/parameters/id"
+      responses:
+        200:
+          description: Success
+          schema:
+            type: file
+            description: Capture File
+            produces: application/vnd.tcpdump.pcap
+
+  /generators:
+    get:
+      operationId: ListGenerators
+      tags:
+        - Generators
+      summary: List signature traffic generators
+      description: >
+        The `generators` endpoint returns all signature traffic generators
+        that are configured to transmit signature test traffic.
+      parameters:
+        - name: port_id
+          in: query
+          description: Filter by port id
+          required: false
+          type: string
+        - name: interface_id
+          in: query
+          description: Filter by interface id
+          required: false
+      responses:
+        200:
+          description: Success
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/Generator"
+    post:
+      operationId: CreateGenerator
+      tags:
+        - Generators
+      summary: Create a signature traffic generator
+      description: Create a new signature traffic generator
+      parameters:
+        - name: config
+          in: body
+          description: New signature traffic generator configuration
+          required: true
+          schema:
+            $ref: "#/definitions/GeneratorConfig"
+      responses:
+        201:
+          description: Success
+          schema:
+            $ref: "#/definitions/Generator"
+
+  /generators/{id}:
+    get:
+      operationId: GetGenerator
+      tags:
+        - Generators
+      summary: Get a signature traffic generator
+      description: Returns a signature traffic generator, by id.
+      parameters:
+        - $ref: "#/parameters/id"
+      responses:
+        200:
+          description: Success
+          schema:
+            $ref: "#/definitions/Generator"
+    delete:
+      operationId: DeleteGenerator
+      tags:
+        - Generators
+      summary: Delete a signature traffic generator
+      description: Deletes an existing signature traffic generator. Idempotent.
+      parameters:
+        - $ref: "#/parameters/id"
+      responses:
+        204:
+          description: No Content
+
+  /generators/{id}/start:
+    post:
+      operationId: StartGenerator
+      tags:
+        - Generators
+      summary: Tell a generator to start transmitting stateless test traffic
+      description: Used to start a non-running generator.
+      parameters:
+        - name: duration
+          in: body
+          description: Duration to run the signature traffic generator
+          required: false
+          schema:
+            $ref: "#/definitions/DurationConfig"
+      responses:
+        202:
+          description: Accepted
+          schema:
+            type: string
+            description: URL to generator results object
+
+  /generators/{id}/stop:
+    post:
+      operationId: StopGenerator
+      tags:
+        - Generators
+      summary: Tell a generator to stop transmitting stateless test traffic
+      description: Used to halt a running generator. Idempotent.
+      responses:
+        204:
+          description: No Content
+
+  /generator-results/{id}:
+    get:
+      operationId: GetGeneratorResult
+      tags:
+        - Generators
+      summary: Get a result from a signature traffic generator
+      description: Returns results from a signature traffic generator by result id.
+      parameters:
+        - $ref: "#/parameters/id"
+      responses:
+        200:
+          description: Success
+          schema:
+            $ref: "#/definitions/GeneratorResult"
+    delete:
+      operationId: DeleteGeneratorResult
+      tags:
+        - Generators
+      summary: >
+        Delete results from a signature traffic generator. Also deletes all child
+        tx-stream objects. Idempotent.
+      parameters:
+        - $ref: "#/parameters/id"
+      responses:
+        204:
+          description: No Content
 
   /interfaces:
     get:
@@ -312,6 +728,54 @@ paths:
         204:
           description: No Content
 
+    /rx-streams:
+    get:
+      operationId: ListRxStreams
+      tags:
+        - Streams
+      summary: List received signature streams
+      description: >
+        The `rx-streams` endpoint returns all signature streams that have been
+        received by analyzer instances.
+      parameters:
+        - name: analyzer_id
+          in: query
+          description: Filter by receive analyzer id
+          required: false
+          type: string
+        - name: interface_id
+          in: query
+          description: Filter by receive interface id
+          required: false
+          type: string
+        - name: port_id
+          in: query
+          description: Filter by receive port id
+          required: false
+          type: string
+      responses:
+        200:
+          description: Success
+          schema:
+            type: array
+            items:
+              $ref: "#/definitons/RxStream"
+
+  /rx-streams/{id}:
+    get:
+      operationId: GetRxStream
+      tags:
+        - Streams
+      summary: Get a stateless receive stream
+      description: Returns a stateless receive stream by id.
+      parameters:
+        - $ref: "#/parameters/id"
+      responses:
+        200:
+          description: Success
+          schema:
+            $ref: "#/definitions/RxStream"
+
   /stacks:
     get:
       operationId: ListStacks
@@ -342,7 +806,879 @@ paths:
           schema:
             $ref: "#/definitions/Stack"
 
+  /tx-streams:
+    get:
+      operationId: ListTxStreams
+      tags:
+        - Streams
+      summary: List stateless transmit streams
+      description: >
+        The `tx-streams` endpoint returns all stateless transmit streams that
+        were generated by generator instances.
+      parameters:
+        - name: generator_id
+          in: query
+          description: Filter by generator id
+          required: false
+          type: string
+        - name: interface_id
+          in: query
+          description: Filter by receive interface id
+          required: false
+          type: string
+        - name: port_id
+          in: query
+          description: Filter by receive port id
+          required: false
+          type: string
+      responses:
+        200:
+          description: Success
+          schema:
+            type: array
+            items:
+              $ref: "#/definitons/TxStream"
+
+/tx-streams/{id}:
+    get:
+      operationId: GetTxStream
+      tags:
+        - Streams
+      summary: Get a stateless transmit stream
+      description: Returns a stateless transmit stream by id.
+      parameters:
+        - $ref: "#/parameters/id"
+      responses:
+        200:
+          description: Success
+          schema:
+            $ref: "#/definitions/TxStream"
+
 definitions:
+  Analyzer:
+    type: object
+    description: >
+      Stateless traffic analyzer; analyzers count received signature traffic via
+      various aggregation methods.
+    properties:
+      id:
+        type: string
+        description: Unique analyzer identifier
+      config:
+        $ref: "#/definitions/AnalyzerConfig"
+      running:
+        type: boolean
+        description: >
+          Indicates whether this object is currently analyzing stateless test
+          traffic or not.
+    required:
+      - id
+      - config
+      - running
+
+  AnalyzerConfig:
+    type: object
+    description: >
+      Analyzer configuration; the configuration specifies what traffic
+      is collected by the analyzer and what results are calculated.
+    properties:
+      source_type:
+        type: string
+        description: >
+          Specifies whether the source_id refers to a port or analyzer
+          identifer.
+        enum:
+          - port
+          - interface
+      source_id:
+          type: string
+          description: >
+            Specifies the unique port or interface identifier for this
+            analyzer.
+      filter:
+        type: string
+        description: >
+          Berkley Packet Filter (BPF) rule that matches input frames for this
+          analyzer to count.  An empty rule, the default, matches all frames.
+      results:
+        type: array
+        description: >
+          List of result sets the analyzer should produce for stateless test
+          traffic that matches the input filter criteria.
+        items:
+          type: string
+          enum:
+            - advanced
+            - basic
+            - interarrival
+            - interarrival_tdigest
+            - jitter
+            - jitter_tdigest
+            - latency
+            - latency_tdigest
+            - prbs
+        default: basic
+        uniqueItems: true
+    required:
+      - method
+      - filter
+      - results
+
+  AnalyzerResult:
+    type: object
+    description: Results collected by a running analyzer
+    properties:
+      active:
+        type: boolean
+        description: Indicates whether the result is currently being updated
+      duration:
+        $ref: "#/definitoion/DurationRemainder"
+      stats:
+        $ref: "#/definition/AnalyzerStreamStats"
+      streams:
+        type: array
+        description: >
+          List of unique stream ids included in stats. Individual stream
+          statistics may be queried via the `rx-streams` endpoint.
+        items:
+          type: string
+    required:
+      - active
+      - duration
+      - stats
+      - streams
+
+  AnalyzerStreamStats:
+    type: object
+    description: Result statistics for received signature traffic
+    properties:
+      dropped:
+        type: integer
+        description: Number of frames expected but not yet received
+        format: int64
+      duplicate:
+        type: integer
+        description: Number of duplicate frames received
+        format: int64
+      interarrival_stats:
+        $ref: "#/definition/AnalyzerTimingStats"
+      interarrival_tdigest:
+        $ref: "#/definition/AnalyzerTimingData"
+      jitter_stats:
+        $ref: "#/definition/AnalyzerTimingStats"
+      jitter_tdigest:
+        $ref: "#/definition/AnalyzerTimingData"
+      latency_stats:
+        $ref: "#/definition/AnalyzerTimingStats"
+      latency_tdigest:
+        $ref: "#/definition/AnalyzerTimingData"
+      ordered:
+        type: integer
+        description: Number of frames received in sequential order
+        format: int64
+      prbs_errors:
+        type: integer
+        description: Total number of received PRBS bit errors
+        format: int64
+      prbs_octets:
+        type: integer
+        description: Total number of received PRBS octets
+        format: int64
+      rx_frames:
+        type: integer
+        description: Total number of received frames
+        format: int64
+      rx_octets:
+        type: integer
+        description: Total number of received octets
+        format: int64
+      rx_errors:
+        type: integer
+        description: Total number of frames received with errors
+        format: int64
+      reordered:
+        type: integer
+        description: Number of frames received in non-sequential order
+        format: int64
+      timestamp_first:
+        type: string
+        description: Timestamp of the first received frame
+        format: date-time
+      timestamp_last:
+        type: string
+        description: Timestamp of the last received frame
+        format: date-time
+    required:
+      - rx_frames
+      - rx_octets
+      - rx_errors
+      - timestamp_first
+      - timestamp_last
+
+  AnalyzerTimingStats:
+    type: object
+    description: Statistical properties of time based analyzer measurements
+    properties:
+      min:
+        type: integer
+        description: Minimum value
+        format: int64
+      max:
+        type: integer
+        description: Maximum value
+        format: int64
+      standard_deviation:
+        type: integer
+        description: Average delta of measured value from the mean
+        format: int64
+      total:
+        type: integer
+        description: Sum of all measured values
+        format: int64
+      units:
+        type: string
+        description: units to apply to time measurement values
+        enum:
+          - microseconds
+          - nanoseconds
+    required:
+      - min
+      - max
+      - standard_deviation
+      - total
+      - units
+
+  AnalyzerTimingData:
+    type: object
+    description: Raw t-digest analyzer data
+    properties:
+      data:
+        type: array
+        description: List of weight, value pairs comprising the t-digest data
+        items:
+          type: object
+          description: t-digest node data
+          properties:
+            weight:
+              type: integer
+              description: Describes the weight of the associated value.
+              format: int64
+            value:
+              type: integer
+              description: >
+                Describes the value of the associated weight. Uses the same
+                units as the timing stats.
+              format: int64
+          required:
+            - weight
+            - value
+    required:
+      - data
+
+  Capture:
+    type: object
+    description: >
+      Packet capture object; captures write transmitted and/or received
+      traffic to a file for detailed inspection.
+    properties:
+      id:
+        type: string
+        description: Unique capture identifier
+      config:
+        $ref: "#/definitions/CaptureConfig"
+      running:
+        type: boolean
+        description: >
+          Indicates whether this object is currently capturing traffic or not.
+    required:
+      - id
+      - config
+      - running
+
+  CaptureConfig:
+    type: object
+    description: >
+      Packet capture configuration; specifies what packets to capture and from where
+      to capture them.
+    properties:
+      source_type:
+        type: string
+        description: >
+          Specifies whether the source_id refers to a port or analyzer
+          identifer.
+        enum:
+          - port
+          - interface
+      source_id:
+          type: string
+          description: >
+            Specifies the unique port or or interface identifier for this
+            analyzer.
+      filter:
+        type: string
+        description: >
+          Berkley Packet Filter (BPF) rule that matches frames to capture. An
+          empty rule, the default, matches all frames.
+      direction:
+        type: string
+        description: the direction to capture
+        enum:
+          - transmit
+          - receive
+          - both
+        default: both
+      truncate:
+        type: integer
+        description: Limits the number of octets captured per frame
+        format: int32
+        minimum: 1
+    required:
+      - source_type
+      - source_id
+
+  CaptureResult:
+    type: object
+    description: Results for a packet capture
+    properties:
+      file_id:
+        type: string
+        description: >
+          Unique identifier for the file containing the raw capture data in
+          the `capture-files` endpoint.
+      active:
+        type: boolean
+        description: Indicates whether the result is currently being updated
+      duration:
+        $ref: "#/definition/DurationRemainder"
+      packets:
+        type: integer
+        description: total number of captured packets
+        format: int64
+      timestamp_first:
+        type: string
+        description: Timestamp of the first captured frame
+        format: date-time
+      timestamp_last:
+        type: string
+        description: Timestamp of the last captured frame
+        format: date-time
+    required:
+      - file_id
+      - active
+      - duration
+      - packets
+      - timestamp_first
+      - timestamp_last
+
+  CaptureFile:
+    type: object
+    description: A file containing captured packet data
+    properties:
+      id:
+        type: string
+        description: unique capture file identifier
+      capture_id:
+        type: string
+        description: unique identifier of capture object that produced this file
+      size:
+        type: integer
+        description: file length, in bytes
+        format: int64
+
+  DurationConfig:
+    type: object
+    description: Specifies how long a frame based object should run when started
+    properties:
+      mode:
+        type: string
+        description: Specifies how the duration is measured
+        enum:
+          - indefinite
+          - seconds
+          - frames
+      duration:
+        type: integer
+        description: Specifies the duration value for definite durations
+        format: int64
+    required:
+      - mode
+
+  DurationRemainder:
+    type: object
+    description: Specifies how much type remains for an object to be active
+    properties:
+      mode:
+        type: string
+        description: Specifies how the duration is measured
+        enum:
+          - indefinite
+          - seconds
+          - frames
+      duration:
+        type: integer
+        description: Specifies the remaining duration for definite durations
+        format: int64
+    required:
+      - mode
+
+  FrameLength:
+    type: object
+    description: Specifies length of stateless test traffic
+    properties:
+      method:
+        type: string
+        description: frame length specification method
+        enum:
+          - fixed
+          - sequence
+          - list
+      fixed:
+        type: object
+        description: Specifies fixed length frames
+        properties:
+          length:
+            type: integer
+            description: Fixed frame length
+            format: int32
+            minimum: 64
+        required:
+          - length
+      sequence:
+        type: object
+        description: Specifies a sequence of frame lengths
+        properties:
+          count:
+            type: integer
+            description: The number of different frame lengths
+            format: int32
+            minimum: 1
+          start:
+            type: integer
+            description: The first length in the sequence
+            format: int32
+            minimum: 64
+          stop:
+            type: integer
+            description: The last length in the sequence
+            format: int32
+            minimum: 64
+        required:
+          - count
+          - start
+      list:
+        type: object
+        description: Specifies a list of frame lengths
+        properties:
+          lengths:
+            type: array
+            description: List of frame lengths
+            items:
+              type: integer
+              format: int32
+              minimum: 64
+            minItems: 1
+        required:
+          - lengths
+    required:
+      - method
+
+  FrameModifier:
+    type: object
+    description: Specifies how to modify frame data
+    properties:
+      offset:
+        type: string
+        description: >
+          Header and field to modify. Use BPF syntax to specify offsets
+      method:
+        type: string
+        description: Modifier method
+        enum:
+          - sequence
+          - list
+      sequence:
+        type: object
+        description: Specifies a sequence of values
+        properties:
+          count:
+            type: integer
+            description: The number of different frame lengths
+            format: int32
+            minimum: 1
+          start:
+            type: integer
+            description: The first length in the sequence
+            format: int32
+            minimum: 64
+          stop:
+            type: integer
+            description: The last length in the sequence
+            format: int32
+            minimum: 64
+          skip:
+            type: array
+            description: List of values in the sequence to skip
+            items:
+              type: integer
+              format: int32
+        required:
+          - count
+          - start
+      list:
+        type: array
+        description: List of modifier values
+        items:
+          type: string
+          format: binary
+        minItems: 1
+      width:
+        type: integer
+        description: Number of octets affected by this modifier
+        format: int32
+      permute:
+        type: boolean
+        description: >
+          Specifies whether to pseudo-randomly order the modifier values
+    required:
+      - offset
+      - method
+      - width
+
+  FrameProtocolDefinition:
+    type: object
+    description: A protocol definition for stateless test traffic frames
+    properties:
+      method:
+        type: string
+        description: protocol definition type
+        enum:
+          - ethernet
+          - ipv4
+          - udp
+          - signature
+      ethernet:
+        $ref: "#/definitions/FrameProtocolEthernet"
+      ipv4:
+        $ref: "#/definitions/FrameProtocolIpv4"
+      udp:
+        $ref: "#/definitions/FrameProtocolUdp"
+      signature:
+        $ref: "#/definitions/FrameProtocolSignature"
+    required:
+      - method
+
+  FrameProtocolEthernet:
+    type: object
+    description: Defines an Ethernet header
+    properties:
+      source:
+        type: string
+        description: Ethernet source MAC
+        format: binary
+      destination:
+        type: string
+        description: Ethernet destination MAC
+        format: binary
+      ethertype:
+        type: string
+        description: Ethernet protocol type
+        format: binary
+
+  FrameProtocolIpv4:
+    type: object
+    definition: Defines an IPv4 Header
+    properties:
+      version:
+        type: string
+        description: IP header version
+        format: binary
+        default: 0x4
+      header_length:
+        type: string
+        description: IP header length
+        format: binary
+        default: 0x5
+      tos:
+        type: string
+        description: Type of Service field
+        format: binary
+        default: 0x00
+      packet_length:
+        type: string
+        description: IP packet length (include payload)
+        format: binary
+      id:
+        type: string
+        description: Identification field
+        format: binary
+      flags:
+        type: string
+        description: IP header flags
+        format: binary
+        default: 0x0;
+      fragment_offset:
+        type: string
+        description: IP fragment offset
+        format: binary
+        default: 0x0000
+      ttl:
+        type: string
+        description: Time To Live field
+        format: binary
+        default: 0xff
+      protocol:
+        type: string
+        description: Protocol field
+        format: binary
+      checksum:
+        type: string
+        description: IP checksum
+        format: binary
+      source:
+        type: string
+        description: IP source address
+        format: binary
+      destination:
+        type: string
+        description: IP destination address
+        format: binary
+
+  FrameProtocolSignature:
+    type: object
+    description: Specifies options for the Spirent signature field
+    properties:
+      prbs:
+        type: boolean
+        description: Fill payload with a pseudo-random bit sequence
+
+  FrameProtocolUdp:
+    type: object
+    description: Defines a UDP header
+    properties:
+      source_port:
+        type: string
+        description: UDP source port
+        format: binary
+      destination_port:
+        type: string
+        description: UDP destination port
+        format: binary
+      length:
+        type: string
+        description: header plus payload length
+        format: binary
+      checksum:
+        type: string
+        description: UDP checksum
+        format: binary
+
+  Generator:
+    type: object
+    description: Stateless traffic generator
+    properties:
+      id:
+        type: string
+        description: Unique generator identifier
+      config:
+        $ref: "#/definitions/GeneratorConfig"
+      running:
+        type: boolean
+        description: >
+          Indicates whether this object is currently generating stateless
+          test traffic
+    required:
+      - id
+      - config
+      - running
+
+  GeneratorConfig:
+    type: object
+    description: Stateless traffic generator configuration
+    properties:
+      source_type:
+        type: string
+        description: >
+          Specifies whether the source_id refers to a port or analyzer
+          identifer.
+        enum:
+          - port
+          - interface
+      source_id:
+          type: string
+          description: >
+            Specifies the unique port or interface identifier for this
+            generator to use as its source.
+      traffic:
+        type: array
+        description: List of traffic definitions
+        items:
+          type: object
+          description: traffic sequences with possible repeats
+          properties:
+            definition:
+              $ref: "#/definitions/GeneratorTrafficDefinition"
+            repeat:
+              type: integer
+              description: number of times to repeat this sequence
+              format: int32
+              minimum: 0
+              default: 0
+          required:
+            - definition
+            - repeat
+        minItems: 1
+    required:
+      - source_type
+      - source_id
+      - traffic
+
+  GeneratorFramesDescriptor:
+    type: object
+    description: Defines a set of streams for the stateless traffic generator
+    properties:
+definitions:
+        type: array
+        description: >
+          Ordered list of frame header definitions. Frames are constructed
+          according to the sequence of header definitions.
+        items:
+          $ref: "#/definitions/FrameDefinition"
+        minItems: 1
+      modifiers:
+        type: array
+        description: List of frame modifiers
+        items:
+          $ref: "#/definitions/FrameModifier"
+      length:
+        $ref: "#/definitions/FrameLength"
+      scalar:
+        type: integer
+        description: relative weight of this frame sequence
+        format: int32
+        minimum: 1
+    required:
+      - definitions
+      - length
+      - scalar
+
+  GeneratorLoad:
+    type: object
+    description: Describes the traffic load of a stateless traffic generator
+    properties:
+      burst:
+        type: integer
+        description: >
+          Tells the generator how many frames to transmit as part of an atomic
+          transmit operations. Larger burst sizes are more efficient.
+        format: int32
+        default: 1
+        minimum: 1
+        maximum: 32
+      rate:
+        type: integer
+        description: The transmit rate
+        format: int64
+      units:
+        type: string
+        description: The transmit rate units
+        enum:
+          - frames
+          - octets
+    required:
+      - rate
+      - units
+
+  GeneratorResult:
+    type: object
+    description: Results collected by a running generator
+    properties:
+      active:
+        type: boolean
+        description: Indicates whether the result is currently being updated
+      duration:
+        $ref: "#/definitoion/DurationRemainder"
+      stats:
+        $ref: "#/definition/GeneratorStreamStats"
+      streams:
+        type: array
+        description: >
+          List of unique stream ids included in stats. Individual stream
+          statistics may be queried via the `tx-streams` endpoint.
+        items:
+          type: string
+    required:
+      - active
+      - duration
+      - stats
+      - streams
+
+  GeneratorStreamStats:
+    type: object
+    description: Stateless traffic generator statistics
+    properties:
+      errors:
+        type: integer
+        description: The number of frames not transmitted due to errors
+        format: int64
+      frames_actual:
+        type: integer
+        description: The total number of frames that have been transmitted
+        format: int64
+      frames_intended:
+        type: integer
+        description: The total number of frames that should have been transmitted
+        format: int64
+      octets_actual:
+        type: integer
+        description: The total number of octets that have been transmitted
+        format: int64
+      octets_intended:
+        type: integer
+        description: The total number of octets that should have been transmitted
+        format: int64
+      timestamp_first:
+        type: string
+        description: The timestamp of the first transmitted frame
+        format: date-time
+      timestamp_last:
+        type: string
+        description: The timestamp of the last transmitted frame
+        format: date-time
+    required:
+      - errors
+      - frames_actual
+      - frames_intended
+      - octets_actual
+      - octets_intended
+      - timestamp_first
+      - timestamp_last
+
+  GeneratorTrafficDefinition:
+    type: object
+    description: Describes a sequence of traffic for a generator to transmit
+    properties:
+      descriptors:
+        type: array
+        description: >
+          A list of frame definitions with modifiers that describe all frames
+          to send as part of this traffic definition.
+        items:
+          $ref: "#/definitions/GeneratorFrameDefinition"
+        minItems: 1
+      load:
+        $ref: "#/definitions/GeneratorLoad"
+      order:
+        type: string
+        description: >
+          Tells the generator how to sequence multiple frame definitions. Only
+          needed if more than one frame descriptor is present.
+        enum:
+          - round-robin
+          - sequential
+    required:
+      - descriptors
+      - load
+
   Interface:
     type: object
     description: Network interface
@@ -653,6 +1989,36 @@ definitions:
       - speed
       - duplex
 
+  RxStream:
+    type: object
+    description: A received signature traffic stream
+    properties:
+      id:
+        type: string
+        description: Unique stateless received stream identifier
+      analyzer_id:
+        type: string
+        description: Unique analyzer identifier that reported this stream
+      port_id:
+        type: string
+        description: Ingress port id
+      interface_id:
+        type: string
+        description: Ingress interface id
+      stream_id:
+        type: integer
+        description: Spirent signature stream id
+        format: int64
+      stats:
+        $ref: "#/definitions/AnalyzerStreamStats"
+    required:
+      - id
+      - analyzer_id
+      - port_id
+      - interface_id
+      - stream_id
+      - stats
+
   Stack:
     type: object
     description: A TCP/IP stack instance
@@ -846,3 +2212,25 @@ definitions:
       - sems
       - mutexes
       - mboxes
+
+  TxStream:
+    type: object
+    description: A transmitted stateless traffic stream
+    properties:
+      id:
+        type: string
+        description: Unique stateless transmit stream identifier
+      generator_id:
+        type: string
+        description: Unique generator identifier that generated this stream
+      stream_id:
+        type: integer
+        description: Spirent signature stream id
+        format: int64
+      stats:
+        $ref: "#/definition/GeneratorStreamStats"
+    required:
+      - id
+      - generator_id
+      - stream_id
+      - stats
