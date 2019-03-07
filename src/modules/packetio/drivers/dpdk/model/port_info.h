@@ -15,6 +15,7 @@ public:
     port_info(uint16_t port_id);
 
     uint16_t id()             const;
+    unsigned socket_id()      const;
 
     const char* driver_name() const;
     unsigned if_index()       const;

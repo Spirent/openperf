@@ -14,6 +14,7 @@ PIO_DRIVER_SOURCES += \
 	queue_poller.cpp \
 	queue_utils.cpp \
 	rx_queue.cpp \
+	topology_utils.cpp \
 	tx_queue.cpp \
 	vif_map_impl.cpp \
 	worker.cpp \

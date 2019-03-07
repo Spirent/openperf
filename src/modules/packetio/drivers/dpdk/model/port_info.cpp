@@ -36,6 +36,12 @@ uint16_t port_info::id() const
     return (m_id);
 }
 
+unsigned port_info::socket_id() const
+{
+    auto id = rte_eth_dev_socket_id(m_id);
+    return (id >= 0 ? id : 0);
+}
+
 const char* port_info::driver_name() const
 {
     return (get_info_field(m_id, &rte_eth_dev_info::driver_name));
