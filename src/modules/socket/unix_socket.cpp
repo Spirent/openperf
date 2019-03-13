@@ -57,7 +57,7 @@ unix_socket::unix_socket(const std::string_view path, int type)
             throw std::runtime_error("Could not bind to unix socket at \""
                                      + m_path + "\". Either Inception is already "
                                      + "running or did not shut down cleanly. "
-                                     + "See --unlink option to force launch.");
+                                     + "See --force-unlink option to force launch.");
         } else {
             throw std::runtime_error("Could not bind to unix socket "
                                      + std::to_string(m_fd) + ": "

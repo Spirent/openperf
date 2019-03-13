@@ -24,7 +24,7 @@ static void* do_mapping(const std::string_view path, size_t size,
             throw std::runtime_error("Could not create shared memory segment \""
                                      + std::string(path) + "\". Either Inception is already "
                                      + "running or did not shut down cleanly. "
-                                     + "See --unlink option to force launch.");
+                                     + "See --force-unlink option to force launch.");
         } else {
             throw std::runtime_error("Could not "
                                      + (std::string(shm_flags & O_CREAT ? "create" : "attach to"))
