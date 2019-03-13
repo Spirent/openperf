@@ -27,6 +27,9 @@ public:
     std::string_view name() const { return (m_path); }
     size_t size() const { return (m_size); }
     void* get() const { return (m_ptr); }
+
+    static bool exists(const std::string_view path);
+    static void remove(const std::string_view path);
 };
 
 }

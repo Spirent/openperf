@@ -16,7 +16,8 @@ SOCKSRV_SOURCES += \
 	server/socket_utils.cpp \
 	server/api_server.cpp \
 	server/tcp_socket.cpp \
-	server/udp_socket.cpp
+	server/udp_socket.cpp \
+	server/api_server_options.c
 
 SOCKSRV_LDLIBS += -lrt
 
