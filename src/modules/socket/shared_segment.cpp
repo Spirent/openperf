@@ -19,10 +19,18 @@ static void* do_mapping(const std::string_view path, size_t size,
     auto fd = shm_open(path.data(), shm_flags,
                        S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
     if (fd == -1) {
-        throw std::runtime_error("Could not "
-                                 + (std::string(shm_flags & O_CREAT ? "create" : "attach to"))
-                                 + " shared memory segment " + std::string(path) + ": "
-                                 + strerror(errno));
+        if (errno == EEXIST &&
+            shm_flags & O_CREAT) {
+            throw std::runtime_error("Could not create shared memory segment \""
+                                     + std::string(path) + "\". Either Inception is already "
+                                     + "running or did not shut down cleanly. "
+                                     + "See --unlink option to force launch.");
+        } else {
+            throw std::runtime_error("Could not "
+                                     + (std::string(shm_flags & O_CREAT ? "create" : "attach to"))
+                                     + " shared memory segment " + std::string(path) + ": "
+                                     + strerror(errno));
+        }
     }
 
     if (shm_flags & O_CREAT) {
@@ -94,6 +102,21 @@ shared_segment::~shared_segment()
     if (!m_initialized) return;
     munmap(m_ptr, m_size);
     shm_unlink(m_path.data());
+}
+
+bool shared_segment::exists(const std::string_view path)
+{
+    return access(path.data(), F_OK) == 0;
+}
+
+void shared_segment::remove(const std::string_view path)
+{
+    if (shm_unlink(path.data()) < 0) {
+        if (errno != ENOENT) {
+            throw std::runtime_error("Could not remove shared memory segment "
+                                     + std::string(path) + ": " + strerror(errno));
+        }
+    }
 }
 
 }
