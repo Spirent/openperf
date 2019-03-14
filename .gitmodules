@@ -17,3 +17,6 @@
 [submodule "deps/expected"]
 	path = deps/expected
 	url = https://github.com/TartanLlama/expected.git
+[submodule "deps/yaml-cpp"]
+	path = deps/yaml-cpp
+	url = https://github.com/jbeder/yaml-cpp.git
