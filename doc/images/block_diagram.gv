@@ -1,0 +1,140 @@
+digraph G {
+        compound = true;  /* allow edges between clusters */
+        newrank = true;
+        //nodesep = 0.75;
+        ranksep = 1;
+
+        node [colorscheme="set312",
+             style="filled"];
+
+        shared_memory [shape=box3d,
+                      fillcolor=1,
+                      width=3.6,
+                      label=<Shared Memory Area>];
+
+        client [shape=ellipse,
+               fillcolor=12,
+               label=<HTTP Client>];
+
+        subgraph cluster_app {
+                 label = "Client Process"
+                 style=rounded;
+                 colorscheme="pastel15";
+                 bgcolor=4;
+
+                 subgraph cluster_lib {
+                         style=invis;
+                         libicp [shape=component,
+                                fillcolor=3,
+                                label=<libicp-shim.so>];
+                 };
+
+                 subgraph cluster_apps {
+                          style=invis;
+                          app_1 [shape=tab, style=invis];
+                 }
+
+                 edge [style=invis];
+                 libicp -> app_1;
+        }
+
+        subgraph cluster_inception {
+                 label = "Inception";
+                 style=rounded;
+                 colorscheme=pastel15;
+                 bgcolor=1;
+
+                 subgraph cluster_api {
+                          label = "API Module";
+                          bgcolor=5;
+
+                          api [shape=tab,
+                              fillcolor=6,
+                              label=<REST API Thread>];
+                          api_space [shape=tab,
+                                    style=invis];
+                          api -> api_space [style=invis];
+                 }
+
+                 subgraph cluster_packetio {
+                          label = "Packetio Module";
+                          bgcolor=3;
+
+                          tcpip [shape=tab,
+                                fillcolor=7,
+                                label=<TCP/IP Thread>];
+
+                          worker_1 [shape=tab,
+                                   fillcolor=7,
+                                   label=<Tx/Rx Thread 1>];
+                          worker_2 [shape=tab,
+                                   fillcolor=7,
+                                   label=<Tx/Rx Thread 2>];
+                          worker_dots [style=solid, shape=plaintext,
+                                      label=<<font point-size="24"><b>...</b></font>>];
+                          worker_n [shape=tab,
+                                   fillcolor=7,
+                                   label=<Tx/Rx Thread N>];
+
+                          { rank = same; worker_1; worker_2; worker_dots; worker_n; }
+
+                          worker_1 -> worker_2 [style=invis];
+                          worker_2 -> worker_dots [style=invis];
+                          worker_dots -> worker_n [style=invis];
+
+                          tcpip -> worker_1 [dir=both];
+                          tcpip -> worker_2 [dir=both];
+                          tcpip -> worker_dots [dir=both,style=invis];
+                          tcpip -> worker_n [dir=both];
+                 }
+
+                 subgraph cluster_sockets {
+                          label = "Socket Module";
+                          bgcolor=2;
+
+                          socket [shape=note,
+                                 fillcolor=5,
+                                 label=<UNIX Socket>];
+                          sockets_space [shape=tab, style=invis];
+                          socket -> sockets_space [style=invis];
+                 }
+
+                 { rank = same; socket; tcpip; api; }
+        }
+
+        port_1 [shape=Msquare,
+               fillcolor=9,
+               label=<Port 1>];
+        port_2 [shape=Msquare,
+               fillcolor=9,
+               label=<Port 2>];
+        port_dots [style=solid,shape=plaintext,
+                  label=<<font point-size="24"><b>...</b></font>>];
+        port_n [shape=Msquare,
+               fillcolor=9,
+               label=<Port N>];
+
+        { rank = same; port_1; port_2; port_dots; port_n; }
+
+        port_1 -> port_2 [style=invis];
+        port_2 -> port_dots [style=invis];
+        port_dots -> port_n [style=invis];
+
+
+        shared_memory -> libicp [dir=both];
+        shared_memory -> socket [dir=both, lhead=cluster_sockets];
+        libicp -> socket [dir=both,
+                         constraint=false]
+
+        client -> api [dir=both, lhead=cluster_api];
+
+        worker_1 -> port_1 [dir=both];
+        worker_1 -> port_2 [dir=both, constraint=false];
+        worker_1 -> port_n [dir=both, constraint=false];
+        worker_2 -> port_1 [dir=both, constraint=false];
+        worker_2 -> port_2 [dir=both];
+        worker_2 -> port_n [dir=both, constraint=false];
+        worker_n -> port_1 [dir=both, constraint=false];
+        worker_n -> port_2 [dir=both, constraint=false];
+        worker_n -> port_n [dir=both];
+}
