@@ -59,7 +59,10 @@ static icp::memory::shared_segment create_shared_memory_pool(size_t size, size_t
 
     auto shared_segment_name = std::string(api::key) + ".memory";
     if (unlink_stale_files) {
-        icp::memory::shared_segment::remove(shared_segment_name);
+        if ((shm_unlink(shared_segment_name.data()) < 0) && (errno != ENOENT)) {
+            throw std::runtime_error("Could not remove shared memory segment "
+                                     + std::string(shared_segment_name) + ": " + strerror(errno));
+        }
     }
     auto segment = icp::memory::shared_segment(shared_segment_name,
                                                total_size, true);
@@ -75,26 +78,20 @@ static icp::memory::shared_segment create_shared_memory_pool(size_t size, size_t
 static icp::socket::unix_socket create_unix_socket(const std::string_view path, int type)
 {
     if (unlink_stale_files) {
-        icp::socket::unix_socket::remove(path);
+        if ((unlink(path.data()) < 0) && (errno != ENOENT)) {
+            throw std::runtime_error("Could not remove shared unix domain socket "
+                                     + std::string(path) + ": " + strerror(errno));
+        }
     }
 
-    return icp::socket::unix_socket(path, type);
+    auto socket = icp::socket::unix_socket(path, type);
+
+    return (socket);
 }
 
 icp::memory::allocator::pool* server::pool() const
 {
     return (reinterpret_cast<icp::memory::allocator::pool*>(m_shm.get()));
-}
-
-static int server_option_handler(int opt, const char * opt_arg __attribute__((unused)))
-{
-    if (opt != 'u') {
-        return (-EINVAL);
-    }
-
-    unlink_stale_files = true;
-
-    return (0);
 }
 
 extern "C" {
@@ -133,9 +130,15 @@ static int close_fd(const struct icp_event_data *data,
     return (0);
 }
 
-int api_server_option_handler(int opt, const char *opt_arg)
+int api_server_option_handler(int opt, const char *opt_arg __attribute__((unused)))
 {
-    return (icp::socket::api::server_option_handler(opt, opt_arg));
+    if (opt != 'u') {
+        return (-EINVAL);
+    }
+
+    unlink_stale_files = true;
+
+    return (0);
 }
 
 }

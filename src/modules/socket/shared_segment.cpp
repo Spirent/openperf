@@ -104,20 +104,5 @@ shared_segment::~shared_segment()
     shm_unlink(m_path.data());
 }
 
-bool shared_segment::exists(const std::string_view path)
-{
-    return access(path.data(), F_OK) == 0;
-}
-
-void shared_segment::remove(const std::string_view path)
-{
-    if (shm_unlink(path.data()) < 0) {
-        if (errno != ENOENT) {
-            throw std::runtime_error("Could not remove shared memory segment "
-                                     + std::string(path) + ": " + strerror(errno));
-        }
-    }
-}
-
 }
 }
