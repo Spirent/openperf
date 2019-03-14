@@ -77,20 +77,5 @@ int unix_socket::get()
     return (m_fd);
 }
 
-bool unix_socket::exists(const std::string_view path)
-{
-    return access(path.data(), F_OK) == 0;
-}
-
-void unix_socket::remove(const std::string_view path)
-{
-    if (unlink(path.data()) < 0) {
-        if (errno != ENOENT) {
-            throw std::runtime_error("Could not remove shared unix domain socket "
-                                     + std::string(path) + ": " + strerror(errno));
-        }
-    }
-}
-
 }
 }

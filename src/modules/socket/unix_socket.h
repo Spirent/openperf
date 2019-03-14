@@ -15,9 +15,6 @@ public:
     unix_socket(const std::string_view path, int type);
     ~unix_socket();
     int get();
-
-    static bool exists(const std::string_view path);
-    static void remove(const std::string_view path);
 };
 
 }

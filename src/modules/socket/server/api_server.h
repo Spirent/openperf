@@ -43,7 +43,6 @@ public:
     int handle_api_init_requests(const struct icp_event_data*);
     int handle_api_read_requests(const struct icp_event_data*);
     int handle_api_delete_requests(const struct icp_event_data*);
-    int api_server_option_handler(int opt, const char * opt_arg);
 };
 
 }
