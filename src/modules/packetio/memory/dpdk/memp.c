@@ -46,8 +46,8 @@
 #error "MEMP_MEM_POOLS is not supported; FIX ME if you want."
 #endif
 
-const char memp_default_mempool[] = "DEFAULT";
-const char memp_ref_rom_mempool[] = "REF_ROM";
+const char memp_default_mempool_fmt[] = "DEFAULT_%d";
+const char memp_ref_rom_mempool_fmt[] = "REF_ROM_%d";
 
 #define LWIP_MEMPOOL(name,num,size,desc) LWIP_MEMPOOL_DECLARE(name,num,size,desc)
 #include "lwip/priv/memp_std.h"
@@ -57,32 +57,58 @@ const struct memp_desc * const memp_pools[MEMP_MAX] = {
 #include "lwip/priv/memp_std.h"
 };
 
-static struct rte_mempool* get_default_mempool()
+typedef _Atomic (struct rte_mempool*) atomic_mempool_ptr;
+
+static atomic_mempool_ptr memp_default_mempools[RTE_MAX_NUMA_NODES] = {};
+static atomic_mempool_ptr memp_ref_rom_mempools[RTE_MAX_NUMA_NODES] = {};
+
+static struct rte_mempool* get_mempool_by_id(const char* memp_fmt, unsigned id)
 {
-    static atomic_flag have_mp = ATOMIC_FLAG_INIT;
-    static struct rte_mempool* default_mp = NULL;
-    if (!atomic_flag_test_and_set(&have_mp)) {
-        default_mp = rte_mempool_lookup(memp_default_mempool);
-    }
-    assert(default_mp);
-    return (default_mp);
+    char name_buf[RTE_MEMPOOL_NAMESIZE];
+    snprintf(name_buf, RTE_MEMPOOL_NAMESIZE, memp_fmt, id);
+    return (rte_mempool_lookup(name_buf));
 }
 
-static struct rte_mempool* get_ref_rom_mempool()
+/* Retrieve the first mempool we can find */
+static struct rte_mempool* get_mempool(const char* memp_fmt)
 {
-    static atomic_flag have_mp = ATOMIC_FLAG_INIT;
-    static struct rte_mempool* ref_rom_mp = NULL;
-    if (!atomic_flag_test_and_set(&have_mp)) {
-        ref_rom_mp = rte_mempool_lookup(memp_ref_rom_mempool);
+    for (size_t i = 0; i < RTE_MAX_NUMA_NODES; i++) {
+        struct rte_mempool* mpool = get_mempool_by_id(memp_fmt, i);
+        if (mpool) return (mpool);
     }
-    assert(ref_rom_mp);
-    return (ref_rom_mp);
+
+    return (NULL);
+}
+
+/* Populate the mempool array with a pool for each index. */
+static void initialize_mempools(const char* memp_fmt, atomic_mempool_ptr mpools[], size_t length)
+{
+    struct rte_mempool *default_mpool = get_mempool(memp_fmt);
+    assert(default_mpool);
+
+    for (size_t i = 0; i < length; i++) {
+        struct rte_mempool *mpool = get_mempool_by_id(memp_fmt, i);
+        atomic_store_explicit(&mpools[i],
+                              (mpool == NULL ? default_mpool : mpool),
+                              memory_order_relaxed);
+    }
+}
+
+static struct rte_mempool* load_mempool(atomic_mempool_ptr mpools[], unsigned idx)
+{
+    return (atomic_load_explicit(&mpools[idx], memory_order_relaxed));
 }
 
 void memp_init()
 {
-    get_default_mempool();
-    get_ref_rom_mempool();
+    /*
+     * Make sure that our mempool arrays are populated with a mempool for
+     * every socket.
+     */
+    initialize_mempools(memp_default_mempool_fmt, memp_default_mempools,
+                        RTE_MAX_NUMA_NODES);
+    initialize_mempools(memp_ref_rom_mempool_fmt, memp_ref_rom_mempools,
+                        RTE_MAX_NUMA_NODES);
 
     /* Initialize stats, maybe */
     for (unsigned i = 0; i < LWIP_ARRAYSIZE(memp_pools); i++) {
@@ -98,10 +124,16 @@ void * memp_malloc(memp_t type)
     void *to_return = NULL;
     switch (type) {
     case MEMP_PBUF:
-        to_return = packetio_memory_mbuf_to_pbuf(rte_pktmbuf_alloc(get_ref_rom_mempool()));
+        to_return = (packetio_memory_mbuf_to_pbuf(
+                         rte_pktmbuf_alloc(
+                             load_mempool(memp_ref_rom_mempools,
+                                          rte_socket_id()))));
         break;
     case MEMP_PBUF_POOL:
-        to_return = packetio_memory_mbuf_to_pbuf(rte_pktmbuf_alloc(get_default_mempool()));
+        to_return = (packetio_memory_mbuf_to_pbuf(
+                         rte_pktmbuf_alloc(
+                             load_mempool(memp_default_mempools,
+                                          rte_socket_id()))));
         break;
     default:
         to_return = rte_malloc(memp_pools[type]->desc, memp_pools[type]->size, 0);

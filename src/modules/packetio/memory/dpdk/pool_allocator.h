@@ -2,7 +2,7 @@
 #define _ICP_PACKETIO_MEMORY_DPDK_POOL_ALLOCATOR_H_
 
 #include <memory>
-#include <vector>
+#include <unordered_map>
 
 #include "core/icp_core.h"
 #include "packetio/drivers/dpdk/dpdk.h"
@@ -16,7 +16,7 @@ class pool_allocator {
 public:
     pool_allocator(const std::vector<model::port_info>&);
 
-    rte_mempool * rx_mempool() { return default_pool.get(); }
+    rte_mempool * rx_mempool(int socket_id) const;
 
 private:
     struct rte_mempool_releaser {
@@ -29,8 +29,9 @@ private:
         }
     };
 
-    std::unique_ptr<rte_mempool, rte_mempool_releaser> default_pool;
-    std::unique_ptr<rte_mempool, rte_mempool_releaser> ref_rom_pool;
+    typedef std::unique_ptr<rte_mempool, rte_mempool_releaser> mempool_ptr;
+    std::unordered_map<unsigned, mempool_ptr> m_default_mpools;
+    std::unordered_map<unsigned, mempool_ptr> m_ref_rom_mpools;
 };
 
 }

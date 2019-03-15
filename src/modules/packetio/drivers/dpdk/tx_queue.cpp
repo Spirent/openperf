@@ -30,7 +30,7 @@ tx_queue::tx_queue(uint16_t port_id, uint16_t queue_id)
     , m_armed(false)
     , m_ring(rte_ring_create(get_ring_name(port_id, queue_id).c_str(),
                              tx_queue_size,
-                             SOCKET_ID_ANY,
+                             rte_eth_dev_socket_id(port_id),
                              RING_F_SP_ENQ | RING_F_SC_DEQ))
 {
     if (m_fd == -1) {

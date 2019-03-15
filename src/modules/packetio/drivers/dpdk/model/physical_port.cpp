@@ -288,7 +288,7 @@ tl::expected<void, std::string> physical_port::apply_port_config(port_info& info
     for (int q = 0; q < info.tx_queue_count(); q++) {
         if ((error = rte_eth_tx_queue_setup(m_id, q,
                                             info.tx_desc_count(),
-                                            SOCKET_ID_ANY,
+                                            info.socket_id(),
                                             &tx_conf)) != 0) {
             return (tl::make_unexpected("Failed to setup TX queue " + std::to_string(q)
                                         + " on port " + std::to_string(m_id) + ": "
@@ -303,7 +303,7 @@ tl::expected<void, std::string> physical_port::apply_port_config(port_info& info
     for (int q = 0; q < info.rx_queue_count(); q++) {
         if ((error = rte_eth_rx_queue_setup(m_id, q,
                                             info.rx_desc_count(),
-                                            SOCKET_ID_ANY, &rx_conf,
+                                            info.socket_id(), &rx_conf,
                                             const_cast<rte_mempool*>(m_pool))) != 0) {
             return (tl::make_unexpected("Failed to setup RX queue " + std::to_string(q)
                                         + " on port " + std::to_string(m_id) + ": "

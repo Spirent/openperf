@@ -328,7 +328,9 @@ net_interface::net_interface(int id, const interface::config_data& config,
     , m_config(config)
     , m_transmit(tx)
     , m_notify(false)
-    , m_recvq(rte_ring_create(recvq_name(id).c_str(), recvq_size, SOCKET_ID_ANY, RING_F_SC_DEQ))
+    , m_recvq(rte_ring_create(recvq_name(id).c_str(), recvq_size,
+                              rte_eth_dev_socket_id(config.port_id),
+                              RING_F_SC_DEQ))
 {
     m_netif.state = this;
 
