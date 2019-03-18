@@ -64,7 +64,8 @@ The core framework provides support for common functionality across all
 modules, such as logging, option handling, data structures, event loops, etc.
 
 Client access to the stack is provided via a shim library, libicp-shim.so, that can be
-used with any program via the LD_PRELOAD environment variable.
+used with any program via the LD_PRELOAD environment variable.  Consult the
+[getting started guide](doc/GETTING_STARTED.md) for example usage.
 
 Additionally, users can create their own modules to link directly into the inception
 binary to allow direct access to the packetio and socket module.
