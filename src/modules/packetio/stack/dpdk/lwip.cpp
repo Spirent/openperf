@@ -12,8 +12,8 @@ namespace dpdk {
 
 static void tcpip_init_done(void *arg __attribute__((unused)))
 {
-    ICP_LOG(ICP_LOG_DEBUG, "TCP/IP thread running on logical core %u\n",
-            rte_lcore_id());
+    ICP_LOG(ICP_LOG_DEBUG, "TCP/IP thread running on logical core %u (NUMA node %u)\n",
+            rte_lcore_id(), rte_socket_id());
 }
 
 lwip::lwip(driver::generic_driver& driver)

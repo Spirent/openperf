@@ -5,8 +5,8 @@
 extern "C" {
 #endif
 
-extern const char memp_default_mempool[];
-extern const char memp_ref_rom_mempool[];
+extern const char memp_default_mempool_fmt[];
+extern const char memp_ref_rom_mempool_fmt[];
 
 #ifdef __cplusplus
 }

@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <map>
 #include <numeric>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -14,7 +15,7 @@
 
 #include "packetio/drivers/dpdk/dpdk.h"
 #include "packetio/drivers/dpdk/eal.h"
-#include "packetio/drivers/dpdk/queue_utils.h"
+#include "packetio/drivers/dpdk/topology_utils.h"
 #include "packetio/drivers/dpdk/worker_api.h"
 #include "packetio/drivers/dpdk/model/physical_port.h"
 #include "packetio/generic_port.h"
@@ -253,6 +254,15 @@ static std::map<int, queue_count> get_port_queue_counts(const std::vector<queue:
     return (port_queue_counts);
 }
 
+static size_t get_worker_count(const std::vector<queue::descriptor>& descriptors)
+{
+    std::set<uint16_t> workers;
+    for (auto& d : descriptors) {
+        workers.insert(d.worker_id);
+    }
+    return (workers.size());
+}
+
 using port_queues = rxtx_queue_container<rx_queue, tx_queue>;
 using port_queues_ptr = std::unique_ptr<port_queues>;
 
@@ -278,11 +288,13 @@ to_worker_descriptors(const std::vector<port_queues_ptr>& queues,
 }
 
 static void configure_all_ports(const std::map<int, queue_count>& port_queue_counts,
-                                rte_mempool* rx_mempool)
+                                const pool_allocator* allocator)
 {
     uint16_t port_id = 0;
     RTE_ETH_FOREACH_DEV(port_id) {
-        auto port = model::physical_port(port_id, rx_mempool);
+        auto info = model::port_info(port_id);
+        auto port = model::physical_port(port_id, allocator->rx_mempool(
+                                             info.socket_id()));
         auto result = port.low_level_config(port_queue_counts.at(port_id).rx,
                                             port_queue_counts.at(port_id).tx);
         if (!result) {
@@ -326,24 +338,6 @@ static uint16_t eal_tx_dummy_function(int, uint32_t, struct rte_mbuf**, uint16_t
     return (0);
 }
 
-static int get_waiting_lcore()
-{
-    int i = 0;
-    RTE_LCORE_FOREACH_SLAVE(i) {
-        switch (rte_eal_get_lcore_state(i)) {
-        case FINISHED:
-            rte_eal_wait_lcore(i);
-            break;
-        case WAIT:
-            return (i);
-        default:
-            continue;
-        }
-    }
-
-    return (-1);
-}
-
 static void launch_and_configure_workers(void* context,
                                          std::unique_ptr<worker::client>& workers,
                                          std::vector<worker::descriptor>& descriptors,
@@ -358,28 +352,23 @@ static void launch_and_configure_workers(void* context,
         .vif = vif
     };
 
-    std::unordered_map<int, int> worker_lcore_map;
-    for (int i = 0; i < eal_workers() - 1; i++) {
-        /* Generate a map from worker index to lcore id; we'll use this later */
-        worker_lcore_map[i] = get_waiting_lcore();
-        rte_eal_remote_launch(worker::main, &worker_args, worker_lcore_map[i]);
+    /* Generate the set of lcore ids where we need workers */
+    std::set<uint16_t> lcore_ids;
+    for (auto& d : descriptors) lcore_ids.insert(d.worker_id);
+
+    /* Launch a worker on each lcore in the set... */
+    for (auto id : lcore_ids) {
+        assert(rte_eal_get_lcore_state(id) == WAIT);
+        rte_eal_remote_launch(worker::main, &worker_args, id);
     }
 
     /*
      * Wait until all workers have pinged us back.  If we send out the configuration
      * before all of the workers are ready, they could miss it.
      */
-    icp_task_sync_block(&sync, eal_workers() - 1);
+    icp_task_sync_block(&sync, lcore_ids.size());
 
-    /*
-     * Update our descriptor configuration so that the worker id points to the actual,
-     * in-use ids instead of our theoretical fantasy ones.
-     */
-    for (auto& d : descriptors) {
-        d.worker_id = worker_lcore_map[d.worker_id];
-    }
     workers->configure(descriptors);
-
 }
 
 eal::eal(void* context, std::vector<std::string> args)
@@ -447,19 +436,16 @@ eal::eal(void* context, std::vector<std::string> args)
     /* Use the port_info vector to allocate our default memory pools */
     m_allocator = std::make_unique<pool_allocator>(pool_allocator(port_info));
 
-    /* Create our client so that we can communicate with worker threads */
-    m_workers = std::make_unique<worker::client>(context, eal_workers() - 1);
-
     /* The rest of our start up depends on whether we have worker threads or not */
     if (eal_workers() == 1) {
         ICP_LOG(ICP_LOG_WARNING, "No hardware threads available to service port queues\n");
+        m_workers = std::make_unique<worker::client>(context, 0); /* no workers */
     } else {
         /* And determine how we should distribute port queues to workers */
-        auto q_descriptors = queue::distribute_queues(port_info, eal_workers() - 1);
+        auto q_descriptors = topology::queue_distribute(port_info);
 
         /* Use the queue descriptors to configure all of our ports */
-        configure_all_ports(get_port_queue_counts(q_descriptors),
-                            m_allocator->rx_mempool());
+        configure_all_ports(get_port_queue_counts(q_descriptors), m_allocator.get());
 
         /* And create our port queues */
         create_port_queues(get_port_queue_counts(q_descriptors), m_port_queues);
@@ -468,6 +454,8 @@ eal::eal(void* context, std::vector<std::string> args)
         auto w_descriptors = to_worker_descriptors(m_port_queues, q_descriptors);
 
         /* and launch them */
+        m_workers = std::make_unique<worker::client>(context,
+                                                     get_worker_count(q_descriptors));
         launch_and_configure_workers(context, m_workers, w_descriptors, m_switch);
     }
 
@@ -563,7 +551,10 @@ std::vector<int> eal::port_ids()
 std::optional<port::generic_port> eal::port(int id) const
 {
     return (rte_eth_dev_is_valid_port(id)
-            ? std::make_optional(port::generic_port(model::physical_port(id, m_allocator->rx_mempool())))
+            ? std::make_optional(port::generic_port(
+                                     model::physical_port(
+                                         id, m_allocator->rx_mempool(
+                                             rte_eth_dev_socket_id(id)))))
             : std::nullopt);
 }
 
@@ -601,16 +592,13 @@ tl::expected<int, std::string> eal::create_port(const port::config_data& config)
      */
     std::string name = "net_bonding" + std::to_string(idx++);
     /**
-     * XXX: The 3rd parameter _should_ be SOCKET_ID_ANY, since we don't care
-     * about NUMA yet, however, the DPDK function signature's are screwed up.
-     * This create function takes a uint8_t for the socket id, but the rest of
-     * the DPDK code uses an int for the socket id.
-     * So... we have to use 0 here so that we don't attempt to allocate memory
-     * from NUMA socket 255.
+     * Use the port ids to figure out the most common socket.  We'll use that
+     * as the socket id for the bonded port.
      */
     int id_or_error = rte_eth_bond_create(name.c_str(),
                                           BONDING_MODE_8023AD,
-                                          0);
+                                          topology::get_most_common_numa_node(
+                                              std::get<port::bond_config>(config).ports));
     if (id_or_error < 0) {
         return tl::make_unexpected("Failed to create bond port: "
                                    + std::string(rte_strerror(std::abs(id_or_error))));

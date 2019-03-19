@@ -13,6 +13,7 @@
 
 #include "core/icp_core.h"
 #include "packetio/drivers/dpdk/dpdk.h"
+#include "packetio/drivers/dpdk/topology_utils.h"
 
 #ifndef EFD_SEMAPHORE
 #define EFD_SEMAPHORE 1
@@ -141,8 +142,15 @@ sys_thread_t sys_thread_new(const char *name, lwip_thread_fn function,
     LWIP_UNUSED_ARG(stacksize);
     LWIP_UNUSED_ARG(prio);
 
-    int lcore = -1;
-    if ((lcore = get_waiting_lcore()) < 0) {
+    /*
+     * Luckily for us the TCPIP thread identifies itself clearly, so we can
+     * put it on a specific core.  Otherwise, just pick one that is free.
+     */
+    int lcore = (strcmp(TCPIP_THREAD_NAME, name) == 0
+                 ? icp::packetio::dpdk::topology::get_stack_lcore_id()
+                 : get_waiting_lcore());
+
+    if (lcore < 0) {
         LWIP_DEBUGF(SYS_DEBUG, ("sys_thread_new: lcore = %d", lcore));
         abort();
     }

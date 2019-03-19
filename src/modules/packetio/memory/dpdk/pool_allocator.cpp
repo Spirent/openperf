@@ -50,7 +50,7 @@ static struct cache_size_map {
 };
 
 __attribute__((const))
-static uint32_t _get_cache_size(uint32_t nb_mbufs)
+static uint32_t get_cache_size(uint32_t nb_mbufs)
 {
     for (size_t i = 0; i < icp_count_of(packetio_cache_size_map); i++) {
         if (packetio_cache_size_map[i].nb_mbufs == nb_mbufs) {
@@ -67,7 +67,7 @@ static uint32_t _get_cache_size(uint32_t nb_mbufs)
  * power of 2, return input - 1 instead of doubling the size.
  */
 __attribute__((const))
-static uint32_t _pool_size_adjust(uint32_t nb_mbufs)
+static uint32_t pool_size_adjust(uint32_t nb_mbufs)
 {
     return (rte_is_power_of_2(nb_mbufs)
             ? nb_mbufs - 1
@@ -76,24 +76,25 @@ static uint32_t _pool_size_adjust(uint32_t nb_mbufs)
 
 static void log_mempool(const struct rte_mempool *mpool)
 {
-    ICP_LOG(ICP_LOG_DEBUG, "%s: %u bytes, %u of %u mbufs available\n",
+    ICP_LOG(ICP_LOG_DEBUG, "%s: %u, %u byte mbufs on NUMA socket %d\n",
             mpool->name,
+            mpool->size,
             rte_pktmbuf_data_room_size((struct rte_mempool *)mpool),
-            rte_mempool_avail_count(mpool), mpool->size);
+            mpool->socket_id);
 }
 
-static rte_mempool* _create_pbuf_mempool(const char* name, size_t size,
-                                         bool cached, bool direct)
+static rte_mempool* create_pbuf_mempool(const char* name, size_t size,
+                                        bool cached, bool direct, int socket_id)
 {
-    size_t nb_mbufs = icp_min(131072, _pool_size_adjust(icp_max(1024U, size)));
+    size_t nb_mbufs = icp_min(131072, pool_size_adjust(icp_max(1024U, size)));
 
     rte_mempool* mp = rte_pktmbuf_pool_create(
         name,
         nb_mbufs,
-        cached ? _get_cache_size(nb_mbufs) : 0,
+        cached ? get_cache_size(nb_mbufs) : 0,
         SIZEOF_STRUCT_PBUF,
         direct ? PBUF_POOL_BUFSIZE : 0,
-        SOCKET_ID_ANY);
+        socket_id);
 
     if (!mp) {
         throw std::runtime_error(std::string("Could not allocate mempool = ") + name);
@@ -105,18 +106,39 @@ static rte_mempool* _create_pbuf_mempool(const char* name, size_t size,
 }
 
 pool_allocator::pool_allocator(const std::vector<model::port_info> &info)
-    : ref_rom_pool(_create_pbuf_mempool(memp_ref_rom_mempool, MEMP_NUM_PBUF, false, false))
 {
-    /* Base default pool size on the number and types of ports */
-    default_pool.reset(_create_pbuf_mempool(memp_default_mempool,
-                                            std::accumulate(begin(info), end(info), 0,
-                                                            [](int lhs, const model::port_info &rhs) {
-                                                                return (lhs
-                                                                        + rhs.rx_desc_count()
-                                                                        + rhs.tx_desc_count());
-                                                            }),
-                                            true, true));
+    /* Base default pool size on the number and types of ports on each NUMA node */
+    for (auto i = 0U; i < RTE_MAX_NUMA_NODES; i++) {
+        auto sum = std::accumulate(begin(info), end(info), 0,
+                                   [&](unsigned lhs, const model::port_info& rhs) {
+                                       return (rhs.socket_id() == i
+                                               ? lhs + rhs.rx_desc_count() + rhs.tx_desc_count()
+                                               : lhs);
+                                   });
+        if (sum) {
+            /*
+             * Create both a ref/rom and default mempool for each NUMA node with ports
+             * Note: we only use a map for the rom/ref pools for symmetry.  We never
+             * actually need to look them up.
+             */
+            std::array<char, RTE_MEMPOOL_NAMESIZE> name_buf;
+            snprintf(name_buf.data(), RTE_MEMPOOL_NAMESIZE, memp_ref_rom_mempool_fmt, i);
+            m_ref_rom_mpools.emplace(
+                i, create_pbuf_mempool(name_buf.data(), MEMP_NUM_PBUF, false, false, i));
+
+            snprintf(name_buf.data(), RTE_MEMPOOL_NAMESIZE, memp_default_mempool_fmt, i);
+            m_default_mpools.emplace(
+                i, create_pbuf_mempool(name_buf.data(), sum, true, true, i));
+        }
+    }
 };
+
+rte_mempool* pool_allocator::rx_mempool(int socket_id) const
+{
+    assert(0 <= socket_id && socket_id <= RTE_MAX_NUMA_NODES);
+    auto found = m_default_mpools.find(socket_id);
+    return (found == m_default_mpools.end() ? nullptr : found->second.get());
+}
 
 }
 }
