@@ -436,11 +436,16 @@ eal::eal(void* context, std::vector<std::string> args)
     /* Use the port_info vector to allocate our default memory pools */
     m_allocator = std::make_unique<pool_allocator>(pool_allocator(port_info));
 
-    /* The rest of our start up depends on whether we have worker threads or not */
-    if (eal_workers() == 1) {
+    /* The rest of our start up depends on whether we have threads or not */
+    switch (eal_workers()) {
+    case 0:
+        throw std::runtime_error("No DPDK worker cores are available! "
+                                 "At least 2 CPU cores are required.");
+    case 1:
         ICP_LOG(ICP_LOG_WARNING, "No hardware threads available to service port queues\n");
         m_workers = std::make_unique<worker::client>(context, 0); /* no workers */
-    } else {
+        break;
+    default: {
         /* And determine how we should distribute port queues to workers */
         auto q_descriptors = topology::queue_distribute(port_info);
 
@@ -457,6 +462,7 @@ eal::eal(void* context, std::vector<std::string> args)
         m_workers = std::make_unique<worker::client>(context,
                                                      get_worker_count(q_descriptors));
         launch_and_configure_workers(context, m_workers, w_descriptors, m_switch);
+    }
     }
 
     /* Finally, register a callback to log link status changes and start our ports. */
