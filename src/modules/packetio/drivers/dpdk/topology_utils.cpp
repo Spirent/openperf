@@ -152,6 +152,8 @@ unsigned get_stack_lcore_id()
         nodes[rte_lcore_to_socket_id(lcore_id)].push_back(lcore_id);
     }
 
+    assert(!nodes.empty());
+
     /* Find the numa node with the most cores */
     auto max = std::max_element(begin(nodes), end(nodes),
                                 [](const cores_by_id::value_type& a,
