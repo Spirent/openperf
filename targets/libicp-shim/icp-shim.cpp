@@ -1,5 +1,7 @@
 #include <atomic>
 #include <cassert>
+#include <cstdlib>
+#include <cstring>
 #include <fcntl.h>
 #include <functional>
 #include <iostream>
@@ -11,6 +13,8 @@ static void icp_shim_init() __attribute__((constructor));
 
 static std::atomic_bool client_initialized = ATOMIC_VAR_INIT(false);
 
+static bool shim_trace = false;
+
 void icp_shim_init()
 {
     auto& libc = icp::socket::libc::wrapper::instance();
@@ -18,10 +22,11 @@ void icp_shim_init()
 
     auto& client = icp::socket::api::client::instance();
     client.init(&client_initialized);
-}
 
-//#define SHIM_TRACE 1
-#ifdef SHIM_TRACE
+    const char * envp = std::getenv("SHIM_TRACE");
+    if (envp != nullptr && std::strncmp(envp, "0", 1) != 0)
+	shim_trace = true;
+}
 
 template <class T>
 void expand(std::initializer_list<T>) {}
@@ -29,12 +34,15 @@ void expand(std::initializer_list<T>) {}
 template <typename Function, typename Object, typename... Args>
 auto call_and_log_function(const char* function_name, Function&& f, Object&& o, Args&&... args)
 {
-    std::cerr << function_name << "(";
-    expand({(std::cerr << args << ",", 0)...});
-    std::cerr << std::flush;
+    if (shim_trace) {
+    	std::cerr << function_name << "(";
+	expand({(std::cerr << args << ",", 0)...});
+	std::cerr << std::flush;
+    }
     auto result = std::invoke(std::forward<Function>(f), std::forward<Object>(o),
                               std::forward<Args>(args)...);
-    std::cerr << ") = " << result << std::endl;
+    if (shim_trace)
+    	std::cerr << ") = " << result << std::endl;
     return (result);
 }
 
@@ -42,12 +50,6 @@ auto call_and_log_function(const char* function_name, Function&& f, Object&& o, 
     call_and_log_function(#function,                                    \
                           &icp::socket::api::client::function,          \
                           client, __VA_ARGS__)
-
-#else
-
-#define client_call(function, ...) client.function(__VA_ARGS__)
-
-#endif /* SHIM_TRACE */
 
 extern "C" {
 
