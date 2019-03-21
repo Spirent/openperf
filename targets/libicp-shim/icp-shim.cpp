@@ -13,7 +13,7 @@ static void icp_shim_init() __attribute__((constructor));
 
 static std::atomic_bool client_initialized = ATOMIC_VAR_INIT(false);
 
-static bool shim_trace = false;
+static bool icp_trace = false;
 
 void icp_shim_init()
 {
@@ -23,9 +23,8 @@ void icp_shim_init()
     auto& client = icp::socket::api::client::instance();
     client.init(&client_initialized);
 
-    const char * envp = std::getenv("SHIM_TRACE");
-    if (envp != nullptr && std::strncmp(envp, "0", 1) != 0)
-	shim_trace = true;
+    const char * envp = std::getenv("ICP_TRACE");
+    if (envp != nullptr && std::strncmp(envp, "0", 1) != 0) icp_trace = true;
 }
 
 template <class T>
@@ -34,22 +33,20 @@ void expand(std::initializer_list<T>) {}
 template <typename Function, typename Object, typename... Args>
 auto call_and_log_function(const char* function_name, Function&& f, Object&& o, Args&&... args)
 {
-    if (shim_trace) {
-    	std::cerr << function_name << "(";
-	expand({(std::cerr << args << ",", 0)...});
-	std::cerr << std::flush;
-    }
+    std::cerr << function_name << "(";
+    expand({(std::cerr << args << ",", 0)...});
+    std::cerr << std::flush;
     auto result = std::invoke(std::forward<Function>(f), std::forward<Object>(o),
                               std::forward<Args>(args)...);
-    if (shim_trace)
-    	std::cerr << ") = " << result << std::endl;
+    std::cerr << ") = " << result << std::endl;
+    	
     return (result);
 }
 
-#define client_call(function, ...)                                      \
-    call_and_log_function(#function,                                    \
-                          &icp::socket::api::client::function,          \
-                          client, __VA_ARGS__)
+#define client_call(function, ...)                                      	\
+    (icp_trace ? call_and_log_function(#function,				\
+                              	       &icp::socket::api::client::function,	\
+                              	       client, __VA_ARGS__) : client.function(__VA_ARGS__))
 
 extern "C" {
 
