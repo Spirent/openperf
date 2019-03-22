@@ -15,6 +15,14 @@ $(call icp_check_vars,$(DPDK_FLAGS_REQ_VARS))
 
 include $(DPDK_DEFCONFIG)
 
+# Do some fix-ups
+ifeq ($(CONFIG_RTE_LIBRTE_IGB_PMD),y)
+	CONFIG_RTE_LIBRTE_E1000_PMD=y
+endif
+ifeq ($(CONFIG_RTE_LIBRTE_EM_PMD),y)
+	CONFIG_RTE_LIBRTE_E1000_PMD=y
+endif
+
 #
 # Order is important: from higher level to lower level
 #
