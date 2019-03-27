@@ -7,7 +7,7 @@ static struct icp_options_data api_server_options = {
     .init = NULL,
     .callback = api_server_option_handler,
     .options = {
-        {"Force removal of stale files", "force-unlink", 'u', 0},
+        {"Force removal of stale files", "force-unlink", 0, 0},
         { 0, 0, 0, 0 },
     },
 };

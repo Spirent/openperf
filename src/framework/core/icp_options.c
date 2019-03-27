@@ -22,8 +22,12 @@ static void __attribute__((noreturn)) _usage(const char *program_name)
         for (const struct icp_option *curr = opt_data->options;
              curr->description != NULL;
              curr++) {
-            fprintf(output, "  -%c, --%-22s%s\n",
-                    curr->short_opt, curr->long_opt, curr->description);
+            if (curr->short_opt == 0)
+                fprintf(output, "      --%-22s%s\n",
+                        curr->long_opt, curr->description);
+            else
+                fprintf(output, "  -%c, --%-22s%s\n",
+                        curr->short_opt, curr->long_opt, curr->description);
         }
     }
 
@@ -54,6 +58,9 @@ struct icp_options_data * _find_options_data(int opt)
             if (curr->short_opt == opt) {
                 return (opt_data);
             }
+            else if (icp_options_hash_long(curr->long_opt) == opt) {
+                return (opt_data);
+            }
         }
     }
     return (NULL);
@@ -68,11 +75,12 @@ int _allocate_optstring(char **optstringp)
         for (const struct icp_option *curr = opt_data->options;
              curr->description != NULL;
              curr++) {
-            length += curr->has_arg ? 2 : 1;
+            if (curr->short_opt)
+                length += curr->has_arg ? 2 : 1;
         }
     }
 
-    /* Allocate suffidient length */
+    /* Allocate sufficient length */
     char *optstring = calloc(1, length);
     if (!optstring) {
         return (-ENOMEM);
@@ -84,9 +92,11 @@ int _allocate_optstring(char **optstringp)
         for (const struct icp_option *curr = opt_data->options;
              curr->description != NULL;
              curr++) {
-            optstring[idx++] = curr->short_opt;
-            if (curr->has_arg) {
-                optstring[idx++] = ':';
+            if (curr->short_opt) {
+                optstring[idx++] = curr->short_opt;
+                if (curr->has_arg) {
+                    optstring[idx++] = ':';
+                }
             }
         }
     }
@@ -123,7 +133,7 @@ int _allocate_longopts(struct option **longoptsp)
                 curr->long_opt,
                 curr->has_arg,
                 NULL,
-                curr->short_opt
+                curr->short_opt ? curr->short_opt : icp_options_hash_long(curr->long_opt)
             };
         }
     }
@@ -160,6 +170,7 @@ int icp_options_parse(int argc, char *argv[])
             _usage(argv[0]);
         }
         struct icp_options_data *opt_data = _find_options_data(opt);
+        assert(opt_data);
         if (opt_data->callback) {
             opt_data->callback(opt, optarg);
         }
@@ -168,6 +179,27 @@ int icp_options_parse(int argc, char *argv[])
     free(optstring);
     free(longopts);
     return (0);
+}
+
+/*
+ * Hash a long option string to the size of a short one (int).
+ * This assumes long_opt points to a NULL-terminated string.
+ * Using FNV-1a for simplicity.
+ * https://tools.ietf.org/html/draft-eastlake-fnv-03
+ */
+int icp_options_hash_long(const char * long_opt)
+{
+    /* Initialize hash with the 32-bit offset_basis */
+    unsigned int hash = 2166136261;
+    static const unsigned int fnv_prime = 16777619;
+    const char * val = long_opt;
+
+    while (*val != '\0') {
+        hash ^= *val++;
+        hash *= fnv_prime;
+    }
+
+    return hash;
 }
 
 void icp_options_register(struct icp_options_data *opt_data)

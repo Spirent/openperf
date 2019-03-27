@@ -62,6 +62,11 @@ int icp_options_init();
 int icp_options_parse(int argc, char *argv[]);
 
 /**
+ * Hash a long option string to the size of a short one (int).
+ */
+int icp_options_hash_long(const char * long_opt);
+
+/**
  * Macro for registring option handlers
  */
 #define REGISTER_OPTIONS(o)                                             \

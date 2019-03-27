@@ -132,12 +132,11 @@ static int close_fd(const struct icp_event_data *data,
 
 int api_server_option_handler(int opt, const char *opt_arg __attribute__((unused)))
 {
-    if (opt != 'u') {
+    if (icp_options_hash_long("force-unlink") != opt) {
         return (-EINVAL);
     }
 
     unlink_stale_files = true;
-
     return (0);
 }
 
