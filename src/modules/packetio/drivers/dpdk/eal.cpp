@@ -433,6 +433,12 @@ eal::eal(void* context, std::vector<std::string> args)
         log_port(port_id, port_info.back());
     }
 
+    /* Make sure we have some ports to use */
+    if (port_info.empty()) {
+        throw std::runtime_error("No DPDK ports are available! "
+                                 "At least 1 port is required.");
+    }
+
     /* Use the port_info vector to allocate our default memory pools */
     m_allocator = std::make_unique<pool_allocator>(pool_allocator(port_info));
 
