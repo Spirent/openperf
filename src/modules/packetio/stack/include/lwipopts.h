@@ -59,6 +59,13 @@
 #define LWIP_WND_SCALE 1
 
 /*
+ * The "extra args" value allows one to put extra data into the TCP PCB.
+ * We use it here to keep track of the actual re-transmission count, as
+ * iperf conveniently queries and displays it while tests are running.
+ */
+#define LWIP_TCP_PCB_NUM_EXT_ARGS 1
+
+/*
  * Pick a send {queue, buffer} length that minimizes internal processing.
  * The stack will use whatever queue and buffer size is necessary to fill
  * the specified window.
