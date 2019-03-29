@@ -68,34 +68,49 @@ static std::string to_string(tcp_pcb* pcb)
 }
 #endif
 
-static size_t do_tcp_transmit(tcp_pcb* pcb, void* ptr, size_t length)
+static size_t do_tcp_transmit(tcp_pcb* pcb, const void* ptr, size_t length)
 {
+    static constexpr uint16_t tcp_send_max = std::numeric_limits<uint16_t>::max();
+
     /*
      * Don't bother invoking TCP machinery to write nothing.
      * That includes skipping writes if we can't send a full MSS
      * worth of data.
      */
     if (length == 0
-        || tcp_sndbuf(pcb) == 0
-        || pcb->snd_wnd < tcp_mss(pcb)) {
+        || tcp_sndbuf(pcb) < tcp_mss(pcb)) {
         return (0);
     }
 
-    auto to_write = std::min(length, static_cast<size_t>(tcp_sndbuf(pcb)));
-    uint8_t flags = (to_write < length
-                     ? TCP_WRITE_FLAG_COPY | TCP_WRITE_FLAG_MORE
-                     : TCP_WRITE_FLAG_COPY);
+    size_t written = 0;
+    auto to_write = std::min(length, static_cast<size_t>(pcb->snd_buf));
 
-    if (tcp_write(pcb, ptr, to_write, flags) != ERR_OK) {
-        return (0);
+    while (to_write > tcp_send_max) {
+        if (tcp_write(pcb, reinterpret_cast<const uint8_t*>(ptr) + written,
+                      tcp_send_max, TCP_WRITE_FLAG_COPY | TCP_WRITE_FLAG_MORE) != ERR_OK) {
+            return (written);
+        }
+        written  += tcp_send_max;
+        to_write -= tcp_send_max;
     }
 
-    if (to_write == length) {
-        /* If we wrote everything we were asked to write, then trigger a transmission */
+    if (tcp_write(pcb, reinterpret_cast<const uint8_t*>(ptr) + written,
+                  to_write, TCP_WRITE_FLAG_COPY) != ERR_OK) {
+        return (written);
+    }
+
+    written += to_write;
+
+    if (written == length || tcp_sndbuf(pcb) == 0) {
+        /*
+         * Trigger a transmission if...
+         * - we wrote everything we were asked to write -or-
+         * - we filled the send buffer
+         */
         tcp_output(pcb);
     }
 
-    return (to_write);
+    return (written);
 }
 
 static void do_tcp_receive(tcp_pcb *pcb, size_t length)
@@ -205,10 +220,10 @@ int tcp_socket::do_lwip_accept(tcp_pcb *newpcb, int err)
 int tcp_socket::do_lwip_sent(uint16_t size __attribute__((unused)))
 {
     /*
-     * Size bytes just cleared the TCP send buffer.  Let's see
-     * if we have up to size bytes more to send.
+     * The stack just cleared some data from the send buffer. See if
+     * we can fill it up again.
      */
-    auto loop_sent = 0;
+    size_t loop_sent = 0;
     do {
         auto [ptr, length] = m_channel->recv_peek();
         loop_sent = m_channel->recv_clear(do_tcp_transmit(m_pcb.get(), ptr, length));
@@ -266,7 +281,7 @@ int tcp_socket::do_lwip_poll()
 {
     /* need to check idle time and close if necessary */
 
-    /* need to check if we can send more data */
+    /* If the connection stalled due to re-transmits, we might have data to send... */
     size_t loop_sent = 0;
     do {
         auto [ptr, length] = m_channel->recv_peek();
