@@ -22,12 +22,14 @@ static void __attribute__((noreturn)) _usage(const char *program_name)
         for (const struct icp_option *curr = opt_data->options;
              curr->description != NULL;
              curr++) {
-            if (curr->short_opt == 0)
+            if (curr->short_opt == 0) {
                 fprintf(output, "      --%-22s%s\n",
                         curr->long_opt, curr->description);
-            else
+            }
+            else {
                 fprintf(output, "  -%c, --%-22s%s\n",
                         curr->short_opt, curr->long_opt, curr->description);
+            }
         }
     }
 
@@ -75,8 +77,9 @@ int _allocate_optstring(char **optstringp)
         for (const struct icp_option *curr = opt_data->options;
              curr->description != NULL;
              curr++) {
-            if (curr->short_opt)
+            if (curr->short_opt) {
                 length += curr->has_arg ? 2 : 1;
+            }
         }
     }
 
