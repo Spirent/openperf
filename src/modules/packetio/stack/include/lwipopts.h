@@ -14,7 +14,7 @@
 #define LWIP_NETIF_API 1
 #define LWIP_CALLBACK_API 0
 #define LWIP_EVENT_API 1
-#define LWIP_ERRNO_INCLUDE <errno.h>
+#define LWIP_ERRNO_STDINCLUDE 1
 
 #define LWIP_SOCKET 0
 #define LWIP_NETCONN 0
@@ -49,6 +49,7 @@
 #define MEMP_USE_CUSTOM_POOLS 0
 
 #define PBUF_POOL_BUFSIZE (2048 + 128)  /* DPDK default MBUF buffer size */
+#define PBUF_PRIVATE_SIZE 64
 
 /* IP options */
 #define IP_FRAG 0
@@ -77,6 +78,11 @@
 
 /* Socket options */
 #define SO_REUSE 1
+
+/* Memcpy options */
+#define MEMCPY(dst,src,len)  PACKETIO_MEMCPY(dst,src,len)
+#define SMEMCPY(dst,src,len) PACKETIO_MEMCPY(dst,src,len)
+#define MEMMOVE(dst,src,len) PACKETIO_MEMCPY(dst,src,len)
 
 /* We've already got these */
 #define LWIP_DONT_PROVIDE_BYTEORDER_FUNCTIONS 1

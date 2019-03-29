@@ -75,6 +75,8 @@ LWIP_OBJECTS := $(patsubst %, $(LWIP_OBJ_DIR)/%, \
 ###
 # Build rules
 ###
+$(LWIP_OBJECTS): | $(PIO_DEPENDS)
+
 $(LWIP_OBJ_DIR)/%.o: $(LWIP_SRC_DIR)/%.c
 	@mkdir -p $(dir $@)
 	$(strip $(ICP_CC) -o $@ -c $(LWIP_CPPFLAGS) $(ICP_CPPFLAGS) $(ICP_COPTS) $<)

@@ -410,7 +410,7 @@ uint16_t packetio_stack_gso_pbuf_copy(struct pbuf* p_head, uint16_t offset,
             offset -= p->len;
         } else {
             auto to_copy = std::min(available, length);
-            memcpy(reinterpret_cast<uint8_t*>(p->payload) + offset,
+            MEMCPY(reinterpret_cast<uint8_t*>(p->payload) + offset,
                    reinterpret_cast<const uint8_t*>(dataptr) + copied,
                    to_copy);
             copied += to_copy;

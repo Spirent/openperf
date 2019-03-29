@@ -1,5 +1,5 @@
-#ifndef _ICP_PACKETIO_STACK_ARCH_CC_H_
-#define _ICP_PACKETIO_STACK_ARCH_CC_H_
+#ifndef _ICP_PACKETIO_STACK_DPDK_ARCH_CC_H_
+#define _ICP_PACKETIO_STACK_DPDK_ARCH_CC_H_
 
 /*
  * This file translates LWIP macros and keywords into sensible values for
@@ -33,4 +33,13 @@
         abort();                                                        \
     } while (0)
 
-#endif /* _ICP_PACKETIO_STACK_ARCH_CC_H_ */
+#ifndef __cplusplus
+/*
+ * Don't include this DPDK header for C++ code, as it uses the "register"
+ * keyword, which is reserved in C++17.
+ */
+#include "rte_memcpy.h"
+#endif
+#define PACKETIO_MEMCPY(dst,src,len) rte_memcpy(dst,src,len)
+
+#endif /* _ICP_PACKETIO_STACK_DPDK_ARCH_CC_H_ */

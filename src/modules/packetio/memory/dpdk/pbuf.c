@@ -93,7 +93,6 @@
 
 #include "packetio/memory/dpdk/pbuf_utils.h"
 
-#define SIZEOF_STRUCT_PBUF        LWIP_MEM_ALIGN_SIZE(sizeof(struct pbuf))
 /* Since the pool is created in memp, PBUF_POOL_BUFSIZE will be automatically
    aligned there. Therefore, PBUF_POOL_BUFSIZE_ALIGNED can be used here. */
 #define PBUF_POOL_BUFSIZE_ALIGNED LWIP_MEM_ALIGN_SIZE(PBUF_POOL_BUFSIZE)
@@ -260,7 +259,7 @@ pbuf_alloc(pbuf_layer layer, u16_t length, pbuf_type type)
         }
         struct rte_mbuf *m = packetio_memory_pbuf_to_mbuf(q);
         qlen = LWIP_MIN(rem_len, (u16_t)(m->buf_len - LWIP_MEM_ALIGN_SIZE(offset)));
-        pbuf_init_alloced_pbuf(q, LWIP_MEM_ALIGN((void *)((u8_t *)q + SIZEOF_STRUCT_PBUF + offset)),
+        pbuf_init_alloced_pbuf(q, LWIP_MEM_ALIGN((void *)((u8_t *)q + PBUF_PRIVATE_SIZE + offset)),
                                rem_len, qlen, type, 0);
         LWIP_ASSERT("pbuf_alloc: pbuf q->payload properly aligned",
                     ((mem_ptr_t)q->payload % MEM_ALIGNMENT) == 0);
@@ -485,10 +484,10 @@ pbuf_add_header_impl(struct pbuf *p, size_t header_size_increment, u8_t force)
     /* set new payload pointer */
     payload = (u8_t *)p->payload - header_size_increment;
     /* boundary check fails? */
-    if ((u8_t *)payload < (u8_t *)p + SIZEOF_STRUCT_PBUF) {
+    if ((u8_t *)payload < (u8_t *)p + PBUF_PRIVATE_SIZE) {
       LWIP_DEBUGF( PBUF_DEBUG | LWIP_DBG_TRACE,
                    ("pbuf_add_header: failed as %p < %p (not enough space for new header size)\n",
-                    (void *)payload, (void *)((u8_t *)p + SIZEOF_STRUCT_PBUF)));
+                    (void *)payload, (void *)((u8_t *)p + PBUF_PRIVATE_SIZE)));
       /* bail out unsuccessfully */
       return 1;
     }
