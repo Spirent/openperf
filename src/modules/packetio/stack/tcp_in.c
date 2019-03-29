@@ -1128,7 +1128,9 @@ tcp_free_acked_segments(struct tcp_pcb *pcb, struct tcp_seg *seg_list, const cha
   /* If we still have an unacknowledged segment, check to see if part of it
    * has been acked.  If so, trim the segment so that only the un-acked
    * portion remains. */
-  if (seg_list != NULL && TCP_SEQ_GT(ackno, lwip_ntohl(seg_list->tcphdr->seqno))) {
+  if (seg_list != NULL &&
+      TCP_SEQ_GT(ackno, lwip_ntohl(seg_list->tcphdr->seqno)) &&
+      TCP_SEQ_LT(ackno, lwip_ntohl(seg_list->tcphdr->seqno) + TCP_TCPLEN(seg_list))) {
       u32_t acked_from_seg = ackno - lwip_ntohl(seg_list->tcphdr->seqno);
       pcb->snd_queuelen -= packetio_stack_gso_segment_ack_partial(seg_list, acked_from_seg);
       recv_acked += acked_from_seg;
