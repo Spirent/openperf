@@ -98,6 +98,16 @@ static size_t do_tcp_transmit(tcp_pcb* pcb, void* ptr, size_t length)
     return (to_write);
 }
 
+static void do_tcp_receive(tcp_pcb *pcb, size_t length)
+{
+    static constexpr uint16_t tcp_recv_max = std::numeric_limits<uint16_t>::max();
+    while (length >= tcp_recv_max) {
+        tcp_recved(pcb, tcp_recv_max);
+        length -= tcp_recv_max;
+    }
+    tcp_recved(pcb, length);
+}
+
 void tcp_socket::tcp_pcb_deleter::operator()(tcp_pcb *pcb)
 {
      /* quick and dirty */
@@ -233,8 +243,8 @@ int tcp_socket::do_lwip_recv(pbuf *p, int err)
         || m_recvq.length() > (m_pcb->rcv_wnd / 2)) {
         std::array<iovec, 64> iovecs;
         auto iovcnt = m_recvq.iovecs(iovecs.data(), iovecs.size());
-        tcp_recved(m_pcb.get(),
-                   m_recvq.clear(m_channel->send(m_pid, iovecs.data(), iovcnt)));
+        do_tcp_receive(m_pcb.get(),
+                       m_recvq.clear(m_channel->send(m_pid, iovecs.data(), iovcnt)));
     }
 
     return (ERR_OK);
@@ -303,8 +313,8 @@ void tcp_socket::handle_io()
     if (m_recvq.bufs()) {
         std::array<iovec, 64> iovecs;
         auto iovcnt = m_recvq.iovecs(iovecs.data(), iovecs.size());
-        tcp_recved(m_pcb.get(),
-                   m_recvq.clear(m_channel->send(m_pid, iovecs.data(), iovcnt)));
+        do_tcp_receive(m_pcb.get(),
+                       m_recvq.clear(m_channel->send(m_pid, iovecs.data(), iovcnt)));
     }
 
     size_t loop_sent = 0;
