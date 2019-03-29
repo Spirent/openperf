@@ -59,15 +59,12 @@
 #define LWIP_WND_SCALE 1
 
 /*
- * Internally, lwIP enforces a relationship between the queue length and size,
- * specifically TCP_SND_QUEUELEN >= (2 * (TCP_SND_BUF / TCP_MSS)).
- * However, most of our NICs can use TSO, so that queue length refers to
- * segment chains instead of single MSS sized buffers.  As a result, we reverse
- * the default lwIP behavior and pick a reasonable queue length and calculate a
- * buffer size to match.
+ * Pick a send {queue, buffer} length that minimizes internal processing.
+ * The stack will use whatever queue and buffer size is necessary to fill
+ * the specified window.
  */
-#define TCP_SND_QUEUELEN 1024
-#define TCP_SND_BUF ((TCP_SND_QUEUELEN * TCP_MSS) / 2)
+#define TCP_SND_QUEUELEN TCP_SNDQUEUELEN_OVERFLOW
+#define TCP_SND_BUF TCP_WND
 
 #define TCP_SNDLOWAT 1
 #define TCP_MSS 1460
