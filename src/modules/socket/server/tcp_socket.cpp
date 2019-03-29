@@ -294,7 +294,7 @@ tl::expected<generic_socket, int> tcp_socket::handle_accept(int flags)
     return (generic_socket(tcp_socket(channel_pool(), m_pid, flags, pcb)));
 }
 
-void tcp_socket::handle_transmit()
+void tcp_socket::handle_io()
 {
     if (!m_pcb) return;  /* can be closed on error */
 
