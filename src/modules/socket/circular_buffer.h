@@ -23,8 +23,12 @@ class circular_buffer
     alignas(cache_line_size) std::atomic_uintptr_t m_read;
     alignas(cache_line_size) std::atomic_uintptr_t m_write;
 
-    size_t read()  const { return m_read.load(std::memory_order_acquire); }
-    size_t write() const { return m_write.load(std::memory_order_acquire); }
+    size_t read() const;
+    size_t write() const;
+    size_t mask(size_t idx) const;
+
+    void read(size_t idx);
+    void write(size_t idx);
 
     circular_buffer(size_t initial_size);
     circular_buffer();
@@ -39,8 +43,10 @@ public:
     circular_buffer& operator=(circular_buffer&& other);
     circular_buffer(circular_buffer&& other);
 
+    size_t capacity() const;
     size_t writable() const;
     size_t readable() const;
+
     bool   empty() const;
     bool   full() const;
 
@@ -51,7 +57,7 @@ public:
     /* TODO: for socket size support */
     //bool resize(size_t size);
 
-    void* peek();
+    void* peek() const;
     size_t skip(size_t length);
 
     size_t read(void* ptr, size_t length);
