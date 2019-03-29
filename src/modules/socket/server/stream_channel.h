@@ -24,8 +24,8 @@ public:
     stream_channel(stream_channel&&) = default;
     stream_channel& operator=(stream_channel&&) = default;
 
-    int client_fd();
-    int server_fd();
+    int client_fd() const;
+    int server_fd() const;
 
     void ack();
     void error(int);
@@ -35,7 +35,7 @@ public:
 
     size_t send(pid_t pid, const iovec iov[], size_t iovcnt);
 
-    iovec recv_peek();
+    iovec recv_peek() const;
     size_t recv_clear(size_t length);
 };
 

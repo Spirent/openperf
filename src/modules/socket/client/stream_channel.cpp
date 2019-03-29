@@ -39,17 +39,17 @@ static int do_write(int fd)
     return (eventfd_write(fd, 1UL));
 }
 
-int stream_channel::client_fd()
+int stream_channel::client_fd() const
 {
     return (client_fds.client_fd);
 }
 
-int stream_channel::server_fd()
+int stream_channel::server_fd() const
 {
     return (client_fds.server_fd);
 }
 
-int stream_channel::flags()
+int stream_channel::flags() const
 {
     return (socket_flags.load(std::memory_order_acquire));
 }

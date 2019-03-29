@@ -44,12 +44,12 @@ stream_channel::~stream_channel()
     close(server_fds.server_fd);
 }
 
-int stream_channel::client_fd()
+int stream_channel::client_fd() const
 {
     return (server_fds.client_fd);
 }
 
-int stream_channel::server_fd()
+int stream_channel::server_fd() const
 {
     return (server_fds.server_fd);
 }
@@ -112,7 +112,7 @@ size_t stream_channel::send(pid_t pid, const iovec iov[], size_t iovcnt)
     return (*written);
 }
 
-iovec stream_channel::recv_peek()
+iovec stream_channel::recv_peek() const
 {
     return (iovec{ .iov_base = sendq.peek(),
                    .iov_len = sendq.readable() });
