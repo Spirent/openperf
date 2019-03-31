@@ -50,6 +50,7 @@ void wrapper::init()
     send        = load_symbol<decltype(send)>(RTLD_NEXT, "send");
     sendmsg     = load_symbol<decltype(sendmsg)>(RTLD_NEXT, "sendmsg");
     sendto      = load_symbol<decltype(sendto)>(RTLD_NEXT, "sendto");
+    setsockopt	= load_symbol<decltype(setsockopt)>(RTLD_NEXT, "setsockopt");
     write       = load_symbol<decltype(write)>(RTLD_NEXT, "write");
     writev      = load_symbol<decltype(writev)>(RTLD_NEXT, "writev");
 }

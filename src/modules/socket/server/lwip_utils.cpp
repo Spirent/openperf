@@ -86,6 +86,26 @@ tl::expected<void, int> do_sock_setsockopt(ip_pcb* pcb,
         else      ip_reset_option(pcb, SOF_REUSEADDR);
         break;
     }
+    case SO_BINDTODEVICE: {
+	char optval[NETIF_NAMESIZE];
+	if (setsockopt.optlen > NETIF_NAMESIZE) return (tl::make_unexpected(EINVAL));
+
+	auto opt = copy_in(optval,
+			   setsockopt.id.pid,
+			   reinterpret_cast<const char*>(setsockopt.optval),
+			   setsockopt.optlen,
+			   NETIF_NAMESIZE);
+	if (!opt) return (tl::make_unexpected(opt.error()));
+
+	struct netif *n = nullptr;
+	n = netif_find((const char *)optval);
+	if (n == nullptr) {
+	    ICP_LOG(ICP_LOG_DEBUG, "netif_find failed for %s\n", optval);
+	    return (tl::make_unexpected(ENODEV));
+	}
+	pcb->netif_idx = netif_get_index(n);
+	break;
+    }
     default:
         return (tl::make_unexpected(ENOPROTOOPT));
     }

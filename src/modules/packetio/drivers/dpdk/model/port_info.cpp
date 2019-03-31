@@ -181,7 +181,11 @@ bool port_info::rxq_interrupt() const
      * rx queue interrupts or not, so just enable them on everything, and let
      * runtime errors modify our behavior.
      */
+#if 0
     return (true);
+#else
+    return (false);
+#endif
 }
 
 }
