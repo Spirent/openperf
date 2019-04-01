@@ -8,10 +8,14 @@ How to bind ICP shim-layer enabled executables (i.e., their sockets) to specific
     * set adaptor networking type to ***Private to my Mac***
     * MAC address can be auto-generated or manually assigned (**same MAC is used in ICP create interface definition**)
 * vm OS - Ubuntu 64-bit 18.10 (ubuntu-18.10-desktop-amd64.iso)
-  * Disconnect the set of adaptors that will be used by inception
+
+## adaptor stuff
+  * Disconnect the set of adaptors in Ubuntu that will be used by inception
     * ***nmcli device disconnect*** ifname
     * ***nmcli device show*** ifname (verify that *GENERAL.STATE* is *disconnected*)
-  * Configure DPDK by invoking *dpdk-setup.sh* and selecting options: 16, 20, 23, 26 (for each adaptor)
+    
+## DPDK stuff
+  * Configure DPDK in Ubuntu by invoking *dpdk-setup.sh* and selecting options: 16, 20, 23, 26 (for each adaptor)
   
         inception.core/deps/dpdk/usertools/dpdk-setup.sh
         ----------------------------------------------------------
@@ -24,7 +28,8 @@ How to bind ICP shim-layer enabled executables (i.e., their sockets) to specific
         [20] Insert IGB UIO module
         [23] Setup hugepage mappings for non-NUMA systems 
         [26] Bind Ethernet/Crypto device to IGB UIO module
-        
+  
+## inception stuff
   * Start inception stack (***w*** option identifies the PCI address of each adaptor)
         
         ./inception-core/build/stack-linux-x86_64-testing/bin/inception --log-level trace --dpdk="-w02:01.0,-w02:06.0" -p 9000 > /tmp/inception.log 2>&1
@@ -60,7 +65,8 @@ How to bind ICP shim-layer enabled executables (i.e., their sockets) to specific
         }
         
         $ curl "http://localhost:9000/interfaces" -d@Y.json
-        
+ 
+ ## use *nc* command to test if the bound sockets are working correctly
   * Configuring and running ICP shim-layer executable
     * New environment variable ICP_BINDTODEVICE needs to be set to internal lwip interface name (*io*N), where N is the value assigned to *id* in the return json string reply from the REST API interface creation request
     * In one window/shell, start the *listener*:
