@@ -231,7 +231,7 @@ uint16_t packetio_stack_gso_oversize_calc_length(uint16_t length)
 
 static constexpr unsigned tcp_max_segment()
 {
-    return ((std::numeric_limits<uint16_t>::max() / TCP_MSS) * TCP_MSS);
+    return (((std::numeric_limits<uint16_t>::max() - PBUF_POOL_BUFSIZE) / TCP_MSS) * TCP_MSS);
 }
 
 uint16_t packetio_stack_gso_max_segment_length(const struct tcp_pcb* pcb)
