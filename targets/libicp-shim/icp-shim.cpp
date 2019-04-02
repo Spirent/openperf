@@ -23,7 +23,7 @@ void icp_shim_init()
     auto& client = icp::socket::api::client::instance();
     client.init(&client_initialized);
 
-    const char* envp = std::getenv("ICP_TRACE");
+    const char * envp = std::getenv("ICP_TRACE");
     if (envp != nullptr && std::strncmp(envp, "0", 1) != 0) icp_trace = true;
 }
 
@@ -206,22 +206,7 @@ int socket(int domain, int type, int protocol)
     }
 
     auto& client = icp::socket::api::client::instance();
-
-    int s = client_call(socket, domain, type, protocol);
-    if (s >= 0) {
-	char * envp = std::getenv("ICP_BINDTODEVICE");
-	if (envp != nullptr) {
-	    std::string str (envp);
-	    /*
-	     * Close socket and return -1 on BINDTODEVICE failure.
-	     */
-	    if (client_call(setsockopt, s, SOL_SOCKET, SO_BINDTODEVICE, str.c_str(), str.length()+1) < 0) {
-		(void)client_call(close, s);
-		return (-1);
-	    }
-	}
-    }
-    return (s);
+    return (client_call(socket, domain, type, protocol));
 }
 
 int fcntl(int s, int cmd, ...)
