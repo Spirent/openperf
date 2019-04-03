@@ -53,9 +53,16 @@ unix_socket::unix_socket(const std::string_view path, int type)
     std::strncpy(addr.sun_path, m_path.c_str(), sizeof(addr.sun_path));
 
     if (bind(m_fd, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) == -1) {
-        throw std::runtime_error("Could not bind to unix socket "
-                                 + std::to_string(m_fd) + ": "
-                                 + std::string(strerror(errno)));
+        if (errno == EADDRINUSE) {
+            throw std::runtime_error("Could not bind to unix socket at \""
+                                     + m_path + "\". Either Inception is already "
+                                     + "running or did not shut down cleanly. "
+                                     + "See --force-unlink option to force launch.");
+        } else {
+            throw std::runtime_error("Could not bind to unix socket "
+                                     + std::to_string(m_fd) + ": "
+                                     + std::string(strerror(errno)));
+        }
     }
 }
 
