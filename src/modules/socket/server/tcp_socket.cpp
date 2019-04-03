@@ -350,7 +350,11 @@ tcp_socket::on_request_reply tcp_socket::on_request(const api::request_listen& l
      * to be careful with pcb ownership and the callback argument here.
      */
     auto orig_pcb = m_pcb.release();
-    auto netif_idx = orig_pcb->netif_idx;   /* cache idx and transfer to "listen_pcb" since netif_idx is assigned the DEFAULT value when listen_pcb is created */
+    /* 
+     * cache idx and transfer to "listen_pcb" since netif_idx is assigned the
+     * DEFAULT value when listen_pcb is created
+     */
+    auto netif_idx = orig_pcb->netif_idx;
 
     ::tcp_arg(orig_pcb, nullptr);
     auto listen_pcb = tcp_listen_with_backlog(orig_pcb, listen.backlog);
