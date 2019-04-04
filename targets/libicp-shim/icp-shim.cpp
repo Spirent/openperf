@@ -23,8 +23,8 @@ void icp_shim_init()
     auto& client = icp::socket::api::client::instance();
     client.init(&client_initialized);
 
-    if (auto envp = std::getenv("ICP_TRACE"); envp != nullptr &&
-        std::strncmp(envp, "0", 1) != 0) icp_trace = true;
+    const char* envp = std::getenv("ICP_TRACE");
+    if (envp != nullptr && std::strncmp(envp, "0", 1) != 0) icp_trace = true;
 }
 
 template <class T>
