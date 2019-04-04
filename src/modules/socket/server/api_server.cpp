@@ -54,8 +54,10 @@ static icp::memory::shared_segment create_shared_memory_pool(size_t size, size_t
     size = align_up(size, 64);
     auto pool_size = align_up(sizeof(icp::memory::allocator::pool), 64);
     auto total_size = next_power_of_two(pool_size + (size * count));
-    auto segment = icp::memory::shared_segment(std::string(api::key) + ".memory",
-                                               total_size, true);
+    auto prefix_opt = get_prefix_opt();
+    auto path = (prefix_opt.length() > 0) ? std::string(api::key) + ".memory." + 
+                 get_prefix_opt() : std::string(api::key) + ".memory";
+    auto segment = icp::memory::shared_segment(path, total_size, true);
     /* Construct a pool in our shared memory segment */
     new (segment.get()) icp::memory::allocator::pool(
         reinterpret_cast<uintptr_t>(segment.get()) + pool_size,
