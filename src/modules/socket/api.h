@@ -177,8 +177,6 @@ std::string client_socket(const std::string_view id);
 
 std::string server_socket();
 
-std::string& get_prefix_opt();
-
 std::optional<socket_fd_pair> get_message_fds(const api::reply_msg&);
 void set_message_fds(api::reply_msg&, const socket_fd_pair& fd_pair);
 
