@@ -29,6 +29,8 @@ using api_handler = icp::socket::server::api_handler;
 static constexpr size_t io_channel_size = std::max(sizeof(dgram_channel),
                                                    sizeof(stream_channel));
 
+static bool unlink_stale_files = false;
+
 static __attribute__((const)) bool power_of_two(uint64_t x) {
     return !(x & (x - 1));
 }
@@ -54,7 +56,15 @@ static icp::memory::shared_segment create_shared_memory_pool(size_t size, size_t
     size = align_up(size, 64);
     auto pool_size = align_up(sizeof(icp::memory::allocator::pool), 64);
     auto total_size = next_power_of_two(pool_size + (size * count));
-    auto segment = icp::memory::shared_segment(std::string(api::key) + ".memory",
+
+    auto shared_segment_name = std::string(api::key) + ".memory";
+    if (unlink_stale_files) {
+        if ((shm_unlink(shared_segment_name.data()) < 0) && (errno != ENOENT)) {
+            throw std::runtime_error("Could not remove shared memory segment "
+                                     + std::string(shared_segment_name) + ": " + strerror(errno));
+        }
+    }
+    auto segment = icp::memory::shared_segment(shared_segment_name,
                                                total_size, true);
     /* Construct a pool in our shared memory segment */
     new (segment.get()) icp::memory::allocator::pool(
@@ -63,6 +73,20 @@ static icp::memory::shared_segment create_shared_memory_pool(size_t size, size_t
         size);
 
     return (segment);
+}
+
+static icp::socket::unix_socket create_unix_socket(const std::string_view path, int type)
+{
+    if (unlink_stale_files) {
+        if ((unlink(path.data()) < 0) && (errno != ENOENT)) {
+            throw std::runtime_error("Could not remove shared unix domain socket "
+                                     + std::string(path) + ": " + strerror(errno));
+        }
+    }
+
+    auto socket = icp::socket::unix_socket(path, type);
+
+    return (socket);
 }
 
 icp::memory::allocator::pool* server::pool() const
@@ -106,10 +130,20 @@ static int close_fd(const struct icp_event_data *data,
     return (0);
 }
 
+int api_server_option_handler(int opt, const char *opt_arg __attribute__((unused)))
+{
+    if (icp_options_hash_long("force-unlink") != opt) {
+        return (-EINVAL);
+    }
+
+    unlink_stale_files = true;
+    return (0);
+}
+
 }
 
 server::server(icp::core::event_loop& loop)
-    : m_sock(api::server_socket(), api::socket_type)
+    : m_sock(create_unix_socket(api::server_socket(), api::socket_type))
     , m_shm(create_shared_memory_pool(align_up(io_channel_size, 64),
                                       api::max_sockets))
     , m_loop(loop)
