@@ -1,5 +1,4 @@
 SOCK_COMMON += \
-	circular_buffer.cpp \
 	common.cpp \
 	shared_segment.cpp \
 	unix_socket.cpp \

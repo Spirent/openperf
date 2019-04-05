@@ -4,8 +4,8 @@
 #include <memory>
 #include "tl/expected.hpp"
 
-#include "memory/allocator/pool.h"
 #include "socket/api.h"
+#include "socket/server/allocator.h"
 
 namespace icp {
 namespace socket {
@@ -88,7 +88,7 @@ private:
     std::shared_ptr<socket_concept> m_self;
 };
 
-tl::expected<generic_socket,int> make_socket(icp::memory::allocator::pool& pool, pid_t pid,
+tl::expected<generic_socket,int> make_socket(allocator& allocator,
                                              int domain, int type, int protocol);
 
 api::io_channel api_channel(channel_variant&);

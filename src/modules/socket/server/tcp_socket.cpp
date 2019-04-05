@@ -113,6 +113,16 @@ static size_t do_tcp_transmit(tcp_pcb* pcb, const void* ptr, size_t length)
     return (written);
 }
 
+static void do_tcp_transmit_all(tcp_pcb *pcb, stream_channel& channel)
+{
+    for (;;) {
+        auto [ptr, length] = channel.recv_peek();
+        if (channel.recv_drop(do_tcp_transmit(pcb, ptr, length)) == 0) {
+            break;
+        }
+    }
+}
+
 static void do_tcp_receive(tcp_pcb *pcb, size_t length)
 {
     static constexpr uint16_t tcp_recv_max = std::numeric_limits<uint16_t>::max();
@@ -123,6 +133,15 @@ static void do_tcp_receive(tcp_pcb *pcb, size_t length)
     tcp_recved(pcb, length);
 }
 
+static void do_tcp_receive_all(tcp_pcb *pcb, stream_channel& channel, pbuf_queue& queue)
+{
+    std::array<iovec, 64> iovecs;
+    while (queue.length() && channel.send_available()) {
+        auto iovcnt = queue.iovecs(iovecs.data(), iovecs.size());
+        do_tcp_receive(pcb, queue.clear(channel.send(iovecs.data(), iovcnt)));
+    }
+}
+
 void tcp_socket::tcp_pcb_deleter::operator()(tcp_pcb *pcb)
 {
      /* quick and dirty */
@@ -131,26 +150,27 @@ void tcp_socket::tcp_pcb_deleter::operator()(tcp_pcb *pcb)
     }
 }
 
-icp::memory::allocator::pool* tcp_socket::channel_pool()
+icp::socket::server::allocator* tcp_socket::channel_allocator()
 {
-    auto deleter = reinterpret_cast<stream_channel_deleter*>(&m_channel.get_deleter());
-    return (deleter->pool_);
+    return (reinterpret_cast<icp::socket::server::allocator*>(
+                reinterpret_cast<socket::stream_channel*>(
+                    m_channel.get())->allocator));
 }
 
-tcp_socket::tcp_socket(icp::memory::allocator::pool* pool, pid_t pid, int flags, tcp_pcb* pcb)
-    : m_channel(new (pool->acquire()) stream_channel(flags), stream_channel_deleter(pool))
+tcp_socket::tcp_socket(icp::socket::server::allocator* allocator, int flags, tcp_pcb* pcb)
+    : m_channel(new (allocator->allocate(sizeof(stream_channel)))
+                stream_channel(flags, *allocator))
     , m_pcb(pcb)
-    , m_pid(pid)
 {
     ::tcp_arg(m_pcb.get(), this);
     ::tcp_poll(m_pcb.get(), nullptr, 2U);
     state(tcp_connected());
 }
 
-tcp_socket::tcp_socket(icp::memory::allocator::pool& pool, pid_t pid, int flags)
-    : m_channel(new (pool.acquire()) stream_channel(flags), stream_channel_deleter(&pool))
+tcp_socket::tcp_socket(icp::socket::server::allocator& allocator, int flags)
+    : m_channel(new (allocator.allocate(sizeof(stream_channel)))
+                stream_channel(flags, allocator))
     , m_pcb(tcp_new())
-    , m_pid(pid)
 {
     ::tcp_arg(m_pcb.get(), this);
     ::tcp_poll(m_pcb.get(), nullptr, 2U);
@@ -175,7 +195,6 @@ tcp_socket& tcp_socket::operator=(tcp_socket&& other) noexcept
     if (this != &other) {
         m_channel = std::move(other.m_channel);
         m_pcb = std::move(other.m_pcb);
-        m_pid = other.m_pid;
         m_acceptq = std::move(other.m_acceptq);
         ::tcp_arg(m_pcb.get(), this);
         state(other.state());
@@ -186,7 +205,6 @@ tcp_socket& tcp_socket::operator=(tcp_socket&& other) noexcept
 tcp_socket::tcp_socket(tcp_socket&& other) noexcept
     : m_channel(std::move(other.m_channel))
     , m_pcb(std::move(other.m_pcb))
-    , m_pid(other.m_pid)
     , m_acceptq(std::move(other.m_acceptq))
 {
     ::tcp_arg(m_pcb.get(), this);
@@ -212,7 +230,7 @@ int tcp_socket::do_lwip_accept(tcp_pcb *newpcb, int err)
     ::tcp_arg(newpcb, nullptr);
     m_acceptq.emplace(newpcb);
     tcp_backlog_delayed(newpcb);
-    m_channel->maybe_notify();
+    m_channel->notify();
 
     return (ERR_OK);
 }
@@ -223,11 +241,7 @@ int tcp_socket::do_lwip_sent(uint16_t size __attribute__((unused)))
      * The stack just cleared some data from the send buffer. See if
      * we can fill it up again.
      */
-    size_t loop_sent = 0;
-    do {
-        auto [ptr, length] = m_channel->recv_peek();
-        loop_sent = m_channel->recv_clear(do_tcp_transmit(m_pcb.get(), ptr, length));
-    } while (loop_sent != 0);
+    do_tcp_transmit_all(m_pcb.get(), *m_channel);
 
     return (ERR_OK);
 }
@@ -256,10 +270,7 @@ int tcp_socket::do_lwip_recv(pbuf *p, int err)
      */
     if (p->flags & PBUF_FLAG_PUSH
         || m_recvq.length() > (m_pcb->rcv_wnd / 2)) {
-        std::array<iovec, 64> iovecs;
-        auto iovcnt = m_recvq.iovecs(iovecs.data(), iovecs.size());
-        do_tcp_receive(m_pcb.get(),
-                       m_recvq.clear(m_channel->send(m_pid, iovecs.data(), iovcnt)));
+        do_tcp_receive_all(m_pcb.get(), *m_channel, m_recvq);
     }
 
     return (ERR_OK);
@@ -281,12 +292,12 @@ int tcp_socket::do_lwip_poll()
 {
     /* need to check idle time and close if necessary */
 
-    /* If the connection stalled due to re-transmits, we might have data to send... */
-    size_t loop_sent = 0;
-    do {
-        auto [ptr, length] = m_channel->recv_peek();
-        loop_sent = m_channel->recv_clear(do_tcp_transmit(m_pcb.get(), ptr, length));
-    } while (loop_sent != 0);
+    /*
+     * If the connection stalled due to re-transmits, we might have data to
+     * send and/or receive
+     */
+    do_tcp_receive_all(m_pcb.get(), *m_channel, m_recvq);
+    do_tcp_transmit_all(m_pcb.get(), *m_channel);
 
     return (ERR_OK);
 }
@@ -316,7 +327,7 @@ tl::expected<generic_socket, int> tcp_socket::handle_accept(int flags)
     auto pcb = m_acceptq.front();
     m_acceptq.pop();
     tcp_backlog_accepted(pcb);
-    return (generic_socket(tcp_socket(channel_pool(), m_pid, flags, pcb)));
+    return (generic_socket(tcp_socket(channel_allocator(), flags, pcb)));
 }
 
 void tcp_socket::handle_io()
@@ -325,18 +336,8 @@ void tcp_socket::handle_io()
 
     m_channel->ack();
 
-    if (m_recvq.bufs()) {
-        std::array<iovec, 64> iovecs;
-        auto iovcnt = m_recvq.iovecs(iovecs.data(), iovecs.size());
-        do_tcp_receive(m_pcb.get(),
-                       m_recvq.clear(m_channel->send(m_pid, iovecs.data(), iovcnt)));
-    }
-
-    size_t loop_sent = 0;
-    do {
-        auto [ptr, length] = m_channel->recv_peek();
-        loop_sent = m_channel->recv_clear(do_tcp_transmit(m_pcb.get(), ptr, length));
-    } while (loop_sent != 0);
+    do_tcp_receive_all(m_pcb.get(), *m_channel, m_recvq);
+    do_tcp_transmit_all(m_pcb.get(), *m_channel);
 }
 
 tcp_socket::on_request_reply tcp_socket::on_request(const api::request_bind& bind,

@@ -2,7 +2,7 @@
 #include <stdexcept>
 #include <sys/un.h>
 
-#include "memory/allocator/pool.h"
+#include "socket/server/allocator.h"
 #include "socket/server/api_handler.h"
 #include "socket/server/socket_utils.h"
 #include "core/icp_core.h"
@@ -12,10 +12,10 @@ namespace socket {
 namespace server {
 
 api_handler::api_handler(icp::core::event_loop& loop,
-                         icp::memory::allocator::pool& pool,
+                         allocator& allocator,
                          pid_t pid)
     : m_loop(loop)
-    , m_pool(pool)
+    , m_allocator(allocator)
     , m_pid(pid)
     , m_next_socket_id(0)
 {}
@@ -159,7 +159,7 @@ api::reply_msg api_handler::handle_request_close(const api::request_close& reque
 api::reply_msg api_handler::handle_request_socket(const api::request_socket& request)
 {
     auto id = api::socket_id{ {m_pid, m_next_socket_id++} };
-    auto socket = make_socket(m_pool, m_pid, request.domain, request.type, request.protocol);
+    auto socket = make_socket(m_allocator, request.domain, request.type, request.protocol);
     if (!socket) {
         return (tl::make_unexpected(socket.error()));
     }

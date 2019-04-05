@@ -8,6 +8,7 @@
 
 #include "tl/expected.hpp"
 
+#include "socket/server/allocator.h"
 #include "socket/server/generic_socket.h"
 
 struct icp_event_data;
@@ -18,22 +19,16 @@ namespace core {
 class event_loop;
 }
 
-namespace memory {
-namespace allocator {
-class pool;
-}
-}
-
 namespace socket {
 namespace server {
 
 class socket;
 
 class api_handler {
-    icp::core::event_loop& m_loop;         /* event loop */
-    icp::memory::allocator::pool& m_pool;  /* io_channel mempool */
-    pid_t m_pid;                           /* client pid */
-    uint32_t m_next_socket_id;             /* socket id counter */
+    icp::core::event_loop& m_loop;  /* event loop */
+    allocator& m_allocator;         /* io_channel mempool */
+    pid_t m_pid;                    /* client pid */
+    uint32_t m_next_socket_id;      /* socket id counter */
 
     /* sockets by id */
     std::unordered_map<api::socket_id, generic_socket> m_sockets;
@@ -57,7 +52,7 @@ class api_handler {
     }
 
 public:
-    api_handler(icp::core::event_loop& loop, icp::memory::allocator::pool& pool, pid_t pid);
+    api_handler(icp::core::event_loop& loop, allocator& allocator, pid_t pid);
     ~api_handler();
 
     int handle_requests(const struct icp_event_data* data);

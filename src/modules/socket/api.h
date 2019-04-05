@@ -11,7 +11,6 @@
 
 #include "tl/expected.hpp"
 
-#include "socket/spsc_queue.h"
 #include "socket/uuid.h"
 
 namespace icp {
@@ -22,7 +21,6 @@ struct stream_channel;
 
 namespace api {
 
-constexpr size_t max_sockets = 512;
 constexpr size_t socket_queue_length = 32;
 constexpr size_t shared_memory_name_length = 32;
 

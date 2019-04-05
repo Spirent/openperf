@@ -11,7 +11,6 @@
 #include <sys/uio.h>
 #include <sys/un.h>
 
-#include "memory/allocator/pool.h"
 #include "socket/api.h"
 #include "socket/dgram_channel.h"
 #include "socket/stream_channel.h"
@@ -26,48 +25,27 @@ namespace api {
 
 using api_handler = icp::socket::server::api_handler;
 
-static constexpr size_t io_channel_size = std::max(sizeof(dgram_channel),
-                                                   sizeof(stream_channel));
-
-static __attribute__((const)) bool power_of_two(uint64_t x) {
-    return !(x & (x - 1));
-}
-
-static uint64_t __attribute__((const)) next_power_of_two(uint64_t x) {
-    if (power_of_two(x)) { return x; }
-    x |= x >> 1;
-    x |= x >> 2;
-    x |= x >> 4;
-    x |= x >> 8;
-    x |= x >> 16;
-    x |= x >> 32;
-    return x + 1;
-}
-
 static __attribute__((const)) uint64_t align_up(uint64_t x, uint64_t align)
 {
     return ((x + align - 1) & ~(align - 1));
 }
 
-static icp::memory::shared_segment create_shared_memory_pool(size_t size, size_t count)
+static icp::memory::shared_segment create_shared_memory(size_t size)
 {
-    size = align_up(size, 64);
-    auto pool_size = align_up(sizeof(icp::memory::allocator::pool), 64);
-    auto total_size = next_power_of_two(pool_size + (size * count));
+    auto impl_size = align_up(sizeof(socket::server::allocator), 64);
     auto segment = icp::memory::shared_segment(std::string(api::key) + ".memory",
-                                               total_size, true);
-    /* Construct a pool in our shared memory segment */
-    new (segment.get()) icp::memory::allocator::pool(
-        reinterpret_cast<uintptr_t>(segment.get()) + pool_size,
-        total_size - pool_size,
-        size);
+                                               size, true);
+    /* Construct our allocator in our shared memory segment */
+    new (segment.get()) socket::server::allocator(
+        reinterpret_cast<uintptr_t>(segment.get()) + impl_size,
+        size - impl_size);
 
     return (segment);
 }
 
-icp::memory::allocator::pool* server::pool() const
+socket::server::allocator* server::allocator() const
 {
-    return (reinterpret_cast<icp::memory::allocator::pool*>(m_shm.get()));
+    return (reinterpret_cast<socket::server::allocator*>(m_shm.get()));
 }
 
 extern "C" {
@@ -110,8 +88,7 @@ static int close_fd(const struct icp_event_data *data,
 
 server::server(icp::core::event_loop& loop)
     : m_sock(api::server_socket(), api::socket_type)
-    , m_shm(create_shared_memory_pool(align_up(io_channel_size, 64),
-                                      api::max_sockets))
+    , m_shm(create_shared_memory(shm_size))
     , m_loop(loop)
 {
     /* Put socket in the listen state and wait for connections */
@@ -189,7 +166,7 @@ int server::handle_api_init_requests(const struct icp_event_data *data)
             ICP_LOG(ICP_LOG_INFO, "New connection received from pid %d, %s\n",
                     init.pid, to_string(init.tid).c_str());
             m_handlers.emplace(init.pid,
-                               std::make_unique<api_handler>(m_loop, *(pool()), init.pid));
+                               std::make_unique<api_handler>(m_loop, *(allocator()), init.pid));
             auto shm_info = api::shared_memory_descriptor{
                 .base = m_shm.get(),
                 .size = m_shm.size()

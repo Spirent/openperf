@@ -5,6 +5,7 @@
 #include <list>
 #include <queue>
 
+#include "socket/server/allocator.h"
 #include "socket/server/generic_socket.h"
 #include "socket/server/pbuf_queue.h"
 #include "socket/server/socket_utils.h"
@@ -47,16 +48,15 @@ class tcp_socket : public socket_state_machine<tcp_socket, tcp_socket_state>
 
     stream_channel_ptr m_channel;
     tcp_pcb_ptr m_pcb;
-    pid_t m_pid;
     std::queue<tcp_pcb*, std::list<tcp_pcb*>> m_acceptq;
     pbuf_queue m_recvq;
 
-    icp::memory::allocator::pool* channel_pool();
+    icp::socket::server::allocator* channel_allocator();
 
-    tcp_socket(icp::memory::allocator::pool* pool, pid_t pid, int flags, tcp_pcb* pcb);
+    tcp_socket(icp::socket::server::allocator* allocator, int flags, tcp_pcb* pcb);
 
 public:
-    tcp_socket(icp::memory::allocator::pool& pool, pid_t pid, int flags);
+    tcp_socket(icp::socket::server::allocator& allocator, int flags);
     ~tcp_socket();
 
     tcp_socket(const tcp_socket&) = delete;
