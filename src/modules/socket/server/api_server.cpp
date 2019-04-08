@@ -147,6 +147,11 @@ int api_server_option_handler(int opt, const char *opt_arg __attribute__((unused
     return (-EINVAL);
 }
 
+const char* api_server_options_prefix_option_get(void)
+{
+    return (prefix_opt.c_str());
+}
+
 }
 
 server::server(icp::core::event_loop& loop)
