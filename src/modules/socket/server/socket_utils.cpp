@@ -98,6 +98,28 @@ tl::expected<void, int> copy_in(struct sockaddr_storage& dst,
     return {};
 }
 
+tl::expected<void, int> copy_in(char* dst,
+                                pid_t src_pid, const char* src_ptr,
+                                socklen_t dstlength, socklen_t srclength)
+{
+    auto local = iovec{
+	.iov_base = dst,
+	.iov_len = dstlength
+    };
+
+    auto remote = iovec{
+	.iov_base = (char *)src_ptr,
+	.iov_len = srclength
+    };
+
+    auto size = process_vm_readv(src_pid, &local, 1, &remote, 1, 0);
+    if (size == -1) {
+        return (tl::make_unexpected(errno));
+    }
+
+    return {};
+}
+
 tl::expected<int, int> copy_in(pid_t src_pid, const int *src_int)
 {
     int value = 0;
