@@ -206,21 +206,7 @@ int socket(int domain, int type, int protocol)
     }
 
     auto& client = icp::socket::api::client::instance();
-
-    int s = client_call(socket, domain, type, protocol);
-    if (s >= 0) {
-        if (auto envp = std::getenv("ICP_BINDTODEVICE"); envp != nullptr) {
-            /*
-             * Close socket and return -1 on BINDTODEVICE failure.
-             */
-            if (client_call(setsockopt, s, SOL_SOCKET, SO_BINDTODEVICE, envp, 
-                            strlen(envp)+1) < 0) {
-                client_call(close, s);
-                return (-1);
-            }
-        }
-    }
-    return (s);
+    return (client_call(socket, domain, type, protocol));
 }
 
 int fcntl(int s, int cmd, ...)
