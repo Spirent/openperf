@@ -20,12 +20,18 @@ client::client()
     , m_sock(api::client_socket(to_string(m_uuid)), api::socket_type)
 {
     auto server = sockaddr_un{ .sun_family = AF_UNIX };
-    std::strncpy(server.sun_path, api::server_socket().c_str(),
-                 sizeof(server.sun_path));
+    if (auto envp = std::getenv("ICP_PREFIX"); envp != nullptr) {
+        std::strncpy(server.sun_path, 
+                     (api::server_socket() + "." + std::string(envp)).c_str(),
+                     sizeof(server.sun_path));
+    } else {
+        std::strncpy(server.sun_path, api::server_socket().c_str(),
+                     sizeof(server.sun_path));
+    }
 
     if (::connect(m_sock.get(),
-                reinterpret_cast<sockaddr*>(&server),
-                sizeof(server)) == -1) {
+                  reinterpret_cast<sockaddr*>(&server),
+                  sizeof(server)) == -1) {
         throw std::runtime_error("Could not connect to socket server: "
                                  + std::string(strerror(errno)));
     }
