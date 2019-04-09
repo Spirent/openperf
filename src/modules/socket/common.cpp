@@ -20,6 +20,10 @@ struct overloaded_visitor : Ts...
 
 std::string client_socket(const std::string_view id)
 {
+    if (auto envp = std::getenv("ICP_PREFIX"); envp != nullptr) {
+        return (std::string("/tmp/.").append(key).append("/client.").append(id).append("." +
+                std::string(envp)));
+    }
     return (std::string("/tmp/.").append(key).append("/client.").append(id));
 }
 
