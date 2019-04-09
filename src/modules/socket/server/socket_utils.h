@@ -69,7 +69,11 @@ tl::expected<void, int> copy_in(struct sockaddr_storage& dst,
                                 pid_t src_pid, const sockaddr* src_ptr,
                                 socklen_t length);
 
-tl::expected<int, int> copy_in(pid_t src_pid, const int *src_int);
+tl::expected<void, int> copy_in(char* dst,
+                                pid_t src_pid, const char* src_ptr,
+                                socklen_t dstlength, socklen_t srclength);
+
+tl::expected<int, int> copy_in(pid_t src_pid, const int* src_int);
 
 tl::expected<void, int> copy_out(pid_t dst_pid, sockaddr* dst_ptr,
                                  const struct sockaddr_storage& src,
