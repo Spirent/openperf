@@ -136,8 +136,10 @@ static void do_tcp_receive(tcp_pcb *pcb, size_t length)
 static void do_tcp_receive_all(tcp_pcb *pcb, stream_channel& channel, pbuf_queue& queue)
 {
     std::array<iovec, 64> iovecs;
-    while (queue.length() && channel.send_available()) {
-        auto iovcnt = queue.iovecs(iovecs.data(), iovecs.size());
+    size_t iovcnt = 0;
+    while (queue.length()
+           && (iovcnt = queue.iovecs(iovecs.data(), iovecs.size(),
+                                     channel.send_available()))) {
         do_tcp_receive(pcb, queue.clear(channel.send(iovecs.data(), iovcnt)));
     }
 }
