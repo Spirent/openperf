@@ -3,6 +3,7 @@
 #include <cstring>
 #include <numeric>
 
+#include "socket/dpdk_memcpy.h"
 #include "socket/circular_buffer_producer.h"
 
 namespace icp {
@@ -106,8 +107,8 @@ size_t circular_buffer_producer<Derived>::write(const void* ptr, size_t length)
     const size_t chunk1 = std::min(to_write, len() - mask(cursor));
     const size_t chunk2 = to_write - chunk1;
 
-    std::memcpy(base() + mask(cursor), ptr, chunk1);
-    std::memcpy(base(), reinterpret_cast<const uint8_t*>(ptr) + chunk1, chunk2);
+    dpdk::memcpy(base() + mask(cursor), ptr, chunk1);
+    dpdk::memcpy(base(), reinterpret_cast<const uint8_t*>(ptr) + chunk1, chunk2);
 
     store_write(cursor + to_write);
     return (to_write);
