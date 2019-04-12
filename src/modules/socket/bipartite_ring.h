@@ -2,6 +2,7 @@
 #define _ICP_SOCKET_BIPARTITE_RING_H_
 
 #include <algorithm>
+#include <array>
 #include <atomic>
 #include <optional>
 

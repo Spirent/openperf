@@ -5,6 +5,7 @@
 
 #include <netinet/in.h>
 #include <socket/bipartite_ring.h>
+#include <socket/pbuf_vec.h>
 #include <socket/api.h>
 
 struct pbuf;
@@ -73,46 +74,9 @@ public:
     in_port_t port() const { return (m_port); }
 };
 
-class dgram_channel_data
-{
-    /*
-     * We store the length in the upper byte of the pbuf and payload pointers.
-     * When machines use more than 48 bits for addressing we can update this. :)
-     */
-    static constexpr uintptr_t ptr_mask = 0xffffffffffff;
-    static constexpr int ptr_shift = 56;
-    pbuf* m_pbuf;
-    void* m_payload;
-
-public:
-    dgram_channel_data() {};
-
-    dgram_channel_data(pbuf* pbuf, void* payload, uint16_t len)
-        : m_pbuf(pbuf)
-        , m_payload(payload)
-    {
-        length(len);
-    }
-
-    pbuf* pbuf() { return (reinterpret_cast<struct pbuf*>(reinterpret_cast<uintptr_t>(m_pbuf) & ptr_mask)); }
-    void* payload() { return (reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(m_payload) & ptr_mask)); }
-    uint16_t length() { return (static_cast<uint16_t>(
-                                    (reinterpret_cast<uintptr_t>(m_pbuf) >> ptr_shift) << 8
-                                    | (reinterpret_cast<uintptr_t>(m_payload) >> ptr_shift))); }
-
-    void length(uint16_t length)
-    {
-        m_pbuf = reinterpret_cast<struct pbuf*>(((static_cast<uint64_t>(length) >> 8) << ptr_shift)
-                                                | (reinterpret_cast<uintptr_t>(m_pbuf) & ptr_mask));
-        m_payload = reinterpret_cast<void*>(((static_cast<uint64_t>(length) & 0xff) << ptr_shift)
-                                            | (reinterpret_cast<uintptr_t>(m_payload) & ptr_mask));
-    }
-
-};
-
 struct dgram_channel_item {
     std::optional<dgram_channel_addr> address;
-    dgram_channel_data data;
+    pbuf_vec pvec;
 };
 
 typedef bipartite_ring<dgram_channel_item, api::socket_queue_length> dgram_ring;
