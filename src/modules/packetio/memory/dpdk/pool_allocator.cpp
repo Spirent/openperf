@@ -88,13 +88,14 @@ static rte_mempool* create_pbuf_mempool(const char* name, size_t size,
 
     size_t nb_mbufs = icp_min(131072, pool_size_adjust(icp_max(1024U, size)));
 
-    rte_mempool* mp = rte_pktmbuf_pool_create(
+    rte_mempool* mp = rte_pktmbuf_pool_create_by_ops(
         name,
         nb_mbufs,
         cached ? get_cache_size(nb_mbufs) : 0,
         PBUF_PRIVATE_SIZE,
         direct ? PBUF_POOL_BUFSIZE : 0,
-        socket_id);
+        socket_id,
+        "stack");
 
     if (!mp) {
         throw std::runtime_error(std::string("Could not allocate mempool = ") + name);
