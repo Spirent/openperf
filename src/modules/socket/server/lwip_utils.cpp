@@ -209,6 +209,8 @@ void get_tcp_info(const tcp_pcb* pcb, tcp_info& info)
     info.tcpi_snd_ssthresh = pcb->ssthresh;
     info.tcpi_snd_cwnd = pcb->cwnd / tcp_mss(pcb);  /* in units of segments */
 
+    info.tcpi_total_retrans = static_cast<uint32_t>(reinterpret_cast<uintptr_t>(tcp_ext_arg_get(pcb, 0)));
+
     info.tcpi_notsent_bytes = (pcb->unsent ? pcb->unsent->len : 0);
 }
 

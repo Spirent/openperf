@@ -56,7 +56,7 @@ public:
 
     tl::expected<generic_socket, int> handle_accept(int);
 
-    void handle_transmit();
+    void handle_io();
 
     /***
      * Socket state machine functions

@@ -42,9 +42,9 @@ public:
         return (m_self->handle_accept(flags));
     }
 
-    void handle_transmit()
+    void handle_io()
     {
-        m_self->handle_transmit();
+        m_self->handle_io();
     }
 
 private:
@@ -53,7 +53,7 @@ private:
         virtual channel_variant channel() const = 0;
         virtual api::reply_msg handle_request(const api::request_msg&) = 0;
         virtual tl::expected<generic_socket, int> handle_accept(int) = 0;
-        virtual void handle_transmit() = 0;
+        virtual void handle_io() = 0;
     };
 
     template <typename Socket>
@@ -77,9 +77,9 @@ private:
             return (m_socket.handle_accept(flags));
         }
 
-        void handle_transmit() override
+        void handle_io() override
         {
-            m_socket.handle_transmit();
+            m_socket.handle_io();
         }
 
         Socket m_socket;

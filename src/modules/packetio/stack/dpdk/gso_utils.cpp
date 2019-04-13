@@ -229,6 +229,11 @@ uint16_t packetio_stack_gso_oversize_calc_length(uint16_t length)
     return ((length + payload_size - 1) & ~(payload_size - 1));
 }
 
+static constexpr unsigned tcp_max_segment()
+{
+    return ((std::numeric_limits<uint16_t>::max() / TCP_MSS) * TCP_MSS);
+}
+
 uint16_t packetio_stack_gso_max_segment_length(const struct tcp_pcb* pcb)
 {
     /*
@@ -238,7 +243,7 @@ uint16_t packetio_stack_gso_max_segment_length(const struct tcp_pcb* pcb)
      * route lookup.
      *
      * Note: even though the hardware might support larger segments,
-     * we must keep the value well below lwIP's maximum of 64k in order
+     * we must keep the value below lwIP's maximum of 64k in order
      * to prevent overflow in the various transmit functions.
      */
     auto netif = (pcb->netif_idx != NETIF_NO_INDEX
@@ -247,7 +252,7 @@ uint16_t packetio_stack_gso_max_segment_length(const struct tcp_pcb* pcb)
     if (!netif) return (TCP_MSS);
 
     auto ifp = reinterpret_cast<net_interface*>(netif->state);
-    return (std::max(60U * 1024, ifp->max_gso_length()));
+    return (std::max(tcp_max_segment(), ifp->max_gso_length()));
 }
 
 uint16_t
@@ -348,8 +353,10 @@ int packetio_stack_gso_segment_split(struct tcp_pcb *pcb, struct tcp_seg* seg,
     seg->next = next_seg;
 
 #if TCP_OVERSIZE
+#if TCP_OVERSIZE_DBGCHECK
     /* Trimming the chain removes any oversize from the original chain */
     seg->oversize_left = 0;
+#endif /* TCP_OVERSIZE_DBGCHECK */
 
     /*
      * However, if our new segment is the last unsent segment, we probably have some
@@ -360,9 +367,11 @@ int packetio_stack_gso_segment_split(struct tcp_pcb *pcb, struct tcp_seg* seg,
         auto p = next_seg->p;
         while (p->next != nullptr) p = p->next;
         LWIP_ASSERT("found last p", p->next == nullptr);
-        next_seg->oversize_left = LWIP_MIN(packetio_stack_gso_pbuf_data_available(p, p->len),
-                                           TCP_MSS);
-        pcb->unsent_oversize = next_seg->oversize_left;
+        pcb->unsent_oversize = LWIP_MIN(packetio_stack_gso_pbuf_data_available(p, p->len),
+                                        TCP_MSS);
+#if TCP_OVERSIZE_DBGCHECK
+        next_seg->oversize_left = pcb->unsent_oversize;
+#endif /* TCP_OVERSIZE_DBGCHECK */
     }
 #endif /* TCP_OVERSIZE */
 
@@ -410,7 +419,7 @@ uint16_t packetio_stack_gso_pbuf_copy(struct pbuf* p_head, uint16_t offset,
             offset -= p->len;
         } else {
             auto to_copy = std::min(available, length);
-            memcpy(reinterpret_cast<uint8_t*>(p->payload) + offset,
+            MEMCPY(reinterpret_cast<uint8_t*>(p->payload) + offset,
                    reinterpret_cast<const uint8_t*>(dataptr) + copied,
                    to_copy);
             copied += to_copy;

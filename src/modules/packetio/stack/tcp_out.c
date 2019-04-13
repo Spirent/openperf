@@ -1807,6 +1807,8 @@ tcp_rexmit(struct tcp_pcb *pcb)
 
   /* Do the actual retransmission. */
   MIB2_STATS_INC(mib2.tcpretranssegs);
+  tcp_ext_arg_set(pcb, 0, (void*)(((uintptr_t)(tcp_ext_arg_get(pcb, 0)))
+                                  + (seg->len / TCP_MSS) + 1));
   /* No need to call tcp_output: we are always called from tcp_input()
      and thus tcp_output directly returns. */
   return ERR_OK;

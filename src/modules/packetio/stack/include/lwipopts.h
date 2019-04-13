@@ -14,7 +14,7 @@
 #define LWIP_NETIF_API 1
 #define LWIP_CALLBACK_API 0
 #define LWIP_EVENT_API 1
-#define LWIP_ERRNO_INCLUDE <errno.h>
+#define LWIP_ERRNO_STDINCLUDE 1
 
 #define LWIP_SOCKET 0
 #define LWIP_NETCONN 0
@@ -49,6 +49,7 @@
 #define MEMP_USE_CUSTOM_POOLS 0
 
 #define PBUF_POOL_BUFSIZE (2048 + 128)  /* DPDK default MBUF buffer size */
+#define PBUF_PRIVATE_SIZE 64
 
 /* IP options */
 #define IP_FRAG 0
@@ -58,15 +59,19 @@
 #define LWIP_WND_SCALE 1
 
 /*
- * Internally, lwIP enforces a relationship between the queue length and size,
- * specifically TCP_SND_QUEUELEN >= (2 * (TCP_SND_BUF / TCP_MSS)).
- * However, most of our NICs can use TSO, so that queue length refers to
- * segment chains instead of single MSS sized buffers.  As a result, we reverse
- * the default lwIP behavior and pick a reasonable queue length and calculate a
- * buffer size to match.
+ * The "extra args" value allows one to put extra data into the TCP PCB.
+ * We use it here to keep track of the actual re-transmission count, as
+ * iperf conveniently queries and displays it while tests are running.
  */
-#define TCP_SND_QUEUELEN 1024
-#define TCP_SND_BUF ((TCP_SND_QUEUELEN * TCP_MSS) / 2)
+#define LWIP_TCP_PCB_NUM_EXT_ARGS 1
+
+/*
+ * Pick a send {queue, buffer} length that minimizes internal processing.
+ * The stack will use whatever queue and buffer size is necessary to fill
+ * the specified window.
+ */
+#define TCP_SND_QUEUELEN TCP_SNDQUEUELEN_OVERFLOW
+#define TCP_SND_BUF TCP_WND
 
 #define TCP_SNDLOWAT 1
 #define TCP_MSS 1460
@@ -77,6 +82,11 @@
 
 /* Socket options */
 #define SO_REUSE 1
+
+/* Memcpy options */
+#define MEMCPY(dst,src,len)  PACKETIO_MEMCPY(dst,src,len)
+#define SMEMCPY(dst,src,len) PACKETIO_MEMCPY(dst,src,len)
+#define MEMMOVE(dst,src,len) PACKETIO_MEMCPY(dst,src,len)
 
 /* We've already got these */
 #define LWIP_DONT_PROVIDE_BYTEORDER_FUNCTIONS 1

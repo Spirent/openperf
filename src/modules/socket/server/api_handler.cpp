@@ -73,7 +73,7 @@ static int handle_socket_read(const struct icp_event_data *data __attribute__((u
 {
     auto socket = (reinterpret_cast<generic_socket*>(arg));
     ICP_LOG(ICP_LOG_TRACE, "Transmit request for socket %p\n", (void*)socket);
-    socket->handle_transmit();
+    socket->handle_io();
     return (0);
 }
 
@@ -147,7 +147,7 @@ api::reply_msg api_handler::handle_request_close(const api::request_close& reque
     }
 
     auto& socket = result->second;
-    socket.handle_transmit();  /* flush the tx queue */
+    socket.handle_io();  /* flush the tx queue */
 
     auto channel = socket.channel();
     m_loop.del(server_fd(channel));

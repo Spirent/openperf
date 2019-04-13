@@ -23,6 +23,7 @@ TEST_CASE("basic functionality for circular_buffer", "[circular_buffer]")
                                    test_string.length());
             REQUIRE(result == test_string.length());
             REQUIRE(cb.readable() == test_string.length());
+            REQUIRE(cb.readable() + cb.writable() == cb.capacity());
 
             SECTION("can read written data, ") {
                 std::array<uint8_t, 1024> buffer;
@@ -51,10 +52,11 @@ TEST_CASE("basic functionality for circular_buffer", "[circular_buffer]")
             size_t written = 0;
             while (cb.writable() > 0) {
                 written += cb.write(buffer.data(), std::min(cb.writable(), buffer.size()));
+                REQUIRE(cb.readable() + cb.writable() == cb.capacity());
             }
 
+            REQUIRE(cb.full());
             REQUIRE(cb.writable() == 0);
-            REQUIRE(cb.full() == 0);
             REQUIRE(cb.readable() == written);
         }
     }
@@ -65,7 +67,7 @@ TEST_CASE("basic functionality for circular_buffer", "[circular_buffer]")
          */
         static constexpr size_t test_size = 4096;
         auto cb = circular_buffer::server(test_size);
-        REQUIRE(cb.writable() == test_size - 1);
+        REQUIRE(cb.writable() == test_size);
 
         static constexpr size_t vec_size = test_size / 2 + 1;
         for (auto value : {1, 2, 3, 4, 5, 6, 7, 8}) {
@@ -76,6 +78,7 @@ TEST_CASE("basic functionality for circular_buffer", "[circular_buffer]")
             auto result = cb.write(data.data(), vec_size);
             REQUIRE(result == vec_size);
             REQUIRE(cb.readable() == vec_size);
+            REQUIRE(cb.readable() + cb.writable() == cb.capacity());
             auto read = cb.read(buffer.data(), vec_size);
             REQUIRE(read == vec_size);
             REQUIRE(cb.readable() == 0);

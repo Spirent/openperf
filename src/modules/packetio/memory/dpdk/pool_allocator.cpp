@@ -13,8 +13,6 @@ namespace icp {
 namespace packetio {
 namespace dpdk {
 
-static const size_t SIZEOF_STRUCT_PBUF = LWIP_MEM_ALIGN_SIZE(sizeof(struct pbuf));
-
 /*
  * Per the DPDK documentation, cache size should be a divisor of pool
  * size.  However, since the optimal pool size is a Mersenne number,
@@ -86,13 +84,15 @@ static void log_mempool(const struct rte_mempool *mpool)
 static rte_mempool* create_pbuf_mempool(const char* name, size_t size,
                                         bool cached, bool direct, int socket_id)
 {
+    static_assert(PBUF_PRIVATE_SIZE >= sizeof(struct pbuf));
+
     size_t nb_mbufs = icp_min(131072, pool_size_adjust(icp_max(1024U, size)));
 
     rte_mempool* mp = rte_pktmbuf_pool_create(
         name,
         nb_mbufs,
         cached ? get_cache_size(nb_mbufs) : 0,
-        SIZEOF_STRUCT_PBUF,
+        PBUF_PRIVATE_SIZE,
         direct ? PBUF_POOL_BUFSIZE : 0,
         socket_id);
 

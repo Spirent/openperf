@@ -71,7 +71,7 @@ tl::expected<generic_socket, int> udp_socket::handle_accept(int)
     return (tl::make_unexpected(EOPNOTSUPP));
 }
 
-void udp_socket::handle_transmit()
+void udp_socket::handle_io()
 {
     m_channel->ack();
     std::array<dgram_channel_item, api::socket_queue_length> items;

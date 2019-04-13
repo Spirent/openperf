@@ -1,3 +1,5 @@
+PIO_INCLUDES += stack/dpdk/include
+
 PIO_STACK_SOURCES += \
 	lwip.cpp \
 	gso_utils.cpp \

@@ -18,6 +18,34 @@ static __attribute__((const)) T align_up(T x, T align)
     return ((x + align - 1) & ~(align - 1));
 }
 
+size_t circular_buffer::read() const
+{
+    return m_read.load(std::memory_order_acquire);
+}
+
+size_t circular_buffer::write() const
+{
+    return m_write.load(std::memory_order_acquire);
+}
+
+size_t circular_buffer::mask(size_t idx) const
+{
+    assert(idx < 2 * m_size);
+    return (idx < m_size ? idx : idx - m_size);
+}
+
+void circular_buffer::read(size_t idx)
+{
+    m_read.store(idx < (2 * m_size) ? idx : idx - (2 * m_size),
+                 std::memory_order_release);
+}
+
+void circular_buffer::write(size_t idx)
+{
+    m_write.store(idx < (2 * m_size) ? idx : idx - (2 * m_size),
+                  std::memory_order_release);
+}
+
 static tl::expected<uint8_t*, int> create_double_buffer(int fd, size_t size)
 {
     /* Get enough memory to map two copies of the buffer */
@@ -106,6 +134,11 @@ circular_buffer::circular_buffer(circular_buffer&& other)
     other.m_buffer = nullptr;
 }
 
+size_t circular_buffer::capacity() const
+{
+    return (m_size);
+}
+
 size_t circular_buffer::readable() const
 {
     auto read_cursor = read();
@@ -113,12 +146,12 @@ size_t circular_buffer::readable() const
 
     return (read_cursor <= write_cursor
             ? write_cursor - read_cursor
-            : m_size - (read_cursor - write_cursor));
+            : (2 * m_size) + write_cursor - read_cursor);
 }
 
 size_t circular_buffer::writable() const
 {
-    return (m_size - readable() - 1);
+    return (m_size - readable());
 }
 
 bool circular_buffer::empty() const
@@ -128,12 +161,12 @@ bool circular_buffer::empty() const
 
 bool circular_buffer::full() const
 {
-    return (read() == (write() + 1));
+    return (m_size == readable());
 }
 
-void* circular_buffer::peek()
+void* circular_buffer::peek() const
 {
-    return (reinterpret_cast<void*>(m_buffer + m_read.load(std::memory_order_acquire)));
+    return (reinterpret_cast<void*>(m_buffer + mask(read())));
 }
 
 size_t circular_buffer::skip(size_t length)
@@ -144,10 +177,7 @@ size_t circular_buffer::skip(size_t length)
     }
 
     auto cursor = m_read.load(std::memory_order_acquire);
-    m_read.store((cursor + to_skip > m_size
-                  ? cursor + to_skip - m_size
-                  : cursor + to_skip),
-                 std::memory_order_release);
+    read(cursor + to_skip);
     return (to_skip);
 }
 
@@ -158,13 +188,9 @@ size_t circular_buffer::read(void* ptr, size_t length)
         return (0);
     }
 
-    auto cursor = m_read.load(std::memory_order_acquire);
-    memcpy(ptr, m_buffer + cursor, to_read);
-    m_read.store((cursor + to_read > m_size
-                  ? cursor + to_read - m_size
-                  : cursor + to_read),
-                 std::memory_order_release);
-
+    auto cursor = read();
+    memcpy(ptr, m_buffer + mask(cursor), to_read);
+    read(cursor + to_read);
     return (to_read);
 }
 
@@ -183,17 +209,14 @@ tl::expected<size_t, int> circular_buffer::read(pid_t pid, iovec iov[], size_t i
 {
     auto cursor = read();
     iovec readvec = {
-        .iov_base = m_buffer + cursor,
+        .iov_base = m_buffer + mask(cursor),
         .iov_len = readable()
     };
 
     auto result = process_vm_readv(pid, iov, iovcnt, &readvec, 1, 0);
     if (result == -1) return (tl::make_unexpected(errno));
 
-    m_read.store((cursor + result > m_size
-                  ? cursor + result - m_size
-                  : cursor + result),
-                 std::memory_order_release);
+    read(cursor + result);
     return (result);
 }
 
@@ -205,11 +228,8 @@ size_t circular_buffer::write(const void* ptr, size_t length)
     }
 
     auto cursor = write();
-    memcpy(m_buffer + cursor, ptr, to_write);
-    m_write.store((cursor + to_write > m_size
-                   ? cursor + to_write - m_size
-                   : cursor + to_write),
-                  std::memory_order_release);
+    memcpy(m_buffer + mask(cursor), ptr, to_write);
+    write(cursor + to_write);
     return (to_write);
 }
 
@@ -228,17 +248,14 @@ tl::expected<size_t, int> circular_buffer::write(pid_t pid, const iovec iov[], s
 {
     auto cursor = write();
     iovec writevec = {
-        .iov_base = m_buffer + cursor,
+        .iov_base = m_buffer + mask(cursor),
         .iov_len = writable()
     };
 
     auto result = process_vm_writev(pid, iov, iovcnt, &writevec, 1, 0);
     if (result == -1) return (tl::unexpected(errno));
 
-    m_write.store((cursor + result > m_size
-                   ? cursor + result - m_size
-                   : cursor + result),
-                  std::memory_order_release);
+    write(cursor + result);
     return (result);
 }
 
