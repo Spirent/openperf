@@ -7,6 +7,8 @@
 #include <string>
 #include <vector>
 
+#include <getopt.h>
+
 #include <net/if.h>
 #include <sys/capability.h>
 
@@ -21,6 +23,9 @@
 #include "packetio/generic_port.h"
 #include "core/icp_log.h"
 
+#include "rte_ring.h"
+#include "rte_eth_ring.h"
+
 namespace icp {
 namespace packetio {
 namespace dpdk {
@@ -34,6 +39,13 @@ static struct named_cap_flag cap_permissions[] = {
     { "cap_ipc_lock", CAP_IPC_LOCK },
     { "cap_net_raw",  CAP_NET_RAW  },
 };
+
+struct copy_on_tx {
+    rte_mempool *mempool;
+    bool on;
+};
+
+static struct copy_on_tx cotx[RTE_MAX_ETHPORTS];
 
 static bool sufficient_permissions()
 {
@@ -293,13 +305,14 @@ static void configure_all_ports(const std::map<int, queue_count>& port_queue_cou
     uint16_t port_id = 0;
     RTE_ETH_FOREACH_DEV(port_id) {
         auto info = model::port_info(port_id);
-        auto port = model::physical_port(port_id, allocator->rx_mempool(
-                                             info.socket_id()));
+        auto mempool = allocator->rx_mempool(info.socket_id());
+        auto port = model::physical_port(port_id, mempool);
         auto result = port.low_level_config(port_queue_counts.at(port_id).rx,
                                             port_queue_counts.at(port_id).tx);
         if (!result) {
             throw std::runtime_error(result.error());
         }
+        if (cotx[port_id].on) cotx[port_id].mempool = mempool;
     }
 }
 
@@ -329,6 +342,13 @@ static uint16_t eal_tx_burst_function(int id, uint32_t hash, struct rte_mbuf* mb
 {
     assert(eal_port_queues[id]);
 
+    if (cotx[id].on) {
+        struct rte_mbuf* mbufs_[nb_mbufs];
+        for (uint16_t n = 0; n < nb_mbufs; n++) {
+            mbufs_[n]=rte_pktmbuf_clone(mbufs[n], cotx[id].mempool);
+        }
+        return (eal_port_queues[id]->tx(hash)->enqueue(mbufs_, nb_mbufs));
+    }
     return (eal_port_queues[id]->tx(hash)->enqueue(mbufs, nb_mbufs));
 }
 
@@ -415,11 +435,47 @@ eal::eal(void* context, std::vector<std::string> args)
      * unparsed.  We subtract two to account for the trailing null and the program name.
      */
     if (parsed_or_err != static_cast<int>(eal_args.size() - 2)) {
-        ICP_LOG(ICP_LOG_ERROR, "DPDK initialization routine only parsed %d of %" PRIu64 " arguments\n",
-                parsed_or_err, eal_args.size() - 2);
-    } else {
-        ICP_LOG(ICP_LOG_INFO, "DPDK initialized (%d workers available)\n", eal_workers());
+        auto argc = eal_args.size() - 2 - parsed_or_err;
+        char** argv = &eal_args[parsed_or_err];
+        int opt;
+        const char* const short_opts = "r";
+
+        optind=1;
+        while ((opt = getopt(argc+1, argv, short_opts)) != -1) {
+            switch (opt) {
+            case 'r':
+                struct rte_ring * ring[2];
+                int port;
+
+                ring[0]=rte_ring_create("R0_RXTX", 1024, 0, RING_F_SP_ENQ|RING_F_SC_DEQ);
+                if (ring[0] == nullptr) {
+                    throw std::runtime_error("Failed to create ring for vdev eth_ring\n");
+                }
+                ring[1]=rte_ring_create("R1_RXTX", 1024, 0, RING_F_SP_ENQ|RING_F_SC_DEQ);
+                if (ring[1] == nullptr) {
+                    throw std::runtime_error("Failed to create ring for vdev eth_ring\n");
+                }
+                port=rte_eth_from_rings("0", &ring[0], 1, &ring[1], 1, 0);
+                if (port == -1) {
+                    throw std::runtime_error("Failed to create vdev eth_ring device\n");
+                }
+                cotx[port].on=true;
+                port=rte_eth_from_rings("1", &ring[1], 1, &ring[0], 1, 0);
+                if (port == -1) {
+                    throw std::runtime_error("Failed to create vdev eth_ring device\n");
+                }
+                cotx[port].on=true;
+                ICP_LOG(ICP_LOG_INFO, "Created 2 vdev eth_ring devices\n");
+                break;
+            default:
+                ICP_LOG(ICP_LOG_ERROR, "DPDK initialization routine ignoring %s option\n",
+                        argv[optind]);
+                break;
+            }
+        }
     }
+
+    ICP_LOG(ICP_LOG_INFO, "DPDK initialized (%d workers available)\n", eal_workers());
 
     /*
      * Loop through our available ports and...
