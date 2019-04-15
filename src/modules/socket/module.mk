@@ -8,6 +8,7 @@ SOCK_COMMON += \
 SOCKSRV_SOURCES += \
 	$(SOCK_COMMON) \
 	server/api_handler.cpp \
+	server/api_server_options.c \
 	server/dgram_channel.cpp \
 	server/lwip_tcp_event.cpp \
 	server/lwip_utils.cpp \

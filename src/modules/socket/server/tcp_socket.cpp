@@ -230,6 +230,7 @@ int tcp_socket::do_lwip_accept(tcp_pcb *newpcb, int err)
      * to the c++ socket wrapper, that behavior is very unhelpful for us.
      */
     ::tcp_arg(newpcb, nullptr);
+    newpcb->netif_idx = m_pcb->netif_idx;
     m_acceptq.emplace(newpcb);
     tcp_backlog_delayed(newpcb);
     m_channel->notify();
@@ -377,14 +378,23 @@ tcp_socket::on_request_reply tcp_socket::on_request(const api::request_listen& l
      * to be careful with pcb ownership and the callback argument here.
      */
     auto orig_pcb = m_pcb.release();
+    /* 
+     * cache idx and transfer to "listen_pcb" since netif_idx is assigned the
+     * DEFAULT value when listen_pcb is created
+     */
+    auto netif_idx = orig_pcb->netif_idx;
+
     ::tcp_arg(orig_pcb, nullptr);
     auto listen_pcb = tcp_listen_with_backlog(orig_pcb, listen.backlog);
+
 
     if (!listen_pcb) {
         m_pcb.reset(orig_pcb);
         ::tcp_arg(orig_pcb, this);
         return {tl::make_unexpected(ENOMEM), std::nullopt};
     }
+
+    listen_pcb->netif_idx = netif_idx;
 
     m_pcb.reset(listen_pcb);
     ::tcp_arg(listen_pcb, this);
