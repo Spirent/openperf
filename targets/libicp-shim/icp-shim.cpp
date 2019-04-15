@@ -1,5 +1,7 @@
 #include <atomic>
 #include <cassert>
+#include <cstdlib>
+#include <cstring>
 #include <fcntl.h>
 #include <functional>
 #include <iostream>
@@ -11,6 +13,8 @@ static void icp_shim_init() __attribute__((constructor));
 
 static std::atomic_bool client_initialized = ATOMIC_VAR_INIT(false);
 
+static bool icp_trace = false;
+
 void icp_shim_init()
 {
     auto& libc = icp::socket::libc::wrapper::instance();
@@ -18,10 +22,10 @@ void icp_shim_init()
 
     auto& client = icp::socket::api::client::instance();
     client.init(&client_initialized);
-}
 
-//#define SHIM_TRACE 1
-#ifdef SHIM_TRACE
+    if (auto envp = std::getenv("ICP_TRACE"); envp != nullptr &&
+        std::strncmp(envp, "0", 1) != 0) icp_trace = true;
+}
 
 template <class T>
 void expand(std::initializer_list<T>) {}
@@ -35,19 +39,14 @@ auto call_and_log_function(const char* function_name, Function&& f, Object&& o, 
     auto result = std::invoke(std::forward<Function>(f), std::forward<Object>(o),
                               std::forward<Args>(args)...);
     std::cerr << ") = " << result << std::endl;
+    	
     return (result);
 }
 
-#define client_call(function, ...)                                      \
-    call_and_log_function(#function,                                    \
-                          &icp::socket::api::client::function,          \
-                          client, __VA_ARGS__)
-
-#else
-
-#define client_call(function, ...) client.function(__VA_ARGS__)
-
-#endif /* SHIM_TRACE */
+#define client_call(function, ...)                                      	\
+    (icp_trace ? call_and_log_function(#function,				\
+                              	       &icp::socket::api::client::function,	\
+                              	       client, __VA_ARGS__) : client.function(__VA_ARGS__))
 
 extern "C" {
 
@@ -207,7 +206,20 @@ int socket(int domain, int type, int protocol)
     }
 
     auto& client = icp::socket::api::client::instance();
-    return (client_call(socket, domain, type, protocol));
+
+    int s = client_call(socket, domain, type, protocol);
+    if (s >= 0) {
+        if (auto envp = std::getenv("ICP_BINDTODEVICE"); envp != nullptr) {
+            /*
+             * Close socket and return -1 on BINDTODEVICE failure.
+             */
+            if (client_call(setsockopt, s, SOL_SOCKET, SO_BINDTODEVICE, envp, strlen(envp)+1) < 0) {
+                client_call(close, s);
+                return (-1);
+            }
+        }
+    }
+    return (s);
 }
 
 int fcntl(int s, int cmd, ...)

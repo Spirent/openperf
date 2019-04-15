@@ -25,6 +25,9 @@ namespace api {
 
 using api_handler = icp::socket::server::api_handler;
 
+static bool unlink_stale_files = false;
+static std::string prefix_opt;
+
 static __attribute__((const)) uint64_t align_up(uint64_t x, uint64_t align)
 {
     return ((x + align - 1) & ~(align - 1));
@@ -46,6 +49,20 @@ static icp::memory::shared_segment create_shared_memory(size_t size)
 socket::server::allocator* server::allocator() const
 {
     return (reinterpret_cast<socket::server::allocator*>(m_shm.get()));
+}
+
+static icp::socket::unix_socket create_unix_socket(const std::string_view path, int type)
+{
+    if (unlink_stale_files) {
+        if ((unlink(path.data()) < 0) && (errno != ENOENT)) {
+            throw std::runtime_error("Could not remove shared unix domain socket "
+                                     + std::string(path) + ": " + strerror(errno));
+        }
+    }
+
+    auto socket = icp::socket::unix_socket(path, type);
+
+    return (socket);
 }
 
 extern "C" {
@@ -84,10 +101,30 @@ static int close_fd(const struct icp_event_data *data,
     return (0);
 }
 
+int api_server_option_handler(int opt, const char *opt_arg __attribute__((unused)))
+{
+    if (icp_options_hash_long("force-unlink") == opt) {
+        unlink_stale_files = true;
+        return (0);
+    }
+    if (icp_options_hash_long("prefix") == opt) {
+        prefix_opt = opt_arg;
+        return (0);
+    }
+    return (-EINVAL);
+}
+
+const char* api_server_options_prefix_option_get(void)
+{
+    return (prefix_opt.c_str());
+}
+
 }
 
 server::server(icp::core::event_loop& loop)
-    : m_sock(api::server_socket(), api::socket_type)
+    : m_sock(create_unix_socket((prefix_opt.length() > 0) ? (api::server_socket() +
+                                "." + prefix_opt) : api::server_socket(),
+                                api::socket_type))
     , m_shm(create_shared_memory(shm_size))
     , m_loop(loop)
 {

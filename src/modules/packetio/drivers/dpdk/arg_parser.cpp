@@ -2,6 +2,7 @@
 
 #include "core/icp_core.h"
 #include "packetio/drivers/dpdk/arg_parser.h"
+#include "socket/server/api_server_options.h"
 
 namespace icp {
 namespace packetio {
@@ -33,6 +34,22 @@ static void add_log_level_arg(enum icp_log_level level, std::vector<std::string>
 
     args.push_back("--log-level");
     args.push_back(log_level_map[level]);
+}
+
+static bool have_file_prefix_arg(std::vector<std::string> &args)
+{
+    for (const auto &s : args) {
+        if (s == "--file-prefix") {
+            return (true);
+        }
+    }
+    return (false);
+}
+
+static void add_file_prefix_arg(const char* prefix, std::vector<std::string>& args)
+{
+    args.push_back("--file-prefix");
+    args.push_back(prefix);
 }
 
 int arg_parser::init(const char *name)
@@ -68,6 +85,12 @@ std::vector<std::string> arg_parser::args()
     /* Append a log level option if needed */
     if (!have_log_level_arg(to_return)) {
         add_log_level_arg(icp_log_level_get(), to_return);
+    }
+    if (!have_file_prefix_arg(to_return)) {
+        if (auto prefix = api_server_options_prefix_option_get(); prefix != nullptr
+            && prefix[0] != '\0') {
+            add_file_prefix_arg(prefix, to_return);
+        }
     }
 
     return (to_return);
