@@ -220,15 +220,7 @@ size_t stream_channel::send_available() const
 
 size_t stream_channel::send(const iovec iov[], size_t iovcnt)
 {
-    auto buf_writable = writable();
-    if (!buf_writable) return (0);
-
-    if (buf_writable == producer_len()) notify();
-
-    auto written = std::accumulate(iov, iov + iovcnt, 0UL,
-                                   [&](size_t x, const iovec& iov) {
-                                       return (x + write(iov.iov_base, iov.iov_len));
-                                   });
+    auto written = write(iov, iovcnt);
 
     notify();
 

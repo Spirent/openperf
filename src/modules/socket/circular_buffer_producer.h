@@ -10,6 +10,12 @@ namespace socket {
 template <typename Derived>
 class circular_buffer_producer
 {
+    /*
+     * Align the 'writable' size to this value to try to limit
+     * inefficient writes to our buffer.
+     */
+    static const size_t writable_alignment = 0x1F;
+
     Derived& derived();
     const Derived& derived() const;
 
@@ -29,6 +35,7 @@ class circular_buffer_producer
 public:
     size_t writable() const;
     size_t write(const void* ptr, size_t length);
+    size_t write(const iovec iov[], size_t iovcnt);
 
     template <typename NotifyFunction>
     size_t write_and_notify(const void* ptr, size_t length, NotifyFunction&& notify);
