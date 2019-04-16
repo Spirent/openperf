@@ -68,7 +68,15 @@ static std::string to_string(tcp_pcb* pcb)
 }
 #endif
 
-static size_t do_tcp_transmit(tcp_pcb* pcb, const void* ptr, size_t length)
+/*
+ * The BufferEmptyFunction should return true if the written amount equals the
+ * buffer's current size.  We use a lambda for this so that we can perform this
+ * check at the very end of the transmission process.  If the client makes any
+ * write to the buffer before we finish, we don't want to set the PSH flag.
+ */
+template <typename BufferEmptyFunction>
+static size_t do_tcp_transmit(tcp_pcb* pcb, const void* ptr, size_t length,
+                              BufferEmptyFunction&& empty)
 {
     static constexpr uint16_t tcp_send_max = std::numeric_limits<uint16_t>::max();
 
@@ -94,14 +102,17 @@ static size_t do_tcp_transmit(tcp_pcb* pcb, const void* ptr, size_t length)
         to_write -= tcp_send_max;
     }
 
+    /* We want to set the PSH flag if this next write will empty the buffer */
+    const auto push = std::forward<BufferEmptyFunction>(empty)(written + to_write);
+    const auto flags = TCP_WRITE_FLAG_COPY | (-(!push) & TCP_WRITE_FLAG_MORE);
     if (tcp_write(pcb, reinterpret_cast<const uint8_t*>(ptr) + written,
-                  to_write, TCP_WRITE_FLAG_COPY) != ERR_OK) {
+                  to_write, flags) != ERR_OK) {
         return (written);
     }
 
     written += to_write;
 
-    if (written == length || tcp_sndbuf(pcb) == 0) {
+    if (written == length || tcp_sndbuf(pcb) < tcp_mss(pcb)) {
         /*
          * Trigger a transmission if...
          * - we wrote everything we were asked to write -or-
@@ -117,7 +128,10 @@ static void do_tcp_transmit_all(tcp_pcb *pcb, stream_channel& channel)
 {
     for (;;) {
         auto [ptr, length] = channel.recv_peek();
-        if (channel.recv_drop(do_tcp_transmit(pcb, ptr, length)) == 0) {
+        if (channel.recv_drop(do_tcp_transmit(pcb, ptr, length,
+                                              [&](size_t written){
+                                                  return (written == channel.readable());
+                                              })) == 0) {
             break;
         }
     }
@@ -135,11 +149,9 @@ static void do_tcp_receive(tcp_pcb *pcb, size_t length)
 
 static void do_tcp_receive_all(tcp_pcb *pcb, stream_channel& channel, pbuf_queue& queue)
 {
-    std::array<iovec, 64> iovecs;
+    std::array<iovec, 32> iovecs;
     size_t iovcnt = 0;
-    while (queue.length()
-           && (iovcnt = queue.iovecs(iovecs.data(), iovecs.size(),
-                                     channel.send_available()))) {
+    while ((iovcnt = queue.iovecs(iovecs.data(), iovecs.size(), channel.send_available())) > 0) {
         do_tcp_receive(pcb, queue.clear(channel.send(iovecs.data(), iovcnt)));
     }
 }
@@ -268,11 +280,11 @@ int tcp_socket::do_lwip_recv(pbuf *p, int err)
 
     /*
      * Initiate a copy to the client's buffer if the TCP sender sent a
-     * PUSH flag or they've filled up a significant portion of the receive
-     * window.
+     * PUSH flag or we have more than enough data to fill the client's
+     * receive buffer.
      */
     if (p->flags & PBUF_FLAG_PUSH
-        || m_recvq.length() > (m_pcb->rcv_wnd / 2)) {
+        || m_recvq.length() > m_channel->send_available()) {
         do_tcp_receive_all(m_pcb.get(), *m_channel, m_recvq);
     }
 
@@ -378,7 +390,7 @@ tcp_socket::on_request_reply tcp_socket::on_request(const api::request_listen& l
      * to be careful with pcb ownership and the callback argument here.
      */
     auto orig_pcb = m_pcb.release();
-    /* 
+    /*
      * cache idx and transfer to "listen_pcb" since netif_idx is assigned the
      * DEFAULT value when listen_pcb is created
      */

@@ -204,10 +204,9 @@ tl::expected<size_t, int> stream_channel::send(pid_t pid __attribute__((unused))
         && socket_flags.load(std::memory_order_relaxed) & EFD_NONBLOCK
         && !writable()) {
         block();   /* pre-emptive block */
-        notify();  /* make sure the other side knows we are blocked */
-    } else {
-        notify();  /* make sure the other side gets at least one notification */
-    }
+    };
+
+    notify();
 
     return (written);
 }
