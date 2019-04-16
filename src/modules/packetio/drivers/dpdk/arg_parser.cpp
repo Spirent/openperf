@@ -52,15 +52,44 @@ static void add_file_prefix_arg(const char* prefix, std::vector<std::string>& ar
     args.push_back(prefix);
 }
 
+static bool have_no_pci_arg(std::vector<std::string> &args)
+{
+    for (const auto &s : args) {
+        if (s == "--no-pci") {
+            return (true);
+        }
+    }
+    return (false);
+}
+
+static void add_no_pci_arg(std::vector<std::string>& args)
+{
+    args.push_back("--no-pci");
+}
+
 int arg_parser::init(const char *name)
 {
     _args.clear();
     _args.push_back(std::string(name));
+    m_test_mode = false;
+    m_test_portpairs = 0;
     return (0);
 }
 
 int arg_parser::parse(int opt, const char *opt_arg)
 {
+    if (icp_options_hash_long("dpdk-test-mode") == opt) {
+        m_test_mode = true;
+        m_test_portpairs = 1;
+        return (0);
+    }
+    if (icp_options_hash_long("dpdk-test-portpairs") == opt) {
+        if (opt_arg != nullptr) {
+            m_test_portpairs = std::strtol(opt_arg, nullptr, 10);
+            return (0);
+        }
+        return (-EINVAL);
+    }
     if (opt != 'd' || opt_arg == nullptr) {
         return (-EINVAL);
     }
@@ -77,6 +106,11 @@ int arg_parser::parse(int opt, const char *opt_arg)
     return (0);
 }
 
+int arg_parser::test_portpairs()
+{
+    return (m_test_portpairs);
+}
+
 std::vector<std::string> arg_parser::args()
 {
     std::vector<std::string> to_return;
@@ -91,6 +125,9 @@ std::vector<std::string> arg_parser::args()
             && prefix[0] != '\0') {
             add_file_prefix_arg(prefix, to_return);
         }
+    }
+    if (m_test_mode && !have_no_pci_arg(to_return)) {
+        add_no_pci_arg(to_return);
     }
 
     return (to_return);

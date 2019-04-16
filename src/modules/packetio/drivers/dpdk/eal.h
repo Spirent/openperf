@@ -28,7 +28,7 @@ namespace dpdk {
 class eal
 {
 public:
-    eal(void *context, std::vector<std::string> args);
+    eal(void *context, std::vector<std::string> args, int test_portpairs);
     ~eal();
 
     /* environment is movable */
@@ -45,7 +45,7 @@ public:
     static std::vector<int> port_ids();
     std::optional<port::generic_port> port(int id) const;
 
-    driver::tx_burst tx_burst_function() const;
+    driver::tx_burst tx_burst_function(int port) const;
 
     tl::expected<int, std::string> create_port(const port::config_data& config);
     tl::expected<void, std::string> delete_port(int id);

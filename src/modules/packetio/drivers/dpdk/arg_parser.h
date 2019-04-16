@@ -29,10 +29,13 @@ class arg_parser : public singleton<arg_parser>
 public:
     int init(const char *name);               /**< Initialize args vector */
     int parse(int opt, const char *opt_arg);  /**< Parse arguments */
+    int test_portpairs();                     /**< Number of eth ring devs */
     std::vector<std::string> args();          /**< Retrieve a copy of args for use */
 
 private:
     std::vector<std::string> _args;
+    int m_test_portpairs;
+    bool m_test_mode;
 };
 
 

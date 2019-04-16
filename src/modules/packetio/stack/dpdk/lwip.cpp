@@ -49,7 +49,7 @@ std::optional<interface::generic_interface> lwip::interface(int id) const
 tl::expected<int, std::string> lwip::create_interface(const interface::config_data& config)
 {
     try {
-        auto ifp = std::make_unique<net_interface>(m_idx, config, m_driver.tx_burst_function());
+        auto ifp = std::make_unique<net_interface>(m_idx, config, m_driver.tx_burst_function(config.port_id));
         m_driver.add_interface(ifp->port_id(), ifp->data());
         auto item = m_interfaces.emplace(std::make_pair(m_idx++, std::move(ifp)));
         return (item.first->first);

@@ -9,6 +9,8 @@ struct icp_options_data dpdk_options = {
     .callback = dpdk_arg_parse_handler,
     .options = {
         {"quoted, comma separated options for DPDK", "dpdk", 'd', true},
+        {"configure ethernet ring devices", "dpdk-test-mode", 0, false},
+        {"specify number of connected port pairs", "dpdk-test-portpairs", 0, true},
         { 0, 0, 0, 0 },
     },
 };

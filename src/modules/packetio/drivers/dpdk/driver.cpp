@@ -14,7 +14,7 @@ std::unique_ptr<generic_driver> make(void* context)
 {
     auto& parser = arg_parser::instance();
     return std::make_unique<generic_driver>(
-        generic_driver(icp::packetio::dpdk::eal(context, parser.args())));
+        generic_driver(icp::packetio::dpdk::eal(context, parser.args(), parser.test_portpairs())));
 }
 
 }
