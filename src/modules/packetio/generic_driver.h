@@ -33,9 +33,9 @@ public:
         return m_self->port(id);
     }
 
-    tx_burst tx_burst_function() const
+    tx_burst tx_burst_function(int port) const
     {
-        return m_self->tx_burst_function();
+        return m_self->tx_burst_function(port);
     }
 
     tl::expected<int, std::string> create_port(const port::config_data& config)
@@ -63,7 +63,7 @@ private:
         virtual ~driver_concept() = default;
         virtual std::vector<int> port_ids() const = 0;
         virtual std::optional<port::generic_port> port(int id) const = 0;
-        virtual tx_burst tx_burst_function() const = 0;
+        virtual tx_burst tx_burst_function(int port) const = 0;
         virtual tl::expected<int, std::string> create_port(const port::config_data& config) = 0;
         virtual tl::expected<void, std::string> delete_port(int id) = 0;
         virtual void add_interface(int id, std::any interface) = 0;
@@ -86,9 +86,9 @@ private:
             return m_driver.port(id);
         }
 
-        tx_burst tx_burst_function() const override
+        tx_burst tx_burst_function(int port) const override
         {
-            return m_driver.tx_burst_function();
+            return m_driver.tx_burst_function(port);
         }
 
         tl::expected<int, std::string> create_port(const port::config_data& config) override

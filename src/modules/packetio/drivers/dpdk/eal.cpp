@@ -293,8 +293,8 @@ static void configure_all_ports(const std::map<int, queue_count>& port_queue_cou
     uint16_t port_id = 0;
     RTE_ETH_FOREACH_DEV(port_id) {
         auto info = model::port_info(port_id);
-        auto port = model::physical_port(port_id, allocator->rx_mempool(
-                                             info.socket_id()));
+        auto mempool = allocator->rx_mempool(info.socket_id());
+        auto port = model::physical_port(port_id, mempool);
         auto result = port.low_level_config(port_queue_counts.at(port_id).rx,
                                             port_queue_counts.at(port_id).tx);
         if (!result) {
@@ -330,6 +330,20 @@ static uint16_t eal_tx_burst_function(int id, uint32_t hash, struct rte_mbuf* mb
     assert(eal_port_queues[id]);
 
     return (eal_port_queues[id]->tx(hash)->enqueue(mbufs, nb_mbufs));
+}
+
+static uint16_t eal_tx_burst_copy_function(int id, uint32_t hash, struct rte_mbuf* mbufs[], uint16_t nb_mbufs)
+{
+    assert(eal_port_queues[id]);
+
+    for (uint16_t n = 0; n < nb_mbufs; n++) {
+        struct rte_mbuf* mb = rte_pktmbuf_clone(mbufs[n], (mbufs[n])->pool);
+        assert(mb != nullptr);
+        rte_pktmbuf_free(mbufs[n]);
+        auto n_mb = eal_port_queues[id]->tx(hash)->enqueue(&mb, 1);
+        assert(n_mb == 1);
+    }
+    return (nb_mbufs);
 }
 
 static uint16_t eal_tx_dummy_function(int, uint32_t, struct rte_mbuf**, uint16_t)
@@ -371,7 +385,31 @@ static void launch_and_configure_workers(void* context,
     workers->configure(descriptors);
 }
 
-eal::eal(void* context, std::vector<std::string> args)
+static void create_test_portpairs(const int test_portpairs)
+{
+    for (int i = 0; i < test_portpairs; i++) {
+        std::string ring_name0 = "TSTRNG_" + std::to_string(i * 2);
+        auto ring0=rte_ring_create(ring_name0.c_str(), 1024, 0, RING_F_SP_ENQ|RING_F_SC_DEQ);
+        if (ring0 == nullptr) {
+            throw std::runtime_error("Failed to create ring for vdev eth_ring\n");
+        }
+        std::string ring_name1 = "TSTRNG_" + std::to_string(i * 2 + 1);
+        auto ring1=rte_ring_create(ring_name1.c_str(), 1024, 0, RING_F_SP_ENQ|RING_F_SC_DEQ);
+        if (ring1 == nullptr) {
+            throw std::runtime_error("Failed to create ring for vdev eth_ring\n");
+        }
+        auto port=rte_eth_from_rings(ring_name0.c_str(), &ring0, 1, &ring1, 1, 0);
+        if (port == -1) {
+            throw std::runtime_error("Failed to create vdev eth_ring device\n");
+        }
+        port=rte_eth_from_rings(ring_name1.c_str(), &ring1, 1, &ring0, 1, 0);
+        if (port == -1) {
+            throw std::runtime_error("Failed to create vdev eth_ring device\n");
+        }
+    }
+}
+
+eal::eal(void* context, std::vector<std::string> args, int test_portpairs)
     : m_initialized(false)
     , m_switch(std::make_shared<vif_map<netif>>())
 {
@@ -419,6 +457,10 @@ eal::eal(void* context, std::vector<std::string> args)
                 parsed_or_err, eal_args.size() - 2);
     } else {
         ICP_LOG(ICP_LOG_INFO, "DPDK initialized (%d workers available)\n", eal_workers());
+    }
+
+    if (test_portpairs > 0) {
+        create_test_portpairs(test_portpairs);
     }
 
     /*
@@ -570,15 +612,18 @@ std::optional<port::generic_port> eal::port(int id) const
             : std::nullopt);
 }
 
-driver::tx_burst eal::tx_burst_function() const
+driver::tx_burst eal::tx_burst_function(int port) const
 {
     /*
      * The reinterpret cast is necessary due to using a (void*) for the
      * buffer parameter in the generic type signature.
      */
+    auto info = model::port_info(port);
     return (reinterpret_cast<driver::tx_burst>(eal_workers() == 1
                                                ? eal_tx_dummy_function
-                                               : eal_tx_burst_function));
+                                               : ((std::strcmp(info.driver_name(), "net_ring") == 0) ?
+                                                  eal_tx_burst_copy_function :
+                                                  eal_tx_burst_function)));
 }
 
 tl::expected<int, std::string> eal::create_port(const port::config_data& config)
