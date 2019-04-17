@@ -388,12 +388,12 @@ static void launch_and_configure_workers(void* context,
 static void create_test_portpairs(const int test_portpairs)
 {
     for (int i = 0; i < test_portpairs; i++) {
-        std::string ring_name0 = "TSTRNG_" + std::to_string(i);
+        std::string ring_name0 = "TSTRNG_" + std::to_string(i * 2);
         auto ring0=rte_ring_create(ring_name0.c_str(), 1024, 0, RING_F_SP_ENQ|RING_F_SC_DEQ);
         if (ring0 == nullptr) {
             throw std::runtime_error("Failed to create ring for vdev eth_ring\n");
         }
-        std::string ring_name1 = "TSTRNG_" + std::to_string(i + 1);
+        std::string ring_name1 = "TSTRNG_" + std::to_string(i * 2 + 1);
         auto ring1=rte_ring_create(ring_name1.c_str(), 1024, 0, RING_F_SP_ENQ|RING_F_SC_DEQ);
         if (ring1 == nullptr) {
             throw std::runtime_error("Failed to create ring for vdev eth_ring\n");
