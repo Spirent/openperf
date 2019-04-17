@@ -7,8 +7,6 @@
 #include <string>
 #include <vector>
 
-#include <getopt.h>
-
 #include <net/if.h>
 #include <sys/capability.h>
 
@@ -22,9 +20,6 @@
 #include "packetio/drivers/dpdk/model/physical_port.h"
 #include "packetio/generic_port.h"
 #include "core/icp_log.h"
-
-#include "rte_ring.h"
-#include "rte_eth_ring.h"
 
 namespace icp {
 namespace packetio {
@@ -292,13 +287,6 @@ to_worker_descriptors(const std::vector<port_queues_ptr>& queues,
     return (wds);
 }
 
-struct eal_test_portpairs_s {
-    rte_mempool* mempool;
-    bool on;
-};
-
-static struct eal_test_portpairs_s eal_test_portpairs[RTE_MAX_ETHPORTS];
-
 static void configure_all_ports(const std::map<int, queue_count>& port_queue_counts,
                                 const pool_allocator* allocator)
 {
@@ -311,9 +299,6 @@ static void configure_all_ports(const std::map<int, queue_count>& port_queue_cou
                                             port_queue_counts.at(port_id).tx);
         if (!result) {
             throw std::runtime_error(result.error());
-        }
-        if (eal_test_portpairs[port_id].on) {
-            eal_test_portpairs[port_id].mempool = mempool;
         }
     }
 }
@@ -351,12 +336,14 @@ static uint16_t eal_tx_burst_copy_function(int id, uint32_t hash, struct rte_mbu
 {
     assert(eal_port_queues[id]);
 
-    auto mempool = eal_test_portpairs[id].mempool;
-    struct rte_mbuf* mbufs_[nb_mbufs];
     for (uint16_t n = 0; n < nb_mbufs; n++) {
-        mbufs_[n]=rte_pktmbuf_clone(mbufs[n], mempool);
+        struct rte_mbuf* mb = rte_pktmbuf_clone(mbufs[n], (mbufs[n])->pool);
+        assert(mb != nullptr);
+        rte_pktmbuf_free(mbufs[n]);
+        auto n_mb = eal_port_queues[id]->tx(hash)->enqueue(&mb, 1);
+        assert(n_mb == 1);
     }
-    return (eal_port_queues[id]->tx(hash)->enqueue(mbufs_, nb_mbufs));
+    return (nb_mbufs);
 }
 
 static uint16_t eal_tx_dummy_function(int, uint32_t, struct rte_mbuf**, uint16_t)
@@ -400,28 +387,25 @@ static void launch_and_configure_workers(void* context,
 
 static void create_test_portpairs(const int test_portpairs)
 {
-    struct rte_ring * ring[2];
-    int port;
-
     for (int i = 0; i < test_portpairs; i++) {
-        ring[0]=rte_ring_create("R0_RXTX", 1024, 0, RING_F_SP_ENQ|RING_F_SC_DEQ);
-        if (ring[0] == nullptr) {
+        std::string ring_name0 = "TSTRNG_" + std::to_string(i);
+        auto ring0=rte_ring_create(ring_name0.c_str(), 1024, 0, RING_F_SP_ENQ|RING_F_SC_DEQ);
+        if (ring0 == nullptr) {
             throw std::runtime_error("Failed to create ring for vdev eth_ring\n");
         }
-        ring[1]=rte_ring_create("R1_RXTX", 1024, 0, RING_F_SP_ENQ|RING_F_SC_DEQ);
-        if (ring[1] == nullptr) {
+        std::string ring_name1 = "TSTRNG_" + std::to_string(i + 1);
+        auto ring1=rte_ring_create(ring_name1.c_str(), 1024, 0, RING_F_SP_ENQ|RING_F_SC_DEQ);
+        if (ring1 == nullptr) {
             throw std::runtime_error("Failed to create ring for vdev eth_ring\n");
         }
-        port=rte_eth_from_rings("0", &ring[0], 1, &ring[1], 1, 0);
+        auto port=rte_eth_from_rings(ring_name0.c_str(), &ring0, 1, &ring1, 1, 0);
         if (port == -1) {
             throw std::runtime_error("Failed to create vdev eth_ring device\n");
         }
-        eal_test_portpairs[port].on=true;
-        port=rte_eth_from_rings("1", &ring[1], 1, &ring[0], 1, 0);
+        port=rte_eth_from_rings(ring_name1.c_str(), &ring1, 1, &ring0, 1, 0);
         if (port == -1) {
             throw std::runtime_error("Failed to create vdev eth_ring device\n");
         }
-        eal_test_portpairs[port].on=true;
     }
 }
 
@@ -634,9 +618,10 @@ driver::tx_burst eal::tx_burst_function(int port) const
      * The reinterpret cast is necessary due to using a (void*) for the
      * buffer parameter in the generic type signature.
      */
+    auto info = model::port_info(port);
     return (reinterpret_cast<driver::tx_burst>(eal_workers() == 1
                                                ? eal_tx_dummy_function
-                                               : (eal_test_portpairs[port].on ?
+                                               : ((std::strcmp(info.driver_name(), "net_ring") == 0) ?
                                                   eal_tx_burst_copy_function :
                                                   eal_tx_burst_function)));
 }

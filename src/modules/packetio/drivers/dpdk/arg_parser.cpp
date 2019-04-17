@@ -111,6 +111,11 @@ int arg_parser::test_portpairs()
     return (m_test_portpairs);
 }
 
+bool arg_parser::test_mode()
+{
+    return (m_test_mode);
+}
+
 std::vector<std::string> arg_parser::args()
 {
     std::vector<std::string> to_return;

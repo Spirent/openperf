@@ -39,5 +39,7 @@
 #include "rte_version.h"
 #include "rte_ether.h"
 #include "rte_gro.h"
+#include "rte_ring.h"
+#include "rte_eth_ring.h"
 
 #endif /* _PACKETIO_DRIVER_DPDK_H_ */

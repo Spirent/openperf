@@ -28,7 +28,7 @@ namespace dpdk {
 class eal
 {
 public:
-    eal(void *context, std::vector<std::string> args, int test_portpairs);
+    eal(void *context, std::vector<std::string> args, int test_portpairs = 0);
     ~eal();
 
     /* environment is movable */
