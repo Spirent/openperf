@@ -4,7 +4,7 @@
 
 namespace icp::config::file {
 
-bool icp_config_is_number(const std::string_view value)
+bool icp_config_is_number(std::string_view value)
 {
     if (value.empty()) { return false; }
 

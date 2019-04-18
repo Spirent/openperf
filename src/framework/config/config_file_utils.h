@@ -8,7 +8,7 @@ namespace icp::config::file {
 // Function to check if a given input string is
 // either a decimal or integer number.
 // Not an exhaustive checker (only supports base-10).
-bool icp_config_is_number(const std::string_view value);
+bool icp_config_is_number(std::string_view value);
 
 // Function to split a resource path from an identifier.
 // In Inception it is assumed that /<path>/<id> in a configuration file maps to
