@@ -16,7 +16,7 @@ OBJECTS := $(patsubst %, $(BUILD_DIR)/%, \
 	$(patsubst %.c, %.o, $(filter %.c, $(SOURCES))))
 SRC_DEPENDS := $(OBJECTS:.o=.d)
 
-BLD_DEPENDS := api framework packetio yaml_cpp
+BLD_DEPENDS := api framework packetio config_file
 ICP_PACKETIO_DRIVER := dpdk
 
 all: inception
