@@ -36,7 +36,7 @@ SOURCES := \
 OBJECTS := $(patsubst %, $(BUILD_DIR)/%, \
 	$(patsubst %.cpp, %.o, $(SOURCES)))
 SRC_DEPENDS += $(OBJECTS:.o=.d)
-BLD_DEPENDS += framework socket_test config_file_test
+BLD_DEPENDS += config_file_test framework socket_test
 
 # Pull in dependencies
 -include $(SRC_DEPENDS)
