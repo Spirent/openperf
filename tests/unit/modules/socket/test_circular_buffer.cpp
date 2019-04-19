@@ -146,4 +146,19 @@ TEST_CASE("circular buffer functionality", "[circular buffer]")
             REQUIRE(std::memcmp(data.data(), buffer.data(), vec_size) == 0);
         }
     }
+
+    SECTION("0 byte write/read is idempotent, ") {
+        std::array<uint8_t, 128> buffer;
+        buffer.fill('b');
+
+        auto written = producer->write(buffer.data(), buffer.size());
+        REQUIRE(written == buffer.size());
+        REQUIRE(consumer->readable() == written);
+        auto zero = producer->write(buffer.data(), 0);
+        REQUIRE(zero == 0);
+        REQUIRE(consumer->readable() == written);
+        auto zero2 = consumer->read(buffer.data(), 0);
+        REQUIRE(zero2 == 0);
+        REQUIRE(consumer->readable() == written);
+    }
 }
