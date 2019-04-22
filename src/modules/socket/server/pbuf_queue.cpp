@@ -52,7 +52,7 @@ size_t pbuf_queue::iovecs(iovec iovs[], size_t max_iovs, size_t max_length) cons
     while (pbuf_idx < m_queue.size() && iov_idx < max_iovs) {
         auto& item = m_queue[pbuf_idx++];
         const auto len = item.len();
-        if (length + len > max_length) break;
+        if (length += len > max_length) break;
         iovs[iov_idx++] = iovec{ .iov_base = item.payload(),
                                  .iov_len = len };
     }

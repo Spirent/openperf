@@ -436,9 +436,9 @@ tcp_write(struct tcp_pcb *pcb, const void *arg, u16_t len, u8_t apiflags)
   LWIP_ERROR("tcp_write: invalid pcb", pcb != NULL, return ERR_ARG);
 
   /* don't allocate segments bigger than half the maximum window we ever received */
-  max_seglen = LWIP_MIN(packetio_stack_gso_max_segment_length(pcb),
-                        TCPWND_MIN16(pcb->snd_wnd_max / 2));
-  max_seglen = max_seglen ? LWIP_MAX(max_seglen, pcb->mss) : pcb->mss;
+  max_seglen = LWIP_MAX(LWIP_MIN(packetio_stack_gso_max_segment_length(pcb),
+                                 TCPWND_MIN16(pcb->snd_wnd_max) / 2),
+                        tcp_mss(pcb));
 
   LWIP_ASSERT_CORE_LOCKED();
 

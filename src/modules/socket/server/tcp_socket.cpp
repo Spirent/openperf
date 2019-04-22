@@ -112,12 +112,11 @@ static size_t do_tcp_transmit(tcp_pcb* pcb, const void* ptr, size_t length,
 
     written += to_write;
 
-    if (written == length || tcp_sndbuf(pcb) < tcp_mss(pcb)) {
-        /*
-         * Trigger a transmission if...
-         * - we wrote everything we were asked to write -or-
-         * - we filled the send buffer
-         */
+    /*
+     * Trigger a transmission if we have an explicit push or the send buffer is
+     * nearly filled.
+     */
+    if (push || tcp_sndbuf(pcb) < tcp_mss(pcb)) {
         tcp_output(pcb);
     }
 

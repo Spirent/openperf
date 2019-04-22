@@ -145,8 +145,8 @@ size_t circular_buffer_consumer<Derived>::read_and_notify(void *ptr, size_t leng
 
     const auto chunk1 = std::min(to_read, lowat);
     const auto chunk2 = to_read - chunk1;
-
     assert(chunk1 + chunk2 == to_read);
+
     auto readed = read(ptr, chunk1);
     std::forward<NotifyFunction>(notify)();
     readed += read(reinterpret_cast<uint8_t*>(ptr) + chunk1, chunk2);
