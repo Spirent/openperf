@@ -23,7 +23,9 @@ public:
     dgram_channel(dgram_channel&&) = default;
     dgram_channel& operator=(dgram_channel&&) = default;
 
-    int flags();
+    int error() const;
+
+    int flags() const;
     int flags(int);
 
     tl::expected<size_t, int> send(pid_t pid, const iovec iov[], size_t iovcnt,
@@ -31,8 +33,6 @@ public:
 
     tl::expected<size_t, int> recv(pid_t pid, iovec iov[], size_t iovcnt,
                                    sockaddr *from, socklen_t *fromlen);
-
-    int recv_clear();
 };
 
 }

@@ -79,7 +79,12 @@ dgram_channel::~dgram_channel()
     close(client_fds.server_fd);
 }
 
-int dgram_channel::flags()
+int dgram_channel::error() const
+{
+    return (0);
+}
+
+int dgram_channel::flags() const
 {
     return (socket_flags.load(std::memory_order_acquire));
 }
@@ -156,12 +161,6 @@ tl::expected<size_t, int> dgram_channel::recv(pid_t pid, iovec iov[], size_t iov
     }
 
     return (result);
-}
-
-int dgram_channel::recv_clear()
-{
-    uint64_t counter = 0;
-    return (eventfd_read(client_fds.client_fd, &counter));
 }
 
 }

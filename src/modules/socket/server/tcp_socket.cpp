@@ -299,6 +299,10 @@ int tcp_socket::do_lwip_connected(int err)
 
     /* transition to the connected state */
     state(tcp_connected());
+
+    /* clients may now write to the socket */
+    m_channel->unblock();
+
     return (ERR_OK);
 }
 
@@ -319,7 +323,17 @@ int tcp_socket::do_lwip_poll()
 int tcp_socket::do_lwip_error(int err)
 {
     m_channel->error(err_to_errno(err));
+
+    /*
+     * If we are in the connecting state, then we need to unblock
+     * the client
+     */
+    if (std::holds_alternative<tcp_connecting>(state())) {
+        m_channel->unblock();
+    }
+
     state(tcp_error{ .value = err_to_errno(err) });
+
     /*
      * lwIP will "conveniently" free the pbuf for us before this callback is
      * triggered, so make sure we don't.
@@ -627,11 +641,24 @@ tl::expected<socklen_t, int> do_tcp_getsockopt(const tcp_pcb* pcb,
 }
 
 tl::expected<socklen_t, int> tcp_socket::do_getsockopt(const tcp_pcb* pcb,
-                                                       const api::request_getsockopt& getsockopt)
+                                                       const api::request_getsockopt& getsockopt,
+                                                       const tcp_socket_state& state)
 {
     switch (getsockopt.level) {
     case SOL_SOCKET:
-        return (do_sock_getsockopt(reinterpret_cast<const ip_pcb*>(pcb), getsockopt));
+        switch (getsockopt.optname) {
+        case SO_ERROR: {
+            int error = 0;
+            if (std::holds_alternative<tcp_error>(state)) {
+                error = std::get<tcp_error>(state).value;
+            }
+            auto result = copy_out(getsockopt.id.pid, getsockopt.optval, error);
+            if (!result) return (tl::make_unexpected(result.error()));
+            return (sizeof(error));
+        }
+        default:
+            return (do_sock_getsockopt(reinterpret_cast<const ip_pcb*>(pcb), getsockopt));
+        }
     case IPPROTO_IP:
         return (do_ip_getsockopt(reinterpret_cast<const ip_pcb*>(pcb), getsockopt));
     case IPPROTO_TCP:
@@ -639,12 +666,6 @@ tl::expected<socklen_t, int> tcp_socket::do_getsockopt(const tcp_pcb* pcb,
     default:
         return (tl::make_unexpected(ENOPROTOOPT));
     }
-}
-
-tcp_socket::on_request_reply tcp_socket::on_request(const api::request_getsockopt&,
-                                                    const tcp_error& error)
-{
-    return {tl::make_unexpected(error.value), std::nullopt};
 }
 
 static

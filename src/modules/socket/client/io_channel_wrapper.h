@@ -29,7 +29,9 @@ public:
     io_channel_wrapper(io_channel_wrapper&&);
     io_channel_wrapper& operator=(io_channel_wrapper&&);
 
-    int flags();
+    int error() const;
+
+    int flags() const;
     int flags(int);
 
     tl::expected<size_t, int> send(pid_t pid, const iovec iov[], size_t iovcnt,
@@ -38,7 +40,9 @@ public:
     tl::expected<size_t, int> recv(pid_t pid, iovec iov[], size_t iovcnt,
                                    sockaddr *from, socklen_t *fromlen);
 
-    int recv_clear();
+    tl::expected<void, int> block_writes();
+    tl::expected<void, int> wait_readable();
+    tl::expected<void, int> wait_writable();
 };
 
 }
