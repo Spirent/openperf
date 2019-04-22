@@ -13,8 +13,11 @@ inception: deps
 	@cd targets/inception && $(MAKE)
 
 .PHONY: test
-test: test_aat
+test: shim test_aat
 
+.PHONY: shim
+shim:
+	@cd targets/libicp-shim && $(MAKE)
 .PHONY: test_aat
 test_aat:
 	@cd tests/aat && $(MAKE)
