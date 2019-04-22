@@ -42,7 +42,15 @@ io_channel_wrapper& io_channel_wrapper::operator=(io_channel_wrapper&& other)
     return (*this);
 }
 
-int io_channel_wrapper::flags()
+int io_channel_wrapper::error() const
+{
+    auto error_visitor = [](auto channel) -> int {
+                             return (channel->error());
+                         };
+    return (std::visit(error_visitor, m_channel));
+}
+
+int io_channel_wrapper::flags() const
 {
     auto flags_visitor = [](auto channel) -> int {
                              return (channel->flags());
@@ -78,12 +86,28 @@ tl::expected<size_t, int> io_channel_wrapper::recv(pid_t pid,
     return (std::visit(recv_visitor, m_channel));
 }
 
-int io_channel_wrapper::recv_clear()
+tl::expected<void, int> io_channel_wrapper::block_writes()
 {
-    auto recv_clear_visitor = [](auto channel) -> int {
-                                  return (channel->recv_clear());
-                              };
-    return (std::visit(recv_clear_visitor, m_channel));
+    if (!std::holds_alternative<stream_channel*>(m_channel)) {
+        return {};
+    }
+    return (std::get<stream_channel*>(m_channel))->block_writes();
+}
+
+tl::expected<void, int> io_channel_wrapper::wait_readable()
+{
+    if (!std::holds_alternative<stream_channel*>(m_channel)) {
+        return {};
+    }
+    return (std::get<stream_channel*>(m_channel))->wait_readable();
+}
+
+tl::expected<void, int> io_channel_wrapper::wait_writable()
+{
+    if (!std::holds_alternative<stream_channel*>(m_channel)) {
+        return {};
+    }
+    return (std::get<stream_channel*>(m_channel))->wait_writable();
 }
 
 }

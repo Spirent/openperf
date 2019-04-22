@@ -137,15 +137,14 @@ public:
     }
 
     /* getsockopt handlers */
-    on_request_reply on_request(const api::request_getsockopt&, const tcp_error& error);
-
     static tl::expected<socklen_t, int> do_getsockopt(const tcp_pcb*,
-                                                      const api::request_getsockopt&);
+                                                      const api::request_getsockopt&,
+                                                      const tcp_socket_state& state);
 
     template <typename State>
     on_request_reply on_request(const api::request_getsockopt& name, const State&)
     {
-        auto result = do_getsockopt(m_pcb.get(), name);
+        auto result = do_getsockopt(m_pcb.get(), name, state());
         if (!result) return {tl::make_unexpected(result.error()), std::nullopt};
         return {api::reply_socklen{*result}, std::nullopt};
     }

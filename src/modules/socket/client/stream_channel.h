@@ -65,6 +65,8 @@ public:
     stream_channel(stream_channel&&) = default;
     stream_channel& operator=(stream_channel&&) = default;
 
+    int error() const;
+
     int flags() const;
     int flags(int);
 
@@ -74,7 +76,9 @@ public:
     tl::expected<size_t, int> recv(pid_t pid, iovec iov[], size_t iovcnt,
                                    sockaddr *from, socklen_t *fromlen);
 
-    int recv_clear();
+    tl::expected<void, int> block_writes();
+    tl::expected<void, int> wait_readable();
+    tl::expected<void, int> wait_writable();
 };
 
 }

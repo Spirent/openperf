@@ -134,8 +134,9 @@ int client::accept(int s, struct sockaddr *addr, socklen_t *addrlen, int flags)
     }
 
     auto& [id, channel] = result->second;
-    if (channel.recv_clear() == -1) {
-        errno = EWOULDBLOCK;
+    auto wait = channel.wait_readable();
+    if (!wait) {
+        errno = wait.error();
         return (-1);
     }
 
@@ -369,6 +370,13 @@ int client::connect(int s, const struct sockaddr *name, socklen_t namelen)
         .namelen = namelen
     };
 
+    /* Connecting sockets should be non-writable, so block the socket */
+    auto block = channel.block_writes();
+    if (!block) {
+        errno = block.error();
+        return (-1);
+    }
+
     auto reply = submit_request(m_sock.get(), request);
     if (!reply) {
         errno = reply.error();
@@ -376,7 +384,24 @@ int client::connect(int s, const struct sockaddr *name, socklen_t namelen)
     }
 
     assert(std::holds_alternative<api::reply_success>(*reply));
-    return (0);
+
+    /*
+     * At this point the connect is in progress in the stack.
+     * If we have a non-blocking socket, let the caller know we're working on it.
+     */
+    if (channel.flags() & SOCK_NONBLOCK) {
+        errno = EINPROGRESS;
+        return (-1);
+    }
+
+    /* Blocking socket; wait for the socket to become writable */
+    auto wait = channel.wait_writable();
+    if (!wait) {
+        errno = wait.error();
+        return (-1);
+    }
+
+    return (channel.error());
 }
 
 int client::listen(int s, int backlog)

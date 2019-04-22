@@ -158,6 +158,11 @@ stream_channel::~stream_channel()
     close(client_fds.server_fd);
 }
 
+int stream_channel::error() const
+{
+    return (socket_error.load(std::memory_order_acquire));
+}
+
 int stream_channel::flags() const
 {
     return (socket_flags.load(std::memory_order_acquire));
@@ -257,9 +262,28 @@ tl::expected<size_t, int> stream_channel::recv(pid_t pid __attribute__((unused))
     return (read_size);
 }
 
-int stream_channel::recv_clear()
+tl::expected<void, int> stream_channel::block_writes()
 {
-    return (ack() == 0 ? 0 : -1);
+    if (auto error = block()) {
+        return (tl::make_unexpected(error));
+    }
+    return {};
+}
+
+tl::expected<void, int> stream_channel::wait_readable()
+{
+    if (auto error = ack_wait()) {
+        return (tl::make_unexpected(error));
+    }
+    return {};
+}
+
+tl::expected<void, int> stream_channel::wait_writable()
+{
+    if (auto error = block_wait()) {
+        return (tl::make_unexpected(error));
+    }
+    return {};
 }
 
 }
