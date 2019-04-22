@@ -1,42 +1,33 @@
 #include <cassert>
 
-#include "packetio/drivers/dpdk/queue_poller.h"
+#include "packetio/drivers/dpdk/epoll_poller.h"
 
 namespace icp {
 namespace packetio {
 namespace dpdk {
 
-enum class queue_type:uint16_t { NO_QUEUE = 0,
-                                 RX_QUEUE = 1,
-                                 TX_QUEUE = 2 };
+
 union epoll_key {
     struct {
-        uint16_t port_id;
-        uint16_t queue_id;
-        queue_type type;
+        uint32_t id;
+        uint32_t index;
     };
     uintptr_t value;
 };
 
-union epoll_key to_epoll_key(queue_ptr& q)
+union epoll_key to_epoll_key(pollable_ptr& p)
 {
-    auto port_visitor = [](auto q) -> uint16_t {
-                            return (q->port_id());
-                        };
-
-    auto queue_visitor = [](auto q) -> uint16_t {
-                             return (q->queue_id());
-                         };
+    auto id_visitor = [](auto p) -> uint32_t {
+                          return (p->poll_id());
+                      };
 
     return (epoll_key {
-            .port_id = std::visit(port_visitor, q),
-            .queue_id = std::visit(queue_visitor, q),
-            .type = (std::holds_alternative<rx_queue*>(q)
-                     ? queue_type::RX_QUEUE
-                     : queue_type::TX_QUEUE) });
+            .id = std::visit(id_visitor, p),
+            .index = static_cast<uint32_t>(p.index()),
+        });
 }
 
-bool queue_poller::add(queue_ptr q)
+bool epoll_poller::add(pollable_ptr q)
 {
     auto key = to_epoll_key(q);
     auto add_visitor = [&](auto q) -> bool {
@@ -52,7 +43,7 @@ bool queue_poller::add(queue_ptr q)
     return (true);
 }
 
-bool queue_poller::del(queue_ptr q)
+bool epoll_poller::del(pollable_ptr q)
 {
     auto key = to_epoll_key(q);
     auto del_visitor = [&](auto q) -> bool {
@@ -68,11 +59,9 @@ bool queue_poller::del(queue_ptr q)
     return (true);
 }
 
-const std::vector<queue_ptr>& queue_poller::poll(int timeout_ms)
+const std::vector<pollable_ptr>& epoll_poller::poll(int timeout_ms)
 {
     m_events.clear();
-
-    auto disable_visitor = [](auto q) { q->disable(); };
 
     std::array<struct rte_epoll_event, max_events> events;
     auto n = rte_epoll_wait(RTE_EPOLL_PER_THREAD, events.data(), events.size(), timeout_ms);
@@ -80,14 +69,13 @@ const std::vector<queue_ptr>& queue_poller::poll(int timeout_ms)
         auto result = m_queues.find(reinterpret_cast<uintptr_t>(events[i].epdata.data));
         assert(result != m_queues.end());  /* should never happen */
         auto queue = result->second;
-        std::visit(disable_visitor, queue);
         m_events.emplace_back(queue);
     }
 
     return (m_events);
 }
 
-bool queue_poller::wait_for_interrupt(int timeout_ms)
+bool epoll_poller::wait_for_interrupt(int timeout_ms)
 {
     std::array<struct rte_epoll_event, max_events> events;
     auto n = rte_epoll_wait(RTE_EPOLL_PER_THREAD, events.data(), events.size(), timeout_ms);
