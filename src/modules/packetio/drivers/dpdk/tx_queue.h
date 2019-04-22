@@ -41,6 +41,7 @@ public:
 
     uint16_t port_id() const;
     uint16_t queue_id() const;
+    uint32_t poll_id() const;
     rte_ring* ring() const;
 
     bool add(int poll_fd, void* data);

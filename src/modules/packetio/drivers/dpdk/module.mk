@@ -11,7 +11,7 @@ PIO_DRIVER_SOURCES += \
 	arg_parser_register.c \
 	driver.cpp \
 	eal.cpp \
-	queue_poller.cpp \
+	epoll_poller.cpp \
 	queue_utils.cpp \
 	rx_queue.cpp \
 	topology_utils.cpp \
@@ -19,6 +19,7 @@ PIO_DRIVER_SOURCES += \
 	vif_map_impl.cpp \
 	worker.cpp \
 	worker_client.cpp \
+	zmq_socket.cpp \
 	model/physical_port.cpp \
 	model/port_info.cpp
 

@@ -13,7 +13,7 @@
 
 #include "core/icp_log.h"
 #include "packetio/drivers/dpdk/dpdk.h"
-#include "packetio/drivers/dpdk/queue_poller.h"
+#include "packetio/drivers/dpdk/epoll_poller.h"
 #include "packetio/drivers/dpdk/queue_utils.h"
 #include "packetio/drivers/dpdk/worker_api.h"
 #include "packetio/memory/dpdk/pbuf_utils.h"
@@ -89,9 +89,9 @@ public:
     }
 };
 
-static bool all_pollable(const std::vector<queue_ptr>& queues)
+static bool all_pollable(const std::vector<pollable_ptr>& queues)
 {
-    queue_poller poller;
+    epoll_poller poller;
 
     auto add_visitor = [&](auto q) -> bool {
                            return (poller.add(q));
@@ -259,7 +259,7 @@ static uint16_t tx_burst(const tx_queue* txq)
     return (sent);
 }
 
-static uint16_t service_queue(const switch_t& vif, const queue_ptr& queue)
+static uint16_t service_queue(const switch_t& vif, const pollable_ptr& queue)
 {
     return (std::visit(overloaded_visitor(
                            [&](const rx_queue* rxq) -> uint16_t {
@@ -267,98 +267,76 @@ static uint16_t service_queue(const switch_t& vif, const queue_ptr& queue)
                            },
                            [](const tx_queue* txq) -> uint16_t {
                                return (tx_burst(txq));
+                           },
+                           [](const zmq_socket*) -> uint16_t {
+                               return (0);  /* noop; not a queue */
                            }),
                        queue));
 }
 
-static void enable_queue_interrupt(const queue_ptr& queue)
+static void enable_queue_interrupt(const pollable_ptr& queue)
 {
     auto enable_visitor = [](auto q) { q->enable(); };
     std::visit(enable_visitor, queue);
 }
 
-static void disable_queue_interrupt(const queue_ptr& queue)
+static void disable_queue_interrupt(const pollable_ptr& queue)
 {
     auto disable_visitor = [](auto q) { q->disable(); };
     std::visit(disable_visitor, queue);
 }
 
 static void run_pollable(void* control, const switch_t& vif,
-                         const std::vector<queue_ptr>& queues)
+                         const std::vector<pollable_ptr>& queues)
 {
-    queue_poller poller;
+    epoll_poller poller;
+
     for (auto& q : queues) {
         poller.add(q);
     }
 
+    auto ctrl_sock = zmq_socket(control);
+    poller.add(&ctrl_sock);
+
     uint16_t max_burst = 0;
     uint16_t idle_queues = 0;
-    uint16_t idle_loops = 0;
 
-    while (!icp_socket_has_messages(control)) {
-    loop_start:
+    for (;;) {
         do {
-            /*
-             * Service our queues as fast as possible if at least one of them
-             * is full.
-             */
+            /* Service queues as fast as possible while packets are present. */
             max_burst = 0;
             idle_queues = 0;
 
             for (auto& q : queues) {
                 auto burst_size = service_queue(vif, q);
                 max_burst = std::max(max_burst, burst_size);
-                if (!burst_size) idle_queues++;
+                idle_queues += !burst_size;
             }
-        } while (max_burst == pkt_burst_size);
+        } while (max_burst > 0);
 
-         /* None of our queues are full, so check to see if they are all idle. */
-        if (idle_queues < queues.size()) {
-            /* Nope; continue servicing our queues */
-            idle_loops = 0;
-            goto loop_start;  /* bypass socket check */
-        } else {
-            /*
-             * All queues are idle; start pausing the CPU instead of
-             * spinning needlessly.
-             */
-            assert(idle_queues == queues.size());
-            idle_loops++;
+        /* All queues are idle; sleep until we have something to do. */
+        assert(idle_queues == queues.size());
 
-            if (idle_loops < 10) {
-                rte_delay_us(1);
-            } else if (idle_loops < 100) {
-                rte_delay_us(5);
-            } else {
-                /*
-                 * We haven't seen a packet for at least half a millisecond;
-                 * go to sleep until we have something to do.
-                 */
-                for (auto& q : queues) {
-                    enable_queue_interrupt(q);
-                }
-                auto events = poller.wait_for_interrupt(poll_timeout.count());
-                for (auto& q : queues) {
-                    disable_queue_interrupt(q);
-                }
-                /*
-                 * Note: don't reset idle_loops.  We want a spurious wake-up to send
-                 * us back to sleep.
-                 */
-                if (events) {
-                    goto loop_start; /* bypass socket check, we have things to do! */
-                }
-            }
+        for (auto& q : queues) {
+            enable_queue_interrupt(q);
         }
+        poller.wait_for_interrupt();
+        for (auto& q : queues) {
+            disable_queue_interrupt(q);
+        }
+
+        if (ctrl_sock.readable()) break;
     }
 
     for (auto& q : queues) {
         poller.del(q);
     }
+
+    poller.del(&ctrl_sock);
 }
 
 static void run_spinning(void* control, const switch_t& vif,
-                         const std::vector<queue_ptr>& queues)
+                         const std::vector<pollable_ptr>& queues)
 {
     while (!icp_socket_has_messages(control)) {
         /*
@@ -389,7 +367,7 @@ static void run_spinning(void* control, const switch_t& vif,
 }
 
 static void run(void* control, const switch_t& vif,
-                const std::vector<queue_ptr>& queues)
+                const std::vector<pollable_ptr>& queues)
 {
     if (all_pollable(queues)) {
         run_pollable(control, vif, queues);
@@ -400,7 +378,7 @@ static void run(void* control, const switch_t& vif,
 
 class worker : public finite_state_machine<worker, state, command_msg>
 {
-    std::vector<queue_ptr> m_queues;
+    std::vector<pollable_ptr> m_queues;
     void* m_context;
     void* m_control;
     switch_t m_switch;

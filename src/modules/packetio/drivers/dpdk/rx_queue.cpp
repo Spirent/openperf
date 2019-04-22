@@ -15,6 +15,11 @@ uint16_t rx_queue::port_id() const { return (m_port); }
 
 uint16_t rx_queue::queue_id() const { return (m_queue); }
 
+uint32_t rx_queue::poll_id() const
+{
+    return ((static_cast<uint32_t>(port_id()) << 16) | queue_id());
+}
+
 bool rx_queue::add(int poll_fd, void* data)
 {
     auto error = rte_eth_dev_rx_intr_ctl_q(port_id(), queue_id(), poll_fd,

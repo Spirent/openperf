@@ -50,6 +50,11 @@ uint16_t tx_queue::port_id() const { return (m_port); }
 
 uint16_t tx_queue::queue_id() const { return (m_queue); }
 
+uint32_t tx_queue::poll_id() const
+{
+    return ((static_cast<uint32_t>(port_id()) << 16) | queue_id());
+}
+
 rte_ring* tx_queue::ring() const { return (m_ring.get()); }
 
 bool tx_queue::add(int poll_fd, void* data)
