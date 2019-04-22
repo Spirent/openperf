@@ -19,6 +19,7 @@ BLD_DEPENDS := catch
 ###
 SOURCES := \
 	test_main.cpp \
+	framework/test_config_file_utils.cpp \
 	framework/test_hashtab.cpp \
 	framework/test_init_factory.cpp \
 	framework/test_list.cpp \
@@ -35,7 +36,7 @@ SOURCES := \
 OBJECTS := $(patsubst %, $(BUILD_DIR)/%, \
 	$(patsubst %.cpp, %.o, $(SOURCES)))
 SRC_DEPENDS += $(OBJECTS:.o=.d)
-BLD_DEPENDS += framework socket_test
+BLD_DEPENDS += config_file_test framework socket_test
 
 # Pull in dependencies
 -include $(SRC_DEPENDS)
