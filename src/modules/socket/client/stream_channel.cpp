@@ -1,22 +1,152 @@
 #include <cassert>
 #include <cerrno>
-#include <cstring>
-#include <unistd.h>
 #include <numeric>
-#include <sys/eventfd.h>
-#include <sys/poll.h>
+#include <unistd.h>
 
-#include <fcntl.h>
+#include "socket/circular_buffer_consumer.tcc"
+#include "socket/circular_buffer_producer.tcc"
+#include "socket/event_queue_consumer.tcc"
+#include "socket/event_queue_producer.tcc"
 
 #include "socket/client/stream_channel.h"
 
 namespace icp {
 namespace socket {
+
+template class circular_buffer_consumer<client::stream_channel>;
+template class circular_buffer_producer<client::stream_channel>;
+template class event_queue_consumer<client::stream_channel>;
+template class event_queue_producer<client::stream_channel>;
+
 namespace client {
 
+/***
+ * protected members required for template derived functionality
+ ***/
+
+/* We consume data from the receive queue */
+uint8_t* stream_channel::consumer_base() const
+{
+    return (rx_buffer.ptr);
+}
+
+size_t stream_channel::consumer_len() const
+{
+    return (rx_buffer.len);
+}
+
+std::atomic_size_t& stream_channel::consumer_read_idx()
+{
+    return (rx_q_read_idx);
+}
+
+const std::atomic_size_t& stream_channel::consumer_read_idx() const
+{
+    return (rx_q_read_idx);
+}
+
+std::atomic_size_t& stream_channel::consumer_write_idx()
+{
+    return (rx_q_write_idx);
+}
+
+const std::atomic_size_t& stream_channel::consumer_write_idx() const
+{
+    return (rx_q_write_idx);
+}
+
+/* We produce data for the transmit queue */
+uint8_t* stream_channel::producer_base() const
+{
+    return (tx_buffer.ptr);
+}
+
+size_t stream_channel::producer_len() const
+{
+    return (tx_buffer.len);
+}
+
+std::atomic_size_t& stream_channel::producer_read_idx()
+{
+    return (tx_q_read_idx);
+}
+
+const std::atomic_size_t& stream_channel::producer_read_idx() const
+{
+    return (tx_q_read_idx);
+}
+
+std::atomic_size_t& stream_channel::producer_write_idx()
+{
+    return (tx_q_write_idx);
+}
+
+const std::atomic_size_t& stream_channel::producer_write_idx() const
+{
+    return (tx_q_write_idx);
+}
+
+/*
+ * We consume notifications on the client fd.
+ * We produce notifications on the server fd.
+ */
+int stream_channel::consumer_fd() const
+{
+    return (client_fds.client_fd);
+}
+
+int stream_channel::producer_fd() const
+{
+    return (client_fds.server_fd);
+}
+
+/* We generate notifications for the transmit queue */
+std::atomic_uint64_t& stream_channel::notify_read_idx()
+{
+    return (tx_fd_read_idx);
+}
+
+const std::atomic_uint64_t& stream_channel::notify_read_idx() const
+{
+    return (tx_fd_read_idx);
+}
+
+std::atomic_uint64_t& stream_channel::notify_write_idx()
+{
+    return (tx_fd_write_idx);
+}
+
+const std::atomic_uint64_t& stream_channel::notify_write_idx() const
+{
+    return (tx_fd_write_idx);
+}
+
+/* We generate acknowledgements for the receive queue */
+std::atomic_uint64_t& stream_channel::ack_read_idx()
+{
+    return (rx_fd_read_idx);
+}
+
+const std::atomic_uint64_t& stream_channel::ack_read_idx() const
+{
+    return (rx_fd_read_idx);
+}
+
+std::atomic_uint64_t& stream_channel::ack_write_idx()
+{
+    return (rx_fd_write_idx);
+}
+
+const std::atomic_uint64_t& stream_channel::ack_write_idx() const
+{
+    return (rx_fd_write_idx);
+}
+
+/***
+ * Public members
+ ***/
+
 stream_channel::stream_channel(int client_fd, int server_fd)
-    : sendq(circular_buffer::client())
-    , recvq(circular_buffer::server())
 {
     client_fds.client_fd = client_fd;
     client_fds.server_fd = server_fd;
@@ -26,27 +156,6 @@ stream_channel::~stream_channel()
 {
     close(client_fds.client_fd);
     close(client_fds.server_fd);
-}
-
-static int do_read(int fd)
-{
-    uint64_t counter;
-    return (eventfd_read(fd, &counter));
-}
-
-static int do_write(int fd)
-{
-    return (eventfd_write(fd, 1UL));
-}
-
-int stream_channel::client_fd() const
-{
-    return (client_fds.client_fd);
-}
-
-int stream_channel::server_fd() const
-{
-    return (client_fds.server_fd);
 }
 
 int stream_channel::flags() const
@@ -60,51 +169,20 @@ int stream_channel::flags(int flags)
     return (0);
 }
 
-void stream_channel::clear_event_flags()
-{
-    block_event_flag.clear(std::memory_order_release);
-    notify_event_flag.clear(std::memory_order_release);
-}
-
-tl::expected<size_t, int> stream_channel::send(pid_t pid,
+tl::expected<size_t, int> stream_channel::send(pid_t pid __attribute__((unused)),
                                                const iovec iov[], size_t iovcnt,
                                                const sockaddr *to __attribute__((unused)))
 {
     if (auto error = socket_error.load(std::memory_order_relaxed); error != 0) {
-        return (tl::make_unexpected(errno));
+        return (tl::make_unexpected(error));
     }
 
     size_t buf_available = 0;
-    while ((buf_available = sendq.writable()) == 0) {
-        /* no writing space available; can we block? */
-        auto flags = socket_flags.load(std::memory_order_acquire);
-        if (flags & O_NONBLOCK) {
-            /*
-             * We have a non-blocking eventfd; let's try to stop up the pipe so
-             * the client doesn't spin.
-             */
-            if (!block_event_flag.test_and_set(std::memory_order_acquire)) {
-                if (notify_event_flag.test_and_set(std::memory_order_acquire)) {
-                    /* consume the existing notification */
-                    do_read(client_fd());
-                }
-                /* no current notifications and no blocks; stuff up the pipe */
-                if (eventfd_write(client_fd(), eventfd_max) == -1) {
-                    clear_event_flags();
-                    return (tl::make_unexpected(errno));
-                }
-            }
-            return (tl::make_unexpected(EWOULDBLOCK));
-        }
-
-        assert((flags & O_NONBLOCK) == 0);
-
-        /* yes we can; so block on our eventfd */
-        block_event_flag.test_and_set(std::memory_order_acquire);
-        notify_event_flag.test_and_set(std::memory_order_acquire);
-        if (eventfd_write(client_fd(), eventfd_max) == -1) {
-            clear_event_flags();
-            return (tl::make_unexpected(errno));
+    while ((buf_available = writable()) == 0) {
+        if (auto error = (socket_flags.load(std::memory_order_relaxed) & EFD_NONBLOCK
+                          ? block()
+                          : block_wait()); error != 0) {
+            return (tl::make_unexpected(error));
         }
 
         /* Check if an error woke us up */
@@ -115,11 +193,20 @@ tl::expected<size_t, int> stream_channel::send(pid_t pid,
 
     assert(buf_available);
 
-    bool empty = sendq.empty();
-    auto written = sendq.write(pid, iov, iovcnt);
-    if (written && empty) {
-        do_write(server_fd());
-    }
+    auto written = std::accumulate(iov, iov + iovcnt, 0UL,
+                                   [&](size_t x, const iovec& iov) {
+                                       return (x + write_and_notify(iov.iov_base,
+                                                                    iov.iov_len,
+                                                                    [&]() { notify(); }));
+                                   });
+
+    if (written == buf_available
+        && socket_flags.load(std::memory_order_relaxed) & EFD_NONBLOCK
+        && !writable()) {
+        block();   /* pre-emptive block */
+    };
+
+    notify();
 
     return (written);
 }
@@ -134,55 +221,45 @@ tl::expected<size_t, int> stream_channel::recv(pid_t pid __attribute__((unused))
      * This ensures clients clear out all data before we report an error.
      */
     size_t buf_readable = 0;
-    while ((buf_readable = recvq.readable()) == 0) {
-        /* Check for an error before sleeping or after waking up with an empty buffer */
+    while ((buf_readable = readable()) == 0) {
+        /* Check if an error exists before blocking */
         if (auto error = socket_error.load(std::memory_order_acquire); error != 0) {
             if (error == EOF) return (0);
             return (tl::make_unexpected(error));
         }
 
-        auto result = do_read(client_fd());
-        if (result == -1) return (tl::make_unexpected(errno));
-
-        /* we read something; clear all flags */
-        clear_event_flags();
+        /* try to block on the fd */
+        if (auto error = ack_wait(); error != 0) {
+            return (tl::make_unexpected(error));
+        }
     }
 
     assert(buf_readable);
 
-    auto read = recvq.read(iov, iovcnt);
-    if (read) do_write(server_fd());
+    auto read_size = std::accumulate(iov, iov + iovcnt, 0UL,
+                                     [&](size_t x, const iovec& iov) {
+                                         return (x + read_and_notify(iov.iov_base,
+                                                                     iov.iov_len,
+                                                                     [&]() { notify(); }));
+                                     });
 
-    /* Check status of available data and update flags/fds */
-    if (read < buf_readable) {
-        if (!notify_event_flag.test_and_set(std::memory_order_acquire)) {
-            /* more to read but no notification; create one */
-            do_write(client_fd());
-        }
-    } else if (notify_event_flag.test_and_set(std::memory_order_acquire)) {
-        /* nothing to read and notification exists; consume it */
-        do_read(client_fd());
-        clear_event_flags();
+    /*
+     * Check to see if we have any remaining data to read.  If we don't, clear
+     * any notification we might have; otherwise make sure a notification
+     * remains so we know to come back and read the rest.
+     */
+    if (!readable()) {
+        ack();
     } else {
-        /*
-         * we just set the notification flag in our check above but there's
-         * nothing to read, so clear the flag
-         */
-        notify_event_flag.clear(std::memory_order_release);
+        ack_undo();
     }
 
-    return (read);
+    return (read_size);
 }
 
 int stream_channel::recv_clear()
 {
-    auto result = do_read(client_fd());
-    if (result == -1) return (-1);
-
-    /* we read something; clear all flags */
-    clear_event_flags();
-
-    return (result);
+    return (ack() == 0 ? 0 : -1);
 }
 
 }

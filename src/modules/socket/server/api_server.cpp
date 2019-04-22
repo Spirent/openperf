@@ -6,12 +6,12 @@
 #include <unordered_map>
 #include <variant>
 
+#include <sys/mman.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/uio.h>
 #include <sys/un.h>
 
-#include "memory/allocator/pool.h"
 #include "socket/api.h"
 #include "socket/dgram_channel.h"
 #include "socket/stream_channel.h"
@@ -26,57 +26,41 @@ namespace api {
 
 using api_handler = icp::socket::server::api_handler;
 
-static constexpr size_t io_channel_size = std::max(sizeof(dgram_channel),
-                                                   sizeof(stream_channel));
-
 static bool unlink_stale_files = false;
-
 static std::string prefix_opt;
-
-static __attribute__((const)) bool power_of_two(uint64_t x) {
-    return !(x & (x - 1));
-}
-
-static uint64_t __attribute__((const)) next_power_of_two(uint64_t x) {
-    if (power_of_two(x)) { return x; }
-    x |= x >> 1;
-    x |= x >> 2;
-    x |= x >> 4;
-    x |= x >> 8;
-    x |= x >> 16;
-    x |= x >> 32;
-    return x + 1;
-}
 
 static __attribute__((const)) uint64_t align_up(uint64_t x, uint64_t align)
 {
     return ((x + align - 1) & ~(align - 1));
 }
 
-static icp::memory::shared_segment create_shared_memory_pool(size_t size, size_t count)
+static icp::memory::shared_segment create_shared_memory(size_t size)
 {
-    size = align_up(size, 64);
-    auto pool_size = align_up(sizeof(icp::memory::allocator::pool), 64);
-    auto total_size = next_power_of_two(pool_size + (size * count));
-
-    auto shared_segment_name = (prefix_opt.length() > 0) ? std::string(api::key) +
-                               ".memory." + prefix_opt :
-                               std::string(api::key) + ".memory";
+    auto shared_segment_name = (prefix_opt.length() > 0
+                                ? std::string(api::key) + ".memory." + prefix_opt
+                                : std::string(api::key) + ".memory");
     if (unlink_stale_files) {
         if ((shm_unlink(shared_segment_name.data()) < 0) && (errno != ENOENT)) {
             throw std::runtime_error("Could not remove shared memory segment "
                                      + std::string(shared_segment_name) + ": " + strerror(errno));
         }
     }
-    auto segment = icp::memory::shared_segment(shared_segment_name,
-                                               total_size, true);
-    /* Construct a pool in our shared memory segment */
-    new (segment.get()) icp::memory::allocator::pool(
-        reinterpret_cast<uintptr_t>(segment.get()) + pool_size,
-        total_size - pool_size,
-        size);
+
+    auto impl_size = align_up(sizeof(socket::server::allocator), 64);
+    auto segment = icp::memory::shared_segment(shared_segment_name.data(),
+                                               size, true);
+
+    /* Construct our allocator in our shared memory segment */
+    new (segment.get()) socket::server::allocator(
+        reinterpret_cast<uintptr_t>(segment.get()) + impl_size,
+        size - impl_size);
 
     return (segment);
+}
+
+socket::server::allocator* server::allocator() const
+{
+    return (reinterpret_cast<socket::server::allocator*>(m_shm.get()));
 }
 
 static icp::socket::unix_socket create_unix_socket(const std::string_view path, int type)
@@ -91,11 +75,6 @@ static icp::socket::unix_socket create_unix_socket(const std::string_view path, 
     auto socket = icp::socket::unix_socket(path, type);
 
     return (socket);
-}
-
-icp::memory::allocator::pool* server::pool() const
-{
-    return (reinterpret_cast<icp::memory::allocator::pool*>(m_shm.get()));
 }
 
 extern "C" {
@@ -158,8 +137,7 @@ server::server(icp::core::event_loop& loop)
     : m_sock(create_unix_socket((prefix_opt.length() > 0) ? (api::server_socket() +
                                 "." + prefix_opt) : api::server_socket(),
                                 api::socket_type))
-    , m_shm(create_shared_memory_pool(align_up(io_channel_size, 64),
-                                      api::max_sockets))
+    , m_shm(create_shared_memory(shm_size))
     , m_loop(loop)
 {
     /* Put socket in the listen state and wait for connections */
@@ -237,7 +215,7 @@ int server::handle_api_init_requests(const struct icp_event_data *data)
             ICP_LOG(ICP_LOG_INFO, "New connection received from pid %d, %s\n",
                     init.pid, to_string(init.tid).c_str());
             m_handlers.emplace(init.pid,
-                               std::make_unique<api_handler>(m_loop, *(pool()), init.pid));
+                               std::make_unique<api_handler>(m_loop, *(allocator()), init.pid));
             auto shm_info = api::shared_memory_descriptor{
                 .base = m_shm.get(),
                 .size = m_shm.size()

@@ -9,6 +9,7 @@
 
 #include "tl/expected.hpp"
 
+#include "socket/server/allocator.h"
 #include "socket/server/dgram_channel.h"
 #include "socket/server/generic_socket.h"
 #include "socket/server/socket_utils.h"
@@ -37,10 +38,9 @@ class udp_socket : public socket_state_machine<udp_socket, udp_socket_state> {
 
     dgram_channel_ptr m_channel;                      /* shared memory io channel */
     std::unique_ptr<udp_pcb, udp_pcb_deleter> m_pcb;  /* lwIP pcb */
-    pid_t m_pid;                                      /* client pid */
 
 public:
-    udp_socket(icp::memory::allocator::pool& pool, pid_t pid, int flags);
+    udp_socket(icp::socket::server::allocator& allocator, int flags);
     ~udp_socket() = default;
 
     udp_socket(const udp_socket&) = delete;

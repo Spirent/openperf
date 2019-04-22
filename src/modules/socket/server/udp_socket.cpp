@@ -48,10 +48,10 @@ void udp_receive(void* arg, udp_pcb* pcb, pbuf* p, const ip_addr_t* addr, in_por
     }
 }
 
-udp_socket::udp_socket(icp::memory::allocator::pool& pool, pid_t pid, int flags)
-    : m_channel(new (pool.acquire()) dgram_channel(flags), dgram_channel_deleter(&pool))
+udp_socket::udp_socket(icp::socket::server::allocator& allocator, int flags)
+    : m_channel(new (allocator.allocate(sizeof(dgram_channel)))
+                dgram_channel(flags), dgram_channel_deleter(&allocator))
     , m_pcb(udp_new())
-    , m_pid(pid)
 {
     if (!m_pcb) {
         throw std::runtime_error("Out of UDP pcb's!");

@@ -4,7 +4,7 @@
 #include <array>
 #include <memory>
 
-#include "memory/allocator/pool.h"
+#include "socket/server/allocator.h"
 #include "socket/dgram_channel.h"
 
 namespace icp {
@@ -38,14 +38,14 @@ public:
 };
 
 struct dgram_channel_deleter {
-    using pool = icp::memory::allocator::pool;
-    pool* pool_;
-    void operator()(icp::socket::server::dgram_channel *c) {
-        c->~dgram_channel();
-        pool_->release(reinterpret_cast<void*>(c));
+    icp::socket::server::allocator* allocator_;
+    void operator()(icp::socket::server::dgram_channel *channel) {
+        channel->~dgram_channel();
+        allocator_->deallocate(reinterpret_cast<uint8_t*>(channel),
+                               sizeof(*channel));
     }
-    dgram_channel_deleter(pool* p)
-        : pool_(p)
+    dgram_channel_deleter(icp::socket::server::allocator* allocator)
+        : allocator_(allocator)
     {}
 };
 

@@ -20,7 +20,7 @@ size_t free_spent_pbufs(BipartiteRing& ring)
     std::array<dgram_channel_item, api::socket_queue_length> items;
     auto nb_items = ring.dequeue(items.data(), items.size());
     for (size_t idx = 0; idx < nb_items; idx++) {
-        pbuf_free(items[idx].data.pbuf());
+        pbuf_free(items[idx].pvec.pbuf());
     }
     return (nb_items);
 }
@@ -34,7 +34,7 @@ size_t load_fresh_pbufs(BipartiteRing& ring)
     size_t idx = 0;
     while (pbuf* p = pbuf_alloc(PBUF_TRANSPORT, max_dgram_length, PBUF_POOL)) {
         items[idx++] = dgram_channel_item{ .address = std::nullopt,
-                                           .data = dgram_channel_data(p, p->payload, p->len)};
+                                           .pvec = pbuf_vec(p, p->payload, p->len)};
         if (idx == capacity) break;
     }
     auto enqueued = ring.enqueue(items.data(), capacity);
@@ -110,8 +110,8 @@ bool dgram_channel::send(const pbuf *p)
     bool idle = recvq.idle();
     bool pushed = recvq.enqueue(
         dgram_channel_item{ .address = std::nullopt,
-                            .data = dgram_channel_data(const_cast<pbuf*>(p),
-                                                       p->payload, p->len) });
+                            .pvec = pbuf_vec(const_cast<pbuf*>(p),
+                                             p->payload, p->len) });
     if (pushed && idle) notify();
     return (pushed);
 }
@@ -123,8 +123,8 @@ bool dgram_channel::send(const pbuf *p, const dgram_ip_addr* addr, in_port_t por
     bool idle = recvq.idle();
     bool pushed = recvq.enqueue(
         dgram_channel_item{ .address = dgram_channel_addr(addr, port),
-                            .data = dgram_channel_data(const_cast<pbuf*>(p),
-                                                       p->payload, p->len) });
+                            .pvec = pbuf_vec(const_cast<pbuf*>(p),
+                                             p->payload, p->len) });
     if (pushed && idle) notify();
     return (pushed);
 }
@@ -140,8 +140,8 @@ size_t dgram_channel::recv(dgram_channel_item items[], size_t max_items)
      * actually allocate anything here; it just trims the length.
      */
     for (size_t idx = 0; idx < dequeued; idx++) {
-        auto& [address, data] = items[idx];
-        pbuf_realloc(data.pbuf(), data.length());
+        auto& [address, pvec] = items[idx];
+        pbuf_realloc(pvec.pbuf(), pvec.len());
     }
     load_fresh_pbufs(sendq);
     return (dequeued);

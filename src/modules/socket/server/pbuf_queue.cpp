@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <cassert>
 
 #include "lwip/pbuf.h"
@@ -13,22 +14,31 @@ pbuf_queue::pbuf_queue()
 
 pbuf_queue::~pbuf_queue()
 {
-    while (!m_pbufs.empty()) {
-        auto p = m_pbufs.front();
-        m_pbufs.pop_front();
-        pbuf_free(p);
+    for (auto& item : m_queue) {
+        pbuf_free(item.pbuf());
     }
 }
 
 void pbuf_queue::push(pbuf* p)
 {
     m_length += p->tot_len;
-    m_pbufs.push_back(p);
+
+    /*
+     * Break the pbuf chain up into individual pbufs, as they are much
+     * easier to manage.  Additionally, clear the next ptr, as we want
+     * to be able to free individual pbufs as well.
+     */
+    while (p != nullptr) {
+        m_queue.emplace_back(p, p->payload, p->len);
+        auto next_p = p->next;
+        p->next = nullptr;
+        p = next_p;
+    }
 }
 
 size_t pbuf_queue::bufs() const
 {
-    return (m_pbufs.size());
+    return (m_queue.size());
 }
 
 size_t pbuf_queue::length() const
@@ -36,25 +46,15 @@ size_t pbuf_queue::length() const
     return (m_length);
 }
 
-size_t pbuf_queue::iovecs(iovec iovs[], size_t max_iovs) const
+size_t pbuf_queue::iovecs(iovec iovs[], size_t max_iovs, size_t max_length) const
 {
-    if (m_pbufs.empty()) return (0);
-
-    size_t iov_idx = 0, pbuf_idx = 0;
-    auto p = m_pbufs[pbuf_idx++];
-    while (p != nullptr && iov_idx < max_iovs) {
-        iovs[iov_idx++] = iovec{ .iov_base = p->payload,
-                                 .iov_len = p->len };
-
-        /*
-         * We have two sources of potential mbufs:
-         * the next pbuf in the chain
-         * -- or --
-         * the next pbuf in the queue
-         */
-        p = (p->next != nullptr ? p->next
-             : pbuf_idx < m_pbufs.size() ? m_pbufs[pbuf_idx++]
-             : nullptr);
+    size_t iov_idx = 0, pbuf_idx = 0, length = 0;
+    while (pbuf_idx < m_queue.size() && iov_idx < max_iovs) {
+        auto& item = m_queue[pbuf_idx++];
+        const auto len = item.len();
+        if (length += len > max_length) break;
+        iovs[iov_idx++] = iovec{ .iov_base = item.payload(),
+                                 .iov_len = len };
     }
 
     return (iov_idx);
@@ -64,46 +64,36 @@ size_t pbuf_queue::clear(size_t length)
 {
     assert(length <= m_length);
 
-    size_t cleared = 0;
+    size_t cleared = 0, delete_idx = 0;
 
-    while (!m_pbufs.empty() && length > 0) {
-        auto p = m_pbufs.front();
-        m_pbufs.pop_front();
-        if (p->tot_len <= length) {
-            /* easy case */
-            cleared += p->tot_len;
-            length -= p->tot_len;
-            pbuf_free(p);
+    while (!m_queue.empty() && length > 0) {
+        auto& item = m_queue[delete_idx++];
+        auto len = item.len();
+        if (len <= length) {
+            cleared += len;
+            length -= len;
         } else {
             /*
-             * Hard case...
-             * Adjust the pbuf so that the payload points to new data
-             * the next time we generate iovecs.
+             * Adjust the pbuf so that the payload points to new data the
+             * next time we generate iovecs.
              */
-            assert(p->tot_len > length);
-            while (length > 0) {
-                assert(p != nullptr);
-                if (length < p->len) {
-                    /* new payload is in this pbuf, adjust payload */
-                    p->payload = reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(p->payload) + length);
-                    cleared += length;
-                    p->tot_len -= length;
-                    p->len -= length;
-                    length = 0;
-                    m_pbufs.push_front(p);
-                } else {
-                    /* new payload is somewhere in the chain... */
-                    assert(p->next);
-                    cleared += p->len;
-                    length -= p->len;
-                    auto newp = p->tot_len != p->len ? p->next : nullptr;
-                    p->next = nullptr;
-                    pbuf_free(p);
-                    p = newp;
-                }
-            }
+            assert(len > length);
+
+            item.payload(reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(item.payload()) + length));
+            item.len(len - length);
+
+            cleared += length;
+            length = 0;
+
+            delete_idx--;  /* we don't want to delete this one */
         }
     }
+
+    std::for_each(begin(m_queue), begin(m_queue) + delete_idx,
+                  [](const pbuf_vec& vec) {
+                      pbuf_free(vec.pbuf());
+                  });
+    m_queue.erase(begin(m_queue), begin(m_queue) + delete_idx);
 
     m_length -= cleared;
 

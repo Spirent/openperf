@@ -77,11 +77,10 @@ std::tuple<pbuf*, uint16_t> pbuf_drop_at(struct pbuf* p_head, uint16_t offset, u
     uint16_t pbufs_freed = 0;
     auto flags = p_head->flags; /* we'll need these later */
     if (start == end) {
-        /* Drop bytes by shuffling the data around */
-        memmove(reinterpret_cast<uint8_t*>(start->payload) + length,
-                reinterpret_cast<uint8_t*>(start->payload),
-                start_offset);
-        start->payload = reinterpret_cast<uint8_t*>(start->payload) + length;
+        /* Drop bytes by shuffling the data around without moving the payload pointer */
+        memmove(reinterpret_cast<uint8_t*>(start->payload) + start_offset,
+                reinterpret_cast<uint8_t*>(start->payload) + start_offset + length,
+                start->len - (start_offset + length));
         start->len -= length;
         start->tot_len -= length;
     } else {
@@ -231,7 +230,7 @@ uint16_t packetio_stack_gso_oversize_calc_length(uint16_t length)
 
 static constexpr unsigned tcp_max_segment()
 {
-    return ((std::numeric_limits<uint16_t>::max() / TCP_MSS) * TCP_MSS);
+    return (((std::numeric_limits<uint16_t>::max() - PBUF_POOL_BUFSIZE) / TCP_MSS) * TCP_MSS);
 }
 
 uint16_t packetio_stack_gso_max_segment_length(const struct tcp_pcb* pcb)

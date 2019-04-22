@@ -8,6 +8,7 @@
 #include "core/icp_core.h"
 #include "socket/shared_segment.h"
 #include "socket/unix_socket.h"
+#include "socket/server/allocator.h"
 
 struct icp_event_data;
 
@@ -28,12 +29,14 @@ namespace api {
 
 class server
 {
+    static constexpr size_t shm_size = (1024 * 1024 * 1024);  /* 1 GB */
+
     unix_socket m_sock;
     icp::memory::shared_segment m_shm;
     icp::core::event_loop& m_loop;
     std::unordered_map<pid_t, std::unique_ptr<socket::server::api_handler>> m_handlers;
     std::unordered_multimap<int, pid_t> m_pids;
-    icp::memory::allocator::pool* pool() const;
+    socket::server::allocator* allocator() const;
 
 public:
     server(icp::core::event_loop& loop);

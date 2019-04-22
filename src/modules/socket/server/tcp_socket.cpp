@@ -68,7 +68,15 @@ static std::string to_string(tcp_pcb* pcb)
 }
 #endif
 
-static size_t do_tcp_transmit(tcp_pcb* pcb, const void* ptr, size_t length)
+/*
+ * The BufferEmptyFunction should return true if the written amount equals the
+ * buffer's current size.  We use a lambda for this so that we can perform this
+ * check at the very end of the transmission process.  If the client makes any
+ * write to the buffer before we finish, we don't want to set the PSH flag.
+ */
+template <typename BufferEmptyFunction>
+static size_t do_tcp_transmit(tcp_pcb* pcb, const void* ptr, size_t length,
+                              BufferEmptyFunction&& empty)
 {
     static constexpr uint16_t tcp_send_max = std::numeric_limits<uint16_t>::max();
 
@@ -94,23 +102,38 @@ static size_t do_tcp_transmit(tcp_pcb* pcb, const void* ptr, size_t length)
         to_write -= tcp_send_max;
     }
 
+    /* We want to set the PSH flag if this next write will empty the buffer */
+    const auto push = std::forward<BufferEmptyFunction>(empty)(written + to_write);
+    const auto flags = TCP_WRITE_FLAG_COPY | (-(!push) & TCP_WRITE_FLAG_MORE);
     if (tcp_write(pcb, reinterpret_cast<const uint8_t*>(ptr) + written,
-                  to_write, TCP_WRITE_FLAG_COPY) != ERR_OK) {
+                  to_write, flags) != ERR_OK) {
         return (written);
     }
 
     written += to_write;
 
-    if (written == length || tcp_sndbuf(pcb) == 0) {
-        /*
-         * Trigger a transmission if...
-         * - we wrote everything we were asked to write -or-
-         * - we filled the send buffer
-         */
+    /*
+     * Trigger a transmission if we have an explicit push or the send buffer is
+     * nearly filled.
+     */
+    if (push || tcp_sndbuf(pcb) < tcp_mss(pcb)) {
         tcp_output(pcb);
     }
 
     return (written);
+}
+
+static void do_tcp_transmit_all(tcp_pcb *pcb, stream_channel& channel)
+{
+    for (;;) {
+        auto [ptr, length] = channel.recv_peek();
+        if (channel.recv_drop(do_tcp_transmit(pcb, ptr, length,
+                                              [&](size_t written){
+                                                  return (written == channel.readable());
+                                              })) == 0) {
+            break;
+        }
+    }
 }
 
 static void do_tcp_receive(tcp_pcb *pcb, size_t length)
@@ -123,6 +146,15 @@ static void do_tcp_receive(tcp_pcb *pcb, size_t length)
     tcp_recved(pcb, length);
 }
 
+static void do_tcp_receive_all(tcp_pcb *pcb, stream_channel& channel, pbuf_queue& queue)
+{
+    std::array<iovec, 32> iovecs;
+    size_t iovcnt = 0;
+    while ((iovcnt = queue.iovecs(iovecs.data(), iovecs.size(), channel.send_available())) > 0) {
+        do_tcp_receive(pcb, queue.clear(channel.send(iovecs.data(), iovcnt)));
+    }
+}
+
 void tcp_socket::tcp_pcb_deleter::operator()(tcp_pcb *pcb)
 {
      /* quick and dirty */
@@ -131,26 +163,27 @@ void tcp_socket::tcp_pcb_deleter::operator()(tcp_pcb *pcb)
     }
 }
 
-icp::memory::allocator::pool* tcp_socket::channel_pool()
+icp::socket::server::allocator* tcp_socket::channel_allocator()
 {
-    auto deleter = reinterpret_cast<stream_channel_deleter*>(&m_channel.get_deleter());
-    return (deleter->pool_);
+    return (reinterpret_cast<icp::socket::server::allocator*>(
+                reinterpret_cast<socket::stream_channel*>(
+                    m_channel.get())->allocator));
 }
 
-tcp_socket::tcp_socket(icp::memory::allocator::pool* pool, pid_t pid, int flags, tcp_pcb* pcb)
-    : m_channel(new (pool->acquire()) stream_channel(flags), stream_channel_deleter(pool))
+tcp_socket::tcp_socket(icp::socket::server::allocator* allocator, int flags, tcp_pcb* pcb)
+    : m_channel(new (allocator->allocate(sizeof(stream_channel)))
+                stream_channel(flags, *allocator))
     , m_pcb(pcb)
-    , m_pid(pid)
 {
     ::tcp_arg(m_pcb.get(), this);
     ::tcp_poll(m_pcb.get(), nullptr, 2U);
     state(tcp_connected());
 }
 
-tcp_socket::tcp_socket(icp::memory::allocator::pool& pool, pid_t pid, int flags)
-    : m_channel(new (pool.acquire()) stream_channel(flags), stream_channel_deleter(&pool))
+tcp_socket::tcp_socket(icp::socket::server::allocator& allocator, int flags)
+    : m_channel(new (allocator.allocate(sizeof(stream_channel)))
+                stream_channel(flags, allocator))
     , m_pcb(tcp_new())
-    , m_pid(pid)
 {
     ::tcp_arg(m_pcb.get(), this);
     ::tcp_poll(m_pcb.get(), nullptr, 2U);
@@ -175,7 +208,6 @@ tcp_socket& tcp_socket::operator=(tcp_socket&& other) noexcept
     if (this != &other) {
         m_channel = std::move(other.m_channel);
         m_pcb = std::move(other.m_pcb);
-        m_pid = other.m_pid;
         m_acceptq = std::move(other.m_acceptq);
         ::tcp_arg(m_pcb.get(), this);
         state(other.state());
@@ -186,7 +218,6 @@ tcp_socket& tcp_socket::operator=(tcp_socket&& other) noexcept
 tcp_socket::tcp_socket(tcp_socket&& other) noexcept
     : m_channel(std::move(other.m_channel))
     , m_pcb(std::move(other.m_pcb))
-    , m_pid(other.m_pid)
     , m_acceptq(std::move(other.m_acceptq))
 {
     ::tcp_arg(m_pcb.get(), this);
@@ -213,7 +244,7 @@ int tcp_socket::do_lwip_accept(tcp_pcb *newpcb, int err)
     newpcb->netif_idx = m_pcb->netif_idx;
     m_acceptq.emplace(newpcb);
     tcp_backlog_delayed(newpcb);
-    m_channel->maybe_notify();
+    m_channel->notify();
 
     return (ERR_OK);
 }
@@ -224,11 +255,7 @@ int tcp_socket::do_lwip_sent(uint16_t size __attribute__((unused)))
      * The stack just cleared some data from the send buffer. See if
      * we can fill it up again.
      */
-    size_t loop_sent = 0;
-    do {
-        auto [ptr, length] = m_channel->recv_peek();
-        loop_sent = m_channel->recv_clear(do_tcp_transmit(m_pcb.get(), ptr, length));
-    } while (loop_sent != 0);
+    do_tcp_transmit_all(m_pcb.get(), *m_channel);
 
     return (ERR_OK);
 }
@@ -252,15 +279,12 @@ int tcp_socket::do_lwip_recv(pbuf *p, int err)
 
     /*
      * Initiate a copy to the client's buffer if the TCP sender sent a
-     * PUSH flag or they've filled up a significant portion of the receive
-     * window.
+     * PUSH flag or we have more than enough data to fill the client's
+     * receive buffer.
      */
     if (p->flags & PBUF_FLAG_PUSH
-        || m_recvq.length() > (m_pcb->rcv_wnd / 2)) {
-        std::array<iovec, 64> iovecs;
-        auto iovcnt = m_recvq.iovecs(iovecs.data(), iovecs.size());
-        do_tcp_receive(m_pcb.get(),
-                       m_recvq.clear(m_channel->send(m_pid, iovecs.data(), iovcnt)));
+        || m_recvq.length() > m_channel->send_available()) {
+        do_tcp_receive_all(m_pcb.get(), *m_channel, m_recvq);
     }
 
     return (ERR_OK);
@@ -282,12 +306,12 @@ int tcp_socket::do_lwip_poll()
 {
     /* need to check idle time and close if necessary */
 
-    /* If the connection stalled due to re-transmits, we might have data to send... */
-    size_t loop_sent = 0;
-    do {
-        auto [ptr, length] = m_channel->recv_peek();
-        loop_sent = m_channel->recv_clear(do_tcp_transmit(m_pcb.get(), ptr, length));
-    } while (loop_sent != 0);
+    /*
+     * If the connection stalled due to re-transmits, we might have data to
+     * send and/or receive
+     */
+    do_tcp_receive_all(m_pcb.get(), *m_channel, m_recvq);
+    do_tcp_transmit_all(m_pcb.get(), *m_channel);
 
     return (ERR_OK);
 }
@@ -317,7 +341,7 @@ tl::expected<generic_socket, int> tcp_socket::handle_accept(int flags)
     auto pcb = m_acceptq.front();
     m_acceptq.pop();
     tcp_backlog_accepted(pcb);
-    return (generic_socket(tcp_socket(channel_pool(), m_pid, flags, pcb)));
+    return (generic_socket(tcp_socket(channel_allocator(), flags, pcb)));
 }
 
 void tcp_socket::handle_io()
@@ -326,18 +350,8 @@ void tcp_socket::handle_io()
 
     m_channel->ack();
 
-    if (m_recvq.bufs()) {
-        std::array<iovec, 64> iovecs;
-        auto iovcnt = m_recvq.iovecs(iovecs.data(), iovecs.size());
-        do_tcp_receive(m_pcb.get(),
-                       m_recvq.clear(m_channel->send(m_pid, iovecs.data(), iovcnt)));
-    }
-
-    size_t loop_sent = 0;
-    do {
-        auto [ptr, length] = m_channel->recv_peek();
-        loop_sent = m_channel->recv_clear(do_tcp_transmit(m_pcb.get(), ptr, length));
-    } while (loop_sent != 0);
+    do_tcp_receive_all(m_pcb.get(), *m_channel, m_recvq);
+    do_tcp_transmit_all(m_pcb.get(), *m_channel);
 }
 
 tcp_socket::on_request_reply tcp_socket::on_request(const api::request_bind& bind,
@@ -375,7 +389,7 @@ tcp_socket::on_request_reply tcp_socket::on_request(const api::request_listen& l
      * to be careful with pcb ownership and the callback argument here.
      */
     auto orig_pcb = m_pcb.release();
-    /* 
+    /*
      * cache idx and transfer to "listen_pcb" since netif_idx is assigned the
      * DEFAULT value when listen_pcb is created
      */

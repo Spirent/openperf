@@ -18,6 +18,7 @@ namespace impl {
 struct heap_tag {
     size_t size;
     uint64_t magic;
+    uint64_t pad[6];
 };
 
 /* sort by address */

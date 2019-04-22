@@ -103,14 +103,14 @@ tl::expected<size_t, int> dgram_channel::send(pid_t pid,
     item->address = to_addr(to);
     if (to && !item->address) return (tl::make_unexpected(EINVAL));
 
-    iovec writevec = iovec{ .iov_base = const_cast<void*>(item->data.payload()),
-                            .iov_len = item->data.length() };
+    iovec writevec = iovec{ .iov_base = const_cast<void*>(item->pvec.payload()),
+                            .iov_len = item->pvec.len() };
     auto result = process_vm_writev(pid, iov, iovcnt, &writevec, 1, 0);
     if (result == -1) {
         return (tl::make_unexpected(errno));
     }
 
-    item->data.length(result);
+    item->pvec.len(result);
     sendq.repack();
 
     if (empty) {
@@ -142,8 +142,8 @@ tl::expected<size_t, int> dgram_channel::recv(pid_t pid, iovec iov[], size_t iov
         }
     }
 
-    auto readvec = iovec { .iov_base = const_cast<void*>(item->data.payload()),
-                           .iov_len = item->data.length() };
+    auto readvec = iovec { .iov_base = const_cast<void*>(item->pvec.payload()),
+                           .iov_len = item->pvec.len() };
     auto result = process_vm_readv(pid, iov, iovcnt, &readvec, 1, 0);
     if (result == -1) {
         return (tl::make_unexpected(errno));

@@ -9,7 +9,7 @@ namespace icp {
 namespace socket {
 namespace server {
 
-tl::expected<generic_socket, int> make_socket(icp::memory::allocator::pool& pool, pid_t pid,
+tl::expected<generic_socket, int> make_socket(icp::socket::server::allocator& allocator,
                                               int domain, int type,
                                               int protocol __attribute__((unused)))
 {
@@ -20,9 +20,9 @@ tl::expected<generic_socket, int> make_socket(icp::memory::allocator::pool& pool
     /* Mask out the options included with the type */
     switch (type & 0xff) {
     case SOCK_DGRAM:
-        return (generic_socket(udp_socket(pool, pid, type)));
+        return (generic_socket(udp_socket(allocator, type)));
     case SOCK_STREAM:
-        return (generic_socket(tcp_socket(pool, pid, type)));
+        return (generic_socket(tcp_socket(allocator, type)));
     default:
         return (tl::make_unexpected(EPROTONOSUPPORT));
     }

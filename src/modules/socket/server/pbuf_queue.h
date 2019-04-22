@@ -1,17 +1,17 @@
 #ifndef _ICP_SOCKET_SERVER_PBUF_BUFFER_H_
 #define _ICP_SOCKET_SERVER_PBUF_BUFFER_H_
 
-#include <deque>
+#include <vector>
 #include <sys/uio.h>
 
-struct pbuf;
+#include "socket/pbuf_vec.h"
 
 namespace icp {
 namespace socket {
 namespace server {
 
 class pbuf_queue {
-    std::deque<pbuf*> m_pbufs;
+    std::vector<pbuf_vec> m_queue;
     size_t m_length;
 
 public:
@@ -20,7 +20,7 @@ public:
 
     size_t bufs() const;
     size_t length() const;
-    size_t iovecs(iovec iovs[], size_t max_iovs) const;
+    size_t iovecs(iovec iovs[], size_t max_iovs, size_t max_length) const;
 
     void push(pbuf*);
     size_t clear(size_t bytes);

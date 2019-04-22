@@ -31,6 +31,7 @@ SOURCES := \
 	framework/test_task.cpp \
 	modules/socket/test_bipartite_ring.cpp \
 	modules/socket/test_circular_buffer.cpp \
+	modules/socket/test_event_queue.cpp \
 	modules/socket/test_uuid.cpp
 
 OBJECTS := $(patsubst %, $(BUILD_DIR)/%, \

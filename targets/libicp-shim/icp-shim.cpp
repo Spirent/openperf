@@ -23,8 +23,10 @@ void icp_shim_init()
     auto& client = icp::socket::api::client::instance();
     client.init(&client_initialized);
 
-    if (auto envp = std::getenv("ICP_TRACE"); envp != nullptr &&
-        std::strncmp(envp, "0", 1) != 0) icp_trace = true;
+    auto envp = std::getenv("ICP_TRACE");
+    if (envp != nullptr && std::strncmp(envp, "0", 1) != 0) {
+        icp_trace = true;
+    }
 }
 
 template <class T>
@@ -39,14 +41,16 @@ auto call_and_log_function(const char* function_name, Function&& f, Object&& o, 
     auto result = std::invoke(std::forward<Function>(f), std::forward<Object>(o),
                               std::forward<Args>(args)...);
     std::cerr << ") = " << result << std::endl;
-    	
+
     return (result);
 }
 
-#define client_call(function, ...)                                      	\
-    (icp_trace ? call_and_log_function(#function,				\
-                              	       &icp::socket::api::client::function,	\
-                              	       client, __VA_ARGS__) : client.function(__VA_ARGS__))
+#define client_call(function, ...)                                      \
+    (icp_trace                                                          \
+     ? call_and_log_function(#function,                                 \
+                             &icp::socket::api::client::function,       \
+                             client, __VA_ARGS__)                       \
+     : client.function(__VA_ARGS__))
 
 extern "C" {
 
@@ -265,9 +269,13 @@ int fcntl(int s, int cmd, ...)
         goto libc_fcntl;
     }
 
-    result = (cmd == F_GETFL
-             ? client_call(fcntl, s, cmd)
-             : client_call(fcntl, s, cmd, va_arg(ap, int)));
+    if (cmd == F_GETFL) {
+        result = client_call(fcntl, s, cmd);
+    } else {
+        auto flags = va_arg(ap, int);
+        result = (libc.fcntl(s, cmd, flags) || client_call(fcntl, s, cmd, flags));
+    }
+
     va_end(ap);
     return (result);
 }

@@ -1,6 +1,6 @@
 SOCK_COMMON += \
-	circular_buffer.cpp \
 	common.cpp \
+	pbuf_vec.cpp \
 	shared_segment.cpp \
 	unix_socket.cpp \
 	uuid.cpp
