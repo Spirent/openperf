@@ -1,18 +1,85 @@
 #include <cassert>
 #include <cerrno>
-#include <string>
 #include <unistd.h>
-#include <sys/eventfd.h>
 #include <sys/uio.h>
 
+#include "socket/event_queue_consumer.tcc"
+#include "socket/event_queue_producer.tcc"
 #include "socket/server/dgram_channel.h"
 #include "lwip/pbuf.h"
 
 namespace icp {
 namespace socket {
+
+template class event_queue_consumer<server::dgram_channel>;
+template class event_queue_producer<server::dgram_channel>;
+
 namespace server {
 
 static constexpr uint16_t max_dgram_length = 1472;  /* 1500 - IP header - UDP header */
+
+/***
+ * protected members required for template derived functionality
+ ***/
+/*
+ * We consume notifications on the server fd.
+ * We produce notifications on the client fd.
+ */
+int dgram_channel::consumer_fd() const
+{
+    return (server_fds.server_fd);
+}
+
+int dgram_channel::producer_fd() const
+{
+    return (server_fds.client_fd);
+}
+
+/* We generate notifications for the receive queue */
+std::atomic_uint64_t& dgram_channel::notify_read_idx()
+{
+    return (rx_fd_read_idx);
+}
+
+const std::atomic_uint64_t& dgram_channel::notify_read_idx() const
+{
+    return (rx_fd_read_idx);
+}
+
+std::atomic_uint64_t& dgram_channel::notify_write_idx()
+{
+    return (rx_fd_write_idx);
+}
+
+const std::atomic_uint64_t& dgram_channel::notify_write_idx() const
+{
+    return (rx_fd_write_idx);
+}
+
+/* We generate acknowledgements for the transmit queue */
+std::atomic_uint64_t& dgram_channel::ack_read_idx()
+{
+    return (tx_fd_read_idx);
+}
+
+const std::atomic_uint64_t& dgram_channel::ack_read_idx() const
+{
+    return (tx_fd_read_idx);
+}
+
+std::atomic_uint64_t& dgram_channel::ack_write_idx()
+{
+    return (tx_fd_write_idx);
+}
+
+const std::atomic_uint64_t& dgram_channel::ack_write_idx() const
+{
+    return (tx_fd_write_idx);
+}
+
+/***
+ * Public members
+ ***/
 
 template <typename BipartiteRing>
 size_t free_spent_pbufs(BipartiteRing& ring)
@@ -54,8 +121,13 @@ void unload_and_free_all_pbufs(BipartiteRing& ring)
 }
 
 dgram_channel::dgram_channel(int socket_flags)
-    : recvq(dgram_ring::server())
-    , sendq(dgram_ring::server())
+    : sendq(dgram_ring::server())
+    , tx_fd_write_idx(0)
+    , rx_fd_read_idx(0)
+    , recvq(dgram_ring::server())
+    , tx_fd_read_idx(0)
+    , rx_fd_write_idx(0)
+    , socket_flags(0)
 {
     int event_flags = 0;
     if (socket_flags & SOCK_CLOEXEC)  event_flags |= EFD_CLOEXEC;
@@ -88,20 +160,6 @@ int dgram_channel::server_fd()
     return (server_fds.server_fd);
 }
 
-void dgram_channel::notify()
-{
-    eventfd_write(server_fds.client_fd, 1);
-}
-
-void dgram_channel::ack()
-{
-    uint64_t counter = 0;
-    eventfd_read(server_fds.server_fd, &counter);
-
-    /* Now is a good time to garbage collect the recvq, too */
-    free_spent_pbufs(recvq);
-}
-
 /* Push all pbufs in the chain onto the dgram_channel */
 bool dgram_channel::send(const pbuf *p)
 {
@@ -125,6 +183,7 @@ bool dgram_channel::send(const pbuf *p, const dgram_ip_addr* addr, in_port_t por
         dgram_channel_item{ .address = dgram_channel_addr(addr, port),
                             .pvec = pbuf_vec(const_cast<pbuf*>(p),
                                              p->payload, p->len) });
+
     if (pushed && idle) notify();
     return (pushed);
 }
