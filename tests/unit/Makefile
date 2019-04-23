@@ -27,6 +27,7 @@ SOURCES := \
 	framework/test_mac_address.cpp \
 	framework/test_ipv4_address.cpp \
 	framework/test_ipv4_network.cpp \
+	framework/test_offset_ptr.cpp \
 	framework/test_std_allocator.cpp \
 	framework/test_task.cpp \
 	modules/socket/test_bipartite_ring.cpp \
