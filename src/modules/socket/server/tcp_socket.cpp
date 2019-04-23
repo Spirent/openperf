@@ -462,7 +462,7 @@ tcp_socket::on_request_reply tcp_socket::on_request(const api::request_connect& 
 {
     auto result = do_tcp_connect(m_pcb.get(), connect);
     if (!result) return {tl::make_unexpected(result.error()), std::nullopt};
-    return {api::reply_success(), tcp_connecting()};
+    return {api::reply_working(), tcp_connecting()};
 }
 
 tcp_socket::on_request_reply tcp_socket::on_request(const api::request_connect& connect,
@@ -470,7 +470,7 @@ tcp_socket::on_request_reply tcp_socket::on_request(const api::request_connect& 
 {
     auto result = do_tcp_connect(m_pcb.get(), connect);
     if (!result) return {tl::make_unexpected(result.error()), std::nullopt};
-    return {api::reply_success(), tcp_connecting()};
+    return {api::reply_working(), tcp_connecting()};
 }
 
 tcp_socket::on_request_reply tcp_socket::on_request(const api::request_connect&,

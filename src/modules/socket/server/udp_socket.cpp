@@ -115,9 +115,14 @@ static err_t do_udp_disconnect(udp_pcb* pcb)
     return (ERR_OK);
 }
 
-static tl::expected<bool, int> do_udp_connect(udp_pcb* pcb, const api::request_connect& connect)
+static tl::expected<bool, int> do_udp_connect(udp_pcb* pcb,
+                                              const api::request_connect& connect,
+                                              dgram_channel* channel)
 {
     sockaddr_storage sstorage;
+
+    /* always unblock the channel */
+    channel->unblock();
 
     auto copy_result = copy_in(sstorage, connect.id.pid, connect.name, connect.namelen);
     if (!copy_result) {
@@ -222,7 +227,7 @@ udp_socket::on_request_reply udp_socket::on_request(const api::request_bind& bin
 udp_socket::on_request_reply udp_socket::on_request(const api::request_connect& connect,
                                                     const udp_init&)
 {
-    auto result = do_udp_connect(m_pcb.get(), connect);
+    auto result = do_udp_connect(m_pcb.get(), connect, m_channel.get());
     if (!result) return {tl::make_unexpected(result.error()), std::nullopt};
     if (!*result) return {api::reply_success(), std::nullopt};  /* still not connected */
     return {api::reply_success(), udp_connected()};
@@ -231,7 +236,7 @@ udp_socket::on_request_reply udp_socket::on_request(const api::request_connect& 
 udp_socket::on_request_reply udp_socket::on_request(const api::request_connect& connect,
                                                     const udp_bound&)
 {
-    auto result = do_udp_connect(m_pcb.get(), connect);
+    auto result = do_udp_connect(m_pcb.get(), connect, m_channel.get());
     if (!result) return {tl::make_unexpected(result.error()), std::nullopt};
     if (!*result) return {api::reply_success(), std::nullopt};  /* still not connected */
     return {api::reply_success(), udp_connected()};
@@ -240,7 +245,7 @@ udp_socket::on_request_reply udp_socket::on_request(const api::request_connect& 
 udp_socket::on_request_reply udp_socket::on_request(const api::request_connect& connect,
                                                     const udp_connected&)
 {
-    auto result = do_udp_connect(m_pcb.get(), connect);
+    auto result = do_udp_connect(m_pcb.get(), connect, m_channel.get());
     if (!result) return {tl::make_unexpected(result.error()), std::nullopt};
     if (!*result) return {api::reply_success(), udp_bound()}; /* disconnected */
     return {api::reply_success(), udp_connected()};

@@ -383,7 +383,12 @@ int client::connect(int s, const struct sockaddr *name, socklen_t namelen)
         return (-1);
     }
 
-    assert(std::holds_alternative<api::reply_success>(*reply));
+    /* We have two possible non-error replies: success or working */
+    if (std::holds_alternative<api::reply_success>(*reply)) {
+        return (0);
+    }
+
+    assert(std::holds_alternative<api::reply_working>(*reply));
 
     /*
      * At this point the connect is in progress in the stack.
