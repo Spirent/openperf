@@ -88,26 +88,26 @@ tl::expected<size_t, int> io_channel_wrapper::recv(pid_t pid,
 
 tl::expected<void, int> io_channel_wrapper::block_writes()
 {
-    if (!std::holds_alternative<stream_channel*>(m_channel)) {
-        return {};
-    }
-    return (std::get<stream_channel*>(m_channel))->block_writes();
+    auto block_writes_visitor = [&](auto channel) -> tl::expected<void, int> {
+        return (channel->block_writes());
+    };
+    return (std::visit(block_writes_visitor, m_channel));
 }
 
 tl::expected<void, int> io_channel_wrapper::wait_readable()
 {
-    if (!std::holds_alternative<stream_channel*>(m_channel)) {
-        return {};
-    }
-    return (std::get<stream_channel*>(m_channel))->wait_readable();
+    auto wait_readable_visitor = [&](auto channel) -> tl::expected<void, int> {
+        return (channel->wait_readable());
+    };
+    return (std::visit(wait_readable_visitor, m_channel));
 }
 
 tl::expected<void, int> io_channel_wrapper::wait_writable()
 {
-    if (!std::holds_alternative<stream_channel*>(m_channel)) {
-        return {};
-    }
-    return (std::get<stream_channel*>(m_channel))->wait_writable();
+    auto wait_writable_visitor = [&](auto channel) -> tl::expected<void, int> {
+        return (channel->wait_writable());
+    };
+    return (std::visit(wait_writable_visitor, m_channel));
 }
 
 }

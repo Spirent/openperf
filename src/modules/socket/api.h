@@ -74,6 +74,8 @@ struct reply_socklen {
 
 struct reply_success {};
 
+struct reply_working {};
+
 struct request_init {
     pid_t pid;
     uuid  tid;
@@ -163,7 +165,8 @@ typedef std::variant<reply_init,
                      reply_accept,
                      reply_socket,
                      reply_socklen,
-                     reply_success> reply_ok;
+                     reply_success,
+                     reply_working> reply_ok;
 
 typedef tl::expected<reply_ok, int> reply_msg;  /* either the reply or an error code */
 

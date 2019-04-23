@@ -1,16 +1,82 @@
 #include <cassert>
-#include <cerrno>
-#include <cstdio>
-#include <cstring>
-#include <numeric>
 #include <unistd.h>
-#include <sys/eventfd.h>
 
+#include "socket/dpdk_memcpy.h"
+#include "socket/event_queue_consumer.tcc"
+#include "socket/event_queue_producer.tcc"
 #include "socket/client/dgram_channel.h"
 
 namespace icp {
 namespace socket {
+
+template class event_queue_consumer<client::dgram_channel>;
+template class event_queue_producer<client::dgram_channel>;
+
 namespace client {
+
+/***
+ * protected members required for template derived functionality
+ ***/
+
+/*
+ * We consume notifications on the client fd.
+ * We produce notifications on the server fd.
+ */
+int dgram_channel::consumer_fd() const
+{
+    return (client_fds.client_fd);
+}
+
+int dgram_channel::producer_fd() const
+{
+    return (client_fds.server_fd);
+}
+
+/* We generate notifications for the transmit queue */
+std::atomic_uint64_t& dgram_channel::notify_read_idx()
+{
+    return (tx_fd_read_idx);
+}
+
+const std::atomic_uint64_t& dgram_channel::notify_read_idx() const
+{
+    return (tx_fd_read_idx);
+}
+
+std::atomic_uint64_t& dgram_channel::notify_write_idx()
+{
+    return (tx_fd_write_idx);
+}
+
+const std::atomic_uint64_t& dgram_channel::notify_write_idx() const
+{
+    return (tx_fd_write_idx);
+}
+
+/* We generate acknowledgements for the receive queue */
+std::atomic_uint64_t& dgram_channel::ack_read_idx()
+{
+    return (rx_fd_read_idx);
+}
+
+const std::atomic_uint64_t& dgram_channel::ack_read_idx() const
+{
+    return (rx_fd_read_idx);
+}
+
+std::atomic_uint64_t& dgram_channel::ack_write_idx()
+{
+    return (rx_fd_write_idx);
+}
+
+const std::atomic_uint64_t& dgram_channel::ack_write_idx() const
+{
+    return (rx_fd_write_idx);
+}
+
+/***
+ * Public members
+ ***/
 
 static std::optional<dgram_channel_addr> to_addr(const sockaddr *addr)
 {
@@ -49,7 +115,7 @@ static std::optional<sockaddr_storage> to_sockaddr(const dgram_channel_addr& add
         auto sa6 = reinterpret_cast<sockaddr_in6*>(&sstorage);
         sa6->sin6_family = AF_INET6;
         sa6->sin6_port = addr.port();
-        std::memcpy(&sa6->sin6_addr.s6_addr, &addr.addr().u_addr.ip6.addr[0],
+        dpdk::memcpy(&sa6->sin6_addr.s6_addr, &addr.addr().u_addr.ip6.addr[0],
                     sizeof(in6_addr));
         return (std::make_optional(sstorage));
     }
@@ -66,8 +132,8 @@ static socklen_t length_of(const sockaddr_storage& sstorage)
 }
 
 dgram_channel::dgram_channel(int client_fd, int server_fd)
-    : recvq(dgram_ring::client())
-    , sendq(dgram_ring::client())
+    : sendq(dgram_ring::client())
+    , recvq(dgram_ring::client())
 {
     client_fds.client_fd = client_fd;
     client_fds.server_fd = server_fd;
@@ -81,6 +147,10 @@ dgram_channel::~dgram_channel()
 
 int dgram_channel::error() const
 {
+    /*
+     * No async errors for stateless sockets; here for io wrapper
+     * compatability.
+     */
     return (0);
 }
 
@@ -119,7 +189,7 @@ tl::expected<size_t, int> dgram_channel::send(pid_t pid,
     sendq.repack();
 
     if (empty) {
-        eventfd_write(client_fds.server_fd, 1);
+        notify();
     }
 
     return (result);
@@ -129,9 +199,9 @@ tl::expected<size_t, int> dgram_channel::recv(pid_t pid, iovec iov[], size_t iov
                                               sockaddr *from, socklen_t *fromlen)
 {
     while (!recvq.available()) {
-        uint64_t counter = 0;
-        auto error = eventfd_read(client_fds.client_fd, &counter);
-        if (error == -1) return (tl::make_unexpected(errno));
+        if (auto error = ack_wait(); error != 0) {
+            return (tl::make_unexpected(error));
+        }
     }
 
     bool full = recvq.full();
@@ -142,7 +212,7 @@ tl::expected<size_t, int> dgram_channel::recv(pid_t pid, iovec iov[], size_t iov
         auto src = to_sockaddr(*item->address);
         if (src && from && fromlen) {
             auto srclen = length_of(*src);
-            std::memcpy(from, &*src, std::min(*fromlen, srclen));
+            dpdk::memcpy(from, &*src, std::min(*fromlen, srclen));
             *fromlen = std::max(*fromlen, srclen);
         }
     }
@@ -157,10 +227,34 @@ tl::expected<size_t, int> dgram_channel::recv(pid_t pid, iovec iov[], size_t iov
     recvq.repack();
 
     if (full) {
-        eventfd_write(client_fds.server_fd, 1);
+        notify();
     }
 
     return (result);
+}
+
+tl::expected<void, int> dgram_channel::block_writes()
+{
+    if (auto error = block()) {
+        return (tl::make_unexpected(error));
+    }
+    return {};
+}
+
+tl::expected<void, int> dgram_channel::wait_readable()
+{
+    if (auto error = ack_wait()) {
+        return (tl::make_unexpected(error));
+    }
+    return {};
+}
+
+tl::expected<void, int> dgram_channel::wait_writable()
+{
+    if (auto error = block_wait()) {
+        return (tl::make_unexpected(error));
+    }
+    return {};
 }
 
 }

@@ -81,11 +81,15 @@ struct dgram_channel_item {
 
 typedef bipartite_ring<dgram_channel_item, api::socket_queue_length> dgram_ring;
 
-#define DGRAM_CHANNEL_MEMBERS                                       \
-    dgram_ring recvq;  /* from stack to client */                   \
-    dgram_ring sendq;  /* from client to stack */                   \
-    api::socket_fd_pair client_fds;                                 \
-    api::socket_fd_pair server_fds;                                 \
+#define DGRAM_CHANNEL_MEMBERS                      \
+    dgram_ring sendq;  /* from client to stack */  \
+    api::socket_fd_pair client_fds;                \
+    std::atomic_uint64_t tx_fd_write_idx;          \
+    std::atomic_uint64_t rx_fd_read_idx;           \
+    dgram_ring recvq;  /* from stack to client */  \
+    api::socket_fd_pair server_fds;                \
+    std::atomic_uint64_t tx_fd_read_idx;           \
+    std::atomic_uint64_t rx_fd_write_idx;          \
     std::atomic_int socket_flags;
 
 struct dgram_channel {

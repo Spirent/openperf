@@ -53,6 +53,9 @@ std::optional<socket_fd_pair> get_message_fds(const reply_msg& reply)
                            },
                            [](const api::reply_success&) -> std::optional<socket_fd_pair> {
                                return (std::nullopt);
+                           },
+                           [](const api::reply_working&) -> std::optional<socket_fd_pair> {
+                               return (std::nullopt);
                            }),
                        *reply));
 }
@@ -77,6 +80,9 @@ void set_message_fds(reply_msg& reply, const socket_fd_pair& fd_pair)
                        ;
                    },
                    [](api::reply_success&) {
+                       ;
+                   },
+                   [](api::reply_working&) {
                        ;
                    }),
                *reply);

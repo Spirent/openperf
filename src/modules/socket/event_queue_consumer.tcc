@@ -111,8 +111,6 @@ int event_queue_consumer<Derived>::ack_undo()
 template <typename Derived>
 int event_queue_consumer<Derived>::block()
 {
-    static constexpr uint64_t eventfd_max = std::numeric_limits<uint64_t>::max() - 1;
-
     /*
      * If the difference between write and read is eventfd_max, then the
      * fd is already blocked.
@@ -138,21 +136,26 @@ int event_queue_consumer<Derived>::block()
 template <typename Derived>
 int event_queue_consumer<Derived>::block_wait()
 {
-    static constexpr uint64_t eventfd_max = std::numeric_limits<uint64_t>::max() - 1;
-
     /*
-     * We need two writes to block on the fd because we can write at
+     * We might need two writes to block on the fd because we can write at
      * most eventfd_max to the counter, but need eventfd_max + 1 to block.
-     * Use our first write to take us to the block threshold...
+     * Use a write to take us to the block threshold, if necessary.
      */
     auto offset = eventfd_max - count();
-    sub_read(offset);
-    if (auto error = eventfd_write(fd(), offset); error != 0) {
-        add_read(offset);  /* undo previous sub */
+    if (offset) {
+        sub_read(offset);
+        if (auto error = eventfd_write(fd(), offset); error != 0) {
+            add_read(offset);  /* undo previous sub */
+            return (errno);
+        }
+    }
+
+    /* This write should block */
+    if (auto error = eventfd_write(fd(), 1); error != 0) {
         return (errno);
     }
-    /* ...and use the second write to force a block */
-    return (eventfd_write(fd(), 1) == 0 ? 0 : errno);
+    sub_read(1);  /* Don't forget to account for the write! */
+    return (0);
 }
 
 }
