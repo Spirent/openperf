@@ -91,7 +91,7 @@ private:
 tl::expected<generic_socket,int> make_socket(allocator& allocator,
                                              int domain, int type, int protocol);
 
-api::io_channel api_channel(channel_variant&);
+api::io_channel_offset api_channel_offset(channel_variant&, const void* base);
 int client_fd(channel_variant&);
 int server_fd(channel_variant&);
 

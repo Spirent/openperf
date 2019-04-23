@@ -29,11 +29,16 @@ class offset_ptr {
         return (reinterpret_cast<intptr_t>(ptr) - reinterpret_cast<intptr_t>(this));
     }
 
+    struct no_init{};
+    offset_ptr(no_init) {}
+
 public:
     typedef T value_type;
     typedef T& reference;
     typedef T* pointer;
     typedef std::random_access_iterator_tag iterator_category;
+
+    static offset_ptr uninitialized() { return offset_ptr(no_init()); }
 
     offset_ptr(pointer ptr = nullptr)
         : m_offset(ptr ? offset_of(ptr) : null_offset)

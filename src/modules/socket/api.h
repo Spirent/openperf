@@ -24,7 +24,18 @@ namespace api {
 constexpr size_t socket_queue_length = 32;
 constexpr size_t shared_memory_name_length = 32;
 
-typedef std::variant<dgram_channel*, stream_channel*> io_channel;
+
+struct dgram_channel_offset {
+    ptrdiff_t offset;
+};
+
+struct stream_channel_offset {
+    ptrdiff_t offset;
+};
+
+typedef std::variant<dgram_channel_offset, stream_channel_offset> io_channel_offset;
+
+typedef std::variant<dgram_channel*, stream_channel*> io_channel_ptr;
 
 struct socket_fd_pair {
     int client_fd;
@@ -57,14 +68,14 @@ struct reply_init {
 
 struct reply_accept {
     socket_id id;
-    io_channel channel;
+    io_channel_offset channel;
     socket_fd_pair fd_pair;
     socklen_t addrlen;
 };
 
 struct reply_socket {
     socket_id id;
-    io_channel channel;
+    io_channel_offset channel;
     socket_fd_pair fd_pair;
 };
 
@@ -180,6 +191,8 @@ std::string server_socket();
 
 std::optional<socket_fd_pair> get_message_fds(const api::reply_msg&);
 void set_message_fds(api::reply_msg&, const socket_fd_pair& fd_pair);
+
+io_channel_ptr to_pointer(io_channel_offset offset, const void* base);
 
 }
 }

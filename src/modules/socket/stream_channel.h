@@ -3,6 +3,7 @@
 
 #include <atomic>
 
+#include "framework/memory/offset_ptr.h"
 #include "socket/api.h"
 
 namespace icp {
@@ -35,7 +36,7 @@ static constexpr size_t cache_line_size = 64;
  */
 
 struct buffer {
-    uint8_t* ptr;
+    memory::offset_ptr<uint8_t> ptr;
     uint64_t len;
 
     buffer(uint8_t* ptr_, uint64_t len_)
@@ -43,7 +44,9 @@ struct buffer {
         , len(len_)
     {}
 
-    buffer() {}
+    buffer()
+        : ptr(memory::offset_ptr<uint8_t>::uninitialized())
+    {}
 };
 
 #define STREAM_CHANNEL_MEMBERS                   \

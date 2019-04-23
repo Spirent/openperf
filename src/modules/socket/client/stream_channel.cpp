@@ -27,7 +27,7 @@ namespace client {
 /* We consume data from the receive queue */
 uint8_t* stream_channel::consumer_base() const
 {
-    return (rx_buffer.ptr);
+    return (rx_buffer.ptr.get());
 }
 
 size_t stream_channel::consumer_len() const
@@ -58,7 +58,7 @@ const std::atomic_size_t& stream_channel::consumer_write_idx() const
 /* We produce data for the transmit queue */
 uint8_t* stream_channel::producer_base() const
 {
-    return (tx_buffer.ptr);
+    return (tx_buffer.ptr.get());
 }
 
 size_t stream_channel::producer_len() const

@@ -26,6 +26,7 @@ class socket;
 
 class api_handler {
     icp::core::event_loop& m_loop;  /* event loop */
+    const void* m_shm_base;         /* shared memory base address */
     allocator& m_allocator;         /* io_channel mempool */
     pid_t m_pid;                    /* client pid */
     uint32_t m_next_socket_id;      /* socket id counter */
@@ -52,7 +53,8 @@ class api_handler {
     }
 
 public:
-    api_handler(icp::core::event_loop& loop, allocator& allocator, pid_t pid);
+    api_handler(icp::core::event_loop& loop, const void* shm_base,
+                allocator& allocator, pid_t pid);
     ~api_handler();
 
     int handle_requests(const struct icp_event_data* data);

@@ -1,3 +1,4 @@
+#include <cassert>
 #include <cerrno>
 
 #include "socket/server/generic_socket.h"
@@ -206,14 +207,20 @@ tl::expected<void, int> copy_out(pid_t dst_pid,
     return {};
 }
 
-api::io_channel api_channel(channel_variant& channel)
+api::io_channel_offset api_channel_offset(channel_variant& channel, const void* base)
 {
+    assert(reinterpret_cast<uintptr_t>(base) <= std::numeric_limits<intptr_t>::max());
+
     return (std::visit(overloaded_visitor(
-                           [](dgram_channel* ptr) -> api::io_channel {
-                               return (reinterpret_cast<icp::socket::dgram_channel*>(ptr));
+                           [&](dgram_channel* ptr) -> api::io_channel_offset {
+                               auto offset = (reinterpret_cast<intptr_t>(ptr)
+                                              - reinterpret_cast<intptr_t>(base));
+                               return (api::dgram_channel_offset{.offset = offset});
                            },
-                           [](stream_channel* ptr) -> api::io_channel {
-                               return (reinterpret_cast<icp::socket::stream_channel*>(ptr));
+                           [&](stream_channel* ptr) -> api::io_channel_offset {
+                               auto offset = (reinterpret_cast<intptr_t>(ptr)
+                                              - reinterpret_cast<intptr_t>(base));
+                               return (api::stream_channel_offset{.offset = offset});
                            }),
                        channel));
 }

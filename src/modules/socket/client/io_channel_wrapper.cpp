@@ -4,8 +4,22 @@ namespace icp {
 namespace socket {
 namespace client {
 
-io_channel_wrapper::io_channel_wrapper(api::io_channel& channel, int client_fd, int server_fd)
-    : m_channel(*reinterpret_cast<io_channel*>(&channel))
+using io_channel = std::variant<dgram_channel*, stream_channel*>;
+
+static io_channel io_channel_cast(api::io_channel_ptr channel)
+{
+    return (std::visit(overloaded_visitor(
+                           [](socket::dgram_channel* channel) -> io_channel {
+                               return (reinterpret_cast<dgram_channel*>(channel));
+                           },
+                           [](socket::stream_channel* channel) -> io_channel {
+                               return (reinterpret_cast<stream_channel*>(channel));
+                           }),
+                       channel));
+}
+
+io_channel_wrapper::io_channel_wrapper(api::io_channel_ptr channel, int client_fd, int server_fd)
+    : m_channel(io_channel_cast(channel))
 {
     std::visit(overloaded_visitor(
                    [&](dgram_channel* channel) {

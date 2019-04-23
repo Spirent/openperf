@@ -88,6 +88,20 @@ void set_message_fds(reply_msg& reply, const socket_fd_pair& fd_pair)
                *reply);
 }
 
+io_channel_ptr to_pointer(io_channel_offset offset, const void* base)
+{
+    return (std::visit(overloaded_visitor(
+                           [&](dgram_channel_offset dgram) -> io_channel_ptr {
+                               return (reinterpret_cast<dgram_channel*>(
+                                           reinterpret_cast<intptr_t>(base) + dgram.offset));
+                           },
+                           [&](stream_channel_offset stream) -> io_channel_ptr {
+                                return (reinterpret_cast<stream_channel*>(
+                                            reinterpret_cast<intptr_t>(base) + stream.offset));
+                           }),
+                       std::move(offset)));
+}
+
 }
 }
 }

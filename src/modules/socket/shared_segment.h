@@ -15,7 +15,6 @@ class shared_segment
 
 public:
     shared_segment(const std::string_view path, size_t size, bool create = false);
-    shared_segment(const std::string_view path, size_t size, const void* addr);
     ~shared_segment();
 
     shared_segment& operator=(shared_segment&& other);
@@ -26,7 +25,7 @@ public:
 
     std::string_view name() const { return (m_path); }
     size_t size() const { return (m_size); }
-    void* get() const { return (m_ptr); }
+    void* base() const { return (m_ptr); }
 };
 
 }

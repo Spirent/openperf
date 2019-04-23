@@ -12,9 +12,11 @@ namespace socket {
 namespace server {
 
 api_handler::api_handler(icp::core::event_loop& loop,
+                         const void* shm_base,
                          allocator& allocator,
                          pid_t pid)
     : m_loop(loop)
+    , m_shm_base(shm_base)
     , m_allocator(allocator)
     , m_pid(pid)
     , m_next_socket_id(0)
@@ -129,7 +131,7 @@ api::reply_msg api_handler::handle_request_accept(const api::request_accept& req
 
     return (api::reply_accept{
             .id = id,
-            .channel = api_channel(channel),
+            .channel = api_channel_offset(channel, m_shm_base),
             .fd_pair = {
                 .client_fd = client_fd(channel),
                 .server_fd = server_fd(channel),
@@ -182,7 +184,7 @@ api::reply_msg api_handler::handle_request_socket(const api::request_socket& req
 
     return (api::reply_socket{
             .id = id,
-            .channel = api_channel(channel),
+            .channel = api_channel_offset(channel, m_shm_base),
             .fd_pair = {
                 .client_fd = client_fd(channel),
                 .server_fd = server_fd(channel),

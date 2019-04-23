@@ -12,9 +12,7 @@
 namespace icp {
 namespace memory {
 
-static void* do_mapping(const std::string_view path, size_t size,
-                        int shm_flags,
-                        const void *addr = nullptr)
+static void* do_mapping(const std::string_view path, size_t size, int shm_flags)
 {
     auto fd = shm_open(path.data(), shm_flags,
                        S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
@@ -37,7 +35,7 @@ static void* do_mapping(const std::string_view path, size_t size,
         ftruncate(fd, size);
     }
 
-    auto ptr = mmap(const_cast<void*>(addr), size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    auto ptr = mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
     close(fd);  /* done with this regardless of outcome... */
     if (ptr == MAP_FAILED) {
         throw std::runtime_error("Could not map shared memory segment "
@@ -58,22 +56,6 @@ shared_segment::shared_segment(const std::string_view path, size_t size, bool cr
     }
     m_ptr = do_mapping(path, size, flags);
     m_initialized = create;
-}
-
-shared_segment::shared_segment(const std::string_view path, size_t size, const void* ptr)
-    : m_path(path)
-    , m_size(size)
-    , m_initialized(false)
-{
-    m_ptr = do_mapping(path, size, O_RDWR, ptr);
-    if (m_ptr != ptr) {
-        /* two chars per byte + terminating null */
-        static constexpr size_t ptr_buf_length = sizeof(void*) * 2 + 1;
-        char buffer[ptr_buf_length];
-        std::snprintf(buffer, ptr_buf_length, "%p", ptr);
-        throw std::runtime_error("Could not map shared memory segment "
-                                 + std::string(path) + " to desired address " + buffer);
-    }
 }
 
 shared_segment::shared_segment (shared_segment&& other)

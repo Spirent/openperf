@@ -21,7 +21,7 @@ client::client()
 {
     auto server = sockaddr_un{ .sun_family = AF_UNIX };
     if (auto envp = std::getenv("ICP_PREFIX"); envp != nullptr) {
-        std::strncpy(server.sun_path, 
+        std::strncpy(server.sun_path,
                      (api::server_socket() + "." + std::string(envp)).c_str(),
                      sizeof(server.sun_path));
     } else {
@@ -112,8 +112,7 @@ void client::init(std::atomic_bool* init_flag)
         /* map shared address memory */
         auto shm_info = *init.shm_info;
         m_shm.reset(new memory::shared_segment(shm_info.name,
-                                               shm_info.size,
-                                               shm_info.base));
+                                               shm_info.size));
     }
 
     m_init_flag = init_flag;
@@ -159,7 +158,7 @@ int client::accept(int s, struct sockaddr *addr, socklen_t *addrlen, int flags)
     auto newresult = m_channels.emplace(
         accept.fd_pair.client_fd,
         ided_channel{accept.id,
-                     io_channel_wrapper(accept.channel,
+                     io_channel_wrapper(to_pointer(accept.channel, m_shm->base()),
                                         accept.fd_pair.client_fd,
                                         accept.fd_pair.server_fd)});
 
@@ -453,7 +452,7 @@ int client::socket(int domain, int type, int protocol)
     auto result = m_channels.emplace(
         socket.fd_pair.client_fd,
         ided_channel{socket.id,
-                     io_channel_wrapper(socket.channel,
+                     io_channel_wrapper(to_pointer(socket.channel, m_shm->base()),
                                         socket.fd_pair.client_fd,
                                         socket.fd_pair.server_fd)});
 
