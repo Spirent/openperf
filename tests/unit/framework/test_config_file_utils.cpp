@@ -2,7 +2,6 @@
 #include <string>
 #include <string.h>
 
-#include "icp_config_file.h"
 #include "config_file_utils.h"
 #include "yaml_json_emitter.h"
 
