@@ -2,6 +2,7 @@
 #define _ICP_SOCKET_EVENT_QUEUE_CONSUMER_H_
 
 #include <atomic>
+#include <limits>
 
 namespace icp {
 namespace socket {
@@ -9,6 +10,8 @@ namespace socket {
 template <typename Derived>
 class event_queue_consumer
 {
+    static constexpr uint64_t eventfd_max = std::numeric_limits<uint64_t>::max() - 1;
+
     Derived& derived();
     const Derived& derived() const;
 
