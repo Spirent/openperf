@@ -209,7 +209,7 @@ tl::expected<size_t, int> dgram_channel::recv(pid_t pid,
 
     bool full = recvq.full();
 
-    auto item = recvq.unpack();
+    auto item = (flags & MSG_PEEK ? recvq.peek() : recvq.unpack());
 
     if (item->address) {
         auto src = to_sockaddr(*item->address);
@@ -229,8 +229,12 @@ tl::expected<size_t, int> dgram_channel::recv(pid_t pid,
 
     recvq.repack();
 
-    if (full) {
-        notify();
+    if (full) notify();
+
+    if (!recvq.available()) {
+        ack();
+    } else {
+        ack_undo();
     }
 
     return (result);

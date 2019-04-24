@@ -160,6 +160,11 @@ int dgram_channel::server_fd()
     return (server_fds.server_fd);
 }
 
+bool dgram_channel::send_empty() const
+{
+    return (recvq.empty());
+}
+
 /* Push all pbufs in the chain onto the dgram_channel */
 bool dgram_channel::send(const pbuf *p)
 {

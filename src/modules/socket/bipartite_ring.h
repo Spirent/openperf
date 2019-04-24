@@ -129,6 +129,15 @@ public:
         return (&m_data[mask(m_client.index++)]);
     }
 
+    T* const peek()
+    {
+        if (!available()) {
+            return (nullptr);
+        }
+
+        return (&m_data[mask(m_client.index)]);
+    }
+
     size_t unpack(T* items[], size_t max_items)
     {
         auto nb_items = std::min(available(), max_items);
