@@ -6,9 +6,15 @@ API_DEPENDS += pistache json
 
 API_SOURCES += \
 	api_init.cpp \
+	api_internal_client.cpp \
 	api_module_info.cpp \
 	api_register.c \
 	api_version.cpp
+
+API_TEST_DEPENDS += pistache
+
+API_TEST_SOURCES += \
+	api_internal_client.cpp
 
 .PHONY: $(API_SRC_DIR)/api_version.cpp
 $(API_OBJ_DIR)/api_version.o: ICP_CPPFLAGS += \
