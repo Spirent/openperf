@@ -45,10 +45,14 @@ public:
     int flags() const;
     int flags(int);
 
-    tl::expected<size_t, int> send(pid_t pid, const iovec iov[], size_t iovcnt,
+    tl::expected<size_t, int> send(pid_t pid,
+                                   const iovec iov[], size_t iovcnt,
+                                   int flags,
                                    const sockaddr *to);
 
-    tl::expected<size_t, int> recv(pid_t pid, iovec iov[], size_t iovcnt,
+    tl::expected<size_t, int> recv(pid_t pid,
+                                   iovec iov[], size_t iovcnt,
+                                   int flags,
                                    sockaddr *from, socklen_t *fromlen);
 
     tl::expected<void, int> block_writes();

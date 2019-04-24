@@ -167,6 +167,7 @@ int dgram_channel::flags(int flags)
 
 tl::expected<size_t, int> dgram_channel::send(pid_t pid,
                                               const iovec iov[], size_t iovcnt,
+                                              int flags __attribute__((unused)),
                                               const sockaddr *to)
 {
     if (!sendq.available()) return (ENOBUFS);
@@ -195,7 +196,9 @@ tl::expected<size_t, int> dgram_channel::send(pid_t pid,
     return (result);
 }
 
-tl::expected<size_t, int> dgram_channel::recv(pid_t pid, iovec iov[], size_t iovcnt,
+tl::expected<size_t, int> dgram_channel::recv(pid_t pid,
+                                              iovec iov[], size_t iovcnt,
+                                              int flags __attribute__((unused)),
                                               sockaddr *from, socklen_t *fromlen)
 {
     while (!recvq.available()) {

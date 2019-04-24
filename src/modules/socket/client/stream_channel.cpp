@@ -176,6 +176,7 @@ int stream_channel::flags(int flags)
 
 tl::expected<size_t, int> stream_channel::send(pid_t pid __attribute__((unused)),
                                                const iovec iov[], size_t iovcnt,
+                                               int flags __attribute__((unused)),
                                                const sockaddr *to __attribute__((unused)))
 {
     if (auto error = socket_error.load(std::memory_order_relaxed); error != 0) {
@@ -218,6 +219,7 @@ tl::expected<size_t, int> stream_channel::send(pid_t pid __attribute__((unused))
 
 tl::expected<size_t, int> stream_channel::recv(pid_t pid __attribute__((unused)),
                                                iovec iov[], size_t iovcnt,
+                                               int flags __attribute__((unused)),
                                                sockaddr *from __attribute__((unused)),
                                                socklen_t *fromlen __attribute__((unused)))
 {
