@@ -47,6 +47,7 @@ public:
     int client_fd();
     int server_fd();
 
+    bool send_empty() const;
     bool send(const pbuf*);
     bool send(const pbuf*, const dgram_ip_addr*, in_port_t);
 

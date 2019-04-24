@@ -43,7 +43,12 @@ void udp_receive(void* arg, udp_pcb* pcb, pbuf* p, const ip_addr_t* addr, in_por
     (void)pcb;
     assert(addr != nullptr);
     auto channel = reinterpret_cast<dgram_channel*>(arg);
-    if (!channel->send(p, reinterpret_cast<const dgram_ip_addr*>(addr), port)) {
+    /*
+     * Note: we switch the byte order of the port here because lwip provides the port
+     * in host byte order but BSD socket clients expect it to be in network byte
+     * order.
+     */
+    if (!channel->send(p, reinterpret_cast<const dgram_ip_addr*>(addr), htons(port))) {
         pbuf_free(p);
     }
 }
@@ -123,6 +128,11 @@ static tl::expected<bool, int> do_udp_connect(udp_pcb* pcb,
 
     /* always unblock the channel */
     channel->unblock();
+
+    /* unblock clears any pending notifications; check if we should (re)notify */
+    if (!channel->send_empty()) {
+        channel->notify();
+    }
 
     auto copy_result = copy_in(sstorage, connect.id.pid, connect.name, connect.namelen);
     if (!copy_result) {
