@@ -17,10 +17,8 @@ class io_channel_wrapper
                                     icp::socket::client::stream_channel*>;
     io_channel m_channel;
 
-    static io_channel to_io_channel(api::io_channel&);
-
 public:
-    io_channel_wrapper(api::io_channel& channel, int client_fd, int server_fd);
+    io_channel_wrapper(api::io_channel_ptr channel, int client_fd, int server_fd);
     ~io_channel_wrapper();
 
     io_channel_wrapper(const io_channel_wrapper&) = delete;

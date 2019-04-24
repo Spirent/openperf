@@ -31,7 +31,7 @@ namespace server {
 /* We consume data from the transmit queue */
 uint8_t* stream_channel::consumer_base() const
 {
-    return (tx_buffer.ptr);
+    return (tx_buffer.ptr.get());
 }
 
 size_t stream_channel::consumer_len() const
@@ -62,7 +62,7 @@ const std::atomic_size_t& stream_channel::consumer_write_idx() const
 /* We produce data for the receive queue */
 uint8_t* stream_channel::producer_base() const
 {
-    return (rx_buffer.ptr);
+    return (rx_buffer.ptr.get());
 }
 
 size_t stream_channel::producer_len() const
@@ -193,8 +193,8 @@ stream_channel::~stream_channel()
     close(server_fds.server_fd);
 
     auto alloc = reinterpret_cast<icp::socket::server::allocator*>(allocator);
-    alloc->deallocate(tx_buffer.ptr, tx_buffer.len);
-    alloc->deallocate(rx_buffer.ptr, rx_buffer.len);
+    alloc->deallocate(tx_buffer.ptr.get(), tx_buffer.len);
+    alloc->deallocate(rx_buffer.ptr.get(), rx_buffer.len);
 }
 
 int stream_channel::client_fd() const

@@ -51,8 +51,8 @@ static icp::memory::shared_segment create_shared_memory(size_t size)
                                                size, true);
 
     /* Construct our allocator in our shared memory segment */
-    new (segment.get()) socket::server::allocator(
-        reinterpret_cast<uintptr_t>(segment.get()) + impl_size,
+    new (segment.base()) socket::server::allocator(
+        reinterpret_cast<uintptr_t>(segment.base()) + impl_size,
         size - impl_size);
 
     return (segment);
@@ -60,7 +60,7 @@ static icp::memory::shared_segment create_shared_memory(size_t size)
 
 socket::server::allocator* server::allocator() const
 {
-    return (reinterpret_cast<socket::server::allocator*>(m_shm.get()));
+    return (reinterpret_cast<socket::server::allocator*>(m_shm.base()));
 }
 
 static icp::socket::unix_socket create_unix_socket(const std::string_view path, int type)
@@ -215,9 +215,11 @@ int server::handle_api_init_requests(const struct icp_event_data *data)
             ICP_LOG(ICP_LOG_INFO, "New connection received from pid %d, %s\n",
                     init.pid, to_string(init.tid).c_str());
             m_handlers.emplace(init.pid,
-                               std::make_unique<api_handler>(m_loop, *(allocator()), init.pid));
+                               std::make_unique<api_handler>(m_loop, m_shm.base(),
+                                                             *(allocator()),
+                                                             init.pid));
             auto shm_info = api::shared_memory_descriptor{
-                .base = m_shm.get(),
+                .base = m_shm.base(),
                 .size = m_shm.size()
             };
             strncpy(shm_info.name, m_shm.name().data(),
