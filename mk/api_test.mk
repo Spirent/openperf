@@ -1,5 +1,5 @@
 #
-# Makefile component for inception framework
+# Makefile component for API unit tests
 #
 
 API_TEST_REQ_VARS := \
