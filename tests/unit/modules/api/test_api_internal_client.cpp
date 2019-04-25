@@ -12,23 +12,21 @@ struct handler : public Pistache::Http::Handler
 {
     HTTP_PROTOTYPE(handler)
 
+    // Map resources to the expected return code.
+    const std::map<std::string, Pistache::Http::Code> resource_code_map {
+      {"/Ok", Pistache::Http::Code::Ok},
+      {"/Not_Found", Pistache::Http::Code::Not_Found}};
+
     void onRequest(const Pistache::Http::Request& request,
                    Pistache::Http::ResponseWriter writer) override
     {
         // Client functions sending the correct HTTP method is implicitly tested here.
         // Behavior is different depending on which method the server side sees.
-        if (request.method() == Pistache::Http::Method::Get) {
-            if (request.resource() == "/Ok")
-                writer.send(Pistache::Http::Code::Ok, request.resource());
-            else if (request.resource() == "/Not_Found")
-                writer.send(Pistache::Http::Code::Not_Found, request.resource());
+        const std::map<Pistache::Http::Method, std::string> method_body_map {
+          {Pistache::Http::Method::Get, request.resource()},
+          {Pistache::Http::Method::Post, request.body()}};
 
-        } else if (request.method() == Pistache::Http::Method::Post) {
-            if (request.resource() == "/Ok")
-                writer.send(Pistache::Http::Code::Ok, request.body());
-            else if (request.resource() == "/Not_Found")
-                writer.send(Pistache::Http::Code::Not_Found, request.body());
-        }
+        writer.send(resource_code_map.at(request.resource()), method_body_map.at(request.method()));
     }
 };
 
