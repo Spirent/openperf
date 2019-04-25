@@ -3,6 +3,7 @@
 #include <pistache/client.h>
 
 #include "api_internal_client.h"
+#include "api_service.h"
 
 namespace icp::api::client {
 
@@ -33,11 +34,16 @@ static auto internal_api_request(Http::RequestBuilder &request_builder, const st
     return result;
 }
 
+static auto make_full_uri(std::string_view resource)
+{
+    return server + ":" + std::to_string(api_get_service_port()) + resource.data();
+}
+
 std::pair<Http::Code, std::string> internal_api_get(std::string_view resource)
 {
     Http::Client client;
     client.init();
-    auto rb     = client.get(server + ":9000" + resource.data());
+    auto rb     = client.get(make_full_uri(resource));
     auto result = internal_api_request(rb, "");
 
     client.shutdown();
@@ -50,7 +56,7 @@ std::pair<Http::Code, std::string> internal_api_post(std::string_view resource,
 {
     Http::Client client;
     client.init();
-    auto rb     = client.post(server + ":9000" + resource.data());
+    auto rb     = client.post(make_full_uri(resource));
     auto result = internal_api_request(rb, body);
 
     client.shutdown();

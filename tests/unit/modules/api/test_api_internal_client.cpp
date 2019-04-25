@@ -4,6 +4,7 @@
 #include <pistache/endpoint.h>
 
 #include "api/api_internal_client.h"
+#include "api/api_service.h"
 
 using namespace icp::api::client;
 
@@ -40,7 +41,7 @@ TEST_CASE("check internal API client support", "[api client]")
 
     // Mock up the server side of things.
     // Taken from the Pistache unit tests.
-    const Pistache::Address address("localhost", Pistache::Port(9000));
+    const Pistache::Address address("localhost", Pistache::Port(icp::api::api_get_service_port()));
 
     Pistache::Http::Endpoint server(address);
     auto flags       = Pistache::Tcp::Options::ReuseAddr;

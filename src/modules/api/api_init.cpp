@@ -40,6 +40,11 @@ static int handle_options(int opt, const char *opt_arg)
     return (0);
 }
 
+in_port_t api_get_service_port(void)
+{
+    return service_port;
+}
+
 static
 Rest::Route::Result NotFound(const Rest::Request &request __attribute__((unused)),
                              Http::ResponseWriter response)
