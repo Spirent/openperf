@@ -19,6 +19,11 @@ test: test_aat
 test_aat:
 	@cd tests/aat && $(MAKE)
 
+.PHONY: test_unit
+test_unit:
+	@cd tests/unit && $(MAKE)
+
 .PHONY: clean
 clean:
 	@cd targets/inception && $(MAKE) clean
+	@cd tests/unit && $(MAKE) clean
