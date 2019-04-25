@@ -219,7 +219,6 @@ int server::handle_api_init_requests(const struct icp_event_data *data)
                                                              *(allocator()),
                                                              init.pid));
             auto shm_info = api::shared_memory_descriptor{
-                .base = m_shm.base(),
                 .size = m_shm.size()
             };
             strncpy(shm_info.name, m_shm.name().data(),

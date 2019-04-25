@@ -44,7 +44,6 @@ struct socket_fd_pair {
 
 struct shared_memory_descriptor {
     char   name[shared_memory_name_length];
-    void  *base;
     size_t size;
 };
 
