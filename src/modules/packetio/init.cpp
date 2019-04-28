@@ -13,13 +13,21 @@
 #include "packetio/port_server.h"
 #include "packetio/stack_server.h"
 
+#include "packetio/drivers/dpdk/topology_utils.h"
+
 namespace icp {
 namespace packetio {
 
 static int module_version = 1;
 
+extern "C" int tcpip_shutdown(void);
+
 struct service {
     ~service() {
+
+        if (tcpip_shutdown() == 0) {
+            rte_eal_wait_lcore(icp::packetio::dpdk::topology::get_stack_lcore_id());
+        }
         if (m_worker.joinable()) {
             m_worker.join();
         }
@@ -67,6 +75,7 @@ int icp_packetio_init(void *context, void *state)
 void icp_packetio_fini(void *state)
 {
     icp::packetio::service *s = reinterpret_cast<icp::packetio::service*>(state);
+
     delete s;
 }
 
