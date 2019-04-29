@@ -13,12 +13,17 @@ inception: deps
 	@cd targets/inception && $(MAKE)
 
 .PHONY: test
-test: test_aat
+test: test_unit test_aat
 
 .PHONY: test_aat
-test_aat:
+test_aat: inception
 	@cd tests/aat && $(MAKE)
+
+.PHONY: test_unit
+test_unit:
+	@cd tests/unit && $(MAKE)
 
 .PHONY: clean
 clean:
 	@cd targets/inception && $(MAKE) clean
+	@cd tests/unit && $(MAKE) clean
