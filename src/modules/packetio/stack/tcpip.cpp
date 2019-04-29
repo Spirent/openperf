@@ -63,6 +63,8 @@
 #define TCPIP_MSG_VAR_ALLOC(name)   API_VAR_ALLOC(struct tcpip_msg, MEMP_TCPIP_MSG_API, name, ERR_MEM)
 #define TCPIP_MSG_VAR_FREE(name)    API_VAR_FREE(MEMP_TCPIP_MSG_API, name)
 
+#define TCPIP_MSG_SHUTDOWN  (TCPIP_MSG_CALLBACK_STATIC + 1)
+
 /* global variables */
 static tcpip_init_done_fn tcpip_init_done;
 static void *tcpip_init_done_arg;
@@ -118,6 +120,13 @@ handle_tcpip_msg(const struct icp_event_data *data, void *arg)
             LWIP_ASSERT("tcpip_thread: invalid message", 0);
             continue;
         }
+
+        auto type = static_cast<int>(msg->type);
+        if (type == TCPIP_MSG_SHUTDOWN) {
+            icp_event_loop_exit(data->loop);
+            break;
+        }
+
         switch (msg->type) {
 #if !LWIP_TCPIP_CORE_LOCKING
         case TCPIP_MSG_API:
@@ -441,6 +450,27 @@ tcpip_init(tcpip_init_done_fn initfunc, void *arg)
 #endif /* LWIP_TCPIP_CORE_LOCKING */
 
     sys_thread_new(TCPIP_THREAD_NAME, tcpip_thread, nullptr, TCPIP_THREAD_STACKSIZE, TCPIP_THREAD_PRIO);
+}
+
+int
+tcpip_shutdown()
+{
+    if (!sys_mbox_valid_val(tcpip_mbox)) {
+        return (-1);
+    }
+
+#if LWIP_NETCONN_SEM_PER_THREAD
+    TCPIP_MSG_VAR_DECLARE(msg);
+    TCPIP_MSG_VAR_ALLOC(msg);
+    TCPIP_MSG_VAR_REF(msg).type = static_cast<tcpip_msg_type>(TCPIP_MSG_SHUTDOWN);
+    TCPIP_MSG_VAR_REF(msg).msg.api_call.sem = LWIP_NETCONN_THREAD_SEM_GET();
+    sys_mbox_post(&tcpip_mbox, &TCPIP_MSG_VAR_REF(msg));
+    sys_arch_sem_wait(TCPIP_MSG_VAR_REF(msg).msg.api_call.sem, 0);
+    TCPIP_MSG_VAR_FREE(msg);
+    return (0);
+#else
+    return (-1);
+#endif
 }
 
 }
