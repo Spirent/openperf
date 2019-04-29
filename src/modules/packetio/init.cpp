@@ -13,13 +13,22 @@
 #include "packetio/port_server.h"
 #include "packetio/stack_server.h"
 
+#include "packetio/drivers/dpdk/topology_utils.h"
+
 namespace icp {
 namespace packetio {
 
 static int module_version = 1;
 
+extern "C" int tcpip_shutdown(void);
+
 struct service {
     ~service() {
+
+        if (tcpip_shutdown() == 0) {
+            int id = icp::packetio::dpdk::topology::get_stack_lcore_id();
+            rte_eal_wait_lcore(id);
+        }
         if (m_worker.joinable()) {
             m_worker.join();
         }
