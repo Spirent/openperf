@@ -96,6 +96,11 @@ public:
         return m_self->stats();
     }
 
+    void shutdown()
+    {
+        m_self->shutdown();
+    }
+
 private:
     struct stack_concept {
         virtual ~stack_concept() = default;
@@ -105,6 +110,7 @@ private:
         virtual tl::expected<int, std::string> create_interface(const interface::config_data& config) = 0;
         virtual void delete_interface(int id) = 0;
         virtual std::unordered_map<std::string, stats_data> stats() const = 0;
+        virtual void shutdown() const = 0;
     };
 
     template <typename Stack>
@@ -141,6 +147,10 @@ private:
         std::unordered_map<std::string, stats_data> stats() const
         {
             return m_stack.stats();
+        }
+        void shutdown() const
+        {
+            m_stack.shutdown();
         }
 
         Stack m_stack;

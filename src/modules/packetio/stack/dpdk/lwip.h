@@ -53,6 +53,7 @@ public:
     std::optional<interface::generic_interface> interface(int id) const;
     tl::expected<int, std::string> create_interface(const interface::config_data& config);
     void delete_interface(int id);
+    void shutdown() const;
 
     std::unordered_map<std::string, stack::stats_data> stats() const;
 

@@ -3,6 +3,7 @@
 
 #include "core/icp_core.h"
 #include "packetio/drivers/dpdk/dpdk.h"
+#include "packetio/drivers/dpdk/topology_utils.h"
 #include "packetio/stack/dpdk/netif_wrapper.h"
 #include "packetio/stack/dpdk/lwip.h"
 
@@ -65,6 +66,15 @@ void lwip::delete_interface(int id)
         auto& ifp = m_interfaces.at(id);
         m_driver.del_interface(ifp->port_id(), std::make_any<netif*>(ifp->data()));
         m_interfaces.erase(id);
+    }
+}
+
+extern "C" err_t tcpip_shutdown();
+void lwip::shutdown() const
+{
+    if (tcpip_shutdown() == ERR_OK) {
+        int id = icp::packetio::dpdk::topology::get_stack_lcore_id();
+        rte_eal_wait_lcore(id);
     }
 }
 

@@ -121,14 +121,7 @@ handle_tcpip_msg(const struct icp_event_data *data, void *arg)
             continue;
         }
 
-        auto type = static_cast<int>(msg->type);
-        if (type == TCPIP_MSG_SHUTDOWN) {
-            icp_event_loop_exit(data->loop);
-            sys_sem_signal(msg->msg.api_call.sem);
-            break;
-        }
-
-        switch (msg->type) {
+        switch (static_cast<int>(msg->type)) {
 #if !LWIP_TCPIP_CORE_LOCKING
         case TCPIP_MSG_API:
             LWIP_DEBUGF(TCPIP_DEBUG, ("tcpip_thread: API message %p\n", (void *)msg));
@@ -171,6 +164,11 @@ handle_tcpip_msg(const struct icp_event_data *data, void *arg)
         case TCPIP_MSG_CALLBACK_STATIC:
             LWIP_DEBUGF(TCPIP_DEBUG, ("tcpip_thread: CALLBACK_STATIC %p\n", (void *)msg));
             msg->msg.cb.function(msg->msg.cb.ctx);
+            break;
+
+        case TCPIP_MSG_SHUTDOWN:
+            icp_event_loop_exit(data->loop);
+            sys_sem_signal(msg->msg.api_call.sem);
             break;
 
         default:
@@ -453,25 +451,46 @@ tcpip_init(tcpip_init_done_fn initfunc, void *arg)
     sys_thread_new(TCPIP_THREAD_NAME, tcpip_thread, nullptr, TCPIP_THREAD_STACKSIZE, TCPIP_THREAD_PRIO);
 }
 
-int
+err_t
 tcpip_shutdown()
 {
     if (!sys_mbox_valid_val(tcpip_mbox)) {
-        return (-1);
+        return (ERR_CLSD);
     }
 
-#if LWIP_NETCONN_SEM_PER_THREAD
+#if LWIP_TCPIP_CORE_LOCKING
+    err_t err;
+    LOCK_TCPIP_CORE();
+    err = fn(call);
+    UNLOCK_TCPIP_CORE();
+    return err;
+#else /* LWIP_TCPIP_CORE_LOCKING */
     TCPIP_MSG_VAR_DECLARE(msg);
+
+#if !LWIP_NETCONN_SEM_PER_THREAD
+    sys_sem_t sem;
+    err_t err = sys_sem_new(&sem, 0);
+    if (err != ERR_OK) {
+        return err;
+    }
+#endif /* LWIP_NETCONN_SEM_PER_THREAD */
     TCPIP_MSG_VAR_ALLOC(msg);
     TCPIP_MSG_VAR_REF(msg).type = static_cast<tcpip_msg_type>(TCPIP_MSG_SHUTDOWN);
+#if LWIP_NETCONN_SEM_PER_THREAD
     TCPIP_MSG_VAR_REF(msg).msg.api_call.sem = LWIP_NETCONN_THREAD_SEM_GET();
+#else
+    TCPIP_MSG_VAR_REF(msg).msg.api_call.sem = &sem;
+#endif
     sys_mbox_post(&tcpip_mbox, &TCPIP_MSG_VAR_REF(msg));
     sys_arch_sem_wait(TCPIP_MSG_VAR_REF(msg).msg.api_call.sem, 0);
     TCPIP_MSG_VAR_FREE(msg);
-    return (0);
-#else
-    return (-1);
-#endif
+
+#if !LWIP_NETCONN_SEM_PER_THREAD
+    sys_sem_free(&call->sem);
+#endif /* LWIP_NETCONN_SEM_PER_THREAD */
+
+    return (ERR_OK);
+#endif /* LWIP_TCPIP_CORE_LOCKING */
 }
 
 }
