@@ -1,0 +1,17 @@
+version: 2
+jobs:
+
+  build:
+    working_directory: /
+    docker:
+      - image: spirentorion/inception-core:0.0.1 # primary container from docker hub
+    steps:
+      - checkout
+      - run: cd inception-core
+      - run:
+          name: Run build and aat tests
+          command: make all -j $(grep -c ^processor /proc/cpuinfo) && make test
+
+      - store_artifacts:
+          path: /inception-core/tests/aat/*.log
+          destination: inception-log
