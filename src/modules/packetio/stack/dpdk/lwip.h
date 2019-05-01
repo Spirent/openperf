@@ -24,12 +24,13 @@ class lwip
 {
 public:
     lwip(driver::generic_driver& driver);
-    ~lwip() = default;
+    ~lwip();
 
     /* stack is movable */
     lwip& operator=(lwip&& other)
     {
         if (this != &other) {
+            m_initialized = other.m_initialized;
             m_interfaces = std::move(other.m_interfaces);
             m_driver = std::move(other.m_driver);
             m_idx = std::move(other.m_idx);
@@ -38,9 +39,11 @@ public:
     }
 
     lwip (lwip&& other)
-        : m_driver(other.m_driver)
+        : m_initialized(other.m_initialized)
+        , m_driver(other.m_driver)
         , m_idx(other.m_idx)
     {
+        other.m_initialized = false;
         m_interfaces = std::move(other.m_interfaces);
     }
 
@@ -57,6 +60,7 @@ public:
     std::unordered_map<std::string, stack::stats_data> stats() const;
 
 private:
+    bool m_initialized;
     driver::generic_driver& m_driver;
     std::unordered_map<size_t, std::unique_ptr<net_interface>> m_interfaces;
     size_t m_idx;

@@ -3,6 +3,7 @@
 
 #include "core/icp_core.h"
 #include "packetio/drivers/dpdk/dpdk.h"
+#include "packetio/drivers/dpdk/topology_utils.h"
 #include "packetio/stack/dpdk/netif_wrapper.h"
 #include "packetio/stack/dpdk/lwip.h"
 
@@ -17,10 +18,25 @@ static void tcpip_init_done(void *arg __attribute__((unused)))
 }
 
 lwip::lwip(driver::generic_driver& driver)
-    : m_driver(driver)
+    : m_initialized(false)
+    , m_driver(driver)
     , m_idx(0)
 {
     tcpip_init(tcpip_init_done, nullptr);
+    m_initialized = true;
+}
+
+extern "C" err_t tcpip_shutdown();
+
+lwip::~lwip()
+{
+    if (!m_initialized) {
+        return;
+    }
+    if (tcpip_shutdown() == ERR_OK) {
+        int id = icp::packetio::dpdk::topology::get_stack_lcore_id();
+        rte_eal_wait_lcore(id);
+    }
 }
 
 std::vector<int> lwip::interface_ids() const
