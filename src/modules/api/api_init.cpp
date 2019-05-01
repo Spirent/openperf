@@ -18,6 +18,9 @@ static in_port_t service_port = 8080;
 
 static int module_version = 1;
 
+static unsigned int startup_timeout = 1000; //in ms
+static unsigned int startup_poll_interval = 10; //in ms
+
 using namespace Pistache;
 
 static int handle_options(int opt, const char *opt_arg)
@@ -70,20 +73,7 @@ public:
     }
 
     int start() {
-        /*
-         * XXX: The pistache server doesn't always shutdown, so just
-         * detach from the thread so we won't be blocked on it when we
-         * shutdown ourselves.
-         */
-        auto thread = std::thread([this]() { run(service_port); });
-        thread.detach();
-        return (0);
-    }
-
-    void run(in_port_t port) {
-        icp_thread_setname("icp_api");
-
-        Address addr(Ipv4::any(), Port(port));
+        Address addr(Ipv4::any(), Port(service_port));
         auto opts = Http::Endpoint::options()
             .threads(1)
             .flags(Tcp::Options::ReuseAddr);
@@ -91,6 +81,32 @@ public:
         m_server = std::make_unique<Http::Endpoint>(addr);
         m_server->init(opts);
         m_server->setHandler(m_router.handler());
+
+        /*
+         * XXX: The pistache server doesn't always shutdown, so just
+         * detach from the thread so we won't be blocked on it when we
+         * shutdown ourselves.
+         */
+        auto thread = std::thread([this]() { run(); });
+        thread.detach();
+
+        unsigned int elapsed_start_time = 0;
+        for (; elapsed_start_time < startup_timeout &&
+                 !m_server->isBound();
+             elapsed_start_time += startup_poll_interval) {
+            std::this_thread::sleep_for(std::chrono::milliseconds
+                                        (startup_poll_interval));
+        }
+
+        if (elapsed_start_time >= startup_timeout) {
+            icp_exit("Failed to start API server module: server socket did not bind before timeout occured.\n");
+        }
+
+        return (0);
+    }
+
+    void run() {
+        icp_thread_setname("icp_api");
         m_server->serve();        // blocks
     }
 
