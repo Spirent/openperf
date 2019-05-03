@@ -3,26 +3,20 @@ version: 2
 jobs:
   build:
     machine:
-      enabled: true
+      image: circleci/classic:latest
 
     working_directory: /
 
     steps:
+      - checkout
+
       - run:
           name: Docker Pull from hub
           command: docker pull spirentorion/inception-core:0.0.1
 
       - run:
-          name: Running docker on machine executor
-          command: docker run -it --privileged spirentorion/inception-core:0.0.1
-
-      - checkout
-
-      - run: cd inception-core
-
-      - run:
-          name: Run build and aat tests
-          command: make all -j $(grep -c ^processor /proc/cpuinfo) && make test
+          name: Running docker on machine executor. Run build and make tests
+          command: docker run -it --privileged -v ~/inception/inception-core:/inception-core -v /proc:/proc spirentorion/inception-core:0.0.1 /bin/bash -c "cd inception-core && make all -j $(grep -c ^processor /proc/cpuinfo) && make test“
 
       - store_artifacts:
           path: /inception-core/tests/aat/*.log
