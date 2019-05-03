@@ -16,7 +16,7 @@ jobs:
 
       - run:
           name: Running docker on machine executor. Run build and make tests
-          command: docker run -it --privileged -v ~/inception/inception-core:/inception-core -v /proc:/proc spirentorion/inception-core:0.0.1 /bin/bash -c "cd inception-core && make all -j $(grep -c ^processor /proc/cpuinfo) && make test“
+          command: docker run -it --privileged -v /inception-core:/inception-core -v /proc:/proc spirentorion/inception-core:0.0.1 /bin/bash -c "cd inception-core && make all -j $(grep -c ^processor /proc/cpuinfo) && make test“
 
       - store_artifacts:
           path: /inception-core/tests/aat/*.log
