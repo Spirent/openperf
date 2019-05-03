@@ -1,4 +1,3 @@
-
 version: 2
 jobs:
   build:
@@ -9,12 +8,12 @@ jobs:
       - checkout
 
       - run:
-          name: Docker Pull latest from hub
+          name: Pull latest build container
           command: docker pull spirentorion/inception-core:latest
 
       - run:
-          name: Running docker on machine executor. Run build and make tests
-          command: docker run -it --privileged -v ~/project:/project -v /proc:/proc spirentorion/inception-core:latest /bin/bash -c "cd /project && make all -j $(grep -c ^processor /proc/cpuinfo) && make test“
+          name: Run containerized build and test
+          command: docker run -it --privileged -v ~/project:/project spirentorion/inception-core:latest /bin/bash -c "cd /project && make all -j $(grep -c ^processor /proc/cpuinfo) && make test"
 
       - store_artifacts:
           path: ~/project/tests/aat/*.log
