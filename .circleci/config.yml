@@ -15,6 +15,18 @@ jobs:
           name: Run containerized build and test
           command: docker run -it --privileged -v ~/project:/project spirentorion/inception-core:latest /bin/bash -c "cd /project && make all -j $(grep -c ^processor /proc/cpuinfo) && make test"
 
+      - run:
+          name: Collect test results
+          command: |
+            set -xe
+            mkdir -p /tmp/test
+            cp ~/project/tests/aat/*.log /tmp/test
+
       - store_artifacts:
-          path: ~/project/tests/aat/*.log
-          destination: inception-log
+          path: ~/project/build/stack-linux-x86_64-testing/bin
+
+      - store_artifacts:
+          path: ~/project/build/libicp-shim-linux-x86_64-testing/lib
+
+      - store_artifacts:
+          path: /tmp/test
