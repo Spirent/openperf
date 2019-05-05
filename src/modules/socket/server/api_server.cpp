@@ -7,6 +7,7 @@
 #include <variant>
 
 #include <sys/mman.h>
+#include <sys/prctl.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/uio.h>
@@ -143,6 +144,15 @@ server::server(icp::core::event_loop& loop)
     /* Put socket in the listen state and wait for connections */
     if (listen(m_sock.get(), 8) == -1) {
         throw std::runtime_error("Could not listen to socket: "
+                                 + std::string(strerror(errno)));
+    }
+
+    if (prctl(PR_SET_DUMPABLE, 1, 0, 0, 0) < 0) {
+        throw std::runtime_error("Could not set dumpable: "
+                                 + std::string(strerror(errno)));
+    }
+    if (prctl(PR_SET_PTRACER, PR_SET_PTRACER_ANY, 0, 0, 0) < 0) {
+        throw std::runtime_error("Could not set ptracer_any: "
                                  + std::string(strerror(errno)));
     }
 

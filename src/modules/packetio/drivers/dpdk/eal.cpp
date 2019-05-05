@@ -586,6 +586,16 @@ eal::eal(void* context, std::vector<std::string> args, int test_portpairs)
     }
 
     start();
+
+    cap_t caps = cap_get_proc();
+    if (caps == nullptr) {
+        throw std::runtime_error("Could not retrieve any capabilities");
+    }
+    cap_clear(caps);
+    if (cap_set_proc(caps) < 0) {
+        throw std::runtime_error("Could not drop all capabilities");
+    }
+    cap_free(caps);
 }
 
 eal::~eal()
