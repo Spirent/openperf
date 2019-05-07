@@ -26,7 +26,7 @@ ICP_CXXFLAGS := -Wno-c11-extensions -Wno-nested-anon-types -Wno-c99-extensions $
 ICP_DEFINES :=
 ICP_LDFLAGS :=
 ICP_LDLIBS :=
-ICP_LDOPTS := -fuse-ld=gold
+ICP_LDOPTS := -fuse-ld=lld
 ICP_INC_DIRS := $(ICP_ROOT)/src
 ICP_LIB_DIRS :=
 ICP_CONFIG_OPTS :=
