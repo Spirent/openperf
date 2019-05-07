@@ -12,11 +12,11 @@ bool icp_config_is_number(std::string_view value)
 
     // Is it an integer?
     strtoll(value.data(), &endptr, 0);
-    if ((endptr - value.data()) == value.length()) { return true; }
+    if (value.data() + value.length() == endptr) { return true; }
 
     // How about a double?
     strtod(value.data(), &endptr);
-    if ((endptr - value.data()) == value.length()) { return true; }
+    if (value.data() + value.length() == endptr) { return true; }
 
     return false;
 }

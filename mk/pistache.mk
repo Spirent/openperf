@@ -19,9 +19,9 @@ ICP_LIB_DIRS += $(HTTP_LIB_DIR)
 ICP_LDLIBS += -lpistache
 
 HTTP_CPPFLAGS := $(addprefix -I,$(HTTP_INC_DIR))
-# Pistache shadows variables regularly; just silence those warnings since we're not going
-# to fix them
-HTTP_CXXFLAGS := -Wno-shadow $(ICP_CXXSTD)
+# Pistache code doesn't build without warnings; just silence them since we're
+# not going to fix them.
+HTTP_CXXFLAGS := -Wno-shadow -Wno-missing-field-initializers $(ICP_CXXSTD)
 
 ###
 # Sources, objects, targets, and dependencies
