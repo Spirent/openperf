@@ -6,7 +6,11 @@ import yaml
 class Config(object):
     def __init__(self, path):
         with open(path, "r") as f:
-            data = yaml.load(f)
+            try:
+                loader = yaml.FullLoader
+            except AttributeError:
+                loader = yaml.Loader
+            data = yaml.load(f, Loader=loader)
         self.services = dict([(k, ServiceConfig(k, **v)) for k, v in data['services'].items()])
 
     def service(self, name='default'):

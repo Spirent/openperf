@@ -30,6 +30,7 @@ SOURCES := \
 	framework/test_offset_ptr.cpp \
 	framework/test_std_allocator.cpp \
 	framework/test_task.cpp \
+	modules/api/test_api_internal_client.cpp \
 	modules/socket/test_bipartite_ring.cpp \
 	modules/socket/test_circular_buffer.cpp \
 	modules/socket/test_event_queue.cpp \
@@ -38,7 +39,7 @@ SOURCES := \
 OBJECTS := $(patsubst %, $(BUILD_DIR)/%, \
 	$(patsubst %.cpp, %.o, $(SOURCES)))
 SRC_DEPENDS += $(OBJECTS:.o=.d)
-BLD_DEPENDS += config_file_test framework socket_test
+BLD_DEPENDS += api_test config_file_test framework socket_test
 
 # Pull in dependencies
 -include $(SRC_DEPENDS)
