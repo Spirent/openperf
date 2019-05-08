@@ -2,6 +2,7 @@
 #define _ICP_CONFIG_FILE_UTILS_H_
 
 #include <string>
+#include "yaml-cpp/yaml.h"
 
 namespace icp::config::file {
 
@@ -16,6 +17,11 @@ bool icp_config_is_number(std::string_view value);
 // <path> may also include multiple forward slashes.
 // Function requires a null-terminated string. Otherwise behavior is undefined.
 std::tuple<std::string_view, std::string_view> icp_config_split_path_id(std::string_view path_id);
+
+// Function to convert YAML to JSON.
+// Used to adapt config file information (written in YAML)
+// to something the REST API can consume (JSON).
+void icp_config_yaml_to_json(const YAML::Node &yaml_src, std::string &output_string);
 
 }  // namespace icp::config::file
 

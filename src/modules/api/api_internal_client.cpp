@@ -1,5 +1,4 @@
 
-#include <pistache/http.h>
 #include <pistache/client.h>
 
 #include "api_internal_client.h"
@@ -36,7 +35,7 @@ static auto internal_api_request(Http::RequestBuilder &request_builder, const st
 
 static auto make_full_uri(std::string_view resource)
 {
-    return server + ":" + std::to_string(api_get_service_port()) + resource.data();
+    return server + ":" + std::to_string(api_get_service_port()) + std::string(resource);
 }
 
 std::pair<Http::Code, std::string> internal_api_get(std::string_view resource)
