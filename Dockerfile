@@ -34,3 +34,6 @@ RUN update-alternatives --install /usr/bin/clang clang /usr/bin/clang-${LLVM_VER
 
 # Install other Circle CI dependencies
 RUN apt-get install -y --no-install-recommends openssh-client
+
+# Install netcat-openbsd
+RUN apt-get install netcat-openbsd
