@@ -32,7 +32,7 @@ CFGFILE_TARGET := $(CFGFILE_LIB_DIR)/lib$(CFGFILE_LIBRARY).a
 
 ICP_INC_DIRS += $(CFGFILE_INC_DIR)
 ICP_LIB_DIRS += $(CFGFILE_LIB_DIR)
-ICP_LDLIBS += -l$(CFGFILE_LIBRARY) $(CFGFILE_LDLIBS)
+ICP_LDLIBS += -Wl,--whole-archive -l$(CFGFILE_LIBRARY) -Wl,--no-whole-archive $(CFGFILE_LDLIBS)
 
 # Load external dependencies, too
 $(foreach DEP, $(CFGFILE_DEPENDS), $(eval include $(ICP_ROOT)/mk/$(DEP).mk))

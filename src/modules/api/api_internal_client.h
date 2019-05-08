@@ -1,6 +1,8 @@
 #ifndef _ICP_API_INTERNAL_CLIENT_H_
 #define _ICP_API_INTERNAL_CLIENT_H_
 
+#include <pistache/http.h>
+
 namespace icp::api::client {
 
 // Send a GET request to the REST API.
