@@ -7,3 +7,18 @@ services:
     base_url: http://127.0.0.1:9000
     init_url: http://127.0.0.1:9000/version
     init_timeout: 15s
+
+shims:
+  default:
+    path: ../../build/libicp-shim-linux-x86_64-testing/lib/libicp-shim.so
+    trace: 0
+
+helpers:
+  nc-ipv4-tcp-lstnr:
+    command: 'nc -4 -l {address} 9999'
+  nc-ipv4-tcp-wrtr:
+    command: 'nc -4 {address} 9999'
+  nc-ipv4-udp-lstnr:
+    command: 'nc -u -4 -l {address} 9999'
+  nc-ipv4-udp-wrtr:
+    command: 'nc -u -4 {address} 9999'
