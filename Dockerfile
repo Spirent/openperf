@@ -21,7 +21,7 @@ RUN apt-get clean && \
     apt-get update && \
     apt-get install -y --no-install-recommends autoconf automake \
     build-essential ca-certificates git libcap-dev libcap2-bin libnuma-dev \
-    libtool pkg-config python sudo virtualenv wget && \
+    libtool netcat-openbsd pkg-config python sudo virtualenv wget && \
     apt-get -t testing install -y --no-install-recommends \
         clang-${LLVM_VERSION} lld-${LLVM_VERSION} llvm-${LLVM_VERSION} \
         llvm-${LLVM_VERSION}-dev
@@ -34,6 +34,3 @@ RUN update-alternatives --install /usr/bin/clang clang /usr/bin/clang-${LLVM_VER
 
 # Install other Circle CI dependencies
 RUN apt-get install -y --no-install-recommends openssh-client
-
-# Install netcat-openbsd
-RUN apt-get install netcat-openbsd
