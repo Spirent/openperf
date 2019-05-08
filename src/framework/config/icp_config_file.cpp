@@ -14,6 +14,7 @@ namespace icp::config::file {
 using namespace std;
 
 static string config_file_name;
+static const string api_server_host          = "localhost";
 static const string api_check_resource       = "/version";
 static constexpr unsigned int poll_interval  = 10;  // in ms
 static constexpr unsigned int max_poll_count = 6;
@@ -27,9 +28,8 @@ static void check_api_port()
     hints.ai_family   = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
 
-    // FIXME: remove hard-coded localhost.
-    int res =
-      getaddrinfo("localhost", to_string(api::api_get_service_port()).c_str(), &hints, &result);
+    int res = getaddrinfo(api_server_host.c_str(), to_string(api::api_get_service_port()).c_str(),
+                          &hints, &result);
     if (res != 0) {
         std::cerr << "Error starting up internal API client: " << gai_strerror(res) << std::endl;
         exit(EXIT_FAILURE);
@@ -165,32 +165,20 @@ int icp_config_file_process_resources()
 
     // FIXME: Is resource count == 0 an error?
 
-    // cout << "resources to configure count: " << root_node["resources"].size() << endl;
-
     for (auto resource : root_node["resources"]) {
-        // cout << "processing resource:" << endl;
-        // cout << "***" << resource.first << "***" << endl;
-        // cout << "---" << resource.second << "---" << endl;
         auto [path, id] = icp_config_split_path_id(resource.first.Scalar());
-        // cout << "path: " << path << " id: " << id << endl << endl;
 
         std::string output_string;
         try {
             icp_config_yaml_to_json(resource.second, output_string);
         } catch (...) {
             std::cerr << "Error processing resource: " << resource.first.Scalar()
-                      << ". Issue converting input YAML format to REST-compatible JSON format." << std::endl;
+                      << ". Issue converting input YAML format to REST-compatible JSON format."
+                      << std::endl;
             exit(EXIT_FAILURE);
         }
-        // cout << "json: " << output_string << endl << endl;
 
-        // cout << "path is really: " << path << endl;
         auto [code, body] = icp::api::client::internal_api_post(path, output_string);
-
-        // cout << "code is: " << code << endl;
-        // cout << "response body is: " << body << endl;
-
-        // If code != Ok, feed into JSON parser to extract data?
 
         switch (code) {
         case Pistache::Http::Code::Ok:
