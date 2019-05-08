@@ -21,6 +21,7 @@ jobs:
             set -xe
             mkdir -p /tmp/test
             cp ~/project/tests/aat/*.log /tmp/test
+          when: always
 
       - store_artifacts:
           path: ~/project/build/stack-linux-x86_64-testing/bin
