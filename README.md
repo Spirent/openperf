@@ -1,4 +1,4 @@
-# Inception
+# Inception [![CircleCI](https://circleci.com/gh/SpirentOrion/inception-core.svg?style=shield&circle-token=bca4a01889f21771b4f3e6461edb67b764e772b4)](https://circleci.com/gh/SpirentOrion/inception-core)
 
 This code base provides an infrastructure and application test and analysis
 framework.  Discrete modules provide functionality with the assistance of a
