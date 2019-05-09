@@ -24,6 +24,7 @@ also depends on some 3rd party components:
 * [lwip](https://savannah.nongnu.org/projects/lwip/) - a lightweight IP stack
 * [pistache](http://pistache.io) - a C++ REST framework with [Swagger](https://swagger.io)
   support
+* [yaml-cpp](https://github.com/jbeder/yaml-cpp) - a YAML parser and emitter in C++ matching the YAML 1.2 spec.
 
 Unit tests are written with [catch2](https://github.com/catchorg/Catch2), a modern C++
 unit testing framework.  Additionally, build acceptance tests are run with
