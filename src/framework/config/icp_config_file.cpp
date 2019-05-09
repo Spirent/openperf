@@ -116,7 +116,7 @@ int config_file_option_handler(int opt, const char *opt_arg)
     }
 
     // Validate there are the two required top-level nodes "core" and "resources".
-    // Also check for the optional "modules" resource, and that no other nodes exist.
+    // Also check for the optional "modules" resource, and that no other top-level nodes exist.
     if ((root_node.size() == 2) && root_node["core"] && root_node["resources"]) {
         return (0);
     } else if ((root_node.size() == 3) && root_node["core"] && root_node["resources"]
@@ -130,20 +130,6 @@ int config_file_option_handler(int opt, const char *opt_arg)
     exit(EXIT_FAILURE);
 
     return (-1);
-}
-
-int icp_config_file_process_core(int(process_val)(int, const char *))
-{
-    YAML::Node root;
-    try {
-        root = YAML::LoadFile(config_file_name);
-    } catch (YAML::BadFile) {
-        cout << "file not found!!" << endl;
-        return -1;
-    }
-
-    // process_val(0, nullptr);
-    return (0);
 }
 
 int icp_config_file_process_resources()
@@ -162,14 +148,12 @@ int icp_config_file_process_resources()
         exit(EXIT_FAILURE);
     }
 
-    // FIXME: Is resource count == 0 an error?
-
     for (auto resource : root_node["resources"]) {
         auto [path, id] = icp_config_split_path_id(resource.first.Scalar());
 
-        std::string output_string;
+        std::string jsonified_resource;
         try {
-            icp_config_yaml_to_json(resource.second, output_string);
+            icp_config_yaml_to_json(resource.second, jsonified_resource);
         } catch (...) {
             std::cerr << "Error processing resource: " << resource.first.Scalar()
                       << ". Issue converting input YAML format to REST-compatible JSON format."
@@ -177,7 +161,7 @@ int icp_config_file_process_resources()
             exit(EXIT_FAILURE);
         }
 
-        auto [code, body] = icp::api::client::internal_api_post(path, output_string);
+        auto [code, body] = icp::api::client::internal_api_post(path, jsonified_resource);
 
         switch (code) {
         case Pistache::Http::Code::Ok:
