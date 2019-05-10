@@ -74,7 +74,7 @@ void handler::list_modules(const Rest::Request &request __attribute__((unused)),
     auto module_count = icp_modules_get_loaded_count();
     std::vector<const struct icp_module_info *> modules(module_count);
     auto returned_module_count = icp_modules_get_info_list(modules.data(), module_count);
-    assert(module_count == returned_module_count);
+
     if (returned_module_count < 0)
     {
         response.send(Http::Code::Internal_Server_Error);

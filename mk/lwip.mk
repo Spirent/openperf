@@ -77,9 +77,13 @@ LWIP_OBJECTS := $(patsubst %, $(LWIP_OBJ_DIR)/%, \
 ###
 $(LWIP_OBJECTS): | $(PIO_DEPENDS)
 
+# Using large windows with window scaling can introduce a tautological
+# comparison in tcp.c.  It's safe to ignore.
+$(LWIP_OBJ_DIR)/core/tcp.o: LWIP_CFLAGS += -Wno-tautological-constant-out-of-range-compare
+
 $(LWIP_OBJ_DIR)/%.o: $(LWIP_SRC_DIR)/%.c
 	@mkdir -p $(dir $@)
-	$(strip $(ICP_CC) -o $@ -c $(LWIP_CPPFLAGS) $(ICP_CPPFLAGS) $(ICP_COPTS) $<)
+	$(strip $(ICP_CC) -o $@ -c $(LWIP_CPPFLAGS) $(ICP_CPPFLAGS) $(LWIP_CFLAGS) $(ICP_COPTS) $<)
 
 .PHONY: clean_lwip
 clean_lwip:

@@ -2,7 +2,7 @@
 # Top level Makefile for inception-core
 #
 
-all: inception
+all: inception libicp-shim
 
 .PHONY: deps
 deps:
@@ -11,6 +11,10 @@ deps:
 .PHONY: inception
 inception: deps
 	@cd targets/inception && $(MAKE)
+
+.PHONY: libicp-shim
+libicp-shim: deps
+	@cd targets/libicp-shim && $(MAKE)
 
 .PHONY: test
 test: test_unit test_aat
@@ -26,4 +30,6 @@ test_unit:
 .PHONY: clean
 clean:
 	@cd targets/inception && $(MAKE) clean
+	@cd targets/libicp-shim && $(MAKE) clean
+	@cd tests/aat && $(MAKE) clean
 	@cd tests/unit && $(MAKE) clean

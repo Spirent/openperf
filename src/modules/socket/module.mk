@@ -21,6 +21,12 @@ SOCKSRV_SOURCES += \
 
 SOCKSRV_LDLIBS += -lrt
 
+# Each channel object lives in shared memory and has both a client and server
+# "version".  Each version contains the same members, but client's don't touch
+# server data and vice versa.  Hence, this warning is safe to ignore.
+$(SOCKSRV_OBJ_DIR)/server/dgram_channel.o: ICP_CXXFLAGS += -Wno-unused-private-field
+$(SOCKSRV_OBJ_DIR)/server/stream_channel.o: ICP_CXXFLAGS += -Wno-unused-private-field
+
 SOCKCLI_SOURCES += \
 	$(SOCK_COMMON) \
 	client/api_client.cpp \
@@ -29,12 +35,14 @@ SOCKCLI_SOURCES += \
 	client/stream_channel.cpp
 
 SOCKCLI_DEPENDS += expected
-
 SOCKCLI_LDLIBS += -lrt
+
+# See comment above.
+$(SOCKCLI_OBJ_DIR)/client/dgram_channel.o: ICP_CXXFLAGS += -Wno-unused-private-field
+$(SOCKCLI_OBJ_DIR)/client/stream_channel.o: ICP_CXXFLAGS += -Wno-unused-private-field
 
 SOCKTEST_SOURCES += \
 	$(SOCK_COMMON)
 
 SOCKTEST_DEPENDS += expected
-
 SOCKTEST_LDLIBS += -lrt
