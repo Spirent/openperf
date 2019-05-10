@@ -8,16 +8,20 @@ namespace api {
 using namespace Pistache;
 using json = nlohmann::json;
 
-#ifndef VERSION_COMMIT
-#error VERSION_COMMIT must be defined
+#ifndef BUILD_COMMIT
+#error BUILD_COMMIT must be defined
 #endif
 
-#ifndef VERSION_NUMBER
-#error VERSION_NUMBER must be defined
+#ifndef BUILD_NUMBER
+#error BUILD_NUMBER must be defined
 #endif
 
-#ifndef VERSION_TIMESTAMP
-#error VERSION_TIMESTAMP must be defined
+#ifndef BUILD_TIMESTAMP
+#error BUILD_TIMESTAMP must be defined
+#endif
+
+#ifndef BUILD_VERSION
+#error BUILD_VERSION must be defined
 #endif
 
 static
@@ -25,9 +29,10 @@ Rest::Route::Result version(const Rest::Request& request __attribute__((unused))
                             Http::ResponseWriter response)
 {
     json version = {
-        { "build_number",  VERSION_NUMBER    },
-        { "build_time",    VERSION_TIMESTAMP },
-        { "source_commit", VERSION_COMMIT    }
+        { "build_number",  BUILD_NUMBER    },
+        { "build_time",    BUILD_TIMESTAMP },
+        { "source_commit", BUILD_COMMIT    },
+        { "version",       BUILD_VERSION   }
     };
 
     response.send(Http::Code::Ok, version.dump());

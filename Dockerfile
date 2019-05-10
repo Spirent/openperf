@@ -21,7 +21,7 @@ RUN apt-get clean && \
     apt-get update && \
     apt-get install -y --no-install-recommends autoconf automake \
     build-essential ca-certificates git libcap-dev libcap2-bin libnuma-dev \
-    libtool pkg-config python sudo virtualenv wget && \
+    libtool netcat-openbsd pkg-config python sudo virtualenv wget && \
     apt-get -t testing install -y --no-install-recommends \
         clang-${LLVM_VERSION} lld-${LLVM_VERSION} llvm-${LLVM_VERSION} \
         llvm-${LLVM_VERSION}-dev
