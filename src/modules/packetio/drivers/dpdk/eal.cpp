@@ -473,6 +473,19 @@ static void create_test_portpairs(const int test_portpairs)
     }
 }
 
+static void drop_caps()
+{
+    cap_t caps = cap_get_proc();
+    if (caps == nullptr) {
+        throw std::runtime_error("Could not retrieve any capabilities");
+    }
+    cap_clear(caps);
+    if (cap_set_proc(caps) < 0) {
+        throw std::runtime_error("Could not drop all capabilities");
+    }
+    cap_free(caps);
+}
+
 eal::eal(void* context, std::vector<std::string> args, int test_portpairs)
     : m_initialized(false)
     , m_switch(std::make_shared<vif_map<netif>>())
@@ -586,6 +599,7 @@ eal::eal(void* context, std::vector<std::string> args, int test_portpairs)
     }
 
     start();
+    drop_caps();
 }
 
 eal::~eal()

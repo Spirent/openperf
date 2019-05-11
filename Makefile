@@ -20,7 +20,7 @@ libicp-shim: deps
 test: test_unit test_aat
 
 .PHONY: test_aat
-test_aat: inception
+test_aat: inception libicp-shim
 	@cd tests/aat && $(MAKE)
 
 .PHONY: test_unit
