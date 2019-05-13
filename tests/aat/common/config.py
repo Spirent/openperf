@@ -12,15 +12,63 @@ class Config(object):
                 loader = yaml.Loader
             data = yaml.load(f, Loader=loader)
         self.services = dict([(k, ServiceConfig(k, **v)) for k, v in data['services'].items()])
+        self.shims = dict([(k, ShimConfig(k, **v)) for k, v in data['shims'].items()])
+        self.helpers = dict([(k, HelperConfig(k, **v)) for k, v in data['helpers'].items()])
 
     def service(self, name='default'):
         return self.services[name]
 
+    def shim(self, name='default'):
+        return self.shims[name]
+
+    def helper(self, name):
+        return self.helpers[name]
+
+class ShimConfig(object):
+    def __init__(self, name, **kwargs):
+        if not name:
+            raise NameError('missing name argument')
+
+        self.name = name
+
+        def set_str(k, v):
+            self.__dict__[k] = str(v)
+
+        setters = {
+            'path': set_str,
+            'trace': set_str
+        }
+
+        for k, v in kwargs.items():
+            setter = setters.get(k)
+            if not setter:
+                raise KeyError('%s shim config has unknown property: %s' % (name, k))
+            setter(k, v)
+
+class HelperConfig(object):
+    def __init__(self, name, **kwargs):
+        if not name:
+            raise NameError('missing name argument')
+
+        self.name = name
+
+        def set_str(k, v):
+            self.__dict__[k] = str(v)
+
+        setters = {
+            'command': set_str
+        }
+
+        for k, v in kwargs.items():
+            setter = setters.get(k)
+            if not setter:
+                raise KeyError('%s helper config has unknown property: %s' % (name, k))
+            setter(k, v)
 
 class ServiceConfig(object):
     def __init__(self, name, **kwargs):
         if not name:
-            raise Exception('missing name')
+            raise NameError('missing name argument')
 
         self.name = name
 
@@ -58,4 +106,4 @@ class ServiceConfig(object):
 
         for k in ('command', 'base_url'):
             if k not in self.__dict__:
-                raise Exception('%s service config is missing required property: %s' % (name, k))
+                raise KeyError('%s service config is missing required property: %s' % (name, k))
