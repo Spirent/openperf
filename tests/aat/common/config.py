@@ -45,6 +45,10 @@ class ShimConfig(object):
                 raise KeyError('%s shim config has unknown property: %s' % (name, k))
             setter(k, v)
 
+        for k in ('path', 'trace'):
+            if k not in self.__dict__:
+                raise KeyError('%s shim config is missing required property: %s' % (name, k))
+
 class HelperConfig(object):
     def __init__(self, name, **kwargs):
         if not name:
@@ -64,6 +68,10 @@ class HelperConfig(object):
             if not setter:
                 raise KeyError('%s helper config has unknown property: %s' % (name, k))
             setter(k, v)
+
+        for k in ['command']:
+            if k not in self.__dict__:
+                raise KeyError('%s helper config is missing required property: %s' % (name, k))
 
 class ServiceConfig(object):
     def __init__(self, name, **kwargs):

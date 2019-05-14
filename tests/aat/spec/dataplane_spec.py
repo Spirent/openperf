@@ -17,11 +17,14 @@ CONFIG = Config(os.path.join(os.path.dirname(__file__), os.environ.get('MAMBA_CO
 
 SEND_DATA_TIMEOUT = 10
 SEND_DATA_LENGTH = 10000
-UDP_WRITE_MAX = 1000 # SEND_DATA_LENGTH must be a multiple of UDP_WRITE_MAX
+UDP_WRITE_MAX = 1000
+assert(UDP_WRITE_MAX > 0 and ((SEND_DATA_LENGTH % UDP_WRITE_MAX) == 0)), \
+      "UDP_WRITE_MAX doesn't evenly divide SEND_DATA_LENGTH"
+       
 WRITER_HANDSHAKE_TIMEOUT = 1
 WRITER_RETRIES = 10
 
-def runlistener(command, intf, shim, trace):
+def run_listener(command, intf, shim, trace):
     p = subprocess.Popen(shlex.split(command),
                          stdin=None, stdout=subprocess.PIPE, stderr=None, close_fds=True,
                          env={'LD_PRELOAD': shim,
@@ -29,7 +32,7 @@ def runlistener(command, intf, shim, trace):
                               'ICP_TRACE': trace})
     return p
 
-def runwriter(command, intf, shim, trace, listenerstdout):
+def run_writer(command, intf, shim, trace, listenerstdout):
     for i in range(WRITER_RETRIES):
         p = subprocess.Popen(shlex.split(command),
                              stdin=subprocess.PIPE, stdout=None, stderr=None, close_fds=True,
@@ -48,16 +51,16 @@ def runwriter(command, intf, shim, trace, listenerstdout):
         p.wait()
     return None
 
-def randomizedata(datalen):
+def randomize_data(datalen):
     retval = ''
     random.seed()
     for i in range(datalen):
         retval += chr(random.randint(ord('!'), ord('~')))
     return retval
 
-def tcpsenddata(listenerstdout, writerstdin, datalen):
+def tcp_send_data(listenerstdout, writerstdin, datalen):
     datarecv = ''
-    datasend = randomizedata(datalen)
+    datasend = randomize_data(datalen)
     writerstdin.write(datasend)
     writerstdin.flush()
     while True:
@@ -69,9 +72,9 @@ def tcpsenddata(listenerstdout, writerstdin, datalen):
             break
     return datarecv == datasend
 
-def udpsenddata(listenerstdout, writerstdin, datalen, maxsend):
+def udp_send_data(listenerstdout, writerstdin, datalen, maxsend):
     datarecv = ''
-    datasend = randomizedata(datalen)
+    datasend = randomize_data(datalen)
     iters = datalen / maxsend
     for i in range(iters):
         writerstdin.write(datasend[i * maxsend:i * maxsend + maxsend])
@@ -114,20 +117,21 @@ with description('dataplane,') as self:
                 with before.each:
                     helper = Service(CONFIG.helper('nc-ipv4-tcp-listener'))
                     command = helper.config.command.format(address=self.addresses[0])
-                    p = runlistener(command, self.intfs[0].id, self.shim.config.path,
-                                    self.shim.config.trace)
+                    p = run_listener(command, self.intfs[0].id, self.shim.config.path,
+                                     self.shim.config.trace)
                     expect(p).not_to(be_none)
                     self.procs.append(p)
                     helper = Service(CONFIG.helper('nc-ipv4-tcp-writer'))
                     command = helper.config.command.format(address=self.addresses[0])
-                    p = runwriter(command, self.intfs[1].id, self.shim.config.path,
-                                  self.shim.config.trace, self.procs[0].stdout)
+                    p = run_writer(command, self.intfs[1].id, self.shim.config.path,
+                                   self.shim.config.trace, self.procs[0].stdout)
                     expect(p).not_to(be_none)
                     self.procs.append(p)
 
                 with description('sendrecv'):
                     with it('succeeds'):
-                        y = tcpsenddata(self.procs[0].stdout, self.procs[1].stdin, SEND_DATA_LENGTH)
+                        y = tcp_send_data(self.procs[0].stdout, self.procs[1].stdin,
+                                          SEND_DATA_LENGTH)
                         expect(y).to(equal(True))
 
                 with after.each:
@@ -141,19 +145,20 @@ with description('dataplane,') as self:
                 with before.each:
                     helper = Service(CONFIG.helper('nc-ipv4-udp-listener'))
                     command = helper.config.command.format(address=self.addresses[0])
-                    p = runlistener(command, self.intfs[0].id, self.shim.config.path,
-                                    self.shim.config.trace)
+                    p = run_listener(command, self.intfs[0].id, self.shim.config.path,
+                                     self.shim.config.trace)
                     self.procs.append(p)
                     helper = Service(CONFIG.helper('nc-ipv4-udp-writer'))
                     command = helper.config.command.format(address=self.addresses[0])
-                    p = runwriter(command, self.intfs[1].id, self.shim.config.path,
-                                  self.shim.config.trace, self.procs[0].stdout)
+                    p = run_writer(command, self.intfs[1].id, self.shim.config.path,
+                                   self.shim.config.trace, self.procs[0].stdout)
                     expect(p).not_to(be_none)
                     self.procs.append(p)
 
                 with description('sendrecv'):
                     with it('succeeds'):
-                        y = udpsenddata(self.procs[0].stdout, self.procs[1].stdin, SEND_DATA_LENGTH, UDP_WRITE_MAX)
+                        y = udp_send_data(self.procs[0].stdout, self.procs[1].stdin,
+                                          SEND_DATA_LENGTH, UDP_WRITE_MAX)
                         expect(y).to(equal(True))
 
                 with after.each:
