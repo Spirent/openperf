@@ -5,7 +5,6 @@
 #include "core/icp_log.h"
 #include "core/icp_modules.h"
 #include "core/icp_options.h"
-#include "config/icp_config_file.h"
 
 void icp_init(void *context, int argc, char *argv[])
 {
@@ -37,12 +36,6 @@ void icp_init(void *context, int argc, char *argv[])
     if (icp_modules_start(context) != 0) {
         icp_exit("Failed to start some modules!");
     }
-
-    /* Finally, process the resources section of a config file */
-    if (icp_config_file_process_resources() != 0) {
-        icp_exit("Failed to process some configuration file resources!");
-    }
-
 }
 
 void icp_halt(void *context)

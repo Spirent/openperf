@@ -9,6 +9,7 @@
 #include "pistache/router.h"
 
 #include "core/icp_core.h"
+#include "api/api_config_file_resources.h"
 #include "api/api_route_handler.h"
 
 namespace icp {
@@ -77,7 +78,7 @@ public:
          */
         auto thread = std::thread([this]() { run(service_port); });
         thread.detach();
-        return (0);
+        return (config::icp_config_file_process_resources());
     }
 
     void run(in_port_t port) {
