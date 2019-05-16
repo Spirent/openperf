@@ -5,7 +5,7 @@ This product includes software developed at Spirent Communications (http://www.s
 
 
 This product bundles Swagger Codegen CLI 2.3.1, which is available under a
-"Apache 2.0" license.  For details, see deps/swagger-codegen/.
+"Apache 2.0" license.  For details, see LICENSE at https://github.com/swagger-api/swagger-codegen.
 
-This product bundles Catch 2.7.1 generated configuration file, which is
-available under a "Boost Software 1.0" license.  For details, see deps/catch/include/.
+This product bundles Catch 2.7.1 generated configuration file, which is available
+under a "Boost Software 1.0" license.  For details, see deps/catch/include/.
