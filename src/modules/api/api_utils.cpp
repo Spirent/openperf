@@ -23,11 +23,7 @@ static constexpr unsigned int max_poll_count = 6;
 // Is the API port open?
 static tl::expected<void, std::string> check_api_port()
 {
-    struct addrinfo hints, *result;
-
-    memset(&hints, 0, sizeof(struct addrinfo));
-    hints.ai_family   = AF_UNSPEC;
-    hints.ai_socktype = SOCK_STREAM;
+    struct addrinfo hints = {.ai_family = AF_UNSPEC, .ai_socktype = SOCK_STREAM}, *result;
 
     int res = getaddrinfo(api_server_host.c_str(),
                           to_string(icp::api::api_get_service_port()).c_str(), &hints, &result);
