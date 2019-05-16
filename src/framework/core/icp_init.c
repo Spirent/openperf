@@ -34,7 +34,7 @@ void icp_init(void *context, int argc, char *argv[])
 
     /* Start anything that needs explicit starting */
     if (icp_modules_start(context) != 0) {
-        icp_exit("Failed to start some modules!");
+        icp_exit("Failed to start some modules!\n");
     }
 }
 

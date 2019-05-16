@@ -78,7 +78,14 @@ public:
          */
         auto thread = std::thread([this]() { run(service_port); });
         thread.detach();
-        return (config::icp_config_file_process_resources());
+
+        auto ret = config::icp_config_file_process_resources();
+        if (!ret) {
+            std::cerr << ret.error() << std::endl;
+            return (-1);
+        }
+
+        return (0);
     }
 
     void run(in_port_t port) {

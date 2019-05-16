@@ -9,6 +9,7 @@
 
 #include "api_service.h"
 #include "api_internal_client.h"
+#include "api/api_utils.h"
 
 using namespace std;
 
@@ -20,7 +21,7 @@ static constexpr unsigned int poll_interval  = 10;  // in ms
 static constexpr unsigned int max_poll_count = 6;
 
 // Is the API port open?
-static int check_api_port()
+static tl::expected<void, std::string> check_api_port()
 {
     struct addrinfo hints, *result;
 
@@ -32,8 +33,8 @@ static int check_api_port()
                           to_string(icp::api::api_get_service_port()).c_str(), &hints, &result);
     if (res != 0) {
         std::cerr << "Error starting up internal API client: " << gai_strerror(res) << std::endl;
-        // exit(EXIT_FAILURE);
-        return (-1);
+        return (tl::make_unexpected("Error starting up internal API client: "
+                                    + std::string(gai_strerror(res))));
     }
 
     unsigned int poll_count = 0;
@@ -45,10 +46,10 @@ static int check_api_port()
 
         int sockfd = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
         if (sockfd == -1) {
-            std::cerr << "Error starting up internal API client: " << strerror(errno) << std::endl;
             freeaddrinfo(result);
-            // exit(EXIT_FAILURE);
-            return (-1);
+
+            return (tl::make_unexpected("Error starting up internal API client: "
+                                        + std::string(strerror(errno))));
         }
 
         if (connect(sockfd, result->ai_addr, result->ai_addrlen) == 0) { done = true; }
@@ -59,17 +60,15 @@ static int check_api_port()
     freeaddrinfo(result);
 
     if (!done) {
-        std::cerr << "Error starting up internal API client. Could not connect to API server."
-                  << std::endl;
-        // exit(EXIT_FAILURE);
-        return (-1);
+        return (tl::make_unexpected(
+          "Error starting up internal API client. Could not connect to API server."));
     }
 
-    return (0);
+    return {};
 }
 
 // Is the API able to retrieve a resource?
-static int check_api_resource()
+static tl::expected<void, std::string> check_api_resource()
 {
     unsigned int poll_count = 0;
     bool done               = false;
@@ -85,24 +84,23 @@ static int check_api_resource()
     }
 
     if (!done) {
-        std::cerr << "Error starting up internal API client. Could not retrieve resource: "
-                  << api_check_resource.c_str() << std::endl;
-        // exit(EXIT_FAILURE);
-        return (-1);
+        return (
+          tl::make_unexpected("Error starting up internal API client. Could not retrieve resource: "
+                              + api_check_resource));
     }
 
-    return (0);
+    return {};
 }
 
-int check_api_module_running()
+tl::expected<void, std::string> check_api_module_running()
 {
-    int result = check_api_port();
-    if (result == -1) return (result);
+    auto result = check_api_port();
+    if (!result) return (result);
 
     result = check_api_resource();
-    if (result == -1) return (result);
+    if (!result) return (result);
 
-    return (0);
+    return {};
 }
 
 }  // namespace icp::api::utils

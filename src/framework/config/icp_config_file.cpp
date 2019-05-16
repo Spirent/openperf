@@ -27,7 +27,7 @@ int config_file_option_handler(int opt, const char *opt_arg)
     if (access(opt_arg, R_OK) == -1) {
         std::cerr << "Error (" << strerror(errno)
                   << ") while attempting to access config file: " << opt_arg << std::endl;
-        exit(EXIT_FAILURE);
+        return (errno);
     }
 
     // This will do an initial parse. yaml-cpp throws exceptions when the parser runs into invalid
@@ -37,7 +37,7 @@ int config_file_option_handler(int opt, const char *opt_arg)
         root_node = YAML::LoadFile(config_file_name);
     } catch (std::exception &e) {
         std::cerr << "Error parsing configuration file: " << e.what() << std::endl;
-        exit(EXIT_FAILURE);
+        return (-EINVAL);
     }
 
     // Validate there are the two required top-level nodes "core" and "resources".
@@ -52,9 +52,8 @@ int config_file_option_handler(int opt, const char *opt_arg)
     std::cerr << "Configuration file must only contain top-level sections \"core:\" and "
                  "\"resources\", and, optionally, \"modules:\""
               << std::endl;
-    exit(EXIT_FAILURE);
 
-    return (-1);
+    return (-EINVAL);
 }
 
 }  // extern "C"
