@@ -42,7 +42,7 @@ std::tuple<std::string_view, std::string_view> icp_config_split_path_id(std::str
                       path_id.substr(last_slash_location + 1));
 }
 
-void icp_config_yaml_to_json(const YAML::Node &yaml_src, std::string &output_string)
+tl::expected<std::string, std::string> icp_config_yaml_to_json(const YAML::Node &yaml_src)
 {
     std::ostringstream output_stream;
     yaml_json_emitter emitter(output_stream);
@@ -51,11 +51,10 @@ void icp_config_yaml_to_json(const YAML::Node &yaml_src, std::string &output_str
     try {
         events.Emit(emitter);
     } catch (std::exception &e) {
-        std::cerr << "Error while converting YAML configuration to JSON. " << e.what() << std::endl;
-        throw;
+        return(tl::make_unexpected("Error while converting YAML configuration to JSON. " + std::string(e.what())));
     }
 
-    output_string = output_stream.str();
+    return output_stream.str();
 }
 
 }  // namespace icp::config::file

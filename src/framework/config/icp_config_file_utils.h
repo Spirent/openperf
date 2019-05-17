@@ -2,6 +2,7 @@
 #define _ICP_CONFIG_FILE_UTILS_H_
 
 #include <string>
+#include "tl/expected.hpp"
 #include "yaml-cpp/yaml.h"
 
 namespace icp::config::file {
@@ -21,7 +22,7 @@ std::tuple<std::string_view, std::string_view> icp_config_split_path_id(std::str
 // Function to convert YAML to JSON.
 // Used to adapt config file information (written in YAML)
 // to something the REST API can consume (JSON).
-void icp_config_yaml_to_json(const YAML::Node &yaml_src, std::string &output_string);
+tl::expected<std::string, std::string> icp_config_yaml_to_json(const YAML::Node &yaml_src);
 
 }  // namespace icp::config::file
 

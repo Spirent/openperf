@@ -12,8 +12,8 @@ namespace icp::api::config {
 
 tl::expected<void, std::string> icp_config_file_process_resources()
 {
-    const char *config_file_name = icp_get_config_file_name();
-    if (strlen(config_file_name) == 0) return {};
+    auto config_file_name = icp_get_config_file_name();
+    if (config_file_name.empty()) return {};
 
     // Make sure the API module is up and running.
     auto res = utils::check_api_module_running();
@@ -21,7 +21,7 @@ tl::expected<void, std::string> icp_config_file_process_resources()
 
     YAML::Node root_node;
     try {
-        root_node = YAML::LoadFile(config_file_name);
+        root_node = YAML::LoadFile(std::string(config_file_name));
     } catch (std::exception &e) {
         return (tl::make_unexpected("Error parsing configuration file: " + std::string(e.what())));
     }
@@ -29,16 +29,13 @@ tl::expected<void, std::string> icp_config_file_process_resources()
     for (auto resource : root_node["resources"]) {
         auto [path, id] = icp_config_split_path_id(resource.first.Scalar());
 
-        std::string jsonified_resource;
-        try {
-            icp_config_yaml_to_json(resource.second, jsonified_resource);
-        } catch (...) {
-            return (tl::make_unexpected(
-              "Error processing resource: " + resource.first.Scalar()
-              + ". Issue converting input YAML format to REST-compatible JSON format."));
-        }
+        auto jsonified_resource = icp_config_yaml_to_json(resource.second);
 
-        auto [code, body] = icp::api::client::internal_api_post(path, jsonified_resource);
+        if (!jsonified_resource)
+            return (tl::make_unexpected("Error processing resource: " + resource.first.Scalar()
+                                        + ": " + jsonified_resource.error()));
+
+        auto [code, body] = icp::api::client::internal_api_post(path, *jsonified_resource);
 
         switch (code) {
         case Pistache::Http::Code::Ok:

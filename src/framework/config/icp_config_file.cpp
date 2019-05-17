@@ -11,15 +11,15 @@ using namespace std;
 
 static string config_file_name;
 
-const char *icp_get_config_file_name()
+std::string_view icp_get_config_file_name()
 {
-    return config_file_name.c_str();
+    return config_file_name;
 }
 
 extern "C" {
 int config_file_option_handler(int opt, const char *opt_arg)
 {
-    if (opt != 'c' || opt_arg == nullptr) { return (-EINVAL); }
+    if (opt != 'c' || opt_arg == nullptr) { return (EINVAL); }
 
     config_file_name = opt_arg;
 
@@ -37,7 +37,7 @@ int config_file_option_handler(int opt, const char *opt_arg)
         root_node = YAML::LoadFile(config_file_name);
     } catch (std::exception &e) {
         std::cerr << "Error parsing configuration file: " << e.what() << std::endl;
-        return (-EINVAL);
+        return (EINVAL);
     }
 
     // Validate there are the two required top-level nodes "core" and "resources".
@@ -53,7 +53,7 @@ int config_file_option_handler(int opt, const char *opt_arg)
                  "\"resources\", and, optionally, \"modules:\""
               << std::endl;
 
-    return (-EINVAL);
+    return (EINVAL);
 }
 
 }  // extern "C"
