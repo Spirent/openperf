@@ -16,7 +16,6 @@ tl::expected<void, std::string> icp_config_file_process_resources()
     if (strlen(config_file_name) == 0) return {};
 
     // Make sure the API module is up and running.
-    // This function will terminate Inception if it's not running.
     auto res = utils::check_api_module_running();
     if (!res) return (res);
 
