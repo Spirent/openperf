@@ -1,5 +1,7 @@
 #include <cerrno>
 #include <cstring>
+#include <fstream>
+#include <iostream>
 #include <memory>
 #include <optional>
 #include <unistd.h>
@@ -152,9 +154,28 @@ server::server(icp::core::event_loop& loop)
                                  + std::string(strerror(errno)));
     }
 
-    if (prctl(PR_SET_PTRACER, PR_SET_PTRACER_ANY, 0, 0, 0) < 0) {
-        throw std::runtime_error("Could not set ptracer_any: "
-                                 + std::string(strerror(errno)));
+    std::string yama_file = "/proc/sys/kernel/yama/ptrace_scope";
+    std::ifstream f (yama_file.c_str(), std::ifstream::in);
+    if (f.is_open()) {
+        char c;
+        if (f.read(&c, 1)) {
+            if (c == '1') {
+                if (prctl(PR_SET_PTRACER, PR_SET_PTRACER_ANY, 0, 0, 0) < 0) {
+                    throw std::runtime_error("Could not set ptracer_any: "
+                                             + std::string(strerror(errno)));
+                }
+            } else {
+                ICP_LOG(ICP_LOG_DEBUG, "%s contains unexpected value: %c\n",
+                        yama_file.c_str(), c);
+            }
+        } else {
+            throw std::runtime_error("Could not read from file: "
+                                     + std::string(strerror(errno)));
+        }
+        f.close();
+    } else {
+        ICP_LOG(ICP_LOG_DEBUG, "Could not open %s: %s\n", yama_file.c_str(),
+                strerror(errno));
     }
 
     struct icp_event_callbacks callbacks = {
