@@ -1,6 +1,7 @@
 
 #include "config/icp_config_file.h"
 #include "config/icp_config_file_utils.h"
+#include "config/icp_config_utils.h"
 #include "api_utils.h"
 #include "yaml-cpp/yaml.h"
 #include "api_internal_client.h"
@@ -29,8 +30,17 @@ tl::expected<void, std::string> icp_config_file_process_resources()
     for (auto resource : root_node["resources"]) {
         auto [path, id] = icp_config_split_path_id(resource.first.Scalar());
 
-        auto jsonified_resource = icp_config_yaml_to_json(resource.second);
+        // Verify we have a valid id.
+        auto valid_id = icp::config::icp_config_validate_id_string(id);
+        if (!valid_id)
+            return (tl::make_unexpected("Error processing resource: " + resource.first.Scalar()
+                                        + ": " + valid_id.error()));
 
+        // Insert user-defined id field.
+        resource.second["id"] = std::string(id);
+
+        // Convert config file YAML to JSON for the REST API.
+        auto jsonified_resource = icp_config_yaml_to_json(resource.second);
         if (!jsonified_resource)
             return (tl::make_unexpected("Error processing resource: " + resource.first.Scalar()
                                         + ": " + jsonified_resource.error()));
