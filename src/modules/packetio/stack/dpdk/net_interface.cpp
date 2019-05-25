@@ -316,12 +316,12 @@ static void unset_ipv4_interface(const std::optional<interface::ipv4_protocol_co
     }
 }
 
-static std::string recvq_name(int id)
+static std::string recvq_name(std::string id)
 {
-    return (std::string("io") + std::to_string(id) + "_recvq");
+    return (std::string("io-") + id + "_recvq");
 }
 
-net_interface::net_interface(int id, const interface::config_data& config,
+net_interface::net_interface(const std::string& id, const interface::config_data& config,
                              driver::tx_burst tx)
     : m_id(id)
     , m_max_gso_length(net_interface_max_gso_length(config.port_id))
@@ -426,7 +426,7 @@ void net_interface::operator delete(void* ifp)
     rte_free(ifp);
 }
 
-int net_interface::id() const
+std::string net_interface::id() const
 {
     return (m_id);
 }

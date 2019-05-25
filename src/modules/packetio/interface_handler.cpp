@@ -3,6 +3,7 @@
 #include "api/api_route_handler.h"
 #include "core/icp_core.h"
 #include "packetio/interface_api.h"
+#include "config/icp_config_utils.h"
 
 namespace icp {
 namespace packetio {
@@ -153,18 +154,17 @@ void handler::create_interface(const Rest::Request &request,
 }
 
 /**
- * Our id might not be an int.  In that case, the Pistache request will throw
- * an exception.  This macro handles catching the exception and returning
- * the appropriate response.  Unfortunately, we cannot make this a function
+ * Our id might not be a valid string. This macro handles validating the id
+ * value using the framework. If the id is invalid this macro will send a reply
+ * using the supplied code and return. Unfortunately, we cannot make this a function
  * because the response is an unmovable object.
  */
 
-#define SAFE_GET_ID(id_, response_, code_)                              \
+#define VALIDATE_ID(id_, response_, code_)                              \
     do {                                                                \
-        try {                                                           \
-            id_ = request.param(":id").as<int>();                       \
-        } catch (const std::runtime_error&) {                           \
-            response_.send(code_);                                      \
+        auto res = config::icp_config_validate_id_string(id);           \
+        if (!res) {                                                     \
+            response_.send(code_, res.error());                         \
             return;                                                     \
         }                                                               \
     } while (0)
@@ -172,8 +172,8 @@ void handler::create_interface(const Rest::Request &request,
 void handler::get_interface(const Rest::Request &request,
                             Http::ResponseWriter response)
 {
-    int id = -1;
-    SAFE_GET_ID(id, response, Http::Code::Not_Found);
+    auto id = request.param(":id").as<std::string>();
+    VALIDATE_ID(id, response, Http::Code::Not_Found);
 
     json api_request = {
         { "type", request_type::GET_INTERFACE },
@@ -201,8 +201,8 @@ void handler::get_interface(const Rest::Request &request,
 void handler::delete_interface(const Rest::Request &request,
                                Http::ResponseWriter response)
 {
-    int id = -1;
-    SAFE_GET_ID(id, response, Http::Code::No_Content);
+    auto id = request.param(":id").as<std::string>();
+    VALIDATE_ID(id, response, Http::Code::Not_Found);
 
     json api_request = {
         { "type", request_type::DELETE_INTERFACE },

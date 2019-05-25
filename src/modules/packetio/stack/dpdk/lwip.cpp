@@ -20,7 +20,7 @@ static void tcpip_init_done(void *arg __attribute__((unused)))
 lwip::lwip(driver::generic_driver& driver)
     : m_initialized(false)
     , m_driver(driver)
-    , m_idx(0)
+      //    , m_idx(0)
 {
     tcpip_init(tcpip_init_done, nullptr);
     m_initialized = true;
@@ -39,9 +39,9 @@ lwip::~lwip()
     }
 }
 
-std::vector<int> lwip::interface_ids() const
+std::vector<std::string> lwip::interface_ids() const
 {
-    std::vector<int> ids;
+    std::vector<std::string> ids;
     for (auto& item : m_interfaces) {
         ids.push_back(item.first);
     }
@@ -54,7 +54,7 @@ static netif_wrapper make_netif_wrapper(const std::unique_ptr<net_interface>& if
     return (netif_wrapper(ifp->id(), ifp->data(), ifp->config()));
 }
 
-std::optional<interface::generic_interface> lwip::interface(int id) const
+std::optional<interface::generic_interface> lwip::interface(const std::string& id) const
 {
     return (m_interfaces.find(id) != m_interfaces.end()
             ? std::make_optional(interface::generic_interface(
@@ -62,12 +62,16 @@ std::optional<interface::generic_interface> lwip::interface(int id) const
             : std::nullopt);
 }
 
-tl::expected<int, std::string> lwip::create_interface(const interface::config_data& config)
+tl::expected<std::string, std::string> lwip::create_interface(const interface::config_data& config)
 {
+    // Check for a duplicate interface name.
+    if (m_interfaces.count(config.id))
+        return (tl::make_unexpected("Interface " + config.id + " already exists."));
+
     try {
-        auto ifp = std::make_unique<net_interface>(m_idx, config, m_driver.tx_burst_function(config.port_id));
+        auto ifp = std::make_unique<net_interface>(config.id, config, m_driver.tx_burst_function(config.port_id));
         m_driver.add_interface(ifp->port_id(), ifp->data());
-        auto item = m_interfaces.emplace(std::make_pair(m_idx++, std::move(ifp)));
+        auto item = m_interfaces.emplace(std::make_pair(config.id, std::move(ifp)));
         return (item.first->first);
     } catch (const std::runtime_error &e) {
         ICP_LOG(ICP_LOG_ERROR, "Interface creation failed: %s\n", e.what());
@@ -75,7 +79,7 @@ tl::expected<int, std::string> lwip::create_interface(const interface::config_da
     }
 }
 
-void lwip::delete_interface(int id)
+void lwip::delete_interface(const std::string& id)
 {
     if (m_interfaces.find(id) != m_interfaces.end()) {
         auto& ifp = m_interfaces.at(id);

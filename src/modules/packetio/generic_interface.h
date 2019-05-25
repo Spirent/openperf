@@ -57,6 +57,7 @@ typedef std::variant<std::monostate,
 struct config_data {
     std::vector<protocol_config> protocols;
     int port_id;
+    std::string id;
 };
 
 config_data make_config_data(const swagger::v1::model::Interface&);
@@ -68,7 +69,7 @@ public:
         : m_self(std::make_shared<interface_model<Interface>>(std::move(intf)))
     {}
 
-    int id() const
+    std::string id() const
     {
         return m_self->id();
     }
@@ -101,7 +102,7 @@ public:
 private:
     struct interface_concept {
         virtual ~interface_concept() = default;
-        virtual int id() const = 0;
+        virtual std::string id() const = 0;
         virtual int port_id() const = 0;
         virtual std::string mac_address() const = 0;
         virtual std::string ipv4_address() const = 0;
@@ -115,7 +116,7 @@ private:
             : m_interface(std::move(intf))
         {}
 
-        int id() const override
+        std::string id() const override
         {
             return m_interface.id();
         }
