@@ -64,7 +64,7 @@ static void _handle_list_interfaces_request(generic_stack& stack, json &request,
 
     json jints = json::array();
 
-    for (int id : stack.interface_ids()) {
+    for (auto id : stack.interface_ids()) {
         auto intf = stack.interface(id);
         if ((!port_id && !mac_addr && !ipv4_addr)
             || (port_id && port_id == std::to_string(intf->port_id()))
@@ -100,7 +100,7 @@ static void _handle_create_interface_request(generic_stack& stack, json& request
 
 static void _handle_get_interface_request(generic_stack& stack, json& request, json& reply)
 {
-    int id = request["id"].get<int>();
+    auto id = request["id"].get<std::string>();
     auto intf = stack.interface(id);
     if (intf) {
         reply["code"] = reply_code::OK;
@@ -112,14 +112,14 @@ static void _handle_get_interface_request(generic_stack& stack, json& request, j
 
 static void _handle_delete_interface_request(generic_stack& stack, json& request, json& reply)
 {
-    stack.delete_interface(request["id"].get<int>());
+    stack.delete_interface(request["id"].get<std::string>());
     reply["code"] = reply_code::OK;
 }
 
 static void _handle_bulk_create_interface_request(generic_stack& stack, json& request, json& reply)
 {
     /* Check input */
-    std::vector<int> success_list;
+    std::vector<std::string> success_list;
     try {
         json response = {
             {"items", json::array()}
@@ -146,7 +146,7 @@ static void _handle_bulk_create_interface_request(generic_stack& stack, json& re
     }
 
     /* If we get here, then we encountered an error; clean up created interfaces */
-    for (int id : success_list) {
+    for (auto id : success_list) {
         stack.delete_interface(id);
     }
 }
@@ -154,12 +154,7 @@ static void _handle_bulk_create_interface_request(generic_stack& stack, json& re
 static void _handle_bulk_delete_interface_request(generic_stack& stack, json& request, json& reply)
 {
     for (std::string request_id : request["ids"]) {
-        /* id should be a number; ignore if not */
-        if (int id = strtol(request_id.c_str(), nullptr, 10);
-            id != 0 || request_id == "0") {  /* strtol returns 0 on error, so make sure the user
-                                              * really wants to delete 0 before doing so */
-            stack.delete_interface(id);
-        }
+        stack.delete_interface(request_id);
     }
     reply["code"] = reply_code::OK;
 }

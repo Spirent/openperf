@@ -6,14 +6,14 @@ namespace icp {
 namespace packetio {
 namespace dpdk {
 
-netif_wrapper::netif_wrapper(int id, const netif* ifp,
+netif_wrapper::netif_wrapper(const std::string& id, const netif* ifp,
                              const interface::config_data& config)
     : m_id(id)
     , m_netif(ifp)
     , m_config(config)
 {}
 
-int netif_wrapper::id() const
+std::string netif_wrapper::id() const
 {
     return (m_id);
 }

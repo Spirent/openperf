@@ -11,15 +11,15 @@ namespace dpdk {
 
 class netif_wrapper
 {
-    const int m_id;
+    const std::string m_id;
     const netif* m_netif;
     const interface::config_data m_config;
 
 public:
-    netif_wrapper(int id, const netif* ifp,
+    netif_wrapper(const std::string& id, const netif* ifp,
                   const interface::config_data& config);
 
-    int id() const;
+    std::string id() const;
     int port_id() const;
     std::string mac_address() const;
     std::string ipv4_address() const;
