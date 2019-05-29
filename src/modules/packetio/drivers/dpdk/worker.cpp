@@ -27,6 +27,8 @@ using switch_t = std::shared_ptr<const vif_map<netif>>;
 
 const std::string endpoint = "inproc://icp_packetio_workers_control";
 
+static bool proxy = false;
+
 static constexpr uint16_t pkt_burst_size = 32;
 static constexpr int mbuf_prefetch_offset = 4;
 
@@ -86,6 +88,11 @@ public:
         if (next_state) {
             m_state = *next_state;
         }
+    }
+
+    const StateVariant& current_state()
+    {
+        return (m_state);
     }
 };
 
@@ -411,6 +418,19 @@ public:
         , m_switch(vif)
     {}
 
+    void service_queues()
+    {
+        uint16_t idle_queues = 0;
+
+        do {
+            idle_queues = 0;
+            for (auto& q : m_queues) {
+                auto burst_size = service_queue(m_switch, q);
+                if (!burst_size) idle_queues++;
+            }
+        } while (idle_queues < m_queues.size());
+    }
+
     /* State transition functions */
     std::optional<state> on_event(state_init&, const configure_msg& msg)
     {
@@ -420,10 +440,12 @@ public:
                 : std::make_optional(state_armed()));
     }
 
-    std::optional<state> on_event(state_armed&, const start_msg &start)
+    std::optional<state> on_event(state_armed&, const start_msg &start __attribute__((unused)))
     {
-        icp_task_sync_ping(m_context, start.endpoint.data());
-        run(m_control, m_switch, m_queues);
+        if (!proxy) {
+            icp_task_sync_ping(m_context, start.endpoint.data());
+            run(m_control, m_switch, m_queues);
+        }
         return (std::make_optional(state_running()));
     }
 
@@ -447,7 +469,9 @@ public:
         if (msg.descriptors.empty()) {
             return (std::make_optional(state_init()));
         }
-        run(m_control, m_switch, m_queues);
+        if (!proxy) {
+            run(m_control, m_switch, m_queues);
+        }
         return (std::make_optional(state_running()));
     }
 
@@ -524,7 +548,61 @@ int main(void *void_args)
     return (0);
 }
 
+static struct {
+    void* cntxt;
+    std::vector<descriptor> dscrptrs;
+    std::shared_ptr<vif_map<netif>> vif;
+} proxy_config_data;
+
+void proxy_stash_config_data(const void* cntxt,
+                             const std::vector<descriptor>& dscrptrs,
+                             const std::shared_ptr<vif_map<netif>>& vif)
+{
+    proxy_config_data = { .cntxt = const_cast<void*>(cntxt),
+                             .dscrptrs = dscrptrs,
+                             .vif = vif };
+    proxy = true;
+}
+
 }
 }
 }
+}
+
+extern "C" {
+
+using namespace icp::packetio::dpdk::worker;
+
+void worker_proxy(bool shutdown)
+{
+    static void* c;
+    static worker* w;
+    static auto configured = false;
+
+    if (shutdown) {
+        icp_socket_close(c);
+        return;
+    }
+
+    if (!configured) {
+        c = icp_socket_get_client_subscription(proxy_config_data.cntxt, 
+                                               endpoint.c_str(), "");
+        w = new worker(proxy_config_data.cntxt, c, proxy_config_data.vif);
+        auto cmd_configure = std::make_optional(
+            configure_msg { .descriptors = proxy_config_data.dscrptrs });
+        w->dispatch(*cmd_configure);
+        auto cmd_start = std::make_optional(start_msg {});
+        w->dispatch(*cmd_start);
+        configured = true;
+    }
+
+    if (std::holds_alternative<state_running>(w->current_state())) {
+        w->service_queues();
+        if (icp_socket_has_messages(c)) {
+            auto cmd = get_command_msg(c);
+            w->dispatch(*cmd);
+        }
+    }
+}
+
 }

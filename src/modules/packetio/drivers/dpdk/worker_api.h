@@ -100,7 +100,9 @@ struct args {
 };
 
 int main(void*);
-
+void proxy_stash_config_data(const void* cntxt,
+                             const std::vector<descriptor>& dscrptrs,
+                             const std::shared_ptr<vif_map<netif>>& vif);
 }
 }
 }
