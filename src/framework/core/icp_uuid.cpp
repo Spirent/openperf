@@ -2,10 +2,9 @@
 #include <random>
 #include <stdexcept>
 
-#include "modules/socket/uuid.h"
+#include "icp_uuid.h"
 
-namespace icp {
-namespace socket {
+namespace icp::core {
 
 uuid::uuid()
     : m_octets{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
@@ -114,5 +113,4 @@ std::string to_string(const uuid& uuid)
     return (std::string(buffer));
 }
 
-}
-}
+} /* namespace icp::core */

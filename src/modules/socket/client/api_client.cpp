@@ -16,7 +16,7 @@ namespace socket {
 namespace api {
 
 client::client()
-    : m_uuid(uuid::random())
+    : m_uuid(core::uuid::random())
     , m_sock(api::client_socket(to_string(m_uuid)), api::socket_type)
 {
     auto server = sockaddr_un{ .sun_family = AF_UNIX };

@@ -18,10 +18,10 @@
 #include "socket/api.h"
 #include "socket/dgram_channel.h"
 #include "socket/stream_channel.h"
-#include "socket/uuid.h"
 #include "socket/server/api_handler.h"
 #include "socket/server/api_server.h"
 #include "core/icp_core.h"
+#include "core/icp_uuid.h"
 
 namespace icp {
 namespace socket {

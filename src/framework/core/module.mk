@@ -12,7 +12,8 @@ FW_SOURCES += \
 	core/icp_options.c \
 	core/icp_reference.c \
 	core/icp_socket.c \
-	core/icp_task.c
+	core/icp_task.c \
+	core/icp_uuid.cpp
 
 ifeq ($(PLATFORM), linux)
 	FW_LDLIBS += -rdynamic
