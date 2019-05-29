@@ -24,7 +24,7 @@ unsigned get_stack_lcore_id();
  * port locality.
  */
 std::vector<queue::descriptor>
-queue_distribute(const std::vector<model::port_info>& port_info);
+queue_distribute(const std::vector<model::port_info>& port_info, bool single_core);
 
 /**
  * Determine the most common NUMA node connected to the most ports

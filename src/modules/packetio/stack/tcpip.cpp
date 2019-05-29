@@ -58,6 +58,8 @@
 #include "core/icp_core.h"
 #include "socket/server/api_server.h"
 
+#include "packetio/drivers/dpdk/dpdk.h"
+
 #define TCPIP_MSG_VAR_REF(name)     API_VAR_REF(name)
 #define TCPIP_MSG_VAR_DECLARE(name) API_VAR_DECLARE(struct tcpip_msg, name)
 #define TCPIP_MSG_VAR_ALLOC(name)   API_VAR_ALLOC(struct tcpip_msg, MEMP_TCPIP_MSG_API, name, ERR_MEM)
@@ -69,6 +71,8 @@
 static tcpip_init_done_fn tcpip_init_done;
 static void *tcpip_init_done_arg;
 static sys_mbox_t tcpip_mbox;
+
+static bool tcpip_shutting_down;
 
 #if LWIP_TCPIP_CORE_LOCKING
 /** The global semaphore to lock the stack. */
@@ -169,6 +173,7 @@ handle_tcpip_msg(const struct icp_event_data *data, void *arg)
         case TCPIP_MSG_SHUTDOWN:
             icp_event_loop_exit(data->loop);
             sys_sem_signal(msg->msg.api_call.sem);
+            tcpip_shutting_down = true;
             break;
 
         default:
@@ -224,8 +229,18 @@ tcpip_thread(void *arg)
         tcpip_init_done(tcpip_init_done_arg);
     }
 
-    tcpip_loop.run();
+    extern int eal_workers_wrapper();
+    extern void worker_proxy(bool);
 
+    if (eal_workers_wrapper() > 1) {
+        tcpip_loop.run();
+    } else {
+        while (true) {
+            tcpip_loop.run(0);
+            worker_proxy(tcpip_shutting_down);
+            if (tcpip_shutting_down) break;
+        }
+    }
     sys_mbox_free(&tcpip_mbox);
 }
 

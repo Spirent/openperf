@@ -410,14 +410,16 @@ static uint16_t eal_tx_burst_copy_function(int id, uint32_t hash, struct rte_mbu
     return (sent);
 }
 
-static uint16_t eal_tx_dummy_function(int, uint32_t, struct rte_mbuf**, uint16_t)
+static void configure_proxy_worker(void* context,
+                                   std::unique_ptr<worker::client>& workers __attribute__((unused)),
+                                   std::vector<worker::descriptor>& descriptors,
+                                   std::shared_ptr<vif_map<netif>>& vif)
 {
-    ICP_LOG(ICP_LOG_WARNING, "Dummy TX function called; no packet transmitted!\n");
-    return (0);
+    worker::proxy_stash_config_data(context, descriptors, vif);
 }
 
 static void launch_and_configure_workers(void* context,
-                                         std::unique_ptr<worker::client>& workers,
+                                         std::unique_ptr<worker::client>& workers __attribute__((unused)),
                                          std::vector<worker::descriptor>& descriptors,
                                          std::shared_ptr<vif_map<netif>>& vif)
 {
@@ -566,13 +568,9 @@ eal::eal(void* context, std::vector<std::string> args, int test_portpairs)
     case 0:
         throw std::runtime_error("No DPDK worker cores are available! "
                                  "At least 2 CPU cores are required.");
-    case 1:
-        ICP_LOG(ICP_LOG_WARNING, "No hardware threads available to service port queues\n");
-        m_workers = std::make_unique<worker::client>(context, 0); /* no workers */
-        break;
     default: {
         /* And determine how we should distribute port queues to workers */
-        auto q_descriptors = topology::queue_distribute(port_info);
+        auto q_descriptors = topology::queue_distribute(port_info, eal_workers() == 1);
 
         /* Use the queue descriptors to configure all of our ports */
         configure_all_ports(get_port_queue_counts(q_descriptors), m_allocator.get());
@@ -586,7 +584,11 @@ eal::eal(void* context, std::vector<std::string> args, int test_portpairs)
         /* and launch them */
         m_workers = std::make_unique<worker::client>(context,
                                                      get_worker_count(q_descriptors));
-        launch_and_configure_workers(context, m_workers, w_descriptors, m_switch);
+        if (eal_workers() == 1) {
+            configure_proxy_worker(context, m_workers, w_descriptors, m_switch);
+        } else {
+            launch_and_configure_workers(context, m_workers, w_descriptors, m_switch);
+        }
     }
     }
 
@@ -651,7 +653,9 @@ void eal::start()
     RTE_ETH_FOREACH_DEV(port_id) {
         model::physical_port(port_id).start();
     }
-    m_workers->start();
+    if (eal_workers() > 1) {
+        m_workers->start();
+    }
 }
 
 void eal::stop()
@@ -697,11 +701,9 @@ driver::tx_burst eal::tx_burst_function(int port) const
      * buffer parameter in the generic type signature.
      */
     auto info = model::port_info(port);
-    return (reinterpret_cast<driver::tx_burst>(eal_workers() == 1
-                                               ? eal_tx_dummy_function
-                                               : ((std::strcmp(info.driver_name(), "net_ring") == 0) ?
-                                                  eal_tx_burst_copy_function :
-                                                  eal_tx_burst_function)));
+    return (reinterpret_cast<driver::tx_burst>(((std::strcmp(info.driver_name(), "net_ring") == 0) ?
+                                                 eal_tx_burst_copy_function :
+                                                 eal_tx_burst_function)));
 }
 
 tl::expected<int, std::string> eal::create_port(const port::config_data& config)
@@ -830,4 +832,15 @@ void eal::del_interface(int id, std::any interface)
 
 }
 }
+}
+
+extern "C" {
+
+using namespace icp::packetio::dpdk;
+
+int eal_workers_wrapper()
+{
+    return eal_workers();
+}
+
 }
