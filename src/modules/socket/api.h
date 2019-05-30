@@ -11,7 +11,7 @@
 
 #include "tl/expected.hpp"
 
-#include "socket/uuid.h"
+#include "core/icp_uuid.h"
 
 namespace icp {
 namespace socket {
@@ -88,7 +88,7 @@ struct reply_working {};
 
 struct request_init {
     pid_t pid;
-    uuid  tid;
+    core::uuid tid;
 };
 
 struct request_accept {
