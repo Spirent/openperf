@@ -249,7 +249,6 @@ config_data make_config_data(const Interface& interface)
     std::vector<std::string> errors;
 
     /* Check port_id value, which must be a non-negative integer */
-    // FIXME - remove strtol call.
     to_return.port_id = std::strtol(interface.getPortId().c_str(), nullptr, 10);
     if (to_return.port_id == 0 && interface.getPortId() != "0") {
         errors.emplace_back("Port ID '" + interface.getPortId() + "' is invalid.");
@@ -384,7 +383,6 @@ std::shared_ptr<Interface> make_swagger_interface(const generic_interface& in_in
 {
     auto out_intf = std::make_shared<Interface>();
 
-    //FIXME - remove to_string.
     out_intf->setId(in_intf.id());
     out_intf->setPortId(std::to_string(in_intf.port_id()));
     out_intf->setConfig(make_swagger_interface_config(in_intf.config()));

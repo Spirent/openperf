@@ -20,7 +20,6 @@ static void tcpip_init_done(void *arg __attribute__((unused)))
 lwip::lwip(driver::generic_driver& driver)
     : m_initialized(false)
     , m_driver(driver)
-      //    , m_idx(0)
 {
     tcpip_init(tcpip_init_done, nullptr);
     m_initialized = true;
