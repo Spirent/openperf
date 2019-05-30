@@ -12,7 +12,8 @@ FW_SOURCES += \
 	core/icp_options.c \
 	core/icp_reference.c \
 	core/icp_socket.c \
-	core/icp_task.c
+	core/icp_task.c \
+	core/icp_version.c
 
 ifeq ($(PLATFORM), linux)
 	FW_LDLIBS += -rdynamic
@@ -33,3 +34,7 @@ else
 	core/icp_exit.c \
 	core/icp_thread_bsd.c
 endif
+
+.PHONY: $(FW_SRC_DIR)/core/icp_version.c
+$(FW_OBJ_DIR)/core/icp_version.o: ICP_CFLAGS += \
+        -DBUILD_VERSION="\"$(GIT_VERSION)\""
