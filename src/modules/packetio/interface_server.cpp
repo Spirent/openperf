@@ -10,6 +10,8 @@
 #include "packetio/interface_api.h"
 #include "packetio/interface_server.h"
 
+#include "core/icp_uuid.h"
+
 namespace icp {
 namespace packetio {
 namespace interface {
@@ -20,8 +22,6 @@ const std::string endpoint = "inproc://icp_packetio_interface";
 using namespace swagger::v1::model;
 using json = nlohmann::json;
 using generic_stack = icp::packetio::stack::generic_stack;
-
-typedef std::map<unsigned, std::shared_ptr<Interface>> interface_map;
 
 std::string to_string(request_type type)
 {
@@ -82,6 +82,10 @@ static void _handle_create_interface_request(generic_stack& stack, json& request
 {
     try {
         auto interface_model = json::parse(request["data"].get<std::string>()).get<Interface>();
+        // If user did not specify an id create one for them.
+        if (interface_model.getId() == empty_id_string) {
+            interface_model.setId(core::to_string(core::uuid::random()));
+        }
         auto result = stack.create_interface(make_config_data(interface_model));
         if (!result) {
             throw std::runtime_error(result.error());
@@ -126,6 +130,10 @@ static void _handle_bulk_create_interface_request(generic_stack& stack, json& re
         };
         for (auto& item : request["items"]) {
             auto interface_model = item.get<Interface>();
+            // If user did not specify an id create one for them.
+            if (interface_model.getId() == empty_id_string) {
+                interface_model.setId(core::to_string(core::uuid::random()));
+            }
             auto result = stack.create_interface(make_config_data(interface_model));
             if (!result) {
                 throw std::runtime_error(result.error());

@@ -11,7 +11,7 @@ void from_json(const json& j, Interface& interface)
     if (j.find("id") != j.end() && !j["id"].is_null()) {
         interface.setId(j["id"]);
     } else {
-        interface.setId("none");
+        interface.setId(icp::packetio::empty_id_string);
     }
 
     interface.setPortId(j.at("port_id"));
@@ -34,7 +34,7 @@ void from_json(const json& j, Port& port)
     if (j.find("id") != j.end() && !j["id"].is_null()) {
         port.setId(j["id"]);
     } else {
-        port.setId("none");
+        port.setId(icp::packetio::empty_id_string);
     }
 
     port.setKind(j.at("kind"));
