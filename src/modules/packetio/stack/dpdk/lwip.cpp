@@ -53,11 +53,11 @@ static netif_wrapper make_netif_wrapper(const std::unique_ptr<net_interface>& if
     return (netif_wrapper(ifp->id(), ifp->data(), ifp->config()));
 }
 
-std::optional<interface::generic_interface> lwip::interface(const std::string& id) const
+std::optional<interface::generic_interface> lwip::interface(std::string_view id) const
 {
     return (m_interfaces.find(id) != m_interfaces.end()
             ? std::make_optional(interface::generic_interface(
-                                     make_netif_wrapper(m_interfaces.at(id))))
+                                 make_netif_wrapper(m_interfaces.at(std::string(id)))))
             : std::nullopt);
 }
 
@@ -78,12 +78,12 @@ tl::expected<std::string, std::string> lwip::create_interface(const interface::c
     }
 }
 
-void lwip::delete_interface(const std::string& id)
+void lwip::delete_interface(std::string_view id)
 {
     if (m_interfaces.find(id) != m_interfaces.end()) {
-        auto& ifp = m_interfaces.at(id);
+        auto& ifp = m_interfaces.at(std::string(id));
         m_driver.del_interface(ifp->port_id(), std::make_any<netif*>(ifp->data()));
-        m_interfaces.erase(id);
+        m_interfaces.erase(std::string(id));
     }
 }
 

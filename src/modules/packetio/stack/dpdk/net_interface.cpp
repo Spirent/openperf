@@ -321,14 +321,14 @@ static std::string recvq_name(std::string id)
     return (std::string("io-") + id + "_recvq");
 }
 
-net_interface::net_interface(const std::string& id, const interface::config_data& config,
+net_interface::net_interface(std::string_view id, const interface::config_data& config,
                              driver::tx_burst tx)
     : m_id(id)
     , m_max_gso_length(net_interface_max_gso_length(config.port_id))
     , m_config(config)
     , m_transmit(tx)
     , m_notify(false)
-    , m_recvq(rte_ring_create(recvq_name(id).c_str(), recvq_size,
+    , m_recvq(rte_ring_create(recvq_name(std::string(id)).c_str(), recvq_size,
                               rte_eth_dev_socket_id(config.port_id),
                               RING_F_SC_DEQ))
 {

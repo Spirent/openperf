@@ -162,7 +162,7 @@ void handler::create_interface(const Rest::Request &request,
 
 #define VALIDATE_ID(id_, response_, code_)                              \
     do {                                                                \
-        auto res = config::icp_config_validate_id_string(id);           \
+        auto res = config::icp_config_validate_id_string(id_);          \
         if (!res) {                                                     \
             response_.send(code_, res.error());                         \
             return;                                                     \

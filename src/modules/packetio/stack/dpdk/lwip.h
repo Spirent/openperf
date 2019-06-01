@@ -3,6 +3,7 @@
 
 #include <optional>
 #include <string>
+#include <map>
 #include <unordered_map>
 #include <vector>
 
@@ -51,16 +52,16 @@ public:
 
     int id() const { return 0; }  /* only 1 stack for now */
     std::vector<std::string> interface_ids() const;
-    std::optional<interface::generic_interface> interface(const std::string& id) const;
+    std::optional<interface::generic_interface> interface(std::string_view id) const;
     tl::expected<std::string, std::string> create_interface(const interface::config_data& config);
-    void delete_interface(const std::string& id);
+    void delete_interface(std::string_view id);
 
     std::unordered_map<std::string, stack::stats_data> stats() const;
 
 private:
     bool m_initialized;
     driver::generic_driver& m_driver;
-    std::unordered_map<std::string, std::unique_ptr<net_interface>> m_interfaces;
+    std::map<std::string, std::unique_ptr<net_interface>, std::less<>> m_interfaces;
 };
 
 }

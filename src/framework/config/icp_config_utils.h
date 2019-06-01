@@ -7,7 +7,7 @@
 namespace icp::config {
 
 // Regular expression used to validate resource IDs.
-const std::string id_regex = "^[a-z0-9-]+$";
+const std::string_view id_regex = "^[a-z0-9-]+$";
 
 // Function to validate if a supplied resource ID string is valid.
 tl::expected<void, std::string> icp_config_validate_id_string(std::string_view id);

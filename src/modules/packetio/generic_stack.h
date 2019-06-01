@@ -76,7 +76,7 @@ public:
         return m_self->interface_ids();
     }
 
-    std::optional<interface::generic_interface> interface(const std::string& id) const
+    std::optional<interface::generic_interface> interface(std::string_view id) const
     {
         return m_self->interface(id);
     }
@@ -86,7 +86,7 @@ public:
         return m_self->create_interface(config);
     }
 
-    void delete_interface(const std::string& id)
+    void delete_interface(std::string_view id)
     {
         m_self->delete_interface(id);
     }
@@ -101,9 +101,9 @@ private:
         virtual ~stack_concept() = default;
         virtual int id() const = 0;
         virtual std::vector<std::string> interface_ids() const = 0;
-        virtual std::optional<interface::generic_interface> interface(const std::string& id) const = 0;
+        virtual std::optional<interface::generic_interface> interface(std::string_view id) const = 0;
         virtual tl::expected<std::string, std::string> create_interface(const interface::config_data& config) = 0;
-        virtual void delete_interface(const std::string& id) = 0;
+        virtual void delete_interface(std::string_view id) = 0;
         virtual std::unordered_map<std::string, stats_data> stats() const = 0;
     };
 
@@ -123,7 +123,7 @@ private:
             return m_stack.interface_ids();
         }
 
-        std::optional<interface::generic_interface> interface(const std::string& id) const
+        std::optional<interface::generic_interface> interface(std::string_view id) const
         {
             return m_stack.interface(id);
         }
@@ -133,7 +133,7 @@ private:
             return m_stack.create_interface(config);
         }
 
-        void delete_interface(const std::string& id)
+        void delete_interface(std::string_view id)
         {
             m_stack.delete_interface(id);
         }

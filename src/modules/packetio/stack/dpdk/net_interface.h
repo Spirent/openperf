@@ -18,7 +18,7 @@ namespace dpdk {
 
 class net_interface {
 public:
-    net_interface(const std::string& id, const interface::config_data& config,
+    net_interface(std::string_view id, const interface::config_data& config,
                   driver::tx_burst tx);
     ~net_interface();
 
