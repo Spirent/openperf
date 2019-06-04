@@ -16,4 +16,10 @@ void from_json(const nlohmann::json&, swagger::v1::model::Port&);
 }
 }
 
+namespace icp {
+namespace packetio {
+    static const std::string empty_id_string = "none";
+}
+}
+
 #endif /* _ICP_PACKETIO_JSON_TRANSMOGRIFY_H_ */

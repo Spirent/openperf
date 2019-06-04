@@ -3,6 +3,7 @@
 
 #include <optional>
 #include <string>
+#include <map>
 #include <unordered_map>
 #include <vector>
 
@@ -33,7 +34,6 @@ public:
             m_initialized = other.m_initialized;
             m_interfaces = std::move(other.m_interfaces);
             m_driver = std::move(other.m_driver);
-            m_idx = std::move(other.m_idx);
         }
         return (*this);
     }
@@ -41,7 +41,6 @@ public:
     lwip (lwip&& other)
         : m_initialized(other.m_initialized)
         , m_driver(other.m_driver)
-        , m_idx(other.m_idx)
     {
         other.m_initialized = false;
         m_interfaces = std::move(other.m_interfaces);
@@ -52,18 +51,17 @@ public:
     lwip& operator=(const lwip&&) = delete;
 
     int id() const { return 0; }  /* only 1 stack for now */
-    std::vector<int> interface_ids() const;
-    std::optional<interface::generic_interface> interface(int id) const;
-    tl::expected<int, std::string> create_interface(const interface::config_data& config);
-    void delete_interface(int id);
+    std::vector<std::string> interface_ids() const;
+    std::optional<interface::generic_interface> interface(std::string_view id) const;
+    tl::expected<std::string, std::string> create_interface(const interface::config_data& config);
+    void delete_interface(std::string_view id);
 
     std::unordered_map<std::string, stack::stats_data> stats() const;
 
 private:
     bool m_initialized;
     driver::generic_driver& m_driver;
-    std::unordered_map<size_t, std::unique_ptr<net_interface>> m_interfaces;
-    size_t m_idx;
+    std::map<std::string, std::unique_ptr<net_interface>, std::less<>> m_interfaces;
 };
 
 }
