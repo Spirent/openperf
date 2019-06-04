@@ -1,5 +1,7 @@
 #include <cerrno>
 #include <cstring>
+#include <fstream>
+#include <iostream>
 #include <memory>
 #include <optional>
 #include <unistd.h>
@@ -7,6 +9,7 @@
 #include <variant>
 
 #include <sys/mman.h>
+#include <sys/prctl.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/uio.h>
@@ -15,16 +18,18 @@
 #include "socket/api.h"
 #include "socket/dgram_channel.h"
 #include "socket/stream_channel.h"
-#include "socket/uuid.h"
 #include "socket/server/api_handler.h"
 #include "socket/server/api_server.h"
 #include "core/icp_core.h"
+#include "core/icp_uuid.h"
 
 namespace icp {
 namespace socket {
 namespace api {
 
 using api_handler = icp::socket::server::api_handler;
+
+static constexpr std::string_view yama_file = "/proc/sys/kernel/yama/ptrace_scope";
 
 static bool unlink_stale_files = false;
 static std::string prefix_opt;
@@ -113,6 +118,41 @@ static int close_fd(const struct icp_event_data *data,
     return (0);
 }
 
+static void update_yama_related_process_settings()
+{
+    if (prctl(PR_SET_DUMPABLE, 1, 0, 0, 0) < 0) {
+        throw std::runtime_error("Could not set dumpable: "
+                                 + std::string(strerror(errno)));
+    }
+
+    std::ifstream f (yama_file.data(), std::ifstream::in);
+    if (f.is_open()) {
+        char c;
+        if (f.read(&c, 1)) {
+            switch (c) {
+            case '1':
+                if (prctl(PR_SET_PTRACER, PR_SET_PTRACER_ANY, 0, 0, 0) < 0) {
+                    throw std::runtime_error("Could not set ptracer_any: "
+                                             + std::string(strerror(errno)));
+                }
+                break;
+            case '2':
+                ICP_LOG(ICP_LOG_WARNING, "inception and its clients need to run as root or \
+                        change contents of %s to 1\n", yama_file.data());
+                break;
+            case '3':
+                ICP_LOG(ICP_LOG_WARNING, "inception requires the contents of %s to be 0, 1, or 2\n",
+                        yama_file.data());
+                break;
+            default:
+                break;
+            }
+        } else {
+            throw std::runtime_error("Could not read from file: " + std::string(strerror(errno)));
+        }
+    }
+}
+
 int api_server_option_handler(int opt, const char *opt_arg __attribute__((unused)))
 {
     if (icp_options_hash_long("force-unlink") == opt) {
@@ -145,6 +185,8 @@ server::server(icp::core::event_loop& loop)
         throw std::runtime_error("Could not listen to socket: "
                                  + std::string(strerror(errno)));
     }
+
+    update_yama_related_process_settings();
 
     struct icp_event_callbacks callbacks = {
         .on_read = handle_api_accept

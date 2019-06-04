@@ -2,7 +2,7 @@
 #include <string>
 #include <string.h>
 
-#include "config_file_utils.h"
+#include "icp_config_file_utils.h"
 #include "yaml_json_emitter.h"
 
 using namespace icp::config::file;

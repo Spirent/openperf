@@ -11,7 +11,7 @@
 #include "socket/client/io_channel_wrapper.h"
 #include "socket/shared_segment.h"
 #include "socket/unix_socket.h"
-#include "socket/uuid.h"
+#include "core/icp_uuid.h"
 
 namespace icp {
 namespace socket {
@@ -37,7 +37,7 @@ class client : public thread_singleton<client>
 {
     using io_channel_wrapper = icp::socket::client::io_channel_wrapper;
 
-    uuid m_uuid;
+    core::uuid m_uuid;
     unix_socket m_sock;
 
     struct ided_channel {

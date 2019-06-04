@@ -36,6 +36,9 @@ ICP_INC_DIRS += $(SOCKCLI_INC_DIR)
 ICP_LIB_DIRS += $(SOCKCLI_LIB_DIR)
 ICP_LDLIBS += -l$(SOCKCLI_LIBRARY) $(SOCKCLI_LDLIBS)
 
+# So we can find core/icp_uuid.h without pulling in the entire framework.
+ICP_INC_DIRS += $(ICP_ROOT)/src/framework
+
 # Load external dependencies, too
 $(foreach DEP, $(SOCKCLI_DEPENDS), $(eval include $(ICP_ROOT)/mk/$(DEP).mk))
 
