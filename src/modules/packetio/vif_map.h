@@ -2,7 +2,6 @@
 #define _ICP_PACKETIO_VIF_MAP_H_
 
 #include <memory>
-#include <optional>
 
 #include "core/icp_core.h"
 #include "net/net_types.h"
@@ -18,8 +17,8 @@ public:
     bool insert(uint16_t id, const net::mac_address& mac, Interface* ifp);
     bool remove(uint16_t id, const net::mac_address& mac, Interface* ifp);
 
-    std::optional<Interface*>   find(uint16_t id, const net::mac_address& mac) const;
-    std::optional<Interface*>   find(uint16_t id, const uint8_t octets[6]) const;
+    Interface*                  find(uint16_t id, const net::mac_address& mac) const;
+    Interface*                  find(uint16_t id, const uint8_t octets[6]) const;
     const icp::list<Interface>& find(uint16_t id) const;
 
     void shrink_to_fit();
