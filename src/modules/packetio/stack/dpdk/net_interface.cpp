@@ -316,21 +316,18 @@ static void unset_ipv4_interface(const std::optional<interface::ipv4_protocol_co
     }
 }
 
-static std::string recvq_name(int id)
+static std::string recvq_name(const netif& netintf)
 {
-    return (std::string("io") + std::to_string(id) + "_recvq");
+    return (std::string("io") + std::to_string(netintf.num) + "_recvq");
 }
 
-net_interface::net_interface(int id, const interface::config_data& config,
+net_interface::net_interface(std::string_view id, const interface::config_data& config,
                              driver::tx_burst tx)
     : m_id(id)
     , m_max_gso_length(net_interface_max_gso_length(config.port_id))
     , m_config(config)
     , m_transmit(tx)
     , m_notify(false)
-    , m_recvq(rte_ring_create(recvq_name(id).c_str(), recvq_size,
-                              rte_eth_dev_socket_id(config.port_id),
-                              RING_F_SC_DEQ))
 {
     m_netif.state = this;
 
@@ -340,6 +337,10 @@ net_interface::net_interface(int id, const interface::config_data& config,
     if (netif_error) {
         throw std::runtime_error(lwip_strerr(netif_error));
     }
+
+    m_recvq = std::unique_ptr<rte_ring, rte_ring_deleter>
+        ((rte_ring_create(recvq_name(m_netif).c_str(), recvq_size,
+                          rte_eth_dev_socket_id(config.port_id), RING_F_SC_DEQ)));
 
     /* Setup callbacks to allow the interface to interact with the port state */
     int dpdk_error = rte_eth_dev_callback_register(m_config.port_id,
@@ -426,7 +427,7 @@ void net_interface::operator delete(void* ifp)
     rte_free(ifp);
 }
 
-int net_interface::id() const
+std::string net_interface::id() const
 {
     return (m_id);
 }

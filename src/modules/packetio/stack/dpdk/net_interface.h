@@ -18,7 +18,7 @@ namespace dpdk {
 
 class net_interface {
 public:
-    net_interface(int id, const interface::config_data& config,
+    net_interface(std::string_view id, const interface::config_data& config,
                   driver::tx_burst tx);
     ~net_interface();
 
@@ -30,7 +30,7 @@ public:
 
     netif* data();
 
-    int id() const;
+    std::string id() const;
     int port_id() const;
     interface::config_data config() const;
 
@@ -50,7 +50,7 @@ private:
     /* XXX: Determine based on NIC speed */
     static constexpr unsigned recvq_size = 1024;
 
-    const int m_id;
+    const std::string m_id;
     const unsigned m_max_gso_length;
     const interface::config_data m_config;
     const driver::tx_burst m_transmit;
