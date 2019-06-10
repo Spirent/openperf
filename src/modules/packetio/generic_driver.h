@@ -25,12 +25,12 @@ public:
         : m_self(std::make_shared<driver_model<Driver>>(std::move(d)))
     {}
 
-    std::vector<int> port_ids() const
+    std::vector<std::string> port_ids() const
     {
         return m_self->port_ids();
     }
 
-    std::optional<port::generic_port> port(int id) const
+    std::optional<port::generic_port> port(std::string_view id) const
     {
         return m_self->port(id);
     }
@@ -40,12 +40,12 @@ public:
         return m_self->tx_burst_function(port);
     }
 
-    tl::expected<int, std::string> create_port(const port::config_data& config)
+    tl::expected<std::string, std::string> create_port(const port::config_data& config)
     {
         return m_self->create_port(config);
     }
 
-    tl::expected<void, std::string> delete_port(int id)
+    tl::expected<void, std::string> delete_port(std::string_view id)
     {
         return m_self->delete_port(id);
     }
@@ -83,11 +83,11 @@ public:
 private:
     struct driver_concept {
         virtual ~driver_concept() = default;
-        virtual std::vector<int> port_ids() const = 0;
-        virtual std::optional<port::generic_port> port(int id) const = 0;
+        virtual std::vector<std::string> port_ids() const = 0;
+        virtual std::optional<port::generic_port> port(std::string_view id) const = 0;
         virtual tx_burst tx_burst_function(int port) const = 0;
-        virtual tl::expected<int, std::string> create_port(const port::config_data& config) = 0;
-        virtual tl::expected<void, std::string> delete_port(int id) = 0;
+        virtual tl::expected<std::string, std::string> create_port(const port::config_data& config) = 0;
+        virtual tl::expected<void, std::string> delete_port(std::string_view id) = 0;
         virtual tl::expected<void, int> attach_port_sink(std::string_view id, pga::generic_sink& sink) = 0;
         virtual void detach_port_sink(std::string_view id, pga::generic_sink& sink) = 0;
         virtual tl::expected<void, int> attach_port_source(std::string_view id, pga::generic_source& source) = 0;
@@ -102,12 +102,12 @@ private:
             : m_driver(std::move(d))
         {}
 
-        std::vector<int> port_ids() const override
+        std::vector<std::string> port_ids() const override
         {
             return m_driver.port_ids();
         }
 
-        std::optional<port::generic_port> port(int id) const override
+        std::optional<port::generic_port> port(std::string_view id) const override
         {
             return m_driver.port(id);
         }
@@ -117,12 +117,12 @@ private:
             return m_driver.tx_burst_function(port);
         }
 
-        tl::expected<int, std::string> create_port(const port::config_data& config) override
+        tl::expected<std::string, std::string> create_port(const port::config_data& config) override
         {
             return m_driver.create_port(config);
         }
 
-        tl::expected<void, std::string> delete_port(int id) override
+        tl::expected<void, std::string> delete_port(std::string_view id) override
         {
             return m_driver.delete_port(id);
         }

@@ -9,16 +9,17 @@ namespace packetio {
 namespace dpdk {
 namespace model {
 
-physical_port::physical_port(int id, rte_mempool *pool)
-    : m_id(id)
+physical_port::physical_port(int idx, std::string id, rte_mempool *pool)
+    : m_idx(idx)
+    , m_id(id)
     , m_pool(pool)
 {
-    if (!rte_eth_dev_is_valid_port(id)) {
-        throw std::runtime_error("Port id " + std::to_string(id) + " is invalid");
+    if (!rte_eth_dev_is_valid_port(idx)) {
+        throw std::runtime_error("Port id " + id + " is invalid");
     }
 }
 
-int physical_port::id() const
+std::string physical_port::id() const
 {
     return m_id;
 }
@@ -31,7 +32,7 @@ std::string physical_port::kind()
 port::link_status physical_port::link() const
 {
     struct rte_eth_link link;
-    rte_eth_link_get_nowait(m_id, &link);
+    rte_eth_link_get_nowait(m_idx, &link);
     return (link.link_status == ETH_LINK_UP
             ? port::link_status::LINK_UP
             : port::link_status::LINK_DOWN);
@@ -40,7 +41,7 @@ port::link_status physical_port::link() const
 port::link_speed physical_port::speed() const
 {
     struct rte_eth_link link;
-    rte_eth_link_get_nowait(m_id, &link);
+    rte_eth_link_get_nowait(m_idx, &link);
     return (link.link_status == ETH_LINK_UP
             ? static_cast<port::link_speed>(link.link_speed)
             : port::link_speed::SPEED_UNKNOWN);
@@ -49,7 +50,7 @@ port::link_speed physical_port::speed() const
 port::link_duplex physical_port::duplex() const
 {
     struct rte_eth_link link;
-    rte_eth_link_get_nowait(m_id, &link);
+    rte_eth_link_get_nowait(m_idx, &link);
     return (link.link_duplex == ETH_LINK_FULL_DUPLEX
             ? port::link_duplex::DUPLEX_FULL
             : port::link_duplex::DUPLEX_HALF);
@@ -58,7 +59,7 @@ port::link_duplex physical_port::duplex() const
 port::stats_data physical_port::stats() const
 {
     struct rte_eth_stats stats;
-    rte_eth_stats_get(m_id, &stats);
+    rte_eth_stats_get(m_idx, &stats);
 
     return {
         .rx_packets = static_cast<int64_t>(stats.ipackets),
@@ -73,7 +74,7 @@ port::stats_data physical_port::stats() const
 port::config_data physical_port::config() const
 {
     rte_eth_link link;
-    rte_eth_link_get_nowait(m_id, &link);
+    rte_eth_link_get_nowait(m_idx, &link);
 
     if (link.link_autoneg == ETH_LINK_AUTONEG) {
         return (port::config_data(port::dpdk_config({ .auto_negotiation = true })));
@@ -171,7 +172,7 @@ tl::expected<void, std::string> physical_port::config(const port::config_data& c
     auto dpdk_config = std::get<port::dpdk_config>(c);
 
     /* Acquire some useful data about our port... */
-    auto info = port_info(m_id);
+    auto info = port_info(m_idx);
 
     rte_eth_conf port_conf = make_rte_eth_conf(info, info.rx_queue_count() > 1);
 
@@ -202,13 +203,14 @@ tl::expected<void, std::string> physical_port::config(const port::config_data& c
 
 tl::expected<void, std::string> physical_port::start()
 {
-    int error = rte_eth_dev_start(m_id);
+    int error = rte_eth_dev_start(m_idx);
     if (error) {
-        return tl::make_unexpected("Failed to start port " + std::to_string(m_id)
+        return tl::make_unexpected("Failed to start port " + m_id
+                                   + "(" + std::to_string(m_idx) + ")"
                                    + ": " + rte_strerror(error));
     }
 
-    ICP_LOG(ICP_LOG_DEBUG, "Successfully started DPDK physical port %d\n", m_id);
+    ICP_LOG(ICP_LOG_DEBUG, "Successfully started DPDK physical port %s\n", m_id.c_str());
 
     return {};
 }
@@ -221,33 +223,34 @@ tl::expected<void, std::string> physical_port::stop()
      * that.
      */
     rte_eth_dev_info info;
-    rte_eth_dev_info_get(m_id, &info);
+    rte_eth_dev_info_get(m_idx, &info);
 
     std::vector<std::string> errors;
     for (int q = 0; q < info.nb_tx_queues; q++) {
-        int error = rte_eth_dev_tx_queue_stop(m_id, q);
+        int error = rte_eth_dev_tx_queue_stop(m_idx, q);
         if (error && error != -ENOTSUP) {
             errors.emplace_back("Failed to cleanly stop TX queue " + std::to_string(q)
-                                + " on port " + std::to_string(m_id) + ": "
-                                + rte_strerror(error) + ".");
+                                + " on port " + m_id
+                                + "(" + std::to_string(m_idx) + ")"
+                                + ": " + rte_strerror(error) + ".");
         }
     }
 
     for (int q = 0; q < info.nb_rx_queues; q++) {
-        int error = rte_eth_dev_rx_queue_stop(m_id, q);
+        int error = rte_eth_dev_rx_queue_stop(m_idx, q);
         if (error && error != -ENOTSUP) {
-            errors.emplace_back("Failed to cleanly stop RX queue " + std::to_string(q)
-                                + " on port " + std::to_string(m_id) + ": "
-                                + rte_strerror(error) + ".");
+            errors.emplace_back("Failed to cleanly stop RX queue " + std::to_string(q) + " on port "
+                                + m_id + "(" + std::to_string(m_idx) + ")"
+                                + ": " + rte_strerror(error) + ".");
         }
     }
 
     if (errors.empty()) {
-        rte_eth_dev_stop(m_id);
+        rte_eth_dev_stop(m_idx);
         return {};
     }
 
-    ICP_LOG(ICP_LOG_DEBUG, "Successfully stopped DPDK physical port %d\n", m_id);
+    ICP_LOG(ICP_LOG_DEBUG, "Successfully stopped DPDK physical port %s\n", m_id.c_str());
 
     return (tl::make_unexpected(
                 std::accumulate(begin(errors), end(errors), std::string(),
@@ -265,7 +268,7 @@ tl::expected<void, std::string> physical_port::apply_port_config(port_info& info
     nb_txqs = (nb_txqs == 0 ? info.tx_queue_default() : nb_txqs);
     bool do_start = false;
 
-    int error = rte_eth_dev_configure(m_id, nb_rxqs, nb_txqs, &port_conf);
+    int error = rte_eth_dev_configure(m_idx, nb_rxqs, nb_txqs, &port_conf);
     if (error == -EBUSY) {
         /* The port is still running; stop it and try again. */
         auto stop_result = stop();
@@ -273,11 +276,12 @@ tl::expected<void, std::string> physical_port::apply_port_config(port_info& info
             return stop_result;
         }
         do_start = true;  /* Assuming we make it to the end without additional errors */
-        error = rte_eth_dev_configure(m_id, nb_rxqs, nb_txqs, &port_conf);
+        error = rte_eth_dev_configure(m_idx, nb_rxqs, nb_txqs, &port_conf);
     }
 
     if (error) {
-        return (tl::make_unexpected("Failed to configure port " + std::to_string(m_id)
+        return (tl::make_unexpected("Failed to configure port " + m_id
+                                    + "(" + std::to_string(m_idx) + ")"
                                     + ": " + rte_strerror(error)));
     }
 
@@ -286,12 +290,13 @@ tl::expected<void, std::string> physical_port::apply_port_config(port_info& info
     tx_conf.offloads = port_conf.txmode.offloads;
 
     for (int q = 0; q < info.tx_queue_count(); q++) {
-        if ((error = rte_eth_tx_queue_setup(m_id, q,
+        if ((error = rte_eth_tx_queue_setup(m_idx, q,
                                             info.tx_desc_count(),
                                             info.socket_id(),
                                             &tx_conf)) != 0) {
             return (tl::make_unexpected("Failed to setup TX queue " + std::to_string(q)
-                                        + " on port " + std::to_string(m_id) + ": "
+                                        + " on port " + m_id
+                                        + "( " + std::to_string(m_idx) + "): "
                                         + rte_strerror(error)));
         }
     }
@@ -301,18 +306,19 @@ tl::expected<void, std::string> physical_port::apply_port_config(port_info& info
     rx_conf.offloads = port_conf.rxmode.offloads;
 
     for (int q = 0; q < info.rx_queue_count(); q++) {
-        if ((error = rte_eth_rx_queue_setup(m_id, q,
+        if ((error = rte_eth_rx_queue_setup(m_idx, q,
                                             info.rx_desc_count(),
                                             info.socket_id(), &rx_conf,
                                             const_cast<rte_mempool*>(m_pool))) != 0) {
             return (tl::make_unexpected("Failed to setup RX queue " + std::to_string(q)
-                                        + " on port " + std::to_string(m_id) + ": "
+                                        + " on port " + m_id
+                                        + "(" + std::to_string(m_idx) + "): "
                                         + rte_strerror(error)));
         }
     }
 
-    ICP_LOG(ICP_LOG_DEBUG, "Successfully configured DPDK physical port %d "
-            "(rxq=%d, txq=%d, pool=%s, speed=0x%x)\n", m_id, nb_rxqs, nb_txqs,
+    ICP_LOG(ICP_LOG_DEBUG, "Successfully configured DPDK physical port %s(%d) "
+            "(rxq=%d, txq=%d, pool=%s, speed=0x%x)\n", m_id.c_str(), m_idx, nb_rxqs, nb_txqs,
             m_pool->name, port_conf.link_speeds);
 
     if (do_start) return start();
@@ -322,7 +328,7 @@ tl::expected<void, std::string> physical_port::apply_port_config(port_info& info
 tl::expected<void, std::string> physical_port::low_level_config(uint16_t nb_rxqs,
                                                                 uint16_t nb_txqs)
 {
-    auto info = port_info(m_id);
+    auto info = port_info(m_idx);
 
     rte_eth_conf port_conf = make_rte_eth_conf(info, nb_rxqs > 1);
 
@@ -341,14 +347,14 @@ void physical_port::add_mac_address(const net::mac_address& mac)
      * because the port doesn't support multiple MAC's or the port's MAC
      * address table is full, then enable promiscuous mode.
      */
-    int error = rte_eth_dev_mac_addr_add(m_id,
+    int error = rte_eth_dev_mac_addr_add(m_idx,
                                          reinterpret_cast<ether_addr*>(
                                              const_cast<uint8_t*>(mac.data())),
                                          0);
     if ((error == -ENOTSUP || error == -ENOSPC)
-        && !rte_eth_promiscuous_get(m_id)) {
-        ICP_LOG(ICP_LOG_INFO, "Enabling promiscuous mode on port %d\n", m_id);
-        rte_eth_promiscuous_enable(m_id);
+        && !rte_eth_promiscuous_get(m_idx)) {
+        ICP_LOG(ICP_LOG_INFO, "Enabling promiscuous mode on port %s\n", m_id.c_str());
+        rte_eth_promiscuous_enable(m_idx);
     }
 }
 
@@ -358,8 +364,8 @@ void physical_port::del_mac_address(const net::mac_address& mac)
      * If we are not in promiscuous mode, attempt to remove the MAC from the
      * port's address table.
      */
-    if (!rte_eth_promiscuous_get(m_id)) {
-        rte_eth_dev_mac_addr_remove(m_id,
+    if (!rte_eth_promiscuous_get(m_idx)) {
+        rte_eth_dev_mac_addr_remove(m_idx,
                                     reinterpret_cast<ether_addr*>(
                                         const_cast<uint8_t*>(mac.data())));
     }

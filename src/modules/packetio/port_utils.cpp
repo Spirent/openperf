@@ -263,7 +263,7 @@ std::shared_ptr<Port> make_swagger_port(const generic_port& in_port)
 {
     auto out_port = std::make_shared<Port>();
 
-    out_port->setId(std::to_string(in_port.id()));
+    out_port->setId(in_port.id());
     out_port->setKind(in_port.kind());
     out_port->setConfig(make_swagger_port_config(in_port));
     out_port->setStatus(make_swagger_port_status(in_port));

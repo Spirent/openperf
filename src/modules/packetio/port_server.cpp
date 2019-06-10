@@ -65,7 +65,7 @@ static void _handle_list_ports_request(generic_driver& driver, json& request, js
     auto kind = get_optional_key<std::string>(request, "kind");
     json jports = json::array();
 
-    for (int id : driver.port_ids()) {
+    for (auto id : driver.port_ids()) {
         auto port = driver.port(id);
         if (!kind || *kind == port->kind()) {
             jports.emplace_back(make_swagger_port(*port)->toJson());
@@ -97,7 +97,7 @@ static void _handle_create_port_request(generic_driver& driver, json& request, j
 
 static void _handle_get_port_request(generic_driver& driver, json& request, json& reply)
 {
-    int id = request["id"].get<int>();
+    auto id = request["id"].get<std::string>();
     auto port = driver.port(id);
     if (port) {
         reply["code"] = reply_code::OK;
@@ -109,7 +109,7 @@ static void _handle_get_port_request(generic_driver& driver, json& request, json
 
 static void _handle_update_port_request(generic_driver& driver, json& request, json& reply)
 {
-    int id = request["id"].get<int>();
+    auto id = request["id"].get<std::string>();
     auto port = driver.port(id);
     if (!port) {
         reply["code"] = reply_code::NO_PORT;
@@ -135,7 +135,7 @@ static void _handle_update_port_request(generic_driver& driver, json& request, j
 
 static void _handle_delete_port_request(generic_driver& driver, json& request, json& reply)
 {
-    auto result = driver.delete_port(request["id"].get<int>());
+    auto result = driver.delete_port(request["id"].get<std::string>());
     if (result) {
         reply["code"] = reply_code::OK;
     } else {

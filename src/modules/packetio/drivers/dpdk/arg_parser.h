@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include <map>
 
 namespace icp {
 namespace packetio {
@@ -32,11 +33,13 @@ public:
     int test_portpairs();                     /**< Number of eth ring devs */
     bool test_mode();                         /**< test mode enable/disable */
     std::vector<std::string> args();          /**< Retrieve a copy of args for use */
+    std::map<int, std::string> id_map();      /**< Retrieve a copy of port idx->id map */
 
 private:
     std::vector<std::string> _args;
     int m_test_portpairs;
     bool m_test_mode;
+    std::map<int, std::string> m_port_index_id;
 };
 
 
