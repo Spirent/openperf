@@ -23,7 +23,11 @@ static constexpr unsigned int max_poll_count = 6;
 // Is the API port open?
 static tl::expected<void, std::string> check_api_port()
 {
-    struct addrinfo hints = {.ai_family = AF_UNSPEC, .ai_socktype = SOCK_STREAM}, *result;
+    /*
+     * XXX: Pistache currently can only support one address family per server.
+     * Until this is fixed, we're using IPv4 only.
+     */
+    struct addrinfo hints = {.ai_family = AF_INET, .ai_socktype = SOCK_STREAM}, *result;
 
     int res = getaddrinfo(api_server_host.c_str(),
                           to_string(icp::api::api_get_service_port()).c_str(), &hints, &result);
