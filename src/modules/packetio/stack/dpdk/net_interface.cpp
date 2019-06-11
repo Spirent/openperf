@@ -455,3 +455,22 @@ interface::config_data net_interface::config() const
 }
 }
 }
+
+extern "C" {
+
+uint8_t netif_id_match(const std::string id_str)
+{
+    for (auto i = 1; i <= UINT8_MAX; i++) {
+        auto n = netif_get_by_index(i);
+        if (n != nullptr) {
+            icp::packetio::dpdk::net_interface *ifp = 
+                reinterpret_cast<icp::packetio::dpdk::net_interface*>(n->state);
+            if (ifp->id() == id_str) {
+                return netif_get_index(n);
+            }
+        }
+    }
+    return (NETIF_NO_INDEX);
+}
+
+}

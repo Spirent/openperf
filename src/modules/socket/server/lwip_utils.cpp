@@ -55,6 +55,8 @@ tl::expected<socklen_t, int> do_sock_getsockopt(const ip_pcb* pcb,
     return (slength);
 }
 
+extern "C" uint8_t netif_id_match(const std::string);
+
 tl::expected<void, int> do_sock_setsockopt(ip_pcb* pcb,
                                            const api::request_setsockopt& setsockopt)
 {
@@ -87,19 +89,18 @@ tl::expected<void, int> do_sock_setsockopt(ip_pcb* pcb,
         break;
     }
     case SO_BINDTODEVICE: {
-        char optval[NETIF_NAMESIZE];
-        if (setsockopt.optlen > NETIF_NAMESIZE) return (tl::make_unexpected(EINVAL));
-        auto opt = copy_in(optval,
+        std::string optval(setsockopt.optlen, '\0');
+        auto opt = copy_in(optval.data(),
                            setsockopt.id.pid,
                            reinterpret_cast<const char*>(setsockopt.optval),
                            setsockopt.optlen,
-                           NETIF_NAMESIZE);
+                           setsockopt.optlen);
         if (!opt) return (tl::make_unexpected(opt.error()));
-        struct netif* n = netif_find((const char *)optval);
-        if (n == nullptr) {
+        auto idx = netif_id_match(optval);
+        if (idx == NETIF_NO_INDEX) {
             return (tl::make_unexpected(ENODEV));
         }
-        pcb->netif_idx = netif_get_index(n);
+        pcb->netif_idx = idx;
         break;
     }
     default:
