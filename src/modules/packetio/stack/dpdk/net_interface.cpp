@@ -365,6 +365,7 @@ net_interface::~net_interface()
     netifapi_netif_remove(&m_netif);
 }
 
+
 int net_interface::handle_rx(struct pbuf* p)
 {
     if (rte_ring_enqueue(m_recvq.get(), p) != 0) {
@@ -450,6 +451,28 @@ unsigned net_interface::max_gso_length() const
 interface::config_data net_interface::config() const
 {
     return (m_config);
+}
+
+int net_interface::attach_sink(pga::generic_sink& sink)
+{
+    (void)sink;
+    return (ENOSYS);
+}
+
+void net_interface::detach_sink(pga::generic_sink& sink)
+{
+    (void)sink;
+}
+
+int net_interface::attach_source(pga::generic_source& source)
+{
+    (void)source;
+    return (ENOSYS);
+}
+
+void net_interface::detach_source(pga::generic_source& source)
+{
+    (void)source;
 }
 
 }

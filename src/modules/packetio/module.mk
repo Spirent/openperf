@@ -18,6 +18,7 @@ PIO_SOURCES += \
 
 include $(PIO_SRC_DIR)/drivers/module.mk
 include $(PIO_SRC_DIR)/memory/module.mk
+include $(PIO_SRC_DIR)/pga/module.mk
 include $(PIO_SRC_DIR)/stack/module.mk
 
 .PHONY: $(PIO_SRC_DIR)/init.cpp

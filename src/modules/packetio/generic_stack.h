@@ -12,6 +12,8 @@
 
 #include "packetio/generic_driver.h"
 #include "packetio/generic_interface.h"
+#include "packetio/pga/generic_sink.h"
+#include "packetio/pga/generic_source.h"
 
 namespace swagger {
 namespace v1 {
@@ -91,6 +93,26 @@ public:
         m_self->delete_interface(id);
     }
 
+    tl::expected<void, int> attach_interface_sink(std::string_view id, pga::generic_sink& sink)
+    {
+        return m_self->attach_interface_sink(id, sink);
+    }
+
+    void detach_interface_sink(std::string_view id, pga::generic_sink& sink)
+    {
+        m_self->detach_interface_sink(id, sink);
+    }
+
+    tl::expected<void, int> attach_interface_source(std::string_view id, pga::generic_source& source)
+    {
+        return m_self->attach_interface_source(id, source);
+    }
+
+    void detach_interface_source(std::string_view id, pga::generic_source& source)
+    {
+        m_self->detach_interface_source(id, source);
+    }
+
     std::unordered_map<std::string, stats_data> stats() const
     {
         return m_self->stats();
@@ -104,6 +126,10 @@ private:
         virtual std::optional<interface::generic_interface> interface(std::string_view id) const = 0;
         virtual tl::expected<std::string, std::string> create_interface(const interface::config_data& config) = 0;
         virtual void delete_interface(std::string_view id) = 0;
+        virtual tl::expected<void, int> attach_interface_sink(std::string_view id, pga::generic_sink& sink) = 0;
+        virtual void detach_interface_sink(std::string_view id, pga::generic_sink& sink) = 0;
+        virtual tl::expected<void, int> attach_interface_source(std::string_view id, pga::generic_source& source) = 0;
+        virtual void detach_interface_source(std::string_view id, pga::generic_source& source) = 0;
         virtual std::unordered_map<std::string, stats_data> stats() const = 0;
     };
 
@@ -113,32 +139,52 @@ private:
             : m_stack(std::move(s))
         {}
 
-        int id() const
+        int id() const override
         {
             return m_stack.id();
         }
 
-        std::vector<std::string> interface_ids() const
+        std::vector<std::string> interface_ids() const override
         {
             return m_stack.interface_ids();
         }
 
-        std::optional<interface::generic_interface> interface(std::string_view id) const
+        std::optional<interface::generic_interface> interface(std::string_view id) const override
         {
             return m_stack.interface(id);
         }
 
-        tl::expected<std::string, std::string> create_interface(const interface::config_data& config)
+        tl::expected<std::string, std::string> create_interface(const interface::config_data& config) override
         {
             return m_stack.create_interface(config);
         }
 
-        void delete_interface(std::string_view id)
+        void delete_interface(std::string_view id) override
         {
             m_stack.delete_interface(id);
         }
 
-        std::unordered_map<std::string, stats_data> stats() const
+        tl::expected<void, int> attach_interface_sink(std::string_view id, pga::generic_sink& sink) override
+        {
+            return m_stack.attach_interface_sink(id, sink);
+        }
+
+        void detach_interface_sink(std::string_view id, pga::generic_sink& sink) override
+        {
+            m_stack.detach_interface_sink(id, sink);
+        }
+
+        tl::expected<void, int> attach_interface_source(std::string_view id, pga::generic_source& source) override
+        {
+            return m_stack.attach_interface_source(id, source);
+        }
+
+        void detach_interface_source(std::string_view id, pga::generic_source& source) override
+        {
+            m_stack.detach_interface_source(id, source);
+        }
+
+        std::unordered_map<std::string, stats_data> stats() const override
         {
             return m_stack.stats();
         }

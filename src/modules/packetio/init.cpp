@@ -12,6 +12,7 @@
 #include "packetio/interface_server.h"
 #include "packetio/port_server.h"
 #include "packetio/stack_server.h"
+#include "packetio/pga/pga_server.h"
 
 namespace icp {
 namespace packetio {
@@ -32,6 +33,7 @@ struct service {
         m_port_server = std::make_unique<port::api::server>(context, *m_loop, *m_driver);
         m_stack_server = std::make_unique<stack::api::server>(context, *m_loop, *m_stack);
         m_if_server = std::make_unique<interface::api::server>(context, *m_loop, *m_stack);
+        m_pga_server = std::make_unique<pga::api::server>(context, *m_loop, *m_driver, *m_stack);
     }
 
     void start()
@@ -48,6 +50,7 @@ struct service {
     std::unique_ptr<port::api::server> m_port_server;
     std::unique_ptr<stack::api::server> m_stack_server;
     std::unique_ptr<interface::api::server> m_if_server;
+    std::unique_ptr<pga::api::server> m_pga_server;
     std::thread m_worker;
 };
 

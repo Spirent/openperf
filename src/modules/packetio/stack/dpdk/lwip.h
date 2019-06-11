@@ -56,6 +56,12 @@ public:
     tl::expected<std::string, std::string> create_interface(const interface::config_data& config);
     void delete_interface(std::string_view id);
 
+    tl::expected<void, int> attach_interface_sink(std::string_view id, pga::generic_sink& sink);
+    void detach_interface_sink(std::string_view id, pga::generic_sink& sink);
+
+    tl::expected<void, int> attach_interface_source(std::string_view id, pga::generic_source& source);
+    void detach_interface_source(std::string_view id, pga::generic_source& source);
+
     std::unordered_map<std::string, stack::stats_data> stats() const;
 
 private:
