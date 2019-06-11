@@ -49,7 +49,7 @@ public:
 
     driver::tx_burst tx_burst_function(int port) const;
 
-    tl::expected<std::string, std::string> create_port(const port::config_data& config);
+    tl::expected<std::string, std::string> create_port(std::string_view id, const port::config_data& config);
     tl::expected<void, std::string> delete_port(std::string_view id);
 
     tl::expected<void, int> attach_port_sink(std::string_view id, pga::generic_sink& sink);

@@ -40,9 +40,9 @@ public:
         return m_self->tx_burst_function(port);
     }
 
-    tl::expected<std::string, std::string> create_port(const port::config_data& config)
+    tl::expected<std::string, std::string> create_port(std::string_view id, const port::config_data& config)
     {
-        return m_self->create_port(config);
+        return m_self->create_port(id, config);
     }
 
     tl::expected<void, std::string> delete_port(std::string_view id)
@@ -86,7 +86,7 @@ private:
         virtual std::vector<std::string> port_ids() const = 0;
         virtual std::optional<port::generic_port> port(std::string_view id) const = 0;
         virtual tx_burst tx_burst_function(int port) const = 0;
-        virtual tl::expected<std::string, std::string> create_port(const port::config_data& config) = 0;
+        virtual tl::expected<std::string, std::string> create_port(std::string_view id, const port::config_data& config) = 0;
         virtual tl::expected<void, std::string> delete_port(std::string_view id) = 0;
         virtual tl::expected<void, int> attach_port_sink(std::string_view id, pga::generic_sink& sink) = 0;
         virtual void detach_port_sink(std::string_view id, pga::generic_sink& sink) = 0;
@@ -117,9 +117,9 @@ private:
             return m_driver.tx_burst_function(port);
         }
 
-        tl::expected<std::string, std::string> create_port(const port::config_data& config) override
+        tl::expected<std::string, std::string> create_port(std::string_view id, const port::config_data& config) override
         {
-            return m_driver.create_port(config);
+            return m_driver.create_port(id, config);
         }
 
         tl::expected<void, std::string> delete_port(std::string_view id) override

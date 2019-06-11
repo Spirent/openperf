@@ -71,7 +71,7 @@ std::string to_string(const lag_mode&);
 
 struct bond_config {
     lag_mode mode;
-    std::vector<int> ports;
+    std::vector<std::string> ports;
 };
 
 typedef std::variant<std::monostate,

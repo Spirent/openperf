@@ -5,6 +5,7 @@
 #include "zmq.h"
 
 #include "core/icp_core.h"
+#include "core/icp_uuid.h"
 #include "swagger/v1/model/Port.h"
 #include "packetio/json_transmogrify.h"
 #include "packetio/port_api.h"
@@ -80,7 +81,10 @@ static void _handle_create_port_request(generic_driver& driver, json& request, j
 {
     try {
         auto port_model = json::parse(request["data"].get<std::string>()).get<Port>();
-        auto result = driver.create_port(make_config_data(port_model));
+        auto result = driver.create_port(port_model.getId() == empty_id_string ?
+                                         core::to_string(core::uuid::random()) :
+                                         port_model.getId(),
+                                         make_config_data(port_model));
         if (!result) {
             throw std::runtime_error(result.error().c_str());
         }
@@ -165,9 +169,9 @@ static int _handle_rpc_request(const icp_event_data *data, void *arg)
         case request_type::GET_PORT:
         case request_type::UPDATE_PORT:
         case request_type::DELETE_PORT:
-            ICP_LOG(ICP_LOG_TRACE, "Received %s request for port %d\n",
+            ICP_LOG(ICP_LOG_TRACE, "Received %s request for port %s\n",
                     to_string(type).c_str(),
-                    request["id"].get<int>());
+                    request["id"].get<std::string>().c_str());
             break;
         default:
             ICP_LOG(ICP_LOG_TRACE, "Received %s request\n", to_string(type).c_str());

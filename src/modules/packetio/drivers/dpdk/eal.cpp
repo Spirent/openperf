@@ -706,7 +706,6 @@ std::optional<port::generic_port> eal::port(std::string_view id) const
 {
     auto port_id = get_port_index_by_id(id);
     if (!port_id) {
-        std::cerr << port_id.error();
         return (std::nullopt);
     }
 
@@ -732,7 +731,7 @@ driver::tx_burst eal::tx_burst_function(int port) const
                                                   eal_tx_burst_function)));
 }
 
-tl::expected<std::string, std::string> eal::create_port(const port::config_data& config)
+tl::expected<std::string, std::string> eal::create_port(std::string_view id, const port::config_data& config)
 {
     static int idx = 0;
 
@@ -741,11 +740,17 @@ tl::expected<std::string, std::string> eal::create_port(const port::config_data&
         return tl::make_unexpected("Missing bond configuration data");
     }
 
+    std::vector<int> port_indexes;
     /* Make sure that all ports in the vector actually exist */
-    for (auto id : std::get<port::bond_config>(config).ports) {
-        if (!rte_eth_dev_is_valid_port(id)) {
-            return tl::make_unexpected("Port id " + std::to_string(id) + " is invalid");
+    for (auto port_id : std::get<port::bond_config>(config).ports) {
+        auto port_index = get_port_index_by_id(port_id);
+        if (!port_index){
+            return tl::make_unexpected(port_index.error());
         }
+        if (!rte_eth_dev_is_valid_port(port_index.value())) {
+            return tl::make_unexpected("Port id " + std::string(id) + " is invalid");
+        }
+        port_indexes.push_back(port_index.value());
     }
 
     /* Well all right.  Let's create a port, shall we? */
@@ -761,38 +766,37 @@ tl::expected<std::string, std::string> eal::create_port(const port::config_data&
     int id_or_error = rte_eth_bond_create(name.c_str(),
                                           BONDING_MODE_8023AD,
                                           topology::get_most_common_numa_node(
-                                              std::get<port::bond_config>(config).ports));
+                                              port_indexes));
     if (id_or_error < 0) {
         return tl::make_unexpected("Failed to create bond port: "
                                    + std::string(rte_strerror(std::abs(id_or_error))));
     }
 
     std::vector<int> success_record;
-    for(auto id : std::get<port::bond_config>(config).ports) {
-        int error = rte_eth_bond_slave_add(id_or_error, id);
+    for (auto port_idx: port_indexes) {
+        int error = rte_eth_bond_slave_add(id_or_error, port_idx);
         if (error) {
             for (auto added_id : success_record) {
                 rte_eth_bond_slave_remove(id_or_error, added_id);
             }
             rte_eth_bond_free(name.c_str());
-            return tl::make_unexpected("Failed to add slave port " + std::to_string(id)
+            return tl::make_unexpected("Failed to add slave port " + std::to_string(port_idx)
                                        + "to bond port " + std::to_string(id_or_error)
                                        + ": " + std::string(rte_strerror(std::abs(error))));
         }
-        success_record.push_back(id);
+        success_record.push_back(port_idx);
     }
 
     m_bond_ports[id_or_error] = name;
-    return (std::to_string(id_or_error));
+    m_port_index_id[id_or_error] = id;
+    return (std::string(id));
 }
 
 tl::expected<void, std::string> eal::delete_port(std::string_view id)
 {
     auto port_index = get_port_index_by_id(id);
     if (!port_index) {
-        return tl::make_unexpected("Could not delete port "
-                                   + std::string(id) + " :"
-                                   + port_index.error());
+        return {};
     }
 
     int port_idx = port_index.value();

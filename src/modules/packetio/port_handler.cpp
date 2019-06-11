@@ -209,7 +209,7 @@ void handler::delete_port(const Rest::Request &request, Http::ResponseWriter res
 
     json api_request = {
         { "type", request_type::DELETE_PORT },
-        { "id", request.param(":id").as<int>() }
+        { "id", request.param(":id").as<std::string>() }
     };
 
     /* We don't care about any reply, here */

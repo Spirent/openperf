@@ -139,7 +139,7 @@ static bond_config from_swagger(std::shared_ptr<PortConfig_bond> config)
                       : lag_mode::LAG_UNKNOWN);
 
     for (auto& id : config->getPorts()) {
-        to_return.ports.push_back(std::strtol(id.c_str(), nullptr, 10));
+        to_return.ports.push_back(id);
     }
 
     return (to_return);
@@ -214,8 +214,8 @@ static std::shared_ptr<PortConfig_bond> make_swagger_port_config_bond(const gene
     auto config = std::get<bond_config>(port.config());
 
     config_bond->setMode(to_string(config.mode));
-    std::transform(begin(config.ports), end(config.ports), std::back_inserter(config_bond->getPorts()),
-                   [](int id) { return std::to_string(id); });
+
+    config_bond->getPorts().insert(config_bond->getPorts().end(), config.ports.begin(), config.ports.end());
 
     return (config_bond);
 }
