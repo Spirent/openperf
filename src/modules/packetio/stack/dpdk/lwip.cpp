@@ -11,6 +11,8 @@ namespace icp {
 namespace packetio {
 namespace dpdk {
 
+#define STRING_VIEW_TO_C_STR(sv) static_cast<int>(sv.length()), sv.data()
+
 static void tcpip_init_done(void *arg __attribute__((unused)))
 {
     ICP_LOG(ICP_LOG_DEBUG, "TCP/IP thread running on logical core %u (NUMA node %u)\n",
@@ -80,10 +82,70 @@ tl::expected<std::string, std::string> lwip::create_interface(const interface::c
 
 void lwip::delete_interface(std::string_view id)
 {
-    if (m_interfaces.find(id) != m_interfaces.end()) {
-        auto& ifp = m_interfaces.at(std::string(id));
+    if (auto item = m_interfaces.find(id); item != m_interfaces.end()) {
+        auto& ifp = item->second;
         m_driver.del_interface(ifp->port_id(), std::make_any<netif*>(ifp->data()));
         m_interfaces.erase(std::string(id));
+    }
+}
+
+tl::expected<void, int> lwip::attach_interface_sink(std::string_view id,
+                                                    pga::generic_sink& sink)
+{
+    auto item = m_interfaces.find(id);
+    if (item == m_interfaces.end()) {
+        return (tl::make_unexpected(ENODEV));
+    }
+
+    auto& ifp = item->second;
+    if (auto error = ifp->attach_sink(sink)) {
+        return (tl::make_unexpected(error));
+    }
+
+    ICP_LOG(ICP_LOG_DEBUG, "Attached sink %s to interface %.*s\n",
+            sink.id().c_str(), STRING_VIEW_TO_C_STR(id));
+
+    return {};
+}
+
+void lwip::detach_interface_sink(std::string_view id, pga::generic_sink& sink)
+{
+    if (auto item = m_interfaces.find(id); item != m_interfaces.end()) {
+        auto& ifp = item->second;
+        ifp->detach_sink(sink);
+
+        ICP_LOG(ICP_LOG_DEBUG, "Detached sink %s from interface %.*s\n",
+                sink.id().c_str(), STRING_VIEW_TO_C_STR(id));
+    }
+}
+
+tl::expected<void, int> lwip::attach_interface_source(std::string_view id,
+                                                      pga::generic_source& source)
+{
+    auto item = m_interfaces.find(id);
+    if (item == m_interfaces.end()) {
+        return (tl::make_unexpected(ENODEV));
+    }
+
+    auto& ifp = item->second;
+    if (auto error = ifp->attach_source(source)) {
+        return (tl::make_unexpected(error));
+    }
+
+    ICP_LOG(ICP_LOG_DEBUG, "Attached source %s to interface %.*s\n",
+            source.id().c_str(), STRING_VIEW_TO_C_STR(id));
+
+    return {};
+}
+
+void lwip::detach_interface_source(std::string_view id, pga::generic_source& source)
+{
+    if (auto item = m_interfaces.find(id); item != m_interfaces.end()) {
+        auto& ifp = item->second;
+        ifp->detach_source(source);
+
+        ICP_LOG(ICP_LOG_DEBUG, "Detached source %s from interface %.*s\n",
+                source.id().c_str(), STRING_VIEW_TO_C_STR(id));
     }
 }
 

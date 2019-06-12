@@ -100,21 +100,17 @@ bool vif_map<Interface>::remove(uint16_t id, const net::mac_address& mac, Interf
 }
 
 template <typename Interface>
-std::optional<Interface*> vif_map<Interface>::find(uint16_t id, const net::mac_address& mac) const
+Interface* vif_map<Interface>::find(uint16_t id, const net::mac_address& mac) const
 {
-    auto item = icp_hashtab_find(m_interfaces.get(), to_key(id, mac));
-    return (item == nullptr
-            ? std::nullopt
-            : std::make_optional(reinterpret_cast<Interface*>(item)));
+    return (reinterpret_cast<Interface*>(icp_hashtab_find(m_interfaces.get(),
+                                                          to_key(id, mac))));
 }
 
 template <typename Interface>
-std::optional<Interface*> vif_map<Interface>::find(uint16_t id, const uint8_t octets[6]) const
+Interface* vif_map<Interface>::find(uint16_t id, const uint8_t octets[6]) const
 {
-    auto item = icp_hashtab_find(m_interfaces.get(), to_key(id, octets));
-    return (item == nullptr
-            ? std::nullopt
-            : std::make_optional(reinterpret_cast<Interface*>(item)));
+    return (reinterpret_cast<Interface*>(icp_hashtab_find(m_interfaces.get(),
+                                                          to_key(id, octets))));
 }
 
 template <typename Interface>

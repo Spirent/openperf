@@ -12,11 +12,23 @@
 #include "packetio/interface_server.h"
 #include "packetio/port_server.h"
 #include "packetio/stack_server.h"
+#include "packetio/pga/pga_server.h"
 
 namespace icp {
 namespace packetio {
 
-static int module_version = 1;
+static constexpr int module_version = 1;
+
+static int handle_zmq_shutdown(const icp_event_data *data,
+                               void *arg __attribute__((unused)))
+{
+    if (zmq_recv(data->socket, nullptr, 0, ZMQ_DONTWAIT) == -1
+        && errno == ETERM) {
+        icp_event_loop_exit(data->loop);
+    }
+
+    return (0);
+}
 
 struct service {
     ~service() {
@@ -32,12 +44,22 @@ struct service {
         m_port_server = std::make_unique<port::api::server>(context, *m_loop, *m_driver);
         m_stack_server = std::make_unique<stack::api::server>(context, *m_loop, *m_stack);
         m_if_server = std::make_unique<interface::api::server>(context, *m_loop, *m_stack);
+        m_pga_server = std::make_unique<pga::api::server>(context, *m_loop, *m_driver, *m_stack);
+
+        m_shutdown.reset(icp_socket_get_server(context, ZMQ_REQ,
+                                               "inproc://packetio_shutdown_canary"));
     }
 
     void start()
     {
         m_worker = std::thread([this]() {
                                    icp_thread_setname("icp_packetio");
+
+                                   struct icp_event_callbacks callbacks = {
+                                       .on_read = handle_zmq_shutdown
+                                   };
+                                   m_loop->add(m_shutdown.get(), &callbacks, nullptr);
+
                                    m_loop->run();
                                });
     }
@@ -48,6 +70,8 @@ struct service {
     std::unique_ptr<port::api::server> m_port_server;
     std::unique_ptr<stack::api::server> m_stack_server;
     std::unique_ptr<interface::api::server> m_if_server;
+    std::unique_ptr<pga::api::server> m_pga_server;
+    std::unique_ptr<void, icp_socket_deleter> m_shutdown;
     std::thread m_worker;
 };
 

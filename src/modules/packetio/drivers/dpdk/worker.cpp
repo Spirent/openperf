@@ -183,8 +183,7 @@ static uint16_t rx_burst(const switch_t& vif, const rx_queue* rxq)
     /* Lookup interfaces for unicast packets ... */
     for (size_t i = 0; i < nb_ucast; i++) {
         auto eth = rte_pktmbuf_mtod(unicast[i], struct ether_hdr *);
-        auto ifp = vif->find(rxq->port_id(), eth->d_addr.addr_bytes);
-        interfaces[i] = ifp ? *ifp : nullptr;
+        interfaces[i] = vif->find(rxq->port_id(), eth->d_addr.addr_bytes);
     }
 
     /* ... and dispatch */
