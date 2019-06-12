@@ -20,7 +20,7 @@ public:
                   const interface::config_data& config);
 
     std::string id() const;
-    int port_id() const;
+    std::string port_id() const;
     std::string mac_address() const;
     std::string ipv4_address() const;
     interface::stats_data stats() const;

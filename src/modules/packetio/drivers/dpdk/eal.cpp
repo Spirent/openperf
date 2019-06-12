@@ -704,7 +704,7 @@ std::vector<std::string> eal::port_ids() const
 
 std::optional<port::generic_port> eal::port(std::string_view id) const
 {
-    auto port_id = get_port_index_by_id(id);
+    auto port_id = get_port_index(id);
     if (!port_id) {
         return (std::nullopt);
     }
@@ -717,13 +717,19 @@ std::optional<port::generic_port> eal::port(std::string_view id) const
             : std::nullopt);
 }
 
-driver::tx_burst eal::tx_burst_function(int port) const
+driver::tx_burst eal::tx_burst_function(std::string_view port) const
 {
+    auto port_index = get_port_index(port);
+    if (!port_index) {
+        throw std::runtime_error("Port " + std::string(port) + " is not a valid port: "
+                                 + port_index.error());
+    }
+
     /*
      * The reinterpret cast is necessary due to using a (void*) for the
      * buffer parameter in the generic type signature.
      */
-    auto info = model::port_info(port);
+    auto info = model::port_info(port_index.value());
     return (reinterpret_cast<driver::tx_burst>(eal_workers() == 1
                                                ? eal_tx_dummy_function
                                                : ((std::strcmp(info.driver_name(), "net_ring") == 0) ?
@@ -743,7 +749,7 @@ tl::expected<std::string, std::string> eal::create_port(std::string_view id, con
     std::vector<int> port_indexes;
     /* Make sure that all ports in the vector actually exist */
     for (auto port_id : std::get<port::bond_config>(config).ports) {
-        auto port_index = get_port_index_by_id(port_id);
+        auto port_index = get_port_index(port_id);
         if (!port_index){
             return tl::make_unexpected(port_index.error());
         }
@@ -794,7 +800,7 @@ tl::expected<std::string, std::string> eal::create_port(std::string_view id, con
 
 tl::expected<void, std::string> eal::delete_port(std::string_view id)
 {
-    auto port_index = get_port_index_by_id(id);
+    auto port_index = get_port_index(id);
     if (!port_index) {
         return {};
     }
@@ -859,47 +865,58 @@ void eal::detach_port_source(std::string_view id, pga::generic_source& source)
     (void)source;
 }
 
-void eal::add_interface(int id, std::any interface)
+void eal::add_interface(std::string_view id, std::any interface)
 {
-    if (!rte_eth_dev_is_valid_port(id)) {
-        throw std::runtime_error("Port id " + std::to_string(id) + " is invalid");
+    auto port_index = get_port_index(id);
+    if (!port_index) { throw std::runtime_error("Port id " + std::string(id) + " is invalid"); }
+
+    int port_idx = port_index.value();
+    if (!rte_eth_dev_is_valid_port(port_idx))
+    {
+        throw std::runtime_error("Port id " + std::to_string(port_idx) + " is invalid");
     }
 
     /* We really only expect one type here */
     auto ifp = std::any_cast<netif*>(interface);
     auto mac = net::mac_address(ifp->hwaddr);
 
-    model::physical_port(id, m_port_index_id.at(id)).add_mac_address(mac);
-    m_switch->insert(id, mac, ifp);
+    model::physical_port(port_idx, m_port_index_id.at(port_idx)).add_mac_address(mac);
+    m_switch->insert(port_idx, mac, ifp);
 
-    if (!m_switch->find(id, ifp->hwaddr)) {
+    if (!m_switch->find(port_idx, ifp->hwaddr)) {
         throw std::runtime_error("Could not find interface mac in switch");
     }
 
-    ICP_LOG(ICP_LOG_DEBUG, "Added interface with mac = %s to port %d\n",
-            net::to_string(net::mac_address(ifp->hwaddr)).c_str(), id);
+    ICP_LOG(ICP_LOG_DEBUG, "Added interface with mac = %s to port %s(%d)\n",
+            net::to_string(net::mac_address(ifp->hwaddr)).c_str(), id.data(), port_idx);
 }
 
-void eal::del_interface(int id, std::any interface)
+void eal::del_interface(std::string_view id, std::any interface)
 {
-    if (!rte_eth_dev_is_valid_port(id)) {
-        throw std::runtime_error("Port id " + std::to_string(id) + " is invalid");
+    auto port_index = get_port_index(id);
+    if (!port_index) {
+        throw std::runtime_error("Port id " + std::string(id) + " is invalid");
+    }
+
+    int port_idx = port_index.value();
+    if (!rte_eth_dev_is_valid_port(port_idx)) {
+        throw std::runtime_error("Port index " + std::to_string(port_idx) + " is invalid");
     }
 
     /* We really only expect one type here */
     auto ifp = std::any_cast<netif*>(interface);
     auto mac = net::mac_address(ifp->hwaddr);
 
-    model::physical_port(id, m_port_index_id.at(id)).del_mac_address(mac);
-    m_switch->remove(id, mac, ifp);
+    model::physical_port(port_idx, m_port_index_id.at(port_idx)).del_mac_address(mac);
+    m_switch->remove(port_idx, mac, ifp);
 
-    ICP_LOG(ICP_LOG_DEBUG, "Deleted interface with mac = %s from port %d\n",
-            net::to_string(net::mac_address(ifp->hwaddr)).c_str(), id);
+    ICP_LOG(ICP_LOG_DEBUG, "Deleted interface with mac = %s from port %s(%d)\n",
+            net::to_string(net::mac_address(ifp->hwaddr)).c_str(), id.data(), port_idx);
 }
 
 /* Method to look up a DPDK port index by REST API id. */
 tl::expected<int, std::string>
-eal::get_port_index_by_id(std::string_view id) const
+eal::get_port_index(std::string_view id) const
 {
     auto it =
       std::find_if(m_port_index_id.begin(), m_port_index_id.end(),

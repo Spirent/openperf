@@ -18,7 +18,7 @@ std::string netif_wrapper::id() const
     return (m_id);
 }
 
-int netif_wrapper::port_id() const
+std::string netif_wrapper::port_id() const
 {
     return (m_config.port_id);
 }

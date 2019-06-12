@@ -67,7 +67,7 @@ static void _handle_list_interfaces_request(generic_stack& stack, json &request,
     for (auto id : stack.interface_ids()) {
         auto intf = stack.interface(id);
         if ((!port_id && !mac_addr && !ipv4_addr)
-            || (port_id && port_id == std::to_string(intf->port_id()))
+            || (port_id && port_id == intf->port_id())
             || (mac_addr && mac_addr == intf->mac_address())
             || (ipv4_addr && ipv4_addr == intf->ipv4_address())) {
             jints.emplace_back(make_swagger_interface(*intf)->toJson());

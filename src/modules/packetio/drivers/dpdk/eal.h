@@ -47,7 +47,7 @@ public:
     std::vector<std::string> port_ids() const;
     std::optional<port::generic_port> port(std::string_view id) const;
 
-    driver::tx_burst tx_burst_function(int port) const;
+    driver::tx_burst tx_burst_function(std::string_view port) const;
 
     tl::expected<std::string, std::string> create_port(std::string_view id, const port::config_data& config);
     tl::expected<void, std::string> delete_port(std::string_view id);
@@ -58,8 +58,10 @@ public:
     tl::expected<void, int> attach_port_source(std::string_view id, pga::generic_source& source);
     void detach_port_source(std::string_view id, pga::generic_source& source);
 
-    void add_interface(int id, std::any interface);
-    void del_interface(int id, std::any interface);
+    void add_interface(std::string_view id, std::any interface);
+    void del_interface(std::string_view id, std::any interface);
+
+    tl::expected<int, std::string> get_port_index(std::string_view id) const;
 
 private:
     bool m_initialized;
@@ -72,7 +74,6 @@ private:
     typedef std::unique_ptr<port_queues> port_queues_ptr;
     std::vector<port_queues_ptr> m_port_queues;
     std::map<int, std::string> m_port_index_id;
-    tl::expected<int, std::string> get_port_index_by_id(std::string_view id) const;
 };
 
 }

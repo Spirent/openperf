@@ -401,7 +401,7 @@ with description('Interfaces,') as self:
             self.api = client.api.InterfacesApi(service.client())
 
         with it('verify interface created'):
-            intfs = self.api.list_interfaces(port_id=0)
+            intfs = self.api.list_interfaces(port_id="port0")
             expect(intfs).not_to(be_empty)
 
         with after.all:
