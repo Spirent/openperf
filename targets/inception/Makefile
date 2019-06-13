@@ -1,5 +1,5 @@
 #
-# Makefile to build stack
+# Makefile to build inception
 #
 
 ICP_ROOT := $(realpath ../../)
@@ -8,44 +8,35 @@ include $(ICP_ROOT)/mk/bootstrap.mk
 
 BUILD_DIR := $(ICP_BUILD_ROOT)/obj
 TARGET_DIR := $(ICP_BUILD_ROOT)/bin
+TARGET_BIN := $(TARGET_DIR)/inception
 
-SOURCES := \
-	main.c
+all: $(ICP_TARGET)
 
-OBJECTS := $(patsubst %, $(BUILD_DIR)/%, \
-	$(patsubst %.c, %.o, $(filter %.c, $(SOURCES))))
-SRC_DEPENDS := $(OBJECTS:.o=.d)
+SOURCES := main.c
+OBJECTS := $(call icp_generate_objects,$(SOURCES),$(BUILD_DIR))
 
-BLD_DEPENDS := api config_file framework packetio
-ICP_PACKETIO_DRIVER := dpdk
-
-all: inception
+BUILD_DEPS := api config_file framework packetio
+ICP_PACKETIO_DRIVER ?= dpdk
 
 # Pull in dependencies
--include $(SRC_DEPENDS)
-$(foreach DEP,$(BLD_DEPENDS),$(eval include $(ICP_ROOT)/mk/$(DEP).mk))
-
-$(OBJECTS): | $(BLD_DEPENDS)
+-include $(OBJECTS:.o=.d)
+$(call icp_include_dependencies,$(BUILD_DEPS))
 
 ICP_CONFIG_OPTS += --enable-static=yes --enable-shared=no
-ICP_CPPFLAGS += $(addprefix -I,$(ICP_INC_DIRS))
-ICP_LDFLAGS += $(addprefix -L,$(ICP_LIB_DIRS))
+ICP_CPPFLAGS += $(addprefix -I,$(sort $(ICP_INC_DIRS)))
+ICP_LDFLAGS += $(addprefix -L,$(sort $(ICP_LIB_DIRS)))
 ICP_LDOPTS += -static-libstdc++ -static-libgcc
 
-# Build rule
-$(BUILD_DIR)/%.o: %.c
-	@mkdir -p $(dir $@)
-	$(strip $(ICP_CC) -o $@ -c $(ICP_CPPFLAGS) $(ICP_CFLAGS) $(ICP_COPTS) $(ICP_DEFINES) $<)
+# Build rules
+$(eval $(call icp_generate_build_rules,$(SOURCES),,BUILD_DIR,BUILD_DEPS))
 
-$(TARGET_DIR)/inception: $(OBJECTS) $(BLD_DEPENDS)
-	@mkdir -p $(dir $@)
-	$(strip $(ICP_CXX) -o $@ $(ICP_LDOPTS) $(ICP_LDFLAGS) $(OBJECTS) $(ICP_LDLIBS))
+$(TARGET_BIN): $(OBJECTS) $(BUILD_DEPS)
+	$(call icp_link_binary,$@,$(OBJECTS))
 	-sudo -n /sbin/setcap CAP_IPC_LOCK,CAP_NET_RAW,CAP_SYS_ADMIN,CAP_DAC_OVERRIDE,CAP_SYS_PTRACE=epi $@
 
-.PHONY: inception
-inception: $(TARGET_DIR)/inception
+.PHONY: $(ICP_TARGET)
+$(ICP_TARGET): $(TARGET_BIN)
 
-.PHONY: clean_inception
-clean_inception:
-	@$(strip rm -f $(TARGET_DIR)/inception $(OBJECTS:%.o=%.[doP]))
-clean: clean_inception
+.PHONY: clean
+clean:
+	@rm -rf $(ICP_BUILD_ROOT)

@@ -1,7 +1,7 @@
 #
 # Makefile component to specify PacketIO code
 #
-PIO_DEPENDS += swagger_model expected
+PIO_DEPENDS += swagger_model expected versions
 
 PIO_SOURCES += \
 	init.cpp \

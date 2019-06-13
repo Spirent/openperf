@@ -8,48 +8,35 @@ include $(ICP_ROOT)/mk/bootstrap.mk
 
 BUILD_DIR := $(ICP_BUILD_ROOT)/obj
 TARGET_DIR := $(ICP_BUILD_ROOT)/lib
+TARGET_LIB := $(TARGET_DIR)/$(ICP_TARGET).so
 
 SOURCES := \
 	icp-shim.cpp \
 	libc_wrapper.cpp
 
-OBJECTS := $(patsubst %, $(BUILD_DIR)/%, \
-        $(patsubst %.cpp, %.o, $(filter %.cpp, $(SOURCES))))
-SRC_DEPENDS := $(OBJECTS:.o=.d)
+OBJECTS := $(call icp_generate_objects,$(SOURCES),$(BUILD_DIR))
+BUILD_DEPS := socket_client
 
-BLD_DEPENDS := socket_client
-
-TARGET := $(TARGET_DIR)/$(ICP_TARGET).so
-
-all: $(TARGET)
+all: $(TARGET_LIB)
 
 # Pull in dependencies
--include $(SRC_DEPENDS)
-$(foreach DEP,$(BLD_DEPENDS),$(eval include $(ICP_ROOT)/mk/$(DEP).mk))
+-include $(OBJECTS:.o=.d)
+$(call icp_include_dependencies,$(BUILD_DEPS))
 
-$(OBJECTS): | $(BLD_DEPENDS)
-
-ICP_CPPFLAGS += -fPIC $(addprefix -I,$(ICP_INC_DIRS))
-ICP_LDFLAGS += $(addprefix -L,$(ICP_LIB_DIRS))
+ICP_CPPFLAGS += -fPIC $(addprefix -I,$(sort $(ICP_INC_DIRS)))
+ICP_LDFLAGS += $(addprefix -L,$(sort $(ICP_LIB_DIRS)))
 ICP_LDOPTS += -static-libstdc++ -static-libgcc -shared
 ICP_LDLIBS += -ldl
 
 # Build rules
-$(BUILD_DIR)/%.o: %.cpp
-	@mkdir -p $(dir $@)
-	$(strip $(ICP_CXX) -o $@ -c $(ICP_CPPFLAGS) $(ICP_CXXFLAGS) $(ICP_COPTS) $(ICP_DEFINES) $<)
+$(eval $(call icp_generate_build_rules,$(SOURCES),,BUILD_DIR,BUILD_DEPS))
 
-$(TARGET): $(OBJECTS) $(BLD_DEPENDS)
-	@mkdir -p $(dir $@)
-	$(strip $(ICP_CXX) -o $@ $(ICP_LDOPTS) $(ICP_LDFLAGS) $(OBJECTS) $(ICP_LDLIBS))
+$(TARGET_LIB): $(OBJECTS) $(BUILD_DEPS)
+	$(call icp_link_library,$@,$(OBJECTS))
 
 .PHONY: $(ICP_TARGET)
-$(ICP_TARGET): $(TARGET)
+$(ICP_TARGET): $(TARGET_LIB)
 
-.PHONY: clean_$(ICP_TARGET)
-clean_$(ICP_TARGET):
-	@$(strip rm -rf $(TARGET_DIR) $(BUILD_DIR))
-clean: clean_$(ICP_TARGET)
-
+.PHONY: clean
 clean:
-	@$(strip rm -rf $(ICP_BUILD_ROOT))
+	@rm -rf $(ICP_BUILD_ROOT)

@@ -13,51 +13,32 @@ CFGFILETEST_INC_DIR := $(ICP_ROOT)/src/framework/config
 CFGFILETEST_LIB_DIR := $(ICP_BUILD_ROOT)/lib
 
 CFGFILETEST_SOURCES :=
-CFGFILETEST_OBJECTS :=
 CFGFILETEST_DEPENDS :=
 CFGFILETEST_LDLIBS  :=
 
 include $(CFGFILETEST_SRC_DIR)/module.mk
 
-CFGFILETEST_OBJECTS += $(patsubst %, $(CFGFILETEST_OBJ_DIR)/%, \
-	$(patsubst %.c, %.o, $(filter %.c, $(CFGFILETEST_SOURCES))))
-
-CFGFILETEST_OBJECTS += $(patsubst %, $(CFGFILETEST_OBJ_DIR)/%, \
-	$(patsubst %.cpp, %.o, $(filter %.cpp, $(CFGFILETEST_SOURCES))))
+CFGFILETEST_OBJECTS := $(call icp_generate_objects,$(CFGFILETEST_SOURCES),$(CFGFILETEST_OBJ_DIR))
 
 CFGFILETEST_LIBRARY := icp_config_file_test
 CFGFILETEST_TARGET := $(CFGFILETEST_LIB_DIR)/lib$(CFGFILETEST_LIBRARY).a
-
--include $(CFGFILETEST_OBJECTS:.o=.d)
 
 ICP_INC_DIRS += $(CFGFILETEST_INC_DIR)
 ICP_LIB_DIRS += $(CFGFILETEST_LIB_DIR)
 ICP_LDLIBS += -Wl,--whole-archive -l$(CFGFILETEST_LIBRARY) -Wl,--no-whole-archive $(CFGFILETEST_LDLIBS)
 
-# Load external dependencies, too
-$(foreach DEP, $(CFGFILETEST_DEPENDS), $(eval include $(ICP_ROOT)/mk/$(DEP).mk))
+# Load external dependencies
+-include $(CFGFILETEST_OBJECTS:.o=.d)
+$(call icp_include_dependencies,$(CFGFILETEST_DEPENDS))
 
 ###
 # Build rules
 ###
-$(CFGFILETEST_OBJECTS): | $(CFGFILETEST_DEPENDS)
+$(eval $(call icp_generate_build_rules,$(CFGFILETEST_SOURCES),CFGFILETEST_SRC_DIR,CFGFILETEST_OBJ_DIR,CFGFILETEST_DEPENDS))
+$(eval $(call icp_generate_clean_rules,config_file_test,CFGFILETEST_TARGET,CFGFILETEST_OBJECTS))
 
-$(CFGFILETEST_OBJ_DIR)/%.o: $(CFGFILETEST_SRC_DIR)/%.c
-	@mkdir -p $(dir $@)
-	$(strip $(ICP_CC) -o $@ -c $(ICP_CPPFLAGS) $(ICP_CFLAGS) $(ICP_COPTS) $(ICP_DEFINES) $<)
-
-$(CFGFILETEST_OBJ_DIR)/%.o: $(CFGFILETEST_SRC_DIR)/%.cpp
-	@mkdir -p $(dir $@)
-	$(strip $(ICP_CXX) -o $@ -c $(ICP_CPPFLAGS) $(ICP_CXXFLAGS) $(ICP_COPTS) $(ICP_DEFINES) $<)
-
-$(CFGFILETEST_TARGET): $(CFGFILETEST_OBJECTS)
-	@mkdir -p $(dir $@)
-	$(strip $(ICP_AR) $(ICP_ARFLAGS) $@ $(CFGFILETEST_OBJECTS))
+$(CFGFILETEST_TARGET): $(CFGFILETEST_OBJECTS) $(CFGFILETEST_DEPENDS)
+	$(call icp_link_library,$@,$(CFGFILETEST_OBJECTS))
 
 .PHONY: config_file_test
 config_file_test: $(CFGFILETEST_TARGET)
-
-.PHONY: clean_config_file_test
-clean_config_file_test:
-	@rm -rf $(CFGFILETEST_OBJ_DIR) $(CFGFILETEST_TARGET)
-clean: clean_config_file_test

@@ -34,3 +34,6 @@ ICP_CONFIG_OPTS :=
 # Detect and update build environment flags
 $(call icp_check_vars,ICP_ROOT ICP_TARGET)
 include $(ICP_ROOT)/mk/build.mk
+
+# Load useful make templates
+include $(ICP_ROOT)/mk/templates.mk

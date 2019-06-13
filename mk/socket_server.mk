@@ -13,52 +13,31 @@ SOCKSRV_INC_DIR := $(ICP_ROOT)/src/modules
 SOCKSRV_LIB_DIR := $(ICP_BUILD_ROOT)/lib
 
 SOCKSRV_SOURCES :=
-SOCKSRV_OBJECTS :=
 SOCKSRV_DEPENDS :=
 SOCKSRV_LDLIBS  :=
 
 include $(SOCKSRV_SRC_DIR)/module.mk
 
-SOCKSRV_OBJECTS += $(patsubst %, $(SOCKSRV_OBJ_DIR)/%, \
-	$(patsubst %.c, %.o, $(filter %.c, $(SOCKSRV_SOURCES))))
-
-SOCKSRV_OBJECTS += $(patsubst %, $(SOCKSRV_OBJ_DIR)/%, \
-	$(patsubst %.cpp, %.o, $(filter %.cpp, $(SOCKSRV_SOURCES))))
-
-SOCKSRV_CPPFLAGS := -I$(ICP_ROOT)/deps/lwip/src/include
+SOCKSRV_OBJECTS := $(call icp_generate_objects,$(SOCKSRV_SOURCES),$(SOCKSRV_OBJ_DIR))
 
 SOCKSRV_LIBRARY := icpsocket_server
 SOCKSRV_TARGET := $(SOCKSRV_LIB_DIR)/lib$(SOCKSRV_LIBRARY).a
 
--include $(SOCKSRV_OBJECTS:.o=.d)
-
 ICP_INC_DIRS += $(SOCKSRV_INC_DIR)
 ICP_LDLIBS += -Wl,--whole-archive -l$(SOCKSRV_LIBRARY) -Wl,--no-whole-archive $(SOCKSRV_LDLIBS)
 
-# Load external dependencies, too
-$(foreach DEP, $(SOCKSRV_DEPENDS), $(eval include $(ICP_ROOT)/mk/$(DEP).mk))
+# Load external dependencies
+-include $(SOCKSRV_OBJECTS:.o=.d)
+$(call icp_include_dependencies,$(SOCKSRC_DEPENDS))
 
 ###
 # Build rules
 ###
-$(SOCKSRV_OBJECTS): | $(SOCKSRV_DEPENDS)
-
-$(SOCKSRV_OBJ_DIR)/%.o: $(SOCKSRV_SRC_DIR)/%.c
-	@mkdir -p $(dir $@)
-	$(strip $(ICP_CC) -o $@ -c $(ICP_CPPFLAGS) $(SOCKSRV_CPPFLAGS) $(ICP_CFLAGS) $(ICP_COPTS) $(ICP_DEFINES) $<)
-
-$(SOCKSRV_OBJ_DIR)/%.o: $(SOCKSRV_SRC_DIR)/%.cpp
-	@mkdir -p $(dir $@)
-	$(strip $(ICP_CXX) -o $@ -c $(ICP_CPPFLAGS) $(SOCKSRV_CPPFLAGS) $(ICP_CXXFLAGS) $(ICP_COPTS) $(ICP_DEFINES) $<)
+$(eval $(call icp_generate_build_rules,$(SOCKSRV_SOURCES),SOCKSRV_SRC_DIR,SOCKSRV_OBJ_DIR,SOCKSRV_DEPENDS))
+$(eval $(call icp_generate_clean_rules,socket_server,SOCKSRV_TARGET,SOCKSRV_OBJECTS))
 
 $(SOCKSRV_TARGET): $(SOCKSRV_OBJECTS)
-	@mkdir -p $(dir $@)
-	$(strip $(ICP_AR) $(ICP_ARFLAGS) $@ $(SOCKSRV_OBJECTS))
+	$(call icp_link_library,$@,$(SOCKSRV_OBJECTS))
 
 .PHONY: socket_server
 socket_server: $(SOCKSRV_TARGET)
-
-.PHONY: clean_socket_server
-clean_socket_server:
-	@rm -rf $(SOCKSRV_OBJ_DIR) $(SOCKSRV_TARGET)
-clean: clean_socket_server

@@ -18,10 +18,10 @@ ICP_INC_DIRS += $(YAML_INC_DIR)
 ICP_LIB_DIRS += $(YAML_LIB_DIR)
 ICP_LDLIBS += -lyamlcpp
 
-YAML_CPPFLAGS := $(addprefix -I,$(YAML_INC_DIR))
+YAML_FLAGS := $(addprefix -I,$(YAML_INC_DIR))
 # YAML-CPP shadows variables in a few places; just silence those warnings since we're not going
 # to fix them
-YAML_CXXFLAGS := -Wno-shadow $(ICP_CXXSTD)
+YAML_FLAGS += -Wno-shadow
 
 ###
 # Sources, objects, targets, and dependencies
@@ -58,8 +58,7 @@ YAML_SOURCES := \
 	src/stream.cpp \
 	src/tag.cpp
 
-YAML_OBJECTS := $(patsubst %, $(YAML_OBJ_DIR)/%, \
-	$(patsubst %.cpp, %.o, $(YAML_SOURCES)))
+YAML_OBJECTS := $(call icp_generate_objects,$(YAML_SOURCES),$(YAML_OBJ_DIR))
 
 # Pull in object dependencies, maybe
 -include $(YAML_OBJECTS:.o=.d)
@@ -69,18 +68,11 @@ YAML_TARGET := $(YAML_LIB_DIR)/libyamlcpp.a
 ###
 # Build rules
 ###
-$(YAML_OBJ_DIR)/%.o: $(YAML_SRC_DIR)/%.cpp
-	@mkdir -p $(dir $@)
-	$(strip $(ICP_CXX) -o $@ -c $(ICP_CPPFLAGS) $(YAML_CPPFLAGS) $(YAML_CXXFLAGS) $(ICP_COPTS) $<)
+$(eval $(call icp_generate_build_rules,$(YAML_SOURCES),YAML_SRC_DIR,YAML_OBJ_DIR,,YAML_FLAGS))
+$(eval $(call icp_generate_clean_rules,yaml_cpp,YAML_TARGET,YAML_OBJECTS))
 
 $(YAML_TARGET): $(YAML_OBJECTS)
-	@mkdir -p $(dir $@)
-	$(strip $(ICP_AR) $(ICP_ARFLAGS) $@ $(YAML_OBJECTS))
+	$(call icp_link_library,$@,$(YAML_OBJECTS))
 
 .PHONY: yaml_cpp
 yaml_cpp: $(YAML_TARGET)
-
-.PHONY: clean_yaml_cpp
-clean_yaml_cpp:
-	@rm -rf $(YAML_OBJ_DIR) $(YAML_BLD_DIR)
-clean: clean_yaml_cpp

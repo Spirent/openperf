@@ -18,10 +18,9 @@ ICP_INC_DIRS += $(HTTP_INC_DIR)
 ICP_LIB_DIRS += $(HTTP_LIB_DIR)
 ICP_LDLIBS += -lpistache
 
-HTTP_CPPFLAGS := $(addprefix -I,$(HTTP_INC_DIR))
 # Pistache code doesn't build without warnings; just silence them since we're
 # not going to fix them.
-HTTP_CXXFLAGS := -Wno-shadow -Wno-missing-field-initializers $(ICP_CXXSTD)
+HTTP_FLAGS := -Wno-shadow -Wno-missing-field-initializers
 
 ###
 # Sources, objects, targets, and dependencies
@@ -52,8 +51,7 @@ HTTP_SERVER_SOURCES := \
 	server/router.cc
 
 HTTP_SOURCES := $(addprefix src/,$(HTTP_COMMON_SOURCES) $(HTTP_CLIENT_SOURCES) $(HTTP_SERVER_SOURCES))
-HTTP_OBJECTS := $(patsubst %, $(HTTP_OBJ_DIR)/%, \
-	$(patsubst %.cc, %.o, $(HTTP_SOURCES)))
+HTTP_OBJECTS := $(call icp_generate_objects,$(HTTP_SOURCES),$(HTTP_OBJ_DIR))
 
 # Pull in object dependencies, maybe
 -include $(HTTP_OBJECTS:.o=.d)
@@ -63,18 +61,11 @@ HTTP_TARGET := $(HTTP_LIB_DIR)/libpistache.a
 ###
 # Build rules
 ###
-$(HTTP_OBJ_DIR)/%.o: $(HTTP_SRC_DIR)/%.cc
-	@mkdir -p $(dir $@)
-	$(strip $(ICP_CXX) -o $@ -c $(ICP_CPPFLAGS) $(HTTP_CPPFLAGS) $(HTTP_CXXFLAGS) $(ICP_COPTS) $<)
+$(eval $(call icp_generate_build_rules,$(HTTP_SOURCES),HTTP_SRC_DIR,HTTP_OBJ_DIR,,HTTP_FLAGS))
+$(eval $(call icp_generate_clean_rules,pistache,HTTP_TARGET,HTTP_OBJECTS))
 
 $(HTTP_TARGET): $(HTTP_OBJECTS)
-	@mkdir -p $(dir $@)
-	$(strip $(ICP_AR) $(ICP_ARFLAGS) $@ $(HTTP_OBJECTS))
+	$(call icp_link_library,$@,$(HTTP_OBJECTS))
 
 .PHONY: pistache
 pistache: $(HTTP_TARGET)
-
-.PHONY: clean_pistache
-clean_pistache:
-	@rm -rf $(HTTP_OBJ_DIR) $(HTTP_BLD_DIR)
-clean: clean_pistache
