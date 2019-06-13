@@ -72,7 +72,7 @@ tl::expected<std::string, std::string> lwip::create_interface(const interface::c
     try {
         auto port_index = m_driver.get_port_index(config.port_id);
         if (!port_index) {
-            return port_index.error();
+            return tl::make_unexpected(port_index.error());
         }
         int port_idx = port_index.value();
         auto ifp = std::make_unique<net_interface>(config.id, config, m_driver.tx_burst_function(config.port_id), port_idx);

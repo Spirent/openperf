@@ -21,6 +21,7 @@
 #include "packetio/generic_port.h"
 #include "core/icp_log.h"
 #include "core/icp_uuid.h"
+#include "config/icp_config_utils.h"
 
 namespace icp {
 namespace packetio {
@@ -575,7 +576,7 @@ eal::eal(void* context, std::vector<std::string> args,
                                  "At least 1 port is required.");
     }
 
-    // Sanity check all ports have names.
+    /* Sanity check all ports have names. */
     assert(port_info.size() == m_port_index_id.size());
 
     /* Use the port_info vector to allocate our default memory pools */
@@ -693,10 +694,10 @@ void eal::stop()
 
 std::vector<std::string> eal::port_ids() const
 {
-    uint16_t port_id = 0;
+    uint16_t port_idx = 0;
     std::vector<std::string> port_ids;
-    RTE_ETH_FOREACH_DEV(port_id) {
-        port_ids.emplace_back(m_port_index_id.at(port_id));
+    RTE_ETH_FOREACH_DEV(port_idx) {
+        port_ids.emplace_back(m_port_index_id.at(port_idx));
     }
 
     return (port_ids);
@@ -704,16 +705,16 @@ std::vector<std::string> eal::port_ids() const
 
 std::optional<port::generic_port> eal::port(std::string_view id) const
 {
-    auto port_id = get_port_index(id);
-    if (!port_id) {
+    auto port_index = get_port_index(id);
+    if (!port_index) {
         return (std::nullopt);
     }
 
-    return (rte_eth_dev_is_valid_port(port_id.value())
+    return (rte_eth_dev_is_valid_port(port_index.value())
             ? std::make_optional(port::generic_port(
                                      model::physical_port(
-                                      port_id.value(), std::string(id), m_allocator->rx_mempool(
-                                          rte_eth_dev_socket_id(port_id.value())))))
+                                      port_index.value(), std::string(id), m_allocator->rx_mempool(
+                                          rte_eth_dev_socket_id(port_index.value())))))
             : std::nullopt);
 }
 
@@ -749,8 +750,14 @@ tl::expected<std::string, std::string> eal::create_port(std::string_view id, con
     std::vector<int> port_indexes;
     /* Make sure that all ports in the vector actually exist */
     for (auto port_id : std::get<port::bond_config>(config).ports) {
+        // Verify port id is valid.
+        auto id_check = config::icp_config_validate_id_string(port_id);
+        if (!id_check) {
+            return tl::make_unexpected(id_check.error());
+        }
+
         auto port_index = get_port_index(port_id);
-        if (!port_index){
+        if (!port_index) {
             return tl::make_unexpected(port_index.error());
         }
         if (!rte_eth_dev_is_valid_port(port_index.value())) {
@@ -833,6 +840,7 @@ tl::expected<void, std::string> eal::delete_port(std::string_view id)
     }
     rte_eth_bond_free(m_bond_ports[port_idx].c_str());
     m_bond_ports.erase(port_idx);
+    m_port_index_id.erase(port_idx);
     return {};
 }
 
@@ -922,7 +930,10 @@ eal::get_port_index(std::string_view id) const
       std::find_if(m_port_index_id.begin(), m_port_index_id.end(),
                    [id](const std::pair<int, std::string>& val) {
                        return val.second == id; });
-    if (it != m_port_index_id.end()) { return (it->first); }
+
+    if (it != m_port_index_id.end()) {
+        return (it->first);
+    }
 
     return (tl::make_unexpected("Could not find a DPDK port associated with id: "
                                 + std::string(id)));

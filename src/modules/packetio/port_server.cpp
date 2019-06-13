@@ -6,6 +6,7 @@
 
 #include "core/icp_core.h"
 #include "core/icp_uuid.h"
+#include "config/icp_config_utils.h"
 #include "swagger/v1/model/Port.h"
 #include "packetio/json_transmogrify.h"
 #include "packetio/port_api.h"
@@ -81,6 +82,12 @@ static void _handle_create_port_request(generic_driver& driver, json& request, j
 {
     try {
         auto port_model = json::parse(request["data"].get<std::string>()).get<Port>();
+
+        auto id_check = config::icp_config_validate_id_string(port_model.getId());
+        if (!id_check) {
+            throw std::runtime_error(id_check.error().c_str());
+        }
+
         auto result = driver.create_port(port_model.getId() == empty_id_string ?
                                          core::to_string(core::uuid::random()) :
                                          port_model.getId(),
