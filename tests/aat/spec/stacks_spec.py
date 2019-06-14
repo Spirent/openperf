@@ -32,7 +32,7 @@ with description('Stacks,') as self:
     with description('get,'):
         with description('known existing stack,'):
             with it('succeeds'):
-                expect(self.api.get_stack('0')).to(be_valid_stack)
+                expect(self.api.get_stack('stack0')).to(be_valid_stack)
 
         with description('non-existent stack,'):
             with it('returns 404'):

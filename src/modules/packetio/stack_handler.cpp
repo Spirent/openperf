@@ -5,6 +5,7 @@
 #include "api/api_route_handler.h"
 #include "core/icp_core.h"
 #include "packetio/stack_api.h"
+#include "config/icp_config_utils.h"
 
 namespace icp {
 namespace packetio {
@@ -89,17 +90,27 @@ void handler::list_stacks(const Rest::Request& requst __attribute__((unused)),
     }
 }
 
+/**
+ * Our id might not be a valid string. This macro handles validating the id
+ * value using the framework. If the id is invalid this macro will send a reply
+ * using the supplied code and return. Unfortunately, we cannot make this a function
+ * because the response is an unmovable object.
+ */
+
+#define VALIDATE_ID(id_, response_, code_)                     \
+    do {                                                       \
+        auto res = config::icp_config_validate_id_string(id_); \
+        if (!res) {                                            \
+            response_.send(code_, res.error());                \
+            return;                                            \
+        }                                                      \
+    } while (0)
+
 void handler::get_stack(const Rest::Request& request,
                         Http::ResponseWriter response)
 {
-    /* We expect the id to be an int; so non-ints are an automatic 404 */
-    int id = -1;
-    try {
-        id = request.param(":id").as<int>();
-    } catch (const std::runtime_error&) {
-        response.send(Http::Code::Not_Found);
-        return;
-    }
+    auto id = request.param(":id").as<std::string>();
+    VALIDATE_ID(id, response, Http::Code::Not_Found);
 
     json api_request = {
         { "type", request_type::GET_STACK },
