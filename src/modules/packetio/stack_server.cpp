@@ -62,8 +62,8 @@ static void handle_list_stacks_request(generic_stack& stack,
 
 static void handle_get_stack_request(generic_stack& stack, json& request, json& reply)
 {
-    int id = request["id"].get<int>();
-    if (id == 0) {
+    auto id = request["id"].get<std::string>();
+    if (id == stack.id()) {
         reply["code"] = reply_code::OK;
         reply["data"] = make_swagger_stack(stack)->toJson().dump();
     } else {

@@ -68,7 +68,7 @@ public:
         : m_self(std::make_shared<stack_model<Stack>>(std::move(s)))
     {}
 
-    int id() const
+    std::string id() const
     {
         return m_self->id();
     }
@@ -121,7 +121,7 @@ public:
 private:
     struct stack_concept {
         virtual ~stack_concept() = default;
-        virtual int id() const = 0;
+        virtual std::string id() const = 0;
         virtual std::vector<std::string> interface_ids() const = 0;
         virtual std::optional<interface::generic_interface> interface(std::string_view id) const = 0;
         virtual tl::expected<std::string, std::string> create_interface(const interface::config_data& config) = 0;
@@ -139,7 +139,7 @@ private:
             : m_stack(std::move(s))
         {}
 
-        int id() const override
+        std::string id() const override
         {
             return m_stack.id();
         }
