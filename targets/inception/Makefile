@@ -3,12 +3,12 @@
 #
 
 ICP_ROOT := $(realpath ../../)
-ICP_TARGET := stack
+ICP_TARGET := inception
 include $(ICP_ROOT)/mk/bootstrap.mk
 
 BUILD_DIR := $(ICP_BUILD_ROOT)/obj
 TARGET_DIR := $(ICP_BUILD_ROOT)/bin
-TARGET_BIN := $(TARGET_DIR)/inception
+TARGET_BIN := $(TARGET_DIR)/$(ICP_TARGET)
 
 all: $(ICP_TARGET)
 
