@@ -6,7 +6,6 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
-#include <map>
 
 #include "packetio/generic_driver.h"
 #include "packetio/generic_port.h"
@@ -30,7 +29,7 @@ class eal
 {
 public:
     eal(void *context, std::vector<std::string> args,
-        std::map<int, std::string> id_map, int test_portpairs = 0);
+        std::unordered_map<int, std::string> id_map, int test_portpairs = 0);
     ~eal();
 
     /* environment is movable */
@@ -73,7 +72,7 @@ private:
     typedef rxtx_queue_container<rx_queue, tx_queue> port_queues;
     typedef std::unique_ptr<port_queues> port_queues_ptr;
     std::vector<port_queues_ptr> m_port_queues;
-    std::map<int, std::string> m_port_index_id;
+    std::unordered_map<int, std::string> m_port_index_id;
 };
 
 }

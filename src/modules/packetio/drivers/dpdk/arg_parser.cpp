@@ -70,18 +70,9 @@ static void add_no_pci_arg(std::vector<std::string>& args)
     args.push_back("--no-pci");
 }
 
-int arg_parser::init(const char *name)
-{
-    _args.clear();
-    _args.push_back(std::string(name));
-    m_test_mode = false;
-    m_test_portpairs = 0;
-    return (0);
-}
-
-static const std::string_view port_index_id_regex = "(port)([0-9]+)=([a-z0-9-]+)";
-static const size_t port_index_match = 2;
-static const size_t port_id_match = 3;
+static constexpr std::string_view port_index_id_regex = "(port)([0-9]+)=([a-z0-9-]+)";
+static constexpr size_t port_index_match = 2;
+static constexpr size_t port_id_match = 3;
 // Input "port0=port_zero" is parsed into the following submatches:
 // match 0: "port0=port_zero"
 // match 1: "port"
@@ -96,6 +87,65 @@ static const size_t port_id_match = 3;
     + " where id may only contain"                     \
     + " lower-case letters, numbers, and hyphens."     \
     << std::endl
+
+static int parse_dpdk_port_ids(const char *opt_arg, std::unordered_map<int, std::string>& port_index_id) {
+    // Pick out all the portX=name pairs.
+    std::string_view input(opt_arg);
+    std::string_view delimiters(" ,");
+    size_t beg = 0, pos = 0;
+    auto data_pair_regex = std::regex(port_index_id_regex.data(), std::regex::extended);
+    while ((beg = input.find_first_not_of(delimiters, pos)) != std::string::npos) {
+        pos = input.find_first_of(delimiters, beg + 1);
+
+        std::string_view index_id_pair(input.substr(beg, pos - beg));
+
+        std::cmatch index_id_pieces;
+        if (std::regex_match(index_id_pair.begin(), index_id_pair.end(),
+                             index_id_pieces, data_pair_regex)) {
+            // regex_match returns the whole match as item 0, and the
+            // sub matches as the remaining items.
+            if (index_id_pieces.size() != 4) {
+                PRINT_NAME_ERROR(index_id_pair);
+            }
+
+            int port_index = std::stoi(index_id_pieces.str(port_index_match));
+            std::string port_id = index_id_pieces.str(port_id_match);
+
+            if (port_index_id.find(port_index) != port_index_id.end()) {
+                std::cout << "Error: detected a duplicate port index: "
+                          << std::to_string(port_index) << std::endl;
+                return (EINVAL);
+            }
+            auto it =
+                std::find_if(port_index_id.begin(), port_index_id.end(),
+                             [&port_id](const std::pair<int, std::string> &val) {
+                                 return val.second == port_id;
+                             });
+            if (it != port_index_id.end()) {
+                std::cout << "Error: detected a duplicate port id: "
+                          << port_id << std::endl;
+                return (EINVAL);
+            }
+
+            port_index_id[port_index] = port_id;
+        } else {
+            PRINT_NAME_ERROR(index_id_pair);
+            return (EINVAL);
+        }
+    }
+
+    return (0);
+}
+#undef PRINT_NAME_ERROR
+
+int arg_parser::init(const char *name)
+{
+    _args.clear();
+    _args.push_back(std::string(name));
+    m_test_mode      = false;
+    m_test_portpairs = 0;
+    return (0);
+}
 
 int arg_parser::parse(int opt, const char *opt_arg)
 {
@@ -113,55 +163,10 @@ int arg_parser::parse(int opt, const char *opt_arg)
     }
     if (icp_options_hash_long("dpdk-port-ids") == opt) {
         if (opt_arg != nullptr) {
-            // Pick out all the portX=name pairs.
-            std::string_view input(opt_arg);
-            std::string_view delimiters(" ,");
-            size_t beg = 0, pos = 0;
-            auto data_pair_regex = std::regex(port_index_id_regex.data(), std::regex::extended);
-            while ((beg = input.find_first_not_of(delimiters, pos)) != std::string::npos) {
-                pos = input.find_first_of(delimiters, beg + 1);
-
-                std::string_view index_id_pair(input.substr(beg, pos - beg));
-
-                std::cmatch index_id_pieces;
-                if (std::regex_match(index_id_pair.begin(), index_id_pair.end(),
-                                     index_id_pieces, data_pair_regex)) {
-                    // regex_match returns the whole match as item 0, and the
-                    // sub matches as the remaining items.
-                    if (index_id_pieces.size() != 4) {
-                        PRINT_NAME_ERROR(index_id_pair);
-                    }
-
-                    int port_index = std::stoi(index_id_pieces.str(port_index_match));
-                    std::string port_id = index_id_pieces.str(port_id_match);
-
-                    if (m_port_index_id.find(port_index) != m_port_index_id.end()) {
-                        std::cout << "Error: detected a duplicate port index: "
-                                  << std::to_string(port_index) << std::endl;
-                        return (EINVAL);
-                    }
-                    auto it =
-                        std::find_if(m_port_index_id.begin(), m_port_index_id.end(),
-                                     [&port_id](const std::pair<int, std::string> &val) {
-                                         return val.second == port_id;
-                                     });
-                    if (it != m_port_index_id.end()) {
-                        std::cout << "Error: detected a duplicate port id: "
-                                  << port_id << std::endl;
-                        return (EINVAL);
-                    }
-
-                    m_port_index_id[port_index] = port_id;
-                } else {
-                    PRINT_NAME_ERROR(index_id_pair);
-                    return (EINVAL);
-                }
-            }
-
-            return (0);
+            return parse_dpdk_port_ids(opt_arg, m_port_index_id);
         }
 
-        return(EINVAL);
+        return (EINVAL);
     }
 
     if (opt != 'd' || opt_arg == nullptr) {
@@ -179,8 +184,6 @@ int arg_parser::parse(int opt, const char *opt_arg)
 
     return (0);
 }
-
-#undef PRINT_NAME_ERROR
 
 int arg_parser::test_portpairs()
 {
@@ -214,7 +217,7 @@ std::vector<std::string> arg_parser::args()
     return (to_return);
 }
 
-std::map<int, std::string> arg_parser::id_map()
+std::unordered_map<int, std::string> arg_parser::id_map()
 {
     return (m_port_index_id);
 }

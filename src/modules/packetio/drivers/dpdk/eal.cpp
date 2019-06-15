@@ -300,7 +300,7 @@ to_worker_descriptors(const std::vector<port_queues_ptr>& queues,
 
 static void configure_all_ports(const std::map<int, queue_count>& port_queue_counts,
                                 const pool_allocator* allocator,
-                                const std::map<int, std::string>& id_name)
+                                const std::unordered_map<int, std::string>& id_name)
 {
     uint16_t port_id = 0;
     RTE_ETH_FOREACH_DEV(port_id) {
@@ -499,7 +499,7 @@ static void drop_caps()
 }
 
 eal::eal(void* context, std::vector<std::string> args,
-         std::map<int, std::string> id_map, int test_portpairs)
+         std::unordered_map<int, std::string> id_map, int test_portpairs)
     : m_initialized(false)
     , m_switch(std::make_shared<vif_map<netif>>())
     , m_port_index_id(id_map)
