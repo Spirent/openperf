@@ -88,9 +88,8 @@ static constexpr size_t port_id_match = 3;
     + " lower-case letters, numbers, and hyphens."     \
     << std::endl
 
-static int parse_dpdk_port_ids(const char *opt_arg, std::unordered_map<int, std::string>& port_index_id) {
+static int parse_dpdk_port_ids(std::string_view input, std::unordered_map<int, std::string>& port_index_id) {
     // Pick out all the portX=name pairs.
-    std::string_view input(opt_arg);
     std::string_view delimiters(" ,");
     size_t beg = 0, pos = 0;
     auto data_pair_regex = std::regex(port_index_id_regex.data(), std::regex::extended);
@@ -113,7 +112,7 @@ static int parse_dpdk_port_ids(const char *opt_arg, std::unordered_map<int, std:
 
             if (port_index_id.find(port_index) != port_index_id.end()) {
                 std::cout << "Error: detected a duplicate port index: "
-                          << std::to_string(port_index) << std::endl;
+                          << port_index << std::endl;
                 return (EINVAL);
             }
             auto it =
