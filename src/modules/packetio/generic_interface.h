@@ -56,7 +56,7 @@ typedef std::variant<std::monostate,
 
 struct config_data {
     std::vector<protocol_config> protocols;
-    int port_id;
+    std::string port_id;
     std::string id;
 };
 
@@ -74,7 +74,7 @@ public:
         return m_self->id();
     }
 
-    int port_id() const
+    std::string port_id() const
     {
         return m_self->port_id();
     }
@@ -103,7 +103,7 @@ private:
     struct interface_concept {
         virtual ~interface_concept() = default;
         virtual std::string id() const = 0;
-        virtual int port_id() const = 0;
+        virtual std::string port_id() const = 0;
         virtual std::string mac_address() const = 0;
         virtual std::string ipv4_address() const = 0;
         virtual stats_data stats() const = 0;
@@ -121,7 +121,7 @@ private:
             return m_interface.id();
         }
 
-        int port_id() const override
+        std::string port_id() const override
         {
             return m_interface.port_id();
         }

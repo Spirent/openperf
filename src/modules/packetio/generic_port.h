@@ -71,7 +71,7 @@ std::string to_string(const lag_mode&);
 
 struct bond_config {
     lag_mode mode;
-    std::vector<int> ports;
+    std::vector<std::string> ports;
 };
 
 typedef std::variant<std::monostate,
@@ -92,7 +92,7 @@ public:
         : m_self(std::make_shared<port_model<Port>>(std::move(port)))
     {}
 
-    int id() const
+    std::string id() const
     {
         return m_self->id();
     }
@@ -135,7 +135,7 @@ public:
 private:
     struct port_concept {
         virtual ~port_concept() = default;
-        virtual int id() const = 0;
+        virtual std::string id() const = 0;
         virtual std::string kind() const = 0;
         virtual link_status link() const = 0;
         virtual link_speed speed() const = 0;
@@ -151,7 +151,7 @@ private:
             : m_port(std::move(port))
         {}
 
-        int id() const override
+        std::string id() const override
         {
             return m_port.id();
         }

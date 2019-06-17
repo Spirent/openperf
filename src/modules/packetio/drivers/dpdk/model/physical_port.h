@@ -18,9 +18,9 @@ class port_info;
 class physical_port
 {
 public:
-    physical_port(int id, rte_mempool *rx_pool = nullptr);
+    physical_port(int idx, std::string id, rte_mempool *rx_pool = nullptr);
 
-    int id() const;
+    std::string id() const;
 
     static std::string kind();
 
@@ -43,7 +43,8 @@ public:
     void del_mac_address(const net::mac_address& mac);
 
 private:
-    const int m_id;
+    const int m_idx;           /* Global DPDK port index. */
+    const std::string m_id;    /* User-defined ID for REST API interactions. */
     const rte_mempool *m_pool;
 
     tl::expected<void, std::string> apply_port_config(port_info&, rte_eth_conf&,

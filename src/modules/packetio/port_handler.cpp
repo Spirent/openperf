@@ -3,6 +3,7 @@
 #include "api/api_route_handler.h"
 #include "core/icp_core.h"
 #include "packetio/port_api.h"
+#include "config/icp_config_utils.h"
 
 namespace icp {
 namespace packetio {
@@ -124,26 +125,25 @@ void handler::create_port(const Rest::Request &request, Http::ResponseWriter res
 }
 
 /**
- * Our id might not be an int.  In that case, the Pistache request will throw
- * an exception.  This macro handles catching the exception and returning
- * the appropriate response.  Unfortunately, we cannot make this a function
+ * Our id might not be a valid string. This macro handles validating the id
+ * value using the framework. If the id is invalid this macro will send a reply
+ * using the supplied code and return. Unfortunately, we cannot make this a function
  * because the response is an unmovable object.
  */
 
-#define SAFE_GET_ID(id_, response_, code_)                              \
-    do {                                                                \
-        try {                                                           \
-            id_ = request.param(":id").as<int>();                       \
-        } catch (const std::runtime_error&) {                           \
-            response_.send(code_);                                      \
-            return;                                                     \
-        }                                                               \
+#define VALIDATE_ID(id_, response_, code_)                     \
+    do {                                                       \
+        auto res = config::icp_config_validate_id_string(id_); \
+        if (!res) {                                            \
+            response_.send(code_, res.error());                \
+            return;                                            \
+        }                                                      \
     } while (0)
 
 void handler::get_port(const Rest::Request &request, Http::ResponseWriter response)
 {
-    int id = -1;
-    SAFE_GET_ID(id, response, Http::Code::Not_Found);
+    auto id = request.param(":id").as<std::string>();
+    VALIDATE_ID(id, response, Http::Code::Not_Found);
 
     json api_request = {
         {"type", request_type::GET_PORT},
@@ -170,8 +170,8 @@ void handler::get_port(const Rest::Request &request, Http::ResponseWriter respon
 
 void handler::update_port(const Rest::Request &request, Http::ResponseWriter response)
 {
-    int id = -1;
-    SAFE_GET_ID(id, response, Http::Code::Not_Found);
+    auto id = request.param(":id").as<std::string>();
+    VALIDATE_ID(id, response, Http::Code::Not_Found);
 
     json api_request = {
         { "type", request_type::UPDATE_PORT },
@@ -204,12 +204,12 @@ void handler::update_port(const Rest::Request &request, Http::ResponseWriter res
 
 void handler::delete_port(const Rest::Request &request, Http::ResponseWriter response)
 {
-    int id = -1;
-    SAFE_GET_ID(id, response, Http::Code::No_Content);
+    auto id = request.param(":id").as<std::string>();
+    VALIDATE_ID(id, response, Http::Code::No_Content);
 
     json api_request = {
         { "type", request_type::DELETE_PORT },
-        { "id", request.param(":id").as<int>() }
+        { "id", request.param(":id").as<std::string>() }
     };
 
     /* We don't care about any reply, here */

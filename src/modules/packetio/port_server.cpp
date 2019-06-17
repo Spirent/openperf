@@ -5,6 +5,8 @@
 #include "zmq.h"
 
 #include "core/icp_core.h"
+#include "core/icp_uuid.h"
+#include "config/icp_config_utils.h"
 #include "swagger/v1/model/Port.h"
 #include "packetio/json_transmogrify.h"
 #include "packetio/port_api.h"
@@ -65,7 +67,7 @@ static void _handle_list_ports_request(generic_driver& driver, json& request, js
     auto kind = get_optional_key<std::string>(request, "kind");
     json jports = json::array();
 
-    for (int id : driver.port_ids()) {
+    for (auto id : driver.port_ids()) {
         auto port = driver.port(id);
         if (!kind || *kind == port->kind()) {
             jports.emplace_back(make_swagger_port(*port)->toJson());
@@ -80,7 +82,16 @@ static void _handle_create_port_request(generic_driver& driver, json& request, j
 {
     try {
         auto port_model = json::parse(request["data"].get<std::string>()).get<Port>();
-        auto result = driver.create_port(make_config_data(port_model));
+
+        auto id_check = config::icp_config_validate_id_string(port_model.getId());
+        if (!id_check) {
+            throw std::runtime_error(id_check.error().c_str());
+        }
+
+        auto result = driver.create_port(port_model.getId() == empty_id_string ?
+                                         core::to_string(core::uuid::random()) :
+                                         port_model.getId(),
+                                         make_config_data(port_model));
         if (!result) {
             throw std::runtime_error(result.error().c_str());
         }
@@ -97,7 +108,7 @@ static void _handle_create_port_request(generic_driver& driver, json& request, j
 
 static void _handle_get_port_request(generic_driver& driver, json& request, json& reply)
 {
-    int id = request["id"].get<int>();
+    auto id = request["id"].get<std::string>();
     auto port = driver.port(id);
     if (port) {
         reply["code"] = reply_code::OK;
@@ -109,7 +120,7 @@ static void _handle_get_port_request(generic_driver& driver, json& request, json
 
 static void _handle_update_port_request(generic_driver& driver, json& request, json& reply)
 {
-    int id = request["id"].get<int>();
+    auto id = request["id"].get<std::string>();
     auto port = driver.port(id);
     if (!port) {
         reply["code"] = reply_code::NO_PORT;
@@ -135,7 +146,7 @@ static void _handle_update_port_request(generic_driver& driver, json& request, j
 
 static void _handle_delete_port_request(generic_driver& driver, json& request, json& reply)
 {
-    auto result = driver.delete_port(request["id"].get<int>());
+    auto result = driver.delete_port(request["id"].get<std::string>());
     if (result) {
         reply["code"] = reply_code::OK;
     } else {
@@ -165,9 +176,9 @@ static int _handle_rpc_request(const icp_event_data *data, void *arg)
         case request_type::GET_PORT:
         case request_type::UPDATE_PORT:
         case request_type::DELETE_PORT:
-            ICP_LOG(ICP_LOG_TRACE, "Received %s request for port %d\n",
+            ICP_LOG(ICP_LOG_TRACE, "Received %s request for port %s\n",
                     to_string(type).c_str(),
-                    request["id"].get<int>());
+                    request["id"].get<std::string>().c_str());
             break;
         default:
             ICP_LOG(ICP_LOG_TRACE, "Received %s request\n", to_string(type).c_str());

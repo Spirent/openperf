@@ -3,7 +3,7 @@ services:
   default:
     # NOTE: --force-unlink will NOT verify if another copy of inception is running.
     # FIXME: Remove --force-unlink. This is a hacky, temporary workaround for reliability.
-    command: 'common/launcher.sh ../../build/stack-linux-x86_64-testing/bin/inception --dpdk-test-mode --log-level debug --force-unlink --dpdk="-m256m,--no-huge" -p 9000 > inception.log 2>&1'
+    command: 'common/launcher.sh ../../build/stack-linux-x86_64-testing/bin/inception --dpdk-test-mode --log-level debug --force-unlink --dpdk="-m256m,--no-huge" --dpdk-port-ids="port0=0, port1=1" -p 9000 > inception.log 2>&1'
     base_url: http://127.0.0.1:9000
     init_url: http://127.0.0.1:9000/version
     init_timeout: 15s
@@ -12,7 +12,7 @@ services:
   interface-config-file:
     # NOTE: --force-unlink will NOT verify if another copy of inception is running.
     # FIXME: Remove --force-unlink. This is a hacky, temporary workaround for reliability.
-    command: 'common/launcher.sh ../../build/stack-linux-x86_64-testing/bin/inception -c spec/test_interface.yaml --dpdk-test-mode --log-level debug --force-unlink --dpdk="-m256m,--no-huge" -p 9000 > inception.log 2>&1'
+    command: 'common/launcher.sh ../../build/stack-linux-x86_64-testing/bin/inception -c spec/test_interface.yaml --dpdk-test-mode --log-level debug --force-unlink --dpdk="-m256m,--no-huge" --dpdk-port-ids="port0=port0, port1=port1" -p 9000 > inception.log 2>&1'
     base_url: http://127.0.0.1:9000
     init_url: http://127.0.0.1:9000/version
     init_timeout: 15s
