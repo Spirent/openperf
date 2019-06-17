@@ -197,7 +197,7 @@ static err_t net_interface_dpdk_init(netif* netif)
 {
     net_interface *ifp = reinterpret_cast<net_interface*>(netif->state);
 
-    auto info = model::port_info(ifp->port_id());
+    auto info = model::port_info(ifp->port_index());
 
     /* Initialize the snmp variables and counters in the netif struct */
     MIB2_INIT_NETIF(netif, snmp_ifType_ethernet_csmacd, info.max_speed());
@@ -212,7 +212,7 @@ static err_t net_interface_dpdk_init(netif* netif)
         netif->hwaddr[i] = eth_config->address[i];
     }
 
-    rte_eth_dev_get_mtu(ifp->port_id(), &netif->mtu);
+    rte_eth_dev_get_mtu(ifp->port_index(), &netif->mtu);
 
     netif->chksum_flags = (to_checksum_check_flags(info.rx_offloads())
                            | to_checksum_gen_flags(info.tx_offloads()));
@@ -236,7 +236,7 @@ static err_t net_interface_dpdk_init(netif* netif)
 
     /* Finally, check link status and set UP flag if needed */
     rte_eth_link link;
-    rte_eth_link_get_nowait(ifp->port_id(), &link);
+    rte_eth_link_get_nowait(ifp->port_index(), &link);
     if (link.link_status == ETH_LINK_UP) {
         netif->flags |= NETIF_FLAG_LINK_UP;
     }
@@ -322,9 +322,10 @@ static std::string recvq_name(const netif& netintf)
 }
 
 net_interface::net_interface(std::string_view id, const interface::config_data& config,
-                             driver::tx_burst tx)
+                             driver::tx_burst tx, int port_index)
     : m_id(id)
-    , m_max_gso_length(net_interface_max_gso_length(config.port_id))
+    , m_port_index(port_index)
+    , m_max_gso_length(net_interface_max_gso_length(port_index))
     , m_config(config)
     , m_transmit(tx)
     , m_notify(false)
@@ -340,10 +341,10 @@ net_interface::net_interface(std::string_view id, const interface::config_data& 
 
     m_recvq = std::unique_ptr<rte_ring, rte_ring_deleter>
         ((rte_ring_create(recvq_name(m_netif).c_str(), recvq_size,
-                          rte_eth_dev_socket_id(config.port_id), RING_F_SC_DEQ)));
+                          rte_eth_dev_socket_id(m_port_index), RING_F_SC_DEQ)));
 
     /* Setup callbacks to allow the interface to interact with the port state */
-    int dpdk_error = rte_eth_dev_callback_register(m_config.port_id,
+    int dpdk_error = rte_eth_dev_callback_register(m_port_index,
                                                    RTE_ETH_EVENT_INTR_LSC,
                                                    net_interface_link_status_change,
                                                    &m_netif);
@@ -354,7 +355,7 @@ net_interface::net_interface(std::string_view id, const interface::config_data& 
 
 net_interface::~net_interface()
 {
-    rte_eth_dev_callback_unregister(m_config.port_id,
+    rte_eth_dev_callback_unregister(m_port_index,
                                     RTE_ETH_EVENT_INTR_LSC,
                                     net_interface_link_status_change,
                                     &m_netif);
@@ -397,7 +398,7 @@ int net_interface::handle_tx(struct pbuf* p)
     }
 
     rte_mbuf *pkts[] = { m_head };
-    return (m_transmit(port_id(), 0, reinterpret_cast<void**>(pkts), 1) == 1 ? ERR_OK : ERR_BUF);
+    return (m_transmit(port_index(), 0, reinterpret_cast<void**>(pkts), 1) == 1 ? ERR_OK : ERR_BUF);
 }
 
 void net_interface::handle_input()
@@ -433,9 +434,14 @@ std::string net_interface::id() const
     return (m_id);
 }
 
-int net_interface::port_id() const
+std::string net_interface::port_id() const
 {
     return (m_config.port_id);
+}
+
+int net_interface::port_index() const
+{
+    return (m_port_index);
 }
 
 netif* net_interface::data()

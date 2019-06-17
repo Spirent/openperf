@@ -4,7 +4,7 @@ modules:
 
 resources:
   /interfaces/interface-one:
-    port_id: "0"
+    port_id: "port0"
     config:
       protocols:
         - eth:

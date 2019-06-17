@@ -70,7 +70,12 @@ tl::expected<std::string, std::string> lwip::create_interface(const interface::c
         return (tl::make_unexpected("Interface " + config.id + " already exists."));
 
     try {
-        auto ifp = std::make_unique<net_interface>(config.id, config, m_driver.tx_burst_function(config.port_id));
+        auto port_index = m_driver.get_port_index(config.port_id);
+        if (!port_index) {
+            return tl::make_unexpected(port_index.error());
+        }
+        int port_idx = port_index.value();
+        auto ifp = std::make_unique<net_interface>(config.id, config, m_driver.tx_burst_function(config.port_id), port_idx);
         m_driver.add_interface(ifp->port_id(), ifp->data());
         auto item = m_interfaces.emplace(std::make_pair(config.id, std::move(ifp)));
         return (item.first->first);
