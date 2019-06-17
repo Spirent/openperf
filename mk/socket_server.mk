@@ -16,7 +16,7 @@ SOCKSRV_SOURCES :=
 SOCKSRV_DEPENDS :=
 SOCKSRV_LDLIBS  :=
 
-include $(SOCKSRV_SRC_DIR)/module.mk
+include $(SOCKSRV_SRC_DIR)/directory.mk
 
 SOCKSRV_OBJECTS := $(call icp_generate_objects,$(SOCKSRV_SOURCES),$(SOCKSRV_OBJ_DIR))
 

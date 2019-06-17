@@ -19,7 +19,7 @@ API_SOURCES :=
 API_DEPENDS :=
 API_LDLIBS  :=
 
-include $(API_SRC_DIR)/module.mk
+include $(API_SRC_DIR)/directory.mk
 
 API_OBJECTS := $(call icp_generate_objects,$(API_SOURCES),$(API_OBJ_DIR))
 

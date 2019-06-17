@@ -16,7 +16,7 @@ SOCKCLI_SOURCES :=
 SOCKCLI_DEPENDS :=
 SOCKCLI_LDLIBS  :=
 
-include $(SOCKCLI_SRC_DIR)/module.mk
+include $(SOCKCLI_SRC_DIR)/directory.mk
 
 SOCKCLI_OBJECTS := $(call icp_generate_objects,$(SOCKCLI_SOURCES),$(SOCKCLI_OBJ_DIR))
 

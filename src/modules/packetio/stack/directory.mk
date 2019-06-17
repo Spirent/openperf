@@ -9,7 +9,7 @@ PIO_DEPENDS += socket_server
 
 PIO_STACK_DIR := $(PIO_SRC_DIR)/stack/$(ICP_PACKETIO_DRIVER)
 
-include $(PIO_STACK_DIR)/module.mk
+include $(PIO_STACK_DIR)/directory.mk
 
 PIO_SOURCES += \
 	stack/tcp_in.c \

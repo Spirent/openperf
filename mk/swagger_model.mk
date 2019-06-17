@@ -16,7 +16,7 @@ SWAGGER_SRC_DIR := $(ICP_ROOT)/src/swagger
 SWAGGER_OBJ_DIR := $(ICP_BUILD_ROOT)/obj/swagger
 SWAGGER_LIB_DIR := $(ICP_BUILD_ROOT)/lib
 
-include $(SWAGGER_SRC_DIR)/module.mk
+include $(SWAGGER_SRC_DIR)/directory.mk
 
 SWAGGER_OBJECTS := $(call icp_generate_objects,$(SWAGGER_SOURCES),$(SWAGGER_OBJ_DIR))
 

@@ -16,7 +16,7 @@ CFGFILE_SOURCES :=
 CFGFILE_DEPENDS :=
 CFGFILE_LDLIBS  :=
 
-include $(CFGFILE_SRC_DIR)/module.mk
+include $(CFGFILE_SRC_DIR)/directory.mk
 
 CFGFILE_OBJECTS := $(call icp_generate_objects,$(CFGFILE_SOURCES),$(CFGFILE_OBJ_DIR))
 

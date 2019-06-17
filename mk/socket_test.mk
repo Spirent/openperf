@@ -16,7 +16,7 @@ SOCKTEST_SOURCES :=
 SOCKTEST_DEPENDS :=
 SOCKTEST_LDLIBS  :=
 
-include $(SOCKTEST_SRC_DIR)/module.mk
+include $(SOCKTEST_SRC_DIR)/directory.mk
 
 SOCKTEST_OBJECTS := $(call icp_generate_objects,$(SOCKTEST_SOURCES),$(SOCKTEST_OBJ_DIR))
 

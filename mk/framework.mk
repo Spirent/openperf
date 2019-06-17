@@ -23,8 +23,8 @@ FW_LDLIBS  :=
 
 FW_MODULES := core memory net
 
-# Load each module's module.mk file
-include $(patsubst %, $(FW_SRC_DIR)/%/module.mk, $(FW_MODULES))
+# Load each module's directory.mk file
+include $(patsubst %, $(FW_SRC_DIR)/%/directory.mk, $(FW_MODULES))
 
 FW_OBJECTS := $(call icp_generate_objects,$(FW_SOURCES),$(FW_OBJ_DIR))
 

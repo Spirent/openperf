@@ -16,10 +16,10 @@ PIO_SOURCES += \
 	stack_server.cpp \
 	stack_utils.cpp
 
-include $(PIO_SRC_DIR)/drivers/module.mk
-include $(PIO_SRC_DIR)/memory/module.mk
-include $(PIO_SRC_DIR)/pga/module.mk
-include $(PIO_SRC_DIR)/stack/module.mk
+include $(PIO_SRC_DIR)/drivers/directory.mk
+include $(PIO_SRC_DIR)/memory/directory.mk
+include $(PIO_SRC_DIR)/pga/directory.mk
+include $(PIO_SRC_DIR)/stack/directory.mk
 
 .PHONY: $(PIO_SRC_DIR)/init.cpp
 %/init.o: ICP_CPPFLAGS += \

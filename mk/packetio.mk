@@ -17,7 +17,7 @@ PIO_SRC_DIR := $(ICP_ROOT)/src/modules/packetio
 PIO_OBJ_DIR := $(ICP_BUILD_ROOT)/obj/modules/packetio
 PIO_LIB_DIR := $(ICP_BUILD_ROOT)/lib
 
-include $(PIO_SRC_DIR)/module.mk
+include $(PIO_SRC_DIR)/directory.mk
 
 PIO_OBJECTS := $(call icp_generate_objects,$(PIO_SOURCES),$(PIO_OBJ_DIR))
 

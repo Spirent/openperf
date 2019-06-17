@@ -19,7 +19,7 @@ API_TEST_SOURCES :=
 API_TEST_DEPENDS :=
 API_TEST_LDLIBS  :=
 
-include $(API_TEST_SRC_DIR)/module.mk
+include $(API_TEST_SRC_DIR)/directory.mk
 
 API_TEST_OBJECTS := $(call icp_generate_objects,$(API_TEST_SOURCES),$(API_TEST_OBJ_DIR))
 
