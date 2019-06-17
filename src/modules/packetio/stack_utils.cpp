@@ -132,7 +132,7 @@ std::shared_ptr<Stack> make_swagger_stack(const generic_stack& in_stack)
 {
     auto out_stack = std::make_shared<Stack>();
 
-    out_stack->setId(std::to_string(in_stack.id()));
+    out_stack->setId(in_stack.id());
     out_stack->setStats(make_swagger_stack_stats(in_stack));
 
     return (out_stack);

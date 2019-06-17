@@ -50,7 +50,7 @@ public:
     lwip(const lwip&) = delete;
     lwip& operator=(const lwip&&) = delete;
 
-    int id() const { return 0; }  /* only 1 stack for now */
+    std::string id() const { return "stack0"; }  /* only 1 stack for now */
     std::vector<std::string> interface_ids() const;
     std::optional<interface::generic_interface> interface(std::string_view id) const;
     tl::expected<std::string, std::string> create_interface(const interface::config_data& config);
