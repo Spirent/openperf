@@ -20,7 +20,7 @@ include $(SOCKTEST_SRC_DIR)/directory.mk
 
 SOCKTEST_OBJECTS := $(call icp_generate_objects,$(SOCKTEST_SOURCES),$(SOCKTEST_OBJ_DIR))
 
-SOCKTEST_LIBRARY := icpsocket_test
+SOCKTEST_LIBRARY := icp_socket_test
 SOCKTEST_TARGET := $(SOCKTEST_LIB_DIR)/lib$(SOCKTEST_LIBRARY).a
 
 ICP_INC_DIRS += $(SOCKTEST_INC_DIR)

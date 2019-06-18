@@ -20,7 +20,7 @@ include $(SOCKSRV_SRC_DIR)/directory.mk
 
 SOCKSRV_OBJECTS := $(call icp_generate_objects,$(SOCKSRV_SOURCES),$(SOCKSRV_OBJ_DIR))
 
-SOCKSRV_LIBRARY := icpsocket_server
+SOCKSRV_LIBRARY := icp_socket_server
 SOCKSRV_TARGET := $(SOCKSRV_LIB_DIR)/lib$(SOCKSRV_LIBRARY).a
 
 ICP_INC_DIRS += $(SOCKSRV_INC_DIR)

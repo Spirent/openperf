@@ -20,12 +20,12 @@ include $(SOCKCLI_SRC_DIR)/directory.mk
 
 SOCKCLI_OBJECTS := $(call icp_generate_objects,$(SOCKCLI_SOURCES),$(SOCKCLI_OBJ_DIR))
 
-SOCKCLI_LIBRARY := icpsocket_client
+SOCKCLI_LIBRARY := icp_socket_client
 SOCKCLI_TARGET := $(SOCKCLI_LIB_DIR)/lib$(SOCKCLI_LIBRARY).a
 
 # The client code depends on core/icp_uuid.h.  This is a header only object,
 # so it's safe to include without pulling in the whole framework.  However,
-# any clients we have will need to find that patg has well, so we need to
+# any clients we have will need to find that path has well, so we need to
 # add the framework path to our exported header list also.
 SOCKCLI_FLAGS := -I$(ICP_ROOT)/src/framework
 
