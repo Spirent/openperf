@@ -6,8 +6,19 @@
 # Helper functions
 ###
 
-# Include standard dependencies
-icp_include_dependencies = $(foreach dep,$(sort $(1)),$(eval include $(ICP_ROOT)/mk/$(dep).mk))
+# Include a dependency iff it has not been included before.
+# We use a predefined tracking variable to ensure we only include a dependency
+# once.
+define icp_include_dependency
+ifeq (,$(findstring $(1),$(ICP_BUILD_DEPENDENCIES)))
+include $(ICP_ROOT)/mk/$(1).mk
+ICP_BUILD_DEPENDENCIES += $(1)
+endif
+endef
+
+# Include pre-defined dependencies
+# $(1): list of dependencies
+icp_include_dependencies = $(foreach item,$(1),$(eval $(call icp_include_dependency,$(item))))
 
 # Translate all sources files with the given extension to object files
 # $(1): source file extension
