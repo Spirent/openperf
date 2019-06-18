@@ -15,3 +15,14 @@ resources:
               address: "198.51.100.10"
               prefix_length: 24
               gateway: "198.51.100.1"
+
+  /interfaces/interface-two:
+    port_id: "port1"
+    config:
+      protocols:
+        - eth:
+            mac_address: "00:10:94:ac:db:ba"
+        - ipv4:
+            method: "dhcp"
+            dhcp:
+              hostname: "device-one"

@@ -63,6 +63,10 @@ with description('Ports,') as self:
             with it('returns 404'):
                 expect(lambda: self.api.get_port('foo')).to(raise_api_exception(404))
 
+        with description('invalid id,'):
+            with it('returns 404'):
+                expect(lambda: self.api.get_port('Inv_port')).to(raise_api_exception(404))
+
         with description('unsupported method,'):
             with it('returns 405'):
                 expect(lambda: self.api.api_client.call_api('/ports/0', 'POST')).to(raise_api_exception(
@@ -129,6 +133,13 @@ with description('Ports,') as self:
                     with it('returns 400'):
                         expect(lambda: self.api.create_port(self.port)).to(raise_api_exception(400))
 
+                with description('invalid member port id,'):
+                    with before.each:
+                        self.port.config.bond.ports = ['Invalid_port']
+
+                    with it('returns 400'):
+                        expect(lambda: self.api.create_port(self.port)).to(raise_api_exception(400))
+
             with description('invalid mode,'):
                 with before.each:
                     self.port.config.bond.mode = 'foo'
@@ -149,6 +160,13 @@ with description('Ports,') as self:
 
         with description('missing kind,'):
             with it('returns 400'):
+                expect(lambda: self.api.create_port(self.port)).to(raise_api_exception(400))
+
+        with description('invalid ID,'):
+            with before.each:
+                self.port.id = 'Invalid_id'
+
+            with it ('returns 400'):
                 expect(lambda: self.api.create_port(self.port)).to(raise_api_exception(400))
 
     with description('delete,'):
@@ -177,6 +195,10 @@ with description('Ports,') as self:
         with description('non-existent port,'):
             with it('succeeds'):
                 self.api.delete_port('foo')
+
+        with description('invalid port ID,'):
+            with it('returns 404'):
+                expect(lambda: self.api.delete_port('Invalid_port_id')).to(raise_api_exception(404))
 
     with after.each:
         try:
