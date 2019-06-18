@@ -1,0 +1,13 @@
+core:
+
+modules:
+
+resources:
+  /ports/port-bond:
+    kind: "bond"
+    config:
+      bond:
+        mode: "lag_802_3_ad"
+        ports:
+          - port0
+          - port1

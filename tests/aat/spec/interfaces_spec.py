@@ -291,7 +291,6 @@ with description('Interfaces,') as self:
                         self.intf.id = "Invalid_interface_id"
                         self.intf.port_id = "0"
                         self.intf.config.protocols[0].eth.mac_address='00:00:00:00:00:01'
-                        print self.intf
                         expect(lambda: self.api.create_interface(self.intf)).to(raise_api_exception(400))
 
                 with description('invalid port ID,'):
@@ -439,19 +438,17 @@ with description('Interfaces,') as self:
             self.process = service.start()
             self.api = client.api.InterfacesApi(service.client())
 
-        with it('verify interface created'):
+        with it('created valid interfaces'):
             intfs = self.api.list_interfaces()
             expect(len(intfs)).to(equal(2))
 
-            intfs = self.api.list_interfaces(port_id="port0")
-            expect(len(intfs)).to(equal(1))
-            expect(intfs[0].id).to(equal("interface-one"))
-            expect(intfs[0].port_id).to(equal("port0"))
+            intf = self.api.get_interface("interface-one")
+            expect(intf).to(be_valid_interface)
+            expect(intf.port_id).to(equal("port0"))
 
-            intfs = self.api.list_interfaces(port_id="port1")
-            expect(len(intfs)).to(equal(1))
-            expect(intfs[0].id).to(equal("interface-two"))
-            expect(intfs[0].port_id).to(equal("port1"))
+            intf = self.api.get_interface("interface-two")
+            expect(intf).to(be_valid_interface)
+            expect(intf.id).to(equal("interface-two"))
 
         with after.all:
             try:
