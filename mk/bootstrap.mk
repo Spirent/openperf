@@ -31,6 +31,8 @@ ICP_INC_DIRS := $(ICP_ROOT)/src
 ICP_LIB_DIRS :=
 ICP_CONFIG_OPTS :=
 
+ICP_BUILD_DEPENDENCIES :=
+
 # Detect and update build environment flags
 $(call icp_check_vars,ICP_ROOT ICP_TARGET)
 include $(ICP_ROOT)/mk/build.mk
