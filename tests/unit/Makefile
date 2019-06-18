@@ -12,7 +12,7 @@ BUILD_DIR := $(ICP_BUILD_ROOT)/obj/unit
 TARGET_DIR := $(ICP_BUILD_ROOT)/bin
 
 SRC_DEPENDS :=
-BLD_DEPENDS := catch
+BLD_DEPENDS := catch api_test config_file_test framework socket_test
 
 ###
 # Framework test files
@@ -37,33 +37,26 @@ SOURCES := \
 	modules/socket/test_circular_buffer.cpp \
 	modules/socket/test_event_queue.cpp
 
-OBJECTS := $(patsubst %, $(BUILD_DIR)/%, \
-	$(patsubst %.cpp, %.o, $(SOURCES)))
-SRC_DEPENDS += $(OBJECTS:.o=.d)
-BLD_DEPENDS += api_test config_file_test framework socket_test
+OBJECTS := $(call icp_generate_objects,$(SOURCES),$(BUILD_DIR))
 
 # Pull in dependencies
--include $(SRC_DEPENDS)
-$(foreach DEP,$(BLD_DEPENDS),$(eval include $(ICP_ROOT)/mk/$(DEP).mk))
+-include $(OBJECTS:.o=.d)
+$(call icp_include_dependencies,$(BLD_DEPENDS))
 
 ICP_CONFIG_OPTS += --enable-static=yes --enable-shared=no
-ICP_CPPFLAGS += $(addprefix -I,$(ICP_INC_DIRS))
-ICP_LDFLAGS += $(addprefix -L,$(ICP_LIB_DIRS))
+ICP_CPPFLAGS += $(addprefix -I,$(sort $(ICP_INC_DIRS)))
+ICP_LDFLAGS += $(addprefix -L,$(sort $(ICP_LIB_DIRS)))
 
 # Build rules
-$(BUILD_DIR)/%.o: %.cpp | $(BLD_DEPENDS)
-	@mkdir -p $(dir $@)
-	$(strip $(ICP_CXX) -o $@ -c $(ICP_CPPFLAGS) $(ICP_CXXFLAGS) $(ICP_COPTS) $(ICP_DEFINES) $<)
+$(eval $(call icp_generate_build_rules,$(SOURCES),,BUILD_DIR,BLD_DEPENDS))
 
 $(TARGET_DIR)/test_inception: $(OBJECTS) $(BLD_DEPENDS)
-	@mkdir -p $(dir $@)
-	$(strip $(ICP_CXX) -o $@ $(ICP_LDOPTS) $(ICP_LDFLAGS) $(OBJECTS) $(ICP_LDLIBS))
+	$(call icp_link_binary,$@,$(OBJECTS))
 
 .PHONY: test_inception
 test_inception: $(TARGET_DIR)/test_inception
 	$(TARGET_DIR)/test_inception
 
-.PHONY: clean_tests
-clean_tests:
+.PHONY: clean
+clean:
 	@rm -rf $(ICP_BUILD_ROOT)
-clean: clean_tests

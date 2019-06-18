@@ -66,8 +66,7 @@ LWIP_SOURCES := \
 	$(LWIP_CORE6_SOURCES) \
 	$(LWIP_API_SOURCES)
 
-LWIP_OBJECTS := $(patsubst %, $(LWIP_OBJ_DIR)/%, \
-	$(patsubst %.c, %.o, $(LWIP_SOURCES)))
+LWIP_OBJECTS := $(call icp_generate_objects,$(LWIP_SOURCES),$(LWIP_OBJ_DIR))
 
 # Pull in object dependencies, maybe
 -include $(LWIP_OBJECTS:.o=.d)
@@ -75,17 +74,9 @@ LWIP_OBJECTS := $(patsubst %, $(LWIP_OBJ_DIR)/%, \
 ###
 # Build rules
 ###
-$(LWIP_OBJECTS): | $(PIO_DEPENDS)
+$(eval $(call icp_generate_build_rules,$(LWIP_SOURCES),LWIP_SRC_DIR,LWIP_OBJ_DIR,PIO_DEPENDS,LWIP_FLAGS))
+$(eval $(call icp_generate_clean_rules,lwip,,LWIP_OBJECTS))
 
 # Using large windows with window scaling can introduce a tautological
 # comparison in tcp.c.  It's safe to ignore.
-$(LWIP_OBJ_DIR)/core/tcp.o: LWIP_CFLAGS += -Wno-tautological-constant-out-of-range-compare
-
-$(LWIP_OBJ_DIR)/%.o: $(LWIP_SRC_DIR)/%.c
-	@mkdir -p $(dir $@)
-	$(strip $(ICP_CC) -o $@ -c $(LWIP_CPPFLAGS) $(ICP_CPPFLAGS) $(LWIP_CFLAGS) $(ICP_COPTS) $<)
-
-.PHONY: clean_lwip
-clean_lwip:
-	@rm -rf $(LWIP_OBJ_DIR)
-clean: clean_lwip
+$(LWIP_OBJ_DIR)/core/tcp.o: LWIP_FLAGS += -Wno-tautological-constant-out-of-range-compare

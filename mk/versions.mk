@@ -26,3 +26,6 @@ endif
 
 #Generate current timestamp per organizational requirements.
 TIMESTAMP := $(shell date -u +%Y-%m-%dT%H:%M:%S%Z)
+
+# This dummy target allows us to treat versions as a standard dependency
+.PHONY: versions

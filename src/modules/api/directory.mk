@@ -2,7 +2,7 @@
 # Makefile component for API code
 #
 
-API_DEPENDS += pistache json
+API_DEPENDS += pistache json versions
 
 API_SOURCES += \
 	api_config_file_resources.cpp \

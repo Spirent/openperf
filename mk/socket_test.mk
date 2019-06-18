@@ -13,51 +13,32 @@ SOCKTEST_INC_DIR := $(ICP_ROOT)/src/modules
 SOCKTEST_LIB_DIR := $(ICP_BUILD_ROOT)/lib
 
 SOCKTEST_SOURCES :=
-SOCKTEST_OBJECTS :=
 SOCKTEST_DEPENDS :=
 SOCKTEST_LDLIBS  :=
 
-include $(SOCKTEST_SRC_DIR)/module.mk
+include $(SOCKTEST_SRC_DIR)/directory.mk
 
-SOCKTEST_OBJECTS += $(patsubst %, $(SOCKTEST_OBJ_DIR)/%, \
-	$(patsubst %.c, %.o, $(filter %.c, $(SOCKTEST_SOURCES))))
-
-SOCKTEST_OBJECTS += $(patsubst %, $(SOCKTEST_OBJ_DIR)/%, \
-	$(patsubst %.cpp, %.o, $(filter %.cpp, $(SOCKTEST_SOURCES))))
+SOCKTEST_OBJECTS := $(call icp_generate_objects,$(SOCKTEST_SOURCES),$(SOCKTEST_OBJ_DIR))
 
 SOCKTEST_LIBRARY := icpsocket_test
 SOCKTEST_TARGET := $(SOCKTEST_LIB_DIR)/lib$(SOCKTEST_LIBRARY).a
-
--include $(SOCKTEST_OBJECTS:.o=.d)
 
 ICP_INC_DIRS += $(SOCKTEST_INC_DIR)
 ICP_LIB_DIRS += $(SOCKTEST_LIB_DIR)
 ICP_LDLIBS += -l$(SOCKTEST_LIBRARY) $(SOCKTEST_LDLIBS)
 
-# Load external dependencies, too
-$(foreach DEP, $(SOCKTEST_DEPENDS), $(eval include $(ICP_ROOT)/mk/$(DEP).mk))
+# Load external dependencies
+-include $(SOCKTEST_OBJECTS:.o=.d)
+$(call icp_include_dependencies,$(SOCKTEST_DEPENDS))
 
 ###
 # Build rules
 ###
-$(SOCKTEST_OBJECTS): | $(SOCKTEST_DEPENDS)
-
-$(SOCKTEST_OBJ_DIR)/%.o: $(SOCKTEST_SRC_DIR)/%.c
-	@mkdir -p $(dir $@)
-	$(strip $(ICP_CC) -o $@ -c $(ICP_CPPFLAGS) $(ICP_CFLAGS) $(ICP_COPTS) $(ICP_DEFINES) $<)
-
-$(SOCKTEST_OBJ_DIR)/%.o: $(SOCKTEST_SRC_DIR)/%.cpp
-	@mkdir -p $(dir $@)
-	$(strip $(ICP_CXX) -o $@ -c $(ICP_CPPFLAGS) $(ICP_CXXFLAGS) $(ICP_COPTS) $(ICP_DEFINES) $<)
+$(eval $(call icp_generate_build_rules,$(SOCKTEST_SOURCES),SOCKTEST_SRC_DIR,SOCKTEST_OBJ_DIR,SOCKTEST_DEPENDS))
+$(eval $(call icp_generate_clean_rules,socket_test,SOCKTEST_TARGET,SOCKTEST_OBJECTS))
 
 $(SOCKTEST_TARGET): $(SOCKTEST_OBJECTS)
-	@mkdir -p $(dir $@)
-	$(strip $(ICP_AR) $(ICP_ARFLAGS) $@ $(SOCKTEST_OBJECTS))
+	$(call icp_link_library,$@,$(SOCKTEST_OBJECTS))
 
 .PHONY: socket_test
 socket_test: $(SOCKTEST_TARGET)
-
-.PHONY: clean_socket_test
-clean_socket_test:
-	@rm -rf $(SOCKTEST_OBJ_DIR) $(SOCKTEST_TARGET)
-clean: clean_socket_test
