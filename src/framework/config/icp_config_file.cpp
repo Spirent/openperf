@@ -2,7 +2,6 @@
 #include "icp_config_file.h"
 #include <iostream>
 #include <unistd.h>
-#include "yaml-cpp/yaml.h"
 #include <string.h>
 
 namespace icp::config::file {
@@ -14,6 +13,28 @@ static string config_file_name;
 std::string_view icp_get_config_file_name()
 {
     return config_file_name;
+}
+
+tl::expected<YAML::Node, std::string> icp_get_module_config(std::string_view module_name)
+{
+    if (config_file_name.empty()) { return YAML::Node(); }
+
+    YAML::Node root_node;
+    try {
+        root_node = YAML::LoadFile(config_file_name);
+    } catch (std::exception &e) {
+        return tl::make_unexpected(e.what());
+    }
+
+    YAML::Node modules_node = root_node["modules"];
+
+    // Option handler below verifies there is a "modules:" section.
+    // If you get this far without one that's definitely a bug.
+    assert(modules_node);
+
+    if (modules_node[std::string(module_name)]) { return modules_node[std::string(module_name)]; }
+
+    return YAML::Node();
 }
 
 extern "C" {

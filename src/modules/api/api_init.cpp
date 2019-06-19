@@ -9,6 +9,8 @@
 #include "pistache/router.h"
 
 #include "core/icp_core.h"
+#include "core/icp_log.h"
+#include "config/icp_config_file.h"
 #include "api/api_config_file_resources.h"
 #include "api/api_route_handler.h"
 
@@ -21,6 +23,19 @@ static int module_version = 1;
 
 using namespace Pistache;
 
+static int set_service_port(long port)
+{
+    if (port == 0) {
+        return (-EINVAL);
+    } else if (port > 65535) {
+        return (-ERANGE);
+    } else {
+        service_port = static_cast<in_port_t>(port);
+    }
+
+    return (0);
+}
+
 static int handle_options(int opt, const char *opt_arg)
 {
     if (opt != 'p' || opt_arg == nullptr) {
@@ -28,17 +43,9 @@ static int handle_options(int opt, const char *opt_arg)
     }
 
     long p = std::strtol(opt_arg, nullptr, 10);
+    int result = set_service_port(p);
 
-    /* Check return value */
-    if (p == 0) {
-        return (-EINVAL);
-    } else if (p > 65535) {
-        return (-ERANGE);
-    } else {
-        service_port = static_cast<in_port_t>(p);
-    }
-
-    return (0);
+    return (result);
 }
 
 in_port_t api_get_service_port(void)
@@ -54,6 +61,35 @@ Rest::Route::Result NotFound(const Rest::Request &request __attribute__((unused)
     return Rest::Route::Result::Ok;
 }
 
+int api_configure_self()
+{
+    auto result = icp::config::file::icp_get_module_config("api");
+    if (!result) {
+        ICP_LOG(ICP_LOG_ERROR, "%s", result.error().c_str());
+        return (EINVAL);
+    }
+
+    YAML::Node root_node = result.value();
+
+    if (!root_node.IsMap()) {
+        ICP_LOG(ICP_LOG_ERROR, "api configuration node does not contain any values!");
+        return (EINVAL);
+    }
+
+    if (root_node["port"]) {
+        try {
+            int res = set_service_port(root_node["port"].as<long>());
+            if (res != 0) { return (res); }
+        }
+        catch (YAML::BadConversion &err) {
+            ICP_LOG(ICP_LOG_ERROR, "Error converting configuration file value: %s", err.what());
+            return (EINVAL);
+        }
+    }
+
+    return (0);
+}
+
 class service {
 public:
     service() {};
@@ -62,7 +98,7 @@ public:
         // Return 404 for anything we don't explicitly handle
         Rest::Routes::NotFound(m_router, NotFound);
 
-        return (0);
+        return (api_configure_self());
     }
 
     int post_init(void *context) {
