@@ -5,11 +5,9 @@
 
 #include "lwip/netifapi.h"
 #include "lwip/snmp.h"
-#include "netif/ethernet.h"
 
 #include "packetio/drivers/dpdk/dpdk.h"
 #include "packetio/drivers/dpdk/model/port_info.h"
-#include "packetio/memory/dpdk/memp.h"
 #include "packetio/memory/dpdk/pbuf_utils.h"
 #include "packetio/stack/dpdk/net_interface.h"
 #include "packetio/stack/dpdk/offload_utils.h"
@@ -183,16 +181,6 @@ static err_t net_interface_rx(pbuf *p, netif* netif)
     return (error);
 }
 
-static err_t net_interface_input(pbuf *p, netif* netif)
-{
-    assert(p);
-    assert(netif);
-
-    net_interface *ifp = reinterpret_cast<net_interface*>(netif->state);
-    ifp->handle_input();
-    return (ERR_OK);
-}
-
 static err_t net_interface_dpdk_init(netif* netif)
 {
     net_interface *ifp = reinterpret_cast<net_interface*>(netif->state);
@@ -316,11 +304,6 @@ static void unset_ipv4_interface(const std::optional<interface::ipv4_protocol_co
     }
 }
 
-static std::string recvq_name(const netif& netintf)
-{
-    return (std::string("io") + std::to_string(netintf.num) + "_recvq");
-}
-
 net_interface::net_interface(std::string_view id, const interface::config_data& config,
                              driver::tx_burst tx, int port_index)
     : m_id(id)
@@ -328,7 +311,6 @@ net_interface::net_interface(std::string_view id, const interface::config_data& 
     , m_max_gso_length(net_interface_max_gso_length(port_index))
     , m_config(config)
     , m_transmit(tx)
-    , m_notify(false)
 {
     m_netif.state = this;
 
@@ -339,9 +321,14 @@ net_interface::net_interface(std::string_view id, const interface::config_data& 
         throw std::runtime_error(lwip_strerr(netif_error));
     }
 
-    m_recvq = std::unique_ptr<rte_ring, rte_ring_deleter>
-        ((rte_ring_create(recvq_name(m_netif).c_str(), recvq_size,
-                          rte_eth_dev_socket_id(m_port_index), RING_F_SC_DEQ)));
+    /**
+     * Update queuing strategy if necessary; direct is the default.
+     * XXX: this decision needs to come from a constructor parameter.
+     */
+    if (rte_lcore_count() > 2) {
+        m_receive.emplace<netif_rx_strategy::queueing>(std::string_view(m_netif.name, 2),
+                                                       m_netif.num, port_index);
+    }
 
     /* Setup callbacks to allow the interface to interact with the port state */
     int dpdk_error = rte_eth_dev_callback_register(m_port_index,
@@ -367,20 +354,23 @@ net_interface::~net_interface()
 }
 
 
-int net_interface::handle_rx(struct pbuf* p)
+err_t net_interface::handle_rx(struct pbuf* p)
 {
-    if (rte_ring_enqueue(m_recvq.get(), p) != 0) {
-        ICP_LOG(ICP_LOG_WARNING, "Receive queue full on %c%c%u\n",
-                m_netif.name[0], m_netif.name[1], m_netif.num);
-        return (ERR_BUF);
-    }
-    if (!m_notify.test_and_set(std::memory_order_acquire)) {
-        tcpip_inpkt(p, &m_netif, net_interface_input);
-    }
-    return (ERR_OK);
+    auto handle_rx_visitor = [&](auto& rx_strategy) {
+                                 return (rx_strategy.handle_rx(p, &m_netif));
+                             };
+    return (std::visit(handle_rx_visitor, m_receive));
 }
 
-int net_interface::handle_tx(struct pbuf* p)
+err_t net_interface::handle_rx_notify()
+{
+    auto handle_rx_notify_visitor = [&](auto& rx_strategy) {
+                                    return (rx_strategy.handle_rx_notify(&m_netif));
+                                };
+    return (std::visit(handle_rx_notify_visitor, m_receive));
+}
+
+err_t net_interface::handle_tx(struct pbuf* p)
 {
     /*
      * Bump the reference count on the mbuf chain before transmitting; when this
@@ -401,23 +391,6 @@ int net_interface::handle_tx(struct pbuf* p)
     return (m_transmit(port_index(), 0, reinterpret_cast<void**>(pkts), 1) == 1 ? ERR_OK : ERR_BUF);
 }
 
-void net_interface::handle_input()
-{
-    static constexpr size_t rx_burst_size = 32;
-    std::array<pbuf*, rx_burst_size> pbufs;
-
-    do {
-        auto nb_pbufs = rte_ring_dequeue_burst(m_recvq.get(),
-                                               reinterpret_cast<void**>(pbufs.data()),
-                                               rx_burst_size, nullptr);
-
-        for (size_t i = 0; i < nb_pbufs; i++) {
-            ethernet_input(pbufs[i], &m_netif);
-        }
-    } while (!rte_ring_empty(m_recvq.get()));
-
-    m_notify.clear(std::memory_order_release);
-}
 
 void* net_interface::operator new(size_t size)
 {
