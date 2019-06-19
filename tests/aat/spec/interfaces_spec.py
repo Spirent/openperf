@@ -434,7 +434,7 @@ with description('Interfaces,') as self:
 
     with description ('configuration file,'):
         with before.all:
-            service = Service(CONFIG.service('interface-config-file'))
+            service = Service(CONFIG.service('config-file'))
             self.process = service.start()
             self.api = client.api.InterfacesApi(service.client())
 

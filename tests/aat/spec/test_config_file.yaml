@@ -3,26 +3,35 @@ core:
 modules:
 
 resources:
+  /ports/port-bond:
+    kind: bond
+    config:
+      bond:
+        mode: lag_802_3_ad
+        ports:
+          - port0
+          - port1
+
   /interfaces/interface-one:
-    port_id: "port0"
+    port_id: port0
     config:
       protocols:
         - eth:
             mac_address: "00:10:94:ae:d6:aa"
         - ipv4:
-            method: "static"
+            method: static
             static:
               address: "198.51.100.10"
               prefix_length: 24
               gateway: "198.51.100.1"
 
   /interfaces/interface-two:
-    port_id: "port1"
+    port_id: port1
     config:
       protocols:
         - eth:
             mac_address: "00:10:94:ac:db:ba"
         - ipv4:
-            method: "dhcp"
+            method: dhcp
             dhcp:
-              hostname: "device-one"
+              hostname: device-one

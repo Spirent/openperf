@@ -222,7 +222,7 @@ with description('Ports,') as self:
 
     with description ('configuration file,'):
         with before.all:
-           service = Service(CONFIG.service('port-config-file'))
+           service = Service(CONFIG.service('config-file'))
            self.process = service.start()
            self.api = client.api.PortsApi(service.client())
 
