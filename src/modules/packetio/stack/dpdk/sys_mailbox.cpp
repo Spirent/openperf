@@ -165,7 +165,7 @@ std::optional<void*> sys_mbox::tryfetch()
 
 extern "C" {
 
-err_t sys_mbox_new(sys_mbox** mboxp, int size)
+err_t sys_mbox_new(sys_mbox_t* mboxp, int size)
 {
     assert(mboxp);
     sys_mbox *m = new sys_mbox(size);
@@ -174,24 +174,24 @@ err_t sys_mbox_new(sys_mbox** mboxp, int size)
     return (ERR_OK);
 }
 
-void sys_mbox_free(sys_mbox** mboxp)
+void sys_mbox_free(sys_mbox_t* mboxp)
 {
     assert(*mboxp);
     delete *mboxp;
     *mboxp = nullptr;
 }
 
-int sys_mbox_fd(sys_mbox** mboxp)
+int sys_mbox_fd(const sys_mbox_t* mboxp)
 {
     assert(mboxp);
-    sys_mbox* mbox = *mboxp;
+    const sys_mbox_t mbox = *mboxp;
     return (mbox->fd());
 }
 
-void sys_mbox_clear_notifications(sys_mbox** mboxp)
+void sys_mbox_clear_notifications(sys_mbox_t* mboxp)
 {
     assert(mboxp);
-    sys_mbox* mbox = *mboxp;
+    sys_mbox_t mbox = *mboxp;
 
     LWIP_DEBUGF(SYS_DEBUG, ("sys_mbox_clear_notification: mbox %p fd %d\n",
                             (void*)mbox, mbox->fd()));
@@ -199,12 +199,12 @@ void sys_mbox_clear_notifications(sys_mbox** mboxp)
     mbox->clear_notifications();
 }
 
-err_t sys_mbox_trypost(sys_mbox** mboxp, void* msg)
+err_t sys_mbox_trypost(sys_mbox_t* mboxp, void* msg)
 {
     assert(mboxp);
     assert(msg);
 
-    sys_mbox* mbox = *mboxp;
+    sys_mbox_t mbox = *mboxp;
 
     LWIP_DEBUGF(SYS_DEBUG, ("sys_mbox_trypost: mbox %p fd %d msg %p\n",
                             (void *)mbox, mbox->fd(), msg));
@@ -212,12 +212,12 @@ err_t sys_mbox_trypost(sys_mbox** mboxp, void* msg)
     return (mbox->trypost(msg) ? ERR_OK : ERR_BUF);
 }
 
-void sys_mbox_post(sys_mbox** mboxp, void* msg)
+void sys_mbox_post(sys_mbox_t* mboxp, void* msg)
 {
     assert(mboxp);
     assert(msg);
 
-    sys_mbox* mbox = *mboxp;
+    sys_mbox_t mbox = *mboxp;
 
     LWIP_DEBUGF(SYS_DEBUG, ("sys_mbox_post: mbox %p fd %d msg %p\n",
                             (void *)mbox, mbox->fd(), msg));
@@ -225,12 +225,12 @@ void sys_mbox_post(sys_mbox** mboxp, void* msg)
     mbox->post(msg);
 }
 
-u32_t sys_arch_mbox_tryfetch(sys_mbox** mboxp, void** msgp)
+u32_t sys_arch_mbox_tryfetch(sys_mbox_t* mboxp, void** msgp)
 {
     assert(mboxp);
     assert(msgp);
 
-    sys_mbox* mbox = *mboxp;
+    sys_mbox_t mbox = *mboxp;
 
     auto msg = mbox->tryfetch();
     if (!msg) return (SYS_MBOX_EMPTY);
@@ -241,12 +241,12 @@ u32_t sys_arch_mbox_tryfetch(sys_mbox** mboxp, void** msgp)
     return (0);
 }
 
-u32_t sys_arch_mbox_fetch(sys_mbox** mboxp, void** msgp, u32_t timeout)
+u32_t sys_arch_mbox_fetch(sys_mbox_t* mboxp, void** msgp, u32_t timeout)
 {
     assert(mboxp);
     assert(msgp);
 
-    sys_mbox* mbox = *mboxp;
+    sys_mbox_t mbox = *mboxp;
 
     auto start = std::chrono::steady_clock::now();
     auto msg = mbox->fetch(timeout);

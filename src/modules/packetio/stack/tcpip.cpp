@@ -79,16 +79,9 @@ sys_mutex_t lock_tcpip_core;
 /* The timeout_id for our timout callback */
 static uint32_t tcpip_timeout_id;
 
-/**
- * The icp event loop code expects timeouts to be specified as a uint64_t
- * containing nanosecond units.  Provide a convenience mechanism to perform
- * the conversion.
- */
-using loop_ns = std::chrono::duration<uint64_t, std::nano>;
+namespace icp::packetio::tcpip {
 
-static int
-handle_tcpip_timeout(const struct icp_event_data *data,
-                     void *arg __attribute__((unused)))
+std::chrono::milliseconds handle_timeouts()
 {
     std::chrono::milliseconds sleeptime;
     do {
@@ -96,30 +89,27 @@ handle_tcpip_timeout(const struct icp_event_data *data,
         sleeptime = std::chrono::milliseconds(sys_timeouts_sleeptime());
     } while (sleeptime.count() == 0);
 
-    icp_event_loop_update(data->loop, tcpip_timeout_id,
-                          std::chrono::duration_cast<loop_ns>(sleeptime).count());
-
-    return (0);
+    return (sleeptime);
 }
-#endif /* LWIP_TIMERS */
 
-static int
-handle_tcpip_msg(const struct icp_event_data *data, void *arg)
+int handle_messages(sys_mbox_t mbox)
 {
-    LWIP_UNUSED_ARG(data);
-    auto mbox = reinterpret_cast<sys_mbox_t>(arg);
     struct tcpip_msg *msg = nullptr;
+    bool finished = false;
+
+    LWIP_TCPIP_THREAD_ALIVE();
 
     /* acknowledge notifications */
     sys_mbox_clear_notifications(&mbox);
 
     while (sys_arch_mbox_tryfetch(&mbox, (void **)&msg) != SYS_MBOX_EMPTY) {
-        LOCK_TCPIP_CORE();
         if (msg == nullptr) {
             LWIP_DEBUGF(TCPIP_DEBUG, ("tcpip_thread: invalid message: NULL\n"));
             LWIP_ASSERT("tcpip_thread: invalid message", 0);
             continue;
         }
+
+        LOCK_TCPIP_CORE();
 
         switch (static_cast<int>(msg->type)) {
 #if !LWIP_TCPIP_CORE_LOCKING
@@ -167,7 +157,7 @@ handle_tcpip_msg(const struct icp_event_data *data, void *arg)
             break;
 
         case TCPIP_MSG_SHUTDOWN:
-            icp_event_loop_exit(data->loop);
+            finished = true;
             sys_sem_signal(msg->msg.api_call.sem);
             break;
 
@@ -177,7 +167,40 @@ handle_tcpip_msg(const struct icp_event_data *data, void *arg)
             break;
         }
 
-        LWIP_TCPIP_THREAD_ALIVE();
+        UNLOCK_TCPIP_CORE();
+    }
+
+    return (finished ? -1 : 0);
+}
+
+}
+
+/**
+ * The icp event loop code expects timeouts to be specified as a uint64_t
+ * containing nanosecond units.  Provide a convenience mechanism to perform
+ * the conversion.
+ */
+using loop_ns = std::chrono::duration<uint64_t, std::nano>;
+
+static int
+handle_tcpip_timeout(const struct icp_event_data *data,
+                     void *arg __attribute__((unused)))
+{
+    auto sleeptime = icp::packetio::tcpip::handle_timeouts();
+    icp_event_loop_update(data->loop, tcpip_timeout_id,
+                          std::chrono::duration_cast<loop_ns>(sleeptime).count());
+
+    return (0);
+}
+#endif /* LWIP_TIMERS */
+
+static int
+handle_tcpip_msg(const struct icp_event_data *data, void *arg)
+{
+    auto mbox = reinterpret_cast<sys_mbox_t>(arg);
+
+    if (icp::packetio::tcpip::handle_messages(mbox) == -1) {
+        icp_event_loop_exit(data->loop);
     }
 
     return (0);
