@@ -46,6 +46,8 @@ tx_queue::tx_queue(uint16_t port_id, uint16_t queue_id)
 
 tx_queue::~tx_queue() { close(m_fd); }
 
+int tx_queue::event_fd() const { return (m_fd); }
+
 uint16_t tx_queue::port_id() const { return (m_port); }
 
 uint16_t tx_queue::queue_id() const { return (m_queue); }
@@ -56,45 +58,6 @@ uint32_t tx_queue::poll_id() const
 }
 
 rte_ring* tx_queue::ring() const { return (m_ring.get()); }
-
-bool tx_queue::add(int poll_fd, void* data)
-{
-    /*
-     * Make sure the event always has the correct data before use.  The
-     * DPDK functions will wipe the struct when/if we remove the event.
-     */
-    m_event = rte_epoll_event{
-        .epdata = {
-            .event = EPOLLIN | EPOLLET,
-            .data = data,
-            .cb_fun = nullptr,
-            .cb_arg = nullptr
-        }
-    };
-
-    auto error = rte_epoll_ctl(poll_fd, EPOLL_CTL_ADD,
-                               m_fd, &m_event);
-    if (error) {
-        ICP_LOG(ICP_LOG_ERROR, "Could not add poll event for tx queue on %u:%u: %s\n",
-                port_id(), queue_id(), strerror(std::abs(error)));
-    }
-
-    return (!error);
-}
-
-bool tx_queue::del(int poll_fd, void* data)
-{
-    assert(m_event.epdata.data == data);
-    auto error = rte_epoll_ctl(poll_fd, EPOLL_CTL_DEL,
-                               m_fd, &m_event);
-
-    if (error) {
-        ICP_LOG(ICP_LOG_ERROR, "Could not delete poll event for tx queue on %u:%u: %s\n",
-                port_id(), queue_id(), strerror(std::abs(error)));
-    }
-
-    return (!error);
-}
 
 bool tx_queue::enable()
 {

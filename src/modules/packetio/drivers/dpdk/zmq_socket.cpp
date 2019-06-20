@@ -1,7 +1,7 @@
 #include <cassert>
 #include <stdexcept>
 #include <string>
-#include <sys/epoll.h>
+
 #include <zmq.h>
 
 #include "packetio/drivers/dpdk/zmq_socket.h"
@@ -14,7 +14,7 @@ static int get_socket_fd(void *socket)
     int fd = -1;
     size_t fd_size = sizeof(fd);
 
-    if (auto error = zmq_getsockopt(socket, ZMQ_FD, &fd, &fd_size); error != 0) {
+    if (zmq_getsockopt(socket, ZMQ_FD, &fd, &fd_size) != 0) {
         return (-1);
     }
 
@@ -40,6 +40,12 @@ bool zmq_socket::readable() const
     return (m_signal);
 }
 
+bool zmq_socket::enable() const { return (true); }
+
+bool zmq_socket::disable() const { return (true); }
+
+int zmq_socket::event_fd() const { return (m_fd); }
+
 static void interrupt_event_callback(int fd __attribute__((unused)), void* arg)
 {
     assert(arg);
@@ -47,42 +53,15 @@ static void interrupt_event_callback(int fd __attribute__((unused)), void* arg)
     *signal = 1;
 }
 
-bool zmq_socket::add(int poll_fd, void* data)
+pollable_event<zmq_socket>::event_callback zmq_socket::event_callback_function() const
 {
-    m_signal = 0;
-    m_event = rte_epoll_event{
-        .epdata = {
-            .event = EPOLLIN | EPOLLET,
-            .data = data,
-            .cb_fun = interrupt_event_callback,
-            .cb_arg = &m_signal
-        }
-    };
-
-    auto error = rte_epoll_ctl(poll_fd, EPOLL_CTL_ADD, m_fd, &m_event);
-    if (error) {
-        ICP_LOG(ICP_LOG_ERROR, "Could not add poll event for zmq socket fd %d: %s\n",
-                m_fd, strerror(std::abs(error)));
-    }
-
-    return (!error);
+    return (interrupt_event_callback);
 }
 
-bool zmq_socket::del(int poll_fd, void* data __attribute__((unused)))
+void* zmq_socket::event_callback_argument()
 {
-    auto error = rte_epoll_ctl(poll_fd, EPOLL_CTL_DEL,
-                               m_fd, &m_event);
-
-    if (error) {
-        ICP_LOG(ICP_LOG_ERROR, "Could not delete poll event for zmq socket %d: %s\n",
-                m_fd, strerror(std::abs(error)));
-    }
-
-    return (!error);
+    return (reinterpret_cast<void*>(&m_signal));
 }
 
-bool zmq_socket::enable() { return (true); }
-
-bool zmq_socket::disable() { return (true); }
 
 }
