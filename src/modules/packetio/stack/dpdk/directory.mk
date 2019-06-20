@@ -8,6 +8,6 @@ PIO_STACK_SOURCES += \
 	netif_utils.cpp \
 	netif_wrapper.cpp \
 	offload_utils.cpp \
-	stack.cpp \
+	stack_factory.cpp \
 	sys_arch.cpp \
 	sys_mailbox.cpp
