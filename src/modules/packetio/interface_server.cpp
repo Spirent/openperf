@@ -4,6 +4,7 @@
 #include <zmq.h>
 
 #include "core/icp_core.h"
+#include "config/icp_config_utils.h"
 #include "swagger/v1/model/Interface.h"
 #include "packetio/generic_interface.h"
 #include "packetio/json_transmogrify.h"
@@ -82,6 +83,11 @@ static void _handle_create_interface_request(generic_stack& stack, json& request
 {
     try {
         auto interface_model = json::parse(request["data"].get<std::string>()).get<Interface>();
+        auto id_check = config::icp_config_validate_id_string(interface_model.getId());
+        if (!id_check) {
+            throw std::runtime_error(id_check.error().c_str());
+        }
+
         // If user did not specify an id create one for them.
         if (interface_model.getId() == empty_id_string) {
             interface_model.setId(core::to_string(core::uuid::random()));

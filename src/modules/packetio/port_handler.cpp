@@ -205,7 +205,7 @@ void handler::update_port(const Rest::Request &request, Http::ResponseWriter res
 void handler::delete_port(const Rest::Request &request, Http::ResponseWriter response)
 {
     auto id = request.param(":id").as<std::string>();
-    VALIDATE_ID(id, response, Http::Code::No_Content);
+    VALIDATE_ID(id, response, Http::Code::Not_Found);
 
     json api_request = {
         { "type", request_type::DELETE_PORT },
