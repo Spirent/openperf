@@ -26,6 +26,18 @@ typedef int (icp_option_init_fn)();
 typedef int (icp_option_callback_fn)(int opt, const char *optarg);
 
 /**
+ * Enum denoting the type of an option's data.
+ */
+enum icp_option_type {
+    ICP_OPTION_TYPE_NONE = 0,
+    ICP_OPTION_TYPE_STRING,
+    ICP_OPTION_TYPE_INT,
+    ICP_OPTION_TYPE_DOUBLE,
+    ICP_OPTION_TYPE_MAP,
+    ICP_OPTION_TYPE_LIST,
+};
+
+/**
  * A structure describing an option based init function
  */
 struct icp_option {
@@ -33,6 +45,7 @@ struct icp_option {
     const char *long_opt;
     int short_opt;
     int has_arg;
+    enum icp_option_type opt_type;
 };
 
 struct icp_options_data {
@@ -65,6 +78,25 @@ int icp_options_parse(int argc, char *argv[]);
  * Hash a long option string to the size of a short one (int).
  */
 int icp_options_hash_long(const char * long_opt);
+
+/**
+ * Retrieve long option string, if any.
+ * @param[in] op short-form option.
+ *
+ * @return
+ *  pointer to a character string if a long form option exists,
+ *  NULL otherwise.
+ */
+const char * icp_options_get_long_opt(int op);
+
+/**
+ * Retrieve type of an option value.
+ * @param[in] op short-form option.
+ *
+ * @return
+ *  value type for the given option.
+ */
+enum icp_option_type icp_options_get_option_type(int op);
 
 /**
  * Macro for registring option handlers

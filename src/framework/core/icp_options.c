@@ -211,6 +211,44 @@ void icp_options_register(struct icp_options_data *opt_data)
     SLIST_INSERT_HEAD(&icp_options_data_head, opt_data, next);
 }
 
+const char * icp_options_get_long_opt(int op)
+{
+    struct icp_options_data *opt_data = _find_options_data(op);
+    assert(opt_data);
+    if (!opt_data) {
+        return (NULL);
+    }
+
+    for (const struct icp_option *curr = opt_data->options;
+         curr->description != NULL;
+         curr++) {
+        if (curr->short_opt == op) {
+            return (curr->long_opt);
+        }
+    }
+
+    return (NULL);
+}
+
+enum icp_option_type icp_options_get_option_type(int op)
+{
+    struct icp_options_data *opt_data = _find_options_data(op);
+    assert(opt_data);
+    if (!opt_data) {
+        return (ICP_OPTION_TYPE_NONE);
+    }
+
+    for (const struct icp_option *curr = opt_data->options;
+         curr->description != NULL;
+         curr++) {
+        if (curr->short_opt == op) {
+            return (curr->opt_type);
+        }
+    }
+
+    return (ICP_OPTION_TYPE_NONE);
+}
+
 /*
  * Register the help option.
  * Note: we don't register any callbacks because we can handle them directly.
@@ -222,8 +260,8 @@ static struct icp_options_data help_option = {
     .init = NULL,
     .callback = NULL,
     .options = {
-        { "Print this message.", "help", 'h', 0 },
-        { 0, 0, 0, 0 },
+        { "Print this message.", "help", 'h', 0, ICP_OPTION_TYPE_NONE },
+        { 0, 0, 0, 0, 0 },
     }
 };
 
