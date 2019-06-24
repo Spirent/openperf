@@ -82,7 +82,7 @@ void udp_socket::handle_io()
     std::array<dgram_channel_item, api::socket_queue_length> items;
     auto nb_items = m_channel->recv(items.data(), items.size());
     for (size_t idx = 0; idx < nb_items; idx++) {
-        auto& [dest, data] = items[idx];
+        auto& [dest, data, timestamp] = items[idx];
         if (dest) udp_sendto(m_pcb.get(), const_cast<pbuf*>(data.pbuf()),
                              reinterpret_cast<const ip_addr_t*>(&dest->addr()), dest->port());
         else      udp_send(m_pcb.get(), const_cast<pbuf*>(data.pbuf()));

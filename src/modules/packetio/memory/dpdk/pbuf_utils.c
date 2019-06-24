@@ -112,3 +112,9 @@ uint16_t packetio_memory_pbuf_header_available(const struct pbuf *p)
     uint16_t payload_offset = (uintptr_t)(p->payload) - (uintptr_t)(m->buf_addr);
     return (payload_offset);
 }
+
+int packetio_memory_pbuf_timestamp_offset(const struct pbuf *p)
+{
+    struct rte_mbuf* m = packetio_memory_pbuf_to_mbuf(p);
+    return ((uintptr_t)p - (uintptr_t)(&m->timestamp));
+}

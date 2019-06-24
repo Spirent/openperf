@@ -47,7 +47,7 @@ struct dgram_ip_addr {
 
 class dgram_channel_addr {
     dgram_ip_addr m_addr;
-    in_port_t  m_port;
+    in_port_t m_port;
 
 public:
     dgram_channel_addr()
@@ -77,6 +77,7 @@ public:
 struct dgram_channel_item {
     std::optional<dgram_channel_addr> address;
     pbuf_vec pvec;
+    std::optional<void*> tstamp;
 };
 
 typedef bipartite_ring<dgram_channel_item, api::socket_queue_length> dgram_ring;
