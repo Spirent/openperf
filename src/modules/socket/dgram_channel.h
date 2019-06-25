@@ -47,7 +47,7 @@ struct dgram_ip_addr {
 
 class dgram_channel_addr {
     dgram_ip_addr m_addr;
-    in_port_t  m_port;
+    in_port_t m_port;
 
 public:
     dgram_channel_addr()
