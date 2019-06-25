@@ -217,7 +217,7 @@ int socket(int domain, int type, int protocol)
             /*
              * Close socket and return -1 on BINDTODEVICE failure.
              */
-            if (client_call(setsockopt, s, SOL_SOCKET, SO_BINDTODEVICE, envp, strlen(envp)+1) < 0) {
+            if (client_call(setsockopt, s, SOL_SOCKET, SO_BINDTODEVICE, envp, strlen(envp)) < 0) {
                 client_call(close, s);
                 return (-1);
             }

@@ -27,6 +27,8 @@ socket make_socket(int type, int protocol)
         return (tcp_socket());
     case SOCK_DGRAM:
         return (udp_socket());
+    case SOCK_RAW:
+        return (raw_socket());
     default:
         return (std::monostate);
     }
@@ -54,6 +56,9 @@ api::reply_msg socket_wrapper::handle_request(const api::request_msg& request)
                                return (socket.handle_request(request));
                            },
                            [&](udp_socket& socket) -> api::reply_msg {
+                               return (socket.handle_request(request));
+                           }),
+                           [&](raw_socket& socket) -> api::reply_msg {
                                return (socket.handle_request(request));
                            }),
                        m_socket));
