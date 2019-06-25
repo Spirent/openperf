@@ -26,26 +26,14 @@ using namespace Pistache;
 static int set_service_port(long port)
 {
     if (port == 0) {
-        return (-EINVAL);
+        return (EINVAL);
     } else if (port > 65535) {
-        return (-ERANGE);
+        return (ERANGE);
     } else {
         service_port = static_cast<in_port_t>(port);
     }
 
     return (0);
-}
-
-static int handle_options(int opt, const char *opt_arg)
-{
-    if (opt != 'p' || opt_arg == nullptr) {
-        return (-EINVAL);
-    }
-
-    long p = std::strtol(opt_arg, nullptr, 10);
-    int result = set_service_port(p);
-
-    return (result);
 }
 
 in_port_t api_get_service_port(void)
@@ -70,6 +58,10 @@ int api_configure_self()
     }
 
     YAML::Node root_node = result.value();
+
+    if (root_node.size() == 0) {
+        return (0);
+    }
 
     if (!root_node.IsMap()) {
         ICP_LOG(ICP_LOG_ERROR, "api configuration node does not contain any values!");
@@ -155,11 +147,6 @@ private:
 }
 
 extern "C" {
-
-int api_option_handler(int opt, const char *opt_arg)
-{
-    return (icp::api::handle_options(opt, opt_arg));
-}
 
 int api_service_pre_init(void *context, void *state)
 {
