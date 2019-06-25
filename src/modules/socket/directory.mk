@@ -15,6 +15,7 @@ SOCKSRV_SOURCES += \
 	server/stream_channel.cpp \
 	server/socket_utils.cpp \
 	server/api_server.cpp \
+	server/raw_socket.cpp \
 	server/tcp_socket.cpp \
 	server/udp_socket.cpp
 

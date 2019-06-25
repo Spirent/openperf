@@ -2,6 +2,7 @@
 #include <cerrno>
 
 #include "socket/server/generic_socket.h"
+#include "socket/server/raw_socket.h"
 #include "socket/server/tcp_socket.h"
 #include "socket/server/udp_socket.h"
 #include "socket/server/socket_utils.h"
@@ -12,7 +13,7 @@ namespace server {
 
 tl::expected<generic_socket, int> make_socket(icp::socket::server::allocator& allocator,
                                               int domain, int type,
-                                              int protocol __attribute__((unused)))
+                                              int protocol)
 {
     if (domain != AF_INET && domain != AF_INET6) {
         return (tl::make_unexpected(EAFNOSUPPORT));
@@ -21,9 +22,13 @@ tl::expected<generic_socket, int> make_socket(icp::socket::server::allocator& al
     /* Mask out the options included with the type */
     switch (type & 0xff) {
     case SOCK_DGRAM:
+        /* temporary until ICMP over UDP is supported */
+        if (protocol == IPPROTO_ICMP || protocol == IPPROTO_ICMPV6) return (tl::make_unexpected(EACCES));
         return (generic_socket(udp_socket(allocator, type)));
     case SOCK_STREAM:
         return (generic_socket(tcp_socket(allocator, type)));
+    case SOCK_RAW:
+        return (generic_socket(raw_socket(allocator, type, protocol)));
     default:
         return (tl::make_unexpected(EPROTONOSUPPORT));
     }
@@ -133,6 +138,28 @@ tl::expected<int, int> copy_in(pid_t src_pid, const int *src_int)
     auto remote = iovec{
         .iov_base = const_cast<int*>(src_int),
         .iov_len = sizeof(int)
+    };
+
+    auto size = process_vm_readv(src_pid, &local, 1, &remote, 1, 0);
+    if (size == -1) {
+        return (tl::make_unexpected(errno));
+    }
+
+    return (value);
+}
+
+tl::expected<uint32_t, int> copy_in(pid_t src_pid, const uint32_t *src_uint)
+{
+    uint32_t value = 0;
+
+    auto local = iovec{
+        .iov_base = &value,
+        .iov_len = sizeof(uint32_t)
+    };
+
+    auto remote = iovec{
+        .iov_base = const_cast<uint32_t*>(src_uint),
+        .iov_len = sizeof(uint32_t)
     };
 
     auto size = process_vm_readv(src_pid, &local, 1, &remote, 1, 0);
