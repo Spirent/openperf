@@ -86,7 +86,7 @@ public:
     on_request_reply on_request(const api::request_getsockname&, const raw_connected&);
 
     /* getsockopt handlers */
-    static tl::expected<socklen_t, int> do_getsockopt(const raw_pcb*, const api::request_getsockopt&);
+    tl::expected<socklen_t, int> do_getsockopt(const raw_pcb*, const api::request_getsockopt&);
 
     template <typename State>
     on_request_reply on_request(const api::request_getsockopt& opt, const State&)

@@ -242,7 +242,21 @@ tl::expected<socklen_t, int> raw_socket::do_getsockopt(const raw_pcb* pcb,
 {
     switch (getsockopt.level) {
     case SOL_RAW:
-        return (tl::make_unexpected(ENOPROTOOPT));
+        switch (getsockopt.optname) {
+        case ICMP_FILTER: {
+            auto slength = getsockopt.optlen;
+            if (pcb->protocol != IPPROTO_ICMP) return (tl::make_unexpected(EOPNOTSUPP));
+            if (slength > sizeof(sizeof m_icmp_filter)) slength = sizeof(m_icmp_filter);
+            auto result = copy_out(getsockopt.id.pid,
+                                   getsockopt.optval,
+                                   &m_icmp_filter,
+                                   slength);
+            if (!result) return (tl::make_unexpected(result.error()));
+            return (slength);
+        }
+        default:
+            return (tl::make_unexpected(ENOPROTOOPT));
+        }
     case SOL_SOCKET:
         return (do_sock_getsockopt(reinterpret_cast<const ip_pcb*>(pcb), getsockopt));
     case IPPROTO_IP:
@@ -259,6 +273,7 @@ tl::expected<void, int> raw_socket::do_setsockopt(raw_pcb* pcb,
     case SOL_RAW:
         switch (setsockopt.optname) {
         case ICMP_FILTER: {
+            if (pcb->protocol != IPPROTO_ICMP) return (tl::make_unexpected(EOPNOTSUPP));
             auto opt = copy_in(setsockopt.id.pid,
                 reinterpret_cast<const uint32_t *>(setsockopt.optval));
             if (!opt) return (tl::make_unexpected(opt.error()));
