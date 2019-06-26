@@ -27,11 +27,18 @@ typedef int (icp_option_callback_fn)(int opt, const char *optarg);
 
 /**
  * Enum denoting the type of an option's data.
+ * Exact types are mapped as:
+ * NONE -> bool. True if present.
+ * STRING -> std::string.
+ * LONG -> long.
+ * DOUBLE -> double.
+ * MAP -> std::map<std::string, std::string> >
+ * LIST -> std::vector<std::string>
  */
 enum icp_option_type {
     ICP_OPTION_TYPE_NONE = 0,
     ICP_OPTION_TYPE_STRING,
-    ICP_OPTION_TYPE_INT,
+    ICP_OPTION_TYPE_LONG,
     ICP_OPTION_TYPE_DOUBLE,
     ICP_OPTION_TYPE_MAP,
     ICP_OPTION_TYPE_LIST,

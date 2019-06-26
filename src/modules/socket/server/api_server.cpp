@@ -22,6 +22,7 @@
 #include "socket/server/api_server.h"
 #include "core/icp_core.h"
 #include "core/icp_uuid.h"
+#include "icp_config_file.h"
 
 namespace icp {
 namespace socket {
@@ -31,7 +32,6 @@ using api_handler = icp::socket::server::api_handler;
 
 static constexpr std::string_view yama_file = "/proc/sys/kernel/yama/ptrace_scope";
 
-static bool unlink_stale_files = false;
 static std::string prefix_opt;
 
 static __attribute__((const)) uint64_t align_up(uint64_t x, uint64_t align)
@@ -39,12 +39,35 @@ static __attribute__((const)) uint64_t align_up(uint64_t x, uint64_t align)
     return ((x + align - 1) & ~(align - 1));
 }
 
+bool unlink_stale_files() {
+    auto result = config::file::icp_config_get_module_param("socket.force-unlink");
+    if (!result) { return false; }
+
+    return result.value().has_value();
+}
+
+std::string prefix_option() {
+    auto result = config::file::icp_config_get_module_param("socket.prefix");
+    if (!result) { return std::string(); }
+
+    if (!result.value().has_value()) { return std::string(); }
+
+    try {
+        return std::any_cast<std::string>(result.value());
+    }
+    catch (...) {
+        return std::string();
+    }
+}
+
 static icp::memory::shared_segment create_shared_memory(size_t size)
 {
-    auto shared_segment_name = (prefix_opt.length() > 0
-                                ? std::string(api::key) + ".memory." + prefix_opt
+    auto prefix_name = prefix_option();
+
+    auto shared_segment_name = (prefix_name.length() > 0
+                                ? std::string(api::key) + ".memory." + prefix_name
                                 : std::string(api::key) + ".memory");
-    if (unlink_stale_files) {
+    if (unlink_stale_files()) {
         if ((shm_unlink(shared_segment_name.data()) < 0) && (errno != ENOENT)) {
             throw std::runtime_error("Could not remove shared memory segment "
                                      + std::string(shared_segment_name) + ": " + strerror(errno));
@@ -70,14 +93,21 @@ socket::server::allocator* server::allocator() const
 
 static icp::socket::unix_socket create_unix_socket(const std::string_view path, int type)
 {
-    if (unlink_stale_files) {
-        if ((unlink(path.data()) < 0) && (errno != ENOENT)) {
+    // Is there a prefix for the path?
+    std::string full_path(path);
+    if (auto prefix_name = prefix_option();
+        prefix_name.length() > 0) {
+        full_path += "." + prefix_name;
+    }
+
+    if (unlink_stale_files()) {
+        if ((unlink(full_path.c_str()) < 0) && (errno != ENOENT)) {
             throw std::runtime_error("Could not remove shared unix domain socket "
-                                     + std::string(path) + ": " + strerror(errno));
+                                     + full_path + ": " + strerror(errno));
         }
     }
 
-    auto socket = icp::socket::unix_socket(path, type);
+    auto socket = icp::socket::unix_socket(full_path, type);
 
     return (socket);
 }
@@ -153,29 +183,16 @@ static void update_yama_related_process_settings()
     }
 }
 
-int api_server_option_handler(int opt, const char *opt_arg __attribute__((unused)))
-{
-    if (icp_options_hash_long("force-unlink") == opt) {
-        unlink_stale_files = true;
-        return (0);
-    }
-    if (icp_options_hash_long("prefix") == opt) {
-        prefix_opt = opt_arg;
-        return (0);
-    }
-    return (-EINVAL);
-}
-
 const char* api_server_options_prefix_option_get(void)
 {
+    prefix_opt = prefix_option();
     return (prefix_opt.c_str());
 }
 
 }
 
 server::server(icp::core::event_loop& loop)
-    : m_sock(create_unix_socket((prefix_opt.length() > 0) ? (api::server_socket() +
-                                "." + prefix_opt) : api::server_socket(),
+    : m_sock(create_unix_socket(api::server_socket(),
                                 api::socket_type))
     , m_shm(create_shared_memory(shm_size))
     , m_loop(loop)

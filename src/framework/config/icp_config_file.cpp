@@ -16,7 +16,7 @@ constexpr static std::string_view path_delimiter(".");
 constexpr static std::string_view list_delimiters(" ,");
 constexpr static std::string_view pair_delimiter("=");
 
-std::string_view icp_get_config_file_name()
+std::string_view icp_config_get_file_name()
 {
     return config_file_name;
 }
@@ -49,14 +49,38 @@ static void set_map_data_node(YAML::Node &node, std::string_view opt_data)
     node = output;
 }
 
-static void set_data_node(YAML::Node &node, std::string_view opt_data,
-                          enum icp_option_type opt_type)
+static std::any get_data_node_value(const YAML::Node &node, enum icp_option_type opt_type)
+{
+    switch (opt_type) {
+    case ICP_OPTION_TYPE_LONG:
+        return node.as<long>();
+        break;
+    case ICP_OPTION_TYPE_DOUBLE:
+        return node.as<double>();
+        break;
+    case ICP_OPTION_TYPE_STRING:
+        return node.as<std::string>();
+        break;
+    case ICP_OPTION_TYPE_MAP:
+        return node.as<std::map<std::string, std::string> >();
+        break;
+    case ICP_OPTION_TYPE_LIST:
+        return node.as<std::vector<std::string> >();
+        break;
+    case ICP_OPTION_TYPE_NONE:
+        return true;
+        break;
+    }
+}
+
+static void set_data_node_value(YAML::Node &node, std::string_view opt_data,
+                                enum icp_option_type opt_type)
 {
     switch (opt_type) {
     case ICP_OPTION_TYPE_STRING:
         node = std::string(opt_data);
         break;
-    case ICP_OPTION_TYPE_INT:
+    case ICP_OPTION_TYPE_LONG:
         node = strtol(opt_data.data(), nullptr, 10);
         break;
     case ICP_OPTION_TYPE_MAP:
@@ -79,11 +103,12 @@ static void set_data_node(YAML::Node &node, std::string_view opt_data,
 static YAML::Node make_data_node(std::string_view opt_data, enum icp_option_type opt_type)
 {
     YAML::Node node;
-    set_data_node(node, opt_data, opt_type);
+    set_data_node_value(node, opt_data, opt_type);
     return node;
 }
 
-/* Recursive function to build a new YAML tree path by the given
+/*
+ * Recursive function to build a new YAML tree path by the given
  * path component strings of the range [pos, end).
  */
 static YAML::Node build_argument_path(std::vector<std::string>::const_iterator pos,
@@ -99,7 +124,8 @@ static YAML::Node build_argument_path(std::vector<std::string>::const_iterator p
     return output;
 }
 
-/* Recursive function to traverse an existing YAML tree path by the given
+/*
+ * Recursive function to traverse an existing YAML tree path by the given
  * path component strings of the range [pos, end). If the entire path exists
  * the base case will assign the requested data value. Else, function will
  * switch over to creating a new path.
@@ -110,7 +136,7 @@ static void traverse_argument_path(YAML::Node &parent_node,
                                    std::string_view opt_data, enum icp_option_type opt_type)
 {
     if (pos == end) {
-        set_data_node(parent_node, opt_data, opt_type);
+        set_data_node_value(parent_node, opt_data, opt_type);
         return;
     }
 
@@ -118,7 +144,29 @@ static void traverse_argument_path(YAML::Node &parent_node,
         YAML::Node child_node = parent_node[*pos];
         traverse_argument_path(child_node, ++pos, end, opt_data, opt_type);
     } else {
-        parent_node = build_argument_path(++pos, end, opt_data, opt_type);
+        // Make a copy, else the ++pos operation on the right side will be reflected
+        // on the left side.
+        std::vector<std::string>::const_iterator cur_pos = pos;
+        parent_node[*cur_pos] = build_argument_path(++pos, end, opt_data, opt_type);
+    }
+
+    return;
+}
+
+static void get_param_by_path(const YAML::Node &parent_node,
+                              std::vector<std::string>::const_iterator pos,
+                              const std::vector<std::string>::const_iterator end,
+                              std::any &param_data,
+                              enum icp_option_type opt_type)
+{
+    if (pos == end) {
+        param_data = get_data_node_value(parent_node, opt_type);
+        return;
+    }
+
+    if (parent_node[*pos]) {
+        const YAML::Node child_node = parent_node[*pos];
+        get_param_by_path(child_node, ++pos, end, param_data, opt_type);
     }
 
     return;
@@ -151,7 +199,7 @@ static tl::expected<void, std::string> get_module_cli_params(std::string_view mo
     return {};
 }
 
-tl::expected<YAML::Node, std::string> icp_get_module_config(std::string_view module_name)
+tl::expected<YAML::Node, std::string> icp_config_get_module_params(std::string_view module_name)
 {
     YAML::Node module_node;
 
@@ -170,7 +218,6 @@ tl::expected<YAML::Node, std::string> icp_get_module_config(std::string_view mod
         assert(modules_node);
 
         if (modules_node[std::string(module_name)]) {
-            // return modules_node[std::string(module_name)];
             module_node = modules_node[std::string(module_name)];
         }
     }
@@ -180,6 +227,22 @@ tl::expected<YAML::Node, std::string> icp_get_module_config(std::string_view mod
     get_module_cli_params(module_name, module_node);
 
     return module_node;
+}
+
+tl::expected<std::any, std::string> icp_config_get_module_param(std::string_view param) {
+    auto param_path = split_string(param, path_delimiter);
+    auto pos = param_path.begin();
+    auto module_config = icp_config_get_module_params(*pos);
+
+    if (module_config) {
+        std::any param_data;
+        auto opt_type = icp_options_get_option_type(icp_options_hash_long(param.data()));
+        get_param_by_path(module_config.value(), ++pos, param_path.end(), param_data, opt_type);
+
+        return param_data;
+    }
+
+    return tl::make_unexpected(module_config.error());
 }
 
 extern "C" {

@@ -222,7 +222,10 @@ const char * icp_options_get_long_opt(int op)
     for (const struct icp_option *curr = opt_data->options;
          curr->description != NULL;
          curr++) {
-        if (curr->short_opt == op) {
+        /* Some arguments don't have a short option. */
+        if (op == (curr->short_opt ?
+                   curr->short_opt :
+                   icp_options_hash_long(curr->long_opt))) {
             return (curr->long_opt);
         }
     }
@@ -241,7 +244,10 @@ enum icp_option_type icp_options_get_option_type(int op)
     for (const struct icp_option *curr = opt_data->options;
          curr->description != NULL;
          curr++) {
-        if (curr->short_opt == op) {
+        /* Some arguments don't have a short option. */
+        if (op == (curr->short_opt ?
+                   curr->short_opt :
+                   icp_options_hash_long(curr->long_opt))) {
             return (curr->opt_type);
         }
     }
