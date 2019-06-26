@@ -9,7 +9,5 @@ PIO_STACK_SOURCES += \
 	netif_wrapper.cpp \
 	offload_utils.cpp \
 	stack_factory.cpp \
-	stack_msg_handler.cpp \
-	stack_timeout_handler.cpp \
 	sys_arch.cpp \
 	sys_mailbox.cpp

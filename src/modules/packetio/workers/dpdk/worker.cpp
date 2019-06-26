@@ -1,8 +1,7 @@
 #include <algorithm>
 #include <array>
+#include <atomic>  /* XXX: needed to clean up a header order issue in libc/libc++ */
 #include <chrono>
-#include <cstdio>
-#include <cstring>
 #include <memory>
 #include <optional>
 #include <variant>
@@ -12,34 +11,26 @@
 #include "lwip/netif.h"
 
 #include "core/icp_log.h"
+#include "core/icp_thread.h"
 #include "packetio/drivers/dpdk/dpdk.h"
-#include "packetio/drivers/dpdk/epoll_poller.h"
 #include "packetio/drivers/dpdk/queue_utils.h"
-#include "packetio/drivers/dpdk/worker_api.h"
 #include "packetio/memory/dpdk/pbuf_utils.h"
+#include "packetio/workers/dpdk/callback.h"
+#include "packetio/workers/dpdk/epoll_poller.h"
+#include "packetio/workers/dpdk/rx_queue.h"
+#include "packetio/workers/dpdk/tx_queue.h"
+#include "packetio/workers/dpdk/zmq_socket.h"
+#include "packetio/workers/dpdk/worker_api.h"
 
-namespace icp {
-namespace packetio {
-namespace dpdk {
-namespace worker {
+namespace icp::packetio::dpdk::worker {
 
-using switch_t = std::shared_ptr<const vif_map<netif>>;
-
-const std::string endpoint = "inproc://icp_packetio_workers_control";
+const std::string_view endpoint = "inproc://icp_packetio_workers_control";
 
 static constexpr uint16_t pkt_burst_size = 32;
 static constexpr int mbuf_prefetch_offset = 4;
 
 using namespace std::chrono_literals;
 static constexpr auto poll_timeout = 250ms;
-
-/**
- * Our worker implements a simple finite state machine with
- * API messages as events.
- */
-using command_msg = std::variant<start_msg,
-                                 stop_msg,
-                                 configure_msg>;
 
 /**
  * We have three states we transition between, based on our messages:
@@ -89,23 +80,23 @@ public:
     }
 };
 
-static bool all_pollable(const std::vector<pollable_ptr>& queues)
+static bool all_pollable(const std::vector<task_ptr>& tasks)
 {
     epoll_poller poller;
 
-    auto add_visitor = [&](auto q) -> bool {
-                           return (poller.add(q));
+    auto add_visitor = [&](auto task) -> bool {
+                           return (poller.add(task));
                        };
 
-    auto del_visitor = [&](auto q) {
-                           poller.del(q);
+    auto del_visitor = [&](auto task) {
+                           poller.del(task);
                        };
 
-    for (auto& q : queues) {
-        if (!std::visit(add_visitor, q)) {
+    for (auto& task : tasks) {
+        if (!std::visit(add_visitor, task)) {
             return (false);
         }
-        std::visit(del_visitor, q);
+        std::visit(del_visitor, task);
     }
     return (true);
 }
@@ -154,7 +145,7 @@ static std::pair<size_t, size_t> partition_mbufs(rte_mbuf* incoming[], int lengt
     return std::make_pair(ucast_idx, mcast_idx);
 }
 
-static uint16_t rx_burst(const switch_t& vif, const rx_queue* rxq)
+static uint16_t rx_burst(const fib* fib, const rx_queue* rxq)
 {
     static const rte_gro_param gro_params = { .gro_types = RTE_GRO_TCP_IPV4,
                                               .max_flow_num = pkt_burst_size,
@@ -183,7 +174,7 @@ static uint16_t rx_burst(const switch_t& vif, const rx_queue* rxq)
     /* Lookup interfaces for unicast packets ... */
     for (size_t i = 0; i < nb_ucast; i++) {
         auto eth = rte_pktmbuf_mtod(unicast[i], struct ether_hdr *);
-        interfaces[i] = vif->find(rxq->port_id(), eth->d_addr.addr_bytes);
+        interfaces[i] = fib->find(rxq->port_id(), eth->d_addr.addr_bytes);
     }
 
     /* ... and dispatch */
@@ -210,7 +201,7 @@ static uint16_t rx_burst(const switch_t& vif, const rx_queue* rxq)
          * can keep the mbuf/pbuf synchronized.
          */
         auto pbuf = packetio_memory_pbuf_synchronize(nunicast[i]);
-        for (auto ifp : vif->find(rxq->port_id())) {
+        for (auto ifp : fib->find(rxq->port_id())) {
             ICP_LOG(ICP_LOG_TRACE, "Dispatching non-unicast packet to %c%c%u\n",
                     ifp->name[0], ifp->name[1], ifp->num);
 
@@ -258,84 +249,112 @@ static uint16_t tx_burst(const tx_queue* txq)
     return (sent);
 }
 
-static uint16_t service_queue(const switch_t& vif, const pollable_ptr& queue)
+static uint16_t service_task(const fib* fib, const task_ptr& task)
 {
     return (std::visit(overloaded_visitor(
+                           [](const callback*) -> uint16_t {
+                               return (0);  /* noop */
+                           },
                            [&](const rx_queue* rxq) -> uint16_t {
-                               return (rx_burst(vif, rxq));
+                               return (rx_burst(fib, rxq));
                            },
                            [](const tx_queue* txq) -> uint16_t {
                                return (tx_burst(txq));
                            },
                            [](const zmq_socket*) -> uint16_t {
-                               return (0);  /* noop; not a queue */
+                               return (0);  /* noop */
                            }),
-                       queue));
+                       task));
 }
 
-static void enable_queue_interrupt(const pollable_ptr& queue)
+/**
+ * These templated structs allows us to determine if a type has a
+ * member function named `enable`.  This and the analogous structs below
+ * for `disable` allow us to generically call those functions if they
+ * exist without having to explicitly know the type.
+ */
+template <typename, typename = std::void_t<>>
+struct has_enable : std::false_type{};
+
+template <typename T>
+struct has_enable<T, std::void_t<decltype(std::declval<T>().enable())>>
+    : std::true_type{};
+
+static void enable_task_interrupt(const task_ptr& task)
 {
-    auto enable_visitor = [](auto q) { q->enable(); };
-    std::visit(enable_visitor, queue);
+    auto enable_visitor = [](auto t) {
+                              if constexpr (has_enable<decltype(t)>::value) {
+                                  t->enable();
+                              }
+                          };
+    std::visit(enable_visitor, task);
 }
 
-static void disable_queue_interrupt(const pollable_ptr& queue)
+template <typename, typename = std::void_t<>>
+struct has_disable : std::false_type{};
+
+template <typename T>
+struct has_disable<T, std::void_t<decltype(std::declval<T>().disable())>>
+    : std::true_type{};
+
+static void disable_task_interrupt(const task_ptr& task)
 {
-    auto disable_visitor = [](auto q) { q->disable(); };
-    std::visit(disable_visitor, queue);
+    auto disable_visitor = [](auto t) {
+                               if constexpr (has_disable<decltype(t)>::value) {
+                                       t->disable();
+                               }
+                           };
+    std::visit(disable_visitor, task);
 }
 
-static void run_pollable(void* control, const switch_t& vif,
-                         const std::vector<pollable_ptr>& queues)
+static void run_pollable(void* control, const fib* fib,
+                         const std::vector<task_ptr>& tasks)
 {
     epoll_poller poller;
 
-    for (auto& q : queues) {
-        poller.add(q);
+    for (auto& task : tasks) {
+        poller.add(task);
     }
 
     auto ctrl_sock = zmq_socket(control);
     poller.add(&ctrl_sock);
 
-    uint16_t max_burst = 0;
-    uint16_t idle_queues = 0;
+    uint16_t idle_tasks = 0;
 
     for (;;) {
         do {
-            /* Service queues as fast as possible while packets are present. */
-            max_burst = 0;
-            idle_queues = 0;
+            /* Service tasks as fast as possible while we have work. */
+            idle_tasks = 0;
 
-            for (auto& q : queues) {
-                auto burst_size = service_queue(vif, q);
-                max_burst = std::max(max_burst, burst_size);
-                idle_queues += !burst_size;
+            for (auto& task : tasks) {
+                auto work = service_task(fib, task);
+                idle_tasks += !work;
             }
-        } while (max_burst > 0);
+        } while (idle_tasks < tasks.size());
 
-        /* All queues are idle; sleep until we have something to do. */
-        assert(idle_queues == queues.size());
+        /* All tasks are idle; sleep until we have something to do. */
+        assert(idle_tasks == tasks.size());
 
-        for (auto& q : queues) {
-            enable_queue_interrupt(q);
+        for (auto& task : tasks) {
+            enable_task_interrupt(task);
         }
         poller.wait_for_interrupt();
-        for (auto& q : queues) {
-            disable_queue_interrupt(q);
+        for (auto& task : tasks) {
+            disable_task_interrupt(task);
         }
 
         if (ctrl_sock.readable()) break;
     }
 
-    for (auto& q : queues) {
-        poller.del(q);
+    for (auto& task : tasks) {
+        poller.del(task);
     }
 
     poller.del(&ctrl_sock);
 }
 
-static void run_spinning(void* control, const switch_t& vif,
-                         const std::vector<pollable_ptr>& queues)
+static void run_spinning(void* control, const fib* fib,
+                         const std::vector<task_ptr>& tasks)
 {
     while (!icp_socket_has_messages(control)) {
         /*
@@ -346,16 +365,16 @@ static void run_spinning(void* control, const switch_t& vif,
         auto start = clock::now();
 
         do {
-            uint16_t idle_queues = 0;
+            uint16_t idle_tasks = 0;
 
             /* Service queues as fast as possible if any of them have packets. */
             do {
-                idle_queues = 0;
-                for (auto& q : queues) {
-                    auto burst_size = service_queue(vif, q);
-                    if (!burst_size) idle_queues++;
+                idle_tasks = 0;
+                for (auto& task : tasks) {
+                    auto work = service_task(fib, task);
+                    idle_tasks += !work;
                 }
-            } while (idle_queues < queues.size());
+            } while (idle_tasks < tasks.size());
 
             /* All queues are idle; take a break from polling */
             rte_delay_us(1);
@@ -365,49 +384,71 @@ static void run_spinning(void* control, const switch_t& vif,
     }
 }
 
-static void run(void* control, const switch_t& vif,
-                const std::vector<pollable_ptr>& queues)
+static void run(void* control, const fib* fib,
+                const std::vector<task_ptr>& tasks)
 {
-    if (all_pollable(queues)) {
-        run_pollable(control, vif, queues);
+    /*
+     * XXX: Our control socket is edge triggered, so make sure we drain
+     * all of the control messages before jumping into our real run
+     * function.  We won't receive any more control interrupts otherwise.
+     */
+    if (icp_socket_has_messages(control)) return;
+
+    if (all_pollable(tasks)) {
+        run_pollable(control, fib, tasks);
     } else {
-        run_spinning(control, vif, queues);
+        run_spinning(control, fib, tasks);
     }
 }
 
-class worker : public finite_state_machine<worker, state, command_msg>
+class worker : public finite_state_machine<worker, state, message>
 {
-    std::vector<pollable_ptr> m_queues;
     void* m_context;
     void* m_control;
-    switch_t m_switch;
+    const fib* m_fib;
+    std::vector<task_ptr> m_tasks;
 
     void update_config(const std::vector<descriptor>& descriptors)
     {
-        m_queues.clear();
+        m_tasks.clear();
 
         for (auto& d: descriptors) {
             if (d.worker_id != rte_lcore_id()) continue;
 
-            if (d.rxq != nullptr) {
-                ICP_LOG(ICP_LOG_DEBUG, "Enabling RX port queue %u:%u on logical core %u\n",
-                        d.rxq->port_id(), d.rxq->queue_id(), rte_lcore_id());
-                m_queues.emplace_back(d.rxq);
-            }
-
-            if (d.txq != nullptr) {
-                ICP_LOG(ICP_LOG_DEBUG, "Enabling TX port queue %u:%u on logical core %u\n",
-                        d.txq->port_id(), d.txq->queue_id(), rte_lcore_id());
-                m_queues.emplace_back(d.txq);
-            }
+            std::visit(overloaded_visitor(
+                           [&](callback* callback) {
+                               ICP_LOG(ICP_LOG_DEBUG, "Adding callback %.*s to worker %u\n",
+                                       static_cast<int>(callback->name().length()), callback->name().data(),
+                                       rte_lcore_id());
+                               m_tasks.emplace_back(callback);
+                           },
+                           [&](rx_queue* rxq) {
+                               ICP_LOG(ICP_LOG_DEBUG, "Adding RX port queue %u:%u to worker %u\n",
+                                       rxq->port_id(), rxq->queue_id(), rte_lcore_id());
+                               m_tasks.emplace_back(rxq);
+                           },
+                           [&](tx_queue* txq) {
+                               ICP_LOG(ICP_LOG_DEBUG, "Adding TX port queue %u:%u to worker %u\n",
+                                       txq->port_id(), txq->queue_id(), rte_lcore_id());
+                               m_tasks.emplace_back(txq);
+                           },
+                           [](zmq_socket*) {
+                               /*
+                                * Here for completeness, but should never be
+                                * configured via an update message.
+                                */
+                               ICP_LOG(ICP_LOG_ERROR, "Unexpected zmq socket send to worker %u\n",
+                                       rte_lcore_id());
+                           }),
+                       d.task);
         }
     }
 
 public:
-    worker(void *context, void* control, const switch_t& vif)
+    worker(void *context, void* control, const fib* fib)
         : m_context(context)
         , m_control(control)
-        , m_switch(vif)
+        , m_fib(fib)
     {}
 
     /* State transition functions */
@@ -422,7 +463,7 @@ public:
     std::optional<state> on_event(state_armed&, const start_msg &start)
     {
         icp_task_sync_ping(m_context, start.endpoint.data());
-        run(m_control, m_switch, m_queues);
+        run(m_control, m_fib, m_tasks);
         return (std::make_optional(state_running()));
     }
 
@@ -446,7 +487,7 @@ public:
         if (msg.descriptors.empty()) {
             return (std::make_optional(state_init()));
         }
-        run(m_control, m_switch, m_queues);
+        run(m_control, m_fib, m_tasks);
         return (std::make_optional(state_running()));
     }
 
@@ -467,54 +508,22 @@ public:
     }
 };
 
-static std::optional<command_msg> get_command_msg(void *socket, int flags = 0)
-{
-    /* who needs classes for RAII? ;-) */
-    zmq_msg_t msg __attribute__((cleanup(zmq_msg_close)));
-
-    if (zmq_msg_init(&msg) == -1
-        || zmq_msg_recv(&msg, socket, flags) < 0) {
-        ICP_LOG(ICP_LOG_ERROR, "Could not receive 0MQ message: %s\n", zmq_strerror(errno));
-        return (std::nullopt);
-    }
-
-    if (zmq_msg_size(&msg) < sizeof(message)) {
-        ICP_LOG(ICP_LOG_ERROR, "Received 0MQ message is too short (%zu < %zu)\n",
-                zmq_msg_size(&msg), sizeof(message));
-        return (std::nullopt);
-    }
-
-    auto m = reinterpret_cast<message*>(zmq_msg_data(&msg));
-    switch (m->type) {
-    case message_type::CONFIG: {
-        std::vector<descriptor> descriptors;
-        for (size_t i = 0; i < m->descriptors_size; i++) {
-            descriptors.emplace_back(m->descriptors[i]);
-        }
-        return (std::make_optional(configure_msg { .descriptors = std::move(descriptors) }));
-    }
-    case message_type::START:
-        return (std::make_optional(start_msg { .endpoint = m->endpoint }));
-    case message_type::STOP:
-        return (std::make_optional(stop_msg { .endpoint = m->endpoint }));
-    default:
-        return (std::nullopt);
-    }
-}
-
 int main(void *void_args)
 {
-    auto args = reinterpret_cast<struct args*>(void_args);
+    icp_thread_setname(("icp_worker_" + std::to_string(rte_lcore_id())).c_str());
+
+    auto args = reinterpret_cast<main_args*>(void_args);
 
     void *context = args->context;
     std::unique_ptr<void, icp_socket_deleter> control(
-        icp_socket_get_client_subscription(context, endpoint.c_str(), ""));
+        icp_socket_get_client_subscription(context, endpoint.data(), ""));
 
+    auto me = worker(context, control.get(), args->fib);
+
+    /* XXX: args are unavailable after this point */
     icp_task_sync_ping(context, args->endpoint.data());
 
-    auto me = worker(context, control.get(), args->vif);
-
-    while (auto cmd = get_command_msg(control.get())) {
+    while (auto cmd = recv_message(control.get())) {
         me.dispatch(*cmd);
     }
 
@@ -523,7 +532,4 @@ int main(void *void_args)
     return (0);
 }
 
-}
-}
-}
 }

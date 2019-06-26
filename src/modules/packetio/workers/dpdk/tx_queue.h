@@ -4,8 +4,10 @@
 #include <atomic>
 #include <memory>
 
-//#include "packetio/drivers/dpdk/dpdk.h"
-#include "packetio/common/dpdk/pollable_event.tcc"
+#include "packetio/workers/dpdk/pollable_event.tcc"
+
+struct rte_ring;
+extern void rte_ring_free(rte_ring*);
 
 namespace icp::packetio::dpdk {
 
@@ -24,7 +26,7 @@ class tx_queue : public pollable_event<tx_queue> {
     std::unique_ptr<rte_ring, rte_ring_deleter> m_ring;
 
     /* XXX: calculate a value based on port speed and queue count? */
-    static constexpr uint16_t tx_queue_size = 512;
+    static constexpr uint16_t tx_queue_size = 128;
 
 public:
     tx_queue(uint16_t port_id, uint16_t queue_id);

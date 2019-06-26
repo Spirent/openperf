@@ -1,5 +1,5 @@
-#ifndef _ICP_PACKETIO_STACK_TCPIP_HANDLERS_H_
-#define _ICP_PACKETIO_STACK_TCPIP_HANDLERS_H_
+#ifndef _ICP_PACKETIO_STACK_TCPIP_H_
+#define _ICP_PACKETIO_STACK_TCPIP_H_
 
 #include <chrono>
 
@@ -9,9 +9,14 @@
  * LwIP global variable needed to send messages between clients
  * and the stack context.
  */
-extern sys_mbox_t tcpip_mbox;
 
 namespace icp::packetio::tcpip {
+
+/*
+ * Unfortunately, lwIP uses a global mailbox to move messages between
+ * clients and the stack thread.  This function provides access to it.
+ */
+sys_mbox_t mbox();
 
 /**
  * Process all pending timeouts in the stack
@@ -28,4 +33,4 @@ int handle_messages(sys_mbox_t);
 
 }
 
-#endif /* _ICP_PACKETIO_STACK_TCPIP_HANDLERS_H_ */
+#endif /* _ICP_PACKETIO_STACK_TCPIP_H_ */

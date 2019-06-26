@@ -1,3 +1,6 @@
+#include <atomic>
+#include <sys/timerfd.h>
+
 #include "lwipopts.h"
 #include "lwip/tcpip.h"
 
@@ -6,10 +9,16 @@
 #include "packetio/drivers/dpdk/topology_utils.h"
 #include "packetio/stack/dpdk/netif_wrapper.h"
 #include "packetio/stack/dpdk/lwip.h"
+#include "packetio/stack/dpdk/sys_mailbox.h"
+#include "packetio/stack/tcpip.h"
 
-namespace icp {
-namespace packetio {
-namespace dpdk {
+sys_mbox_t icp::packetio::tcpip::mbox()
+{
+    static auto tcpip_mbox = sys_mbox();
+    return (std::addressof(tcpip_mbox));
+}
+
+namespace icp::packetio::dpdk {
 
 #define STRING_VIEW_TO_C_STR(sv) static_cast<int>(sv.length()), sv.data()
 
@@ -19,25 +28,115 @@ static void tcpip_init_done(void *arg __attribute__((unused)))
             rte_lcore_id(), rte_socket_id());
 }
 
-lwip::lwip(driver::generic_driver& driver)
-    : m_initialized(false)
-    , m_driver(driver)
+static constexpr timespec duration_to_timespec(std::chrono::milliseconds ms)
 {
-    tcpip_init(tcpip_init_done, nullptr);
+    return (timespec {
+            .tv_sec  = std::chrono::duration_cast<std::chrono::seconds>(ms).count(),
+            .tv_nsec = std::chrono::duration_cast<std::chrono::nanoseconds>(ms).count() });
+}
+
+static int handle_tcpip_timeout(event_loop::generic_event_loop& loop __attribute__((unused)),
+                                std::any arg)
+{
+    auto timer_fd = std::any_cast<int>(arg);
+
+    uint64_t count;
+    if (read(timer_fd, &count, sizeof(count)) == -1) {
+        ICP_LOG(ICP_LOG_WARNING, "Spurious stack thread timeout\n");
+    }
+
+    auto sleeptime = tcpip::handle_timeouts();
+    auto wake_up = itimerspec {
+        .it_interval = { 0, 0 },
+        .it_value = duration_to_timespec(sleeptime)
+    };
+
+    return (timerfd_settime(timer_fd, 0, &wake_up, nullptr));
+}
+
+static int handle_tcpip_message(event_loop::generic_event_loop& loop __attribute__((unused)),
+                               std::any arg)
+{
+    auto mbox = std::any_cast<sys_mbox_t>(arg);
+    return (tcpip::handle_messages(mbox));
+}
+
+lwip::lwip(driver::generic_driver& driver, workers::generic_workers& workers)
+    : m_driver(driver)
+    , m_workers(workers)
+    , m_timerfd(timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK))
+{
+    if (m_timerfd == -1) {
+        throw std::runtime_error("Could not create kernel timer: "
+                                 + std::string(strerror(errno)));
+    }
+
+    auto tcpip_mbox = tcpip::mbox();
+    auto msg_id = m_workers.add_task(workers::context::STACK,
+                                     "stack_message_handler",
+                                     sys_mbox_fd(&tcpip_mbox),
+                                     handle_tcpip_message,
+                                     tcpip_mbox);
+    if (!msg_id) {
+        throw std::runtime_error("Could not create message handler task: "
+                                 + std::string(strerror(msg_id.error())));
+    }
+    m_tasks.push_back(*msg_id);
+
+    auto timeout_id = m_workers.add_task(workers::context::STACK,
+                                         "stack_timeout_handler",
+                                         m_timerfd,
+                                         handle_tcpip_timeout,
+                                         m_timerfd);
+    if (!timeout_id) {
+        throw std::runtime_error("Could not create timeout handler task: "
+                                 + std::string(strerror(msg_id.error())));
+    }
+    m_tasks.push_back(*timeout_id);
+
+    if (tcpip_callback(tcpip_init_done, nullptr) != ERR_OK) {
+        throw std::runtime_error("Could not initialize stack");
+    }
+
     m_initialized = true;
 }
 
-extern "C" err_t tcpip_shutdown();
-
 lwip::~lwip()
 {
-    if (!m_initialized) {
-        return;
+    if (!m_initialized) return;
+
+    for (auto& id : m_tasks) {
+        m_workers.del_task(id);
     }
-    if (tcpip_shutdown() == ERR_OK) {
-        int id = icp::packetio::dpdk::topology::get_stack_lcore_id();
-        rte_eal_wait_lcore(id);
+
+    close(m_timerfd);
+}
+
+lwip& lwip::operator=(lwip&& other)
+{
+    if (this != &other) {
+        m_initialized = other.m_initialized;
+        other.m_initialized = false;
+
+        m_driver = std::move(other.m_driver);
+        m_workers = std::move(other.m_workers);
+        m_tasks = std::move(other.m_tasks);
+        m_interfaces = std::move(other.m_interfaces);
+
+        m_timerfd = other.m_timerfd;
     }
+    return (*this);
+}
+
+lwip::lwip(lwip&& other)
+    : m_initialized(other.m_initialized)
+    , m_driver(other.m_driver)
+    , m_workers(other.m_workers)
+    , m_tasks(std::move(other.m_tasks))
+    , m_interfaces(std::move(other.m_interfaces))
+    , m_timerfd(other.m_timerfd)
+{
+    other.m_initialized = false;
 }
 
 std::vector<std::string> lwip::interface_ids() const
@@ -70,13 +169,15 @@ tl::expected<std::string, std::string> lwip::create_interface(const interface::c
         return (tl::make_unexpected("Interface " + config.id + " already exists."));
 
     try {
-        auto port_index = m_driver.get_port_index(config.port_id);
+        auto port_index = m_driver.port_index(config.port_id);
         if (!port_index) {
-            return tl::make_unexpected(port_index.error());
+            return (tl::make_unexpected("Port id " + config.port_id + " is invalid."));
         }
         int port_idx = port_index.value();
-        auto ifp = std::make_unique<net_interface>(config.id, config, m_driver.tx_burst_function(config.port_id), port_idx);
-        m_driver.add_interface(ifp->port_id(), ifp->data());
+        auto ifp = std::make_unique<net_interface>(config.id, config,
+                                                   m_workers.get_transmit_function(config.port_id),
+                                                   port_idx);
+        m_workers.add_interface(ifp->port_id(), ifp->data());
         auto item = m_interfaces.emplace(std::make_pair(config.id, std::move(ifp)));
         return (item.first->first);
     } catch (const std::runtime_error &e) {
@@ -89,7 +190,8 @@ void lwip::delete_interface(std::string_view id)
 {
     if (auto item = m_interfaces.find(id); item != m_interfaces.end()) {
         auto& ifp = item->second;
-        m_driver.del_interface(ifp->port_id(), std::make_any<netif*>(ifp->data()));
+        (void)ifp;
+        m_workers.del_interface(ifp->port_id(), std::make_any<netif*>(ifp->data()));
         m_interfaces.erase(std::string(id));
     }
 }
@@ -291,6 +393,4 @@ std::unordered_map<std::string, stack::stats_data> lwip::stats() const
     return (stats);
 }
 
-}
-}
 }

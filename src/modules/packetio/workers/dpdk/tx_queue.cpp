@@ -9,12 +9,10 @@
 #include <sys/eventfd.h>
 
 #include "packetio/drivers/dpdk/model/physical_port.h"
-#include "packetio/drivers/dpdk/tx_queue.h"
+#include "packetio/workers/dpdk/tx_queue.h"
 #include "core/icp_log.h"
 
-namespace icp {
-namespace packetio {
-namespace dpdk {
+namespace icp::packetio::dpdk {
 
 static std::string get_ring_name(uint16_t port_id, uint16_t queue_id)
 {
@@ -104,6 +102,4 @@ uint16_t tx_queue::enqueue(rte_mbuf* const mbufs[], uint16_t nb_mbufs)
     return (queued);
 }
 
-}
-}
 }

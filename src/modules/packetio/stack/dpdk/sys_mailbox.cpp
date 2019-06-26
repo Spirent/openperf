@@ -2,7 +2,6 @@
 #include <cassert>
 #include <chrono>
 #include <memory>
-#include <optional>
 
 #include <poll.h>
 #include <sys/eventfd.h>
@@ -14,6 +13,7 @@
 #include "lwip/stats.h"
 
 #include "packetio/drivers/dpdk/dpdk.h"
+#include "packetio/stack/dpdk/sys_mailbox.h"
 
 #ifndef EFD_SEMAPHORE
 #define EFD_SEMAPHORE 1
@@ -21,43 +21,6 @@ int eventfd(unsigned int initval, int flags);
 int eventfd_read(int fd, uint64_t* value);
 int eventfd_write(int fd, uint64_t value);
 #endif
-
-#ifndef _PACKETIO_DRIVER_DPDK_H_
-struct rte_ring;
-void rte_ring_free(rte_ring *);
-rte_ring* rte_ring_create(const char*, unsigned, int, unsigned);
-int rte_ring_full(rte_ring *);
-int rte_ring_empty(rte_ring *);
-int rte_ring_enqueue(rte_ring *, void*);
-int rte_ring_dequeue(rte_ring *, void**);
-#endif
-
-struct sys_mbox
-{
-    struct rte_ring_deleter {
-        void operator()(rte_ring *ring) {
-            rte_ring_free(ring);
-        }
-    };
-
-    static std::atomic_size_t m_idx;
-    std::unique_ptr<rte_ring, rte_ring_deleter> m_ring;
-    std::atomic_flag m_armed;
-    int m_fd;
-
-public:
-    sys_mbox(int size, int flags = RING_F_SC_DEQ);
-    ~sys_mbox();
-
-    int fd() const;
-    void clear_notifications();
-
-    void post(void *msg);
-    bool trypost(void *msg);
-
-    std::optional<void*> fetch(u32_t timeout);
-    std::optional<void*> tryfetch();
-};
 
 std::atomic_size_t sys_mbox::m_idx = ATOMIC_VAR_INIT(0);
 
@@ -144,7 +107,7 @@ bool sys_mbox::trypost(void *msg)
     return (true);
 }
 
-std::optional<void*> sys_mbox::fetch(u32_t timeout)
+void* sys_mbox::fetch(u32_t timeout)
 {
     while (rte_ring_empty(m_ring.get())) {
         auto lwip_to = (timeout == 0 ? -1 : timeout);
@@ -155,12 +118,12 @@ std::optional<void*> sys_mbox::fetch(u32_t timeout)
     return (tryfetch());
 }
 
-std::optional<void*> sys_mbox::tryfetch()
+void* sys_mbox::tryfetch()
 {
     void *msg = nullptr;
     return (rte_ring_dequeue(m_ring.get(), &msg) == 0
-            ? std::make_optional(msg)
-            : std::nullopt);
+            ? msg
+            : nullptr);
 }
 
 extern "C" {
@@ -235,7 +198,7 @@ u32_t sys_arch_mbox_tryfetch(sys_mbox_t* mboxp, void** msgp)
     auto msg = mbox->tryfetch();
     if (!msg) return (SYS_MBOX_EMPTY);
 
-    *msgp = *msg;
+    *msgp = msg;
     LWIP_DEBUGF(SYS_DEBUG, ("sys_mbox_tryfetch: mbox %p fd %d msg %p\n",
                             (void *)mbox, mbox->fd(), *msgp));
     return (0);
@@ -254,7 +217,7 @@ u32_t sys_arch_mbox_fetch(sys_mbox_t* mboxp, void** msgp, u32_t timeout)
 
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(
         std::chrono::steady_clock::now() - start).count();
-    *msgp = *msg;
+    *msgp = msg;
 
     LWIP_DEBUGF(SYS_DEBUG, ("sys_mbox_fetch: mbox %p fd %d msg %p duration %lu\n",
                             (void *)mbox, mbox->fd(), *msgp, duration));

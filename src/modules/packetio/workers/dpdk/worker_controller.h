@@ -1,0 +1,56 @@
+#ifndef _ICP_PACKETIO_DPDK_WORKER_CONTROLLER_H_
+#define _ICP_PACKETIO_DPDK_WORKER_CONTROLLER_H_
+
+#include <memory>
+#include <unordered_map>
+
+#include "core/icp_uuid.h"
+#include "packetio/generic_driver.h"
+#include "packetio/generic_event_loop.h"
+#include "packetio/generic_workers.h"
+#include "packetio/workers/dpdk/callback.h"
+#include "packetio/workers/dpdk/worker_api.h"
+
+namespace icp::packetio::dpdk {
+
+class worker_controller
+{
+public:
+    worker_controller(void* context, driver::generic_driver& driver);
+    ~worker_controller();
+
+    /* controller is movable */
+    worker_controller& operator=(worker_controller&& other);
+    worker_controller(worker_controller&& other);
+
+    /* controller is non-copyable */
+    worker_controller(const worker_controller&) = delete;
+    worker_controller& operator=(const worker_controller&&) = delete;
+
+    workers::transmit_function get_transmit_function(std::string_view port_id) const;
+
+    void add_interface(std::string_view port_id, std::any interface);
+    void del_interface(std::string_view port_id, std::any interface);
+
+    tl::expected<std::string, int> add_task(workers::context ctx,
+                                            std::string_view name,
+                                            event_loop::event_notifier notify,
+                                            event_loop::callback_function callback,
+                                            std::any arg);
+    void del_task(std::string_view);
+
+    using task_map = std::unordered_map<core::uuid, callback>;
+    using loop_map = std::unordered_map<workers::context,
+                                        event_loop::generic_event_loop>;
+
+private:
+    std::unique_ptr<worker::client> m_workers;
+    driver::generic_driver& m_driver;
+    std::unique_ptr<worker::fib> m_fib;
+    task_map m_tasks;
+    loop_map m_loops;
+};
+
+}
+
+#endif /* _ICP_PACKETIO_DPDK_WORKER_CONTROLLER_H_ */

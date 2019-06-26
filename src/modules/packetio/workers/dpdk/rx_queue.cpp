@@ -1,10 +1,8 @@
 #include "packetio/drivers/dpdk/dpdk.h"
-#include "packetio/drivers/dpdk/rx_queue.h"
+#include "packetio/workers/dpdk/rx_queue.h"
 #include "core/icp_log.h"
 
-namespace icp {
-namespace packetio {
-namespace dpdk {
+namespace icp::packetio::dpdk {
 
 rx_queue::rx_queue(uint16_t port_id, uint16_t queue_id)
     : m_port(port_id)
@@ -62,6 +60,4 @@ bool rx_queue::disable()
     return (!error);
 }
 
-}
-}
 }

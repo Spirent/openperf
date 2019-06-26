@@ -18,7 +18,7 @@ class port_info;
 class physical_port
 {
 public:
-    physical_port(int idx, std::string id, rte_mempool *rx_pool = nullptr);
+    physical_port(int idx, std::string_view id, rte_mempool *rx_pool = nullptr);
 
     std::string id() const;
 
