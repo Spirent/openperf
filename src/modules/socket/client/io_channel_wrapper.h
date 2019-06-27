@@ -38,9 +38,8 @@ public:
                                    const sockaddr *to);
 
     tl::expected<size_t, int> recv(pid_t pid,
-                                   iovec iov[], size_t iovcnt,
-                                   int flags,
-                                   sockaddr *from, socklen_t *fromlen);
+                                   struct msghdr *msg,
+                                   int flags);
 
     tl::expected<void, int> block_writes();
     tl::expected<void, int> wait_readable();

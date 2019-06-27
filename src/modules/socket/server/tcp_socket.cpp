@@ -703,7 +703,12 @@ tl::expected<void, int> tcp_socket::do_setsockopt(tcp_pcb* pcb,
 {
     switch (setsockopt.level) {
     case SOL_SOCKET:
-        return (do_sock_setsockopt(reinterpret_cast<ip_pcb*>(pcb), setsockopt));
+        switch (setsockopt.optname) {
+        case SO_TIMESTAMP:
+            return (tl::make_unexpected(ENOPROTOOPT));
+        default:
+            return (do_sock_setsockopt(reinterpret_cast<ip_pcb*>(pcb), setsockopt));
+        }
     case IPPROTO_IP:
         return (do_ip_setsockopt(reinterpret_cast<ip_pcb*>(pcb), setsockopt));
     case IPPROTO_TCP:

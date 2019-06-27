@@ -92,12 +92,11 @@ tl::expected<size_t, int> io_channel_wrapper::send(pid_t pid,
 }
 
 tl::expected<size_t, int> io_channel_wrapper::recv(pid_t pid,
-                                                   iovec iov[], size_t iovcnt,
-                                                   int flags,
-                                                   sockaddr *from, socklen_t *fromlen)
+                                                   struct msghdr *msg,
+                                                   int flags)
 {
     auto recv_visitor = [&](auto channel) -> tl::expected<size_t, int> {
-        return (channel->recv(pid, iov, iovcnt, flags, from, fromlen));
+        return (channel->recv(pid, msg, flags));
     };
     return (std::visit(recv_visitor, m_channel));
 }

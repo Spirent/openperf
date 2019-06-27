@@ -77,6 +77,7 @@ public:
 struct dgram_channel_item {
     std::optional<dgram_channel_addr> address;
     pbuf_vec pvec;
+    uint64_t tstamp;
 };
 
 typedef bipartite_ring<dgram_channel_item, api::socket_queue_length> dgram_ring;

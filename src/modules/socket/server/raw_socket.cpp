@@ -6,6 +6,7 @@
 #include <sys/socket.h>
 #include <sys/uio.h>
 
+#include "socket/api.h"
 #include "socket/server/lwip_utils.h"
 #include "socket/server/raw_socket.h"
 #include "lwip/memp.h"
@@ -67,7 +68,13 @@ uint8_t raw_receive(void* arg, raw_pcb* pcb, pbuf* p, const ip_addr_t* addr)
     }
 
     auto channel = std::get<dgram_channel*>(rsock->channel());
-    if (!channel->send(p, reinterpret_cast<const dgram_ip_addr*>(addr), 0)) {
+    uint64_t tstamp = 0;
+    if (rsock->option(SO_TIMESTAMP)) {
+        struct timeval tv;
+        gettimeofday(&tv, NULL);
+        tstamp = icp::socket::api::timeval_to_tstamp(&tv);
+    }
+    if (!channel->send(p, reinterpret_cast<const dgram_ip_addr*>(addr), 0, tstamp)) {
         return (0);
     }
     return (1);
@@ -121,7 +128,7 @@ void raw_socket::handle_io()
     std::array<dgram_channel_item, api::socket_queue_length> items;
     auto nb_items = m_channel->recv(items.data(), items.size());
     for (size_t idx = 0; idx < nb_items; idx++) {
-        auto& [dest, data] = items[idx];
+        auto& [dest, data, tstamp] = items[idx];
         if (dest) raw_sendto(m_pcb.get(), const_cast<pbuf*>(data.pbuf()),
                              reinterpret_cast<const ip_addr_t*>(&dest->addr()));
         else      raw_send(m_pcb.get(), const_cast<pbuf*>(data.pbuf()));
@@ -258,7 +265,17 @@ tl::expected<socklen_t, int> raw_socket::do_getsockopt(const raw_pcb* pcb,
             return (tl::make_unexpected(ENOPROTOOPT));
         }
     case SOL_SOCKET:
-        return (do_sock_getsockopt(reinterpret_cast<const ip_pcb*>(pcb), getsockopt));
+        switch (getsockopt.optname) {
+        case SO_TIMESTAMP: {
+            auto optname = 1 << getsockopt.optname;
+            int opt = !!(m_options & optname);
+            auto result = copy_out(getsockopt.id.pid, getsockopt.optval, opt);
+            if (!result) return (tl::make_unexpected(result.error()));
+            return (sizeof(opt));
+        }
+        default:
+            return (do_sock_getsockopt(reinterpret_cast<const ip_pcb*>(pcb), getsockopt));
+        }
     case IPPROTO_IP:
         return (do_ip_getsockopt(reinterpret_cast<const ip_pcb*>(pcb), getsockopt));
     default:
@@ -284,7 +301,22 @@ tl::expected<void, int> raw_socket::do_setsockopt(raw_pcb* pcb,
             return (tl::make_unexpected(ENOPROTOOPT));
         }
     case SOL_SOCKET:
-        return (do_sock_setsockopt(reinterpret_cast<ip_pcb*>(pcb), setsockopt));
+        switch (setsockopt.optname) {
+        case SO_TIMESTAMP: {
+            auto optname = (1 << setsockopt.optname);
+            auto opt = copy_in(setsockopt.id.pid,
+                               reinterpret_cast<const int*>(setsockopt.optval));
+            if (!opt) return (tl::make_unexpected(opt.error()));
+            if (*opt) {
+                m_options |= optname;
+            } else {
+                m_options &= ~optname;
+            }
+            return {};
+        }
+        default:
+            return (do_sock_setsockopt(reinterpret_cast<ip_pcb*>(pcb), setsockopt));
+        }
     case IPPROTO_IP:
         return (do_ip_setsockopt(reinterpret_cast<ip_pcb*>(pcb), setsockopt));
     default:
@@ -354,6 +386,11 @@ raw_socket::on_request_reply raw_socket::on_request(const api::request_getsockna
 uint32_t raw_socket::icmp_filter()
 {
     return (m_icmp_filter.data);
+}
+
+bool raw_socket::option(const int opt)
+{
+    return (!!(m_options & (1 << opt)));
 }
 
 }

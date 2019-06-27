@@ -49,7 +49,7 @@ public:
 
     bool send_empty() const;
     bool send(const pbuf*);
-    bool send(const pbuf*, const dgram_ip_addr*, in_port_t);
+    bool send(const pbuf*, const dgram_ip_addr*, in_port_t, uint64_t);
 
     size_t recv(dgram_channel_item items[], size_t max_items);
 };

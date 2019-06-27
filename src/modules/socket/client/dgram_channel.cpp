@@ -131,6 +131,28 @@ static socklen_t length_of(const sockaddr_storage& sstorage)
             : sizeof(sockaddr_in6));
 }
 
+static void put_cmsg(struct msghdr* msg, int level, int type, int len, void* data)
+{
+    auto cm = reinterpret_cast<struct cmsghdr*>(msg->msg_control);
+    auto cmlen = CMSG_LEN(len);
+    if (cm == nullptr || msg->msg_controllen < sizeof(*cm)) {
+        msg->msg_flags |= MSG_CTRUNC;
+        return;
+    }
+    if (msg->msg_controllen < cmlen) {
+        msg->msg_flags |= MSG_CTRUNC;
+        cmlen = msg->msg_controllen;
+    }
+    *cm = { .cmsg_level = level, .cmsg_type = type, .cmsg_len = cmlen };
+    dpdk::memcpy(CMSG_DATA(cm), data, cmlen - sizeof(struct cmsghdr));
+    cmlen = CMSG_SPACE(len);
+    if (msg->msg_controllen < cmlen) {
+        cmlen = msg->msg_controllen;
+    }
+    msg->msg_control = reinterpret_cast<char*>(msg->msg_control)+cmlen;
+    msg->msg_controllen -= cmlen;
+}
+
 dgram_channel::dgram_channel(int client_fd, int server_fd)
     : sendq(dgram_ring::client())
     , recvq(dgram_ring::client())
@@ -197,9 +219,8 @@ tl::expected<size_t, int> dgram_channel::send(pid_t pid,
 }
 
 tl::expected<size_t, int> dgram_channel::recv(pid_t pid,
-                                              iovec iov[], size_t iovcnt,
-                                              int flags __attribute__((unused)),
-                                              sockaddr *from, socklen_t *fromlen)
+                                              struct msghdr *msgh,
+                                              int flags)
 {
     while (!recvq.available()) {
         if (auto error = ack_wait(); error != 0) {
@@ -213,6 +234,8 @@ tl::expected<size_t, int> dgram_channel::recv(pid_t pid,
 
     if (item->address) {
         auto src = to_sockaddr(*item->address);
+        auto from = reinterpret_cast<sockaddr*>(msgh->msg_name);
+        auto fromlen = &msgh->msg_namelen;
         if (src && from && fromlen) {
             auto srclen = length_of(*src);
             dpdk::memcpy(from, &*src, std::min(*fromlen, srclen));
@@ -222,9 +245,15 @@ tl::expected<size_t, int> dgram_channel::recv(pid_t pid,
 
     auto readvec = iovec { .iov_base = const_cast<void*>(item->pvec.payload()),
                            .iov_len = item->pvec.len() };
-    auto result = process_vm_readv(pid, iov, iovcnt, &readvec, 1, 0);
+    auto result = process_vm_readv(pid, msgh->msg_iov, msgh->msg_iovlen, &readvec, 1, 0);
     if (result == -1) {
         return (tl::make_unexpected(errno));
+    }
+
+    if (item->tstamp != 0) {
+        struct timeval tv;
+        api::tstamp_to_timeval(item->tstamp, &tv);
+        put_cmsg(msgh, SOL_SOCKET, SO_TIMESTAMP, sizeof(tv), &tv);
     }
 
     recvq.repack();

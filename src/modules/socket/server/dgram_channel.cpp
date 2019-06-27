@@ -174,12 +174,13 @@ bool dgram_channel::send(const pbuf *p)
     bool pushed = recvq.enqueue(
         dgram_channel_item{ .address = std::nullopt,
                             .pvec = pbuf_vec(const_cast<pbuf*>(p),
-                                             p->payload, p->len) });
+                                             p->payload, p->len),
+                            .tstamp = 0 });
     if (pushed && idle) notify();
     return (pushed);
 }
 
-bool dgram_channel::send(const pbuf *p, const dgram_ip_addr* addr, in_port_t port)
+bool dgram_channel::send(const pbuf *p, const dgram_ip_addr* addr, in_port_t port, uint64_t tstamp)
 {
     assert(p->next == nullptr);  /* scream if we drop data */
     free_spent_pbufs(recvq);
@@ -187,7 +188,8 @@ bool dgram_channel::send(const pbuf *p, const dgram_ip_addr* addr, in_port_t por
     bool pushed = recvq.enqueue(
         dgram_channel_item{ .address = dgram_channel_addr(addr, port),
                             .pvec = pbuf_vec(const_cast<pbuf*>(p),
-                                             p->payload, p->len) });
+                                             p->payload, p->len),
+                            .tstamp = tstamp });
 
     if (pushed && idle) notify();
     return (pushed);
@@ -204,7 +206,7 @@ size_t dgram_channel::recv(dgram_channel_item items[], size_t max_items)
      * actually allocate anything here; it just trims the length.
      */
     for (size_t idx = 0; idx < dequeued; idx++) {
-        auto& [address, pvec] = items[idx];
+        auto& [address, pvec, tstamp] = items[idx];
         pbuf_realloc(pvec.pbuf(), pvec.len());
     }
     load_fresh_pbufs(sendq);

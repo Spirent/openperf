@@ -102,6 +102,17 @@ io_channel_ptr to_pointer(io_channel_offset offset, const void* base)
                        std::move(offset)));
 }
 
+uint64_t timeval_to_tstamp(const timeval* tv)
+{
+    return (tv->tv_sec << 32 | tv->tv_usec);
+}
+
+void tstamp_to_timeval(const uint64_t tstamp, timeval* tv)
+{
+    tv->tv_sec = static_cast<time_t>(tstamp >> 32);
+    tv->tv_usec = static_cast<suseconds_t>(tstamp & (~(0UL) >> 32));
+}
+
 }
 }
 }

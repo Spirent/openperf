@@ -115,9 +115,12 @@ public:
     }
 
     uint32_t icmp_filter();
+
+    bool option(int);
     
 private:
     struct icmp_filter m_icmp_filter;
+    uint64_t m_options;
 
 };
 

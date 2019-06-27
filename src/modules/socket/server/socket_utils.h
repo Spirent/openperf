@@ -87,6 +87,8 @@ tl::expected<void, int> copy_out(pid_t dst_pid,
                                  void* dst_ptr, const void* src_ptr,
                                  socklen_t length);
 
+uint64_t timeval_to_tstamp(const struct timeval* tv);
+
 }
 }
 }

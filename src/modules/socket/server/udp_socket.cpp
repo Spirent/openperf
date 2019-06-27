@@ -42,13 +42,20 @@ void udp_receive(void* arg, udp_pcb* pcb, pbuf* p, const ip_addr_t* addr, in_por
 {
     (void)pcb;
     assert(addr != nullptr);
-    auto channel = reinterpret_cast<dgram_channel*>(arg);
+    auto usock = reinterpret_cast<udp_socket*>(arg);
+    auto channel = std::get<dgram_channel*>(usock->channel());
+    uint64_t tstamp = 0;
+    if (usock->option(SO_TIMESTAMP)) {
+        struct timeval tv;
+        gettimeofday(&tv, NULL);
+        tstamp = icp::socket::api::timeval_to_tstamp(&tv);
+    }
     /*
      * Note: we switch the byte order of the port here because lwip provides the port
      * in host byte order but BSD socket clients expect it to be in network byte
      * order.
      */
-    if (!channel->send(p, reinterpret_cast<const dgram_ip_addr*>(addr), htons(port))) {
+    if (!channel->send(p, reinterpret_cast<const dgram_ip_addr*>(addr), htons(port), tstamp)) {
         pbuf_free(p);
     }
 }
@@ -62,7 +69,24 @@ udp_socket::udp_socket(icp::socket::server::allocator& allocator, int flags)
         throw std::runtime_error("Out of UDP pcb's!");
     }
 
-    udp_recv(m_pcb.get(), &udp_receive, m_channel.get());
+    udp_recv(m_pcb.get(), &udp_receive, this);
+}
+
+udp_socket& udp_socket::operator=(udp_socket&& other) noexcept
+{
+    if (this != &other) {
+        m_channel = std::move(other.m_channel);
+        m_pcb = std::move(other.m_pcb);
+        udp_recv(m_pcb.get(), &udp_receive, this);
+    }
+    return (*this);
+}
+
+udp_socket::udp_socket(udp_socket&& other) noexcept
+    : m_channel(std::move(other.m_channel))
+    , m_pcb(std::move(other.m_pcb))
+{
+    udp_recv(m_pcb.get(), &udp_receive, this);
 }
 
 channel_variant udp_socket::channel() const
@@ -82,7 +106,7 @@ void udp_socket::handle_io()
     std::array<dgram_channel_item, api::socket_queue_length> items;
     auto nb_items = m_channel->recv(items.data(), items.size());
     for (size_t idx = 0; idx < nb_items; idx++) {
-        auto& [dest, data] = items[idx];
+        auto& [dest, data, tstamp] = items[idx];
         if (dest) udp_sendto(m_pcb.get(), const_cast<pbuf*>(data.pbuf()),
                              reinterpret_cast<const ip_addr_t*>(&dest->addr()), dest->port());
         else      udp_send(m_pcb.get(), const_cast<pbuf*>(data.pbuf()));
@@ -218,7 +242,22 @@ tl::expected<void, int> udp_socket::do_setsockopt(udp_pcb* pcb,
 {
     switch (setsockopt.level) {
     case SOL_SOCKET:
-        return (do_sock_setsockopt(reinterpret_cast<ip_pcb*>(pcb), setsockopt));
+        switch (setsockopt.optname) {
+        case SO_TIMESTAMP: {
+            auto opt = copy_in(setsockopt.id.pid,
+                               reinterpret_cast<const int*>(setsockopt.optval));
+
+            if (!opt) return (tl::make_unexpected(opt.error()));
+            if (*opt) {
+                m_options |= (1 << SO_TIMESTAMP);
+            } else {
+                m_options &= ~(1 << SO_TIMESTAMP);
+            }
+            return {};
+        }
+        default:
+            return (do_sock_setsockopt(reinterpret_cast<ip_pcb*>(pcb), setsockopt));
+        }
     case IPPROTO_IP:
         return (do_ip_setsockopt(reinterpret_cast<ip_pcb*>(pcb), setsockopt));
     default:
@@ -286,6 +325,11 @@ udp_socket::on_request_reply udp_socket::on_request(const api::request_getsockna
                                   getsockname);
     if (!result) return {tl::make_unexpected(result.error()), std::nullopt};
     return {api::reply_socklen{*result}, std::nullopt};
+}
+
+bool udp_socket::option(const int opt)
+{
+    return (!!(m_options & (1 << opt)));
 }
 
 }

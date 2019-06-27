@@ -218,10 +218,8 @@ tl::expected<size_t, int> stream_channel::send(pid_t pid __attribute__((unused))
 }
 
 tl::expected<size_t, int> stream_channel::recv(pid_t pid __attribute__((unused)),
-                                               iovec iov[], size_t iovcnt,
-                                               int flags __attribute__((unused)),
-                                               sockaddr *from __attribute__((unused)),
-                                               socklen_t *fromlen __attribute__((unused)))
+                                               struct msghdr *msgh,
+                                               int flags __attribute__((unused)))
 {
     /*
      * Note: we only check for errors if there is nothing to read in the buffer.
@@ -243,7 +241,7 @@ tl::expected<size_t, int> stream_channel::recv(pid_t pid __attribute__((unused))
 
     assert(buf_readable);
 
-    auto read_size = std::accumulate(iov, iov + iovcnt, 0UL,
+    auto read_size = std::accumulate(msgh->msg_iov, msgh->msg_iov + msgh->msg_iovlen, 0UL,
                                      [&](size_t x, const iovec& iov) {
                                          return (x + read_and_notify(iov.iov_base,
                                                                      iov.iov_len,

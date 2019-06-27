@@ -62,6 +62,22 @@ tl::expected<void, int> do_sock_setsockopt(ip_pcb* pcb,
     assert(setsockopt.level == SOL_SOCKET);
 
     switch (setsockopt.optname) {
+    case SO_BINDTODEVICE:
+    {
+        std::string optval(setsockopt.optlen, '\0');
+        auto opt = copy_in(optval.data(),
+                           setsockopt.id.pid,
+                           reinterpret_cast<const char*>(setsockopt.optval),
+                           setsockopt.optlen,
+                           setsockopt.optlen);
+        if (!opt) return (tl::make_unexpected(opt.error()));
+        auto idx = netif_id_match(optval);
+        if (idx == NETIF_NO_INDEX) {
+            return (tl::make_unexpected(ENODEV));
+        }
+        pcb->netif_idx = idx;
+        break;
+    }
     case SO_BROADCAST: {
         auto opt = copy_in(setsockopt.id.pid,
                            reinterpret_cast<const int*>(setsockopt.optval));
@@ -85,21 +101,6 @@ tl::expected<void, int> do_sock_setsockopt(ip_pcb* pcb,
         if (!opt) return (tl::make_unexpected(opt.error()));
         if (*opt) ip_set_option(pcb, SOF_REUSEADDR);
         else      ip_reset_option(pcb, SOF_REUSEADDR);
-        break;
-    }
-    case SO_BINDTODEVICE: {
-        std::string optval(setsockopt.optlen, '\0');
-        auto opt = copy_in(optval.data(),
-                           setsockopt.id.pid,
-                           reinterpret_cast<const char*>(setsockopt.optval),
-                           setsockopt.optlen,
-                           setsockopt.optlen);
-        if (!opt) return (tl::make_unexpected(opt.error()));
-        auto idx = netif_id_match(optval);
-        if (idx == NETIF_NO_INDEX) {
-            return (tl::make_unexpected(ENODEV));
-        }
-        pcb->netif_idx = idx;
         break;
     }
     default:

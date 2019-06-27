@@ -193,6 +193,10 @@ void set_message_fds(api::reply_msg&, const socket_fd_pair& fd_pair);
 
 io_channel_ptr to_pointer(io_channel_offset offset, const void* base);
 
+uint64_t timeval_to_tstamp(const timeval*);
+
+void tstamp_to_timeval(const uint64_t tstamp, timeval*);
+
 }
 }
 }

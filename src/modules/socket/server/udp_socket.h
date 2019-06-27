@@ -46,8 +46,8 @@ public:
     udp_socket(const udp_socket&) = delete;
     udp_socket& operator=(const udp_socket&&) = delete;
 
-    udp_socket& operator=(udp_socket&& other) = default;
-    udp_socket(udp_socket&& other) = default;
+    udp_socket& operator=(udp_socket&& other) noexcept;
+    udp_socket(udp_socket&& other) noexcept;
 
     /***
      * Generic socket functions
@@ -95,7 +95,7 @@ public:
     }
 
     /* setsockopt handlers */
-    static tl::expected<void, int> do_setsockopt(udp_pcb*, const api::request_setsockopt&);
+    tl::expected<void, int> do_setsockopt(udp_pcb*, const api::request_setsockopt&);
 
     template <typename State>
     on_request_reply on_request(const api::request_setsockopt& opt, const State&)
@@ -111,6 +111,12 @@ public:
     {
         return {tl::make_unexpected(EINVAL), std::nullopt};
     }
+
+    bool option(int);
+
+private:
+    uint64_t m_options;
+
 };
 
 const char * to_string(const udp_socket_state&);
