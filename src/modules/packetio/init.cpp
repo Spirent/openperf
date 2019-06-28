@@ -11,6 +11,7 @@
 #include "packetio/generic_stack.h"
 #include "packetio/generic_workers.h"
 #include "packetio/interface_server.h"
+#include "packetio/internal_server.h"
 #include "packetio/port_server.h"
 #include "packetio/stack_server.h"
 
@@ -45,6 +46,7 @@ struct service {
         m_port_server = std::make_unique<port::api::server>(context, *m_loop, *m_driver);
         m_stack_server = std::make_unique<stack::api::server>(context, *m_loop, *m_stack);
         m_if_server = std::make_unique<interface::api::server>(context, *m_loop, *m_stack);
+        m_internal_server = std::make_unique<internal::api::server>(context, *m_loop, *m_workers);
 
         m_shutdown.reset(icp_socket_get_server(context, ZMQ_REQ,
                                                "inproc://packetio_shutdown_canary"));
@@ -71,6 +73,7 @@ struct service {
     std::unique_ptr<port::api::server> m_port_server;
     std::unique_ptr<stack::api::server> m_stack_server;
     std::unique_ptr<interface::api::server> m_if_server;
+    std::unique_ptr<internal::api::server> m_internal_server;
     std::unique_ptr<void, icp_socket_deleter> m_shutdown;
     std::thread m_service;
 };

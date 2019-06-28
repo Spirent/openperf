@@ -401,7 +401,7 @@ static void run(void* control, const fib* fib,
     }
 }
 
-class worker : public finite_state_machine<worker, state, message>
+class worker : public finite_state_machine<worker, state, command_msg>
 {
     void* m_context;
     void* m_control;

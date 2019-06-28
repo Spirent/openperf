@@ -53,7 +53,7 @@ struct configure_msg {
  * Our worker is a finite state machine and these messages are
  * the events that trigger state changes.
  */
-using message = std::variant<start_msg, stop_msg, configure_msg>;
+using command_msg = std::variant<start_msg, stop_msg, configure_msg>;
 
 extern const std::string_view endpoint;
 
@@ -80,8 +80,8 @@ struct main_args {
 
 int main(void*);
 
-int send_message(void* socket, const message& msg);
-std::optional<message> recv_message(void* socket, int flags = 0);
+int send_message(void* socket, const command_msg& msg);
+std::optional<command_msg> recv_message(void* socket, int flags = 0);
 
 }
 }
