@@ -23,11 +23,11 @@ static void __attribute__((noreturn)) _usage(const char *program_name)
              curr->description != NULL;
              curr++) {
             if (curr->short_opt == 0) {
-                fprintf(output, "      --%-22s%s\n",
+                fprintf(output, "      --%-32s%s\n",
                         curr->long_opt, curr->description);
             }
             else {
-                fprintf(output, "  -%c, --%-22s%s\n",
+                fprintf(output, "  -%c, --%-32s%s\n",
                         curr->short_opt, curr->long_opt, curr->description);
             }
         }

@@ -40,14 +40,14 @@ static __attribute__((const)) uint64_t align_up(uint64_t x, uint64_t align)
 }
 
 bool unlink_stale_files() {
-    auto result = config::file::icp_config_get_module_param("socket.force-unlink");
+    auto result = config::file::icp_config_get_param("modules.socket.force-unlink");
     if (!result) { return false; }
 
     return result.value().has_value();
 }
 
 std::string prefix_option() {
-    auto result = config::file::icp_config_get_module_param("socket.prefix");
+    auto result = config::file::icp_config_get_param("modules.socket.prefix");
     if (!result) { return std::string(); }
 
     if (!result.value().has_value()) { return std::string(); }

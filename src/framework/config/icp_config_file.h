@@ -45,24 +45,24 @@ namespace icp::config::file {
 std::string_view icp_config_get_file_name();
 
 /*
- * Get configuration parameters for the specified module.
+ * Get configuration parameters for the specified path.
  * @param[in]  module_name name of the module to get parameters for.
  *
  * @return
  *  a YAML::Node object representing configuration prameters, if any.
  *
  */
-tl::expected<YAML::Node, std::string> icp_config_get_module_params(std::string_view module_name);
+tl::expected<YAML::Node, std::string> icp_config_get_params(std::string_view module_name);
 
 /*
- * Get a specific module configuration parameter.
+ * Get a specific configuration parameter.
  * @param[in]  period-deliniated path to the requested parameter.
  *
  * @return
  *  a expected<> object with a (possibly) empty std::any or, on error, a string with details.
  *
  */
-tl::expected<std::any, std::string> icp_config_get_module_param(std::string_view param);
+tl::expected<std::any, std::string> icp_config_get_param(std::string_view param);
 
 }  // namespace icp::config::file
 #endif /* ifdef __cplusplus */

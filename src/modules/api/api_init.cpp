@@ -51,7 +51,7 @@ Rest::Route::Result NotFound(const Rest::Request &request __attribute__((unused)
 
 int api_configure_self()
 {
-    auto result = icp::config::file::icp_config_get_module_params("api");
+    auto result = icp::config::file::icp_config_get_params("modules.api");
     if (!result) {
         ICP_LOG(ICP_LOG_ERROR, "%s", result.error().c_str());
         return (EINVAL);
