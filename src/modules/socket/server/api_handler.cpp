@@ -7,11 +7,9 @@
 #include "socket/server/socket_utils.h"
 #include "core/icp_core.h"
 
-namespace icp {
-namespace socket {
-namespace server {
+namespace icp::socket::server {
 
-api_handler::api_handler(icp::core::event_loop& loop,
+api_handler::api_handler(event_loop& loop,
                          const void* shm_base,
                          allocator& allocator,
                          pid_t pid)
@@ -26,7 +24,8 @@ api_handler::~api_handler()
 {
     /* Remove any remaining fds in our loop that the client didn't explicitly close. */
     for (auto fd : m_server_fds) {
-        m_loop.del(fd);
+        m_loop.del_callback(fd);
+        close(fd);
     }
 }
 
@@ -70,20 +69,11 @@ static ssize_t send_reply(int sockfd, const sockaddr_un& client, const api::repl
 /**
  * Read data from clients to transmit to the stack.
  */
-static int handle_socket_read(const struct icp_event_data *data __attribute__((unused)),
-                              void *arg)
+static int handle_socket_read(api_handler::event_loop&, std::any arg)
 {
-    auto socket = (reinterpret_cast<generic_socket*>(arg));
+    auto socket = std::any_cast<generic_socket*>(arg);
     ICP_LOG(ICP_LOG_TRACE, "Transmit request for socket %p\n", (void*)socket);
     socket->handle_io();
-    return (0);
-}
-
-static int handle_socket_delete(const struct icp_event_data *data __attribute__((unused)),
-                                void *arg)
-{
-    auto socket = (reinterpret_cast<generic_socket*>(arg));
-    delete socket;
     return (0);
 }
 
@@ -110,14 +100,11 @@ api::reply_msg api_handler::handle_request_accept(const api::request_accept& req
     auto& accept_socket = stored.first->second;
     auto channel = accept_socket.channel();
 
-    struct icp_event_callbacks socket_callbacks = {
-        .on_read   = handle_socket_read,
-        .on_delete = handle_socket_delete
-    };
-
     m_server_fds.emplace(server_fd(channel));
-    m_loop.add(server_fd(channel), &socket_callbacks,
-               reinterpret_cast<void*>(new generic_socket(accept_socket)));
+    m_loop.add_callback("socket io callback for fd = " + std::to_string(server_fd(channel)),
+                        server_fd(channel),
+                        handle_socket_read,
+                        generic_socket(accept_socket));
 
     /* We need the peer name as well */
     auto addr_request = api::request_getpeername{
@@ -152,7 +139,7 @@ api::reply_msg api_handler::handle_request_close(const api::request_close& reque
     socket.handle_io();  /* flush the tx queue */
 
     auto channel = socket.channel();
-    m_loop.del(server_fd(channel));
+    m_loop.del_callback(server_fd(channel));
     m_server_fds.erase(server_fd(channel));
     m_sockets.erase(result);
     return (api::reply_success());
@@ -172,15 +159,12 @@ api::reply_msg api_handler::handle_request_socket(const api::request_socket& req
     }
 
     /* Add I/O callback for socket writes from client to stack */
-    struct icp_event_callbacks socket_callbacks = {
-        .on_read   = handle_socket_read,
-        .on_delete = handle_socket_delete
-    };
-
     auto channel = socket->channel();
     m_server_fds.emplace(server_fd(channel));
-    m_loop.add(server_fd(channel), &socket_callbacks,
-               reinterpret_cast<void*>(new generic_socket(*socket)));  /* bump ref count on ptr */
+    m_loop.add_callback("socket io callback for fd = " + std::to_string(server_fd(channel)),
+                        server_fd(channel),
+                        handle_socket_read,
+                        generic_socket(*socket));
 
     return (api::reply_socket{
             .id = id,
@@ -192,13 +176,13 @@ api::reply_msg api_handler::handle_request_socket(const api::request_socket& req
         });
 }
 
-int api_handler::handle_requests(const struct icp_event_data *data)
+int api_handler::handle_requests(int fd)
 {
     api::request_msg request;
     ssize_t recv_or_err = 0;
     sockaddr_un client;
     socklen_t client_length = sizeof(client);
-    while ((recv_or_err = recvfrom(data->fd,
+    while ((recv_or_err = recvfrom(fd,
                                    reinterpret_cast<void*>(&request), sizeof(request),
                                    0,
                                    reinterpret_cast<sockaddr*>(&client), &client_length))
@@ -255,15 +239,13 @@ int api_handler::handle_requests(const struct icp_event_data *data)
                                     }),
                                 request);
 
-        if (send_reply(data->fd, client, reply) == -1) {
+        if (send_reply(fd, client, reply) == -1) {
             ICP_LOG(ICP_LOG_ERROR, "Error sending reply on fd = %d: %s\n",
-                    data->fd, strerror(errno));
+                    fd, strerror(errno));
         }
     }
 
     return (recv_or_err == 0 ? -1 : 0);
 }
 
-}
-}
 }
