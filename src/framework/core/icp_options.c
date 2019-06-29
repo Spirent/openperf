@@ -50,7 +50,7 @@ int icp_options_init()
     return (0);
 }
 
-struct icp_options_data * _find_options_data(int opt)
+static struct icp_options_data * _find_options_data(int opt)
 {
     struct icp_options_data *opt_data = NULL;
     SLIST_FOREACH(opt_data, &icp_options_data_head, next) {
@@ -213,7 +213,9 @@ int icp_options_parse(int argc, char *argv[])
         struct icp_options_data *opt_data = _find_options_data(opt);
         assert(opt_data);
         if (opt_data->callback) {
-            opt_data->callback(opt, optarg);
+            if (opt_data->callback(opt, optarg) != 0) {
+                _usage(argv[0]);
+            }
         }
     }
 
