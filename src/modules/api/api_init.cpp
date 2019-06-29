@@ -51,32 +51,14 @@ Rest::Route::Result NotFound(const Rest::Request &request __attribute__((unused)
 
 int api_configure_self()
 {
-    auto result = icp::config::file::icp_config_get_params("modules.api");
-    if (!result) {
-        ICP_LOG(ICP_LOG_ERROR, "%s", result.error().c_str());
+    auto port_num = icp::config::file::icp_config_get_param("modules.api.port");
+    if (!port_num) {
+        ICP_LOG(ICP_LOG_ERROR, "%s", port_num.error().c_str());
         return (EINVAL);
     }
 
-    YAML::Node root_node = result.value();
-
-    if (root_node.size() == 0) {
-        return (0);
-    }
-
-    if (!root_node.IsMap()) {
-        ICP_LOG(ICP_LOG_ERROR, "api configuration node does not contain any values!");
-        return (EINVAL);
-    }
-
-    if (root_node["port"]) {
-        try {
-            int res = set_service_port(root_node["port"].as<long>());
-            if (res != 0) { return (res); }
-        }
-        catch (YAML::BadConversion &err) {
-            ICP_LOG(ICP_LOG_ERROR, "Error converting configuration file value: %s", err.what());
-            return (EINVAL);
-        }
+    if (port_num.value().has_value()) {
+        return (set_service_port(std::any_cast<long>(port_num.value())));
     }
 
     return (0);

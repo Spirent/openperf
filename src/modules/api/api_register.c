@@ -3,7 +3,7 @@
 
 MAKE_OPTION_DATA(api, NULL,
                  MAKE_OPT("API service port", "modules.api.port", 'p',
-                          true, ICP_OPTION_TYPE_LONG),
+                          1, ICP_OPTION_TYPE_LONG),
                  );
 
 REGISTER_MODULE_OPTIONS(api)

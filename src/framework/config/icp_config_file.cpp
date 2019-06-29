@@ -79,8 +79,11 @@ static std::any get_data_node_value(const YAML::Node &node, enum icp_option_type
         case ICP_OPTION_TYPE_LIST:
             return (node.as<std::vector<std::string>>());
             break;
-        case ICP_OPTION_TYPE_NONE:
+        case ICP_OPTION_TYPE_BOOL:
             return (true);
+            break;
+        case ICP_OPTION_TYPE_NONE:
+            return (node);
             break;
         }
     }
@@ -111,8 +114,11 @@ static void set_data_node_value(YAML::Node &node, std::string_view opt_data,
     case ICP_OPTION_TYPE_DOUBLE:
         node = strtod(opt_data.data(), nullptr);
         break;
-    case ICP_OPTION_TYPE_NONE:
+    case ICP_OPTION_TYPE_BOOL:
         node = true;
+        break;
+    case ICP_OPTION_TYPE_NONE:
+        node = "";
         break;
     }
 
@@ -207,7 +213,7 @@ static tl::expected<void, std::string> merge_cli_params(std::string_view path, Y
         assert(arg_path.size() > 1);
 
         update_param_by_path(node, arg_path.begin(), arg_path.end(), opt.second,
-                             icp_options_get_option_type(opt.first));
+                             icp_options_get_opt_type_short(opt.first));
     }
 
     return {};
@@ -245,8 +251,8 @@ tl::expected<std::any, std::string> icp_config_get_param(std::string_view param,
 
 tl::expected<std::any, std::string> icp_config_get_param(std::string_view param)
 {
-    return (icp_config_get_param(param,
-                                 icp_options_get_option_type(icp_options_hash_long(param.data()))));
+    auto opt_type = icp_options_get_opt_type_long(param.data(), param.length());
+    return icp_config_get_param(param, opt_type);
 }
 
 extern "C" {
@@ -291,9 +297,12 @@ int config_file_option_handler(int opt, const char *opt_arg)
 
 int module_option_handler(int opt, const char *opt_arg)
 {
-    // Check that the user supplied argument data if the module
+    // Check that the user supplied argument data if the registrant
     // developer told us to expect some.
-    if ((icp_options_get_option_type(opt) != ICP_OPTION_TYPE_NONE) && (!opt_arg)) {
+    auto opt_type = (icp_options_get_opt_type_short(opt));
+    if  ((!opt_arg) &&
+         ((opt_type != ICP_OPTION_TYPE_BOOL)
+          && (opt_type != ICP_OPTION_TYPE_NONE))) {
         return (EINVAL);
     }
 

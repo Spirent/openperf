@@ -68,6 +68,44 @@ struct icp_options_data * _find_options_data(int opt)
     return (NULL);
 }
 
+static const struct icp_option * _find_opt_by_long(const char * long_op, size_t len)
+{
+    /* No shenanigans, please. */
+    assert(long_op);
+    assert(len > 0);
+
+    struct icp_options_data *opt_data = NULL;
+    SLIST_FOREACH(opt_data, &icp_options_data_head, next)
+    {
+        for (const struct icp_option *curr = opt_data->options;
+             curr->description != NULL;
+             curr++) {
+            if (strncmp(long_op, curr->long_opt, len) == 0) {
+                return (curr);
+            }
+        }
+    }
+    return (NULL);
+}
+
+static const struct icp_option * _find_opt_by_short(int op)
+{
+    struct icp_options_data *opt_data = NULL;
+    SLIST_FOREACH(opt_data, &icp_options_data_head, next)
+    {
+        for (const struct icp_option *curr = opt_data->options;
+             curr->description != NULL;
+             curr++) {
+            if (curr->short_opt == op) {
+                return (curr);
+            } else if (icp_options_hash_long(curr->long_opt) == op) {
+                return (curr);
+            }
+        }
+    }
+    return (NULL);
+}
+
 int _allocate_optstring(char **optstringp)
 {
     /* Figure out necessary string length */
@@ -213,43 +251,34 @@ void icp_options_register(struct icp_options_data *opt_data)
 
 const char * icp_options_get_long_opt(int op)
 {
-    struct icp_options_data *opt_data = _find_options_data(op);
-    assert(opt_data);
-    if (!opt_data) {
+    const struct icp_option * opt = _find_opt_by_short(op);
+    /* All CLI options must have a long-form version. */
+    assert(opt);
+    if (!opt) {
         return (NULL);
     }
 
-    for (const struct icp_option *curr = opt_data->options;
-         curr->description != NULL;
-         curr++) {
-        /* Some arguments don't have a short option. */
-        if (op == (curr->short_opt ?
-                   curr->short_opt :
-                   icp_options_hash_long(curr->long_opt))) {
-            return (curr->long_opt);
-        }
-    }
-
-    return (NULL);
+    return (opt->long_opt);
 }
 
-enum icp_option_type icp_options_get_option_type(int op)
+enum icp_option_type icp_options_get_opt_type_short(int op)
 {
-    struct icp_options_data *opt_data = _find_options_data(op);
-    assert(opt_data);
-    if (!opt_data) {
-        return (ICP_OPTION_TYPE_NONE);
+    const struct icp_option * opt = _find_opt_by_short(op);
+
+    if (opt) {
+        return (opt->opt_type);
     }
 
-    for (const struct icp_option *curr = opt_data->options;
-         curr->description != NULL;
-         curr++) {
-        /* Some arguments don't have a short option. */
-        if (op == (curr->short_opt ?
-                   curr->short_opt :
-                   icp_options_hash_long(curr->long_opt))) {
-            return (curr->opt_type);
-        }
+    return (ICP_OPTION_TYPE_NONE);
+}
+
+enum icp_option_type icp_options_get_opt_type_long(const char * long_opt, size_t len)
+{
+    const struct icp_option * opt = _find_opt_by_long(long_opt, len);
+    assert(opt);
+
+    if (opt) {
+        return (opt->opt_type);
     }
 
     return (ICP_OPTION_TYPE_NONE);

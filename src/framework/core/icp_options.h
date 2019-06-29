@@ -28,11 +28,11 @@ typedef int (icp_option_callback_fn)(int opt, const char *optarg);
 /**
  * Enum denoting the type of an option's data.
  * Exact types are mapped as:
- * NONE -> bool. True if present.
- * STRING -> std::string.
- * LONG -> long.
- * DOUBLE -> double.
- * MAP -> std::map<std::string, std::string> >
+ * BOOL -> bool
+ * STRING -> std::string
+ * LONG -> long
+ * DOUBLE -> double
+ * MAP -> std::map<std::string, std::string>>
  * LIST -> std::vector<std::string>
  */
 enum icp_option_type {
@@ -42,6 +42,7 @@ enum icp_option_type {
     ICP_OPTION_TYPE_DOUBLE,
     ICP_OPTION_TYPE_MAP,
     ICP_OPTION_TYPE_LIST,
+    ICP_OPTION_TYPE_BOOL
 };
 
 /**
@@ -87,11 +88,11 @@ int icp_options_parse(int argc, char *argv[]);
 int icp_options_hash_long(const char * long_opt);
 
 /**
- * Retrieve long option string, if any.
+ * Retrieve long option string.
  * @param[in] op short-form option.
  *
  * @return
- *  pointer to a character string if a long form option exists,
+ *  pointer to a character string for the long form option,
  *  NULL otherwise.
  */
 const char * icp_options_get_long_opt(int op);
@@ -101,9 +102,19 @@ const char * icp_options_get_long_opt(int op);
  * @param[in] op short-form option.
  *
  * @return
- *  value type for the given option.
+ *  value type for the given option, ICP_OPTION_TYPE_NONE if none can be found.
  */
-enum icp_option_type icp_options_get_option_type(int op);
+enum icp_option_type icp_options_get_opt_type_short(int op);
+
+/**
+ * Retrieve type of an option value.
+ * @param[in] long_opt long-form option.
+ * @param[in] len length of long-form option.
+ *
+ * @return
+ *  value type for the given option, ICP_OPTION_TYPE_NONE if none can be found.
+ */
+enum icp_option_type icp_options_get_opt_type_long(const char *long_opt, size_t len);
 
 /**
  * Macro for registring option handlers

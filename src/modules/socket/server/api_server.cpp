@@ -72,6 +72,8 @@ static icp::memory::shared_segment create_shared_memory(size_t size)
             throw std::runtime_error("Could not remove shared memory segment "
                                      + std::string(shared_segment_name) + ": " + strerror(errno));
         }
+
+        ICP_LOG(ICP_LOG_DEBUG, "Unlinking stale shared memory at: %s", shared_segment_name.c_str());
     }
 
     auto impl_size = align_up(sizeof(socket::server::allocator), 64);
@@ -82,6 +84,8 @@ static icp::memory::shared_segment create_shared_memory(size_t size)
     new (segment.base()) socket::server::allocator(
         reinterpret_cast<uintptr_t>(segment.base()) + impl_size,
         size - impl_size);
+
+    ICP_LOG(ICP_LOG_DEBUG, "Created shared memory at: %s, with size %lu", shared_segment_name.c_str(), size);
 
     return (segment);
 }
@@ -105,9 +109,12 @@ static icp::socket::unix_socket create_unix_socket(const std::string_view path, 
             throw std::runtime_error("Could not remove shared unix domain socket "
                                      + full_path + ": " + strerror(errno));
         }
+        ICP_LOG(ICP_LOG_DEBUG, "Unlinking stale server socket at: %s", full_path.c_str());
     }
 
     auto socket = icp::socket::unix_socket(full_path, type);
+
+    ICP_LOG(ICP_LOG_DEBUG, "Created unix socket at: %s", full_path.c_str());
 
     return (socket);
 }
