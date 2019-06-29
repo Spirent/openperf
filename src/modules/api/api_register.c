@@ -6,4 +6,4 @@ MAKE_OPTION_DATA(api, NULL,
                           1, ICP_OPTION_TYPE_LONG),
                  );
 
-REGISTER_MODULE_OPTIONS(api)
+REGISTER_CLI_OPTIONS(api)

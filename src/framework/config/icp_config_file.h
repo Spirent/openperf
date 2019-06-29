@@ -11,27 +11,41 @@
 
 #include "core/icp_options.h"
 
-extern int module_option_handler(int opt, const char *opt_arg);
+extern int framework_cli_option_handler(int opt, const char *opt_arg);
 
+/*
+ * Helper macro to create command line argument details.
+ * All fields are mandatory.
+ * arg_types are defined in icp_config.h
+ */
 #define MAKE_OPT(description, long_arg, short_arg, has_param, arg_type) \
     {                                                                   \
      description, long_arg, short_arg, has_param, arg_type              \
-         }                                                              \
+    }                                                                   \
 
-#define MAKE_OPTION_DATA(module_name, init_fn, ...)                     \
-    static struct icp_options_data module_name##_options =              \
+/*
+ * Register command-line options with the framework.
+ * config_name must be globally unique.
+ * init_fn is called prior to command line argument processing.
+ */
+#define MAKE_OPTION_DATA(config_name, init_fn, ...)                     \
+    static struct icp_options_data config_name##_options =              \
         {                                                               \
-         .name = #module_name,                                          \
+         .name = #config_name,                                          \
          .init = init_fn,                                               \
-         .callback = module_option_handler,                             \
+         .callback = framework_cli_option_handler,                      \
          .options = {                                                   \
                      __VA_ARGS__                                        \
                      {0, 0, 0, 0, 0},                                   \
                      }                                                  \
         }
 
-#define REGISTER_MODULE_OPTIONS(module_name) \
-    REGISTER_OPTIONS(module_name##_options)
+/*
+ * Helper macro to connect framework configuration support to low-level
+ * command line support.
+ */
+#define REGISTER_CLI_OPTIONS(config_name) \
+    REGISTER_OPTIONS(config_name##_options)
 
 #ifdef __cplusplus
 namespace icp::config::file {

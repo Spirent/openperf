@@ -6,4 +6,4 @@ MAKE_OPTION_DATA(socket, NULL,
                  MAKE_OPT("Prefix for running multiple instances", "modules.socket.prefix", 0, 1, ICP_OPTION_TYPE_STRING),
                  );
 
-REGISTER_MODULE_OPTIONS(socket)
+REGISTER_CLI_OPTIONS(socket)

@@ -295,7 +295,7 @@ int config_file_option_handler(int opt, const char *opt_arg)
     return (EINVAL);
 }
 
-int module_option_handler(int opt, const char *opt_arg)
+int framework_cli_option_handler(int opt, const char *opt_arg)
 {
     // Check that the user supplied argument data if the registrant
     // developer told us to expect some.
