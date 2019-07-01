@@ -18,9 +18,9 @@ extern int framework_cli_option_handler(int opt, const char *opt_arg);
  * All fields are mandatory.
  * arg_types are defined in icp_config.h
  */
-#define MAKE_OPT(description, long_arg, short_arg, has_param, arg_type) \
+#define MAKE_OPT(description, long_arg, short_arg, arg_type)            \
     {                                                                   \
-     description, long_arg, short_arg, has_param, arg_type              \
+        description, long_arg, short_arg, arg_type                      \
     }                                                                   \
 
 /*
@@ -36,7 +36,7 @@ extern int framework_cli_option_handler(int opt, const char *opt_arg);
          .callback = framework_cli_option_handler,                      \
          .options = {                                                   \
                      __VA_ARGS__                                        \
-                     {0, 0, 0, 0, 0},                                   \
+                     {0, 0, 0, 0 },                                     \
                      }                                                  \
         }
 

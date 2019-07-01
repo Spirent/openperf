@@ -52,7 +52,6 @@ struct icp_option {
     const char *description;
     const char *long_opt;
     int short_opt;
-    int has_arg;
     enum icp_option_type opt_type;
 };
 

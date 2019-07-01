@@ -7,8 +7,8 @@ static struct icp_options_data config_file_options = {
     .init = NULL,
     .callback = config_file_option_handler,
     .options = {
-        {"File to use to configure Inception", "config", 'c', true, ICP_OPTION_TYPE_STRING},
-        { 0, 0, 0, 0, 0 },
+        {"File to use to configure Inception", "config", 'c', ICP_OPTION_TYPE_STRING},
+        { 0, 0, 0, 0 },
     },
 };
 

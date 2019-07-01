@@ -116,7 +116,7 @@ int _allocate_optstring(char **optstringp)
              curr->description != NULL;
              curr++) {
             if (curr->short_opt) {
-                length += curr->has_arg ? 2 : 1;
+                length += curr->opt_type ? 2 : 1;
             }
         }
     }
@@ -135,7 +135,7 @@ int _allocate_optstring(char **optstringp)
              curr++) {
             if (curr->short_opt) {
                 optstring[idx++] = curr->short_opt;
-                if (curr->has_arg) {
+                if (curr->opt_type) {
                     optstring[idx++] = ':';
                 }
             }
@@ -172,7 +172,7 @@ int _allocate_longopts(struct option **longoptsp)
              curr++) {
             longopts[idx++] = (struct option){
                 curr->long_opt,
-                curr->has_arg,
+                curr->opt_type,
                 NULL,
                 curr->short_opt ? curr->short_opt : icp_options_hash_long(curr->long_opt)
             };
@@ -256,9 +256,6 @@ const char * icp_options_get_long_opt(int op)
     const struct icp_option * opt = _find_opt_by_short(op);
     /* All CLI options must have a long-form version. */
     assert(opt);
-    if (!opt) {
-        return (NULL);
-    }
 
     return (opt->long_opt);
 }
@@ -279,11 +276,7 @@ enum icp_option_type icp_options_get_opt_type_long(const char * long_opt, size_t
     const struct icp_option * opt = _find_opt_by_long(long_opt, len);
     assert(opt);
 
-    if (opt) {
-        return (opt->opt_type);
-    }
-
-    return (ICP_OPTION_TYPE_NONE);
+    return (opt->opt_type);
 }
 
 /*
@@ -297,8 +290,8 @@ static struct icp_options_data help_option = {
     .init = NULL,
     .callback = NULL,
     .options = {
-        { "Print this message.", "help", 'h', 0, ICP_OPTION_TYPE_NONE },
-        { 0, 0, 0, 0, 0 },
+        { "Print this message.", "help", 'h', ICP_OPTION_TYPE_NONE },
+        { 0, 0, 0, 0 },
     }
 };
 

@@ -8,11 +8,11 @@ struct icp_options_data dpdk_options = {
     .init = dpdk_arg_parse_init,
     .callback = dpdk_arg_parse_handler,
     .options = {
-        {"quoted, comma separated options for DPDK", "dpdk", 'd', true, ICP_OPTION_TYPE_STRING},
-        {"enable test mode by creating loopback port pairs", "dpdk-test-mode", 0, false, ICP_OPTION_TYPE_BOOL},
-        {"number of loopback port pairs for testing, defaults to 1", "dpdk-test-portpairs", 0, true, ICP_OPTION_TYPE_LONG},
-        {"quoted, comma separated list of port index-id mappings in the form portX=id", "dpdk-port-ids", 0, true, ICP_OPTION_TYPE_MAP},
-        { 0, 0, 0, 0, 0 },
+        {"quoted, comma separated options for DPDK", "dpdk", 'd', ICP_OPTION_TYPE_STRING},
+        {"enable test mode by creating loopback port pairs", "dpdk-test-mode", 0, ICP_OPTION_TYPE_BOOL},
+        {"number of loopback port pairs for testing, defaults to 1", "dpdk-test-portpairs", 0, ICP_OPTION_TYPE_LONG},
+        {"quoted, comma separated list of port index-id mappings in the form portX=id", "dpdk-port-ids", 0, ICP_OPTION_TYPE_MAP},
+        { 0, 0, 0, 0 },
     },
 };
 

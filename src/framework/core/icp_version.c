@@ -33,8 +33,8 @@ static struct icp_options_data version_options = {
   .init     = NULL,
   .callback = version_option_handler,
   .options = {
-      {"Version", "version", 'v', false, ICP_OPTION_TYPE_NONE},
-      { 0, 0, 0, 0, 0 },
+      {"Version", "version", 'v', ICP_OPTION_TYPE_NONE},
+      { 0, 0, 0, 0 },
     },
 };
 

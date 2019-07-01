@@ -32,8 +32,6 @@ using api_handler = icp::socket::server::api_handler;
 
 static constexpr std::string_view yama_file = "/proc/sys/kernel/yama/ptrace_scope";
 
-static std::string prefix_opt;
-
 static __attribute__((const)) uint64_t align_up(uint64_t x, uint64_t align)
 {
     return ((x + align - 1) & ~(align - 1));
@@ -48,9 +46,8 @@ bool unlink_stale_files() {
 
 std::string prefix_option() {
     auto result = config::file::icp_config_get_param("modules.socket.prefix");
-    if (!result) { return std::string(); }
 
-    if (!result.value().has_value()) { return std::string(); }
+    if ((!result) || (!result.value().has_value())) { return std::string(); }
 
     try {
         return std::any_cast<std::string>(result.value());
@@ -192,7 +189,7 @@ static void update_yama_related_process_settings()
 
 const char* api_server_options_prefix_option_get(void)
 {
-    prefix_opt = prefix_option();
+    static std::string prefix_opt = prefix_option();
     return (prefix_opt.c_str());
 }
 
