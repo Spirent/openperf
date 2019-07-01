@@ -90,9 +90,9 @@ static int handle_rpc_request(const icp_event_data *data, void *arg)
 
         switch (type) {
         case request_type::GET_STACK:
-            ICP_LOG(ICP_LOG_TRACE, "Received %s request for port %d\n",
+            ICP_LOG(ICP_LOG_TRACE, "Received %s request for port %s\n",
                     to_string(type).c_str(),
-                    request["id"].get<int>());
+                    request["id"].get<std::string>().c_str());
             break;
         default:
             ICP_LOG(ICP_LOG_TRACE, "Received %s request\n", to_string(type).c_str());

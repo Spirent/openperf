@@ -20,9 +20,9 @@ json submit_request(void *socket, json& request)
     auto type = request["type"].get<request_type>();
     switch (type) {
     case request_type::GET_STACK:
-        ICP_LOG(ICP_LOG_TRACE, "Sending %s request for stack %d\n",
+        ICP_LOG(ICP_LOG_TRACE, "Sending %s request for stack %s\n",
                 to_string(type).c_str(),
-                request["id"].get<int>());
+                request["id"].get<std::string>().c_str());
         break;
     default:
         ICP_LOG(ICP_LOG_TRACE, "Sending %s request\n", to_string(type).c_str());
