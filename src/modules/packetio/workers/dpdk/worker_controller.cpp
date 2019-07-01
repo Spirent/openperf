@@ -86,39 +86,6 @@ static std::vector<queue::descriptor> get_queue_descriptors(std::vector<model::p
     return (q_descriptors);
 }
 
-static void update_workers(worker::client* workers,
-                           const worker::port_queues& queues,
-                           const worker_controller::task_map& tasks,
-                           const std::vector<queue::descriptor>& queue_descriptors)
-{
-    auto descriptors = to_worker_descriptors(queue_descriptors, queues);
-    auto stack_lcore = topology::get_stack_lcore_id();
-
-    /* Ugh. */
-    using non_const_task = std::remove_const_t<worker_controller::task_map::mapped_type>;
-
-    for (auto& [id, task] : tasks) {
-        descriptors.emplace_back(stack_lcore, std::addressof(const_cast<non_const_task&>(task)));
-    }
-
-    workers->configure(descriptors);
-}
-
-static void update_workers(worker::client* workers,
-                           const worker::port_queues& queues,
-                           const worker_controller::task_map& tasks)
-{
-    uint16_t port_id = 0;
-    std::vector<model::port_info> port_info;
-    RTE_ETH_FOREACH_DEV(port_id) {
-        port_info.emplace_back(model::port_info(port_id));
-    }
-
-    auto q_descriptors = get_queue_descriptors(port_info);
-
-    update_workers(workers, queues, tasks, q_descriptors);
-}
-
 static unsigned num_workers()
 {
     return (rte_lcore_count() - 1);
@@ -146,7 +113,7 @@ worker_controller::worker_controller(void* context,
     queues.setup(q_descriptors);
 
     /* Distribute them to our waiting workers */
-    update_workers(m_workers.get(), queues, m_tasks, q_descriptors);
+    m_workers->add_descriptors(to_worker_descriptors(q_descriptors, queues));
 
     /* And start them */
     m_workers->start(m_context, num_workers());
@@ -302,7 +269,9 @@ tl::expected<std::string, int> worker_controller::add_task(workers::context ctx,
     ICP_LOG(ICP_LOG_DEBUG, "Added task %.*s with id = %s\n",
             static_cast<int>(name.length()), name.data(), core::to_string(id).c_str());
 
-    update_workers(m_workers.get(), worker::port_queues::instance(), m_tasks);
+    std::vector<worker::descriptor> tasks { worker::descriptor(topology::get_stack_lcore_id(),
+                                                               std::addressof(it->second)) };
+    m_workers->add_descriptors(tasks);
 
     return (core::to_string(id));
 }
@@ -311,8 +280,12 @@ void worker_controller::del_task(std::string_view task_id)
 {
     ICP_LOG(ICP_LOG_DEBUG, "Deleting task %.*s\n",
             static_cast<int>(task_id.length()), task_id.data());
-    m_tasks.erase(core::uuid(task_id));
-    update_workers(m_workers.get(), worker::port_queues::instance(), m_tasks);
+    if (auto item = m_tasks.find(core::uuid(task_id)); item != m_tasks.end()) {
+        std::vector<worker::descriptor> tasks { worker::descriptor(topology::get_stack_lcore_id(),
+                                                                   std::addressof(item->second)) };
+        m_workers->del_descriptors(tasks);
+        m_tasks.erase(item);
+    }
 }
 
 }

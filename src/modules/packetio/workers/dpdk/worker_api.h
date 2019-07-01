@@ -45,7 +45,11 @@ struct stop_msg {
     std::string endpoint;
 };
 
-struct configure_msg {
+struct add_descriptors_msg {
+    std::vector<worker::descriptor> descriptors;
+};
+
+struct del_descriptors_msg {
     std::vector<worker::descriptor> descriptors;
 };
 
@@ -53,7 +57,10 @@ struct configure_msg {
  * Our worker is a finite state machine and these messages are
  * the events that trigger state changes.
  */
-using command_msg = std::variant<start_msg, stop_msg, configure_msg>;
+using command_msg = std::variant<start_msg,
+                                 stop_msg,
+                                 add_descriptors_msg,
+                                 del_descriptors_msg>;
 
 extern const std::string_view endpoint;
 
@@ -64,7 +71,8 @@ public:
 
     void start(void* context, unsigned nb_workers);
     void stop(void* context, unsigned nb_workers);
-    void configure(const std::vector<worker::descriptor>&);
+    void add_descriptors(const std::vector<worker::descriptor>&);
+    void del_descriptors(const std::vector<worker::descriptor>&);
 
 private:
     std::unique_ptr<void, icp_socket_deleter> m_socket;

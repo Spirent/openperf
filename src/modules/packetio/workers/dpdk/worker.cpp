@@ -32,15 +32,14 @@ using namespace std::chrono_literals;
 static constexpr auto poll_timeout = 250ms;
 
 /**
- * We have three states we transition between, based on our messages:
- * init, armed, and running.  We use each struct as a tag for
- * each state.  And we wrap them all in std::variant for ease of use.
+ * We only have two states we transition between, based on our messages:
+ * stopped and started.  We use each struct as a tag for each state.  And
+ * we wrap them all in std::variant for ease of use.
  */
-struct state_init {};
-struct state_armed {};
-struct state_running {};
+struct state_stopped {};
+struct state_started {};
 
-using state = std::variant<state_init, state_armed, state_running>;
+using state = std::variant<state_stopped, state_started>;
 
 /**
  * This struct is magic.  Use templates and parameter packing to provide
@@ -398,7 +397,7 @@ static void run(void* control, const fib* fib,
      */
     if (icp_socket_has_messages(control)) return;
 
-    if (all_pollable(tasks)) {
+    if (tasks.empty() || all_pollable(tasks)) {
         run_pollable(control, fib, tasks);
     } else {
         run_spinning(control, fib, tasks);
@@ -412,39 +411,70 @@ class worker : public finite_state_machine<worker, state, command_msg>
     const fib* m_fib;
     std::vector<task_ptr> m_tasks;
 
-    void update_config(const std::vector<descriptor>& descriptors)
+    void add_config(const std::vector<descriptor>& descriptors)
     {
-        m_tasks.clear();
-
         for (auto& d: descriptors) {
             if (d.worker_id != rte_lcore_id()) continue;
 
             std::visit(overloaded_visitor(
-                           [&](callback* callback) {
+                           [](const callback* callback) {
                                ICP_LOG(ICP_LOG_DEBUG, "Adding callback %.*s to worker %u\n",
                                        static_cast<int>(callback->name().length()), callback->name().data(),
                                        rte_lcore_id());
-                               m_tasks.emplace_back(callback);
                            },
-                           [&](rx_queue* rxq) {
+                           [](const rx_queue* rxq) {
                                ICP_LOG(ICP_LOG_DEBUG, "Adding RX port queue %u:%u to worker %u\n",
                                        rxq->port_id(), rxq->queue_id(), rte_lcore_id());
-                               m_tasks.emplace_back(rxq);
                            },
-                           [&](tx_queue* txq) {
+                           [](const tx_queue* txq) {
                                ICP_LOG(ICP_LOG_DEBUG, "Adding TX port queue %u:%u to worker %u\n",
                                        txq->port_id(), txq->queue_id(), rte_lcore_id());
-                               m_tasks.emplace_back(txq);
                            },
-                           [](zmq_socket*) {
+                           [](const zmq_socket*) {
                                /*
                                 * Here for completeness, but should never be
                                 * configured via an update message.
                                 */
-                               ICP_LOG(ICP_LOG_ERROR, "Unexpected zmq socket send to worker %u\n",
+                               ICP_LOG(ICP_LOG_ERROR, "Unexpected request to add 0MQ socket to worker %u\n",
                                        rte_lcore_id());
                            }),
                        d.task);
+
+            m_tasks.push_back(d.task);
+        }
+    }
+
+    void del_config(const std::vector<descriptor>& descriptors)
+    {
+        for (auto& d: descriptors) {
+            if (d.worker_id != rte_lcore_id()) continue;
+
+            std::visit(overloaded_visitor(
+                           [](const callback* callback) {
+                               ICP_LOG(ICP_LOG_DEBUG, "Removing callback %.*s from worker %u\n",
+                                       static_cast<int>(callback->name().length()), callback->name().data(),
+                                       rte_lcore_id());
+                           },
+                           [](const rx_queue* rxq) {
+                               ICP_LOG(ICP_LOG_DEBUG, "Removing RX port queue %u:%u from worker %u\n",
+                                       rxq->port_id(), rxq->queue_id(), rte_lcore_id());
+                           },
+                           [](const tx_queue* txq) {
+                               ICP_LOG(ICP_LOG_DEBUG, "Removing TX port queue %u:%u from worker %u\n",
+                                       txq->port_id(), txq->queue_id(), rte_lcore_id());
+                           },
+                           [](const zmq_socket*) {
+                               ICP_LOG(ICP_LOG_ERROR, "Unexpected request to remove 0MQ socket from worker %u\n",
+                                       rte_lcore_id());
+                           }),
+                       d.task);
+
+            m_tasks.erase(std::remove_if(begin(m_tasks), end(m_tasks),
+                                         [&](const task_ptr& task) {
+                                             return (task == d.task);
+                                         }),
+                          end(m_tasks));
+
         }
     }
 
@@ -456,59 +486,46 @@ public:
     {}
 
     /* State transition functions */
-    std::optional<state> on_event(state_init&, const configure_msg& msg)
+    std::optional<state> on_event(state_stopped&, const add_descriptors_msg& add)
     {
-        update_config(msg.descriptors);
-        return (msg.descriptors.empty()
-                ? std::nullopt
-                : std::make_optional(state_armed()));
+        add_config(add.descriptors);
+        return (std::nullopt);
     }
 
-    std::optional<state> on_event(state_armed&, const start_msg &start)
+    std::optional<state> on_event(state_stopped&, const del_descriptors_msg& del)
     {
-        icp_task_sync_ping(m_context, start.endpoint.data());
+        del_config(del.descriptors);
+        return (std::nullopt);
+    }
+
+    std::optional<state> on_event(state_started&, const add_descriptors_msg& add)
+    {
+        add_config(add.descriptors);
         run(m_control, m_fib, m_tasks);
-        return (std::make_optional(state_running()));
+        return (std::nullopt);
     }
 
-    std::optional<state> on_event(state_armed&, const configure_msg& msg)
+    std::optional<state> on_event(state_started&, const del_descriptors_msg& del)
     {
-        update_config(msg.descriptors);
-        return (msg.descriptors.empty()
-                ? std::nullopt
-                : std::make_optional(state_armed()));
-    }
-
-    std::optional<state> on_event(state_running&, const stop_msg& stop)
-    {
-        icp_task_sync_ping(m_context, stop.endpoint.data());
-        return (std::make_optional(state_armed()));
-    }
-
-    std::optional<state> on_event(state_running&, const configure_msg& msg)
-    {
-        update_config(msg.descriptors);
-        if (msg.descriptors.empty()) {
-            return (std::make_optional(state_init()));
-        }
+        del_config(del.descriptors);
         run(m_control, m_fib, m_tasks);
-        return (std::make_optional(state_running()));
+        return (std::nullopt);
     }
 
-    /* Generic stop */
-    template <typename State>
-    std::optional<state> on_event(State&, const stop_msg& stop)
-    {
-        icp_task_sync_ping(m_context, stop.endpoint.data());
-        return std::nullopt;
-    }
-
-    /* Generic start */
+    /* Generic state transition functions */
     template <typename State>
     std::optional<state> on_event(State&, const start_msg& start)
     {
         icp_task_sync_ping(m_context, start.endpoint.data());
-        return std::nullopt;
+        run(m_control, m_fib, m_tasks);
+        return (std::make_optional(state_started{}));
+    }
+
+    template <typename State>
+    std::optional<state> on_event(State&, const stop_msg& stop)
+    {
+        icp_task_sync_ping(m_context, stop.endpoint.data());
+        return (std::make_optional(state_stopped{}));
     }
 };
 

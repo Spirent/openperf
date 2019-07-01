@@ -34,7 +34,7 @@ void client::start(void* context, unsigned nb_workers)
 {
     auto syncpoint = random_endpoint();
     auto sync = icp_task_sync_socket(context, syncpoint.c_str());
-    if (auto error = send_message(m_socket.get(), start_msg{ .endpoint = syncpoint });
+    if (auto error = send_message(m_socket.get(), start_msg{ syncpoint });
         error && error != ETERM) {
         throw std::runtime_error("Could not send start message to workers: "
                                  + std::string(zmq_strerror(error)));
@@ -48,7 +48,7 @@ void client::stop(void* context, unsigned nb_workers)
 {
     auto syncpoint = random_endpoint();
     auto sync = icp_task_sync_socket(context, syncpoint.c_str());
-    if (auto error = send_message(m_socket.get(), stop_msg{ .endpoint = syncpoint });
+    if (auto error = send_message(m_socket.get(), stop_msg{ syncpoint });
         error && error != ETERM) {
         throw std::runtime_error("Could not send stop message to workers: "
                                  + std::string(zmq_strerror(error)));
@@ -58,11 +58,20 @@ void client::stop(void* context, unsigned nb_workers)
                                  "(syncpoint = %s)\n", syncpoint.c_str());
 }
 
-void client::configure(const std::vector<descriptor>& descriptors)
+void client::add_descriptors(const std::vector<descriptor>& descriptors)
 {
-    if (auto error = send_message(m_socket.get(), configure_msg{ .descriptors = descriptors });
+    if (auto error = send_message(m_socket.get(), add_descriptors_msg { descriptors });
         error && error != ETERM) {
-        throw std::runtime_error("Could not send configure message to workers: "
+        throw std::runtime_error("Could not send add descriptors message to workers: "
+                                 + std::string(zmq_strerror(error)));
+    }
+}
+
+void client::del_descriptors(const std::vector<descriptor>& descriptors)
+{
+    if (auto error = send_message(m_socket.get(), del_descriptors_msg { descriptors });
+        error && error != ETERM) {
+        throw std::runtime_error("Could not send delete descriptors message to workers: "
                                  + std::string(zmq_strerror(error)));
     }
 }

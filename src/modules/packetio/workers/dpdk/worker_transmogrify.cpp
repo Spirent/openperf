@@ -35,9 +35,16 @@ static serialized_msg serialize_message(const command_msg& msg)
                                                                       stop.endpoint.data(),
                                                                       stop.endpoint.length()));
                                     },
-                                    [&](const configure_msg& config) {
-                                        assert(config.descriptors.size());
-                                        auto& vec = config.descriptors;
+                                    [&](const add_descriptors_msg& add) {
+                                        assert(add.descriptors.size());
+                                        auto& vec = add.descriptors;
+                                        return (message::zmq_msg_init(&serialized.data,
+                                                                      vec.data(),
+                                                                      sizeof(*std::begin(vec)) * vec.size()));
+                                    },
+                                    [&](const del_descriptors_msg& del) {
+                                        assert(del.descriptors.size());
+                                        auto& vec = del.descriptors;
                                         return (message::zmq_msg_init(&serialized.data,
                                                                       vec.data(),
                                                                       sizeof(*std::begin(vec)) * vec.size()));
@@ -82,11 +89,17 @@ static command_msg deserialize_message(const serialized_msg& msg)
                          zmq_msg_size(&msg.data));
         return (stop_msg{ data });
     }
-    case message::variant_index<command_msg, configure_msg>(): {
+    case message::variant_index<command_msg, add_descriptors_msg>(): {
         auto data = message::zmq_msg_data<descriptor*>(&msg.data);
         auto count = zmq_msg_size(&msg.data) / sizeof(descriptor);
         std::vector<descriptor> descriptors(data, data + count);
-        return (configure_msg{ descriptors });
+        return (add_descriptors_msg{ descriptors });
+    }
+    case message::variant_index<command_msg, del_descriptors_msg>(): {
+        auto data = message::zmq_msg_data<descriptor*>(&msg.data);
+        auto count = zmq_msg_size(&msg.data) / sizeof(descriptor);
+        std::vector<descriptor> descriptors(data, data + count);
+        return (del_descriptors_msg{ descriptors });
     }
     default:
         throw std::runtime_error("Unhandled deserialization case; fix me!");
