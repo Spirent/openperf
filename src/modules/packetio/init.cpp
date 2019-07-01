@@ -66,10 +66,16 @@ struct service {
                                });
     }
 
-    std::unique_ptr<icp::core::event_loop> m_loop;
+    /*
+     * Note: the order of declaration here is the same as the order of
+     * initialization in init().  This is both intentional and necessary
+     * as the objects will be destroyed in the reverse order of their
+     * declaration.
+     */
     std::unique_ptr<driver::generic_driver> m_driver;
     std::unique_ptr<workers::generic_workers> m_workers;
     std::unique_ptr<stack::generic_stack> m_stack;
+    std::unique_ptr<icp::core::event_loop> m_loop;
     std::unique_ptr<port::api::server> m_port_server;
     std::unique_ptr<stack::api::server> m_stack_server;
     std::unique_ptr<interface::api::server> m_if_server;

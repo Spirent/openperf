@@ -9,7 +9,7 @@
 struct netif;
 struct pbuf;
 struct rte_ring;
-extern void rte_ring_free(struct rte_ring*);
+extern "C" void rte_ring_free(struct rte_ring*);
 
 namespace icp::packetio::dpdk::netif_rx_strategy {
 

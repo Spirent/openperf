@@ -19,8 +19,20 @@ client::client(void* context)
     : m_socket(icp_socket_get_client(context, ZMQ_REQ, endpoint.data()))
 {}
 
-tl::expected<std::string, int> client::add_task(std::string_view name,
-                                                workers::context ctx,
+client::client(client&& other)
+    : m_socket(std::move(other.m_socket))
+{}
+
+client& client::operator=(client&& other)
+{
+    if (this != &other) {
+        m_socket = std::move(other.m_socket);
+    }
+    return (*this);
+}
+
+tl::expected<std::string, int> client::add_task(workers::context ctx,
+                                                std::string_view name,
                                                 event_loop::event_notifier notify,
                                                 event_loop::callback_function callback,
                                                 std::any arg)

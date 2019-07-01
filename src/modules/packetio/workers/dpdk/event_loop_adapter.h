@@ -5,30 +5,29 @@
 #include <vector>
 
 #include "packetio/generic_event_loop.h"
-#include "packetio/workers/dpdk/callback.h"
+#include "packetio/internal_client.h"
 
 namespace icp::packetio::dpdk::worker {
 
 class event_loop_adapter
 {
 public:
-    event_loop_adapter() = default;
+    event_loop_adapter(void* context, workers::context ctx);
     ~event_loop_adapter();
 
     event_loop_adapter(event_loop_adapter&& other);
     event_loop_adapter& operator=(event_loop_adapter&& other);
 
-    bool add_callback(event_loop::generic_event_loop& loop,
-                      std::string_view name,
+    bool add_callback(std::string_view name,
                       event_loop::event_notifier notify,
                       event_loop::callback_function callback,
                       std::any arg) noexcept;
     void del_callback(event_loop::event_notifier notify) noexcept;
 
-    using callback_container = std::vector<std::unique_ptr<callback>>;
-
 private:
-    callback_container m_callbacks;
+    internal::api::client m_client;
+    workers::context m_ctx;
+    std::unordered_map<event_loop::event_notifier, std::string> m_tasks;
 };
 
 }

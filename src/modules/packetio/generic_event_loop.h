@@ -27,7 +27,7 @@ public:
                       callback_function callback,
                       std::any arg) noexcept
     {
-        return (m_self->add_callback(*this, name, notify, callback, arg));
+        return (m_self->add_callback(name, notify, callback, arg));
     }
 
     void del_callback(event_notifier notify) noexcept
@@ -38,8 +38,7 @@ public:
 private:
     struct event_loop_concept {
         virtual ~event_loop_concept() = default;
-        virtual bool add_callback(generic_event_loop& loop,
-                                  std::string_view name,
+        virtual bool add_callback(std::string_view name,
                                   event_notifier notify,
                                   callback_function callback,
                                   std::any arg) noexcept = 0;
@@ -52,13 +51,12 @@ private:
             : m_loop(std::move(loop))
         {}
 
-        bool add_callback(generic_event_loop& loop,
-                          std::string_view name,
+        bool add_callback(std::string_view name,
                           event_notifier notify,
                           callback_function callback,
                           std::any arg) noexcept
         {
-            return (m_loop.add_callback(loop, name, notify, callback, arg));
+            return (m_loop.add_callback(name, notify, callback, arg));
         }
 
         void del_callback(event_notifier notify) noexcept

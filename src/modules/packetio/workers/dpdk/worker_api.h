@@ -60,15 +60,13 @@ extern const std::string_view endpoint;
 class client
 {
 public:
-    client(void *context, size_t nb_workers);
+    client(void* context);
 
-    void start();
-    void stop();
+    void start(void* context, unsigned nb_workers);
+    void stop(void* context, unsigned nb_workers);
     void configure(const std::vector<worker::descriptor>&);
 
 private:
-    const void*  m_context;
-    const size_t m_workers;
     std::unique_ptr<void, icp_socket_deleter> m_socket;
 };
 

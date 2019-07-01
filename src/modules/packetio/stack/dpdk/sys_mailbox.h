@@ -1,8 +1,10 @@
+#ifndef _ICP_PACKETIO_DPDK_SYS_MAILBOX_H_
+#define _ICP_PACKETIO_DPDK_SYS_MAILBOX_H_
+
 #include <atomic>
 #include <memory>
 
-struct rte_ring;
-void rte_ring_free(rte_ring *);
+#include "packetio/drivers/dpdk/dpdk.h"
 
 /**
  * Note: this is the implementation of lwIP's sys_mbox_t object.
@@ -36,3 +38,5 @@ public:
     void* fetch(uint32_t timeout);
     void* tryfetch();
 };
+
+#endif /* _ICP_PACKETIO_DPDK_SYS_MAILBOX_H_ */

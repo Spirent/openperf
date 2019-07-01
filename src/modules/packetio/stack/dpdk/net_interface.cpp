@@ -205,8 +205,9 @@ static err_t net_interface_dpdk_init(netif* netif)
     netif->chksum_flags = (to_checksum_check_flags(info.rx_offloads())
                            | to_checksum_gen_flags(info.tx_offloads()));
 
-    ICP_LOG(ICP_LOG_DEBUG, "Interface %c%c%u: mtu = %u, offloads = 0x%x\n",
-            netif->name[0], netif->name[1], netif->num, netif->mtu, netif->chksum_flags);
+    ICP_LOG(ICP_LOG_DEBUG, "Interface %c%c%u: mtu = %u, offloads = 0x%04hx\n",
+            netif->name[0], netif->name[1], netif->num, netif->mtu,
+            static_cast<uint16_t>(~netif->chksum_flags));
 
     netif->flags = (NETIF_FLAG_BROADCAST
                     | NETIF_FLAG_ETHERNET

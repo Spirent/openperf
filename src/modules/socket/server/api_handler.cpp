@@ -184,7 +184,7 @@ int api_handler::handle_requests(int fd)
     socklen_t client_length = sizeof(client);
     while ((recv_or_err = recvfrom(fd,
                                    reinterpret_cast<void*>(&request), sizeof(request),
-                                   0,
+                                   MSG_DONTWAIT,
                                    reinterpret_cast<sockaddr*>(&client), &client_length))
            == sizeof(api::request_msg)) {
 

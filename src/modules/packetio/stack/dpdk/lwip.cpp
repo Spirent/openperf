@@ -2,21 +2,16 @@
 #include <sys/timerfd.h>
 
 #include "lwipopts.h"
+#include "lwip/init.h"
 #include "lwip/tcpip.h"
 
 #include "core/icp_core.h"
 #include "packetio/drivers/dpdk/dpdk.h"
 #include "packetio/drivers/dpdk/topology_utils.h"
-#include "packetio/stack/dpdk/netif_wrapper.h"
 #include "packetio/stack/dpdk/lwip.h"
-#include "packetio/stack/dpdk/sys_mailbox.h"
+#include "packetio/stack/dpdk/netif_wrapper.h"
+#include "packetio/stack/dpdk/tcpip_mbox.h"
 #include "packetio/stack/tcpip.h"
-
-sys_mbox_t icp::packetio::tcpip::mbox()
-{
-    static auto tcpip_mbox = sys_mbox();
-    return (std::addressof(tcpip_mbox));
-}
 
 namespace icp::packetio::dpdk {
 
@@ -71,7 +66,18 @@ lwip::lwip(driver::generic_driver& driver, workers::generic_workers& workers)
                                  + std::string(strerror(errno)));
     }
 
-    auto tcpip_mbox = tcpip::mbox();
+    lwip_init();
+
+    /*
+     * XXX: lwIP uses a global sys_mbox_t to allow communication between
+     * clients and the stack thread.  We initialize this object here and
+     * de-initialize it in our destructor.  This coupling is necessary to
+     * allow the process to cleanly shut down.  Luckily, client functions
+     * check for a valid mbox object before using it.  But if we don't
+     * invalidate it, they can block on a callback waiting for a response
+     * from our non-existent stack tasks.
+     */
+    auto tcpip_mbox = tcpip_mbox::instance().init();
     auto msg_id = m_workers.add_task(workers::context::STACK,
                                      "stack_message_handler",
                                      sys_mbox_fd(&tcpip_mbox),
@@ -109,6 +115,7 @@ lwip::~lwip()
         m_workers.del_task(id);
     }
 
+    tcpip_mbox::instance().fini();
     close(m_timerfd);
 }
 
@@ -190,7 +197,6 @@ void lwip::delete_interface(std::string_view id)
 {
     if (auto item = m_interfaces.find(id); item != m_interfaces.end()) {
         auto& ifp = item->second;
-        (void)ifp;
         m_workers.del_interface(ifp->port_id(), std::make_any<netif*>(ifp->data()));
         m_interfaces.erase(std::string(id));
     }

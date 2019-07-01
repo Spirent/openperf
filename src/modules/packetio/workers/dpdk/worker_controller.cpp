@@ -59,6 +59,33 @@ static std::vector<worker::descriptor> to_worker_descriptors(const std::vector<q
     return (worker_items);
 }
 
+static std::vector<queue::descriptor> get_queue_descriptors(std::vector<model::port_info>& port_info)
+{
+    auto q_descriptors = topology::queue_distribute(port_info);
+
+    /*
+     * XXX: If we have only one worker thread, then everything should use the
+     * direct transmit functions.  Hence,  we don't need any tx queues.
+     */
+    if (rte_lcore_count() <= 2) {
+        /* Filter out all tx queues; we don't need them */
+        q_descriptors.erase(std::remove_if(begin(q_descriptors), end(q_descriptors),
+                                           [](const queue::descriptor& d) {
+                                               return (d.mode == queue::queue_mode::TX);
+                                           }),
+                            end(q_descriptors));
+
+        /* Change all RXTX queues to RX only */
+        for (auto& d : q_descriptors) {
+            if (d.mode == queue::queue_mode::RXTX) {
+                d.mode = queue::queue_mode::RX;
+            }
+        }
+    }
+
+    return (q_descriptors);
+}
+
 static void update_workers(worker::client* workers,
                            const worker::port_queues& queues,
                            const worker_controller::task_map& tasks,
@@ -87,14 +114,20 @@ static void update_workers(worker::client* workers,
         port_info.emplace_back(model::port_info(port_id));
     }
 
-    auto q_descriptors = topology::queue_distribute(port_info);
+    auto q_descriptors = get_queue_descriptors(port_info);
 
     update_workers(workers, queues, tasks, q_descriptors);
 }
 
+static unsigned num_workers()
+{
+    return (rte_lcore_count() - 1);
+}
+
 worker_controller::worker_controller(void* context,
                                      driver::generic_driver& driver)
-    : m_workers(std::make_unique<worker::client>(context, rte_lcore_count() - 1))
+    : m_context(context)
+    , m_workers(std::make_unique<worker::client>(context))
     , m_driver(driver)
     , m_fib(std::make_unique<worker::fib>())
 {
@@ -107,7 +140,7 @@ worker_controller::worker_controller(void* context,
         port_info.emplace_back(model::port_info(port_id));
     }
 
-    auto q_descriptors = topology::queue_distribute(port_info);
+    auto q_descriptors = get_queue_descriptors(port_info);
 
     auto& queues = worker::port_queues::instance();
     queues.setup(q_descriptors);
@@ -116,20 +149,21 @@ worker_controller::worker_controller(void* context,
     update_workers(m_workers.get(), queues, m_tasks, q_descriptors);
 
     /* And start them */
-    m_workers->start();
+    m_workers->start(m_context, num_workers());
 }
 
 worker_controller::~worker_controller()
 {
     if (!m_workers) return;
 
-    m_workers->stop();
+    m_workers->stop(m_context, num_workers());
     rte_eal_mp_wait_lcore();
     worker::port_queues::instance().unset();
 }
 
 worker_controller::worker_controller(worker_controller&& other)
-    : m_workers(std::move(other.m_workers))
+    : m_context(other.m_context)
+    , m_workers(std::move(other.m_workers))
     , m_driver(other.m_driver)
     , m_fib(std::move(other.m_fib))
     , m_tasks(std::move(other.m_tasks))
@@ -139,6 +173,7 @@ worker_controller::worker_controller(worker_controller&& other)
 worker_controller& worker_controller::operator=(worker_controller&& other)
 {
     if (this != &other) {
+        m_context = other.m_context;
         m_workers = std::move(other.m_workers);
         m_driver = other.m_driver;
         m_fib = std::move(other.m_fib);
@@ -199,7 +234,7 @@ void worker_controller::add_interface(std::string_view port_id, std::any interfa
     if (m_fib->find(*port_idx, mac)) {
         throw std::runtime_error("Interface with mac = "
                                  + net::to_string(mac) + " on port "
-                                 + std::string(port_id) + "(idx = "
+                                 + std::string(port_id) + " (idx = "
                                  + std::to_string(*port_idx) + ") already exists in FIB");
     }
 
@@ -227,10 +262,10 @@ void worker_controller::del_interface(std::string_view port_id, std::any interfa
     auto ifp = std::any_cast<netif*>(interface);
     auto mac = net::mac_address(ifp->hwaddr);
 
-    if (m_fib->remove(*port_idx, mac, ifp)) {
+    if (!m_fib->remove(*port_idx, mac, ifp)) {
         throw std::runtime_error("Could not remove mac = "
                                  + net::to_string(mac) + " for port "
-                                 + std::string(port_id) + "(idx = "
+                                 + std::string(port_id) + " (idx = "
                                  + std::to_string(*port_idx) + ") from FIB");
     }
 
@@ -254,7 +289,7 @@ tl::expected<std::string, int> worker_controller::add_task(workers::context ctx,
     }
 
     if (m_loops.find(ctx) == m_loops.end()) {
-        m_loops.emplace(ctx, worker::event_loop_adapter());
+        m_loops.emplace(ctx, worker::event_loop_adapter(m_context, ctx));
     }
     auto& loop = m_loops.at(ctx);
 

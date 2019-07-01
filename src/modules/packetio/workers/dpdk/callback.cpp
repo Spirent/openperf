@@ -14,13 +14,6 @@ struct overloaded_visitor : Ts...
     using Ts::operator()...;
 };
 
-static void dpdk_epoll_callback(int fd, void* arg)
-{
-    auto pollable = reinterpret_cast<callback*>(arg);
-    assert(fd == pollable->event_fd());
-    pollable->do_callback();
-}
-
 static int get_event_fd(const event_loop::event_notifier& notifier)
 {
     return (std::visit(overloaded_visitor(
@@ -75,16 +68,6 @@ void callback::do_callback()
 int callback::event_fd() const
 {
     return (get_event_fd(m_notify));
-}
-
-pollable_event<callback>::event_callback callback::event_callback_function() const
-{
-    return (dpdk_epoll_callback);
-}
-
-void* callback::event_callback_argument()
-{
-    return (this);
 }
 
 }

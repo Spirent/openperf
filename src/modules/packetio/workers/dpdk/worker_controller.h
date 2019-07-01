@@ -44,6 +44,7 @@ public:
                                         event_loop::generic_event_loop>;
 
 private:
+    void* m_context;
     std::unique_ptr<worker::client> m_workers;
     driver::generic_driver& m_driver;
     std::unique_ptr<worker::fib> m_fib;

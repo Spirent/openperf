@@ -1,6 +1,5 @@
 #include <algorithm>
 #include <array>
-#include <atomic>  /* XXX: needed to clean up a header order issue in libc/libc++ */
 #include <chrono>
 #include <memory>
 #include <optional>
@@ -252,8 +251,9 @@ static uint16_t tx_burst(const tx_queue* txq)
 static uint16_t service_task(const fib* fib, const task_ptr& task)
 {
     return (std::visit(overloaded_visitor(
-                           [](const callback*) -> uint16_t {
-                               return (0);  /* noop */
+                           [](const callback* cb) -> uint16_t {
+                               const_cast<callback*>(cb)->do_callback();
+                               return (0);
                            },
                            [&](const rx_queue* rxq) -> uint16_t {
                                return (rx_burst(fib, rxq));
@@ -356,7 +356,11 @@ static void run_pollable(void* control, const fib* fib,
 static void run_spinning(void* control, const fib* fib,
                          const std::vector<task_ptr>& tasks)
 {
-    while (!icp_socket_has_messages(control)) {
+    epoll_poller poller;
+
+    auto ctrl_sock = zmq_socket(control);
+
+    while (!ctrl_sock.readable()) {
         /*
          * Check the time before servicing any queues.  We want to query our control
          * socket periodically for messages without hammering it.

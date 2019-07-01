@@ -26,36 +26,34 @@ static std::string random_endpoint()
     return (to_return);
 }
 
-client::client(void *context, size_t nb_workers)
-    : m_context(context)
-    , m_workers(nb_workers)
-    , m_socket(icp_socket_get_server(context, ZMQ_PUB, endpoint.data()))
+client::client(void *context)
+    : m_socket(icp_socket_get_server(context, ZMQ_PUB, endpoint.data()))
 {}
 
-void client::start()
+void client::start(void* context, unsigned nb_workers)
 {
     auto syncpoint = random_endpoint();
-    auto sync = icp_task_sync_socket(const_cast<void*>(m_context), syncpoint.c_str());
+    auto sync = icp_task_sync_socket(context, syncpoint.c_str());
     if (auto error = send_message(m_socket.get(), start_msg{ .endpoint = syncpoint });
         error && error != ETERM) {
         throw std::runtime_error("Could not send start message to workers: "
                                  + std::string(zmq_strerror(error)));
     }
-    icp_task_sync_block_and_warn(&sync, m_workers, 1000,
+    icp_task_sync_block_and_warn(&sync, nb_workers, 1000,
                                  "Still waiting on start acknowledgment from queue workers "
                                  "(syncpoint = %s)\n", syncpoint.c_str());
 }
 
-void client::stop()
+void client::stop(void* context, unsigned nb_workers)
 {
     auto syncpoint = random_endpoint();
-    auto sync = icp_task_sync_socket(const_cast<void*>(m_context), syncpoint.c_str());
+    auto sync = icp_task_sync_socket(context, syncpoint.c_str());
     if (auto error = send_message(m_socket.get(), stop_msg{ .endpoint = syncpoint });
         error && error != ETERM) {
         throw std::runtime_error("Could not send stop message to workers: "
                                  + std::string(zmq_strerror(error)));
     }
-    icp_task_sync_block_and_warn(&sync, m_workers, 1000,
+    icp_task_sync_block_and_warn(&sync, nb_workers, 1000,
                                  "Still waiting on stop acknowledgment from queue workers "
                                  "(syncpoint = %s)\n", syncpoint.c_str());
 }

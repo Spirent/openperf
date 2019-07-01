@@ -18,8 +18,11 @@ class client
 public:
     client(void* context);
 
-    tl::expected<std::string, int> add_task(std::string_view name,
-                                            workers::context ctx,
+    client(client&& other);
+    client& operator=(client&& other);
+
+    tl::expected<std::string, int> add_task(workers::context ctx,
+                                            std::string_view name,
                                             event_loop::event_notifier notify,
                                             event_loop::callback_function callback,
                                             std::any arg);

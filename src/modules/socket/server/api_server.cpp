@@ -120,7 +120,7 @@ server::server(void* context)
     , m_sock(create_unix_socket((prefix_opt.length() > 0
                                  ? (api::server_socket() + "." + prefix_opt)
                                  : api::server_socket()),
-                                api::socket_type))
+                                SOCK_NONBLOCK | api::socket_type))
     , m_shm(create_shared_memory(shm_size))
 {
     /* Put socket in the listen state and wait for connections */
@@ -142,8 +142,8 @@ int server::start()
     assert(m_task.empty());
 
     using namespace std::placeholders;
-    auto result = client.add_task("icp::socket::server api handler",
-                                  packetio::workers::context::STACK,
+    auto result = client.add_task(packetio::workers::context::STACK,
+                                  "icp::socket::server api handler",
                                   m_sock.get(),
                                   std::bind(&server::handle_api_accept, this, _1, _2),
                                   nullptr);
@@ -203,7 +203,7 @@ int server::handle_api_init(event_loop& loop, std::any arg)
 
     for (;;) {
         api::request_msg request;
-        auto ret = recv(fd, &request, sizeof(request), 0);
+        auto ret = recv(fd, &request, sizeof(request), MSG_DONTWAIT);
         if (ret == -1) {
             break;
         }
@@ -269,7 +269,6 @@ int server::handle_api_init(event_loop& loop, std::any arg)
             send(fd, &reply, sizeof(reply), 0);
             continue;
         }
-        loop.del_callback(fd);
 
         m_pids.emplace(newfd, init.pid);
 
@@ -279,9 +278,11 @@ int server::handle_api_init(event_loop& loop, std::any arg)
                           std::bind(&server::handle_api_read, this, _1, _2),
                           newfd);
         send(newfd, &reply, sizeof(reply), 0);
+
+        return (-1);  /* drop this callback from event loop */
     }
 
-    return (-1);
+    return (0);
 }
 
 int server::handle_api_read(event_loop&, std::any arg)
@@ -292,26 +293,26 @@ int server::handle_api_read(event_loop&, std::any arg)
     auto pid_result = m_pids.find(fd);
     if (pid_result == m_pids.end()) {
         ICP_LOG(ICP_LOG_ERROR, "Could not locate pid for fd = %d\n", fd);
-        return (handle_api_delete(fd));
+        return (do_api_close(fd));
     }
 
     auto pid = pid_result->second;
     auto handler_result = m_handlers.find(pid);
     if (handler_result == m_handlers.end()) {
         ICP_LOG(ICP_LOG_ERROR, "Could not locate handler for pid = %d\n", pid);
-        return (handle_api_delete(fd));
+        return (do_api_close(fd));
     }
 
     auto& handler = handler_result->second;
-    return (handler->handle_requests(fd) || handle_api_delete(fd));
+    return (handler->handle_requests(fd) && do_api_close(fd));
 }
 
-int server::handle_api_delete(int fd)
+int server::do_api_close(int fd)
 {
     auto pid_result = m_pids.find(fd);
     if (pid_result == m_pids.end()) {
         ICP_LOG(ICP_LOG_ERROR, "Could not locate pid for fd = %d\n", fd);
-        return (-1);
+        return (0);
     }
     auto pid = pid_result->second;
 

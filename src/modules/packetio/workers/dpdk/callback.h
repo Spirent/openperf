@@ -30,8 +30,6 @@ public:
     void do_callback();
 
     int event_fd() const;
-    event_callback event_callback_function() const;
-    void* event_callback_argument();
 };
 
 }
