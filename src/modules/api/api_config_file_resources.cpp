@@ -13,7 +13,7 @@ namespace icp::api::config {
 
 tl::expected<void, std::string> icp_config_file_process_resources()
 {
-    auto config_file_name = icp_get_config_file_name();
+    auto config_file_name = icp_config_get_file_name();
     if (config_file_name.empty()) return {};
 
     // Make sure the API module is up and running.
