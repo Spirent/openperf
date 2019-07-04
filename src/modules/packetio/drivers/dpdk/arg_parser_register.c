@@ -1,8 +1,23 @@
 #include "core/icp_core.h"
+#include "config/icp_config_file.h"
 
 extern int dpdk_arg_parse_init();
-extern int dpdk_arg_parse_handler(int opt, const char *opt_arg);
+/* extern int dpdk_arg_parse_handler(int opt, const char *opt_arg); */
 
+MAKE_OPTION_DATA(
+  dpdk, dpdk_arg_parse_init,
+  MAKE_OPT("quoted, comma separated options for DPDK", "modules.packetio.dpdk.options", 'd',
+           ICP_OPTION_TYPE_LIST),
+  MAKE_OPT("enable test mode by creating loopback port pairs", "modules.packetio.dpdk.test-mode", 0,
+           ICP_OPTION_TYPE_BOOL),
+  MAKE_OPT("number of loopback port pairs for testing, defaults to 1",
+           "modules.packetio.dpdk.test-portpairs", 0, ICP_OPTION_TYPE_LONG),
+  MAKE_OPT("quoted, comma separated list of port index-id mappings in the form portX=id",
+           "modules.packetio.dpdk.port-ids", 0, ICP_OPTION_TYPE_MAP), );
+
+REGISTER_CLI_OPTIONS(dpdk)
+
+/*
 struct icp_options_data dpdk_options = {
     .name = "DPDK",
     .init = dpdk_arg_parse_init,
@@ -17,3 +32,4 @@ struct icp_options_data dpdk_options = {
 };
 
 REGISTER_OPTIONS(dpdk_options)
+*/
