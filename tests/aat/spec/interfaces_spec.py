@@ -44,7 +44,7 @@ with description('Interfaces,') as self:
                         intfs = self.api.list_interfaces(port_id=self.intf.port_id)
                         expect([ i for i in intfs if i.id == self.intf.id ]).not_to(be_empty)
 
-                with description('invalid port,'):
+                with description('non-existent port,'):
                     with it('returns no interfaces'):
                         intfs = self.api.list_interfaces(port_id='foo')
                         expect(intfs).to(be_empty)
@@ -102,6 +102,9 @@ with description('Interfaces,') as self:
             with description('non-existent interface,'):
                 with it('returns 404'):
                     expect(lambda: self.api.get_interface('foo')).to(raise_api_exception(404))
+            with description('invalid interface id,'):
+                with it('returns 404'):
+                    expect(lambda: self.api.get_interface('Invalid_interface')).to(raise_api_exception(404))
 
         with description('create,'):
             with before.each:
@@ -266,6 +269,37 @@ with description('Interfaces,') as self:
                                 expect(intf).to(be_valid_interface)
                                 self.cleanup = intf
 
+            with description('User-defined ID,'):
+                with before.each:
+                    self.intf.config.protocols = map(as_interface_protocol, [
+                        client.models.InterfaceProtocolConfigEth()
+                    ])
+
+                with description('valid IDs,'):
+                    with it('succeeds'):
+                        self.intf.id = "interface-one-hundred"
+                        self.intf.port_id = "0"
+                        self.intf.config.protocols[0].eth.mac_address='00:00:00:00:00:01'
+                        intf = self.api.create_interface(self.intf)
+                        expect(intf).to(be_valid_interface)
+                        expect(intf.id).to(equal("interface-one-hundred"))
+                        expect(intf.port_id).to(equal("0"))
+                        self.cleanup = intf
+
+                with description('invalid interface ID,'):
+                    with it('returns 400'):
+                        self.intf.id = "Invalid_interface_id"
+                        self.intf.port_id = "0"
+                        self.intf.config.protocols[0].eth.mac_address='00:00:00:00:00:01'
+                        expect(lambda: self.api.create_interface(self.intf)).to(raise_api_exception(400))
+
+                with description('invalid port ID,'):
+                    with it('returns 400'):
+                        self.intf.id = "valid-intf-id"
+                        self.intf.port_id = "Invalid_Port_id"
+                        self.intf.config.protocols[0].eth.mac_address='00:00:00:00:00:01'
+                        expect(lambda: self.api.create_interface(self.intf)).to(raise_api_exception(400))
+
         with description('update,'):
             with description('valid interface,'):
                 with before.each:
@@ -299,6 +333,10 @@ with description('Interfaces,') as self:
             with description('non-existent interface,'):
                 with it('succeeds'):
                     self.api.delete_interface('foo')
+
+            with description('invalid interface ID,'):
+                with it('returns 400'):
+                    expect(lambda: self.api.delete_interface("Invalid_d")).to(raise_api_exception(404))
 
         with description('bulk-create,'):
             with description('IPv4 protocol,'):
@@ -396,13 +434,21 @@ with description('Interfaces,') as self:
 
     with description ('configuration file,'):
         with before.all:
-            service = Service(CONFIG.service('interface-config-file'))
+            service = Service(CONFIG.service('config-file'))
             self.process = service.start()
             self.api = client.api.InterfacesApi(service.client())
 
-        with it('verify interface created'):
-            intfs = self.api.list_interfaces(port_id="port0")
-            expect(intfs).not_to(be_empty)
+        with it('created valid interfaces'):
+            intfs = self.api.list_interfaces()
+            expect(len(intfs)).to(equal(2))
+
+            intf = self.api.get_interface("interface-one")
+            expect(intf).to(be_valid_interface)
+            expect(intf.port_id).to(equal("port0"))
+
+            intf = self.api.get_interface("interface-two")
+            expect(intf).to(be_valid_interface)
+            expect(intf.id).to(equal("interface-two"))
 
         with after.all:
             try:
