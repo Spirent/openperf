@@ -178,7 +178,7 @@ int icp_modules_get_info_list(const struct icp_module_info * info[], size_t max_
  * which would obviously cause items to be dropped from the list.
  * This is mainly a problem when state has a constructor of some sort.
  */
-#define REGISTER_MODULE(m, info_, state_,                        \
+#define REGISTER_MODULE(m, info_, state_,                               \
                         pre_init_, init_, post_init_,                   \
                         start_, finish_)                                \
     static struct icp_module m;                                         \
