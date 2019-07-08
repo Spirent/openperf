@@ -75,9 +75,9 @@ static void log_port(uint16_t port_idx, std::string_view port_id, model::port_in
     if (auto if_index = info.if_index(); if_index > 0) {
         char if_name[IF_NAMESIZE];
         if_indextoname(if_index, if_name);
-        ICP_LOG(ICP_LOG_INFO, "  dpdk%d(%s): %02x:%02x:%02x:%02x:%02x:%02x (%s) attached to %s\n",
+        ICP_LOG(ICP_LOG_INFO, "Port index %u is using id = %.*s (MAC = %02x:%02x:%02x:%02x:%02x:%02x, driver = %s attached to %s)",
                 port_idx,
-                port_id.data(),
+                static_cast<int>(port_id.length()), port_id.data(),
                 mac_addr.addr_bytes[0],
                 mac_addr.addr_bytes[1],
                 mac_addr.addr_bytes[2],
@@ -86,9 +86,9 @@ static void log_port(uint16_t port_idx, std::string_view port_id, model::port_in
                 mac_addr.addr_bytes[5],
                 info.driver_name(), if_name);
     } else {
-        ICP_LOG(ICP_LOG_INFO, "  dpdk%d(%s): %02x:%02x:%02x:%02x:%02x:%02x (%s)\n",
+        ICP_LOG(ICP_LOG_INFO, "Port index %u is using id = %.*s (MAC = %02x:%02x:%02x:%02x:%02x:%02x, driver = %s)",
                 port_idx,
-                port_id.data(),
+                static_cast<int>(port_id.length()), port_id.data(),
                 mac_addr.addr_bytes[0],
                 mac_addr.addr_bytes[1],
                 mac_addr.addr_bytes[2],

@@ -23,7 +23,7 @@ class queueing
 
     std::unique_ptr<rte_ring, rte_ring_deleter> m_queue;
     std::atomic_flag m_notify;
-    static constexpr int rx_queue_size = 128;
+    static constexpr int rx_queue_size = 512;
 public:
     queueing(std::string_view if_prefix, uint16_t if_index, uint16_t port_index);
 

@@ -38,6 +38,7 @@ static int handle_tcpip_timeout(event_loop::generic_event_loop& loop __attribute
     uint64_t count;
     if (read(timer_fd, &count, sizeof(count)) == -1) {
         ICP_LOG(ICP_LOG_WARNING, "Spurious stack thread timeout\n");
+        return (0);
     }
 
     auto sleeptime = tcpip::handle_timeouts();
@@ -79,7 +80,7 @@ lwip::lwip(driver::generic_driver& driver, workers::generic_workers& workers)
      */
     auto tcpip_mbox = tcpip_mbox::instance().init();
     auto msg_id = m_workers.add_task(workers::context::STACK,
-                                     "stack_message_handler",
+                                     "stack API messages",
                                      sys_mbox_fd(&tcpip_mbox),
                                      handle_tcpip_message,
                                      tcpip_mbox);
@@ -90,7 +91,7 @@ lwip::lwip(driver::generic_driver& driver, workers::generic_workers& workers)
     m_tasks.push_back(*msg_id);
 
     auto timeout_id = m_workers.add_task(workers::context::STACK,
-                                         "stack_timeout_handler",
+                                         "stack timers",
                                          m_timerfd,
                                          handle_tcpip_timeout,
                                          m_timerfd);
@@ -100,6 +101,18 @@ lwip::lwip(driver::generic_driver& driver, workers::generic_workers& workers)
     }
     m_tasks.push_back(*timeout_id);
 
+    /* Kick the stack timer to get it started */
+    auto kick = itimerspec {
+        .it_interval = {0, 0},
+        .it_value = {0, 100}
+    };
+
+    if (timerfd_settime(m_timerfd, 0, &kick, nullptr) == -1) {
+        throw std::runtime_error("Could not set initial TCPIP stack timeout: "
+                                 + std::string(strerror(errno)));
+    }
+
+    /* Run a simple callback in the stack to log that it has started */
     if (tcpip_callback(tcpip_init_done, nullptr) != ERR_OK) {
         throw std::runtime_error("Could not initialize stack");
     }
