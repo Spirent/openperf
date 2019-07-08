@@ -106,24 +106,18 @@ int handle_messages(sys_mbox_t mbox)
             LWIP_DEBUGF(TCPIP_DEBUG, ("tcpip: API message %p\n", (void *)msg));
             msg->msg.api_msg.function(msg->msg.api_msg.msg);
             break;
+
         case TCPIP_MSG_API_CALL:
             LWIP_DEBUGF(TCPIP_DEBUG, ("tcpip: API CALL message %p\n", (void *)msg));
             msg->msg.api_call.arg->err = msg->msg.api_call.function(msg->msg.api_call.arg);
             sys_sem_signal(msg->msg.api_call.sem);
             break;
 
-#if LWIP_TCPIP_TIMEOUT && LWIP_TIMERS
-        case TCPIP_MSG_TIMEOUT:
-            LWIP_DEBUGF(TCPIP_DEBUG, ("tcpip: TIMEOUT %p\n", (void *)msg));
-            sys_timeout(msg->msg.tmo.msecs, msg->msg.tmo.h, msg->msg.tmo.arg);
-            memp_free(MEMP_TCPIP_MSG_API, msg);
+        case TCPIP_MSG_INPKT:
+            LWIP_DEBUGF(TCPIP_DEBUG, ("tcpip: PACKET %p\n", (void *)msg));
+            msg->msg.inp.input_fn(msg->msg.inp.p, msg->msg.inp.netif);
+            memp_free(MEMP_TCPIP_MSG_INPKT, msg);
             break;
-        case TCPIP_MSG_UNTIMEOUT:
-            LWIP_DEBUGF(TCPIP_DEBUG, ("tcpip: UNTIMEOUT %p\n", (void *)msg));
-            sys_untimeout(msg->msg.tmo.h, msg->msg.tmo.arg);
-            memp_free(MEMP_TCPIP_MSG_API, msg);
-            break;
-#endif /* LWIP_TCPIP_TIMEOUT && LWIP_TIMERS */
 
         case TCPIP_MSG_CALLBACK:
             LWIP_DEBUGF(TCPIP_DEBUG, ("tcpip: CALLBACK %p\n", (void *)msg));
