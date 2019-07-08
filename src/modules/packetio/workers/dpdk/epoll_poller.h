@@ -10,12 +10,11 @@
 namespace icp::packetio::dpdk::worker {
 
 class epoll_poller {
-    std::unordered_map<uintptr_t, task_ptr> m_tasks;
     std::vector<task_ptr> m_events;
     static constexpr size_t max_events = 128;
 
 public:
-    epoll_poller() = default;
+    epoll_poller();
     ~epoll_poller() = default;
 
     bool add(task_ptr p);

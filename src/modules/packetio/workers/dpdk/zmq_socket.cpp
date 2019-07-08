@@ -21,19 +21,15 @@ static int get_socket_fd(void *socket)
     return (fd);
 }
 
-zmq_socket::zmq_socket(void* socket)
+zmq_socket::zmq_socket(void* socket, bool* signal)
     : m_socket(socket)
+    , m_signal(signal)
     , m_fd(get_socket_fd(socket))
 {
     if (m_fd == -1) {
         throw std::runtime_error("Could not acquire fd for socket: "
                                  + std::string(zmq_strerror(errno)));
     }
-}
-
-uint32_t zmq_socket::poll_id() const
-{
-    return (event_fd());
 }
 
 bool zmq_socket::readable() const
@@ -50,6 +46,23 @@ bool zmq_socket::readable() const
 int zmq_socket::event_fd() const
 {
     return (m_fd);
+}
+
+static void interrupt_event_callback(int, void* arg)
+{
+    assert(arg);
+    auto *signal = reinterpret_cast<bool*>(arg);
+    *signal = true;
+}
+
+pollable_event<zmq_socket>::event_callback zmq_socket::event_callback_function() const
+{
+    return (interrupt_event_callback);
+}
+
+void* zmq_socket::event_callback_argument()
+{
+    return (reinterpret_cast<void*>(m_signal));
 }
 
 }

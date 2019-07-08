@@ -37,10 +37,11 @@ class server
     using event_loop = icp::packetio::event_loop::generic_event_loop;
 
     int handle_api_accept(event_loop& loop, std::any);
-    int handle_api_init(event_loop& loop, std::any arg);
-    int handle_api_read(event_loop& loop, std::any arg);
+    int handle_api_client(event_loop& loop, std::any arg);
+    void handle_api_error(std::any arg);
 
-    int do_api_close(int fd);
+    int do_client_init(event_loop& loop, int fd);
+    int do_client_read(pid_t pid, int fd);
 
 public:
     server(void* context);

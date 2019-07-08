@@ -7,17 +7,19 @@ namespace icp::packetio::dpdk {
 
 class zmq_socket : public pollable_event<zmq_socket> {
     void* m_socket;
+    bool* m_signal;
     int m_fd;
 
 public:
-    zmq_socket(void* socket);
+    zmq_socket(void* socket, bool* signal);
     ~zmq_socket() = default;
-
-    uint32_t poll_id() const;
 
     bool readable() const;
 
     int event_fd() const;
+
+    event_callback event_callback_function() const;
+    void* event_callback_argument();
 };
 
 }

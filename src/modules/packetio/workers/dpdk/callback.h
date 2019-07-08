@@ -10,26 +10,25 @@ namespace icp::packetio::dpdk {
 
 class callback : public pollable_event<callback>
 {
-    event_loop::generic_event_loop m_loop;
     std::string m_name;
     event_loop::event_notifier m_notify;
-    event_loop::callback_function m_callback;
+    event_loop::event_handler m_on_event;
+    std::optional<event_loop::delete_handler> m_on_delete;
     std::any m_arg;
 
 public:
-    callback(event_loop::generic_event_loop loop,
-             std::string_view name,
+    callback(std::string_view name,
              event_loop::event_notifier notifier,
-             event_loop::callback_function callback,
+             event_loop::event_handler on_event,
+             std::optional<event_loop::delete_handler> on_delete,
              std::any arg);
+    ~callback();
 
-    uint32_t poll_id() const;
     std::string_view name() const;
     event_loop::event_notifier notifier() const;
-
-    void do_callback();
-
     int event_fd() const;
+
+    void run_callback(event_loop::generic_event_loop& loop);
 };
 
 }

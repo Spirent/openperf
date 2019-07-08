@@ -20,7 +20,8 @@ struct task_data {
     char name[name_length_max];
     workers::context ctx;
     event_loop::event_notifier notifier;
-    event_loop::callback_function callback;
+    event_loop::event_handler on_event;
+    std::optional<event_loop::delete_handler> on_delete;
     std::any arg;
 };
 

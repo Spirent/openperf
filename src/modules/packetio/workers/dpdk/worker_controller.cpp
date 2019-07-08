@@ -65,7 +65,7 @@ static std::vector<queue::descriptor> get_queue_descriptors(std::vector<model::p
 
     /*
      * XXX: If we have only one worker thread, then everything should use the
-     * direct transmit functions.  Hence,  we don't need any tx queues.
+     * direct transmit functions.  Hence, we don't need any tx queues.
      */
     if (rte_lcore_count() <= 2) {
         /* Filter out all tx queues; we don't need them */
@@ -134,7 +134,6 @@ worker_controller::worker_controller(worker_controller&& other)
     , m_driver(other.m_driver)
     , m_fib(std::move(other.m_fib))
     , m_tasks(std::move(other.m_tasks))
-    , m_loops(std::move(other.m_loops))
 {}
 
 worker_controller& worker_controller::operator=(worker_controller&& other)
@@ -145,7 +144,6 @@ worker_controller& worker_controller::operator=(worker_controller&& other)
         m_driver = other.m_driver;
         m_fib = std::move(other.m_fib);
         m_tasks = std::move(other.m_tasks);
-        m_loops = std::move(other.m_loops);
     }
     return (*this);
 }
@@ -247,7 +245,8 @@ void worker_controller::del_interface(std::string_view port_id, std::any interfa
 tl::expected<std::string, int> worker_controller::add_task(workers::context ctx,
                                                            std::string_view name,
                                                            event_loop::event_notifier notify,
-                                                           event_loop::callback_function callback,
+                                                           event_loop::event_handler on_event,
+                                                           std::optional<event_loop::delete_handler> on_delete,
                                                            std::any arg)
 {
     /* XXX: We only know about stack tasks right now */
@@ -255,13 +254,8 @@ tl::expected<std::string, int> worker_controller::add_task(workers::context ctx,
         return (tl::make_unexpected(EINVAL));
     }
 
-    if (m_loops.find(ctx) == m_loops.end()) {
-        m_loops.emplace(ctx, worker::event_loop_adapter(m_context, ctx));
-    }
-    auto& loop = m_loops.at(ctx);
-
     auto id = core::uuid::random();
-    auto [it, success] = m_tasks.try_emplace(id, loop, name, notify, callback, arg);
+    auto [it, success] = m_tasks.try_emplace(id, name, notify, on_event, on_delete, arg);
     if (!success) {
         return (tl::make_unexpected(-1));
     }
