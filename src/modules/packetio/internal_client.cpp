@@ -31,17 +31,19 @@ client& client::operator=(client&& other)
     return (*this);
 }
 
-tl::expected<std::string, int> client::add_task(workers::context ctx,
-                                                std::string_view name,
-                                                event_loop::event_notifier notify,
-                                                event_loop::callback_function callback,
-                                                std::any arg)
+tl::expected<std::string, int> client::add_task_impl(workers::context ctx,
+                                                     std::string_view name,
+                                                     event_loop::event_notifier notify,
+                                                     event_loop::event_handler on_event,
+                                                     std::optional<event_loop::delete_handler> on_delete,
+                                                     std::any arg)
 {
     auto request = request_task_add {
         .task = {
             .ctx = ctx,
             .notifier = notify,
-            .callback = callback,
+            .on_event = on_event,
+            .on_delete = on_delete,
             .arg = arg
         }
     };
@@ -67,6 +69,25 @@ tl::expected<std::string, int> client::add_task(workers::context ctx,
     }
 
     return (tl::make_unexpected(EBADMSG));
+}
+
+tl::expected<std::string, int> client::add_task(workers::context ctx,
+                                                std::string_view name,
+                                                event_loop::event_notifier notify,
+                                                event_loop::event_handler on_event,
+                                                std::any arg)
+{
+    return (add_task_impl(ctx, name, notify, on_event, std::nullopt, arg));
+}
+
+tl::expected<std::string, int> client::add_task(workers::context ctx,
+                                                std::string_view name,
+                                                event_loop::event_notifier notify,
+                                                event_loop::event_handler on_event,
+                                                event_loop::delete_handler on_delete,
+                                                std::any arg)
+{
+    return (add_task_impl(ctx, name, notify, on_event, on_delete, arg));
 }
 
 tl::expected<void, int> client::del_task(std::string_view task_id)

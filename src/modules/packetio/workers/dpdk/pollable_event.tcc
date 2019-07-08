@@ -46,7 +46,7 @@ public:
         if (error) {
             ICP_LOG(ICP_LOG_ERROR, "Could not add poll event for fd %d: %s\n",
                     static_cast<Derived&>(*this).event_fd(),
-                    strerror(std::abs(error)));
+                    strerror(errno));
         }
 
         return (!error);
@@ -62,7 +62,7 @@ public:
         if (error) {
             ICP_LOG(ICP_LOG_ERROR, "Could not delete poll event for fd %d: %s\n",
                     static_cast<Derived&>(*this).event_fd(),
-                    strerror(std::abs(error)));
+                    strerror(errno));
         }
 
         return (!error);

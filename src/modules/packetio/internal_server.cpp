@@ -18,11 +18,18 @@ struct overloaded_visitor : Ts...
 reply_msg handle_request(workers::generic_workers& workers,
                          const request_task_add& request)
 {
-    auto result = workers.add_task(request.task.ctx,
-                                   request.task.name,
-                                   request.task.notifier,
-                                   request.task.callback,
-                                   request.task.arg);
+    auto result = (request.task.on_delete.has_value()
+                   ? workers.add_task(request.task.ctx,
+                                      request.task.name,
+                                      request.task.notifier,
+                                      request.task.on_event,
+                                      request.task.on_delete.value(),
+                                      request.task.arg)
+                   : workers.add_task(request.task.ctx,
+                                      request.task.name,
+                                      request.task.notifier,
+                                      request.task.on_event,
+                                      request.task.arg));
 
     if (!result) {
         return (reply_error{result.error()});

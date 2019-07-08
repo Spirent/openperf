@@ -25,7 +25,6 @@ api_handler::~api_handler()
     /* Remove any remaining fds in our loop that the client didn't explicitly close. */
     for (auto fd : m_server_fds) {
         m_loop.del_callback(fd);
-        close(fd);
     }
 }
 
@@ -77,6 +76,12 @@ static int handle_socket_read(api_handler::event_loop&, std::any arg)
     return (0);
 }
 
+static void handle_socket_delete(std::any arg)
+{
+    auto socket = std::any_cast<generic_socket*>(arg);
+    delete socket;
+}
+
 api::reply_msg api_handler::handle_request_accept(const api::request_accept& request)
 {
     auto lookup = m_sockets.find(request.id);
@@ -101,10 +106,11 @@ api::reply_msg api_handler::handle_request_accept(const api::request_accept& req
     auto channel = accept_socket.channel();
 
     m_server_fds.emplace(server_fd(channel));
-    m_loop.add_callback("socket io callback for fd = " + std::to_string(server_fd(channel)),
+    m_loop.add_callback("socket io for fd = " + std::to_string(server_fd(channel)),
                         server_fd(channel),
                         handle_socket_read,
-                        generic_socket(accept_socket));
+                        handle_socket_delete,
+                        new generic_socket(accept_socket));
 
     /* We need the peer name as well */
     auto addr_request = api::request_getpeername{
@@ -161,10 +167,11 @@ api::reply_msg api_handler::handle_request_socket(const api::request_socket& req
     /* Add I/O callback for socket writes from client to stack */
     auto channel = socket->channel();
     m_server_fds.emplace(server_fd(channel));
-    m_loop.add_callback("socket io callback for fd = " + std::to_string(server_fd(channel)),
+    m_loop.add_callback("socket io for fd = " + std::to_string(server_fd(channel)),
                         server_fd(channel),
                         handle_socket_read,
-                        generic_socket(*socket));
+                        handle_socket_delete,
+                        new generic_socket(*socket));
 
     return (api::reply_socket{
             .id = id,

@@ -35,13 +35,12 @@ public:
     tl::expected<std::string, int> add_task(workers::context ctx,
                                             std::string_view name,
                                             event_loop::event_notifier notify,
-                                            event_loop::callback_function callback,
+                                            event_loop::event_handler on_event,
+                                            std::optional<event_loop::delete_handler> on_delete,
                                             std::any arg);
     void del_task(std::string_view);
 
     using task_map = std::unordered_map<core::uuid, callback>;
-    using loop_map = std::unordered_map<workers::context,
-                                        event_loop::generic_event_loop>;
 
 private:
     void* m_context;
@@ -49,7 +48,6 @@ private:
     driver::generic_driver& m_driver;
     std::unique_ptr<worker::fib> m_fib;
     task_map m_tasks;
-    loop_map m_loops;
 };
 
 }

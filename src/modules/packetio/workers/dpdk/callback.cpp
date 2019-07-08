@@ -1,3 +1,5 @@
+#include <unistd.h>
+
 #include "zmq.h"
 
 #include "packetio/workers/dpdk/callback.h"
@@ -31,21 +33,36 @@ static int get_event_fd(const event_loop::event_notifier& notifier)
                        notifier));
 }
 
-callback::callback(event_loop::generic_event_loop loop,
-                   std::string_view name,
+static void close_event_fd(event_loop::event_notifier& notifier)
+{
+    return (std::visit(overloaded_visitor(
+                           [](void* socket) {
+                               zmq_close(socket);
+                           },
+                           [](int fd) {
+                               close(fd);
+                           }),
+                       notifier));
+}
+
+callback::callback(std::string_view name,
                    event_loop::event_notifier notifier,
-                   event_loop::callback_function callback,
+                   event_loop::event_handler on_event,
+                   std::optional<event_loop::delete_handler> on_delete,
                    std::any arg)
-    : m_loop(loop)
-    , m_name(name)
-    , m_notify(notifier)
-    , m_callback(callback)
-    , m_arg(arg)
+    : m_name(name)
+    , m_notify(std::move(notifier))
+    , m_on_event(std::move(on_event))
+    , m_on_delete(std::move(on_delete))
+    , m_arg(std::move(arg))
 {}
 
-uint32_t callback::poll_id() const
+callback::~callback()
 {
-    return (get_event_fd(m_notify));
+    if (m_on_delete) {
+        m_on_delete.value()(m_arg);
+    }
+    close_event_fd(m_notify);
 }
 
 std::string_view callback::name() const
@@ -58,16 +75,17 @@ event_loop::event_notifier callback::notifier() const
     return (m_notify);
 }
 
-void callback::do_callback()
-{
-    if (m_callback(m_loop, m_arg) == -1) {
-        m_loop.del_callback(m_notify);
-    }
-}
-
 int callback::event_fd() const
 {
     return (get_event_fd(m_notify));
+}
+
+void callback::run_callback(event_loop::generic_event_loop& loop)
+{
+    auto error = m_on_event(loop, m_arg);
+    if (error) {
+        loop.del_callback(m_notify);
+    }
 }
 
 }

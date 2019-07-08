@@ -44,10 +44,20 @@ public:
     tl::expected<std::string, int> add_task(context ctx,
                                             std::string_view name,
                                             event_loop::event_notifier notify,
-                                            event_loop::callback_function callback,
+                                            event_loop::event_handler on_event,
                                             std::any arg)
     {
-        return (m_self->add_task(ctx, name, notify, callback, arg));
+        return (m_self->add_task(ctx, name, notify, on_event, std::nullopt, arg));
+    }
+
+    tl::expected<std::string, int> add_task(context ctx,
+                                            std::string_view name,
+                                            event_loop::event_notifier notify,
+                                            event_loop::event_handler on_event,
+                                            event_loop::delete_handler on_delete,
+                                            std::any arg)
+    {
+        return (m_self->add_task(ctx, name, notify, on_event, on_delete, arg));
     }
 
     void del_task(std::string_view task_id)
@@ -64,7 +74,8 @@ private:
         virtual tl::expected<std::string, int> add_task(context ctx,
                                                         std::string_view name,
                                                         event_loop::event_notifier notify,
-                                                        event_loop::callback_function callback,
+                                                        event_loop::event_handler on_event,
+                                                        std::optional<event_loop::delete_handler> on_delete,
                                                         std::any arg) = 0;
         virtual void del_task(std::string_view task_id) = 0;
     };
@@ -93,10 +104,11 @@ private:
         tl::expected<std::string, int> add_task(context ctx,
                                                 std::string_view name,
                                                 event_loop::event_notifier notify,
-                                                event_loop::callback_function callback,
+                                                event_loop::event_handler on_event,
+                                                std::optional<event_loop::delete_handler> on_delete,
                                                 std::any arg) override
         {
-            return (m_workers.add_task(ctx, name, notify, callback, arg));
+            return (m_workers.add_task(ctx, name, notify, on_event, on_delete, arg));
         }
 
         void del_task(std::string_view task_id) override

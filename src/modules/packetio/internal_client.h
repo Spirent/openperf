@@ -15,6 +15,12 @@ class client
 {
     std::unique_ptr<void, icp_socket_deleter> m_socket;
 
+    tl::expected<std::string, int> add_task_impl(workers::context ctx,
+                                                 std::string_view name,
+                                                 event_loop::event_notifier notify,
+                                                 event_loop::event_handler on_event,
+                                                 std::optional<event_loop::delete_handler> on_delete,
+                                                 std::any arg);
 public:
     client(void* context);
 
@@ -24,7 +30,14 @@ public:
     tl::expected<std::string, int> add_task(workers::context ctx,
                                             std::string_view name,
                                             event_loop::event_notifier notify,
-                                            event_loop::callback_function callback,
+                                            event_loop::event_handler on_event,
+                                            std::any arg);
+
+    tl::expected<std::string, int> add_task(workers::context ctx,
+                                            std::string_view name,
+                                            event_loop::event_notifier notify,
+                                            event_loop::event_handler on_event,
+                                            event_loop::delete_handler on_delete,
                                             std::any arg);
 
     tl::expected<void, int> del_task(std::string_view task_id);

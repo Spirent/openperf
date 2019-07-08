@@ -143,7 +143,7 @@ int server::start()
 
     using namespace std::placeholders;
     auto result = client.add_task(packetio::workers::context::STACK,
-                                  "icp::socket::server api handler",
+                                  "socket API",
                                   m_sock.get(),
                                   std::bind(&server::handle_api_accept, this, _1, _2),
                                   nullptr);
@@ -185,22 +185,34 @@ int server::handle_api_accept(event_loop& loop, std::any)
         }
 
         using namespace std::placeholders;
-        if (!loop.add_callback("icp::socket::server::handle_api_init for fd = " + std::to_string(fd),
+        if (!loop.add_callback("socket API for fd = " + std::to_string(fd),
                                fd,
-                               std::bind(&server::handle_api_init, this, _1, _2),
+                               std::bind(&server::handle_api_client, this, _1, _2),
+                               std::bind(&server::handle_api_error, this, _1),
                                fd)) {
-            ICP_LOG(ICP_LOG_ERROR, "Failed to add api init callback for fd = %d\n", fd);
-            return (-1);
+            ICP_LOG(ICP_LOG_ERROR, "Failed to add socket API callback for fd = %d\n", fd);
         }
     }
 
     return (0);
 }
 
-int server::handle_api_init(event_loop& loop, std::any arg)
+int server::handle_api_client(event_loop& loop, std::any arg)
 {
-    int fd = std::any_cast<int>(arg);
+    auto fd = std::any_cast<int>(arg);
 
+    /*
+     * Look for the pid for this fd.  If we don't have it, then we need to
+     * do some initialization.
+     */
+    auto pid_result = m_pids.find(fd);
+    return (pid_result == m_pids.end()
+            ? do_client_init(loop, fd)
+            : do_client_read(pid_result->second, fd));
+}
+
+int server::do_client_init(event_loop& loop, int fd)
+{
     for (;;) {
         api::request_msg request;
         auto ret = recv(fd, &request, sizeof(request), MSG_DONTWAIT);
@@ -253,89 +265,52 @@ int server::handle_api_init(event_loop& loop, std::any arg)
             };
         }
 
-        /*
-         * XXX: We are going to replace our callback with one that can
-         * actually handle socket requests.  To do that, we dup our existing
-         * fd, delete our old callback, and add our new one.  Our event
-         * loop can't handle argument updates for callbacks, so we just do
-         * this shuffle instead.  Since we only expect to do this once per
-         * client thread, this shouldn't be a common occurrence.
-         */
-        auto newfd = dup(fd);
-        if (newfd == -1) {
-            ICP_LOG(ICP_LOG_ERROR, "Could not duplicate descriptor: %s\n",
-                    strerror(errno));
-            reply = tl::make_unexpected(errno);
-            send(fd, &reply, sizeof(reply), 0);
-            continue;
+        if (send(fd, &reply, sizeof(reply), 0) > 0) {
+            ICP_LOG(ICP_LOG_DEBUG, "Initialized client from pid %d, %s\n",
+                    init.pid, to_string(init.tid).c_str());
+
+            /* Add this client to our pid map */
+            m_pids.emplace(fd, init.pid);
         }
-
-        m_pids.emplace(newfd, init.pid);
-
-        using namespace std::placeholders;
-        loop.add_callback("icp::socket::server::handle_api_read for fd = " + std::to_string(newfd),
-                          newfd,
-                          std::bind(&server::handle_api_read, this, _1, _2),
-                          newfd);
-        send(newfd, &reply, sizeof(reply), 0);
-
-        return (-1);  /* drop this callback from event loop */
     }
 
     return (0);
 }
 
-int server::handle_api_read(event_loop&, std::any arg)
+int server::do_client_read(pid_t pid, int fd)
 {
-    int fd = std::any_cast<int>(arg);
-
-    /* Find the appropriate handler for this fd */
-    auto pid_result = m_pids.find(fd);
-    if (pid_result == m_pids.end()) {
-        ICP_LOG(ICP_LOG_ERROR, "Could not locate pid for fd = %d\n", fd);
-        return (do_api_close(fd));
-    }
-
-    auto pid = pid_result->second;
+    /* Find the handler for this pid and dispatch to it */
     auto handler_result = m_handlers.find(pid);
     if (handler_result == m_handlers.end()) {
         ICP_LOG(ICP_LOG_ERROR, "Could not locate handler for pid = %d\n", pid);
-        return (do_api_close(fd));
+        return (-1);
     }
 
     auto& handler = handler_result->second;
-    return (handler->handle_requests(fd) && do_api_close(fd));
+    return (handler->handle_requests(fd));
 }
 
-int server::do_api_close(int fd)
+void server::handle_api_error(std::any arg)
 {
+    int fd = std::any_cast<int>(arg);
+
+    /* Remove one fd, pid pair from our map */
     auto pid_result = m_pids.find(fd);
     if (pid_result == m_pids.end()) {
-        ICP_LOG(ICP_LOG_ERROR, "Could not locate pid for fd = %d\n", fd);
-        return (0);
+        ICP_LOG(ICP_LOG_ERROR, "Could not find pid for fd = %d\n", fd);
+        return;
     }
-    auto pid = pid_result->second;
-
-    /* Remove fd, pid pair from our map */
-    m_pids.erase(pid_result);
 
     /* Check and see if this was the last fd for this pid. */
-    bool found = false;
-    for (auto& kv : m_pids) {
-        if (pid == kv.second) {
-            found = true;
-            break;
-        }
-    }
-
-    if (!found) {
-        /* All connections for this handler are gone; delete it */
+    if (m_pids.count(fd) == 1) {
+        /* All other connections for this handler are gone; delete it */
+        auto pid = pid_result->second;
         ICP_LOG(ICP_LOG_INFO, "All connections from pid %d are gone; cleaning up\n", pid);
         m_handlers.erase(pid);
     }
 
+    m_pids.erase(pid_result);
     close(fd);
-    return (-1);
 }
 
 }
