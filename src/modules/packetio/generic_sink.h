@@ -1,11 +1,10 @@
-#ifndef _ICP_PACKETIO_PGA_GENERIC_SINK_H_
-#define _ICP_PACKETIO_PGA_GENERIC_SINK_H_
+#ifndef _ICP_PACKETIO_GENERIC_SINK_H_
+#define _ICP_PACKETIO_GENERIC_SINK_H_
 
-#include <cstdint>
 #include <memory>
 #include <string>
 
-namespace icp::packetio::pga {
+namespace icp::packetio::packets {
 
 class generic_sink {
 public:
@@ -16,19 +15,13 @@ public:
 
     std::string id() const
     {
-        return m_self->id();
+        return (m_self->id());
     }
 
     template <typename PacketType>
     uint16_t push(PacketType* packets[], uint16_t length)
     {
-        return m_self->push(reinterpret_cast<void**>(packets), length);
-    }
-
-    template <typename PacketType>
-    uint16_t push(PacketType* packet)
-    {
-        return m_self->push(reinterpret_cast<void*>(packet));
+        return (m_self->push(reinterpret_cast<void**>(packets), length));
     }
 
 private:
@@ -36,7 +29,6 @@ private:
         virtual ~sink_concept() = default;
         virtual std::string id() const = 0;
         virtual uint16_t push(void* packets[], uint16_t length) = 0;
-        virtual uint16_t push(void* packet) = 0;
     };
 
     template <typename Sink>
@@ -47,17 +39,12 @@ private:
 
         std::string id() const override
         {
-            return m_sink.id();
+            return (m_sink.id());
         }
 
         uint16_t push(void* packets[], uint16_t length) override
         {
-            return m_sink.push(packets, length);
-        }
-
-        uint16_t push(void* packet) override
-        {
-            return m_sink.push(packet);
+            return (m_sink.push(packets, length));
         }
 
         Sink m_sink;
@@ -68,4 +55,4 @@ private:
 
 }
 
-#endif /* _ICP_PACKETIO_PGA_GENERIC_SINK_H_ */
+#endif /* _ICP_PACKETIO_GENERIC_SINK_H_ */

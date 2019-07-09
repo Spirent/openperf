@@ -32,14 +32,9 @@ public:
     std::string id() const { return "stack0"; }  /* only 1 stack for now */
     std::vector<std::string> interface_ids() const;
     std::optional<interface::generic_interface> interface(std::string_view id) const;
+
     tl::expected<std::string, std::string> create_interface(const interface::config_data& config);
     void delete_interface(std::string_view id);
-
-    tl::expected<void, int> attach_interface_sink(std::string_view id, pga::generic_sink& sink);
-    void detach_interface_sink(std::string_view id, pga::generic_sink& sink);
-
-    tl::expected<void, int> attach_interface_source(std::string_view id, pga::generic_source& source);
-    void detach_interface_source(std::string_view id, pga::generic_source& source);
 
     std::unordered_map<std::string, stack::stats_data> stats() const;
 

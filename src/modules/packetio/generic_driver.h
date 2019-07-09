@@ -9,8 +9,6 @@
 #include "tl/expected.hpp"
 
 #include "packetio/generic_port.h"
-#include "packetio/pga/generic_sink.h"
-#include "packetio/pga/generic_source.h"
 
 namespace icp {
 namespace packetio {
@@ -50,26 +48,6 @@ public:
         return m_self->delete_port(id);
     }
 
-    tl::expected<void, int> attach_port_sink(std::string_view id, pga::generic_sink& sink)
-    {
-        return m_self->attach_port_sink(id, sink);
-    }
-
-    void detach_port_sink(std::string_view id, pga::generic_sink& sink)
-    {
-        m_self->detach_port_sink(id, sink);
-    }
-
-    tl::expected<void, int> attach_port_source(std::string_view id, pga::generic_source& source)
-    {
-        return m_self->attach_port_source(id, source);
-    }
-
-    void detach_port_source(std::string_view id, pga::generic_source& source)
-    {
-        m_self->detach_port_source(id, source);
-    }
-
 private:
     struct driver_concept {
         virtual ~driver_concept() = default;
@@ -78,10 +56,6 @@ private:
         virtual std::optional<int> port_index(std::string_view id) const = 0;
         virtual tl::expected<std::string, std::string> create_port(std::string_view id, const port::config_data& config) = 0;
         virtual tl::expected<void, std::string> delete_port(std::string_view id) = 0;
-        virtual tl::expected<void, int> attach_port_sink(std::string_view id, pga::generic_sink& sink) = 0;
-        virtual void detach_port_sink(std::string_view id, pga::generic_sink& sink) = 0;
-        virtual tl::expected<void, int> attach_port_source(std::string_view id, pga::generic_source& source) = 0;
-        virtual void detach_port_source(std::string_view id, pga::generic_source& source) = 0;
     };
 
     template <typename Driver>
@@ -113,26 +87,6 @@ private:
         tl::expected<void, std::string> delete_port(std::string_view id) override
         {
             return m_driver.delete_port(id);
-        }
-
-        tl::expected<void, int> attach_port_sink(std::string_view id, pga::generic_sink& sink) override
-        {
-            return m_driver.attach_port_sink(id, sink);
-        }
-
-        void detach_port_sink(std::string_view id, pga::generic_sink& sink) override
-        {
-            m_driver.detach_port_sink(id, sink);
-        }
-
-        tl::expected<void, int> attach_port_source(std::string_view id, pga::generic_source& source) override
-        {
-            return m_driver.attach_port_source(id, source);
-        }
-
-        void detach_port_source(std::string_view id, pga::generic_source& source) override
-        {
-            m_driver.detach_port_source(id, source);
         }
 
         Driver m_driver;

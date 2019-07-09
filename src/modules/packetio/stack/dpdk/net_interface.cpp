@@ -433,28 +433,6 @@ interface::config_data net_interface::config() const
     return (m_config);
 }
 
-int net_interface::attach_sink(pga::generic_sink& sink)
-{
-    (void)sink;
-    return (ENOSYS);
-}
-
-void net_interface::detach_sink(pga::generic_sink& sink)
-{
-    (void)sink;
-}
-
-int net_interface::attach_source(pga::generic_source& source)
-{
-    (void)source;
-    return (ENOSYS);
-}
-
-void net_interface::detach_source(pga::generic_source& source)
-{
-    (void)source;
-}
-
 }
 }
 }

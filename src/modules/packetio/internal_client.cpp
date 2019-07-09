@@ -31,6 +31,110 @@ client& client::operator=(client&& other)
     return (*this);
 }
 
+tl::expected<std::string, int> client::add_sink(std::string_view src_id,
+                                                packets::generic_sink sink)
+{
+    if (src_id.length() > name_length_max) {
+        ICP_LOG(ICP_LOG_ERROR, "Source ID, %.*s, is too big\n",
+                static_cast<int>(src_id.length()), src_id.data());
+        return (tl::make_unexpected(ENOMEM));
+    }
+
+    auto request = request_sink_add {
+        .data = {
+            .sink = std::move(sink)
+        }
+    };
+    std::copy(src_id.data(),
+              src_id.data() + src_id.length(),
+              request.data.src_id);
+
+    auto reply = do_request(m_socket.get(), request);
+    if (!reply) {
+        return (tl::make_unexpected(reply.error()));
+    }
+
+    if (auto success = std::get_if<reply_sink_add>(&reply.value())) {
+        return (success->sink_id);
+    } else if (auto error = std::get_if<reply_error>(&reply.value())) {
+        return (tl::make_unexpected(error->value));
+    }
+
+    return (tl::make_unexpected(EBADMSG));
+}
+
+tl::expected<void, int> client::del_sink(std::string_view sink_id)
+{
+    auto request = request_sink_del {
+        .sink_id = std::string(sink_id)
+    };
+
+    auto reply = do_request(m_socket.get(), request);
+    if (!reply) {
+        return (tl::make_unexpected(reply.error()));
+    }
+
+    if (auto success = std::get_if<reply_ok>(&reply.value())) {
+        return {};
+    } else if (auto error = std::get_if<reply_error>(&reply.value())) {
+        return (tl::make_unexpected(error->value));
+    }
+
+    return (tl::make_unexpected(EBADMSG));
+}
+
+tl::expected<std::string, int> client::add_source(std::string_view src_id,
+                                                  packets::generic_source source)
+{
+    if (src_id.length() > name_length_max) {
+        ICP_LOG(ICP_LOG_ERROR, "Source ID, %.*s, is too big\n",
+                static_cast<int>(src_id.length()), src_id.data());
+        return (tl::make_unexpected(ENOMEM));
+    }
+
+    auto request = request_source_add {
+        .data = {
+            .source = std::move(source)
+        }
+    };
+    std::copy(src_id.data(),
+              src_id.data() + src_id.length(),
+              request.data.dst_id);
+
+    auto reply = do_request(m_socket.get(), request);
+    if (!reply) {
+        return (tl::make_unexpected(reply.error()));
+    }
+
+    if (auto success = std::get_if<reply_source_add>(&reply.value())) {
+        return (success->source_id);
+    } else if (auto error = std::get_if<reply_error>(&reply.value())) {
+        return (tl::make_unexpected(error->value));
+    }
+
+    return (tl::make_unexpected(EBADMSG));
+}
+
+tl::expected<void, int> client::del_source(std::string_view source_id)
+{
+    auto request = request_source_del {
+        .source_id = std::string(source_id)
+    };
+
+    auto reply = do_request(m_socket.get(), request);
+    if (!reply) {
+        return (tl::make_unexpected(reply.error()));
+    }
+
+    if (auto success = std::get_if<reply_ok>(&reply.value())) {
+        return {};
+    } else if (auto error = std::get_if<reply_error>(&reply.value())) {
+        return (tl::make_unexpected(error->value));
+    }
+
+    return (tl::make_unexpected(EBADMSG));
+}
+
 tl::expected<std::string, int> client::add_task_impl(workers::context ctx,
                                                      std::string_view name,
                                                      event_loop::event_notifier notify,
@@ -39,7 +143,7 @@ tl::expected<std::string, int> client::add_task_impl(workers::context ctx,
                                                      std::any arg)
 {
     auto request = request_task_add {
-        .task = {
+        .data = {
             .ctx = ctx,
             .notifier = notify,
             .on_event = on_event,
@@ -55,7 +159,7 @@ tl::expected<std::string, int> client::add_task_impl(workers::context ctx,
 
     std::copy(name.data(),
               name.data() + std::min(name.length(), name_length_max),
-              request.task.name);
+              request.data.name);
 
     auto reply = do_request(m_socket.get(), request);
     if (!reply) {

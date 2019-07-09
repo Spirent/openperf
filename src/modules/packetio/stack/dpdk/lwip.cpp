@@ -215,66 +215,6 @@ void lwip::delete_interface(std::string_view id)
     }
 }
 
-tl::expected<void, int> lwip::attach_interface_sink(std::string_view id,
-                                                    pga::generic_sink& sink)
-{
-    auto item = m_interfaces.find(id);
-    if (item == m_interfaces.end()) {
-        return (tl::make_unexpected(ENODEV));
-    }
-
-    auto& ifp = item->second;
-    if (auto error = ifp->attach_sink(sink)) {
-        return (tl::make_unexpected(error));
-    }
-
-    ICP_LOG(ICP_LOG_DEBUG, "Attached sink %s to interface %.*s\n",
-            sink.id().c_str(), STRING_VIEW_TO_C_STR(id));
-
-    return {};
-}
-
-void lwip::detach_interface_sink(std::string_view id, pga::generic_sink& sink)
-{
-    if (auto item = m_interfaces.find(id); item != m_interfaces.end()) {
-        auto& ifp = item->second;
-        ifp->detach_sink(sink);
-
-        ICP_LOG(ICP_LOG_DEBUG, "Detached sink %s from interface %.*s\n",
-                sink.id().c_str(), STRING_VIEW_TO_C_STR(id));
-    }
-}
-
-tl::expected<void, int> lwip::attach_interface_source(std::string_view id,
-                                                      pga::generic_source& source)
-{
-    auto item = m_interfaces.find(id);
-    if (item == m_interfaces.end()) {
-        return (tl::make_unexpected(ENODEV));
-    }
-
-    auto& ifp = item->second;
-    if (auto error = ifp->attach_source(source)) {
-        return (tl::make_unexpected(error));
-    }
-
-    ICP_LOG(ICP_LOG_DEBUG, "Attached source %s to interface %.*s\n",
-            source.id().c_str(), STRING_VIEW_TO_C_STR(id));
-
-    return {};
-}
-
-void lwip::detach_interface_source(std::string_view id, pga::generic_source& source)
-{
-    if (auto item = m_interfaces.find(id); item != m_interfaces.end()) {
-        auto& ifp = item->second;
-        ifp->detach_source(source);
-
-        ICP_LOG(ICP_LOG_DEBUG, "Detached source %s from interface %.*s\n",
-                source.id().c_str(), STRING_VIEW_TO_C_STR(id));
-    }
-}
-
 /**
  * The rest of this file is pretty ugly.
  * The LwIP code guards all stats via ifdef blocks.  We need to do the same

@@ -618,35 +618,6 @@ tl::expected<void, std::string> eal::delete_port(std::string_view id)
     return {};
 }
 
-tl::expected<void, int> eal::attach_port_sink(std::string_view id,
-                                              pga::generic_sink& sink)
-{
-    (void)id;
-    (void)sink;
-    return (tl::make_unexpected(ENOSYS));
-}
-
-void eal::detach_port_sink(std::string_view id, pga::generic_sink& sink)
-{
-    (void)id;
-    (void)sink;
-}
-
-
-tl::expected<void, int> eal::attach_port_source(std::string_view id,
-                                                pga::generic_source& source)
-{
-    (void)id;
-    (void)source;
-    return (tl::make_unexpected(ENOSYS));
-}
-
-void eal::detach_port_source(std::string_view id, pga::generic_source& source)
-{
-    (void)id;
-    (void)source;
-}
-
 }
 }
 }
