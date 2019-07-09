@@ -94,6 +94,8 @@ template <typename T>
 std::optional<T> icp_config_get_param(std::string_view param)
 {
     auto res = icp_config_get_param(param);
+    if (!res) { return (std::nullopt); }
+
     auto node = *res;
     if (node.IsNull()) { return (std::nullopt); }
 
@@ -103,6 +105,7 @@ std::optional<T> icp_config_get_param(std::string_view param)
 
 /*
  * Specialized version to handle values from ICP_OPTION_TYPE enum.
+ * Stuff like: icp_config_get_param<ICP_OPTION_TYPE_LONG>(path);
  *
  */
 template <icp_option_type T>

@@ -52,27 +52,12 @@ Rest::Route::Result NotFound(const Rest::Request &request __attribute__((unused)
 int api_configure_self()
 {
     auto port_num = icp::config::file::icp_config_get_param<ICP_OPTION_TYPE_LONG>("modules.api.port");
-    auto port_num2 =
-      icp::config::file::icp_config_get_param<long>("modules.api.port");
-
-    assert (*port_num == *port_num2);
 
     if (port_num) {
         return (set_service_port(*port_num));
     }
 
     return (0);
-    // auto port_num = icp::config::file::icp_config_get_param("modules.api.port");
-    // if (!port_num) {
-    //     ICP_LOG(ICP_LOG_ERROR, "%s", port_num.error().c_str());
-    //     return (EINVAL);
-    // }
-
-    // if (port_num.value().has_value()) {
-    //     return (set_service_port(std::any_cast<long>(port_num.value())));
-    // }
-
-    // return (0);
 }
 
 class service {
@@ -98,6 +83,7 @@ public:
          * shutdown ourselves.
          */
         auto thread = std::thread([this]() { run(service_port); });
+        ICP_LOG(ICP_LOG_DEBUG, "REST API server listening on port %d", service_port);
         thread.detach();
 
         auto ret = config::icp_config_file_process_resources();

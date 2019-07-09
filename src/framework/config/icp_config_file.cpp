@@ -184,11 +184,9 @@ std::optional<YAML::Node> icp_config_get_param(std::string_view path)
 {
     YAML::Node root_node;
     if (!config_file_name.empty()) {
-        try {
-            root_node = YAML::LoadFile(config_file_name);
-        } catch (std::exception &e) {
-            throw;
-        }
+        // If this throws it's a bug or weird environment issue.
+        // File is loaded and checked by the CLI option handler below.
+        root_node = YAML::LoadFile(config_file_name);
     }
 
     // Does the user want to override any config file settings
