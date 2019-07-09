@@ -58,43 +58,6 @@ static void set_map_data_node(YAML::Node &node, std::string_view opt_data)
     node = output;
 }
 
-// static std::any get_data_node_value(const YAML::Node &node, enum icp_option_type opt_type)
-// {
-//     if (node.IsNull()) { return (std::any()); }
-
-//     try {
-//         switch (opt_type) {
-//         case ICP_OPTION_TYPE_LONG:
-//             return (node.as<long>());
-//             break;
-//         case ICP_OPTION_TYPE_DOUBLE:
-//             return (node.as<double>());
-//             break;
-//         case ICP_OPTION_TYPE_STRING:
-//             return (node.as<std::string>());
-//             break;
-//         case ICP_OPTION_TYPE_MAP:
-//             return (node.as<std::map<std::string, std::string>>());
-//             break;
-//         case ICP_OPTION_TYPE_LIST:
-//             return (node.as<std::vector<std::string>>());
-//             break;
-//         case ICP_OPTION_TYPE_BOOL:
-//             return (true);
-//             break;
-//         case ICP_OPTION_TYPE_NONE:
-//             return (node);
-//             break;
-//         }
-//     }
-//     catch (std::exception &e){
-//         std::ostringstream os;
-//         os << node;
-//         ICP_LOG(ICP_LOG_ERROR, "Error converting value for configuration file node %s", os.str().c_str());
-//         throw;
-//     }
-// }
-
 static void set_data_node_value(YAML::Node &node, std::string_view opt_data,
                                 enum icp_option_type opt_type)
 {
@@ -173,8 +136,9 @@ static void update_param_by_path(YAML::Node &parent_node, path_iterator pos,
     return;
 }
 
-static YAML::Node get_param_by_path(const YAML::Node &parent_node, path_iterator pos,
-                                    const path_iterator end)
+static std::optional<YAML::Node> get_param_by_path(const YAML::Node &parent_node,
+                                                   path_iterator pos,
+                                                   const path_iterator end)
 {
     if (pos == end) { return (parent_node); }
 
@@ -183,10 +147,10 @@ static YAML::Node get_param_by_path(const YAML::Node &parent_node, path_iterator
         return (get_param_by_path(child_node, ++pos, end));
     }
 
-    return (YAML::Node());
+    return (std::nullopt);
 }
 
-static tl::expected<void, std::string> merge_cli_params(std::string_view path, YAML::Node &node)
+static void merge_cli_params(std::string_view path, YAML::Node &node)
 {
     for (auto &opt : cli_options) {
         auto long_opt = icp_options_get_long_opt(opt.first);
@@ -194,7 +158,7 @@ static tl::expected<void, std::string> merge_cli_params(std::string_view path, Y
         // All CLI options are required to have a long-form version.
         assert(long_opt);
 
-        if (!long_opt) { return (tl::make_unexpected("Command-line option "
+        if (!long_opt) { throw (std::runtime_error("Command-line option "
                                                      + std::to_string(opt.first)
                                                      + " does not have a "
                                                      + "corresponding long-form "
@@ -213,7 +177,7 @@ static tl::expected<void, std::string> merge_cli_params(std::string_view path, Y
                              icp_options_get_opt_type_short(opt.first));
     }
 
-    return {};
+    return;
 }
 
 std::optional<YAML::Node> icp_config_get_param(std::string_view path)
@@ -223,7 +187,6 @@ std::optional<YAML::Node> icp_config_get_param(std::string_view path)
         try {
             root_node = YAML::LoadFile(config_file_name);
         } catch (std::exception &e) {
-            //FIXME - print an error?
             throw;
         }
     }
@@ -236,22 +199,6 @@ std::optional<YAML::Node> icp_config_get_param(std::string_view path)
 
     return (get_param_by_path(root_node, path_components.begin(), path_components.end()));
 }
-
-// tl::expected<std::any, std::string> icp_config_get_param(std::string_view param,
-//                                                          enum icp_option_type opt_type)
-// {
-//     auto param_node = icp_config_get_params(param);
-
-//     if (param_node) { return (get_data_node_value(param_node, opt_type)); }
-
-//     return (tl::make_unexpected("ERROR!"));
-// }
-
-// tl::expected<std::any, std::string> icp_config_get_param(std::string_view param)
-// {
-//     auto opt_type = icp_options_get_opt_type_long(param.data(), param.length());
-//     return icp_config_get_param(param, opt_type);
-// }
 
 extern "C" {
 int config_file_option_handler(int opt, const char *opt_arg)

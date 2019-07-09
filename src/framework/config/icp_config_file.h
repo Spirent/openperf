@@ -69,27 +69,8 @@ std::string_view icp_config_get_file_name();
  */
 std::optional<YAML::Node> icp_config_get_param(std::string_view param);
 
-/*
- * Get a specific configuration parameter.
- * @param[in]  period-deliniated path to the requested parameter.
- *
- * @return
- *  a expected<> object with a (possibly) empty std::any or, on error, a string with details.
- *
- */
-//tl::expected<std::any, std::string> icp_config_get_param(std::string_view param);
 
-// enum icp_option_type {
-//     ICP_OPTION_TYPE_NONE = 0,
-//     ICP_OPTION_TYPE_STRING,
-//     ICP_OPTION_TYPE_LONG,
-//     ICP_OPTION_TYPE_DOUBLE,
-//     ICP_OPTION_TYPE_MAP,
-//     ICP_OPTION_TYPE_LIST,
-//     ICP_OPTION_TYPE_BOOL
-// };
-
-// Map option type to concrete type.
+// Helper structs to map option type to concrete type.
 template <icp_option_type T> struct icp_option_type_maps;
 template<> struct icp_option_type_maps<icp_option_type::ICP_OPTION_TYPE_NONE>   { typedef bool type; };
 template<> struct icp_option_type_maps<icp_option_type::ICP_OPTION_TYPE_STRING> { typedef std::string type; };
@@ -98,17 +79,17 @@ template<> struct icp_option_type_maps<icp_option_type::ICP_OPTION_TYPE_DOUBLE> 
 template<> struct icp_option_type_maps<icp_option_type::ICP_OPTION_TYPE_MAP> { typedef std::map<std::string, std::string> type; };
 template<> struct icp_option_type_maps<icp_option_type::ICP_OPTION_TYPE_LIST> { typedef std::vector<std::string> type; };
 
-// Templated access to configuration parameters.
+/*
+ * Get a specific configuration parameter.
+ * @param[in]  period-deliniated path to the requested parameter.
+ *
+ * @note this will throw on any type conversion error. YAML::BadConversion.
 
-// template <icp_option_type_t S>
-// struct icp_config_get_paramz<icp_option_type_t> {
-//     static std::optional<typename icp_option_type_maps<S>::type>
-//     get(std::string_view param) {
-//         return std::make_optional(param);
-//     }
-// };
-
-//FIXME - specialize on bool?
+ * @return
+ *  std::optional<> object that contains the requested value if it exists,
+ *  otherwise empty.
+ *
+ */
 template <typename T>
 std::optional<T> icp_config_get_param(std::string_view param)
 {
@@ -116,59 +97,31 @@ std::optional<T> icp_config_get_param(std::string_view param)
     auto node = *res;
     if (node.IsNull()) { return (std::nullopt); }
 
-    try {
-        return (std::make_optional(node.as<T>()));
-    }
-    catch (YAML::BadConversion &e) {
-        //std::cerr << "Error converting value for parameter " << param
-        //          << " " << e.what() << std::endl;
-        throw;
-    }
+    /* This can throw a YAML::BadConversion exception. */
+    return (std::make_optional(node.as<T>()));
 }
 
-// template <bool>
-// std::optional<bool> icp_config_get_paramz(std::string_view param)
-// {
-//     auto node = icp_config_get_params(param);
-//     return (std::make_optional(!node.IsNull()));
-// }
-
-//template <icp_option_type T>
-//typename std::enable_if_t<T == ICP_OPTION_TYPE_BOOL,
-//                          std::optional<typename icp_option_type_maps<T>::type>>
-// icp_config_get_paramz(std::string_view param) {
-//     //auto node = icp_config_get_params(param);
-//     //return (std::make_optional(!node.IsNull()));
-//     return (icp_config_get_paramz<bool>(param));
-// }
-
+/*
+ * Specialized version to handle values from ICP_OPTION_TYPE enum.
+ *
+ */
 template <icp_option_type T>
 std::optional<typename icp_option_type_maps<T>::type>
 icp_config_get_param(std::string_view param)
 {
-    //    auto node = icp_config_get_params(param);
-    //if (node.IsNull()) { return (std::make_optional(false)); }
-
-    //return std::make_optional(node.as<typename icp_option_type_maps<T>::type>());
-
     return icp_config_get_param<typename icp_option_type_maps<T>::type>(param);
 }
 
+/*
+ * Specialized version to handle icp_config_get_param<YAML::Node>(path);
+ *
+ */
 template <typename T>
 typename std::enable_if_t<std::is_same<T, YAML::Node>::value, std::optional<YAML::Node>>
 icp_config_get_param(std::string_view param)
 {
-    //return std::make_optional(YAML::Node(param.data()));
     return icp_config_get_param(param);
 }
-// template <typename T>
-// std::optional<T> icp_config_get_paramz(std::string_view param)
-// {
-//     auto node = icp_config_get_params(param);
-//     if (node.IsNull()) { return (std::make_optional(false)); }
-
-//     return (std::make_optional(node.as<T>()));
-// }
 
 }  // namespace icp::config::file
 #endif /* ifdef __cplusplus */
