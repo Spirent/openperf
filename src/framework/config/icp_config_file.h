@@ -70,7 +70,15 @@ std::string_view icp_config_get_file_name();
 std::optional<YAML::Node> icp_config_get_param(std::string_view param);
 
 
-// Helper structs to map option type to concrete type.
+/*
+ * Helper structs to map icp_option_type to concrete type.
+ *
+ * Essentially allow users to use enum icp_option_type values as
+ * template arguments to icp_config_get_param.
+ *
+ * icp_config_get_param<ICP_OPTION_TYPE_LONG> resolves to
+ * icp_config_get_param<long>.
+ */
 template <icp_option_type T> struct icp_option_type_maps;
 template<> struct icp_option_type_maps<icp_option_type::ICP_OPTION_TYPE_NONE>   { typedef bool type; };
 template<> struct icp_option_type_maps<icp_option_type::ICP_OPTION_TYPE_STRING> { typedef std::string type; };

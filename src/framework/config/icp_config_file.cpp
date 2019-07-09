@@ -156,8 +156,6 @@ static void merge_cli_params(std::string_view path, YAML::Node &node)
         auto long_opt = icp_options_get_long_opt(opt.first);
 
         // All CLI options are required to have a long-form version.
-        assert(long_opt);
-
         if (!long_opt) { throw (std::runtime_error("Command-line option "
                                                      + std::to_string(opt.first)
                                                      + " does not have a "
