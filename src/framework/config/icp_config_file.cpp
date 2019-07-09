@@ -58,42 +58,42 @@ static void set_map_data_node(YAML::Node &node, std::string_view opt_data)
     node = output;
 }
 
-static std::any get_data_node_value(const YAML::Node &node, enum icp_option_type opt_type)
-{
-    if (node.IsNull()) { return (std::any()); }
+// static std::any get_data_node_value(const YAML::Node &node, enum icp_option_type opt_type)
+// {
+//     if (node.IsNull()) { return (std::any()); }
 
-    try {
-        switch (opt_type) {
-        case ICP_OPTION_TYPE_LONG:
-            return (node.as<long>());
-            break;
-        case ICP_OPTION_TYPE_DOUBLE:
-            return (node.as<double>());
-            break;
-        case ICP_OPTION_TYPE_STRING:
-            return (node.as<std::string>());
-            break;
-        case ICP_OPTION_TYPE_MAP:
-            return (node.as<std::map<std::string, std::string>>());
-            break;
-        case ICP_OPTION_TYPE_LIST:
-            return (node.as<std::vector<std::string>>());
-            break;
-        case ICP_OPTION_TYPE_BOOL:
-            return (true);
-            break;
-        case ICP_OPTION_TYPE_NONE:
-            return (node);
-            break;
-        }
-    }
-    catch (std::exception &e){
-        std::ostringstream os;
-        os << node;
-        ICP_LOG(ICP_LOG_ERROR, "Error converting value for configuration file node %s", os.str().c_str());
-        throw;
-    }
-}
+//     try {
+//         switch (opt_type) {
+//         case ICP_OPTION_TYPE_LONG:
+//             return (node.as<long>());
+//             break;
+//         case ICP_OPTION_TYPE_DOUBLE:
+//             return (node.as<double>());
+//             break;
+//         case ICP_OPTION_TYPE_STRING:
+//             return (node.as<std::string>());
+//             break;
+//         case ICP_OPTION_TYPE_MAP:
+//             return (node.as<std::map<std::string, std::string>>());
+//             break;
+//         case ICP_OPTION_TYPE_LIST:
+//             return (node.as<std::vector<std::string>>());
+//             break;
+//         case ICP_OPTION_TYPE_BOOL:
+//             return (true);
+//             break;
+//         case ICP_OPTION_TYPE_NONE:
+//             return (node);
+//             break;
+//         }
+//     }
+//     catch (std::exception &e){
+//         std::ostringstream os;
+//         os << node;
+//         ICP_LOG(ICP_LOG_ERROR, "Error converting value for configuration file node %s", os.str().c_str());
+//         throw;
+//     }
+// }
 
 static void set_data_node_value(YAML::Node &node, std::string_view opt_data,
                                 enum icp_option_type opt_type)
@@ -219,14 +219,15 @@ static tl::expected<void, std::string> merge_cli_params(std::string_view path, Y
     return {};
 }
 
-tl::expected<YAML::Node, std::string> icp_config_get_params(std::string_view path)
+std::optional<YAML::Node> icp_config_get_param(std::string_view path)
 {
     YAML::Node root_node;
     if (!config_file_name.empty()) {
         try {
             root_node = YAML::LoadFile(config_file_name);
         } catch (std::exception &e) {
-            return (tl::make_unexpected(e.what()));
+            //FIXME - print an error?
+            throw;
         }
     }
 
@@ -239,21 +240,21 @@ tl::expected<YAML::Node, std::string> icp_config_get_params(std::string_view pat
     return (get_param_by_path(root_node, path_components.begin(), path_components.end()));
 }
 
-tl::expected<std::any, std::string> icp_config_get_param(std::string_view param,
-                                                         enum icp_option_type opt_type)
-{
-    auto param_node = icp_config_get_params(param);
+// tl::expected<std::any, std::string> icp_config_get_param(std::string_view param,
+//                                                          enum icp_option_type opt_type)
+// {
+//     auto param_node = icp_config_get_params(param);
 
-    if (param_node) { return (get_data_node_value(param_node.value(), opt_type)); }
+//     if (param_node) { return (get_data_node_value(param_node, opt_type)); }
 
-    return (tl::make_unexpected(param_node.error()));
-}
+//     return (tl::make_unexpected("ERROR!"));
+// }
 
-tl::expected<std::any, std::string> icp_config_get_param(std::string_view param)
-{
-    auto opt_type = icp_options_get_opt_type_long(param.data(), param.length());
-    return icp_config_get_param(param, opt_type);
-}
+// tl::expected<std::any, std::string> icp_config_get_param(std::string_view param)
+// {
+//     auto opt_type = icp_options_get_opt_type_long(param.data(), param.length());
+//     return icp_config_get_param(param, opt_type);
+// }
 
 extern "C" {
 int config_file_option_handler(int opt, const char *opt_arg)

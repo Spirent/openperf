@@ -38,23 +38,26 @@ static __attribute__((const)) uint64_t align_up(uint64_t x, uint64_t align)
 }
 
 bool unlink_stale_files() {
-    auto result = config::file::icp_config_get_param("modules.socket.force-unlink");
-    if (!result) { return false; }
+    auto result = config::file::icp_config_get_param<ICP_OPTION_TYPE_BOOL>("modules.socket.force-unlink");
+    //if (!result) { return false; }
 
-    return result.value().has_value();
+    return (*result);
 }
 
 std::string prefix_option() {
-    auto result = config::file::icp_config_get_param("modules.socket.prefix");
+    auto result = config::file::icp_config_get_param<ICP_OPTION_TYPE_STRING>("modules.socket.prefix");
 
-    if ((!result) || (!result.value().has_value())) { return std::string(); }
+    //if ((!result) || (!result.value().has_value())) { return std::string(); }
+    if (!result) { return std::string(); }
 
-    try {
-        return std::any_cast<std::string>(result.value());
-    }
-    catch (...) {
-        return std::string();
-    }
+    return (*result);
+
+    // try {
+    //     return std::any_cast<std::string>(result.value());
+    // }
+    // catch (...) {
+    //     return std::string();
+    // }
 }
 
 static icp::memory::shared_segment create_shared_memory(size_t size)

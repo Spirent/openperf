@@ -35,7 +35,7 @@ typedef int (icp_option_callback_fn)(int opt, const char *optarg);
  * MAP -> std::map<std::string, std::string>>
  * LIST -> std::vector<std::string>
  */
-enum icp_option_type {
+typedef enum icp_option_type {
     ICP_OPTION_TYPE_NONE = 0,
     ICP_OPTION_TYPE_STRING,
     ICP_OPTION_TYPE_LONG,
@@ -43,7 +43,9 @@ enum icp_option_type {
     ICP_OPTION_TYPE_MAP,
     ICP_OPTION_TYPE_LIST,
     ICP_OPTION_TYPE_BOOL
-};
+} icp_option_type_t;
+
+//FIXME - remove BOOL type. With that type the no-arg arguments that use it end up reserving space for a value.
 
 /**
  * A structure describing an option based init function
