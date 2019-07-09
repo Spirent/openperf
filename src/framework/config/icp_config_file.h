@@ -5,6 +5,7 @@
 #ifdef __cplusplus
 #include <string_view>
 #include <any>
+#include <optional>
 #include "tl/expected.hpp"
 #include "yaml-cpp/yaml.h"
 #endif /* ifdef __cplusplus */
@@ -59,24 +60,79 @@ namespace icp::config::file {
 std::string_view icp_config_get_file_name();
 
 /*
- * Get configuration parameters for the specified path.
- * @param[in]  module_name name of the module to get parameters for.
+ * Get configuration parameter(s) for the specified path.
+ * @param[in]  period-deliniated path to the requested parameter node
  *
  * @return
  *  a YAML::Node object representing configuration prameters, if any.
  *
  */
-tl::expected<YAML::Node, std::string> icp_config_get_params(std::string_view module_name);
+std::optional<YAML::Node> icp_config_get_param(std::string_view param);
+
+
+/*
+ * Helper structs to map icp_option_type to concrete type.
+ *
+ * Essentially allow users to use enum icp_option_type values as
+ * template arguments to icp_config_get_param.
+ *
+ * icp_config_get_param<ICP_OPTION_TYPE_LONG> resolves to
+ * icp_config_get_param<long>.
+ */
+template <icp_option_type T> struct icp_option_type_maps;
+template<> struct icp_option_type_maps<icp_option_type::ICP_OPTION_TYPE_NONE>   { typedef bool type; };
+template<> struct icp_option_type_maps<icp_option_type::ICP_OPTION_TYPE_STRING> { typedef std::string type; };
+template<> struct icp_option_type_maps<icp_option_type::ICP_OPTION_TYPE_LONG> { typedef long type; };
+template<> struct icp_option_type_maps<icp_option_type::ICP_OPTION_TYPE_DOUBLE> { typedef double type; };
+template<> struct icp_option_type_maps<icp_option_type::ICP_OPTION_TYPE_MAP> { typedef std::map<std::string, std::string> type; };
+template<> struct icp_option_type_maps<icp_option_type::ICP_OPTION_TYPE_LIST> { typedef std::vector<std::string> type; };
 
 /*
  * Get a specific configuration parameter.
  * @param[in]  period-deliniated path to the requested parameter.
  *
+ * @note this will throw on any type conversion error. YAML::BadConversion.
+
  * @return
- *  a expected<> object with a (possibly) empty std::any or, on error, a string with details.
+ *  std::optional<> object that contains the requested value if it exists,
+ *  otherwise empty.
  *
  */
-tl::expected<std::any, std::string> icp_config_get_param(std::string_view param);
+template <typename T>
+std::optional<T> icp_config_get_param(std::string_view param)
+{
+    auto res = icp_config_get_param(param);
+    if (!res) { return (std::nullopt); }
+
+    auto node = *res;
+    if (node.IsNull()) { return (std::nullopt); }
+
+    /* This can throw a YAML::BadConversion exception. */
+    return (std::make_optional(node.as<T>()));
+}
+
+/*
+ * Specialized version to handle values from ICP_OPTION_TYPE enum.
+ * Stuff like: icp_config_get_param<ICP_OPTION_TYPE_LONG>(path);
+ *
+ */
+template <icp_option_type T>
+std::optional<typename icp_option_type_maps<T>::type>
+icp_config_get_param(std::string_view param)
+{
+    return icp_config_get_param<typename icp_option_type_maps<T>::type>(param);
+}
+
+/*
+ * Specialized version to handle icp_config_get_param<YAML::Node>(path);
+ *
+ */
+template <typename T>
+typename std::enable_if_t<std::is_same<T, YAML::Node>::value, std::optional<YAML::Node>>
+icp_config_get_param(std::string_view param)
+{
+    return icp_config_get_param(param);
+}
 
 }  // namespace icp::config::file
 #endif /* ifdef __cplusplus */
