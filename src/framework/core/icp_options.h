@@ -28,12 +28,15 @@ typedef int (icp_option_callback_fn)(int opt, const char *optarg);
 /**
  * Enum denoting the type of an option's data.
  * Exact types are mapped as:
- * BOOL -> bool
  * STRING -> std::string
  * LONG -> long
  * DOUBLE -> double
  * MAP -> std::map<std::string, std::string>>
  * LIST -> std::vector<std::string>
+ *
+ * NONE -> bool
+ * The NONE -> bool thing means that if the option is present
+ * framework will return true when queried for it, false otherwise.
  */
 typedef enum icp_option_type {
     ICP_OPTION_TYPE_NONE = 0,
@@ -41,11 +44,8 @@ typedef enum icp_option_type {
     ICP_OPTION_TYPE_LONG,
     ICP_OPTION_TYPE_DOUBLE,
     ICP_OPTION_TYPE_MAP,
-    ICP_OPTION_TYPE_LIST,
-    ICP_OPTION_TYPE_BOOL
+    ICP_OPTION_TYPE_LIST
 } icp_option_type_t;
-
-//FIXME - remove BOOL type. With that type the no-arg arguments that use it end up reserving space for a value.
 
 /**
  * A structure describing an option based init function

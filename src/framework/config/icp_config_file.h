@@ -91,13 +91,12 @@ std::optional<YAML::Node> icp_config_get_param(std::string_view param);
 
 // Map option type to concrete type.
 template <icp_option_type T> struct icp_option_type_maps;
-template<> struct icp_option_type_maps<icp_option_type::ICP_OPTION_TYPE_BOOL>   { typedef bool type; };
+template<> struct icp_option_type_maps<icp_option_type::ICP_OPTION_TYPE_NONE>   { typedef bool type; };
 template<> struct icp_option_type_maps<icp_option_type::ICP_OPTION_TYPE_STRING> { typedef std::string type; };
 template<> struct icp_option_type_maps<icp_option_type::ICP_OPTION_TYPE_LONG> { typedef long type; };
 template<> struct icp_option_type_maps<icp_option_type::ICP_OPTION_TYPE_DOUBLE> { typedef double type; };
 template<> struct icp_option_type_maps<icp_option_type::ICP_OPTION_TYPE_MAP> { typedef std::map<std::string, std::string> type; };
 template<> struct icp_option_type_maps<icp_option_type::ICP_OPTION_TYPE_LIST> { typedef std::vector<std::string> type; };
-//FIXME - handle ICP_OPTION_TYPE_NONE.
 
 // Templated access to configuration parameters.
 

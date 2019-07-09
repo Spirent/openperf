@@ -114,11 +114,8 @@ static void set_data_node_value(YAML::Node &node, std::string_view opt_data,
     case ICP_OPTION_TYPE_DOUBLE:
         node = strtod(opt_data.data(), nullptr);
         break;
-    case ICP_OPTION_TYPE_BOOL:
-        node = true;
-        break;
     case ICP_OPTION_TYPE_NONE:
-        node = "";
+        node = true;
         break;
     }
 
@@ -301,9 +298,7 @@ int framework_cli_option_handler(int opt, const char *opt_arg)
     // Check that the user supplied argument data if the registrant
     // developer told us to expect some.
     auto opt_type = (icp_options_get_opt_type_short(opt));
-    if  ((!opt_arg) &&
-         ((opt_type != ICP_OPTION_TYPE_BOOL)
-          && (opt_type != ICP_OPTION_TYPE_NONE))) {
+    if  ((!opt_arg) && (opt_type != ICP_OPTION_TYPE_NONE)) {
         return (EINVAL);
     }
 

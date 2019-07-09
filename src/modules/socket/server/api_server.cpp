@@ -38,7 +38,7 @@ static __attribute__((const)) uint64_t align_up(uint64_t x, uint64_t align)
 }
 
 bool unlink_stale_files() {
-    auto result = config::file::icp_config_get_param<ICP_OPTION_TYPE_BOOL>("modules.socket.force-unlink");
+    auto result = config::file::icp_config_get_param<ICP_OPTION_TYPE_NONE>("modules.socket.force-unlink");
     //if (!result) { return false; }
 
     return (*result);
