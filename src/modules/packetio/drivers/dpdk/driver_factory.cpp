@@ -8,14 +8,15 @@ namespace icp::packetio::driver {
 
 std::unique_ptr<generic_driver> make()
 {
-    auto& parser = dpdk::arg_parser::instance();
+    namespace cfg = icp::packetio::dpdk::config;
+
     return (std::make_unique<generic_driver>(
-                parser.test_mode()
-                ? icp::packetio::dpdk::eal::test_environment(parser.args(),
-                                                             parser.id_map(),
-                                                             parser.test_portpairs())
-                : icp::packetio::dpdk::eal::real_environment(parser.args(),
-                                                             parser.id_map())));
+                cfg::dpdk_test_mode()
+                ? icp::packetio::dpdk::eal::test_environment(cfg::dpdk_args(),
+                                                             cfg::dpdk_id_map(),
+                                                             cfg::dpdk_test_portpairs())
+                : icp::packetio::dpdk::eal::real_environment(cfg::dpdk_args(),
+                                                             cfg::dpdk_id_map())));
 }
 
 }

@@ -1,10 +1,8 @@
 #include "core/icp_core.h"
 #include "config/icp_config_file.h"
 
-extern int dpdk_arg_parse_init();
-
 MAKE_OPTION_DATA(
-  dpdk, dpdk_arg_parse_init,
+  dpdk, NULL,
   MAKE_OPT("quoted, comma separated options for DPDK",
            "modules.packetio.dpdk.options", 'd',
            ICP_OPTION_TYPE_LIST),
