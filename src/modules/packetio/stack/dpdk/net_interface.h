@@ -2,15 +2,15 @@
 #define _ICP_PACKETIO_STACK_DPDK_NET_INTERFACE_H_
 
 #include <memory>
+#include <variant>
 
-#include "lwip/netifapi.h"
+#include "lwip/netif.h"
 
 #include "packetio/generic_driver.h"
 #include "packetio/generic_interface.h"
+#include "packetio/stack/dpdk/net_interface_rx.h"
 
 struct pbuf;
-struct rte_ring;
-extern void rte_ring_free(struct rte_ring*);
 
 namespace icp {
 namespace packetio {
@@ -28,7 +28,7 @@ public:
     net_interface(const net_interface&) = delete;
     net_interface& operator= (const net_interface&) = delete;
 
-    netif* data();
+    struct netif* data();
 
     std::string id() const;
     std::string port_id() const;
@@ -43,29 +43,23 @@ public:
     int attach_source(pga::generic_source& source);
     void detach_source(pga::generic_source& source);
 
-    int handle_rx(struct pbuf*);
-    int handle_tx(struct pbuf*);
-    void handle_input();
+    err_t handle_tx(struct pbuf*);
+
+    err_t handle_rx(struct pbuf*);
+    err_t handle_rx_notify();
 
 private:
-    struct rte_ring_deleter {
-        void operator()(rte_ring *ring) {
-            rte_ring_free(ring);
-        }
-    };
-
-    /* XXX: Determine based on NIC speed */
-    static constexpr unsigned recvq_size = 1024;
-
     const std::string m_id;
     const int m_port_index; /* DPDK port index, that is */
     const unsigned m_max_gso_length;
     const interface::config_data m_config;
     const driver::tx_burst m_transmit;
 
+    typedef std::variant<netif_rx_strategy::direct,
+                         netif_rx_strategy::queueing> rx_strategy;
+    rx_strategy m_receive;
+
     netif m_netif;
-    std::atomic_flag m_notify;
-    std::unique_ptr<rte_ring, rte_ring_deleter> m_recvq;
 };
 
 }

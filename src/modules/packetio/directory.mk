@@ -8,6 +8,9 @@ PIO_SOURCES += \
 	interface_handler.cpp \
 	interface_server.cpp \
 	interface_utils.cpp \
+	internal_client.cpp \
+	internal_transmogrify.cpp \
+	internal_server.cpp \
 	json_transmogrify.cpp \
 	port_handler.cpp \
 	port_server.cpp \
@@ -18,8 +21,8 @@ PIO_SOURCES += \
 
 include $(PIO_SRC_DIR)/drivers/directory.mk
 include $(PIO_SRC_DIR)/memory/directory.mk
-include $(PIO_SRC_DIR)/pga/directory.mk
 include $(PIO_SRC_DIR)/stack/directory.mk
+include $(PIO_SRC_DIR)/workers/directory.mk
 
 .PHONY: $(PIO_SRC_DIR)/init.cpp
 %/init.o: ICP_CPPFLAGS += \

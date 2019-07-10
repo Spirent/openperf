@@ -9,10 +9,11 @@
 #include "core/icp_core.h"
 #include "packetio/generic_driver.h"
 #include "packetio/generic_stack.h"
+#include "packetio/generic_workers.h"
 #include "packetio/interface_server.h"
+#include "packetio/internal_server.h"
 #include "packetio/port_server.h"
 #include "packetio/stack_server.h"
-#include "packetio/pga/pga_server.h"
 
 namespace icp {
 namespace packetio {
@@ -32,19 +33,20 @@ static int handle_zmq_shutdown(const icp_event_data *data,
 
 struct service {
     ~service() {
-        if (m_worker.joinable()) {
-            m_worker.join();
+        if (m_service.joinable()) {
+            m_service.join();
         }
     }
 
     void init(void *context) {
-        m_driver = driver::make(context);
-        m_stack = stack::make(*m_driver);
+        m_driver = driver::make();
+        m_workers = workers::make(context, *m_driver);
+        m_stack = stack::make(*m_driver, *m_workers);
         m_loop = std::make_unique<icp::core::event_loop>();
         m_port_server = std::make_unique<port::api::server>(context, *m_loop, *m_driver);
         m_stack_server = std::make_unique<stack::api::server>(context, *m_loop, *m_stack);
         m_if_server = std::make_unique<interface::api::server>(context, *m_loop, *m_stack);
-        m_pga_server = std::make_unique<pga::api::server>(context, *m_loop, *m_driver, *m_stack);
+        m_internal_server = std::make_unique<internal::api::server>(context, *m_loop, *m_workers);
 
         m_shutdown.reset(icp_socket_get_server(context, ZMQ_REQ,
                                                "inproc://packetio_shutdown_canary"));
@@ -52,7 +54,7 @@ struct service {
 
     void start()
     {
-        m_worker = std::thread([this]() {
+        m_service = std::thread([this]() {
                                    icp_thread_setname("icp_packetio");
 
                                    struct icp_event_callbacks callbacks = {
@@ -64,15 +66,22 @@ struct service {
                                });
     }
 
-    std::unique_ptr<icp::core::event_loop> m_loop;
+    /*
+     * Note: the order of declaration here is the same as the order of
+     * initialization in init().  This is both intentional and necessary
+     * as the objects will be destroyed in the reverse order of their
+     * declaration.
+     */
     std::unique_ptr<driver::generic_driver> m_driver;
+    std::unique_ptr<workers::generic_workers> m_workers;
     std::unique_ptr<stack::generic_stack> m_stack;
+    std::unique_ptr<icp::core::event_loop> m_loop;
     std::unique_ptr<port::api::server> m_port_server;
     std::unique_ptr<stack::api::server> m_stack_server;
     std::unique_ptr<interface::api::server> m_if_server;
-    std::unique_ptr<pga::api::server> m_pga_server;
+    std::unique_ptr<internal::api::server> m_internal_server;
     std::unique_ptr<void, icp_socket_deleter> m_shutdown;
-    std::thread m_worker;
+    std::thread m_service;
 };
 
 }

@@ -9,13 +9,13 @@ namespace packetio {
 namespace dpdk {
 namespace model {
 
-physical_port::physical_port(int idx, std::string id, rte_mempool *pool)
+physical_port::physical_port(int idx, std::string_view id, rte_mempool *pool)
     : m_idx(idx)
     , m_id(id)
     , m_pool(pool)
 {
     if (!rte_eth_dev_is_valid_port(idx)) {
-        throw std::runtime_error("Port id " + id + " is invalid");
+        throw std::runtime_error("Port id " + std::string(id) + " is invalid");
     }
 }
 
@@ -317,8 +317,8 @@ tl::expected<void, std::string> physical_port::apply_port_config(port_info& info
         }
     }
 
-    ICP_LOG(ICP_LOG_DEBUG, "Successfully configured DPDK physical port %s(%d) "
-            "(rxq=%d, txq=%d, pool=%s, speed=0x%x)\n", m_id.c_str(), m_idx, nb_rxqs, nb_txqs,
+    ICP_LOG(ICP_LOG_DEBUG, "Successfully configured DPDK physical port %s "
+            "(idx=%u, rxq=%d, txq=%d, pool=%s, speed=0x%x)\n", m_id.c_str(), m_idx, nb_rxqs, nb_txqs,
             m_pool->name, port_conf.link_speeds);
 
     if (do_start) return start();

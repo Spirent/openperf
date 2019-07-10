@@ -7,17 +7,19 @@ SOCK_COMMON += \
 SOCKSRV_SOURCES += \
 	$(SOCK_COMMON) \
 	server/api_handler.cpp \
+	server/api_server.cpp \
 	server/api_server_options.c \
 	server/dgram_channel.cpp \
+	server/init.cpp \
 	server/lwip_tcp_event.cpp \
 	server/lwip_utils.cpp \
 	server/pbuf_queue.cpp \
 	server/stream_channel.cpp \
 	server/socket_utils.cpp \
-	server/api_server.cpp \
 	server/tcp_socket.cpp \
 	server/udp_socket.cpp
 
+SOCKSRV_DEPENDS += packetio versions
 SOCKSRV_LDLIBS += -lrt
 
 # Each channel object lives in shared memory and has both a client and server
@@ -25,6 +27,12 @@ SOCKSRV_LDLIBS += -lrt
 # server data and vice versa.  Hence, this warning is safe to ignore.
 $(SOCKSRV_OBJ_DIR)/server/dgram_channel.o: ICP_CXXFLAGS += -Wno-unused-private-field
 $(SOCKSRV_OBJ_DIR)/server/stream_channel.o: ICP_CXXFLAGS += -Wno-unused-private-field
+
+.PHONY: $(SOCKSRV_SRC_DIR)/server/init.cpp
+$(SOCKSRV_OBJ_DIR)/server/init.o: ICP_CPPFLAGS += \
+	-DBUILD_COMMIT="\"$(GIT_COMMIT)\"" \
+	-DBUILD_NUMBER="\"$(BUILD_NUMBER)\"" \
+	-DBUILD_TIMESTAMP="\"$(TIMESTAMP)\""
 
 SOCKCLI_SOURCES += \
 	$(SOCK_COMMON) \

@@ -25,11 +25,10 @@ using cores_by_id = std::unordered_map<unsigned, std::vector<unsigned>>;
 std::vector<queue::descriptor>
 queue_distribute(const std::vector<model::port_info>& port_info)
 {
-    /*
-     * First, pick the core that should run the stack. We don't want to assign
-     * any queues to it.
-     */
-    auto stack_lcore = get_stack_lcore_id();
+    /* If we have multiple cores, assign the stack to a dedicated one. */
+    unsigned stack_lcore = (rte_lcore_count() <= 2
+                            ? std::numeric_limits<unsigned>::max()
+                            : get_stack_lcore_id());
 
     /*
      * Generate a node -> core map so that we can easily tell which cores are
@@ -38,10 +37,7 @@ queue_distribute(const std::vector<model::port_info>& port_info)
     cores_by_id nodes;
     unsigned lcore_id = 0;
     RTE_LCORE_FOREACH_SLAVE(lcore_id) {
-        /* No other cores should be running anything */
-        assert(rte_eal_get_lcore_state(lcore_id) == WAIT);
         if (lcore_id == stack_lcore) continue;
-
         nodes[rte_lcore_to_socket_id(lcore_id)].push_back(lcore_id);
     }
 
