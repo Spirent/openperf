@@ -95,7 +95,7 @@ static int get_port_index(std::string_view name)
 static int process_dpdk_port_ids(const std::map<std::string, std::string> &input,
                                  std::unordered_map<int, std::string> &output) {
     for (auto &entry: input) {
-        // split port ID from "port" part.
+        // split port index from "port" part.
         auto port_idx = get_port_index(entry.first);
         if (port_idx < 0) {
             PRINT_NAME_ERROR(entry.first);
@@ -149,14 +149,15 @@ bool arg_parser::test_mode()
 
 std::vector<std::string> arg_parser::args()
 {
-    std::vector<std::string> to_return;
+    // Add name value in straight away.
+    std::vector<std::string> to_return {m_name};
+
+    // Add name value in.
+    //to_return.push_back(m_name);
 
     // Get the list from the framework.
     auto arg_list = config::file::icp_config_get_param<ICP_OPTION_TYPE_LIST>("modules.packetio.dpdk.options");
     if (!arg_list) { return (to_return); }
-
-    // Add name value in.
-    to_return.push_back(m_name);
 
     // Walk through it and split any args that have a =.
     for (auto &v: *arg_list) {
