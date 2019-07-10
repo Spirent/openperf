@@ -23,11 +23,11 @@ static void __attribute__((noreturn)) _usage(const char *program_name)
              curr->description != NULL;
              curr++) {
             if (curr->short_opt == 0) {
-                fprintf(output, "      --%-22s%s\n",
+                fprintf(output, "      --%-32s%s\n",
                         curr->long_opt, curr->description);
             }
             else {
-                fprintf(output, "  -%c, --%-22s%s\n",
+                fprintf(output, "  -%c, --%-32s%s\n",
                         curr->short_opt, curr->long_opt, curr->description);
             }
         }
@@ -50,7 +50,7 @@ int icp_options_init()
     return (0);
 }
 
-struct icp_options_data * _find_options_data(int opt)
+static struct icp_options_data * _find_options_data(int opt)
 {
     struct icp_options_data *opt_data = NULL;
     SLIST_FOREACH(opt_data, &icp_options_data_head, next) {
@@ -68,6 +68,44 @@ struct icp_options_data * _find_options_data(int opt)
     return (NULL);
 }
 
+static const struct icp_option * _find_opt_by_long(const char * long_op, size_t len)
+{
+    /* No shenanigans, please. */
+    assert(long_op);
+    assert(len > 0);
+
+    struct icp_options_data *opt_data = NULL;
+    SLIST_FOREACH(opt_data, &icp_options_data_head, next)
+    {
+        for (const struct icp_option *curr = opt_data->options;
+             curr->description != NULL;
+             curr++) {
+            if (strncmp(long_op, curr->long_opt, len) == 0) {
+                return (curr);
+            }
+        }
+    }
+    return (NULL);
+}
+
+static const struct icp_option * _find_opt_by_short(int op)
+{
+    struct icp_options_data *opt_data = NULL;
+    SLIST_FOREACH(opt_data, &icp_options_data_head, next)
+    {
+        for (const struct icp_option *curr = opt_data->options;
+             curr->description != NULL;
+             curr++) {
+            if (curr->short_opt == op) {
+                return (curr);
+            } else if (icp_options_hash_long(curr->long_opt) == op) {
+                return (curr);
+            }
+        }
+    }
+    return (NULL);
+}
+
 int _allocate_optstring(char **optstringp)
 {
     /* Figure out necessary string length */
@@ -78,7 +116,7 @@ int _allocate_optstring(char **optstringp)
              curr->description != NULL;
              curr++) {
             if (curr->short_opt) {
-                length += curr->has_arg ? 2 : 1;
+                length += curr->opt_type ? 2 : 1;
             }
         }
     }
@@ -97,7 +135,7 @@ int _allocate_optstring(char **optstringp)
              curr++) {
             if (curr->short_opt) {
                 optstring[idx++] = curr->short_opt;
-                if (curr->has_arg) {
+                if (curr->opt_type) {
                     optstring[idx++] = ':';
                 }
             }
@@ -134,7 +172,7 @@ int _allocate_longopts(struct option **longoptsp)
              curr++) {
             longopts[idx++] = (struct option){
                 curr->long_opt,
-                curr->has_arg,
+                curr->opt_type,
                 NULL,
                 curr->short_opt ? curr->short_opt : icp_options_hash_long(curr->long_opt)
             };
@@ -175,7 +213,9 @@ int icp_options_parse(int argc, char *argv[])
         struct icp_options_data *opt_data = _find_options_data(opt);
         assert(opt_data);
         if (opt_data->callback) {
-            opt_data->callback(opt, optarg);
+            if (opt_data->callback(opt, optarg) != 0) {
+                _usage(argv[0]);
+            }
         }
     }
 
@@ -211,6 +251,34 @@ void icp_options_register(struct icp_options_data *opt_data)
     SLIST_INSERT_HEAD(&icp_options_data_head, opt_data, next);
 }
 
+const char * icp_options_get_long_opt(int op)
+{
+    const struct icp_option * opt = _find_opt_by_short(op);
+    /* All CLI options must have a long-form version. */
+    assert(opt);
+
+    return (opt->long_opt);
+}
+
+enum icp_option_type icp_options_get_opt_type_short(int op)
+{
+    const struct icp_option * opt = _find_opt_by_short(op);
+
+    if (opt) {
+        return (opt->opt_type);
+    }
+
+    return (ICP_OPTION_TYPE_NONE);
+}
+
+enum icp_option_type icp_options_get_opt_type_long(const char * long_opt, size_t len)
+{
+    const struct icp_option * opt = _find_opt_by_long(long_opt, len);
+    assert(opt);
+
+    return (opt->opt_type);
+}
+
 /*
  * Register the help option.
  * Note: we don't register any callbacks because we can handle them directly.
@@ -222,7 +290,7 @@ static struct icp_options_data help_option = {
     .init = NULL,
     .callback = NULL,
     .options = {
-        { "Print this message.", "help", 'h', 0 },
+        { "Print this message.", "help", 'h', ICP_OPTION_TYPE_NONE },
         { 0, 0, 0, 0 },
     }
 };

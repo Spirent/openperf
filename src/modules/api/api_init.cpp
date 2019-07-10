@@ -9,6 +9,8 @@
 #include "pistache/router.h"
 
 #include "core/icp_core.h"
+#include "core/icp_log.h"
+#include "config/icp_config_file.h"
 #include "api/api_config_file_resources.h"
 #include "api/api_route_handler.h"
 
@@ -21,21 +23,14 @@ static int module_version = 1;
 
 using namespace Pistache;
 
-static int handle_options(int opt, const char *opt_arg)
+static int set_service_port(long port)
 {
-    if (opt != 'p' || opt_arg == nullptr) {
-        return (-EINVAL);
-    }
-
-    long p = std::strtol(opt_arg, nullptr, 10);
-
-    /* Check return value */
-    if (p == 0) {
-        return (-EINVAL);
-    } else if (p > 65535) {
-        return (-ERANGE);
+    if (port == 0) {
+        return (EINVAL);
+    } else if (port > 65535) {
+        return (ERANGE);
     } else {
-        service_port = static_cast<in_port_t>(p);
+        service_port = static_cast<in_port_t>(port);
     }
 
     return (0);
@@ -54,6 +49,17 @@ Rest::Route::Result NotFound(const Rest::Request &request __attribute__((unused)
     return Rest::Route::Result::Ok;
 }
 
+int api_configure_self()
+{
+    auto port_num = icp::config::file::icp_config_get_param<ICP_OPTION_TYPE_LONG>("modules.api.port");
+
+    if (port_num) {
+        return (set_service_port(*port_num));
+    }
+
+    return (0);
+}
+
 class service {
 public:
     service() {};
@@ -62,7 +68,7 @@ public:
         // Return 404 for anything we don't explicitly handle
         Rest::Routes::NotFound(m_router, NotFound);
 
-        return (0);
+        return (api_configure_self());
     }
 
     int post_init(void *context) {
@@ -77,6 +83,7 @@ public:
          * shutdown ourselves.
          */
         auto thread = std::thread([this]() { run(service_port); });
+        ICP_LOG(ICP_LOG_DEBUG, "REST API server listening on port %d", service_port);
         thread.detach();
 
         auto ret = config::icp_config_file_process_resources();
@@ -119,11 +126,6 @@ private:
 }
 
 extern "C" {
-
-int api_option_handler(int opt, const char *opt_arg)
-{
-    return (icp::api::handle_options(opt, opt_arg));
-}
 
 int api_service_pre_init(void *context, void *state)
 {
