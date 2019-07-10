@@ -5,39 +5,14 @@
 #include <vector>
 #include <unordered_map>
 
-namespace icp::packetio::dpdk {
+namespace icp::packetio::dpdk::config {
 
-template <typename T>
-class singleton {
-public:
-    static T& instance()
-    {
-        static T instance;
-        return instance;
-    }
+int dpdk_test_portpairs();                          /**< Number of eth ring devs */
+bool dpdk_test_mode();                              /**< test mode enable/disable */
+std::vector<std::string> dpdk_args();               /**< Retrieve a copy of args for use */
+std::unordered_map<int, std::string> dpdk_id_map(); /**< Retrieve a copy of port idx->id map */
 
-    singleton(const singleton&) = delete;
-    singleton& operator= (const singleton) = delete;
-
-protected:
-    singleton() {};
-};
-
-class arg_parser : public singleton<arg_parser>
-{
-public:
-    int init(const char *name);                    /**< Initialize args vector */
-    int test_portpairs();                          /**< Number of eth ring devs */
-    bool test_mode();                              /**< test mode enable/disable */
-    std::vector<std::string> args();               /**< Retrieve a copy of args for use */
-    std::unordered_map<int, std::string> id_map(); /**< Retrieve a copy of port idx->id map */
-
-private:
-    std::string m_name;
-};
-
-
-} /* namespace icp::packetio::dpdk */
+} /* namespace icp::packetio::dpdk::config */
 
 
 #endif /* _ICP_PACKETIO_DPDK_ARG_PARSER_H_ */

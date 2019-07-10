@@ -8,7 +8,11 @@
 
 #include <iostream>
 
-namespace icp::packetio::dpdk {
+namespace icp::packetio::dpdk::config {
+
+using namespace icp::config;
+
+static constexpr std::string_view program_name = "icp_eal";
 
 /* Check if the 'log-level' argument has been added to the arguments vector */
 static bool have_log_level_arg(std::vector<std::string> &args)
@@ -127,30 +131,24 @@ static int process_dpdk_port_ids(const std::map<std::string, std::string> &input
 }
 #undef PRINT_NAME_ERROR
 
-int arg_parser::init(const char *name)
-{
-    m_name = name;
-    return (0);
-}
-
-int arg_parser::test_portpairs()
+int dpdk_test_portpairs()
 {
     auto result = config::file::icp_config_get_param<ICP_OPTION_TYPE_LONG>("modules.packetio.dpdk.test-portpairs");
 
-    return (result.value_or(test_mode() ? 1 : 0));
+    return (result.value_or(dpdk_test_mode() ? 1 : 0));
 }
 
-bool arg_parser::test_mode()
+bool dpdk_test_mode()
 {
     auto result = config::file::icp_config_get_param<ICP_OPTION_TYPE_NONE>("modules.packetio.dpdk.test-mode");
 
     return (result.value_or(false));
 }
 
-std::vector<std::string> arg_parser::args()
+std::vector<std::string> dpdk_args()
 {
     // Add name value in straight away.
-    std::vector<std::string> to_return {m_name};
+    std::vector<std::string> to_return {std::string(program_name)};
 
     // Get the list from the framework.
     auto arg_list = config::file::icp_config_get_param<ICP_OPTION_TYPE_LIST>("modules.packetio.dpdk.options");
@@ -176,14 +174,14 @@ std::vector<std::string> arg_parser::args()
             add_file_prefix_arg(prefix, to_return);
         }
     }
-    if (test_mode() && !have_no_pci_arg(to_return)) {
+    if (dpdk_test_mode() && !have_no_pci_arg(to_return)) {
         add_no_pci_arg(to_return);
     }
 
     return (to_return);
 }
 
-std::unordered_map<int, std::string> arg_parser::id_map()
+std::unordered_map<int, std::string> dpdk_id_map()
 {
     auto src_map = config::file::icp_config_get_param<ICP_OPTION_TYPE_MAP>("modules.packetio.dpdk.port-ids");
 
@@ -198,20 +196,4 @@ std::unordered_map<int, std::string> arg_parser::id_map()
     return (to_return);
 }
 
-}  /* namespace icp::packetio::dpdk */
-
-/**
- * Provide C hooks for icp_options to use.
- */
-extern "C" {
-
-using namespace icp::packetio::dpdk;
-
-int dpdk_arg_parse_init()
-{
-    /* Arguments need to start with the program name */
-    auto& parser = arg_parser::instance();
-    return (parser.init("icp_eal"));
-}
-
-}
+}  /* namespace icp::packetio::dpdk::config */
