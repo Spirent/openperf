@@ -152,9 +152,6 @@ std::vector<std::string> arg_parser::args()
     // Add name value in straight away.
     std::vector<std::string> to_return {m_name};
 
-    // Add name value in.
-    //to_return.push_back(m_name);
-
     // Get the list from the framework.
     auto arg_list = config::file::icp_config_get_param<ICP_OPTION_TYPE_LIST>("modules.packetio.dpdk.options");
     if (!arg_list) { return (to_return); }
