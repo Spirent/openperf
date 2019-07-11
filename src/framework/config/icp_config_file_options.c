@@ -1,11 +1,14 @@
 #include "core/icp_core.h"
 
-extern int config_file_option_handler(int opt, const char *opt_arg);
-
+/*
+ * No need to register a callback here.
+ * The framework explicitly checks for a configuration file argument
+ * and sets the filename variable accordingly.
+ */
 static struct icp_options_data config_file_options = {
     .name = "CONFIG-FILE",
     .init = NULL,
-    .callback = config_file_option_handler,
+    .callback = NULL,
     .options = {
         {"File to use to configure Inception", "config", 'c', ICP_OPTION_TYPE_STRING},
         { 0, 0, 0, 0 },

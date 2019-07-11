@@ -6,6 +6,8 @@
 #include "core/icp_modules.h"
 #include "core/icp_options.h"
 
+#include "config/icp_config_file.h"
+
 void icp_init(void *context, int argc, char *argv[])
 {
     /*
@@ -17,6 +19,15 @@ void icp_init(void *context, int argc, char *argv[])
     icp_log_level_set(log_level == ICP_LOG_NONE ? ICP_LOG_INFO : log_level);
     if (icp_log_init(context, NULL) != 0) {
         icp_exit("Logging initialization failed!");
+    }
+
+    /*
+     * Do we have a configuration file?
+     * Explicitly check for it (and set internal file name) here to avoid
+     * ordering problems with other CLI arguments.
+     */
+    if (icp_config_file_find(argc, argv) != 0) {
+        icp_exit("Failed to load configuration file!");
     }
 
     /* Parse system options */
