@@ -196,17 +196,31 @@ std::optional<YAML::Node> icp_config_get_param(std::string_view path)
     return (get_param_by_path(root_node, path_components.begin(), path_components.end()));
 }
 
-extern "C" {
-int config_file_option_handler(int opt, const char *opt_arg)
-{
-    if (opt != 'c' || opt_arg == nullptr) { return (EINVAL); }
+static char * find_config_file_option(int argc, char * const argv[]) {
+    for (int idx = 0; idx < argc - 1; idx++) {
+        if (strcmp(argv[idx], "--config") == 0
+            || strcmp(argv[idx], "-c") == 0) {
+            return (argv[idx + 1]);
+        }
+    }
 
-    config_file_name = opt_arg;
+    return (NULL);
+}
+
+extern "C" {
+int icp_config_file_find(int argc, char * const argv[])
+{
+    char *file_name = find_config_file_option(argc, argv);
+
+    if (!file_name) { return (0); }
+
+    config_file_name = file_name;
 
     // Make sure the file exists and is readable.
-    if (access(opt_arg, R_OK) == -1) {
+    if (access(file_name, R_OK) == -1) {
         std::cerr << "Error (" << strerror(errno)
-                  << ") while attempting to access config file: " << opt_arg << std::endl;
+                  << ") while attempting to access config file: "
+                  << file_name << std::endl;
         return (errno);
     }
 
@@ -216,7 +230,8 @@ int config_file_option_handler(int opt, const char *opt_arg)
     try {
         root_node = YAML::LoadFile(config_file_name);
     } catch (std::exception &e) {
-        std::cerr << "Error parsing configuration file: " << e.what() << std::endl;
+        std::cerr << "Error parsing configuration file: "
+                  << e.what() << std::endl;
         return (EINVAL);
     }
 
