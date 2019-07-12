@@ -97,7 +97,7 @@ void icp_log_level_set(enum icp_log_level level)
         icp_log_level = level;
 }
 
-static enum icp_log_level parse_log_optarg(const char *arg)
+enum icp_log_level parse_log_optarg(const char *arg)
 {
     /* Check for a number */
     long level = strtol(arg, NULL, 10);
@@ -115,16 +115,15 @@ static enum icp_log_level parse_log_optarg(const char *arg)
     }
 
     /* Normalize optarg */
-    static size_t MAX_LEVEL_LENGTH = 8;
-    char normal_arg[MAX_LEVEL_LENGTH];
-    for (size_t i = 0; i < icp_min(strlen(arg), MAX_LEVEL_LENGTH); i++) {
+    char normal_arg[ICP_LOG_MAX_LEVEL_LENGTH];
+    for (size_t i = 0; i < icp_min(strlen(arg), ICP_LOG_MAX_LEVEL_LENGTH); i++) {
         normal_arg[i] = isupper(arg[i]) ? tolower(arg[i]) : arg[i];
     }
 
     /* Look for known strings */
     for (enum icp_log_level ll = ICP_LOG_NONE; ll < ICP_LOG_MAX; ll++) {
         const char *ref = log_level_string(ll);
-        if (strncmp(normal_arg, ref, icp_min(strlen(ref), MAX_LEVEL_LENGTH)) == 0) {
+        if (strncmp(normal_arg, ref, icp_min(strlen(ref), ICP_LOG_MAX_LEVEL_LENGTH)) == 0) {
             return (ll);
         }
     }
@@ -135,7 +134,7 @@ static enum icp_log_level parse_log_optarg(const char *arg)
 enum icp_log_level icp_log_level_find(int argc, char * const argv[])
 {
     for (int idx = 0; idx < argc - 1; idx++) {
-        if (strcmp(argv[idx], "--log-level") == 0
+        if (strcmp(argv[idx], "--core.log.level") == 0
             || strcmp(argv[idx], "-l") == 0) {
             return parse_log_optarg(argv[idx + 1]);
         }
@@ -537,7 +536,7 @@ static struct icp_options_data log_level_option = {
     .init = NULL,
     .callback = NULL,
     .options = {
-        { "Specify the log level; takes a number (1-6) or level", "log-level", 'l', ICP_OPTION_TYPE_LONG},
+        { "Specify the log level; takes a number (1-6) or level", "core.log.level", 'l', ICP_OPTION_TYPE_STRING},
         { 0, 0, 0, 0 },
     }
 };
