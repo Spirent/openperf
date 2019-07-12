@@ -49,7 +49,7 @@ TEST_CASE("check logging command line parsing function", "[logging]")
     SECTION("check long cli argument by number") {
         std::vector<char *> args = {
             const_cast<char *>("test_program"),
-            const_cast<char *>("--log-level"),
+            const_cast<char *>("--core.log.level"),
             const_cast<char *>("2"),
             nullptr
         };
@@ -59,7 +59,7 @@ TEST_CASE("check logging command line parsing function", "[logging]")
     SECTION("check long cli argument by name") {
         std::vector<char *> args = {
             const_cast<char *>("test_program"),
-            const_cast<char *>("--log-level"),
+            const_cast<char *>("--core.log.level"),
             const_cast<char *>("warning"),
             nullptr
         };

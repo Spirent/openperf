@@ -196,7 +196,8 @@ std::optional<YAML::Node> icp_config_get_param(std::string_view path)
     return (get_param_by_path(root_node, path_components.begin(), path_components.end()));
 }
 
-static char * find_config_file_option(int argc, char * const argv[]) {
+static char * find_config_file_option(int argc, char * const argv[])
+{
     for (int idx = 0; idx < argc - 1; idx++) {
         if (strcmp(argv[idx], "--config") == 0
             || strcmp(argv[idx], "-c") == 0) {
@@ -235,6 +236,10 @@ int icp_config_file_find(int argc, char * const argv[])
         return (EINVAL);
     }
 
+    // Putting this at the top can lead to the message being lost on its
+    // way to the logging thread.
+    ICP_LOG(ICP_LOG_DEBUG, "Reading from configuration file %s", file_name);
+
     // Validate there are the two required top-level nodes "core" and "resources".
     // Also check for the optional "modules" resource, and that no other top-level nodes exist.
     if ((root_node.size() == 2) && root_node["core"] && root_node["resources"]) {
@@ -266,6 +271,22 @@ int framework_cli_option_handler(int opt, const char *opt_arg)
     cli_options[opt] = std::string(opt_arg ? opt_arg : "");
 
     return (0);
+}
+
+char * icp_config_file_get_value_str(const char *param, char *value, int len)
+{
+    assert(param);
+    assert(value);
+    assert(len);
+
+    auto val = icp_config_get_param<std::string>(param);
+
+    if (!val) { return (NULL); }
+
+    strncpy(value, (*val).c_str(),
+            std::min(len, static_cast<int>((*val).length() - 1)));
+
+    return (value);
 }
 
 }  // extern "C"
