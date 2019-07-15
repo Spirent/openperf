@@ -19,9 +19,9 @@ json submit_request(void *socket, json& request)
     switch (type) {
     case request_type::GET_INTERFACE:
     case request_type::DELETE_INTERFACE:
-        ICP_LOG(ICP_LOG_TRACE, "Sending %s request for interface %d\n",
+        ICP_LOG(ICP_LOG_TRACE, "Sending %s request for interface %s\n",
                 to_string(type).c_str(),
-                request["id"].get<int>());
+                request["id"].get<std::string>().c_str());
         break;
     default:
         ICP_LOG(ICP_LOG_TRACE, "Sending %s request\n", to_string(type).c_str());

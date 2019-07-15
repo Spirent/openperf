@@ -12,6 +12,7 @@
 
 #include "packetio/generic_driver.h"
 #include "packetio/generic_interface.h"
+#include "packetio/generic_workers.h"
 #include "packetio/pga/generic_sink.h"
 #include "packetio/pga/generic_source.h"
 
@@ -195,7 +196,8 @@ private:
     std::shared_ptr<stack_concept> m_self;
 };
 
-std::unique_ptr<generic_stack> make(driver::generic_driver& driver);
+std::unique_ptr<generic_stack> make(driver::generic_driver& driver,
+                                    workers::generic_workers& workers);
 
 std::shared_ptr<swagger::v1::model::Stack> make_swagger_stack(const generic_stack& stack);
 

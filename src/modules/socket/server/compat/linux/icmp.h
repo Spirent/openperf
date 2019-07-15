@@ -1,8 +1,6 @@
 #ifndef _ICP_SOCKET_SERVER_COMPAT_LINUX_ICMP_H_
 #define _ICP_SOCKET_SERVER_COMPAT_LINUX_ICMP_H_
 
-#include <stdint.h>
-
 #define LINUX_ICMP_ECHOREPLY     0
 #define LINUX_ICMP_FILTER        1
 #define LINUX_ICMP_DEST_UNREACH  3

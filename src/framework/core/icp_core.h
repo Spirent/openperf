@@ -10,6 +10,11 @@
  */
 
 #ifdef __cplusplus
+/*
+ * XXX: Fix a header ordering issue between C++ <atomic> and c11's <stdatomic.h>
+ * Basically, the C++ version always needs to be first to prevent compiler errors
+ */
+#include <atomic>
 #include "core/icp_event_loop.hpp"
 #include "core/icp_init_factory.hpp"
 #include "core/icp_list.hpp"
