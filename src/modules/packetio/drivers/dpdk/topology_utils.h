@@ -1,6 +1,7 @@
 #ifndef _ICP_PACKETIO_DPDK_TOPOLOGY_UTILS_H_
 #define _ICP_PACKETIO_DPDK_TOPOLOGY_UTILS_H_
 
+#include <algorithm>
 #include <unordered_map>
 
 #include "packetio/drivers/dpdk/queue_utils.h"

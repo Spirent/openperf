@@ -8,24 +8,30 @@
 
 #include "tl/expected.hpp"
 
+#include "packetio/generic_event_loop.h"
 #include "socket/server/allocator.h"
 #include "socket/server/generic_socket.h"
 
 struct icp_event_data;
 
-namespace icp {
-
-namespace core {
+namespace icp::core {
 class event_loop;
 }
 
-namespace socket {
-namespace server {
-
-class socket;
+namespace icp::socket::server {
 
 class api_handler {
-    icp::core::event_loop& m_loop;  /* event loop */
+public:
+    using event_loop = icp::packetio::event_loop::generic_event_loop;
+
+    api_handler(event_loop& loop, const void* shm_base,
+                allocator& allocator, pid_t pid);
+    ~api_handler();
+
+    int handle_requests(int fd);
+
+private:
+    event_loop& m_loop;             /* event loop */
     const void* m_shm_base;         /* shared memory base address */
     allocator& m_allocator;         /* io_channel mempool */
     pid_t m_pid;                    /* client pid */
@@ -51,17 +57,8 @@ class api_handler {
         auto& socket = result->second;
         return (socket.handle_request(request));
     }
-
-public:
-    api_handler(icp::core::event_loop& loop, const void* shm_base,
-                allocator& allocator, pid_t pid);
-    ~api_handler();
-
-    int handle_requests(const struct icp_event_data* data);
 };
 
-}
-}
 }
 
 #endif /* _ICP_SOCKET_SERVER_API_HANDLER_H_ */

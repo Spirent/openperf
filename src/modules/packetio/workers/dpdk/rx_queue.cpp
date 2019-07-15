@@ -1,10 +1,8 @@
 #include "packetio/drivers/dpdk/dpdk.h"
-#include "packetio/drivers/dpdk/rx_queue.h"
+#include "packetio/workers/dpdk/rx_queue.h"
 #include "core/icp_log.h"
 
-namespace icp {
-namespace packetio {
-namespace dpdk {
+namespace icp::packetio::dpdk {
 
 rx_queue::rx_queue(uint16_t port_id, uint16_t queue_id)
     : m_port(port_id)
@@ -14,11 +12,6 @@ rx_queue::rx_queue(uint16_t port_id, uint16_t queue_id)
 uint16_t rx_queue::port_id() const { return (m_port); }
 
 uint16_t rx_queue::queue_id() const { return (m_queue); }
-
-uint32_t rx_queue::poll_id() const
-{
-    return ((static_cast<uint32_t>(port_id()) << 16) | queue_id());
-}
 
 bool rx_queue::add(int poll_fd, void* data)
 {
@@ -62,6 +55,4 @@ bool rx_queue::disable()
     return (!error);
 }
 
-}
-}
 }

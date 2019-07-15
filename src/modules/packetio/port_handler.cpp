@@ -20,9 +20,9 @@ json submit_request(void *socket, json& request)
     case request_type::GET_PORT:
     case request_type::UPDATE_PORT:
     case request_type::DELETE_PORT:
-        ICP_LOG(ICP_LOG_TRACE, "Sending %s request for port %d\n",
+        ICP_LOG(ICP_LOG_TRACE, "Sending %s request for port %s\n",
                 to_string(type).c_str(),
-                request["id"].get<int>());
+                request["id"].get<std::string>().c_str());
         break;
     default:
         ICP_LOG(ICP_LOG_TRACE, "Sending %s request\n", to_string(type).c_str());

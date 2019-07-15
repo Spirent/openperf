@@ -193,9 +193,9 @@ static int _handle_rpc_request(const icp_event_data *data, void *arg)
         switch (type) {
         case request_type::GET_INTERFACE:
         case request_type::DELETE_INTERFACE:
-            ICP_LOG(ICP_LOG_TRACE, "Received %s request for interface %d\n",
+            ICP_LOG(ICP_LOG_TRACE, "Received %s request for interface %s\n",
                     to_string(type).c_str(),
-                    request["id"].get<int>());
+                    request["id"].get<std::string>().c_str());
             break;
         default:
             ICP_LOG(ICP_LOG_TRACE, "Received %s request\n", to_string(type).c_str());

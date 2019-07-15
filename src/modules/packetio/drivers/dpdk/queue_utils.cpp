@@ -8,10 +8,7 @@
 #include "packetio/drivers/dpdk/model/port_info.h"
 #include "packetio/drivers/dpdk/queue_utils.h"
 
-namespace icp {
-namespace packetio {
-namespace dpdk {
-namespace queue {
+namespace icp::packetio::dpdk::queue {
 
 struct queue_info {
     uint16_t count;        /**< The number of queues in use */
@@ -289,7 +286,4 @@ std::vector<descriptor> distribute_queues(const std::vector<model::port_info>& p
                                            static_cast<uint16_t>(1))));
 }
 
-}
-}
-}
 }

@@ -15,7 +15,7 @@ all: $(ICP_TARGET)
 SOURCES := main.c
 OBJECTS := $(call icp_generate_objects,$(SOURCES),$(BUILD_DIR))
 
-BUILD_DEPS := api config_file framework packetio
+BUILD_DEPS := api config_file framework packetio socket_server
 ICP_PACKETIO_DRIVER ?= dpdk
 
 # Pull in dependencies
