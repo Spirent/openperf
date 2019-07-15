@@ -236,8 +236,8 @@ int icp_config_file_find(int argc, char * const argv[])
         return (EINVAL);
     }
 
-    // Putting this at the top can lead to the message being lost on its
-    // way to the logging thread.
+    // XXX: Putting this at the top can lead to the message being lost on its
+    // way to the logging thread. Definitely a workaround, but not a critical message either.
     ICP_LOG(ICP_LOG_DEBUG, "Reading from configuration file %s", file_name);
 
     // Validate there are the two required top-level nodes "core" and "resources".
