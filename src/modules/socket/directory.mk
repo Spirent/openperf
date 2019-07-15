@@ -10,10 +10,12 @@ SOCKSRV_SOURCES += \
 	server/api_server.cpp \
 	server/api_server_options.c \
 	server/dgram_channel.cpp \
+	server/icmp_socket.cpp \
 	server/init.cpp \
 	server/lwip_tcp_event.cpp \
 	server/lwip_utils.cpp \
 	server/pbuf_queue.cpp \
+	server/raw_socket.cpp \
 	server/stream_channel.cpp \
 	server/socket_utils.cpp \
 	server/tcp_socket.cpp \
