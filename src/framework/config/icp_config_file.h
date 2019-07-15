@@ -12,6 +12,49 @@
 
 #include "core/icp_options.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/*
+ * Find configuration file CLI argument and, if found, set in-memory
+ * configuration file name value.
+ * Function will load, parse, and run some sanity checks on the file.
+ *
+ * @param[in] argc
+ *   number of cli arguments
+ * @param[in] argv
+ *   array of cli strings
+ *
+ * @return
+ *  If no errors occur return 0, non-zero otherwise.
+ *
+ * @note users are allowed to not specify a configuration file.
+ *   In this case the function returns 0.
+ */
+int icp_config_file_find(int argc, char * const argv[]);
+
+/*
+ * Get the value of a configuration parameter as a C-style string.
+ * This is intended as a C wrapper.
+ * C++ callers should use icp_config_get_param() instead.
+ *
+ * @param[in] param
+ *   path to configuration parameter.
+ * @param[in] value
+ *   pointer to destination char[].
+ * @param[in] len
+ *   maximum number of characters to copy.
+ *
+ * @return
+ *   pointer to value if a value is found, else a pointer to NULL.
+ */
+char * icp_config_file_get_value_str(const char * param, char * value, int len);
+
+#ifdef __cplusplus
+}
+#endif
+
 extern int framework_cli_option_handler(int opt, const char *opt_arg);
 
 /*

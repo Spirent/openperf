@@ -1,4 +1,6 @@
 core:
+  log:
+    level: debug
 
 modules:
   api:

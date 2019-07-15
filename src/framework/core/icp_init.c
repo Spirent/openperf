@@ -6,6 +6,8 @@
 #include "core/icp_modules.h"
 #include "core/icp_options.h"
 
+#include "config/icp_config_file.h"
+
 void icp_init(void *context, int argc, char *argv[])
 {
     /*
@@ -17,6 +19,29 @@ void icp_init(void *context, int argc, char *argv[])
     icp_log_level_set(log_level == ICP_LOG_NONE ? ICP_LOG_INFO : log_level);
     if (icp_log_init(context, NULL) != 0) {
         icp_exit("Logging initialization failed!");
+    }
+
+    /*
+     * Do we have a configuration file?
+     * Explicitly check for it (and set internal file name) here to avoid
+     * ordering problems with other CLI arguments.
+     */
+    if (icp_config_file_find(argc, argv) != 0) {
+        icp_exit("Failed to load configuration file!");
+    }
+
+    /*
+     * Update log level if it was specified in the configuration file and
+     * not on the command line.
+     */
+    if (log_level == ICP_LOG_NONE) {
+        /* Check if configuration file has a log level option. */
+        char arg_string[ICP_LOG_MAX_LEVEL_LENGTH];
+
+        if (icp_config_file_get_value_str("core.log.level", arg_string, ICP_LOG_MAX_LEVEL_LENGTH)) {
+            enum icp_log_level cfg_log_level = parse_log_optarg(arg_string);
+            icp_log_level_set(cfg_log_level == ICP_LOG_NONE ? ICP_LOG_INFO : cfg_log_level);
+        }
     }
 
     /* Parse system options */
