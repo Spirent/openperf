@@ -196,17 +196,32 @@ std::optional<YAML::Node> icp_config_get_param(std::string_view path)
     return (get_param_by_path(root_node, path_components.begin(), path_components.end()));
 }
 
-extern "C" {
-int config_file_option_handler(int opt, const char *opt_arg)
+static char * find_config_file_option(int argc, char * const argv[])
 {
-    if (opt != 'c' || opt_arg == nullptr) { return (EINVAL); }
+    for (int idx = 0; idx < argc - 1; idx++) {
+        if (strcmp(argv[idx], "--config") == 0
+            || strcmp(argv[idx], "-c") == 0) {
+            return (argv[idx + 1]);
+        }
+    }
 
-    config_file_name = opt_arg;
+    return (NULL);
+}
+
+extern "C" {
+int icp_config_file_find(int argc, char * const argv[])
+{
+    char *file_name = find_config_file_option(argc, argv);
+
+    if (!file_name) { return (0); }
+
+    config_file_name = file_name;
 
     // Make sure the file exists and is readable.
-    if (access(opt_arg, R_OK) == -1) {
+    if (access(file_name, R_OK) == -1) {
         std::cerr << "Error (" << strerror(errno)
-                  << ") while attempting to access config file: " << opt_arg << std::endl;
+                  << ") while attempting to access config file: "
+                  << file_name << std::endl;
         return (errno);
     }
 
@@ -216,9 +231,14 @@ int config_file_option_handler(int opt, const char *opt_arg)
     try {
         root_node = YAML::LoadFile(config_file_name);
     } catch (std::exception &e) {
-        std::cerr << "Error parsing configuration file: " << e.what() << std::endl;
+        std::cerr << "Error parsing configuration file: "
+                  << e.what() << std::endl;
         return (EINVAL);
     }
+
+    // XXX: Putting this at the top can lead to the message being lost on its
+    // way to the logging thread. Definitely a workaround, but not a critical message either.
+    ICP_LOG(ICP_LOG_DEBUG, "Reading from configuration file %s", file_name);
 
     // Validate there are the two required top-level nodes "core" and "resources".
     // Also check for the optional "modules" resource, and that no other top-level nodes exist.
@@ -251,6 +271,22 @@ int framework_cli_option_handler(int opt, const char *opt_arg)
     cli_options[opt] = std::string(opt_arg ? opt_arg : "");
 
     return (0);
+}
+
+char * icp_config_file_get_value_str(const char *param, char *value, int len)
+{
+    assert(param);
+    assert(value);
+    assert(len);
+
+    auto val = icp_config_get_param<std::string>(param);
+
+    if (!val) { return (NULL); }
+
+    strncpy(value, (*val).c_str(),
+            std::min(len, static_cast<int>((*val).length() - 1)));
+
+    return (value);
 }
 
 }  // extern "C"

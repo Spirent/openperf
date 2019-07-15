@@ -51,6 +51,22 @@ void icp_log_level_set(enum icp_log_level level);
 enum icp_log_level icp_log_level_find(int argc, char * const argv[]);
 
 /**
+ * Maximum length (in chars) of an ICP log level value.
+ */
+static const size_t ICP_LOG_MAX_LEVEL_LENGTH = 8;
+
+/**
+ * Parse a log level argument to the associated enum value.
+ *
+ * @param[in] arg
+ *   Log level argument to parse
+ *
+ * @return
+ *   log level found in arg, ICP_LOG_NONE otherwise
+ */
+enum icp_log_level parse_log_optarg(const char *arg);
+
+/**
  * Get the full function name from the full function signature string
  *
  * @param[in] signature
