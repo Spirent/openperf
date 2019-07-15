@@ -2,14 +2,17 @@
 #include <regex>
 
 #include "core/icp_core.h"
+#include "config/icp_config_file.h"
 #include "packetio/drivers/dpdk/arg_parser.h"
 #include "socket/server/api_server_options.h"
 
 #include <iostream>
 
-namespace icp {
-namespace packetio {
-namespace dpdk {
+namespace icp::packetio::dpdk::config {
+
+using namespace icp::config;
+
+static constexpr std::string_view program_name = "icp_eal";
 
 /* Check if the 'log-level' argument has been added to the arguments vector */
 static bool have_log_level_arg(std::vector<std::string> &args)
@@ -70,14 +73,19 @@ static void add_no_pci_arg(std::vector<std::string>& args)
     args.push_back("--no-pci");
 }
 
-static constexpr std::string_view port_index_id_regex = "(port)([0-9]+)=([a-z0-9-]+)";
-static constexpr size_t port_index_match = 2;
-static constexpr size_t port_id_match = 3;
-// Input "port0=port_zero" is parsed into the following submatches:
-// match 0: "port0=port_zero"
-// match 1: "port"
-// match 2: "0"
-// match 3: "port_zero"
+// Split portX and return just the X part.
+// Return -1 if no valid X part is found.
+static int get_port_index(std::string_view name)
+{
+    auto index_offset = name.find_first_not_of("port");
+    if (index_offset == std::string_view::npos) { return (-1); }
+
+    char *last_char;
+    auto to_return = strtol(name.data() + index_offset, &last_char, 10);
+    if (*last_char == '\0') { return (to_return); }
+
+    return (-1);
+}
 
 #define PRINT_NAME_ERROR(id_)                          \
     std::cerr << std::string(id_)                      \
@@ -88,116 +96,73 @@ static constexpr size_t port_id_match = 3;
     + " lower-case letters, numbers, and hyphens."     \
     << std::endl
 
-static int parse_dpdk_port_ids(std::string_view input, std::unordered_map<int, std::string>& port_index_id) {
-    // Pick out all the portX=name pairs.
-    std::string_view delimiters(" ,");
-    size_t beg = 0, pos = 0;
-    auto data_pair_regex = std::regex(port_index_id_regex.data(), std::regex::extended);
-    while ((beg = input.find_first_not_of(delimiters, pos)) != std::string::npos) {
-        pos = input.find_first_of(delimiters, beg + 1);
-
-        std::string_view index_id_pair(input.substr(beg, pos - beg));
-
-        std::cmatch index_id_pieces;
-        if (std::regex_match(index_id_pair.begin(), index_id_pair.end(),
-                             index_id_pieces, data_pair_regex)) {
-            // regex_match returns the whole match as item 0, and the
-            // sub matches as the remaining items.
-            if (index_id_pieces.size() != 4) {
-                PRINT_NAME_ERROR(index_id_pair);
-            }
-
-            int port_index = std::stoi(index_id_pieces.str(port_index_match));
-            std::string port_id = index_id_pieces.str(port_id_match);
-
-            if (port_index_id.find(port_index) != port_index_id.end()) {
-                std::cout << "Error: detected a duplicate port index: "
-                          << port_index << std::endl;
-                return (EINVAL);
-            }
-            auto it =
-                std::find_if(port_index_id.begin(), port_index_id.end(),
-                             [&port_id](const std::pair<int, std::string> &val) {
-                                 return val.second == port_id;
-                             });
-            if (it != port_index_id.end()) {
-                std::cout << "Error: detected a duplicate port id: "
-                          << port_id << std::endl;
-                return (EINVAL);
-            }
-
-            port_index_id[port_index] = port_id;
-        } else {
-            PRINT_NAME_ERROR(index_id_pair);
+static int process_dpdk_port_ids(const std::map<std::string, std::string> &input,
+                                 std::unordered_map<int, std::string> &output) {
+    for (auto &entry: input) {
+        // split port index from "port" part.
+        auto port_idx = get_port_index(entry.first);
+        if (port_idx < 0) {
+            PRINT_NAME_ERROR(entry.first);
             return (EINVAL);
         }
+
+        // check for duplicate port index.
+        if (output.find(port_idx) != output.end()) {
+            std::cerr << "Error: detected a duplicate port index: "
+                      << port_idx << std::endl;
+            return (EINVAL);
+        }
+
+        // check for duplicate port ID.
+        auto port_id = entry.second;
+        auto it      = std::find_if(
+          output.begin(), output.end(),
+          [&port_id](const std::pair<int, std::string> &val) { return val.second == port_id; });
+        if (it != output.end()) {
+            std::cerr << "Error: detected a duplicate port id: "
+                      << port_id << std::endl;
+            return (EINVAL);
+        }
+
+        output[port_idx] = port_id;
     }
 
     return (0);
 }
 #undef PRINT_NAME_ERROR
 
-int arg_parser::init(const char *name)
+int dpdk_test_portpairs()
 {
-    _args.clear();
-    _args.push_back(std::string(name));
-    m_test_mode      = false;
-    m_test_portpairs = 0;
-    return (0);
+    auto result = config::file::icp_config_get_param<ICP_OPTION_TYPE_LONG>("modules.packetio.dpdk.test-portpairs");
+
+    return (result.value_or(dpdk_test_mode() ? 1 : 0));
 }
 
-int arg_parser::parse(int opt, const char *opt_arg)
+bool dpdk_test_mode()
 {
-    if (icp_options_hash_long("dpdk-test-mode") == opt) {
-        m_test_mode = true;
-        m_test_portpairs = 1;
-        return (0);
-    }
-    if (icp_options_hash_long("dpdk-test-portpairs") == opt) {
-        if (opt_arg != nullptr) {
-            m_test_portpairs = std::strtol(opt_arg, nullptr, 10);
-            return (0);
+    auto result = config::file::icp_config_get_param<ICP_OPTION_TYPE_NONE>("modules.packetio.dpdk.test-mode");
+
+    return (result.value_or(false));
+}
+
+std::vector<std::string> dpdk_args()
+{
+    // Add name value in straight away.
+    std::vector<std::string> to_return {std::string(program_name)};
+
+    // Get the list from the framework.
+    auto arg_list = config::file::icp_config_get_param<ICP_OPTION_TYPE_LIST>("modules.packetio.dpdk.options");
+    if (!arg_list) { return (to_return); }
+
+    // Walk through it and split any args that have a =.
+    for (auto &v: *arg_list) {
+        if (auto pos = v.find_first_of("="); pos != v.npos) {
+            to_return.push_back(v.substr(0, pos));
+            to_return.push_back(v.substr(pos+1, v.size()));
+        } else {
+            to_return.push_back(v);
         }
-        return (EINVAL);
     }
-    if (icp_options_hash_long("dpdk-port-ids") == opt) {
-        if (opt_arg != nullptr) {
-            return parse_dpdk_port_ids(opt_arg, m_port_index_id);
-        }
-
-        return (EINVAL);
-    }
-
-    if (opt != 'd' || opt_arg == nullptr) {
-        return (EINVAL);
-    }
-
-    /* Assume optarg is a comma seperated list of DPDK/EAL options */
-    std::string input(opt_arg);
-    std::string delimiters(" ,=");
-    size_t beg = 0, pos = 0;
-    while ((beg = input.find_first_not_of(delimiters, pos)) != std::string::npos) {
-        pos = input.find_first_of(delimiters, beg + 1);
-        _args.emplace_back(input.substr(beg, pos-beg));
-    }
-
-    return (0);
-}
-
-int arg_parser::test_portpairs()
-{
-    return (m_test_portpairs);
-}
-
-bool arg_parser::test_mode()
-{
-    return (m_test_mode);
-}
-
-std::vector<std::string> arg_parser::args()
-{
-    std::vector<std::string> to_return;
-    std::copy(begin(_args), end(_args), std::back_inserter(to_return));
 
     /* Append a log level option if needed */
     if (!have_log_level_arg(to_return)) {
@@ -209,40 +174,26 @@ std::vector<std::string> arg_parser::args()
             add_file_prefix_arg(prefix, to_return);
         }
     }
-    if (m_test_mode && !have_no_pci_arg(to_return)) {
+    if (dpdk_test_mode() && !have_no_pci_arg(to_return)) {
         add_no_pci_arg(to_return);
     }
 
     return (to_return);
 }
 
-std::unordered_map<int, std::string> arg_parser::id_map()
+std::unordered_map<int, std::string> dpdk_id_map()
 {
-    return (m_port_index_id);
+    auto src_map = config::file::icp_config_get_param<ICP_OPTION_TYPE_MAP>("modules.packetio.dpdk.port-ids");
+
+    std::unordered_map<int, std::string> to_return;
+
+    if (!src_map) { return (to_return); }
+
+    if (process_dpdk_port_ids(*src_map, to_return) != 0) {
+        throw std::runtime_error("Error mapping DPDK Port Indexes to Port IDs.");
+    }
+
+    return (to_return);
 }
 
-}
-}
-}
-
-/**
- * Provide C hooks for icp_options to use.
- */
-extern "C" {
-
-using namespace icp::packetio::dpdk;
-
-int dpdk_arg_parse_init()
-{
-    /* Arguments need to start with the program name */
-    auto& parser = arg_parser::instance();
-    return (parser.init("icp_eal"));
-}
-
-int dpdk_arg_parse_handler(int opt, const char *opt_arg)
-{
-    auto& parser = arg_parser::instance();
-    return (parser.parse(opt, opt_arg));
-}
-
-}
+}  /* namespace icp::packetio::dpdk::config */
