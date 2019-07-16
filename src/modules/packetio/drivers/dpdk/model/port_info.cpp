@@ -2,6 +2,7 @@
 #include <limits>
 
 #include "core/icp_core.h"
+#include "config/icp_config_file.h"
 #include "packetio/drivers/dpdk/dpdk.h"
 #include "packetio/drivers/dpdk/model/port_info.h"
 
@@ -178,10 +179,13 @@ bool port_info::rxq_interrupt() const
 {
     /*
      * There seems to be no programatic way to determine whether a device supports
-     * rx queue interrupts or not, so just enable them on everything, and let
-     * runtime errors modify our behavior.
+     * rx queue interrupts or not, so we attempt to enable them on everything, unless
+     * the user says otherwise.  Run-time errors will disable them.
      */
-    return (true);
+    static auto result = icp::config::file::icp_config_get_param<ICP_OPTION_TYPE_NONE>(
+        "modules.packetio.dpdk.no-rx-interrupts");
+    /* XXX: A negative times a negative equals a positive. Say it! */
+    return (!result.value_or(false));
 }
 
 }
