@@ -46,6 +46,7 @@
                                      (concat root "deps/dpdk/lib/librte_timer")
                                      (concat root "deps/dpdk/lib/librte_vhost")
                                      (concat root "deps/expected")
+                                     (concat root "deps/immer")
                                      (concat root "deps/json/single_include")
                                      (concat root "deps/json/single_include/nlohmann")
                                      (concat root "deps/lwip/src/include")
