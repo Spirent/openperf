@@ -8,6 +8,8 @@
 
 #include "lwip/netif.h"
 #include "packetio/vif_map.h"
+#include "packetio/drivers/dpdk/dpdk.h"
+#include "packetio/recycle.h"
 
 namespace icp::packetio::dpdk {
 class callback;
@@ -18,6 +20,7 @@ class zmq_socket;
 namespace worker {
 
 using fib = vif_map<netif>;
+using recycler = packetio::recycle::depot<RTE_MAX_LCORE>;
 
 /**
  * The types of things the worker knows how to handle.
@@ -81,6 +84,7 @@ private:
 struct main_args {
     void* context;
     std::string_view endpoint;
+    recycler* recycler;
     const fib* fib;
 };
 

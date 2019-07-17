@@ -5,18 +5,24 @@
 #include <unordered_map>
 
 #include "core/icp_uuid.h"
+#include "packetio/drivers/dpdk/dpdk.h"
 #include "packetio/generic_driver.h"
 #include "packetio/generic_event_loop.h"
 #include "packetio/generic_workers.h"
 #include "packetio/workers/dpdk/callback.h"
 #include "packetio/workers/dpdk/worker_api.h"
 
+namespace icp::core {
+class event_loop;
+}
+
 namespace icp::packetio::dpdk {
 
 class worker_controller
 {
 public:
-    worker_controller(void* context, driver::generic_driver& driver);
+    worker_controller(void* context, icp::core::event_loop& loop,
+                      driver::generic_driver& driver);
     ~worker_controller();
 
     /* controller is movable */
@@ -44,9 +50,10 @@ public:
 
 private:
     void* m_context;
-    std::unique_ptr<worker::client> m_workers;
     driver::generic_driver& m_driver;
+    std::unique_ptr<worker::client> m_workers;
     std::unique_ptr<worker::fib> m_fib;
+    std::unique_ptr<worker::recycler> m_recycler;
     task_map m_tasks;
 };
 

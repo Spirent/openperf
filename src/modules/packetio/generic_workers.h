@@ -11,6 +11,10 @@
 #include "packetio/generic_driver.h"
 #include "packetio/generic_event_loop.h"
 
+namespace icp::core {
+class event_loop;
+}
+
 namespace icp::packetio::workers {
 
 using transmit_function = uint16_t (*)(int id, uint32_t hash, void* items[], uint16_t nb_items);
@@ -122,7 +126,7 @@ private:
     std::shared_ptr<workers_concept> m_self;
 };
 
-std::unique_ptr<generic_workers> make(void*, driver::generic_driver&);
+std::unique_ptr<generic_workers> make(void*, icp::core::event_loop&, driver::generic_driver&);
 
 }
 

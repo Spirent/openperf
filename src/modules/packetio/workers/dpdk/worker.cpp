@@ -305,7 +305,7 @@ static void disable_event_interrupt(const task_ptr& task)
     std::visit(disable_visitor, task);
 }
 
-static void run_pollable(void* control, const fib* fib,
+static void run_pollable(void* control, recycler* recycler, const fib* fib,
                          const std::vector<task_ptr>& queues,
                          event_loop_adapter& loop_adapter,
                          const std::vector<task_ptr>& callbacks)
@@ -340,27 +340,31 @@ static void run_pollable(void* control, const fib* fib,
     }
 
     while (!messages) {
-        for (auto& event : poller.poll()) {
-            std::visit(overloaded_visitor(
-                           [&](callback *cb) {
-                               cb->run_callback(loop);
-                           },
-                           [&](rx_queue* rxq) {
-                               while (rx_burst(fib, rxq) == pkt_burst_size)
-                                   ;
-                               do {
-                                   rxq->enable();
-                               } while (rx_burst(fib, rxq));
-                           },
-                           [](tx_queue* txq) {
-                               while (tx_burst(txq) == pkt_burst_size)
-                                   ;
-                               txq->enable();
-                           },
-                           [](zmq_socket*) {
-                               /* noop */
-                           }),
-                       event);
+        auto& events = poller.poll();
+        {
+            auto guard = packetio::recycle::guard(*recycler, rte_lcore_id());
+            for (auto& event : events) {
+                std::visit(overloaded_visitor(
+                               [&](callback *cb) {
+                                   cb->run_callback(loop);
+                               },
+                               [&](rx_queue* rxq) {
+                                   while (rx_burst(fib, rxq) == pkt_burst_size)
+                                       ;
+                                   do {
+                                       rxq->enable();
+                                   } while (rx_burst(fib, rxq));
+                               },
+                               [](tx_queue* txq) {
+                                   while (tx_burst(txq) == pkt_burst_size)
+                                       ;
+                                   txq->enable();
+                               },
+                               [](zmq_socket*) {
+                                   /* noop */
+                               }),
+                           event);
+            }
         }
         loop_adapter.update_poller(poller);
     }
@@ -377,7 +381,7 @@ static void run_pollable(void* control, const fib* fib,
     poller.del(&ctrl_sock);
 }
 
-static void run_spinning(void* control, const fib* fib,
+static void run_spinning(void* control, recycler* recycler, const fib* fib,
                          const std::vector<task_ptr>& queues,
                          event_loop_adapter& loop_adapter,
                          const std::vector<task_ptr>& callbacks)
@@ -394,6 +398,8 @@ static void run_spinning(void* control, const fib* fib,
     }
 
     while (!messages) {
+        recycler->reader_checkpoint(rte_lcore_id());
+
         /* Service queues as fast as possible if any of them have packets. */
         uint16_t pkts;
         do {
@@ -417,7 +423,7 @@ static void run_spinning(void* control, const fib* fib,
     poller.del(&ctrl_sock);
 }
 
-static void run(void* control, const fib* fib,
+static void run(void* control, recycler* recycler, const fib* fib,
                 const std::vector<task_ptr>& queues,
                 event_loop_adapter& loop_adapter,
                 const std::vector<task_ptr>& callbacks)
@@ -430,9 +436,9 @@ static void run(void* control, const fib* fib,
     if (icp_socket_has_messages(control)) return;
 
     if (queues.empty() || all_pollable(queues)) {
-        run_pollable(control, fib, queues, loop_adapter, callbacks);
+        run_pollable(control, recycler, fib, queues, loop_adapter, callbacks);
     } else {
-        run_spinning(control, fib, queues, loop_adapter, callbacks);
+        run_spinning(control, recycler, fib, queues, loop_adapter, callbacks);
     }
 }
 
@@ -440,7 +446,9 @@ class worker : public finite_state_machine<worker, state, command_msg>
 {
     void* m_context;
     void* m_control;
+    recycler* m_recycler;
     const fib* m_fib;
+
     std::vector<task_ptr> m_queues;
     std::vector<task_ptr> m_callbacks;
     event_loop_adapter m_loop_adapter;
@@ -522,9 +530,10 @@ class worker : public finite_state_machine<worker, state, command_msg>
     }
 
 public:
-    worker(void *context, void* control, const fib* fib)
+    worker(void *context, void* control, recycler* recycler, const fib* fib)
         : m_context(context)
         , m_control(control)
+        , m_recycler(recycler)
         , m_fib(fib)
     {}
 
@@ -544,14 +553,14 @@ public:
     std::optional<state> on_event(state_started&, const add_descriptors_msg& add)
     {
         add_config(add.descriptors);
-        run(m_control, m_fib, m_queues, m_loop_adapter, m_callbacks);
+        run(m_control, m_recycler, m_fib, m_queues, m_loop_adapter, m_callbacks);
         return (std::nullopt);
     }
 
     std::optional<state> on_event(state_started&, const del_descriptors_msg& del)
     {
         del_config(del.descriptors);
-        run(m_control, m_fib, m_queues, m_loop_adapter, m_callbacks);
+        run(m_control, m_recycler, m_fib, m_queues, m_loop_adapter, m_callbacks);
         return (std::nullopt);
     }
 
@@ -560,7 +569,7 @@ public:
     std::optional<state> on_event(State&, const start_msg& start)
     {
         icp_task_sync_ping(m_context, start.endpoint.data());
-        run(m_control, m_fib, m_queues, m_loop_adapter, m_callbacks);
+        run(m_control, m_recycler, m_fib, m_queues, m_loop_adapter, m_callbacks);
         return (std::make_optional(state_started{}));
     }
 
@@ -582,7 +591,7 @@ int main(void *void_args)
     std::unique_ptr<void, icp_socket_deleter> control(
         icp_socket_get_client_subscription(context, endpoint.data(), ""));
 
-    auto me = worker(context, control.get(), args->fib);
+    auto me = worker(context, control.get(), args->recycler, args->fib);
 
     /* XXX: args are unavailable after this point */
     icp_task_sync_ping(context, args->endpoint.data());

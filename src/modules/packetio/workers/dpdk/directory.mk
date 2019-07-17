@@ -2,6 +2,7 @@ PIO_WORKER_SOURCES += \
 	callback.cpp \
 	epoll_poller.cpp \
 	event_loop_adapter.cpp \
+	recycle_impl.cpp \
 	rx_queue.cpp \
 	tx_queue.cpp \
 	vif_map_impl.cpp \

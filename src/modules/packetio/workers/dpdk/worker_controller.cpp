@@ -1,4 +1,6 @@
-#include "core/icp_uuid.h"
+#include <chrono>
+
+#include "core/icp_core.h"
 #include "packetio/drivers/dpdk/dpdk.h"
 #include "packetio/drivers/dpdk/model/physical_port.h"
 #include "packetio/drivers/dpdk/model/port_info.h"
@@ -10,7 +12,7 @@
 
 namespace icp::packetio::dpdk {
 
-static void launch_workers(void* context, worker::fib* fib)
+static void launch_workers(void* context, worker::recycler* recycler, worker::fib* fib)
 {
     /* Launch work threads on all of our available worker cores */
     static std::string_view sync_endpoint = "inproc://dpdk_worker_sync";
@@ -18,6 +20,7 @@ static void launch_workers(void* context, worker::fib* fib)
     struct worker::main_args args = {
         .context = context,
         .endpoint = sync_endpoint.data(),
+        .recycler = recycler,
         .fib = fib
     };
 
@@ -91,14 +94,44 @@ static unsigned num_workers()
     return (rte_lcore_count() - 1);
 }
 
+static int handle_recycler_timeout(const icp_event_data*, void* arg)
+{
+    auto recycler = reinterpret_cast<worker::recycler*>(arg);
+    recycler->writer_process_gc_callbacks();
+    return (0);
+}
+
+static void setup_recycler_callback(icp::core::event_loop& loop, worker::recycler* recycler)
+{
+    using namespace std::chrono_literals;
+    std::chrono::duration<uint64_t, std::nano> timeout = 5s;
+
+    struct icp_event_callbacks callbacks = {
+        .on_read = handle_recycler_timeout
+    };
+
+    loop.add(timeout.count(), &callbacks, recycler);
+}
+
 worker_controller::worker_controller(void* context,
+                                     icp::core::event_loop& loop,
                                      driver::generic_driver& driver)
     : m_context(context)
-    , m_workers(std::make_unique<worker::client>(context))
     , m_driver(driver)
+    , m_workers(std::make_unique<worker::client>(context))
     , m_fib(std::make_unique<worker::fib>())
+    , m_recycler(std::make_unique<worker::recycler>())
 {
-    launch_workers(context, m_fib.get());
+    launch_workers(context, m_recycler.get(), m_fib.get());
+
+    /* Update QSBR based memory reclamation with worker info */
+    unsigned lcore_id;
+    RTE_LCORE_FOREACH_SLAVE(lcore_id) {
+        m_recycler->writer_add_reader(lcore_id);
+    }
+
+    /* And create the periodic callback */
+    setup_recycler_callback(loop, m_recycler.get());
 
     /* Construct our necessary port queues */
     uint16_t port_id = 0;
@@ -108,7 +141,6 @@ worker_controller::worker_controller(void* context,
     }
 
     auto q_descriptors = get_queue_descriptors(port_info);
-
     auto& queues = worker::port_queues::instance();
     queues.setup(q_descriptors);
 
@@ -124,15 +156,17 @@ worker_controller::~worker_controller()
     if (!m_workers) return;
 
     m_workers->stop(m_context, num_workers());
+    m_recycler->writer_process_gc_callbacks();
     rte_eal_mp_wait_lcore();
     worker::port_queues::instance().unset();
 }
 
 worker_controller::worker_controller(worker_controller&& other)
     : m_context(other.m_context)
-    , m_workers(std::move(other.m_workers))
     , m_driver(other.m_driver)
+    , m_workers(std::move(other.m_workers))
     , m_fib(std::move(other.m_fib))
+    , m_recycler(std::move(other.m_recycler))
     , m_tasks(std::move(other.m_tasks))
 {}
 
@@ -140,9 +174,10 @@ worker_controller& worker_controller::operator=(worker_controller&& other)
 {
     if (this != &other) {
         m_context = other.m_context;
-        m_workers = std::move(other.m_workers);
         m_driver = other.m_driver;
+        m_workers = std::move(other.m_workers);
         m_fib = std::move(other.m_fib);
+        m_recycler = std::move(other.m_recycler);
         m_tasks = std::move(other.m_tasks);
     }
     return (*this);
@@ -240,6 +275,8 @@ void worker_controller::del_interface(std::string_view port_id, std::any interfa
             net::to_string(mac).c_str(),
             static_cast<int>(port_id.length()), port_id.data(),
             *port_idx);
+
+    m_recycler->writer_add_gc_callback([&](){ m_fib->shrink_to_fit(); });
 }
 
 tl::expected<std::string, int> worker_controller::add_task(workers::context ctx,
@@ -274,11 +311,12 @@ void worker_controller::del_task(std::string_view task_id)
 {
     ICP_LOG(ICP_LOG_DEBUG, "Deleting task %.*s\n",
             static_cast<int>(task_id.length()), task_id.data());
-    if (auto item = m_tasks.find(core::uuid(task_id)); item != m_tasks.end()) {
+    auto id = core::uuid(task_id);
+    if (auto item = m_tasks.find(id); item != m_tasks.end()) {
         std::vector<worker::descriptor> tasks { worker::descriptor(topology::get_stack_lcore_id(),
                                                                    std::addressof(item->second)) };
         m_workers->del_descriptors(tasks);
-        m_tasks.erase(item);
+        m_recycler->writer_add_gc_callback([id,this](){ m_tasks.erase(id); });
     }
 }
 
