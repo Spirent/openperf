@@ -4,15 +4,33 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include "core/icp_common.h"
 #include "core/icp_log.h"
 #include "core/icp_options.h"
 
 static SLIST_HEAD(icp_options_data_head, icp_options_data) icp_options_data_head =
     SLIST_HEAD_INITIALIZER(icp_options_data_head);
 
+static unsigned _max_option_length()
+{
+    unsigned max_length = 0;
+    struct icp_options_data *opt_data = NULL;
+    SLIST_FOREACH(opt_data, &icp_options_data_head, next) {
+        for (const struct icp_option* curr = opt_data->options;
+             curr->description != NULL;
+             curr++) {
+            max_length = icp_max(strlen(curr->long_opt), max_length);
+        }
+    }
+
+    return (max_length);
+}
+
 static void __attribute__((noreturn)) _usage(const char *program_name)
 {
     FILE *output = stderr;
+
+    unsigned opt_width = _max_option_length() + 4;
 
     fprintf(output, "Usage: %s\n\n", program_name);
     fprintf(output, "Options:\n");
@@ -23,12 +41,12 @@ static void __attribute__((noreturn)) _usage(const char *program_name)
              curr->description != NULL;
              curr++) {
             if (curr->short_opt == 0) {
-                fprintf(output, "      --%-32s%s\n",
-                        curr->long_opt, curr->description);
+                fprintf(output, "      --%-*s%s\n",
+                        opt_width, curr->long_opt, curr->description);
             }
             else {
-                fprintf(output, "  -%c, --%-32s%s\n",
-                        curr->short_opt, curr->long_opt, curr->description);
+                fprintf(output, "  -%c, --%-*s%s\n",
+                        curr->short_opt, opt_width, curr->long_opt, curr->description);
             }
         }
     }
@@ -172,7 +190,7 @@ int _allocate_longopts(struct option **longoptsp)
              curr++) {
             longopts[idx++] = (struct option){
                 curr->long_opt,
-                curr->opt_type,
+                curr->opt_type == ICP_OPTION_TYPE_NONE ? 0 : 1,
                 NULL,
                 curr->short_opt ? curr->short_opt : icp_options_hash_long(curr->long_opt)
             };

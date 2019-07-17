@@ -12,6 +12,9 @@ MAKE_OPTION_DATA(
   MAKE_OPT("number of loopback port pairs for testing, defaults to 1",
            "modules.packetio.dpdk.test-portpairs", 0, ICP_OPTION_TYPE_LONG),
   MAKE_OPT("quoted, comma separated list of port index-id mappings in the form portX=id",
-           "modules.packetio.dpdk.port-ids", 0, ICP_OPTION_TYPE_MAP), );
+           "modules.packetio.dpdk.port-ids", 0, ICP_OPTION_TYPE_MAP),
+  MAKE_OPT("disable receive queue interrupts",
+           "modules.packetio.dpdk.no-rx-interrupts", 0,
+           ICP_OPTION_TYPE_NONE), );
 
 REGISTER_CLI_OPTIONS(dpdk)
