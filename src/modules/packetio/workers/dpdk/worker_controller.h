@@ -2,7 +2,6 @@
 #define _ICP_PACKETIO_DPDK_WORKER_CONTROLLER_H_
 
 #include <memory>
-#include <unordered_map>
 
 #include "core/icp_uuid.h"
 #include "packetio/drivers/dpdk/dpdk.h"

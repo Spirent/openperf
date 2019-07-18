@@ -6,9 +6,12 @@
 #include <string>
 #include <variant>
 
+#include "core/icp_core.h"
 #include "lwip/netif.h"
-#include "packetio/vif_map.h"
 #include "packetio/drivers/dpdk/dpdk.h"
+#include "packetio/forwarding_table.h"
+#include "packetio/generic_sink.h"
+#include "packetio/generic_source.h"
 #include "packetio/recycle.h"
 
 namespace icp::packetio::dpdk {
@@ -19,7 +22,9 @@ class zmq_socket;
 
 namespace worker {
 
-using fib = vif_map<netif>;
+using fib = packetio::forwarding_table<netif,
+                                       packets::generic_sink,
+                                       RTE_MAX_ETHPORTS>;
 using recycler = packetio::recycle::depot<RTE_MAX_LCORE>;
 
 /**

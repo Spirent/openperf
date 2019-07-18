@@ -34,6 +34,11 @@ public:
         return m_self->pull(reinterpret_cast<void**>(packets), length);
     }
 
+    bool operator==(const generic_source& other) const
+    {
+        return (id() == other.id());
+    }
+
 private:
     struct source_concept {
         virtual ~source_concept() = default;

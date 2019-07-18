@@ -231,7 +231,7 @@ void worker_controller::add_interface(std::string_view port_id, std::any interfa
     auto ifp = std::any_cast<netif*>(interface);
     auto mac = net::mac_address(ifp->hwaddr);
 
-    if (m_fib->find(*port_idx, mac)) {
+    if (m_fib->find_interface(*port_idx, mac)) {
         throw std::runtime_error("Interface with mac = "
                                  + net::to_string(mac) + " on port "
                                  + std::string(port_id) + " (idx = "
@@ -240,13 +240,8 @@ void worker_controller::add_interface(std::string_view port_id, std::any interfa
 
     auto port = model::physical_port(*port_idx, port_id);
     port.add_mac_address(mac);
-    if (!m_fib->insert(*port_idx, mac, ifp)) {
-        port.del_mac_address(mac);
-        throw std::runtime_error("Could not insert mac = "
-                                 + net::to_string(mac) + " for port "
-                                 + std::string(port_id) + "(idx = "
-                                 + std::to_string(*port_idx) + ") into FIB");
-    }
+    auto to_delete = m_fib->insert_interface(*port_idx, mac, ifp);
+    m_recycler->writer_add_gc_callback([to_delete](){ delete to_delete; });
 
     ICP_LOG(ICP_LOG_DEBUG, "Added interface with mac = %s to port %.*s (idx = %u)\n",
             net::to_string(mac).c_str(),
@@ -261,22 +256,14 @@ void worker_controller::del_interface(std::string_view port_id, std::any interfa
 
     auto ifp = std::any_cast<netif*>(interface);
     auto mac = net::mac_address(ifp->hwaddr);
-
-    if (!m_fib->remove(*port_idx, mac, ifp)) {
-        throw std::runtime_error("Could not remove mac = "
-                                 + net::to_string(mac) + " for port "
-                                 + std::string(port_id) + " (idx = "
-                                 + std::to_string(*port_idx) + ") from FIB");
-    }
-
+    auto to_delete = m_fib->remove_interface(*port_idx, mac);
+    m_recycler->writer_add_gc_callback([to_delete](){ delete to_delete; });
     model::physical_port(*port_idx, port_id).del_mac_address(mac);
 
     ICP_LOG(ICP_LOG_DEBUG, "Removed interface with mac = %s to port %.*s (idx = %u)\n",
             net::to_string(mac).c_str(),
             static_cast<int>(port_id.length()), port_id.data(),
             *port_idx);
-
-    m_recycler->writer_add_gc_callback([&](){ m_fib->shrink_to_fit(); });
 }
 
 tl::expected<std::string, int> worker_controller::add_task(workers::context ctx,

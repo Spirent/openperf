@@ -24,6 +24,11 @@ public:
         return (m_self->push(reinterpret_cast<void**>(packets), length));
     }
 
+    bool operator==(const generic_sink& other) const
+    {
+        return (id() == other.id());
+    }
+
 private:
     struct sink_concept {
         virtual ~sink_concept() = default;

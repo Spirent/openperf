@@ -170,7 +170,7 @@ static uint16_t rx_burst(const fib* fib, const rx_queue* rxq)
     /* Lookup interfaces for unicast packets ... */
     for (size_t i = 0; i < nb_ucast; i++) {
         auto eth = rte_pktmbuf_mtod(unicast[i], struct ether_hdr *);
-        interfaces[i] = fib->find(rxq->port_id(), eth->d_addr.addr_bytes);
+        interfaces[i] = fib->find_interface(rxq->port_id(), eth->d_addr.addr_bytes);
     }
 
     /* ... and dispatch */
@@ -197,7 +197,7 @@ static uint16_t rx_burst(const fib* fib, const rx_queue* rxq)
          * can keep the mbuf/pbuf synchronized.
          */
         auto pbuf = packetio_memory_pbuf_synchronize(nunicast[i]);
-        for (auto ifp : fib->find(rxq->port_id())) {
+        for (auto [idx, ifp] : fib->get_interfaces(rxq->port_id())) {
             ICP_LOG(ICP_LOG_TRACE, "Dispatching non-unicast packet to %c%c%u\n",
                     ifp->name[0], ifp->name[1], ifp->num);
 
