@@ -10,6 +10,8 @@
 
 #include "packetio/generic_driver.h"
 #include "packetio/generic_event_loop.h"
+#include "packetio/generic_sink.h"
+#include "packetio/generic_source.h"
 
 namespace icp::core {
 class event_loop;
@@ -45,6 +47,17 @@ public:
         return (m_self->del_interface(port_id, interface));
     }
 
+    tl::expected<void, int> add_sink(std::string_view src_id,
+                                     packets::generic_sink sink)
+    {
+        return (m_self->add_sink(src_id, sink));
+    }
+
+    void del_sink(std::string_view src_id, packets::generic_sink sink)
+    {
+        m_self->del_sink(src_id, sink);
+    }
+
     tl::expected<std::string, int> add_task(context ctx,
                                             std::string_view name,
                                             event_loop::event_notifier notify,
@@ -66,7 +79,7 @@ public:
 
     void del_task(std::string_view task_id)
     {
-        return (m_self->del_task(task_id));
+        m_self->del_task(task_id);
     }
 
 private:
@@ -75,6 +88,9 @@ private:
         virtual transmit_function get_transmit_function(std::string_view port_id) const = 0;
         virtual void add_interface(std::string_view port_id, std::any interface) = 0;
         virtual void del_interface(std::string_view port_id, std::any interface) = 0;
+        virtual tl::expected<void, int> add_sink(std::string_view src_id,
+                                                 packets::generic_sink sink) = 0;
+        virtual void del_sink(std::string_view src_id, packets::generic_sink sink) = 0;
         virtual tl::expected<std::string, int> add_task(context ctx,
                                                         std::string_view name,
                                                         event_loop::event_notifier notify,
@@ -103,6 +119,17 @@ private:
         void del_interface(std::string_view port_id, std::any interface) override
         {
             return (m_workers.del_interface(port_id, interface));
+        }
+
+        tl::expected<void, int> add_sink(std::string_view src_id,
+                                         packets::generic_sink sink) override
+        {
+            return (m_workers.add_sink(src_id, sink));
+        }
+
+        void del_sink(std::string_view src_id, packets::generic_sink sink) override
+        {
+            m_workers.del_sink(src_id, sink);
         }
 
         tl::expected<std::string, int> add_task(context ctx,

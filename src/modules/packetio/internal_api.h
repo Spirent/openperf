@@ -28,11 +28,7 @@ struct request_sink_add {
 };
 
 struct request_sink_del {
-    std::string sink_id;
-};
-
-struct reply_sink_add {
-    std::string sink_id;
+    sink_data data;
 };
 
 struct source_data {
@@ -45,11 +41,7 @@ struct request_source_add {
 };
 
 struct request_source_del {
-    std::string source_id;
-};
-
-struct reply_source_add {
-    std::string source_id;
+    source_data data;
 };
 
 struct task_data {
@@ -86,9 +78,7 @@ using request_msg = std::variant<request_sink_add,
                                  request_task_add,
                                  request_task_del>;
 
-using reply_msg = std::variant<reply_sink_add,
-                               reply_source_add,
-                               reply_task_add,
+using reply_msg = std::variant<reply_task_add,
                                reply_ok,
                                reply_error>;
 

@@ -23,8 +23,8 @@ serialized_msg serialize_request(const request_msg& msg)
                                     },
                                     [&](const request_sink_del& sink_del) {
                                         return (message::zmq_msg_init(&serialized.data,
-                                                                      sink_del.sink_id.data(),
-                                                                      sink_del.sink_id.length()));
+                                                                      std::addressof(sink_del.data),
+                                                                      sizeof(sink_del.data)));
                                     },
                                     [&](const request_source_add& source_add) {
                                         return (message::zmq_msg_init(&serialized.data,
@@ -33,8 +33,8 @@ serialized_msg serialize_request(const request_msg& msg)
                                     },
                                     [&](const request_source_del& source_del) {
                                         return (message::zmq_msg_init(&serialized.data,
-                                                                      source_del.source_id.data(),
-                                                                      source_del.source_id.length()));
+                                                                      std::addressof(source_del.data),
+                                                                      sizeof(source_del.data)));
                                     },
                                     [&](const request_task_add& task_add) {
                                         return (message::zmq_msg_init(&serialized.data,
@@ -59,16 +59,6 @@ serialized_msg serialize_reply(const reply_msg& msg)
     serialized_msg serialized;
     auto error = (message::zmq_msg_init(&serialized.type, msg.index())
                   || std::visit(message::overloaded_visitor(
-                                    [&](const reply_sink_add& sink_add) {
-                                        return (message::zmq_msg_init(&serialized.data,
-                                                                      sink_add.sink_id.data(),
-                                                                      sink_add.sink_id.length()));
-                                    },
-                                    [&](const reply_source_add& source_add) {
-                                        return (message::zmq_msg_init(&serialized.data,
-                                                                      source_add.source_id.data(),
-                                                                      source_add.source_id.length()));
-                                    },
                                     [&](const reply_task_add& task_add) {
                                         return (message::zmq_msg_init(&serialized.data,
                                                                       task_add.task_id.data(),
@@ -95,18 +85,12 @@ tl::expected<request_msg, int> deserialize_request(const serialized_msg& msg)
     switch (idx) {
     case message::variant_index<request_msg, request_sink_add>():
         return (request_sink_add{ *(message::zmq_msg_data<sink_data*>(&msg.data)) });
-    case message::variant_index<request_msg, request_sink_del>(): {
-        std::string data(message::zmq_msg_data<char*>(&msg.data),
-                         zmq_msg_size(&msg.data));
-        return (request_sink_del{ data });
-    }
+    case message::variant_index<request_msg, request_sink_del>():
+        return (request_sink_del{ *(message::zmq_msg_data<sink_data*>(&msg.data)) });
     case message::variant_index<request_msg, request_source_add>():
         return (request_source_add{ *(message::zmq_msg_data<source_data*>(&msg.data)) });
-    case message::variant_index<request_msg, request_source_del>(): {
-        std::string data(message::zmq_msg_data<char*>(&msg.data),
-                         zmq_msg_size(&msg.data));
-        return (request_source_del{ data });
-    }
+    case message::variant_index<request_msg, request_source_del>():
+        return (request_source_del{ *(message::zmq_msg_data<source_data*>(&msg.data)) });
     case message::variant_index<request_msg, request_task_add>():
         return (request_task_add{ *(message::zmq_msg_data<task_data*>(&msg.data)) });
     case message::variant_index<request_msg, request_task_del>(): {
@@ -124,16 +108,6 @@ tl::expected<reply_msg, int> deserialize_reply(const serialized_msg& msg)
     using index_type = decltype(std::declval<request_msg>().index());
     auto idx = *(message::zmq_msg_data<index_type*>(&msg.type));
     switch (idx) {
-    case message::variant_index<reply_msg, reply_sink_add>(): {
-        std::string data(message::zmq_msg_data<char*>(&msg.data),
-                         zmq_msg_size(&msg.data));
-        return (reply_sink_add{ data });
-    }
-    case message::variant_index<reply_msg, reply_source_add>(): {
-        std::string data(message::zmq_msg_data<char*>(&msg.data),
-                         zmq_msg_size(&msg.data));
-        return (reply_source_add{ data });
-    }
     case message::variant_index<reply_msg, reply_task_add>(): {
         std::string data(message::zmq_msg_data<char*>(&msg.data),
                          zmq_msg_size(&msg.data));

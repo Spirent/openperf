@@ -29,13 +29,14 @@ public:
     client(client&& other);
     client& operator=(client&& other);
 
-    tl::expected<std::string, int> add_sink(std::string_view src_id,
-                                            packets::generic_sink sink);
-    tl::expected<void, int> del_sink(std::string_view sink_id);
-
-    tl::expected<std::string, int> add_source(std::string_view dst_id,
-                                              packets::generic_source source);
-    tl::expected<void, int> del_source(std::string_view source_id);
+    tl::expected<void, int> add_sink(std::string_view src_id,
+                                     packets::generic_sink sink);
+    tl::expected<void, int> del_sink(std::string_view src_id,
+                                     packets::generic_sink sink);
+    tl::expected<void, int> add_source(std::string_view dst_id,
+                                       packets::generic_source source);
+    tl::expected<void, int> del_source(std::string_view dst_id,
+                                       packets::generic_source source);
 
     tl::expected<std::string, int> add_task(workers::context ctx,
                                             std::string_view name,

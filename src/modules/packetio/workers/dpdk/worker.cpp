@@ -97,7 +97,7 @@ static bool all_pollable(const std::vector<task_ptr>& tasks)
     return (true);
 }
 
-static std::pair<size_t, size_t> partition_mbufs(rte_mbuf* incoming[], int length,
+static std::pair<size_t, size_t> partition_mbufs(rte_mbuf* const incoming[], int length,
                                                  rte_mbuf* unicast[], rte_mbuf* multicast[])
 {
     size_t ucast_idx = 0, mcast_idx = 0;
@@ -141,29 +141,13 @@ static std::pair<size_t, size_t> partition_mbufs(rte_mbuf* incoming[], int lengt
     return std::make_pair(ucast_idx, mcast_idx);
 }
 
-static uint16_t rx_burst(const fib* fib, const rx_queue* rxq)
+static void rx_interface_dispatch(const fib* fib, const rx_queue* rxq,
+                                  rte_mbuf* const incoming[], uint16_t n)
 {
-    static const rte_gro_param gro_params = { .gro_types = RTE_GRO_TCP_IPV4,
-                                              .max_flow_num = pkt_burst_size,
-                                              .max_item_per_flow = pkt_burst_size };
-    /*
-     * We pull packets from the port and put them in the receive array.
-     * We then sort them into unicast and multicast types.
-     */
-    std::array<rte_mbuf*, pkt_burst_size> incoming, unicast, nunicast;
+    std::array<rte_mbuf*, pkt_burst_size> unicast, nunicast;
     std::array<netif*, pkt_burst_size> interfaces;
 
-    auto n = rte_eth_rx_burst(rxq->port_id(), rxq->queue_id(),
-                              incoming.data(), pkt_burst_size);
-
-    if (!n) return (0);
-
-    n = rte_gro_reassemble_burst(incoming.data(), n, &gro_params);
-
-    ICP_LOG(ICP_LOG_TRACE, "Received %d packet%s on %d:%d\n",
-            n, n > 1 ? "s" : "", rxq->port_id(), rxq->queue_id());
-
-    auto [nb_ucast, nb_nucast] = partition_mbufs(incoming.data(), n,
+    auto [nb_ucast, nb_nucast] = partition_mbufs(incoming, n,
                                                  unicast.data(),
                                                  nunicast.data());
 
@@ -207,6 +191,56 @@ static uint16_t rx_burst(const fib* fib, const rx_queue* rxq)
             }
         }
         pbuf_free(pbuf);
+    }
+}
+
+static void rx_sink_dispatch(const fib* fib, const rx_queue* rxq,
+                             rte_mbuf* const incoming[], uint16_t n)
+{
+    for(auto& sink : fib->get_sinks(rxq->port_id())) {
+        ICP_LOG(ICP_LOG_TRACE, "Dispatching packets to sink %s\n", sink.id().c_str());
+        sink.push(incoming, n);
+    }
+}
+
+static uint16_t rx_burst(const fib* fib, const rx_queue* rxq)
+{
+    static const rte_gro_param gro_params = { .gro_types = RTE_GRO_TCP_IPV4,
+                                              .max_flow_num = pkt_burst_size,
+                                              .max_item_per_flow = pkt_burst_size };
+    /*
+     * We pull packets from the port and put them in the receive array.
+     * We then sort them into unicast and multicast types.
+     */
+    std::array<rte_mbuf*, pkt_burst_size> incoming;
+
+    auto n = rte_eth_rx_burst(rxq->port_id(), rxq->queue_id(),
+                              incoming.data(), pkt_burst_size);
+
+    if (!n) return (0);
+
+    n = rte_gro_reassemble_burst(incoming.data(), n, &gro_params);
+
+    ICP_LOG(ICP_LOG_TRACE, "Received %d packet%s on %d:%d\n",
+            n, n > 1 ? "s" : "", rxq->port_id(), rxq->queue_id());
+
+    /*
+     * Bump the reference count on all packets.  We don't want the stack
+     * to drop them before we can dispatch them to our sinks.
+     */
+    for (uint16_t i = 0; i < n; i++) {
+        rte_pktmbuf_refcnt_update(incoming[i], 1);
+    }
+
+    /* Dispatch packets to stack interfaces first */
+    rx_interface_dispatch(fib, rxq, incoming.data(), n);
+
+    /* Then, dispatch packets to any port sinks */
+    rx_sink_dispatch(fib, rxq, incoming.data(), n);
+
+    /* Finally, free all of our packets.  This is due to the refcnt bump above */
+    for (uint16_t i = 0; i < n; i++) {
+        rte_pktmbuf_free(incoming[i]);
     }
 
     return (n);

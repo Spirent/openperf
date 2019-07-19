@@ -266,6 +266,54 @@ void worker_controller::del_interface(std::string_view port_id, std::any interfa
             *port_idx);
 }
 
+template <typename Vector, typename Item>
+bool vector_contains_match(const Vector& vector, const Item& match)
+{
+    for (auto& item : vector) {
+        if (item.id() == match.id()) return (true);
+    }
+    return (false);
+}
+
+tl::expected<void, int> worker_controller::add_sink(std::string_view src_id,
+                                                    packets::generic_sink sink)
+{
+    /* Only support port sinks for now */
+    auto port_idx = m_driver.port_index(src_id);
+    if (!port_idx) {
+        return (tl::make_unexpected(EINVAL));
+    }
+
+    if (vector_contains_match(m_fib->get_sinks(*port_idx), sink)) {
+        return (tl::make_unexpected(EALREADY));
+    }
+
+    ICP_LOG(ICP_LOG_DEBUG, "Adding sink %s to port %.*s (idx = %u)\n",
+            sink.id().c_str(),
+            static_cast<int>(src_id.length()), src_id.data(),
+            *port_idx);
+
+    auto to_delete = m_fib->insert_sink(*port_idx, std::move(sink));
+    m_recycler->writer_add_gc_callback([to_delete](){ delete to_delete; });
+
+    return {};
+}
+
+void worker_controller::del_sink(std::string_view src_id, packets::generic_sink sink)
+{
+    /* Only support port sinks for now */
+    auto port_idx = m_driver.port_index(src_id);
+    if (!port_idx) return;
+
+    ICP_LOG(ICP_LOG_DEBUG, "Deleting sink %s from port %.*s (idx = %u)\n",
+            sink.id().c_str(),
+            static_cast<int>(src_id.length()), src_id.data(),
+            *port_idx);
+
+    auto to_delete = m_fib->remove_sink(*port_idx, std::move(sink));
+    m_recycler->writer_add_gc_callback([to_delete](){ delete to_delete; });
+}
+
 tl::expected<std::string, int> worker_controller::add_task(workers::context ctx,
                                                            std::string_view name,
                                                            event_loop::event_notifier notify,
@@ -281,7 +329,7 @@ tl::expected<std::string, int> worker_controller::add_task(workers::context ctx,
     auto id = core::uuid::random();
     auto [it, success] = m_tasks.try_emplace(id, name, notify, on_event, on_delete, arg);
     if (!success) {
-        return (tl::make_unexpected(-1));
+        return (tl::make_unexpected(EALREADY));
     }
 
     ICP_LOG(ICP_LOG_DEBUG, "Added task %.*s with id = %s\n",

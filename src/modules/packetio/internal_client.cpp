@@ -31,8 +31,8 @@ client& client::operator=(client&& other)
     return (*this);
 }
 
-tl::expected<std::string, int> client::add_sink(std::string_view src_id,
-                                                packets::generic_sink sink)
+tl::expected<void, int> client::add_sink(std::string_view src_id,
+                                         packets::generic_sink sink)
 {
     if (src_id.length() > name_length_max) {
         ICP_LOG(ICP_LOG_ERROR, "Source ID, %.*s, is too big\n",
@@ -54,8 +54,8 @@ tl::expected<std::string, int> client::add_sink(std::string_view src_id,
         return (tl::make_unexpected(reply.error()));
     }
 
-    if (auto success = std::get_if<reply_sink_add>(&reply.value())) {
-        return (success->sink_id);
+    if (auto success = std::get_if<reply_ok>(&reply.value())) {
+        return {};
     } else if (auto error = std::get_if<reply_error>(&reply.value())) {
         return (tl::make_unexpected(error->value));
     }
@@ -63,11 +63,23 @@ tl::expected<std::string, int> client::add_sink(std::string_view src_id,
     return (tl::make_unexpected(EBADMSG));
 }
 
-tl::expected<void, int> client::del_sink(std::string_view sink_id)
+tl::expected<void, int> client::del_sink(std::string_view src_id,
+                                         packets::generic_sink sink)
 {
+    if (src_id.length() > name_length_max) {
+        ICP_LOG(ICP_LOG_ERROR, "Source ID, %.*s, is too big\n",
+                static_cast<int>(src_id.length()), src_id.data());
+        return (tl::make_unexpected(ENOMEM));
+    }
+
     auto request = request_sink_del {
-        .sink_id = std::string(sink_id)
+        .data = {
+            .sink = std::move(sink)
+        }
     };
+    std::copy(src_id.data(),
+              src_id.data() + src_id.length(),
+              request.data.src_id);
 
     auto reply = do_request(m_socket.get(), request);
     if (!reply) {
@@ -83,12 +95,12 @@ tl::expected<void, int> client::del_sink(std::string_view sink_id)
     return (tl::make_unexpected(EBADMSG));
 }
 
-tl::expected<std::string, int> client::add_source(std::string_view src_id,
-                                                  packets::generic_source source)
+tl::expected<void, int> client::add_source(std::string_view dst_id,
+                                           packets::generic_source source)
 {
-    if (src_id.length() > name_length_max) {
-        ICP_LOG(ICP_LOG_ERROR, "Source ID, %.*s, is too big\n",
-                static_cast<int>(src_id.length()), src_id.data());
+    if (dst_id.length() > name_length_max) {
+        ICP_LOG(ICP_LOG_ERROR, "Destination ID, %.*s, is too big\n",
+                static_cast<int>(dst_id.length()), dst_id.data());
         return (tl::make_unexpected(ENOMEM));
     }
 
@@ -97,8 +109,8 @@ tl::expected<std::string, int> client::add_source(std::string_view src_id,
             .source = std::move(source)
         }
     };
-    std::copy(src_id.data(),
-              src_id.data() + src_id.length(),
+    std::copy(dst_id.data(),
+              dst_id.data() + dst_id.length(),
               request.data.dst_id);
 
     auto reply = do_request(m_socket.get(), request);
@@ -106,8 +118,8 @@ tl::expected<std::string, int> client::add_source(std::string_view src_id,
         return (tl::make_unexpected(reply.error()));
     }
 
-    if (auto success = std::get_if<reply_source_add>(&reply.value())) {
-        return (success->source_id);
+    if (auto success = std::get_if<reply_ok>(&reply.value())) {
+        return {};
     } else if (auto error = std::get_if<reply_error>(&reply.value())) {
         return (tl::make_unexpected(error->value));
     }
@@ -115,11 +127,23 @@ tl::expected<std::string, int> client::add_source(std::string_view src_id,
     return (tl::make_unexpected(EBADMSG));
 }
 
-tl::expected<void, int> client::del_source(std::string_view source_id)
+tl::expected<void, int> client::del_source(std::string_view dst_id,
+                                           packets::generic_source source)
 {
+    if (dst_id.length() > name_length_max) {
+        ICP_LOG(ICP_LOG_ERROR, "Destination ID, %.*s, is too big\n",
+                static_cast<int>(dst_id.length()), dst_id.data());
+        return (tl::make_unexpected(ENOMEM));
+    }
+
     auto request = request_source_del {
-        .source_id = std::string(source_id)
+        .data = {
+            .source = std::move(source)
+        }
     };
+    std::copy(dst_id.data(),
+              dst_id.data() + dst_id.length(),
+              request.data.dst_id);
 
     auto reply = do_request(m_socket.get(), request);
     if (!reply) {

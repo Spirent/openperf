@@ -18,17 +18,21 @@ struct overloaded_visitor : Ts...
 reply_msg handle_request(workers::generic_workers& workers,
                          const request_sink_add& request)
 {
-    (void)workers;
-    (void)request;
-    return (reply_error{ENOSYS});
+    auto result = workers.add_sink(request.data.src_id,
+                                   std::move(request.data.sink));
+    if (!result) {
+        return (reply_error{result.error()});
+    } else {
+        return (reply_ok{});
+    }
 }
 
 reply_msg handle_request(workers::generic_workers& workers,
                          const request_sink_del& request)
 {
-    (void)workers;
-    (void)request;
-    return (reply_error{ENOSYS});
+    workers.del_sink(request.data.src_id,
+                     std::move(request.data.sink));
+    return (reply_ok{});
 }
 
 reply_msg handle_request(workers::generic_workers& workers,
@@ -85,14 +89,16 @@ static std::string to_string(request_msg& request)
                                        + " to source " + std::string(msg.data.src_id));
                            },
                            [](const request_sink_del& msg) {
-                               return ("delete sink " + std::string(msg.sink_id));
+                               return ("delete sink " + std::string(msg.data.sink.id())
+                                       + " from source " + std::string(msg.data.src_id));
                            },
                            [](const request_source_add& msg) {
                                return ("add source " + std::string(msg.data.source.id())
                                        + " to destination " + std::string(msg.data.dst_id));
                            },
                            [](const request_source_del& msg) {
-                               return ("delete source " + std::string(msg.source_id));
+                               return ("delete source " + std::string(msg.data.source.id())
+                                       + " from destination " + std::string(msg.data.dst_id));
                            },
                            [](const request_task_add& msg) {
                                return ("add task " + std::string(msg.data.name));

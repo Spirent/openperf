@@ -37,13 +37,17 @@ public:
     void add_interface(std::string_view port_id, std::any interface);
     void del_interface(std::string_view port_id, std::any interface);
 
+    tl::expected<void, int> add_sink(std::string_view src_id,
+                                     packets::generic_sink sink);
+    void del_sink(std::string_view src_id, packets::generic_sink sink);
+
     tl::expected<std::string, int> add_task(workers::context ctx,
                                             std::string_view name,
                                             event_loop::event_notifier notify,
                                             event_loop::event_handler on_event,
                                             std::optional<event_loop::delete_handler> on_delete,
                                             std::any arg);
-    void del_task(std::string_view);
+    void del_task(std::string_view task_id);
 
     using task_map = std::unordered_map<core::uuid, callback>;
 
