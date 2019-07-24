@@ -18,6 +18,7 @@
 #include "packetio/workers/dpdk/event_loop_adapter.h"
 #include "packetio/workers/dpdk/rx_queue.h"
 #include "packetio/workers/dpdk/tx_queue.h"
+#include "packetio/workers/dpdk/tx_scheduler.h"
 #include "packetio/workers/dpdk/zmq_socket.h"
 #include "packetio/workers/dpdk/worker_api.h"
 
@@ -293,6 +294,10 @@ static uint16_t service_event(event_loop::generic_event_loop& loop,
                            [](const tx_queue* txq) -> uint16_t {
                                return (tx_burst(txq));
                            },
+                           [](const tx_scheduler* scheduler) -> uint16_t {
+                               const_cast<tx_scheduler*>(scheduler)->run();
+                               return (0);
+                           },
                            [](const zmq_socket*) -> uint16_t {
                                return (0);  /* noop */
                            }),
@@ -339,24 +344,30 @@ static void disable_event_interrupt(const task_ptr& task)
     std::visit(disable_visitor, task);
 }
 
-static void run_pollable(void* control, recycler* recycler, const fib* fib,
-                         const std::vector<task_ptr>& queues,
-                         event_loop_adapter& loop_adapter,
-                         const std::vector<task_ptr>& callbacks)
+struct run_args {
+    void* control;
+    recycler* recycler;
+    event_loop_adapter& loop_adapter;
+    const fib* fib;
+    const std::vector<task_ptr>& rx_queues;
+    const std::vector<task_ptr>& pollables;
+};
+
+static void run_pollable(run_args&& args)
 {
     bool messages = false;
-    auto ctrl_sock = zmq_socket(control, &messages);
-    auto loop = event_loop::generic_event_loop(&loop_adapter);
+    auto ctrl_sock = zmq_socket(args.control, &messages);
+    auto loop = event_loop::generic_event_loop(&args.loop_adapter);
     auto poller = epoll_poller();
 
     poller.add(&ctrl_sock);
 
-    for (auto& q : queues) {
+    for (auto& q : args.rx_queues) {
         poller.add(q);
     }
 
-    for (auto& c : callbacks) {
-        poller.add(c);
+    for (auto& p : args.pollables) {
+        poller.add(p);
     }
 
     /*
@@ -367,32 +378,35 @@ static void run_pollable(void* control, recycler* recycler, const fib* fib,
     * interrupts on an empty queue otherwise.
     * XXX: Enabling interrupts on some platforms is SLOW!
     */
-    for (auto& q : queues) {
+    for (auto& q : args.rx_queues) {
         do {
             enable_event_interrupt(q);
-        } while (service_event(loop, fib, q));
+        } while (service_event(loop, args.fib, q));
     }
 
     while (!messages) {
         auto& events = poller.poll();
         {
-            auto guard = packetio::recycle::guard(*recycler, rte_lcore_id());
+            auto guard = packetio::recycle::guard(*args.recycler, rte_lcore_id());
             for (auto& event : events) {
                 std::visit(overloaded_visitor(
                                [&](callback *cb) {
                                    cb->run_callback(loop);
                                },
                                [&](rx_queue* rxq) {
-                                   while (rx_burst(fib, rxq) == pkt_burst_size)
+                                   while (rx_burst(args.fib, rxq) == pkt_burst_size)
                                        ;
                                    do {
                                        rxq->enable();
-                                   } while (rx_burst(fib, rxq));
+                                   } while (rx_burst(args.fib, rxq));
                                },
                                [](tx_queue* txq) {
                                    while (tx_burst(txq) == pkt_burst_size)
                                        ;
                                    txq->enable();
+                               },
+                               [](tx_scheduler* scheduler) {
+                                   scheduler->run();
                                },
                                [](zmq_socket*) {
                                    /* noop */
@@ -400,79 +414,73 @@ static void run_pollable(void* control, recycler* recycler, const fib* fib,
                            event);
             }
         }
-        loop_adapter.update_poller(poller);
+        args.loop_adapter.update_poller(poller);
     }
 
-    for (auto& q : queues) {
+    for (auto& q : args.rx_queues) {
         disable_event_interrupt(q);
         poller.del(q);
     }
 
-    for (auto& c : callbacks) {
-        poller.del(c);
+    for (auto& p : args.pollables) {
+        poller.del(p);
     }
 
     poller.del(&ctrl_sock);
 }
 
-static void run_spinning(void* control, recycler* recycler, const fib* fib,
-                         const std::vector<task_ptr>& queues,
-                         event_loop_adapter& loop_adapter,
-                         const std::vector<task_ptr>& callbacks)
+static void run_spinning(run_args&& args)
 {
     bool messages = false;
-    auto ctrl_sock = zmq_socket(control, &messages);
-    auto loop = event_loop::generic_event_loop(&loop_adapter);
+    auto ctrl_sock = zmq_socket(args.control, &messages);
+    auto loop = event_loop::generic_event_loop(&args.loop_adapter);
     auto poller = epoll_poller();
 
     poller.add(&ctrl_sock);
 
-    for (auto& cb : callbacks) {
-        poller.add(cb);
+    for (auto& p : args.pollables) {
+        poller.add(p);
     }
 
     while (!messages) {
-        recycler->reader_checkpoint(rte_lcore_id());
+        args.recycler->reader_checkpoint(rte_lcore_id());
 
         /* Service queues as fast as possible if any of them have packets. */
         uint16_t pkts;
         do {
             pkts = 0;
-            for (auto& q : queues) {
-                pkts += service_event(loop, fib, q);
+            for (auto& q : args.rx_queues) {
+                pkts += service_event(loop, args.fib, q);
             }
         } while (pkts);
 
         /* All queues are idle; check callbacks */
-        loop_adapter.update_poller(poller);
+        args.loop_adapter.update_poller(poller);
         for (auto& event : poller.poll(0)) {
-            service_event(loop, fib, event);
+             service_event(loop, args.fib, event);
         }
     }
 
-    for (auto& cb : callbacks) {
-        poller.del(cb);
+    for (auto& p : args.pollables) {
+        poller.del(p);
     }
 
     poller.del(&ctrl_sock);
 }
 
-static void run(void* control, recycler* recycler, const fib* fib,
-                const std::vector<task_ptr>& queues,
-                event_loop_adapter& loop_adapter,
-                const std::vector<task_ptr>& callbacks)
+static void run(run_args&& args)
 {
     /*
      * XXX: Our control socket is edge triggered, so make sure we drain
      * all of the control messages before jumping into our real run
      * function.  We won't receive any more control interrupts otherwise.
      */
-    if (icp_socket_has_messages(control)) return;
+    if (icp_socket_has_messages(args.control)) return;
 
-    if (queues.empty() || all_pollable(queues)) {
-        run_pollable(control, recycler, fib, queues, loop_adapter, callbacks);
+    if (args.rx_queues.empty() || all_pollable(args.rx_queues)) {
+        run_pollable(std::move(args));
     } else {
-        run_spinning(control, recycler, fib, queues, loop_adapter, callbacks);
+        run_spinning(std::move(args));
     }
 }
 
@@ -483,9 +491,16 @@ class worker : public finite_state_machine<worker, state, command_msg>
     recycler* m_recycler;
     const fib* m_fib;
 
-    std::vector<task_ptr> m_queues;
-    std::vector<task_ptr> m_callbacks;
     event_loop_adapter m_loop_adapter;
+
+    /**
+     * Workers deal with a number of different event sources.  All of those
+     * sources are interrupt driven with the possible exception of RX queues.
+     * Hence, we need to separate rx queues from our other event types in
+     * order to handle them properly.
+     */
+    std::vector<task_ptr> m_rx_queues;
+    std::vector<task_ptr> m_pollables;
 
     void add_config(const std::vector<descriptor>& descriptors)
     {
@@ -493,31 +508,28 @@ class worker : public finite_state_machine<worker, state, command_msg>
             if (d.worker_id != rte_lcore_id()) continue;
 
             std::visit(overloaded_visitor(
-                           [&](const callback* callback) {
+                           [&](callback* callback) {
                                ICP_LOG(ICP_LOG_DEBUG, "Adding task %.*s to worker %u\n",
                                        static_cast<int>(callback->name().length()), callback->name().data(),
                                        rte_lcore_id());
-                               m_callbacks.push_back(d.task);
+                               m_pollables.emplace_back(callback);
                            },
-                           [&](const rx_queue* rxq) {
+                           [&](rx_queue* rxq) {
                                ICP_LOG(ICP_LOG_DEBUG, "Adding RX port queue %u:%u to worker %u\n",
                                        rxq->port_id(), rxq->queue_id(), rte_lcore_id());
-                               m_queues.push_back(d.task);
+                               m_rx_queues.emplace_back(rxq);
                            },
-                           [&](const tx_queue* txq) {
+                           [&](tx_queue* txq) {
                                ICP_LOG(ICP_LOG_DEBUG, "Adding TX port queue %u:%u to worker %u\n",
                                        txq->port_id(), txq->queue_id(), rte_lcore_id());
-                               m_queues.push_back(d.task);
+                               m_pollables.emplace_back(txq);
                            },
-                           [](const zmq_socket*) {
-                               /*
-                                * Here for completeness, but should never be
-                                * configured via an update message.
-                                */
-                               ICP_LOG(ICP_LOG_ERROR, "Unexpected request to add 0MQ socket to worker %u\n",
-                                       rte_lcore_id());
+                           [&](tx_scheduler* scheduler) {
+                               ICP_LOG(ICP_LOG_DEBUG, "Adding TX port scheduler %u:%u to worker %u\n",
+                                       scheduler->port_id(), scheduler->queue_id(), rte_lcore_id());
+                               m_pollables.emplace_back(scheduler);
                            }),
-                       d.task);
+                       d.ptr);
         }
     }
 
@@ -531,36 +543,52 @@ class worker : public finite_state_machine<worker, state, command_msg>
              * so don't dereference them!
              */
             std::visit(overloaded_visitor(
-                           [&](const callback*) {
+                           [&](callback* cb) {
                                ICP_LOG(ICP_LOG_DEBUG, "Removing task from worker %u\n",
                                        rte_lcore_id());
-                               m_callbacks.erase(std::remove(std::begin(m_callbacks),
-                                                             std::end(m_callbacks),
-                                                             d.task),
-                                                 std::end(m_callbacks));
+                               m_pollables.erase(std::remove(std::begin(m_pollables),
+                                                             std::end(m_pollables),
+                                                             task_ptr{cb}),
+                                                 std::end(m_pollables));
                            },
-                           [&](const rx_queue*) {
+                           [&](rx_queue* rxq) {
                                ICP_LOG(ICP_LOG_DEBUG, "Removing RX port queue from worker %u\n",
                                        rte_lcore_id());
-                               m_queues.erase(std::remove(std::begin(m_queues),
-                                                          std::end(m_queues),
-                                                          d.task),
-                                              std::end(m_queues));
+                               m_rx_queues.erase(std::remove(std::begin(m_rx_queues),
+                                                          std::end(m_rx_queues),
+                                                             task_ptr{rxq}),
+                                              std::end(m_rx_queues));
                            },
-                           [&](const tx_queue*) {
+                           [&](tx_queue* txq) {
                                ICP_LOG(ICP_LOG_DEBUG, "Removing TX port queue from worker %u\n",
                                        rte_lcore_id());
-                               m_queues.erase(std::remove(std::begin(m_queues),
-                                                          std::end(m_queues),
-                                                          d.task),
-                                              std::end(m_queues));
+                               m_pollables.erase(std::remove(std::begin(m_pollables),
+                                                             std::end(m_pollables),
+                                                             task_ptr{txq}),
+                                              std::end(m_pollables));
                            },
-                           [](const zmq_socket*) {
-                               ICP_LOG(ICP_LOG_ERROR, "Unexpected request to remove 0MQ socket from worker %u\n",
+                           [&](tx_scheduler* scheduler) {
+                               ICP_LOG(ICP_LOG_DEBUG, "Removing TX port scheduler from worker %u\n",
                                        rte_lcore_id());
+                               m_pollables.erase(std::remove(std::begin(m_pollables),
+                                                             std::end(m_pollables),
+                                                             task_ptr{scheduler}),
+                                              std::end(m_pollables));
                            }),
-                       d.task);
+                       d.ptr);
         }
+    }
+
+    run_args make_run_args()
+    {
+        return (run_args{
+                .control = m_control,
+                .recycler = m_recycler,
+                .loop_adapter = m_loop_adapter,
+                .fib = m_fib,
+                .rx_queues = m_rx_queues,
+                .pollables = m_pollables
+            });
     }
 
 public:
@@ -587,14 +615,15 @@ public:
     std::optional<state> on_event(state_started&, const add_descriptors_msg& add)
     {
         add_config(add.descriptors);
-        run(m_control, m_recycler, m_fib, m_queues, m_loop_adapter, m_callbacks);
+
+        run(make_run_args());
         return (std::nullopt);
     }
 
     std::optional<state> on_event(state_started&, const del_descriptors_msg& del)
     {
         del_config(del.descriptors);
-        run(m_control, m_recycler, m_fib, m_queues, m_loop_adapter, m_callbacks);
+        run(make_run_args());
         return (std::nullopt);
     }
 
@@ -603,7 +632,7 @@ public:
     std::optional<state> on_event(State&, const start_msg& start)
     {
         icp_task_sync_ping(m_context, start.endpoint.data());
-        run(m_control, m_recycler, m_fib, m_queues, m_loop_adapter, m_callbacks);
+        run(make_run_args());
         return (std::make_optional(state_started{}));
     }
 

@@ -1,0 +1,128 @@
+#ifndef _ICP_PACKETIO_DPDK_TX_SCHEDULER_H_
+#define _ICP_PACKETIO_DPDK_TX_SCHEDULER_H_
+
+#include <chrono>
+#include <queue>
+#include <optional>
+#include <variant>
+
+#include "packetio/generic_source.h"
+#include "packetio/workers/dpdk/worker_api.h"
+#include "packetio/workers/dpdk/pollable_event.tcc"
+
+namespace icp::packetio::dpdk {
+
+namespace schedule {
+
+using clock = std::chrono::high_resolution_clock;
+using time_point = std::chrono::time_point<clock>;
+
+struct entry {
+    time_point deadline;
+    const packets::generic_source* source;
+};
+
+constexpr bool operator>(const entry& left, const entry& right);
+
+struct state_idle {};       /* No events are scheduled */
+struct state_link_check{};  /* Events are scheduled; link is down */
+struct state_running {};    /* Events are scheduled; link is up */
+
+using state = std::variant<state_idle,
+                           state_link_check,
+                           state_running>;
+
+std::string_view to_string(state&);
+
+template <typename Derived, typename StateVariant>
+class finite_state_machine
+{
+    StateVariant m_state;
+public:
+    void run()
+    {
+        Derived& child = static_cast<Derived&>(*this);
+        auto next_state = std::visit(
+            [&](auto& state) -> std::optional<StateVariant> {
+                return (child.on_timeout(state));
+            },
+            m_state);
+
+        if (next_state) {
+            ICP_LOG(ICP_LOG_TRACE, "Tx port scheduler %u:%u: %.*s --> %.*s\n",
+                    child.port_id(), child.queue_id(),
+                    static_cast<int>(to_string(m_state).length()),
+                    to_string(m_state).data(),
+                    static_cast<int>(to_string(*next_state).length()),
+                    to_string(*next_state).data());
+
+            m_state = *next_state;
+            std::visit([&](auto& state) {
+                           child.on_transition(state);
+                       },
+                m_state);
+        }
+    }
+};
+
+}
+
+class tx_scheduler : public pollable_event<tx_scheduler>
+                   , public schedule::finite_state_machine<tx_scheduler,
+                                                           schedule::state>
+{
+    static constexpr uint16_t max_tx_burst_size = 32;
+
+    const worker::tib& m_tib;
+    uint16_t m_portid;
+    uint16_t m_queueid;
+    int m_timerfd;
+
+    /* By default, priority_queue sorts by std::less<> which causes the
+     * largest element to appear as top().  For our use, we want the
+     * smallest value, as that represents the next deadline, so we use
+     * std::greater<> instead.
+     */
+    std::priority_queue<schedule::entry,
+                        std::vector<schedule::entry>,
+                        std::greater<schedule::entry>> m_schedule;
+
+    schedule::time_point m_time_reschedule;
+
+    void do_reschedule(const schedule::time_point& now);
+
+public:
+    tx_scheduler(const worker::tib& tib, uint16_t port_idx, uint16_t queue_idx);
+    ~tx_scheduler();
+
+    uint16_t port_id() const;
+    uint16_t queue_id() const;
+
+    int event_fd() const;
+    void* event_callback_argument();
+    pollable_event<tx_scheduler>::event_callback event_callback_function() const;
+
+    /*
+     * Because we expect state transitions to be the rare, e.g. timeouts
+     * normally don't change the current state, we divide the event handling
+     * process into two sets of functions: on_timeout and on_transition.
+     *
+     * The on_timeout functions contain the action required for a timeout
+     * in the specified state and the decision making logic needed on
+     * whether to transition to a new state or not.
+     *
+     * The on_transition functions handle updating the timer and other
+     * internal variables needed to run in the specified state.
+     */
+    std::optional<schedule::state> on_timeout(const schedule::state_idle&);
+    std::optional<schedule::state> on_timeout(const schedule::state_link_check&);
+    std::optional<schedule::state> on_timeout(const schedule::state_running&);
+
+    void on_transition(const schedule::state_idle&);
+    void on_transition(const schedule::state_link_check&);
+    void on_transition(const schedule::state_running&);
+};
+
+}
+
+#endif /* _ICP_PACKETIO_DPDK_TX_SCHEDULER_H_ */

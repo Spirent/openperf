@@ -1,20 +1,28 @@
 #ifndef _ICP_PACKETIO_FORWARDING_TABLE_H_
 #define _ICP_PACKETIO_FORWARDING_TABLE_H_
 
+/**
+ * @file
+ *
+ * The forwarding_table contains all of the details needed to dispatch
+ * packets on the receive path.
+ */
+
 #include <array>
 #include <atomic>
 
-#include "immer/map.hpp"
 #include "immer/flex_vector.hpp"
+#include "immer/map.hpp"
 
 #include "net/net_types.h"
 
 namespace icp::packetio {
 
 template <typename Interface, typename Sink, int MaxPorts>
-class forwarding_table {
-    using interface_map        = immer::map<uint64_t, Interface*>;
-    using sink_vector          = immer::flex_vector<Sink>;
+class forwarding_table
+{
+    using interface_map = immer::map<uint64_t, Interface*>;
+    using sink_vector   = immer::flex_vector<Sink>;
 
     std::array<std::atomic<interface_map*>, MaxPorts> m_interfaces;
     std::array<std::atomic<sink_vector*>,   MaxPorts> m_sinks;

@@ -38,17 +38,22 @@ reply_msg handle_request(workers::generic_workers& workers,
 reply_msg handle_request(workers::generic_workers& workers,
                          const request_source_add& request)
 {
-    (void)workers;
-    (void)request;
-    return (reply_error{ENOSYS});
+    auto result = workers.add_source(request.data.dst_id,
+                                     std::move(request.data.source));
+
+    if (!result) {
+        return (reply_error{result.error()});
+    } else {
+        return (reply_ok{});
+    }
 }
 
 reply_msg handle_request(workers::generic_workers& workers,
                          const request_source_del& request)
 {
-    (void)workers;
-    (void)request;
-    return (reply_error{ENOSYS});
+    workers.del_source(request.data.dst_id,
+                       std::move(request.data.source));
+    return (reply_ok{});
 }
 
 reply_msg handle_request(workers::generic_workers& workers,

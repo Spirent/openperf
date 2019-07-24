@@ -13,11 +13,13 @@
 #include "packetio/generic_sink.h"
 #include "packetio/generic_source.h"
 #include "packetio/recycle.h"
+#include "packetio/transmit_table.h"
 
 namespace icp::packetio::dpdk {
 class callback;
 class rx_queue;
 class tx_queue;
+class tx_scheduler;
 class zmq_socket;
 
 namespace worker {
@@ -25,23 +27,33 @@ namespace worker {
 using fib = packetio::forwarding_table<netif,
                                        packets::generic_sink,
                                        RTE_MAX_ETHPORTS>;
+using tib = packetio::transmit_table<packets::generic_source>;
 using recycler = packetio::recycle::depot<RTE_MAX_LCORE>;
 
 /**
- * The types of things the worker knows how to handle.
+ * The types of things workers know how to deal with.
  */
 using task_ptr = std::variant<callback*,
                               rx_queue*,
                               tx_queue*,
+                              tx_scheduler*,
                               zmq_socket*>;
+
+/**
+ * The types of things we insert into descriptors.
+ */
+using descriptor_ptr = std::variant<callback*,
+                                    rx_queue*,
+                                    tx_queue*,
+                                    tx_scheduler*>;
 
 struct descriptor {
     uint16_t worker_id;
-    task_ptr task;
+    descriptor_ptr ptr;
 
-    descriptor(uint16_t id, task_ptr ptr)
+    descriptor(uint16_t id, descriptor_ptr p)
         : worker_id(id)
-        , task(ptr)
+        , ptr(p)
     {}
 };
 

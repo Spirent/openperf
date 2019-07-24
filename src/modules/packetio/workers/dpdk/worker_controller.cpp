@@ -12,7 +12,7 @@
 
 namespace icp::packetio::dpdk {
 
-static void launch_workers(void* context, worker::recycler* recycler, worker::fib* fib)
+static void launch_workers(void* context, worker::recycler* recycler, const worker::fib* fib)
 {
     /* Launch work threads on all of our available worker cores */
     static std::string_view sync_endpoint = "inproc://dpdk_worker_sync";
@@ -21,7 +21,7 @@ static void launch_workers(void* context, worker::recycler* recycler, worker::fi
         .context = context,
         .endpoint = sync_endpoint.data(),
         .recycler = recycler,
-        .fib = fib
+        .fib = fib,
     };
 
     /* Launch a worker on every available core */
@@ -37,6 +37,8 @@ static void launch_workers(void* context, worker::recycler* recycler, worker::fi
 }
 
 static std::vector<worker::descriptor> to_worker_descriptors(const std::vector<queue::descriptor>& descriptors,
+                                                             const std::vector<worker_controller::txsched_ptr>& tx_schedulers,
+                                                             const worker_controller::worker_map& tx_workers,
                                                              const worker::port_queues& queues)
 {
     std::vector<worker::descriptor> worker_items;
@@ -57,6 +59,11 @@ static std::vector<worker::descriptor> to_worker_descriptors(const std::vector<q
         default:
             break;
         }
+    }
+
+    for (auto& sched_ptr : tx_schedulers) {
+        auto idx = tx_workers.at(std::make_pair(sched_ptr->port_id(), sched_ptr->queue_id()));
+        worker_items.emplace_back(idx, sched_ptr.get());
     }
 
     return (worker_items);
@@ -120,11 +127,16 @@ worker_controller::worker_controller(void* context,
     , m_driver(driver)
     , m_workers(std::make_unique<worker::client>(context))
     , m_fib(std::make_unique<worker::fib>())
+    , m_tib(std::make_unique<worker::tib>())
     , m_recycler(std::make_unique<worker::recycler>())
 {
     launch_workers(context, m_recycler.get(), m_fib.get());
 
-    /* Update QSBR based memory reclamation with worker info */
+    /*
+     * For each worker we need to...
+     * 1. Update QSBR based memory reclamation with worker info
+     * 2. Initialize the transmit worker load map.
+     */
     unsigned lcore_id;
     RTE_LCORE_FOREACH_SLAVE(lcore_id) {
         m_recycler->writer_add_reader(lcore_id);
@@ -133,19 +145,30 @@ worker_controller::worker_controller(void* context,
     /* And create the periodic callback */
     setup_recycler_callback(loop, m_recycler.get());
 
-    /* Construct our necessary port queues */
+    /* We need port information to setup our workers, so get it */
     uint16_t port_id = 0;
     std::vector<model::port_info> port_info;
     RTE_ETH_FOREACH_DEV(port_id) {
         port_info.emplace_back(model::port_info(port_id));
     }
 
+    /* Construct our necessary transmit schedulers and metadata */
+    for (auto& d : topology::queue_distribute(port_info)) {
+        if (d.mode == queue::queue_mode::RX) continue;
+        m_tx_schedulers.push_back(std::make_unique<tx_scheduler>(*m_tib, d.port_id, d.queue_id));
+        m_tx_loads.emplace(d.worker_id, 0);
+        m_tx_workers.emplace(std::make_pair(d.port_id, d.queue_id), d.worker_id);
+    }
+
+    /* Construct our necessary port queues */
     auto q_descriptors = get_queue_descriptors(port_info);
     auto& queues = worker::port_queues::instance();
     queues.setup(q_descriptors);
 
-    /* Distribute them to our waiting workers */
-    m_workers->add_descriptors(to_worker_descriptors(q_descriptors, queues));
+    /* Distribute queues and schedulers to workers */
+    m_workers->add_descriptors(to_worker_descriptors(q_descriptors,
+                                                     m_tx_schedulers, m_tx_workers,
+                                                     queues));
 
     /* And start them */
     m_workers->start(m_context, num_workers());
@@ -166,8 +189,12 @@ worker_controller::worker_controller(worker_controller&& other)
     , m_driver(other.m_driver)
     , m_workers(std::move(other.m_workers))
     , m_fib(std::move(other.m_fib))
+    , m_tib(std::move(other.m_tib))
     , m_recycler(std::move(other.m_recycler))
     , m_tasks(std::move(other.m_tasks))
+    , m_tx_schedulers(std::move(other.m_tx_schedulers))
+    , m_tx_loads(std::move(other.m_tx_loads))
+    , m_tx_workers(std::move(other.m_tx_workers))
 {}
 
 worker_controller& worker_controller::operator=(worker_controller&& other)
@@ -177,8 +204,12 @@ worker_controller& worker_controller::operator=(worker_controller&& other)
         m_driver = other.m_driver;
         m_workers = std::move(other.m_workers);
         m_fib = std::move(other.m_fib);
+        m_tib = std::move(other.m_tib);
         m_recycler = std::move(other.m_recycler);
         m_tasks = std::move(other.m_tasks);
+        m_tx_schedulers = std::move(other.m_tx_schedulers);
+        m_tx_loads = std::move(other.m_tx_loads);
+        m_tx_workers = std::move(other.m_tx_workers);
     }
     return (*this);
 }
@@ -267,10 +298,10 @@ void worker_controller::del_interface(std::string_view port_id, std::any interfa
 }
 
 template <typename Vector, typename Item>
-bool vector_contains_match(const Vector& vector, const Item& match)
+bool contains_match(const Vector& vector, const Item& match)
 {
     for (auto& item : vector) {
-        if (item.id() == match.id()) return (true);
+        if (item == match) return (true);
     }
     return (false);
 }
@@ -284,7 +315,7 @@ tl::expected<void, int> worker_controller::add_sink(std::string_view src_id,
         return (tl::make_unexpected(EINVAL));
     }
 
-    if (vector_contains_match(m_fib->get_sinks(*port_idx), sink)) {
+    if (contains_match(m_fib->get_sinks(*port_idx), sink)) {
         return (tl::make_unexpected(EALREADY));
     }
 
@@ -311,6 +342,148 @@ void worker_controller::del_sink(std::string_view src_id, packets::generic_sink 
             *port_idx);
 
     auto to_delete = m_fib->remove_sink(*port_idx, std::move(sink));
+    m_recycler->writer_add_gc_callback([to_delete](){ delete to_delete; });
+}
+
+/*
+ * Find the transmit queue and worker index of the least loaded worker that
+ * can transmit on the specified port.
+*/
+std::pair<uint16_t, unsigned>
+get_queue_and_worker_idx(const worker_controller::worker_map& workers,
+                         const worker_controller::load_map& loads,
+                         uint16_t port_idx)
+{
+    static constexpr uint16_t max_idx = std::numeric_limits<uint16_t>::max();
+
+    struct comparator {
+        bool operator()(const worker_controller::worker_map::value_type& left,
+                        const worker_controller::worker_map::key_type& right)
+        {
+            auto left_id = (static_cast<uint32_t>(left.first.first) << 16
+                            | left.first.second);
+            auto right_id = (static_cast<uint32_t>(right.first) << 16
+                             | right.second);
+
+            return (left_id < right_id);
+        }
+
+        bool operator()(const worker_controller::worker_map::key_type& left,
+                        const worker_controller::worker_map::value_type& right)
+        {
+            auto left_id = (static_cast<uint32_t>(left.first) << 16
+                            | left.second);
+            auto right_id = (static_cast<uint32_t>(right.first.first) << 16
+                             | right.first.second);
+
+            return (left_id < right_id);
+        }
+    };
+
+    /*
+     * Find the range for all of the worker entries for the specified port,
+     * e.g. where (port, 0) <= key <= (port, infinity).
+     */
+    auto range = std::make_pair(std::lower_bound(std::begin(workers),
+                                                 std::end(workers),
+                                                 std::make_pair(port_idx, 0),
+                                                 comparator{}),
+                                std::upper_bound(std::begin(workers),
+                                                 std::end(workers),
+                                                 std::make_pair(port_idx, max_idx),
+                                                 comparator{}));
+
+    /*
+     * Now, find the least loaded worker for this port range and return
+     * both the worker id and the queue id.
+     */
+    auto min_load = std::numeric_limits<uint64_t>::max();
+    auto queue_idx = std::numeric_limits<uint16_t>::max();
+    auto worker_idx = std::numeric_limits<unsigned>::max();
+
+    std::for_each(range.first, range.second,
+                  [&](const worker_controller::worker_map::value_type& item) {
+                      /*
+                       * Note for item:
+                       * first = std::pair<uint16_t, uint16_t>
+                       * second = worker id
+                       */
+                      auto worker_load = loads.at(item.second);
+                      if (worker_load < min_load) {
+                          min_load = worker_load;
+                          queue_idx = item.first.second;
+                          worker_idx = item.second;
+                      }
+                  });
+
+    assert(queue_idx != max_idx);
+    return (std::make_pair(queue_idx, worker_idx));
+}
+
+/* This judges load by interrupts/sec */
+uint64_t get_source_load(const packets::generic_source& source)
+{
+    return ((source.packet_rate() / source.burst_size()).count());
+}
+
+std::optional<uint16_t> find_queue(worker::tib& tib, uint16_t port_idx,
+                                   std::string_view source_id)
+{
+    for (const auto& [key, source] : tib.get_sources(port_idx)) {
+        if (source.id() == source_id) {
+            return (std::get<worker::tib::key_queue_idx>(key));
+        }
+    }
+    return (std::nullopt);
+}
+
+tl::expected<void, int> worker_controller::add_source(std::string_view dst_id,
+                                                      packets::generic_source source)
+{
+    /* Only support port sources for now */
+    auto port_idx = m_driver.port_index(dst_id);
+    if (!port_idx) {
+        return (tl::make_unexpected(EINVAL));
+    }
+
+    if (find_queue(*m_tib, *port_idx, source.id())) {
+        return (tl::make_unexpected(EALREADY));
+    }
+
+    auto [queue_idx, worker_idx] = get_queue_and_worker_idx(m_tx_workers, m_tx_loads, *port_idx);
+    m_tx_loads[worker_idx] += get_source_load(source);
+
+    ICP_LOG(ICP_LOG_DEBUG, "Adding source %s to port %.*s (idx = %u, queue = %u) on worker %u\n",
+            source.id().c_str(),
+            static_cast<int>(dst_id.length()), dst_id.data(),
+            *port_idx, queue_idx, worker_idx);
+
+    auto to_delete = m_tib->insert_source(*port_idx, queue_idx, std::move(source));
+    m_recycler->writer_add_gc_callback([to_delete](){ delete to_delete; });
+
+    return {};
+}
+
+void worker_controller::del_source(std::string_view dst_id, packets::generic_source source)
+{
+    /* Only support port sources for now */
+    auto port_idx = m_driver.port_index(dst_id);
+    if (!port_idx) return;
+
+    auto queue_idx = find_queue(*m_tib, *port_idx, source.id());
+    if (!queue_idx) return;
+
+    auto worker_idx = m_tx_workers[std::make_pair(*port_idx, *queue_idx)];
+    auto& worker_load = m_tx_loads[worker_idx];
+    auto source_load = get_source_load(source);
+    if (worker_load > source_load) worker_load -= source_load;
+
+    ICP_LOG(ICP_LOG_DEBUG, "Deleting source %s from port %.*s (idx = %u, queue = %u) on worker %u\n",
+            source.id().c_str(),
+            static_cast<int>(dst_id.length()), dst_id.data(),
+            *port_idx, *queue_idx, worker_idx);
+
+    auto to_delete = m_tib->remove_source(*port_idx, 0, std::move(source));
     m_recycler->writer_add_gc_callback([to_delete](){ delete to_delete; });
 }
 

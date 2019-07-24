@@ -2,14 +2,17 @@
 #define _ICP_PACKETIO_DPDK_WORKER_CONTROLLER_H_
 
 #include <memory>
+#include <unordered_map>
+#include <utility>
 
 #include "core/icp_uuid.h"
-#include "packetio/drivers/dpdk/dpdk.h"
 #include "packetio/generic_driver.h"
 #include "packetio/generic_event_loop.h"
 #include "packetio/generic_workers.h"
 #include "packetio/workers/dpdk/callback.h"
+#include "packetio/workers/dpdk/tx_scheduler.h"
 #include "packetio/workers/dpdk/worker_api.h"
+#include "utils/hash_combine.h"
 
 namespace icp::core {
 class event_loop;
@@ -41,6 +44,10 @@ public:
                                      packets::generic_sink sink);
     void del_sink(std::string_view src_id, packets::generic_sink sink);
 
+    tl::expected<void, int> add_source(std::string_view dst_id,
+                                       packets::generic_source source);
+    void del_source(std::string_view dst_id, packets::generic_source source);
+
     tl::expected<std::string, int> add_task(workers::context ctx,
                                             std::string_view name,
                                             event_loop::event_notifier notify,
@@ -49,15 +56,25 @@ public:
                                             std::any arg);
     void del_task(std::string_view task_id);
 
-    using task_map = std::unordered_map<core::uuid, callback>;
+    using load_map   = std::unordered_map<unsigned, uint64_t>;
+    using task_map   = std::unordered_map<core::uuid, callback>;
+    using worker_map = std::unordered_map<std::pair<uint16_t, uint16_t>, unsigned>;
+
+    using txsched_ptr  = std::unique_ptr<tx_scheduler>;
 
 private:
-    void* m_context;
-    driver::generic_driver& m_driver;
-    std::unique_ptr<worker::client> m_workers;
-    std::unique_ptr<worker::fib> m_fib;
-    std::unique_ptr<worker::recycler> m_recycler;
-    task_map m_tasks;
+    void* m_context;                               /* 0MQ context */
+    driver::generic_driver& m_driver;              /* generic driver reference */
+    std::unique_ptr<worker::client> m_workers;     /* worker command client */
+    std::unique_ptr<worker::fib> m_fib;            /* rx distpatch table */
+    std::unique_ptr<worker::tib> m_tib;            /* transmit source table */
+    std::unique_ptr<worker::recycler> m_recycler;  /* RCU based deleter */
+
+    task_map m_tasks;        /* map from task id --> task object */
+
+    std::vector<txsched_ptr> m_tx_schedulers;      /* TX queue schedulers */
+    load_map m_tx_loads;      /* map from worker id --> worker load */
+    worker_map m_tx_workers;  /* map from (port id, queue id) --> worker id */
 };
 
 }
