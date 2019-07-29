@@ -147,14 +147,14 @@ void tx_scheduler::do_reschedule(const schedule::time_point& now)
     const auto& priority_vec = get_container(m_schedule);
 
     for (const auto& key_source : m_tib.get_sources(port_id(), queue_id())) {
-        auto& source = key_source.second;
+        const auto& key = key_source.first;
+        const auto& source = key_source.second;
         auto found = std::find_if(std::begin(priority_vec), std::end(priority_vec),
                                   [&](const auto& entry) {
-                                      return (source == *entry.source);
+                                      return (key == entry.key);
                                   });
-        if (found == std::end(priority_vec)) {
-            m_schedule.push({ now + next_deadline(source),
-                              std::addressof(source) });
+        if (found == std::end(priority_vec) && source.active()) {
+            m_schedule.push({ now + next_deadline(source), key });
         }
     }
 
@@ -236,9 +236,15 @@ std::optional<schedule::state> tx_scheduler::on_timeout(const schedule::state_ru
     if (link_down(port_id())) return (schedule::state_link_check{});
 
     while (m_schedule.top().deadline < (now = schedule::clock::now())) {
-        /* Remove the event from the schedule */
-        auto [deadline, source] = m_schedule.top();
-        m_schedule.pop();
+        /* Grab the event from the schedule */
+        auto& [deadline, key] = m_schedule.top();
+
+        auto source = m_tib.get_source(key);
+        if (!source) {
+            /* Source could have been removed while we were idle */
+            m_schedule.pop();
+            continue;
+        }
 
         /*
          * Run tx event; obviously need a better implementation to handle packets we
@@ -252,15 +258,16 @@ std::optional<schedule::state> tx_scheduler::on_timeout(const schedule::state_ru
         ICP_LOG(ICP_LOG_TRACE, "Transmitted %u of %u packets on %u:%u from source %s\n",
                 sent, to_send, port_id(), queue_id(), source->id().c_str());
 
-        /* Re-add entry to schedule if it still exists and is still active */
-        if (m_tib.get_source(port_id(), queue_id(), source->id())
-            && source->active()) {
+        /* Re-add entry to schedule if it still active */
+        if (source->active()) {
             /*
              * Always update from the previous deadline value, as we don't want
              * our intervals to drift.
              */
-            m_schedule.push({deadline + next_deadline(*source), source});
+            m_schedule.push({deadline + next_deadline(*source), key});
         }
+
+        m_schedule.pop();
     }
 
     if (m_schedule.empty()) return (on_timeout(schedule::state_idle{}));
@@ -299,8 +306,8 @@ void tx_scheduler::on_transition(const schedule::state_running&)
     auto now = schedule::clock::now();
 
     /* Generate a schedule for all available entities */
-    for (auto& [_, source] : m_tib.get_sources(port_id(), queue_id())) {
-        m_schedule.push({now + next_deadline(source), std::addressof(source)});
+    for (auto& [key, source] : m_tib.get_sources(port_id(), queue_id())) {
+        m_schedule.push({now + next_deadline(source), key});
     }
 
     /* Adjust timer to match schedule */

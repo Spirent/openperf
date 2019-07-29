@@ -45,8 +45,7 @@ public:
               typename source_map::iterator>
     get_sources(uint16_t port_idx, uint16_t queue_idx) const;
 
-    const Source* get_source(uint16_t port_idx, uint16_t queue_idx,
-                             std::string_view source_id) const;
+    const Source* get_source(const source_key& key) const;
 
 private:
     std::atomic<source_map*> m_sources;

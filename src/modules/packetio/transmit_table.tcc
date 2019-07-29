@@ -118,10 +118,8 @@ transmit_table<Source>::get_sources(uint16_t port_idx, uint16_t queue_idx) const
 }
 
 template <typename Source>
-const Source* transmit_table<Source>::get_source(uint16_t port_idx, uint16_t queue_idx,
-                                                 std::string_view source_id) const
+const Source* transmit_table<Source>::get_source(const transmit_table<Source>::source_key& key) const
 {
-    auto key = to_key(port_idx, queue_idx, source_id);
     auto map = m_sources.load(std::memory_order_consume);
     return (map->find(key));
 }
