@@ -250,7 +250,7 @@ std::optional<schedule::state> tx_scheduler::on_timeout(const schedule::state_ru
          * Run tx event; obviously need a better implementation to handle packets we
          * can't send immediately.
          */
-        auto to_send = source->pull(reinterpret_cast<void**>(outgoing.data()),
+        auto to_send = source->pull(reinterpret_cast<packets::packet_buffer**>(outgoing.data()),
                                     std::min(static_cast<uint16_t>(outgoing.size()),
                                              source->burst_size()));
         auto sent = rte_eth_tx_burst(port_id(), queue_id(), outgoing.data(), to_send);

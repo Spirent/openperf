@@ -200,7 +200,7 @@ static void rx_sink_dispatch(const fib* fib, const rx_queue* rxq,
 {
     for(auto& sink : fib->get_sinks(rxq->port_id())) {
         ICP_LOG(ICP_LOG_TRACE, "Dispatching packets to sink %s\n", sink.id().c_str());
-        sink.push(incoming, n);
+        sink.push(reinterpret_cast<packets::packet_buffer* const*>(incoming), n);
     }
 }
 

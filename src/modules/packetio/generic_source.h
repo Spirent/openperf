@@ -8,6 +8,8 @@
 
 namespace icp::packetio::packets {
 
+struct packet_buffer;
+
 using packets_per_hour   = icp::units::rate<uint64_t, std::ratio<1, 3600>>;
 
 class generic_source {
@@ -42,10 +44,9 @@ public:
         return (m_self->packet_rate());
     }
 
-    template <typename PacketType>
-    uint16_t pull(PacketType* packets[], uint16_t max_length) const
+    uint16_t pull(packet_buffer* packets[], uint16_t max_length) const
     {
-        return (m_self->pull(reinterpret_cast<void**>(packets), max_length));
+        return (m_self->pull(packets, max_length));
     }
 
     bool operator==(const generic_source& other) const
@@ -60,7 +61,7 @@ private:
         virtual bool active() const = 0;
         virtual uint16_t burst_size() const = 0;
         virtual packets_per_hour packet_rate() const = 0;
-        virtual uint16_t pull(void* packets[], uint16_t max_length) = 0;
+        virtual uint16_t pull(packet_buffer* packets[], uint16_t max_length) = 0;
     };
 
     /**
@@ -117,7 +118,7 @@ private:
             return (m_source.packet_rate());
         }
 
-        uint16_t pull(void* packets[], uint16_t max_length) override
+        uint16_t pull(packet_buffer* packets[], uint16_t max_length) override
         {
             return (m_source.pull(packets, max_length));
         }
