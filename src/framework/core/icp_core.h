@@ -18,6 +18,7 @@
 #include "core/icp_event_loop.hpp"
 #include "core/icp_init_factory.hpp"
 #include "core/icp_list.hpp"
+#include "core/icp_uuid.h"
 #endif
 
 #include "core/icp_common.h"

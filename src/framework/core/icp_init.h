@@ -5,6 +5,10 @@
  * @file
  */
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * Initialize core services and run all initialization/registration
  * callbacks.
@@ -25,5 +29,9 @@ void icp_init(void *context, int argc, char *argv[]);
  *   ZeroMQ context for messaging sockets
  */
 void icp_halt(void *context);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* _ICP_INIT_H_ */
