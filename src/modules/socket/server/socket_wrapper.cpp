@@ -4,20 +4,6 @@ namespace icp {
 namespace socket {
 namespace server {
 
-/**
- * This struct is magic.  Use templates and parameter packing to provide
- * some syntactic sugar for creating visitor objects for std::visit.
- */
-template<typename ...Ts>
-struct overloaded_visitor : Ts...
-{
-    overloaded_visitor(const Ts&... args)
-        : Ts(args)...
-    {}
-
-    using Ts::operator()...;
-};
-
 static
 socket make_socket(int type, int protocol)
 {
@@ -51,17 +37,10 @@ size_t socket_wrapper::id() { return (m_id); }
 
 api::reply_msg socket_wrapper::handle_request(const api::request_msg& request)
 {
-    return (std::visit(overloaded_visitor(
-                           [&](tcp_socket& socket) -> api::reply_msg {
+    auto request_visitor = [&](auto& socket) -> api::reply_msg {
                                return (socket.handle_request(request));
-                           },
-                           [&](udp_socket& socket) -> api::reply_msg {
-                               return (socket.handle_request(request));
-                           }),
-                           [&](raw_socket& socket) -> api::reply_msg {
-                               return (socket.handle_request(request));
-                           }),
-                       m_socket));
+                           };
+    return (std::visit(request_visitor, m_socket));
 }
 
 }

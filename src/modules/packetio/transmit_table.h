@@ -11,6 +11,13 @@ namespace icp::packetio {
 template <typename Source>
 class transmit_table
 {
+    /*
+     * XXX: 64 is a biased, yet arbitrary constant.
+     * It is probably the host machines cache line size, which keeps our
+     * key/value pair limited to the size of a cache line.  Conveniently,
+     * it also gives us sufficient room to store a stringified UUID, which
+     * is the default id for sources.
+     */
     static constexpr auto key_buffer_length =
         64 - (2 * sizeof(uint16_t)) - sizeof(Source);
 public:

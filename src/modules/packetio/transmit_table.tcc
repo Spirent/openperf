@@ -64,8 +64,8 @@ transmit_table<Source>::remove_source(uint16_t port_idx, uint16_t queue_idx,
 template <typename Source>
 struct source_map_comparator
 {
-    static constexpr auto key_port_idx = 0;
-    static constexpr auto key_queue_idx = 1;
+    static constexpr auto key_port_idx  = transmit_table<Source>::key_port_idx;
+    static constexpr auto key_queue_idx = transmit_table<Source>::key_queue_idx;
 
     bool operator()(const typename transmit_table<Source>::source_map::value_type& left,
                     const typename transmit_table<Source>::source_map::key_type& right)

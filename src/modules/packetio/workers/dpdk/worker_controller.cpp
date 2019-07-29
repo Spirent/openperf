@@ -201,7 +201,7 @@ worker_controller& worker_controller::operator=(worker_controller&& other)
 {
     if (this != &other) {
         m_context = other.m_context;
-        m_driver = other.m_driver;
+        m_driver = std::move(other.m_driver);
         m_workers = std::move(other.m_workers);
         m_fib = std::move(other.m_fib);
         m_tib = std::move(other.m_tib);

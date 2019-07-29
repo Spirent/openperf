@@ -24,6 +24,8 @@ class forwarding_table
     using interface_map = immer::map<uint64_t, Interface*>;
     using sink_vector   = immer::flex_vector<Sink>;
 
+    static constexpr unsigned mac_address_length = 6;
+
     std::array<std::atomic<interface_map*>, MaxPorts> m_interfaces;
     std::array<std::atomic<sink_vector*>,   MaxPorts> m_sinks;
 
@@ -39,7 +41,7 @@ public:
     sink_vector* remove_sink(uint16_t port_idx, Sink sink);
 
     Interface* find_interface(uint16_t port_idx, const net::mac_address& mac) const;
-    Interface* find_interface(uint16_t port_idx, const uint8_t octets[6]) const;
+    Interface* find_interface(uint16_t port_idx, const uint8_t octets[mac_address_length]) const;
 
     interface_map& get_interfaces(uint16_t port_idx) const;
     sink_vector&   get_sinks(uint16_t port_idx) const;

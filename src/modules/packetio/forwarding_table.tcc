@@ -5,6 +5,18 @@
 
 namespace icp::packetio {
 
+/**
+ * A note about our keys:
+ * We use the 16-bit port index and the 48-bit MAC address to generate
+ * a 64 bit key of the form [port_idx | MAC].
+ * This does two things for us:
+ * 1. Packets received on the wrong port won't be forwarded to a matching
+ *    interface.
+ * 2. We can support the same MAC address on multiple ports.
+ *
+ * As we expand the L2 protocols that we support, we will need to expand
+ * the size of this key.
+ **/
 static uint64_t to_key(uint16_t port_idx, const net::mac_address& mac)
 {
     return (static_cast<uint64_t>(port_idx) << 48
@@ -118,7 +130,7 @@ Interface* forwarding_table<Interface, Sink, MaxPorts>::find_interface(
 
 template <typename Interface, typename Sink, int MaxPorts>
 Interface* forwarding_table<Interface, Sink, MaxPorts>::find_interface(
-    uint16_t port_idx, const uint8_t octets[6]) const
+    uint16_t port_idx, const uint8_t octets[mac_address_length]) const
 {
     assert(port_idx < MaxPorts);
 

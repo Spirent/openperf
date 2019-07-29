@@ -20,7 +20,7 @@ class generic_driver {
 public:
     template <typename Driver>
     generic_driver(Driver d)
-        : m_self(std::make_shared<driver_model<Driver>>(std::move(d)))
+        : m_self(std::make_unique<driver_model<Driver>>(std::move(d)))
     {}
 
     std::vector<std::string> port_ids() const
@@ -92,7 +92,7 @@ private:
         Driver m_driver;
     };
 
-    std::shared_ptr<driver_concept> m_self;
+    std::unique_ptr<driver_concept> m_self;
 };
 
 std::unique_ptr<generic_driver> make();

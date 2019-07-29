@@ -64,7 +64,7 @@ class generic_stack {
 public:
     template <typename Stack>
     generic_stack(Stack s)
-        : m_self(std::make_shared<stack_model<Stack>>(std::move(s)))
+        : m_self(std::make_unique<stack_model<Stack>>(std::move(s)))
     {}
 
     std::string id() const
@@ -147,7 +147,7 @@ private:
         Stack m_stack;
     };
 
-    std::shared_ptr<stack_concept> m_self;
+    std::unique_ptr<stack_concept> m_self;
 };
 
 std::unique_ptr<generic_stack> make(driver::generic_driver& driver,

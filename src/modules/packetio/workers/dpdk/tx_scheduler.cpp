@@ -57,12 +57,13 @@ static void read_timer(int fd, void* arg)
 static int set_timer_interval(int fd, std::chrono::nanoseconds ns)
 {
     using namespace std::literals::chrono_literals;
-    using timer_s  = std::chrono::duration<time_t>;
-    using timer_ns = std::chrono::duration<long, std::nano>;
+    using ts_s  = std::chrono::duration<decltype(std::declval<timespec>().tv_sec)>;
+    using ts_ns = std::chrono::duration<decltype(std::declval<timespec>().tv_nsec),
+                                        std::nano>;
 
     auto timer_value = itimerspec{
-        .it_interval = { std::chrono::duration_cast<timer_s>(ns).count(),
-                         std::chrono::duration_cast<timer_ns>(ns % 1s).count() },
+        .it_interval = { std::chrono::duration_cast<ts_s>(ns).count(),
+                         std::chrono::duration_cast<ts_ns>(ns % 1s).count() },
         .it_value    = { 0, 1 }  /* fire immediately */
     };
 
@@ -72,13 +73,14 @@ static int set_timer_interval(int fd, std::chrono::nanoseconds ns)
 static int set_timer_oneshot(int fd, std::chrono::nanoseconds ns)
 {
     using namespace std::literals::chrono_literals;
-    using timer_s  = std::chrono::duration<time_t>;
-    using timer_ns = std::chrono::duration<long, std::nano>;
+    using ts_s  = std::chrono::duration<decltype(std::declval<timespec>().tv_sec)>;
+    using ts_ns = std::chrono::duration<decltype(std::declval<timespec>().tv_nsec),
+                                        std::nano>;
 
     auto timer_value = itimerspec{
         .it_interval = { 0, 0 },
-        .it_value    = { std::chrono::duration_cast<timer_s>(ns).count(),
-                         std::chrono::duration_cast<timer_ns>(ns % 1s).count() }
+        .it_value    = { std::chrono::duration_cast<ts_s>(ns).count(),
+                         std::chrono::duration_cast<ts_ns>(ns % 1s).count() }
     };
 
     return (timerfd_settime(fd, 0, &timer_value, nullptr));
@@ -144,16 +146,13 @@ void tx_scheduler::do_reschedule(const schedule::time_point& now)
 {
     const auto& priority_vec = get_container(m_schedule);
 
-    for (auto& [_, source] : m_tib.get_sources(port_id(), queue_id())) {
-        bool found = false;
-        for (const auto& entry : priority_vec) {
-            if (source == *entry.source) {
-                found = true;
-                break;
-            }
-        }
-
-        if (!found) {
+    for (const auto& key_source : m_tib.get_sources(port_id(), queue_id())) {
+        auto& source = key_source.second;
+        auto found = std::find_if(std::begin(priority_vec), std::end(priority_vec),
+                                  [&](const auto& entry) {
+                                      return (source == *entry.source);
+                                  });
+        if (found == std::end(priority_vec)) {
             m_schedule.push({ now + next_deadline(source),
                               std::addressof(source) });
         }

@@ -347,7 +347,7 @@ static void disable_event_interrupt(const task_ptr& task)
 struct run_args {
     void* control;
     recycler* recycler;
-    event_loop_adapter& loop_adapter;
+    event_loop::generic_event_loop& loop;
     const fib* fib;
     const std::vector<task_ptr>& rx_queues;
     const std::vector<task_ptr>& pollables;
@@ -357,7 +357,7 @@ static void run_pollable(run_args&& args)
 {
     bool messages = false;
     auto ctrl_sock = zmq_socket(args.control, &messages);
-    auto loop = event_loop::generic_event_loop(&args.loop_adapter);
+    auto& loop_adapter = args.loop.get_reference<event_loop_adapter>();
     auto poller = epoll_poller();
 
     poller.add(&ctrl_sock);
@@ -381,7 +381,7 @@ static void run_pollable(run_args&& args)
     for (auto& q : args.rx_queues) {
         do {
             enable_event_interrupt(q);
-        } while (service_event(loop, args.fib, q));
+        } while (service_event(args.loop, args.fib, q));
     }
 
     while (!messages) {
@@ -391,7 +391,7 @@ static void run_pollable(run_args&& args)
             for (auto& event : events) {
                 std::visit(overloaded_visitor(
                                [&](callback *cb) {
-                                   cb->run_callback(loop);
+                                   cb->run_callback(args.loop);
                                },
                                [&](rx_queue* rxq) {
                                    while (rx_burst(args.fib, rxq) == pkt_burst_size)
@@ -414,7 +414,7 @@ static void run_pollable(run_args&& args)
                            event);
             }
         }
-        args.loop_adapter.update_poller(poller);
+        loop_adapter.update_poller(poller);
     }
 
     for (auto& q : args.rx_queues) {
@@ -433,7 +433,7 @@ static void run_spinning(run_args&& args)
 {
     bool messages = false;
     auto ctrl_sock = zmq_socket(args.control, &messages);
-    auto loop = event_loop::generic_event_loop(&args.loop_adapter);
+    auto& loop_adapter = args.loop.get_reference<event_loop_adapter>();
     auto poller = epoll_poller();
 
     poller.add(&ctrl_sock);
@@ -450,14 +450,14 @@ static void run_spinning(run_args&& args)
         do {
             pkts = 0;
             for (auto& q : args.rx_queues) {
-                pkts += service_event(loop, args.fib, q);
+                pkts += service_event(args.loop, args.fib, q);
             }
         } while (pkts);
 
         /* All queues are idle; check callbacks */
-        args.loop_adapter.update_poller(poller);
+        loop_adapter.update_poller(poller);
         for (auto& event : poller.poll(0)) {
-             service_event(loop, args.fib, event);
+             service_event(args.loop, args.fib, event);
         }
     }
 
@@ -490,8 +490,7 @@ class worker : public finite_state_machine<worker, state, command_msg>
     void* m_control;
     recycler* m_recycler;
     const fib* m_fib;
-
-    event_loop_adapter m_loop_adapter;
+    event_loop::generic_event_loop m_loop;
 
     /**
      * Workers deal with a number of different event sources.  All of those
@@ -584,7 +583,7 @@ class worker : public finite_state_machine<worker, state, command_msg>
         return (run_args{
                 .control = m_control,
                 .recycler = m_recycler,
-                .loop_adapter = m_loop_adapter,
+                .loop = m_loop,
                 .fib = m_fib,
                 .rx_queues = m_rx_queues,
                 .pollables = m_pollables
@@ -597,6 +596,7 @@ public:
         , m_control(control)
         , m_recycler(recycler)
         , m_fib(fib)
+        , m_loop(event_loop_adapter{})
     {}
 
     /* State transition functions */

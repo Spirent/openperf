@@ -29,7 +29,7 @@ class generic_workers
 public:
     template <typename Workers>
     generic_workers(Workers s)
-        : m_self(std::make_shared<workers_model<Workers>>(std::move(s)))
+        : m_self(std::make_unique<workers_model<Workers>>(std::move(s)))
     {}
 
     transmit_function get_transmit_function(std::string_view port_id) const
@@ -175,7 +175,7 @@ private:
         Workers m_workers;
     };
 
-    std::shared_ptr<workers_concept> m_self;
+    std::unique_ptr<workers_concept> m_self;
 };
 
 std::unique_ptr<generic_workers> make(void*, icp::core::event_loop&, driver::generic_driver&);

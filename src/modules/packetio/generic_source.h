@@ -43,9 +43,9 @@ public:
     }
 
     template <typename PacketType>
-    uint16_t pull(PacketType* packets[], uint16_t length) const
+    uint16_t pull(PacketType* packets[], uint16_t max_length) const
     {
-        return (m_self->pull(reinterpret_cast<void**>(packets), length));
+        return (m_self->pull(reinterpret_cast<void**>(packets), max_length));
     }
 
     bool operator==(const generic_source& other) const
@@ -60,7 +60,7 @@ private:
         virtual bool active() const = 0;
         virtual uint16_t burst_size() const = 0;
         virtual packets_per_hour packet_rate() const = 0;
-        virtual uint16_t pull(void* packets[], uint16_t length) const = 0;
+        virtual uint16_t pull(void* packets[], uint16_t max_length) = 0;
     };
 
     /**
@@ -117,9 +117,9 @@ private:
             return (m_source.packet_rate());
         }
 
-        uint16_t pull(void* packets[], uint16_t length) const override
+        uint16_t pull(void* packets[], uint16_t max_length) override
         {
-            return (m_source.pull(packets, length));
+            return (m_source.pull(packets, max_length));
         }
 
         Source m_source;
