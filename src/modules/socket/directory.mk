@@ -16,8 +16,8 @@ SOCKSRV_SOURCES += \
 	server/lwip_utils.cpp \
 	server/pbuf_queue.cpp \
 	server/raw_socket.cpp \
-	server/stream_channel.cpp \
 	server/socket_utils.cpp \
+	server/stream_channel.cpp \
 	server/tcp_socket.cpp \
 	server/udp_socket.cpp
 

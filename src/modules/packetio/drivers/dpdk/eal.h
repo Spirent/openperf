@@ -48,12 +48,6 @@ public:
     tl::expected<std::string, std::string> create_port(std::string_view id, const port::config_data& config);
     tl::expected<void, std::string> delete_port(std::string_view id);
 
-    tl::expected<void, int> attach_port_sink(std::string_view id, pga::generic_sink& sink);
-    void detach_port_sink(std::string_view id, pga::generic_sink& sink);
-
-    tl::expected<void, int> attach_port_source(std::string_view id, pga::generic_source& source);
-    void detach_port_source(std::string_view id, pga::generic_source& source);
-
 private:
     bool m_initialized;
     std::unique_ptr<pool_allocator> m_allocator;

@@ -89,7 +89,7 @@ class generic_port {
 public:
     template <typename Port>
     generic_port(Port port)
-        : m_self(std::make_shared<port_model<Port>>(std::move(port)))
+        : m_self(std::make_unique<port_model<Port>>(std::move(port)))
     {}
 
     std::string id() const
@@ -194,7 +194,7 @@ private:
         Port m_port;
     };
 
-    std::shared_ptr<port_concept> m_self;
+    std::unique_ptr<port_concept> m_self;
 };
 
 std::shared_ptr<swagger::v1::model::Port> make_swagger_port(const generic_port&);

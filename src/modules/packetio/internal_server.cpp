@@ -16,20 +16,61 @@ struct overloaded_visitor : Ts...
 };
 
 reply_msg handle_request(workers::generic_workers& workers,
+                         const request_sink_add& request)
+{
+    auto result = workers.add_sink(request.data.src_id,
+                                   std::move(request.data.sink));
+    if (!result) {
+        return (reply_error{result.error()});
+    } else {
+        return (reply_ok{});
+    }
+}
+
+reply_msg handle_request(workers::generic_workers& workers,
+                         const request_sink_del& request)
+{
+    workers.del_sink(request.data.src_id,
+                     std::move(request.data.sink));
+    return (reply_ok{});
+}
+
+reply_msg handle_request(workers::generic_workers& workers,
+                         const request_source_add& request)
+{
+    auto result = workers.add_source(request.data.dst_id,
+                                     std::move(request.data.source));
+
+    if (!result) {
+        return (reply_error{result.error()});
+    } else {
+        return (reply_ok{});
+    }
+}
+
+reply_msg handle_request(workers::generic_workers& workers,
+                         const request_source_del& request)
+{
+    workers.del_source(request.data.dst_id,
+                       std::move(request.data.source));
+    return (reply_ok{});
+}
+
+reply_msg handle_request(workers::generic_workers& workers,
                          const request_task_add& request)
 {
-    auto result = (request.task.on_delete.has_value()
-                   ? workers.add_task(request.task.ctx,
-                                      request.task.name,
-                                      request.task.notifier,
-                                      request.task.on_event,
-                                      request.task.on_delete.value(),
-                                      request.task.arg)
-                   : workers.add_task(request.task.ctx,
-                                      request.task.name,
-                                      request.task.notifier,
-                                      request.task.on_event,
-                                      request.task.arg));
+    auto result = (request.data.on_delete.has_value()
+                   ? workers.add_task(request.data.ctx,
+                                      request.data.name,
+                                      request.data.notifier,
+                                      request.data.on_event,
+                                      request.data.on_delete.value(),
+                                      request.data.arg)
+                   : workers.add_task(request.data.ctx,
+                                      request.data.name,
+                                      request.data.notifier,
+                                      request.data.on_event,
+                                      request.data.arg));
 
     if (!result) {
         return (reply_error{result.error()});
@@ -48,8 +89,24 @@ reply_msg handle_request(workers::generic_workers& workers,
 static std::string to_string(request_msg& request)
 {
     return (std::visit(overloaded_visitor(
+                           [](const request_sink_add& msg) {
+                               return ("add sink " + std::string(msg.data.sink.id())
+                                       + " to source " + std::string(msg.data.src_id));
+                           },
+                           [](const request_sink_del& msg) {
+                               return ("delete sink " + std::string(msg.data.sink.id())
+                                       + " from source " + std::string(msg.data.src_id));
+                           },
+                           [](const request_source_add& msg) {
+                               return ("add source " + std::string(msg.data.source.id())
+                                       + " to destination " + std::string(msg.data.dst_id));
+                           },
+                           [](const request_source_del& msg) {
+                               return ("delete source " + std::string(msg.data.source.id())
+                                       + " from destination " + std::string(msg.data.dst_id));
+                           },
                            [](const request_task_add& msg) {
-                               return ("add task " + std::string(msg.task.name));
+                               return ("add task " + std::string(msg.data.name));
                            },
                            [](const request_task_del& msg) {
                                return ("delete task " + std::string(msg.task_id));

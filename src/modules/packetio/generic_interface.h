@@ -66,7 +66,7 @@ class generic_interface {
 public:
     template <typename Interface>
     generic_interface(Interface intf)
-        : m_self(std::make_shared<interface_model<Interface>>(std::move(intf)))
+        : m_self(std::make_unique<interface_model<Interface>>(std::move(intf)))
     {}
 
     std::string id() const
@@ -149,7 +149,7 @@ private:
         Interface m_interface;
     };
 
-    std::shared_ptr<interface_concept> m_self;
+    std::unique_ptr<const interface_concept> m_self;
 };
 
 std::shared_ptr<swagger::v1::model::Interface> make_swagger_interface(const generic_interface&);

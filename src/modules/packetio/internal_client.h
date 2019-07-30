@@ -7,6 +7,8 @@
 
 #include "core/icp_core.h"
 #include "packetio/generic_event_loop.h"
+#include "packetio/generic_sink.h"
+#include "packetio/generic_source.h"
 #include "packetio/generic_workers.h"
 
 namespace icp::packetio::internal::api {
@@ -26,6 +28,15 @@ public:
 
     client(client&& other);
     client& operator=(client&& other);
+
+    tl::expected<void, int> add_sink(std::string_view src_id,
+                                     packets::generic_sink sink);
+    tl::expected<void, int> del_sink(std::string_view src_id,
+                                     packets::generic_sink sink);
+    tl::expected<void, int> add_source(std::string_view dst_id,
+                                       packets::generic_source source);
+    tl::expected<void, int> del_source(std::string_view dst_id,
+                                       packets::generic_source source);
 
     tl::expected<std::string, int> add_task(workers::context ctx,
                                             std::string_view name,

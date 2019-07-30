@@ -39,10 +39,10 @@ struct service {
     }
 
     void init(void *context) {
-        m_driver = driver::make();
-        m_workers = workers::make(context, *m_driver);
-        m_stack = stack::make(*m_driver, *m_workers);
         m_loop = std::make_unique<icp::core::event_loop>();
+        m_driver = driver::make();
+        m_workers = workers::make(context, *m_loop, *m_driver);
+        m_stack = stack::make(*m_driver, *m_workers);
         m_port_server = std::make_unique<port::api::server>(context, *m_loop, *m_driver);
         m_stack_server = std::make_unique<stack::api::server>(context, *m_loop, *m_stack);
         m_if_server = std::make_unique<interface::api::server>(context, *m_loop, *m_stack);
@@ -72,10 +72,10 @@ struct service {
      * as the objects will be destroyed in the reverse order of their
      * declaration.
      */
+    std::unique_ptr<icp::core::event_loop> m_loop;
     std::unique_ptr<driver::generic_driver> m_driver;
     std::unique_ptr<workers::generic_workers> m_workers;
     std::unique_ptr<stack::generic_stack> m_stack;
-    std::unique_ptr<icp::core::event_loop> m_loop;
     std::unique_ptr<port::api::server> m_port_server;
     std::unique_ptr<stack::api::server> m_stack_server;
     std::unique_ptr<interface::api::server> m_if_server;

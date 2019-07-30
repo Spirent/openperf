@@ -3,6 +3,7 @@
 #include "packetio/workers/dpdk/callback.h"
 #include "packetio/workers/dpdk/rx_queue.h"
 #include "packetio/workers/dpdk/tx_queue.h"
+#include "packetio/workers/dpdk/tx_scheduler.h"
 #include "packetio/workers/dpdk/zmq_socket.h"
 #include "packetio/workers/dpdk/epoll_poller.h"
 
@@ -52,6 +53,8 @@ task_ptr to_task_ptr(void* ptr)
         return (reinterpret_cast<rx_queue*>(reinterpret_cast<uintptr_t>(ptr) & ptr_mask));
     case variant_index<task_ptr, tx_queue*>():
         return (reinterpret_cast<tx_queue*>(reinterpret_cast<uintptr_t>(ptr) & ptr_mask));
+    case variant_index<task_ptr, tx_scheduler*>():
+        return (reinterpret_cast<tx_scheduler*>(reinterpret_cast<uintptr_t>(ptr) & ptr_mask));
     case variant_index<task_ptr, zmq_socket*>():
         return (reinterpret_cast<zmq_socket*>(reinterpret_cast<uintptr_t>(ptr) & ptr_mask));
     default:

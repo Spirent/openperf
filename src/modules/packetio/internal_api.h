@@ -8,6 +8,8 @@
 #include "tl/expected.hpp"
 
 #include "packetio/generic_event_loop.h"
+#include "packetio/generic_sink.h"
+#include "packetio/generic_source.h"
 #include "packetio/generic_workers.h"
 
 namespace icp::packetio::internal::api {
@@ -15,6 +17,32 @@ namespace icp::packetio::internal::api {
 constexpr size_t name_length_max = 64;
 
 extern std::string_view endpoint;
+
+struct sink_data {
+    char src_id[name_length_max];
+    packets::generic_sink sink;
+};
+
+struct request_sink_add {
+    sink_data data;
+};
+
+struct request_sink_del {
+    sink_data data;
+};
+
+struct source_data {
+    char dst_id[name_length_max];
+    packets::generic_source source;
+};
+
+struct request_source_add {
+    source_data data;
+};
+
+struct request_source_del {
+    source_data data;
+};
 
 struct task_data {
     char name[name_length_max];
@@ -26,7 +54,7 @@ struct task_data {
 };
 
 struct request_task_add {
-    task_data task;
+    task_data data;
 };
 
 struct request_task_del {
@@ -43,7 +71,11 @@ struct reply_error {
     int value;
 };
 
-using request_msg = std::variant<request_task_add,
+using request_msg = std::variant<request_sink_add,
+                                 request_sink_del,
+                                 request_source_add,
+                                 request_source_del,
+                                 request_task_add,
                                  request_task_del>;
 
 using reply_msg = std::variant<reply_task_add,

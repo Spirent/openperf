@@ -16,10 +16,30 @@ serialized_msg serialize_request(const request_msg& msg)
     serialized_msg serialized;
     auto error = (message::zmq_msg_init(&serialized.type, msg.index())
                   || std::visit(message::overloaded_visitor(
+                                    [&](const request_sink_add& sink_add) {
+                                        return (message::zmq_msg_init(&serialized.data,
+                                                                      std::addressof(sink_add.data),
+                                                                      sizeof(sink_add.data)));
+                                    },
+                                    [&](const request_sink_del& sink_del) {
+                                        return (message::zmq_msg_init(&serialized.data,
+                                                                      std::addressof(sink_del.data),
+                                                                      sizeof(sink_del.data)));
+                                    },
+                                    [&](const request_source_add& source_add) {
+                                        return (message::zmq_msg_init(&serialized.data,
+                                                                      std::addressof(source_add.data),
+                                                                      sizeof(source_add.data)));
+                                    },
+                                    [&](const request_source_del& source_del) {
+                                        return (message::zmq_msg_init(&serialized.data,
+                                                                      std::addressof(source_del.data),
+                                                                      sizeof(source_del.data)));
+                                    },
                                     [&](const request_task_add& task_add) {
                                         return (message::zmq_msg_init(&serialized.data,
-                                                                      std::addressof(task_add.task),
-                                                                      sizeof(task_add.task)));
+                                                                      std::addressof(task_add.data),
+                                                                      sizeof(task_add.data)));
                                     },
                                     [&](const request_task_del& task_del) {
                                         return (message::zmq_msg_init(&serialized.data,
@@ -63,6 +83,14 @@ tl::expected<request_msg, int> deserialize_request(const serialized_msg& msg)
     using index_type = decltype(std::declval<request_msg>().index());
     auto idx = *(message::zmq_msg_data<index_type*>(&msg.type));
     switch (idx) {
+    case message::variant_index<request_msg, request_sink_add>():
+        return (request_sink_add{ *(message::zmq_msg_data<sink_data*>(&msg.data)) });
+    case message::variant_index<request_msg, request_sink_del>():
+        return (request_sink_del{ *(message::zmq_msg_data<sink_data*>(&msg.data)) });
+    case message::variant_index<request_msg, request_source_add>():
+        return (request_source_add{ *(message::zmq_msg_data<source_data*>(&msg.data)) });
+    case message::variant_index<request_msg, request_source_del>():
+        return (request_source_del{ *(message::zmq_msg_data<source_data*>(&msg.data)) });
     case message::variant_index<request_msg, request_task_add>():
         return (request_task_add{ *(message::zmq_msg_data<task_data*>(&msg.data)) });
     case message::variant_index<request_msg, request_task_del>(): {

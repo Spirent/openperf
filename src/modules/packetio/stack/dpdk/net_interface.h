@@ -37,12 +37,6 @@ public:
 
     unsigned max_gso_length() const;
 
-    int attach_sink(pga::generic_sink& sink);
-    void detach_sink(pga::generic_sink& sink);
-
-    int attach_source(pga::generic_source& source);
-    void detach_source(pga::generic_source& source);
-
     err_t handle_tx(struct pbuf*);
 
     err_t handle_rx(struct pbuf*);
