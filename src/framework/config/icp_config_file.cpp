@@ -317,8 +317,7 @@ char * icp_config_file_get_value_str(const char *param, char *value, int len)
 
     if (!val) { return (NULL); }
 
-    strncpy(value, (*val).c_str(),
-            std::min(len, static_cast<int>((*val).length() - 1)));
+    strncpy(value, (*val).c_str(), len);
 
     return (value);
 }
