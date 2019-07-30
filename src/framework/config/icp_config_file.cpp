@@ -1,6 +1,7 @@
 #include "core/icp_common.h"
 #include "icp_config_file.h"
 #include <iostream>
+#include <numeric>
 #include <unistd.h>
 #include <string.h>
 #include <unordered_map>
@@ -240,20 +241,53 @@ int icp_config_file_find(int argc, char * const argv[])
     // way to the logging thread. Definitely a workaround, but not a critical message either.
     ICP_LOG(ICP_LOG_DEBUG, "Reading from configuration file %s", file_name);
 
-    // Validate there are the two required top-level nodes "core" and "resources".
-    // Also check for the optional "modules" resource, and that no other top-level nodes exist.
-    if ((root_node.size() == 2) && root_node["core"] && root_node["resources"]) {
-        return (0);
-    } else if ((root_node.size() == 3) && root_node["core"] && root_node["resources"]
-               && root_node["modules"]) {
-        return (0);
+    // We currently support three top level nodes: `core`, `modules`, and
+    // `resources`. Nodes are generally optional, however the `resources`
+    // node depends on the `modules` node.  Hence, we return an error
+    // if 'resources' exists without `modules`.
+    if (root_node["resources"] && !root_node["modules"]) {
+        std::cerr << "Configuration file " << file_name << " contains \"resources\""
+                  << " but not \"modules\".  The \"modules\" section is required."
+                  << std::endl;
+        return (EINVAL);
     }
 
-    std::cerr << "Configuration file must only contain top-level sections \"core:\" and "
-                 "\"resources\", and, optionally, \"modules:\""
-              << std::endl;
+    // We also generate a warning if the config file contains unrecognized
+    // nodes.
+    auto top_level_nodes = std::initializer_list<std::string_view> { "core",
+                                                                     "modules",
+                                                                     "resources" };
 
-    return (EINVAL);
+    // Clearly, set_difference would be a better choice here, but unfortunately,
+    // YAML::Node only appears to allow you to retrieve the key value from an
+    // iterator and not from the actual node!
+    std::vector<std::string> unknown_nodes;
+    for (const auto& node : root_node) {
+        auto key = node.first.as<std::string>();
+        if (auto found = std::find(std::begin(top_level_nodes),
+                                   std::end(top_level_nodes), key);
+            found == std::end(top_level_nodes)) {
+            unknown_nodes.push_back(std::move(key));
+        }
+    }
+
+    if (!unknown_nodes.empty()) {
+        ICP_LOG(ICP_LOG_WARNING, "Ignoring %zu unrecognized top-level node%s in %s: %s\n",
+                unknown_nodes.size(),
+                unknown_nodes.size() == 1 ? "" : "s",
+                file_name,
+                std::accumulate(std::begin(unknown_nodes), std::end(unknown_nodes), std::string(),
+                                [&](const std::string& a, const std::string b) -> std::string {
+                                    return (a
+                                            + (a.length() == 0 ? ""
+                                               : unknown_nodes.size() == 2 ? " and "
+                                               : unknown_nodes.back() == b ? ", and "
+                                               : ". ")
+                                            + "\\\"" + b + "\\\"");
+                                }).c_str());
+    }
+
+    return (0);
 }
 
 int framework_cli_option_handler(int opt, const char *opt_arg)
