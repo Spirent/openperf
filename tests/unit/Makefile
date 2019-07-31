@@ -12,7 +12,7 @@ BUILD_DIR := $(ICP_BUILD_ROOT)/obj/unit
 TARGET_DIR := $(ICP_BUILD_ROOT)/bin
 
 SRC_DEPENDS :=
-BLD_DEPENDS := catch api_test config_file_test framework socket_test
+BLD_DEPENDS := catch api_test config_file_test framework packetio_test socket_test
 
 ###
 # Framework test files
@@ -34,6 +34,7 @@ SOURCES := \
 	framework/test_units_rate.cpp \
 	framework/test_uuid.cpp \
 	modules/api/test_api_internal_client.cpp \
+	modules/packetio/test_transmit_table.cpp \
 	modules/socket/test_bipartite_ring.cpp \
 	modules/socket/test_circular_buffer.cpp \
 	modules/socket/test_event_queue.cpp
@@ -50,6 +51,9 @@ ICP_LDFLAGS += $(addprefix -L,$(sort $(ICP_LIB_DIRS)))
 
 # Build rules
 $(eval $(call icp_generate_build_rules,$(SOURCES),,BUILD_DIR,BLD_DEPENDS))
+
+# Need to fix immer at some point
+$(BUILD_DIR)/modules/packetio/%.o: ICP_CPPFLAGS += -Wno-unused-parameter -Wno-shadow
 
 $(TARGET_DIR)/test_inception: $(OBJECTS) $(BLD_DEPENDS)
 	$(call icp_link_binary,$@,$(OBJECTS))

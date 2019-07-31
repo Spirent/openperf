@@ -4,7 +4,7 @@
 #include <atomic>
 #include <utility>
 
-#include "immer/map.hpp"
+#include "immer/flex_vector.hpp"
 
 namespace icp::packetio {
 
@@ -30,7 +30,8 @@ public:
 
     using source_key = std::tuple<uint16_t, uint16_t,
                                   std::array<char, key_buffer_length>>;
-    using source_map = immer::map<source_key, Source>;
+    using source_pair = std::pair<source_key, Source>;
+    using source_map = immer::flex_vector<source_pair>;
 
     source_map* insert_source(uint16_t port_idx, uint16_t queue_idx,
                               Source source);
