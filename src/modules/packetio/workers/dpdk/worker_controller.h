@@ -1,6 +1,7 @@
 #ifndef _ICP_PACKETIO_DPDK_WORKER_CONTROLLER_H_
 #define _ICP_PACKETIO_DPDK_WORKER_CONTROLLER_H_
 
+#include <map>
 #include <memory>
 #include <unordered_map>
 #include <utility>
@@ -58,7 +59,7 @@ public:
 
     using load_map   = std::unordered_map<unsigned, uint64_t>;
     using task_map   = std::unordered_map<core::uuid, callback>;
-    using worker_map = std::unordered_map<std::pair<uint16_t, uint16_t>, unsigned>;
+    using worker_map = std::map<std::pair<uint16_t, uint16_t>, unsigned>;
 
     using txsched_ptr  = std::unique_ptr<tx_scheduler>;
 

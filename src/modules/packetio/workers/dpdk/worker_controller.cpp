@@ -356,27 +356,17 @@ get_queue_and_worker_idx(const worker_controller::worker_map& workers,
 {
     static constexpr uint16_t max_idx = std::numeric_limits<uint16_t>::max();
 
-    struct comparator {
+    struct port_comparator {
         bool operator()(const worker_controller::worker_map::value_type& left,
                         const worker_controller::worker_map::key_type& right)
         {
-            auto left_id = (static_cast<uint32_t>(left.first.first) << 16
-                            | left.first.second);
-            auto right_id = (static_cast<uint32_t>(right.first) << 16
-                             | right.second);
-
-            return (left_id < right_id);
+            return (left.first.first < right.first);
         }
 
         bool operator()(const worker_controller::worker_map::key_type& left,
                         const worker_controller::worker_map::value_type& right)
         {
-            auto left_id = (static_cast<uint32_t>(left.first) << 16
-                            | left.second);
-            auto right_id = (static_cast<uint32_t>(right.first.first) << 16
-                             | right.first.second);
-
-            return (left_id < right_id);
+            return (left.first < right.first.first);
         }
     };
 
@@ -384,14 +374,10 @@ get_queue_and_worker_idx(const worker_controller::worker_map& workers,
      * Find the range for all of the worker entries for the specified port,
      * e.g. where (port, 0) <= key <= (port, infinity).
      */
-    auto range = std::make_pair(std::lower_bound(std::begin(workers),
-                                                 std::end(workers),
-                                                 std::make_pair(port_idx, 0),
-                                                 comparator{}),
-                                std::upper_bound(std::begin(workers),
-                                                 std::end(workers),
-                                                 std::make_pair(port_idx, max_idx),
-                                                 comparator{}));
+    auto range = std::equal_range(std::begin(workers),
+                                  std::end(workers),
+                                  std::make_pair(port_idx, 0),
+                                  port_comparator{});
 
     /*
      * Now, find the least loaded worker for this port range and return
