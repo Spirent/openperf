@@ -1,5 +1,4 @@
 #include <cassert>
-#include <optional>
 
 #include "packetio/forwarding_table.h"
 
@@ -39,18 +38,6 @@ static uint64_t to_key(uint16_t port_idx, const uint8_t octets[6])
             | octets[5]);
 }
 
-template <typename Vector, typename Item>
-std::optional<typename Vector::size_type> find(typename Vector::const_iterator first,
-                                               typename Vector::const_iterator last,
-                                               Item& value)
-{
-    typename Vector::size_type idx = 0;
-    for(; first != last; ++first, ++idx) {
-        if (*first == value) return (idx);
-    }
-    return (std::nullopt);
-}
-
 template <typename Interface, typename Sink, int MaxPorts>
 forwarding_table<Interface, Sink, MaxPorts>::forwarding_table()
 {
@@ -77,7 +64,7 @@ forwarding_table<Interface, Sink, MaxPorts>::insert_interface(
     assert(port_idx < MaxPorts);
 
     auto original = m_interfaces[port_idx].load(std::memory_order_relaxed);
-    auto updated = new interface_map(original->set(to_key(port_idx, mac), ifp));
+    auto updated = new interface_map(std::move(original->set(to_key(port_idx, mac), ifp)));
     return (m_interfaces[port_idx].exchange(updated, std::memory_order_release));
 }
 
@@ -89,7 +76,7 @@ forwarding_table<Interface, Sink, MaxPorts>::remove_interface(
     assert(port_idx < MaxPorts);
 
     auto original = m_interfaces[port_idx].load(std::memory_order_relaxed);
-    auto updated = new interface_map(original->erase(to_key(port_idx, mac)));
+    auto updated = new interface_map(std::move(original->erase(to_key(port_idx, mac))));
     return (m_interfaces[port_idx].exchange(updated, std::memory_order_release));
 }
 
@@ -100,7 +87,7 @@ forwarding_table<Interface, Sink, MaxPorts>::insert_sink(uint16_t port_idx, Sink
     assert(port_idx < MaxPorts);
 
     auto original = m_sinks[port_idx].load(std::memory_order_relaxed);
-    auto updated = new sink_vector(original->push_back(sink));
+    auto updated = new sink_vector(std::move(original->push_back(sink)));
     return (m_sinks[port_idx].exchange(updated, std::memory_order_release));
 }
 
@@ -111,9 +98,10 @@ forwarding_table<Interface, Sink, MaxPorts>::remove_sink(uint16_t port_idx, Sink
     assert(port_idx < MaxPorts);
 
     auto original = m_sinks[port_idx].load(std::memory_order_relaxed);
-    auto idx = find<sink_vector>(original->begin(), original->end(), sink);
-    if (!idx) return (nullptr);
-    auto updated = new sink_vector(original->erase(*idx));
+    auto found = std::find(original->begin(), original->end(), sink);
+    if (found == original->end()) return (nullptr);  /* not found */
+    auto updated = new sink_vector(
+        std::move(original->erase(std::distance(original->begin(), found))));
     return (m_sinks[port_idx].exchange(updated, std::memory_order_release));
 }
 
