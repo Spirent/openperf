@@ -139,7 +139,7 @@ const typename Container::container_type& get_container(Container& container)
 }
 
 /*
- * Look for new sources that we don't have scheduled and add them to
+ * Look for new, active sources that we don't have scheduled and add them to
  * the schedule.
  */
 void tx_scheduler::do_reschedule(const schedule::time_point& now)
@@ -149,11 +149,9 @@ void tx_scheduler::do_reschedule(const schedule::time_point& now)
     for (const auto& key_source : m_tib.get_sources(port_id(), queue_id())) {
         const auto& key = key_source.first;
         const auto& source = key_source.second;
-        auto found = std::find_if(std::begin(priority_vec), std::end(priority_vec),
-                                  [&](const auto& entry) {
-                                      return (key == entry.key);
-                                  });
-        if (found == std::end(priority_vec) && source.active()) {
+        if (source.active()
+            && std::none_of(std::begin(priority_vec), std::end(priority_vec),
+                            [&](const auto& entry) { return (key == entry.key); })) {
             m_schedule.push({ now + next_deadline(source), key });
         }
     }

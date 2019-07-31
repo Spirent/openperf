@@ -354,8 +354,6 @@ get_queue_and_worker_idx(const worker_controller::worker_map& workers,
                          const worker_controller::load_map& loads,
                          uint16_t port_idx)
 {
-    static constexpr uint16_t max_idx = std::numeric_limits<uint16_t>::max();
-
     struct port_comparator {
         bool operator()(const worker_controller::worker_map::value_type& left,
                         const worker_controller::worker_map::key_type& right)
@@ -382,28 +380,33 @@ get_queue_and_worker_idx(const worker_controller::worker_map& workers,
     /*
      * Now, find the least loaded worker for this port range and return
      * both the worker id and the queue id.
+     * Note: our range items contain:
+     * first = port/queue index as std::pair<uint16_t, uint16_t>
+     * second = worker index
+     * We find the minimum over the set and store the results in a tuple
+     * containing the minimum load with the associated queue and worker.
      */
-    auto min_load = std::numeric_limits<uint64_t>::max();
-    auto queue_idx = std::numeric_limits<uint16_t>::max();
-    auto worker_idx = std::numeric_limits<unsigned>::max();
+    auto load_queue_worker = std::accumulate(range.first, range.second,
+                                             std::make_tuple(std::numeric_limits<uint64_t>::max(),
+                                                             std::numeric_limits<uint16_t>::max(),
+                                                             std::numeric_limits<unsigned>::max()),
+                                             [&](const auto& tuple, const worker_controller::worker_map::value_type& item) {
+                                                 auto worker_load = loads.at(item.second);
+                                                 if (worker_load < std::get<0>(tuple)) {
+                                                     return (std::make_tuple(worker_load,
+                                                                             item.first.second,
+                                                                             item.second));
+                                                 } else {
+                                                     return (tuple);
+                                                 }
+                                             });
 
-    std::for_each(range.first, range.second,
-                  [&](const worker_controller::worker_map::value_type& item) {
-                      /*
-                       * Note for item:
-                       * first = std::pair<uint16_t, uint16_t>
-                       * second = worker id
-                       */
-                      auto worker_load = loads.at(item.second);
-                      if (worker_load < min_load) {
-                          min_load = worker_load;
-                          queue_idx = item.first.second;
-                          worker_idx = item.second;
-                      }
-                  });
+    /* Make sure we found something usable */
+    assert(std::get<1>(load_queue_worker) != std::numeric_limits<uint16_t>::max());
+    assert(std::get<2>(load_queue_worker) != std::numeric_limits<unsigned>::max());
 
-    assert(queue_idx != max_idx);
-    return (std::make_pair(queue_idx, worker_idx));
+    return (std::make_pair(std::get<1>(load_queue_worker),
+                           std::get<2>(load_queue_worker)));
 }
 
 /* This judges load by interrupts/sec */
