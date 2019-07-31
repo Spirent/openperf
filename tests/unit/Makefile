@@ -35,6 +35,7 @@ SOURCES := \
 	framework/test_uuid.cpp \
 	modules/api/test_api_internal_client.cpp \
 	modules/packetio/test_forwarding_table.cpp \
+	modules/packetio/test_recycle.cpp \
 	modules/packetio/test_transmit_table.cpp \
 	modules/socket/test_bipartite_ring.cpp \
 	modules/socket/test_circular_buffer.cpp \
