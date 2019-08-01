@@ -45,4 +45,22 @@ inline bool operator>=(const mac_address& lhs, const mac_address& rhs) { return 
 }
 }
 
+namespace std {
+
+template <>
+struct hash<icp::net::mac_address>
+{
+    size_t operator()(const icp::net::mac_address& mac) const noexcept
+    {
+        auto value = (static_cast<uint64_t>(mac[0]) << 40
+                      | static_cast<uint64_t>(mac[1]) << 32
+                      | mac[2] << 24
+                      | mac[3] << 16
+                      | mac[4] << 8
+                      | mac[5]);
+        return (std::hash<uint64_t>{}(value));
+    }
+};
+
+}
 #endif /* _ICP_FRAMEWORK_NET_MAC_ADDRESS_H_ */

@@ -21,7 +21,7 @@ namespace icp::packetio {
 template <typename Interface, typename Sink, int MaxPorts>
 class forwarding_table
 {
-    using interface_map = immer::map<uint64_t, Interface*>;
+    using interface_map = immer::map<net::mac_address, Interface*>;
     using sink_vector   = immer::flex_vector<Sink>;
 
     static constexpr unsigned mac_address_length = 6;
