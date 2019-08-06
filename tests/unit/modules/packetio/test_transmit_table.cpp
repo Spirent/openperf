@@ -33,7 +33,7 @@ TEST_CASE("transmit table functionality", "[transmit table]")
             REQUIRE(s1_ptr->id() == s1.id());
 
             SECTION("remove one, ") {
-                to_delete = table.remove_source(0, 0, s1);
+                to_delete = table.remove_source(0, 0, s1.id());
                 REQUIRE(to_delete);
                 delete to_delete;
 
@@ -99,7 +99,7 @@ TEST_CASE("transmit table functionality", "[transmit table]")
                               [&](const auto& pair) {
                                   auto to_delete = table.remove_source(pair.first,
                                                                        pair.second,
-                                                                       sources[pair.first * many_queues + pair.second]);
+                                                                       sources[pair.first * many_queues + pair.second].id());
                                   REQUIRE(to_delete);
                                   delete to_delete;
 

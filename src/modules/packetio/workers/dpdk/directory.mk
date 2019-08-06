@@ -10,6 +10,7 @@ PIO_WORKER_SOURCES += \
 	transmit_table_impl.cpp \
 	tx_queue.cpp \
 	tx_scheduler.cpp \
+	tx_source.cpp \
 	worker_client.cpp \
 	worker_controller.cpp \
 	worker_factory.cpp \

@@ -71,8 +71,6 @@ class tx_scheduler : public pollable_event<tx_scheduler>
                    , public schedule::finite_state_machine<tx_scheduler,
                                                            schedule::state>
 {
-    static constexpr uint16_t max_tx_burst_size = 32;
-
     const worker::tib& m_tib;
     uint16_t m_portid;
     uint16_t m_queueid;

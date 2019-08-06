@@ -110,15 +110,17 @@ transmit_table<Source>::insert_source(uint16_t port_idx, uint16_t queue_idx,
 template <typename Source>
 typename transmit_table<Source>::source_map*
 transmit_table<Source>::remove_source(uint16_t port_idx, uint16_t queue_idx,
-                                      Source source)
+                                      std::string_view source_id)
 {
-    auto key = to_key(port_idx, queue_idx, source.id());
+    auto key = to_key(port_idx, queue_idx, source_id);
     auto original = m_sources.load(std::memory_order_consume);
-    auto found = std::find_if(original->begin(), original->end(),
+    auto range = std::equal_range(original->begin(), original->end(), key,
+                               key_comparator<Source>{});
+    auto found = std::find_if(range.first, range.second,
                               [&](const auto& item) {
                                   return (item.first == key);
                               });
-    if (found == original->end()) return (nullptr);
+    if (found == range.second) return (nullptr);
     auto updated = new source_map{
         std::move(original->erase(std::distance(original->begin(), found)))};
     return (m_sources.exchange(updated, std::memory_order_release));

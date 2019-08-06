@@ -22,6 +22,7 @@ uint16_t length(const packet_buffer* buffer)
 
 void length(packet_buffer* buffer, uint16_t size)
 {
+    rte_pktmbuf_data_len(buffer) = size;
     rte_pktmbuf_pkt_len(buffer) = size;
 }
 

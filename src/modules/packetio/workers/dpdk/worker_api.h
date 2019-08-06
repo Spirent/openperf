@@ -11,9 +11,9 @@
 #include "packetio/drivers/dpdk/dpdk.h"
 #include "packetio/forwarding_table.h"
 #include "packetio/generic_sink.h"
-#include "packetio/generic_source.h"
 #include "packetio/recycle.h"
 #include "packetio/transmit_table.h"
+#include "packetio/workers/dpdk/tx_source.h"
 
 namespace icp::packetio::dpdk {
 class callback;
@@ -24,10 +24,12 @@ class zmq_socket;
 
 namespace worker {
 
+static constexpr uint16_t pkt_burst_size = 32;
+
 using fib = packetio::forwarding_table<netif,
                                        packets::generic_sink,
                                        RTE_MAX_ETHPORTS>;
-using tib = packetio::transmit_table<packets::generic_source>;
+using tib = packetio::transmit_table<dpdk::tx_source>;
 using recycler = packetio::recycle::depot<RTE_MAX_LCORE>;
 
 /**
