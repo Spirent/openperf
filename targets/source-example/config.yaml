@@ -1,0 +1,23 @@
+core:
+  log:
+    level: debug
+
+modules:
+  packetio:
+    dpdk:
+      port-ids:
+        port0: port0
+
+resources:
+  /interfaces/interface0:
+    port_id: port0
+    config:
+      protocols:
+        - eth:
+            mac_address: "00:10:94:ae:d6:ab"
+        - ipv4:
+            method: static
+            static:
+              address: "198.18.25.1"
+              prefix_length: 15
+              gateway: "198.18.0.1"
