@@ -86,7 +86,8 @@ static int set_timer_oneshot(int fd, std::chrono::nanoseconds ns)
     return (timerfd_settime(fd, 0, &timer_value, nullptr));
 }
 
-std::chrono::nanoseconds next_deadline(const packets::generic_source& source)
+template <typename Source>
+std::chrono::nanoseconds next_deadline(const Source& source)
 {
     using ns = std::chrono::nanoseconds;
     return (units::get_period<ns>(source.packet_rate() / source.burst_size()));
@@ -229,11 +230,12 @@ std::optional<schedule::state> tx_scheduler::on_timeout(const schedule::state_ru
     assert(!m_schedule.empty());
 
     schedule::time_point now;
-    std::array<rte_mbuf*, max_tx_burst_size> outgoing;
+    std::array<rte_mbuf*, worker::pkt_burst_size> outgoing;
 
     if (link_down(port_id())) return (schedule::state_link_check{});
 
-    while (m_schedule.top().deadline < (now = schedule::clock::now())) {
+    while (!m_schedule.empty()
+           && m_schedule.top().deadline < (now = schedule::clock::now())) {
         /* Grab the event from the schedule */
         auto& [deadline, key] = m_schedule.top();
 
@@ -248,10 +250,20 @@ std::optional<schedule::state> tx_scheduler::on_timeout(const schedule::state_ru
          * Run tx event; obviously need a better implementation to handle packets we
          * can't send immediately.
          */
-        auto to_send = source->pull(reinterpret_cast<packets::packet_buffer**>(outgoing.data()),
+        auto to_send = source->pull(outgoing.data(),
                                     std::min(static_cast<uint16_t>(outgoing.size()),
                                              source->burst_size()));
-        auto sent = rte_eth_tx_burst(port_id(), queue_id(), outgoing.data(), to_send);
+        auto prepared = rte_eth_tx_prepare(port_id(), queue_id(), outgoing.data(), to_send);
+        if (prepared < to_send) {
+            ICP_LOG(ICP_LOG_WARNING, "Source %s returned %u untransmittable packets\n",
+                    source->id().c_str(), to_send - prepared);
+        }
+
+        auto sent = rte_eth_tx_burst(port_id(), queue_id(), outgoing.data(), prepared);
+
+        /* Drop all unsent mbufs */
+        std::for_each(outgoing.data() + sent, outgoing.data() + to_send,
+                      [](auto mbuf) { rte_pktmbuf_free(mbuf); });
 
         ICP_LOG(ICP_LOG_TRACE, "Transmitted %u of %u packets on %u:%u from source %s\n",
                 sent, to_send, port_id(), queue_id(), source->id().c_str());

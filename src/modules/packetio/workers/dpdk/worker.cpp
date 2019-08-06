@@ -26,7 +26,6 @@ namespace icp::packetio::dpdk::worker {
 
 const std::string_view endpoint = "inproc://icp_packetio_workers_control";
 
-static constexpr uint16_t pkt_burst_size = 32;
 static constexpr int mbuf_prefetch_offset = 4;
 
 /**

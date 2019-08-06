@@ -6,6 +6,7 @@
 #include "packetio/drivers/dpdk/model/port_info.h"
 #include "packetio/drivers/dpdk/topology_utils.h"
 #include "packetio/workers/dpdk/event_loop_adapter.h"
+#include "packetio/workers/dpdk/tx_source.h"
 #include "packetio/workers/dpdk/worker_tx_functions.h"
 #include "packetio/workers/dpdk/worker_queues.h"
 #include "packetio/workers/dpdk/worker_controller.h"
@@ -447,7 +448,8 @@ tl::expected<void, int> worker_controller::add_source(std::string_view dst_id,
             static_cast<int>(dst_id.length()), dst_id.data(),
             *port_idx, queue_idx, worker_idx);
 
-    auto to_delete = m_tib->insert_source(*port_idx, queue_idx, std::move(source));
+    auto to_delete = m_tib->insert_source(*port_idx, queue_idx,
+                                          tx_source(*port_idx, std::move(source)));
     m_recycler->writer_add_gc_callback([to_delete](){ delete to_delete; });
 
     return {};
@@ -472,7 +474,7 @@ void worker_controller::del_source(std::string_view dst_id, packets::generic_sou
             static_cast<int>(dst_id.length()), dst_id.data(),
             *port_idx, *queue_idx, worker_idx);
 
-    auto to_delete = m_tib->remove_source(*port_idx, 0, std::move(source));
+    auto to_delete = m_tib->remove_source(*port_idx, *queue_idx, source.id());
     m_recycler->writer_add_gc_callback([to_delete](){ delete to_delete; });
 }
 

@@ -45,9 +45,7 @@ tl::expected<void, int> client::add_sink(std::string_view src_id,
             .sink = std::move(sink)
         }
     };
-    std::copy(src_id.data(),
-              src_id.data() + src_id.length(),
-              request.data.src_id);
+    std::copy_n(src_id.data(), src_id.length(), request.data.src_id);
 
     auto reply = do_request(m_socket.get(), request);
     if (!reply) {
@@ -77,9 +75,7 @@ tl::expected<void, int> client::del_sink(std::string_view src_id,
             .sink = std::move(sink)
         }
     };
-    std::copy(src_id.data(),
-              src_id.data() + src_id.length(),
-              request.data.src_id);
+    std::copy_n(src_id.data(), src_id.length(), request.data.src_id);
 
     auto reply = do_request(m_socket.get(), request);
     if (!reply) {
@@ -109,9 +105,7 @@ tl::expected<void, int> client::add_source(std::string_view dst_id,
             .source = std::move(source)
         }
     };
-    std::copy(dst_id.data(),
-              dst_id.data() + dst_id.length(),
-              request.data.dst_id);
+    std::copy_n(dst_id.data(), dst_id.length(), request.data.dst_id);
 
     auto reply = do_request(m_socket.get(), request);
     if (!reply) {
@@ -141,9 +135,7 @@ tl::expected<void, int> client::del_source(std::string_view dst_id,
             .source = std::move(source)
         }
     };
-    std::copy(dst_id.data(),
-              dst_id.data() + dst_id.length(),
-              request.data.dst_id);
+    std::copy_n(dst_id.data(), dst_id.length(), request.data.dst_id);
 
     auto reply = do_request(m_socket.get(), request);
     if (!reply) {

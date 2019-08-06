@@ -34,6 +34,11 @@ public:
         return (m_self->burst_size());
     }
 
+    uint16_t max_packet_length() const
+    {
+        return (m_self->max_packet_length());
+    }
+
     /*
      * Packets... Per... Hour ?!?!?
      * Yep.  Rationale is that it allows us to send traffic at less than
@@ -44,9 +49,10 @@ public:
         return (m_self->packet_rate());
     }
 
-    uint16_t pull(packet_buffer* packets[], uint16_t max_length) const
+    uint16_t transform(packet_buffer* input[], uint16_t input_length,
+                       packet_buffer* output[]) const
     {
-        return (m_self->pull(packets, max_length));
+        return (m_self->transform(input, input_length, output));
     }
 
     bool operator==(const generic_source& other) const
@@ -60,8 +66,10 @@ private:
         virtual std::string id() const = 0;
         virtual bool active() const = 0;
         virtual uint16_t burst_size() const = 0;
+        virtual uint16_t max_packet_length() const = 0;
         virtual packets_per_hour packet_rate() const = 0;
-        virtual uint16_t pull(packet_buffer* packets[], uint16_t max_length) = 0;
+        virtual uint16_t transform(packet_buffer* input[], uint16_t input_length,
+                                   packet_buffer* output[]) = 0;
     };
 
     /**
@@ -74,7 +82,7 @@ private:
 
     template <typename T>
     struct has_active<T, std::void_t<decltype(std::declval<T>().active())>>
-        : std::true_type{};
+        : std::true_type {};
 
     /* uint16_t burst_size(); */
     template <typename T, typename = std::void_t<> >
@@ -82,7 +90,15 @@ private:
 
     template <typename T>
     struct has_burst_size<T, std::void_t<decltype(std::declval<T>().burst_size())>>
-        : std::true_type{};
+        : std::true_type {};
+
+    /* uint16_t max_packet_length */
+    template <typename T, typename = std::void_t<> >
+    struct has_max_packet_length : std::false_type {};
+
+    template <typename T>
+    struct has_max_packet_length<T, std::void_t<decltype(std::declval<T>().max_packet_length())>>
+        : std::true_type {};
 
     template <typename Source>
     struct source_model final : source_concept {
@@ -113,14 +129,24 @@ private:
             }
         }
 
+        uint16_t max_packet_length() const override
+        {
+            if constexpr (has_max_packet_length<Source>::value) {
+                    return (m_source.max_packet_length());
+            } else {
+                return (1500);
+            }
+        }
+
         packets_per_hour packet_rate() const override
         {
             return (m_source.packet_rate());
         }
 
-        uint16_t pull(packet_buffer* packets[], uint16_t max_length) override
+        uint16_t transform(packet_buffer* input[], uint16_t input_length,
+                           packet_buffer* output[]) override
         {
-            return (m_source.pull(packets, max_length));
+            return (m_source.transform(input, input_length, output));
         }
 
         Source m_source;
