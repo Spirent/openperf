@@ -27,10 +27,16 @@ constexpr bool operator>(const entry& left, const entry& right);
 struct state_idle {};       /* No events are scheduled */
 struct state_link_check{};  /* Events are scheduled; link is down */
 struct state_running {};    /* Events are scheduled; link is up */
+struct state_blocked        /* Events are scheduled; link is up; queue is full */
+{
+    mutable uint16_t remaining;
+    entry entry;
+};
 
 using state = std::variant<state_idle,
                            state_link_check,
-                           state_running>;
+                           state_running,
+                           state_blocked>;
 
 std::string_view to_string(state&);
 
@@ -76,6 +82,8 @@ class tx_scheduler : public pollable_event<tx_scheduler>
     uint16_t m_queueid;
     int m_timerfd;
 
+    std::vector<rte_mbuf*> m_buffer;
+
     /* By default, priority_queue sorts by std::less<> which causes the
      * largest element to appear as top().  For our use, we want the
      * smallest value, as that represents the next deadline, so we use
@@ -115,10 +123,12 @@ public:
     std::optional<schedule::state> on_timeout(const schedule::state_idle&);
     std::optional<schedule::state> on_timeout(const schedule::state_link_check&);
     std::optional<schedule::state> on_timeout(const schedule::state_running&);
+    std::optional<schedule::state> on_timeout(const schedule::state_blocked&);
 
     void on_transition(const schedule::state_idle&);
     void on_transition(const schedule::state_link_check&);
     void on_transition(const schedule::state_running&);
+    void on_transition(const schedule::state_blocked&);
 };
 
 }

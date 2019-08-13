@@ -152,7 +152,7 @@ uint16_t port_info::rx_desc_count() const
 uint16_t port_info::tx_desc_count() const
 {
     return std::min((get_info_field(m_id, &rte_eth_dev_info::tx_desc_lim).nb_max),
-                    static_cast<uint16_t>(512));
+                    static_cast<uint16_t>(1024));
 }
 
 uint16_t port_info::tx_tso_segment_max() const
