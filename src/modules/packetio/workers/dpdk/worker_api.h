@@ -24,7 +24,7 @@ class zmq_socket;
 
 namespace worker {
 
-static constexpr uint16_t pkt_burst_size = 32;
+static constexpr uint16_t pkt_burst_size = 64;
 
 using fib = packetio::forwarding_table<netif,
                                        packets::generic_sink,
