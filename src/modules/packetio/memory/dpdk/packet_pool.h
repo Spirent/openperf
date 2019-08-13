@@ -22,7 +22,8 @@ class packet_pool
 
 public:
     packet_pool(std::string_view id, int numa_node,
-                uint16_t max_packet_length, uint16_t num_packets);
+                uint16_t packet_length, uint16_t packet_count,
+                uint16_t cache_size = 0);
     ~packet_pool() = default;
 
     packets::packet_buffer* get();
