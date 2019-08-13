@@ -5,6 +5,15 @@
 
 namespace icp::packetio::dpdk {
 
+using namespace std::literals::chrono_literals;
+static constexpr auto block_poll    = 100ns;
+static constexpr auto idle_poll     = 1s;
+static constexpr auto link_poll     = 100ms;
+static constexpr auto min_poll      = 1ns;
+static constexpr auto schedule_poll = idle_poll;
+
+static constexpr uint16_t max_retries = 4;
+
 namespace schedule {
 
 constexpr bool operator>(const entry& left, const entry& right)
@@ -33,6 +42,9 @@ std::string_view to_string(state& state)
                            },
                            [](const state_running&) {
                                return ("running");
+                           },
+                           [](const state_blocked&) {
+                               return ("blocked");
                            }),
                        state));
 }
@@ -72,6 +84,8 @@ static int set_timer_interval(int fd, std::chrono::nanoseconds ns)
 
 static int set_timer_oneshot(int fd, std::chrono::nanoseconds ns)
 {
+    assert(ns.count() > 0);
+
     using namespace std::literals::chrono_literals;
     using ts_s  = std::chrono::duration<decltype(std::declval<timespec>().tv_sec)>;
     using ts_ns = std::chrono::duration<decltype(std::declval<timespec>().tv_nsec),
@@ -104,8 +118,7 @@ tx_scheduler::tx_scheduler(const worker::tib& tib, uint16_t port_idx, uint16_t q
                                  + std::string(strerror(errno)));
     }
 
-    using namespace std::literals::chrono_literals;
-    if (set_timer_interval(m_timerfd, 1s) == -1) {
+    if (set_timer_interval(m_timerfd, idle_poll) == -1) {
         throw std::runtime_error("Could not set kernel timer: "
                                  + std::string(strerror(errno)));
     }
@@ -157,8 +170,14 @@ void tx_scheduler::do_reschedule(const schedule::time_point& now)
         }
     }
 
-    using namespace std::literals::chrono_literals;
-    m_time_reschedule += 1s;  /* Update from previous value to prevent drift */
+    /*
+     * Updating from the previous rescheduling time prevents drift.
+     * However, if we've been buffering packets, we could be running behind, so
+     * make sure our next reschedule time is in the future.
+     */
+    while (m_time_reschedule < now) {
+        m_time_reschedule += schedule_poll;
+    }
 }
 
 uint16_t tx_scheduler::port_id() const
@@ -193,17 +212,20 @@ static bool link_down(uint16_t port_idx)
     return (link.link_status == ETH_LINK_DOWN);
 }
 
-static bool have_sources(const worker::tib& tib, uint16_t port_idx, uint16_t queue_idx)
+static bool have_active_sources(const worker::tib& tib, uint16_t port_idx, uint16_t queue_idx)
 {
     /* Check the forwarding table for matching events */
     auto range = tib.get_sources(port_idx, queue_idx);
-    return (std::distance(range.first, range.second));
+    return (std::any_of(range.first, range.second,
+                        [](const auto& key_source) {
+                            return (key_source.second.active());
+                        }));
 }
 
 std::optional<schedule::state> tx_scheduler::on_timeout(const schedule::state_idle&)
 {
     /* No sources --> nothing to do */
-    if (!have_sources(m_tib, port_id(), queue_id())) return (std::nullopt);
+    if (!have_active_sources(m_tib, port_id(), queue_id())) return (std::nullopt);
 
     /* Next state depends on link */
     if (link_down(port_id())) {
@@ -218,55 +240,109 @@ std::optional<schedule::state> tx_scheduler::on_timeout(const schedule::state_li
     if (link_down(port_id())) return (std::nullopt);
 
     /* Link is up; Next state depends on whether we have events to schedule */
-    if (have_sources(m_tib, port_id(), queue_id())) {
+    if (have_active_sources(m_tib, port_id(), queue_id())) {
         return (schedule::state_running{});
     } else {
         return (schedule::state_idle{});
     }
 }
 
-std::optional<schedule::state> tx_scheduler::on_timeout(const schedule::state_running&)
+template <typename T>
+static __attribute__((const)) T distribute(T total, T buckets, T n)
 {
-    assert(!m_schedule.empty());
+    assert(n < buckets);
+    auto base = total / buckets;
+    return (n < total % buckets ? base + 1 : base);
+}
 
-    schedule::time_point now;
+template <typename Source>
+static uint16_t do_transmit(uint16_t port_idx, uint16_t queue_idx,
+                            Source& source, uint16_t burst_size,
+                            std::vector<rte_mbuf*>& untransmitted)
+{
     std::array<rte_mbuf*, worker::pkt_burst_size> outgoing;
 
-    if (link_down(port_id())) return (schedule::state_link_check{});
+    /*
+     * Divide our source's packet burst into a set of similarly sized chunks
+     * that are less than or equal to our packet burst size.
+     */
+    uint16_t total_sent = 0;
+    uint16_t total_to_send = 0;
+    uint16_t nb_bursts = (burst_size + (worker::pkt_burst_size - 1)) / worker::pkt_burst_size;
+    for (uint16_t i = 0; i < nb_bursts; i++) {
+        auto loop_burst = distribute(burst_size, nb_bursts, i);
+        assert(loop_burst <= outgoing.size());
 
-    while (!m_schedule.empty()
-           && m_schedule.top().deadline < (now = schedule::clock::now())) {
-        /* Grab the event from the schedule */
-        auto& [deadline, key] = m_schedule.top();
-
-        auto source = m_tib.get_source(key);
-        if (!source) {
-            /* Source could have been removed while we were idle */
-            m_schedule.pop();
-            continue;
-        }
-
-        /*
-         * Run tx event; obviously need a better implementation to handle packets we
-         * can't send immediately.
-         */
-        auto to_send = source->pull(outgoing.data(),
-                                    std::min(static_cast<uint16_t>(outgoing.size()),
-                                             source->burst_size()));
-        auto prepared = rte_eth_tx_prepare(port_id(), queue_id(), outgoing.data(), to_send);
+        /* Grab a burst of packets and attempt to transmit them. */
+        auto to_send = source->pull(outgoing.data(), loop_burst);
+        auto prepared = rte_eth_tx_prepare(port_idx, queue_idx, outgoing.data(), to_send);
         if (prepared < to_send) {
             ICP_LOG(ICP_LOG_WARNING, "Source %s returned %u untransmittable packets\n",
                     source->id().c_str(), to_send - prepared);
+
+            /* Drop all un-sendable mbufs */
+            std::for_each(outgoing.data() + prepared, outgoing.data() + to_send,
+                          [](auto mbuf) { rte_pktmbuf_free(mbuf); });
         }
 
-        auto sent = rte_eth_tx_burst(port_id(), queue_id(), outgoing.data(), prepared);
+        total_to_send += prepared;
+        auto sent = rte_eth_tx_burst(port_idx, queue_idx, outgoing.data(), prepared);
 
-        /* Drop all unsent mbufs */
-        std::for_each(outgoing.data() + sent, outgoing.data() + to_send,
-                      [](auto mbuf) { rte_pktmbuf_free(mbuf); });
+        /*
+         * If we were unable to send all of the packets in our burst, retry
+         * a few times before buffering the packets and returning.
+         */
+        if (sent < prepared) {
+            unsigned retries = 0;
+            do {
+                rte_pause();
+                sent += rte_eth_tx_burst(port_idx, queue_idx, outgoing.data() + sent,
+                                         prepared - sent);
+            } while (sent < prepared && ++retries < max_retries);
 
-        ICP_LOG(ICP_LOG_TRACE, "Transmitted %u of %u packets on %u:%u from source %s\n",
-                sent, to_send, port_id(), queue_id(), source->id().c_str());
+            /* Queue is still full after our retries; buffer packets */
+            if (sent < prepared) {
+                std::copy_n(outgoing.data() + sent, prepared - sent,
+                            std::back_inserter(untransmitted));
+                total_sent += sent;
+                break;
+            }
+        }
+
+        total_sent += sent;
+    }
+
+    ICP_LOG(ICP_LOG_TRACE, "Transmitted %u of %u packets on %u:%u from source %s\n",
+            total_sent, total_to_send, port_idx, queue_idx, source->id().c_str());
+
+    return (total_sent);
+}
+
+std::optional<schedule::state> tx_scheduler::on_timeout(const schedule::state_running&)
+{
+    if (link_down(port_id())) return (schedule::state_link_check{});
+
+    schedule::time_point now;
+    while (!m_schedule.empty()
+           && m_schedule.top().deadline <= (now = schedule::clock::now())) {
+        /* Grab the event from the schedule */
+        auto [deadline, key] = m_schedule.top();
+        m_schedule.pop();
+
+        /*
+         * Verify the source is still in our forwarding table;
+         * it could have been removed while we were idle.
+         */
+        auto source = m_tib.get_source(key);
+        if (!source) continue;
+
+        auto burst_size = source->burst_size();
+        auto sent = do_transmit(port_id(), queue_id(), source, burst_size, m_buffer);
+
+        if (!m_buffer.empty()) {
+            uint16_t remaining = burst_size - sent - m_buffer.size();
+            return (schedule::state_blocked{remaining, {deadline, key}});
+        }
 
         /* Re-add entry to schedule if it still active */
         if (source->active()) {
@@ -276,13 +352,13 @@ std::optional<schedule::state> tx_scheduler::on_timeout(const schedule::state_ru
              */
             m_schedule.push({deadline + next_deadline(*source), key});
         }
-
-        m_schedule.pop();
     }
 
-    if (m_schedule.empty()) return (on_timeout(schedule::state_idle{}));
+    if (m_schedule.empty()) return (schedule::state_idle{});
 
-    if (now > m_time_reschedule) do_reschedule(now);
+    assert(m_schedule.top().deadline > now);
+
+    if (m_time_reschedule <= now) do_reschedule(now);
 
     /* Update timer for next event */
     set_timer_oneshot(m_timerfd,
@@ -290,41 +366,119 @@ std::optional<schedule::state> tx_scheduler::on_timeout(const schedule::state_ru
     return (std::nullopt);
 }
 
+std::optional<schedule::state> tx_scheduler::on_timeout(const schedule::state_blocked& blocked)
+{
+    assert(!m_buffer.empty());
+
+    if (link_down(port_id())) return (schedule::state_link_check{});
+
+    auto& [deadline, key] = blocked.entry;
+
+    /*
+     * Verify source still exists.  If it doesn't clear the buffer and
+     * transition to the appropriate state.
+     */
+    auto source = m_tib.get_source(key);
+    if (!source) {
+        m_buffer.clear();
+        if (have_active_sources(m_tib, port_id(), queue_id())) {
+            return (schedule::state_running{});
+        } else {
+            return (schedule::state_idle{});
+        }
+    }
+
+    auto to_send = m_buffer.size();
+    auto sent = rte_eth_tx_burst(port_id(), queue_id(), m_buffer.data(), to_send);
+    if (sent < to_send) {
+        m_buffer.erase(std::begin(m_buffer), std::begin(m_buffer) + sent);
+        set_timer_oneshot(m_timerfd, block_poll);
+        return (std::nullopt);
+    }
+    assert(sent == to_send);
+    m_buffer.clear();
+
+    sent = do_transmit(port_id(), queue_id(), source, blocked.remaining, m_buffer);
+
+    /* Still blocked */
+    if (sent < blocked.remaining) {
+        blocked.remaining -= sent;
+        set_timer_oneshot(m_timerfd, block_poll);
+        return (std::nullopt);
+    }
+
+    /*
+     * Blocked queue is cleared.
+     * Add the blocked source back to the schedule if it is still active.
+     * Note: we use the current time as the next source deadline so that
+     * we don't generate new events in the past.
+     */
+    assert(sent == blocked.remaining);
+    assert(m_buffer.empty());
+    if (source->active()) m_schedule.push({schedule::clock::now(), key});
+
+    /* If we don't have any active sources, return to the idle state */
+    if (!have_active_sources(m_tib, port_id(), queue_id())) {
+        return (schedule::state_idle{});
+    }
+
+    /*
+     * Otherwise, jump back into the run state.  If the run handler doesn't
+     * return an updated state, then we should stay in the run state; let
+     * the upper layer know.
+     */
+    auto state = on_timeout(schedule::state_running{});
+    return (state ? *state : schedule::state_running{});
+}
+
 void tx_scheduler::on_transition(const schedule::state_idle&)
 {
+    assert(m_buffer.empty());
     assert(m_schedule.empty());
 
-    using namespace std::literals::chrono_literals;
-    set_timer_interval(m_timerfd, 1s);
+    set_timer_interval(m_timerfd, idle_poll);
 }
 
 void tx_scheduler::on_transition(const schedule::state_link_check&)
 {
-    /* Drop any scheduled items as we can't do anything with them without a link */
+    /* Drop any buffered packets as we can't do anything with them without a link */
+    std::for_each(std::begin(m_buffer), std::end(m_buffer),
+                  [](auto mbuf){ rte_pktmbuf_free(mbuf); });
+    m_buffer.clear();
+
+    /* Drop any scheduled items as we can't do anything with them without a link either */
     while (!m_schedule.empty()) {
         m_schedule.pop();
     }
 
-    using namespace std::literals::chrono_literals;
-    set_timer_interval(m_timerfd, 500ms);
+    set_timer_interval(m_timerfd, link_poll);
 }
 
 void tx_scheduler::on_transition(const schedule::state_running&)
 {
-    assert(m_schedule.empty());
+    assert(m_buffer.empty());
+    assert(have_active_sources(m_tib, port_id(), queue_id()));
 
     auto now = schedule::clock::now();
+    if (m_schedule.empty()) {
+        /* Generate a schedule for all available entities */
+        for (auto& [key, source] : m_tib.get_sources(port_id(), queue_id())) {
+            if (source.active()) m_schedule.push({now + next_deadline(source), key});
+        }
 
-    /* Generate a schedule for all available entities */
-    for (auto& [key, source] : m_tib.get_sources(port_id(), queue_id())) {
-        m_schedule.push({now + next_deadline(source), key});
+        /* Adjust timer to match schedule */
+        m_time_reschedule = now + schedule_poll;
     }
 
-    /* Adjust timer to match schedule */
-    using namespace std::literals::chrono_literals;
-    m_time_reschedule = now + 1s;
     set_timer_oneshot(m_timerfd,
-                      std::min(m_schedule.top().deadline, m_time_reschedule) - now);
+                      std::max(min_poll,
+                               std::min(m_schedule.top().deadline, m_time_reschedule) - now));
+}
+
+void tx_scheduler::on_transition(const schedule::state_blocked&)
+{
+    assert(!m_buffer.empty());
+    set_timer_oneshot(m_timerfd, block_poll);
 }
 
 }

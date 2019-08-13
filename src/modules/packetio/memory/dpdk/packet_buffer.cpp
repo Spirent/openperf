@@ -46,4 +46,19 @@ const void* to_data(const packet_buffer* buffer, uint16_t offset)
     return (rte_pktmbuf_mtod_offset(buffer, void*, offset));
 }
 
+void* prepend(packet_buffer* buffer, uint16_t offset)
+{
+    return (rte_pktmbuf_prepend(buffer, offset));
+}
+
+void* append(packet_buffer* buffer, uint16_t offset)
+{
+    return (rte_pktmbuf_append(buffer, offset));
+}
+
+void* front(packet_buffer* buffer)
+{
+    return (rte_pktmbuf_prepend(buffer, buffer->data_off));
+}
+
 }
