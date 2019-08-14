@@ -286,4 +286,34 @@ std::vector<descriptor> distribute_queues(const std::vector<model::port_info>& p
                                            static_cast<uint16_t>(1))));
 }
 
+std::map<int, count> get_port_queue_counts(const std::vector<queue::descriptor>& descriptors)
+{
+    std::map<int, count> port_queue_counts;
+
+    for (auto& d : descriptors) {
+        if (port_queue_counts.find(d.port_id) == port_queue_counts.end()) {
+            port_queue_counts.emplace(d.port_id, count{});
+        }
+
+        auto& queue_count = port_queue_counts[d.port_id];
+
+        switch (d.mode) {
+        case queue::queue_mode::RX:
+            queue_count.rx++;
+            break;
+        case queue::queue_mode::TX:
+            queue_count.tx++;
+            break;
+        case queue::queue_mode::RXTX:
+            queue_count.tx++;
+            queue_count.rx++;
+            break;
+        default:
+            break;
+        }
+    }
+
+    return (port_queue_counts);
+}
+
 }

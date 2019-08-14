@@ -2,6 +2,7 @@
 #define _ICP_PACKETIO_DPDK_QUEUE_UTILS_H_
 
 #include <cstdint>
+#include <map>
 #include <vector>
 
 namespace icp {
@@ -39,6 +40,22 @@ struct descriptor {
  *   A vector containing queue assignments for workers
  */
 std::vector<descriptor> distribute_queues(const std::vector<model::port_info>& port_info, uint16_t q_workers);
+
+struct count {
+    uint16_t rx;  /**< number of rx queues */
+    uint16_t tx;  /**< number of tx queues */
+};
+
+/**
+ * Generate a map of port index --> queue counts based on assignments
+ * in the descriptor vector.
+ *
+ * @param[in] descriptors
+ *   A vector containing queue descriptors
+ * @return
+ *   A map of port indexes to queue counts
+ */
+std::map<int, count> get_port_queue_counts(const std::vector<descriptor>& descriptors);
 
 }
 }
