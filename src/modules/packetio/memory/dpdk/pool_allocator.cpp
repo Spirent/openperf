@@ -106,14 +106,17 @@ static rte_mempool* create_pbuf_mempool(const char* name, size_t size,
     return (mp);
 }
 
-pool_allocator::pool_allocator(const std::vector<model::port_info> &info)
+pool_allocator::pool_allocator(const std::vector<model::port_info> &info,
+                               const std::map<int, queue::count>& q_counts)
 {
     /* Base default pool size on the number and types of ports on each NUMA node */
     for (auto i = 0U; i < RTE_MAX_NUMA_NODES; i++) {
         auto sum = std::accumulate(begin(info), end(info), 0,
                                    [&](unsigned lhs, const model::port_info& rhs) {
                                        return (rhs.socket_id() == i
-                                               ? lhs + rhs.rx_desc_count() + rhs.tx_desc_count()
+                                               ? (lhs
+                                                  + (q_counts.at(rhs.id()).rx * rhs.rx_desc_count())
+                                                  + (q_counts.at(rhs.id()).tx * rhs.tx_desc_count()))
                                                : lhs);
                                    });
         if (sum) {

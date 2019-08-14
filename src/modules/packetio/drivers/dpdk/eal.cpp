@@ -215,42 +215,7 @@ static ssize_t eal_log_write(void* cookie __attribute__((unused)),
     return (size);
 }
 
-struct queue_count {
-    uint16_t rx;
-    uint16_t tx;
-};
-
-static std::map<int, queue_count> get_port_queue_counts(const std::vector<queue::descriptor>& descriptors)
-{
-    std::map<int, queue_count> port_queue_counts;
-
-    for (auto& d : descriptors) {
-        if (port_queue_counts.find(d.port_id) == port_queue_counts.end()) {
-            port_queue_counts.emplace(d.port_id, queue_count());
-        }
-
-        auto& queue_count = port_queue_counts[d.port_id];
-
-        switch (d.mode) {
-        case queue::queue_mode::RX:
-            queue_count.rx++;
-            break;
-        case queue::queue_mode::TX:
-            queue_count.tx++;
-            break;
-        case queue::queue_mode::RXTX:
-            queue_count.tx++;
-            queue_count.rx++;
-            break;
-        default:
-            break;
-        }
-    }
-
-    return (port_queue_counts);
-}
-
-static void configure_all_ports(const std::map<int, queue_count>& port_queue_counts,
+static void configure_all_ports(const std::map<int, queue::count>& port_queue_counts,
                                 const pool_allocator* allocator,
                                 const std::unordered_map<int, std::string>& id_name)
 {
@@ -396,9 +361,6 @@ eal::eal(std::vector<std::string> args,
     /* Sanity check all ports have names. */
     assert(port_info.size() == m_port_ids.size());
 
-    /* Use the port_info vector to allocate our default memory pools */
-    m_allocator = std::make_unique<pool_allocator>(port_info);
-
     ICP_LOG(ICP_LOG_INFO, "DPDK initialized with %" PRIu64 " ports and %u workers\n",
             port_info.size(), rte_lcore_count() - 1);
 
@@ -407,9 +369,13 @@ eal::eal(std::vector<std::string> args,
      * and cpu topoology.
      */
     auto q_descriptors = topology::queue_distribute(port_info);
+    auto q_counts = queue::get_port_queue_counts(q_descriptors);
+
+    /* Use the port_info and queue counts to allocate our default memory pools */
+    m_allocator = std::make_unique<pool_allocator>(port_info, q_counts);
 
     /* Use the queue descriptors to configure all of our ports */
-    configure_all_ports(get_port_queue_counts(q_descriptors), m_allocator.get(), m_port_ids);
+    configure_all_ports(q_counts, m_allocator.get(), m_port_ids);
 
     /* Finally, register a callback to log link status changes and start our ports. */
     if (int error = rte_eth_dev_callback_register(RTE_ETH_ALL, RTE_ETH_EVENT_INTR_LSC,
