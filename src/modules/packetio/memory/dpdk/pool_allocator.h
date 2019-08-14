@@ -6,6 +6,7 @@
 
 #include "core/icp_core.h"
 #include "packetio/drivers/dpdk/dpdk.h"
+#include "packetio/drivers/dpdk/queue_utils.h"
 #include "packetio/drivers/dpdk/model/port_info.h"
 
 namespace icp {
@@ -14,7 +15,8 @@ namespace dpdk {
 
 class pool_allocator {
 public:
-    pool_allocator(const std::vector<model::port_info>&);
+    pool_allocator(const std::vector<model::port_info>&,
+                   const std::map<int, queue::count>&);
 
     rte_mempool * rx_mempool(int socket_id) const;
 
