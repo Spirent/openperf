@@ -348,7 +348,7 @@ void physical_port::add_mac_address(const net::mac_address& mac)
      * address table is full, then enable promiscuous mode.
      */
     int error = rte_eth_dev_mac_addr_add(m_idx,
-                                         reinterpret_cast<ether_addr*>(
+                                         reinterpret_cast<rte_ether_addr*>(
                                              const_cast<uint8_t*>(mac.data())),
                                          0);
     if ((error == -ENOTSUP || error == -ENOSPC)
@@ -366,7 +366,7 @@ void physical_port::del_mac_address(const net::mac_address& mac)
      */
     if (!rte_eth_promiscuous_get(m_idx)) {
         rte_eth_dev_mac_addr_remove(m_idx,
-                                    reinterpret_cast<ether_addr*>(
+                                    reinterpret_cast<rte_ether_addr*>(
                                         const_cast<uint8_t*>(mac.data())));
     }
 }
