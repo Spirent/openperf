@@ -21,7 +21,7 @@ FW_SOURCES :=
 FW_DEPENDS :=
 FW_LDLIBS  :=
 
-FW_MODULES := core memory net
+FW_MODULES := core memory net stats
 
 # Load each module's directory.mk file
 include $(patsubst %, $(FW_SRC_DIR)/%/directory.mk, $(FW_MODULES))
