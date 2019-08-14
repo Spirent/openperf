@@ -120,8 +120,8 @@ static std::pair<size_t, size_t> partition_mbufs(rte_mbuf* const incoming[], int
      */
     for (i = 0; i < (length - mbuf_prefetch_offset); i++) {
         rte_prefetch0(rte_pktmbuf_mtod(incoming[i + mbuf_prefetch_offset], void*));
-        auto eth = rte_pktmbuf_mtod(incoming[i], struct ether_hdr*);
-        if (is_unicast_ether_addr(&eth->d_addr)) {
+        auto eth = rte_pktmbuf_mtod(incoming[i], struct rte_ether_hdr*);
+        if (rte_is_unicast_ether_addr(&eth->d_addr)) {
             unicast[ucast_idx++] = incoming[i];
         } else {
             multicast[mcast_idx++] = incoming[i];
@@ -130,8 +130,8 @@ static std::pair<size_t, size_t> partition_mbufs(rte_mbuf* const incoming[], int
 
      /* All prefetches are done; finish parsing the remaining mbufs. */
     for (; i < length; i++) {
-        auto eth = rte_pktmbuf_mtod(incoming[i], struct ether_hdr*);
-        if (is_unicast_ether_addr(&eth->d_addr)) {
+        auto eth = rte_pktmbuf_mtod(incoming[i], struct rte_ether_hdr*);
+        if (rte_is_unicast_ether_addr(&eth->d_addr)) {
             unicast[ucast_idx++] = incoming[i];
         } else {
             multicast[mcast_idx++] = incoming[i];
@@ -153,7 +153,7 @@ static void rx_interface_dispatch(const fib* fib, const rx_queue* rxq,
 
     /* Lookup interfaces for unicast packets ... */
     for (size_t i = 0; i < nb_ucast; i++) {
-        auto eth = rte_pktmbuf_mtod(unicast[i], struct ether_hdr *);
+        auto eth = rte_pktmbuf_mtod(unicast[i], struct rte_ether_hdr *);
         interfaces[i] = fib->find_interface(rxq->port_id(), eth->d_addr.addr_bytes);
     }
 

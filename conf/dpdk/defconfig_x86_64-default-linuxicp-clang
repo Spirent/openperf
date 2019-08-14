@@ -10,10 +10,25 @@
 ###
 
 #
+# String that appears before the version number
+#
+CONFIG_RTE_VER_PREFIX="DPDK"
+
+#
+# Version information completed when this file is processed for a build
+#
+CONFIG_RTE_VER_YEAR=__YEAR
+CONFIG_RTE_VER_MONTH=__MONTH
+CONFIG_RTE_VER_MINOR=__MINOR
+CONFIG_RTE_VER_SUFFIX=__SUFFIX
+CONFIG_RTE_VER_RELEASE=__RELEASE
+
+#
 # define executive environment
 # RTE_EXEC_ENV values are the directories in mk/exec-env/
 #
 CONFIG_RTE_EXEC_ENV="linuxapp"
+CONFIG_RTE_EXEC_ENV_LINUX=y
 CONFIG_RTE_EXEC_ENV_LINUXAPP=y
 
 #
@@ -276,6 +291,11 @@ CONFIG_RTE_LIBRTE_E1000_DEBUG_TX_FREE=n
 CONFIG_RTE_LIBRTE_E1000_PF_DISABLE_STRIP_CRC=n
 
 #
+# Compile burst-oriented HINIC PMD driver
+#
+CONFIG_RTE_LIBRTE_HINIC_PMD=n
+
+#
 # Compile burst-oriented IXGBE PMD driver
 #
 CONFIG_RTE_LIBRTE_IXGBE_PMD=y
@@ -320,14 +340,15 @@ CONFIG_RTE_LIBRTE_ICE_RX_ALLOW_BULK_ALLOC=y
 CONFIG_RTE_LIBRTE_ICE_16BYTE_RX_DESC=n
 
 #
-# Compile burst-oriented AVF PMD driver
+# Compile burst-oriented IAVF PMD driver
 #
-CONFIG_RTE_LIBRTE_AVF_PMD=n
-CONFIG_RTE_LIBRTE_AVF_INC_VECTOR=y
-CONFIG_RTE_LIBRTE_AVF_DEBUG_TX=n
-CONFIG_RTE_LIBRTE_AVF_DEBUG_TX_FREE=n
-CONFIG_RTE_LIBRTE_AVF_DEBUG_RX=n
-CONFIG_RTE_LIBRTE_AVF_16BYTE_RX_DESC=n
+CONFIG_RTE_LIBRTE_IAVF_PMD=n
+CONFIG_RTE_LIBRTE_IAVF_INC_VECTOR=y
+CONFIG_RTE_LIBRTE_IAVF_DEBUG_TX=n
+CONFIG_RTE_LIBRTE_IAVF_DEBUG_TX_FREE=n
+CONFIG_RTE_LIBRTE_IAVF_DEBUG_RX=n
+CONFIG_RTE_LIBRTE_IAVF_DEBUG_DUMP_DESC=n
+CONFIG_RTE_LIBRTE_IAVF_16BYTE_RX_DESC=n
 
 #
 # Compile burst-oriented Mellanox ConnectX-3 (MLX4) PMD
@@ -377,6 +398,11 @@ CONFIG_RTE_LIBRTE_SFC_EFX_DEBUG=n
 CONFIG_RTE_LIBRTE_PMD_SZEDATA2=n
 
 #
+# Compile software PMD backed by NFB device
+#
+CONFIG_RTE_LIBRTE_NFB_PMD=n
+
+#
 # Compile burst-oriented Cavium Thunderx NICVF PMD driver
 #
 CONFIG_RTE_LIBRTE_THUNDERX_NICVF_PMD=n
@@ -396,6 +422,11 @@ CONFIG_RTE_LIBRTE_LIO_DEBUG_REGS=n
 # Compile burst-oriented Cavium OCTEONTX network PMD driver
 #
 CONFIG_RTE_LIBRTE_OCTEONTX_PMD=n
+
+#
+# Compile burst-oriented Marvell OCTEON TX2 network PMD driver
+#
+CONFIG_RTE_LIBRTE_OCTEONTX2_PMD=n
 
 #
 # Compile WRS accelerated virtual port (AVP) guest PMD driver
@@ -430,6 +461,16 @@ CONFIG_RTE_LIBRTE_VMXNET3_DEBUG_TX_FREE=n
 # Compile software PMD backed by AF_PACKET sockets (Linux only)
 #
 CONFIG_RTE_LIBRTE_PMD_AF_PACKET=y
+
+#
+# Compile software PMD backed by AF_XDP sockets (Linux only)
+#
+CONFIG_RTE_LIBRTE_PMD_AF_XDP=n
+
+#
+# Compile Memory Interface PMD driver (Linux only)
+#
+CONFIG_RTE_LIBRTE_PMD_MEMIF=n
 
 #
 # Compile link bonding PMD library
@@ -508,8 +549,11 @@ CONFIG_RTE_PMD_PACKET_PREFETCH=y
 # EXPERIMENTAL: API may change without prior notice
 #
 CONFIG_RTE_LIBRTE_BBDEV=n
+CONFIG_RTE_LIBRTE_BBDEV_DEBUG=n
 CONFIG_RTE_BBDEV_MAX_DEVS=128
 CONFIG_RTE_BBDEV_OFFLOAD_COST=y
+CONFIG_RTE_BBDEV_SDK_AVX2=n
+CONFIG_RTE_BBDEV_SDK_AVX512=n
 
 #
 # Compile PMD for NULL bbdev device
@@ -520,6 +564,11 @@ CONFIG_RTE_LIBRTE_PMD_BBDEV_NULL=n
 # Compile PMD for turbo software bbdev device
 #
 CONFIG_RTE_LIBRTE_PMD_BBDEV_TURBO_SW=n
+
+#
+# Compile PMD for Intel FPGA LTE FEC bbdev device
+#
+CONFIG_RTE_LIBRTE_PMD_FPGA_LTE_FEC=n
 
 #
 # Compile generic crypto device library
@@ -560,6 +609,8 @@ CONFIG_RTE_LIBRTE_PMD_OCTEONTX_CRYPTO=n
 #
 CONFIG_RTE_LIBRTE_PMD_QAT=n
 CONFIG_RTE_LIBRTE_PMD_QAT_SYM=n
+CONFIG_RTE_LIBRTE_PMD_QAT_ASYM=n
+
 #
 # Max. number of QuickAssist devices, which can be detected and attached
 #
@@ -692,6 +743,11 @@ CONFIG_RTE_LIBRTE_PMD_DSW_EVENTDEV=n
 CONFIG_RTE_LIBRTE_PMD_OCTEONTX_SSOVF=n
 
 #
+# Compile PMD for octeontx2 sso event device
+#
+CONFIG_RTE_LIBRTE_PMD_OCTEONTX2_EVENTDEV=n
+
+#
 # Compile PMD for OPDL event device
 #
 CONFIG_RTE_LIBRTE_PMD_OPDL_EVENTDEV=n
@@ -730,9 +786,29 @@ CONFIG_RTE_LIBRTE_PMD_DPAA2_QDMA_RAWDEV=n
 CONFIG_RTE_LIBRTE_PMD_IFPGA_RAWDEV=n
 
 #
+# Compile PMD for Intel IOAT raw device
+#
+CONFIG_RTE_LIBRTE_PMD_IOAT_RAWDEV=n
+
+#
+# Compile PMD for octeontx2 DMA raw device
+#
+CONFIG_RTE_LIBRTE_PMD_OCTEONTX2_DMA_RAWDEV=n
+
+#
+# Compile PMD for NTB raw device
+#
+CONFIG_RTE_LIBRTE_PMD_NTB_RAWDEV=n
+
+#
 # Compile librte_ring
 #
 CONFIG_RTE_LIBRTE_RING=y
+
+#
+# Compile librte_stack
+#
+CONFIG_RTE_LIBRTE_STACK=y
 
 #
 # Compile librte_mempool
@@ -753,6 +829,11 @@ CONFIG_RTE_DRIVER_MEMPOOL_STACK=y
 # Compile PMD for octeontx fpa mempool device
 #
 CONFIG_RTE_LIBRTE_OCTEONTX_MEMPOOL=n
+
+#
+# Compile PMD for octeontx2 npa mempool device
+#
+CONFIG_RTE_LIBRTE_OCTEONTX2_MEMPOOL=n
 
 #
 # Compile librte_mbuf
@@ -820,6 +901,12 @@ CONFIG_RTE_LIBRTE_LATENCY_STATS=y
 # Compile librte_telemetry
 #
 CONFIG_RTE_LIBRTE_TELEMETRY=n
+
+#
+# Compile librte_rcu
+#
+CONFIG_RTE_LIBRTE_RCU=n
+CONFIG_RTE_LIBRTE_RCU_DEBUG=n
 
 #
 # Compile librte_lpm
