@@ -69,7 +69,7 @@ static bool sufficient_permissions()
 
 static void log_port(uint16_t port_idx, std::string_view port_id, model::port_info& info)
 {
-    struct ether_addr mac_addr;
+    struct rte_ether_addr mac_addr;
     rte_eth_macaddr_get(port_idx, &mac_addr);
 
     if (auto if_index = info.if_index(); if_index > 0) {
