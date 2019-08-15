@@ -1,12 +1,10 @@
 #include <assert.h>
-#include <signal.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
 
 #include <sys/epoll.h>
 #include <sys/queue.h>
-#include <sys/signalfd.h>
 #include <sys/stat.h>
 #include <sys/timerfd.h>
 #include <sys/types.h>
@@ -47,7 +45,6 @@ struct icp_event {
 struct icp_event_loop {
     int poll_fd;
     int flags;
-    int signal_fd;
     size_t nb_events;
     size_t nb_epoll_events;
     SLIST_HEAD(icp_event_loop_events,   icp_event) events_list;
@@ -69,27 +66,6 @@ struct icp_event_loop * icp_event_loop_allocate(void)
         free(loop);
         return (NULL);
     }
-
-    /**
-     * Setup a signalfd so that we can catch signals when blocked on epoll
-     * and cleanly shut the event loop down.
-     */
-    sigset_t mask;
-    sigemptyset(&mask);
-    sigaddset(&mask, SIGINT);
-    sigaddset(&mask, SIGTERM);
-
-    if ((loop->signal_fd = signalfd(-1, &mask, 0)) == -1) {
-        close(loop->poll_fd);
-        free(loop);
-        return (NULL);
-    }
-
-    struct epoll_event event = {
-        .events = EPOLLIN,
-        .data = { .fd = loop->signal_fd }
-    };
-    epoll_ctl(loop->poll_fd, EPOLL_CTL_ADD, loop->signal_fd, &event);
 
     SLIST_INIT(&loop->events_list);
     SLIST_INIT(&loop->update_list);
@@ -126,10 +102,6 @@ void icp_event_loop_free(struct icp_event_loop **loop_p)
 
     if (loop->poll_fd != -1) {
         close(loop->poll_fd);
-    }
-
-    if (loop->signal_fd != -1) {
-        close(loop->signal_fd);
     }
 
     free(loop);
@@ -558,11 +530,6 @@ int _do_event_handling(struct icp_event_loop *loop,
     for (size_t i = 0; i < nb_events; i++) {
         struct epoll_event *epev = &epevents[i];
         struct icp_event *event = (struct icp_event *)epev->data.ptr;
-
-        if (epev->data.fd == loop->signal_fd) {
-            icp_event_loop_exit(loop);
-            continue;
-        }
 
         if (epev->events & EPOLLIN) {
             switch (event->data.type) {
