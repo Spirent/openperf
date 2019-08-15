@@ -1,10 +1,26 @@
-// FIXME - add attribution to tdunning implementation.
+/*
+ * Licensed to Ted Dunning under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
-// Hello there. If you're reading this you probably want to #include
-// this file to specialize the template for different value/weight types.
-// May we instead suggest adding a new entry in icp_centroid.cpp
-// with those different types?
-
+/**
+ * Hello there. If you're reading this you probably want to #include
+ * this file to specialize the template for different value/weight types.
+ * May we instead suggest adding a new entry in icp_centroid.cpp
+ * with those different types?
+*/
 #include "icp_tdigest.h"
 
 #include <stdexcept>
@@ -61,21 +77,32 @@ std::vector<std::pair<Values, Weight>> icp_tdigest<Values, Weight>::get() const
 }
 
 /**
- * When taken together the following 4 functions comprise the scaling function for
- * t-digests.
- *
- * This is a direct C++ translation of "k_2" from the tdunning reference implementation.
+ * When taken together the following 4 functions (Z, normalizer_fn, k, q)
+ * comprise the scaling function for t-digests.
+ */
+
+/**
+ * C++ translation of the "k_2" version found in the reference implementation
+ * available here: https://github.com/tdunning/t-digest
  */
 static double Z(double compression, double n)
 {
     return (4 * log(n / compression) + 24);
 }
 
+/**
+ * C++ translation of the "k_2" version found in the reference implementation
+ * available here: https://github.com/tdunning/t-digest
+ */
 static double normalizer_fn(double compression, double n)
 {
     return (compression / Z(compression, n));
 }
 
+/**
+ * C++ translation of the "k_2" version found in the reference implementation
+ * available here: https://github.com/tdunning/t-digest
+ */
 static double k(double q, double normalizer)
 {
     const double q_min = 1e-15;
@@ -89,6 +116,10 @@ static double k(double q, double normalizer)
     return (log(q / (1 - q)) * normalizer);
 }
 
+/**
+ * C++ translation of the "k_2" version found in the reference implementation
+ * available here: https://github.com/tdunning/t-digest
+ */
 static double q(double k, double normalizer)
 {
     double w = exp(k / normalizer);
@@ -96,7 +127,8 @@ static double q(double k, double normalizer)
 }
 
 /**
- * merge() method borrows from the tdunning reference implementation.
+ * Based on the equivalent function in the reference implementation available here:
+ * https://github.com/tdunning/t-digest
  */
 template <typename Values, typename Weight>
 void icp_tdigest<Values, Weight>::merge()
@@ -173,7 +205,8 @@ void icp_tdigest<Values, Weight>::merge()
 }
 
 /**
- * quantile() method borrows significantly from the tdunning reference implementation.
+ * Based on the equivalent function in the reference implementation available here:
+ * https://github.com/tdunning/t-digest
  */
 template <typename Values, typename Weight>
 double icp_tdigest<Values, Weight>::quantile(double p) const
@@ -238,8 +271,8 @@ double icp_tdigest<Values, Weight>::quantile(double p) const
 }
 
 /**
- * cumulative_distribution() method borrows significantly from the
- * tdunning reference implementation.
+ * Based on the equivalent function in the reference implementation available here:
+ * https://github.com/tdunning/t-digest
  */
 template <typename Values, typename Weight>
 double icp_tdigest<Values, Weight>::cumulative_distribution(Values x) const
