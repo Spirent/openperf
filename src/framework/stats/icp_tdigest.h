@@ -1,10 +1,7 @@
 #ifndef _ICP_TDIGEST_H_
 #define _ICP_TDIGEST_H_
 
-#include <algorithm>
 #include <assert.h>
-#include <cmath>
-#include <optional>
 #include <vector>
 #include <atomic>
 
@@ -23,19 +20,21 @@ struct icp_centroid
         : mean(new_mean)
         , weight(new_weight)
     {}
-
-    // friend bool operator<(const icp_centroid &lhs, const icp_centroid &rhs) {
-    bool operator<(const icp_centroid<Values, Weight> &rhs) const
-    {
-        return mean < rhs.mean;
-    }
-
-    // friend bool operator>(const icp_centroid &lhs, const icp_centroid &rhs) {
-    bool operator>(const icp_centroid<Values, Weight> &rhs) const
-    {
-        return mean > rhs.mean;
-    }
 };
+
+template <typename Values = float, typename Weight = unsigned>
+inline bool operator<(const icp_centroid<Values, Weight> &lhs,
+                      const icp_centroid<Values, Weight> &rhs)
+{
+    return (lhs.mean < rhs.mean);
+}
+
+template <typename Values = float, typename Weight = unsigned>
+inline bool operator>(const icp_centroid<Values, Weight> &lhs,
+                      const icp_centroid<Values, Weight> &rhs)
+{
+    return (lhs.mean > rhs.mean);
+}
 
 template <typename Values = float, typename Weight = unsigned>
 class icp_tdigest
@@ -67,7 +66,7 @@ class icp_tdigest
 
         insert_result insert(const centroid_t &val)
         {
-            return insert(val.mean, val.weight);
+            return (insert(val.mean, val.weight));
         }
 
         void reset()
@@ -80,7 +79,11 @@ class icp_tdigest
     tdigest_impl one;
     tdigest_impl two;
 
-    static constexpr size_t buffer_multiplier = 2;  // FIXME - benchmark for bigger size.
+    // XXX: buffer multiplier must be > 0. BUT how much greater
+    // will affect size vs speed balance. The effects of which
+    // have not been studied. Set to 2 to favor size. Informal
+    // benchmarks for this value yielded acceptable results.
+    static constexpr size_t buffer_multiplier = 2;
     tdigest_impl buffer;
 
     std::atomic<tdigest_impl *> active;
@@ -176,7 +179,6 @@ public:
      *
      * @return
      *  a value from the dataset that satisfies the above condition
-     *  returns -DBL_MAX on error
      */
     double quantile(double p) const;
 
@@ -224,6 +226,6 @@ public:
     }
 };
 
-} // namespace icp::stats::tdigest
+}  // namespace icp::stats
 
 #endif
