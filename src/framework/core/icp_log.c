@@ -283,7 +283,9 @@ int icp_vlog(enum icp_log_level level, const char *tag,
         return (0);
 
     if ((messages = get_thread_log_socket()) == NULL) {
-        icp_safe_log("Logging message lost!  Could not retrieve thread log socket.\n");
+        if (errno != ETERM) {
+            icp_safe_log("Logging message lost!  Could not retrieve thread log socket.\n");
+        }
         goto icp_log_exit;
     }
 
