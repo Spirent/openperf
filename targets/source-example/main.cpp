@@ -26,28 +26,27 @@ void signal_handler(int signo __attribute__((unused)))
 }
 
 struct test_packet {
-    struct ether_hdr ether;
-    struct ipv4_hdr  ipv4;
-    struct udp_hdr   udp;
+    struct rte_ether_hdr ether;
+    struct rte_ipv4_hdr  ipv4;
+    struct rte_udp_hdr   udp;
 } __attribute__((packed));
 
 using namespace icp::net;
 
-static void initialize_eth_header(ether_hdr& eth_hdr,
+static void initialize_eth_header(rte_ether_hdr& eth_hdr,
                                   mac_address& src_mac, mac_address& dst_mac,
                                   uint16_t ether_type)
 {
-    ether_addr_copy(reinterpret_cast<const ether_addr*>(dst_mac.data()), &eth_hdr.d_addr);
-    ether_addr_copy(reinterpret_cast<const ether_addr*>(src_mac.data()), &eth_hdr.s_addr);
+    rte_ether_addr_copy(reinterpret_cast<const rte_ether_addr*>(dst_mac.data()), &eth_hdr.d_addr);
+    rte_ether_addr_copy(reinterpret_cast<const rte_ether_addr*>(src_mac.data()), &eth_hdr.s_addr);
     eth_hdr.ether_type = htons(ether_type);
 }
 
-
-static void initialize_ipv4_header(ipv4_hdr& ip_hdr,
+static void initialize_ipv4_header(rte_ipv4_hdr& ip_hdr,
                                    ipv4_address& src_addr, ipv4_address& dst_addr,
                                    uint16_t pkt_data_len)
 {
-    auto pkt_len = pkt_data_len + sizeof(ipv4_hdr);
+    auto pkt_len = pkt_data_len + sizeof(ip_hdr);
     /*
      * Initialize IP header.
      */
@@ -56,6 +55,7 @@ static void initialize_ipv4_header(ipv4_hdr& ip_hdr,
     ip_hdr.fragment_offset = 0;
     ip_hdr.time_to_live    = 0x10;
     ip_hdr.next_proto_id   = IPPROTO_UDP;
+    ip_hdr.hdr_checksum    = 0;
     ip_hdr.packet_id       = 0;
     ip_hdr.total_length    = htons(pkt_len);
     ip_hdr.src_addr        = htonl(src_addr.data());
@@ -65,23 +65,18 @@ static void initialize_ipv4_header(ipv4_hdr& ip_hdr,
      * Compute IP header checksum.
      */
     auto ptr16 = reinterpret_cast<uint16_t*>(std::addressof(ip_hdr));
-    unsigned ip_cksum = 0;
-    ip_cksum += ptr16[0]; ip_cksum += ptr16[1];
-    ip_cksum += ptr16[2]; ip_cksum += ptr16[3];
-    ip_cksum += ptr16[4];
-    ip_cksum += ptr16[6]; ip_cksum += ptr16[7];
-    ip_cksum += ptr16[8]; ip_cksum += ptr16[9];
+    unsigned ip_cksum = std::accumulate(ptr16, ptr16 + 10, 0U,
+                                        [](unsigned sum, auto chunk){ return (sum + chunk); });
+
     /*
      * Reduce 32 bit checksum to 16 bits and complement it.
      */
     ip_cksum = ((ip_cksum & 0xFFFF0000) >> 16) + (ip_cksum & 0x0000FFFF);
-    ip_cksum %= 65536;
     ip_cksum = (~ip_cksum) & 0x0000FFFF;
-    if (ip_cksum == 0) ip_cksum = 0xFFFF;
-    ip_hdr.hdr_checksum = static_cast<uint16_t>(ip_cksum);
+    ip_hdr.hdr_checksum = static_cast<uint16_t>(ip_cksum == 0 ? 0xFFFF : ip_cksum);
 }
 
-static void initialize_udp_header(udp_hdr& udp_hdr, uint16_t src_port,
+static void initialize_udp_header(rte_udp_hdr& udp_hdr, uint16_t src_port,
                                   uint16_t dst_port, uint16_t pkt_data_len)
 {
     auto pkt_len = pkt_data_len + sizeof(udp_hdr);
@@ -132,7 +127,7 @@ public:
                       [&](auto packet) {
                           auto tmp = packets::to_data<test_packet>(packet);
 
-                          initialize_eth_header(tmp->ether, src_mac, dst_mac, ETHER_TYPE_IPv4);
+                          initialize_eth_header(tmp->ether, src_mac, dst_mac, RTE_ETHER_TYPE_IPV4);
                           initialize_ipv4_header(tmp->ipv4, src_ip, dst_ip, 26);
                           initialize_udp_header(tmp->udp, 3357, 3357, 18);
 
