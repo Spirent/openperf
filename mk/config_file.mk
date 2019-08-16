@@ -37,7 +37,8 @@ $(call icp_include_dependencies,$(CFGFILE_DEPENDS))
 $(eval $(call icp_generate_build_rules,$(CFGFILE_SOURCES),CFGFILE_SRC_DIR,CFGFILE_OBJ_DIR,CFGFILE_DEPENDS))
 $(eval $(call icp_generate_clean_rules,config_file,CFGFILE_TARGET,CFGFILE_OBJECTS))
 
-$(CFGFILE_TARGET): $(CFGFILE_OBJECTS) $(CFGFILE_DEPENDS)
+# XXX: I don't know why this explicit dependency is necessary to pull in yaml_cpp.
+$(CFGFILE_TARGET): $(CFGFILE_OBJECTS) | $(CFGFILE_DEPENDS)
 	$(call icp_link_library,$@,$(CFGFILE_OBJECTS))
 
 .PHONY: config_file

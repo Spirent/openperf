@@ -12,7 +12,7 @@ BUILD_DIR := $(ICP_BUILD_ROOT)/obj/unit
 TARGET_DIR := $(ICP_BUILD_ROOT)/bin
 
 SRC_DEPENDS :=
-BLD_DEPENDS := catch api_test config_file_test framework packetio_test socket_test
+BLD_DEPENDS := catch api_test config_file framework packetio_test socket_test
 
 ###
 # Framework test files
