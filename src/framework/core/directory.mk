@@ -35,6 +35,10 @@ else
 	core/icp_thread_bsd.c
 endif
 
-.PHONY: $(FW_SRC_DIR)/core/icp_version.c
+FW_VERSIONED_FILES := icp_version.o
+FW_UNVERSIONED_OBJECTS :=\
+	$(call icp_generate_objects,$(filter-out,$(FW_VERSIONED_FILES),$(FW_SOURCES)),$(FW_OBJ_DIR))
+
+$(FW_OBJ_DIR)/core/icp_version.o: $(FW_UNVERSIONED_OBJECTS:.o=.d)
 $(FW_OBJ_DIR)/core/icp_version.o: ICP_CFLAGS += \
         -DBUILD_VERSION="\"$(GIT_VERSION)\""
