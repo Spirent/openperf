@@ -1,6 +1,7 @@
 #include "catch.hpp"
 
 #include "stats/icp_tdigest.h"
+#include "stats/icp_tdigest.tcc"
 
 #include <random>
 #include <chrono>

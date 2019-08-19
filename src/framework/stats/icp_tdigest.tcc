@@ -15,12 +15,6 @@
  * limitations under the License.
  */
 
-/**
- * Hello there. If you're reading this you probably want to #include
- * this file to specialize the template for different value/weight types.
- * May we instead suggest adding a new entry in icp_centroid.cpp
- * with those different types?
-*/
 #include "icp_tdigest.h"
 
 #include <stdexcept>
@@ -45,11 +39,14 @@ icp_tdigest<Values, Weight>::icp_tdigest(size_t size)
 template <typename Values, typename Weight>
 void icp_tdigest<Values, Weight>::insert(const icp_tdigest<Values, Weight> &src)
 {
+    max_val = std::max(max_val, src.max_val);
+    min_val = std::min(min_val, src.min_val);
+
     auto insert_fn = [this](const auto &val) {
         if (buffer.insert(val) == tdigest_impl::insert_result::NEED_COMPRESS) { merge(); }
     };
 
-    std::for_each((*src.active).values.begin(), (*src.active).values.end(), insert_fn);
+    std::for_each(src.active->values.begin(), src.active->values.end(), insert_fn);
     // Explicitly merge any unmerged data for a consistent end state.
     merge();
 }
@@ -70,7 +67,7 @@ std::vector<std::pair<Values, Weight>> icp_tdigest<Values, Weight>::get() const
 {
     std::vector<std::pair<Values, Weight>> to_return;
 
-    std::transform((*active).values.begin(), (*active).values.end(), std::back_inserter(to_return),
+    std::transform(active->values.begin(), active->values.end(), std::back_inserter(to_return),
                    [](const centroid_t &val) { return (std::make_pair(val.mean, val.weight)); });
 
     return (to_return);
@@ -133,7 +130,7 @@ static double q(double k, double normalizer)
 template <typename Values, typename Weight>
 void icp_tdigest<Values, Weight>::merge()
 {
-    tdigest_impl &inactive = (&one == active.load()) ? two : one;
+    auto &inactive = (&one == active) ? two : one;
 
     if (buffer.values.empty()) {
         return;
@@ -143,17 +140,30 @@ void icp_tdigest<Values, Weight>::merge()
 
     if (run_forward) {
         std::sort(inputs.begin(), inputs.end(), std::less<centroid_t>());
+
+        // Update min/max values only if sorted first/last centroids are single points.
+        min_val = std::min(min_val,
+                           inputs.front().weight == 1 ? inputs.front().mean :
+                           std::numeric_limits<Values>::max());
+
+        max_val = std::max(max_val,
+                           inputs.back().weight == 1 ? inputs.back().mean :
+                           std::numeric_limits<Values>::min());
+
     } else {
         std::sort(inputs.begin(), inputs.end(), std::greater<centroid_t>());
+
+        // Update min/max values only if sorted first/last centroids are single points.
+        min_val = std::min(min_val,
+                           inputs.back().weight == 1 ? inputs.back().mean
+                           : std::numeric_limits<Values>::max());
+
+        max_val = std::max(max_val,
+                           inputs.front().weight == 1 ? inputs.front().mean
+                           : std::numeric_limits<Values>::min());
     }
 
-    // Update max and min values for this t-digest.
-    max_val = std::max(max_val,
-                       run_forward ? inputs.back().mean : inputs.front().mean);
-    min_val = std::min(min_val, run_forward ? inputs.front().mean
-                       : inputs.back().mean);
-
-    const Weight new_total_weight = buffer.total_weight + (*active).total_weight;
+    const Weight new_total_weight = buffer.total_weight + active->total_weight;
     const double normalizer       = normalizer_fn(inactive.values.capacity(), new_total_weight);
     double k1                     = k(0, normalizer);
     double next_q_limit_weight    = new_total_weight * q(k1 + 1, normalizer);
@@ -200,8 +210,27 @@ void icp_tdigest<Values, Weight>::merge()
     // merge.
     inputs.assign(inactive.values.begin(), inactive.values.end());
 
-    auto new_inactive = active.exchange(&inactive);
+    auto new_inactive = active;
+    active = &inactive;
     new_inactive->reset();
+}
+
+/**
+ * XXX: replace with std::lerp when C++20 support becomes available.
+ * This version adapted from libcxx, which is part of the LLVM project
+ * under an "Apache 2.0 license with LLVM Exceptions." The project can be
+ * found at https://github.com/llvm-mirror/libcxx
+ */
+static double lerp(double a, double b, double t) noexcept
+{
+    if ((a <= 0 && b >= 0) || (a >= 0 && b <= 0)) return t * b + (1 - t) * a;
+
+    if (t == 1) return b;
+    const double x = a + t * (b - a);
+    if (t > 1 == b > a)
+        return b < x ? x : b;
+    else
+        return x < b ? x : b;
 }
 
 /**
@@ -215,35 +244,36 @@ double icp_tdigest<Values, Weight>::quantile(double p) const
         throw std::out_of_range("Requested quantile must be between 0 and 100.");
     }
 
-    if ((*active).values.empty()) {
+    if (active->values.empty()) {
         return (0);
-    } else if ((*active).values.size() == 1) {
-        return ((*active).values.front().mean);
+    } else if (active->values.size() == 1) {
+        return (active->values.front().mean);
     }
 
-    const Weight index = (static_cast<double>(p) / 100) * (*active).total_weight;
+    const Weight index = (p / 100) * active->total_weight;
 
     if (index < 1) { return (min_val); }
 
     // For smaller quantiles, interpolate between minimum value and the first
     // centroid.
-    const auto &first = (*active).values.front();
+    const auto &first = active->values.front();
     if (first.weight > 1 && index < (first.weight / 2)) {
-        return (min_val + (index - 1) / (first.weight / 2 - 1) * (first.mean - min_val));
+        return (lerp(min_val, first.mean, static_cast<double>(index - 1) / (first.weight / 2 - 1)));
     }
 
-    if (index > (*active).total_weight - 1) { return (max_val); }
+    if (index > active->total_weight - 1) { return (max_val); }
 
     // For larger quantiles, interpolate between maximum value and the last
     // centroid.
-    const auto &last = (*active).values.back();
-    if (last.weight > 1 && (*active).total_weight - index <= last.weight / 2) {
+    const auto &last = active->values.back();
+    if (last.weight > 1 && active->total_weight - index <= last.weight / 2) {
         return (max_val
-                - ((*active).total_weight - index - 1) / (last.weight / 2 - 1)
-                    * (max_val - last.mean));
+                - static_cast<double>(active->total_weight - index - 1) /
+                (last.weight / 2 - 1)
+                * (max_val - last.mean));
     }
 
-    Weight weight_so_far = (*active).values.front().weight / 2;
+    Weight weight_so_far = active->values.front().weight / 2;
     double quantile      = 0;
     auto quantile_fn     = [index, &weight_so_far, &quantile](const centroid_t &left,
                                                           const centroid_t &right) {
@@ -261,9 +291,9 @@ double icp_tdigest<Values, Weight>::quantile(double p) const
         return (false);
     };
 
-    auto it = std::adjacent_find((*active).values.begin(), (*active).values.end(), quantile_fn);
+    auto it = std::adjacent_find(active->values.begin(), active->values.end(), quantile_fn);
 
-    if (it == (*active).values.end()) {
+    if (it == active->values.end()) {
         throw std::runtime_error("Could not calculate quantile " + std::to_string(p));
     }
 
@@ -277,51 +307,50 @@ double icp_tdigest<Values, Weight>::quantile(double p) const
 template <typename Values, typename Weight>
 double icp_tdigest<Values, Weight>::cumulative_distribution(Values x) const
 {
-    if ((*active).values.empty()) { return (1.0); }
+    if (active->values.empty()) { return (1.0); }
 
-    if ((*active).values.size() == 1) {
+    if (active->values.size() == 1) {
         if (x < min_val) { return (0); }
         if (x > max_val) { return (1.0); }
         if (x - min_val <= (max_val - min_val)) { return (0.5); }
         return ((x - min_val) / (max_val - min_val));
     }
 
-    // From here on out we divide by (*active).total_weight in multiple places
+    // From here on out we divide by active->total_weight in multiple places
     // along several code paths.
     // Let's make sure we're not going to divide by zero.
-    assert((*active).total_weight);
+    assert(active->total_weight);
 
     // Is x at one of the extremes?
-    if (x < (*active).values.front().mean) {
-        const auto &first = (*active).values.front();
+    if (x < active->values.front().mean) {
+        const auto &first = active->values.front();
         if (first.mean - min_val > 0) {
-            return ((1 + (x - min_val) / (first.mean - min_val) * (first.weight / 2 - 1))
-                    / (*active).total_weight);
+            return (lerp(1, first.weight / 2 - 1, (x - min_val) / (first.mean - min_val)) / active->total_weight);
         }
         return (0);
     }
-    if (x > (*active).values.back().mean) {
-        const auto &last = (*active).values.back();
+    if (x > active->values.back().mean) {
+        const auto &last = active->values.back();
         if (max_val - last.mean > 0) {
-            return (1
-                    - ((1 + (max_val - x) / (max_val - last.mean) * (last.weight / 2 - 1))
-                       / (*active).total_weight));
+            return (1 - (lerp(1, last.weight / 2 - 1, (max_val - x) / (max_val - last.mean)  / active->total_weight)));
         }
         return (1.0);
     }
 
     Weight weight_so_far = 0;
     double cdf           = 0;
-    auto cdf_fn          = [x, &weight_so_far, &cdf, total_weight = (*active).total_weight](
+    auto cdf_fn          = [x, &weight_so_far, &cdf, total_weight = active->total_weight](
                     const centroid_t &left, const centroid_t &right) {
         assert(total_weight);
         if (left.mean <= x && x < right.mean) {
             // x is bracketed between left and right.
 
             Weight delta_weight = (right.weight + left.weight) / static_cast<Weight>(2);
-            double base         = weight_so_far + (left.weight / static_cast<Values>(2));
+            double base         = weight_so_far + (left.weight / static_cast<Weight>(2));
 
-            cdf = (base + delta_weight * (x - left.mean) / (right.mean - left.mean)) / total_weight;
+            cdf = lerp(base, base + delta_weight,
+                       static_cast<double>((x - left.mean)) / (right.mean - left.mean))
+                  / total_weight;
             return (true);
         }
 
@@ -329,13 +358,13 @@ double icp_tdigest<Values, Weight>::cumulative_distribution(Values x) const
         return (false);
     };
 
-    auto it = std::adjacent_find((*active).values.begin(), (*active).values.end(), cdf_fn);
+    auto it = std::adjacent_find(active->values.begin(), active->values.end(), cdf_fn);
 
     // Did we fail to find a pair of bracketing centroids?
-    if (it == (*active).values.end()) {
+    if (it == active->values.end()) {
         // Might be between max_val and the last centroid.
-        if (x == (*active).values.back().mean) {
-            return ((1 - 0.5 / (*active).total_weight));
+        if (x == active->values.back().mean) {
+            return ((1 - 0.5 / active->total_weight));
         }
     }
 
