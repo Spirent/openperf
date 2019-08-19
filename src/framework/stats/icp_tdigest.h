@@ -3,7 +3,6 @@
 
 #include <assert.h>
 #include <vector>
-#include <atomic>
 
 namespace icp::stats {
 
@@ -86,7 +85,7 @@ class icp_tdigest
     static constexpr size_t buffer_multiplier = 2;
     tdigest_impl buffer;
 
-    std::atomic<tdigest_impl *> active;
+    tdigest_impl *active;
 
     Values min_val, max_val;
     bool run_forward;
