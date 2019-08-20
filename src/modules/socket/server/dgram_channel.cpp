@@ -170,12 +170,11 @@ bool dgram_channel::send(const pbuf *p)
 {
     assert(p->next == nullptr);  /* let's not drop data */
     free_spent_pbufs(recvq);
-    bool idle = recvq.idle();
     bool pushed = recvq.enqueue(
         dgram_channel_item{ .address = std::nullopt,
                             .pvec = pbuf_vec(const_cast<pbuf*>(p),
                                              p->payload, p->len) });
-    if (pushed && idle) notify();
+    if (pushed) notify();
     return (pushed);
 }
 
@@ -183,13 +182,11 @@ bool dgram_channel::send(const pbuf *p, const dgram_ip_addr* addr, in_port_t por
 {
     assert(p->next == nullptr);  /* scream if we drop data */
     free_spent_pbufs(recvq);
-    bool idle = recvq.idle();
     bool pushed = recvq.enqueue(
         dgram_channel_item{ .address = dgram_channel_addr(addr, port),
                             .pvec = pbuf_vec(const_cast<pbuf*>(p),
                                              p->payload, p->len) });
-
-    if (pushed && idle) notify();
+    if (pushed) notify();
     return (pushed);
 }
 
