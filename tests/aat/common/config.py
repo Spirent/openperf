@@ -12,9 +12,13 @@ class Config(object):
                 loader = yaml.Loader
             data = yaml.load(f, Loader=loader)
         self.services = dict([(k, ServiceConfig(k, **v)) for k, v in data['services'].items()])
+        self.shims = dict([(k, ShimConfig(k, **v)) for k, v in data['shims'].items()])
 
     def service(self, name='default'):
         return self.services[name]
+
+    def shim(self, name='default'):
+        return self.shims[name]
 
 
 class ServiceConfig(object):
@@ -59,3 +63,25 @@ class ServiceConfig(object):
         for k in ('command', 'base_url'):
             if k not in self.__dict__:
                 raise Exception('%s service config is missing required property: %s' % (name, k))
+
+
+class ShimConfig(object):
+    def __init__(self, name, **kwargs):
+        if not name:
+            raise AttributeError('missing name')
+
+        self.name = name
+
+        def set_str(k, v):
+            self.__dict__[k] = str(v)
+
+        setters = {
+            'path': set_str,
+            'trace': set_str
+        }
+
+        for k, v in kwargs.items():
+            setter = setters.get(k)
+            if not setter:
+                raise KeyError('%s shim config has unknown property: %s' % (name, k))
+            setter(k, v)
