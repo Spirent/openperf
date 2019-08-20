@@ -172,8 +172,6 @@ tl::expected<size_t, int> dgram_channel::send(pid_t pid,
 {
     if (!sendq.available()) return (ENOBUFS);
 
-    bool empty = !sendq.ready();
-
     auto item = sendq.unpack();
     assert(item);
     item->address = to_addr(to);
@@ -189,9 +187,7 @@ tl::expected<size_t, int> dgram_channel::send(pid_t pid,
     item->pvec.len(result);
     sendq.repack();
 
-    if (empty) {
-        notify();
-    }
+    notify();
 
     return (result);
 }
@@ -206,8 +202,6 @@ tl::expected<size_t, int> dgram_channel::recv(pid_t pid,
             return (tl::make_unexpected(error));
         }
     }
-
-    bool full = recvq.full();
 
     auto item = (flags & MSG_PEEK ? recvq.peek() : recvq.unpack());
 
@@ -229,8 +223,13 @@ tl::expected<size_t, int> dgram_channel::recv(pid_t pid,
 
     recvq.repack();
 
-    if (full) notify();
+    notify();
 
+    /*
+     * Check to see if we have any remaining data to read.  If we don't,
+     * clear any pending notification we might have.  Otherwise, make sure
+     * a notification remains so we know to come back and read the rest.
+     */
     if (!recvq.available()) {
         ack();
     } else {
