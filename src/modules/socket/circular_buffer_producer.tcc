@@ -120,11 +120,11 @@ size_t circular_buffer_producer<Derived>::write(const void* ptr, size_t length)
 template <typename Derived>
 size_t circular_buffer_producer<Derived>::write(const iovec iov[], size_t iovcnt)
 {
-    auto to_write = std::min(writable(),
-                             std::accumulate(iov, iov + iovcnt, 0UL,
-                                             [](size_t x, const iovec& iov) {
-                                                 return (x + iov.iov_len);
-                                             }));
+    const auto to_write = std::min(writable(),
+                                   std::accumulate(iov, iov + iovcnt, 0UL,
+                                                   [](size_t x, const iovec& iov) {
+                                                       return (x + iov.iov_len);
+                                                   }));
     if (!to_write) return (0);
 
     auto cursor = load_write();
@@ -141,8 +141,14 @@ size_t circular_buffer_producer<Derived>::write(const iovec iov[], size_t iovcnt
         iov_idx++;
     }
 
-    /* All writes before the wrap; return what was written */
-    if (chunk1 == to_write) {
+    /*
+     * Check to see if we're done writing.  Obviously, if chunk1 is the
+     * same size as what we expected to write, then we're done.  Less obviously,
+     * if the next item's length exceeds the size of chunk2, then we don't
+     * have enough space in the buffer to write it; hence we bail.
+     * Note: if we're not done writing, then iov_idx must be valid.
+     */
+    if (chunk1 == to_write || chunk2 < iov[iov_idx].iov_len) {
         store_write(cursor + written1);
         return (written1);
     }
