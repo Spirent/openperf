@@ -120,11 +120,11 @@ size_t circular_buffer_producer<Derived>::write(const void* ptr, size_t length)
 template <typename Derived>
 size_t circular_buffer_producer<Derived>::write(const iovec iov[], size_t iovcnt)
 {
-    auto to_write = std::min(writable(),
-                             std::accumulate(iov, iov + iovcnt, 0UL,
-                                             [](size_t x, const iovec& iov) {
-                                                 return (x + iov.iov_len);
-                                             }));
+    const auto to_write = std::min(writable(),
+                                   std::accumulate(iov, iov + iovcnt, 0UL,
+                                                   [](size_t x, const iovec& iov) {
+                                                       return (x + iov.iov_len);
+                                                   }));
     if (!to_write) return (0);
 
     auto cursor = load_write();
@@ -147,11 +147,25 @@ size_t circular_buffer_producer<Derived>::write(const iovec iov[], size_t iovcnt
         return (written1);
     }
 
-    /* Next write is across the end of the buffer */
+    /*
+     * Next write is across the end of the buffer.  Divide the vector into
+     * two pieces: one before the wrap and one after.
+     */
     const auto piece1 = chunk1 - written1;
     const auto piece2 = iov[iov_idx].iov_len - piece1;
     assert(piece1 + piece2 == iov[iov_idx].iov_len);
 
+    /*
+     * If we don't have enough room to write the wrapped portion into the
+     * buffer, then skip writing any of it.  We don't want to copy a partial
+     * iovec.
+     */
+    if (chunk2 < piece2) {
+        store_write(cursor + written1);
+        return(written1);
+    }
+
+    /* Copy the two pieces */
     dpdk::memcpy(base() + mask(cursor) + written1, iov[iov_idx].iov_base, piece1);
     written1 += piece1;
     dpdk::memcpy(base(), reinterpret_cast<const uint8_t*>(iov[iov_idx].iov_base) + piece1, piece2);
