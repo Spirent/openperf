@@ -26,9 +26,9 @@ include $(PIO_SRC_DIR)/workers/directory.mk
 
 PIO_VERSIONED_FILES := init.cpp
 PIO_UNVERSIONED_OBJECTS :=\
-	$(call icp_generate_objects,$(filter-out,$(PIO_VERSIONED_FILES),$(PIO_SOURCES)),$(PIO_OBJ_DIR))
+	$(call icp_generate_objects,$(filter-out $(PIO_VERSIONED_FILES),$(PIO_SOURCES)),$(PIO_OBJ_DIR))
 
-$(PIO_OBJ_DIR)/init.o : $(PIO_UNVERSIONED_OBJECTS:.o=.d)
+$(PIO_OBJ_DIR)/init.o : $(PIO_UNVERSIONED_OBJECTS)
 $(PIO_OBJ_DIR)/init.o: ICP_CPPFLAGS += \
 	-DBUILD_COMMIT="\"$(GIT_COMMIT)\"" \
 	-DBUILD_NUMBER="\"$(BUILD_NUMBER)\"" \

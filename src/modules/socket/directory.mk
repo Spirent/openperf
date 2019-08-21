@@ -30,11 +30,11 @@ SOCKSRV_LDLIBS += -lrt
 $(SOCKSRV_OBJ_DIR)/server/dgram_channel.o: ICP_CXXFLAGS += -Wno-unused-private-field
 $(SOCKSRV_OBJ_DIR)/server/stream_channel.o: ICP_CXXFLAGS += -Wno-unused-private-field
 
-SOCKSRV_VERSIONED_FILES := init.cpp
-SOCKSRV_UNVERSIONED_OBJECTS :=\
-	$(call icp_generate_objects,$(filter-out,$(SOCKSRV_VERSIONED_FILES),$(SOCKSRV_SOURCES)),$(SOCKSRV_OBJ_DIR))
+SOCKSRV_VERSIONED_FILES := server/init.cpp
+SOCKSRV_UNVERSIONED_OBJECTS =\
+	$(call icp_generate_objects,$(filter-out $(SOCKSRV_VERSIONED_FILES),$(SOCKSRV_SOURCES)),$(SOCKSRV_OBJ_DIR))
 
-$(SOCKSRV_OBJ_DIR)/server/init.o: $(SOCKSRV_UNVERSIONED_OBJECTS:.o=.d)
+$(SOCKSRV_OBJ_DIR)/server/init.o: $(SOCKSRV_UNVERSIONED_OBJECTS)
 $(SOCKSRV_OBJ_DIR)/server/init.o: ICP_CPPFLAGS += \
 	-DBUILD_COMMIT="\"$(GIT_COMMIT)\"" \
 	-DBUILD_NUMBER="\"$(BUILD_NUMBER)\"" \
