@@ -86,9 +86,10 @@ size_t free_spent_pbufs(BipartiteRing& ring)
 {
     std::array<dgram_channel_item, api::socket_queue_length> items;
     auto nb_items = ring.dequeue(items.data(), items.size());
-    for (size_t idx = 0; idx < nb_items; idx++) {
-        pbuf_free(items[idx].pvec.pbuf());
-    }
+    std::for_each(items.data(), items.data() + nb_items,
+                  [](auto& item) {
+                      pbuf_free(item.pvec.pbuf());
+                  });
     return (nb_items);
 }
 
@@ -96,26 +97,23 @@ template <typename BipartiteRing>
 size_t load_fresh_pbufs(BipartiteRing& ring)
 {
     std::array<dgram_channel_item, api::socket_queue_length> items;
-    auto capacity = ring.capacity();
-    if (!capacity) return (0);
-    size_t idx = 0;
-    while (pbuf* p = pbuf_alloc(PBUF_TRANSPORT, max_dgram_length, PBUF_POOL)) {
+    auto capacity = std::min(ring.capacity(), items.size());
+    auto idx = 0U;
+    while (auto p = pbuf_alloc(PBUF_TRANSPORT, max_dgram_length, PBUF_POOL)) {
         items[idx++] = dgram_channel_item{ .address = std::nullopt,
-                                           .pvec = pbuf_vec(p, p->payload, p->len)};
+                                           .pvec = pbuf_vec(p, p->payload, p->len) };
         if (idx == capacity) break;
     }
     auto enqueued = ring.enqueue(items.data(), capacity);
-    assert(enqueued == capacity);
+    assert(enqueued == capacity);  /* we should always enqueue everything */
     return (enqueued);
 }
 
 template <typename BipartiteRing>
 void unload_and_free_all_pbufs(BipartiteRing& ring)
 {
-    std::array<dgram_channel_item, api::socket_queue_length> items;
-    while (ring.available()) {
-        ring.unpack();
-    }
+    while (ring.unpack())
+        ;
     ring.repack();
     free_spent_pbufs(ring);
 }
@@ -200,10 +198,11 @@ size_t dgram_channel::recv(dgram_channel_item items[], size_t max_items)
      * so we need to do it here.  Despite the name, 'pbuf_realloc' won't
      * actually allocate anything here; it just trims the length.
      */
-    for (size_t idx = 0; idx < dequeued; idx++) {
-        auto& [address, pvec] = items[idx];
-        pbuf_realloc(pvec.pbuf(), pvec.len());
-    }
+    std::for_each(items, items + dequeued,
+                  [](auto& item) {
+                      auto& [address, pvec] = item;
+                      pbuf_realloc(pvec.pbuf(), pvec.len());
+                  });
     load_fresh_pbufs(sendq);
     return (dequeued);
 }
