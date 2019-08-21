@@ -121,7 +121,17 @@ void memp_init()
 
 void * memp_malloc(memp_t type)
 {
+#if MEMP_STATS
+    const struct memp_desc * const desc = memp_pools[type];
+#endif
     void *to_return = NULL;
+
+    /*
+     * Note: the DPDK memory pools maintain their own internal counters for
+     * usage.  Additionally, drivers can allocate memory from these pools
+     * directly.  As a result, any use/max counters we attempt to keep here
+     * would be wrong.
+     */
     switch (type) {
     case MEMP_PBUF:
         to_return = (packetio_memory_mbuf_to_pbuf(
@@ -137,23 +147,23 @@ void * memp_malloc(memp_t type)
         break;
     default:
         to_return = rte_malloc(memp_pools[type]->desc, memp_pools[type]->size, 0);
-
 #if MEMP_STATS
-        {
-            const struct memp_desc * const desc = memp_pools[type];
-            if (to_return) {
-                mem_size_t used = atomic_fetch_add_explicit((_Atomic mem_size_t*)&desc->stats->used,
-                                                            1, memory_order_release) + 1;
-                desc->stats->max = icp_max(used, desc->stats->max);
-            } else {
-                LWIP_DEBUGF(MEMP_DEBUG | LWIP_DBG_LEVEL_SERIOUS,
-                            ("memp_malloc: out of memory in pool %s\n", desc->desc));
-                desc->stats->err++;
-            }
+        if (to_return) {
+            mem_size_t used = atomic_fetch_add_explicit((_Atomic mem_size_t*)&desc->stats->used,
+                                                        1, memory_order_release) + 1;
+            desc->stats->max = icp_max(used, desc->stats->max);
         }
 #endif
     }
 
+#if MEMP_STATS
+    if (!to_return) {
+        LWIP_DEBUGF(MEMP_DEBUG | LWIP_DBG_LEVEL_SERIOUS,
+                    ("memp_malloc: out of memory in pool %s\n", desc->desc));
+        atomic_fetch_add_explicit((_Atomic mem_size_t*)&desc->stats->err,
+                                  1,  memory_order_release);
+    }
+#endif
     return (to_return);
 }
 
@@ -176,4 +186,65 @@ void memp_free(memp_t type, void *mem)
         }
 #endif
     }
+}
+
+int64_t packetio_memory_memp_pool_avail(const struct memp_desc* mem)
+{
+    int64_t total_avail = 0;
+    if (strncmp(mem->desc, "PBUF_POOL", 9) == 0) {
+        for (int i = 0; i < RTE_MAX_NUMA_NODES; i++) {
+            struct rte_mempool* node_mpool = get_mempool_by_id(memp_default_mempool_fmt, i);
+            if (node_mpool) {
+                total_avail += rte_mempool_avail_count(node_mpool);
+            }
+        }
+    } else if (strncmp(mem->desc, "PBUF_REF/ROM", 12) == 0) {
+        for (int i = 0; i < RTE_MAX_NUMA_NODES; i++) {
+            struct rte_mempool* node_mpool = get_mempool_by_id(memp_ref_rom_mempool_fmt, i);
+            if (node_mpool) {
+                total_avail += rte_mempool_avail_count(node_mpool);
+            }
+        }
+    } else {
+        total_avail = mem->stats->avail;
+    }
+
+    return (total_avail);
+}
+
+int64_t packetio_memory_memp_pool_max(const struct memp_desc* mem)
+{
+    int64_t max = 0;
+    if (strncmp(mem->desc, "PBUF_POOL", 9) == 0
+        || strncmp(mem->desc, "PBUF_REF/ROM", 12) == 0) {
+        max = -1;
+    } else {
+        max = mem->stats->max;
+    }
+
+    return (max);
+}
+
+int64_t packetio_memory_memp_pool_used(const struct memp_desc* mem)
+{
+    int64_t total_used = 0;
+    if (strncmp(mem->desc, "PBUF_POOL", 9) == 0) {
+        for (int i = 0; i < RTE_MAX_NUMA_NODES; i++) {
+            struct rte_mempool* node_mpool = get_mempool_by_id(memp_default_mempool_fmt, i);
+            if (node_mpool) {
+                total_used += rte_mempool_in_use_count(node_mpool);
+            }
+        }
+    } else if (strncmp(mem->desc, "PBUF_REF/ROM", 12) == 0) {
+        for (int i = 0; i < RTE_MAX_NUMA_NODES; i++) {
+            struct rte_mempool* node_mpool = get_mempool_by_id(memp_ref_rom_mempool_fmt, i);
+            if (node_mpool) {
+                total_used += rte_mempool_in_use_count(node_mpool);
+            }
+        }
+    } else {
+        total_used = mem->stats->used;
+    }
+
+    return (total_used);
 }
