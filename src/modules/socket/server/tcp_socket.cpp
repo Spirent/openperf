@@ -126,10 +126,10 @@ static size_t do_tcp_transmit(tcp_pcb* pcb, const void* ptr, size_t length,
 static void do_tcp_transmit_all(tcp_pcb *pcb, stream_channel& channel)
 {
     for (;;) {
-        auto [ptr, length] = channel.recv_peek();
-        if (channel.recv_drop(do_tcp_transmit(pcb, ptr, length,
+        auto iov = channel.recv_peek();
+        if (channel.recv_drop(do_tcp_transmit(pcb, iov.iov_base, iov.iov_len,
                                               [&](size_t written){
-                                                  return (written == channel.readable());
+                                                  return (written == iov.iov_len);
                                               })) == 0) {
             break;
         }
@@ -149,9 +149,10 @@ static void do_tcp_receive(tcp_pcb *pcb, size_t length)
 static void do_tcp_receive_all(tcp_pcb *pcb, stream_channel& channel, pbuf_queue& queue)
 {
     std::array<iovec, 32> iovecs;
-    size_t iovcnt = 0;
-    while ((iovcnt = queue.iovecs(iovecs.data(), iovecs.size(), channel.send_available())) > 0) {
-        do_tcp_receive(pcb, queue.clear(channel.send(iovecs.data(), iovcnt)));
+    size_t iovcnt = 0, cleared = 0;
+    while ((iovcnt = queue.iovecs(iovecs.data(), iovecs.size(), channel.send_available())) > 0
+           && (cleared = queue.clear(channel.send(iovecs.data(), iovcnt))) > 0) {
+        do_tcp_receive(pcb, cleared);
     }
 }
 
