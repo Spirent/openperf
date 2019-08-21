@@ -8,6 +8,7 @@
 #include "core/icp_core.h"
 #include "packetio/drivers/dpdk/dpdk.h"
 #include "packetio/drivers/dpdk/topology_utils.h"
+#include "packetio/memory/dpdk/memp.h"
 #include "packetio/stack/dpdk/lwip.h"
 #include "packetio/stack/dpdk/netif_wrapper.h"
 #include "packetio/stack/dpdk/tcpip_mbox.h"
@@ -237,9 +238,9 @@ static stack::element_stats_data make_element_stats_data(const stats_syselem* sy
 static stack::memory_stats_data make_memory_stats_data(const memp_desc* mem)
 {
     return { .name      = mem->desc,
-             .available = static_cast<int64_t>(mem->stats->avail),
-             .used      = static_cast<int64_t>(mem->stats->used),
-             .max       = static_cast<int64_t>(mem->stats->max),
+             .available = packetio_memory_memp_pool_avail(mem),
+             .used      = packetio_memory_memp_pool_used(mem),
+             .max       = packetio_memory_memp_pool_max(mem),
              .errors    = mem->stats->err,
              .illegal   = mem->stats->illegal };
 }
