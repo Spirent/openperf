@@ -16,9 +16,9 @@ API_SOURCES += \
 API_VERSIONED_FILES := api_version.cpp api_init.cpp
 API_VERSIONED_OBJECTS := $(call icp_generate_objects,$(API_VERSIONED_FILES),$(API_OBJ_DIR))
 API_UNVERSIONED_OBJECTS =\
-	$(call icp_generate_objects,$(filter-out,$(API_VERSIONED_FILES),$(API_SOURCES)),$(API_OBJ_DIR))
+	$(call icp_generate_objects,$(filter-out $(API_VERSIONED_FILES),$(API_SOURCES)),$(API_OBJ_DIR))
 
-$(API_VERSIONED_OBJECTS): $(API_UNVERSIONED_OBJECTS:.o=.d)
+$(API_VERSIONED_OBJECTS): $(API_UNVERSIONED_OBJECTS)
 $(API_VERSIONED_OBJECTS): ICP_CPPFLAGS += \
 	-DBUILD_COMMIT="\"$(GIT_COMMIT)\"" \
 	-DBUILD_NUMBER="\"$(BUILD_NUMBER)\"" \
@@ -34,9 +34,9 @@ API_TEST_SOURCES += \
 	api_utils.cpp
 
 API_UNVERSIONED_TEST_OBJECTS =\
-	$(call icp_generate_objects,$(filter-out,$(API_VERSIONED_FILES),$(API_TEST_SOURCES)),$(API_TEST_OBJ_DIR))
+	$(call icp_generate_objects,$(filter-out $(API_VERSIONED_FILES),$(API_TEST_SOURCES)),$(API_TEST_OBJ_DIR))
 
-$(API_TEST_OBJ_DIR)/api_init.o: $(API_UNVERSIONED_TEST_OBJECTS:.o=.d)
+$(API_TEST_OBJ_DIR)/api_init.o: $(API_UNVERSIONED_TEST_OBJECTS)
 $(API_TEST_OBJ_DIR)/api_init.o: ICP_CPPFLAGS += \
 	-DBUILD_COMMIT="\"$(GIT_COMMIT)\"" \
 	-DBUILD_NUMBER="\"$(BUILD_NUMBER)\"" \
