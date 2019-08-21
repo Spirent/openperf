@@ -100,12 +100,14 @@ void raw_socket::handle_io()
     m_channel->ack();
     std::array<dgram_channel_item, api::socket_queue_length> items;
     auto nb_items = m_channel->recv(items.data(), items.size());
-    for (size_t idx = 0; idx < nb_items; idx++) {
-        auto& [dest, data] = items[idx];
-        if (dest) raw_sendto(m_pcb.get(), const_cast<pbuf*>(data.pbuf()),
-                             reinterpret_cast<const ip_addr_t*>(&dest->addr()));
-        else      raw_send(m_pcb.get(), const_cast<pbuf*>(data.pbuf()));
-    }
+    std::for_each(items.data(), items.data() + nb_items,
+                  [&](auto& item) {
+                      auto& [dest, data] = item;
+                      if (dest) raw_sendto(m_pcb.get(), data.pbuf(),
+                                           reinterpret_cast<const ip_addr_t*>(&dest->addr()));
+                      else      raw_send(m_pcb.get(), data.pbuf());
+                      pbuf_free(data.pbuf());
+                  });
 }
 
 static tl::expected<void, int> do_raw_bind(raw_pcb* pcb, const api::request_bind& bind)
