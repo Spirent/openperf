@@ -23,17 +23,29 @@ tl::expected<generic_socket, int> make_socket(icp::socket::server::allocator& al
     /* Mask out the options included with the type */
     switch (type & 0xff) {
     case SOCK_DGRAM:
-        if (protocol == IPPROTO_ICMP || protocol == IPPROTO_ICMPV6) {
+        switch (protocol) {
+        case IPPROTO_IP:
+        case IPPROTO_UDP:
+            return (generic_socket(udp_socket(allocator, type)));
+        default:
             return (tl::make_unexpected(EACCES));
         }
-        return (generic_socket(udp_socket(allocator, type)));
     case SOCK_STREAM:
-        return (generic_socket(tcp_socket(allocator, type)));
-    case SOCK_RAW:
-        if (protocol == IPPROTO_ICMP || protocol == IPPROTO_ICMPV6) {
-            return (generic_socket(icmp_socket(allocator, type, protocol)));
+        switch (protocol) {
+        case IPPROTO_IP:
+        case IPPROTO_TCP:
+            return (generic_socket(tcp_socket(allocator, type)));
+        default:
+            return (tl::make_unexpected(EACCES));
         }
-        return (generic_socket(raw_socket(allocator, type, protocol)));
+    case SOCK_RAW:
+        switch (protocol) {
+        case IPPROTO_ICMP:
+        case IPPROTO_ICMPV6:
+            return (generic_socket(icmp_socket(allocator, type, protocol)));
+        default:
+            return (generic_socket(raw_socket(allocator, type, protocol)));
+        }
     default:
         return (tl::make_unexpected(EPROTONOSUPPORT));
     }
@@ -114,13 +126,13 @@ tl::expected<void, int> copy_in(char* dst,
                                 socklen_t dstlength, socklen_t srclength)
 {
     auto local = iovec{
-    .iov_base = dst,
-    .iov_len = dstlength
+        .iov_base = dst,
+        .iov_len = dstlength
     };
 
     auto remote = iovec{
-    .iov_base = (char *)src_ptr,
-    .iov_len = srclength
+        .iov_base = const_cast<char*>(src_ptr),
+        .iov_len = srclength
     };
 
     auto size = process_vm_readv(src_pid, &local, 1, &remote, 1, 0);
