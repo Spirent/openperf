@@ -80,14 +80,12 @@ static size_t do_tcp_transmit(tcp_pcb* pcb, const void* ptr, size_t length,
 {
     static constexpr uint16_t tcp_send_max = std::numeric_limits<uint16_t>::max();
 
-    /*
-     * Don't bother invoking TCP machinery to write nothing.
-     * That includes skipping writes if we can't send a full MSS
-     * worth of data.
-     */
-    if (length == 0
-        || tcp_sndbuf(pcb) < tcp_mss(pcb)) {
-        return (0);
+    /* Don't bother invoking TCP machinery to write nothing. */
+    if (length == 0) return (0);
+
+    /* If the send buffer is too small, try to make some room */
+    if (tcp_sndbuf(pcb) < length) {
+        tcp_output(pcb);
     }
 
     size_t written = 0;
@@ -112,13 +110,8 @@ static size_t do_tcp_transmit(tcp_pcb* pcb, const void* ptr, size_t length,
 
     written += to_write;
 
-    /*
-     * Trigger a transmission if we have an explicit push or the send buffer is
-     * nearly filled.
-     */
-    if (push || tcp_sndbuf(pcb) < tcp_mss(pcb)) {
-        tcp_output(pcb);
-    }
+    /* Trigger a transmission if we have a push. */
+    if (push) tcp_output(pcb);
 
     return (written);
 }
