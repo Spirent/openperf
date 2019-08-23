@@ -218,6 +218,12 @@ size_t stream_channel::send_available() const
     return (writable());
 }
 
+size_t stream_channel::send_consumable() const
+{
+    /* e.g. the amount of consumable data in the producer's buffer */
+    return (producer_len() - writable());
+}
+
 size_t stream_channel::send(const iovec iov[], size_t iovcnt)
 {
     auto written = write(iov, iovcnt);

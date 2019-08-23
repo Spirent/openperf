@@ -74,6 +74,7 @@ public:
     void error(int);
 
     size_t send_available() const;
+    size_t send_consumable() const;
     size_t send(const iovec iov[], size_t iovcnt);
 
     iovec  recv_peek() const;
