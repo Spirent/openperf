@@ -404,13 +404,14 @@ tcp_socket::on_request_reply tcp_socket::on_request(const api::request_listen& l
     auto netif_idx = orig_pcb->netif_idx;
 
     ::tcp_arg(orig_pcb, nullptr);
-    auto listen_pcb = tcp_listen_with_backlog(orig_pcb, listen.backlog);
+    err_t error = ERR_OK;
+    auto listen_pcb = tcp_listen_with_backlog_and_err(orig_pcb, listen.backlog, &error);
 
 
     if (!listen_pcb) {
         m_pcb.reset(orig_pcb);
         ::tcp_arg(orig_pcb, this);
-        return {tl::make_unexpected(ENOMEM), std::nullopt};
+        return {tl::make_unexpected(err_to_errno(error)), std::nullopt};
     }
 
     listen_pcb->netif_idx = netif_idx;
