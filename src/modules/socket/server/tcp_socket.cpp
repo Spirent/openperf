@@ -308,7 +308,16 @@ int tcp_socket::do_lwip_poll()
      * If the connection stalled due to re-transmits, we might have data to
      * send and/or receive
      */
-    do_tcp_receive_all(m_pcb.get(), *m_channel, m_recvq);
+    if (m_recvq.length()) {
+        /* Data in the receive queue; try to pass to client */
+        do_tcp_receive_all(m_pcb.get(), *m_channel, m_recvq);
+    } else if (m_channel->send_consumable()) {
+        /* Client buffer has data; (re)notify */
+        ICP_LOG(ICP_LOG_DEBUG, "Kicking idle client\n");
+        m_channel->notify();
+    }
+
+    /* Try to transmit anything we data in our send buffer. */
     do_tcp_transmit_all(m_pcb.get(), *m_channel);
 
     return (ERR_OK);
