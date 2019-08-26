@@ -27,6 +27,9 @@ tl::expected<generic_socket, int> make_socket(icp::socket::server::allocator& al
         case IPPROTO_IP:
         case IPPROTO_UDP:
             return (generic_socket(udp_socket(allocator, type)));
+        case IPPROTO_ICMP:
+        case IPPROTO_ICMPV6:
+            return (generic_socket(icmp_socket(allocator, type, protocol)));
         default:
             return (tl::make_unexpected(EACCES));
         }
@@ -155,28 +158,6 @@ tl::expected<int, int> copy_in(pid_t src_pid, const int *src_int)
     auto remote = iovec{
         .iov_base = const_cast<int*>(src_int),
         .iov_len = sizeof(int)
-    };
-
-    auto size = process_vm_readv(src_pid, &local, 1, &remote, 1, 0);
-    if (size == -1) {
-        return (tl::make_unexpected(errno));
-    }
-
-    return (value);
-}
-
-tl::expected<uint32_t, int> copy_in(pid_t src_pid, const uint32_t *src_uint)
-{
-    uint32_t value = 0;
-
-    auto local = iovec{
-        .iov_base = &value,
-        .iov_len = sizeof(uint32_t)
-    };
-
-    auto remote = iovec{
-        .iov_base = const_cast<uint32_t*>(src_uint),
-        .iov_len = sizeof(uint32_t)
     };
 
     auto size = process_vm_readv(src_pid, &local, 1, &remote, 1, 0);

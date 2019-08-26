@@ -1,12 +1,12 @@
 #ifndef _ICP_SOCKET_SERVER_COMPAT_LINUX_ICMP_H_
 #define _ICP_SOCKET_SERVER_COMPAT_LINUX_ICMP_H_
 
-#define LINUX_ICMP_ECHOREPLY     0
-#define LINUX_ICMP_FILTER        1
-#define LINUX_ICMP_DEST_UNREACH  3
-#define LINUX_ICMP_SOURCE_QUENCH 4
-#define LINUX_ICMP_REDIRECT      5
-#define LINUX_ICMP_TIME_EXCEEDED 11
-#define LINUX_ICMP_PARAMETERPROB 12
+#include <stdint.h>
+
+#define LINUX_ICMP_FILTER 1
+
+struct linux_icmp_filter {
+    uint32_t data;
+};
 
 #endif /* _ICP_SOCKET_SERVER_COMPAT_LINUX_ICMP_H_ */
