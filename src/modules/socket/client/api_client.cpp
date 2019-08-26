@@ -62,7 +62,7 @@ static api::reply_msg submit_request(int sockfd,
 
     /* Create a properly aligned data buffer for our cmsg data */
     union {
-        char data[CMSG_SPACE(sizeof(int))];
+        char data[CMSG_SPACE(sizeof(api::socket_fd_pair))];
         struct cmsghdr align;
     } control;
 
