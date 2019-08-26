@@ -1,9 +1,7 @@
 #ifndef _ICP_SOCKET_SERVER_ICMP_SOCKET_H_
 #define _ICP_SOCKET_SERVER_ICMP_SOCKET_H_
 
-#include <cerrno>
-#include <memory>
-#include <utility>
+#include <bitset>
 
 #include "tl/expected.hpp"
 
@@ -22,6 +20,13 @@ namespace server {
 class icmp_socket : public raw_socket {
 public:
     icmp_socket(icp::socket::server::allocator& allocator, int flags, int protocol);
+    ~icmp_socket() = default;
+
+    icmp_socket(const icmp_socket&) = delete;
+    icmp_socket& operator=(const icmp_socket&&) = delete;
+
+    icmp_socket& operator=(icmp_socket&& other) noexcept;
+    icmp_socket(icmp_socket&& other) noexcept;
 
     /* getsockopt handlers */
     tl::expected<socklen_t, int> do_getsockopt(const raw_pcb*, const api::request_getsockopt&);
@@ -29,18 +34,16 @@ public:
     /* setsockopt handlers */
     tl::expected<void, int> do_setsockopt(raw_pcb*, const api::request_setsockopt&);
 
-    uint32_t icmp_filter();
-    
+    bool is_filtered(uint8_t icmp_type) const;
+
 private:
-    uint32_t m_icmp_filter;
-
+    /*
+     * The filter can filter any ICMP type, which is defined by a single octet.
+     * If bit n in the bitset is set, then type n should be filtered.
+     */
+    using icmp_filter = std::bitset<256>;
+    icmp_filter m_filter;
 };
-
-/**
- * Generic receive function used by lwIP upon packet reception.  This
- * is added to the pcb when the raw_socket object is constructed.
- */
-uint8_t icmp_receive(void*, raw_pcb*, pbuf*, const ip_addr_t*);
 
 }
 }
