@@ -38,7 +38,7 @@ void udp_socket::udp_pcb_deleter::operator()(udp_pcb *pcb)
     udp_remove(pcb);
 }
 
-void udp_receive(void* arg, udp_pcb* pcb, pbuf* p, const ip_addr_t* addr, in_port_t port)
+static void udp_receive(void* arg, udp_pcb* pcb, pbuf* p, const ip_addr_t* addr, in_port_t port)
 {
     (void)pcb;
     assert(addr != nullptr);
