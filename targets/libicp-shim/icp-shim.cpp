@@ -40,7 +40,13 @@ auto call_and_log_function(const char* function_name, Function&& f, Object&& o, 
     std::cerr << std::flush;
     auto result = std::invoke(std::forward<Function>(f), std::forward<Object>(o),
                               std::forward<Args>(args)...);
-    std::cerr << ") = " << result << std::endl;
+    std::cerr << ") = " << result;
+
+    if (result < 0) {
+        std::cerr << " (errno = " << errno << ")";
+    }
+
+    std::cerr << std::endl;
 
     return (result);
 }
