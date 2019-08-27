@@ -54,7 +54,6 @@ public:
 
     bool del(int poll_fd, void* data)
     {
-        assert(m_event.epdata.data == data);
         auto error = rte_epoll_ctl(poll_fd, EPOLL_CTL_DEL,
                                    static_cast<Derived&>(*this).event_fd(),
                                    &m_event);

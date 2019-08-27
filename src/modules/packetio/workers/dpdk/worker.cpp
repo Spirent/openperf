@@ -413,6 +413,7 @@ static void run_pollable(run_args&& args)
                            event);
             }
         }
+        /* Perform all loop updates before exiting or restarting the loop. */
         loop_adapter.update_poller(poller);
     }
 
@@ -454,10 +455,12 @@ static void run_spinning(run_args&& args)
         } while (pkts);
 
         /* All queues are idle; check callbacks */
-        loop_adapter.update_poller(poller);
         for (auto& event : poller.poll(0)) {
              service_event(args.loop, args.fib, event);
         }
+
+        /* Perform all loop updates before exiting or restarting the loop. */
+        loop_adapter.update_poller(poller);
     }
 
     for (auto& p : args.pollables) {
