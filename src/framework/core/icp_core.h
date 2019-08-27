@@ -32,9 +32,7 @@
 #include "core/icp_log.h"
 #include "core/icp_modules.h"
 #include "core/icp_options.h"
-#include "core/icp_reference.h"
 #include "core/icp_socket.h"
-#include "core/icp_string.h"
 #include "core/icp_task.h"
 #include "core/icp_thread.h"
 

@@ -6,7 +6,6 @@
 
 #include "core/icp_log.h"
 #include "core/icp_common.h"
-#include "core/icp_string.h"
 #include "core/icp_socket.h"
 
 #define ZEROMQ_EXTERNAL_ENDPOINT_REGEX "tcp://"
