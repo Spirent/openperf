@@ -10,7 +10,6 @@ FW_SOURCES += \
 	core/icp_log.c \
 	core/icp_modules.c \
 	core/icp_options.c \
-	core/icp_reference.c \
 	core/icp_socket.c \
 	core/icp_task.c \
 	core/icp_version.c
