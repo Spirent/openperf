@@ -39,7 +39,7 @@ void raw_socket::raw_pcb_deleter::operator()(raw_pcb *pcb)
     raw_remove(pcb);
 }
 
-uint8_t raw_receive(void* arg, raw_pcb* pcb, pbuf* p, const ip_addr_t* addr)
+static uint8_t raw_receive(void* arg, raw_pcb* pcb, pbuf* p, const ip_addr_t* addr)
 {
     (void)pcb;
     assert(addr != nullptr);

@@ -115,12 +115,6 @@ public:
 
 const char * to_string(const udp_socket_state&);
 
-/**
- * Generic receive function used by lwIP upon packet reception.  This
- * is added to the pcb when the udp_socket object is constructed.
- */
-void udp_receive(void*, udp_pcb*, pbuf*, const ip_addr_t*, in_port_t);
-
 }
 }
 }

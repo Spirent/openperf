@@ -120,12 +120,6 @@ protected:
 
 const char * to_string(const raw_socket_state&);
 
-/**
- * Generic receive function used by lwIP upon packet reception.  This
- * is added to the pcb when the raw_socket object is constructed.
- */
-uint8_t raw_receive(void*, raw_pcb*, pbuf*, const ip_addr_t*);
-
 }
 }
 }
