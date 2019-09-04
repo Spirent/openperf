@@ -8,6 +8,7 @@
 #include <string_view>
 #include <string.h>
 #include <chrono>
+#include <unordered_map>
 
 #include <getopt.h>
 
@@ -25,14 +26,22 @@ static double max_error = 6.0; // Maximum percent error.
 static bool verbose = false;
 static bool quiet = false;
 static unsigned trial_count = 2;
-static std::string value_type = "uint64_t"; // Data type to use for t-digest values.
-static std::string weight_type = "uint64_t"; // Data type to use for t-digest weights.
+static std::string value_type = "unsigned long long int"; // Data type to use for t-digest values.
+static std::string weight_type = "unsigned long long int"; // Data type to use for t-digest weights.
 static std::string input_type = "integral"; // Type to use for generated test data.
 
 static enum class test_mode { COMPRESSION_FACTOR = 0,
                               PERCENT_ERROR,
                               VERIFY,
                               BENCHMARK } mode;
+
+static const std::unordered_map<std::string_view, test_mode> mode_names
+    {
+     {"compression-factor", test_mode::COMPRESSION_FACTOR},
+     {"percent-error", test_mode::PERCENT_ERROR},
+     {"verify", test_mode::VERIFY},
+     {"benchmark", test_mode::BENCHMARK}
+    };
 
 /**
  * Command-line argument handling.
@@ -54,12 +63,12 @@ static struct cli_option cli_options[] = {
     {{"trials", required_argument, 0, 't'},
      "number of trials to execute for above parameters"},
     {{"input-type", required_argument, 0, 'i'},
-     "data type of input data (integral or floating-point)"},
+     "data type of input data (integral or floating_point)"},
     {{"value-type", required_argument, 0, 'a'},
      "c++ data type to use for t-digest values"},
     {{"weight-type", required_argument, 0, 'w'},
      "c++ data type to use for t-digest weights"},
-    {{"benchmark", no_argument, 0, 'b'}, "benchmkark mode"},
+    {{"mode", required_argument, 0, 'm'}, "program operation mode"},
     {{"quiet", no_argument, 0, 'q'}, "quiet mode"},
     {{"verbose", no_argument, 0, 'v'}, "output additional information"},
     {{"help", no_argument, 0, 'h'}, "display this help text"},
@@ -68,24 +77,16 @@ static struct cli_option cli_options[] = {
 static void print_usage()
 {
     // Brief overview of the program.
-    std::cout << "Utility to assist with t-digest integration." << std::endl
+    std::cout << std::endl
+              << "Utility to assist with t-digest integration." << std::endl
               << "It has four modes of operation:" << std::endl
-              << "    1. Provide guidance for selecting an appropriate compression factor." << std::endl
-              << "    2. Provide feedback on what sort of error percentages can be expected "
-              << "for a supplied compression factor." << std::endl
-              << "    3. Provide success percentage for a given compression factor and "
-              << "maximum acceptable percent error." << std::endl
+              << "    1. Suggest a compression factor." << std::endl
+              << "    2. Evaluate error percentages." << std::endl
+              << "    3. Verify error range for a given maximum percent error." << std::endl
               << "    4. Benchmkark time required to insert values into a t-digest." << std::endl;
 
     std::cout << std::endl;
 
-    std::cout << "Modes can be invoked as follows:" << std::endl
-              << "    Supply -e and omit -f to select a compression factor." << std::endl
-              << "    Supply -f and omit -e to get a range of expected percent errors." << std::endl
-              << "    Supply both -e and -f to calculate success percentage." << std::endl
-              << "    Supply -b (and optionally -e and -f) to benchmark the given parameters." << std::endl;
-
-    std::cout << std::endl;
     // Now let's tell everyone about our options.
     // How much extra space to insert after the long options.
     static constexpr size_t space_fudge = 3;
@@ -106,6 +107,25 @@ static void print_usage()
     }
 }
 
+static void set_test_mode(std::string_view mode_arg)
+{
+    auto mode_val = mode_names.find(mode_arg);
+
+    if (mode_val == mode_names.end()) {
+        std::string valid_mode_string;
+        std::for_each(mode_names.begin(), mode_names.end(), [&](auto &mode_string){
+                                                                valid_mode_string += std::string(mode_string.first)
+                                                                    + ", ";});
+
+        valid_mode_string.erase(valid_mode_string.size() - 2, 2);
+        std::cerr << "Invalid test mode " << mode_arg << ". "
+                  << "Valid test modes include: " << valid_mode_string << std::endl;
+        exit(EXIT_FAILURE);
+    }
+
+    mode = mode_val->second;
+}
+
 static std::string make_shortopts()
 {
     std::string to_return;
@@ -122,7 +142,6 @@ static std::string make_shortopts()
     return (to_return);
 }
 
-
 static void process_options(int argc, char* argv[])
 {
     auto short_opts = make_shortopts();
@@ -130,13 +149,8 @@ static void process_options(int argc, char* argv[])
     // Extract the relevant option structs so we can pass them to
     // getopt_long
     std::vector<struct option> options;
-    for (auto &opt: cli_options) {
-        options.push_back(opt.opt);
-    }
-
-    // What sort of parameters has the user given us?
-    bool have_percent_error = false;
-    bool have_compression_factor = false;
+    std::transform(std::begin(cli_options), std::end(cli_options),  std::back_inserter(options),
+                   [](const struct cli_option &opt) {return opt.opt;} );
 
     int opt_index = 0;
     while (true)
@@ -150,6 +164,9 @@ static void process_options(int argc, char* argv[])
       if (opt == '?') {
           print_usage();
           exit(EXIT_FAILURE);
+      } else if (opt == 'h') {
+          print_usage();
+          exit(EXIT_SUCCESS);
       } else if (opt == 's') {
           min_value = atof(optarg);
       } else if (opt == 'S') {
@@ -160,10 +177,8 @@ static void process_options(int argc, char* argv[])
           value_count = atoll(optarg);
       } else if (opt == 'f') {
           compression_factor = atoi(optarg);
-          have_compression_factor = true;
       } else if (opt == 'e') {
           max_error = atof(optarg);
-          have_percent_error = true;
       } else if (opt == 'v') {
           verbose = true;
       } else if (opt == 'a') {
@@ -172,38 +187,14 @@ static void process_options(int argc, char* argv[])
           weight_type = optarg;
       } else if (opt == 'i') {
           input_type = optarg;
-      } else if (opt == 'b') {
-          mode = test_mode::BENCHMARK;
+      } else if (opt == 'm') {
+          set_test_mode(optarg);
       } else if (opt == 'q') {
           quiet = true;
-      } else if (opt == 'h') {
-          print_usage();
-          exit(EXIT_SUCCESS);
       } else {
           assert(false);
       }
-
-      std::cout << static_cast<char>(opt) << std::endl;
     }
-
-    // Let's figure out what the user wants us to do.
-    if (mode == test_mode::BENCHMARK) {
-        //noop
-    } else if (have_percent_error && have_compression_factor) {
-        // Verify probability the supplied inputs yield an acceptable % error.
-        mode = test_mode::VERIFY;
-    } else if (have_percent_error) {
-        // Find an acceptable compression factor.
-        mode = test_mode::COMPRESSION_FACTOR;
-    } else if (have_compression_factor) {
-        // Calculate error ranges for given compression factor.
-        mode = test_mode::PERCENT_ERROR;
-    } else {
-        print_usage();
-        std::cerr << "Must include one of -b -e or -f." << std::endl;
-        exit(EXIT_FAILURE);
-    }
-
 }
 
 static bool validate_parameters()
@@ -247,7 +238,7 @@ static void print_parameters() {
     std::cout << "Test Mode: ";
     switch (mode) {
     case test_mode::BENCHMARK:
-        std::cout << "benchmkark" << std::endl;;
+        std::cout << "benchmark" << std::endl;;
         break;
     case test_mode::COMPRESSION_FACTOR:
         std::cout << "compression factor" << std::endl;
@@ -263,13 +254,16 @@ static void print_parameters() {
     std::cout << "Minimum expected value: " << min_value << std::endl;
     std::cout << "Maximum expected value: " << max_value << std::endl;
     std::cout << "Number of values to test with: " << value_count << std::endl;
-    std::cout << "Compression factor (if applicable): " << compression_factor << std::endl;
-    std::cout << "Maximum percent error (if applicable): " << max_error << std::endl;
+    if (mode != test_mode::COMPRESSION_FACTOR) {
+        std::cout << "Compression factor: " << compression_factor << std::endl;
+    }
+    if (mode != test_mode::PERCENT_ERROR) {
+        std::cout << "Maximum percent error: " << max_error << std::endl;
+    }
     std::cout << "Number of trials to run: " << trial_count << std::endl;
     std::cout << "Value data type: " << value_type << std::endl;
     std::cout << "Weight data type: " << weight_type << std::endl;
     std::cout << "Input data type: " << input_type << std::endl;
-    std::cout << "Benchmark mode: " << (mode == test_mode::BENCHMARK ? "true" : "false") << std::endl;
 
     std::cout << std::endl;
 }
@@ -295,23 +289,29 @@ static auto generate_inputs()
         std::uniform_int_distribution<Inputs> distribution(min_value, max_value);
         to_return.reserve(value_count);
 
-        for (size_t i = 0; i < value_count; i++) {
-            to_return.push_back(distribution(generator));
-        }
+        std::generate_n(std::back_inserter(to_return), value_count,
+                        [&distribution, &generator](){ return distribution(generator); });
     }
 
     if constexpr (std::is_floating_point<Inputs>::value) {
       std::uniform_real_distribution<Inputs> distribution(min_value, max_value);
       to_return.reserve(value_count);
 
-      for (size_t i = 0; i < value_count; i++) {
-        to_return.push_back(distribution(generator));
-      }
+      std::generate_n(std::back_inserter(to_return), value_count,
+                      [&distribution, &generator]() { return distribution(generator); });
     }
 
     return (to_return);
 }
 
+/**
+ * Function to run a single insertion trial and calculate
+ * worst percent error from CDF.
+ *
+ * Returns a std::pair consisting of:
+ *  - worst percent error.
+ *  - total insertion time.
+ */
 template<typename Values, typename Weight, typename Inputs>
 static auto tdigest_trial(const std::vector<Inputs> &values,
                           size_t comp_factor)
@@ -330,13 +330,18 @@ static auto tdigest_trial(const std::vector<Inputs> &values,
     double epsilon = -1;
 
     for (double x = min_value; x <= max_value; x += max_value / 10) {
-      double target = (1.0 * x) / max_value;
+      double target = x / max_value;
       epsilon = std::max(fabs(target - digest.cumulative_distribution(x)),
                          epsilon);
     }
 
     return (std::make_pair(epsilon, diff.count()));
 }
+
+/**
+ * Test case functions. Ultimately the mode parameter maps to
+ * one of these functions.
+ */
 
 template<typename Values, typename Weight, typename Inputs>
 static auto find_compression_factor()
@@ -347,9 +352,8 @@ static auto find_compression_factor()
     static constexpr unsigned delta = 2;
 
     unsigned current = min;
-    bool searching = true;
 
-    while (searching) {
+    while (true) {
         auto [epsilon, time] = tdigest_trial<Values, Weight>(inputs, current);
 
         if (epsilon < (max_error / 100.0)) {
@@ -394,7 +398,6 @@ static auto benchmark()
 
     auto [epsilon, time] = tdigest_trial<Values, Weight>(inputs, compression_factor);
 
-
     if (epsilon <= (max_error / 100.0)) {
         return (time);
     }
@@ -403,11 +406,11 @@ static auto benchmark()
 }
 
 /**
- * Function to invoke the request test now that we've resolved our three
+ * Function to invoke the requested test now that we've resolved our three
  * template parameters.
  */
 template <typename Values, typename Weight, typename Inputs>
-static float run_test_impl() {
+static double run_test_impl() {
     switch (mode) {
     case test_mode::PERCENT_ERROR:
         return (find_max_error<Values, Weight, Inputs>());
@@ -434,12 +437,12 @@ static auto bind_input() {
     if (input_type == "integral") {
         return (run_test_impl<V, W, uint64_t>());
     }
-    if (input_type == "floating-point") {
+    if (input_type == "floating_point") {
         return (run_test_impl<V, W, double>());
     }
 
     std::cout << "Unsupported input type " << input_type << ". "
-              << "Supported value types include: integral, floating-point" << std::endl;
+              << "Supported value types include: integral, floating_point" << std::endl;
 
     exit(EXIT_FAILURE);
 }
@@ -452,18 +455,21 @@ template <typename V>
 static auto bind_weight() {
     std::string weight_types;
 #define WEIGHT_TYPE(type_)                                              \
-    weight_types = weight_types + #type_ + " ";                         \
+    weight_types = weight_types + #type_ + ", ";                        \
     if (weight_type == #type_) {                                        \
         return (bind_input<V, type_>());                                \
     }
-  WEIGHT_TYPE(uint64_t)
-  WEIGHT_TYPE(double)
+    WEIGHT_TYPE(unsigned long long int)
+    WEIGHT_TYPE(double)
 #undef WEIGHT_TYPE
 
-  std::cout << "Unsupported weight type " << weight_type << ". "
-            << "Supported value types include: " << weight_types << std::endl;
+    // Trim the trailing comma
+    weight_types.erase(weight_types.size() - 2, 2);
 
-  exit(EXIT_FAILURE);
+    std::cout << "Unsupported weight type " << weight_type << ". "
+              << "Supported value types include: " << weight_types << std::endl;
+
+    exit(EXIT_FAILURE);
 }
 
 /**
@@ -474,16 +480,25 @@ static auto bind_weight() {
 static auto run_test() {
     std::string value_types;
 #define VALUE_TYPE(type_)                                               \
-    value_types = value_types + #type_ + " ";                           \
+    value_types = value_types + #type_ + ", ";                          \
     if (value_type == #type_) {                                         \
         return (bind_weight<type_>());                                  \
     }
-    VALUE_TYPE(double)
-    VALUE_TYPE(uint64_t)
-    VALUE_TYPE(uint32_t)
-    VALUE_TYPE(uint16_t)
     VALUE_TYPE(float)
+    VALUE_TYPE(double)
+    VALUE_TYPE(long double)
+    VALUE_TYPE(short int)
+    VALUE_TYPE(unsigned short int)
+    VALUE_TYPE(int)
+    VALUE_TYPE(unsigned int)
+    VALUE_TYPE(long int)
+    VALUE_TYPE(unsigned long int)
+    VALUE_TYPE(long long int)
+    VALUE_TYPE(unsigned long long int)
 #undef VALUE_TYPE
+
+    // Trim the trailing comma.
+    value_types.erase(value_types.size() - 2, 2);
 
     std::cout << "Unsupported value type " << value_type << ". "
               << "Supported value types include: " << value_types << std::endl;
@@ -491,13 +506,13 @@ static auto run_test() {
     exit(EXIT_FAILURE);
 }
 
-static void output_results(std::vector<float> &results)
+static void output_results(std::vector<double> &results)
 {
   auto [min, max] = std::minmax_element(results.begin(), results.end());
 
   auto sum = std::accumulate(results.begin(), results.end(), 0.0);
 
-  auto avg = sum / static_cast<float>(results.size());
+  auto avg = sum / static_cast<double>(results.size());
 
   if (verbose) {
     std::cout << "Individual Trial Results:" << std::endl;
@@ -515,20 +530,23 @@ static void output_results(std::vector<float> &results)
       // benchmkark() returns -1 in those cases.
       // Check for cases of -1 and compute the benchmark values for the
       // valid results only and warn the user.
-      auto invalid_trials = std::count_if(results.begin(), results.end(), [](float val) {return val < 0;});
+      auto invalid_trials = std::count_if(results.begin(), results.end(), [](double val) {return val < 0;});
       if (invalid_trials != 0) {
           std::cout << "Warning: detected " << invalid_trials << " trials with percent error greater than "
                     << max_error << ". Results below are only for valid trials." << std::endl;
 
-          sum = std::accumulate(results.begin(), results.end(), 0.0, [](double sum, float val) {
+          sum = std::accumulate(results.begin(), results.end(), 0.0, [](double sum, double val) {
                                                                          if (val >= 0) {
                                                                              sum += val;
                                                                          }
                                                                          return (sum);});
           avg = (results.size() - invalid_trials != 0) ? sum /
-              static_cast<float>(results.size() - invalid_trials) : 0;
+              static_cast<double>(results.size() - invalid_trials) : 0;
 
-          min = find_if(results.begin(), results.end(), [](float val) { return (val >= 0); });
+          min = std::min_element(results.begin(), results.end(),
+                                 [](double &lhs, double &rhs){
+                                     if (lhs < 0) return (false);
+                                     else return (lhs < rhs); });
       }
 
       if (!quiet) {
@@ -586,7 +604,7 @@ int main (int argc, char* argv[]) {
         print_parameters();
     }
 
-    std::vector<float> results;
+    std::vector<double> results;
     for (unsigned i = 0; i < trial_count; i++) {
         if (verbose) { std::cout << "***Running Trial: " << i << "***" << std::endl; }
 
