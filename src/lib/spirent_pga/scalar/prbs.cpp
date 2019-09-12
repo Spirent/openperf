@@ -27,19 +27,23 @@ uint64_t verify_prbs_aligned(const uint32_t payload[], uint16_t length,
     /*
      * We start without definitively knowing the PRBS seed value, so we generate
      * future expected values from the payload data directly until
-     * we establish a match.
+     * we establish a match.  We need two sequential matches to guarantee that
+     * we have found the proper PRBS sequence
      */
+    unsigned sync_steps = 0;
     while (offset + 1 < length) {
-        auto loop_errors = __builtin_popcount(payload[offset++] ^ ~expected);
+        auto loop_errors = __builtin_popcount(payload[offset] ^ ~expected);
         bit_errors += loop_errors;
-        if (!loop_errors) break;  /* we've found the PRBS sequence */
+        sync_steps = (loop_errors ? 0 : sync_steps + 1);
+        if (sync_steps > 1) break;  /* we've found the PRBS sequence */
 
         /* Otherwise, use the payload to generate the next seed */
-        expected = pga::prbs::step(~payload[offset]);
+        expected = pga::prbs::step(~payload[offset++]);
     }
 
-    std::for_each(payload + offset, payload + length,
-                  [&](auto data) {
+    /* payload[offset] was checked above */
+    std::for_each(payload + offset + 1, payload + length,
+                  [&](const auto& data) {
                       expected = pga::prbs::step(expected);
                       bit_errors += __builtin_popcount(data ^ ~expected);
                   });

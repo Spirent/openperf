@@ -419,8 +419,11 @@ export uniform unsigned int64 verify_prbs_aligned(const uniform unsigned int32 p
          * the PRBS machinery.
          */
         cif (!prbs_sync) {
-            curr_seed = ~payload[reduce_max(i) + 1];
-            next_seed = prbs_next(~payload[reduce_max(i) + 1], programIndex);
+            uniform int base = reduce_max(i) + 1;
+            if (base < length) {
+                curr_seed = ~payload[base];
+                next_seed = prbs_next(~payload[base], programIndex);
+            }
         } else {
             curr_seed = next_seed;
             next_seed = prbs_step(next_seed);

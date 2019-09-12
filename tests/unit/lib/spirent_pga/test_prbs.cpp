@@ -81,8 +81,47 @@ TEST_CASE("PRBS functions", "[spirent-pga]")
                 }
 
                 verify_tests++;
+
+                /*
+                 * Make sure that the verify function figures out the sequence (by returning
+                 * the correct seed) and detects no errors.
+                 */
                 auto result = verify_fn(ref_data.data(), ref_data.size(), ~ref_data[0]);
                 REQUIRE(verify_result == result);
+
+                /*
+                 * Now, flip one bit in each "quadlet" and make sure that the
+                 * bit error is found.
+                 */
+                uint16_t offset = 0;
+                std::for_each(ref_data.data(), ref_data.data() + ref_data.size(),
+                          [&](auto& quadlet) {
+                              /* Flip a bit */
+                              quadlet ^= 1;
+
+                              auto result = verify_fn(ref_data.data(), ref_data.size(), ~ref_data[0]);
+                              uint32_t bit_errors = result & 0xffffffff;
+                              if (instruction_set == pga::instruction_set::type::SCALAR) {
+                                  /*
+                                   * The scalar version requires two sequential quadlets without errors to sync
+                                   * to the PRBS pattern, hence we'll have higher than expected error counts for
+                                   * the first two quadlets as the verify function is comparing the payload data
+                                   * to the wrong expected values.
+                                   */
+                                  REQUIRE(static_cast<bool>(offset > 2 ? bit_errors == 1 : bit_errors < 32));
+                              } else {
+                                  /*
+                                   * Vector versions will only see erroneous errors counts for errors in the
+                                   * first quadlet.
+                                   */
+                                  REQUIRE(static_cast<bool>(offset > 1 ? bit_errors == 1 : bit_errors < 64));
+                              }
+
+                              /* Unflip the bit */
+                              quadlet ^= 1;
+
+                              offset++;
+                          });
             }
             /* scalar + at least 1 vector */
             REQUIRE(verify_tests > 1);
@@ -125,26 +164,6 @@ TEST_CASE("PRBS functions", "[spirent-pga]")
                 REQUIRE(bit_errors == 0);
                 REQUIRE(errors == false);
             }
-        }
-
-        SECTION("error detection") {
-            /* Make sure we can actually detect bit-errors! */
-            auto ptr = buffer.data();
-            uint16_t length = buffer_size;
-
-            pga_fill_prbs(&ptr, &length, 1, seed);
-
-            /*
-             * Flip a bit.
-             * Note: we can't detect errors until we've determined the PRBS
-             * sequence, hence error detection in the first 8 bytes is iffy
-             */
-            buffer[8] ^= 1;
-
-            uint32_t bit_errors = 0;
-            auto errors = pga_verify_prbs(&ptr, &length, 1, &bit_errors);
-            REQUIRE(bit_errors == 1);
-            REQUIRE(errors == true);
         }
     }
 }

@@ -88,7 +88,7 @@ void initialize_verify_prbs(function_wrapper<verify_prbs_aligned_fn>& wrapper)
     scalar::fill_prbs_aligned(buffer.data(), buffer.size(), 0xffffffff);
 
     /* Use the first value in the buffer as the seed value for verify */
-    wrapper.init(buffer.data(), buffer.size(), buffer[0]);
+    wrapper.init(buffer.data(), buffer.size(), ~buffer[0]);
 }
 
 functions::functions()
