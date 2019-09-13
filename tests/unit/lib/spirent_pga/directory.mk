@@ -1,5 +1,7 @@
 # Makefile component for spirent_pga unit tests
 
+TEST_DEPENDS += spirent_pga
+
 TEST_SOURCES += \
 	lib/spirent_pga/test_checksums.cpp \
 	lib/spirent_pga/test_init.cpp \
@@ -7,7 +9,9 @@ TEST_SOURCES += \
 	lib/spirent_pga/test_prbs.cpp \
 	lib/spirent_pga/test_signatures.cpp
 
-TEST_DEPENDS += spirent_pga
+ifeq ($(ARCH),x86_64)
+	TEST_SOURCES += lib/spirent_pga/api_test_x86.cpp
+endif
 
 # We need to use the same build defines as the library in order to
 # use some of our test functions

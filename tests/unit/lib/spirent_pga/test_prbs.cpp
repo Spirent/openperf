@@ -31,12 +31,7 @@ TEST_CASE("PRBS functions", "[spirent-pga]")
             std::array<uint32_t, buffer_size> data;
             unsigned vector_tests = 0;
 
-            for (auto instruction_set : { pga::instruction_set::type::SSE2,
-                                          pga::instruction_set::type::SSE4,
-                                          pga::instruction_set::type::AVX,
-                                          pga::instruction_set::type::AVX2,
-                                          pga::instruction_set::type::AVX512SKX }) {
-
+            for (auto instruction_set : pga::test::vector_instruction_sets()) {
                 auto vector_fn = pga::test::get_function(functions.fill_prbs_aligned_impl,
                                                          instruction_set);
                 /*
@@ -69,13 +64,7 @@ TEST_CASE("PRBS functions", "[spirent-pga]")
             unsigned verify_tests = 0;
             uint64_t verify_result = static_cast<uint64_t>(ref_next_seed) << 32 | 0;
 
-            for (auto instruction_set : { pga::instruction_set::type::SCALAR,
-                                          pga::instruction_set::type::SSE2,
-                                          pga::instruction_set::type::SSE4,
-                                          pga::instruction_set::type::AVX,
-                                          pga::instruction_set::type::AVX2,
-                                          pga::instruction_set::type::AVX512SKX }) {
-
+            for (auto instruction_set : pga::test::instruction_sets()) {
                 auto verify_fn = pga::test::get_function(functions.verify_prbs_aligned_impl,
                                                          instruction_set);
 
