@@ -55,12 +55,7 @@ TEST_CASE("signature functions", "[spirent-pga]")
         SECTION("encoding") {
             unsigned vector_tests = 0;
 
-            for (auto instruction_set : { pga::instruction_set::type::SSE2,
-                                          pga::instruction_set::type::SSE4,
-                                          pga::instruction_set::type::AVX,
-                                          pga::instruction_set::type::AVX2,
-                                          pga::instruction_set::type::AVX512SKX }) {
-
+            for (auto instruction_set : pga::test::vector_instruction_sets()) {
                 auto vector_fn = pga::test::get_function(functions.encode_signatures_impl,
                                                          instruction_set);
                 /*
@@ -105,13 +100,7 @@ TEST_CASE("signature functions", "[spirent-pga]")
              */
             unsigned decode_tests = 0;
 
-            for (auto instruction_set : { pga::instruction_set::type::SCALAR,
-                                          pga::instruction_set::type::SSE2,
-                                          pga::instruction_set::type::SSE4,
-                                          pga::instruction_set::type::AVX,
-                                          pga::instruction_set::type::AVX2,
-                                          pga::instruction_set::type::AVX512SKX }) {
-
+            for (auto instruction_set : pga::test::instruction_sets()) {
                 auto decode_fn = pga::test::get_function(functions.decode_signatures_impl,
                                                          instruction_set);
 

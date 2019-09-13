@@ -15,13 +15,7 @@ TEST_CASE("fill functions", "[spirent-pga]")
         /* Check that all functions generate valid fill data correctly */
         SECTION("constant") {
             unsigned const_tests = 0;
-            for (auto instruction_set : { pga::instruction_set::type::SCALAR,
-                                          pga::instruction_set::type::SSE2,
-                                          pga::instruction_set::type::SSE4,
-                                          pga::instruction_set::type::AVX,
-                                          pga::instruction_set::type::AVX2,
-                                          pga::instruction_set::type::AVX512SKX }) {
-
+            for (auto instruction_set : pga::test::instruction_sets()) {
                 auto fill_fn = pga::test::get_function(functions.fill_step_aligned_impl,
                                                        instruction_set);
 
@@ -56,13 +50,7 @@ TEST_CASE("fill functions", "[spirent-pga]")
 
         SECTION("increment") {
             unsigned incr_tests = 0;
-            for (auto instruction_set : { pga::instruction_set::type::SCALAR,
-                                          pga::instruction_set::type::SSE2,
-                                          pga::instruction_set::type::SSE4,
-                                          pga::instruction_set::type::AVX,
-                                          pga::instruction_set::type::AVX2,
-                                          pga::instruction_set::type::AVX512SKX }) {
-
+            for (auto instruction_set : pga::test::instruction_sets()) {
                 auto fill_fn = pga::test::get_function(functions.fill_step_aligned_impl,
                                                        instruction_set);
 
@@ -99,13 +87,7 @@ TEST_CASE("fill functions", "[spirent-pga]")
 
         SECTION("decrement") {
             unsigned decr_tests = 0;
-            for (auto instruction_set : { pga::instruction_set::type::SCALAR,
-                                          pga::instruction_set::type::SSE2,
-                                          pga::instruction_set::type::SSE4,
-                                          pga::instruction_set::type::AVX,
-                                          pga::instruction_set::type::AVX2,
-                                          pga::instruction_set::type::AVX512SKX }) {
-
+            for (auto instruction_set : pga::test::instruction_sets()) {
                 auto fill_fn = pga::test::get_function(functions.fill_step_aligned_impl,
                                                        instruction_set);
 
