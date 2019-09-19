@@ -71,10 +71,13 @@ TEST_CASE("signature functions", "[spirent-pga]")
                     continue;
                 }
 
+                INFO("instruction set = " << pga::instruction_set::to_string(instruction_set));
+
                 vector_tests++;
 
                 std::vector<spirent_signature> vec_signatures(nb_signatures);
                 std::vector<uint8_t*> vec_signature_ptrs(nb_signatures);
+
                 for (auto i = 0; i < nb_signatures; i++) {
                     vec_signatures[i] = {{}, 0, 0};
                     vec_signature_ptrs[i] = &vec_signatures[i].data[0];
@@ -85,7 +88,7 @@ TEST_CASE("signature functions", "[spirent-pga]")
                           sequence_nums.data(),
                           timestamp, flags, vec_signatures.size());
 
-                /* Now, compare all signature data */
+                /* Now, compare all signature data and the cheater field */
                 for (auto i = 0; i < nb_signatures; i++) {
                     REQUIRE(std::equal(ref_signatures[i].data,
                                        ref_signatures[i].data + 16,
@@ -115,6 +118,8 @@ TEST_CASE("signature functions", "[spirent-pga]")
                 if (!(decode_fn && pga::instruction_set::available(instruction_set))) {
                     continue;
                 }
+
+                INFO("instruction set = " << pga::instruction_set::to_string(instruction_set));
 
                 decode_tests++;
 
@@ -179,10 +184,14 @@ TEST_CASE("signature functions", "[spirent-pga]")
                               sequence_nums.data(),
                               timestamp, flags, ref_signature_ptrs.size());
 
-        /* Verify that every signature has a non-zero CRC value */
+        /*
+         * Verify that every signature has a non-zero CRC value and
+         * zeroed out cheater value.
+         */
         std::for_each(std::begin(ref_signatures), std::end(ref_signatures),
                       [](auto& sig) {
                           REQUIRE(sig.crc != 0);
+                          REQUIRE(sig.cheater == 0);
                       });
 
         /* Make sure the presence of the CRC doesn't impede decoding */

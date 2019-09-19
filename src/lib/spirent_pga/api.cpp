@@ -1,4 +1,5 @@
 #include "api.h"
+#include "common/checksum.h"
 #include "common/fill.h"
 #include "common/prbs.h"
 #include "common/signature.h"
@@ -17,15 +18,22 @@ extern "C" {
 
 void pga_init()
 {
-    auto& functions = pga::functions::instance();
-    (void)functions;
+    [[maybe_unused]] auto& functions = pga::functions::instance();
 }
-
 
 void pga_log_info(FILE* output)
 {
     auto& functions = pga::functions::instance();
 
+    pga_log_implementation_info(output, functions.checksum_ipv4_headers_impl.name,
+                                pga::instruction_set::to_string(
+                                    pga::get_instruction_set(functions.checksum_ipv4_headers_impl)));
+    pga_log_implementation_info(output, functions.checksum_ipv4_pseudoheaders_impl.name,
+                                pga::instruction_set::to_string(
+                                    pga::get_instruction_set(functions.checksum_ipv4_pseudoheaders_impl)));
+    pga_log_implementation_info(output, functions.checksum_data_aligned_impl.name,
+                                pga::instruction_set::to_string(
+                                    pga::get_instruction_set(functions.checksum_data_aligned_impl)));
     pga_log_implementation_info(output, functions.decode_signatures_impl.name,
                                 pga::instruction_set::to_string(
                                     pga::get_instruction_set(functions.decode_signatures_impl)));
@@ -91,6 +99,20 @@ void pga_signatures_encode(uint8_t* destinations[],
                            timestamp, flags, count);
 }
 
+void pga_fill_const(uint8_t* payloads[], uint16_t lengths[], uint16_t count, uint8_t base)
+{
+    for (uint16_t i = 0; i < count; i++) {
+        pga::fill::fixed(payloads[i], lengths[i], base);
+    }
+}
+
+void pga_fill_decr(uint8_t* payloads[], uint16_t lengths[], uint16_t count, uint8_t base)
+{
+    for (uint16_t i = 0; i < count; i++) {
+        pga::fill::decr(payloads[i], lengths[i], base);
+    }
+}
+
 void pga_fill_incr(uint8_t* payloads[], uint16_t lengths[], uint16_t count, uint8_t base)
 {
     for (uint16_t i = 0; i < count; i++) {
@@ -117,6 +139,18 @@ bool pga_verify_prbs(uint8_t* payloads[], uint16_t lengths[], uint16_t count,
 
     return (std::any_of(bit_errors, bit_errors + count,
                         [](auto& value) { return (value); }));
+}
+
+void pga_checksum_ipv4_headers(const uint8_t* ipv4_headers[], uint16_t count,
+                               uint32_t checksums[])
+{
+    pga::checksum::ipv4_headers(ipv4_headers, count, checksums);
+}
+
+void pga_checksum_ipv4_tcpudp(const uint8_t* ipv4_headers[], uint16_t count,
+                              uint32_t checksums[])
+{
+    pga::checksum::ipv4_tcpudp(ipv4_headers, count, checksums);
 }
 
 }

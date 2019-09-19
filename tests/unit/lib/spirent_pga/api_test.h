@@ -13,8 +13,8 @@
 
 namespace pga::test {
 
-template <typename FunctionPtr>
-FunctionPtr get_function(const function_wrapper<FunctionPtr>& wrapper,
+template <typename FunctionPtr, typename Tag = void>
+FunctionPtr get_function(const function_wrapper<FunctionPtr, Tag>& wrapper,
                          instruction_set::type type)
 {
     return (pga::get_function(wrapper.functions, type));

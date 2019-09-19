@@ -1,6 +1,7 @@
 # Makefile component for spirent_pga unit tests
 
 TEST_SOURCES += \
+	lib/spirent_pga/test_checksums.cpp \
 	lib/spirent_pga/test_init.cpp \
 	lib/spirent_pga/test_fills.cpp \
 	lib/spirent_pga/test_prbs.cpp \

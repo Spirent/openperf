@@ -1,5 +1,6 @@
 
-#include "signature_scramble.ispc"
+#include "signature_scramble.h"
+#include "aos_soa_5.h"
 
 export void encode_signatures(unsigned int8* uniform destinations[],
                               unsigned int32 const uniform stream_ids[],
@@ -47,14 +48,14 @@ export void encode_signatures(unsigned int8* uniform destinations[],
         signature[2] ^= mask[2];
         signature[3] ^= mask[3];
 
-        /* Write signature data out into a linear array */
+        /* Write signature data out as an array of structs in our scratch area */
         soa_to_aos4((int)signature[0],
                     (int)signature[1],
                     (int)signature[2],
                     (int)signature[3],
                     scratch);
 
-        /* And scatter the data into place */
+        /* And scatter the signatures into place */
         memcpy(destinations[i], &scratch[programIndex * 4], 16);
     }
 }

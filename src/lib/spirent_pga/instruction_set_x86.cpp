@@ -1,5 +1,4 @@
 #include <cstdint>
-#include <cstdio>
 
 #include <cpuid.h>
 

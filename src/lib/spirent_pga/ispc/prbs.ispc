@@ -43,7 +43,9 @@ inline unsigned int32 prbs_rotate_left(unsigned int32 value, uniform unsigned in
     return ((value << 23 | value) << count | value >> (23 - count));
 }
 
-inline unsigned int32 prbs_xorshift_next4(uniform unsigned int32 seed, int index)
+#if TARGET_WIDTH == 4
+
+inline unsigned int32 prbs_next(uniform unsigned int32 seed, int index)
 {
     static const uniform unsigned int32 masks[][4] = {
         { 0x00000000,0x0003ffff,0x00000000,0x0003ffff },
@@ -89,7 +91,34 @@ inline unsigned int32 prbs_xorshift_next4(uniform unsigned int32 seed, int index
             ^ (prbs_rotate_left(base, 20) & masks[20][index]));
 }
 
-inline unsigned int32 prbs_xorshift_next8(uniform unsigned int32 seed, int index)
+inline unsigned int32 prbs_step(unsigned int32 seed)
+{
+    static const uniform unsigned int32 masks[] = {
+        0x0003ffff,
+        0x000fffff,
+        0x00000003,
+        0xffffffff,
+        0xffffffff,
+        0x000003ff,
+        0xffffe000,
+        0xffffffff
+    };
+
+    unsigned int32 base = seed & PRBS_SEED_MASK;  /* only need the lower 23 bits of the seed value */
+
+    return ((base & masks[0])
+            ^ (prbs_rotate_left(base,  2) & masks[1])
+            ^ (prbs_rotate_left(base,  7) & masks[2])
+            ^ (prbs_rotate_left(base, 10) & masks[3])
+            ^ (prbs_rotate_left(base, 13) & masks[4])
+            ^ (prbs_rotate_left(base, 15) & masks[5])
+            ^ (prbs_rotate_left(base, 18) & masks[6])
+            ^ (prbs_rotate_left(base, 20) & masks[7]));
+}
+
+#elif TARGET_WIDTH == 8
+
+inline unsigned int32 prbs_next(uniform unsigned int32 seed, int index)
 {
     static const uniform unsigned int32 masks[][8] = {
         { 0x00000000,0x0003ffff,0x00000000,0x0003ffff,0x00000000,0x00000000,0x00000000,0x0003ffff },
@@ -144,7 +173,42 @@ inline unsigned int32 prbs_xorshift_next8(uniform unsigned int32 seed, int index
             ^ (prbs_rotate_left(base, 22) & masks[22][index]));
 }
 
-inline unsigned int32 prbs_xorshift_next16(uniform unsigned int32 seed, int index)
+inline unsigned int32 prbs_step(unsigned int32 seed)
+{
+    static const uniform unsigned int32 masks[] = {
+        0x0003ffff,
+        0x000fffff,
+        0xffffffff,
+        0x003fffff,
+        0x00000003,
+        0x03fffff8,
+        0x0000000f,
+        0xffffff00,
+        0xffffffff,
+        0xffffe000,
+        0xffffffff,
+        0xfffe0000
+    };
+
+    unsigned int32 base = seed & PRBS_SEED_MASK;  /* only need the lower 23 bits of the seed value */
+
+    return ((base & masks[0])
+            ^ (prbs_rotate_left(base,  2) & masks[1])
+            ^ (prbs_rotate_left(base,  3) & masks[2])
+            ^ (prbs_rotate_left(base,  4) & masks[3])
+            ^ (prbs_rotate_left(base,  7) & masks[4])
+            ^ (prbs_rotate_left(base,  8) & masks[5])
+            ^ (prbs_rotate_left(base,  9) & masks[6])
+            ^ (prbs_rotate_left(base, 13) & masks[7])
+            ^ (prbs_rotate_left(base, 17) & masks[8])
+            ^ (prbs_rotate_left(base, 18) & masks[9])
+            ^ (prbs_rotate_left(base, 20) & masks[10])
+            ^ (prbs_rotate_left(base, 22) & masks[11]));
+}
+
+#elif TARGET_WIDTH == 16
+
+inline unsigned int32 prbs_next(uniform unsigned int32 seed, int index)
 {
     static const uniform unsigned int32 masks[][16] = {
         { 0x00000000,0x0003ffff,0x00000000,0x0003ffff,0x00000000,0x00000000,0x00000000,0x0003ffff,
@@ -222,65 +286,7 @@ inline unsigned int32 prbs_xorshift_next16(uniform unsigned int32 seed, int inde
             ^ (prbs_rotate_left(base, 22) & masks[22][index]));
 }
 
-inline unsigned int32 prbs_xorshift_step4(unsigned int32 seed)
-{
-    static const uniform unsigned int32 masks[] = {
-        0x0003ffff,
-        0x000fffff,
-        0x00000003,
-        0xffffffff,
-        0xffffffff,
-        0x000003ff,
-        0xffffe000,
-        0xffffffff
-    };
-
-    unsigned int32 base = seed & PRBS_SEED_MASK;  /* only need the lower 23 bits of the seed value */
-
-    return ((base & masks[0])
-            ^ (prbs_rotate_left(base,  2) & masks[1])
-            ^ (prbs_rotate_left(base,  7) & masks[2])
-            ^ (prbs_rotate_left(base, 10) & masks[3])
-            ^ (prbs_rotate_left(base, 13) & masks[4])
-            ^ (prbs_rotate_left(base, 15) & masks[5])
-            ^ (prbs_rotate_left(base, 18) & masks[6])
-            ^ (prbs_rotate_left(base, 20) & masks[7]));
-}
-
-inline unsigned int32 prbs_xorshift_step8(unsigned int32 seed)
-{
-    static const uniform unsigned int32 masks[] = {
-        0x0003ffff,
-        0x000fffff,
-        0xffffffff,
-        0x003fffff,
-        0x00000003,
-        0x03fffff8,
-        0x0000000f,
-        0xffffff00,
-        0xffffffff,
-        0xffffe000,
-        0xffffffff,
-        0xfffe0000
-    };
-
-    unsigned int32 base = seed & PRBS_SEED_MASK;  /* only need the lower 23 bits of the seed value */
-
-    return ((base & masks[0])
-            ^ (prbs_rotate_left(base,  2) & masks[1])
-            ^ (prbs_rotate_left(base,  3) & masks[2])
-            ^ (prbs_rotate_left(base,  4) & masks[3])
-            ^ (prbs_rotate_left(base,  7) & masks[4])
-            ^ (prbs_rotate_left(base,  8) & masks[5])
-            ^ (prbs_rotate_left(base,  9) & masks[6])
-            ^ (prbs_rotate_left(base, 13) & masks[7])
-            ^ (prbs_rotate_left(base, 17) & masks[8])
-            ^ (prbs_rotate_left(base, 18) & masks[9])
-            ^ (prbs_rotate_left(base, 20) & masks[10])
-            ^ (prbs_rotate_left(base, 22) & masks[11]));
-}
-
-inline unsigned int32 prbs_xorshift_step16(unsigned int32 seed)
+inline unsigned int32 prbs_step(unsigned int32 seed)
 {
     static const uniform unsigned int32 masks[] = {
         0x0003ffff,
@@ -315,25 +321,7 @@ inline unsigned int32 prbs_xorshift_step16(unsigned int32 seed)
             ^ (prbs_rotate_left(base, 22) & masks[12]));
 }
 
-inline unsigned int32 prbs_next(uniform unsigned int32 seed, int index)
-{
-    switch (programCount) {
-    case 4: return (prbs_xorshift_next4(seed, index));
-    case 8: return (prbs_xorshift_next8(seed, index));
-    case 16: return (prbs_xorshift_next16(seed, index));
-    default: assert(false);
-    }
-}
-
-inline unsigned int32 prbs_step(unsigned int32 seed)
-{
-    switch (programCount) {
-    case 4: return (prbs_xorshift_step4(seed));
-    case 8: return (prbs_xorshift_step8(seed));
-    case 16: return (prbs_xorshift_step16(seed));
-    default: assert(false);
-    }
-}
+#endif
 
 /**
  * The n_th chunk of PRBS data consists of the complement of the

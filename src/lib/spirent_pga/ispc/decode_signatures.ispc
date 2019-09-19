@@ -1,4 +1,4 @@
-#include "signature_scramble.ispc"
+#include "signature_scramble.h"
 
 export uniform unsigned int16 decode_signatures(const unsigned int8* const uniform payloads[],
                                                 uniform unsigned int16 count,

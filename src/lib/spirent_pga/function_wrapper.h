@@ -40,7 +40,7 @@ constexpr instruction_set::type get_instruction_set(const std::array<std::pair<i
     return (instruction_set::type::NONE);
 }
 
-template <typename FunctionType>
+template <typename FunctionType, typename Tag = void>
 struct function_wrapper
 {
     static constexpr std::array<std::pair<instruction_set::type, FunctionType>,
@@ -143,24 +143,30 @@ struct function_wrapper
                                                 return (x.first < y.first);
                                             })->first.count();
             /* Integer code ftw! */
-            auto speedup_10x = scalar_ns * 10 / best_ns;
+            auto speedup_100x = scalar_ns * 100 / best_ns;
             std::cerr << " Picking the "
                       << instruction_set::to_string(get_instruction_set(functions, best))
-                      << " version (" << speedup_10x / 10 << "." << speedup_10x % 10
-                      << "x speedup)" << std::endl;
+                      << " version";
+
+            if (speedup_100x > 100) {
+                std::cerr << " (" << speedup_100x / 100 << "." << speedup_100x % 100
+                          << "x speedup)";
+            }
+
+            std::cerr << std::endl;
         }
     }
 };
 
-template <typename FunctionType>
-constexpr instruction_set::type get_instruction_set(const function_wrapper<FunctionType>& wrapper)
+template <typename FunctionType, typename Tag = void>
+constexpr instruction_set::type get_instruction_set(const function_wrapper<FunctionType, Tag>& wrapper)
 {
-    auto item = std::find_if(std::begin(function_wrapper<FunctionType>::functions),
-                             std::end(function_wrapper<FunctionType>::functions),
+    auto item = std::find_if(std::begin(function_wrapper<FunctionType, Tag>::functions),
+                             std::end(function_wrapper<FunctionType, Tag>::functions),
                              [&](const auto& pair) {
                                  return (pair.second == wrapper.best);
                              });
-    return (item == std::end(function_wrapper<FunctionType>::functions)
+    return (item == std::end(function_wrapper<FunctionType, Tag>::functions)
             ? instruction_set::type::NONE
             : (*item).first);
 }
@@ -206,6 +212,26 @@ constexpr instruction_set::type get_instruction_set(const function_wrapper<Funct
                                    decltype(&ispc::f)>,                 \
                          static_cast<int>(pga::instruction_set::type::MAX)> \
         pga::function_wrapper<decltype(&ispc::f)>::functions = {{  \
+            ISPC_FUNCTION_WRAPPER_INIT_FUNCTION_DATA(f)                 \
+        }}
+
+#define ISPC_FUNCTION_WRAPPER_TAGGED_INIT(tag, ret, f, ...)             \
+    namespace scalar {                                                  \
+    extern ret f(__VA_ARGS__);                                          \
+    }                                                                   \
+    namespace ispc {                                                    \
+    extern "C" ret f(__VA_ARGS__);                                      \
+    extern "C" ret f ## _sse2(__VA_ARGS__);                             \
+    extern "C" ret f ## _sse4(__VA_ARGS__);                             \
+    extern "C" ret f ## _avx(__VA_ARGS__);                              \
+    extern "C" ret f ## _avx2(__VA_ARGS__);                             \
+    extern "C" ret f ## _avx512skx(__VA_ARGS__);                        \
+    }                                                                   \
+    template <>                                                         \
+    constexpr std::array<std::pair<pga::instruction_set::type,          \
+                                   decltype(&ispc::f)>,                 \
+                         static_cast<int>(pga::instruction_set::type::MAX)> \
+        pga::function_wrapper<decltype(&ispc::f), tag>::functions = {{  \
             ISPC_FUNCTION_WRAPPER_INIT_FUNCTION_DATA(f)                 \
         }}
 
