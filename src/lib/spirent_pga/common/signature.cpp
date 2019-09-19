@@ -41,14 +41,14 @@ uint16_t decode(const uint8_t* payloads[], uint16_t count,
                 uint64_t timestamps[],
                 int flags[])
 {
-    static constexpr uint16_t analyze_loop_count = 32;
-    std::array<const uint8_t*, analyze_loop_count> signatures;
-    std::array<uint32_t, analyze_loop_count> timestamp_lo;
-    std::array<uint32_t, analyze_loop_count> timestamp_hi;
+    static constexpr uint16_t decode_loop_count = 32;
+    std::array<const uint8_t*, decode_loop_count> signatures;
+    std::array<uint32_t, decode_loop_count> timestamp_lo;
+    std::array<uint32_t, decode_loop_count> timestamp_hi;
 
     auto& functions = functions::instance();
 
-    uint16_t nb_loops = (count + (analyze_loop_count - 1)) / analyze_loop_count;
+    uint16_t nb_loops = (count + (decode_loop_count - 1)) / decode_loop_count;
     uint16_t nb_signatures = 0;
     uint16_t begin = 0;
 
@@ -59,7 +59,7 @@ uint16_t decode(const uint8_t* payloads[], uint16_t count,
         /* Step 1: Figure out if any of our payloads have valid signature CRCs */
         std::copy_if(payloads + begin, payloads + end,
                      signatures.data(),
-                     [&](const auto payload){
+                     [&](const auto& payload){
                          auto signature = reinterpret_cast<const spirent_signature*>(payload);
                          auto match = (signature->crc == calculate_crc16(signature->data, 16));
                          copied += match;
@@ -97,12 +97,17 @@ void encode(uint8_t* destinations[],
     auto& functions = functions::instance();
 
     /* Write the signature data into place */
-    functions.encode_signatures_impl(destinations, stream_ids, sequence_numbers,
+    functions.encode_signatures_impl(destinations,
+                                     stream_ids, sequence_numbers,
                                      timestamp, flags, count);
 
-    /* And calculate the CRC for each signature */
+    /*
+     * And calculate the CRC for each signature.
+     * Note: we just zero out the cheater since we expect hardware to
+     * do the payload checksumming for us.
+     */
     std::for_each(destinations, destinations + count,
-                  [](auto destination){
+                  [](auto& destination){
                       auto signature = reinterpret_cast<spirent_signature*>(destination);
                       signature->crc = calculate_crc16(signature->data, 16);
                       signature->cheater = 0;

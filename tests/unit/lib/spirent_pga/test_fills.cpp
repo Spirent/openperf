@@ -29,6 +29,8 @@ TEST_CASE("fill functions", "[spirent-pga]")
                     continue;
                 }
 
+                INFO("instruction set = " << pga::instruction_set::to_string(instruction_set));
+
                 const_tests++;
 
                 /* Fill the buffer with incorrect data before use */
@@ -67,6 +69,8 @@ TEST_CASE("fill functions", "[spirent-pga]")
                 if (!(fill_fn && pga::instruction_set::available(instruction_set))) {
                     continue;
                 }
+
+                INFO("instruction set = " << pga::instruction_set::to_string(instruction_set));
 
                 incr_tests++;
 
@@ -108,6 +112,8 @@ TEST_CASE("fill functions", "[spirent-pga]")
                 if (!(fill_fn && pga::instruction_set::available(instruction_set))) {
                     continue;
                 }
+
+                INFO("instruction set = " << pga::instruction_set::to_string(instruction_set));
 
                 decr_tests++;
 

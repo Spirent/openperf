@@ -5,9 +5,29 @@
 
 #include "function_wrapper.h"
 
-using encode_signatures_fn = void (*)(uint8_t*[], const uint32_t[], const uint32_t[],
-                                     uint64_t, int, uint16_t);
-ISPC_FUNCTION_WRAPPER_INIT(void, encode_signatures, uint8_t*[], const uint32_t[], const uint32_t[],
+using checksum_ipv4_headers_fn = void (*)(const uint8_t*[], uint16_t, uint32_t[]);
+
+/*
+ * Since the IPv4 header and pseudoheader checksum functions have the same signature,
+ * we need some tag structs to differentiate between them.
+ */
+struct ipv4_header{};
+struct ipv4_pseudoheader{};
+
+ISPC_FUNCTION_WRAPPER_TAGGED_INIT(ipv4_header, void, checksum_ipv4_headers,
+                                  const uint8_t*[], uint16_t, uint32_t[]);
+
+ISPC_FUNCTION_WRAPPER_TAGGED_INIT(ipv4_pseudoheader, void, checksum_ipv4_pseudoheaders,
+                                  const uint8_t*[], uint16_t, uint32_t[]);
+
+using checksum_data_aligned_fn = uint32_t (*)(const uint32_t[], uint16_t);
+ISPC_FUNCTION_WRAPPER_INIT(uint32_t, checksum_data_aligned, const uint32_t[], uint16_t);
+
+using encode_signatures_fn = void (*)(uint8_t*[],
+                                      const uint32_t[], const uint32_t[],
+                                      uint64_t, int, uint16_t);
+ISPC_FUNCTION_WRAPPER_INIT(void, encode_signatures, uint8_t*[],
+                           const uint32_t[], const uint32_t[],
                            uint64_t, int, uint16_t);
 
 using decode_signatures_fn = uint16_t (*)(const uint8_t* const[], uint16_t,
@@ -53,13 +73,19 @@ struct functions : singleton<functions>
 {
     functions();
 
-    function_wrapper<encode_signatures_fn> encode_signatures_impl = {"signature encodes", nullptr };
-    function_wrapper<decode_signatures_fn> decode_signatures_impl = {"signature decodes", nullptr };
+    function_wrapper<checksum_ipv4_headers_fn,
+                     ipv4_header> checksum_ipv4_headers_impl = {"IPv4 header checksumming", nullptr };
+    function_wrapper<checksum_ipv4_headers_fn,
+                     ipv4_pseudoheader> checksum_ipv4_pseudoheaders_impl = {"IPv4 pseudoheader checksumming", nullptr };
+    function_wrapper<checksum_data_aligned_fn> checksum_data_aligned_impl = {"data checksumming", nullptr };
 
-    function_wrapper<fill_step_aligned_fn> fill_step_aligned_impl = {"payload fills", nullptr };
-    function_wrapper<fill_prbs_aligned_fn> fill_prbs_aligned_impl = {"PRBS generation", nullptr };
+    function_wrapper<encode_signatures_fn> encode_signatures_impl = { "signature encodes", nullptr };
+    function_wrapper<decode_signatures_fn> decode_signatures_impl = { "signature decodes", nullptr };
 
-    function_wrapper<verify_prbs_aligned_fn> verify_prbs_aligned_impl = {"PRBS verification", nullptr };
+    function_wrapper<fill_step_aligned_fn> fill_step_aligned_impl = { "payload fills", nullptr };
+    function_wrapper<fill_prbs_aligned_fn> fill_prbs_aligned_impl = { "PRBS generation", nullptr };
+
+    function_wrapper<verify_prbs_aligned_fn> verify_prbs_aligned_impl = { "PRBS verification", nullptr };
 };
 
 }

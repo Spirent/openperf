@@ -42,6 +42,22 @@ void pga_init();
 void pga_log_info(FILE* output);
 
 /**
+ * Calculate the non-zero checksum of (payload & mask)
+ * This function is necessary to fill in the Spirent signature checksum
+ * cheater field when using 64 & 65 byte UDP test frames.
+ *7
+ * @param[in] payload
+ *   pointer to data to checksum
+ * @param[in] mask
+ *   pointer to mask indicating which bits to include in checksum calculation
+ * @param[in] length of payload
+ *
+ * @return
+ *   non-zero 16 bit checksum
+ */
+uint16_t pga_checksum_udp(const uint8_t payload[], const uint8_t mask[], uint16_t length);
+
+/**
  * These enums define specific signature bit field values.
  */
 enum pga_signature_prbs {
@@ -223,6 +239,35 @@ uint32_t pga_fill_prbs(uint8_t* payloads[], uint16_t lengths[], uint16_t count, 
  */
 bool pga_verify_prbs(uint8_t* payloads[], uint16_t lengths[], uint16_t count,
                      uint32_t bit_errors[]);
+
+/**
+ * Generate checksums for IPv4 headers.
+ *
+ * @param[in] ipv4_headers
+ *   array of pointers to IPv4 headers
+ * @param[in] count
+ *   the number of headers in the array
+ * @param[out] checksums
+ *   output array of checksums; checksum[i] contains the checksum of the i'th
+ *   header
+ */
+void pga_checksum_ipv4_headers(const uint8_t* ipv4_headers[], uint16_t count,
+                               uint32_t checksums[]);
+
+/**
+ * Generate TCP/UDP checksums.
+ *
+ * @param[in] ipv4_headers
+ *   array of pointers to IPv4 headers.  The layer 4 data to checksum should
+ *   follow the IPv4 header
+ * @param[in] count
+ *   the number of headers/payloads to checksum
+ * @param[out] checksums
+ *   output array of checksums; checksum[i] contains the checksum for the i'th
+ *   header/payload
+ */
+void pga_checksum_ipv4_tcpudp(const uint8_t* ipv4_headers[], uint16_t count,
+                              uint32_t checksums[]);
 
 #ifdef __cplusplus
 }

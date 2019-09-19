@@ -47,7 +47,10 @@ TEST_CASE("PRBS functions", "[spirent-pga]")
                     continue;
                 }
 
+                INFO("instruction set = " << pga::instruction_set::to_string(instruction_set));
+
                 vector_tests++;
+
                 auto next_seed = vector_fn(data.data(), data.size(), seed);
                 REQUIRE(ref_next_seed == next_seed);
                 REQUIRE(std::equal(std::begin(ref_data), std::end(ref_data),
@@ -79,6 +82,8 @@ TEST_CASE("PRBS functions", "[spirent-pga]")
                 if (!(verify_fn && pga::instruction_set::available(instruction_set))) {
                     continue;
                 }
+
+                INFO("instruction set = " << pga::instruction_set::to_string(instruction_set));
 
                 verify_tests++;
 
@@ -112,9 +117,10 @@ TEST_CASE("PRBS functions", "[spirent-pga]")
                               } else {
                                   /*
                                    * Vector versions will only see erroneous errors counts for errors in the
-                                   * first quadlet.
+                                   * first quadlet.  The most we could possibly see would be 15 * 32, so make
+                                   * sure our count is below that.
                                    */
-                                  REQUIRE(static_cast<bool>(offset > 1 ? bit_errors == 1 : bit_errors < 64));
+                                  REQUIRE(static_cast<bool>(offset > 1 ? bit_errors == 1 : bit_errors < (15 * 32)));
                               }
 
                               /* Unflip the bit */
