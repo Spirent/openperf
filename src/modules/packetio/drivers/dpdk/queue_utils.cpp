@@ -4,6 +4,7 @@
 #include <map>
 #include <vector>
 
+#include "config/icp_config_file.h"
 #include "packetio/drivers/dpdk/model/physical_port.h"
 #include "packetio/drivers/dpdk/model/port_info.h"
 #include "packetio/drivers/dpdk/queue_utils.h"
@@ -108,12 +109,16 @@ static __attribute__((const)) T round_up(T x, T multiple)
  * across the specified number of 'buckets'.
  * Obviously, 0 <= n < buckets.
  */
-template <typename T>
-static __attribute__((const)) T distribute(T total, T buckets, T n)
+template <typename T, typename U, typename V>
+static __attribute__((const)) T distribute(T total, U buckets, V n)
 {
+    static_assert(std::is_integral_v<T>);
+    static_assert(std::is_integral_v<U>);
+    static_assert(std::is_integral_v<V>);
+
     assert(n < buckets);
     auto base = total / buckets;
-    return (n < total % buckets ? base + 1 : base);
+    return (static_cast<T>(n < total % buckets ? base + 1 : base));
 }
 
 uint16_t worker_id(const std::vector<worker_config>& workers, uint16_t offset)
@@ -273,17 +278,41 @@ static std::vector<descriptor> distribute_queues(const std::vector<model::port_i
     return (descriptors);
 }
 
+/* Compress any numeric value into a non-zero uint16_t */
+template <typename T>
+uint16_t to_u16(T x)
+{
+    return (static_cast<uint16_t>(std::clamp(x, static_cast<T>(1), static_cast<T>(0xffff))));
+}
+
 std::vector<descriptor> distribute_queues(const std::vector<model::port_info>& port_info, uint16_t q_workers)
 {
-    return (q_workers == 1
-            ? distribute_queues(port_info)
-            : distribute_queues(port_info,
-                                distribute(q_workers,
-                                           static_cast<uint16_t>(2),
-                                           static_cast<uint16_t>(0)),
-                                distribute(q_workers,
-                                           static_cast<uint16_t>(2),
-                                           static_cast<uint16_t>(1))));
+    /* With only 1 worker, no distribution is necessary */
+    if (q_workers == 1) {
+        return (distribute_queues(port_info));
+    }
+
+    using namespace config::file;
+    static auto max_rx_queues = icp_config_get_param<ICP_OPTION_TYPE_LONG>("modules.packetio.dpdk.max-rx-workers");
+    static auto max_tx_queues = icp_config_get_param<ICP_OPTION_TYPE_LONG>("modules.packetio.dpdk.max-tx-workers");
+
+    /* By default, queue workers are evenly distributed between rx and tx workers */
+    auto rx_q_workers = distribute(q_workers, 2, 0);
+    auto tx_q_workers = distribute(q_workers, 2, 1);
+
+    /* However, if the user has applied constraints, we have to update those values */
+    if (max_rx_queues && max_tx_queues) {
+        rx_q_workers = std::min(rx_q_workers, to_u16(*max_rx_queues));
+        tx_q_workers = std::min(tx_q_workers, to_u16(*max_tx_queues));
+    } else if (max_rx_queues) {
+        rx_q_workers = std::min(rx_q_workers, to_u16(*max_rx_queues));
+        tx_q_workers = q_workers - rx_q_workers;
+    } else if (max_tx_queues) {
+        tx_q_workers = std::min(tx_q_workers, to_u16(*max_tx_queues));
+        rx_q_workers = q_workers - tx_q_workers;
+    }
+
+    return (distribute_queues(port_info, rx_q_workers, tx_q_workers));
 }
 
 std::map<int, count> get_port_queue_counts(const std::vector<queue::descriptor>& descriptors)

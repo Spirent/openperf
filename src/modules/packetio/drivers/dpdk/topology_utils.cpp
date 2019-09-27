@@ -157,9 +157,12 @@ unsigned get_stack_lcore_id()
                                     return (a.second.size() < b.second.size());
                                 });
 
-    /* Return the first available core */
+    /*
+     * Return the last available core.
+     * Note: cores should be sorted since we iterated through them that way.
+     */
     assert(!max->second.empty());
-    return (max->second.front());
+    return (max->second.back());
 }
 
 }
