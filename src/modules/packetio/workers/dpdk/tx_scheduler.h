@@ -26,7 +26,9 @@ constexpr bool operator>(const entry& left, const entry& right);
 
 struct state_idle {};       /* No events are scheduled */
 struct state_link_check{};  /* Events are scheduled; link is down */
-struct state_running {};    /* Events are scheduled; link is up */
+struct state_running {      /* Events are schedule; link is up */
+    mutable bool reschedule = false;
+};
 struct state_blocked        /* Events are scheduled; link is up; queue is full */
 {
     mutable uint16_t remaining;
