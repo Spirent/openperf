@@ -318,9 +318,14 @@ static uint16_t do_transmit(uint16_t port_idx, uint16_t queue_idx,
     return (total_sent);
 }
 
-std::optional<schedule::state> tx_scheduler::on_timeout(const schedule::state_running&)
+std::optional<schedule::state> tx_scheduler::on_timeout(const schedule::state_running& state)
 {
     if (link_down(port_id())) return (schedule::state_link_check{});
+
+    if (state.reschedule) {
+        do_reschedule(schedule::clock::now());
+        state.reschedule = false;
+    }
 
     schedule::time_point now;
     while (!m_schedule.empty()
@@ -358,11 +363,14 @@ std::optional<schedule::state> tx_scheduler::on_timeout(const schedule::state_ru
 
     assert(m_schedule.top().deadline > now);
 
-    if (m_time_reschedule <= now) do_reschedule(now);
-
     /* Update timer for next event */
-    set_timer_oneshot(m_timerfd,
-                      std::min(m_schedule.top().deadline, m_time_reschedule) - now);
+    if (m_time_reschedule <= m_schedule.top().deadline) {
+        set_timer_oneshot(m_timerfd, std::max(min_poll, m_time_reschedule - now));
+        state.reschedule = true;
+    } else {
+        set_timer_oneshot(m_timerfd, m_schedule.top().deadline - now);
+    }
+
     return (std::nullopt);
 }
 
@@ -434,7 +442,7 @@ std::optional<schedule::state> tx_scheduler::on_timeout(const schedule::state_bl
 void tx_scheduler::on_transition(const schedule::state_idle&)
 {
     assert(m_buffer.empty());
-    assert(m_schedule.empty());
+    assert(!have_active_sources(m_tib, port_id(), queue_id()));
 
     set_timer_interval(m_timerfd, idle_poll);
 }
@@ -454,7 +462,7 @@ void tx_scheduler::on_transition(const schedule::state_link_check&)
     set_timer_interval(m_timerfd, link_poll);
 }
 
-void tx_scheduler::on_transition(const schedule::state_running&)
+void tx_scheduler::on_transition(const schedule::state_running& state)
 {
     assert(m_buffer.empty());
     assert(have_active_sources(m_tib, port_id(), queue_id()));
@@ -470,9 +478,13 @@ void tx_scheduler::on_transition(const schedule::state_running&)
         m_time_reschedule = now + schedule_poll;
     }
 
-    set_timer_oneshot(m_timerfd,
-                      std::max(min_poll,
-                               std::min(m_schedule.top().deadline, m_time_reschedule) - now));
+    if (m_time_reschedule <= m_schedule.top().deadline) {
+        state.reschedule = true;
+        set_timer_oneshot(m_timerfd, std::max(min_poll, m_time_reschedule - now));
+    } else {
+        state.reschedule = false;
+        set_timer_oneshot(m_timerfd, std::max(min_poll, m_schedule.top().deadline - now));
+    }
 }
 
 void tx_scheduler::on_transition(const schedule::state_blocked&)
