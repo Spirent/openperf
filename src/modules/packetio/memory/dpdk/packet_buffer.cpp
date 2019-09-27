@@ -58,7 +58,7 @@ void* append(packet_buffer* buffer, uint16_t offset)
 
 void* front(packet_buffer* buffer)
 {
-    return (rte_pktmbuf_prepend(buffer, buffer->data_off));
+    return (rte_pktmbuf_mtod(buffer, void*));
 }
 
 }
