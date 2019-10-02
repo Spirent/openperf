@@ -145,6 +145,23 @@ bool dpdk_test_mode()
     return (result.value_or(false));
 }
 
+/*
+ * Our list argument type splits arguments on commas, however some DPDK options
+ * use commas to support key=value modifiers.  This function reconstructs the
+ * commas so that arguments are parsed correctly.
+ */
+static void add_dpdk_argument(std::vector<std::string>& args, std::string_view input)
+{
+    if (auto pos = input.find_first_of("="); pos != input.npos
+        && !args.empty()
+        && args.back().front() != '-') {
+        /* This looks like a key=value modifier; prepend a comma */
+        args.back().append("," + std::string(input));
+    } else {
+        args.emplace_back(input);
+    }
+}
+
 std::vector<std::string> dpdk_args()
 {
     // Add name value in straight away.
@@ -154,14 +171,9 @@ std::vector<std::string> dpdk_args()
     auto arg_list = config::file::icp_config_get_param<ICP_OPTION_TYPE_LIST>("modules.packetio.dpdk.options");
     if (!arg_list) { return (to_return); }
 
-    // Walk through it and split any args that have a =.
+    // Walk through it and rebuild the arguments DPDK expects
     for (auto &v: *arg_list) {
-        if (auto pos = v.find_first_of("="); pos != v.npos) {
-            to_return.push_back(v.substr(0, pos));
-            to_return.push_back(v.substr(pos+1, v.size()));
-        } else {
-            to_return.push_back(v);
-        }
+        add_dpdk_argument(to_return, v);
     }
 
     /* Append a log level option if needed */
