@@ -38,6 +38,12 @@ static T zmq_msg_data(const zmq_msg_t* msg)
     return (reinterpret_cast<T>(zmq_msg_data(const_cast<zmq_msg_t*>(msg))));
 }
 
+template <typename T>
+static size_t zmq_msg_size(const zmq_msg_t* msg)
+{
+    return (zmq_msg_size(const_cast<zmq_msg_t*>(msg))/sizeof(T));
+}
+
 /**
  * Templated function to retrieve the index for a specific type in a variant.
  * Helps make the switch statement when de-serializing a message a little

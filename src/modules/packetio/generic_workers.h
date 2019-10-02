@@ -32,6 +32,16 @@ public:
         : m_self(std::make_unique<workers_model<Workers>>(std::move(s)))
     {}
 
+    std::vector<unsigned> get_rx_worker_ids() const
+    {
+        return (m_self->get_rx_worker_ids());
+    }
+
+    std::vector<unsigned> get_tx_worker_ids() const
+    {
+        return (m_self->get_tx_worker_ids());
+    }
+
     transmit_function get_transmit_function(std::string_view port_id) const
     {
         return (m_self->get_transmit_function(port_id));
@@ -96,6 +106,8 @@ public:
 private:
     struct workers_concept {
         virtual ~workers_concept() = default;
+        virtual std::vector<unsigned> get_rx_worker_ids() const = 0;
+        virtual std::vector<unsigned> get_tx_worker_ids() const = 0;
         virtual transmit_function get_transmit_function(std::string_view port_id) const = 0;
         virtual void add_interface(std::string_view port_id, std::any interface) = 0;
         virtual void del_interface(std::string_view port_id, std::any interface) = 0;
@@ -119,6 +131,16 @@ private:
         workers_model(Workers s)
             : m_workers(std::move(s))
         {}
+
+        std::vector<unsigned> get_rx_worker_ids() const override
+        {
+            return (m_workers.get_rx_worker_ids());
+        }
+
+        std::vector<unsigned> get_tx_worker_ids() const override
+        {
+            return (m_workers.get_tx_worker_ids());
+        }
 
         transmit_function get_transmit_function(std::string_view port_id) const override
         {
