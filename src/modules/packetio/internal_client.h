@@ -29,6 +29,9 @@ public:
     client(client&& other);
     client& operator=(client&& other);
 
+    tl::expected<unsigned, int> get_worker_rx_count();
+    tl::expected<unsigned, int> get_worker_tx_count();
+
     tl::expected<void, int> add_sink(std::string_view src_id,
                                      packets::generic_sink sink);
     tl::expected<void, int> del_sink(std::string_view src_id,

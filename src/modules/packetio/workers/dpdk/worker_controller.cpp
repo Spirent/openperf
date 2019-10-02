@@ -1,4 +1,5 @@
 #include <chrono>
+#include <set>
 
 #include "core/icp_core.h"
 #include "packetio/drivers/dpdk/dpdk.h"
@@ -68,6 +69,17 @@ static std::vector<worker::descriptor> to_worker_descriptors(const std::vector<q
     }
 
     return (worker_items);
+}
+
+static std::vector<model::port_info> get_port_info()
+{
+    uint16_t port_id = 0;
+    std::vector<model::port_info> port_info;
+    RTE_ETH_FOREACH_DEV(port_id) {
+        port_info.emplace_back(model::port_info(port_id));
+    }
+
+    return (port_info);
 }
 
 static std::vector<queue::descriptor> get_queue_descriptors(std::vector<model::port_info>& port_info)
@@ -147,11 +159,7 @@ worker_controller::worker_controller(void* context,
     setup_recycler_callback(loop, m_recycler.get());
 
     /* We need port information to setup our workers, so get it */
-    uint16_t port_id = 0;
-    std::vector<model::port_info> port_info;
-    RTE_ETH_FOREACH_DEV(port_id) {
-        port_info.emplace_back(model::port_info(port_id));
-    }
+    auto port_info = get_port_info();
 
     /* Construct our necessary transmit schedulers and metadata */
     for (auto& d : topology::queue_distribute(port_info)) {
@@ -213,6 +221,39 @@ worker_controller& worker_controller::operator=(worker_controller&& other)
         m_tx_workers = std::move(other.m_tx_workers);
     }
     return (*this);
+}
+
+static unsigned get_worker_count(queue::queue_mode type)
+{
+    auto port_info = get_port_info();
+    auto q_descriptors = topology::queue_distribute(port_info);
+
+    /*
+     * Our queue descriptors vector contains all port queues along with
+     * their assigned workers.  Go through the data finding all queues of
+     * the correct type and add the associated worker to our set of workers.
+     */
+    std::set<uint16_t> workers;
+    std::for_each(std::begin(q_descriptors), std::end(q_descriptors),
+        [&](auto& d) {
+            auto match = (type == queue::queue_mode::NONE
+                          ? (d.mode == queue::queue_mode::NONE)
+                          : (d.mode == queue::queue_mode::RXTX || d.mode == type));
+            if (match) workers.insert(d.worker_id);
+        });
+
+    /* Now we know the unique workers for that queue type. */
+    return (workers.size());
+}
+
+unsigned worker_controller::get_rx_worker_count() const
+{
+    return (get_worker_count(queue::queue_mode::RX));
+}
+
+unsigned worker_controller::get_tx_worker_count() const
+{
+    return (get_worker_count(queue::queue_mode::TX));
 }
 
 template <typename T>

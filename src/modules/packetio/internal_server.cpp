@@ -86,6 +86,18 @@ reply_msg handle_request(workers::generic_workers& workers,
     return (reply_ok{});
 }
 
+reply_msg handle_request(workers::generic_workers& workers,
+                         const request_worker_rx_count&)
+{
+    return (reply_count{workers.get_rx_worker_count()});
+}
+
+reply_msg handle_request(workers::generic_workers& workers,
+                         const request_worker_tx_count&)
+{
+    return (reply_count{workers.get_tx_worker_count()});
+}
+
 static std::string to_string(request_msg& request)
 {
     return (std::visit(overloaded_visitor(
@@ -110,6 +122,12 @@ static std::string to_string(request_msg& request)
                            },
                            [](const request_task_del& msg) {
                                return ("delete task " + std::string(msg.task_id));
+                           },
+                           [](const request_worker_rx_count&) {
+                               return (std::string("get worker rx count"));
+                           },
+                           [](const request_worker_tx_count&) {
+                               return (std::string("get worker tx count"));
                            }),
                        request));
 }

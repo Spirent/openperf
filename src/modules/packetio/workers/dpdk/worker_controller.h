@@ -36,6 +36,9 @@ public:
     worker_controller(const worker_controller&) = delete;
     worker_controller& operator=(const worker_controller&&) = delete;
 
+    unsigned get_rx_worker_count() const;
+    unsigned get_tx_worker_count() const;
+
     workers::transmit_function get_transmit_function(std::string_view port_id) const;
 
     void add_interface(std::string_view port_id, std::any interface);
