@@ -5,6 +5,7 @@ PIO_WORKER_SOURCES += \
 	epoll_poller.cpp \
 	event_loop_adapter.cpp \
 	forwarding_table_impl.cpp \
+	internal_worker.cpp \
 	recycle_impl.cpp \
 	rx_queue.cpp \
 	transmit_table_impl.cpp \
