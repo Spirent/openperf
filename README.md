@@ -25,6 +25,7 @@ also depends on some 3rd party components:
 * [pistache](http://pistache.io) - a C++ REST framework with [Swagger](https://swagger.io)
   support
 * [yaml-cpp](https://github.com/jbeder/yaml-cpp) - a YAML parser and emitter in C++ matching the YAML 1.2 spec.
+* [immer](https://sinusoid.es/immer/index.html) - a library of persistent and immutable data structures written in C++.
 
 Unit tests are written with [catch2](https://github.com/catchorg/Catch2), a modern C++
 unit testing framework.  Additionally, build acceptance tests are run with
