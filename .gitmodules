@@ -1,6 +1,6 @@
 [submodule "deps/dpdk"]
 	path = deps/dpdk
-	url = https://git.dpdk.org/dpdk
+	url = http://dpdk.org/git/dpdk
 [submodule "deps/libzmq"]
 	path = deps/libzmq
 	url = https://github.com/zeromq/libzmq.git
