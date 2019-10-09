@@ -21,9 +21,6 @@ Then build the inception code from within the docker container:
 If all is fine, you should see something like
 
 	sudo -n /sbin/setcap CAP_IPC_LOCK,CAP_NET_RAW,CAP_SYS_ADMIN,CAP_DAC_OVERRIDE,CAP_SYS_PTRACE=epi /project/build/inception-linux-x86_64-testing/bin/inception
-	Failed to set capabilities on file `/project/build/inception-linux-x86_64-testing/bin/inception' (Operation not supported)
-	The value of the capability argument is not permitted for a file. Or the file is not a regular (non-symlink) file
-	make[1]: [Makefile:35: /project/build/inception-linux-x86_64-testing/bin/inception] Error 1 (ignored)
 	make[1]: Leaving directory '/project/targets/inception'
 	make[1]: Entering directory '/project/targets/libicp-shim'
 	clang++ -flto=thin -shared -o /project/build/libicp-shim-linux-x86_64-testing/lib/libicp-shim.so -fuse-ld=lld -static-libstdc++ -static-libgcc -shared -L/project/build/libicp-shim-linux-x86_64-testing/lib /project/build/libicp-shim-linux-x86_64-testing/obj/icp-shim.o /project/build/libicp-shim-linux-x86_64-testing/obj/libc_wrapper.o -licp_socket_client -lrt -ldl
@@ -34,6 +31,30 @@ If all is fine, you should see something like
 Finally, run the tests
 
 	docker run -it --privileged -v ./inception-core:/project inception-builder:latest /bin/bash -c "make -C /project test"
+
+For verbose test, you can run the following command within the docker container: 
+
+	cd /project/tests/aat;
+	env/bin/mamba spec --format=documentation
+
+You will be able to see the following logs:
+
+	Modules,
+	  list,
+	    all,
+	      ✓ it returns list of modules (1.3598 seconds)
+	      unsupported method,
+	        ✓ it returns 405
+	  get,
+	    known module,
+	      packetio
+	        ✓ it succeeds
+	    non-existent module,
+	      ✓ it returns 404
+	    unsupported method,
+	      ✓ it returns 405
+	    invalid module name,
+	      ✓ it returns 400	
 
 
 # Internal API 
@@ -59,7 +80,7 @@ The `context` is a ZeroMQ message queue used to communicate with the Inception e
 
 	auto client = icp::packetio::internal::api::client(context);
 
-Once, the test is finihed, cleanup the stack using
+Once the test is finihed, cleanup the stack using:
 
     /* ... then clean up and exit. */
     icp_halt(context);
@@ -190,3 +211,156 @@ The `id` method is the same as for the generator, allowing to specify on which w
     }
 
 Full sink source code available from [sink-example/main.cpp](../targets/sink-example/main.cpp)
+
+# Modules
+
+## Socket Module
+
+There are three folders _socket_, _client_  and _server_. The _client_ is what is linked with the application, while the server resides in the inception process.
+
+### Client Initialization 
+
+Upon startup (`icp::socket::api::client.init()`), the client will exchange an HELLO message with the server over local unix domain socket (`unix_socket` type [`SOCK_SEQPACKET`](http://urchin.earth.li/~twic/Sequenced_Packets_Over_Ordinary_TCP.html) to `/tmp/.com.spirent.inception/server`). The server responds with the server process ID and shared memory, as well as an optional pair of file descriptors to be used for subsequent communications.
+
+When the client needs to create a new socket, it calls the socket equivalent wrapper [`client::socket(domain, type, protocol)`](https://github.com/SpirentOrion/inception-core/blob/master/src/modules/socket/client/api_client.cpp#L435). The server allocates a _channel_ into the shared memory, a socket FD pair, and a socket ID.  
+
+### Sending Data from the Client
+
+Sending data over this socket (assuming UDP) will eventually call `client::sendmsg` with the destination `sockaddr` passed in the message header (`msg_name`). This method will send the data over the channel ([`channel.send`](https://github.com/SpirentOrion/inception-core/blob/master/src/modules/socket/client/api_client.cpp#L593)), which in turn, calls the _dgram channel_ implementation [`dgram_channel::send`](https://github.com/SpirentOrion/inception-core/blob/master/src/modules/socket/client/dgram_channel.cpp#L168). 
+
+
+	ssize_t client::sendto(int s, const void *dataptr, size_t len, int flags, const struct sockaddr *to, socklen_t tolen)
+	{
+	    auto iov = iovec{
+	        .iov_base = const_cast<void*>(dataptr),
+	        .iov_len = len
+	    };
+	
+	    auto msg = msghdr{
+	        .msg_name = const_cast<sockaddr*>(to),
+	        .msg_namelen = tolen,
+	        .msg_iov = &iov,
+	        .msg_iovlen = 1
+	    };
+	
+	    return (sendmsg(s, &msg, flags));
+	}
+	
+	
+	ssize_t client::sendmsg(int s, const struct msghdr *message, int flags)
+	{
+	    auto& [id, channel] = m_channels.find(s)->second;
+	    
+	    channel.send(m_server_pid, message->msg_iov, message->msg_iovlen, 
+	    	flags, reinterpret_cast<const sockaddr*>(message->msg_name));
+	}
+	
+This last method transfers the data via the [`process_vm_writev`](https://linux.die.net/man/2/process_vm_writev) call (which copies memory between two processes without going through the kernel).
+	
+	dgram_channel::send(pid_t pid, iov[], iovcnt,..., sockaddr *to)
+	{
+	    auto item = sendq.unpack();
+	    item->address = to_addr(to);
+	
+	    iovec writevec = iovec{ 
+	    	.iov_base = const_cast<void*>(item->pvec.payload()),
+	        .iov_len = item->pvec.len() 
+	    };
+	    process_vm_writev(pid, iov, iovcnt, &writevec, 1, 0);
+	
+	    item->pvec.len(result);
+	    sendq.repack();
+	
+	    notify();
+		...	
+	}
+	
+The sending process does not use the shared memory. Instead, it uses the [`sendq`](https://github.com/SpirentOrion/inception-core/blob/master/src/modules/socket/bipartite_ring.h) (implemented as a bipartite ring). The item type is `dgram_channel_item`, which contains a [pbuf_vec](https://github.com/SpirentOrion/inception-core/blob/master/src/modules/socket/pbuf_vec.cpp), which carries the payload and LWIP buf pointer as well as the payload length. From the client side, the puf is anonymised.
+
+	struct dgram_channel_item {
+	    std::optional<dgram_channel_addr> address;
+	    pbuf_vec pvec;
+	};
+
+The `notify` is implemented in the `event_queue_producer` which the `dgram_channel` inherits from. At first glance, it looks quite complex:
+
+	template <typename Derived>
+	int event_queue_producer<Derived>::notify()
+	{
+	    if (!count()) {
+	        write_idx().fetch_add(1, std::memory_order_release);
+	        if (auto err = eventfd_write(fd(), 1); err != 0) {
+	            write_idx().fetch_sub(1, std::memory_order_release);
+	            return (errno);
+	        }
+	    }
+	    return (0);
+	}
+
+But the most imporant is the `eventfd_write(fd(), 1)` which [_just_ sends](https://stackoverflow.com/questions/18557064/where-to-find-eventfd-write-documentation) an event of value `1` to the consumer (server). 
+
+### Receiving Data from the Client
+
+Receiving data (from a UDP client socket) is similar to sending data, at least in the first steps:
+	
+	
+	ssize_t client::recvfrom(int s, void *mem, size_t len, int flags,
+	                 struct sockaddr *from, socklen_t *fromlen)
+	{
+	    auto iov = iovec{
+	        .iov_base = mem,
+	        .iov_len = len
+	    };
+	
+	    auto msg = msghdr{
+	        .msg_name = from,
+	        .msg_namelen = (fromlen ? *fromlen : 0),
+	        .msg_iov = &iov,
+	        .msg_iovlen = 1
+	    };
+	
+	    auto to_return = recvmsg(s, &msg, flags);
+	    if (fromlen && to_return != -1) *fromlen = msg.msg_namelen;
+	    return (to_return);
+	
+	}
+	
+	ssize_t client::recvmsg(int s, struct msghdr *message, int flags)
+	{
+	    auto& [id, channel] = m_channels.find(s)->second;
+	    channel.recv(
+	    	m_server_pid, message->msg_iov, message->msg_iovlen, 
+	    		flags, message->msg_name, &message->msg_namelen);
+	    ..
+	}
+	
+The actual recv implememtation also used memory copy between threads using `process_vm_readv`. The `ack_wait` is implemented in the _event queue_ and uses `eventfd_read` to wait for new events. The `ack_undo` pushes back and event on the _event queue_. 
+	
+	dgram_channel::recv(pid_t pid, iovec iov[], size_t iovcnt, int, ...)
+	{
+	    while (!recvq.available()) {
+	        if (auto error = ack_wait(); error != 0) {
+	            return (tl::make_unexpected(error));
+	        }
+	    }
+	
+	    auto item = (flags & MSG_PEEK ? recvq.peek() : recvq.unpack());
+	
+	    auto readvec = iovec { 
+	    	.iov_base = const_cast<void*>(item->pvec.payload()),
+	       .iov_len = item->pvec.len() 
+	    };
+	    process_vm_readv(pid, iov, iovcnt, &readvec, 1, 0);
+	    recvq.repack();
+	
+	    notify();
+	
+	    if (!recvq.available()) ack(); else ack_undo();
+	
+	    ...	
+	}
+	
+The line `if (!recvq.available()) ack(); else ack_undo();` is to check to see if there are any remaining data to read.  If not, it clear any pending notification.  Otherwise, it makes sure a notification remains so the client reads the rest.
+
+But, so, where is the shared memory?
+
