@@ -143,7 +143,7 @@ virtual packets_per_hour packet_rate() const = 0;
 virtual uint16_t transform(packet_buffer* input[], uint16_t input_length, packet_buffer* output[]) = 0;
 ```
 
-As well as the move semantics for those two methods (which is defined as the default semantics since the test source only has copyable data members.
+As well as the move semantics for those two methods (which is defined as the default semantics since the test source only has copyable data members).
 
 ```C++
 test_source(test_source&& other) = default;
@@ -253,6 +253,16 @@ The test_sink need to implement the following methods:
 virtual std::string id() const = 0;
 virtual uint16_t push(packet_buffer* const packets[], uint16_t length) = 0;
 ```
+
+As well as the move semantics for those two methods (which is more complex that the test_source, since the sink has to cope with non-copyable members, such as the pointer to the counter (`std::unique_ptr<packet_counter<uint64_t>> m_counter`)).
+
+.
+
+```C++
+test_sink(test_sink&& other)
+test_sink& operator=(test_sink&& other)
+```
+
 
 The `id` method is the same as for the generator, allowing to specify on which worker/core the sink is running. The `push` method is called for each received packet. For instance, this code will create statistics for received packet length.
 
