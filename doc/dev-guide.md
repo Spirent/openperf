@@ -66,17 +66,20 @@ This section gives some practical example for creating an using the Inception st
 ## Creating the ICP Stack
 
 ```C++	
-icp_thread_setname("icp_main");
-
-void *context = zmq_ctx_new();
-if (!context) {
-    icp_exit("Could not initialize ZeroMQ context!");
+void main(int argc, const char ** argv) {
+	icp_thread_setname("icp_main");
+	
+	void *context = zmq_ctx_new();
+	if (!context) {
+	    icp_exit("Could not initialize ZeroMQ context!");
+	}
+	
+	/* Do initialization... */
+	icp_init(context, argc, argv);
 }
-
-/* Do initialization... */
-const char* argv[] = {"--config","config.yaml"};
-icp_init(context, 2, argv);
 ```
+
+The application should be started with the arguments `--config config.yaml` in order for `icp_init` to locate the configuration file.
 
 The `context` is a ZeroMQ message queue used to communicate with the Inception engine. The internal API client can be accessed using
 
@@ -84,11 +87,35 @@ The `context` is a ZeroMQ message queue used to communicate with the Inception e
 auto client = icp::packetio::internal::api::client(context);
 ```
 
-Once the test is finihed, cleanup the stack using:
+Once the test is finished, cleanup the stack using:
 
 ```C++	
 /* ... then clean up and exit. */
 icp_halt(context);
+```
+
+Note that in the following examples, this configuration is uses (is exposes `port0` and it's associated _interface_).
+
+```
+modules:
+  packetio:
+    dpdk:
+      port-ids:
+        port0: port0
+
+resources:
+  /interfaces/interface0:
+    port_id: port0
+    config:
+      protocols:
+        - eth:
+            mac_address: "00:10:94:ae:d6:ab"
+        - ipv4:
+            method: static
+            static:
+              address: "198.18.25.1"
+              prefix_length: 15
+              gateway: "198.18.0.1"
 ```
 
 ## Packet Generator
@@ -99,13 +126,13 @@ Generating packets is a easy as
 client.add_source("port0", source0);
 ```
 	
-Where `source0` is an Inception source:
+Where `port0` must be defined in the configuration file (`config.yaml`) and where `source0` is an Inception source:
 
 ```C++	
 auto source0 = 	icp::packetio::packets::generic_source(test_source());
 ```
 
-The test source needs to implement 
+The test source needs to implement the following methods:
 	
 ```C++	
 virtual std::string id() const = 0;
@@ -114,6 +141,13 @@ virtual uint16_t burst_size() const = 0;
 virtual uint16_t max_packet_length() const = 0;
 virtual packets_per_hour packet_rate() const = 0;
 virtual uint16_t transform(packet_buffer* input[], uint16_t input_length, packet_buffer* output[]) = 0;
+```
+
+As well as the move semantics for those two methods (which is defined as the default semantics since the test source only has copyable data members.
+
+```C++
+test_source(test_source&& other) = default;
+test_source& operator=(test_source&& other) = default;
 ```
 
 Method | return type | Comment 
@@ -279,7 +313,7 @@ ssize_t client::sendmsg(int s, const struct msghdr *message, int flags)
 }
 ```
 	
-This last method transfers the data via the [`process_vm_writev`](https://linux.die.net/man/2/process_vm_writev) call (which copies memory between two processes without going through the kernel).
+This last method transfers the data via the [`process_vm_writev`](https://linux.die.net/man/2/process_vm_writev) system-call (the data moves directly between the address spaces of the two processes, without passing through kernel space).
 	
 ```C++	
 dgram_channel::send(pid_t pid, iov[], iovcnt,..., sockaddr *to)
@@ -329,6 +363,9 @@ int event_queue_producer<Derived>::notify()
 
 But the most imporant is the `eventfd_write(fd(), 1)` which [_just_ sends](https://stackoverflow.com/questions/18557064/where-to-find-eventfd-write-documentation) an event of value `1` to the consumer (server). 
 
+The other thing to note is that the atomic counters are used the same way as head/tail indexes of a ring buffer, but here we call them read_idx and write_idx. If read == write, then there are no outstanding notifications for the event fd. If read != write, then there are notifications. We do this to minimize our syscalls for reading/writing the fd's. So, that eventfd_write function is only called if we know for a fact that the other side is idle (and hence needs a wake up).
+
+
 ### Receiving Data from the Client
 
 Receiving data (from a UDP client socket) is similar to sending data, at least in the first steps:
@@ -365,7 +402,7 @@ ssize_t client::recvmsg(int s, struct msghdr *message, int flags)
 }
 ```
 	
-The actual recv implememtation also used memory copy between threads using `process_vm_readv`. The `ack_wait` is implemented in the _event queue_ and uses `eventfd_read` to wait for new events. The `ack_undo` pushes back and event on the _event queue_. 
+The actual recv implememtation also used memory copy between threads using `process_vm_readv`. The `ack_wait` is implemented in the _event queue_ and uses `eventfd_read` to wait for new events. The `ack_undo` pushes back an event on the _event queue_. 
 	
 ```C++
 dgram_channel::recv(pid_t pid, iovec iov[], size_t iovcnt, int, ...)
@@ -453,7 +490,8 @@ static void udp_receive(void* arg, udp_pcb* pcb, pbuf* p, const ip_addr_t* addr,
 }
 ```
 
-Note that the `dgram_channel` referenced here is the server dgram channel and is completely independent of the client `dgram_channel`. The udp receive handler then calls the chanel `send` method, which pushes a `dgram_channel_item`
+Note that the `dgram_channel` referenced here is the server dgram channel. It is a seperate implementation of the client dgram channel, howerver both implementation share the same interpretation of the same underlying data. The udp receive handler then calls the chanel `send` method, which pushes a `dgram_channel_item`
+
 
 ```C++
 bool dgram_channel::send(const pbuf *pbuf, const dgram_ip_addr* addr, in_port_t port)
