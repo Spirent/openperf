@@ -256,7 +256,6 @@ virtual uint16_t push(packet_buffer* const packets[], uint16_t length) = 0;
 
 As well as the move semantics for those two methods (which is more complex that the test_source, since the sink has to cope with non-copyable members, such as the pointer to the counter (`std::unique_ptr<packet_counter<uint64_t>> m_counter`)).
 
-.
 
 ```C++
 test_sink(test_sink&& other)
@@ -280,7 +279,7 @@ Full sink source code available from [sink-example/main.cpp](../targets/sink-exa
 
 # Modules
 
-## Socket Module
+## Socket Module - UDP
 
 There are three folders _socket_, _client_  and _server_. The _client_ is what is linked with the application, while the server resides in the inception process.
 
@@ -473,15 +472,18 @@ The `udp_new ` returns an actual LWIP pcb. The `dragm_channel` is defined as:
 ```C++
 typedef bipartite_ring<dgram_channel_item, api::socket_queue_length> dgram_ring;
 
-dgram_ring sendq;  /* from client to stack */  
-api::socket_fd_pair client_fds;                
-std::atomic_uint64_t tx_fd_write_idx;          
-std::atomic_uint64_t rx_fd_read_idx;           
-dgram_ring recvq;  /* from stack to client */  
-api::socket_fd_pair server_fds;                
-std::atomic_uint64_t tx_fd_read_idx;           
-std::atomic_uint64_t rx_fd_write_idx;          
-std::atomic_int socket_flags;
+class dgram_channel : public event_queue_consumer<dgram_channel>
+                    , public event_queue_producer<dgram_channel>
+{
+	dgram_ring sendq;  /* from client to stack */  
+	api::socket_fd_pair client_fds;                
+	std::atomic_uint64_t tx_fd_write_idx;          
+	std::atomic_uint64_t rx_fd_read_idx;           
+	dgram_ring recvq;  /* from stack to client */  
+	api::socket_fd_pair server_fds;                
+	std::atomic_uint64_t tx_fd_read_idx;           
+	std::atomic_uint64_t rx_fd_write_idx;          
+	std::atomic_int socket_flags;
 ```
 
 The magic is that both send and receive queues are statically allocated as part of the `dgram_channel` -  but yet, those two queues are only holding pointers to the payload. So where is the payload actually allocated? To find the answer, let's check the receiving process.
@@ -520,4 +522,146 @@ The LWIP states that _the callback is responsible for freeing the pbuf if it's n
 
 So, in conclusion, for UDP, the shared memory is only used for the channel and queues, but not for the payload, as described on the component diagram below:
 
-![Internal Components](images/socket-module.png)
+![Internal Components](images/socket-module-udp.png)
+
+## Socket Module - TCP
+
+As explained in the section before, the UDP socket implementation does not use the shared memory for passing the protocol buffers (pbuf's). This is however not the case for TCP, while use shared memory for both queue and payloads.
+
+### Sending data from the Client
+
+The TCP client stack is implemented as the `stream_channel`. When sending data, the client will eventually run the following code:
+
+```C++
+tl::expected<size_t, int> stream_channel::send(pid_t pid, iov[], iovcount, ...) {
+
+	auto flags = socket_flags.load(std::memory_order_relaxed);
+	auto isNonBlocking = flag & EFD_NONBLOCK
+
+	size_t buf_available = 0;
+    while ((buf_available = writable()) == 0) {
+         isNonBlocking ? block() : block_wait()
+    }
+
+    auto written = std::accumulate(
+    	iov, iov + iovcnt, 0UL, [&](size_t x, const iovec& iov) {
+          auto v = write_and_notify(iov.iov_base, iov.iov_len, 
+          	[&]() { notify(); })
+    	  return (x + v);
+    });
+
+    if (written == buf_available && isNonBlocking && !writable()) {
+        block();   /* pre-emptive block */
+    };
+
+    notify();
+
+    return (written);
+}
+```
+
+The first part `while (writable()==0)` waits for space to be available in the ring buffer.  The second part, `std::accumulate` over `write_and_notify`  writes the actualy data from the io vector, and, for each io chunk, notifies the server over the ring buffer. Last, the `if (written == buf_available ...) block()` is used when the buffer is full after writing, to give a change for the client to get scheduled (_to be confirmed_). 
+
+An interresting scenario is to understand what happens if there is not enough space available in the buffer, when calling the `write_and_notify`? Well, just like the standard socket implmentation, `write_and_notify` will only write as many bytes as it can, and return the actual written size. (_Note: could there be a atomicity bug, because the std::accumlate does not prevents from buffer to be read while iterating the write?_)
+
+The main difference with UDP is that UDP uses `sendq` (type `dgram_ring`) and  `process_vm_writev` while TCP uses `write_and_notify` only; The _simplified_ TCP socket structure is the following
+
+
+```C++
+class stream_channel : public circular_buffer_consumer<stream_channel>
+                     , public circular_buffer_producer<stream_channel>
+                     , public event_queue_consumer<stream_channel>
+                     , public event_queue_producer<stream_channel>
+{
+	buffer tx_buffer;
+	buffer rx_buffer;
+	api::socket_fd_pair client_fds;              
+	std::atomic_int socket_error;                
+	std::atomic_int socket_flags;                
+	api::socket_fd_pair server_fds;
+	void* allocator;
+```
+
+
+When the TCP socket is created, the server allocates the buffer from the shared memory:
+
+```
+stream_channel::stream_channel(int flags, icp::socket::server::allocator& allocator)
+    : tx_buffer(allocator.allocate(init_buffer_size), init_buffer_size)
+    , rx_buffer(allocator.allocate(init_buffer_size), init_buffer_size)
+    , ...
+```
+
+Where `init_buffer_size` is defined as *128 kb*. The `buffer` class is surprisingly simple, but yet very efficiently designed:
+
+```C++
+struct buffer {
+    uint64_t len;
+    memory::offset_ptr<uint8_t> ptr;
+    buffer(uint8_t* ptr_, uint64_t len_) : ptr(ptr_) , len(len_) {}
+    buffer() : ptr(memory::offset_ptr<uint8_t>::uninitialized()) {}
+};
+```
+
+Note that all of the buffer data is kept in two cache aligned structs so that the read and write threads will not destructively share the data. The first struct is written to exclusively by the server thread.  The second struct is written to exclusively by the client thread.
+ 
+### Receiving data from the Server
+
+After a stream socket has accepted a new incomming connection, it receives the data via the `do_lwip_recv` method:
+
+```C++
+int tcp_socket::do_lwip_recv(pbuf *p, int err)
+{
+    /* Store the incoming pbuf in our buffer */
+    m_recvq.push(p);
+
+    if (p->flags & PBUF_FLAG_PUSH
+        || m_recvq.length() > m_channel->send_available()) {
+        do_tcp_receive_all(m_pcb.get(), *m_channel, m_recvq);
+    }
+}
+```
+
+The `m_recvq` is a pbuf queue. The second part `if (p->flags & PBUF_FLAG_PUSH...` initiate a copy to the client's buffer if the TCP sender sent a PUSH flag or there are more than enough data to fill the client's receive buffer.
+
+The `do_tcp_receive_all` eventually calls the `channel.send` and then frees the pbuf (LWIP function `tcp_recved`). The channel `send` method is efficiently relying on the `circular_buffer_producer::write` method to copy the data:
+
+```C++
+size_t stream_channel::send(const iovec iov[], size_t iovcnt)
+{
+    auto written = write(iov, iovcnt);
+    notify();
+    return (written);
+}
+```
+
+The `write` method makes efficient copy using the `dpdk::memcpy` helper. From the client side, when notified of available data, the client will call the `read_and_notify` which also copies the data using `dpdk::memcpy`.
+
+### Sending data from the Server
+
+When the client has notified of new available outgoing data (which it previously copied to the output buffer), the server needs to send this data to the LWIP stack. It does it via the `do_tcp_transmit` method (_very_ simpified in the code below):
+
+```C++
+	static size_t do_tcp_transmit(tcp_pcb* pcb, const void* ptr, size_t length, ...)
+{
+	size_t written = 0;
+	auto to_write = std::min(length, pcb->snd_buf);
+
+	const auto flags = TCP_WRITE_FLAG_COPY | TCP_WRITE_FLAG_MORE;
+	
+	if (tcp_write(pcb, ptr, to_write, flags) != ERR_OK) {
+	    return (written);
+	}
+		
+	return to_write;
+}
+
+```
+
+The server implementation uses `TCP_WRITE_FLAG_COPY`, meaning that the client data on the TX circular buffer can be released immediately.
+
+The following component diagram summurizes the _stream channel_ data flow.
+
+
+
+![Internal Components](images/socket-module-tcp.png)
