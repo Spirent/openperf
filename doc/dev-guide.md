@@ -526,7 +526,7 @@ So, in conclusion, for UDP, the shared memory is only used for the channel and q
 
 ## Socket Module - TCP
 
-As explained in the section before, the UDP socket implementation does not use the shared memory for passing the protocol buffers (pbuf's). This is however not the case for TCP, while use shared memory for both queue and payloads.
+As explained in the section before, the UDP socket implementation does not use the shared memory for passing the protocol buffers (pbuf's). This is however not the case for TCP, which uses shared memory for both queue and payloads.
 
 ### Sending data from the Client
 
@@ -534,29 +534,29 @@ The TCP client stack is implemented as the `stream_channel`. When sending data, 
 
 ```C++
 tl::expected<size_t, int> stream_channel::send(pid_t pid, iov[], iovcount, ...) {
-
+	
 	auto flags = socket_flags.load(std::memory_order_relaxed);
 	auto isNonBlocking = flag & EFD_NONBLOCK
-
+	
 	size_t buf_available = 0;
-    while ((buf_available = writable()) == 0) {
-         isNonBlocking ? block() : block_wait()
-    }
-
-    auto written = std::accumulate(
-    	iov, iov + iovcnt, 0UL, [&](size_t x, const iovec& iov) {
-          auto v = write_and_notify(iov.iov_base, iov.iov_len, 
-          	[&]() { notify(); })
-    	  return (x + v);
-    });
-
-    if (written == buf_available && isNonBlocking && !writable()) {
-        block();   /* pre-emptive block */
-    };
-
-    notify();
-
-    return (written);
+	while ((buf_available = writable()) == 0) {
+	     isNonBlocking ? block() : block_wait()
+	}
+	
+	auto written = std::accumulate(
+		iov, iov + iovcnt, 0UL, [&](size_t x, const iovec& iov) {
+	      auto v = write_and_notify(iov.iov_base, iov.iov_len, 
+	      	[&]() { notify(); })
+		  return (x + v);
+	});
+	
+	if (written == buf_available && isNonBlocking && !writable()) {
+	    block();   /* pre-emptive block */
+	};
+	
+	notify();
+	
+	return (written);
 }
 ```
 
