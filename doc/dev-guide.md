@@ -79,7 +79,9 @@ void main(int argc, const char ** argv) {
 }
 ```
 
-The application should be started with the arguments `--config config.yaml` in order for `icp_init` to locate the configuration file.
+The application should be started with the arguments `--config config.yaml` in order for `icp_init` to locate the configuration file. 
+
+> The reason for passing the configuration as an arugment to the program is to be able to switch between configuration files when multiple NICs are available. For instance, one would run a test with program -c config_nic1.yaml then program -c config_nic2.yaml, etc.
 
 The `context` is a ZeroMQ message queue used to communicate with the Inception engine. The internal API client can be accessed using
 
@@ -569,7 +571,8 @@ Last, the `if (written == buf_available ...) block()` is used when the buffer is
 
 An interresting scenario is to understand what happens if there is not enough space available in the buffer, when calling the `write_and_notify`? Well, just like the standard socket implmentation, `write_and_notify` will only write as many bytes as it can, and return the actual written size. 
 
-> _Note: could there be a atomicity bug, because the std::accumlate does not prevents from buffer to be read while iterating the write?_
+> Note: could there be a atomicity bug, because the std::accumlate does not prevents from buffer to be read while iterating the write?
+> 
 > Answer: This buffer is a text book Single Producer, Single Consumer queue (BSD sockets aren't thread safe). The stack can only read up to the tail index in the buffer and that won't be updated until after the write completes. If the stack needs a notification, that won't happen until after the tail index is updated
 
 The main difference with UDP is that UDP uses `sendq` (type `dgram_ring`) and  `process_vm_writev` while TCP uses `write_and_notify` only; The _simplified_ TCP socket structure is the following
