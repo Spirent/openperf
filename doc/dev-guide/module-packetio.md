@@ -52,11 +52,10 @@ tl::expected<std::string, std::string> lwip::create_interface(const interface::c
 }
 ```
 
-The `net_interface` is directly dealing with the DPDK library:
+The `net_interface` is dealing the IP address allocation. The function `setup_ipv4_interface` handles _static_, _dhcp_ or _local_ IP addresses. 
 
 ```C++
-net_interface::net_interface(std::string_view id, const interface::config_data& config,
-                             driver::tx_burst tx, int port_index)
+net_interface::net_interface(std::string_view id, const interface::config_data& config, driver::tx_burst tx, int port_index)
     : m_id(id)
     , m_port_index(port_index)
     , m_max_gso_length(net_interface_max_gso_length(port_index))
@@ -79,12 +78,18 @@ net_interface::net_interface(std::string_view id, const interface::config_data& 
             m_netif.num, port_index
         );
     }
-
-    /* Setup callbacks to allow the interface to interact with the port state */
-    rte_eth_dev_callback_register(m_port_index, RTE_ETH_EVENT_INTR_LSC, 
-        net_interface_link_status_change, &m_netif);
+    ...
 }
 ```
+
+The _Update queuing strategy if necessary; direct is the default._ is slightly more complex to analyse. 
+
+The `m_receive` (of type `rx_strategy`) is used when handling RX packets, such as `(std::visit(handle_rx_visitor, m_receive))`. The `rx_strategy` can be either `direct` (no queing) or `queueing` (with a 512 element queue size). The `emplace` method is used because `m_receive` is a variant.
+
+> Question: What is the reason for `2` in `std::string_view(m_netif.name, 2)`?
+
+> What happens is there is only 2 or less cores? The `m_receive` would not be updated, so packets could not be received? 
+
 
 While the _worker_ `add_interface` copes with adding the Ethernet MAC address to the port.
 
@@ -111,6 +116,8 @@ void worker_controller::add_interface(std::string_view port_id, std::any interfa
 ```
 
 The `m_recycler` (of type `packetio::recycle::depot<RTE_MAX_LCORE>`) is used to safely deleting data shared with a bunch of reader threads. For instance, when the port is shutdown, it can ensure that all interfaces are cleaned-up, unless referenced by their another thread (_to be confirmed_). 
+
+The `port.add_mac_address` is using DPDK `rte_eth_dev_mac_addr_add` to add the MAC as a valid RX address. If this DPDK fails, the interface is turned into promiscuous mode. 
 
 The `m_fib` (of type `packetio::forwarding_table<netif, packets::generic_sink, RTE_MAX_ETHPORTS>`) is used as the _rx distpatch table_, to know how to associate MACs to interfaces.  It is very nicely implemented as templated code. The `insert_interface` code is defined as:
 
