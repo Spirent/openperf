@@ -536,11 +536,12 @@ The TCP client stack is implemented as the `stream_channel`. When sending data, 
 tl::expected<size_t, int> stream_channel::send(pid_t pid, iov[], iovcount, ...) {
 	
 	auto flags = socket_flags.load(std::memory_order_relaxed);
-	auto isNonBlocking = flag & EFD_NONBLOCK
+	auto is_non_blocking = flag & EFD_NONBLOCK
 	
 	size_t buf_available = 0;
 	while ((buf_available = writable()) == 0) {
-	     isNonBlocking ? block() : block_wait()
+	     auto error = is_non_blocking ? block() : block_wait();
+         if (error!=0) return (tl::make_unexpected(error));
 	}
 	
 	auto written = std::accumulate(
@@ -550,7 +551,7 @@ tl::expected<size_t, int> stream_channel::send(pid_t pid, iov[], iovcount, ...) 
 		  return (x + v);
 	});
 	
-	if (written == buf_available && isNonBlocking && !writable()) {
+	if (written == buf_available && is_non_blocking && !writable()) {
 	    block();   /* pre-emptive block */
 	};
 	
@@ -560,9 +561,16 @@ tl::expected<size_t, int> stream_channel::send(pid_t pid, iov[], iovcount, ...) 
 }
 ```
 
-The first part `while (writable()==0)` waits for space to be available in the ring buffer.  The second part, `std::accumulate` over `write_and_notify`  writes the actualy data from the io vector, and, for each io chunk, notifies the server over the ring buffer. Last, the `if (written == buf_available ...) block()` is used when the buffer is full after writing, to give a change for the client to get scheduled (_to be confirmed_). 
+The first part `while (writable()==0)` waits for space to be available in the ring buffer. It also handles returning EWOULDBLOCK if the socket is non-blocking and full. 
 
-An interresting scenario is to understand what happens if there is not enough space available in the buffer, when calling the `write_and_notify`? Well, just like the standard socket implmentation, `write_and_notify` will only write as many bytes as it can, and return the actual written size. (_Note: could there be a atomicity bug, because the std::accumlate does not prevents from buffer to be read while iterating the write?_)
+The second part, `std::accumulate` over `write_and_notify`  writes the actualy data from the io vector, and, for each io chunk, notifies the server over the ring buffer. 
+
+Last, the `if (written == buf_available ...) block()` is used when the buffer is full after writing, to give a change for the client to get scheduled: If the client has just filled up the send buffer, the socket is non-blocking, and the stack hasn't read any data yet, then we mark the fd as blocked so that the client will know not to try to write any more data if they're using `poll` or `epoll` or whatever. Without that line, the fd would indicate writable status even though the socket is full, which is not the desired behavior.
+
+An interresting scenario is to understand what happens if there is not enough space available in the buffer, when calling the `write_and_notify`? Well, just like the standard socket implmentation, `write_and_notify` will only write as many bytes as it can, and return the actual written size. 
+
+> _Note: could there be a atomicity bug, because the std::accumlate does not prevents from buffer to be read while iterating the write?_
+> Answer: This buffer is a text book Single Producer, Single Consumer queue (BSD sockets aren't thread safe). The stack can only read up to the tail index in the buffer and that won't be updated until after the write completes. If the stack needs a notification, that won't happen until after the tail index is updated
 
 The main difference with UDP is that UDP uses `sendq` (type `dgram_ring`) and  `process_vm_writev` while TCP uses `write_and_notify` only; The _simplified_ TCP socket structure is the following
 
