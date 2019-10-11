@@ -14,3 +14,6 @@
     - [Packet IO](module-packetio.md)
 
 
+---
+
+![Inception components](../images/block_diagram.png)

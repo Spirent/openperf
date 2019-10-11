@@ -3,7 +3,7 @@
 
 This section gives some practical example for creating an using the Inception stack usign the Internal APIS (i.e. without LD-Preload Shim)
 
-![Internal Components](images/internal-api.png)
+![Internal Components](../images/internal-api.png)
 
 ## Creating the ICP Stack
 
@@ -180,7 +180,7 @@ static void initialize_ipv4_header(rte_ipv4_hdr& ip_hdr,
 }
 ```
 
-Full generator source code available from [source-example/main.cpp](../targets source sink-example/main.cpp)
+Full generator source code available from [source-example/main.cpp](../../targets source sink-example/main.cpp)
 
 ## Sink
 
@@ -219,4 +219,4 @@ uint16_t push(icp::packetio::packets::packet_buffer* const packets[], uint16_t l
 }
 ```
 
-Full sink source code available from [sink-example/main.cpp](../targets/sink-example/main.cpp)
+Full sink source code available from [sink-example/main.cpp](../../targets/sink-example/main.cpp)
