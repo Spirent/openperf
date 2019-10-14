@@ -22,3 +22,6 @@
 [submodule "deps/immer"]
 	path = deps/immer
 	url = https://github.com/arximboldi/immer.git
+[submodule "deps/digestible"]
+	path = deps/digestible
+	url = https://github.com/SpirentOrion/digestible.git
