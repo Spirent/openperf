@@ -154,3 +154,131 @@ The `interface_map` is defined as `immer::map<net::mac_address, Interface*>`.
 > The immer `map` provides a good trade-off between cache locality, search, update performance and structural sharing. It does so by storing the data in contiguous chunks of 2^B elements. When storing big objects, the size of these contiguous chunks can become too big, damaging performance. If this is measured to be problematic for a specific use-case, it can be solved by using a immer::box to wrap the type T.
 
 > B default value is 5, therefore chunks can handle 32 elements. Storting 1M interfaces would require 31K chunks.
+
+# Packet IO - Receving Packets (at interface level)
+
+
+Once a packet is received by DPDK, it goes through the `rx_interace_dispach`, which associates the right interface from the packet mac address. If there is a matching interface, it eventually runs the `net_interface_rx`, which calls one either the `queueing` or `direct` buffering implementation:
+
+```C++
+err_t direct::handle_rx(pbuf* p, netif* netintf)
+{
+    return (ethernet_input(p, netintf));
+}
+```
+
+The `direct` implementation justs calls `ethernet_input`, which is a _LWIP_ method. The `queueing` is slightly more complex, but in short, uses a _DPDK_ ring to keep track of the buffers, and eventually calls the `ethernet_input` _LWIP_ method.
+
+
+```C++
+err_t queueing::handle_rx(pbuf* p, netif* netintf)
+{
+    if (rte_ring_enqueue(m_queue.get(), p) != 0) {
+        /* Queue is full ... */
+        return (ERR_BUF);
+    }
+    if (!m_notify.test_and_set(std::memory_order_acquire)) {
+        tcpip_inpkt(p, netintf, net_interface_rx_notify);
+    }
+    return (ERR_OK);
+}
+
+err_t queueing::handle_rx_notify(netif* netintf)
+{
+    static constexpr size_t rx_burst_size = 32;
+    std::array<pbuf*, rx_burst_size> pbufs;
+
+    do {
+        auto nb_pbufs = rte_ring_dequeue_burst(m_queue.get(),(pbufs.data(), rx_burst_size, nullptr);
+
+        for (size_t i = 0; i < nb_pbufs; i++) ethernet_input(pbufs[i], netintf);
+
+    } while (!rte_ring_empty(m_queue.get()));
+
+    m_notify.clear(std::memory_order_release);
+    return (ERR_OK);
+}
+```
+
+What is interresting to note is that the `tcpip_inpkt` implementation is overriden. In the original implementation, `tcpip_inpkt` accesses the TCPIP _mbox_ as a global variable `static sys_mbox_t tcpip_mbox;`. For Incpetion, it uses the in-function declaration `auto tcpip_mbox = icp::packetio::tcpip::mbox();` 
+
+
+```C++
+sys_mbox_t icp::packetio::tcpip::mbox()
+{
+    return (icp::packetio::dpdk::tcpip_mbox::instance().get());
+}
+```
+
+The explanation can be found in the `lwip.cpp` file:
+
+> lwIP uses a global sys_mbox_t to allow communication between
+> clients and the stack thread.  We initialize this object here and
+> de-initialize it in our destructor.  This coupling is necessary to
+> allow the process to cleanly shut down.  Luckily, client functions
+> check for a valid mbox object before using it.  But if we don't
+> invalidate it, they can block on a callback waiting for a response
+< from our non-existent stack tasks.
+
+
+# Packet IO - Sending Packets (at interface level)
+
+The `net_interface_dpdk_init` is reponsible for setting the LWIP stack output and linking it to the DPDK driver.
+
+```C++
+static err_t net_interface_dpdk_init(netif* netif)
+{
+    net_interface *ifp = reinterpret_cast<net_interface*>(netif->state);
+
+    rte_eth_dev_get_mtu(ifp->port_index(), &netif->mtu);
+
+    auto info = model::port_info(ifp->port_index());
+    netif->chksum_flags = (to_checksum_check_flags(info.rx_offloads()) | to_checksum_gen_flags(info.tx_offloads()));
+
+    ...
+    netif->linkoutput = net_interface_tx;
+    netif->output = etharp_output;
+    ...
+}
+```
+
+The `linkoutput` function is called by ethernet_output() when it wants to send a packet on the interface. This function outputs the pbuf as-is on the link medium. While the `output` function is called by the IP module when it wants to send a packet on the interface. This function typically first resolves the hardware address, then sends the packet. For ethernet physical layer, this is usually etharp_output()
+
+
+The `net_interface_tx` (_link output_) is (_code simplified below_)  passing the incoming packet to the `net_interface` implementation.
+
+```C++
+static err_t net_interface_tx(netif* netif, pbuf *p)
+{
+    net_interface *ifp = reinterpret_cast<net_interface*>(netif->state);
+    return ifp->handle_tx(p);
+}
+```
+
+The `handle_tx` handles the convertion from pbuf (from LWIP) to mbuf (DPDK) using the method `packetio_memory_mbuf_synchronize`. The `rte_mbuf_refcnt_update` is needed for bumping the reference count on the mbuf chain before transmitting, since, when the `handle_tx` function returns, the stack will free the pbuf chain.
+
+```C++
+err_t net_interface::handle_tx(struct pbuf* p)
+{
+    /*
+     *      */
+    auto m_head = packetio_memory_mbuf_synchronize(p);
+    for (auto m = m_head; m != nullptr; m = m->next) rte_mbuf_refcnt_update(m, 1);
+
+    /* Setup tx offload metadata if offloads are enabled. */
+    if (~m_netif.chksum_flags & netif_tx_chksum_mask) {
+        set_tx_offload_metadata(m_head, m_netif.mtu);
+    }
+
+    return (m_transmit(port_index(), 0, reinterpret_cast<void**>(m_head), 1) == 1 ? ERR_OK : ERR_BUF);
+}
+```
+
+The mbuf/pbuf allocation scheme is very smart, and relying on the _headroom_ capability from the DPDK mbuf, as shown below:
+
+![mbuf-pbuf](../images/mbuf-pbuf-memory-structure.png)
+
+
+The `m_transmit` corresponds to the worker `get_transmit_function`, which comes with two implementation: `direct` and `queued`. The _direct_ implementation eventually calls the `rte_eth_tx_burst` DPDK function.  The _queued_ implementation uses a DPDK ring of 256 elements.
+
+In the case the driver is based on `net_ring`, the buffer needs to be copied... That's because of the portion of the mbuf private area to used store the lwip pbuf: The net_ring driver hands transmitted packets directly to another port, which could cause after-free bugs (_more explanations needed_).
