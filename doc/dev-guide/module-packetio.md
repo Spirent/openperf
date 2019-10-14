@@ -220,6 +220,9 @@ The explanation can be found in the `lwip.cpp` file:
 > invalidate it, they can block on a callback waiting for a response
 < from our non-existent stack tasks.
 
+Here is the receive sequency diagram summary:
+
+![receive sequence](../images/receive_sequence_diagram.png)
 
 # Packet IO - Sending Packets (at interface level)
 
@@ -274,7 +277,7 @@ err_t net_interface::handle_tx(struct pbuf* p)
 }
 ```
 
-The mbuf/pbuf allocation scheme is very smart, and relying on the _headroom_ capability from the DPDK mbuf, as shown below:
+The mbuf/pbuf allocation scheme is very smart, and relying on the _headroom_ capability from the DPDK mbuf, as shown below. The `pbuf_alloc` method is overriden by ICP to allocate and _mbuf_ instead with the headroom correctly setup with a puf.
 
 ![mbuf-pbuf](../images/mbuf-pbuf-memory-structure.png)
 
@@ -282,3 +285,14 @@ The mbuf/pbuf allocation scheme is very smart, and relying on the _headroom_ cap
 The `m_transmit` corresponds to the worker `get_transmit_function`, which comes with two implementation: `direct` and `queued`. The _direct_ implementation eventually calls the `rte_eth_tx_burst` DPDK function.  The _queued_ implementation uses a DPDK ring of 256 elements.
 
 In the case the driver is based on `net_ring`, the buffer needs to be copied... That's because of the portion of the mbuf private area to used store the lwip pbuf: The net_ring driver hands transmitted packets directly to another port, which could cause after-free bugs (_more explanations needed_).
+
+
+When the application send a packet (for instance UDP), how does LWIP knows which _net interface_ should be used? That's because, in the socket module, when a new socket is created, it will bind the socket to a location address and port (function `udp_bind`). If the socket is not bound, it will fail as decribed in this [bug report](http://savannah.nongnu.org/bugs/?3168):
+
+> We can get that by including a check in udp_send() that checks if the local_ip of the udp pcb (if not is_any) is the same as the ip_addr of the netif used to send the packet (if not, we return ERR_VAL).
+> If we then send to the socket/netconn, we get an error ERR_VAL into conn->err (do_send() has to be modified to catch more errors, see task #6880) that is translated to EINVAL.
+
+Here is the transmit sequency diagram summary:
+
+![transmit sequence](../images/transmit_sequence_diagram.png)
+
