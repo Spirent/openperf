@@ -296,3 +296,92 @@ Here is the transmit sequency diagram summary:
 
 ![transmit sequence](../images/transmit_sequence_diagram.png)
 
+
+# Packet IO - LWIP Memory Managment
+
+The LWIP _memp_ is [customized](https://github.com/SpirentOrion/inception-core/blob/master/src/modules/packetio/stack/include/lwipopts.h) to use specialized mem_malloc/mem_free instead of the lwip pool allocator.
+
+```C++
+#define MEMP_MEM_MALLOC 1
+#define MEMP_USE_CUSTOM_POOLS 0
+```
+
+The `memp_malloc` function is overriden in [memory/dpkpk/memp.c](https://github.com/SpirentOrion/inception-core/blob/master/src/modules/packetio/memory/dpdk/memp.c) and using DPDK huge-page allocator (`rte_malloc`) for everything but the pbufs:
+
+```C++
+void * memp_malloc(memp_t type)
+{
+    switch (type) {
+    case MEMP_PBUF:
+    case MEMP_PBUF_POOL:
+        auto pool = type==MEMP_PBUF?memp_ref_rom_mempools:memp_default_mempools;
+        auto mbuf = rte_pktmbuf_alloc( load_mempool(pool,rte_socket_id())) )
+        return packetio_memory_mbuf_to_pbuf(mbuf);
+        break;
+
+    default:
+        return rte_malloc(memp_pools[type]->desc, memp_pools[type]->size, 0);
+    }
+}
+```
+
+The `memp_pools` is actually not a memory pool (i.e. a pre-allocated pool of buffers). Instead, all allocations are done directly in the rte_malloc hugepage.
+
+For `MEMP_PBUF` / `MEMP_PBUF_POLL`, it uses the DPDK poll based allocation `rte_pktmbuf_alloc`. The pool instanciated for each NUMA core (`rte_socket_id`).
+
+```C++
+static atomic_mempool_ptr memp_default_mempools[RTE_MAX_NUMA_NODES] = {};
+static atomic_mempool_ptr memp_ref_rom_mempools[RTE_MAX_NUMA_NODES] = {};
+```
+
+Those pools are initialized by [`pool_allocator`](https://github.com/SpirentOrion/inception-core/blob/master/src/modules/packetio/memory/dpdk/pool_allocator.cpp). 
+
+```C++
+pool_allocator::pool_allocator(const std::vector<model::port_info> &info,
+                               const std::map<int, queue::count>& q_counts)
+{
+    for (auto i = 0U; i < RTE_MAX_NUMA_NODES; i++) {
+
+        auto sum = std::accumulate(begin(info), end(info), 0, [&](unsigned lhs, const model::port_info& rhs) {
+            if (rhs.socket_id() != i) return lhs
+            return lhs + q_counts.at(rhs.id()).rx * rhs.rx_desc_count() + q_counts.at(rhs.id()).tx * rhs.tx_desc_count();
+        });
+        if (!sum) continue
+
+        std::array<char, RTE_MEMPOOL_NAMESIZE> name_buf;
+        snprintf(name_buf.data(), RTE_MEMPOOL_NAMESIZE, memp_ref_rom_mempool_fmt, i);
+        m_ref_rom_mpools.emplace( i, create_pbuf_mempool(name_buf.data(), MEMP_NUM_PBUF, false, false, i));
+
+        snprintf(name_buf.data(), RTE_MEMPOOL_NAMESIZE, memp_default_mempool_fmt, i);
+        m_default_mpools.emplace( i, create_pbuf_mempool(name_buf.data(), sum, true, true, i));
+
+    }
+};
+```
+
+The `sum` takes into account the number of buffers, including those needed by the driver port implementation (see the PR for [fix DPDK default pool allocation](https://github.com/SpirentOrion/inception-core/commit/5a011f06ec8779efd779c1b7323b9bcfa823e940)). 
+
+Two pools are created - one for ROM/REF (most likely not used) - and the other for RAM based buffers.  The `create_pbuf_mempool` is using DPDK pools.
+
+
+```C++
+static rte_mempool* create_pbuf_mempool(const char* name, size_t size,
+                                        bool cached, bool direct, int socket_id)
+{
+    size_t nb_mbufs = icp_min(131072, pool_size_adjust(icp_max(1024U, size)));
+
+    rte_mempool* mp = rte_pktmbuf_pool_create_by_ops(
+        name,
+        nb_mbufs, /*The number of elements in the mbuf pool*/
+        cached ? get_cache_size(nb_mbufs) : 0, /*Size of the per-core object cache*/
+        PBUF_PRIVATE_SIZE, /*Size of application private are between the rte_mbuf structure and the data buffer*/
+        direct ? PBUF_POOL_BUFSIZE : 0, /*Size of data buffer in each mbu*/
+        socket_id,
+        "stack");
+
+    return (mp);
+}
+```
+
+Note that the maximum number of buffers per NUMA is `128K`. 
+
