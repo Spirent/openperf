@@ -12,7 +12,7 @@
 * Modules:
     - [Socket](module-socket.md)
     - [Packet IO](module-packetio.md)
-
+    - [Configuration](configuration.md)
 
 ---
 
