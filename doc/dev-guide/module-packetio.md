@@ -284,13 +284,23 @@ The mbuf/pbuf allocation scheme is very smart, and relying on the _headroom_ cap
 
 The `m_transmit` corresponds to the worker `get_transmit_function`, which comes with two implementation: `direct` and `queued`. The _direct_ implementation eventually calls the `rte_eth_tx_burst` DPDK function.  The _queued_ implementation uses a DPDK ring of 256 elements.
 
-In the case the driver is based on `net_ring`, the buffer needs to be copied... That's because of the portion of the mbuf private area to used store the lwip pbuf: The net_ring driver hands transmitted packets directly to another port, which could cause after-free bugs (_more explanations needed_).
+In the case the driver is based on `net_ring` (used for _AAT_ only), the buffer needs to be copied... That's because of the portion of the mbuf private area to used store the lwip pbuf: The net_ring driver hands transmitted packets directly to another port, which could cause after-free bugs. If still not clear, the full explanation is:
+
+>Sure. The net_ring driver is really only used for the AAT tests. It sets up a fake Ethernet driver that just queues/dequeues packets into a ring. Now, our mbuf's contain their pbuf data in a private area inside the mbuf.
+
+>So, assume we are using net_ring without the copy. When the stack transmits a packet into the net_ring, it will enqueue the packet into the ring. At this point, the receive thread (using the DPDK port attached to the other side of the ring) can pick up the packet and hand it back to the stack before the transmit thread can free the pbuf. At this point, there is now a data race on the pbuf data inside the mbuf for the transmit and receive functions in the stack. This condition is especially troublesome for TCP since the stack has to hold on to the data in the pbuf until the other side can acknowledge it.
+
+>Stuffing the pbuf data inside the mbuf is a huge efficiency win using real drivers/NICs, so this copy non-sense seems like a reasonable tradeoff when using the net_ring driver for testing.
 
 
-When the application send a packet (for instance UDP), how does LWIP knows which _net interface_ should be used? That's because, in the socket module, when a new socket is created, it will bind the socket to a location address and port (function `udp_bind`). If the socket is not bound, it will fail as decribed in this [bug report](http://savannah.nongnu.org/bugs/?3168):
+
+
+When the application sends a packet (for instance UDP), how does LWIP knows which _net interface_ should be used? That's because, in the socket module, when a new socket is created, it will bind the socket to a location address and port (function `udp_bind`). If the socket is not bound, it will fail as decribed in this [bug report](http://savannah.nongnu.org/bugs/?3168): 
 
 > We can get that by including a check in udp_send() that checks if the local_ip of the udp pcb (if not is_any) is the same as the ip_addr of the netif used to send the packet (if not, we return ERR_VAL).
 > If we then send to the socket/netconn, we get an error ERR_VAL into conn->err (do_send() has to be modified to catch more errors, see task #6880) that is translated to EINVAL.
+
+Note that every c++ socket object in inception _socket module_ is a finite state machine that prevents clients from being able to use LwIP code in an unintended manner. Hence, it should not be possible to hit this LwIP bug at all using inception socket module.
 
 Here is the transmit sequency diagram summary:
 
@@ -325,7 +335,7 @@ void * memp_malloc(memp_t type)
 }
 ```
 
-The `memp_pools` is actually not a memory pool (i.e. a pre-allocated pool of buffers). Instead, all allocations are done directly in the rte_malloc hugepage.
+The `memp_pools` is actually not a memory pool (i.e. a pre-allocated pool of buffers). Instead, all allocations are done directly in the rte_malloc hugepage. (Note: Creating actual pools for various stack objects has been tried, but it didn't make any measurable performance difference)
 
 For `MEMP_PBUF` / `MEMP_PBUF_POLL`, it uses the DPDK poll based allocation `rte_pktmbuf_alloc`. The pool instanciated for each NUMA core (`rte_socket_id`).
 
