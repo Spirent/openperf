@@ -393,5 +393,59 @@ static rte_mempool* create_pbuf_mempool(const char* name, size_t size,
 }
 ```
 
-Note that the maximum number of buffers per NUMA is `128K`. 
+Note that the maximum number of buffers per NUMA is `128K`. Explanation below:
+
+> The number of mbufs has to be a power of 2 and 128k seemed like a reasonable limit.  We can increase it if necessary.  
+> Additionally, the minimum number of mbufs is determined by the total number of ports/queues.  Each receive queue needs to be fully populated with mbufs in order to work plus you need extras for in-flight data.  Additionally, the number of interfaces isn't known when the pool is created, so there is no way to have the number of buffers proportional to them.  
+> It's certainly possible to run out of mbufs, though.  There are various memory allocation error counters in the stack that can tell you if you hit that condition. The number of mbufs comes from a fixed size pool and it's not possible to dynamically size them, so I don't have any good ideas for how to handle creating enough mbufs for any scenario without wasting memory resources for the common case.
+
+
+ ## Memory Statistics
+
+ The swagger API exposes a `StackMemoryStats` object. It is implemeted as a Packet IO `stack::memory_stats_data`, based on the _memp_ statistics (provided flag `MEMP_STATS` is enabled).
+
+```C++
+struct memory_stats_data {
+    const char *name;
+    int64_t available;
+    int64_t used;
+    int64_t max;
+    int64_t errors;
+    int64_t illegal;
+};
+```
+
+This information is defined for each LWIP memory type (defined in `memp_std.h`), eg `RAW_PCB`, `UDP_PCB`, `TCP_PCB`, `TCP_PCB_LISTEN`.... `PBUF_POOL`.
+
+The `errors` member is incremented each time memp fails to allocate (either mpbuf or eg PCB). 
+
+The `available`, `used` and `max` only report allocation for the m/pbufs pool - using the `rte_mempool_in_xxx_count` method for each NUMA pool. For the other types (`RAW_PCB`, `UDP_PCB`), it uses the LWIP stats. Since LWIP allocator is bypassed, this value should always be zero. The `illegal` does not seems to be used from inception, but only LWIP, so the value should also always be zero..
+
+```C++
+int64_t packetio_memory_memp_pool_avail(const struct memp_desc* mem)
+{
+    int64_t total_avail = 0;
+    if (strncmp(mem->desc, "PBUF_POOL", 9) == 0) {
+        for (int i = 0; i < RTE_MAX_NUMA_NODES; i++) {
+            struct rte_mempool* node_mpool = get_mempool_by_id(memp_default_mempool_fmt, i);
+            if (node_mpool) {
+                total_avail += rte_mempool_avail_count(node_mpool);
+            }
+        }
+    } else if (strncmp(mem->desc, "PBUF_REF/ROM", 12) == 0) {
+        for (int i = 0; i < RTE_MAX_NUMA_NODES; i++) {
+            struct rte_mempool* node_mpool = get_mempool_by_id(memp_ref_rom_mempool_fmt, i);
+            if (node_mpool) {
+                total_avail += rte_mempool_avail_count(node_mpool);
+            }
+        }
+    } else {
+        total_avail = mem->stats->avail;
+    }
+
+    return (total_avail);
+}
+```
+
+
 
