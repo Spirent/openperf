@@ -18,6 +18,9 @@
     - [Configuration](configuration.md)
     - [API](module-api.md)
 
+* Advanced:
+    - [Packet IO Workers](module-packetio-workers.md)
+
 ---
 
 ![Inception components](../images/block_diagram.png)

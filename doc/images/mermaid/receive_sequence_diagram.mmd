@@ -1,0 +1,37 @@
+sequenceDiagram
+  participant NIC
+  participant DPDK as Worker Thread
+  participant RxQueue as Interface Rx Queue
+  participant Stack as TCP/IP Thread
+  participant SHM as Shared Memory
+  participant Client as Client Thread
+NIC-xDPDK: Receive interrupt
+Activate DPDK
+loop while packets
+     DPDK->>NIC: Receive packets
+     NIC-->>DPDK: N packets received
+     DPDK->>DPDK: Lookup VIFs
+     DPDK->>RxQueue: Enqueue packets for Interface
+     RxQueue-->>DPDK: N packets enqueued
+     opt queue empty
+         DPDK-xStack: Wakeup stack
+     end
+     Deactivate DPDK
+end
+Activate Stack
+loop while packets
+     Stack->>RxQueue: Dequeue packets
+     RxQueue-->>Stack: N packets dequeued
+     Stack->>Stack: Process packets
+     Stack->>SHM: Buffer packet data
+     opt buffer empty
+         Stack-xClient: Wakeup client
+     end
+end
+Deactivate Stack
+Activate Client
+loop while data
+     Client->>SHM: Read packet data
+     SHM-->>Client: Data read
+end
+Deactivate Client

@@ -1,0 +1,34 @@
+sequenceDiagram
+  participant Client as Client Thread
+  participant SHM as Shared Memory
+  participant Stack as TCP/IP Thread
+  participant TxQueue as Port Tx Queue
+  participant DPDK as Worker Thread
+  participant NIC
+Activate Client
+loop while data
+     Client->>SHM: Write packet data
+     SHM-->>Client: data written
+     opt buffer empty
+         Client-xStack: Wakeup stack
+     end
+end
+Deactivate Client
+Activate Stack
+loop while data
+     Stack->>SHM: Read packet data
+     SHM-->>Stack: Data read
+     Stack->>Stack: Process data
+     Stack->>TxQueue: Enqueue packets
+     TxQueue-->>Stack: N packets enqueued
+     opt queue empty
+         Stack-xDPDK: Wakeup worker
+     end
+end
+Deactivate Stack
+Activate DPDK
+loop while packets
+     DPDK->>NIC: Transmit packets
+     NIC-->>DPDK: N packets transmitted
+end
+Deactivate DPDK

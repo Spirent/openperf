@@ -1,0 +1,27 @@
+graph TD;
+
+worker::main-->worker.on_event(worker.on_event<br><small>add_descriptors_msg</small>)
+worker.on_event-->xxx["add_config<br>to pollables"]
+worker.on_event-->run_pollable
+
+run_pollable-->loop["loop while no new 0MQ message"]
+
+client::add_task-->loop::add_callback
+loop::add_callback-.indirect from client<br>to worker thread.->worker::on_event
+worker::on_event-->m_additions((m_additions))
+
+loop-->|Step 1|poller.poll
+poller.poll-->rte_epoll_wait
+loop-->|Step 2|for_each_event
+for_each_event-->Switch{switch}
+Switch-->run_callback
+Switch-->tx/rx_burst
+tx/rx_burst-->XX(...)
+loop-->|Step 3|update_poller;
+update_poller-->updater(for each event<br>in m_additions);
+updater-->poller.add
+poller.add-->rte_epoll_ctl(rte_epoll_ctl<br><small>EPOLL_CTL_ADD</small>);
+updater-->move(move to<br>runnables)
+run_callback-->on_event
+
+m_additions-.async.->updater
