@@ -23,7 +23,7 @@ jobs:
             cp ~/project/tests/aat/*.log /tmp/test
 
       - store_artifacts:
-          path: ~/project/build/stack-linux-x86_64-testing/bin
+          path: ~/project/build/inception-linux-x86_64-testing/bin
 
       - store_artifacts:
           path: ~/project/build/libicp-shim-linux-x86_64-testing/lib
