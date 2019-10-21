@@ -32,7 +32,7 @@ std::string server_socket()
     return (std::string("/tmp/.").append(key).append("/server"));
 }
 
-std::optional<socket_fd_pair> get_message_fds(const reply_msg& reply)
+std::optional<api::socket_fd_pair> get_message_fds(const api::reply_msg& reply)
 {
     if (!reply) {
         return (std::nullopt);
@@ -60,7 +60,7 @@ std::optional<socket_fd_pair> get_message_fds(const reply_msg& reply)
                        *reply));
 }
 
-void set_message_fds(reply_msg& reply, const socket_fd_pair& fd_pair)
+void set_message_fds(api::reply_msg& reply, const api::socket_fd_pair& fd_pair)
 {
     if (!reply) {
         return;
@@ -88,7 +88,7 @@ void set_message_fds(reply_msg& reply, const socket_fd_pair& fd_pair)
                *reply);
 }
 
-io_channel_ptr to_pointer(io_channel_offset offset, const void* base)
+api::io_channel_ptr to_pointer(api::io_channel_offset offset, const void* base)
 {
     return (std::visit(overloaded_visitor(
                            [&](dgram_channel_offset dgram) -> io_channel_ptr {
