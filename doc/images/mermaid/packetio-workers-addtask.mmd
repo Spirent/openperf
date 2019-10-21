@@ -1,0 +1,23 @@
+graph TD;
+client::add_task-->add_task_impl;
+add_task_impl-->do_request[do_request<br><small>request_task_add</small>];
+do_request-->send_message;
+
+send_message-. 0MQ .-> handle_request
+
+server_loop-->handle_rpc_request;
+handle_rpc_request-->handle_request(handle_request<br><small>request_task_add</small>);
+handle_request-->workers::add_task;
+
+
+workers::add_task-->core::uuid::random
+workers::add_task-->m_tasks.try_emplace
+workers::add_task-->m_workers.add_descriptors
+m_workers.add_descriptors-->add_descriptors_msg(send_message<br><small>add_descriptors_msg</small>)
+
+add_descriptors_msg-. 0MQ .-> worker.on_event
+
+worker::main-->fsm.dispatch
+fsm.dispatch-->|filter on<br>worker ID|worker.on_event(worker.on_event<br><small>add_descriptors_msg</small>)
+worker.on_event-->xxx["add_config<br>to pollables"]
+worker.on_event-->run_pollable
