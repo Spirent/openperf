@@ -188,10 +188,10 @@ std::string client_socket(const std::string_view id);
 
 std::string server_socket();
 
-std::optional<socket_fd_pair> get_message_fds(const api::reply_msg&);
-void set_message_fds(api::reply_msg&, const socket_fd_pair& fd_pair);
+std::optional<api::socket_fd_pair> get_message_fds(const api::reply_msg&);
+void set_message_fds(api::reply_msg&, const api::socket_fd_pair& fd_pair);
 
-io_channel_ptr to_pointer(io_channel_offset offset, const void* base);
+api::io_channel_ptr to_pointer(api::io_channel_offset offset, const void* base);
 
 }
 }
