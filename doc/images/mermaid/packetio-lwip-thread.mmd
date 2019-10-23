@@ -1,0 +1,7 @@
+graph TD;
+
+lwip::lwip-->|add_task|handle_tcpip_timeout
+handle_tcpip_timeout-->tcpip::handle_timeouts
+
+lwip::lwip-->|add_task|handle_tcpip_message
+handle_tcpip_message-->tcpip::handle_messages
