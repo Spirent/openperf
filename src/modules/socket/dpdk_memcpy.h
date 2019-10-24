@@ -10,6 +10,18 @@
 #ifndef _ICP_SOCKET_DPDK_MEMCPY_H_
 #define _ICP_SOCKET_DPDK_MEMCPY_H_
 
+#ifndef __AVX2__
+
+#include <string.h>
+namespace dpdk {
+static inline void * memcpy(void *dst, const void *src, size_t n)
+{
+    return ::memcpy(dst,src,n);
+}
+}
+
+#else //__AVX2__
+
 #include <stdint.h>
 #include <x86intrin.h>
 
@@ -282,4 +294,5 @@ memcpy(void *dst, const void *src, size_t n)
 
 }
 
+#endif // __AVX2__
 #endif /* _ICP_SOCKET_DPDK_MEMCPY_H_ */
