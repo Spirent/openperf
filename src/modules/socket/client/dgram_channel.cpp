@@ -1,7 +1,7 @@
 #include <cassert>
 #include <unistd.h>
 
-#include "socket/dpdk_memcpy.h"
+#include "socket/dpdk/memcpy.h"
 #include "socket/event_queue_consumer.tcc"
 #include "socket/event_queue_producer.tcc"
 #include "socket/client/dgram_channel.h"
