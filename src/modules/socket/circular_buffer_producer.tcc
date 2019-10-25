@@ -3,7 +3,7 @@
 #include <cstring>
 #include <numeric>
 
-#include "socket/dpdk_memcpy.h"
+#include "socket/dpdk/memcpy.h"
 #include "socket/circular_buffer_producer.h"
 
 namespace icp {
