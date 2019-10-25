@@ -364,4 +364,4 @@ filter-libs = \
 			$(firstword $(1))) \
 		$(call filter-libs,$(call allbutfirst,$(1)))))
 
-ICP_LDLIBS += $(call filter-libs,$(_LDLIBS-y))
+DPDK_LDLIBS := $(call filter-libs,$(_LDLIBS-y))

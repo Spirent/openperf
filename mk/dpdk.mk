@@ -24,13 +24,17 @@ else
 	DPDK_TARGET := $(DPDK_LIB_DIR)/libdpdk.a
 endif
 
-# Generate appropriate ICP_LDLIBS based on the dpdk defconfig
+# Generate appropriate DPDK_LDLIBS based on the dpdk defconfig
 include $(ICP_ROOT)/mk/dpdk_ldlibs.mk
+
+# Generate appropriate DPDK_DEFINES based on the current compiler flags
+include $(ICP_ROOT)/mk/dpdk_defines.mk
 
 # Update global build variables
 ICP_INC_DIRS += $(DPDK_INC_DIR)
 ICP_LIB_DIRS += $(DPDK_LIB_DIR)
-ICP_LDLIBS += -pthread -ldl
+ICP_LDLIBS += $(DPDK_LDLIBS) -pthread -ldl
+ICP_DEFINES += $(DPDK_DEFINES)
 
 ###
 # DPDK build rules
