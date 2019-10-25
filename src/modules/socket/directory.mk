@@ -19,7 +19,16 @@ SOCKSRV_SOURCES += \
 	server/socket_utils.cpp \
 	server/stream_channel.cpp \
 	server/tcp_socket.cpp \
-	server/udp_socket.cpp
+	server/udp_socket.cpp \
+
+
+ifeq ($(findstring -mavx2,$(ICP_COPTS)),-mavx2)
+SOCKSRV_SOURCES += memcpy/dpdk_avx2.cpp
+SOCKCLI_SOURCES += memcpy/dpdk_avx2.cpp
+else 
+SOCKSRV_SOURCES += memcpy/stdlib.cpp
+SOCKCLI_SOURCES += memcpy/stdlib.cpp
+endif
 
 SOCKSRV_DEPENDS += packetio versions
 SOCKSRV_LDLIBS += -lrt

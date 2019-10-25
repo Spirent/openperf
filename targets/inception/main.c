@@ -16,13 +16,6 @@ extern int packetio_init(int argc, char *argv[]);
 
 int main(int argc, char* argv[])
 {
-    #ifdef __AVX2__
-    if(!__builtin_cpu_supports("avx2")) {
-        printf("Your host CPU must support AVX2 instruction set\n");
-        return -1;
-    }
-    #endif
-
     icp_thread_setname("icp_main");
 
     /* Block child threads from intercepting SIGINT or SIGTERM */

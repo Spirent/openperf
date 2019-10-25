@@ -6,7 +6,9 @@
 X86_OPTS += -mcx16
 
 # SSE4.2 provided the CRC32 instruction, which DPDK needs
+X86_OPTS += -msse4.2
+
 # AVX2 is needed for the DPDK version of memcpy
-X86_OPTS += -msse4.2 -mavx2
+X86_OPTS += -mavx2
 
 ICP_COPTS += ${X86_OPTS}
