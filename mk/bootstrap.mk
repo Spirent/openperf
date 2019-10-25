@@ -16,7 +16,7 @@ ICP_AR := llvm-ar
 ICP_ARFLAGS := rcs
 ICP_CC := $(CC) -flto=thin
 ICP_CXX := $(CXX) -flto=thin
-ICP_COPTS :=
+ICP_COPTS := -march=native
 ICP_CSTD := -std=gnu11  # c++11 with GNU extensions
 ICP_CXXSTD := -std=c++17
 ICP_CFLAGS := $(ICP_CSTD)

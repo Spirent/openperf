@@ -2,11 +2,22 @@
 # x86_64 specific options
 #
 
-# Enable compare-and-exchange for 16-byte aligned 128 bit objects
-X86_OPTS += -mcx16
+# At a minimum, we need the following x86 CPU flags to compile.
+# mcx16: Enable compare-and-exchange for 16-byte aligned 128 bit objects
+# mssse3: SSSE3 instructions are needed for some included DPDK headers, e.g. rte_memcpy.h
+#
+# Check if the current optimizations give us those features.  If the don't, then we
+# need to add them
 
-# SSE4.2 provided the CRC32 instruction, which DPDK needs
-# AVX2 is needed for the DPDK version of memcpy
-X86_OPTS += -msse4.2 -mavx2
+ICP_COMPILER_DEFINES := $(shell $(ICP_CC) $(ICP_COPTS) -dM -E - < /dev/null)
 
-ICP_COPTS += ${X86_OPTS}
+# Note: override is needed to change user defined variables
+ifeq ($(filter $(ICP_COMPILER_DEFINES),__GCC_HAVE_SYNC_COMPARE_AND_SWAP_16),)
+override ICP_COPTS += -mcx16
+endif
+
+ifeq ($(filter $(ICP_COMPILER_DEFINES),__SSSE3__),)
+override ICP_COPTS += -mssse3
+endif
+
+undefine ICP_COMPILER_DEFINES
