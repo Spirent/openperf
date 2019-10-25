@@ -7,17 +7,15 @@
  * Note: this is the AVX2 version
  */
 
-#ifndef _ICP_SOCKET_DPDK_MEMCPY_H_
-#define _ICP_SOCKET_DPDK_MEMCPY_H_
+#ifndef _ICP_SOCKET_DPDK_MEMCPY_AVX2_H_
+#define _ICP_SOCKET_DPDK_MEMCPY_AVX2_H_
 
 #include <stdint.h>
 #include <x86intrin.h>
 
-namespace dpdk {
+namespace dpdk::impl::avx2 {
 
-#define ALIGNMENT_MASK 0x1F
-
-namespace impl {
+static constexpr int alignment_mask = 0x1f;
 
 /**
  * AVX2 implementation below
@@ -268,18 +266,6 @@ rte_memcpy_aligned(void *dst, const void *src, size_t n)
     return ret;
 }
 
-} /* namespace impl */
-
-static inline void *
-memcpy(void *dst, const void *src, size_t n)
-{
-    if (!(((uintptr_t)dst | (uintptr_t)src) & ALIGNMENT_MASK)) {
-        return impl::rte_memcpy_aligned(dst, src, n);
-    } else {
-        return impl::rte_memcpy_generic(dst, src, n);
-    }
 }
 
-}
-
-#endif /* _ICP_SOCKET_DPDK_MEMCPY_H_ */
+#endif /* _ICP_SOCKET_DPDK_MEMCPY_AVX2_H_ */
