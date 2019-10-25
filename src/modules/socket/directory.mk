@@ -4,6 +4,12 @@ SOCK_COMMON += \
 	shared_segment.cpp \
 	unix_socket.cpp
 
+ifeq ($(findstring -mavx2,$(ICP_COPTS)),-mavx2)
+SOCK_COMMON += memcpy/dpdk_avx2.cpp
+else 
+SOCK_COMMON += memcpy/stdlib.cpp
+endif
+
 SOCKSRV_SOURCES += \
 	$(SOCK_COMMON) \
 	server/api_handler.cpp \
