@@ -13,7 +13,6 @@ include $(PIO_STACK_DIR)/directory.mk
 PIO_SOURCES += \
 	stack/tcp_in.c \
 	stack/tcp_out.c \
-	stack/tcpip.cpp \
-	stack/timeouts.c
+	stack/tcpip.cpp
 
 PIO_SOURCES += $(addprefix stack/$(ICP_PACKETIO_DRIVER)/,$(PIO_STACK_SOURCES))
