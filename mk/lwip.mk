@@ -32,6 +32,7 @@ LWIP_CORE_SOURCES := \
 	core/stats.c \
 	core/sys.c \
 	core/tcp.c \
+	core/timeouts.c \
 	core/udp.c \
 	netif/ethernet.c
 
