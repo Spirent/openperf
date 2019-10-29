@@ -23,6 +23,7 @@ public:
     uint32_t speeds()         const;
     uint32_t max_speed()      const;
     uint32_t max_rx_pktlen()  const;
+    uint32_t max_mac_addrs()  const;
 
     uint64_t rx_offloads()    const;
     uint64_t tx_offloads()    const;

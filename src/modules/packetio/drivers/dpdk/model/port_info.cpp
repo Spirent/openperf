@@ -58,6 +58,11 @@ uint32_t port_info::max_rx_pktlen() const
     return (get_info_field(m_id, &rte_eth_dev_info::max_rx_pktlen));
 }
 
+uint32_t port_info::max_mac_addrs() const
+{
+    return (get_info_field(m_id, &rte_eth_dev_info::max_mac_addrs));
+}
+
 uint32_t port_info::speeds() const
 {
     return (get_info_field(m_id, &rte_eth_dev_info::speed_capa));

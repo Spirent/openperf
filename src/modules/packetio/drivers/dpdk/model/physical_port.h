@@ -39,9 +39,6 @@ public:
     tl::expected<void, std::string> low_level_config(uint16_t nb_rxqs,
                                                      uint16_t nb_txqs);
 
-    void add_mac_address(const net::mac_address& mac);
-    void del_mac_address(const net::mac_address& mac);
-
 private:
     const int m_idx;           /* Global DPDK port index. */
     const std::string m_id;    /* User-defined ID for REST API interactions. */
