@@ -134,6 +134,20 @@ static void setup_recycler_callback(icp::core::event_loop& loop, worker::recycle
     loop.add(timeout.count(), &callbacks, recycler);
 }
 
+static port::filter& get_port_filter(std::vector<worker_controller::filter_ptr>& filters,
+                                     uint16_t port_id)
+{
+    auto filter = std::find_if(std::begin(filters), std::end(filters),
+                               [&](auto& f) {
+                                   return (port_id == f->port_id());
+                               });
+
+    /* Port filter should *always* exist */
+    assert(filter != filters.end());
+
+    return (*(filter->get()));
+}
+
 worker_controller::worker_controller(void* context,
                                      icp::core::event_loop& loop,
                                      driver::generic_driver& driver)
@@ -161,6 +175,11 @@ worker_controller::worker_controller(void* context,
 
     /* We need port information to setup our workers, so get it */
     auto port_info = get_port_info();
+
+    /* Setup port filters */
+    for (auto& info : port_info) {
+        m_filters.push_back(std::make_unique<port::filter>(info.id()));
+    }
 
     /* Construct our necessary transmit schedulers and metadata */
     for (auto& d : topology::queue_distribute(port_info)) {
@@ -205,6 +224,7 @@ worker_controller::worker_controller(worker_controller&& other)
     , m_tx_schedulers(std::move(other.m_tx_schedulers))
     , m_tx_loads(std::move(other.m_tx_loads))
     , m_tx_workers(std::move(other.m_tx_workers))
+    , m_filters(std::move(other.m_filters))
 {}
 
 worker_controller& worker_controller::operator=(worker_controller&& other)
@@ -220,6 +240,7 @@ worker_controller& worker_controller::operator=(worker_controller&& other)
         m_tx_schedulers = std::move(other.m_tx_schedulers);
         m_tx_loads = std::move(other.m_tx_loads);
         m_tx_workers = std::move(other.m_tx_workers);
+        m_filters = std::move(other.m_filters);
     }
     return (*this);
 }
@@ -315,8 +336,8 @@ void worker_controller::add_interface(std::string_view port_id, std::any interfa
                                  + std::to_string(*port_idx) + ") already exists in FIB");
     }
 
-    auto port = model::physical_port(*port_idx, port_id);
-    port.add_mac_address(mac);
+    get_port_filter(m_filters, *port_idx).add_mac_address(mac);
+
     auto to_delete = m_fib->insert_interface(*port_idx, mac, ifp);
     m_recycler->writer_add_gc_callback([to_delete](){ delete to_delete; });
 
@@ -335,7 +356,8 @@ void worker_controller::del_interface(std::string_view port_id, std::any interfa
     auto mac = net::mac_address(ifp->hwaddr);
     auto to_delete = m_fib->remove_interface(*port_idx, mac);
     m_recycler->writer_add_gc_callback([to_delete](){ delete to_delete; });
-    model::physical_port(*port_idx, port_id).del_mac_address(mac);
+
+    get_port_filter(m_filters, *port_idx).del_mac_address(mac);
 
     ICP_LOG(ICP_LOG_DEBUG, "Removed interface with mac = %s to port %.*s (idx = %u)\n",
             net::to_string(mac).c_str(),
@@ -373,6 +395,9 @@ tl::expected<void, int> worker_controller::add_sink(std::string_view src_id,
     auto to_delete = m_fib->insert_sink(*port_idx, std::move(sink));
     m_recycler->writer_add_gc_callback([to_delete](){ delete to_delete; });
 
+    /* Disable filtering so the sink can get all incoming packets */
+    get_port_filter(m_filters, *port_idx).disable();
+
     return {};
 }
 
@@ -389,6 +414,11 @@ void worker_controller::del_sink(std::string_view src_id, packets::generic_sink 
 
     auto to_delete = m_fib->remove_sink(*port_idx, std::move(sink));
     m_recycler->writer_add_gc_callback([to_delete](){ delete to_delete; });
+
+    /* If we just removed the last sink on the port, re-enable the port filter */
+    if (m_fib->get_sinks(*port_idx).empty()) {
+        get_port_filter(m_filters, *port_idx).enable();
+    }
 }
 
 /*

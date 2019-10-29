@@ -10,6 +10,7 @@
 #include "packetio/generic_driver.h"
 #include "packetio/generic_event_loop.h"
 #include "packetio/generic_workers.h"
+#include "packetio/drivers/dpdk/port_filter.h"
 #include "packetio/workers/dpdk/callback.h"
 #include "packetio/workers/dpdk/tx_scheduler.h"
 #include "packetio/workers/dpdk/worker_api.h"
@@ -65,6 +66,7 @@ public:
     using worker_map = std::map<std::pair<uint16_t, uint16_t>, unsigned>;
 
     using txsched_ptr  = std::unique_ptr<tx_scheduler>;
+    using filter_ptr   = std::unique_ptr<port::filter>;
 
 private:
     void* m_context;                               /* 0MQ context */
@@ -79,6 +81,8 @@ private:
     std::vector<txsched_ptr> m_tx_schedulers;      /* TX queue schedulers */
     load_map m_tx_loads;      /* map from worker id --> worker load */
     worker_map m_tx_workers;  /* map from (port id, queue id) --> worker id */
+
+    std::vector<filter_ptr> m_filters;  /* Port filters */
 };
 
 }

@@ -340,37 +340,6 @@ tl::expected<void, std::string> physical_port::low_level_config(uint16_t nb_rxqs
     return {};
 }
 
-void physical_port::add_mac_address(const net::mac_address& mac)
-{
-    /**
-     * Attempt to add the specified MAC to the port.  If we can't, either
-     * because the port doesn't support multiple MAC's or the port's MAC
-     * address table is full, then enable promiscuous mode.
-     */
-    int error = rte_eth_dev_mac_addr_add(m_idx,
-                                         reinterpret_cast<rte_ether_addr*>(
-                                             const_cast<uint8_t*>(mac.data())),
-                                         0);
-    if ((error == -ENOTSUP || error == -ENOSPC)
-        && !rte_eth_promiscuous_get(m_idx)) {
-        ICP_LOG(ICP_LOG_INFO, "Enabling promiscuous mode on port %s\n", m_id.c_str());
-        rte_eth_promiscuous_enable(m_idx);
-    }
-}
-
-void physical_port::del_mac_address(const net::mac_address& mac)
-{
-    /*
-     * If we are not in promiscuous mode, attempt to remove the MAC from the
-     * port's address table.
-     */
-    if (!rte_eth_promiscuous_get(m_idx)) {
-        rte_eth_dev_mac_addr_remove(m_idx,
-                                    reinterpret_cast<rte_ether_addr*>(
-                                        const_cast<uint8_t*>(mac.data())));
-    }
-}
-
 }
 }
 }
