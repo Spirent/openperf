@@ -20,6 +20,7 @@
 
 * Advanced:
     - [Packet IO Workers](module-packetio-workers.md)
+    - [LwIP Customization](module-packetio-lwip.md)
 
 ---
 
