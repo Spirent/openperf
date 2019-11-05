@@ -4,6 +4,12 @@ SOCK_COMMON += \
 	shared_segment.cpp \
 	unix_socket.cpp
 
+ifeq ($(PLATFORM),linux)
+	SOCK_COMMON += process_control_linux.cpp
+	SOCKSRV_LDLIBS += -lcap
+	SOCKCLI_LDLIBS += -lcap
+endif
+
 SOCKSRV_SOURCES += \
 	$(SOCK_COMMON) \
 	server/api_handler.cpp \
