@@ -34,7 +34,7 @@ $(BUILD_DIR)/main.o: ICP_CPPFLAGS += -Wno-register
 
 $(TARGET_BIN): $(OBJECTS) $(BUILD_DEPS)
 	$(call icp_link_binary,$@,$(OBJECTS))
-	-sudo -n /sbin/setcap CAP_IPC_LOCK,CAP_NET_RAW,CAP_SYS_ADMIN,CAP_DAC_OVERRIDE,CAP_SYS_PTRACE=epi $@
+	sudo -n /sbin/setcap CAP_IPC_LOCK,CAP_NET_ADMIN,CAP_NET_RAW=ep $@
 
 .PHONY: $(ICP_TARGET)
 $(ICP_TARGET): $(TARGET_BIN)
