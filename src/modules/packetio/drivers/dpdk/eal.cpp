@@ -5,7 +5,6 @@
 #include <vector>
 
 #include <net/if.h>
-#include <sys/capability.h>
 
 #include "lwip/netif.h"
 #include "tl/expected.hpp"
@@ -22,42 +21,6 @@
 namespace icp {
 namespace packetio {
 namespace dpdk {
-
-struct named_cap_flag {
-    const char *name;
-    int flag;
-};
-
-static struct named_cap_flag cap_permissions[] = {
-    { "cap_ipc_lock", CAP_IPC_LOCK },
-    { "cap_net_raw",  CAP_NET_RAW  },
-};
-
-static bool sufficient_permissions()
-{
-    cap_t caps = cap_get_proc();
-    if (!caps) {
-        ICP_LOG(ICP_LOG_ERROR, "Could not retrieve any capabilities.\n");
-        return (false);
-    }
-
-    bool have_permissions = true;  /* assume we have permission unless we don't */
-    for(auto &item : cap_permissions) {
-        cap_flag_value_t flag;
-        if (cap_get_flag(caps, item.flag, CAP_EFFECTIVE, &flag) == -1) {
-            ICP_LOG(ICP_LOG_ERROR, "cap_get_flag returned error for %s.\n", item.name);
-            have_permissions = false;
-            break;
-        } else if (!flag) {
-            ICP_LOG(ICP_LOG_INFO, "Missing required DPDK capability: %s\n", item.name);
-            have_permissions = false;
-        }
-    }
-
-    cap_free(caps);
-
-    return (have_permissions);
-}
 
 /*
  * This file acts as an intermediary between the lower DPDK layer and the
@@ -254,19 +217,6 @@ static void create_test_portpairs(const int test_portpairs)
     }
 }
 
-static void drop_caps()
-{
-    cap_t caps = cap_get_proc();
-    if (caps == nullptr) {
-        throw std::runtime_error("Could not retrieve any capabilities");
-    }
-    cap_clear(caps);
-    if (cap_set_proc(caps) < 0) {
-        throw std::runtime_error("Could not drop all capabilities");
-    }
-    cap_free(caps);
-}
-
 eal eal::test_environment(std::vector<std::string> args,
                           std::unordered_map<int, std::string> port_ids,
                           unsigned test_portpairs)
@@ -287,11 +237,6 @@ eal::eal(std::vector<std::string> args,
     : m_initialized(false)
     , m_port_ids(port_ids)
 {
-    /* Check to see if we have permissions to launch DPDK */
-    if (!sufficient_permissions()) {
-        throw std::runtime_error("Insufficient permissions to initialize DPDK");
-    }
-
     /* Convert args to c-strings for DPDK consumption */
     std::vector<char *> eal_args;
     eal_args.reserve(args.size() + 1);
@@ -386,8 +331,6 @@ eal::eal(std::vector<std::string> args,
     }
 
     start();
-
-    drop_caps();
 
     m_initialized = true;
 }

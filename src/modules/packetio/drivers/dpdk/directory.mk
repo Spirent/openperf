@@ -15,5 +15,3 @@ PIO_DRIVER_SOURCES += \
 	topology_utils.cpp \
 	model/physical_port.cpp \
 	model/port_info.cpp
-
-PIO_LIBS += -lcap

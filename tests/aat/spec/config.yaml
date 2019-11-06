@@ -3,7 +3,7 @@ services:
   default:
     # NOTE: --force-unlink will NOT verify if another copy of inception is running.
     # FIXME: Remove --force-unlink. This is a hacky, temporary workaround for reliability.
-    command: 'common/launcher.sh ../../build/inception-linux-x86_64-testing/bin/inception --modules.packetio.dpdk.test-mode --core.log.level debug --modules.socket.force-unlink --modules.packetio.dpdk.options="-m256m,--no-huge" --modules.packetio.dpdk.port-ids="port0=0, port1=1" -p 9000 >> inception.log 2>&1'
+    command: '../../build/inception-linux-x86_64-testing/bin/inception --modules.packetio.dpdk.test-mode --core.log.level debug --modules.socket.force-unlink --modules.packetio.dpdk.options="-m256m,--no-huge" --modules.packetio.dpdk.port-ids="port0=0, port1=1" -p 9000 >> inception.log 2>&1'
     base_url: http://127.0.0.1:9000
     init_url: http://127.0.0.1:9000/version
     init_timeout: 15s
@@ -12,7 +12,7 @@ services:
   config-file:
     # NOTE: --force-unlink will NOT verify if another copy of inception is running.
     # FIXME: Remove --force-unlink. This is a hacky, temporary workaround for reliability.
-    command: 'common/launcher.sh ../../build/inception-linux-x86_64-testing/bin/inception -c spec/test_config_file.yaml >> inception.log 2>&1'
+    command: '../../build/inception-linux-x86_64-testing/bin/inception -c spec/test_config_file.yaml >> inception.log 2>&1'
     base_url: http://127.0.0.1:9000
     init_url: http://127.0.0.1:9000/version
     init_timeout: 15s
@@ -21,7 +21,7 @@ services:
   dataplane:
     # NOTE: --force-unlink will NOT verify if another copy of inception is running.
     # FIXME: Remove --force-unlink. This is a hacky, temporary workaround for reliability.
-    command: 'common/launcher.sh ../../build/inception-linux-x86_64-testing/bin/inception -c spec/test_dataplane.yaml >> inception.log 2>&1'
+    command: '../../build/inception-linux-x86_64-testing/bin/inception -c spec/test_dataplane.yaml >> inception.log 2>&1'
     base_url: http://127.0.0.1:9000
     init_url: http://127.0.0.1:9000/interfaces/dataplane-server
     init_timeout: 15s
