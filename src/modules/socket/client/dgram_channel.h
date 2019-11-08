@@ -1,6 +1,10 @@
 #ifndef _ICP_SOCKET_CLIENT_DGRAM_CHANNEL_H_
 #define _ICP_SOCKET_CLIENT_DGRAM_CHANNEL_H_
 
+#include "tl/expected.hpp"
+
+#include "socket/circular_buffer_consumer.h"
+#include "socket/circular_buffer_producer.h"
 #include "socket/event_queue_consumer.h"
 #include "socket/event_queue_producer.h"
 #include "socket/dgram_channel.h"
@@ -9,15 +13,33 @@ namespace icp {
 namespace socket {
 namespace client {
 
-class dgram_channel : public event_queue_consumer<dgram_channel>
+class dgram_channel : public circular_buffer_consumer<dgram_channel>
+                    , public circular_buffer_producer<dgram_channel>
+                    , public event_queue_consumer<dgram_channel>
                     , public event_queue_producer<dgram_channel>
 {
     DGRAM_CHANNEL_MEMBERS
 
+    friend class circular_buffer_consumer<dgram_channel>;
+    friend class circular_buffer_producer<dgram_channel>;
     friend class event_queue_consumer<dgram_channel>;
     friend class event_queue_producer<dgram_channel>;
 
 protected:
+    uint8_t* producer_base() const;
+    size_t   producer_len() const;
+    std::atomic_size_t& producer_read_idx();
+    const std::atomic_size_t& producer_read_idx() const;
+    std::atomic_size_t& producer_write_idx();
+    const std::atomic_size_t& producer_write_idx() const;
+
+    uint8_t* consumer_base() const;
+    size_t   consumer_len() const;
+    std::atomic_size_t& consumer_read_idx();
+    const std::atomic_size_t& consumer_read_idx() const;
+    std::atomic_size_t& consumer_write_idx();
+    const std::atomic_size_t& consumer_write_idx() const;
+
     int consumer_fd() const;
     int producer_fd() const;
 
@@ -45,13 +67,11 @@ public:
     int flags() const;
     int flags(int);
 
-    tl::expected<size_t, int> send(pid_t pid,
-                                   const iovec iov[], size_t iovcnt,
+    tl::expected<size_t, int> send(const iovec iov[], size_t iovcnt,
                                    int flags,
                                    const sockaddr *to);
 
-    tl::expected<size_t, int> recv(pid_t pid,
-                                   iovec iov[], size_t iovcnt,
+    tl::expected<size_t, int> recv(iovec iov[], size_t iovcnt,
                                    int flags,
                                    sockaddr *from, socklen_t *fromlen);
 

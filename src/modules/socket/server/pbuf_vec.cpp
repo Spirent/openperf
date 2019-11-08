@@ -1,7 +1,6 @@
-#include "socket/pbuf_vec.h"
+#include "socket/server/pbuf_vec.h"
 
-namespace icp {
-namespace socket {
+namespace icp::socket::server {
 
 pbuf_vec::pbuf_vec() {}
 
@@ -44,5 +43,4 @@ void pbuf_vec::len(uint16_t length)
                                         | (reinterpret_cast<uintptr_t>(m_payload) & ptr_mask));
 }
 
-}
 }

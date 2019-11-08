@@ -12,12 +12,29 @@
 #include "tl/expected.hpp"
 
 #include "core/icp_uuid.h"
+#include "framework/memory/offset_ptr.h"
 
 namespace icp {
 namespace socket {
 
 struct dgram_channel;
 struct stream_channel;
+
+struct buffer {
+    memory::offset_ptr<uint8_t> ptr;
+    uint64_t len;
+
+    buffer(uint8_t* ptr_, uint64_t len_)
+        : ptr(ptr_)
+        , len(len_)
+    {}
+
+    buffer()
+        : ptr(memory::offset_ptr<uint8_t>::uninitialized())
+    {}
+};
+
+constexpr size_t cache_line_size = 64;
 
 namespace api {
 

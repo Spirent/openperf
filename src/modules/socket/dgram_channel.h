@@ -4,28 +4,12 @@
 #include <atomic>
 
 #include <netinet/in.h>
-#include <socket/bipartite_ring.h>
-#include <socket/pbuf_vec.h>
-#include <socket/api.h>
 
-struct pbuf;
+#include "framework/memory/offset_ptr.h"
+#include "socket/api.h"
 
 namespace icp {
 namespace socket {
-
-/**
- * This struct is magic.  Use templates and parameter packing to provide
- * some syntactic sugar for creating visitor objects for std::visit.
- */
-template<typename ...Ts>
-struct overloaded_visitor : Ts...
-{
-    overloaded_visitor(const Ts&... args)
-        : Ts(args)...
-    {}
-
-    using Ts::operator()...;
-};
 
 struct dgram_ipv4_addr {
     uint32_t addr;
@@ -74,23 +58,51 @@ public:
     in_port_t port() const { return (m_port); }
 };
 
-struct dgram_channel_item {
+/*
+ * Static tag for sanity checking random pointers are actually descriptors.
+ * Can be removed once we're sure this works :)
+ */
+static constexpr uint64_t descriptor_tag = 0xABCCDDDEEEEE;
+
+/* Each datagram in the buffer is pre-pended with the following descriptor */
+struct dgram_channel_descriptor {
+    uint64_t tag = descriptor_tag;
     std::optional<dgram_channel_addr> address;
-    pbuf_vec pvec;
+    uint16_t length;
 };
 
-typedef bipartite_ring<dgram_channel_item, api::socket_queue_length> dgram_ring;
+/*
+ * The datagram channel uses the same approach as the stream
+ * channel.  But because we're dealing with packets of data,
+ * we pre-pend each write to the buffer with a fixed size header.
+ * This header allows the reader to determine the address for the
+ * payload and the actual size of the data which follows.
+ *
+ * Additionally, just like the stream channel, we maintain two
+ * individual buffers, one for transmit and one for receive,
+ * and we used eventfd's to signal between client and server
+ * when necessary.
+ */
 
-#define DGRAM_CHANNEL_MEMBERS                      \
-    dgram_ring sendq;  /* from client to stack */  \
-    api::socket_fd_pair client_fds;                \
-    std::atomic_uint64_t tx_fd_write_idx;          \
-    std::atomic_uint64_t rx_fd_read_idx;           \
-    dgram_ring recvq;  /* from stack to client */  \
-    api::socket_fd_pair server_fds;                \
-    std::atomic_uint64_t tx_fd_read_idx;           \
-    std::atomic_uint64_t rx_fd_write_idx;          \
-    std::atomic_int socket_flags;
+#define DGRAM_CHANNEL_MEMBERS                         \
+    struct alignas(cache_line_size) {                 \
+        buffer tx_buffer;                             \
+        api::socket_fd_pair client_fds;               \
+        std::atomic_uint64_t tx_q_write_idx;          \
+        std::atomic_uint64_t rx_q_read_idx;           \
+        std::atomic_uint64_t tx_fd_write_idx;         \
+        std::atomic_uint64_t rx_fd_read_idx;          \
+        std::atomic_int socket_flags;                 \
+    };                                                \
+    struct alignas(cache_line_size) {                 \
+        buffer rx_buffer;                             \
+        api::socket_fd_pair server_fds;               \
+        std::atomic_uint64_t tx_q_read_idx;           \
+        std::atomic_uint64_t rx_q_write_idx;          \
+        std::atomic_uint64_t tx_fd_read_idx;          \
+        std::atomic_uint64_t rx_fd_write_idx;         \
+        void* allocator;                              \
+    };
 
 struct dgram_channel {
     DGRAM_CHANNEL_MEMBERS

@@ -108,7 +108,6 @@ void client::init(std::atomic_bool* init_flag)
     }
 
     auto& init = std::get<api::reply_init>(*reply);
-    m_server_pid = init.pid;
 
     if (init.shm_info) {
         /* map shared address memory */
@@ -117,7 +116,7 @@ void client::init(std::atomic_bool* init_flag)
                                                shm_info.size));
 
         /* enable ptrace from server side */
-        process_control::enable_ptrace(stderr, m_server_pid);
+        process_control::enable_ptrace(stderr, init.pid);
     }
 
     m_init_flag = init_flag;
@@ -563,8 +562,7 @@ ssize_t client::recvmsg(int s, struct msghdr *message, int flags)
     }
 
     auto& [id, channel] = result->second;
-    auto recv_result = channel.recv(m_server_pid,
-                                    message->msg_iov, message->msg_iovlen,
+    auto recv_result = channel.recv(message->msg_iov, message->msg_iovlen,
                                     flags,
                                     reinterpret_cast<sockaddr*>(message->msg_name),
                                     &message->msg_namelen);
@@ -595,8 +593,7 @@ ssize_t client::sendmsg(int s, const struct msghdr *message, int flags)
     }
 
     auto& [id, channel] = result->second;
-    auto send_result = channel.send(m_server_pid,
-                                    message->msg_iov, message->msg_iovlen,
+    auto send_result = channel.send(message->msg_iov, message->msg_iovlen,
                                     flags,
                                     reinterpret_cast<const sockaddr*>(message->msg_name));
     if (!send_result) {
