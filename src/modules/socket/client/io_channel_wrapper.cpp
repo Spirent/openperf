@@ -4,6 +4,20 @@ namespace icp {
 namespace socket {
 namespace client {
 
+/**
+ * This struct is magic.  Use templates and parameter packing to provide
+ * some syntactic sugar for creating visitor objects for std::visit.
+ */
+template<typename ...Ts>
+struct overloaded_visitor : Ts...
+{
+    overloaded_visitor(const Ts&... args)
+        : Ts(args)...
+    {}
+
+    using Ts::operator()...;
+};
+
 using io_channel = std::variant<dgram_channel*, stream_channel*>;
 
 static io_channel io_channel_cast(api::io_channel_ptr channel)
@@ -80,24 +94,22 @@ int io_channel_wrapper::flags(int new_flags)
     return (std::visit(flags_visitor, m_channel));
 }
 
-tl::expected<size_t, int> io_channel_wrapper::send(pid_t pid,
-                                                   const iovec iov[], size_t iovcnt,
+tl::expected<size_t, int> io_channel_wrapper::send(const iovec iov[], size_t iovcnt,
                                                    int flags,
                                                    const sockaddr *to)
 {
     auto send_visitor = [&](auto channel) -> tl::expected<size_t, int> {
-        return (channel->send(pid, iov, iovcnt, flags, to));
+        return (channel->send(iov, iovcnt, flags, to));
     };
     return (std::visit(send_visitor, m_channel));
 }
 
-tl::expected<size_t, int> io_channel_wrapper::recv(pid_t pid,
-                                                   iovec iov[], size_t iovcnt,
+tl::expected<size_t, int> io_channel_wrapper::recv(iovec iov[], size_t iovcnt,
                                                    int flags,
                                                    sockaddr *from, socklen_t *fromlen)
 {
     auto recv_visitor = [&](auto channel) -> tl::expected<size_t, int> {
-        return (channel->recv(pid, iov, iovcnt, flags, from, fromlen));
+        return (channel->recv(iov, iovcnt, flags, from, fromlen));
     };
     return (std::visit(recv_visitor, m_channel));
 }

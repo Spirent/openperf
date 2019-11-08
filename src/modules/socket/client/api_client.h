@@ -47,7 +47,6 @@ class client : public thread_singleton<client>
     std::unordered_map<int, ided_channel> m_channels;
 
     std::unique_ptr<memory::shared_segment> m_shm;
-    pid_t m_server_pid;
     std::atomic_bool* m_init_flag;
 
 public:

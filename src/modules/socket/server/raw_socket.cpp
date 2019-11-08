@@ -54,7 +54,7 @@ static uint8_t raw_receive(void* arg, raw_pcb* pcb, pbuf* p, const ip_addr_t* ad
 
 raw_socket::raw_socket(icp::socket::server::allocator& allocator, int flags, int protocol, raw_recv_fn recv_callback)
     : m_channel(new (allocator.allocate(sizeof(dgram_channel)))
-                dgram_channel(flags), dgram_channel_deleter(&allocator))
+                dgram_channel(flags, allocator))
     , m_pcb(raw_new(protocol))
     , m_recv_callback(recv_callback)
 {
@@ -98,16 +98,16 @@ tl::expected<generic_socket, int> raw_socket::handle_accept(int)
 void raw_socket::handle_io()
 {
     m_channel->ack();
-    std::array<dgram_channel_item, api::socket_queue_length> items;
-    auto nb_items = m_channel->recv(items.data(), items.size());
-    std::for_each(items.data(), items.data() + nb_items,
-                  [&](auto& item) {
-                      auto& [dest, data] = item;
-                      if (dest) raw_sendto(m_pcb.get(), data.pbuf(),
-                                           reinterpret_cast<const ip_addr_t*>(&dest->addr()));
-                      else      raw_send(m_pcb.get(), data.pbuf());
-                      pbuf_free(data.pbuf());
-                  });
+    while (m_channel->recv_available()) {
+        auto [p, dest] = m_channel->recv();
+
+        assert(p);
+
+        if (dest) raw_sendto(m_pcb.get(), p, reinterpret_cast<const ip_addr_t*>(&dest->addr()));
+        else      raw_send(m_pcb.get(), p);
+
+        pbuf_free(p);
+    }
 }
 
 static tl::expected<void, int> do_raw_bind(raw_pcb* pcb, const api::request_bind& bind)

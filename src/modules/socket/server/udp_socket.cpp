@@ -49,13 +49,14 @@ static void udp_receive(void* arg, udp_pcb* pcb, pbuf* p, const ip_addr_t* addr,
      * order.
      */
     if (!channel->send(p, reinterpret_cast<const dgram_ip_addr*>(addr), htons(port))) {
+        UDP_STATS_INC(udp.drop);
         pbuf_free(p);
     }
 }
 
 udp_socket::udp_socket(icp::socket::server::allocator& allocator, int flags)
     : m_channel(new (allocator.allocate(sizeof(dgram_channel)))
-                dgram_channel(flags), dgram_channel_deleter(&allocator))
+                dgram_channel(flags, allocator))
     , m_pcb(udp_new())
 {
     if (!m_pcb) {
@@ -79,17 +80,18 @@ tl::expected<generic_socket, int> udp_socket::handle_accept(int)
 void udp_socket::handle_io()
 {
     m_channel->ack();
-    std::array<dgram_channel_item, api::socket_queue_length> items;
-    auto nb_items = m_channel->recv(items.data(), items.size());
-    std::for_each(items.data(), items.data() + nb_items,
-                  [&](auto& item) {
-                      auto& [dest, data] = item;
-                      if (dest) udp_sendto(m_pcb.get(), data.pbuf(),
-                                           reinterpret_cast<const ip_addr_t*>(&dest->addr()),
-                                           dest->port());
-                      else      udp_send(m_pcb.get(), data.pbuf());
-                      pbuf_free(data.pbuf());
-                  });
+    while (m_channel->recv_available()) {
+        auto [p, dest] = m_channel->recv();
+
+        assert(p);
+
+        if (dest) udp_sendto(m_pcb.get(), p,
+                             reinterpret_cast<const ip_addr_t*>(&dest->addr()),
+                             dest->port());
+        else      udp_send(m_pcb.get(), p);
+
+        pbuf_free(p);
+    }
 }
 
 static tl::expected<void, int> do_udp_bind(udp_pcb* pcb, const api::request_bind& bind)
