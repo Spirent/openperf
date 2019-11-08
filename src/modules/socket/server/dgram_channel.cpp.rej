@@ -1,0 +1,12 @@
+--- src/modules/socket/server/dgram_channel.cpp
++++ src/modules/socket/server/dgram_channel.cpp
+@@ -319,8 +319,7 @@ std::pair<pbuf*, std::optional<dgram_channel_addr>> dgram_channel::recv()
+     if (!p) {
+         return (std::make_pair(nullptr, std::nullopt));
+     }
+-    fprintf(stderr, "p->len = %u, desc->length = %u\n", p->len, desc->length);
+-    fflush(stderr);
++
+     assert(p->len == desc->length);
+ 
+     pread(p->payload, desc->length, sizeof(storage));

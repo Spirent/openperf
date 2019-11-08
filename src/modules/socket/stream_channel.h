@@ -3,13 +3,10 @@
 
 #include <atomic>
 
-#include "framework/memory/offset_ptr.h"
 #include "socket/api.h"
 
 namespace icp {
 namespace socket {
-
-static constexpr size_t cache_line_size = 64;
 
 /*
  * Note: buffer names are from the point of view of the client,
@@ -35,36 +32,26 @@ static constexpr size_t cache_line_size = 64;
  * struct is written to exclusively by the client thread.
  */
 
-struct buffer {
-    memory::offset_ptr<uint8_t> ptr;
-    uint64_t len;
-
-    buffer(uint8_t* ptr_, uint64_t len_)
-        : ptr(ptr_)
-        , len(len_)
-    {}
-
-    buffer()
-        : ptr(memory::offset_ptr<uint8_t>::uninitialized())
-    {}
-};
-
-#define STREAM_CHANNEL_MEMBERS                   \
-    buffer tx_buffer;                            \
-    api::socket_fd_pair client_fds;              \
-    std::atomic_size_t tx_q_write_idx;           \
-    std::atomic_size_t rx_q_read_idx;            \
-    std::atomic_uint64_t tx_fd_write_idx;        \
-    std::atomic_uint64_t rx_fd_read_idx;         \
-    std::atomic_int socket_error;                \
-    std::atomic_int socket_flags;                \
-    buffer rx_buffer;                            \
-    api::socket_fd_pair server_fds;              \
-    std::atomic_size_t tx_q_read_idx;            \
-    std::atomic_size_t rx_q_write_idx;           \
-    std::atomic_uint64_t tx_fd_read_idx;         \
-    std::atomic_uint64_t rx_fd_write_idx;        \
-    void* allocator;
+#define STREAM_CHANNEL_MEMBERS                       \
+    struct alignas(cache_line_size) {                \
+        buffer tx_buffer;                            \
+        api::socket_fd_pair client_fds;              \
+        std::atomic_size_t tx_q_write_idx;           \
+        std::atomic_size_t rx_q_read_idx;            \
+        std::atomic_uint64_t tx_fd_write_idx;        \
+        std::atomic_uint64_t rx_fd_read_idx;         \
+        std::atomic_int socket_error;                \
+        std::atomic_int socket_flags;                \
+    };                                               \
+    struct alignas(cache_line_size) {                \
+        buffer rx_buffer;                            \
+        api::socket_fd_pair server_fds;              \
+        std::atomic_size_t tx_q_read_idx;            \
+        std::atomic_size_t rx_q_write_idx;           \
+        std::atomic_uint64_t tx_fd_read_idx;         \
+        std::atomic_uint64_t rx_fd_write_idx;        \
+        void* allocator;                             \
+    };
 
 struct stream_channel {
     STREAM_CHANNEL_MEMBERS

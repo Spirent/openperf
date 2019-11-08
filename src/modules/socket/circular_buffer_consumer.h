@@ -1,6 +1,7 @@
 #ifndef _ICP_SOCKET_CIRCULAR_BUFFER_CONSUMER_H_
 #define _ICP_SOCKET_CIRCULAR_BUFFER_CONSUMER_H_
 
+#include <array>
 #include <atomic>
 #include <sys/uio.h>
 
@@ -31,11 +32,14 @@ class circular_buffer_consumer
 public:
     size_t readable() const;
     size_t read(void* ptr, size_t length);
+    size_t pread(void* ptr, size_t length, size_t offset);
 
     template <typename NotifyFunction>
     size_t read_and_notify(void* ptr, size_t length, NotifyFunction&& notify);
 
-    iovec  peek() const;
+    using peek_data = std::array<iovec, 2>;
+    peek_data peek() const;
+
     size_t drop(size_t length);
 };
 

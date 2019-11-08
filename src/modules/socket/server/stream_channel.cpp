@@ -235,7 +235,8 @@ size_t stream_channel::send(const iovec iov[], size_t iovcnt)
 
 iovec stream_channel::recv_peek() const
 {
-    return (peek());
+    /* XXX: should return both iovec items */
+    return (peek()[0]);
 }
 
 size_t stream_channel::recv_drop(size_t length)
