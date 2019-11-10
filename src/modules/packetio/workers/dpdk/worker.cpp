@@ -291,7 +291,9 @@ static uint16_t service_event(event_loop::generic_event_loop& loop,
                                return (rx_burst(fib, rxq));
                            },
                            [](const tx_queue* txq) -> uint16_t {
-                               return (tx_burst(txq));
+                               auto nb_pkts = tx_burst(txq);
+                               const_cast<tx_queue*>(txq)->enable();
+                               return (nb_pkts);
                            },
                            [](const tx_scheduler* scheduler) -> uint16_t {
                                const_cast<tx_scheduler*>(scheduler)->run();
