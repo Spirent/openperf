@@ -317,7 +317,7 @@ int tcp_socket::do_lwip_poll()
         m_channel->notify();
     }
 
-    /* Try to transmit anything we data in our send buffer. */
+    /* Try to transmit any data in our send buffer. */
     do_tcp_transmit_all(m_pcb.get(), *m_channel);
 
     return (ERR_OK);

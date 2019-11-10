@@ -46,19 +46,21 @@ err_t queueing::handle_rx_notify(netif* netintf)
 {
     static constexpr size_t rx_burst_size = 32;
     std::array<pbuf*, rx_burst_size> pbufs;
+    unsigned nb_remaining = 0;
+
+    m_notify.clear(std::memory_order_release);
 
     do {
         auto nb_pbufs = rte_ring_dequeue_burst(m_queue.get(),
                                                reinterpret_cast<void**>(pbufs.data()),
-                                               rx_burst_size, nullptr);
+                                               rx_burst_size, &nb_remaining);
 
         for (size_t i = 0; i < nb_pbufs; i++) {
             /* Note: ethernet_input _always_ return ERR_OK */
             ethernet_input(pbufs[i], netintf);
         }
-    } while (!rte_ring_empty(m_queue.get()));
+    } while (nb_remaining);
 
-    m_notify.clear(std::memory_order_release);
     return (ERR_OK);
 }
 
