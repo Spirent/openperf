@@ -20,15 +20,6 @@ static unsigned get_max_mac_addresses(uint16_t port_id)
     return (model::port_info(port_id).max_mac_addrs() - 1);
 }
 
-mac_filter::mac_filter(uint16_t port_id)
-    : m_port(port_id)
-{}
-
-uint16_t mac_filter::port_id() const
-{
-    return (m_port);
-}
-
 static void maybe_enable_promiscuous_mode(uint16_t port_id)
 {
     if (!rte_eth_promiscuous_get(port_id)) {
@@ -43,6 +34,43 @@ static void maybe_disable_promiscuous_mode(uint16_t port_id)
         ICP_LOG(ICP_LOG_INFO, "Disabling promiscuous mode on port %u\n", port_id);
         rte_eth_promiscuous_disable(port_id);
     }
+}
+
+mac_filter::mac_filter(uint16_t port_id)
+    : m_port(port_id)
+{}
+
+mac_filter::~mac_filter()
+{
+    if (m_filtered.empty()) return;
+
+    std::for_each(std::begin(m_filtered), std::end(m_filtered),
+                  [&](const auto& mac) {
+                      rte_eth_dev_mac_addr_remove(m_port, to_dpdk_mac(mac));
+                  });
+
+    maybe_disable_promiscuous_mode(m_port);
+}
+
+mac_filter::mac_filter(mac_filter&& other)
+    : m_port(other.m_port)
+    , m_filtered(std::move(other.m_filtered))
+    , m_overflowed(std::move(other.m_overflowed))
+{}
+
+mac_filter& mac_filter::operator=(mac_filter&& other)
+{
+    if (this != &other) {
+        m_port = other.m_port;
+        m_filtered = std::move(other.m_filtered);
+        m_overflowed = std::move(other.m_overflowed);
+    }
+    return (*this);
+}
+
+uint16_t mac_filter::port_id() const
+{
+    return (m_port);
 }
 
 static filter_state_error on_error(const filter_event_add& add, uint16_t port_id, int error)
