@@ -330,8 +330,6 @@ eal::eal(std::vector<std::string> args,
                 strerror(std::abs(error)));
     }
 
-    start();
-
     m_initialized = true;
 }
 
@@ -341,7 +339,7 @@ eal::~eal()
         return;
     }
 
-    stop();
+    stop_all_ports();
 
     rte_eth_dev_callback_unregister(RTE_ETH_ALL, RTE_ETH_EVENT_INTR_LSC,
                                     log_link_status_change, nullptr);
@@ -374,7 +372,7 @@ eal& eal::operator=(eal&& other)
     return (*this);
 }
 
-void eal::start() const
+void eal::start_all_ports() const
 {
     uint16_t port_id = 0;
     RTE_ETH_FOREACH_DEV(port_id) {
@@ -382,7 +380,7 @@ void eal::start() const
     }
 }
 
-void eal::stop() const
+void eal::stop_all_ports() const
 {
     uint16_t port_id = 0;
     RTE_ETH_FOREACH_DEV(port_id) {

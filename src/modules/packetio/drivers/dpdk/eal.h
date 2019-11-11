@@ -48,6 +48,9 @@ public:
     tl::expected<std::string, std::string> create_port(std::string_view id, const port::config_data& config);
     tl::expected<void, std::string> delete_port(std::string_view id);
 
+    void start_all_ports() const;
+    void stop_all_ports() const;
+
 private:
     bool m_initialized;
     std::unique_ptr<pool_allocator> m_allocator;
@@ -57,9 +60,6 @@ private:
     eal(std::vector<std::string> args,
         std::unordered_map<int, std::string> port_ids,
         unsigned test_portpairs = 0);
-
-    void start() const;
-    void stop() const;
 };
 
 }

@@ -70,6 +70,41 @@ public:
     }
 };
 
+class flow_filter : public filter_state_machine<flow_filter, filter_state, filter_event>
+{
+    uint16_t m_port;
+
+    std::unordered_map<net::mac_address, rte_flow*> m_flows;
+    std::vector<net::mac_address> m_overflows;
+
+public:
+    flow_filter(uint16_t port_id);
+    ~flow_filter();
+
+    flow_filter(flow_filter&&);
+    flow_filter& operator=(flow_filter&&);
+
+    uint16_t port_id() const;
+
+    std::optional<filter_state> on_event(const filter_event_add& add, const filter_state_ok&);
+    std::optional<filter_state> on_event(const filter_event_del& del, const filter_state_ok&);
+    std::optional<filter_state> on_event(const filter_event_disable&, const filter_state_ok&);
+
+    std::optional<filter_state> on_event(const filter_event_add& add, const filter_state_overflow&);
+    std::optional<filter_state> on_event(const filter_event_del& del, const filter_state_overflow&);
+
+    std::optional<filter_state> on_event(const filter_event_add& add, const filter_state_disabled&);
+    std::optional<filter_state> on_event(const filter_event_del& del, const filter_state_disabled&);
+    std::optional<filter_state> on_event(const filter_event_enable&, const filter_state_disabled&);
+
+    /* Default action for any unhandled cases */
+    template <typename Event, typename State>
+    std::optional<filter_state> on_event(const Event&, const State&)
+    {
+        return (std::nullopt);
+    }
+};
+
 class mac_filter : public filter_state_machine<mac_filter, filter_state, filter_event>
 {
     uint16_t m_port;
@@ -78,6 +113,10 @@ class mac_filter : public filter_state_machine<mac_filter, filter_state, filter_
 
 public:
     mac_filter(uint16_t port_id);
+    ~mac_filter();
+
+    mac_filter(mac_filter&&);
+    mac_filter& operator=(mac_filter&&);
 
     uint16_t port_id() const;
 
@@ -113,7 +152,7 @@ public:
     void enable();
     void disable();
 
-    using filter_strategy = std::variant<mac_filter>;
+    using filter_strategy = std::variant<flow_filter, mac_filter>;
 
 private:
     filter_strategy m_filter;
