@@ -10,15 +10,20 @@
 #include "packetio/drivers/dpdk/topology_utils.h"
 #include "packetio/memory/dpdk/memp.h"
 #include "packetio/stack/dpdk/lwip.h"
-#include "packetio/stack/dpdk/netif_wrapper.h"
 #include "packetio/stack/dpdk/tcpip_mbox.h"
+#include "packetio/stack/netif_wrapper.h"
 #include "packetio/stack/tcpip.h"
 
 namespace icp::packetio::dpdk {
 
 #define STRING_VIEW_TO_C_STR(sv) static_cast<int>(sv.length()), sv.data()
 
-static void tcpip_init_done(void *arg __attribute__((unused)))
+static netif_wrapper make_netif_wrapper(const std::unique_ptr<net_interface>& ifp)
+{
+    return (netif_wrapper(ifp->id(), ifp->data(), ifp->config()));
+}
+
+static void tcpip_init_done(void*)
 {
     ICP_LOG(ICP_LOG_DEBUG, "TCP/IP thread running on logical core %u (NUMA node %u)\n",
             rte_lcore_id(), rte_socket_id());
@@ -52,10 +57,36 @@ static int handle_tcpip_timeout(event_loop::generic_event_loop& loop __attribute
 }
 
 static int handle_tcpip_message(event_loop::generic_event_loop& loop __attribute__((unused)),
-                               std::any arg)
+                                std::any arg)
 {
     auto mbox = std::any_cast<sys_mbox_t>(arg);
     return (tcpip::handle_messages(mbox));
+}
+
+/*
+ * DPDK callback for notifying interfaces about link state changes.
+ * Having 1 callback per port seems like a better idea than setting up 1 callback
+ * per interface.
+ */
+static int lwip_link_status_change_callback(uint16_t port_id,
+                                            rte_eth_event_type event __attribute__((unused)),
+                                            void *cb_arg,
+                                            void *ret_param __attribute__((unused)))
+{
+    assert(event == RTE_ETH_EVENT_INTR_LSC);
+    struct rte_eth_link link;
+    rte_eth_link_get_nowait(port_id, &link);
+
+    auto& map = *(reinterpret_cast<lwip::interface_map*>(cb_arg));
+
+    std::for_each(std::begin(map), std::end(map),
+                  [&](auto& pair) {
+                      if (pair.second->port_index() == port_id) {
+                          pair.second->handle_link_state_change(link.link_status == ETH_LINK_UP);
+                      }
+                  });
+
+    return (0);
 }
 
 lwip::lwip(driver::generic_driver& driver, workers::generic_workers& workers)
@@ -118,6 +149,13 @@ lwip::lwip(driver::generic_driver& driver, workers::generic_workers& workers)
         throw std::runtime_error("Could not initialize stack");
     }
 
+    /* Register for link status change callbacks for all DPDK ports */
+    if (rte_eth_dev_callback_register(RTE_ETH_ALL, RTE_ETH_EVENT_INTR_LSC,
+                                      lwip_link_status_change_callback,
+                                      std::addressof(m_interfaces))) {
+        throw std::runtime_error("Could not register DPDK link status change callback");
+    }
+
     m_initialized = true;
 }
 
@@ -131,6 +169,12 @@ lwip::~lwip()
 
     tcpip_mbox::instance().fini();
     close(m_timerfd);
+
+    rte_eth_dev_callback_unregister(RTE_ETH_ALL, RTE_ETH_EVENT_INTR_LSC,
+                                    lwip_link_status_change_callback,
+                                    std::addressof(m_interfaces));
+
+    m_interfaces.clear();
 }
 
 lwip& lwip::operator=(lwip&& other)
@@ -146,6 +190,16 @@ lwip& lwip::operator=(lwip&& other)
 
         m_timerfd = other.m_timerfd;
     }
+
+    if (rte_eth_dev_callback_unregister(RTE_ETH_ALL, RTE_ETH_EVENT_INTR_LSC,
+                                        lwip_link_status_change_callback,
+                                        std::addressof(other.m_interfaces))
+        || rte_eth_dev_callback_register(RTE_ETH_ALL, RTE_ETH_EVENT_INTR_LSC,
+                                         lwip_link_status_change_callback,
+                                         std::addressof(m_interfaces))) {
+        throw std::runtime_error("Could not update DPDK link status change callback");
+    }
+
     return (*this);
 }
 
@@ -157,22 +211,24 @@ lwip::lwip(lwip&& other)
     , m_interfaces(std::move(other.m_interfaces))
     , m_timerfd(other.m_timerfd)
 {
+    if (rte_eth_dev_callback_unregister(RTE_ETH_ALL, RTE_ETH_EVENT_INTR_LSC,
+                                        lwip_link_status_change_callback,
+                                        std::addressof(other.m_interfaces))
+        || rte_eth_dev_callback_register(RTE_ETH_ALL, RTE_ETH_EVENT_INTR_LSC,
+                                         lwip_link_status_change_callback,
+                                         std::addressof(m_interfaces))) {
+        throw std::runtime_error("Could not update DPDK link status change callback");
+    }
+
     other.m_initialized = false;
 }
 
 std::vector<std::string> lwip::interface_ids() const
 {
     std::vector<std::string> ids;
-    for (auto& item : m_interfaces) {
-        ids.push_back(item.first);
-    }
-
+    std::transform(std::begin(m_interfaces), std::end(m_interfaces), std::back_inserter(ids),
+                   [](auto& item) { return (item.first); });
     return (ids);
-}
-
-static netif_wrapper make_netif_wrapper(const std::unique_ptr<net_interface>& ifp)
-{
-    return (netif_wrapper(ifp->id(), ifp->data(), ifp->config()));
 }
 
 std::optional<interface::generic_interface> lwip::interface(std::string_view id) const
@@ -195,11 +251,11 @@ tl::expected<std::string, std::string> lwip::create_interface(const interface::c
             return (tl::make_unexpected("Port id " + config.port_id + " is invalid."));
         }
         int port_idx = port_index.value();
-        auto ifp = std::make_unique<net_interface>(config.id, config,
-                                                   m_workers.get_transmit_function(config.port_id),
-                                                   port_idx);
-        m_workers.add_interface(ifp->port_id(), ifp->data());
-        auto item = m_interfaces.emplace(std::make_pair(config.id, std::move(ifp)));
+        auto ifp = std::make_unique<net_interface>(config.id, port_idx, config,
+                                                   m_workers.get_transmit_function(config.port_id));
+        m_workers.add_interface(ifp->port_id(),
+                                interface::generic_interface(make_netif_wrapper(ifp)));
+        auto item = m_interfaces.emplace(config.id, std::move(ifp));
         return (item.first->first);
     } catch (const std::runtime_error &e) {
         ICP_LOG(ICP_LOG_ERROR, "Interface creation failed: %s\n", e.what());
@@ -211,7 +267,8 @@ void lwip::delete_interface(std::string_view id)
 {
     if (auto item = m_interfaces.find(id); item != m_interfaces.end()) {
         auto& ifp = item->second;
-        m_workers.del_interface(ifp->port_id(), std::make_any<netif*>(ifp->data()));
+        m_workers.del_interface(ifp->port_id(),
+                                interface::generic_interface(make_netif_wrapper(ifp)));
         m_interfaces.erase(std::string(id));
     }
 }

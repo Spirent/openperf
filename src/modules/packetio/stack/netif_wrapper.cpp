@@ -1,10 +1,9 @@
+#include "arpa/inet.h"
 #include "lwip/netif.h"
 
-#include "packetio/stack/dpdk/netif_wrapper.h"
+#include "packetio/stack/netif_wrapper.h"
 
-namespace icp {
-namespace packetio {
-namespace dpdk {
+namespace icp::packetio {
 
 netif_wrapper::netif_wrapper(std::string_view id, const netif* ifp,
                              const interface::config_data& config)
@@ -30,7 +29,17 @@ std::string netif_wrapper::mac_address() const
 
 std::string netif_wrapper::ipv4_address() const
 {
-    return (net::to_string(net::ipv4_address(ip_2_ip4(&m_netif->ip_addr)->addr)));
+    return (net::to_string(net::ipv4_address(ntohl(ip_2_ip4(&m_netif->ip_addr)->addr))));
+}
+
+std::any netif_wrapper::data() const
+{
+    return (m_netif);
+}
+
+interface::config_data netif_wrapper::config() const
+{
+    return (m_config);
 }
 
 interface::stats_data netif_wrapper::stats() const
@@ -49,11 +58,4 @@ interface::stats_data netif_wrapper::stats() const
     };
 }
 
-interface::config_data netif_wrapper::config() const
-{
-    return (m_config);
-}
-
-}
-}
 }

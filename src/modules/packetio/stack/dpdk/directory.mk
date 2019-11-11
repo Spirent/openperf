@@ -6,7 +6,6 @@ PIO_STACK_SOURCES += \
 	net_interface.cpp \
 	net_interface_rx.cpp \
 	netif_utils.cpp \
-	netif_wrapper.cpp \
 	offload_utils.cpp \
 	stack_factory.cpp \
 	sys_arch.cpp \

@@ -305,8 +305,9 @@ static void unset_ipv4_interface(const std::optional<interface::ipv4_protocol_co
     }
 }
 
-net_interface::net_interface(std::string_view id, const interface::config_data& config,
-                             driver::tx_burst tx, int port_index)
+net_interface::net_interface(std::string_view id, int port_index,
+                             const interface::config_data& config,
+                             driver::tx_burst tx)
     : m_id(id)
     , m_port_index(port_index)
     , m_max_gso_length(net_interface_max_gso_length(port_index))
@@ -330,15 +331,6 @@ net_interface::net_interface(std::string_view id, const interface::config_data& 
         m_receive.emplace<netif_rx_strategy::queueing>(std::string_view(m_netif.name, 2),
                                                        m_netif.num, port_index);
     }
-
-    /* Setup callbacks to allow the interface to interact with the port state */
-    int dpdk_error = rte_eth_dev_callback_register(m_port_index,
-                                                   RTE_ETH_EVENT_INTR_LSC,
-                                                   net_interface_link_status_change,
-                                                   &m_netif);
-    if (dpdk_error) {
-        throw std::runtime_error(rte_strerror(dpdk_error));
-    }
 }
 
 net_interface::~net_interface()
@@ -354,6 +346,13 @@ net_interface::~net_interface()
     netifapi_netif_remove(&m_netif);
 }
 
+void net_interface::handle_link_state_change(bool link_up)
+{
+    ICP_LOG(ICP_LOG_INFO, "Interface %c%c%u Link %s\n",
+            m_netif.name[0], m_netif.name[1], m_netif.num,
+            link_up ? "Up" : "Down");
+    link_up ? netifapi_netif_set_link_up(&m_netif) : netifapi_netif_set_link_down(&m_netif);
+}
 
 err_t net_interface::handle_rx(struct pbuf* p)
 {
@@ -418,7 +417,7 @@ int net_interface::port_index() const
     return (m_port_index);
 }
 
-netif* net_interface::data()
+const netif* net_interface::data() const
 {
     return (&m_netif);
 }

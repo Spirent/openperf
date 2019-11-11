@@ -38,12 +38,14 @@ public:
 
     std::unordered_map<std::string, stack::stats_data> stats() const;
 
+    using interface_map = std::map<std::string, std::unique_ptr<net_interface>, std::less<>>;
+
 private:
     bool m_initialized;
     driver::generic_driver& m_driver;
     workers::generic_workers& m_workers;
     std::vector<std::string> m_tasks;
-    std::map<std::string, std::unique_ptr<net_interface>, std::less<>> m_interfaces;
+    interface_map m_interfaces;
     int m_timerfd;
 };
 

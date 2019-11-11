@@ -11,6 +11,7 @@ PIO_STACK_DIR := $(PIO_SRC_DIR)/stack/$(ICP_PACKETIO_DRIVER)
 include $(PIO_STACK_DIR)/directory.mk
 
 PIO_SOURCES += \
+	stack/netif_wrapper.cpp \
 	stack/tcp_in.c \
 	stack/tcp_out.c \
 	stack/tcpip.cpp

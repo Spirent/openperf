@@ -201,6 +201,7 @@ worker_controller::worker_controller(void* context,
                                                      queues));
 
     /* And start them */
+    m_driver.start_all_ports();
     m_workers->start(m_context, num_workers());
 }
 
@@ -209,6 +210,7 @@ worker_controller::~worker_controller()
     if (!m_workers) return;
 
     m_workers->stop(m_context, num_workers());
+    m_driver.stop_all_ports();
     m_recycler->writer_process_gc_callbacks();
     rte_eal_mp_wait_lcore();
     worker::port_queues::instance().unset();
@@ -358,16 +360,15 @@ workers::transmit_function worker_controller::get_transmit_function(std::string_
             : to_transmit_function(worker::tx_queued));
 }
 
-void worker_controller::add_interface(std::string_view port_id, std::any interface)
+void worker_controller::add_interface(std::string_view port_id,
+                                      interface::generic_interface interface)
 {
     auto port_idx = m_driver.port_index(port_id);
     if (!port_idx) {
         throw std::runtime_error("Port id " + std::string(port_id) + " is unknown");
     }
 
-    /* We really only expect one type here */
-    auto ifp = std::any_cast<netif*>(interface);
-    auto mac = net::mac_address(ifp->hwaddr);
+    auto mac = net::mac_address(interface.mac_address());
 
     if (m_fib->find_interface(*port_idx, mac)) {
         throw std::runtime_error("Interface with mac = "
@@ -378,7 +379,9 @@ void worker_controller::add_interface(std::string_view port_id, std::any interfa
 
     get_port_filter(m_filters, *port_idx).add_mac_address(mac);
 
-    auto to_delete = m_fib->insert_interface(*port_idx, mac, ifp);
+    auto to_delete = m_fib->insert_interface(*port_idx, mac,
+                                             const_cast<netif*>(
+                                                 std::any_cast<const netif*>(interface.data())));
     m_recycler->writer_add_gc_callback([to_delete](){ delete to_delete; });
 
     ICP_LOG(ICP_LOG_DEBUG, "Added interface with mac = %s to port %.*s (idx = %u)\n",
@@ -387,13 +390,13 @@ void worker_controller::add_interface(std::string_view port_id, std::any interfa
             *port_idx);
 }
 
-void worker_controller::del_interface(std::string_view port_id, std::any interface)
+void worker_controller::del_interface(std::string_view port_id,
+                                      interface::generic_interface interface)
 {
     auto port_idx = m_driver.port_index(port_id);
     if (!port_idx) return;
 
-    auto ifp = std::any_cast<netif*>(interface);
-    auto mac = net::mac_address(ifp->hwaddr);
+    auto mac = net::mac_address(interface.mac_address());
     auto to_delete = m_fib->remove_interface(*port_idx, mac);
     m_recycler->writer_add_gc_callback([to_delete](){ delete to_delete; });
 
