@@ -27,7 +27,6 @@
 /* Network Interface options */
 #define LWIP_CHECKSUM_CTRL_PER_NETIF 1
 #define LWIP_NETIF_HOSTNAME 1
-#define LWIP_NETIF_LINK_CALLBACK 1
 
 /* Protocol support */
 #define LWIP_DHCP 1

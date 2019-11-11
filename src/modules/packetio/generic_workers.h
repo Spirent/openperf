@@ -1,7 +1,6 @@
 #ifndef _ICP_PACKETIO_GENERIC_WORKERS_H_
 #define _ICP_PACKETIO_GENERIC_WORKERS_H_
 
-#include <any>
 #include <functional>
 #include <memory>
 #include <string>
@@ -10,6 +9,7 @@
 
 #include "packetio/generic_driver.h"
 #include "packetio/generic_event_loop.h"
+#include "packetio/generic_interface.h"
 #include "packetio/generic_sink.h"
 #include "packetio/generic_source.h"
 
@@ -47,14 +47,14 @@ public:
         return (m_self->get_transmit_function(port_id));
     }
 
-    void add_interface(std::string_view port_id, std::any interface)
+    void add_interface(std::string_view port_id, interface::generic_interface interface)
     {
-        return (m_self->add_interface(port_id, interface));
+        m_self->add_interface(port_id, interface);
     }
 
-    void del_interface(std::string_view port_id, std::any interface)
+    void del_interface(std::string_view port_id, interface::generic_interface interface)
     {
-        return (m_self->del_interface(port_id, interface));
+        m_self->del_interface(port_id, interface);
     }
 
     tl::expected<void, int> add_sink(std::string_view src_id,
@@ -109,8 +109,8 @@ private:
         virtual std::vector<unsigned> get_rx_worker_ids() const = 0;
         virtual std::vector<unsigned> get_tx_worker_ids() const = 0;
         virtual transmit_function get_transmit_function(std::string_view port_id) const = 0;
-        virtual void add_interface(std::string_view port_id, std::any interface) = 0;
-        virtual void del_interface(std::string_view port_id, std::any interface) = 0;
+        virtual void add_interface(std::string_view port_id, interface::generic_interface interface) = 0;
+        virtual void del_interface(std::string_view port_id, interface::generic_interface interface) = 0;
         virtual tl::expected<void, int> add_sink(std::string_view src_id,
                                                  packets::generic_sink sink) = 0;
         virtual void del_sink(std::string_view src_id, packets::generic_sink sink) = 0;
@@ -147,14 +147,14 @@ private:
             return (m_workers.get_transmit_function(port_id));
         }
 
-        void add_interface(std::string_view port_id, std::any interface) override
+        void add_interface(std::string_view port_id, interface::generic_interface interface) override
         {
-            return (m_workers.add_interface(port_id, interface));
+            m_workers.add_interface(port_id, interface);
         }
 
-        void del_interface(std::string_view port_id, std::any interface) override
+        void del_interface(std::string_view port_id, interface::generic_interface interface) override
         {
-            return (m_workers.del_interface(port_id, interface));
+            m_workers.del_interface(port_id, interface);
         }
 
         tl::expected<void, int> add_sink(std::string_view src_id,

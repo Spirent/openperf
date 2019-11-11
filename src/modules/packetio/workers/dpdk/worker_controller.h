@@ -42,8 +42,10 @@ public:
 
     workers::transmit_function get_transmit_function(std::string_view port_id) const;
 
-    void add_interface(std::string_view port_id, std::any interface);
-    void del_interface(std::string_view port_id, std::any interface);
+    void add_interface(std::string_view port_id,
+                       interface::generic_interface interface);
+    void del_interface(std::string_view port_id,
+                       interface::generic_interface interface);
 
     tl::expected<void, int> add_sink(std::string_view src_id,
                                      packets::generic_sink sink);

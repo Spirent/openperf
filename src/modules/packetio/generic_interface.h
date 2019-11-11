@@ -1,6 +1,7 @@
 #ifndef _ICP_PACKETIO_GENERIC_INTERFACE_H_
 #define _ICP_PACKETIO_GENERIC_INTERFACE_H_
 
+#include <any>
 #include <memory>
 #include <optional>
 #include <string>
@@ -66,7 +67,7 @@ class generic_interface {
 public:
     template <typename Interface>
     generic_interface(Interface intf)
-        : m_self(std::make_unique<interface_model<Interface>>(std::move(intf)))
+        : m_self(std::make_shared<interface_model<Interface>>(std::move(intf)))
     {}
 
     std::string id() const
@@ -89,14 +90,19 @@ public:
         return m_self->ipv4_address();
     }
 
-    stats_data stats() const
-    {
-        return m_self->stats();
-    }
-
     config_data config() const
     {
         return m_self->config();
+    }
+
+    std::any data() const
+    {
+        return m_self->data();
+    }
+
+    stats_data stats() const
+    {
+        return m_self->stats();
     }
 
 private:
@@ -106,8 +112,9 @@ private:
         virtual std::string port_id() const = 0;
         virtual std::string mac_address() const = 0;
         virtual std::string ipv4_address() const = 0;
-        virtual stats_data stats() const = 0;
         virtual config_data config() const = 0;
+        virtual std::any data() const = 0;
+        virtual stats_data stats() const = 0;
     };
 
     template <typename Interface>
@@ -136,20 +143,25 @@ private:
             return m_interface.ipv4_address();
         }
 
-        stats_data stats() const override
-        {
-            return m_interface.stats();
-        }
-
         config_data config() const override
         {
             return m_interface.config();
         }
 
+        std::any data() const override
+        {
+            return m_interface.data();
+        }
+
+        stats_data stats() const override
+        {
+            return m_interface.stats();
+        }
+
         Interface m_interface;
     };
 
-    std::unique_ptr<const interface_concept> m_self;
+    std::shared_ptr<const interface_concept> m_self;
 };
 
 std::shared_ptr<swagger::v1::model::Interface> make_swagger_interface(const generic_interface&);

@@ -1,13 +1,15 @@
 #ifndef _ICP_PACKETIO_STACK_NETIF_WRAPPER_H_
 #define _ICP_PACKETIO_STACK_NETIF_WRAPPER_H_
 
+#include <any>
+#include <string>
+
+#include "net/net_types.h"
 #include "packetio/generic_interface.h"
 
 struct netif;
 
-namespace icp {
-namespace packetio {
-namespace dpdk {
+namespace icp::packetio {
 
 class netif_wrapper
 {
@@ -23,11 +25,11 @@ public:
     std::string port_id() const;
     std::string mac_address() const;
     std::string ipv4_address() const;
-    interface::stats_data stats() const;
     interface::config_data config() const;
+    std::any data() const;
+    interface::stats_data stats() const;
 };
 
 }
-}
-}
+
 #endif /* _ICP_PACKETIO_STACK_NETIF_WRAPPER_H_ */
