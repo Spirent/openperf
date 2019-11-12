@@ -28,6 +28,8 @@ namespace icp::socket::api {
 
 using api_handler = icp::socket::server::api_handler;
 
+static constexpr std::string_view shm_file_prefix = "/dev/shm/";
+
 static __attribute__((const)) uint64_t align_up(uint64_t x, uint64_t align)
 {
     return ((x + align - 1) & ~(align - 1));
@@ -52,13 +54,13 @@ static icp::memory::shared_segment create_shared_memory(size_t size)
     auto shared_segment_name = (prefix_name.length() > 0
                                 ? std::string(api::key) + ".memory." + prefix_name
                                 : std::string(api::key) + ".memory");
-    if (unlink_stale_files()) {
-        if ((shm_unlink(shared_segment_name.data()) < 0) && (errno != ENOENT)) {
+    if (access((std::string(shm_file_prefix) + shared_segment_name).c_str(), F_OK) != -1
+        && unlink_stale_files()) {
+        ICP_LOG(ICP_LOG_DEBUG, "Unlinking stale shared memory at: %s", shared_segment_name.c_str());
+        if (shm_unlink(shared_segment_name.data()) < 0) {
             throw std::runtime_error("Could not remove shared memory segment "
                                      + std::string(shared_segment_name) + ": " + strerror(errno));
         }
-
-        ICP_LOG(ICP_LOG_DEBUG, "Unlinking stale shared memory at: %s", shared_segment_name.c_str());
     }
 
     auto impl_size = align_up(sizeof(socket::server::allocator), 64);
@@ -89,12 +91,12 @@ static icp::socket::unix_socket create_unix_socket(const std::string_view path, 
         full_path += "." + prefix_name;
     }
 
-    if (unlink_stale_files()) {
-        if ((unlink(full_path.c_str()) < 0) && (errno != ENOENT)) {
+    if (access(full_path.c_str(), F_OK) != -1 && unlink_stale_files()) {
+        ICP_LOG(ICP_LOG_DEBUG, "Unlinking stale server socket at: %s", full_path.c_str());
+        if (unlink(full_path.c_str()) < 0) {
             throw std::runtime_error("Could not remove shared unix domain socket "
                                      + full_path + ": " + strerror(errno));
         }
-        ICP_LOG(ICP_LOG_DEBUG, "Unlinking stale server socket at: %s", full_path.c_str());
     }
 
     auto socket = icp::socket::unix_socket(full_path, type);

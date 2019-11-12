@@ -45,6 +45,12 @@ serialized_msg serialize_request(const request_msg& msg)
                                         return (message::zmq_msg_init(&serialized.data,
                                                                       task_del.task_id.data(),
                                                                       task_del.task_id.length()));
+                                    },
+                                    [&](const request_worker_rx_ids&) {
+                                        return (message::zmq_msg_init(&serialized.data, 0));
+                                    },
+                                    [&](const request_worker_tx_ids&) {
+                                        return (message::zmq_msg_init(&serialized.data, 0));
                                     }),
                                 msg));
     if (error) {
@@ -63,6 +69,16 @@ serialized_msg serialize_reply(const reply_msg& msg)
                                         return (message::zmq_msg_init(&serialized.data,
                                                                       task_add.task_id.data(),
                                                                       task_add.task_id.length()));
+                                    },
+                                    [&](const reply_worker_ids& worker_ids) {
+                                        /*
+                                         * ZMQ wants the length in bytes, so we have to scale the length
+                                         * of the vector up to match.
+                                         */
+                                        auto scalar = sizeof(decltype(worker_ids.worker_ids)::value_type);
+                                        return (message::zmq_msg_init(&serialized.data,
+                                                                      worker_ids.worker_ids.data(),
+                                                                      scalar * worker_ids.worker_ids.size()));
                                     },
                                     [&](const reply_ok&) {
                                         return (message::zmq_msg_init(&serialized.data, 0));
@@ -96,8 +112,12 @@ tl::expected<request_msg, int> deserialize_request(const serialized_msg& msg)
     case message::variant_index<request_msg, request_task_del>(): {
         std::string data(message::zmq_msg_data<char*>(&msg.data),
                          zmq_msg_size(&msg.data));
-        return (request_task_del{ data });
+        return (request_task_del{ std::move(data) });
     }
+    case message::variant_index<request_msg, request_worker_rx_ids>():
+        return (request_worker_rx_ids{});
+    case message::variant_index<request_msg, request_worker_tx_ids>():
+        return (request_worker_tx_ids{});
     }
 
     return (tl::make_unexpected(EINVAL));
@@ -111,7 +131,12 @@ tl::expected<reply_msg, int> deserialize_reply(const serialized_msg& msg)
     case message::variant_index<reply_msg, reply_task_add>(): {
         std::string data(message::zmq_msg_data<char*>(&msg.data),
                          zmq_msg_size(&msg.data));
-        return (reply_task_add{ data });
+        return (reply_task_add{ std::move(data) });
+    }
+    case message::variant_index<reply_msg, reply_worker_ids>(): {
+        auto data = message::zmq_msg_data<unsigned*>(&msg.data);
+        std::vector<unsigned> ids(data, data + message::zmq_msg_size<unsigned>(&msg.data));
+        return (reply_worker_ids{ std::move(ids) });
     }
     case message::variant_index<reply_msg, reply_ok>():
         return (reply_ok{});

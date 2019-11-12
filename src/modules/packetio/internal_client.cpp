@@ -31,6 +31,26 @@ client& client::operator=(client&& other)
     return (*this);
 }
 
+tl::expected<std::vector<unsigned>, int> client::get_worker_rx_ids()
+{
+    auto reply = do_request(m_socket.get(), request_worker_rx_ids{});
+    if (!reply) {
+        return (tl::make_unexpected(reply.error()));
+    }
+
+    return (std::get<reply_worker_ids>(reply.value()).worker_ids);
+}
+
+tl::expected<std::vector<unsigned>, int> client::get_worker_tx_ids()
+{
+    auto reply = do_request(m_socket.get(), request_worker_tx_ids{});
+    if (!reply) {
+        return (tl::make_unexpected(reply.error()));
+    }
+
+    return (std::get<reply_worker_ids>(reply.value()).worker_ids);
+}
+
 tl::expected<void, int> client::add_sink(std::string_view src_id,
                                          packets::generic_sink sink)
 {

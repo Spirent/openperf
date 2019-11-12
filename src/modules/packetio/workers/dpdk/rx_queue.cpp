@@ -1,8 +1,29 @@
+#include <optional>
+#include <sys/epoll.h>
+
 #include "packetio/drivers/dpdk/dpdk.h"
 #include "packetio/workers/dpdk/rx_queue.h"
 #include "core/icp_log.h"
 
 namespace icp::packetio::dpdk {
+
+static std::optional<int> get_queue_fd(uint16_t port_id, uint16_t queue_id)
+{
+    /* XXX: clean this up when function symbol is marked stable */
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+    auto fd = rte_eth_dev_rx_intr_ctl_q_get_fd(port_id, queue_id);
+#pragma clang diagnostic pop
+
+    if (fd == -1) return (std::nullopt);
+    return (fd);
+}
+
+static void ack_interrupt(int fd, void* arg)
+{
+    auto rxq = reinterpret_cast<rx_queue*>(arg);
+    rxq->disable();
+}
 
 rx_queue::rx_queue(uint16_t port_id, uint16_t queue_id)
     : m_port(port_id)
@@ -15,23 +36,39 @@ uint16_t rx_queue::queue_id() const { return (m_queue); }
 
 bool rx_queue::add(int poll_fd, void* data)
 {
-    auto error = rte_eth_dev_rx_intr_ctl_q(port_id(), queue_id(), poll_fd,
-                                           RTE_INTR_EVENT_ADD, data);
+    auto fd = get_queue_fd(port_id(), queue_id());
+    if (!fd) return (false);
+
+    m_event = rte_epoll_event{
+        .epdata = {
+            .event = EPOLLIN | EPOLLET,
+            .data = data,
+            .cb_fun = ack_interrupt,
+            .cb_arg = this
+        }
+    };
+
+    auto error = rte_epoll_ctl(poll_fd, EPOLL_CTL_ADD, *fd, &m_event);
+
     if (error) {
-        ICP_LOG(ICP_LOG_ERROR, "Could not add interrupt event for rx port queue %u:%u: %s\n",
-                port_id(), queue_id(), strerror(std::abs(error)));
+        ICP_LOG(ICP_LOG_ERROR, "Could not add rx interrupt for %u:%u: %s\n",
+                port_id(), queue_id(),strerror(errno));
     }
+
     return (!error);
 }
 
 bool rx_queue::del(int poll_fd, void* data)
 {
-    auto error = rte_eth_dev_rx_intr_ctl_q(port_id(), queue_id(), poll_fd,
-                                           RTE_INTR_EVENT_DEL, data);
+    auto fd = get_queue_fd(port_id(), queue_id());
+    if (!fd) return (false);
+
+    auto error = rte_epoll_ctl(poll_fd, EPOLL_CTL_DEL, *fd, &m_event);
     if (error) {
-        ICP_LOG(ICP_LOG_ERROR, "Could not delete interrupt event for rx port queue %u:%u: %s\n",
-                port_id(), queue_id(), strerror(std::abs(error)));
+        ICP_LOG(ICP_LOG_ERROR, "Could not delete rx interrupt for %u:%u: %s\n",
+                port_id(), queue_id(), strerror(errno));
     }
+
     return (!error);
 }
 
