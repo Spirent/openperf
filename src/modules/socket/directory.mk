@@ -1,8 +1,13 @@
 SOCK_COMMON += \
 	common.cpp \
-	pbuf_vec.cpp \
 	shared_segment.cpp \
 	unix_socket.cpp
+
+ifeq ($(PLATFORM),linux)
+	SOCK_COMMON += process_control_linux.cpp
+	SOCKSRV_LDLIBS += -lcap
+	SOCKCLI_LDLIBS += -lcap
+endif
 
 SOCKSRV_SOURCES += \
 	$(SOCK_COMMON) \
@@ -15,6 +20,7 @@ SOCKSRV_SOURCES += \
 	server/lwip_tcp_event.cpp \
 	server/lwip_utils.cpp \
 	server/pbuf_queue.cpp \
+	server/pbuf_vec.cpp \
 	server/raw_socket.cpp \
 	server/socket_utils.cpp \
 	server/stream_channel.cpp \

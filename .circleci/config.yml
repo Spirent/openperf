@@ -17,6 +17,7 @@ jobs:
 
       - run:
           name: Collect test results
+          when: always
           command: |
             set -xe
             mkdir -p /tmp/test

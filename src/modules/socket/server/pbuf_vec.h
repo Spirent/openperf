@@ -1,12 +1,11 @@
-#ifndef _ICP_SOCKET_PBUF_VEC_H_
-#define _ICP_SOCKET_PBUF_VEC_H_
+#ifndef _ICP_SOCKET_SERVER_PBUF_VEC_H_
+#define _ICP_SOCKET_SERVER_PBUF_VEC_H_
 
 #include <cstdint>
 
 struct pbuf;
 
-namespace icp {
-namespace socket {
+namespace icp::socket::server {
 
 class pbuf_vec
 {
@@ -30,9 +29,8 @@ public:
 
     uint16_t len() const;
     void len(uint16_t len);
-
 };
 
 }
-}
-#endif /* _ICP_SOCKET_PBUF_VEC_H_ */
+
+#endif /* _ICP_SOCKET_SERVER_PBUF_VEC_H_ */

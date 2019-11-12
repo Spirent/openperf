@@ -16,6 +16,7 @@
 
 #include "socket/api.h"
 #include "socket/dgram_channel.h"
+#include "socket/process_control.h"
 #include "socket/stream_channel.h"
 #include "socket/server/api_handler.h"
 #include "socket/server/api_server.h"
@@ -27,7 +28,6 @@ namespace icp::socket::api {
 
 using api_handler = icp::socket::server::api_handler;
 
-static constexpr std::string_view yama_file = "/proc/sys/kernel/yama/ptrace_scope";
 static constexpr std::string_view shm_file_prefix = "/dev/shm/";
 
 static __attribute__((const)) uint64_t align_up(uint64_t x, uint64_t align)
@@ -106,39 +106,26 @@ static icp::socket::unix_socket create_unix_socket(const std::string_view path, 
     return (socket);
 }
 
-static void update_yama_related_process_settings()
+static ssize_t log_ptrace_error(void*, const char* buf, size_t size)
 {
-    if (prctl(PR_SET_DUMPABLE, 1, 0, 0, 0) < 0) {
-        throw std::runtime_error("Could not set dumpable: "
-                                 + std::string(strerror(errno)));
-    }
+    if (size == 0) return (0);
 
-    std::ifstream f (yama_file.data(), std::ifstream::in);
-    if (f.is_open()) {
-        char c;
-        if (f.read(&c, 1)) {
-            switch (c) {
-            case '1':
-                if (prctl(PR_SET_PTRACER, PR_SET_PTRACER_ANY, 0, 0, 0) < 0) {
-                    throw std::runtime_error("Could not set ptracer_any: "
-                                             + std::string(strerror(errno)));
-                }
-                break;
-            case '2':
-                ICP_LOG(ICP_LOG_WARNING, "inception and its clients need to run as root or \
-                        change contents of %s to 1\n", yama_file.data());
-                break;
-            case '3':
-                ICP_LOG(ICP_LOG_WARNING, "inception requires the contents of %s to be 0, 1, or 2\n",
-                        yama_file.data());
-                break;
-            default:
-                break;
-            }
-        } else {
-            throw std::runtime_error("Could not read from file: " + std::string(strerror(errno)));
-        }
-    }
+    /*
+     * Our icp_log functions needs all logging messages terminated with a
+     * new-line, so fix up any messages that need it.
+     */
+    const char* format = (buf[size - 1] == '\n') ? "%.*s" : "%.*s\n";
+
+    /*
+     * About that function tag...  The logging macro can easily retrieve
+     * the current function name.  However, this function's name isn't helpful,
+     * so skip the macro and just fill in the actual logging function's arguments
+     * as appropriate for our usage.
+     */
+    icp_log(ICP_LOG_ERROR, "icp::socket::process_control::enable_ptrace",
+            format, static_cast<int>(size), buf);
+
+    return (size);
 }
 
 server::server(void* context)
@@ -153,8 +140,25 @@ server::server(void* context)
                                  + std::string(strerror(errno)));
     }
 
-    update_yama_related_process_settings();
+    /*
+     * The process control code is used by both server AND client.  As a
+     * result, it doesn't use the default core logger, but allows callers
+     * to redirect error messages to arbitrary streams.  Construct a
+     * temporary "cookie" for the process control code to use.
+     */
+    auto stream_functions = cookie_io_functions_t{
+        .write = log_ptrace_error
+    };
 
+    auto stream = std::unique_ptr<FILE, decltype(&fclose)>(fopencookie(nullptr, "w+", stream_functions), fclose);
+    if (!stream) {
+        throw std::runtime_error("Could not create error stream for process control: " +
+                                 std::string(strerror(errno)));
+    }
+
+    if (!process_control::enable_ptrace(stream.get())) {
+        throw std::runtime_error("Could not enable process tracing");
+    }
 }
 
 server::~server() {}
