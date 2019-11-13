@@ -11,7 +11,7 @@ from common.matcher import be_valid_stack, raise_api_exception
 CONFIG = Config(os.path.join(os.path.dirname(__file__), os.environ.get('MAMBA_CONFIG', 'config.yaml')))
 
 
-with description('Stacks,') as self:
+with description('Stacks,', 'stacks') as self:
     with before.all:
         service = Service(CONFIG.service())
         self.process = service.start()

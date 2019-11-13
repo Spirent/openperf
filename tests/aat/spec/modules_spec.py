@@ -11,7 +11,7 @@ from common.matcher import be_valid_module, raise_api_exception
 CONFIG = Config(os.path.join(os.path.dirname(__file__), os.environ.get('MAMBA_CONFIG', 'config.yaml')))
 
 
-with description('Modules, ') as self:
+with description('Modules, ', 'modules') as self:
     with before.all:
         service = Service(CONFIG.service())
         self.process = service.start()

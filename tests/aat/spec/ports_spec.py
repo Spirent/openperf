@@ -11,7 +11,7 @@ from common.matcher import be_valid_port, raise_api_exception
 CONFIG = Config(os.path.join(os.path.dirname(__file__), os.environ.get('MAMBA_CONFIG', 'config.yaml')))
 
 
-with description('Ports,') as self:
+with description('Ports,', 'ports') as self:
     with description('REST API,'):
 
         with before.all:
