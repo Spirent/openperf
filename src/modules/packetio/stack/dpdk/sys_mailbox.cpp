@@ -27,8 +27,6 @@ std::atomic_size_t sys_mbox::m_idx = ATOMIC_VAR_INIT(0);
 sys_mbox::sys_mbox(int size, int flags)
     : m_armed(false)
 {
-    if (!size) size = 128;
-
     if (size == 0 || (size & (size - 1)) != 0) {
         throw std::runtime_error("size must be a non-zero power of two");
     }
@@ -80,7 +78,7 @@ static void do_write(int fd)
 
 void sys_mbox::clear_notifications()
 {
-    if (m_armed.test_and_set(std::memory_order_acquire)) {
+    if (m_armed.test_and_set(std::memory_order_acq_rel)) {
         do_read(m_fd);
     }
     m_armed.clear(std::memory_order_release);
@@ -92,7 +90,7 @@ void sys_mbox::post(void *msg)
     while (rte_ring_enqueue(m_ring.get(), msg) == -ENOBUFS) {
         rte_pause();
     }
-    if (empty && !m_armed.test_and_set(std::memory_order_acquire)) {
+    if (empty && !m_armed.test_and_set(std::memory_order_acq_rel)) {
         do_write(m_fd);
     }
 }
@@ -101,7 +99,7 @@ bool sys_mbox::trypost(void *msg)
 {
     bool empty = rte_ring_empty(m_ring.get());
     if (rte_ring_enqueue(m_ring.get(), msg) != 0) return (false);
-    if (empty && !m_armed.test_and_set(std::memory_order_acquire)) {
+    if (empty && !m_armed.test_and_set(std::memory_order_acq_rel)) {
         do_write(m_fd);
     }
     return (true);

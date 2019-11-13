@@ -71,9 +71,14 @@ err_t queueing::handle_rx(pbuf* p, netif* netintf)
             netintf->name[0], netintf->name[1], netintf->num);
         return (ERR_BUF);
     }
-    if (!m_notify.test_and_set(std::memory_order_acquire)) {
-        tcpip_inpkt(p, netintf, net_interface_rx_notify);
+
+    if (!m_notify.test_and_set(std::memory_order_acq_rel)) {
+        /* We really can't lose this notification, so keep trying! */
+        while (tcpip_inpkt(p, netintf, net_interface_rx_notify) != ERR_OK) {
+            rte_pause();
+        }
     }
+
     return (ERR_OK);
 }
 
