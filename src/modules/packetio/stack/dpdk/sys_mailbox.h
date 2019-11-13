@@ -23,7 +23,7 @@ struct sys_mbox
     int m_fd;
 
 public:
-    sys_mbox(int size = 32, int flags = RING_F_SC_DEQ);
+    sys_mbox(int size = 128, int flags = RING_F_SC_DEQ);
     ~sys_mbox();
 
     sys_mbox(sys_mbox&& other) = delete;

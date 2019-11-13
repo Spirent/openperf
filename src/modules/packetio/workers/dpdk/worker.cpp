@@ -7,6 +7,7 @@
 
 #include <zmq.h>
 #include "lwip/netif.h"
+#include "lwip/snmp.h"
 
 #include "core/icp_log.h"
 #include "core/icp_thread.h"
@@ -159,38 +160,46 @@ static void rx_interface_dispatch(const fib* fib, const rx_queue* rxq,
 
     /* ... and dispatch */
     for (size_t i = 0; i < nb_ucast; i++) {
-        if (!interfaces[i]) {
-            rte_pktmbuf_free(unicast[i]);
-            continue;
-        }
+        if (!interfaces[i]) continue;
 
         ICP_LOG(ICP_LOG_TRACE, "Dispatching unicast packet to %c%c%u\n",
                 interfaces[i]->name[0], interfaces[i]->name[1],
                 interfaces[i]->num);
 
-        auto pbuf = packetio_memory_pbuf_synchronize(unicast[i]);
-        if (interfaces[i]->input(pbuf, interfaces[i]) != ERR_OK) {
-            pbuf_free(pbuf);
+        if (interfaces[i]->input(packetio_memory_pbuf_synchronize(unicast[i]),
+                                 interfaces[i]) != ERR_OK) {
+            /*
+             * XXX: This increment is non-atomic.  However, the likelihood of
+             * discarding in the tcpip thread is low, so this count can still
+             * be useful.
+             */
+            MIB2_STATS_NETIF_INC(interfaces[i], ifindiscards);
+            rte_pktmbuf_free(unicast[i]);
         }
     }
 
-    /* Dispatch all non-unicast packets to all interfaces */
+    /*
+     * Dispatch all non-unicast packets to all interfaces.
+     * To do this efficiently we make a clone of each mbuf, which makes
+     * a copy of the packet metadata with a pointer to the original
+     * packet buffer.  This allows each receiving interface to adjust
+     * their payload pointers as necessary while parsing the headers.
+     */
     for (size_t i = 0; i < nb_nucast; i++) {
-        /*
-         * After we synchronize, use pbuf functions only so that we
-         * can keep the mbuf/pbuf synchronized.
-         */
-        auto pbuf = packetio_memory_pbuf_synchronize(nunicast[i]);
         for (auto [idx, ifp] : fib->get_interfaces(rxq->port_id())) {
+
             ICP_LOG(ICP_LOG_TRACE, "Dispatching non-unicast packet to %c%c%u\n",
                     ifp->name[0], ifp->name[1], ifp->num);
 
-            pbuf_ref(pbuf);
-            if (ifp->input(pbuf, ifp) != ERR_OK) {
-                pbuf_free(pbuf);
+            auto clone = rte_pktmbuf_clone(nunicast[i], nunicast[i]->pool);
+            if (!clone || ifp->input(packetio_memory_pbuf_synchronize(clone), ifp) != ERR_OK) {
+                /* XXX: see comment above */
+                MIB2_STATS_NETIF_INC(ifp, ifindiscards);
+                rte_pktmbuf_free(clone);  /* Note: this free handles null correctly */
             }
         }
-        pbuf_free(pbuf);
+
+        rte_pktmbuf_free(nunicast[i]);
     }
 }
 
@@ -224,24 +233,11 @@ static uint16_t rx_burst(const fib* fib, const rx_queue* rxq)
     ICP_LOG(ICP_LOG_TRACE, "Received %d packet%s on %d:%d\n",
             n, n > 1 ? "s" : "", rxq->port_id(), rxq->queue_id());
 
-    /*
-     * Bump the reference count on all packets.  We don't want the stack
-     * to drop them before we can dispatch them to our sinks.
-     */
-    for (uint16_t i = 0; i < n; i++) {
-        rte_pktmbuf_refcnt_update(incoming[i], 1);
-    }
-
-    /* Dispatch packets to stack interfaces first */
-    rx_interface_dispatch(fib, rxq, incoming.data(), n);
-
-    /* Then, dispatch packets to any port sinks */
+    /* Dispatch packets to any port sinks */
     rx_sink_dispatch(fib, rxq, incoming.data(), n);
 
-    /* Finally, free all of our packets.  This is due to the refcnt bump above */
-    for (uint16_t i = 0; i < n; i++) {
-        rte_pktmbuf_free(incoming[i]);
-    }
+    /* Then, dispatch to stack interfaces */
+    rx_interface_dispatch(fib, rxq, incoming.data(), n);
 
     return (n);
 }
