@@ -16,7 +16,7 @@ CONFIG = Config(os.path.join(os.path.dirname(__file__), os.environ.get('MAMBA_CO
 BULK_OP_SIZE = 4
 
 
-with description('Interfaces,') as self:
+with description('Interfaces,', 'interfaces') as self:
     with description ('REST API,'):
 
         with before.all:
