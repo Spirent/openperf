@@ -1,11 +1,11 @@
 
 # Internal API 
 
-This section gives some practical example for creating an using the Inception stack usign the Internal APIS (i.e. without LD-Preload Shim)
+This section gives some practical example for creating an using the OpenPerf stack usign the Internal APIS (i.e. without LD-Preload Shim)
 
 ![Internal Components](../images/internal-api.png)
 
-## Creating the ICP Stack
+## Creating the OpenPerf Stack
 
 ```C++	
 void main(int argc, const char ** argv) {
@@ -25,7 +25,7 @@ The application should be started with the arguments `--config config.yaml` in o
 
 > The reason for passing the configuration as an arugment to the program is to be able to switch between configuration files when multiple NICs are available. For instance, one would run a test with program -c config_nic1.yaml then program -c config_nic2.yaml, etc.
 
-The `context` is a ZeroMQ message queue used to communicate with the Inception engine. The internal API client can be accessed using
+The `context` is a ZeroMQ message queue used to communicate with the OpenPerf engine. The internal API client can be accessed using
 
 ```C++	
 auto client = icp::packetio::internal::api::client(context);
@@ -70,7 +70,7 @@ Generating packets is a easy as
 client.add_source("port0", source0);
 ```
 	
-Where `port0` must be defined in the configuration file (`config.yaml`) and where `source0` is an Inception source:
+Where `port0` must be defined in the configuration file (`config.yaml`) and where `source0` is an OpenPerf source:
 
 ```C++	
 auto source0 = 	icp::packetio::packets::generic_source(test_source());

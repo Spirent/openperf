@@ -1,6 +1,6 @@
 
 
-# LWIP Customization for Inception
+# LWIP Customization for OpenPerf
 
 ## Files
 
@@ -44,7 +44,7 @@ One of the main change is to replace the global `tcpip_mbox` with a function cal
 +auto tcpip_mbox = icp::packetio::tcpip::mbox();
 ```
 
-The other change is to replace the previous _tcpip_thread_ with an inception compatible worker and callback implementation.
+The other change is to replace the previous _tcpip_thread_ with an OpenPerf compatible worker and callback implementation.
 
 For this purpose, two new functions under the `icp::packetio::tcpip` namespace provide the core functionality of the lwip TCP/IP stack:  `handle_timeouts` and `handle_messages`.
 
@@ -358,7 +358,7 @@ struct pbuf * pbuf_alloc(pbuf_layer layer, u16_t length, pbuf_type type)
 ```
 
 
-This function essentially changes the way the _pbuf_ length is calculated. The regular LwIP code uses the constant `PBUF_POOL_BUFSIZE_ALIGNED` defined as ` TCP_MSS+40+PBUF_LINK_ENCAPSULATION_HLEN+PBUF_LINK_HLEN` to know the total available length from the _pbuf_.  While, for inception, the implementation uses the _mbuf_ length information `packetio_memory_pbuf_to_mbuf(pbuf)->buf_len`.
+This function essentially changes the way the _pbuf_ length is calculated. The regular LwIP code uses the constant `PBUF_POOL_BUFSIZE_ALIGNED` defined as ` TCP_MSS+40+PBUF_LINK_ENCAPSULATION_HLEN+PBUF_LINK_HLEN` to know the total available length from the _pbuf_.  While, for OpenPerf, the implementation uses the _mbuf_ length information `packetio_memory_pbuf_to_mbuf(pbuf)->buf_len`.
 
 The pbuf overhead size is also changed from `SIZEOF_STRUCT_PBUF` to `PBUF_PRIVATE_SIZE` - to match the DPDK allocation scheme:
 

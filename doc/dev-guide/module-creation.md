@@ -1,6 +1,6 @@
 
 
-# Inception Modules
+# OpenPerf Modules
 
 
 ## Declaration
@@ -96,7 +96,7 @@ The different logging levels are:
    * `DEBUG`   : Debugging messages
    * `TRACE`   : Trace level messages
 
-All logs are available from the `inception.log` file. Each log line looks like:
+All logs are available from the `openperf.log` file. Each log line looks like:
 
 ```javascript
 {
@@ -147,7 +147,7 @@ server::server(void* context, icp::core::event_loop& loop, void *arg)
 }
 ```
 
-The `loop` is instanciated by the module. Its type is the C++ class [`icp::core::event_loop`](https://github.com/SpirentOrion/inception-core/blob/master/src/framework/core/icp_event_loop.hpp#L11), which wraps the `icp_event_loop_xxx` functions. 
+The `loop` is instanciated by the module. Its type is the C++ class [`icp::core::event_loop`](https://github.com/SpirentOrion/openperf-core/blob/master/src/framework/core/icp_event_loop.hpp#L11), which wraps the `icp_event_loop_xxx` functions. 
 
 The callback typically deserializes the message and then uses an `std::visit` to switch to the correct message handler.
 
@@ -168,7 +168,7 @@ handle_rpc_request(const icp_event_data* data, void* arg)
 
 The `recv_message`  returns a  [tl::expected](https://github.com/TartanLlama/expected) promise. 
 
-Note that for this code to work, the module needs to implement the [transmogrification](https://github.com/SpirentOrion/inception-core/blob/master/src/modules/packetio/internal_transmogrify.cpp) for the serialized objects.  
+Note that for this code to work, the module needs to implement the [transmogrification](https://github.com/SpirentOrion/openperf-core/blob/master/src/modules/packetio/internal_transmogrify.cpp) for the serialized objects.  
 
 ```C++
 struct serialized_msg {

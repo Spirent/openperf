@@ -1,6 +1,6 @@
 # PacketIO Module
 
-The _packet IO_ module is the core of Inception, handling both DPDK, LWIP and the workers. It is defined as a `service` which runs multiple servers/stack and components, as shown on the diagram below:
+The _packet IO_ module is the core of OpenPerf, handling both DPDK, LWIP and the workers. It is defined as a `service` which runs multiple servers/stack and components, as shown on the diagram below:
 
 ![Internal Components](../images/packetio-module.png)
 
@@ -99,9 +99,9 @@ The `m_receive` (of type `rx_strategy`) is used when handling RX packets, such a
 
 > What happens is there is only 2 or less cores? The `m_receive` would not be updated, so packets could not be received? 
 
->> So, this is a combination of a DPDKism and the desire to have inception work on the smallest system possible.
+>> So, this is a combination of a DPDKism and the desire to have OpenPerf work on the smallest system possible.
 
->> The `rte_lcore_count()` returns the total number of cores that DPDK is aware of. This includes the master core, which isn't allowed to run any data plane traffic and and worker cores which can run data plane traffic. The minimal system inception can run on is a 2 core box, where one core is the master and one core is the worker. In that case, the stack and the tx and rx worker callbacks are all run in the same thread, so it doesn't make sense to use a queue to pass the the packets around. The rx_strategy_direct structure allows the receive worker to call directly into the stack when a packet is received. Obviously, the rx_strategy_queueing just sticks the packet in a queue and (maybe) wakes up the stack. There is a similar process on the transmit side, which is why the net_interface object has driver::tx_burst, which is a transmit function, as a contstructer parameter.
+>> The `rte_lcore_count()` returns the total number of cores that DPDK is aware of. This includes the master core, which isn't allowed to run any data plane traffic and and worker cores which can run data plane traffic. The minimal system OpenPerf can run on is a 2 core box, where one core is the master and one core is the worker. In that case, the stack and the tx and rx worker callbacks are all run in the same thread, so it doesn't make sense to use a queue to pass the the packets around. The rx_strategy_direct structure allows the receive worker to call directly into the stack when a packet is received. Obviously, the rx_strategy_queueing just sticks the packet in a queue and (maybe) wakes up the stack. There is a similar process on the transmit side, which is why the net_interface object has driver::tx_burst, which is a transmit function, as a contstructer parameter.
 
 >> A std::variant always contains an object. If you don't explicitly name a type, then the default constructor will instantiate the first type in the variant definition. So, when the net_interface object is created, m_receive contains a `rx_strategy_direct` object.
 
@@ -277,7 +277,7 @@ err_t net_interface::handle_tx(struct pbuf* p)
 }
 ```
 
-The mbuf/pbuf allocation scheme is very smart, and relying on the _headroom_ capability from the DPDK mbuf, as shown below. The `pbuf_alloc` method is overriden by ICP to allocate and _mbuf_ instead with the headroom correctly setup with a puf.
+The mbuf/pbuf allocation scheme is very smart, and relying on the _headroom_ capability from the DPDK mbuf, as shown below. The `pbuf_alloc` method is overriden by OpenPerf to allocate and _mbuf_ instead with the headroom correctly setup with a puf.
 
 ![mbuf-pbuf](../images/mbuf-pbuf-memory-structure.png)
 
@@ -300,7 +300,7 @@ When the application sends a packet (for instance UDP), how does LWIP knows whic
 > We can get that by including a check in udp_send() that checks if the local_ip of the udp pcb (if not is_any) is the same as the ip_addr of the netif used to send the packet (if not, we return ERR_VAL).
 > If we then send to the socket/netconn, we get an error ERR_VAL into conn->err (do_send() has to be modified to catch more errors, see task #6880) that is translated to EINVAL.
 
-Note that every c++ socket object in inception _socket module_ is a finite state machine that prevents clients from being able to use LwIP code in an unintended manner. Hence, it should not be possible to hit this LwIP bug at all using inception socket module.
+Note that every c++ socket object in OpenPerf _socket module_ is a finite state machine that prevents clients from being able to use LwIP code in an unintended manner. Hence, it should not be possible to hit this LwIP bug at all using OpenPerf socket module.
 
 Here is the transmit sequency diagram summary:
 
@@ -309,14 +309,14 @@ Here is the transmit sequency diagram summary:
 
 # Packet IO - LWIP Memory Managment
 
-The LWIP _memp_ is [customized](https://github.com/SpirentOrion/inception-core/blob/master/src/modules/packetio/stack/include/lwipopts.h) to use specialized mem_malloc/mem_free instead of the lwip pool allocator.
+The LWIP _memp_ is [customized](https://github.com/SpirentOrion/openperf-core/blob/master/src/modules/packetio/stack/include/lwipopts.h) to use specialized mem_malloc/mem_free instead of the lwip pool allocator.
 
 ```C++
 #define MEMP_MEM_MALLOC 1
 #define MEMP_USE_CUSTOM_POOLS 0
 ```
 
-The `memp_malloc` function is overriden in [memory/dpkpk/memp.c](https://github.com/SpirentOrion/inception-core/blob/master/src/modules/packetio/memory/dpdk/memp.c) and using DPDK huge-page allocator (`rte_malloc`) for everything but the pbufs:
+The `memp_malloc` function is overriden in [memory/dpkpk/memp.c](https://github.com/SpirentOrion/openperf-core/blob/master/src/modules/packetio/memory/dpdk/memp.c) and using DPDK huge-page allocator (`rte_malloc`) for everything but the pbufs:
 
 ```C++
 void * memp_malloc(memp_t type)
@@ -344,7 +344,7 @@ static atomic_mempool_ptr memp_default_mempools[RTE_MAX_NUMA_NODES] = {};
 static atomic_mempool_ptr memp_ref_rom_mempools[RTE_MAX_NUMA_NODES] = {};
 ```
 
-Those pools are initialized by [`pool_allocator`](https://github.com/SpirentOrion/inception-core/blob/master/src/modules/packetio/memory/dpdk/pool_allocator.cpp). 
+Those pools are initialized by [`pool_allocator`](https://github.com/SpirentOrion/openperf-core/blob/master/src/modules/packetio/memory/dpdk/pool_allocator.cpp). 
 
 ```C++
 pool_allocator::pool_allocator(const std::vector<model::port_info> &info,
@@ -369,7 +369,7 @@ pool_allocator::pool_allocator(const std::vector<model::port_info> &info,
 };
 ```
 
-The `sum` takes into account the number of buffers, including those needed by the driver port implementation (see the PR for [fix DPDK default pool allocation](https://github.com/SpirentOrion/inception-core/commit/5a011f06ec8779efd779c1b7323b9bcfa823e940)). 
+The `sum` takes into account the number of buffers, including those needed by the driver port implementation (see the PR for [fix DPDK default pool allocation](https://github.com/SpirentOrion/openperf-core/commit/5a011f06ec8779efd779c1b7323b9bcfa823e940)). 
 
 Two pools are created - one for ROM/REF (most likely not used) - and the other for RAM based buffers.  The `create_pbuf_mempool` is using DPDK pools.
 
@@ -419,7 +419,7 @@ This information is defined for each LWIP memory type (defined in `memp_std.h`),
 
 The `errors` member is incremented each time memp fails to allocate (either mpbuf or eg PCB). 
 
-The `available`, `used` and `max` only report allocation for the m/pbufs pool - using the `rte_mempool_in_xxx_count` method for each NUMA pool. For the other types (`RAW_PCB`, `UDP_PCB`), it uses the LWIP stats. Since LWIP allocator is bypassed, this value should always be zero. The `illegal` does not seems to be used from inception, but only LWIP, so the value should also always be zero..
+The `available`, `used` and `max` only report allocation for the m/pbufs pool - using the `rte_mempool_in_xxx_count` method for each NUMA pool. For the other types (`RAW_PCB`, `UDP_PCB`), it uses the LWIP stats. Since LWIP allocator is bypassed, this value should always be zero. The `illegal` does not seems to be used from OpenPerf, but only LWIP, so the value should also always be zero..
 
 ```C++
 int64_t packetio_memory_memp_pool_avail(const struct memp_desc* mem)
