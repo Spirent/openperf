@@ -31,9 +31,15 @@ client& client::operator=(client&& other)
     return (*this);
 }
 
-tl::expected<std::vector<unsigned>, int> client::get_worker_rx_ids()
+tl::expected<std::vector<unsigned>, int>
+client::get_worker_rx_ids(std::optional<std::string_view> obj_id)
 {
-    auto reply = do_request(m_socket.get(), request_worker_rx_ids{});
+    auto request = request_worker_rx_ids{};
+    if (obj_id) {
+        request.object_id = std::string(*obj_id);
+    }
+
+    auto reply = do_request(m_socket.get(), request);
     if (!reply) {
         return (tl::make_unexpected(reply.error()));
     }
@@ -41,9 +47,15 @@ tl::expected<std::vector<unsigned>, int> client::get_worker_rx_ids()
     return (std::get<reply_worker_ids>(reply.value()).worker_ids);
 }
 
-tl::expected<std::vector<unsigned>, int> client::get_worker_tx_ids()
+tl::expected<std::vector<unsigned>, int>
+client::get_worker_tx_ids(std::optional<std::string_view> obj_id)
 {
-    auto reply = do_request(m_socket.get(), request_worker_tx_ids{});
+    auto request = request_worker_tx_ids{};
+    if (obj_id) {
+        request.object_id = std::string(*obj_id);
+    }
+
+    auto reply = do_request(m_socket.get(), request);
     if (!reply) {
         return (tl::make_unexpected(reply.error()));
     }

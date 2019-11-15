@@ -4,6 +4,7 @@
 #include <any>
 #include <functional>
 #include <memory>
+#include <optional>
 #include <string>
 
 #include "tl/expected.hpp"
@@ -32,14 +33,14 @@ public:
         : m_self(std::make_unique<workers_model<Workers>>(std::move(s)))
     {}
 
-    std::vector<unsigned> get_rx_worker_ids() const
+    std::vector<unsigned> get_rx_worker_ids(std::optional<std::string_view> obj_id = std::nullopt) const
     {
-        return (m_self->get_rx_worker_ids());
+        return (m_self->get_rx_worker_ids(obj_id));
     }
 
-    std::vector<unsigned> get_tx_worker_ids() const
+    std::vector<unsigned> get_tx_worker_ids(std::optional<std::string_view> obj_id = std::nullopt) const
     {
-        return (m_self->get_tx_worker_ids());
+        return (m_self->get_tx_worker_ids(obj_id));
     }
 
     transmit_function get_transmit_function(std::string_view port_id) const
@@ -106,8 +107,8 @@ public:
 private:
     struct workers_concept {
         virtual ~workers_concept() = default;
-        virtual std::vector<unsigned> get_rx_worker_ids() const = 0;
-        virtual std::vector<unsigned> get_tx_worker_ids() const = 0;
+        virtual std::vector<unsigned> get_rx_worker_ids(std::optional<std::string_view> obj_id) const = 0;
+        virtual std::vector<unsigned> get_tx_worker_ids(std::optional<std::string_view> obj_id) const = 0;
         virtual transmit_function get_transmit_function(std::string_view port_id) const = 0;
         virtual void add_interface(std::string_view port_id, std::any interface) = 0;
         virtual void del_interface(std::string_view port_id, std::any interface) = 0;
@@ -132,14 +133,14 @@ private:
             : m_workers(std::move(s))
         {}
 
-        std::vector<unsigned> get_rx_worker_ids() const override
+        std::vector<unsigned> get_rx_worker_ids(std::optional<std::string_view> obj_id) const override
         {
-            return (m_workers.get_rx_worker_ids());
+            return (m_workers.get_rx_worker_ids(obj_id));
         }
 
-        std::vector<unsigned> get_tx_worker_ids() const override
+        std::vector<unsigned> get_tx_worker_ids(std::optional<std::string_view> obj_id) const override
         {
-            return (m_workers.get_tx_worker_ids());
+            return (m_workers.get_tx_worker_ids(obj_id));
         }
 
         transmit_function get_transmit_function(std::string_view port_id) const override

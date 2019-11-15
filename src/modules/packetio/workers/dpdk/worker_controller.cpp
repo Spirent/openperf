@@ -7,6 +7,7 @@
 #include "packetio/drivers/dpdk/model/physical_port.h"
 #include "packetio/drivers/dpdk/model/port_info.h"
 #include "packetio/drivers/dpdk/topology_utils.h"
+#include "packetio/stack/dpdk/net_interface.h"
 #include "packetio/workers/dpdk/event_loop_adapter.h"
 #include "packetio/workers/dpdk/tx_source.h"
 #include "packetio/workers/dpdk/worker_tx_functions.h"
@@ -224,10 +225,21 @@ worker_controller& worker_controller::operator=(worker_controller&& other)
     return (*this);
 }
 
-static std::vector<unsigned> get_worker_ids(queue::queue_mode type)
+static std::vector<unsigned> get_worker_ids(queue::queue_mode type,
+                                            std::optional<int> port_id = std::nullopt)
 {
     auto port_info = get_port_info();
     auto q_descriptors = topology::queue_distribute(port_info);
+
+    /* If caller gave us a port, filter out all non-matching descriptors */
+    if (port_id) {
+        q_descriptors.erase(std::remove_if(std::begin(q_descriptors),
+                                           std::end(q_descriptors),
+                                           [&](const auto& d) {
+                                               return (d.port_id != *port_id);
+                                           }),
+                            std::end(q_descriptors));
+    }
 
     /*
      * Our queue descriptors vector contains all port queues along with
@@ -247,17 +259,45 @@ static std::vector<unsigned> get_worker_ids(queue::queue_mode type)
     std::sort(std::begin(workers), std::end(workers));
     workers.erase(std::unique(std::begin(workers), std::end(workers)),
                   std::end(workers));
+
     return (workers);
 }
 
-std::vector<unsigned> worker_controller::get_rx_worker_ids() const
+static int get_port_index(std::string_view id,
+                          const driver::generic_driver& driver,
+                          const worker::fib* fib)
 {
-    return (get_worker_ids(queue::queue_mode::RX));
+    /* See if this id refers to a port */
+    if (auto port_idx = driver.port_index(id); port_idx.has_value()) {
+        return (*port_idx);
+    }
+
+    /* Maybe it's an interface id; look it up */
+    if (auto ifp = fib->find_interface(id); ifp != nullptr) {
+        return (to_interface(ifp).port_index());
+    }
+
+    /*
+     * Not found; return an index we can't possibly have so that we
+     * can use the value to filter out all ports in the function above.
+     */
+    return (-1);
 }
 
-std::vector<unsigned> worker_controller::get_tx_worker_ids() const
+std::vector<unsigned> worker_controller::get_rx_worker_ids(std::optional<std::string_view> obj_id) const
 {
-    return (get_worker_ids(queue::queue_mode::TX));
+    return (obj_id
+            ? get_worker_ids(queue::queue_mode::RX,
+                             get_port_index(*obj_id, m_driver, m_fib.get()))
+            : get_worker_ids(queue::queue_mode::RX));
+}
+
+std::vector<unsigned> worker_controller::get_tx_worker_ids(std::optional<std::string_view> obj_id) const
+{
+    return (obj_id
+            ? get_worker_ids(queue::queue_mode::TX,
+                             get_port_index(*obj_id, m_driver, m_fib.get()))
+            : get_worker_ids(queue::queue_mode::TX));
 }
 
 template <typename T>

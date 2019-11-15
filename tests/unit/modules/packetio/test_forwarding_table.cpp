@@ -27,6 +27,12 @@ template class icp::packetio::forwarding_table<test_interface,
                                                test_sink,
                                                max_ports>;
 
+template <>
+std::string icp::packetio::get_interface_id(test_interface* ifp)
+{
+    return (ifp->id);
+}
+
 using forwarding_table = icp::packetio::forwarding_table<test_interface,
                                                          test_sink,
                                                          max_ports>;
@@ -48,6 +54,10 @@ TEST_CASE("forwarding table functionality", "[forwarding table]")
             auto ptr = table.find_interface(port1, mac1);
             REQUIRE(ptr == std::addressof(ifp1));
             REQUIRE(ptr->id == ifp1.id);
+
+            auto ptr2 = table.find_interface(ifp1.id);
+            REQUIRE(ptr2 == std::addressof(ifp1));
+            REQUIRE(ptr2->id == ifp1.id);
 
             SECTION("remove interface, ") {
                 to_delete = table.remove_interface(port1, mac1);
@@ -118,6 +128,9 @@ TEST_CASE("forwarding table functionality", "[forwarding table]")
             for(const auto& [key, value] : interfaces) {
                 auto ptr = table.find_interface(key.first, key.second);
                 REQUIRE(ptr->id == value.id);
+
+                auto ptr2 = table.find_interface(value.id);
+                REQUIRE(ptr2->id == value.id);
 
                 auto& map = table.get_interfaces(key.first);
                 REQUIRE(map.size() == many_interfaces / many_ports);
