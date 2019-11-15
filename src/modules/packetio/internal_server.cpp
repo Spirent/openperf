@@ -87,15 +87,15 @@ reply_msg handle_request(workers::generic_workers& workers,
 }
 
 reply_msg handle_request(workers::generic_workers& workers,
-                         const request_worker_rx_ids&)
+                         const request_worker_rx_ids& rx_ids)
 {
-    return (reply_worker_ids{workers.get_rx_worker_ids()});
+    return (reply_worker_ids{workers.get_rx_worker_ids(rx_ids.object_id)});
 }
 
 reply_msg handle_request(workers::generic_workers& workers,
-                         const request_worker_tx_ids&)
+                         const request_worker_tx_ids& tx_ids)
 {
-    return (reply_worker_ids{workers.get_tx_worker_ids()});
+    return (reply_worker_ids{workers.get_tx_worker_ids(tx_ids.object_id)});
 }
 
 static std::string to_string(request_msg& request)
@@ -123,11 +123,13 @@ static std::string to_string(request_msg& request)
                            [](const request_task_del& msg) {
                                return ("delete task " + std::string(msg.task_id));
                            },
-                           [](const request_worker_rx_ids&) {
-                               return (std::string("get worker RX ids"));
+                           [](const request_worker_rx_ids& rx_ids) {
+                               return ("get worker RX ids for "
+                                       + (rx_ids.object_id ? *rx_ids.object_id : std::string("ALL")));
                            },
-                           [](const request_worker_tx_ids&) {
-                               return (std::string("get worker TX ids"));
+                           [](const request_worker_tx_ids& tx_ids) {
+                               return ("get worker TX ids for "
+                                       + (tx_ids.object_id ? *tx_ids.object_id : std::string("ALL")));
                            }),
                        request));
 }

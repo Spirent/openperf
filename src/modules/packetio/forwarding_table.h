@@ -40,6 +40,8 @@ public:
     sink_vector* insert_sink(uint16_t port_idx, Sink sink);
     sink_vector* remove_sink(uint16_t port_idx, Sink sink);
 
+    Interface* find_interface(std::string_view id) const;
+
     Interface* find_interface(uint16_t port_idx, const net::mac_address& mac) const;
     Interface* find_interface(uint16_t port_idx, const uint8_t octets[mac_address_length]) const;
 

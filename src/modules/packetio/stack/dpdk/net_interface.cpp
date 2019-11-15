@@ -433,6 +433,11 @@ interface::config_data net_interface::config() const
     return (m_config);
 }
 
+const net_interface& to_interface(netif* ifp)
+{
+    return *(reinterpret_cast<net_interface*>(ifp->state));
+}
+
 }
 }
 }

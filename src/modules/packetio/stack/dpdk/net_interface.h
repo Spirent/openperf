@@ -56,6 +56,8 @@ private:
     netif m_netif;
 };
 
+const net_interface& to_interface(netif*);
+
 }
 }
 }

@@ -46,11 +46,19 @@ serialized_msg serialize_request(const request_msg& msg)
                                                                       task_del.task_id.data(),
                                                                       task_del.task_id.length()));
                                     },
-                                    [&](const request_worker_rx_ids&) {
-                                        return (message::zmq_msg_init(&serialized.data, 0));
+                                    [&](const request_worker_rx_ids& rx_ids) {
+                                        return (rx_ids.object_id
+                                                ? message::zmq_msg_init(&serialized.data,
+                                                                        rx_ids.object_id->data(),
+                                                                        rx_ids.object_id->length())
+                                                : zmq_msg_init(&serialized.data));
                                     },
-                                    [&](const request_worker_tx_ids&) {
-                                        return (message::zmq_msg_init(&serialized.data, 0));
+                                    [&](const request_worker_tx_ids& tx_ids) {
+                                        return (tx_ids.object_id
+                                                ? message::zmq_msg_init(&serialized.data,
+                                                                        tx_ids.object_id->data(),
+                                                                        tx_ids.object_id->length())
+                                                : zmq_msg_init(&serialized.data));
                                     }),
                                 msg));
     if (error) {
@@ -114,10 +122,22 @@ tl::expected<request_msg, int> deserialize_request(const serialized_msg& msg)
                          zmq_msg_size(&msg.data));
         return (request_task_del{ std::move(data) });
     }
-    case message::variant_index<request_msg, request_worker_rx_ids>():
+    case message::variant_index<request_msg, request_worker_rx_ids>(): {
+        if (zmq_msg_size(&msg.data)) {
+            std::string data(message::zmq_msg_data<char*>(&msg.data),
+                             zmq_msg_size(&msg.data));
+            return (request_worker_rx_ids{ std::move(data) });
+        }
         return (request_worker_rx_ids{});
-    case message::variant_index<request_msg, request_worker_tx_ids>():
+    }
+    case message::variant_index<request_msg, request_worker_tx_ids>(): {
+        if (zmq_msg_size(&msg.data)) {
+            std::string data(message::zmq_msg_data<char*>(&msg.data),
+                             zmq_msg_size(&msg.data));
+            return (request_worker_tx_ids{ std::move(data) });
+        }
         return (request_worker_tx_ids{});
+    }
     }
 
     return (tl::make_unexpected(EINVAL));

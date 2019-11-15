@@ -61,8 +61,13 @@ struct request_task_del {
     std::string task_id;
 };
 
-struct request_worker_rx_ids {};
-struct request_worker_tx_ids {};
+struct request_worker_rx_ids {
+    std::optional<std::string> object_id = std::nullopt;
+};
+
+struct request_worker_tx_ids {
+    std::optional<std::string> object_id = std::nullopt;
+};
 
 struct reply_task_add {
     std::string task_id;

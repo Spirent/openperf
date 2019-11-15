@@ -1,8 +1,12 @@
 #include <cassert>
+#include <string>
 
 #include "packetio/forwarding_table.h"
 
 namespace icp::packetio {
+
+template <typename Interface>
+std::string get_interface_id(Interface* ifp);
 
 template <typename Interface, typename Sink, int MaxPorts>
 forwarding_table<Interface, Sink, MaxPorts>::forwarding_table()
@@ -69,6 +73,22 @@ forwarding_table<Interface, Sink, MaxPorts>::remove_sink(uint16_t port_idx, Sink
     auto updated = new sink_vector(
         std::move(original->erase(std::distance(original->begin(), found))));
     return (m_sinks[port_idx].exchange(updated, std::memory_order_release));
+}
+
+template <typename Interface, typename Sink, int MaxPorts>
+Interface* forwarding_table<Interface, Sink, MaxPorts>::find_interface(
+    std::string_view id) const
+{
+    for (auto& map_ptr : m_interfaces) {
+        const auto& map = *(map_ptr.load(std::memory_order_consume));
+        auto item = std::find_if(std::begin(map), std::end(map),
+                                 [&](const auto& pair) {
+                                     return (get_interface_id(pair.second) == id);
+                                 });
+        if (item != std::end(map)) return (item->second);
+    }
+
+    return (nullptr);
 }
 
 template <typename Interface, typename Sink, int MaxPorts>
