@@ -1,31 +1,31 @@
-# Inception Getting Started Guide
+# OpenPerf Getting Started Guide
 
-This guide documents the steps necessary to use Inception as a user-space
+This guide documents the steps necessary to use OpenPerf as a user-space
 stack for 3rd part applications, such as `iperf`.
 
 ## Prerequisites
 
-Currently, inception only runs on `Linux`.  Additionally, your host
+Currently, OpenPerf only runs on `Linux`.  Additionally, your host
 platform will need at least three CPU cores and one DPDK compatible NIC.
-As `inception` is a DPDK based application, you will need to make sure
+As `openperf` is a DPDK based application, you will need to make sure
 your target platform can support a DPDK program.  Consult the relevant
 [DPDK system requirements](https://doc.dpdk.org/guides/linux_gsg/sys_reqs.html)
 for details.
 
-Once you have a DPDK compatible platform, you will need to build the Inception
+Once you have a DPDK compatible platform, you will need to build the OpenPerf
 targets.
 
 ### Targets
 
-You will need to build two targets: `inception` and `libicp-shim.so`.
+You will need to build two targets: `openperf` and `libopenperf-shim.so`.
 
-#### Inception
+#### OpenPerf
 
-The `inception` binary contains a REST API server and a user-space stack.
-To build, type `make` in the `targets/inception` directory.
+The `openperf` binary contains a REST API server and a user-space stack.
+To build, type `make` in the `targets/openperf` directory.
 To run, simply `exec` the resulting binary.
 
-The `inception` binary provides a few command line options to control its
+The `openperf` binary provides a few command line options to control its
 behavior.
 
 - `--api-port`: specify the listening port for the REST server
@@ -40,30 +40,30 @@ behavior.
   - **DEBUG**: log developer details
   - **TRACE**: log everything
 
-**Note**: inception will automatically adjust the DPDK log level based on the
+**Note**: OpenPerf will automatically adjust the DPDK log level based on the
 `--log-level` parameter.
 
 Finally, logs are written to `stdout` in **JSON** format.
 
-#### libicp-shim.so
+#### libopenperf-shim.so
 
-The `libicp-shim.so` library contains a BSD socket implementation for
-`inception`.
-To build, type `make` in the `targets/libicp-shim` directory.
+The `libopenperf-shim.so` library contains a BSD socket implementation for
+`openperf`.
+To build, type `make` in the `targets/libopenperf-shim` directory.
 
 ## Running
 
-**Note**: Currently, `inception` and its client processes require elevated
+**Note**: Currently, `openperf` and its client processes require elevated
 privileges to run. This is not desired behavior and will be addressed
 soon.
 
-To run `iperf` using `inception`, follow these steps:
+To run `iperf` using `openperf`, follow these steps:
 
-1. Start the `inception` process. At a minimum, you may need to use the
-   `--dpdk` option to specify a core mask for inception to use. To run
-   `inception` on all even numbered cores on an 8 core host, use:
+1. Start the `inceopenperfption` process. At a minimum, you may need to use the
+   `--dpdk` option to specify a core mask for OpenPerf to use. To run
+   `openperf` on all even numbered cores on an 8 core host, use:
    ```
-   sudo <inception build path>/bin/inception --dpdk="-c=0x55"
+   sudo <openperf build path>/bin/openperf --dpdk="-c=0x55"
    ```
 2. Create an interface for the stack.  This can be done by sending a properly
    formed POST request to the REST API socket.  The snippet below creates
@@ -141,7 +141,7 @@ To run `iperf` using `inception`, follow these steps:
    200 HTTP response code).
 3. Run your client app using a **LD_PRELOAD** variable to access the stack
    ```
-   sudo LD_PRELOAD=<inception build path>/lib/libicp-shim.so \
+   sudo LD_PRELOAD=<openperf build path>/lib/libopenperf-shim.so \
    iperf -c <iperf server address>
    ```
    Obviously, you will need another `iperf` instance running at the specified

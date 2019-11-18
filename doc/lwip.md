@@ -1,6 +1,6 @@
 # Background
 
-Inception uses lwIP, a Lightweight TCP/IP stack, for providing state-full
+OpenPerf uses lwIP, a Lightweight TCP/IP stack, for providing state-full
 network traffic functionality.  At it's core, lwIP is a single threaded
 stack implementation that uses message passing as the only mechanism for
 programs to use the stack.
@@ -38,7 +38,7 @@ have the possibility of getting our changes merged upstream.
 Finally, what we merge upstream *should* be limited to functionality that is
 commonly available elsewhere, e.g. the lock-free data structures required for
 a multi-threaded stack implementation *should* not be a part of lwIP directly.
-Instead, we should create Inception specific function hooks or macros that
+Instead, we should create OpenPerf specific function hooks or macros that
 allow extensions where we need them but are defaulted to provide the current
 lwIP behavior.  This will allow us to replace the existing lwIP functionality
 with our own logic.

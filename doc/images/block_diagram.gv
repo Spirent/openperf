@@ -24,9 +24,9 @@ digraph G {
 
                  subgraph cluster_lib {
                          style=invis;
-                         libicp [shape=component,
+                         libopenperf [shape=component,
                                 fillcolor=3,
-                                label=<libicp-shim.so>];
+                                label=<libopenperf-shim.so>];
                  };
 
                  subgraph cluster_apps {
@@ -35,11 +35,11 @@ digraph G {
                  }
 
                  edge [style=invis];
-                 libicp -> app_1;
+                 libopenperf -> app_1;
         }
 
         subgraph cluster_inception {
-                 label = "Inception";
+                 label = "OpenPerf";
                  style=rounded;
                  colorscheme=pastel15;
                  bgcolor=1;
@@ -121,9 +121,9 @@ digraph G {
         port_dots -> port_n [style=invis];
 
 
-        shared_memory -> libicp [dir=both];
+        shared_memory -> libopenperf [dir=both];
         shared_memory -> socket [dir=both, lhead=cluster_sockets];
-        libicp -> socket [dir=both,
+        libopenperf -> socket [dir=both,
                          constraint=false]
 
         client -> api [dir=both, lhead=cluster_api];

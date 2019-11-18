@@ -1,6 +1,6 @@
 
 
-# Inception Developper Guide
+# OpenPerf Developper Guide
 
 *Table of contents:*
 
@@ -24,4 +24,4 @@
 
 ---
 
-![Inception components](../images/block_diagram.png)
+![OpenPerf components](../images/block_diagram.png)
