@@ -1,6 +1,7 @@
 #ifndef _ICP_PACKETIO_GENERIC_SOURCE_H_
 #define _ICP_PACKETIO_GENERIC_SOURCE_H_
 
+#include <any>
 #include <memory>
 #include <string>
 
@@ -60,6 +61,12 @@ public:
         return (id() == other.id());
     }
 
+    template <typename Source>
+    Source& get() const
+    {
+        return (*(std::any_cast<Source*>(m_self->get_pointer())));
+    }
+
 private:
     struct source_concept {
         virtual ~source_concept() = default;
@@ -70,6 +77,7 @@ private:
         virtual packets_per_hour packet_rate() const = 0;
         virtual uint16_t transform(packet_buffer* input[], uint16_t input_length,
                                    packet_buffer* output[]) = 0;
+        virtual std::any get_pointer() noexcept = 0;
     };
 
     /**
@@ -132,7 +140,7 @@ private:
         uint16_t max_packet_length() const override
         {
             if constexpr (has_max_packet_length<Source>::value) {
-                    return (m_source.max_packet_length());
+                return (m_source.max_packet_length());
             } else {
                 return (1500);
             }
@@ -147,6 +155,11 @@ private:
                            packet_buffer* output[]) override
         {
             return (m_source.transform(input, input_length, output));
+        }
+
+        std::any get_pointer() noexcept override
+        {
+            return (std::addressof(m_source));
         }
 
         Source m_source;
