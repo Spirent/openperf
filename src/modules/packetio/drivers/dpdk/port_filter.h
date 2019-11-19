@@ -1,6 +1,7 @@
 #ifndef _ICP_PACKETIO_DPDK_PORT_FILTER_H_
 #define _ICP_PACKETIO_DPDK_PORT_FILTER_H_
 
+#include <functional>
 #include <optional>
 #include <variant>
 #include <vector>
@@ -9,6 +10,7 @@
 #include "core/icp_log.h"
 #include "net/net_types.h"
 #include "packetio/generic_interface.h"
+#include "utils/variant_index.h"
 
 struct rte_flow;
 
@@ -32,10 +34,12 @@ using filter_state = std::variant<filter_state_ok,
  */
 struct filter_event_add {
     net::mac_address mac;
+    std::optional<std::function<void()>> on_overflow = std::nullopt;
 };
 
 struct filter_event_del {
     net::mac_address mac;
+    std::optional<std::function<void()>> on_underflow = std::nullopt;
 };
 
 struct filter_event_disable {};
@@ -139,15 +143,26 @@ public:
     }
 };
 
+using filter_variant = std::variant<flow_filter, mac_filter>;
+
+enum class filter_type {
+    flow = utils::variant_index<filter_variant, flow_filter>(),
+    mac  = utils::variant_index<filter_variant, mac_filter>(),
+};
+
 class filter
 {
 public:
     filter(uint16_t port_id);
 
     uint16_t port_id() const;
+    filter_type type() const;
 
     void add_mac_address(const net::mac_address& mac);
+    void add_mac_address(const net::mac_address& mac, std::function<void()>&& on_overflow);
+
     void del_mac_address(const net::mac_address& mac);
+    void del_mac_address(const net::mac_address& mac, std::function<void()>&& on_underflow);
 
     void enable();
     void disable();

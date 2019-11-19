@@ -13,6 +13,7 @@ namespace icp::packetio::dpdk::port {
 
 enum class flow_error_type {validation, addition, deletion};
 
+enum class rule_action : bool { none = false, add_stack_tag = true };
 /*
  * Try to log a useful message given the peculiar nature of the rte_flow_error
  * structure.  Some drivers don't bother filling in some of the fields!
@@ -40,7 +41,7 @@ static void log_flow_error(enum flow_error_type type, const rte_flow_error& erro
 static tl::expected<rte_flow*, int> add_ethernet_flow(uint16_t port_id,
                                                       const rte_flow_item_eth* eth_spec,
                                                       const rte_flow_item_eth* eth_mask,
-                                                      std::optional<unsigned> tag = std::nullopt)
+                                                      rule_action action)
 {
     /*
      * We want to distribute our flows across all queues via RSS.  To do that,
@@ -77,11 +78,13 @@ static tl::expected<rte_flow*, int> add_ethernet_flow(uint16_t port_id,
         },
     };
 
-    const auto action_mark = rte_flow_action_mark{ .id = tag ? *tag : 0 };
+    const auto action_mark = rte_flow_action_mark{
+        .id = (action == rule_action::add_stack_tag ? 1U : 0U),
+    };
 
     std::array<rte_flow_action, 3> actions = {
         rte_flow_action{
-            .type = tag ? RTE_FLOW_ACTION_TYPE_MARK : RTE_FLOW_ACTION_TYPE_FLAG,
+            .type = RTE_FLOW_ACTION_TYPE_MARK,
             .conf = &action_mark,
         },
         rte_flow_action{
@@ -111,7 +114,7 @@ static tl::expected<rte_flow*, int> add_ethernet_flow(uint16_t port_id,
 
 static tl::expected<rte_flow*, int> add_ethernet_flow(uint16_t port_id,
                                                       const net::mac_address& mac,
-                                                      std::optional<unsigned> tag = std::nullopt)
+                                                      rule_action action)
 {
     auto eth_spec = rte_flow_item_eth{
         .dst.addr_bytes = { mac[0], mac[1], mac[2], mac[3], mac[4], mac[5] },
@@ -121,7 +124,7 @@ static tl::expected<rte_flow*, int> add_ethernet_flow(uint16_t port_id,
         .dst.addr_bytes = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff },
     };
 
-    return (add_ethernet_flow(port_id, &eth_spec, &eth_mask, tag));
+    return (add_ethernet_flow(port_id, &eth_spec, &eth_mask, action));
 }
 
 static bool delete_flow(uint16_t port_id, struct rte_flow* flow)
@@ -135,6 +138,20 @@ static bool delete_flow(uint16_t port_id, struct rte_flow* flow)
     return (true);
 }
 
+static void maybe_invoke_callback(const filter_event_add& add)
+{
+    if (add.on_overflow) {
+        add.on_overflow.value()();
+    }
+}
+
+static void maybe_invoke_callback(const filter_event_del& del)
+{
+    if (del.on_underflow) {
+        del.on_underflow.value()();
+    }
+}
+
 flow_filter::flow_filter(uint16_t port_id)
     : m_port(port_id)
 {
@@ -142,12 +159,15 @@ flow_filter::flow_filter(uint16_t port_id)
         .dst.addr_bytes = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff },
     };
 
-    auto flow = add_ethernet_flow(port_id, &broadcast, &broadcast);
+    auto flow = add_ethernet_flow(port_id, &broadcast, &broadcast,
+                                  rule_action::add_stack_tag);
     if (!flow) {
         throw std::runtime_error("Could not add broadcast flow rule");
     }
 
     m_flows.emplace(net::mac_address(broadcast.dst.addr_bytes), *flow);
+
+    /* XXX: Add IPv6 multicast rules when IPv6 support is added */
 }
 
 flow_filter::~flow_filter()
@@ -193,7 +213,7 @@ static bool filter_full(uint16_t port_id)
         .src.addr_bytes = { 0x01, 0x00, 0x00, 0x00, 0x00, 0x00 },
     };
 
-    auto flow = add_ethernet_flow(port_id, &dummy, &dummy);
+    auto flow = add_ethernet_flow(port_id, &dummy, &dummy, rule_action::none);
     if (!flow) { return (true); }  /* assume device is full */
 
     delete_flow(port_id, *flow);
@@ -210,7 +230,9 @@ static void maybe_move_overflow_to_filter(uint16_t port_id,
 {
     if (overflows.empty()) return;  /* nothing to do */
 
-    if (auto flow = add_ethernet_flow(port_id, overflows.front()); flow.has_value()) {
+    if (auto flow = add_ethernet_flow(port_id, overflows.front(),
+                                      rule_action::add_stack_tag);
+        flow.has_value()) {
         flows.emplace(overflows.front(), *flow);
         std::rotate(std::begin(overflows), std::begin(overflows) + 1,
                     std::end(overflows));
@@ -240,17 +262,22 @@ std::optional<filter_state> flow_filter::on_event(const filter_event_add& add,
      * As far as we know, the table isn't full.  Add the promiscuous rule
      * in case this is the last rule we can add.
      */
-    auto promiscuous_flow = add_ethernet_flow(m_port, &promiscuous, &promiscuous);
+    auto promiscuous_flow = add_ethernet_flow(m_port, &promiscuous, &promiscuous,
+                                              rule_action::none);
     if (!promiscuous_flow) {
         return (filter_state_error{});
     } else if (filter_full(m_port)) {
         ICP_LOG(ICP_LOG_INFO, "Enabling promiscuous mode on port %u\n", m_port);
         m_flows.emplace(net::mac_address(promiscuous.dst.addr_bytes), *promiscuous_flow);
+
+        m_overflows.push_back(add.mac);
+        maybe_invoke_callback(add);
+
         return (filter_state_overflow{});
     }
 
     /* Add the actual rule we want */
-    auto flow = add_ethernet_flow(m_port, add.mac);
+    auto flow = add_ethernet_flow(m_port, add.mac, rule_action::add_stack_tag);
     if (!flow) {
         return (filter_state_error{});
     }
@@ -282,7 +309,8 @@ std::optional<filter_state> flow_filter::on_event(const filter_event_del& del,
 
 std::optional<filter_state> flow_filter::on_event(const filter_event_disable&, const filter_state_ok&)
 {
-    auto promiscuous_flow = add_ethernet_flow(m_port, &promiscuous, &promiscuous);
+    auto promiscuous_flow = add_ethernet_flow(m_port, &promiscuous, &promiscuous,
+                                              rule_action::none);
     if (!promiscuous_flow) {
         return (filter_state_error{});
     }
@@ -319,6 +347,7 @@ std::optional<filter_state> flow_filter::on_event(const filter_event_del& del, c
         if (!maybe_disable_promiscuous_mode(m_port, m_flows)) {
             return (filter_state_error{});
         }
+        maybe_invoke_callback(del);
         return (filter_state_ok{});
     }
 
@@ -328,13 +357,18 @@ std::optional<filter_state> flow_filter::on_event(const filter_event_del& del, c
 std::optional<filter_state> flow_filter::on_event(const filter_event_add& add, const filter_state_disabled&)
 {
     /* Try to add the rule to our flow table */
-    auto flow = add_ethernet_flow(m_port, add.mac);
+    auto flow = add_ethernet_flow(m_port, add.mac, rule_action::add_stack_tag);
     if (!flow) {
         /* Filter must be full, add to overflow */
+        bool empty = m_overflows.empty();
         m_overflows.push_back(add.mac);
+
+        /* And invoke the callback if this is the first overflowed entry */
+        if (empty) maybe_invoke_callback(add);
     } else {
         m_flows.emplace(add.mac, *flow);
     }
+
     return (std::nullopt);
 }
 
@@ -351,6 +385,8 @@ std::optional<filter_state> flow_filter::on_event(const filter_event_del& del, c
         m_overflows.erase(std::remove(std::begin(m_overflows), std::end(m_overflows), del.mac),
                           std::end(m_overflows));
     }
+
+    if (m_overflows.empty()) maybe_invoke_callback(del);
 
     return (std::nullopt);
 }

@@ -28,11 +28,22 @@ static void ack_interrupt(int fd, void* arg)
 rx_queue::rx_queue(uint16_t port_id, uint16_t queue_id)
     : m_port(port_id)
     , m_queue(queue_id)
+    , m_flags(0)
 {}
 
 uint16_t rx_queue::port_id() const { return (m_port); }
 
 uint16_t rx_queue::queue_id() const { return (m_queue); }
+
+rx_queue::bitflags rx_queue::flags() const
+{
+    return (m_flags.load(std::memory_order_consume));
+}
+
+void rx_queue::flags(bitflags flags)
+{
+    m_flags.store(flags, std::memory_order_release);
+}
 
 bool rx_queue::add(int poll_fd, void* data)
 {

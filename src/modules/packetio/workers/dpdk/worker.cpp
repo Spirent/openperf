@@ -27,7 +27,7 @@ namespace icp::packetio::dpdk::worker {
 
 const std::string_view endpoint = "inproc://icp_packetio_workers_control";
 
-static constexpr int mbuf_prefetch_offset = 4;
+static constexpr int mbuf_prefetch_offset = 8;
 
 /**
  * We only have two states we transition between, based on our messages:
@@ -152,15 +152,19 @@ static void rx_interface_dispatch(const fib* fib, const rx_queue* rxq,
                                                  unicast.data(),
                                                  nunicast.data());
 
-    /* Lookup interfaces for unicast packets ... */
-    for (size_t i = 0; i < nb_ucast; i++) {
-        auto eth = rte_pktmbuf_mtod(unicast[i], struct rte_ether_hdr *);
-        interfaces[i] = fib->find_interface(rxq->port_id(), eth->d_addr.addr_bytes);
-    }
+    /* Turn packets into destination interfaces... */
+    std::transform(unicast.data(), unicast.data() + nb_ucast, interfaces.data(),
+                   [&](auto& mbuf) {
+                       auto eth = rte_pktmbuf_mtod(mbuf, struct rte_ether_hdr *);
+                       return (fib->find_interface(rxq->port_id(), eth->d_addr.addr_bytes));
+                   });
 
     /* ... and dispatch */
     for (size_t i = 0; i < nb_ucast; i++) {
-        if (!interfaces[i]) continue;
+        if (!interfaces[i]) {
+            rte_pktmbuf_free(unicast[i]);
+            continue;
+        }
 
         ICP_LOG(ICP_LOG_TRACE, "Dispatching unicast packet to %c%c%u\n",
                 interfaces[i]->name[0], interfaces[i]->name[1],
@@ -198,7 +202,6 @@ static void rx_interface_dispatch(const fib* fib, const rx_queue* rxq,
                 rte_pktmbuf_free(clone);  /* Note: this free handles null correctly */
             }
         }
-
         rte_pktmbuf_free(nunicast[i]);
     }
 }
@@ -214,21 +217,22 @@ static void rx_sink_dispatch(const fib* fib, const rx_queue* rxq,
 
 static uint16_t rx_burst(const fib* fib, const rx_queue* rxq)
 {
-    static const rte_gro_param gro_params = { .gro_types = RTE_GRO_TCP_IPV4,
-                                              .max_flow_num = pkt_burst_size,
-                                              .max_item_per_flow = pkt_burst_size };
-    /*
-     * We pull packets from the port and put them in the receive array.
-     * We then sort them into unicast and multicast types.
-     */
+
     std::array<rte_mbuf*, pkt_burst_size> incoming;
+    auto rx_flags = rxq->flags();
 
     auto n = rte_eth_rx_burst(rxq->port_id(), rxq->queue_id(),
                               incoming.data(), pkt_burst_size);
 
     if (!n) return (0);
 
-    n = rte_gro_reassemble_burst(incoming.data(), n, &gro_params);
+    if (!(rx_flags & rx_feature_flags::hardware_lro)) {
+        static const rte_gro_param gro_params = { .gro_types = RTE_GRO_TCP_IPV4,
+                                                  .max_flow_num = pkt_burst_size,
+                                                  .max_item_per_flow = pkt_burst_size };
+
+        n = rte_gro_reassemble_burst(incoming.data(), n, &gro_params);
+    }
 
     ICP_LOG(ICP_LOG_TRACE, "Received %d packet%s on %d:%d\n",
             n, n > 1 ? "s" : "", rxq->port_id(), rxq->queue_id());
@@ -237,7 +241,25 @@ static uint16_t rx_burst(const fib* fib, const rx_queue* rxq)
     rx_sink_dispatch(fib, rxq, incoming.data(), n);
 
     /* Then, dispatch to stack interfaces */
-    rx_interface_dispatch(fib, rxq, incoming.data(), n);
+    if (rx_flags & rx_feature_flags::hardware_tags) {
+        /*
+         * If we have hardware tags for interface matching packets, then
+         * partition the packets into two groups: stack packets and non-stack packets.
+         */
+        auto cursor = std::stable_partition(incoming.data(), incoming.data() + n,
+                                            [](auto& mbuf) {
+                                                return ((mbuf->ol_flags & PKT_RX_FDIR) && mbuf->hash.fdir.hi);
+                                            });
+
+        /* Hand the stack packets off to the stack... */
+        rx_interface_dispatch(fib, rxq, incoming.data(), std::distance(incoming.data(), cursor));
+
+        /* ... and free the non-stack packets */
+        std::for_each(cursor, incoming.data() + n, rte_pktmbuf_free);
+    } else {
+        /* No hardware help, let the stack sort everything out */
+        rx_interface_dispatch(fib, rxq, incoming.data(), n);
+    }
 
     return (n);
 }
