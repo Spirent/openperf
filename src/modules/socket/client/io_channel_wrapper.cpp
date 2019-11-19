@@ -1,28 +1,15 @@
 #include "socket/client/io_channel_wrapper.h"
+#include "utils/overloaded_visitor.h"
 
 namespace icp {
 namespace socket {
 namespace client {
 
-/**
- * This struct is magic.  Use templates and parameter packing to provide
- * some syntactic sugar for creating visitor objects for std::visit.
- */
-template<typename ...Ts>
-struct overloaded_visitor : Ts...
-{
-    overloaded_visitor(const Ts&... args)
-        : Ts(args)...
-    {}
-
-    using Ts::operator()...;
-};
-
 using io_channel = std::variant<dgram_channel*, stream_channel*>;
 
 static io_channel io_channel_cast(api::io_channel_ptr channel)
 {
-    return (std::visit(overloaded_visitor(
+    return (std::visit(utils::overloaded_visitor(
                            [](socket::dgram_channel* channel) -> io_channel {
                                return (reinterpret_cast<dgram_channel*>(channel));
                            },
@@ -35,7 +22,7 @@ static io_channel io_channel_cast(api::io_channel_ptr channel)
 io_channel_wrapper::io_channel_wrapper(api::io_channel_ptr channel, int client_fd, int server_fd)
     : m_channel(io_channel_cast(channel))
 {
-    std::visit(overloaded_visitor(
+    std::visit(utils::overloaded_visitor(
                    [&](dgram_channel* channel) {
                        new (channel) dgram_channel(client_fd, server_fd);
                    },
@@ -47,7 +34,7 @@ io_channel_wrapper::io_channel_wrapper(api::io_channel_ptr channel, int client_f
 
 io_channel_wrapper::~io_channel_wrapper()
 {
-    std::visit(overloaded_visitor(
+    std::visit(utils::overloaded_visitor(
                    [](dgram_channel* channel) {
                        if (channel) channel->~dgram_channel();
                    },

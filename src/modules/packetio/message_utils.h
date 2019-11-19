@@ -44,30 +44,6 @@ static size_t zmq_msg_size(const zmq_msg_t* msg)
     return (zmq_msg_size(const_cast<zmq_msg_t*>(msg))/sizeof(T));
 }
 
-/**
- * Templated function to retrieve the index for a specific type in a variant.
- * Helps make the switch statement when de-serializing a message a little
- * more intuitive.
- */
-template <typename VariantType, typename T, std::size_t index = 0>
-constexpr size_t variant_index() {
-    if constexpr (std::is_same_v<std::variant_alternative_t<index, VariantType>, T>) {
-        return (index);
-    } else {
-        return (variant_index<VariantType, T, index + 1>());
-    }
-}
-
-template<typename ...Ts>
-struct overloaded_visitor : Ts...
-{
-    overloaded_visitor(const Ts&... args)
-        : Ts(args)...
-    {}
-
-    using Ts::operator()...;
-};
-
 }
 
 #endif /* _ICP_PACKETIO_MESSAGE_UTILS_H_ */

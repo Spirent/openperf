@@ -2,26 +2,13 @@
 
 #include "swagger/v1/model/Stack.h"
 #include "packetio/generic_stack.h"
+#include "utils/overloaded_visitor.h"
 
 namespace icp {
 namespace packetio {
 namespace stack {
 
 using namespace swagger::v1::model;
-
-/**
- * This struct is magic.  Use templates and parameter packing to provide
- * some syntactic sugar for creating visitor objects for std::visit.
- */
-template<typename ...Ts>
-struct overloaded_visitor : Ts...
-{
-    overloaded_visitor(const Ts&... args)
-        : Ts(args)...
-    {}
-
-    using Ts::operator()...;
-};
 
 typedef void(protocol_getter)(std::shared_ptr<StackProtocolStats>);
 
@@ -112,7 +99,7 @@ static std::shared_ptr<StackStats> make_swagger_stack_stats(const generic_stack&
 
     /* One of the functions is not like the others... */
     for (auto& kv : stack.stats()) {
-        std::visit(overloaded_visitor(
+        std::visit(utils::overloaded_visitor(
                        [&](const element_stats_data& element) {
                            std::get<element_setter>(setters[kv.first])(make_swagger_element_stats(element));
                        },

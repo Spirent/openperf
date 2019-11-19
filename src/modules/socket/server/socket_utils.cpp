@@ -7,6 +7,7 @@
 #include "socket/server/tcp_socket.h"
 #include "socket/server/udp_socket.h"
 #include "socket/server/socket_utils.h"
+#include "utils/overloaded_visitor.h"
 
 namespace icp {
 namespace socket {
@@ -236,7 +237,7 @@ api::io_channel_offset api_channel_offset(channel_variant& channel, const void* 
 {
     assert(reinterpret_cast<uintptr_t>(base) <= std::numeric_limits<intptr_t>::max());
 
-    return (std::visit(overloaded_visitor(
+    return (std::visit(utils::overloaded_visitor(
                            [&](dgram_channel* ptr) -> api::io_channel_offset {
                                auto offset = (reinterpret_cast<intptr_t>(ptr)
                                               - reinterpret_cast<intptr_t>(base));

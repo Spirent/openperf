@@ -2,6 +2,7 @@
 #include <unistd.h>
 
 #include "packetio/workers/dpdk/tx_scheduler.h"
+#include "utils/overloaded_visitor.h"
 
 namespace icp::packetio::dpdk {
 
@@ -21,19 +22,9 @@ constexpr bool operator>(const entry& left, const entry& right)
     return (left.deadline > right.deadline);
 }
 
-template<typename ...Ts>
-struct overloaded_visitor : Ts...
-{
-    overloaded_visitor(const Ts&... args)
-        : Ts(args)...
-    {}
-
-    using Ts::operator()...;
-};
-
 std::string_view to_string(state& state)
 {
-    return (std::visit(overloaded_visitor(
+    return (std::visit(utils::overloaded_visitor(
                            [](const state_idle&) {
                                return ("idle");
                            },

@@ -7,6 +7,7 @@
 #include "socket/server/tcp_socket.h"
 #include "lwip/pbuf.h"
 #include "lwip/tcp.h"
+#include "utils/overloaded_visitor.h"
 
 namespace icp {
 namespace socket {
@@ -14,7 +15,7 @@ namespace server {
 
 const char * to_string(const tcp_socket_state& state)
 {
-    return (std::visit(overloaded_visitor(
+    return (std::visit(utils::overloaded_visitor(
                            [](const tcp_init&) -> const char* {
                                return ("init");
                            },

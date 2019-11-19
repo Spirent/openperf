@@ -6,6 +6,7 @@
 #include "socket/server/api_handler.h"
 #include "socket/server/socket_utils.h"
 #include "core/icp_core.h"
+#include "utils/overloaded_visitor.h"
 
 namespace icp::socket::server {
 
@@ -195,7 +196,7 @@ int api_handler::handle_requests(int fd)
                                    reinterpret_cast<sockaddr*>(&client), &client_length))
            == sizeof(api::request_msg)) {
 
-        auto reply = std::visit(overloaded_visitor(
+        auto reply = std::visit(utils::overloaded_visitor(
                                     [](const api::request_init&) -> api::reply_msg {
                                         ICP_LOG(ICP_LOG_TRACE, "init request received\n");
                                         return (tl::make_unexpected(EINVAL));

@@ -1,22 +1,9 @@
 #include "socket/api.h"
+#include "utils/overloaded_visitor.h"
 
 namespace icp {
 namespace socket {
 namespace api {
-
-/**
- * This struct is magic.  Use templates and parameter packing to provide
- * some syntactic sugar for creating visitor objects for std::visit.
- */
-template<typename ...Ts>
-struct overloaded_visitor : Ts...
-{
-    overloaded_visitor(const Ts&... args)
-        : Ts(args)...
-    {}
-
-    using Ts::operator()...;
-};
 
 std::string client_socket(const std::string_view id)
 {
@@ -38,7 +25,7 @@ std::optional<api::socket_fd_pair> get_message_fds(const api::reply_msg& reply)
         return (std::nullopt);
     }
 
-    return (std::visit(overloaded_visitor(
+    return (std::visit(utils::overloaded_visitor(
                            [](const api::reply_accept& accept) -> std::optional<socket_fd_pair> {
                                return (std::make_optional(accept.fd_pair));
                            },
@@ -66,7 +53,7 @@ void set_message_fds(api::reply_msg& reply, const api::socket_fd_pair& fd_pair)
         return;
     }
 
-    std::visit(overloaded_visitor(
+    std::visit(utils::overloaded_visitor(
                    [&](api::reply_accept& accept) {
                        accept.fd_pair = fd_pair;
                    },
@@ -90,7 +77,7 @@ void set_message_fds(api::reply_msg& reply, const api::socket_fd_pair& fd_pair)
 
 api::io_channel_ptr to_pointer(api::io_channel_offset offset, const void* base)
 {
-    return (std::visit(overloaded_visitor(
+    return (std::visit(utils::overloaded_visitor(
                            [&](dgram_channel_offset dgram) -> io_channel_ptr {
                                return (reinterpret_cast<dgram_channel*>(
                                            reinterpret_cast<intptr_t>(base) + dgram.offset));

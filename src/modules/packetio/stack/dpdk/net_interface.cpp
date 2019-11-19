@@ -11,6 +11,7 @@
 #include "packetio/memory/dpdk/pbuf_utils.h"
 #include "packetio/stack/dpdk/net_interface.h"
 #include "packetio/stack/dpdk/offload_utils.h"
+#include "utils/overloaded_visitor.h"
 
 namespace icp {
 namespace packetio {
@@ -21,16 +22,6 @@ constexpr static char ifname_1 = 'o';
 
 constexpr static uint16_t netif_rx_chksum_mask = 0xFF00;
 constexpr static uint16_t netif_tx_chksum_mask = 0x00FF;
-
-template<typename ...Ts>
-struct overloaded_visitor : Ts...
-{
-    overloaded_visitor(const Ts&... args)
-        : Ts(args)...
-    {}
-
-    using Ts::operator()...;
-};
 
 /**
  * Retrieve the first instance of a protocol in the configuration vector.
@@ -257,7 +248,7 @@ static err_t setup_ipv4_interface(const std::optional<interface::ipv4_protocol_c
 
     if (ipv4_config) {
         /* Explicit IPv4 config; so use it */
-        std::visit(overloaded_visitor(
+        std::visit(utils::overloaded_visitor(
                        [&](const interface::ipv4_static_protocol_config& ipv4) {
                            ip4_addr address = { htonl(ipv4.address.data()) };
                            ip4_addr netmask = { htonl(to_netmask(ipv4.prefix_length)) };

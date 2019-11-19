@@ -5,26 +5,13 @@
 
 #include "swagger/v1/model/Port.h"
 #include "packetio/generic_port.h"
+#include "utils/overloaded_visitor.h"
 
 namespace icp {
 namespace packetio {
 namespace port {
 
 using namespace swagger::v1::model;
-
-/**
- * This struct is magic.  Use templates and parameter packing to provide
- * some syntactic sugar for creating visitor objects for std::visit.
- */
-template<typename ...Ts>
-struct overloaded_visitor : Ts...
-{
-    overloaded_visitor(const Ts&... args)
-        : Ts(args)...
-    {}
-
-    using Ts::operator()...;
-};
 
 std::string to_string(const link_status &status)
 {
@@ -114,7 +101,7 @@ static void validate(const dpdk_config& dpdk, std::vector<std::string>& errors)
 
 static bool is_valid(config_data& config, std::vector<std::string>& errors)
 {
-    auto config_visitor = overloaded_visitor(
+    auto config_visitor = utils::overloaded_visitor(
         [&](const bond_config& bond) {
             validate(bond, errors);
         },
