@@ -149,6 +149,48 @@ static port::filter& get_port_filter(std::vector<worker_controller::filter_ptr>&
     return (*(filter->get()));
 }
 
+static void maybe_enable_rxq_tag_detection(const port::filter& filter)
+{
+    if (filter.type() == port::filter_type::flow) {
+        auto& queues = worker::port_queues::instance();
+        auto& container = queues[filter.port_id()];
+        for (uint16_t i = 0; i < container.rx_queues(); i++) {
+            auto rxq = container.rx(i);
+            ICP_LOG(ICP_LOG_DEBUG, "Enabling hardware flow tag detection on RX queue %u:%u\n",
+                    rxq->port_id(), rxq->queue_id());
+            rxq->flags(rxq->flags() | rx_feature_flags::hardware_tags);
+        }
+    }
+}
+
+static void maybe_disable_rxq_tag_detection(const port::filter& filter)
+{
+    if (filter.type() == port::filter_type::flow) {
+        auto& queues = worker::port_queues::instance();
+        auto& container = queues[filter.port_id()];
+        for (uint16_t i = 0; i < container.rx_queues(); i++) {
+            auto rxq = container.rx(i);
+            ICP_LOG(ICP_LOG_DEBUG, "Disabling hardware flow tag detection on RX queue %u:%u\n",
+                    rxq->port_id(), rxq->queue_id());
+            rxq->flags(rxq->flags() & ~rx_feature_flags::hardware_tags);
+        }
+    }
+}
+
+static void maybe_update_rxq_lro_mode(const model::port_info& info)
+{
+    if (info.rx_offloads() & DEV_RX_OFFLOAD_TCP_LRO) {
+        auto& queues = worker::port_queues::instance();
+        auto& container = queues[info.id()];
+        for (uint16_t i = 0; i < container.rx_queues(); i++) {
+            auto rxq = container.rx(i);
+            ICP_LOG(ICP_LOG_DEBUG, "Disabling software LRO on RX queue %u:%u. "
+                    "Hardware support detected\n", rxq->port_id(), rxq->queue_id());
+            rxq->flags(rxq->flags() | rx_feature_flags::hardware_lro);
+        }
+    }
+}
+
 worker_controller::worker_controller(void* context,
                                      icp::core::event_loop& loop,
                                      driver::generic_driver& driver)
@@ -194,6 +236,13 @@ worker_controller::worker_controller(void* context,
     auto q_descriptors = get_queue_descriptors(port_info);
     auto& queues = worker::port_queues::instance();
     queues.setup(q_descriptors);
+
+    /* Update queues to take advantage of port capabilities */
+    /* XXX: queues must be setup first! */
+    std::for_each(std::begin(m_filters), std::end(m_filters),
+                  [](const auto& filter) { maybe_enable_rxq_tag_detection(*filter); });
+    std::for_each(std::begin(port_info), std::end(port_info),
+                  [](const auto& info) { maybe_update_rxq_lro_mode(info); });
 
     /* Distribute queues and schedulers to workers */
     m_workers->add_descriptors(to_worker_descriptors(q_descriptors,
@@ -377,7 +426,8 @@ void worker_controller::add_interface(std::string_view port_id,
                                  + std::to_string(*port_idx) + ") already exists in FIB");
     }
 
-    get_port_filter(m_filters, *port_idx).add_mac_address(mac);
+    auto& filter = get_port_filter(m_filters, *port_idx);
+    filter.add_mac_address(mac, [&]() { maybe_disable_rxq_tag_detection(filter); });
 
     auto to_delete = m_fib->insert_interface(*port_idx, mac,
                                              const_cast<netif*>(
@@ -400,7 +450,8 @@ void worker_controller::del_interface(std::string_view port_id,
     auto to_delete = m_fib->remove_interface(*port_idx, mac);
     m_recycler->writer_add_gc_callback([to_delete](){ delete to_delete; });
 
-    get_port_filter(m_filters, *port_idx).del_mac_address(mac);
+    auto& filter = get_port_filter(m_filters, *port_idx);
+    filter.del_mac_address(mac, [&]() { maybe_enable_rxq_tag_detection(filter); });
 
     ICP_LOG(ICP_LOG_DEBUG, "Removed interface with mac = %s to port %.*s (idx = %u)\n",
             net::to_string(mac).c_str(),

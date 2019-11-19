@@ -45,6 +45,11 @@ uint16_t filter::port_id() const
     return (std::visit(id_visitor, m_filter));
 }
 
+filter_type filter::type() const
+{
+    return (static_cast<filter_type>(m_filter.index()));
+}
+
 void filter::add_mac_address(const net::mac_address& mac)
 {
     auto add_filter_visitor = [&](auto& filter) {
@@ -54,10 +59,34 @@ void filter::add_mac_address(const net::mac_address& mac)
     std::visit(add_filter_visitor, m_filter);
 }
 
+void filter::add_mac_address(const net::mac_address& mac, std::function<void()>&& on_overflow)
+{
+    auto add_filter_visitor = [&](auto& filter) {
+                                  auto event = filter_event_add{
+                                      mac,
+                                      std::forward<std::function<void()>>(on_overflow)
+                                  };
+                                  filter.handle_event(event);
+                              };
+    std::visit(add_filter_visitor, m_filter);
+}
+
 void filter::del_mac_address(const net::mac_address& mac)
 {
     auto del_filter_visitor = [&](auto& filter) {
                                   auto event = filter_event_del{ mac };
+                                  filter.handle_event(event);
+                              };
+    std::visit(del_filter_visitor, m_filter);
+}
+
+void filter::del_mac_address(const net::mac_address& mac, std::function<void()>&& on_underflow)
+{
+    auto del_filter_visitor = [&](auto& filter) {
+                                  auto event = filter_event_del{
+                                      mac,
+                                      std::forward<std::function<void()>>(on_underflow)
+                                  };
                                   filter.handle_event(event);
                               };
     std::visit(del_filter_visitor, m_filter);
