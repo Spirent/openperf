@@ -363,7 +363,7 @@ static void run_pollable(run_args&& args)
 {
     bool messages = false;
     auto ctrl_sock = zmq_socket(args.control, &messages);
-    auto& loop_adapter = args.loop.get_reference<event_loop_adapter>();
+    auto& loop_adapter = args.loop.get<event_loop_adapter>();
     auto poller = epoll_poller();
 
     poller.add(&ctrl_sock);
@@ -440,7 +440,7 @@ static void run_spinning(run_args&& args)
 {
     bool messages = false;
     auto ctrl_sock = zmq_socket(args.control, &messages);
-    auto& loop_adapter = args.loop.get_reference<event_loop_adapter>();
+    auto& loop_adapter = args.loop.get<event_loop_adapter>();
     auto poller = epoll_poller();
 
     poller.add(&ctrl_sock);

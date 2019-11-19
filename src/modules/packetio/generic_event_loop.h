@@ -48,7 +48,7 @@ public:
     }
 
     template <typename EventLoop>
-    EventLoop& get_reference() const
+    EventLoop& get() const
     {
         return (*(std::any_cast<EventLoop*>(m_self->get_pointer())));
     }

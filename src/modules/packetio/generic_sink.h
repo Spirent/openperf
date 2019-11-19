@@ -1,6 +1,7 @@
 #ifndef _ICP_PACKETIO_GENERIC_SINK_H_
 #define _ICP_PACKETIO_GENERIC_SINK_H_
 
+#include <any>
 #include <memory>
 #include <string>
 
@@ -30,11 +31,18 @@ public:
         return (id() == other.id());
     }
 
+    template <typename Sink>
+    Sink& get() const
+    {
+        return (*(std::any_cast<Sink*>(m_self->get_pointer())));
+    }
+
 private:
     struct sink_concept {
         virtual ~sink_concept() = default;
         virtual std::string id() const = 0;
         virtual uint16_t push(packet_buffer* const packets[], uint16_t length) = 0;
+        virtual std::any get_pointer() noexcept = 0;
     };
 
     template <typename Sink>
@@ -51,6 +59,11 @@ private:
         uint16_t push(packet_buffer* const packets[], uint16_t length) override
         {
             return (m_sink.push(packets, length));
+        }
+
+        std::any get_pointer() noexcept override
+        {
+            return (std::addressof(m_sink));
         }
 
         Sink m_sink;
