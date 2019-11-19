@@ -4,6 +4,8 @@
 
 #include "packetio/message_utils.h"
 #include "packetio/workers/dpdk/worker_api.h"
+#include "utils/overloaded_visitor.h"
+#include "utils/variant_index.h"
 
 namespace icp::packetio::dpdk::worker {
 
@@ -22,7 +24,7 @@ static serialized_msg serialize_message(const command_msg& msg)
 {
     serialized_msg serialized;
     auto error = (message::zmq_msg_init(&serialized.type, msg.index())
-                  || std::visit(message::overloaded_visitor(
+                  || std::visit(utils::overloaded_visitor(
                                     [&](const start_msg& start) {
                                         assert(start.endpoint.length());
                                         return (message::zmq_msg_init(&serialized.data,
@@ -79,23 +81,23 @@ static command_msg deserialize_message(const serialized_msg& msg)
     using index_type = decltype(std::declval<command_msg>().index());
     auto idx = *(message::zmq_msg_data<index_type*>(&msg.type));
     switch (idx) {
-    case message::variant_index<command_msg, start_msg>(): {
+    case utils::variant_index<command_msg, start_msg>(): {
         std::string data(message::zmq_msg_data<char*>(&msg.data),
                          zmq_msg_size(&msg.data));
         return (start_msg{ data });
     }
-    case message::variant_index<command_msg, stop_msg>(): {
+    case utils::variant_index<command_msg, stop_msg>(): {
         std::string data(message::zmq_msg_data<char*>(&msg.data),
                          zmq_msg_size(&msg.data));
         return (stop_msg{ data });
     }
-    case message::variant_index<command_msg, add_descriptors_msg>(): {
+    case utils::variant_index<command_msg, add_descriptors_msg>(): {
         auto data = message::zmq_msg_data<descriptor*>(&msg.data);
         auto count = zmq_msg_size(&msg.data) / sizeof(descriptor);
         std::vector<descriptor> descriptors(data, data + count);
         return (add_descriptors_msg{ descriptors });
     }
-    case message::variant_index<command_msg, del_descriptors_msg>(): {
+    case utils::variant_index<command_msg, del_descriptors_msg>(): {
         auto data = message::zmq_msg_data<descriptor*>(&msg.data);
         auto count = zmq_msg_size(&msg.data) / sizeof(descriptor);
         std::vector<descriptor> descriptors(data, data + count);

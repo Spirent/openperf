@@ -3,22 +3,13 @@
 #include "zmq.h"
 
 #include "packetio/workers/dpdk/callback.h"
+#include "utils/overloaded_visitor.h"
 
 namespace icp::packetio::dpdk {
 
-template<typename ...Ts>
-struct overloaded_visitor : Ts...
-{
-    overloaded_visitor(const Ts&... args)
-        : Ts(args)...
-    {}
-
-    using Ts::operator()...;
-};
-
 static int get_event_fd(const event_loop::event_notifier& notifier)
 {
-    return (std::visit(overloaded_visitor(
+    return (std::visit(utils::overloaded_visitor(
                            [](const void* socket) {
                                int fd = -1;
                                size_t fd_size = sizeof(fd);
@@ -35,7 +26,7 @@ static int get_event_fd(const event_loop::event_notifier& notifier)
 
 static void close_event_fd(event_loop::event_notifier& notifier)
 {
-    return (std::visit(overloaded_visitor(
+    return (std::visit(utils::overloaded_visitor(
                            [](void* socket) {
                                zmq_close(socket);
                            },

@@ -13,20 +13,6 @@ namespace icp {
 namespace socket {
 namespace server {
 
-/**
- * This struct is magic.  Use templates and parameter packing to provide
- * some syntactic sugar for creating visitor objects for std::visit.
- */
-template<typename ...Ts>
-struct overloaded_visitor : Ts...
-{
-    overloaded_visitor(const Ts&... args)
-        : Ts(args)...
-    {}
-
-    using Ts::operator()...;
-};
-
 template <typename Derived, typename StateVariant>
 class socket_state_machine
 {

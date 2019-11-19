@@ -1,21 +1,12 @@
 #include "packetio/drivers/dpdk/dpdk.h"
 #include "packetio/drivers/dpdk/port_filter.h"
+#include "utils/overloaded_visitor.h"
 
 namespace icp::packetio::dpdk::port {
 
-template<typename ...Ts>
-struct overloaded_visitor : Ts...
-{
-    overloaded_visitor(const Ts&... args)
-        : Ts(args)...
-    {}
-
-    using Ts::operator()...;
-};
-
 std::string_view to_string(filter_state& state)
 {
-    return (std::visit(overloaded_visitor(
+    return (std::visit(utils::overloaded_visitor(
                            [](filter_state_ok&) { return "ok"; },
                            [](filter_state_overflow&) { return "overflow"; },
                            [](filter_state_disabled&) { return "disabled"; },

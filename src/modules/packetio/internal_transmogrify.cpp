@@ -2,6 +2,8 @@
 
 #include "packetio/message_utils.h"
 #include "packetio/internal_api.h"
+#include "utils/overloaded_visitor.h"
+#include "utils/variant_index.h"
 
 namespace icp::packetio::internal::api {
 
@@ -15,7 +17,7 @@ serialized_msg serialize_request(const request_msg& msg)
 {
     serialized_msg serialized;
     auto error = (message::zmq_msg_init(&serialized.type, msg.index())
-                  || std::visit(message::overloaded_visitor(
+                  || std::visit(utils::overloaded_visitor(
                                     [&](const request_sink_add& sink_add) {
                                         return (message::zmq_msg_init(&serialized.data,
                                                                       std::addressof(sink_add.data),
@@ -72,7 +74,7 @@ serialized_msg serialize_reply(const reply_msg& msg)
 {
     serialized_msg serialized;
     auto error = (message::zmq_msg_init(&serialized.type, msg.index())
-                  || std::visit(message::overloaded_visitor(
+                  || std::visit(utils::overloaded_visitor(
                                     [&](const reply_task_add& task_add) {
                                         return (message::zmq_msg_init(&serialized.data,
                                                                       task_add.task_id.data(),
@@ -107,22 +109,22 @@ tl::expected<request_msg, int> deserialize_request(const serialized_msg& msg)
     using index_type = decltype(std::declval<request_msg>().index());
     auto idx = *(message::zmq_msg_data<index_type*>(&msg.type));
     switch (idx) {
-    case message::variant_index<request_msg, request_sink_add>():
+    case utils::variant_index<request_msg, request_sink_add>():
         return (request_sink_add{ *(message::zmq_msg_data<sink_data*>(&msg.data)) });
-    case message::variant_index<request_msg, request_sink_del>():
+    case utils::variant_index<request_msg, request_sink_del>():
         return (request_sink_del{ *(message::zmq_msg_data<sink_data*>(&msg.data)) });
-    case message::variant_index<request_msg, request_source_add>():
+    case utils::variant_index<request_msg, request_source_add>():
         return (request_source_add{ *(message::zmq_msg_data<source_data*>(&msg.data)) });
-    case message::variant_index<request_msg, request_source_del>():
+    case utils::variant_index<request_msg, request_source_del>():
         return (request_source_del{ *(message::zmq_msg_data<source_data*>(&msg.data)) });
-    case message::variant_index<request_msg, request_task_add>():
+    case utils::variant_index<request_msg, request_task_add>():
         return (request_task_add{ *(message::zmq_msg_data<task_data*>(&msg.data)) });
-    case message::variant_index<request_msg, request_task_del>(): {
+    case utils::variant_index<request_msg, request_task_del>(): {
         std::string data(message::zmq_msg_data<char*>(&msg.data),
                          zmq_msg_size(&msg.data));
         return (request_task_del{ std::move(data) });
     }
-    case message::variant_index<request_msg, request_worker_rx_ids>(): {
+    case utils::variant_index<request_msg, request_worker_rx_ids>(): {
         if (zmq_msg_size(&msg.data)) {
             std::string data(message::zmq_msg_data<char*>(&msg.data),
                              zmq_msg_size(&msg.data));
@@ -130,7 +132,7 @@ tl::expected<request_msg, int> deserialize_request(const serialized_msg& msg)
         }
         return (request_worker_rx_ids{});
     }
-    case message::variant_index<request_msg, request_worker_tx_ids>(): {
+    case utils::variant_index<request_msg, request_worker_tx_ids>(): {
         if (zmq_msg_size(&msg.data)) {
             std::string data(message::zmq_msg_data<char*>(&msg.data),
                              zmq_msg_size(&msg.data));
@@ -148,19 +150,19 @@ tl::expected<reply_msg, int> deserialize_reply(const serialized_msg& msg)
     using index_type = decltype(std::declval<request_msg>().index());
     auto idx = *(message::zmq_msg_data<index_type*>(&msg.type));
     switch (idx) {
-    case message::variant_index<reply_msg, reply_task_add>(): {
+    case utils::variant_index<reply_msg, reply_task_add>(): {
         std::string data(message::zmq_msg_data<char*>(&msg.data),
                          zmq_msg_size(&msg.data));
         return (reply_task_add{ std::move(data) });
     }
-    case message::variant_index<reply_msg, reply_worker_ids>(): {
+    case utils::variant_index<reply_msg, reply_worker_ids>(): {
         auto data = message::zmq_msg_data<unsigned*>(&msg.data);
         std::vector<unsigned> ids(data, data + message::zmq_msg_size<unsigned>(&msg.data));
         return (reply_worker_ids{ std::move(ids) });
     }
-    case message::variant_index<reply_msg, reply_ok>():
+    case utils::variant_index<reply_msg, reply_ok>():
         return (reply_ok{});
-    case message::variant_index<reply_msg, reply_error>():
+    case utils::variant_index<reply_msg, reply_error>():
         return (reply_error{ *(message::zmq_msg_data<int*>(&msg.data)) });
     }
 

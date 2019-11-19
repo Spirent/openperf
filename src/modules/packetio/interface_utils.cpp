@@ -8,26 +8,13 @@
 
 #include "swagger/v1/model/Interface.h"
 #include "packetio/generic_interface.h"
+#include "utils/overloaded_visitor.h"
 
 namespace icp {
 namespace packetio {
 namespace interface {
 
 using namespace swagger::v1::model;
-
-/**
- * This struct is magic.  Use templates and parameter packing to provide
- * some syntactic sugar for creating visitor objects for std::visit.
- */
-template<typename ...Ts>
-struct overloaded_visitor : Ts...
-{
-    overloaded_visitor(const Ts&... args)
-        : Ts(args)...
-    {}
-
-    using Ts::operator()...;
-};
 
 static void validate(const eth_protocol_config& eth,
                      std::vector<std::string>& errors)
@@ -86,7 +73,7 @@ static void validate(const ipv4_static_protocol_config& ipv4,
 static void validate(const ipv4_protocol_config& ipv4,
                      std::vector<std::string>& errors)
 {
-    auto visitor = overloaded_visitor(
+    auto visitor = utils::overloaded_visitor(
         [&](const ipv4_dhcp_protocol_config& dhcp_ipv4) {
             validate(dhcp_ipv4, errors);
         },
@@ -135,7 +122,7 @@ static bool is_valid(config_data& config, std::vector<std::string>& errors)
      * our configuration vector.
      */
     type_info_counter protocol_counter;
-    auto protocol_visitor = overloaded_visitor(
+    auto protocol_visitor = utils::overloaded_visitor(
         [&](const eth_protocol_config& eth) {
             protocol_counter[typeid(eth)]++;
             validate(eth, errors);
@@ -308,7 +295,7 @@ make_swagger_protocol_config(const ipv4_protocol_config& ipv4)
 {
     auto config = std::make_shared<InterfaceProtocolConfig_ipv4>();
 
-    auto visitor = overloaded_visitor(
+    auto visitor = utils::overloaded_visitor(
         [&](const ipv4_dhcp_protocol_config &dhcp_ipv4) {
             config->setDhcp(make_swagger_protocol_config(dhcp_ipv4));
             config->setMethod("dhcp");
@@ -329,7 +316,7 @@ make_swagger_protocol_config(const protocol_config& protocol)
 {
     auto config = std::make_shared<InterfaceProtocolConfig>();
 
-    auto visitor = overloaded_visitor(
+    auto visitor = utils::overloaded_visitor(
         [&](const eth_protocol_config& eth) {
             config->setEth(make_swagger_protocol_config(eth));
         },

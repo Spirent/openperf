@@ -22,6 +22,7 @@
 #include "packetio/workers/dpdk/tx_scheduler.h"
 #include "packetio/workers/dpdk/zmq_socket.h"
 #include "packetio/workers/dpdk/worker_api.h"
+#include "utils/overloaded_visitor.h"
 
 namespace icp::packetio::dpdk::worker {
 
@@ -38,20 +39,6 @@ struct state_stopped {};
 struct state_started {};
 
 using state = std::variant<state_stopped, state_started>;
-
-/**
- * This struct is magic.  Use templates and parameter packing to provide
- * some syntactic sugar for creating visitor objects for std::visit.
- */
-template<typename ...Ts>
-struct overloaded_visitor : Ts...
-{
-    overloaded_visitor(const Ts&... args)
-        : Ts(args)...
-    {}
-
-    using Ts::operator()...;
-};
 
 /**
  * This CRTP based class provides a simple finite state machine framework
@@ -300,7 +287,7 @@ static uint16_t tx_burst(const tx_queue* txq)
 static uint16_t service_event(event_loop::generic_event_loop& loop,
                               const fib* fib, const task_ptr& task)
 {
-    return (std::visit(overloaded_visitor(
+    return (std::visit(utils::overloaded_visitor(
                            [&](const callback* cb) -> uint16_t {
                                const_cast<callback*>(cb)->run_callback(loop);
                                return (0);
@@ -408,7 +395,7 @@ static void run_pollable(run_args&& args)
         {
             auto guard = packetio::recycle::guard(*args.recycler, rte_lcore_id());
             for (auto& event : events) {
-                std::visit(overloaded_visitor(
+                std::visit(utils::overloaded_visitor(
                                [&](callback *cb) {
                                    cb->run_callback(args.loop);
                                },
@@ -528,7 +515,7 @@ class worker : public finite_state_machine<worker, state, command_msg>
         for (auto& d: descriptors) {
             if (d.worker_id != rte_lcore_id()) continue;
 
-            std::visit(overloaded_visitor(
+            std::visit(utils::overloaded_visitor(
                            [&](callback* callback) {
                                ICP_LOG(ICP_LOG_DEBUG, "Adding task %.*s to worker %u\n",
                                        static_cast<int>(callback->name().length()), callback->name().data(),
@@ -563,7 +550,7 @@ class worker : public finite_state_machine<worker, state, command_msg>
              * XXX: Careful!  These pointers have likely been deleted by their owners at this point,
              * so don't dereference them!
              */
-            std::visit(overloaded_visitor(
+            std::visit(utils::overloaded_visitor(
                            [&](callback* cb) {
                                ICP_LOG(ICP_LOG_DEBUG, "Removing task from worker %u\n",
                                        rte_lcore_id());

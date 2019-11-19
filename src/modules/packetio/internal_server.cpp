@@ -1,19 +1,10 @@
 #include "packetio/internal_api.h"
 #include "packetio/internal_server.h"
+#include "utils/overloaded_visitor.h"
 
 namespace icp::packetio::internal::api {
 
 std::string_view endpoint = "inproc://icp_packetio_internal";
-
-template<typename ...Ts>
-struct overloaded_visitor : Ts...
-{
-    overloaded_visitor(const Ts&... args)
-        : Ts(args)...
-    {}
-
-    using Ts::operator()...;
-};
 
 reply_msg handle_request(workers::generic_workers& workers,
                          const request_sink_add& request)
@@ -100,7 +91,7 @@ reply_msg handle_request(workers::generic_workers& workers,
 
 static std::string to_string(request_msg& request)
 {
-    return (std::visit(overloaded_visitor(
+    return (std::visit(utils::overloaded_visitor(
                            [](const request_sink_add& msg) {
                                return ("add sink " + std::string(msg.data.sink.id())
                                        + " to source " + std::string(msg.data.src_id));
