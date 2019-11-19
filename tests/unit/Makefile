@@ -21,6 +21,7 @@ SOURCES := \
 	test_main.cpp \
 	framework/test_config_file_utils.cpp \
 	framework/test_config_utils.cpp \
+	framework/test_enum_flags.cpp \
 	framework/test_hashtab.cpp \
 	framework/test_init_factory.cpp \
 	framework/test_list.cpp \
