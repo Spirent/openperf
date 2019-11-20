@@ -2,25 +2,25 @@
 # Base Makefile component for all builds
 #
 
-$(call icp_check_vars,ICP_ROOT ICP_TARGET)
+$(call op_check_vars,OP_ROOT OP_TARGET)
 
 # Generate platform/arch/mode tuple and load corresponding sub-makefiles
 PLATFORM ?= $(shell uname -s | tr [A-Z] [a-z])
-ifeq (,$(wildcard $(ICP_ROOT)/mk/platform/$(PLATFORM).mk))
+ifeq (,$(wildcard $(OP_ROOT)/mk/platform/$(PLATFORM).mk))
 $(error unsupported build platform $(PLATFORM))
 endif
-include $(ICP_ROOT)/mk/platform/$(PLATFORM).mk
+include $(OP_ROOT)/mk/platform/$(PLATFORM).mk
 
 ARCH ?= $(shell uname -m)
-ifeq (,$(wildcard $(ICP_ROOT)/mk/arch/$(ARCH).mk))
+ifeq (,$(wildcard $(OP_ROOT)/mk/arch/$(ARCH).mk))
 $(error unsupported build architecture $(ARCH))
 endif
-include $(ICP_ROOT)/mk/arch/$(ARCH).mk
+include $(OP_ROOT)/mk/arch/$(ARCH).mk
 
 MODE ?= testing
-ifeq (,$(wildcard $(ICP_ROOT)/mk/mode/$(MODE).mk))
+ifeq (,$(wildcard $(OP_ROOT)/mk/mode/$(MODE).mk))
 $(error unsupported build mode $(MODE))
 endif
-include $(ICP_ROOT)/mk/mode/$(MODE).mk
+include $(OP_ROOT)/mk/mode/$(MODE).mk
 
-ICP_BUILD_ROOT := $(ICP_ROOT)/build/$(ICP_TARGET)-$(PLATFORM)-$(ARCH)-$(MODE)
+OP_BUILD_ROOT := $(OP_ROOT)/build/$(OP_TARGET)-$(PLATFORM)-$(ARCH)-$(MODE)

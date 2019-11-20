@@ -10,7 +10,7 @@
 #include "packetio/generic_interface.h"
 #include "utils/overloaded_visitor.h"
 
-namespace icp {
+namespace openperf {
 namespace packetio {
 namespace interface {
 

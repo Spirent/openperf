@@ -2,14 +2,14 @@
 # Makefile to build unit tests
 #
 
-all: test_inception
+all: test_openperf
 
-ICP_ROOT := $(realpath ../../)
-ICP_TARGET := tests
-include $(ICP_ROOT)/mk/bootstrap.mk
+OP_ROOT := $(realpath ../../)
+OP_TARGET := tests
+include $(OP_ROOT)/mk/bootstrap.mk
 
-BUILD_DIR := $(ICP_BUILD_ROOT)/obj/unit
-TARGET_DIR := $(ICP_BUILD_ROOT)/bin
+BUILD_DIR := $(OP_BUILD_ROOT)/obj/unit
+TARGET_DIR := $(OP_BUILD_ROOT)/bin
 
 SRC_DEPENDS :=
 BLD_DEPENDS := catch api_test config_file framework packetio_test socket_test
@@ -41,29 +41,29 @@ SOURCES := \
 	modules/socket/test_circular_buffer.cpp \
 	modules/socket/test_event_queue.cpp
 
-OBJECTS := $(call icp_generate_objects,$(SOURCES),$(BUILD_DIR))
+OBJECTS := $(call op_generate_objects,$(SOURCES),$(BUILD_DIR))
 
 # Pull in dependencies
 -include $(OBJECTS:.o=.d)
-$(call icp_include_dependencies,$(BLD_DEPENDS))
+$(call op_include_dependencies,$(BLD_DEPENDS))
 
-ICP_CONFIG_OPTS += --enable-static=yes --enable-shared=no
-ICP_CPPFLAGS += $(addprefix -I,$(sort $(ICP_INC_DIRS)))
-ICP_LDFLAGS += $(addprefix -L,$(sort $(ICP_LIB_DIRS)))
+OP_CONFIG_OPTS += --enable-static=yes --enable-shared=no
+OP_CPPFLAGS += $(addprefix -I,$(sort $(OP_INC_DIRS)))
+OP_LDFLAGS += $(addprefix -L,$(sort $(OP_LIB_DIRS)))
 
 # Build rules
-$(eval $(call icp_generate_build_rules,$(SOURCES),,BUILD_DIR,BLD_DEPENDS))
+$(eval $(call op_generate_build_rules,$(SOURCES),,BUILD_DIR,BLD_DEPENDS))
 
 # Need to fix immer at some point
-$(BUILD_DIR)/modules/packetio/%.o: ICP_CPPFLAGS += -Wno-unused-parameter -Wno-shadow
+$(BUILD_DIR)/modules/packetio/%.o: OP_CPPFLAGS += -Wno-unused-parameter -Wno-shadow
 
-$(TARGET_DIR)/test_inception: $(OBJECTS) $(BLD_DEPENDS)
-	$(call icp_link_binary,$@,$(OBJECTS))
+$(TARGET_DIR)/test_openperf: $(OBJECTS) $(BLD_DEPENDS)
+	$(call op_link_binary,$@,$(OBJECTS))
 
-.PHONY: test_inception
-test_inception: $(TARGET_DIR)/test_inception
-	$(TARGET_DIR)/test_inception
+.PHONY: test_openperf
+test_openperf: $(TARGET_DIR)/test_openperf
+	$(TARGET_DIR)/test_openperf
 
 .PHONY: clean
 clean:
-	@rm -rf $(ICP_BUILD_ROOT)
+	@rm -rf $(OP_BUILD_ROOT)

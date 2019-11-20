@@ -1,12 +1,12 @@
-#ifndef _ICP_PACKETIO_DPDK_WORKER_CONTROLLER_H_
-#define _ICP_PACKETIO_DPDK_WORKER_CONTROLLER_H_
+#ifndef _OP_PACKETIO_DPDK_WORKER_CONTROLLER_H_
+#define _OP_PACKETIO_DPDK_WORKER_CONTROLLER_H_
 
 #include <map>
 #include <memory>
 #include <unordered_map>
 #include <utility>
 
-#include "core/icp_uuid.h"
+#include "core/op_uuid.h"
 #include "packetio/generic_driver.h"
 #include "packetio/generic_event_loop.h"
 #include "packetio/generic_workers.h"
@@ -16,16 +16,16 @@
 #include "packetio/workers/dpdk/worker_api.h"
 #include "utils/hash_combine.h"
 
-namespace icp::core {
+namespace openperf::core {
 class event_loop;
 }
 
-namespace icp::packetio::dpdk {
+namespace openperf::packetio::dpdk {
 
 class worker_controller
 {
 public:
-    worker_controller(void* context, icp::core::event_loop& loop,
+    worker_controller(void* context, openperf::core::event_loop& loop,
                       driver::generic_driver& driver);
     ~worker_controller();
 
@@ -89,4 +89,4 @@ private:
 
 }
 
-#endif /* _ICP_PACKETIO_DPDK_WORKER_CONTROLLER_H_ */
+#endif /* _OP_PACKETIO_DPDK_WORKER_CONTROLLER_H_ */

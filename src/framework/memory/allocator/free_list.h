@@ -1,12 +1,12 @@
-#ifndef _ICP_MEMORY_ALLOCATOR_FREE_LIST_H_
-#define _ICP_MEMORY_ALLOCATOR_FREE_LIST_H_
+#ifndef _OP_MEMORY_ALLOCATOR_FREE_LIST_H_
+#define _OP_MEMORY_ALLOCATOR_FREE_LIST_H_
 
 #include <cstddef>
 #include <cstdint>
 
 #include "memory/allocator/bsd_tree.h"
 
-namespace icp {
+namespace openperf {
 namespace memory {
 namespace allocator {
 namespace impl {
@@ -41,4 +41,4 @@ public:
 }
 }
 
-#endif /* _ICP_MEMORY_ALLOCATOR_FREE_LIST_H_ */
+#endif /* _OP_MEMORY_ALLOCATOR_FREE_LIST_H_ */

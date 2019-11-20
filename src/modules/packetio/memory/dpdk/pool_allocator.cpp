@@ -3,13 +3,13 @@
 
 #include "lwip/pbuf.h"
 
-#include "core/icp_core.h"
+#include "core/op_core.h"
 #include "packetio/drivers/dpdk/dpdk.h"
 #include "packetio/drivers/dpdk/model/port_info.h"
 #include "packetio/memory/dpdk/memp.h"
 #include "packetio/memory/dpdk/pool_allocator.h"
 
-namespace icp {
+namespace openperf {
 namespace packetio {
 namespace dpdk {
 
@@ -50,7 +50,7 @@ static struct cache_size_map {
 __attribute__((const))
 static uint32_t get_cache_size(uint32_t nb_mbufs)
 {
-    for (size_t i = 0; i < icp_count_of(packetio_cache_size_map); i++) {
+    for (size_t i = 0; i < op_count_of(packetio_cache_size_map); i++) {
         if (packetio_cache_size_map[i].nb_mbufs == nb_mbufs) {
             return (packetio_cache_size_map[i].cache_size);
         }
@@ -74,7 +74,7 @@ static uint32_t pool_size_adjust(uint32_t nb_mbufs)
 
 static void log_mempool(const struct rte_mempool *mpool)
 {
-    ICP_LOG(ICP_LOG_DEBUG, "%s: %u, %u byte mbufs on NUMA socket %d\n",
+    OP_LOG(OP_LOG_DEBUG, "%s: %u, %u byte mbufs on NUMA socket %d\n",
             mpool->name,
             mpool->size,
             rte_pktmbuf_data_room_size((struct rte_mempool *)mpool),
@@ -86,7 +86,7 @@ static rte_mempool* create_pbuf_mempool(const char* name, size_t size,
 {
     static_assert(PBUF_PRIVATE_SIZE >= sizeof(struct pbuf));
 
-    size_t nb_mbufs = icp_min(131072, pool_size_adjust(icp_max(1024U, size)));
+    size_t nb_mbufs = op_min(131072, pool_size_adjust(op_max(1024U, size)));
 
     rte_mempool* mp = rte_pktmbuf_pool_create_by_ops(
         name,

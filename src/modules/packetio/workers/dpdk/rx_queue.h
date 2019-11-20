@@ -1,5 +1,5 @@
-#ifndef _ICP_PACKETIO_DPDK_RX_QUEUE_H_
-#define _ICP_PACKETIO_DPDK_RX_QUEUE_H_
+#ifndef _OP_PACKETIO_DPDK_RX_QUEUE_H_
+#define _OP_PACKETIO_DPDK_RX_QUEUE_H_
 
 #include <atomic>
 #include <cstdint>
@@ -7,7 +7,7 @@
 #include "utils/enum_flags.h"
 #include "packetio/drivers/dpdk/dpdk.h"
 
-namespace icp::packetio::dpdk {
+namespace openperf::packetio::dpdk {
 
 enum class rx_feature_flags {
     hardware_lro  = (1 << 0),  /**< Hardware supports LRO */
@@ -25,7 +25,7 @@ public:
     uint16_t port_id() const;
     uint16_t queue_id() const;
 
-    using bitflags = icp::utils::bit_flags<rx_feature_flags>;
+    using bitflags = openperf::utils::bit_flags<rx_feature_flags>;
     bitflags flags() const;
     void flags(bitflags flags);
 
@@ -44,6 +44,6 @@ private:
 
 }
 
-declare_enum_flags(icp::packetio::dpdk::rx_feature_flags);
+declare_enum_flags(openperf::packetio::dpdk::rx_feature_flags);
 
-#endif /* _ICP_PACKETIO_DPDK_RX_QUEUE_H_ */
+#endif /* _OP_PACKETIO_DPDK_RX_QUEUE_H_ */

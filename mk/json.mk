@@ -3,12 +3,12 @@
 #
 
 JSON_REQ_VARS := \
-	ICP_ROOT
-$(call icp_check_vars,$(JSON_REQ_VARS))
+	OP_ROOT
+$(call op_check_vars,$(JSON_REQ_VARS))
 
-JSON_SRC_DIR := $(ICP_ROOT)/deps/json
+JSON_SRC_DIR := $(OP_ROOT)/deps/json
 
-ICP_INC_DIRS += $(JSON_SRC_DIR)/single_include/nlohmann
+OP_INC_DIRS += $(JSON_SRC_DIR)/single_include/nlohmann
 
 ###
 # No build rules; header only

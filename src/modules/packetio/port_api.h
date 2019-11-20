@@ -1,5 +1,5 @@
-#ifndef _ICP_PACKETIO_PORT_API_H_
-#define _ICP_PACKETIO_PORT_API_H_
+#ifndef _OP_PACKETIO_PORT_API_H_
+#define _OP_PACKETIO_PORT_API_H_
 
 #include <memory>
 #include <string>
@@ -15,7 +15,7 @@ class Port;
 }
 }
 
-namespace icp {
+namespace openperf {
 
 namespace core {
 class event_loop;
@@ -56,4 +56,4 @@ extern const std::string endpoint;
 }
 }
 
-#endif /*_ICP_PACKETIO_PORT_API_H_ */
+#endif /*_OP_PACKETIO_PORT_API_H_ */

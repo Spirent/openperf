@@ -1,5 +1,5 @@
-#ifndef _ICP_MEMORY_OFFSET_PTR_H_
-#define _ICP_MEMORY_OFFSET_PTR_H_
+#ifndef _OP_MEMORY_OFFSET_PTR_H_
+#define _OP_MEMORY_OFFSET_PTR_H_
 
 /**
  * Pointer that contains the offset from this pointer to the pointed to value
@@ -11,7 +11,7 @@
 #include <cstddef>
 #include <iterator>
 
-namespace icp::memory {
+namespace openperf::memory {
 
 template <typename T>
 class offset_ptr {
@@ -105,4 +105,4 @@ public:
 
 }
 
-#endif /* _ICP_MEMORY_OFFSET_PTR_H_ */
+#endif /* _OP_MEMORY_OFFSET_PTR_H_ */

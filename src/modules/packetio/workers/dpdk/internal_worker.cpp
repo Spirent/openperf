@@ -1,7 +1,7 @@
 #include "packetio/internal_worker.h"
 #include "packetio/drivers/dpdk/dpdk.h"
 
-namespace icp::packetio::internal::worker {
+namespace openperf::packetio::internal::worker {
 
 unsigned get_id()
 {

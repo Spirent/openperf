@@ -1,10 +1,10 @@
-#ifndef _ICP_UTILS_HASH_COMBINE_H_
-#define _ICP_UTILS_HASH_COMBINE_H_
+#ifndef _OP_UTILS_HASH_COMBINE_H_
+#define _OP_UTILS_HASH_COMBINE_H_
 
 #include <type_traits>
 #include <utility>
 
-namespace icp::utils {
+namespace openperf::utils {
 
 /*
  * This hash combining function is shamelessly taken from the boost hash_combine
@@ -46,7 +46,7 @@ struct hash<std::tuple<Types...>>
 {
     size_t operator()(const std::tuple<Types...>& tuple) const
     {
-        return (icp::utils::hash_combine_tuple<0>(size_t{0}, tuple));
+        return (openperf::utils::hash_combine_tuple<0>(size_t{0}, tuple));
     }
 };
 
@@ -55,12 +55,12 @@ struct hash<std::pair<First, Second>>
 {
     size_t operator()(const std::pair<First, Second>& pair) const
     {
-        return (icp::utils::hash_combine(
-                    icp::utils::hash_combine(size_t{0}, pair.first),
+        return (openperf::utils::hash_combine(
+                    openperf::utils::hash_combine(size_t{0}, pair.first),
                     pair.second));
     }
 };
 
 }
 
-#endif /* _ICP_UTILS_HASH_COMBINE_H_ */
+#endif /* _OP_UTILS_HASH_COMBINE_H_ */

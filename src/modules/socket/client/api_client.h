@@ -1,5 +1,5 @@
-#ifndef _ICP_SOCKET_API_CLIENT_H_
-#define _ICP_SOCKET_API_CLIENT_H_
+#ifndef _OP_SOCKET_API_CLIENT_H_
+#define _OP_SOCKET_API_CLIENT_H_
 
 #include <memory>
 #include <string>
@@ -11,9 +11,9 @@
 #include "socket/client/io_channel_wrapper.h"
 #include "socket/shared_segment.h"
 #include "socket/unix_socket.h"
-#include "core/icp_uuid.h"
+#include "core/op_uuid.h"
 
-namespace icp {
+namespace openperf {
 namespace socket {
 namespace api {
 
@@ -35,7 +35,7 @@ protected:
 
 class client : public thread_singleton<client>
 {
-    using io_channel_wrapper = icp::socket::client::io_channel_wrapper;
+    using io_channel_wrapper = openperf::socket::client::io_channel_wrapper;
 
     core::uuid m_uuid;
     unix_socket m_sock;
@@ -92,4 +92,4 @@ public:
 }
 }
 
-#endif /* _ICP_SOCKET_API_CLIENT_H_ */
+#endif /* _OP_SOCKET_API_CLIENT_H_ */

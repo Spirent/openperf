@@ -9,7 +9,7 @@
 
 #include "socket/unix_socket.h"
 
-namespace icp {
+namespace openperf {
 namespace socket {
 
 void check_and_create_path(const std::string_view path)
@@ -55,7 +55,7 @@ unix_socket::unix_socket(const std::string_view path, int type)
     if (bind(m_fd, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) == -1) {
         if (errno == EADDRINUSE) {
             throw std::runtime_error("Could not bind to unix socket at \""
-                                     + m_path + "\". Either Inception is already "
+                                     + m_path + "\". Either OpenPerf is already "
                                      + "running or did not shut down cleanly. "
                                      + "Use --modules.socket.force-unlink option "
                                      + "to force launch.");

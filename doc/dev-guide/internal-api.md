@@ -9,33 +9,33 @@ This section gives some practical example for creating an using the OpenPerf sta
 
 ```C++	
 void main(int argc, const char ** argv) {
-	icp_thread_setname("icp_main");
+	op_thread_setname("op_main");
 	
 	void *context = zmq_ctx_new();
 	if (!context) {
-	    icp_exit("Could not initialize ZeroMQ context!");
+	    op_exit("Could not initialize ZeroMQ context!");
 	}
 	
 	/* Do initialization... */
-	icp_init(context, argc, argv);
+	op_init(context, argc, argv);
 }
 ```
 
-The application should be started with the arguments `--config config.yaml` in order for `icp_init` to locate the configuration file. 
+The application should be started with the arguments `--config config.yaml` in order for `op_init` to locate the configuration file. 
 
 > The reason for passing the configuration as an arugment to the program is to be able to switch between configuration files when multiple NICs are available. For instance, one would run a test with program -c config_nic1.yaml then program -c config_nic2.yaml, etc.
 
 The `context` is a ZeroMQ message queue used to communicate with the OpenPerf engine. The internal API client can be accessed using
 
 ```C++	
-auto client = icp::packetio::internal::api::client(context);
+auto client = openperf::packetio::internal::api::client(context);
 ```
 
 Once the test is finished, cleanup the stack using:
 
 ```C++	
 /* ... then clean up and exit. */
-icp_halt(context);
+op_halt(context);
 ```
 
 Note that in the following examples, this configuration is uses (is exposes `port0` and it's associated _interface_).
@@ -73,7 +73,7 @@ client.add_source("port0", source0);
 Where `port0` must be defined in the configuration file (`config.yaml`) and where `source0` is an OpenPerf source:
 
 ```C++	
-auto source0 = 	icp::packetio::packets::generic_source(test_source());
+auto source0 = 	openperf::packetio::packets::generic_source(test_source());
 ```
 
 The test source needs to implement the following methods:
@@ -100,14 +100,14 @@ Method | return type | Comment
 `Active` | boolean | true if generation is active 
 `burst_size` | uint16 | Needed for prealloc
 `max_packet_length` | uint16 | Needed for prealloc
-`packet_rate` | icp::units::rate | Packet rate
+`packet_rate` | openperf::units::rate | Packet rate
 `transform` | ... | Actual packet generator
 
 The `transform` is the core of the generator. A UDP/IP/ETH generator would look like this:
 
 ```C++	
-using namespace icp::packetio;
-using namespace icp::packetio::packets;
+using namespace openperf::packetio;
+using namespace openperf::packetio::packets;
 	
 uint16_t transform(packet_buffer* input[], uint16_t count, packet_buffer* output[])
 {
@@ -187,7 +187,7 @@ Full generator source code available from [source-example/main.cpp](../../target
 Creating sinks, aka analysers, is as easy as generators:
 
 ```C++	
-auto sink0 = icp::packetio::packets::generic_sink(test_sink());
+auto sink0 = openperf::packetio::packets::generic_sink(test_sink());
 auto success = client.add_sink("port0", sink0);
 ```
     
@@ -210,10 +210,10 @@ test_sink& operator=(test_sink&& other)
 The `id` method is the same as for the generator, allowing to specify on which worker/core the sink is running. The `push` method is called for each received packet. For instance, this code will create statistics for received packet length.
 
 ```C++	
-uint16_t push(icp::packetio::packets::packet_buffer* const packets[], uint16_t length) const
+uint16_t push(openperf::packetio::packets::packet_buffer* const packets[], uint16_t length) const
 {
     for(uint16_t i = 0; i < length; i++) {
-        m_counter->add(icp::packetio::packets::length(packets[i]));
+        m_counter->add(openperf::packetio::packets::length(packets[i]));
     }
     return (length);
 }

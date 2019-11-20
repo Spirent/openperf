@@ -1,10 +1,10 @@
-#ifndef _ICP_FRAMEWORK_NET_IPV4_ADDRESS_H_
-#define _ICP_FRAMEWORK_NET_IPV4_ADDRESS_H_
+#ifndef _OP_FRAMEWORK_NET_IPV4_ADDRESS_H_
+#define _OP_FRAMEWORK_NET_IPV4_ADDRESS_H_
 
 #include <cstdint>
 #include <string>
 
-namespace icp {
+namespace openperf {
 namespace net {
 
 class ipv4_address
@@ -43,4 +43,4 @@ inline bool operator>=(const ipv4_address& lhs, const ipv4_address& rhs) { retur
 }
 }
 
-#endif /* _ICP_FRAMEWORK_NET_IPV4_ADDRESS_H_ */
+#endif /* _OP_FRAMEWORK_NET_IPV4_ADDRESS_H_ */

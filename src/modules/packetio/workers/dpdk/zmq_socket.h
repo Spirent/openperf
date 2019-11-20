@@ -1,9 +1,9 @@
-#ifndef _ICP_PACKETIO_DPDK_ZMQ_SOCKET_H_
-#define _ICP_PACKETIO_DPDK_ZMQ_SOCKET_H_
+#ifndef _OP_PACKETIO_DPDK_ZMQ_SOCKET_H_
+#define _OP_PACKETIO_DPDK_ZMQ_SOCKET_H_
 
 #include "packetio/workers/dpdk/pollable_event.tcc"
 
-namespace icp::packetio::dpdk {
+namespace openperf::packetio::dpdk {
 
 class zmq_socket : public pollable_event<zmq_socket> {
     void* m_socket;
@@ -24,4 +24,4 @@ public:
 
 }
 
-#endif /* _ICP_PACKETIO_DPDK_ZMQ_SOCKET_H_ */
+#endif /* _OP_PACKETIO_DPDK_ZMQ_SOCKET_H_ */

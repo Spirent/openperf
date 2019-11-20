@@ -3,7 +3,7 @@
 
 #include "socket/event_queue_consumer.h"
 
-namespace icp {
+namespace openperf {
 namespace socket {
 
 template <typename Derived>

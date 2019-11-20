@@ -1,11 +1,11 @@
-#ifndef _ICP_SOCKET_SERVER_PBUF_VEC_H_
-#define _ICP_SOCKET_SERVER_PBUF_VEC_H_
+#ifndef _OP_SOCKET_SERVER_PBUF_VEC_H_
+#define _OP_SOCKET_SERVER_PBUF_VEC_H_
 
 #include <cstdint>
 
 struct pbuf;
 
-namespace icp::socket::server {
+namespace openperf::socket::server {
 
 class pbuf_vec
 {
@@ -33,4 +33,4 @@ public:
 
 }
 
-#endif /* _ICP_SOCKET_SERVER_PBUF_VEC_H_ */
+#endif /* _OP_SOCKET_SERVER_PBUF_VEC_H_ */

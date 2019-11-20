@@ -1,5 +1,5 @@
-#ifndef _ICP_PACKETIO_GENERIC_INTERFACE_H_
-#define _ICP_PACKETIO_GENERIC_INTERFACE_H_
+#ifndef _OP_PACKETIO_GENERIC_INTERFACE_H_
+#define _OP_PACKETIO_GENERIC_INTERFACE_H_
 
 #include <any>
 #include <memory>
@@ -20,7 +20,7 @@ class Interface;
 }
 }
 
-namespace icp {
+namespace openperf {
 namespace packetio {
 namespace interface {
 
@@ -178,4 +178,4 @@ std::optional<T> get_optional_key(const nlohmann::json& j, const char *key)
 }
 }
 
-#endif /* _ICP_PACKETIO_GENERIC_INTERFACE_H_ */
+#endif /* _OP_PACKETIO_GENERIC_INTERFACE_H_ */

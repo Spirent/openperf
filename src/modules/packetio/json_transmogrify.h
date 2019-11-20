@@ -1,5 +1,5 @@
-#ifndef _ICP_PACKETIO_JSON_TRANSMOGRIFY_H_
-#define _ICP_PACKETIO_JSON_TRANSMOGRIFY_H_
+#ifndef _OP_PACKETIO_JSON_TRANSMOGRIFY_H_
+#define _OP_PACKETIO_JSON_TRANSMOGRIFY_H_
 
 #include "json.hpp"
 #include "swagger/v1/model/Interface.h"
@@ -16,10 +16,10 @@ void from_json(const nlohmann::json&, swagger::v1::model::Port&);
 }
 }
 
-namespace icp {
+namespace openperf {
 namespace packetio {
     static const std::string empty_id_string = "none";
 }
 }
 
-#endif /* _ICP_PACKETIO_JSON_TRANSMOGRIFY_H_ */
+#endif /* _OP_PACKETIO_JSON_TRANSMOGRIFY_H_ */

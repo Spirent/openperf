@@ -3,11 +3,11 @@
 #include "json.hpp"
 
 #include "api/api_route_handler.h"
-#include "core/icp_core.h"
+#include "core/op_core.h"
 #include "packetio/stack_api.h"
-#include "config/icp_config_utils.h"
+#include "config/op_config_utils.h"
 
-namespace icp {
+namespace openperf {
 namespace packetio {
 namespace stack {
 namespace api {
@@ -20,12 +20,12 @@ json submit_request(void *socket, json& request)
     auto type = request["type"].get<request_type>();
     switch (type) {
     case request_type::GET_STACK:
-        ICP_LOG(ICP_LOG_TRACE, "Sending %s request for stack %s\n",
+        OP_LOG(OP_LOG_TRACE, "Sending %s request for stack %s\n",
                 to_string(type).c_str(),
                 request["id"].get<std::string>().c_str());
         break;
     default:
-        ICP_LOG(ICP_LOG_TRACE, "Sending %s request\n", to_string(type).c_str());
+        OP_LOG(OP_LOG_TRACE, "Sending %s request\n", to_string(type).c_str());
     }
 
     std::vector<uint8_t> request_buffer = json::to_cbor(request);
@@ -39,7 +39,7 @@ json submit_request(void *socket, json& request)
         };
     }
 
-    ICP_LOG(ICP_LOG_TRACE, "Received %s reply\n", to_string(type).c_str());
+    OP_LOG(OP_LOG_TRACE, "Received %s reply\n", to_string(type).c_str());
 
     std::vector<uint8_t> reply_buffer(static_cast<uint8_t *>(zmq_msg_data(&reply_msg)),
                                       static_cast<uint8_t *>(zmq_msg_data(&reply_msg)) + zmq_msg_size(&reply_msg));
@@ -49,7 +49,7 @@ json submit_request(void *socket, json& request)
     return json::from_cbor(reply_buffer);
 }
 
-class handler : public icp::api::route::handler::registrar<handler> {
+class handler : public openperf::api::route::handler::registrar<handler> {
 public:
     handler(void* context, Rest::Router& router);
 
@@ -57,11 +57,11 @@ public:
     void   get_stack(const Rest::Request& request, Http::ResponseWriter response);
 
 private:
-    std::unique_ptr<void, icp_socket_deleter> m_socket;
+    std::unique_ptr<void, op_socket_deleter> m_socket;
 };
 
 handler::handler(void* context, Rest::Router& router)
-    : m_socket(icp_socket_get_client(context, ZMQ_REQ, endpoint.c_str()))
+    : m_socket(op_socket_get_client(context, ZMQ_REQ, endpoint.c_str()))
 {
     Rest::Routes::Get(router, "/stacks",
                       Rest::Routes::bind(&handler::list_stacks, this));
@@ -99,7 +99,7 @@ void handler::list_stacks(const Rest::Request& requst __attribute__((unused)),
 
 #define VALIDATE_ID(id_, response_, code_)                     \
     do {                                                       \
-        auto res = config::icp_config_validate_id_string(id_); \
+        auto res = config::op_config_validate_id_string(id_); \
         if (!res) {                                            \
             response_.send(code_, res.error());                \
             return;                                            \

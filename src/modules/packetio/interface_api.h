@@ -1,11 +1,11 @@
-#ifndef _ICP_PACKETIO_INTERFACE_API_H_
-#define _ICP_PACKETIO_INTERFACE_API_H_
+#ifndef _OP_PACKETIO_INTERFACE_API_H_
+#define _OP_PACKETIO_INTERFACE_API_H_
 
 #include <string>
 
 #include "json.hpp"
 
-namespace icp {
+namespace openperf {
 namespace packetio {
 namespace interface {
 namespace api {
@@ -41,4 +41,4 @@ extern const std::string endpoint;
 }
 }
 }
-#endif /* _ICP_PACKETIO_INTERFACE_API_H_ */
+#endif /* _OP_PACKETIO_INTERFACE_API_H_ */

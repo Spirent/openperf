@@ -12,7 +12,7 @@
 #include "socket/server/dgram_channel.h"
 #include "lwip/pbuf.h"
 
-namespace icp::socket {
+namespace openperf::socket {
 
 template class circular_buffer_consumer<server::dgram_channel>;
 template class circular_buffer_producer<server::dgram_channel>;
@@ -148,7 +148,7 @@ const std::atomic_uint64_t& dgram_channel::ack_write_idx() const
  ***/
 
 dgram_channel::dgram_channel(int flags,
-                             icp::socket::server::allocator& allocator)
+                             openperf::socket::server::allocator& allocator)
     : tx_buffer(allocator.allocate(init_buffer_size), init_buffer_size)
     , tx_q_write_idx(0)
     , rx_q_read_idx(0)
@@ -187,7 +187,7 @@ dgram_channel::~dgram_channel()
     close(server_fds.client_fd);
     close(server_fds.server_fd);
 
-    auto alloc = reinterpret_cast<icp::socket::server::allocator*>(allocator);
+    auto alloc = reinterpret_cast<openperf::socket::server::allocator*>(allocator);
     alloc->deallocate(tx_buffer.ptr.get(), tx_buffer.len);
     alloc->deallocate(rx_buffer.ptr.get(), rx_buffer.len);
 }

@@ -1,6 +1,6 @@
 #include "socket/server/socket_wrapper.h"
 
-namespace icp {
+namespace openperf {
 namespace socket {
 namespace server {
 
@@ -21,12 +21,12 @@ socket make_socket(int type, int protocol)
 }
 
 static
-io_channel* acquire_io_channel(icp::memory::allocator::pool& pool)
+io_channel* acquire_io_channel(openperf::memory::allocator::pool& pool)
 {
     return (reinterpret_cast<io_channel*>(pool.acquire()));
 }
 
-socket_wrapper::socket_wrapper(size_t id, icp::memory::allocator::pool& pool,
+socket_wrapper::socket_wrapper(size_t id, openperf::memory::allocator::pool& pool,
                                int domain, int type, int protocol)
     : m_channel(acquire_io_channel(pool), io_channel_deleter(pool))
     , m_socket(make_socket(type, protocol))

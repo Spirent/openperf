@@ -8,13 +8,13 @@
 #include "pistache/endpoint.h"
 #include "pistache/router.h"
 
-#include "core/icp_core.h"
-#include "core/icp_log.h"
-#include "config/icp_config_file.h"
+#include "core/op_core.h"
+#include "core/op_log.h"
+#include "config/op_config_file.h"
 #include "api/api_config_file_resources.h"
 #include "api/api_route_handler.h"
 
-namespace icp {
+namespace openperf {
 namespace api {
 
 static in_port_t service_port = 8080;
@@ -51,7 +51,7 @@ Rest::Route::Result NotFound(const Rest::Request &request __attribute__((unused)
 
 int api_configure_self()
 {
-    auto port_num = icp::config::file::icp_config_get_param<ICP_OPTION_TYPE_LONG>("modules.api.port");
+    auto port_num = openperf::config::file::op_config_get_param<OP_OPTION_TYPE_LONG>("modules.api.port");
 
     if (port_num) {
         return (set_service_port(*port_num));
@@ -83,10 +83,10 @@ public:
          * shutdown ourselves.
          */
         auto thread = std::thread([this]() { run(service_port); });
-        ICP_LOG(ICP_LOG_DEBUG, "REST API server listening on port %d", service_port);
+        OP_LOG(OP_LOG_DEBUG, "REST API server listening on port %d", service_port);
         thread.detach();
 
-        auto ret = config::icp_config_file_process_resources();
+        auto ret = config::op_config_file_process_resources();
         if (!ret) {
             std::cerr << ret.error() << std::endl;
             return (-1);
@@ -96,7 +96,7 @@ public:
     }
 
     void run(in_port_t port) {
-        icp_thread_setname("icp_api");
+        op_thread_setname("op_api");
 
         Address addr(Ipv4::any(), Port(port));
         auto opts = Http::Endpoint::options()
@@ -130,25 +130,25 @@ extern "C" {
 int api_service_pre_init(void *context, void *state)
 {
     (void)context;
-    icp::api::service *s = reinterpret_cast<icp::api::service *>(state);
+    openperf::api::service *s = reinterpret_cast<openperf::api::service *>(state);
     return (s->pre_init());
 }
 
 int api_service_post_init(void *context, void *state)
 {
-    icp::api::service *s = reinterpret_cast<icp::api::service *>(state);
+    openperf::api::service *s = reinterpret_cast<openperf::api::service *>(state);
     return (s->post_init(context));
 }
 
 int api_service_start(void *state)
 {
-    icp::api::service *s = reinterpret_cast<icp::api::service *>(state);
+    openperf::api::service *s = reinterpret_cast<openperf::api::service *>(state);
     return (s->start());
 }
 
 void api_service_fini(void *state)
 {
-    icp::api::service *s = reinterpret_cast<icp::api::service *>(state);
+    openperf::api::service *s = reinterpret_cast<openperf::api::service *>(state);
     s->stop();
     delete s;
 }
@@ -157,9 +157,9 @@ REGISTER_MODULE(api_service,
                 INIT_MODULE_INFO(
                                  "api",
                                  "Module to handle API services",
-                                 icp::api::module_version
+                                 openperf::api::module_version
                                  ),
-                new icp::api::service(),
+                new openperf::api::service(),
                 api_service_pre_init,
                 nullptr,
                 api_service_post_init,

@@ -1,5 +1,5 @@
-#ifndef _ICP_SOCKET_CLIENT_DGRAM_CHANNEL_H_
-#define _ICP_SOCKET_CLIENT_DGRAM_CHANNEL_H_
+#ifndef _OP_SOCKET_CLIENT_DGRAM_CHANNEL_H_
+#define _OP_SOCKET_CLIENT_DGRAM_CHANNEL_H_
 
 #include "tl/expected.hpp"
 
@@ -9,7 +9,7 @@
 #include "socket/event_queue_producer.h"
 #include "socket/dgram_channel.h"
 
-namespace icp {
+namespace openperf {
 namespace socket {
 namespace client {
 
@@ -84,4 +84,4 @@ public:
 }
 }
 
-#endif /* _ICP_SOCKET_CLIENT_DGRAM_CHANNEL_H_ */
+#endif /* _OP_SOCKET_CLIENT_DGRAM_CHANNEL_H_ */

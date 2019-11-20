@@ -1,12 +1,12 @@
-#ifndef _ICP_PACKETIO_DPDK_WORKER_API_H_
-#define _ICP_PACKETIO_DPDK_WORKER_API_H_
+#ifndef _OP_PACKETIO_DPDK_WORKER_API_H_
+#define _OP_PACKETIO_DPDK_WORKER_API_H_
 
 #include <memory>
 #include <optional>
 #include <string>
 #include <variant>
 
-#include "core/icp_core.h"
+#include "core/op_core.h"
 #include "lwip/netif.h"
 #include "packetio/drivers/dpdk/dpdk.h"
 #include "packetio/forwarding_table.h"
@@ -15,7 +15,7 @@
 #include "packetio/transmit_table.h"
 #include "packetio/workers/dpdk/tx_source.h"
 
-namespace icp::packetio::dpdk {
+namespace openperf::packetio::dpdk {
 class callback;
 class rx_queue;
 class tx_queue;
@@ -97,7 +97,7 @@ public:
     void del_descriptors(const std::vector<worker::descriptor>&);
 
 private:
-    std::unique_ptr<void, icp_socket_deleter> m_socket;
+    std::unique_ptr<void, op_socket_deleter> m_socket;
 };
 
 struct main_args {
@@ -115,4 +115,4 @@ std::optional<command_msg> recv_message(void* socket, int flags = 0);
 }
 }
 
-#endif /* _ICP_PACKETIO_DPDK_WORKER_API_H_ */
+#endif /* _OP_PACKETIO_DPDK_WORKER_API_H_ */

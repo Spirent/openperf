@@ -1,5 +1,5 @@
-#ifndef _ICP_SOCKET_SERVER_COMPAT_LINUX_ICMP_H_
-#define _ICP_SOCKET_SERVER_COMPAT_LINUX_ICMP_H_
+#ifndef _OP_SOCKET_SERVER_COMPAT_LINUX_ICMP_H_
+#define _OP_SOCKET_SERVER_COMPAT_LINUX_ICMP_H_
 
 #include <stdint.h>
 
@@ -9,4 +9,4 @@ struct linux_icmp_filter {
     uint32_t data;
 };
 
-#endif /* _ICP_SOCKET_SERVER_COMPAT_LINUX_ICMP_H_ */
+#endif /* _OP_SOCKET_SERVER_COMPAT_LINUX_ICMP_H_ */

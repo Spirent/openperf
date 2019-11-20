@@ -1,5 +1,5 @@
-#ifndef _ICP_PACKETIO_MEMORY_DPDK_MEMP_H_
-#define _ICP_PACKETIO_MEMORY_DPDK_MEMP_H_
+#ifndef _OP_PACKETIO_MEMORY_DPDK_MEMP_H_
+#define _OP_PACKETIO_MEMORY_DPDK_MEMP_H_
 
 #include <stdint.h>
 
@@ -19,4 +19,4 @@ int64_t packetio_memory_memp_pool_used(const struct memp_desc*);
 }
 #endif
 
-#endif /* _ICP_PACKETIO_MEMORY_DPDK_MEMP_H_ */
+#endif /* _OP_PACKETIO_MEMORY_DPDK_MEMP_H_ */

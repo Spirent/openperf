@@ -1,5 +1,5 @@
-#ifndef _ICP_SOCKET_DPDK_MEMCPY_H_
-#define _ICP_SOCKET_DPDK_MEMCPY_H_
+#ifndef _OP_SOCKET_DPDK_MEMCPY_H_
+#define _OP_SOCKET_DPDK_MEMCPY_H_
 
 #include <cstdint>
 #include <cstring>
@@ -59,4 +59,4 @@ memcpy(void *dst, const void *src, size_t n)
 
 }
 
-#endif /* _ICP_SOCKET_DPDK_MEMCPY_H_ */
+#endif /* _OP_SOCKET_DPDK_MEMCPY_H_ */

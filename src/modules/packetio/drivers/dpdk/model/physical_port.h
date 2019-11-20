@@ -1,5 +1,5 @@
-#ifndef _ICP_PACKETIO_DPDK_MODEL_PHYSICAL_PORT_H_
-#define _ICP_PACKETIO_DPDK_MODEL_PHYSICAL_PORT_H_
+#ifndef _OP_PACKETIO_DPDK_MODEL_PHYSICAL_PORT_H_
+#define _OP_PACKETIO_DPDK_MODEL_PHYSICAL_PORT_H_
 
 #include "net/net_types.h"
 #include "packetio/generic_port.h"
@@ -8,7 +8,7 @@ struct rte_eth_conf;
 struct rte_eth_dev_info;
 struct rte_mempool;
 
-namespace icp {
+namespace openperf {
 namespace packetio {
 namespace dpdk {
 namespace model {
@@ -53,4 +53,4 @@ private:
 }
 }
 }
-#endif /* _ICP_PACKETIO_DPDK_MODEL_PHYSICAL_PORT_H_ */
+#endif /* _OP_PACKETIO_DPDK_MODEL_PHYSICAL_PORT_H_ */

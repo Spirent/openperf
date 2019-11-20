@@ -31,7 +31,7 @@ struct event_queue
 };
 
 class test_event_producer : public event_queue
-                          , public icp::socket::event_queue_producer<test_event_producer>
+                          , public openperf::socket::event_queue_producer<test_event_producer>
 {
     friend class event_queue_producer<test_event_producer>;
 
@@ -50,7 +50,7 @@ public:
 };
 
 class test_event_consumer : public event_queue
-                          , public icp::socket::event_queue_consumer<test_event_consumer>
+                          , public openperf::socket::event_queue_consumer<test_event_consumer>
 {
     friend class event_queue_consumer<test_event_consumer>;
 

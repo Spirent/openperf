@@ -1,5 +1,5 @@
-#ifndef _ICP_PACKETIO_STACK_DPDK_SYS_ARCH_H_
-#define _ICP_PACKETIO_STACK_DPDK_SYS_ARCH_H_
+#ifndef _OP_PACKETIO_STACK_DPDK_SYS_ARCH_H_
+#define _OP_PACKETIO_STACK_DPDK_SYS_ARCH_H_
 
 #include <stddef.h>
 
@@ -29,4 +29,4 @@ typedef struct sys_thread * sys_thread_t;
 void sys_check_timeouts();
 u32_t sys_timeouts_sleeptime();
 
-#endif /* _ICP_PACKETIO_STACK_DPDK_SYS_ARCH_H_ */
+#endif /* _OP_PACKETIO_STACK_DPDK_SYS_ARCH_H_ */

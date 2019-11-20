@@ -1,11 +1,11 @@
-#ifndef _ICP_PACKETIO_MESSAGE_UTILS_H_
-#define _ICP_PACKETIO_MESSAGE_UTILS_H_
+#ifndef _OP_PACKETIO_MESSAGE_UTILS_H_
+#define _OP_PACKETIO_MESSAGE_UTILS_H_
 
 #include <algorithm>
 #include <variant>
 #include <zmq.h>
 
-namespace icp::packetio::message {
+namespace openperf::packetio::message {
 
 template <typename T>
 static auto zmq_msg_init(zmq_msg_t* msg, const T& value)
@@ -46,4 +46,4 @@ static size_t zmq_msg_size(const zmq_msg_t* msg)
 
 }
 
-#endif /* _ICP_PACKETIO_MESSAGE_UTILS_H_ */
+#endif /* _OP_PACKETIO_MESSAGE_UTILS_H_ */

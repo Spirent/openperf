@@ -15,7 +15,7 @@
 #include "packetio/stack/dpdk/net_interface.h"
 #include "packetio/stack/gso_utils.h"
 
-namespace icp {
+namespace openperf {
 namespace packetio {
 namespace dpdk {
 namespace gso {
@@ -215,7 +215,7 @@ std::tuple<pbuf*, bool> pbuf_split_at(struct pbuf* p_head, uint16_t split, pbuf_
 
 extern "C" {
 
-using namespace icp::packetio::dpdk;
+using namespace openperf::packetio::dpdk;
 
 uint16_t packetio_stack_gso_oversize_calc_length(uint16_t length)
 {

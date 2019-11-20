@@ -11,7 +11,7 @@ DPDK_FLAGS_REQ_VARS := \
 	DPDK_DEFCONFIG \
 	DPDK_LIB_DIR \
 	DPDK_SRC_DIR
-$(call icp_check_vars,$(DPDK_FLAGS_REQ_VARS))
+$(call op_check_vars,$(DPDK_FLAGS_REQ_VARS))
 
 include $(DPDK_DEFCONFIG)
 

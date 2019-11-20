@@ -1,13 +1,13 @@
 #include "socket/api.h"
 #include "utils/overloaded_visitor.h"
 
-namespace icp {
+namespace openperf {
 namespace socket {
 namespace api {
 
 std::string client_socket(const std::string_view id)
 {
-    if (auto envp = std::getenv("ICP_PREFIX"); envp != nullptr) {
+    if (auto envp = std::getenv("OP_PREFIX"); envp != nullptr) {
         return (std::string("/tmp/.").append(key).append("/client.").append(id).append("." +
                 std::string(envp)));
     }

@@ -3,7 +3,7 @@
 
 #include "catch.hpp"
 
-#include "core/icp_uuid.h"
+#include "core/op_uuid.h"
 #include "packetio/forwarding_table.tcc"
 
 static constexpr int max_ports = 32;
@@ -23,17 +23,17 @@ struct test_sink
     }
 };
 
-template class icp::packetio::forwarding_table<test_interface,
+template class openperf::packetio::forwarding_table<test_interface,
                                                test_sink,
                                                max_ports>;
 
 template <>
-std::string icp::packetio::get_interface_id(test_interface* ifp)
+std::string openperf::packetio::get_interface_id(test_interface* ifp)
 {
     return (ifp->id);
 }
 
-using forwarding_table = icp::packetio::forwarding_table<test_interface,
+using forwarding_table = openperf::packetio::forwarding_table<test_interface,
                                                          test_sink,
                                                          max_ports>;
 
@@ -43,7 +43,7 @@ TEST_CASE("forwarding table functionality", "[forwarding table]")
 
     SECTION("insert interface, ") {
         auto ifp1 = test_interface{"interface_1"};
-        auto mac1 = icp::net::mac_address{0x00, 0x01, 0x02, 0x03, 0x04, 0x05};
+        auto mac1 = openperf::net::mac_address{0x00, 0x01, 0x02, 0x03, 0x04, 0x05};
         auto port1 = static_cast<uint16_t>(0);
 
         auto to_delete = table.insert_interface(port1, mac1, std::addressof(ifp1));
@@ -105,7 +105,7 @@ TEST_CASE("forwarding table functionality", "[forwarding table]")
         static_assert(many_interfaces % many_ports == 0);
 
         /* Create a map of port, mac --> interfaces and load them into our table */
-        using vif_map = std::map<std::pair<uint16_t, icp::net::mac_address>,
+        using vif_map = std::map<std::pair<uint16_t, openperf::net::mac_address>,
                                  test_interface>;
         auto interfaces = vif_map();
 
@@ -113,11 +113,11 @@ TEST_CASE("forwarding table functionality", "[forwarding table]")
         std::generate_n(std::inserter(interfaces, interfaces.begin()),
                         many_interfaces,
                         [&]() {
-                            auto uuid = icp::core::uuid::random();
-                            auto mac = icp::net::mac_address(uuid.data());
+                            auto uuid = openperf::core::uuid::random();
+                            auto mac = openperf::net::mac_address(uuid.data());
                             auto key = std::make_pair(if_idx % many_ports, mac);
                             if_idx++;
-                            return (std::make_pair(key, test_interface{icp::core::to_string(uuid)}));
+                            return (std::make_pair(key, test_interface{openperf::core::to_string(uuid)}));
                         });
 
         for(auto& [key, value] : interfaces) {
@@ -161,11 +161,11 @@ TEST_CASE("forwarding table functionality", "[forwarding table]")
 
         std::generate_n(std::back_inserter(port0_sinks), many_sinks,
                         [&](){
-                            return (test_sink{icp::core::to_string(icp::core::uuid::random())});
+                            return (test_sink{openperf::core::to_string(openperf::core::uuid::random())});
                         });
         std::generate_n(std::back_inserter(port1_sinks), many_sinks,
                         [&](){
-                            return (test_sink{icp::core::to_string(icp::core::uuid::random())});
+                            return (test_sink{openperf::core::to_string(openperf::core::uuid::random())});
                         });
 
         for (const auto& sink : port0_sinks) {

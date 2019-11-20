@@ -1,10 +1,10 @@
-#ifndef _ICP_PACKETIO_DPDK_RXTX_QUEUE_CONTAINER_H_
-#define _ICP_PACKETIO_DPDK_RXTX_QUEUE_CONTAINER_H_
+#ifndef _OP_PACKETIO_DPDK_RXTX_QUEUE_CONTAINER_H_
+#define _OP_PACKETIO_DPDK_RXTX_QUEUE_CONTAINER_H_
 
 #include <memory>
 #include <vector>
 
-namespace icp {
+namespace openperf {
 namespace packetio {
 namespace dpdk {
 
@@ -70,4 +70,4 @@ public:
 }
 }
 
-#endif /* _ICP_PACKETIO_DPDK_RXTX_QUEUE_CONTAINER_H_ */
+#endif /* _OP_PACKETIO_DPDK_RXTX_QUEUE_CONTAINER_H_ */

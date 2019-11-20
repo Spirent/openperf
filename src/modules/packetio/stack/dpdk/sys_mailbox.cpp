@@ -65,14 +65,14 @@ static void do_read(int fd)
 {
     uint64_t counter = 0;
     auto error = eventfd_read(fd, &counter);
-    if (error) ICP_LOG(ICP_LOG_ERROR, "Could not read fd %d: %s\n",
+    if (error) OP_LOG(OP_LOG_ERROR, "Could not read fd %d: %s\n",
                        fd, strerror(errno));
 }
 
 static void do_write(int fd)
 {
     auto error = eventfd_write(fd, 1UL);
-    if (error) ICP_LOG(ICP_LOG_ERROR, "Could not write fd %d: %s\n",
+    if (error) OP_LOG(OP_LOG_ERROR, "Could not write fd %d: %s\n",
                        fd, strerror(errno));
 }
 

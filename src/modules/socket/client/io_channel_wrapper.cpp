@@ -1,7 +1,7 @@
 #include "socket/client/io_channel_wrapper.h"
 #include "utils/overloaded_visitor.h"
 
-namespace icp {
+namespace openperf {
 namespace socket {
 namespace client {
 

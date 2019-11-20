@@ -1,5 +1,5 @@
-#ifndef _ICP_PACKETIO_DPDK_WORKER_QUEUES_H_
-#define _ICP_PACKETIO_DPDK_WORKER_QUEUES_H_
+#ifndef _OP_PACKETIO_DPDK_WORKER_QUEUES_H_
+#define _OP_PACKETIO_DPDK_WORKER_QUEUES_H_
 
 /**
  * @file
@@ -25,7 +25,7 @@
 
 struct rte_mbuf;
 
-namespace icp::packetio::dpdk::worker {
+namespace openperf::packetio::dpdk::worker {
 
 template <typename T>
 class singleton {
@@ -57,4 +57,4 @@ private:
 
 }
 
-#endif /* _ICP_PACKETIO_DPDK_WORKER_QUEUES_H_ */
+#endif /* _OP_PACKETIO_DPDK_WORKER_QUEUES_H_ */

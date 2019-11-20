@@ -4,7 +4,7 @@
 #include "packetio/stack/tcpip.h"
 #include "packetio/stack/dpdk/tcpip_mbox.h"
 
-namespace icp::packetio::dpdk {
+namespace openperf::packetio::dpdk {
 
 sys_mbox_t tcpip_mbox::init()
 {
@@ -24,7 +24,7 @@ sys_mbox_t tcpip_mbox::get()
 
 }
 
-sys_mbox_t icp::packetio::tcpip::mbox()
+sys_mbox_t openperf::packetio::tcpip::mbox()
 {
-    return (icp::packetio::dpdk::tcpip_mbox::instance().get());
+    return (openperf::packetio::dpdk::tcpip_mbox::instance().get());
 }

@@ -4,7 +4,7 @@
 #include "packetio/generic_stack.h"
 #include "utils/overloaded_visitor.h"
 
-namespace icp {
+namespace openperf {
 namespace packetio {
 namespace stack {
 

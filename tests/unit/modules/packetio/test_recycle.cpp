@@ -2,9 +2,9 @@
 
 #include "packetio/recycle.tcc"
 
-template class icp::packetio::recycle::depot<2>;
+template class openperf::packetio::recycle::depot<2>;
 
-using recycler = icp::packetio::recycle::depot<2>;
+using recycler = openperf::packetio::recycle::depot<2>;
 
 TEST_CASE("recycler functionality", "[recycler]")
 {
@@ -27,7 +27,7 @@ TEST_CASE("recycler functionality", "[recycler]")
 
         bool gc_fired = false;
         {
-            icp::packetio::recycle::guard guard(depot, 0);
+            openperf::packetio::recycle::guard guard(depot, 0);
             depot.writer_add_gc_callback([&](){ gc_fired = true; });
             depot.writer_process_gc_callbacks();
 

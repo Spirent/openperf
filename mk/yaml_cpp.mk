@@ -3,20 +3,20 @@
 #
 
 YAML_REQ_VARS := \
-	ICP_ROOT \
-	ICP_BUILD_ROOT
-$(call icp_check_vars,$(YAML_REQ_VARS))
+	OP_ROOT \
+	OP_BUILD_ROOT
+$(call op_check_vars,$(YAML_REQ_VARS))
 
-YAML_SRC_DIR := $(ICP_ROOT)/deps/yaml-cpp
-YAML_OBJ_DIR := $(ICP_BUILD_ROOT)/obj/yaml-cpp
-YAML_BLD_DIR := $(ICP_BUILD_ROOT)/yaml-cpp
+YAML_SRC_DIR := $(OP_ROOT)/deps/yaml-cpp
+YAML_OBJ_DIR := $(OP_BUILD_ROOT)/obj/yaml-cpp
+YAML_BLD_DIR := $(OP_BUILD_ROOT)/yaml-cpp
 YAML_INC_DIR := $(YAML_SRC_DIR)/include
 YAML_LIB_DIR := $(YAML_BLD_DIR)/lib
 
 # Update global variables
-ICP_INC_DIRS += $(YAML_INC_DIR)
-ICP_LIB_DIRS += $(YAML_LIB_DIR)
-ICP_LDLIBS += -lyamlcpp
+OP_INC_DIRS += $(YAML_INC_DIR)
+OP_LIB_DIRS += $(YAML_LIB_DIR)
+OP_LDLIBS += -lyamlcpp
 
 YAML_FLAGS := $(addprefix -I,$(YAML_INC_DIR))
 # YAML-CPP shadows variables in a few places; just silence those warnings since we're not going
@@ -58,7 +58,7 @@ YAML_SOURCES := \
 	src/stream.cpp \
 	src/tag.cpp
 
-YAML_OBJECTS := $(call icp_generate_objects,$(YAML_SOURCES),$(YAML_OBJ_DIR))
+YAML_OBJECTS := $(call op_generate_objects,$(YAML_SOURCES),$(YAML_OBJ_DIR))
 
 # Pull in object dependencies, maybe
 -include $(YAML_OBJECTS:.o=.d)
@@ -68,11 +68,11 @@ YAML_TARGET := $(YAML_LIB_DIR)/libyamlcpp.a
 ###
 # Build rules
 ###
-$(eval $(call icp_generate_build_rules,$(YAML_SOURCES),YAML_SRC_DIR,YAML_OBJ_DIR,,YAML_FLAGS))
-$(eval $(call icp_generate_clean_rules,yaml_cpp,YAML_TARGET,YAML_OBJECTS))
+$(eval $(call op_generate_build_rules,$(YAML_SOURCES),YAML_SRC_DIR,YAML_OBJ_DIR,,YAML_FLAGS))
+$(eval $(call op_generate_clean_rules,yaml_cpp,YAML_TARGET,YAML_OBJECTS))
 
 $(YAML_TARGET): $(YAML_OBJECTS)
-	$(call icp_link_library,$@,$(YAML_OBJECTS))
+	$(call op_link_library,$@,$(YAML_OBJECTS))
 
 .PHONY: yaml_cpp
 yaml_cpp: $(YAML_TARGET)

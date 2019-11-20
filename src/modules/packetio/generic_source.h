@@ -1,5 +1,5 @@
-#ifndef _ICP_PACKETIO_GENERIC_SOURCE_H_
-#define _ICP_PACKETIO_GENERIC_SOURCE_H_
+#ifndef _OP_PACKETIO_GENERIC_SOURCE_H_
+#define _OP_PACKETIO_GENERIC_SOURCE_H_
 
 #include <any>
 #include <memory>
@@ -7,11 +7,11 @@
 
 #include "units/rate.h"
 
-namespace icp::packetio::packets {
+namespace openperf::packetio::packets {
 
 struct packet_buffer;
 
-using packets_per_hour   = icp::units::rate<uint64_t, std::ratio<1, 3600>>;
+using packets_per_hour   = openperf::units::rate<uint64_t, std::ratio<1, 3600>>;
 
 class generic_source {
 public:
@@ -170,4 +170,4 @@ private:
 
 }
 
-#endif /* _ICP_PACKETIO_GENERIC_SOURCE_H_ */
+#endif /* _OP_PACKETIO_GENERIC_SOURCE_H_ */

@@ -9,8 +9,8 @@
 #include "lwip/netif.h"
 #include "lwip/snmp.h"
 
-#include "core/icp_log.h"
-#include "core/icp_thread.h"
+#include "core/op_log.h"
+#include "core/op_thread.h"
 #include "packetio/drivers/dpdk/dpdk.h"
 #include "packetio/drivers/dpdk/queue_utils.h"
 #include "packetio/memory/dpdk/pbuf_utils.h"
@@ -24,9 +24,9 @@
 #include "packetio/workers/dpdk/worker_api.h"
 #include "utils/overloaded_visitor.h"
 
-namespace icp::packetio::dpdk::worker {
+namespace openperf::packetio::dpdk::worker {
 
-const std::string_view endpoint = "inproc://icp_packetio_workers_control";
+const std::string_view endpoint = "inproc://op_packetio_workers_control";
 
 static constexpr int mbuf_prefetch_offset = 8;
 
@@ -164,7 +164,7 @@ static void rx_interface_dispatch(const fib* fib, const rx_queue* rxq,
             continue;
         }
 
-        ICP_LOG(ICP_LOG_TRACE, "Dispatching unicast packet to %c%c%u\n",
+        OP_LOG(OP_LOG_TRACE, "Dispatching unicast packet to %c%c%u\n",
                 interfaces[i]->name[0], interfaces[i]->name[1],
                 interfaces[i]->num);
 
@@ -185,7 +185,7 @@ static void rx_interface_dispatch(const fib* fib, const rx_queue* rxq,
     for (size_t i = 0; i < nb_nucast; i++) {
         for (auto [idx, ifp] : fib->get_interfaces(rxq->port_id())) {
 
-            ICP_LOG(ICP_LOG_TRACE, "Dispatching non-unicast packet to %c%c%u\n",
+            OP_LOG(OP_LOG_TRACE, "Dispatching non-unicast packet to %c%c%u\n",
                     ifp->name[0], ifp->name[1], ifp->num);
 
             auto clone = rte_pktmbuf_clone(nunicast[i], nunicast[i]->pool);
@@ -202,7 +202,7 @@ static void rx_sink_dispatch(const fib* fib, const rx_queue* rxq,
                              rte_mbuf* const incoming[], uint16_t n)
 {
     for(auto& sink : fib->get_sinks(rxq->port_id())) {
-        ICP_LOG(ICP_LOG_TRACE, "Dispatching packets to sink %s\n", sink.id().c_str());
+        OP_LOG(OP_LOG_TRACE, "Dispatching packets to sink %s\n", sink.id().c_str());
         sink.push(reinterpret_cast<packets::packet_buffer* const*>(incoming), n);
     }
 }
@@ -216,8 +216,8 @@ static uint16_t rx_burst(const fib* fib, const rx_queue* rxq)
 
     if (!n) return (0);
 
-    ICP_LOG(ICP_LOG_TRACE, "Received %d packet%s on %d:%d\n",
-            n, n > 1 ? "s" : "", rxq->port_id(), rxq->queue_id());
+    OP_LOG(OP_LOG_TRACE, "Received %d packet%s on %d:%d\n",
+           n, n > 1 ? "s" : "", rxq->port_id(), rxq->queue_id());
 
     /* Dispatch packets to any port sinks */
     rx_sink_dispatch(fib, rxq, incoming.data(), n);
@@ -268,7 +268,7 @@ static uint16_t tx_burst(const tx_queue* txq)
     auto sent = rte_eth_tx_burst(txq->port_id(), txq->queue_id(),
                                  outgoing.data(), to_send);
 
-    ICP_LOG(ICP_LOG_TRACE, "Transmitted %u of %u packet%s on %u:%u\n",
+    OP_LOG(OP_LOG_TRACE, "Transmitted %u of %u packet%s on %u:%u\n",
             sent, to_send, sent > 1 ? "s" : "", txq->port_id(), txq->queue_id());
 
     size_t retries = 0;
@@ -281,7 +281,7 @@ static uint16_t tx_burst(const tx_queue* txq)
     }
 
     if (retries) {
-        ICP_LOG(ICP_LOG_DEBUG, "Transmission required %zu retries on %u:%u\n",
+        OP_LOG(OP_LOG_DEBUG, "Transmission required %zu retries on %u:%u\n",
                 retries, txq->port_id(), txq->queue_id());
     }
 
@@ -488,7 +488,7 @@ static void run(run_args&& args)
      * all of the control messages before jumping into our real run
      * function.  We won't receive any more control interrupts otherwise.
      */
-    if (icp_socket_has_messages(args.control)) return;
+    if (op_socket_has_messages(args.control)) return;
 
     if (args.rx_queues.empty() || all_pollable(args.rx_queues)) {
         run_pollable(std::move(args));
@@ -521,23 +521,23 @@ class worker : public finite_state_machine<worker, state, command_msg>
 
             std::visit(utils::overloaded_visitor(
                            [&](callback* callback) {
-                               ICP_LOG(ICP_LOG_DEBUG, "Adding task %.*s to worker %u\n",
+                               OP_LOG(OP_LOG_DEBUG, "Adding task %.*s to worker %u\n",
                                        static_cast<int>(callback->name().length()), callback->name().data(),
                                        rte_lcore_id());
                                m_pollables.emplace_back(callback);
                            },
                            [&](rx_queue* rxq) {
-                               ICP_LOG(ICP_LOG_DEBUG, "Adding RX port queue %u:%u to worker %u\n",
+                               OP_LOG(OP_LOG_DEBUG, "Adding RX port queue %u:%u to worker %u\n",
                                        rxq->port_id(), rxq->queue_id(), rte_lcore_id());
                                m_rx_queues.emplace_back(rxq);
                            },
                            [&](tx_queue* txq) {
-                               ICP_LOG(ICP_LOG_DEBUG, "Adding TX port queue %u:%u to worker %u\n",
+                               OP_LOG(OP_LOG_DEBUG, "Adding TX port queue %u:%u to worker %u\n",
                                        txq->port_id(), txq->queue_id(), rte_lcore_id());
                                m_pollables.emplace_back(txq);
                            },
                            [&](tx_scheduler* scheduler) {
-                               ICP_LOG(ICP_LOG_DEBUG, "Adding TX port scheduler %u:%u to worker %u\n",
+                               OP_LOG(OP_LOG_DEBUG, "Adding TX port scheduler %u:%u to worker %u\n",
                                        scheduler->port_id(), scheduler->queue_id(), rte_lcore_id());
                                m_pollables.emplace_back(scheduler);
                            }),
@@ -556,7 +556,7 @@ class worker : public finite_state_machine<worker, state, command_msg>
              */
             std::visit(utils::overloaded_visitor(
                            [&](callback* cb) {
-                               ICP_LOG(ICP_LOG_DEBUG, "Removing task from worker %u\n",
+                               OP_LOG(OP_LOG_DEBUG, "Removing task from worker %u\n",
                                        rte_lcore_id());
                                m_pollables.erase(std::remove(std::begin(m_pollables),
                                                              std::end(m_pollables),
@@ -564,7 +564,7 @@ class worker : public finite_state_machine<worker, state, command_msg>
                                                  std::end(m_pollables));
                            },
                            [&](rx_queue* rxq) {
-                               ICP_LOG(ICP_LOG_DEBUG, "Removing RX port queue from worker %u\n",
+                               OP_LOG(OP_LOG_DEBUG, "Removing RX port queue from worker %u\n",
                                        rte_lcore_id());
                                m_rx_queues.erase(std::remove(std::begin(m_rx_queues),
                                                           std::end(m_rx_queues),
@@ -572,7 +572,7 @@ class worker : public finite_state_machine<worker, state, command_msg>
                                               std::end(m_rx_queues));
                            },
                            [&](tx_queue* txq) {
-                               ICP_LOG(ICP_LOG_DEBUG, "Removing TX port queue from worker %u\n",
+                               OP_LOG(OP_LOG_DEBUG, "Removing TX port queue from worker %u\n",
                                        rte_lcore_id());
                                m_pollables.erase(std::remove(std::begin(m_pollables),
                                                              std::end(m_pollables),
@@ -580,7 +580,7 @@ class worker : public finite_state_machine<worker, state, command_msg>
                                               std::end(m_pollables));
                            },
                            [&](tx_scheduler* scheduler) {
-                               ICP_LOG(ICP_LOG_DEBUG, "Removing TX port scheduler from worker %u\n",
+                               OP_LOG(OP_LOG_DEBUG, "Removing TX port scheduler from worker %u\n",
                                        rte_lcore_id());
                                m_pollables.erase(std::remove(std::begin(m_pollables),
                                                              std::end(m_pollables),
@@ -644,7 +644,7 @@ public:
     template <typename State>
     std::optional<state> on_event(State&, const start_msg& start)
     {
-        icp_task_sync_ping(m_context, start.endpoint.data());
+        op_task_sync_ping(m_context, start.endpoint.data());
         run(make_run_args());
         return (std::make_optional(state_started{}));
     }
@@ -652,31 +652,31 @@ public:
     template <typename State>
     std::optional<state> on_event(State&, const stop_msg& stop)
     {
-        icp_task_sync_ping(m_context, stop.endpoint.data());
+        op_task_sync_ping(m_context, stop.endpoint.data());
         return (std::make_optional(state_stopped{}));
     }
 };
 
 int main(void *void_args)
 {
-    icp_thread_setname(("icp_worker_" + std::to_string(rte_lcore_id())).c_str());
+    op_thread_setname(("op_worker_" + std::to_string(rte_lcore_id())).c_str());
 
     auto args = reinterpret_cast<main_args*>(void_args);
 
     void *context = args->context;
-    std::unique_ptr<void, icp_socket_deleter> control(
-        icp_socket_get_client_subscription(context, endpoint.data(), ""));
+    std::unique_ptr<void, op_socket_deleter> control(
+        op_socket_get_client_subscription(context, endpoint.data(), ""));
 
     auto me = worker(context, control.get(), args->recycler, args->fib);
 
     /* XXX: args are unavailable after this point */
-    icp_task_sync_ping(context, args->endpoint.data());
+    op_task_sync_ping(context, args->endpoint.data());
 
     while (auto cmd = recv_message(control.get())) {
         me.dispatch(*cmd);
     }
 
-    ICP_LOG(ICP_LOG_WARNING, "queue worker %d exited\n", rte_lcore_id());
+    OP_LOG(OP_LOG_WARNING, "queue worker %d exited\n", rte_lcore_id());
 
     return (0);
 }

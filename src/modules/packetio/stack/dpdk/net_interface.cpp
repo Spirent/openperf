@@ -13,7 +13,7 @@
 #include "packetio/stack/dpdk/offload_utils.h"
 #include "utils/overloaded_visitor.h"
 
-namespace icp {
+namespace openperf {
 namespace packetio {
 namespace dpdk {
 
@@ -111,7 +111,7 @@ static err_t net_interface_tx(netif* netif, pbuf *p)
         MIB2_STATS_NETIF_INC(netif, ifoutnucastpkts);
     }
 
-    ICP_LOG(ICP_LOG_TRACE, "Transmitting packet from %c%c%u\n",
+    OP_LOG(OP_LOG_TRACE, "Transmitting packet from %c%c%u\n",
             netif->name[0], netif->name[1], netif->num);
 
     auto error = ifp->handle_tx(p);
@@ -155,14 +155,14 @@ static err_t net_interface_rx(pbuf *p, netif* netif)
             UDP_STATS_INC(udp.chkerr);
         } else {
             /* what is this?!?! */
-            ICP_LOG(ICP_LOG_WARNING, "Unrecognized L4 packet type: %s\n",
+            OP_LOG(OP_LOG_WARNING, "Unrecognized L4 packet type: %s\n",
                     rte_get_ptype_l4_name(mbuf->packet_type));
         }
         pbuf_free(p);
         return (ERR_OK);
     }
 
-    ICP_LOG(ICP_LOG_TRACE, "Receiving packet for %c%c%u\n",
+    OP_LOG(OP_LOG_TRACE, "Receiving packet for %c%c%u\n",
             netif->name[0], netif->name[1], netif->num);
 
     auto error = ifp->handle_rx(p);
@@ -196,7 +196,7 @@ static err_t net_interface_dpdk_init(netif* netif)
     netif->chksum_flags = (to_checksum_check_flags(info.rx_offloads())
                            | to_checksum_gen_flags(info.tx_offloads()));
 
-    ICP_LOG(ICP_LOG_DEBUG, "Interface %c%c%u: mtu = %u, offloads = 0x%04hx\n",
+    OP_LOG(OP_LOG_DEBUG, "Interface %c%c%u: mtu = %u, offloads = 0x%04hx\n",
             netif->name[0], netif->name[1], netif->num, netif->mtu,
             static_cast<uint16_t>(~netif->chksum_flags));
 
@@ -339,7 +339,7 @@ net_interface::~net_interface()
 
 void net_interface::handle_link_state_change(bool link_up)
 {
-    ICP_LOG(ICP_LOG_INFO, "Interface %c%c%u Link %s\n",
+    OP_LOG(OP_LOG_INFO, "Interface %c%c%u Link %s\n",
             m_netif.name[0], m_netif.name[1], m_netif.num,
             link_up ? "Up" : "Down");
     link_up ? netifapi_netif_set_link_up(&m_netif) : netifapi_netif_set_link_down(&m_netif);

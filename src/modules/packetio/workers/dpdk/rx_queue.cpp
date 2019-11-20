@@ -3,9 +3,9 @@
 
 #include "packetio/drivers/dpdk/dpdk.h"
 #include "packetio/workers/dpdk/rx_queue.h"
-#include "core/icp_log.h"
+#include "core/op_log.h"
 
-namespace icp::packetio::dpdk {
+namespace openperf::packetio::dpdk {
 
 static std::optional<int> get_queue_fd(uint16_t port_id, uint16_t queue_id)
 {
@@ -62,7 +62,7 @@ bool rx_queue::add(int poll_fd, void* data)
     auto error = rte_epoll_ctl(poll_fd, EPOLL_CTL_ADD, *fd, &m_event);
 
     if (error) {
-        ICP_LOG(ICP_LOG_ERROR, "Could not add rx interrupt for %u:%u: %s\n",
+        OP_LOG(OP_LOG_ERROR, "Could not add rx interrupt for %u:%u: %s\n",
                 port_id(), queue_id(),strerror(errno));
     }
 
@@ -76,7 +76,7 @@ bool rx_queue::del(int poll_fd, void* data)
 
     auto error = rte_epoll_ctl(poll_fd, EPOLL_CTL_DEL, *fd, &m_event);
     if (error) {
-        ICP_LOG(ICP_LOG_ERROR, "Could not delete rx interrupt for %u:%u: %s\n",
+        OP_LOG(OP_LOG_ERROR, "Could not delete rx interrupt for %u:%u: %s\n",
                 port_id(), queue_id(), strerror(errno));
     }
 
@@ -87,7 +87,7 @@ bool rx_queue::enable()
 {
     int error = rte_eth_dev_rx_intr_enable(port_id(), queue_id());
     if (error) {
-        ICP_LOG(ICP_LOG_ERROR, "Could not enable interrupt for rx port queue %d:%d: %s\n",
+        OP_LOG(OP_LOG_ERROR, "Could not enable interrupt for rx port queue %d:%d: %s\n",
                 port_id(), queue_id(), strerror(std::abs(error)));
     }
     return (!error);
@@ -97,7 +97,7 @@ bool rx_queue::disable()
 {
     int error = rte_eth_dev_rx_intr_disable(port_id(), queue_id());
     if (error) {
-        ICP_LOG(ICP_LOG_ERROR, "Could not disable interrupt for rx port queue %d:%d: %s\n",
+        OP_LOG(OP_LOG_ERROR, "Could not disable interrupt for rx port queue %d:%d: %s\n",
                 port_id(), queue_id(), strerror(std::abs(error)));
     }
     return (!error);

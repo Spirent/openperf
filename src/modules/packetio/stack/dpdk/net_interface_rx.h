@@ -1,5 +1,5 @@
-#ifndef _ICP_PACKETIO_DPDK_NET_INTERFACE_RX_H_
-#define _ICP_PACKETIO_DPDK_NET_INTERFACE_RX_H_
+#ifndef _OP_PACKETIO_DPDK_NET_INTERFACE_RX_H_
+#define _OP_PACKETIO_DPDK_NET_INTERFACE_RX_H_
 
 #include <memory>
 #include <string>
@@ -11,7 +11,7 @@ struct pbuf;
 struct rte_ring;
 extern "C" void rte_ring_free(struct rte_ring*);
 
-namespace icp::packetio::dpdk::netif_rx_strategy {
+namespace openperf::packetio::dpdk::netif_rx_strategy {
 
 class queueing
 {
@@ -39,4 +39,4 @@ struct direct
 
 }
 
-#endif /* _ICP_PACKETIO_DPDK_NET_INTERFACE_RX_H_ */
+#endif /* _OP_PACKETIO_DPDK_NET_INTERFACE_RX_H_ */

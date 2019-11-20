@@ -3,70 +3,70 @@
 
 There are three folders _socket_, _client_  and _server_. The _client_ is what is linked with the application, while the server resides in the OpenPerf process.
 
-## Client Initialization 
+## Client Initialization
 
-Upon startup (`icp::socket::api::client.init()`), the client will exchange an HELLO message with the server over local unix domain socket (`unix_socket` type [`SOCK_SEQPACKET`](http://urchin.earth.li/~twic/Sequenced_Packets_Over_Ordinary_TCP.html) to `/tmp/.com.spirent.openperf/server`). The server responds with the server process ID and shared memory, as well as an optional pair of file descriptors to be used for subsequent communications.
+Upon startup (`openperf::socket::api::client.init()`), the client will exchange an HELLO message with the server over local unix domain socket (`unix_socket` type [`SOCK_SEQPACKET`](http://urchin.earth.li/~twic/Sequenced_Packets_Over_Ordinary_TCP.html) to `/tmp/.com.spirent.openperf/server`). The server responds with the server process ID and shared memory, as well as an optional pair of file descriptors to be used for subsequent communications.
 
-When the client needs to create a new socket, it calls the socket equivalent wrapper [`client::socket(domain, type, protocol)`](https://github.com/SpirentOrion/openperf-core/blob/master/src/modules/socket/client/api_client.cpp#L435). The server allocates a _channel_ into the shared memory, a socket FD pair, and a socket ID.  
+When the client needs to create a new socket, it calls the socket equivalent wrapper [`client::socket(domain, type, protocol)`](https://github.com/SpirentOrion/inception-core/blob/master/src/modules/socket/client/api_client.cpp#L435). The server allocates a _channel_ into the shared memory, a socket FD pair, and a socket ID.
 
 ## Sending Data from the Client
 
-Sending data over this socket (assuming UDP) will eventually call `client::sendmsg` with the destination `sockaddr` passed in the message header (`msg_name`). This method will send the data over the channel ([`channel.send`](https://github.com/SpirentOrion/openperf-core/blob/master/src/modules/socket/client/api_client.cpp#L593)), which in turn, calls the _dgram channel_ implementation [`dgram_channel::send`](https://github.com/SpirentOrion/openperf-core/blob/master/src/modules/socket/client/dgram_channel.cpp#L168). 
+Sending data over this socket (assuming UDP) will eventually call `client::sendmsg` with the destination `sockaddr` passed in the message header (`msg_name`). This method will send the data over the channel ([`channel.send`](https://github.com/SpirentOrion/inception-core/blob/master/src/modules/socket/client/api_client.cpp#L593)), which in turn, calls the _dgram channel_ implementation [`dgram_channel::send`](https://github.com/SpirentOrion/inception-core/blob/master/src/modules/socket/client/dgram_channel.cpp#L168).
 
 
-```C++	
+```C++
 ssize_t client::sendto(int s, const void *dataptr, size_t len, int flags, const struct sockaddr *to, socklen_t tolen)
 {
     auto iov = iovec{
         .iov_base = const_cast<void*>(dataptr),
         .iov_len = len
     };
-	
+
     auto msg = msghdr{
         .msg_name = const_cast<sockaddr*>(to),
         .msg_namelen = tolen,
         .msg_iov = &iov,
         .msg_iovlen = 1
     };
-	
+
     return (sendmsg(s, &msg, flags));
 }
-	
-	
+
+
 ssize_t client::sendmsg(int s, const struct msghdr *message, int flags)
 {
     auto& [id, channel] = m_channels.find(s)->second;
-    
-    channel.send(m_server_pid, message->msg_iov, message->msg_iovlen, 
+
+    channel.send(m_server_pid, message->msg_iov, message->msg_iovlen,
     	flags, reinterpret_cast<const sockaddr*>(message->msg_name));
 }
 ```
-	
+
 This last method transfers the data via the [`process_vm_writev`](https://linux.die.net/man/2/process_vm_writev) system-call (the data moves directly between the address spaces of the two processes, without passing through kernel space).
-	
-```C++	
+
+```C++
 dgram_channel::send(pid_t pid, iov[], iovcnt,..., sockaddr *to)
 {
     auto item = sendq.unpack();
     item->address = to_addr(to);
-	
-    iovec writevec = iovec{ 
+
+    iovec writevec = iovec{
     	.iov_base = const_cast<void*>(item->pvec.payload()),
-        .iov_len = item->pvec.len() 
+        .iov_len = item->pvec.len()
     };
     process_vm_writev(pid, iov, iovcnt, &writevec, 1, 0);
-	
+
     item->pvec.len(result);
     sendq.repack();
-	
+
     notify();
-	...	
+	...
 }
 ```
-	
-The sending process does not use the shared memory. Instead, it uses the [`sendq`](https://github.com/SpirentOrion/openperf-core/blob/master/src/modules/socket/bipartite_ring.h) (implemented as a bipartite ring). The item type is `dgram_channel_item`, which contains a [pbuf_vec](https://github.com/SpirentOrion/openperf-core/blob/master/src/modules/socket/pbuf_vec.cpp), which carries the payload and LWIP buf pointer as well as the payload length. From the client side, the puf is anonymised.
 
-```C++	
+The sending process does not use the shared memory. Instead, it uses the [`sendq`](https://github.com/SpirentOrion/inception-core/blob/master/src/modules/socket/bipartite_ring.h) (implemented as a bipartite ring). The item type is `dgram_channel_item`, which contains a [pbuf_vec](https://github.com/SpirentOrion/inception-core/blob/master/src/modules/socket/pbuf_vec.cpp), which carries the payload and LWIP buf pointer as well as the payload length. From the client side, the puf is anonymised.
+
+```C++
 struct dgram_channel_item {
     std::optional<dgram_channel_addr> address;
     pbuf_vec pvec;
@@ -75,7 +75,7 @@ struct dgram_channel_item {
 
 The `notify` is implemented in the `event_queue_producer` which the `dgram_channel` inherits from. At first glance, it looks quite complex:
 
-```C++	
+```C++
 template <typename Derived>
 int event_queue_producer<Derived>::notify()
 {
@@ -90,7 +90,7 @@ int event_queue_producer<Derived>::notify()
 }
 ```
 
-But the most imporant is the `eventfd_write(fd(), 1)` which [_just_ sends](https://stackoverflow.com/questions/18557064/where-to-find-eventfd-write-documentation) an event of value `1` to the consumer (server). 
+But the most imporant is the `eventfd_write(fd(), 1)` which [_just_ sends](https://stackoverflow.com/questions/18557064/where-to-find-eventfd-write-documentation) an event of value `1` to the consumer (server).
 
 The other thing to note is that the atomic counters are used the same way as head/tail indexes of a ring buffer, but here we call them read_idx and write_idx. If read == write, then there are no outstanding notifications for the event fd. If read != write, then there are notifications. We do this to minimize our syscalls for reading/writing the fd's. So, that eventfd_write function is only called if we know for a fact that the other side is idle (and hence needs a wake up).
 
@@ -98,8 +98,8 @@ The other thing to note is that the atomic counters are used the same way as hea
 ## Receiving Data from the Client
 
 Receiving data (from a UDP client socket) is similar to sending data, at least in the first steps:
-	
-```C++	
+
+```C++
 ssize_t client::recvfrom(int s, void *mem, size_t len, int flags,
                  struct sockaddr *from, socklen_t *fromlen)
 {
@@ -107,32 +107,32 @@ ssize_t client::recvfrom(int s, void *mem, size_t len, int flags,
         .iov_base = mem,
         .iov_len = len
     };
-	
+
     auto msg = msghdr{
         .msg_name = from,
         .msg_namelen = (fromlen ? *fromlen : 0),
         .msg_iov = &iov,
         .msg_iovlen = 1
     };
-	
+
     auto to_return = recvmsg(s, &msg, flags);
     if (fromlen && to_return != -1) *fromlen = msg.msg_namelen;
     return (to_return);
-	
+
 }
-	
+
 ssize_t client::recvmsg(int s, struct msghdr *message, int flags)
 {
     auto& [id, channel] = m_channels.find(s)->second;
     channel.recv(
-    	m_server_pid, message->msg_iov, message->msg_iovlen, 
+    	m_server_pid, message->msg_iov, message->msg_iovlen,
     		flags, message->msg_name, &message->msg_namelen);
     ..
 }
 ```
-	
-The actual recv implememtation also used memory copy between threads using `process_vm_readv`. The `ack_wait` is implemented in the _event queue_ and uses `eventfd_read` to wait for new events. The `ack_undo` pushes back an event on the _event queue_. 
-	
+
+The actual recv implememtation also used memory copy between threads using `process_vm_readv`. The `ack_wait` is implemented in the _event queue_ and uses `eventfd_read` to wait for new events. The `ack_undo` pushes back an event on the _event queue_.
+
 ```C++
 dgram_channel::recv(pid_t pid, iovec iov[], size_t iovcnt, int, ...)
 {
@@ -141,48 +141,48 @@ dgram_channel::recv(pid_t pid, iovec iov[], size_t iovcnt, int, ...)
             return (tl::make_unexpected(error));
         }
     }
-	
+
     auto item = (flags & MSG_PEEK ? recvq.peek() : recvq.unpack());
-	
-    auto readvec = iovec { 
+
+    auto readvec = iovec {
     	.iov_base = const_cast<void*>(item->pvec.payload()),
-       .iov_len = item->pvec.len() 
+       .iov_len = item->pvec.len()
     };
     process_vm_readv(pid, iov, iovcnt, &readvec, 1, 0);
     recvq.repack();
-	
+
     notify();
-	
+
     if (!recvq.available()) ack(); else ack_undo();
-	
-    ...	
+
+    ...
 }
 ```
-	
+
 The line `if (!recvq.available()) ack(); else ack_undo();` is to check to see if there are any remaining data to read.  If not, it clear any pending notification.  Otherwise, it makes sure a notification remains so the client reads the rest.
 
 But, so, where is the shared memory? To understand it, let's first dig into the server code.
 
-## Server Initialization 
+## Server Initialization
 
-When creating a socket (UDP in the following example), the server will execute `api_handler::handle_request_socket`, which will, in turn create the actual socket using [`make_socket`](https://github.com/SpirentOrion/openperf-core/blob/master/src/modules/socket/server/socket_utils.cpp#L15)
+When creating a socket (UDP in the following example), the server will execute `api_handler::handle_request_socket`, which will, in turn create the actual socket using [`make_socket`](https://github.com/SpirentOrion/inception-core/blob/master/src/modules/socket/server/socket_utils.cpp#L15)
 
 	make_socket(m_allocator, request.domain, request.type, request.protocol);
-	
-When the allocator is a `icp::memory::allocator` working with the shared memory. The make socket function will eventually call the _right_ socket implementation, in our case, the [`udp_socket`](https://github.com/SpirentOrion/openperf-core/blob/master/src/modules/socket/server/udp_socket.cpp#L56)
+
+When the allocator is a `openperf::memory::allocator` working with the shared memory. The make socket function will eventually call the _right_ socket implementation, in our case, the [`udp_socket`](https://github.com/SpirentOrion/inception-core/blob/master/src/modules/socket/server/udp_socket.cpp#L56)
 
 ```C++
-udp_socket::udp_socket(icp::socket::server::allocator& allocator, int flags)
+udp_socket::udp_socket(openperf::socket::server::allocator& allocator, int flags)
 {
     m_channel = new (allocator.allocate(sizeof(dgram_channel)))
     dgram_channel_deleter = &allocator
     dgram_channel = flags
-    m_pcb = udp_new()      
-               
+    m_pcb = udp_new()
+
     if (!m_pcb) {
         throw std::runtime_error("Out of UDP pcb's!");
     }
-	
+
     udp_recv(m_pcb.get(), &udp_receive, m_channel.get());
 }
 ```
@@ -195,14 +195,14 @@ typedef bipartite_ring<dgram_channel_item, api::socket_queue_length> dgram_ring;
 class dgram_channel : public event_queue_consumer<dgram_channel>
                     , public event_queue_producer<dgram_channel>
 {
-	dgram_ring sendq;  /* from client to stack */  
-	api::socket_fd_pair client_fds;                
-	std::atomic_uint64_t tx_fd_write_idx;          
-	std::atomic_uint64_t rx_fd_read_idx;           
-	dgram_ring recvq;  /* from stack to client */  
-	api::socket_fd_pair server_fds;                
-	std::atomic_uint64_t tx_fd_read_idx;           
-	std::atomic_uint64_t rx_fd_write_idx;          
+	dgram_ring sendq;  /* from client to stack */
+	api::socket_fd_pair client_fds;
+	std::atomic_uint64_t tx_fd_write_idx;
+	std::atomic_uint64_t rx_fd_read_idx;
+	dgram_ring recvq;  /* from stack to client */
+	api::socket_fd_pair server_fds;
+	std::atomic_uint64_t tx_fd_read_idx;
+	std::atomic_uint64_t rx_fd_write_idx;
 	std::atomic_int socket_flags;
 ```
 
@@ -229,16 +229,16 @@ Note that the `dgram_channel` referenced here is the server dgram channel. It is
 bool dgram_channel::send(const pbuf *pbuf, const dgram_ip_addr* addr, in_port_t port)
 {
     free_spent_pbufs(recvq);
-    bool pushed = recvq.enqueue( dgram_channel_item{ 
+    bool pushed = recvq.enqueue( dgram_channel_item{
     	.address = dgram_channel_addr(addr, port),
-    	.pvec = pbuf_vec(const_cast<pbuf*>(p), p->payload, p->len) 
+    	.pvec = pbuf_vec(const_cast<pbuf*>(p), p->payload, p->len)
     });
     if (pushed) notify();
     return (pushed);
 }
 ```
 
-The LWIP states that _the callback is responsible for freeing the pbuf if it's not used any more_, which is what `free_spent_pbufs` is _asynchronously_ doing.  To be considered as a `spent pbuf`, the client will first have to call `recv`. 
+The LWIP states that _the callback is responsible for freeing the pbuf if it's not used any more_, which is what `free_spent_pbufs` is _asynchronously_ doing.  To be considered as a `spent pbuf`, the client will first have to call `recv`.
 
 So, in conclusion, for UDP, the shared memory is only used for the channel and queues, but not for the payload, as described on the component diagram below:
 
@@ -254,43 +254,43 @@ The TCP client stack is implemented as the `stream_channel`. When sending data, 
 
 ```C++
 tl::expected<size_t, int> stream_channel::send(pid_t pid, iov[], iovcount, ...) {
-	
+
 	auto flags = socket_flags.load(std::memory_order_relaxed);
 	auto is_non_blocking = flag & EFD_NONBLOCK
-	
+
 	size_t buf_available = 0;
 	while ((buf_available = writable()) == 0) {
 	     auto error = is_non_blocking ? block() : block_wait();
          if (error!=0) return (tl::make_unexpected(error));
 	}
-	
+
 	auto written = std::accumulate(
 		iov, iov + iovcnt, 0UL, [&](size_t x, const iovec& iov) {
-	      auto v = write_and_notify(iov.iov_base, iov.iov_len, 
+	      auto v = write_and_notify(iov.iov_base, iov.iov_len,
 	      	[&]() { notify(); })
 		  return (x + v);
 	});
-	
+
 	if (written == buf_available && is_non_blocking && !writable()) {
 	    block();   /* pre-emptive block */
 	};
-	
+
 	notify();
-	
+
 	return (written);
 }
 ```
 
-The first part `while (writable()==0)` waits for space to be available in the ring buffer. It also handles returning EWOULDBLOCK if the socket is non-blocking and full. 
+The first part `while (writable()==0)` waits for space to be available in the ring buffer. It also handles returning EWOULDBLOCK if the socket is non-blocking and full.
 
-The second part, `std::accumulate` over `write_and_notify`  writes the actualy data from the io vector, and, for each io chunk, notifies the server over the ring buffer. 
+The second part, `std::accumulate` over `write_and_notify`  writes the actualy data from the io vector, and, for each io chunk, notifies the server over the ring buffer.
 
 Last, the `if (written == buf_available ...) block()` is used when the buffer is full after writing, to give a change for the client to get scheduled: If the client has just filled up the send buffer, the socket is non-blocking, and the stack hasn't read any data yet, then we mark the fd as blocked so that the client will know not to try to write any more data if they're using `poll` or `epoll` or whatever. Without that line, the fd would indicate writable status even though the socket is full, which is not the desired behavior.
 
-An interresting scenario is to understand what happens if there is not enough space available in the buffer, when calling the `write_and_notify`? Well, just like the standard socket implmentation, `write_and_notify` will only write as many bytes as it can, and return the actual written size. 
+An interresting scenario is to understand what happens if there is not enough space available in the buffer, when calling the `write_and_notify`? Well, just like the standard socket implmentation, `write_and_notify` will only write as many bytes as it can, and return the actual written size.
 
 > Note: could there be a atomicity bug, because the std::accumlate does not prevents from buffer to be read while iterating the write?
-> 
+>
 > Answer: This buffer is a text book Single Producer, Single Consumer queue (BSD sockets aren't thread safe). The stack can only read up to the tail index in the buffer and that won't be updated until after the write completes. If the stack needs a notification, that won't happen until after the tail index is updated
 
 The main difference with UDP is that UDP uses `sendq` (type `dgram_ring`) and  `process_vm_writev` while TCP uses `write_and_notify` only; The _simplified_ TCP socket structure is the following
@@ -304,9 +304,9 @@ class stream_channel : public circular_buffer_consumer<stream_channel>
 {
 	buffer tx_buffer;
 	buffer rx_buffer;
-	api::socket_fd_pair client_fds;              
-	std::atomic_int socket_error;                
-	std::atomic_int socket_flags;                
+	api::socket_fd_pair client_fds;
+	std::atomic_int socket_error;
+	std::atomic_int socket_flags;
 	api::socket_fd_pair server_fds;
 	void* allocator;
 ```
@@ -315,7 +315,7 @@ class stream_channel : public circular_buffer_consumer<stream_channel>
 When the TCP socket is created, the server allocates the buffer from the shared memory:
 
 ```
-stream_channel::stream_channel(int flags, icp::socket::server::allocator& allocator)
+stream_channel::stream_channel(int flags, openperf::socket::server::allocator& allocator)
     : tx_buffer(allocator.allocate(init_buffer_size), init_buffer_size)
     , rx_buffer(allocator.allocate(init_buffer_size), init_buffer_size)
     , ...
@@ -333,7 +333,7 @@ struct buffer {
 ```
 
 Note that all of the buffer data is kept in two cache aligned structs so that the read and write threads will not destructively share the data. The first struct is written to exclusively by the server thread.  The second struct is written to exclusively by the client thread.
- 
+
 ## Receiving data from the Server
 
 After a stream socket has accepted a new incomming connection, it receives the data via the `do_lwip_recv` method:
@@ -377,11 +377,11 @@ When the client has notified of new available outgoing data (which it previously
 	auto to_write = std::min(length, pcb->snd_buf);
 
 	const auto flags = TCP_WRITE_FLAG_COPY | TCP_WRITE_FLAG_MORE;
-	
+
 	if (tcp_write(pcb, ptr, to_write, flags) != ERR_OK) {
 	    return (written);
 	}
-		
+
 	return to_write;
 }
 
@@ -394,5 +394,3 @@ The following component diagram summurizes the _stream channel_ data flow.
 
 
 ![Internal Components](../images/socket-module-tcp.png)
-
-

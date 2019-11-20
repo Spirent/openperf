@@ -1,7 +1,7 @@
-#include "core/icp_log.h"
+#include "core/op_log.h"
 #include "packetio/recycle.h"
 
-namespace icp::packetio::recycle {
+namespace openperf::packetio::recycle {
 
 template <int NumReaders>
 depot<NumReaders>::depot()
@@ -30,7 +30,7 @@ void depot<NumReaders>::writer_add_gc_callback(const std::function<void()>& call
     auto v = m_writer_version.load(std::memory_order_relaxed);
     auto [it, success] = m_callbacks.emplace(v, std::move(callback));
     if (!success) {
-        ICP_LOG(ICP_LOG_ERROR, "Failed to add garbage collecting callback for version %zu\n", v);
+        OP_LOG(OP_LOG_ERROR, "Failed to add garbage collecting callback for version %zu\n", v);
         return;
     }
     m_writer_version.fetch_add(1, std::memory_order_acq_rel);
@@ -42,7 +42,7 @@ void depot<NumReaders>::writer_add_gc_callback(std::function<void()>&& callback)
     auto v = m_writer_version.load(std::memory_order_relaxed);
     auto [it, success] = m_callbacks.emplace(v, std::forward<gc_callback>(callback));
     if (!success) {
-        ICP_LOG(ICP_LOG_ERROR, "Failed to add garbage collecting callback for version %zu\n", v);
+        OP_LOG(OP_LOG_ERROR, "Failed to add garbage collecting callback for version %zu\n", v);
         return;
     }
     m_writer_version.fetch_add(1, std::memory_order_acq_rel);
@@ -70,7 +70,7 @@ void depot<NumReaders>::writer_process_gc_callbacks()
     /* Find and run all callbacks between [0, min_version) */
     std::for_each(std::begin(m_callbacks), m_callbacks.lower_bound(min_version),
                   [](auto& pair) {
-                      ICP_LOG(ICP_LOG_DEBUG, "Running garbage collection callback for version %zu\n",
+                      OP_LOG(OP_LOG_DEBUG, "Running garbage collection callback for version %zu\n",
                               pair.first);
                       pair.second();
                   });

@@ -1,5 +1,5 @@
-#ifndef _ICP_SOCKET_DGRAM_CHANNEL_H_
-#define _ICP_SOCKET_DGRAM_CHANNEL_H_
+#ifndef _OP_SOCKET_DGRAM_CHANNEL_H_
+#define _OP_SOCKET_DGRAM_CHANNEL_H_
 
 #include <atomic>
 
@@ -8,7 +8,7 @@
 #include "framework/memory/offset_ptr.h"
 #include "socket/api.h"
 
-namespace icp {
+namespace openperf {
 namespace socket {
 
 struct dgram_ipv4_addr {
@@ -111,4 +111,4 @@ struct dgram_channel {
 }
 }
 
-#endif /* _ICP_SOCKET_DGRAM_CHANNEL_H_ */
+#endif /* _OP_SOCKET_DGRAM_CHANNEL_H_ */

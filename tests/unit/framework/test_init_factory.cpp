@@ -1,8 +1,8 @@
 #include "catch.hpp"
 
-#include "core/icp_init_factory.hpp"
+#include "core/op_init_factory.hpp"
 
-struct test_base : icp::core::init_factory<test_base, int& >
+struct test_base : openperf::core::init_factory<test_base, int& >
 {
     test_base(Key) {};
 };

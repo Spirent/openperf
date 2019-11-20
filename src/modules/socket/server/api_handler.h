@@ -1,5 +1,5 @@
-#ifndef _ICP_SOCKET_SERVER_API_HANDLER_H_
-#define _ICP_SOCKET_SERVER_API_HANDLER_H_
+#ifndef _OP_SOCKET_SERVER_API_HANDLER_H_
+#define _OP_SOCKET_SERVER_API_HANDLER_H_
 
 #include <cerrno>
 #include <memory>
@@ -12,17 +12,17 @@
 #include "socket/server/allocator.h"
 #include "socket/server/generic_socket.h"
 
-struct icp_event_data;
+struct op_event_data;
 
-namespace icp::core {
+namespace openperf::core {
 class event_loop;
 }
 
-namespace icp::socket::server {
+namespace openperf::socket::server {
 
 class api_handler {
 public:
-    using event_loop = icp::packetio::event_loop::generic_event_loop;
+    using event_loop = openperf::packetio::event_loop::generic_event_loop;
 
     api_handler(event_loop& loop, const void* shm_base,
                 allocator& allocator, pid_t pid);
@@ -61,4 +61,4 @@ private:
 
 }
 
-#endif /* _ICP_SOCKET_SERVER_API_HANDLER_H_ */
+#endif /* _OP_SOCKET_SERVER_API_HANDLER_H_ */

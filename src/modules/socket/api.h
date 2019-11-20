@@ -1,5 +1,5 @@
-#ifndef _ICP_SOCKET_API_H_
-#define _ICP_SOCKET_API_H_
+#ifndef _OP_SOCKET_API_H_
+#define _OP_SOCKET_API_H_
 
 #include <string>
 #include <optional>
@@ -11,10 +11,10 @@
 
 #include "tl/expected.hpp"
 
-#include "core/icp_uuid.h"
+#include "core/op_uuid.h"
 #include "framework/memory/offset_ptr.h"
 
-namespace icp {
+namespace openperf {
 namespace socket {
 
 struct dgram_channel;
@@ -197,7 +197,7 @@ typedef std::variant<reply_init,
 
 typedef tl::expected<reply_ok, int> reply_msg;  /* either the reply or an error code */
 
-constexpr std::string_view key = "com.spirent.inception";
+constexpr std::string_view key = "com.spirent.openperf";
 
 constexpr int socket_type = SOCK_SEQPACKET;
 
@@ -217,9 +217,9 @@ api::io_channel_ptr to_pointer(api::io_channel_offset offset, const void* base);
 namespace std {
 
 template <>
-struct hash<icp::socket::api::socket_id>
+struct hash<openperf::socket::api::socket_id>
 {
-    size_t operator()(const icp::socket::api::socket_id& id) const noexcept
+    size_t operator()(const openperf::socket::api::socket_id& id) const noexcept
     {
         return (std::hash<uint64_t>{}(id.uint64));
     }
@@ -227,4 +227,4 @@ struct hash<icp::socket::api::socket_id>
 
 }
 
-#endif /* _ICP_SOCKET_API_H_ */
+#endif /* _OP_SOCKET_API_H_ */

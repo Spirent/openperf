@@ -1,11 +1,11 @@
-#ifndef _ICP_PACKETIO_DPDK_QUEUE_UTILS_H_
-#define _ICP_PACKETIO_DPDK_QUEUE_UTILS_H_
+#ifndef _OP_PACKETIO_DPDK_QUEUE_UTILS_H_
+#define _OP_PACKETIO_DPDK_QUEUE_UTILS_H_
 
 #include <cstdint>
 #include <map>
 #include <vector>
 
-namespace icp {
+namespace openperf {
 namespace packetio {
 namespace dpdk {
 namespace model {
@@ -62,4 +62,4 @@ std::map<int, count> get_port_queue_counts(const std::vector<descriptor>& descri
 }
 }
 
-#endif /* _ICP_PACKETIO_DPDK_QUEUE_UTILS_H_ */
+#endif /* _OP_PACKETIO_DPDK_QUEUE_UTILS_H_ */

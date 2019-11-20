@@ -5,7 +5,7 @@
 
 struct netif;
 
-namespace icp::packetio {
+namespace openperf::packetio {
 
 template class forwarding_table<netif,
                                 packets::generic_sink,

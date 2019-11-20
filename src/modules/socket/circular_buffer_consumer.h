@@ -1,11 +1,11 @@
-#ifndef _ICP_SOCKET_CIRCULAR_BUFFER_CONSUMER_H_
-#define _ICP_SOCKET_CIRCULAR_BUFFER_CONSUMER_H_
+#ifndef _OP_SOCKET_CIRCULAR_BUFFER_CONSUMER_H_
+#define _OP_SOCKET_CIRCULAR_BUFFER_CONSUMER_H_
 
 #include <array>
 #include <atomic>
 #include <sys/uio.h>
 
-namespace icp {
+namespace openperf {
 namespace socket {
 
 template <typename Derived>
@@ -46,4 +46,4 @@ public:
 }
 }
 
-#endif /* _ICP_SOCKET_CIRCULAR_BUFFER_CONSUMER_H_ */
+#endif /* _OP_SOCKET_CIRCULAR_BUFFER_CONSUMER_H_ */

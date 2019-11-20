@@ -2,5 +2,5 @@
 # Makefile component to specify 'testing' build options
 #
 
-ICP_COPTS += -Os -g
-ICP_CPPFLAGS += -fstack-check
+OP_COPTS += -Os -g
+OP_CPPFLAGS += -fstack-check

@@ -1,9 +1,9 @@
 # coding: utf-8
 
 """
-    Inception Core API
+    OpenPerf API
 
-    REST API interface to the Inception Core  # noqa: E501
+    REST API interface for OpenPerf  # noqa: E501
 
     OpenAPI spec version: 1
     Contact: support@spirent.com
@@ -27,14 +27,14 @@ REQUIRES = ["urllib3 >= 1.15", "six >= 1.10", "certifi", "python-dateutil"]
 setup(
     name=NAME,
     version=VERSION,
-    description="Inception Core API",
+    description="OpenPerf API",
     author_email="support@spirent.com",
     url="",
-    keywords=["Swagger", "Inception Core API"],
+    keywords=["Swagger", "OpenPerf API"],
     install_requires=REQUIRES,
     packages=find_packages(),
     include_package_data=True,
     long_description="""\
-    REST API interface to the Inception Core  # noqa: E501
+    REST API interface for OpenPerf  # noqa: E501
     """
 )

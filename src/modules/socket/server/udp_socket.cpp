@@ -12,7 +12,7 @@
 #include "lwip/udp.h"
 #include "utils/overloaded_visitor.h"
 
-namespace icp {
+namespace openperf {
 namespace socket {
 namespace server {
 
@@ -55,7 +55,7 @@ static void udp_receive(void* arg, udp_pcb* pcb, pbuf* p, const ip_addr_t* addr,
     }
 }
 
-udp_socket::udp_socket(icp::socket::server::allocator& allocator, int flags)
+udp_socket::udp_socket(openperf::socket::server::allocator& allocator, int flags)
     : m_channel(new (allocator.allocate(sizeof(dgram_channel)))
                 dgram_channel(flags, allocator))
     , m_pcb(udp_new())

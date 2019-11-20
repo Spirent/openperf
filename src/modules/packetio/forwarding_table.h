@@ -1,5 +1,5 @@
-#ifndef _ICP_PACKETIO_FORWARDING_TABLE_H_
-#define _ICP_PACKETIO_FORWARDING_TABLE_H_
+#ifndef _OP_PACKETIO_FORWARDING_TABLE_H_
+#define _OP_PACKETIO_FORWARDING_TABLE_H_
 
 /**
  * @file
@@ -16,7 +16,7 @@
 
 #include "net/net_types.h"
 
-namespace icp::packetio {
+namespace openperf::packetio {
 
 template <typename Interface, typename Sink, int MaxPorts>
 class forwarding_table
@@ -51,4 +51,4 @@ public:
 
 }
 
-#endif /* _ICP_PACKETIO_FORWARDING_TABLE_H_ */
+#endif /* _OP_PACKETIO_FORWARDING_TABLE_H_ */

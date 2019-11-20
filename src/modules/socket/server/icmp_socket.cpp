@@ -13,7 +13,7 @@
 #include "lwip/memp.h"
 #include "lwip/raw.h"
 
-namespace icp {
+namespace openperf {
 namespace socket {
 namespace server {
 
@@ -73,7 +73,7 @@ static raw_recv_fn get_receive_function(int type)
     }
 }
 
-icmp_socket::icmp_socket(icp::socket::server::allocator& allocator, int flags, int protocol)
+icmp_socket::icmp_socket(openperf::socket::server::allocator& allocator, int flags, int protocol)
     : raw_socket(allocator, flags, protocol, get_receive_function(flags & 0xff))
     , m_filter(0)
 {
