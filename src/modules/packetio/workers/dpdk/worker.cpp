@@ -130,8 +130,19 @@ static std::pair<size_t, size_t> partition_mbufs(rte_mbuf* const incoming[], int
 }
 
 static void rx_interface_dispatch(const fib* fib, const rx_queue* rxq,
-                                  rte_mbuf* const incoming[], uint16_t n)
+                                  rte_mbuf* incoming[], uint16_t n)
 {
+    /*
+     * If we don't have hardware LRO support, try to coalesce some
+     * packets before handing them up the stack.
+     */
+    if (!(rxq->flags() & rx_feature_flags::hardware_lro)) {
+        static const rte_gro_param gro_params = { .gro_types = RTE_GRO_TCP_IPV4,
+                                                  .max_flow_num = pkt_burst_size,
+                                                  .max_item_per_flow = pkt_burst_size };
+        n = rte_gro_reassemble_burst(incoming, n, &gro_params);
+    }
+
     std::array<rte_mbuf*, pkt_burst_size> unicast, nunicast;
     std::array<netif*, pkt_burst_size> interfaces;
 
@@ -204,22 +215,12 @@ static void rx_sink_dispatch(const fib* fib, const rx_queue* rxq,
 
 static uint16_t rx_burst(const fib* fib, const rx_queue* rxq)
 {
-
     std::array<rte_mbuf*, pkt_burst_size> incoming;
-    auto rx_flags = rxq->flags();
 
     auto n = rte_eth_rx_burst(rxq->port_id(), rxq->queue_id(),
                               incoming.data(), pkt_burst_size);
 
     if (!n) return (0);
-
-    if (!(rx_flags & rx_feature_flags::hardware_lro)) {
-        static const rte_gro_param gro_params = { .gro_types = RTE_GRO_TCP_IPV4,
-                                                  .max_flow_num = pkt_burst_size,
-                                                  .max_item_per_flow = pkt_burst_size };
-
-        n = rte_gro_reassemble_burst(incoming.data(), n, &gro_params);
-    }
 
     ICP_LOG(ICP_LOG_TRACE, "Received %d packet%s on %d:%d\n",
             n, n > 1 ? "s" : "", rxq->port_id(), rxq->queue_id());
@@ -228,23 +229,32 @@ static uint16_t rx_burst(const fib* fib, const rx_queue* rxq)
     rx_sink_dispatch(fib, rxq, incoming.data(), n);
 
     /* Then, dispatch to stack interfaces */
-    if (rx_flags & rx_feature_flags::hardware_tags) {
+    if (rxq->flags() & rx_feature_flags::hardware_tags) {
         /*
          * If we have hardware tags for interface matching packets, then
-         * partition the packets into two groups: stack packets and non-stack packets.
+         * sort the packets into two groups: stack packets and non-stack packets.
          */
-        auto cursor = std::stable_partition(incoming.data(), incoming.data() + n,
-                                            [](auto& mbuf) {
-                                                return ((mbuf->ol_flags & PKT_RX_FDIR) && mbuf->hash.fdir.hi);
-                                            });
+        std::array<rte_mbuf*, pkt_burst_size> to_free, to_stack;
+        uint16_t nb_to_free = 0, nb_to_stack = 0;
+        std::for_each(incoming.data(), incoming.data() + n,
+                      [&](auto& mbuf) {
+                          if ((mbuf->ol_flags & PKT_RX_FDIR) && mbuf->hash.fdir.hi) {
+                              to_stack[nb_to_stack++] = mbuf;
+                          } else {
+                              to_free[nb_to_free++] = mbuf;
+                          }
+                      });
 
-        /* Hand the stack packets off to the stack... */
-        rx_interface_dispatch(fib, rxq, incoming.data(), std::distance(incoming.data(), cursor));
+        /* Hand any stack packets off to the stack... */
+        if (nb_to_stack) {
+            rx_interface_dispatch(fib, rxq, to_stack.data(), nb_to_stack);
+        }
 
-        /* ... and free the non-stack packets */
-        std::for_each(cursor, incoming.data() + n, rte_pktmbuf_free);
+        /* ... and free all the non-stack packets */
+        std::for_each(to_free.data(), to_free.data() + nb_to_free,
+                      rte_pktmbuf_free);
     } else {
-        /* No hardware help, let the stack sort everything out */
+        /* No hardware help; let the stack sort everything out */
         rx_interface_dispatch(fib, rxq, incoming.data(), n);
     }
 
