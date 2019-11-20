@@ -1,5 +1,5 @@
 #include "core/op_log.h"
-#include "packetio/recycle.h"
+#include "packetio/recycle.hpp"
 
 namespace openperf::packetio::recycle {
 

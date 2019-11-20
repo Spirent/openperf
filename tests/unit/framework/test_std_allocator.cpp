@@ -4,8 +4,8 @@
 
 #include "catch.hpp"
 
-#include "memory/std_allocator.h"
-#include "memory/allocator/free_list.h"
+#include "memory/std_allocator.hpp"
+#include "memory/allocator/free_list.hpp"
 
 struct c_deleter {
     void operator()(void* ptr) {

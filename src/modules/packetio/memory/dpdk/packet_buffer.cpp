@@ -1,5 +1,5 @@
 #include "packetio/drivers/dpdk/dpdk.h"
-#include "packetio/packet_buffer.h"
+#include "packetio/packet_buffer.hpp"
 
 namespace openperf::packetio::packets {
 

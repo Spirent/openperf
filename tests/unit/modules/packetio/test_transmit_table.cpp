@@ -1,6 +1,6 @@
 #include "catch.hpp"
 
-#include "core/op_uuid.h"
+#include "core/op_uuid.hpp"
 #include "packetio/transmit_table.tcc"
 
 struct test_source

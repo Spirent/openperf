@@ -14,15 +14,15 @@
 #include <sys/uio.h>
 #include <sys/un.h>
 
-#include "socket/api.h"
-#include "socket/dgram_channel.h"
-#include "socket/process_control.h"
-#include "socket/stream_channel.h"
-#include "socket/server/api_handler.h"
-#include "socket/server/api_server.h"
+#include "socket/api.hpp"
+#include "socket/dgram_channel.hpp"
+#include "socket/process_control.hpp"
+#include "socket/stream_channel.hpp"
+#include "socket/server/api_handler.hpp"
+#include "socket/server/api_server.hpp"
 #include "core/op_core.h"
-#include "core/op_uuid.h"
-#include "op_config_file.h"
+#include "core/op_uuid.hpp"
+#include "op_config_file.hpp"
 
 namespace openperf::socket::api {
 

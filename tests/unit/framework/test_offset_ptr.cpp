@@ -4,7 +4,7 @@
 
 #include "catch.hpp"
 
-#include "memory/offset_ptr.h"
+#include "memory/offset_ptr.hpp"
 
 struct test_struct {
     int foo;

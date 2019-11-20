@@ -10,9 +10,9 @@
 
 #include "lwip/tcp.h"
 #include "lwip/priv/tcp_priv.h"
-#include "packetio/drivers/dpdk/model/port_info.h"
+#include "packetio/drivers/dpdk/model/port_info.hpp"
 #include "packetio/memory/dpdk/pbuf_utils.h"
-#include "packetio/stack/dpdk/net_interface.h"
+#include "packetio/stack/dpdk/net_interface.hpp"
 #include "packetio/stack/gso_utils.h"
 
 namespace openperf {

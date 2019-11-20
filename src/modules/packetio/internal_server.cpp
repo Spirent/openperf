@@ -1,6 +1,6 @@
-#include "packetio/internal_api.h"
-#include "packetio/internal_server.h"
-#include "utils/overloaded_visitor.h"
+#include "packetio/internal_api.hpp"
+#include "packetio/internal_server.hpp"
+#include "utils/overloaded_visitor.hpp"
 
 namespace openperf::packetio::internal::api {
 

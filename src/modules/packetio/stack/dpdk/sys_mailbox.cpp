@@ -13,7 +13,7 @@
 #include "lwip/stats.h"
 
 #include "packetio/drivers/dpdk/dpdk.h"
-#include "packetio/stack/dpdk/sys_mailbox.h"
+#include "packetio/stack/dpdk/sys_mailbox.hpp"
 
 #ifndef EFD_SEMAPHORE
 #define EFD_SEMAPHORE 1

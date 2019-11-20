@@ -3,8 +3,8 @@
 
 #include "catch.hpp"
 
-#include "units/rate.h"
-#include "units/data-rates.h"
+#include "units/rate.hpp"
+#include "units/data-rates.hpp"
 
 TEST_CASE("rates", "[rate]")
 {

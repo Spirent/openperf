@@ -12,7 +12,7 @@
 #include <sys/prctl.h>
 
 #include "core/op_log.h"
-#include "socket/process_control.h"
+#include "socket/process_control.hpp"
 
 namespace openperf::socket::process_control {
 

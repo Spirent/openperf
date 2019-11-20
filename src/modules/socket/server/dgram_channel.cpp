@@ -9,7 +9,7 @@
 #include "socket/circular_buffer_producer.tcc"
 #include "socket/event_queue_consumer.tcc"
 #include "socket/event_queue_producer.tcc"
-#include "socket/server/dgram_channel.h"
+#include "socket/server/dgram_channel.hpp"
 #include "lwip/pbuf.h"
 
 namespace openperf::socket {

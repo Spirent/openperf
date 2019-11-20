@@ -4,14 +4,14 @@
 #include <zmq.h>
 
 #include "core/op_core.h"
-#include "config/op_config_utils.h"
+#include "config/op_config_utils.hpp"
 #include "swagger/v1/model/Interface.h"
-#include "packetio/generic_interface.h"
-#include "packetio/json_transmogrify.h"
-#include "packetio/interface_api.h"
-#include "packetio/interface_server.h"
+#include "packetio/generic_interface.hpp"
+#include "packetio/json_transmogrify.hpp"
+#include "packetio/interface_api.hpp"
+#include "packetio/interface_server.hpp"
 
-#include "core/op_uuid.h"
+#include "core/op_uuid.hpp"
 
 namespace openperf {
 namespace packetio {

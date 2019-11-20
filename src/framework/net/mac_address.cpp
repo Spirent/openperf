@@ -1,7 +1,7 @@
 #include <cstring>
 #include <stdexcept>
 
-#include "net/mac_address.h"
+#include "net/mac_address.hpp"
 
 namespace openperf {
 namespace net {

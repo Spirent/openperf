@@ -1,8 +1,8 @@
 #include <sys/timerfd.h>
 #include <unistd.h>
 
-#include "packetio/workers/dpdk/tx_scheduler.h"
-#include "utils/overloaded_visitor.h"
+#include "packetio/workers/dpdk/tx_scheduler.hpp"
+#include "utils/overloaded_visitor.hpp"
 
 namespace openperf::packetio::dpdk {
 

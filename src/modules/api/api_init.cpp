@@ -10,9 +10,9 @@
 
 #include "core/op_core.h"
 #include "core/op_log.h"
-#include "config/op_config_file.h"
-#include "api/api_config_file_resources.h"
-#include "api/api_route_handler.h"
+#include "config/op_config_file.hpp"
+#include "api/api_config_file_resources.hpp"
+#include "api/api_route_handler.hpp"
 
 namespace openperf {
 namespace api {

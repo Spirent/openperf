@@ -1,6 +1,6 @@
 #include "json.hpp"
 
-#include "api/api_route_handler.h"
+#include "api/api_route_handler.hpp"
 
 namespace openperf {
 namespace api {

@@ -1,5 +1,5 @@
-#include "op_config_file_utils.h"
-#include "yaml_json_emitter.h"
+#include "op_config_file_utils.hpp"
+#include "yaml_json_emitter.hpp"
 #include "yaml-cpp/eventhandler.h"
 #include "yaml-cpp/emitfromevents.h"
 #include "../src/nodeevents.h"

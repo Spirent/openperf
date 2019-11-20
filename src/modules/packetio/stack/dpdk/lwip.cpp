@@ -7,12 +7,12 @@
 
 #include "core/op_core.h"
 #include "packetio/drivers/dpdk/dpdk.h"
-#include "packetio/drivers/dpdk/topology_utils.h"
+#include "packetio/drivers/dpdk/topology_utils.hpp"
 #include "packetio/memory/dpdk/memp.h"
-#include "packetio/stack/dpdk/lwip.h"
-#include "packetio/stack/dpdk/tcpip_mbox.h"
-#include "packetio/stack/netif_wrapper.h"
-#include "packetio/stack/tcpip.h"
+#include "packetio/stack/dpdk/lwip.hpp"
+#include "packetio/stack/dpdk/tcpip_mbox.hpp"
+#include "packetio/stack/netif_wrapper.hpp"
+#include "packetio/stack/tcpip.hpp"
 
 namespace openperf::packetio::dpdk {
 

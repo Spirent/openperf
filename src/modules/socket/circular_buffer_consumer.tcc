@@ -5,8 +5,8 @@
 #include <numeric>
 #include <optional>
 
-#include "socket/dpdk/memcpy.h"
-#include "socket/circular_buffer_consumer.h"
+#include "socket/dpdk/memcpy.hpp"
+#include "socket/circular_buffer_consumer.hpp"
 
 namespace openperf {
 namespace socket {

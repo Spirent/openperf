@@ -1,4 +1,4 @@
-#include "op_config_utils.h"
+#include "op_config_utils.hpp"
 #include <regex>
 
 namespace openperf::config {

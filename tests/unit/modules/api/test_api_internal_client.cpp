@@ -3,8 +3,8 @@
 #include <pistache/client.h>
 #include <pistache/endpoint.h>
 
-#include "api/api_internal_client.h"
-#include "api/api_service.h"
+#include "api/api_internal_client.hpp"
+#include "api/api_service.hpp"
 
 using namespace openperf::api::client;
 

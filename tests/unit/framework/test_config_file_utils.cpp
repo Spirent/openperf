@@ -2,8 +2,8 @@
 #include <string>
 #include <string.h>
 
-#include "op_config_file_utils.h"
-#include "yaml_json_emitter.h"
+#include "op_config_file_utils.hpp"
+#include "yaml_json_emitter.hpp"
 
 using namespace openperf::config::file;
 

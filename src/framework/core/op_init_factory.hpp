@@ -1,5 +1,5 @@
-#ifndef _OP_CORE_INIT_FACTORY_H_
-#define _OP_CORE_INIT_FACTORY_H_
+#ifndef _OP_CORE_INIT_FACTORY_HPP_
+#define _OP_CORE_INIT_FACTORY_HPP_
 
 #include <algorithm>
 #include <functional>
@@ -100,4 +100,4 @@ bool init_factory<Base, Args...>::registrar<T>::registered =
 }
 }
 
-#endif /* _OP_CORE_INIT_FACTORY_H_ */
+#endif /* _OP_CORE_INIT_FACTORY_HPP_ */

@@ -10,13 +10,13 @@
 #include "tl/expected.hpp"
 
 #include "packetio/drivers/dpdk/dpdk.h"
-#include "packetio/drivers/dpdk/eal.h"
-#include "packetio/drivers/dpdk/topology_utils.h"
-#include "packetio/drivers/dpdk/model/physical_port.h"
-#include "packetio/generic_port.h"
+#include "packetio/drivers/dpdk/eal.hpp"
+#include "packetio/drivers/dpdk/topology_utils.hpp"
+#include "packetio/drivers/dpdk/model/physical_port.hpp"
+#include "packetio/generic_port.hpp"
 #include "core/op_log.h"
-#include "core/op_uuid.h"
-#include "config/op_config_utils.h"
+#include "core/op_uuid.hpp"
+#include "config/op_config_utils.hpp"
 
 namespace openperf {
 namespace packetio {

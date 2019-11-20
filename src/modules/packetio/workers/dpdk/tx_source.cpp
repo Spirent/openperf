@@ -1,8 +1,8 @@
 #include <array>
 
-#include "packetio/drivers/dpdk/model/port_info.h"
-#include "packetio/workers/dpdk/tx_source.h"
-#include "packetio/workers/dpdk/worker_api.h"
+#include "packetio/drivers/dpdk/model/port_info.hpp"
+#include "packetio/workers/dpdk/tx_source.hpp"
+#include "packetio/workers/dpdk/worker_api.hpp"
 
 namespace openperf::packetio::dpdk {
 

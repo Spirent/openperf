@@ -1,8 +1,8 @@
 #include "core/op_core.h"
-#include "packetio/generic_port.h"
+#include "packetio/generic_port.hpp"
 #include "packetio/drivers/dpdk/dpdk.h"
-#include "packetio/drivers/dpdk/model/port_info.h"
-#include "packetio/drivers/dpdk/model/physical_port.h"
+#include "packetio/drivers/dpdk/model/port_info.hpp"
+#include "packetio/drivers/dpdk/model/physical_port.hpp"
 
 namespace openperf {
 namespace packetio {

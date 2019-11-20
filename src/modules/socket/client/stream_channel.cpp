@@ -8,7 +8,7 @@
 #include "socket/event_queue_consumer.tcc"
 #include "socket/event_queue_producer.tcc"
 
-#include "socket/client/stream_channel.h"
+#include "socket/client/stream_channel.hpp"
 
 namespace openperf {
 namespace socket {

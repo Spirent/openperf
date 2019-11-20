@@ -2,7 +2,7 @@
 #include "rte_ip.h"   /* ip pseudo header cksum */
 #include "rte_net.h"  /* ptype info */
 
-#include "packetio/stack/dpdk/offload_utils.h"
+#include "packetio/stack/dpdk/offload_utils.hpp"
 #include "core/op_log.h"
 
 namespace openperf {

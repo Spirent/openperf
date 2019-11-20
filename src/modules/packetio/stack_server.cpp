@@ -2,8 +2,8 @@
 
 #include "core/op_core.h"
 #include "swagger/v1/model/Stack.h"
-#include "packetio/stack_api.h"
-#include "packetio/stack_server.h"
+#include "packetio/stack_api.hpp"
+#include "packetio/stack_server.hpp"
 
 namespace openperf {
 namespace packetio {

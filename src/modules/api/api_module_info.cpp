@@ -2,7 +2,7 @@
 
 #include "json.hpp"
 
-#include "api/api_route_handler.h"
+#include "api/api_route_handler.hpp"
 #include "swagger/v1/model/Module.h"
 
 #include "core/op_modules.h"

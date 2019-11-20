@@ -7,7 +7,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-#include "socket/shared_segment.h"
+#include "socket/shared_segment.hpp"
 
 namespace openperf {
 namespace memory {

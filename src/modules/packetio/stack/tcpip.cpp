@@ -56,7 +56,7 @@
 #include "netif/ethernet.h"
 
 #include "core/op_core.h"
-#include "packetio/stack/tcpip.h"
+#include "packetio/stack/tcpip.hpp"
 
 #define TCPIP_MSG_VAR_REF(name)     API_VAR_REF(name)
 #define TCPIP_MSG_VAR_DECLARE(name) API_VAR_DECLARE(struct tcpip_msg, name)

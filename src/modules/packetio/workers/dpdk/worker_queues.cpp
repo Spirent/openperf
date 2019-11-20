@@ -1,6 +1,6 @@
 #include <map>
 
-#include "packetio/workers/dpdk/worker_queues.h"
+#include "packetio/workers/dpdk/worker_queues.hpp"
 
 namespace openperf::packetio::dpdk::worker {
 

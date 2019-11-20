@@ -1,7 +1,7 @@
 #include "core/op_log.h"
 #include "packetio/drivers/dpdk/dpdk.h"
-#include "packetio/workers/dpdk/worker_queues.h"
-#include "packetio/workers/dpdk/worker_tx_functions.h"
+#include "packetio/workers/dpdk/worker_queues.hpp"
+#include "packetio/workers/dpdk/worker_tx_functions.hpp"
 
 namespace openperf::packetio::dpdk::worker {
 

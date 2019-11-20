@@ -4,7 +4,7 @@
 
 #include <zmq.h>
 
-#include "packetio/workers/dpdk/zmq_socket.h"
+#include "packetio/workers/dpdk/zmq_socket.hpp"
 #include "core/op_log.h"
 
 namespace openperf::packetio::dpdk {

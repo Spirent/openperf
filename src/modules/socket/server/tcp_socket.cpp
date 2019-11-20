@@ -3,11 +3,11 @@
 #include <numeric>
 
 #include "socket/server/compat/linux/tcp.h"
-#include "socket/server/lwip_utils.h"
-#include "socket/server/tcp_socket.h"
+#include "socket/server/lwip_utils.hpp"
+#include "socket/server/tcp_socket.hpp"
 #include "lwip/pbuf.h"
 #include "lwip/tcp.h"
-#include "utils/overloaded_visitor.h"
+#include "utils/overloaded_visitor.hpp"
 
 namespace openperf {
 namespace socket {

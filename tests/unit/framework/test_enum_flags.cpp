@@ -1,6 +1,6 @@
 #include "catch.hpp"
 
-#include "utils/enum_flags.h"
+#include "utils/enum_flags.hpp"
 
 enum class test_enums {
     A = (1 << 0),

@@ -7,13 +7,13 @@
 #include <zmq.h>
 
 #include "core/op_core.h"
-#include "packetio/generic_driver.h"
-#include "packetio/generic_stack.h"
-#include "packetio/generic_workers.h"
-#include "packetio/interface_server.h"
-#include "packetio/internal_server.h"
-#include "packetio/port_server.h"
-#include "packetio/stack_server.h"
+#include "packetio/generic_driver.hpp"
+#include "packetio/generic_stack.hpp"
+#include "packetio/generic_workers.hpp"
+#include "packetio/interface_server.hpp"
+#include "packetio/internal_server.hpp"
+#include "packetio/port_server.hpp"
+#include "packetio/stack_server.hpp"
 
 namespace openperf {
 namespace packetio {

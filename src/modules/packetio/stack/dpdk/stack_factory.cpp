@@ -1,7 +1,7 @@
 #include <memory>
 
-#include "packetio/generic_stack.h"
-#include "packetio/stack/dpdk/lwip.h"
+#include "packetio/generic_stack.hpp"
+#include "packetio/stack/dpdk/lwip.hpp"
 
 namespace openperf::packetio::stack {
 

@@ -4,15 +4,15 @@
 
 #include "core/op_core.h"
 #include "packetio/drivers/dpdk/dpdk.h"
-#include "packetio/drivers/dpdk/model/physical_port.h"
-#include "packetio/drivers/dpdk/model/port_info.h"
-#include "packetio/drivers/dpdk/topology_utils.h"
-#include "packetio/stack/dpdk/net_interface.h"
-#include "packetio/workers/dpdk/event_loop_adapter.h"
-#include "packetio/workers/dpdk/tx_source.h"
-#include "packetio/workers/dpdk/worker_tx_functions.h"
-#include "packetio/workers/dpdk/worker_queues.h"
-#include "packetio/workers/dpdk/worker_controller.h"
+#include "packetio/drivers/dpdk/model/physical_port.hpp"
+#include "packetio/drivers/dpdk/model/port_info.hpp"
+#include "packetio/drivers/dpdk/topology_utils.hpp"
+#include "packetio/stack/dpdk/net_interface.hpp"
+#include "packetio/workers/dpdk/event_loop_adapter.hpp"
+#include "packetio/workers/dpdk/tx_source.hpp"
+#include "packetio/workers/dpdk/worker_tx_functions.hpp"
+#include "packetio/workers/dpdk/worker_queues.hpp"
+#include "packetio/workers/dpdk/worker_controller.hpp"
 
 namespace openperf::packetio::dpdk {
 

@@ -1,6 +1,6 @@
-#include "packetio/generic_driver.h"
-#include "packetio/drivers/dpdk/arg_parser.h"
-#include "packetio/drivers/dpdk/eal.h"
+#include "packetio/generic_driver.hpp"
+#include "packetio/drivers/dpdk/arg_parser.hpp"
+#include "packetio/drivers/dpdk/eal.hpp"
 
 #include <memory>
 

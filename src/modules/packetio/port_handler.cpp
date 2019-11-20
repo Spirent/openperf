@@ -1,9 +1,9 @@
 #include <zmq.h>
 
-#include "api/api_route_handler.h"
+#include "api/api_route_handler.hpp"
 #include "core/op_core.h"
-#include "packetio/port_api.h"
-#include "config/op_config_utils.h"
+#include "packetio/port_api.hpp"
+#include "config/op_config_utils.hpp"
 
 namespace openperf {
 namespace packetio {

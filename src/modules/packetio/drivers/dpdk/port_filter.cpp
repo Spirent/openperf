@@ -1,6 +1,6 @@
 #include "packetio/drivers/dpdk/dpdk.h"
-#include "packetio/drivers/dpdk/port_filter.h"
-#include "utils/overloaded_visitor.h"
+#include "packetio/drivers/dpdk/port_filter.hpp"
+#include "utils/overloaded_visitor.hpp"
 
 namespace openperf::packetio::dpdk::port {
 

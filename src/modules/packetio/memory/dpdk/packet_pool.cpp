@@ -1,7 +1,7 @@
 #include <algorithm>
 
 #include "core/op_log.h"
-#include "packetio/memory/dpdk/packet_pool.h"
+#include "packetio/memory/dpdk/packet_pool.hpp"
 
 namespace openperf::packetio::dpdk {
 

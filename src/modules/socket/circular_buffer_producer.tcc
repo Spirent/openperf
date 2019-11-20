@@ -3,8 +3,8 @@
 #include <cstring>
 #include <numeric>
 
-#include "socket/dpdk/memcpy.h"
-#include "socket/circular_buffer_producer.h"
+#include "socket/dpdk/memcpy.hpp"
+#include "socket/circular_buffer_producer.hpp"
 
 namespace openperf {
 namespace socket {

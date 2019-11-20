@@ -4,8 +4,8 @@
 #include "json.hpp"
 
 #include "swagger/v1/model/Port.h"
-#include "packetio/generic_port.h"
-#include "utils/overloaded_visitor.h"
+#include "packetio/generic_port.hpp"
+#include "utils/overloaded_visitor.hpp"
 
 namespace openperf {
 namespace packetio {

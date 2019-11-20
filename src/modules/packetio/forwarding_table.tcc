@@ -1,7 +1,7 @@
 #include <cassert>
 #include <string>
 
-#include "packetio/forwarding_table.h"
+#include "packetio/forwarding_table.hpp"
 
 namespace openperf::packetio {
 

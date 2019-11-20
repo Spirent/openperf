@@ -1,8 +1,8 @@
 #include <cassert>
 
 #include "swagger/v1/model/Stack.h"
-#include "packetio/generic_stack.h"
-#include "utils/overloaded_visitor.h"
+#include "packetio/generic_stack.hpp"
+#include "utils/overloaded_visitor.hpp"
 
 namespace openperf {
 namespace packetio {

@@ -12,7 +12,7 @@
 #include "socket/event_queue_consumer.tcc"
 #include "socket/event_queue_producer.tcc"
 
-#include "socket/server/stream_channel.h"
+#include "socket/server/stream_channel.hpp"
 
 namespace openperf {
 namespace socket {

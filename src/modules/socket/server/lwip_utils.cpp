@@ -1,8 +1,8 @@
 #include <cassert>
 
 #include "socket/server/compat/linux/tcp.h"
-#include "socket/server/socket_utils.h"
-#include "socket/server/lwip_utils.h"
+#include "socket/server/socket_utils.hpp"
+#include "socket/server/lwip_utils.hpp"
 #include "lwip/tcp.h"
 #include "lwip/priv/tcp_priv.h"
 #include "packetio/stack/netif_utils.h"

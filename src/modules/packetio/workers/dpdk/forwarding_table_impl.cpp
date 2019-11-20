@@ -1,7 +1,7 @@
 #include "packetio/drivers/dpdk/dpdk.h"
-#include "packetio/stack/dpdk/net_interface.h"
+#include "packetio/stack/dpdk/net_interface.hpp"
 #include "packetio/forwarding_table.tcc"
-#include "packetio/generic_sink.h"
+#include "packetio/generic_sink.hpp"
 
 struct netif;
 

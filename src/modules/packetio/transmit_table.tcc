@@ -1,6 +1,6 @@
 #include "core/op_log.h"
-#include "packetio/transmit_table.h"
-#include "utils/hash_combine.h"
+#include "packetio/transmit_table.hpp"
+#include "utils/hash_combine.hpp"
 
 namespace openperf::packetio {
 
