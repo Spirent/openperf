@@ -4,7 +4,7 @@
 
 #include "net/ipv4_address.h"
 
-namespace icp {
+namespace openperf {
 namespace net {
 
 ipv4_address::ipv4_address()

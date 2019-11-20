@@ -10,7 +10,7 @@
 
 #include "socket/client/stream_channel.h"
 
-namespace icp {
+namespace openperf {
 namespace socket {
 
 template class circular_buffer_consumer<client::stream_channel>;

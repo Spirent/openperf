@@ -1,12 +1,12 @@
 #include <algorithm>
 #include <variant>
 
-#include "core/icp_log.h"
+#include "core/op_log.h"
 #include "packetio/internal_client.h"
 #include "packetio/workers/dpdk/event_loop_adapter.h"
 #include "packetio/workers/dpdk/epoll_poller.h"
 
-namespace icp::packetio::dpdk::worker {
+namespace openperf::packetio::dpdk::worker {
 
 event_loop_adapter::event_loop_adapter(event_loop_adapter&& other)
     : m_additions(std::move(other.m_additions))
@@ -35,7 +35,7 @@ bool event_loop_adapter::update_poller(epoll_poller& poller)
     auto last_addition = std::stable_partition(std::begin(m_additions), std::end(m_additions),
                                                [&](auto& cbptr) {
                                                    if (poller.add(cbptr.get())) {
-                                                       ICP_LOG(ICP_LOG_DEBUG, "Adding callback %.*s to worker %u\n",
+                                                       OP_LOG(OP_LOG_DEBUG, "Adding callback %.*s to worker %u\n",
                                                                static_cast<int>(cbptr->name().length()),
                                                                cbptr->name().data(), rte_lcore_id());
                                                        return (true);
@@ -56,7 +56,7 @@ bool event_loop_adapter::update_poller(epoll_poller& poller)
      */
     std::vector<callback_ptr> staging(m_deletions.size());
     for (auto& cbptr : m_deletions) {
-        ICP_LOG(ICP_LOG_DEBUG, "Deleting callback %.*s from worker %u\n",
+        OP_LOG(OP_LOG_DEBUG, "Deleting callback %.*s from worker %u\n",
                 static_cast<int>(cbptr->name().length()),
                 cbptr->name().data(), rte_lcore_id());
         poller.del(cbptr.get());

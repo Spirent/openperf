@@ -1,5 +1,5 @@
-#ifndef _ICP_PACKETIO_DPDK_TX_SCHEDULER_H_
-#define _ICP_PACKETIO_DPDK_TX_SCHEDULER_H_
+#ifndef _OP_PACKETIO_DPDK_TX_SCHEDULER_H_
+#define _OP_PACKETIO_DPDK_TX_SCHEDULER_H_
 
 #include <chrono>
 #include <queue>
@@ -10,7 +10,7 @@
 #include "packetio/workers/dpdk/worker_api.h"
 #include "packetio/workers/dpdk/pollable_event.tcc"
 
-namespace icp::packetio::dpdk {
+namespace openperf::packetio::dpdk {
 
 namespace schedule {
 
@@ -57,7 +57,7 @@ public:
             m_state);
 
         if (next_state) {
-            ICP_LOG(ICP_LOG_TRACE, "Tx port scheduler %u:%u: %.*s --> %.*s\n",
+            OP_LOG(OP_LOG_TRACE, "Tx port scheduler %u:%u: %.*s --> %.*s\n",
                     child.port_id(), child.queue_id(),
                     static_cast<int>(to_string(m_state).length()),
                     to_string(m_state).data(),
@@ -135,4 +135,4 @@ public:
 
 }
 
-#endif /* _ICP_PACKETIO_DPDK_TX_SCHEDULER_H_ */
+#endif /* _OP_PACKETIO_DPDK_TX_SCHEDULER_H_ */

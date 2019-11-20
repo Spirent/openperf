@@ -1,5 +1,5 @@
-#ifndef _ICP_SOCKET_SERVER_LWIP_UTILS_H_
-#define _ICP_SOCKET_SERVER_LWIP_UTILS_H_
+#ifndef _OP_SOCKET_SERVER_LWIP_UTILS_H_
+#define _OP_SOCKET_SERVER_LWIP_UTILS_H_
 
 #include "tl/expected.hpp"
 #include "socket/api.h"
@@ -8,7 +8,7 @@ struct ip_pcb;
 struct tcp_info;
 struct tcp_pcb;
 
-namespace icp {
+namespace openperf {
 namespace socket {
 namespace server {
 
@@ -28,4 +28,4 @@ void get_tcp_info(const tcp_pcb*, tcp_info&);
 }
 }
 
-#endif /* _ICP_SOCKET_SERVER_LWIP_UTILS_H_ */
+#endif /* _OP_SOCKET_SERVER_LWIP_UTILS_H_ */

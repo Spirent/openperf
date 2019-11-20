@@ -1,10 +1,10 @@
-#ifndef _ICP_PACKETIO_DPDK_MODEL_PORT_INFO_H_
-#define _ICP_PACKETIO_DPDK_MODEL_PORT_INFO_H_
+#ifndef _OP_PACKETIO_DPDK_MODEL_PORT_INFO_H_
+#define _OP_PACKETIO_DPDK_MODEL_PORT_INFO_H_
 
 #include <cstdint>
 #include "packetio/drivers/dpdk/dpdk.h"
 
-namespace icp {
+namespace openperf {
 namespace packetio {
 namespace dpdk {
 namespace model {
@@ -57,4 +57,4 @@ private:
 }
 }
 
-#endif /* _ICP_PACKETIO_DPDK_MODEL_PORT_INFO_H_ */
+#endif /* _OP_PACKETIO_DPDK_MODEL_PORT_INFO_H_ */

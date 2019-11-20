@@ -3,7 +3,7 @@
 #include "swagger/v1/model/Stack.h"
 #include "packetio/generic_stack.h"
 
-namespace icp {
+namespace openperf {
 namespace packetio {
 namespace stack {
 

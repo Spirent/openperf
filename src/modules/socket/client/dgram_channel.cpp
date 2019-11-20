@@ -9,7 +9,7 @@
 
 #include "socket/client/dgram_channel.h"
 
-namespace icp::socket {
+namespace openperf::socket {
 
 template class circular_buffer_consumer<client::dgram_channel>;
 template class circular_buffer_producer<client::dgram_channel>;

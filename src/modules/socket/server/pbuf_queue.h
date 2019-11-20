@@ -1,12 +1,12 @@
-#ifndef _ICP_SOCKET_SERVER_PBUF_BUFFER_H_
-#define _ICP_SOCKET_SERVER_PBUF_BUFFER_H_
+#ifndef _OP_SOCKET_SERVER_PBUF_BUFFER_H_
+#define _OP_SOCKET_SERVER_PBUF_BUFFER_H_
 
 #include <vector>
 #include <sys/uio.h>
 
 #include "socket/server/pbuf_vec.h"
 
-namespace icp {
+namespace openperf {
 namespace socket {
 namespace server {
 
@@ -30,4 +30,4 @@ public:
 }
 }
 
-#endif /* _ICP_SOCKET_SERVER_PBUF_BUFFER_H_ */
+#endif /* _OP_SOCKET_SERVER_PBUF_BUFFER_H_ */

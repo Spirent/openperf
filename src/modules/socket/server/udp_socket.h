@@ -1,5 +1,5 @@
-#ifndef _ICP_SOCKET_SERVER_UDP_SOCKET_H_
-#define _ICP_SOCKET_SERVER_UDP_SOCKET_H_
+#ifndef _OP_SOCKET_SERVER_UDP_SOCKET_H_
+#define _OP_SOCKET_SERVER_UDP_SOCKET_H_
 
 #include <cerrno>
 #include <memory>
@@ -17,7 +17,7 @@
 struct udp_pcb;
 struct pbuf;
 
-namespace icp {
+namespace openperf {
 namespace socket {
 namespace server {
 
@@ -40,7 +40,7 @@ class udp_socket : public socket_state_machine<udp_socket, udp_socket_state> {
     std::unique_ptr<udp_pcb, udp_pcb_deleter> m_pcb;  /* lwIP pcb */
 
 public:
-    udp_socket(icp::socket::server::allocator& allocator, int flags);
+    udp_socket(openperf::socket::server::allocator& allocator, int flags);
     ~udp_socket() = default;
 
     udp_socket(const udp_socket&) = delete;
@@ -119,4 +119,4 @@ const char * to_string(const udp_socket_state&);
 }
 }
 
-#endif /* _ICP_SOCKET_SERVER_UDP_SOCKET_H_ */
+#endif /* _OP_SOCKET_SERVER_UDP_SOCKET_H_ */

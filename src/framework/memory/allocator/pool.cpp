@@ -4,7 +4,7 @@
 
 #include "memory/allocator/pool.h"
 
-namespace icp {
+namespace openperf {
 namespace memory {
 namespace allocator {
 

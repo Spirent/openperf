@@ -1,5 +1,5 @@
-#ifndef _ICP_PACKETIO_DPDK_WORKER_EVENT_LOOP_ADAPTER_H_
-#define _ICP_PACKETIO_DPDK_WORKER_EVENT_LOOP_ADAPTER_H_
+#ifndef _OP_PACKETIO_DPDK_WORKER_EVENT_LOOP_ADAPTER_H_
+#define _OP_PACKETIO_DPDK_WORKER_EVENT_LOOP_ADAPTER_H_
 
 #include <memory>
 #include <unordered_map>
@@ -9,7 +9,7 @@
 #include "packetio/workers/dpdk/callback.h"
 #include "packetio/workers/dpdk/worker_api.h"
 
-namespace icp::packetio::dpdk::worker {
+namespace openperf::packetio::dpdk::worker {
 
 class epoll_poller;
 
@@ -41,4 +41,4 @@ private:
 
 }
 
-#endif /* _ICP_PACKETIO_DPDK_WORKER_EVENT_LOOP_ADAPTER_H_ */
+#endif /* _OP_PACKETIO_DPDK_WORKER_EVENT_LOOP_ADAPTER_H_ */

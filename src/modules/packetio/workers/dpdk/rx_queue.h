@@ -1,10 +1,10 @@
-#ifndef _ICP_PACKETIO_DPDK_RX_QUEUE_H_
-#define _ICP_PACKETIO_DPDK_RX_QUEUE_H_
+#ifndef _OP_PACKETIO_DPDK_RX_QUEUE_H_
+#define _OP_PACKETIO_DPDK_RX_QUEUE_H_
 
 #include <cstdint>
 #include "packetio/drivers/dpdk/dpdk.h"
 
-namespace icp {
+namespace openperf {
 namespace packetio {
 namespace dpdk {
 
@@ -34,4 +34,4 @@ public:
 }
 }
 
-#endif /* _ICP_PACKETIO_DPDK_RX_QUEUE_H_ */
+#endif /* _OP_PACKETIO_DPDK_RX_QUEUE_H_ */

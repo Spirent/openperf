@@ -1,7 +1,7 @@
 #include "lwip/netifapi.h"
 #include "packetio/stack/dpdk/net_interface.h"
 
-using namespace icp::packetio::dpdk;
+using namespace openperf::packetio::dpdk;
 
 uint8_t netif_id_match(std::string_view id_str)
 {
@@ -9,7 +9,7 @@ uint8_t netif_id_match(std::string_view id_str)
         auto n = netif_get_by_index(i);
         if (n != nullptr) {
             auto *ifp =
-                reinterpret_cast<icp::packetio::dpdk::net_interface*>(n->state);
+                reinterpret_cast<openperf::packetio::dpdk::net_interface*>(n->state);
             if (ifp->id() == id_str) {
                 return netif_get_index(n);
             }

@@ -14,11 +14,11 @@
 #include "packetio/drivers/dpdk/topology_utils.h"
 #include "packetio/drivers/dpdk/model/physical_port.h"
 #include "packetio/generic_port.h"
-#include "core/icp_log.h"
-#include "core/icp_uuid.h"
-#include "config/icp_config_utils.h"
+#include "core/op_log.h"
+#include "core/op_uuid.h"
+#include "config/op_config_utils.h"
 
-namespace icp {
+namespace openperf {
 namespace packetio {
 namespace dpdk {
 
@@ -38,7 +38,7 @@ static void log_port(uint16_t port_idx, std::string_view port_id, model::port_in
     if (auto if_index = info.if_index(); if_index > 0) {
         char if_name[IF_NAMESIZE];
         if_indextoname(if_index, if_name);
-        ICP_LOG(ICP_LOG_INFO, "Port index %u is using id = %.*s (MAC = %02x:%02x:%02x:%02x:%02x:%02x, driver = %s attached to %s)",
+        OP_LOG(OP_LOG_INFO, "Port index %u is using id = %.*s (MAC = %02x:%02x:%02x:%02x:%02x:%02x, driver = %s attached to %s)",
                 port_idx,
                 static_cast<int>(port_id.length()), port_id.data(),
                 mac_addr.addr_bytes[0],
@@ -49,7 +49,7 @@ static void log_port(uint16_t port_idx, std::string_view port_id, model::port_in
                 mac_addr.addr_bytes[5],
                 info.driver_name(), if_name);
     } else {
-        ICP_LOG(ICP_LOG_INFO, "Port index %u is using id = %.*s (MAC = %02x:%02x:%02x:%02x:%02x:%02x, driver = %s)",
+        OP_LOG(OP_LOG_INFO, "Port index %u is using id = %.*s (MAC = %02x:%02x:%02x:%02x:%02x:%02x, driver = %s)",
                 port_idx,
                 static_cast<int>(port_id.length()), port_id.data(),
                 mac_addr.addr_bytes[0],
@@ -71,11 +71,11 @@ static int log_link_status_change(uint16_t port_id,
     struct rte_eth_link link;
     rte_eth_link_get_nowait(port_id, &link);
     if (link.link_status == ETH_LINK_UP) {
-        ICP_LOG(ICP_LOG_INFO, "Port %u Link Up - speed %u Mbps - %s-duplex\n",
+        OP_LOG(OP_LOG_INFO, "Port %u Link Up - speed %u Mbps - %s-duplex\n",
                 port_id, link.link_speed,
                 link.link_duplex == ETH_LINK_FULL_DUPLEX ? "full" : "half");
     } else {
-        ICP_LOG(ICP_LOG_INFO, "Port %u Link Down\n", port_id);
+        OP_LOG(OP_LOG_INFO, "Port %u Link Down\n", port_id);
     }
 
     return (0);
@@ -120,13 +120,13 @@ static const char* dpdk_logtype(int logtype)
         "user8"
     };
 
-    return ((logtype >= 0 && logtype < static_cast<int>(icp_count_of(logtype_strings)))
+    return ((logtype >= 0 && logtype < static_cast<int>(op_count_of(logtype_strings)))
             ? logtype_strings[logtype]
             : "unknown");
 }
 
 __attribute__((const))
-static enum icp_log_level dpdk_loglevel(int loglevel)
+static enum op_log_level dpdk_loglevel(int loglevel)
 {
     /*
      * This should be kept in sync with the inferred log levels found in the
@@ -134,21 +134,21 @@ static enum icp_log_level dpdk_loglevel(int loglevel)
      */
     switch (loglevel) {
     case RTE_LOG_EMERG:
-        return ICP_LOG_CRITICAL;
+        return OP_LOG_CRITICAL;
     case RTE_LOG_ALERT:
-        return ICP_LOG_ERROR;
+        return OP_LOG_ERROR;
     case RTE_LOG_CRIT:
-        return ICP_LOG_WARNING;
+        return OP_LOG_WARNING;
     case RTE_LOG_ERR:
-        return ICP_LOG_INFO;
+        return OP_LOG_INFO;
     case RTE_LOG_WARNING:
     case RTE_LOG_NOTICE:
     case RTE_LOG_INFO:
-        return ICP_LOG_DEBUG;
+        return OP_LOG_DEBUG;
     case RTE_LOG_DEBUG:
-        return ICP_LOG_TRACE;
+        return OP_LOG_TRACE;
     default:
-        return ICP_LOG_NONE;
+        return OP_LOG_NONE;
     }
 }
 
@@ -162,7 +162,7 @@ static ssize_t eal_log_write(void* cookie __attribute__((unused)),
     if (size == 0) return (0);
 
     /*
-     * icp_log needs all of the messages to be terminated with a new-line, so fix up
+     * op_log needs all of the messages to be terminated with a new-line, so fix up
      * any messages that lack such niceties.
      */
     const char *format = (buf[size-1] == '\n') ? "%.*s" : "%.*s\n";
@@ -171,7 +171,7 @@ static ssize_t eal_log_write(void* cookie __attribute__((unused)),
      * We can't grab the right function with a macro, so call the
      * actual function and provide the logtype instead.
      */
-    icp_log(dpdk_loglevel(rte_log_cur_msg_loglevel()),
+    op_log(dpdk_loglevel(rte_log_cur_msg_loglevel()),
             dpdk_logtype(rte_log_cur_msg_logtype()),
             format, static_cast<int>(size), buf);
 
@@ -244,7 +244,7 @@ eal::eal(std::vector<std::string> args,
                    [](std::string &s) { return s.data(); });
     eal_args.push_back(nullptr); /* null terminator */
 
-    ICP_LOG(ICP_LOG_INFO, "Initializing DPDK with \\\"%s\\\"\n",
+    OP_LOG(OP_LOG_INFO, "Initializing DPDK with \\\"%s\\\"\n",
             std::accumulate(begin(args), end(args), std::string(),
                             [](const std::string &a, const std::string &b) -> std::string {
                                 return a + (a.length() > 0 ? " " : "") + b;
@@ -273,7 +273,7 @@ eal::eal(std::vector<std::string> args,
      * unparsed.  We subtract two to account for the trailing null and the program name.
      */
     if (parsed_or_err != static_cast<int>(eal_args.size() - 2)) {
-        ICP_LOG(ICP_LOG_ERROR, "DPDK initialization routine only parsed %d of %" PRIu64 " arguments\n",
+        OP_LOG(OP_LOG_ERROR, "DPDK initialization routine only parsed %d of %" PRIu64 " arguments\n",
                 parsed_or_err, eal_args.size() - 2);
     }
 
@@ -306,7 +306,7 @@ eal::eal(std::vector<std::string> args,
     /* Sanity check all ports have names. */
     assert(port_info.size() == m_port_ids.size());
 
-    ICP_LOG(ICP_LOG_INFO, "DPDK initialized with %" PRIu64 " ports and %u workers\n",
+    OP_LOG(OP_LOG_INFO, "DPDK initialized with %" PRIu64 " ports and %u workers\n",
             port_info.size(), rte_lcore_count() - 1);
 
     /*
@@ -326,7 +326,7 @@ eal::eal(std::vector<std::string> args,
     if (int error = rte_eth_dev_callback_register(RTE_ETH_ALL, RTE_ETH_EVENT_INTR_LSC,
                                                   log_link_status_change, nullptr);
         error != 0) {
-        ICP_LOG(ICP_LOG_WARNING, "Could not register link status change callback: %s\n",
+        OP_LOG(OP_LOG_WARNING, "Could not register link status change callback: %s\n",
                 strerror(std::abs(error)));
     }
 
@@ -439,7 +439,7 @@ tl::expected<std::string, std::string> eal::create_port(std::string_view id, con
     /* Make sure that all ports in the vector actually exist */
     for (auto port_id : std::get<port::bond_config>(config).ports) {
         // Verify port id is valid.
-        auto id_check = config::icp_config_validate_id_string(port_id);
+        auto id_check = config::op_config_validate_id_string(port_id);
         if (!id_check) {
             return tl::make_unexpected(id_check.error());
         }
@@ -513,7 +513,7 @@ tl::expected<void, std::string> eal::delete_port(std::string_view id)
     int length_or_err = rte_eth_bond_slaves_get(port_idx, slaves.data(), slaves.size());
     if (length_or_err < 0) {
         /* Not sure what else we can do here... */
-        ICP_LOG(ICP_LOG_ERROR, "Could not retrieve slave port ids from bonded port %s\n", id.data());
+        OP_LOG(OP_LOG_ERROR, "Could not retrieve slave port ids from bonded port %s\n", id.data());
     } else if (length_or_err > 0) {
         for (int i = 0; i < length_or_err; i++) {
             rte_eth_bond_slave_remove(port_idx, slaves[i]);

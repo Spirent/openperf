@@ -9,15 +9,15 @@
 # Check if the current optimizations give us those features.  If the don't, then we
 # need to add them
 
-ICP_COMPILER_DEFINES := $(shell $(ICP_CC) $(ICP_COPTS) -dM -E - < /dev/null)
+OP_COMPILER_DEFINES := $(shell $(OP_CC) $(OP_COPTS) -dM -E - < /dev/null)
 
 # Note: override is needed to change user defined variables
-ifeq ($(filter $(ICP_COMPILER_DEFINES),__GCC_HAVE_SYNC_COMPARE_AND_SWAP_16),)
-override ICP_COPTS += -mcx16
+ifeq ($(filter $(OP_COMPILER_DEFINES),__GCC_HAVE_SYNC_COMPARE_AND_SWAP_16),)
+override OP_COPTS += -mcx16
 endif
 
-ifeq ($(filter $(ICP_COMPILER_DEFINES),__SSSE3__),)
-override ICP_COPTS += -mssse3
+ifeq ($(filter $(OP_COMPILER_DEFINES),__SSSE3__),)
+override OP_COPTS += -mssse3
 endif
 
-undefine ICP_COMPILER_DEFINES
+undefine OP_COMPILER_DEFINES

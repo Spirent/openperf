@@ -7,8 +7,8 @@
  * Note: this is the AVX2 version
  */
 
-#ifndef _ICP_SOCKET_DPDK_MEMCPY_AVX2_H_
-#define _ICP_SOCKET_DPDK_MEMCPY_AVX2_H_
+#ifndef _OP_SOCKET_DPDK_MEMCPY_AVX2_H_
+#define _OP_SOCKET_DPDK_MEMCPY_AVX2_H_
 
 #include <stdint.h>
 #include <x86intrin.h>
@@ -268,4 +268,4 @@ rte_memcpy_aligned(void *dst, const void *src, size_t n)
 
 }
 
-#endif /* _ICP_SOCKET_DPDK_MEMCPY_AVX2_H_ */
+#endif /* _OP_SOCKET_DPDK_MEMCPY_AVX2_H_ */

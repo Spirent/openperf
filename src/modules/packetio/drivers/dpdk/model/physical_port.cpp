@@ -1,10 +1,10 @@
-#include "core/icp_core.h"
+#include "core/op_core.h"
 #include "packetio/generic_port.h"
 #include "packetio/drivers/dpdk/dpdk.h"
 #include "packetio/drivers/dpdk/model/port_info.h"
 #include "packetio/drivers/dpdk/model/physical_port.h"
 
-namespace icp {
+namespace openperf {
 namespace packetio {
 namespace dpdk {
 namespace model {
@@ -210,7 +210,7 @@ tl::expected<void, std::string> physical_port::start()
                                    + ": " + rte_strerror(error));
     }
 
-    ICP_LOG(ICP_LOG_DEBUG, "Successfully started DPDK physical port %s\n", m_id.c_str());
+    OP_LOG(OP_LOG_DEBUG, "Successfully started DPDK physical port %s\n", m_id.c_str());
 
     return {};
 }
@@ -250,7 +250,7 @@ tl::expected<void, std::string> physical_port::stop()
         return {};
     }
 
-    ICP_LOG(ICP_LOG_DEBUG, "Successfully stopped DPDK physical port %s\n", m_id.c_str());
+    OP_LOG(OP_LOG_DEBUG, "Successfully stopped DPDK physical port %s\n", m_id.c_str());
 
     return (tl::make_unexpected(
                 std::accumulate(begin(errors), end(errors), std::string(),
@@ -317,7 +317,7 @@ tl::expected<void, std::string> physical_port::apply_port_config(port_info& info
         }
     }
 
-    ICP_LOG(ICP_LOG_DEBUG, "Successfully configured DPDK physical port %s "
+    OP_LOG(OP_LOG_DEBUG, "Successfully configured DPDK physical port %s "
             "(idx=%u, rxq=%d, txq=%d, pool=%s, speed=0x%x)\n", m_id.c_str(), m_idx, nb_rxqs, nb_txqs,
             m_pool->name, port_conf.link_speeds);
 

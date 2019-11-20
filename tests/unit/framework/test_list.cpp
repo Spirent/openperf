@@ -4,12 +4,12 @@
 
 #include "catch.hpp"
 
-#include "core/icp_core.h"
-#include "core/icp_list.hpp"
+#include "core/op_core.h"
+#include "core/op_list.hpp"
 
-struct icp_list_deleter {
-    void operator()(icp_list *list) const {
-        icp_list_free(&list);
+struct op_list_deleter {
+    void operator()(op_list *list) const {
+        op_list_free(&list);
     }
 };
 
@@ -22,47 +22,47 @@ void test_thing_destroyer(void *thing)
     _destroyer_run_count++;
 }
 
-TEST_CASE("icp_list functionality checks", "[list]")
+TEST_CASE("op_list functionality checks", "[list]")
 {
-    std::unique_ptr<icp_list, icp_list_deleter> list(icp_list_allocate());
+    std::unique_ptr<op_list, op_list_deleter> list(op_list_allocate());
 
     REQUIRE(list);
 
     SECTION( "items can be inserted and then found" ) {
         for (size_t i = 1; i < 10; i++ ) {
-            icp_list_item *item = icp_list_item_allocate((void *)i);
+            op_list_item *item = op_list_item_allocate((void *)i);
             REQUIRE(item);
-            REQUIRE(icp_list_insert(list.get(), item) == true);
-            REQUIRE(icp_list_find(list.get(), (void *)i) != nullptr);
+            REQUIRE(op_list_insert(list.get(), item) == true);
+            REQUIRE(op_list_find(list.get(), (void *)i) != nullptr);
         }
 
-        REQUIRE(icp_list_find(list.get(), (void *)11) == nullptr);
+        REQUIRE(op_list_find(list.get(), (void *)11) == nullptr);
     }
 
     SECTION("items can be inserted and then deleted") {
         for (size_t i = 1; i < 10; i++) {
-            icp_list_item *item = icp_list_item_allocate((void *)i);
+            op_list_item *item = op_list_item_allocate((void *)i);
             REQUIRE(item);
-            REQUIRE(icp_list_insert(list.get(), item) == true);
-            REQUIRE(icp_list_delete(list.get(), (void *)i) == true);
-            REQUIRE(icp_list_find(list.get(), (void *)i) == nullptr);
+            REQUIRE(op_list_insert(list.get(), item) == true);
+            REQUIRE(op_list_delete(list.get(), (void *)i) == true);
+            REQUIRE(op_list_find(list.get(), (void *)i) == nullptr);
         }
     }
 
     SECTION("verify garbage collection works") {
-        icp_list_set_destructor(list.get(), test_thing_destroyer);
+        op_list_set_destructor(list.get(), test_thing_destroyer);
 
         for (size_t i = 1; i < 10; i++) {
-            icp_list_item *item = icp_list_item_allocate((void *)i);
+            op_list_item *item = op_list_item_allocate((void *)i);
             REQUIRE(item);
-            REQUIRE(icp_list_insert(list.get(), item) == true);
+            REQUIRE(op_list_insert(list.get(), item) == true);
         }
 
-        void *test_value = icp_list_find(list.get(), (void *)5);
+        void *test_value = op_list_find(list.get(), (void *)5);
         REQUIRE(test_value);
-        REQUIRE(icp_list_delete(list.get(), (void *)5) == true);
-        REQUIRE(icp_list_find(list.get(), (void *)9) != nullptr);
-        icp_list_garbage_collect(list.get());
+        REQUIRE(op_list_delete(list.get(), (void *)5) == true);
+        REQUIRE(op_list_find(list.get(), (void *)9) != nullptr);
+        op_list_garbage_collect(list.get());
 
         /* Verify that our thing destroyer was called on test_value */
         REQUIRE(_destroyer_run_count == 1);
@@ -71,17 +71,17 @@ TEST_CASE("icp_list functionality checks", "[list]")
 
     SECTION("verify that we can fully walk the list") {
         for (size_t i = 1; i < 10; i++) {
-            icp_list_item *item = icp_list_item_allocate((void *)i);
+            op_list_item *item = op_list_item_allocate((void *)i);
             REQUIRE(item);
-            REQUIRE(icp_list_insert(list.get(), item) == true);
+            REQUIRE(op_list_insert(list.get(), item) == true);
         }
 
         /* Now walk the list.  There should be 9 items */
         size_t nb_items = 0;
         void *value = nullptr;
-        icp_list_item *prev = icp_list_head(list.get());
+        op_list_item *prev = op_list_head(list.get());
         REQUIRE(prev);
-        while ((value = icp_list_next(list.get(), &prev)) != nullptr) {
+        while ((value = op_list_next(list.get(), &prev)) != nullptr) {
             nb_items++;
         }
         REQUIRE(nb_items == 9);
@@ -101,8 +101,8 @@ TEST_CASE("icp_list functionality checks", "[list]")
             threads.emplace_back(std::thread([&list, scaler]() {
                                                  for (size_t i = 1; i <= nb_inserts; i++) {
                                                      uint64_t value = scaler * i;
-                                                     icp_list_item *item = icp_list_item_allocate((void *)value);
-                                                     REQUIRE(icp_list_insert(list.get(), item) == true);
+                                                     op_list_item *item = op_list_item_allocate((void *)value);
+                                                     REQUIRE(op_list_insert(list.get(), item) == true);
                                                  }
                                              }));
         }
@@ -112,12 +112,12 @@ TEST_CASE("icp_list functionality checks", "[list]")
         }
 
         /* Verify that we have the correct number of items in our list */
-        REQUIRE(icp_list_length(list.get()) == nb_inserts * scalers.size());
+        REQUIRE(op_list_length(list.get()) == nb_inserts * scalers.size());
 
         /* And verify that we can find every entry */
         for (auto scaler : scalers) {
             for (size_t i = 1; i <= nb_inserts; i++) {
-                REQUIRE(icp_list_find(list.get(), (void *)(scaler * i)) != nullptr);
+                REQUIRE(op_list_find(list.get(), (void *)(scaler * i)) != nullptr);
             }
         }
     }
@@ -125,13 +125,13 @@ TEST_CASE("icp_list functionality checks", "[list]")
     SECTION("verify list snapshot") {
         static constexpr size_t test_items = 10;
         for (size_t i = 1; i <= test_items; i++) {
-            REQUIRE(icp_list_insert(list.get(), (void *)i) == true);
+            REQUIRE(op_list_insert(list.get(), (void *)i) == true);
         }
 
         size_t **items = NULL;
         size_t nb_items = 0;
 
-        REQUIRE(icp_list_snapshot(list.get(), (void ***)&items, &nb_items) == 0);
+        REQUIRE(op_list_snapshot(list.get(), (void ***)&items, &nb_items) == 0);
         REQUIRE(nb_items == test_items);
         REQUIRE(items != nullptr);
 
@@ -140,18 +140,18 @@ TEST_CASE("icp_list functionality checks", "[list]")
 
     SECTION("verify list purge function") {
         for (size_t i = 1; i < 10; i++) {
-            REQUIRE(icp_list_insert(list.get(), (void *)i) == true);
+            REQUIRE(op_list_insert(list.get(), (void *)i) == true);
         }
 
-        REQUIRE(icp_list_purge(list.get()) == 0);
-        REQUIRE(icp_list_length(list.get()) == 0);  /* empty after purge */
+        REQUIRE(op_list_purge(list.get()) == 0);
+        REQUIRE(op_list_length(list.get()) == 0);  /* empty after purge */
     }
 }
 
-TEST_CASE("icp list cpp wrapper functionality")
+TEST_CASE("openperf list cpp wrapper functionality")
 {
     SECTION("can create, ") {
-        auto list = icp::list<int>();
+        auto list = openperf::list<int>();
 
         SECTION("can insert, ") {
             int test_value = 4814;

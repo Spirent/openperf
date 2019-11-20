@@ -1,9 +1,9 @@
-#include "core/icp_log.h"
+#include "core/op_log.h"
 #include "packetio/drivers/dpdk/dpdk.h"
 #include "packetio/workers/dpdk/worker_queues.h"
 #include "packetio/workers/dpdk/worker_tx_functions.h"
 
-namespace icp::packetio::dpdk::worker {
+namespace openperf::packetio::dpdk::worker {
 
 /* Copy mbuf header and packet data */
 static void eal_mbuf_copy_seg(rte_mbuf *dst, const rte_mbuf* src)
@@ -71,7 +71,7 @@ static uint16_t transmit(uint16_t port_idx, uint16_t queue_idx,
 {
     auto sent = rte_eth_tx_burst(port_idx, queue_idx, mbufs, nb_mbufs);
 
-    ICP_LOG(ICP_LOG_TRACE, "Transmitted %u of %u packet%s on %u:%u\n",
+    OP_LOG(OP_LOG_TRACE, "Transmitted %u of %u packet%s on %u:%u\n",
             sent, nb_mbufs, sent > 1 ? "s" : "", port_idx, queue_idx);
 
     return (sent);
@@ -132,7 +132,7 @@ uint16_t tx_queued(int port_idx, uint32_t hash, struct rte_mbuf* mbufs[], uint16
 
 uint16_t tx_dummy(int port_idx, uint32_t, struct rte_mbuf**, uint16_t)
 {
-    ICP_LOG(ICP_LOG_WARNING, "Dummy TX function called for port %u; "
+    OP_LOG(OP_LOG_WARNING, "Dummy TX function called for port %u; "
             "no packet transmitted!\n", port_idx);
     return (0);
 }

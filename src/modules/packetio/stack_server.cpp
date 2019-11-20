@@ -1,16 +1,16 @@
 #include <zmq.h>
 
-#include "core/icp_core.h"
+#include "core/op_core.h"
 #include "swagger/v1/model/Stack.h"
 #include "packetio/stack_api.h"
 #include "packetio/stack_server.h"
 
-namespace icp {
+namespace openperf {
 namespace packetio {
 namespace stack {
 namespace api {
 
-const std::string endpoint = "inproc://icp_packetio_stack";
+const std::string endpoint = "inproc://op_packetio_stack";
 
 using namespace swagger::v1::model;
 using json = nlohmann::json;
@@ -71,7 +71,7 @@ static void handle_get_stack_request(generic_stack& stack, json& request, json& 
     }
 }
 
-static int handle_rpc_request(const icp_event_data *data, void *arg)
+static int handle_rpc_request(const op_event_data *data, void *arg)
 {
     generic_stack& stack = *(reinterpret_cast<generic_stack *>(arg));
     int recv_or_err = 0;
@@ -90,12 +90,12 @@ static int handle_rpc_request(const icp_event_data *data, void *arg)
 
         switch (type) {
         case request_type::GET_STACK:
-            ICP_LOG(ICP_LOG_TRACE, "Received %s request for port %s\n",
+            OP_LOG(OP_LOG_TRACE, "Received %s request for port %s\n",
                     to_string(type).c_str(),
                     request["id"].get<std::string>().c_str());
             break;
         default:
-            ICP_LOG(ICP_LOG_TRACE, "Received %s request\n", to_string(type).c_str());
+            OP_LOG(OP_LOG_TRACE, "Received %s request\n", to_string(type).c_str());
         }
 
         switch (type) {
@@ -113,9 +113,9 @@ static int handle_rpc_request(const icp_event_data *data, void *arg)
         std::vector<uint8_t> reply_buffer = json::to_cbor(reply);
         if ((send_or_err = zmq_send(data->socket, reply_buffer.data(), reply_buffer.size(), 0))
             != static_cast<int>(reply_buffer.size())) {
-            ICP_LOG(ICP_LOG_ERROR, "Request reply failed: %s\n", zmq_strerror(errno));
+            OP_LOG(OP_LOG_ERROR, "Request reply failed: %s\n", zmq_strerror(errno));
         } else {
-            ICP_LOG(ICP_LOG_TRACE, "Sent %s reply to %s request\n",
+            OP_LOG(OP_LOG_TRACE, "Sent %s reply to %s request\n",
                     to_string(reply["code"].get<reply_code>()).c_str(),
                     to_string(type).c_str());
         }
@@ -127,11 +127,11 @@ static int handle_rpc_request(const icp_event_data *data, void *arg)
 }
 
 server::server(void* context,
-               icp::core::event_loop& loop,
+               openperf::core::event_loop& loop,
                generic_stack& stack)
-    : m_socket(icp_socket_get_server(context, ZMQ_REP, endpoint.c_str()))
+    : m_socket(op_socket_get_server(context, ZMQ_REP, endpoint.c_str()))
 {
-    struct icp_event_callbacks callbacks = {
+    struct op_event_callbacks callbacks = {
         .on_read = handle_rpc_request
     };
     loop.add(m_socket.get(), &callbacks, &stack);

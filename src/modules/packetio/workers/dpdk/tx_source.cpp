@@ -4,7 +4,7 @@
 #include "packetio/workers/dpdk/tx_source.h"
 #include "packetio/workers/dpdk/worker_api.h"
 
-namespace icp::packetio::dpdk {
+namespace openperf::packetio::dpdk {
 
 static packet_pool make_packet_pool(uint16_t port_idx, const packets::generic_source& source)
 {
@@ -64,7 +64,7 @@ uint16_t tx_source::pull(rte_mbuf* packets[], uint16_t count) const
     auto n = m_pool.get(tmp.data(), std::min(static_cast<uint16_t>(tmp.size()), count));
 
     if (!n) {
-        //ICP_LOG(ICP_LOG_WARNING, "No packet buffers available for %s\n", id().c_str());
+        //OP_LOG(OP_LOG_WARNING, "No packet buffers available for %s\n", id().c_str());
         return (0);
     }
 

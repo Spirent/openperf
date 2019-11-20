@@ -5,9 +5,9 @@
 #include "api/api_route_handler.h"
 #include "swagger/v1/model/Module.h"
 
-#include "core/icp_modules.h"
+#include "core/op_modules.h"
 
-namespace icp {
+namespace openperf {
 namespace api {
 namespace modules{
 
@@ -15,7 +15,7 @@ using namespace Pistache;
 using json = nlohmann::json;
 using namespace swagger::v1::model;
 
-class handler : public icp::api::route::handler::registrar<handler> {
+class handler : public openperf::api::route::handler::registrar<handler> {
 public:
     handler(void *context, Rest::Router& router);
     void list_modules(const Rest::Request& request, Http::ResponseWriter response);
@@ -32,7 +32,7 @@ handler::handler(void *context __attribute__((unused)), Rest::Router& router)
                       Rest::Routes::bind(&handler::get_module, this));
 }
 
-static auto to_string(enum icp_module_linkage_type type)
+static auto to_string(enum op_module_linkage_type type)
 {
     switch (type)
     {
@@ -45,7 +45,7 @@ static auto to_string(enum icp_module_linkage_type type)
     }
 }
 
-static auto create_json_module_info(const struct icp_module_info *module_info)
+static auto create_json_module_info(const struct op_module_info *module_info)
 {
     auto out_mod = std::make_shared<Module>();
     out_mod->setId(module_info->id);
@@ -71,9 +71,9 @@ static auto create_json_module_info(const struct icp_module_info *module_info)
 void handler::list_modules(const Rest::Request &request __attribute__((unused)),
                            Http::ResponseWriter response)
 {
-    auto module_count = icp_modules_get_loaded_count();
-    std::vector<const struct icp_module_info *> modules(module_count);
-    auto returned_module_count = icp_modules_get_info_list(modules.data(), module_count);
+    auto module_count = op_modules_get_loaded_count();
+    std::vector<const struct op_module_info *> modules(module_count);
+    auto returned_module_count = op_modules_get_info_list(modules.data(), module_count);
 
     if (returned_module_count < 0)
     {
@@ -104,14 +104,14 @@ void handler::get_module(const Rest::Request& request, Http::ResponseWriter resp
 {
     auto id = request.param(":id").as<std::string>();
 
-    const std::regex id_regex(ICP_MODULE_ID_REGEX);
+    const std::regex id_regex(OP_MODULE_ID_REGEX);
     if (!std::regex_match(id, id_regex))
     {
         response.send(Http::Code::Bad_Request, "Invalid characters detected in request. Only a-z, 0-9, -, and . are allowed.");
         return;
     }
 
-    auto module_info = icp_modules_get_info_by_id(id.c_str());
+    auto module_info = op_modules_get_info_by_id(id.c_str());
     if (!module_info)
     {
         response.send(Http::Code::Not_Found);
@@ -126,4 +126,4 @@ void handler::get_module(const Rest::Request& request, Http::ResponseWriter resp
 
 } //namespace modules
 } //namespace api
-} //namespace icp
+} //namespace openperf

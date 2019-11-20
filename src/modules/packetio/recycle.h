@@ -1,12 +1,12 @@
-#ifndef _ICP_PACKETIO_RECYCLE_H_
-#define _ICP_PACKETIO_RECYCLE_H_
+#ifndef _OP_PACKETIO_RECYCLE_H_
+#define _OP_PACKETIO_RECYCLE_H_
 
 #include <atomic>
 #include <bitset>
 #include <functional>
 #include <map>
 
-namespace icp::packetio::recycle {
+namespace openperf::packetio::recycle {
 
 /**
  * The depot contains all the logic and machinery necessary to implement
@@ -74,4 +74,4 @@ public:
 
 }
 
-#endif /* _ICP_PACKETIO_RECYCLE_H_ */
+#endif /* _OP_PACKETIO_RECYCLE_H_ */

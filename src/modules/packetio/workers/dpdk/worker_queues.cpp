@@ -2,7 +2,7 @@
 
 #include "packetio/workers/dpdk/worker_queues.h"
 
-namespace icp::packetio::dpdk::worker {
+namespace openperf::packetio::dpdk::worker {
 
 void port_queues::setup(const std::vector<queue::descriptor>& descriptors)
 {

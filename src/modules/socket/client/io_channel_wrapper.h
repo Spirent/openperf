@@ -1,5 +1,5 @@
-#ifndef _ICP_SOCKET_CLIENT_IO_CHANNEL_WRAPPER_H_
-#define _ICP_SOCKET_CLIENT_IO_CHANNEL_WRAPPER_H_
+#ifndef _OP_SOCKET_CLIENT_IO_CHANNEL_WRAPPER_H_
+#define _OP_SOCKET_CLIENT_IO_CHANNEL_WRAPPER_H_
 
 #include "tl/expected.hpp"
 
@@ -7,14 +7,14 @@
 #include "socket/client/dgram_channel.h"
 #include "socket/client/stream_channel.h"
 
-namespace icp {
+namespace openperf {
 namespace socket {
 namespace client {
 
 class io_channel_wrapper
 {
-    using io_channel = std::variant<icp::socket::client::dgram_channel*,
-                                    icp::socket::client::stream_channel*>;
+    using io_channel = std::variant<openperf::socket::client::dgram_channel*,
+                                    openperf::socket::client::stream_channel*>;
     io_channel m_channel;
 
 public:
@@ -49,4 +49,4 @@ public:
 }
 }
 
-#endif /* _ICP_SOCKET_CLIENT_IO_CHANNEL_WRAPPER_H_ */
+#endif /* _OP_SOCKET_CLIENT_IO_CHANNEL_WRAPPER_H_ */

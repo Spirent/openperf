@@ -13,7 +13,7 @@ struct c_deleter {
     }
 };
 
-using raw_allocator = icp::memory::std_allocator<uint8_t, icp::memory::allocator::free_list>;
+using raw_allocator = openperf::memory::std_allocator<uint8_t, openperf::memory::allocator::free_list>;
 
 TEST_CASE("basic functionality for std_allocator", "[std_allocator]")
 {
@@ -116,7 +116,7 @@ TEST_CASE("basic functionality for std_allocator", "[std_allocator]")
     }
 }
 
-using int_allocator = icp::memory::std_allocator<int, icp::memory::allocator::free_list>;
+using int_allocator = openperf::memory::std_allocator<int, openperf::memory::allocator::free_list>;
 
 TEST_CASE("able to use std_allocator in a container", "[std_allocator]")
 {

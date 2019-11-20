@@ -2,7 +2,7 @@
 
 #include "net/mac_address.h"
 
-using mac_address = icp::net::mac_address;
+using mac_address = openperf::net::mac_address;
 
 TEST_CASE("mac_address functionality checks", "[mac_address]")
 {

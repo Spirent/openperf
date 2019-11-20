@@ -25,4 +25,4 @@ PIO_WORKER_SOURCES += \
 # Annoyingly, immer makes use of unused parameters. Silence those warnings
 # until we can fix them.
 ###
-$(PIO_OBJ_DIR)/workers/dpdk/%.o: ICP_CPPFLAGS += -Wno-unused-parameter -Wno-shadow
+$(PIO_OBJ_DIR)/workers/dpdk/%.o: OP_CPPFLAGS += -Wno-unused-parameter -Wno-shadow

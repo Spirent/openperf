@@ -1,6 +1,6 @@
 #include "catch.hpp"
 
-#include "core/icp_uuid.h"
+#include "core/op_uuid.h"
 #include "packetio/transmit_table.tcc"
 
 struct test_source
@@ -10,9 +10,9 @@ struct test_source
     std::string id() const { return (id_); }
 };
 
-template class icp::packetio::transmit_table<test_source>;
+template class openperf::packetio::transmit_table<test_source>;
 
-using transmit_table = icp::packetio::transmit_table<test_source>;
+using transmit_table = openperf::packetio::transmit_table<test_source>;
 
 TEST_CASE("transmit table functionality", "[transmit table]")
 {
@@ -50,7 +50,7 @@ TEST_CASE("transmit table functionality", "[transmit table]")
         static constexpr unsigned many_queues = 3;
 
         /* Boot-strapping */
-        using namespace icp::core;
+        using namespace openperf::core;
         std::generate_n(std::back_inserter(sources), many_ports * many_queues,
                         []() {
                             return (test_source{to_string(uuid::random())});

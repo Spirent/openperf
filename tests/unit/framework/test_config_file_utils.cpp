@@ -2,10 +2,10 @@
 #include <string>
 #include <string.h>
 
-#include "icp_config_file_utils.h"
+#include "op_config_file_utils.h"
 #include "yaml_json_emitter.h"
 
-using namespace icp::config::file;
+using namespace openperf::config::file;
 
 TEST_CASE("check config file utilty functions", "[config file]")
 {
@@ -22,7 +22,7 @@ TEST_CASE("check config file utilty functions", "[config file]")
                                        "0x10",
                                        "0x1abcd");
         // clang-format on
-        REQUIRE(icp_config_is_number(is_number_true) == true);
+        REQUIRE(op_config_is_number(is_number_true) == true);
 
         // clang-format off
         auto is_number_false = GENERATE(as<std::string> {},
@@ -35,42 +35,42 @@ TEST_CASE("check config file utilty functions", "[config file]")
                                         "14 42",
                                         "50-30");
         // clang-format on
-        REQUIRE(icp_config_is_number(is_number_false) == false);
+        REQUIRE(op_config_is_number(is_number_false) == false);
     }
 
     SECTION("verify splitting path and id function")
     {
-        auto path_id = icp_config_split_path_id("/ports/transmit-port-one");
+        auto path_id = op_config_split_path_id("/ports/transmit-port-one");
         REQUIRE(std::get<0>(path_id) == "/ports");
         REQUIRE(std::get<1>(path_id) == "transmit-port-one");
 
-        path_id = icp_config_split_path_id("/ports");
+        path_id = op_config_split_path_id("/ports");
         REQUIRE(std::get<0>(path_id) == "/ports");
         REQUIRE(std::get<1>(path_id) == "");
 
-        path_id = icp_config_split_path_id("");
+        path_id = op_config_split_path_id("");
         REQUIRE(std::get<0>(path_id) == "");
         REQUIRE(std::get<1>(path_id) == "");
 
         // Relative path. Function is doing its job even though
         // it might not be valid for pistache routing.
-        path_id = icp_config_split_path_id("ports/transmit-port-one");
+        path_id = op_config_split_path_id("ports/transmit-port-one");
         REQUIRE(std::get<0>(path_id) == "ports");
         REQUIRE(std::get<1>(path_id) == "transmit-port-one");
 
-        path_id = icp_config_split_path_id("/interfaces//interface-one");
+        path_id = op_config_split_path_id("/interfaces//interface-one");
         REQUIRE(std::get<0>(path_id) == "/interfaces/");
         REQUIRE(std::get<1>(path_id) == "interface-one");
 
         // Technically an error for pistache routing, but this function
         // need not know that.
-        path_id = icp_config_split_path_id("/interfaces//interface-one/");
+        path_id = op_config_split_path_id("/interfaces//interface-one/");
         REQUIRE(std::get<0>(path_id) == "/interfaces//interface-one");
         REQUIRE(std::get<1>(path_id) == "");
 
         // Will probably never have this path, but worth checking
         // that the split function works here too.
-        path_id = icp_config_split_path_id("/abcdefg/h-i-j-k");
+        path_id = op_config_split_path_id("/abcdefg/h-i-j-k");
         REQUIRE(std::get<0>(path_id) == "/abcdefg");
         REQUIRE(std::get<1>(path_id) == "h-i-j-k");
     }
@@ -79,7 +79,7 @@ TEST_CASE("check config file utilty functions", "[config file]")
 TEST_CASE("test YAML -> JSON emitter."
           "[config file]")
 {
-    // Boilerplate objects. They are not used in Inception,
+    // Boilerplate objects. They are not used in OpenPerf,
     // but are required by yaml-cpp interface.
     YAML::Mark mark;
     YAML::anchor_t anchor           = 0;

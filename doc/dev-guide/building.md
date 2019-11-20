@@ -23,7 +23,7 @@ If all is fine, you should see something like
 	sudo -n /sbin/setcap CAP_IPC_LOCK,CAP_NET_RAW,CAP_SYS_ADMIN,CAP_DAC_OVERRIDE,CAP_SYS_PTRACE=epi /project/build/openperf-linux-x86_64-testing/bin/openperf
 	make[1]: Leaving directory '/project/targets/openperf'
 	make[1]: Entering directory '/project/targets/libopenperf-shim'
-	clang++ -flto=thin -shared -o /project/build/libopenperf-shim-linux-x86_64-testing/lib/libopenperf-shim.so -fuse-ld=lld -static-libstdc++ -static-libgcc -shared -L/project/build/libopenperf-shim-linux-x86_64-testing/lib /project/build/libopenperf-shim-linux-x86_64-testing/obj/icp-shim.o /project/build/libopenperf-shim-linux-x86_64-testing/obj/libc_wrapper.o -licp_socket_client -lrt -ldl
+	clang++ -flto=thin -shared -o /project/build/libopenperf-shim-linux-x86_64-testing/lib/libopenperf-shim.so -fuse-ld=lld -static-libstdc++ -static-libgcc -shared -L/project/build/libopenperf-shim-linux-x86_64-testing/lib /project/build/libopenperf-shim-linux-x86_64-testing/obj/icp-shim.o /project/build/libopenperf-shim-linux-x86_64-testing/obj/libc_wrapper.o -lop_socket_client -lrt -ldl
 	make[1]: Leaving directory '/project/targets/libopenperf-shim'
 	root@8f97d154f160:/project#
 	root@8f97d154f160:/project#

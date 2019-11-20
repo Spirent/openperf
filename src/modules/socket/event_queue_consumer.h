@@ -1,10 +1,10 @@
-#ifndef _ICP_SOCKET_EVENT_QUEUE_CONSUMER_H_
-#define _ICP_SOCKET_EVENT_QUEUE_CONSUMER_H_
+#ifndef _OP_SOCKET_EVENT_QUEUE_CONSUMER_H_
+#define _OP_SOCKET_EVENT_QUEUE_CONSUMER_H_
 
 #include <atomic>
 #include <limits>
 
-namespace icp {
+namespace openperf {
 namespace socket {
 
 template <typename Derived>
@@ -41,4 +41,4 @@ public:
 }
 }
 
-#endif /* _ICP_SOCKET_EVENT_QUEUE_CONSUMER_H_ */
+#endif /* _OP_SOCKET_EVENT_QUEUE_CONSUMER_H_ */

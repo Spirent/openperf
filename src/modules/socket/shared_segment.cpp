@@ -9,7 +9,7 @@
 
 #include "socket/shared_segment.h"
 
-namespace icp {
+namespace openperf {
 namespace memory {
 
 static void* do_mapping(const std::string_view path, size_t size, int shm_flags)
@@ -20,7 +20,7 @@ static void* do_mapping(const std::string_view path, size_t size, int shm_flags)
         if (errno == EEXIST &&
             shm_flags & O_CREAT) {
             throw std::runtime_error("Could not create shared memory segment \""
-                                     + std::string(path) + "\". Either Inception is already "
+                                     + std::string(path) + "\". Either OpenPerf is already "
                                      + "running or did not shut down cleanly. "
                                      + "Use --modules.socket.force-unlink option to force launch.");
         } else {

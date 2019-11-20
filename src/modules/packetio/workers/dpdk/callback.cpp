@@ -4,7 +4,7 @@
 
 #include "packetio/workers/dpdk/callback.h"
 
-namespace icp::packetio::dpdk {
+namespace openperf::packetio::dpdk {
 
 template<typename ...Ts>
 struct overloaded_visitor : Ts...

@@ -3,9 +3,9 @@
 
 #include "catch.hpp"
 
-#include "core/icp_uuid.h"
+#include "core/op_uuid.h"
 
-using uuid = icp::core::uuid;
+using uuid = openperf::core::uuid;
 
 TEST_CASE("uuid constructors", "[uuid]")
 {
@@ -40,7 +40,7 @@ TEST_CASE("uuid constructors", "[uuid]")
         REQUIRE(u[15] == 0x00);
 
         SECTION("can convert to string correctly") {
-            REQUIRE(icp::core::to_string(u) == "123e4567-e89b-12d3-a456-426655440000");
+            REQUIRE(openperf::core::to_string(u) == "123e4567-e89b-12d3-a456-426655440000");
         }
 
         SECTION("can reject obviously bad strings") {
@@ -67,7 +67,7 @@ TEST_CASE("uuid constructors", "[uuid]")
         }
 
         SECTION("can convert to string correctly") {
-            REQUIRE(icp::core::to_string(u) == "00112233-4455-6677-8899-aabbccddeeff");
+            REQUIRE(openperf::core::to_string(u) == "00112233-4455-6677-8899-aabbccddeeff");
         }
     }
 
@@ -82,7 +82,7 @@ TEST_CASE("uuid constructors", "[uuid]")
             REQUIRE((u[8] >> 6) == 0x01);  /* variant */
 
             /* but we should not see any duplicates */
-            auto s = icp::core::to_string(u);
+            auto s = openperf::core::to_string(u);
             REQUIRE(uuids.find(s) == uuids.end());
             uuids.insert(s);
         }

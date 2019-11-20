@@ -41,12 +41,12 @@ One of the main change is to replace the global `tcpip_mbox` with a function cal
 
 ```diff
 -static sys_mbox_t tcpip_mbox;
-+auto tcpip_mbox = icp::packetio::tcpip::mbox();
++auto tcpip_mbox = openperf::packetio::tcpip::mbox();
 ```
 
 The other change is to replace the previous _tcpip_thread_ with an OpenPerf compatible worker and callback implementation.
 
-For this purpose, two new functions under the `icp::packetio::tcpip` namespace provide the core functionality of the lwip TCP/IP stack:  `handle_timeouts` and `handle_messages`.
+For this purpose, two new functions under the `openperf::packetio::tcpip` namespace provide the core functionality of the lwip TCP/IP stack:  `handle_timeouts` and `handle_messages`.
 
 ```cpp
 std::chrono::milliseconds handle_timeouts()

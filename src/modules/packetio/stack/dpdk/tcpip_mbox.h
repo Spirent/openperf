@@ -1,11 +1,11 @@
-#ifndef _ICP_PACKETIO_DPDK_TCPIP_MBOX_H_
-#define _ICP_PACKETIO_DPDK_TCPIP_MBOX_H_
+#ifndef _OP_PACKETIO_DPDK_TCPIP_MBOX_H_
+#define _OP_PACKETIO_DPDK_TCPIP_MBOX_H_
 
 #include <memory>
 
 #include "packetio/stack/dpdk/sys_mailbox.h"
 
-namespace icp::packetio::dpdk {
+namespace openperf::packetio::dpdk {
 
 template <typename T>
 class singleton {
@@ -35,4 +35,4 @@ private:
 
 }
 
-#endif /* _ICP_PACKETIO_DPDK_TCPIP_MBOX_H_ */
+#endif /* _OP_PACKETIO_DPDK_TCPIP_MBOX_H_ */

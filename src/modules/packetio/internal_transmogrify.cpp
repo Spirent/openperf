@@ -3,7 +3,7 @@
 #include "packetio/message_utils.h"
 #include "packetio/internal_api.h"
 
-namespace icp::packetio::internal::api {
+namespace openperf::packetio::internal::api {
 
 void close(serialized_msg& msg)
 {

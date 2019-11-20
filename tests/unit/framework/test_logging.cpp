@@ -3,7 +3,7 @@
 #include "zmq.h"
 #include "catch.hpp"
 
-#include "core/icp_core.h"
+#include "core/op_core.h"
 
 struct zmq_context_deleter {
     void operator()(void *context) const {
@@ -12,9 +12,9 @@ struct zmq_context_deleter {
 };
 
 TEST_CASE("check log level setter/getter", "[logging]") {
-    for (int level = ICP_LOG_NONE; level <= ICP_LOG_MAX; level++) {
-        icp_log_level_set(static_cast<enum icp_log_level>(level));
-        REQUIRE(icp_log_level_get() == level);
+    for (int level = OP_LOG_NONE; level <= OP_LOG_MAX; level++) {
+        op_log_level_set(static_cast<enum op_log_level>(level));
+        REQUIRE(op_log_level_get() == level);
     }
 }
 
@@ -22,20 +22,20 @@ TEST_CASE("exercise logging thread functionality", "[logging]")
 {
     std::unique_ptr<void, zmq_context_deleter> context(zmq_ctx_new());
     REQUIRE(context);
-    REQUIRE(icp_log_init(context.get(), NULL) == 0);
+    REQUIRE(op_log_init(context.get(), NULL) == 0);
 
     SECTION("verify log message submission") {
-        REQUIRE(icp_log(ICP_LOG_CRITICAL, __PRETTY_FUNCTION__,
+        REQUIRE(op_log(OP_LOG_CRITICAL, __PRETTY_FUNCTION__,
                         "This is a critical message\n") == 0);
-        REQUIRE(icp_log(ICP_LOG_ERROR, __PRETTY_FUNCTION__,
+        REQUIRE(op_log(OP_LOG_ERROR, __PRETTY_FUNCTION__,
                         "This is a error message\n") == 0);
-        REQUIRE(icp_log(ICP_LOG_WARNING, __PRETTY_FUNCTION__,
+        REQUIRE(op_log(OP_LOG_WARNING, __PRETTY_FUNCTION__,
                         "This is a warning message\n") == 0);
-        REQUIRE(icp_log(ICP_LOG_INFO, __PRETTY_FUNCTION__,
+        REQUIRE(op_log(OP_LOG_INFO, __PRETTY_FUNCTION__,
                         "This is a info message\n") == 0);
-        REQUIRE(icp_log(ICP_LOG_DEBUG, __PRETTY_FUNCTION__,
+        REQUIRE(op_log(OP_LOG_DEBUG, __PRETTY_FUNCTION__,
                         "This is a debug message\n") == 0);
-        REQUIRE(icp_log(ICP_LOG_TRACE, __PRETTY_FUNCTION__,
+        REQUIRE(op_log(OP_LOG_TRACE, __PRETTY_FUNCTION__,
                         "This is a trace message\n") == 0);
     }
 }
@@ -53,7 +53,7 @@ TEST_CASE("check logging command line parsing function", "[logging]")
             const_cast<char *>("2"),
             nullptr
         };
-        REQUIRE(icp_log_level_find(args.size() - 1, args.data()) == ICP_LOG_ERROR);
+        REQUIRE(op_log_level_find(args.size() - 1, args.data()) == OP_LOG_ERROR);
     }
 
     SECTION("check long cli argument by name") {
@@ -63,7 +63,7 @@ TEST_CASE("check logging command line parsing function", "[logging]")
             const_cast<char *>("warning"),
             nullptr
         };
-        REQUIRE(icp_log_level_find(args.size() - 1, args.data()) == ICP_LOG_WARNING);
+        REQUIRE(op_log_level_find(args.size() - 1, args.data()) == OP_LOG_WARNING);
     }
 
     SECTION("check short cli argument by number") {
@@ -73,7 +73,7 @@ TEST_CASE("check logging command line parsing function", "[logging]")
             const_cast<char *>("4"),
             nullptr
         };
-        REQUIRE(icp_log_level_find(args.size() - 1, args.data()) == ICP_LOG_INFO);
+        REQUIRE(op_log_level_find(args.size() - 1, args.data()) == OP_LOG_INFO);
     }
 
     SECTION("check short cli argument by name") {
@@ -83,7 +83,7 @@ TEST_CASE("check logging command line parsing function", "[logging]")
             const_cast<char *>("DEBUG"),
             nullptr
         };
-        REQUIRE(icp_log_level_find(args.size() - 1, args.data()) == ICP_LOG_DEBUG);
+        REQUIRE(op_log_level_find(args.size() - 1, args.data()) == OP_LOG_DEBUG);
     }
 }
 
@@ -98,13 +98,13 @@ TEST_CASE("check logging function signature --> string function", "[logging]")
           "some::class<some::type_a, some::type_b>::function" },
         { "void some::class<some::type_a, some::type_b>::function(int x) [CLASS = some::other_class]",
           "some::class<some::type_a, some::type_b>::function" },
-        { "void icp::packetio::dpdk::worker::finite_state_machine<icp::packetio::dpdk::worker::worker, std::variant<icp::packetio::dpdk::worker::state_init, icp::packetio::dpdk::worker::state_armed, icp::packetio::dpdk::worker::state_running>, std::variant<icp::packetio::dpdk::worker::start_msg, icp::packetio::dpdk::worker::stop_msg, icp::packetio::dpdk::worker::configure_msg> >::dispatch(const EventVariant &) [Derived = icp::packetio::dpdk::worker::worker, StateVariant = std::variant<icp::packetio::dpdk::worker::state_init, icp::packetio::dpdk::worker::state_armed, icp::packetio::dpdk::worker::state_running>, EventVariant = std::variant<icp::packetio::dpdk::worker::start_msg, icp::packetio::dpdk::worker::stop_msg, icp::packetio::dpdk::worker::configure_msg>]",
-          "icp::packetio::dpdk::worker::finite_state_machine<icp::packetio::dpdk::worker::worker, std::variant<icp::packetio::dpdk::worker::state_init, icp::packetio::dpdk::worker::state_armed, icp::packetio::dpdk::worker::state_running>, std::variant<icp::packetio::dpdk::worker::start_msg, icp::packetio::dpdk::worker::stop_msg, icp::packetio::dpdk::worker::configure_msg> >::dispatch" }
+        { "void openperf::packetio::dpdk::worker::finite_state_machine<openperf::packetio::dpdk::worker::worker, std::variant<openperf::packetio::dpdk::worker::state_init, openperf::packetio::dpdk::worker::state_armed, openperf::packetio::dpdk::worker::state_running>, std::variant<openperf::packetio::dpdk::worker::start_msg, openperf::packetio::dpdk::worker::stop_msg, openperf::packetio::dpdk::worker::configure_msg> >::dispatch(const EventVariant &) [Derived = openperf::packetio::dpdk::worker::worker, StateVariant = std::variant<openperf::packetio::dpdk::worker::state_init, openperf::packetio::dpdk::worker::state_armed, openperf::packetio::dpdk::worker::state_running>, EventVariant = std::variant<openperf::packetio::dpdk::worker::start_msg, openperf::packetio::dpdk::worker::stop_msg, openperf::packetio::dpdk::worker::configure_msg>]",
+          "openperf::packetio::dpdk::worker::finite_state_machine<openperf::packetio::dpdk::worker::worker, std::variant<openperf::packetio::dpdk::worker::state_init, openperf::packetio::dpdk::worker::state_armed, openperf::packetio::dpdk::worker::state_running>, std::variant<openperf::packetio::dpdk::worker::start_msg, openperf::packetio::dpdk::worker::stop_msg, openperf::packetio::dpdk::worker::configure_msg> >::dispatch" }
     };
 
     for(auto &pair : signatures) {
         char output[strlen(pair.first)];
-        icp_log_function_name(pair.first, output);
+        op_log_function_name(pair.first, output);
         REQUIRE(strcmp(output, pair.second) == 0);
     }
 }

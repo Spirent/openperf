@@ -67,7 +67,7 @@ def add_interfaces(url, tag, port_id, network, count, offset):
 
 
 def del_interfaces(url, tag, count):
-    # Retrieve the list of interface ids from the inception instance
+    # Retrieve the list of interface ids from the openperf instance
     get = requests.get("/".join([url, 'interfaces']))
     get.raise_for_status()
     # Note: key provides a natural sort order for id's,
@@ -85,7 +85,7 @@ def del_interfaces(url, tag, count):
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Bulk interface testing for inception')
+    parser = argparse.ArgumentParser(description='Bulk interface testing for openperf')
     parser.add_argument('url')
     parser.add_argument('action', choices=['add', 'remove'])
     parser.add_argument('--tag', default='scalability', type=str,

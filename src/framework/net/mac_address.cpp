@@ -3,7 +3,7 @@
 
 #include "net/mac_address.h"
 
-namespace icp {
+namespace openperf {
 namespace net {
 
 mac_address::mac_address()

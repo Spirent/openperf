@@ -1,5 +1,5 @@
-#ifndef _ICP_PACKETIO_DPDK_WORKER_QUEUES_H_
-#define _ICP_PACKETIO_DPDK_WORKER_QUEUES_H_
+#ifndef _OP_PACKETIO_DPDK_WORKER_QUEUES_H_
+#define _OP_PACKETIO_DPDK_WORKER_QUEUES_H_
 
 #include <cstdint>
 
@@ -10,7 +10,7 @@
 
 struct rte_mbuf;
 
-namespace icp::packetio::dpdk::worker {
+namespace openperf::packetio::dpdk::worker {
 
 template <typename T>
 class singleton {
@@ -48,4 +48,4 @@ uint16_t tx_queue_function(int idx, uint32_t hash, struct rte_mbuf* mbufs[], uin
 
 }
 
-#endif /* _ICP_PACKETIO_DPDK_WORKER_QUEUES_H_ */
+#endif /* _OP_PACKETIO_DPDK_WORKER_QUEUES_H_ */

@@ -3,18 +3,18 @@
 #
 
 DPDK_REQ_VARS := \
-	ICP_ROOT \
-	ICP_BUILD_ROOT \
-	ICP_DPDK_TARGET \
+	OP_ROOT \
+	OP_BUILD_ROOT \
+	OP_DPDK_TARGET \
 	ARCH
-$(call icp_check_vars,$(DPDK_REQ_VARS))
+$(call op_check_vars,$(DPDK_REQ_VARS))
 
-DPDK_SRC_DIR := $(ICP_ROOT)/deps/dpdk
-DPDK_BLD_DIR := $(ICP_BUILD_ROOT)/dpdk
+DPDK_SRC_DIR := $(OP_ROOT)/deps/dpdk
+DPDK_BLD_DIR := $(OP_BUILD_ROOT)/dpdk
 DPDK_INC_DIR := $(DPDK_BLD_DIR)/include
 DPDK_LIB_DIR := $(DPDK_BLD_DIR)/lib
 
-DPDK_DEFCONFIG := $(ICP_ROOT)/conf/dpdk/defconfig_$(ARCH)-$(ICP_DPDK_TARGET)
+DPDK_DEFCONFIG := $(OP_ROOT)/conf/dpdk/defconfig_$(ARCH)-$(OP_DPDK_TARGET)
 
 # DPDK target depends on the configuration we're building
 DPDK_SHARED = $(shell grep "BUILD_SHARED_LIB=y" $(DPDK_DEFCONFIG))
@@ -25,16 +25,16 @@ else
 endif
 
 # Generate appropriate DPDK_LDLIBS based on the dpdk defconfig
-include $(ICP_ROOT)/mk/dpdk_ldlibs.mk
+include $(OP_ROOT)/mk/dpdk_ldlibs.mk
 
 # Generate appropriate DPDK_DEFINES based on the current compiler flags
-include $(ICP_ROOT)/mk/dpdk_defines.mk
+include $(OP_ROOT)/mk/dpdk_defines.mk
 
 # Update global build variables
-ICP_INC_DIRS += $(DPDK_INC_DIR)
-ICP_LIB_DIRS += $(DPDK_LIB_DIR)
-ICP_LDLIBS += $(DPDK_LDLIBS) -pthread -ldl
-ICP_DEFINES += $(DPDK_DEFINES)
+OP_INC_DIRS += $(DPDK_INC_DIR)
+OP_LIB_DIRS += $(DPDK_LIB_DIR)
+OP_LDLIBS += $(DPDK_LDLIBS) -pthread -ldl
+OP_DEFINES += $(DPDK_DEFINES)
 
 ###
 # DPDK build rules
@@ -42,10 +42,10 @@ ICP_DEFINES += $(DPDK_DEFINES)
 
 $(DPDK_BLD_DIR)/.config:
 	cp $(DPDK_DEFCONFIG) $(DPDK_SRC_DIR)/config
-	cd $(DPDK_SRC_DIR) && $(MAKE) config T=$(ARCH)-$(ICP_DPDK_TARGET) O=$(DPDK_BLD_DIR)
+	cd $(DPDK_SRC_DIR) && $(MAKE) config T=$(ARCH)-$(OP_DPDK_TARGET) O=$(DPDK_BLD_DIR)
 
 $(DPDK_TARGET): $(DPDK_BLD_DIR)/.config
-	cd $(DPDK_BLD_DIR) && $(MAKE) EXTRA_CFLAGS="$(strip $(ICP_CSTD) $(ICP_COPTS))"
+	cd $(DPDK_BLD_DIR) && $(MAKE) EXTRA_CFLAGS="$(strip $(OP_CSTD) $(OP_COPTS))"
 
 .PHONY: dpdk
 dpdk: $(DPDK_TARGET)

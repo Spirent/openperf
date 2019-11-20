@@ -1,5 +1,5 @@
-#ifndef _ICP_PACKETIO_DPDK_TX_SOURCE_H_
-#define _ICP_PACKETIO_DPDK_TX_SOURCE_H_
+#ifndef _OP_PACKETIO_DPDK_TX_SOURCE_H_
+#define _OP_PACKETIO_DPDK_TX_SOURCE_H_
 
 /**
  * @file
@@ -15,7 +15,7 @@
 #include "packetio/drivers/dpdk/dpdk.h"
 #include "packetio/memory/dpdk/packet_pool.h"
 
-namespace icp::packetio::dpdk {
+namespace openperf::packetio::dpdk {
 
 class tx_source
 {
@@ -36,4 +36,4 @@ public:
 
 }
 
-#endif /* _ICP_PACKETIO_DPDK_TX_SOURCE_H_ */
+#endif /* _OP_PACKETIO_DPDK_TX_SOURCE_H_ */

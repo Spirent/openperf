@@ -7,7 +7,7 @@
 #include "lwip/priv/tcp_priv.h"
 #include "packetio/stack/netif_utils.h"
 
-namespace icp {
+namespace openperf {
 namespace socket {
 namespace server {
 

@@ -1,5 +1,5 @@
-#ifndef _ICP_PACKETIO_DPDK_POLLABLE_EVENT_TCC_
-#define _ICP_PACKETIO_DPDK_POLLABLE_EVENT_TCC_
+#ifndef _OP_PACKETIO_DPDK_POLLABLE_EVENT_TCC_
+#define _OP_PACKETIO_DPDK_POLLABLE_EVENT_TCC_
 
 #include <cassert>
 #include <cstring>
@@ -8,9 +8,9 @@
 #include <sys/epoll.h>
 
 #include "packetio/drivers/dpdk/dpdk.h"
-#include "core/icp_log.h"
+#include "core/op_log.h"
 
-namespace icp::packetio::dpdk {
+namespace openperf::packetio::dpdk {
 
 template <typename Derived>
 class pollable_event
@@ -44,7 +44,7 @@ public:
                                    &m_event);
 
         if (error) {
-            ICP_LOG(ICP_LOG_ERROR, "Could not add poll event for fd %d: %s\n",
+            OP_LOG(OP_LOG_ERROR, "Could not add poll event for fd %d: %s\n",
                     static_cast<Derived&>(*this).event_fd(),
                     strerror(errno));
         }
@@ -59,7 +59,7 @@ public:
                                    &m_event);
 
         if (error) {
-            ICP_LOG(ICP_LOG_ERROR, "Could not delete poll event for fd %d: %s\n",
+            OP_LOG(OP_LOG_ERROR, "Could not delete poll event for fd %d: %s\n",
                     static_cast<Derived&>(*this).event_fd(),
                     strerror(errno));
         }
@@ -110,4 +110,4 @@ private:
 
 }
 
-#endif /* _ICP_PACKETIO_DPDK_POLLABLE_EVENT_TCC_ */
+#endif /* _OP_PACKETIO_DPDK_POLLABLE_EVENT_TCC_ */

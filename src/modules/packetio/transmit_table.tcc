@@ -1,8 +1,8 @@
-#include "core/icp_log.h"
+#include "core/op_log.h"
 #include "packetio/transmit_table.h"
 #include "utils/hash_combine.h"
 
-namespace icp::packetio {
+namespace openperf::packetio {
 
 template <typename Source>
 transmit_table<Source>::transmit_table()
@@ -21,7 +21,7 @@ typename transmit_table<Source>::source_key
 transmit_table<Source>::to_key(uint16_t port_idx, uint16_t queue_idx, std::string_view source_id)
 {
     if (source_id.length() > key_buffer_length) {
-        ICP_LOG(ICP_LOG_WARNING, "Truncating source id = %.*s to %zu characters\n",
+        OP_LOG(OP_LOG_WARNING, "Truncating source id = %.*s to %zu characters\n",
                 static_cast<int>(source_id.length()), source_id.data(),
                 key_buffer_length);
     }

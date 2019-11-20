@@ -174,7 +174,7 @@ def create_connected_endpoints(api_client, reader_id, writer_id, domain, protoco
                                   stderr=subprocess.PIPE,
                                   close_fds=True,
                                   env={'LD_PRELOAD': shim.config.path,
-                                       'ICP_BINDTODEVICE': writer_id})
+                                       'OP_BINDTODEVICE': writer_id})
         server_input = writer.stdin
 
     if is_server_interface(reader_id):
@@ -184,7 +184,7 @@ def create_connected_endpoints(api_client, reader_id, writer_id, domain, protoco
                                   stderr=subprocess.PIPE,
                                   close_fds=True,
                                   env={'LD_PRELOAD': shim.config.path,
-                                       'ICP_BINDTODEVICE': reader_id})
+                                       'OP_BINDTODEVICE': reader_id})
         server_input = reader.stdin
 
     try:
@@ -205,7 +205,7 @@ def create_connected_endpoints(api_client, reader_id, writer_id, domain, protoco
                                   stderr=subprocess.PIPE,
                                   close_fds=True,
                                   env={'LD_PRELOAD': shim.config.path,
-                                       'ICP_BINDTODEVICE': writer_id})
+                                       'OP_BINDTODEVICE': writer_id})
         client_output = writer.stderr
 
     if not is_server_interface(reader_id):
@@ -215,7 +215,7 @@ def create_connected_endpoints(api_client, reader_id, writer_id, domain, protoco
                                   stderr=subprocess.PIPE,
                                   close_fds=True,
                                   env={'LD_PRELOAD': shim.config.path,
-                                       'ICP_BINDTODEVICE': reader_id})
+                                       'OP_BINDTODEVICE': reader_id})
         client_output = reader.stderr
 
     try:
@@ -289,7 +289,7 @@ def do_ping(api_client, ping_binary, src_id, dst_id, domain):
         p = subprocess.Popen(ping_command(ping_binary, dst_ip),
                              stdout=null, stderr=null,
                              env={'LD_PRELOAD': shim.config.path,
-                                  'ICP_BINDTODEVICE': src_id})
+                                  'OP_BINDTODEVICE': src_id})
         p.wait()
         expect(p.returncode).to(equal(0))
 

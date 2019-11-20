@@ -1,9 +1,9 @@
 #include <algorithm>
 
-#include "core/icp_log.h"
+#include "core/op_log.h"
 #include "packetio/memory/dpdk/packet_pool.h"
 
-namespace icp::packetio::dpdk {
+namespace openperf::packetio::dpdk {
 
 /*
  * Convert nb_mbufs to a Mersenne number, as those are the
@@ -33,7 +33,7 @@ struct rte_mempool* create_spsc_pktmbuf_mempool(std::string_view id, unsigned in
                                                 uint16_t packet_size, int socket_id)
 {
     if (RTE_ALIGN(priv_size, RTE_MBUF_PRIV_ALIGN) != priv_size) {
-        ICP_LOG(ICP_LOG_ERROR, "mbuf priv_size=%u is not aligned\n", priv_size);
+        OP_LOG(OP_LOG_ERROR, "mbuf priv_size=%u is not aligned\n", priv_size);
         rte_errno = EINVAL;
         return (nullptr);
     }
@@ -58,7 +58,7 @@ static rte_mempool* create_mempool(std::string_view id, int numa_mode,
     static constexpr auto max_length = RTE_MEMPOOL_NAMESIZE - 1;
     auto name = "pool-" + std::string(id);
     if (name.length() >= max_length) {
-        ICP_LOG(ICP_LOG_DEBUG, "Truncating mempool name = %s\n", name.c_str());
+        OP_LOG(OP_LOG_DEBUG, "Truncating mempool name = %s\n", name.c_str());
         name.resize(max_length);
         name.resize(name.find_last_of('-'));  /* Pick a nice trim spot for uuids */
     }
@@ -72,7 +72,7 @@ packet_pool::packet_pool(std::string_view id, int numa_node,
                          uint16_t cache_size)
     : m_pool(create_mempool(id, numa_node, packet_length, packet_count, cache_size),
              [](auto p) {
-                 ICP_LOG(ICP_LOG_DEBUG, "Deleting packet pool %s\n", p->name);
+                 OP_LOG(OP_LOG_DEBUG, "Deleting packet pool %s\n", p->name);
                  rte_mempool_free(p);
              })
 {
@@ -81,7 +81,7 @@ packet_pool::packet_pool(std::string_view id, int numa_node,
                                  + std::string(rte_strerror(rte_errno)));
     }
 
-    ICP_LOG(ICP_LOG_DEBUG, "%s: %u, %u byte mbufs on NUMA socket %d\n",
+    OP_LOG(OP_LOG_DEBUG, "%s: %u, %u byte mbufs on NUMA socket %d\n",
             m_pool->name,
             m_pool->size,
             rte_pktmbuf_data_room_size(m_pool.get()),

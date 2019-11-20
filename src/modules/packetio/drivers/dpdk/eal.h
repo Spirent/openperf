@@ -1,5 +1,5 @@
-#ifndef _ICP_PACKETIO_DPDK_EAL_H_
-#define _ICP_PACKETIO_DPDK_EAL_H_
+#ifndef _OP_PACKETIO_DPDK_EAL_H_
+#define _OP_PACKETIO_DPDK_EAL_H_
 
 #include <any>
 #include <memory>
@@ -11,7 +11,7 @@
 #include "packetio/generic_port.h"
 #include "packetio/memory/dpdk/pool_allocator.h"
 
-namespace icp {
+namespace openperf {
 namespace packetio {
 
 namespace port {
@@ -66,4 +66,4 @@ private:
 }
 }
 
-#endif /* _ICP_PACKETIO_DPDK_EAL_H_ */
+#endif /* _OP_PACKETIO_DPDK_EAL_H_ */

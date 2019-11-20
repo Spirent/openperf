@@ -1,9 +1,9 @@
-#ifndef _ICP_SOCKET_EVENT_QUEUE_PRODUCER_H_
-#define _ICP_SOCKET_EVENT_QUEUE_PRODUCER_H_
+#ifndef _OP_SOCKET_EVENT_QUEUE_PRODUCER_H_
+#define _OP_SOCKET_EVENT_QUEUE_PRODUCER_H_
 
 #include <atomic>
 
-namespace icp {
+namespace openperf {
 namespace socket {
 
 template <typename Derived>
@@ -31,4 +31,4 @@ public:
 }
 }
 
-#endif /* _ICP_SOCKET_EVENT_QUEUE_PRODUCER_H_ */
+#endif /* _OP_SOCKET_EVENT_QUEUE_PRODUCER_H_ */

@@ -8,9 +8,9 @@
 #include "packetio/drivers/dpdk/dpdk.h"
 #include "packetio/stack/dpdk/net_interface.h"
 #include "packetio/stack/dpdk/net_interface_rx.h"
-#include "core/icp_log.h"
+#include "core/op_log.h"
 
-namespace icp::packetio::dpdk::netif_rx_strategy {
+namespace openperf::packetio::dpdk::netif_rx_strategy {
 
 /***
  * Queueing strategy functions
@@ -67,7 +67,7 @@ err_t queueing::handle_rx_notify(netif* netintf)
 err_t queueing::handle_rx(pbuf* p, netif* netintf)
 {
     if (rte_ring_enqueue(m_queue.get(), p) != 0) {
-        ICP_LOG(ICP_LOG_WARNING, "Receive queue on %c%c%u is full; packet dropped!\n",
+        OP_LOG(OP_LOG_WARNING, "Receive queue on %c%c%u is full; packet dropped!\n",
             netintf->name[0], netintf->name[1], netintf->num);
         return (ERR_BUF);
     }
@@ -89,7 +89,7 @@ err_t queueing::handle_rx(pbuf* p, netif* netintf)
 err_t direct::handle_rx_notify(netif* netintf)
 {
     /* Should never be called */
-    ICP_LOG(ICP_LOG_ERROR, "Calling useless rx notify function on %c%c%u\n",
+    OP_LOG(OP_LOG_ERROR, "Calling useless rx notify function on %c%c%u\n",
             netintf->name[0], netintf->name[1], netintf->num);
     return (ERR_IF);
 }

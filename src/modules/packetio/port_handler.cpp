@@ -1,11 +1,11 @@
 #include <zmq.h>
 
 #include "api/api_route_handler.h"
-#include "core/icp_core.h"
+#include "core/op_core.h"
 #include "packetio/port_api.h"
-#include "config/icp_config_utils.h"
+#include "config/op_config_utils.h"
 
-namespace icp {
+namespace openperf {
 namespace packetio {
 namespace port {
 namespace api {
@@ -20,12 +20,12 @@ json submit_request(void *socket, json& request)
     case request_type::GET_PORT:
     case request_type::UPDATE_PORT:
     case request_type::DELETE_PORT:
-        ICP_LOG(ICP_LOG_TRACE, "Sending %s request for port %s\n",
+        OP_LOG(OP_LOG_TRACE, "Sending %s request for port %s\n",
                 to_string(type).c_str(),
                 request["id"].get<std::string>().c_str());
         break;
     default:
-        ICP_LOG(ICP_LOG_TRACE, "Sending %s request\n", to_string(type).c_str());
+        OP_LOG(OP_LOG_TRACE, "Sending %s request\n", to_string(type).c_str());
     }
 
     std::vector<uint8_t> request_buffer = json::to_cbor(request);
@@ -39,7 +39,7 @@ json submit_request(void *socket, json& request)
         };
     }
 
-    ICP_LOG(ICP_LOG_TRACE, "Received %s reply\n", to_string(type).c_str());
+    OP_LOG(OP_LOG_TRACE, "Received %s reply\n", to_string(type).c_str());
 
     std::vector<uint8_t> reply_buffer(static_cast<uint8_t *>(zmq_msg_data(&reply_msg)),
                                       static_cast<uint8_t *>(zmq_msg_data(&reply_msg)) + zmq_msg_size(&reply_msg));
@@ -49,7 +49,7 @@ json submit_request(void *socket, json& request)
     return json::from_cbor(reply_buffer);
 }
 
-class handler : public icp::api::route::handler::registrar<handler> {
+class handler : public openperf::api::route::handler::registrar<handler> {
 public:
     handler(void *context, Rest::Router &router);
 
@@ -60,11 +60,11 @@ public:
     void delete_port(const Rest::Request &request, Http::ResponseWriter response);
 
 private:
-    std::unique_ptr<void, icp_socket_deleter> socket;
+    std::unique_ptr<void, op_socket_deleter> socket;
 };
 
 handler::handler(void *context, Rest::Router &router)
-    : socket(icp_socket_get_client(context, ZMQ_REQ, endpoint.c_str()))
+    : socket(op_socket_get_client(context, ZMQ_REQ, endpoint.c_str()))
 {
     Rest::Routes::Get(router, "/ports",
                       Rest::Routes::bind(&handler::list_ports, this));
@@ -133,7 +133,7 @@ void handler::create_port(const Rest::Request &request, Http::ResponseWriter res
 
 #define VALIDATE_ID(id_, response_, code_)                     \
     do {                                                       \
-        auto res = config::icp_config_validate_id_string(id_); \
+        auto res = config::op_config_validate_id_string(id_); \
         if (!res) {                                            \
             response_.send(code_, res.error());                \
             return;                                            \

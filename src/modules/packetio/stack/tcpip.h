@@ -1,5 +1,5 @@
-#ifndef _ICP_PACKETIO_STACK_TCPIP_H_
-#define _ICP_PACKETIO_STACK_TCPIP_H_
+#ifndef _OP_PACKETIO_STACK_TCPIP_H_
+#define _OP_PACKETIO_STACK_TCPIP_H_
 
 #include <chrono>
 
@@ -10,7 +10,7 @@
  * and the stack context.
  */
 
-namespace icp::packetio::tcpip {
+namespace openperf::packetio::tcpip {
 
 /*
  * Unfortunately, lwIP uses a global mailbox to move messages between
@@ -33,4 +33,4 @@ int handle_messages(sys_mbox_t);
 
 }
 
-#endif /* _ICP_PACKETIO_STACK_TCPIP_H_ */
+#endif /* _OP_PACKETIO_STACK_TCPIP_H_ */

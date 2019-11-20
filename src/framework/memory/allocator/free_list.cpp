@@ -5,7 +5,7 @@
 
 #include "memory/allocator/free_list.h"
 
-namespace icp {
+namespace openperf {
 namespace memory {
 namespace allocator {
 

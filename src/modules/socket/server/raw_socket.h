@@ -1,5 +1,5 @@
-#ifndef _ICP_SOCKET_SERVER_RAW_SOCKET_H_
-#define _ICP_SOCKET_SERVER_RAW_SOCKET_H_
+#ifndef _OP_SOCKET_SERVER_RAW_SOCKET_H_
+#define _OP_SOCKET_SERVER_RAW_SOCKET_H_
 
 #include <cerrno>
 #include <memory>
@@ -19,7 +19,7 @@
 struct raw_pcb;
 struct pbuf;
 
-namespace icp {
+namespace openperf {
 namespace socket {
 namespace server {
 
@@ -35,7 +35,7 @@ typedef std::variant<raw_init,
 
 class raw_socket : public socket_state_machine<raw_socket, raw_socket_state> {
 public:
-    raw_socket(icp::socket::server::allocator& allocator, int flags, int protocol, raw_recv_fn recv_callback = nullptr);
+    raw_socket(openperf::socket::server::allocator& allocator, int flags, int protocol, raw_recv_fn recv_callback = nullptr);
     ~raw_socket() = default;
 
     raw_socket(const raw_socket&) = delete;
@@ -124,4 +124,4 @@ const char * to_string(const raw_socket_state&);
 }
 }
 
-#endif /* _ICP_SOCKET_SERVER_RAW_SOCKET_H_ */
+#endif /* _OP_SOCKET_SERVER_RAW_SOCKET_H_ */

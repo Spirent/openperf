@@ -1,25 +1,25 @@
-#ifndef _ICP_SOCKET_API_SERVER_H_
-#define _ICP_SOCKET_API_SERVER_H_
+#ifndef _OP_SOCKET_API_SERVER_H_
+#define _OP_SOCKET_API_SERVER_H_
 
 #include <memory>
 #include <unordered_map>
 
-#include "core/icp_core.h"
+#include "core/op_core.h"
 #include "packetio/internal_client.h"
 #include "packetio/generic_event_loop.h"
 #include "socket/shared_segment.h"
 #include "socket/unix_socket.h"
 #include "socket/server/allocator.h"
 
-namespace icp::memory::allocator {
+namespace openperf::memory::allocator {
 class pool;
 }
 
-namespace icp::socket::server {
+namespace openperf::socket::server {
 class api_handler;
 }
 
-namespace icp::socket::api {
+namespace openperf::socket::api {
 
 class server
 {
@@ -27,14 +27,14 @@ class server
 
     void* m_context;
     unix_socket m_sock;
-    icp::memory::shared_segment m_shm;
+    openperf::memory::shared_segment m_shm;
     std::unordered_map<pid_t, std::unique_ptr<socket::server::api_handler>> m_handlers;
     std::unordered_multimap<int, pid_t> m_pids;
     std::string m_task;
 
     socket::server::allocator* allocator() const;
 
-    using event_loop = icp::packetio::event_loop::generic_event_loop;
+    using event_loop = openperf::packetio::event_loop::generic_event_loop;
 
     int handle_api_accept(event_loop& loop, std::any);
     int handle_api_client(event_loop& loop, std::any arg);
@@ -53,4 +53,4 @@ public:
 
 }
 
-#endif /* _ICP_SOCKET_API_SERVER_H_ */
+#endif /* _OP_SOCKET_API_SERVER_H_ */

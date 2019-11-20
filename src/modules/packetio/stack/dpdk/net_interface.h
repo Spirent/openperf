@@ -1,5 +1,5 @@
-#ifndef _ICP_PACKETIO_STACK_DPDK_NET_INTERFACE_H_
-#define _ICP_PACKETIO_STACK_DPDK_NET_INTERFACE_H_
+#ifndef _OP_PACKETIO_STACK_DPDK_NET_INTERFACE_H_
+#define _OP_PACKETIO_STACK_DPDK_NET_INTERFACE_H_
 
 #include <memory>
 #include <variant>
@@ -13,7 +13,7 @@
 
 struct pbuf;
 
-namespace icp {
+namespace openperf {
 namespace packetio {
 namespace dpdk {
 
@@ -66,4 +66,4 @@ const net_interface& to_interface(netif*);
 }
 }
 
-#endif /* _ICP_PACKETIO_STACK_DPDK_NET_INTERFACE_H_ */
+#endif /* _OP_PACKETIO_STACK_DPDK_NET_INTERFACE_H_ */

@@ -1,6 +1,6 @@
 #include "socket/client/io_channel_wrapper.h"
 
-namespace icp {
+namespace openperf {
 namespace socket {
 namespace client {
 

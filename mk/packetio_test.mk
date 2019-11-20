@@ -3,13 +3,13 @@
 #
 
 PIOTEST_REQ_VARS := \
-	ICP_ROOT
-$(call icp_check_vars,$(PIOTEST_REQ_VARS))
+	OP_ROOT
+$(call op_check_vars,$(PIOTEST_REQ_VARS))
 
 PIOTEST_DEPENDS := immer
-$(call icp_include_dependencies,$(PIOTEST_DEPENDS))
+$(call op_include_dependencies,$(PIOTEST_DEPENDS))
 
-ICP_INC_DIRS += $(ICP_ROOT)/src/modules
+OP_INC_DIRS += $(OP_ROOT)/src/modules
 
 ###
 # No build rules; header only for now

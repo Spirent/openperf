@@ -1,10 +1,10 @@
-#ifndef _ICP_SOCKET_PROCESS_CONTROL_H_
-#define _ICP_SOCKET_PROCESS_CONTROL_H_
+#ifndef _OP_SOCKET_PROCESS_CONTROL_H_
+#define _OP_SOCKET_PROCESS_CONTROL_H_
 
 #include <cstdio>
 #include <optional>
 
-namespace icp::socket::process_control {
+namespace openperf::socket::process_control {
 
 /**
  * Enable appropriate ptrace permission based on the current host
@@ -26,4 +26,4 @@ bool enable_ptrace(FILE* output, std::optional<pid_t> pid = std::nullopt);
 
 }
 
-#endif /* _ICP_SOCKET_PROCESS_CONTROL_H_ */
+#endif /* _OP_SOCKET_PROCESS_CONTROL_H_ */

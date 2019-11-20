@@ -8,11 +8,11 @@
 #include "socket/server/udp_socket.h"
 #include "socket/server/socket_utils.h"
 
-namespace icp {
+namespace openperf {
 namespace socket {
 namespace server {
 
-tl::expected<generic_socket, int> make_socket(icp::socket::server::allocator& allocator,
+tl::expected<generic_socket, int> make_socket(openperf::socket::server::allocator& allocator,
                                               int domain, int type,
                                               int protocol)
 {

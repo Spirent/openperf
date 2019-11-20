@@ -1,5 +1,5 @@
-#ifndef _ICP_PACKETIO_DPDK_TX_QUEUE_H_
-#define _ICP_PACKETIO_DPDK_TX_QUEUE_H_
+#ifndef _OP_PACKETIO_DPDK_TX_QUEUE_H_
+#define _OP_PACKETIO_DPDK_TX_QUEUE_H_
 
 #include <atomic>
 #include <memory>
@@ -9,7 +9,7 @@
 struct rte_ring;
 extern void rte_ring_free(rte_ring*);
 
-namespace icp::packetio::dpdk {
+namespace openperf::packetio::dpdk {
 
 class tx_queue : public pollable_event<tx_queue> {
     struct rte_ring_deleter {
@@ -62,4 +62,4 @@ public:
 
 }
 
-#endif /* _ICP_PACKETIO_DPDK_TX_QUEUE_H_ */
+#endif /* _OP_PACKETIO_DPDK_TX_QUEUE_H_ */

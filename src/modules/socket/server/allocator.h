@@ -1,17 +1,17 @@
-#ifndef _ICP_SOCKET_SERVER_ALLOCATOR_H_
-#define _ICP_SOCKET_SERVER_ALLOCATOR_H_
+#ifndef _OP_SOCKET_SERVER_ALLOCATOR_H_
+#define _OP_SOCKET_SERVER_ALLOCATOR_H_
 
 #include "memory/std_allocator.h"
 #include "memory/allocator/free_list.h"
 
-namespace icp {
+namespace openperf {
 namespace socket {
 namespace server {
 
-typedef icp::memory::std_allocator<uint8_t, icp::memory::allocator::free_list> allocator;
+typedef openperf::memory::std_allocator<uint8_t, openperf::memory::allocator::free_list> allocator;
 
 }
 }
 }
 
-#endif /* _ICP_SOCKET_SERVER_ALLOCATOR_H_ */
+#endif /* _OP_SOCKET_SERVER_ALLOCATOR_H_ */

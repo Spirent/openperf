@@ -1,5 +1,5 @@
-#ifndef _ICP_PACKETIO_INTERNAL_API_H_
-#define _ICP_PACKETIO_INTERNAL_API_H_
+#ifndef _OP_PACKETIO_INTERNAL_API_H_
+#define _OP_PACKETIO_INTERNAL_API_H_
 
 #include <optional>
 #include <string>
@@ -12,7 +12,7 @@
 #include "packetio/generic_source.h"
 #include "packetio/generic_workers.h"
 
-namespace icp::packetio::internal::api {
+namespace openperf::packetio::internal::api {
 
 constexpr size_t name_length_max = 64;
 
@@ -114,4 +114,4 @@ tl::expected<serialized_msg, int> recv_message(void* socket, int flags = 0);
 
 }
 
-#endif /* _ICP_PACKETIO_INTERNAL_API_H_ */
+#endif /* _OP_PACKETIO_INTERNAL_API_H_ */

@@ -1,6 +1,6 @@
 
-#ifndef _ICP_SOCKET_API_SERVER_OPTIONS_H_
-#define _ICP_SOCKET_API_SERVER_OPTIONS_H_
+#ifndef _OP_SOCKET_API_SERVER_OPTIONS_H_
+#define _OP_SOCKET_API_SERVER_OPTIONS_H_
 
 #ifdef __cplusplus
 extern "C" {

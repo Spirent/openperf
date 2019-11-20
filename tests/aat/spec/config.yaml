@@ -1,32 +1,32 @@
 ---
 services:
   default:
-    # NOTE: --force-unlink will NOT verify if another copy of inception is running.
+    # NOTE: --force-unlink will NOT verify if another copy of openperf is running.
     # FIXME: Remove --force-unlink. This is a hacky, temporary workaround for reliability.
-    command: '../../build/inception-linux-x86_64-testing/bin/inception --modules.packetio.dpdk.test-mode --core.log.level debug --modules.socket.force-unlink --modules.packetio.dpdk.options="-m256m,--no-huge" --modules.packetio.dpdk.port-ids="port0=0, port1=1" -p 9000 >> inception.log 2>&1'
+    command: '../../build/openperf-linux-x86_64-testing/bin/openperf --modules.packetio.dpdk.test-mode --core.log.level debug --modules.socket.force-unlink --modules.packetio.dpdk.options="-m256m,--no-huge" --modules.packetio.dpdk.port-ids="port0=0, port1=1" -p 9000 >> openperf.log 2>&1'
     base_url: http://127.0.0.1:9000
     init_url: http://127.0.0.1:9000/version
     init_timeout: 15s
 
   #Test config file support.
   config-file:
-    # NOTE: --force-unlink will NOT verify if another copy of inception is running.
+    # NOTE: --force-unlink will NOT verify if another copy of openperf is running.
     # FIXME: Remove --force-unlink. This is a hacky, temporary workaround for reliability.
-    command: '../../build/inception-linux-x86_64-testing/bin/inception -c spec/test_config_file.yaml >> inception.log 2>&1'
+    command: '../../build/openperf-linux-x86_64-testing/bin/openperf -c spec/test_config_file.yaml >> openperf.log 2>&1'
     base_url: http://127.0.0.1:9000
     init_url: http://127.0.0.1:9000/interfaces/interface-two
     init_timeout: 15s
 
   #Test dataplane support (requires config file).
   dataplane:
-    # NOTE: --force-unlink will NOT verify if another copy of inception is running.
+    # NOTE: --force-unlink will NOT verify if another copy of openperf is running.
     # FIXME: Remove --force-unlink. This is a hacky, temporary workaround for reliability.
-    command: '../../build/inception-linux-x86_64-testing/bin/inception -c spec/test_dataplane.yaml >> inception.log 2>&1'
+    command: '../../build/openperf-linux-x86_64-testing/bin/openperf -c spec/test_dataplane.yaml >> openperf.log 2>&1'
     base_url: http://127.0.0.1:9000
     init_url: http://127.0.0.1:9000/interfaces/dataplane-server
     init_timeout: 15s
 
 shims:
   default:
-    path: '../../build/libicp-shim-linux-x86_64-testing/lib/libicp-shim.so'
+    path: '../../build/libopenperf-shim-linux-x86_64-testing/lib/libopenperf-shim.so'
     trace: 0

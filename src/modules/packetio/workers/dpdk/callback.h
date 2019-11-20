@@ -1,12 +1,12 @@
-#ifndef _ICP_PACKETIO_DPDK_CALLBACK_H_
-#define _ICP_PACKETIO_DPDK_CALLBACK_H_
+#ifndef _OP_PACKETIO_DPDK_CALLBACK_H_
+#define _OP_PACKETIO_DPDK_CALLBACK_H_
 
 #include <string>
 
 #include "packetio/generic_event_loop.h"
 #include "packetio/workers/dpdk/pollable_event.tcc"
 
-namespace icp::packetio::dpdk {
+namespace openperf::packetio::dpdk {
 
 class callback : public pollable_event<callback>
 {
@@ -33,4 +33,4 @@ public:
 
 }
 
-#endif /* _ICP_PACKETIO_DPDK_CALLBACK_H_ */
+#endif /* _OP_PACKETIO_DPDK_CALLBACK_H_ */

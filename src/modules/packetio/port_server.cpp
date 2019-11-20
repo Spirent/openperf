@@ -4,24 +4,24 @@
 
 #include "zmq.h"
 
-#include "core/icp_core.h"
-#include "core/icp_uuid.h"
-#include "config/icp_config_utils.h"
+#include "core/op_core.h"
+#include "core/op_uuid.h"
+#include "config/op_config_utils.h"
 #include "swagger/v1/model/Port.h"
 #include "packetio/json_transmogrify.h"
 #include "packetio/port_api.h"
 #include "packetio/port_server.h"
 
-namespace icp {
+namespace openperf {
 namespace packetio {
 namespace port {
 namespace api {
 
-const std::string endpoint = "inproc://icp_packetio_port";
+const std::string endpoint = "inproc://op_packetio_port";
 
 using namespace swagger::v1::model;
 using json = nlohmann::json;
-using generic_driver = icp::packetio::driver::generic_driver;
+using generic_driver = openperf::packetio::driver::generic_driver;
 
 std::string to_string(request_type type)
 {
@@ -83,7 +83,7 @@ static void _handle_create_port_request(generic_driver& driver, json& request, j
     try {
         auto port_model = json::parse(request["data"].get<std::string>()).get<Port>();
 
-        auto id_check = config::icp_config_validate_id_string(port_model.getId());
+        auto id_check = config::op_config_validate_id_string(port_model.getId());
         if (!id_check) {
             throw std::runtime_error(id_check.error().c_str());
         }
@@ -155,7 +155,7 @@ static void _handle_delete_port_request(generic_driver& driver, json& request, j
     }
 }
 
-static int _handle_rpc_request(const icp_event_data *data, void *arg)
+static int _handle_rpc_request(const op_event_data *data, void *arg)
 {
     generic_driver& driver = *(reinterpret_cast<generic_driver *>(arg));
     int recv_or_err = 0;
@@ -176,12 +176,12 @@ static int _handle_rpc_request(const icp_event_data *data, void *arg)
         case request_type::GET_PORT:
         case request_type::UPDATE_PORT:
         case request_type::DELETE_PORT:
-            ICP_LOG(ICP_LOG_TRACE, "Received %s request for port %s\n",
+            OP_LOG(OP_LOG_TRACE, "Received %s request for port %s\n",
                     to_string(type).c_str(),
                     request["id"].get<std::string>().c_str());
             break;
         default:
-            ICP_LOG(ICP_LOG_TRACE, "Received %s request\n", to_string(type).c_str());
+            OP_LOG(OP_LOG_TRACE, "Received %s request\n", to_string(type).c_str());
         }
 
         switch (type) {
@@ -208,9 +208,9 @@ static int _handle_rpc_request(const icp_event_data *data, void *arg)
         std::vector<uint8_t> reply_buffer = json::to_cbor(reply);
         if ((send_or_err = zmq_send(data->socket, reply_buffer.data(), reply_buffer.size(), 0))
             != static_cast<int>(reply_buffer.size())) {
-            ICP_LOG(ICP_LOG_ERROR, "Request reply failed: %s\n", zmq_strerror(errno));
+            OP_LOG(OP_LOG_ERROR, "Request reply failed: %s\n", zmq_strerror(errno));
         } else {
-            ICP_LOG(ICP_LOG_TRACE, "Sent %s reply to %s request\n",
+            OP_LOG(OP_LOG_TRACE, "Sent %s reply to %s request\n",
                     to_string(reply["code"].get<reply_code>()).c_str(),
                     to_string(type).c_str());
         }
@@ -222,11 +222,11 @@ static int _handle_rpc_request(const icp_event_data *data, void *arg)
 }
 
 server::server(void* context,
-               icp::core::event_loop& loop,
+               openperf::core::event_loop& loop,
                generic_driver& driver)
-    : m_socket(icp_socket_get_server(context, ZMQ_REP, endpoint.c_str()))
+    : m_socket(op_socket_get_server(context, ZMQ_REP, endpoint.c_str()))
 {
-    struct icp_event_callbacks callbacks = {
+    struct op_event_callbacks callbacks = {
         .on_read = _handle_rpc_request
     };
     loop.add(m_socket.get(), &callbacks, &driver);

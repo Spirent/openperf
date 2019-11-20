@@ -29,15 +29,15 @@ static void _handle_bulk_create_interface_request(generic_stack& stack, json& re
 }
 ```
 
-The `stack` is created by the packet IO module, and is implemented as a `icp::packetio::dpdk::lwip` with driver defined as `icp::packetio::dpdk::eal::real_environment`.
+The `stack` is created by the packet IO module, and is implemented as a `openperf::packetio::dpdk::lwip` with driver defined as `openperf::packetio::dpdk::eal::real_environment`.
 
-> Note: the actual object is icp::packet::dpdk::eal. The real_environment is just a named constructor function. There is also a test_envionrment constructor which is used to run the AAT's and sets up virtual NICs for testing.
+> Note: the actual object is openperf::packet::dpdk::eal. The real_environment is just a named constructor function. There is also a test_envionrment constructor which is used to run the AAT's and sets up virtual NICs for testing.
 
 ```C++
 std::unique_ptr<generic_stack> make(driver::generic_driver& driver,
                                     workers::generic_workers& workers)
 {
-    return std::make_unique<generic_stack>(icp::packetio::dpdk::lwip(driver, workers));
+    return std::make_unique<generic_stack>(openperf::packetio::dpdk::lwip(driver, workers));
 }
 ```
 
@@ -200,13 +200,13 @@ err_t queueing::handle_rx_notify(netif* netintf)
 }
 ```
 
-What is interresting to note is that the `tcpip_inpkt` implementation is overriden. In the original implementation, `tcpip_inpkt` accesses the TCPIP _mbox_ as a global variable `static sys_mbox_t tcpip_mbox;`. For Incpetion, it uses the in-function declaration `auto tcpip_mbox = icp::packetio::tcpip::mbox();` 
+What is interresting to note is that the `tcpip_inpkt` implementation is overriden. In the original implementation, `tcpip_inpkt` accesses the TCPIP _mbox_ as a global variable `static sys_mbox_t tcpip_mbox;`. For Incpetion, it uses the in-function declaration `auto tcpip_mbox = openperf::packetio::tcpip::mbox();` 
 
 
 ```C++
-sys_mbox_t icp::packetio::tcpip::mbox()
+sys_mbox_t openperf::packetio::tcpip::mbox()
 {
-    return (icp::packetio::dpdk::tcpip_mbox::instance().get());
+    return (openperf::packetio::dpdk::tcpip_mbox::instance().get());
 }
 ```
 
@@ -378,7 +378,7 @@ Two pools are created - one for ROM/REF (most likely not used) - and the other f
 static rte_mempool* create_pbuf_mempool(const char* name, size_t size,
                                         bool cached, bool direct, int socket_id)
 {
-    size_t nb_mbufs = icp_min(131072, pool_size_adjust(icp_max(1024U, size)));
+    size_t nb_mbufs = op_min(131072, pool_size_adjust(op_max(1024U, size)));
 
     rte_mempool* mp = rte_pktmbuf_pool_create_by_ops(
         name,

@@ -9,7 +9,7 @@
 #include "swagger/v1/model/Interface.h"
 #include "packetio/generic_interface.h"
 
-namespace icp {
+namespace openperf {
 namespace packetio {
 namespace interface {
 

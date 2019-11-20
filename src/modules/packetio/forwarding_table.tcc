@@ -3,7 +3,7 @@
 
 #include "packetio/forwarding_table.h"
 
-namespace icp::packetio {
+namespace openperf::packetio {
 
 template <typename Interface>
 std::string get_interface_id(Interface* ifp);

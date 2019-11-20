@@ -2,7 +2,7 @@
 
 #include "api/api_route_handler.h"
 
-namespace icp {
+namespace openperf {
 namespace api {
 
 using namespace Pistache;
@@ -40,7 +40,7 @@ Rest::Route::Result version(const Rest::Request& request __attribute__((unused))
     return (Rest::Route::Result::Ok);
 }
 
-class handler : public icp::api::route::handler::registrar<handler> {
+class handler : public openperf::api::route::handler::registrar<handler> {
 public:
     handler(void *context, Rest::Router& router);
 };

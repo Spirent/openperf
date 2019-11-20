@@ -1,5 +1,5 @@
-#ifndef _ICP_SOCKET_SERVER_DGRAM_CHANNEL_H_
-#define _ICP_SOCKET_SERVER_DGRAM_CHANNEL_H_
+#ifndef _OP_SOCKET_SERVER_DGRAM_CHANNEL_H_
+#define _OP_SOCKET_SERVER_DGRAM_CHANNEL_H_
 
 #include <array>
 #include <memory>
@@ -13,7 +13,7 @@
 
 struct pbuf;
 
-namespace icp::socket::server {
+namespace openperf::socket::server {
 
 class dgram_channel : public circular_buffer_consumer<dgram_channel>
                     , public circular_buffer_producer<dgram_channel>
@@ -57,7 +57,7 @@ protected:
     const std::atomic_uint64_t& ack_write_idx() const;
 
 public:
-    dgram_channel(int socket_flags, icp::socket::server::allocator& allocator);
+    dgram_channel(int socket_flags, openperf::socket::server::allocator& allocator);
     ~dgram_channel();
 
     dgram_channel(const dgram_channel&) = delete;
@@ -80,10 +80,10 @@ public:
 };
 
 struct dgram_channel_deleter {
-    icp::socket::server::allocator* allocator_;
-    void operator()(icp::socket::server::dgram_channel *channel) {
-        auto allocator = reinterpret_cast<icp::socket::server::allocator*>(
-            reinterpret_cast<icp::socket::dgram_channel*>(channel)->allocator);
+    openperf::socket::server::allocator* allocator_;
+    void operator()(openperf::socket::server::dgram_channel *channel) {
+        auto allocator = reinterpret_cast<openperf::socket::server::allocator*>(
+            reinterpret_cast<openperf::socket::dgram_channel*>(channel)->allocator);
         channel->~dgram_channel();
         allocator->deallocate(reinterpret_cast<uint8_t*>(channel),
                               sizeof(*channel));
@@ -94,4 +94,4 @@ typedef std::unique_ptr<dgram_channel, dgram_channel_deleter> dgram_channel_ptr;
 
 }
 
-#endif /* _ICP_SOCKET_SERVER_DGRAM_CHANNEL_H_ */
+#endif /* _OP_SOCKET_SERVER_DGRAM_CHANNEL_H_ */

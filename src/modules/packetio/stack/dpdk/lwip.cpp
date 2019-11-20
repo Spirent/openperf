@@ -5,7 +5,7 @@
 #include "lwip/init.h"
 #include "lwip/tcpip.h"
 
-#include "core/icp_core.h"
+#include "core/op_core.h"
 #include "packetio/drivers/dpdk/dpdk.h"
 #include "packetio/drivers/dpdk/topology_utils.h"
 #include "packetio/memory/dpdk/memp.h"
@@ -14,7 +14,7 @@
 #include "packetio/stack/netif_wrapper.h"
 #include "packetio/stack/tcpip.h"
 
-namespace icp::packetio::dpdk {
+namespace openperf::packetio::dpdk {
 
 #define STRING_VIEW_TO_C_STR(sv) static_cast<int>(sv.length()), sv.data()
 
@@ -25,7 +25,7 @@ static netif_wrapper make_netif_wrapper(const std::unique_ptr<net_interface>& if
 
 static void tcpip_init_done(void*)
 {
-    ICP_LOG(ICP_LOG_DEBUG, "TCP/IP thread running on logical core %u (NUMA node %u)\n",
+    OP_LOG(OP_LOG_DEBUG, "TCP/IP thread running on logical core %u (NUMA node %u)\n",
             rte_lcore_id(), rte_socket_id());
 }
 
@@ -43,7 +43,7 @@ static int handle_tcpip_timeout(event_loop::generic_event_loop& loop __attribute
 
     uint64_t count;
     if (read(timer_fd, &count, sizeof(count)) == -1) {
-        ICP_LOG(ICP_LOG_WARNING, "Spurious stack thread timeout\n");
+        OP_LOG(OP_LOG_WARNING, "Spurious stack thread timeout\n");
         return (0);
     }
 
@@ -258,7 +258,7 @@ tl::expected<std::string, std::string> lwip::create_interface(const interface::c
         auto item = m_interfaces.emplace(config.id, std::move(ifp));
         return (item.first->first);
     } catch (const std::runtime_error &e) {
-        ICP_LOG(ICP_LOG_ERROR, "Interface creation failed: %s\n", e.what());
+        OP_LOG(OP_LOG_ERROR, "Interface creation failed: %s\n", e.what());
         return (tl::make_unexpected(e.what()));
     }
 }

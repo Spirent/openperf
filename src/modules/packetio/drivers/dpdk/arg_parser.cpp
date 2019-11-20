@@ -1,18 +1,18 @@
 #include <unordered_map>
 #include <regex>
 
-#include "core/icp_core.h"
-#include "config/icp_config_file.h"
+#include "core/op_core.h"
+#include "config/op_config_file.h"
 #include "packetio/drivers/dpdk/arg_parser.h"
 #include "socket/server/api_server_options.h"
 
 #include <iostream>
 
-namespace icp::packetio::dpdk::config {
+namespace openperf::packetio::dpdk::config {
 
-using namespace icp::config;
+using namespace openperf::config;
 
-static constexpr std::string_view program_name = "icp_eal";
+static constexpr std::string_view program_name = "op_eal";
 
 /* Check if the 'log-level' argument has been added to the arguments vector */
 static bool have_log_level_arg(std::vector<std::string> &args)
@@ -25,17 +25,17 @@ static bool have_log_level_arg(std::vector<std::string> &args)
     return (false);
 }
 
-static void add_log_level_arg(enum icp_log_level level, std::vector<std::string>& args)
+static void add_log_level_arg(enum op_log_level level, std::vector<std::string>& args)
 {
-    /* Map ICP log levels to DPDK log levels */
-    static std::unordered_map<enum icp_log_level, std::string> log_level_map = {
-        {ICP_LOG_NONE,     "0"},  /* RTE_LOG_EMERG */
-        {ICP_LOG_CRITICAL, "1"},  /* RTE_LOG_ERERG */
-        {ICP_LOG_ERROR,    "2"},  /* RTE_LOG_ALERT */
-        {ICP_LOG_WARNING,  "3"},  /* RTE_LOG_CRIT */
-        {ICP_LOG_INFO,     "4"},  /* RTE_LOG_ERR */
-        {ICP_LOG_DEBUG,    "7"},  /* RTE_LOG_INFO */
-        {ICP_LOG_TRACE,    "8"}   /* RTE_LOG_DEBUG */
+    /* Map OP log levels to DPDK log levels */
+    static std::unordered_map<enum op_log_level, std::string> log_level_map = {
+        {OP_LOG_NONE,     "0"},  /* RTE_LOG_EMERG */
+        {OP_LOG_CRITICAL, "1"},  /* RTE_LOG_ERERG */
+        {OP_LOG_ERROR,    "2"},  /* RTE_LOG_ALERT */
+        {OP_LOG_WARNING,  "3"},  /* RTE_LOG_CRIT */
+        {OP_LOG_INFO,     "4"},  /* RTE_LOG_ERR */
+        {OP_LOG_DEBUG,    "7"},  /* RTE_LOG_INFO */
+        {OP_LOG_TRACE,    "8"}   /* RTE_LOG_DEBUG */
     };
 
     args.push_back("--log-level");
@@ -133,14 +133,14 @@ static int process_dpdk_port_ids(const std::map<std::string, std::string> &input
 
 int dpdk_test_portpairs()
 {
-    auto result = config::file::icp_config_get_param<ICP_OPTION_TYPE_LONG>("modules.packetio.dpdk.test-portpairs");
+    auto result = config::file::op_config_get_param<OP_OPTION_TYPE_LONG>("modules.packetio.dpdk.test-portpairs");
 
     return (result.value_or(dpdk_test_mode() ? 1 : 0));
 }
 
 bool dpdk_test_mode()
 {
-    auto result = config::file::icp_config_get_param<ICP_OPTION_TYPE_NONE>("modules.packetio.dpdk.test-mode");
+    auto result = config::file::op_config_get_param<OP_OPTION_TYPE_NONE>("modules.packetio.dpdk.test-mode");
 
     return (result.value_or(false));
 }
@@ -167,7 +167,7 @@ std::vector<std::string> dpdk_args()
     std::vector<std::string> to_return {std::string(program_name)};
 
     // Get the list from the framework.
-    auto arg_list = config::file::icp_config_get_param<ICP_OPTION_TYPE_LIST>("modules.packetio.dpdk.options");
+    auto arg_list = config::file::op_config_get_param<OP_OPTION_TYPE_LIST>("modules.packetio.dpdk.options");
     if (!arg_list) { return (to_return); }
 
     // Walk through it and rebuild the arguments DPDK expects
@@ -177,7 +177,7 @@ std::vector<std::string> dpdk_args()
 
     /* Append a log level option if needed */
     if (!have_log_level_arg(to_return)) {
-        add_log_level_arg(icp_log_level_get(), to_return);
+        add_log_level_arg(op_log_level_get(), to_return);
     }
     if (!have_file_prefix_arg(to_return)) {
         if (auto prefix = api_server_options_prefix_option_get(); prefix != nullptr
@@ -194,7 +194,7 @@ std::vector<std::string> dpdk_args()
 
 std::unordered_map<int, std::string> dpdk_id_map()
 {
-    auto src_map = config::file::icp_config_get_param<ICP_OPTION_TYPE_MAP>("modules.packetio.dpdk.port-ids");
+    auto src_map = config::file::op_config_get_param<OP_OPTION_TYPE_MAP>("modules.packetio.dpdk.port-ids");
 
     std::unordered_map<int, std::string> to_return;
 
@@ -207,4 +207,4 @@ std::unordered_map<int, std::string> dpdk_id_map()
     return (to_return);
 }
 
-}  /* namespace icp::packetio::dpdk::config */
+}  /* namespace openperf::packetio::dpdk::config */

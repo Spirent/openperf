@@ -1,5 +1,5 @@
-#ifndef _ICP_SOCKET_SERVER_TCP_SOCKET_H_
-#define _ICP_SOCKET_SERVER_TCP_SOCKET_H_
+#ifndef _OP_SOCKET_SERVER_TCP_SOCKET_H_
+#define _OP_SOCKET_SERVER_TCP_SOCKET_H_
 
 #include <cerrno>
 #include <list>
@@ -14,7 +14,7 @@
 struct pbuf;
 struct tcp_pcb;
 
-namespace icp {
+namespace openperf {
 namespace socket {
 namespace server {
 
@@ -51,12 +51,12 @@ class tcp_socket : public socket_state_machine<tcp_socket, tcp_socket_state>
     std::queue<tcp_pcb*, std::list<tcp_pcb*>> m_acceptq;
     pbuf_queue m_recvq;
 
-    icp::socket::server::allocator* channel_allocator();
+    openperf::socket::server::allocator* channel_allocator();
 
-    tcp_socket(icp::socket::server::allocator* allocator, int flags, tcp_pcb* pcb);
+    tcp_socket(openperf::socket::server::allocator* allocator, int flags, tcp_pcb* pcb);
 
 public:
-    tcp_socket(icp::socket::server::allocator& allocator, int flags);
+    tcp_socket(openperf::socket::server::allocator& allocator, int flags);
     ~tcp_socket();
 
     tcp_socket(const tcp_socket&) = delete;
@@ -176,4 +176,4 @@ const char * to_string(const tcp_socket_state&);
 }
 }
 
-#endif /* _ICP_SOCKET_SERVER_TCP_SOCKET_H_ */
+#endif /* _OP_SOCKET_SERVER_TCP_SOCKET_H_ */

@@ -1,10 +1,10 @@
-#ifndef _ICP_PACKETIO_GENERIC_SINK_H_
-#define _ICP_PACKETIO_GENERIC_SINK_H_
+#ifndef _OP_PACKETIO_GENERIC_SINK_H_
+#define _OP_PACKETIO_GENERIC_SINK_H_
 
 #include <memory>
 #include <string>
 
-namespace icp::packetio::packets {
+namespace openperf::packetio::packets {
 
 struct packet_buffer;
 
@@ -61,4 +61,4 @@ private:
 
 }
 
-#endif /* _ICP_PACKETIO_GENERIC_SINK_H_ */
+#endif /* _OP_PACKETIO_GENERIC_SINK_H_ */

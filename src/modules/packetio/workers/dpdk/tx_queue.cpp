@@ -10,9 +10,9 @@
 
 #include "packetio/drivers/dpdk/model/physical_port.h"
 #include "packetio/workers/dpdk/tx_queue.h"
-#include "core/icp_log.h"
+#include "core/op_log.h"
 
-namespace icp::packetio::dpdk {
+namespace openperf::packetio::dpdk {
 
 static std::string get_ring_name(uint16_t port_id, uint16_t queue_id)
 {
@@ -80,7 +80,7 @@ bool tx_queue::notify()
         m_data.write_idx.fetch_add(1, std::memory_order_release);
         if (auto error = eventfd_write(event_fd(), 1U); error != 0) {
             m_data.write_idx.fetch_sub(1, std::memory_order_release);
-            ICP_LOG(ICP_LOG_ERROR, "Could not generate notification for tx "
+            OP_LOG(OP_LOG_ERROR, "Could not generate notification for tx "
                     "queue %u:%u on fd %d: %s\n", port_id(), queue_id(),
                     event_fd(), strerror(errno));
             return (false);
@@ -113,7 +113,7 @@ uint16_t tx_queue::enqueue(rte_mbuf* const mbufs[], uint16_t nb_mbufs)
                                          reinterpret_cast<void* const*>(mbufs),
                                          nb_mbufs, nullptr);
     if (!queued) {
-        ICP_LOG(ICP_LOG_WARNING, "tx queue %u:%u full\n", port_id(), queue_id());
+        OP_LOG(OP_LOG_WARNING, "tx queue %u:%u full\n", port_id(), queue_id());
         return (0);
     };
 

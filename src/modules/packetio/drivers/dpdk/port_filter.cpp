@@ -1,7 +1,7 @@
 #include "packetio/drivers/dpdk/dpdk.h"
 #include "packetio/drivers/dpdk/port_filter.h"
 
-namespace icp::packetio::dpdk::port {
+namespace openperf::packetio::dpdk::port {
 
 template<typename ...Ts>
 struct overloaded_visitor : Ts...
@@ -27,11 +27,11 @@ static filter::filter_strategy make_filter(uint16_t port_id)
 {
     auto flow_error = rte_flow_error{};
     if (rte_flow_isolate(port_id, 1, &flow_error) == 0) {
-        ICP_LOG(ICP_LOG_DEBUG, "Using flow filter for port %u\n", port_id);
+        OP_LOG(OP_LOG_DEBUG, "Using flow filter for port %u\n", port_id);
         return (flow_filter(port_id));
     }
 
-    ICP_LOG(ICP_LOG_DEBUG, "Using mac filter for port %u\n", port_id);
+    OP_LOG(OP_LOG_DEBUG, "Using mac filter for port %u\n", port_id);
     return (mac_filter(port_id));
 }
 

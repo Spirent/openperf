@@ -2,7 +2,7 @@
 
 #include "socket/server/tcp_socket.h"
 #include "lwip/tcp.h"
-#include "core/icp_log.h"
+#include "core/op_log.h"
 
 static const char* to_string(enum lwip_event event)
 {
@@ -34,10 +34,10 @@ err_t lwip_tcp_event(void *arg, struct tcp_pcb *pcb, enum lwip_event event,
         return (ERR_RST);
     }
 
-    using tcp_socket = icp::socket::server::tcp_socket;
+    using tcp_socket = openperf::socket::server::tcp_socket;
     auto socket = reinterpret_cast<tcp_socket*>(arg);
 
-    ICP_LOG(ICP_LOG_TRACE, "Received tcp %s event: socket = %p, pcb = %p, "
+    OP_LOG(OP_LOG_TRACE, "Received tcp %s event: socket = %p, pcb = %p, "
             "pbuf = %p, size = %u, err = %d\n",
             to_string(event), (void*)socket, (void*)pcb, (void*)p, size, err);
 
@@ -55,7 +55,7 @@ err_t lwip_tcp_event(void *arg, struct tcp_pcb *pcb, enum lwip_event event,
     case LWIP_EVENT_ERR:
         return (socket->do_lwip_error(err));
     default:
-        ICP_LOG(ICP_LOG_WARNING, "Unhandled tcp socket event: %d\n", event);
+        OP_LOG(OP_LOG_WARNING, "Unhandled tcp socket event: %d\n", event);
         return (ERR_VAL);
     }
 }

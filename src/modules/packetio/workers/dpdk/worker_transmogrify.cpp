@@ -5,7 +5,7 @@
 #include "packetio/message_utils.h"
 #include "packetio/workers/dpdk/worker_api.h"
 
-namespace icp::packetio::dpdk::worker {
+namespace openperf::packetio::dpdk::worker {
 
 struct serialized_msg {
     zmq_msg_t type;

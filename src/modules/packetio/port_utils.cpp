@@ -6,7 +6,7 @@
 #include "swagger/v1/model/Port.h"
 #include "packetio/generic_port.h"
 
-namespace icp {
+namespace openperf {
 namespace packetio {
 namespace port {
 

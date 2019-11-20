@@ -1,18 +1,18 @@
-#ifndef _ICP_PACKETIO_DPDK_PORT_FILTER_H_
-#define _ICP_PACKETIO_DPDK_PORT_FILTER_H_
+#ifndef _OP_PACKETIO_DPDK_PORT_FILTER_H_
+#define _OP_PACKETIO_DPDK_PORT_FILTER_H_
 
 #include <optional>
 #include <variant>
 #include <vector>
 #include <unordered_map>
 
-#include "core/icp_log.h"
+#include "core/op_log.h"
 #include "net/net_types.h"
 #include "packetio/generic_interface.h"
 
 struct rte_flow;
 
-namespace icp::packetio::dpdk::port {
+namespace openperf::packetio::dpdk::port {
 
 /**
  * Filter states
@@ -61,7 +61,7 @@ public:
             }, event, m_state);
 
         if (next_state) {
-            ICP_LOG(ICP_LOG_TRACE, "Port Filter %u: %s --> %s\n",
+            OP_LOG(OP_LOG_TRACE, "Port Filter %u: %s --> %s\n",
                     reinterpret_cast<Derived&>(*this).port_id(),
                     to_string(m_state).data(),
                     to_string(*next_state).data());
@@ -162,4 +162,4 @@ const char * to_string(const filter_state&);
 
 }
 
-#endif /* _ICP_PACKETIO_DPDK_PORT_FILTER_H_ */
+#endif /* _OP_PACKETIO_DPDK_PORT_FILTER_H_ */

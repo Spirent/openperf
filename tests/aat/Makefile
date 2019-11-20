@@ -3,7 +3,7 @@ API_SUBDIR		= api/v1
 ENV_SUBDIR		= env
 ENV_REQUIREMENTS	= requirements.txt
 SPEC_SUBDIRS		= spec
-LOG_FILE		    = inception.log
+LOG_FILE		    = openperf.log
 
 .PHONY: all setup clean
 

@@ -1,5 +1,5 @@
-#ifndef _ICP_PACKETIO_MEMORY_DPDK_PACKET_POOL_H_
-#define _ICP_PACKETIO_MEMORY_DPDK_PACKET_POOL_H_
+#ifndef _OP_PACKETIO_MEMORY_DPDK_PACKET_POOL_H_
+#define _OP_PACKETIO_MEMORY_DPDK_PACKET_POOL_H_
 
 #include <cassert>
 #include <memory>
@@ -9,7 +9,7 @@
 
 struct rte_mempool;
 
-namespace icp::packetio {
+namespace openperf::packetio {
 namespace packets {
 struct packet_buffer;
 }
@@ -36,4 +36,4 @@ public:
 }
 }
 
-#endif /* _ICP_PACKETIO_MEMORY_DPDK_PACKET_POOL_H_ */
+#endif /* _OP_PACKETIO_MEMORY_DPDK_PACKET_POOL_H_ */

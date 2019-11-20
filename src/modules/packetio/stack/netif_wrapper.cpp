@@ -3,7 +3,7 @@
 
 #include "packetio/stack/netif_wrapper.h"
 
-namespace icp::packetio {
+namespace openperf::packetio {
 
 netif_wrapper::netif_wrapper(std::string_view id, const netif* ifp,
                              const interface::config_data& config)

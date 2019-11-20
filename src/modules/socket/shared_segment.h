@@ -1,9 +1,9 @@
-#ifndef _ICP_MEMORY_SHARED_SEGMENT_H_
-#define _ICP_MEMORY_SHARED_SEGMENT_H_
+#ifndef _OP_MEMORY_SHARED_SEGMENT_H_
+#define _OP_MEMORY_SHARED_SEGMENT_H_
 
 #include <string>
 
-namespace icp {
+namespace openperf {
 namespace memory {
 
 class shared_segment
@@ -31,4 +31,4 @@ public:
 }
 }
 
-#endif /* _ICP_MEMORY_SHARED_SEGMENT_H_ */
+#endif /* _OP_MEMORY_SHARED_SEGMENT_H_ */

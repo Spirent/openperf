@@ -1,5 +1,5 @@
-#ifndef _ICP_PACKETIO_INTERNAL_WORKER_H_
-#define _ICP_PACKETIO_INTERNAL_WORKER_H_
+#ifndef _OP_PACKETIO_INTERNAL_WORKER_H_
+#define _OP_PACKETIO_INTERNAL_WORKER_H_
 
 /**
  * @file
@@ -11,7 +11,7 @@
  * Calling these functions *outside* of a worker thread context is an error.
  */
 
-namespace icp::packetio::internal::worker {
+namespace openperf::packetio::internal::worker {
 
 /**
  * Retrieve the worker thread id
@@ -31,4 +31,4 @@ unsigned get_numa_node();
 
 }
 
-#endif /* _ICP_PACKETIO_INTERNAL_WORKER_H_ */
+#endif /* _OP_PACKETIO_INTERNAL_WORKER_H_ */

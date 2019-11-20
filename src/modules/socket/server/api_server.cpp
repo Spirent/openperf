@@ -20,13 +20,13 @@
 #include "socket/stream_channel.h"
 #include "socket/server/api_handler.h"
 #include "socket/server/api_server.h"
-#include "core/icp_core.h"
-#include "core/icp_uuid.h"
-#include "icp_config_file.h"
+#include "core/op_core.h"
+#include "core/op_uuid.h"
+#include "op_config_file.h"
 
-namespace icp::socket::api {
+namespace openperf::socket::api {
 
-using api_handler = icp::socket::server::api_handler;
+using api_handler = openperf::socket::server::api_handler;
 
 static constexpr std::string_view shm_file_prefix = "/dev/shm/";
 
@@ -36,18 +36,18 @@ static __attribute__((const)) uint64_t align_up(uint64_t x, uint64_t align)
 }
 
 bool unlink_stale_files() {
-    auto result = config::file::icp_config_get_param<ICP_OPTION_TYPE_NONE>("modules.socket.force-unlink");
+    auto result = config::file::op_config_get_param<OP_OPTION_TYPE_NONE>("modules.socket.force-unlink");
 
     return (result.value_or(false));
 }
 
 std::string prefix_option() {
-    auto result = config::file::icp_config_get_param<ICP_OPTION_TYPE_STRING>("modules.socket.prefix");
+    auto result = config::file::op_config_get_param<OP_OPTION_TYPE_STRING>("modules.socket.prefix");
 
     return (result.value_or(std::string()));
 }
 
-static icp::memory::shared_segment create_shared_memory(size_t size)
+static openperf::memory::shared_segment create_shared_memory(size_t size)
 {
     auto prefix_name = prefix_option();
 
@@ -56,7 +56,7 @@ static icp::memory::shared_segment create_shared_memory(size_t size)
                                 : std::string(api::key) + ".memory");
     if (access((std::string(shm_file_prefix) + shared_segment_name).c_str(), F_OK) != -1
         && unlink_stale_files()) {
-        ICP_LOG(ICP_LOG_DEBUG, "Unlinking stale shared memory at: %s", shared_segment_name.c_str());
+        OP_LOG(OP_LOG_DEBUG, "Unlinking stale shared memory at: %s", shared_segment_name.c_str());
         if (shm_unlink(shared_segment_name.data()) < 0) {
             throw std::runtime_error("Could not remove shared memory segment "
                                      + std::string(shared_segment_name) + ": " + strerror(errno));
@@ -64,7 +64,7 @@ static icp::memory::shared_segment create_shared_memory(size_t size)
     }
 
     auto impl_size = align_up(sizeof(socket::server::allocator), 64);
-    auto segment = icp::memory::shared_segment(shared_segment_name.data(),
+    auto segment = openperf::memory::shared_segment(shared_segment_name.data(),
                                                size, true);
 
     /* Construct our allocator in our shared memory segment */
@@ -72,7 +72,7 @@ static icp::memory::shared_segment create_shared_memory(size_t size)
         reinterpret_cast<uintptr_t>(segment.base()) + impl_size,
         size - impl_size);
 
-    ICP_LOG(ICP_LOG_DEBUG, "Created shared memory at: %s, with size %lu", shared_segment_name.c_str(), size);
+    OP_LOG(OP_LOG_DEBUG, "Created shared memory at: %s, with size %lu", shared_segment_name.c_str(), size);
 
     return (segment);
 }
@@ -82,7 +82,7 @@ socket::server::allocator* server::allocator() const
     return (reinterpret_cast<socket::server::allocator*>(m_shm.base()));
 }
 
-static icp::socket::unix_socket create_unix_socket(const std::string_view path, int type)
+static openperf::socket::unix_socket create_unix_socket(const std::string_view path, int type)
 {
     // Is there a prefix for the path?
     std::string full_path(path);
@@ -92,16 +92,16 @@ static icp::socket::unix_socket create_unix_socket(const std::string_view path, 
     }
 
     if (access(full_path.c_str(), F_OK) != -1 && unlink_stale_files()) {
-        ICP_LOG(ICP_LOG_DEBUG, "Unlinking stale server socket at: %s", full_path.c_str());
+        OP_LOG(OP_LOG_DEBUG, "Unlinking stale server socket at: %s", full_path.c_str());
         if (unlink(full_path.c_str()) < 0) {
             throw std::runtime_error("Could not remove shared unix domain socket "
                                      + full_path + ": " + strerror(errno));
         }
     }
 
-    auto socket = icp::socket::unix_socket(full_path, type);
+    auto socket = openperf::socket::unix_socket(full_path, type);
 
-    ICP_LOG(ICP_LOG_DEBUG, "Created unix socket at: %s", full_path.c_str());
+    OP_LOG(OP_LOG_DEBUG, "Created unix socket at: %s", full_path.c_str());
 
     return (socket);
 }
@@ -111,7 +111,7 @@ static ssize_t log_ptrace_error(void*, const char* buf, size_t size)
     if (size == 0) return (0);
 
     /*
-     * Our icp_log functions needs all logging messages terminated with a
+     * Our op_log functions needs all logging messages terminated with a
      * new-line, so fix up any messages that need it.
      */
     const char* format = (buf[size - 1] == '\n') ? "%.*s" : "%.*s\n";
@@ -122,7 +122,7 @@ static ssize_t log_ptrace_error(void*, const char* buf, size_t size)
      * so skip the macro and just fill in the actual logging function's arguments
      * as appropriate for our usage.
      */
-    icp_log(ICP_LOG_ERROR, "icp::socket::process_control::enable_ptrace",
+    op_log(OP_LOG_ERROR, "openperf::socket::process_control::enable_ptrace",
             format, static_cast<int>(size), buf);
 
     return (size);
@@ -206,7 +206,7 @@ int server::handle_api_accept(event_loop& loop, std::any)
                          &client_length);
         if (fd == -1) {
             if (errno != EAGAIN && errno != EWOULDBLOCK) {
-                ICP_LOG(ICP_LOG_ERROR, "Could not accept socket: %s\n",
+                OP_LOG(OP_LOG_ERROR, "Could not accept socket: %s\n",
                         strerror(errno));
             }
             break;
@@ -218,7 +218,7 @@ int server::handle_api_accept(event_loop& loop, std::any)
                                std::bind(&server::handle_api_client, this, _1, _2),
                                std::bind(&server::handle_api_error, this, _1),
                                fd)) {
-            ICP_LOG(ICP_LOG_ERROR, "Failed to add socket API callback for fd = %d\n", fd);
+            OP_LOG(OP_LOG_ERROR, "Failed to add socket API callback for fd = %d\n", fd);
         }
     }
 
@@ -246,7 +246,7 @@ int server::do_client_init(event_loop& loop, int fd)
     if (ret == -1) return (0);
 
     if (!std::holds_alternative<api::request_init>(request)) {
-        ICP_LOG(ICP_LOG_ERROR, "Received unexpected message during "
+        OP_LOG(OP_LOG_ERROR, "Received unexpected message during "
                 "client init phase");
         api::reply_msg reply = tl::make_unexpected(EINVAL);
         send(fd, &reply, sizeof(reply), 0);
@@ -263,7 +263,7 @@ int server::do_client_init(event_loop& loop, int fd)
      */
     auto init = std::get<api::request_init>(request);
     if (m_handlers.find(init.pid) == m_handlers.end()) {
-        ICP_LOG(ICP_LOG_INFO, "New connection received from pid %d, %s\n",
+        OP_LOG(OP_LOG_INFO, "New connection received from pid %d, %s\n",
                 init.pid, to_string(init.tid).c_str());
         m_handlers.emplace(init.pid,
                            std::make_unique<api_handler>(loop, m_shm.base(),
@@ -291,7 +291,7 @@ int server::do_client_init(event_loop& loop, int fd)
     }
 
     if (send(fd, &reply, sizeof(reply), 0) > 0) {
-        ICP_LOG(ICP_LOG_DEBUG, "Initialized client from pid %d, %s\n",
+        OP_LOG(OP_LOG_DEBUG, "Initialized client from pid %d, %s\n",
                 init.pid, to_string(init.tid).c_str());
 
         /* Add this client to our pid map */
@@ -311,7 +311,7 @@ int server::do_client_read(pid_t pid, int fd)
     /* Find the handler for this pid and dispatch to it */
     auto handler_result = m_handlers.find(pid);
     if (handler_result == m_handlers.end()) {
-        ICP_LOG(ICP_LOG_ERROR, "Could not locate handler for pid = %d\n", pid);
+        OP_LOG(OP_LOG_ERROR, "Could not locate handler for pid = %d\n", pid);
         return (-1);
     }
 
@@ -326,7 +326,7 @@ void server::handle_api_error(std::any arg)
     /* Remove one fd, pid pair from our map */
     auto pid_result = m_pids.find(fd);
     if (pid_result == m_pids.end()) {
-        ICP_LOG(ICP_LOG_ERROR, "Could not find pid for fd = %d\n", fd);
+        OP_LOG(OP_LOG_ERROR, "Could not find pid for fd = %d\n", fd);
         return;
     }
 
@@ -334,7 +334,7 @@ void server::handle_api_error(std::any arg)
     if (m_pids.count(fd) == 1) {
         /* All other connections for this handler are gone; delete it */
         auto pid = pid_result->second;
-        ICP_LOG(ICP_LOG_INFO, "All connections from pid %d are gone; cleaning up\n", pid);
+        OP_LOG(OP_LOG_INFO, "All connections from pid %d are gone; cleaning up\n", pid);
         m_handlers.erase(pid);
     }
 
@@ -348,7 +348,7 @@ extern "C" {
 
 const char* api_server_options_prefix_option_get(void)
 {
-    static std::string prefix_opt = icp::socket::api::prefix_option();
+    static std::string prefix_opt = openperf::socket::api::prefix_option();
     return (prefix_opt.c_str());
 }
 

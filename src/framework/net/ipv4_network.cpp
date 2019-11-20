@@ -2,7 +2,7 @@
 
 #include "net/ipv4_network.h"
 
-namespace icp {
+namespace openperf {
 namespace net {
 
 ipv4_network::ipv4_network(const ipv4_address& addr, uint8_t prefix)

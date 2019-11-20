@@ -4,12 +4,12 @@
 #include <map>
 #include <vector>
 
-#include "config/icp_config_file.h"
+#include "config/op_config_file.h"
 #include "packetio/drivers/dpdk/model/physical_port.h"
 #include "packetio/drivers/dpdk/model/port_info.h"
 #include "packetio/drivers/dpdk/queue_utils.h"
 
-namespace icp::packetio::dpdk::queue {
+namespace openperf::packetio::dpdk::queue {
 
 struct queue_info {
     uint16_t count;        /**< The number of queues in use */
@@ -293,8 +293,8 @@ std::vector<descriptor> distribute_queues(const std::vector<model::port_info>& p
     }
 
     using namespace config::file;
-    static auto max_rx_queues = icp_config_get_param<ICP_OPTION_TYPE_LONG>("modules.packetio.dpdk.max-rx-workers");
-    static auto max_tx_queues = icp_config_get_param<ICP_OPTION_TYPE_LONG>("modules.packetio.dpdk.max-tx-workers");
+    static auto max_rx_queues = op_config_get_param<OP_OPTION_TYPE_LONG>("modules.packetio.dpdk.max-rx-workers");
+    static auto max_tx_queues = op_config_get_param<OP_OPTION_TYPE_LONG>("modules.packetio.dpdk.max-tx-workers");
 
     /* By default, queue workers are evenly distributed between rx and tx workers */
     auto rx_q_workers = distribute(q_workers, 2, 0);

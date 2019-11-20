@@ -1,6 +1,6 @@
 /**
-* Inception Core API
-* REST API interface to the Inception Core
+* OpenPerf API
+* REST API interface for OpenPerf
 *
 * OpenAPI spec version: 1
 * Contact: support@spirent.com

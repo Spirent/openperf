@@ -1,11 +1,11 @@
-#ifndef _ICP_SOCKET_STREAM_CHANNEL_H_
-#define _ICP_SOCKET_STREAM_CHANNEL_H_
+#ifndef _OP_SOCKET_STREAM_CHANNEL_H_
+#define _OP_SOCKET_STREAM_CHANNEL_H_
 
 #include <atomic>
 
 #include "socket/api.h"
 
-namespace icp {
+namespace openperf {
 namespace socket {
 
 /*
@@ -60,4 +60,4 @@ struct stream_channel {
 }
 }
 
-#endif /* _ICP_SOCKET_STREAM_CHANNEL_H_ */
+#endif /* _OP_SOCKET_STREAM_CHANNEL_H_ */

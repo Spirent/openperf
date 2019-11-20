@@ -1,5 +1,5 @@
 ###
-# Full DPDK configuration file for use with inception
+# Full DPDK configuration file for use with openperf
 #
 # By specifying the full configuration in a single file
 # we can programatically generate the appropriate libraries

@@ -1,5 +1,5 @@
-#ifndef _ICP_PACKETIO_GENERIC_WORKERS_H_
-#define _ICP_PACKETIO_GENERIC_WORKERS_H_
+#ifndef _OP_PACKETIO_GENERIC_WORKERS_H_
+#define _OP_PACKETIO_GENERIC_WORKERS_H_
 
 #include <functional>
 #include <memory>
@@ -14,11 +14,11 @@
 #include "packetio/generic_sink.h"
 #include "packetio/generic_source.h"
 
-namespace icp::core {
+namespace openperf::core {
 class event_loop;
 }
 
-namespace icp::packetio::workers {
+namespace openperf::packetio::workers {
 
 using transmit_function = uint16_t (*)(int id, uint32_t hash, void* items[], uint16_t nb_items);
 
@@ -201,8 +201,8 @@ private:
     std::unique_ptr<workers_concept> m_self;
 };
 
-std::unique_ptr<generic_workers> make(void*, icp::core::event_loop&, driver::generic_driver&);
+std::unique_ptr<generic_workers> make(void*, openperf::core::event_loop&, driver::generic_driver&);
 
 }
 
-#endif /* _ICP_PACKETIO_GENERIC_WORKERS_H_ */
+#endif /* _OP_PACKETIO_GENERIC_WORKERS_H_ */

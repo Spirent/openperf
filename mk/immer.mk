@@ -3,12 +3,12 @@
 #
 
 IMMER_REQ_VARS := \
-	ICP_ROOT
-$(call icp_check_vars,$(IMMER_REQ_VARS))
+	OP_ROOT
+$(call op_check_vars,$(IMMER_REQ_VARS))
 
-IMMER_SRC_DIR := $(ICP_ROOT)/deps/immer
+IMMER_SRC_DIR := $(OP_ROOT)/deps/immer
 
-ICP_INC_DIRS += $(IMMER_SRC_DIR)
+OP_INC_DIRS += $(IMMER_SRC_DIR)
 
 ###
 # No build rules; header only

@@ -1,9 +1,9 @@
-#ifndef _ICP_FRAMEWORK_NET_IPV4_NETWORK_H_
-#define _ICP_FRAMEWORK_NET_IPV4_NETWORK_H_
+#ifndef _OP_FRAMEWORK_NET_IPV4_NETWORK_H_
+#define _OP_FRAMEWORK_NET_IPV4_NETWORK_H_
 
 #include "net/ipv4_address.h"
 
-namespace icp {
+namespace openperf {
 namespace net {
 
 class ipv4_network
@@ -33,4 +33,4 @@ inline bool operator>=(const ipv4_network& lhs, const ipv4_network& rhs) { retur
 }
 }
 
-#endif /* _ICP_FRAMEWORK_NET_IPV4_NETWORK_H_ */
+#endif /* _OP_FRAMEWORK_NET_IPV4_NETWORK_H_ */

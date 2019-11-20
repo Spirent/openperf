@@ -5,7 +5,7 @@ There are three folders _socket_, _client_  and _server_. The _client_ is what i
 
 ## Client Initialization 
 
-Upon startup (`icp::socket::api::client.init()`), the client will exchange an HELLO message with the server over local unix domain socket (`unix_socket` type [`SOCK_SEQPACKET`](http://urchin.earth.li/~twic/Sequenced_Packets_Over_Ordinary_TCP.html) to `/tmp/.com.spirent.openperf/server`). The server responds with the server process ID and shared memory, as well as an optional pair of file descriptors to be used for subsequent communications.
+Upon startup (`openperf::socket::api::client.init()`), the client will exchange an HELLO message with the server over local unix domain socket (`unix_socket` type [`SOCK_SEQPACKET`](http://urchin.earth.li/~twic/Sequenced_Packets_Over_Ordinary_TCP.html) to `/tmp/.com.spirent.openperf/server`). The server responds with the server process ID and shared memory, as well as an optional pair of file descriptors to be used for subsequent communications.
 
 When the client needs to create a new socket, it calls the socket equivalent wrapper [`client::socket(domain, type, protocol)`](https://github.com/SpirentOrion/openperf-core/blob/master/src/modules/socket/client/api_client.cpp#L435). The server allocates a _channel_ into the shared memory, a socket FD pair, and a socket ID.  
 
@@ -169,10 +169,10 @@ When creating a socket (UDP in the following example), the server will execute `
 
 	make_socket(m_allocator, request.domain, request.type, request.protocol);
 	
-When the allocator is a `icp::memory::allocator` working with the shared memory. The make socket function will eventually call the _right_ socket implementation, in our case, the [`udp_socket`](https://github.com/SpirentOrion/openperf-core/blob/master/src/modules/socket/server/udp_socket.cpp#L56)
+When the allocator is a `openperf::memory::allocator` working with the shared memory. The make socket function will eventually call the _right_ socket implementation, in our case, the [`udp_socket`](https://github.com/SpirentOrion/openperf-core/blob/master/src/modules/socket/server/udp_socket.cpp#L56)
 
 ```C++
-udp_socket::udp_socket(icp::socket::server::allocator& allocator, int flags)
+udp_socket::udp_socket(openperf::socket::server::allocator& allocator, int flags)
 {
     m_channel = new (allocator.allocate(sizeof(dgram_channel)))
     dgram_channel_deleter = &allocator
@@ -315,7 +315,7 @@ class stream_channel : public circular_buffer_consumer<stream_channel>
 When the TCP socket is created, the server allocates the buffer from the shared memory:
 
 ```
-stream_channel::stream_channel(int flags, icp::socket::server::allocator& allocator)
+stream_channel::stream_channel(int flags, openperf::socket::server::allocator& allocator)
     : tx_buffer(allocator.allocate(init_buffer_size), init_buffer_size)
     , rx_buffer(allocator.allocate(init_buffer_size), init_buffer_size)
     , ...

@@ -1,5 +1,5 @@
-#ifndef _ICP_PACKETIO_STACK_DPDK_ARCH_CC_H_
-#define _ICP_PACKETIO_STACK_DPDK_ARCH_CC_H_
+#ifndef _OP_PACKETIO_STACK_DPDK_ARCH_CC_H_
+#define _OP_PACKETIO_STACK_DPDK_ARCH_CC_H_
 
 /*
  * This file translates LWIP macros and keywords into sensible values for
@@ -10,7 +10,7 @@
 #include <stdlib.h>
 #include <sys/time.h>
 
-#include "core/icp_log.h"
+#include "core/op_log.h"
 
 /*
  * Macro shenanigans to remove the enclosing parentheses from existing
@@ -22,7 +22,7 @@
 
 #define LWIP_PLATFORM_DIAG(x)                               \
     do {                                                    \
-        icp_log(ICP_LOG_DEBUG, "lwip", PASS_PARAMETERS(x)); \
+        op_log(OP_LOG_DEBUG, "lwip", PASS_PARAMETERS(x)); \
     } while (0)
 
 #define LWIP_PLATFORM_ASSERT(x)                                         \
@@ -42,4 +42,4 @@
 #endif
 #define PACKETIO_MEMCPY(dst,src,len) rte_memcpy(dst,src,len)
 
-#endif /* _ICP_PACKETIO_STACK_DPDK_ARCH_CC_H_ */
+#endif /* _OP_PACKETIO_STACK_DPDK_ARCH_CC_H_ */

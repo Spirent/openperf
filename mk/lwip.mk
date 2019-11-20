@@ -6,16 +6,16 @@
 # Load stack info; always required for now
 ###
 LWIP_REQ_VARS := \
-	ICP_ROOT \
-	ICP_BUILD_ROOT
-$(call icp_check_vars,$(LWIP_REQ_VARS))
+	OP_ROOT \
+	OP_BUILD_ROOT
+$(call op_check_vars,$(LWIP_REQ_VARS))
 
-LWIP_SRC_DIR := $(ICP_ROOT)/deps/lwip/src
+LWIP_SRC_DIR := $(OP_ROOT)/deps/lwip/src
 LWIP_INC_DIR := $(LWIP_SRC_DIR)/include
-LWIP_OBJ_DIR := $(ICP_BUILD_ROOT)/obj/lwip
+LWIP_OBJ_DIR := $(OP_BUILD_ROOT)/obj/lwip
 
 # Update global variables
-ICP_INC_DIRS += $(LWIP_INC_DIR)
+OP_INC_DIRS += $(LWIP_INC_DIR)
 
 ###
 # Sources and objects
@@ -67,7 +67,7 @@ LWIP_SOURCES := \
 	$(LWIP_CORE6_SOURCES) \
 	$(LWIP_API_SOURCES)
 
-LWIP_OBJECTS := $(call icp_generate_objects,$(LWIP_SOURCES),$(LWIP_OBJ_DIR))
+LWIP_OBJECTS := $(call op_generate_objects,$(LWIP_SOURCES),$(LWIP_OBJ_DIR))
 
 # Pull in object dependencies, maybe
 -include $(LWIP_OBJECTS:.o=.d)
@@ -75,8 +75,8 @@ LWIP_OBJECTS := $(call icp_generate_objects,$(LWIP_SOURCES),$(LWIP_OBJ_DIR))
 ###
 # Build rules
 ###
-$(eval $(call icp_generate_build_rules,$(LWIP_SOURCES),LWIP_SRC_DIR,LWIP_OBJ_DIR,PIO_DEPENDS,LWIP_FLAGS))
-$(eval $(call icp_generate_clean_rules,lwip,,LWIP_OBJECTS))
+$(eval $(call op_generate_build_rules,$(LWIP_SOURCES),LWIP_SRC_DIR,LWIP_OBJ_DIR,PIO_DEPENDS,LWIP_FLAGS))
+$(eval $(call op_generate_clean_rules,lwip,,LWIP_OBJECTS))
 
 # Using large windows with window scaling can introduce a tautological
 # comparison in tcp.c.  It's safe to ignore.

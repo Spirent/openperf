@@ -1,12 +1,12 @@
-#ifndef _ICP_PACKETIO_TRANSMIT_TABLE_H_
-#define _ICP_PACKETIO_TRANSMIT_TABLE_H_
+#ifndef _OP_PACKETIO_TRANSMIT_TABLE_H_
+#define _OP_PACKETIO_TRANSMIT_TABLE_H_
 
 #include <atomic>
 #include <utility>
 
 #include "immer/flex_vector.hpp"
 
-namespace icp::packetio {
+namespace openperf::packetio {
 
 template <typename Source>
 class transmit_table
@@ -79,4 +79,4 @@ Iterator end(const std::pair<Iterator, Iterator>& range)
 
 }
 
-#endif /* _ICP_PACKETIO_TRANSMIT_TABLE_H_ */
+#endif /* _OP_PACKETIO_TRANSMIT_TABLE_H_ */

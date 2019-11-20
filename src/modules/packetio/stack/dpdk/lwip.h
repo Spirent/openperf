@@ -1,5 +1,5 @@
-#ifndef _ICP_PACKETIO_STACK_LWIP_H_
-#define _ICP_PACKETIO_STACK_LWIP_H_
+#ifndef _OP_PACKETIO_STACK_LWIP_H_
+#define _OP_PACKETIO_STACK_LWIP_H_
 
 #include <optional>
 #include <string>
@@ -8,12 +8,12 @@
 
 #include "tl/expected.hpp"
 
-#include "core/icp_uuid.h"
+#include "core/op_uuid.h"
 #include "packetio/generic_interface.h"
 #include "packetio/generic_stack.h"
 #include "packetio/stack/dpdk/net_interface.h"
 
-namespace icp::packetio::dpdk {
+namespace openperf::packetio::dpdk {
 
 class lwip
 {
@@ -51,4 +51,4 @@ private:
 
 }
 
-#endif /* _ICP_PACKETIO_STACK_LWIP_H_ */
+#endif /* _OP_PACKETIO_STACK_LWIP_H_ */

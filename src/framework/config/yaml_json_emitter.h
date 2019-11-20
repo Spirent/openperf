@@ -1,17 +1,17 @@
 
-#ifndef _ICP_YAML_JSON_EMITTER_H_
-#define _ICP_YAML_JSON_EMITTER_H_
+#ifndef _OP_YAML_JSON_EMITTER_H_
+#define _OP_YAML_JSON_EMITTER_H_
 
 // Custom YAML -> JSON converter class.
 // Uses yaml-cpp parsing events to output JSON that is
-// Compatible with Inception plugins.
+// Compatible with OpenPerf plugins.
 // This is NOT a complete, standards-compliant converter.
 
 #include "yaml-cpp/yaml.h"
 #include "yaml-cpp/eventhandler.h"
 #include <stack>
 
-namespace icp::config::file {
+namespace openperf::config::file {
 
 using namespace YAML;
 
@@ -46,6 +46,6 @@ class yaml_json_emitter : public YAML::EventHandler
     };
     std::stack<State::value> m_state_stack;
 };
-}  // namespace icp::config::file
+}  // namespace openperf::config::file
 
-#endif /*_ICP_CONFIG_FILE_ADAPTER_H_*/
+#endif /*_OP_CONFIG_FILE_ADAPTER_H_*/

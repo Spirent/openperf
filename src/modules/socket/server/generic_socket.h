@@ -1,5 +1,5 @@
-#ifndef _ICP_SOCKET_SERVER_GENERIC_SOCKET_H_
-#define _ICP_SOCKET_SERVER_GENERIC_SOCKET_H_
+#ifndef _OP_SOCKET_SERVER_GENERIC_SOCKET_H_
+#define _OP_SOCKET_SERVER_GENERIC_SOCKET_H_
 
 #include <memory>
 #include "tl/expected.hpp"
@@ -7,7 +7,7 @@
 #include "socket/api.h"
 #include "socket/server/allocator.h"
 
-namespace icp {
+namespace openperf {
 namespace socket {
 namespace server {
 
@@ -99,4 +99,4 @@ int server_fd(channel_variant&);
 }
 }
 
-#endif /* _ICP_SOCKET_SERVER_GENERIC_SOCKET_H_ */
+#endif /* _OP_SOCKET_SERVER_GENERIC_SOCKET_H_ */

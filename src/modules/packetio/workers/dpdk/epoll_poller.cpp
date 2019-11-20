@@ -7,7 +7,7 @@
 #include "packetio/workers/dpdk/zmq_socket.h"
 #include "packetio/workers/dpdk/epoll_poller.h"
 
-namespace icp::packetio::dpdk::worker {
+namespace openperf::packetio::dpdk::worker {
 
 /**
  * Templated function to retrieve the index for a specific type in a variant.

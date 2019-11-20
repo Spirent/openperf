@@ -1,10 +1,10 @@
-#ifndef _ICP_FRAMEWORK_NET_MAC_ADDRESS_H_
-#define _ICP_FRAMEWORK_NET_MAC_ADDRESS_H_
+#ifndef _OP_FRAMEWORK_NET_MAC_ADDRESS_H_
+#define _OP_FRAMEWORK_NET_MAC_ADDRESS_H_
 
 #include <cstdint>
 #include <string>
 
-namespace icp {
+namespace openperf {
 namespace net {
 
 class mac_address
@@ -48,9 +48,9 @@ inline bool operator>=(const mac_address& lhs, const mac_address& rhs) { return 
 namespace std {
 
 template <>
-struct hash<icp::net::mac_address>
+struct hash<openperf::net::mac_address>
 {
-    size_t operator()(const icp::net::mac_address& mac) const noexcept
+    size_t operator()(const openperf::net::mac_address& mac) const noexcept
     {
         auto value = (static_cast<uint64_t>(mac[0]) << 40
                       | static_cast<uint64_t>(mac[1]) << 32
@@ -63,4 +63,4 @@ struct hash<icp::net::mac_address>
 };
 
 }
-#endif /* _ICP_FRAMEWORK_NET_MAC_ADDRESS_H_ */
+#endif /* _OP_FRAMEWORK_NET_MAC_ADDRESS_H_ */

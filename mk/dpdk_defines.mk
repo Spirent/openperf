@@ -5,7 +5,7 @@
 # need the ones that influence the behavior of rte_memcpy.
 #
 
-DPDK_COMPILER_DEFINES := $(shell $(ICP_CC) $(ICP_COPTS) -dM -E - < /dev/null)
+DPDK_COMPILER_DEFINES := $(shell $(OP_CC) $(OP_COPTS) -dM -E - < /dev/null)
 
 ###
 # x86 flags

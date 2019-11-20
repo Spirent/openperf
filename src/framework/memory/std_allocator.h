@@ -1,9 +1,9 @@
-#ifndef _ICP_MEMORY_STD_ALLOCATOR_H_
-#define _ICP_MEMORY_STD_ALLOCATOR_H_
+#ifndef _OP_MEMORY_STD_ALLOCATOR_H_
+#define _OP_MEMORY_STD_ALLOCATOR_H_
 
 #include <memory>
 
-namespace icp {
+namespace openperf {
 namespace memory {
 
 template <class T, class Impl>
@@ -56,4 +56,4 @@ bool operator!=(std_allocator<T, Impl> const& x, std_allocator<U, Impl> const& y
 }
 }
 
-#endif /* _ICP_MEMORY_STD_ALLOCATOR_H_ */
+#endif /* _OP_MEMORY_STD_ALLOCATOR_H_ */
