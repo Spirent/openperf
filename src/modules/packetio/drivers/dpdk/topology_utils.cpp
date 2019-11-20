@@ -5,7 +5,7 @@
 #include <vector>
 
 #include "packetio/drivers/dpdk/dpdk.h"
-#include "packetio/drivers/dpdk/topology_utils.h"
+#include "packetio/drivers/dpdk/topology_utils.hpp"
 #include "core/op_log.h"
 
 namespace openperf {

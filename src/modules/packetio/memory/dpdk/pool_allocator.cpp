@@ -5,9 +5,9 @@
 
 #include "core/op_core.h"
 #include "packetio/drivers/dpdk/dpdk.h"
-#include "packetio/drivers/dpdk/model/port_info.h"
+#include "packetio/drivers/dpdk/model/port_info.hpp"
 #include "packetio/memory/dpdk/memp.h"
-#include "packetio/memory/dpdk/pool_allocator.h"
+#include "packetio/memory/dpdk/pool_allocator.hpp"
 
 namespace openperf {
 namespace packetio {

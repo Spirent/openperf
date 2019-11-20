@@ -6,11 +6,11 @@
 #include <sys/socket.h>
 #include <sys/uio.h>
 
-#include "socket/server/lwip_utils.h"
-#include "socket/server/udp_socket.h"
+#include "socket/server/lwip_utils.hpp"
+#include "socket/server/udp_socket.hpp"
 #include "lwip/memp.h"
 #include "lwip/udp.h"
-#include "utils/overloaded_visitor.h"
+#include "utils/overloaded_visitor.hpp"
 
 namespace openperf {
 namespace socket {

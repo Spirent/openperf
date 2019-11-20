@@ -1,4 +1,4 @@
-#include "packetio/json_transmogrify.h"
+#include "packetio/json_transmogrify.hpp"
 
 using json = nlohmann::json;
 

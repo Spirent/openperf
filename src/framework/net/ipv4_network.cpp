@@ -1,6 +1,6 @@
 #include <stdexcept>
 
-#include "net/ipv4_network.h"
+#include "net/ipv4_network.hpp"
 
 namespace openperf {
 namespace net {

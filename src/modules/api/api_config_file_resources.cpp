@@ -1,11 +1,11 @@
 
-#include "config/op_config_file.h"
-#include "config/op_config_file_utils.h"
-#include "config/op_config_utils.h"
-#include "api_utils.h"
+#include "config/op_config_file.hpp"
+#include "config/op_config_file_utils.hpp"
+#include "config/op_config_utils.hpp"
+#include "api_utils.hpp"
 #include "yaml-cpp/yaml.h"
-#include "api_internal_client.h"
-#include "api/api_config_file_resources.h"
+#include "api_internal_client.hpp"
+#include "api/api_config_file_resources.hpp"
 
 using namespace openperf::config::file;
 

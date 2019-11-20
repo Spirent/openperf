@@ -1,13 +1,13 @@
 #include <cassert>
 #include <unistd.h>
 
-#include "socket/dpdk/memcpy.h"
+#include "socket/dpdk/memcpy.hpp"
 #include "socket/circular_buffer_consumer.tcc"
 #include "socket/circular_buffer_producer.tcc"
 #include "socket/event_queue_consumer.tcc"
 #include "socket/event_queue_producer.tcc"
 
-#include "socket/client/dgram_channel.h"
+#include "socket/client/dgram_channel.hpp"
 
 namespace openperf::socket {
 

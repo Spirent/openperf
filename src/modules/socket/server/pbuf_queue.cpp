@@ -2,7 +2,7 @@
 #include <cassert>
 
 #include "lwip/pbuf.h"
-#include "socket/server/pbuf_queue.h"
+#include "socket/server/pbuf_queue.hpp"
 
 namespace openperf {
 namespace socket {

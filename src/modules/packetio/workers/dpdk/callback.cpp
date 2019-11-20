@@ -2,8 +2,8 @@
 
 #include "zmq.h"
 
-#include "packetio/workers/dpdk/callback.h"
-#include "utils/overloaded_visitor.h"
+#include "packetio/workers/dpdk/callback.hpp"
+#include "utils/overloaded_visitor.hpp"
 
 namespace openperf::packetio::dpdk {
 

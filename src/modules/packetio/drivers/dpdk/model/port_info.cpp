@@ -2,9 +2,9 @@
 #include <limits>
 
 #include "core/op_core.h"
-#include "config/op_config_file.h"
+#include "config/op_config_file.hpp"
 #include "packetio/drivers/dpdk/dpdk.h"
-#include "packetio/drivers/dpdk/model/port_info.h"
+#include "packetio/drivers/dpdk/model/port_info.hpp"
 
 namespace openperf {
 namespace packetio {

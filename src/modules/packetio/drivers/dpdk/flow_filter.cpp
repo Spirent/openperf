@@ -4,8 +4,8 @@
 #include "tl/expected.hpp"
 
 #include "packetio/drivers/dpdk/dpdk.h"
-#include "packetio/drivers/dpdk/model/port_info.h"
-#include "packetio/drivers/dpdk/port_filter.h"
+#include "packetio/drivers/dpdk/model/port_info.hpp"
+#include "packetio/drivers/dpdk/port_filter.hpp"
 
 struct rte_flow;
 

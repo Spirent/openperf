@@ -1,8 +1,8 @@
 
 #include <pistache/client.h>
 
-#include "api_internal_client.h"
-#include "api_service.h"
+#include "api_internal_client.hpp"
+#include "api_service.hpp"
 
 namespace openperf::api::client {
 

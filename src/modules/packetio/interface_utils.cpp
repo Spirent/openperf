@@ -7,8 +7,8 @@
 #include <arpa/inet.h>
 
 #include "swagger/v1/model/Interface.h"
-#include "packetio/generic_interface.h"
-#include "utils/overloaded_visitor.h"
+#include "packetio/generic_interface.hpp"
+#include "utils/overloaded_visitor.hpp"
 
 namespace openperf {
 namespace packetio {

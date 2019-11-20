@@ -1,7 +1,7 @@
 #include "arpa/inet.h"
 #include "lwip/netif.h"
 
-#include "packetio/stack/netif_wrapper.h"
+#include "packetio/stack/netif_wrapper.hpp"
 
 namespace openperf::packetio {
 

@@ -2,7 +2,7 @@
 #include <sys/epoll.h>
 
 #include "packetio/drivers/dpdk/dpdk.h"
-#include "packetio/workers/dpdk/rx_queue.h"
+#include "packetio/workers/dpdk/rx_queue.hpp"
 #include "core/op_log.h"
 
 namespace openperf::packetio::dpdk {

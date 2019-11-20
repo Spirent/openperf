@@ -1,11 +1,11 @@
 #include <cassert>
 
-#include "packetio/workers/dpdk/callback.h"
-#include "packetio/workers/dpdk/rx_queue.h"
-#include "packetio/workers/dpdk/tx_queue.h"
-#include "packetio/workers/dpdk/tx_scheduler.h"
-#include "packetio/workers/dpdk/zmq_socket.h"
-#include "packetio/workers/dpdk/epoll_poller.h"
+#include "packetio/workers/dpdk/callback.hpp"
+#include "packetio/workers/dpdk/rx_queue.hpp"
+#include "packetio/workers/dpdk/tx_queue.hpp"
+#include "packetio/workers/dpdk/tx_scheduler.hpp"
+#include "packetio/workers/dpdk/zmq_socket.hpp"
+#include "packetio/workers/dpdk/epoll_poller.hpp"
 
 namespace openperf::packetio::dpdk::worker {
 

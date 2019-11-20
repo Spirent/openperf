@@ -1,8 +1,8 @@
 #include <cassert>
 #include "lwip/sys.h"
 
-#include "packetio/stack/tcpip.h"
-#include "packetio/stack/dpdk/tcpip_mbox.h"
+#include "packetio/stack/tcpip.hpp"
+#include "packetio/stack/dpdk/tcpip_mbox.hpp"
 
 namespace openperf::packetio::dpdk {
 

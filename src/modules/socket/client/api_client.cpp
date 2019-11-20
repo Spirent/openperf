@@ -8,9 +8,9 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "socket/api.h"
-#include "socket/process_control.h"
-#include "socket/client/api_client.h"
+#include "socket/api.hpp"
+#include "socket/process_control.hpp"
+#include "socket/client/api_client.hpp"
 
 namespace openperf {
 namespace socket {

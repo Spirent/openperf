@@ -2,9 +2,9 @@
 #include <variant>
 
 #include "core/op_log.h"
-#include "packetio/internal_client.h"
-#include "packetio/workers/dpdk/event_loop_adapter.h"
-#include "packetio/workers/dpdk/epoll_poller.h"
+#include "packetio/internal_client.hpp"
+#include "packetio/workers/dpdk/event_loop_adapter.hpp"
+#include "packetio/workers/dpdk/epoll_poller.hpp"
 
 namespace openperf::packetio::dpdk::worker {
 

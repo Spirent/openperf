@@ -2,7 +2,7 @@
 #include <string>
 #include <iostream>
 
-#include "op_config_utils.h"
+#include "op_config_utils.hpp"
 
 using namespace openperf::config;
 

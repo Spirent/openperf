@@ -1,8 +1,8 @@
 #include <algorithm>
 #include <cassert>
 
-#include "packetio/drivers/dpdk/model/port_info.h"
-#include "packetio/drivers/dpdk/port_filter.h"
+#include "packetio/drivers/dpdk/model/port_info.hpp"
+#include "packetio/drivers/dpdk/port_filter.hpp"
 
 namespace openperf::packetio::dpdk::port {
 

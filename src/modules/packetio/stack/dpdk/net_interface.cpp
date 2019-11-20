@@ -7,11 +7,11 @@
 #include "lwip/snmp.h"
 
 #include "packetio/drivers/dpdk/dpdk.h"
-#include "packetio/drivers/dpdk/model/port_info.h"
+#include "packetio/drivers/dpdk/model/port_info.hpp"
 #include "packetio/memory/dpdk/pbuf_utils.h"
-#include "packetio/stack/dpdk/net_interface.h"
-#include "packetio/stack/dpdk/offload_utils.h"
-#include "utils/overloaded_visitor.h"
+#include "packetio/stack/dpdk/net_interface.hpp"
+#include "packetio/stack/dpdk/offload_utils.hpp"
+#include "utils/overloaded_visitor.hpp"
 
 namespace openperf {
 namespace packetio {

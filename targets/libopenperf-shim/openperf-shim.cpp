@@ -6,8 +6,8 @@
 #include <functional>
 #include <iostream>
 
-#include "socket/client/api_client.h"
-#include "libc_wrapper.h"
+#include "socket/client/api_client.hpp"
+#include "libc_wrapper.hpp"
 
 static void openperf_shim_init() __attribute__((constructor));
 

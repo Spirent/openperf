@@ -2,10 +2,10 @@
 
 #include <zmq.h>
 
-#include "packetio/message_utils.h"
-#include "packetio/workers/dpdk/worker_api.h"
-#include "utils/overloaded_visitor.h"
-#include "utils/variant_index.h"
+#include "packetio/message_utils.hpp"
+#include "packetio/workers/dpdk/worker_api.hpp"
+#include "utils/overloaded_visitor.hpp"
+#include "utils/variant_index.hpp"
 
 namespace openperf::packetio::dpdk::worker {
 

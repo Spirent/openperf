@@ -1,5 +1,5 @@
 #include "lwip/netifapi.h"
-#include "packetio/stack/dpdk/net_interface.h"
+#include "packetio/stack/dpdk/net_interface.hpp"
 
 using namespace openperf::packetio::dpdk;
 

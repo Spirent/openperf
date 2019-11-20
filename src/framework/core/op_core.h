@@ -18,7 +18,7 @@
 #include "core/op_event_loop.hpp"
 #include "core/op_init_factory.hpp"
 #include "core/op_list.hpp"
-#include "core/op_uuid.h"
+#include "core/op_uuid.hpp"
 #endif
 
 #include "core/op_common.h"

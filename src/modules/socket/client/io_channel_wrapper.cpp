@@ -1,5 +1,5 @@
-#include "socket/client/io_channel_wrapper.h"
-#include "utils/overloaded_visitor.h"
+#include "socket/client/io_channel_wrapper.hpp"
+#include "utils/overloaded_visitor.hpp"
 
 namespace openperf {
 namespace socket {
