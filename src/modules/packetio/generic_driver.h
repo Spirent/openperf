@@ -1,5 +1,5 @@
-#ifndef _ICP_PACKETIO_GENERIC_DRIVER_H_
-#define _ICP_PACKETIO_GENERIC_DRIVER_H_
+#ifndef _OP_PACKETIO_GENERIC_DRIVER_H_
+#define _OP_PACKETIO_GENERIC_DRIVER_H_
 
 #include <any>
 #include <memory>
@@ -10,7 +10,7 @@
 
 #include "packetio/generic_port.h"
 
-namespace icp {
+namespace openperf {
 namespace packetio {
 namespace driver {
 
@@ -123,4 +123,4 @@ std::unique_ptr<generic_driver> make();
 }
 }
 
-#endif /* _ICP_PACKETIO_GENERIC_DRIVER_H_ */
+#endif /* _OP_PACKETIO_GENERIC_DRIVER_H_ */

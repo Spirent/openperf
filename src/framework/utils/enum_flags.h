@@ -1,5 +1,5 @@
-#ifndef _ICP_UTILS_ENUM_FLAGS_H_
-#define _ICP_UTILS_ENUM_FLAGS_H_
+#ifndef _OP_UTILS_ENUM_FLAGS_H_
+#define _OP_UTILS_ENUM_FLAGS_H_
 
 #include <cstdio>
 #include <type_traits>
@@ -12,9 +12,9 @@
 
 #define declare_enum_flags(Enum)                              \
     template <>                                               \
-    struct icp::utils::is_enum_flag<Enum> : std::true_type {}
+    struct openperf::utils::is_enum_flag<Enum> : std::true_type {}
 
-namespace icp::utils {
+namespace openperf::utils {
 
 template <typename Enum>
 struct is_enum_flag : std::false_type {};
@@ -76,7 +76,7 @@ struct bit_flags
  *
  * Note: These functions are intentionally in the global namespace for name
  * resolution purposes. The compiler was unable to find some functions when
- * they were defined in the icp::utils namespace.
+ * they were defined in the openperf::utils namespace.
  */
 
 /***
@@ -85,91 +85,91 @@ struct bit_flags
 
 template <typename Enum>
 constexpr
-typename std::enable_if_t<std::is_enum_v<Enum> && icp::utils::is_enum_flag<Enum>::value,
-                          icp::utils::enumerator<Enum>>
+typename std::enable_if_t<std::is_enum_v<Enum> && openperf::utils::is_enum_flag<Enum>::value,
+                          openperf::utils::enumerator<Enum>>
 operator&(const Enum& lhs, const Enum& rhs)
 {
     using enum_type = std::underlying_type_t<Enum>;
-    return (icp::utils::enumerator<Enum>(static_cast<enum_type>(lhs) & static_cast<enum_type>(rhs)));
+    return (openperf::utils::enumerator<Enum>(static_cast<enum_type>(lhs) & static_cast<enum_type>(rhs)));
 }
 
 template <typename Enum>
 constexpr
-typename std::enable_if_t<std::is_enum_v<Enum> && icp::utils::is_enum_flag<Enum>::value,
-                          icp::utils::enumerator<Enum>>
-operator&(const icp::utils::enumerator<Enum>& lhs, const icp::utils::enumerator<Enum>& rhs)
+typename std::enable_if_t<std::is_enum_v<Enum> && openperf::utils::is_enum_flag<Enum>::value,
+                          openperf::utils::enumerator<Enum>>
+operator&(const openperf::utils::enumerator<Enum>& lhs, const openperf::utils::enumerator<Enum>& rhs)
 {
     using enum_type = std::underlying_type_t<Enum>;
-    return (icp::utils::enumerator<Enum>(static_cast<enum_type>(lhs.value) & static_cast<enum_type>(rhs.value)));
+    return (openperf::utils::enumerator<Enum>(static_cast<enum_type>(lhs.value) & static_cast<enum_type>(rhs.value)));
 }
 
 template <typename Enum>
 constexpr
-typename std::enable_if_t<std::is_enum_v<Enum> && icp::utils::is_enum_flag<Enum>::value,
-                          icp::utils::bit_flags<Enum>>
-operator&(const icp::utils::bit_flags<Enum>& lhs, const icp::utils::bit_flags<Enum>& rhs)
+typename std::enable_if_t<std::is_enum_v<Enum> && openperf::utils::is_enum_flag<Enum>::value,
+                          openperf::utils::bit_flags<Enum>>
+operator&(const openperf::utils::bit_flags<Enum>& lhs, const openperf::utils::bit_flags<Enum>& rhs)
 {
-    return (icp::utils::bit_flags<Enum>(lhs.value & rhs.value));
+    return (openperf::utils::bit_flags<Enum>(lhs.value & rhs.value));
 }
 
 template <typename Enum>
 constexpr
-typename std::enable_if_t<std::is_enum_v<Enum> && icp::utils::is_enum_flag<Enum>::value,
-                          icp::utils::enumerator<Enum>>
-operator&(const Enum& lhs, const icp::utils::enumerator<Enum>& rhs)
-{
-    using enum_type = std::underlying_type_t<Enum>;
-    return (icp::utils::enumerator<Enum>(static_cast<enum_type>(lhs) & static_cast<enum_type>(rhs.value)));
-}
-
-template <typename Enum>
-constexpr
-typename std::enable_if_t<std::is_enum_v<Enum> && icp::utils::is_enum_flag<Enum>::value,
-                          icp::utils::enumerator<Enum>>
-operator&(const icp::utils::enumerator<Enum>& lhs, const Enum& rhs)
+typename std::enable_if_t<std::is_enum_v<Enum> && openperf::utils::is_enum_flag<Enum>::value,
+                          openperf::utils::enumerator<Enum>>
+operator&(const Enum& lhs, const openperf::utils::enumerator<Enum>& rhs)
 {
     using enum_type = std::underlying_type_t<Enum>;
-    return (icp::utils::enumerator<Enum>(static_cast<enum_type>(lhs.value) & static_cast<enum_type>(rhs)));
+    return (openperf::utils::enumerator<Enum>(static_cast<enum_type>(lhs) & static_cast<enum_type>(rhs.value)));
 }
 
 template <typename Enum>
 constexpr
-typename std::enable_if_t<std::is_enum_v<Enum> && icp::utils::is_enum_flag<Enum>::value,
-                          icp::utils::enumerator<Enum>>
-operator&(const Enum& lhs, const icp::utils::bit_flags<Enum>& rhs)
+typename std::enable_if_t<std::is_enum_v<Enum> && openperf::utils::is_enum_flag<Enum>::value,
+                          openperf::utils::enumerator<Enum>>
+operator&(const openperf::utils::enumerator<Enum>& lhs, const Enum& rhs)
 {
     using enum_type = std::underlying_type_t<Enum>;
-    return (icp::utils::enumerator<Enum>(static_cast<enum_type>(lhs) & rhs.value));
+    return (openperf::utils::enumerator<Enum>(static_cast<enum_type>(lhs.value) & static_cast<enum_type>(rhs)));
 }
 
 template <typename Enum>
 constexpr
-typename std::enable_if_t<std::is_enum_v<Enum> && icp::utils::is_enum_flag<Enum>::value,
-                          icp::utils::enumerator<Enum>>
-operator&(const icp::utils::bit_flags<Enum>& lhs, const Enum& rhs)
+typename std::enable_if_t<std::is_enum_v<Enum> && openperf::utils::is_enum_flag<Enum>::value,
+                          openperf::utils::enumerator<Enum>>
+operator&(const Enum& lhs, const openperf::utils::bit_flags<Enum>& rhs)
 {
     using enum_type = std::underlying_type_t<Enum>;
-    return (icp::utils::enumerator<Enum>(lhs.value & static_cast<enum_type>(rhs)));
+    return (openperf::utils::enumerator<Enum>(static_cast<enum_type>(lhs) & rhs.value));
 }
 
 template <typename Enum>
 constexpr
-typename std::enable_if_t<std::is_enum_v<Enum> && icp::utils::is_enum_flag<Enum>::value,
-                          icp::utils::enumerator<Enum>>
-operator&(const icp::utils::enumerator<Enum>& lhs, const icp::utils::bit_flags<Enum>& rhs)
+typename std::enable_if_t<std::is_enum_v<Enum> && openperf::utils::is_enum_flag<Enum>::value,
+                          openperf::utils::enumerator<Enum>>
+operator&(const openperf::utils::bit_flags<Enum>& lhs, const Enum& rhs)
 {
     using enum_type = std::underlying_type_t<Enum>;
-    return (icp::utils::enumerator<Enum>(static_cast<enum_type>(lhs.value) & rhs.value));
+    return (openperf::utils::enumerator<Enum>(lhs.value & static_cast<enum_type>(rhs)));
 }
 
 template <typename Enum>
 constexpr
-typename std::enable_if_t<std::is_enum_v<Enum> && icp::utils::is_enum_flag<Enum>::value,
-                          icp::utils::enumerator<Enum>>
-operator&(const icp::utils::bit_flags<Enum>& lhs, const icp::utils::enumerator<Enum>& rhs)
+typename std::enable_if_t<std::is_enum_v<Enum> && openperf::utils::is_enum_flag<Enum>::value,
+                          openperf::utils::enumerator<Enum>>
+operator&(const openperf::utils::enumerator<Enum>& lhs, const openperf::utils::bit_flags<Enum>& rhs)
 {
     using enum_type = std::underlying_type_t<Enum>;
-    return (icp::utils::enumerator<Enum>(lhs.value & static_cast<enum_type>(rhs.value)));
+    return (openperf::utils::enumerator<Enum>(static_cast<enum_type>(lhs.value) & rhs.value));
+}
+
+template <typename Enum>
+constexpr
+typename std::enable_if_t<std::is_enum_v<Enum> && openperf::utils::is_enum_flag<Enum>::value,
+                          openperf::utils::enumerator<Enum>>
+operator&(const openperf::utils::bit_flags<Enum>& lhs, const openperf::utils::enumerator<Enum>& rhs)
+{
+    using enum_type = std::underlying_type_t<Enum>;
+    return (openperf::utils::enumerator<Enum>(lhs.value & static_cast<enum_type>(rhs.value)));
 }
 
 /***
@@ -178,91 +178,91 @@ operator&(const icp::utils::bit_flags<Enum>& lhs, const icp::utils::enumerator<E
 
 template <typename Enum>
 constexpr
-typename std::enable_if_t<std::is_enum_v<Enum> && icp::utils::is_enum_flag<Enum>::value,
-                          icp::utils::bit_flags<Enum>>
+typename std::enable_if_t<std::is_enum_v<Enum> && openperf::utils::is_enum_flag<Enum>::value,
+                          openperf::utils::bit_flags<Enum>>
 operator|(const Enum& lhs, const Enum& rhs)
 {
     using enum_type = std::underlying_type_t<Enum>;
-    return (icp::utils::bit_flags<Enum>(static_cast<enum_type>(lhs) | static_cast<enum_type>(rhs)));
+    return (openperf::utils::bit_flags<Enum>(static_cast<enum_type>(lhs) | static_cast<enum_type>(rhs)));
 }
 
 template <typename Enum>
 constexpr
-typename std::enable_if_t<std::is_enum_v<Enum> && icp::utils::is_enum_flag<Enum>::value,
-                          icp::utils::bit_flags<Enum>>
-operator|(const icp::utils::enumerator<Enum>& lhs, const icp::utils::enumerator<Enum>& rhs)
+typename std::enable_if_t<std::is_enum_v<Enum> && openperf::utils::is_enum_flag<Enum>::value,
+                          openperf::utils::bit_flags<Enum>>
+operator|(const openperf::utils::enumerator<Enum>& lhs, const openperf::utils::enumerator<Enum>& rhs)
 {
     using enum_type = std::underlying_type_t<Enum>;
-    return (icp::utils::bit_flags<Enum>(static_cast<enum_type>(lhs.value) | static_cast<enum_type>(rhs.value)));
+    return (openperf::utils::bit_flags<Enum>(static_cast<enum_type>(lhs.value) | static_cast<enum_type>(rhs.value)));
 }
 
 template <typename Enum>
 constexpr
-typename std::enable_if_t<std::is_enum_v<Enum> && icp::utils::is_enum_flag<Enum>::value,
-                          icp::utils::bit_flags<Enum>>
-operator|(const icp::utils::bit_flags<Enum>& lhs, const icp::utils::bit_flags<Enum>& rhs)
+typename std::enable_if_t<std::is_enum_v<Enum> && openperf::utils::is_enum_flag<Enum>::value,
+                          openperf::utils::bit_flags<Enum>>
+operator|(const openperf::utils::bit_flags<Enum>& lhs, const openperf::utils::bit_flags<Enum>& rhs)
 {
-    return (icp::utils::bit_flags<Enum>(lhs.value | rhs.value));
+    return (openperf::utils::bit_flags<Enum>(lhs.value | rhs.value));
 }
 
 template <typename Enum>
 constexpr
-typename std::enable_if_t<std::is_enum_v<Enum> && icp::utils::is_enum_flag<Enum>::value,
-                          icp::utils::bit_flags<Enum>>
-operator|(const Enum& lhs, const icp::utils::enumerator<Enum>& rhs)
-{
-    using enum_type = std::underlying_type_t<Enum>;
-    return (icp::utils::bit_flags<Enum>(static_cast<enum_type>(lhs) | static_cast<enum_type>(rhs.value)));
-}
-
-template <typename Enum>
-constexpr
-typename std::enable_if_t<std::is_enum_v<Enum> && icp::utils::is_enum_flag<Enum>::value,
-                          icp::utils::bit_flags<Enum>>
-operator|(const icp::utils::enumerator<Enum>& lhs, const Enum& rhs)
+typename std::enable_if_t<std::is_enum_v<Enum> && openperf::utils::is_enum_flag<Enum>::value,
+                          openperf::utils::bit_flags<Enum>>
+operator|(const Enum& lhs, const openperf::utils::enumerator<Enum>& rhs)
 {
     using enum_type = std::underlying_type_t<Enum>;
-    return (icp::utils::bit_flags<Enum>(static_cast<enum_type>(lhs.value) | static_cast<enum_type>(rhs)));
+    return (openperf::utils::bit_flags<Enum>(static_cast<enum_type>(lhs) | static_cast<enum_type>(rhs.value)));
 }
 
 template <typename Enum>
 constexpr
-typename std::enable_if_t<std::is_enum_v<Enum> && icp::utils::is_enum_flag<Enum>::value,
-                          icp::utils::bit_flags<Enum>>
-operator|(const Enum& lhs, const icp::utils::bit_flags<Enum>& rhs)
+typename std::enable_if_t<std::is_enum_v<Enum> && openperf::utils::is_enum_flag<Enum>::value,
+                          openperf::utils::bit_flags<Enum>>
+operator|(const openperf::utils::enumerator<Enum>& lhs, const Enum& rhs)
 {
     using enum_type = std::underlying_type_t<Enum>;
-    return (icp::utils::bit_flags<Enum>(static_cast<enum_type>(lhs) | rhs.value));
+    return (openperf::utils::bit_flags<Enum>(static_cast<enum_type>(lhs.value) | static_cast<enum_type>(rhs)));
 }
 
 template <typename Enum>
 constexpr
-typename std::enable_if_t<std::is_enum_v<Enum> && icp::utils::is_enum_flag<Enum>::value,
-                          icp::utils::bit_flags<Enum>>
-operator|(const icp::utils::bit_flags<Enum>& lhs, const Enum& rhs)
+typename std::enable_if_t<std::is_enum_v<Enum> && openperf::utils::is_enum_flag<Enum>::value,
+                          openperf::utils::bit_flags<Enum>>
+operator|(const Enum& lhs, const openperf::utils::bit_flags<Enum>& rhs)
 {
     using enum_type = std::underlying_type_t<Enum>;
-    return (icp::utils::bit_flags<Enum>(lhs.value | static_cast<enum_type>(rhs)));
+    return (openperf::utils::bit_flags<Enum>(static_cast<enum_type>(lhs) | rhs.value));
 }
 
 template <typename Enum>
 constexpr
-typename std::enable_if_t<std::is_enum_v<Enum> && icp::utils::is_enum_flag<Enum>::value,
-                          icp::utils::bit_flags<Enum>>
-operator|(const icp::utils::enumerator<Enum>& lhs, const icp::utils::bit_flags<Enum>& rhs)
+typename std::enable_if_t<std::is_enum_v<Enum> && openperf::utils::is_enum_flag<Enum>::value,
+                          openperf::utils::bit_flags<Enum>>
+operator|(const openperf::utils::bit_flags<Enum>& lhs, const Enum& rhs)
 {
     using enum_type = std::underlying_type_t<Enum>;
-    return (icp::utils::bit_flags<Enum>(static_cast<enum_type>(lhs.value) | rhs.value));
+    return (openperf::utils::bit_flags<Enum>(lhs.value | static_cast<enum_type>(rhs)));
 }
 
 template <typename Enum>
 constexpr
-typename std::enable_if_t<std::is_enum_v<Enum> && icp::utils::is_enum_flag<Enum>::value,
-                          icp::utils::bit_flags<Enum>>
-operator|(const icp::utils::bit_flags<Enum>& lhs, const icp::utils::enumerator<Enum>& rhs)
+typename std::enable_if_t<std::is_enum_v<Enum> && openperf::utils::is_enum_flag<Enum>::value,
+                          openperf::utils::bit_flags<Enum>>
+operator|(const openperf::utils::enumerator<Enum>& lhs, const openperf::utils::bit_flags<Enum>& rhs)
 {
     using enum_type = std::underlying_type_t<Enum>;
-    return (icp::utils::bit_flags<Enum>(lhs.value | static_cast<enum_type>(rhs.value)));
+    return (openperf::utils::bit_flags<Enum>(static_cast<enum_type>(lhs.value) | rhs.value));
+}
+
+template <typename Enum>
+constexpr
+typename std::enable_if_t<std::is_enum_v<Enum> && openperf::utils::is_enum_flag<Enum>::value,
+                          openperf::utils::bit_flags<Enum>>
+operator|(const openperf::utils::bit_flags<Enum>& lhs, const openperf::utils::enumerator<Enum>& rhs)
+{
+    using enum_type = std::underlying_type_t<Enum>;
+    return (openperf::utils::bit_flags<Enum>(lhs.value | static_cast<enum_type>(rhs.value)));
 }
 
 /***
@@ -271,91 +271,91 @@ operator|(const icp::utils::bit_flags<Enum>& lhs, const icp::utils::enumerator<E
 
 template <typename Enum>
 constexpr
-typename std::enable_if_t<std::is_enum_v<Enum> && icp::utils::is_enum_flag<Enum>::value,
-                          icp::utils::bit_flags<Enum>>
+typename std::enable_if_t<std::is_enum_v<Enum> && openperf::utils::is_enum_flag<Enum>::value,
+                          openperf::utils::bit_flags<Enum>>
 operator^(const Enum& lhs, const Enum& rhs)
 {
     using enum_type = std::underlying_type_t<Enum>;
-    return (icp::utils::bit_flags<Enum>(static_cast<enum_type>(lhs) ^ static_cast<enum_type>(rhs)));
+    return (openperf::utils::bit_flags<Enum>(static_cast<enum_type>(lhs) ^ static_cast<enum_type>(rhs)));
 }
 
 template <typename Enum>
 constexpr
-typename std::enable_if_t<std::is_enum_v<Enum> && icp::utils::is_enum_flag<Enum>::value,
-                          icp::utils::bit_flags<Enum>>
-operator^(const icp::utils::enumerator<Enum>& lhs, const icp::utils::enumerator<Enum>& rhs)
+typename std::enable_if_t<std::is_enum_v<Enum> && openperf::utils::is_enum_flag<Enum>::value,
+                          openperf::utils::bit_flags<Enum>>
+operator^(const openperf::utils::enumerator<Enum>& lhs, const openperf::utils::enumerator<Enum>& rhs)
 {
     using enum_type = std::underlying_type_t<Enum>;
-    return (icp::utils::bit_flags<Enum>(static_cast<enum_type>(lhs.value) ^ static_cast<enum_type>(rhs.value)));
+    return (openperf::utils::bit_flags<Enum>(static_cast<enum_type>(lhs.value) ^ static_cast<enum_type>(rhs.value)));
 }
 
 template <typename Enum>
 constexpr
-typename std::enable_if_t<std::is_enum_v<Enum> && icp::utils::is_enum_flag<Enum>::value,
-                          icp::utils::bit_flags<Enum>>
-operator^(const icp::utils::bit_flags<Enum>& lhs, const icp::utils::bit_flags<Enum>& rhs)
+typename std::enable_if_t<std::is_enum_v<Enum> && openperf::utils::is_enum_flag<Enum>::value,
+                          openperf::utils::bit_flags<Enum>>
+operator^(const openperf::utils::bit_flags<Enum>& lhs, const openperf::utils::bit_flags<Enum>& rhs)
 {
-    return (icp::utils::bit_flags<Enum>(lhs.value ^ rhs.value));
+    return (openperf::utils::bit_flags<Enum>(lhs.value ^ rhs.value));
 }
 
 template <typename Enum>
 constexpr
-typename std::enable_if_t<std::is_enum_v<Enum> && icp::utils::is_enum_flag<Enum>::value,
-                          icp::utils::bit_flags<Enum>>
-operator^(const Enum& lhs, const icp::utils::enumerator<Enum>& rhs)
-{
-    using enum_type = std::underlying_type_t<Enum>;
-    return (icp::utils::bit_flags<Enum>(static_cast<enum_type>(lhs) ^ static_cast<enum_type>(rhs.value)));
-}
-
-template <typename Enum>
-constexpr
-typename std::enable_if_t<std::is_enum_v<Enum> && icp::utils::is_enum_flag<Enum>::value,
-                          icp::utils::bit_flags<Enum>>
-operator^(const icp::utils::enumerator<Enum>& lhs, const Enum& rhs)
+typename std::enable_if_t<std::is_enum_v<Enum> && openperf::utils::is_enum_flag<Enum>::value,
+                          openperf::utils::bit_flags<Enum>>
+operator^(const Enum& lhs, const openperf::utils::enumerator<Enum>& rhs)
 {
     using enum_type = std::underlying_type_t<Enum>;
-    return (icp::utils::bit_flags<Enum>(static_cast<enum_type>(lhs.value) ^ static_cast<enum_type>(rhs)));
+    return (openperf::utils::bit_flags<Enum>(static_cast<enum_type>(lhs) ^ static_cast<enum_type>(rhs.value)));
 }
 
 template <typename Enum>
 constexpr
-typename std::enable_if_t<std::is_enum_v<Enum> && icp::utils::is_enum_flag<Enum>::value,
-                          icp::utils::bit_flags<Enum>>
-operator^(const Enum& lhs, const icp::utils::bit_flags<Enum>& rhs)
+typename std::enable_if_t<std::is_enum_v<Enum> && openperf::utils::is_enum_flag<Enum>::value,
+                          openperf::utils::bit_flags<Enum>>
+operator^(const openperf::utils::enumerator<Enum>& lhs, const Enum& rhs)
 {
     using enum_type = std::underlying_type_t<Enum>;
-    return (icp::utils::bit_flags<Enum>(static_cast<enum_type>(lhs) ^ rhs.value));
+    return (openperf::utils::bit_flags<Enum>(static_cast<enum_type>(lhs.value) ^ static_cast<enum_type>(rhs)));
 }
 
 template <typename Enum>
 constexpr
-typename std::enable_if_t<std::is_enum_v<Enum> && icp::utils::is_enum_flag<Enum>::value,
-                          icp::utils::bit_flags<Enum>>
-operator^(const icp::utils::bit_flags<Enum>& lhs, const Enum& rhs)
+typename std::enable_if_t<std::is_enum_v<Enum> && openperf::utils::is_enum_flag<Enum>::value,
+                          openperf::utils::bit_flags<Enum>>
+operator^(const Enum& lhs, const openperf::utils::bit_flags<Enum>& rhs)
 {
     using enum_type = std::underlying_type_t<Enum>;
-    return (icp::utils::bit_flags<Enum>(lhs.value ^ static_cast<enum_type>(rhs)));
+    return (openperf::utils::bit_flags<Enum>(static_cast<enum_type>(lhs) ^ rhs.value));
 }
 
 template <typename Enum>
 constexpr
-typename std::enable_if_t<std::is_enum_v<Enum> && icp::utils::is_enum_flag<Enum>::value,
-                          icp::utils::bit_flags<Enum>>
-operator^(const icp::utils::enumerator<Enum>& lhs, const icp::utils::bit_flags<Enum>& rhs)
+typename std::enable_if_t<std::is_enum_v<Enum> && openperf::utils::is_enum_flag<Enum>::value,
+                          openperf::utils::bit_flags<Enum>>
+operator^(const openperf::utils::bit_flags<Enum>& lhs, const Enum& rhs)
 {
     using enum_type = std::underlying_type_t<Enum>;
-    return (icp::utils::bit_flags<Enum>(static_cast<enum_type>(lhs.value) ^ rhs.value));
+    return (openperf::utils::bit_flags<Enum>(lhs.value ^ static_cast<enum_type>(rhs)));
 }
 
 template <typename Enum>
 constexpr
-typename std::enable_if_t<std::is_enum_v<Enum> && icp::utils::is_enum_flag<Enum>::value,
-                          icp::utils::bit_flags<Enum>>
-operator^(const icp::utils::bit_flags<Enum>& lhs, const icp::utils::enumerator<Enum>& rhs)
+typename std::enable_if_t<std::is_enum_v<Enum> && openperf::utils::is_enum_flag<Enum>::value,
+                          openperf::utils::bit_flags<Enum>>
+operator^(const openperf::utils::enumerator<Enum>& lhs, const openperf::utils::bit_flags<Enum>& rhs)
 {
     using enum_type = std::underlying_type_t<Enum>;
-    return (icp::utils::bit_flags<Enum>(lhs.value ^ static_cast<enum_type>(rhs.value)));
+    return (openperf::utils::bit_flags<Enum>(static_cast<enum_type>(lhs.value) ^ rhs.value));
+}
+
+template <typename Enum>
+constexpr
+typename std::enable_if_t<std::is_enum_v<Enum> && openperf::utils::is_enum_flag<Enum>::value,
+                          openperf::utils::bit_flags<Enum>>
+operator^(const openperf::utils::bit_flags<Enum>& lhs, const openperf::utils::enumerator<Enum>& rhs)
+{
+    using enum_type = std::underlying_type_t<Enum>;
+    return (openperf::utils::bit_flags<Enum>(lhs.value ^ static_cast<enum_type>(rhs.value)));
 }
 
 /***
@@ -364,9 +364,9 @@ operator^(const icp::utils::bit_flags<Enum>& lhs, const icp::utils::enumerator<E
 
 template <typename Enum>
 constexpr
-typename std::enable_if_t<std::is_enum_v<Enum> && icp::utils::is_enum_flag<Enum>::value,
-                          icp::utils::bit_flags<Enum>>
-operator&=(icp::utils::bit_flags<Enum>& lhs, const Enum& rhs)
+typename std::enable_if_t<std::is_enum_v<Enum> && openperf::utils::is_enum_flag<Enum>::value,
+                          openperf::utils::bit_flags<Enum>>
+operator&=(openperf::utils::bit_flags<Enum>& lhs, const Enum& rhs)
 {
     using enum_type = std::underlying_type_t<Enum>;
     lhs.value &= static_cast<enum_type>(rhs);
@@ -375,9 +375,9 @@ operator&=(icp::utils::bit_flags<Enum>& lhs, const Enum& rhs)
 
 template <typename Enum>
 constexpr
-typename std::enable_if_t<std::is_enum_v<Enum> && icp::utils::is_enum_flag<Enum>::value,
-                          icp::utils::bit_flags<Enum>>
-operator&=(icp::utils::bit_flags<Enum>& lhs, const icp::utils::enumerator<Enum>& rhs)
+typename std::enable_if_t<std::is_enum_v<Enum> && openperf::utils::is_enum_flag<Enum>::value,
+                          openperf::utils::bit_flags<Enum>>
+operator&=(openperf::utils::bit_flags<Enum>& lhs, const openperf::utils::enumerator<Enum>& rhs)
 {
     using enum_type = std::underlying_type_t<Enum>;
     lhs.value &= static_cast<enum_type>(rhs.value);
@@ -386,9 +386,9 @@ operator&=(icp::utils::bit_flags<Enum>& lhs, const icp::utils::enumerator<Enum>&
 
 template <typename Enum>
 constexpr
-typename std::enable_if_t<std::is_enum_v<Enum> && icp::utils::is_enum_flag<Enum>::value,
-                          icp::utils::bit_flags<Enum>>
-operator&=(icp::utils::bit_flags<Enum>& lhs, const icp::utils::bit_flags<Enum>& rhs)
+typename std::enable_if_t<std::is_enum_v<Enum> && openperf::utils::is_enum_flag<Enum>::value,
+                          openperf::utils::bit_flags<Enum>>
+operator&=(openperf::utils::bit_flags<Enum>& lhs, const openperf::utils::bit_flags<Enum>& rhs)
 {
     lhs.value &= rhs.value;
     return (lhs);
@@ -400,9 +400,9 @@ operator&=(icp::utils::bit_flags<Enum>& lhs, const icp::utils::bit_flags<Enum>& 
 
 template <typename Enum>
 constexpr
-typename std::enable_if_t<std::is_enum_v<Enum> && icp::utils::is_enum_flag<Enum>::value,
-                          icp::utils::bit_flags<Enum>>
-operator|=(icp::utils::bit_flags<Enum>& lhs, const Enum& rhs)
+typename std::enable_if_t<std::is_enum_v<Enum> && openperf::utils::is_enum_flag<Enum>::value,
+                          openperf::utils::bit_flags<Enum>>
+operator|=(openperf::utils::bit_flags<Enum>& lhs, const Enum& rhs)
 {
     using enum_type = std::underlying_type_t<Enum>;
     lhs.value |= static_cast<enum_type>(rhs);
@@ -411,9 +411,9 @@ operator|=(icp::utils::bit_flags<Enum>& lhs, const Enum& rhs)
 
 template <typename Enum>
 constexpr
-typename std::enable_if_t<std::is_enum_v<Enum> && icp::utils::is_enum_flag<Enum>::value,
-                          icp::utils::bit_flags<Enum>>
-operator|=(icp::utils::bit_flags<Enum>& lhs, const icp::utils::enumerator<Enum>& rhs)
+typename std::enable_if_t<std::is_enum_v<Enum> && openperf::utils::is_enum_flag<Enum>::value,
+                          openperf::utils::bit_flags<Enum>>
+operator|=(openperf::utils::bit_flags<Enum>& lhs, const openperf::utils::enumerator<Enum>& rhs)
 {
     using enum_type = std::underlying_type_t<Enum>;
     lhs.value |= static_cast<enum_type>(rhs.value);
@@ -422,9 +422,9 @@ operator|=(icp::utils::bit_flags<Enum>& lhs, const icp::utils::enumerator<Enum>&
 
 template <typename Enum>
 constexpr
-typename std::enable_if_t<std::is_enum_v<Enum> && icp::utils::is_enum_flag<Enum>::value,
-                          icp::utils::bit_flags<Enum>>
-operator|=(icp::utils::bit_flags<Enum>& lhs, const icp::utils::bit_flags<Enum>& rhs)
+typename std::enable_if_t<std::is_enum_v<Enum> && openperf::utils::is_enum_flag<Enum>::value,
+                          openperf::utils::bit_flags<Enum>>
+operator|=(openperf::utils::bit_flags<Enum>& lhs, const openperf::utils::bit_flags<Enum>& rhs)
 {
     lhs.value |= rhs.value;
     return (lhs);
@@ -436,9 +436,9 @@ operator|=(icp::utils::bit_flags<Enum>& lhs, const icp::utils::bit_flags<Enum>& 
 
 template <typename Enum>
 constexpr
-typename std::enable_if_t<std::is_enum_v<Enum> && icp::utils::is_enum_flag<Enum>::value,
-                          icp::utils::bit_flags<Enum>>
-operator^=(icp::utils::bit_flags<Enum>& lhs, const Enum& rhs)
+typename std::enable_if_t<std::is_enum_v<Enum> && openperf::utils::is_enum_flag<Enum>::value,
+                          openperf::utils::bit_flags<Enum>>
+operator^=(openperf::utils::bit_flags<Enum>& lhs, const Enum& rhs)
 {
     using enum_type = std::underlying_type_t<Enum>;
     lhs.value ^= static_cast<enum_type>(rhs);
@@ -447,9 +447,9 @@ operator^=(icp::utils::bit_flags<Enum>& lhs, const Enum& rhs)
 
 template <typename Enum>
 constexpr
-typename std::enable_if_t<std::is_enum_v<Enum> && icp::utils::is_enum_flag<Enum>::value,
-                          icp::utils::bit_flags<Enum>>
-operator^=(icp::utils::bit_flags<Enum>& lhs, const icp::utils::enumerator<Enum>& rhs)
+typename std::enable_if_t<std::is_enum_v<Enum> && openperf::utils::is_enum_flag<Enum>::value,
+                          openperf::utils::bit_flags<Enum>>
+operator^=(openperf::utils::bit_flags<Enum>& lhs, const openperf::utils::enumerator<Enum>& rhs)
 {
     using enum_type = std::underlying_type_t<Enum>;
     lhs.value ^= static_cast<enum_type>(rhs.value);
@@ -458,9 +458,9 @@ operator^=(icp::utils::bit_flags<Enum>& lhs, const icp::utils::enumerator<Enum>&
 
 template <typename Enum>
 constexpr
-typename std::enable_if_t<std::is_enum_v<Enum> && icp::utils::is_enum_flag<Enum>::value,
-                          icp::utils::bit_flags<Enum>>
-operator^=(icp::utils::bit_flags<Enum>& lhs, const icp::utils::bit_flags<Enum>& rhs)
+typename std::enable_if_t<std::is_enum_v<Enum> && openperf::utils::is_enum_flag<Enum>::value,
+                          openperf::utils::bit_flags<Enum>>
+operator^=(openperf::utils::bit_flags<Enum>& lhs, const openperf::utils::bit_flags<Enum>& rhs)
 {
     lhs.value ^= rhs.value;
     return (lhs);
@@ -472,31 +472,31 @@ operator^=(icp::utils::bit_flags<Enum>& lhs, const icp::utils::bit_flags<Enum>& 
 
 template <typename Enum>
 constexpr
-typename std::enable_if_t<std::is_enum_v<Enum> && icp::utils::is_enum_flag<Enum>::value,
-                          icp::utils::bit_flags<Enum>>
+typename std::enable_if_t<std::is_enum_v<Enum> && openperf::utils::is_enum_flag<Enum>::value,
+                          openperf::utils::bit_flags<Enum>>
 operator~(const Enum& lhs)
 {
     using enum_type = std::underlying_type_t<Enum>;
-    return (icp::utils::bit_flags<Enum>(~static_cast<enum_type>(lhs)));
+    return (openperf::utils::bit_flags<Enum>(~static_cast<enum_type>(lhs)));
 }
 
 template <typename Enum>
 constexpr
-typename std::enable_if_t<std::is_enum_v<Enum> && icp::utils::is_enum_flag<Enum>::value,
-                          icp::utils::bit_flags<Enum>>
-operator~(const icp::utils::enumerator<Enum>& lhs)
+typename std::enable_if_t<std::is_enum_v<Enum> && openperf::utils::is_enum_flag<Enum>::value,
+                          openperf::utils::bit_flags<Enum>>
+operator~(const openperf::utils::enumerator<Enum>& lhs)
 {
     using enum_type = std::underlying_type_t<Enum>;
-    return (icp::utils::bit_flags<Enum>(~static_cast<enum_type>(lhs.value)));
+    return (openperf::utils::bit_flags<Enum>(~static_cast<enum_type>(lhs.value)));
 }
 
 template <typename Enum>
 constexpr
-typename std::enable_if_t<std::is_enum_v<Enum> && icp::utils::is_enum_flag<Enum>::value,
-                          icp::utils::bit_flags<Enum>>
-operator~(const icp::utils::bit_flags<Enum>& lhs)
+typename std::enable_if_t<std::is_enum_v<Enum> && openperf::utils::is_enum_flag<Enum>::value,
+                          openperf::utils::bit_flags<Enum>>
+operator~(const openperf::utils::bit_flags<Enum>& lhs)
 {
-    return (icp::utils::bit_flags<Enum>(~lhs.value));
+    return (openperf::utils::bit_flags<Enum>(~lhs.value));
 }
 
 /***
@@ -505,7 +505,7 @@ operator~(const icp::utils::bit_flags<Enum>& lhs)
 
 template <typename Enum>
 constexpr
-typename std::enable_if_t<std::is_enum_v<Enum> && icp::utils::is_enum_flag<Enum>::value, bool>
+typename std::enable_if_t<std::is_enum_v<Enum> && openperf::utils::is_enum_flag<Enum>::value, bool>
 operator==(const Enum& lhs, const Enum& rhs)
 {
     return (lhs == rhs);
@@ -513,32 +513,32 @@ operator==(const Enum& lhs, const Enum& rhs)
 
 template <typename Enum>
 constexpr
-typename std::enable_if_t<std::is_enum_v<Enum> && icp::utils::is_enum_flag<Enum>::value, bool>
-operator==(const icp::utils::enumerator<Enum>& lhs, const icp::utils::enumerator<Enum>& rhs)
+typename std::enable_if_t<std::is_enum_v<Enum> && openperf::utils::is_enum_flag<Enum>::value, bool>
+operator==(const openperf::utils::enumerator<Enum>& lhs, const openperf::utils::enumerator<Enum>& rhs)
 {
     return (lhs.value == rhs.value);
 }
 
 template <typename Enum>
 constexpr
-typename std::enable_if_t<std::is_enum_v<Enum> && icp::utils::is_enum_flag<Enum>::value, bool>
-operator==(const icp::utils::bit_flags<Enum>& lhs, const icp::utils::bit_flags<Enum>& rhs)
+typename std::enable_if_t<std::is_enum_v<Enum> && openperf::utils::is_enum_flag<Enum>::value, bool>
+operator==(const openperf::utils::bit_flags<Enum>& lhs, const openperf::utils::bit_flags<Enum>& rhs)
 {
     return (lhs.value == rhs.value);
 }
 
 template <typename Enum>
 constexpr
-typename std::enable_if_t<std::is_enum_v<Enum> && icp::utils::is_enum_flag<Enum>::value, bool>
-operator==(const Enum& lhs, const icp::utils::enumerator<Enum>& rhs)
+typename std::enable_if_t<std::is_enum_v<Enum> && openperf::utils::is_enum_flag<Enum>::value, bool>
+operator==(const Enum& lhs, const openperf::utils::enumerator<Enum>& rhs)
 {
     return (lhs == rhs.value);
 }
 
 template <typename Enum>
 constexpr
-typename std::enable_if_t<std::is_enum_v<Enum> && icp::utils::is_enum_flag<Enum>::value, bool>
-operator==(const icp::utils::enumerator<Enum>& lhs, const Enum& rhs)
+typename std::enable_if_t<std::is_enum_v<Enum> && openperf::utils::is_enum_flag<Enum>::value, bool>
+operator==(const openperf::utils::enumerator<Enum>& lhs, const Enum& rhs)
 {
     return (lhs.value == rhs);
 }
@@ -549,7 +549,7 @@ operator==(const icp::utils::enumerator<Enum>& lhs, const Enum& rhs)
 
 template <typename Enum>
 constexpr
-typename std::enable_if_t<std::is_enum_v<Enum> && icp::utils::is_enum_flag<Enum>::value, bool>
+typename std::enable_if_t<std::is_enum_v<Enum> && openperf::utils::is_enum_flag<Enum>::value, bool>
 operator!=(const Enum& lhs, const Enum& rhs)
 {
     return (lhs != rhs);
@@ -557,34 +557,34 @@ operator!=(const Enum& lhs, const Enum& rhs)
 
 template <typename Enum>
 constexpr
-typename std::enable_if_t<std::is_enum_v<Enum> && icp::utils::is_enum_flag<Enum>::value, bool>
-operator!=(const icp::utils::enumerator<Enum>& lhs, const icp::utils::enumerator<Enum>& rhs)
+typename std::enable_if_t<std::is_enum_v<Enum> && openperf::utils::is_enum_flag<Enum>::value, bool>
+operator!=(const openperf::utils::enumerator<Enum>& lhs, const openperf::utils::enumerator<Enum>& rhs)
 {
     return (lhs.value != rhs.value);
 }
 
 template <typename Enum>
 constexpr
-typename std::enable_if_t<std::is_enum_v<Enum> && icp::utils::is_enum_flag<Enum>::value, bool>
-operator!=(const icp::utils::bit_flags<Enum>& lhs, const icp::utils::bit_flags<Enum>& rhs)
+typename std::enable_if_t<std::is_enum_v<Enum> && openperf::utils::is_enum_flag<Enum>::value, bool>
+operator!=(const openperf::utils::bit_flags<Enum>& lhs, const openperf::utils::bit_flags<Enum>& rhs)
 {
     return (lhs.value != rhs.value);
 }
 
 template <typename Enum>
 constexpr
-typename std::enable_if_t<std::is_enum_v<Enum> && icp::utils::is_enum_flag<Enum>::value, bool>
-operator!=(const Enum& lhs, const icp::utils::enumerator<Enum>& rhs)
+typename std::enable_if_t<std::is_enum_v<Enum> && openperf::utils::is_enum_flag<Enum>::value, bool>
+operator!=(const Enum& lhs, const openperf::utils::enumerator<Enum>& rhs)
 {
     return (lhs != rhs.value);
 }
 
 template <typename Enum>
 constexpr
-typename std::enable_if_t<std::is_enum_v<Enum> && icp::utils::is_enum_flag<Enum>::value, bool>
-operator!=(const icp::utils::enumerator<Enum>& lhs, const Enum& rhs)
+typename std::enable_if_t<std::is_enum_v<Enum> && openperf::utils::is_enum_flag<Enum>::value, bool>
+operator!=(const openperf::utils::enumerator<Enum>& lhs, const Enum& rhs)
 {
     return (lhs.value != rhs);
 }
 
-#endif /* _ICP_UTILS_ENUM_FLAGS_H_ */
+#endif /* _OP_UTILS_ENUM_FLAGS_H_ */

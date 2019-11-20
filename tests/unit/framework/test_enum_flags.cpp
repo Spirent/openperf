@@ -14,8 +14,8 @@ declare_enum_flags(test_enums);
 TEST_CASE("enums flags", "[enum flags]")
 {
     using enum_type = std::underlying_type_t<test_enums>;
-    auto mask = icp::utils::bit_flags<test_enums>(std::numeric_limits<enum_type>::max());
-    auto enum_a = icp::utils::enumerator<test_enums>(test_enums::A);
+    auto mask = openperf::utils::bit_flags<test_enums>(std::numeric_limits<enum_type>::max());
+    auto enum_a = openperf::utils::enumerator<test_enums>(test_enums::A);
 
     SECTION("test operator &") {
         auto a_and_b = test_enums::A & test_enums::B;

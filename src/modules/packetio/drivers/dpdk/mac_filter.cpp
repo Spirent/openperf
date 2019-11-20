@@ -4,7 +4,7 @@
 #include "packetio/drivers/dpdk/model/port_info.h"
 #include "packetio/drivers/dpdk/port_filter.h"
 
-namespace icp::packetio::dpdk::port {
+namespace openperf::packetio::dpdk::port {
 
 static struct rte_ether_addr* to_dpdk_mac(const net::mac_address& mac)
 {
@@ -23,7 +23,7 @@ static unsigned get_max_mac_addresses(uint16_t port_id)
 static void maybe_enable_promiscuous_mode(uint16_t port_id)
 {
     if (!rte_eth_promiscuous_get(port_id)) {
-        ICP_LOG(ICP_LOG_INFO, "Enabling promiscuous mode on port %u\n", port_id);
+        OP_LOG(OP_LOG_INFO, "Enabling promiscuous mode on port %u\n", port_id);
         rte_eth_promiscuous_enable(port_id);
     }
 }
@@ -31,7 +31,7 @@ static void maybe_enable_promiscuous_mode(uint16_t port_id)
 static void maybe_disable_promiscuous_mode(uint16_t port_id)
 {
     if (rte_eth_promiscuous_get(port_id)) {
-        ICP_LOG(ICP_LOG_INFO, "Disabling promiscuous mode on port %u\n", port_id);
+        OP_LOG(OP_LOG_INFO, "Disabling promiscuous mode on port %u\n", port_id);
         rte_eth_promiscuous_disable(port_id);
     }
 }
@@ -75,7 +75,7 @@ uint16_t mac_filter::port_id() const
 
 static filter_state_error on_error(const filter_event_add& add, uint16_t port_id, int error)
 {
-    ICP_LOG(ICP_LOG_ERROR, "Failed to add address %s to port %u: %s\n",
+    OP_LOG(OP_LOG_ERROR, "Failed to add address %s to port %u: %s\n",
             net::to_string(add.mac).c_str(), port_id, strerror(std::abs(error)));
     maybe_enable_promiscuous_mode(port_id);
     return (filter_state_error{});
@@ -83,7 +83,7 @@ static filter_state_error on_error(const filter_event_add& add, uint16_t port_id
 
 static filter_state_error on_error(const filter_event_del& del, uint16_t port_id, int error)
 {
-    ICP_LOG(ICP_LOG_ERROR, "Failed to remove address %s from port %u: %s\n",
+    OP_LOG(OP_LOG_ERROR, "Failed to remove address %s from port %u: %s\n",
             net::to_string(del.mac).c_str(), port_id, strerror(std::abs(error)));
     return (filter_state_error{});
 }

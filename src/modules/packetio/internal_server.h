@@ -1,16 +1,16 @@
-#ifndef _ICP_PACKETIO_INTERNAL_SERVER_H_
-#define _ICP_PACKETIO_INTERNAL_SERVER_H_
+#ifndef _OP_PACKETIO_INTERNAL_SERVER_H_
+#define _OP_PACKETIO_INTERNAL_SERVER_H_
 
 #include <memory>
 
-#include "core/icp_core.h"
+#include "core/op_core.h"
 #include "packetio/generic_workers.h"
 
-namespace icp::packetio::internal::api {
+namespace openperf::packetio::internal::api {
 
 class server
 {
-    std::unique_ptr<void, icp_socket_deleter> m_socket;
+    std::unique_ptr<void, op_socket_deleter> m_socket;
     workers::generic_workers& m_workers;
 
 public:
@@ -23,4 +23,4 @@ public:
 
 }
 
-#endif /* _ICP_PACKETIO_INTERNAL_SERVER_H_ */
+#endif /* _OP_PACKETIO_INTERNAL_SERVER_H_ */

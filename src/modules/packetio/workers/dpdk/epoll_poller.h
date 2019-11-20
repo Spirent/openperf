@@ -1,5 +1,5 @@
-#ifndef _ICP_PACKETIO_DPDK_EPOLL_POLLER_H_
-#define _ICP_PACKETIO_DPDK_EPOLL_POLLER_H_
+#ifndef _OP_PACKETIO_DPDK_EPOLL_POLLER_H_
+#define _OP_PACKETIO_DPDK_EPOLL_POLLER_H_
 
 #include <unordered_map>
 #include <variant>
@@ -7,7 +7,7 @@
 
 #include "packetio/workers/dpdk/worker_api.h"
 
-namespace icp::packetio::dpdk::worker {
+namespace openperf::packetio::dpdk::worker {
 
 class epoll_poller {
     std::vector<task_ptr> m_events;
@@ -27,4 +27,4 @@ public:
 
 }
 
-#endif /* _ICP_PACKETIO_DPDK_EPOLL_POLLER_H_ */
+#endif /* _OP_PACKETIO_DPDK_EPOLL_POLLER_H_ */

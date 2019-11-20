@@ -1,5 +1,5 @@
-#ifndef _ICP_SOCKET_SERVER_STREAM_CHANNEL_H_
-#define _ICP_SOCKET_SERVER_STREAM_CHANNEL_H_
+#ifndef _OP_SOCKET_SERVER_STREAM_CHANNEL_H_
+#define _OP_SOCKET_SERVER_STREAM_CHANNEL_H_
 
 #include <memory>
 
@@ -10,7 +10,7 @@
 #include "socket/event_queue_producer.h"
 #include "socket/stream_channel.h"
 
-namespace icp {
+namespace openperf {
 namespace socket {
 namespace server {
 
@@ -59,7 +59,7 @@ protected:
     const std::atomic_uint64_t& ack_write_idx() const;
 
 public:
-    stream_channel(int socket_flags, icp::socket::server::allocator& allocator);
+    stream_channel(int socket_flags, openperf::socket::server::allocator& allocator);
     ~stream_channel();
 
     stream_channel(const stream_channel&) = delete;
@@ -84,9 +84,9 @@ public:
 };
 
 struct stream_channel_deleter {
-    void operator()(icp::socket::server::stream_channel* channel) {
-        auto allocator = reinterpret_cast<icp::socket::server::allocator*>(
-            reinterpret_cast<icp::socket::stream_channel*>(channel)->allocator);
+    void operator()(openperf::socket::server::stream_channel* channel) {
+        auto allocator = reinterpret_cast<openperf::socket::server::allocator*>(
+            reinterpret_cast<openperf::socket::stream_channel*>(channel)->allocator);
         channel->~stream_channel();
         allocator->deallocate(reinterpret_cast<uint8_t*>(channel),
                               sizeof(*channel));
@@ -99,4 +99,4 @@ typedef std::unique_ptr<stream_channel, stream_channel_deleter> stream_channel_p
 }
 }
 
-#endif /* _ICP_SOCKET_SERVER_STREAM_CHANNEL_H_ */
+#endif /* _OP_SOCKET_SERVER_STREAM_CHANNEL_H_ */

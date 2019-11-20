@@ -55,7 +55,7 @@
 #include "lwip/etharp.h"
 #include "netif/ethernet.h"
 
-#include "core/icp_core.h"
+#include "core/op_core.h"
 #include "packetio/stack/tcpip.h"
 
 #define TCPIP_MSG_VAR_REF(name)     API_VAR_REF(name)
@@ -67,7 +67,7 @@
 #error "lwip's core locking is not supported"
 #endif /* LWIP_TCPIP_CORE_LOCKING */
 
-namespace icp::packetio::tcpip {
+namespace openperf::packetio::tcpip {
 
 /**
  * These next two functions, handle_timeouts() and handle_messages() provide
@@ -154,7 +154,7 @@ extern "C" {
 err_t
 tcpip_inpkt(struct pbuf *p, struct netif *inp, netif_input_fn input_fn)
 {
-    auto tcpip_mbox = icp::packetio::tcpip::mbox();
+    auto tcpip_mbox = openperf::packetio::tcpip::mbox();
     struct tcpip_msg *msg;
 
     LWIP_ASSERT("Invalid mbox", sys_mbox_valid_val(tcpip_mbox));
@@ -215,7 +215,7 @@ tcpip_input(struct pbuf *p, struct netif *inp)
 err_t
 tcpip_callback(tcpip_callback_fn function, void *ctx)
 {
-    auto tcpip_mbox = icp::packetio::tcpip::mbox();
+    auto tcpip_mbox = openperf::packetio::tcpip::mbox();
     struct tcpip_msg *msg;
 
     LWIP_ASSERT("Invalid mbox", sys_mbox_valid_val(tcpip_mbox));
@@ -252,7 +252,7 @@ tcpip_callback(tcpip_callback_fn function, void *ctx)
 err_t
 tcpip_try_callback(tcpip_callback_fn function, void *ctx)
 {
-    auto tcpip_mbox = icp::packetio::tcpip::mbox();
+    auto tcpip_mbox = openperf::packetio::tcpip::mbox();
     struct tcpip_msg *msg;
 
     LWIP_ASSERT("Invalid mbox", sys_mbox_valid_val(tcpip_mbox));
@@ -286,7 +286,7 @@ tcpip_try_callback(tcpip_callback_fn function, void *ctx)
 err_t
 tcpip_api_call(tcpip_api_call_fn fn, struct tcpip_api_call_data *call)
 {
-    auto tcpip_mbox = icp::packetio::tcpip::mbox();
+    auto tcpip_mbox = openperf::packetio::tcpip::mbox();
     /*
      * XXX: Shutdown can cause a race on this value, so don't proceed if we've
      * already destroyed the tcpip_mbox.

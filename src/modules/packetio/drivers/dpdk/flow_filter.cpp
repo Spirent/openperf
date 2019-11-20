@@ -9,7 +9,7 @@
 
 struct rte_flow;
 
-namespace icp::packetio::dpdk::port {
+namespace openperf::packetio::dpdk::port {
 
 enum class flow_error_type {validation, addition, deletion};
 
@@ -24,15 +24,15 @@ static void log_flow_error(enum flow_error_type type, const rte_flow_error& erro
                                : type == flow_error_type::addition ? "addition"
                                : "deletion");
     if (error.message) {
-        ICP_LOG(ICP_LOG_ERROR, "Flow %.*s failed: %s\n",
+        OP_LOG(OP_LOG_ERROR, "Flow %.*s failed: %s\n",
                 static_cast<int>(action.size()), action.data(),
                 error.message);
     } else if (error.cause) {
-        ICP_LOG(ICP_LOG_ERROR, "Flow %.*s failed: %s\n",
+        OP_LOG(OP_LOG_ERROR, "Flow %.*s failed: %s\n",
                 static_cast<int>(action.size()), action.data(),
                 error.cause);
     } else {
-        ICP_LOG(ICP_LOG_ERROR, "Flow %.*s failed: %d\n",
+        OP_LOG(OP_LOG_ERROR, "Flow %.*s failed: %d\n",
                 static_cast<int>(action.size()), action.data(),
                 error.type);
     }
@@ -246,7 +246,7 @@ static bool maybe_disable_promiscuous_mode(uint16_t port_id,
     if (auto item = flows.find(net::mac_address(promiscuous.dst.addr_bytes));
         item != flows.end()) {
         if (delete_flow(port_id, item->second)) {
-            ICP_LOG(ICP_LOG_INFO, "Disabling promiscuous mode on port %u\n", port_id);
+            OP_LOG(OP_LOG_INFO, "Disabling promiscuous mode on port %u\n", port_id);
             flows.erase(item);
             return (true);
         }
@@ -267,7 +267,7 @@ std::optional<filter_state> flow_filter::on_event(const filter_event_add& add,
     if (!promiscuous_flow) {
         return (filter_state_error{});
     } else if (filter_full(m_port)) {
-        ICP_LOG(ICP_LOG_INFO, "Enabling promiscuous mode on port %u\n", m_port);
+        OP_LOG(OP_LOG_INFO, "Enabling promiscuous mode on port %u\n", m_port);
         m_flows.emplace(net::mac_address(promiscuous.dst.addr_bytes), *promiscuous_flow);
 
         m_overflows.push_back(add.mac);
@@ -315,7 +315,7 @@ std::optional<filter_state> flow_filter::on_event(const filter_event_disable&, c
         return (filter_state_error{});
     }
 
-    ICP_LOG(ICP_LOG_INFO, "Enabling promiscuous mode on port %u\n", m_port);
+    OP_LOG(OP_LOG_INFO, "Enabling promiscuous mode on port %u\n", m_port);
     m_flows.emplace(net::mac_address(promiscuous.dst.addr_bytes), *promiscuous_flow);
 
     return (filter_state_disabled{});

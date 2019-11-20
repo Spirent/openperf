@@ -1,5 +1,5 @@
-#ifndef _ICP_PACKETIO_GENERIC_EVENT_LOOP_H_
-#define _ICP_PACKETIO_GENERIC_EVENT_LOOP_H_
+#ifndef _OP_PACKETIO_GENERIC_EVENT_LOOP_H_
+#define _OP_PACKETIO_GENERIC_EVENT_LOOP_H_
 
 #include <any>
 #include <cassert>
@@ -9,7 +9,7 @@
 #include <string>
 #include <variant>
 
-namespace icp::packetio::event_loop {
+namespace openperf::packetio::event_loop {
 
 class generic_event_loop;
 
@@ -98,4 +98,4 @@ private:
 
 }
 
-#endif /* _ICP_PACKETIO_GENERIC_EVENT_LOOP_H_ */
+#endif /* _OP_PACKETIO_GENERIC_EVENT_LOOP_H_ */

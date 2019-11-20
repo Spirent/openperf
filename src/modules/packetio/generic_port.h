@@ -1,5 +1,5 @@
-#ifndef _ICP_PACKETIO_GENERIC_PORT_H_
-#define _ICP_PACKETIO_GENERIC_PORT_H_
+#ifndef _OP_PACKETIO_GENERIC_PORT_H_
+#define _OP_PACKETIO_GENERIC_PORT_H_
 
 #include <memory>
 #include <string>
@@ -17,7 +17,7 @@ class Port;
 }
 }
 
-namespace icp {
+namespace openperf {
 namespace packetio {
 namespace port {
 
@@ -203,4 +203,4 @@ std::shared_ptr<swagger::v1::model::Port> make_swagger_port(const generic_port&)
 }
 }
 
-#endif /* _ICP_PACKETIO_GENERIC_PORT_H_ */
+#endif /* _OP_PACKETIO_GENERIC_PORT_H_ */

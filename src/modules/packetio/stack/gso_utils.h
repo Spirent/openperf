@@ -1,5 +1,5 @@
-#ifndef _ICP_PACKETIO_STACK_GSO_UTILS_H_
-#define _ICP_PACKETIO_STACK_GSO_UTILS_H_
+#ifndef _OP_PACKETIO_STACK_GSO_UTILS_H_
+#define _OP_PACKETIO_STACK_GSO_UTILS_H_
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -63,4 +63,4 @@ uint16_t packetio_stack_gso_pbuf_copy(struct pbuf* p_head, uint16_t offset,
 }
 #endif
 
-#endif /* _ICP_PACKETIO_STACK_GSO_UTILS_H_ */
+#endif /* _OP_PACKETIO_STACK_GSO_UTILS_H_ */

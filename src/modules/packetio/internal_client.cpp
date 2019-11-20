@@ -3,7 +3,7 @@
 #include "packetio/internal_api.h"
 #include "packetio/internal_client.h"
 
-namespace icp::packetio::internal::api {
+namespace openperf::packetio::internal::api {
 
 static tl::expected<reply_msg, int> do_request(void* socket,
                                                const request_msg& request)
@@ -16,7 +16,7 @@ static tl::expected<reply_msg, int> do_request(void* socket,
 }
 
 client::client(void* context)
-    : m_socket(icp_socket_get_client(context, ZMQ_REQ, endpoint.data()))
+    : m_socket(op_socket_get_client(context, ZMQ_REQ, endpoint.data()))
 {}
 
 client::client(client&& other)
@@ -67,7 +67,7 @@ tl::expected<void, int> client::add_sink(std::string_view src_id,
                                          packets::generic_sink sink)
 {
     if (src_id.length() > name_length_max) {
-        ICP_LOG(ICP_LOG_ERROR, "Source ID, %.*s, is too big\n",
+        OP_LOG(OP_LOG_ERROR, "Source ID, %.*s, is too big\n",
                 static_cast<int>(src_id.length()), src_id.data());
         return (tl::make_unexpected(ENOMEM));
     }
@@ -97,7 +97,7 @@ tl::expected<void, int> client::del_sink(std::string_view src_id,
                                          packets::generic_sink sink)
 {
     if (src_id.length() > name_length_max) {
-        ICP_LOG(ICP_LOG_ERROR, "Source ID, %.*s, is too big\n",
+        OP_LOG(OP_LOG_ERROR, "Source ID, %.*s, is too big\n",
                 static_cast<int>(src_id.length()), src_id.data());
         return (tl::make_unexpected(ENOMEM));
     }
@@ -127,7 +127,7 @@ tl::expected<void, int> client::add_source(std::string_view dst_id,
                                            packets::generic_source source)
 {
     if (dst_id.length() > name_length_max) {
-        ICP_LOG(ICP_LOG_ERROR, "Destination ID, %.*s, is too big\n",
+        OP_LOG(OP_LOG_ERROR, "Destination ID, %.*s, is too big\n",
                 static_cast<int>(dst_id.length()), dst_id.data());
         return (tl::make_unexpected(ENOMEM));
     }
@@ -157,7 +157,7 @@ tl::expected<void, int> client::del_source(std::string_view dst_id,
                                            packets::generic_source source)
 {
     if (dst_id.length() > name_length_max) {
-        ICP_LOG(ICP_LOG_ERROR, "Destination ID, %.*s, is too big\n",
+        OP_LOG(OP_LOG_ERROR, "Destination ID, %.*s, is too big\n",
                 static_cast<int>(dst_id.length()), dst_id.data());
         return (tl::make_unexpected(ENOMEM));
     }
@@ -201,7 +201,7 @@ tl::expected<std::string, int> client::add_task_impl(workers::context ctx,
     };
 
     if (name.length() > name_length_max) {
-        ICP_LOG(ICP_LOG_WARNING, "Truncating task name to %.*s\n",
+        OP_LOG(OP_LOG_WARNING, "Truncating task name to %.*s\n",
                 static_cast<int>(name_length_max), name.data());
     }
 

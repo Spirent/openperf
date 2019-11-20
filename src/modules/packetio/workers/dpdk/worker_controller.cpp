@@ -2,7 +2,7 @@
 #include <chrono>
 #include <vector>
 
-#include "core/icp_core.h"
+#include "core/op_core.h"
 #include "packetio/drivers/dpdk/dpdk.h"
 #include "packetio/drivers/dpdk/model/physical_port.h"
 #include "packetio/drivers/dpdk/model/port_info.h"
@@ -14,13 +14,13 @@
 #include "packetio/workers/dpdk/worker_queues.h"
 #include "packetio/workers/dpdk/worker_controller.h"
 
-namespace icp::packetio::dpdk {
+namespace openperf::packetio::dpdk {
 
 static void launch_workers(void* context, worker::recycler* recycler, const worker::fib* fib)
 {
     /* Launch work threads on all of our available worker cores */
     static std::string_view sync_endpoint = "inproc://dpdk_worker_sync";
-    auto sync = icp_task_sync_socket(context, sync_endpoint.data());
+    auto sync = op_task_sync_socket(context, sync_endpoint.data());
     struct worker::main_args args = {
         .context = context,
         .endpoint = sync_endpoint.data(),
@@ -37,7 +37,7 @@ static void launch_workers(void* context, worker::recycler* recycler, const work
      * Wait until all workers have pinged us back.  If we send out the configuration
      * before all of the workers are ready, they could miss it.
      */
-    icp_task_sync_block(&sync, rte_lcore_count() - 1);
+    op_task_sync_block(&sync, rte_lcore_count() - 1);
 }
 
 static std::vector<worker::descriptor> to_worker_descriptors(const std::vector<queue::descriptor>& descriptors,
@@ -116,19 +116,19 @@ static unsigned num_workers()
     return (rte_lcore_count() - 1);
 }
 
-static int handle_recycler_timeout(const icp_event_data*, void* arg)
+static int handle_recycler_timeout(const op_event_data*, void* arg)
 {
     auto recycler = reinterpret_cast<worker::recycler*>(arg);
     recycler->writer_process_gc_callbacks();
     return (0);
 }
 
-static void setup_recycler_callback(icp::core::event_loop& loop, worker::recycler* recycler)
+static void setup_recycler_callback(openperf::core::event_loop& loop, worker::recycler* recycler)
 {
     using namespace std::chrono_literals;
     std::chrono::duration<uint64_t, std::nano> timeout = 5s;
 
-    struct icp_event_callbacks callbacks = {
+    struct op_event_callbacks callbacks = {
         .on_read = handle_recycler_timeout
     };
 
@@ -156,8 +156,8 @@ static void maybe_enable_rxq_tag_detection(const port::filter& filter)
         auto& container = queues[filter.port_id()];
         for (uint16_t i = 0; i < container.rx_queues(); i++) {
             auto rxq = container.rx(i);
-            ICP_LOG(ICP_LOG_DEBUG, "Enabling hardware flow tag detection on RX queue %u:%u\n",
-                    rxq->port_id(), rxq->queue_id());
+            OP_LOG(OP_LOG_DEBUG, "Enabling hardware flow tag detection on RX queue %u:%u\n",
+                   rxq->port_id(), rxq->queue_id());
             rxq->flags(rxq->flags() | rx_feature_flags::hardware_tags);
         }
     }
@@ -170,8 +170,8 @@ static void maybe_disable_rxq_tag_detection(const port::filter& filter)
         auto& container = queues[filter.port_id()];
         for (uint16_t i = 0; i < container.rx_queues(); i++) {
             auto rxq = container.rx(i);
-            ICP_LOG(ICP_LOG_DEBUG, "Disabling hardware flow tag detection on RX queue %u:%u\n",
-                    rxq->port_id(), rxq->queue_id());
+            OP_LOG(OP_LOG_DEBUG, "Disabling hardware flow tag detection on RX queue %u:%u\n",
+                   rxq->port_id(), rxq->queue_id());
             rxq->flags(rxq->flags() & ~rx_feature_flags::hardware_tags);
         }
     }
@@ -184,15 +184,15 @@ static void maybe_update_rxq_lro_mode(const model::port_info& info)
         auto& container = queues[info.id()];
         for (uint16_t i = 0; i < container.rx_queues(); i++) {
             auto rxq = container.rx(i);
-            ICP_LOG(ICP_LOG_DEBUG, "Disabling software LRO on RX queue %u:%u. "
-                    "Hardware support detected\n", rxq->port_id(), rxq->queue_id());
+            OP_LOG(OP_LOG_DEBUG, "Disabling software LRO on RX queue %u:%u. "
+                   "Hardware support detected\n", rxq->port_id(), rxq->queue_id());
             rxq->flags(rxq->flags() | rx_feature_flags::hardware_lro);
         }
     }
 }
 
 worker_controller::worker_controller(void* context,
-                                     icp::core::event_loop& loop,
+                                     openperf::core::event_loop& loop,
                                      driver::generic_driver& driver)
     : m_context(context)
     , m_driver(driver)
@@ -434,7 +434,7 @@ void worker_controller::add_interface(std::string_view port_id,
                                                  std::any_cast<const netif*>(interface.data())));
     m_recycler->writer_add_gc_callback([to_delete](){ delete to_delete; });
 
-    ICP_LOG(ICP_LOG_DEBUG, "Added interface with mac = %s to port %.*s (idx = %u)\n",
+    OP_LOG(OP_LOG_DEBUG, "Added interface with mac = %s to port %.*s (idx = %u)\n",
             net::to_string(mac).c_str(),
             static_cast<int>(port_id.length()), port_id.data(),
             *port_idx);
@@ -453,7 +453,7 @@ void worker_controller::del_interface(std::string_view port_id,
     auto& filter = get_port_filter(m_filters, *port_idx);
     filter.del_mac_address(mac, [&]() { maybe_enable_rxq_tag_detection(filter); });
 
-    ICP_LOG(ICP_LOG_DEBUG, "Removed interface with mac = %s to port %.*s (idx = %u)\n",
+    OP_LOG(OP_LOG_DEBUG, "Removed interface with mac = %s to port %.*s (idx = %u)\n",
             net::to_string(mac).c_str(),
             static_cast<int>(port_id.length()), port_id.data(),
             *port_idx);
@@ -481,7 +481,7 @@ tl::expected<void, int> worker_controller::add_sink(std::string_view src_id,
         return (tl::make_unexpected(EALREADY));
     }
 
-    ICP_LOG(ICP_LOG_DEBUG, "Adding sink %s to port %.*s (idx = %u)\n",
+    OP_LOG(OP_LOG_DEBUG, "Adding sink %s to port %.*s (idx = %u)\n",
             sink.id().c_str(),
             static_cast<int>(src_id.length()), src_id.data(),
             *port_idx);
@@ -501,7 +501,7 @@ void worker_controller::del_sink(std::string_view src_id, packets::generic_sink 
     auto port_idx = m_driver.port_index(src_id);
     if (!port_idx) return;
 
-    ICP_LOG(ICP_LOG_DEBUG, "Deleting sink %s from port %.*s (idx = %u)\n",
+    OP_LOG(OP_LOG_DEBUG, "Deleting sink %s from port %.*s (idx = %u)\n",
             sink.id().c_str(),
             static_cast<int>(src_id.length()), src_id.data(),
             *port_idx);
@@ -612,7 +612,7 @@ tl::expected<void, int> worker_controller::add_source(std::string_view dst_id,
     auto [queue_idx, worker_idx] = get_queue_and_worker_idx(m_tx_workers, m_tx_loads, *port_idx);
     m_tx_loads[worker_idx] += get_source_load(source);
 
-    ICP_LOG(ICP_LOG_DEBUG, "Adding source %s to port %.*s (idx = %u, queue = %u) on worker %u\n",
+    OP_LOG(OP_LOG_DEBUG, "Adding source %s to port %.*s (idx = %u, queue = %u) on worker %u\n",
             source.id().c_str(),
             static_cast<int>(dst_id.length()), dst_id.data(),
             *port_idx, queue_idx, worker_idx);
@@ -638,7 +638,7 @@ void worker_controller::del_source(std::string_view dst_id, packets::generic_sou
     auto source_load = get_source_load(source);
     if (worker_load > source_load) worker_load -= source_load;
 
-    ICP_LOG(ICP_LOG_DEBUG, "Deleting source %s from port %.*s (idx = %u, queue = %u) on worker %u\n",
+    OP_LOG(OP_LOG_DEBUG, "Deleting source %s from port %.*s (idx = %u, queue = %u) on worker %u\n",
             source.id().c_str(),
             static_cast<int>(dst_id.length()), dst_id.data(),
             *port_idx, *queue_idx, worker_idx);
@@ -665,7 +665,7 @@ tl::expected<std::string, int> worker_controller::add_task(workers::context ctx,
         return (tl::make_unexpected(EALREADY));
     }
 
-    ICP_LOG(ICP_LOG_DEBUG, "Added task %.*s with id = %s\n",
+    OP_LOG(OP_LOG_DEBUG, "Added task %.*s with id = %s\n",
             static_cast<int>(name.length()), name.data(), core::to_string(id).c_str());
 
     std::vector<worker::descriptor> tasks { worker::descriptor(topology::get_stack_lcore_id(),
@@ -677,7 +677,7 @@ tl::expected<std::string, int> worker_controller::add_task(workers::context ctx,
 
 void worker_controller::del_task(std::string_view task_id)
 {
-    ICP_LOG(ICP_LOG_DEBUG, "Deleting task %.*s\n",
+    OP_LOG(OP_LOG_DEBUG, "Deleting task %.*s\n",
             static_cast<int>(task_id.length()), task_id.data());
     auto id = core::uuid(task_id);
     if (auto item = m_tasks.find(id); item != m_tasks.end()) {

@@ -1,20 +1,20 @@
-# Inception [![CircleCI](https://circleci.com/gh/SpirentOrion/inception-core.svg?style=shield&circle-token=bca4a01889f21771b4f3e6461edb67b764e772b4)](https://circleci.com/gh/SpirentOrion/inception-core)
+# OpenPerf [![CircleCI](https://circleci.com/gh/SpirentOrion/inception-core.svg?style=shield&circle-token=bca4a01889f21771b4f3e6461edb67b764e772b4)](https://circleci.com/gh/SpirentOrion/inception-core)
 
 This code base provides an infrastructure and application test and analysis
 framework.  Discrete modules provide functionality with the assistance of a
 common core.  Each module also defines a REST API via a [Swagger](https://swagger.io)
 specification to allow users to access and control its functionality.
 
-The first set of modules for Inception provides a user-mode stack.  This
+The first set of modules for OpenPerf provides a user-mode stack.  This
 stack is an amalgam of [lwip](https://savannah.nongnu.org/projects/lwip/) for
 TCP/IP protocol support and [DPDK](https://www.dpdk.org) for network connectivity.
 Configuration and management of network ports and interfaces is defined in this
-[REST API](api/schema/v1/inception-core.yaml).
+[REST API](api/schema/v1/openperf.yaml).
 
 ## Dependencies
 
-Inception is written in modern C/C++, e.g. C11 and C++17. The build process is
-handled via `make` and uses [clang](https://clang.llvm.org) by default.  Inception
+OpenPerf is written in modern C/C++, e.g. C11 and C++17. The build process is
+handled via `make` and uses [clang](https://clang.llvm.org) by default.  OpenPerf
 also depends on some 3rd party components:
 
 * [DPDK](https://www.dpdk.org) - used for network drivers and packet buffers
@@ -33,8 +33,8 @@ unit testing framework.  Additionally, build acceptance tests are run with
 
 ## Design
 
-Inception is inherently multi-threaded.  In order to maximize per thread
-performance, Inception uses lockless and non-blocking techniques instead
+OpenPerf is inherently multi-threaded.  In order to maximize per thread
+performance, OpenPerf uses lockless and non-blocking techniques instead
 of traditional thread synchronization methods.
 
 One motivation for using ZeroMQ is to allow message passing between components.
@@ -49,25 +49,25 @@ both a lockless list and hash-table implementation.
 
 ## Overview
 
-![Inception components](doc/images/block_diagram.png)
+![OpenPerf components](doc/images/block_diagram.png)
 
-Inception is composed of a core framework and three primary code modules:
+OpenPerf is composed of a core framework and three primary code modules:
 
-* api: The API module runs a web service that provides access to Inception
+* api: The API module runs a web service that provides access to OpenPerf
   internals via a REST interface.
 * packetio: The packetio module contains the stack and packet forwarding logic
   necessary to pass packets between the physical ports and the user created
   interfaces.
 * socket: The socket module provides a BSD sockets compatible API to the
   stack in the packetio module.  It creates the shared memory and UNIX domain
-  socket required by the libicp-shim.so library for access to stack functions.
+  socket required by the libopenperf-shim.so library for access to stack functions.
 
 The core framework provides support for common functionality across all
 modules, such as logging, option handling, data structures, event loops, etc.
 
-Client access to the stack is provided via a shim library, libicp-shim.so, that can be
+Client access to the stack is provided via a shim library, libopenperf-shim.so, that can be
 used with any program via the LD_PRELOAD environment variable.  Consult the
 [getting started guide](doc/GETTING_STARTED.md) for example usage.
 
-Additionally, users can create their own modules to link directly into the inception
+Additionally, users can create their own modules to link directly into the OpenPerf
 binary to allow direct access to the packetio and socket module.

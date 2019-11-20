@@ -1,11 +1,11 @@
-#ifndef _ICP_PACKETIO_TRANSMOGRIFY_UTILS_H_
-#define _ICP_PACKETIO_TRANSMOGRIFY_UTILS_H_
+#ifndef _OP_PACKETIO_TRANSMOGRIFY_UTILS_H_
+#define _OP_PACKETIO_TRANSMOGRIFY_UTILS_H_
 
 #include <algorithm>
 #include <variant>
 #include <zmq.h>
 
-namespace icp::packetio::transmogrify {
+namespace openperf::packetio::transmogrify {
 
 template <typename T>
 static auto zmq_msg_init(zmq_msg_t* msg, const T& value)
@@ -54,4 +54,4 @@ constexpr size_t variant_index() {
 
 }
 
-#endif /* _ICP_PACKETIO_TRANSMOGRIFY_UTILS_H_ */
+#endif /* _OP_PACKETIO_TRANSMOGRIFY_UTILS_H_ */

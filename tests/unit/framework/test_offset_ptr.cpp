@@ -15,7 +15,7 @@ struct test_struct {
 TEST_CASE("basic functionality for offset_ptr", "[offset_ptr]")
 {
     SECTION("default constructor works, ") {
-        icp::memory::offset_ptr<int> x;
+        openperf::memory::offset_ptr<int> x;
 
         SECTION("empty pointer equals null,") {
             REQUIRE(x == nullptr);
@@ -35,7 +35,7 @@ TEST_CASE("basic functionality for offset_ptr", "[offset_ptr]")
     }
 
     SECTION("pointer constructor works,") {
-        auto x = icp::memory::offset_ptr<char>(new auto('x'));
+        auto x = openperf::memory::offset_ptr<char>(new auto('x'));
 
         SECTION("can get constructed value,") {
             REQUIRE(*x == 'x');
@@ -47,7 +47,7 @@ TEST_CASE("basic functionality for offset_ptr", "[offset_ptr]")
         }
 
         SECTION("can construct offset_ptr from an offset_ptr,") {
-            auto y = icp::memory::offset_ptr<char>(x);
+            auto y = openperf::memory::offset_ptr<char>(x);
             REQUIRE(y == x);
             REQUIRE(*y == *x);
         }
@@ -56,7 +56,7 @@ TEST_CASE("basic functionality for offset_ptr", "[offset_ptr]")
     }
 
     SECTION("pointer works with arrays,") {
-        auto x = icp::memory::offset_ptr<long>(new long[10]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9});
+        auto x = openperf::memory::offset_ptr<long>(new long[10]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9});
 
         SECTION("can access items by index,") {
             for (int i = 0; i < 10; i++) {
@@ -106,7 +106,7 @@ TEST_CASE("basic functionality for offset_ptr", "[offset_ptr]")
     }
 
     SECTION("pointer works with standard library,") {
-        auto x = icp::memory::offset_ptr<int>(new int[100]);
+        auto x = openperf::memory::offset_ptr<int>(new int[100]);
 
         SECTION("can fill with iota,") {
             std::iota(x.get(), x.get() + 100, 1);
@@ -120,7 +120,7 @@ TEST_CASE("basic functionality for offset_ptr", "[offset_ptr]")
     }
 
     SECTION("can use with structures,") {
-        auto x = icp::memory::offset_ptr<test_struct>(new test_struct());
+        auto x = openperf::memory::offset_ptr<test_struct>(new test_struct());
 
         SECTION("can set values,") {
             static constexpr int value_foo = 1;

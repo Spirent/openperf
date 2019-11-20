@@ -1,7 +1,7 @@
-#ifndef _ICP_UTILS_OVERLOADED_VISITOR_H_
-#define _ICP_UTILS_OVERLOADED_VISITOR_H_
+#ifndef _OP_UTILS_OVERLOADED_VISITOR_H_
+#define _OP_UTILS_OVERLOADED_VISITOR_H_
 
-namespace icp::utils {
+namespace openperf::utils {
 
 /**
  * This struct is magic.  Use templates and parameter packing to provide
@@ -19,4 +19,4 @@ struct overloaded_visitor : Ts...
 
 }
 
-#endif /* _ICP_UTILS_OVERLOADED_VISITOR_H_ */
+#endif /* _OP_UTILS_OVERLOADED_VISITOR_H_ */

@@ -2,9 +2,9 @@
 #include "packetio/internal_server.h"
 #include "utils/overloaded_visitor.h"
 
-namespace icp::packetio::internal::api {
+namespace openperf::packetio::internal::api {
 
-std::string_view endpoint = "inproc://icp_packetio_internal";
+std::string_view endpoint = "inproc://op_packetio_internal";
 
 reply_msg handle_request(workers::generic_workers& workers,
                          const request_sink_add& request)
@@ -125,14 +125,14 @@ static std::string to_string(request_msg& request)
                        request));
 }
 
-static int handle_rpc_request(const icp_event_data* data, void* arg)
+static int handle_rpc_request(const op_event_data* data, void* arg)
 {
     auto server = reinterpret_cast<internal::api::server*>(arg);
     unsigned tx_errors = 0;
 
     while (auto request = recv_message(data->socket, ZMQ_DONTWAIT)
            .and_then(deserialize_request)) {
-        ICP_LOG(ICP_LOG_TRACE, "Received request to %s\n", to_string(*request).c_str());
+        OP_LOG(OP_LOG_TRACE, "Received request to %s\n", to_string(*request).c_str());
 
         auto handle_visitor = [&](auto& request_msg) -> reply_msg {
                                   return (handle_request(server->workers(), request_msg));
@@ -141,15 +141,15 @@ static int handle_rpc_request(const icp_event_data* data, void* arg)
 
         if (send_message(data->socket, serialize_reply(reply)) == -1) {
             tx_errors++;
-            ICP_LOG(ICP_LOG_ERROR, "Error sending reply: %s\n", zmq_strerror(errno));
+            OP_LOG(OP_LOG_ERROR, "Error sending reply: %s\n", zmq_strerror(errno));
             continue;
         }
 
         if (auto error = std::get_if<reply_error>(&reply)) {
-            ICP_LOG(ICP_LOG_TRACE, "Request to %s failed: %s\n",
+            OP_LOG(OP_LOG_TRACE, "Request to %s failed: %s\n",
                     to_string(*request).c_str(), strerror(error->value));
         } else {
-            ICP_LOG(ICP_LOG_TRACE, "Request to %s succeeded\n",
+            OP_LOG(OP_LOG_TRACE, "Request to %s succeeded\n",
                     to_string(*request).c_str());
         }
     }
@@ -159,10 +159,10 @@ static int handle_rpc_request(const icp_event_data* data, void* arg)
 
 server::server(void* context, core::event_loop& loop,
                workers::generic_workers& workers)
-    : m_socket(icp_socket_get_server(context, ZMQ_REP, endpoint.data()))
+    : m_socket(op_socket_get_server(context, ZMQ_REP, endpoint.data()))
     , m_workers(workers)
 {
-    struct icp_event_callbacks callbacks = {
+    struct op_event_callbacks callbacks = {
         .on_read = handle_rpc_request
     };
 

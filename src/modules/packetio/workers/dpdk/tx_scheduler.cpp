@@ -4,7 +4,7 @@
 #include "packetio/workers/dpdk/tx_scheduler.h"
 #include "utils/overloaded_visitor.h"
 
-namespace icp::packetio::dpdk {
+namespace openperf::packetio::dpdk {
 
 using namespace std::literals::chrono_literals;
 static constexpr auto block_poll    = 100ns;
@@ -52,7 +52,7 @@ static void read_timer(int fd, void* arg)
     uint64_t counter = 0;
     auto error = read(fd, &counter, sizeof(counter));
     if (error == -1 && errno == EAGAIN) {
-        ICP_LOG(ICP_LOG_WARNING, "Spurious tx scheduler wakeup for %u:%u\n",
+        OP_LOG(OP_LOG_WARNING, "Spurious tx scheduler wakeup for %u:%u\n",
                 scheduler->port_id(), scheduler->queue_id());
     }
 }
@@ -268,7 +268,7 @@ static uint16_t do_transmit(uint16_t port_idx, uint16_t queue_idx,
         auto to_send = source->pull(outgoing.data(), loop_burst);
         auto prepared = rte_eth_tx_prepare(port_idx, queue_idx, outgoing.data(), to_send);
         if (prepared < to_send) {
-            ICP_LOG(ICP_LOG_WARNING, "Source %s returned %u untransmittable packets\n",
+            OP_LOG(OP_LOG_WARNING, "Source %s returned %u untransmittable packets\n",
                     source->id().c_str(), to_send - prepared);
 
             /* Drop all un-sendable mbufs */
@@ -302,7 +302,7 @@ static uint16_t do_transmit(uint16_t port_idx, uint16_t queue_idx,
         total_sent += sent;
     }
 
-    ICP_LOG(ICP_LOG_TRACE, "Transmitted %u of %u packets on %u:%u from source %s\n",
+    OP_LOG(OP_LOG_TRACE, "Transmitted %u of %u packets on %u:%u from source %s\n",
             total_sent, total_to_send, port_idx, queue_idx, source->id().c_str());
 
     return (total_sent);

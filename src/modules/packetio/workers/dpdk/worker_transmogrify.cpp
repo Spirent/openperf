@@ -7,7 +7,7 @@
 #include "utils/overloaded_visitor.h"
 #include "utils/variant_index.h"
 
-namespace icp::packetio::dpdk::worker {
+namespace openperf::packetio::dpdk::worker {
 
 struct serialized_msg {
     zmq_msg_t type;

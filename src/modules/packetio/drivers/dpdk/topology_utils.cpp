@@ -6,9 +6,9 @@
 
 #include "packetio/drivers/dpdk/dpdk.h"
 #include "packetio/drivers/dpdk/topology_utils.h"
-#include "core/icp_log.h"
+#include "core/op_log.h"
 
-namespace icp {
+namespace openperf {
 namespace packetio {
 namespace dpdk {
 namespace topology {
@@ -18,7 +18,7 @@ using cores_by_id = std::unordered_map<unsigned, std::vector<unsigned>>;
 /*
  * Distribute port queues to workers while taking into account NUMA
  * relationships.  This is a simple and probably non-optimal solution to the
- * problem.  The best solution for users is to run one Inception node per NUMA
+ * problem.  The best solution for users is to run one OpenPerf node per NUMA
  * node instance.  But if a user chooses not to do that, this will at least
  * allow everything to work.
  */
@@ -58,7 +58,7 @@ queue_distribute(const std::vector<model::port_info>& port_info)
     /* Log a warning if we have to assign ports to cores on different nodes */
     if (!unmatched_port_nodes.empty()) {
         for (auto& item : unmatched_port_nodes) {
-            ICP_LOG(ICP_LOG_WARNING,
+            OP_LOG(OP_LOG_WARNING,
                     "No local cores are available for ports on NUMA socket %u (port%s %s)\n",
                     item.first,
                     item.second.size() > 1 ? "s" : "",

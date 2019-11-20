@@ -1,5 +1,5 @@
-#ifndef _ICP_PACKETIO_STACK_LWIPOPTS_H_
-#define _ICP_PACKETIO_STACK_LWIPOPTS_H_
+#ifndef _OP_PACKETIO_STACK_LWIPOPTS_H_
+#define _OP_PACKETIO_STACK_LWIPOPTS_H_
 
 /**
  * This file contains definitions to control the build and runtime behavior
@@ -129,4 +129,4 @@
 //#define DNS_DEBUG        LWIP_DBG_ON
 //#define IP6_DEBUG        LWIP_DBG_ON
 
-#endif /* _ICP_PACKETIO_STACK_LWIPOPTS_H_ */
+#endif /* _OP_PACKETIO_STACK_LWIPOPTS_H_ */

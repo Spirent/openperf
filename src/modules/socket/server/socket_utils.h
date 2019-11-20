@@ -1,15 +1,15 @@
-#ifndef _ICP_SOCKET_SERVER_SOCKET_UTILS_H_
-#define _ICP_SOCKET_SERVER_SOCKET_UTILS_H_
+#ifndef _OP_SOCKET_SERVER_SOCKET_UTILS_H_
+#define _OP_SOCKET_SERVER_SOCKET_UTILS_H_
 
 #include <optional>
 #include <arpa/inet.h>
 
 #include "socket/api.h"
 
-#include "core/icp_log.h"
+#include "core/op_log.h"
 #include "lwip/ip_addr.h"
 
-namespace icp {
+namespace openperf {
 namespace socket {
 namespace server {
 
@@ -33,7 +33,7 @@ public:
             },
             request, m_state);
         if (next_state) {
-            ICP_LOG(ICP_LOG_TRACE, "Socket %p: %s --> %s\n",
+            OP_LOG(OP_LOG_TRACE, "Socket %p: %s --> %s\n",
                     reinterpret_cast<void*>(this), to_string(m_state),
                     to_string(*next_state));
             m_state = *std::move(next_state);
@@ -75,4 +75,4 @@ tl::expected<void, int> copy_out(pid_t dst_pid,
 }
 }
 
-#endif /* _ICP_SOCKET_SERVER_SOCKET_UTILS_H_ */
+#endif /* _OP_SOCKET_SERVER_SOCKET_UTILS_H_ */

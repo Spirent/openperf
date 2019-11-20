@@ -51,7 +51,7 @@ int server::handle_api_accept(event_loop& loop, std::any)
 }
 ```
 
-> Note that the terms **callback** and **task** are equivalent in the context of workers. 
+> Note that the terms **callback** and **task** are equivalent in the context of workers.
 
 
 ## Client: Handling tasks
@@ -80,22 +80,22 @@ static int handle_tcpip_timeout(event_loop::generic_event_loop& loop, std::any a
 
 ## Workers: Controller
 
-The worker server is started with the packetIO module. 
+The worker server is started with the packetIO module.
 
 ```cpp
 workers::make(context, *m_loop, *m_driver);
 ```
 
-It returns an instance of `worker_controller` which is _abstracted_ as a `generic_workers` when handled from packetIO. 
+It returns an instance of `worker_controller` which is _abstracted_ as a `generic_workers` when handled from packetIO.
 
-The first step for the worker controller is to _launch_ the workers, via the `launch_workers` method. 
+The first step for the worker controller is to _launch_ the workers, via the `launch_workers` method.
 
 ```cpp
 static void launch_workers(void* context, worker::recycler* recycler, const worker::fib* fib)
 {
     /* Launch work threads on all of our available worker cores */
     static std::string_view sync_endpoint = "inproc://dpdk_worker_sync";
-    auto sync = icp_task_sync_socket(context, sync_endpoint.data());
+    auto sync = op_task_sync_socket(context, sync_endpoint.data());
     struct worker::main_args args = {
         .context = context,
         .endpoint = sync_endpoint.data(),
@@ -110,13 +110,13 @@ static void launch_workers(void* context, worker::recycler* recycler, const work
      * Wait until all workers have pinged us back.  If we send out the configuration
      * before all of the workers are ready, they could miss it.
      */
-    icp_task_sync_block(&sync, rte_lcore_count() - 1);
+    op_task_sync_block(&sync, rte_lcore_count() - 1);
 }
 ```
 
-The [rte_eal_mp_remote_launch](http://doc.dpdk.org/api/rte__launch_8h.html#a2f78fc845135fe22c1ba1c870954b60a) function launches the `worker::main` callback on all lcores. 
+The [rte_eal_mp_remote_launch](http://doc.dpdk.org/api/rte__launch_8h.html#a2f78fc845135fe22c1ba1c870954b60a) function launches the `worker::main` callback on all lcores.
 
-The `icp_task_sync_block` is implemented as part of the core OpenPerf framework. It waits for _n_ messages (`rte_lcore_count`) to be received on the `sync` _0MQ_ channel, and then clean the channel.
+The `op_task_sync_block` is implemented as part of the core OpenPerf framework. It waits for _n_ messages (`rte_lcore_count`) to be received on the `sync` _0MQ_ channel, and then clean the channel.
 
 The _worker controller_ then initialize each worker context, for both _QSBR_ and _transmit load map_:
 
@@ -130,14 +130,14 @@ Finally,  the _worker controller_ _starts_ `num_workers()` workers via the _work
 void client::start(void* context, unsigned nb_workers)
 {
     auto syncpoint = random_endpoint();
-    auto sync = icp_task_sync_socket(context, syncpoint.c_str());
+    auto sync = op_task_sync_socket(context, syncpoint.c_str());
     send_message(m_socket.get(), start_msg{ syncpoint });
-    icp_task_sync_block_and_warn(&sync, nb_workers, 1000,
+    op_task_sync_block_and_warn(&sync, nb_workers, 1000,
          "Still waiting on start acknowledgment from queue workers ");
 }
 ```
 
-The above code works since `num_workers()` is equivalent to `rte_lcore_count()-1`. 
+The above code works since `num_workers()` is equivalent to `rte_lcore_count()-1`.
 
 
 ## Workers: Adding Tasks
@@ -168,23 +168,23 @@ worker_controller::add_task(workers::context ctx,
         topology::get_stack_lcore_id(),
         std::addressof(it->second)
     )
-    
+
     std::vector<worker::descriptor> tasks { descriptor }
     m_workers->add_descriptors(tasks);
-    
+
     return (core::to_string(id));
 }
 ```
 
-> Note that the  `add_task()`  only works for `workers::context::STACK`.  The intent for external clients to use the sink/source related functions for adding things to the workers. The task stuff is really just to allow the stack module to insert the stack functions into the workers. This is all because of the requirement to run  _inception_  on as few as 2 cores (and hence the stack and the port I/O functions have to run in one worker).
+> Note that the  `add_task()`  only works for `workers::context::STACK`.  The intent for external clients to use the sink/source related functions for adding things to the workers. The task stuff is really just to allow the stack module to insert the stack functions into the workers. This is all because of the requirement to run  _openperf_  on as few as 2 cores (and hence the stack and the port I/O functions have to run in one worker).
 
-Each task is assigned a random UUID first, using  `core::uuid::random`. The `m_tasks` is an `std::unordered_map` mapping UUID to the task. 
+Each task is assigned a random UUID first, using  `core::uuid::random`. The `m_tasks` is an `std::unordered_map` mapping UUID to the task.
 
 The task is then assigned to a worker using the method `topology::get_stack_lcore_id`, and then sent to the actually worker using `m_workers->add_descriptors`.
 
-The [`topology::get_stack_lcore_id`](https://github.com/SpirentOrion/openperf-core/blob/141d26f6ae6c02407603ead75b6675aed91a2868/src/modules/packetio/drivers/dpdk/topology_utils.cpp#L135) is straightforward - checks the NUMA with the most cores, and return the _first_ core. This function always returns the same core, since LWIP is single threaded.
+The [`topology::get_stack_lcore_id`](https://github.com/SpirentOrion/inception-core/blob/141d26f6ae6c02407603ead75b6675aed91a2868/src/modules/packetio/drivers/dpdk/topology_utils.cpp#L135) is straightforward - checks the NUMA with the most cores, and return the _first_ core. This function always returns the same core, since LWIP is single threaded.
 
-> Note that port queues _are_ distributed amongst all available workers. This is done by [`topology::queue_distribute`](https://github.com/SpirentOrion/openperf-core/blob/141d26f6ae6c02407603ead75b6675aed91a2868/src/modules/packetio/drivers/dpdk/topology_utils.cpp#L26)
+> Note that port queues _are_ distributed amongst all available workers. This is done by [`topology::queue_distribute`](https://github.com/SpirentOrion/inception-core/blob/141d26f6ae6c02407603ead75b6675aed91a2868/src/modules/packetio/drivers/dpdk/topology_utils.cpp#L26)
 
 Once the worker has received a task, it adds it to an internal structure called _pollable_, which is then processed using epoll (The next section explains it in details).The following flow-chart shows the complete sequence for adding tasks.
 
@@ -271,15 +271,13 @@ public:
     }
 ```
 
-Why would `rte_epoll_ctl` fail, thus making spinning the only polling method?  
+Why would `rte_epoll_ctl` fail, thus making spinning the only polling method?
 
 > The  `add()`  function goes through the concrete pollable object, e.g.  `rx_queue`  or  `tx_queue`, etc. The  `rx_queue`'s  `add()`  method can fail if the queue (and hence the port) doesn't support rx interrupts (or have them enabled). This happens before  `rte_epoll_ctrl()`  is called.
 
 > Note: you can disable rx interrupts from the command line via a configuration option.
 
 
-The following graph shows the callgraph summary for pollable worker execution. 
+The following graph shows the callgraph summary for pollable worker execution.
 
 ![](../images/packetio-workers-addtask.png)
-
-

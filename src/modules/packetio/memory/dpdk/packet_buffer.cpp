@@ -1,7 +1,7 @@
 #include "packetio/drivers/dpdk/dpdk.h"
 #include "packetio/packet_buffer.h"
 
-namespace icp::packetio::packets {
+namespace openperf::packetio::packets {
 
 /*
  * For our DPDK backend, the packet_buffer is a rte_mbuf.

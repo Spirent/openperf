@@ -34,7 +34,7 @@ struct circular_buffer
 };
 
 class test_buffer_producer : public circular_buffer
-                           , public icp::socket::circular_buffer_producer<test_buffer_producer>
+                           , public openperf::socket::circular_buffer_producer<test_buffer_producer>
 {
     friend class circular_buffer_producer<test_buffer_producer>;
 
@@ -54,7 +54,7 @@ public:
 };
 
 class test_buffer_consumer : public circular_buffer
-                           , public icp::socket::circular_buffer_consumer<test_buffer_consumer>
+                           , public openperf::socket::circular_buffer_consumer<test_buffer_consumer>
 {
     friend class circular_buffer_consumer<test_buffer_consumer>;
 

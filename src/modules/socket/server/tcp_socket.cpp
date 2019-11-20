@@ -9,7 +9,7 @@
 #include "lwip/tcp.h"
 #include "utils/overloaded_visitor.h"
 
-namespace icp {
+namespace openperf {
 namespace socket {
 namespace server {
 
@@ -158,14 +158,14 @@ void tcp_socket::tcp_pcb_deleter::operator()(tcp_pcb *pcb)
     }
 }
 
-icp::socket::server::allocator* tcp_socket::channel_allocator()
+openperf::socket::server::allocator* tcp_socket::channel_allocator()
 {
-    return (reinterpret_cast<icp::socket::server::allocator*>(
+    return (reinterpret_cast<openperf::socket::server::allocator*>(
                 reinterpret_cast<socket::stream_channel*>(
                     m_channel.get())->allocator));
 }
 
-tcp_socket::tcp_socket(icp::socket::server::allocator* allocator, int flags, tcp_pcb* pcb)
+tcp_socket::tcp_socket(openperf::socket::server::allocator* allocator, int flags, tcp_pcb* pcb)
     : m_channel(new (allocator->allocate(sizeof(stream_channel)))
                 stream_channel(flags, *allocator))
     , m_pcb(pcb)
@@ -175,7 +175,7 @@ tcp_socket::tcp_socket(icp::socket::server::allocator* allocator, int flags, tcp
     state(tcp_connected());
 }
 
-tcp_socket::tcp_socket(icp::socket::server::allocator& allocator, int flags)
+tcp_socket::tcp_socket(openperf::socket::server::allocator& allocator, int flags)
     : m_channel(new (allocator.allocate(sizeof(stream_channel)))
                 stream_channel(flags, allocator))
     , m_pcb(tcp_new())
@@ -314,7 +314,7 @@ int tcp_socket::do_lwip_poll()
         do_tcp_receive_all(m_pcb.get(), *m_channel, m_recvq);
     } else if (m_channel->send_consumable()) {
         /* Client buffer has data; (re)notify */
-        ICP_LOG(ICP_LOG_DEBUG, "Kicking idle client\n");
+        OP_LOG(OP_LOG_DEBUG, "Kicking idle client\n");
         m_channel->notify();
     }
 

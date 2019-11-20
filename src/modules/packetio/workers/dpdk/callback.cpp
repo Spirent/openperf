@@ -5,7 +5,7 @@
 #include "packetio/workers/dpdk/callback.h"
 #include "utils/overloaded_visitor.h"
 
-namespace icp::packetio::dpdk {
+namespace openperf::packetio::dpdk {
 
 static int get_event_fd(const event_loop::event_notifier& notifier)
 {

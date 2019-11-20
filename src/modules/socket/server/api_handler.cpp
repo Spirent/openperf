@@ -5,10 +5,10 @@
 #include "socket/server/allocator.h"
 #include "socket/server/api_handler.h"
 #include "socket/server/socket_utils.h"
-#include "core/icp_core.h"
+#include "core/op_core.h"
 #include "utils/overloaded_visitor.h"
 
-namespace icp::socket::server {
+namespace openperf::socket::server {
 
 api_handler::api_handler(event_loop& loop,
                          const void* shm_base,
@@ -59,7 +59,7 @@ static ssize_t send_reply(int sockfd, const sockaddr_un& client, const api::repl
         cmsg->cmsg_len   = CMSG_LEN(sizeof(*fd_pair));
         memcpy(CMSG_DATA(cmsg), &(*fd_pair), sizeof(*fd_pair));
 
-        ICP_LOG(ICP_LOG_DEBUG, "Sending client_fd = %d, server_fd = %d\n",
+        OP_LOG(OP_LOG_DEBUG, "Sending client_fd = %d, server_fd = %d\n",
                 fd_pair->client_fd, fd_pair->server_fd);
     }
 
@@ -72,7 +72,7 @@ static ssize_t send_reply(int sockfd, const sockaddr_un& client, const api::repl
 static int handle_socket_read(api_handler::event_loop&, std::any arg)
 {
     auto socket = std::any_cast<generic_socket*>(arg);
-    ICP_LOG(ICP_LOG_TRACE, "Transmit request for socket %p\n", (void*)socket);
+    OP_LOG(OP_LOG_TRACE, "Transmit request for socket %p\n", (void*)socket);
     socket->handle_io();
     return (0);
 }
@@ -198,57 +198,57 @@ int api_handler::handle_requests(int fd)
 
         auto reply = std::visit(utils::overloaded_visitor(
                                     [](const api::request_init&) -> api::reply_msg {
-                                        ICP_LOG(ICP_LOG_TRACE, "init request received\n");
+                                        OP_LOG(OP_LOG_TRACE, "init request received\n");
                                         return (tl::make_unexpected(EINVAL));
                                     },
                                     [&](const api::request_accept& request) -> api::reply_msg {
-                                        ICP_LOG(ICP_LOG_TRACE, "accept request received\n");
+                                        OP_LOG(OP_LOG_TRACE, "accept request received\n");
                                         return (handle_request_accept(request));
                                     },
                                     [&](const api::request_bind& request) -> api::reply_msg {
-                                        ICP_LOG(ICP_LOG_TRACE, "bind request received\n");
+                                        OP_LOG(OP_LOG_TRACE, "bind request received\n");
                                         return (handle_request_generic(request));
                                     },
                                     [&](const api::request_shutdown& request) -> api::reply_msg {
-                                        ICP_LOG(ICP_LOG_TRACE, "shutdown request received\n");
+                                        OP_LOG(OP_LOG_TRACE, "shutdown request received\n");
                                         return (handle_request_generic(request));
                                     },
                                     [&](const api::request_getpeername& request) -> api::reply_msg {
-                                        ICP_LOG(ICP_LOG_TRACE, "getpeername request received\n");
+                                        OP_LOG(OP_LOG_TRACE, "getpeername request received\n");
                                         return (handle_request_generic(request));
                                     },
                                     [&](const api::request_getsockname& request) -> api::reply_msg {
-                                        ICP_LOG(ICP_LOG_TRACE, "getsockname request received\n");
+                                        OP_LOG(OP_LOG_TRACE, "getsockname request received\n");
                                         return (handle_request_generic(request));
                                     },
                                     [&](const api::request_getsockopt& request) -> api::reply_msg {
-                                        ICP_LOG(ICP_LOG_TRACE, "getsockopt request received\n");
+                                        OP_LOG(OP_LOG_TRACE, "getsockopt request received\n");
                                         return (handle_request_generic(request));
                                     },
                                     [&](const api::request_setsockopt& request) -> api::reply_msg {
-                                        ICP_LOG(ICP_LOG_TRACE, "setsockopt request received\n");
+                                        OP_LOG(OP_LOG_TRACE, "setsockopt request received\n");
                                         return (handle_request_generic(request));
                                     },
                                     [&](const api::request_close& request) -> api::reply_msg {
-                                        ICP_LOG(ICP_LOG_TRACE, "close request received\n");
+                                        OP_LOG(OP_LOG_TRACE, "close request received\n");
                                         return (handle_request_close(request));
                                     },
                                     [&](const api::request_connect& request) -> api::reply_msg {
-                                        ICP_LOG(ICP_LOG_TRACE, "connect request received\n");
+                                        OP_LOG(OP_LOG_TRACE, "connect request received\n");
                                         return (handle_request_generic(request));
                                     },
                                     [&](const api::request_listen& request) -> api::reply_msg {
-                                        ICP_LOG(ICP_LOG_TRACE, "listen request received\n");
+                                        OP_LOG(OP_LOG_TRACE, "listen request received\n");
                                         return (handle_request_generic(request));
                                     },
                                     [&](const api::request_socket& request) -> api::reply_msg {
-                                        ICP_LOG(ICP_LOG_TRACE, "socket request received\n");
+                                        OP_LOG(OP_LOG_TRACE, "socket request received\n");
                                         return (handle_request_socket(request));
                                     }),
                                 request);
 
         if (send_reply(fd, client, reply) == -1) {
-            ICP_LOG(ICP_LOG_ERROR, "Error sending reply on fd = %d: %s\n",
+            OP_LOG(OP_LOG_ERROR, "Error sending reply on fd = %d: %s\n",
                     fd, strerror(errno));
         }
     }

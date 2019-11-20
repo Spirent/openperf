@@ -6,7 +6,7 @@ The _packet IO_ module is the core of OpenPerf, handling both DPDK, LWIP and the
 
 # PacketIO Module - Interfaces
 
-One of those servers is the `interface server` component which handles the interface related 0MQ RPC requests. 
+One of those servers is the `interface server` component which handles the interface related 0MQ RPC requests.
 
 In this section, the `BULK_CREATE_INTERFACES`  RPC request, reponsible to create a large number of interfaces in one single call, in being studied.
 
@@ -29,15 +29,15 @@ static void _handle_bulk_create_interface_request(generic_stack& stack, json& re
 }
 ```
 
-The `stack` is created by the packet IO module, and is implemented as a `icp::packetio::dpdk::lwip` with driver defined as `icp::packetio::dpdk::eal::real_environment`.
+The `stack` is created by the packet IO module, and is implemented as a `openperf::packetio::dpdk::lwip` with driver defined as `openperf::packetio::dpdk::eal::real_environment`.
 
-> Note: the actual object is icp::packet::dpdk::eal. The real_environment is just a named constructor function. There is also a test_envionrment constructor which is used to run the AAT's and sets up virtual NICs for testing.
+> Note: the actual object is openperf::packet::dpdk::eal. The real_environment is just a named constructor function. There is also a test_envionrment constructor which is used to run the AAT's and sets up virtual NICs for testing.
 
 ```C++
 std::unique_ptr<generic_stack> make(driver::generic_driver& driver,
                                     workers::generic_workers& workers)
 {
-    return std::make_unique<generic_stack>(icp::packetio::dpdk::lwip(driver, workers));
+    return std::make_unique<generic_stack>(openperf::packetio::dpdk::lwip(driver, workers));
 }
 ```
 
@@ -61,7 +61,7 @@ tl::expected<std::string, std::string> lwip::create_interface(const interface::c
 }
 ```
 
-The `net_interface` is dealing the IP address allocation. The function `setup_ipv4_interface` handles _static_, _dhcp_ or _local_ IP addresses. 
+The `net_interface` is dealing the IP address allocation. The function `setup_ipv4_interface` handles _static_, _dhcp_ or _local_ IP addresses.
 
 ```C++
 net_interface::net_interface(std::string_view id, const interface::config_data& config, driver::tx_burst tx, int port_index)
@@ -83,7 +83,7 @@ net_interface::net_interface(std::string_view id, const interface::config_data& 
      */
     if (rte_lcore_count() > 2) {
         m_receive.emplace<netif_rx_strategy::queueing>(
-            std::string_view(m_netif.name, 2), 
+            std::string_view(m_netif.name, 2),
             m_netif.num, port_index
         );
     }
@@ -91,13 +91,13 @@ net_interface::net_interface(std::string_view id, const interface::config_data& 
 }
 ```
 
-The _Update queuing strategy if necessary; direct is the default._ is slightly more complex to analyse. 
+The _Update queuing strategy if necessary; direct is the default._ is slightly more complex to analyse.
 
 The `m_receive` (of type `rx_strategy`) is used when handling RX packets, such as `(std::visit(handle_rx_visitor, m_receive))`. The `rx_strategy` can be either `direct` (no queing) or `queueing` (with a 512 element queue size). The `emplace` method is used because `m_receive` is a variant.
 
 > Question: What is the reason for `2` in `std::string_view(m_netif.name, 2)`?
 
-> What happens is there is only 2 or less cores? The `m_receive` would not be updated, so packets could not be received? 
+> What happens is there is only 2 or less cores? The `m_receive` would not be updated, so packets could not be received?
 
 >> So, this is a combination of a DPDKism and the desire to have OpenPerf work on the smallest system possible.
 
@@ -131,9 +131,9 @@ void worker_controller::add_interface(std::string_view port_id, std::any interfa
 }
 ```
 
-The `m_recycler` (of type `packetio::recycle::depot<RTE_MAX_LCORE>`) is used to safely deleting data shared with a bunch of reader threads. For instance, when the port is shutdown, it can ensure that all interfaces are cleaned-up, unless referenced by their another thread. `m_recycler` is an [RCU](https://math.mit.edu/research/highschool/primes/materials/2016/conf/10-1%20Sheth-Welling-Sheth.pdf) implementation. The worker threads will periodically update their checkpoints to let the main thread know when it is safe to run the callbacks to delete objects. 
+The `m_recycler` (of type `packetio::recycle::depot<RTE_MAX_LCORE>`) is used to safely deleting data shared with a bunch of reader threads. For instance, when the port is shutdown, it can ensure that all interfaces are cleaned-up, unless referenced by their another thread. `m_recycler` is an [RCU](https://math.mit.edu/research/highschool/primes/materials/2016/conf/10-1%20Sheth-Welling-Sheth.pdf) implementation. The worker threads will periodically update their checkpoints to let the main thread know when it is safe to run the callbacks to delete objects.
 
-The `port.add_mac_address` is using DPDK `rte_eth_dev_mac_addr_add` to add the MAC as a valid RX address. If this DPDK fails, the interface is turned into promiscuous mode. 
+The `port.add_mac_address` is using DPDK `rte_eth_dev_mac_addr_add` to add the MAC as a valid RX address. If this DPDK fails, the interface is turned into promiscuous mode.
 
 The `m_fib` (of type `packetio::forwarding_table<netif, packets::generic_sink, RTE_MAX_ETHPORTS>`) is used as the _rx distpatch table_, to know how to associate MACs to interfaces.  It is very nicely implemented as templated code. The `insert_interface` code is defined as:
 
@@ -148,8 +148,8 @@ interface_map* forwarding_table::insert_interface( uint16_t port_idx, const net:
 }
 ```
 
-The `interface_map` is defined as `immer::map<net::mac_address, Interface*>`. 
-[Immer](https://sinusoid.es/immer/) is a library of persistent and immutable data structures written in C++. These enable whole new kinds of architectures for interactive and concurrent programs of striking simplicity, correctness, and performance. 
+The `interface_map` is defined as `immer::map<net::mac_address, Interface*>`.
+[Immer](https://sinusoid.es/immer/) is a library of persistent and immutable data structures written in C++. These enable whole new kinds of architectures for interactive and concurrent programs of striking simplicity, correctness, and performance.
 
 > The immer `map` provides a good trade-off between cache locality, search, update performance and structural sharing. It does so by storing the data in contiguous chunks of 2^B elements. When storing big objects, the size of these contiguous chunks can become too big, damaging performance. If this is measured to be problematic for a specific use-case, it can be solved by using a immer::box to wrap the type T.
 
@@ -200,13 +200,13 @@ err_t queueing::handle_rx_notify(netif* netintf)
 }
 ```
 
-What is interresting to note is that the `tcpip_inpkt` implementation is overriden. In the original implementation, `tcpip_inpkt` accesses the TCPIP _mbox_ as a global variable `static sys_mbox_t tcpip_mbox;`. For Incpetion, it uses the in-function declaration `auto tcpip_mbox = icp::packetio::tcpip::mbox();` 
+What is interresting to note is that the `tcpip_inpkt` implementation is overriden. In the original implementation, `tcpip_inpkt` accesses the TCPIP _mbox_ as a global variable `static sys_mbox_t tcpip_mbox;`. For OpenPerf, it uses the in-function declaration `auto tcpip_mbox = openperf::packetio::tcpip::mbox();`
 
 
 ```C++
-sys_mbox_t icp::packetio::tcpip::mbox()
+sys_mbox_t openperf::packetio::tcpip::mbox()
 {
-    return (icp::packetio::dpdk::tcpip_mbox::instance().get());
+    return (openperf::packetio::dpdk::tcpip_mbox::instance().get());
 }
 ```
 
@@ -295,7 +295,7 @@ In the case the driver is based on `net_ring` (used for _AAT_ only), the buffer 
 
 
 
-When the application sends a packet (for instance UDP), how does LWIP knows which _net interface_ should be used? That's because, in the socket module, when a new socket is created, it will bind the socket to a location address and port (function `udp_bind`). If the socket is not bound, it will fail as decribed in this [bug report](http://savannah.nongnu.org/bugs/?3168): 
+When the application sends a packet (for instance UDP), how does LWIP knows which _net interface_ should be used? That's because, in the socket module, when a new socket is created, it will bind the socket to a location address and port (function `udp_bind`). If the socket is not bound, it will fail as decribed in this [bug report](http://savannah.nongnu.org/bugs/?3168):
 
 > We can get that by including a check in udp_send() that checks if the local_ip of the udp pcb (if not is_any) is the same as the ip_addr of the netif used to send the packet (if not, we return ERR_VAL).
 > If we then send to the socket/netconn, we get an error ERR_VAL into conn->err (do_send() has to be modified to catch more errors, see task #6880) that is translated to EINVAL.
@@ -309,14 +309,14 @@ Here is the transmit sequency diagram summary:
 
 # Packet IO - LWIP Memory Managment
 
-The LWIP _memp_ is [customized](https://github.com/SpirentOrion/openperf-core/blob/master/src/modules/packetio/stack/include/lwipopts.h) to use specialized mem_malloc/mem_free instead of the lwip pool allocator.
+The LWIP _memp_ is [customized](https://github.com/SpirentOrion/inception-core/blob/master/src/modules/packetio/stack/include/lwipopts.h) to use specialized mem_malloc/mem_free instead of the lwip pool allocator.
 
 ```C++
 #define MEMP_MEM_MALLOC 1
 #define MEMP_USE_CUSTOM_POOLS 0
 ```
 
-The `memp_malloc` function is overriden in [memory/dpkpk/memp.c](https://github.com/SpirentOrion/openperf-core/blob/master/src/modules/packetio/memory/dpdk/memp.c) and using DPDK huge-page allocator (`rte_malloc`) for everything but the pbufs:
+The `memp_malloc` function is overriden in [memory/dpkpk/memp.c](https://github.com/SpirentOrion/inception-core/blob/master/src/modules/packetio/memory/dpdk/memp.c) and using DPDK huge-page allocator (`rte_malloc`) for everything but the pbufs:
 
 ```C++
 void * memp_malloc(memp_t type)
@@ -344,7 +344,7 @@ static atomic_mempool_ptr memp_default_mempools[RTE_MAX_NUMA_NODES] = {};
 static atomic_mempool_ptr memp_ref_rom_mempools[RTE_MAX_NUMA_NODES] = {};
 ```
 
-Those pools are initialized by [`pool_allocator`](https://github.com/SpirentOrion/openperf-core/blob/master/src/modules/packetio/memory/dpdk/pool_allocator.cpp). 
+Those pools are initialized by [`pool_allocator`](https://github.com/SpirentOrion/inception-core/blob/master/src/modules/packetio/memory/dpdk/pool_allocator.cpp).
 
 ```C++
 pool_allocator::pool_allocator(const std::vector<model::port_info> &info,
@@ -369,7 +369,7 @@ pool_allocator::pool_allocator(const std::vector<model::port_info> &info,
 };
 ```
 
-The `sum` takes into account the number of buffers, including those needed by the driver port implementation (see the PR for [fix DPDK default pool allocation](https://github.com/SpirentOrion/openperf-core/commit/5a011f06ec8779efd779c1b7323b9bcfa823e940)). 
+The `sum` takes into account the number of buffers, including those needed by the driver port implementation (see the PR for [fix DPDK default pool allocation](https://github.com/SpirentOrion/inception-core/commit/5a011f06ec8779efd779c1b7323b9bcfa823e940)).
 
 Two pools are created - one for ROM/REF (most likely not used) - and the other for RAM based buffers.  The `create_pbuf_mempool` is using DPDK pools.
 
@@ -378,7 +378,7 @@ Two pools are created - one for ROM/REF (most likely not used) - and the other f
 static rte_mempool* create_pbuf_mempool(const char* name, size_t size,
                                         bool cached, bool direct, int socket_id)
 {
-    size_t nb_mbufs = icp_min(131072, pool_size_adjust(icp_max(1024U, size)));
+    size_t nb_mbufs = op_min(131072, pool_size_adjust(op_max(1024U, size)));
 
     rte_mempool* mp = rte_pktmbuf_pool_create_by_ops(
         name,
@@ -395,8 +395,8 @@ static rte_mempool* create_pbuf_mempool(const char* name, size_t size,
 
 Note that the maximum number of buffers per NUMA is `128K`. Explanation below:
 
-> The number of mbufs has to be a power of 2 and 128k seemed like a reasonable limit.  We can increase it if necessary.  
-> Additionally, the minimum number of mbufs is determined by the total number of ports/queues.  Each receive queue needs to be fully populated with mbufs in order to work plus you need extras for in-flight data.  Additionally, the number of interfaces isn't known when the pool is created, so there is no way to have the number of buffers proportional to them.  
+> The number of mbufs has to be a power of 2 and 128k seemed like a reasonable limit.  We can increase it if necessary.
+> Additionally, the minimum number of mbufs is determined by the total number of ports/queues.  Each receive queue needs to be fully populated with mbufs in order to work plus you need extras for in-flight data.  Additionally, the number of interfaces isn't known when the pool is created, so there is no way to have the number of buffers proportional to them.
 > It's certainly possible to run out of mbufs, though.  There are various memory allocation error counters in the stack that can tell you if you hit that condition. The number of mbufs comes from a fixed size pool and it's not possible to dynamically size them, so I don't have any good ideas for how to handle creating enough mbufs for any scenario without wasting memory resources for the common case.
 
 
@@ -417,7 +417,7 @@ struct memory_stats_data {
 
 This information is defined for each LWIP memory type (defined in `memp_std.h`), eg `RAW_PCB`, `UDP_PCB`, `TCP_PCB`, `TCP_PCB_LISTEN`.... `PBUF_POOL`.
 
-The `errors` member is incremented each time memp fails to allocate (either mpbuf or eg PCB). 
+The `errors` member is incremented each time memp fails to allocate (either mpbuf or eg PCB).
 
 The `available`, `used` and `max` only report allocation for the m/pbufs pool - using the `rte_mempool_in_xxx_count` method for each NUMA pool. For the other types (`RAW_PCB`, `UDP_PCB`), it uses the LWIP stats. Since LWIP allocator is bypassed, this value should always be zero. The `illegal` does not seems to be used from OpenPerf, but only LWIP, so the value should also always be zero..
 
@@ -446,6 +446,3 @@ int64_t packetio_memory_memp_pool_avail(const struct memp_desc* mem)
     return (total_avail);
 }
 ```
-
-
-

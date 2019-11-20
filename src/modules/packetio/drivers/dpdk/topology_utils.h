@@ -1,5 +1,5 @@
-#ifndef _ICP_PACKETIO_DPDK_TOPOLOGY_UTILS_H_
-#define _ICP_PACKETIO_DPDK_TOPOLOGY_UTILS_H_
+#ifndef _OP_PACKETIO_DPDK_TOPOLOGY_UTILS_H_
+#define _OP_PACKETIO_DPDK_TOPOLOGY_UTILS_H_
 
 #include <algorithm>
 #include <unordered_map>
@@ -7,7 +7,7 @@
 #include "packetio/drivers/dpdk/queue_utils.h"
 #include "packetio/drivers/dpdk/model/port_info.h"
 
-namespace icp {
+namespace openperf {
 namespace packetio {
 namespace dpdk {
 namespace topology {
@@ -54,4 +54,4 @@ unsigned get_most_common_numa_node(const Container& port_ids)
 }
 }
 
-#endif /* _ICP_PACKETIO_DPDK_TOPOLOGY_UTILS_H_ */
+#endif /* _OP_PACKETIO_DPDK_TOPOLOGY_UTILS_H_ */

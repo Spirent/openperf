@@ -12,7 +12,7 @@
 #include "socket/process_control.h"
 #include "socket/client/api_client.h"
 
-namespace icp {
+namespace openperf {
 namespace socket {
 namespace api {
 
@@ -21,7 +21,7 @@ client::client()
     , m_sock(api::client_socket(to_string(m_uuid)), api::socket_type)
 {
     auto server = sockaddr_un{ .sun_family = AF_UNIX };
-    if (auto envp = std::getenv("ICP_PREFIX"); envp != nullptr) {
+    if (auto envp = std::getenv("OP_PREFIX"); envp != nullptr) {
         std::strncpy(server.sun_path,
                      (api::server_socket() + "." + std::string(envp)).c_str(),
                      sizeof(server.sun_path));

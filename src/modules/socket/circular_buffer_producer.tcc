@@ -6,7 +6,7 @@
 #include "socket/dpdk/memcpy.h"
 #include "socket/circular_buffer_producer.h"
 
-namespace icp {
+namespace openperf {
 namespace socket {
 
 template <typename Derived>

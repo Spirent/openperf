@@ -24,10 +24,10 @@ jobs:
             cp ~/project/tests/aat/*.log /tmp/test
 
       - store_artifacts:
-          path: ~/project/build/inception-linux-x86_64-testing/bin
+          path: ~/project/build/openperf-linux-x86_64-testing/bin
 
       - store_artifacts:
-          path: ~/project/build/libicp-shim-linux-x86_64-testing/lib
+          path: ~/project/build/libopenperf-shim-linux-x86_64-testing/lib
 
       - store_artifacts:
           path: /tmp/test

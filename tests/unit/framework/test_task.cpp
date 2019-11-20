@@ -6,7 +6,7 @@
 #include <zmq.h>
 #include "catch.hpp"
 
-#include "core/icp_core.h"
+#include "core/op_core.h"
 
 static std::string random_endpoint()
 {
@@ -24,10 +24,10 @@ static std::string random_endpoint()
 static void ping_ponger(void *context, const char* endpoint,
                         const char* initial_syncpoint, int nb_syncs) {
 
-    void* control = icp_socket_get_client_subscription(context, endpoint, "");
+    void* control = op_socket_get_client_subscription(context, endpoint, "");
     REQUIRE(control);
 
-    icp_task_sync_ping(context, initial_syncpoint);
+    op_task_sync_ping(context, initial_syncpoint);
 
     zmq_msg_t msg __attribute__((cleanup(zmq_msg_close)));
 
@@ -39,13 +39,13 @@ static void ping_ponger(void *context, const char* endpoint,
         std::string syncpoint(static_cast<char*>(zmq_msg_data(&msg)));
 
         /* And send sync reply */
-        icp_task_sync_ping(context, syncpoint.c_str());
+        op_task_sync_ping(context, syncpoint.c_str());
     }
 
     zmq_close(control);
 }
 
-TEST_CASE("icp task functionality checks", "[task]")
+TEST_CASE("openperf task functionality checks", "[task]")
 {
     void* context = zmq_ctx_new();
     REQUIRE(context);
@@ -55,16 +55,16 @@ TEST_CASE("icp task functionality checks", "[task]")
     SECTION("single task sync") {
         std::vector<std::thread> threads;
         auto endpoint = random_endpoint();
-        void *sync = icp_task_sync_socket(context, endpoint.c_str());
+        void *sync = op_task_sync_socket(context, endpoint.c_str());
         REQUIRE(sync);
 
         for (int i = 0; i < nb_threads; i++) {
             threads.emplace_back(std::thread([&]() {
-                                                 icp_task_sync_ping(context, endpoint.c_str());
+                                                 op_task_sync_ping(context, endpoint.c_str());
                                              }));
         }
 
-        REQUIRE(icp_task_sync_block(&sync, nb_threads) == 0);
+        REQUIRE(op_task_sync_block(&sync, nb_threads) == 0);
 
         for (auto& thread : threads) {
             thread.join();
@@ -78,12 +78,12 @@ TEST_CASE("icp task functionality checks", "[task]")
         auto endpoint = random_endpoint();
         REQUIRE(endpoint.length());
 
-        auto control = icp_socket_get_server(context, ZMQ_PUB, endpoint.c_str());
+        auto control = op_socket_get_server(context, ZMQ_PUB, endpoint.c_str());
         REQUIRE(control);
 
         auto initial_syncpoint = random_endpoint();
         REQUIRE(initial_syncpoint.length());
-        auto init_sync = icp_task_sync_socket(context, initial_syncpoint.c_str());
+        auto init_sync = op_task_sync_socket(context, initial_syncpoint.c_str());
         REQUIRE(init_sync);
 
         for (int i = 0; i < nb_threads; i++) {
@@ -93,14 +93,14 @@ TEST_CASE("icp task functionality checks", "[task]")
                                              }));
         }
 
-        REQUIRE(icp_task_sync_block(&init_sync, nb_threads) == 0);
+        REQUIRE(op_task_sync_block(&init_sync, nb_threads) == 0);
 
         for (int k = 0; k < nb_syncs; k++) {
             /* Generate a new syncpoint... */
             auto syncpoint = random_endpoint();
             REQUIRE(syncpoint.length());
 
-            auto sync = icp_task_sync_socket(context, syncpoint.c_str());
+            auto sync = op_task_sync_socket(context, syncpoint.c_str());
             REQUIRE(sync);
 
             /* ... send it to our threads ... */
@@ -110,7 +110,7 @@ TEST_CASE("icp task functionality checks", "[task]")
             REQUIRE(zmq_msg_send(&to_send, control, 0) > 0);
 
             /* ... and wait for their responses. */
-            REQUIRE(icp_task_sync_block(&sync, nb_threads) == 0);
+            REQUIRE(op_task_sync_block(&sync, nb_threads) == 0);
         }
 
         for (auto& thread : threads) {

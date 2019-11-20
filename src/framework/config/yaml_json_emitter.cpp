@@ -1,9 +1,9 @@
 #include "yaml_json_emitter.h"
 #include "assert.h"
 
-#include "icp_config_file_utils.h"
+#include "op_config_file_utils.h"
 
-namespace icp::config::file {
+namespace openperf::config::file {
 
 yaml_json_emitter::yaml_json_emitter(std::ostringstream& output_stream)
     : m_emitter(YAML::Emitter(output_stream))
@@ -29,7 +29,7 @@ void yaml_json_emitter::OnScalar(const Mark& mark __attribute__((unused)), const
         } else if (value == "true" || value == "false") {
             // Boolean. Pass through as unquoted text.
             m_emitter << YAML::TrueFalseBool << value;
-        } else if (icp_config_is_number(value)) {
+        } else if (op_config_is_number(value)) {
             m_emitter << value;
         } else {
             // Fall back on sending as a quoted string.
@@ -94,4 +94,4 @@ void yaml_json_emitter::BeginNode()
     }
 }
 
-}  // namespace icp::config::file
+}  // namespace openperf::config::file

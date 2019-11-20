@@ -1,5 +1,5 @@
-#ifndef _ICP_PACKETIO_GENERIC_STACK_H_
-#define _ICP_PACKETIO_GENERIC_STACK_H_
+#ifndef _OP_PACKETIO_GENERIC_STACK_H_
+#define _OP_PACKETIO_GENERIC_STACK_H_
 
 #include <memory>
 #include <optional>
@@ -22,7 +22,7 @@ class Stack;
 }
 }
 
-namespace icp {
+namespace openperf {
 namespace packetio {
 namespace stack {
 
@@ -158,4 +158,4 @@ std::shared_ptr<swagger::v1::model::Stack> make_swagger_stack(const generic_stac
 }
 }
 }
-#endif /* _ICP_PATCKETIO_GENERIC_STACK_H_ */
+#endif /* _OP_PATCKETIO_GENERIC_STACK_H_ */

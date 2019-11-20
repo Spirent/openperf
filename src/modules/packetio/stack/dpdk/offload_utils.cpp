@@ -3,9 +3,9 @@
 #include "rte_net.h"  /* ptype info */
 
 #include "packetio/stack/dpdk/offload_utils.h"
-#include "core/icp_log.h"
+#include "core/op_log.h"
 
-namespace icp {
+namespace openperf {
 namespace packetio {
 namespace dpdk {
 

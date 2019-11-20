@@ -11,7 +11,7 @@
 
 #include <sys/eventfd.h>
 
-#include "core/icp_core.h"
+#include "core/op_core.h"
 #include "packetio/drivers/dpdk/dpdk.h"
 #include "packetio/drivers/dpdk/topology_utils.h"
 
@@ -25,7 +25,7 @@ int eventfd_write(int fd, uint64_t value);
 namespace lwip {
 /* XXX: need to add a shutdown hook to properly close these descriptors */
 static thread_local sys_sem_t thread_fd = -1;
-icp::list<int> thread_semaphores;
+openperf::list<int> thread_semaphores;
 }
 
 extern "C" {
@@ -110,7 +110,7 @@ thread_wrapper(void *arg)
 {
     struct thread_wrapper_data *thread_data = (struct thread_wrapper_data *)arg;
 
-    icp_thread_setname(thread_data->name);
+    op_thread_setname(thread_data->name);
     thread_data->function(thread_data->arg);
 
     /* we should never get here */
@@ -147,7 +147,7 @@ sys_thread_t sys_thread_new(const char *name, lwip_thread_fn function,
      * put it on a specific core.  Otherwise, just pick one that is free.
      */
     int lcore = (strcmp(TCPIP_THREAD_NAME, name) == 0
-                 ? icp::packetio::dpdk::topology::get_stack_lcore_id()
+                 ? openperf::packetio::dpdk::topology::get_stack_lcore_id()
                  : get_waiting_lcore());
 
     if (lcore < 0) {

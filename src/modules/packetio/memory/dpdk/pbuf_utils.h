@@ -1,5 +1,5 @@
-#ifndef _ICP_PACKETIO_MEMORY_DPDK_PBUF_UTILS_H_
-#define _ICP_PACKETIO_MEMORY_DPDK_PBUF_UTILS_H_
+#ifndef _OP_PACKETIO_MEMORY_DPDK_PBUF_UTILS_H_
+#define _OP_PACKETIO_MEMORY_DPDK_PBUF_UTILS_H_
 
 #include "lwip/pbuf.h"
 #include "packetio/drivers/dpdk/dpdk.h"
@@ -24,4 +24,4 @@ uint16_t packetio_memory_pbuf_header_available(const struct pbuf*);
 }
 #endif
 
-#endif /* _ICP_PACKETIO_MEMORY_DPDK_PBUF_UTILS_H_ */
+#endif /* _OP_PACKETIO_MEMORY_DPDK_PBUF_UTILS_H_ */

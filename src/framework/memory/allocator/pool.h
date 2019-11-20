@@ -1,12 +1,12 @@
-#ifndef _ICP_MEMORY_ALLOCATOR_POOL_H_
-#define _ICP_MEMORY_ALLOCATOR_POOL_H_
+#ifndef _OP_MEMORY_ALLOCATOR_POOL_H_
+#define _OP_MEMORY_ALLOCATOR_POOL_H_
 
 #include <cstddef>
 #include <cstdint>
 
 #include <sys/queue.h>
 
-namespace icp {
+namespace openperf {
 namespace memory {
 namespace allocator {
 
@@ -61,4 +61,4 @@ public:
 }
 }
 
-#endif /* _ICP_MEMORY_ALLOCATOR_POOL_H_ */
+#endif /* _OP_MEMORY_ALLOCATOR_POOL_H_ */

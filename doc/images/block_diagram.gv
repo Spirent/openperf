@@ -38,7 +38,7 @@ digraph G {
                  libopenperf -> app_1;
         }
 
-        subgraph cluster_inception {
+        subgraph cluster_openperf {
                  label = "OpenPerf";
                  style=rounded;
                  colorscheme=pastel15;

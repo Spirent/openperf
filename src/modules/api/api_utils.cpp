@@ -13,7 +13,7 @@
 
 using namespace std;
 
-namespace icp::api::utils {
+namespace openperf::api::utils {
 
 static const string api_server_host          = "localhost";
 static const string api_check_resource       = "/version";
@@ -30,7 +30,7 @@ static tl::expected<void, std::string> check_api_port()
     struct addrinfo hints = {.ai_family = AF_INET, .ai_socktype = SOCK_STREAM}, *result;
 
     int res = getaddrinfo(api_server_host.c_str(),
-                          to_string(icp::api::api_get_service_port()).c_str(), &hints, &result);
+                          to_string(openperf::api::api_get_service_port()).c_str(), &hints, &result);
     if (res != 0) {
         std::cerr << "Error starting up internal API client: " << gai_strerror(res) << std::endl;
         return (tl::make_unexpected("Error starting up internal API client: "
@@ -74,7 +74,7 @@ static tl::expected<void, std::string> check_api_resource()
     bool done               = false;
 
     for (; (poll_count < max_poll_count) && !done; poll_count++) {
-        auto [code, body] = icp::api::client::internal_api_get(api_check_resource);
+        auto [code, body] = openperf::api::client::internal_api_get(api_check_resource);
         if (code == Pistache::Http::Code::Ok) {
             done = true;
             break;
@@ -103,4 +103,4 @@ tl::expected<void, std::string> check_api_module_running()
     return {};
 }
 
-}  // namespace icp::api::utils
+}  // namespace openperf::api::utils

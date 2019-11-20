@@ -1,10 +1,10 @@
-#ifndef _ICP_PACKETIO_PACKET_BUFFER_H_
-#define _ICP_PACKETIO_PACKET_BUFFER_H_
+#ifndef _OP_PACKETIO_PACKET_BUFFER_H_
+#define _OP_PACKETIO_PACKET_BUFFER_H_
 
 #include <cstdint>
 #include <cstddef>
 
-namespace icp::packetio::packets {
+namespace openperf::packetio::packets {
 
 struct packet_buffer;
 
@@ -69,4 +69,4 @@ T* front(packet_buffer* buffer)
 
 }
 
-#endif /* _ICP_PACKETIO_PACKET_BUFFER_H_ */
+#endif /* _OP_PACKETIO_PACKET_BUFFER_H_ */

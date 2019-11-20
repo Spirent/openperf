@@ -11,10 +11,10 @@
 #include <sys/capability.h>
 #include <sys/prctl.h>
 
-#include "core/icp_log.h"
+#include "core/op_log.h"
 #include "socket/process_control.h"
 
-namespace icp::socket::process_control {
+namespace openperf::socket::process_control {
 
 static constexpr std::string_view yama_ptrace_file = "/proc/sys/kernel/yama/ptrace_scope";
 
@@ -118,7 +118,7 @@ bool enable_ptrace(FILE* output, std::optional<pid_t> pid)
         /* Process must have CAP_SYS_PTRACE capability */
         auto required_caps = std::array<cap_value_t, 1>{ CAP_SYS_PTRACE };
         if (!get_caps(output, required_caps.data(), required_caps.size())) {
-            fprintf(output, "Inception and its clients need the CAP_SYS_PTRACE capability. "
+            fprintf(output, "OpenPerf and its clients need the CAP_SYS_PTRACE capability. "
                     "Alternatively, consider changing the value of %.*s to 1.\n",
                     static_cast<int>(yama_ptrace_file.size()), yama_ptrace_file.data());
             result = false;

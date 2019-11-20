@@ -2,9 +2,9 @@
 #include <string>
 #include <iostream>
 
-#include "icp_config_utils.h"
+#include "op_config_utils.h"
 
-using namespace icp::config;
+using namespace openperf::config;
 
 TEST_CASE("check configuration utility functions", "[config]")
 {
@@ -23,7 +23,7 @@ TEST_CASE("check configuration utility functions", "[config]")
             "0x2"};
         // clang-format on
         for (auto is_valid_id : valid_ids) {
-            REQUIRE(icp_config_validate_id_string(is_valid_id).error() == "");
+            REQUIRE(op_config_validate_id_string(is_valid_id).error() == "");
         }
 
         // clang-format off
@@ -38,7 +38,7 @@ TEST_CASE("check configuration utility functions", "[config]")
             ""};
         // clang-format on
         for (auto not_valid_id : invalid_ids) {
-            REQUIRE(icp_config_validate_id_string(not_valid_id).error() != "");
+            REQUIRE(op_config_validate_id_string(not_valid_id).error() != "");
         }
     }
 }

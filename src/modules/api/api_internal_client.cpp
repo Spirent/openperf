@@ -4,7 +4,7 @@
 #include "api_internal_client.h"
 #include "api_service.h"
 
-namespace icp::api::client {
+namespace openperf::api::client {
 
 using namespace Pistache;
 
@@ -63,4 +63,4 @@ std::pair<Http::Code, std::string> internal_api_post(std::string_view resource,
     return result;
 }
 
-}  // namespace icp::api::client
+}  // namespace openperf::api::client

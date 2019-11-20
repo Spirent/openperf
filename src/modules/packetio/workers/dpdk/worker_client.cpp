@@ -3,10 +3,10 @@
 
 #include <zmq.h>
 
-#include "core/icp_core.h"
+#include "core/op_core.h"
 #include "packetio/workers/dpdk/worker_api.h"
 
-namespace icp::packetio::dpdk::worker {
+namespace openperf::packetio::dpdk::worker {
 
 /**
  * Generate a random endpoint for worker synchronization.
@@ -27,19 +27,19 @@ static std::string random_endpoint()
 }
 
 client::client(void *context)
-    : m_socket(icp_socket_get_server(context, ZMQ_PUB, endpoint.data()))
+    : m_socket(op_socket_get_server(context, ZMQ_PUB, endpoint.data()))
 {}
 
 void client::start(void* context, unsigned nb_workers)
 {
     auto syncpoint = random_endpoint();
-    auto sync = icp_task_sync_socket(context, syncpoint.c_str());
+    auto sync = op_task_sync_socket(context, syncpoint.c_str());
     if (auto error = send_message(m_socket.get(), start_msg{ syncpoint });
         error && error != ETERM) {
         throw std::runtime_error("Could not send start message to workers: "
                                  + std::string(zmq_strerror(error)));
     }
-    icp_task_sync_block_and_warn(&sync, nb_workers, 1000,
+    op_task_sync_block_and_warn(&sync, nb_workers, 1000,
                                  "Still waiting on start acknowledgment from queue workers "
                                  "(syncpoint = %s)\n", syncpoint.c_str());
 }
@@ -47,13 +47,13 @@ void client::start(void* context, unsigned nb_workers)
 void client::stop(void* context, unsigned nb_workers)
 {
     auto syncpoint = random_endpoint();
-    auto sync = icp_task_sync_socket(context, syncpoint.c_str());
+    auto sync = op_task_sync_socket(context, syncpoint.c_str());
     if (auto error = send_message(m_socket.get(), stop_msg{ syncpoint });
         error && error != ETERM) {
         throw std::runtime_error("Could not send stop message to workers: "
                                  + std::string(zmq_strerror(error)));
     }
-    icp_task_sync_block_and_warn(&sync, nb_workers, 1000,
+    op_task_sync_block_and_warn(&sync, nb_workers, 1000,
                                  "Still waiting on stop acknowledgment from queue workers "
                                  "(syncpoint = %s)\n", syncpoint.c_str());
 }

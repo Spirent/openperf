@@ -3,20 +3,20 @@
 #
 
 HTTP_REQ_VARS := \
-	ICP_ROOT \
-	ICP_BUILD_ROOT
-$(call icp_check_vars,$(HTTP_REQ_VARS))
+	OP_ROOT \
+	OP_BUILD_ROOT
+$(call op_check_vars,$(HTTP_REQ_VARS))
 
-HTTP_SRC_DIR := $(ICP_ROOT)/deps/pistache
-HTTP_OBJ_DIR := $(ICP_BUILD_ROOT)/obj/pistache
-HTTP_BLD_DIR := $(ICP_BUILD_ROOT)/pistache
+HTTP_SRC_DIR := $(OP_ROOT)/deps/pistache
+HTTP_OBJ_DIR := $(OP_BUILD_ROOT)/obj/pistache
+HTTP_BLD_DIR := $(OP_BUILD_ROOT)/pistache
 HTTP_INC_DIR := $(HTTP_SRC_DIR)/include
 HTTP_LIB_DIR := $(HTTP_BLD_DIR)/lib
 
 # Update global variables
-ICP_INC_DIRS += $(HTTP_INC_DIR)
-ICP_LIB_DIRS += $(HTTP_LIB_DIR)
-ICP_LDLIBS += -lpistache
+OP_INC_DIRS += $(HTTP_INC_DIR)
+OP_LIB_DIRS += $(HTTP_LIB_DIR)
+OP_LDLIBS += -lpistache
 
 # Pistache code doesn't build without warnings; just silence them since we're
 # not going to fix them.
@@ -51,7 +51,7 @@ HTTP_SERVER_SOURCES := \
 	server/router.cc
 
 HTTP_SOURCES := $(addprefix src/,$(HTTP_COMMON_SOURCES) $(HTTP_CLIENT_SOURCES) $(HTTP_SERVER_SOURCES))
-HTTP_OBJECTS := $(call icp_generate_objects,$(HTTP_SOURCES),$(HTTP_OBJ_DIR))
+HTTP_OBJECTS := $(call op_generate_objects,$(HTTP_SOURCES),$(HTTP_OBJ_DIR))
 
 # Pull in object dependencies, maybe
 -include $(HTTP_OBJECTS:.o=.d)
@@ -61,11 +61,11 @@ HTTP_TARGET := $(HTTP_LIB_DIR)/libpistache.a
 ###
 # Build rules
 ###
-$(eval $(call icp_generate_build_rules,$(HTTP_SOURCES),HTTP_SRC_DIR,HTTP_OBJ_DIR,,HTTP_FLAGS))
-$(eval $(call icp_generate_clean_rules,pistache,HTTP_TARGET,HTTP_OBJECTS))
+$(eval $(call op_generate_build_rules,$(HTTP_SOURCES),HTTP_SRC_DIR,HTTP_OBJ_DIR,,HTTP_FLAGS))
+$(eval $(call op_generate_clean_rules,pistache,HTTP_TARGET,HTTP_OBJECTS))
 
 $(HTTP_TARGET): $(HTTP_OBJECTS)
-	$(call icp_link_library,$@,$(HTTP_OBJECTS))
+	$(call op_link_library,$@,$(HTTP_OBJECTS))
 
 .PHONY: pistache
 pistache: $(HTTP_TARGET)

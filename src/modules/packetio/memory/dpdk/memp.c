@@ -32,7 +32,7 @@
 #include "lwip/ip6_frag.h"
 #include "lwip/mld6.h"
 
-#include "core/icp_common.h"
+#include "core/op_common.h"
 #include "packetio/drivers/dpdk/dpdk.h"
 #include "packetio/memory/dpdk/memp.h"
 #include "packetio/memory/dpdk/pbuf_utils.h"
@@ -151,7 +151,7 @@ void * memp_malloc(memp_t type)
         if (to_return) {
             mem_size_t used = atomic_fetch_add_explicit((_Atomic mem_size_t*)&desc->stats->used,
                                                         1, memory_order_release) + 1;
-            desc->stats->max = icp_max(used, desc->stats->max);
+            desc->stats->max = op_max(used, desc->stats->max);
         }
 #endif
     }

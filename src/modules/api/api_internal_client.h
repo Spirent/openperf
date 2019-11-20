@@ -1,9 +1,9 @@
-#ifndef _ICP_API_INTERNAL_CLIENT_H_
-#define _ICP_API_INTERNAL_CLIENT_H_
+#ifndef _OP_API_INTERNAL_CLIENT_H_
+#define _OP_API_INTERNAL_CLIENT_H_
 
 #include <pistache/http.h>
 
-namespace icp::api::client {
+namespace openperf::api::client {
 
 // Send a GET request to the REST API.
 // @param resource - REST API resource perform GET operation on.
@@ -17,5 +17,5 @@ std::pair<Pistache::Http::Code, std::string> internal_api_get(std::string_view r
 std::pair<Pistache::Http::Code, std::string> internal_api_post(std::string_view resource,
                                                                const std::string &body);
 
-}  // namespace icp::api::client
+}  // namespace openperf::api::client
 #endif

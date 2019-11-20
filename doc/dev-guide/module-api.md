@@ -33,7 +33,7 @@ public:
 The API module alos uses the nice [_init factory_](http://www.nirfriedman.com/2018/04/29/unforgettable-factory) design pattern (implemented as the `handler_init`). The factory is declared in this way:
 
 ```cpp
-struct handler_init : icp::core::init_factory<handler, void *, Pistache::Rest::Router &>
+struct handler_init : openperf::core::init_factory<handler, void *, Pistache::Rest::Router &>
 {
     handler(Key) {};
     virtual ~handler() = default;
@@ -47,13 +47,13 @@ handlers std::vector<std::unique_ptr<handler_init>>
 handler_init::make_all(handlers, context, router);
 ```
 
-Note that message handlers are not only declared in the API module. Each module can have its handlers, such as the [Packet IO interface module](https://github.com/SpirentOrion/openperf-core/blob/master/src/modules/packetio/interface_handler.cpp). 
+Note that message handlers are not only declared in the API module. Each module can have its handlers, such as the [Packet IO interface module](https://github.com/SpirentOrion/inception-core/blob/master/src/modules/packetio/interface_handler.cpp).
 
 ## Configuration Mapping
 
-Once the routes and messages and configured, the next step for the API server is to read the `config.yaml` and instantiate the interface, ports, etc... accordingly. This is done in the `icp_config_file_process_resources` function.
+Once the routes and messages and configured, the next step for the API server is to read the `config.yaml` and instantiate the interface, ports, etc... accordingly. This is done in the `op_config_file_process_resources` function.
 
-For each of the `resources` declared in the configuration, the function first validated the content, convert the resource definition to _JSON_ and then calls the HTTP server _internally_ using `icp::api::client::internal_api_post`
+For each of the `resources` declared in the configuration, the function first validated the content, convert the resource definition to _JSON_ and then calls the HTTP server _internally_ using `openperf::api::client::internal_api_post`
 
 The _internal API post_ implementation is also based on Pistache:
 
@@ -77,4 +77,3 @@ static auto internal_api_request(Http::RequestBuilder &request_builder, const st
 }
 ```
 Pistache is using its implementation of async promises. The `Async::Barrier`.`wait_for` is part of the Pistache library, and using a [std::condition_variable](https://github.com/oktal/pistache/blob/master/include/pistache/async.h#L1109) to wait for the promise to resolve (or fail).
-

@@ -8,8 +8,8 @@
 
 #include "zmq.h"
 
-#include "core/icp_core.h"
-#include "core/icp_uuid.h"
+#include "core/op_core.h"
+#include "core/op_uuid.h"
 #include "net/net_types.h"
 #include "units/rate.h"
 #include "packetio/internal_client.h"
@@ -19,10 +19,10 @@
 #include "rte_ip.h"
 #include "rte_udp.h"
 
-static bool _icp_done = false;
+static bool _op_done = false;
 void signal_handler(int signo __attribute__((unused)))
 {
-    _icp_done = true;
+    _op_done = true;
 }
 
 struct test_packet {
@@ -31,7 +31,7 @@ struct test_packet {
     struct rte_udp_hdr   udp;
 } __attribute__((packed));
 
-using namespace icp::net;
+using namespace openperf::net;
 
 static void initialize_eth_header(rte_ether_hdr& eth_hdr,
                                   mac_address& src_mac, mac_address& dst_mac,
@@ -87,16 +87,16 @@ static void initialize_udp_header(rte_udp_hdr& udp_hdr, uint16_t src_port,
 }
 
 class test_source {
-    using packets_per_second = icp::units::rate<uint64_t>;
-    using packets_per_minute = icp::units::rate<uint64_t, std::ratio<1, 60>>;
-    using packets_per_hour   = icp::units::rate<uint64_t, std::ratio<1, 3600>>;
+    using packets_per_second = openperf::units::rate<uint64_t>;
+    using packets_per_minute = openperf::units::rate<uint64_t, std::ratio<1, 60>>;
+    using packets_per_hour   = openperf::units::rate<uint64_t, std::ratio<1, 3600>>;
 
-    icp::core::uuid m_id;
+    openperf::core::uuid m_id;
     packets_per_minute m_rate;
 
 public:
     test_source(uint64_t ppm)
-        : m_id(icp::core::uuid::random())
+        : m_id(openperf::core::uuid::random())
         , m_rate(ppm)
     {}
 
@@ -105,7 +105,7 @@ public:
 
     std::string id() const
     {
-        return (icp::core::to_string(m_id));
+        return (openperf::core::to_string(m_id));
     }
 
     packets_per_hour packet_rate() const
@@ -113,10 +113,10 @@ public:
         return (m_rate);
     }
 
-    uint16_t transform(icp::packetio::packets::packet_buffer* input[], uint16_t input_length,
-                       icp::packetio::packets::packet_buffer* output[])
+    uint16_t transform(openperf::packetio::packets::packet_buffer* input[], uint16_t input_length,
+                       openperf::packetio::packets::packet_buffer* output[])
     {
-        using namespace icp::packetio;
+        using namespace openperf::packetio;
 
         auto src_mac = mac_address{ 0x00, 0xff, 0xaa, 0xff, 0xaa, 0xff };
         auto dst_mac = mac_address{ 0x00, 0xaa, 0xff, 0xaa, 0xff, 0xaa };
@@ -143,9 +143,9 @@ public:
 void test_sources(void* context)
 {
     using namespace std::chrono_literals;
-    auto client = icp::packetio::internal::api::client(context);
+    auto client = openperf::packetio::internal::api::client(context);
 
-    auto source0 = icp::packetio::packets::generic_source(test_source(30)); /* packet/2 sec */
+    auto source0 = openperf::packetio::packets::generic_source(test_source(30)); /* packet/2 sec */
     auto success = client.add_source("port0", source0);
     if (!success) {
         throw std::runtime_error("Could not add first source to port 0\n");
@@ -160,21 +160,21 @@ void test_sources(void* context)
 
 int main(int argc, char* argv[])
 {
-    icp_thread_setname("icp_main");
+    op_thread_setname("op_main");
 
     void *context = zmq_ctx_new();
     if (!context) {
-        icp_exit("Could not initialize ZeroMQ context!");
+        op_exit("Could not initialize ZeroMQ context!");
     }
 
     /* Do initialization... */
-    icp_init(context, argc, argv);
+    op_init(context, argc, argv);
 
     /* ... then do the sources thing... */
     test_sources(context);
 
     /* ... then clean up and exit. */
-    icp_halt(context);
+    op_halt(context);
 
     exit(EXIT_SUCCESS);
 }

@@ -12,7 +12,7 @@
 #include "lwip/raw.h"
 #include "utils/overloaded_visitor.h"
 
-namespace icp {
+namespace openperf {
 namespace socket {
 namespace server {
 
@@ -52,7 +52,7 @@ static uint8_t raw_receive(void* arg, raw_pcb* pcb, pbuf* p, const ip_addr_t* ad
     return (1);
 }
 
-raw_socket::raw_socket(icp::socket::server::allocator& allocator, int flags, int protocol, raw_recv_fn recv_callback)
+raw_socket::raw_socket(openperf::socket::server::allocator& allocator, int flags, int protocol, raw_recv_fn recv_callback)
     : m_channel(new (allocator.allocate(sizeof(dgram_channel)))
                 dgram_channel(flags, allocator))
     , m_pcb(raw_new(protocol))

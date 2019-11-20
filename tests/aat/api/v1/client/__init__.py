@@ -3,9 +3,9 @@
 # flake8: noqa
 
 """
-    Inception Core API
+    OpenPerf API
 
-    REST API interface to the Inception Core  # noqa: E501
+    REST API interface for OpenPerf  # noqa: E501
 
     OpenAPI spec version: 1
     Contact: support@spirent.com

@@ -1,5 +1,5 @@
-#ifndef _ICP_PACKETIO_DPDK_SYS_MAILBOX_H_
-#define _ICP_PACKETIO_DPDK_SYS_MAILBOX_H_
+#ifndef _OP_PACKETIO_DPDK_SYS_MAILBOX_H_
+#define _OP_PACKETIO_DPDK_SYS_MAILBOX_H_
 
 #include <atomic>
 #include <memory>
@@ -39,4 +39,4 @@ public:
     void* tryfetch();
 };
 
-#endif /* _ICP_PACKETIO_DPDK_SYS_MAILBOX_H_ */
+#endif /* _OP_PACKETIO_DPDK_SYS_MAILBOX_H_ */

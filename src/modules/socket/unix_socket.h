@@ -1,9 +1,9 @@
-#ifndef _ICP_SOCKET_UNIX_SOCKET_H_
-#define _ICP_SOCKET_UNIX_SOCKET_H_
+#ifndef _OP_SOCKET_UNIX_SOCKET_H_
+#define _OP_SOCKET_UNIX_SOCKET_H_
 
 #include <string>
 
-namespace icp {
+namespace openperf {
 namespace socket {
 
 class unix_socket
@@ -20,4 +20,4 @@ public:
 }
 }
 
-#endif /* _ICP_SOCKET_UNIX_SOCKET_H_ */
+#endif /* _OP_SOCKET_UNIX_SOCKET_H_ */

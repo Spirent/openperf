@@ -5,9 +5,9 @@
 #include <zmq.h>
 
 #include "packetio/workers/dpdk/zmq_socket.h"
-#include "core/icp_log.h"
+#include "core/op_log.h"
 
-namespace icp::packetio::dpdk {
+namespace openperf::packetio::dpdk {
 
 static int get_socket_fd(void *socket)
 {

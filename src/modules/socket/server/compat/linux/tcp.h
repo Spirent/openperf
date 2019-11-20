@@ -1,5 +1,5 @@
-#ifndef _ICP_SOCKET_SERVER_COMPAT_LINUX_TCP_H_
-#define _ICP_SOCKET_SERVER_COMPAT_LINUX_TCP_H_
+#ifndef _OP_SOCKET_SERVER_COMPAT_LINUX_TCP_H_
+#define _OP_SOCKET_SERVER_COMPAT_LINUX_TCP_H_
 
 #include <stdint.h>
 
@@ -84,4 +84,4 @@ struct tcp_info {
     uint64_t   tcpi_sndbuf_limited; /* Time (usec) limited by send buffer */
 };
 
-#endif /* _ICP_SOCKET_SERVER_COMPAT_LINUX_TCP_H_ */
+#endif /* _OP_SOCKET_SERVER_COMPAT_LINUX_TCP_H_ */

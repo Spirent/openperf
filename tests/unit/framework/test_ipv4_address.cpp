@@ -2,7 +2,7 @@
 
 #include "net/ipv4_address.h"
 
-using namespace icp::net;
+using namespace openperf::net;
 
 TEST_CASE("ipv4_address functionality checks", "[ipv4_address]")
 {

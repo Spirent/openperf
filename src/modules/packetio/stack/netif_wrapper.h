@@ -1,5 +1,5 @@
-#ifndef _ICP_PACKETIO_STACK_NETIF_WRAPPER_H_
-#define _ICP_PACKETIO_STACK_NETIF_WRAPPER_H_
+#ifndef _OP_PACKETIO_STACK_NETIF_WRAPPER_H_
+#define _OP_PACKETIO_STACK_NETIF_WRAPPER_H_
 
 #include <any>
 #include <string>
@@ -9,7 +9,7 @@
 
 struct netif;
 
-namespace icp::packetio {
+namespace openperf::packetio {
 
 class netif_wrapper
 {
@@ -32,4 +32,4 @@ public:
 
 }
 
-#endif /* _ICP_PACKETIO_STACK_NETIF_WRAPPER_H_ */
+#endif /* _OP_PACKETIO_STACK_NETIF_WRAPPER_H_ */

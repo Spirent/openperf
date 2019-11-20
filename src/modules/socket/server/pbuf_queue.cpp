@@ -4,7 +4,7 @@
 #include "lwip/pbuf.h"
 #include "socket/server/pbuf_queue.h"
 
-namespace icp {
+namespace openperf {
 namespace socket {
 namespace server {
 

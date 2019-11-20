@@ -1,5 +1,5 @@
-#ifndef _ICP_SOCKET_SERVER_ICMP_SOCKET_H_
-#define _ICP_SOCKET_SERVER_ICMP_SOCKET_H_
+#ifndef _OP_SOCKET_SERVER_ICMP_SOCKET_H_
+#define _OP_SOCKET_SERVER_ICMP_SOCKET_H_
 
 #include <bitset>
 
@@ -13,13 +13,13 @@
 
 struct pbuf;
 
-namespace icp {
+namespace openperf {
 namespace socket {
 namespace server {
 
 class icmp_socket : public raw_socket {
 public:
-    icmp_socket(icp::socket::server::allocator& allocator, int flags, int protocol);
+    icmp_socket(openperf::socket::server::allocator& allocator, int flags, int protocol);
     ~icmp_socket() = default;
 
     icmp_socket(const icmp_socket&) = delete;
@@ -49,4 +49,4 @@ private:
 }
 }
 
-#endif /* _ICP_SOCKET_SERVER_ICMP_SOCKET_H_ */
+#endif /* _OP_SOCKET_SERVER_ICMP_SOCKET_H_ */

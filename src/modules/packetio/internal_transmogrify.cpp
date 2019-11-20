@@ -5,7 +5,7 @@
 #include "utils/overloaded_visitor.h"
 #include "utils/variant_index.h"
 
-namespace icp::packetio::internal::api {
+namespace openperf::packetio::internal::api {
 
 void close(serialized_msg& msg)
 {

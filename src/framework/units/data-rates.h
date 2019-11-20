@@ -1,9 +1,9 @@
-#ifndef _ICP_UNITS_DATA_RATES_H_
-#define _ICP_UNITS_DATA_RATES_H_
+#ifndef _OP_UNITS_DATA_RATES_H_
+#define _OP_UNITS_DATA_RATES_H_
 
 #include "units/rate.h"
 
-namespace icp::units {
+namespace openperf::units {
 
 /**
  * Convenience typedefs for standard network rates
@@ -30,4 +30,4 @@ typedef std::ratio_multiply<tebibits, std::ratio<8>> tebibytes;
 
 }
 
-#endif /* _ICP_UNITS_DATA_RATES_H_ */
+#endif /* _OP_UNITS_DATA_RATES_H_ */

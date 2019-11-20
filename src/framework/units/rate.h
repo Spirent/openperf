@@ -1,5 +1,5 @@
-#ifndef _ICP_UNITS_RATE_H_
-#define _ICP_UNITS_RATE_H_
+#ifndef _OP_UNITS_RATE_H_
+#define _OP_UNITS_RATE_H_
 
 /**
  * @file
@@ -18,7 +18,7 @@
 #include <numeric>
 #include <ratio>
 
-namespace icp::units {
+namespace openperf::units {
 
 template <typename Rep, typename Frequency = std::ratio<1>>
 class rate;
@@ -403,9 +403,9 @@ operator%(const rate<Rep1,Frequency1>& left, rate<Rep2,Frequency2>& right)
 namespace std {
 
 template <class Rep1, class Frequency1, class Rep2, class Frequency2>
-struct common_type<icp::units::rate<Rep1, Frequency1>,
-                   icp::units::rate<Rep2, Frequency2>> {
-    typedef icp::units::rate<typename common_type<Rep1, Rep2>::type,
+struct common_type<openperf::units::rate<Rep1, Frequency1>,
+                   openperf::units::rate<Rep2, Frequency2>> {
+    typedef openperf::units::rate<typename common_type<Rep1, Rep2>::type,
                              typename std::ratio<std::gcd(Frequency1::num,
                                                           Frequency2::num),
                                                  std::lcm(Frequency1::den,Frequency2::den)>> type;
@@ -413,4 +413,4 @@ struct common_type<icp::units::rate<Rep1, Frequency1>,
 
 }
 
-#endif /* _ICP_UNITS_RATE_H_ */
+#endif /* _OP_UNITS_RATE_H_ */
