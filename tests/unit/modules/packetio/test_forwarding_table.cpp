@@ -3,7 +3,7 @@
 
 #include "catch.hpp"
 
-#include "core/op_uuid.h"
+#include "core/op_uuid.hpp"
 #include "packetio/forwarding_table.tcc"
 
 static constexpr int max_ports = 32;

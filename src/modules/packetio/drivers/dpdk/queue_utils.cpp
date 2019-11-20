@@ -4,10 +4,10 @@
 #include <map>
 #include <vector>
 
-#include "config/op_config_file.h"
-#include "packetio/drivers/dpdk/model/physical_port.h"
-#include "packetio/drivers/dpdk/model/port_info.h"
-#include "packetio/drivers/dpdk/queue_utils.h"
+#include "config/op_config_file.hpp"
+#include "packetio/drivers/dpdk/model/physical_port.hpp"
+#include "packetio/drivers/dpdk/model/port_info.hpp"
+#include "packetio/drivers/dpdk/queue_utils.hpp"
 
 namespace openperf::packetio::dpdk::queue {
 

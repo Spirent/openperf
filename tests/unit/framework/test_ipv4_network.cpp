@@ -1,6 +1,6 @@
 #include "catch.hpp"
 
-#include "net/ipv4_network.h"
+#include "net/ipv4_network.hpp"
 
 using ipv4_address = openperf::net::ipv4_address;
 using ipv4_network = openperf::net::ipv4_network;

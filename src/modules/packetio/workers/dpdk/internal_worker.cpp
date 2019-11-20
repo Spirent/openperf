@@ -1,4 +1,4 @@
-#include "packetio/internal_worker.h"
+#include "packetio/internal_worker.hpp"
 #include "packetio/drivers/dpdk/dpdk.h"
 
 namespace openperf::packetio::internal::worker {

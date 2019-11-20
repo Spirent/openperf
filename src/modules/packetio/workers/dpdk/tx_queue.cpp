@@ -8,8 +8,8 @@
 #include <sys/epoll.h>
 #include <sys/eventfd.h>
 
-#include "packetio/drivers/dpdk/model/physical_port.h"
-#include "packetio/workers/dpdk/tx_queue.h"
+#include "packetio/drivers/dpdk/model/physical_port.hpp"
+#include "packetio/workers/dpdk/tx_queue.hpp"
 #include "core/op_log.h"
 
 namespace openperf::packetio::dpdk {

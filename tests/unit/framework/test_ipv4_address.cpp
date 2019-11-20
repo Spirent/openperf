@@ -1,6 +1,6 @@
 #include "catch.hpp"
 
-#include "net/ipv4_address.h"
+#include "net/ipv4_address.hpp"
 
 using namespace openperf::net;
 

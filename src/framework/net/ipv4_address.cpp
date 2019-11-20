@@ -2,7 +2,7 @@
 
 #include <arpa/inet.h>
 
-#include "net/ipv4_address.h"
+#include "net/ipv4_address.hpp"
 
 namespace openperf {
 namespace net {

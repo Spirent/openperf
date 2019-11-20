@@ -6,7 +6,7 @@
 #include "core/op_modules.h"
 #include "core/op_options.h"
 
-#include "config/op_config_file.h"
+#include "config/op_config_file.hpp"
 
 void op_init(void *context, int argc, char *argv[])
 {

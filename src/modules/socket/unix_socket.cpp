@@ -7,7 +7,7 @@
 #include <unistd.h>
 #include <vector>
 
-#include "socket/unix_socket.h"
+#include "socket/unix_socket.hpp"
 
 namespace openperf {
 namespace socket {

@@ -1,7 +1,7 @@
 #include <cerrno>
 
-#include "packetio/internal_api.h"
-#include "packetio/internal_client.h"
+#include "packetio/internal_api.hpp"
+#include "packetio/internal_client.hpp"
 
 namespace openperf::packetio::internal::api {
 

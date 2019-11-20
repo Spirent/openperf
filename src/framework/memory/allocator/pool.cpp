@@ -2,7 +2,7 @@
 #include <new>
 #include <stdexcept>
 
-#include "memory/allocator/pool.h"
+#include "memory/allocator/pool.hpp"
 
 namespace openperf {
 namespace memory {

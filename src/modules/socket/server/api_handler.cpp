@@ -2,11 +2,11 @@
 #include <stdexcept>
 #include <sys/un.h>
 
-#include "socket/server/allocator.h"
-#include "socket/server/api_handler.h"
-#include "socket/server/socket_utils.h"
+#include "socket/server/allocator.hpp"
+#include "socket/server/api_handler.hpp"
+#include "socket/server/socket_utils.hpp"
 #include "core/op_core.h"
-#include "utils/overloaded_visitor.h"
+#include "utils/overloaded_visitor.hpp"
 
 namespace openperf::socket::server {
 

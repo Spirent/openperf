@@ -1,6 +1,6 @@
 #include "core/op_core.h"
-#include "packetio/generic_workers.h"
-#include "packetio/workers/dpdk/worker_controller.h"
+#include "packetio/generic_workers.hpp"
+#include "packetio/workers/dpdk/worker_controller.hpp"
 
 namespace openperf::packetio::workers {
 

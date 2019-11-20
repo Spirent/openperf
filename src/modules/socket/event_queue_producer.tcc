@@ -1,7 +1,7 @@
 #include <cerrno>
 #include <sys/eventfd.h>
 
-#include "socket/event_queue_producer.h"
+#include "socket/event_queue_producer.hpp"
 
 namespace openperf {
 namespace socket {

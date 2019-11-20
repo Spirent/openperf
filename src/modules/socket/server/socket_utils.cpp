@@ -1,13 +1,13 @@
 #include <cassert>
 #include <cerrno>
 
-#include "socket/server/generic_socket.h"
-#include "socket/server/icmp_socket.h"
-#include "socket/server/raw_socket.h"
-#include "socket/server/tcp_socket.h"
-#include "socket/server/udp_socket.h"
-#include "socket/server/socket_utils.h"
-#include "utils/overloaded_visitor.h"
+#include "socket/server/generic_socket.hpp"
+#include "socket/server/icmp_socket.hpp"
+#include "socket/server/raw_socket.hpp"
+#include "socket/server/tcp_socket.hpp"
+#include "socket/server/udp_socket.hpp"
+#include "socket/server/socket_utils.hpp"
+#include "utils/overloaded_visitor.hpp"
 
 namespace openperf {
 namespace socket {

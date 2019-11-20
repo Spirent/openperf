@@ -1,5 +1,5 @@
 #include "core/op_core.h"
-#include "config/op_config_file.h"
+#include "config/op_config_file.hpp"
 
 MAKE_OPTION_DATA(
   dpdk, NULL,

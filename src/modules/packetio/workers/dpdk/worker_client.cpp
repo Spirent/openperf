@@ -4,7 +4,7 @@
 #include <zmq.h>
 
 #include "core/op_core.h"
-#include "packetio/workers/dpdk/worker_api.h"
+#include "packetio/workers/dpdk/worker_api.hpp"
 
 namespace openperf::packetio::dpdk::worker {
 

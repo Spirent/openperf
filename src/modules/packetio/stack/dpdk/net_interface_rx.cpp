@@ -6,8 +6,8 @@
 #include "netif/ethernet.h"
 
 #include "packetio/drivers/dpdk/dpdk.h"
-#include "packetio/stack/dpdk/net_interface.h"
-#include "packetio/stack/dpdk/net_interface_rx.h"
+#include "packetio/stack/dpdk/net_interface.hpp"
+#include "packetio/stack/dpdk/net_interface_rx.hpp"
 #include "core/op_log.h"
 
 namespace openperf::packetio::dpdk::netif_rx_strategy {

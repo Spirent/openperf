@@ -7,9 +7,9 @@
 #include <unistd.h>
 #include <string.h>
 
-#include "api_service.h"
-#include "api_internal_client.h"
-#include "api/api_utils.h"
+#include "api_service.hpp"
+#include "api_internal_client.hpp"
+#include "api/api_utils.hpp"
 
 using namespace std;
 

@@ -1,6 +1,6 @@
 #include "catch.hpp"
 
-#include "net/mac_address.h"
+#include "net/mac_address.hpp"
 
 using mac_address = openperf::net::mac_address;
 

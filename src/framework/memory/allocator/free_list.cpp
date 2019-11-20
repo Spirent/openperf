@@ -3,7 +3,7 @@
 #include <new>
 #include <stdexcept>
 
-#include "memory/allocator/free_list.h"
+#include "memory/allocator/free_list.hpp"
 
 namespace openperf {
 namespace memory {

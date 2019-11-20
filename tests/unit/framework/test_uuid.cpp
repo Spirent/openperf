@@ -3,7 +3,7 @@
 
 #include "catch.hpp"
 
-#include "core/op_uuid.h"
+#include "core/op_uuid.hpp"
 
 using uuid = openperf::core::uuid;
 

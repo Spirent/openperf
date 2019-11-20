@@ -6,9 +6,9 @@
 #include <sys/socket.h>
 #include <sys/uio.h>
 
-#include "socket/server/icmp_socket.h"
-#include "socket/server/lwip_utils.h"
-#include "socket/server/raw_socket.h"
+#include "socket/server/icmp_socket.hpp"
+#include "socket/server/lwip_utils.hpp"
+#include "socket/server/raw_socket.hpp"
 #include "lwip/icmp.h"
 #include "lwip/memp.h"
 #include "lwip/raw.h"

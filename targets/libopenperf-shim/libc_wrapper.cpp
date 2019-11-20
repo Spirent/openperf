@@ -3,7 +3,7 @@
 #include <stdexcept>
 #include <string>
 
-#include "libc_wrapper.h"
+#include "libc_wrapper.hpp"
 
 namespace openperf {
 namespace socket {

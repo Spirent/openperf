@@ -5,12 +5,12 @@
 #include "zmq.h"
 
 #include "core/op_core.h"
-#include "core/op_uuid.h"
-#include "config/op_config_utils.h"
+#include "core/op_uuid.hpp"
+#include "config/op_config_utils.hpp"
 #include "swagger/v1/model/Port.h"
-#include "packetio/json_transmogrify.h"
-#include "packetio/port_api.h"
-#include "packetio/port_server.h"
+#include "packetio/json_transmogrify.hpp"
+#include "packetio/port_api.hpp"
+#include "packetio/port_server.hpp"
 
 namespace openperf {
 namespace packetio {

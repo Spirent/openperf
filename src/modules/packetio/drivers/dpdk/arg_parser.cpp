@@ -2,8 +2,8 @@
 #include <regex>
 
 #include "core/op_core.h"
-#include "config/op_config_file.h"
-#include "packetio/drivers/dpdk/arg_parser.h"
+#include "config/op_config_file.hpp"
+#include "packetio/drivers/dpdk/arg_parser.hpp"
 #include "socket/server/api_server_options.h"
 
 #include <iostream>

@@ -1,7 +1,7 @@
 #include <thread>
 
 #include "core/op_core.h"
-#include "socket/server/api_server.h"
+#include "socket/server/api_server.hpp"
 
 namespace openperf::socket::server {
 
