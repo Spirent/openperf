@@ -40,6 +40,7 @@
 #define LWIP_STATS_LARGE 1
 #define MEMP_STATS 1
 #define MIB2_STATS 1
+#include "atomic_mib2_macros.h"
 
 /* Memory allocation options */
 #define MEM_ALIGNMENT 8

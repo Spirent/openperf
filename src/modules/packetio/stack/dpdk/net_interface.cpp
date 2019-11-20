@@ -167,7 +167,7 @@ static err_t net_interface_rx(pbuf *p, netif* netif)
 
     auto error = ifp->handle_rx(p);
     if (error != ERR_OK) {
-        MIB2_STATS_NETIF_INC(netif, ifindiscards);
+        MIB2_STATS_NETIF_INC_ATOMIC(netif, ifindiscards);
     }
     return (error);
 }
