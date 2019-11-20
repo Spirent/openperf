@@ -170,12 +170,7 @@ static void rx_interface_dispatch(const fib* fib, const rx_queue* rxq,
 
         if (interfaces[i]->input(packetio_memory_pbuf_synchronize(unicast[i]),
                                  interfaces[i]) != ERR_OK) {
-            /*
-             * XXX: This increment is non-atomic.  However, the likelihood of
-             * discarding in the tcpip thread is low, so this count can still
-             * be useful.
-             */
-            MIB2_STATS_NETIF_INC(interfaces[i], ifindiscards);
+            MIB2_STATS_NETIF_INC_ATOMIC(interfaces[i], ifindiscards);
             rte_pktmbuf_free(unicast[i]);
         }
     }
@@ -195,8 +190,7 @@ static void rx_interface_dispatch(const fib* fib, const rx_queue* rxq,
 
             auto clone = rte_pktmbuf_clone(nunicast[i], nunicast[i]->pool);
             if (!clone || ifp->input(packetio_memory_pbuf_synchronize(clone), ifp) != ERR_OK) {
-                /* XXX: see comment above */
-                MIB2_STATS_NETIF_INC(ifp, ifindiscards);
+                MIB2_STATS_NETIF_INC_ATOMIC(ifp, ifindiscards);
                 rte_pktmbuf_free(clone);  /* Note: this free handles null correctly */
             }
         }
