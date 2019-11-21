@@ -33,3 +33,31 @@ clean:
 	@cd targets/libopenperf-shim && $(MAKE) clean
 	@cd tests/aat && $(MAKE) clean
 	@cd tests/unit && $(MAKE) clean
+
+.PHONY: pretty
+pretty: pretty-cpp pretty-c
+
+# We skip a lot of the C-code....
+# We want to leave white-space as-is for any LwIP derived code so that we can
+# easily compare deltas when upgrading.
+# We also skip over anything with the C11 _Generic keyword; clang-format
+# doesn't handle it correctly.
+pretty-c:
+	@find src targets tests \
+		-path src/swagger -prune -o \
+		-type f \( \
+			-iname \*.c -o \
+			-iname \*.h \) \
+		! -name bsd_tree.h \
+		$(shell printf "! -name %s " $(shell basename -a $(shell grep -rl "This file is part of the lwIP" src))) \
+		$(shell printf "! -name %s " $(shell basename -a $(shell grep -rl _Generic src))) \
+		-print0 | xargs -0 clang-format -i -style=file
+
+pretty-cpp:
+	@find src targets tests \
+		-path src/swagger -prune -o \
+		-type f \( \
+			-iname \*.cpp -o \
+			-iname \*.hpp -o \
+			-iname \*.tcc \) \
+		-print0 | xargs -0 clang-format -i -style=file

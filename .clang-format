@@ -1,0 +1,36 @@
+#
+# Clang-Format configuration for OpenPerf code
+#
+BasedOnStyle: LLVM
+---
+Language: Cpp
+AccessModifierOffset: -4  # Relative to standard indent width
+AlignOperands: true
+AllowShortBlocksOnASingleLine: true
+AllowShortIfStatementsOnASingleLine: true
+AllowShortLoopsOnASingleLine: true
+AlwaysBreakBeforeMultilineStrings: false
+AlwaysBreakTemplateDeclarations: MultiLine
+
+# Picky, picky, picky... - Hermey
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterClass: true
+  AfterFunction: true
+  AfterStruct: true
+  AfterUnion: true
+  SplitEmptyFunction: false
+  SplitEmptyRecord: false
+  SplitEmptyNamespace: false
+
+BreakBeforeBinaryOperators: NonAssignment
+BreakConstructorInitializers: BeforeComma
+BreakInheritanceList: BeforeComma
+DerivePointerAlignment: false
+IndentCaseLabels: false
+PointerAlignment: Left
+IndentWidth: 4
+SortIncludes: false  # Enabling this can break things!
+
+# Need a clang-format version past 8 to support newer standards
+Standard: Cpp11
