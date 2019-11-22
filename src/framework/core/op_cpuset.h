@@ -4,13 +4,13 @@
 #include <stddef.h>
 #include <stdbool.h>
 
-typedef void * op_cpuset_t;
+typedef void* op_cpuset_t;
 
 op_cpuset_t op_cpuset_create(void);
 
-int op_cpuset_from_string(op_cpuset_t cpuset, const char *str);
+int op_cpuset_from_string(op_cpuset_t cpuset, const char* str);
 
-void op_cpuset_to_string(op_cpuset_t cpuset, char *buf, size_t buflen);
+void op_cpuset_to_string(op_cpuset_t cpuset, char* buf, size_t buflen);
 
 void op_cpuset_delete(op_cpuset_t cpuset);
 
@@ -18,7 +18,7 @@ void op_cpuset_clear(op_cpuset_t cpuset);
 
 size_t op_cpuset_get_native_size(op_cpuset_t cpuset);
 
-void *op_cpuset_get_native_ptr(op_cpuset_t cpuset);
+void* op_cpuset_get_native_ptr(op_cpuset_t cpuset);
 
 void op_cpuset_set(op_cpuset_t cpuset, size_t cpu, bool val);
 
@@ -46,12 +46,11 @@ bool op_cpuset_equal(op_cpuset_t a, op_cpuset_t b);
  * @param val
  *   The value to set for each bit in the range.
  */
-inline void op_cpuset_set_range(op_cpuset_t cpuset, size_t start, size_t len, bool val)
+inline void op_cpuset_set_range(op_cpuset_t cpuset, size_t start, size_t len,
+                                bool val)
 {
     size_t i, end = start + len;
-    for (i = start; i < end; ++i) {
-        op_cpuset_set(cpuset, i, val);
-    }
+    for (i = start; i < end; ++i) { op_cpuset_set(cpuset, i, val); }
 }
 
 /**
@@ -62,7 +61,7 @@ inline void op_cpuset_set_range(op_cpuset_t cpuset, size_t start, size_t len, bo
  * @return
  *   The cpuset if successful or NULL if fail.
  */
-inline op_cpuset_t op_cpuset_create_from_string(const char *str)
+inline op_cpuset_t op_cpuset_create_from_string(const char* str)
 {
     op_cpuset_t cpuset = op_cpuset_create();
     if (cpuset) {
@@ -84,7 +83,7 @@ inline op_cpuset_t op_cpuset_create_from_string(const char *str)
  * @return
  *   0 if successful, non-zero if fail.
  */
-inline int op_cpuset_get_first(op_cpuset_t cpuset, size_t *cpu)
+inline int op_cpuset_get_first(op_cpuset_t cpuset, size_t* cpu)
 {
     size_t i, size = op_cpuset_size(cpuset);
     for (i = 0; i < size; ++i) {
@@ -106,7 +105,7 @@ inline int op_cpuset_get_first(op_cpuset_t cpuset, size_t *cpu)
  * @return
  *   0 if successful, non-zero if fail.
  */
-inline int op_cpuset_get_next(op_cpuset_t cpuset, size_t *cpu)
+inline int op_cpuset_get_next(op_cpuset_t cpuset, size_t* cpu)
 {
     int i, size = op_cpuset_size(cpuset);
     for (i = (*cpu) + 1; i < size; ++i) {

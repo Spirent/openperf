@@ -9,10 +9,12 @@ static struct op_options_data config_file_options = {
     .name = "CONFIG-FILE",
     .init = NULL,
     .callback = NULL,
-    .options = {
-        {"File to use to configure OpenPerf", "config", 'c', OP_OPTION_TYPE_STRING},
-        { 0, 0, 0, 0 },
-    },
+    .options =
+        {
+            {"File to use to configure OpenPerf", "config", 'c',
+             OP_OPTION_TYPE_STRING},
+            {0, 0, 0, 0},
+        },
 };
 
 REGISTER_OPTIONS(config_file_options)

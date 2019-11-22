@@ -7,10 +7,7 @@
 #include "zmq.h"
 
 static bool _op_done = false;
-void signal_handler(int signo __attribute__((unused)))
-{
-    _op_done = true;
-}
+void signal_handler(int signo __attribute__((unused))) { _op_done = true; }
 
 int main(int argc, char* argv[])
 {
@@ -23,10 +20,8 @@ int main(int argc, char* argv[])
     sigaddset(&newset, SIGTERM);
     pthread_sigmask(SIG_BLOCK, &newset, &oldset);
 
-    void *context = zmq_ctx_new();
-    if (!context) {
-        op_exit("Could not initialize ZeroMQ context!");
-    }
+    void* context = zmq_ctx_new();
+    if (!context) { op_exit("Could not initialize ZeroMQ context!"); }
 
     op_init(context, argc, argv);
 
@@ -44,9 +39,7 @@ int main(int argc, char* argv[])
     /* Block until we're done ... */
     sigset_t emptyset;
     sigemptyset(&emptyset);
-    while (!_op_done) {
-        sigsuspend(&emptyset);
-    }
+    while (!_op_done) { sigsuspend(&emptyset); }
 
     /* ... then clean up and exit. */
     op_halt(context);

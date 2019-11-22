@@ -3,14 +3,8 @@
 
 namespace openperf::packetio::internal::worker {
 
-unsigned get_id()
-{
-    return (rte_lcore_id());
-}
+unsigned get_id() { return (rte_lcore_id()); }
 
-unsigned get_numa_node()
-{
-    return (rte_socket_id());
-}
+unsigned get_numa_node() { return (rte_socket_id()); }
 
-}
+} // namespace openperf::packetio::internal::worker

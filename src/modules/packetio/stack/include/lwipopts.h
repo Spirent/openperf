@@ -32,7 +32,7 @@
 #define LWIP_DHCP 1
 #define LWIP_AUTOIP 1
 #define LWIP_DHCP_AUTOIP_COOP 1
-#define DHCP_DOES_ARP_CHECK 1  /* let's be a good net-citizen */
+#define DHCP_DOES_ARP_CHECK 1 /* let's be a good net-citizen */
 
 /* Miscellaneous options */
 #define LWIP_STATS 1
@@ -49,7 +49,7 @@
 #define MEMP_MEM_MALLOC 1
 #define MEMP_USE_CUSTOM_POOLS 0
 
-#define PBUF_POOL_BUFSIZE (2048 + 128)  /* DPDK default MBUF buffer size */
+#define PBUF_POOL_BUFSIZE (2048 + 128) /* DPDK default MBUF buffer size */
 #define PBUF_PRIVATE_SIZE 64
 
 /* IP options */
@@ -85,9 +85,9 @@
 #define SO_REUSE 1
 
 /* Memcpy options */
-#define MEMCPY(dst,src,len)  PACKETIO_MEMCPY(dst,src,len)
-#define SMEMCPY(dst,src,len) PACKETIO_MEMCPY(dst,src,len)
-#define MEMMOVE(dst,src,len) PACKETIO_MEMCPY(dst,src,len)
+#define MEMCPY(dst, src, len) PACKETIO_MEMCPY(dst, src, len)
+#define SMEMCPY(dst, src, len) PACKETIO_MEMCPY(dst, src, len)
+#define MEMMOVE(dst, src, len) PACKETIO_MEMCPY(dst, src, len)
 
 /* We've already got these */
 #define LWIP_DONT_PROVIDE_BYTEORDER_FUNCTIONS 1

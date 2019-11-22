@@ -17,7 +17,7 @@ public:
     int get();
 };
 
-}
-}
+} // namespace socket
+} // namespace openperf
 
 #endif /* _OP_SOCKET_UNIX_SOCKET_HPP_ */

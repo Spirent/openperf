@@ -11,10 +11,9 @@
  */
 struct sys_mbox
 {
-    struct rte_ring_deleter {
-        void operator()(rte_ring *ring) {
-            rte_ring_free(ring);
-        }
+    struct rte_ring_deleter
+    {
+        void operator()(rte_ring* ring) { rte_ring_free(ring); }
     };
 
     static std::atomic_size_t m_idx;
@@ -32,8 +31,8 @@ public:
     int fd() const;
     void clear_notifications();
 
-    void post(void *msg);
-    bool trypost(void *msg);
+    void post(void* msg);
+    bool trypost(void* msg);
 
     void* fetch(uint32_t timeout);
     void* tryfetch();

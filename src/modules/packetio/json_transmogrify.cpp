@@ -58,6 +58,6 @@ void from_json(const json& j, Port& port)
     }
 }
 
-}
-}
-}
+} // namespace model
+} // namespace v1
+} // namespace swagger

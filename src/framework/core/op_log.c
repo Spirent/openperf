@@ -20,13 +20,13 @@
 #include "core/op_socket.h"
 #include "core/op_thread.h"
 
-static const char *op_log_endpoint = "inproc://op_logging";
+static const char* op_log_endpoint = "inproc://op_logging";
 
-static void *op_log_context;
+static void* op_log_context;
 static enum op_log_level op_log_level;
 
-static struct op_list *_thread_log_sockets = NULL;
-static __thread void *_log_socket = NULL;
+static struct op_list* _thread_log_sockets = NULL;
+static __thread void* _log_socket = NULL;
 static atomic_bool _log_thread_ready = ATOMIC_VAR_INIT(false);
 
 #define THREAD_LENGTH OP_THREAD_NAME_MAX_LENGTH
@@ -34,19 +34,20 @@ static atomic_bool _log_thread_ready = ATOMIC_VAR_INIT(false);
 /**
  * Structure for sending messages to the logging thread
  */
-struct op_log_message {
-    char thread[THREAD_LENGTH];  /**< Sender's thread name */
-    time_t time;                 /**< Time sender logged message */
-    const char* tag;             /**< Additional message information */
-    const char* message;         /**< A pointer to the message to log */
+struct op_log_message
+{
+    char thread[THREAD_LENGTH]; /**< Sender's thread name */
+    time_t time;                /**< Time sender logged message */
+    const char* tag;            /**< Additional message information */
+    const char* message;        /**< A pointer to the message to log */
     enum op_log_level level;    /**< The message's log level */
-    uint32_t length;             /**< Length of the message (bytes) */
+    uint32_t length;            /**< Length of the message (bytes) */
 };
 
 /**
  * Simple function to free strings that get logged via ZeroMQ;
  */
-static void _zmq_buffer_free(void *data, void *hint __attribute__((unused)))
+static void _zmq_buffer_free(void* data, void* hint __attribute__((unused)))
 {
     free(data);
 }
@@ -74,30 +75,26 @@ static char* log_level_string(enum op_log_level level)
 /**
  * Free dynamically allocated part of op_log_message structs
  */
-static void op_log_free(const struct op_log_message *msg)
+static void op_log_free(const struct op_log_message* msg)
 {
-    if (msg->tag) free((void *)msg->tag);
-    if (msg->message) free((void *)msg->message);
+    if (msg->tag) free((void*)msg->tag);
+    if (msg->message) free((void*)msg->message);
 }
 
 /**
  * Get the system log level
  */
-enum op_log_level op_log_level_get(void)
-{
-    return op_log_level;
-}
+enum op_log_level op_log_level_get(void) { return op_log_level; }
 
 /**
  * Set the system log level
  */
 void op_log_level_set(enum op_log_level level)
 {
-    if ((OP_LOG_NONE <= level) && (level <= OP_LOG_MAX))
-        op_log_level = level;
+    if ((OP_LOG_NONE <= level) && (level <= OP_LOG_MAX)) op_log_level = level;
 }
 
-enum op_log_level parse_log_optarg(const char *arg)
+enum op_log_level parse_log_optarg(const char* arg)
 {
     /* Check for a number */
     long level = strtol(arg, NULL, 10);
@@ -122,8 +119,10 @@ enum op_log_level parse_log_optarg(const char *arg)
 
     /* Look for known strings */
     for (enum op_log_level ll = OP_LOG_NONE; ll < OP_LOG_MAX; ll++) {
-        const char *ref = log_level_string(ll);
-        if (strncmp(normal_arg, ref, op_min(strlen(ref), OP_LOG_MAX_LEVEL_LENGTH)) == 0) {
+        const char* ref = log_level_string(ll);
+        if (strncmp(normal_arg, ref,
+                    op_min(strlen(ref), OP_LOG_MAX_LEVEL_LENGTH))
+            == 0) {
             return (ll);
         }
     }
@@ -131,7 +130,7 @@ enum op_log_level parse_log_optarg(const char *arg)
     return (OP_LOG_NONE);
 }
 
-enum op_log_level op_log_level_find(int argc, char * const argv[])
+enum op_log_level op_log_level_find(int argc, char* const argv[])
 {
     for (int idx = 0; idx < argc - 1; idx++) {
         if (strcmp(argv[idx], "--core.log.level") == 0
@@ -143,20 +142,18 @@ enum op_log_level op_log_level_find(int argc, char * const argv[])
     return (OP_LOG_NONE);
 }
 
-static const char * skip_keywords(const char *begin, const char *end)
+static const char* skip_keywords(const char* begin, const char* end)
 {
-    /* Various words that precede or modify the type that should also be skipped */
-    static const char* keywords[] = {
-        "unsigned",
-        "signed",
-        "static"
-    };
+    /* Various words that precede or modify the type that should also be skipped
+     */
+    static const char* keywords[] = {"unsigned", "signed", "static"};
 
-    const char *cursor = begin;
+    const char* cursor = begin;
     size_t length = end - begin;
     for (size_t i = 0; i < op_count_of(keywords); i++) {
-        const char *keyword = keywords[i];
-        if (length > strlen(keyword) && strncmp(cursor, keyword, strlen(keyword)) == 0) {
+        const char* keyword = keywords[i];
+        if (length > strlen(keyword)
+            && strncmp(cursor, keyword, strlen(keyword)) == 0) {
             size_t adjust = strlen(keyword) + 1;
             cursor += adjust;
             assert(length >= adjust);
@@ -169,34 +166,29 @@ static const char * skip_keywords(const char *begin, const char *end)
      * don't have return types.
      */
     size_t template_level = 0;
-    const char *to_return = cursor;
+    const char* to_return = cursor;
     while (cursor <= end) {
-        if (*cursor == '(' && template_level == 0) {
-            break;
-        }
+        if (*cursor == '(' && template_level == 0) { break; }
         if (*cursor == ' ' && template_level == 0) {
             to_return = cursor;
             break;
         }
-        if (*cursor == '<') {
-            template_level++;
-        }
-        if (*cursor == '>' && template_level > 0) {
-            template_level--;
-        }
+        if (*cursor == '<') { template_level++; }
+        if (*cursor == '>' && template_level > 0) { template_level--; }
         cursor++;
     }
 
-    /* Skip any trailing spaces so we can return a cursor pointing at something */
+    /* Skip any trailing spaces so we can return a cursor pointing at something
+     */
     while (*to_return == ' ') to_return++;
 
     return (to_return);
 }
 
-void op_log_function_name(const char *signature, char *function)
+void op_log_function_name(const char* signature, char* function)
 {
-    char const *cursor = signature;
-    char const *end = signature + strlen(signature);
+    char const* cursor = signature;
+    char const* end = signature + strlen(signature);
 
     /* Skip over the return type */
     cursor = skip_keywords(cursor, end);
@@ -230,18 +222,16 @@ function_name_exit:
  * Retrieve the logging socket for the calling thread.
  * If we don't have one, then create it and add it to our list of sockets.
  */
-static void * get_thread_log_socket(void)
+static void* get_thread_log_socket(void)
 {
     if (_log_socket == NULL) {
         if ((_log_socket = zmq_socket(op_log_context, ZMQ_PUSH)) == NULL
             || zmq_connect(_log_socket, op_log_endpoint) != 0) {
-            if (errno == ETERM) {
-                return (NULL);  /* system is shutting down */
-            }
+            if (errno == ETERM) { return (NULL); /* system is shutting down */ }
 
             /* No good excuse for failing. */
             op_exit("Could not connect to %s: %s\n", op_log_endpoint,
-                     zmq_strerror(errno));
+                    zmq_strerror(errno));
         }
 
         /* Add this socket to our socket list, so we can close it on exit */
@@ -259,8 +249,7 @@ static void * get_thread_log_socket(void)
  * thread.  Not sure what to do about errors in this function, as the
  * inability to log messages probably ought to be fatal...
  */
-int op_log(enum op_log_level level, const char *tag,
-            const char *format, ...)
+int op_log(enum op_log_level level, const char* tag, const char* format, ...)
 {
     va_list argp;
     va_start(argp, format);
@@ -269,22 +258,23 @@ int op_log(enum op_log_level level, const char *tag,
     return (error);
 }
 
-int op_vlog(enum op_log_level level, const char *tag,
-             const char *format, va_list argp)
+int op_vlog(enum op_log_level level, const char* tag, const char* format,
+            va_list argp)
 {
     int ret = 0;
-    char *msg = NULL;
-    void *messages = NULL;
+    char* msg = NULL;
+    void* messages = NULL;
 
     if (!atomic_load_explicit(&_log_thread_ready, memory_order_relaxed))
         return (0);
 
-    if (level > op_log_level)  /* Nothing to do */
+    if (level > op_log_level) /* Nothing to do */
         return (0);
 
     if ((messages = get_thread_log_socket()) == NULL) {
         if (errno != ETERM) {
-            op_safe_log("Logging message lost!  Could not retrieve thread log socket.\n");
+            op_safe_log("Logging message lost!  Could not retrieve thread log "
+                        "socket.\n");
         }
         goto op_log_exit;
     }
@@ -297,7 +287,8 @@ int op_vlog(enum op_log_level level, const char *tag,
 
     if (ret == -1) {
         /* Eek! We can't copy the log message for some reason */
-        op_safe_log("Logging message lost!  vasprintf call failed: %s", strerror(errno));
+        op_safe_log("Logging message lost!  vasprintf call failed: %s",
+                    strerror(errno));
         goto op_log_exit;
     }
 
@@ -322,7 +313,8 @@ int op_vlog(enum op_log_level level, const char *tag,
         op_log_free(&log);
         if (errno != ETERM && errno != ENOTSOCK) {
             /* Filter out errors that occur when shutting down */
-            op_safe_log("Logging message lost!  zmq_send call failed: %s", zmq_strerror(errno));
+            op_safe_log("Logging message lost!  zmq_send call failed: %s",
+                        zmq_strerror(errno));
         }
     }
 
@@ -332,24 +324,23 @@ op_log_exit:
     return (ret);
 }
 
-void op_log_write(const struct op_log_message *msg, FILE *file, void *socket)
+void op_log_write(const struct op_log_message* msg, FILE* file, void* socket)
 {
-    if (!msg->message || msg->length == 0) {
-        return;
-    }
+    if (!msg->message || msg->length == 0) { return; }
 
     int error = 0;
-    char *log_msg = NULL;
+    char* log_msg = NULL;
     char txt_time[32];
 
     strftime(txt_time, sizeof(txt_time), "%FT%TZ", gmtime(&msg->time));
     /* Note: we use the length to trim the trailing '\n' from the message */
-    error = asprintf(&log_msg,
-                     "{\"time\": \"%s\", \"level\": \"%s\", \"thread\": \"%s\", "
-                     "\"tag\": \"%s\", \"message\": \"%.*s\"}\n",
-                     txt_time, log_level_string(msg->level), msg->thread, msg->tag,
-                     msg->message[msg->length - 1] == '\n' ? msg->length - 1 : msg->length,
-                     msg->message);
+    error = asprintf(
+        &log_msg,
+        "{\"time\": \"%s\", \"level\": \"%s\", \"thread\": \"%s\", "
+        "\"tag\": \"%s\", \"message\": \"%.*s\"}\n",
+        txt_time, log_level_string(msg->level), msg->thread, msg->tag,
+        msg->message[msg->length - 1] == '\n' ? msg->length - 1 : msg->length,
+        msg->message);
     if (error == -1) {
         /* Eek!  No message to log! */
         op_safe_log("Could not create logging message with asprintf!\n");
@@ -371,7 +362,8 @@ void op_log_write(const struct op_log_message *msg, FILE *file, void *socket)
          * _zmq_buffer_free when the message has been sent.
          */
         if (zmq_msg_init_data(&zmq_msg, log_msg, strlen(log_msg) - 1,
-                              _zmq_buffer_free, NULL) != 0) {
+                              _zmq_buffer_free, NULL)
+            != 0) {
             op_safe_log("Could not initialize zmq_msg\n");
             free(log_msg);
             return;
@@ -386,12 +378,13 @@ void op_log_write(const struct op_log_message *msg, FILE *file, void *socket)
 /**
  * Default logging callback handler
  */
-static int handle_message(const struct op_event_data *data, void *socket)
+static int handle_message(const struct op_event_data* data, void* socket)
 {
     struct op_log_message log;
     int recv_or_err = 0;
-    while ((recv_or_err = zmq_recv(data->socket, &log, sizeof(log), ZMQ_DONTWAIT))
-           == sizeof(log)) {
+    while (
+        (recv_or_err = zmq_recv(data->socket, &log, sizeof(log), ZMQ_DONTWAIT))
+        == sizeof(log)) {
         /* Use stdout for now; can change later */
         op_log_write(&log, stdout, socket);
         op_log_free(&log);
@@ -403,15 +396,16 @@ static int handle_message(const struct op_event_data *data, void *socket)
 /**
  * Structure for sending initial arguments to the logging thread
  */
-struct op_log_task_args {
-    void *context;
-    const char *logging_endpoint;
-    const char *pair_endpoint;
+struct op_log_task_args
+{
+    void* context;
+    const char* logging_endpoint;
+    const char* pair_endpoint;
 };
 
-void *op_log_task(void *void_args)
+void* op_log_task(void* void_args)
 {
-    struct op_log_task_args *args = (struct op_log_task_args*)void_args;
+    struct op_log_task_args* args = (struct op_log_task_args*)void_args;
 
     op_thread_setname("op_log");
 
@@ -419,17 +413,20 @@ void *op_log_task(void *void_args)
      * Open socket back to our parent so we can send them a notification
      * that we're ready.
      */
-    void *parent = op_socket_get_client(args->context, ZMQ_PAIR, args->pair_endpoint);
+    void* parent =
+        op_socket_get_client(args->context, ZMQ_PAIR, args->pair_endpoint);
     if (!parent) op_exit("Could not create parent notification socket\n");
 
     /* Create a socket for pulling log messages from clients */
-    void *messages = op_socket_get_server(args->context, ZMQ_PULL, op_log_endpoint);
+    void* messages =
+        op_socket_get_server(args->context, ZMQ_PULL, op_log_endpoint);
     if (!messages) op_exit("Could not create logging server socket\n");
 
     /* Create a socket for publishing log messages to external clients, maybe */
-    void *external = NULL;
+    void* external = NULL;
     if (args->logging_endpoint) {
-        external = op_socket_get_server(args->context, ZMQ_PUB, args->logging_endpoint);
+        external = op_socket_get_server(args->context, ZMQ_PUB,
+                                        args->logging_endpoint);
         if (!external) op_exit("Could not create log publishing socket\n");
     }
 
@@ -445,11 +442,12 @@ void *op_log_task(void *void_args)
     if (error) op_exit("Could not add callack to event loop\n");
 
     /*
-     * Create a list for storing thread local log sockets.  We will need to close
-     * them all when we exit.
+     * Create a list for storing thread local log sockets.  We will need to
+     * close them all when we exit.
      */
     _thread_log_sockets = op_list_allocate();
-    if (!_thread_log_sockets) op_exit("Could not create thread local socket storage list\n");
+    if (!_thread_log_sockets)
+        op_exit("Could not create thread local socket storage list\n");
     op_list_set_destructor(_thread_log_sockets, op_socket_close);
 
     /* Notify parent that we're ready to work */
@@ -476,37 +474,40 @@ void *op_log_task(void *void_args)
 /**
  * Fire off the logging thread in a detached state
  */
-int op_log_init(void *context, const char *logging_endpoint)
+int op_log_init(void* context, const char* logging_endpoint)
 {
     int ret = 0;
     pthread_t log_thread;
     pthread_attr_t log_thread_attr;
-    const char *notify_endpoint = "inproc://op_log_notify";
-    struct op_log_task_args *args = NULL;
+    const char* notify_endpoint = "inproc://op_log_notify";
+    struct op_log_task_args* args = NULL;
 
     op_log_context = context;
 
     /* Create a socket for the child ready notification */
-    void *notify = zmq_socket(context, ZMQ_PAIR);
+    void* notify = zmq_socket(context, ZMQ_PAIR);
     if (!notify) op_exit("Failed to create notification socket\n");
 
     if (zmq_bind(notify, notify_endpoint) != 0) {
         op_exit("Failed to bind to log notification socket: %s\n",
-                 zmq_strerror(errno));
+                zmq_strerror(errno));
     }
 
     /* Launch the logging thread */
     if (pthread_attr_init(&log_thread_attr)
-        || pthread_attr_setdetachstate(&log_thread_attr, PTHREAD_CREATE_DETACHED)) {
+        || pthread_attr_setdetachstate(&log_thread_attr,
+                                       PTHREAD_CREATE_DETACHED)) {
         op_exit("Could not set pthread attributes\n");
     }
 
-    args = (struct op_log_task_args *)malloc(sizeof(*args));
+    args = (struct op_log_task_args*)malloc(sizeof(*args));
     args->context = context;
     args->logging_endpoint = logging_endpoint;
     args->pair_endpoint = notify_endpoint;
 
-    if ((ret = pthread_create(&log_thread, &log_thread_attr, &op_log_task, args)) != 0) {
+    if ((ret =
+             pthread_create(&log_thread, &log_thread_attr, &op_log_task, args))
+        != 0) {
         free(args);
         return (-1);
     }
@@ -538,9 +539,9 @@ static struct op_options_data log_level_option = {
     .init = NULL,
     .callback = NULL,
     .options = {
-        { "Specify the log level; takes a number (1-6) or level", "core.log.level", 'l', OP_OPTION_TYPE_STRING},
-        { 0, 0, 0, 0 },
-    }
-};
+        {"Specify the log level; takes a number (1-6) or level",
+         "core.log.level", 'l', OP_OPTION_TYPE_STRING},
+        {0, 0, 0, 0},
+    }};
 
 REGISTER_OPTIONS(log_level_option)

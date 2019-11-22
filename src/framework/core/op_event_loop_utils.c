@@ -8,22 +8,20 @@
 #include "core/op_event_loop_utils.h"
 
 /* inline function symbol */
-extern int op_event_loop_add_timer_noid(struct op_event_loop *loop,
-                                         uint64_t timeout,
-                                         const struct op_event_callbacks *callbacks,
-                                         void *arg);
+extern int
+op_event_loop_add_timer_noid(struct op_event_loop* loop, uint64_t timeout,
+                             const struct op_event_callbacks* callbacks,
+                             void* arg);
 
 int op_event_loop_set_nonblocking(int fd)
 {
     int flags = fcntl(fd, F_GETFL);
-    if (flags == -1) {
-        return (-errno);
-    }
+    if (flags == -1) { return (-errno); }
 
     return (fcntl(fd, F_SETFL, flags | O_NONBLOCK));
 }
 
-int op_event_loop_get_socket_fd(void *socket)
+int op_event_loop_get_socket_fd(void* socket)
 {
     int error = 0;
     int fd = -1;
@@ -35,7 +33,7 @@ int op_event_loop_get_socket_fd(void *socket)
 
     assert(sizeof(fd) == fd_size);
 
-    return(fd);
+    return (fd);
 }
 
 /*
@@ -43,7 +41,7 @@ int op_event_loop_get_socket_fd(void *socket)
  * is an error.  The expectation is that the callbacks will handle
  * errors better than the event loop will.
  */
-bool op_event_loop_get_socket_is_readable(void *socket)
+bool op_event_loop_get_socket_is_readable(void* socket)
 {
     uint32_t flags = 0;
     size_t flag_size = sizeof(flags);
@@ -53,7 +51,7 @@ bool op_event_loop_get_socket_is_readable(void *socket)
     return (error == 0 ? flags & ZMQ_POLLIN : true);
 }
 
-bool op_event_loop_get_socket_is_writable(void *socket)
+bool op_event_loop_get_socket_is_writable(void* socket)
 {
     uint32_t flags = 0;
     size_t flag_size = sizeof(flags);

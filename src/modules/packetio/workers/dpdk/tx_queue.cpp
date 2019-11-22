@@ -16,8 +16,8 @@ namespace openperf::packetio::dpdk {
 
 static std::string get_ring_name(uint16_t port_id, uint16_t queue_id)
 {
-    return (std::string("tx_ring_") + std::to_string(port_id)
-            + "_" + std::to_string(queue_id));
+    return (std::string("tx_ring_") + std::to_string(port_id) + "_"
+            + std::to_string(queue_id));
 }
 
 tx_queue::data::data(uint16_t port_id, uint16_t queue_id)
@@ -26,8 +26,7 @@ tx_queue::data::data(uint16_t port_id, uint16_t queue_id)
     , queue(queue_id)
     , fd(eventfd(0, EFD_NONBLOCK))
     , ring(rte_ring_create(get_ring_name(port_id, queue_id).c_str(),
-                           tx_queue_size,
-                           rte_eth_dev_socket_id(port_id),
+                           tx_queue_size, rte_eth_dev_socket_id(port_id),
                            RING_F_SP_ENQ | RING_F_SC_DEQ))
     , write_idx(0)
 {}
@@ -35,7 +34,7 @@ tx_queue::data::data(uint16_t port_id, uint16_t queue_id)
 tx_queue::tx_queue(uint16_t port_id, uint16_t queue_id)
     : m_data(port_id, queue_id)
 {
-    static_assert(offsetof(data,write_idx) - offsetof(data,read_idx) >= 64);
+    static_assert(offsetof(data, write_idx) - offsetof(data, read_idx) >= 64);
     if (m_data.fd == -1) {
         throw std::runtime_error("Could not create eventfd: "
                                  + std::string(strerror(errno)));
@@ -44,7 +43,6 @@ tx_queue::tx_queue(uint16_t port_id, uint16_t queue_id)
     if (!m_data.ring) {
         throw std::runtime_error("Could not create DPDK ring for tx queue");
     }
-
 }
 
 tx_queue::~tx_queue() { close(m_data.fd); }
@@ -80,9 +78,10 @@ bool tx_queue::notify()
         m_data.write_idx.fetch_add(1, std::memory_order_release);
         if (auto error = eventfd_write(event_fd(), 1U); error != 0) {
             m_data.write_idx.fetch_sub(1, std::memory_order_release);
-            OP_LOG(OP_LOG_ERROR, "Could not generate notification for tx "
-                    "queue %u:%u on fd %d: %s\n", port_id(), queue_id(),
-                    event_fd(), strerror(errno));
+            OP_LOG(OP_LOG_ERROR,
+                   "Could not generate notification for tx "
+                   "queue %u:%u on fd %d: %s\n",
+                   port_id(), queue_id(), event_fd(), strerror(errno));
             return (false);
         }
     }
@@ -109,9 +108,8 @@ uint16_t tx_queue::enqueue(rte_mbuf* const mbufs[], uint16_t nb_mbufs)
 {
     notify();
 
-    auto queued = rte_ring_enqueue_burst(ring(),
-                                         reinterpret_cast<void* const*>(mbufs),
-                                         nb_mbufs, nullptr);
+    auto queued = rte_ring_enqueue_burst(
+        ring(), reinterpret_cast<void* const*>(mbufs), nb_mbufs, nullptr);
     if (!queued) {
         OP_LOG(OP_LOG_WARNING, "tx queue %u:%u full\n", port_id(), queue_id());
         return (0);
@@ -120,4 +118,4 @@ uint16_t tx_queue::enqueue(rte_mbuf* const mbufs[], uint16_t nb_mbufs)
     return (queued);
 }
 
-}
+} // namespace openperf::packetio::dpdk

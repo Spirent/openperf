@@ -7,8 +7,7 @@
 namespace openperf {
 namespace socket {
 
-template <typename Derived>
-class circular_buffer_producer
+template <typename Derived> class circular_buffer_producer
 {
     /*
      * Align the 'writable' size to this value to try to limit
@@ -20,7 +19,7 @@ class circular_buffer_producer
     const Derived& derived() const;
 
     uint8_t* base() const;
-    size_t   len()  const;
+    size_t len() const;
     std::atomic_size_t& read_idx();
     const std::atomic_size_t& read_idx() const;
     std::atomic_size_t& write_idx();
@@ -38,10 +37,11 @@ public:
     size_t write(const iovec iov[], size_t iovcnt);
 
     template <typename NotifyFunction>
-    size_t write_and_notify(const void* ptr, size_t length, NotifyFunction&& notify);
+    size_t write_and_notify(const void* ptr, size_t length,
+                            NotifyFunction&& notify);
 };
 
-}
-}
+} // namespace socket
+} // namespace openperf
 
 #endif /* _OP_SOCKET_CIRCULAR_BUFFER_PRODUCER_HPP_ */

@@ -24,8 +24,7 @@ public:
 
     bool update_poller(epoll_poller& poller);
 
-    bool add_callback(std::string_view name,
-                      event_loop::event_notifier notify,
+    bool add_callback(std::string_view name, event_loop::event_notifier notify,
                       event_loop::event_handler on_event,
                       std::optional<event_loop::delete_handler> on_delete,
                       std::any arg) noexcept;
@@ -34,11 +33,11 @@ public:
 private:
     using callback_ptr = std::unique_ptr<callback>;
 
-    std::vector<callback_ptr> m_additions;  /* new callbacks to run */
-    std::vector<callback_ptr> m_deletions;  /* existing callbacks to delete */
-    std::vector<callback_ptr> m_runnables;  /* active callbacks */
+    std::vector<callback_ptr> m_additions; /* new callbacks to run */
+    std::vector<callback_ptr> m_deletions; /* existing callbacks to delete */
+    std::vector<callback_ptr> m_runnables; /* active callbacks */
 };
 
-}
+} // namespace openperf::packetio::dpdk::worker
 
 #endif /* _OP_PACKETIO_DPDK_WORKER_EVENT_LOOP_ADAPTER_HPP_ */

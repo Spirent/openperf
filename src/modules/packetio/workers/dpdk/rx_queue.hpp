@@ -10,11 +10,12 @@
 namespace openperf::packetio::dpdk {
 
 enum class rx_feature_flags {
-    hardware_lro  = (1 << 0),  /**< Hardware supports LRO */
-    hardware_tags = (1 << 1),  /**< Hardware is tagging stack packets */
+    hardware_lro = (1 << 0),  /**< Hardware supports LRO */
+    hardware_tags = (1 << 1), /**< Hardware is tagging stack packets */
 };
 
-class rx_queue {
+class rx_queue
+{
 public:
     rx_queue(uint16_t port_id, uint16_t queue_id);
     ~rx_queue() = default;
@@ -42,7 +43,7 @@ private:
     struct rte_epoll_event m_event;
 };
 
-}
+} // namespace openperf::packetio::dpdk
 
 declare_enum_flags(openperf::packetio::dpdk::rx_feature_flags);
 

@@ -80,8 +80,7 @@ template <typename Derived>
 void circular_buffer_producer<Derived>::store_write(size_t idx)
 {
     auto dlen = 2 * len();
-    write_idx().store(idx < dlen ? idx : idx - dlen,
-                      std::memory_order_release);
+    write_idx().store(idx < dlen ? idx : idx - dlen, std::memory_order_release);
 }
 
 template <typename Derived>
@@ -90,9 +89,9 @@ size_t circular_buffer_producer<Derived>::writable() const
     auto read_cursor = load_read();
     auto write_cursor = load_write();
 
-    auto available = (read_cursor <= write_cursor
-                      ? len() - write_cursor + read_cursor
-                      : read_cursor - write_cursor - len());
+    auto available =
+        (read_cursor <= write_cursor ? len() - write_cursor + read_cursor
+                                     : read_cursor - write_cursor - len());
 
     /* Try to limit unaligned writes to the buffer */
     return (available & ~(writable_alignment));
@@ -111,20 +110,22 @@ size_t circular_buffer_producer<Derived>::write(const void* ptr, size_t length)
     const size_t chunk2 = to_write - chunk1;
 
     dpdk::memcpy(base() + mask(cursor), ptr, chunk1);
-    dpdk::memcpy(base(), reinterpret_cast<const uint8_t*>(ptr) + chunk1, chunk2);
+    dpdk::memcpy(base(), reinterpret_cast<const uint8_t*>(ptr) + chunk1,
+                 chunk2);
 
     store_write(cursor + to_write);
     return (to_write);
 }
 
 template <typename Derived>
-size_t circular_buffer_producer<Derived>::write(const iovec iov[], size_t iovcnt)
+size_t circular_buffer_producer<Derived>::write(const iovec iov[],
+                                                size_t iovcnt)
 {
-    const auto to_write = std::min(writable(),
-                                   std::accumulate(iov, iov + iovcnt, 0UL,
-                                                   [](size_t x, const iovec& iov) {
-                                                       return (x + iov.iov_len);
-                                                   }));
+    const auto to_write =
+        std::min(writable(), std::accumulate(iov, iov + iovcnt, 0UL,
+                                             [](size_t x, const iovec& iov) {
+                                                 return (x + iov.iov_len);
+                                             }));
     if (!to_write) return (0);
 
     auto cursor = load_write();
@@ -134,9 +135,9 @@ size_t circular_buffer_producer<Derived>::write(const iovec iov[], size_t iovcnt
     size_t iov_idx = 0, written1 = 0;
 
     /* Copy full iovs before the buffer wrap */
-    while (written1 + iov[iov_idx].iov_len <= chunk1
-           && iov_idx < iovcnt) {
-        dpdk::memcpy(base() + mask(cursor) + written1, iov[iov_idx].iov_base, iov[iov_idx].iov_len);
+    while (written1 + iov[iov_idx].iov_len <= chunk1 && iov_idx < iovcnt) {
+        dpdk::memcpy(base() + mask(cursor) + written1, iov[iov_idx].iov_base,
+                     iov[iov_idx].iov_len);
         written1 += iov[iov_idx].iov_len;
         iov_idx++;
     }
@@ -162,20 +163,24 @@ size_t circular_buffer_producer<Derived>::write(const iovec iov[], size_t iovcnt
      */
     if (chunk2 < piece2) {
         store_write(cursor + written1);
-        return(written1);
+        return (written1);
     }
 
     /* Copy the two pieces */
-    dpdk::memcpy(base() + mask(cursor) + written1, iov[iov_idx].iov_base, piece1);
+    dpdk::memcpy(base() + mask(cursor) + written1, iov[iov_idx].iov_base,
+                 piece1);
     written1 += piece1;
-    dpdk::memcpy(base(), reinterpret_cast<const uint8_t*>(iov[iov_idx].iov_base) + piece1, piece2);
+    dpdk::memcpy(base(),
+                 reinterpret_cast<const uint8_t*>(iov[iov_idx].iov_base)
+                     + piece1,
+                 piece2);
     auto written2 = piece2;
     iov_idx++;
 
     /* Now finish writing iovs to the front of the buffer */
-    while (written2 + iov[iov_idx].iov_len <= chunk2
-           && iov_idx < iovcnt) {
-        dpdk::memcpy(base() + written2, iov[iov_idx].iov_base, iov[iov_idx].iov_len);
+    while (written2 + iov[iov_idx].iov_len <= chunk2 && iov_idx < iovcnt) {
+        dpdk::memcpy(base() + written2, iov[iov_idx].iov_base,
+                     iov[iov_idx].iov_len);
         written2 += iov[iov_idx].iov_len;
         iov_idx++;
     }
@@ -186,8 +191,8 @@ size_t circular_buffer_producer<Derived>::write(const iovec iov[], size_t iovcnt
 
 template <typename Derived>
 template <typename NotifyFunction>
-size_t circular_buffer_producer<Derived>::write_and_notify(const void* ptr, size_t length,
-                                                           NotifyFunction&& notify)
+size_t circular_buffer_producer<Derived>::write_and_notify(
+    const void* ptr, size_t length, NotifyFunction&& notify)
 {
     const auto available = writable();
     const auto hiwat = available - (len() >> 1);
@@ -205,5 +210,5 @@ size_t circular_buffer_producer<Derived>::write_and_notify(const void* ptr, size
     return (written);
 }
 
-}
-}
+} // namespace socket
+} // namespace openperf

@@ -32,7 +32,7 @@ extern "C" {
  * @note users are allowed to not specify a configuration file.
  *   In this case the function returns 0.
  */
-int op_config_file_find(int argc, char * const argv[]);
+int op_config_file_find(int argc, char* const argv[]);
 
 /*
  * Get the value of a configuration parameter as a C-style string.
@@ -49,46 +49,43 @@ int op_config_file_find(int argc, char * const argv[]);
  * @return
  *   pointer to value if a value is found, else a pointer to NULL.
  */
-char * op_config_file_get_value_str(const char * param, char * value, int len);
+char* op_config_file_get_value_str(const char* param, char* value, int len);
 
 #ifdef __cplusplus
 }
 #endif
 
-extern int framework_cli_option_handler(int opt, const char *opt_arg);
+extern int framework_cli_option_handler(int opt, const char* opt_arg);
 
 /*
  * Helper macro to create command line argument details.
  * All fields are mandatory.
  * arg_types are defined in op_config.h
  */
-#define MAKE_OPT(description, long_arg, short_arg, arg_type)            \
-    {                                                                   \
-        description, long_arg, short_arg, arg_type                      \
-    }                                                                   \
+#define MAKE_OPT(description, long_arg, short_arg, arg_type)                   \
+    {                                                                          \
+        description, long_arg, short_arg, arg_type                             \
+    }
 
 /*
  * Register command-line options with the framework.
  * config_name must be globally unique.
  * init_fn is called prior to command line argument processing.
  */
-#define MAKE_OPTION_DATA(config_name, init_fn, ...)                     \
-    static struct op_options_data config_name##_options =              \
-        {                                                               \
-         .name = #config_name,                                          \
-         .init = init_fn,                                               \
-         .callback = framework_cli_option_handler,                      \
-         .options = {                                                   \
-                     __VA_ARGS__                                        \
-                     {0, 0, 0, 0 },                                     \
-                     }                                                  \
-        }
+#define MAKE_OPTION_DATA(config_name, init_fn, ...)                            \
+    static struct op_options_data config_name##_options = {                    \
+        .name = #config_name,                                                  \
+        .init = init_fn,                                                       \
+        .callback = framework_cli_option_handler,                              \
+        .options = {                                                           \
+            __VA_ARGS__{0, 0, 0, 0},                                           \
+        }}
 
 /*
  * Helper macro to connect framework configuration support to low-level
  * command line support.
  */
-#define REGISTER_CLI_OPTIONS(config_name) \
+#define REGISTER_CLI_OPTIONS(config_name)                                      \
     REGISTER_OPTIONS(config_name##_options)
 
 #ifdef __cplusplus
@@ -112,7 +109,6 @@ std::string_view op_config_get_file_name();
  */
 std::optional<YAML::Node> op_config_get_param(std::string_view param);
 
-
 /*
  * Helper structs to map op_option_type to concrete type.
  *
@@ -123,12 +119,30 @@ std::optional<YAML::Node> op_config_get_param(std::string_view param);
  * op_config_get_param<long>.
  */
 template <op_option_type T> struct op_option_type_maps;
-template<> struct op_option_type_maps<op_option_type::OP_OPTION_TYPE_NONE>   { typedef bool type; };
-template<> struct op_option_type_maps<op_option_type::OP_OPTION_TYPE_STRING> { typedef std::string type; };
-template<> struct op_option_type_maps<op_option_type::OP_OPTION_TYPE_LONG> { typedef long type; };
-template<> struct op_option_type_maps<op_option_type::OP_OPTION_TYPE_DOUBLE> { typedef double type; };
-template<> struct op_option_type_maps<op_option_type::OP_OPTION_TYPE_MAP> { typedef std::map<std::string, std::string> type; };
-template<> struct op_option_type_maps<op_option_type::OP_OPTION_TYPE_LIST> { typedef std::vector<std::string> type; };
+template <> struct op_option_type_maps<op_option_type::OP_OPTION_TYPE_NONE>
+{
+    typedef bool type;
+};
+template <> struct op_option_type_maps<op_option_type::OP_OPTION_TYPE_STRING>
+{
+    typedef std::string type;
+};
+template <> struct op_option_type_maps<op_option_type::OP_OPTION_TYPE_LONG>
+{
+    typedef long type;
+};
+template <> struct op_option_type_maps<op_option_type::OP_OPTION_TYPE_DOUBLE>
+{
+    typedef double type;
+};
+template <> struct op_option_type_maps<op_option_type::OP_OPTION_TYPE_MAP>
+{
+    typedef std::map<std::string, std::string> type;
+};
+template <> struct op_option_type_maps<op_option_type::OP_OPTION_TYPE_LIST>
+{
+    typedef std::vector<std::string> type;
+};
 
 /*
  * Get a specific configuration parameter.
@@ -171,13 +185,14 @@ op_config_get_param(std::string_view param)
  *
  */
 template <typename T>
-typename std::enable_if_t<std::is_same<T, YAML::Node>::value, std::optional<YAML::Node>>
+typename std::enable_if_t<std::is_same<T, YAML::Node>::value,
+                          std::optional<YAML::Node>>
 op_config_get_param(std::string_view param)
 {
     return op_config_get_param(param);
 }
 
-}  // namespace openperf::config::file
+} // namespace openperf::config::file
 #endif /* ifdef __cplusplus */
 
 #endif /* _OP_CONFIG_FILE_HPP_ */

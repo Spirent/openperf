@@ -12,12 +12,12 @@ extern "C" {
 
 enum op_log_level {
     OP_LOG_NONE = 0,
-    OP_LOG_CRITICAL,     /**< Fatal error condition */
-    OP_LOG_ERROR,        /**< Non-fatal error condition */
-    OP_LOG_WARNING,      /**< Unexpected event or condition */
-    OP_LOG_INFO,         /**< Informational messages */
-    OP_LOG_DEBUG,        /**< Debugging messages */
-    OP_LOG_TRACE,        /**< Trace level messages */
+    OP_LOG_CRITICAL, /**< Fatal error condition */
+    OP_LOG_ERROR,    /**< Non-fatal error condition */
+    OP_LOG_WARNING,  /**< Unexpected event or condition */
+    OP_LOG_INFO,     /**< Informational messages */
+    OP_LOG_DEBUG,    /**< Debugging messages */
+    OP_LOG_TRACE,    /**< Trace level messages */
     OP_LOG_MAX,
 };
 
@@ -48,7 +48,7 @@ void op_log_level_set(enum op_log_level level);
  * @return
  *   log level found in cli arguments (may be OP_LOG_NONE)
  */
-enum op_log_level op_log_level_find(int argc, char * const argv[]);
+enum op_log_level op_log_level_find(int argc, char* const argv[]);
 
 /**
  * Maximum length (in chars) of an OP log level value.
@@ -64,7 +64,7 @@ static const size_t OP_LOG_MAX_LEVEL_LENGTH = 8;
  * @return
  *   log level found in arg, OP_LOG_NONE otherwise
  */
-enum op_log_level parse_log_optarg(const char *arg);
+enum op_log_level parse_log_optarg(const char* arg);
 
 /**
  * Get the full function name from the full function signature string
@@ -74,7 +74,7 @@ enum op_log_level parse_log_optarg(const char *arg);
  * @parma[out] function
  *   Buffer for function name; should be at least as long as signature
  */
-void op_log_function_name(const char *signature, char *function);
+void op_log_function_name(const char* signature, char* function);
 
 /**
  * Macro to possibly write a message to the log
@@ -89,13 +89,13 @@ void op_log_function_name(const char *signature, char *function);
  *   -  0: Success
  *   - !0: Error
  */
-#define OP_LOG(level, format, ...)                                     \
-    do {                                                                \
-        if (level <= op_log_level_get()) {                             \
-            char function_[strlen(__PRETTY_FUNCTION__)];                \
-            op_log_function_name(__PRETTY_FUNCTION__, function_);      \
-            op_log(level, function_, format, ##__VA_ARGS__);           \
-        }                                                               \
+#define OP_LOG(level, format, ...)                                             \
+    do {                                                                       \
+        if (level <= op_log_level_get()) {                                     \
+            char function_[strlen(__PRETTY_FUNCTION__)];                       \
+            op_log_function_name(__PRETTY_FUNCTION__, function_);              \
+            op_log(level, function_, format, ##__VA_ARGS__);                   \
+        }                                                                      \
     } while (0)
 
 /**
@@ -111,12 +111,11 @@ void op_log_function_name(const char *signature, char *function);
  *   -  0: Success
  *   - !0: Error
  */
-int op_log(enum op_log_level level, const char *tag,
-            const char *format, ...)
+int op_log(enum op_log_level level, const char* tag, const char* format, ...)
     __attribute__((format(printf, 3, 4)));
 
-int op_vlog(enum op_log_level level, const char *tag,
-             const char *format, va_list argp);
+int op_vlog(enum op_log_level level, const char* tag, const char* format,
+            va_list argp);
 
 /**
  * Intialize the logging subsystem
@@ -127,7 +126,7 @@ int op_vlog(enum op_log_level level, const char *tag,
  *   - 0: Success
  *   -!0: Error
  */
-int op_log_init(void *context, const char *logging_endpoint);
+int op_log_init(void* context, const char* logging_endpoint);
 
 #ifdef __cplusplus
 }

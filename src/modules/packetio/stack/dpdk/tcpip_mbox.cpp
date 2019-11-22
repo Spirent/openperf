@@ -12,17 +12,11 @@ sys_mbox_t tcpip_mbox::init()
     return (m_mbox.get());
 }
 
-void tcpip_mbox::fini()
-{
-    m_mbox.reset();
-}
+void tcpip_mbox::fini() { m_mbox.reset(); }
 
-sys_mbox_t tcpip_mbox::get()
-{
-    return (m_mbox.get());
-}
+sys_mbox_t tcpip_mbox::get() { return (m_mbox.get()); }
 
-}
+} // namespace openperf::packetio::dpdk
 
 sys_mbox_t openperf::packetio::tcpip::mbox()
 {

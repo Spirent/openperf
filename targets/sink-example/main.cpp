@@ -14,10 +14,7 @@
 #include "packet_counter.h"
 
 static bool _op_done = false;
-void signal_handler(int signo __attribute__((unused)))
-{
-    _op_done = true;
-}
+void signal_handler(int signo __attribute__((unused))) { _op_done = true; }
 
 template <typename T>
 static void log_counter(packet_counter<T>& counter, double delta)
@@ -29,18 +26,18 @@ static void log_counter(packet_counter<T>& counter, double delta)
     auto octets = counter.octets_total_.load(std::memory_order_relaxed);
     auto Mbps = delta ? octets / delta / 131072 : 0;
 
-    OP_LOG(OP_LOG_INFO, "%s counters: packets %zu (%.02f pps), length %zu/%zu/%zu (%.02f Mbps)\n",
-            counter.name_.c_str(),
-            pkts, pps,
-            counter.octets_min_.load(std::memory_order_relaxed),
-            octets / pkts,
-            counter.octets_max_.load(std::memory_order_relaxed),
-            Mbps);
+    OP_LOG(OP_LOG_INFO,
+           "%s counters: packets %zu (%.02f pps), length %zu/%zu/%zu (%.02f "
+           "Mbps)\n",
+           counter.name_.c_str(), pkts, pps,
+           counter.octets_min_.load(std::memory_order_relaxed), octets / pkts,
+           counter.octets_max_.load(std::memory_order_relaxed), Mbps);
 
     counter.reset();
 }
 
-class test_sink {
+class test_sink
+{
     openperf::core::uuid m_id;
     std::unique_ptr<packet_counter<uint64_t>> m_counter;
     std::thread m_logger;
@@ -48,19 +45,22 @@ class test_sink {
 public:
     test_sink(uint16_t port_id)
         : m_id(openperf::core::uuid::random())
-        , m_counter(std::make_unique<packet_counter<uint64_t>>("Port " + std::to_string(port_id)))
+        , m_counter(std::make_unique<packet_counter<uint64_t>>(
+              "Port " + std::to_string(port_id)))
     {
-        m_logger = std::thread([](packet_counter<uint64_t>* counter){
-                                   using namespace std::chrono_literals;
-                                   using namespace std::chrono;
-                                   while (!_op_done) {
-                                       auto start = high_resolution_clock::now();
-                                       std::this_thread::sleep_for(1s);
-                                       auto period = duration_cast<duration<double>>(
-                                           high_resolution_clock::now() - start);
-                                       log_counter(*counter, period.count());
-                                   }
-                               }, m_counter.get());
+        m_logger = std::thread(
+            [](packet_counter<uint64_t>* counter) {
+                using namespace std::chrono_literals;
+                using namespace std::chrono;
+                while (!_op_done) {
+                    auto start = high_resolution_clock::now();
+                    std::this_thread::sleep_for(1s);
+                    auto period = duration_cast<duration<double>>(
+                        high_resolution_clock::now() - start);
+                    log_counter(*counter, period.count());
+                }
+            },
+            m_counter.get());
     }
 
     test_sink(test_sink&& other)
@@ -84,29 +84,25 @@ public:
         if (m_counter) m_logger.join();
     }
 
-    std::string id() const
-    {
-        return (openperf::core::to_string(m_id));
-    }
+    std::string id() const { return (openperf::core::to_string(m_id)); }
 
-    uint16_t push(openperf::packetio::packets::packet_buffer* const packets[], uint16_t length) const
+    uint16_t push(openperf::packetio::packets::packet_buffer* const packets[],
+                  uint16_t length) const
     {
-        for(uint16_t i = 0; i < length; i++) {
+        for (uint16_t i = 0; i < length; i++) {
             m_counter->add(openperf::packetio::packets::length(packets[i]));
         }
         return (length);
     }
 };
 
-void test_sinks(void *context)
+void test_sinks(void* context)
 {
     auto client = openperf::packetio::internal::api::client(context);
 
     auto sink0 = openperf::packetio::packets::generic_sink(test_sink(0));
     auto success = client.add_sink("port0", sink0);
-    if (!success) {
-        throw std::runtime_error("Could not add sink to port0");
-    }
+    if (!success) { throw std::runtime_error("Could not add sink to port0"); }
 }
 
 int main(int argc, char* argv[])
@@ -120,10 +116,8 @@ int main(int argc, char* argv[])
     sigaddset(&newset, SIGTERM);
     pthread_sigmask(SIG_BLOCK, &newset, &oldset);
 
-    void *context = zmq_ctx_new();
-    if (!context) {
-        op_exit("Could not initialize ZeroMQ context!");
-    }
+    void* context = zmq_ctx_new();
+    if (!context) { op_exit("Could not initialize ZeroMQ context!"); }
 
     op_init(context, argc, argv);
 
@@ -143,9 +137,7 @@ int main(int argc, char* argv[])
     /* Block until we're done ... */
     sigset_t emptyset;
     sigemptyset(&emptyset);
-    while (!_op_done) {
-        sigsuspend(&emptyset);
-    }
+    while (!_op_done) { sigsuspend(&emptyset); }
 
     /* ... then clean up and exit. */
     op_halt(context);

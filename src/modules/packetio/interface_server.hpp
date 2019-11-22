@@ -25,8 +25,8 @@ private:
     std::unique_ptr<void, op_socket_deleter> m_socket;
 };
 
-}
-}
-}
-}
+} // namespace api
+} // namespace interface
+} // namespace packetio
+} // namespace openperf
 #endif /* _OP_PACKETIO_INTERFACE_SERVER_HPP_ */

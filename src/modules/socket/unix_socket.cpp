@@ -18,12 +18,13 @@ void check_and_create_path(const std::string_view path)
     /* tear down the path into tokens */
     std::string_view delimiters("/");
     size_t beg = 0, pos = 0;
-    while ((beg = path.find_first_not_of(delimiters, pos)) != std::string::npos) {
+    while ((beg = path.find_first_not_of(delimiters, pos))
+           != std::string::npos) {
         pos = path.find_first_of(delimiters, beg + 1);
         tokens.emplace_back(path.substr(beg, pos - beg));
     }
 
-    if (tokens.size() == 1) return;  /* nothing to do */
+    if (tokens.size() == 1) return; /* nothing to do */
 
     /* and build it back up, creating necessary directories as we go */
     std::string current(path[0] == '/' ? "/" : "");
@@ -49,16 +50,17 @@ unix_socket::unix_socket(const std::string_view path, int type)
 
     check_and_create_path(path);
 
-    struct sockaddr_un addr = { .sun_family = AF_UNIX };
+    struct sockaddr_un addr = {.sun_family = AF_UNIX};
     std::strncpy(addr.sun_path, m_path.c_str(), sizeof(addr.sun_path));
 
     if (bind(m_fd, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) == -1) {
         if (errno == EADDRINUSE) {
-            throw std::runtime_error("Could not bind to unix socket at \""
-                                     + m_path + "\". Either OpenPerf is already "
-                                     + "running or did not shut down cleanly. "
-                                     + "Use --modules.socket.force-unlink option "
-                                     + "to force launch.");
+            throw std::runtime_error(
+                "Could not bind to unix socket at \"" + m_path
+                + "\". Either OpenPerf is already "
+                + "running or did not shut down cleanly. "
+                + "Use --modules.socket.force-unlink option "
+                + "to force launch.");
         } else {
             throw std::runtime_error("Could not bind to unix socket "
                                      + std::to_string(m_fd) + ": "
@@ -73,10 +75,7 @@ unix_socket::~unix_socket()
     unlink(m_path.c_str());
 }
 
-int unix_socket::get()
-{
-    return (m_fd);
-}
+int unix_socket::get() { return (m_fd); }
 
-}
-}
+} // namespace socket
+} // namespace openperf

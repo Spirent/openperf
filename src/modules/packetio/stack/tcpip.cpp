@@ -8,8 +8,8 @@
  * Copyright (c) 2001-2004 Swedish Institute of Computer Science.
  * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without modification,
- * are permitted provided that the following conditions are met:
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
  *
  * 1. Redistributions of source code must retain the above copyright notice,
  *    this list of conditions and the following disclaimer.
@@ -21,14 +21,14 @@
  *
  * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR IMPLIED
  * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT
- * SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
- * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT
- * OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
- * IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY
- * OF SUCH DAMAGE.
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+ * EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+ * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * This file is part of the lwIP TCP/IP stack.
  *
@@ -58,10 +58,11 @@
 #include "core/op_core.h"
 #include "packetio/stack/tcpip.hpp"
 
-#define TCPIP_MSG_VAR_REF(name)     API_VAR_REF(name)
+#define TCPIP_MSG_VAR_REF(name) API_VAR_REF(name)
 #define TCPIP_MSG_VAR_DECLARE(name) API_VAR_DECLARE(struct tcpip_msg, name)
-#define TCPIP_MSG_VAR_ALLOC(name)   API_VAR_ALLOC(struct tcpip_msg, MEMP_TCPIP_MSG_API, name, ERR_MEM)
-#define TCPIP_MSG_VAR_FREE(name)    API_VAR_FREE(MEMP_TCPIP_MSG_API, name)
+#define TCPIP_MSG_VAR_ALLOC(name)                                              \
+    API_VAR_ALLOC(struct tcpip_msg, MEMP_TCPIP_MSG_API, name, ERR_MEM)
+#define TCPIP_MSG_VAR_FREE(name) API_VAR_FREE(MEMP_TCPIP_MSG_API, name)
 
 #if LWIP_TCPIP_CORE_LOCKING
 #error "lwip's core locking is not supported"
@@ -87,14 +88,14 @@ std::chrono::milliseconds handle_timeouts()
 
 int handle_messages(sys_mbox_t mbox)
 {
-    struct tcpip_msg *msg = nullptr;
+    struct tcpip_msg* msg = nullptr;
 
     LWIP_TCPIP_THREAD_ALIVE();
 
     /* acknowledge notifications */
     sys_mbox_clear_notifications(&mbox);
 
-    while (sys_arch_mbox_tryfetch(&mbox, (void **)&msg) != SYS_MBOX_EMPTY) {
+    while (sys_arch_mbox_tryfetch(&mbox, (void**)&msg) != SYS_MBOX_EMPTY) {
         if (msg == nullptr) {
             LWIP_DEBUGF(TCPIP_DEBUG, ("tcpip: invalid message: NULL\n"));
             LWIP_ASSERT("tcpip: invalid message", 0);
@@ -103,35 +104,39 @@ int handle_messages(sys_mbox_t mbox)
 
         switch (static_cast<int>(msg->type)) {
         case TCPIP_MSG_API:
-            LWIP_DEBUGF(TCPIP_DEBUG, ("tcpip: API message %p\n", (void *)msg));
+            LWIP_DEBUGF(TCPIP_DEBUG, ("tcpip: API message %p\n", (void*)msg));
             msg->msg.api_msg.function(msg->msg.api_msg.msg);
             break;
 
         case TCPIP_MSG_API_CALL:
-            LWIP_DEBUGF(TCPIP_DEBUG, ("tcpip: API CALL message %p\n", (void *)msg));
-            msg->msg.api_call.arg->err = msg->msg.api_call.function(msg->msg.api_call.arg);
+            LWIP_DEBUGF(TCPIP_DEBUG,
+                        ("tcpip: API CALL message %p\n", (void*)msg));
+            msg->msg.api_call.arg->err =
+                msg->msg.api_call.function(msg->msg.api_call.arg);
             sys_sem_signal(msg->msg.api_call.sem);
             break;
 
         case TCPIP_MSG_INPKT:
-            LWIP_DEBUGF(TCPIP_DEBUG, ("tcpip: PACKET %p\n", (void *)msg));
+            LWIP_DEBUGF(TCPIP_DEBUG, ("tcpip: PACKET %p\n", (void*)msg));
             msg->msg.inp.input_fn(msg->msg.inp.p, msg->msg.inp.netif);
             memp_free(MEMP_TCPIP_MSG_INPKT, msg);
             break;
 
         case TCPIP_MSG_CALLBACK:
-            LWIP_DEBUGF(TCPIP_DEBUG, ("tcpip: CALLBACK %p\n", (void *)msg));
+            LWIP_DEBUGF(TCPIP_DEBUG, ("tcpip: CALLBACK %p\n", (void*)msg));
             msg->msg.cb.function(msg->msg.cb.ctx);
             memp_free(MEMP_TCPIP_MSG_API, msg);
             break;
 
         case TCPIP_MSG_CALLBACK_STATIC:
-            LWIP_DEBUGF(TCPIP_DEBUG, ("tcpip: CALLBACK_STATIC %p\n", (void *)msg));
+            LWIP_DEBUGF(TCPIP_DEBUG,
+                        ("tcpip: CALLBACK_STATIC %p\n", (void*)msg));
             msg->msg.cb.function(msg->msg.cb.ctx);
             break;
 
         default:
-            LWIP_DEBUGF(TCPIP_DEBUG, ("tcpip: invalid message: %d\n", msg->type));
+            LWIP_DEBUGF(TCPIP_DEBUG,
+                        ("tcpip: invalid message: %d\n", msg->type));
             LWIP_ASSERT("tcpip: invalid message", 0);
             break;
         }
@@ -140,7 +145,7 @@ int handle_messages(sys_mbox_t mbox)
     return (0);
 }
 
-}
+} // namespace openperf::packetio::tcpip
 
 extern "C" {
 
@@ -151,18 +156,15 @@ extern "C" {
  * @param inp the network interface on which the packet was received
  * @param input_fn input function to call
  */
-err_t
-tcpip_inpkt(struct pbuf *p, struct netif *inp, netif_input_fn input_fn)
+err_t tcpip_inpkt(struct pbuf* p, struct netif* inp, netif_input_fn input_fn)
 {
     auto tcpip_mbox = openperf::packetio::tcpip::mbox();
-    struct tcpip_msg *msg;
+    struct tcpip_msg* msg;
 
     LWIP_ASSERT("Invalid mbox", sys_mbox_valid_val(tcpip_mbox));
 
-    msg = (struct tcpip_msg *)memp_malloc(MEMP_TCPIP_MSG_INPKT);
-    if (msg == nullptr) {
-        return ERR_MEM;
-    }
+    msg = (struct tcpip_msg*)memp_malloc(MEMP_TCPIP_MSG_INPKT);
+    if (msg == nullptr) { return ERR_MEM; }
 
     msg->type = TCPIP_MSG_INPKT;
     msg->msg.inp.p = p;
@@ -186,8 +188,7 @@ tcpip_inpkt(struct pbuf *p, struct netif *inp, netif_input_fn input_fn)
  *          NETIF_FLAG_ETHERNET flags)
  * @param inp the network interface on which the packet was received
  */
-err_t
-tcpip_input(struct pbuf *p, struct netif *inp)
+err_t tcpip_input(struct pbuf* p, struct netif* inp)
 {
 #if LWIP_ETHERNET
     if (inp->flags & (NETIF_FLAG_ETHARP | NETIF_FLAG_ETHERNET)) {
@@ -212,18 +213,15 @@ tcpip_input(struct pbuf *p, struct netif *inp)
  *
  * @see tcpip_try_callback
  */
-err_t
-tcpip_callback(tcpip_callback_fn function, void *ctx)
+err_t tcpip_callback(tcpip_callback_fn function, void* ctx)
 {
     auto tcpip_mbox = openperf::packetio::tcpip::mbox();
-    struct tcpip_msg *msg;
+    struct tcpip_msg* msg;
 
     LWIP_ASSERT("Invalid mbox", sys_mbox_valid_val(tcpip_mbox));
 
-    msg = (struct tcpip_msg *)memp_malloc(MEMP_TCPIP_MSG_API);
-    if (msg == NULL) {
-        return ERR_MEM;
-    }
+    msg = (struct tcpip_msg*)memp_malloc(MEMP_TCPIP_MSG_API);
+    if (msg == NULL) { return ERR_MEM; }
 
     msg->type = TCPIP_MSG_CALLBACK;
     msg->msg.cb.function = function;
@@ -249,18 +247,15 @@ tcpip_callback(tcpip_callback_fn function, void *ctx)
  *
  * @see tcpip_callback
  */
-err_t
-tcpip_try_callback(tcpip_callback_fn function, void *ctx)
+err_t tcpip_try_callback(tcpip_callback_fn function, void* ctx)
 {
     auto tcpip_mbox = openperf::packetio::tcpip::mbox();
-    struct tcpip_msg *msg;
+    struct tcpip_msg* msg;
 
     LWIP_ASSERT("Invalid mbox", sys_mbox_valid_val(tcpip_mbox));
 
-    msg = (struct tcpip_msg *)memp_malloc(MEMP_TCPIP_MSG_API);
-    if (msg == NULL) {
-        return ERR_MEM;
-    }
+    msg = (struct tcpip_msg*)memp_malloc(MEMP_TCPIP_MSG_API);
+    if (msg == NULL) { return ERR_MEM; }
 
     msg->type = TCPIP_MSG_CALLBACK;
     msg->msg.cb.function = function;
@@ -283,25 +278,20 @@ tcpip_try_callback(tcpip_callback_fn function, void *ctx)
  * @param call Call parameters
  * @return Return value from tcpip_api_call_fn
  */
-err_t
-tcpip_api_call(tcpip_api_call_fn fn, struct tcpip_api_call_data *call)
+err_t tcpip_api_call(tcpip_api_call_fn fn, struct tcpip_api_call_data* call)
 {
     auto tcpip_mbox = openperf::packetio::tcpip::mbox();
     /*
      * XXX: Shutdown can cause a race on this value, so don't proceed if we've
      * already destroyed the tcpip_mbox.
      */
-    if (!sys_mbox_valid_val(tcpip_mbox)) {
-        return (-1);
-    }
+    if (!sys_mbox_valid_val(tcpip_mbox)) { return (-1); }
 
     TCPIP_MSG_VAR_DECLARE(msg);
 
 #if !LWIP_NETCONN_SEM_PER_THREAD
     err_t err = sys_sem_new(&call->sem, 0);
-    if (err != ERR_OK) {
-        return err;
-    }
+    if (err != ERR_OK) { return err; }
 #endif /* LWIP_NETCONN_SEM_PER_THREAD */
 
     TCPIP_MSG_VAR_ALLOC(msg);
@@ -310,7 +300,7 @@ tcpip_api_call(tcpip_api_call_fn fn, struct tcpip_api_call_data *call)
     TCPIP_MSG_VAR_REF(msg).msg.api_call.function = fn;
 #if LWIP_NETCONN_SEM_PER_THREAD
     TCPIP_MSG_VAR_REF(msg).msg.api_call.sem = LWIP_NETCONN_THREAD_SEM_GET();
-#else /* LWIP_NETCONN_SEM_PER_THREAD */
+#else  /* LWIP_NETCONN_SEM_PER_THREAD */
     TCPIP_MSG_VAR_REF(msg).msg.api_call.sem = &call->sem;
 #endif /* LWIP_NETCONN_SEM_PER_THREAD */
     sys_mbox_post(&tcpip_mbox, &TCPIP_MSG_VAR_REF(msg));
@@ -323,7 +313,6 @@ tcpip_api_call(tcpip_api_call_fn fn, struct tcpip_api_call_data *call)
 
     return call->err;
 }
-
 }
 
 #endif /* !NO_SYS */

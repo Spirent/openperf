@@ -13,23 +13,25 @@
 
 namespace openperf::memory {
 
-template <typename T>
-class offset_ptr {
+template <typename T> class offset_ptr
+{
     /*
      * Magic number to determine if we point to null or not.  One byte away
      * from our address is still us, so this can never be a valid value.
      */
     static constexpr int null_offset = 1;
 
-    ptrdiff_t m_offset;  /* the offset of whatever we are pointing to */
+    ptrdiff_t m_offset; /* the offset of whatever we are pointing to */
 
     ptrdiff_t offset_of(T* ptr)
     {
         assert(ptr);
-        return (reinterpret_cast<intptr_t>(ptr) - reinterpret_cast<intptr_t>(this));
+        return (reinterpret_cast<intptr_t>(ptr)
+                - reinterpret_cast<intptr_t>(this));
     }
 
-    struct no_init{};
+    struct no_init
+    {};
     offset_ptr(no_init) {}
 
 public:
@@ -63,29 +65,18 @@ public:
     pointer get() const noexcept
     {
         return (reinterpret_cast<T*>(m_offset == null_offset
-                                     ? reinterpret_cast<intptr_t>(nullptr)
-                                     : reinterpret_cast<intptr_t>(this) + m_offset));
+                                         ? reinterpret_cast<intptr_t>(nullptr)
+                                         : reinterpret_cast<intptr_t>(this)
+                                               + m_offset));
     }
 
-    pointer operator->() const noexcept
-    {
-        return (get());
-    }
+    pointer operator->() const noexcept { return (get()); }
 
-    reference operator *() const noexcept
-    {
-        return (*get());
-    }
+    reference operator*() const noexcept { return (*get()); }
 
-    reference operator[](size_t idx) const noexcept
-    {
-        return (get()[idx]);
-    }
+    reference operator[](size_t idx) const noexcept { return (get()[idx]); }
 
-    bool operator==(const pointer ptr) const noexcept
-    {
-        return (get() == ptr);
-    }
+    bool operator==(const pointer ptr) const noexcept { return (get() == ptr); }
 
     bool operator==(const offset_ptr& optr) const noexcept
     {
@@ -97,12 +88,9 @@ public:
         return (m_offset != null_offset);
     }
 
-    bool operator!() const noexcept
-    {
-        return (m_offset == null_offset);
-    }
+    bool operator!() const noexcept { return (m_offset == null_offset); }
 };
 
-}
+} // namespace openperf::memory
 
 #endif /* _OP_MEMORY_OFFSET_PTR_HPP_ */

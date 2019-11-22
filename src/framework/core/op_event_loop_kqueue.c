@@ -23,37 +23,37 @@ enum op_event_type {
     OP_EVENT_TYPE_TIMER,
 };
 
-struct op_event {
+struct op_event
+{
     struct op_event_data data;
     struct op_event_callbacks callbacks;
-    void *arg;
+    void* arg;
     SLIST_ENTRY(op_event) events_link;
     SLIST_ENTRY(op_event) update_link;
     SLIST_ENTRY(op_event) remove_link;
     SLIST_ENTRY(op_event) disable_link;
 };
 
-#define OP_EVENT_LOOP_RUNNING     (1 << 0)
+#define OP_EVENT_LOOP_RUNNING (1 << 0)
 #define OP_EVENT_LOOP_EDGETRIGGER (1 << 1)
 
-struct op_event_loop {
+struct op_event_loop
+{
     int poll_fd;
     int flags;
     size_t nb_events;
     size_t next_timeout_id;
-    SLIST_HEAD(op_event_loop_events,   op_event) events_list;
-    SLIST_HEAD(op_event_loop_updates,  op_event) update_list;
+    SLIST_HEAD(op_event_loop_events, op_event) events_list;
+    SLIST_HEAD(op_event_loop_updates, op_event) update_list;
     SLIST_HEAD(op_event_loop_removals, op_event) remove_list;
     SLIST_HEAD(op_event_loop_disables, op_event) disable_list;
 };
 
-struct op_event_loop * op_event_loop_allocate(void)
+struct op_event_loop* op_event_loop_allocate(void)
 {
-    struct op_event_loop *loop = NULL;
+    struct op_event_loop* loop = NULL;
 
-    if ((loop = calloc(1, sizeof(*loop))) == NULL) {
-        return (NULL);
-    }
+    if ((loop = calloc(1, sizeof(*loop))) == NULL) { return (NULL); }
 
     if ((loop->poll_fd = kqueue()) == -1) {
         free(loop);
@@ -70,7 +70,7 @@ struct op_event_loop * op_event_loop_allocate(void)
     return (loop);
 }
 
-void op_event_loop_set_edge_triggered(struct op_event_loop *loop, bool value)
+void op_event_loop_set_edge_triggered(struct op_event_loop* loop, bool value)
 {
     if (value) {
         loop->flags |= OP_EVENT_LOOP_EDGETRIGGER;
@@ -79,36 +79,33 @@ void op_event_loop_set_edge_triggered(struct op_event_loop *loop, bool value)
     }
 }
 
-size_t op_event_loop_count(struct op_event_loop *loop)
+size_t op_event_loop_count(struct op_event_loop* loop)
 {
     return (loop->nb_events);
 }
 
-void op_event_loop_free(struct op_event_loop **loop_p)
+void op_event_loop_free(struct op_event_loop** loop_p)
 {
     assert(*loop_p);
-    struct op_event_loop *loop = *loop_p;
+    struct op_event_loop* loop = *loop_p;
 
     /* Remove all registered events */
     op_event_loop_purge(loop);
     assert(loop->nb_events == 0);
 
-    if (loop->poll_fd != -1) {
-        close(loop->poll_fd);
-    }
+    if (loop->poll_fd != -1) { close(loop->poll_fd); }
 
     free(loop);
 
     *loop_p = NULL;
 }
 
-void op_event_loop_exit(struct op_event_loop *loop)
+void op_event_loop_exit(struct op_event_loop* loop)
 {
     loop->flags &= ~OP_EVENT_LOOP_RUNNING;
 }
 
-int _enqueue_new_event(struct op_event_loop *loop,
-                       struct op_event *event)
+int _enqueue_new_event(struct op_event_loop* loop, struct op_event* event)
 {
     event->data.loop = loop;
     SLIST_INSERT_HEAD(&loop->events_list, event, events_link);
@@ -118,10 +115,8 @@ int _enqueue_new_event(struct op_event_loop *loop,
     return (0);
 }
 
-int op_event_loop_add_fd(struct op_event_loop *loop,
-                          int fd,
-                          const struct op_event_callbacks *callbacks,
-                          void *arg)
+int op_event_loop_add_fd(struct op_event_loop* loop, int fd,
+                         const struct op_event_callbacks* callbacks, void* arg)
 {
     assert(loop);
     assert(callbacks);
@@ -131,14 +126,10 @@ int op_event_loop_add_fd(struct op_event_loop *loop,
     }
 
     /* Only non-blocking descriptors are allowed here */
-    if (op_event_loop_set_nonblocking(fd) != 0) {
-        return (-1);
-    }
+    if (op_event_loop_set_nonblocking(fd) != 0) { return (-1); }
 
-    struct op_event *event = calloc(1, sizeof(*event));
-    if (!event) {
-        return (-ENOMEM);
-    }
+    struct op_event* event = calloc(1, sizeof(*event));
+    if (!event) { return (-ENOMEM); }
 
     event->data.type = OP_EVENT_TYPE_FD;
     event->data.fd = fd;
@@ -148,10 +139,8 @@ int op_event_loop_add_fd(struct op_event_loop *loop,
     return (_enqueue_new_event(loop, event));
 }
 
-int op_event_loop_add_zmq(struct op_event_loop *loop,
-                           void *socket,
-                           const struct op_event_callbacks *callbacks,
-                           void *arg)
+int op_event_loop_add_zmq(struct op_event_loop* loop, void* socket,
+                          const struct op_event_callbacks* callbacks, void* arg)
 {
     assert(loop);
     assert(socket);
@@ -162,10 +151,8 @@ int op_event_loop_add_zmq(struct op_event_loop *loop,
         return (-EINVAL);
     }
 
-    struct op_event *event = calloc(1, sizeof(*event));
-    if (!event) {
-        return (-ENOMEM);
-    }
+    struct op_event* event = calloc(1, sizeof(*event));
+    if (!event) { return (-ENOMEM); }
 
     event->data.type = OP_EVENT_TYPE_ZMQ;
     event->data.socket_fd = fd;
@@ -176,23 +163,18 @@ int op_event_loop_add_zmq(struct op_event_loop *loop,
     return (_enqueue_new_event(loop, event));
 }
 
-int op_event_loop_add_timer_ided(struct op_event_loop *loop,
-                                  uint64_t timeout_ns,
-                                  const struct op_event_callbacks *callbacks,
-                                  void *arg,
-                                  uint32_t *timeout_id)
+int op_event_loop_add_timer_ided(struct op_event_loop* loop,
+                                 uint64_t timeout_ns,
+                                 const struct op_event_callbacks* callbacks,
+                                 void* arg, uint32_t* timeout_id)
 {
     assert(loop);
     assert(callbacks);
 
-    if (!callbacks->on_timeout) {
-        return (-EINVAL);
-    }
+    if (!callbacks->on_timeout) { return (-EINVAL); }
 
-    struct op_event *event = calloc(1, sizeof(*event));
-    if (!event) {
-        return (-ENOMEM);
-    }
+    struct op_event* event = calloc(1, sizeof(*event));
+    if (!event) { return (-ENOMEM); }
 
     event->data.type = OP_EVENT_TYPE_TIMER;
     event->data.timeout_ns = timeout_ns;
@@ -200,17 +182,16 @@ int op_event_loop_add_timer_ided(struct op_event_loop *loop,
     event->callbacks = *callbacks;
     event->arg = arg;
 
-    if (timeout_id) {
-        *timeout_id = event->data.timeout_id;
-    }
+    if (timeout_id) { *timeout_id = event->data.timeout_id; }
 
     return (_enqueue_new_event(loop, event));
 }
 
-struct op_event *op_event_loop_find_fd(struct op_event_loop *loop, int fd)
+struct op_event* op_event_loop_find_fd(struct op_event_loop* loop, int fd)
 {
-    struct op_event *event = NULL;
-    SLIST_FOREACH(event, &loop->events_list, events_link) {
+    struct op_event* event = NULL;
+    SLIST_FOREACH(event, &loop->events_list, events_link)
+    {
         if (event->data.type == OP_EVENT_TYPE_FD && event->data.fd == fd) {
             break;
         }
@@ -219,11 +200,12 @@ struct op_event *op_event_loop_find_fd(struct op_event_loop *loop, int fd)
     return (event);
 }
 
-struct op_event * op_event_loop_find_zmq(struct op_event_loop *loop,
-                                           void *socket)
+struct op_event* op_event_loop_find_zmq(struct op_event_loop* loop,
+                                        void* socket)
 {
-    struct op_event *event = NULL;
-    SLIST_FOREACH(event, &loop->events_list, events_link) {
+    struct op_event* event = NULL;
+    SLIST_FOREACH(event, &loop->events_list, events_link)
+    {
         if (event->data.type == OP_EVENT_TYPE_ZMQ
             && event->data.socket == socket) {
             break;
@@ -232,11 +214,12 @@ struct op_event * op_event_loop_find_zmq(struct op_event_loop *loop,
     return (event);
 }
 
-struct op_event * op_event_loop_find_timer(struct op_event_loop *loop,
-                                             uint32_t timeout_id)
+struct op_event* op_event_loop_find_timer(struct op_event_loop* loop,
+                                          uint32_t timeout_id)
 {
-    struct op_event *event = NULL;
-    SLIST_FOREACH(event, &loop->events_list, events_link) {
+    struct op_event* event = NULL;
+    SLIST_FOREACH(event, &loop->events_list, events_link)
+    {
         if (event->data.type == OP_EVENT_TYPE_TIMER
             && event->data.timeout_id == timeout_id) {
             break;
@@ -245,62 +228,50 @@ struct op_event * op_event_loop_find_timer(struct op_event_loop *loop,
     return (event);
 }
 
-int op_event_loop_update_fd(struct op_event_loop *loop,
-                             int fd,
-                             const struct op_event_callbacks *callbacks)
+int op_event_loop_update_fd(struct op_event_loop* loop, int fd,
+                            const struct op_event_callbacks* callbacks)
 {
-    struct op_event *event = op_event_loop_find(loop, fd);
-    if (!event) {
-        return (-EINVAL);
-    }
+    struct op_event* event = op_event_loop_find(loop, fd);
+    if (!event) { return (-EINVAL); }
 
     event->callbacks = *callbacks;
     SLIST_INSERT_HEAD(&loop->update_list, event, update_link);
     return (0);
 }
 
-int op_event_loop_update_zmq(struct op_event_loop *loop,
-                              void *socket,
-                              const struct op_event_callbacks *callbacks)
+int op_event_loop_update_zmq(struct op_event_loop* loop, void* socket,
+                             const struct op_event_callbacks* callbacks)
 {
-    struct op_event *event = op_event_loop_find(loop, socket);
-    if (!event) {
-        return (-EINVAL);
-    }
+    struct op_event* event = op_event_loop_find(loop, socket);
+    if (!event) { return (-EINVAL); }
     event->callbacks = *callbacks;
     SLIST_INSERT_HEAD(&loop->update_list, event, update_link);
     return (0);
 }
 
-int op_event_loop_update_timer_cb(struct op_event_loop *loop,
-                                   uint32_t timeout_id,
-                                   const struct op_event_callbacks *callbacks)
+int op_event_loop_update_timer_cb(struct op_event_loop* loop,
+                                  uint32_t timeout_id,
+                                  const struct op_event_callbacks* callbacks)
 {
-    struct op_event *event = op_event_loop_find(loop, timeout_id);
-    if (!event) {
-        return (-EINVAL);
-    }
+    struct op_event* event = op_event_loop_find(loop, timeout_id);
+    if (!event) { return (-EINVAL); }
     event->callbacks = *callbacks;
     SLIST_INSERT_HEAD(&loop->update_list, event, update_link);
     return (0);
 }
 
-int op_event_loop_update_timer_to(struct op_event_loop *loop,
-                                   uint32_t timeout_id,
-                                   uint64_t timeout)
+int op_event_loop_update_timer_to(struct op_event_loop* loop,
+                                  uint32_t timeout_id, uint64_t timeout)
 {
-    struct op_event *event = op_event_loop_find(loop, timeout_id);
-    if (!event) {
-        return (-EINVAL);
-    }
+    struct op_event* event = op_event_loop_find(loop, timeout_id);
+    if (!event) { return (-EINVAL); }
 
     event->data.timeout_ns = timeout;
     SLIST_INSERT_HEAD(&loop->update_list, event, update_link);
     return (0);
 }
 
-
-static int _event_key(const struct op_event *event)
+static int _event_key(const struct op_event* event)
 {
     assert(event->data.type);
 
@@ -325,15 +296,14 @@ static int _event_key(const struct op_event *event)
  * Note: This issue is kqueue specific due to the separate read/write filters
  * per fd.
  */
-#define DELETE_KQ_FILTER_CALLBACK(name, field, filter)                  \
-    static int                                                          \
-    _delete_kq_##name##_callback(const struct op_event_data *data,     \
-                              __attribute__((unused)) void *arg)        \
-    {                                                                   \
-        struct kevent kev;                                              \
-        EV_SET(&kev, data->field, filter, EV_DELETE, 0, 0, NULL);       \
-        kevent(data->loop->poll_fd, &kev, 1, NULL, 0, NULL);            \
-        return (0);                                                     \
+#define DELETE_KQ_FILTER_CALLBACK(name, field, filter)                         \
+    static int _delete_kq_##name##_callback(const struct op_event_data* data,  \
+                                            __attribute__((unused)) void* arg) \
+    {                                                                          \
+        struct kevent kev;                                                     \
+        EV_SET(&kev, data->field, filter, EV_DELETE, 0, 0, NULL);              \
+        kevent(data->loop->poll_fd, &kev, 1, NULL, 0, NULL);                   \
+        return (0);                                                            \
     }
 
 DELETE_KQ_FILTER_CALLBACK(read, fd, EVFILT_READ)
@@ -341,7 +311,7 @@ DELETE_KQ_FILTER_CALLBACK(write, fd, EVFILT_WRITE)
 
 #undef DELETE_KQ_FILTER_CALLBACK
 
-static int _disable_event(struct op_event_loop *loop, struct op_event *event)
+static int _disable_event(struct op_event_loop* loop, struct op_event* event)
 {
     /* Cancel pending updates and add to disable list */
     SLIST_FIND_AND_REMOVE(&loop->update_list, update_link, op_event, event);
@@ -353,21 +323,21 @@ static int _disable_event(struct op_event_loop *loop, struct op_event *event)
 
     switch (event->data.type) {
     case OP_EVENT_TYPE_TIMER:
-        EV_SET(&kevents[idx++], _event_key(event), EVFILT_TIMER,
-               EV_DISABLE, 0, 0, event);
-            break;
+        EV_SET(&kevents[idx++], _event_key(event), EVFILT_TIMER, EV_DISABLE, 0,
+               0, event);
+        break;
     case OP_EVENT_TYPE_ZMQ:
     case OP_EVENT_TYPE_FD:
         if (event->callbacks.on_read
             && event->callbacks.on_read != _delete_kq_read_callback) {
-            EV_SET(&kevents[idx++], _event_key(event), EVFILT_READ,
-                   EV_DISABLE, 0, 0, event);
+            EV_SET(&kevents[idx++], _event_key(event), EVFILT_READ, EV_DISABLE,
+                   0, 0, event);
         }
 
         if (event->callbacks.on_write
             && event->callbacks.on_write != _delete_kq_write_callback) {
-            EV_SET(&kevents[idx++], _event_key(event), EVFILT_WRITE,
-                   EV_DISABLE, 0, 0, event);
+            EV_SET(&kevents[idx++], _event_key(event), EVFILT_WRITE, EV_DISABLE,
+                   0, 0, event);
         }
         break;
     }
@@ -380,46 +350,40 @@ static int _disable_event(struct op_event_loop *loop, struct op_event *event)
     return (!error || errno == ENOENT ? 0 : -errno);
 }
 
-int op_event_loop_disable_fd(struct op_event_loop *loop, int fd)
+int op_event_loop_disable_fd(struct op_event_loop* loop, int fd)
 {
-    struct op_event *event = op_event_loop_find(loop, fd);
-    if (!event) {
-        return (-EINVAL);
-    }
+    struct op_event* event = op_event_loop_find(loop, fd);
+    if (!event) { return (-EINVAL); }
     return (_disable_event(loop, event));
 }
 
-int op_event_loop_disable_zmq(struct op_event_loop *loop, void *socket)
+int op_event_loop_disable_zmq(struct op_event_loop* loop, void* socket)
 {
-    struct op_event *event = op_event_loop_find(loop, socket);
-    if (!event) {
-        return (-EINVAL);
-    }
+    struct op_event* event = op_event_loop_find(loop, socket);
+    if (!event) { return (-EINVAL); }
     return (_disable_event(loop, event));
 }
 
-int op_event_loop_disable_timer(struct op_event_loop *loop, uint32_t timeout_id)
+int op_event_loop_disable_timer(struct op_event_loop* loop, uint32_t timeout_id)
 {
-    struct op_event *event = op_event_loop_find(loop, timeout_id);
-    if (!event) {
-        return (-EINVAL);
-    }
+    struct op_event* event = op_event_loop_find(loop, timeout_id);
+    if (!event) { return (-EINVAL); }
     return (_disable_event(loop, event));
 }
 
-int op_event_loop_enable_all(struct op_event_loop *loop)
+int op_event_loop_enable_all(struct op_event_loop* loop)
 {
     size_t idx = 0;
     struct kevent kevents[loop->nb_events * 2];
 
     while (!SLIST_EMPTY(&loop->disable_list)) {
-        struct op_event *event = SLIST_FIRST(&loop->disable_list);
+        struct op_event* event = SLIST_FIRST(&loop->disable_list);
         SLIST_REMOVE_HEAD(&loop->disable_list, disable_link);
 
         switch (event->data.type) {
         case OP_EVENT_TYPE_TIMER:
-            EV_SET(&kevents[idx++], _event_key(event), EVFILT_TIMER,
-                   EV_ENABLE, 0, 0, event);
+            EV_SET(&kevents[idx++], _event_key(event), EVFILT_TIMER, EV_ENABLE,
+                   0, 0, event);
             break;
         case OP_EVENT_TYPE_ZMQ:
         case OP_EVENT_TYPE_FD:
@@ -449,73 +413,66 @@ int op_event_loop_enable_all(struct op_event_loop *loop)
     for (int i = 0; i < events; i++) {
         if (kerrors[i].flags & EV_ERROR) {
             SLIST_INSERT_IF_MISSING(&loop->update_list,
-                                    (struct op_event *)kerrors[i].udata,
+                                    (struct op_event*)kerrors[i].udata,
                                     update_link);
         }
     }
     return (0);
 }
 
-int op_event_loop_del_fd(struct op_event_loop *loop, int fd)
+int op_event_loop_del_fd(struct op_event_loop* loop, int fd)
 {
-    struct op_event *event = op_event_loop_find(loop, fd);
-    if (!event) {
-        return (-EINVAL);
-    }
+    struct op_event* event = op_event_loop_find(loop, fd);
+    if (!event) { return (-EINVAL); }
     SLIST_INSERT_IF_MISSING(&loop->remove_list, event, remove_link);
     return (0);
 }
 
-int op_event_loop_del_zmq(struct op_event_loop *loop, void *socket)
+int op_event_loop_del_zmq(struct op_event_loop* loop, void* socket)
 {
-    struct op_event *event = op_event_loop_find(loop, socket);
-    if (!event) {
-        return (-EINVAL);
-    }
+    struct op_event* event = op_event_loop_find(loop, socket);
+    if (!event) { return (-EINVAL); }
     SLIST_INSERT_IF_MISSING(&loop->remove_list, event, remove_link);
     return (0);
 }
 
-int op_event_loop_del_timer(struct op_event_loop *loop, uint32_t timeout_id)
+int op_event_loop_del_timer(struct op_event_loop* loop, uint32_t timeout_id)
 {
-    struct op_event *event = op_event_loop_find(loop, timeout_id);
-    if (!event) {
-        return (-EINVAL);
-    }
+    struct op_event* event = op_event_loop_find(loop, timeout_id);
+    if (!event) { return (-EINVAL); }
     SLIST_INSERT_IF_MISSING(&loop->remove_list, event, remove_link);
     return (0);
 }
 
-size_t _do_event_updates(struct op_event_loop *loop)
+size_t _do_event_updates(struct op_event_loop* loop)
 {
     size_t idx = 0;
     struct kevent kevents[loop->nb_events * 2];
-    uint16_t base_flags = (loop->flags & OP_EVENT_LOOP_EDGETRIGGER) ? EV_CLEAR : 0;
+    uint16_t base_flags =
+        (loop->flags & OP_EVENT_LOOP_EDGETRIGGER) ? EV_CLEAR : 0;
 
     while (!SLIST_EMPTY(&loop->update_list)) {
-        struct op_event *event = SLIST_FIRST(&loop->update_list);
+        struct op_event* event = SLIST_FIRST(&loop->update_list);
         SLIST_REMOVE_HEAD(&loop->update_list, update_link);
 
         switch (event->data.type) {
         case OP_EVENT_TYPE_TIMER:
             EV_SET(&kevents[idx++], _event_key(event), EVFILT_TIMER,
-                   base_flags | EV_ADD,
-                   NOTE_NSECONDS, event->data.timeout_ns, event);
+                   base_flags | EV_ADD, NOTE_NSECONDS, event->data.timeout_ns,
+                   event);
             break;
         case OP_EVENT_TYPE_ZMQ:
         case OP_EVENT_TYPE_FD:
             if (event->callbacks.on_read) {
                 EV_SET(&kevents[idx++], _event_key(event), EVFILT_READ,
-                       base_flags | EV_ADD,
-                       0, 0, event);
+                       base_flags | EV_ADD, 0, 0, event);
             } else {
                 event->callbacks.on_read = _delete_kq_read_callback;
             }
 
             if (event->callbacks.on_write) {
                 EV_SET(&kevents[idx++], _event_key(event), EVFILT_WRITE,
-                       base_flags | EV_ADD,
-                       0, 0, event);
+                       base_flags | EV_ADD, 0, 0, event);
             } else {
                 event->callbacks.on_write = _delete_kq_write_callback;
             }
@@ -524,26 +481,26 @@ size_t _do_event_updates(struct op_event_loop *loop)
     }
 
     if (idx && kevent(loop->poll_fd, kevents, idx, NULL, 0, NULL) == -1) {
-        op_exit("Failed to add events to kqueue %d: %s\n",
-                 loop->poll_fd, strerror(errno));
+        op_exit("Failed to add events to kqueue %d: %s\n", loop->poll_fd,
+                strerror(errno));
         return (-1);
     }
 
     return (idx);
 }
 
-int _do_event_handling(struct op_event_loop *loop,
-                       struct kevent *kevents, size_t nb_events)
+int _do_event_handling(struct op_event_loop* loop, struct kevent* kevents,
+                       size_t nb_events)
 {
     for (size_t i = 0; i < nb_events; i++) {
-        struct kevent *kev = &kevents[i];
-        struct op_event *event = (struct op_event *)kev->udata;
+        struct kevent* kev = &kevents[i];
+        struct op_event* event = (struct op_event*)kev->udata;
 
         switch (kev->filter) {
         case EVFILT_READ:
             if (event->data.type == OP_EVENT_TYPE_ZMQ
                 && !op_event_loop_get_socket_is_readable(event->data.socket)) {
-                continue;  /* false alarm */
+                continue; /* false alarm */
             }
             if (event->callbacks.on_read(&event->data, event->arg) != 0) {
                 SLIST_INSERT_IF_MISSING(&loop->remove_list, event, remove_link);
@@ -552,7 +509,7 @@ int _do_event_handling(struct op_event_loop *loop,
         case EVFILT_WRITE:
             if (event->data.type == OP_EVENT_TYPE_ZMQ
                 && !op_event_loop_get_socket_is_writable(event->data.socket)) {
-                continue;  /* false alarm */
+                continue; /* false alarm */
             }
             if (event->callbacks.on_write(&event->data, event->arg) != 0) {
                 SLIST_INSERT_IF_MISSING(&loop->remove_list, event, remove_link);
@@ -565,7 +522,7 @@ int _do_event_handling(struct op_event_loop *loop,
             break;
         default:
             OP_LOG(OP_LOG_ERROR, "Unsupported kqueue filter type: %d\n",
-                    kev->filter);
+                   kev->filter);
             SLIST_INSERT_IF_MISSING(&loop->remove_list, event, remove_link);
             break;
         }
@@ -578,7 +535,7 @@ int _do_event_handling(struct op_event_loop *loop,
     return (0);
 }
 
-size_t _do_event_removals(struct op_event_loop *loop)
+size_t _do_event_removals(struct op_event_loop* loop)
 {
     size_t idx = 0;
     struct kevent kevents[loop->nb_events * 2];
@@ -592,13 +549,13 @@ size_t _do_event_removals(struct op_event_loop *loop)
      * file descriptor, and closing the file descriptor is something which the
      * close/delete callbacks might do.
      */
-    struct op_event *event = NULL;
-    SLIST_FOREACH(event, &loop->remove_list, remove_link) {
+    struct op_event* event = NULL;
+    SLIST_FOREACH(event, &loop->remove_list, remove_link)
+    {
         switch (event->data.type) {
-        case OP_EVENT_TYPE_TIMER:
-        {
-            EV_SET(&kevents[idx++], _event_key(event), EVFILT_TIMER,
-                   EV_DELETE, 0, 0, NULL);
+        case OP_EVENT_TYPE_TIMER: {
+            EV_SET(&kevents[idx++], _event_key(event), EVFILT_TIMER, EV_DELETE,
+                   0, 0, NULL);
             break;
         }
         case OP_EVENT_TYPE_FD:
@@ -619,9 +576,8 @@ size_t _do_event_removals(struct op_event_loop *loop)
 
     /* Drop all pending events */
     if (idx && kevent(loop->poll_fd, kevents, idx, NULL, 0, NULL) == -1) {
-        OP_LOG(OP_LOG_ERROR,
-                "Failed to delete %zu events from kqueue %d: %s\n",
-                idx, loop->poll_fd, strerror(errno));
+        OP_LOG(OP_LOG_ERROR, "Failed to delete %zu events from kqueue %d: %s\n",
+               idx, loop->poll_fd, strerror(errno));
     }
 
     /* Now clean up our lists and run any pending callbacks */
@@ -635,7 +591,8 @@ size_t _do_event_removals(struct op_event_loop *loop)
         }
 
         SLIST_FIND_AND_REMOVE(&loop->update_list, update_link, op_event, event);
-        SLIST_FIND_AND_REMOVE(&loop->disable_list, disable_link, op_event, event);
+        SLIST_FIND_AND_REMOVE(&loop->disable_list, disable_link, op_event,
+                              event);
         SLIST_REMOVE(&loop->events_list, event, op_event, events_link);
 
         if (event->callbacks.on_delete) {
@@ -650,16 +607,17 @@ size_t _do_event_removals(struct op_event_loop *loop)
     return (idx);
 }
 
-void op_event_loop_purge(struct op_event_loop *loop)
+void op_event_loop_purge(struct op_event_loop* loop)
 {
-    struct op_event *event = NULL;
-    SLIST_FOREACH(event, &loop->events_list, events_link) {
+    struct op_event* event = NULL;
+    SLIST_FOREACH(event, &loop->events_list, events_link)
+    {
         SLIST_INSERT_IF_MISSING(&loop->remove_list, event, remove_link);
     }
     _do_event_removals(loop);
 }
 
-int op_event_loop_run_timeout(struct op_event_loop *loop, int timeout)
+int op_event_loop_run_timeout(struct op_event_loop* loop, int timeout)
 {
     loop->flags |= OP_EVENT_LOOP_RUNNING;
 
@@ -667,14 +625,15 @@ int op_event_loop_run_timeout(struct op_event_loop *loop, int timeout)
         _do_event_updates(loop);
 
         struct kevent kevents[KQUEUE_MAX_EVENTS];
-        struct timespec ts= {}, *tsp = NULL;
+        struct timespec ts = {}, *tsp = NULL;
         if (timeout != -1) {
             ts = (struct timespec){timeout / 1000, (timeout % 1000) * 1000000};
             tsp = &ts;
         }
 
-        if (loop->nb_events) {  /* sleeping with no events could sleep forever */
-            int nb_events = kevent(loop->poll_fd, NULL, 0, kevents, KQUEUE_MAX_EVENTS, tsp);
+        if (loop->nb_events) { /* sleeping with no events could sleep forever */
+            int nb_events =
+                kevent(loop->poll_fd, NULL, 0, kevents, KQUEUE_MAX_EVENTS, tsp);
             if (nb_events > 0) {
                 _do_event_handling(loop, kevents, nb_events);
                 _do_event_removals(loop);
@@ -694,7 +653,7 @@ int op_event_loop_run_timeout(struct op_event_loop *loop, int timeout)
     return (0);
 }
 
-int op_event_loop_run_forever(struct op_event_loop *loop)
+int op_event_loop_run_forever(struct op_event_loop* loop)
 {
     return (op_event_loop_run_timeout(loop, -1));
 }

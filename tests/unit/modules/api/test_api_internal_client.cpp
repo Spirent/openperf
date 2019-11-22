@@ -13,36 +13,40 @@ struct handler : public Pistache::Http::Handler
     HTTP_PROTOTYPE(handler)
 
     // Map resources to the expected return code.
-    const std::map<std::string, Pistache::Http::Code> resource_code_map {
-      {"/Ok", Pistache::Http::Code::Ok},
-      {"/Not_Found", Pistache::Http::Code::Not_Found}};
+    const std::map<std::string, Pistache::Http::Code> resource_code_map{
+        {"/Ok", Pistache::Http::Code::Ok},
+        {"/Not_Found", Pistache::Http::Code::Not_Found}};
 
     void onRequest(const Pistache::Http::Request& request,
                    Pistache::Http::ResponseWriter writer) override
     {
-        // Client functions sending the correct HTTP method is implicitly tested here.
-        // Behavior is different depending on which method the server side sees.
-        const std::map<Pistache::Http::Method, std::string> method_body_map {
-          {Pistache::Http::Method::Get, request.resource()},
-          {Pistache::Http::Method::Post, request.body()}};
+        // Client functions sending the correct HTTP method is implicitly tested
+        // here. Behavior is different depending on which method the server side
+        // sees.
+        const std::map<Pistache::Http::Method, std::string> method_body_map{
+            {Pistache::Http::Method::Get, request.resource()},
+            {Pistache::Http::Method::Post, request.body()}};
 
-        writer.send(resource_code_map.at(request.resource()), method_body_map.at(request.method()));
+        writer.send(resource_code_map.at(request.resource()),
+                    method_body_map.at(request.method()));
     }
 };
 
 TEST_CASE("check internal API client support", "[api client]")
 {
-    // Creating a single huge test case because we're opening an actual TCP port and opening and
-    // closing it multiple times requires timeouts that will slow down the unit tests. Besides,
-    // there's no clear need to start and stop a server that has no state and merely reflects
-    // requests back to the client.
+    // Creating a single huge test case because we're opening an actual TCP port
+    // and opening and closing it multiple times requires timeouts that will
+    // slow down the unit tests. Besides, there's no clear need to start and
+    // stop a server that has no state and merely reflects requests back to the
+    // client.
 
     // Mock up the server side of things.
     // Taken from the Pistache unit tests.
-    const Pistache::Address address("localhost", Pistache::Port(openperf::api::api_get_service_port()));
+    const Pistache::Address address(
+        "localhost", Pistache::Port(openperf::api::api_get_service_port()));
 
     Pistache::Http::Endpoint server(address);
-    auto flags       = Pistache::Tcp::Options::ReuseAddr;
+    auto flags = Pistache::Tcp::Options::ReuseAddr;
     auto server_opts = Pistache::Http::Endpoint::options().flags(flags);
     server.init(server_opts);
     server.setHandler(Pistache::Http::make_handler<handler>());

@@ -21,9 +21,8 @@ class packet_pool
     std::shared_ptr<rte_mempool> m_pool;
 
 public:
-    packet_pool(std::string_view id, int numa_node,
-                uint16_t packet_length, uint16_t packet_count,
-                uint16_t cache_size = 0);
+    packet_pool(std::string_view id, int numa_node, uint16_t packet_length,
+                uint16_t packet_count, uint16_t cache_size = 0);
     ~packet_pool() = default;
 
     packets::packet_buffer* get();
@@ -33,7 +32,7 @@ public:
     void put(packets::packet_buffer* const buffers[], uint16_t count);
 };
 
-}
-}
+} // namespace dpdk
+} // namespace openperf::packetio
 
 #endif /* _OP_PACKETIO_MEMORY_DPDK_PACKET_POOL_HPP_ */

@@ -20,16 +20,15 @@ constexpr static std::string_view path_delimiter(".");
 constexpr static std::string_view list_delimiters(" ,");
 constexpr static std::string_view pair_delimiter("=");
 
-std::string_view op_config_get_file_name()
-{
-    return (config_file_name);
-}
+std::string_view op_config_get_file_name() { return (config_file_name); }
 
-static std::vector<std::string> split_string(std::string_view input, std::string_view delimiters)
+static std::vector<std::string> split_string(std::string_view input,
+                                             std::string_view delimiters)
 {
     std::vector<std::string> output;
     size_t beg = 0, pos = 0;
-    while ((beg = input.find_first_not_of(delimiters, pos)) != std::string::npos) {
+    while ((beg = input.find_first_not_of(delimiters, pos))
+           != std::string::npos) {
         pos = input.find_first_of(delimiters, beg + 1);
 
         output.push_back(std::string(input.substr(beg, pos - beg)));
@@ -40,26 +39,28 @@ static std::vector<std::string> split_string(std::string_view input, std::string
 // XXX - replace with the standard library version when we upgrade to C++20.
 static bool starts_with(std::string_view val, std::string_view prefix)
 {
-    return ((val.size() >= prefix.size()) && (val.compare(0, prefix.size(), prefix) == 0));
+    return ((val.size() >= prefix.size())
+            && (val.compare(0, prefix.size(), prefix) == 0));
 }
 
-static void set_map_data_node(YAML::Node &node, std::string_view opt_data)
+static void set_map_data_node(YAML::Node& node, std::string_view opt_data)
 {
     auto data_pairs = split_string(opt_data, list_delimiters);
 
     // XXX: yaml-cpp does not have type conversion for unordered_map.
     std::map<std::string, std::string> output;
-    for (auto &data_pair : data_pairs) {
+    for (auto& data_pair : data_pairs) {
         size_t pos = data_pair.find_first_of(pair_delimiter);
         if (pos == std::string::npos) { continue; }
 
-        output[data_pair.substr(0, pos)] = data_pair.substr(pos + 1, data_pair.length());
+        output[data_pair.substr(0, pos)] =
+            data_pair.substr(pos + 1, data_pair.length());
     }
 
     node = output;
 }
 
-static void set_data_node_value(YAML::Node &node, std::string_view opt_data,
+static void set_data_node_value(YAML::Node& node, std::string_view opt_data,
                                 enum op_option_type opt_type)
 {
     switch (opt_type) {
@@ -86,7 +87,8 @@ static void set_data_node_value(YAML::Node &node, std::string_view opt_data,
     return;
 }
 
-static YAML::Node make_data_node(std::string_view opt_data, enum op_option_type opt_type)
+static YAML::Node make_data_node(std::string_view opt_data,
+                                 enum op_option_type opt_type)
 {
     YAML::Node node;
     set_data_node_value(node, opt_data, opt_type);
@@ -97,8 +99,10 @@ static YAML::Node make_data_node(std::string_view opt_data, enum op_option_type 
  * Recursive function to create a new YAML tree path by the given
  * path component strings of the range [pos, end).
  */
-static YAML::Node create_param_by_path(path_iterator pos, const path_iterator end,
-                                       std::string_view opt_data, enum op_option_type opt_type)
+static YAML::Node create_param_by_path(path_iterator pos,
+                                       const path_iterator end,
+                                       std::string_view opt_data,
+                                       enum op_option_type opt_type)
 {
     if (pos == end) { return (make_data_node(opt_data, opt_type)); }
 
@@ -115,8 +119,9 @@ static YAML::Node create_param_by_path(path_iterator pos, const path_iterator en
  * the base case will assign the requested data value. Else, function will
  * switch over to creating a new path.
  */
-static void update_param_by_path(YAML::Node &parent_node, path_iterator pos,
-                                 const path_iterator end, std::string_view opt_data,
+static void update_param_by_path(YAML::Node& parent_node, path_iterator pos,
+                                 const path_iterator end,
+                                 std::string_view opt_data,
                                  enum op_option_type opt_type)
 {
     if (pos == end) {
@@ -128,18 +133,19 @@ static void update_param_by_path(YAML::Node &parent_node, path_iterator pos,
         YAML::Node child_node = parent_node[*pos];
         update_param_by_path(child_node, ++pos, end, opt_data, opt_type);
     } else {
-        // Make a copy, else the ++pos operation on the right side will be reflected
-        // on the left side.
+        // Make a copy, else the ++pos operation on the right side will be
+        // reflected on the left side.
         auto key = pos;
-        parent_node[*key] = create_param_by_path(++pos, end, opt_data, opt_type);
+        parent_node[*key] =
+            create_param_by_path(++pos, end, opt_data, opt_type);
     }
 
     return;
 }
 
-static std::optional<YAML::Node> get_param_by_path(const YAML::Node &parent_node,
-                                                   path_iterator pos,
-                                                   const path_iterator end)
+static std::optional<YAML::Node>
+get_param_by_path(const YAML::Node& parent_node, path_iterator pos,
+                  const path_iterator end)
 {
     if (pos == end) { return (parent_node); }
 
@@ -151,17 +157,18 @@ static std::optional<YAML::Node> get_param_by_path(const YAML::Node &parent_node
     return (std::nullopt);
 }
 
-static void merge_cli_params(std::string_view path, YAML::Node &node)
+static void merge_cli_params(std::string_view path, YAML::Node& node)
 {
-    for (auto &opt : cli_options) {
+    for (auto& opt : cli_options) {
         auto long_opt = op_options_get_long_opt(opt.first);
 
         // All CLI options are required to have a long-form version.
-        if (!long_opt) { throw (std::runtime_error("Command-line option "
-                                                     + std::to_string(opt.first)
-                                                     + " does not have a "
-                                                     + "corresponding long-form "
-                                                     + "option.")); }
+        if (!long_opt) {
+            throw(std::runtime_error("Command-line option "
+                                     + std::to_string(opt.first)
+                                     + " does not have a "
+                                     + "corresponding long-form " + "option."));
+        }
 
         if (!starts_with(long_opt, path)) { continue; }
 
@@ -194,10 +201,11 @@ std::optional<YAML::Node> op_config_get_param(std::string_view path)
 
     auto path_components = split_string(path, path_delimiter);
 
-    return (get_param_by_path(root_node, path_components.begin(), path_components.end()));
+    return (get_param_by_path(root_node, path_components.begin(),
+                              path_components.end()));
 }
 
-static char * find_config_file_option(int argc, char * const argv[])
+static char* find_config_file_option(int argc, char* const argv[])
 {
     for (int idx = 0; idx < argc - 1; idx++) {
         if (strcmp(argv[idx], "--config") == 0
@@ -210,9 +218,9 @@ static char * find_config_file_option(int argc, char * const argv[])
 }
 
 extern "C" {
-int op_config_file_find(int argc, char * const argv[])
+int op_config_file_find(int argc, char* const argv[])
 {
-    char *file_name = find_config_file_option(argc, argv);
+    char* file_name = find_config_file_option(argc, argv);
 
     if (!file_name) { return (0); }
 
@@ -221,24 +229,25 @@ int op_config_file_find(int argc, char * const argv[])
     // Make sure the file exists and is readable.
     if (access(file_name, R_OK) == -1) {
         std::cerr << "Error (" << strerror(errno)
-                  << ") while attempting to access config file: "
-                  << file_name << std::endl;
+                  << ") while attempting to access config file: " << file_name
+                  << std::endl;
         return (errno);
     }
 
-    // This will do an initial parse. yaml-cpp throws exceptions when the parser runs into invalid
-    // YAML.
+    // This will do an initial parse. yaml-cpp throws exceptions when the parser
+    // runs into invalid YAML.
     YAML::Node root_node;
     try {
         root_node = YAML::LoadFile(config_file_name);
-    } catch (std::exception &e) {
-        std::cerr << "Error parsing configuration file: "
-                  << e.what() << std::endl;
+    } catch (std::exception& e) {
+        std::cerr << "Error parsing configuration file: " << e.what()
+                  << std::endl;
         return (EINVAL);
     }
 
     // XXX: Putting this at the top can lead to the message being lost on its
-    // way to the logging thread. Definitely a workaround, but not a critical message either.
+    // way to the logging thread. Definitely a workaround, but not a critical
+    // message either.
     OP_LOG(OP_LOG_DEBUG, "Reading from configuration file %s", file_name);
 
     // We currently support three top level nodes: `core`, `modules`, and
@@ -246,17 +255,17 @@ int op_config_file_find(int argc, char * const argv[])
     // node depends on the `modules` node.  Hence, we return an error
     // if 'resources' exists without `modules`.
     if (root_node["resources"] && !root_node["modules"]) {
-        std::cerr << "Configuration file " << file_name << " contains \"resources\""
-                  << " but not \"modules\".  The \"modules\" section is required."
-                  << std::endl;
+        std::cerr
+            << "Configuration file " << file_name << " contains \"resources\""
+            << " but not \"modules\".  The \"modules\" section is required."
+            << std::endl;
         return (EINVAL);
     }
 
     // We also generate a warning if the config file contains unrecognized
     // nodes.
-    auto top_level_nodes = std::initializer_list<std::string_view> { "core",
-                                                                     "modules",
-                                                                     "resources" };
+    auto top_level_nodes =
+        std::initializer_list<std::string_view>{"core", "modules", "resources"};
 
     // Clearly, set_difference would be a better choice here, but unfortunately,
     // YAML::Node only appears to allow you to retrieve the key value from an
@@ -272,32 +281,36 @@ int op_config_file_find(int argc, char * const argv[])
     }
 
     if (!unknown_nodes.empty()) {
-        OP_LOG(OP_LOG_WARNING, "Ignoring %zu unrecognized top-level node%s in %s: %s\n",
-                unknown_nodes.size(),
-                unknown_nodes.size() == 1 ? "" : "s",
-                file_name,
-                std::accumulate(std::begin(unknown_nodes), std::end(unknown_nodes), std::string(),
-                                [&](const std::string& a, const std::string b) -> std::string {
-                                    return (a
-                                            + (a.length() == 0 ? ""
-                                               : unknown_nodes.size() == 2 ? " and "
-                                               : unknown_nodes.back() == b ? ", and "
-                                               : ". ")
-                                            + "\\\"" + b + "\\\"");
-                                }).c_str());
+        OP_LOG(
+            OP_LOG_WARNING,
+            "Ignoring %zu unrecognized top-level node%s in %s: %s\n",
+            unknown_nodes.size(), unknown_nodes.size() == 1 ? "" : "s",
+            file_name,
+            std::accumulate(
+                std::begin(unknown_nodes), std::end(unknown_nodes),
+                std::string(),
+                [&](const std::string& a, const std::string b) -> std::string {
+                    return (a
+                            + (a.length() == 0
+                                   ? ""
+                                   : unknown_nodes.size() == 2
+                                         ? " and "
+                                         : unknown_nodes.back() == b ? ", and "
+                                                                     : ". ")
+                            + "\\\"" + b + "\\\"");
+                })
+                .c_str());
     }
 
     return (0);
 }
 
-int framework_cli_option_handler(int opt, const char *opt_arg)
+int framework_cli_option_handler(int opt, const char* opt_arg)
 {
     // Check that the user supplied argument data if the registrant
     // developer told us to expect some.
     auto opt_type = (op_options_get_opt_type_short(opt));
-    if  ((!opt_arg) && (opt_type != OP_OPTION_TYPE_NONE)) {
-        return (EINVAL);
-    }
+    if ((!opt_arg) && (opt_type != OP_OPTION_TYPE_NONE)) { return (EINVAL); }
 
     // Flag-type arguments are allowed to not have associated data.
     // For those cases the framework creates/updates a node and sets
@@ -307,7 +320,7 @@ int framework_cli_option_handler(int opt, const char *opt_arg)
     return (0);
 }
 
-char * op_config_file_get_value_str(const char *param, char *value, int len)
+char* op_config_file_get_value_str(const char* param, char* value, int len)
 {
     assert(param);
     assert(value);
@@ -322,6 +335,6 @@ char * op_config_file_get_value_str(const char *param, char *value, int len)
     return (value);
 }
 
-}  // extern "C"
+} // extern "C"
 
-}  // namespace openperf::config::file
+} // namespace openperf::config::file

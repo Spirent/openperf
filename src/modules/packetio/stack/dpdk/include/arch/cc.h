@@ -18,19 +18,19 @@
  */
 #define _Args(...) __VA_ARGS__
 #define STRIP_PARENS(X) X
-#define PASS_PARAMETERS(X) STRIP_PARENS( _Args X )
+#define PASS_PARAMETERS(X) STRIP_PARENS(_Args X)
 
-#define LWIP_PLATFORM_DIAG(x)                               \
-    do {                                                    \
-        op_log(OP_LOG_DEBUG, "lwip", PASS_PARAMETERS(x)); \
+#define LWIP_PLATFORM_DIAG(x)                                                  \
+    do {                                                                       \
+        op_log(OP_LOG_DEBUG, "lwip", PASS_PARAMETERS(x));                      \
     } while (0)
 
-#define LWIP_PLATFORM_ASSERT(x)                                         \
-    do {                                                                \
-        fprintf(stderr, "Assertion \"%s\" failed at line %d in %s\n",   \
-                x, __LINE__, __FILE__);                                 \
-        fflush(stderr);                                                 \
-        abort();                                                        \
+#define LWIP_PLATFORM_ASSERT(x)                                                \
+    do {                                                                       \
+        fprintf(stderr, "Assertion \"%s\" failed at line %d in %s\n", x,       \
+                __LINE__, __FILE__);                                           \
+        fflush(stderr);                                                        \
+        abort();                                                               \
     } while (0)
 
 #ifndef __cplusplus
@@ -40,6 +40,6 @@
  */
 #include "rte_memcpy.h"
 #endif
-#define PACKETIO_MEMCPY(dst,src,len) rte_memcpy(dst,src,len)
+#define PACKETIO_MEMCPY(dst, src, len) rte_memcpy(dst, src, len)
 
 #endif /* _OP_PACKETIO_STACK_DPDK_ARCH_CC_H_ */

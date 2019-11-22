@@ -25,12 +25,12 @@ public:
     pbuf* pbuf() const;
 
     void* payload() const;
-    void  payload(void* addr);
+    void payload(void* addr);
 
     uint16_t len() const;
     void len(uint16_t len);
 };
 
-}
+} // namespace openperf::socket::server
 
 #endif /* _OP_SOCKET_SERVER_PBUF_VEC_HPP_ */

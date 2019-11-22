@@ -41,17 +41,18 @@ unsigned get_most_common_numa_node(const Container& port_ids)
         node_counts[socket]++;
     }
 
-    auto max = std::max_element(begin(node_counts), end(node_counts),
-                                [](count_map::value_type& a, count_map::value_type& b) {
-                                    return (a.second < b.second);
-                                });
+    auto max = std::max_element(
+        begin(node_counts), end(node_counts),
+        [](count_map::value_type& a, count_map::value_type& b) {
+            return (a.second < b.second);
+        });
 
     return (max->first);
 }
 
-}
-}
-}
-}
+} // namespace topology
+} // namespace dpdk
+} // namespace packetio
+} // namespace openperf
 
 #endif /* _OP_PACKETIO_DPDK_TOPOLOGY_UTILS_HPP_ */

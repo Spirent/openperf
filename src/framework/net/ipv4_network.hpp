@@ -23,14 +23,32 @@ std::string to_string(const ipv4_network&);
 
 int compare(const ipv4_network&, const ipv4_network&);
 
-inline bool operator==(const ipv4_network& lhs, const ipv4_network& rhs) { return compare(lhs, rhs) == 0; }
-inline bool operator!=(const ipv4_network& lhs, const ipv4_network& rhs) { return compare(lhs, rhs) != 0; }
-inline bool operator< (const ipv4_network& lhs, const ipv4_network& rhs) { return compare(lhs, rhs) <  0; }
-inline bool operator> (const ipv4_network& lhs, const ipv4_network& rhs) { return compare(lhs, rhs) >  0; }
-inline bool operator<=(const ipv4_network& lhs, const ipv4_network& rhs) { return compare(lhs, rhs) <= 0; }
-inline bool operator>=(const ipv4_network& lhs, const ipv4_network& rhs) { return compare(lhs, rhs) >= 0; }
+inline bool operator==(const ipv4_network& lhs, const ipv4_network& rhs)
+{
+    return compare(lhs, rhs) == 0;
+}
+inline bool operator!=(const ipv4_network& lhs, const ipv4_network& rhs)
+{
+    return compare(lhs, rhs) != 0;
+}
+inline bool operator<(const ipv4_network& lhs, const ipv4_network& rhs)
+{
+    return compare(lhs, rhs) < 0;
+}
+inline bool operator>(const ipv4_network& lhs, const ipv4_network& rhs)
+{
+    return compare(lhs, rhs) > 0;
+}
+inline bool operator<=(const ipv4_network& lhs, const ipv4_network& rhs)
+{
+    return compare(lhs, rhs) <= 0;
+}
+inline bool operator>=(const ipv4_network& lhs, const ipv4_network& rhs)
+{
+    return compare(lhs, rhs) >= 0;
+}
 
-}
-}
+} // namespace net
+} // namespace openperf
 
 #endif /* _OP_FRAMEWORK_NET_IPV4_NETWORK_HPP_ */

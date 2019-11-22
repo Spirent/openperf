@@ -82,7 +82,7 @@ TEST_CASE("test YAML -> JSON emitter."
     // Boilerplate objects. They are not used in OpenPerf,
     // but are required by yaml-cpp interface.
     YAML::Mark mark;
-    YAML::anchor_t anchor           = 0;
+    YAML::anchor_t anchor = 0;
     YAML::EmitterStyle::value style = YAML::EmitterStyle::Default;
 
     SECTION("basic emitter test")

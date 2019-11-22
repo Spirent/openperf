@@ -23,22 +23,25 @@ public:
 
     /* stack is movable */
     lwip& operator=(lwip&& other);
-    lwip (lwip&& other);
+    lwip(lwip&& other);
 
     /* stack is non-copyable */
     lwip(const lwip&) = delete;
     lwip& operator=(const lwip&&) = delete;
 
-    std::string id() const { return "stack0"; }  /* only 1 stack for now */
+    std::string id() const { return "stack0"; } /* only 1 stack for now */
     std::vector<std::string> interface_ids() const;
-    std::optional<interface::generic_interface> interface(std::string_view id) const;
+    std::optional<interface::generic_interface>
+    interface(std::string_view id) const;
 
-    tl::expected<std::string, std::string> create_interface(const interface::config_data& config);
+    tl::expected<std::string, std::string>
+    create_interface(const interface::config_data& config);
     void delete_interface(std::string_view id);
 
     std::unordered_map<std::string, stack::stats_data> stats() const;
 
-    using interface_map = std::map<std::string, std::unique_ptr<net_interface>, std::less<>>;
+    using interface_map =
+        std::map<std::string, std::unique_ptr<net_interface>, std::less<>>;
 
 private:
     bool m_initialized;
@@ -49,6 +52,6 @@ private:
     int m_timerfd;
 };
 
-}
+} // namespace openperf::packetio::dpdk
 
 #endif /* _OP_PACKETIO_STACK_LWIP_HPP_ */

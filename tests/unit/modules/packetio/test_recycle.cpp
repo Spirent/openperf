@@ -10,11 +10,12 @@ TEST_CASE("recycler functionality", "[recycler]")
 {
     auto depot = recycler();
 
-    SECTION("test absent reader, ") {
+    SECTION("test absent reader, ")
+    {
         depot.writer_add_reader(0);
 
         bool gc_fired = false;
-        depot.writer_add_gc_callback([&](){ gc_fired = true; });
+        depot.writer_add_gc_callback([&]() { gc_fired = true; });
 
         depot.writer_process_gc_callbacks();
 
@@ -22,13 +23,14 @@ TEST_CASE("recycler functionality", "[recycler]")
         REQUIRE(gc_fired == true);
     }
 
-    SECTION("test guarded reader, ") {
+    SECTION("test guarded reader, ")
+    {
         depot.writer_add_reader(0);
 
         bool gc_fired = false;
         {
             openperf::packetio::recycle::guard guard(depot, 0);
-            depot.writer_add_gc_callback([&](){ gc_fired = true; });
+            depot.writer_add_gc_callback([&]() { gc_fired = true; });
             depot.writer_process_gc_callbacks();
 
             /* GC can't run because reader is guarded */
@@ -40,7 +42,8 @@ TEST_CASE("recycler functionality", "[recycler]")
         REQUIRE(gc_fired == true);
     }
 
-    SECTION("test multiple readers, ") {
+    SECTION("test multiple readers, ")
+    {
         depot.writer_add_reader(0);
         depot.writer_add_reader(1);
 
@@ -52,7 +55,7 @@ TEST_CASE("recycler functionality", "[recycler]")
         depot.reader_checkpoint(1);
 
         /* send writer to version 2 */
-        depot.writer_add_gc_callback([&](){ gc_one_fired = true; });
+        depot.writer_add_gc_callback([&]() { gc_one_fired = true; });
 
         /* Verify callback can't fire with both readers at version 1 */
         depot.writer_process_gc_callbacks();
@@ -66,7 +69,7 @@ TEST_CASE("recycler functionality", "[recycler]")
         REQUIRE(gc_one_fired == false);
 
         /* Add a new callback and make sure it can't fire either */
-        depot.writer_add_gc_callback([&](){ gc_two_fired = true; });
+        depot.writer_add_gc_callback([&]() { gc_two_fired = true; });
 
         depot.writer_process_gc_callbacks();
         REQUIRE(gc_one_fired == false);

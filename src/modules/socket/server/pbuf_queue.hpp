@@ -10,7 +10,8 @@ namespace openperf {
 namespace socket {
 namespace server {
 
-class pbuf_queue {
+class pbuf_queue
+{
     std::vector<pbuf_vec> m_queue;
     size_t m_length;
 
@@ -26,8 +27,8 @@ public:
     size_t clear(size_t bytes);
 };
 
-}
-}
-}
+} // namespace server
+} // namespace socket
+} // namespace openperf
 
 #endif /* _OP_SOCKET_SERVER_PBUF_BUFFER_HPP_ */

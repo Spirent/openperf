@@ -32,32 +32,35 @@ namespace socket {
  * struct is written to exclusively by the client thread.
  */
 
-#define STREAM_CHANNEL_MEMBERS                       \
-    struct alignas(cache_line_size) {                \
-        buffer tx_buffer;                            \
-        api::socket_fd_pair client_fds;              \
-        std::atomic_size_t tx_q_write_idx;           \
-        std::atomic_size_t rx_q_read_idx;            \
-        std::atomic_uint64_t tx_fd_write_idx;        \
-        std::atomic_uint64_t rx_fd_read_idx;         \
-        std::atomic_int socket_error;                \
-        std::atomic_int socket_flags;                \
-    };                                               \
-    struct alignas(cache_line_size) {                \
-        buffer rx_buffer;                            \
-        api::socket_fd_pair server_fds;              \
-        std::atomic_size_t tx_q_read_idx;            \
-        std::atomic_size_t rx_q_write_idx;           \
-        std::atomic_uint64_t tx_fd_read_idx;         \
-        std::atomic_uint64_t rx_fd_write_idx;        \
-        void* allocator;                             \
+#define STREAM_CHANNEL_MEMBERS                                                 \
+    struct alignas(cache_line_size)                                            \
+    {                                                                          \
+        buffer tx_buffer;                                                      \
+        api::socket_fd_pair client_fds;                                        \
+        std::atomic_size_t tx_q_write_idx;                                     \
+        std::atomic_size_t rx_q_read_idx;                                      \
+        std::atomic_uint64_t tx_fd_write_idx;                                  \
+        std::atomic_uint64_t rx_fd_read_idx;                                   \
+        std::atomic_int socket_error;                                          \
+        std::atomic_int socket_flags;                                          \
+    };                                                                         \
+    struct alignas(cache_line_size)                                            \
+    {                                                                          \
+        buffer rx_buffer;                                                      \
+        api::socket_fd_pair server_fds;                                        \
+        std::atomic_size_t tx_q_read_idx;                                      \
+        std::atomic_size_t rx_q_write_idx;                                     \
+        std::atomic_uint64_t tx_fd_read_idx;                                   \
+        std::atomic_uint64_t rx_fd_write_idx;                                  \
+        void* allocator;                                                       \
     };
 
-struct stream_channel {
+struct stream_channel
+{
     STREAM_CHANNEL_MEMBERS
 };
 
-}
-}
+} // namespace socket
+} // namespace openperf
 
 #endif /* _OP_SOCKET_STREAM_CHANNEL_HPP_ */

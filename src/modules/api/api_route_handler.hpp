@@ -8,14 +8,15 @@ namespace openperf {
 namespace api {
 namespace route {
 
-struct handler : openperf::core::init_factory<handler, void *, Pistache::Rest::Router &>
+struct handler
+    : openperf::core::init_factory<handler, void*, Pistache::Rest::Router&>
 {
-    handler(Key) {};
+    handler(Key){};
     virtual ~handler() = default;
 };
 
-}
-}
-}
+} // namespace route
+} // namespace api
+} // namespace openperf
 
 #endif /* _OP_API_ROUTE_HANDLER_ */

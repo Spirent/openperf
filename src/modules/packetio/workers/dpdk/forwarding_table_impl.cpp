@@ -7,18 +7,15 @@ struct netif;
 
 namespace openperf::packetio {
 
-template class forwarding_table<netif,
-                                packets::generic_sink,
-                                RTE_MAX_ETHPORTS>;
+template class forwarding_table<netif, packets::generic_sink, RTE_MAX_ETHPORTS>;
 
 /*
  * Provide a template specialization for the forwarding table so that it
  * can retrieve the opaque string id from an interface.
  */
-template<>
-std::string get_interface_id(netif* ifp)
+template <> std::string get_interface_id(netif* ifp)
 {
     return (dpdk::to_interface(ifp).id());
 }
 
-}
+} // namespace openperf::packetio

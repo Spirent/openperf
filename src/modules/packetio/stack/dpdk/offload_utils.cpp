@@ -1,6 +1,6 @@
 #include <cassert>
-#include "rte_ip.h"   /* ip pseudo header cksum */
-#include "rte_net.h"  /* ptype info */
+#include "rte_ip.h"  /* ip pseudo header cksum */
+#include "rte_net.h" /* ptype info */
 
 #include "packetio/stack/dpdk/offload_utils.hpp"
 #include "core/op_log.h"
@@ -24,9 +24,9 @@ void set_tx_offload_metadata(rte_mbuf* mbuf, uint16_t mtu)
 {
     /* Parse the packet headers to determine protocols and header offsets */
     struct rte_net_hdr_lens hdr_lens = {};
-    auto ptype = rte_net_get_ptype(mbuf, &hdr_lens, (RTE_PTYPE_L2_MASK
-                                                     | RTE_PTYPE_L3_MASK
-                                                     | RTE_PTYPE_L4_MASK));
+    auto ptype = rte_net_get_ptype(
+        mbuf, &hdr_lens,
+        (RTE_PTYPE_L2_MASK | RTE_PTYPE_L3_MASK | RTE_PTYPE_L4_MASK));
 
     /*
      * Use the packet type data to generate the proper offload flags and to
@@ -39,7 +39,8 @@ void set_tx_offload_metadata(rte_mbuf* mbuf, uint16_t mtu)
     case RTE_PTYPE_L3_IPV4:
     case RTE_PTYPE_L3_IPV4_EXT:
     case RTE_PTYPE_L3_IPV4_EXT_UNKNOWN: {
-        auto ip4 = rte_pktmbuf_mtod_offset(mbuf, rte_ipv4_hdr*, hdr_lens.l2_len);
+        auto ip4 =
+            rte_pktmbuf_mtod_offset(mbuf, rte_ipv4_hdr*, hdr_lens.l2_len);
         ip4->hdr_checksum = 0;
         ol_flags |= (PKT_TX_IP_CKSUM | PKT_TX_IPV4);
         break;
@@ -57,9 +58,12 @@ void set_tx_offload_metadata(rte_mbuf* mbuf, uint16_t mtu)
         auto udp = rte_pktmbuf_mtod_offset(mbuf, rte_udp_hdr*,
                                            hdr_lens.l2_len + hdr_lens.l3_len);
         ol_flags |= PKT_TX_UDP_CKSUM;
-        udp->dgram_cksum = (ol_flags & PKT_TX_IPV4
-                            ? rte_ipv4_phdr_cksum(reinterpret_cast<rte_ipv4_hdr*>(ip), ol_flags)
-                            : rte_ipv6_phdr_cksum(reinterpret_cast<rte_ipv6_hdr*>(ip), ol_flags));
+        udp->dgram_cksum =
+            (ol_flags & PKT_TX_IPV4
+                 ? rte_ipv4_phdr_cksum(reinterpret_cast<rte_ipv4_hdr*>(ip),
+                                       ol_flags)
+                 : rte_ipv6_phdr_cksum(reinterpret_cast<rte_ipv6_hdr*>(ip),
+                                       ol_flags));
         break;
     }
     case RTE_PTYPE_L4_TCP: {
@@ -67,12 +71,14 @@ void set_tx_offload_metadata(rte_mbuf* mbuf, uint16_t mtu)
         auto tcp = rte_pktmbuf_mtod_offset(mbuf, rte_tcp_hdr*,
                                            hdr_lens.l2_len + hdr_lens.l3_len);
         tso_segsz = mtu - hdr_lens.l3_len - tcp_header_length(tcp);
-        ol_flags |= (rte_pktmbuf_pkt_len(mbuf) > mtu
-                     ? PKT_TX_TCP_SEG | PKT_TX_TCP_CKSUM
-                     : PKT_TX_TCP_CKSUM);
+        ol_flags |=
+            (rte_pktmbuf_pkt_len(mbuf) > mtu ? PKT_TX_TCP_SEG | PKT_TX_TCP_CKSUM
+                                             : PKT_TX_TCP_CKSUM);
         tcp->cksum = (ol_flags & PKT_TX_IPV4
-                      ? rte_ipv4_phdr_cksum(reinterpret_cast<rte_ipv4_hdr*>(ip), ol_flags)
-                      : rte_ipv6_phdr_cksum(reinterpret_cast<rte_ipv6_hdr*>(ip), ol_flags));
+                          ? rte_ipv4_phdr_cksum(
+                              reinterpret_cast<rte_ipv4_hdr*>(ip), ol_flags)
+                          : rte_ipv6_phdr_cksum(
+                              reinterpret_cast<rte_ipv6_hdr*>(ip), ol_flags));
         break;
     }
     }
@@ -87,6 +93,6 @@ void set_tx_offload_metadata(rte_mbuf* mbuf, uint16_t mtu)
     rte_mbuf_sanity_check(mbuf, true);
 }
 
-}
-}
-}
+} // namespace dpdk
+} // namespace packetio
+} // namespace openperf

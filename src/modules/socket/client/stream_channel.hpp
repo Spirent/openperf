@@ -16,10 +16,11 @@ namespace client {
 /*
  * The client side stream channel owns the Rx buffer.
  */
-class stream_channel : public circular_buffer_consumer<stream_channel>
-                     , public circular_buffer_producer<stream_channel>
-                     , public event_queue_consumer<stream_channel>
-                     , public event_queue_producer<stream_channel>
+class stream_channel
+    : public circular_buffer_consumer<stream_channel>
+    , public circular_buffer_producer<stream_channel>
+    , public event_queue_consumer<stream_channel>
+    , public event_queue_producer<stream_channel>
 {
     STREAM_CHANNEL_MEMBERS
 
@@ -30,14 +31,14 @@ class stream_channel : public circular_buffer_consumer<stream_channel>
 
 protected:
     uint8_t* producer_base() const;
-    size_t   producer_len() const;
+    size_t producer_len() const;
     std::atomic_size_t& producer_read_idx();
     const std::atomic_size_t& producer_read_idx() const;
     std::atomic_size_t& producer_write_idx();
     const std::atomic_size_t& producer_write_idx() const;
 
     uint8_t* consumer_base() const;
-    size_t   consumer_len() const;
+    size_t consumer_len() const;
     std::atomic_size_t& consumer_read_idx();
     const std::atomic_size_t& consumer_read_idx() const;
     std::atomic_size_t& consumer_write_idx();
@@ -70,21 +71,19 @@ public:
     int flags() const;
     int flags(int);
 
-    tl::expected<size_t, int> send(const iovec iov[], size_t iovcnt,
-                                   int flags,
-                                   const sockaddr *to);
+    tl::expected<size_t, int> send(const iovec iov[], size_t iovcnt, int flags,
+                                   const sockaddr* to);
 
-    tl::expected<size_t, int> recv(iovec iov[], size_t iovcnt,
-                                   int flags,
-                                   sockaddr *from, socklen_t *fromlen);
+    tl::expected<size_t, int> recv(iovec iov[], size_t iovcnt, int flags,
+                                   sockaddr* from, socklen_t* fromlen);
 
     tl::expected<void, int> block_writes();
     tl::expected<void, int> wait_readable();
     tl::expected<void, int> wait_writable();
 };
 
-}
-}
-}
+} // namespace client
+} // namespace socket
+} // namespace openperf
 
 #endif /* _OP_SOCKET_CLIENT_STREAM_CHANNEL_HPP_ */

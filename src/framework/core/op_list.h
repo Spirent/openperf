@@ -86,7 +86,7 @@ void op_list_free(struct op_list **listp);
  *   -  0: Success
  *   - !0: Error
  */
- int op_list_purge(struct op_list *list);
+int op_list_purge(struct op_list *list);
 
 /**
  * Destroy all items previously marked for delete.  If a destructor was
@@ -134,7 +134,7 @@ struct op_list_item *op_list_head(struct op_list *list);
  *   pointer to value of next item or NULL on error
  */
 void *op_list_next(struct op_list *list,
-                    struct op_list_item **prevp);
+                   struct op_list_item **prevp);
 
 /**
  * Allocate a new list item
@@ -177,7 +177,7 @@ void *op_list_item_data(const struct op_list_item *item);
  *   - false: item was not inserted
  */
 bool op_list_insert_head_item(struct op_list *list,
-                               struct op_list_item *item);
+                              struct op_list_item *item);
 
 /**
  * Insert items into the list after the specified node.
@@ -194,8 +194,8 @@ bool op_list_insert_head_item(struct op_list *list,
  *   - false: item was not inserted
  */
 bool op_list_insert_node_item(struct op_list *list,
-                               struct op_list_item *start,
-                               struct op_list_item *item);
+                              struct op_list_item *start,
+                              struct op_list_item *item);
 
 /**
  * Insert items into the list
@@ -210,7 +210,7 @@ bool op_list_insert_node_item(struct op_list *list,
  *   - false: item was not inserted
  */
 bool op_list_insert_head_value(struct op_list *list,
-                                void *item);
+                               void *item);
 
 /**
  * Insert items into the list
@@ -227,25 +227,25 @@ bool op_list_insert_head_value(struct op_list *list,
  *   - false: item was not inserted
  */
 bool op_list_insert_node_value(struct op_list *list,
-                                struct op_list_item *start,
-                                void *item);
+                               struct op_list_item *start,
+                               void *item);
 
-#define op_list_insert_head(list, item)                            \
-    _Generic((item),                                                \
-             struct op_list_item *: op_list_insert_head_item,     \
-             default: op_list_insert_head_value                    \
+#define op_list_insert_head(list, item)                         \
+    _Generic((item),                                            \
+             struct op_list_item *: op_list_insert_head_item,   \
+             default: op_list_insert_head_value                 \
         )(list, item)
 
-#define op_list_insert_node(list, start, item)                     \
-    _Generic((item),                                                \
-             struct op_list_item *: op_list_insert_node_item,     \
-             default: op_list_insert_node_value                    \
+#define op_list_insert_node(list, start, item)                  \
+    _Generic((item),                                            \
+             struct op_list_item *: op_list_insert_node_item,   \
+             default: op_list_insert_node_value                 \
         )(list, start, item)
 
 #define GET_LIST_INSERT_MACRO(_1, _2, _3, NAME, ...) NAME
-#define op_list_insert(...)                                  \
-    GET_LIST_INSERT_MACRO(__VA_ARGS__,                        \
-                          op_list_insert_node,               \
+#define op_list_insert(...)                                 \
+    GET_LIST_INSERT_MACRO(__VA_ARGS__,                      \
+                          op_list_insert_node,              \
                           op_list_insert_head)(__VA_ARGS__)
 
 /**
@@ -260,7 +260,7 @@ bool op_list_insert_node_value(struct op_list *list,
  *   item value if found, otherwise NULL
  */
 void *op_list_find_head(struct op_list *list,
-                         const void *key);
+                        const void *key);
 
 /**
  * Look for key in the list starting at the specified node.
@@ -277,13 +277,13 @@ void *op_list_find_head(struct op_list *list,
  *   item value if found, otherwise NULL
  */
 void *op_list_find_node(struct op_list *list,
-                         struct op_list_item *start,
-                         const void *key);
+                        struct op_list_item *start,
+                        const void *key);
 
 #define GET_LIST_FIND_MACRO(_1, _2, _3, NAME, ...) NAME
-#define op_list_find(...)                                  \
-    GET_LIST_FIND_MACRO(__VA_ARGS__,                        \
-                        op_list_find_node,                 \
+#define op_list_find(...)                               \
+    GET_LIST_FIND_MACRO(__VA_ARGS__,                    \
+                        op_list_find_node,              \
                         op_list_find_head)(__VA_ARGS__)
 
 /**
@@ -299,7 +299,7 @@ void *op_list_find_node(struct op_list *list,
  *   - false: item not found
  */
 bool op_list_delete_head(struct op_list *list,
-                          const void *key);
+                         const void *key);
 
 /**
  * Look for key in the list starting at the specified node.
@@ -317,13 +317,13 @@ bool op_list_delete_head(struct op_list *list,
  *   - false: item not found
  */
 bool op_list_delete_node(struct op_list *list,
-                          struct op_list_item *start,
-                          const void *key);
+                         struct op_list_item *start,
+                         const void *key);
 
 #define GET_LIST_DELETE_MACRO(_1, _2, _3, NAME, ...) NAME
-#define op_list_delete(...)                                  \
-    GET_LIST_DELETE_MACRO(__VA_ARGS__,                        \
-                          op_list_delete_node,               \
+#define op_list_delete(...)                                 \
+    GET_LIST_DELETE_MACRO(__VA_ARGS__,                      \
+                          op_list_delete_node,              \
                           op_list_delete_head)(__VA_ARGS__)
 
 /**

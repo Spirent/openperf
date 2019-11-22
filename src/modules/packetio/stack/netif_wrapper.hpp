@@ -30,6 +30,6 @@ public:
     interface::stats_data stats() const;
 };
 
-}
+} // namespace openperf::packetio
 
 #endif /* _OP_PACKETIO_STACK_NETIF_WRAPPER_HPP_ */

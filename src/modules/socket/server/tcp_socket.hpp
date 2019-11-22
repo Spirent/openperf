@@ -18,30 +18,36 @@ namespace openperf {
 namespace socket {
 namespace server {
 
+struct tcp_init
+{};
+struct tcp_bound
+{};
+struct tcp_accept
+{};
+struct tcp_listening
+{};
+struct tcp_connecting
+{};
+struct tcp_connected
+{};
+struct tcp_closing
+{};
+struct tcp_closed
+{};
+struct tcp_error
+{
+    int value;
+};
 
-struct tcp_init {};
-struct tcp_bound {};
-struct tcp_accept {};
-struct tcp_listening {};
-struct tcp_connecting {};
-struct tcp_connected {};
-struct tcp_closing {};
-struct tcp_closed {};
-struct tcp_error{ int value; };
-
-typedef std::variant<tcp_init,
-                     tcp_bound,
-                     tcp_accept,
-                     tcp_listening,
-                     tcp_connecting,
-                     tcp_connected,
-                     tcp_closing,
-                     tcp_closed,
-                     tcp_error> tcp_socket_state;
+typedef std::variant<tcp_init, tcp_bound, tcp_accept, tcp_listening,
+                     tcp_connecting, tcp_connected, tcp_closing, tcp_closed,
+                     tcp_error>
+    tcp_socket_state;
 
 class tcp_socket : public socket_state_machine<tcp_socket, tcp_socket_state>
 {
-    struct tcp_pcb_deleter {
+    struct tcp_pcb_deleter
+    {
         void operator()(tcp_pcb* pcb);
     };
     typedef std::unique_ptr<tcp_pcb, tcp_pcb_deleter> tcp_pcb_ptr;
@@ -53,7 +59,8 @@ class tcp_socket : public socket_state_machine<tcp_socket, tcp_socket_state>
 
     openperf::socket::server::allocator* channel_allocator();
 
-    tcp_socket(openperf::socket::server::allocator* allocator, int flags, tcp_pcb* pcb);
+    tcp_socket(openperf::socket::server::allocator* allocator, int flags,
+               tcp_pcb* pcb);
 
 public:
     tcp_socket(openperf::socket::server::allocator& allocator, int flags);
@@ -70,7 +77,7 @@ public:
      ***/
     int do_lwip_accept(tcp_pcb* newpcb, int err);
     int do_lwip_sent(uint16_t size);
-    int do_lwip_recv(pbuf *p, int err);
+    int do_lwip_recv(pbuf* p, int err);
     int do_lwip_connected(int err);
     int do_lwip_poll();
     int do_lwip_error(int err);
@@ -98,12 +105,15 @@ public:
     /* connection handlers */
     on_request_reply on_request(const api::request_connect&, const tcp_init&);
     on_request_reply on_request(const api::request_connect&, const tcp_bound&);
-    on_request_reply on_request(const api::request_connect&, const tcp_connecting&);
-    on_request_reply on_request(const api::request_connect&, const tcp_connected&);
+    on_request_reply on_request(const api::request_connect&,
+                                const tcp_connecting&);
+    on_request_reply on_request(const api::request_connect&,
+                                const tcp_connected&);
     on_request_reply on_request(const api::request_connect&, const tcp_error&);
 
     /* shutdown handlers */
-    on_request_reply on_request(const api::request_shutdown&, const tcp_connected&);
+    on_request_reply on_request(const api::request_shutdown&,
+                                const tcp_connected&);
     on_request_reply on_request(const api::request_shutdown&, const tcp_error&);
 
     template <typename State>
@@ -113,8 +123,10 @@ public:
     }
 
     /* getpeername handlers */
-    on_request_reply on_request(const api::request_getpeername&, const tcp_connected&);
-    on_request_reply on_request(const api::request_getpeername&, const tcp_error&);
+    on_request_reply on_request(const api::request_getpeername&,
+                                const tcp_connected&);
+    on_request_reply on_request(const api::request_getpeername&,
+                                const tcp_error&);
 
     template <typename State>
     on_request_reply on_request(const api::request_getpeername&, const State&)
@@ -123,13 +135,15 @@ public:
     }
 
     /* getsockname handlers */
-    on_request_reply on_request(const api::request_getsockname&, const tcp_error&);
+    on_request_reply on_request(const api::request_getsockname&,
+                                const tcp_error&);
 
-    static tl::expected<socklen_t, int> do_tcp_getsockname(const tcp_pcb*,
-                                                           const api::request_getsockname&);
+    static tl::expected<socklen_t, int>
+    do_tcp_getsockname(const tcp_pcb*, const api::request_getsockname&);
 
     template <typename State>
-    on_request_reply on_request(const api::request_getsockname& name, const State&)
+    on_request_reply on_request(const api::request_getsockname& name,
+                                const State&)
     {
         auto result = do_tcp_getsockname(m_pcb.get(), name);
         if (!result) return {tl::make_unexpected(result.error()), std::nullopt};
@@ -137,12 +151,13 @@ public:
     }
 
     /* getsockopt handlers */
-    static tl::expected<socklen_t, int> do_getsockopt(const tcp_pcb*,
-                                                      const api::request_getsockopt&,
-                                                      const tcp_socket_state& state);
+    static tl::expected<socklen_t, int>
+    do_getsockopt(const tcp_pcb*, const api::request_getsockopt&,
+                  const tcp_socket_state& state);
 
     template <typename State>
-    on_request_reply on_request(const api::request_getsockopt& name, const State&)
+    on_request_reply on_request(const api::request_getsockopt& name,
+                                const State&)
     {
         auto result = do_getsockopt(m_pcb.get(), name, state());
         if (!result) return {tl::make_unexpected(result.error()), std::nullopt};
@@ -150,12 +165,15 @@ public:
     }
 
     /* setsockopt handlers */
-    on_request_reply on_request(const api::request_setsockopt&, const tcp_error& error);
+    on_request_reply on_request(const api::request_setsockopt&,
+                                const tcp_error& error);
 
-    static tl::expected<void, int> do_setsockopt(tcp_pcb*, const api::request_setsockopt&);
+    static tl::expected<void, int>
+    do_setsockopt(tcp_pcb*, const api::request_setsockopt&);
 
     template <typename State>
-    on_request_reply on_request(const api::request_setsockopt& name, const State&)
+    on_request_reply on_request(const api::request_setsockopt& name,
+                                const State&)
     {
         auto result = do_setsockopt(m_pcb.get(), name);
         if (!result) return {tl::make_unexpected(result.error()), std::nullopt};
@@ -170,10 +188,10 @@ public:
     }
 };
 
-const char * to_string(const tcp_socket_state&);
+const char* to_string(const tcp_socket_state&);
 
-}
-}
-}
+} // namespace server
+} // namespace socket
+} // namespace openperf
 
 #endif /* _OP_SOCKET_SERVER_TCP_SOCKET_HPP_ */

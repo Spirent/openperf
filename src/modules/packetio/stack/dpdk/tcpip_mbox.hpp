@@ -7,8 +7,8 @@
 
 namespace openperf::packetio::dpdk {
 
-template <typename T>
-class singleton {
+template <typename T> class singleton
+{
 public:
     static T& instance()
     {
@@ -17,9 +17,10 @@ public:
     }
 
     singleton(const singleton&) = delete;
-    singleton& operator= (const singleton) = delete;
+    singleton& operator=(const singleton) = delete;
+
 protected:
-    singleton() {};
+    singleton(){};
 };
 
 class tcpip_mbox : public singleton<tcpip_mbox>
@@ -33,6 +34,6 @@ private:
     std::unique_ptr<sys_mbox> m_mbox;
 };
 
-}
+} // namespace openperf::packetio::dpdk
 
 #endif /* _OP_PACKETIO_DPDK_TCPIP_MBOX_HPP_ */

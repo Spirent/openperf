@@ -15,7 +15,8 @@ namespace impl {
  * Using the bsd tree code here is nice, because it allows us to use
  * the memory heap to store (nearly) all of it's own meta data.
  */
-struct heap_tag {
+struct heap_tag
+{
     size_t size;
     uint64_t magic;
     uint64_t pad[6];
@@ -27,9 +28,7 @@ static int compare_heap_nodes(heap_node* lhs, heap_node* rhs)
     auto left = reinterpret_cast<uintptr_t>(lhs);
     auto right = reinterpret_cast<uintptr_t>(rhs);
 
-    return (left < right ? -1
-            : left > right ? 1
-            : 0);
+    return (left < right ? -1 : left > right ? 1 : 0);
 }
 
 RB_GENERATE_STATIC(heap, heap_node, entry, compare_heap_nodes);
@@ -39,20 +38,18 @@ heap_node* find_free_node(heap* h, size_t size)
 {
     heap_node* to_return = nullptr;
     heap_node* current = nullptr;
-    RB_FOREACH(current, heap, h) {
-        if (current->size < size) continue;  /* to small */
-        if (to_return == nullptr
-            || current->size < to_return->size) {
+    RB_FOREACH(current, heap, h)
+    {
+        if (current->size < size) continue; /* to small */
+        if (to_return == nullptr || current->size < to_return->size) {
             to_return = current;
         }
     }
 
-    return (to_return
-            ? RB_REMOVE(heap, h, to_return)
-            : nullptr);
+    return (to_return ? RB_REMOVE(heap, h, to_return) : nullptr);
 }
 
-}
+} // namespace impl
 
 static __attribute__((const)) uint64_t align_up(uint64_t x, uint64_t align)
 {
@@ -76,12 +73,12 @@ void* free_list::reserve(size_t size)
      * We cannot allocate below the size of our meta data, so bump the
      * allocation size up if needed.
      */
-    size = align_up(std::max(size + sizeof(impl::heap_tag),
-                             sizeof(impl::heap_node)),
-                    alignment);
+    size = align_up(
+        std::max(size + sizeof(impl::heap_tag), sizeof(impl::heap_node)),
+        alignment);
     auto node = impl::find_free_node(&m_heap, size);
     if (node == nullptr) {
-        throw std::bad_alloc();  /* oom or request too big */
+        throw std::bad_alloc(); /* oom or request too big */
     }
 
     /**
@@ -101,8 +98,8 @@ void* free_list::reserve(size_t size)
     tag->size = size;
     tag->magic = magic_key;
 
-    return reinterpret_cast<void*>(
-        reinterpret_cast<uintptr_t>(tag) + sizeof(impl::heap_tag));
+    return reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(tag)
+                                   + sizeof(impl::heap_tag));
 }
 
 void free_list::release(void* ptr)
@@ -121,24 +118,24 @@ void free_list::release(void* ptr)
     }
 
     auto node = reinterpret_cast<impl::heap_node*>(tag);
-    assert(node->size == tag->size);  /* sanity check congruent structs */
+    assert(node->size == tag->size); /* sanity check congruent structs */
     assert(node->size != 1);
     auto ret = RB_INSERT(heap, &m_heap, node);
-    if (ret != nullptr) {
-        throw std::runtime_error("Double free!?!");
-    }
+    if (ret != nullptr) { throw std::runtime_error("Double free!?!"); }
 
     /* Finally, see if we can merge this node into it's neighbors */
     auto next = RB_NEXT(heap, &m_heap, node);
     if (next
-        && reinterpret_cast<uintptr_t>(node) + node->size == reinterpret_cast<uintptr_t>(next)) {
+        && reinterpret_cast<uintptr_t>(node) + node->size
+               == reinterpret_cast<uintptr_t>(next)) {
         node->size += next->size;
         RB_REMOVE(heap, &m_heap, next);
     }
 
     auto prev = RB_PREV(heap, &m_heap, node);
     if (prev
-        && reinterpret_cast<uintptr_t>(prev) + prev->size == reinterpret_cast<uintptr_t>(node)) {
+        && reinterpret_cast<uintptr_t>(prev) + prev->size
+               == reinterpret_cast<uintptr_t>(node)) {
         prev->size += node->size;
         RB_REMOVE(heap, &m_heap, node);
     }
@@ -149,11 +146,8 @@ size_t free_list::size() const noexcept
     return (m_upper - m_lower - sizeof(impl::heap_tag));
 }
 
-uintptr_t free_list::base() const noexcept
-{
-    return (m_lower);
-}
+uintptr_t free_list::base() const noexcept { return (m_lower); }
 
-}
-}
-}
+} // namespace allocator
+} // namespace memory
+} // namespace openperf

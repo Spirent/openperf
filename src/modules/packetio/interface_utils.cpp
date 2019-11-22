@@ -20,10 +20,12 @@ static void validate(const eth_protocol_config& eth,
                      std::vector<std::string>& errors)
 {
     if (eth.address.is_broadcast()) {
-        errors.emplace_back("Broadcast MAC address (" + net::to_string(eth.address)
+        errors.emplace_back("Broadcast MAC address ("
+                            + net::to_string(eth.address)
                             + ") is not allowed.");
     } else if (eth.address.is_multicast()) {
-        errors.emplace_back("Multicast MAC address (" + net::to_string(eth.address)
+        errors.emplace_back("Multicast MAC address ("
+                            + net::to_string(eth.address)
                             + ") is not allowed.");
     }
 }
@@ -38,14 +40,17 @@ static void validate(const ipv4_static_protocol_config& ipv4,
                      std::vector<std::string>& errors)
 {
     if (ipv4.prefix_length > 32) {
-        errors.emplace_back("Prefix length (" + std::to_string(ipv4.prefix_length)
+        errors.emplace_back("Prefix length ("
+                            + std::to_string(ipv4.prefix_length)
                             + ") is too big.");
     }
     if (ipv4.address.is_loopback()) {
-        errors.emplace_back("Cannot use loopback address (" + net::to_string(ipv4.address)
+        errors.emplace_back("Cannot use loopback address ("
+                            + net::to_string(ipv4.address)
                             + ") for interface.");
     } else if (ipv4.address.is_multicast()) {
-        errors.emplace_back("Cannot use multicast address (" + net::to_string(ipv4.address)
+        errors.emplace_back("Cannot use multicast address ("
+                            + net::to_string(ipv4.address)
                             + ") for interface.");
     }
 
@@ -59,13 +64,14 @@ static void validate(const ipv4_static_protocol_config& ipv4,
             errors.emplace_back("Cannot use multicast address ("
                                 + net::to_string(*ipv4.gateway)
                                 + ") for gateway.");
-        } else if (net::ipv4_network(*ipv4.gateway, ipv4.prefix_length) !=
-                   net::ipv4_network(ipv4.address, ipv4.prefix_length)) {
-            errors.emplace_back("Gateway address (" + net::to_string(*ipv4.gateway)
-                                + ") is not in the same broadcast domain as interface ("
-                                + net::to_string(net::ipv4_network(ipv4.address,
-                                                                   ipv4.prefix_length))
-                                + ").");
+        } else if (net::ipv4_network(*ipv4.gateway, ipv4.prefix_length)
+                   != net::ipv4_network(ipv4.address, ipv4.prefix_length)) {
+            errors.emplace_back(
+                "Gateway address (" + net::to_string(*ipv4.gateway)
+                + ") is not in the same broadcast domain as interface ("
+                + net::to_string(
+                    net::ipv4_network(ipv4.address, ipv4.prefix_length))
+                + ").");
         }
     }
 }
@@ -132,37 +138,48 @@ static bool is_valid(config_data& config, std::vector<std::string>& errors)
             validate(ipv4, errors);
         },
         [&](const std::monostate&) {
-            errors.emplace_back("No valid interface protocol configuration found.");
+            errors.emplace_back(
+                "No valid interface protocol configuration found.");
         });
 
     for (auto& protocol : config.protocols) {
         std::visit(protocol_visitor, protocol);
     }
 
-    /* Currently we require 1 Ethernet protocol config and at most 1 IPv4 protocol config */
-    if (auto count = protocol_counter[typeid(eth_protocol_config)]; count != 1) {
-        errors.emplace_back("At " + std::string(count == 0 ? "least" : "most") + " one Ethernet "
-                            + "protocol configuration is required per interface.");
+    /* Currently we require 1 Ethernet protocol config and at most 1 IPv4
+     * protocol config */
+    if (auto count = protocol_counter[typeid(eth_protocol_config)];
+        count != 1) {
+        errors.emplace_back(
+            "At " + std::string(count == 0 ? "least" : "most")
+            + " one Ethernet "
+            + "protocol configuration is required per interface.");
     }
-    if (auto count = protocol_counter[typeid(ipv4_protocol_config)]; count > 1) {
-        errors.emplace_back("At most one IPv4 protocol configuration is allowed per interface, "
-                            "not " + std::to_string(count) + ".");
+    if (auto count = protocol_counter[typeid(ipv4_protocol_config)];
+        count > 1) {
+        errors.emplace_back(
+            "At most one IPv4 protocol configuration is allowed per interface, "
+            "not "
+            + std::to_string(count) + ".");
     }
 
     /*
-     * XXX: swagger specs says we care about order, but at this point, our configuration
-     * is unambiguous, so don't bother.
+     * XXX: swagger specs says we care about order, but at this point, our
+     * configuration is unambiguous, so don't bother.
      */
 
     return (errors.size() == 0);
 }
 
-static eth_protocol_config from_swagger(std::shared_ptr<InterfaceProtocolConfig_eth> config)
+static eth_protocol_config
+from_swagger(std::shared_ptr<InterfaceProtocolConfig_eth> config)
 {
-    return (eth_protocol_config{ .address = net::mac_address(config->getMacAddress()) });
+    return (eth_protocol_config{.address =
+                                    net::mac_address(config->getMacAddress())});
 }
 
-static ipv4_dhcp_protocol_config from_swagger(std::shared_ptr<InterfaceProtocolConfig_ipv4_dhcp> config)
+static ipv4_dhcp_protocol_config
+from_swagger(std::shared_ptr<InterfaceProtocolConfig_ipv4_dhcp> config)
 {
     ipv4_dhcp_protocol_config to_return;
 
@@ -175,25 +192,28 @@ static ipv4_dhcp_protocol_config from_swagger(std::shared_ptr<InterfaceProtocolC
     }
 
     return (to_return);
-
 }
 
-static ipv4_static_protocol_config from_swagger(std::shared_ptr<InterfaceProtocolConfig_ipv4_static> config)
+static ipv4_static_protocol_config
+from_swagger(std::shared_ptr<InterfaceProtocolConfig_ipv4_static> config)
 {
     ipv4_static_protocol_config to_return;
 
     if (config->gatewayIsSet()) {
-        to_return.gateway = std::make_optional(net::ipv4_address(config->getGateway()));
+        to_return.gateway =
+            std::make_optional(net::ipv4_address(config->getGateway()));
     }
 
     to_return.address = net::ipv4_address(config->getAddress());
     /* XXX: Can't use small ints in swagger, so cut this value down. */
-    to_return.prefix_length = config->getPrefixLength() & std::numeric_limits<uint8_t>::max();
+    to_return.prefix_length =
+        config->getPrefixLength() & std::numeric_limits<uint8_t>::max();
 
     return (to_return);
 }
 
-static ipv4_protocol_config from_swagger(std::shared_ptr<InterfaceProtocolConfig_ipv4> config)
+static ipv4_protocol_config
+from_swagger(std::shared_ptr<InterfaceProtocolConfig_ipv4> config)
 {
     ipv4_protocol_config to_return;
 
@@ -206,7 +226,8 @@ static ipv4_protocol_config from_swagger(std::shared_ptr<InterfaceProtocolConfig
     return (to_return);
 }
 
-static protocol_config from_swagger(std::shared_ptr<InterfaceProtocolConfig> config)
+static protocol_config
+from_swagger(std::shared_ptr<InterfaceProtocolConfig> config)
 {
     protocol_config to_return;
 
@@ -238,18 +259,17 @@ config_data make_config_data(const Interface& interface)
     std::vector<std::string> errors;
     /* Now check the actual configuration data */
     if (!is_valid(to_return, errors)) {
-        throw std::runtime_error(
-            std::accumulate(begin(errors), end(errors), std::string(),
-                            [](const std::string &a, const std::string &b) -> std::string {
-                                return a + (a.length() > 0 ? " " : "") + b;
-                            }));
+        throw std::runtime_error(std::accumulate(
+            begin(errors), end(errors), std::string(),
+            [](const std::string& a, const std::string& b) -> std::string {
+                return a + (a.length() > 0 ? " " : "") + b;
+            }));
     }
 
     return (to_return);
 }
 
-static
-std::shared_ptr<InterfaceProtocolConfig_eth>
+static std::shared_ptr<InterfaceProtocolConfig_eth>
 make_swagger_protocol_config(const eth_protocol_config& eth)
 {
     auto config = std::make_shared<InterfaceProtocolConfig_eth>();
@@ -259,23 +279,17 @@ make_swagger_protocol_config(const eth_protocol_config& eth)
     return (config);
 }
 
-static
-std::shared_ptr<InterfaceProtocolConfig_ipv4_dhcp>
+static std::shared_ptr<InterfaceProtocolConfig_ipv4_dhcp>
 make_swagger_protocol_config(const ipv4_dhcp_protocol_config& dhcp_ipv4)
 {
     auto config = std::make_shared<InterfaceProtocolConfig_ipv4_dhcp>();
-    if (dhcp_ipv4.hostname) {
-        config->setHostname(*dhcp_ipv4.hostname);
-    }
-    if (dhcp_ipv4.client) {
-        config->setClient(*dhcp_ipv4.client);
-    }
+    if (dhcp_ipv4.hostname) { config->setHostname(*dhcp_ipv4.hostname); }
+    if (dhcp_ipv4.client) { config->setClient(*dhcp_ipv4.client); }
 
     return (config);
 }
 
-static
-std::shared_ptr<InterfaceProtocolConfig_ipv4_static>
+static std::shared_ptr<InterfaceProtocolConfig_ipv4_static>
 make_swagger_protocol_config(const ipv4_static_protocol_config& static_ipv4)
 {
     auto config = std::make_shared<InterfaceProtocolConfig_ipv4_static>();
@@ -289,18 +303,17 @@ make_swagger_protocol_config(const ipv4_static_protocol_config& static_ipv4)
     return (config);
 }
 
-static
-std::shared_ptr<InterfaceProtocolConfig_ipv4>
+static std::shared_ptr<InterfaceProtocolConfig_ipv4>
 make_swagger_protocol_config(const ipv4_protocol_config& ipv4)
 {
     auto config = std::make_shared<InterfaceProtocolConfig_ipv4>();
 
     auto visitor = utils::overloaded_visitor(
-        [&](const ipv4_dhcp_protocol_config &dhcp_ipv4) {
+        [&](const ipv4_dhcp_protocol_config& dhcp_ipv4) {
             config->setDhcp(make_swagger_protocol_config(dhcp_ipv4));
             config->setMethod("dhcp");
         },
-        [&](const ipv4_static_protocol_config &static_ipv4) {
+        [&](const ipv4_static_protocol_config& static_ipv4) {
             config->setStatic(make_swagger_protocol_config(static_ipv4));
             config->setMethod("static");
         });
@@ -310,8 +323,7 @@ make_swagger_protocol_config(const ipv4_protocol_config& ipv4)
     return (config);
 }
 
-static
-std::shared_ptr<InterfaceProtocolConfig>
+static std::shared_ptr<InterfaceProtocolConfig>
 make_swagger_protocol_config(const protocol_config& protocol)
 {
     auto config = std::make_shared<InterfaceProtocolConfig>();
@@ -323,8 +335,7 @@ make_swagger_protocol_config(const protocol_config& protocol)
         [&](const ipv4_protocol_config& ipv4) {
             config->setIpv4(make_swagger_protocol_config(ipv4));
         },
-        [](const std::monostate&)
-        {
+        [](const std::monostate&) {
             /* Nothing to do */
         });
 
@@ -333,19 +344,18 @@ make_swagger_protocol_config(const protocol_config& protocol)
     return (config);
 }
 
-static
-std::shared_ptr<Interface_config>
+static std::shared_ptr<Interface_config>
 make_swagger_interface_config(const config_data& in_config)
 {
     auto config = std::make_shared<Interface_config>();
     for (auto& protocol : in_config.protocols) {
-        config->getProtocols().emplace_back(make_swagger_protocol_config(protocol));
+        config->getProtocols().emplace_back(
+            make_swagger_protocol_config(protocol));
     }
     return (config);
 }
 
-static
-std::shared_ptr<InterfaceStats>
+static std::shared_ptr<InterfaceStats>
 make_swagger_interface_stats(const generic_interface& intf)
 {
     auto stats = std::make_shared<InterfaceStats>();
@@ -361,7 +371,8 @@ make_swagger_interface_stats(const generic_interface& intf)
     return (stats);
 }
 
-std::shared_ptr<Interface> make_swagger_interface(const generic_interface& in_intf)
+std::shared_ptr<Interface>
+make_swagger_interface(const generic_interface& in_intf)
 {
     auto out_intf = std::make_shared<Interface>();
 
@@ -373,6 +384,6 @@ std::shared_ptr<Interface> make_swagger_interface(const generic_interface& in_in
     return (out_intf);
 }
 
-}
-}
-}
+} // namespace interface
+} // namespace packetio
+} // namespace openperf

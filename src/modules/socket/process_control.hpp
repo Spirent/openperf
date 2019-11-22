@@ -24,6 +24,6 @@ namespace openperf::socket::process_control {
  */
 bool enable_ptrace(FILE* output, std::optional<pid_t> pid = std::nullopt);
 
-}
+} // namespace openperf::socket::process_control
 
 #endif /* _OP_SOCKET_PROCESS_CONTROL_HPP_ */

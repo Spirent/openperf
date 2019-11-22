@@ -9,14 +9,12 @@
 
 namespace openperf::packetio::dpdk {
 
-static int get_socket_fd(void *socket)
+static int get_socket_fd(void* socket)
 {
     int fd = -1;
     size_t fd_size = sizeof(fd);
 
-    if (zmq_getsockopt(socket, ZMQ_FD, &fd, &fd_size) != 0) {
-        return (-1);
-    }
+    if (zmq_getsockopt(socket, ZMQ_FD, &fd, &fd_size) != 0) { return (-1); }
 
     return (fd);
 }
@@ -39,23 +37,22 @@ bool zmq_socket::readable() const
 
     int error = zmq_getsockopt(m_socket, ZMQ_EVENTS, &flags, &flag_size);
 
-    /* XXX: return true if there is an error; let the upper layers figure it out */
+    /* XXX: return true if there is an error; let the upper layers figure it out
+     */
     return (error == 0 ? flags & ZMQ_POLLIN : true);
 }
 
-int zmq_socket::event_fd() const
-{
-    return (m_fd);
-}
+int zmq_socket::event_fd() const { return (m_fd); }
 
 static void interrupt_event_callback(int, void* arg)
 {
     assert(arg);
-    auto *signal = reinterpret_cast<bool*>(arg);
+    auto* signal = reinterpret_cast<bool*>(arg);
     *signal = true;
 }
 
-pollable_event<zmq_socket>::event_callback zmq_socket::event_callback_function() const
+pollable_event<zmq_socket>::event_callback
+zmq_socket::event_callback_function() const
 {
     return (interrupt_event_callback);
 }
@@ -65,4 +62,4 @@ void* zmq_socket::event_callback_argument()
     return (reinterpret_cast<void*>(m_signal));
 }
 
-}
+} // namespace openperf::packetio::dpdk

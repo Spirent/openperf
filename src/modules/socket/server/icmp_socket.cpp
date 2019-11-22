@@ -23,20 +23,22 @@ namespace server {
  */
 static uint8_t icmp_type(const pbuf*)
 {
-    return (ip_current_is_v6()
-            ? ICMPH_TYPE(static_cast<const icmp6_hdr*>(ip_next_header_ptr()))
-            : ICMPH_TYPE(static_cast<const icmp_echo_hdr*>(ip_next_header_ptr())));
+    return (ip_current_is_v6() ? ICMPH_TYPE(
+                static_cast<const icmp6_hdr*>(ip_next_header_ptr()))
+                               : ICMPH_TYPE(static_cast<const icmp_echo_hdr*>(
+                                   ip_next_header_ptr())));
 }
 
 /* RAW receive function; payload should point to IP header */
-static uint8_t icmp_receive_raw(void* arg, raw_pcb*, pbuf* p, const ip_addr_t* addr)
+static uint8_t icmp_receive_raw(void* arg, raw_pcb*, pbuf* p,
+                                const ip_addr_t* addr)
 {
     assert(addr != nullptr);
     auto sock = reinterpret_cast<icmp_socket*>(arg);
 
     if (sock->is_filtered(icmp_type(p))) {
         pbuf_free(p);
-        return (1);  /* pbuf was consumed */
+        return (1); /* pbuf was consumed */
     }
 
     auto channel = std::get<dgram_channel*>(sock->channel());
@@ -44,14 +46,15 @@ static uint8_t icmp_receive_raw(void* arg, raw_pcb*, pbuf* p, const ip_addr_t* a
 }
 
 /* DGRAM receive functions; payload should point to ICMP(v6) header */
-static uint8_t icmp_receive_dgram(void* arg, raw_pcb*, pbuf* p, const ip_addr_t* addr)
+static uint8_t icmp_receive_dgram(void* arg, raw_pcb*, pbuf* p,
+                                  const ip_addr_t* addr)
 {
     assert(addr != nullptr);
     auto sock = reinterpret_cast<icmp_socket*>(arg);
 
     if (sock->is_filtered(icmp_type(p))) {
         pbuf_free(p);
-        return (1);  /* pbuf was consumed */
+        return (1); /* pbuf was consumed */
     }
 
     /*
@@ -67,23 +70,25 @@ static uint8_t icmp_receive_dgram(void* arg, raw_pcb*, pbuf* p, const ip_addr_t*
 static raw_recv_fn get_receive_function(int type)
 {
     switch (type) {
-    case SOCK_DGRAM: return (icmp_receive_dgram);
-    case SOCK_RAW:   return (icmp_receive_raw);
-    default: throw std::runtime_error("Invalid icmp socket type: " + std::to_string(type));
+    case SOCK_DGRAM:
+        return (icmp_receive_dgram);
+    case SOCK_RAW:
+        return (icmp_receive_raw);
+    default:
+        throw std::runtime_error("Invalid icmp socket type: "
+                                 + std::to_string(type));
     }
 }
 
-icmp_socket::icmp_socket(openperf::socket::server::allocator& allocator, int flags, int protocol)
+icmp_socket::icmp_socket(openperf::socket::server::allocator& allocator,
+                         int flags, int protocol)
     : raw_socket(allocator, flags, protocol, get_receive_function(flags & 0xff))
     , m_filter(0)
-{
-}
+{}
 
 icmp_socket& icmp_socket::operator=(icmp_socket&& other) noexcept
 {
-    if (this != &other) {
-        m_filter = other.m_filter;
-    }
+    if (this != &other) { m_filter = other.m_filter; }
     return (*this);
 }
 
@@ -92,20 +97,22 @@ icmp_socket::icmp_socket(icmp_socket&& other) noexcept
     , m_filter(other.m_filter)
 {}
 
-tl::expected<socklen_t, int> icmp_socket::do_getsockopt(const raw_pcb* pcb,
-                                                        const api::request_getsockopt& getsockopt)
+tl::expected<socklen_t, int>
+icmp_socket::do_getsockopt(const raw_pcb* pcb,
+                           const api::request_getsockopt& getsockopt)
 {
     switch (getsockopt.level) {
     case SOL_RAW:
         switch (getsockopt.optname) {
         case LINUX_ICMP_FILTER: {
-            if (pcb->protocol != IPPROTO_ICMP) return (tl::make_unexpected(EOPNOTSUPP));
-            auto filter = linux_icmp_filter{ static_cast<uint32_t>(m_filter.to_ulong()) };
-            auto result = copy_out(getsockopt.id.pid,
-                                   getsockopt.optval,
-                                   &filter,
-                                   std::min(static_cast<unsigned>(sizeof(filter)),
-                                            getsockopt.optlen));
+            if (pcb->protocol != IPPROTO_ICMP)
+                return (tl::make_unexpected(EOPNOTSUPP));
+            auto filter =
+                linux_icmp_filter{static_cast<uint32_t>(m_filter.to_ulong())};
+            auto result =
+                copy_out(getsockopt.id.pid, getsockopt.optval, &filter,
+                         std::min(static_cast<unsigned>(sizeof(filter)),
+                                  getsockopt.optlen));
             if (!result) return (tl::make_unexpected(result.error()));
             return (sizeof(filter));
         }
@@ -113,27 +120,31 @@ tl::expected<socklen_t, int> icmp_socket::do_getsockopt(const raw_pcb* pcb,
             return (tl::make_unexpected(ENOPROTOOPT));
         }
     case SOL_SOCKET:
-        return (do_sock_getsockopt(reinterpret_cast<const ip_pcb*>(pcb), getsockopt));
+        return (do_sock_getsockopt(reinterpret_cast<const ip_pcb*>(pcb),
+                                   getsockopt));
     case IPPROTO_IP:
-        return (do_ip_getsockopt(reinterpret_cast<const ip_pcb*>(pcb), getsockopt));
+        return (
+            do_ip_getsockopt(reinterpret_cast<const ip_pcb*>(pcb), getsockopt));
     default:
         return (tl::make_unexpected(ENOPROTOOPT));
     }
 }
 
-tl::expected<void, int> icmp_socket::do_setsockopt(raw_pcb* pcb,
-                                                   const api::request_setsockopt& setsockopt)
+tl::expected<void, int>
+icmp_socket::do_setsockopt(raw_pcb* pcb,
+                           const api::request_setsockopt& setsockopt)
 {
     switch (setsockopt.level) {
     case SOL_RAW:
         switch (setsockopt.optname) {
         case LINUX_ICMP_FILTER: {
-            if (pcb->protocol != IPPROTO_ICMP) return (tl::make_unexpected(EOPNOTSUPP));
+            if (pcb->protocol != IPPROTO_ICMP)
+                return (tl::make_unexpected(EOPNOTSUPP));
             auto filter = linux_icmp_filter{0};
-            auto opt = copy_in(reinterpret_cast<char*>(&filter),
-                               setsockopt.id.pid,
-                               reinterpret_cast<const char*>(setsockopt.optval),
-                               sizeof(filter), setsockopt.optlen);
+            auto opt =
+                copy_in(reinterpret_cast<char*>(&filter), setsockopt.id.pid,
+                        reinterpret_cast<const char*>(setsockopt.optval),
+                        sizeof(filter), setsockopt.optlen);
             if (!opt) return (tl::make_unexpected(opt.error()));
             m_filter = icmp_filter(filter.data);
             return {};
@@ -155,6 +166,6 @@ bool icmp_socket::is_filtered(uint8_t type) const
     return (m_filter.test(type));
 }
 
-}
-}
-}
+} // namespace server
+} // namespace socket
+} // namespace openperf

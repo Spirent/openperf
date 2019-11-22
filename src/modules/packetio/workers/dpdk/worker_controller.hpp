@@ -37,10 +37,13 @@ public:
     worker_controller(const worker_controller&) = delete;
     worker_controller& operator=(const worker_controller&&) = delete;
 
-    std::vector<unsigned> get_rx_worker_ids(std::optional<std::string_view> obj_id = std::nullopt) const;
-    std::vector<unsigned> get_tx_worker_ids(std::optional<std::string_view> obj_id = std::nullopt) const;
+    std::vector<unsigned> get_rx_worker_ids(
+        std::optional<std::string_view> obj_id = std::nullopt) const;
+    std::vector<unsigned> get_tx_worker_ids(
+        std::optional<std::string_view> obj_id = std::nullopt) const;
 
-    workers::transmit_function get_transmit_function(std::string_view port_id) const;
+    workers::transmit_function
+    get_transmit_function(std::string_view port_id) const;
 
     void add_interface(std::string_view port_id,
                        interface::generic_interface interface);
@@ -55,38 +58,37 @@ public:
                                        packets::generic_source source);
     void del_source(std::string_view dst_id, packets::generic_source source);
 
-    tl::expected<std::string, int> add_task(workers::context ctx,
-                                            std::string_view name,
-                                            event_loop::event_notifier notify,
-                                            event_loop::event_handler on_event,
-                                            std::optional<event_loop::delete_handler> on_delete,
-                                            std::any arg);
+    tl::expected<std::string, int>
+    add_task(workers::context ctx, std::string_view name,
+             event_loop::event_notifier notify,
+             event_loop::event_handler on_event,
+             std::optional<event_loop::delete_handler> on_delete, std::any arg);
     void del_task(std::string_view task_id);
 
-    using load_map   = std::unordered_map<unsigned, uint64_t>;
-    using task_map   = std::unordered_map<core::uuid, callback>;
+    using load_map = std::unordered_map<unsigned, uint64_t>;
+    using task_map = std::unordered_map<core::uuid, callback>;
     using worker_map = std::map<std::pair<uint16_t, uint16_t>, unsigned>;
 
-    using txsched_ptr  = std::unique_ptr<tx_scheduler>;
-    using filter_ptr   = std::unique_ptr<port::filter>;
+    using txsched_ptr = std::unique_ptr<tx_scheduler>;
+    using filter_ptr = std::unique_ptr<port::filter>;
 
 private:
-    void* m_context;                               /* 0MQ context */
-    driver::generic_driver& m_driver;              /* generic driver reference */
-    std::unique_ptr<worker::client> m_workers;     /* worker command client */
-    std::unique_ptr<worker::fib> m_fib;            /* rx distpatch table */
-    std::unique_ptr<worker::tib> m_tib;            /* transmit source table */
-    std::unique_ptr<worker::recycler> m_recycler;  /* RCU based deleter */
+    void* m_context;                              /* 0MQ context */
+    driver::generic_driver& m_driver;             /* generic driver reference */
+    std::unique_ptr<worker::client> m_workers;    /* worker command client */
+    std::unique_ptr<worker::fib> m_fib;           /* rx distpatch table */
+    std::unique_ptr<worker::tib> m_tib;           /* transmit source table */
+    std::unique_ptr<worker::recycler> m_recycler; /* RCU based deleter */
 
-    task_map m_tasks;        /* map from task id --> task object */
+    task_map m_tasks; /* map from task id --> task object */
 
-    std::vector<txsched_ptr> m_tx_schedulers;      /* TX queue schedulers */
-    load_map m_tx_loads;      /* map from worker id --> worker load */
-    worker_map m_tx_workers;  /* map from (port id, queue id) --> worker id */
+    std::vector<txsched_ptr> m_tx_schedulers; /* TX queue schedulers */
+    load_map m_tx_loads;     /* map from worker id --> worker load */
+    worker_map m_tx_workers; /* map from (port id, queue id) --> worker id */
 
-    std::vector<filter_ptr> m_filters;  /* Port filters */
+    std::vector<filter_ptr> m_filters; /* Port filters */
 };
 
-}
+} // namespace openperf::packetio::dpdk
 
 #endif /* _OP_PACKETIO_DPDK_WORKER_CONTROLLER_HPP_ */

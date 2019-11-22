@@ -23,15 +23,9 @@ namespace client {
  ***/
 
 /* We consume data from the receive queue */
-uint8_t* dgram_channel::consumer_base() const
-{
-    return (rx_buffer.ptr.get());
-}
+uint8_t* dgram_channel::consumer_base() const { return (rx_buffer.ptr.get()); }
 
-size_t dgram_channel::consumer_len() const
-{
-    return (rx_buffer.len);
-}
+size_t dgram_channel::consumer_len() const { return (rx_buffer.len); }
 
 std::atomic_size_t& dgram_channel::consumer_read_idx()
 {
@@ -54,15 +48,9 @@ const std::atomic_size_t& dgram_channel::consumer_write_idx() const
 }
 
 /* We produce data for the transmit queue */
-uint8_t* dgram_channel::producer_base() const
-{
-    return (tx_buffer.ptr.get());
-}
+uint8_t* dgram_channel::producer_base() const { return (tx_buffer.ptr.get()); }
 
-size_t dgram_channel::producer_len() const
-{
-    return (tx_buffer.len);
-}
+size_t dgram_channel::producer_len() const { return (tx_buffer.len); }
 
 std::atomic_size_t& dgram_channel::producer_read_idx()
 {
@@ -88,15 +76,9 @@ const std::atomic_size_t& dgram_channel::producer_write_idx() const
  * We consume notifications on the client fd.
  * We produce notifications on the server fd.
  */
-int dgram_channel::consumer_fd() const
-{
-    return (client_fds.client_fd);
-}
+int dgram_channel::consumer_fd() const { return (client_fds.client_fd); }
 
-int dgram_channel::producer_fd() const
-{
-    return (client_fds.server_fd);
-}
+int dgram_channel::producer_fd() const { return (client_fds.server_fd); }
 
 /* We generate notifications for the transmit queue */
 std::atomic_uint64_t& dgram_channel::notify_read_idx()
@@ -120,10 +102,7 @@ const std::atomic_uint64_t& dgram_channel::notify_write_idx() const
 }
 
 /* We generate acknowledgements for the receive queue */
-std::atomic_uint64_t& dgram_channel::ack_read_idx()
-{
-    return (rx_fd_read_idx);
-}
+std::atomic_uint64_t& dgram_channel::ack_read_idx() { return (rx_fd_read_idx); }
 
 const std::atomic_uint64_t& dgram_channel::ack_read_idx() const
 {
@@ -144,7 +123,7 @@ const std::atomic_uint64_t& dgram_channel::ack_write_idx() const
  * Public members
  ***/
 
-static std::optional<dgram_channel_addr> to_addr(const sockaddr *addr)
+static std::optional<dgram_channel_addr> to_addr(const sockaddr* addr)
 {
     if (!addr) return (std::nullopt);
 
@@ -157,15 +136,16 @@ static std::optional<dgram_channel_addr> to_addr(const sockaddr *addr)
     case AF_INET6: {
         auto sa6 = reinterpret_cast<const sockaddr_in6*>(addr);
         return (std::make_optional<dgram_channel_addr>(
-                    reinterpret_cast<const uint32_t*>(&sa6->sin6_addr.s6_addr),
-                    ntohs(sa6->sin6_port)));
+            reinterpret_cast<const uint32_t*>(&sa6->sin6_addr.s6_addr),
+            ntohs(sa6->sin6_port)));
     }
     default:
         return (std::nullopt);
     }
 }
 
-static std::optional<sockaddr_storage> to_sockaddr(const dgram_channel_addr& addr)
+static std::optional<sockaddr_storage>
+to_sockaddr(const dgram_channel_addr& addr)
 {
     struct sockaddr_storage sstorage;
 
@@ -182,7 +162,7 @@ static std::optional<sockaddr_storage> to_sockaddr(const dgram_channel_addr& add
         sa6->sin6_family = AF_INET6;
         sa6->sin6_port = addr.port();
         dpdk::memcpy(&sa6->sin6_addr.s6_addr, &addr.addr().u_addr.ip6.addr[0],
-                    sizeof(in6_addr));
+                     sizeof(in6_addr));
         return (std::make_optional(sstorage));
     }
     default:
@@ -192,9 +172,8 @@ static std::optional<sockaddr_storage> to_sockaddr(const dgram_channel_addr& add
 
 static socklen_t length_of(const sockaddr_storage& sstorage)
 {
-    return (sstorage.ss_family == AF_INET
-            ? sizeof(sockaddr_in)
-            : sizeof(sockaddr_in6));
+    return (sstorage.ss_family == AF_INET ? sizeof(sockaddr_in)
+                                          : sizeof(sockaddr_in6));
 }
 
 dgram_channel::dgram_channel(int client_fd, int server_fd)
@@ -238,13 +217,12 @@ static size_t buffer_required(size_t length)
 
 tl::expected<size_t, int> dgram_channel::send(const iovec iov[], size_t iovcnt,
                                               int flags __attribute__((unused)),
-                                              const sockaddr *to)
+                                              const sockaddr* to)
 {
-    auto iov_length = std::accumulate(iov, iov + iovcnt, 0UL,
-                                      [](size_t total, const iovec& iov) {
-                                          return (total + iov.iov_len);
-                                      });
-    if (!iov_length) return (0);  /* success? */
+    auto iov_length = std::accumulate(
+        iov, iov + iovcnt, 0UL,
+        [](size_t total, const iovec& iov) { return (total + iov.iov_len); });
+    if (!iov_length) return (0); /* success? */
 
     /*
      * Let the user know if they're trying to send something larger
@@ -256,9 +234,11 @@ tl::expected<size_t, int> dgram_channel::send(const iovec iov[], size_t iovcnt,
 
     size_t buffer_available = 0;
     while ((buffer_available = writable()) < buffer_required(iov_length)) {
-        if (auto error = (socket_flags.load(std::memory_order_relaxed) & EFD_NONBLOCK
-                          ? block()
-                          : block_wait()); error != 0) {
+        if (auto error =
+                (socket_flags.load(std::memory_order_relaxed) & EFD_NONBLOCK
+                     ? block()
+                     : block_wait());
+            error != 0) {
             return (tl::make_unexpected(error));
         }
     }
@@ -279,9 +259,9 @@ tl::expected<size_t, int> dgram_channel::send(const iovec iov[], size_t iovcnt,
     auto written = write(iov, iovcnt);
 
     if (buffer_required(written) == buffer_available
-        && socket_flags.load(std::memory_order_relaxed)& EFD_NONBLOCK
+        && socket_flags.load(std::memory_order_relaxed) & EFD_NONBLOCK
         && !writable()) {
-        block();  /* pre-emptive block */
+        block(); /* pre-emptive block */
     }
 
     notify();
@@ -289,9 +269,9 @@ tl::expected<size_t, int> dgram_channel::send(const iovec iov[], size_t iovcnt,
     return (written);
 }
 
-static dgram_channel_descriptor*
-to_dgram_descriptor(const circular_buffer_consumer<dgram_channel>::peek_data&& peek,
-                    struct dgram_channel_descriptor& storage)
+static dgram_channel_descriptor* to_dgram_descriptor(
+    const circular_buffer_consumer<dgram_channel>::peek_data&& peek,
+    struct dgram_channel_descriptor& storage)
 {
     auto readable = peek[0].iov_len + peek[1].iov_len;
     if (readable < sizeof(dgram_channel_descriptor)) return (nullptr);
@@ -306,8 +286,7 @@ to_dgram_descriptor(const circular_buffer_consumer<dgram_channel>::peek_data&& p
          */
         desc = std::addressof(storage);
         std::copy_n(reinterpret_cast<std::byte*>(peek[0].iov_base),
-                    peek[0].iov_len,
-                    reinterpret_cast<std::byte*>(desc));
+                    peek[0].iov_len, reinterpret_cast<std::byte*>(desc));
         std::copy_n(reinterpret_cast<std::byte*>(peek[1].iov_base),
                     sizeof(storage) - peek[0].iov_len,
                     reinterpret_cast<std::byte*>(desc) + peek[0].iov_len);
@@ -322,8 +301,8 @@ to_dgram_descriptor(const circular_buffer_consumer<dgram_channel>::peek_data&& p
 }
 
 tl::expected<size_t, int> dgram_channel::recv(iovec iov[], size_t iovcnt,
-                                              int flags,
-                                              sockaddr *from, socklen_t *fromlen)
+                                              int flags, sockaddr* from,
+                                              socklen_t* fromlen)
 {
     dgram_channel_descriptor* desc = nullptr;
     auto storage = dgram_channel_descriptor{};
@@ -355,8 +334,7 @@ tl::expected<size_t, int> dgram_channel::recv(iovec iov[], size_t iovcnt,
         auto to_read = desc->length - read_size;
 
         read_size += pread(iov[idx].iov_base,
-                           std::min(to_read, iov[idx].iov_len),
-                           offset);
+                           std::min(to_read, iov[idx].iov_len), offset);
         offset += read_size;
         idx++;
     }
@@ -382,27 +360,21 @@ tl::expected<size_t, int> dgram_channel::recv(iovec iov[], size_t iovcnt,
 
 tl::expected<void, int> dgram_channel::block_writes()
 {
-    if (auto error = block()) {
-        return (tl::make_unexpected(error));
-    }
+    if (auto error = block()) { return (tl::make_unexpected(error)); }
     return {};
 }
 
 tl::expected<void, int> dgram_channel::wait_readable()
 {
-    if (auto error = ack_wait()) {
-        return (tl::make_unexpected(error));
-    }
+    if (auto error = ack_wait()) { return (tl::make_unexpected(error)); }
     return {};
 }
 
 tl::expected<void, int> dgram_channel::wait_writable()
 {
-    if (auto error = block_wait()) {
-        return (tl::make_unexpected(error));
-    }
+    if (auto error = block_wait()) { return (tl::make_unexpected(error)); }
     return {};
 }
 
-}
-}
+} // namespace client
+} // namespace openperf::socket

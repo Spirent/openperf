@@ -24,23 +24,28 @@ struct event_queue
                                      + std::string(strerror(errno)));
         }
     }
-    event_queue() {};
-    ~event_queue() {
-        close(base_fd);
-    }
+    event_queue(){};
+    ~event_queue() { close(base_fd); }
 };
 
-class test_event_producer : public event_queue
-                          , public openperf::socket::event_queue_producer<test_event_producer>
+class test_event_producer
+    : public event_queue
+    , public openperf::socket::event_queue_producer<test_event_producer>
 {
     friend class event_queue_producer<test_event_producer>;
 
 protected:
     int producer_fd() const { return base_fd; }
     std::atomic_uint64_t& notify_read_idx() { return base_read_idx; }
-    const std::atomic_uint64_t& notify_read_idx() const { return base_read_idx; }
+    const std::atomic_uint64_t& notify_read_idx() const
+    {
+        return base_read_idx;
+    }
     std::atomic_uint64_t& notify_write_idx() { return base_write_idx; }
-    const std::atomic_uint64_t& notify_write_idx() const { return base_write_idx; }
+    const std::atomic_uint64_t& notify_write_idx() const
+    {
+        return base_write_idx;
+    }
 
 public:
     test_event_producer(int flags)
@@ -49,8 +54,9 @@ public:
     ~test_event_producer() = default;
 };
 
-class test_event_consumer : public event_queue
-                          , public openperf::socket::event_queue_consumer<test_event_consumer>
+class test_event_consumer
+    : public event_queue
+    , public openperf::socket::event_queue_consumer<test_event_consumer>
 {
     friend class event_queue_consumer<test_event_consumer>;
 
@@ -68,52 +74,59 @@ public:
     ~test_event_consumer() = default;
 };
 
-
 TEST_CASE("event queue functionality", "[event queue]")
 {
-    SECTION("nonblocking testcases, ") {
+    SECTION("nonblocking testcases, ")
+    {
         auto producer = std::make_unique<test_event_producer>(EFD_NONBLOCK);
         auto consumer = new (producer.get()) test_event_consumer();
 
         REQUIRE(producer);
         REQUIRE(consumer);
 
-        SECTION("empty queue returns 0 on ack, ") {
+        SECTION("empty queue returns 0 on ack, ")
+        {
             REQUIRE(consumer->ack() == 0);
         }
 
-        SECTION("empty queue returns EWOULDBLOCK on ack_wait, ") {
+        SECTION("empty queue returns EWOULDBLOCK on ack_wait, ")
+        {
             REQUIRE(consumer->ack_wait() == EWOULDBLOCK);
         }
 
-        SECTION("notification behavior, ") {
+        SECTION("notification behavior, ")
+        {
             REQUIRE(producer->notify() == 0);
 
-            SECTION("ack_wait returns 0 after notification, ") {
+            SECTION("ack_wait returns 0 after notification, ")
+            {
                 REQUIRE(consumer->ack_wait() == 0);
 
-                SECTION("2nd ack wait returns EWOULDBLOCK after notification, ") {
+                SECTION("2nd ack wait returns EWOULDBLOCK after notification, ")
+                {
                     REQUIRE(consumer->ack_wait() == EWOULDBLOCK);
                 }
             }
         }
     }
 
-    SECTION("blocking testcases, ") {
+    SECTION("blocking testcases, ")
+    {
         auto producer = std::make_unique<test_event_producer>(0);
         auto consumer = new (producer.get()) test_event_consumer();
 
         REQUIRE(producer);
         REQUIRE(consumer);
 
-        SECTION("can wake sleeping thread with notify, ") {
+        SECTION("can wake sleeping thread with notify, ")
+        {
             std::atomic_bool notified = false;
             bool notify_called = false;
 
             auto sleeper = std::thread([&]() {
-                                           consumer->ack_wait();
-                                           notified = true;
-                                       });
+                consumer->ack_wait();
+                notified = true;
+            });
 
             while (!notified) {
                 producer->notify();
@@ -123,13 +136,14 @@ TEST_CASE("event queue functionality", "[event queue]")
             sleeper.join();
         }
 
-        SECTION("can wake sleeping thread with unblock, ") {
+        SECTION("can wake sleeping thread with unblock, ")
+        {
             std::atomic_bool unblocked = false;
             bool unblock_called = false;
             auto sleeper = std::thread([&]() {
-                                           consumer->block_wait();
-                                           unblocked = true;
-                                       });
+                consumer->block_wait();
+                unblocked = true;
+            });
 
             while (!unblocked) {
                 producer->unblock();
@@ -140,4 +154,3 @@ TEST_CASE("event queue functionality", "[event queue]")
         }
     }
 }
-

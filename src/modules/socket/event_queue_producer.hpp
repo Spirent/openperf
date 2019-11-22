@@ -6,8 +6,7 @@
 namespace openperf {
 namespace socket {
 
-template <typename Derived>
-class event_queue_producer
+template <typename Derived> class event_queue_producer
 {
     Derived& derived();
     const Derived& derived() const;
@@ -28,7 +27,7 @@ public:
     int unblock();
 };
 
-}
-}
+} // namespace socket
+} // namespace openperf
 
 #endif /* _OP_SOCKET_EVENT_QUEUE_PRODUCER_HPP_ */

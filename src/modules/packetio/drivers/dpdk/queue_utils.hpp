@@ -13,19 +13,17 @@ class port_info;
 }
 namespace queue {
 
-enum class queue_mode { NONE = 0,
-                        RX,
-                        TX,
-                        RXTX };
+enum class queue_mode { NONE = 0, RX, TX, RXTX };
 
 /**
  * Structure describing how to configure port queues
  */
-struct descriptor {
-    uint16_t worker_id;    /**< worker id that should handle the specified queue */
-    uint16_t port_id;      /**< queue's port id */
-    uint16_t queue_id;     /**< queue's queue id */
-    queue_mode mode;       /**< operational mode of queue for worker */
+struct descriptor
+{
+    uint16_t worker_id; /**< worker id that should handle the specified queue */
+    uint16_t port_id;   /**< queue's port id */
+    uint16_t queue_id;  /**< queue's queue id */
+    queue_mode mode;    /**< operational mode of queue for worker */
 };
 
 /**
@@ -39,11 +37,14 @@ struct descriptor {
  * @return
  *   A vector containing queue assignments for workers
  */
-std::vector<descriptor> distribute_queues(const std::vector<model::port_info>& port_info, uint16_t q_workers);
+std::vector<descriptor>
+distribute_queues(const std::vector<model::port_info>& port_info,
+                  uint16_t q_workers);
 
-struct count {
-    uint16_t rx;  /**< number of rx queues */
-    uint16_t tx;  /**< number of tx queues */
+struct count
+{
+    uint16_t rx; /**< number of rx queues */
+    uint16_t tx; /**< number of tx queues */
 };
 
 /**
@@ -55,11 +56,12 @@ struct count {
  * @return
  *   A map of port indexes to queue counts
  */
-std::map<int, count> get_port_queue_counts(const std::vector<descriptor>& descriptors);
+std::map<int, count>
+get_port_queue_counts(const std::vector<descriptor>& descriptors);
 
-}
-}
-}
-}
+} // namespace queue
+} // namespace dpdk
+} // namespace packetio
+} // namespace openperf
 
 #endif /* _OP_PACKETIO_DPDK_QUEUE_UTILS_HPP_ */

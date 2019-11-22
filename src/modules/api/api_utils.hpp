@@ -8,5 +8,5 @@ namespace openperf::api::utils {
 // Verify API module is up and running.
 tl::expected<void, std::string> check_api_module_running();
 
-}  // namespace openperf::api::utils
+} // namespace openperf::api::utils
 #endif

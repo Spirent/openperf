@@ -17,35 +17,37 @@ namespace schedule {
 using clock = std::chrono::high_resolution_clock;
 using time_point = std::chrono::time_point<clock>;
 
-struct entry {
+struct entry
+{
     time_point deadline;
     worker::tib::source_key key;
 };
 
 constexpr bool operator>(const entry& left, const entry& right);
 
-struct state_idle {};       /* No events are scheduled */
-struct state_link_check{};  /* Events are scheduled; link is down */
-struct state_running {      /* Events are schedule; link is up */
+struct state_idle
+{}; /* No events are scheduled */
+struct state_link_check
+{}; /* Events are scheduled; link is down */
+struct state_running
+{ /* Events are schedule; link is up */
     mutable bool reschedule = false;
 };
-struct state_blocked        /* Events are scheduled; link is up; queue is full */
+struct state_blocked /* Events are scheduled; link is up; queue is full */
 {
     mutable uint16_t remaining;
     entry entry;
 };
 
-using state = std::variant<state_idle,
-                           state_link_check,
-                           state_running,
-                           state_blocked>;
+using state =
+    std::variant<state_idle, state_link_check, state_running, state_blocked>;
 
 std::string_view to_string(state&);
 
-template <typename Derived, typename StateVariant>
-class finite_state_machine
+template <typename Derived, typename StateVariant> class finite_state_machine
 {
     StateVariant m_state;
+
 public:
     void run()
     {
@@ -58,26 +60,24 @@ public:
 
         if (next_state) {
             OP_LOG(OP_LOG_TRACE, "Tx port scheduler %u:%u: %.*s --> %.*s\n",
-                    child.port_id(), child.queue_id(),
-                    static_cast<int>(to_string(m_state).length()),
-                    to_string(m_state).data(),
-                    static_cast<int>(to_string(*next_state).length()),
-                    to_string(*next_state).data());
+                   child.port_id(), child.queue_id(),
+                   static_cast<int>(to_string(m_state).length()),
+                   to_string(m_state).data(),
+                   static_cast<int>(to_string(*next_state).length()),
+                   to_string(*next_state).data());
 
             m_state = *next_state;
-            std::visit([&](auto& state) {
-                           child.on_transition(state);
-                       },
-                m_state);
+            std::visit([&](auto& state) { child.on_transition(state); },
+                       m_state);
         }
     }
 };
 
-}
+} // namespace schedule
 
-class tx_scheduler : public pollable_event<tx_scheduler>
-                   , public schedule::finite_state_machine<tx_scheduler,
-                                                           schedule::state>
+class tx_scheduler
+    : public pollable_event<tx_scheduler>
+    , public schedule::finite_state_machine<tx_scheduler, schedule::state>
 {
     const worker::tib& m_tib;
     uint16_t m_portid;
@@ -91,9 +91,9 @@ class tx_scheduler : public pollable_event<tx_scheduler>
      * smallest value, as that represents the next deadline, so we use
      * std::greater<> instead.
      */
-    std::priority_queue<schedule::entry,
-                        std::vector<schedule::entry>,
-                        std::greater<schedule::entry>> m_schedule;
+    std::priority_queue<schedule::entry, std::vector<schedule::entry>,
+                        std::greater<schedule::entry>>
+        m_schedule;
 
     schedule::time_point m_time_reschedule;
 
@@ -108,7 +108,8 @@ public:
 
     int event_fd() const;
     void* event_callback_argument();
-    pollable_event<tx_scheduler>::event_callback event_callback_function() const;
+    pollable_event<tx_scheduler>::event_callback
+    event_callback_function() const;
 
     /*
      * Because we expect state transitions to be the rare, e.g. timeouts
@@ -123,7 +124,8 @@ public:
      * internal variables needed to run in the specified state.
      */
     std::optional<schedule::state> on_timeout(const schedule::state_idle&);
-    std::optional<schedule::state> on_timeout(const schedule::state_link_check&);
+    std::optional<schedule::state>
+    on_timeout(const schedule::state_link_check&);
     std::optional<schedule::state> on_timeout(const schedule::state_running&);
     std::optional<schedule::state> on_timeout(const schedule::state_blocked&);
 
@@ -133,6 +135,6 @@ public:
     void on_transition(const schedule::state_blocked&);
 };
 
-}
+} // namespace openperf::packetio::dpdk
 
 #endif /* _OP_PACKETIO_DPDK_TX_SCHEDULER_HPP_ */

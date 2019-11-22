@@ -17,8 +17,8 @@ namespace openperf {
 namespace socket {
 namespace api {
 
-template <typename T>
-class thread_singleton {
+template <typename T> class thread_singleton
+{
 public:
     static T& instance()
     {
@@ -30,7 +30,7 @@ public:
     thread_singleton& operator=(const thread_singleton) = delete;
 
 protected:
-    thread_singleton() {};
+    thread_singleton(){};
 };
 
 class client : public thread_singleton<client>
@@ -40,7 +40,8 @@ class client : public thread_singleton<client>
     core::uuid m_uuid;
     unix_socket m_sock;
 
-    struct ided_channel {
+    struct ided_channel
+    {
         socket_id id;
         io_channel_wrapper channel;
     };
@@ -58,38 +59,40 @@ public:
     bool is_socket(int s);
 
     /* General socket functions */
-    int accept(int s, struct sockaddr *addr, socklen_t *addrlen, int flags = 0);
-    int bind(int s, const struct sockaddr *name, socklen_t namelen);
+    int accept(int s, struct sockaddr* addr, socklen_t* addrlen, int flags = 0);
+    int bind(int s, const struct sockaddr* name, socklen_t namelen);
     int shutdown(int s, int how);
-    int getpeername(int s, struct sockaddr *name, socklen_t *namelen);
-    int getsockname(int s, struct sockaddr *name, socklen_t *namelen);
-    int getsockopt(int s, int level, int optname, void *optval, socklen_t *optlen);
-    int setsockopt(int s, int level, int optname, const void *optval, socklen_t optlen);
+    int getpeername(int s, struct sockaddr* name, socklen_t* namelen);
+    int getsockname(int s, struct sockaddr* name, socklen_t* namelen);
+    int getsockopt(int s, int level, int optname, void* optval,
+                   socklen_t* optlen);
+    int setsockopt(int s, int level, int optname, const void* optval,
+                   socklen_t optlen);
     int close(int s);
-    int connect(int s, const struct sockaddr *name, socklen_t namelen);
+    int connect(int s, const struct sockaddr* name, socklen_t namelen);
     int listen(int s, int backlog);
     int socket(int domain, int type, int protocol);
     int fcntl(int fd, int cmd, ...);
 
     /* Receive functions */
-    ssize_t read(int s, void *mem, size_t len);
-    ssize_t readv(int s, const struct iovec *iov, int iovcnt);
-    ssize_t recv(int s, void *mem, size_t len, int flags);
-    ssize_t recvfrom(int s, void *mem, size_t len, int flags,
-                     struct sockaddr *from, socklen_t *fromlen);
-    ssize_t recvmsg(int s, struct msghdr *message, int flags);
+    ssize_t read(int s, void* mem, size_t len);
+    ssize_t readv(int s, const struct iovec* iov, int iovcnt);
+    ssize_t recv(int s, void* mem, size_t len, int flags);
+    ssize_t recvfrom(int s, void* mem, size_t len, int flags,
+                     struct sockaddr* from, socklen_t* fromlen);
+    ssize_t recvmsg(int s, struct msghdr* message, int flags);
 
     /* Transmit functions */
-    ssize_t send(int s, const void *dataptr, size_t len, int flags);
-    ssize_t sendmsg(int s, const struct msghdr *message, int flags);
-    ssize_t sendto(int s, const void *dataptr, size_t len, int flags,
-                   const struct sockaddr *to, socklen_t tolen);
-    ssize_t write(int s, const void *dataptr, size_t len);
-    ssize_t writev(int s, const struct iovec *iov, int iovcnt);
+    ssize_t send(int s, const void* dataptr, size_t len, int flags);
+    ssize_t sendmsg(int s, const struct msghdr* message, int flags);
+    ssize_t sendto(int s, const void* dataptr, size_t len, int flags,
+                   const struct sockaddr* to, socklen_t tolen);
+    ssize_t write(int s, const void* dataptr, size_t len);
+    ssize_t writev(int s, const struct iovec* iov, int iovcnt);
 };
 
-}
-}
-}
+} // namespace api
+} // namespace socket
+} // namespace openperf
 
 #endif /* _OP_SOCKET_API_CLIENT_HPP_ */

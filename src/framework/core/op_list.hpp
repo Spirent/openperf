@@ -8,15 +8,15 @@
 
 namespace openperf {
 
-template <typename Item>
-class list_iterator {
+template <typename Item> class list_iterator
+{
     op_list* m_list;
     op_list_item* m_cursor;
 
 public:
     using tr = std::iterator_traits<Item*>;
     using value_type = typename tr::value_type;
-    using pointer   = typename tr::pointer;
+    using pointer = typename tr::pointer;
 
     list_iterator(op_list* list, op_list_item* cursor) noexcept
         : m_list(list)
@@ -57,8 +57,7 @@ public:
     }
 };
 
-template <typename Item>
-class list
+template <typename Item> class list
 {
 public:
     list()
@@ -84,14 +83,13 @@ public:
     void shrink_to_fit() { op_list_garbage_collect(m_list.get()); }
 
 private:
-    struct op_list_deleter {
-        void operator()(op_list *list) const {
-            op_list_free(&list);
-        }
+    struct op_list_deleter
+    {
+        void operator()(op_list* list) const { op_list_free(&list); }
     };
 
     std::unique_ptr<op_list, op_list_deleter> m_list;
 };
 
-}
+} // namespace openperf
 #endif /* _OP_LIST_HPP_ */

@@ -74,9 +74,9 @@ int op_event_loop_run_forever(struct op_event_loop *loop);
 int op_event_loop_run_timeout(struct op_event_loop *loop, int timeout);
 
 #define GET_LOOP_RUN_MACRO(_1, _2, NAME, ...) NAME
-#define op_event_loop_run(...)                                     \
-    GET_LOOP_RUN_MACRO(__VA_ARGS__,                                 \
-                       op_event_loop_run_timeout,                  \
+#define op_event_loop_run(...)                                  \
+    GET_LOOP_RUN_MACRO(__VA_ARGS__,                             \
+                       op_event_loop_run_timeout,               \
                        op_event_loop_run_forever)(__VA_ARGS__)
 
 /**
@@ -89,34 +89,34 @@ void op_event_loop_exit(struct op_event_loop *loop);
  * macro hackery to have a single 'function' for all event additions
  */
 int op_event_loop_add_fd(struct op_event_loop *loop,
-                          int fd,
+                         int fd,
+                         const struct op_event_callbacks *callbacks,
+                         void *arg);
+
+int op_event_loop_add_zmq(struct op_event_loop *loop,
+                          void *socket,
                           const struct op_event_callbacks *callbacks,
                           void *arg);
 
-int op_event_loop_add_zmq(struct op_event_loop *loop,
-                           void *socket,
-                           const struct op_event_callbacks *callbacks,
-                           void *arg);
-
 int op_event_loop_add_timer_ided(struct op_event_loop *loop,
-                                  uint64_t timeout,
-                                  const struct op_event_callbacks *callbacks,
-                                  void *arg,
-                                  uint32_t *timeout_id);
+                                 uint64_t timeout,
+                                 const struct op_event_callbacks *callbacks,
+                                 void *arg,
+                                 uint32_t *timeout_id);
 
 inline
 int op_event_loop_add_timer_noid(struct op_event_loop *loop,
-                                  uint64_t timeout,
-                                  const struct op_event_callbacks *callbacks,
-                                  void *arg)
+                                 uint64_t timeout,
+                                 const struct op_event_callbacks *callbacks,
+                                 void *arg)
 {
     return (op_event_loop_add_timer_ided(loop, timeout, callbacks, arg, NULL));
 }
 
 #define GET_ADD_TIMER_MACRO(_1, _2, _3, _4, _5, NAME, ...) NAME
-#define op_event_loop_add_timer(...)                               \
+#define op_event_loop_add_timer(...)                                \
     GET_ADD_TIMER_MACRO(__VA_ARGS__,                                \
-                        op_event_loop_add_timer_ided,              \
+                        op_event_loop_add_timer_ided,               \
                         op_event_loop_add_timer_noid)(__VA_ARGS__)
 
 /**
@@ -135,33 +135,33 @@ int op_event_loop_add_timer_noid(struct op_event_loop *loop,
  *  -  0: Success
  *  - !0: Error
  */
-#define op_event_loop_add(loop, thing, callbacks, arg)         \
-    _Generic((thing),                                           \
-             int: op_event_loop_add_fd,                        \
-             const int: op_event_loop_add_fd,                  \
-             void *: op_event_loop_add_zmq,                    \
-             uint64_t: op_event_loop_add_timer_noid,           \
-             const uint64_t: op_event_loop_add_timer_noid      \
+#define op_event_loop_add(loop, thing, callbacks, arg)      \
+    _Generic((thing),                                       \
+             int: op_event_loop_add_fd,                     \
+             const int: op_event_loop_add_fd,               \
+             void *: op_event_loop_add_zmq,                 \
+             uint64_t: op_event_loop_add_timer_noid,        \
+             const uint64_t: op_event_loop_add_timer_noid   \
         )(loop, thing, callbacks, arg)
 
 /**
  * macro hackery to have a single 'function' for all event updates
  */
 int op_event_loop_update_fd(struct op_event_loop *loop,
-                             int fd,
-                             const struct op_event_callbacks *callbacks);
+                            int fd,
+                            const struct op_event_callbacks *callbacks);
 
 int op_event_loop_update_zmq(struct op_event_loop *loop,
-                              void *socket,
-                              const struct op_event_callbacks *callbacks);
+                             void *socket,
+                             const struct op_event_callbacks *callbacks);
 
 int op_event_loop_update_timer_cb(struct op_event_loop *loop,
-                                   uint32_t timeout_id,
-                                   const struct op_event_callbacks *callbacks);
+                                  uint32_t timeout_id,
+                                  const struct op_event_callbacks *callbacks);
 
 int op_event_loop_update_timer_to(struct op_event_loop *loop,
-                                   uint32_t timeout_id,
-                                   uint64_t timeout);
+                                  uint32_t timeout_id,
+                                  uint64_t timeout);
 
 /**
  * Macro to update an item in the event loop.
@@ -177,19 +177,19 @@ int op_event_loop_update_timer_to(struct op_event_loop *loop,
  *  -  0: Success
  *  - !0: Error
  */
-#define op_event_loop_update(loop, thing, arg)                         \
-    _Generic((thing),                                                   \
-             int: op_event_loop_update_fd,                             \
-             const int: op_event_loop_update_fd,                       \
-             void *: op_event_loop_update_zmq,                         \
-             uint32_t:                                                  \
-             _Generic((arg),                                            \
-                      struct op_event_callbacks *:                     \
-                          op_event_loop_update_timer_cb,               \
-                      const struct op_event_callbacks *:               \
-                          op_event_loop_update_timer_cb,               \
-                      uint64_t: op_event_loop_update_timer_to          \
-                 )                                                      \
+#define op_event_loop_update(loop, thing, arg)                  \
+    _Generic((thing),                                           \
+             int: op_event_loop_update_fd,                      \
+             const int: op_event_loop_update_fd,                \
+             void *: op_event_loop_update_zmq,                  \
+             uint32_t:                                          \
+             _Generic((arg),                                    \
+                      struct op_event_callbacks *:              \
+                      op_event_loop_update_timer_cb,            \
+                      const struct op_event_callbacks *:        \
+                      op_event_loop_update_timer_cb,            \
+                      uint64_t: op_event_loop_update_timer_to   \
+                 )                                              \
         )(loop, thing, arg)
 
 /**
@@ -211,12 +211,12 @@ int op_event_loop_disable_timer(struct op_event_loop *loop, uint32_t timeout_id)
  *  -  0: Success
  *  - !0: Error
  */
-#define op_event_loop_disable(loop, thing)         \
+#define op_event_loop_disable(loop, thing)          \
     _Generic((thing),                               \
-             int: op_event_loop_disable_fd,        \
-             const int: op_event_loop_disable_fd,  \
-             void *: op_event_loop_disable_zmq,    \
-             uint32_t: op_event_loop_disable_timer \
+             int: op_event_loop_disable_fd,         \
+             const int: op_event_loop_disable_fd,   \
+             void *: op_event_loop_disable_zmq,     \
+             uint32_t: op_event_loop_disable_timer  \
         )(loop, thing)
 
 /**
@@ -250,13 +250,13 @@ int op_event_loop_del_timer(struct op_event_loop *loop, uint32_t timeout_id);
  *  -  0: Success
  *  - !0: Error
  */
-#define op_event_loop_del(loop, thing)               \
-    _Generic((thing),                                 \
-             int: op_event_loop_del_fd,              \
-             const int: op_event_loop_del_fd,        \
-             void *: op_event_loop_del_zmq,          \
-             uint32_t: op_event_loop_del_timer,      \
-             const uint32_t: op_event_loop_del_timer \
+#define op_event_loop_del(loop, thing)                  \
+    _Generic((thing),                                   \
+             int: op_event_loop_del_fd,                 \
+             const int: op_event_loop_del_fd,           \
+             void *: op_event_loop_del_zmq,             \
+             uint32_t: op_event_loop_del_timer,         \
+             const uint32_t: op_event_loop_del_timer    \
         )(loop, thing)
 
 #ifdef __cplusplus

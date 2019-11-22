@@ -15,44 +15,47 @@ extern "C" {
 /**
  * Signature for module init/start/stop functions
  */
-typedef int (op_module_init_fn)(void *context, void *state);
+typedef int(op_module_init_fn)(void* context, void* state);
 
-typedef void (op_module_fini_fn)(void *state);
+typedef void(op_module_fini_fn)(void* state);
 
-typedef int (op_module_start_fn)(void *state);
+typedef int(op_module_start_fn)(void* state);
 
 /**
  * Structure describing details of a module
  */
 #define OP_MODULE_ID_REGEX "^[a-z0-9.\\-]+$"
 enum op_module_linkage_type { NONE, DYNAMIC, STATIC, MAX };
-struct op_module_info {
-    const char *id;
-    const char *description;
+struct op_module_info
+{
+    const char* id;
+    const char* description;
 
-    struct version {
+    struct version
+    {
         int version;
-        const char *build_number;
-        const char *build_date;
-        const char *source_commit;
+        const char* build_number;
+        const char* build_date;
+        const char* source_commit;
     } version;
 
     enum op_module_linkage_type linkage;
-    const char *path;
+    const char* path;
 };
 
 /**
  * Structure describing a module to initialize
  */
-struct op_module {
+struct op_module
+{
     SLIST_ENTRY(op_module) next;
     struct op_module_info info;
-    void *state;
-    op_module_init_fn  *pre_init;
-    op_module_init_fn  *init;
-    op_module_init_fn  *post_init;
-    op_module_start_fn *start;
-    op_module_fini_fn  *finish;
+    void* state;
+    op_module_init_fn* pre_init;
+    op_module_init_fn* init;
+    op_module_init_fn* post_init;
+    op_module_start_fn* start;
+    op_module_fini_fn* finish;
 };
 
 /**
@@ -61,7 +64,7 @@ struct op_module {
  * @param[in] module
  *   Pointer to an op_module structure describing the module to register
  */
-void op_modules_register(struct op_module *module);
+void op_modules_register(struct op_module* module);
 
 /**
  * Invoke pre init callback for all registered modules
@@ -73,7 +76,7 @@ void op_modules_register(struct op_module *module);
  *   -  0: Success
  *   - !0: Error
  */
-int op_modules_pre_init(void *context);
+int op_modules_pre_init(void* context);
 
 /**
  * Invoke init callback for all registered modules
@@ -85,7 +88,7 @@ int op_modules_pre_init(void *context);
  *   -  0: Success
  *   - !0: Error
  */
-int op_modules_init(void *context);
+int op_modules_init(void* context);
 
 /**
  * Invoke post init callback for all registered modules
@@ -97,7 +100,7 @@ int op_modules_init(void *context);
  *   -  0: Success
  *   - !0: Error
  */
-int op_modules_post_init(void *context);
+int op_modules_post_init(void* context);
 
 /**
  * Invoke start callback for all registered modules
@@ -110,7 +113,6 @@ int op_modules_post_init(void *context);
  *   - !0: Error
  */
 int op_modules_start();
-
 
 /**
  * Invoke finish callback for all registered modules
@@ -134,7 +136,7 @@ size_t op_modules_get_loaded_count();
  * @return
  *   if located, module information struct otherwise NULL
  */
-const struct op_module_info * op_modules_get_info_by_id(const char * module_id);
+const struct op_module_info* op_modules_get_info_by_id(const char* module_id);
 
 /**
  * Get a list of module information structs for all modules currently
@@ -144,13 +146,16 @@ const struct op_module_info * op_modules_get_info_by_id(const char * module_id);
  *   pointer to an array of const pointers to module info structs
  * @param max_entries
  *   maximum number of entries in the array pointed to by info.
- *   a value of 0 will return the current loaded module count. info[] would not be modified.
+ *   a value of 0 will return the current loaded module count. info[] would not
+ * be modified.
  *
  * @return
  *   on success return the actual number of modules info now points to
- *   otherwise -1. except if max_entries is 0, then return current loaded module count.
+ *   otherwise -1. except if max_entries is 0, then return current loaded module
+ * count.
  */
-int op_modules_get_info_list(const struct op_module_info * info[], size_t max_entries);
+int op_modules_get_info_list(const struct op_module_info* info[],
+                             size_t max_entries);
 
 /**
  * Workaround for preprocessor not exactly understanding initializer lists.
@@ -158,18 +163,15 @@ int op_modules_get_info_list(const struct op_module_info * info[], size_t max_en
  * arguments to the REGISTER_MODULE macro itself.
  */
 
-#define INIT_MODULE_INFO(id_, description_, version_)                   \
-    { .id = id_,                                                        \
-      .description = description_,                                      \
-      .version = {                                                      \
-            .version = version_,                                        \
-            .build_number = BUILD_NUMBER,                               \
-            .build_date = BUILD_TIMESTAMP,                              \
-            .source_commit = BUILD_COMMIT                               \
-       },                                                               \
-       .linkage = STATIC,                                               \
-       .path = NULL                                                     \
-    }                                                                   \
+#define INIT_MODULE_INFO(id_, description_, version_)                          \
+    {                                                                          \
+        .id = id_, .description = description_,                                \
+        .version = {.version = version_,                                       \
+                    .build_number = BUILD_NUMBER,                              \
+                    .build_date = BUILD_TIMESTAMP,                             \
+                    .source_commit = BUILD_COMMIT},                            \
+        .linkage = STATIC, .path = NULL                                        \
+    }
 
 /**
  * Macro hackery for ensuring that the module struct is initialized *before*
@@ -178,26 +180,22 @@ int op_modules_get_info_list(const struct op_module_info * info[], size_t max_en
  * which would obviously cause items to be dropped from the list.
  * This is mainly a problem when state has a constructor of some sort.
  */
-#define REGISTER_MODULE(m, info_, state_,                               \
-                        pre_init_, init_, post_init_,                   \
-                        start_, finish_)                                \
-    static struct op_module m;                                         \
-    __attribute__((constructor (100)))                                  \
-    void op_modules_init_ ## m(void)                                   \
-    {                                                                   \
-        m = { .info = info_,                                            \
-              .state = state_,                                          \
-              .pre_init = pre_init_,                                    \
-              .init = init_,                                            \
-              .post_init = post_init_,                                  \
-              .start = start_,                                          \
-              .finish = finish_                                         \
-        };                                                              \
-    }                                                                   \
-    __attribute__((constructor (200)))                                  \
-    void op_modules_register_ ## m(void)                               \
-    {                                                                   \
-        op_modules_register(&m);                                       \
+#define REGISTER_MODULE(m, info_, state_, pre_init_, init_, post_init_,        \
+                        start_, finish_)                                       \
+    static struct op_module m;                                                 \
+    __attribute__((constructor(100))) void op_modules_init_##m(void)           \
+    {                                                                          \
+        m = {.info = info_,                                                    \
+             .state = state_,                                                  \
+             .pre_init = pre_init_,                                            \
+             .init = init_,                                                    \
+             .post_init = post_init_,                                          \
+             .start = start_,                                                  \
+             .finish = finish_};                                               \
+    }                                                                          \
+    __attribute__((constructor(200))) void op_modules_register_##m(void)       \
+    {                                                                          \
+        op_modules_register(&m);                                               \
     }
 
 #ifdef __cplusplus

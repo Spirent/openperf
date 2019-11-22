@@ -9,8 +9,10 @@ yaml_json_emitter::yaml_json_emitter(std::ostringstream& output_stream)
     : m_emitter(YAML::Emitter(output_stream))
 {}
 
-void yaml_json_emitter::OnScalar(const Mark& mark __attribute__((unused)), const std::string& tag,
-                                 anchor_t anchor __attribute__((unused)), const std::string& value)
+void yaml_json_emitter::OnScalar(const Mark& mark __attribute__((unused)),
+                                 const std::string& tag,
+                                 anchor_t anchor __attribute__((unused)),
+                                 const std::string& value)
 {
     BeginNode();
 
@@ -40,10 +42,13 @@ void yaml_json_emitter::OnScalar(const Mark& mark __attribute__((unused)), const
     }
 }
 
-void yaml_json_emitter::OnSequenceStart(const Mark& mark __attribute__((unused)),
-                                        const std::string& tag __attribute__((unused)),
+void yaml_json_emitter::OnSequenceStart(const Mark& mark
+                                        __attribute__((unused)),
+                                        const std::string& tag
+                                        __attribute__((unused)),
                                         anchor_t anchor __attribute__((unused)),
-                                        EmitterStyle::value style __attribute__((unused)))
+                                        EmitterStyle::value style
+                                        __attribute__((unused)))
 {
     BeginNode();
     m_emitter << Flow;
@@ -59,9 +64,11 @@ void yaml_json_emitter::OnSequenceEnd()
 }
 
 void yaml_json_emitter::OnMapStart(const Mark& mark __attribute__((unused)),
-                                   const std::string& tag __attribute__((unused)),
+                                   const std::string& tag
+                                   __attribute__((unused)),
                                    anchor_t anchor __attribute__((unused)),
-                                   EmitterStyle::value style __attribute__((unused)))
+                                   EmitterStyle::value style
+                                   __attribute__((unused)))
 {
     BeginNode();
     m_emitter << Flow;
@@ -94,4 +101,4 @@ void yaml_json_emitter::BeginNode()
     }
 }
 
-}  // namespace openperf::config::file
+} // namespace openperf::config::file

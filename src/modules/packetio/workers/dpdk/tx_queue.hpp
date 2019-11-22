@@ -11,18 +11,19 @@ extern void rte_ring_free(rte_ring*);
 
 namespace openperf::packetio::dpdk {
 
-class tx_queue : public pollable_event<tx_queue> {
-    struct rte_ring_deleter {
-        void operator()(struct rte_ring* ring) {
-            rte_ring_free(ring);
-        }
+class tx_queue : public pollable_event<tx_queue>
+{
+    struct rte_ring_deleter
+    {
+        void operator()(struct rte_ring* ring) { rte_ring_free(ring); }
     };
 
     /*
      * Use a struct to get the proper alignment between read_idx and write_idx.
      * We want them to be 64 bytes apart, e.g. 1 cache-line.
      */
-    struct data {
+    struct data
+    {
         std::atomic_uint64_t read_idx;
         uint16_t port;
         uint16_t queue;
@@ -59,7 +60,6 @@ public:
     uint16_t enqueue(rte_mbuf* const mbufs[], uint16_t nb_mbufs);
 };
 
-
-}
+} // namespace openperf::packetio::dpdk
 
 #endif /* _OP_PACKETIO_DPDK_TX_QUEUE_HPP_ */

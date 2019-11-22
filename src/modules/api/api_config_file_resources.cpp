@@ -23,8 +23,9 @@ tl::expected<void, std::string> op_config_file_process_resources()
     YAML::Node root_node;
     try {
         root_node = YAML::LoadFile(std::string(config_file_name));
-    } catch (std::exception &e) {
-        return (tl::make_unexpected("Error parsing configuration file: " + std::string(e.what())));
+    } catch (std::exception& e) {
+        return (tl::make_unexpected("Error parsing configuration file: "
+                                    + std::string(e.what())));
     }
 
     for (auto resource : root_node["resources"]) {
@@ -33,8 +34,9 @@ tl::expected<void, std::string> op_config_file_process_resources()
         // Verify we have a valid id.
         auto valid_id = openperf::config::op_config_validate_id_string(id);
         if (!valid_id)
-            return (tl::make_unexpected("Error processing resource: " + resource.first.Scalar()
-                                        + ": " + valid_id.error()));
+            return (tl::make_unexpected("Error processing resource: "
+                                        + resource.first.Scalar() + ": "
+                                        + valid_id.error()));
 
         // Insert user-defined id field.
         resource.second["id"] = std::string(id);
@@ -42,23 +44,26 @@ tl::expected<void, std::string> op_config_file_process_resources()
         // Convert config file YAML to JSON for the REST API.
         auto jsonified_resource = op_config_yaml_to_json(resource.second);
         if (!jsonified_resource)
-            return (tl::make_unexpected("Error processing resource: " + resource.first.Scalar()
-                                        + ": " + jsonified_resource.error()));
+            return (tl::make_unexpected("Error processing resource: "
+                                        + resource.first.Scalar() + ": "
+                                        + jsonified_resource.error()));
 
-        auto [code, body] = openperf::api::client::internal_api_post(path, *jsonified_resource);
+        auto [code, body] =
+            openperf::api::client::internal_api_post(path, *jsonified_resource);
 
         switch (code) {
         case Pistache::Http::Code::Ok:
             break;
         case Pistache::Http::Code::Not_Found:
-            return (tl::make_unexpected("Error configuring resource: " + std::string(path.data())
-                                        + ". Invalid path: " + std::string(path)));
+            return (tl::make_unexpected(
+                "Error configuring resource: " + std::string(path.data())
+                + ". Invalid path: " + std::string(path)));
             break;
         case Pistache::Http::Code::Method_Not_Allowed:
             // Config trying to POST to a resource that does not support POST.
-            return (tl::make_unexpected("Error configuring resource: " + std::string(path.data())
-                                        + ". " + std::string(path)
-                                        + " is read-only and not configurable."));
+            return (tl::make_unexpected(
+                "Error configuring resource: " + std::string(path.data()) + ". "
+                + std::string(path) + " is read-only and not configurable."));
             break;
         default:
             return (tl::make_unexpected("Error while processing resource: "
@@ -70,4 +75,4 @@ tl::expected<void, std::string> op_config_file_process_resources()
 
     return {};
 }
-}  // namespace openperf::api::config
+} // namespace openperf::api::config

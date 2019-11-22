@@ -29,15 +29,9 @@ namespace server {
  ***/
 
 /* We consume data from the transmit queue */
-uint8_t* stream_channel::consumer_base() const
-{
-    return (tx_buffer.ptr.get());
-}
+uint8_t* stream_channel::consumer_base() const { return (tx_buffer.ptr.get()); }
 
-size_t stream_channel::consumer_len() const
-{
-    return (tx_buffer.len);
-}
+size_t stream_channel::consumer_len() const { return (tx_buffer.len); }
 
 std::atomic_size_t& stream_channel::consumer_read_idx()
 {
@@ -60,15 +54,9 @@ const std::atomic_size_t& stream_channel::consumer_write_idx() const
 }
 
 /* We produce data for the receive queue */
-uint8_t* stream_channel::producer_base() const
-{
-    return (rx_buffer.ptr.get());
-}
+uint8_t* stream_channel::producer_base() const { return (rx_buffer.ptr.get()); }
 
-size_t stream_channel::producer_len() const
-{
-    return (rx_buffer.len);
-}
+size_t stream_channel::producer_len() const { return (rx_buffer.len); }
 
 std::atomic_size_t& stream_channel::producer_read_idx()
 {
@@ -94,15 +82,9 @@ const std::atomic_size_t& stream_channel::producer_write_idx() const
  * We consume notifications on the server fd.
  * We produce notifications on the client fd.
  */
-int stream_channel::consumer_fd() const
-{
-    return (server_fds.server_fd);
-}
+int stream_channel::consumer_fd() const { return (server_fds.server_fd); }
 
-int stream_channel::producer_fd() const
-{
-    return (server_fds.client_fd);
-}
+int stream_channel::producer_fd() const { return (server_fds.client_fd); }
 
 /* We generate notifications for the receive queue */
 std::atomic_uint64_t& stream_channel::notify_read_idx()
@@ -171,11 +153,15 @@ stream_channel::stream_channel(int flags,
     static_assert(O_CLOEXEC == EFD_CLOEXEC);
 
     /* make sure structure is properly cache aligned */
-    assert((reinterpret_cast<uintptr_t>(&tx_buffer) & (socket::cache_line_size - 1)) == 0);
-    assert((reinterpret_cast<uintptr_t>(&rx_buffer) & (socket::cache_line_size - 1)) == 0);
+    assert((reinterpret_cast<uintptr_t>(&tx_buffer)
+            & (socket::cache_line_size - 1))
+           == 0);
+    assert((reinterpret_cast<uintptr_t>(&rx_buffer)
+            & (socket::cache_line_size - 1))
+           == 0);
 
     int event_flags = 0;
-    if (flags & SOCK_CLOEXEC)  event_flags |= EFD_CLOEXEC;
+    if (flags & SOCK_CLOEXEC) event_flags |= EFD_CLOEXEC;
     if (flags & SOCK_NONBLOCK) event_flags |= EFD_NONBLOCK;
 
     if ((server_fds.client_fd = eventfd(0, event_flags)) == -1
@@ -192,20 +178,15 @@ stream_channel::~stream_channel()
     close(server_fds.client_fd);
     close(server_fds.server_fd);
 
-    auto alloc = reinterpret_cast<openperf::socket::server::allocator*>(allocator);
+    auto alloc =
+        reinterpret_cast<openperf::socket::server::allocator*>(allocator);
     alloc->deallocate(tx_buffer.ptr.get(), tx_buffer.len);
     alloc->deallocate(rx_buffer.ptr.get(), rx_buffer.len);
 }
 
-int stream_channel::client_fd() const
-{
-    return (server_fds.client_fd);
-}
+int stream_channel::client_fd() const { return (server_fds.client_fd); }
 
-int stream_channel::server_fd() const
-{
-    return (server_fds.server_fd);
-}
+int stream_channel::server_fd() const { return (server_fds.server_fd); }
 
 void stream_channel::error(int error)
 {
@@ -213,10 +194,7 @@ void stream_channel::error(int error)
     notify();
 }
 
-size_t stream_channel::send_available() const
-{
-    return (writable());
-}
+size_t stream_channel::send_available() const { return (writable()); }
 
 size_t stream_channel::send_consumable() const
 {
@@ -244,7 +222,7 @@ size_t stream_channel::recv_drop(size_t length)
     if (!length) return (0);
 
     auto adjust = drop(length);
-    assert(adjust == length);  /* should always be true for us */
+    assert(adjust == length); /* should always be true for us */
 
     unblock();
 
@@ -253,7 +231,9 @@ size_t stream_channel::recv_drop(size_t length)
 
 void stream_channel::dump() const
 {
-    fprintf(stderr, "server: tx_q: %zu:%zu, rx_q: %zu:%zu, tx_fd: %zu:%zu, rx_fd: %zu:%zu\n",
+    fprintf(stderr,
+            "server: tx_q: %zu:%zu, rx_q: %zu:%zu, tx_fd: %zu:%zu, rx_fd: "
+            "%zu:%zu\n",
             atomic_load(&tx_q_write_idx), atomic_load(&tx_q_read_idx),
             atomic_load(&rx_q_write_idx), atomic_load(&rx_q_read_idx),
             atomic_load(&tx_fd_write_idx), atomic_load(&tx_fd_read_idx),
@@ -261,6 +241,6 @@ void stream_channel::dump() const
     fflush(stderr);
 }
 
-}
-}
-}
+} // namespace server
+} // namespace socket
+} // namespace openperf

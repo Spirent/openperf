@@ -26,43 +26,44 @@ using generic_driver = openperf::packetio::driver::generic_driver;
 std::string to_string(request_type type)
 {
     const static std::unordered_map<request_type, std::string> request_types = {
-        { request_type::LIST_PORTS,  "LIST_PORTS"  },
-        { request_type::CREATE_PORT, "CREATE_PORT" },
-        { request_type::GET_PORT,    "GET_PORT"    },
-        { request_type::UPDATE_PORT, "UPDATE_PORT" },
-        { request_type::DELETE_PORT, "DELETE_PORT" },
-        { request_type::NONE,        "UNKNOWN"     }  /* Overloaded */
+        {request_type::LIST_PORTS, "LIST_PORTS"},
+        {request_type::CREATE_PORT, "CREATE_PORT"},
+        {request_type::GET_PORT, "GET_PORT"},
+        {request_type::UPDATE_PORT, "UPDATE_PORT"},
+        {request_type::DELETE_PORT, "DELETE_PORT"},
+        {request_type::NONE, "UNKNOWN"} /* Overloaded */
     };
 
     return (request_types.find(type) == request_types.end()
-            ? request_types.at(request_type::NONE)
-            : request_types.at(type));
+                ? request_types.at(request_type::NONE)
+                : request_types.at(type));
 }
 
 std::string to_string(reply_code code)
 {
     const static std::unordered_map<reply_code, std::string> reply_codes = {
-        { reply_code::OK,        "OK"         },
-        { reply_code::NO_PORT,   "NO_PORT_ID" },
-        { reply_code::BAD_INPUT, "BAD_INPUT"  },
-        { reply_code::ERROR,     "ERROR"      },
-        { reply_code::NONE,      "UNKNOWN"    },  /* Overloaded */
+        {reply_code::OK, "OK"},
+        {reply_code::NO_PORT, "NO_PORT_ID"},
+        {reply_code::BAD_INPUT, "BAD_INPUT"},
+        {reply_code::ERROR, "ERROR"},
+        {reply_code::NONE, "UNKNOWN"}, /* Overloaded */
     };
 
     return (reply_codes.find(code) == reply_codes.end()
-            ? reply_codes.at(reply_code::NONE)
-            : reply_codes.at(code));
+                ? reply_codes.at(reply_code::NONE)
+                : reply_codes.at(code));
 }
 
-template<typename T>
-static std::optional<T> get_optional_key(json& j, const char * key)
+template <typename T>
+static std::optional<T> get_optional_key(json& j, const char* key)
 {
     return (j.find(key) != j.end() && !j[key].is_null()
-            ? std::make_optional(j[key].get<T>())
-            : std::nullopt);
+                ? std::make_optional(j[key].get<T>())
+                : std::nullopt);
 }
 
-static void _handle_list_ports_request(generic_driver& driver, json& request, json& reply)
+static void _handle_list_ports_request(generic_driver& driver, json& request,
+                                       json& reply)
 {
     auto kind = get_optional_key<std::string>(request, "kind");
     json jports = json::array();
@@ -78,25 +79,26 @@ static void _handle_list_ports_request(generic_driver& driver, json& request, js
     reply["data"] = jports.dump();
 }
 
-static void _handle_create_port_request(generic_driver& driver, json& request, json& reply)
+static void _handle_create_port_request(generic_driver& driver, json& request,
+                                        json& reply)
 {
     try {
-        auto port_model = json::parse(request["data"].get<std::string>()).get<Port>();
+        auto port_model =
+            json::parse(request["data"].get<std::string>()).get<Port>();
 
-        auto id_check = config::op_config_validate_id_string(port_model.getId());
-        if (!id_check) {
-            throw std::runtime_error(id_check.error().c_str());
-        }
+        auto id_check =
+            config::op_config_validate_id_string(port_model.getId());
+        if (!id_check) { throw std::runtime_error(id_check.error().c_str()); }
 
-        auto result = driver.create_port(port_model.getId() == empty_id_string ?
-                                         core::to_string(core::uuid::random()) :
-                                         port_model.getId(),
-                                         make_config_data(port_model));
-        if (!result) {
-            throw std::runtime_error(result.error().c_str());
-        }
+        auto result =
+            driver.create_port(port_model.getId() == empty_id_string
+                                   ? core::to_string(core::uuid::random())
+                                   : port_model.getId(),
+                               make_config_data(port_model));
+        if (!result) { throw std::runtime_error(result.error().c_str()); }
         reply["code"] = reply_code::OK;
-        reply["data"] = make_swagger_port(*driver.port(result.value()))->toJson().dump();
+        reply["data"] =
+            make_swagger_port(*driver.port(result.value()))->toJson().dump();
     } catch (const json::exception& e) {
         reply["code"] = reply_code::BAD_INPUT;
         reply["error"] = json_error(e.id, e.what());
@@ -106,7 +108,8 @@ static void _handle_create_port_request(generic_driver& driver, json& request, j
     }
 }
 
-static void _handle_get_port_request(generic_driver& driver, json& request, json& reply)
+static void _handle_get_port_request(generic_driver& driver, json& request,
+                                     json& reply)
 {
     auto id = request["id"].get<std::string>();
     auto port = driver.port(id);
@@ -118,7 +121,8 @@ static void _handle_get_port_request(generic_driver& driver, json& request, json
     }
 }
 
-static void _handle_update_port_request(generic_driver& driver, json& request, json& reply)
+static void _handle_update_port_request(generic_driver& driver, json& request,
+                                        json& reply)
 {
     auto id = request["id"].get<std::string>();
     auto port = driver.port(id);
@@ -128,11 +132,10 @@ static void _handle_update_port_request(generic_driver& driver, json& request, j
     }
 
     try {
-        auto port_model = json::parse(request["data"].get<std::string>()).get<Port>();
+        auto port_model =
+            json::parse(request["data"].get<std::string>()).get<Port>();
         auto result = port->config(make_config_data(port_model));
-        if (!result) {
-            throw std::runtime_error(result.error().c_str());
-        }
+        if (!result) { throw std::runtime_error(result.error().c_str()); }
         reply["code"] = reply_code::OK;
         reply["data"] = make_swagger_port(*port)->toJson().dump();
     } catch (const json::exception& e) {
@@ -144,7 +147,8 @@ static void _handle_update_port_request(generic_driver& driver, json& request, j
     }
 }
 
-static void _handle_delete_port_request(generic_driver& driver, json& request, json& reply)
+static void _handle_delete_port_request(generic_driver& driver, json& request,
+                                        json& reply)
 {
     auto result = driver.delete_port(request["id"].get<std::string>());
     if (result) {
@@ -155,18 +159,22 @@ static void _handle_delete_port_request(generic_driver& driver, json& request, j
     }
 }
 
-static int _handle_rpc_request(const op_event_data *data, void *arg)
+static int _handle_rpc_request(const op_event_data* data, void* arg)
 {
-    generic_driver& driver = *(reinterpret_cast<generic_driver *>(arg));
+    generic_driver& driver = *(reinterpret_cast<generic_driver*>(arg));
     int recv_or_err = 0;
     int send_or_err = 0;
     zmq_msg_t request_msg;
     if (zmq_msg_init(&request_msg) == -1) {
         throw std::runtime_error(zmq_strerror(errno));
     }
-    while ((recv_or_err = zmq_msg_recv(&request_msg, data->socket, ZMQ_DONTWAIT)) > 0) {
-        std::vector<uint8_t> request_buffer(static_cast<uint8_t *>(zmq_msg_data(&request_msg)),
-                                            static_cast<uint8_t *>(zmq_msg_data(&request_msg)) + zmq_msg_size(&request_msg));
+    while (
+        (recv_or_err = zmq_msg_recv(&request_msg, data->socket, ZMQ_DONTWAIT))
+        > 0) {
+        std::vector<uint8_t> request_buffer(
+            static_cast<uint8_t*>(zmq_msg_data(&request_msg)),
+            static_cast<uint8_t*>(zmq_msg_data(&request_msg))
+                + zmq_msg_size(&request_msg));
 
         json request = json::from_cbor(request_buffer);
         request_type type = request["type"].get<request_type>();
@@ -177,11 +185,12 @@ static int _handle_rpc_request(const op_event_data *data, void *arg)
         case request_type::UPDATE_PORT:
         case request_type::DELETE_PORT:
             OP_LOG(OP_LOG_TRACE, "Received %s request for port %s\n",
-                    to_string(type).c_str(),
-                    request["id"].get<std::string>().c_str());
+                   to_string(type).c_str(),
+                   request["id"].get<std::string>().c_str());
             break;
         default:
-            OP_LOG(OP_LOG_TRACE, "Received %s request\n", to_string(type).c_str());
+            OP_LOG(OP_LOG_TRACE, "Received %s request\n",
+                   to_string(type).c_str());
         }
 
         switch (type) {
@@ -202,17 +211,20 @@ static int _handle_rpc_request(const op_event_data *data, void *arg)
             break;
         default:
             reply["code"] = reply_code::ERROR;
-            reply["error"] = json_error(ENOSYS, "Request type not implemented in packtio port server");
+            reply["error"] = json_error(
+                ENOSYS, "Request type not implemented in packtio port server");
         }
 
         std::vector<uint8_t> reply_buffer = json::to_cbor(reply);
-        if ((send_or_err = zmq_send(data->socket, reply_buffer.data(), reply_buffer.size(), 0))
+        if ((send_or_err = zmq_send(data->socket, reply_buffer.data(),
+                                    reply_buffer.size(), 0))
             != static_cast<int>(reply_buffer.size())) {
-            OP_LOG(OP_LOG_ERROR, "Request reply failed: %s\n", zmq_strerror(errno));
+            OP_LOG(OP_LOG_ERROR, "Request reply failed: %s\n",
+                   zmq_strerror(errno));
         } else {
             OP_LOG(OP_LOG_TRACE, "Sent %s reply to %s request\n",
-                    to_string(reply["code"].get<reply_code>()).c_str(),
-                    to_string(type).c_str());
+                   to_string(reply["code"].get<reply_code>()).c_str(),
+                   to_string(type).c_str());
         }
     }
 
@@ -221,18 +233,15 @@ static int _handle_rpc_request(const op_event_data *data, void *arg)
     return (((recv_or_err < 0 || send_or_err < 0) && errno == ETERM) ? -1 : 0);
 }
 
-server::server(void* context,
-               openperf::core::event_loop& loop,
+server::server(void* context, openperf::core::event_loop& loop,
                generic_driver& driver)
     : m_socket(op_socket_get_server(context, ZMQ_REP, endpoint.c_str()))
 {
-    struct op_event_callbacks callbacks = {
-        .on_read = _handle_rpc_request
-    };
+    struct op_event_callbacks callbacks = {.on_read = _handle_rpc_request};
     loop.add(m_socket.get(), &callbacks, &driver);
 }
 
-}
-}
-}
-}
+} // namespace api
+} // namespace port
+} // namespace packetio
+} // namespace openperf

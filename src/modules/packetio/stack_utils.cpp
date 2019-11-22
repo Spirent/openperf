@@ -60,7 +60,8 @@ make_swagger_element_stats(const element_stats_data& src)
     return (dst);
 }
 
-static std::shared_ptr<StackStats> make_swagger_stack_stats(const generic_stack& stack)
+static std::shared_ptr<StackStats>
+make_swagger_stack_stats(const generic_stack& stack)
 {
     auto stats = std::make_shared<StackStats>();
 
@@ -68,46 +69,50 @@ static std::shared_ptr<StackStats> make_swagger_stack_stats(const generic_stack&
      * Whew.  Simplify some names to make this gobbledygook a little easier
      * to understand.
      */
-    using element_setter = std::function<void(std::shared_ptr<StackElementStats>)>;
-    using protocol_setter = std::function<void(std::shared_ptr<StackProtocolStats>)>;
+    using element_setter =
+        std::function<void(std::shared_ptr<StackElementStats>)>;
+    using protocol_setter =
+        std::function<void(std::shared_ptr<StackProtocolStats>)>;
     using generic_setter = std::variant<element_setter, protocol_setter>;
     using setters_map = std::unordered_map<std::string, generic_setter>;
     using std::placeholders::_1;
 
     /**
-     * Provide a mapping between statistics keys and stats object setter functions.
-     * Unfortunately, this can't be static map because we need to bind to the current
-     * instance of the stats object.
+     * Provide a mapping between statistics keys and stats object setter
+     * functions. Unfortunately, this can't be static map because we need to
+     * bind to the current instance of the stats object.
      */
     setters_map setters = {
-        {"sems",      std::bind(&StackStats::setSems,     stats, _1) },
-        {"mutexes",   std::bind(&StackStats::setMutexes,  stats, _1) },
-        {"mboxes",    std::bind(&StackStats::setMboxes,   stats, _1) },
-        {"arp",       std::bind(&StackStats::setArp,      stats, _1) },
-        {"ipv4",      std::bind(&StackStats::setIpv4,     stats, _1) },
-        {"ipv4_frag", std::bind(&StackStats::setIpv4Frag, stats, _1) },
-        {"icmpv4",    std::bind(&StackStats::setIcmpv4,   stats, _1) },
-        {"igmp",      std::bind(&StackStats::setIgmp,     stats, _1) },
-        {"nd",        std::bind(&StackStats::setNd,       stats, _1) },
-        {"ipv6",      std::bind(&StackStats::setIpv6,     stats, _1) },
-        {"ipv6_frag", std::bind(&StackStats::setIpv6Frag, stats, _1) },
-        {"icmpv6",    std::bind(&StackStats::setIcmpv6,   stats, _1) },
-        {"mld",       std::bind(&StackStats::setMld,      stats, _1) },
-        {"udp",       std::bind(&StackStats::setUdp,      stats, _1) },
-        {"tcp",       std::bind(&StackStats::setTcp,      stats, _1) }
-    };
+        {"sems", std::bind(&StackStats::setSems, stats, _1)},
+        {"mutexes", std::bind(&StackStats::setMutexes, stats, _1)},
+        {"mboxes", std::bind(&StackStats::setMboxes, stats, _1)},
+        {"arp", std::bind(&StackStats::setArp, stats, _1)},
+        {"ipv4", std::bind(&StackStats::setIpv4, stats, _1)},
+        {"ipv4_frag", std::bind(&StackStats::setIpv4Frag, stats, _1)},
+        {"icmpv4", std::bind(&StackStats::setIcmpv4, stats, _1)},
+        {"igmp", std::bind(&StackStats::setIgmp, stats, _1)},
+        {"nd", std::bind(&StackStats::setNd, stats, _1)},
+        {"ipv6", std::bind(&StackStats::setIpv6, stats, _1)},
+        {"ipv6_frag", std::bind(&StackStats::setIpv6Frag, stats, _1)},
+        {"icmpv6", std::bind(&StackStats::setIcmpv6, stats, _1)},
+        {"mld", std::bind(&StackStats::setMld, stats, _1)},
+        {"udp", std::bind(&StackStats::setUdp, stats, _1)},
+        {"tcp", std::bind(&StackStats::setTcp, stats, _1)}};
 
     /* One of the functions is not like the others... */
     for (auto& kv : stack.stats()) {
         std::visit(utils::overloaded_visitor(
                        [&](const element_stats_data& element) {
-                           std::get<element_setter>(setters[kv.first])(make_swagger_element_stats(element));
+                           std::get<element_setter>(setters[kv.first])(
+                               make_swagger_element_stats(element));
                        },
                        [&](const memory_stats_data& memory) {
-                           stats->getPools().emplace_back(make_swagger_memory_stats(memory));
+                           stats->getPools().emplace_back(
+                               make_swagger_memory_stats(memory));
                        },
                        [&](const protocol_stats_data& protocol) {
-                           std::get<protocol_setter>(setters[kv.first])(make_swagger_protocol_stats(protocol));
+                           std::get<protocol_setter>(setters[kv.first])(
+                               make_swagger_protocol_stats(protocol));
                        }),
                    kv.second);
     }
@@ -125,6 +130,6 @@ std::shared_ptr<Stack> make_swagger_stack(const generic_stack& in_stack)
     return (out_stack);
 }
 
-}
-}
-}
+} // namespace stack
+} // namespace packetio
+} // namespace openperf

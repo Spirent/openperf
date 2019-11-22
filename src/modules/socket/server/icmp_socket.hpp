@@ -17,9 +17,11 @@ namespace openperf {
 namespace socket {
 namespace server {
 
-class icmp_socket : public raw_socket {
+class icmp_socket : public raw_socket
+{
 public:
-    icmp_socket(openperf::socket::server::allocator& allocator, int flags, int protocol);
+    icmp_socket(openperf::socket::server::allocator& allocator, int flags,
+                int protocol);
     ~icmp_socket() = default;
 
     icmp_socket(const icmp_socket&) = delete;
@@ -29,10 +31,12 @@ public:
     icmp_socket(icmp_socket&& other) noexcept;
 
     /* getsockopt handlers */
-    tl::expected<socklen_t, int> do_getsockopt(const raw_pcb*, const api::request_getsockopt&);
+    tl::expected<socklen_t, int> do_getsockopt(const raw_pcb*,
+                                               const api::request_getsockopt&);
 
     /* setsockopt handlers */
-    tl::expected<void, int> do_setsockopt(raw_pcb*, const api::request_setsockopt&);
+    tl::expected<void, int> do_setsockopt(raw_pcb*,
+                                          const api::request_setsockopt&);
 
     bool is_filtered(uint8_t icmp_type) const;
 
@@ -45,8 +49,8 @@ private:
     icmp_filter m_filter;
 };
 
-}
-}
-}
+} // namespace server
+} // namespace socket
+} // namespace openperf
 
 #endif /* _OP_SOCKET_SERVER_ICMP_SOCKET_HPP_ */

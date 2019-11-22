@@ -17,18 +17,18 @@ namespace openperf {
 namespace packetio {
 namespace dpdk {
 
-class net_interface {
+class net_interface
+{
 public:
     net_interface(std::string_view id, int port_index,
-                  const interface::config_data& config,
-                  driver::tx_burst tx);
+                  const interface::config_data& config, driver::tx_burst tx);
     ~net_interface();
 
-    static void *operator new(size_t);
+    static void* operator new(size_t);
     static void operator delete(void*);
 
     net_interface(const net_interface&) = delete;
-    net_interface& operator= (const net_interface&) = delete;
+    net_interface& operator=(const net_interface&) = delete;
 
     const netif* data() const;
 
@@ -46,8 +46,9 @@ public:
 
     err_t handle_tx(struct pbuf*);
 
-    using rx_strategy = std::variant<netif_rx_strategy::direct,
-                                     netif_rx_strategy::queueing>;
+    using rx_strategy =
+        std::variant<netif_rx_strategy::direct, netif_rx_strategy::queueing>;
+
 private:
     const std::string m_id;
     const int m_port_index; /* DPDK port index, that is */
@@ -62,8 +63,8 @@ private:
 
 const net_interface& to_interface(netif*);
 
-}
-}
-}
+} // namespace dpdk
+} // namespace packetio
+} // namespace openperf
 
 #endif /* _OP_PACKETIO_STACK_DPDK_NET_INTERFACE_HPP_ */

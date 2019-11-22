@@ -6,8 +6,7 @@
 namespace openperf {
 namespace socket {
 
-template <typename Derived>
-Derived& event_queue_producer<Derived>::derived()
+template <typename Derived> Derived& event_queue_producer<Derived>::derived()
 {
     return (static_cast<Derived&>(*this));
 }
@@ -18,8 +17,7 @@ const Derived& event_queue_producer<Derived>::derived() const
     return (static_cast<const Derived&>(*this));
 }
 
-template <typename Derived>
-int event_queue_producer<Derived>::fd() const
+template <typename Derived> int event_queue_producer<Derived>::fd() const
 {
     return (derived().producer_fd());
 }
@@ -66,8 +64,7 @@ uint64_t event_queue_producer<Derived>::count() const
     return (load_write() - load_read());
 }
 
-template <typename Derived>
-int event_queue_producer<Derived>::notify()
+template <typename Derived> int event_queue_producer<Derived>::notify()
 {
     auto events = count();
     if (!events) {
@@ -80,8 +77,7 @@ int event_queue_producer<Derived>::notify()
     return (0);
 }
 
-template <typename Derived>
-int event_queue_producer<Derived>::unblock()
+template <typename Derived> int event_queue_producer<Derived>::unblock()
 {
     bool blocked = (load_write() < load_read());
     if (blocked) {
@@ -93,5 +89,5 @@ int event_queue_producer<Derived>::unblock()
     return (0);
 }
 
-}
-}
+} // namespace socket
+} // namespace openperf

@@ -8,7 +8,8 @@ namespace openperf::packetio::packets {
  * However, we don't want to expose that fact to our clients.
  * This empty struct effectively just gives rte_mbuf a new type.
  */
-struct packet_buffer : public rte_mbuf {};
+struct packet_buffer : public rte_mbuf
+{};
 
 uint16_t max_length(const packet_buffer* buffer)
 {
@@ -61,4 +62,4 @@ void* front(packet_buffer* buffer)
     return (rte_pktmbuf_prepend(buffer, buffer->data_off));
 }
 
-}
+} // namespace openperf::packetio::packets

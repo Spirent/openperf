@@ -18,33 +18,40 @@ constexpr size_t name_length_max = 64;
 
 extern std::string_view endpoint;
 
-struct sink_data {
+struct sink_data
+{
     char src_id[name_length_max];
     packets::generic_sink sink;
 };
 
-struct request_sink_add {
+struct request_sink_add
+{
     sink_data data;
 };
 
-struct request_sink_del {
+struct request_sink_del
+{
     sink_data data;
 };
 
-struct source_data {
+struct source_data
+{
     char dst_id[name_length_max];
     packets::generic_source source;
 };
 
-struct request_source_add {
+struct request_source_add
+{
     source_data data;
 };
 
-struct request_source_del {
+struct request_source_del
+{
     source_data data;
 };
 
-struct task_data {
+struct task_data
+{
     char name[name_length_max];
     workers::context ctx;
     event_loop::event_notifier notifier;
@@ -53,52 +60,54 @@ struct task_data {
     std::any arg;
 };
 
-struct request_task_add {
+struct request_task_add
+{
     task_data data;
 };
 
-struct request_task_del {
+struct request_task_del
+{
     std::string task_id;
 };
 
-struct request_worker_rx_ids {
+struct request_worker_rx_ids
+{
     std::optional<std::string> object_id = std::nullopt;
 };
 
-struct request_worker_tx_ids {
+struct request_worker_tx_ids
+{
     std::optional<std::string> object_id = std::nullopt;
 };
 
-struct reply_task_add {
+struct reply_task_add
+{
     std::string task_id;
 };
 
-struct reply_worker_ids {
+struct reply_worker_ids
+{
     std::vector<unsigned> worker_ids;
 };
 
-struct reply_ok {};
+struct reply_ok
+{};
 
-struct reply_error {
+struct reply_error
+{
     int value;
 };
 
-using request_msg = std::variant<request_sink_add,
-                                 request_sink_del,
-                                 request_source_add,
-                                 request_source_del,
-                                 request_task_add,
-                                 request_task_del,
-                                 request_worker_rx_ids,
-                                 request_worker_tx_ids>;
+using request_msg =
+    std::variant<request_sink_add, request_sink_del, request_source_add,
+                 request_source_del, request_task_add, request_task_del,
+                 request_worker_rx_ids, request_worker_tx_ids>;
 
-using reply_msg = std::variant<reply_task_add,
-                               reply_worker_ids,
-                               reply_ok,
-                               reply_error>;
+using reply_msg =
+    std::variant<reply_task_add, reply_worker_ids, reply_ok, reply_error>;
 
-
-struct serialized_msg {
+struct serialized_msg
+{
     zmq_msg_t type;
     zmq_msg_t data;
 };
@@ -112,6 +121,6 @@ tl::expected<reply_msg, int> deserialize_reply(const serialized_msg& msg);
 int send_message(void* socket, serialized_msg&& msg);
 tl::expected<serialized_msg, int> recv_message(void* socket, int flags = 0);
 
-}
+} // namespace openperf::packetio::internal::api
 
 #endif /* _OP_PACKETIO_INTERNAL_API_HPP_ */
