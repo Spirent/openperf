@@ -65,9 +65,6 @@ public:
     dgram_channel(const dgram_channel&) = delete;
     dgram_channel& operator=(const dgram_channel&&) = delete;
 
-    dgram_channel(dgram_channel&&) = default;
-    dgram_channel& operator=(dgram_channel&&) = default;
-
     int client_fd();
     int server_fd();
 

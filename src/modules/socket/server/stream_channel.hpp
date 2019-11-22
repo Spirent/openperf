@@ -67,9 +67,6 @@ public:
     stream_channel(const stream_channel&) = delete;
     stream_channel& operator=(const stream_channel&&) = delete;
 
-    stream_channel(stream_channel&&) = default;
-    stream_channel& operator=(stream_channel&&) = default;
-
     int client_fd() const;
     int server_fd() const;
 
