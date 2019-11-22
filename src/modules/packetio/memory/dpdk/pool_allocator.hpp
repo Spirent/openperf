@@ -13,19 +13,22 @@ namespace openperf {
 namespace packetio {
 namespace dpdk {
 
-class pool_allocator {
+class pool_allocator
+{
 public:
     pool_allocator(const std::vector<model::port_info>&,
                    const std::map<int, queue::count>&);
 
-    rte_mempool * rx_mempool(int socket_id) const;
+    rte_mempool* rx_mempool(int socket_id) const;
 
 private:
-    struct rte_mempool_releaser {
-        void operator()(rte_mempool *mp) {
+    struct rte_mempool_releaser
+    {
+        void operator()(rte_mempool* mp)
+        {
             if (!rte_mempool_full(mp)) {
                 OP_LOG(OP_LOG_ERROR, "%mempool %s is missing %u mbufs\n",
-                        mp->name, rte_mempool_in_use_count(mp));
+                       mp->name, rte_mempool_in_use_count(mp));
             }
             rte_mempool_free(mp);
         }
@@ -36,7 +39,7 @@ private:
     std::unordered_map<unsigned, mempool_ptr> m_ref_rom_mpools;
 };
 
-}
-}
-}
+} // namespace dpdk
+} // namespace packetio
+} // namespace openperf
 #endif /* _OP_PACKETIO_MEMORY_DPDK_POOL_ALLOCATOR_HPP_ */

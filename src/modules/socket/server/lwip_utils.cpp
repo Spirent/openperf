@@ -11,8 +11,8 @@ namespace openperf {
 namespace socket {
 namespace server {
 
-tl::expected<socklen_t, int> do_sock_getsockopt(const ip_pcb* pcb,
-                                                const api::request_getsockopt& getsockopt)
+tl::expected<socklen_t, int>
+do_sock_getsockopt(const ip_pcb* pcb, const api::request_getsockopt& getsockopt)
 {
     assert(getsockopt.level == SOL_SOCKET);
 
@@ -56,8 +56,8 @@ tl::expected<socklen_t, int> do_sock_getsockopt(const ip_pcb* pcb,
     return (slength);
 }
 
-tl::expected<void, int> do_sock_setsockopt(ip_pcb* pcb,
-                                           const api::request_setsockopt& setsockopt)
+tl::expected<void, int>
+do_sock_setsockopt(ip_pcb* pcb, const api::request_setsockopt& setsockopt)
 {
     assert(setsockopt.level == SOL_SOCKET);
 
@@ -66,16 +66,20 @@ tl::expected<void, int> do_sock_setsockopt(ip_pcb* pcb,
         auto opt = copy_in(setsockopt.id.pid,
                            reinterpret_cast<const int*>(setsockopt.optval));
         if (!opt) return (tl::make_unexpected(opt.error()));
-        if (*opt) ip_set_option(pcb, SOF_BROADCAST);
-        else      ip_reset_option(pcb, SOF_BROADCAST);
+        if (*opt)
+            ip_set_option(pcb, SOF_BROADCAST);
+        else
+            ip_reset_option(pcb, SOF_BROADCAST);
         break;
     }
     case SO_KEEPALIVE: {
         auto opt = copy_in(setsockopt.id.pid,
-                           reinterpret_cast<const int *>(setsockopt.optval));
+                           reinterpret_cast<const int*>(setsockopt.optval));
         if (!opt) return (tl::make_unexpected(opt.error()));
-        if (*opt) ip_set_option(pcb, SOF_KEEPALIVE);
-        else      ip_reset_option(pcb, SOF_KEEPALIVE);
+        if (*opt)
+            ip_set_option(pcb, SOF_KEEPALIVE);
+        else
+            ip_reset_option(pcb, SOF_KEEPALIVE);
         break;
     }
     case SO_REUSEADDR:
@@ -83,22 +87,20 @@ tl::expected<void, int> do_sock_setsockopt(ip_pcb* pcb,
         auto opt = copy_in(setsockopt.id.pid,
                            reinterpret_cast<const int*>(setsockopt.optval));
         if (!opt) return (tl::make_unexpected(opt.error()));
-        if (*opt) ip_set_option(pcb, SOF_REUSEADDR);
-        else      ip_reset_option(pcb, SOF_REUSEADDR);
+        if (*opt)
+            ip_set_option(pcb, SOF_REUSEADDR);
+        else
+            ip_reset_option(pcb, SOF_REUSEADDR);
         break;
     }
     case SO_BINDTODEVICE: {
         std::string optval(setsockopt.optlen, '\0');
-        auto opt = copy_in(optval.data(),
-                           setsockopt.id.pid,
+        auto opt = copy_in(optval.data(), setsockopt.id.pid,
                            reinterpret_cast<const char*>(setsockopt.optval),
-                           setsockopt.optlen,
-                           setsockopt.optlen);
+                           setsockopt.optlen, setsockopt.optlen);
         if (!opt) return (tl::make_unexpected(opt.error()));
         auto idx = netif_id_match(optval);
-        if (idx == NETIF_NO_INDEX) {
-            return (tl::make_unexpected(ENODEV));
-        }
+        if (idx == NETIF_NO_INDEX) { return (tl::make_unexpected(ENODEV)); }
         pcb->netif_idx = idx;
         break;
     }
@@ -109,8 +111,8 @@ tl::expected<void, int> do_sock_setsockopt(ip_pcb* pcb,
     return {};
 }
 
-tl::expected<socklen_t, int> do_ip_getsockopt(const ip_pcb* pcb,
-                                              const api::request_getsockopt& getsockopt)
+tl::expected<socklen_t, int>
+do_ip_getsockopt(const ip_pcb* pcb, const api::request_getsockopt& getsockopt)
 {
     assert(getsockopt.level == IPPROTO_IP);
 
@@ -137,8 +139,8 @@ tl::expected<socklen_t, int> do_ip_getsockopt(const ip_pcb* pcb,
     return (slength);
 }
 
-tl::expected<void, int> do_ip_setsockopt(ip_pcb* pcb,
-                                         const api::request_setsockopt& setsockopt)
+tl::expected<void, int>
+do_ip_setsockopt(ip_pcb* pcb, const api::request_setsockopt& setsockopt)
 {
     assert(setsockopt.level == IPPROTO_IP);
 
@@ -166,21 +168,31 @@ tl::expected<void, int> do_ip_setsockopt(ip_pcb* pcb,
     return {};
 }
 
-
 static int lwip_to_linux_state(enum tcp_state state)
 {
     switch (state) {
-    case CLOSED: return (LINUX_TCP_CLOSE);
-    case LISTEN: return (LINUX_TCP_LISTEN);
-    case SYN_SENT: return (LINUX_TCP_SYN_SENT);
-    case SYN_RCVD: return (LINUX_TCP_SYN_RECV);
-    case ESTABLISHED: return (LINUX_TCP_ESTABLISHED);
-    case FIN_WAIT_1: return (LINUX_TCP_FIN_WAIT1);
-    case FIN_WAIT_2: return (LINUX_TCP_FIN_WAIT2);
-    case CLOSE_WAIT: return (LINUX_TCP_CLOSE_WAIT);
-    case CLOSING: return (LINUX_TCP_CLOSING);
-    case LAST_ACK: return (LINUX_TCP_LAST_ACK);
-    case TIME_WAIT: return (LINUX_TCP_TIME_WAIT);
+    case CLOSED:
+        return (LINUX_TCP_CLOSE);
+    case LISTEN:
+        return (LINUX_TCP_LISTEN);
+    case SYN_SENT:
+        return (LINUX_TCP_SYN_SENT);
+    case SYN_RCVD:
+        return (LINUX_TCP_SYN_RECV);
+    case ESTABLISHED:
+        return (LINUX_TCP_ESTABLISHED);
+    case FIN_WAIT_1:
+        return (LINUX_TCP_FIN_WAIT1);
+    case FIN_WAIT_2:
+        return (LINUX_TCP_FIN_WAIT2);
+    case CLOSE_WAIT:
+        return (LINUX_TCP_CLOSE_WAIT);
+    case CLOSING:
+        return (LINUX_TCP_CLOSING);
+    case LAST_ACK:
+        return (LINUX_TCP_LAST_ACK);
+    case TIME_WAIT:
+        return (LINUX_TCP_TIME_WAIT);
     }
 }
 
@@ -207,13 +219,14 @@ void get_tcp_info(const tcp_pcb* pcb, tcp_info& info)
 
     info.tcpi_rtt = pcb->rttest * 500;
     info.tcpi_snd_ssthresh = pcb->ssthresh;
-    info.tcpi_snd_cwnd = pcb->cwnd / tcp_mss(pcb);  /* in units of segments */
+    info.tcpi_snd_cwnd = pcb->cwnd / tcp_mss(pcb); /* in units of segments */
 
-    info.tcpi_total_retrans = static_cast<uint32_t>(reinterpret_cast<uintptr_t>(tcp_ext_arg_get(pcb, 0)));
+    info.tcpi_total_retrans = static_cast<uint32_t>(
+        reinterpret_cast<uintptr_t>(tcp_ext_arg_get(pcb, 0)));
 
     info.tcpi_notsent_bytes = (pcb->unsent ? pcb->unsent->len : 0);
 }
 
-}
-}
-}
+} // namespace server
+} // namespace socket
+} // namespace openperf

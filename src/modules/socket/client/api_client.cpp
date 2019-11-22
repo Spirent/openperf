@@ -20,7 +20,7 @@ client::client()
     : m_uuid(core::uuid::random())
     , m_sock(api::client_socket(to_string(m_uuid)), api::socket_type)
 {
-    auto server = sockaddr_un{ .sun_family = AF_UNIX };
+    auto server = sockaddr_un{.sun_family = AF_UNIX};
     if (auto envp = std::getenv("OP_PREFIX"); envp != nullptr) {
         std::strncpy(server.sun_path,
                      (api::server_socket() + "." + std::string(envp)).c_str(),
@@ -30,55 +30,46 @@ client::client()
                      sizeof(server.sun_path));
     }
 
-    if (::connect(m_sock.get(),
-                  reinterpret_cast<sockaddr*>(&server),
-                  sizeof(server)) == -1) {
+    if (::connect(m_sock.get(), reinterpret_cast<sockaddr*>(&server),
+                  sizeof(server))
+        == -1) {
         throw std::runtime_error("Could not connect to socket server: "
                                  + std::string(strerror(errno)));
     }
 }
 
-client::~client()
-{
-    *m_init_flag = false;
-}
+client::~client() { *m_init_flag = false; }
 
 static api::reply_msg submit_request(int sockfd,
                                      const api::request_msg& request)
 {
-    if (send(sockfd,
-             const_cast<void*>(reinterpret_cast<const void*>(&request)),
-             sizeof(request),
-             0) == -1) {
+    if (send(sockfd, const_cast<void*>(reinterpret_cast<const void*>(&request)),
+             sizeof(request), 0)
+        == -1) {
         return (tl::make_unexpected(errno));
     }
 
     /* Setup to receive a message */
     api::reply_msg reply;
 
-    struct iovec iov = {
-        .iov_base = reinterpret_cast<void*>(&reply),
-        .iov_len = sizeof(reply)
-    };
+    struct iovec iov = {.iov_base = reinterpret_cast<void*>(&reply),
+                        .iov_len = sizeof(reply)};
 
     /* Create a properly aligned data buffer for our cmsg data */
-    union {
+    union
+    {
         char data[CMSG_SPACE(sizeof(api::socket_fd_pair))];
         struct cmsghdr align;
     } control;
 
-    struct msghdr msg = {
-        .msg_iov = &iov,
-        .msg_iovlen = 1,
-        .msg_control = control.data,
-        .msg_controllen = sizeof(control.data)
-    };
+    struct msghdr msg = {.msg_iov = &iov,
+                         .msg_iovlen = 1,
+                         .msg_control = control.data,
+                         .msg_controllen = sizeof(control.data)};
 
-    if (recvmsg(sockfd, &msg, 0) == -1) {
-        return (tl::make_unexpected(errno));
-    }
+    if (recvmsg(sockfd, &msg, 0) == -1) { return (tl::make_unexpected(errno)); }
 
-    if (struct cmsghdr *cmsg = CMSG_FIRSTHDR(&msg); cmsg != nullptr) {
+    if (struct cmsghdr* cmsg = CMSG_FIRSTHDR(&msg); cmsg != nullptr) {
         if (cmsg->cmsg_len == CMSG_LEN(sizeof(api::socket_fd_pair))
             && cmsg->cmsg_level == SOL_SOCKET
             && cmsg->cmsg_type == SCM_RIGHTS) {
@@ -86,7 +77,8 @@ static api::reply_msg submit_request(int sockfd,
              * Message contains a fd, update the message sockfd value so the
              * client can use it directly.
              */
-            set_message_fds(reply, *(reinterpret_cast<api::socket_fd_pair*>(CMSG_DATA(cmsg))));
+            set_message_fds(reply, *(reinterpret_cast<api::socket_fd_pair*>(
+                                       CMSG_DATA(cmsg))));
         }
     }
 
@@ -96,10 +88,8 @@ static api::reply_msg submit_request(int sockfd,
 /* Send a hello message to server; wait for reply */
 void client::init(std::atomic_bool* init_flag)
 {
-    api::request_msg request = api::request_init{
-        .pid = getpid(),
-        .tid = m_uuid
-    };
+    api::request_msg request =
+        api::request_init{.pid = getpid(), .tid = m_uuid};
 
     auto reply = submit_request(m_sock.get(), request);
     if (!reply) {
@@ -112,8 +102,7 @@ void client::init(std::atomic_bool* init_flag)
     if (init.shm_info) {
         /* map shared address memory */
         auto shm_info = *init.shm_info;
-        m_shm.reset(new memory::shared_segment(shm_info.name,
-                                               shm_info.size));
+        m_shm.reset(new memory::shared_segment(shm_info.name, shm_info.size));
 
         /* enable ptrace from server side */
         process_control::enable_ptrace(stderr, init.pid);
@@ -123,12 +112,9 @@ void client::init(std::atomic_bool* init_flag)
     *m_init_flag = true;
 }
 
-bool client::is_socket(int s)
-{
-    return (m_channels.count(s));
-}
+bool client::is_socket(int s) { return (m_channels.count(s)); }
 
-int client::accept(int s, struct sockaddr *addr, socklen_t *addrlen, int flags)
+int client::accept(int s, struct sockaddr* addr, socklen_t* addrlen, int flags)
 {
     auto result = m_channels.find(s);
     if (result == m_channels.end()) {
@@ -143,12 +129,11 @@ int client::accept(int s, struct sockaddr *addr, socklen_t *addrlen, int flags)
         return (-1);
     }
 
-    api::request_msg request = api::request_accept{
-        .id = id,
-        .flags = flags,
-        .addr = addr,
-        .addrlen = (addrlen ? *addrlen : 0)
-    };
+    api::request_msg request =
+        api::request_accept{.id = id,
+                            .flags = flags,
+                            .addr = addr,
+                            .addrlen = (addrlen ? *addrlen : 0)};
 
     auto reply = submit_request(m_sock.get(), request);
     if (!reply) {
@@ -162,24 +147,22 @@ int client::accept(int s, struct sockaddr *addr, socklen_t *addrlen, int flags)
     auto newresult = m_channels.emplace(
         accept.fd_pair.client_fd,
         ided_channel{accept.id,
-                     io_channel_wrapper(to_pointer(accept.channel, m_shm->base()),
-                                        accept.fd_pair.client_fd,
-                                        accept.fd_pair.server_fd)});
+                     io_channel_wrapper(
+                         to_pointer(accept.channel, m_shm->base()),
+                         accept.fd_pair.client_fd, accept.fd_pair.server_fd)});
 
     if (!newresult.second) {
         errno = ENOBUFS;
         return (-1);
     }
 
-    if (addrlen) {
-        *addrlen = accept.addrlen;
-    }
+    if (addrlen) { *addrlen = accept.addrlen; }
 
     /* Give the client their fd */
     return (accept.fd_pair.client_fd);
 }
 
-int client::bind(int s, const struct sockaddr *name, socklen_t namelen)
+int client::bind(int s, const struct sockaddr* name, socklen_t namelen)
 {
     auto result = m_channels.find(s);
     if (result == m_channels.end()) {
@@ -188,11 +171,8 @@ int client::bind(int s, const struct sockaddr *name, socklen_t namelen)
     }
 
     auto& [id, channel] = result->second;
-    api::request_msg request = api::request_bind{
-        .id = id,
-        .name = name,
-        .namelen = namelen
-    };
+    api::request_msg request =
+        api::request_bind{.id = id, .name = name, .namelen = namelen};
 
     auto reply = submit_request(m_sock.get(), request);
     if (!reply) {
@@ -213,10 +193,7 @@ int client::shutdown(int s, int how)
     }
 
     auto& [id, channel] = result->second;
-    api::request_msg request = api::request_shutdown{
-        .id = id,
-        .how = how
-    };
+    api::request_msg request = api::request_shutdown{.id = id, .how = how};
 
     auto reply = submit_request(m_sock.get(), request);
     if (!reply) {
@@ -228,7 +205,7 @@ int client::shutdown(int s, int how)
     return (0);
 }
 
-int client::getpeername(int s, struct sockaddr *name, socklen_t *namelen)
+int client::getpeername(int s, struct sockaddr* name, socklen_t* namelen)
 {
     auto result = m_channels.find(s);
     if (result == m_channels.end()) {
@@ -237,11 +214,8 @@ int client::getpeername(int s, struct sockaddr *name, socklen_t *namelen)
     }
 
     auto& [id, channel] = result->second;
-    api::request_msg request = api::request_getpeername{
-        .id = id,
-        .name = name,
-        .namelen = *namelen
-    };
+    api::request_msg request =
+        api::request_getpeername{.id = id, .name = name, .namelen = *namelen};
 
     auto reply = submit_request(m_sock.get(), request);
     if (!reply) {
@@ -253,7 +227,7 @@ int client::getpeername(int s, struct sockaddr *name, socklen_t *namelen)
     return (0);
 }
 
-int client::getsockname(int s, struct sockaddr *name, socklen_t *namelen)
+int client::getsockname(int s, struct sockaddr* name, socklen_t* namelen)
 {
     auto result = m_channels.find(s);
     if (result == m_channels.end()) {
@@ -262,11 +236,8 @@ int client::getsockname(int s, struct sockaddr *name, socklen_t *namelen)
     }
 
     auto& [id, channel] = result->second;
-    api::request_msg request = api::request_getsockname{
-        .id = id,
-        .name = name,
-        .namelen = *namelen
-    };
+    api::request_msg request =
+        api::request_getsockname{.id = id, .name = name, .namelen = *namelen};
 
     auto reply = submit_request(m_sock.get(), request);
     if (!reply) {
@@ -278,7 +249,8 @@ int client::getsockname(int s, struct sockaddr *name, socklen_t *namelen)
     return (0);
 }
 
-int client::getsockopt(int s, int level, int optname, void *optval, socklen_t *optlen)
+int client::getsockopt(int s, int level, int optname, void* optval,
+                       socklen_t* optlen)
 {
     auto result = m_channels.find(s);
     if (result == m_channels.end()) {
@@ -287,13 +259,12 @@ int client::getsockopt(int s, int level, int optname, void *optval, socklen_t *o
     }
 
     auto& [id, channel] = result->second;
-    api::request_msg request = api::request_getsockopt{
-        .id = id,
-        .level = level,
-        .optname = optname,
-        .optval = optval,
-        .optlen = (optlen ? *optlen : 0)
-    };
+    api::request_msg request =
+        api::request_getsockopt{.id = id,
+                                .level = level,
+                                .optname = optname,
+                                .optval = optval,
+                                .optlen = (optlen ? *optlen : 0)};
 
     auto reply = submit_request(m_sock.get(), request);
     if (!reply) {
@@ -301,13 +272,12 @@ int client::getsockopt(int s, int level, int optname, void *optval, socklen_t *o
         return (-1);
     }
 
-    if (optlen) {
-        *optlen = std::get<api::reply_socklen>(*reply).length;
-    }
+    if (optlen) { *optlen = std::get<api::reply_socklen>(*reply).length; }
     return (0);
 }
 
-int client::setsockopt(int s, int level, int optname, const void *optval, socklen_t optlen)
+int client::setsockopt(int s, int level, int optname, const void* optval,
+                       socklen_t optlen)
 {
     auto result = m_channels.find(s);
     if (result == m_channels.end()) {
@@ -316,13 +286,11 @@ int client::setsockopt(int s, int level, int optname, const void *optval, sockle
     }
 
     auto& [id, channel] = result->second;
-    api::request_msg request = api::request_setsockopt{
-        .id = id,
-        .level = level,
-        .optname = optname,
-        .optval = optval,
-        .optlen = optlen
-    };
+    api::request_msg request = api::request_setsockopt{.id = id,
+                                                       .level = level,
+                                                       .optname = optname,
+                                                       .optval = optval,
+                                                       .optlen = optlen};
 
     auto reply = submit_request(m_sock.get(), request);
     if (!reply) {
@@ -344,9 +312,7 @@ int client::close(int s)
     }
 
     auto& [id, channel] = result->second;
-    api::request_msg request = api::request_close{
-        .id = id
-    };
+    api::request_msg request = api::request_close{.id = id};
 
     auto reply = submit_request(m_sock.get(), request);
     if (!reply) {
@@ -358,7 +324,7 @@ int client::close(int s)
     return (0);
 }
 
-int client::connect(int s, const struct sockaddr *name, socklen_t namelen)
+int client::connect(int s, const struct sockaddr* name, socklen_t namelen)
 {
     auto result = m_channels.find(s);
     if (result == m_channels.end()) {
@@ -367,11 +333,8 @@ int client::connect(int s, const struct sockaddr *name, socklen_t namelen)
     }
 
     auto& [id, channel] = result->second;
-    api::request_msg request = api::request_connect{
-        .id = id,
-        .name = name,
-        .namelen = namelen
-    };
+    api::request_msg request =
+        api::request_connect{.id = id, .name = name, .namelen = namelen};
 
     /* Connecting sockets should be non-writable, so block the socket */
     auto block = channel.block_writes();
@@ -387,15 +350,14 @@ int client::connect(int s, const struct sockaddr *name, socklen_t namelen)
     }
 
     /* We have two possible non-error replies: success or working */
-    if (std::holds_alternative<api::reply_success>(*reply)) {
-        return (0);
-    }
+    if (std::holds_alternative<api::reply_success>(*reply)) { return (0); }
 
     assert(std::holds_alternative<api::reply_working>(*reply));
 
     /*
      * At this point the connect is in progress in the stack.
-     * If we have a non-blocking socket, let the caller know we're working on it.
+     * If we have a non-blocking socket, let the caller know we're working on
+     * it.
      */
     if (channel.flags() & SOCK_NONBLOCK) {
         errno = EINPROGRESS;
@@ -421,10 +383,8 @@ int client::listen(int s, int backlog)
     }
 
     auto& [id, channel] = result->second;
-    api::request_msg request = api::request_listen{
-        .id = id,
-        .backlog = backlog
-    };
+    api::request_msg request =
+        api::request_listen{.id = id, .backlog = backlog};
 
     auto reply = submit_request(m_sock.get(), request);
     if (!reply) {
@@ -439,10 +399,7 @@ int client::listen(int s, int backlog)
 int client::socket(int domain, int type, int protocol)
 {
     api::request_msg request = api::request_socket{
-        .domain = domain,
-        .type = type,
-        .protocol = protocol
-    };
+        .domain = domain, .type = type, .protocol = protocol};
 
     auto reply = submit_request(m_sock.get(), request);
     if (!reply) {
@@ -456,9 +413,9 @@ int client::socket(int domain, int type, int protocol)
     auto result = m_channels.emplace(
         socket.fd_pair.client_fd,
         ided_channel{socket.id,
-                     io_channel_wrapper(to_pointer(socket.channel, m_shm->base()),
-                                        socket.fd_pair.client_fd,
-                                        socket.fd_pair.server_fd)});
+                     io_channel_wrapper(
+                         to_pointer(socket.channel, m_shm->base()),
+                         socket.fd_pair.client_fd, socket.fd_pair.server_fd)});
 
     if (!result.second) {
         errno = ENOBUFS;
@@ -510,50 +467,43 @@ int client::fcntl(int s, int cmd, ...)
 /***
  * Receive functions
  ***/
-ssize_t client::read(int s, void *mem, size_t len)
+ssize_t client::read(int s, void* mem, size_t len)
 {
     return (recv(s, mem, len, 0));
 }
 
-ssize_t client::readv(int s, const struct iovec *iov, int iovcnt)
+ssize_t client::readv(int s, const struct iovec* iov, int iovcnt)
 {
-    auto msg = msghdr{
-        .msg_iov = const_cast<iovec*>(iov),
-        .msg_iovlen = static_cast<decltype(msghdr::msg_iovlen)>(iovcnt)
-    };
+    auto msg =
+        msghdr{.msg_iov = const_cast<iovec*>(iov),
+               .msg_iovlen = static_cast<decltype(msghdr::msg_iovlen)>(iovcnt)};
 
     return (recvmsg(s, &msg, 0));
 }
 
-ssize_t client::recv(int s, void *mem, size_t len, int flags)
+ssize_t client::recv(int s, void* mem, size_t len, int flags)
 {
     return (recvfrom(s, mem, len, flags, nullptr, nullptr));
 }
 
-ssize_t client::recvfrom(int s, void *mem, size_t len, int flags,
-                 struct sockaddr *from, socklen_t *fromlen)
+ssize_t client::recvfrom(int s, void* mem, size_t len, int flags,
+                         struct sockaddr* from, socklen_t* fromlen)
 {
-    auto iov = iovec{
-        .iov_base = mem,
-        .iov_len = len
-    };
+    auto iov = iovec{.iov_base = mem, .iov_len = len};
 
-    auto msg = msghdr{
-        .msg_name = from,
-        .msg_namelen = (fromlen ? *fromlen : 0),
-        .msg_iov = &iov,
-        .msg_iovlen = 1
-    };
+    auto msg = msghdr{.msg_name = from,
+                      .msg_namelen = (fromlen ? *fromlen : 0),
+                      .msg_iov = &iov,
+                      .msg_iovlen = 1};
 
     auto to_return = recvmsg(s, &msg, flags);
     if (fromlen && to_return != -1) *fromlen = msg.msg_namelen;
     return (to_return);
-
 }
 
-ssize_t client::recvmsg(int s, struct msghdr *message, int flags)
+ssize_t client::recvmsg(int s, struct msghdr* message, int flags)
 {
-    (void)flags;  /* TODO */
+    (void)flags; /* TODO */
 
     auto result = m_channels.find(s);
     if (result == m_channels.end()) {
@@ -562,10 +512,9 @@ ssize_t client::recvmsg(int s, struct msghdr *message, int flags)
     }
 
     auto& [id, channel] = result->second;
-    auto recv_result = channel.recv(message->msg_iov, message->msg_iovlen,
-                                    flags,
-                                    reinterpret_cast<sockaddr*>(message->msg_name),
-                                    &message->msg_namelen);
+    auto recv_result = channel.recv(
+        message->msg_iov, message->msg_iovlen, flags,
+        reinterpret_cast<sockaddr*>(message->msg_name), &message->msg_namelen);
     if (!recv_result) {
         errno = recv_result.error();
         return (-1);
@@ -577,12 +526,12 @@ ssize_t client::recvmsg(int s, struct msghdr *message, int flags)
 /***
  * Transmit functions
  ***/
-ssize_t client::send(int s, const void *dataptr, size_t len, int flags)
+ssize_t client::send(int s, const void* dataptr, size_t len, int flags)
 {
     return (sendto(s, dataptr, len, flags, nullptr, 0));
 }
 
-ssize_t client::sendmsg(int s, const struct msghdr *message, int flags)
+ssize_t client::sendmsg(int s, const struct msghdr* message, int flags)
 {
     (void)flags; /* TODO */
 
@@ -593,9 +542,9 @@ ssize_t client::sendmsg(int s, const struct msghdr *message, int flags)
     }
 
     auto& [id, channel] = result->second;
-    auto send_result = channel.send(message->msg_iov, message->msg_iovlen,
-                                    flags,
-                                    reinterpret_cast<const sockaddr*>(message->msg_name));
+    auto send_result =
+        channel.send(message->msg_iov, message->msg_iovlen, flags,
+                     reinterpret_cast<const sockaddr*>(message->msg_name));
     if (!send_result) {
         errno = send_result.error();
         return (-1);
@@ -604,39 +553,33 @@ ssize_t client::sendmsg(int s, const struct msghdr *message, int flags)
     return (*send_result);
 }
 
-ssize_t client::sendto(int s, const void *dataptr, size_t len, int flags,
-                       const struct sockaddr *to, socklen_t tolen)
+ssize_t client::sendto(int s, const void* dataptr, size_t len, int flags,
+                       const struct sockaddr* to, socklen_t tolen)
 {
-    auto iov = iovec{
-        .iov_base = const_cast<void*>(dataptr),
-        .iov_len = len
-    };
+    auto iov = iovec{.iov_base = const_cast<void*>(dataptr), .iov_len = len};
 
-    auto msg = msghdr{
-        .msg_name = const_cast<sockaddr*>(to),
-        .msg_namelen = tolen,
-        .msg_iov = &iov,
-        .msg_iovlen = 1
-    };
+    auto msg = msghdr{.msg_name = const_cast<sockaddr*>(to),
+                      .msg_namelen = tolen,
+                      .msg_iov = &iov,
+                      .msg_iovlen = 1};
 
     return (sendmsg(s, &msg, flags));
 }
 
-ssize_t client::write(int s, const void *dataptr, size_t len)
+ssize_t client::write(int s, const void* dataptr, size_t len)
 {
     return (send(s, dataptr, len, 0));
 }
 
-ssize_t client::writev(int s, const struct iovec *iov, int iovcnt)
+ssize_t client::writev(int s, const struct iovec* iov, int iovcnt)
 {
-    auto msg = msghdr{
-        .msg_iov = const_cast<iovec*>(iov),
-        .msg_iovlen = static_cast<decltype(msghdr::msg_iovlen)>(iovcnt)
-    };
+    auto msg =
+        msghdr{.msg_iov = const_cast<iovec*>(iov),
+               .msg_iovlen = static_cast<decltype(msghdr::msg_iovlen)>(iovcnt)};
 
     return (sendmsg(s, &msg, 0));
 }
 
-}
-}
-}
+} // namespace api
+} // namespace socket
+} // namespace openperf

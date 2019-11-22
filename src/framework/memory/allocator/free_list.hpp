@@ -11,14 +11,15 @@ namespace memory {
 namespace allocator {
 namespace impl {
 
-struct heap_node {
+struct heap_node
+{
     size_t size;
     RB_ENTRY(heap_node) entry;
 };
 
 RB_HEAD(heap, heap_node);
 
-}
+} // namespace impl
 
 class free_list
 {
@@ -32,13 +33,13 @@ public:
     free_list(uintptr_t heap_base, size_t heap_size, size_t item_size = 0);
 
     void* reserve(size_t size);
-    void  release(void* ptr);
+    void release(void* ptr);
     size_t size() const noexcept;
     uintptr_t base() const noexcept;
 };
 
-}
-}
-}
+} // namespace allocator
+} // namespace memory
+} // namespace openperf
 
 #endif /* _OP_MEMORY_ALLOCATOR_FREE_LIST_HPP_ */

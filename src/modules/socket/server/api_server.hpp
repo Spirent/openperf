@@ -23,12 +23,13 @@ namespace openperf::socket::api {
 
 class server
 {
-    static constexpr size_t shm_size = (1024 * 1024 * 1024);  /* 1 GB */
+    static constexpr size_t shm_size = (1024 * 1024 * 1024); /* 1 GB */
 
     void* m_context;
     unix_socket m_sock;
     openperf::memory::shared_segment m_shm;
-    std::unordered_map<pid_t, std::unique_ptr<socket::server::api_handler>> m_handlers;
+    std::unordered_map<pid_t, std::unique_ptr<socket::server::api_handler>>
+        m_handlers;
     std::unordered_multimap<int, pid_t> m_pids;
     std::string m_task;
 
@@ -45,12 +46,13 @@ class server
 
 public:
     server(void* context);
-    ~server();  /* Explicit destructor needed to avoid pulling in api_handler header */
+    ~server(); /* Explicit destructor needed to avoid pulling in api_handler
+                  header */
 
     int start();
     void stop();
 };
 
-}
+} // namespace openperf::socket::api
 
 #endif /* _OP_SOCKET_API_SERVER_HPP_ */

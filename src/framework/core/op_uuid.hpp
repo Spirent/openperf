@@ -13,23 +13,23 @@ class uuid
 {
     alignas(8) uint8_t m_octets[16];
 
-  public:
+public:
     static uuid random() /* constructor for random uuid */
     {
-        std::mt19937_64 generator {std::random_device()()};
+        std::mt19937_64 generator{std::random_device()()};
         std::uniform_int_distribution<> dist(0, 255);
         std::array<uint8_t, 16> data;
 
-        data[0]  = dist(generator);
-        data[1]  = dist(generator);
-        data[2]  = dist(generator);
-        data[3]  = dist(generator);
-        data[4]  = dist(generator);
-        data[5]  = dist(generator);
-        data[6]  = (dist(generator) & 0x0f) | 0x40; /* version 4 */
-        data[7]  = dist(generator);
-        data[8]  = (dist(generator) & 0x3f) | 0x40; /* variant */
-        data[9]  = dist(generator);
+        data[0] = dist(generator);
+        data[1] = dist(generator);
+        data[2] = dist(generator);
+        data[3] = dist(generator);
+        data[4] = dist(generator);
+        data[5] = dist(generator);
+        data[6] = (dist(generator) & 0x0f) | 0x40; /* version 4 */
+        data[7] = dist(generator);
+        data[8] = (dist(generator) & 0x3f) | 0x40; /* variant */
+        data[9] = dist(generator);
         data[10] = dist(generator);
         data[11] = dist(generator);
         data[12] = dist(generator);
@@ -41,7 +41,7 @@ class uuid
     }
 
     uuid()
-        : m_octets {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+        : m_octets{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
     {}
 
     uuid(const std::string_view input)
@@ -50,7 +50,9 @@ class uuid
         static constexpr std::string_view delimiters("-");
         static constexpr std::string_view hex_digits = "0123456789abcdefABCDEF";
 
-        if (input.length() != 36) { throw std::runtime_error("UUID must be 36 characters long"); }
+        if (input.length() != 36) {
+            throw std::runtime_error("UUID must be 36 characters long");
+        }
 
         for (size_t i = 0; i < input.length(); i++) {
             if (i == 8 || i == 13 || i == 18 || i == 23) {
@@ -59,8 +61,9 @@ class uuid
                 }
             } else {
                 if (hex_digits.find(input.at(i)) == std::string::npos) {
-                    throw std::runtime_error(std::string(&input.at(i))
-                                             + " is not a valid hexadecimal character");
+                    throw std::runtime_error(
+                        std::string(&input.at(i))
+                        + " is not a valid hexadecimal character");
                 }
             }
         }
@@ -79,58 +82,52 @@ class uuid
     }
 
     uuid(const uint8_t data[15])
-        : m_octets {data[0], data[1], data[2],  data[3],  data[4],  data[5],  data[6],  data[7],
-                    data[8], data[9], data[10], data[11], data[12], data[13], data[14], data[15]}
+        : m_octets{data[0],  data[1],  data[2],  data[3], data[4],  data[5],
+                   data[6],  data[7],  data[8],  data[9], data[10], data[11],
+                   data[12], data[13], data[14], data[15]}
     {}
 
     uuid(std::initializer_list<uint8_t> data)
     {
-        if (data.size() != 16) { throw std::runtime_error("16 items required"); }
+        if (data.size() != 16) {
+            throw std::runtime_error("16 items required");
+        }
 
         size_t idx = 0;
-        for (auto value : data) {
-            m_octets[idx++] = value;
-        }
+        for (auto value : data) { m_octets[idx++] = value; }
     }
 
     uint8_t operator[](size_t idx) const
     {
-        if (idx > 15) { throw std::out_of_range(std::to_string(idx) + " is not between 0 and 15"); }
+        if (idx > 15) {
+            throw std::out_of_range(std::to_string(idx)
+                                    + " is not between 0 and 15");
+        }
         return m_octets[idx];
     }
 
-    const uint8_t* data() const
-    {
-        return (&m_octets[0]);
-    }
+    const uint8_t* data() const { return (&m_octets[0]); }
 };
 
 inline bool operator==(const uuid& lhs, const uuid& rhs)
 {
-    return (lhs[0] == rhs[0]
-            && lhs[1] == rhs[1]
-            && lhs[2] == rhs[2]
-            && lhs[3] == rhs[3]
-            && lhs[4] == rhs[4]
-            && lhs[5] == rhs[5]
-            && lhs[6] == rhs[6]
-            && lhs[7] == rhs[7]
-            && lhs[8] == rhs[8]
-            && lhs[9] == rhs[9]
-            && lhs[10] == rhs[10]
-            && lhs[11] == rhs[11]
-            && lhs[12] == rhs[12]
-            && lhs[13] == rhs[13]
-            && lhs[14] == rhs[14]
+    return (lhs[0] == rhs[0] && lhs[1] == rhs[1] && lhs[2] == rhs[2]
+            && lhs[3] == rhs[3] && lhs[4] == rhs[4] && lhs[5] == rhs[5]
+            && lhs[6] == rhs[6] && lhs[7] == rhs[7] && lhs[8] == rhs[8]
+            && lhs[9] == rhs[9] && lhs[10] == rhs[10] && lhs[11] == rhs[11]
+            && lhs[12] == rhs[12] && lhs[13] == rhs[13] && lhs[14] == rhs[14]
             && lhs[15] == rhs[15]);
 }
 
 inline std::string to_string(const uuid& uuid)
 {
     char buffer[37]; /* 36 chars + NUL */
-    snprintf(buffer, 37, "%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x",
-             uuid[0], uuid[1], uuid[2], uuid[3], uuid[4], uuid[5], uuid[6], uuid[7], uuid[8],
-             uuid[9], uuid[10], uuid[11], uuid[12], uuid[13], uuid[14], uuid[15]);
+    snprintf(
+        buffer, 37,
+        "%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x",
+        uuid[0], uuid[1], uuid[2], uuid[3], uuid[4], uuid[5], uuid[6], uuid[7],
+        uuid[8], uuid[9], uuid[10], uuid[11], uuid[12], uuid[13], uuid[14],
+        uuid[15]);
     return (std::string(buffer));
 }
 
@@ -138,14 +135,13 @@ inline std::string to_string(const uuid& uuid)
 
 namespace std {
 
-template <>
-struct hash<openperf::core::uuid>
+template <> struct hash<openperf::core::uuid>
 {
     size_t operator()(const openperf::core::uuid& uuid) const noexcept
     {
         auto data = reinterpret_cast<const uint64_t*>(uuid.data());
-        auto h1   = std::hash<uint64_t> {}(data[0]);
-        auto h2   = std::hash<uint64_t> {}(data[1]);
+        auto h1 = std::hash<uint64_t>{}(data[0]);
+        auto h2 = std::hash<uint64_t>{}(data[1]);
         return (h1 ^ (h2 << 1));
     }
 };

@@ -6,7 +6,8 @@
 
 namespace openperf::packetio::dpdk {
 
-static packet_pool make_packet_pool(uint16_t port_idx, const packets::generic_source& source)
+static packet_pool make_packet_pool(uint16_t port_idx,
+                                    const packets::generic_source& source)
 {
     auto info = model::port_info(port_idx);
 
@@ -18,8 +19,7 @@ static packet_pool make_packet_pool(uint16_t port_idx, const packets::generic_so
      * otherwise every call to retrieve buffers from the pool will bypass the
      * CPU cache and go straight to the pool.
      */
-    return (packet_pool(source.id(),
-                        info.socket_id(),
+    return (packet_pool(source.id(), info.socket_id(),
                         source.max_packet_length(),
                         info.tx_desc_count() + 2 * worker::pkt_burst_size,
                         2 * worker::pkt_burst_size));
@@ -30,20 +30,11 @@ tx_source::tx_source(uint16_t port_idx, packets::generic_source source)
     , m_source(std::move(source))
 {}
 
-std::string tx_source::id() const
-{
-    return (m_source.id());
-}
+std::string tx_source::id() const { return (m_source.id()); }
 
-bool tx_source::active() const
-{
-    return (m_source.active());
-}
+bool tx_source::active() const { return (m_source.active()); }
 
-uint16_t tx_source::burst_size() const
-{
-    return (m_source.burst_size());
-}
+uint16_t tx_source::burst_size() const { return (m_source.burst_size()); }
 
 uint16_t tx_source::max_packet_length() const
 {
@@ -61,15 +52,17 @@ uint16_t tx_source::pull(rte_mbuf* packets[], uint16_t count) const
     std::array<packets::packet_buffer*, worker::pkt_burst_size> tmp;
     assert(count <= tmp.size());
 
-    auto n = m_pool.get(tmp.data(), std::min(static_cast<uint16_t>(tmp.size()), count));
+    auto n = m_pool.get(tmp.data(),
+                        std::min(static_cast<uint16_t>(tmp.size()), count));
 
     if (!n) {
-        //OP_LOG(OP_LOG_WARNING, "No packet buffers available for %s\n", id().c_str());
+        // OP_LOG(OP_LOG_WARNING, "No packet buffers available for %s\n",
+        // id().c_str());
         return (0);
     }
 
-    auto m = m_source.transform(tmp.data(), n,
-                                reinterpret_cast<packets::packet_buffer**>(packets));
+    auto m = m_source.transform(
+        tmp.data(), n, reinterpret_cast<packets::packet_buffer**>(packets));
 
     /* Free any unused packet buffers */
     if (m < n) m_pool.put(tmp.data() + m, n - m);
@@ -77,4 +70,4 @@ uint16_t tx_source::pull(rte_mbuf* packets[], uint16_t count) const
     return (m);
 }
 
-}
+} // namespace openperf::packetio::dpdk

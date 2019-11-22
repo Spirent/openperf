@@ -8,11 +8,13 @@ namespace openperf {
 namespace memory {
 namespace allocator {
 
-static __attribute__((const)) bool power_of_two(uint64_t x) {
+static __attribute__((const)) bool power_of_two(uint64_t x)
+{
     return !(x & (x - 1));
 }
 
-static uint64_t __attribute__((const)) next_power_of_two(uint64_t x) {
+static uint64_t __attribute__((const)) next_power_of_two(uint64_t x)
+{
     if (power_of_two(x)) { return x; }
     x |= x >> 1;
     x |= x >> 2;
@@ -26,7 +28,8 @@ static uint64_t __attribute__((const)) next_power_of_two(uint64_t x) {
 pool::pool(uintptr_t base, size_t pool_size, size_t item_size)
     : m_lower(base)
     , m_upper(base + pool_size)
-    , m_size(next_power_of_two(std::max(item_size, sizeof(intrusive_stack::node))))
+    , m_size(
+          next_power_of_two(std::max(item_size, sizeof(intrusive_stack::node))))
 {
     if (pool_size < m_size) {
         throw std::runtime_error("pool_size is too small for item_size");
@@ -37,10 +40,7 @@ pool::pool(uintptr_t base, size_t pool_size, size_t item_size)
     }
 }
 
-void* pool::acquire()
-{
-    return (reinterpret_cast<void*>(m_stack.pop()));
-}
+void* pool::acquire() { return (reinterpret_cast<void*>(m_stack.pop())); }
 
 void pool::release(const void* ptr)
 {
@@ -50,20 +50,13 @@ void pool::release(const void* ptr)
     }
 
     m_stack.push(
-        reinterpret_cast<intrusive_stack::node*>(
-            const_cast<void*>(ptr)));
+        reinterpret_cast<intrusive_stack::node*>(const_cast<void*>(ptr)));
 }
 
-size_t pool::size() const noexcept
-{
-    return (m_upper - m_lower);
-}
+size_t pool::size() const noexcept { return (m_upper - m_lower); }
 
-uintptr_t pool::base() const noexcept
-{
-    return (m_lower);
-}
+uintptr_t pool::base() const noexcept { return (m_lower); }
 
-}
-}
-}
+} // namespace allocator
+} // namespace memory
+} // namespace openperf

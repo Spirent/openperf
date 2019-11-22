@@ -4,33 +4,32 @@
 
 namespace openperf::packetio {
 
-template <typename Source>
-transmit_table<Source>::transmit_table()
+template <typename Source> transmit_table<Source>::transmit_table()
 {
     m_sources.store(new source_map{});
 }
 
-template <typename Source>
-transmit_table<Source>::~transmit_table()
+template <typename Source> transmit_table<Source>::~transmit_table()
 {
     delete m_sources.exchange(nullptr);
 }
 
 template <typename Source>
 typename transmit_table<Source>::source_key
-transmit_table<Source>::to_key(uint16_t port_idx, uint16_t queue_idx, std::string_view source_id)
+transmit_table<Source>::to_key(uint16_t port_idx, uint16_t queue_idx,
+                               std::string_view source_id)
 {
     if (source_id.length() > key_buffer_length) {
-        OP_LOG(OP_LOG_WARNING, "Truncating source id = %.*s to %zu characters\n",
-                static_cast<int>(source_id.length()), source_id.data(),
-                key_buffer_length);
+        OP_LOG(OP_LOG_WARNING,
+               "Truncating source id = %.*s to %zu characters\n",
+               static_cast<int>(source_id.length()), source_id.data(),
+               key_buffer_length);
     }
 
     auto key = source_key{port_idx, queue_idx, {}};
     auto& buffer = std::get<key_buffer_idx>(key);
     std::copy_n(source_id.data(),
-                std::min(source_id.length(), key_buffer_length),
-                buffer.data());
+                std::min(source_id.length(), key_buffer_length), buffer.data());
 
     return (key);
 }
@@ -38,13 +37,12 @@ transmit_table<Source>::to_key(uint16_t port_idx, uint16_t queue_idx, std::strin
 /*
  * The various binary search algorithms, e.g. equal_range, lower_bound, etc.,
  * need to make the "less than" comparison between keys and values in any order.
- * To facilitate this, We make use of two comparison structs.  The first compares
- * full keys.  The second only compares port/queue indexes.
+ * To facilitate this, We make use of two comparison structs.  The first
+ * compares full keys.  The second only compares port/queue indexes.
  */
-template <typename Source>
-struct key_comparator
+template <typename Source> struct key_comparator
 {
-    static constexpr auto key_port_idx  = transmit_table<Source>::key_port_idx;
+    static constexpr auto key_port_idx = transmit_table<Source>::key_port_idx;
     static constexpr auto key_queue_idx = transmit_table<Source>::key_queue_idx;
 
     bool operator()(const typename transmit_table<Source>::source_key& left,
@@ -60,21 +58,21 @@ struct key_comparator
     }
 };
 
-
-template <typename Source>
-struct port_queue_comparator
+template <typename Source> struct port_queue_comparator
 {
-    static constexpr auto key_port_idx  = transmit_table<Source>::key_port_idx;
+    static constexpr auto key_port_idx = transmit_table<Source>::key_port_idx;
     static constexpr auto key_queue_idx = transmit_table<Source>::key_queue_idx;
 
     bool operator()(const typename transmit_table<Source>::source_key& left,
                     const typename transmit_table<Source>::source_pair& right)
     {
         /* Turn port/queue indexes into a number and compare them */
-        auto left_id = (static_cast<uint32_t>(std::get<key_port_idx>(left)) << 16
-                        | std::get<key_queue_idx>(left));
-        auto right_id = (static_cast<uint32_t>(std::get<key_port_idx>(right.first)) << 16
-                         | std::get<key_queue_idx>(right.first));
+        auto left_id =
+            (static_cast<uint32_t>(std::get<key_port_idx>(left)) << 16
+             | std::get<key_queue_idx>(left));
+        auto right_id =
+            (static_cast<uint32_t>(std::get<key_port_idx>(right.first)) << 16
+             | std::get<key_queue_idx>(right.first));
 
         return (left_id < right_id);
     }
@@ -83,10 +81,12 @@ struct port_queue_comparator
                     const typename transmit_table<Source>::source_key& right)
     {
         /* Turn port/queue indexes into a number and compare them */
-        auto left_id = (static_cast<uint32_t>(std::get<key_port_idx>(left.first)) << 16
-                        | std::get<key_queue_idx>(left.first));
-        auto right_id = (static_cast<uint32_t>(std::get<key_port_idx>(right)) << 16
-                         | std::get<key_queue_idx>(right));
+        auto left_id =
+            (static_cast<uint32_t>(std::get<key_port_idx>(left.first)) << 16
+             | std::get<key_queue_idx>(left.first));
+        auto right_id =
+            (static_cast<uint32_t>(std::get<key_port_idx>(right)) << 16
+             | std::get<key_queue_idx>(right));
 
         return (left_id < right_id);
     }
@@ -101,9 +101,9 @@ transmit_table<Source>::insert_source(uint16_t port_idx, uint16_t queue_idx,
     auto original = m_sources.load(std::memory_order_consume);
     auto precursor = std::lower_bound(original->begin(), original->end(), key,
                                       key_comparator<Source>{});
-    auto updated = new source_map{std::move(
-            original->insert(std::distance(original->begin(), precursor),
-                             std::make_pair(key, std::move(source))))};
+    auto updated = new source_map{
+        std::move(original->insert(std::distance(original->begin(), precursor),
+                                   std::make_pair(key, std::move(source))))};
     return (m_sources.exchange(updated, std::memory_order_release));
 }
 
@@ -115,11 +115,10 @@ transmit_table<Source>::remove_source(uint16_t port_idx, uint16_t queue_idx,
     auto key = to_key(port_idx, queue_idx, source_id);
     auto original = m_sources.load(std::memory_order_consume);
     auto range = std::equal_range(original->begin(), original->end(), key,
-                               key_comparator<Source>{});
-    auto found = std::find_if(range.first, range.second,
-                              [&](const auto& item) {
-                                  return (item.first == key);
-                              });
+                                  key_comparator<Source>{});
+    auto found = std::find_if(range.first, range.second, [&](const auto& item) {
+        return (item.first == key);
+    });
     if (found == range.second) return (nullptr);
     auto updated = new source_map{
         std::move(original->erase(std::distance(original->begin(), found)))};
@@ -152,23 +151,23 @@ transmit_table<Source>::get_sources(uint16_t port_idx, uint16_t queue_idx) const
 }
 
 template <typename Source>
-const Source* transmit_table<Source>::get_source(const transmit_table<Source>::source_key& key) const
+const Source* transmit_table<Source>::get_source(
+    const transmit_table<Source>::source_key& key) const
 {
     auto map = m_sources.load(std::memory_order_consume);
     auto range = std::equal_range(map->begin(), map->end(), key,
                                   key_comparator<Source>{});
     assert(std::distance(range.first, range.second) <= 1);
     return (std::distance(range.first, range.second) == 1
-            ? std::addressof(range.first->second)
-            : nullptr);
+                ? std::addressof(range.first->second)
+                : nullptr);
 }
 
-}
+} // namespace openperf::packetio
 
 /* There is no standard hash for an array, so we need to provide one */
 namespace std {
-template <size_t N>
-struct hash<std::array<char, N>>
+template <size_t N> struct hash<std::array<char, N>>
 {
     size_t operator()(const std::array<char, N>& array) const
     {
@@ -177,4 +176,4 @@ struct hash<std::array<char, N>>
     }
 };
 
-}
+} // namespace std

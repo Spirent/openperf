@@ -20,22 +20,23 @@ class event_loop;
 
 namespace openperf::socket::server {
 
-class api_handler {
+class api_handler
+{
 public:
     using event_loop = openperf::packetio::event_loop::generic_event_loop;
 
-    api_handler(event_loop& loop, const void* shm_base,
-                allocator& allocator, pid_t pid);
+    api_handler(event_loop& loop, const void* shm_base, allocator& allocator,
+                pid_t pid);
     ~api_handler();
 
     int handle_requests(int fd);
 
 private:
-    event_loop& m_loop;             /* event loop */
-    const void* m_shm_base;         /* shared memory base address */
-    allocator& m_allocator;         /* io_channel mempool */
-    pid_t m_pid;                    /* client pid */
-    uint32_t m_next_socket_id;      /* socket id counter */
+    event_loop& m_loop;        /* event loop */
+    const void* m_shm_base;    /* shared memory base address */
+    allocator& m_allocator;    /* io_channel mempool */
+    pid_t m_pid;               /* client pid */
+    uint32_t m_next_socket_id; /* socket id counter */
 
     /* sockets by id */
     std::unordered_map<api::socket_id, generic_socket> m_sockets;
@@ -59,6 +60,6 @@ private:
     }
 };
 
-}
+} // namespace openperf::socket::server
 
 #endif /* _OP_SOCKET_SERVER_API_HANDLER_HPP_ */

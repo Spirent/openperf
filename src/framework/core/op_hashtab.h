@@ -26,7 +26,7 @@ extern "C" {
 
 struct op_hashtab;
 
-typedef uintptr_t (op_hasher)(const void *thing);
+typedef uintptr_t(op_hasher)(const void* thing);
 
 /**
  * Allocate a new hash table
@@ -34,7 +34,7 @@ typedef uintptr_t (op_hasher)(const void *thing);
  * @return
  *   pointer to new allocated hashtab or NULL on error
  */
-struct op_hashtab *op_hashtab_allocate();
+struct op_hashtab* op_hashtab_allocate();
 
 /**
  * Set the hashing function for the hash table
@@ -44,7 +44,7 @@ struct op_hashtab *op_hashtab_allocate();
  * @param[in] hasher
  *   key hashing function
  */
-void op_hashtab_set_hasher(struct op_hashtab *tab, op_hasher hasher);
+void op_hashtab_set_hasher(struct op_hashtab* tab, op_hasher hasher);
 
 /**
  * Set the destructor for hashtable keys.
@@ -54,8 +54,8 @@ void op_hashtab_set_hasher(struct op_hashtab *tab, op_hasher hasher);
  * @param[in] destructor
  *   key destructor
  */
-void op_hashtab_set_key_destructor(struct op_hashtab *tab,
-                                    op_destructor destructor);
+void op_hashtab_set_key_destructor(struct op_hashtab* tab,
+                                   op_destructor destructor);
 
 /**
  * Set the destructor for hashtable values.
@@ -65,8 +65,8 @@ void op_hashtab_set_key_destructor(struct op_hashtab *tab,
  * @param[in] destructor
  *   value destructor
  */
-void op_hashtab_set_value_destructor(struct op_hashtab *tab,
-                                      op_destructor destructor);
+void op_hashtab_set_value_destructor(struct op_hashtab* tab,
+                                     op_destructor destructor);
 
 /**
  * Destroy an existing hash table and free all allocated memory.
@@ -76,7 +76,7 @@ void op_hashtab_set_value_destructor(struct op_hashtab *tab,
  * @param[out] tabp
  *   address of hashtab pointer
  */
-void op_hashtab_free(struct op_hashtab **tabp);
+void op_hashtab_free(struct op_hashtab** tabp);
 
 /**
  * Delete all current items in the hash table.
@@ -88,7 +88,7 @@ void op_hashtab_free(struct op_hashtab **tabp);
  *   -  0: Success
  *   - !0: Error
  */
- int op_hashtab_purge(struct op_hashtab *tab);
+int op_hashtab_purge(struct op_hashtab* tab);
 
 /**
  * Perform garbage collection on the underlying list.  Concurrent
@@ -97,7 +97,7 @@ void op_hashtab_free(struct op_hashtab **tabp);
  * @param[in] tab
  *   pointer to hash table
  */
-void op_hashtab_garbage_collect(struct op_hashtab *tab);
+void op_hashtab_garbage_collect(struct op_hashtab* tab);
 
 /**
  * Insert key/value into the table.
@@ -113,9 +113,7 @@ void op_hashtab_garbage_collect(struct op_hashtab *tab);
  *   -  true: success
  *   - false: error
  */
- bool op_hashtab_insert(struct op_hashtab *tab,
-                         void *key,
-                         void *value);
+bool op_hashtab_insert(struct op_hashtab* tab, void* key, void* value);
 
 /**
  * Retrieve the value of key in the table.
@@ -128,7 +126,7 @@ void op_hashtab_garbage_collect(struct op_hashtab *tab);
  * @return
  *   pointer to value if found, otherwise NULL
  */
-void *op_hashtab_find(struct op_hashtab *tab, const void *key);
+void* op_hashtab_find(struct op_hashtab* tab, const void* key);
 
 /**
  * Retrieve the next item in the hash table after cursor.
@@ -144,7 +142,7 @@ void *op_hashtab_find(struct op_hashtab *tab, const void *key);
  * @return
  *   value of subsequent entry
  */
-void *op_hashtab_next(struct op_hashtab *tab, void **cursor);
+void* op_hashtab_next(struct op_hashtab* tab, void** cursor);
 
 /**
  * Iterate through the hashtable, stopping at the end
@@ -158,7 +156,7 @@ void *op_hashtab_next(struct op_hashtab *tab, void **cursor);
  * @return
  *   value of subsequent entry
  */
-void *op_hashtab_iterate(struct op_hashtab *tab, void **cursor);
+void* op_hashtab_iterate(struct op_hashtab* tab, void** cursor);
 
 /**
  * Delete a key/value pair from the table.
@@ -174,7 +172,7 @@ void *op_hashtab_iterate(struct op_hashtab *tab, void **cursor);
  *   -  true: success
  *   - false: key not found
  */
-bool op_hashtab_delete(struct op_hashtab *tab, const void *key);
+bool op_hashtab_delete(struct op_hashtab* tab, const void* key);
 
 /**
  * Retrieve the current number of entries in the table.
@@ -185,7 +183,7 @@ bool op_hashtab_delete(struct op_hashtab *tab, const void *key);
  * @return
  *   number of non-deleted key/value entries in the table
  */
-size_t op_hashtab_size(struct op_hashtab *tab);
+size_t op_hashtab_size(struct op_hashtab* tab);
 
 /**
  * Retrieve an array of item pointers.  Caller is responsible
@@ -202,7 +200,8 @@ size_t op_hashtab_size(struct op_hashtab *tab);
  *   -  0: Success
  *   - !0: Error
  */
-int op_hashtab_snapshot(struct op_hashtab *tab, void **itemsp[], size_t *nb_items);
+int op_hashtab_snapshot(struct op_hashtab* tab, void** itemsp[],
+                        size_t* nb_items);
 
 #ifdef __cplusplus
 }

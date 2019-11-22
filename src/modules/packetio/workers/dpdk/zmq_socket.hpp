@@ -5,7 +5,8 @@
 
 namespace openperf::packetio::dpdk {
 
-class zmq_socket : public pollable_event<zmq_socket> {
+class zmq_socket : public pollable_event<zmq_socket>
+{
     void* m_socket;
     bool* m_signal;
     int m_fd;
@@ -22,6 +23,6 @@ public:
     void* event_callback_argument();
 };
 
-}
+} // namespace openperf::packetio::dpdk
 
 #endif /* _OP_PACKETIO_DPDK_ZMQ_SOCKET_HPP_ */

@@ -1,8 +1,8 @@
 /**
  * @file
  *
- * The content of some of these functions are based on the lwip/GSO implementation contained
- * here: https://github.com/sysml/lwip.git
+ * The content of some of these functions are based on the lwip/GSO
+ * implementation contained here: https://github.com/sysml/lwip.git
  */
 
 #include <algorithm>
@@ -24,13 +24,12 @@ namespace gso {
  * Nearly identical to the pbuf_skip function in <lwip>/src/core/pbuf.c,
  * but also returns the pbuf before the returned pbuf.
  */
-static
-pbuf* pbuf_skip_with_previous(struct pbuf *in, u16_t in_offset,
-                              u16_t *out_offset, struct pbuf** out_prev)
+static pbuf* pbuf_skip_with_previous(struct pbuf* in, u16_t in_offset,
+                                     u16_t* out_offset, struct pbuf** out_prev)
 {
     u16_t offset_left = in_offset;
-    struct pbuf *q = in;
-    struct pbuf *prev = NULL;
+    struct pbuf* q = in;
+    struct pbuf* prev = NULL;
 
     /* get the correct pbuf */
     while ((q != NULL) && (q->len <= offset_left)) {
@@ -39,21 +38,24 @@ pbuf* pbuf_skip_with_previous(struct pbuf *in, u16_t in_offset,
         q = q->next;
     }
     if (out_offset) *out_offset = offset_left;
-    if (out_prev)   *out_prev = prev;
+    if (out_prev) *out_prev = prev;
 
     return q;
 }
 
 /* Drop length bytes from the given pbuf chain at the specified offset. */
-static
-std::tuple<pbuf*, uint16_t> pbuf_drop_at(struct pbuf* p_head, uint16_t offset, uint16_t length)
+static std::tuple<pbuf*, uint16_t>
+pbuf_drop_at(struct pbuf* p_head, uint16_t offset, uint16_t length)
 {
-    LWIP_ERROR("(p_head != NULL) && (offset + len < p_head->tot_len) (programmer violates API)",
+    LWIP_ERROR("(p_head != NULL) && (offset + len < p_head->tot_len) "
+               "(programmer violates API)",
                ((p_head != NULL) && (offset + length < p_head->tot_len)),
                return (std::make_tuple(nullptr, 0)););
 
     for (struct pbuf* p = p_head; p != NULL; p = p->next)
-        LWIP_ASSERT("pbuf chains with multiple references are not implemented yet", (p->ref <= 1));
+        LWIP_ASSERT(
+            "pbuf chains with multiple references are not implemented yet",
+            (p->ref <= 1));
 
     if (offset == 0 && length == p_head->tot_len) {
         /* easy case; drop the whole chain */
@@ -64,7 +66,8 @@ std::tuple<pbuf*, uint16_t> pbuf_drop_at(struct pbuf* p_head, uint16_t offset, u
 
     uint16_t start_offset = 0;
     struct pbuf* start_prev = NULL;
-    auto start = pbuf_skip_with_previous(p_head, offset, &start_offset, &start_prev);
+    auto start =
+        pbuf_skip_with_previous(p_head, offset, &start_offset, &start_prev);
     if (start_offset == 0 && start_prev != NULL) {
         start = start_prev;
         start_offset = start_prev->len;
@@ -77,9 +80,11 @@ std::tuple<pbuf*, uint16_t> pbuf_drop_at(struct pbuf* p_head, uint16_t offset, u
     uint16_t pbufs_freed = 0;
     auto flags = p_head->flags; /* we'll need these later */
     if (start == end) {
-        /* Drop bytes by shuffling the data around without moving the payload pointer */
+        /* Drop bytes by shuffling the data around without moving the payload
+         * pointer */
         memmove(reinterpret_cast<uint8_t*>(start->payload) + start_offset,
-                reinterpret_cast<uint8_t*>(start->payload) + start_offset + length,
+                reinterpret_cast<uint8_t*>(start->payload) + start_offset
+                    + length,
                 start->len - (start_offset + length));
         start->len -= length;
         start->tot_len -= length;
@@ -91,7 +96,8 @@ std::tuple<pbuf*, uint16_t> pbuf_drop_at(struct pbuf* p_head, uint16_t offset, u
 
         /* Drop bytes on trailing pbuf? */
         if (end != NULL && end_offset > 0) {
-            end->payload = reinterpret_cast<uint8_t*>(end->payload) + end_offset;
+            end->payload =
+                reinterpret_cast<uint8_t*>(end->payload) + end_offset;
             end->len -= end_offset;
             end->tot_len -= end_offset;
         }
@@ -115,9 +121,7 @@ std::tuple<pbuf*, uint16_t> pbuf_drop_at(struct pbuf* p_head, uint16_t offset, u
         start->next = end;
         start->tot_len -= length;
     }
-    for (auto p = p_head; p != start; p = p->next) {
-        p->tot_len -= length;
-    }
+    for (auto p = p_head; p != start; p = p->next) { p->tot_len -= length; }
 
     p_head->flags = flags;
 
@@ -131,29 +135,34 @@ std::tuple<pbuf*, uint16_t> pbuf_drop_at(struct pbuf* p_head, uint16_t offset, u
  * The returned pbuf is guaranteed to have enough headroom for the requested
  * layer.
  */
-static
-std::tuple<pbuf*, bool> pbuf_split_at(struct pbuf* p_head, uint16_t split, pbuf_layer layer)
+static std::tuple<pbuf*, bool> pbuf_split_at(struct pbuf* p_head,
+                                             uint16_t split, pbuf_layer layer)
 {
-    LWIP_ERROR("(p_head != NULL) && (split < p_head->tot_len) (programmer violates API)",
+    LWIP_ERROR("(p_head != NULL) && (split < p_head->tot_len) (programmer "
+               "violates API)",
                ((p_head != NULL) && (split < p_head->tot_len)),
                return (std::make_tuple(nullptr, false)););
 
     for (struct pbuf* p = p_head; p != NULL; p = p->next)
-        LWIP_ASSERT("pbuf chains with multiple references are not implemented yet", (p->ref <= 1));
+        LWIP_ASSERT(
+            "pbuf chains with multiple references are not implemented yet",
+            (p->ref <= 1));
 
     if (split == 0 || split >= p_head->tot_len) {
         /* easy case; nothing to split */
         return (std::make_tuple(nullptr, false));
     }
 
-    pbuf *to_return = nullptr;
+    pbuf* to_return = nullptr;
     bool new_pbuf = false;
     uint16_t split_offset = 0;
     struct pbuf* split_prev = nullptr;
-    struct pbuf* split_pbuf = pbuf_skip_with_previous(p_head, split, &split_offset, &split_prev);
+    struct pbuf* split_pbuf =
+        pbuf_skip_with_previous(p_head, split, &split_offset, &split_prev);
 
     LWIP_ASSERT("split_pbuf == nullptr", split_pbuf != nullptr);
-    LWIP_ASSERT("offset != 0 or prev != 0)", split_offset != 0 || split_prev != 0);
+    LWIP_ASSERT("offset != 0 or prev != 0)",
+                split_offset != 0 || split_prev != 0);
 
     if (split_offset == 0) {
         /* Nice!  We split on a pbuf boundary */
@@ -168,11 +177,11 @@ std::tuple<pbuf*, bool> pbuf_split_at(struct pbuf* p_head, uint16_t split, pbuf_
     } else {
         /* Not nice; Allocate a new pbuf and update lengths and payload */
         LWIP_ASSERT("supported pbuf type",
-                    pbuf_match_type(split_pbuf, PBUF_RAM) || pbuf_match_type(split_pbuf, PBUF_POOL));
-        auto next_pbuf = pbuf_alloc(layer, split_pbuf->len - split_offset,
-                                    (pbuf_match_type(split_pbuf, PBUF_RAM)
-                                     ? PBUF_RAM
-                                     : PBUF_POOL));
+                    pbuf_match_type(split_pbuf, PBUF_RAM)
+                        || pbuf_match_type(split_pbuf, PBUF_POOL));
+        auto next_pbuf = pbuf_alloc(
+            layer, split_pbuf->len - split_offset,
+            (pbuf_match_type(split_pbuf, PBUF_RAM) ? PBUF_RAM : PBUF_POOL));
         if (!next_pbuf) return (std::make_tuple(nullptr, false));
 
         LWIP_ASSERT("split pbuf header too small",
@@ -208,10 +217,10 @@ std::tuple<pbuf*, bool> pbuf_split_at(struct pbuf* p_head, uint16_t split, pbuf_
     return (std::make_tuple(to_return, new_pbuf));
 }
 
-}
-}
-}
-}
+} // namespace gso
+} // namespace dpdk
+} // namespace packetio
+} // namespace openperf
 
 extern "C" {
 
@@ -223,14 +232,18 @@ uint16_t packetio_stack_gso_oversize_calc_length(uint16_t length)
      * Verify that payload size is indeed a power of two, otherwise we
      * need to update this calculation.
      */
-    static constexpr uint16_t payload_size = PBUF_POOL_BUFSIZE - RTE_PKTMBUF_HEADROOM;
-    static_assert(payload_size != 0 && (payload_size & (payload_size - 1)) == 0);
+    static constexpr uint16_t payload_size =
+        PBUF_POOL_BUFSIZE - RTE_PKTMBUF_HEADROOM;
+    static_assert(payload_size != 0
+                  && (payload_size & (payload_size - 1)) == 0);
     return ((length + payload_size - 1) & ~(payload_size - 1));
 }
 
 static constexpr unsigned tcp_max_segment()
 {
-    return (((std::numeric_limits<uint16_t>::max() - PBUF_POOL_BUFSIZE) / TCP_MSS) * TCP_MSS);
+    return (
+        ((std::numeric_limits<uint16_t>::max() - PBUF_POOL_BUFSIZE) / TCP_MSS)
+        * TCP_MSS);
 }
 
 uint16_t packetio_stack_gso_max_segment_length(const struct tcp_pcb* pcb)
@@ -246,23 +259,24 @@ uint16_t packetio_stack_gso_max_segment_length(const struct tcp_pcb* pcb)
      * to prevent overflow in the various transmit functions.
      */
     auto netif = (pcb->netif_idx != NETIF_NO_INDEX
-                  ? netif_get_by_index(pcb->netif_idx)
-                  : ip_route(&pcb->local_ip, &pcb->remote_ip));
+                      ? netif_get_by_index(pcb->netif_idx)
+                      : ip_route(&pcb->local_ip, &pcb->remote_ip));
     if (!netif) return (TCP_MSS);
 
     auto ifp = reinterpret_cast<net_interface*>(netif->state);
     return (std::max(tcp_max_segment(), ifp->max_gso_length()));
 }
 
-uint16_t
-packetio_stack_gso_segment_ack_partial(struct tcp_seg *seg, uint16_t acked)
+uint16_t packetio_stack_gso_segment_ack_partial(struct tcp_seg* seg,
+                                                uint16_t acked)
 {
     LWIP_ERROR("(seg != NULL) && (acked < seg->len) (programmer violates API)",
                ((seg != NULL) && (acked < seg->len)), return 0;);
 
     LWIP_DEBUGF(TCP_INPUT_DEBUG | LWIP_DBG_LEVEL_SERIOUS,
-                ("gso_segment_ack_partial: acked %" PRIu16 " bytes (seg->len: %" PRIu16
-                 ", seg->p->tot_len: %" PRIu16 ", hdr_len: %" PRIu32 ")\n",
+                ("gso_segment_ack_partial: acked %" PRIu16
+                 " bytes (seg->len: %" PRIu16 ", seg->p->tot_len: %" PRIu16
+                 ", hdr_len: %" PRIu32 ")\n",
                  acked, seg->len, seg->p->tot_len, seg->p->tot_len - seg->len));
 
     LWIP_ASSERT("segment without TCP header!?",
@@ -297,17 +311,21 @@ packetio_stack_gso_segment_ack_partial(struct tcp_seg *seg, uint16_t acked)
     return (nb_pbufs_freed);
 }
 
-int packetio_stack_gso_segment_split(struct tcp_pcb *pcb, struct tcp_seg* seg,
+int packetio_stack_gso_segment_split(struct tcp_pcb* pcb, struct tcp_seg* seg,
                                      uint16_t split)
 {
-    LWIP_ERROR("pcb != NULL && seg != NULL && split != 0 && split < seg->len (programmer violates API)",
-               ((pcb != nullptr) && (seg != nullptr) && (split != 0) && (split < seg->len)), return ERR_ARG;);
+    LWIP_ERROR("pcb != NULL && seg != NULL && split != 0 && split < seg->len "
+               "(programmer violates API)",
+               ((pcb != nullptr) && (seg != nullptr) && (split != 0)
+                && (split < seg->len)),
+               return ERR_ARG;);
 
     LWIP_ASSERT("segment without TCP header", (seg->tcphdr != nullptr));
 
     LWIP_DEBUGF(TCP_OUTPUT_DEBUG | LWIP_DBG_LEVEL_SERIOUS,
-                ("gso_segment_split: split segment at %" PRIu16 " (seg->len: %" PRIu16
-                 ", seg->p->tot_len: %" PRIu16 ", hdr_len: %" PRIu16 ")\n",
+                ("gso_segment_split: split segment at %" PRIu16
+                 " (seg->len: %" PRIu16 ", seg->p->tot_len: %" PRIu16
+                 ", hdr_len: %" PRIu16 ")\n",
                  split, seg->len, seg->p->tot_len, seg->p->tot_len - seg->len));
 
     uint16_t seg_header_length = seg->p->tot_len - seg->len;
@@ -324,10 +342,11 @@ int packetio_stack_gso_segment_split(struct tcp_pcb *pcb, struct tcp_seg* seg,
     }
 
     /*
-     * Split the pbufs into two chains. One remains attached to the segment, the other is
-     * returned by this function.
+     * Split the pbufs into two chains. One remains attached to the segment, the
+     * other is returned by this function.
      */
-    auto [next_pbuf, pbuf_incr] = gso::pbuf_split_at(seg->p, seg_header_length + split, PBUF_TRANSPORT);
+    auto [next_pbuf, pbuf_incr] =
+        gso::pbuf_split_at(seg->p, seg_header_length + split, PBUF_TRANSPORT);
     if (!next_pbuf) {
         LWIP_DEBUGF(TCP_OUTPUT_DEBUG | LWIP_DBG_LEVEL_SERIOUS,
                     ("gso_segment_split: failed to split pbuf\n"));
@@ -337,7 +356,8 @@ int packetio_stack_gso_segment_split(struct tcp_pcb *pcb, struct tcp_seg* seg,
 
     /* Copy the original TCP header to the new chain */
     auto err = pbuf_header(next_pbuf, tcp_header_length);
-    LWIP_ASSERT("appending header failed", err == ERR_OK);  /* can never fail... */
+    LWIP_ASSERT("appending header failed",
+                err == ERR_OK); /* can never fail... */
     packetio_stack_gso_pbuf_copy(next_pbuf, 0, seg->tcphdr, tcp_header_length);
 
     /* Update segments with new chain/length data */
@@ -348,7 +368,7 @@ int packetio_stack_gso_segment_split(struct tcp_pcb *pcb, struct tcp_seg* seg,
     next_seg->flags = seg->flags;
     next_seg->next = seg->next;
 
-    seg->len  = split;
+    seg->len = split;
     seg->next = next_seg;
 
 #if TCP_OVERSIZE
@@ -358,16 +378,16 @@ int packetio_stack_gso_segment_split(struct tcp_pcb *pcb, struct tcp_seg* seg,
 #endif /* TCP_OVERSIZE_DBGCHECK */
 
     /*
-     * However, if our new segment is the last unsent segment, we probably have some
-     * oversize; update the segment and the pcb.
+     * However, if our new segment is the last unsent segment, we probably have
+     * some oversize; update the segment and the pcb.
      */
     if (next_seg->next == NULL) {
         /* skip to last pbuf in chain */
         auto p = next_seg->p;
         while (p->next != nullptr) p = p->next;
         LWIP_ASSERT("found last p", p->next == nullptr);
-        pcb->unsent_oversize = LWIP_MIN(packetio_stack_gso_pbuf_data_available(p, p->len),
-                                        TCP_MSS);
+        pcb->unsent_oversize = LWIP_MIN(
+            packetio_stack_gso_pbuf_data_available(p, p->len), TCP_MSS);
 #if TCP_OVERSIZE_DBGCHECK
         next_seg->oversize_left = pcb->unsent_oversize;
 #endif /* TCP_OVERSIZE_DBGCHECK */
@@ -388,7 +408,8 @@ int packetio_stack_gso_segment_split(struct tcp_pcb *pcb, struct tcp_seg* seg,
             seg->tcphdr->urgp = lwip_htons(seg->len);
         }
     }
-    next_seg->tcphdr->seqno = lwip_htonl(lwip_ntohl(seg->tcphdr->seqno) + seg->len);
+    next_seg->tcphdr->seqno =
+        lwip_htonl(lwip_ntohl(seg->tcphdr->seqno) + seg->len);
 
     /*
      * If we allocated a new pbuf to split the chain, we need to update the
@@ -399,12 +420,11 @@ int packetio_stack_gso_segment_split(struct tcp_pcb *pcb, struct tcp_seg* seg,
     return ERR_OK;
 }
 
-uint16_t packetio_stack_gso_pbuf_data_available(const struct pbuf* p, uint16_t offset)
+uint16_t packetio_stack_gso_pbuf_data_available(const struct pbuf* p,
+                                                uint16_t offset)
 {
     auto max_payload = packetio_memory_pbuf_data_available(p);
-    return (max_payload > offset
-            ? max_payload - offset
-            : 0);
+    return (max_payload > offset ? max_payload - offset : 0);
 }
 
 uint16_t packetio_stack_gso_pbuf_copy(struct pbuf* p_head, uint16_t offset,
@@ -419,8 +439,7 @@ uint16_t packetio_stack_gso_pbuf_copy(struct pbuf* p_head, uint16_t offset,
         } else {
             auto to_copy = std::min(available, length);
             MEMCPY(reinterpret_cast<uint8_t*>(p->payload) + offset,
-                   reinterpret_cast<const uint8_t*>(dataptr) + copied,
-                   to_copy);
+                   reinterpret_cast<const uint8_t*>(dataptr) + copied, to_copy);
             copied += to_copy;
             length -= to_copy;
 
@@ -430,5 +449,4 @@ uint16_t packetio_stack_gso_pbuf_copy(struct pbuf* p_head, uint16_t offset,
 
     return (copied);
 }
-
 }

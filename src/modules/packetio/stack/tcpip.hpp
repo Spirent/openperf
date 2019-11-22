@@ -31,6 +31,6 @@ std::chrono::milliseconds handle_timeouts();
  */
 int handle_messages(sys_mbox_t);
 
-}
+} // namespace openperf::packetio::tcpip
 
 #endif /* _OP_PACKETIO_STACK_TCPIP_HPP_ */

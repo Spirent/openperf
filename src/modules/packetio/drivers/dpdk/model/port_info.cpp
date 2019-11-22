@@ -19,7 +19,7 @@ static T get_info_field(int id, T rte_eth_dev_info::*field)
     return (info.*field);
 }
 
-static uint16_t operator "" _S(unsigned long long value)
+static uint16_t operator"" _S(unsigned long long value)
 {
     return static_cast<uint16_t>(value);
 }
@@ -28,14 +28,12 @@ port_info::port_info(uint16_t port_id)
     : m_id(port_id)
 {
     if (!rte_eth_dev_is_valid_port(m_id)) {
-        throw std::runtime_error("Port id " + std::to_string(m_id) + " is invalid");
+        throw std::runtime_error("Port id " + std::to_string(m_id)
+                                 + " is invalid");
     }
 }
 
-uint16_t port_info::id() const
-{
-    return (m_id);
-}
+uint16_t port_info::id() const { return (m_id); }
 
 unsigned port_info::socket_id() const
 {
@@ -130,7 +128,9 @@ uint16_t port_info::rx_queue_max() const
 
 uint16_t port_info::rx_queue_default() const
 {
-    return (std::max(1_S, get_info_field(m_id, &rte_eth_dev_info::default_rxportconf).nb_queues));
+    return (std::max(
+        1_S,
+        get_info_field(m_id, &rte_eth_dev_info::default_rxportconf).nb_queues));
 }
 
 uint16_t port_info::tx_queue_count() const
@@ -145,19 +145,23 @@ uint16_t port_info::tx_queue_max() const
 
 uint16_t port_info::tx_queue_default() const
 {
-    return (std::max(1_S, get_info_field(m_id, &rte_eth_dev_info::default_txportconf).nb_queues));
+    return (std::max(
+        1_S,
+        get_info_field(m_id, &rte_eth_dev_info::default_txportconf).nb_queues));
 }
 
 uint16_t port_info::rx_desc_count() const
 {
-    return std::min((get_info_field(m_id, &rte_eth_dev_info::rx_desc_lim).nb_max),
-                    static_cast<uint16_t>(4096));
+    return std::min(
+        (get_info_field(m_id, &rte_eth_dev_info::rx_desc_lim).nb_max),
+        static_cast<uint16_t>(4096));
 }
 
 uint16_t port_info::tx_desc_count() const
 {
-    return std::min((get_info_field(m_id, &rte_eth_dev_info::tx_desc_lim).nb_max),
-                    static_cast<uint16_t>(1024));
+    return std::min(
+        (get_info_field(m_id, &rte_eth_dev_info::tx_desc_lim).nb_max),
+        static_cast<uint16_t>(1024));
 }
 
 uint16_t port_info::tx_tso_segment_max() const
@@ -177,23 +181,26 @@ rte_eth_txconf port_info::default_txconf() const
 
 bool port_info::lsc_interrupt() const
 {
-    return (*(get_info_field(m_id, &rte_eth_dev_info::dev_flags)) & RTE_ETH_DEV_INTR_LSC);
+    return (*(get_info_field(m_id, &rte_eth_dev_info::dev_flags))
+            & RTE_ETH_DEV_INTR_LSC);
 }
 
 bool port_info::rxq_interrupt() const
 {
     /*
-     * There seems to be no programatic way to determine whether a device supports
-     * rx queue interrupts or not, so we attempt to enable them on everything, unless
-     * the user says otherwise.  Run-time errors will disable them.
+     * There seems to be no programatic way to determine whether a device
+     * supports rx queue interrupts or not, so we attempt to enable them on
+     * everything, unless the user says otherwise.  Run-time errors will disable
+     * them.
      */
-    static auto result = openperf::config::file::op_config_get_param<OP_OPTION_TYPE_NONE>(
-        "modules.packetio.dpdk.no-rx-interrupts");
+    static auto result =
+        openperf::config::file::op_config_get_param<OP_OPTION_TYPE_NONE>(
+            "modules.packetio.dpdk.no-rx-interrupts");
     /* XXX: A negative times a negative equals a positive. Say it! */
     return (!result.value_or(false));
 }
 
-}
-}
-}
-}
+} // namespace model
+} // namespace dpdk
+} // namespace packetio
+} // namespace openperf

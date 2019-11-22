@@ -8,7 +8,7 @@
 
 #include "core/op_list.h"
 
-const void *op_dummy_list_value = (void *)0x0ddba11;
+const void* op_dummy_list_value = (void*)0x0ddba11;
 
 /**
  * Internal flags, structures, and defines
@@ -19,53 +19,57 @@ enum op_list_entry_flags {
 
 struct op_list_item;
 
-struct op_list_entry {
-    uint32_t version;            /**< version for avoiding aba problem */
-    uint32_t flags;              /**< attributes for this node */
-    struct op_list_item *next;  /**< pointer to list item */
+struct op_list_entry
+{
+    uint32_t version;          /**< version for avoiding aba problem */
+    uint32_t flags;            /**< attributes for this node */
+    struct op_list_item* next; /**< pointer to list item */
 } __attribute__((aligned(16)));
 
-#define OP_LIST_ENTRY_INIT { 0, 0, NULL }
+#define OP_LIST_ENTRY_INIT                                                     \
+    {                                                                          \
+        0, 0, NULL                                                             \
+    }
 
-struct op_list_item {
+struct op_list_item
+{
     _Atomic struct op_list_entry entry;
-    void *data;
+    void* data;
 };
 
 /*
  * XXX: Double word alignment is necessary for all
  * struct op_list_item members
  */
-struct op_list {
-    struct op_list_item head;         /**< list head */
-    atomic_size_t length;              /**< # of items in the list */
-    op_comparator *comparator;        /**< list key compare function */
-    op_destructor *destructor;        /**< list item destructor */
-    atomic_size_t free_length;         /**< # of items on the freelist */
-    struct op_list_item free_head;    /**< freelist head */
+struct op_list
+{
+    struct op_list_item head;      /**< list head */
+    atomic_size_t length;          /**< # of items in the list */
+    op_comparator* comparator;     /**< list key compare function */
+    op_destructor* destructor;     /**< list item destructor */
+    atomic_size_t free_length;     /**< # of items on the freelist */
+    struct op_list_item free_head; /**< freelist head */
 } __attribute__((aligned(64)));
 
 /**
  * Various static functions
  */
-static bool _is_deleted(struct op_list_entry *p)
+static bool _is_deleted(struct op_list_entry* p)
 {
     return (p->flags & LIST_ENTRY_DELETED ? true : false);
 }
 
-static void _list_item_destroy(struct op_list_item **itemp,
+static void _list_item_destroy(struct op_list_item** itemp,
                                op_destructor destructor)
 {
-    struct op_list_item *item = *itemp;
+    struct op_list_item* item = *itemp;
 
-    if (destructor) {
-        destructor(item->data);
-    }
+    if (destructor) { destructor(item->data); }
 
     op_list_item_free(itemp);
 }
 
-static int _list_item_compare(const void *thing1, const void *thing2)
+static int _list_item_compare(const void* thing1, const void* thing2)
 {
     if (thing1 == thing2) {
         return (0);
@@ -76,22 +80,22 @@ static int _list_item_compare(const void *thing1, const void *thing2)
     }
 }
 
-void _initialize_head_item(struct op_list_item *head)
+void _initialize_head_item(struct op_list_item* head)
 {
     head->data = NULL;
     struct op_list_entry head_entry = OP_LIST_ENTRY_INIT;
     atomic_init(&head->entry, head_entry);
 }
 
-struct op_list * op_list_allocate()
+struct op_list* op_list_allocate()
 {
-    struct op_list *list = NULL;
-    if (posix_memalign((void **)&list, 64, sizeof(*list)) != 0) {
+    struct op_list* list = NULL;
+    if (posix_memalign((void**)&list, 64, sizeof(*list)) != 0) {
         return (NULL);
     }
     list->length = ATOMIC_VAR_INIT(0);
     list->free_length = ATOMIC_VAR_INIT(0);
-    list->comparator =  _list_item_compare;
+    list->comparator = _list_item_compare;
     list->destructor = NULL;
 
     /* Initialize list heads */
@@ -101,25 +105,24 @@ struct op_list * op_list_allocate()
     return (list);
 }
 
-void op_list_set_comparator(struct op_list *list, op_comparator comparator)
+void op_list_set_comparator(struct op_list* list, op_comparator comparator)
 {
     list->comparator = comparator;
 }
 
-void op_list_set_destructor(struct op_list *list, op_destructor destructor)
+void op_list_set_destructor(struct op_list* list, op_destructor destructor)
 {
     list->destructor = destructor;
 }
 
-void _destroy_list_items(struct op_list_item *head,
-                         op_destructor destructor)
+void _destroy_list_items(struct op_list_item* head, op_destructor destructor)
 {
     struct op_list_entry head_entry = atomic_load(&head->entry);
-    struct op_list_item *current = head_entry.next;
+    struct op_list_item* current = head_entry.next;
 
     while (current != NULL) {
         struct op_list_entry current_entry = atomic_load(&current->entry);
-        struct op_list_item *next = current_entry.next;
+        struct op_list_item* next = current_entry.next;
         _list_item_destroy(&current, destructor);
         current = next;
     }
@@ -134,24 +137,22 @@ void _destroy_list_items(struct op_list_item *head,
  * XXX: Assumes that concurrent use has been halted by an external
  * mechanism...
  */
-void op_list_free(struct op_list **listp)
+void op_list_free(struct op_list** listp)
 {
-    struct op_list *list = *listp;
+    struct op_list* list = *listp;
 
     /* Free everything in the lists */
-    _destroy_list_items(&list->head,
-                        list->destructor);
-    _destroy_list_items(&list->free_head,
-                        list->destructor);
+    _destroy_list_items(&list->head, list->destructor);
+    _destroy_list_items(&list->free_head, list->destructor);
 
     free(list);
     *listp = NULL;
 }
 
-int op_list_purge(struct op_list *list)
+int op_list_purge(struct op_list* list)
 {
-    void **items = NULL;
-    size_t nb_items  = 0;
+    void** items = NULL;
+    size_t nb_items = 0;
     int error = 0;
 
     if ((error = op_list_snapshot(list, &items, &nb_items)) != 0) {
@@ -159,7 +160,7 @@ int op_list_purge(struct op_list *list)
     }
 
     for (size_t i = 0; i < nb_items; i++) {
-        void *item = items[i];
+        void* item = items[i];
         op_list_delete(list, item);
     }
 
@@ -172,21 +173,18 @@ int op_list_purge(struct op_list *list)
  * XXX: Assumes that concurrent use has been halted by an external
  * mechanism...
  */
-void op_list_garbage_collect(struct op_list *list)
+void op_list_garbage_collect(struct op_list* list)
 {
-    _destroy_list_items(&list->free_head,
-                        list->destructor);
+    _destroy_list_items(&list->free_head, list->destructor);
     atomic_store(&list->free_length, 0);
 }
 
-struct op_list_item *op_list_item_allocate(void *value)
+struct op_list_item* op_list_item_allocate(void* value)
 {
     assert(value);
 
-    struct op_list_item *item = calloc(1, sizeof(*item));
-    if (!item) {
-        return (NULL);
-    }
+    struct op_list_item* item = calloc(1, sizeof(*item));
+    if (!item) { return (NULL); }
 
     item->data = value;
 
@@ -196,7 +194,7 @@ struct op_list_item *op_list_item_allocate(void *value)
     return (item);
 }
 
-void op_list_item_free(struct op_list_item **itemp)
+void op_list_item_free(struct op_list_item** itemp)
 
 {
     assert(*itemp);
@@ -204,7 +202,7 @@ void op_list_item_free(struct op_list_item **itemp)
     *itemp = NULL;
 }
 
-void *op_list_item_data(const struct op_list_item *item)
+void* op_list_item_data(const struct op_list_item* item)
 {
     return (item->data);
 }
@@ -213,20 +211,20 @@ void *op_list_item_data(const struct op_list_item *item)
  * Insert an item on the free list
  * It should have already been marked for delete
  */
-bool _freelist_insert(struct op_list *list, struct op_list_item *node)
+bool _freelist_insert(struct op_list* list, struct op_list_item* node)
 {
     assert(list);
     assert(node);
 
-    struct op_list_item *head = &list->free_head;
-    struct op_list_entry head_now = atomic_load_explicit(&head->entry,
-                                                          memory_order_acquire);
+    struct op_list_item* head = &list->free_head;
+    struct op_list_entry head_now =
+        atomic_load_explicit(&head->entry, memory_order_acquire);
     struct op_list_entry head_update = OP_LIST_ENTRY_INIT;
 
     do {
         /* Update node to point to head's next item */
-        struct op_list_entry node_entry = atomic_load_explicit(&node->entry,
-                                                                memory_order_relaxed);
+        struct op_list_entry node_entry =
+            atomic_load_explicit(&node->entry, memory_order_relaxed);
         assert(node_entry.flags & LIST_ENTRY_DELETED);
         node_entry.version += 1;
         node_entry.next = head_now.next;
@@ -237,21 +235,18 @@ bool _freelist_insert(struct op_list *list, struct op_list_item *node)
         head_update.flags = head_now.flags;
         head_update.next = node;
 
-    } while (!atomic_compare_exchange_weak_explicit(&head->entry,
-                                                    &head_now,
-                                                    head_update,
-                                                    memory_order_release,
-                                                    memory_order_relaxed));
+    } while (!atomic_compare_exchange_weak_explicit(
+        &head->entry, &head_now, head_update, memory_order_release,
+        memory_order_relaxed));
 
     atomic_fetch_add_explicit(&list->free_length, 1, memory_order_relaxed);
     return (true);
 }
 
-int _handle_list_delete(struct op_list *list,
-                        struct op_list_item *to_delete,
-                        struct op_list_entry *to_delete_entry,
-                        struct op_list_item *prev,
-                        struct op_list_entry *prev_entry)
+int _handle_list_delete(struct op_list* list, struct op_list_item* to_delete,
+                        struct op_list_entry* to_delete_entry,
+                        struct op_list_item* prev,
+                        struct op_list_entry* prev_entry)
 {
     /*
      * This node has been marked deleted.
@@ -262,10 +257,9 @@ int _handle_list_delete(struct op_list *list,
         .flags = prev_entry->flags,
         .next = to_delete_entry->next,
     };
-    if (atomic_compare_exchange_weak_explicit(&prev->entry, prev_entry,
-                                              prev_entry_update,
-                                              memory_order_release,
-                                              memory_order_relaxed)) {
+    if (atomic_compare_exchange_weak_explicit(
+            &prev->entry, prev_entry, prev_entry_update, memory_order_release,
+            memory_order_relaxed)) {
         /*
          * Current is no longer in the list.
          * Stick it on the freelist so we don't lose it.
@@ -287,11 +281,9 @@ int _handle_list_delete(struct op_list *list,
  * CAS operations.  This ensures the atomicity of the insert, find, and
  * delete operations on the list.
  */
-bool _op_list_pfind(struct op_list *list,
-                     struct op_list_item *start,
-                     const void *key,
-                     struct op_list_item **prev,
-                     struct op_list_entry *prev_entry)
+bool _op_list_pfind(struct op_list* list, struct op_list_item* start,
+                    const void* key, struct op_list_item** prev,
+                    struct op_list_entry* prev_entry)
 {
     assert(list);
     assert(start);
@@ -301,27 +293,26 @@ bool _op_list_pfind(struct op_list *list,
 
 start:
     *prev = start;
-    *prev_entry = atomic_load_explicit(&(*prev)->entry,
-                                       memory_order_acquire);
+    *prev_entry = atomic_load_explicit(&(*prev)->entry, memory_order_acquire);
 
     while (prev_entry->next != NULL) {
-        struct op_list_item *curr = prev_entry->next;
-        struct op_list_entry curr_entry = atomic_load_explicit(&curr->entry,
-                                                                memory_order_acquire);
+        struct op_list_item* curr = prev_entry->next;
+        struct op_list_entry curr_entry =
+            atomic_load_explicit(&curr->entry, memory_order_acquire);
 
         if (!_is_deleted(&curr_entry)) {
             int result = list->comparator(curr->data, key);
-            if (result == 0) {        /* equal */
+            if (result == 0) { /* equal */
                 return (true);
-            } else if (result > 0) {  /* greater than */
+            } else if (result > 0) { /* greater than */
                 return (false);
             }
             /* else less than; keep looking */
             *prev = curr;
             *prev_entry = curr_entry;
         } else {
-            if (_handle_list_delete(list, curr, &curr_entry,
-                                    *prev, prev_entry) != 0) {
+            if (_handle_list_delete(list, curr, &curr_entry, *prev, prev_entry)
+                != 0) {
                 /*
                  * Some other thread updated the list for us.  Restart
                  * the loop in case other things changed.
@@ -334,39 +325,34 @@ start:
     return (false);
 }
 
-bool op_list_insert_head_item(struct op_list *list,
-                               struct op_list_item *item)
+bool op_list_insert_head_item(struct op_list* list, struct op_list_item* item)
 {
     return (op_list_insert_node(list, &list->head, item));
 }
 
-bool op_list_insert_head_value(struct op_list *list,
-                                void *value)
+bool op_list_insert_head_value(struct op_list* list, void* value)
 {
-    struct op_list_item *item = op_list_item_allocate(value);
-    if (!item) {
-        return (false);
-    }
+    struct op_list_item* item = op_list_item_allocate(value);
+    if (!item) { return (false); }
 
     return (op_list_insert_head_item(list, item));
 }
 
-bool op_list_insert_node_item(struct op_list *list,
-                               struct op_list_item *start,
-                               struct op_list_item *item)
+bool op_list_insert_node_item(struct op_list* list, struct op_list_item* start,
+                              struct op_list_item* item)
 {
     assert(list);
     assert(start);
     assert(item);
 
-    struct op_list_item *prev = NULL;
+    struct op_list_item* prev = NULL;
     struct op_list_entry prev_now = OP_LIST_ENTRY_INIT;
     struct op_list_entry prev_update = OP_LIST_ENTRY_INIT;
 
     /* Now insert into the list */
     do {
         if (_op_list_pfind(list, start, item->data, &prev, &prev_now)) {
-            return (false);  /* item already in list */
+            return (false); /* item already in list */
         }
 
         /* New node goes after previous */
@@ -380,105 +366,96 @@ bool op_list_insert_node_item(struct op_list *list,
         prev_update.next = item;
 
         /* Now try to swap */
-    } while (!atomic_compare_exchange_weak_explicit(&prev->entry,
-                                                    &prev_now,
-                                                    prev_update,
-                                                    memory_order_release,
-                                                    memory_order_relaxed));
+    } while (!atomic_compare_exchange_weak_explicit(
+        &prev->entry, &prev_now, prev_update, memory_order_release,
+        memory_order_relaxed));
 
     atomic_fetch_add_explicit(&list->length, 1, memory_order_relaxed);
     return (true);
 }
 
-bool op_list_insert_node_value(struct op_list *list,
-                                struct op_list_item *start,
-                                void *value)
+bool op_list_insert_node_value(struct op_list* list, struct op_list_item* start,
+                               void* value)
 {
-    struct op_list_item *item = op_list_item_allocate(value);
-    if (!item) {
-        return (false);
-    }
+    struct op_list_item* item = op_list_item_allocate(value);
+    if (!item) { return (false); }
 
     return (op_list_insert_node_item(list, start, item));
 }
 
-void *op_list_find_head(struct op_list *list, const void *key)
+void* op_list_find_head(struct op_list* list, const void* key)
 {
     struct op_list_entry prev_entry = OP_LIST_ENTRY_INIT;
-    struct op_list_item *prev = NULL;
+    struct op_list_item* prev = NULL;
     return (_op_list_pfind(list, &list->head, key, &prev, &prev_entry)
-            ? prev_entry.next->data
-            : NULL);
+                ? prev_entry.next->data
+                : NULL);
 }
 
-void *op_list_find_node(struct op_list *list,
-                         struct op_list_item *start,
-                         const void *key)
+void* op_list_find_node(struct op_list* list, struct op_list_item* start,
+                        const void* key)
 {
     struct op_list_entry prev_entry = OP_LIST_ENTRY_INIT;
-    struct op_list_item *prev = NULL;
+    struct op_list_item* prev = NULL;
     return (_op_list_pfind(list, start, key, &prev, &prev_entry)
-            ? prev_entry.next->data
-            : NULL);
+                ? prev_entry.next->data
+                : NULL);
 }
 
-bool op_list_delete_head(struct op_list *list, const void *key)
+bool op_list_delete_head(struct op_list* list, const void* key)
 {
     return (op_list_delete_node(list, &list->head, key));
 }
 
-bool op_list_delete_node(struct op_list *list,
-                          struct op_list_item *start,
-                          const void *key)
+bool op_list_delete_node(struct op_list* list, struct op_list_item* start,
+                         const void* key)
 {
     assert(list);
     assert(start);
     assert(key);
 
-    struct op_list_item *prev = NULL;
+    struct op_list_item* prev = NULL;
     struct op_list_entry prev_entry = OP_LIST_ENTRY_INIT;
-    struct op_list_item *to_delete = NULL;
+    struct op_list_item* to_delete = NULL;
     struct op_list_entry to_delete_now = OP_LIST_ENTRY_INIT;
     struct op_list_entry to_delete_update = OP_LIST_ENTRY_INIT;
 
     do {
         if (!_op_list_pfind(list, start, key, &prev, &prev_entry)) {
-            return (false);  /* no matching key */
+            return (false); /* no matching key */
         }
 
         to_delete = prev_entry.next;
-        to_delete_now = atomic_load_explicit(&to_delete->entry,
-                                             memory_order_acquire);
+        to_delete_now =
+            atomic_load_explicit(&to_delete->entry, memory_order_acquire);
         to_delete_update = to_delete_now;
         to_delete_update.version = to_delete_now.version + 1;
         to_delete_update.flags |= LIST_ENTRY_DELETED;
-    } while (!atomic_compare_exchange_weak_explicit(&to_delete->entry,
-                                                    &to_delete_now,
-                                                    to_delete_update,
-                                                    memory_order_release,
-                                                    memory_order_relaxed));
+    } while (!atomic_compare_exchange_weak_explicit(
+        &to_delete->entry, &to_delete_now, to_delete_update,
+        memory_order_release, memory_order_relaxed));
 
     atomic_fetch_sub_explicit(&list->length, 1, memory_order_relaxed);
     return (true);
 }
 
-size_t op_list_length(struct op_list *list)
+size_t op_list_length(struct op_list* list)
 {
     size_t length = atomic_load_explicit(&list->length, memory_order_relaxed);
     return (length);
 }
 
-struct op_list_item *op_list_head(struct op_list *list)
+struct op_list_item* op_list_head(struct op_list* list)
 {
     return (&list->head);
 }
 
-void *op_list_next(struct op_list *list, struct op_list_item **prevp)
+void* op_list_next(struct op_list* list, struct op_list_item** prevp)
 {
     (void)list;
-    struct op_list_item *prev = *prevp;
-    struct op_list_entry prev_entry = atomic_load_explicit(&prev->entry,
-                                                            memory_order_acquire);
+    struct op_list_item* prev = *prevp;
+    struct op_list_entry prev_entry =
+        atomic_load_explicit(&prev->entry, memory_order_acquire);
 
     /* Make sure previous has not been deleted */
     if (_is_deleted(&prev_entry)) {
@@ -489,9 +466,9 @@ void *op_list_next(struct op_list *list, struct op_list_item **prevp)
 
     /* Look for the next item */
     while (prev_entry.next != NULL) {
-        struct op_list_item *curr = prev_entry.next;
-        struct op_list_entry curr_entry = atomic_load_explicit(&curr->entry,
-                                                                memory_order_acquire);
+        struct op_list_item* curr = prev_entry.next;
+        struct op_list_entry curr_entry =
+            atomic_load_explicit(&curr->entry, memory_order_acquire);
 
         /* Return the first non-deleted item we come across in the list */
         if (!_is_deleted(&curr_entry)) {
@@ -499,8 +476,8 @@ void *op_list_next(struct op_list *list, struct op_list_item **prevp)
             return (curr->data);
         } else {
             /* Try to remove the deleted node from the list */
-            if (_handle_list_delete(list, curr, &curr_entry,
-                                    prev, &prev_entry) == 0) {
+            if (_handle_list_delete(list, curr, &curr_entry, prev, &prev_entry)
+                == 0) {
                 /* On success, we can continue our search */
                 continue;
             } else {
@@ -517,20 +494,17 @@ void *op_list_next(struct op_list *list, struct op_list_item **prevp)
     return (NULL);
 }
 
-int op_list_snapshot(struct op_list *list, void **itemsp[], size_t *nb_items)
+int op_list_snapshot(struct op_list* list, void** itemsp[], size_t* nb_items)
 {
-    void **items = NULL;
+    void** items = NULL;
 
     do {
         size_t length = op_list_length(list);
         items = realloc(items, length * sizeof(*items));
-        if (!items) {
-            return (-ENOMEM);
-        }
-        struct op_list_item *cursor = op_list_head(list);
-        void *current = op_list_next(list, &cursor);
-        for (*nb_items = 0;
-             *nb_items < length && current != NULL;
+        if (!items) { return (-ENOMEM); }
+        struct op_list_item* cursor = op_list_head(list);
+        void* current = op_list_next(list, &cursor);
+        for (*nb_items = 0; *nb_items < length && current != NULL;
              (*nb_items)++, current = op_list_next(list, &cursor)) {
             items[*nb_items] = current;
         }

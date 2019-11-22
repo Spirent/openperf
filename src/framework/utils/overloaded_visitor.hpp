@@ -7,8 +7,7 @@ namespace openperf::utils {
  * This struct is magic.  Use templates and parameter packing to provide
  * some syntactic sugar for creating visitor objects for std::visit.
  */
-template<typename ...Ts>
-struct overloaded_visitor : Ts...
+template <typename... Ts> struct overloaded_visitor : Ts...
 {
     overloaded_visitor(const Ts&... args)
         : Ts(args)...
@@ -17,6 +16,6 @@ struct overloaded_visitor : Ts...
     using Ts::operator()...;
 };
 
-}
+} // namespace openperf::utils
 
 #endif /* _OP_UTILS_OVERLOADED_VISITOR_H_ */

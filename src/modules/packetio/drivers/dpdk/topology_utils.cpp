@@ -26,9 +26,9 @@ std::vector<queue::descriptor>
 queue_distribute(const std::vector<model::port_info>& port_info)
 {
     /* If we have multiple cores, assign the stack to a dedicated one. */
-    unsigned stack_lcore = (rte_lcore_count() <= 2
-                            ? std::numeric_limits<unsigned>::max()
-                            : get_stack_lcore_id());
+    unsigned stack_lcore =
+        (rte_lcore_count() <= 2 ? std::numeric_limits<unsigned>::max()
+                                : get_stack_lcore_id());
 
     /*
      * Generate a node -> core map so that we can easily tell which cores are
@@ -36,7 +36,8 @@ queue_distribute(const std::vector<model::port_info>& port_info)
      */
     cores_by_id nodes;
     unsigned lcore_id = 0;
-    RTE_LCORE_FOREACH_SLAVE(lcore_id) {
+    RTE_LCORE_FOREACH_SLAVE(lcore_id)
+    {
         if (lcore_id == stack_lcore) continue;
         nodes[rte_lcore_to_socket_id(lcore_id)].push_back(lcore_id);
     }
@@ -59,18 +60,23 @@ queue_distribute(const std::vector<model::port_info>& port_info)
     if (!unmatched_port_nodes.empty()) {
         for (auto& item : unmatched_port_nodes) {
             OP_LOG(OP_LOG_WARNING,
-                    "No local cores are available for ports on NUMA socket %u (port%s %s)\n",
-                    item.first,
-                    item.second.size() > 1 ? "s" : "",
-                    std::accumulate(begin(item.second), end(item.second), std::string(),
-                                    [&](const std::string &a, unsigned b) -> std::string {
-                                        return (a
-                                                + (a.length() == 0 ? ""
-                                                   : item.second.size() == 2 ? " and "
-                                                   : item.second.back() == b ? ", and "
-                                                   : ", ")
-                                                + std::to_string(b));
-                                    }).c_str());
+                   "No local cores are available for ports on NUMA socket %u "
+                   "(port%s %s)\n",
+                   item.first, item.second.size() > 1 ? "s" : "",
+                   std::accumulate(
+                       begin(item.second), end(item.second), std::string(),
+                       [&](const std::string& a, unsigned b) -> std::string {
+                           return (a
+                                   + (a.length() == 0
+                                          ? ""
+                                          : item.second.size() == 2
+                                                ? " and "
+                                                : item.second.back() == b
+                                                      ? ", and "
+                                                      : ", ")
+                                   + std::to_string(b));
+                       })
+                       .c_str());
         }
     }
 
@@ -80,9 +86,7 @@ queue_distribute(const std::vector<model::port_info>& port_info)
      * We'll use this to help assign port queues without local cores to workers.
      */
     std::vector<unsigned> node_ids;
-    for (auto& node : nodes) {
-        node_ids.push_back(node.first);
-    }
+    for (auto& node : nodes) { node_ids.push_back(node.first); }
     std::sort(begin(node_ids), end(node_ids));
 
     std::vector<queue::descriptor> descriptors;
@@ -92,7 +96,8 @@ queue_distribute(const std::vector<model::port_info>& port_info)
          * this node.
          */
         std::vector<model::port_info> numa_port_info;
-        std::copy_if(begin(port_info), end(port_info), std::back_inserter(numa_port_info),
+        std::copy_if(begin(port_info), end(port_info),
+                     std::back_inserter(numa_port_info),
                      [&](const model::port_info& info) -> bool {
                          return (info.socket_id() == node.first);
                      });
@@ -111,22 +116,24 @@ queue_distribute(const std::vector<model::port_info>& port_info)
         }
 
         /* Now, generate a queue distribution for this set of ports and cores */
-        auto node_descriptors = queue::distribute_queues(numa_port_info, node.second.size());
+        auto node_descriptors =
+            queue::distribute_queues(numa_port_info, node.second.size());
 
         /*
          * Finally, update the descriptor so that the worker id points to the
          * correct core id for that numa node.  Then add it to our final list
          * of queue descriptors.
          */
-        std::transform(begin(node_descriptors), end(node_descriptors), std::back_inserter(descriptors),
-                       [&](const queue::descriptor& d) -> queue::descriptor {
-                           return (queue::descriptor{
-                                   .worker_id = static_cast<uint16_t>(
-                                       node.second[d.worker_id]),
-                                   .port_id = d.port_id,
-                                   .queue_id = d.queue_id,
-                                   .mode = d.mode });
-                       });
+        std::transform(
+            begin(node_descriptors), end(node_descriptors),
+            std::back_inserter(descriptors),
+            [&](const queue::descriptor& d) -> queue::descriptor {
+                return (queue::descriptor{.worker_id = static_cast<uint16_t>(
+                                              node.second[d.worker_id]),
+                                          .port_id = d.port_id,
+                                          .queue_id = d.queue_id,
+                                          .mode = d.mode});
+            });
     }
 
     return (descriptors);
@@ -137,32 +144,34 @@ unsigned get_stack_lcore_id()
     /* Generate the set of numa nodes/socket ids from our set of ports */
     std::set<unsigned> node_ids;
     uint16_t port_id = 0;
-    RTE_ETH_FOREACH_DEV(port_id) {
+    RTE_ETH_FOREACH_DEV(port_id)
+    {
         node_ids.insert(rte_eth_dev_socket_id(port_id));
     }
 
     /* Determine how many cores we can use on each node */
     cores_by_id nodes;
     int lcore_id = 0;
-    RTE_LCORE_FOREACH_SLAVE(lcore_id) {
+    RTE_LCORE_FOREACH_SLAVE(lcore_id)
+    {
         nodes[rte_lcore_to_socket_id(lcore_id)].push_back(lcore_id);
     }
 
     assert(!nodes.empty());
 
     /* Find the numa node with the most cores */
-    auto max = std::max_element(begin(nodes), end(nodes),
-                                [](const cores_by_id::value_type& a,
-                                   const cores_by_id::value_type& b) {
-                                    return (a.second.size() < b.second.size());
-                                });
+    auto max = std::max_element(
+        begin(nodes), end(nodes),
+        [](const cores_by_id::value_type& a, const cores_by_id::value_type& b) {
+            return (a.second.size() < b.second.size());
+        });
 
     /* Return the first available core */
     assert(!max->second.empty());
     return (max->second.front());
 }
 
-}
-}
-}
-}
+} // namespace topology
+} // namespace dpdk
+} // namespace packetio
+} // namespace openperf

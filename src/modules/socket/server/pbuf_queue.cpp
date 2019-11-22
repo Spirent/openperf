@@ -14,9 +14,7 @@ pbuf_queue::pbuf_queue()
 
 pbuf_queue::~pbuf_queue()
 {
-    for (auto& item : m_queue) {
-        pbuf_free(item.pbuf());
-    }
+    for (auto& item : m_queue) { pbuf_free(item.pbuf()); }
 }
 
 void pbuf_queue::push(pbuf* p)
@@ -36,25 +34,19 @@ void pbuf_queue::push(pbuf* p)
     }
 }
 
-size_t pbuf_queue::bufs() const
-{
-    return (m_queue.size());
-}
+size_t pbuf_queue::bufs() const { return (m_queue.size()); }
 
-size_t pbuf_queue::length() const
-{
-    return (m_length);
-}
+size_t pbuf_queue::length() const { return (m_length); }
 
-size_t pbuf_queue::iovecs(iovec iovs[], size_t max_iovs, size_t max_length) const
+size_t pbuf_queue::iovecs(iovec iovs[], size_t max_iovs,
+                          size_t max_length) const
 {
     size_t iov_idx = 0, pbuf_idx = 0, length = 0;
     while (pbuf_idx < m_queue.size() && iov_idx < max_iovs) {
         auto& item = m_queue[pbuf_idx++];
         const auto len = item.len();
         if (length += len > max_length) break;
-        iovs[iov_idx++] = iovec{ .iov_base = item.payload(),
-                                 .iov_len = len };
+        iovs[iov_idx++] = iovec{.iov_base = item.payload(), .iov_len = len};
     }
 
     return (iov_idx);
@@ -79,20 +71,19 @@ size_t pbuf_queue::clear(size_t length)
              */
             assert(len > length);
 
-            item.payload(reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(item.payload()) + length));
+            item.payload(reinterpret_cast<void*>(
+                reinterpret_cast<uintptr_t>(item.payload()) + length));
             item.len(len - length);
 
             cleared += length;
             length = 0;
 
-            delete_idx--;  /* we don't want to delete this one */
+            delete_idx--; /* we don't want to delete this one */
         }
     }
 
     std::for_each(begin(m_queue), begin(m_queue) + delete_idx,
-                  [](const pbuf_vec& vec) {
-                      pbuf_free(vec.pbuf());
-                  });
+                  [](const pbuf_vec& vec) { pbuf_free(vec.pbuf()); });
     m_queue.erase(begin(m_queue), begin(m_queue) + delete_idx);
 
     m_length -= cleared;
@@ -100,6 +91,6 @@ size_t pbuf_queue::clear(size_t length)
     return (cleared);
 }
 
-}
-}
-}
+} // namespace server
+} // namespace socket
+} // namespace openperf

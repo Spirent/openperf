@@ -8,14 +8,13 @@
 namespace openperf {
 namespace socket {
 
-template <typename Derived>
-class circular_buffer_consumer
+template <typename Derived> class circular_buffer_consumer
 {
     Derived& derived();
     const Derived& derived() const;
 
     uint8_t* base() const;
-    size_t   len()  const;
+    size_t len() const;
 
     std::atomic_size_t& read_idx();
     const std::atomic_size_t& read_idx() const;
@@ -43,7 +42,7 @@ public:
     size_t drop(size_t length);
 };
 
-}
-}
+} // namespace socket
+} // namespace openperf
 
 #endif /* _OP_SOCKET_CIRCULAR_BUFFER_CONSUMER_HPP_ */

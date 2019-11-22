@@ -29,6 +29,6 @@ unsigned get_id();
  */
 unsigned get_numa_node();
 
-}
+} // namespace openperf::packetio::internal::worker
 
 #endif /* _OP_PACKETIO_INTERNAL_WORKER_HPP_ */

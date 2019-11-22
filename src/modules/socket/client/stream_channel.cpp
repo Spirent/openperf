@@ -25,15 +25,9 @@ namespace client {
  ***/
 
 /* We consume data from the receive queue */
-uint8_t* stream_channel::consumer_base() const
-{
-    return (rx_buffer.ptr.get());
-}
+uint8_t* stream_channel::consumer_base() const { return (rx_buffer.ptr.get()); }
 
-size_t stream_channel::consumer_len() const
-{
-    return (rx_buffer.len);
-}
+size_t stream_channel::consumer_len() const { return (rx_buffer.len); }
 
 std::atomic_size_t& stream_channel::consumer_read_idx()
 {
@@ -56,15 +50,9 @@ const std::atomic_size_t& stream_channel::consumer_write_idx() const
 }
 
 /* We produce data for the transmit queue */
-uint8_t* stream_channel::producer_base() const
-{
-    return (tx_buffer.ptr.get());
-}
+uint8_t* stream_channel::producer_base() const { return (tx_buffer.ptr.get()); }
 
-size_t stream_channel::producer_len() const
-{
-    return (tx_buffer.len);
-}
+size_t stream_channel::producer_len() const { return (tx_buffer.len); }
 
 std::atomic_size_t& stream_channel::producer_read_idx()
 {
@@ -90,15 +78,9 @@ const std::atomic_size_t& stream_channel::producer_write_idx() const
  * We consume notifications on the client fd.
  * We produce notifications on the server fd.
  */
-int stream_channel::consumer_fd() const
-{
-    return (client_fds.client_fd);
-}
+int stream_channel::consumer_fd() const { return (client_fds.client_fd); }
 
-int stream_channel::producer_fd() const
-{
-    return (client_fds.server_fd);
-}
+int stream_channel::producer_fd() const { return (client_fds.server_fd); }
 
 /* We generate notifications for the transmit queue */
 std::atomic_uint64_t& stream_channel::notify_read_idx()
@@ -175,8 +157,10 @@ int stream_channel::flags(int flags)
 }
 
 tl::expected<size_t, int> stream_channel::send(const iovec iov[], size_t iovcnt,
-                                               int flags __attribute__((unused)),
-                                               const sockaddr *to __attribute__((unused)))
+                                               int flags
+                                               __attribute__((unused)),
+                                               const sockaddr* to
+                                               __attribute__((unused)))
 {
     if (auto error = socket_error.load(std::memory_order_relaxed); error != 0) {
         return (tl::make_unexpected(error));
@@ -184,31 +168,34 @@ tl::expected<size_t, int> stream_channel::send(const iovec iov[], size_t iovcnt,
 
     size_t buf_available = 0;
     while ((buf_available = writable()) == 0) {
-        if (auto error = (socket_flags.load(std::memory_order_relaxed) & EFD_NONBLOCK
-                          ? block()
-                          : block_wait()); error != 0) {
+        if (auto error =
+                (socket_flags.load(std::memory_order_relaxed) & EFD_NONBLOCK
+                     ? block()
+                     : block_wait());
+            error != 0) {
             return (tl::make_unexpected(error));
         }
 
         /* Check if an error woke us up */
-        if (auto error = socket_error.load(std::memory_order_acquire); error != 0) {
+        if (auto error = socket_error.load(std::memory_order_acquire);
+            error != 0) {
             return (tl::make_unexpected(error));
         }
     }
 
     assert(buf_available);
 
-    auto written = std::accumulate(iov, iov + iovcnt, 0UL,
-                                   [&](size_t x, const iovec& iov) {
-                                       return (x + write_and_notify(iov.iov_base,
-                                                                    iov.iov_len,
-                                                                    [&]() { notify(); }));
-                                   });
+    auto written = std::accumulate(
+        iov, iov + iovcnt, 0UL, [&](size_t x, const iovec& iov) {
+            return (x + write_and_notify(iov.iov_base, iov.iov_len, [&]() {
+                        notify();
+                    }));
+        });
 
     if (written == buf_available
         && socket_flags.load(std::memory_order_relaxed) & EFD_NONBLOCK
         && !writable()) {
-        block();   /* pre-emptive block */
+        block(); /* pre-emptive block */
     };
 
     notify();
@@ -216,10 +203,11 @@ tl::expected<size_t, int> stream_channel::send(const iovec iov[], size_t iovcnt,
     return (written);
 }
 
-tl::expected<size_t, int> stream_channel::recv(iovec iov[], size_t iovcnt,
-                                               int flags __attribute__((unused)),
-                                               sockaddr *from __attribute__((unused)),
-                                               socklen_t *fromlen __attribute__((unused)))
+tl::expected<size_t, int>
+stream_channel::recv(iovec iov[], size_t iovcnt,
+                     int flags __attribute__((unused)),
+                     sockaddr* from __attribute__((unused)),
+                     socklen_t* fromlen __attribute__((unused)))
 {
     /*
      * Note: we only check for errors if there is nothing to read in the buffer.
@@ -228,7 +216,8 @@ tl::expected<size_t, int> stream_channel::recv(iovec iov[], size_t iovcnt,
     size_t buf_readable = 0;
     while ((buf_readable = readable()) == 0) {
         /* Check if an error exists before blocking */
-        if (auto error = socket_error.load(std::memory_order_acquire); error != 0) {
+        if (auto error = socket_error.load(std::memory_order_acquire);
+            error != 0) {
             if (error == EOF) return (0);
             return (tl::make_unexpected(error));
         }
@@ -241,12 +230,12 @@ tl::expected<size_t, int> stream_channel::recv(iovec iov[], size_t iovcnt,
 
     assert(buf_readable);
 
-    auto read_size = std::accumulate(iov, iov + iovcnt, 0UL,
-                                     [&](size_t x, const iovec& iov) {
-                                         return (x + read_and_notify(iov.iov_base,
-                                                                     iov.iov_len,
-                                                                     [&]() { notify(); }));
-                                     });
+    auto read_size = std::accumulate(
+        iov, iov + iovcnt, 0UL, [&](size_t x, const iovec& iov) {
+            return (x + read_and_notify(iov.iov_base, iov.iov_len, [&]() {
+                        notify();
+                    }));
+        });
 
     /*
      * Check to see if we have any remaining data to read.  If we don't, clear
@@ -264,28 +253,22 @@ tl::expected<size_t, int> stream_channel::recv(iovec iov[], size_t iovcnt,
 
 tl::expected<void, int> stream_channel::block_writes()
 {
-    if (auto error = block()) {
-        return (tl::make_unexpected(error));
-    }
+    if (auto error = block()) { return (tl::make_unexpected(error)); }
     return {};
 }
 
 tl::expected<void, int> stream_channel::wait_readable()
 {
-    if (auto error = ack_wait()) {
-        return (tl::make_unexpected(error));
-    }
+    if (auto error = ack_wait()) { return (tl::make_unexpected(error)); }
     return {};
 }
 
 tl::expected<void, int> stream_channel::wait_writable()
 {
-    if (auto error = block_wait()) {
-        return (tl::make_unexpected(error));
-    }
+    if (auto error = block_wait()) { return (tl::make_unexpected(error)); }
     return {};
 }
 
-}
-}
-}
+} // namespace client
+} // namespace socket
+} // namespace openperf

@@ -12,8 +12,7 @@
 
 namespace openperf::packetio::dpdk {
 
-template <typename Derived>
-class pollable_event
+template <typename Derived> class pollable_event
 {
 public:
     pollable_event() = default;
@@ -30,23 +29,18 @@ public:
          * Make sure the event always has the correct data before use.  The
          * DPDK functions will wipe the struct when/if we remove the event.
          */
-        m_event = rte_epoll_event{
-            .epdata = {
-                .event = EPOLLIN | EPOLLET,
-                .data = data,
-                .cb_fun = get_callback_fun(),
-                .cb_arg = get_callback_arg()
-            }
-        };
+        m_event = rte_epoll_event{.epdata = {.event = EPOLLIN | EPOLLET,
+                                             .data = data,
+                                             .cb_fun = get_callback_fun(),
+                                             .cb_arg = get_callback_arg()}};
 
-        auto error = rte_epoll_ctl(poll_fd, EPOLL_CTL_ADD,
-                                   static_cast<Derived&>(*this).event_fd(),
-                                   &m_event);
+        auto error =
+            rte_epoll_ctl(poll_fd, EPOLL_CTL_ADD,
+                          static_cast<Derived&>(*this).event_fd(), &m_event);
 
         if (error) {
             OP_LOG(OP_LOG_ERROR, "Could not add poll event for fd %d: %s\n",
-                    static_cast<Derived&>(*this).event_fd(),
-                    strerror(errno));
+                   static_cast<Derived&>(*this).event_fd(), strerror(errno));
         }
 
         return (!error);
@@ -54,14 +48,13 @@ public:
 
     bool del(int poll_fd, void* data)
     {
-        auto error = rte_epoll_ctl(poll_fd, EPOLL_CTL_DEL,
-                                   static_cast<Derived&>(*this).event_fd(),
-                                   &m_event);
+        auto error =
+            rte_epoll_ctl(poll_fd, EPOLL_CTL_DEL,
+                          static_cast<Derived&>(*this).event_fd(), &m_event);
 
         if (error) {
             OP_LOG(OP_LOG_ERROR, "Could not delete poll event for fd %d: %s\n",
-                    static_cast<Derived&>(*this).event_fd(),
-                    strerror(errno));
+                   static_cast<Derived&>(*this).event_fd(), strerror(errno));
         }
 
         return (!error);
@@ -75,12 +68,15 @@ private:
      * functions and/or arguments.  Use the derived functions if provided,
      * otherwise use nullptr.
      */
-    template <typename, typename = std::void_t<> >
-    struct has_event_callback_argument : std::false_type{};
+    template <typename, typename = std::void_t<>>
+    struct has_event_callback_argument : std::false_type
+    {};
 
     template <typename T>
-    struct has_event_callback_argument<T, std::void_t<decltype(std::declval<T>().event_callback_argument())>>
-        : std::true_type{};
+    struct has_event_callback_argument<
+        T, std::void_t<decltype(std::declval<T>().event_callback_argument())>>
+        : std::true_type
+    {};
 
     void* get_callback_arg()
     {
@@ -91,12 +87,15 @@ private:
         }
     }
 
-    template <typename, typename = std::void_t<> >
-    struct has_event_callback_function : std::false_type{};
+    template <typename, typename = std::void_t<>>
+    struct has_event_callback_function : std::false_type
+    {};
 
     template <typename T>
-    struct has_event_callback_function<T, std::void_t<decltype(std::declval<T>().event_callback_function())>>
-        : std::true_type{};
+    struct has_event_callback_function<
+        T, std::void_t<decltype(std::declval<T>().event_callback_function())>>
+        : std::true_type
+    {};
 
     event_callback get_callback_fun()
     {
@@ -108,6 +107,6 @@ private:
     }
 };
 
-}
+} // namespace openperf::packetio::dpdk
 
 #endif /* _OP_PACKETIO_DPDK_POLLABLE_EVENT_TCC_ */

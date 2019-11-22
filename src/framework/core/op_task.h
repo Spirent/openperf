@@ -13,16 +13,18 @@ extern "C" {
 /**
  * Structure providing arguments for tasks
  */
-struct op_task_args {
-    void *context;                      /**< ZeroMQ context */
-    char name[OP_TASK_ARGS_NAME_MAX];  /**< Thread name for task */
-    struct {
-        const void *args;               /**< (optional) argument for task */
-        uint64_t flags;                 /**< (optional) flags for task */
+struct op_task_args
+{
+    void* context;                    /**< ZeroMQ context */
+    char name[OP_TASK_ARGS_NAME_MAX]; /**< Thread name for task */
+    struct
+    {
+        const void* args; /**< (optional) argument for task */
+        uint64_t flags;   /**< (optional) flags for task */
     } custom;
 };
 
-typedef void *(task_fn)(void *args);
+typedef void*(task_fn)(void* args);
 
 /**
  * Run task in a new, detached thread.  This task blocks until the new
@@ -38,9 +40,8 @@ typedef void *(task_fn)(void *args);
  *   0: Success
  *  !0: Error
  */
-int op_task_launch(task_fn *task,
-                    struct op_task_args *task_args,
-                    const char *task_name);
+int op_task_launch(task_fn* task, struct op_task_args* task_args,
+                   const char* task_name);
 
 /**
  * Open a socket for the purpose of synchronizing with other processes
@@ -53,7 +54,7 @@ int op_task_launch(task_fn *task,
  * @return
  *   0MQ socket or NULL on error
  */
-void *op_task_sync_socket(void *context, const char *endpoint);
+void* op_task_sync_socket(void* context, const char* endpoint);
 
 /**
  * Wait for responses on the socket.
@@ -67,7 +68,7 @@ void *op_task_sync_socket(void *context, const char *endpoint);
  *   0: Success
  *  !0: Error
  */
-int op_task_sync_block(void **socketp, size_t expected);
+int op_task_sync_block(void** socketp, size_t expected);
 
 /**
  * Wait for responses on the socket and log a warning every
@@ -88,16 +89,14 @@ int op_task_sync_block(void **socketp, size_t expected);
  *   0: Success
  *  !0: Error
  */
-#define op_task_sync_block_and_warn(socketp, expected,                 \
-                                     timeout, format, ...)              \
-    _op_task_sync_block_and_warn(socketp, expected, timeout,           \
-                                  __func__, format, ##__VA_ARGS__)
+#define op_task_sync_block_and_warn(socketp, expected, timeout, format, ...)   \
+    _op_task_sync_block_and_warn(socketp, expected, timeout, __func__, format, \
+                                 ##__VA_ARGS__)
 
-int _op_task_sync_block_and_warn(void **socketp, size_t expected,
-                                  unsigned interval,
-                                  const char *function,
-                                  const char *format, ...)
-__attribute__((format(printf, 5, 6)));
+int _op_task_sync_block_and_warn(void** socketp, size_t expected,
+                                 unsigned interval, const char* function,
+                                 const char* format, ...)
+    __attribute__((format(printf, 5, 6)));
 
 /**
  * Notify the sync endpoint
@@ -111,7 +110,7 @@ __attribute__((format(printf, 5, 6)));
  *   0: Success
  *  !0: Error
  */
-int op_task_sync_ping(void *context, const char *endpoint);
+int op_task_sync_ping(void* context, const char* endpoint);
 
 #ifdef __cplusplus
 }

@@ -8,7 +8,7 @@
 
 #include "config/op_config_file.hpp"
 
-void op_init(void *context, int argc, char *argv[])
+void op_init(void* context, int argc, char* argv[])
 {
     /*
      * First, we need to get the logging thread up and running. Look
@@ -38,21 +38,21 @@ void op_init(void *context, int argc, char *argv[])
         /* Check if configuration file has a log level option. */
         char arg_string[OP_LOG_MAX_LEVEL_LENGTH];
 
-        if (op_config_file_get_value_str("core.log.level", arg_string, OP_LOG_MAX_LEVEL_LENGTH)) {
+        if (op_config_file_get_value_str("core.log.level", arg_string,
+                                         OP_LOG_MAX_LEVEL_LENGTH)) {
             enum op_log_level cfg_log_level = parse_log_optarg(arg_string);
-            op_log_level_set(cfg_log_level == OP_LOG_NONE ? OP_LOG_INFO : cfg_log_level);
+            op_log_level_set(cfg_log_level == OP_LOG_NONE ? OP_LOG_INFO
+                                                          : cfg_log_level);
         }
     }
 
     /* Parse system options */
-    if (op_options_init() != 0
-        || op_options_parse(argc, argv) != 0) {
+    if (op_options_init() != 0 || op_options_parse(argc, argv) != 0) {
         op_exit("Option parsing failed!");
     }
 
     /* Initialize all modules */
-    if (op_modules_pre_init(context) != 0
-        || op_modules_init(context) != 0
+    if (op_modules_pre_init(context) != 0 || op_modules_init(context) != 0
         || op_modules_post_init(context) != 0) {
         op_exit("Module initialization failed!");
     }
@@ -63,7 +63,7 @@ void op_init(void *context, int argc, char *argv[])
     }
 }
 
-void op_halt(void *context)
+void op_halt(void* context)
 {
     zmq_ctx_shutdown(context);
     op_modules_finish();

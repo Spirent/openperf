@@ -7,10 +7,10 @@
 namespace openperf::packetio::dpdk {
 
 using namespace std::literals::chrono_literals;
-static constexpr auto block_poll    = 100ns;
-static constexpr auto idle_poll     = 1s;
-static constexpr auto link_poll     = 100ms;
-static constexpr auto min_poll      = 1ns;
+static constexpr auto block_poll = 100ns;
+static constexpr auto idle_poll = 1s;
+static constexpr auto link_poll = 100ms;
+static constexpr auto min_poll = 1ns;
 static constexpr auto schedule_poll = idle_poll;
 
 static constexpr uint16_t max_retries = 4;
@@ -24,23 +24,16 @@ constexpr bool operator>(const entry& left, const entry& right)
 
 std::string_view to_string(state& state)
 {
-    return (std::visit(utils::overloaded_visitor(
-                           [](const state_idle&) {
-                               return ("idle");
-                           },
-                           [](const state_link_check&) {
-                               return ("link_check");
-                           },
-                           [](const state_running&) {
-                               return ("running");
-                           },
-                           [](const state_blocked&) {
-                               return ("blocked");
-                           }),
-                       state));
+    return (
+        std::visit(utils::overloaded_visitor(
+                       [](const state_idle&) { return ("idle"); },
+                       [](const state_link_check&) { return ("link_check"); },
+                       [](const state_running&) { return ("running"); },
+                       [](const state_blocked&) { return ("blocked"); }),
+                   state));
 }
 
-}
+} // namespace schedule
 
 /*
  * Callback function for DPDK use. It just clears the file descriptor for
@@ -53,21 +46,23 @@ static void read_timer(int fd, void* arg)
     auto error = read(fd, &counter, sizeof(counter));
     if (error == -1 && errno == EAGAIN) {
         OP_LOG(OP_LOG_WARNING, "Spurious tx scheduler wakeup for %u:%u\n",
-                scheduler->port_id(), scheduler->queue_id());
+               scheduler->port_id(), scheduler->queue_id());
     }
 }
 
 static int set_timer_interval(int fd, std::chrono::nanoseconds ns)
 {
     using namespace std::literals::chrono_literals;
-    using ts_s  = std::chrono::duration<decltype(std::declval<timespec>().tv_sec)>;
-    using ts_ns = std::chrono::duration<decltype(std::declval<timespec>().tv_nsec),
-                                        std::nano>;
+    using ts_s =
+        std::chrono::duration<decltype(std::declval<timespec>().tv_sec)>;
+    using ts_ns =
+        std::chrono::duration<decltype(std::declval<timespec>().tv_nsec),
+                              std::nano>;
 
     auto timer_value = itimerspec{
-        .it_interval = { std::chrono::duration_cast<ts_s>(ns).count(),
-                         std::chrono::duration_cast<ts_ns>(ns % 1s).count() },
-        .it_value    = { 0, 1 }  /* fire immediately */
+        .it_interval = {std::chrono::duration_cast<ts_s>(ns).count(),
+                        std::chrono::duration_cast<ts_ns>(ns % 1s).count()},
+        .it_value = {0, 1} /* fire immediately */
     };
 
     return (timerfd_settime(fd, 0, &timer_value, nullptr));
@@ -78,15 +73,16 @@ static int set_timer_oneshot(int fd, std::chrono::nanoseconds ns)
     assert(ns.count() > 0);
 
     using namespace std::literals::chrono_literals;
-    using ts_s  = std::chrono::duration<decltype(std::declval<timespec>().tv_sec)>;
-    using ts_ns = std::chrono::duration<decltype(std::declval<timespec>().tv_nsec),
-                                        std::nano>;
+    using ts_s =
+        std::chrono::duration<decltype(std::declval<timespec>().tv_sec)>;
+    using ts_ns =
+        std::chrono::duration<decltype(std::declval<timespec>().tv_nsec),
+                              std::nano>;
 
     auto timer_value = itimerspec{
-        .it_interval = { 0, 0 },
-        .it_value    = { std::chrono::duration_cast<ts_s>(ns).count(),
-                         std::chrono::duration_cast<ts_ns>(ns % 1s).count() }
-    };
+        .it_interval = {0, 0},
+        .it_value = {std::chrono::duration_cast<ts_s>(ns).count(),
+                     std::chrono::duration_cast<ts_ns>(ns % 1s).count()}};
 
     return (timerfd_settime(fd, 0, &timer_value, nullptr));
 }
@@ -98,7 +94,8 @@ std::chrono::nanoseconds next_deadline(const Source& source)
     return (units::get_period<ns>(source.packet_rate() / source.burst_size()));
 }
 
-tx_scheduler::tx_scheduler(const worker::tib& tib, uint16_t port_idx, uint16_t queue_idx)
+tx_scheduler::tx_scheduler(const worker::tib& tib, uint16_t port_idx,
+                           uint16_t queue_idx)
     : m_tib(tib)
     , m_portid(port_idx)
     , m_queueid(queue_idx)
@@ -115,10 +112,7 @@ tx_scheduler::tx_scheduler(const worker::tib& tib, uint16_t port_idx, uint16_t q
     }
 }
 
-tx_scheduler::~tx_scheduler()
-{
-    close(m_timerfd);
-}
+tx_scheduler::~tx_scheduler() { close(m_timerfd); }
 
 /*
  * Luckily, std::priority_queue objects store their underlying container
@@ -133,8 +127,10 @@ tx_scheduler::~tx_scheduler()
 template <class Container>
 const typename Container::container_type& get_container(Container& container)
 {
-    struct accessor : Container {
-        static const typename Container::container_type& get (Container& container)
+    struct accessor : Container
+    {
+        static const typename Container::container_type&
+        get(Container& container)
         {
             return container.*&accessor::c;
         }
@@ -155,9 +151,10 @@ void tx_scheduler::do_reschedule(const schedule::time_point& now)
         const auto& key = key_source.first;
         const auto& source = key_source.second;
         if (source.active()
-            && std::none_of(std::begin(priority_vec), std::end(priority_vec),
-                            [&](const auto& entry) { return (key == entry.key); })) {
-            m_schedule.push({ now + next_deadline(source), key });
+            && std::none_of(
+                std::begin(priority_vec), std::end(priority_vec),
+                [&](const auto& entry) { return (key == entry.key); })) {
+            m_schedule.push({now + next_deadline(source), key});
         }
     }
 
@@ -166,32 +163,19 @@ void tx_scheduler::do_reschedule(const schedule::time_point& now)
      * However, if we've been buffering packets, we could be running behind, so
      * make sure our next reschedule time is in the future.
      */
-    while (m_time_reschedule < now) {
-        m_time_reschedule += schedule_poll;
-    }
+    while (m_time_reschedule < now) { m_time_reschedule += schedule_poll; }
 }
 
-uint16_t tx_scheduler::port_id() const
-{
-    return (m_portid);
-}
+uint16_t tx_scheduler::port_id() const { return (m_portid); }
 
-uint16_t tx_scheduler::queue_id() const
-{
-    return (m_queueid);
-}
+uint16_t tx_scheduler::queue_id() const { return (m_queueid); }
 
-int tx_scheduler::event_fd() const
-{
-    return (m_timerfd);
-}
+int tx_scheduler::event_fd() const { return (m_timerfd); }
 
-void* tx_scheduler::event_callback_argument()
-{
-    return (this);
-}
+void* tx_scheduler::event_callback_argument() { return (this); }
 
-pollable_event<tx_scheduler>::event_callback tx_scheduler::event_callback_function() const
+pollable_event<tx_scheduler>::event_callback
+tx_scheduler::event_callback_function() const
 {
     return (read_timer);
 }
@@ -203,20 +187,22 @@ static bool link_down(uint16_t port_idx)
     return (link.link_status == ETH_LINK_DOWN);
 }
 
-static bool have_active_sources(const worker::tib& tib, uint16_t port_idx, uint16_t queue_idx)
+static bool have_active_sources(const worker::tib& tib, uint16_t port_idx,
+                                uint16_t queue_idx)
 {
     /* Check the forwarding table for matching events */
     auto range = tib.get_sources(port_idx, queue_idx);
-    return (std::any_of(range.first, range.second,
-                        [](const auto& key_source) {
-                            return (key_source.second.active());
-                        }));
+    return (std::any_of(range.first, range.second, [](const auto& key_source) {
+        return (key_source.second.active());
+    }));
 }
 
-std::optional<schedule::state> tx_scheduler::on_timeout(const schedule::state_idle&)
+std::optional<schedule::state>
+tx_scheduler::on_timeout(const schedule::state_idle&)
 {
     /* No sources --> nothing to do */
-    if (!have_active_sources(m_tib, port_id(), queue_id())) return (std::nullopt);
+    if (!have_active_sources(m_tib, port_id(), queue_id()))
+        return (std::nullopt);
 
     /* Next state depends on link */
     if (link_down(port_id())) {
@@ -226,7 +212,8 @@ std::optional<schedule::state> tx_scheduler::on_timeout(const schedule::state_id
     }
 }
 
-std::optional<schedule::state> tx_scheduler::on_timeout(const schedule::state_link_check&)
+std::optional<schedule::state>
+tx_scheduler::on_timeout(const schedule::state_link_check&)
 {
     if (link_down(port_id())) return (std::nullopt);
 
@@ -259,24 +246,29 @@ static uint16_t do_transmit(uint16_t port_idx, uint16_t queue_idx,
      */
     uint16_t total_sent = 0;
     uint16_t total_to_send = 0;
-    uint16_t nb_bursts = (burst_size + (worker::pkt_burst_size - 1)) / worker::pkt_burst_size;
+    uint16_t nb_bursts =
+        (burst_size + (worker::pkt_burst_size - 1)) / worker::pkt_burst_size;
     for (uint16_t i = 0; i < nb_bursts; i++) {
         auto loop_burst = distribute(burst_size, nb_bursts, i);
         assert(loop_burst <= outgoing.size());
 
         /* Grab a burst of packets and attempt to transmit them. */
         auto to_send = source->pull(outgoing.data(), loop_burst);
-        auto prepared = rte_eth_tx_prepare(port_idx, queue_idx, outgoing.data(), to_send);
+        auto prepared =
+            rte_eth_tx_prepare(port_idx, queue_idx, outgoing.data(), to_send);
         if (prepared < to_send) {
-            OP_LOG(OP_LOG_WARNING, "Source %s returned %u untransmittable packets\n",
-                    source->id().c_str(), to_send - prepared);
+            OP_LOG(OP_LOG_WARNING,
+                   "Source %s returned %u untransmittable packets\n",
+                   source->id().c_str(), to_send - prepared);
 
             /* Drop all un-sendable mbufs */
-            std::for_each(outgoing.data() + prepared, outgoing.data() + to_send, rte_pktmbuf_free);
+            std::for_each(outgoing.data() + prepared, outgoing.data() + to_send,
+                          rte_pktmbuf_free);
         }
 
         total_to_send += prepared;
-        auto sent = rte_eth_tx_burst(port_idx, queue_idx, outgoing.data(), prepared);
+        auto sent =
+            rte_eth_tx_burst(port_idx, queue_idx, outgoing.data(), prepared);
 
         /*
          * If we were unable to send all of the packets in our burst, retry
@@ -286,8 +278,9 @@ static uint16_t do_transmit(uint16_t port_idx, uint16_t queue_idx,
             unsigned retries = 0;
             do {
                 rte_pause();
-                sent += rte_eth_tx_burst(port_idx, queue_idx, outgoing.data() + sent,
-                                         prepared - sent);
+                sent +=
+                    rte_eth_tx_burst(port_idx, queue_idx,
+                                     outgoing.data() + sent, prepared - sent);
             } while (sent < prepared && ++retries < max_retries);
 
             /* Queue is still full after our retries; buffer packets */
@@ -302,13 +295,15 @@ static uint16_t do_transmit(uint16_t port_idx, uint16_t queue_idx,
         total_sent += sent;
     }
 
-    OP_LOG(OP_LOG_TRACE, "Transmitted %u of %u packets on %u:%u from source %s\n",
-            total_sent, total_to_send, port_idx, queue_idx, source->id().c_str());
+    OP_LOG(OP_LOG_TRACE,
+           "Transmitted %u of %u packets on %u:%u from source %s\n", total_sent,
+           total_to_send, port_idx, queue_idx, source->id().c_str());
 
     return (total_sent);
 }
 
-std::optional<schedule::state> tx_scheduler::on_timeout(const schedule::state_running& state)
+std::optional<schedule::state>
+tx_scheduler::on_timeout(const schedule::state_running& state)
 {
     if (link_down(port_id())) return (schedule::state_link_check{});
 
@@ -332,7 +327,8 @@ std::optional<schedule::state> tx_scheduler::on_timeout(const schedule::state_ru
         if (!source) continue;
 
         auto burst_size = source->burst_size();
-        auto sent = do_transmit(port_id(), queue_id(), source, burst_size, m_buffer);
+        auto sent =
+            do_transmit(port_id(), queue_id(), source, burst_size, m_buffer);
 
         if (!m_buffer.empty()) {
             uint16_t remaining = burst_size - sent - m_buffer.size();
@@ -355,7 +351,8 @@ std::optional<schedule::state> tx_scheduler::on_timeout(const schedule::state_ru
 
     /* Update timer for next event */
     if (m_time_reschedule <= m_schedule.top().deadline) {
-        set_timer_oneshot(m_timerfd, std::max(min_poll, m_time_reschedule - now));
+        set_timer_oneshot(m_timerfd,
+                          std::max(min_poll, m_time_reschedule - now));
         state.reschedule = true;
     } else {
         set_timer_oneshot(m_timerfd, m_schedule.top().deadline - now);
@@ -364,7 +361,8 @@ std::optional<schedule::state> tx_scheduler::on_timeout(const schedule::state_ru
     return (std::nullopt);
 }
 
-std::optional<schedule::state> tx_scheduler::on_timeout(const schedule::state_blocked& blocked)
+std::optional<schedule::state>
+tx_scheduler::on_timeout(const schedule::state_blocked& blocked)
 {
     assert(!m_buffer.empty());
 
@@ -387,7 +385,8 @@ std::optional<schedule::state> tx_scheduler::on_timeout(const schedule::state_bl
     }
 
     auto to_send = m_buffer.size();
-    auto sent = rte_eth_tx_burst(port_id(), queue_id(), m_buffer.data(), to_send);
+    auto sent =
+        rte_eth_tx_burst(port_id(), queue_id(), m_buffer.data(), to_send);
     if (sent < to_send) {
         m_buffer.erase(std::begin(m_buffer), std::begin(m_buffer) + sent);
         set_timer_oneshot(m_timerfd, block_poll);
@@ -396,7 +395,8 @@ std::optional<schedule::state> tx_scheduler::on_timeout(const schedule::state_bl
     assert(sent == to_send);
     m_buffer.clear();
 
-    sent = do_transmit(port_id(), queue_id(), source, blocked.remaining, m_buffer);
+    sent =
+        do_transmit(port_id(), queue_id(), source, blocked.remaining, m_buffer);
 
     /* Still blocked */
     if (sent < blocked.remaining) {
@@ -439,14 +439,14 @@ void tx_scheduler::on_transition(const schedule::state_idle&)
 
 void tx_scheduler::on_transition(const schedule::state_link_check&)
 {
-    /* Drop any buffered packets as we can't do anything with them without a link */
+    /* Drop any buffered packets as we can't do anything with them without a
+     * link */
     std::for_each(std::begin(m_buffer), std::end(m_buffer), rte_pktmbuf_free);
     m_buffer.clear();
 
-    /* Drop any scheduled items as we can't do anything with them without a link either */
-    while (!m_schedule.empty()) {
-        m_schedule.pop();
-    }
+    /* Drop any scheduled items as we can't do anything with them without a link
+     * either */
+    while (!m_schedule.empty()) { m_schedule.pop(); }
 
     set_timer_interval(m_timerfd, link_poll);
 }
@@ -459,20 +459,22 @@ void tx_scheduler::on_transition(const schedule::state_running& state)
     if (m_schedule.empty()) {
         /* Generate a schedule for all available entities */
         for (auto& [key, source] : m_tib.get_sources(port_id(), queue_id())) {
-            if (source.active()) m_schedule.push({now + next_deadline(source), key});
+            if (source.active())
+                m_schedule.push({now + next_deadline(source), key});
         }
 
         /* Adjust timer to match schedule */
         m_time_reschedule = now + schedule_poll;
     }
 
-    if (m_schedule.empty()
-        || m_time_reschedule <= m_schedule.top().deadline) {
+    if (m_schedule.empty() || m_time_reschedule <= m_schedule.top().deadline) {
         state.reschedule = true;
-        set_timer_oneshot(m_timerfd, std::max(min_poll, m_time_reschedule - now));
+        set_timer_oneshot(m_timerfd,
+                          std::max(min_poll, m_time_reschedule - now));
     } else {
         state.reschedule = false;
-        set_timer_oneshot(m_timerfd, std::max(min_poll, m_schedule.top().deadline - now));
+        set_timer_oneshot(m_timerfd,
+                          std::max(min_poll, m_schedule.top().deadline - now));
     }
 }
 
@@ -482,4 +484,4 @@ void tx_scheduler::on_transition(const schedule::state_blocked&)
     set_timer_oneshot(m_timerfd, block_poll);
 }
 
-}
+} // namespace openperf::packetio::dpdk

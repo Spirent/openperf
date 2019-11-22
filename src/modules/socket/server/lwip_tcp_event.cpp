@@ -26,8 +26,8 @@ static const char* to_string(enum lwip_event event)
 
 extern "C" {
 
-err_t lwip_tcp_event(void *arg, struct tcp_pcb *pcb, enum lwip_event event,
-                     struct pbuf *p, uint16_t size, err_t err)
+err_t lwip_tcp_event(void* arg, struct tcp_pcb* pcb, enum lwip_event event,
+                     struct pbuf* p, uint16_t size, err_t err)
 {
     if (arg == nullptr) {
         /* Nothing to do; our socket has been destroyed */
@@ -37,9 +37,10 @@ err_t lwip_tcp_event(void *arg, struct tcp_pcb *pcb, enum lwip_event event,
     using tcp_socket = openperf::socket::server::tcp_socket;
     auto socket = reinterpret_cast<tcp_socket*>(arg);
 
-    OP_LOG(OP_LOG_TRACE, "Received tcp %s event: socket = %p, pcb = %p, "
-            "pbuf = %p, size = %u, err = %d\n",
-            to_string(event), (void*)socket, (void*)pcb, (void*)p, size, err);
+    OP_LOG(OP_LOG_TRACE,
+           "Received tcp %s event: socket = %p, pcb = %p, "
+           "pbuf = %p, size = %u, err = %d\n",
+           to_string(event), (void*)socket, (void*)pcb, (void*)p, size, err);
 
     switch (event) {
     case LWIP_EVENT_ACCEPT:
@@ -59,5 +60,4 @@ err_t lwip_tcp_event(void *arg, struct tcp_pcb *pcb, enum lwip_event event,
         return (ERR_VAL);
     }
 }
-
 }

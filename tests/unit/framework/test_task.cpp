@@ -16,13 +16,14 @@ static std::string random_endpoint()
     std::uniform_int_distribution<> dist(0, chars.size() - 1);
     std::string to_return("inproc://test_task_sync_");
     std::generate_n(std::back_inserter(to_return), 8,
-                    [&]{ return chars[dist(generator)]; });
+                    [&] { return chars[dist(generator)]; });
 
     return (to_return);
 }
 
-static void ping_ponger(void *context, const char* endpoint,
-                        const char* initial_syncpoint, int nb_syncs) {
+static void ping_ponger(void* context, const char* endpoint,
+                        const char* initial_syncpoint, int nb_syncs)
+{
 
     void* control = op_socket_get_client_subscription(context, endpoint, "");
     REQUIRE(control);
@@ -52,26 +53,25 @@ TEST_CASE("openperf task functionality checks", "[task]")
 
     constexpr int nb_threads = 4;
 
-    SECTION("single task sync") {
+    SECTION("single task sync")
+    {
         std::vector<std::thread> threads;
         auto endpoint = random_endpoint();
-        void *sync = op_task_sync_socket(context, endpoint.c_str());
+        void* sync = op_task_sync_socket(context, endpoint.c_str());
         REQUIRE(sync);
 
         for (int i = 0; i < nb_threads; i++) {
-            threads.emplace_back(std::thread([&]() {
-                                                 op_task_sync_ping(context, endpoint.c_str());
-                                             }));
+            threads.emplace_back(std::thread(
+                [&]() { op_task_sync_ping(context, endpoint.c_str()); }));
         }
 
         REQUIRE(op_task_sync_block(&sync, nb_threads) == 0);
 
-        for (auto& thread : threads) {
-            thread.join();
-        }
+        for (auto& thread : threads) { thread.join(); }
     }
 
-    SECTION("repeated task syncs") {
+    SECTION("repeated task syncs")
+    {
         constexpr int nb_syncs = 100;
         std::vector<std::thread> threads;
 
@@ -83,14 +83,15 @@ TEST_CASE("openperf task functionality checks", "[task]")
 
         auto initial_syncpoint = random_endpoint();
         REQUIRE(initial_syncpoint.length());
-        auto init_sync = op_task_sync_socket(context, initial_syncpoint.c_str());
+        auto init_sync =
+            op_task_sync_socket(context, initial_syncpoint.c_str());
         REQUIRE(init_sync);
 
         for (int i = 0; i < nb_threads; i++) {
             threads.emplace_back(std::thread([&]() {
-                                                 ping_ponger(context, endpoint.c_str(),
-                                                             initial_syncpoint.c_str(), nb_syncs);
-                                             }));
+                ping_ponger(context, endpoint.c_str(),
+                            initial_syncpoint.c_str(), nb_syncs);
+            }));
         }
 
         REQUIRE(op_task_sync_block(&init_sync, nb_threads) == 0);
@@ -106,16 +107,15 @@ TEST_CASE("openperf task functionality checks", "[task]")
             /* ... send it to our threads ... */
             zmq_msg_t to_send __attribute__((cleanup(zmq_msg_close)));
             REQUIRE(zmq_msg_init_size(&to_send, syncpoint.length() + 1) == 0);
-            std::strcpy(reinterpret_cast<char*>(zmq_msg_data(&to_send)), syncpoint.c_str());
+            std::strcpy(reinterpret_cast<char*>(zmq_msg_data(&to_send)),
+                        syncpoint.c_str());
             REQUIRE(zmq_msg_send(&to_send, control, 0) > 0);
 
             /* ... and wait for their responses. */
             REQUIRE(op_task_sync_block(&sync, nb_threads) == 0);
         }
 
-        for (auto& thread : threads) {
-            thread.join();
-        }
+        for (auto& thread : threads) { thread.join(); }
 
         zmq_close(control);
     }

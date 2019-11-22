@@ -7,8 +7,9 @@
 namespace openperf::config {
 
 // Function to validate if a supplied resource ID string is valid.
-tl::expected<void, std::string> op_config_validate_id_string(std::string_view id);
+tl::expected<void, std::string>
+op_config_validate_id_string(std::string_view id);
 
-}  // namespace openperf::config
+} // namespace openperf::config
 
 #endif

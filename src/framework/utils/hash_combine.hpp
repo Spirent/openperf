@@ -10,8 +10,7 @@ namespace openperf::utils {
  * This hash combining function is shamelessly taken from the boost hash_combine
  * implementation.
  */
-template <typename T>
-size_t hash_combine(size_t seed, const T& value)
+template <typename T> size_t hash_combine(size_t seed, const T& value)
 {
     std::hash<T> hasher;
     return (seed ^ hasher(value) + 0x9e3779b9 + (seed << 6) + (seed >> 2));
@@ -30,19 +29,19 @@ hash_combine_tuple(size_t seed, const std::tuple<Types...>&)
 }
 
 template <size_t N, typename... Types>
-std::enable_if_t<N < sizeof...(Types), size_t>
-hash_combine_tuple(size_t seed, const std::tuple<Types...>& tuple)
+    std::enable_if_t < N<sizeof...(Types), size_t>
+    hash_combine_tuple(size_t seed, const std::tuple<Types...>& tuple)
 {
-    return (hash_combine_tuple<N + 1>(hash_combine(seed, std::get<N>(tuple)), tuple));
+    return (hash_combine_tuple<N + 1>(hash_combine(seed, std::get<N>(tuple)),
+                                      tuple));
 }
 
-}
+} // namespace openperf::utils
 
 /* Add pair/tuple specializations to std::hash */
 namespace std {
 
-template <typename... Types>
-struct hash<std::tuple<Types...>>
+template <typename... Types> struct hash<std::tuple<Types...>>
 {
     size_t operator()(const std::tuple<Types...>& tuple) const
     {
@@ -50,17 +49,15 @@ struct hash<std::tuple<Types...>>
     }
 };
 
-template <typename First, typename Second>
-struct hash<std::pair<First, Second>>
+template <typename First, typename Second> struct hash<std::pair<First, Second>>
 {
     size_t operator()(const std::pair<First, Second>& pair) const
     {
         return (openperf::utils::hash_combine(
-                    openperf::utils::hash_combine(size_t{0}, pair.first),
-                    pair.second));
+            openperf::utils::hash_combine(size_t{0}, pair.first), pair.second));
     }
 };
 
-}
+} // namespace std
 
 #endif /* _OP_UTILS_HASH_COMBINE_HPP_ */

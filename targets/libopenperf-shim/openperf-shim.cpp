@@ -15,8 +15,8 @@ static std::atomic_bool client_initialized = ATOMIC_VAR_INIT(false);
 
 static bool client_trace = false;
 
-static constexpr std::string_view client_trace_var      = "OP_TRACE\0";
-static constexpr std::string_view client_bindtodev_var  = "OP_BINDTODEVICE\0";
+static constexpr std::string_view client_trace_var = "OP_TRACE\0";
+static constexpr std::string_view client_bindtodev_var = "OP_BINDTODEVICE\0";
 
 void openperf_shim_init()
 {
@@ -32,116 +32,96 @@ void openperf_shim_init()
     }
 }
 
-template <class T>
-void expand(std::initializer_list<T>) {}
+template <class T> void expand(std::initializer_list<T>) {}
 
 template <typename Function, typename Object, typename... Args>
-auto call_and_log_function(const char* function_name, Function&& f, Object&& o, Args&&... args)
+auto call_and_log_function(const char* function_name, Function&& f, Object&& o,
+                           Args&&... args)
 {
     std::cerr << function_name << "(";
     expand({(std::cerr << args << ",", 0)...});
     std::cerr << std::flush;
-    auto result = std::invoke(std::forward<Function>(f), std::forward<Object>(o),
-                              std::forward<Args>(args)...);
+    auto result =
+        std::invoke(std::forward<Function>(f), std::forward<Object>(o),
+                    std::forward<Args>(args)...);
     std::cerr << ") = " << result;
 
-    if (result < 0) {
-        std::cerr << " (errno = " << errno << ")";
-    }
+    if (result < 0) { std::cerr << " (errno = " << errno << ")"; }
 
     std::cerr << std::endl;
 
     return (result);
 }
 
-#define client_call(function, ...)                                      \
-    (client_trace                                                       \
-     ? call_and_log_function(#function,                                 \
-                             &openperf::socket::api::client::function,  \
-                             client, __VA_ARGS__)                       \
-     : client.function(__VA_ARGS__))
+#define client_call(function, ...)                                             \
+    (client_trace ? call_and_log_function(                                     \
+         #function, &openperf::socket::api::client::function, client,          \
+         __VA_ARGS__)                                                          \
+                  : client.function(__VA_ARGS__))
 
 extern "C" {
 
-int accept(int s, struct sockaddr *addr, socklen_t *addrlen)
+int accept(int s, struct sockaddr* addr, socklen_t* addrlen)
 {
     auto& libc = openperf::socket::libc::wrapper::instance();
-    if (!client_initialized) {
-        return (libc.accept(s, addr, addrlen));
-    }
+    if (!client_initialized) { return (libc.accept(s, addr, addrlen)); }
 
     auto& client = openperf::socket::api::client::instance();
-    return (client.is_socket(s)
-            ? client_call(accept, s, addr, addrlen, 0)
-            : libc.accept(s, addr, addrlen));
+    return (client.is_socket(s) ? client_call(accept, s, addr, addrlen, 0)
+                                : libc.accept(s, addr, addrlen));
 }
 
-int accept4(int s, struct sockaddr *addr, socklen_t *addrlen, int flags)
+int accept4(int s, struct sockaddr* addr, socklen_t* addrlen, int flags)
 {
     auto& libc = openperf::socket::libc::wrapper::instance();
-    if (!client_initialized) {
-        return (libc.accept(s, addr, addrlen));
-    }
+    if (!client_initialized) { return (libc.accept(s, addr, addrlen)); }
 
     auto& client = openperf::socket::api::client::instance();
-    return (client.is_socket(s)
-            ? client_call(accept, s, addr, addrlen, flags)
-            : libc.accept(s, addr, addrlen));
+    return (client.is_socket(s) ? client_call(accept, s, addr, addrlen, flags)
+                                : libc.accept(s, addr, addrlen));
 }
 
-int bind(int s, const struct sockaddr *name, socklen_t namelen)
+int bind(int s, const struct sockaddr* name, socklen_t namelen)
 {
     auto& libc = openperf::socket::libc::wrapper::instance();
-    if (!client_initialized) {
-        return (libc.bind(s, name, namelen));
-    }
+    if (!client_initialized) { return (libc.bind(s, name, namelen)); }
 
     auto& client = openperf::socket::api::client::instance();
-    return (client.is_socket(s)
-            ? client_call(bind, s, name, namelen)
-            : libc.bind(s, name, namelen));
+    return (client.is_socket(s) ? client_call(bind, s, name, namelen)
+                                : libc.bind(s, name, namelen));
 }
 
 int shutdown(int s, int how)
 {
     auto& libc = openperf::socket::libc::wrapper::instance();
-    if (!client_initialized) {
-        return (libc.shutdown(s, how));
-    }
+    if (!client_initialized) { return (libc.shutdown(s, how)); }
 
     auto& client = openperf::socket::api::client::instance();
-    return (client.is_socket(s)
-            ? client_call(shutdown, s, how)
-            : libc.shutdown(s, how));
+    return (client.is_socket(s) ? client_call(shutdown, s, how)
+                                : libc.shutdown(s, how));
 }
 
-int getpeername(int s, struct sockaddr *name, socklen_t *namelen)
+int getpeername(int s, struct sockaddr* name, socklen_t* namelen)
 {
     auto& libc = openperf::socket::libc::wrapper::instance();
-    if (!client_initialized) {
-        return (libc.getpeername(s, name, namelen));
-    }
+    if (!client_initialized) { return (libc.getpeername(s, name, namelen)); }
 
     auto& client = openperf::socket::api::client::instance();
-    return (client.is_socket(s)
-            ? client_call(getpeername, s, name, namelen)
-            : libc.getpeername(s, name, namelen));
+    return (client.is_socket(s) ? client_call(getpeername, s, name, namelen)
+                                : libc.getpeername(s, name, namelen));
 }
 
-int getsockname(int s, struct sockaddr *name, socklen_t *namelen)
+int getsockname(int s, struct sockaddr* name, socklen_t* namelen)
 {
     auto& libc = openperf::socket::libc::wrapper::instance();
-    if (!client_initialized) {
-        return (libc.getsockname(s, name, namelen));
-    }
+    if (!client_initialized) { return (libc.getsockname(s, name, namelen)); }
 
     auto& client = openperf::socket::api::client::instance();
-    return (client.is_socket(s)
-            ? client_call(getsockname, s, name, namelen)
-            : libc.getsockname(s, name, namelen));
+    return (client.is_socket(s) ? client_call(getsockname, s, name, namelen)
+                                : libc.getsockname(s, name, namelen));
 }
 
-int getsockopt(int s, int level, int optname, void *optval, socklen_t *optlen)
+int getsockopt(int s, int level, int optname, void* optval, socklen_t* optlen)
 {
     auto& libc = openperf::socket::libc::wrapper::instance();
     if (!client_initialized) {
@@ -150,11 +130,12 @@ int getsockopt(int s, int level, int optname, void *optval, socklen_t *optlen)
 
     auto& client = openperf::socket::api::client::instance();
     return (client.is_socket(s)
-            ? client_call(getsockopt, s, level, optname, optval, optlen)
-            : libc.getsockopt(s, level, optname, optval, optlen));
+                ? client_call(getsockopt, s, level, optname, optval, optlen)
+                : libc.getsockopt(s, level, optname, optval, optlen));
 }
 
-int setsockopt(int s, int level, int optname, const void *optval, socklen_t optlen)
+int setsockopt(int s, int level, int optname, const void* optval,
+               socklen_t optlen)
 {
     auto& libc = openperf::socket::libc::wrapper::instance();
     if (!client_initialized) {
@@ -163,47 +144,37 @@ int setsockopt(int s, int level, int optname, const void *optval, socklen_t optl
 
     auto& client = openperf::socket::api::client::instance();
     return (client.is_socket(s)
-            ? client_call(setsockopt, s, level, optname, optval, optlen)
-            : libc.setsockopt(s, level, optname, optval, optlen));
+                ? client_call(setsockopt, s, level, optname, optval, optlen)
+                : libc.setsockopt(s, level, optname, optval, optlen));
 }
 
 int close(int s)
 {
     auto& libc = openperf::socket::libc::wrapper::instance();
-    if (!client_initialized) {
-        return (libc.close(s));
-    }
+    if (!client_initialized) { return (libc.close(s)); }
 
     auto& client = openperf::socket::api::client::instance();
-    return (client.is_socket(s)
-            ? client_call(close, s)
-            : libc.close(s));
+    return (client.is_socket(s) ? client_call(close, s) : libc.close(s));
 }
 
-int connect(int s, const struct sockaddr *name, socklen_t namelen)
+int connect(int s, const struct sockaddr* name, socklen_t namelen)
 {
     auto& libc = openperf::socket::libc::wrapper::instance();
-    if (!client_initialized) {
-        return (libc.connect(s, name, namelen));
-    }
+    if (!client_initialized) { return (libc.connect(s, name, namelen)); }
 
     auto& client = openperf::socket::api::client::instance();
-    return (client.is_socket(s)
-            ? client_call(connect, s, name, namelen)
-            : libc.connect(s, name, namelen));
+    return (client.is_socket(s) ? client_call(connect, s, name, namelen)
+                                : libc.connect(s, name, namelen));
 }
 
 int listen(int s, int backlog)
 {
     auto& libc = openperf::socket::libc::wrapper::instance();
-    if (!client_initialized) {
-        return (libc.listen(s, backlog));
-    }
+    if (!client_initialized) { return (libc.listen(s, backlog)); }
 
     auto& client = openperf::socket::api::client::instance();
-    return (client.is_socket(s)
-            ? client_call(listen, s, backlog)
-            : libc.listen(s, backlog));
+    return (client.is_socket(s) ? client_call(listen, s, backlog)
+                                : libc.listen(s, backlog));
 }
 
 int libc_socket(int domain, int type, int protocol)
@@ -222,11 +193,14 @@ int socket(int domain, int type, int protocol)
 
     int s = client_call(socket, domain, type, protocol);
     if (s >= 0) {
-        if (auto envp = std::getenv(client_bindtodev_var.data()); envp != nullptr) {
+        if (auto envp = std::getenv(client_bindtodev_var.data());
+            envp != nullptr) {
             /*
              * Close socket and return -1 on BINDTODEVICE failure.
              */
-            if (client_call(setsockopt, s, SOL_SOCKET, SO_BINDTODEVICE, envp, strlen(envp)) < 0) {
+            if (client_call(setsockopt, s, SOL_SOCKET, SO_BINDTODEVICE, envp,
+                            strlen(envp))
+                < 0) {
                 client_call(close, s);
                 return (-1);
             }
@@ -273,8 +247,7 @@ int fcntl(int s, int cmd, ...)
     }
 
     auto& client = openperf::socket::api::client::instance();
-    if (!client.is_socket(s)
-        || (cmd != F_GETFL && cmd != F_SETFL)) {
+    if (!client.is_socket(s) || (cmd != F_GETFL && cmd != F_SETFL)) {
         goto libc_fcntl;
     }
 
@@ -282,7 +255,8 @@ int fcntl(int s, int cmd, ...)
         result = client_call(fcntl, s, cmd);
     } else {
         auto flags = va_arg(ap, int);
-        result = (libc.fcntl(s, cmd, flags) || client_call(fcntl, s, cmd, flags));
+        result =
+            (libc.fcntl(s, cmd, flags) || client_call(fcntl, s, cmd, flags));
     }
 
     va_end(ap);
@@ -290,47 +264,38 @@ int fcntl(int s, int cmd, ...)
 }
 
 /* Receive functions */
-ssize_t read(int s, void *mem, size_t len)
+ssize_t read(int s, void* mem, size_t len)
 {
     auto& libc = openperf::socket::libc::wrapper::instance();
-    if (!client_initialized) {
-        return (libc.read(s, mem, len));
-    }
+    if (!client_initialized) { return (libc.read(s, mem, len)); }
 
     auto& client = openperf::socket::api::client::instance();
-    return (client.is_socket(s)
-            ? client_call(read, s, mem, len)
-            : libc.read(s, mem, len));
+    return (client.is_socket(s) ? client_call(read, s, mem, len)
+                                : libc.read(s, mem, len));
 }
 
-ssize_t readv(int s, const struct iovec *iov, int iovcnt)
+ssize_t readv(int s, const struct iovec* iov, int iovcnt)
 {
     auto& libc = openperf::socket::libc::wrapper::instance();
-    if (!client_initialized) {
-        return (libc.readv(s, iov, iovcnt));
-    }
+    if (!client_initialized) { return (libc.readv(s, iov, iovcnt)); }
 
     auto& client = openperf::socket::api::client::instance();
-    return (client.is_socket(s)
-            ? client_call(readv, s, iov, iovcnt)
-            : libc.readv(s, iov, iovcnt));
+    return (client.is_socket(s) ? client_call(readv, s, iov, iovcnt)
+                                : libc.readv(s, iov, iovcnt));
 }
 
-ssize_t recv(int s, void *mem, size_t len, int flags)
+ssize_t recv(int s, void* mem, size_t len, int flags)
 {
     auto& libc = openperf::socket::libc::wrapper::instance();
-    if (!client_initialized) {
-        return (libc.recv(s, mem, len, flags));
-    }
+    if (!client_initialized) { return (libc.recv(s, mem, len, flags)); }
 
     auto& client = openperf::socket::api::client::instance();
-    return (client.is_socket(s)
-            ? client_call(recv, s, mem, len, flags)
-            : libc.recv(s, mem, len, flags));
+    return (client.is_socket(s) ? client_call(recv, s, mem, len, flags)
+                                : libc.recv(s, mem, len, flags));
 }
 
-ssize_t recvfrom(int s, void *mem, size_t len, int flags,
-                 struct sockaddr *from, socklen_t *fromlen)
+ssize_t recvfrom(int s, void* mem, size_t len, int flags, struct sockaddr* from,
+                 socklen_t* fromlen)
 {
     auto& libc = openperf::socket::libc::wrapper::instance();
     if (!client_initialized) {
@@ -339,52 +304,43 @@ ssize_t recvfrom(int s, void *mem, size_t len, int flags,
 
     auto& client = openperf::socket::api::client::instance();
     return (client.is_socket(s)
-            ? client_call(recvfrom, s, mem, len, flags, from, fromlen)
-            : libc.recvfrom(s, mem, len, flags, from, fromlen));
+                ? client_call(recvfrom, s, mem, len, flags, from, fromlen)
+                : libc.recvfrom(s, mem, len, flags, from, fromlen));
 }
 
-ssize_t recvmsg(int s, struct msghdr *message, int flags)
+ssize_t recvmsg(int s, struct msghdr* message, int flags)
 {
     auto& libc = openperf::socket::libc::wrapper::instance();
-    if (!client_initialized) {
-        return (libc.recvmsg(s, message, flags));
-    }
+    if (!client_initialized) { return (libc.recvmsg(s, message, flags)); }
 
     auto& client = openperf::socket::api::client::instance();
-    return (client.is_socket(s)
-            ? client_call(recvmsg, s, message, flags)
-            : libc.recvmsg(s, message, flags));
+    return (client.is_socket(s) ? client_call(recvmsg, s, message, flags)
+                                : libc.recvmsg(s, message, flags));
 }
 
 /* Transmit functions */
-ssize_t send(int s, const void *dataptr, size_t len, int flags)
+ssize_t send(int s, const void* dataptr, size_t len, int flags)
 {
     auto& libc = openperf::socket::libc::wrapper::instance();
-    if (!client_initialized) {
-        return (libc.send(s, dataptr, len, flags));
-    }
+    if (!client_initialized) { return (libc.send(s, dataptr, len, flags)); }
 
     auto& client = openperf::socket::api::client::instance();
-    return (client.is_socket(s)
-            ? client_call(send, s, dataptr, len, flags)
-            : libc.send(s, dataptr, len, flags));
+    return (client.is_socket(s) ? client_call(send, s, dataptr, len, flags)
+                                : libc.send(s, dataptr, len, flags));
 }
 
-ssize_t sendmsg(int s, const struct msghdr *message, int flags)
+ssize_t sendmsg(int s, const struct msghdr* message, int flags)
 {
     auto& libc = openperf::socket::libc::wrapper::instance();
-    if (!client_initialized) {
-        return (libc.sendmsg(s, message, flags));
-    }
+    if (!client_initialized) { return (libc.sendmsg(s, message, flags)); }
 
     auto& client = openperf::socket::api::client::instance();
-    return (client.is_socket(s)
-            ? client_call(sendmsg, s, message, flags)
-            : libc.sendmsg(s, message, flags));
+    return (client.is_socket(s) ? client_call(sendmsg, s, message, flags)
+                                : libc.sendmsg(s, message, flags));
 }
 
-ssize_t sendto(int s, const void *dataptr, size_t len, int flags,
-               const struct sockaddr *to, socklen_t tolen)
+ssize_t sendto(int s, const void* dataptr, size_t len, int flags,
+               const struct sockaddr* to, socklen_t tolen)
 {
     auto& libc = openperf::socket::libc::wrapper::instance();
     if (!client_initialized) {
@@ -393,34 +349,27 @@ ssize_t sendto(int s, const void *dataptr, size_t len, int flags,
 
     auto& client = openperf::socket::api::client::instance();
     return (client.is_socket(s)
-            ? client_call(sendto, s, dataptr, len, flags, to, tolen)
-            : libc.sendto(s, dataptr, len, flags, to, tolen));
+                ? client_call(sendto, s, dataptr, len, flags, to, tolen)
+                : libc.sendto(s, dataptr, len, flags, to, tolen));
 }
 
-ssize_t write(int s, const void *dataptr, size_t len)
+ssize_t write(int s, const void* dataptr, size_t len)
 {
     auto& libc = openperf::socket::libc::wrapper::instance();
-    if (!client_initialized) {
-        return (libc.write(s, dataptr, len));
-    }
+    if (!client_initialized) { return (libc.write(s, dataptr, len)); }
 
     auto& client = openperf::socket::api::client::instance();
-    return (client.is_socket(s)
-            ? client_call(write, s, dataptr, len)
-            : libc.write(s, dataptr, len));
+    return (client.is_socket(s) ? client_call(write, s, dataptr, len)
+                                : libc.write(s, dataptr, len));
 }
 
-ssize_t writev(int s, const struct iovec *iov, int iovcnt)
+ssize_t writev(int s, const struct iovec* iov, int iovcnt)
 {
     auto& libc = openperf::socket::libc::wrapper::instance();
-    if (!client_initialized) {
-        return (libc.writev(s, iov, iovcnt));
-    }
+    if (!client_initialized) { return (libc.writev(s, iov, iovcnt)); }
 
     auto& client = openperf::socket::api::client::instance();
-    return (client.is_socket(s)
-            ? client_call(writev, s, iov, iovcnt)
-            : libc.writev(s, iov, iovcnt));
+    return (client.is_socket(s) ? client_call(writev, s, iov, iovcnt)
+                                : libc.writev(s, iov, iovcnt));
 }
-
 }

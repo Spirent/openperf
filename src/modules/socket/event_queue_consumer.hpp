@@ -7,10 +7,10 @@
 namespace openperf {
 namespace socket {
 
-template <typename Derived>
-class event_queue_consumer
+template <typename Derived> class event_queue_consumer
 {
-    static constexpr uint64_t eventfd_max = std::numeric_limits<uint64_t>::max() - 1;
+    static constexpr uint64_t eventfd_max =
+        std::numeric_limits<uint64_t>::max() - 1;
 
     Derived& derived();
     const Derived& derived() const;
@@ -38,7 +38,7 @@ public:
     int block_wait();
 };
 
-}
-}
+} // namespace socket
+} // namespace openperf
 
 #endif /* _OP_SOCKET_EVENT_QUEUE_CONSUMER_HPP_ */

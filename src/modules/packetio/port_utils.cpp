@@ -13,7 +13,7 @@ namespace port {
 
 using namespace swagger::v1::model;
 
-std::string to_string(const link_status &status)
+std::string to_string(const link_status& status)
 {
     switch (status) {
     case link_status::LINK_UP:
@@ -37,7 +37,7 @@ std::string to_string(const link_duplex& duplex)
     }
 }
 
-std::string to_string(const link_speed &speed)
+std::string to_string(const link_speed& speed)
 {
     return std::to_string(static_cast<int>(speed)) + " Mbps";
 }
@@ -55,23 +55,24 @@ std::string to_string(const lag_mode& mode)
 static void validate(const bond_config& bond, std::vector<std::string>& errors)
 {
     if (bond.mode != lag_mode::LAG_802_3_AD) {
-        errors.emplace_back("Unrecognized LAG mode; only 'lag_802_3_ad' is currently supported.");
+        errors.emplace_back("Unrecognized LAG mode; only 'lag_802_3_ad' is "
+                            "currently supported.");
     }
 
     if (bond.ports.size() < 2) {
-        errors.emplace_back("At least two ports are required for link bonding.");
+        errors.emplace_back(
+            "At least two ports are required for link bonding.");
     }
 }
 
 static void validate(const dpdk_config& dpdk, std::vector<std::string>& errors)
 {
     /* Only need to validate speed/duplex when auto is disabled */
-    if (dpdk.auto_negotiation) {
-        return;
-    }
+    if (dpdk.auto_negotiation) { return; }
 
     if (dpdk.duplex == link_duplex::DUPLEX_UNKNOWN) {
-        errors.emplace_back("Unrecognized duplex setting; please only use 'full' or 'half'.");
+        errors.emplace_back(
+            "Unrecognized duplex setting; please only use 'full' or 'half'.");
     }
 
     switch (dpdk.speed) {
@@ -95,19 +96,16 @@ static void validate(const dpdk_config& dpdk, std::vector<std::string>& errors)
         }
         break;
     default:
-        errors.emplace_back("Unrecognized speed setting: " + to_string(dpdk.speed) + ".");
+        errors.emplace_back(
+            "Unrecognized speed setting: " + to_string(dpdk.speed) + ".");
     }
 }
 
 static bool is_valid(config_data& config, std::vector<std::string>& errors)
 {
     auto config_visitor = utils::overloaded_visitor(
-        [&](const bond_config& bond) {
-            validate(bond, errors);
-        },
-        [&](const dpdk_config& dpdk) {
-            validate(dpdk, errors);
-        },
+        [&](const bond_config& bond) { validate(bond, errors); },
+        [&](const dpdk_config& dpdk) { validate(dpdk, errors); },
         [&](const std::monostate&) {
             errors.emplace_back("No valid port configuration found.");
         });
@@ -121,13 +119,11 @@ static bond_config from_swagger(std::shared_ptr<PortConfig_bond> config)
 {
     bond_config to_return;
 
-    to_return.mode = (config->getMode() == "lag_802_3_ad"
-                      ? lag_mode::LAG_802_3_AD
-                      : lag_mode::LAG_UNKNOWN);
+    to_return.mode =
+        (config->getMode() == "lag_802_3_ad" ? lag_mode::LAG_802_3_AD
+                                             : lag_mode::LAG_UNKNOWN);
 
-    for (auto& id : config->getPorts()) {
-        to_return.ports.push_back(id);
-    }
+    for (auto& id : config->getPorts()) { to_return.ports.push_back(id); }
 
     return (to_return);
 }
@@ -143,9 +139,10 @@ static dpdk_config from_swagger(std::shared_ptr<PortConfig_dpdk> config)
 
     if (config->duplexIsSet()) {
         auto duplex = config->getDuplex();
-        to_return.duplex = (duplex == "full" ? link_duplex::DUPLEX_FULL
-                            : duplex == "half" ? link_duplex::DUPLEX_HALF
-                            : link_duplex::DUPLEX_UNKNOWN);
+        to_return.duplex =
+            (duplex == "full" ? link_duplex::DUPLEX_FULL
+                              : duplex == "half" ? link_duplex::DUPLEX_HALF
+                                                 : link_duplex::DUPLEX_UNKNOWN);
     }
 
     return (to_return);
@@ -166,11 +163,11 @@ config_data make_config_data(const Port& port)
 
     std::vector<std::string> errors;
     if (!is_valid(to_return, errors)) {
-        throw std::runtime_error(
-            std::accumulate(begin(errors), end(errors), std::string(),
-                            [](const std::string &a, const std::string &b) -> std::string {
-                                return a + (a.length() > 0 ? " " : "") + b;
-                            }));
+        throw std::runtime_error(std::accumulate(
+            begin(errors), end(errors), std::string(),
+            [](const std::string& a, const std::string& b) -> std::string {
+                return a + (a.length() > 0 ? " " : "") + b;
+            }));
     }
 
     return (to_return);
@@ -180,7 +177,8 @@ config_data make_config_data(const Port& port)
  * Functions to transmogrify generic_ports to swagger ports
  */
 
-static std::shared_ptr<PortConfig_dpdk> make_swagger_port_config_dpdk(const generic_port& port)
+static std::shared_ptr<PortConfig_dpdk>
+make_swagger_port_config_dpdk(const generic_port& port)
 {
     auto config_dpdk = std::make_shared<PortConfig_dpdk>();
     auto config = std::get<dpdk_config>(port.config());
@@ -195,19 +193,22 @@ static std::shared_ptr<PortConfig_dpdk> make_swagger_port_config_dpdk(const gene
     return (config_dpdk);
 }
 
-static std::shared_ptr<PortConfig_bond> make_swagger_port_config_bond(const generic_port& port)
+static std::shared_ptr<PortConfig_bond>
+make_swagger_port_config_bond(const generic_port& port)
 {
     auto config_bond = std::make_shared<PortConfig_bond>();
     auto config = std::get<bond_config>(port.config());
 
     config_bond->setMode(to_string(config.mode));
 
-    config_bond->getPorts().insert(config_bond->getPorts().end(), config.ports.begin(), config.ports.end());
+    config_bond->getPorts().insert(config_bond->getPorts().end(),
+                                   config.ports.begin(), config.ports.end());
 
     return (config_bond);
 }
 
-static std::shared_ptr<PortConfig> make_swagger_port_config(const generic_port& port)
+static std::shared_ptr<PortConfig>
+make_swagger_port_config(const generic_port& port)
 {
     auto config = std::make_shared<PortConfig>();
 
@@ -220,7 +221,8 @@ static std::shared_ptr<PortConfig> make_swagger_port_config(const generic_port& 
     return (config);
 }
 
-static std::shared_ptr<PortStatus> make_swagger_port_status(const generic_port& port)
+static std::shared_ptr<PortStatus>
+make_swagger_port_status(const generic_port& port)
 {
     auto status = std::make_shared<PortStatus>();
 
@@ -231,7 +233,8 @@ static std::shared_ptr<PortStatus> make_swagger_port_status(const generic_port& 
     return (status);
 }
 
-static std::shared_ptr<PortStats> make_swagger_port_stats(const generic_port& port)
+static std::shared_ptr<PortStats>
+make_swagger_port_stats(const generic_port& port)
 {
     auto stats = std::make_shared<PortStats>();
     auto in_stats = port.stats();
@@ -259,7 +262,6 @@ std::shared_ptr<Port> make_swagger_port(const generic_port& in_port)
     return (out_port);
 }
 
-
-}
-}
-}
+} // namespace port
+} // namespace packetio
+} // namespace openperf
