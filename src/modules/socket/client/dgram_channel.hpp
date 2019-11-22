@@ -60,9 +60,6 @@ public:
     dgram_channel(const dgram_channel&) = delete;
     dgram_channel& operator=(const dgram_channel&&) = delete;
 
-    dgram_channel(dgram_channel&&) = default;
-    dgram_channel& operator=(dgram_channel&&) = default;
-
     int error() const;
 
     int flags() const;
