@@ -20,8 +20,8 @@ namespace packetio {
 
 static constexpr int module_version = 1;
 
-static int handle_zmq_shutdown(const op_event_data *data,
-                               void *arg __attribute__((unused)))
+static int handle_zmq_shutdown(const op_event_data* data,
+                               void* arg __attribute__((unused)))
 {
     if (zmq_recv(data->socket, nullptr, 0, ZMQ_DONTWAIT) == -1
         && errno == ETERM) {
@@ -31,39 +31,43 @@ static int handle_zmq_shutdown(const op_event_data *data,
     return (0);
 }
 
-struct service {
-    ~service() {
-        if (m_service.joinable()) {
-            m_service.join();
-        }
+struct service
+{
+    ~service()
+    {
+        if (m_service.joinable()) { m_service.join(); }
     }
 
-    void init(void *context) {
+    void init(void* context)
+    {
         m_loop = std::make_unique<openperf::core::event_loop>();
         m_driver = driver::make();
         m_workers = workers::make(context, *m_loop, *m_driver);
         m_stack = stack::make(*m_driver, *m_workers);
-        m_port_server = std::make_unique<port::api::server>(context, *m_loop, *m_driver);
-        m_stack_server = std::make_unique<stack::api::server>(context, *m_loop, *m_stack);
-        m_if_server = std::make_unique<interface::api::server>(context, *m_loop, *m_stack);
-        m_internal_server = std::make_unique<internal::api::server>(context, *m_loop, *m_workers);
+        m_port_server =
+            std::make_unique<port::api::server>(context, *m_loop, *m_driver);
+        m_stack_server =
+            std::make_unique<stack::api::server>(context, *m_loop, *m_stack);
+        m_if_server = std::make_unique<interface::api::server>(context, *m_loop,
+                                                               *m_stack);
+        m_internal_server = std::make_unique<internal::api::server>(
+            context, *m_loop, *m_workers);
 
-        m_shutdown.reset(op_socket_get_server(context, ZMQ_REQ,
-                                               "inproc://packetio_shutdown_canary"));
+        m_shutdown.reset(op_socket_get_server(
+            context, ZMQ_REQ, "inproc://packetio_shutdown_canary"));
     }
 
     void start()
     {
         m_service = std::thread([this]() {
-                                   op_thread_setname("op_packetio");
+            op_thread_setname("op_packetio");
 
-                                   struct op_event_callbacks callbacks = {
-                                       .on_read = handle_zmq_shutdown
-                                   };
-                                   m_loop->add(m_shutdown.get(), &callbacks, nullptr);
+            struct op_event_callbacks callbacks = {.on_read =
+                                                       handle_zmq_shutdown};
+            m_loop->add(m_shutdown.get(), &callbacks, nullptr);
 
-                                   m_loop->run();
-                               });
+            m_loop->run();
+        });
     }
 
     /*
@@ -84,35 +88,32 @@ struct service {
     std::thread m_service;
 };
 
-}
-}
+} // namespace packetio
+} // namespace openperf
 
 extern "C" {
 
-int op_packetio_init(void *context, void *state)
+int op_packetio_init(void* context, void* state)
 {
-    openperf::packetio::service *s = reinterpret_cast<openperf::packetio::service *>(state);
+    openperf::packetio::service* s =
+        reinterpret_cast<openperf::packetio::service*>(state);
     s->init(context);
     s->start();
     return (0);
 }
 
-void op_packetio_fini(void *state)
+void op_packetio_fini(void* state)
 {
-    openperf::packetio::service *s = reinterpret_cast<openperf::packetio::service*>(state);
+    openperf::packetio::service* s =
+        reinterpret_cast<openperf::packetio::service*>(state);
     delete s;
 }
 
 REGISTER_MODULE(packetio,
-                INIT_MODULE_INFO(
-                                 "packetio",
-                                 "Core module comprising TCP/IP stack functionality, virtual interfaces, and DPDK",
-                                 openperf::packetio::module_version
-                                 ),
-                new openperf::packetio::service(),
-                nullptr,
-                op_packetio_init,
-                nullptr,
-                nullptr,
-                op_packetio_fini);
+                INIT_MODULE_INFO("packetio",
+                                 "Core module comprising TCP/IP stack "
+                                 "functionality, virtual interfaces, and DPDK",
+                                 openperf::packetio::module_version),
+                new openperf::packetio::service(), nullptr, op_packetio_init,
+                nullptr, nullptr, op_packetio_fini);
 }

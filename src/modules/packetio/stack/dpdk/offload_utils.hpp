@@ -12,7 +12,7 @@ namespace dpdk {
 void set_tx_offload_metadata(rte_mbuf* mbuf, uint16_t mtu);
 
 }
-}
-}
+} // namespace packetio
+} // namespace openperf
 
 #endif /* _OP_PACKETIO_STACK_DPDK_OFFLOAD_UTILS_HPP_ */

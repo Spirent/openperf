@@ -82,8 +82,7 @@ template <typename Derived>
 void circular_buffer_consumer<Derived>::store_read(size_t idx)
 {
     auto dlen = 2 * len();
-    read_idx().store(idx < dlen ? idx : idx - dlen,
-                     std::memory_order_release);
+    read_idx().store(idx < dlen ? idx : idx - dlen, std::memory_order_release);
 }
 
 template <typename Derived>
@@ -93,17 +92,15 @@ size_t circular_buffer_consumer<Derived>::readable() const
     auto write_cursor = load_write();
 
     return (read_cursor <= write_cursor
-            ? write_cursor - read_cursor
-            : (2 * len()) + write_cursor - read_cursor);
+                ? write_cursor - read_cursor
+                : (2 * len()) + write_cursor - read_cursor);
 }
 
 template <typename Derived>
 std::array<iovec, 2> circular_buffer_consumer<Derived>::peek() const
 {
     auto to_read = readable();
-    if (!to_read) {
-        return (std::array<iovec, 2>{});
-    }
+    if (!to_read) { return (std::array<iovec, 2>{}); }
 
     auto cursor = load_read();
 
@@ -112,14 +109,14 @@ std::array<iovec, 2> circular_buffer_consumer<Derived>::peek() const
     const size_t chunk2 = to_read - chunk1;
 
     return (std::array<iovec, 2>{
-            iovec{
-                .iov_base = base() + mask(cursor),
-                .iov_len = chunk1,
-            },
-            iovec{
-                .iov_base = base(),
-                .iov_len = chunk2,
-            },
+        iovec{
+            .iov_base = base() + mask(cursor),
+            .iov_len = chunk1,
+        },
+        iovec{
+            .iov_base = base(),
+            .iov_len = chunk2,
+        },
     });
 }
 
@@ -134,7 +131,8 @@ size_t circular_buffer_consumer<Derived>::drop(size_t length)
 }
 
 template <typename Derived>
-size_t circular_buffer_consumer<Derived>::pread(void* ptr, size_t length, size_t offset)
+size_t circular_buffer_consumer<Derived>::pread(void* ptr, size_t length,
+                                                size_t offset)
 {
     auto can_read = readable();
     auto to_read = std::min(can_read > offset ? can_read - offset : 0, length);
@@ -160,8 +158,9 @@ size_t circular_buffer_consumer<Derived>::read(void* ptr, size_t length)
 
 template <typename Derived>
 template <typename NotifyFunction>
-size_t circular_buffer_consumer<Derived>::read_and_notify(void *ptr, size_t length,
-                                                          NotifyFunction&& notify)
+size_t
+circular_buffer_consumer<Derived>::read_and_notify(void* ptr, size_t length,
+                                                   NotifyFunction&& notify)
 {
     const auto available = readable();
     static auto lowat = available - (len() >> 1);
@@ -179,5 +178,5 @@ size_t circular_buffer_consumer<Derived>::read_and_notify(void *ptr, size_t leng
     return (readed);
 }
 
-}
-}
+} // namespace socket
+} // namespace openperf

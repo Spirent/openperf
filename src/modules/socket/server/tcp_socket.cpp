@@ -13,37 +13,20 @@ namespace openperf {
 namespace socket {
 namespace server {
 
-const char * to_string(const tcp_socket_state& state)
+const char* to_string(const tcp_socket_state& state)
 {
-    return (std::visit(utils::overloaded_visitor(
-                           [](const tcp_init&) -> const char* {
-                               return ("init");
-                           },
-                           [](const tcp_bound&) -> const char* {
-                               return ("bound");
-                           },
-                           [](const tcp_accept&) -> const char* {
-                               return ("accept");
-                           },
-                           [](const tcp_listening&) -> const char* {
-                               return ("listening");
-                           },
-                           [](const tcp_connecting&) -> const char* {
-                               return ("connecting");
-                           },
-                           [](const tcp_connected&) -> const char* {
-                               return ("connected");
-                           },
-                           [](const tcp_closing&) -> const char* {
-                               return ("closing");
-                           },
-                           [](const tcp_closed&) -> const char* {
-                               return ("closed");
-                           },
-                           [](const tcp_error&) -> const char* {
-                               return ("error");
-                           }),
-                       state));
+    return (std::visit(
+        utils::overloaded_visitor(
+            [](const tcp_init&) -> const char* { return ("init"); },
+            [](const tcp_bound&) -> const char* { return ("bound"); },
+            [](const tcp_accept&) -> const char* { return ("accept"); },
+            [](const tcp_listening&) -> const char* { return ("listening"); },
+            [](const tcp_connecting&) -> const char* { return ("connecting"); },
+            [](const tcp_connected&) -> const char* { return ("connected"); },
+            [](const tcp_closing&) -> const char* { return ("closing"); },
+            [](const tcp_closed&) -> const char* { return ("closed"); },
+            [](const tcp_error&) -> const char* { return ("error"); }),
+        state));
 }
 
 #if 0
@@ -79,33 +62,35 @@ template <typename BufferEmptyFunction>
 static size_t do_tcp_transmit(tcp_pcb* pcb, const void* ptr, size_t length,
                               BufferEmptyFunction&& empty)
 {
-    static constexpr uint16_t tcp_send_max = std::numeric_limits<uint16_t>::max();
+    static constexpr uint16_t tcp_send_max =
+        std::numeric_limits<uint16_t>::max();
 
     /* Don't bother invoking TCP machinery to write nothing. */
     if (length == 0) return (0);
 
     /* If the send buffer is too small, try to make some room */
-    if (tcp_sndbuf(pcb) < length) {
-        tcp_output(pcb);
-    }
+    if (tcp_sndbuf(pcb) < length) { tcp_output(pcb); }
 
     size_t written = 0;
     auto to_write = std::min(length, static_cast<size_t>(pcb->snd_buf));
 
     while (to_write > tcp_send_max) {
         if (tcp_write(pcb, reinterpret_cast<const uint8_t*>(ptr) + written,
-                      tcp_send_max, TCP_WRITE_FLAG_COPY | TCP_WRITE_FLAG_MORE) != ERR_OK) {
+                      tcp_send_max, TCP_WRITE_FLAG_COPY | TCP_WRITE_FLAG_MORE)
+            != ERR_OK) {
             return (written);
         }
-        written  += tcp_send_max;
+        written += tcp_send_max;
         to_write -= tcp_send_max;
     }
 
     /* We want to set the PSH flag if this next write will empty the buffer */
-    const auto push = std::forward<BufferEmptyFunction>(empty)(written + to_write);
+    const auto push =
+        std::forward<BufferEmptyFunction>(empty)(written + to_write);
     const auto flags = TCP_WRITE_FLAG_COPY | (-(!push) & TCP_WRITE_FLAG_MORE);
     if (tcp_write(pcb, reinterpret_cast<const uint8_t*>(ptr) + written,
-                  to_write, flags) != ERR_OK) {
+                  to_write, flags)
+        != ERR_OK) {
         return (written);
     }
 
@@ -117,22 +102,23 @@ static size_t do_tcp_transmit(tcp_pcb* pcb, const void* ptr, size_t length,
     return (written);
 }
 
-static void do_tcp_transmit_all(tcp_pcb *pcb, stream_channel& channel)
+static void do_tcp_transmit_all(tcp_pcb* pcb, stream_channel& channel)
 {
     for (;;) {
         auto iov = channel.recv_peek();
-        if (channel.recv_drop(do_tcp_transmit(pcb, iov.iov_base, iov.iov_len,
-                                              [&](size_t written){
-                                                  return (written == iov.iov_len);
-                                              })) == 0) {
+        if (channel.recv_drop(do_tcp_transmit(
+                pcb, iov.iov_base, iov.iov_len,
+                [&](size_t written) { return (written == iov.iov_len); }))
+            == 0) {
             break;
         }
     }
 }
 
-static void do_tcp_receive(tcp_pcb *pcb, size_t length)
+static void do_tcp_receive(tcp_pcb* pcb, size_t length)
 {
-    static constexpr uint16_t tcp_recv_max = std::numeric_limits<uint16_t>::max();
+    static constexpr uint16_t tcp_recv_max =
+        std::numeric_limits<uint16_t>::max();
     while (length >= tcp_recv_max) {
         tcp_recved(pcb, tcp_recv_max);
         length -= tcp_recv_max;
@@ -140,34 +126,36 @@ static void do_tcp_receive(tcp_pcb *pcb, size_t length)
     tcp_recved(pcb, length);
 }
 
-static void do_tcp_receive_all(tcp_pcb *pcb, stream_channel& channel, pbuf_queue& queue)
+static void do_tcp_receive_all(tcp_pcb* pcb, stream_channel& channel,
+                               pbuf_queue& queue)
 {
     std::array<iovec, 32> iovecs;
     size_t iovcnt = 0, cleared = 0;
-    while ((iovcnt = queue.iovecs(iovecs.data(), iovecs.size(), channel.send_available())) > 0
-           && (cleared = queue.clear(channel.send(iovecs.data(), iovcnt))) > 0) {
+    while ((iovcnt = queue.iovecs(iovecs.data(), iovecs.size(),
+                                  channel.send_available()))
+               > 0
+           && (cleared = queue.clear(channel.send(iovecs.data(), iovcnt)))
+                  > 0) {
         do_tcp_receive(pcb, cleared);
     }
 }
 
-void tcp_socket::tcp_pcb_deleter::operator()(tcp_pcb *pcb)
+void tcp_socket::tcp_pcb_deleter::operator()(tcp_pcb* pcb)
 {
-     /* quick and dirty */
-    if (tcp_close(pcb) != ERR_OK) {
-        tcp_abort(pcb);
-    }
+    /* quick and dirty */
+    if (tcp_close(pcb) != ERR_OK) { tcp_abort(pcb); }
 }
 
 openperf::socket::server::allocator* tcp_socket::channel_allocator()
 {
     return (reinterpret_cast<openperf::socket::server::allocator*>(
-                reinterpret_cast<socket::stream_channel*>(
-                    m_channel.get())->allocator));
+        reinterpret_cast<socket::stream_channel*>(m_channel.get())->allocator));
 }
 
-tcp_socket::tcp_socket(openperf::socket::server::allocator* allocator, int flags, tcp_pcb* pcb)
+tcp_socket::tcp_socket(openperf::socket::server::allocator* allocator,
+                       int flags, tcp_pcb* pcb)
     : m_channel(new (allocator->allocate(sizeof(stream_channel)))
-                stream_channel(flags, *allocator))
+                    stream_channel(flags, *allocator))
     , m_pcb(pcb)
 {
     ::tcp_arg(m_pcb.get(), this);
@@ -175,9 +163,10 @@ tcp_socket::tcp_socket(openperf::socket::server::allocator* allocator, int flags
     state(tcp_connected());
 }
 
-tcp_socket::tcp_socket(openperf::socket::server::allocator& allocator, int flags)
+tcp_socket::tcp_socket(openperf::socket::server::allocator& allocator,
+                       int flags)
     : m_channel(new (allocator.allocate(sizeof(stream_channel)))
-                stream_channel(flags, allocator))
+                    stream_channel(flags, allocator))
     , m_pcb(tcp_new())
 {
     ::tcp_arg(m_pcb.get(), this);
@@ -219,16 +208,11 @@ tcp_socket::tcp_socket(tcp_socket&& other) noexcept
     state(other.state());
 }
 
-channel_variant tcp_socket::channel() const
-{
-    return (m_channel.get());
-}
+channel_variant tcp_socket::channel() const { return (m_channel.get()); }
 
-int tcp_socket::do_lwip_accept(tcp_pcb *newpcb, int err)
+int tcp_socket::do_lwip_accept(tcp_pcb* newpcb, int err)
 {
-    if (err != ERR_OK || newpcb == nullptr) {
-        return (ERR_VAL);
-    }
+    if (err != ERR_OK || newpcb == nullptr) { return (ERR_VAL); }
 
     /*
      * XXX: Clear the argument from the newpcb. lwIP helpfully(?) sets this
@@ -255,7 +239,7 @@ int tcp_socket::do_lwip_sent(uint16_t size __attribute__((unused)))
     return (ERR_OK);
 }
 
-int tcp_socket::do_lwip_recv(pbuf *p, int err)
+int tcp_socket::do_lwip_recv(pbuf* p, int err)
 {
     if (err != ERR_OK) {
         if (p != nullptr) pbuf_free(p);
@@ -336,7 +320,7 @@ int tcp_socket::do_lwip_error(int err)
         m_channel->unblock();
     }
 
-    state(tcp_error{ .value = err_to_errno(err) });
+    state(tcp_error{.value = err_to_errno(err)});
 
     /*
      * lwIP will "conveniently" free the pbuf for us before this callback is
@@ -352,9 +336,7 @@ tl::expected<generic_socket, int> tcp_socket::handle_accept(int flags)
         return (tl::make_unexpected(EINVAL));
     }
 
-    if (m_acceptq.empty()) {
-        return (tl::make_unexpected(EAGAIN));
-    }
+    if (m_acceptq.empty()) { return (tl::make_unexpected(EAGAIN)); }
 
     auto pcb = m_acceptq.front();
     m_acceptq.pop();
@@ -364,7 +346,7 @@ tl::expected<generic_socket, int> tcp_socket::handle_accept(int flags)
 
 void tcp_socket::handle_io()
 {
-    if (!m_pcb) return;  /* can be closed on error */
+    if (!m_pcb) return; /* can be closed on error */
 
     m_channel->ack();
 
@@ -372,8 +354,8 @@ void tcp_socket::handle_io()
     do_tcp_transmit_all(m_pcb.get(), *m_channel);
 }
 
-tcp_socket::on_request_reply tcp_socket::on_request(const api::request_bind& bind,
-                                                    const tcp_init&)
+tcp_socket::on_request_reply
+tcp_socket::on_request(const api::request_bind& bind, const tcp_init&)
 {
     sockaddr_storage sstorage;
 
@@ -397,14 +379,15 @@ tcp_socket::on_request_reply tcp_socket::on_request(const api::request_bind& bin
     return {api::reply_success(), tcp_bound()};
 }
 
-tcp_socket::on_request_reply tcp_socket::on_request(const api::request_listen& listen,
-                                                    const tcp_bound&)
+tcp_socket::on_request_reply
+tcp_socket::on_request(const api::request_listen& listen, const tcp_bound&)
 {
     /*
-     * The lwIP listen function deallocates the original pcb and replaces it with
-     * a smaller one.  However, it can also fail to allocate the new pcb, in which case
-     * it returns null and doesn't deallocate the original.  Because of this, we have
-     * to be careful with pcb ownership and the callback argument here.
+     * The lwIP listen function deallocates the original pcb and replaces it
+     * with a smaller one.  However, it can also fail to allocate the new pcb,
+     * in which case it returns null and doesn't deallocate the original.
+     * Because of this, we have to be careful with pcb ownership and the
+     * callback argument here.
      */
     auto orig_pcb = m_pcb.release();
     /*
@@ -415,8 +398,8 @@ tcp_socket::on_request_reply tcp_socket::on_request(const api::request_listen& l
 
     ::tcp_arg(orig_pcb, nullptr);
     err_t error = ERR_OK;
-    auto listen_pcb = tcp_listen_with_backlog_and_err(orig_pcb, listen.backlog, &error);
-
+    auto listen_pcb =
+        tcp_listen_with_backlog_and_err(orig_pcb, listen.backlog, &error);
 
     if (!listen_pcb) {
         m_pcb.reset(orig_pcb);
@@ -438,40 +421,36 @@ tcp_socket::on_request_reply tcp_socket::on_request(const api::request_listen&,
     return {tl::make_unexpected(error.value), std::nullopt};
 }
 
-static tl::expected<void, int> do_tcp_connect(tcp_pcb *pcb, const api::request_connect& connect)
+static tl::expected<void, int>
+do_tcp_connect(tcp_pcb* pcb, const api::request_connect& connect)
 {
     sockaddr_storage sstorage;
 
-    auto copy_result = copy_in(sstorage, connect.id.pid, connect.name, connect.namelen);
-    if (!copy_result) {
-        return (tl::make_unexpected(copy_result.error()));
-    }
+    auto copy_result =
+        copy_in(sstorage, connect.id.pid, connect.name, connect.namelen);
+    if (!copy_result) { return (tl::make_unexpected(copy_result.error())); }
 
     auto ip_addr = get_address(sstorage);
     auto ip_port = get_port(sstorage);
 
-    if (!ip_addr | !ip_port) {
-        return (tl::make_unexpected(EINVAL));
-    }
+    if (!ip_addr | !ip_port) { return (tl::make_unexpected(EINVAL)); }
 
     auto error = tcp_connect(pcb, &*ip_addr, *ip_port, nullptr);
-    if (error != ERR_OK) {
-        return (tl::make_unexpected(err_to_errno(error)));
-    }
+    if (error != ERR_OK) { return (tl::make_unexpected(err_to_errno(error))); }
 
     return {};
 }
 
-tcp_socket::on_request_reply tcp_socket::on_request(const api::request_connect& connect,
-                                                    const tcp_init&)
+tcp_socket::on_request_reply
+tcp_socket::on_request(const api::request_connect& connect, const tcp_init&)
 {
     auto result = do_tcp_connect(m_pcb.get(), connect);
     if (!result) return {tl::make_unexpected(result.error()), std::nullopt};
     return {api::reply_working(), tcp_connecting()};
 }
 
-tcp_socket::on_request_reply tcp_socket::on_request(const api::request_connect& connect,
-                                                    const tcp_bound&)
+tcp_socket::on_request_reply
+tcp_socket::on_request(const api::request_connect& connect, const tcp_bound&)
 {
     auto result = do_tcp_connect(m_pcb.get(), connect);
     if (!result) return {tl::make_unexpected(result.error()), std::nullopt};
@@ -496,8 +475,9 @@ tcp_socket::on_request_reply tcp_socket::on_request(const api::request_connect&,
     return {tl::make_unexpected(error.value), std::nullopt};
 }
 
-tcp_socket::on_request_reply tcp_socket::on_request(const api::request_shutdown& shutdown,
-                                                    const tcp_connected&)
+tcp_socket::on_request_reply
+tcp_socket::on_request(const api::request_shutdown& shutdown,
+                       const tcp_connected&)
 {
     int shut_rx = 0, shut_tx = 0;
     switch (shutdown.how) {
@@ -523,8 +503,8 @@ tcp_socket::on_request_reply tcp_socket::on_request(const api::request_shutdown&
     return {api::reply_success(), std::nullopt};
 }
 
-tcp_socket::on_request_reply tcp_socket::on_request(const api::request_shutdown&,
-                                                    const tcp_error& error)
+tcp_socket::on_request_reply
+tcp_socket::on_request(const api::request_shutdown&, const tcp_error& error)
 {
     return {tl::make_unexpected(error.value), std::nullopt};
 }
@@ -539,7 +519,7 @@ static tl::expected<socklen_t, int> do_tcp_get_name(const ip_addr_t& ip_addr,
 
     switch (IP_GET_TYPE(&ip_addr)) {
     case IPADDR_TYPE_V4: {
-        struct sockaddr_in *sa4 = reinterpret_cast<sockaddr_in*>(&sstorage);
+        struct sockaddr_in* sa4 = reinterpret_cast<sockaddr_in*>(&sstorage);
         sa4->sin_family = AF_INET;
         sa4->sin_port = htons(ip_port);
         sa4->sin_addr.s_addr = ip_2_ip4(&ip_addr)->addr;
@@ -548,11 +528,10 @@ static tl::expected<socklen_t, int> do_tcp_get_name(const ip_addr_t& ip_addr,
         break;
     }
     case IPADDR_TYPE_V6: {
-        struct sockaddr_in6 *sa6 = reinterpret_cast<sockaddr_in6*>(&sstorage);
+        struct sockaddr_in6* sa6 = reinterpret_cast<sockaddr_in6*>(&sstorage);
         sa6->sin6_family = AF_INET6;
         sa6->sin6_port = htons(ip_port);
-        std::memcpy(sa6->sin6_addr.s6_addr,
-                    ip_2_ip6(&ip_addr)->addr,
+        std::memcpy(sa6->sin6_addr.s6_addr, ip_2_ip6(&ip_addr)->addr,
                     sizeof(in6_addr));
 
         slength = sizeof(sockaddr_in6);
@@ -563,44 +542,44 @@ static tl::expected<socklen_t, int> do_tcp_get_name(const ip_addr_t& ip_addr,
     }
 
     /* Copy the data out */
-    auto result = copy_out(request.id.pid, request.name,
-                           sstorage, std::min(request.namelen, slength));
-    if (!result) {
-        return (tl::make_unexpected(result.error()));
-    }
+    auto result = copy_out(request.id.pid, request.name, sstorage,
+                           std::min(request.namelen, slength));
+    if (!result) { return (tl::make_unexpected(result.error())); }
 
     return (slength);
 }
 
-tcp_socket::on_request_reply tcp_socket::on_request(const api::request_getpeername& getpeername,
-                                                    const tcp_connected&)
+tcp_socket::on_request_reply
+tcp_socket::on_request(const api::request_getpeername& getpeername,
+                       const tcp_connected&)
 {
-    auto result = do_tcp_get_name(m_pcb->remote_ip, m_pcb->remote_port, getpeername);
+    auto result =
+        do_tcp_get_name(m_pcb->remote_ip, m_pcb->remote_port, getpeername);
     if (!result) return {tl::make_unexpected(result.error()), std::nullopt};
     return {api::reply_socklen{*result}, std::nullopt};
 }
 
-tcp_socket::on_request_reply tcp_socket::on_request(const api::request_getpeername&,
-                                                    const tcp_error& error)
+tcp_socket::on_request_reply
+tcp_socket::on_request(const api::request_getpeername&, const tcp_error& error)
 {
     return {tl::make_unexpected(error.value), std::nullopt};
 }
 
-tl::expected<socklen_t, int> tcp_socket::do_tcp_getsockname(const tcp_pcb* pcb,
-                                                            const api::request_getsockname& getsockname)
+tl::expected<socklen_t, int>
+tcp_socket::do_tcp_getsockname(const tcp_pcb* pcb,
+                               const api::request_getsockname& getsockname)
 {
     return (do_tcp_get_name(pcb->local_ip, pcb->local_port, getsockname));
 }
 
-tcp_socket::on_request_reply tcp_socket::on_request(const api::request_getsockname&,
-                                                    const tcp_error& error)
+tcp_socket::on_request_reply
+tcp_socket::on_request(const api::request_getsockname&, const tcp_error& error)
 {
     return {tl::make_unexpected(error.value), std::nullopt};
 }
 
-static
-tl::expected<socklen_t, int> do_tcp_getsockopt(const tcp_pcb* pcb,
-                                               const api::request_getsockopt& getsockopt)
+static tl::expected<socklen_t, int>
+do_tcp_getsockopt(const tcp_pcb* pcb, const api::request_getsockopt& getsockopt)
 {
     assert(getsockopt.level == IPPROTO_TCP);
 
@@ -623,17 +602,19 @@ tl::expected<socklen_t, int> do_tcp_getsockopt(const tcp_pcb* pcb,
     case LINUX_TCP_INFO: {
         auto info = tcp_info{};
         get_tcp_info(pcb, info);
-        auto result = copy_out(getsockopt.id.pid, getsockopt.optval,
-                               reinterpret_cast<void*>(&info),
-                               std::min(sizeof(info), static_cast<size_t>(getsockopt.optlen)));
+        auto result = copy_out(
+            getsockopt.id.pid, getsockopt.optval,
+            reinterpret_cast<void*>(&info),
+            std::min(sizeof(info), static_cast<size_t>(getsockopt.optlen)));
         if (!result) return (tl::make_unexpected(result.error()));
         slength = sizeof(info);
         break;
     }
     case LINUX_TCP_CONGESTION: {
         std::string_view cc = "reno";
-        auto result = copy_out(getsockopt.id.pid, getsockopt.optval, cc.data(),
-                               std::min(cc.length(), static_cast<size_t>(getsockopt.optlen)));
+        auto result = copy_out(
+            getsockopt.id.pid, getsockopt.optval, cc.data(),
+            std::min(cc.length(), static_cast<size_t>(getsockopt.optlen)));
         if (!result) return (tl::make_unexpected(result.error()));
         slength = sizeof(cc.length());
         break;
@@ -645,9 +626,10 @@ tl::expected<socklen_t, int> do_tcp_getsockopt(const tcp_pcb* pcb,
     return (slength);
 }
 
-tl::expected<socklen_t, int> tcp_socket::do_getsockopt(const tcp_pcb* pcb,
-                                                       const api::request_getsockopt& getsockopt,
-                                                       const tcp_socket_state& state)
+tl::expected<socklen_t, int>
+tcp_socket::do_getsockopt(const tcp_pcb* pcb,
+                          const api::request_getsockopt& getsockopt,
+                          const tcp_socket_state& state)
 {
     switch (getsockopt.level) {
     case SOL_SOCKET:
@@ -662,10 +644,12 @@ tl::expected<socklen_t, int> tcp_socket::do_getsockopt(const tcp_pcb* pcb,
             return (sizeof(error));
         }
         default:
-            return (do_sock_getsockopt(reinterpret_cast<const ip_pcb*>(pcb), getsockopt));
+            return (do_sock_getsockopt(reinterpret_cast<const ip_pcb*>(pcb),
+                                       getsockopt));
         }
     case IPPROTO_IP:
-        return (do_ip_getsockopt(reinterpret_cast<const ip_pcb*>(pcb), getsockopt));
+        return (
+            do_ip_getsockopt(reinterpret_cast<const ip_pcb*>(pcb), getsockopt));
     case IPPROTO_TCP:
         return (do_tcp_getsockopt(pcb, getsockopt));
     default:
@@ -673,9 +657,8 @@ tl::expected<socklen_t, int> tcp_socket::do_getsockopt(const tcp_pcb* pcb,
     }
 }
 
-static
-tl::expected<void, int> do_tcp_setsockopt(tcp_pcb* pcb,
-                                          const api::request_setsockopt& setsockopt)
+static tl::expected<void, int>
+do_tcp_setsockopt(tcp_pcb* pcb, const api::request_setsockopt& setsockopt)
 {
     assert(setsockopt.level == IPPROTO_TCP);
 
@@ -684,8 +667,10 @@ tl::expected<void, int> do_tcp_setsockopt(tcp_pcb* pcb,
         auto opt = copy_in(setsockopt.id.pid,
                            reinterpret_cast<const int*>(setsockopt.optval));
         if (!opt) return (tl::make_unexpected(opt.error()));
-        if (*opt) tcp_nagle_disable(pcb);
-        else      tcp_nagle_enable(pcb);
+        if (*opt)
+            tcp_nagle_disable(pcb);
+        else
+            tcp_nagle_enable(pcb);
         break;
     }
     case LINUX_TCP_MAXSEG: {
@@ -703,8 +688,9 @@ tl::expected<void, int> do_tcp_setsockopt(tcp_pcb* pcb,
     return {};
 }
 
-tl::expected<void, int> tcp_socket::do_setsockopt(tcp_pcb* pcb,
-                                                  const api::request_setsockopt& setsockopt)
+tl::expected<void, int>
+tcp_socket::do_setsockopt(tcp_pcb* pcb,
+                          const api::request_setsockopt& setsockopt)
 {
     switch (setsockopt.level) {
     case SOL_SOCKET:
@@ -718,12 +704,12 @@ tl::expected<void, int> tcp_socket::do_setsockopt(tcp_pcb* pcb,
     }
 }
 
-tcp_socket::on_request_reply tcp_socket::on_request(const api::request_setsockopt&,
-                                                    const tcp_error& error)
+tcp_socket::on_request_reply
+tcp_socket::on_request(const api::request_setsockopt&, const tcp_error& error)
 {
     return {tl::make_unexpected(error.value), std::nullopt};
 }
 
-}
-}
-}
+} // namespace server
+} // namespace socket
+} // namespace openperf

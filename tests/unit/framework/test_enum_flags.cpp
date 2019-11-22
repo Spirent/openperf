@@ -14,10 +14,12 @@ declare_enum_flags(test_enums);
 TEST_CASE("enums flags", "[enum flags]")
 {
     using enum_type = std::underlying_type_t<test_enums>;
-    auto mask = openperf::utils::bit_flags<test_enums>(std::numeric_limits<enum_type>::max());
+    auto mask = openperf::utils::bit_flags<test_enums>(
+        std::numeric_limits<enum_type>::max());
     auto enum_a = openperf::utils::enumerator<test_enums>(test_enums::A);
 
-    SECTION("test operator &") {
+    SECTION("test operator &")
+    {
         auto a_and_b = test_enums::A & test_enums::B;
         REQUIRE(!a_and_b);
 
@@ -38,7 +40,8 @@ TEST_CASE("enums flags", "[enum flags]")
         REQUIRE(mask_and_b);
     }
 
-    SECTION("test operator |") {
+    SECTION("test operator |")
+    {
         auto a_or_c = test_enums::A | test_enums::C;
         REQUIRE(a_or_c);
         REQUIRE(a_or_c.value == 5);
@@ -50,7 +53,8 @@ TEST_CASE("enums flags", "[enum flags]")
         REQUIRE(a_or_mask == mask);
     }
 
-    SECTION("test operator ^") {
+    SECTION("test operator ^")
+    {
         auto a_xor_d = test_enums::A ^ test_enums::D;
         REQUIRE(a_xor_d);
         REQUIRE(a_xor_d.value == 9);
@@ -60,18 +64,21 @@ TEST_CASE("enums flags", "[enum flags]")
 
         auto a_xor_mask = test_enums::A ^ mask;
         REQUIRE(a_xor_mask != mask);
-        REQUIRE(a_xor_mask.value == (std::numeric_limits<enum_type>::max() ^ 1));
+        REQUIRE(a_xor_mask.value
+                == (std::numeric_limits<enum_type>::max() ^ 1));
 
         auto a_xor_d_xor_mask = a_xor_d ^ mask;
         REQUIRE(a_xor_d_xor_mask != a_xor_d);
         REQUIRE(a_xor_d_xor_mask != mask);
     }
 
-    SECTION("test operator ~") {
+    SECTION("test operator ~")
+    {
         auto not_a = ~test_enums::A;
         REQUIRE(not_a.value == (std::numeric_limits<unsigned>::max() ^ 1));
 
         auto not_a_or_b = ~(test_enums::A | test_enums::B);
-        REQUIRE(not_a_or_b.value == (std::numeric_limits<unsigned>::max() ^ (1 | 2)));
+        REQUIRE(not_a_or_b.value
+                == (std::numeric_limits<unsigned>::max() ^ (1 | 2)));
     }
 }

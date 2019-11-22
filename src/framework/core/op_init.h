@@ -18,7 +18,7 @@ extern "C" {
  * @params context
  *   ZeroMQ context for messaging sockets
  */
-void op_init(void *context, int argc, char *argv[]);
+void op_init(void* context, int argc, char* argv[]);
 
 /**
  * Give modules an opportunity to cleanly shut down.
@@ -28,7 +28,7 @@ void op_init(void *context, int argc, char *argv[]);
  * @params context
  *   ZeroMQ context for messaging sockets
  */
-void op_halt(void *context);
+void op_halt(void* context);
 
 #ifdef __cplusplus
 }

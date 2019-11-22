@@ -11,23 +11,23 @@
 #include "core/op_task.h"
 #include "core/op_thread.h"
 
-struct op_task_internal_args {
-    task_fn *original_task;
-    struct op_task_args *original_args;
-    char *pair_endpoint;
+struct op_task_internal_args
+{
+    task_fn* original_task;
+    struct op_task_args* original_args;
+    char* pair_endpoint;
 };
-
 
 /**
  * A generic task wrapper that notifies the caller that is has
  * been started
  */
-static void *op_task_launcher_task(void *void_args)
+static void* op_task_launcher_task(void* void_args)
 {
-    struct op_task_internal_args *iargs =
-        (struct op_task_internal_args *)void_args;
-    task_fn *task = iargs->original_task;
-    struct op_task_args *args = iargs->original_args;
+    struct op_task_internal_args* iargs =
+        (struct op_task_internal_args*)void_args;
+    task_fn* task = iargs->original_task;
+    struct op_task_args* args = iargs->original_args;
 
     /* Set thread name */
     op_thread_setname(args->name);
@@ -35,7 +35,7 @@ static void *op_task_launcher_task(void *void_args)
     /* Notify parent that we've started execution */
     if (op_task_sync_ping(args->context, iargs->pair_endpoint) != 0) {
         op_exit("Failed to notify parent that %s thread has started\n",
-                 args->name);
+                args->name);
     }
 
     /* Clean up */
@@ -49,22 +49,21 @@ static void *op_task_launcher_task(void *void_args)
 /**
  * Start a generic task
  */
-int op_task_launch(task_fn *task,
-                    struct op_task_args *task_args,
-                    const char *task_name)
+int op_task_launch(task_fn* task, struct op_task_args* task_args,
+                   const char* task_name)
 {
     pthread_t thread;
     pthread_attr_t thread_attr;
     int err = 0;
 
-    struct op_task_internal_args *iargs = malloc(sizeof(*iargs));
+    struct op_task_internal_args* iargs = malloc(sizeof(*iargs));
     assert(iargs);
 
     /* Create a socket for the child notification */
     asprintf(&iargs->pair_endpoint, "inproc://op_%s_notify", task_name);
     assert(iargs->pair_endpoint);
-    void *notify = op_task_sync_socket(task_args->context,
-                                        iargs->pair_endpoint);
+    void* notify =
+        op_task_sync_socket(task_args->context, iargs->pair_endpoint);
     assert(notify);
 
     /* Launch a detached thread */
@@ -79,15 +78,16 @@ int op_task_launch(task_fn *task,
 
     OP_LOG(OP_LOG_DEBUG, "Creating new thread for %s task...\n", task_name);
 
-    if ((err = pthread_create(&thread, &thread_attr, op_task_launcher_task, iargs)) != 0) {
-        OP_LOG(OP_LOG_ERROR, "Failed to launch task %s: %d\n",
-                task_name, err);
+    if ((err = pthread_create(&thread, &thread_attr, op_task_launcher_task,
+                              iargs))
+        != 0) {
+        OP_LOG(OP_LOG_ERROR, "Failed to launch task %s: %d\n", task_name, err);
         goto error_and_free;
     }
 
-    op_task_sync_block_and_warn(&notify, 1, 1000,
-                                 "Still waiting on acknowledgment from %s task\n",
-                                 task_name);
+    op_task_sync_block_and_warn(
+        &notify, 1, 1000, "Still waiting on acknowledgment from %s task\n",
+        task_name);
     OP_LOG(OP_LOG_DEBUG, "Task %s started!\n", task_name);
 
     return (0);
@@ -106,12 +106,12 @@ error_and_free:
     return (err);
 }
 
-void *op_task_sync_socket(void *context, const char *endpoint)
+void* op_task_sync_socket(void* context, const char* endpoint)
 {
     return (op_socket_get_server(context, ZMQ_PULL, endpoint));
 }
 
-static void _op_task_unbind_socket(void *socket)
+static void _op_task_unbind_socket(void* socket)
 {
     /*
      * Explicitly unbind the socket so we can reuse the endpoint immediately
@@ -133,9 +133,9 @@ static void _op_task_unbind_socket(void *socket)
     }
 }
 
-int op_task_sync_block(void **socketp, size_t expected)
+int op_task_sync_block(void** socketp, size_t expected)
 {
-    void *socket = *socketp;
+    void* socket = *socketp;
     size_t responses = 0;
     uint8_t buffer[16];
     while (responses < expected
@@ -151,11 +151,11 @@ int op_task_sync_block(void **socketp, size_t expected)
     return (0);
 }
 
-int _op_task_sync_block_and_warn(void **socketp, size_t expected,
-                                  unsigned interval,
-                                  const char *function, const char *format, ...)
+int _op_task_sync_block_and_warn(void** socketp, size_t expected,
+                                 unsigned interval, const char* function,
+                                 const char* format, ...)
 {
-    void *socket = *socketp;
+    void* socket = *socketp;
     unsigned responses = 0;
     int error = 0;
     while (responses < expected) {
@@ -208,13 +208,10 @@ _op_task_sync_block_and_warn_out:
     return (error);
 }
 
-int op_task_sync_ping(void *context, const char *endpoint)
+int op_task_sync_ping(void* context, const char* endpoint)
 {
-    void *sync = op_socket_get_client(context, ZMQ_PUSH,
-                                       endpoint);
-    if (!sync) {
-        return (-1);
-    }
+    void* sync = op_socket_get_client(context, ZMQ_PUSH, endpoint);
+    if (!sync) { return (-1); }
 
     int send_or_err = zmq_send(sync, "", 0, 0);
     zmq_close(sync);

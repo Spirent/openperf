@@ -19,36 +19,40 @@ namespace openperf::packetio::dpdk::port {
 /**
  * Filter states
  */
-struct filter_state_ok {};        /*<< Filter is enabled and working */
-struct filter_state_overflow {};  /*<< Port is promiscuous due to filter overflow */
-struct filter_state_disabled {};  /*<< Port is promiscuous due to administrative event */
-struct filter_state_error {};     /*<< Filter returned an error; no further modifications are possible */
+struct filter_state_ok
+{}; /*<< Filter is enabled and working */
+struct filter_state_overflow
+{}; /*<< Port is promiscuous due to filter overflow */
+struct filter_state_disabled
+{}; /*<< Port is promiscuous due to administrative event */
+struct filter_state_error
+{}; /*<< Filter returned an error; no further modifications are possible */
 
-using filter_state = std::variant<filter_state_ok,
-                                  filter_state_overflow,
-                                  filter_state_disabled,
-                                  filter_state_error>;
+using filter_state = std::variant<filter_state_ok, filter_state_overflow,
+                                  filter_state_disabled, filter_state_error>;
 
 /**
  * Filter events
  */
-struct filter_event_add {
+struct filter_event_add
+{
     net::mac_address mac;
     std::optional<std::function<void()>> on_overflow = std::nullopt;
 };
 
-struct filter_event_del {
+struct filter_event_del
+{
     net::mac_address mac;
     std::optional<std::function<void()>> on_underflow = std::nullopt;
 };
 
-struct filter_event_disable {};
-struct filter_event_enable {};
+struct filter_event_disable
+{};
+struct filter_event_enable
+{};
 
-using filter_event = std::variant<filter_event_add,
-                                  filter_event_del,
-                                  filter_event_disable,
-                                  filter_event_enable>;
+using filter_event = std::variant<filter_event_add, filter_event_del,
+                                  filter_event_disable, filter_event_enable>;
 
 template <typename Derived, typename StateVariant, typename EventVariant>
 class filter_state_machine
@@ -62,19 +66,20 @@ public:
         auto next_state = std::visit(
             [&](const auto& action, const auto& state) {
                 return (child.on_event(action, state));
-            }, event, m_state);
+            },
+            event, m_state);
 
         if (next_state) {
             OP_LOG(OP_LOG_TRACE, "Port Filter %u: %s --> %s\n",
-                    reinterpret_cast<Derived&>(*this).port_id(),
-                    to_string(m_state).data(),
-                    to_string(*next_state).data());
+                   reinterpret_cast<Derived&>(*this).port_id(),
+                   to_string(m_state).data(), to_string(*next_state).data());
             m_state = *std::move(next_state);
         }
     }
 };
 
-class flow_filter : public filter_state_machine<flow_filter, filter_state, filter_event>
+class flow_filter
+    : public filter_state_machine<flow_filter, filter_state, filter_event>
 {
     uint16_t m_port;
 
@@ -90,16 +95,24 @@ public:
 
     uint16_t port_id() const;
 
-    std::optional<filter_state> on_event(const filter_event_add& add, const filter_state_ok&);
-    std::optional<filter_state> on_event(const filter_event_del& del, const filter_state_ok&);
-    std::optional<filter_state> on_event(const filter_event_disable&, const filter_state_ok&);
+    std::optional<filter_state> on_event(const filter_event_add& add,
+                                         const filter_state_ok&);
+    std::optional<filter_state> on_event(const filter_event_del& del,
+                                         const filter_state_ok&);
+    std::optional<filter_state> on_event(const filter_event_disable&,
+                                         const filter_state_ok&);
 
-    std::optional<filter_state> on_event(const filter_event_add& add, const filter_state_overflow&);
-    std::optional<filter_state> on_event(const filter_event_del& del, const filter_state_overflow&);
+    std::optional<filter_state> on_event(const filter_event_add& add,
+                                         const filter_state_overflow&);
+    std::optional<filter_state> on_event(const filter_event_del& del,
+                                         const filter_state_overflow&);
 
-    std::optional<filter_state> on_event(const filter_event_add& add, const filter_state_disabled&);
-    std::optional<filter_state> on_event(const filter_event_del& del, const filter_state_disabled&);
-    std::optional<filter_state> on_event(const filter_event_enable&, const filter_state_disabled&);
+    std::optional<filter_state> on_event(const filter_event_add& add,
+                                         const filter_state_disabled&);
+    std::optional<filter_state> on_event(const filter_event_del& del,
+                                         const filter_state_disabled&);
+    std::optional<filter_state> on_event(const filter_event_enable&,
+                                         const filter_state_disabled&);
 
     /* Default action for any unhandled cases */
     template <typename Event, typename State>
@@ -109,7 +122,8 @@ public:
     }
 };
 
-class mac_filter : public filter_state_machine<mac_filter, filter_state, filter_event>
+class mac_filter
+    : public filter_state_machine<mac_filter, filter_state, filter_event>
 {
     uint16_t m_port;
     std::vector<net::mac_address> m_filtered;
@@ -124,16 +138,24 @@ public:
 
     uint16_t port_id() const;
 
-    std::optional<filter_state> on_event(const filter_event_add& add, const filter_state_ok&);
-    std::optional<filter_state> on_event(const filter_event_del& del, const filter_state_ok&);
-    std::optional<filter_state> on_event(const filter_event_disable&, const filter_state_ok&);
+    std::optional<filter_state> on_event(const filter_event_add& add,
+                                         const filter_state_ok&);
+    std::optional<filter_state> on_event(const filter_event_del& del,
+                                         const filter_state_ok&);
+    std::optional<filter_state> on_event(const filter_event_disable&,
+                                         const filter_state_ok&);
 
-    std::optional<filter_state> on_event(const filter_event_add& add, const filter_state_overflow&);
-    std::optional<filter_state> on_event(const filter_event_del& del, const filter_state_overflow&);
+    std::optional<filter_state> on_event(const filter_event_add& add,
+                                         const filter_state_overflow&);
+    std::optional<filter_state> on_event(const filter_event_del& del,
+                                         const filter_state_overflow&);
 
-    std::optional<filter_state> on_event(const filter_event_add& add, const filter_state_disabled&);
-    std::optional<filter_state> on_event(const filter_event_del& del, const filter_state_disabled&);
-    std::optional<filter_state> on_event(const filter_event_enable&, const filter_state_disabled&);
+    std::optional<filter_state> on_event(const filter_event_add& add,
+                                         const filter_state_disabled&);
+    std::optional<filter_state> on_event(const filter_event_del& del,
+                                         const filter_state_disabled&);
+    std::optional<filter_state> on_event(const filter_event_enable&,
+                                         const filter_state_disabled&);
 
     /* Default action for any unhandled cases */
     template <typename Event, typename State>
@@ -147,7 +169,7 @@ using filter_variant = std::variant<flow_filter, mac_filter>;
 
 enum class filter_type {
     flow = utils::variant_index<filter_variant, flow_filter>(),
-    mac  = utils::variant_index<filter_variant, mac_filter>(),
+    mac = utils::variant_index<filter_variant, mac_filter>(),
 };
 
 class filter
@@ -159,10 +181,12 @@ public:
     filter_type type() const;
 
     void add_mac_address(const net::mac_address& mac);
-    void add_mac_address(const net::mac_address& mac, std::function<void()>&& on_overflow);
+    void add_mac_address(const net::mac_address& mac,
+                         std::function<void()>&& on_overflow);
 
     void del_mac_address(const net::mac_address& mac);
-    void del_mac_address(const net::mac_address& mac, std::function<void()>&& on_underflow);
+    void del_mac_address(const net::mac_address& mac,
+                         std::function<void()>&& on_underflow);
 
     void enable();
     void disable();
@@ -173,8 +197,8 @@ private:
     filter_strategy m_filter;
 };
 
-const char * to_string(const filter_state&);
+const char* to_string(const filter_state&);
 
-}
+} // namespace openperf::packetio::dpdk::port
 
 #endif /* _OP_PACKETIO_DPDK_PORT_FILTER_HPP_ */

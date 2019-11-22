@@ -18,12 +18,12 @@ extern "C" {
 /**
  * Signature for option based init function
  */
-typedef int (op_option_init_fn)();
+typedef int(op_option_init_fn)();
 
 /**
  * Signature for option handler callback
  */
-typedef int (op_option_callback_fn)(int opt, const char *optarg);
+typedef int(op_option_callback_fn)(int opt, const char* optarg);
 
 /**
  * Enum denoting the type of an option's data.
@@ -50,18 +50,20 @@ typedef enum op_option_type {
 /**
  * A structure describing an option based init function
  */
-struct op_option {
-    const char *description;
-    const char *long_opt;
+struct op_option
+{
+    const char* description;
+    const char* long_opt;
     int short_opt;
     enum op_option_type opt_type;
 };
 
-struct op_options_data {
+struct op_options_data
+{
     SLIST_ENTRY(op_options_data) next;
-    const char *name;
-    op_option_init_fn *init;
-    op_option_callback_fn *callback;
+    const char* name;
+    op_option_init_fn* init;
+    op_option_callback_fn* callback;
     struct op_option options[];
 };
 
@@ -71,7 +73,7 @@ struct op_options_data {
  * @param[in] opt_init
  *   Pointer to an op_option_init struct
  */
-void op_options_register(struct op_options_data *opt_data);
+void op_options_register(struct op_options_data* opt_data);
 
 /**
  * Call all registered option init functions
@@ -81,12 +83,12 @@ int op_options_init();
 /**
  * Parse all options
  */
-int op_options_parse(int argc, char *argv[]);
+int op_options_parse(int argc, char* argv[]);
 
 /**
  * Hash a long option string to the size of a short one (int).
  */
-int op_options_hash_long(const char * long_opt);
+int op_options_hash_long(const char* long_opt);
 
 /**
  * Retrieve long option string.
@@ -96,7 +98,7 @@ int op_options_hash_long(const char * long_opt);
  *  pointer to a character string for the long form option,
  *  NULL otherwise.
  */
-const char * op_options_get_long_opt(int op);
+const char* op_options_get_long_opt(int op);
 
 /**
  * Retrieve type of an option value.
@@ -115,16 +117,17 @@ enum op_option_type op_options_get_opt_type_short(int op);
  * @return
  *  value type for the given option, OP_OPTION_TYPE_NONE if none can be found.
  */
-enum op_option_type op_options_get_opt_type_long(const char *long_opt, size_t len);
+enum op_option_type op_options_get_opt_type_long(const char* long_opt,
+                                                 size_t len);
 
 /**
  * Macro for registring option handlers
  */
-#define REGISTER_OPTIONS(o)                                             \
-    void op_options_register_ ## o(void);                              \
-    void __attribute__((constructor)) op_options_register_ ## o(void)  \
-    {                                                                   \
-        op_options_register((struct op_options_data *)&o);            \
+#define REGISTER_OPTIONS(o)                                                    \
+    void op_options_register_##o(void);                                        \
+    void __attribute__((constructor)) op_options_register_##o(void)            \
+    {                                                                          \
+        op_options_register((struct op_options_data*)&o);                      \
     }
 
 #ifdef __cplusplus

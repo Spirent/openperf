@@ -7,8 +7,7 @@
 
 namespace openperf::packetio::transmogrify {
 
-template <typename T>
-static auto zmq_msg_init(zmq_msg_t* msg, const T& value)
+template <typename T> static auto zmq_msg_init(zmq_msg_t* msg, const T& value)
 {
     if (auto error = zmq_msg_init_size(msg, sizeof(T)); error != 0) {
         return (error);
@@ -32,8 +31,7 @@ static auto zmq_msg_init(zmq_msg_t* msg, const T* buffer, size_t length)
     return (0);
 }
 
-template <typename T>
-static T zmq_msg_data(const zmq_msg_t* msg)
+template <typename T> static T zmq_msg_data(const zmq_msg_t* msg)
 {
     return (reinterpret_cast<T>(zmq_msg_data(const_cast<zmq_msg_t*>(msg))));
 }
@@ -44,14 +42,16 @@ static T zmq_msg_data(const zmq_msg_t* msg)
  * more intuitive.
  */
 template <typename VariantType, typename T, std::size_t index = 0>
-constexpr size_t variant_index() {
-    if constexpr (std::is_same_v<std::variant_alternative_t<index, VariantType>, T>) {
+constexpr size_t variant_index()
+{
+    if constexpr (std::is_same_v<std::variant_alternative_t<index, VariantType>,
+                                 T>) {
         return (index);
     } else {
         return (variant_index<VariantType, T, index + 1>());
     }
 }
 
-}
+} // namespace openperf::packetio::transmogrify
 
 #endif /* _OP_PACKETIO_TRANSMOGRIFY_UTILS_HPP_ */

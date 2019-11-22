@@ -15,10 +15,11 @@ struct pbuf;
 
 namespace openperf::socket::server {
 
-class dgram_channel : public circular_buffer_consumer<dgram_channel>
-                    , public circular_buffer_producer<dgram_channel>
-                    , public event_queue_consumer<dgram_channel>
-                    , public event_queue_producer<dgram_channel>
+class dgram_channel
+    : public circular_buffer_consumer<dgram_channel>
+    , public circular_buffer_producer<dgram_channel>
+    , public event_queue_consumer<dgram_channel>
+    , public event_queue_producer<dgram_channel>
 {
     DGRAM_CHANNEL_MEMBERS
 
@@ -27,18 +28,18 @@ class dgram_channel : public circular_buffer_consumer<dgram_channel>
     friend class event_queue_consumer<dgram_channel>;
     friend class event_queue_producer<dgram_channel>;
 
-    static constexpr size_t init_buffer_size = 32 * 1024;  /* 64 kb */
+    static constexpr size_t init_buffer_size = 32 * 1024; /* 64 kb */
 
 protected:
     uint8_t* producer_base() const;
-    size_t   producer_len() const;
+    size_t producer_len() const;
     std::atomic_size_t& producer_read_idx();
     const std::atomic_size_t& producer_read_idx() const;
     std::atomic_size_t& producer_write_idx();
     const std::atomic_size_t& producer_write_idx() const;
 
     uint8_t* consumer_base() const;
-    size_t   consumer_len() const;
+    size_t consumer_len() const;
     std::atomic_size_t& consumer_read_idx();
     const std::atomic_size_t& consumer_read_idx() const;
     std::atomic_size_t& consumer_write_idx();
@@ -57,7 +58,8 @@ protected:
     const std::atomic_uint64_t& ack_write_idx() const;
 
 public:
-    dgram_channel(int socket_flags, openperf::socket::server::allocator& allocator);
+    dgram_channel(int socket_flags,
+                  openperf::socket::server::allocator& allocator);
     ~dgram_channel();
 
     dgram_channel(const dgram_channel&) = delete;
@@ -70,8 +72,8 @@ public:
     int server_fd();
 
     bool send_empty() const;
-    bool send(const pbuf *p);
-    bool send(const pbuf *p, const dgram_ip_addr* addr, in_port_t);
+    bool send(const pbuf* p);
+    bool send(const pbuf* p, const dgram_ip_addr* addr, in_port_t);
 
     bool recv_available() const;
     std::pair<pbuf*, std::optional<dgram_channel_addr>> recv();
@@ -79,11 +81,14 @@ public:
     void dump() const;
 };
 
-struct dgram_channel_deleter {
+struct dgram_channel_deleter
+{
     openperf::socket::server::allocator* allocator_;
-    void operator()(openperf::socket::server::dgram_channel *channel) {
+    void operator()(openperf::socket::server::dgram_channel* channel)
+    {
         auto allocator = reinterpret_cast<openperf::socket::server::allocator*>(
-            reinterpret_cast<openperf::socket::dgram_channel*>(channel)->allocator);
+            reinterpret_cast<openperf::socket::dgram_channel*>(channel)
+                ->allocator);
         channel->~dgram_channel();
         allocator->deallocate(reinterpret_cast<uint8_t*>(channel),
                               sizeof(*channel));
@@ -92,6 +97,6 @@ struct dgram_channel_deleter {
 
 typedef std::unique_ptr<dgram_channel, dgram_channel_deleter> dgram_channel_ptr;
 
-}
+} // namespace openperf::socket::server
 
 #endif /* _OP_SOCKET_SERVER_DGRAM_CHANNEL_HPP_ */

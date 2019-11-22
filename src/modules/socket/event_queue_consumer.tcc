@@ -6,8 +6,7 @@
 namespace openperf {
 namespace socket {
 
-template <typename Derived>
-Derived& event_queue_consumer<Derived>::derived()
+template <typename Derived> Derived& event_queue_consumer<Derived>::derived()
 {
     return (static_cast<Derived&>(*this));
 }
@@ -18,8 +17,7 @@ const Derived& event_queue_consumer<Derived>::derived() const
     return (static_cast<const Derived&>(*this));
 }
 
-template <typename Derived>
-int event_queue_consumer<Derived>::fd() const
+template <typename Derived> int event_queue_consumer<Derived>::fd() const
 {
     return (derived().consumer_fd());
 }
@@ -78,14 +76,12 @@ uint64_t event_queue_consumer<Derived>::count() const
     return (load_write() - load_read());
 }
 
-template <typename Derived>
-int event_queue_consumer<Derived>::ack()
+template <typename Derived> int event_queue_consumer<Derived>::ack()
 {
     return (count() ? ack_wait() : 0);
 }
 
-template <typename Derived>
-int event_queue_consumer<Derived>::ack_wait()
+template <typename Derived> int event_queue_consumer<Derived>::ack_wait()
 {
     uint64_t counter = 0;
     auto error = eventfd_read(fd(), &counter);
@@ -94,8 +90,7 @@ int event_queue_consumer<Derived>::ack_wait()
     return (0);
 }
 
-template <typename Derived>
-int event_queue_consumer<Derived>::ack_undo()
+template <typename Derived> int event_queue_consumer<Derived>::ack_undo()
 {
     if (count()) return (0);
 
@@ -108,17 +103,14 @@ int event_queue_consumer<Derived>::ack_undo()
     return (0);
 }
 
-template <typename Derived>
-int event_queue_consumer<Derived>::block()
+template <typename Derived> int event_queue_consumer<Derived>::block()
 {
     /*
      * If the difference between write and read is eventfd_max, then the
      * fd is already blocked.
      */
     auto events = count();
-    if (events == eventfd_max) {
-        return (EWOULDBLOCK);
-    }
+    if (events == eventfd_max) { return (EWOULDBLOCK); }
 
     /*
      * In order to block the fd, we need to write a value, x, such that
@@ -133,8 +125,7 @@ int event_queue_consumer<Derived>::block()
     return (0);
 }
 
-template <typename Derived>
-int event_queue_consumer<Derived>::block_wait()
+template <typename Derived> int event_queue_consumer<Derived>::block_wait()
 {
     /*
      * We might need two writes to block on the fd because we can write at
@@ -145,18 +136,16 @@ int event_queue_consumer<Derived>::block_wait()
     if (offset) {
         sub_read(offset);
         if (auto error = eventfd_write(fd(), offset); error != 0) {
-            add_read(offset);  /* undo previous sub */
+            add_read(offset); /* undo previous sub */
             return (errno);
         }
     }
 
     /* This write should block */
-    if (auto error = eventfd_write(fd(), 1); error != 0) {
-        return (errno);
-    }
-    sub_read(1);  /* Don't forget to account for the write! */
+    if (auto error = eventfd_write(fd(), 1); error != 0) { return (errno); }
+    sub_read(1); /* Don't forget to account for the write! */
     return (0);
 }
 
-}
-}
+} // namespace socket
+} // namespace openperf

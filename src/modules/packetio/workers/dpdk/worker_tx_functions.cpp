@@ -6,7 +6,7 @@
 namespace openperf::packetio::dpdk::worker {
 
 /* Copy mbuf header and packet data */
-static void eal_mbuf_copy_seg(rte_mbuf *dst, const rte_mbuf* src)
+static void eal_mbuf_copy_seg(rte_mbuf* dst, const rte_mbuf* src)
 {
     assert(dst);
     assert(src);
@@ -24,12 +24,12 @@ static void eal_mbuf_copy_seg(rte_mbuf *dst, const rte_mbuf* src)
     dst->tx_offload = src->tx_offload;
     dst->timesync = src->timesync;
 
-    rte_memcpy(rte_pktmbuf_mtod(dst, void*),
-               rte_pktmbuf_mtod(src, const void*),
+    rte_memcpy(rte_pktmbuf_mtod(dst, void*), rte_pktmbuf_mtod(src, const void*),
                rte_pktmbuf_data_len(src));
 }
 
-/* Make a complete copy of an mbuf chain with mbufs from the same pool as the source */
+/* Make a complete copy of an mbuf chain with mbufs from the same pool as the
+ * source */
 static rte_mbuf* eal_mbuf_copy_chain(const rte_mbuf* src_head)
 {
     assert(src_head);
@@ -71,42 +71,41 @@ static uint16_t transmit(uint16_t port_idx, uint16_t queue_idx,
 {
     auto sent = rte_eth_tx_burst(port_idx, queue_idx, mbufs, nb_mbufs);
 
-    OP_LOG(OP_LOG_TRACE, "Transmitted %u of %u packet%s on %u:%u\n",
-            sent, nb_mbufs, sent > 1 ? "s" : "", port_idx, queue_idx);
+    OP_LOG(OP_LOG_TRACE, "Transmitted %u of %u packet%s on %u:%u\n", sent,
+           nb_mbufs, sent > 1 ? "s" : "", port_idx, queue_idx);
 
     return (sent);
 }
 
-
-uint16_t tx_copy_direct(int port_idx, uint32_t, struct rte_mbuf* mbufs[], uint16_t nb_mbufs)
+uint16_t tx_copy_direct(int port_idx, uint32_t, struct rte_mbuf* mbufs[],
+                        uint16_t nb_mbufs)
 {
     uint16_t sent = 0;
 
     for (uint16_t i = 0; i < nb_mbufs; i++) {
         /*
-         * Note: caller expects the driver to free the mbuf when transmitted, hence
-         * we free the original mbuf here and the driver frees the copy.
+         * Note: caller expects the driver to free the mbuf when transmitted,
+         * hence we free the original mbuf here and the driver frees the copy.
          */
         auto copy = eal_mbuf_copy_chain(mbufs[i]);
         rte_pktmbuf_free(mbufs[i]);
-        if (!copy || !transmit(port_idx, 0, &copy, 1)) {
-            return (sent);
-        }
+        if (!copy || !transmit(port_idx, 0, &copy, 1)) { return (sent); }
         sent++;
     }
 
     return (sent);
 }
 
-uint16_t tx_copy_queued(int port_idx, uint32_t hash, struct rte_mbuf* mbufs[], uint16_t nb_mbufs)
+uint16_t tx_copy_queued(int port_idx, uint32_t hash, struct rte_mbuf* mbufs[],
+                        uint16_t nb_mbufs)
 {
     uint16_t sent = 0;
     auto& queues = worker::port_queues::instance();
 
     for (uint16_t i = 0; i < nb_mbufs; i++) {
         /*
-         * Note: caller expects the driver to free the mbuf when transmitted, hence
-         * we free the original mbuf here and the driver frees the copy.
+         * Note: caller expects the driver to free the mbuf when transmitted,
+         * hence we free the original mbuf here and the driver frees the copy.
          */
         auto copy = eal_mbuf_copy_chain(mbufs[i]);
         rte_pktmbuf_free(mbufs[i]);
@@ -119,12 +118,14 @@ uint16_t tx_copy_queued(int port_idx, uint32_t hash, struct rte_mbuf* mbufs[], u
     return (sent);
 }
 
-uint16_t tx_direct(int port_idx, uint32_t, struct rte_mbuf* mbufs[], uint16_t nb_mbufs)
+uint16_t tx_direct(int port_idx, uint32_t, struct rte_mbuf* mbufs[],
+                   uint16_t nb_mbufs)
 {
     return (transmit(port_idx, 0, mbufs, nb_mbufs));
 }
 
-uint16_t tx_queued(int port_idx, uint32_t hash, struct rte_mbuf* mbufs[], uint16_t nb_mbufs)
+uint16_t tx_queued(int port_idx, uint32_t hash, struct rte_mbuf* mbufs[],
+                   uint16_t nb_mbufs)
 {
     auto& queues = worker::port_queues::instance();
     return (queues[port_idx].tx(hash)->enqueue(mbufs, nb_mbufs));
@@ -132,9 +133,11 @@ uint16_t tx_queued(int port_idx, uint32_t hash, struct rte_mbuf* mbufs[], uint16
 
 uint16_t tx_dummy(int port_idx, uint32_t, struct rte_mbuf**, uint16_t)
 {
-    OP_LOG(OP_LOG_WARNING, "Dummy TX function called for port %u; "
-            "no packet transmitted!\n", port_idx);
+    OP_LOG(OP_LOG_WARNING,
+           "Dummy TX function called for port %u; "
+           "no packet transmitted!\n",
+           port_idx);
     return (0);
 }
 
-}
+} // namespace openperf::packetio::dpdk::worker

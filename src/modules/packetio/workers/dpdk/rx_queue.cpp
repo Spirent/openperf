@@ -50,20 +50,16 @@ bool rx_queue::add(int poll_fd, void* data)
     auto fd = get_queue_fd(port_id(), queue_id());
     if (!fd) return (false);
 
-    m_event = rte_epoll_event{
-        .epdata = {
-            .event = EPOLLIN | EPOLLET,
-            .data = data,
-            .cb_fun = ack_interrupt,
-            .cb_arg = this
-        }
-    };
+    m_event = rte_epoll_event{.epdata = {.event = EPOLLIN | EPOLLET,
+                                         .data = data,
+                                         .cb_fun = ack_interrupt,
+                                         .cb_arg = this}};
 
     auto error = rte_epoll_ctl(poll_fd, EPOLL_CTL_ADD, *fd, &m_event);
 
     if (error) {
         OP_LOG(OP_LOG_ERROR, "Could not add rx interrupt for %u:%u: %s\n",
-                port_id(), queue_id(),strerror(errno));
+               port_id(), queue_id(), strerror(errno));
     }
 
     return (!error);
@@ -77,7 +73,7 @@ bool rx_queue::del(int poll_fd, void* data)
     auto error = rte_epoll_ctl(poll_fd, EPOLL_CTL_DEL, *fd, &m_event);
     if (error) {
         OP_LOG(OP_LOG_ERROR, "Could not delete rx interrupt for %u:%u: %s\n",
-                port_id(), queue_id(), strerror(errno));
+               port_id(), queue_id(), strerror(errno));
     }
 
     return (!error);
@@ -87,8 +83,9 @@ bool rx_queue::enable()
 {
     int error = rte_eth_dev_rx_intr_enable(port_id(), queue_id());
     if (error) {
-        OP_LOG(OP_LOG_ERROR, "Could not enable interrupt for rx port queue %d:%d: %s\n",
-                port_id(), queue_id(), strerror(std::abs(error)));
+        OP_LOG(OP_LOG_ERROR,
+               "Could not enable interrupt for rx port queue %d:%d: %s\n",
+               port_id(), queue_id(), strerror(std::abs(error)));
     }
     return (!error);
 }
@@ -97,10 +94,11 @@ bool rx_queue::disable()
 {
     int error = rte_eth_dev_rx_intr_disable(port_id(), queue_id());
     if (error) {
-        OP_LOG(OP_LOG_ERROR, "Could not disable interrupt for rx port queue %d:%d: %s\n",
-                port_id(), queue_id(), strerror(std::abs(error)));
+        OP_LOG(OP_LOG_ERROR,
+               "Could not disable interrupt for rx port queue %d:%d: %s\n",
+               port_id(), queue_id(), strerror(std::abs(error)));
     }
     return (!error);
 }
 
-}
+} // namespace openperf::packetio::dpdk

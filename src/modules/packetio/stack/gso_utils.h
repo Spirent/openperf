@@ -30,11 +30,12 @@ uint16_t packetio_stack_gso_max_segment_length(const struct tcp_pcb*);
  * Drop leading (acked) data from the specified segment.  This is called by
  * tcp_free_acked_segments() to trim data from partially acknowledged segments.
  *
- * Returns the number of pbufs freed from segment's chain so the pcb's snd_queuelen
- * can be updated.  Since no allocations are necessary, this function should never
- * fail.
+ * Returns the number of pbufs freed from segment's chain so the pcb's
+ * snd_queuelen can be updated.  Since no allocations are necessary, this
+ * function should never fail.
  */
-uint16_t packetio_stack_gso_segment_ack_partial(struct tcp_seg *seg, uint16_t acked);
+uint16_t packetio_stack_gso_segment_ack_partial(struct tcp_seg* seg,
+                                                uint16_t acked);
 
 /**
  * Split a segment at the specified split value.
@@ -45,13 +46,14 @@ uint16_t packetio_stack_gso_segment_ack_partial(struct tcp_seg *seg, uint16_t ac
  * is updated to reflect the change.
  * On failure, an error code is returned and the segment and pcb are unmodified.
  */
-int packetio_stack_gso_segment_split(struct tcp_pcb *pcb, struct tcp_seg *seg,
+int packetio_stack_gso_segment_split(struct tcp_pcb* pcb, struct tcp_seg* seg,
                                      uint16_t split);
 
 /**
  * Returns the amount of unused payload in the pbuf after the given offset.
  */
-uint16_t packetio_stack_gso_pbuf_data_available(const struct pbuf* p, uint16_t offset);
+uint16_t packetio_stack_gso_pbuf_data_available(const struct pbuf* p,
+                                                uint16_t offset);
 
 /**
  * Copy data into a pbuf chain, starting at the specified offset.

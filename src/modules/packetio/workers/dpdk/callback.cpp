@@ -15,29 +15,24 @@ static int get_event_fd(const event_loop::event_notifier& notifier)
                                size_t fd_size = sizeof(fd);
 
                                return (zmq_getsockopt(const_cast<void*>(socket),
-                                                      ZMQ_FD, &fd, &fd_size) == 0
-                                       ? fd : -1);
+                                                      ZMQ_FD, &fd, &fd_size)
+                                               == 0
+                                           ? fd
+                                           : -1);
                            },
-                           [](const int fd) {
-                               return (fd);
-                           }),
+                           [](const int fd) { return (fd); }),
                        notifier));
 }
 
 static void close_event_fd(event_loop::event_notifier& notifier)
 {
-    return (std::visit(utils::overloaded_visitor(
-                           [](void* socket) {
-                               zmq_close(socket);
-                           },
-                           [](int fd) {
-                               close(fd);
-                           }),
-                       notifier));
+    return (std::visit(
+        utils::overloaded_visitor([](void* socket) { zmq_close(socket); },
+                                  [](int fd) { close(fd); }),
+        notifier));
 }
 
-callback::callback(std::string_view name,
-                   event_loop::event_notifier notifier,
+callback::callback(std::string_view name, event_loop::event_notifier notifier,
                    event_loop::event_handler on_event,
                    std::optional<event_loop::delete_handler> on_delete,
                    std::any arg)
@@ -50,33 +45,20 @@ callback::callback(std::string_view name,
 
 callback::~callback()
 {
-    if (m_on_delete) {
-        m_on_delete.value()(m_arg);
-    }
+    if (m_on_delete) { m_on_delete.value()(m_arg); }
     close_event_fd(m_notify);
 }
 
-std::string_view callback::name() const
-{
-    return (m_name);
-}
+std::string_view callback::name() const { return (m_name); }
 
-event_loop::event_notifier callback::notifier() const
-{
-    return (m_notify);
-}
+event_loop::event_notifier callback::notifier() const { return (m_notify); }
 
-int callback::event_fd() const
-{
-    return (get_event_fd(m_notify));
-}
+int callback::event_fd() const { return (get_event_fd(m_notify)); }
 
 void callback::run_callback(event_loop::generic_event_loop& loop)
 {
     auto error = m_on_event(loop, m_arg);
-    if (error) {
-        loop.del_callback(m_notify);
-    }
+    if (error) { loop.del_callback(m_notify); }
 }
 
-}
+} // namespace openperf::packetio::dpdk

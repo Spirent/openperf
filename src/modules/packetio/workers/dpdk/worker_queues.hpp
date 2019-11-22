@@ -27,8 +27,8 @@ struct rte_mbuf;
 
 namespace openperf::packetio::dpdk::worker {
 
-template <typename T>
-class singleton {
+template <typename T> class singleton
+{
 public:
     static T& instance()
     {
@@ -37,9 +37,10 @@ public:
     }
 
     singleton(const singleton&) = delete;
-    singleton& operator= (const singleton) = delete;
+    singleton& operator=(const singleton) = delete;
+
 protected:
-    singleton() {};
+    singleton(){};
 };
 
 class port_queues : public singleton<port_queues>
@@ -55,6 +56,6 @@ private:
     std::vector<queue_container> m_queues;
 };
 
-}
+} // namespace openperf::packetio::dpdk::worker
 
 #endif /* _OP_PACKETIO_DPDK_WORKER_QUEUES_HPP_ */

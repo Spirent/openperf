@@ -10,8 +10,9 @@ TEST_CASE("check configuration utility functions", "[config]")
 {
     SECTION("verify resource ID validation function")
     {
-        // GENERATE does not play nicely with REQUIRE when the return type is tl::expected.
-        // It works but does not tell you which value caused a failure.
+        // GENERATE does not play nicely with REQUIRE when the return type is
+        // tl::expected. It works but does not tell you which value caused a
+        // failure.
 
         // clang-format off
         std::vector<std::string> valid_ids {

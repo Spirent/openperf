@@ -32,17 +32,18 @@ bool event_loop_adapter::update_poller(epoll_poller& poller)
      * Move callbacks on the additions list to the runnable list if we can
      * add them to the poller.
      */
-    auto last_addition = std::stable_partition(std::begin(m_additions), std::end(m_additions),
-                                               [&](auto& cbptr) {
-                                                   if (poller.add(cbptr.get())) {
-                                                       OP_LOG(OP_LOG_DEBUG, "Adding callback %.*s to worker %u\n",
-                                                               static_cast<int>(cbptr->name().length()),
-                                                               cbptr->name().data(), rte_lcore_id());
-                                                       return (true);
-                                                   }
-                                                   return (false);
-                                               });
-    std::move(std::begin(m_additions), last_addition, std::back_inserter(m_runnables));
+    auto last_addition = std::stable_partition(
+        std::begin(m_additions), std::end(m_additions), [&](auto& cbptr) {
+            if (poller.add(cbptr.get())) {
+                OP_LOG(OP_LOG_DEBUG, "Adding callback %.*s to worker %u\n",
+                       static_cast<int>(cbptr->name().length()),
+                       cbptr->name().data(), rte_lcore_id());
+                return (true);
+            }
+            return (false);
+        });
+    std::move(std::begin(m_additions), last_addition,
+              std::back_inserter(m_runnables));
     m_additions.erase(std::begin(m_additions), last_addition);
 
     /*
@@ -57,8 +58,8 @@ bool event_loop_adapter::update_poller(epoll_poller& poller)
     std::vector<callback_ptr> staging(m_deletions.size());
     for (auto& cbptr : m_deletions) {
         OP_LOG(OP_LOG_DEBUG, "Deleting callback %.*s from worker %u\n",
-                static_cast<int>(cbptr->name().length()),
-                cbptr->name().data(), rte_lcore_id());
+               static_cast<int>(cbptr->name().length()), cbptr->name().data(),
+               rte_lcore_id());
         poller.del(cbptr.get());
         staging.push_back(std::move(cbptr));
     }
@@ -67,17 +68,18 @@ bool event_loop_adapter::update_poller(epoll_poller& poller)
     return (m_additions.empty() && m_deletions.empty());
 }
 
-bool event_loop_adapter::add_callback(std::string_view name,
-                                      event_loop::event_notifier notify,
-                                      event_loop::event_handler on_event,
-                                      std::optional<event_loop::delete_handler> on_delete,
-                                      std::any arg) noexcept
+bool event_loop_adapter::add_callback(
+    std::string_view name, event_loop::event_notifier notify,
+    event_loop::event_handler on_event,
+    std::optional<event_loop::delete_handler> on_delete, std::any arg) noexcept
 {
-    m_additions.push_back(std::make_unique<callback>(name, notify, on_event, on_delete, arg));
+    m_additions.push_back(
+        std::make_unique<callback>(name, notify, on_event, on_delete, arg));
     return (true);
 }
 
-void event_loop_adapter::del_callback(event_loop::event_notifier notify) noexcept
+void event_loop_adapter::del_callback(
+    event_loop::event_notifier notify) noexcept
 {
     /*
      * Since partition sorts the vector into [true items, false items], we need
@@ -85,19 +87,21 @@ void event_loop_adapter::del_callback(event_loop::event_notifier notify) noexcep
      * end of the vector for easier move/deletion.
      */
     auto not_callback = [&](auto& cbptr) {
-                              return (cbptr->notifier() != notify);
-                        };
+        return (cbptr->notifier() != notify);
+    };
 
     /* Move the matching callbacks and move them into our deletions list. */
-    auto additions_to_move = std::stable_partition(std::begin(m_additions), std::end(m_additions),
-                                                   not_callback);
-    std::move(additions_to_move, std::end(m_additions), std::back_inserter(m_deletions));
+    auto additions_to_move = std::stable_partition(
+        std::begin(m_additions), std::end(m_additions), not_callback);
+    std::move(additions_to_move, std::end(m_additions),
+              std::back_inserter(m_deletions));
     m_additions.erase(additions_to_move, std::end(m_additions));
 
-    auto runnables_to_move = std::stable_partition(std::begin(m_runnables), std::end(m_runnables),
-                                                   not_callback);
-    std::move(runnables_to_move, std::end(m_runnables), std::back_inserter(m_deletions));
+    auto runnables_to_move = std::stable_partition(
+        std::begin(m_runnables), std::end(m_runnables), not_callback);
+    std::move(runnables_to_move, std::end(m_runnables),
+              std::back_inserter(m_deletions));
     m_runnables.erase(runnables_to_move, std::end(m_runnables));
 }
 
-}
+} // namespace openperf::packetio::dpdk::worker

@@ -13,8 +13,8 @@ namespace openperf::packetio::recycle {
  * a Quiescent State Based Reclamation mechanism for safely deleting data
  * shared with a bunch of reader threads.
  **/
-template <int NumReaders>
-class depot {
+template <int NumReaders> class depot
+{
     using gc_callback = std::function<void()>;
     static constexpr size_t cache_line_size = 64;
     static constexpr size_t base_version = 1;
@@ -30,10 +30,12 @@ class depot {
      * any cache sharing here as we expect reader threads to update this
      * frequently.
      */
-    struct alignas(cache_line_size) reader_state {
+    struct alignas(cache_line_size) reader_state
+    {
         std::atomic_size_t version;
     };
-    alignas(cache_line_size) std::array<reader_state, NumReaders> m_reader_states;
+    alignas(
+        cache_line_size) std::array<reader_state, NumReaders> m_reader_states;
 
 public:
     depot();
@@ -61,8 +63,7 @@ public:
  * This guard object provides a RAII based mechanism to protect reader access
  * to data that will be deleted via a depot based callback.
  **/
-template <int NumReaders>
-class guard
+template <int NumReaders> class guard
 {
     depot<NumReaders>& m_depot;
     size_t m_id;
@@ -72,6 +73,6 @@ public:
     ~guard();
 };
 
-}
+} // namespace openperf::packetio::recycle
 
 #endif /* _OP_PACKETIO_RECYCLE_HPP_ */

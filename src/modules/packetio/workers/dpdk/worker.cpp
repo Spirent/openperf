@@ -35,8 +35,10 @@ static constexpr int mbuf_prefetch_offset = 8;
  * stopped and started.  We use each struct as a tag for each state.  And
  * we wrap them all in std::variant for ease of use.
  */
-struct state_stopped {};
-struct state_started {};
+struct state_stopped
+{};
+struct state_started
+{};
 
 using state = std::variant<state_stopped, state_started>;
 
@@ -48,6 +50,7 @@ template <typename Derived, typename StateVariant, typename EventVariant>
 class finite_state_machine
 {
     StateVariant m_state;
+
 public:
     void dispatch(const EventVariant& event)
     {
@@ -58,9 +61,7 @@ public:
             },
             m_state, event);
 
-        if (next_state) {
-            m_state = *next_state;
-        }
+        if (next_state) { m_state = *next_state; }
     }
 };
 
@@ -68,25 +69,21 @@ static bool all_pollable(const std::vector<task_ptr>& tasks)
 {
     epoll_poller poller;
 
-    auto add_visitor = [&](auto task) -> bool {
-                           return (poller.add(task));
-                       };
+    auto add_visitor = [&](auto task) -> bool { return (poller.add(task)); };
 
-    auto del_visitor = [&](auto task) {
-                           poller.del(task);
-                       };
+    auto del_visitor = [&](auto task) { poller.del(task); };
 
     for (auto& task : tasks) {
-        if (!std::visit(add_visitor, task)) {
-            return (false);
-        }
+        if (!std::visit(add_visitor, task)) { return (false); }
         std::visit(del_visitor, task);
     }
     return (true);
 }
 
-static std::pair<size_t, size_t> partition_mbufs(rte_mbuf* const incoming[], int length,
-                                                 rte_mbuf* unicast[], rte_mbuf* multicast[])
+static std::pair<size_t, size_t> partition_mbufs(rte_mbuf* const incoming[],
+                                                 int length,
+                                                 rte_mbuf* unicast[],
+                                                 rte_mbuf* multicast[])
 {
     size_t ucast_idx = 0, mcast_idx = 0;
     int i = 0;
@@ -107,7 +104,8 @@ static std::pair<size_t, size_t> partition_mbufs(rte_mbuf* const incoming[], int
      * based on data that should now be in the local CPU cache.
      */
     for (i = 0; i < (length - mbuf_prefetch_offset); i++) {
-        rte_prefetch0(rte_pktmbuf_mtod(incoming[i + mbuf_prefetch_offset], void*));
+        rte_prefetch0(
+            rte_pktmbuf_mtod(incoming[i + mbuf_prefetch_offset], void*));
         auto eth = rte_pktmbuf_mtod(incoming[i], struct rte_ether_hdr*);
         if (rte_is_unicast_ether_addr(&eth->d_addr)) {
             unicast[ucast_idx++] = incoming[i];
@@ -116,7 +114,7 @@ static std::pair<size_t, size_t> partition_mbufs(rte_mbuf* const incoming[], int
         }
     }
 
-     /* All prefetches are done; finish parsing the remaining mbufs. */
+    /* All prefetches are done; finish parsing the remaining mbufs. */
     for (; i < length; i++) {
         auto eth = rte_pktmbuf_mtod(incoming[i], struct rte_ether_hdr*);
         if (rte_is_unicast_ether_addr(&eth->d_addr)) {
@@ -137,24 +135,25 @@ static void rx_interface_dispatch(const fib* fib, const rx_queue* rxq,
      * packets before handing them up the stack.
      */
     if (!(rxq->flags() & rx_feature_flags::hardware_lro)) {
-        static const rte_gro_param gro_params = { .gro_types = RTE_GRO_TCP_IPV4,
-                                                  .max_flow_num = pkt_burst_size,
-                                                  .max_item_per_flow = pkt_burst_size };
+        static const rte_gro_param gro_params = {.gro_types = RTE_GRO_TCP_IPV4,
+                                                 .max_flow_num = pkt_burst_size,
+                                                 .max_item_per_flow =
+                                                     pkt_burst_size};
         n = rte_gro_reassemble_burst(incoming, n, &gro_params);
     }
 
     std::array<rte_mbuf*, pkt_burst_size> unicast, nunicast;
     std::array<netif*, pkt_burst_size> interfaces;
 
-    auto [nb_ucast, nb_nucast] = partition_mbufs(incoming, n,
-                                                 unicast.data(),
-                                                 nunicast.data());
+    auto [nb_ucast, nb_nucast] =
+        partition_mbufs(incoming, n, unicast.data(), nunicast.data());
 
     /* Turn packets into destination interfaces... */
     std::transform(unicast.data(), unicast.data() + nb_ucast, interfaces.data(),
                    [&](auto& mbuf) {
-                       auto eth = rte_pktmbuf_mtod(mbuf, struct rte_ether_hdr *);
-                       return (fib->find_interface(rxq->port_id(), eth->d_addr.addr_bytes));
+                       auto eth = rte_pktmbuf_mtod(mbuf, struct rte_ether_hdr*);
+                       return (fib->find_interface(rxq->port_id(),
+                                                   eth->d_addr.addr_bytes));
                    });
 
     /* ... and dispatch */
@@ -165,11 +164,12 @@ static void rx_interface_dispatch(const fib* fib, const rx_queue* rxq,
         }
 
         OP_LOG(OP_LOG_TRACE, "Dispatching unicast packet to %c%c%u\n",
-                interfaces[i]->name[0], interfaces[i]->name[1],
-                interfaces[i]->num);
+               interfaces[i]->name[0], interfaces[i]->name[1],
+               interfaces[i]->num);
 
         if (interfaces[i]->input(packetio_memory_pbuf_synchronize(unicast[i]),
-                                 interfaces[i]) != ERR_OK) {
+                                 interfaces[i])
+            != ERR_OK) {
             MIB2_STATS_NETIF_INC_ATOMIC(interfaces[i], ifindiscards);
             rte_pktmbuf_free(unicast[i]);
         }
@@ -186,12 +186,15 @@ static void rx_interface_dispatch(const fib* fib, const rx_queue* rxq,
         for (auto [idx, ifp] : fib->get_interfaces(rxq->port_id())) {
 
             OP_LOG(OP_LOG_TRACE, "Dispatching non-unicast packet to %c%c%u\n",
-                    ifp->name[0], ifp->name[1], ifp->num);
+                   ifp->name[0], ifp->name[1], ifp->num);
 
             auto clone = rte_pktmbuf_clone(nunicast[i], nunicast[i]->pool);
-            if (!clone || ifp->input(packetio_memory_pbuf_synchronize(clone), ifp) != ERR_OK) {
+            if (!clone
+                || ifp->input(packetio_memory_pbuf_synchronize(clone), ifp)
+                       != ERR_OK) {
                 MIB2_STATS_NETIF_INC_ATOMIC(ifp, ifindiscards);
-                rte_pktmbuf_free(clone);  /* Note: this free handles null correctly */
+                rte_pktmbuf_free(
+                    clone); /* Note: this free handles null correctly */
             }
         }
         rte_pktmbuf_free(nunicast[i]);
@@ -201,9 +204,11 @@ static void rx_interface_dispatch(const fib* fib, const rx_queue* rxq,
 static void rx_sink_dispatch(const fib* fib, const rx_queue* rxq,
                              rte_mbuf* const incoming[], uint16_t n)
 {
-    for(auto& sink : fib->get_sinks(rxq->port_id())) {
-        OP_LOG(OP_LOG_TRACE, "Dispatching packets to sink %s\n", sink.id().c_str());
-        sink.push(reinterpret_cast<packets::packet_buffer* const*>(incoming), n);
+    for (auto& sink : fib->get_sinks(rxq->port_id())) {
+        OP_LOG(OP_LOG_TRACE, "Dispatching packets to sink %s\n",
+               sink.id().c_str());
+        sink.push(reinterpret_cast<packets::packet_buffer* const*>(incoming),
+                  n);
     }
 }
 
@@ -211,13 +216,13 @@ static uint16_t rx_burst(const fib* fib, const rx_queue* rxq)
 {
     std::array<rte_mbuf*, pkt_burst_size> incoming;
 
-    auto n = rte_eth_rx_burst(rxq->port_id(), rxq->queue_id(),
-                              incoming.data(), pkt_burst_size);
+    auto n = rte_eth_rx_burst(rxq->port_id(), rxq->queue_id(), incoming.data(),
+                              pkt_burst_size);
 
     if (!n) return (0);
 
-    OP_LOG(OP_LOG_TRACE, "Received %d packet%s on %d:%d\n",
-           n, n > 1 ? "s" : "", rxq->port_id(), rxq->queue_id());
+    OP_LOG(OP_LOG_TRACE, "Received %d packet%s on %d:%d\n", n, n > 1 ? "s" : "",
+           rxq->port_id(), rxq->queue_id());
 
     /* Dispatch packets to any port sinks */
     rx_sink_dispatch(fib, rxq, incoming.data(), n);
@@ -226,18 +231,18 @@ static uint16_t rx_burst(const fib* fib, const rx_queue* rxq)
     if (rxq->flags() & rx_feature_flags::hardware_tags) {
         /*
          * If we have hardware tags for interface matching packets, then
-         * sort the packets into two groups: stack packets and non-stack packets.
+         * sort the packets into two groups: stack packets and non-stack
+         * packets.
          */
         std::array<rte_mbuf*, pkt_burst_size> to_free, to_stack;
         uint16_t nb_to_free = 0, nb_to_stack = 0;
-        std::for_each(incoming.data(), incoming.data() + n,
-                      [&](auto& mbuf) {
-                          if ((mbuf->ol_flags & PKT_RX_FDIR) && mbuf->hash.fdir.hi) {
-                              to_stack[nb_to_stack++] = mbuf;
-                          } else {
-                              to_free[nb_to_free++] = mbuf;
-                          }
-                      });
+        std::for_each(incoming.data(), incoming.data() + n, [&](auto& mbuf) {
+            if ((mbuf->ol_flags & PKT_RX_FDIR) && mbuf->hash.fdir.hi) {
+                to_stack[nb_to_stack++] = mbuf;
+            } else {
+                to_free[nb_to_free++] = mbuf;
+            }
+        });
 
         /* Hand any stack packets off to the stack... */
         if (nb_to_stack) {
@@ -259,30 +264,29 @@ static uint16_t tx_burst(const tx_queue* txq)
 {
     std::array<rte_mbuf*, pkt_burst_size> outgoing;
 
-    auto to_send = rte_ring_dequeue_burst(txq->ring(),
-                                          reinterpret_cast<void**>(outgoing.data()),
-                                          outgoing.size(), nullptr);
+    auto to_send = rte_ring_dequeue_burst(
+        txq->ring(), reinterpret_cast<void**>(outgoing.data()), outgoing.size(),
+        nullptr);
 
     if (!to_send) return (0);
 
     auto sent = rte_eth_tx_burst(txq->port_id(), txq->queue_id(),
                                  outgoing.data(), to_send);
 
-    OP_LOG(OP_LOG_TRACE, "Transmitted %u of %u packet%s on %u:%u\n",
-            sent, to_send, sent > 1 ? "s" : "", txq->port_id(), txq->queue_id());
+    OP_LOG(OP_LOG_TRACE, "Transmitted %u of %u packet%s on %u:%u\n", sent,
+           to_send, sent > 1 ? "s" : "", txq->port_id(), txq->queue_id());
 
     size_t retries = 0;
     while (sent < to_send) {
         rte_pause();
         retries++;
         sent += rte_eth_tx_burst(txq->port_id(), txq->queue_id(),
-                                 outgoing.data() + sent,
-                                 to_send - sent);
+                                 outgoing.data() + sent, to_send - sent);
     }
 
     if (retries) {
         OP_LOG(OP_LOG_DEBUG, "Transmission required %zu retries on %u:%u\n",
-                retries, txq->port_id(), txq->queue_id());
+               retries, txq->port_id(), txq->queue_id());
     }
 
     return (sent);
@@ -309,7 +313,7 @@ static uint16_t service_event(event_loop::generic_event_loop& loop,
                                return (0);
                            },
                            [](const zmq_socket*) -> uint16_t {
-                               return (0);  /* noop */
+                               return (0); /* noop */
                            }),
                        task));
 }
@@ -321,40 +325,41 @@ static uint16_t service_event(event_loop::generic_event_loop& loop,
  * exist without having to explicitly know the type.
  */
 template <typename, typename = std::void_t<>>
-struct has_enable : std::false_type{};
+struct has_enable : std::false_type
+{};
 
 template <typename T>
 struct has_enable<T, std::void_t<decltype(std::declval<T>().enable())>>
-    : std::true_type{};
+    : std::true_type
+{};
 
 static void enable_event_interrupt(const task_ptr& task)
 {
     auto enable_visitor = [](auto t) {
-                              if constexpr (has_enable<decltype(*t)>::value) {
-                                  t->enable();
-                              }
-                          };
+        if constexpr (has_enable<decltype(*t)>::value) { t->enable(); }
+    };
     std::visit(enable_visitor, task);
 }
 
 template <typename, typename = std::void_t<>>
-struct has_disable : std::false_type{};
+struct has_disable : std::false_type
+{};
 
 template <typename T>
 struct has_disable<T, std::void_t<decltype(std::declval<T>().disable())>>
-    : std::true_type{};
+    : std::true_type
+{};
 
 static void disable_event_interrupt(const task_ptr& task)
 {
     auto disable_visitor = [](auto t) {
-                               if constexpr (has_disable<decltype(*t)>::value) {
-                                       t->disable();
-                               }
-                           };
+        if constexpr (has_disable<decltype(*t)>::value) { t->disable(); }
+    };
     std::visit(disable_visitor, task);
 }
 
-struct run_args {
+struct run_args
+{
     void* control;
     recycler* recycler;
     event_loop::generic_event_loop& loop;
@@ -372,22 +377,18 @@ static void run_pollable(run_args&& args)
 
     poller.add(&ctrl_sock);
 
-    for (auto& q : args.rx_queues) {
-        poller.add(q);
-    }
+    for (auto& q : args.rx_queues) { poller.add(q); }
 
-    for (auto& p : args.pollables) {
-        poller.add(p);
-    }
+    for (auto& p : args.pollables) { poller.add(p); }
 
     /*
-    * Interrupt support on some DPDK NICs appears to be flaky in that
-    * enabling interrupts with packets in the queue causes no future
-    * interrupt to be generated.  So, make sure the queue is empty
-    * after we enable the interrupt.  We can't guarantee we enabled
-    * interrupts on an empty queue otherwise.
-    * XXX: Enabling interrupts on some platforms is SLOW!
-    */
+     * Interrupt support on some DPDK NICs appears to be flaky in that
+     * enabling interrupts with packets in the queue causes no future
+     * interrupt to be generated.  So, make sure the queue is empty
+     * after we enable the interrupt.  We can't guarantee we enabled
+     * interrupts on an empty queue otherwise.
+     * XXX: Enabling interrupts on some platforms is SLOW!
+     */
     for (auto& q : args.rx_queues) {
         do {
             enable_event_interrupt(q);
@@ -397,31 +398,29 @@ static void run_pollable(run_args&& args)
     while (!messages) {
         auto& events = poller.poll();
         {
-            auto guard = packetio::recycle::guard(*args.recycler, rte_lcore_id());
+            auto guard =
+                packetio::recycle::guard(*args.recycler, rte_lcore_id());
             for (auto& event : events) {
-                std::visit(utils::overloaded_visitor(
-                               [&](callback *cb) {
-                                   cb->run_callback(args.loop);
-                               },
-                               [&](rx_queue* rxq) {
-                                   while (rx_burst(args.fib, rxq) == pkt_burst_size)
-                                       ;
-                                   do {
-                                       rxq->enable();
-                                   } while (rx_burst(args.fib, rxq));
-                               },
-                               [](tx_queue* txq) {
-                                   while (tx_burst(txq) == pkt_burst_size)
-                                       ;
-                                   txq->enable();
-                               },
-                               [](tx_scheduler* scheduler) {
-                                   scheduler->run();
-                               },
-                               [](zmq_socket*) {
-                                   /* noop */
-                               }),
-                           event);
+                std::visit(
+                    utils::overloaded_visitor(
+                        [&](callback* cb) { cb->run_callback(args.loop); },
+                        [&](rx_queue* rxq) {
+                            while (rx_burst(args.fib, rxq) == pkt_burst_size)
+                                ;
+                            do {
+                                rxq->enable();
+                            } while (rx_burst(args.fib, rxq));
+                        },
+                        [](tx_queue* txq) {
+                            while (tx_burst(txq) == pkt_burst_size)
+                                ;
+                            txq->enable();
+                        },
+                        [](tx_scheduler* scheduler) { scheduler->run(); },
+                        [](zmq_socket*) {
+                            /* noop */
+                        }),
+                    event);
             }
         }
         /* Perform all loop updates before exiting or restarting the loop. */
@@ -433,9 +432,7 @@ static void run_pollable(run_args&& args)
         poller.del(q);
     }
 
-    for (auto& p : args.pollables) {
-        poller.del(p);
-    }
+    for (auto& p : args.pollables) { poller.del(p); }
 
     poller.del(&ctrl_sock);
 }
@@ -449,9 +446,7 @@ static void run_spinning(run_args&& args)
 
     poller.add(&ctrl_sock);
 
-    for (auto& p : args.pollables) {
-        poller.add(p);
-    }
+    for (auto& p : args.pollables) { poller.add(p); }
 
     while (!messages) {
         args.recycler->reader_checkpoint(rte_lcore_id());
@@ -467,16 +462,14 @@ static void run_spinning(run_args&& args)
 
         /* All queues are idle; check callbacks */
         for (auto& event : poller.poll(0)) {
-             service_event(args.loop, args.fib, event);
+            service_event(args.loop, args.fib, event);
         }
 
         /* Perform all loop updates before exiting or restarting the loop. */
         loop_adapter.update_poller(poller);
     }
 
-    for (auto& p : args.pollables) {
-        poller.del(p);
-    }
+    for (auto& p : args.pollables) { poller.del(p); }
 
     poller.del(&ctrl_sock);
 }
@@ -516,95 +509,102 @@ class worker : public finite_state_machine<worker, state, command_msg>
 
     void add_config(const std::vector<descriptor>& descriptors)
     {
-        for (auto& d: descriptors) {
+        for (auto& d : descriptors) {
             if (d.worker_id != rte_lcore_id()) continue;
 
-            std::visit(utils::overloaded_visitor(
-                           [&](callback* callback) {
-                               OP_LOG(OP_LOG_DEBUG, "Adding task %.*s to worker %u\n",
-                                       static_cast<int>(callback->name().length()), callback->name().data(),
-                                       rte_lcore_id());
-                               m_pollables.emplace_back(callback);
-                           },
-                           [&](rx_queue* rxq) {
-                               OP_LOG(OP_LOG_DEBUG, "Adding RX port queue %u:%u to worker %u\n",
-                                       rxq->port_id(), rxq->queue_id(), rte_lcore_id());
-                               m_rx_queues.emplace_back(rxq);
-                           },
-                           [&](tx_queue* txq) {
-                               OP_LOG(OP_LOG_DEBUG, "Adding TX port queue %u:%u to worker %u\n",
-                                       txq->port_id(), txq->queue_id(), rte_lcore_id());
-                               m_pollables.emplace_back(txq);
-                           },
-                           [&](tx_scheduler* scheduler) {
-                               OP_LOG(OP_LOG_DEBUG, "Adding TX port scheduler %u:%u to worker %u\n",
-                                       scheduler->port_id(), scheduler->queue_id(), rte_lcore_id());
-                               m_pollables.emplace_back(scheduler);
-                           }),
-                       d.ptr);
+            std::visit(
+                utils::overloaded_visitor(
+                    [&](callback* callback) {
+                        OP_LOG(OP_LOG_DEBUG, "Adding task %.*s to worker %u\n",
+                               static_cast<int>(callback->name().length()),
+                               callback->name().data(), rte_lcore_id());
+                        m_pollables.emplace_back(callback);
+                    },
+                    [&](rx_queue* rxq) {
+                        OP_LOG(OP_LOG_DEBUG,
+                               "Adding RX port queue %u:%u to worker %u\n",
+                               rxq->port_id(), rxq->queue_id(), rte_lcore_id());
+                        m_rx_queues.emplace_back(rxq);
+                    },
+                    [&](tx_queue* txq) {
+                        OP_LOG(OP_LOG_DEBUG,
+                               "Adding TX port queue %u:%u to worker %u\n",
+                               txq->port_id(), txq->queue_id(), rte_lcore_id());
+                        m_pollables.emplace_back(txq);
+                    },
+                    [&](tx_scheduler* scheduler) {
+                        OP_LOG(OP_LOG_DEBUG,
+                               "Adding TX port scheduler %u:%u to worker %u\n",
+                               scheduler->port_id(), scheduler->queue_id(),
+                               rte_lcore_id());
+                        m_pollables.emplace_back(scheduler);
+                    }),
+                d.ptr);
         }
     }
 
     void del_config(const std::vector<descriptor>& descriptors)
     {
-        for (auto& d: descriptors) {
+        for (auto& d : descriptors) {
             if (d.worker_id != rte_lcore_id()) continue;
 
             /*
-             * XXX: Careful!  These pointers have likely been deleted by their owners at this point,
-             * so don't dereference them!
+             * XXX: Careful!  These pointers have likely been deleted by their
+             * owners at this point, so don't dereference them!
              */
-            std::visit(utils::overloaded_visitor(
-                           [&](callback* cb) {
-                               OP_LOG(OP_LOG_DEBUG, "Removing task from worker %u\n",
-                                       rte_lcore_id());
-                               m_pollables.erase(std::remove(std::begin(m_pollables),
-                                                             std::end(m_pollables),
-                                                             task_ptr{cb}),
-                                                 std::end(m_pollables));
-                           },
-                           [&](rx_queue* rxq) {
-                               OP_LOG(OP_LOG_DEBUG, "Removing RX port queue from worker %u\n",
-                                       rte_lcore_id());
-                               m_rx_queues.erase(std::remove(std::begin(m_rx_queues),
-                                                          std::end(m_rx_queues),
-                                                             task_ptr{rxq}),
-                                              std::end(m_rx_queues));
-                           },
-                           [&](tx_queue* txq) {
-                               OP_LOG(OP_LOG_DEBUG, "Removing TX port queue from worker %u\n",
-                                       rte_lcore_id());
-                               m_pollables.erase(std::remove(std::begin(m_pollables),
-                                                             std::end(m_pollables),
-                                                             task_ptr{txq}),
-                                              std::end(m_pollables));
-                           },
-                           [&](tx_scheduler* scheduler) {
-                               OP_LOG(OP_LOG_DEBUG, "Removing TX port scheduler from worker %u\n",
-                                       rte_lcore_id());
-                               m_pollables.erase(std::remove(std::begin(m_pollables),
-                                                             std::end(m_pollables),
-                                                             task_ptr{scheduler}),
-                                              std::end(m_pollables));
-                           }),
-                       d.ptr);
+            std::visit(
+                utils::overloaded_visitor(
+                    [&](callback* cb) {
+                        OP_LOG(OP_LOG_DEBUG, "Removing task from worker %u\n",
+                               rte_lcore_id());
+                        m_pollables.erase(std::remove(std::begin(m_pollables),
+                                                      std::end(m_pollables),
+                                                      task_ptr{cb}),
+                                          std::end(m_pollables));
+                    },
+                    [&](rx_queue* rxq) {
+                        OP_LOG(OP_LOG_DEBUG,
+                               "Removing RX port queue from worker %u\n",
+                               rte_lcore_id());
+                        m_rx_queues.erase(std::remove(std::begin(m_rx_queues),
+                                                      std::end(m_rx_queues),
+                                                      task_ptr{rxq}),
+                                          std::end(m_rx_queues));
+                    },
+                    [&](tx_queue* txq) {
+                        OP_LOG(OP_LOG_DEBUG,
+                               "Removing TX port queue from worker %u\n",
+                               rte_lcore_id());
+                        m_pollables.erase(std::remove(std::begin(m_pollables),
+                                                      std::end(m_pollables),
+                                                      task_ptr{txq}),
+                                          std::end(m_pollables));
+                    },
+                    [&](tx_scheduler* scheduler) {
+                        OP_LOG(OP_LOG_DEBUG,
+                               "Removing TX port scheduler from worker %u\n",
+                               rte_lcore_id());
+                        m_pollables.erase(std::remove(std::begin(m_pollables),
+                                                      std::end(m_pollables),
+                                                      task_ptr{scheduler}),
+                                          std::end(m_pollables));
+                    }),
+                d.ptr);
         }
     }
 
     run_args make_run_args()
     {
-        return (run_args{
-                .control = m_control,
-                .recycler = m_recycler,
-                .loop = m_loop,
-                .fib = m_fib,
-                .rx_queues = m_rx_queues,
-                .pollables = m_pollables
-            });
+        return (run_args{.control = m_control,
+                         .recycler = m_recycler,
+                         .loop = m_loop,
+                         .fib = m_fib,
+                         .rx_queues = m_rx_queues,
+                         .pollables = m_pollables});
     }
 
 public:
-    worker(void *context, void* control, recycler* recycler, const fib* fib)
+    worker(void* context, void* control, recycler* recycler, const fib* fib)
         : m_context(context)
         , m_control(control)
         , m_recycler(recycler)
@@ -613,19 +613,22 @@ public:
     {}
 
     /* State transition functions */
-    std::optional<state> on_event(state_stopped&, const add_descriptors_msg& add)
+    std::optional<state> on_event(state_stopped&,
+                                  const add_descriptors_msg& add)
     {
         add_config(add.descriptors);
         return (std::nullopt);
     }
 
-    std::optional<state> on_event(state_stopped&, const del_descriptors_msg& del)
+    std::optional<state> on_event(state_stopped&,
+                                  const del_descriptors_msg& del)
     {
         del_config(del.descriptors);
         return (std::nullopt);
     }
 
-    std::optional<state> on_event(state_started&, const add_descriptors_msg& add)
+    std::optional<state> on_event(state_started&,
+                                  const add_descriptors_msg& add)
     {
         add_config(add.descriptors);
 
@@ -633,7 +636,8 @@ public:
         return (std::nullopt);
     }
 
-    std::optional<state> on_event(state_started&, const del_descriptors_msg& del)
+    std::optional<state> on_event(state_started&,
+                                  const del_descriptors_msg& del)
     {
         del_config(del.descriptors);
         run(make_run_args());
@@ -657,13 +661,13 @@ public:
     }
 };
 
-int main(void *void_args)
+int main(void* void_args)
 {
     op_thread_setname(("op_worker_" + std::to_string(rte_lcore_id())).c_str());
 
     auto args = reinterpret_cast<main_args*>(void_args);
 
-    void *context = args->context;
+    void* context = args->context;
     std::unique_ptr<void, op_socket_deleter> control(
         op_socket_get_client_subscription(context, endpoint.data(), ""));
 
@@ -672,13 +676,11 @@ int main(void *void_args)
     /* XXX: args are unavailable after this point */
     op_task_sync_ping(context, args->endpoint.data());
 
-    while (auto cmd = recv_message(control.get())) {
-        me.dispatch(*cmd);
-    }
+    while (auto cmd = recv_message(control.get())) { me.dispatch(*cmd); }
 
     OP_LOG(OP_LOG_WARNING, "queue worker %d exited\n", rte_lcore_id());
 
     return (0);
 }
 
-}
+} // namespace openperf::packetio::dpdk::worker

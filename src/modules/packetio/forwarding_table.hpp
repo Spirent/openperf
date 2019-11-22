@@ -22,33 +22,37 @@ template <typename Interface, typename Sink, int MaxPorts>
 class forwarding_table
 {
     using interface_map = immer::map<net::mac_address, Interface*>;
-    using sink_vector   = immer::flex_vector<Sink>;
+    using sink_vector = immer::flex_vector<Sink>;
 
     static constexpr unsigned mac_address_length = 6;
 
     std::array<std::atomic<interface_map*>, MaxPorts> m_interfaces;
-    std::array<std::atomic<sink_vector*>,   MaxPorts> m_sinks;
+    std::array<std::atomic<sink_vector*>, MaxPorts> m_sinks;
 
 public:
     forwarding_table();
     ~forwarding_table();
 
-    interface_map* insert_interface(uint16_t port_idx, const net::mac_address& mac,
+    interface_map* insert_interface(uint16_t port_idx,
+                                    const net::mac_address& mac,
                                     Interface* ifp);
-    interface_map* remove_interface(uint16_t port_idx, const net::mac_address& mac);
+    interface_map* remove_interface(uint16_t port_idx,
+                                    const net::mac_address& mac);
 
     sink_vector* insert_sink(uint16_t port_idx, Sink sink);
     sink_vector* remove_sink(uint16_t port_idx, Sink sink);
 
     Interface* find_interface(std::string_view id) const;
 
-    Interface* find_interface(uint16_t port_idx, const net::mac_address& mac) const;
-    Interface* find_interface(uint16_t port_idx, const uint8_t octets[mac_address_length]) const;
+    Interface* find_interface(uint16_t port_idx,
+                              const net::mac_address& mac) const;
+    Interface* find_interface(uint16_t port_idx,
+                              const uint8_t octets[mac_address_length]) const;
 
     interface_map& get_interfaces(uint16_t port_idx) const;
-    sink_vector&   get_sinks(uint16_t port_idx) const;
+    sink_vector& get_sinks(uint16_t port_idx) const;
 };
 
-}
+} // namespace openperf::packetio
 
 #endif /* _OP_PACKETIO_FORWARDING_TABLE_HPP_ */

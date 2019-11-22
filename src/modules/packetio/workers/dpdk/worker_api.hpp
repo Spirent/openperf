@@ -26,30 +26,25 @@ namespace worker {
 
 static constexpr uint16_t pkt_burst_size = 64;
 
-using fib = packetio::forwarding_table<netif,
-                                       packets::generic_sink,
-                                       RTE_MAX_ETHPORTS>;
+using fib =
+    packetio::forwarding_table<netif, packets::generic_sink, RTE_MAX_ETHPORTS>;
 using tib = packetio::transmit_table<dpdk::tx_source>;
 using recycler = packetio::recycle::depot<RTE_MAX_LCORE>;
 
 /**
  * The types of things workers know how to deal with.
  */
-using task_ptr = std::variant<callback*,
-                              rx_queue*,
-                              tx_queue*,
-                              tx_scheduler*,
-                              zmq_socket*>;
+using task_ptr =
+    std::variant<callback*, rx_queue*, tx_queue*, tx_scheduler*, zmq_socket*>;
 
 /**
  * The types of things we insert into descriptors.
  */
-using descriptor_ptr = std::variant<callback*,
-                                    rx_queue*,
-                                    tx_queue*,
-                                    tx_scheduler*>;
+using descriptor_ptr =
+    std::variant<callback*, rx_queue*, tx_queue*, tx_scheduler*>;
 
-struct descriptor {
+struct descriptor
+{
     uint16_t worker_id;
     descriptor_ptr ptr;
 
@@ -59,19 +54,23 @@ struct descriptor {
     {}
 };
 
-struct start_msg {
+struct start_msg
+{
     std::string endpoint;
 };
 
-struct stop_msg {
+struct stop_msg
+{
     std::string endpoint;
 };
 
-struct add_descriptors_msg {
+struct add_descriptors_msg
+{
     std::vector<worker::descriptor> descriptors;
 };
 
-struct del_descriptors_msg {
+struct del_descriptors_msg
+{
     std::vector<worker::descriptor> descriptors;
 };
 
@@ -79,10 +78,8 @@ struct del_descriptors_msg {
  * Our worker is a finite state machine and these messages are
  * the events that trigger state changes.
  */
-using command_msg = std::variant<start_msg,
-                                 stop_msg,
-                                 add_descriptors_msg,
-                                 del_descriptors_msg>;
+using command_msg =
+    std::variant<start_msg, stop_msg, add_descriptors_msg, del_descriptors_msg>;
 
 extern const std::string_view endpoint;
 
@@ -100,7 +97,8 @@ private:
     std::unique_ptr<void, op_socket_deleter> m_socket;
 };
 
-struct main_args {
+struct main_args
+{
     void* context;
     std::string_view endpoint;
     recycler* recycler;
@@ -112,7 +110,7 @@ int main(void*);
 int send_message(void* socket, const command_msg& msg);
 std::optional<command_msg> recv_message(void* socket, int flags = 0);
 
-}
-}
+} // namespace worker
+} // namespace openperf::packetio::dpdk
 
 #endif /* _OP_PACKETIO_DPDK_WORKER_API_HPP_ */

@@ -7,8 +7,7 @@
 
 namespace openperf::packetio::message {
 
-template <typename T>
-static auto zmq_msg_init(zmq_msg_t* msg, const T& value)
+template <typename T> static auto zmq_msg_init(zmq_msg_t* msg, const T& value)
 {
     if (auto error = zmq_msg_init_size(msg, sizeof(T)); error != 0) {
         return (error);
@@ -32,18 +31,16 @@ static auto zmq_msg_init(zmq_msg_t* msg, const T* buffer, size_t length)
     return (0);
 }
 
-template <typename T>
-static T zmq_msg_data(const zmq_msg_t* msg)
+template <typename T> static T zmq_msg_data(const zmq_msg_t* msg)
 {
     return (reinterpret_cast<T>(zmq_msg_data(const_cast<zmq_msg_t*>(msg))));
 }
 
-template <typename T>
-static size_t zmq_msg_size(const zmq_msg_t* msg)
+template <typename T> static size_t zmq_msg_size(const zmq_msg_t* msg)
 {
-    return (zmq_msg_size(const_cast<zmq_msg_t*>(msg))/sizeof(T));
+    return (zmq_msg_size(const_cast<zmq_msg_t*>(msg)) / sizeof(T));
 }
 
-}
+} // namespace openperf::packetio::message
 
 #endif /* _OP_PACKETIO_MESSAGE_UTILS_HPP_ */

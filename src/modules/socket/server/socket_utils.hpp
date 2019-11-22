@@ -13,13 +13,13 @@ namespace openperf {
 namespace socket {
 namespace server {
 
-template <typename Derived, typename StateVariant>
-class socket_state_machine
+template <typename Derived, typename StateVariant> class socket_state_machine
 {
     StateVariant m_state;
 
 public:
-    struct on_request_reply {
+    struct on_request_reply
+    {
         api::reply_msg msg;
         std::optional<StateVariant> state;
     };
@@ -34,8 +34,8 @@ public:
             request, m_state);
         if (next_state) {
             OP_LOG(OP_LOG_TRACE, "Socket %p: %s --> %s\n",
-                    reinterpret_cast<void*>(this), to_string(m_state),
-                    to_string(*next_state));
+                   reinterpret_cast<void*>(this), to_string(m_state),
+                   to_string(*next_state));
             m_state = *std::move(next_state);
         }
         return (msg);
@@ -51,12 +51,10 @@ std::optional<ip_addr_t> get_address(const sockaddr_storage&);
 
 std::optional<in_port_t> get_port(const sockaddr_storage&);
 
-tl::expected<void, int> copy_in(struct sockaddr_storage& dst,
-                                pid_t src_pid, const sockaddr* src_ptr,
-                                socklen_t length);
+tl::expected<void, int> copy_in(struct sockaddr_storage& dst, pid_t src_pid,
+                                const sockaddr* src_ptr, socklen_t length);
 
-tl::expected<void, int> copy_in(char* dst,
-                                pid_t src_pid, const char* src_ptr,
+tl::expected<void, int> copy_in(char* dst, pid_t src_pid, const char* src_ptr,
                                 socklen_t dstlength, socklen_t srclength);
 
 tl::expected<int, int> copy_in(pid_t src_pid, const int* src_int);
@@ -67,12 +65,11 @@ tl::expected<void, int> copy_out(pid_t dst_pid, sockaddr* dst_ptr,
 
 tl::expected<void, int> copy_out(pid_t dst_pid, void* dst_ptr, int src);
 
-tl::expected<void, int> copy_out(pid_t dst_pid,
-                                 void* dst_ptr, const void* src_ptr,
-                                 socklen_t length);
+tl::expected<void, int> copy_out(pid_t dst_pid, void* dst_ptr,
+                                 const void* src_ptr, socklen_t length);
 
-}
-}
-}
+} // namespace server
+} // namespace socket
+} // namespace openperf
 
 #endif /* _OP_SOCKET_SERVER_SOCKET_UTILS_HPP_ */

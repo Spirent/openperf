@@ -45,7 +45,8 @@ public:
     std::optional<port::generic_port> port(std::string_view id) const;
     std::optional<int> port_index(std::string_view id) const;
 
-    tl::expected<std::string, std::string> create_port(std::string_view id, const port::config_data& config);
+    tl::expected<std::string, std::string>
+    create_port(std::string_view id, const port::config_data& config);
     tl::expected<void, std::string> delete_port(std::string_view id);
 
     void start_all_ports() const;
@@ -62,8 +63,8 @@ private:
         unsigned test_portpairs = 0);
 };
 
-}
-}
-}
+} // namespace dpdk
+} // namespace packetio
+} // namespace openperf
 
 #endif /* _OP_PACKETIO_DPDK_EAL_HPP_ */

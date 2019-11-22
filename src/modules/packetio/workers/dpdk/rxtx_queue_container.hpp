@@ -8,8 +8,8 @@ namespace openperf {
 namespace packetio {
 namespace dpdk {
 
-template <typename RxQueue, typename TxQueue>
-class rxtx_queue_container {
+template <typename RxQueue, typename TxQueue> class rxtx_queue_container
+{
     std::vector<std::unique_ptr<RxQueue>> m_rxqs;
     std::vector<std::unique_ptr<TxQueue>> m_txqs;
 
@@ -25,40 +25,22 @@ public:
         }
     }
 
-    size_t rx_queues() const
-    {
-        return (m_rxqs.size());
-    }
+    size_t rx_queues() const { return (m_rxqs.size()); }
 
-    size_t tx_queues() const
-    {
-        return (m_txqs.size());
-    }
+    size_t tx_queues() const { return (m_txqs.size()); }
 
-    uint16_t rx_queue_id(uint32_t hash) const
-    {
-        return (hash % m_rxqs.size());
-    }
+    uint16_t rx_queue_id(uint32_t hash) const { return (hash % m_rxqs.size()); }
 
-    uint16_t tx_queue_id(uint32_t hash) const
-    {
-        return (hash % m_txqs.size());
-    }
+    uint16_t tx_queue_id(uint32_t hash) const { return (hash % m_txqs.size()); }
 
-    RxQueue* rx(uint16_t queue_id) const
-    {
-        return (m_rxqs.at(queue_id).get());
-    }
+    RxQueue* rx(uint16_t queue_id) const { return (m_rxqs.at(queue_id).get()); }
 
     RxQueue* rx(uint32_t hash) const
     {
         return (m_rxqs.at(hash % m_rxqs.size()).get());
     }
 
-    TxQueue* tx(uint16_t queue_id) const
-    {
-        return (m_txqs.at(queue_id).get());
-    }
+    TxQueue* tx(uint16_t queue_id) const { return (m_txqs.at(queue_id).get()); }
 
     TxQueue* tx(uint32_t hash) const
     {
@@ -66,8 +48,8 @@ public:
     }
 };
 
-}
-}
-}
+} // namespace dpdk
+} // namespace packetio
+} // namespace openperf
 
 #endif /* _OP_PACKETIO_DPDK_RXTX_QUEUE_CONTAINER_HPP_ */

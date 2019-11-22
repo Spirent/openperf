@@ -5,7 +5,8 @@
 
 #define LINUX_ICMP_FILTER 1
 
-struct linux_icmp_filter {
+struct linux_icmp_filter
+{
     uint32_t data;
 };
 

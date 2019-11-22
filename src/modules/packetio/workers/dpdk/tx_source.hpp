@@ -34,6 +34,6 @@ public:
     uint16_t pull(rte_mbuf* packets[], uint16_t count) const;
 };
 
-}
+} // namespace openperf::packetio::dpdk
 
 #endif /* _OP_PACKETIO_DPDK_TX_SOURCE_HPP_ */

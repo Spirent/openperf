@@ -10,9 +10,9 @@
 extern "C" {
 #endif
 
-int op_thread_setname(const char *name);
+int op_thread_setname(const char* name);
 
-int op_thread_getname(pthread_t tid, char *name);
+int op_thread_getname(pthread_t tid, char* name);
 
 int op_thread_set_affinity(int core_id);
 
