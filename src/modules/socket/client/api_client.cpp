@@ -451,11 +451,13 @@ int client::fcntl(int s, int cmd, ...)
     case F_GETFD:
     case F_GETOWN:
         to_return = ::fcntl(s, cmd);
+        break;
     case F_DUPFD:
     case F_DUPFD_CLOEXEC:
     case F_SETFD:
     case F_SETOWN:
         to_return = ::fcntl(s, cmd, va_arg(ap, int));
+        break;
     default:
         to_return = ::fcntl(s, cmd, va_arg(ap, void*));
     }
