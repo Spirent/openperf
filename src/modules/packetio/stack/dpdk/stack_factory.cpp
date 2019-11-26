@@ -8,8 +8,8 @@ namespace openperf::packetio::stack {
 std::unique_ptr<generic_stack> make(driver::generic_driver& driver,
                                     workers::generic_workers& workers)
 {
-    return std::make_unique<generic_stack>(
-        openperf::packetio::dpdk::lwip(driver, workers));
+    return (std::make_unique<generic_stack>(
+        openperf::packetio::dpdk::lwip(driver, workers)));
 }
 
 } // namespace openperf::packetio::stack

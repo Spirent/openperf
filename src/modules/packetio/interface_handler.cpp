@@ -158,27 +158,14 @@ void handler::create_interface(const Rest::Request& request,
     }
 }
 
-/**
- * Our id might not be a valid string. This macro handles validating the id
- * value using the framework. If the id is invalid this macro will send a reply
- * using the supplied code and return. Unfortunately, we cannot make this a
- * function because the response is an unmovable object.
- */
-
-#define VALIDATE_ID(id_, response_, code_)                                     \
-    do {                                                                       \
-        auto res = config::op_config_validate_id_string(id_);                  \
-        if (!res) {                                                            \
-            response_.send(code_, res.error());                                \
-            return;                                                            \
-        }                                                                      \
-    } while (0)
-
 void handler::get_interface(const Rest::Request& request,
                             Http::ResponseWriter response)
 {
     auto id = request.param(":id").as<std::string>();
-    VALIDATE_ID(id, response, Http::Code::Not_Found);
+    if (auto res = config::op_config_validate_id_string(id); !res) {
+        response.send(Http::Code::Not_Found, res.error());
+        return;
+    }
 
     json api_request = {{"type", request_type::GET_INTERFACE}, {"id", id}};
 
@@ -205,7 +192,10 @@ void handler::delete_interface(const Rest::Request& request,
                                Http::ResponseWriter response)
 {
     auto id = request.param(":id").as<std::string>();
-    VALIDATE_ID(id, response, Http::Code::Not_Found);
+    if (auto res = config::op_config_validate_id_string(id); !res) {
+        response.send(Http::Code::Not_Found, res.error());
+        return;
+    }
 
     json api_request = {{"type", request_type::DELETE_INTERFACE}, {"id", id}};
 

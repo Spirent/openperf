@@ -135,9 +135,9 @@ pool_allocator::pool_allocator(const std::vector<model::port_info>& info,
     }
 };
 
-rte_mempool* pool_allocator::rx_mempool(int socket_id) const
+rte_mempool* pool_allocator::rx_mempool(unsigned socket_id) const
 {
-    assert(0 <= socket_id && socket_id <= RTE_MAX_NUMA_NODES);
+    assert(socket_id <= RTE_MAX_NUMA_NODES);
     auto found = m_default_mpools.find(socket_id);
     return (found == m_default_mpools.end() ? nullptr : found->second.get());
 }

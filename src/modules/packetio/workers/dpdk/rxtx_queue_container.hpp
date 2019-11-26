@@ -25,9 +25,15 @@ public:
         }
     }
 
-    size_t rx_queues() const { return (m_rxqs.size()); }
+    uint16_t rx_queues() const
+    {
+        return (static_cast<uint16_t>(m_rxqs.size()));
+    }
 
-    size_t tx_queues() const { return (m_txqs.size()); }
+    uint16_t tx_queues() const
+    {
+        return (static_cast<uint16_t>(m_txqs.size()));
+    }
 
     uint16_t rx_queue_id(uint32_t hash) const { return (hash % m_rxqs.size()); }
 
