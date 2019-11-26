@@ -6,3 +6,6 @@ build/
 
 # OSX cruft
 .DS_Store
+
+# clang compiler database
+compile_commands.json
