@@ -34,6 +34,10 @@ clean:
 	@cd tests/aat && $(MAKE) clean
 	@cd tests/unit && $(MAKE) clean
 
+###
+# Targets for code formatting and analysis
+###
+
 .PHONY: pretty
 pretty: pretty-cpp pretty-c
 
@@ -61,3 +65,13 @@ pretty-cpp:
 			-iname \*.hpp -o \
 			-iname \*.tcc \) \
 		-print0 | xargs -0 clang-format -i -style=file
+
+# clang-tidy requires a compile_commands.json file which is oustide the scope
+# of this Makefile.  Hence, we make the file a requirement but don't provide
+# a rule to build it.
+.PHONY: tidy
+tidy: compile_commands.json
+	@find src -path src/swagger -prune -o -iname \*.cpp -print0 \
+		| xargs -0 run-clang-tidy -quiet \
+			-header-filter='^$(shell pwd)/src/.*hpp,-^$(shell pwd)/src/modules/socket/dpdk/.*hpp' \
+			-extra-arg=-Wno-shadow
