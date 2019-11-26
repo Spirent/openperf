@@ -14,14 +14,17 @@ RUN apt-get clean && \
     apt-get install -y --no-install-recommends autoconf automake \
     build-essential ca-certificates git libcap-dev libcap2-bin libnuma-dev \
     libtool netcat-openbsd pkg-config python sudo virtualenv wget \
-    clang-${LLVM_VERSION} lld-${LLVM_VERSION} llvm-${LLVM_VERSION} \
-    llvm-${LLVM_VERSION}-dev
+    clang-${LLVM_VERSION} clang-format-${LLVM_VERSION} clang-tidy-${LLVM_VERSION} \
+    llvm-${LLVM_VERSION} llvm-${LLVM_VERSION}-dev \
+    lld-${LLVM_VERSION} bear
 
 # Fix up toolchain names
-RUN update-alternatives --install /usr/bin/clang clang /usr/bin/clang-${LLVM_VERSION} 10 \
+RUN update-alternatives --install /usr/bin/clang clang /usr/bin/clang-${LLVM_VERSION} ${LLVM_VERSION} \
                         --slave /usr/bin/clang++ clang++ /usr/bin/clang++-${LLVM_VERSION} && \
-    update-alternatives --install /usr/bin/llvm-ar llvm-ar /usr/bin/llvm-ar-${LLVM_VERSION} 10 && \
-    update-alternatives --install /usr/bin/lld lld /usr/bin/lld-${LLVM_VERSION} 10
+    update-alternatives --install /usr/bin/clang-format clang-format /usr/bin/clang-format-${LLVM_VERSION} ${LLVM_VERSION} && \
+    update-alternatives --install /usr/bin/run-clang-tidy run-clang-tidy /usr/bin/run-clang-tidy-${LLVM_VERSION} ${LLVM_VERSION} && \
+    update-alternatives --install /usr/bin/llvm-ar llvm-ar /usr/bin/llvm-ar-${LLVM_VERSION} ${LLVM_VERSION} && \
+    update-alternatives --install /usr/bin/lld lld /usr/bin/lld-${LLVM_VERSION} ${LLVM_VERSION}
 
 # Install other Circle CI dependencies
 RUN apt-get install -y --no-install-recommends openssh-client
