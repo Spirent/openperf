@@ -45,8 +45,10 @@ callback::callback(std::string_view name, event_loop::event_notifier notifier,
 
 callback::~callback()
 {
-    if (m_on_delete) { m_on_delete.value()(m_arg); }
-    close_event_fd(m_notify);
+    try {
+        if (m_on_delete) { m_on_delete.value()(m_arg); }
+        close_event_fd(m_notify);
+    } catch (...) {}
 }
 
 std::string_view callback::name() const { return (m_name); }

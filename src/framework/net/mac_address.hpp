@@ -67,7 +67,7 @@ namespace std {
 
 template <> struct hash<openperf::net::mac_address>
 {
-    size_t operator()(const openperf::net::mac_address& mac) const noexcept
+    size_t operator()(const openperf::net::mac_address& mac) const
     {
         auto value = (static_cast<uint64_t>(mac[0]) << 40
                       | static_cast<uint64_t>(mac[1]) << 32 | mac[2] << 24

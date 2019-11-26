@@ -19,7 +19,7 @@ public:
     pool_allocator(const std::vector<model::port_info>&,
                    const std::map<int, queue::count>&);
 
-    rte_mempool* rx_mempool(int socket_id) const;
+    rte_mempool* rx_mempool(unsigned socket_id) const;
 
 private:
     struct rte_mempool_releaser

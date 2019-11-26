@@ -130,10 +130,12 @@ static __attribute__((const)) T distribute(T total, U buckets, V n)
 
 uint16_t worker_id(const std::vector<worker_config>& workers, uint16_t offset)
 {
+    assert(workers.size() < std::numeric_limits<uint16_t>::max());
+
     /* First, see if we can find a worker with less queues than the others */
     bool have_candidate = false;
     uint16_t to_return = offset % workers.size();
-    for (uint16_t i = 0; i < workers.size(); i++) {
+    for (size_t i = 0; i < workers.size(); i++) {
         auto id = (offset + i) % workers.size();
         if (workers[id].queues < workers[to_return].queues) {
             have_candidate = true;
@@ -146,7 +148,7 @@ uint16_t worker_id(const std::vector<worker_config>& workers, uint16_t offset)
          * No obvious candidate based on queue counts; look for a worker with
          * less load.  Otherwise, just use the offset.
          */
-        for (uint16_t i = 0; i < workers.size(); i++) {
+        for (size_t i = 0; i < workers.size(); i++) {
             auto id = (offset + i) % workers.size();
             if (workers[id].load < workers[to_return].load) { to_return = id; }
         }

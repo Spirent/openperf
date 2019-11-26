@@ -76,6 +76,7 @@ pbuf_drop_at(struct pbuf* p_head, uint16_t offset, uint16_t length)
 
     uint16_t end_offset = 0;
     auto end = pbuf_skip(p_head, offset + length, &end_offset);
+    assert(end);
 
     uint16_t pbufs_freed = 0;
     auto flags = p_head->flags; /* we'll need these later */
@@ -104,7 +105,7 @@ pbuf_drop_at(struct pbuf* p_head, uint16_t offset, uint16_t length)
 
         /* Drop the stuff in between */
         auto p = start_offset == 0 ? start : start->next;
-        while (p != end) {
+        while (p && p != end) {
             auto next = p->next;
             p->next = NULL;
             pbuf_free(p);

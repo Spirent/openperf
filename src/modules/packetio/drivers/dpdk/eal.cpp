@@ -82,38 +82,15 @@ static int log_link_status_change(uint16_t port_id,
 __attribute__((const)) static const char* dpdk_logtype(int logtype)
 {
     /* Current as of DPDK release 18.08 */
-    static const char* logtype_strings[] = {"lib.eal",
-                                            "lib.malloc",
-                                            "lib.ring",
-                                            "lib.mempool",
-                                            "lib.timer",
-                                            "pmd",
-                                            "lib.hash",
-                                            "lib.lpm",
-                                            "lib.kni",
-                                            "lib.acl",
-                                            "lib.power",
-                                            "lib.meter",
-                                            "lib.sched",
-                                            "lib.port",
-                                            "lib.table",
-                                            "lib.pipeline",
-                                            "lib.mbuf",
-                                            "lib.cryptodev",
-                                            "lib.efd",
-                                            "lib.eventdev",
-                                            "lib.gso"
-                                            "reserved1",
-                                            "reserved2",
-                                            "reserved3",
-                                            "user1",
-                                            "user2",
-                                            "user3",
-                                            "user4",
-                                            "user5",
-                                            "user6",
-                                            "user7",
-                                            "user8"};
+    static const char* logtype_strings[] = {
+        "lib.eal",   "lib.malloc",    "lib.ring",  "lib.mempool",
+        "lib.timer", "pmd",           "lib.hash",  "lib.lpm",
+        "lib.kni",   "lib.acl",       "lib.power", "lib.meter",
+        "lib.sched", "lib.port",      "lib.table", "lib.pipeline",
+        "lib.mbuf",  "lib.cryptodev", "lib.efd",   "lib.eventdev",
+        "lib.gso",   "reserved1",     "reserved2", "reserved3",
+        "user1",     "user2",         "user3",     "user4",
+        "user5",     "user6",         "user7",     "user8"};
 
     return ((logtype >= 0
              && logtype < static_cast<int>(op_count_of(logtype_strings)))
@@ -190,9 +167,9 @@ configure_all_ports(const std::map<int, queue::count>& port_queue_counts,
     }
 }
 
-static void create_test_portpairs(const int test_portpairs)
+static void create_test_portpairs(unsigned test_portpairs)
 {
-    for (int i = 0; i < test_portpairs; i++) {
+    for (auto i = 0U; i < test_portpairs; i++) {
         std::string ring_name0 = "TSTRNG_" + std::to_string(i * 2);
         auto ring0 = rte_ring_create(ring_name0.c_str(), 1024, 0,
                                      RING_F_SP_ENQ | RING_F_SC_DEQ);
@@ -261,7 +238,8 @@ eal::eal(std::vector<std::string> args,
         throw std::runtime_error("Failed to set DPDK log stream");
     }
 
-    int parsed_or_err = rte_eal_init(eal_args.size() - 1, eal_args.data());
+    int parsed_or_err =
+        rte_eal_init(static_cast<int>(eal_args.size() - 1), eal_args.data());
     if (parsed_or_err < 0) {
         throw std::runtime_error("Failed to initialize DPDK");
     } else if (rte_lcore_count() <= 1) {

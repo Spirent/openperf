@@ -29,7 +29,7 @@ __attribute__((const)) static T align_up(T x, S align)
 struct rte_mempool*
 create_spsc_pktmbuf_mempool(std::string_view id, unsigned int n,
                             unsigned int cache_size, uint16_t priv_size,
-                            uint16_t packet_size, int socket_id)
+                            uint16_t packet_size, unsigned socket_id)
 {
     if (RTE_ALIGN(priv_size, RTE_MBUF_PRIV_ALIGN) != priv_size) {
         OP_LOG(OP_LOG_ERROR, "mbuf priv_size=%u is not aligned\n", priv_size);
@@ -42,13 +42,13 @@ create_spsc_pktmbuf_mempool(std::string_view id, unsigned int n,
 
     auto mp = rte_mempool_create(
         id.data(), n, elt_size, cache_size, sizeof(rte_pktmbuf_pool_private),
-        rte_pktmbuf_pool_init, nullptr, rte_pktmbuf_init, nullptr, socket_id,
-        MEMPOOL_F_SP_PUT | MEMPOOL_F_SC_GET);
+        rte_pktmbuf_pool_init, nullptr, rte_pktmbuf_init, nullptr,
+        static_cast<int>(socket_id), MEMPOOL_F_SP_PUT | MEMPOOL_F_SC_GET);
 
     return (mp);
 }
 
-static rte_mempool* create_mempool(std::string_view id, int numa_mode,
+static rte_mempool* create_mempool(std::string_view id, unsigned numa_mode,
                                    uint16_t packet_length,
                                    uint16_t packet_count, uint16_t cache_size)
 {
@@ -66,7 +66,7 @@ static rte_mempool* create_mempool(std::string_view id, int numa_mode,
         packet_length, numa_mode));
 }
 
-packet_pool::packet_pool(std::string_view id, int numa_node,
+packet_pool::packet_pool(std::string_view id, unsigned numa_node,
                          uint16_t packet_length, uint16_t packet_count,
                          uint16_t cache_size)
     : m_pool(

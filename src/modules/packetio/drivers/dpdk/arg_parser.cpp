@@ -83,14 +83,6 @@ static int get_port_index(std::string_view name)
     return (-1);
 }
 
-#define PRINT_NAME_ERROR(id_)                                                  \
-    std::cerr << std::string(id_) + " is not a valid port id specifier."       \
-                     + " It must have the form portX=id,"                      \
-                     + " where X is the zero-based DPDK port index and"        \
-                     + " where id may only contain"                            \
-                     + " lower-case letters, numbers, and hyphens."            \
-              << std::endl
-
 static int
 process_dpdk_port_ids(const std::map<std::string, std::string>& input,
                       std::unordered_map<int, std::string>& output)
@@ -99,7 +91,13 @@ process_dpdk_port_ids(const std::map<std::string, std::string>& input,
         // split port index from "port" part.
         auto port_idx = get_port_index(entry.first);
         if (port_idx < 0) {
-            PRINT_NAME_ERROR(entry.first);
+            std::cerr << std::string(entry.first)
+                             + " is not a valid port id specifier."
+                             + " It must have the form portX=id,"
+                             + " where X is the zero-based DPDK port index and"
+                             + " where id may only contain"
+                             + " lower-case letters, numbers, and hyphens."
+                      << std::endl;
             return (EINVAL);
         }
 
@@ -128,7 +126,6 @@ process_dpdk_port_ids(const std::map<std::string, std::string>& input,
 
     return (0);
 }
-#undef PRINT_NAME_ERROR
 
 int dpdk_test_portpairs()
 {

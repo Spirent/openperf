@@ -52,11 +52,15 @@ void sys_sem_signal(sys_sem_t* sem)
 
 u32_t sys_arch_sem_wait(sys_sem_t* sem, u32_t timeout)
 {
+    static constexpr auto max_timeout =
+        static_cast<uint32_t>(std::numeric_limits<int>::max());
     auto start = std::chrono::steady_clock::now();
 
     struct pollfd pfd = {.fd = *sem, .events = POLLIN};
 
-    int n = poll(&pfd, 1, timeout == 0 ? -1 : timeout);
+    int n = poll(
+        &pfd, 1,
+        timeout == 0 ? -1 : static_cast<int>(std::min(timeout, max_timeout)));
     if (n <= 0) return (SYS_ARCH_TIMEOUT);
 
     uint64_t counter = 0;
@@ -142,9 +146,9 @@ sys_thread_t sys_thread_new(const char* name, lwip_thread_fn function,
      * Luckily for us the TCPIP thread identifies itself clearly, so we can
      * put it on a specific core.  Otherwise, just pick one that is free.
      */
-    int lcore = (strcmp(TCPIP_THREAD_NAME, name) == 0
-                     ? openperf::packetio::dpdk::topology::get_stack_lcore_id()
-                     : get_waiting_lcore());
+    int lcore = (strcmp(TCPIP_THREAD_NAME, name) == 0 ? static_cast<int>(
+                     openperf::packetio::dpdk::topology::get_stack_lcore_id())
+                                                      : get_waiting_lcore());
 
     if (lcore < 0) {
         LWIP_DEBUGF(SYS_DEBUG, ("sys_thread_new: lcore = %d", lcore));
