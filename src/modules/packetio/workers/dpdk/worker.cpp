@@ -55,13 +55,18 @@ public:
     void dispatch(const EventVariant& event)
     {
         Derived& child = static_cast<Derived&>(*this);
-        auto next_state = std::visit(
-            [&](auto& state, const auto& event) -> std::optional<StateVariant> {
-                return (child.on_event(state, event));
-            },
-            m_state, event);
+        try {
+            auto next_state = std::visit(
+                [&](auto& state,
+                    const auto& event) -> std::optional<StateVariant> {
+                    return (child.on_event(state, event));
+                },
+                m_state, event);
 
-        if (next_state) { m_state = *next_state; }
+            if (next_state) { m_state = *next_state; }
+        } catch (const std::exception& e) {
+            OP_LOG(OP_LOG_ERROR, "%s\n", e.what());
+        }
     }
 };
 

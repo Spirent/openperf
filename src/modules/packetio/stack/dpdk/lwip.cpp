@@ -16,8 +16,6 @@
 
 namespace openperf::packetio::dpdk {
 
-#define STRING_VIEW_TO_C_STR(sv) static_cast<int>(sv.length()), sv.data()
-
 static netif_wrapper
 make_netif_wrapper(const std::unique_ptr<net_interface>& ifp)
 {
@@ -191,8 +189,8 @@ lwip& lwip::operator=(lwip&& other)
         || rte_eth_dev_callback_register(RTE_ETH_ALL, RTE_ETH_EVENT_INTR_LSC,
                                          lwip_link_status_change_callback,
                                          std::addressof(m_interfaces))) {
-        throw std::runtime_error(
-            "Could not update DPDK link status change callback");
+        OP_LOG(OP_LOG_ERROR,
+               "Could not update DPDK link status change callback\n");
     }
 
     return (*this);
@@ -212,8 +210,8 @@ lwip::lwip(lwip&& other)
         || rte_eth_dev_callback_register(RTE_ETH_ALL, RTE_ETH_EVENT_INTR_LSC,
                                          lwip_link_status_change_callback,
                                          std::addressof(m_interfaces))) {
-        throw std::runtime_error(
-            "Could not update DPDK link status change callback");
+        OP_LOG(OP_LOG_ERROR,
+               "Could not update DPDK link status change callback\n");
     }
 
     other.m_initialized = false;

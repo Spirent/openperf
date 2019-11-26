@@ -36,14 +36,21 @@ io_channel_wrapper::io_channel_wrapper(api::io_channel_ptr channel,
 
 io_channel_wrapper::~io_channel_wrapper()
 {
-    std::visit(utils::overloaded_visitor(
-                   [](dgram_channel* channel) {
-                       if (channel) channel->~dgram_channel();
-                   },
-                   [](stream_channel* channel) {
-                       if (channel) channel->~stream_channel();
-                   }),
-               m_channel);
+    /*
+     * While std::visit can technically throw an exception, it really
+     * shouldn't it in this case.  We use the try/catch block here to
+     * enforce expected (and good!) behavior.
+     */
+    try {
+        std::visit(utils::overloaded_visitor(
+                       [](dgram_channel* channel) {
+                           if (channel) channel->~dgram_channel();
+                       },
+                       [](stream_channel* channel) {
+                           if (channel) channel->~stream_channel();
+                       }),
+                   m_channel);
+    } catch (...) {}
 }
 
 io_channel_wrapper::io_channel_wrapper(io_channel_wrapper&& other)

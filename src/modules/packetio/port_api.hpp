@@ -7,14 +7,6 @@
 
 #include "json.hpp"
 
-namespace swagger {
-namespace v1 {
-namespace model {
-class Port;
-}
-} // namespace v1
-} // namespace swagger
-
 namespace openperf {
 
 namespace core {
