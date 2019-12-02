@@ -25,8 +25,9 @@ static int read_ptrace_scope(FILE* output)
 
     auto f = std::ifstream(yama_ptrace_file.data(), std::ifstream::in);
     if (!f.is_open()) {
-        fprintf(output, "Could not determine ptrace scope; assuming classic "
-                        "ptrace permissions\n");
+        fprintf(output,
+                "Could not determine ptrace scope; assuming classic "
+                "ptrace permissions\n");
         return (0);
     }
 
@@ -42,7 +43,9 @@ static int read_ptrace_scope(FILE* output)
 static std::string to_string(cap_value_t cap_values[], size_t nb_cap_values)
 {
     return (std::accumulate(
-        cap_values, cap_values + nb_cap_values, std::string(),
+        cap_values,
+        cap_values + nb_cap_values,
+        std::string(),
         [&](const std::string& s, auto& cap_value) -> std::string {
             return (s
                     + (s.length() == 0
@@ -56,15 +59,16 @@ static std::string to_string(cap_value_t cap_values[], size_t nb_cap_values)
         }));
 }
 
-static bool get_caps(FILE* output, cap_value_t cap_values[],
-                     size_t nb_cap_values)
+static bool
+get_caps(FILE* output, cap_value_t cap_values[], size_t nb_cap_values)
 {
     /* Use a nice, RAII wrapper for the caps pointer */
     auto caps =
         std::unique_ptr<std::remove_pointer_t<cap_t>, decltype(&cap_free)>(
             cap_get_proc(), cap_free);
     if (!caps) {
-        fprintf(output, "Could not retrieve process capabilities: %s\n",
+        fprintf(output,
+                "Could not retrieve process capabilities: %s\n",
                 strerror(errno));
         return (false);
     }
@@ -79,7 +83,8 @@ static bool get_caps(FILE* output, cap_value_t cap_values[],
                 fprintf(
                     output,
                     "Could not read effective capability value for %s: %s\n",
-                    cap_to_name(cap_value), strerror(errno));
+                    cap_to_name(cap_value),
+                    strerror(errno));
             }
             return (flag == CAP_SET);
         });
@@ -87,12 +92,13 @@ static bool get_caps(FILE* output, cap_value_t cap_values[],
     /* Set any needed capability flags */
     auto nb_unset_flags = std::distance(cursor, cap_values + nb_cap_values);
     if (nb_unset_flags) {
-        if (auto error = cap_set_flag(caps.get(), CAP_EFFECTIVE, nb_unset_flags,
-                                      cursor, CAP_SET);
+        if (auto error = cap_set_flag(
+                caps.get(), CAP_EFFECTIVE, nb_unset_flags, cursor, CAP_SET);
             error != 0) {
             fprintf(output,
                     "Could not set effective capability flag for %s: %s\n",
-                    to_string(cursor, nb_unset_flags).c_str(), strerror(errno));
+                    to_string(cursor, nb_unset_flags).c_str(),
+                    strerror(errno));
             return (false);
         }
     }
@@ -111,8 +117,8 @@ bool enable_ptrace(FILE* output, std::optional<pid_t> pid)
      * succeed */
     if (prctl(PR_GET_DUMPABLE, 0, 0, 0, 0, 0) != 1) {
         if (prctl(PR_SET_DUMPABLE, 1, 0, 0, 0) != 0) {
-            fprintf(output, "Could not set dumpable flag: %s\n",
-                    strerror(errno));
+            fprintf(
+                output, "Could not set dumpable flag: %s\n", strerror(errno));
             result = false;
         }
     }
@@ -125,7 +131,8 @@ bool enable_ptrace(FILE* output, std::optional<pid_t> pid)
         /* Process must have a predefined relationship with it's peer */
         if (prctl(PR_SET_PTRACER, pid ? *pid : PR_SET_PTRACER_ANY, 0, 0, 0)
             == -1) {
-            fprintf(output, "Could not enable ptrace for pid %s: %s\n",
+            fprintf(output,
+                    "Could not enable ptrace for pid %s: %s\n",
                     pid ? std::to_string(*pid).c_str() : "ANY",
                     strerror(errno));
             result = false;

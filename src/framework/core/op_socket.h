@@ -17,16 +17,19 @@ void op_socket_close(void* s);
 
 void* op_socket_get_server(void* context, int type, const char* endpoint);
 void* op_socket_get_client_basic(void* context, int type, const char* endpoint);
-void* op_socket_get_client_identified(void* context, int type,
+void* op_socket_get_client_identified(void* context,
+                                      int type,
                                       const char* endpoint,
                                       const char* identity);
-void* op_socket_get_client_subscription(void* context, const char* endpoint,
+void* op_socket_get_client_subscription(void* context,
+                                        const char* endpoint,
                                         const char* prefix);
 
 /* XXX: _1 and _2 are just placeholders.  No function actually matches. */
 #define GET_CLIENT_SOCKET_MACRO(_1, _2, _3, _4, NAME, ...) NAME
 #define op_socket_get_client(...)                                              \
-    GET_CLIENT_SOCKET_MACRO(__VA_ARGS__, op_socket_get_client_identified,      \
+    GET_CLIENT_SOCKET_MACRO(__VA_ARGS__,                                       \
+                            op_socket_get_client_identified,                   \
                             op_socket_get_client_basic)                        \
     (__VA_ARGS__)
 

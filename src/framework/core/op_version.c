@@ -21,8 +21,11 @@ static int version_option_handler(int opt __attribute__((unused)),
 
     FILE* output = stderr;
 
-    fprintf(output, "Spirent OpenPerf, version %s (%s-%s)\n", BUILD_VERSION,
-            info.machine, info.sysname);
+    fprintf(output,
+            "Spirent OpenPerf, version %s (%s-%s)\n",
+            BUILD_VERSION,
+            info.machine,
+            info.sysname);
     fprintf(output, "Copyright (C) 2019 Spirent Communications\n");
     exit(EXIT_SUCCESS);
 }

@@ -25,15 +25,19 @@ public:
         : m_self(std::make_unique<event_loop_model<EventLoop>>(std::move(loop)))
     {}
 
-    bool add_callback(std::string_view name, event_notifier notify,
-                      event_handler on_event, std::any arg) noexcept
+    bool add_callback(std::string_view name,
+                      event_notifier notify,
+                      event_handler on_event,
+                      std::any arg) noexcept
     {
         return (
             m_self->add_callback(name, notify, on_event, std::nullopt, arg));
     }
 
-    bool add_callback(std::string_view name, event_notifier notify,
-                      event_handler on_event, delete_handler on_delete,
+    bool add_callback(std::string_view name,
+                      event_notifier notify,
+                      event_handler on_event,
+                      delete_handler on_delete,
                       std::any arg) noexcept
     {
         return (m_self->add_callback(name, notify, on_event, on_delete, arg));
@@ -53,7 +57,8 @@ private:
     struct event_loop_concept
     {
         virtual ~event_loop_concept() = default;
-        virtual bool add_callback(std::string_view name, event_notifier notify,
+        virtual bool add_callback(std::string_view name,
+                                  event_notifier notify,
                                   event_handler on_event,
                                   std::optional<delete_handler> on_delete,
                                   std::any arg) noexcept = 0;
@@ -68,7 +73,8 @@ private:
             : m_loop(std::move(loop))
         {}
 
-        bool add_callback(std::string_view name, event_notifier notify,
+        bool add_callback(std::string_view name,
+                          event_notifier notify,
                           event_handler on_event,
                           std::optional<delete_handler> on_delete,
                           std::any arg) noexcept override

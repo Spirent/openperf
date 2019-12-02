@@ -50,7 +50,10 @@ REGISTER_MODULE(socket_server,
                                  "Core module providing access to the TCP/IP "
                                  "stack via libopenperf-shim.so",
                                  openperf::socket::server::module_version),
-                new openperf::socket::server::service(), nullptr,
-                op_socket_server_init, nullptr, op_socket_server_start,
+                new openperf::socket::server::service(),
+                nullptr,
+                op_socket_server_init,
+                nullptr,
+                op_socket_server_start,
                 op_socket_server_stop);
 }

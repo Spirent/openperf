@@ -10,8 +10,10 @@
 
 namespace openperf::socket::server {
 
-api_handler::api_handler(event_loop& loop, const void* shm_base,
-                         allocator& allocator, pid_t pid)
+api_handler::api_handler(event_loop& loop,
+                         const void* shm_base,
+                         allocator& allocator,
+                         pid_t pid)
     : m_loop(loop)
     , m_shm_base(shm_base)
     , m_allocator(allocator)
@@ -26,8 +28,8 @@ api_handler::~api_handler()
     for (auto fd : m_server_fds) { m_loop.del_callback(fd); }
 }
 
-static ssize_t send_reply(int sockfd, const sockaddr_un& client,
-                          const api::reply_msg& reply)
+static ssize_t
+send_reply(int sockfd, const sockaddr_un& client, const api::reply_msg& reply)
 {
     struct iovec iov = {
         .iov_base = const_cast<void*>(reinterpret_cast<const void*>(&reply)),
@@ -57,8 +59,10 @@ static ssize_t send_reply(int sockfd, const sockaddr_un& client,
         cmsg->cmsg_len = CMSG_LEN(sizeof(*fd_pair));
         memcpy(CMSG_DATA(cmsg), &(*fd_pair), sizeof(*fd_pair));
 
-        OP_LOG(OP_LOG_DEBUG, "Sending client_fd = %d, server_fd = %d\n",
-               fd_pair->client_fd, fd_pair->server_fd);
+        OP_LOG(OP_LOG_DEBUG,
+               "Sending client_fd = %d, server_fd = %d\n",
+               fd_pair->client_fd,
+               fd_pair->server_fd);
     }
 
     return (sendmsg(sockfd, &msg, 0));
@@ -100,10 +104,12 @@ api_handler::handle_request_accept(const api::request_accept& request)
     auto channel = accept_socket.channel();
 
     m_server_fds.emplace(server_fd(channel));
-    m_loop.add_callback(
-        "socket io for fd = " + std::to_string(server_fd(channel)),
-        server_fd(channel), handle_socket_read, handle_socket_delete,
-        new generic_socket(accept_socket));
+    m_loop.add_callback("socket io for fd = "
+                            + std::to_string(server_fd(channel)),
+                        server_fd(channel),
+                        handle_socket_read,
+                        handle_socket_delete,
+                        new generic_socket(accept_socket));
 
     /* We need the peer name as well */
     auto addr_request = api::request_getpeername{
@@ -144,8 +150,8 @@ api::reply_msg
 api_handler::handle_request_socket(const api::request_socket& request)
 {
     auto id = api::socket_id{{m_pid, m_next_socket_id++}};
-    auto socket = make_socket(m_allocator, request.domain, request.type,
-                              request.protocol);
+    auto socket = make_socket(
+        m_allocator, request.domain, request.type, request.protocol);
     if (!socket) { return (tl::make_unexpected(socket.error())); }
 
     auto result = m_sockets.emplace(id, *socket);
@@ -156,8 +162,10 @@ api_handler::handle_request_socket(const api::request_socket& request)
     m_server_fds.emplace(server_fd(channel));
     m_loop.add_callback("socket io for fd = "
                             + std::to_string(server_fd(channel)),
-                        server_fd(channel), handle_socket_read,
-                        handle_socket_delete, new generic_socket(*socket));
+                        server_fd(channel),
+                        handle_socket_read,
+                        handle_socket_delete,
+                        new generic_socket(*socket));
 
     return (
         api::reply_socket{.id = id,
@@ -174,10 +182,12 @@ int api_handler::handle_requests(int fd)
     ssize_t recv_or_err = 0;
     sockaddr_un client;
     socklen_t client_length = sizeof(client);
-    while ((recv_or_err =
-                recvfrom(fd, reinterpret_cast<void*>(&request), sizeof(request),
-                         MSG_DONTWAIT, reinterpret_cast<sockaddr*>(&client),
-                         &client_length))
+    while ((recv_or_err = recvfrom(fd,
+                                   reinterpret_cast<void*>(&request),
+                                   sizeof(request),
+                                   MSG_DONTWAIT,
+                                   reinterpret_cast<sockaddr*>(&client),
+                                   &client_length))
            == sizeof(api::request_msg)) {
 
         auto reply = std::visit(
@@ -233,7 +243,9 @@ int api_handler::handle_requests(int fd)
             request);
 
         if (send_reply(fd, client, reply) == -1) {
-            OP_LOG(OP_LOG_ERROR, "Error sending reply on fd = %d: %s\n", fd,
+            OP_LOG(OP_LOG_ERROR,
+                   "Error sending reply on fd = %d: %s\n",
+                   fd,
                    strerror(errno));
         }
     }

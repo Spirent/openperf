@@ -26,12 +26,13 @@ client::client()
                      (api::server_socket() + "." + std::string(envp)).c_str(),
                      sizeof(server.sun_path));
     } else {
-        std::strncpy(server.sun_path, api::server_socket().c_str(),
+        std::strncpy(server.sun_path,
+                     api::server_socket().c_str(),
                      sizeof(server.sun_path));
     }
 
-    if (::connect(m_sock.get(), reinterpret_cast<sockaddr*>(&server),
-                  sizeof(server))
+    if (::connect(
+            m_sock.get(), reinterpret_cast<sockaddr*>(&server), sizeof(server))
         == -1) {
         throw std::runtime_error("Could not connect to socket server: "
                                  + std::string(strerror(errno)));
@@ -43,8 +44,10 @@ client::~client() { *m_init_flag = false; }
 static api::reply_msg submit_request(int sockfd,
                                      const api::request_msg& request)
 {
-    if (send(sockfd, const_cast<void*>(reinterpret_cast<const void*>(&request)),
-             sizeof(request), 0)
+    if (send(sockfd,
+             const_cast<void*>(reinterpret_cast<const void*>(&request)),
+             sizeof(request),
+             0)
         == -1) {
         return (tl::make_unexpected(errno));
     }
@@ -77,8 +80,9 @@ static api::reply_msg submit_request(int sockfd,
              * Message contains a fd, update the message sockfd value so the
              * client can use it directly.
              */
-            set_message_fds(reply, *(reinterpret_cast<api::socket_fd_pair*>(
-                                       CMSG_DATA(cmsg))));
+            set_message_fds(
+                reply,
+                *(reinterpret_cast<api::socket_fd_pair*>(CMSG_DATA(cmsg))));
         }
     }
 
@@ -146,10 +150,11 @@ int client::accept(int s, struct sockaddr* addr, socklen_t* addrlen, int flags)
     /* Record socket data for future use */
     auto newresult = m_channels.emplace(
         accept.fd_pair.client_fd,
-        ided_channel{accept.id,
-                     io_channel_wrapper(
-                         to_pointer(accept.channel, m_shm->base()),
-                         accept.fd_pair.client_fd, accept.fd_pair.server_fd)});
+        ided_channel{
+            accept.id,
+            io_channel_wrapper(to_pointer(accept.channel, m_shm->base()),
+                               accept.fd_pair.client_fd,
+                               accept.fd_pair.server_fd)});
 
     if (!newresult.second) {
         errno = ENOBUFS;
@@ -249,8 +254,8 @@ int client::getsockname(int s, struct sockaddr* name, socklen_t* namelen)
     return (0);
 }
 
-int client::getsockopt(int s, int level, int optname, void* optval,
-                       socklen_t* optlen)
+int client::getsockopt(
+    int s, int level, int optname, void* optval, socklen_t* optlen)
 {
     auto result = m_channels.find(s);
     if (result == m_channels.end()) {
@@ -276,8 +281,8 @@ int client::getsockopt(int s, int level, int optname, void* optval,
     return (0);
 }
 
-int client::setsockopt(int s, int level, int optname, const void* optval,
-                       socklen_t optlen)
+int client::setsockopt(
+    int s, int level, int optname, const void* optval, socklen_t optlen)
 {
     auto result = m_channels.find(s);
     if (result == m_channels.end()) {
@@ -412,10 +417,11 @@ int client::socket(int domain, int type, int protocol)
     /* Record socket data for future use */
     auto result = m_channels.emplace(
         socket.fd_pair.client_fd,
-        ided_channel{socket.id,
-                     io_channel_wrapper(
-                         to_pointer(socket.channel, m_shm->base()),
-                         socket.fd_pair.client_fd, socket.fd_pair.server_fd)});
+        ided_channel{
+            socket.id,
+            io_channel_wrapper(to_pointer(socket.channel, m_shm->base()),
+                               socket.fd_pair.client_fd,
+                               socket.fd_pair.server_fd)});
 
     if (!result.second) {
         errno = ENOBUFS;
@@ -488,8 +494,12 @@ ssize_t client::recv(int s, void* mem, size_t len, int flags)
     return (recvfrom(s, mem, len, flags, nullptr, nullptr));
 }
 
-ssize_t client::recvfrom(int s, void* mem, size_t len, int flags,
-                         struct sockaddr* from, socklen_t* fromlen)
+ssize_t client::recvfrom(int s,
+                         void* mem,
+                         size_t len,
+                         int flags,
+                         struct sockaddr* from,
+                         socklen_t* fromlen)
 {
     auto iov = iovec{.iov_base = mem, .iov_len = len};
 
@@ -514,9 +524,12 @@ ssize_t client::recvmsg(int s, struct msghdr* message, int flags)
     }
 
     auto& [id, channel] = result->second;
-    auto recv_result = channel.recv(
-        message->msg_iov, message->msg_iovlen, flags,
-        reinterpret_cast<sockaddr*>(message->msg_name), &message->msg_namelen);
+    auto recv_result =
+        channel.recv(message->msg_iov,
+                     message->msg_iovlen,
+                     flags,
+                     reinterpret_cast<sockaddr*>(message->msg_name),
+                     &message->msg_namelen);
     if (!recv_result) {
         errno = recv_result.error();
         return (-1);
@@ -545,7 +558,9 @@ ssize_t client::sendmsg(int s, const struct msghdr* message, int flags)
 
     auto& [id, channel] = result->second;
     auto send_result =
-        channel.send(message->msg_iov, message->msg_iovlen, flags,
+        channel.send(message->msg_iov,
+                     message->msg_iovlen,
+                     flags,
                      reinterpret_cast<const sockaddr*>(message->msg_name));
     if (!send_result) {
         errno = send_result.error();
@@ -555,8 +570,12 @@ ssize_t client::sendmsg(int s, const struct msghdr* message, int flags)
     return (*send_result);
 }
 
-ssize_t client::sendto(int s, const void* dataptr, size_t len, int flags,
-                       const struct sockaddr* to, socklen_t tolen)
+ssize_t client::sendto(int s,
+                       const void* dataptr,
+                       size_t len,
+                       int flags,
+                       const struct sockaddr* to,
+                       socklen_t tolen)
 {
     auto iov = iovec{.iov_base = const_cast<void*>(dataptr), .iov_len = len};
 

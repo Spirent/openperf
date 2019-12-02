@@ -14,7 +14,9 @@ namespace openperf {
 namespace packetio {
 namespace driver {
 
-typedef uint16_t (*tx_burst)(int id, uint32_t hash, void* items[],
+typedef uint16_t (*tx_burst)(int id,
+                             uint32_t hash,
+                             void* items[],
                              uint16_t nb_items);
 
 class generic_driver

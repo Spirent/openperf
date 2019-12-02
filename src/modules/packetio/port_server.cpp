@@ -62,8 +62,8 @@ static std::optional<T> get_optional_key(json& j, const char* key)
                 : std::nullopt);
 }
 
-static void _handle_list_ports_request(generic_driver& driver, json& request,
-                                       json& reply)
+static void
+_handle_list_ports_request(generic_driver& driver, json& request, json& reply)
 {
     auto kind = get_optional_key<std::string>(request, "kind");
     json jports = json::array();
@@ -79,8 +79,8 @@ static void _handle_list_ports_request(generic_driver& driver, json& request,
     reply["data"] = jports.dump();
 }
 
-static void _handle_create_port_request(generic_driver& driver, json& request,
-                                        json& reply)
+static void
+_handle_create_port_request(generic_driver& driver, json& request, json& reply)
 {
     try {
         auto port_model =
@@ -108,8 +108,8 @@ static void _handle_create_port_request(generic_driver& driver, json& request,
     }
 }
 
-static void _handle_get_port_request(generic_driver& driver, json& request,
-                                     json& reply)
+static void
+_handle_get_port_request(generic_driver& driver, json& request, json& reply)
 {
     auto id = request["id"].get<std::string>();
     auto port = driver.port(id);
@@ -121,8 +121,8 @@ static void _handle_get_port_request(generic_driver& driver, json& request,
     }
 }
 
-static void _handle_update_port_request(generic_driver& driver, json& request,
-                                        json& reply)
+static void
+_handle_update_port_request(generic_driver& driver, json& request, json& reply)
 {
     auto id = request["id"].get<std::string>();
     auto port = driver.port(id);
@@ -147,8 +147,8 @@ static void _handle_update_port_request(generic_driver& driver, json& request,
     }
 }
 
-static void _handle_delete_port_request(generic_driver& driver, json& request,
-                                        json& reply)
+static void
+_handle_delete_port_request(generic_driver& driver, json& request, json& reply)
 {
     auto result = driver.delete_port(request["id"].get<std::string>());
     if (result) {
@@ -184,13 +184,14 @@ static int _handle_rpc_request(const op_event_data* data, void* arg)
         case request_type::GET_PORT:
         case request_type::UPDATE_PORT:
         case request_type::DELETE_PORT:
-            OP_LOG(OP_LOG_TRACE, "Received %s request for port %s\n",
+            OP_LOG(OP_LOG_TRACE,
+                   "Received %s request for port %s\n",
                    to_string(type).c_str(),
                    request["id"].get<std::string>().c_str());
             break;
         default:
-            OP_LOG(OP_LOG_TRACE, "Received %s request\n",
-                   to_string(type).c_str());
+            OP_LOG(
+                OP_LOG_TRACE, "Received %s request\n", to_string(type).c_str());
         }
 
         switch (type) {
@@ -216,13 +217,15 @@ static int _handle_rpc_request(const op_event_data* data, void* arg)
         }
 
         std::vector<uint8_t> reply_buffer = json::to_cbor(reply);
-        if ((send_or_err = zmq_send(data->socket, reply_buffer.data(),
-                                    reply_buffer.size(), 0))
+        if ((send_or_err = zmq_send(
+                 data->socket, reply_buffer.data(), reply_buffer.size(), 0))
             != static_cast<int>(reply_buffer.size())) {
-            OP_LOG(OP_LOG_ERROR, "Request reply failed: %s\n",
+            OP_LOG(OP_LOG_ERROR,
+                   "Request reply failed: %s\n",
                    zmq_strerror(errno));
         } else {
-            OP_LOG(OP_LOG_TRACE, "Sent %s reply to %s request\n",
+            OP_LOG(OP_LOG_TRACE,
+                   "Sent %s reply to %s request\n",
                    to_string(reply["code"].get<reply_code>()).c_str(),
                    to_string(type).c_str());
         }
@@ -233,7 +236,8 @@ static int _handle_rpc_request(const op_event_data* data, void* arg)
     return (((recv_or_err < 0 || send_or_err < 0) && errno == ETERM) ? -1 : 0);
 }
 
-server::server(void* context, openperf::core::event_loop& loop,
+server::server(void* context,
+               openperf::core::event_loop& loop,
                generic_driver& driver)
     : m_socket(op_socket_get_server(context, ZMQ_REP, endpoint.c_str()))
 {

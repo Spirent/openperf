@@ -15,14 +15,17 @@ static std::string random_endpoint()
     std::mt19937_64 generator{std::random_device()()};
     std::uniform_int_distribution<> dist(0, chars.size() - 1);
     std::string to_return("inproc://test_task_sync_");
-    std::generate_n(std::back_inserter(to_return), 8,
-                    [&] { return chars[dist(generator)]; });
+    std::generate_n(std::back_inserter(to_return), 8, [&] {
+        return chars[dist(generator)];
+    });
 
     return (to_return);
 }
 
-static void ping_ponger(void* context, const char* endpoint,
-                        const char* initial_syncpoint, int nb_syncs)
+static void ping_ponger(void* context,
+                        const char* endpoint,
+                        const char* initial_syncpoint,
+                        int nb_syncs)
 {
 
     void* control = op_socket_get_client_subscription(context, endpoint, "");
@@ -89,8 +92,10 @@ TEST_CASE("openperf task functionality checks", "[task]")
 
         for (int i = 0; i < nb_threads; i++) {
             threads.emplace_back(std::thread([&]() {
-                ping_ponger(context, endpoint.c_str(),
-                            initial_syncpoint.c_str(), nb_syncs);
+                ping_ponger(context,
+                            endpoint.c_str(),
+                            initial_syncpoint.c_str(),
+                            nb_syncs);
             }));
         }
 

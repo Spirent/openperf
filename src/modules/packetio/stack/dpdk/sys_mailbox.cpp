@@ -64,8 +64,8 @@ static void do_write(int fd)
 {
     auto error = eventfd_write(fd, 1UL);
     if (error)
-        OP_LOG(OP_LOG_ERROR, "Could not write fd %d: %s\n", fd,
-               strerror(errno));
+        OP_LOG(
+            OP_LOG_ERROR, "Could not write fd %d: %s\n", fd, strerror(errno));
 }
 
 void sys_mbox::clear_notifications()
@@ -140,8 +140,10 @@ void sys_mbox_clear_notifications(sys_mbox_t* mboxp)
     assert(mboxp);
     sys_mbox_t mbox = *mboxp;
 
-    LWIP_DEBUGF(SYS_DEBUG, ("sys_mbox_clear_notification: mbox %p fd %d\n",
-                            (void*)mbox, mbox->fd()));
+    LWIP_DEBUGF(SYS_DEBUG,
+                ("sys_mbox_clear_notification: mbox %p fd %d\n",
+                 (void*)mbox,
+                 mbox->fd()));
 
     mbox->clear_notifications();
 }
@@ -153,8 +155,11 @@ err_t sys_mbox_trypost(sys_mbox_t* mboxp, void* msg)
 
     sys_mbox_t mbox = *mboxp;
 
-    LWIP_DEBUGF(SYS_DEBUG, ("sys_mbox_trypost: mbox %p fd %d msg %p\n",
-                            (void*)mbox, mbox->fd(), msg));
+    LWIP_DEBUGF(SYS_DEBUG,
+                ("sys_mbox_trypost: mbox %p fd %d msg %p\n",
+                 (void*)mbox,
+                 mbox->fd(),
+                 msg));
 
     return (mbox->trypost(msg) ? ERR_OK : ERR_BUF);
 }
@@ -166,8 +171,11 @@ void sys_mbox_post(sys_mbox_t* mboxp, void* msg)
 
     sys_mbox_t mbox = *mboxp;
 
-    LWIP_DEBUGF(SYS_DEBUG, ("sys_mbox_post: mbox %p fd %d msg %p\n",
-                            (void*)mbox, mbox->fd(), msg));
+    LWIP_DEBUGF(SYS_DEBUG,
+                ("sys_mbox_post: mbox %p fd %d msg %p\n",
+                 (void*)mbox,
+                 mbox->fd(),
+                 msg));
 
     mbox->post(msg);
 }
@@ -183,8 +191,11 @@ u32_t sys_arch_mbox_tryfetch(sys_mbox_t* mboxp, void** msgp)
     if (!msg) return (SYS_MBOX_EMPTY);
 
     *msgp = msg;
-    LWIP_DEBUGF(SYS_DEBUG, ("sys_mbox_tryfetch: mbox %p fd %d msg %p\n",
-                            (void*)mbox, mbox->fd(), *msgp));
+    LWIP_DEBUGF(SYS_DEBUG,
+                ("sys_mbox_tryfetch: mbox %p fd %d msg %p\n",
+                 (void*)mbox,
+                 mbox->fd(),
+                 *msgp));
     return (0);
 }
 
@@ -206,7 +217,10 @@ u32_t sys_arch_mbox_fetch(sys_mbox_t* mboxp, void** msgp, u32_t timeout)
 
     LWIP_DEBUGF(SYS_DEBUG,
                 ("sys_mbox_fetch: mbox %p fd %d msg %p duration %lu\n",
-                 (void*)mbox, mbox->fd(), *msgp, duration));
+                 (void*)mbox,
+                 mbox->fd(),
+                 *msgp,
+                 duration));
     return (duration);
 }
 }

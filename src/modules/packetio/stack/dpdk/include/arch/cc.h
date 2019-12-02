@@ -27,8 +27,11 @@
 
 #define LWIP_PLATFORM_ASSERT(x)                                                \
     do {                                                                       \
-        fprintf(stderr, "Assertion \"%s\" failed at line %d in %s\n", x,       \
-                __LINE__, __FILE__);                                           \
+        fprintf(stderr,                                                        \
+                "Assertion \"%s\" failed at line %d in %s\n",                  \
+                x,                                                             \
+                __LINE__,                                                      \
+                __FILE__);                                                     \
         fflush(stderr);                                                        \
         abort();                                                               \
     } while (0)

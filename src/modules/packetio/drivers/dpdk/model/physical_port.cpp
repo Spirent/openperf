@@ -201,7 +201,8 @@ tl::expected<void, std::string> physical_port::start()
                                    + rte_strerror(error));
     }
 
-    OP_LOG(OP_LOG_DEBUG, "Successfully started DPDK physical port %s\n",
+    OP_LOG(OP_LOG_DEBUG,
+           "Successfully started DPDK physical port %s\n",
            m_id.c_str());
 
     return {};
@@ -243,19 +244,24 @@ tl::expected<void, std::string> physical_port::stop()
         return {};
     }
 
-    OP_LOG(OP_LOG_DEBUG, "Successfully stopped DPDK physical port %s\n",
+    OP_LOG(OP_LOG_DEBUG,
+           "Successfully stopped DPDK physical port %s\n",
            m_id.c_str());
 
     return (tl::make_unexpected(std::accumulate(
-        begin(errors), end(errors), std::string(),
+        begin(errors),
+        end(errors),
+        std::string(),
         [](const std::string& a, const std::string& b) -> std::string {
             return a + (a.length() > 0 ? " " : "") + b;
         })));
 }
 
 tl::expected<void, std::string>
-physical_port::apply_port_config(port_info& info, rte_eth_conf& port_conf,
-                                 uint16_t nb_rxqs, uint16_t nb_txqs)
+physical_port::apply_port_config(port_info& info,
+                                 rte_eth_conf& port_conf,
+                                 uint16_t nb_rxqs,
+                                 uint16_t nb_txqs)
 {
     nb_rxqs = (nb_rxqs == 0 ? info.rx_queue_default() : nb_rxqs);
     nb_txqs = (nb_txqs == 0 ? info.tx_queue_default() : nb_txqs);
@@ -282,8 +288,8 @@ physical_port::apply_port_config(port_info& info, rte_eth_conf& port_conf,
     tx_conf.offloads = port_conf.txmode.offloads;
 
     for (int q = 0; q < info.tx_queue_count(); q++) {
-        if ((error = rte_eth_tx_queue_setup(m_idx, q, info.tx_desc_count(),
-                                            info.socket_id(), &tx_conf))
+        if ((error = rte_eth_tx_queue_setup(
+                 m_idx, q, info.tx_desc_count(), info.socket_id(), &tx_conf))
             != 0) {
             return (tl::make_unexpected("Failed to setup TX queue "
                                         + std::to_string(q) + " on port " + m_id
@@ -297,8 +303,11 @@ physical_port::apply_port_config(port_info& info, rte_eth_conf& port_conf,
     rx_conf.offloads = port_conf.rxmode.offloads;
 
     for (int q = 0; q < info.rx_queue_count(); q++) {
-        if ((error = rte_eth_rx_queue_setup(m_idx, q, info.rx_desc_count(),
-                                            info.socket_id(), &rx_conf,
+        if ((error = rte_eth_rx_queue_setup(m_idx,
+                                            q,
+                                            info.rx_desc_count(),
+                                            info.socket_id(),
+                                            &rx_conf,
                                             const_cast<rte_mempool*>(m_pool)))
             != 0) {
             return (tl::make_unexpected("Failed to setup RX queue "
@@ -311,7 +320,11 @@ physical_port::apply_port_config(port_info& info, rte_eth_conf& port_conf,
     OP_LOG(OP_LOG_DEBUG,
            "Successfully configured DPDK physical port %s "
            "(idx=%u, rxq=%d, txq=%d, pool=%s, speed=0x%x)\n",
-           m_id.c_str(), m_idx, nb_rxqs, nb_txqs, m_pool->name,
+           m_id.c_str(),
+           m_idx,
+           nb_rxqs,
+           nb_txqs,
+           m_pool->name,
            port_conf.link_speeds);
 
     if (do_start) return start();

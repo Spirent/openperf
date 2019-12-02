@@ -59,7 +59,9 @@ static std::string to_string(tcp_pcb* pcb)
  * write to the buffer before we finish, we don't want to set the PSH flag.
  */
 template <typename BufferEmptyFunction>
-static size_t do_tcp_transmit(tcp_pcb* pcb, const void* ptr, size_t length,
+static size_t do_tcp_transmit(tcp_pcb* pcb,
+                              const void* ptr,
+                              size_t length,
                               BufferEmptyFunction&& empty)
 {
     static constexpr uint16_t tcp_send_max =
@@ -75,8 +77,10 @@ static size_t do_tcp_transmit(tcp_pcb* pcb, const void* ptr, size_t length,
     auto to_write = std::min(length, static_cast<size_t>(pcb->snd_buf));
 
     while (to_write > tcp_send_max) {
-        if (tcp_write(pcb, reinterpret_cast<const uint8_t*>(ptr) + written,
-                      tcp_send_max, TCP_WRITE_FLAG_COPY | TCP_WRITE_FLAG_MORE)
+        if (tcp_write(pcb,
+                      reinterpret_cast<const uint8_t*>(ptr) + written,
+                      tcp_send_max,
+                      TCP_WRITE_FLAG_COPY | TCP_WRITE_FLAG_MORE)
             != ERR_OK) {
             return (written);
         }
@@ -88,8 +92,10 @@ static size_t do_tcp_transmit(tcp_pcb* pcb, const void* ptr, size_t length,
     const auto push =
         std::forward<BufferEmptyFunction>(empty)(written + to_write);
     const auto flags = TCP_WRITE_FLAG_COPY | (-(!push) & TCP_WRITE_FLAG_MORE);
-    if (tcp_write(pcb, reinterpret_cast<const uint8_t*>(ptr) + written,
-                  to_write, flags)
+    if (tcp_write(pcb,
+                  reinterpret_cast<const uint8_t*>(ptr) + written,
+                  to_write,
+                  flags)
         != ERR_OK) {
         return (written);
     }
@@ -107,7 +113,9 @@ static void do_tcp_transmit_all(tcp_pcb* pcb, stream_channel& channel)
     for (;;) {
         auto iov = channel.recv_peek();
         if (channel.recv_drop(do_tcp_transmit(
-                pcb, iov.iov_base, iov.iov_len,
+                pcb,
+                iov.iov_base,
+                iov.iov_len,
                 [&](size_t written) { return (written == iov.iov_len); }))
             == 0) {
             break;
@@ -126,13 +134,13 @@ static void do_tcp_receive(tcp_pcb* pcb, size_t length)
     tcp_recved(pcb, length);
 }
 
-static void do_tcp_receive_all(tcp_pcb* pcb, stream_channel& channel,
-                               pbuf_queue& queue)
+static void
+do_tcp_receive_all(tcp_pcb* pcb, stream_channel& channel, pbuf_queue& queue)
 {
     std::array<iovec, 32> iovecs;
     size_t iovcnt = 0, cleared = 0;
-    while ((iovcnt = queue.iovecs(iovecs.data(), iovecs.size(),
-                                  channel.send_available()))
+    while ((iovcnt = queue.iovecs(
+                iovecs.data(), iovecs.size(), channel.send_available()))
                > 0
            && (cleared = queue.clear(channel.send(iovecs.data(), iovcnt)))
                   > 0) {
@@ -153,7 +161,8 @@ openperf::socket::server::allocator* tcp_socket::channel_allocator()
 }
 
 tcp_socket::tcp_socket(openperf::socket::server::allocator* allocator,
-                       int flags, tcp_pcb* pcb)
+                       int flags,
+                       tcp_pcb* pcb)
     : m_channel(new (allocator->allocate(sizeof(stream_channel)))
                     stream_channel(flags, *allocator))
     , m_pcb(pcb)
@@ -531,8 +540,8 @@ static tl::expected<socklen_t, int> do_tcp_get_name(const ip_addr_t& ip_addr,
         struct sockaddr_in6* sa6 = reinterpret_cast<sockaddr_in6*>(&sstorage);
         sa6->sin6_family = AF_INET6;
         sa6->sin6_port = htons(ip_port);
-        std::memcpy(sa6->sin6_addr.s6_addr, ip_2_ip6(&ip_addr)->addr,
-                    sizeof(in6_addr));
+        std::memcpy(
+            sa6->sin6_addr.s6_addr, ip_2_ip6(&ip_addr)->addr, sizeof(in6_addr));
 
         slength = sizeof(sockaddr_in6);
         break;
@@ -542,7 +551,9 @@ static tl::expected<socklen_t, int> do_tcp_get_name(const ip_addr_t& ip_addr,
     }
 
     /* Copy the data out */
-    auto result = copy_out(request.id.pid, request.name, sstorage,
+    auto result = copy_out(request.id.pid,
+                           request.name,
+                           sstorage,
                            std::min(request.namelen, slength));
     if (!result) { return (tl::make_unexpected(result.error())); }
 
@@ -603,7 +614,8 @@ do_tcp_getsockopt(const tcp_pcb* pcb, const api::request_getsockopt& getsockopt)
         auto info = tcp_info{};
         get_tcp_info(pcb, info);
         auto result = copy_out(
-            getsockopt.id.pid, getsockopt.optval,
+            getsockopt.id.pid,
+            getsockopt.optval,
             reinterpret_cast<void*>(&info),
             std::min(sizeof(info), static_cast<size_t>(getsockopt.optlen)));
         if (!result) return (tl::make_unexpected(result.error()));
@@ -613,7 +625,9 @@ do_tcp_getsockopt(const tcp_pcb* pcb, const api::request_getsockopt& getsockopt)
     case LINUX_TCP_CONGESTION: {
         std::string_view cc = "reno";
         auto result = copy_out(
-            getsockopt.id.pid, getsockopt.optval, cc.data(),
+            getsockopt.id.pid,
+            getsockopt.optval,
+            cc.data(),
             std::min(cc.length(), static_cast<size_t>(getsockopt.optlen)));
         if (!result) return (tl::make_unexpected(result.error()));
         slength = sizeof(cc.length());

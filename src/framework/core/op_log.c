@@ -120,8 +120,8 @@ enum op_log_level parse_log_optarg(const char* arg)
     /* Look for known strings */
     for (enum op_log_level ll = OP_LOG_NONE; ll < OP_LOG_MAX; ll++) {
         const char* ref = log_level_string(ll);
-        if (strncmp(normal_arg, ref,
-                    op_min(strlen(ref), OP_LOG_MAX_LEVEL_LENGTH))
+        if (strncmp(
+                normal_arg, ref, op_min(strlen(ref), OP_LOG_MAX_LEVEL_LENGTH))
             == 0) {
             return (ll);
         }
@@ -230,7 +230,8 @@ static void* get_thread_log_socket(void)
             if (errno == ETERM) { return (NULL); /* system is shutting down */ }
 
             /* No good excuse for failing. */
-            op_exit("Could not connect to %s: %s\n", op_log_endpoint,
+            op_exit("Could not connect to %s: %s\n",
+                    op_log_endpoint,
                     zmq_strerror(errno));
         }
 
@@ -258,7 +259,9 @@ int op_log(enum op_log_level level, const char* tag, const char* format, ...)
     return (error);
 }
 
-int op_vlog(enum op_log_level level, const char* tag, const char* format,
+int op_vlog(enum op_log_level level,
+            const char* tag,
+            const char* format,
             va_list argp)
 {
     int ret = 0;
@@ -338,7 +341,10 @@ void op_log_write(const struct op_log_message* msg, FILE* file, void* socket)
         &log_msg,
         "{\"time\": \"%s\", \"level\": \"%s\", \"thread\": \"%s\", "
         "\"tag\": \"%s\", \"message\": \"%.*s\"}\n",
-        txt_time, log_level_string(msg->level), msg->thread, msg->tag,
+        txt_time,
+        log_level_string(msg->level),
+        msg->thread,
+        msg->tag,
         msg->message[msg->length - 1] == '\n' ? msg->length - 1 : msg->length,
         msg->message);
     if (error == -1) {
@@ -361,8 +367,8 @@ void op_log_write(const struct op_log_message* msg, FILE* file, void* socket)
          * ZeroMQ now owns the string buffer and will call
          * _zmq_buffer_free when the message has been sent.
          */
-        if (zmq_msg_init_data(&zmq_msg, log_msg, strlen(log_msg) - 1,
-                              _zmq_buffer_free, NULL)
+        if (zmq_msg_init_data(
+                &zmq_msg, log_msg, strlen(log_msg) - 1, _zmq_buffer_free, NULL)
             != 0) {
             op_safe_log("Could not initialize zmq_msg\n");
             free(log_msg);
@@ -425,8 +431,8 @@ void* op_log_task(void* void_args)
     /* Create a socket for publishing log messages to external clients, maybe */
     void* external = NULL;
     if (args->logging_endpoint) {
-        external = op_socket_get_server(args->context, ZMQ_PUB,
-                                        args->logging_endpoint);
+        external = op_socket_get_server(
+            args->context, ZMQ_PUB, args->logging_endpoint);
         if (!external) op_exit("Could not create log publishing socket\n");
     }
 
@@ -540,7 +546,9 @@ static struct op_options_data log_level_option = {
     .callback = NULL,
     .options = {
         {"Specify the log level; takes a number (1-6) or level",
-         "core.log.level", 'l', OP_OPTION_TYPE_STRING},
+         "core.log.level",
+         'l',
+         OP_OPTION_TYPE_STRING},
         {0, 0, 0, 0},
     }};
 

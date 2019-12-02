@@ -20,8 +20,9 @@ static std::string random_endpoint()
     std::mt19937_64 generator{std::random_device()()};
     std::uniform_int_distribution<> dist(0, chars.size() - 1);
     std::string to_return("inproc://worker_sync_");
-    std::generate_n(std::back_inserter(to_return), 8,
-                    [&] { return chars[dist(generator)]; });
+    std::generate_n(std::back_inserter(to_return), 8, [&] {
+        return chars[dist(generator)];
+    });
 
     return (to_return);
 }
@@ -40,7 +41,9 @@ void client::start(void* context, unsigned nb_workers)
                                  + std::string(zmq_strerror(error)));
     }
     op_task_sync_block_and_warn(
-        &sync, nb_workers, 1000,
+        &sync,
+        nb_workers,
+        1000,
         "Still waiting on start acknowledgment from queue workers "
         "(syncpoint = %s)\n",
         syncpoint.c_str());
@@ -56,7 +59,9 @@ void client::stop(void* context, unsigned nb_workers)
                                  + std::string(zmq_strerror(error)));
     }
     op_task_sync_block_and_warn(
-        &sync, nb_workers, 1000,
+        &sync,
+        nb_workers,
+        1000,
         "Still waiting on stop acknowledgment from queue workers "
         "(syncpoint = %s)\n",
         syncpoint.c_str());

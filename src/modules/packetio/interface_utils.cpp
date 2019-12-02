@@ -260,7 +260,9 @@ config_data make_config_data(const Interface& interface)
     /* Now check the actual configuration data */
     if (!is_valid(to_return, errors)) {
         throw std::runtime_error(std::accumulate(
-            begin(errors), end(errors), std::string(),
+            begin(errors),
+            end(errors),
+            std::string(),
             [](const std::string& a, const std::string& b) -> std::string {
                 return a + (a.length() > 0 ? " " : "") + b;
             }));

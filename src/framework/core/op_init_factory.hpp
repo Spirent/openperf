@@ -27,7 +27,8 @@ public:
                          T&&... args)
     {
         // Sort into priority order
-        std::sort(begin(ctors()), end(ctors()),
+        std::sort(begin(ctors()),
+                  end(ctors()),
                   [](const ranked_ctor& a, const ranked_ctor& b) -> bool {
                       return a.first < b.first;
                   });

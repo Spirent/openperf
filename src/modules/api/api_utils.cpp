@@ -33,7 +33,8 @@ static tl::expected<void, std::string> check_api_port()
     int res =
         getaddrinfo(api_server_host.c_str(),
                     to_string(openperf::api::api_get_service_port()).c_str(),
-                    &hints, &result);
+                    &hints,
+                    &result);
     if (res != 0) {
         std::cerr << "Error starting up internal API client: "
                   << gai_strerror(res) << std::endl;

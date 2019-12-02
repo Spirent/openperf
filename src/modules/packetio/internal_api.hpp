@@ -98,10 +98,14 @@ struct reply_error
     int value;
 };
 
-using request_msg =
-    std::variant<request_sink_add, request_sink_del, request_source_add,
-                 request_source_del, request_task_add, request_task_del,
-                 request_worker_rx_ids, request_worker_tx_ids>;
+using request_msg = std::variant<request_sink_add,
+                                 request_sink_del,
+                                 request_source_add,
+                                 request_source_del,
+                                 request_task_add,
+                                 request_task_del,
+                                 request_worker_rx_ids,
+                                 request_worker_tx_ids>;
 
 using reply_msg =
     std::variant<reply_task_add, reply_worker_ids, reply_ok, reply_error>;

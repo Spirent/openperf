@@ -180,8 +180,8 @@ int op_modules_get_info_list(const struct op_module_info* info[],
  * which would obviously cause items to be dropped from the list.
  * This is mainly a problem when state has a constructor of some sort.
  */
-#define REGISTER_MODULE(m, info_, state_, pre_init_, init_, post_init_,        \
-                        start_, finish_)                                       \
+#define REGISTER_MODULE(                                                       \
+    m, info_, state_, pre_init_, init_, post_init_, start_, finish_)           \
     static struct op_module m;                                                 \
     __attribute__((constructor(100))) void op_modules_init_##m(void)           \
     {                                                                          \

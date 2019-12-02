@@ -26,22 +26,27 @@ TEST_CASE("exercise logging thread functionality", "[logging]")
 
     SECTION("verify log message submission")
     {
-        REQUIRE(op_log(OP_LOG_CRITICAL, __PRETTY_FUNCTION__,
+        REQUIRE(op_log(OP_LOG_CRITICAL,
+                       __PRETTY_FUNCTION__,
                        "This is a critical message\n")
                 == 0);
-        REQUIRE(op_log(OP_LOG_ERROR, __PRETTY_FUNCTION__,
+        REQUIRE(op_log(OP_LOG_ERROR,
+                       __PRETTY_FUNCTION__,
                        "This is a error message\n")
                 == 0);
-        REQUIRE(op_log(OP_LOG_WARNING, __PRETTY_FUNCTION__,
+        REQUIRE(op_log(OP_LOG_WARNING,
+                       __PRETTY_FUNCTION__,
                        "This is a warning message\n")
                 == 0);
         REQUIRE(
             op_log(OP_LOG_INFO, __PRETTY_FUNCTION__, "This is a info message\n")
             == 0);
-        REQUIRE(op_log(OP_LOG_DEBUG, __PRETTY_FUNCTION__,
+        REQUIRE(op_log(OP_LOG_DEBUG,
+                       __PRETTY_FUNCTION__,
                        "This is a debug message\n")
                 == 0);
-        REQUIRE(op_log(OP_LOG_TRACE, __PRETTY_FUNCTION__,
+        REQUIRE(op_log(OP_LOG_TRACE,
+                       __PRETTY_FUNCTION__,
                        "This is a trace message\n")
                 == 0);
     }
@@ -57,7 +62,8 @@ TEST_CASE("check logging command line parsing function", "[logging]")
     {
         std::vector<char*> args = {const_cast<char*>("test_program"),
                                    const_cast<char*>("--core.log.level"),
-                                   const_cast<char*>("2"), nullptr};
+                                   const_cast<char*>("2"),
+                                   nullptr};
         REQUIRE(op_log_level_find(args.size() - 1, args.data())
                 == OP_LOG_ERROR);
     }
@@ -66,7 +72,8 @@ TEST_CASE("check logging command line parsing function", "[logging]")
     {
         std::vector<char*> args = {const_cast<char*>("test_program"),
                                    const_cast<char*>("--core.log.level"),
-                                   const_cast<char*>("warning"), nullptr};
+                                   const_cast<char*>("warning"),
+                                   nullptr};
         REQUIRE(op_log_level_find(args.size() - 1, args.data())
                 == OP_LOG_WARNING);
     }
@@ -75,7 +82,8 @@ TEST_CASE("check logging command line parsing function", "[logging]")
     {
         std::vector<char*> args = {const_cast<char*>("test_program"),
                                    const_cast<char*>("-l"),
-                                   const_cast<char*>("4"), nullptr};
+                                   const_cast<char*>("4"),
+                                   nullptr};
         REQUIRE(op_log_level_find(args.size() - 1, args.data()) == OP_LOG_INFO);
     }
 
@@ -83,7 +91,8 @@ TEST_CASE("check logging command line parsing function", "[logging]")
     {
         std::vector<char*> args = {const_cast<char*>("test_program"),
                                    const_cast<char*>("-l"),
-                                   const_cast<char*>("DEBUG"), nullptr};
+                                   const_cast<char*>("DEBUG"),
+                                   nullptr};
         REQUIRE(op_log_level_find(args.size() - 1, args.data())
                 == OP_LOG_DEBUG);
     }

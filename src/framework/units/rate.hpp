@@ -59,9 +59,11 @@ struct treat_as_floating_point : std::is_floating_point<Rep>
  * Casting functions
  **/
 
-template <typename FromRate, typename ToRate,
-          typename Frequency = typename std::ratio_divide<
-              typename FromRate::frequency, typename ToRate::frequency>::type>
+template <typename FromRate,
+          typename ToRate,
+          typename Frequency =
+              typename std::ratio_divide<typename FromRate::frequency,
+                                         typename ToRate::frequency>::type>
 struct rate_cast_impl
 {
     ToRate operator()(const FromRate& from) const
@@ -87,9 +89,11 @@ rate_cast(const rate<Rep, Frequency>& from)
  * This is similar to the rate_cast above, but period is the inverse of
  * frequency, so the conversion is flipped.
  */
-template <typename FromRate, typename ToDuration,
-          typename Frequency = typename std::ratio_multiply<
-              typename FromRate::frequency, typename ToDuration::period>::type>
+template <typename FromRate,
+          typename ToDuration,
+          typename Frequency =
+              typename std::ratio_multiply<typename FromRate::frequency,
+                                           typename ToDuration::period>::type>
 struct get_period_impl
 {
     ToDuration operator()(const FromRate& from) const
@@ -128,15 +132,17 @@ public:
 
     constexpr rate() = default;
 
-    template <typename Rep2, typename = typename std::enable_if_t<
-                                 std::is_convertible<const Rep2&, rep>::value
-                                 && (treat_as_floating_point<rep>::value
-                                     || !treat_as_floating_point<Rep2>::value)>>
+    template <typename Rep2,
+              typename = typename std::enable_if_t<
+                  std::is_convertible<const Rep2&, rep>::value
+                  && (treat_as_floating_point<rep>::value
+                      || !treat_as_floating_point<Rep2>::value)>>
     constexpr explicit rate(const Rep2& r)
         : rep_(static_cast<rep>(r))
     {}
 
-    template <typename Rep2, typename Frequency2,
+    template <typename Rep2,
+              typename Frequency2,
               typename = typename std::enable_if_t<
                   treat_as_floating_point<rep>::value
                   || (std::ratio_divide<Frequency2, frequency>::den == 1
@@ -235,7 +241,9 @@ template <typename Rate> struct rate_equal_impl<Rate, Rate>
     }
 };
 
-template <typename Rep1, typename Frequency1, typename Rep2,
+template <typename Rep1,
+          typename Frequency1,
+          typename Rep2,
           typename Frequency2>
 constexpr bool operator==(const rate<Rep1, Frequency1>& left,
                           const rate<Rep2, Frequency2>& right)
@@ -244,7 +252,9 @@ constexpr bool operator==(const rate<Rep1, Frequency1>& left,
         left, right));
 }
 
-template <typename Rep1, typename Frequency1, typename Rep2,
+template <typename Rep1,
+          typename Frequency1,
+          typename Rep2,
           typename Frequency2>
 constexpr bool operator!=(const rate<Rep1, Frequency1>& left,
                           const rate<Rep2, Frequency2>& right)
@@ -271,7 +281,9 @@ template <typename Rate> struct rate_less_than_impl<Rate, Rate>
     }
 };
 
-template <typename Rep1, typename Frequency1, typename Rep2,
+template <typename Rep1,
+          typename Frequency1,
+          typename Rep2,
           typename Frequency2>
 constexpr bool operator<(const rate<Rep1, Frequency1>& left,
                          const rate<Rep2, Frequency2>& right)
@@ -282,7 +294,9 @@ constexpr bool operator<(const rate<Rep1, Frequency1>& left,
 }
 
 /* Everything else (implemented with less than) */
-template <typename Rep1, typename Frequency1, typename Rep2,
+template <typename Rep1,
+          typename Frequency1,
+          typename Rep2,
           typename Frequency2>
 constexpr bool operator>(const rate<Rep1, Frequency1>& left,
                          const rate<Rep2, Frequency2>& right)
@@ -290,7 +304,9 @@ constexpr bool operator>(const rate<Rep1, Frequency1>& left,
     return (right < left);
 }
 
-template <typename Rep1, typename Frequency1, typename Rep2,
+template <typename Rep1,
+          typename Frequency1,
+          typename Rep2,
           typename Frequency2>
 constexpr bool operator<=(const rate<Rep1, Frequency1>& left,
                           const rate<Rep2, Frequency2>& right)
@@ -298,7 +314,9 @@ constexpr bool operator<=(const rate<Rep1, Frequency1>& left,
     return !(right < left);
 }
 
-template <typename Rep1, typename Frequency1, typename Rep2,
+template <typename Rep1,
+          typename Frequency1,
+          typename Rep2,
           typename Frequency2>
 constexpr bool operator>=(const rate<Rep1, Frequency1>& left,
                           const rate<Rep2, Frequency2>& right)
@@ -311,7 +329,9 @@ constexpr bool operator>=(const rate<Rep1, Frequency1>& left,
  **/
 
 /* addition */
-template <typename Rep1, typename Frequency1, typename Rep2,
+template <typename Rep1,
+          typename Frequency1,
+          typename Rep2,
           typename Frequency2>
 constexpr
     typename std::common_type_t<rate<Rep1, Frequency1>, rate<Rep2, Frequency2>>
@@ -324,7 +344,9 @@ constexpr
 }
 
 /* subtraction */
-template <typename Rep1, typename Frequency1, typename Rep2,
+template <typename Rep1,
+          typename Frequency1,
+          typename Rep2,
           typename Frequency2>
 constexpr
     typename std::common_type_t<rate<Rep1, Frequency1>, rate<Rep2, Frequency2>>
@@ -371,7 +393,9 @@ operator/(const rate<Rep1, Frequency>& value, const Rep2& scalar)
                         / static_cast<common_rep>(scalar)));
 }
 
-template <typename Rep1, typename Frequency1, typename Rep2,
+template <typename Rep1,
+          typename Frequency1,
+          typename Rep2,
           typename Frequency2>
 constexpr typename std::common_type_t<Rep1, Rep2>
 operator/(const rate<Rep1, Frequency1>& left, rate<Rep2, Frequency2>& right)
@@ -394,7 +418,9 @@ operator%(const rate<Rep1, Frequency>& value, const Rep2& scalar)
                         % static_cast<common_rep>(scalar)));
 }
 
-template <typename Rep1, typename Frequency1, typename Rep2,
+template <typename Rep1,
+          typename Frequency1,
+          typename Rep2,
           typename Frequency2>
 constexpr typename std::common_type_t<Rep1, Rep2>
 operator%(const rate<Rep1, Frequency1>& left, rate<Rep2, Frequency2>& right)

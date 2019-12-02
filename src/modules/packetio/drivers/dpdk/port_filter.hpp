@@ -28,8 +28,10 @@ struct filter_state_disabled
 struct filter_state_error
 {}; /*<< Filter returned an error; no further modifications are possible */
 
-using filter_state = std::variant<filter_state_ok, filter_state_overflow,
-                                  filter_state_disabled, filter_state_error>;
+using filter_state = std::variant<filter_state_ok,
+                                  filter_state_overflow,
+                                  filter_state_disabled,
+                                  filter_state_error>;
 
 /**
  * Filter events
@@ -51,8 +53,10 @@ struct filter_event_disable
 struct filter_event_enable
 {};
 
-using filter_event = std::variant<filter_event_add, filter_event_del,
-                                  filter_event_disable, filter_event_enable>;
+using filter_event = std::variant<filter_event_add,
+                                  filter_event_del,
+                                  filter_event_disable,
+                                  filter_event_enable>;
 
 template <typename Derived, typename StateVariant, typename EventVariant>
 class filter_state_machine
@@ -67,12 +71,15 @@ public:
             [&](const auto& action, const auto& state) {
                 return (child.on_event(action, state));
             },
-            event, m_state);
+            event,
+            m_state);
 
         if (next_state) {
-            OP_LOG(OP_LOG_TRACE, "Port Filter %u: %s --> %s\n",
+            OP_LOG(OP_LOG_TRACE,
+                   "Port Filter %u: %s --> %s\n",
                    reinterpret_cast<Derived&>(*this).port_id(),
-                   to_string(m_state).data(), to_string(*next_state).data());
+                   to_string(m_state).data(),
+                   to_string(*next_state).data());
             m_state = *std::move(next_state);
         }
     }

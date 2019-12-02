@@ -41,16 +41,26 @@ private:
         m_port_queues;
 };
 
-using tx_function = uint16_t (*)(int idx, uint32_t hash,
-                                 struct rte_mbuf* mbufs[], uint16_t nb_mbufs);
+using tx_function = uint16_t (*)(int idx,
+                                 uint32_t hash,
+                                 struct rte_mbuf* mbufs[],
+                                 uint16_t nb_mbufs);
 
-uint16_t tx_copy_function(int idx, uint32_t hash, struct rte_mbuf* mbufs[],
+uint16_t tx_copy_function(int idx,
+                          uint32_t hash,
+                          struct rte_mbuf* mbufs[],
                           uint16_t nb_mbufs);
-uint16_t tx_direct_function(int idx, uint32_t hash, struct rte_mbuf* mbufs[],
+uint16_t tx_direct_function(int idx,
+                            uint32_t hash,
+                            struct rte_mbuf* mbufs[],
                             uint16_t nb_mbufs);
-uint16_t tx_dummy_function(int idx, uint32_t hash, struct rte_mbuf* mbufs[],
+uint16_t tx_dummy_function(int idx,
+                           uint32_t hash,
+                           struct rte_mbuf* mbufs[],
                            uint16_t nb_mbufs);
-uint16_t tx_queue_function(int idx, uint32_t hash, struct rte_mbuf* mbufs[],
+uint16_t tx_queue_function(int idx,
+                           uint32_t hash,
+                           struct rte_mbuf* mbufs[],
                            uint16_t nb_mbufs);
 
 } // namespace openperf::packetio::dpdk::worker

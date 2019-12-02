@@ -37,8 +37,8 @@ public:
     size_t write(const iovec iov[], size_t iovcnt);
 
     template <typename NotifyFunction>
-    size_t write_and_notify(const void* ptr, size_t length,
-                            NotifyFunction&& notify);
+    size_t
+    write_and_notify(const void* ptr, size_t length, NotifyFunction&& notify);
 };
 
 } // namespace socket

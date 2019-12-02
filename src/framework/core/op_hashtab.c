@@ -115,8 +115,8 @@ static __attribute__((const)) uintptr_t _get_parent(uintptr_t idx)
     return (idx & ~(1 << p));
 }
 
-static struct op_list_item* _hashtab_item_allocate(struct op_hashtab* tab,
-                                                   void* key, void* value)
+static struct op_list_item*
+_hashtab_item_allocate(struct op_hashtab* tab, void* key, void* value)
 {
     struct op_hashtab_key_value* kv = calloc(1, sizeof(*kv));
     if (!kv) { return (NULL); }
@@ -319,9 +319,11 @@ bool op_hashtab_insert(struct op_hashtab* tab, void* key, void* value)
          * a spurious error, in which case the next caller will attempt
          * the update.
          */
-        atomic_compare_exchange_weak_explicit(
-            &tab->tab_size, &tab_size, tab_size * 2, memory_order_release,
-            memory_order_relaxed);
+        atomic_compare_exchange_weak_explicit(&tab->tab_size,
+                                              &tab_size,
+                                              tab_size * 2,
+                                              memory_order_release,
+                                              memory_order_relaxed);
     }
 
     return (true);
@@ -413,7 +415,8 @@ size_t op_hashtab_size(struct op_hashtab* tab)
     return (size);
 }
 
-int op_hashtab_snapshot(struct op_hashtab* tab, void** itemsp[],
+int op_hashtab_snapshot(struct op_hashtab* tab,
+                        void** itemsp[],
                         size_t* nb_items)
 {
     void** items = NULL;

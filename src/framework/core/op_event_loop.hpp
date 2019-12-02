@@ -34,11 +34,13 @@ public:
     {
         return op_event_loop_add_zmq(m_loop.get(), socket, callbacks, arg);
     }
-    int add(uint64_t timeout, const struct op_event_callbacks* callbacks,
-            void* arg, uint32_t* timeout_id = nullptr)
+    int add(uint64_t timeout,
+            const struct op_event_callbacks* callbacks,
+            void* arg,
+            uint32_t* timeout_id = nullptr)
     {
-        return op_event_loop_add_timer_ided(m_loop.get(), timeout, callbacks,
-                                            arg, timeout_id);
+        return op_event_loop_add_timer_ided(
+            m_loop.get(), timeout, callbacks, arg, timeout_id);
     }
 
     // Update callbacks
@@ -52,8 +54,8 @@ public:
     }
     int update(uint32_t timeout_id, const struct op_event_callbacks* callbacks)
     {
-        return op_event_loop_update_timer_cb(m_loop.get(), timeout_id,
-                                             callbacks);
+        return op_event_loop_update_timer_cb(
+            m_loop.get(), timeout_id, callbacks);
     }
     int update(uint32_t timeout_id, uint64_t timeout)
     {

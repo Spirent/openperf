@@ -29,8 +29,8 @@ const char* to_string(const raw_socket_state& state)
 
 void raw_socket::raw_pcb_deleter::operator()(raw_pcb* pcb) { raw_remove(pcb); }
 
-static uint8_t raw_receive(void* arg, raw_pcb* pcb, pbuf* p,
-                           const ip_addr_t* addr)
+static uint8_t
+raw_receive(void* arg, raw_pcb* pcb, pbuf* p, const ip_addr_t* addr)
 {
     (void)pcb;
     assert(addr != nullptr);
@@ -44,7 +44,9 @@ static uint8_t raw_receive(void* arg, raw_pcb* pcb, pbuf* p,
 }
 
 raw_socket::raw_socket(openperf::socket::server::allocator& allocator,
-                       int flags, int protocol, raw_recv_fn recv_callback)
+                       int flags,
+                       int protocol,
+                       raw_recv_fn recv_callback)
     : m_channel(new (allocator.allocate(sizeof(dgram_channel)))
                     dgram_channel(flags, allocator))
     , m_pcb(raw_new(protocol))
@@ -91,7 +93,8 @@ void raw_socket::handle_io()
         assert(p);
 
         if (dest)
-            raw_sendto(m_pcb.get(), p,
+            raw_sendto(m_pcb.get(),
+                       p,
                        reinterpret_cast<const ip_addr_t*>(&dest->addr()));
         else
             raw_send(m_pcb.get(), p);
@@ -125,9 +128,8 @@ static err_t do_raw_disconnect(raw_pcb* pcb)
     return (ERR_OK);
 }
 
-static tl::expected<bool, int>
-do_raw_connect(raw_pcb* pcb, const api::request_connect& connect,
-               dgram_channel* channel)
+static tl::expected<bool, int> do_raw_connect(
+    raw_pcb* pcb, const api::request_connect& connect, dgram_channel* channel)
 {
     sockaddr_storage sstorage;
 
@@ -176,8 +178,8 @@ static tl::expected<socklen_t, int> do_raw_get_name(const ip_addr_t& ip_addr,
         struct sockaddr_in6* sa6 = reinterpret_cast<sockaddr_in6*>(&sstorage);
         sa6->sin6_family = AF_INET6;
         sa6->sin6_port = htons(ip_port);
-        std::memcpy(sa6->sin6_addr.s6_addr, ip_2_ip6(&ip_addr)->addr,
-                    sizeof(in6_addr));
+        std::memcpy(
+            sa6->sin6_addr.s6_addr, ip_2_ip6(&ip_addr)->addr, sizeof(in6_addr));
 
         slength = sizeof(sockaddr_in6);
         break;
@@ -187,7 +189,9 @@ static tl::expected<socklen_t, int> do_raw_get_name(const ip_addr_t& ip_addr,
     }
 
     /* Copy the data out */
-    auto result = copy_out(request.id.pid, request.name, sstorage,
+    auto result = copy_out(request.id.pid,
+                           request.name,
+                           sstorage,
                            std::min(request.namelen, slength));
     if (!result) { return (tl::make_unexpected(result.error())); }
 

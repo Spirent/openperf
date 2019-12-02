@@ -164,7 +164,9 @@ config_data make_config_data(const Port& port)
     std::vector<std::string> errors;
     if (!is_valid(to_return, errors)) {
         throw std::runtime_error(std::accumulate(
-            begin(errors), end(errors), std::string(),
+            begin(errors),
+            end(errors),
+            std::string(),
             [](const std::string& a, const std::string& b) -> std::string {
                 return a + (a.length() > 0 ? " " : "") + b;
             }));
@@ -202,7 +204,8 @@ make_swagger_port_config_bond(const generic_port& port)
     config_bond->setMode(to_string(config.mode));
 
     config_bond->getPorts().insert(config_bond->getPorts().end(),
-                                   config.ports.begin(), config.ports.end());
+                                   config.ports.begin(),
+                                   config.ports.end());
 
     return (config_bond);
 }

@@ -24,7 +24,8 @@ public:
 
     bool update_poller(epoll_poller& poller);
 
-    bool add_callback(std::string_view name, event_loop::event_notifier notify,
+    bool add_callback(std::string_view name,
+                      event_loop::event_notifier notify,
                       event_loop::event_handler on_event,
                       std::optional<event_loop::delete_handler> on_delete,
                       std::any arg) noexcept;

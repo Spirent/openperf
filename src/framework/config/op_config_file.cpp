@@ -60,7 +60,8 @@ static void set_map_data_node(YAML::Node& node, std::string_view opt_data)
     node = output;
 }
 
-static void set_data_node_value(YAML::Node& node, std::string_view opt_data,
+static void set_data_node_value(YAML::Node& node,
+                                std::string_view opt_data,
                                 enum op_option_type opt_type)
 {
     switch (opt_type) {
@@ -119,7 +120,8 @@ static YAML::Node create_param_by_path(path_iterator pos,
  * the base case will assign the requested data value. Else, function will
  * switch over to creating a new path.
  */
-static void update_param_by_path(YAML::Node& parent_node, path_iterator pos,
+static void update_param_by_path(YAML::Node& parent_node,
+                                 path_iterator pos,
                                  const path_iterator end,
                                  std::string_view opt_data,
                                  enum op_option_type opt_type)
@@ -143,9 +145,8 @@ static void update_param_by_path(YAML::Node& parent_node, path_iterator pos,
     return;
 }
 
-static std::optional<YAML::Node>
-get_param_by_path(const YAML::Node& parent_node, path_iterator pos,
-                  const path_iterator end)
+static std::optional<YAML::Node> get_param_by_path(
+    const YAML::Node& parent_node, path_iterator pos, const path_iterator end)
 {
     if (pos == end) { return (parent_node); }
 
@@ -179,7 +180,10 @@ static void merge_cli_params(std::string_view path, YAML::Node& node)
         // YAML representation with.
         assert(arg_path.size() > 1);
 
-        update_param_by_path(node, arg_path.begin(), arg_path.end(), opt.second,
+        update_param_by_path(node,
+                             arg_path.begin(),
+                             arg_path.end(),
+                             opt.second,
                              op_options_get_opt_type_short(opt.first));
     }
 
@@ -201,8 +205,8 @@ std::optional<YAML::Node> op_config_get_param(std::string_view path)
 
     auto path_components = split_string(path, path_delimiter);
 
-    return (get_param_by_path(root_node, path_components.begin(),
-                              path_components.end()));
+    return (get_param_by_path(
+        root_node, path_components.begin(), path_components.end()));
 }
 
 static char* find_config_file_option(int argc, char* const argv[])
@@ -273,8 +277,8 @@ int op_config_file_find(int argc, char* const argv[])
     std::vector<std::string> unknown_nodes;
     for (const auto& node : root_node) {
         auto key = node.first.as<std::string>();
-        if (auto found = std::find(std::begin(top_level_nodes),
-                                   std::end(top_level_nodes), key);
+        if (auto found = std::find(
+                std::begin(top_level_nodes), std::end(top_level_nodes), key);
             found == std::end(top_level_nodes)) {
             unknown_nodes.push_back(std::move(key));
         }
@@ -284,10 +288,12 @@ int op_config_file_find(int argc, char* const argv[])
         OP_LOG(
             OP_LOG_WARNING,
             "Ignoring %zu unrecognized top-level node%s in %s: %s\n",
-            unknown_nodes.size(), unknown_nodes.size() == 1 ? "" : "s",
+            unknown_nodes.size(),
+            unknown_nodes.size() == 1 ? "" : "s",
             file_name,
             std::accumulate(
-                std::begin(unknown_nodes), std::end(unknown_nodes),
+                std::begin(unknown_nodes),
+                std::end(unknown_nodes),
                 std::string(),
                 [&](const std::string& a, const std::string b) -> std::string {
                     return (a

@@ -15,7 +15,8 @@
         std::atomic_fetch_add_explicit(                                        \
             reinterpret_cast<std::atomic<counter_type>*>(                      \
                 std::addressof(n->mib2_counters.x)),                           \
-            static_cast<counter_type>(val), std::memory_order_relaxed);        \
+            static_cast<counter_type>(val),                                    \
+            std::memory_order_relaxed);                                        \
     } while (0)
 
 #define MIB2_STATS_NETIF_INC_ATOMIC(n, x) MIB2_STATS_NETIF_ADD_ATOMIC(n, x, 1)

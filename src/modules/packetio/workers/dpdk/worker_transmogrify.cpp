@@ -26,34 +26,37 @@ static serialized_msg serialize_message(const command_msg& msg)
     serialized_msg serialized;
     auto error =
         (message::zmq_msg_init(&serialized.type, msg.index())
-         || std::visit(utils::overloaded_visitor(
-                           [&](const start_msg& start) {
-                               assert(start.endpoint.length());
-                               return (message::zmq_msg_init(
-                                   &serialized.data, start.endpoint.data(),
-                                   start.endpoint.length()));
-                           },
-                           [&](const stop_msg& stop) {
-                               assert(stop.endpoint.length());
-                               return (message::zmq_msg_init(
-                                   &serialized.data, stop.endpoint.data(),
-                                   stop.endpoint.length()));
-                           },
-                           [&](const add_descriptors_msg& add) {
-                               assert(add.descriptors.size());
-                               auto& vec = add.descriptors;
-                               return (message::zmq_msg_init(
-                                   &serialized.data, vec.data(),
-                                   sizeof(*std::begin(vec)) * vec.size()));
-                           },
-                           [&](const del_descriptors_msg& del) {
-                               assert(del.descriptors.size());
-                               auto& vec = del.descriptors;
-                               return (message::zmq_msg_init(
-                                   &serialized.data, vec.data(),
-                                   sizeof(*std::begin(vec)) * vec.size()));
-                           }),
-                       msg));
+         || std::visit(
+             utils::overloaded_visitor(
+                 [&](const start_msg& start) {
+                     assert(start.endpoint.length());
+                     return (message::zmq_msg_init(&serialized.data,
+                                                   start.endpoint.data(),
+                                                   start.endpoint.length()));
+                 },
+                 [&](const stop_msg& stop) {
+                     assert(stop.endpoint.length());
+                     return (message::zmq_msg_init(&serialized.data,
+                                                   stop.endpoint.data(),
+                                                   stop.endpoint.length()));
+                 },
+                 [&](const add_descriptors_msg& add) {
+                     assert(add.descriptors.size());
+                     auto& vec = add.descriptors;
+                     return (message::zmq_msg_init(&serialized.data,
+                                                   vec.data(),
+                                                   sizeof(*std::begin(vec))
+                                                       * vec.size()));
+                 },
+                 [&](const del_descriptors_msg& del) {
+                     assert(del.descriptors.size());
+                     auto& vec = del.descriptors;
+                     return (message::zmq_msg_init(&serialized.data,
+                                                   vec.data(),
+                                                   sizeof(*std::begin(vec))
+                                                       * vec.size()));
+                 }),
+             msg));
 
     if (error) { throw std::bad_alloc(); }
 

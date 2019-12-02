@@ -25,16 +25,22 @@ public:
     {}
     void OnDocumentStart(const Mark& mark __attribute__((unused))) {}
     void OnDocumentEnd() {}
-    void OnMapStart(const Mark& mark, const std::string& tag, anchor_t anchor,
+    void OnMapStart(const Mark& mark,
+                    const std::string& tag,
+                    anchor_t anchor,
                     EmitterStyle::value style);
     void OnMapEnd();
     void OnNull(const Mark& mark __attribute__((unused)),
                 anchor_t anchor __attribute__((unused)))
     {}
-    void OnScalar(const Mark& mark, const std::string& tag, anchor_t anchor,
+    void OnScalar(const Mark& mark,
+                  const std::string& tag,
+                  anchor_t anchor,
                   const std::string& value);
-    void OnSequenceStart(const Mark& mark, const std::string& tag,
-                         anchor_t anchor, EmitterStyle::value style);
+    void OnSequenceStart(const Mark& mark,
+                         const std::string& tag,
+                         anchor_t anchor,
+                         EmitterStyle::value style);
     void OnSequenceEnd();
 
 private:

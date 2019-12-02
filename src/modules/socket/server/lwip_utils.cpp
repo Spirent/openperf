@@ -95,9 +95,11 @@ do_sock_setsockopt(ip_pcb* pcb, const api::request_setsockopt& setsockopt)
     }
     case SO_BINDTODEVICE: {
         std::string optval(setsockopt.optlen, '\0');
-        auto opt = copy_in(optval.data(), setsockopt.id.pid,
+        auto opt = copy_in(optval.data(),
+                           setsockopt.id.pid,
                            reinterpret_cast<const char*>(setsockopt.optval),
-                           setsockopt.optlen, setsockopt.optlen);
+                           setsockopt.optlen,
+                           setsockopt.optlen);
         if (!opt) return (tl::make_unexpected(opt.error()));
         auto idx = netif_id_match(optval);
         if (idx == NETIF_NO_INDEX) { return (tl::make_unexpected(ENODEV)); }

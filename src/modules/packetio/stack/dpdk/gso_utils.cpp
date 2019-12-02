@@ -24,8 +24,10 @@ namespace gso {
  * Nearly identical to the pbuf_skip function in <lwip>/src/core/pbuf.c,
  * but also returns the pbuf before the returned pbuf.
  */
-static pbuf* pbuf_skip_with_previous(struct pbuf* in, u16_t in_offset,
-                                     u16_t* out_offset, struct pbuf** out_prev)
+static pbuf* pbuf_skip_with_previous(struct pbuf* in,
+                                     u16_t in_offset,
+                                     u16_t* out_offset,
+                                     struct pbuf** out_prev)
 {
     u16_t offset_left = in_offset;
     struct pbuf* q = in;
@@ -136,8 +138,8 @@ pbuf_drop_at(struct pbuf* p_head, uint16_t offset, uint16_t length)
  * The returned pbuf is guaranteed to have enough headroom for the requested
  * layer.
  */
-static std::tuple<pbuf*, bool> pbuf_split_at(struct pbuf* p_head,
-                                             uint16_t split, pbuf_layer layer)
+static std::tuple<pbuf*, bool>
+pbuf_split_at(struct pbuf* p_head, uint16_t split, pbuf_layer layer)
 {
     LWIP_ERROR("(p_head != NULL) && (split < p_head->tot_len) (programmer "
                "violates API)",
@@ -181,7 +183,8 @@ static std::tuple<pbuf*, bool> pbuf_split_at(struct pbuf* p_head,
                     pbuf_match_type(split_pbuf, PBUF_RAM)
                         || pbuf_match_type(split_pbuf, PBUF_POOL));
         auto next_pbuf = pbuf_alloc(
-            layer, split_pbuf->len - split_offset,
+            layer,
+            split_pbuf->len - split_offset,
             (pbuf_match_type(split_pbuf, PBUF_RAM) ? PBUF_RAM : PBUF_POOL));
         if (!next_pbuf) return (std::make_tuple(nullptr, false));
 
@@ -272,13 +275,17 @@ uint16_t packetio_stack_gso_segment_ack_partial(struct tcp_seg* seg,
                                                 uint16_t acked)
 {
     LWIP_ERROR("(seg != NULL) && (acked < seg->len) (programmer violates API)",
-               ((seg != NULL) && (acked < seg->len)), return 0;);
+               ((seg != NULL) && (acked < seg->len)),
+               return 0;);
 
     LWIP_DEBUGF(TCP_INPUT_DEBUG | LWIP_DBG_LEVEL_SERIOUS,
                 ("gso_segment_ack_partial: acked %" PRIu16
                  " bytes (seg->len: %" PRIu16 ", seg->p->tot_len: %" PRIu16
                  ", hdr_len: %" PRIu32 ")\n",
-                 acked, seg->len, seg->p->tot_len, seg->p->tot_len - seg->len));
+                 acked,
+                 seg->len,
+                 seg->p->tot_len,
+                 seg->p->tot_len - seg->len));
 
     LWIP_ASSERT("segment without TCP header!?",
                 (seg->tcphdr != NULL && seg->len < seg->p->tot_len));
@@ -312,7 +319,8 @@ uint16_t packetio_stack_gso_segment_ack_partial(struct tcp_seg* seg,
     return (nb_pbufs_freed);
 }
 
-int packetio_stack_gso_segment_split(struct tcp_pcb* pcb, struct tcp_seg* seg,
+int packetio_stack_gso_segment_split(struct tcp_pcb* pcb,
+                                     struct tcp_seg* seg,
                                      uint16_t split)
 {
     LWIP_ERROR("pcb != NULL && seg != NULL && split != 0 && split < seg->len "
@@ -327,7 +335,10 @@ int packetio_stack_gso_segment_split(struct tcp_pcb* pcb, struct tcp_seg* seg,
                 ("gso_segment_split: split segment at %" PRIu16
                  " (seg->len: %" PRIu16 ", seg->p->tot_len: %" PRIu16
                  ", hdr_len: %" PRIu16 ")\n",
-                 split, seg->len, seg->p->tot_len, seg->p->tot_len - seg->len));
+                 split,
+                 seg->len,
+                 seg->p->tot_len,
+                 seg->p->tot_len - seg->len));
 
     uint16_t seg_header_length = seg->p->tot_len - seg->len;
     uint16_t tcp_header_length = TCP_HLEN + LWIP_TCP_OPT_LENGTH(seg->flags);
@@ -428,8 +439,10 @@ uint16_t packetio_stack_gso_pbuf_data_available(const struct pbuf* p,
     return (max_payload > offset ? max_payload - offset : 0);
 }
 
-uint16_t packetio_stack_gso_pbuf_copy(struct pbuf* p_head, uint16_t offset,
-                                      const void* dataptr, uint16_t length)
+uint16_t packetio_stack_gso_pbuf_copy(struct pbuf* p_head,
+                                      uint16_t offset,
+                                      const void* dataptr,
+                                      uint16_t length)
 {
     uint16_t copied = 0;
 
@@ -440,7 +453,8 @@ uint16_t packetio_stack_gso_pbuf_copy(struct pbuf* p_head, uint16_t offset,
         } else {
             auto to_copy = std::min(available, length);
             MEMCPY(reinterpret_cast<uint8_t*>(p->payload) + offset,
-                   reinterpret_cast<const uint8_t*>(dataptr) + copied, to_copy);
+                   reinterpret_cast<const uint8_t*>(dataptr) + copied,
+                   to_copy);
             copied += to_copy;
             length -= to_copy;
 

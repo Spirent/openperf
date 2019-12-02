@@ -94,8 +94,8 @@ const std::vector<task_ptr>& epoll_poller::poll(int timeout_ms)
     m_events.clear();
 
     std::array<struct rte_epoll_event, max_events> events;
-    auto n = rte_epoll_wait(RTE_EPOLL_PER_THREAD, events.data(), events.size(),
-                            timeout_ms);
+    auto n = rte_epoll_wait(
+        RTE_EPOLL_PER_THREAD, events.data(), events.size(), timeout_ms);
     for (int i = 0; i < n; i++) {
         m_events.push_back(to_task_ptr(events[i].epdata.data));
     }
@@ -106,8 +106,8 @@ const std::vector<task_ptr>& epoll_poller::poll(int timeout_ms)
 bool epoll_poller::wait_for_interrupt(int timeout_ms) const
 {
     std::array<struct rte_epoll_event, max_events> events;
-    auto n = rte_epoll_wait(RTE_EPOLL_PER_THREAD, events.data(), events.size(),
-                            timeout_ms);
+    auto n = rte_epoll_wait(
+        RTE_EPOLL_PER_THREAD, events.data(), events.size(), timeout_ms);
     return (n > 0);
 }
 

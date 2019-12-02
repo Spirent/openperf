@@ -45,10 +45,10 @@ mac_filter::~mac_filter()
 {
     if (m_filtered.empty()) return;
 
-    std::for_each(std::begin(m_filtered), std::end(m_filtered),
-                  [&](const auto& mac) {
-                      rte_eth_dev_mac_addr_remove(m_port, to_dpdk_mac(mac));
-                  });
+    std::for_each(
+        std::begin(m_filtered), std::end(m_filtered), [&](const auto& mac) {
+            rte_eth_dev_mac_addr_remove(m_port, to_dpdk_mac(mac));
+        });
 
     maybe_disable_promiscuous_mode(m_port);
 }
@@ -71,25 +71,32 @@ mac_filter& mac_filter::operator=(mac_filter&& other)
 
 uint16_t mac_filter::port_id() const { return (m_port); }
 
-static filter_state_error on_error(const filter_event_add& add,
-                                   uint16_t port_id, int error)
+static filter_state_error
+on_error(const filter_event_add& add, uint16_t port_id, int error)
 {
-    OP_LOG(OP_LOG_ERROR, "Failed to add address %s to port %u: %s\n",
-           net::to_string(add.mac).c_str(), port_id, strerror(std::abs(error)));
+    OP_LOG(OP_LOG_ERROR,
+           "Failed to add address %s to port %u: %s\n",
+           net::to_string(add.mac).c_str(),
+           port_id,
+           strerror(std::abs(error)));
     maybe_enable_promiscuous_mode(port_id);
     return (filter_state_error{});
 }
 
-static filter_state_error on_error(const filter_event_del& del,
-                                   uint16_t port_id, int error)
+static filter_state_error
+on_error(const filter_event_del& del, uint16_t port_id, int error)
 {
-    OP_LOG(OP_LOG_ERROR, "Failed to remove address %s from port %u: %s\n",
-           net::to_string(del.mac).c_str(), port_id, strerror(std::abs(error)));
+    OP_LOG(OP_LOG_ERROR,
+           "Failed to remove address %s from port %u: %s\n",
+           net::to_string(del.mac).c_str(),
+           port_id,
+           strerror(std::abs(error)));
     return (filter_state_error{});
 }
 
 static std::optional<filter_state_error>
-maybe_delete_mac(uint16_t port_id, const net::mac_address& mac,
+maybe_delete_mac(uint16_t port_id,
+                 const net::mac_address& mac,
                  std::vector<net::mac_address>& filtered,
                  std::vector<net::mac_address>& overflowed)
 {
@@ -128,7 +135,8 @@ maybe_delete_mac(uint16_t port_id, const net::mac_address& mac,
 
         /* Drop the added MAC from the overflow list */
         filtered.push_back(overflowed.front());
-        std::rotate(std::begin(overflowed), std::begin(overflowed) + 1,
+        std::rotate(std::begin(overflowed),
+                    std::begin(overflowed) + 1,
                     std::end(overflowed));
         overflowed.pop_back();
     }

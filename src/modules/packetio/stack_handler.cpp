@@ -20,7 +20,8 @@ json submit_request(void* socket, json& request)
     auto type = request["type"].get<request_type>();
     switch (type) {
     case request_type::GET_STACK:
-        OP_LOG(OP_LOG_TRACE, "Sending %s request for stack %s\n",
+        OP_LOG(OP_LOG_TRACE,
+               "Sending %s request for stack %s\n",
                to_string(type).c_str(),
                request["id"].get<std::string>().c_str());
         break;
@@ -66,10 +67,10 @@ private:
 handler::handler(void* context, Rest::Router& router)
     : m_socket(op_socket_get_client(context, ZMQ_REQ, endpoint.c_str()))
 {
-    Rest::Routes::Get(router, "/stacks",
-                      Rest::Routes::bind(&handler::list_stacks, this));
-    Rest::Routes::Get(router, "/stacks/:id",
-                      Rest::Routes::bind(&handler::get_stack, this));
+    Rest::Routes::Get(
+        router, "/stacks", Rest::Routes::bind(&handler::list_stacks, this));
+    Rest::Routes::Get(
+        router, "/stacks/:id", Rest::Routes::bind(&handler::get_stack, this));
 }
 
 void handler::list_stacks(const Rest::Request& requst __attribute__((unused)),

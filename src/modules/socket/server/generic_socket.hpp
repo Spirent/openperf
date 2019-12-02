@@ -80,8 +80,8 @@ private:
     std::shared_ptr<socket_concept> m_self;
 };
 
-tl::expected<generic_socket, int> make_socket(allocator& allocator, int domain,
-                                              int type, int protocol);
+tl::expected<generic_socket, int>
+make_socket(allocator& allocator, int domain, int type, int protocol);
 
 api::io_channel_offset api_channel_offset(channel_variant&, const void* base);
 int client_fd(channel_variant&);

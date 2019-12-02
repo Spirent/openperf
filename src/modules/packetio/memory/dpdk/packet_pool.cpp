@@ -26,10 +26,12 @@ __attribute__((const)) static T align_up(T x, S align)
  * Based on the DPDK rte_pktmbuf_pool_create() function, but optimized for
  * single-producer, single-consumer use.
  */
-struct rte_mempool*
-create_spsc_pktmbuf_mempool(std::string_view id, unsigned int n,
-                            unsigned int cache_size, uint16_t priv_size,
-                            uint16_t packet_size, unsigned socket_id)
+struct rte_mempool* create_spsc_pktmbuf_mempool(std::string_view id,
+                                                unsigned int n,
+                                                unsigned int cache_size,
+                                                uint16_t priv_size,
+                                                uint16_t packet_size,
+                                                unsigned socket_id)
 {
     if (RTE_ALIGN(priv_size, RTE_MBUF_PRIV_ALIGN) != priv_size) {
         OP_LOG(OP_LOG_ERROR, "mbuf priv_size=%u is not aligned\n", priv_size);
@@ -40,17 +42,26 @@ create_spsc_pktmbuf_mempool(std::string_view id, unsigned int n,
     auto max_packet_size = align_up(packet_size, 64);
     auto elt_size = sizeof(rte_mbuf) + priv_size + max_packet_size;
 
-    auto mp = rte_mempool_create(
-        id.data(), n, elt_size, cache_size, sizeof(rte_pktmbuf_pool_private),
-        rte_pktmbuf_pool_init, nullptr, rte_pktmbuf_init, nullptr,
-        static_cast<int>(socket_id), MEMPOOL_F_SP_PUT | MEMPOOL_F_SC_GET);
+    auto mp = rte_mempool_create(id.data(),
+                                 n,
+                                 elt_size,
+                                 cache_size,
+                                 sizeof(rte_pktmbuf_pool_private),
+                                 rte_pktmbuf_pool_init,
+                                 nullptr,
+                                 rte_pktmbuf_init,
+                                 nullptr,
+                                 static_cast<int>(socket_id),
+                                 MEMPOOL_F_SP_PUT | MEMPOOL_F_SC_GET);
 
     return (mp);
 }
 
-static rte_mempool* create_mempool(std::string_view id, unsigned numa_mode,
+static rte_mempool* create_mempool(std::string_view id,
+                                   unsigned numa_mode,
                                    uint16_t packet_length,
-                                   uint16_t packet_count, uint16_t cache_size)
+                                   uint16_t packet_count,
+                                   uint16_t cache_size)
 {
     static constexpr auto max_length = RTE_MEMPOOL_NAMESIZE - 1;
     auto name = "pool-" + std::string(id);
@@ -61,13 +72,18 @@ static rte_mempool* create_mempool(std::string_view id, unsigned numa_mode,
             name.find_last_of('-')); /* Pick a nice trim spot for uuids */
     }
 
-    return (create_spsc_pktmbuf_mempool(
-        name.c_str(), pool_size_adjust(packet_count), cache_size, 0,
-        packet_length, numa_mode));
+    return (create_spsc_pktmbuf_mempool(name.c_str(),
+                                        pool_size_adjust(packet_count),
+                                        cache_size,
+                                        0,
+                                        packet_length,
+                                        numa_mode));
 }
 
-packet_pool::packet_pool(std::string_view id, unsigned numa_node,
-                         uint16_t packet_length, uint16_t packet_count,
+packet_pool::packet_pool(std::string_view id,
+                         unsigned numa_node,
+                         uint16_t packet_length,
+                         uint16_t packet_count,
                          uint16_t cache_size)
     : m_pool(
         create_mempool(id, numa_node, packet_length, packet_count, cache_size),
@@ -81,8 +97,11 @@ packet_pool::packet_pool(std::string_view id, unsigned numa_node,
                                  + std::string(rte_strerror(rte_errno)));
     }
 
-    OP_LOG(OP_LOG_DEBUG, "%s: %u, %u byte mbufs on NUMA socket %d\n",
-           m_pool->name, m_pool->size, rte_pktmbuf_data_room_size(m_pool.get()),
+    OP_LOG(OP_LOG_DEBUG,
+           "%s: %u, %u byte mbufs on NUMA socket %d\n",
+           m_pool->name,
+           m_pool->size,
+           rte_pktmbuf_data_room_size(m_pool.get()),
            m_pool->socket_id);
 }
 

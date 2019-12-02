@@ -112,8 +112,11 @@ static err_t net_interface_tx(netif* netif, pbuf* p)
         MIB2_STATS_NETIF_INC(netif, ifoutnucastpkts);
     }
 
-    OP_LOG(OP_LOG_TRACE, "Transmitting packet from %c%c%u\n", netif->name[0],
-           netif->name[1], netif->num);
+    OP_LOG(OP_LOG_TRACE,
+           "Transmitting packet from %c%c%u\n",
+           netif->name[0],
+           netif->name[1],
+           netif->num);
 
     auto error = ifp->handle_tx(p);
     if (error != ERR_OK) { MIB2_STATS_NETIF_INC(netif, ifoutdiscards); }
@@ -154,15 +157,19 @@ static err_t net_interface_rx(pbuf* p, netif* netif)
             UDP_STATS_INC(udp.chkerr);
         } else {
             /* what is this?!?! */
-            OP_LOG(OP_LOG_WARNING, "Unrecognized L4 packet type: %s\n",
+            OP_LOG(OP_LOG_WARNING,
+                   "Unrecognized L4 packet type: %s\n",
                    rte_get_ptype_l4_name(mbuf->packet_type));
         }
         pbuf_free(p);
         return (ERR_OK);
     }
 
-    OP_LOG(OP_LOG_TRACE, "Receiving packet for %c%c%u\n", netif->name[0],
-           netif->name[1], netif->num);
+    OP_LOG(OP_LOG_TRACE,
+           "Receiving packet for %c%c%u\n",
+           netif->name[0],
+           netif->name[1],
+           netif->num);
 
     auto error = ifp->handle_rx(p);
     if (error != ERR_OK) { MIB2_STATS_NETIF_INC_ATOMIC(netif, ifindiscards); }
@@ -194,8 +201,12 @@ static err_t net_interface_dpdk_init(netif* netif)
     netif->chksum_flags = (to_checksum_check_flags(info.rx_offloads())
                            | to_checksum_gen_flags(info.tx_offloads()));
 
-    OP_LOG(OP_LOG_DEBUG, "Interface %c%c%u: mtu = %u, offloads = 0x%04hx\n",
-           netif->name[0], netif->name[1], netif->num, netif->mtu,
+    OP_LOG(OP_LOG_DEBUG,
+           "Interface %c%c%u: mtu = %u, offloads = 0x%04hx\n",
+           netif->name[0],
+           netif->name[1],
+           netif->num,
+           netif->mtu,
            static_cast<uint16_t>(~netif->chksum_flags));
 
     netif->flags = (NETIF_FLAG_BROADCAST | NETIF_FLAG_ETHERNET
@@ -249,19 +260,25 @@ static err_t setup_ipv4_interface(
                     ip4_addr netmask = {htonl(to_netmask(ipv4.prefix_length))};
                     ip4_addr gateway = {
                         ipv4.gateway ? htonl(ipv4.gateway->data()) : 0};
-                    netif_error =
-                        (netifapi_netif_add(
-                             &netif, &address, &netmask, &gateway, netif.state,
-                             net_interface_dpdk_init, net_interface_rx)
-                         || netifapi_netif_set_up(&netif));
+                    netif_error = (netifapi_netif_add(&netif,
+                                                      &address,
+                                                      &netmask,
+                                                      &gateway,
+                                                      netif.state,
+                                                      net_interface_dpdk_init,
+                                                      net_interface_rx)
+                                   || netifapi_netif_set_up(&netif));
                 },
                 [&](const interface::ipv4_dhcp_protocol_config& dhcp) {
                     if (dhcp.hostname) {
                         netif_set_hostname(&netif,
                                            dhcp.hostname.value().c_str());
                     }
-                    netif_error = (netifapi_netif_add(&netif, nullptr, nullptr,
-                                                      nullptr, netif.state,
+                    netif_error = (netifapi_netif_add(&netif,
+                                                      nullptr,
+                                                      nullptr,
+                                                      nullptr,
+                                                      netif.state,
                                                       net_interface_dpdk_init,
                                                       net_interface_rx)
                                    || netifapi_netif_set_up(&netif)
@@ -272,8 +289,13 @@ static err_t setup_ipv4_interface(
         /* No explicit IPv4 config; use AutoIP to pick a link-local IPv4 address
          */
         netif_error =
-            (netifapi_netif_add(&netif, nullptr, nullptr, nullptr, netif.state,
-                                net_interface_dpdk_init, net_interface_rx)
+            (netifapi_netif_add(&netif,
+                                nullptr,
+                                nullptr,
+                                nullptr,
+                                netif.state,
+                                net_interface_dpdk_init,
+                                net_interface_rx)
              || netifapi_netif_set_up(&netif) || netifapi_autoip_start(&netif));
     }
 
@@ -294,7 +316,8 @@ unset_ipv4_interface(const std::optional<interface::ipv4_protocol_config> ipv4,
     }
 }
 
-net_interface::net_interface(std::string_view id, int port_index,
+net_interface::net_interface(std::string_view id,
+                             int port_index,
                              const interface::config_data& config,
                              driver::tx_burst tx)
     : m_id(id)
@@ -323,8 +346,10 @@ net_interface::net_interface(std::string_view id, int port_index,
 
 net_interface::~net_interface()
 {
-    rte_eth_dev_callback_unregister(m_port_index, RTE_ETH_EVENT_INTR_LSC,
-                                    net_interface_link_status_change, &m_netif);
+    rte_eth_dev_callback_unregister(m_port_index,
+                                    RTE_ETH_EVENT_INTR_LSC,
+                                    net_interface_link_status_change,
+                                    &m_netif);
 
     unset_ipv4_interface(
         get_protocol_config<interface::ipv4_protocol_config>(m_config),
@@ -335,8 +360,12 @@ net_interface::~net_interface()
 
 void net_interface::handle_link_state_change(bool link_up)
 {
-    OP_LOG(OP_LOG_INFO, "Interface %c%c%u Link %s\n", m_netif.name[0],
-           m_netif.name[1], m_netif.num, link_up ? "Up" : "Down");
+    OP_LOG(OP_LOG_INFO,
+           "Interface %c%c%u Link %s\n",
+           m_netif.name[0],
+           m_netif.name[1],
+           m_netif.num,
+           link_up ? "Up" : "Down");
     link_up ? netifapi_netif_set_link_up(&m_netif)
             : netifapi_netif_set_link_down(&m_netif);
 }

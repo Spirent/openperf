@@ -26,7 +26,8 @@ static void tcpip_init_done(void*)
 {
     OP_LOG(OP_LOG_DEBUG,
            "TCP/IP thread running on logical core %u (NUMA node %u)\n",
-           rte_lcore_id(), rte_socket_id());
+           rte_lcore_id(),
+           rte_socket_id());
 }
 
 static constexpr timespec duration_to_timespec(std::chrono::milliseconds ms)
@@ -69,9 +70,12 @@ static int handle_tcpip_message(event_loop::generic_event_loop& loop
  * Having 1 callback per port seems like a better idea than setting up 1
  * callback per interface.
  */
-static int lwip_link_status_change_callback(
-    uint16_t port_id, rte_eth_event_type event __attribute__((unused)),
-    void* cb_arg, void* ret_param __attribute__((unused)))
+static int lwip_link_status_change_callback(uint16_t port_id,
+                                            rte_eth_event_type event
+                                            __attribute__((unused)),
+                                            void* cb_arg,
+                                            void* ret_param
+                                            __attribute__((unused)))
 {
     assert(event == RTE_ETH_EVENT_INTR_LSC);
     struct rte_eth_link link;
@@ -111,18 +115,22 @@ lwip::lwip(driver::generic_driver& driver, workers::generic_workers& workers)
      * from our non-existent stack tasks.
      */
     auto tcpip_mbox = tcpip_mbox::instance().init();
-    auto msg_id = m_workers.add_task(
-        workers::context::STACK, "stack API messages", sys_mbox_fd(&tcpip_mbox),
-        handle_tcpip_message, tcpip_mbox);
+    auto msg_id = m_workers.add_task(workers::context::STACK,
+                                     "stack API messages",
+                                     sys_mbox_fd(&tcpip_mbox),
+                                     handle_tcpip_message,
+                                     tcpip_mbox);
     if (!msg_id) {
         throw std::runtime_error("Could not create message handler task: "
                                  + std::string(strerror(msg_id.error())));
     }
     m_tasks.push_back(*msg_id);
 
-    auto timeout_id =
-        m_workers.add_task(workers::context::STACK, "stack timers", m_timerfd,
-                           handle_tcpip_timeout, m_timerfd);
+    auto timeout_id = m_workers.add_task(workers::context::STACK,
+                                         "stack timers",
+                                         m_timerfd,
+                                         handle_tcpip_timeout,
+                                         m_timerfd);
     if (!timeout_id) {
         throw std::runtime_error("Could not create timeout handler task: "
                                  + std::string(strerror(msg_id.error())));
@@ -143,7 +151,8 @@ lwip::lwip(driver::generic_driver& driver, workers::generic_workers& workers)
     }
 
     /* Register for link status change callbacks for all DPDK ports */
-    if (rte_eth_dev_callback_register(RTE_ETH_ALL, RTE_ETH_EVENT_INTR_LSC,
+    if (rte_eth_dev_callback_register(RTE_ETH_ALL,
+                                      RTE_ETH_EVENT_INTR_LSC,
                                       lwip_link_status_change_callback,
                                       std::addressof(m_interfaces))) {
         throw std::runtime_error(
@@ -162,7 +171,8 @@ lwip::~lwip()
     tcpip_mbox::instance().fini();
     close(m_timerfd);
 
-    rte_eth_dev_callback_unregister(RTE_ETH_ALL, RTE_ETH_EVENT_INTR_LSC,
+    rte_eth_dev_callback_unregister(RTE_ETH_ALL,
+                                    RTE_ETH_EVENT_INTR_LSC,
                                     lwip_link_status_change_callback,
                                     std::addressof(m_interfaces));
 
@@ -183,10 +193,12 @@ lwip& lwip::operator=(lwip&& other)
         m_timerfd = other.m_timerfd;
     }
 
-    if (rte_eth_dev_callback_unregister(RTE_ETH_ALL, RTE_ETH_EVENT_INTR_LSC,
+    if (rte_eth_dev_callback_unregister(RTE_ETH_ALL,
+                                        RTE_ETH_EVENT_INTR_LSC,
                                         lwip_link_status_change_callback,
                                         std::addressof(other.m_interfaces))
-        || rte_eth_dev_callback_register(RTE_ETH_ALL, RTE_ETH_EVENT_INTR_LSC,
+        || rte_eth_dev_callback_register(RTE_ETH_ALL,
+                                         RTE_ETH_EVENT_INTR_LSC,
                                          lwip_link_status_change_callback,
                                          std::addressof(m_interfaces))) {
         OP_LOG(OP_LOG_ERROR,
@@ -204,10 +216,12 @@ lwip::lwip(lwip&& other)
     , m_interfaces(std::move(other.m_interfaces))
     , m_timerfd(other.m_timerfd)
 {
-    if (rte_eth_dev_callback_unregister(RTE_ETH_ALL, RTE_ETH_EVENT_INTR_LSC,
+    if (rte_eth_dev_callback_unregister(RTE_ETH_ALL,
+                                        RTE_ETH_EVENT_INTR_LSC,
                                         lwip_link_status_change_callback,
                                         std::addressof(other.m_interfaces))
-        || rte_eth_dev_callback_register(RTE_ETH_ALL, RTE_ETH_EVENT_INTR_LSC,
+        || rte_eth_dev_callback_register(RTE_ETH_ALL,
+                                         RTE_ETH_EVENT_INTR_LSC,
                                          lwip_link_status_change_callback,
                                          std::addressof(m_interfaces))) {
         OP_LOG(OP_LOG_ERROR,
@@ -220,7 +234,8 @@ lwip::lwip(lwip&& other)
 std::vector<std::string> lwip::interface_ids() const
 {
     std::vector<std::string> ids;
-    std::transform(std::begin(m_interfaces), std::end(m_interfaces),
+    std::transform(std::begin(m_interfaces),
+                   std::end(m_interfaces),
                    std::back_inserter(ids),
                    [](auto& item) { return (item.first); });
     return (ids);
@@ -251,10 +266,13 @@ lwip::create_interface(const interface::config_data& config)
         }
         int port_idx = port_index.value();
         auto ifp = std::make_unique<net_interface>(
-            config.id, port_idx, config,
+            config.id,
+            port_idx,
+            config,
             m_workers.get_transmit_function(config.port_id));
-        m_workers.add_interface(ifp->port_id(), interface::generic_interface(
-                                                    make_netif_wrapper(ifp)));
+        m_workers.add_interface(
+            ifp->port_id(),
+            interface::generic_interface(make_netif_wrapper(ifp)));
         auto item = m_interfaces.emplace(config.id, std::move(ifp));
         return (item.first->first);
     } catch (const std::runtime_error& e) {
@@ -267,8 +285,9 @@ void lwip::delete_interface(std::string_view id)
 {
     if (auto item = m_interfaces.find(id); item != m_interfaces.end()) {
         auto& ifp = item->second;
-        m_workers.del_interface(ifp->port_id(), interface::generic_interface(
-                                                    make_netif_wrapper(ifp)));
+        m_workers.del_interface(
+            ifp->port_id(),
+            interface::generic_interface(make_netif_wrapper(ifp)));
         m_interfaces.erase(std::string(id));
     }
 }

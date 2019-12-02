@@ -27,11 +27,11 @@ public:
 
 handler::handler(void* context __attribute__((unused)), Rest::Router& router)
 {
-    Rest::Routes::Get(router, "/modules",
-                      Rest::Routes::bind(&handler::list_modules, this));
+    Rest::Routes::Get(
+        router, "/modules", Rest::Routes::bind(&handler::list_modules, this));
 
-    Rest::Routes::Get(router, "/modules/:id",
-                      Rest::Routes::bind(&handler::get_module, this));
+    Rest::Routes::Get(
+        router, "/modules/:id", Rest::Routes::bind(&handler::get_module, this));
 }
 
 static auto to_string(enum op_module_linkage_type type)

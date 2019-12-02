@@ -72,22 +72,29 @@ __attribute__((const)) static uint32_t pool_size_adjust(uint32_t nb_mbufs)
 
 static void log_mempool(const struct rte_mempool* mpool)
 {
-    OP_LOG(OP_LOG_DEBUG, "%s: %u, %u byte mbufs on NUMA socket %d\n",
-           mpool->name, mpool->size,
+    OP_LOG(OP_LOG_DEBUG,
+           "%s: %u, %u byte mbufs on NUMA socket %d\n",
+           mpool->name,
+           mpool->size,
            rte_pktmbuf_data_room_size((struct rte_mempool*)mpool),
            mpool->socket_id);
 }
 
-static rte_mempool* create_pbuf_mempool(const char* name, size_t size,
-                                        bool cached, bool direct, int socket_id)
+static rte_mempool* create_pbuf_mempool(
+    const char* name, size_t size, bool cached, bool direct, int socket_id)
 {
     static_assert(PBUF_PRIVATE_SIZE >= sizeof(struct pbuf));
 
     size_t nb_mbufs = op_min(131072, pool_size_adjust(op_max(1024U, size)));
 
-    rte_mempool* mp = rte_pktmbuf_pool_create_by_ops(
-        name, nb_mbufs, cached ? get_cache_size(nb_mbufs) : 0,
-        PBUF_PRIVATE_SIZE, direct ? PBUF_POOL_BUFSIZE : 0, socket_id, "stack");
+    rte_mempool* mp =
+        rte_pktmbuf_pool_create_by_ops(name,
+                                       nb_mbufs,
+                                       cached ? get_cache_size(nb_mbufs) : 0,
+                                       PBUF_PRIVATE_SIZE,
+                                       direct ? PBUF_POOL_BUFSIZE : 0,
+                                       socket_id,
+                                       "stack");
 
     if (!mp) {
         throw std::runtime_error(std::string("Could not allocate mempool = ")
@@ -106,7 +113,9 @@ pool_allocator::pool_allocator(const std::vector<model::port_info>& info,
      */
     for (auto i = 0U; i < RTE_MAX_NUMA_NODES; i++) {
         auto sum = std::accumulate(
-            begin(info), end(info), 0,
+            begin(info),
+            end(info),
+            0,
             [&](unsigned lhs, const model::port_info& rhs) {
                 return (rhs.socket_id() == i ? (
                             lhs
@@ -121,14 +130,19 @@ pool_allocator::pool_allocator(const std::vector<model::port_info>& info,
              * We never actually need to look them up.
              */
             std::array<char, RTE_MEMPOOL_NAMESIZE> name_buf;
-            snprintf(name_buf.data(), RTE_MEMPOOL_NAMESIZE,
-                     memp_ref_rom_mempool_fmt, i);
-            m_ref_rom_mpools.emplace(i, create_pbuf_mempool(name_buf.data(),
-                                                            MEMP_NUM_PBUF,
-                                                            false, false, i));
+            snprintf(name_buf.data(),
+                     RTE_MEMPOOL_NAMESIZE,
+                     memp_ref_rom_mempool_fmt,
+                     i);
+            m_ref_rom_mpools.emplace(
+                i,
+                create_pbuf_mempool(
+                    name_buf.data(), MEMP_NUM_PBUF, false, false, i));
 
-            snprintf(name_buf.data(), RTE_MEMPOOL_NAMESIZE,
-                     memp_default_mempool_fmt, i);
+            snprintf(name_buf.data(),
+                     RTE_MEMPOOL_NAMESIZE,
+                     memp_default_mempool_fmt,
+                     i);
             m_default_mpools.emplace(
                 i, create_pbuf_mempool(name_buf.data(), sum, true, true, i));
         }

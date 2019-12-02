@@ -59,8 +59,10 @@ public:
             m_state);
 
         if (next_state) {
-            OP_LOG(OP_LOG_TRACE, "Tx port scheduler %u:%u: %.*s --> %.*s\n",
-                   child.port_id(), child.queue_id(),
+            OP_LOG(OP_LOG_TRACE,
+                   "Tx port scheduler %u:%u: %.*s --> %.*s\n",
+                   child.port_id(),
+                   child.queue_id(),
                    static_cast<int>(to_string(m_state).length()),
                    to_string(m_state).data(),
                    static_cast<int>(to_string(*next_state).length()),
@@ -91,7 +93,8 @@ class tx_scheduler
      * smallest value, as that represents the next deadline, so we use
      * std::greater<> instead.
      */
-    std::priority_queue<schedule::entry, std::vector<schedule::entry>,
+    std::priority_queue<schedule::entry,
+                        std::vector<schedule::entry>,
                         std::greater<schedule::entry>>
         m_schedule;
 

@@ -18,7 +18,8 @@ static unsigned _max_option_length()
     SLIST_FOREACH(opt_data, &op_options_data_head, next)
     {
         for (const struct op_option* curr = opt_data->options;
-             curr->description != NULL; curr++) {
+             curr->description != NULL;
+             curr++) {
             max_length = op_max(strlen(curr->long_opt), max_length);
         }
     }
@@ -39,13 +40,21 @@ static void __attribute__((noreturn)) _usage(const char* program_name)
     SLIST_FOREACH(opt_data, &op_options_data_head, next)
     {
         for (const struct op_option* curr = opt_data->options;
-             curr->description != NULL; curr++) {
+             curr->description != NULL;
+             curr++) {
             if (curr->short_opt == 0) {
-                fprintf(output, "      --%-*s%s\n", opt_width, curr->long_opt,
+                fprintf(output,
+                        "      --%-*s%s\n",
+                        opt_width,
+                        curr->long_opt,
                         curr->description);
             } else {
-                fprintf(output, "  -%c, --%-*s%s\n", curr->short_opt, opt_width,
-                        curr->long_opt, curr->description);
+                fprintf(output,
+                        "  -%c, --%-*s%s\n",
+                        curr->short_opt,
+                        opt_width,
+                        curr->long_opt,
+                        curr->description);
             }
         }
     }
@@ -60,7 +69,8 @@ int op_options_init()
     {
         if (opt_data->init) {
             if (opt_data->init() != 0) {
-                OP_LOG(OP_LOG_ERROR, "Failed to initialize %s options\n",
+                OP_LOG(OP_LOG_ERROR,
+                       "Failed to initialize %s options\n",
                        opt_data->name);
             }
         }
@@ -75,7 +85,8 @@ static struct op_options_data* _find_options_data(int opt)
     SLIST_FOREACH(opt_data, &op_options_data_head, next)
     {
         for (const struct op_option* curr = opt_data->options;
-             curr->description != NULL; curr++) {
+             curr->description != NULL;
+             curr++) {
             if (curr->short_opt == opt) {
                 return (opt_data);
             } else if (op_options_hash_long(curr->long_opt) == opt) {
@@ -97,7 +108,8 @@ static const struct op_option* _find_opt_by_long(const char* long_op,
     SLIST_FOREACH(opt_data, &op_options_data_head, next)
     {
         for (const struct op_option* curr = opt_data->options;
-             curr->description != NULL; curr++) {
+             curr->description != NULL;
+             curr++) {
             if (strncmp(long_op, curr->long_opt, len) == 0) { return (curr); }
         }
     }
@@ -110,7 +122,8 @@ static const struct op_option* _find_opt_by_short(int op)
     SLIST_FOREACH(opt_data, &op_options_data_head, next)
     {
         for (const struct op_option* curr = opt_data->options;
-             curr->description != NULL; curr++) {
+             curr->description != NULL;
+             curr++) {
             if (curr->short_opt == op) {
                 return (curr);
             } else if (op_options_hash_long(curr->long_opt) == op) {
@@ -129,7 +142,8 @@ int _allocate_optstring(char** optstringp)
     SLIST_FOREACH(opt_data, &op_options_data_head, next)
     {
         for (const struct op_option* curr = opt_data->options;
-             curr->description != NULL; curr++) {
+             curr->description != NULL;
+             curr++) {
             if (curr->short_opt) { length += curr->opt_type ? 2 : 1; }
         }
     }
@@ -143,7 +157,8 @@ int _allocate_optstring(char** optstringp)
     SLIST_FOREACH(opt_data, &op_options_data_head, next)
     {
         for (const struct op_option* curr = opt_data->options;
-             curr->description != NULL; curr++) {
+             curr->description != NULL;
+             curr++) {
             if (curr->short_opt) {
                 optstring[idx++] = curr->short_opt;
                 if (curr->opt_type) { optstring[idx++] = ':'; }
@@ -163,7 +178,8 @@ int _allocate_longopts(struct option** longoptsp)
     SLIST_FOREACH(opt_data, &op_options_data_head, next)
     {
         for (const struct op_option* curr = opt_data->options;
-             curr->description != NULL; curr++) {
+             curr->description != NULL;
+             curr++) {
             nb_opts++;
         }
     }
@@ -176,9 +192,11 @@ int _allocate_longopts(struct option** longoptsp)
     SLIST_FOREACH(opt_data, &op_options_data_head, next)
     {
         for (const struct op_option* curr = opt_data->options;
-             curr->description != NULL; curr++) {
+             curr->description != NULL;
+             curr++) {
             longopts[idx++] = (struct option){
-                curr->long_opt, curr->opt_type == OP_OPTION_TYPE_NONE ? 0 : 1,
+                curr->long_opt,
+                curr->opt_type == OP_OPTION_TYPE_NONE ? 0 : 1,
                 NULL,
                 curr->short_opt ? curr->short_opt
                                 : op_options_hash_long(curr->long_opt)};

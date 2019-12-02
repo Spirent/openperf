@@ -17,9 +17,11 @@ class callback : public pollable_event<callback>
     std::any m_arg;
 
 public:
-    callback(std::string_view name, event_loop::event_notifier notifier,
+    callback(std::string_view name,
+             event_loop::event_notifier notifier,
              event_loop::event_handler on_event,
-             std::optional<event_loop::delete_handler> on_delete, std::any arg);
+             std::optional<event_loop::delete_handler> on_delete,
+             std::any arg);
     ~callback();
 
     std::string_view name() const;

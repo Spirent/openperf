@@ -25,7 +25,8 @@ class queueing
     static constexpr int rx_queue_size = 512;
 
 public:
-    queueing(std::string_view if_prefix, uint16_t if_index,
+    queueing(std::string_view if_prefix,
+             uint16_t if_index,
              uint16_t port_index);
 
     err_t handle_rx(pbuf*, netif*);

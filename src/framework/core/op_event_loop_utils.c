@@ -9,7 +9,8 @@
 
 /* inline function symbol */
 extern int
-op_event_loop_add_timer_noid(struct op_event_loop* loop, uint64_t timeout,
+op_event_loop_add_timer_noid(struct op_event_loop* loop,
+                             uint64_t timeout,
                              const struct op_event_callbacks* callbacks,
                              void* arg);
 

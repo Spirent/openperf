@@ -235,15 +235,18 @@ bool _freelist_insert(struct op_list* list, struct op_list_item* node)
         head_update.flags = head_now.flags;
         head_update.next = node;
 
-    } while (!atomic_compare_exchange_weak_explicit(
-        &head->entry, &head_now, head_update, memory_order_release,
-        memory_order_relaxed));
+    } while (!atomic_compare_exchange_weak_explicit(&head->entry,
+                                                    &head_now,
+                                                    head_update,
+                                                    memory_order_release,
+                                                    memory_order_relaxed));
 
     atomic_fetch_add_explicit(&list->free_length, 1, memory_order_relaxed);
     return (true);
 }
 
-int _handle_list_delete(struct op_list* list, struct op_list_item* to_delete,
+int _handle_list_delete(struct op_list* list,
+                        struct op_list_item* to_delete,
                         struct op_list_entry* to_delete_entry,
                         struct op_list_item* prev,
                         struct op_list_entry* prev_entry)
@@ -257,9 +260,11 @@ int _handle_list_delete(struct op_list* list, struct op_list_item* to_delete,
         .flags = prev_entry->flags,
         .next = to_delete_entry->next,
     };
-    if (atomic_compare_exchange_weak_explicit(
-            &prev->entry, prev_entry, prev_entry_update, memory_order_release,
-            memory_order_relaxed)) {
+    if (atomic_compare_exchange_weak_explicit(&prev->entry,
+                                              prev_entry,
+                                              prev_entry_update,
+                                              memory_order_release,
+                                              memory_order_relaxed)) {
         /*
          * Current is no longer in the list.
          * Stick it on the freelist so we don't lose it.
@@ -281,8 +286,10 @@ int _handle_list_delete(struct op_list* list, struct op_list_item* to_delete,
  * CAS operations.  This ensures the atomicity of the insert, find, and
  * delete operations on the list.
  */
-bool _op_list_pfind(struct op_list* list, struct op_list_item* start,
-                    const void* key, struct op_list_item** prev,
+bool _op_list_pfind(struct op_list* list,
+                    struct op_list_item* start,
+                    const void* key,
+                    struct op_list_item** prev,
                     struct op_list_entry* prev_entry)
 {
     assert(list);
@@ -338,7 +345,8 @@ bool op_list_insert_head_value(struct op_list* list, void* value)
     return (op_list_insert_head_item(list, item));
 }
 
-bool op_list_insert_node_item(struct op_list* list, struct op_list_item* start,
+bool op_list_insert_node_item(struct op_list* list,
+                              struct op_list_item* start,
                               struct op_list_item* item)
 {
     assert(list);
@@ -366,15 +374,18 @@ bool op_list_insert_node_item(struct op_list* list, struct op_list_item* start,
         prev_update.next = item;
 
         /* Now try to swap */
-    } while (!atomic_compare_exchange_weak_explicit(
-        &prev->entry, &prev_now, prev_update, memory_order_release,
-        memory_order_relaxed));
+    } while (!atomic_compare_exchange_weak_explicit(&prev->entry,
+                                                    &prev_now,
+                                                    prev_update,
+                                                    memory_order_release,
+                                                    memory_order_relaxed));
 
     atomic_fetch_add_explicit(&list->length, 1, memory_order_relaxed);
     return (true);
 }
 
-bool op_list_insert_node_value(struct op_list* list, struct op_list_item* start,
+bool op_list_insert_node_value(struct op_list* list,
+                               struct op_list_item* start,
                                void* value)
 {
     struct op_list_item* item = op_list_item_allocate(value);
@@ -392,7 +403,8 @@ void* op_list_find_head(struct op_list* list, const void* key)
                 : NULL);
 }
 
-void* op_list_find_node(struct op_list* list, struct op_list_item* start,
+void* op_list_find_node(struct op_list* list,
+                        struct op_list_item* start,
                         const void* key)
 {
     struct op_list_entry prev_entry = OP_LIST_ENTRY_INIT;
@@ -407,7 +419,8 @@ bool op_list_delete_head(struct op_list* list, const void* key)
     return (op_list_delete_node(list, &list->head, key));
 }
 
-bool op_list_delete_node(struct op_list* list, struct op_list_item* start,
+bool op_list_delete_node(struct op_list* list,
+                         struct op_list_item* start,
                          const void* key)
 {
     assert(list);
@@ -431,9 +444,11 @@ bool op_list_delete_node(struct op_list* list, struct op_list_item* start,
         to_delete_update = to_delete_now;
         to_delete_update.version = to_delete_now.version + 1;
         to_delete_update.flags |= LIST_ENTRY_DELETED;
-    } while (!atomic_compare_exchange_weak_explicit(
-        &to_delete->entry, &to_delete_now, to_delete_update,
-        memory_order_release, memory_order_relaxed));
+    } while (!atomic_compare_exchange_weak_explicit(&to_delete->entry,
+                                                    &to_delete_now,
+                                                    to_delete_update,
+                                                    memory_order_release,
+                                                    memory_order_relaxed));
 
     atomic_fetch_sub_explicit(&list->length, 1, memory_order_relaxed);
     return (true);

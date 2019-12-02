@@ -136,8 +136,10 @@ enum op_event_type _get_fd_event_type(int fd)
                                                          : OP_EVENT_TYPE_FD);
 }
 
-int op_event_loop_add_fd(struct op_event_loop* loop, int fd,
-                         const struct op_event_callbacks* callbacks, void* arg)
+int op_event_loop_add_fd(struct op_event_loop* loop,
+                         int fd,
+                         const struct op_event_callbacks* callbacks,
+                         void* arg)
 {
     assert(loop);
     assert(callbacks);
@@ -163,8 +165,10 @@ int op_event_loop_add_fd(struct op_event_loop* loop, int fd,
     return (_enqueue_new_event(loop, event));
 }
 
-int op_event_loop_add_zmq(struct op_event_loop* loop, void* socket,
-                          const struct op_event_callbacks* callbacks, void* arg)
+int op_event_loop_add_zmq(struct op_event_loop* loop,
+                          void* socket,
+                          const struct op_event_callbacks* callbacks,
+                          void* arg)
 {
     assert(loop);
     assert(socket);
@@ -190,7 +194,8 @@ int op_event_loop_add_zmq(struct op_event_loop* loop, void* socket,
 int op_event_loop_add_timer_ided(struct op_event_loop* loop,
                                  uint64_t timeout_ns,
                                  const struct op_event_callbacks* callbacks,
-                                 void* arg, uint32_t* timeout_id)
+                                 void* arg,
+                                 uint32_t* timeout_id)
 {
     assert(loop);
     assert(callbacks);
@@ -261,7 +266,8 @@ struct op_event* op_event_loop_find_timer(struct op_event_loop* loop,
     return (event);
 }
 
-int op_event_loop_update_fd(struct op_event_loop* loop, int fd,
+int op_event_loop_update_fd(struct op_event_loop* loop,
+                            int fd,
                             const struct op_event_callbacks* callbacks)
 {
     struct op_event* event = op_event_loop_find(loop, fd);
@@ -272,7 +278,8 @@ int op_event_loop_update_fd(struct op_event_loop* loop, int fd,
     return (0);
 }
 
-int op_event_loop_update_zmq(struct op_event_loop* loop, void* socket,
+int op_event_loop_update_zmq(struct op_event_loop* loop,
+                             void* socket,
                              const struct op_event_callbacks* callbacks)
 {
     struct op_event* event = op_event_loop_find(loop, socket);
@@ -294,7 +301,8 @@ int op_event_loop_update_timer_cb(struct op_event_loop* loop,
 }
 
 int op_event_loop_update_timer_to(struct op_event_loop* loop,
-                                  uint32_t timeout_id, uint64_t timeout)
+                                  uint32_t timeout_id,
+                                  uint64_t timeout)
 {
     struct op_event* event = op_event_loop_find(loop, timeout_id);
     if (!event) { return (-EINVAL); }
@@ -400,7 +408,8 @@ static int _event_timer_read(const struct op_event_data* data)
     return (read_or_err == sizeof(nb_expirations) ? 0 : -1);
 }
 
-int _epoll_add_or_mod(struct op_event_loop* loop, int fd,
+int _epoll_add_or_mod(struct op_event_loop* loop,
+                      int fd,
                       struct epoll_event* event)
 {
     int error = epoll_ctl(loop->poll_fd, EPOLL_CTL_MOD, fd, event);
@@ -441,7 +450,9 @@ size_t _do_event_updates(struct op_event_loop* loop)
                 SLIST_INSERT_IF_MISSING(&loop->remove_list, event, remove_link);
                 OP_LOG(OP_LOG_WARNING,
                        "Failed to update timer fd %d in epoll %d: %s\n",
-                       _event_key(event), loop->poll_fd, strerror(errno));
+                       _event_key(event),
+                       loop->poll_fd,
+                       strerror(errno));
             } else {
                 nb_events++;
             }
@@ -460,7 +471,9 @@ size_t _do_event_updates(struct op_event_loop* loop)
                 SLIST_INSERT_IF_MISSING(&loop->remove_list, event, remove_link);
                 OP_LOG(OP_LOG_WARNING,
                        "Failed to update fd %d in epoll %d: %s\n",
-                       _event_key(event), loop->poll_fd, strerror(errno));
+                       _event_key(event),
+                       loop->poll_fd,
+                       strerror(errno));
             } else {
                 nb_events++;
             }
@@ -482,7 +495,8 @@ size_t _do_event_updates(struct op_event_loop* loop)
     return nb_events;
 }
 
-int _do_event_handling(struct op_event_loop* loop, struct epoll_event* epevents,
+int _do_event_handling(struct op_event_loop* loop,
+                       struct epoll_event* epevents,
                        size_t nb_events)
 {
     for (size_t i = 0; i < nb_events; i++) {
@@ -494,8 +508,8 @@ int _do_event_handling(struct op_event_loop* loop, struct epoll_event* epevents,
             case OP_EVENT_TYPE_TIMER:
                 if (event->callbacks.on_timeout(&event->data, event->arg)
                     != 0) {
-                    SLIST_INSERT_IF_MISSING(&loop->remove_list, event,
-                                            remove_link);
+                    SLIST_INSERT_IF_MISSING(
+                        &loop->remove_list, event, remove_link);
                 } else {
                     /* timer_fd's need to be read in order to be cleared */
                     _event_timer_read(&event->data);
@@ -506,8 +520,8 @@ int _do_event_handling(struct op_event_loop* loop, struct epoll_event* epevents,
                     break; /* fall through if readable */
             case OP_EVENT_TYPE_FD:
                 if (event->callbacks.on_read(&event->data, event->arg) != 0) {
-                    SLIST_INSERT_IF_MISSING(&loop->remove_list, event,
-                                            remove_link);
+                    SLIST_INSERT_IF_MISSING(
+                        &loop->remove_list, event, remove_link);
                 }
                 break;
             default:
@@ -524,8 +538,8 @@ int _do_event_handling(struct op_event_loop* loop, struct epoll_event* epevents,
                     break; /* fall through if writable */
             case OP_EVENT_TYPE_FD:
                 if (event->callbacks.on_write(&event->data, event->arg) != 0) {
-                    SLIST_INSERT_IF_MISSING(&loop->remove_list, event,
-                                            remove_link);
+                    SLIST_INSERT_IF_MISSING(
+                        &loop->remove_list, event, remove_link);
                 }
                 break;
             default:
@@ -571,19 +585,19 @@ int _do_event_removals(struct op_event_loop* loop)
         SLIST_REMOVE_HEAD(&loop->remove_list, remove_link);
 
         if (event->data.type != OP_EVENT_TYPE_FILE) {
-            int error = epoll_ctl(loop->poll_fd, EPOLL_CTL_DEL,
-                                  _event_key(event), NULL);
+            int error = epoll_ctl(
+                loop->poll_fd, EPOLL_CTL_DEL, _event_key(event), NULL);
             /* During shutdown, the fd might have already been closed, so ignore
              * EBADF here */
             loop->nb_epoll_events -= (!error || errno == EBADF ? 1 : 0);
         } else {
-            SLIST_FIND_AND_REMOVE(&loop->always_list, always_link, op_event,
-                                  event);
+            SLIST_FIND_AND_REMOVE(
+                &loop->always_list, always_link, op_event, event);
         }
 
         SLIST_FIND_AND_REMOVE(&loop->update_list, update_link, op_event, event);
-        SLIST_FIND_AND_REMOVE(&loop->disable_list, disable_link, op_event,
-                              event);
+        SLIST_FIND_AND_REMOVE(
+            &loop->disable_list, disable_link, op_event, event);
         SLIST_REMOVE(&loop->events_list, event, op_event, events_link);
 
         if (event->data.type == OP_EVENT_TYPE_TIMER) {
@@ -641,8 +655,8 @@ int op_event_loop_run_timeout(struct op_event_loop* loop, int timeout)
         if (loop->nb_epoll_events) {
             int epoll_timeout = (SLIST_EMPTY(&loop->always_list) ? timeout : 0);
             struct epoll_event events[EPOLL_MAX_EVENTS];
-            int nb_events = epoll_wait(loop->poll_fd, events, EPOLL_MAX_EVENTS,
-                                       epoll_timeout);
+            int nb_events = epoll_wait(
+                loop->poll_fd, events, EPOLL_MAX_EVENTS, epoll_timeout);
             if (nb_events > 0) {
                 _do_event_handling(loop, events, nb_events);
                 _do_event_removals(loop);

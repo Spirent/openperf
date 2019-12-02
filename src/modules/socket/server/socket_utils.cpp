@@ -14,8 +14,10 @@ namespace socket {
 namespace server {
 
 tl::expected<generic_socket, int>
-make_socket(openperf::socket::server::allocator& allocator, int domain,
-            int type, int protocol)
+make_socket(openperf::socket::server::allocator& allocator,
+            int domain,
+            int type,
+            int protocol)
 {
     if (domain != AF_INET && domain != AF_INET6) {
         return (tl::make_unexpected(EAFNOSUPPORT));
@@ -99,8 +101,10 @@ std::optional<in_port_t> get_port(const sockaddr_storage& sstorage)
     }
 }
 
-tl::expected<void, int> copy_in(struct sockaddr_storage& dst, pid_t src_pid,
-                                const sockaddr* src_ptr, socklen_t length)
+tl::expected<void, int> copy_in(struct sockaddr_storage& dst,
+                                pid_t src_pid,
+                                const sockaddr* src_ptr,
+                                socklen_t length)
 {
     constexpr socklen_t dst_length = sizeof(dst);
     if (length > dst_length) { return (tl::make_unexpected(ENAMETOOLONG)); }
@@ -116,8 +120,11 @@ tl::expected<void, int> copy_in(struct sockaddr_storage& dst, pid_t src_pid,
     return {};
 }
 
-tl::expected<void, int> copy_in(char* dst, pid_t src_pid, const char* src_ptr,
-                                socklen_t dstlength, socklen_t srclength)
+tl::expected<void, int> copy_in(char* dst,
+                                pid_t src_pid,
+                                const char* src_ptr,
+                                socklen_t dstlength,
+                                socklen_t srclength)
 {
     auto local = iovec{.iov_base = dst, .iov_len = dstlength};
 
@@ -145,7 +152,8 @@ tl::expected<int, int> copy_in(pid_t src_pid, const int* src_int)
     return (value);
 }
 
-tl::expected<void, int> copy_out(pid_t dst_pid, sockaddr* dst_ptr,
+tl::expected<void, int> copy_out(pid_t dst_pid,
+                                 sockaddr* dst_ptr,
                                  const struct sockaddr_storage& src,
                                  socklen_t length)
 {
@@ -173,8 +181,8 @@ tl::expected<void, int> copy_out(pid_t dst_pid, void* dst_ptr, int src)
     return {};
 }
 
-tl::expected<void, int> copy_out(pid_t dst_pid, void* dst_ptr,
-                                 const void* src_ptr, socklen_t length)
+tl::expected<void, int>
+copy_out(pid_t dst_pid, void* dst_ptr, const void* src_ptr, socklen_t length)
 {
     auto local =
         iovec{.iov_base = const_cast<void*>(src_ptr), .iov_len = length};

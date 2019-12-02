@@ -214,7 +214,8 @@ bool dgram_channel::send(const pbuf* p)
     return (true);
 }
 
-bool dgram_channel::send(const pbuf* p, const dgram_ip_addr* addr,
+bool dgram_channel::send(const pbuf* p,
+                         const dgram_ip_addr* addr,
                          in_port_t port)
 {
     if (writable() < buffer_required(p->len)) return (false);
@@ -259,7 +260,8 @@ static dgram_channel_descriptor* to_dgram_descriptor(
          */
         desc = std::addressof(storage);
         std::copy_n(reinterpret_cast<std::byte*>(peek[0].iov_base),
-                    peek[0].iov_len, reinterpret_cast<std::byte*>(desc));
+                    peek[0].iov_len,
+                    reinterpret_cast<std::byte*>(desc));
         std::copy_n(reinterpret_cast<std::byte*>(peek[1].iov_base),
                     sizeof(storage) - peek[0].iov_len,
                     reinterpret_cast<std::byte*>(desc) + peek[0].iov_len);
@@ -315,10 +317,14 @@ void dgram_channel::dump() const
     fprintf(stderr,
             "server: tx_q: %zu:%zu, rx_q: %zu:%zu, tx_fd: %zu:%zu, rx_fd: "
             "%zu:%zu\n",
-            atomic_load(&tx_q_write_idx), atomic_load(&tx_q_read_idx),
-            atomic_load(&rx_q_write_idx), atomic_load(&rx_q_read_idx),
-            atomic_load(&tx_fd_write_idx), atomic_load(&tx_fd_read_idx),
-            atomic_load(&rx_fd_write_idx), atomic_load(&rx_fd_read_idx));
+            atomic_load(&tx_q_write_idx),
+            atomic_load(&tx_q_read_idx),
+            atomic_load(&rx_q_write_idx),
+            atomic_load(&rx_q_read_idx),
+            atomic_load(&tx_fd_write_idx),
+            atomic_load(&tx_fd_read_idx),
+            atomic_load(&rx_fd_write_idx),
+            atomic_load(&rx_fd_read_idx));
     fflush(stderr);
 }
 

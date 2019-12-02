@@ -97,8 +97,8 @@ TEST_CASE("op_list functionality checks", "[list]")
          * Use a bunch of large prime numbers for scalers.  This allows us
          * to insert a bunch of interspersed values without duplicates.
          */
-        std::vector<unsigned> scalers = {1009, 1013, 1019, 1021,
-                                         1031, 1033, 1039, 1049};
+        std::vector<unsigned> scalers = {
+            1009, 1013, 1019, 1021, 1031, 1033, 1039, 1049};
         std::vector<std::thread> threads;
         static constexpr size_t nb_inserts = 250;
 

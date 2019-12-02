@@ -20,8 +20,8 @@ struct test_sink
     bool operator==(const test_sink& other) const { return (id == other.id); }
 };
 
-template class openperf::packetio::forwarding_table<test_interface, test_sink,
-                                                    max_ports>;
+template class openperf::packetio::
+    forwarding_table<test_interface, test_sink, max_ports>;
 
 template <>
 std::string openperf::packetio::get_interface_id(test_interface* ifp)
@@ -117,7 +117,8 @@ TEST_CASE("forwarding table functionality", "[forwarding table]")
 
         auto if_idx = 0;
         std::generate_n(
-            std::inserter(interfaces, interfaces.begin()), many_interfaces,
+            std::inserter(interfaces, interfaces.begin()),
+            many_interfaces,
             [&]() {
                 auto uuid = openperf::core::uuid::random();
                 auto mac = openperf::net::mac_address(uuid.data());
@@ -128,8 +129,8 @@ TEST_CASE("forwarding table functionality", "[forwarding table]")
             });
 
         for (auto& [key, value] : interfaces) {
-            table.insert_interface(key.first, key.second,
-                                   std::addressof(value));
+            table.insert_interface(
+                key.first, key.second, std::addressof(value));
         }
 
         SECTION("find many interfaces, ")
@@ -197,7 +198,8 @@ TEST_CASE("forwarding table functionality", "[forwarding table]")
             auto table_port0_sinks = table.get_sinks(port0);
             REQUIRE(table_port0_sinks.size() == many_sinks);
             std::vector<test_sink> difference;
-            std::set_difference(std::begin(port0_sinks), std::end(port0_sinks),
+            std::set_difference(std::begin(port0_sinks),
+                                std::end(port0_sinks),
                                 std::begin(table_port0_sinks),
                                 std::end(table_port0_sinks),
                                 std::back_inserter(difference),
@@ -209,7 +211,8 @@ TEST_CASE("forwarding table functionality", "[forwarding table]")
             auto table_port1_sinks = table.get_sinks(port1);
             REQUIRE(table_port1_sinks.size() == many_sinks);
 
-            std::set_difference(std::begin(port1_sinks), std::end(port1_sinks),
+            std::set_difference(std::begin(port1_sinks),
+                                std::end(port1_sinks),
                                 std::begin(table_port1_sinks),
                                 std::end(table_port1_sinks),
                                 std::back_inserter(difference),

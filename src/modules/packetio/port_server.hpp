@@ -17,7 +17,8 @@ namespace api {
 class server
 {
 public:
-    server(void* context, core::event_loop& loop,
+    server(void* context,
+           core::event_loop& loop,
            driver::generic_driver& driver);
 
 private:

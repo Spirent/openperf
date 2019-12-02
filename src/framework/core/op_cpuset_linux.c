@@ -53,20 +53,24 @@ size_t op_cpuset_count(op_cpuset_t cpuset)
 
 void op_cpuset_and(op_cpuset_t dest, op_cpuset_t src)
 {
-    CPU_AND_S(CPU_ALLOC_SIZE(CPU_SETSIZE), (cpu_set_t*)dest, (cpu_set_t*)dest,
+    CPU_AND_S(CPU_ALLOC_SIZE(CPU_SETSIZE),
+              (cpu_set_t*)dest,
+              (cpu_set_t*)dest,
               (cpu_set_t*)src);
 }
 
 void op_cpuset_or(op_cpuset_t dest, op_cpuset_t src)
 {
-    CPU_OR_S(CPU_ALLOC_SIZE(CPU_SETSIZE), (cpu_set_t*)dest, (cpu_set_t*)dest,
+    CPU_OR_S(CPU_ALLOC_SIZE(CPU_SETSIZE),
+             (cpu_set_t*)dest,
+             (cpu_set_t*)dest,
              (cpu_set_t*)src);
 }
 
 bool op_cpuset_equal(op_cpuset_t a, op_cpuset_t b)
 {
-    return CPU_EQUAL_S(CPU_ALLOC_SIZE(CPU_SETSIZE), (cpu_set_t*)a,
-                       (cpu_set_t*)b);
+    return CPU_EQUAL_S(
+        CPU_ALLOC_SIZE(CPU_SETSIZE), (cpu_set_t*)a, (cpu_set_t*)b);
 }
 
 size_t op_get_cpu_count(void)

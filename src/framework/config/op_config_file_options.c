@@ -11,7 +11,9 @@ static struct op_options_data config_file_options = {
     .callback = NULL,
     .options =
         {
-            {"File to use to configure OpenPerf", "config", 'c',
+            {"File to use to configure OpenPerf",
+             "config",
+             'c',
              OP_OPTION_TYPE_STRING},
             {0, 0, 0, 0},
         },

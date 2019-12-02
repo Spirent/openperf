@@ -46,7 +46,8 @@ uint16_t packetio_stack_gso_segment_ack_partial(struct tcp_seg* seg,
  * is updated to reflect the change.
  * On failure, an error code is returned and the segment and pcb are unmodified.
  */
-int packetio_stack_gso_segment_split(struct tcp_pcb* pcb, struct tcp_seg* seg,
+int packetio_stack_gso_segment_split(struct tcp_pcb* pcb,
+                                     struct tcp_seg* seg,
                                      uint16_t split);
 
 /**
@@ -58,8 +59,10 @@ uint16_t packetio_stack_gso_pbuf_data_available(const struct pbuf* p,
 /**
  * Copy data into a pbuf chain, starting at the specified offset.
  */
-uint16_t packetio_stack_gso_pbuf_copy(struct pbuf* p_head, uint16_t offset,
-                                      const void* dataptr, uint16_t length);
+uint16_t packetio_stack_gso_pbuf_copy(struct pbuf* p_head,
+                                      uint16_t offset,
+                                      const void* dataptr,
+                                      uint16_t length);
 
 #ifdef __cplusplus
 }
