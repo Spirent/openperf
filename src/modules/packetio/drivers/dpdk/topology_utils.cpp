@@ -62,9 +62,12 @@ queue_distribute(const std::vector<model::port_info>& port_info)
             OP_LOG(OP_LOG_WARNING,
                    "No local cores are available for ports on NUMA socket %u "
                    "(port%s %s)\n",
-                   item.first, item.second.size() > 1 ? "s" : "",
+                   item.first,
+                   item.second.size() > 1 ? "s" : "",
                    std::accumulate(
-                       begin(item.second), end(item.second), std::string(),
+                       begin(item.second),
+                       end(item.second),
+                       std::string(),
                        [&](const std::string& a, unsigned b) -> std::string {
                            return (a
                                    + (a.length() == 0
@@ -96,7 +99,8 @@ queue_distribute(const std::vector<model::port_info>& port_info)
          * this node.
          */
         std::vector<model::port_info> numa_port_info;
-        std::copy_if(begin(port_info), end(port_info),
+        std::copy_if(begin(port_info),
+                     end(port_info),
                      std::back_inserter(numa_port_info),
                      [&](const model::port_info& info) -> bool {
                          return (info.socket_id() == node.first);
@@ -110,7 +114,8 @@ queue_distribute(const std::vector<model::port_info>& port_info)
         for (auto& port_node : unmatched_port_nodes) {
             auto node_id = node_ids[port_node.first % nodes.size()];
             if (node_id == node.first) {
-                std::copy(begin(port_node.second), end(port_node.second),
+                std::copy(begin(port_node.second),
+                          end(port_node.second),
                           std::back_inserter(numa_port_info));
             }
         }
@@ -125,7 +130,8 @@ queue_distribute(const std::vector<model::port_info>& port_info)
          * of queue descriptors.
          */
         std::transform(
-            begin(node_descriptors), end(node_descriptors),
+            begin(node_descriptors),
+            end(node_descriptors),
             std::back_inserter(descriptors),
             [&](const queue::descriptor& d) -> queue::descriptor {
                 return (queue::descriptor{.worker_id = static_cast<uint16_t>(
@@ -161,7 +167,8 @@ unsigned get_stack_lcore_id()
 
     /* Find the numa node with the most cores */
     auto max = std::max_element(
-        begin(nodes), end(nodes),
+        begin(nodes),
+        end(nodes),
         [](const cores_by_id::value_type& a, const cores_by_id::value_type& b) {
             return (a.second.size() < b.second.size());
         });

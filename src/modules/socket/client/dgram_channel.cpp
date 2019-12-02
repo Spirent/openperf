@@ -161,7 +161,8 @@ to_sockaddr(const dgram_channel_addr& addr)
         auto sa6 = reinterpret_cast<sockaddr_in6*>(&sstorage);
         sa6->sin6_family = AF_INET6;
         sa6->sin6_port = addr.port();
-        dpdk::memcpy(&sa6->sin6_addr.s6_addr, &addr.addr().u_addr.ip6.addr[0],
+        dpdk::memcpy(&sa6->sin6_addr.s6_addr,
+                     &addr.addr().u_addr.ip6.addr[0],
                      sizeof(in6_addr));
         return (std::make_optional(sstorage));
     }
@@ -215,13 +216,15 @@ static size_t buffer_required(size_t length)
     return (sizeof(dgram_channel_descriptor) + length);
 }
 
-tl::expected<size_t, int> dgram_channel::send(const iovec iov[], size_t iovcnt,
+tl::expected<size_t, int> dgram_channel::send(const iovec iov[],
+                                              size_t iovcnt,
                                               int flags __attribute__((unused)),
                                               const sockaddr* to)
 {
     auto iov_length = std::accumulate(
-        iov, iov + iovcnt, 0UL,
-        [](size_t total, const iovec& iov) { return (total + iov.iov_len); });
+        iov, iov + iovcnt, 0UL, [](size_t total, const iovec& iov) {
+            return (total + iov.iov_len);
+        });
     if (!iov_length) return (0); /* success? */
 
     /*
@@ -286,7 +289,8 @@ static dgram_channel_descriptor* to_dgram_descriptor(
          */
         desc = std::addressof(storage);
         std::copy_n(reinterpret_cast<std::byte*>(peek[0].iov_base),
-                    peek[0].iov_len, reinterpret_cast<std::byte*>(desc));
+                    peek[0].iov_len,
+                    reinterpret_cast<std::byte*>(desc));
         std::copy_n(reinterpret_cast<std::byte*>(peek[1].iov_base),
                     sizeof(storage) - peek[0].iov_len,
                     reinterpret_cast<std::byte*>(desc) + peek[0].iov_len);
@@ -300,9 +304,8 @@ static dgram_channel_descriptor* to_dgram_descriptor(
     return (readable < buffer_required(desc->length) ? nullptr : desc);
 }
 
-tl::expected<size_t, int> dgram_channel::recv(iovec iov[], size_t iovcnt,
-                                              int flags, sockaddr* from,
-                                              socklen_t* fromlen)
+tl::expected<size_t, int> dgram_channel::recv(
+    iovec iov[], size_t iovcnt, int flags, sockaddr* from, socklen_t* fromlen)
 {
     dgram_channel_descriptor* desc = nullptr;
     auto storage = dgram_channel_descriptor{};
@@ -333,8 +336,8 @@ tl::expected<size_t, int> dgram_channel::recv(iovec iov[], size_t iovcnt,
     while (read_size < desc->length && idx < iovcnt) {
         auto to_read = desc->length - read_size;
 
-        read_size += pread(iov[idx].iov_base,
-                           std::min(to_read, iov[idx].iov_len), offset);
+        read_size += pread(
+            iov[idx].iov_base, std::min(to_read, iov[idx].iov_len), offset);
         offset += read_size;
         idx++;
     }

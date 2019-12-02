@@ -56,7 +56,8 @@ static __attribute__((const)) uint64_t align_up(uint64_t x, uint64_t align)
     return ((x + align - 1) & ~(align - 1));
 }
 
-free_list::free_list(uintptr_t heap_base, size_t heap_size,
+free_list::free_list(uintptr_t heap_base,
+                     size_t heap_size,
                      size_t item_size __attribute__((unused)))
     : m_lower(heap_base)
     , m_upper(heap_base + heap_size)

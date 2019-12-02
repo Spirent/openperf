@@ -29,8 +29,8 @@ const char* to_string(const udp_socket_state& state)
 
 void udp_socket::udp_pcb_deleter::operator()(udp_pcb* pcb) { udp_remove(pcb); }
 
-static void udp_receive(void* arg, udp_pcb* pcb, pbuf* p, const ip_addr_t* addr,
-                        in_port_t port)
+static void udp_receive(
+    void* arg, udp_pcb* pcb, pbuf* p, const ip_addr_t* addr, in_port_t port)
 {
     (void)pcb;
     assert(addr != nullptr);
@@ -40,8 +40,8 @@ static void udp_receive(void* arg, udp_pcb* pcb, pbuf* p, const ip_addr_t* addr,
      * port in host byte order but BSD socket clients expect it to be in network
      * byte order.
      */
-    if (!channel->send(p, reinterpret_cast<const dgram_ip_addr*>(addr),
-                       htons(port))) {
+    if (!channel->send(
+            p, reinterpret_cast<const dgram_ip_addr*>(addr), htons(port))) {
         UDP_STATS_INC(udp.drop);
         pbuf_free(p);
     }
@@ -75,7 +75,8 @@ void udp_socket::handle_io()
         assert(p);
 
         if (dest)
-            udp_sendto(m_pcb.get(), p,
+            udp_sendto(m_pcb.get(),
+                       p,
                        reinterpret_cast<const ip_addr_t*>(&dest->addr()),
                        dest->port());
         else
@@ -111,9 +112,8 @@ static err_t do_udp_disconnect(udp_pcb* pcb)
     return (ERR_OK);
 }
 
-static tl::expected<bool, int>
-do_udp_connect(udp_pcb* pcb, const api::request_connect& connect,
-               dgram_channel* channel)
+static tl::expected<bool, int> do_udp_connect(
+    udp_pcb* pcb, const api::request_connect& connect, dgram_channel* channel)
 {
     sockaddr_storage sstorage;
 
@@ -164,8 +164,8 @@ static tl::expected<socklen_t, int> do_udp_get_name(const ip_addr_t& ip_addr,
         struct sockaddr_in6* sa6 = reinterpret_cast<sockaddr_in6*>(&sstorage);
         sa6->sin6_family = AF_INET6;
         sa6->sin6_port = htons(ip_port);
-        std::memcpy(sa6->sin6_addr.s6_addr, ip_2_ip6(&ip_addr)->addr,
-                    sizeof(in6_addr));
+        std::memcpy(
+            sa6->sin6_addr.s6_addr, ip_2_ip6(&ip_addr)->addr, sizeof(in6_addr));
 
         slength = sizeof(sockaddr_in6);
         break;
@@ -175,7 +175,9 @@ static tl::expected<socklen_t, int> do_udp_get_name(const ip_addr_t& ip_addr,
     }
 
     /* Copy the data out */
-    auto result = copy_out(request.id.pid, request.name, sstorage,
+    auto result = copy_out(request.id.pid,
+                           request.name,
+                           sstorage,
                            std::min(request.namelen, slength));
     if (!result) { return (tl::make_unexpected(result.error())); }
 

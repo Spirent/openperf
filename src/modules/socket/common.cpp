@@ -59,7 +59,8 @@ void set_message_fds(api::reply_msg& reply, const api::socket_fd_pair& fd_pair)
                    [&](api::reply_accept& accept) { accept.fd_pair = fd_pair; },
                    [](api::reply_init&) { ; },
                    [&](api::reply_socket& socket) { socket.fd_pair = fd_pair; },
-                   [](api::reply_socklen&) { ; }, [](api::reply_success&) { ; },
+                   [](api::reply_socklen&) { ; },
+                   [](api::reply_success&) { ; },
                    [](api::reply_working&) { ; }),
                *reply);
 }

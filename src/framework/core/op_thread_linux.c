@@ -30,9 +30,10 @@ int op_thread_set_affinity(int core_id)
 
 int op_thread_set_affinity_mask(const op_cpuset_t cpuset)
 {
-    return (pthread_setaffinity_np(
-        pthread_self(), op_cpuset_get_native_size(cpuset),
-        (cpu_set_t*)op_cpuset_get_native_ptr(cpuset)));
+    return (
+        pthread_setaffinity_np(pthread_self(),
+                               op_cpuset_get_native_size(cpuset),
+                               (cpu_set_t*)op_cpuset_get_native_ptr(cpuset)));
 }
 
 int op_thread_get_affinity_mask(op_cpuset_t cpuset)

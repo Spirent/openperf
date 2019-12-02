@@ -26,7 +26,8 @@ tx_queue::data::data(uint16_t port_id, uint16_t queue_id)
     , queue(queue_id)
     , fd(eventfd(0, EFD_NONBLOCK))
     , ring(rte_ring_create(get_ring_name(port_id, queue_id).c_str(),
-                           tx_queue_size, rte_eth_dev_socket_id(port_id),
+                           tx_queue_size,
+                           rte_eth_dev_socket_id(port_id),
                            RING_F_SP_ENQ | RING_F_SC_DEQ))
     , write_idx(0)
 {}
@@ -81,7 +82,10 @@ bool tx_queue::notify()
             OP_LOG(OP_LOG_ERROR,
                    "Could not generate notification for tx "
                    "queue %u:%u on fd %d: %s\n",
-                   port_id(), queue_id(), event_fd(), strerror(errno));
+                   port_id(),
+                   queue_id(),
+                   event_fd(),
+                   strerror(errno));
             return (false);
         }
     }
@@ -99,7 +103,8 @@ bool tx_queue::enable()
 
 void tx_queue::dump() const
 {
-    fprintf(stderr, "write_idx = %zu, read_index = %zu\n",
+    fprintf(stderr,
+            "write_idx = %zu, read_index = %zu\n",
             m_data.write_idx.load(std::memory_order_acquire),
             m_data.read_idx.load(std::memory_order_acquire));
 }

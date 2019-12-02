@@ -111,7 +111,8 @@ process_dpdk_port_ids(const std::map<std::string, std::string>& input,
         // check for duplicate port ID.
         auto port_id = entry.second;
         auto it =
-            std::find_if(output.begin(), output.end(),
+            std::find_if(output.begin(),
+                         output.end(),
                          [&port_id](const std::pair<int, std::string>& val) {
                              return val.second == port_id;
                          });

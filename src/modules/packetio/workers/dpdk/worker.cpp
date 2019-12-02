@@ -61,7 +61,8 @@ public:
                     const auto& event) -> std::optional<StateVariant> {
                     return (child.on_event(state, event));
                 },
-                m_state, event);
+                m_state,
+                event);
 
             if (next_state) { m_state = *next_state; }
         } catch (const std::exception& e) {
@@ -132,8 +133,10 @@ static std::pair<size_t, size_t> partition_mbufs(rte_mbuf* const incoming[],
     return std::make_pair(ucast_idx, mcast_idx);
 }
 
-static void rx_interface_dispatch(const fib* fib, const rx_queue* rxq,
-                                  rte_mbuf* incoming[], uint16_t n)
+static void rx_interface_dispatch(const fib* fib,
+                                  const rx_queue* rxq,
+                                  rte_mbuf* incoming[],
+                                  uint16_t n)
 {
     /*
      * If we don't have hardware LRO support, try to coalesce some
@@ -154,7 +157,9 @@ static void rx_interface_dispatch(const fib* fib, const rx_queue* rxq,
         partition_mbufs(incoming, n, unicast.data(), nunicast.data());
 
     /* Turn packets into destination interfaces... */
-    std::transform(unicast.data(), unicast.data() + nb_ucast, interfaces.data(),
+    std::transform(unicast.data(),
+                   unicast.data() + nb_ucast,
+                   interfaces.data(),
                    [&](auto& mbuf) {
                        auto eth = rte_pktmbuf_mtod(mbuf, struct rte_ether_hdr*);
                        return (fib->find_interface(rxq->port_id(),
@@ -168,8 +173,10 @@ static void rx_interface_dispatch(const fib* fib, const rx_queue* rxq,
             continue;
         }
 
-        OP_LOG(OP_LOG_TRACE, "Dispatching unicast packet to %c%c%u\n",
-               interfaces[i]->name[0], interfaces[i]->name[1],
+        OP_LOG(OP_LOG_TRACE,
+               "Dispatching unicast packet to %c%c%u\n",
+               interfaces[i]->name[0],
+               interfaces[i]->name[1],
                interfaces[i]->num);
 
         if (interfaces[i]->input(packetio_memory_pbuf_synchronize(unicast[i]),
@@ -190,8 +197,11 @@ static void rx_interface_dispatch(const fib* fib, const rx_queue* rxq,
     for (size_t i = 0; i < nb_nucast; i++) {
         for (auto [idx, ifp] : fib->get_interfaces(rxq->port_id())) {
 
-            OP_LOG(OP_LOG_TRACE, "Dispatching non-unicast packet to %c%c%u\n",
-                   ifp->name[0], ifp->name[1], ifp->num);
+            OP_LOG(OP_LOG_TRACE,
+                   "Dispatching non-unicast packet to %c%c%u\n",
+                   ifp->name[0],
+                   ifp->name[1],
+                   ifp->num);
 
             auto clone = rte_pktmbuf_clone(nunicast[i], nunicast[i]->pool);
             if (!clone
@@ -206,11 +216,14 @@ static void rx_interface_dispatch(const fib* fib, const rx_queue* rxq,
     }
 }
 
-static void rx_sink_dispatch(const fib* fib, const rx_queue* rxq,
-                             rte_mbuf* const incoming[], uint16_t n)
+static void rx_sink_dispatch(const fib* fib,
+                             const rx_queue* rxq,
+                             rte_mbuf* const incoming[],
+                             uint16_t n)
 {
     for (auto& sink : fib->get_sinks(rxq->port_id())) {
-        OP_LOG(OP_LOG_TRACE, "Dispatching packets to sink %s\n",
+        OP_LOG(OP_LOG_TRACE,
+               "Dispatching packets to sink %s\n",
                sink.id().c_str());
         sink.push(reinterpret_cast<packets::packet_buffer* const*>(incoming),
                   n);
@@ -221,13 +234,17 @@ static uint16_t rx_burst(const fib* fib, const rx_queue* rxq)
 {
     std::array<rte_mbuf*, pkt_burst_size> incoming;
 
-    auto n = rte_eth_rx_burst(rxq->port_id(), rxq->queue_id(), incoming.data(),
-                              pkt_burst_size);
+    auto n = rte_eth_rx_burst(
+        rxq->port_id(), rxq->queue_id(), incoming.data(), pkt_burst_size);
 
     if (!n) return (0);
 
-    OP_LOG(OP_LOG_TRACE, "Received %d packet%s on %d:%d\n", n, n > 1 ? "s" : "",
-           rxq->port_id(), rxq->queue_id());
+    OP_LOG(OP_LOG_TRACE,
+           "Received %d packet%s on %d:%d\n",
+           n,
+           n > 1 ? "s" : "",
+           rxq->port_id(),
+           rxq->queue_id());
 
     /* Dispatch packets to any port sinks */
     rx_sink_dispatch(fib, rxq, incoming.data(), n);
@@ -255,8 +272,8 @@ static uint16_t rx_burst(const fib* fib, const rx_queue* rxq)
         }
 
         /* ... and free all the non-stack packets */
-        std::for_each(to_free.data(), to_free.data() + nb_to_free,
-                      rte_pktmbuf_free);
+        std::for_each(
+            to_free.data(), to_free.data() + nb_to_free, rte_pktmbuf_free);
     } else {
         /* No hardware help; let the stack sort everything out */
         rx_interface_dispatch(fib, rxq, incoming.data(), n);
@@ -269,36 +286,49 @@ static uint16_t tx_burst(const tx_queue* txq)
 {
     std::array<rte_mbuf*, pkt_burst_size> outgoing;
 
-    auto to_send = rte_ring_dequeue_burst(
-        txq->ring(), reinterpret_cast<void**>(outgoing.data()), outgoing.size(),
-        nullptr);
+    auto to_send =
+        rte_ring_dequeue_burst(txq->ring(),
+                               reinterpret_cast<void**>(outgoing.data()),
+                               outgoing.size(),
+                               nullptr);
 
     if (!to_send) return (0);
 
-    auto sent = rte_eth_tx_burst(txq->port_id(), txq->queue_id(),
-                                 outgoing.data(), to_send);
+    auto sent = rte_eth_tx_burst(
+        txq->port_id(), txq->queue_id(), outgoing.data(), to_send);
 
-    OP_LOG(OP_LOG_TRACE, "Transmitted %u of %u packet%s on %u:%u\n", sent,
-           to_send, sent > 1 ? "s" : "", txq->port_id(), txq->queue_id());
+    OP_LOG(OP_LOG_TRACE,
+           "Transmitted %u of %u packet%s on %u:%u\n",
+           sent,
+           to_send,
+           sent > 1 ? "s" : "",
+           txq->port_id(),
+           txq->queue_id());
 
     size_t retries = 0;
     while (sent < to_send) {
         rte_pause();
         retries++;
-        sent += rte_eth_tx_burst(txq->port_id(), txq->queue_id(),
-                                 outgoing.data() + sent, to_send - sent);
+        sent += rte_eth_tx_burst(txq->port_id(),
+                                 txq->queue_id(),
+                                 outgoing.data() + sent,
+                                 to_send - sent);
     }
 
     if (retries) {
-        OP_LOG(OP_LOG_DEBUG, "Transmission required %zu retries on %u:%u\n",
-               retries, txq->port_id(), txq->queue_id());
+        OP_LOG(OP_LOG_DEBUG,
+               "Transmission required %zu retries on %u:%u\n",
+               retries,
+               txq->port_id(),
+               txq->queue_id());
     }
 
     return (sent);
 }
 
 static uint16_t service_event(event_loop::generic_event_loop& loop,
-                              const fib* fib, const task_ptr& task)
+                              const fib* fib,
+                              const task_ptr& task)
 {
     return (std::visit(utils::overloaded_visitor(
                            [&](const callback* cb) -> uint16_t {
@@ -520,27 +550,34 @@ class worker : public finite_state_machine<worker, state, command_msg>
             std::visit(
                 utils::overloaded_visitor(
                     [&](callback* callback) {
-                        OP_LOG(OP_LOG_DEBUG, "Adding task %.*s to worker %u\n",
+                        OP_LOG(OP_LOG_DEBUG,
+                               "Adding task %.*s to worker %u\n",
                                static_cast<int>(callback->name().length()),
-                               callback->name().data(), rte_lcore_id());
+                               callback->name().data(),
+                               rte_lcore_id());
                         m_pollables.emplace_back(callback);
                     },
                     [&](rx_queue* rxq) {
                         OP_LOG(OP_LOG_DEBUG,
                                "Adding RX port queue %u:%u to worker %u\n",
-                               rxq->port_id(), rxq->queue_id(), rte_lcore_id());
+                               rxq->port_id(),
+                               rxq->queue_id(),
+                               rte_lcore_id());
                         m_rx_queues.emplace_back(rxq);
                     },
                     [&](tx_queue* txq) {
                         OP_LOG(OP_LOG_DEBUG,
                                "Adding TX port queue %u:%u to worker %u\n",
-                               txq->port_id(), txq->queue_id(), rte_lcore_id());
+                               txq->port_id(),
+                               txq->queue_id(),
+                               rte_lcore_id());
                         m_pollables.emplace_back(txq);
                     },
                     [&](tx_scheduler* scheduler) {
                         OP_LOG(OP_LOG_DEBUG,
                                "Adding TX port scheduler %u:%u to worker %u\n",
-                               scheduler->port_id(), scheduler->queue_id(),
+                               scheduler->port_id(),
+                               scheduler->queue_id(),
                                rte_lcore_id());
                         m_pollables.emplace_back(scheduler);
                     }),
@@ -560,7 +597,8 @@ class worker : public finite_state_machine<worker, state, command_msg>
             std::visit(
                 utils::overloaded_visitor(
                     [&](callback* cb) {
-                        OP_LOG(OP_LOG_DEBUG, "Removing task from worker %u\n",
+                        OP_LOG(OP_LOG_DEBUG,
+                               "Removing task from worker %u\n",
                                rte_lcore_id());
                         m_pollables.erase(std::remove(std::begin(m_pollables),
                                                       std::end(m_pollables),

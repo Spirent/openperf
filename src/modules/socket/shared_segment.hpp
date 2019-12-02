@@ -14,7 +14,8 @@ class shared_segment
     bool m_initialized;
 
 public:
-    shared_segment(const std::string_view path, size_t size,
+    shared_segment(const std::string_view path,
+                   size_t size,
                    bool create = false);
     ~shared_segment();
 

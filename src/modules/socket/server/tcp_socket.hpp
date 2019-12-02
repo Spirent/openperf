@@ -39,8 +39,14 @@ struct tcp_error
     int value;
 };
 
-typedef std::variant<tcp_init, tcp_bound, tcp_accept, tcp_listening,
-                     tcp_connecting, tcp_connected, tcp_closing, tcp_closed,
+typedef std::variant<tcp_init,
+                     tcp_bound,
+                     tcp_accept,
+                     tcp_listening,
+                     tcp_connecting,
+                     tcp_connected,
+                     tcp_closing,
+                     tcp_closed,
                      tcp_error>
     tcp_socket_state;
 
@@ -59,7 +65,8 @@ class tcp_socket : public socket_state_machine<tcp_socket, tcp_socket_state>
 
     openperf::socket::server::allocator* channel_allocator();
 
-    tcp_socket(openperf::socket::server::allocator* allocator, int flags,
+    tcp_socket(openperf::socket::server::allocator* allocator,
+               int flags,
                tcp_pcb* pcb);
 
 public:
@@ -152,7 +159,8 @@ public:
 
     /* getsockopt handlers */
     static tl::expected<socklen_t, int>
-    do_getsockopt(const tcp_pcb*, const api::request_getsockopt&,
+    do_getsockopt(const tcp_pcb*,
+                  const api::request_getsockopt&,
                   const tcp_socket_state& state);
 
     template <typename State>

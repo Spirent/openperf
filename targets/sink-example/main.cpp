@@ -29,9 +29,13 @@ static void log_counter(packet_counter<T>& counter, double delta)
     OP_LOG(OP_LOG_INFO,
            "%s counters: packets %zu (%.02f pps), length %zu/%zu/%zu (%.02f "
            "Mbps)\n",
-           counter.name_.c_str(), pkts, pps,
-           counter.octets_min_.load(std::memory_order_relaxed), octets / pkts,
-           counter.octets_max_.load(std::memory_order_relaxed), Mbps);
+           counter.name_.c_str(),
+           pkts,
+           pps,
+           counter.octets_min_.load(std::memory_order_relaxed),
+           octets / pkts,
+           counter.octets_max_.load(std::memory_order_relaxed),
+           Mbps);
 
     counter.reset();
 }

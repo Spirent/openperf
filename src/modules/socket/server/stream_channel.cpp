@@ -234,10 +234,14 @@ void stream_channel::dump() const
     fprintf(stderr,
             "server: tx_q: %zu:%zu, rx_q: %zu:%zu, tx_fd: %zu:%zu, rx_fd: "
             "%zu:%zu\n",
-            atomic_load(&tx_q_write_idx), atomic_load(&tx_q_read_idx),
-            atomic_load(&rx_q_write_idx), atomic_load(&rx_q_read_idx),
-            atomic_load(&tx_fd_write_idx), atomic_load(&tx_fd_read_idx),
-            atomic_load(&rx_fd_write_idx), atomic_load(&rx_fd_read_idx));
+            atomic_load(&tx_q_write_idx),
+            atomic_load(&tx_q_read_idx),
+            atomic_load(&rx_q_write_idx),
+            atomic_load(&rx_q_read_idx),
+            atomic_load(&tx_fd_write_idx),
+            atomic_load(&tx_fd_read_idx),
+            atomic_load(&rx_fd_write_idx),
+            atomic_load(&rx_fd_read_idx));
     fflush(stderr);
 }
 

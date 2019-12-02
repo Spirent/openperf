@@ -24,7 +24,8 @@ static void eal_mbuf_copy_seg(rte_mbuf* dst, const rte_mbuf* src)
     dst->tx_offload = src->tx_offload;
     dst->timesync = src->timesync;
 
-    rte_memcpy(rte_pktmbuf_mtod(dst, void*), rte_pktmbuf_mtod(src, const void*),
+    rte_memcpy(rte_pktmbuf_mtod(dst, void*),
+               rte_pktmbuf_mtod(src, const void*),
                rte_pktmbuf_data_len(src));
 }
 
@@ -66,18 +67,27 @@ static rte_mbuf* eal_mbuf_copy_chain(const rte_mbuf* src_head)
     return (dst_head);
 }
 
-static uint16_t transmit(uint16_t port_idx, uint16_t queue_idx,
-                         struct rte_mbuf* mbufs[], uint16_t nb_mbufs)
+static uint16_t transmit(uint16_t port_idx,
+                         uint16_t queue_idx,
+                         struct rte_mbuf* mbufs[],
+                         uint16_t nb_mbufs)
 {
     auto sent = rte_eth_tx_burst(port_idx, queue_idx, mbufs, nb_mbufs);
 
-    OP_LOG(OP_LOG_TRACE, "Transmitted %u of %u packet%s on %u:%u\n", sent,
-           nb_mbufs, sent > 1 ? "s" : "", port_idx, queue_idx);
+    OP_LOG(OP_LOG_TRACE,
+           "Transmitted %u of %u packet%s on %u:%u\n",
+           sent,
+           nb_mbufs,
+           sent > 1 ? "s" : "",
+           port_idx,
+           queue_idx);
 
     return (sent);
 }
 
-uint16_t tx_copy_direct(int port_idx, uint32_t, struct rte_mbuf* mbufs[],
+uint16_t tx_copy_direct(int port_idx,
+                        uint32_t,
+                        struct rte_mbuf* mbufs[],
                         uint16_t nb_mbufs)
 {
     uint16_t sent = 0;
@@ -96,7 +106,9 @@ uint16_t tx_copy_direct(int port_idx, uint32_t, struct rte_mbuf* mbufs[],
     return (sent);
 }
 
-uint16_t tx_copy_queued(int port_idx, uint32_t hash, struct rte_mbuf* mbufs[],
+uint16_t tx_copy_queued(int port_idx,
+                        uint32_t hash,
+                        struct rte_mbuf* mbufs[],
                         uint16_t nb_mbufs)
 {
     uint16_t sent = 0;
@@ -118,13 +130,15 @@ uint16_t tx_copy_queued(int port_idx, uint32_t hash, struct rte_mbuf* mbufs[],
     return (sent);
 }
 
-uint16_t tx_direct(int port_idx, uint32_t, struct rte_mbuf* mbufs[],
-                   uint16_t nb_mbufs)
+uint16_t
+tx_direct(int port_idx, uint32_t, struct rte_mbuf* mbufs[], uint16_t nb_mbufs)
 {
     return (transmit(port_idx, 0, mbufs, nb_mbufs));
 }
 
-uint16_t tx_queued(int port_idx, uint32_t hash, struct rte_mbuf* mbufs[],
+uint16_t tx_queued(int port_idx,
+                   uint32_t hash,
+                   struct rte_mbuf* mbufs[],
                    uint16_t nb_mbufs)
 {
     auto& queues = worker::port_queues::instance();

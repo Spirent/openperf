@@ -543,7 +543,8 @@ operator~(const openperf::utils::bit_flags<Enum>& lhs)
 
 template <typename Enum>
 constexpr typename std::enable_if_t<
-    std::is_enum_v<Enum> && openperf::utils::is_enum_flag<Enum>::value, bool>
+    std::is_enum_v<Enum> && openperf::utils::is_enum_flag<Enum>::value,
+    bool>
 operator==(const Enum& lhs, const Enum& rhs)
 {
     return (lhs == rhs);
@@ -551,7 +552,8 @@ operator==(const Enum& lhs, const Enum& rhs)
 
 template <typename Enum>
 constexpr typename std::enable_if_t<
-    std::is_enum_v<Enum> && openperf::utils::is_enum_flag<Enum>::value, bool>
+    std::is_enum_v<Enum> && openperf::utils::is_enum_flag<Enum>::value,
+    bool>
 operator==(const openperf::utils::enumerator<Enum>& lhs,
            const openperf::utils::enumerator<Enum>& rhs)
 {
@@ -560,7 +562,8 @@ operator==(const openperf::utils::enumerator<Enum>& lhs,
 
 template <typename Enum>
 constexpr typename std::enable_if_t<
-    std::is_enum_v<Enum> && openperf::utils::is_enum_flag<Enum>::value, bool>
+    std::is_enum_v<Enum> && openperf::utils::is_enum_flag<Enum>::value,
+    bool>
 operator==(const openperf::utils::bit_flags<Enum>& lhs,
            const openperf::utils::bit_flags<Enum>& rhs)
 {
@@ -569,7 +572,8 @@ operator==(const openperf::utils::bit_flags<Enum>& lhs,
 
 template <typename Enum>
 constexpr typename std::enable_if_t<
-    std::is_enum_v<Enum> && openperf::utils::is_enum_flag<Enum>::value, bool>
+    std::is_enum_v<Enum> && openperf::utils::is_enum_flag<Enum>::value,
+    bool>
 operator==(const Enum& lhs, const openperf::utils::enumerator<Enum>& rhs)
 {
     return (lhs == rhs.value);
@@ -577,7 +581,8 @@ operator==(const Enum& lhs, const openperf::utils::enumerator<Enum>& rhs)
 
 template <typename Enum>
 constexpr typename std::enable_if_t<
-    std::is_enum_v<Enum> && openperf::utils::is_enum_flag<Enum>::value, bool>
+    std::is_enum_v<Enum> && openperf::utils::is_enum_flag<Enum>::value,
+    bool>
 operator==(const openperf::utils::enumerator<Enum>& lhs, const Enum& rhs)
 {
     return (lhs.value == rhs);
@@ -589,7 +594,8 @@ operator==(const openperf::utils::enumerator<Enum>& lhs, const Enum& rhs)
 
 template <typename Enum>
 constexpr typename std::enable_if_t<
-    std::is_enum_v<Enum> && openperf::utils::is_enum_flag<Enum>::value, bool>
+    std::is_enum_v<Enum> && openperf::utils::is_enum_flag<Enum>::value,
+    bool>
 operator!=(const Enum& lhs, const Enum& rhs)
 {
     return (lhs != rhs);
@@ -597,7 +603,8 @@ operator!=(const Enum& lhs, const Enum& rhs)
 
 template <typename Enum>
 constexpr typename std::enable_if_t<
-    std::is_enum_v<Enum> && openperf::utils::is_enum_flag<Enum>::value, bool>
+    std::is_enum_v<Enum> && openperf::utils::is_enum_flag<Enum>::value,
+    bool>
 operator!=(const openperf::utils::enumerator<Enum>& lhs,
            const openperf::utils::enumerator<Enum>& rhs)
 {
@@ -606,7 +613,8 @@ operator!=(const openperf::utils::enumerator<Enum>& lhs,
 
 template <typename Enum>
 constexpr typename std::enable_if_t<
-    std::is_enum_v<Enum> && openperf::utils::is_enum_flag<Enum>::value, bool>
+    std::is_enum_v<Enum> && openperf::utils::is_enum_flag<Enum>::value,
+    bool>
 operator!=(const openperf::utils::bit_flags<Enum>& lhs,
            const openperf::utils::bit_flags<Enum>& rhs)
 {
@@ -615,7 +623,8 @@ operator!=(const openperf::utils::bit_flags<Enum>& lhs,
 
 template <typename Enum>
 constexpr typename std::enable_if_t<
-    std::is_enum_v<Enum> && openperf::utils::is_enum_flag<Enum>::value, bool>
+    std::is_enum_v<Enum> && openperf::utils::is_enum_flag<Enum>::value,
+    bool>
 operator!=(const Enum& lhs, const openperf::utils::enumerator<Enum>& rhs)
 {
     return (lhs != rhs.value);
@@ -623,7 +632,8 @@ operator!=(const Enum& lhs, const openperf::utils::enumerator<Enum>& rhs)
 
 template <typename Enum>
 constexpr typename std::enable_if_t<
-    std::is_enum_v<Enum> && openperf::utils::is_enum_flag<Enum>::value, bool>
+    std::is_enum_v<Enum> && openperf::utils::is_enum_flag<Enum>::value,
+    bool>
 operator!=(const openperf::utils::enumerator<Enum>& lhs, const Enum& rhs)
 {
     return (lhs.value != rhs);

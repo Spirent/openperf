@@ -36,12 +36,16 @@ void* op_socket_get_server(void* context, int type, const char* endpoint)
             return (NULL);
         else
             op_exit("Failed to create server socket for %s: %s (%d)\n",
-                    endpoint, zmq_strerror(errno), errno);
+                    endpoint,
+                    zmq_strerror(errno),
+                    errno);
     }
 
     const int ipv6 = 1;
     if (zmq_setsockopt(server, ZMQ_IPV6, &ipv6, sizeof(ipv6)) != 0) {
-        OP_LOG(OP_LOG_ERROR, "Failed to enable ZMQ IPv6 on %s: %s\n", endpoint,
+        OP_LOG(OP_LOG_ERROR,
+               "Failed to enable ZMQ IPv6 on %s: %s\n",
+               endpoint,
                zmq_strerror(errno));
     }
 
@@ -49,8 +53,10 @@ void* op_socket_get_server(void* context, int type, const char* endpoint)
         const int timeout = 1000; /* milliseconds */
         if (zmq_setsockopt(server, ZMQ_SNDTIMEO, &timeout, sizeof(timeout))
             != 0)
-            OP_LOG(OP_LOG_WARNING, "Unable to set socket timeout on %s: %s\n",
-                   endpoint, zmq_strerror(errno));
+            OP_LOG(OP_LOG_WARNING,
+                   "Unable to set socket timeout on %s: %s\n",
+                   endpoint,
+                   zmq_strerror(errno));
     }
 
     if (zmq_bind(server, endpoint) != 0 && errno != ETERM) {
@@ -66,7 +72,8 @@ void* op_socket_get_client_basic(void* context, int type, const char* endpoint)
     return (op_socket_get_client_identified(context, type, endpoint, NULL));
 }
 
-void* op_socket_get_client_identified(void* context, int type,
+void* op_socket_get_client_identified(void* context,
+                                      int type,
                                       const char* endpoint,
                                       const char* identity)
 {
@@ -79,14 +86,18 @@ void* op_socket_get_client_identified(void* context, int type,
             return (NULL);
         else
             op_exit("Failed to create client socket for %s: %s (%d)\n",
-                    endpoint, zmq_strerror(errno), errno);
+                    endpoint,
+                    zmq_strerror(errno),
+                    errno);
     }
 
     if (identity) {
         if (zmq_setsockopt(client, ZMQ_IDENTITY, identity, strlen(identity))
             != 0) {
-            op_exit("Failed to set identity %s for %s: %s\n", identity,
-                    endpoint, zmq_strerror(errno));
+            op_exit("Failed to set identity %s for %s: %s\n",
+                    identity,
+                    endpoint,
+                    zmq_strerror(errno));
         }
     }
 
@@ -95,14 +106,17 @@ void* op_socket_get_client_identified(void* context, int type,
 
         /* Close external sockets immediately when close is called */
         if (zmq_setsockopt(client, ZMQ_LINGER, &zero, sizeof(zero)) != 0) {
-            op_exit("Failed to set linger option for %s: %s\n", endpoint,
+            op_exit("Failed to set linger option for %s: %s\n",
+                    endpoint,
                     zmq_strerror(errno));
         }
 
         const int ipv6 = 1;
         if (zmq_setsockopt(client, ZMQ_IPV6, &ipv6, sizeof(ipv6)) != 0) {
-            OP_LOG(OP_LOG_ERROR, "Failed to enable ZMQ IPv6 on %s: %s\n",
-                   endpoint, zmq_strerror(errno));
+            OP_LOG(OP_LOG_ERROR,
+                   "Failed to enable ZMQ IPv6 on %s: %s\n",
+                   endpoint,
+                   zmq_strerror(errno));
         }
     }
 
@@ -114,7 +128,8 @@ void* op_socket_get_client_identified(void* context, int type,
     return (client);
 }
 
-void* op_socket_get_client_subscription(void* context, const char* endpoint,
+void* op_socket_get_client_subscription(void* context,
+                                        const char* endpoint,
                                         const char* prefix)
 {
     assert(context);
@@ -127,7 +142,9 @@ void* op_socket_get_client_subscription(void* context, const char* endpoint,
     if (zmq_setsockopt(sub, ZMQ_SUBSCRIBE, prefix, strlen(prefix)) != 0
         && errno != ETERM) {
         zmq_close(sub);
-        op_exit("Failed to add %s subscription to %s: %s\n", prefix, endpoint,
+        op_exit("Failed to add %s subscription to %s: %s\n",
+                prefix,
+                endpoint,
                 zmq_strerror(errno));
     }
 

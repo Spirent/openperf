@@ -45,8 +45,10 @@ static void read_timer(int fd, void* arg)
     uint64_t counter = 0;
     auto error = read(fd, &counter, sizeof(counter));
     if (error == -1 && errno == EAGAIN) {
-        OP_LOG(OP_LOG_WARNING, "Spurious tx scheduler wakeup for %u:%u\n",
-               scheduler->port_id(), scheduler->queue_id());
+        OP_LOG(OP_LOG_WARNING,
+               "Spurious tx scheduler wakeup for %u:%u\n",
+               scheduler->port_id(),
+               scheduler->queue_id());
     }
 }
 
@@ -94,7 +96,8 @@ std::chrono::nanoseconds next_deadline(const Source& source)
     return (units::get_period<ns>(source.packet_rate() / source.burst_size()));
 }
 
-tx_scheduler::tx_scheduler(const worker::tib& tib, uint16_t port_idx,
+tx_scheduler::tx_scheduler(const worker::tib& tib,
+                           uint16_t port_idx,
                            uint16_t queue_idx)
     : m_tib(tib)
     , m_portid(port_idx)
@@ -152,7 +155,8 @@ void tx_scheduler::do_reschedule(const schedule::time_point& now)
         const auto& source = key_source.second;
         if (source.active()
             && std::none_of(
-                std::begin(priority_vec), std::end(priority_vec),
+                std::begin(priority_vec),
+                std::end(priority_vec),
                 [&](const auto& entry) { return (key == entry.key); })) {
             m_schedule.push({now + next_deadline(source), key});
         }
@@ -187,7 +191,8 @@ static bool link_down(uint16_t port_idx)
     return (link.link_status == ETH_LINK_DOWN);
 }
 
-static bool have_active_sources(const worker::tib& tib, uint16_t port_idx,
+static bool have_active_sources(const worker::tib& tib,
+                                uint16_t port_idx,
                                 uint16_t queue_idx)
 {
     /* Check the forwarding table for matching events */
@@ -234,8 +239,10 @@ static __attribute__((const)) T distribute(T total, T buckets, T n)
 }
 
 template <typename Source>
-static uint16_t do_transmit(uint16_t port_idx, uint16_t queue_idx,
-                            Source& source, uint16_t burst_size,
+static uint16_t do_transmit(uint16_t port_idx,
+                            uint16_t queue_idx,
+                            Source& source,
+                            uint16_t burst_size,
                             std::vector<rte_mbuf*>& untransmitted)
 {
     std::array<rte_mbuf*, worker::pkt_burst_size> outgoing;
@@ -259,10 +266,12 @@ static uint16_t do_transmit(uint16_t port_idx, uint16_t queue_idx,
         if (prepared < to_send) {
             OP_LOG(OP_LOG_WARNING,
                    "Source %s returned %u untransmittable packets\n",
-                   source->id().c_str(), to_send - prepared);
+                   source->id().c_str(),
+                   to_send - prepared);
 
             /* Drop all un-sendable mbufs */
-            std::for_each(outgoing.data() + prepared, outgoing.data() + to_send,
+            std::for_each(outgoing.data() + prepared,
+                          outgoing.data() + to_send,
                           rte_pktmbuf_free);
         }
 
@@ -278,14 +287,16 @@ static uint16_t do_transmit(uint16_t port_idx, uint16_t queue_idx,
             unsigned retries = 0;
             do {
                 rte_pause();
-                sent +=
-                    rte_eth_tx_burst(port_idx, queue_idx,
-                                     outgoing.data() + sent, prepared - sent);
+                sent += rte_eth_tx_burst(port_idx,
+                                         queue_idx,
+                                         outgoing.data() + sent,
+                                         prepared - sent);
             } while (sent < prepared && ++retries < max_retries);
 
             /* Queue is still full after our retries; buffer packets */
             if (sent < prepared) {
-                std::copy_n(outgoing.data() + sent, prepared - sent,
+                std::copy_n(outgoing.data() + sent,
+                            prepared - sent,
                             std::back_inserter(untransmitted));
                 total_sent += sent;
                 break;
@@ -296,8 +307,12 @@ static uint16_t do_transmit(uint16_t port_idx, uint16_t queue_idx,
     }
 
     OP_LOG(OP_LOG_TRACE,
-           "Transmitted %u of %u packets on %u:%u from source %s\n", total_sent,
-           total_to_send, port_idx, queue_idx, source->id().c_str());
+           "Transmitted %u of %u packets on %u:%u from source %s\n",
+           total_sent,
+           total_to_send,
+           port_idx,
+           queue_idx,
+           source->id().c_str());
 
     return (total_sent);
 }

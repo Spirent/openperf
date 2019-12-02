@@ -97,8 +97,14 @@ const uint8_t* mac_address::data() const { return (&m_octets[0]); }
 std::string to_string(const mac_address& mac)
 {
     char buffer[18];
-    sprintf(buffer, "%02x:%02x:%02x:%02x:%02x:%02x", mac[0], mac[1], mac[2],
-            mac[3], mac[4], mac[5]);
+    sprintf(buffer,
+            "%02x:%02x:%02x:%02x:%02x:%02x",
+            mac[0],
+            mac[1],
+            mac[2],
+            mac[3],
+            mac[4],
+            mac[5]);
     return (std::string(buffer));
 }
 

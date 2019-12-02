@@ -156,7 +156,8 @@ int stream_channel::flags(int flags)
     return (0);
 }
 
-tl::expected<size_t, int> stream_channel::send(const iovec iov[], size_t iovcnt,
+tl::expected<size_t, int> stream_channel::send(const iovec iov[],
+                                               size_t iovcnt,
                                                int flags
                                                __attribute__((unused)),
                                                const sockaddr* to
@@ -204,7 +205,8 @@ tl::expected<size_t, int> stream_channel::send(const iovec iov[], size_t iovcnt,
 }
 
 tl::expected<size_t, int>
-stream_channel::recv(iovec iov[], size_t iovcnt,
+stream_channel::recv(iovec iov[],
+                     size_t iovcnt,
                      int flags __attribute__((unused)),
                      sockaddr* from __attribute__((unused)),
                      socklen_t* fromlen __attribute__((unused)))

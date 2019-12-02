@@ -33,9 +33,10 @@ public:
     using source_pair = std::pair<source_key, Source>;
     using source_map = immer::flex_vector<source_pair>;
 
-    source_map* insert_source(uint16_t port_idx, uint16_t queue_idx,
-                              Source source);
-    source_map* remove_source(uint16_t port_idx, uint16_t queue_idx,
+    source_map*
+    insert_source(uint16_t port_idx, uint16_t queue_idx, Source source);
+    source_map* remove_source(uint16_t port_idx,
+                              uint16_t queue_idx,
                               std::string_view source_id);
 
     std::pair<typename source_map::iterator, typename source_map::iterator>

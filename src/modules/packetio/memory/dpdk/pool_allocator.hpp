@@ -27,8 +27,10 @@ private:
         void operator()(rte_mempool* mp)
         {
             if (!rte_mempool_full(mp)) {
-                OP_LOG(OP_LOG_ERROR, "%mempool %s is missing %u mbufs\n",
-                       mp->name, rte_mempool_in_use_count(mp));
+                OP_LOG(OP_LOG_ERROR,
+                       "%mempool %s is missing %u mbufs\n",
+                       mp->name,
+                       rte_mempool_in_use_count(mp));
             }
             rte_mempool_free(mp);
         }

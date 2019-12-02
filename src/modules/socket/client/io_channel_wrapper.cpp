@@ -21,7 +21,8 @@ static io_channel io_channel_cast(api::io_channel_ptr channel)
 }
 
 io_channel_wrapper::io_channel_wrapper(api::io_channel_ptr channel,
-                                       int client_fd, int server_fd)
+                                       int client_fd,
+                                       int server_fd)
     : m_channel(io_channel_cast(channel))
 {
     std::visit(utils::overloaded_visitor(
@@ -85,7 +86,8 @@ int io_channel_wrapper::flags(int new_flags)
 }
 
 tl::expected<size_t, int> io_channel_wrapper::send(const iovec iov[],
-                                                   size_t iovcnt, int flags,
+                                                   size_t iovcnt,
+                                                   int flags,
                                                    const sockaddr* to)
 {
     auto send_visitor = [&](auto channel) -> tl::expected<size_t, int> {
@@ -94,9 +96,8 @@ tl::expected<size_t, int> io_channel_wrapper::send(const iovec iov[],
     return (std::visit(send_visitor, m_channel));
 }
 
-tl::expected<size_t, int> io_channel_wrapper::recv(iovec iov[], size_t iovcnt,
-                                                   int flags, sockaddr* from,
-                                                   socklen_t* fromlen)
+tl::expected<size_t, int> io_channel_wrapper::recv(
+    iovec iov[], size_t iovcnt, int flags, sockaddr* from, socklen_t* fromlen)
 {
     auto recv_visitor = [&](auto channel) -> tl::expected<size_t, int> {
         return (channel->recv(iov, iovcnt, flags, from, fromlen));

@@ -60,8 +60,8 @@ static void handle_list_stacks_request(generic_stack& stack,
     reply["data"] = jstacks.dump();
 }
 
-static void handle_get_stack_request(generic_stack& stack, json& request,
-                                     json& reply)
+static void
+handle_get_stack_request(generic_stack& stack, json& request, json& reply)
 {
     auto id = request["id"].get<std::string>();
     if (id == stack.id()) {
@@ -95,13 +95,14 @@ static int handle_rpc_request(const op_event_data* data, void* arg)
 
         switch (type) {
         case request_type::GET_STACK:
-            OP_LOG(OP_LOG_TRACE, "Received %s request for port %s\n",
+            OP_LOG(OP_LOG_TRACE,
+                   "Received %s request for port %s\n",
                    to_string(type).c_str(),
                    request["id"].get<std::string>().c_str());
             break;
         default:
-            OP_LOG(OP_LOG_TRACE, "Received %s request\n",
-                   to_string(type).c_str());
+            OP_LOG(
+                OP_LOG_TRACE, "Received %s request\n", to_string(type).c_str());
         }
 
         switch (type) {
@@ -118,13 +119,15 @@ static int handle_rpc_request(const op_event_data* data, void* arg)
         }
 
         std::vector<uint8_t> reply_buffer = json::to_cbor(reply);
-        if ((send_or_err = zmq_send(data->socket, reply_buffer.data(),
-                                    reply_buffer.size(), 0))
+        if ((send_or_err = zmq_send(
+                 data->socket, reply_buffer.data(), reply_buffer.size(), 0))
             != static_cast<int>(reply_buffer.size())) {
-            OP_LOG(OP_LOG_ERROR, "Request reply failed: %s\n",
+            OP_LOG(OP_LOG_ERROR,
+                   "Request reply failed: %s\n",
                    zmq_strerror(errno));
         } else {
-            OP_LOG(OP_LOG_TRACE, "Sent %s reply to %s request\n",
+            OP_LOG(OP_LOG_TRACE,
+                   "Sent %s reply to %s request\n",
                    to_string(reply["code"].get<reply_code>()).c_str(),
                    to_string(type).c_str());
         }
@@ -135,7 +138,8 @@ static int handle_rpc_request(const op_event_data* data, void* arg)
     return (((recv_or_err < 0 || send_or_err < 0) && errno == ETERM) ? -1 : 0);
 }
 
-server::server(void* context, openperf::core::event_loop& loop,
+server::server(void* context,
+               openperf::core::event_loop& loop,
                generic_stack& stack)
     : m_socket(op_socket_get_server(context, ZMQ_REP, endpoint.c_str()))
 {

@@ -131,7 +131,8 @@ size_t circular_buffer_consumer<Derived>::drop(size_t length)
 }
 
 template <typename Derived>
-size_t circular_buffer_consumer<Derived>::pread(void* ptr, size_t length,
+size_t circular_buffer_consumer<Derived>::pread(void* ptr,
+                                                size_t length,
                                                 size_t offset)
 {
     auto can_read = readable();
@@ -158,9 +159,8 @@ size_t circular_buffer_consumer<Derived>::read(void* ptr, size_t length)
 
 template <typename Derived>
 template <typename NotifyFunction>
-size_t
-circular_buffer_consumer<Derived>::read_and_notify(void* ptr, size_t length,
-                                                   NotifyFunction&& notify)
+size_t circular_buffer_consumer<Derived>::read_and_notify(
+    void* ptr, size_t length, NotifyFunction&& notify)
 {
     const auto available = readable();
     static auto lowat = available - (len() >> 1);

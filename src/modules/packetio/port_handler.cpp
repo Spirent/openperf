@@ -20,7 +20,8 @@ json submit_request(void* socket, json& request)
     case request_type::GET_PORT:
     case request_type::UPDATE_PORT:
     case request_type::DELETE_PORT:
-        OP_LOG(OP_LOG_TRACE, "Sending %s request for port %s\n",
+        OP_LOG(OP_LOG_TRACE,
+               "Sending %s request for port %s\n",
                to_string(type).c_str(),
                request["id"].get<std::string>().c_str());
         break;
@@ -72,16 +73,16 @@ private:
 handler::handler(void* context, Rest::Router& router)
     : socket(op_socket_get_client(context, ZMQ_REQ, endpoint.c_str()))
 {
-    Rest::Routes::Get(router, "/ports",
-                      Rest::Routes::bind(&handler::list_ports, this));
-    Rest::Routes::Post(router, "/ports",
-                       Rest::Routes::bind(&handler::create_port, this));
-    Rest::Routes::Get(router, "/ports/:id",
-                      Rest::Routes::bind(&handler::get_port, this));
-    Rest::Routes::Put(router, "/ports/:id",
-                      Rest::Routes::bind(&handler::update_port, this));
-    Rest::Routes::Delete(router, "/ports/:id",
-                         Rest::Routes::bind(&handler::delete_port, this));
+    Rest::Routes::Get(
+        router, "/ports", Rest::Routes::bind(&handler::list_ports, this));
+    Rest::Routes::Post(
+        router, "/ports", Rest::Routes::bind(&handler::create_port, this));
+    Rest::Routes::Get(
+        router, "/ports/:id", Rest::Routes::bind(&handler::get_port, this));
+    Rest::Routes::Put(
+        router, "/ports/:id", Rest::Routes::bind(&handler::update_port, this));
+    Rest::Routes::Delete(
+        router, "/ports/:id", Rest::Routes::bind(&handler::delete_port, this));
 }
 
 void handler::list_ports(const Rest::Request& request,

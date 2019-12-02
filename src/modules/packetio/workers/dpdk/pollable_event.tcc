@@ -34,13 +34,16 @@ public:
                                              .cb_fun = get_callback_fun(),
                                              .cb_arg = get_callback_arg()}};
 
-        auto error =
-            rte_epoll_ctl(poll_fd, EPOLL_CTL_ADD,
-                          static_cast<Derived&>(*this).event_fd(), &m_event);
+        auto error = rte_epoll_ctl(poll_fd,
+                                   EPOLL_CTL_ADD,
+                                   static_cast<Derived&>(*this).event_fd(),
+                                   &m_event);
 
         if (error) {
-            OP_LOG(OP_LOG_ERROR, "Could not add poll event for fd %d: %s\n",
-                   static_cast<Derived&>(*this).event_fd(), strerror(errno));
+            OP_LOG(OP_LOG_ERROR,
+                   "Could not add poll event for fd %d: %s\n",
+                   static_cast<Derived&>(*this).event_fd(),
+                   strerror(errno));
         }
 
         return (!error);
@@ -48,13 +51,16 @@ public:
 
     bool del(int poll_fd, void* data)
     {
-        auto error =
-            rte_epoll_ctl(poll_fd, EPOLL_CTL_DEL,
-                          static_cast<Derived&>(*this).event_fd(), &m_event);
+        auto error = rte_epoll_ctl(poll_fd,
+                                   EPOLL_CTL_DEL,
+                                   static_cast<Derived&>(*this).event_fd(),
+                                   &m_event);
 
         if (error) {
-            OP_LOG(OP_LOG_ERROR, "Could not delete poll event for fd %d: %s\n",
-                   static_cast<Derived&>(*this).event_fd(), strerror(errno));
+            OP_LOG(OP_LOG_ERROR,
+                   "Could not delete poll event for fd %d: %s\n",
+                   static_cast<Derived&>(*this).event_fd(),
+                   strerror(errno));
         }
 
         return (!error);
@@ -74,7 +80,8 @@ private:
 
     template <typename T>
     struct has_event_callback_argument<
-        T, std::void_t<decltype(std::declval<T>().event_callback_argument())>>
+        T,
+        std::void_t<decltype(std::declval<T>().event_callback_argument())>>
         : std::true_type
     {};
 
@@ -93,7 +100,8 @@ private:
 
     template <typename T>
     struct has_event_callback_function<
-        T, std::void_t<decltype(std::declval<T>().event_callback_function())>>
+        T,
+        std::void_t<decltype(std::declval<T>().event_callback_function())>>
         : std::true_type
     {};
 

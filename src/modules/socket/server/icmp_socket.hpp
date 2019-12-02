@@ -20,7 +20,8 @@ namespace server {
 class icmp_socket : public raw_socket
 {
 public:
-    icmp_socket(openperf::socket::server::allocator& allocator, int flags,
+    icmp_socket(openperf::socket::server::allocator& allocator,
+                int flags,
                 int protocol);
     ~icmp_socket() = default;
 

@@ -57,8 +57,10 @@ tl::expected<void, int> client::add_sink(std::string_view src_id,
                                          packets::generic_sink sink)
 {
     if (src_id.length() > name_length_max) {
-        OP_LOG(OP_LOG_ERROR, "Source ID, %.*s, is too big\n",
-               static_cast<int>(src_id.length()), src_id.data());
+        OP_LOG(OP_LOG_ERROR,
+               "Source ID, %.*s, is too big\n",
+               static_cast<int>(src_id.length()),
+               src_id.data());
         return (tl::make_unexpected(ENOMEM));
     }
 
@@ -81,8 +83,10 @@ tl::expected<void, int> client::del_sink(std::string_view src_id,
                                          packets::generic_sink sink)
 {
     if (src_id.length() > name_length_max) {
-        OP_LOG(OP_LOG_ERROR, "Source ID, %.*s, is too big\n",
-               static_cast<int>(src_id.length()), src_id.data());
+        OP_LOG(OP_LOG_ERROR,
+               "Source ID, %.*s, is too big\n",
+               static_cast<int>(src_id.length()),
+               src_id.data());
         return (tl::make_unexpected(ENOMEM));
     }
 
@@ -105,8 +109,10 @@ tl::expected<void, int> client::add_source(std::string_view dst_id,
                                            packets::generic_source source)
 {
     if (dst_id.length() > name_length_max) {
-        OP_LOG(OP_LOG_ERROR, "Destination ID, %.*s, is too big\n",
-               static_cast<int>(dst_id.length()), dst_id.data());
+        OP_LOG(OP_LOG_ERROR,
+               "Destination ID, %.*s, is too big\n",
+               static_cast<int>(dst_id.length()),
+               dst_id.data());
         return (tl::make_unexpected(ENOMEM));
     }
 
@@ -129,8 +135,10 @@ tl::expected<void, int> client::del_source(std::string_view dst_id,
                                            packets::generic_source source)
 {
     if (dst_id.length() > name_length_max) {
-        OP_LOG(OP_LOG_ERROR, "Destination ID, %.*s, is too big\n",
-               static_cast<int>(dst_id.length()), dst_id.data());
+        OP_LOG(OP_LOG_ERROR,
+               "Destination ID, %.*s, is too big\n",
+               static_cast<int>(dst_id.length()),
+               dst_id.data());
         return (tl::make_unexpected(ENOMEM));
     }
 
@@ -149,10 +157,13 @@ tl::expected<void, int> client::del_source(std::string_view dst_id,
     return (tl::make_unexpected(EBADMSG));
 }
 
-tl::expected<std::string, int> client::add_task_impl(
-    workers::context ctx, std::string_view name,
-    event_loop::event_notifier notify, event_loop::event_handler on_event,
-    std::optional<event_loop::delete_handler> on_delete, std::any arg)
+tl::expected<std::string, int>
+client::add_task_impl(workers::context ctx,
+                      std::string_view name,
+                      event_loop::event_notifier notify,
+                      event_loop::event_handler on_event,
+                      std::optional<event_loop::delete_handler> on_delete,
+                      std::any arg)
 {
     auto request = request_task_add{.data = {.ctx = ctx,
                                              .notifier = notify,
@@ -161,8 +172,10 @@ tl::expected<std::string, int> client::add_task_impl(
                                              .arg = arg}};
 
     if (name.length() > name_length_max) {
-        OP_LOG(OP_LOG_WARNING, "Truncating task name to %.*s\n",
-               static_cast<int>(name_length_max), name.data());
+        OP_LOG(OP_LOG_WARNING,
+               "Truncating task name to %.*s\n",
+               static_cast<int>(name_length_max),
+               name.data());
     }
 
     std::copy(name.data(),
@@ -182,18 +195,22 @@ tl::expected<std::string, int> client::add_task_impl(
 }
 
 tl::expected<std::string, int>
-client::add_task(workers::context ctx, std::string_view name,
+client::add_task(workers::context ctx,
+                 std::string_view name,
                  event_loop::event_notifier notify,
-                 event_loop::event_handler on_event, std::any arg)
+                 event_loop::event_handler on_event,
+                 std::any arg)
 {
     return (add_task_impl(ctx, name, notify, on_event, std::nullopt, arg));
 }
 
 tl::expected<std::string, int>
-client::add_task(workers::context ctx, std::string_view name,
+client::add_task(workers::context ctx,
+                 std::string_view name,
                  event_loop::event_notifier notify,
                  event_loop::event_handler on_event,
-                 event_loop::delete_handler on_delete, std::any arg)
+                 event_loop::delete_handler on_delete,
+                 std::any arg)
 {
     return (add_task_impl(ctx, name, notify, on_event, on_delete, arg));
 }

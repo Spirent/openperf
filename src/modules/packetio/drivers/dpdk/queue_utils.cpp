@@ -37,7 +37,8 @@ struct worker_config
  * This looks complicated, but really we just try to assign a reasonable number
  * of queues based on our port/queue/thread constraints.
  */
-static uint16_t suggested_queue_count(uint16_t nb_ports, uint16_t nb_queues,
+static uint16_t suggested_queue_count(uint16_t nb_ports,
+                                      uint16_t nb_queues,
                                       uint16_t nb_threads)
 {
     return (
@@ -45,8 +46,9 @@ static uint16_t suggested_queue_count(uint16_t nb_ports, uint16_t nb_queues,
             ? 1
             : nb_ports < nb_threads
                   ? (nb_threads % nb_ports == 0
-                         ? std::min(nb_queues, static_cast<uint16_t>(
-                                                   nb_threads / nb_ports))
+                         ? std::min(
+                             nb_queues,
+                             static_cast<uint16_t>(nb_threads / nb_ports))
                          : std::min(nb_queues, nb_threads))
                   : std::min(nb_queues, static_cast<uint16_t>(nb_threads - 1)));
 }
@@ -57,7 +59,8 @@ static uint16_t suggested_queue_count(uint16_t nb_ports, uint16_t nb_queues,
  */
 static std::map<int, port_queue_info>
 bonus_queue_info(const std::vector<model::port_info>& port_info,
-                 uint16_t rx_extras, uint16_t tx_extras)
+                 uint16_t rx_extras,
+                 uint16_t tx_extras)
 {
     std::map<int, port_queue_info> queue_info;
     for (auto& info : port_info) {
@@ -79,9 +82,9 @@ bonus_queue_info(const std::vector<model::port_info>& port_info,
      * normal loop direction.
      */
     for (auto it = std::rbegin(queue_info); it != std::rend(queue_info); ++it) {
-        uint16_t to_give =
-            std::min(rx_extras, static_cast<uint16_t>(it->second.rxq.max
-                                                      - it->second.rxq.count));
+        uint16_t to_give = std::min(
+            rx_extras,
+            static_cast<uint16_t>(it->second.rxq.max - it->second.rxq.count));
         it->second.rxq.avail += to_give;
         rx_extras -= to_give;
 
@@ -89,9 +92,9 @@ bonus_queue_info(const std::vector<model::port_info>& port_info,
     }
 
     for (auto it = std::rbegin(queue_info); it != std::rend(queue_info); ++it) {
-        uint16_t to_give =
-            std::min(tx_extras, static_cast<uint16_t>(it->second.txq.max
-                                                      - it->second.txq.count));
+        uint16_t to_give = std::min(
+            tx_extras,
+            static_cast<uint16_t>(it->second.txq.max - it->second.txq.count));
         it->second.txq.avail += to_give;
         tx_extras -= to_give;
 
@@ -175,25 +178,30 @@ distribute_queues(const std::vector<model::port_info>& port_info)
 
 static std::vector<descriptor>
 distribute_queues(const std::vector<model::port_info>& port_info,
-                  uint16_t rx_workers, uint16_t tx_workers)
+                  uint16_t rx_workers,
+                  uint16_t tx_workers)
 {
     /*
      * Calculate the minimum number of {rx,tx} queues we need based on our
      * suggested queue count.
      */
     uint16_t rxq_min = std::accumulate(
-        std::begin(port_info), std::end(port_info), 0,
+        std::begin(port_info),
+        std::end(port_info),
+        0,
         [&](int x, const model::port_info& pi) {
             return (x
-                    + suggested_queue_count(port_info.size(),
-                                            pi.rx_queue_default(), rx_workers));
+                    + suggested_queue_count(
+                        port_info.size(), pi.rx_queue_default(), rx_workers));
         });
     uint16_t txq_min = std::accumulate(
-        std::begin(port_info), std::end(port_info), 0,
+        std::begin(port_info),
+        std::end(port_info),
+        0,
         [&](int x, const model::port_info& pi) {
             return (x
-                    + suggested_queue_count(port_info.size(),
-                                            pi.tx_queue_default(), tx_workers));
+                    + suggested_queue_count(
+                        port_info.size(), pi.tx_queue_default(), tx_workers));
         });
 
     /*
@@ -230,13 +238,13 @@ distribute_queues(const std::vector<model::port_info>& port_info,
         auto& bonus = queue_bonus[info.max_speed()];
         /* Only hand out bonus queues if all ports of the same speed can get one
          */
-        auto rx_bonus = (bonus.rxq.avail >= bonus.count
-                             ? distribute(bonus.rxq.avail, bonus.rxq.count,
-                                          bonus.rxq.distributed++)
-                             : 0);
+        auto rx_bonus =
+            (bonus.rxq.avail >= bonus.count ? distribute(
+                 bonus.rxq.avail, bonus.rxq.count, bonus.rxq.distributed++)
+                                            : 0);
         uint16_t rxq_count =
-            (suggested_queue_count(port_info.size(), info.rx_queue_default(),
-                                   rx_workers)
+            (suggested_queue_count(
+                 port_info.size(), info.rx_queue_default(), rx_workers)
              + rx_bonus);
 
         /* And assign them to workers */
@@ -254,14 +262,14 @@ distribute_queues(const std::vector<model::port_info>& port_info,
         }
 
         /* And we do the same for tx */
-        auto tx_bonus = (bonus.txq.avail >= bonus.count
-                             ? distribute(bonus.txq.avail, bonus.txq.count,
-                                          bonus.txq.distributed++)
-                             : 0);
+        auto tx_bonus =
+            (bonus.txq.avail >= bonus.count ? distribute(
+                 bonus.txq.avail, bonus.txq.count, bonus.txq.distributed++)
+                                            : 0);
 
         uint16_t txq_count =
-            (suggested_queue_count(port_info.size(), info.tx_queue_default(),
-                                   tx_workers)
+            (suggested_queue_count(
+                 port_info.size(), info.tx_queue_default(), tx_workers)
              + tx_bonus);
 
         for (uint16_t q = 0; q < txq_count; q++) {

@@ -38,8 +38,8 @@ void op_init(void* context, int argc, char* argv[])
         /* Check if configuration file has a log level option. */
         char arg_string[OP_LOG_MAX_LEVEL_LENGTH];
 
-        if (op_config_file_get_value_str("core.log.level", arg_string,
-                                         OP_LOG_MAX_LEVEL_LENGTH)) {
+        if (op_config_file_get_value_str(
+                "core.log.level", arg_string, OP_LOG_MAX_LEVEL_LENGTH)) {
             enum op_log_level cfg_log_level = parse_log_optarg(arg_string);
             op_log_level_set(cfg_log_level == OP_LOG_NONE ? OP_LOG_INFO
                                                           : cfg_log_level);

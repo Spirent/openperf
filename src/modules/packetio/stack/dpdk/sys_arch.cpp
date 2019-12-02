@@ -59,7 +59,8 @@ u32_t sys_arch_sem_wait(sys_sem_t* sem, u32_t timeout)
     struct pollfd pfd = {.fd = *sem, .events = POLLIN};
 
     int n = poll(
-        &pfd, 1,
+        &pfd,
+        1,
         timeout == 0 ? -1 : static_cast<int>(std::min(timeout, max_timeout)));
     if (n <= 0) return (SYS_ARCH_TIMEOUT);
 
@@ -136,8 +137,11 @@ static int get_waiting_lcore()
     return (-1);
 }
 
-sys_thread_t sys_thread_new(const char* name, lwip_thread_fn function,
-                            void* arg, int stacksize, int prio)
+sys_thread_t sys_thread_new(const char* name,
+                            lwip_thread_fn function,
+                            void* arg,
+                            int stacksize,
+                            int prio)
 {
     LWIP_UNUSED_ARG(stacksize);
     LWIP_UNUSED_ARG(prio);
@@ -163,8 +167,9 @@ sys_thread_t sys_thread_new(const char* name, lwip_thread_fn function,
     int code = rte_eal_remote_launch(thread_wrapper, thread_data, lcore);
 
     if (code) {
-        LWIP_DEBUGF(SYS_DEBUG, ("sys_thread_new: rte_eal_remote_launch %s: %d",
-                                name, code));
+        LWIP_DEBUGF(
+            SYS_DEBUG,
+            ("sys_thread_new: rte_eal_remote_launch %s: %d", name, code));
         abort();
     }
 

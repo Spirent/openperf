@@ -38,8 +38,10 @@ typedef std::variant<raw_init, raw_bound, raw_connected, raw_closed>
 class raw_socket : public socket_state_machine<raw_socket, raw_socket_state>
 {
 public:
-    raw_socket(openperf::socket::server::allocator& allocator, int flags,
-               int protocol, raw_recv_fn recv_callback = nullptr);
+    raw_socket(openperf::socket::server::allocator& allocator,
+               int flags,
+               int protocol,
+               raw_recv_fn recv_callback = nullptr);
     ~raw_socket() = default;
 
     raw_socket(const raw_socket&) = delete;

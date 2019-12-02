@@ -25,7 +25,8 @@ namespace openperf::packetio::dpdk {
 class worker_controller
 {
 public:
-    worker_controller(void* context, openperf::core::event_loop& loop,
+    worker_controller(void* context,
+                      openperf::core::event_loop& loop,
                       driver::generic_driver& driver);
     ~worker_controller();
 
@@ -59,10 +60,12 @@ public:
     void del_source(std::string_view dst_id, packets::generic_source source);
 
     tl::expected<std::string, int>
-    add_task(workers::context ctx, std::string_view name,
+    add_task(workers::context ctx,
+             std::string_view name,
              event_loop::event_notifier notify,
              event_loop::event_handler on_event,
-             std::optional<event_loop::delete_handler> on_delete, std::any arg);
+             std::optional<event_loop::delete_handler> on_delete,
+             std::any arg);
     void del_task(std::string_view task_id);
 
     using load_map = std::unordered_map<unsigned, uint64_t>;

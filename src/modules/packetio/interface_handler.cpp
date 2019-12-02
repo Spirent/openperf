@@ -19,7 +19,8 @@ json submit_request(void* socket, json& request)
     switch (type) {
     case request_type::GET_INTERFACE:
     case request_type::DELETE_INTERFACE:
-        OP_LOG(OP_LOG_TRACE, "Sending %s request for interface %s\n",
+        OP_LOG(OP_LOG_TRACE,
+               "Sending %s request for interface %s\n",
                to_string(type).c_str(),
                request["id"].get<std::string>().c_str());
         break;
@@ -76,20 +77,26 @@ private:
 handler::handler(void* context, Rest::Router& router)
     : socket(op_socket_get_client(context, ZMQ_REQ, endpoint.c_str()))
 {
-    Rest::Routes::Get(router, "/interfaces",
+    Rest::Routes::Get(router,
+                      "/interfaces",
                       Rest::Routes::bind(&handler::list_interfaces, this));
-    Rest::Routes::Post(router, "/interfaces",
+    Rest::Routes::Post(router,
+                       "/interfaces",
                        Rest::Routes::bind(&handler::create_interface, this));
-    Rest::Routes::Get(router, "/interfaces/:id",
+    Rest::Routes::Get(router,
+                      "/interfaces/:id",
                       Rest::Routes::bind(&handler::get_interface, this));
-    Rest::Routes::Delete(router, "/interfaces/:id",
+    Rest::Routes::Delete(router,
+                         "/interfaces/:id",
                          Rest::Routes::bind(&handler::delete_interface, this));
 
     Rest::Routes::Post(
-        router, "/interfaces/x/bulk-create",
+        router,
+        "/interfaces/x/bulk-create",
         Rest::Routes::bind(&handler::bulk_create_interfaces, this));
     Rest::Routes::Post(
-        router, "/interfaces/x/bulk-delete",
+        router,
+        "/interfaces/x/bulk-delete",
         Rest::Routes::bind(&handler::bulk_delete_interfaces, this));
 }
 

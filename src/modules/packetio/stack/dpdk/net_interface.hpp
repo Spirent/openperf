@@ -20,8 +20,10 @@ namespace dpdk {
 class net_interface
 {
 public:
-    net_interface(std::string_view id, int port_index,
-                  const interface::config_data& config, driver::tx_burst tx);
+    net_interface(std::string_view id,
+                  int port_index,
+                  const interface::config_data& config,
+                  driver::tx_burst tx);
     ~net_interface();
 
     static void* operator new(size_t);

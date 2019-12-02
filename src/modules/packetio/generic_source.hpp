@@ -36,7 +36,8 @@ public:
      */
     packets_per_hour packet_rate() const { return (m_self->packet_rate()); }
 
-    uint16_t transform(packet_buffer* input[], uint16_t input_length,
+    uint16_t transform(packet_buffer* input[],
+                       uint16_t input_length,
                        packet_buffer* output[]) const
     {
         return (m_self->transform(input, input_length, output));
@@ -99,7 +100,8 @@ private:
 
     template <typename T>
     struct has_max_packet_length<
-        T, std::void_t<decltype(std::declval<T>().max_packet_length())>>
+        T,
+        std::void_t<decltype(std::declval<T>().max_packet_length())>>
         : std::true_type
     {};
 
@@ -143,7 +145,8 @@ private:
             return (m_source.packet_rate());
         }
 
-        uint16_t transform(packet_buffer* input[], uint16_t input_length,
+        uint16_t transform(packet_buffer* input[],
+                           uint16_t input_length,
                            packet_buffer* output[]) override
         {
             return (m_source.transform(input, input_length, output));

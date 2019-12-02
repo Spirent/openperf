@@ -84,7 +84,8 @@ static struct rte_mempool* get_mempool(const char* memp_fmt)
 
 /* Populate the mempool array with a pool for each index. */
 static void initialize_mempools(const char* memp_fmt,
-                                atomic_mempool_ptr mpools[], size_t length)
+                                atomic_mempool_ptr mpools[],
+                                size_t length)
 {
     struct rte_mempool* default_mpool = get_mempool(memp_fmt);
     assert(default_mpool);
@@ -109,10 +110,10 @@ void memp_init()
      * Make sure that our mempool arrays are populated with a mempool for
      * every socket.
      */
-    initialize_mempools(memp_default_mempool_fmt, memp_default_mempools,
-                        RTE_MAX_NUMA_NODES);
-    initialize_mempools(memp_ref_rom_mempool_fmt, memp_ref_rom_mempools,
-                        RTE_MAX_NUMA_NODES);
+    initialize_mempools(
+        memp_default_mempool_fmt, memp_default_mempools, RTE_MAX_NUMA_NODES);
+    initialize_mempools(
+        memp_ref_rom_mempool_fmt, memp_ref_rom_mempools, RTE_MAX_NUMA_NODES);
 
     /* Initialize stats, maybe */
     for (unsigned i = 0; i < LWIP_ARRAYSIZE(memp_pools); i++) {
@@ -151,7 +152,8 @@ void* memp_malloc(memp_t type)
 #if MEMP_STATS
         if (to_return) {
             mem_size_t used = atomic_fetch_add_explicit(
-                                  (_Atomic mem_size_t*)&desc->stats->used, 1,
+                                  (_Atomic mem_size_t*)&desc->stats->used,
+                                  1,
                                   memory_order_release)
                               + 1;
             desc->stats->max = op_max(used, desc->stats->max);
@@ -163,8 +165,8 @@ void* memp_malloc(memp_t type)
     if (!to_return) {
         LWIP_DEBUGF(MEMP_DEBUG | LWIP_DBG_LEVEL_SERIOUS,
                     ("memp_malloc: out of memory in pool %s\n", desc->desc));
-        atomic_fetch_add_explicit((_Atomic mem_size_t*)&desc->stats->err, 1,
-                                  memory_order_release);
+        atomic_fetch_add_explicit(
+            (_Atomic mem_size_t*)&desc->stats->err, 1, memory_order_release);
     }
 #endif
     return (to_return);
@@ -184,7 +186,8 @@ void memp_free(memp_t type, void* mem)
         {
             const struct memp_desc* const desc = memp_pools[type];
             mem_size_t used = atomic_fetch_sub_explicit(
-                (_Atomic mem_size_t*)&desc->stats->used, 1,
+                (_Atomic mem_size_t*)&desc->stats->used,
+                1,
                 memory_order_release);
             LWIP_ASSERT("free before alloc?", used != 0);
         }

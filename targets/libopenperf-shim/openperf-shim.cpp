@@ -35,15 +35,17 @@ void openperf_shim_init()
 template <class T> void expand(std::initializer_list<T>) {}
 
 template <typename Function, typename Object, typename... Args>
-auto call_and_log_function(const char* function_name, Function&& f, Object&& o,
+auto call_and_log_function(const char* function_name,
+                           Function&& f,
+                           Object&& o,
                            Args&&... args)
 {
     std::cerr << function_name << "(";
     expand({(std::cerr << args << ",", 0)...});
     std::cerr << std::flush;
-    auto result =
-        std::invoke(std::forward<Function>(f), std::forward<Object>(o),
-                    std::forward<Args>(args)...);
+    auto result = std::invoke(std::forward<Function>(f),
+                              std::forward<Object>(o),
+                              std::forward<Args>(args)...);
     std::cerr << ") = " << result;
 
     if (result < 0) { std::cerr << " (errno = " << errno << ")"; }
@@ -54,10 +56,12 @@ auto call_and_log_function(const char* function_name, Function&& f, Object&& o,
 }
 
 #define client_call(function, ...)                                             \
-    (client_trace ? call_and_log_function(                                     \
-         #function, &openperf::socket::api::client::function, client,          \
-         __VA_ARGS__)                                                          \
-                  : client.function(__VA_ARGS__))
+    (client_trace                                                              \
+         ? call_and_log_function(#function,                                    \
+                                 &openperf::socket::api::client::function,     \
+                                 client,                                       \
+                                 __VA_ARGS__)                                  \
+         : client.function(__VA_ARGS__))
 
 extern "C" {
 
@@ -134,8 +138,8 @@ int getsockopt(int s, int level, int optname, void* optval, socklen_t* optlen)
                 : libc.getsockopt(s, level, optname, optval, optlen));
 }
 
-int setsockopt(int s, int level, int optname, const void* optval,
-               socklen_t optlen)
+int setsockopt(
+    int s, int level, int optname, const void* optval, socklen_t optlen)
 {
     auto& libc = openperf::socket::libc::wrapper::instance();
     if (!client_initialized) {
@@ -198,7 +202,11 @@ int socket(int domain, int type, int protocol)
             /*
              * Close socket and return -1 on BINDTODEVICE failure.
              */
-            if (client_call(setsockopt, s, SOL_SOCKET, SO_BINDTODEVICE, envp,
+            if (client_call(setsockopt,
+                            s,
+                            SOL_SOCKET,
+                            SO_BINDTODEVICE,
+                            envp,
                             strlen(envp))
                 < 0) {
                 client_call(close, s);
@@ -294,7 +302,11 @@ ssize_t recv(int s, void* mem, size_t len, int flags)
                                 : libc.recv(s, mem, len, flags));
 }
 
-ssize_t recvfrom(int s, void* mem, size_t len, int flags, struct sockaddr* from,
+ssize_t recvfrom(int s,
+                 void* mem,
+                 size_t len,
+                 int flags,
+                 struct sockaddr* from,
                  socklen_t* fromlen)
 {
     auto& libc = openperf::socket::libc::wrapper::instance();
@@ -339,8 +351,12 @@ ssize_t sendmsg(int s, const struct msghdr* message, int flags)
                                 : libc.sendmsg(s, message, flags));
 }
 
-ssize_t sendto(int s, const void* dataptr, size_t len, int flags,
-               const struct sockaddr* to, socklen_t tolen)
+ssize_t sendto(int s,
+               const void* dataptr,
+               size_t len,
+               int flags,
+               const struct sockaddr* to,
+               socklen_t tolen)
 {
     auto& libc = openperf::socket::libc::wrapper::instance();
     if (!client_initialized) {

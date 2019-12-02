@@ -15,21 +15,22 @@ template <typename Source> transmit_table<Source>::~transmit_table()
 }
 
 template <typename Source>
-typename transmit_table<Source>::source_key
-transmit_table<Source>::to_key(uint16_t port_idx, uint16_t queue_idx,
-                               std::string_view source_id)
+typename transmit_table<Source>::source_key transmit_table<Source>::to_key(
+    uint16_t port_idx, uint16_t queue_idx, std::string_view source_id)
 {
     if (source_id.length() > key_buffer_length) {
         OP_LOG(OP_LOG_WARNING,
                "Truncating source id = %.*s to %zu characters\n",
-               static_cast<int>(source_id.length()), source_id.data(),
+               static_cast<int>(source_id.length()),
+               source_id.data(),
                key_buffer_length);
     }
 
     auto key = source_key{port_idx, queue_idx, {}};
     auto& buffer = std::get<key_buffer_idx>(key);
     std::copy_n(source_id.data(),
-                std::min(source_id.length(), key_buffer_length), buffer.data());
+                std::min(source_id.length(), key_buffer_length),
+                buffer.data());
 
     return (key);
 }
@@ -94,13 +95,14 @@ template <typename Source> struct port_queue_comparator
 
 template <typename Source>
 typename transmit_table<Source>::source_map*
-transmit_table<Source>::insert_source(uint16_t port_idx, uint16_t queue_idx,
+transmit_table<Source>::insert_source(uint16_t port_idx,
+                                      uint16_t queue_idx,
                                       Source source)
 {
     auto key = to_key(port_idx, queue_idx, source.id());
     auto original = m_sources.load(std::memory_order_consume);
-    auto precursor = std::lower_bound(original->begin(), original->end(), key,
-                                      key_comparator<Source>{});
+    auto precursor = std::lower_bound(
+        original->begin(), original->end(), key, key_comparator<Source>{});
     auto updated = new source_map{
         std::move(original->insert(std::distance(original->begin(), precursor),
                                    std::make_pair(key, std::move(source))))};
@@ -109,13 +111,14 @@ transmit_table<Source>::insert_source(uint16_t port_idx, uint16_t queue_idx,
 
 template <typename Source>
 typename transmit_table<Source>::source_map*
-transmit_table<Source>::remove_source(uint16_t port_idx, uint16_t queue_idx,
+transmit_table<Source>::remove_source(uint16_t port_idx,
+                                      uint16_t queue_idx,
                                       std::string_view source_id)
 {
     auto key = to_key(port_idx, queue_idx, source_id);
     auto original = m_sources.load(std::memory_order_consume);
-    auto range = std::equal_range(original->begin(), original->end(), key,
-                                  key_comparator<Source>{});
+    auto range = std::equal_range(
+        original->begin(), original->end(), key, key_comparator<Source>{});
     auto found = std::find_if(range.first, range.second, [&](const auto& item) {
         return (item.first == key);
     });
@@ -133,10 +136,13 @@ transmit_table<Source>::get_sources(uint16_t port_idx) const
     auto lo_key = to_key(port_idx, 0, "");
     auto hi_key = to_key(port_idx, std::numeric_limits<uint16_t>::max(), "");
     auto map = m_sources.load(std::memory_order_consume);
-    return (std::make_pair(std::lower_bound(map->begin(), map->end(), lo_key,
-                                            port_queue_comparator<Source>{}),
-                           std::upper_bound(map->begin(), map->end(), hi_key,
-                                            port_queue_comparator<Source>{})));
+    return (std::make_pair(
+        std::lower_bound(
+            map->begin(), map->end(), lo_key, port_queue_comparator<Source>{}),
+        std::upper_bound(map->begin(),
+                         map->end(),
+                         hi_key,
+                         port_queue_comparator<Source>{})));
 }
 
 template <typename Source>
@@ -146,8 +152,8 @@ transmit_table<Source>::get_sources(uint16_t port_idx, uint16_t queue_idx) const
 {
     auto key = to_key(port_idx, queue_idx, "");
     auto map = m_sources.load(std::memory_order_consume);
-    return (std::equal_range(map->begin(), map->end(), key,
-                             port_queue_comparator<Source>{}));
+    return (std::equal_range(
+        map->begin(), map->end(), key, port_queue_comparator<Source>{}));
 }
 
 template <typename Source>
@@ -155,8 +161,8 @@ const Source* transmit_table<Source>::get_source(
     const transmit_table<Source>::source_key& key) const
 {
     auto map = m_sources.load(std::memory_order_consume);
-    auto range = std::equal_range(map->begin(), map->end(), key,
-                                  key_comparator<Source>{});
+    auto range = std::equal_range(
+        map->begin(), map->end(), key, key_comparator<Source>{});
     assert(std::distance(range.first, range.second) <= 1);
     return (std::distance(range.first, range.second) == 1
                 ? std::addressof(range.first->second)

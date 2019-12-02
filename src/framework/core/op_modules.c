@@ -31,8 +31,8 @@ void op_modules_register(struct op_module* module)
     int regresult = regcomp(&regex, OP_MODULE_ID_REGEX, REG_EXTENDED);
     if (regresult) {
         char error_string[op_modules_err_str_max_len];
-        size_t error_string_len = regerror(regresult, &regex, error_string,
-                                           op_modules_err_str_max_len);
+        size_t error_string_len = regerror(
+            regresult, &regex, error_string, op_modules_err_str_max_len);
         op_exit(
             "Module registration id validation regex failed to compile: %s%s\n",
             error_string,
@@ -61,7 +61,9 @@ int op_modules_pre_init(void* context)
         if (!module->pre_init) { continue; }
         int ret = module->pre_init(context, module->state);
         errors += !!(ret != 0);
-        OP_LOG(OP_LOG_INFO, "Pre-initializing %s module: %s\n", module->info.id,
+        OP_LOG(OP_LOG_INFO,
+               "Pre-initializing %s module: %s\n",
+               module->info.id,
                ret ? "Failed" : "OK");
     }
 
@@ -78,7 +80,9 @@ int op_modules_init(void* context)
         if (!module->init) { continue; }
         int ret = module->init(context, module->state);
         errors += !!(ret != 0);
-        OP_LOG(OP_LOG_INFO, "Initializing %s module: %s\n", module->info.id,
+        OP_LOG(OP_LOG_INFO,
+               "Initializing %s module: %s\n",
+               module->info.id,
                ret ? "Failed" : "OK");
     }
 
@@ -95,8 +99,10 @@ int op_modules_post_init(void* context)
         if (!module->post_init) { continue; }
         int ret = module->post_init(context, module->state);
         errors += !!(ret != 0);
-        OP_LOG(OP_LOG_INFO, "Post-initializing %s module: %s\n",
-               module->info.id, ret ? "Failed" : "OK");
+        OP_LOG(OP_LOG_INFO,
+               "Post-initializing %s module: %s\n",
+               module->info.id,
+               ret ? "Failed" : "OK");
     }
 
     return (errors);
@@ -112,7 +118,9 @@ int op_modules_start()
         if (!module->start) { continue; }
         int ret = module->start(module->state);
         errors += !!(ret != 0);
-        OP_LOG(OP_LOG_INFO, "Starting %s module: %s\n", module->info.id,
+        OP_LOG(OP_LOG_INFO,
+               "Starting %s module: %s\n",
+               module->info.id,
                ret ? "Failed" : "OK");
     }
 

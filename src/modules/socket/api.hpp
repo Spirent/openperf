@@ -200,14 +200,26 @@ struct request_socket
     int protocol;
 };
 
-typedef std::variant<request_init, request_accept, request_bind,
-                     request_shutdown, request_getpeername, request_getsockname,
-                     request_getsockopt, request_setsockopt, request_close,
-                     request_connect, request_listen, request_socket>
+typedef std::variant<request_init,
+                     request_accept,
+                     request_bind,
+                     request_shutdown,
+                     request_getpeername,
+                     request_getsockname,
+                     request_getsockopt,
+                     request_setsockopt,
+                     request_close,
+                     request_connect,
+                     request_listen,
+                     request_socket>
     request_msg;
 
-typedef std::variant<reply_init, reply_accept, reply_socket, reply_socklen,
-                     reply_success, reply_working>
+typedef std::variant<reply_init,
+                     reply_accept,
+                     reply_socket,
+                     reply_socklen,
+                     reply_success,
+                     reply_working>
     reply_ok;
 
 typedef tl::expected<reply_ok, int>

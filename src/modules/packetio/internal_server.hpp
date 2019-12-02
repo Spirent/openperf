@@ -14,7 +14,8 @@ class server
     workers::generic_workers& m_workers;
 
 public:
-    server(void* context, core::event_loop& loop,
+    server(void* context,
+           core::event_loop& loop,
            workers::generic_workers& workers);
 
     workers::generic_workers& workers() const;

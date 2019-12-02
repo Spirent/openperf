@@ -25,7 +25,9 @@ class api_handler
 public:
     using event_loop = openperf::packetio::event_loop::generic_event_loop;
 
-    api_handler(event_loop& loop, const void* shm_base, allocator& allocator,
+    api_handler(event_loop& loop,
+                const void* shm_base,
+                allocator& allocator,
                 pid_t pid);
     ~api_handler();
 

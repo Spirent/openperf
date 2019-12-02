@@ -9,8 +9,8 @@
 /*
  * Symbols for inline functions.
  */
-extern void op_cpuset_set_range(op_cpuset_t cpuset, size_t start, size_t len,
-                                bool val);
+extern void
+op_cpuset_set_range(op_cpuset_t cpuset, size_t start, size_t len, bool val);
 extern op_cpuset_t op_cpuset_create_from_string(const char* str);
 extern int op_cpuset_get_first(op_cpuset_t cpuset, size_t* cpu);
 extern int op_cpuset_get_next(op_cpuset_t cpuset, size_t* cpu);
@@ -27,7 +27,9 @@ uint64_t op_cpuset_get_uint64(op_cpuset_t cpuset, size_t off, size_t len)
     return val;
 }
 
-void op_cpuset_set_uint64(op_cpuset_t cpuset, size_t off, size_t len,
+void op_cpuset_set_uint64(op_cpuset_t cpuset,
+                          size_t off,
+                          size_t len,
                           uint64_t val)
 {
     uint64_t mask = 0x1;

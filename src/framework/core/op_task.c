@@ -49,7 +49,8 @@ static void* op_task_launcher_task(void* void_args)
 /**
  * Start a generic task
  */
-int op_task_launch(task_fn* task, struct op_task_args* task_args,
+int op_task_launch(task_fn* task,
+                   struct op_task_args* task_args,
                    const char* task_name)
 {
     pthread_t thread;
@@ -78,15 +79,18 @@ int op_task_launch(task_fn* task, struct op_task_args* task_args,
 
     OP_LOG(OP_LOG_DEBUG, "Creating new thread for %s task...\n", task_name);
 
-    if ((err = pthread_create(&thread, &thread_attr, op_task_launcher_task,
-                              iargs))
+    if ((err = pthread_create(
+             &thread, &thread_attr, op_task_launcher_task, iargs))
         != 0) {
         OP_LOG(OP_LOG_ERROR, "Failed to launch task %s: %d\n", task_name, err);
         goto error_and_free;
     }
 
     op_task_sync_block_and_warn(
-        &notify, 1, 1000, "Still waiting on acknowledgment from %s task\n",
+        &notify,
+        1,
+        1000,
+        "Still waiting on acknowledgment from %s task\n",
         task_name);
     OP_LOG(OP_LOG_DEBUG, "Task %s started!\n", task_name);
 
@@ -151,9 +155,12 @@ int op_task_sync_block(void** socketp, size_t expected)
     return (0);
 }
 
-int _op_task_sync_block_and_warn(void** socketp, size_t expected,
-                                 unsigned interval, const char* function,
-                                 const char* format, ...)
+int _op_task_sync_block_and_warn(void** socketp,
+                                 size_t expected,
+                                 unsigned interval,
+                                 const char* function,
+                                 const char* format,
+                                 ...)
 {
     void* socket = *socketp;
     unsigned responses = 0;

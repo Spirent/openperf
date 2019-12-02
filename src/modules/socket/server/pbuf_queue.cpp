@@ -38,8 +38,8 @@ size_t pbuf_queue::bufs() const { return (m_queue.size()); }
 
 size_t pbuf_queue::length() const { return (m_length); }
 
-size_t pbuf_queue::iovecs(iovec iovs[], size_t max_iovs,
-                          size_t max_length) const
+size_t
+pbuf_queue::iovecs(iovec iovs[], size_t max_iovs, size_t max_length) const
 {
     size_t iov_idx = 0, pbuf_idx = 0, length = 0;
     while (pbuf_idx < m_queue.size() && iov_idx < max_iovs) {
@@ -82,7 +82,8 @@ size_t pbuf_queue::clear(size_t length)
         }
     }
 
-    std::for_each(begin(m_queue), begin(m_queue) + delete_idx,
+    std::for_each(begin(m_queue),
+                  begin(m_queue) + delete_idx,
                   [](const pbuf_vec& vec) { pbuf_free(vec.pbuf()); });
     m_queue.erase(begin(m_queue), begin(m_queue) + delete_idx);
 

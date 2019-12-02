@@ -9,19 +9,20 @@ namespace openperf::packetio::dpdk {
 
 static int get_event_fd(const event_loop::event_notifier& notifier)
 {
-    return (std::visit(utils::overloaded_visitor(
-                           [](const void* socket) {
-                               int fd = -1;
-                               size_t fd_size = sizeof(fd);
+    return (std::visit(
+        utils::overloaded_visitor(
+            [](const void* socket) {
+                int fd = -1;
+                size_t fd_size = sizeof(fd);
 
-                               return (zmq_getsockopt(const_cast<void*>(socket),
-                                                      ZMQ_FD, &fd, &fd_size)
-                                               == 0
-                                           ? fd
-                                           : -1);
-                           },
-                           [](const int fd) { return (fd); }),
-                       notifier));
+                return (zmq_getsockopt(
+                            const_cast<void*>(socket), ZMQ_FD, &fd, &fd_size)
+                                == 0
+                            ? fd
+                            : -1);
+            },
+            [](const int fd) { return (fd); }),
+        notifier));
 }
 
 static void close_event_fd(event_loop::event_notifier& notifier)
@@ -32,7 +33,8 @@ static void close_event_fd(event_loop::event_notifier& notifier)
         notifier));
 }
 
-callback::callback(std::string_view name, event_loop::event_notifier notifier,
+callback::callback(std::string_view name,
+                   event_loop::event_notifier notifier,
                    event_loop::event_handler on_event,
                    std::optional<event_loop::delete_handler> on_delete,
                    std::any arg)

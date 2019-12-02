@@ -65,11 +65,14 @@ public:
     int flags() const;
     int flags(int);
 
-    tl::expected<size_t, int> send(const iovec iov[], size_t iovcnt, int flags,
-                                   const sockaddr* to);
+    tl::expected<size_t, int>
+    send(const iovec iov[], size_t iovcnt, int flags, const sockaddr* to);
 
-    tl::expected<size_t, int> recv(iovec iov[], size_t iovcnt, int flags,
-                                   sockaddr* from, socklen_t* fromlen);
+    tl::expected<size_t, int> recv(iovec iov[],
+                                   size_t iovcnt,
+                                   int flags,
+                                   sockaddr* from,
+                                   socklen_t* fromlen);
 
     tl::expected<void, int> block_writes();
     tl::expected<void, int> wait_readable();

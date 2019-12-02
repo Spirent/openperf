@@ -44,7 +44,8 @@ private:
     const std::string m_id; /* User-defined ID for REST API interactions. */
     const rte_mempool* m_pool;
 
-    tl::expected<void, std::string> apply_port_config(port_info&, rte_eth_conf&,
+    tl::expected<void, std::string> apply_port_config(port_info&,
+                                                      rte_eth_conf&,
                                                       uint16_t nb_rxqs = 0,
                                                       uint16_t nb_txqs = 0);
 };

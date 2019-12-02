@@ -114,7 +114,9 @@ void op_log_function_name(const char* signature, char* function);
 int op_log(enum op_log_level level, const char* tag, const char* format, ...)
     __attribute__((format(printf, 3, 4)));
 
-int op_vlog(enum op_log_level level, const char* tag, const char* format,
+int op_vlog(enum op_log_level level,
+            const char* tag,
+            const char* format,
             va_list argp);
 
 /**

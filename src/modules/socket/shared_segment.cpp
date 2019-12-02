@@ -44,7 +44,8 @@ static void* do_mapping(const std::string_view path, size_t size, int shm_flags)
     return (ptr);
 }
 
-shared_segment::shared_segment(const std::string_view path, size_t size,
+shared_segment::shared_segment(const std::string_view path,
+                               size_t size,
                                bool create)
     : m_path(path)
     , m_size(size)

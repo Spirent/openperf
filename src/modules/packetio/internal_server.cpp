@@ -48,15 +48,18 @@ reply_msg handle_request(workers::generic_workers& workers,
 reply_msg handle_request(workers::generic_workers& workers,
                          const request_task_add& request)
 {
-    auto result =
-        (request.data.on_delete.has_value()
-             ? workers.add_task(request.data.ctx, request.data.name,
-                                request.data.notifier, request.data.on_event,
-                                request.data.on_delete.value(),
-                                request.data.arg)
-             : workers.add_task(request.data.ctx, request.data.name,
-                                request.data.notifier, request.data.on_event,
-                                request.data.arg));
+    auto result = (request.data.on_delete.has_value()
+                       ? workers.add_task(request.data.ctx,
+                                          request.data.name,
+                                          request.data.notifier,
+                                          request.data.on_event,
+                                          request.data.on_delete.value(),
+                                          request.data.arg)
+                       : workers.add_task(request.data.ctx,
+                                          request.data.name,
+                                          request.data.notifier,
+                                          request.data.on_event,
+                                          request.data.arg));
 
     if (!result) {
         return (reply_error{result.error()});
@@ -130,7 +133,8 @@ static int handle_rpc_request(const op_event_data* data, void* arg)
 
     while (auto request = recv_message(data->socket, ZMQ_DONTWAIT)
                               .and_then(deserialize_request)) {
-        OP_LOG(OP_LOG_TRACE, "Received request to %s\n",
+        OP_LOG(OP_LOG_TRACE,
+               "Received request to %s\n",
                to_string(*request).c_str());
 
         auto handle_visitor = [&](auto& request_msg) -> reply_msg {
@@ -140,16 +144,19 @@ static int handle_rpc_request(const op_event_data* data, void* arg)
 
         if (send_message(data->socket, serialize_reply(reply)) == -1) {
             tx_errors++;
-            OP_LOG(OP_LOG_ERROR, "Error sending reply: %s\n",
-                   zmq_strerror(errno));
+            OP_LOG(
+                OP_LOG_ERROR, "Error sending reply: %s\n", zmq_strerror(errno));
             continue;
         }
 
         if (auto error = std::get_if<reply_error>(&reply)) {
-            OP_LOG(OP_LOG_TRACE, "Request to %s failed: %s\n",
-                   to_string(*request).c_str(), strerror(error->value));
+            OP_LOG(OP_LOG_TRACE,
+                   "Request to %s failed: %s\n",
+                   to_string(*request).c_str(),
+                   strerror(error->value));
         } else {
-            OP_LOG(OP_LOG_TRACE, "Request to %s succeeded\n",
+            OP_LOG(OP_LOG_TRACE,
+                   "Request to %s succeeded\n",
                    to_string(*request).c_str());
         }
     }
@@ -157,7 +164,8 @@ static int handle_rpc_request(const op_event_data* data, void* arg)
     return ((tx_errors || errno == ETERM) ? -1 : 0);
 }
 
-server::server(void* context, core::event_loop& loop,
+server::server(void* context,
+               core::event_loop& loop,
                workers::generic_workers& workers)
     : m_socket(op_socket_get_server(context, ZMQ_REP, endpoint.data()))
     , m_workers(workers)

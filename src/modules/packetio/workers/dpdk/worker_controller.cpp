@@ -16,7 +16,8 @@
 
 namespace openperf::packetio::dpdk {
 
-static void launch_workers(void* context, worker::recycler* recycler,
+static void launch_workers(void* context,
+                           worker::recycler* recycler,
                            const worker::fib* fib)
 {
     /* Launch work threads on all of our available worker cores */
@@ -104,7 +105,8 @@ get_queue_descriptors(std::vector<model::port_info>& port_info)
     if (rte_lcore_count() <= 2) {
         /* Filter out all tx queues; we don't need them */
         q_descriptors.erase(
-            std::remove_if(begin(q_descriptors), end(q_descriptors),
+            std::remove_if(begin(q_descriptors),
+                           end(q_descriptors),
                            [](const queue::descriptor& d) {
                                return (d.mode == queue::queue_mode::TX);
                            }),
@@ -146,8 +148,9 @@ get_port_filter(std::vector<worker_controller::filter_ptr>& filters,
                 uint16_t port_id)
 {
     auto filter =
-        std::find_if(std::begin(filters), std::end(filters),
-                     [&](auto& f) { return (port_id == f->port_id()); });
+        std::find_if(std::begin(filters), std::end(filters), [&](auto& f) {
+            return (port_id == f->port_id());
+        });
 
     /* Port filter should *always* exist */
     assert(filter != filters.end());
@@ -164,7 +167,8 @@ static void maybe_enable_rxq_tag_detection(const port::filter& filter)
             auto rxq = container.rx(i);
             OP_LOG(OP_LOG_DEBUG,
                    "Enabling hardware flow tag detection on RX queue %u:%u\n",
-                   rxq->port_id(), rxq->queue_id());
+                   rxq->port_id(),
+                   rxq->queue_id());
             rxq->flags(rxq->flags() | rx_feature_flags::hardware_tags);
         }
     }
@@ -179,7 +183,8 @@ static void maybe_disable_rxq_tag_detection(const port::filter& filter)
             auto rxq = container.rx(i);
             OP_LOG(OP_LOG_DEBUG,
                    "Disabling hardware flow tag detection on RX queue %u:%u\n",
-                   rxq->port_id(), rxq->queue_id());
+                   rxq->port_id(),
+                   rxq->queue_id());
             rxq->flags(rxq->flags() & ~rx_feature_flags::hardware_tags);
         }
     }
@@ -195,7 +200,8 @@ static void maybe_update_rxq_lro_mode(const model::port_info& info)
             OP_LOG(OP_LOG_DEBUG,
                    "Disabling software LRO on RX queue %u:%u. "
                    "Hardware support detected\n",
-                   rxq->port_id(), rxq->queue_id());
+                   rxq->port_id(),
+                   rxq->queue_id());
             rxq->flags(rxq->flags() | rx_feature_flags::hardware_lro);
         }
     }
@@ -253,9 +259,11 @@ worker_controller::worker_controller(void* context,
     /* Update queues to take advantage of port capabilities */
     /* XXX: queues must be setup first! */
     std::for_each(
-        std::begin(m_filters), std::end(m_filters),
-        [](const auto& filter) { maybe_enable_rxq_tag_detection(*filter); });
-    std::for_each(std::begin(port_info), std::end(port_info),
+        std::begin(m_filters), std::end(m_filters), [](const auto& filter) {
+            maybe_enable_rxq_tag_detection(*filter);
+        });
+    std::for_each(std::begin(port_info),
+                  std::end(port_info),
                   [](const auto& info) { maybe_update_rxq_lro_mode(info); });
 
     /* Distribute queues and schedulers to workers */
@@ -448,14 +456,17 @@ void worker_controller::add_interface(std::string_view port_id,
                            [&]() { maybe_disable_rxq_tag_detection(filter); });
 
     auto to_delete = m_fib->insert_interface(
-        *port_idx, mac,
+        *port_idx,
+        mac,
         const_cast<netif*>(std::any_cast<const netif*>(interface.data())));
     m_recycler->writer_add_gc_callback([to_delete]() { delete to_delete; });
 
     OP_LOG(OP_LOG_DEBUG,
            "Added interface with mac = %s to port %.*s (idx = %u)\n",
-           net::to_string(mac).c_str(), static_cast<int>(port_id.length()),
-           port_id.data(), *port_idx);
+           net::to_string(mac).c_str(),
+           static_cast<int>(port_id.length()),
+           port_id.data(),
+           *port_idx);
 }
 
 void worker_controller::del_interface(std::string_view port_id,
@@ -474,8 +485,10 @@ void worker_controller::del_interface(std::string_view port_id,
 
     OP_LOG(OP_LOG_DEBUG,
            "Removed interface with mac = %s to port %.*s (idx = %u)\n",
-           net::to_string(mac).c_str(), static_cast<int>(port_id.length()),
-           port_id.data(), *port_idx);
+           net::to_string(mac).c_str(),
+           static_cast<int>(port_id.length()),
+           port_id.data(),
+           *port_idx);
 }
 
 template <typename Vector, typename Item>
@@ -498,8 +511,11 @@ tl::expected<void, int> worker_controller::add_sink(std::string_view src_id,
         return (tl::make_unexpected(EALREADY));
     }
 
-    OP_LOG(OP_LOG_DEBUG, "Adding sink %s to port %.*s (idx = %u)\n",
-           sink.id().c_str(), static_cast<int>(src_id.length()), src_id.data(),
+    OP_LOG(OP_LOG_DEBUG,
+           "Adding sink %s to port %.*s (idx = %u)\n",
+           sink.id().c_str(),
+           static_cast<int>(src_id.length()),
+           src_id.data(),
            *port_idx);
 
     auto to_delete = m_fib->insert_sink(*port_idx, std::move(sink));
@@ -518,8 +534,11 @@ void worker_controller::del_sink(std::string_view src_id,
     auto port_idx = m_driver.port_index(src_id);
     if (!port_idx) return;
 
-    OP_LOG(OP_LOG_DEBUG, "Deleting sink %s from port %.*s (idx = %u)\n",
-           sink.id().c_str(), static_cast<int>(src_id.length()), src_id.data(),
+    OP_LOG(OP_LOG_DEBUG,
+           "Deleting sink %s from port %.*s (idx = %u)\n",
+           sink.id().c_str(),
+           static_cast<int>(src_id.length()),
+           src_id.data(),
            *port_idx);
 
     auto to_delete = m_fib->remove_sink(*port_idx, std::move(sink));
@@ -560,9 +579,10 @@ get_queue_and_worker_idx(const worker_controller::worker_map& workers,
      * Find the range for all of the worker entries for the specified port,
      * e.g. where (port, 0) <= key <= (port, infinity).
      */
-    auto range =
-        std::equal_range(std::begin(workers), std::end(workers),
-                         std::make_pair(port_idx, 0), port_comparator{});
+    auto range = std::equal_range(std::begin(workers),
+                                  std::end(workers),
+                                  std::make_pair(port_idx, 0),
+                                  port_comparator{});
 
     /*
      * Now, find the least loaded worker for this port range and return
@@ -574,7 +594,8 @@ get_queue_and_worker_idx(const worker_controller::worker_map& workers,
      * containing the minimum load with the associated queue and worker.
      */
     auto load_queue_worker = std::accumulate(
-        range.first, range.second,
+        range.first,
+        range.second,
         std::make_tuple(std::numeric_limits<uint64_t>::max(),
                         std::numeric_limits<uint16_t>::max(),
                         std::numeric_limits<unsigned>::max()),
@@ -582,8 +603,8 @@ get_queue_and_worker_idx(const worker_controller::worker_map& workers,
             const worker_controller::worker_map::value_type& item) {
             auto worker_load = loads.at(item.second);
             if (worker_load < std::get<0>(tuple)) {
-                return (std::make_tuple(worker_load, item.first.second,
-                                        item.second));
+                return (std::make_tuple(
+                    worker_load, item.first.second, item.second));
             } else {
                 return (tuple);
             }
@@ -605,8 +626,8 @@ uint64_t get_source_load(const packets::generic_source& source)
     return ((source.packet_rate() / source.burst_size()).count());
 }
 
-std::optional<uint16_t> find_queue(worker::tib& tib, uint16_t port_idx,
-                                   std::string_view source_id)
+std::optional<uint16_t>
+find_queue(worker::tib& tib, uint16_t port_idx, std::string_view source_id)
 {
     for (const auto& [key, source] : tib.get_sources(port_idx)) {
         if (source.id() == source_id) {
@@ -635,8 +656,12 @@ worker_controller::add_source(std::string_view dst_id,
     OP_LOG(
         OP_LOG_DEBUG,
         "Adding source %s to port %.*s (idx = %u, queue = %u) on worker %u\n",
-        source.id().c_str(), static_cast<int>(dst_id.length()), dst_id.data(),
-        *port_idx, queue_idx, worker_idx);
+        source.id().c_str(),
+        static_cast<int>(dst_id.length()),
+        dst_id.data(),
+        *port_idx,
+        queue_idx,
+        worker_idx);
 
     auto to_delete = m_tib->insert_source(
         *port_idx, queue_idx, tx_source(*port_idx, std::move(source)));
@@ -663,17 +688,24 @@ void worker_controller::del_source(std::string_view dst_id,
     OP_LOG(OP_LOG_DEBUG,
            "Deleting source %s from port %.*s (idx = %u, queue = %u) on worker "
            "%u\n",
-           source.id().c_str(), static_cast<int>(dst_id.length()),
-           dst_id.data(), *port_idx, *queue_idx, worker_idx);
+           source.id().c_str(),
+           static_cast<int>(dst_id.length()),
+           dst_id.data(),
+           *port_idx,
+           *queue_idx,
+           worker_idx);
 
     auto to_delete = m_tib->remove_source(*port_idx, *queue_idx, source.id());
     m_recycler->writer_add_gc_callback([to_delete]() { delete to_delete; });
 }
 
-tl::expected<std::string, int> worker_controller::add_task(
-    workers::context ctx, std::string_view name,
-    event_loop::event_notifier notify, event_loop::event_handler on_event,
-    std::optional<event_loop::delete_handler> on_delete, std::any arg)
+tl::expected<std::string, int>
+worker_controller::add_task(workers::context ctx,
+                            std::string_view name,
+                            event_loop::event_notifier notify,
+                            event_loop::event_handler on_event,
+                            std::optional<event_loop::delete_handler> on_delete,
+                            std::any arg)
 {
     /* XXX: We only know about stack tasks right now */
     if (ctx != workers::context::STACK) {
@@ -685,8 +717,10 @@ tl::expected<std::string, int> worker_controller::add_task(
         m_tasks.try_emplace(id, name, notify, on_event, on_delete, arg);
     if (!success) { return (tl::make_unexpected(EALREADY)); }
 
-    OP_LOG(OP_LOG_DEBUG, "Added task %.*s with id = %s\n",
-           static_cast<int>(name.length()), name.data(),
+    OP_LOG(OP_LOG_DEBUG,
+           "Added task %.*s with id = %s\n",
+           static_cast<int>(name.length()),
+           name.data(),
            core::to_string(id).c_str());
 
     std::vector<worker::descriptor> tasks{worker::descriptor(
@@ -698,8 +732,10 @@ tl::expected<std::string, int> worker_controller::add_task(
 
 void worker_controller::del_task(std::string_view task_id)
 {
-    OP_LOG(OP_LOG_DEBUG, "Deleting task %.*s\n",
-           static_cast<int>(task_id.length()), task_id.data());
+    OP_LOG(OP_LOG_DEBUG,
+           "Deleting task %.*s\n",
+           static_cast<int>(task_id.length()),
+           task_id.data());
     auto id = core::uuid(task_id);
     if (auto item = m_tasks.find(id); item != m_tasks.end()) {
         std::vector<worker::descriptor> tasks{worker::descriptor(

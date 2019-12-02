@@ -58,8 +58,11 @@ bool rx_queue::add(int poll_fd, void* data)
     auto error = rte_epoll_ctl(poll_fd, EPOLL_CTL_ADD, *fd, &m_event);
 
     if (error) {
-        OP_LOG(OP_LOG_ERROR, "Could not add rx interrupt for %u:%u: %s\n",
-               port_id(), queue_id(), strerror(errno));
+        OP_LOG(OP_LOG_ERROR,
+               "Could not add rx interrupt for %u:%u: %s\n",
+               port_id(),
+               queue_id(),
+               strerror(errno));
     }
 
     return (!error);
@@ -72,8 +75,11 @@ bool rx_queue::del(int poll_fd, void* data)
 
     auto error = rte_epoll_ctl(poll_fd, EPOLL_CTL_DEL, *fd, &m_event);
     if (error) {
-        OP_LOG(OP_LOG_ERROR, "Could not delete rx interrupt for %u:%u: %s\n",
-               port_id(), queue_id(), strerror(errno));
+        OP_LOG(OP_LOG_ERROR,
+               "Could not delete rx interrupt for %u:%u: %s\n",
+               port_id(),
+               queue_id(),
+               strerror(errno));
     }
 
     return (!error);
@@ -85,7 +91,9 @@ bool rx_queue::enable()
     if (error) {
         OP_LOG(OP_LOG_ERROR,
                "Could not enable interrupt for rx port queue %d:%d: %s\n",
-               port_id(), queue_id(), strerror(std::abs(error)));
+               port_id(),
+               queue_id(),
+               strerror(std::abs(error)));
     }
     return (!error);
 }
@@ -96,7 +104,9 @@ bool rx_queue::disable()
     if (error) {
         OP_LOG(OP_LOG_ERROR,
                "Could not disable interrupt for rx port queue %d:%d: %s\n",
-               port_id(), queue_id(), strerror(std::abs(error)));
+               port_id(),
+               queue_id(),
+               strerror(std::abs(error)));
     }
     return (!error);
 }

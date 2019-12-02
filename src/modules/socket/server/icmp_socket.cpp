@@ -30,8 +30,8 @@ static uint8_t icmp_type(const pbuf*)
 }
 
 /* RAW receive function; payload should point to IP header */
-static uint8_t icmp_receive_raw(void* arg, raw_pcb*, pbuf* p,
-                                const ip_addr_t* addr)
+static uint8_t
+icmp_receive_raw(void* arg, raw_pcb*, pbuf* p, const ip_addr_t* addr)
 {
     assert(addr != nullptr);
     auto sock = reinterpret_cast<icmp_socket*>(arg);
@@ -46,8 +46,8 @@ static uint8_t icmp_receive_raw(void* arg, raw_pcb*, pbuf* p,
 }
 
 /* DGRAM receive functions; payload should point to ICMP(v6) header */
-static uint8_t icmp_receive_dgram(void* arg, raw_pcb*, pbuf* p,
-                                  const ip_addr_t* addr)
+static uint8_t
+icmp_receive_dgram(void* arg, raw_pcb*, pbuf* p, const ip_addr_t* addr)
 {
     assert(addr != nullptr);
     auto sock = reinterpret_cast<icmp_socket*>(arg);
@@ -81,7 +81,8 @@ static raw_recv_fn get_receive_function(int type)
 }
 
 icmp_socket::icmp_socket(openperf::socket::server::allocator& allocator,
-                         int flags, int protocol)
+                         int flags,
+                         int protocol)
     : raw_socket(allocator, flags, protocol, get_receive_function(flags & 0xff))
     , m_filter(0)
 {}
@@ -110,7 +111,9 @@ icmp_socket::do_getsockopt(const raw_pcb* pcb,
             auto filter =
                 linux_icmp_filter{static_cast<uint32_t>(m_filter.to_ulong())};
             auto result =
-                copy_out(getsockopt.id.pid, getsockopt.optval, &filter,
+                copy_out(getsockopt.id.pid,
+                         getsockopt.optval,
+                         &filter,
                          std::min(static_cast<unsigned>(sizeof(filter)),
                                   getsockopt.optlen));
             if (!result) return (tl::make_unexpected(result.error()));
@@ -141,10 +144,11 @@ icmp_socket::do_setsockopt(raw_pcb* pcb,
             if (pcb->protocol != IPPROTO_ICMP)
                 return (tl::make_unexpected(EOPNOTSUPP));
             auto filter = linux_icmp_filter{0};
-            auto opt =
-                copy_in(reinterpret_cast<char*>(&filter), setsockopt.id.pid,
-                        reinterpret_cast<const char*>(setsockopt.optval),
-                        sizeof(filter), setsockopt.optlen);
+            auto opt = copy_in(reinterpret_cast<char*>(&filter),
+                               setsockopt.id.pid,
+                               reinterpret_cast<const char*>(setsockopt.optval),
+                               sizeof(filter),
+                               setsockopt.optlen);
             if (!opt) return (tl::make_unexpected(opt.error()));
             m_filter = icmp_filter(filter.data);
             return {};

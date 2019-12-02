@@ -31,8 +31,10 @@ struct test_packet
 
 using namespace openperf::net;
 
-static void initialize_eth_header(rte_ether_hdr& eth_hdr, mac_address& src_mac,
-                                  mac_address& dst_mac, uint16_t ether_type)
+static void initialize_eth_header(rte_ether_hdr& eth_hdr,
+                                  mac_address& src_mac,
+                                  mac_address& dst_mac,
+                                  uint16_t ether_type)
 {
     rte_ether_addr_copy(reinterpret_cast<const rte_ether_addr*>(dst_mac.data()),
                         &eth_hdr.d_addr);
@@ -41,7 +43,8 @@ static void initialize_eth_header(rte_ether_hdr& eth_hdr, mac_address& src_mac,
     eth_hdr.ether_type = htons(ether_type);
 }
 
-static void initialize_ipv4_header(rte_ipv4_hdr& ip_hdr, ipv4_address& src_addr,
+static void initialize_ipv4_header(rte_ipv4_hdr& ip_hdr,
+                                   ipv4_address& src_addr,
                                    ipv4_address& dst_addr,
                                    uint16_t pkt_data_len)
 {
@@ -65,8 +68,9 @@ static void initialize_ipv4_header(rte_ipv4_hdr& ip_hdr, ipv4_address& src_addr,
      */
     auto ptr16 = reinterpret_cast<uint16_t*>(std::addressof(ip_hdr));
     unsigned ip_cksum =
-        std::accumulate(ptr16, ptr16 + 10, 0U,
-                        [](unsigned sum, auto chunk) { return (sum + chunk); });
+        std::accumulate(ptr16, ptr16 + 10, 0U, [](unsigned sum, auto chunk) {
+            return (sum + chunk);
+        });
 
     /*
      * Reduce 32 bit checksum to 16 bits and complement it.
@@ -77,8 +81,10 @@ static void initialize_ipv4_header(rte_ipv4_hdr& ip_hdr, ipv4_address& src_addr,
         static_cast<uint16_t>(ip_cksum == 0 ? 0xFFFF : ip_cksum);
 }
 
-static void initialize_udp_header(rte_udp_hdr& udp_hdr, uint16_t src_port,
-                                  uint16_t dst_port, uint16_t pkt_data_len)
+static void initialize_udp_header(rte_udp_hdr& udp_hdr,
+                                  uint16_t src_port,
+                                  uint16_t dst_port,
+                                  uint16_t pkt_data_len)
 {
     auto pkt_len = pkt_data_len + sizeof(udp_hdr);
     udp_hdr.src_port = htons(src_port);
@@ -125,8 +131,8 @@ public:
         std::for_each(input, input + input_length, [&](auto packet) {
             auto tmp = packets::to_data<test_packet>(packet);
 
-            initialize_eth_header(tmp->ether, src_mac, dst_mac,
-                                  RTE_ETHER_TYPE_IPV4);
+            initialize_eth_header(
+                tmp->ether, src_mac, dst_mac, RTE_ETHER_TYPE_IPV4);
             initialize_ipv4_header(tmp->ipv4, src_ip, dst_ip, 26);
             initialize_udp_header(tmp->udp, 3357, 3357, 18);
 

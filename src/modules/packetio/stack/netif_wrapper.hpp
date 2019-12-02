@@ -18,7 +18,8 @@ class netif_wrapper
     const interface::config_data m_config;
 
 public:
-    netif_wrapper(std::string_view id, const netif* ifp,
+    netif_wrapper(std::string_view id,
+                  const netif* ifp,
                   const interface::config_data& config);
 
     std::string id() const;

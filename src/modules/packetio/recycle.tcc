@@ -73,7 +73,8 @@ template <int NumReaders> void depot<NumReaders>::writer_process_gc_callbacks()
 
     /* Find and run all callbacks between [0, min_version) */
     std::for_each(
-        std::begin(m_callbacks), m_callbacks.lower_bound(min_version),
+        std::begin(m_callbacks),
+        m_callbacks.lower_bound(min_version),
         [](auto& pair) {
             OP_LOG(OP_LOG_DEBUG,
                    "Running garbage collection callback for version %zu\n",

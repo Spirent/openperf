@@ -84,8 +84,8 @@ public:
          * shutdown ourselves.
          */
         auto thread = std::thread([this]() { run(service_port); });
-        OP_LOG(OP_LOG_DEBUG, "REST API server listening on port %d",
-               service_port);
+        OP_LOG(
+            OP_LOG_DEBUG, "REST API server listening on port %d", service_port);
         thread.detach();
 
         auto ret = config::op_config_file_process_resources();
@@ -161,8 +161,13 @@ void api_service_fini(void* state)
 }
 
 REGISTER_MODULE(api_service,
-                INIT_MODULE_INFO("api", "Module to handle API services",
+                INIT_MODULE_INFO("api",
+                                 "Module to handle API services",
                                  openperf::api::module_version),
-                new openperf::api::service(), api_service_pre_init, nullptr,
-                api_service_post_init, api_service_start, api_service_fini)
+                new openperf::api::service(),
+                api_service_pre_init,
+                nullptr,
+                api_service_post_init,
+                api_service_start,
+                api_service_fini)
 }

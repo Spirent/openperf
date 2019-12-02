@@ -26,20 +26,31 @@ static void log_flow_error(enum flow_error_type type,
              ? "validation"
              : type == flow_error_type::addition ? "addition" : "deletion");
     if (error.message) {
-        OP_LOG(OP_LOG_ERROR, "Flow %.*s failed: %s\n",
-               static_cast<int>(action.size()), action.data(), error.message);
+        OP_LOG(OP_LOG_ERROR,
+               "Flow %.*s failed: %s\n",
+               static_cast<int>(action.size()),
+               action.data(),
+               error.message);
     } else if (error.cause) {
-        OP_LOG(OP_LOG_ERROR, "Flow %.*s failed: %s\n",
-               static_cast<int>(action.size()), action.data(), error.cause);
+        OP_LOG(OP_LOG_ERROR,
+               "Flow %.*s failed: %s\n",
+               static_cast<int>(action.size()),
+               action.data(),
+               error.cause);
     } else {
-        OP_LOG(OP_LOG_ERROR, "Flow %.*s failed: %d\n",
-               static_cast<int>(action.size()), action.data(), error.type);
+        OP_LOG(OP_LOG_ERROR,
+               "Flow %.*s failed: %d\n",
+               static_cast<int>(action.size()),
+               action.data(),
+               error.type);
     }
 }
 
 static tl::expected<rte_flow*, int>
-add_ethernet_flow(uint16_t port_id, const rte_flow_item_eth* eth_spec,
-                  const rte_flow_item_eth* eth_mask, rule_action action)
+add_ethernet_flow(uint16_t port_id,
+                  const rte_flow_item_eth* eth_spec,
+                  const rte_flow_item_eth* eth_mask,
+                  rule_action action)
 {
     /*
      * We want to distribute our flows across all queues via RSS.  To do that,
@@ -96,15 +107,15 @@ add_ethernet_flow(uint16_t port_id, const rte_flow_item_eth* eth_spec,
 
     auto flow_error = rte_flow_error{};
 
-    if (auto error = rte_flow_validate(port_id, &attr, items.data(),
-                                       actions.data(), &flow_error);
+    if (auto error = rte_flow_validate(
+            port_id, &attr, items.data(), actions.data(), &flow_error);
         error != 0) {
         log_flow_error(flow_error_type::validation, flow_error);
         return (tl::make_unexpected(std::abs(error)));
     }
 
-    auto flow = rte_flow_create(port_id, &attr, items.data(), actions.data(),
-                                &flow_error);
+    auto flow = rte_flow_create(
+        port_id, &attr, items.data(), actions.data(), &flow_error);
     if (!flow) {
         log_flow_error(flow_error_type::addition, flow_error);
         return (
@@ -114,9 +125,8 @@ add_ethernet_flow(uint16_t port_id, const rte_flow_item_eth* eth_spec,
     return (flow);
 }
 
-static tl::expected<rte_flow*, int>
-add_ethernet_flow(uint16_t port_id, const net::mac_address& mac,
-                  rule_action action)
+static tl::expected<rte_flow*, int> add_ethernet_flow(
+    uint16_t port_id, const net::mac_address& mac, rule_action action)
 {
     auto eth_spec = rte_flow_item_eth{
         .dst.addr_bytes = {mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]},
@@ -157,8 +167,8 @@ flow_filter::flow_filter(uint16_t port_id)
         .dst.addr_bytes = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff},
     };
 
-    auto flow = add_ethernet_flow(port_id, &broadcast, &broadcast,
-                                  rule_action::add_stack_tag);
+    auto flow = add_ethernet_flow(
+        port_id, &broadcast, &broadcast, rule_action::add_stack_tag);
     if (!flow) {
         throw std::runtime_error("Could not add broadcast flow rule");
     }
@@ -220,16 +230,18 @@ static bool filter_full(uint16_t port_id)
  * Attempt to move a MAC from overflows to flow.
  */
 static void maybe_move_overflow_to_filter(
-    uint16_t port_id, std::unordered_map<net::mac_address, rte_flow*>& flows,
+    uint16_t port_id,
+    std::unordered_map<net::mac_address, rte_flow*>& flows,
     std::vector<net::mac_address>& overflows)
 {
     if (overflows.empty()) return; /* nothing to do */
 
-    if (auto flow = add_ethernet_flow(port_id, overflows.front(),
-                                      rule_action::add_stack_tag);
+    if (auto flow = add_ethernet_flow(
+            port_id, overflows.front(), rule_action::add_stack_tag);
         flow.has_value()) {
         flows.emplace(overflows.front(), *flow);
-        std::rotate(std::begin(overflows), std::begin(overflows) + 1,
+        std::rotate(std::begin(overflows),
+                    std::begin(overflows) + 1,
                     std::end(overflows));
         overflows.pop_back();
     }
@@ -241,7 +253,8 @@ static bool maybe_disable_promiscuous_mode(
     if (auto item = flows.find(net::mac_address(promiscuous.dst.addr_bytes));
         item != flows.end()) {
         if (delete_flow(port_id, item->second)) {
-            OP_LOG(OP_LOG_INFO, "Disabling promiscuous mode on port %u\n",
+            OP_LOG(OP_LOG_INFO,
+                   "Disabling promiscuous mode on port %u\n",
                    port_id);
             flows.erase(item);
             return (true);
@@ -258,8 +271,8 @@ std::optional<filter_state> flow_filter::on_event(const filter_event_add& add,
      * As far as we know, the table isn't full.  Add the promiscuous rule
      * in case this is the last rule we can add.
      */
-    auto promiscuous_flow = add_ethernet_flow(m_port, &promiscuous,
-                                              &promiscuous, rule_action::none);
+    auto promiscuous_flow = add_ethernet_flow(
+        m_port, &promiscuous, &promiscuous, rule_action::none);
     if (!promiscuous_flow) {
         return (filter_state_error{});
     } else if (filter_full(m_port)) {
@@ -304,8 +317,8 @@ std::optional<filter_state> flow_filter::on_event(const filter_event_del& del,
 std::optional<filter_state> flow_filter::on_event(const filter_event_disable&,
                                                   const filter_state_ok&)
 {
-    auto promiscuous_flow = add_ethernet_flow(m_port, &promiscuous,
-                                              &promiscuous, rule_action::none);
+    auto promiscuous_flow = add_ethernet_flow(
+        m_port, &promiscuous, &promiscuous, rule_action::none);
     if (!promiscuous_flow) { return (filter_state_error{}); }
 
     OP_LOG(OP_LOG_INFO, "Enabling promiscuous mode on port %u\n", m_port);
@@ -335,7 +348,8 @@ std::optional<filter_state> flow_filter::on_event(const filter_event_del& del,
     } else {
         /* Item must be in overflow table */
         m_overflows.erase(std::remove(std::begin(m_overflows),
-                                      std::end(m_overflows), del.mac),
+                                      std::end(m_overflows),
+                                      del.mac),
                           std::end(m_overflows));
     }
 
@@ -382,7 +396,8 @@ std::optional<filter_state> flow_filter::on_event(const filter_event_del& del,
     } else {
         /* Item must be in overflow table */
         m_overflows.erase(std::remove(std::begin(m_overflows),
-                                      std::end(m_overflows), del.mac),
+                                      std::end(m_overflows),
+                                      del.mac),
                           std::end(m_overflows));
     }
 

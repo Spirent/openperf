@@ -25,7 +25,8 @@ void set_tx_offload_metadata(rte_mbuf* mbuf, uint16_t mtu)
     /* Parse the packet headers to determine protocols and header offsets */
     struct rte_net_hdr_lens hdr_lens = {};
     auto ptype = rte_net_get_ptype(
-        mbuf, &hdr_lens,
+        mbuf,
+        &hdr_lens,
         (RTE_PTYPE_L2_MASK | RTE_PTYPE_L3_MASK | RTE_PTYPE_L4_MASK));
 
     /*
@@ -55,8 +56,8 @@ void set_tx_offload_metadata(rte_mbuf* mbuf, uint16_t mtu)
     switch (ptype & RTE_PTYPE_L4_MASK) {
     case RTE_PTYPE_L4_UDP: {
         auto ip = rte_pktmbuf_mtod_offset(mbuf, void*, hdr_lens.l2_len);
-        auto udp = rte_pktmbuf_mtod_offset(mbuf, rte_udp_hdr*,
-                                           hdr_lens.l2_len + hdr_lens.l3_len);
+        auto udp = rte_pktmbuf_mtod_offset(
+            mbuf, rte_udp_hdr*, hdr_lens.l2_len + hdr_lens.l3_len);
         ol_flags |= PKT_TX_UDP_CKSUM;
         udp->dgram_cksum =
             (ol_flags & PKT_TX_IPV4
@@ -68,8 +69,8 @@ void set_tx_offload_metadata(rte_mbuf* mbuf, uint16_t mtu)
     }
     case RTE_PTYPE_L4_TCP: {
         auto ip = rte_pktmbuf_mtod_offset(mbuf, void*, hdr_lens.l2_len);
-        auto tcp = rte_pktmbuf_mtod_offset(mbuf, rte_tcp_hdr*,
-                                           hdr_lens.l2_len + hdr_lens.l3_len);
+        auto tcp = rte_pktmbuf_mtod_offset(
+            mbuf, rte_tcp_hdr*, hdr_lens.l2_len + hdr_lens.l3_len);
         tso_segsz = mtu - hdr_lens.l3_len - tcp_header_length(tcp);
         ol_flags |=
             (rte_pktmbuf_pkt_len(mbuf) > mtu ? PKT_TX_TCP_SEG | PKT_TX_TCP_CKSUM

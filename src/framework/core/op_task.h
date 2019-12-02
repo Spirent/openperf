@@ -40,7 +40,8 @@ typedef void*(task_fn)(void* args);
  *   0: Success
  *  !0: Error
  */
-int op_task_launch(task_fn* task, struct op_task_args* task_args,
+int op_task_launch(task_fn* task,
+                   struct op_task_args* task_args,
                    const char* task_name);
 
 /**
@@ -90,13 +91,15 @@ int op_task_sync_block(void** socketp, size_t expected);
  *  !0: Error
  */
 #define op_task_sync_block_and_warn(socketp, expected, timeout, format, ...)   \
-    _op_task_sync_block_and_warn(socketp, expected, timeout, __func__, format, \
-                                 ##__VA_ARGS__)
+    _op_task_sync_block_and_warn(                                              \
+        socketp, expected, timeout, __func__, format, ##__VA_ARGS__)
 
-int _op_task_sync_block_and_warn(void** socketp, size_t expected,
-                                 unsigned interval, const char* function,
-                                 const char* format, ...)
-    __attribute__((format(printf, 5, 6)));
+int _op_task_sync_block_and_warn(void** socketp,
+                                 size_t expected,
+                                 unsigned interval,
+                                 const char* function,
+                                 const char* format,
+                                 ...) __attribute__((format(printf, 5, 6)));
 
 /**
  * Notify the sync endpoint

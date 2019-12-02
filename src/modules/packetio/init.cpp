@@ -48,8 +48,8 @@ struct service
             std::make_unique<port::api::server>(context, *m_loop, *m_driver);
         m_stack_server =
             std::make_unique<stack::api::server>(context, *m_loop, *m_stack);
-        m_if_server = std::make_unique<interface::api::server>(context, *m_loop,
-                                                               *m_stack);
+        m_if_server = std::make_unique<interface::api::server>(
+            context, *m_loop, *m_stack);
         m_internal_server = std::make_unique<internal::api::server>(
             context, *m_loop, *m_workers);
 
@@ -114,6 +114,10 @@ REGISTER_MODULE(packetio,
                                  "Core module comprising TCP/IP stack "
                                  "functionality, virtual interfaces, and DPDK",
                                  openperf::packetio::module_version),
-                new openperf::packetio::service(), nullptr, op_packetio_init,
-                nullptr, nullptr, op_packetio_fini);
+                new openperf::packetio::service(),
+                nullptr,
+                op_packetio_init,
+                nullptr,
+                nullptr,
+                op_packetio_fini);
 }

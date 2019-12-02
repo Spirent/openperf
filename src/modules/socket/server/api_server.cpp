@@ -63,7 +63,8 @@ static openperf::memory::shared_segment create_shared_memory(size_t size)
                F_OK)
             != -1
         && unlink_stale_files()) {
-        OP_LOG(OP_LOG_DEBUG, "Unlinking stale shared memory at: %s",
+        OP_LOG(OP_LOG_DEBUG,
+               "Unlinking stale shared memory at: %s",
                shared_segment_name.c_str());
         if (shm_unlink(shared_segment_name.data()) < 0) {
             throw std::runtime_error("Could not remove shared memory segment "
@@ -73,16 +74,18 @@ static openperf::memory::shared_segment create_shared_memory(size_t size)
     }
 
     auto impl_size = align_up(sizeof(socket::server::allocator), 64);
-    auto segment = openperf::memory::shared_segment(shared_segment_name.data(),
-                                                    size, true);
+    auto segment = openperf::memory::shared_segment(
+        shared_segment_name.data(), size, true);
 
     /* Construct our allocator in our shared memory segment */
     new (segment.base()) socket::server::allocator(
         reinterpret_cast<uintptr_t>(segment.base()) + impl_size,
         size - impl_size);
 
-    OP_LOG(OP_LOG_DEBUG, "Created shared memory at: %s, with size %lu",
-           shared_segment_name.c_str(), size);
+    OP_LOG(OP_LOG_DEBUG,
+           "Created shared memory at: %s, with size %lu",
+           shared_segment_name.c_str(),
+           size);
 
     return (segment);
 }
@@ -102,7 +105,8 @@ create_unix_socket(const std::string_view path, int type)
     }
 
     if (access(full_path.c_str(), F_OK) != -1 && unlink_stale_files()) {
-        OP_LOG(OP_LOG_DEBUG, "Unlinking stale server socket at: %s",
+        OP_LOG(OP_LOG_DEBUG,
+               "Unlinking stale server socket at: %s",
                full_path.c_str());
         if (unlink(full_path.c_str()) < 0) {
             throw std::runtime_error(
@@ -134,8 +138,11 @@ static ssize_t log_ptrace_error(void*, const char* buf, size_t size)
      * so skip the macro and just fill in the actual logging function's
      * arguments as appropriate for our usage.
      */
-    op_log(OP_LOG_ERROR, "openperf::socket::process_control::enable_ptrace",
-           format, static_cast<int>(size), buf);
+    op_log(OP_LOG_ERROR,
+           "openperf::socket::process_control::enable_ptrace",
+           format,
+           static_cast<int>(size),
+           buf);
 
     return (size);
 }
@@ -182,9 +189,12 @@ int server::start()
     assert(m_task.empty());
 
     using namespace std::placeholders;
-    auto result = client.add_task(
-        packetio::workers::context::STACK, "socket API", m_sock.get(),
-        std::bind(&server::handle_api_accept, this, _1, _2), nullptr);
+    auto result =
+        client.add_task(packetio::workers::context::STACK,
+                        "socket API",
+                        m_sock.get(),
+                        std::bind(&server::handle_api_accept, this, _1, _2),
+                        nullptr);
     if (!result) { return (result.error()); }
 
     m_task = *result;
@@ -209,11 +219,12 @@ int server::handle_api_accept(event_loop& loop, std::any)
     for (;;) {
         sockaddr_un client;
         socklen_t client_length = sizeof(client);
-        auto fd = accept(m_sock.get(), reinterpret_cast<sockaddr*>(&client),
-                         &client_length);
+        auto fd = accept(
+            m_sock.get(), reinterpret_cast<sockaddr*>(&client), &client_length);
         if (fd == -1) {
             if (errno != EAGAIN && errno != EWOULDBLOCK) {
-                OP_LOG(OP_LOG_ERROR, "Could not accept socket: %s\n",
+                OP_LOG(OP_LOG_ERROR,
+                       "Could not accept socket: %s\n",
                        strerror(errno));
             }
             break;
@@ -221,11 +232,14 @@ int server::handle_api_accept(event_loop& loop, std::any)
 
         using namespace std::placeholders;
         if (!loop.add_callback(
-                "socket API for fd = " + std::to_string(fd), fd,
+                "socket API for fd = " + std::to_string(fd),
+                fd,
                 std::bind(&server::handle_api_client, this, _1, _2),
-                std::bind(&server::handle_api_error, this, _1), fd)) {
+                std::bind(&server::handle_api_error, this, _1),
+                fd)) {
             OP_LOG(OP_LOG_ERROR,
-                   "Failed to add socket API callback for fd = %d\n", fd);
+                   "Failed to add socket API callback for fd = %d\n",
+                   fd);
         }
     }
 
@@ -253,8 +267,9 @@ int server::do_client_init(event_loop& loop, int fd)
     if (ret == -1) return (0);
 
     if (!std::holds_alternative<api::request_init>(request)) {
-        OP_LOG(OP_LOG_ERROR, "Received unexpected message during "
-                             "client init phase");
+        OP_LOG(OP_LOG_ERROR,
+               "Received unexpected message during "
+               "client init phase");
         api::reply_msg reply = tl::make_unexpected(EINVAL);
         send(fd, &reply, sizeof(reply), 0);
         return (0);
@@ -270,14 +285,16 @@ int server::do_client_init(event_loop& loop, int fd)
      */
     auto init = std::get<api::request_init>(request);
     if (m_handlers.find(init.pid) == m_handlers.end()) {
-        OP_LOG(OP_LOG_INFO, "New connection received from pid %d, %s\n",
-               init.pid, to_string(init.tid).c_str());
-        m_handlers.emplace(
-            init.pid, std::make_unique<api_handler>(loop, m_shm.base(),
-                                                    *(allocator()), init.pid));
+        OP_LOG(OP_LOG_INFO,
+               "New connection received from pid %d, %s\n",
+               init.pid,
+               to_string(init.tid).c_str());
+        m_handlers.emplace(init.pid,
+                           std::make_unique<api_handler>(
+                               loop, m_shm.base(), *(allocator()), init.pid));
         auto shm_info = api::shared_memory_descriptor{.size = m_shm.size()};
-        strncpy(shm_info.name, m_shm.name().data(),
-                api::shared_memory_name_length);
+        strncpy(
+            shm_info.name, m_shm.name().data(), api::shared_memory_name_length);
         reply = api::reply_init{.pid = getpid(),
                                 .shm_info = std::make_optional(shm_info)};
     } else {
@@ -290,7 +307,9 @@ int server::do_client_init(event_loop& loop, int fd)
     }
 
     if (send(fd, &reply, sizeof(reply), 0) > 0) {
-        OP_LOG(OP_LOG_DEBUG, "Initialized client from pid %d, %s\n", init.pid,
+        OP_LOG(OP_LOG_DEBUG,
+               "Initialized client from pid %d, %s\n",
+               init.pid,
                to_string(init.tid).c_str());
 
         /* Add this client to our pid map */
@@ -334,7 +353,8 @@ void server::handle_api_error(std::any arg)
         /* All other connections for this handler are gone; delete it */
         auto pid = pid_result->second;
         OP_LOG(OP_LOG_INFO,
-               "All connections from pid %d are gone; cleaning up\n", pid);
+               "All connections from pid %d are gone; cleaning up\n",
+               pid);
         m_handlers.erase(pid);
     }
 

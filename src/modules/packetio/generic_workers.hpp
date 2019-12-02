@@ -20,7 +20,9 @@ class event_loop;
 
 namespace openperf::packetio::workers {
 
-using transmit_function = uint16_t (*)(int id, uint32_t hash, void* items[],
+using transmit_function = uint16_t (*)(int id,
+                                       uint32_t hash,
+                                       void* items[],
                                        uint16_t nb_items);
 
 enum class context { NONE = 0, STACK };
@@ -84,7 +86,8 @@ public:
         m_self->del_source(dst_id, source);
     }
 
-    tl::expected<std::string, int> add_task(context ctx, std::string_view name,
+    tl::expected<std::string, int> add_task(context ctx,
+                                            std::string_view name,
                                             event_loop::event_notifier notify,
                                             event_loop::event_handler on_event,
                                             std::any arg)
@@ -94,10 +97,12 @@ public:
     }
 
     tl::expected<std::string, int>
-    add_task(context ctx, std::string_view name,
+    add_task(context ctx,
+             std::string_view name,
              event_loop::event_notifier notify,
              event_loop::event_handler on_event,
-             event_loop::delete_handler on_delete, std::any arg)
+             event_loop::delete_handler on_delete,
+             std::any arg)
     {
         return (m_self->add_task(ctx, name, notify, on_event, on_delete, arg));
     }
@@ -127,7 +132,8 @@ private:
         virtual void del_source(std::string_view dst_id,
                                 packets::generic_source source) = 0;
         virtual tl::expected<std::string, int>
-        add_task(context ctx, std::string_view name,
+        add_task(context ctx,
+                 std::string_view name,
                  event_loop::event_notifier notify,
                  event_loop::event_handler on_event,
                  std::optional<event_loop::delete_handler> on_delete,
@@ -197,14 +203,15 @@ private:
         }
 
         tl::expected<std::string, int>
-        add_task(context ctx, std::string_view name,
+        add_task(context ctx,
+                 std::string_view name,
                  event_loop::event_notifier notify,
                  event_loop::event_handler on_event,
                  std::optional<event_loop::delete_handler> on_delete,
                  std::any arg) override
         {
-            return (m_workers.add_task(ctx, name, notify, on_event, on_delete,
-                                       arg));
+            return (m_workers.add_task(
+                ctx, name, notify, on_event, on_delete, arg));
         }
 
         void del_task(std::string_view task_id) override
@@ -218,8 +225,8 @@ private:
     std::unique_ptr<workers_concept> m_self;
 };
 
-std::unique_ptr<generic_workers> make(void*, openperf::core::event_loop&,
-                                      driver::generic_driver&);
+std::unique_ptr<generic_workers>
+make(void*, openperf::core::event_loop&, driver::generic_driver&);
 
 } // namespace openperf::packetio::workers
 

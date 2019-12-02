@@ -19,7 +19,8 @@ static packet_pool make_packet_pool(uint16_t port_idx,
      * otherwise every call to retrieve buffers from the pool will bypass the
      * CPU cache and go straight to the pool.
      */
-    return (packet_pool(source.id(), info.socket_id(),
+    return (packet_pool(source.id(),
+                        info.socket_id(),
                         source.max_packet_length(),
                         info.tx_desc_count() + 2 * worker::pkt_burst_size,
                         2 * worker::pkt_burst_size));

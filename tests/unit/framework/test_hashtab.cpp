@@ -16,7 +16,8 @@ TEST_CASE("op_hashtab functionality checks", "[hashtab]")
         {
             uintptr_t key = 0xdeadbeef;
             uintptr_t value = 0xc0ffee;
-            bool inserted = op_hashtab_insert(tab, reinterpret_cast<void*>(key),
+            bool inserted = op_hashtab_insert(tab,
+                                              reinterpret_cast<void*>(key),
                                               reinterpret_cast<void*>(value));
             REQUIRE(inserted);
 
@@ -63,8 +64,8 @@ TEST_CASE("op_hashtab concurrent inserts work", "[hashtab]")
      * Use a bunch of large prime numbers for scalers.  This allows us
      * to insert a bunch of interspersed values without duplicates.
      */
-    std::vector<uintptr_t> scalers = {1009, 1013, 1019, 1021,
-                                      1031, 1033, 1039, 1049};
+    std::vector<uintptr_t> scalers = {
+        1009, 1013, 1019, 1021, 1031, 1033, 1039, 1049};
     std::vector<std::thread> threads;
     static constexpr uintptr_t test_value = 0x5ca1ab1e;
     static constexpr size_t nb_inserts = 250;
@@ -82,7 +83,8 @@ TEST_CASE("op_hashtab concurrent inserts work", "[hashtab]")
                     for (size_t i = 1; i <= nb_inserts; i++) {
                         uintptr_t key = scaler * i;
                         bool inserted = op_hashtab_insert(
-                            tab.get(), reinterpret_cast<void*>(key),
+                            tab.get(),
+                            reinterpret_cast<void*>(key),
                             reinterpret_cast<void*>(test_value));
                         REQUIRE(inserted);
                     }

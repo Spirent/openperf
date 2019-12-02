@@ -42,7 +42,8 @@ unsigned get_most_common_numa_node(const Container& port_ids)
     }
 
     auto max = std::max_element(
-        begin(node_counts), end(node_counts),
+        begin(node_counts),
+        end(node_counts),
         [](count_map::value_type& a, count_map::value_type& b) {
             return (a.second < b.second);
         });

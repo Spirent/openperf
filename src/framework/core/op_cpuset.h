@@ -46,8 +46,8 @@ bool op_cpuset_equal(op_cpuset_t a, op_cpuset_t b);
  * @param val
  *   The value to set for each bit in the range.
  */
-inline void op_cpuset_set_range(op_cpuset_t cpuset, size_t start, size_t len,
-                                bool val)
+inline void
+op_cpuset_set_range(op_cpuset_t cpuset, size_t start, size_t len, bool val)
 {
     size_t i, end = start + len;
     for (i = start; i < end; ++i) { op_cpuset_set(cpuset, i, val); }

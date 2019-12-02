@@ -58,8 +58,22 @@ TEST_CASE("uuid constructors", "[uuid]")
 
     SECTION("can construct UUID from bytes")
     {
-        uint8_t data[] = {0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77,
-                          0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff};
+        uint8_t data[] = {0x00,
+                          0x11,
+                          0x22,
+                          0x33,
+                          0x44,
+                          0x55,
+                          0x66,
+                          0x77,
+                          0x88,
+                          0x99,
+                          0xaa,
+                          0xbb,
+                          0xcc,
+                          0xdd,
+                          0xee,
+                          0xff};
         uuid u(data);
 
         for (size_t i = 0; i < 15; i++) { REQUIRE(u[i] == data[i]); }

@@ -10,8 +10,8 @@ void port_queues::setup(const std::vector<queue::descriptor>& descriptors)
     m_queues.reserve(RTE_MAX_ETHPORTS);
 
     for (auto& [idx, queue_count] : queue::get_port_queue_counts(descriptors)) {
-        m_queues.emplace(begin(m_queues) + idx, idx, queue_count.rx,
-                         queue_count.tx);
+        m_queues.emplace(
+            begin(m_queues) + idx, idx, queue_count.rx, queue_count.tx);
     }
 }
 

@@ -200,7 +200,8 @@ size_t op_hashtab_size(struct op_hashtab* tab);
  *   -  0: Success
  *   - !0: Error
  */
-int op_hashtab_snapshot(struct op_hashtab* tab, void** itemsp[],
+int op_hashtab_snapshot(struct op_hashtab* tab,
+                        void** itemsp[],
                         size_t* nb_items);
 
 #ifdef __cplusplus
