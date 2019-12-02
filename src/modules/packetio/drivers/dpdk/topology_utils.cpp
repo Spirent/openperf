@@ -36,8 +36,7 @@ queue_distribute(const std::vector<model::port_info>& port_info)
      */
     cores_by_id nodes;
     unsigned lcore_id = 0;
-    RTE_LCORE_FOREACH_SLAVE(lcore_id)
-    {
+    RTE_LCORE_FOREACH_SLAVE (lcore_id) {
         if (lcore_id == stack_lcore) continue;
         nodes[rte_lcore_to_socket_id(lcore_id)].push_back(lcore_id);
     }
@@ -150,16 +149,14 @@ unsigned get_stack_lcore_id()
     /* Generate the set of numa nodes/socket ids from our set of ports */
     std::set<unsigned> node_ids;
     uint16_t port_id = 0;
-    RTE_ETH_FOREACH_DEV(port_id)
-    {
+    RTE_ETH_FOREACH_DEV (port_id) {
         node_ids.insert(rte_eth_dev_socket_id(port_id));
     }
 
     /* Determine how many cores we can use on each node */
     cores_by_id nodes;
     int lcore_id = 0;
-    RTE_LCORE_FOREACH_SLAVE(lcore_id)
-    {
+    RTE_LCORE_FOREACH_SLAVE (lcore_id) {
         nodes[rte_lcore_to_socket_id(lcore_id)].push_back(lcore_id);
     }
 

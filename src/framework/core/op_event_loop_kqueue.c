@@ -195,8 +195,7 @@ int op_event_loop_add_timer_ided(struct op_event_loop* loop,
 struct op_event* op_event_loop_find_fd(struct op_event_loop* loop, int fd)
 {
     struct op_event* event = NULL;
-    SLIST_FOREACH(event, &loop->events_list, events_link)
-    {
+    SLIST_FOREACH (event, &loop->events_list, events_link) {
         if (event->data.type == OP_EVENT_TYPE_FD && event->data.fd == fd) {
             break;
         }
@@ -209,8 +208,7 @@ struct op_event* op_event_loop_find_zmq(struct op_event_loop* loop,
                                         void* socket)
 {
     struct op_event* event = NULL;
-    SLIST_FOREACH(event, &loop->events_list, events_link)
-    {
+    SLIST_FOREACH (event, &loop->events_list, events_link) {
         if (event->data.type == OP_EVENT_TYPE_ZMQ
             && event->data.socket == socket) {
             break;
@@ -223,8 +221,7 @@ struct op_event* op_event_loop_find_timer(struct op_event_loop* loop,
                                           uint32_t timeout_id)
 {
     struct op_event* event = NULL;
-    SLIST_FOREACH(event, &loop->events_list, events_link)
-    {
+    SLIST_FOREACH (event, &loop->events_list, events_link) {
         if (event->data.type == OP_EVENT_TYPE_TIMER
             && event->data.timeout_id == timeout_id) {
             break;
@@ -605,8 +602,7 @@ size_t _do_event_removals(struct op_event_loop* loop)
      * close/delete callbacks might do.
      */
     struct op_event* event = NULL;
-    SLIST_FOREACH(event, &loop->remove_list, remove_link)
-    {
+    SLIST_FOREACH (event, &loop->remove_list, remove_link) {
         switch (event->data.type) {
         case OP_EVENT_TYPE_TIMER: {
             EV_SET(&kevents[idx++],
@@ -683,8 +679,7 @@ size_t _do_event_removals(struct op_event_loop* loop)
 void op_event_loop_purge(struct op_event_loop* loop)
 {
     struct op_event* event = NULL;
-    SLIST_FOREACH(event, &loop->events_list, events_link)
-    {
+    SLIST_FOREACH (event, &loop->events_list, events_link) {
         SLIST_INSERT_IF_MISSING(&loop->remove_list, event, remove_link);
     }
     _do_event_removals(loop);

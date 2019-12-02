@@ -38,8 +38,7 @@ heap_node* find_free_node(heap* h, size_t size)
 {
     heap_node* to_return = nullptr;
     heap_node* current = nullptr;
-    RB_FOREACH(current, heap, h)
-    {
+    RB_FOREACH (current, heap, h) {
         if (current->size < size) continue; /* to small */
         if (to_return == nullptr || current->size < to_return->size) {
             to_return = current;

@@ -15,8 +15,7 @@ static unsigned _max_option_length()
 {
     unsigned max_length = 0;
     struct op_options_data* opt_data = NULL;
-    SLIST_FOREACH(opt_data, &op_options_data_head, next)
-    {
+    SLIST_FOREACH (opt_data, &op_options_data_head, next) {
         for (const struct op_option* curr = opt_data->options;
              curr->description != NULL;
              curr++) {
@@ -37,8 +36,7 @@ static void __attribute__((noreturn)) _usage(const char* program_name)
     fprintf(output, "Options:\n");
 
     struct op_options_data* opt_data = NULL;
-    SLIST_FOREACH(opt_data, &op_options_data_head, next)
-    {
+    SLIST_FOREACH (opt_data, &op_options_data_head, next) {
         for (const struct op_option* curr = opt_data->options;
              curr->description != NULL;
              curr++) {
@@ -65,8 +63,7 @@ static void __attribute__((noreturn)) _usage(const char* program_name)
 int op_options_init()
 {
     struct op_options_data* opt_data = NULL;
-    SLIST_FOREACH(opt_data, &op_options_data_head, next)
-    {
+    SLIST_FOREACH (opt_data, &op_options_data_head, next) {
         if (opt_data->init) {
             if (opt_data->init() != 0) {
                 OP_LOG(OP_LOG_ERROR,
@@ -82,8 +79,7 @@ int op_options_init()
 static struct op_options_data* _find_options_data(int opt)
 {
     struct op_options_data* opt_data = NULL;
-    SLIST_FOREACH(opt_data, &op_options_data_head, next)
-    {
+    SLIST_FOREACH (opt_data, &op_options_data_head, next) {
         for (const struct op_option* curr = opt_data->options;
              curr->description != NULL;
              curr++) {
@@ -105,8 +101,7 @@ static const struct op_option* _find_opt_by_long(const char* long_op,
     assert(len > 0);
 
     struct op_options_data* opt_data = NULL;
-    SLIST_FOREACH(opt_data, &op_options_data_head, next)
-    {
+    SLIST_FOREACH (opt_data, &op_options_data_head, next) {
         for (const struct op_option* curr = opt_data->options;
              curr->description != NULL;
              curr++) {
@@ -119,8 +114,7 @@ static const struct op_option* _find_opt_by_long(const char* long_op,
 static const struct op_option* _find_opt_by_short(int op)
 {
     struct op_options_data* opt_data = NULL;
-    SLIST_FOREACH(opt_data, &op_options_data_head, next)
-    {
+    SLIST_FOREACH (opt_data, &op_options_data_head, next) {
         for (const struct op_option* curr = opt_data->options;
              curr->description != NULL;
              curr++) {
@@ -139,8 +133,7 @@ int _allocate_optstring(char** optstringp)
     /* Figure out necessary string length */
     int length = 1; /* include trailing null */
     struct op_options_data* opt_data = NULL;
-    SLIST_FOREACH(opt_data, &op_options_data_head, next)
-    {
+    SLIST_FOREACH (opt_data, &op_options_data_head, next) {
         for (const struct op_option* curr = opt_data->options;
              curr->description != NULL;
              curr++) {
@@ -154,8 +147,7 @@ int _allocate_optstring(char** optstringp)
 
     /* Fill in string */
     unsigned idx = 0;
-    SLIST_FOREACH(opt_data, &op_options_data_head, next)
-    {
+    SLIST_FOREACH (opt_data, &op_options_data_head, next) {
         for (const struct op_option* curr = opt_data->options;
              curr->description != NULL;
              curr++) {
@@ -175,8 +167,7 @@ int _allocate_longopts(struct option** longoptsp)
     /* Figure out necessary longopts length */
     int nb_opts = 1; /* include null terminated ending */
     struct op_options_data* opt_data = NULL;
-    SLIST_FOREACH(opt_data, &op_options_data_head, next)
-    {
+    SLIST_FOREACH (opt_data, &op_options_data_head, next) {
         for (const struct op_option* curr = opt_data->options;
              curr->description != NULL;
              curr++) {
@@ -189,8 +180,7 @@ int _allocate_longopts(struct option** longoptsp)
 
     /* Fill in longopts */
     unsigned idx = 0;
-    SLIST_FOREACH(opt_data, &op_options_data_head, next)
-    {
+    SLIST_FOREACH (opt_data, &op_options_data_head, next) {
         for (const struct op_option* curr = opt_data->options;
              curr->description != NULL;
              curr++) {

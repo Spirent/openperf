@@ -29,6 +29,33 @@ BreakBeforeBinaryOperators: NonAssignment
 BreakConstructorInitializers: BeforeComma
 BreakInheritanceList: BeforeComma
 DerivePointerAlignment: false
+ForEachMacros:
+# LwIP
+  - NETIF_FOREACH
+# DPDK
+  - RTE_ETH_FOREACH_DEV
+  - RTE_ETH_FOREACH_DEV_OF
+  - RTE_ETH_FOREACH_DEV_OWNED_BY
+  - RTE_ETH_FOREACH_DEV_SIBLING
+  - RTE_ETH_FOREACH_MATCHING_DEV
+  - RTE_ETH_FOREACH_VALID_DEV
+  - RTE_LCORE_FOREACH
+  - RTE_LCORE_FOREACH_SLAVE
+# bsd_tree.h
+  - SPLAY_FOREACH
+  - RB_FOREACH
+  - RB_FOREACH_FROM
+  - RB_FOREACH_SAFE
+  - RB_FOREACH_REVERSE
+  - RB_FOREACH_REVERSE_FROM
+  - RB_FOREACH_REVERSE_SAFE
+# queue.h
+  - LIST_FOREACH
+  - SLIST_FOREACH
+  - STAILQ_FOREACH
+  - TAILQ_FOREACH
+  - TAILQ_FOREACH_REVERSE
+
 IndentCaseLabels: false
 PointerAlignment: Left
 IndentWidth: 4

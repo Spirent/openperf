@@ -56,8 +56,7 @@ int op_modules_pre_init(void* context)
     struct op_module* module = NULL;
     int errors = 0;
 
-    SLIST_FOREACH(module, &op_modules_list_head, next)
-    {
+    SLIST_FOREACH (module, &op_modules_list_head, next) {
         if (!module->pre_init) { continue; }
         int ret = module->pre_init(context, module->state);
         errors += !!(ret != 0);
@@ -75,8 +74,7 @@ int op_modules_init(void* context)
     struct op_module* module = NULL;
     int errors = 0;
 
-    SLIST_FOREACH(module, &op_modules_list_head, next)
-    {
+    SLIST_FOREACH (module, &op_modules_list_head, next) {
         if (!module->init) { continue; }
         int ret = module->init(context, module->state);
         errors += !!(ret != 0);
@@ -94,8 +92,7 @@ int op_modules_post_init(void* context)
     struct op_module* module = NULL;
     int errors = 0;
 
-    SLIST_FOREACH(module, &op_modules_list_head, next)
-    {
+    SLIST_FOREACH (module, &op_modules_list_head, next) {
         if (!module->post_init) { continue; }
         int ret = module->post_init(context, module->state);
         errors += !!(ret != 0);
@@ -113,8 +110,7 @@ int op_modules_start()
     struct op_module* module = NULL;
     int errors = 0;
 
-    SLIST_FOREACH(module, &op_modules_list_head, next)
-    {
+    SLIST_FOREACH (module, &op_modules_list_head, next) {
         if (!module->start) { continue; }
         int ret = module->start(module->state);
         errors += !!(ret != 0);
@@ -130,8 +126,7 @@ int op_modules_start()
 void op_modules_finish()
 {
     struct op_module* module = NULL;
-    SLIST_FOREACH(module, &op_modules_list_head, next)
-    {
+    SLIST_FOREACH (module, &op_modules_list_head, next) {
         if (!module->finish) { continue; }
         module->finish(module->state);
     }
@@ -142,8 +137,7 @@ size_t op_modules_get_loaded_count()
     int loaded_module_count = 0;
     struct op_module* module = NULL;
 
-    SLIST_FOREACH(module, &op_modules_list_head, next)
-    {
+    SLIST_FOREACH (module, &op_modules_list_head, next) {
         loaded_module_count++;
     }
 
@@ -155,8 +149,7 @@ const struct op_module_info* op_modules_get_info_by_id(const char* module_id)
     if (!module_id) return NULL;
 
     struct op_module* module = NULL;
-    SLIST_FOREACH(module, &op_modules_list_head, next)
-    {
+    SLIST_FOREACH (module, &op_modules_list_head, next) {
 
         if (strcmp(module_id, module->info.id) == 0) { return &module->info; }
     }
@@ -173,8 +166,7 @@ int op_modules_get_info_list(const struct op_module_info* info[],
 
     size_t module_list_count = 0;
     struct op_module* module = NULL;
-    SLIST_FOREACH(module, &op_modules_list_head, next)
-    {
+    SLIST_FOREACH (module, &op_modules_list_head, next) {
         info[module_list_count] = &module->info;
         module_list_count++;
 

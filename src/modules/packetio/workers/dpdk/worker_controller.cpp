@@ -85,8 +85,7 @@ static std::vector<model::port_info> get_port_info()
 {
     uint16_t port_id = 0;
     std::vector<model::port_info> port_info;
-    RTE_ETH_FOREACH_DEV(port_id)
-    {
+    RTE_ETH_FOREACH_DEV (port_id) {
         port_info.emplace_back(model::port_info(port_id));
     }
 
@@ -225,8 +224,7 @@ worker_controller::worker_controller(void* context,
      * 2. Initialize the transmit worker load map.
      */
     unsigned lcore_id;
-    RTE_LCORE_FOREACH_SLAVE(lcore_id)
-    {
+    RTE_LCORE_FOREACH_SLAVE (lcore_id) {
         m_recycler->writer_add_reader(lcore_id);
     }
 
