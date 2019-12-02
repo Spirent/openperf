@@ -172,8 +172,7 @@ configure_all_ports(const std::map<int, queue::count>& port_queue_counts,
                     const std::unordered_map<int, std::string>& id_name)
 {
     uint16_t port_id = 0;
-    RTE_ETH_FOREACH_DEV(port_id)
-    {
+    RTE_ETH_FOREACH_DEV (port_id) {
         auto info = model::port_info(port_id);
         auto mempool = allocator->rx_mempool(info.socket_id());
         auto port = model::physical_port(port_id, id_name.at(port_id), mempool);
@@ -292,8 +291,7 @@ eal::eal(std::vector<std::string> args,
      */
     uint16_t port_id = 0;
     std::vector<model::port_info> port_info;
-    RTE_ETH_FOREACH_DEV(port_id)
-    {
+    RTE_ETH_FOREACH_DEV (port_id) {
         if (m_port_ids.find(port_id) == m_port_ids.end()) {
             m_port_ids[port_id] = core::to_string(core::uuid::random());
         }
@@ -384,8 +382,7 @@ eal& eal::operator=(eal&& other)
 void eal::start_all_ports() const
 {
     uint16_t port_id = 0;
-    RTE_ETH_FOREACH_DEV(port_id)
-    {
+    RTE_ETH_FOREACH_DEV (port_id) {
         model::physical_port(port_id, m_port_ids.at(port_id)).start();
     }
 }
@@ -393,8 +390,7 @@ void eal::start_all_ports() const
 void eal::stop_all_ports() const
 {
     uint16_t port_id = 0;
-    RTE_ETH_FOREACH_DEV(port_id)
-    {
+    RTE_ETH_FOREACH_DEV (port_id) {
         model::physical_port(port_id, m_port_ids.at(port_id)).stop();
     }
 }
@@ -403,8 +399,7 @@ std::vector<std::string> eal::port_ids() const
 {
     uint16_t port_idx = 0;
     std::vector<std::string> port_ids;
-    RTE_ETH_FOREACH_DEV(port_idx)
-    {
+    RTE_ETH_FOREACH_DEV (port_idx) {
         port_ids.emplace_back(m_port_ids.at(port_idx));
     }
 

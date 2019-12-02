@@ -227,8 +227,7 @@ struct op_event* op_event_loop_find_fd(struct op_event_loop* loop, int fd)
     if (type == OP_EVENT_TYPE_NONE) { return (NULL); }
 
     struct op_event* event = NULL;
-    SLIST_FOREACH(event, &loop->events_list, events_link)
-    {
+    SLIST_FOREACH (event, &loop->events_list, events_link) {
         if ((enum op_event_type)event->data.type == type
             && event->data.fd == fd) {
             break;
@@ -242,8 +241,7 @@ struct op_event* op_event_loop_find_zmq(struct op_event_loop* loop,
                                         void* socket)
 {
     struct op_event* event = NULL;
-    SLIST_FOREACH(event, &loop->events_list, events_link)
-    {
+    SLIST_FOREACH (event, &loop->events_list, events_link) {
         if (event->data.type == OP_EVENT_TYPE_ZMQ
             && event->data.socket == socket) {
             break;
@@ -256,8 +254,7 @@ struct op_event* op_event_loop_find_timer(struct op_event_loop* loop,
                                           uint32_t timeout_id)
 {
     struct op_event* event = NULL;
-    SLIST_FOREACH(event, &loop->events_list, events_link)
-    {
+    SLIST_FOREACH (event, &loop->events_list, events_link) {
         if (event->data.type == OP_EVENT_TYPE_TIMER
             && event->data.timeout_id == timeout_id) {
             break;
@@ -560,8 +557,7 @@ int _do_always_handling(struct op_event_loop* loop)
 {
     /* Handle our _always_ events */
     struct op_event* event = NULL;
-    SLIST_FOREACH(event, &loop->always_list, always_link)
-    {
+    SLIST_FOREACH (event, &loop->always_list, always_link) {
         if (event->callbacks.on_read
             && event->callbacks.on_read(&event->data, event->arg) != 0) {
             SLIST_INSERT_IF_MISSING(&loop->remove_list, event, remove_link);
@@ -623,8 +619,7 @@ int _do_event_removals(struct op_event_loop* loop)
 void op_event_loop_purge(struct op_event_loop* loop)
 {
     struct op_event* event = NULL;
-    SLIST_FOREACH(event, &loop->events_list, events_link)
-    {
+    SLIST_FOREACH (event, &loop->events_list, events_link) {
         SLIST_INSERT_IF_MISSING(&loop->remove_list, event, remove_link);
     }
     _do_event_removals(loop);
