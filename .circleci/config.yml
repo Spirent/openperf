@@ -13,10 +13,10 @@ jobs:
 
       - run:
           name: Run containerized build and test
-          command: docker run -it --privileged -v ~/project:/project spirentorion/inception-core:latest /bin/bash -c "cd /project && make all -j $(grep -c ^processor /proc/cpuinfo) && make test"
+          command: docker run -it --privileged -v ~/project:/project spirentorion/inception-core:latest /bin/bash -c "cd /project && bear make -j$(nproc) all && .circleci/run_clang_tidy.sh && make -j$(nproc) test"
 
       - run:
-          name: Collect test results
+          name: Collect AAT log
           when: always
           command: |
             set -xe

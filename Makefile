@@ -33,6 +33,7 @@ clean:
 	@cd targets/libopenperf-shim && $(MAKE) clean
 	@cd tests/aat && $(MAKE) clean
 	@cd tests/unit && $(MAKE) clean
+	@rm -f compile_commands.json
 
 ###
 # Targets for code formatting and analysis
