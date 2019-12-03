@@ -147,7 +147,7 @@ server::server(void* context, openperf::core::event_loop& loop, void *arg)
 }
 ```
 
-The `loop` is instanciated by the module. Its type is the C++ class [`openperf::core::event_loop`](https://github.com/SpirentOrion/inception-core/blob/master/src/framework/core/op_event_loop.hpp#L11), which wraps the `op_event_loop_xxx` functions.
+The `loop` is instanciated by the module. Its type is the C++ class [`openperf::core::event_loop`](https://github.com/Spirent/openperf/blob/master/src/framework/core/op_event_loop.hpp#L11), which wraps the `op_event_loop_xxx` functions.
 
 The callback typically deserializes the message and then uses an `std::visit` to switch to the correct message handler.
 
@@ -168,7 +168,7 @@ handle_rpc_request(const op_event_data* data, void* arg)
 
 The `recv_message`  returns a  [tl::expected](https://github.com/TartanLlama/expected) promise.
 
-Note that for this code to work, the module needs to implement the [transmogrification](https://github.com/SpirentOrion/inception-core/blob/master/src/modules/packetio/internal_transmogrify.cpp) for the serialized objects.
+Note that for this code to work, the module needs to implement the [transmogrification](https://github.com/Spirent/openperf/blob/master/src/modules/packetio/internal_transmogrify.cpp) for the serialized objects.
 
 ```C++
 struct serialized_msg {

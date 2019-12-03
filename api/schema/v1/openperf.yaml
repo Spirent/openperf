@@ -10,7 +10,7 @@ info:
     email: "support@spirent.com"
   license:
     name: "TBD"
-    url: "https://github.com/SpirentOrion/inception-core/blob/master/LICENSE"
+    url: "https://github.com/Spirent/openperf/blob/master/LICENSE"
   version: "1"
 
 schemes:

@@ -182,9 +182,9 @@ Each task is assigned a random UUID first, using  `core::uuid::random`. The `m_t
 
 The task is then assigned to a worker using the method `topology::get_stack_lcore_id`, and then sent to the actually worker using `m_workers->add_descriptors`.
 
-The [`topology::get_stack_lcore_id`](https://github.com/SpirentOrion/inception-core/blob/141d26f6ae6c02407603ead75b6675aed91a2868/src/modules/packetio/drivers/dpdk/topology_utils.cpp#L135) is straightforward - checks the NUMA with the most cores, and return the _first_ core. This function always returns the same core, since LWIP is single threaded.
+The [`topology::get_stack_lcore_id`](https://github.com/Spirent/openperf/blob/141d26f6ae6c02407603ead75b6675aed91a2868/src/modules/packetio/drivers/dpdk/topology_utils.cpp#L135) is straightforward - checks the NUMA with the most cores, and return the _first_ core. This function always returns the same core, since LWIP is single threaded.
 
-> Note that port queues _are_ distributed amongst all available workers. This is done by [`topology::queue_distribute`](https://github.com/SpirentOrion/inception-core/blob/141d26f6ae6c02407603ead75b6675aed91a2868/src/modules/packetio/drivers/dpdk/topology_utils.cpp#L26)
+> Note that port queues _are_ distributed amongst all available workers. This is done by [`topology::queue_distribute`](https://github.com/Spirent/openperf/blob/141d26f6ae6c02407603ead75b6675aed91a2868/src/modules/packetio/drivers/dpdk/topology_utils.cpp#L26)
 
 Once the worker has received a task, it adds it to an internal structure called _pollable_, which is then processed using epoll (The next section explains it in details).The following flow-chart shows the complete sequence for adding tasks.
 
