@@ -40,7 +40,8 @@ HTTP_COMMON_SOURCES := \
 	common/stream.cc \
 	common/tcp.cc \
 	common/timer_pool.cc \
-	common/transport.cc
+	common/transport.cc \
+	common/utils.cc
 
 HTTP_CLIENT_SOURCES := \
 	client/client.cc
