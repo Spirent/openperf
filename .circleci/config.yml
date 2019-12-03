@@ -9,11 +9,11 @@ jobs:
 
       - run:
           name: Pull latest build container
-          command: docker pull spirentorion/inception-core:latest
+          command: docker pull spirentorion/openperf:latest
 
       - run:
           name: Run containerized build and test
-          command: docker run -it --privileged -v ~/project:/project spirentorion/inception-core:latest /bin/bash -c "cd /project && bear make -j$(nproc) all && .circleci/run_clang_tidy.sh && make -j$(nproc) test"
+          command: docker run -it --privileged -v ~/project:/project spirentorion/openperf:latest /bin/bash -c "cd /project && bear make -j$(nproc) all && .circleci/run_clang_tidy.sh && make -j$(nproc) test"
 
       - run:
           name: Collect AAT log

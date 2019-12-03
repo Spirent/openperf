@@ -1,4 +1,4 @@
-# OpenPerf [![CircleCI](https://circleci.com/gh/SpirentOrion/inception-core.svg?style=shield&circle-token=bca4a01889f21771b4f3e6461edb67b764e772b4)](https://circleci.com/gh/SpirentOrion/inception-core)
+# OpenPerf [![CircleCI](https://circleci.com/gh/Spirent/openperf.svg?style=svg&circle-token=1b7544e46667c681bbcefd3ccc54c9716ff732fe)](https://circleci.com/gh/Spirent/openperf)
 
 This code base provides an infrastructure and application test and analysis
 framework.  Discrete modules provide functionality with the assistance of a
