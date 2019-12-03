@@ -4,19 +4,19 @@
 
 First, checkout the git folder
 
-	git clone https://github.com/SpirentOrion/inception-core
+	git clone https://github.com/Spirent/openperf
 
 Then download the sub-modules dependencies
 
-	make -C inception-core deps
+	make -C openperf deps
 
 Then, build the docker image to get all tools installed (needed for C++17 compilation):
 
-	docker build -t openperf-builder inception-core
+	docker build -t openperf-builder openperf
 
 Then build the OpenPerf code from within the docker container:
 
-	docker run -it --privileged -v `pwd`/inception-core:/project openperf-builder:latest /bin/bash -c "make -C /project all"
+	docker run -it --privileged -v `pwd`/openperf:/project openperf-builder:latest /bin/bash -c "make -C /project all"
 
 If all is fine, you should see something like
 
@@ -30,7 +30,7 @@ If all is fine, you should see something like
 
 Finally, run the tests
 
-	docker run -it --privileged -v `pwd`/inception-core:/project openperf-builder:latest /bin/bash -c "make -C /project test"
+	docker run -it --privileged -v `pwd`/openperf:/project openperf-builder:latest /bin/bash -c "make -C /project test"
 
 For verbose test, you can run the following command within the docker container:
 

@@ -47,7 +47,7 @@ handlers std::vector<std::unique_ptr<handler_init>>
 handler_init::make_all(handlers, context, router);
 ```
 
-Note that message handlers are not only declared in the API module. Each module can have its handlers, such as the [Packet IO interface module](https://github.com/SpirentOrion/inception-core/blob/master/src/modules/packetio/interface_handler.cpp).
+Note that message handlers are not only declared in the API module. Each module can have its handlers, such as the [Packet IO interface module](https://github.com/Spirent/openperf/blob/master/src/modules/packetio/interface_handler.cpp).
 
 ## Configuration Mapping
 

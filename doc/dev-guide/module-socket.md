@@ -7,11 +7,11 @@ There are three folders _socket_, _client_  and _server_. The _client_ is what i
 
 Upon startup (`openperf::socket::api::client.init()`), the client will exchange an HELLO message with the server over local unix domain socket (`unix_socket` type [`SOCK_SEQPACKET`](http://urchin.earth.li/~twic/Sequenced_Packets_Over_Ordinary_TCP.html) to `/tmp/.com.spirent.openperf/server`). The server responds with the server process ID and shared memory, as well as an optional pair of file descriptors to be used for subsequent communications.
 
-When the client needs to create a new socket, it calls the socket equivalent wrapper [`client::socket(domain, type, protocol)`](https://github.com/SpirentOrion/inception-core/blob/master/src/modules/socket/client/api_client.cpp#L435). The server allocates a _channel_ into the shared memory, a socket FD pair, and a socket ID.
+When the client needs to create a new socket, it calls the socket equivalent wrapper [`client::socket(domain, type, protocol)`](https://github.com/Spirent/openperf/blob/master/src/modules/socket/client/api_client.cpp#L435). The server allocates a _channel_ into the shared memory, a socket FD pair, and a socket ID.
 
 ## Sending Data from the Client
 
-Sending data over this socket (assuming UDP) will eventually call `client::sendmsg` with the destination `sockaddr` passed in the message header (`msg_name`). This method will send the data over the channel ([`channel.send`](https://github.com/SpirentOrion/inception-core/blob/master/src/modules/socket/client/api_client.cpp#L593)), which in turn, calls the _dgram channel_ implementation [`dgram_channel::send`](https://github.com/SpirentOrion/inception-core/blob/master/src/modules/socket/client/dgram_channel.cpp#L168).
+Sending data over this socket (assuming UDP) will eventually call `client::sendmsg` with the destination `sockaddr` passed in the message header (`msg_name`). This method will send the data over the channel ([`channel.send`](https://github.com/Spirent/openperf/blob/master/src/modules/socket/client/api_client.cpp#L593)), which in turn, calls the _dgram channel_ implementation [`dgram_channel::send`](https://github.com/Spirent/openperf/blob/master/src/modules/socket/client/dgram_channel.cpp#L168).
 
 
 ```C++
@@ -64,7 +64,7 @@ dgram_channel::send(pid_t pid, iov[], iovcnt,..., sockaddr *to)
 }
 ```
 
-The sending process does not use the shared memory. Instead, it uses the [`sendq`](https://github.com/SpirentOrion/inception-core/blob/master/src/modules/socket/bipartite_ring.h) (implemented as a bipartite ring). The item type is `dgram_channel_item`, which contains a [pbuf_vec](https://github.com/SpirentOrion/inception-core/blob/master/src/modules/socket/pbuf_vec.cpp), which carries the payload and LWIP buf pointer as well as the payload length. From the client side, the puf is anonymised.
+The sending process does not use the shared memory. Instead, it uses the [`sendq`](https://github.com/Spirent/openperf/blob/master/src/modules/socket/bipartite_ring.h) (implemented as a bipartite ring). The item type is `dgram_channel_item`, which contains a [pbuf_vec](https://github.com/Spirent/openperf/blob/master/src/modules/socket/pbuf_vec.cpp), which carries the payload and LWIP buf pointer as well as the payload length. From the client side, the puf is anonymised.
 
 ```C++
 struct dgram_channel_item {
@@ -165,11 +165,11 @@ But, so, where is the shared memory? To understand it, let's first dig into the 
 
 ## Server Initialization
 
-When creating a socket (UDP in the following example), the server will execute `api_handler::handle_request_socket`, which will, in turn create the actual socket using [`make_socket`](https://github.com/SpirentOrion/inception-core/blob/master/src/modules/socket/server/socket_utils.cpp#L15)
+When creating a socket (UDP in the following example), the server will execute `api_handler::handle_request_socket`, which will, in turn create the actual socket using [`make_socket`](https://github.com/Spirent/openperf/blob/master/src/modules/socket/server/socket_utils.cpp#L15)
 
 	make_socket(m_allocator, request.domain, request.type, request.protocol);
 
-When the allocator is a `openperf::memory::allocator` working with the shared memory. The make socket function will eventually call the _right_ socket implementation, in our case, the [`udp_socket`](https://github.com/SpirentOrion/inception-core/blob/master/src/modules/socket/server/udp_socket.cpp#L56)
+When the allocator is a `openperf::memory::allocator` working with the shared memory. The make socket function will eventually call the _right_ socket implementation, in our case, the [`udp_socket`](https://github.com/Spirent/openperf/blob/master/src/modules/socket/server/udp_socket.cpp#L56)
 
 ```C++
 udp_socket::udp_socket(openperf::socket::server::allocator& allocator, int flags)
