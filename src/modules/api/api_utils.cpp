@@ -1,47 +1,37 @@
 
 #include <string>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netdb.h>
 #include <iostream>
+#include <netinet/in.h>
 #include <unistd.h>
-#include <string.h>
 
 #include "api_service.hpp"
 #include "api_internal_client.hpp"
 #include "api/api_utils.hpp"
 
-using namespace std;
-
 namespace openperf::api::utils {
 
-static const string api_server_host = "localhost";
-static const string api_check_resource = "/version";
+static constexpr std::string_view api_server_host = "localhost";
+static constexpr std::string_view api_check_resource = "/version";
 static constexpr unsigned int poll_interval = 10; // in ms
 static constexpr unsigned int max_poll_count = 6;
 
 // Is the API port open?
 static tl::expected<void, std::string> check_api_port()
 {
-    /*
-     * XXX: Pistache currently can only support one address family per server.
-     * Until this is fixed, we're using IPv4 only.
-     */
-    struct addrinfo hints = {.ai_family = AF_INET, .ai_socktype = SOCK_STREAM},
-                    *result;
-
+    struct addrinfo hints = {.ai_family = AF_UNSPEC,
+                             .ai_socktype = SOCK_STREAM};
+    auto ai = Pistache::AddrInfo();
     int res =
-        getaddrinfo(api_server_host.c_str(),
-                    to_string(openperf::api::api_get_service_port()).c_str(),
-                    &hints,
-                    &result);
+        ai.invoke(api_server_host.data(),
+                  std::to_string(openperf::api::api_get_service_port()).c_str(),
+                  &hints);
     if (res != 0) {
         std::cerr << "Error starting up internal API client: "
                   << gai_strerror(res) << std::endl;
         return (tl::make_unexpected("Error starting up internal API client: "
                                     + std::string(gai_strerror(res))));
     }
-
+    auto result = ai.get_info_ptr();
     unsigned int poll_count = 0;
     bool done = false;
     for (; (poll_count < max_poll_count) && !done; poll_count++) {
@@ -53,8 +43,6 @@ static tl::expected<void, std::string> check_api_port()
         int sockfd =
             socket(result->ai_family, result->ai_socktype, result->ai_protocol);
         if (sockfd == -1) {
-            freeaddrinfo(result);
-
             return (
                 tl::make_unexpected("Error starting up internal API client: "
                                     + std::string(strerror(errno))));
@@ -66,8 +54,6 @@ static tl::expected<void, std::string> check_api_port()
 
         close(sockfd);
     }
-
-    freeaddrinfo(result);
 
     if (!done) {
         return (tl::make_unexpected("Error starting up internal API client. "
@@ -98,7 +84,7 @@ static tl::expected<void, std::string> check_api_resource()
     if (!done) {
         return (tl::make_unexpected("Error starting up internal API client. "
                                     "Could not retrieve resource: "
-                                    + api_check_resource));
+                                    + std::string(api_check_resource)));
     }
 
     return {};
