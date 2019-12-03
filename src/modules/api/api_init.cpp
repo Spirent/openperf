@@ -101,7 +101,7 @@ public:
     {
         op_thread_setname("op_api");
 
-        Address addr(Ipv4::any(), Port(port));
+        Address addr(IP::any(Ipv6::supported()), Port(port));
         auto opts =
             Http::Endpoint::options().threads(1).flags(Tcp::Options::ReuseAddr);
 
