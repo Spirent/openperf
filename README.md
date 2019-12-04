@@ -49,25 +49,28 @@ both a lockless list and hash-table implementation.
 
 ## Overview
 
-![OpenPerf components](doc/images/block_diagram.png)
+<center><img src='https://github.com/Spirent/openperf/raw/master/doc/images/block_diagram.png' width="500"></center>
 
 OpenPerf is composed of a core framework and three primary code modules:
 
-* api: The API module runs a web service that provides access to OpenPerf
+* `API`: The API module runs a web service that provides access to OpenPerf
   internals via a REST interface.
-* packetio: The packetio module contains the stack and packet forwarding logic
+
+* `PacketIO`: The packetio module contains the stack and packet forwarding logic
   necessary to pass packets between the physical ports and the user created
   interfaces.
-* socket: The socket module provides a BSD sockets compatible API to the
+
+* `Socket`: The socket module provides a BSD sockets compatible API to the
   stack in the packetio module.  It creates the shared memory and UNIX domain
   socket required by the libopenperf-shim.so library for access to stack functions.
 
 The core framework provides support for common functionality across all
 modules, such as logging, option handling, data structures, event loops, etc.
 
-Client access to the stack is provided via a shim library, libopenperf-shim.so, that can be
+Client access to the stack is provided via a shim library, `libopenperf-shim.so`, that can be
 used with any program via the LD_PRELOAD environment variable.  Consult the
 [getting started guide](doc/GETTING_STARTED.md) for example usage.
 
 Additionally, users can create their own modules to link directly into the OpenPerf
-binary to allow direct access to the packetio and socket module.
+binary to allow direct access to the packetio and socket module. For more information, 
+refer to the [developer guide](doc/dev-guide/).
