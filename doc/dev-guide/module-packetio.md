@@ -309,14 +309,14 @@ Here is the transmit sequency diagram summary:
 
 # Packet IO - LWIP Memory Managment
 
-The LWIP _memp_ is [customized](https://github.com/Spirent/openperf/blob/master/src/modules/packetio/stack/include/lwipopts.h) to use specialized mem_malloc/mem_free instead of the lwip pool allocator.
+The LWIP _memp_ is [customized](https://github.com/Spirent/openperf/blob/d8d89dfc8f2545572f917d0903706a3577a0a76b/src/modules/packetio/stack/include/lwipopts.h#L47) to use specialized mem_malloc/mem_free instead of the lwip pool allocator.
 
 ```C++
 #define MEMP_MEM_MALLOC 1
 #define MEMP_USE_CUSTOM_POOLS 0
 ```
 
-The `memp_malloc` function is overriden in [memory/dpkpk/memp.c](https://github.com/Spirent/openperf/blob/master/src/modules/packetio/memory/dpdk/memp.c) and using DPDK huge-page allocator (`rte_malloc`) for everything but the pbufs:
+The `memp_malloc` function is overriden in [memory/dpkpk/memp.c](https://github.com/Spirent/openperf/blob/d8d89dfc8f2545572f917d0903706a3577a0a76b/src/modules/packetio/memory/dpdk/memp.c#L127) and using DPDK huge-page allocator (`rte_malloc`) for everything but the pbufs:
 
 ```C++
 void * memp_malloc(memp_t type)
@@ -344,7 +344,7 @@ static atomic_mempool_ptr memp_default_mempools[RTE_MAX_NUMA_NODES] = {};
 static atomic_mempool_ptr memp_ref_rom_mempools[RTE_MAX_NUMA_NODES] = {};
 ```
 
-Those pools are initialized by [`pool_allocator`](https://github.com/Spirent/openperf/blob/master/src/modules/packetio/memory/dpdk/pool_allocator.cpp).
+Those pools are initialized by [`pool_allocator`](https://github.com/Spirent/openperf/blob/d8d89dfc8f2545572f917d0903706a3577a0a76b/src/modules/packetio/memory/dpdk/pool_allocator.cpp#L109).
 
 ```C++
 pool_allocator::pool_allocator(const std::vector<model::port_info> &info,
