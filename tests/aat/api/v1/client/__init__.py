@@ -20,6 +20,9 @@ from client.api.interfaces_api import InterfacesApi
 from client.api.modules_api import ModulesApi
 from client.api.ports_api import PortsApi
 from client.api.stacks_api import StacksApi
+from client.api.time_counters_api import TimeCountersApi
+from client.api.time_keeper_api import TimeKeeperApi
+from client.api.time_sources_api import TimeSourcesApi
 
 # import ApiClient
 from client.api_client import ApiClient
@@ -49,3 +52,10 @@ from client.models.stack_element_stats import StackElementStats
 from client.models.stack_memory_stats import StackMemoryStats
 from client.models.stack_protocol_stats import StackProtocolStats
 from client.models.stack_stats import StackStats
+from client.models.time_counter import TimeCounter
+from client.models.time_keeper import TimeKeeper
+from client.models.time_source import TimeSource
+from client.models.time_source_config import TimeSourceConfig
+from client.models.time_source_config_ntp import TimeSourceConfigNtp
+from client.models.time_source_stats import TimeSourceStats
+from client.models.time_source_stats_ntp import TimeSourceStatsNtp
