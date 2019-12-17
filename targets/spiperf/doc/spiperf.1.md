@@ -1,5 +1,5 @@
 % SPIPERF(1)
-% Spirent Communications
+% https://github.com/Spirent/openperf
 % December 2019
 
 # NAME
@@ -24,11 +24,11 @@ In stateless mode **spiperf** configures traffic between `client` and `server` a
 
 Stateful mode has not been implemented at this time.
 
-To use **spiperf** user must first start two _OpenPerf_ instances, one each for the `client` and `server`.
+To use **spiperf** user must first start one or two _OpenPerf_ instances.
 
 # QUICK START
 
-The simplest **spiperf** test can be run with two simple commands:
+A basic **spiperf** test can be run with two simple commands:
 
 ```
 spiperf --server
@@ -56,7 +56,7 @@ Behind the scenes the `client` instance will connect to the `server` one and sha
 :    Quiet output. This option does not affect results output.
 
 **-o**, **\--openperf-url** _url_
-:    Bind to _OpenPerf_ resource _url_. _url_ has the format <_host-ip_>:<_host-port_>/<_port-id_>. Here _host-ip_ is the IP address or hostname of the _OpenPerf_ host, _host-port_ is the _OpenPerf_ API port, and _port-id_ is the test port resource identifier from _OpenPerf_. All fields are optional; **spiperf** will use sensible defaults for omitted values. In This case _host-ip_ will default to _localhost_, _host-port_ will be the default _OpenPerf_ API port, and _port-id_ will default to the sole port resource.
+:    Bind to _OpenPerf_ resource _url_. _url_ has the format <_host-ip_>:<_host-port_>/<_port-id_>. Here _host-ip_ is the IP address or hostname of the _OpenPerf_ host, _host-port_ is the _OpenPerf_ API port, and _port-id_ is the test port resource identifier from _OpenPerf_. All fields are optional; **spiperf** will use sensible defaults for omitted values (i.e. _http://localhost:8080/).
 
 **-p**, **\--port** _n_
 :    **spiperf** will listen on (server) or connect to (client) port _n_.
@@ -67,14 +67,8 @@ Behind the scenes the `client` instance will connect to the `server` one and sha
 **\--logfile** _file_
 :    Output to logfile specified by _file_.
 
-**\--forceflush**
+**\--force-flush**
 :    Flush output after every line.
-
-**-4**, **\--version4**
-:    Force **spiperf** to use only IPv4 for control (client-server) connection. 
-
-**-6**, **\--version6**
-:    Force **spiperf** to use only IPv6 for control (client-server) connection.
 
 ## Server Options
 
@@ -90,25 +84,22 @@ Behind the scenes the `client` instance will connect to the `server` one and sha
 ## General Client Options
 
 **-c**, **\--client** _server_
-:    Run **spiperf** in client mode connecting to **spiperf** server instance at address _server_.
+:    Run **spiperf** in client mode connecting to **spiperf** server instance at URL _server_ (i.e. _spiperf-server.local:4321_).
 
 **-t**, **\--time** _n_
 :    Run traffic for _n_ seconds. Defaults to 10 seconds.
 
 **\--connect-timeout** _n_
-:    Wait _n_ milliseconds for server **spiperf** instance to respond to a connection request. Defaults to 3000 ms.
+:    Wait _n_ seconds for server **spiperf** instance to respond to a connection request. Defaults to 3.
 
-**\--cport** _n_
-:    Use _n_ as TCP/UDP destination port for test traffic.
+**\--traffic-port** _n_
+:    Use _n_ as TCP/UDP destination port for stateful/stateless test traffic.
 
-**\--headers** _header_[,_header_]
-:    Comma-separated list of protocol headers to use in test traffic packets. List is processed left-to-right and applied to the packet in that order. Defaults to _Ethernet_,_IPv4_. See **\--help** output for a full list of supported headers. Case-insensitive. A non-exhaustive list includes: _Ethernet_, _VLAN_, _IPv4_, _IPv6_. Not all permutations are supported. Note: stateless traffic mode automatically appends a _UDP_ header to this list.
+**\--client-addrs** _header_=_address_[,_header_=_address_]
+:    Comma-separated list of protocol header=address pairs for the client side. List is processed left-to-right and applied to the packet in that order. Defaults to _Ethernet_,_IPv4_. See **\--help** output for a full list of supported headers. Case-insensitive. A non-exhaustive list includes: _Ethernet_, _VLAN_, _IPv4_, _IPv6_. Not all permutations are supported. Note: stateless traffic mode automatically appends a _UDP_ header to this list, the destination port of which is configured via **\--traffic-port** parameter. A special value of _auto_ can be supplied in place of an _address_ and **spiperf** will auto-generate a value.
 
-**\--client-addrs** _address_[,_address_]
-:    Comma-separated list of client-side addresses to use in test traffic packets. List is processed left-to-right and applied to the packet in that order. A special value of _auto_ can be supplied in place of a specific address and **spiperf** will auto-generate that address. Note: does not cover automatically-inserted header; use _\--cport_ instead.
-
-**\--server-addrs** _address_[,_address_]
-:    Comma-separated list of server-side addresses to use in test traffic packets. List is processed left-to-right and applied to the packet in that order. A special value of _auto_ can be supplied in place of a specific address and **spiperf** will auto-generate that address. Note: does not cover automatically-inserted header; use _\--cport_ instead.
+**\--server-addrs** _header_=_address_[,_header_=_address_]
+:    Comma-separated list of protocol header=address pairs for the server side. List is processed left-to-right and applied to the packet in that order. Defaults to _Ethernet_,_IPv4_. See **\--help** output for a full list of supported headers. Case-insensitive. A non-exhaustive list includes: _Ethernet_, _VLAN_, _IPv4_, _IPv6_. Not all permutations are supported. Note: stateless traffic mode automatically appends a _UDP_ header to this list, the destination port of which is configured via **\--traffic-port** parameter. A special value of _auto_ can be supplied in place of an _address_ and **spiperf** will auto-generate a value.
 
 **-S**, **\--tos** _n_
 :    Use _n_ as IP Type of Service value in test traffic packets.
@@ -149,7 +140,7 @@ Behind the scenes the `client` instance will connect to the `server` one and sha
 :    Skip ARP/ND for test traffic.
 
 **-P**, **\--parallel** _n_
-:    Transmit _n_ parallel traffic streams. Streams are differentiated from one another using different source UDP/TCP ports. Specified traffic rate is divided equally among streams. Defaults to 1.
+:    Transmit _n_ parallel traffic streams. Streams are differentiated from one another using different source UDP/TCP ports. Specified traffic rate is divided equally among streams. Defaults to 1. To generate source UDP/TCP ports, **spiperf** will first pick a base port then increment by one until _n_ values have been generated.
 
 ## Result Options
 
@@ -157,25 +148,16 @@ Behind the scenes the `client` instance will connect to the `server` one and sha
 :    Output periodic results every _n_ seconds. Defaults to 1.
 
 **-J**, **\--json**
-:    Output results in _json_ format.
+:    Output results in _JSON_ format.
 
-**\--no-runtime-results**
-:    Do not output periodic results during test execution.
+**\--runtime-results** _type_
+:    Output _type_ runtime results. _type_ can be one of _none_, _terse_, _full_, _user_. Defaults to _terse_. _user_ type displays values specified by **\--analyze** parameter. Values _none_, _terse_, _full_ override **\--analyze** parameter. If omitted and **\--analyze** is present _type_ is _user_. _terse_ type analyzes _Transmit Bit Rate_, _Receive Bit Rate_, _Average Latency_, and _Drop (loss) Count_.
 
-**\--no-final-results**
-:    Do not output end-of-test summary results.
+**\--final-results** _type_
+:    Output _type_ final results. _type_ can be one of _none_, _terse_, _full_, _user_. Defaults to _terse_. _user_ type displays values specified by **\--analyze** parameter. Values _none_, _terse_, _full_ override **\--analyze** parameter. If omitted and **\--analyze** is present _type_ is _user_. _terse_ type analyzes _Transmit Bit Rate_, _Receive Bit Rate_, _Average Latency_, and _Drop (loss) Count_.
 
-**\--terse-runtime-results**
-:    Periodically output a useful but not exhaustive set of results during test execution. This list includes _Transmit Bit Rate_, _Receive Bit Rate_, _Average Latency_, _Drop Packet Count_. This is the default.
-
-**\--terse-final-results**
-:    Output a useful but not exhaustive set of results upon test completion. This list includes _Transmit Bit Rate_, _Receive Bit Rate_, _Average Latency_, _Drop Packet Count_. This is the default.
-
-**\--full-runtime-results**
-:    Periodically output a full set of results during test execution.
-
-**\--full-final-results**
-:    Output a full set of results upon test completion.
+**\--analyze** _stat_ [,_stat_...]
+:    List of statistics to analyze. A non-exhaustive list of values for _stat_ includes: _bit-rate_, _frame-rate_, _byte-count_, _frame-count_, _latency_, _jitter_, _sequence_. See _RESULTS_ section for a complete list. Statistics are output in the order specified. 
 
 **\--result-units** _unit_
 :    Display results in units _unit_. Supported values are: _B_, _K_, _M_, _G_. If no option is specified, **spiperf** will choose a reasonable default per value to minimize the number of digits in the output value.
@@ -232,7 +214,7 @@ Behind the scenes the `client` instance will connect to the `server` one and sha
 This example shows an enhanced traffic configuration. This assumes the **spiperf** server is running on host _a.b.c.d_ port _4321_. It also assumes that the client's _OpenPerf_ instance is running on the same host using the default API port and that there's exactly one test port resource configured. Server configuration is omitted as it's not different from the example in the quick start section. Test will run 200Mbps of traffic downstream (server->client) and 20Mbps upstream for 2 minutes, and send a repeating frame size sequence of 64, 256, 128 bytes.
 
 ```
-spiperf -c a.b.c.d -p 4321 -d 200M -u 20M -t 120 --imix acb
+spiperf -c a.b.c.d:4321 -d 200M -u 20M -t 120 --imix acb
 ```
 
 This example shows how to configure custom protocol headers. This assumes **spiperf** server instance is running on host _a.b.c.d_ port _4321_. It also assumes that the client's _OpenPerf_ instance is running on the same host using the default API port and that there's exactly one test port resource configured. Server configuration is omitted as it's not different from the example in the quick start section. Following table lists out protocols and addresses used. Arguments are on separate lines to better associate the address values with the intended header.
@@ -244,10 +226,9 @@ This example shows how to configure custom protocol headers. This assumes **spip
 | IPv4     | 192.168.1.24      | 10.0.0.1          |
 
 ```
-spiperf -c a.b.c.d -p 4321 \
---headers ethernet,vlan,ipv4 \
---client-addrs aa:bb:cc:dd:ee:ff,17,192.168.1.24 \
---server-addrs 00:11:22:33:44:55,200,10.0.0.1
+spiperf -c a.b.c.d:4321 \
+--client-addrs ethernet=aa:bb:cc:dd:ee:ff,vlan=17,ipv4=192.168.1.24 \
+--server-addrs ethernet=00:11:22:33:44:vlan=55,ipv4=200,10.0.0.1
 ```
 
 This example demonstrates how to specify _OpenPerf_ test port resources. The server is being configured to use the _OpenPerf_ instance on host _4.3.2.1_, port _6543_, and test port resource _test-port-one_. The server is being run on host _1.2.3.4_ and is listening on the default port. The client is being configured to use the _OpenPerf_ instance on the local host at the default port and using test port resource _port-two_.
@@ -258,9 +239,15 @@ spiperf -s -o 4.3.2.1:6543/test-port-one
 spiperf -c 1.2.3.4 -o /port-two
 ```
 
+This example demonstrates how to configure different result output. This assumes the **spiperf** server is running on host _a.b.c.d_ port _4321_. It also assumes that the client's _OpenPerf_ instance is running on the same host using the default API port and that there's exactly one test port resource configured. Server configuration is omitted as it's not different from the example in the quick start section. **spiperf** will output _Transmit Bit Rate_, _Receive Bit Rate_, _Transmit Frame Rate_, _Receive Frame Rate_, _Drop Packet Count_, _Out-of-Order Packet Count_ at runtime and when the test completes.
+
+```
+spiperf -c a.b.c.d:4321 --analyze bit-rate,frame-rate,sequence
+```
+
 # RESULTS
 
-**spiperf** surfaces a rich subset of _OpenPerf_'s results and statistics. One important distinction between **spiperf** and _iperf3_ relates to runtime statistics. Runtime statistics in **spiperf** are always test-to-time; they measure the test from beginning until the snapshot is taken. In contrast _iperf3_ runtime statistics are for the previous measurement period.
+**spiperf** surfaces a rich subset of _OpenPerf_'s results and statistics. One important distinction between **spiperf** and _iperf3_ relates to runtime statistics. Runtime statistics in **spiperf** are measured from the start of the test until the end of the measurement period. In contrast _iperf3_ runtime statistics are for the previous measurement period.
 
 Transmit Bytes
 :    Total number of bytes transmitted. Note: this measures packet data plus protocol headers.
@@ -298,27 +285,26 @@ Drop Count
 Out-of-Order Count
 :    Number of packets that were received out of order (e.g. received in a different order than transmitted.) Packet reordering causes interruptions and reduced performance of network protocols.
 
-With such a long list of possible results, **spiperf** allows users to select between three subsets of these values.
+With such a long list of possible results, **spiperf** allows users to select which results they want to see.
 
-| Terse             | _to be named_       | Full                 |
-|-------------------|---------------------|----------------------|
-| Transmit Bit Rate | Transmit Bit Rate   | Transmit Bit Rate    |
-| Receive Bit Rate  | Receive Bit Rate    | Receive Bit Rate     |
-|                   | Transmit Byte Count | Transmit Byte Count  |
-|                   | Receive Byte Count  | Receive Byte Count   |
-|                   |                     | Minimum Latency      |
-| Average Latency   | Average Latency     | Average Latency      |
-|                   | Maximum Latency     | Maximum Latency      |
-|                   | Average Jitter      | Average Jitter       |
-|                   | Maximum Jitter      | Maximum Jitter       |
-| Drop Cout         | Drop Count          | Drop Count           |
-|                   | Out-of-Order Count  | Out-of-Order Count   |
-|                   |                     | Transmit Frame Rate  |
-|                   |                     | Receive Frame Rate   |
-|                   |                     | Transmit Frame Count |
-|                   |                     | Receive Frame Count  |
-|                   |                     |                      |
 
+| \--analyze  | Statistic Counter    |
+|-------------|----------------------|
+| bit-rate    | Transmit Bit Rate    |
+|             | Receive Bit Rate     |
+| frame-rate  | Transmit Frame Rate  |
+|             | Receive Frame Rate   |
+| byte-count  | Transmit Byte Count  |
+|             | Receive Byte Count   |
+| frame-count | Transmit Frame Count |
+|             | Receive Frame Count  |
+| latency     | Minimum Latency      |
+|             | Average Latency      |
+|             | Maximum Latency      |
+| jitter      | Average Jitter       |
+|             | Maximum Jitter       |
+| sequence    | Drop Count           |
+|             | Out-of-Order Count   |
 
 # SEE ALSO
 
