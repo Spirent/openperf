@@ -14,3 +14,8 @@ from common.matcher.port import be_valid_port
 
 # stack.py
 from common.matcher.stack import be_valid_stack
+
+# timesync.py
+from common.matcher.timesync import be_valid_counter
+from common.matcher.timesync import be_valid_keeper
+from common.matcher.timesync import be_valid_source
