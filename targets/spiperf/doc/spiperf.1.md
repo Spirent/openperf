@@ -1,6 +1,6 @@
 % SPIPERF(1)
 % https://github.com/Spirent/openperf
-% December 2019
+% January 2020
 
 # NAME
 
@@ -16,15 +16,15 @@ spiperf - test network throughput, latency, and loss.
 
 **spiperf** is a command line tool inspired by _iperf3_ that uses _OpenPerf_ as an underlying stack for increased performance, flexibility, and analytical capability. An emphasis has been placed on ease-of-use to allow minimal user input to run a meaningful test. At the same time a rich assortment of command-line options are provided so that discerning users may have enhanced control over their tests.
 
-**spiperf** uses a client-server model for configuration and control purposes. A _server_ waits for a _client_ to connect and send configuration details. Once the test is started by the _client_, both sides collect statistics and present them to the user. This terminology is borrowed from _iperf_.
+**spiperf** uses a client-server model for configuration and control purposes. A _server_ waits for a _client_ to connect and send configuration details. Once the _client_ starts the test, both sides collect statistics and present them to the user. This terminology is borrowed from _iperf_.
 
 **spiperf** has two major modes of operation: stateful (TCP) and stateless (UDP) traffic.
 
-In stateless mode **spiperf** configures traffic between _client_ and _server_ and provides statistics related to throughput, latency, and loss, if any. Using a special signature embedded within each packet it is able to determine latency and loss in one direction without the need for round-trip transmission.
+In stateless mode **spiperf** configures traffic between _client_ and _server_ and provides statistics related to throughput, latency, and loss. **spiperf** measures one-way latency and loss using a special signature embedded within each packet.
 
 Stateful mode has not been implemented at this time.
 
-By default **spiperf** operates much like _iperf3_. Most _iperf3_ options are honored and results are presented in a comparable format. An extended set of options are also provided, which unlock the full capabilities of **spiperf**. These extended options are intended to supplement and extend functionality.
+By default **spiperf** operates much like _iperf3_. Most _iperf3_ options are honored and results are presented in a comparable format. **spiperf** also provides an extended set of options, which unlock the full capabilities of **spiperf**.
 
 To use **spiperf** user must first start one or two _OpenPerf_ instances.
 
@@ -40,11 +40,9 @@ spiperf --server
 spiperf -c <server ip>
 ```
 
-This will result in stateless (UDP) test data streams being sent at 1Mbps for 10 seconds from the _client_ to the _server_ via their respective _OpenPerf_ instances.
+This runs a test that sends stateless (UDP) test data streams at 1Mbps for 10 seconds from the _client_ to the _server_ via their respective _OpenPerf_ instances.
 
-Behind the scenes the _client_ instance will connect to the _server_ one via a dedicated **spiperf** control channel and share configuration information. Once both sides are configured the _client_ instance will initiate test data stream transmission. While data stream(s) are running snapshot statistics will periodically be output.
-
-[FIXME: is this a good thing or a bad thing?] Unlike _iperf3_ these statistics are a snapshot of the entire test up until the sample is taken, not of a fixed interval. Once traffic has finished sending the transmitting port will output end-of-test results that summarize the test.
+Behind the scenes the _client_ instance will connect to the _server_ one via a dedicated **spiperf** control channel and share configuration information. Once both sides are configured the _client_ instance initiates test data stream transmission. While data stream(s) are running snapshot statistics are output periodically. Once traffic has finished sending the transmitting port will output end-of-test results that summarize the test.
 
 # OPTIONS
 
@@ -63,7 +61,7 @@ Behind the scenes the _client_ instance will connect to the _server_ one via a d
 :    Output debug-level information. Mostly useful for developers, but can be helpful in debugging connectivity issues between **spiperf** and _OpenPerf_ instances.
 
 **-o**, **\--openperf-url** _url_
-:    Bind to _OpenPerf_ resource _url_. _url_ has the format <_host-ip_>:<_host-port_>/ports/<_port-id_>. Here _host-ip_ is the IP address or hostname of the _OpenPerf_ host, _host-port_ is the _OpenPerf_ API port, and _port-id_ is the test port resource identifier from _OpenPerf_. All fields are optional; **spiperf** will use sensible defaults for omitted values (i.e. _http://localhost:8080/_).
+:    Bind to _OpenPerf_ resource _url_. _url_ has the format <_host-address_>:<_host-port_>/<_resource-collection_>/<_resource-id_>. Here _host-address_ is the IP address or hostname of the _OpenPerf_ host, _host-port_ is the _OpenPerf_ API port, _resource-collection_ is either _ports_ or _interfaces_, and _resource-id_ is the resource identifier from _OpenPerf_. All fields are optional; **spiperf** will use sensible defaults for omitted values (i.e. _http://localhost:8080/_).
 
 **-p**, **\--port** _n_
 :    **spiperf** will listen on (server) or connect to (client) port _n_. This setting is for the **spiperf** to **spiperf** control connection.
@@ -118,7 +116,7 @@ Behind the scenes the _client_ instance will connect to the _server_ one via a d
 :    Run data stream(s) for _n_ seconds. Defaults to 10 seconds. Does not support extended time suffixes. Mutually exclusive with **-n** and **-k** options.
 
 **-n**, **\--bytes** _n_[KMG]
-:    Send _n_ bytes worth of data packets. Mutually exclusive with **-t** and **-k** options. **spiperf** interprets this the number of packet data bytes not just packet payload bytes (i.e. payload plus total header size). Minimum value is **-l** option value. If _n_ is not an even multiple of the **-l** option **spiperf** will output a warning and round _n_ up to the nearest multiple.
+:    Send _n_ bytes worth of data packets. Mutually exclusive with **-t** and **-k** options. **spiperf** interprets this the number of packet data bytes not just packet payload bytes (i.e. payload plus total header size). Minimum value is **-l** option value. If _n_ is not an even multiple of the **-l** option **spiperf** will output a warning and send at least _n_ bytes worth of data packets.
 
 **-k**, **\--blockcount** _n_[KM]
 :    Send _n_ data stream blocks (packets). Mutually exclusive with **-t** and **-n** options.
@@ -142,10 +140,10 @@ Behind the scenes the _client_ instance will connect to the _server_ one via a d
 :    Use _IPv6_ data streams. See also **\--client-addrs** and **\--server-addrs** extended options for more flexible configuration. Added for compatibility with _iperf3_. May also be specified as **\--version6**.
 
 **\--client-addrs** _header_=_address_[,_header_=_address_]
-:    Comma-separated list of protocol header=address pairs for the client side of data streams. List is processed left-to-right and applied to the packet in that order. Defaults to _Ethernet_,_IPv4_. See **\--help** output for a full list of supported headers. Case-insensitive. A non-exhaustive list includes: _Ethernet_, _VLAN_, _IPv4_, _IPv6_. Not all permutations are supported. Note: stateless traffic mode automatically appends a _UDP_ header to this list, ports of which are configured via **\--client-port** and **\--server-port** parameters. A special value of _auto_ can be supplied in place of an _address_ and **spiperf** will auto-generate a value. **spiperf** extension. Mutually exclusive with **-4** and **-6** options.
+:    Comma-separated list of protocol header=address pairs for the client side of data streams. List is processed left-to-right and applied to the packet in that order. Defaults to _Ethernet_,_IPv4_. See **\--help** output for a full list of supported headers. Case-insensitive. A non-exhaustive list includes: _Ethernet_, _VLAN_, _IPv4_, _IPv6_. Not all permutations are supported. Note: stateless traffic mode automatically appends a _UDP_ header to this list, with source and destination ports configured via **\--client-port** and **\--server-port** parameters. Supply the special value of _auto_ in place of an _address_ and **spiperf** will auto-generate a value. **spiperf** extension. Mutually exclusive with **-4** and **-6** options. Note: bind to an existing _OpenPerf_ _interface_ via the **-o** to preconfigure this information.
 
 **\--server-addrs** _header_=_address_[,_header_=_address_]
-:    Comma-separated list of protocol header=address pairs for the server side of data streams. List is processed left-to-right and applied to the packet in that order. Defaults to _Ethernet_,_IPv4_. See **\--help** output for a full list of supported headers. Case-insensitive. A non-exhaustive list includes: _Ethernet_, _VLAN_, _IPv4_, _IPv6_. Not all permutations are supported. Note: stateless traffic mode automatically appends a _UDP_ header to this list, the ports of which are configured via **\--server-port** and **\--client-port** parameters. A special value of _auto_ can be supplied in place of an _address_ and **spiperf** will auto-generate a value. **spiperf** extension. Mutually exclusive with **-4** and **-6** options.
+:    Comma-separated list of protocol header=address pairs for the server side of data streams. List is processed left-to-right and applied to the packet in that order. Defaults to _Ethernet_,_IPv4_. See **\--help** output for a full list of supported headers. Case-insensitive. A non-exhaustive list includes: _Ethernet_, _VLAN_, _IPv4_, _IPv6_. Not all permutations are supported. Note: stateless traffic mode automatically appends a _UDP_ header to this list, with source and destination ports configured via **\--server-port** and **\--client-port** parameters.  Supply the special value of _auto_ in place of an _address_ and **spiperf** will auto-generate a value. **spiperf** extension. Mutually exclusive with **-4** and **-6** options. Note: bind to an existing _OpenPerf_ _interface_ via the **-o** to preconfigure this information.
 
 **-S**, **\--tos** _n_
 :    Use _n_ as IP Type of Service value in all data stream packets. Valid prefixes include _O_ (capital of the letter o) for octal and _0x_ for hex. No prefix denotes decimal format.
@@ -172,7 +170,7 @@ Behind the scenes the _client_ instance will connect to the _server_ one via a d
 
 **\--imix** _length-code_[...]
 :    Use _IMIX_ packet length distribution. Mutually exclusive with **-l**. Supports length codes _a_ to _g_ from RFC 6985 section 4. See _IMIX Length Table_ below for size-code mappings. Not supported with **-b** duration option. **spiperf** extension.
- 
+
 **\--fill-pattern** _bytes_
 :    Fill data stream packet payloads with _bytes_ pattern. Must be in the format 0xYYYY where Y is a hex digit. **spiperf** extension.
 
@@ -195,6 +193,9 @@ Behind the scenes the _client_ instance will connect to the _server_ one via a d
 
 **\--analyze** _stat_ [,_stat_...]
 :    List of statistics to analyze. A non-exhaustive list of values for _stat_ includes: _bit-rate_, _packet-rate_, _byte-count_, _packet-count_, _latency_, _jitter_, _sequence_. See _RESULTS_ section for a complete list. Statistics are output in the order specified. **spiperf** extension. Implies **\--extended-results**.
+
+**\--raw-results-file** _file_
+:    Output raw results for all analyzed statistics to _file_. If _file_ exists it is overwritten. **\--format** and **\--json** options do not affect output. Option is intended for _gnuplot_ visualization. See results section for additional details.
 
 
 | Size (bytes) | IMIX Genome Code Letter |
@@ -281,9 +282,7 @@ spiperf -c a.b.c.d:4321 --analyze bit-rate,packet-rate,sequence
 
 # RESULTS
 
-**spiperf** surfaces a rich subset of _OpenPerf_'s results and statistics. By default results output in the same format as _iperf3_. They also output in the same location, namely transmit results on the transmit side and receive results on the receive side. When using **spiperf**'s extended results, result values are collected from both transmit and receive and output together on the transmit side. 
-
-[comment: not sure if we want to keep this behavior or not.] One important distinction between **spiperf** and _iperf3_ relates to runtime statistics. Runtime statistics in **spiperf** are measured from the start of the test until the end of the measurement period. In contrast _iperf3_ runtime statistics are for the previous measurement period.
+**spiperf** surfaces a rich subset of _OpenPerf_'s results and statistics. By default results output in the same format as _iperf3_. They also output in the same location, namely transmit results on the transmit side and receive results on the receive side. When using **spiperf**'s extended results, result values are collected from both transmit and receive and output together on the transmit side.
 
 Transmit Bytes
 :    Total number of bytes transmitted. Note: this measures packet data plus protocol headers.
@@ -341,6 +340,9 @@ With such a long list of possible results, **spiperf** allows users to select wh
 |              | Maximum Jitter            |
 | sequence     | Dropped Packet Count      |
 |              | Out-of-Order Packet Count |
+
+
+For raw results **spiperf** outputs each statistic counter as a separate data set. Each row in a data set is the counter's value from a sample period. _latency_ and _jitter_ statistics have an extra data set. These extra data sets mirror the internal _t-digest_ data structure that tracked _latency_ and _jitter_ values for each packet. Each row in these data sets represents a data point from the _t-digest_ structure. Internally _t-digests_ store data points as mean-weight pairs.
 
 # SEE ALSO
 
