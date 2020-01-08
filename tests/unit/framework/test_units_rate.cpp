@@ -122,20 +122,20 @@ TEST_CASE("rates", "[rate]")
         using us = std::chrono::microseconds;
 
         auto idle = rpm{800};
-        auto rev_period = openperf::units::get_period<ms>(idle);
+        auto rev_duration = openperf::units::to_duration<ms>(idle);
         /* 60 / 800 = 0.075 */
-        REQUIRE(rev_period.count() == 75);
+        REQUIRE(rev_duration.count() == 75);
 
-        auto cycle_period =
-            openperf::units::get_period<ms>(idle / rev_per_cycle);
+        auto cycle_duration =
+            openperf::units::to_duration<ms>(idle / rev_per_cycle);
         /* (60 * 4) / 800 = 0.3 */
-        REQUIRE(cycle_period.count() == 300);
+        REQUIRE(cycle_duration.count() == 300);
 
         /* each spark plug fires once per revolution */
-        auto spark_period =
-            openperf::units::get_period<us>(idle * num_cylinders);
+        auto spark_duration =
+            openperf::units::to_duration<us>(idle * num_cylinders);
         /* 60 / (800 * 6) = 0.0125 */
-        REQUIRE(spark_period.count() == 12500);
+        REQUIRE(spark_duration.count() == 12500);
     }
 
     SECTION("data rates, ")

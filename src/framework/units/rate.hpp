@@ -14,6 +14,7 @@
  * duration based on the frequency.
  */
 
+#include <chrono>
 #include <limits>
 #include <numeric>
 #include <ratio>
@@ -94,7 +95,7 @@ template <typename FromRate,
           typename Frequency =
               typename std::ratio_multiply<typename FromRate::frequency,
                                            typename ToDuration::period>::type>
-struct get_period_impl
+struct to_duration_impl
 {
     ToDuration operator()(const FromRate& from) const
     {
@@ -108,9 +109,35 @@ struct get_period_impl
 };
 
 template <typename ToDuration, typename Rep, typename Frequency>
-constexpr ToDuration get_period(const rate<Rep, Frequency>& from)
+constexpr ToDuration to_duration(const rate<Rep, Frequency>& from)
 {
-    return (get_period_impl<rate<Rep, Frequency>, ToDuration>()(from));
+    return (to_duration_impl<rate<Rep, Frequency>, ToDuration>()(from));
+}
+
+/*
+ * Convert a (std::chrono)duration to a rate.
+ */
+template <typename FromDuration,
+          typename ToRate,
+          typename Period =
+              typename std::ratio_multiply<typename FromDuration::period,
+                                           typename ToRate::frequency>::type>
+struct to_rate_impl
+{
+    ToRate operator()(const FromDuration& from) const
+    {
+        using common = std::common_type_t<typename ToRate::rep,
+                                          typename FromDuration::rep>;
+        return (ToRate(static_cast<typename ToRate::rep>(
+            static_cast<common>(Period::den) / static_cast<common>(from.count())
+            * static_cast<common>(Period::num))));
+    }
+};
+
+template <typename ToRate, typename Rep, typename Period>
+constexpr ToRate to_rate(const std::chrono::duration<Rep, Period>& from)
+{
+    return (to_rate_impl<std::chrono::duration<Rep, Period>, ToRate>()(from));
 }
 
 /**
@@ -398,7 +425,8 @@ template <typename Rep1,
           typename Rep2,
           typename Frequency2>
 constexpr typename std::common_type_t<Rep1, Rep2>
-operator/(const rate<Rep1, Frequency1>& left, rate<Rep2, Frequency2>& right)
+operator/(const rate<Rep1, Frequency1>& left,
+          const rate<Rep2, Frequency2>& right)
 {
     using common =
         std::common_type_t<rate<Rep1, Frequency1>, rate<Rep2, Frequency2>>;
