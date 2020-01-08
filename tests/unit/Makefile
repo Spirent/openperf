@@ -12,7 +12,7 @@ BUILD_DIR := $(OP_BUILD_ROOT)/obj/unit
 TARGET_DIR := $(OP_BUILD_ROOT)/bin
 
 SRC_DEPENDS :=
-BLD_DEPENDS := catch api_test config_file framework packetio_test socket_test
+BLD_DEPENDS := api_test catch config_file framework packetio_test pistache timesync_test
 
 ###
 # Framework test files
@@ -39,7 +39,10 @@ SOURCES := \
 	modules/packetio/test_recycle.cpp \
 	modules/packetio/test_transmit_table.cpp \
 	modules/socket/test_circular_buffer.cpp \
-	modules/socket/test_event_queue.cpp
+	modules/socket/test_event_queue.cpp \
+	modules/timesync/test_bintime.cpp \
+	modules/timesync/test_clock.cpp \
+	modules/timesync/test_history.cpp
 
 OBJECTS := $(call op_generate_objects,$(SOURCES),$(BUILD_DIR))
 
