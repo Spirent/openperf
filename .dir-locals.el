@@ -3,6 +3,7 @@
 ((nil . ((eval . (let ((root (projectile-project-root)))
                    (setq-local flycheck-clang-include-path
                                (list (concat root "deps/catch/include")
+                                     (concat root "deps/digestible/include")
                                      (concat root "deps/dpdk/lib/librte_acl")
                                      (concat root "deps/dpdk/lib/librte_bbdev")
                                      (concat root "deps/dpdk/lib/librte_bitratestats")
