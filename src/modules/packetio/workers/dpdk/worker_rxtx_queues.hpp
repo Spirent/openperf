@@ -7,28 +7,13 @@
 #include "packetio/workers/dpdk/rxtx_queue_container.hpp"
 #include "packetio/workers/dpdk/rx_queue.hpp"
 #include "packetio/workers/dpdk/tx_queue.hpp"
+#include "utils/singleton.hpp"
 
 struct rte_mbuf;
 
 namespace openperf::packetio::dpdk::worker {
 
-template <typename T> class singleton
-{
-public:
-    static T& instance()
-    {
-        static T instance;
-        return instance;
-    }
-
-    singleton(const singleton&) = delete;
-    singleton& operator=(const singleton) = delete;
-
-protected:
-    singleton(){};
-};
-
-class rxtx_queues : public singleton<rxtx_queues>
+class rxtx_queues : public utils::singleton<rxtx_queues>
 {
 public:
     void setup_queues(const std::vector<queue::descriptor>& descriptors);
