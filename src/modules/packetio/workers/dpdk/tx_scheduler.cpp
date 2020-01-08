@@ -93,7 +93,7 @@ template <typename Source>
 std::chrono::nanoseconds next_deadline(const Source& source)
 {
     using ns = std::chrono::nanoseconds;
-    return (units::get_period<ns>(source.packet_rate() / source.burst_size()));
+    return (units::to_duration<ns>(source.packet_rate() / source.burst_size()));
 }
 
 tx_scheduler::tx_scheduler(const worker::tib& tib,
