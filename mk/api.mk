@@ -12,7 +12,7 @@ API_OBJ_DIR := $(OP_BUILD_ROOT)/obj/modules/api
 API_LIB_DIR := $(OP_BUILD_ROOT)/lib
 
 # We explicitly state our includes, e.g. include module/<header.h>
-OP_INC_DIRS += $(API_INC_DIR)
+OP_INC_DIRS += $(OP_ROOT)/src/modules
 OP_LIB_DIRS += $(API_LIB_DIR)
 
 API_SOURCES :=
