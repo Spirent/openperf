@@ -21,6 +21,8 @@ TimeSourceStats_ntp::TimeSourceStats_ntp()
 {
     m_Rx_packets = 0L;
     m_Tx_packets = 0L;
+    m_Stratum = 0;
+    m_StratumIsSet = false;
     
 }
 
@@ -39,6 +41,10 @@ nlohmann::json TimeSourceStats_ntp::toJson() const
 
     val["rx_packets"] = m_Rx_packets;
     val["tx_packets"] = m_Tx_packets;
+    if(m_StratumIsSet)
+    {
+        val["stratum"] = m_Stratum;
+    }
     
 
     return val;
@@ -48,6 +54,10 @@ void TimeSourceStats_ntp::fromJson(nlohmann::json& val)
 {
     setRxPackets(val.at("rx_packets"));
     setTxPackets(val.at("tx_packets"));
+    if(val.find("stratum") != val.end())
+    {
+        setStratum(val.at("stratum"));
+    }
     
 }
 
@@ -69,6 +79,23 @@ void TimeSourceStats_ntp::setTxPackets(int64_t value)
 {
     m_Tx_packets = value;
     
+}
+int32_t TimeSourceStats_ntp::getStratum() const
+{
+    return m_Stratum;
+}
+void TimeSourceStats_ntp::setStratum(int32_t value)
+{
+    m_Stratum = value;
+    m_StratumIsSet = true;
+}
+bool TimeSourceStats_ntp::stratumIsSet() const
+{
+    return m_StratumIsSet;
+}
+void TimeSourceStats_ntp::unsetStratum()
+{
+    m_StratumIsSet = false;
 }
 
 }
