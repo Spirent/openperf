@@ -29,8 +29,27 @@ public:
 
     /* Frequency calculations always involve a result and an error */
     using freq_result = std::pair<counter::hz, counter::hz>;
-    using theta_result = std::pair<bintime, double>;
     using rtt_container = digestible::tdigest<counter::ticks, unsigned>;
+
+    std::optional<counter::hz> frequency() const;
+    std::optional<counter::hz> frequency_error() const;
+    std::optional<counter::hz> local_frequency() const;
+    std::optional<counter::hz> local_frequency_error() const;
+    bintime offset() const;
+    std::optional<bintime> theta() const;
+
+    size_t nb_frequency_accept() const;
+    size_t nb_frequency_reject() const;
+    size_t nb_local_frequency_accept() const;
+    size_t nb_local_frequency_reject() const;
+    size_t nb_theta_accept() const;
+    size_t nb_theta_reject() const;
+    size_t nb_timestamps() const;
+
+    std::optional<double> rtt_maximum() const;
+    std::optional<double> rtt_median() const;
+    std::optional<double> rtt_minimum() const;
+    size_t rtt_size() const;
 
 private:
     std::optional<freq_result> do_rate_estimation(const timestamp& ts);
@@ -55,7 +74,7 @@ private:
         } f_local;
         struct
         {
-            theta_result current = {bintime::zero(), 0};
+            bintime current = bintime::zero();
             counter::ticks last_update = 0;
         } theta_hat;
         bintime K = bintime::zero();
@@ -64,12 +83,13 @@ private:
 
     struct stats
     {
-        rtt_container rtts = rtt_container(32);
-        size_t timestamps = 0;
-        size_t f_hat = 0;
-        size_t f_local = 0;
-        size_t theta_hat = 0;
-        size_t updates = 0;
+        rtt_container rtts = rtt_container(16);
+        size_t f_hat_accept = 0;
+        size_t f_hat_reject = 0;
+        size_t f_local_accept = 0;
+        size_t f_local_reject = 0;
+        size_t theta_hat_accept = 0;
+        size_t theta_hat_reject = 0;
         counter::ticks last_update = 0;
     };
     stats m_stats;

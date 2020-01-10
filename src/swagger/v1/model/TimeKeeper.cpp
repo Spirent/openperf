@@ -22,7 +22,6 @@ TimeKeeper::TimeKeeper()
     m_Time = "";
     m_Time_counter_id = "";
     m_Time_source_id = "";
-    m_Synced = false;
     
 }
 
@@ -39,10 +38,11 @@ nlohmann::json TimeKeeper::toJson() const
 {
     nlohmann::json val = nlohmann::json::object();
 
+    val["info"] = ModelBase::toJson(m_Info);
+    val["stats"] = ModelBase::toJson(m_Stats);
     val["time"] = ModelBase::toJson(m_Time);
     val["time_counter_id"] = ModelBase::toJson(m_Time_counter_id);
     val["time_source_id"] = ModelBase::toJson(m_Time_source_id);
-    val["synced"] = m_Synced;
     
 
     return val;
@@ -53,11 +53,28 @@ void TimeKeeper::fromJson(nlohmann::json& val)
     setTime(val.at("time"));
     setTimeCounterId(val.at("time_counter_id"));
     setTimeSourceId(val.at("time_source_id"));
-    setSynced(val.at("synced"));
     
 }
 
 
+std::shared_ptr<TimeKeeperInfo> TimeKeeper::getInfo() const
+{
+    return m_Info;
+}
+void TimeKeeper::setInfo(std::shared_ptr<TimeKeeperInfo> value)
+{
+    m_Info = value;
+    
+}
+std::shared_ptr<TimeKeeperStats> TimeKeeper::getStats() const
+{
+    return m_Stats;
+}
+void TimeKeeper::setStats(std::shared_ptr<TimeKeeperStats> value)
+{
+    m_Stats = value;
+    
+}
 std::string TimeKeeper::getTime() const
 {
     return m_Time;
@@ -83,15 +100,6 @@ std::string TimeKeeper::getTimeSourceId() const
 void TimeKeeper::setTimeSourceId(std::string value)
 {
     m_Time_source_id = value;
-    
-}
-bool TimeKeeper::isSynced() const
-{
-    return m_Synced;
-}
-void TimeKeeper::setSynced(bool value)
-{
-    m_Synced = value;
     
 }
 

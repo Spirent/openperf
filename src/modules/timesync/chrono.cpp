@@ -122,9 +122,10 @@ int keeper::sync(const bintime& timestamp, counter::ticks t, counter::hz freq)
                     ((1ULL << 63) / th_next->lerp.freq.count()) << 1;
                 th_next->lerp.ticks =
                     th_next->ref.ticks
-                    + (detail::to_seconds<double>(std::chrono::abs(jump))
-                           .count()
-                       * th_next->lerp.freq.count());
+                    + static_cast<counter::ticks>(
+                        detail::to_seconds<double>(std::chrono::abs(jump))
+                            .count()
+                        * th_next->lerp.freq.count());
                 assert(th_next->lerp.ticks >= th_next->ref.ticks);
             }
         }

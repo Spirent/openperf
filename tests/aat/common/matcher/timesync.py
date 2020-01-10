@@ -21,7 +21,10 @@ class _be_valid_keeper(Matcher):
         expect(keeper).to(be_a(client.models.TimeKeeper))
         expect(keeper.time).to(be_a(datetime))
         expect(keeper.time_counter_id).not_to(be_empty)
-        if (keeper.synced):
+        expect(keeper.stats).to(be_a(client.models.TimeKeeperStats))
+        expect(keeper.stats.round_trip_times).to(be_a(client.models.TimeKeeperStatsRoundTripTimes))
+        expect(keeper.info).to(be_a(client.models.TimeKeeperInfo))
+        if (keeper.info.synced):
             expect(keeper.time_source_id).not_to(be_empty)
         return True, ['is valid keeper']
 
