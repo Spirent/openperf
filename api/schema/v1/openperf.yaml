@@ -39,6 +39,9 @@ tags:
   - name: Modules
   - name: Ports
   - name: Stacks
+  - name: TimeCounters
+  - name: TimeKeeper
+  - name: TimeSources
 
 basePath: /
 
@@ -341,6 +344,114 @@ paths:
           description: Success
           schema:
             $ref: "#/definitions/Stack"
+
+  /time-counters:
+    get:
+      operationId: ListTimeCounters
+      tags:
+        - TimeCounters
+      summary: List time counters
+      description: |
+        The `time-counters` endpoint returns all local time counters
+        that are available for measuring the passage of time.  This
+        list is for informational purposes only.
+      responses:
+        200:
+          description: Success
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/TimeCounter"
+
+  /time-counters/{id}:
+    get:
+      operationId: GetTimeCounter
+      tags:
+        - TimeCounters
+      summary: Get a time counter
+      description: Returns a time counter, by id.
+      parameters:
+        - $ref: "#/parameters/id"
+      responses:
+        200:
+          description: Success
+          schema:
+            $ref: "#/definitions/TimeCounter"
+
+  /time-keeper:
+    get:
+      operationId: GetTimeKeeper
+      tags:
+        - TimeKeeper
+      summary: Get a time keeper.
+      description: Returns the system time keeper, aka clock.
+      responses:
+        200:
+          description: Success
+          schema:
+            $ref: "#/definitions/TimeKeeper"
+
+  /time-sources:
+    get:
+      operationId: ListTimeSources
+      tags:
+        - TimeSources
+      summary: List reference clocks
+      description: |
+        The `time-sources` endpoint returns all network clock sources
+        that are used for syncing the local time.
+      responses:
+        200:
+          description: Success
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/TimeSource"
+    post:
+      operationId: CreateTimeSource
+      tags:
+        - TimeSources
+      summary: Register a time source for time syncing.
+      description: Registers a new time source for time syncing.
+      parameters:
+        - name: timesource
+          in: body
+          description: New time source
+          required: true
+          schema:
+            $ref: "#/definitions/TimeSource"
+      responses:
+        201:
+          description: Success
+          schema:
+            $ref: "#/definitions/TimeSource"
+
+  /time-sources/{id}:
+    get:
+      operationId: GetTimeSource
+      tags:
+        - TimeSources
+      summary: Get a time source
+      description: Get a time source, by id.
+      parameters:
+        - $ref: "#/parameters/id"
+      responses:
+        200:
+          description: Success
+          schema:
+            $ref: "#/definitions/TimeSource"
+    delete:
+      operationId: DeleteTimeSource
+      tags:
+        - TimeSources
+      summary: Delete a time source
+      description: Deletes an existing time source. Idempotent.
+      parameters:
+        - $ref: "#/parameters/id"
+      responses:
+        204:
+          description: No Content
+
 
 definitions:
   Interface:
@@ -846,3 +957,235 @@ definitions:
       - sems
       - mutexes
       - mboxes
+
+  TimeCounter:
+    type: object
+    description: A source of clock ticks
+    properties:
+      id:
+        type: string
+        description: Unique time counter identifier
+      name:
+        type: string
+        description: Time counter name
+      frequency:
+        type: integer
+        description: Tick rate of the counter, in Hz.
+        format: int64
+      priority:
+        type: integer
+        description: |
+          Priority to determine which counter to use in situations where
+          there is more than one (higher number = higher priority)
+        format: int32
+    required:
+      - id
+      - name
+      - frequency
+      - quality
+
+  TimeKeeperInfo:
+    type: object
+    description: TimeKeeper internal state information
+    properties:
+      frequency:
+        type: number
+        description: |
+          The TimeCounter frequency as measured by the interval between the
+          two best timestamp exchanges with the TimeSource over the past two
+          hours, in hz.
+        format: int64
+      frequency_error:
+        type: number
+        description: The estimated error in the TimeCounter frequency measurement, in hz.
+        format: int64
+      local_frequency:
+        type: number
+        description: |
+          The TimeCounter frequency as measured by the interval between the
+          two best timestamp exchanges with the TimeSource over the past hour,
+          in hz. This value is used to help determine TimeCounter drift.
+        format: int64
+      local_frequency_error:
+        type: number
+        description: The estimated error in the local TimeCounter frequency measurement, in hz.
+        format: int64
+      offset:
+        type: number
+        description: |
+          The offset applied to TimeCounter derived timestamp values,
+          in seconds.  This value comes from the system host clock.
+        format: double
+      synced:
+        type: boolean
+        description: Indicates if the clock is synchronized to the source
+      theta:
+        type: number
+        description: |
+          The calculated correction to apply to the offset, based on the
+          measured TimeCounter frequency and TimeSource timestamps.
+        format: double
+    required:
+      - offset
+      - boolean
+
+  TimeKeeperStats:
+    type: object
+    description: TimeKeeper statistics
+    properties:
+      frequency_accept:
+        type: number
+        description: The number of times the frequency calculation has been updated.
+        format: int64
+      frequency_reject:
+        type: number
+        description: |
+          The number of times the frequency calculation has been rejected due
+          to an excessive delta between old and new values.
+        format: int64
+      local_frequency_accept:
+        type: number
+        description: The number of times the local frequency calculation has been updated.
+        format: int64
+      local_frequency_reject:
+        type: number
+        description: |
+          The number of times the local frequency calculation has been rejected
+          due to an excessive delta between old and new values.
+        format: int64
+      round_trip_times:
+        type: object
+        description: |
+          The round trip time measures the total elapsed time to make a timestamp
+          exchange with the remote time source.  The TimeKeeper stores RTT data so
+          that the least delayed clock exchanges can be given extra weight when
+          calculating the current clock offset.
+        properties:
+          avg:
+            type: number
+            description: the average round trip time, in seconds.
+            format: double
+          max:
+            type: number
+            description: The maximum round trip time, in seconds.
+            format: double
+          min:
+            type: number
+            description: The minimum round trip time, in seconds.
+            format: double
+          size:
+            type: number
+            description: The number of round trip times in the data set.
+            format: int64
+        required:
+          - size
+      theta_accept:
+        type: number
+        description: The number of times the theta calculation has been updated.
+        format: int64
+      theta_reject:
+        type: number
+        description: |
+          Then umber of times the theta calculation has been rejected due to
+          excessive delta between old and new values.
+        format: int64
+      timestamps:
+        type: number
+        description: The number of timestamps in the current working set of timestamps.
+        format: int64
+    required:
+      - frequency_accept
+      - frequency_reject
+      - local_frequency_accept
+      - local_frequency_reject
+      - round_trip_times
+      - theta_accept
+      - theta_reject
+      - timestamps
+
+  TimeKeeper:
+    type: object
+    description: |
+      A combination of a TimeSource and a TimeCounter used to measure
+      the passage of time, aka a clock
+    properties:
+      info:
+        $ref: "#/definitions/TimeKeeperInfo"
+      stats:
+        $ref: "#/definitions/TimeKeeperStats"
+      time:
+        type: string
+        description: The current time and date in ISO8601 format
+        format: date-time
+      time_counter_id:
+        type: string
+        description: Time counter used for measuring time intervals
+      time_source_id:
+        type: string
+        description: Time source used for wall-clock synchronization
+    required:
+      - info
+      - stats
+      - time
+      - time_counter_id
+      - time_source_id
+
+  TimeSourceConfig:
+    type: object
+    description: time source configuration
+    properties:
+      ntp:
+        type: object
+        description: Network Time Protocol Server
+        properties:
+          hostname:
+            type: string
+            description: network hostname or address for server
+          service:
+            type: string
+            default: "ntp"
+            description: server port
+        required:
+          - hostname
+
+  TimeSourceStats:
+    type: object
+    description: time source statistics
+    properties:
+      ntp:
+        type: object
+        description: NTP statistics
+        properties:
+          rx_packets:
+            type: integer
+            description: Received packets
+            format: int64
+          tx_packets:
+            type: integer
+            description: Transmitted packets
+            format: int64
+        required:
+          - rx_packets
+          - tx_packets
+
+  TimeSource:
+    type: object
+    description: A reference time source
+    properties:
+      id:
+        type: string
+        description: Unique time source identifier
+      kind:
+        type: string
+        description: time source kind
+        enum:
+          - ntp
+      config:
+        $ref: "#/definitions/TimeSourceConfig"
+      stats:
+        $ref: "#/definitions/TimeSourceStats"
+    required:
+      - id
+      - kind
+      - config
+      - stats
