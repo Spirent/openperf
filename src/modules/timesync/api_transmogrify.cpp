@@ -245,6 +245,51 @@ std::string to_rfc3339(std::chrono::duration<Rep, Period> from)
     return (os.str());
 }
 
+std::shared_ptr<swagger::v1::model::TimeKeeperInfo>
+to_swagger(const time_keeper_info& src)
+{
+    using TimeKeeperInfo = swagger::v1::model::TimeKeeperInfo;
+    auto dst = std::make_shared<TimeKeeperInfo>();
+
+    if (src.freq) { dst->setFrequency(src.freq->count()); }
+    if (src.freq_error) { dst->setFrequencyError(src.freq_error->count()); }
+    if (src.local_freq) { dst->setLocalFrequency(src.local_freq->count()); }
+    if (src.local_freq) {
+        dst->setLocalFrequencyError(src.local_freq_error->count());
+    }
+    dst->setOffset(to_double(src.offset));
+    dst->setSynced(src.synced);
+    if (src.theta) { dst->setTheta(to_double(*src.theta)); }
+
+    return (dst);
+}
+
+std::shared_ptr<swagger::v1::model::TimeKeeperStats>
+to_swagger(const time_keeper_stats& src)
+{
+    using RttStats = swagger::v1::model::TimeKeeperStats_round_trip_times;
+    auto rtt_stats = std::make_shared<RttStats>();
+
+    if (src.rtts.median) { rtt_stats->setAvg(*src.rtts.median); }
+    if (src.rtts.maximum) { rtt_stats->setMax(*src.rtts.maximum); }
+    if (src.rtts.minimum) { rtt_stats->setMin(*src.rtts.minimum); }
+    rtt_stats->setSize(src.rtts.size);
+
+    using TimeKeeperStats = swagger::v1::model::TimeKeeperStats;
+    auto dst = std::make_shared<TimeKeeperStats>();
+
+    dst->setFrequencyAccept(src.freq_accept);
+    dst->setFrequencyReject(src.freq_reject);
+    dst->setLocalFrequencyAccept(src.local_freq_accept);
+    dst->setLocalFrequencyReject(src.local_freq_reject);
+    dst->setRoundTripTimes(rtt_stats);
+    dst->setThetaAccept(src.theta_accept);
+    dst->setThetaReject(src.theta_reject);
+    dst->setTimestamps(src.timestamps);
+
+    return (dst);
+}
+
 std::shared_ptr<swagger::v1::model::TimeKeeper>
 to_swagger(const time_keeper& src)
 {
@@ -254,7 +299,8 @@ to_swagger(const time_keeper& src)
     dst->setTime(to_rfc3339(src.ts.time_since_epoch()));
     dst->setTimeCounterId(std::string(src.counter_id));
     dst->setTimeSourceId(std::string(src.source_id));
-    dst->setSynced(src.synced);
+    dst->setInfo(to_swagger(src.info));
+    dst->setStats(to_swagger(src.stats));
 
     return (dst);
 }
