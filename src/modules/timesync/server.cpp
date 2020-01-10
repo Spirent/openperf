@@ -1,6 +1,8 @@
 #include <algorithm>
 #include <cmath>
 
+#include <arpa/inet.h>
+
 #include "timesync/api.hpp"
 #include "timesync/chrono.hpp"
 #include "timesync/ntp.hpp"
@@ -168,29 +170,62 @@ reply_msg server::handle_request(const request_time_keeper&)
     return (reply_time_keeper{keeper});
 }
 
+static void* get_address(const struct addrinfo* ai)
+{
+    return (ai->ai_family == AF_INET
+                ? static_cast<void*>(std::addressof(
+                    reinterpret_cast<sockaddr_in*>(ai->ai_addr)->sin_addr))
+                : static_cast<void*>(std::addressof(
+                    reinterpret_cast<sockaddr_in6*>(ai->ai_addr)->sin6_addr)));
+}
+
+static in_port_t get_port(const struct addrinfo* ai)
+{
+    return (
+        ntohs(ai->ai_family == AF_INET
+                  ? reinterpret_cast<sockaddr_in*>(ai->ai_addr)->sin_port
+                  : reinterpret_cast<sockaddr_in6*>(ai->ai_addr)->sin6_port));
+}
+
 tl::expected<time_source, int> to_time_source(std::string_view id,
                                               const ntp_server_state* state)
 {
+    auto config = time_source_config_ntp{};
+
     std::array<char, name_max_length> node;
     std::array<char, service_max_length> service;
 
     auto ai = state->addrinfo.get();
-    auto error = getnameinfo(ai->ai_addr,
-                             ai->ai_addrlen,
-                             node.data(),
-                             node.size(),
-                             service.data(),
-                             service.size(),
-                             NI_NAMEREQD);
-    if (error) { return (tl::make_unexpected(error)); }
+    if (getnameinfo(ai->ai_addr,
+                    ai->ai_addrlen,
+                    node.data(),
+                    node.size(),
+                    service.data(),
+                    service.size(),
+                    NI_NAMEREQD)
+        == 0) {
+        std::copy_n(node.data(),
+                    std::min(std::strlen(node.data()), node.size()),
+                    config.node);
 
-    auto config = time_source_config_ntp{};
-    std::copy_n(node.data(),
-                std::min(std::strlen(node.data()), node.size()),
-                config.node);
-    std::copy_n(service.data(),
-                std::min(std::strlen(service.data()), service.size()),
-                config.service);
+        std::copy_n(service.data(),
+                    std::min(std::strlen(service.data()), service.size()),
+                    config.service);
+    } else {
+        /* Resolution failed for some reason; return the raw socket data */
+        std::array<char, INET6_ADDRSTRLEN> buffer;
+        if (inet_ntop(
+                ai->ai_family, get_address(ai), buffer.data(), ai->ai_addrlen)
+            == nullptr) {
+            return (tl::make_unexpected(errno));
+        }
+        std::copy_n(buffer.data(),
+                    std::min(std::strlen(buffer.data()), buffer.size()),
+                    config.node);
+
+        auto port = std::to_string(get_port(ai));
+        std::copy_n(port.data(), port.length(), config.service);
+    }
 
     auto ts = time_source{.config = config,
                           .stats = {state->stats.rx, state->stats.tx}};
