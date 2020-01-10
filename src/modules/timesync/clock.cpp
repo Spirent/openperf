@@ -159,9 +159,8 @@ struct theta_hat_calc_token
     bintime t;              /**< reference point for time deltas */
     struct
     {
-        double num;
-        double den;
-        double error;
+        double num; /* weighted sum of theta estimates in seconds */
+        double den; /* weighted sum */
     } theta;
 };
 
@@ -189,7 +188,6 @@ static void accumulate_theta_hat(const timestamp& ts,
         token.theta.num +=
             omega_i * (to_double(theta_i) + gamma_hat * to_double(delta_t));
         token.theta.den += omega_i;
-        token.theta.error += omega_i * e_i_t;
     }
 }
 
@@ -248,13 +246,15 @@ void clock::reset()
     m_data = data{.K = get_host_offset()};
 
     m_stats = stats{};
+    assert(m_stats.rtts.centroid_count() == 0);
 }
 
 bool clock::synced() const
 {
     bool is_synced = false;
 
-    if (m_stats.updates > 1 && get_value(m_data.f_hat.current).count()) {
+    if (m_stats.theta_hat_accept > 1
+        && get_value(m_data.f_hat.current).count()) {
         auto delta_ticks = counter::now() - m_data.f_hat.last_update;
         auto delta = to_bintime(delta_ticks, get_value(m_data.f_hat.current));
         assert(delta.bt_sec >= 0); /* negative time is bad, yo! */
@@ -396,42 +396,34 @@ void clock::do_offset_sync(const timestamp& ts)
         .min_rtt = min_rtt,
         .f_hat = get_value(m_data.f_hat.current),
         .K = m_data.K,
-        .t = to_bintime(ts.Tf, get_value(m_data.f_hat.current)),
-        .theta.error = 0};
+        .t = to_bintime(ts.Tf, get_value(m_data.f_hat.current))};
 
     auto range =
         std::make_pair(m_history.lower_bound(to_time(ts) - tau_star.count()),
                        m_history.upper_bound(to_time(ts)));
     m_history.apply(range, accumulate_theta_hat, token);
 
-    auto error_threshold = get_value(m_data.f_hat.current).count() * 24
-                           * noise.num / noise.den; /* 6E */
-
-    if (token.theta.den == 0
-        || error_threshold <= (token.theta.error / token.theta.den)) {
-        return;
-    }
+    if (token.theta.den == 0) { return; } /* no suitable estimates */
 
     auto theta = to_bintime(token.theta.num / token.theta.den);
-
-    m_stats.theta_hat++;
-    m_data.theta_hat.current =
-        std::make_pair(theta, token.theta.error / token.theta.den);
-    m_data.theta_hat.last_update = ts.Tf;
 
     /*
      * After the first update, the clock should not move very much between
      * successive updates. Verify that we're not about to screw up the clock.
      */
-    auto delta_t = (m_stats.f_hat ? to_bintime(ts.Tf - m_stats.last_update,
-                                               get_value(m_data.f_hat.current))
-                                  : bintime::zero());
+    auto delta_t =
+        (m_stats.f_hat_accept ? to_bintime(ts.Tf - m_stats.last_update,
+                                           get_value(m_data.f_hat.current))
+                              : bintime::zero());
 
-    if (!offset_delta_exceeded(get_value(m_data.theta_hat.current),
+    if (!offset_delta_exceeded(m_data.theta_hat.current,
                                theta,
                                delta_t,
-                               m_stats.theta_hat,
+                               m_stats.theta_hat_accept,
                                theta_ppm_limit)) {
+        m_data.theta_hat.current = theta;
+        m_data.theta_hat.last_update = ts.Tf;
+        m_stats.theta_hat_accept++;
 
         auto now = calculate_absolute_time(
             theta, m_data.K, ts.Tf, get_value(m_data.f_hat.current));
@@ -441,15 +433,15 @@ void clock::do_offset_sync(const timestamp& ts)
                          : get_value(m_data.f_hat.current));
 
         m_update(now, ts.Tf, freq);
-        m_stats.updates++;
         m_stats.last_update = ts.Tf;
     } else {
         OP_LOG(OP_LOG_WARNING,
                "theta_hat update rejected "
                "(%.06f --> %.06f, ppm = %.06f)\n",
-               to_double(get_value(m_data.theta_hat.current)),
+               to_double(m_data.theta_hat.current),
                to_double(theta),
-               get_threshold_ppm(m_stats.theta_hat, theta_ppm_limit));
+               get_threshold_ppm(m_stats.theta_hat_accept, theta_ppm_limit));
+        m_stats.theta_hat_reject++;
     }
 }
 
@@ -474,26 +466,28 @@ clock::update(uint64_t Ta, const bintime& Tb, const bintime& Te, uint64_t Tf)
      * sanity checking on our calculation.
      */
     auto f_hat = do_rate_estimation(stamp);
-    auto delta_t = (m_stats.f_hat ? to_bintime(Tf - m_data.f_hat.last_update,
-                                               get_value(m_data.f_hat.current))
-                                  : bintime::zero());
+    auto delta_t =
+        (m_stats.f_hat_accept ? to_bintime(Tf - m_data.f_hat.last_update,
+                                           get_value(m_data.f_hat.current))
+                              : bintime::zero());
 
     if (f_hat
         && !rate_delta_exceeded(get_value(m_data.f_hat.current),
                                 get_value(*f_hat),
                                 delta_t,
-                                m_stats.f_hat,
+                                m_stats.f_hat_accept,
                                 f_hat_ppm_limit)) {
         m_data.f_hat.current = *f_hat;
         m_data.f_hat.last_update = Tf;
-        m_stats.f_hat++;
+        m_stats.f_hat_accept++;
     } else if (f_hat) {
         OP_LOG(OP_LOG_WARNING,
                "f_hat update rejected "
                "(%" PRIu64 " --> %" PRIu64 ", ppm = %.06f)\n",
                get_value(m_data.f_hat.current).count(),
                get_value(*f_hat).count(),
-               get_threshold_ppm(m_stats.f_hat, f_hat_ppm_limit));
+               get_threshold_ppm(m_stats.f_hat_accept, f_hat_ppm_limit));
+        m_stats.f_hat_reject++;
     }
 
     /*
@@ -510,25 +504,27 @@ clock::update(uint64_t Ta, const bintime& Tb, const bintime& Te, uint64_t Tf)
      * a valid f_hat value in order to determine the quality of the local
      * rate estimate.
      */
-    delta_t = (m_stats.f_hat ? to_bintime(Tf - m_data.f_local.last_update,
-                                          get_value(m_data.f_hat.current))
-                             : bintime::zero());
+    delta_t =
+        (m_stats.f_hat_accept ? to_bintime(Tf - m_data.f_local.last_update,
+                                           get_value(m_data.f_hat.current))
+                              : bintime::zero());
     if (f_local
         && !rate_delta_exceeded(get_value(m_data.f_local.current),
                                 get_value(*f_local),
                                 delta_t,
-                                m_stats.f_local,
+                                m_stats.f_local_accept,
                                 f_local_ppm_limit)) {
         m_data.f_local.current = *f_local;
         m_data.f_local.last_update = Tf;
-        m_stats.f_local++;
+        m_stats.f_local_accept++;
     } else if (f_local) {
         OP_LOG(OP_LOG_WARNING,
                "f_local update rejected "
                "(%" PRIu64 " --> %" PRIu64 ", ppm = %.06f)\n",
                get_value(m_data.f_local.current).count(),
                get_value(*f_local).count(),
-               get_threshold_ppm(m_stats.f_local, f_local_ppm_limit));
+               get_threshold_ppm(m_stats.f_local_accept, f_local_ppm_limit));
+        m_stats.f_local_reject++;
     }
 
     /*
@@ -548,5 +544,102 @@ clock::update(uint64_t Ta, const bintime& Tb, const bintime& Te, uint64_t Tf)
 
     return {};
 }
+
+std::optional<counter::hz> clock::frequency() const
+{
+    if (!m_stats.f_hat_accept) { return (std::nullopt); }
+
+    return (get_value(m_data.f_hat.current));
+}
+
+std::optional<counter::hz> clock::frequency_error() const
+{
+    if (!m_stats.f_hat_accept) { return (std::nullopt); }
+
+    return (get_error(m_data.f_hat.current));
+}
+
+std::optional<counter::hz> clock::local_frequency() const
+{
+    if (!m_stats.f_local_accept) { return (std::nullopt); }
+
+    return (get_value(m_data.f_local.current));
+}
+
+std::optional<counter::hz> clock::local_frequency_error() const
+{
+    if (!m_stats.f_local_accept) { return (std::nullopt); }
+
+    return (get_error(m_data.f_local.current));
+}
+
+bintime clock::offset() const { return (m_data.K); }
+
+std::optional<bintime> clock::theta() const
+{
+    if (!m_stats.theta_hat_accept) { return (std::nullopt); }
+
+    return (m_data.theta_hat.current);
+}
+
+size_t clock::nb_frequency_accept() const { return (m_stats.f_hat_accept); }
+
+size_t clock::nb_frequency_reject() const { return (m_stats.f_hat_reject); }
+
+size_t clock::nb_local_frequency_accept() const
+{
+    return (m_stats.f_local_accept);
+}
+
+size_t clock::nb_local_frequency_reject() const
+{
+    return (m_stats.f_local_reject);
+}
+
+size_t clock::nb_theta_accept() const { return (m_stats.theta_hat_accept); }
+
+size_t clock::nb_theta_reject() const { return (m_stats.theta_hat_reject); }
+
+size_t clock::nb_timestamps() const { return (m_history.size()); }
+
+static double to_seconds(counter::ticks ticks, counter::hz hz)
+{
+    return (std::chrono::duration_cast<std::chrono::duration<double>>(
+                to_duration(to_bintime(ticks, hz)))
+                .count());
+}
+
+std::optional<double> clock::rtt_maximum() const
+{
+    if (m_stats.rtts.size() && m_stats.f_hat_accept) {
+        return (
+            to_seconds(m_stats.rtts.max(), get_value(m_data.f_hat.current)));
+    }
+
+    return (std::nullopt);
+}
+
+std::optional<double> clock::rtt_median() const
+{
+    if (m_stats.rtts.size() && m_stats.f_hat_accept) {
+        return (
+            to_seconds(static_cast<counter::ticks>(m_stats.rtts.quantile(50)),
+                       get_value(m_data.f_hat.current)));
+    }
+
+    return (std::nullopt);
+}
+
+std::optional<double> clock::rtt_minimum() const
+{
+    if (m_stats.rtts.size() && m_stats.f_hat_accept) {
+        return (
+            to_seconds(m_stats.rtts.min(), get_value(m_data.f_hat.current)));
+    }
+
+    return (std::nullopt);
+}
+
+size_t clock::rtt_size() const { return (m_stats.rtts.size()); }
 
 } // namespace openperf::timesync

@@ -22,6 +22,8 @@
 #include "ModelBase.h"
 
 #include <string>
+#include "TimeKeeperStats.h"
+#include "TimeKeeperInfo.h"
 
 namespace swagger {
 namespace v1 {
@@ -49,6 +51,16 @@ public:
     /// TimeKeeper members
 
     /// <summary>
+    /// 
+    /// </summary>
+    std::shared_ptr<TimeKeeperInfo> getInfo() const;
+    void setInfo(std::shared_ptr<TimeKeeperInfo> value);
+        /// <summary>
+    /// 
+    /// </summary>
+    std::shared_ptr<TimeKeeperStats> getStats() const;
+    void setStats(std::shared_ptr<TimeKeeperStats> value);
+        /// <summary>
     /// The current time and date in ISO8601 format
     /// </summary>
     std::string getTime() const;
@@ -63,20 +75,17 @@ public:
     /// </summary>
     std::string getTimeSourceId() const;
     void setTimeSourceId(std::string value);
-        /// <summary>
-    /// Indicates if clock has synced to source or not
-    /// </summary>
-    bool isSynced() const;
-    void setSynced(bool value);
     
 protected:
+    std::shared_ptr<TimeKeeperInfo> m_Info;
+
+    std::shared_ptr<TimeKeeperStats> m_Stats;
+
     std::string m_Time;
 
     std::string m_Time_counter_id;
 
     std::string m_Time_source_id;
-
-    bool m_Synced;
 
 };
 

@@ -46,13 +46,45 @@ struct reply_time_counters
 struct request_time_keeper
 {};
 
+struct time_keeper_info
+{
+    std::optional<counter::hz> freq;
+    std::optional<counter::hz> freq_error;
+    std::optional<counter::hz> local_freq;
+    std::optional<counter::hz> local_freq_error;
+    bintime offset;
+    std::optional<bintime> theta;
+    bool synced;
+};
+
+struct time_keeper_rtt_stats
+{
+    std::optional<double> maximum;
+    std::optional<double> median;
+    std::optional<double> minimum;
+    int64_t size;
+};
+
+struct time_keeper_stats
+{
+    int64_t freq_accept;
+    int64_t freq_reject;
+    int64_t local_freq_accept;
+    int64_t local_freq_reject;
+    int64_t theta_accept;
+    int64_t theta_reject;
+    int64_t timestamps;
+    time_keeper_rtt_stats rtts;
+};
+
 struct time_keeper
 {
     using time_point = std::chrono::time_point<chrono::realtime>;
     char counter_id[id_max_length];
     char source_id[id_max_length];
     time_point ts;
-    bool synced;
+    time_keeper_info info;
+    time_keeper_stats stats;
 };
 
 struct reply_time_keeper
