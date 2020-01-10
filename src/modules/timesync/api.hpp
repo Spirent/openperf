@@ -102,6 +102,7 @@ struct time_source_stats_ntp
 {
     int64_t rx_packets;
     int64_t tx_packets;
+    std::optional<uint8_t> stratum;
 };
 
 struct time_source

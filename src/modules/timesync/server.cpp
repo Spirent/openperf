@@ -59,6 +59,7 @@ static int handle_ntp_reply(const struct op_event_data*, void* arg)
         if (!reply) continue;
         // ntp::dump(stderr, *reply);
         state->stats.rx++;
+        state->stats.stratum = reply->stratum;
         state->clock->update(
             state->last_tx, reply->receive, reply->transmit, *rx_time);
     }
@@ -228,7 +229,9 @@ tl::expected<time_source, int> to_time_source(std::string_view id,
     }
 
     auto ts = time_source{.config = config,
-                          .stats = {state->stats.rx, state->stats.tx}};
+                          .stats = {.rx_packets = state->stats.rx,
+                                    .tx_packets = state->stats.tx,
+                                    .stratum = state->stats.stratum}};
     id.copy(ts.id, id_max_length);
 
     return (ts);

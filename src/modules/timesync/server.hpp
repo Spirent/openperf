@@ -29,6 +29,7 @@ struct ntp_server_state
     {
         unsigned rx = 0;
         unsigned tx = 0;
+        std::optional<uint8_t> stratum = std::nullopt; /* unsynchronized */
     } stats;
     counter::ticks last_tx = 0;
 

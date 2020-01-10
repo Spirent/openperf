@@ -32,23 +32,28 @@ class TimeSourceStatsNtp(object):
     """
     swagger_types = {
         'rx_packets': 'int',
-        'tx_packets': 'int'
+        'tx_packets': 'int',
+        'stratum': 'int'
     }
 
     attribute_map = {
         'rx_packets': 'rx_packets',
-        'tx_packets': 'tx_packets'
+        'tx_packets': 'tx_packets',
+        'stratum': 'stratum'
     }
 
-    def __init__(self, rx_packets=None, tx_packets=None):  # noqa: E501
+    def __init__(self, rx_packets=None, tx_packets=None, stratum=None):  # noqa: E501
         """TimeSourceStatsNtp - a model defined in Swagger"""  # noqa: E501
 
         self._rx_packets = None
         self._tx_packets = None
+        self._stratum = None
         self.discriminator = None
 
         self.rx_packets = rx_packets
         self.tx_packets = tx_packets
+        if stratum is not None:
+            self.stratum = stratum
 
     @property
     def rx_packets(self):
@@ -93,6 +98,28 @@ class TimeSourceStatsNtp(object):
         :type: int
         """
         self._tx_packets = tx_packets
+
+    @property
+    def stratum(self):
+        """Gets the stratum of this TimeSourceStatsNtp.  # noqa: E501
+
+        Distance from a reference clock, in network hops.  # noqa: E501
+
+        :return: The stratum of this TimeSourceStatsNtp.  # noqa: E501
+        :rtype: int
+        """
+        return self._stratum
+
+    @stratum.setter
+    def stratum(self, stratum):
+        """Sets the stratum of this TimeSourceStatsNtp.
+
+        Distance from a reference clock, in network hops.  # noqa: E501
+
+        :param stratum: The stratum of this TimeSourceStatsNtp.  # noqa: E501
+        :type: int
+        """
+        self._stratum = stratum
 
     def to_dict(self):
         """Returns the model properties as a dict"""

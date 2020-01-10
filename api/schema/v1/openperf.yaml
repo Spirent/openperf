@@ -1164,6 +1164,10 @@ definitions:
             type: integer
             description: Transmitted packets
             format: int64
+          stratum:
+            type: integer
+            description: Distance from a reference clock, in network hops.
+            format: int32
         required:
           - rx_packets
           - tx_packets

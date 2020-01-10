@@ -57,12 +57,21 @@ public:
     /// </summary>
     int64_t getTxPackets() const;
     void setTxPackets(int64_t value);
-    
+        /// <summary>
+    /// Distance from a reference clock, in network hops.
+    /// </summary>
+    int32_t getStratum() const;
+    void setStratum(int32_t value);
+    bool stratumIsSet() const;
+    void unsetStratum();
+
 protected:
     int64_t m_Rx_packets;
 
     int64_t m_Tx_packets;
 
+    int32_t m_Stratum;
+    bool m_StratumIsSet;
 };
 
 }
