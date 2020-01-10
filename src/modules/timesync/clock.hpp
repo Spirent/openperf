@@ -29,8 +29,24 @@ public:
 
     /* Frequency calculations always involve a result and an error */
     using freq_result = std::pair<counter::hz, counter::hz>;
-    using theta_result = std::pair<bintime, double>;
     using rtt_container = digestible::tdigest<counter::ticks, unsigned>;
+
+    std::optional<counter::hz> frequency() const;
+    std::optional<counter::hz> frequency_error() const;
+    std::optional<counter::hz> local_frequency() const;
+    std::optional<counter::hz> local_frequency_error() const;
+    bintime offset() const;
+    std::optional<bintime> theta() const;
+
+    size_t nb_frequency_updates() const;
+    size_t nb_local_frequency_updates() const;
+    size_t nb_theta_updates() const;
+    size_t nb_timestamps() const;
+    size_t nb_updates() const;
+
+    std::optional<double> rtt_maximum() const;
+    std::optional<double> rtt_median() const;
+    std::optional<double> rtt_minimum() const;
 
 private:
     std::optional<freq_result> do_rate_estimation(const timestamp& ts);
@@ -55,7 +71,7 @@ private:
         } f_local;
         struct
         {
-            theta_result current = {bintime::zero(), 0};
+            bintime current = bintime::zero();
             counter::ticks last_update = 0;
         } theta_hat;
         bintime K = bintime::zero();

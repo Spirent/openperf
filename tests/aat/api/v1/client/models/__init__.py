@@ -41,6 +41,9 @@ from client.models.stack_protocol_stats import StackProtocolStats
 from client.models.stack_stats import StackStats
 from client.models.time_counter import TimeCounter
 from client.models.time_keeper import TimeKeeper
+from client.models.time_keeper_info import TimeKeeperInfo
+from client.models.time_keeper_stats import TimeKeeperStats
+from client.models.time_keeper_stats_round_trip_times import TimeKeeperStatsRoundTripTimes
 from client.models.time_source import TimeSource
 from client.models.time_source_config import TimeSourceConfig
 from client.models.time_source_config_ntp import TimeSourceConfigNtp

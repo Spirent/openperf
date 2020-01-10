@@ -131,8 +131,25 @@ reply_msg server::handle_request(const request_time_counters& request)
 
 reply_msg server::handle_request(const request_time_keeper&)
 {
-    auto keeper =
-        time_keeper{.ts = chrono::realtime::now(), .synced = m_clock->synced()};
+    auto keeper = time_keeper{
+        .ts = chrono::realtime::now(),
+        .info = {.freq = m_clock->frequency(),
+                 .freq_error = m_clock->frequency_error(),
+                 .local_freq = m_clock->local_frequency(),
+                 .local_freq_error = m_clock->local_frequency_error(),
+                 .offset = m_clock->offset(),
+                 .synced = m_clock->synced(),
+                 .theta = m_clock->theta()},
+        .stats = {.freq = static_cast<int64_t>(m_clock->nb_frequency_updates()),
+                  .local_freq = static_cast<int64_t>(
+                      m_clock->nb_local_frequency_updates()),
+                  .rtts = {.maximum = m_clock->rtt_maximum(),
+                           .median = m_clock->rtt_median(),
+                           .minimum = m_clock->rtt_minimum()},
+                  .theta = static_cast<int64_t>(m_clock->nb_theta_updates()),
+                  .timestamps = static_cast<int64_t>(m_clock->nb_timestamps()),
+                  .updates = static_cast<int64_t>(m_clock->nb_updates())},
+    };
 
     core::to_string(m_timecounters.front()->id)
         .copy(keeper.counter_id, name_max_length);

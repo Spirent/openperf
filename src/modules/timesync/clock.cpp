@@ -159,9 +159,8 @@ struct theta_hat_calc_token
     bintime t;              /**< reference point for time deltas */
     struct
     {
-        double num;
-        double den;
-        double error;
+        double num; /* weighted sum of theta estimates in seconds */
+        double den; /* weighted sum */
     } theta;
 };
 
@@ -189,7 +188,6 @@ static void accumulate_theta_hat(const timestamp& ts,
         token.theta.num +=
             omega_i * (to_double(theta_i) + gamma_hat * to_double(delta_t));
         token.theta.den += omega_i;
-        token.theta.error += omega_i * e_i_t;
     }
 }
 
@@ -248,6 +246,7 @@ void clock::reset()
     m_data = data{.K = get_host_offset()};
 
     m_stats = stats{};
+    assert(m_stats.rtts.centroid_count() == 0);
 }
 
 bool clock::synced() const
@@ -393,27 +392,19 @@ void clock::do_offset_sync(const timestamp& ts)
         .min_rtt = min_rtt,
         .f_hat = get_value(m_data.f_hat.current),
         .K = m_data.K,
-        .t = to_bintime(ts.Tf, get_value(m_data.f_hat.current)),
-        .theta.error = 0};
+        .t = to_bintime(ts.Tf, get_value(m_data.f_hat.current))};
 
     auto range =
         std::make_pair(m_history.lower_bound(to_time(ts) - tau_star.count()),
                        m_history.upper_bound(to_time(ts)));
     m_history.apply(range, accumulate_theta_hat, token);
 
-    auto error_threshold = get_value(m_data.f_hat.current).count() * 24
-                           * noise.num / noise.den; /* 6E */
-
-    if (token.theta.den == 0
-        || error_threshold <= (token.theta.error / token.theta.den)) {
-        return;
-    }
+    if (token.theta.den == 0) { return; } /* no suitable estimates */
 
     auto theta = to_bintime(token.theta.num / token.theta.den);
 
     m_stats.theta_hat++;
-    m_data.theta_hat.current =
-        std::make_pair(theta, token.theta.error / token.theta.den);
+    m_data.theta_hat.current = theta;
     m_data.theta_hat.last_update = ts.Tf;
 
     /*
@@ -424,12 +415,11 @@ void clock::do_offset_sync(const timestamp& ts)
                                                get_value(m_data.f_hat.current))
                                   : bintime::zero());
 
-    if (!offset_delta_exceeded(get_value(m_data.theta_hat.current),
+    if (!offset_delta_exceeded(m_data.theta_hat.current,
                                theta,
                                delta_t,
                                m_stats.theta_hat,
                                theta_ppm_limit)) {
-
         auto now = calculate_absolute_time(
             theta, m_data.K, ts.Tf, get_value(m_data.f_hat.current));
 
@@ -444,7 +434,7 @@ void clock::do_offset_sync(const timestamp& ts)
         OP_LOG(OP_LOG_WARNING,
                "theta_hat update rejected "
                "(%.06f --> %.06f, ppm = %.06f)\n",
-               to_double(get_value(m_data.theta_hat.current)),
+               to_double(m_data.theta_hat.current),
                to_double(theta),
                get_threshold_ppm(m_stats.theta_hat, theta_ppm_limit));
     }
@@ -464,6 +454,7 @@ clock::update(uint64_t Ta, const bintime& Tb, const bintime& Te, uint64_t Tf)
     /* Update RTT stats */
     m_stats.rtts.insert(to_rtt(stamp));
     m_stats.rtts.merge();
+    m_stats.timestamps++;
 
     /*
      * Update our f_hat estimate. Even though we use our best clock
@@ -544,6 +535,82 @@ clock::update(uint64_t Ta, const bintime& Tb, const bintime& Te, uint64_t Tf)
     if (f_hat) { do_offset_sync(stamp); }
 
     return {};
+}
+
+std::optional<counter::hz> clock::frequency() const
+{
+    if (!m_stats.f_hat) { return (std::nullopt); }
+
+    return (get_value(m_data.f_hat.current));
+}
+
+std::optional<counter::hz> clock::frequency_error() const
+{
+    if (!m_stats.f_hat) { return (std::nullopt); }
+
+    return (get_error(m_data.f_hat.current));
+}
+
+std::optional<counter::hz> clock::local_frequency() const
+{
+    if (!m_stats.f_local) { return (std::nullopt); }
+
+    return (get_value(m_data.f_local.current));
+}
+
+std::optional<counter::hz> clock::local_frequency_error() const
+{
+    if (!m_stats.f_local) { return (std::nullopt); }
+
+    return (get_error(m_data.f_local.current));
+}
+
+bintime clock::offset() const { return (m_data.K); }
+
+std::optional<bintime> clock::theta() const
+{
+    if (!m_stats.theta_hat) { return (std::nullopt); }
+
+    return (m_data.theta_hat.current);
+}
+
+size_t clock::nb_frequency_updates() const { return (m_stats.f_hat); }
+
+size_t clock::nb_local_frequency_updates() const { return (m_stats.f_local); }
+
+size_t clock::nb_theta_updates() const { return (m_stats.theta_hat); }
+
+size_t clock::nb_timestamps() const { return (m_stats.timestamps); }
+
+size_t clock::nb_updates() const { return (m_stats.updates); }
+
+static double to_seconds(counter::ticks ticks, counter::hz hz)
+{
+    return (std::chrono::duration_cast<std::chrono::duration<double>>(
+                to_duration(to_bintime(ticks, hz)))
+                .count());
+}
+
+std::optional<double> clock::rtt_maximum() const
+{
+    if (!m_stats.timestamps || !m_stats.f_hat) { return (std::nullopt); }
+
+    return (to_seconds(m_stats.rtts.max(), get_value(m_data.f_hat.current)));
+}
+
+std::optional<double> clock::rtt_median() const
+{
+    if (!m_stats.timestamps || !m_stats.f_hat) { return (std::nullopt); }
+
+    return (
+        to_seconds(m_stats.rtts.quantile(50), get_value(m_data.f_hat.current)));
+}
+
+std::optional<double> clock::rtt_minimum() const
+{
+    if (!m_stats.timestamps || !m_stats.f_hat) { return (std::nullopt); }
+
+    return (to_seconds(m_stats.rtts.min(), get_value(m_data.f_hat.current)));
 }
 
 } // namespace openperf::timesync

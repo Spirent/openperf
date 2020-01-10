@@ -984,12 +984,110 @@ definitions:
       - frequency
       - quality
 
+  TimeKeeperInfo:
+    type: object
+    description: TimeKeeper internal state information
+    properties:
+      frequency:
+        type: number
+        description: |
+          The TimeCounter frequency as measured by the interval between the
+          two best timestamp exchanges over the past two hours, in hz.
+        format: int64
+      frequency_error:
+        type: number
+        description: The estimated error in the TimeCounter frequency measurement, in hz.
+        format: int64
+      local_frequency:
+        type: number
+        description: |
+          The TimeCounter frequency as measured by the interval between the
+          two best timestamp exchanges over the past hour, in hz. This
+          value is used to help determine TimeCounter drift.
+        format: int64
+      local_frequency_error:
+        type: number
+        description: The estimated error in the local TimeCounter frequency measurement, in hz.
+        format: int64
+      offset:
+        type: number
+        description: |
+          The offset applied to TimeCounter derived timestamp values,
+          in seconds.
+        format: double
+      synced:
+        type: boolean
+        description: Indicates if the clock is synchronized to the source
+      theta:
+        type: number
+        description: |
+          The calculated correction to apply to the offset, based on the
+          measured TimeCounter frequency and timestamp exchanges.
+        format: double
+    required:
+      - offset
+      - boolean
+
+  TimeKeeperStats:
+    type: object
+    description: TimeKeeper statistics
+    properties:
+      frequency_updates:
+        type: number
+        description: The number of times the frequency has been calculated.
+        format: int64
+      local_frequency_updates:
+        type: number
+        description: The number of times the local frequency has been calculated.
+        format: int64
+      round_trip_times:
+        type: object
+        description: |
+          Round trip times measure the time it takes to make a complete timestamp
+          exchange with the time source, as measured by the local time counter.
+        properties:
+          maximum:
+            type: number
+            description: The maximum round trip time, in seconds.
+            format: double
+          median:
+            type: number
+            description: the median round trip time, in seconds.
+            format: double
+          minimum:
+            type: number
+            description: The minimum round trip time, in seconds.
+            format: double
+      theta_updates:
+        type: number
+        description: The number of times theta has been calculated.
+        format: int64
+      timestamps:
+        type: number
+        description: The number of timestamp messages received by the time keeper.
+        format: int64
+      updates:
+        type: number
+        description: The number of clock synchronization events.
+        format: int64
+    required:
+      - frequency_updates
+      - local_frequency_updates
+      - round_trip_times
+      - theta_updates
+      - timestamps
+      - updates
+
   TimeKeeper:
     type: object
     description: |
       A combination of a TimeSource and a TimeCounter used to measure
       the passage of time, aka a clock
     properties:
+      info:
+        $ref: "#/definitions/TimeKeeperInfo"
+      stats:
+        $ref: "#/definitions/TimeKeeperStats"
       time:
         type: string
         description: The current time and date in ISO8601 format
@@ -1000,14 +1098,12 @@ definitions:
       time_source_id:
         type: string
         description: Time source used for wall-clock synchronization
-      synced:
-        type: boolean
-        description: Indicates if clock has synced to source or not
     required:
+      - info
+      - stats
       - time
       - time_counter_id
       - time_source_id
-      - synced
 
   TimeSourceConfig:
     type: object
