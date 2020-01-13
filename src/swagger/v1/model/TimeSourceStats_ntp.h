@@ -58,7 +58,7 @@ public:
     int64_t getTxPackets() const;
     void setTxPackets(int64_t value);
         /// <summary>
-    /// Distance from a reference clock, in network hops.
+    /// Time source distance from a NTP reference clock, in network hops. 
     /// </summary>
     int32_t getStratum() const;
     void setStratum(int32_t value);

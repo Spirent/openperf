@@ -245,11 +245,11 @@ std::string to_rfc3339(std::chrono::duration<Rep, Period> from)
     return (os.str());
 }
 
-std::shared_ptr<swagger::v1::model::TimeKeeperInfo>
+std::shared_ptr<swagger::v1::model::TimeKeeperState>
 to_swagger(const time_keeper_info& src)
 {
-    using TimeKeeperInfo = swagger::v1::model::TimeKeeperInfo;
-    auto dst = std::make_shared<TimeKeeperInfo>();
+    using TimeKeeperState = swagger::v1::model::TimeKeeperState;
+    auto dst = std::make_shared<TimeKeeperState>();
 
     if (src.freq) { dst->setFrequency(src.freq->count()); }
     if (src.freq_error) { dst->setFrequencyError(src.freq_error->count()); }
@@ -296,11 +296,11 @@ to_swagger(const time_keeper& src)
     using TimeKeeper = swagger::v1::model::TimeKeeper;
     auto dst = std::make_shared<TimeKeeper>();
 
+    dst->setState(to_swagger(src.info));
+    dst->setStats(to_swagger(src.stats));
     dst->setTime(to_rfc3339(src.ts.time_since_epoch()));
     dst->setTimeCounterId(std::string(src.counter_id));
     dst->setTimeSourceId(std::string(src.source_id));
-    dst->setInfo(to_swagger(src.info));
-    dst->setStats(to_swagger(src.stats));
 
     return (dst);
 }
@@ -312,7 +312,7 @@ to_swagger(const time_source_config_ntp& src)
     auto ntp_conf = std::make_shared<TimeSourceConfig_ntp>();
 
     ntp_conf->setHostname(src.node);
-    ntp_conf->setService(src.service);
+    ntp_conf->setPort(src.port);
 
     using TimeSourceConfig = swagger::v1::model::TimeSourceConfig;
     auto dst = std::make_shared<TimeSourceConfig>();
@@ -356,11 +356,11 @@ from_swagger(const swagger::v1::model::TimeSourceConfig_ntp& src)
     auto to_return = time_source_config_ntp{};
     src.getHostname().copy(to_return.node, name_max_length);
 
-    if (src.serviceIsSet()) {
-        src.getService().copy(to_return.service, service_max_length);
+    if (src.portIsSet()) {
+        src.getPort().copy(to_return.port, port_max_length);
     } else {
-        static constexpr std::string_view service = "ntp";
-        service.copy(to_return.service, service_max_length);
+        static constexpr std::string_view port = "ntp";
+        port.copy(to_return.port, port_max_length);
     }
 
     return (to_return);

@@ -15,7 +15,7 @@ Method | HTTP request | Description
 
 Register a time source for time syncing.
 
-Registers a new time source for time syncing.
+Registers a new time source for time syncing. Time sources are immutable. 
 
 ### Example
 ```python
@@ -158,7 +158,7 @@ No authorization required
 
 List reference clocks
 
-The `time-sources` endpoint returns all network clock sources that are used for syncing the local time. 
+The `time-sources` endpoint returns all time sources that are used for syncing the local time. 
 
 ### Example
 ```python

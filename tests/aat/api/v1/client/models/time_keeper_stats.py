@@ -232,7 +232,7 @@ class TimeKeeperStats(object):
     def timestamps(self):
         """Gets the timestamps of this TimeKeeperStats.  # noqa: E501
 
-        The number of timestamps in the current working set of timestamps.  # noqa: E501
+        The number of timestamps in the current working set of timestamps. Old timestamps are dropped from the history of timestamps as they become irrelevant.   # noqa: E501
 
         :return: The timestamps of this TimeKeeperStats.  # noqa: E501
         :rtype: float
@@ -243,7 +243,7 @@ class TimeKeeperStats(object):
     def timestamps(self, timestamps):
         """Sets the timestamps of this TimeKeeperStats.
 
-        The number of timestamps in the current working set of timestamps.  # noqa: E501
+        The number of timestamps in the current working set of timestamps. Old timestamps are dropped from the history of timestamps as they become irrelevant.   # noqa: E501
 
         :param timestamps: The timestamps of this TimeKeeperStats.  # noqa: E501
         :type: float

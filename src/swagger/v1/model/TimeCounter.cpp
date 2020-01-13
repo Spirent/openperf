@@ -23,7 +23,6 @@ TimeCounter::TimeCounter()
     m_Name = "";
     m_Frequency = 0L;
     m_Priority = 0;
-    m_PriorityIsSet = false;
     
 }
 
@@ -43,10 +42,7 @@ nlohmann::json TimeCounter::toJson() const
     val["id"] = ModelBase::toJson(m_Id);
     val["name"] = ModelBase::toJson(m_Name);
     val["frequency"] = m_Frequency;
-    if(m_PriorityIsSet)
-    {
-        val["priority"] = m_Priority;
-    }
+    val["priority"] = m_Priority;
     
 
     return val;
@@ -57,10 +53,7 @@ void TimeCounter::fromJson(nlohmann::json& val)
     setId(val.at("id"));
     setName(val.at("name"));
     setFrequency(val.at("frequency"));
-    if(val.find("priority") != val.end())
-    {
-        setPriority(val.at("priority"));
-    }
+    setPriority(val.at("priority"));
     
 }
 
@@ -99,15 +92,7 @@ int32_t TimeCounter::getPriority() const
 void TimeCounter::setPriority(int32_t value)
 {
     m_Priority = value;
-    m_PriorityIsSet = true;
-}
-bool TimeCounter::priorityIsSet() const
-{
-    return m_PriorityIsSet;
-}
-void TimeCounter::unsetPriority()
-{
-    m_PriorityIsSet = false;
+    
 }
 
 }
