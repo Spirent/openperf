@@ -20,8 +20,8 @@ namespace model {
 TimeSourceConfig_ntp::TimeSourceConfig_ntp()
 {
     m_Hostname = "";
-    m_Service = "";
-    m_ServiceIsSet = false;
+    m_Port = "";
+    m_PortIsSet = false;
     
 }
 
@@ -39,9 +39,9 @@ nlohmann::json TimeSourceConfig_ntp::toJson() const
     nlohmann::json val = nlohmann::json::object();
 
     val["hostname"] = ModelBase::toJson(m_Hostname);
-    if(m_ServiceIsSet)
+    if(m_PortIsSet)
     {
-        val["service"] = ModelBase::toJson(m_Service);
+        val["port"] = ModelBase::toJson(m_Port);
     }
     
 
@@ -51,9 +51,9 @@ nlohmann::json TimeSourceConfig_ntp::toJson() const
 void TimeSourceConfig_ntp::fromJson(nlohmann::json& val)
 {
     setHostname(val.at("hostname"));
-    if(val.find("service") != val.end())
+    if(val.find("port") != val.end())
     {
-        setService(val.at("service"));
+        setPort(val.at("port"));
         
     }
     
@@ -69,22 +69,22 @@ void TimeSourceConfig_ntp::setHostname(std::string value)
     m_Hostname = value;
     
 }
-std::string TimeSourceConfig_ntp::getService() const
+std::string TimeSourceConfig_ntp::getPort() const
 {
-    return m_Service;
+    return m_Port;
 }
-void TimeSourceConfig_ntp::setService(std::string value)
+void TimeSourceConfig_ntp::setPort(std::string value)
 {
-    m_Service = value;
-    m_ServiceIsSet = true;
+    m_Port = value;
+    m_PortIsSet = true;
 }
-bool TimeSourceConfig_ntp::serviceIsSet() const
+bool TimeSourceConfig_ntp::portIsSet() const
 {
-    return m_ServiceIsSet;
+    return m_PortIsSet;
 }
-void TimeSourceConfig_ntp::unsetService()
+void TimeSourceConfig_ntp::unsetPort()
 {
-    m_ServiceIsSet = false;
+    m_PortIsSet = false;
 }
 
 }

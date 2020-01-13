@@ -24,9 +24,9 @@ def get_ntp_timesource(hostname, id=None):
     ntp_config.hostname = hostname
 
     # XXX: Our test container doesn't have an /etc/services file, so we
-    # need to explicitly state the port.  The default service of "ntp"
+    # need to explicitly state the port.  The default port of "ntp"
     # will cause a lookup failure.
-    ntp_config.service = "123"
+    ntp_config.port = "123"
 
     config = client.models.TimeSourceConfig()
     config.ntp = ntp_config

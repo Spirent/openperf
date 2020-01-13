@@ -36,7 +36,7 @@ class TimeSourcesApi(object):
     def create_time_source(self, timesource, **kwargs):  # noqa: E501
         """Register a time source for time syncing.  # noqa: E501
 
-        Registers a new time source for time syncing.  # noqa: E501
+        Registers a new time source for time syncing. Time sources are immutable.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async=True
         >>> thread = api.create_time_source(timesource, async=True)
@@ -58,7 +58,7 @@ class TimeSourcesApi(object):
     def create_time_source_with_http_info(self, timesource, **kwargs):  # noqa: E501
         """Register a time source for time syncing.  # noqa: E501
 
-        Registers a new time source for time syncing.  # noqa: E501
+        Registers a new time source for time syncing. Time sources are immutable.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async=True
         >>> thread = api.create_time_source_with_http_info(timesource, async=True)
@@ -333,7 +333,7 @@ class TimeSourcesApi(object):
     def list_time_sources(self, **kwargs):  # noqa: E501
         """List reference clocks  # noqa: E501
 
-        The `time-sources` endpoint returns all network clock sources that are used for syncing the local time.   # noqa: E501
+        The `time-sources` endpoint returns all time sources that are used for syncing the local time.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async=True
         >>> thread = api.list_time_sources(async=True)
@@ -354,7 +354,7 @@ class TimeSourcesApi(object):
     def list_time_sources_with_http_info(self, **kwargs):  # noqa: E501
         """List reference clocks  # noqa: E501
 
-        The `time-sources` endpoint returns all network clock sources that are used for syncing the local time.   # noqa: E501
+        The `time-sources` endpoint returns all time sources that are used for syncing the local time.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async=True
         >>> thread = api.list_time_sources_with_http_info(async=True)

@@ -398,7 +398,7 @@ paths:
         - TimeSources
       summary: List reference clocks
       description: |
-        The `time-sources` endpoint returns all network clock sources
+        The `time-sources` endpoint returns all time sources
         that are used for syncing the local time.
       responses:
         200:
@@ -412,7 +412,9 @@ paths:
       tags:
         - TimeSources
       summary: Register a time source for time syncing.
-      description: Registers a new time source for time syncing.
+      description: |
+        Registers a new time source for time syncing. Time sources are
+        immutable.
       parameters:
         - name: timesource
           in: body
@@ -975,55 +977,59 @@ definitions:
       priority:
         type: integer
         description: |
-          Priority to determine which counter to use in situations where
-          there is more than one (higher number = higher priority)
+          Priority determines which counter to use in situations where
+          there are multiple counters available (higher number = higher priority).
+          Priority is always positive.
         format: int32
     required:
       - id
       - name
       - frequency
-      - quality
+      - priority
 
-  TimeKeeperInfo:
+  TimeKeeperState:
     type: object
     description: TimeKeeper internal state information
     properties:
       frequency:
         type: number
         description: |
-          The TimeCounter frequency as measured by the interval between the
-          two best timestamp exchanges with the TimeSource over the past two
-          hours, in hz.
+          The time counter frequency as measured by the interval between the
+          two best timestamp exchanges with the time source over the past two
+          hours, in Hz.
         format: int64
       frequency_error:
         type: number
-        description: The estimated error in the TimeCounter frequency measurement, in hz.
+        description: The estimated error of the time counter frequency measurement, in Hz.
         format: int64
       local_frequency:
         type: number
         description: |
-          The TimeCounter frequency as measured by the interval between the
-          two best timestamp exchanges with the TimeSource over the past hour,
-          in hz. This value is used to help determine TimeCounter drift.
+          The time counter frequency as measured by the interval between the
+          two best timestamp exchanges with the time source over the past hour,
+          in Hz. This value is used to help determine time stamp error due to
+          time counter frequency drift.
         format: int64
       local_frequency_error:
         type: number
-        description: The estimated error in the local TimeCounter frequency measurement, in hz.
+        description: The estimated error of the local time counter frequency measurement, in Hz.
         format: int64
       offset:
         type: number
         description: |
-          The offset applied to TimeCounter derived timestamp values,
+          The offset applied to time counter derived timestamp values,
           in seconds.  This value comes from the system host clock.
         format: double
       synced:
         type: boolean
-        description: Indicates if the clock is synchronized to the source
+        description: |
+          The time keeper is considered to be synced to the time source if a clock
+          offset, theta, has been calculated and applied within the past 20 minutes.
       theta:
         type: number
         description: |
           The calculated correction to apply to the offset, based on the
-          measured TimeCounter frequency and TimeSource timestamps.
+          measured time counter frequency and time source timestamps.
         format: double
     required:
       - offset
@@ -1091,7 +1097,10 @@ definitions:
         format: int64
       timestamps:
         type: number
-        description: The number of timestamps in the current working set of timestamps.
+        description: |
+          The number of timestamps in the current working set of timestamps.
+          Old timestamps are dropped from the history of timestamps as they
+          become irrelevant.
         format: int64
     required:
       - frequency_accept
@@ -1106,11 +1115,11 @@ definitions:
   TimeKeeper:
     type: object
     description: |
-      A combination of a TimeSource and a TimeCounter used to measure
+      A combination of a time source and a time counter used to measure
       the passage of time, aka a clock
     properties:
-      info:
-        $ref: "#/definitions/TimeKeeperInfo"
+      state:
+        $ref: "#/definitions/TimeKeeperState"
       stats:
         $ref: "#/definitions/TimeKeeperStats"
       time:
@@ -1119,12 +1128,12 @@ definitions:
         format: date-time
       time_counter_id:
         type: string
-        description: Time counter used for measuring time intervals
+        description: time counter used for measuring time intervals
       time_source_id:
         type: string
-        description: Time source used for wall-clock synchronization
+        description: time source used for wall-clock synchronization
     required:
-      - info
+      - state
       - stats
       - time
       - time_counter_id
@@ -1141,10 +1150,10 @@ definitions:
           hostname:
             type: string
             description: network hostname or address for server
-          service:
+          port:
             type: string
             default: "ntp"
-            description: server port
+            description: service name or port for server
         required:
           - hostname
 
@@ -1166,7 +1175,8 @@ definitions:
             format: int64
           stratum:
             type: integer
-            description: Distance from a reference clock, in network hops.
+            description: |
+              Time source distance from a NTP reference clock, in network hops.
             format: int32
         required:
           - rx_packets

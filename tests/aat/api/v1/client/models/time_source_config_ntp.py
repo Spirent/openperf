@@ -32,24 +32,24 @@ class TimeSourceConfigNtp(object):
     """
     swagger_types = {
         'hostname': 'str',
-        'service': 'str'
+        'port': 'str'
     }
 
     attribute_map = {
         'hostname': 'hostname',
-        'service': 'service'
+        'port': 'port'
     }
 
-    def __init__(self, hostname=None, service='ntp'):  # noqa: E501
+    def __init__(self, hostname=None, port='ntp'):  # noqa: E501
         """TimeSourceConfigNtp - a model defined in Swagger"""  # noqa: E501
 
         self._hostname = None
-        self._service = None
+        self._port = None
         self.discriminator = None
 
         self.hostname = hostname
-        if service is not None:
-            self.service = service
+        if port is not None:
+            self.port = port
 
     @property
     def hostname(self):
@@ -74,26 +74,26 @@ class TimeSourceConfigNtp(object):
         self._hostname = hostname
 
     @property
-    def service(self):
-        """Gets the service of this TimeSourceConfigNtp.  # noqa: E501
+    def port(self):
+        """Gets the port of this TimeSourceConfigNtp.  # noqa: E501
 
-        server port  # noqa: E501
+        service name or port for server  # noqa: E501
 
-        :return: The service of this TimeSourceConfigNtp.  # noqa: E501
+        :return: The port of this TimeSourceConfigNtp.  # noqa: E501
         :rtype: str
         """
-        return self._service
+        return self._port
 
-    @service.setter
-    def service(self, service):
-        """Sets the service of this TimeSourceConfigNtp.
+    @port.setter
+    def port(self, port):
+        """Sets the port of this TimeSourceConfigNtp.
 
-        server port  # noqa: E501
+        service name or port for server  # noqa: E501
 
-        :param service: The service of this TimeSourceConfigNtp.  # noqa: E501
+        :param port: The port of this TimeSourceConfigNtp.  # noqa: E501
         :type: str
         """
-        self._service = service
+        self._port = port
 
     def to_dict(self):
         """Returns the model properties as a dict"""

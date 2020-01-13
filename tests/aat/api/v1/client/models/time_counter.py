@@ -56,8 +56,7 @@ class TimeCounter(object):
         self.id = id
         self.name = name
         self.frequency = frequency
-        if priority is not None:
-            self.priority = priority
+        self.priority = priority
 
     @property
     def id(self):
@@ -129,7 +128,7 @@ class TimeCounter(object):
     def priority(self):
         """Gets the priority of this TimeCounter.  # noqa: E501
 
-        Priority to determine which counter to use in situations where there is more than one (higher number = higher priority)   # noqa: E501
+        Priority determines which counter to use in situations where there are multiple counters available (higher number = higher priority). Priority is always positive.   # noqa: E501
 
         :return: The priority of this TimeCounter.  # noqa: E501
         :rtype: int
@@ -140,7 +139,7 @@ class TimeCounter(object):
     def priority(self, priority):
         """Sets the priority of this TimeCounter.
 
-        Priority to determine which counter to use in situations where there is more than one (higher number = higher priority)   # noqa: E501
+        Priority determines which counter to use in situations where there are multiple counters available (higher number = higher priority). Priority is always positive.   # noqa: E501
 
         :param priority: The priority of this TimeCounter.  # noqa: E501
         :type: int

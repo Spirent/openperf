@@ -54,18 +54,18 @@ public:
     std::string getHostname() const;
     void setHostname(std::string value);
         /// <summary>
-    /// server port
+    /// service name or port for server
     /// </summary>
-    std::string getService() const;
-    void setService(std::string value);
-    bool serviceIsSet() const;
-    void unsetService();
+    std::string getPort() const;
+    void setPort(std::string value);
+    bool portIsSet() const;
+    void unsetPort();
 
 protected:
     std::string m_Hostname;
 
-    std::string m_Service;
-    bool m_ServiceIsSet;
+    std::string m_Port;
+    bool m_PortIsSet;
 };
 
 }

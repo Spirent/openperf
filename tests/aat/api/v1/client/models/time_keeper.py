@@ -16,7 +16,7 @@ import re  # noqa: F401
 
 import six
 
-from client.models.time_keeper_info import TimeKeeperInfo  # noqa: F401,E501
+from client.models.time_keeper_state import TimeKeeperState  # noqa: F401,E501
 from client.models.time_keeper_stats import TimeKeeperStats  # noqa: F401,E501
 
 
@@ -34,7 +34,7 @@ class TimeKeeper(object):
                             and the value is json key in definition.
     """
     swagger_types = {
-        'info': 'TimeKeeperInfo',
+        'state': 'TimeKeeperState',
         'stats': 'TimeKeeperStats',
         'time': 'datetime',
         'time_counter_id': 'str',
@@ -42,48 +42,48 @@ class TimeKeeper(object):
     }
 
     attribute_map = {
-        'info': 'info',
+        'state': 'state',
         'stats': 'stats',
         'time': 'time',
         'time_counter_id': 'time_counter_id',
         'time_source_id': 'time_source_id'
     }
 
-    def __init__(self, info=None, stats=None, time=None, time_counter_id=None, time_source_id=None):  # noqa: E501
+    def __init__(self, state=None, stats=None, time=None, time_counter_id=None, time_source_id=None):  # noqa: E501
         """TimeKeeper - a model defined in Swagger"""  # noqa: E501
 
-        self._info = None
+        self._state = None
         self._stats = None
         self._time = None
         self._time_counter_id = None
         self._time_source_id = None
         self.discriminator = None
 
-        self.info = info
+        self.state = state
         self.stats = stats
         self.time = time
         self.time_counter_id = time_counter_id
         self.time_source_id = time_source_id
 
     @property
-    def info(self):
-        """Gets the info of this TimeKeeper.  # noqa: E501
+    def state(self):
+        """Gets the state of this TimeKeeper.  # noqa: E501
 
 
-        :return: The info of this TimeKeeper.  # noqa: E501
-        :rtype: TimeKeeperInfo
+        :return: The state of this TimeKeeper.  # noqa: E501
+        :rtype: TimeKeeperState
         """
-        return self._info
+        return self._state
 
-    @info.setter
-    def info(self, info):
-        """Sets the info of this TimeKeeper.
+    @state.setter
+    def state(self, state):
+        """Sets the state of this TimeKeeper.
 
 
-        :param info: The info of this TimeKeeper.  # noqa: E501
-        :type: TimeKeeperInfo
+        :param state: The state of this TimeKeeper.  # noqa: E501
+        :type: TimeKeeperState
         """
-        self._info = info
+        self._state = state
 
     @property
     def stats(self):
@@ -131,7 +131,7 @@ class TimeKeeper(object):
     def time_counter_id(self):
         """Gets the time_counter_id of this TimeKeeper.  # noqa: E501
 
-        Time counter used for measuring time intervals  # noqa: E501
+        time counter used for measuring time intervals  # noqa: E501
 
         :return: The time_counter_id of this TimeKeeper.  # noqa: E501
         :rtype: str
@@ -142,7 +142,7 @@ class TimeKeeper(object):
     def time_counter_id(self, time_counter_id):
         """Sets the time_counter_id of this TimeKeeper.
 
-        Time counter used for measuring time intervals  # noqa: E501
+        time counter used for measuring time intervals  # noqa: E501
 
         :param time_counter_id: The time_counter_id of this TimeKeeper.  # noqa: E501
         :type: str
@@ -153,7 +153,7 @@ class TimeKeeper(object):
     def time_source_id(self):
         """Gets the time_source_id of this TimeKeeper.  # noqa: E501
 
-        Time source used for wall-clock synchronization  # noqa: E501
+        time source used for wall-clock synchronization  # noqa: E501
 
         :return: The time_source_id of this TimeKeeper.  # noqa: E501
         :rtype: str
@@ -164,7 +164,7 @@ class TimeKeeper(object):
     def time_source_id(self, time_source_id):
         """Sets the time_source_id of this TimeKeeper.
 
-        Time source used for wall-clock synchronization  # noqa: E501
+        time source used for wall-clock synchronization  # noqa: E501
 
         :param time_source_id: The time_source_id of this TimeKeeper.  # noqa: E501
         :type: str
