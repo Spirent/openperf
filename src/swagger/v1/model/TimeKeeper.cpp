@@ -38,7 +38,7 @@ nlohmann::json TimeKeeper::toJson() const
 {
     nlohmann::json val = nlohmann::json::object();
 
-    val["info"] = ModelBase::toJson(m_Info);
+    val["state"] = ModelBase::toJson(m_State);
     val["stats"] = ModelBase::toJson(m_Stats);
     val["time"] = ModelBase::toJson(m_Time);
     val["time_counter_id"] = ModelBase::toJson(m_Time_counter_id);
@@ -57,13 +57,13 @@ void TimeKeeper::fromJson(nlohmann::json& val)
 }
 
 
-std::shared_ptr<TimeKeeperInfo> TimeKeeper::getInfo() const
+std::shared_ptr<TimeKeeperState> TimeKeeper::getState() const
 {
-    return m_Info;
+    return m_State;
 }
-void TimeKeeper::setInfo(std::shared_ptr<TimeKeeperInfo> value)
+void TimeKeeper::setState(std::shared_ptr<TimeKeeperState> value)
 {
-    m_Info = value;
+    m_State = value;
     
 }
 std::shared_ptr<TimeKeeperStats> TimeKeeper::getStats() const

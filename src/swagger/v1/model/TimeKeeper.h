@@ -12,7 +12,7 @@
 /*
  * TimeKeeper.h
  *
- * A combination of a TimeSource and a TimeCounter used to measure the passage of time, aka a clock 
+ * A combination of a time source and a time counter used to measure the passage of time, aka a clock 
  */
 
 #ifndef TimeKeeper_H_
@@ -21,16 +21,16 @@
 
 #include "ModelBase.h"
 
+#include "TimeKeeperState.h"
 #include <string>
 #include "TimeKeeperStats.h"
-#include "TimeKeeperInfo.h"
 
 namespace swagger {
 namespace v1 {
 namespace model {
 
 /// <summary>
-/// A combination of a TimeSource and a TimeCounter used to measure the passage of time, aka a clock 
+/// A combination of a time source and a time counter used to measure the passage of time, aka a clock 
 /// </summary>
 class  TimeKeeper
     : public ModelBase
@@ -53,8 +53,8 @@ public:
     /// <summary>
     /// 
     /// </summary>
-    std::shared_ptr<TimeKeeperInfo> getInfo() const;
-    void setInfo(std::shared_ptr<TimeKeeperInfo> value);
+    std::shared_ptr<TimeKeeperState> getState() const;
+    void setState(std::shared_ptr<TimeKeeperState> value);
         /// <summary>
     /// 
     /// </summary>
@@ -66,18 +66,18 @@ public:
     std::string getTime() const;
     void setTime(std::string value);
         /// <summary>
-    /// Time counter used for measuring time intervals
+    /// time counter used for measuring time intervals
     /// </summary>
     std::string getTimeCounterId() const;
     void setTimeCounterId(std::string value);
         /// <summary>
-    /// Time source used for wall-clock synchronization
+    /// time source used for wall-clock synchronization
     /// </summary>
     std::string getTimeSourceId() const;
     void setTimeSourceId(std::string value);
     
 protected:
-    std::shared_ptr<TimeKeeperInfo> m_Info;
+    std::shared_ptr<TimeKeeperState> m_State;
 
     std::shared_ptr<TimeKeeperStats> m_Stats;
 

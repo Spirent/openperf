@@ -64,13 +64,11 @@ public:
     int64_t getFrequency() const;
     void setFrequency(int64_t value);
         /// <summary>
-    /// Priority to determine which counter to use in situations where there is more than one (higher number &#x3D; higher priority) 
+    /// Priority determines which counter to use in situations where there are multiple counters available (higher number &#x3D; higher priority). Priority is always positive. 
     /// </summary>
     int32_t getPriority() const;
     void setPriority(int32_t value);
-    bool priorityIsSet() const;
-    void unsetPriority();
-
+    
 protected:
     std::string m_Id;
 
@@ -79,7 +77,7 @@ protected:
     int64_t m_Frequency;
 
     int32_t m_Priority;
-    bool m_PriorityIsSet;
+
 };
 
 }

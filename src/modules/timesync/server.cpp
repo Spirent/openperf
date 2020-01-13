@@ -194,24 +194,24 @@ tl::expected<time_source, int> to_time_source(std::string_view id,
     auto config = time_source_config_ntp{};
 
     std::array<char, name_max_length> node;
-    std::array<char, service_max_length> service;
+    std::array<char, port_max_length> port;
 
     auto ai = state->addrinfo.get();
     if (getnameinfo(ai->ai_addr,
                     ai->ai_addrlen,
                     node.data(),
                     node.size(),
-                    service.data(),
-                    service.size(),
+                    port.data(),
+                    port.size(),
                     NI_NAMEREQD)
         == 0) {
         std::copy_n(node.data(),
                     std::min(std::strlen(node.data()), node.size()),
                     config.node);
 
-        std::copy_n(service.data(),
-                    std::min(std::strlen(service.data()), service.size()),
-                    config.service);
+        std::copy_n(port.data(),
+                    std::min(std::strlen(port.data()), port.size()),
+                    config.port);
     } else {
         /* Resolution failed for some reason; return the raw socket data */
         std::array<char, INET6_ADDRSTRLEN> buffer;
@@ -224,8 +224,8 @@ tl::expected<time_source, int> to_time_source(std::string_view id,
                     std::min(std::strlen(buffer.data()), buffer.size()),
                     config.node);
 
-        auto port = std::to_string(get_port(ai));
-        std::copy_n(port.data(), port.length(), config.service);
+        auto port_num = std::to_string(get_port(ai));
+        std::copy_n(port_num.data(), port_num.length(), config.port);
     }
 
     auto ts = time_source{.config = config,
@@ -275,7 +275,7 @@ reply_msg server::handle_request(const request_time_source_add& add)
 
     addrinfo* ai = nullptr;
     if (auto error = getaddrinfo(
-            add.source.config.node, add.source.config.service, nullptr, &ai);
+            add.source.config.node, add.source.config.port, nullptr, &ai);
         error != 0) {
         return (to_error(error_type::EAI_ERROR, error));
     }

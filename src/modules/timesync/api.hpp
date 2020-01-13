@@ -23,7 +23,7 @@ constexpr std::string_view endpoint = "inproc://openperf_timesync";
 
 static constexpr size_t id_max_length = 64;
 static constexpr size_t name_max_length = NI_MAXHOST;
-static constexpr size_t service_max_length = NI_MAXSERV;
+static constexpr size_t port_max_length = NI_MAXSERV;
 
 struct time_counter
 {
@@ -95,7 +95,7 @@ struct reply_time_keeper
 struct time_source_config_ntp
 {
     char node[name_max_length];
-    char service[service_max_length];
+    char port[port_max_length];
 };
 
 struct time_source_stats_ntp

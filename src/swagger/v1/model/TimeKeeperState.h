@@ -10,13 +10,13 @@
 * Do not edit the class manually.
 */
 /*
- * TimeKeeperInfo.h
+ * TimeKeeperState.h
  *
  * TimeKeeper internal state information
  */
 
-#ifndef TimeKeeperInfo_H_
-#define TimeKeeperInfo_H_
+#ifndef TimeKeeperState_H_
+#define TimeKeeperState_H_
 
 
 #include "ModelBase.h"
@@ -29,12 +29,12 @@ namespace model {
 /// <summary>
 /// TimeKeeper internal state information
 /// </summary>
-class  TimeKeeperInfo
+class  TimeKeeperState
     : public ModelBase
 {
 public:
-    TimeKeeperInfo();
-    virtual ~TimeKeeperInfo();
+    TimeKeeperState();
+    virtual ~TimeKeeperState();
 
     /////////////////////////////////////////////
     /// ModelBase overrides
@@ -45,50 +45,50 @@ public:
     void fromJson(nlohmann::json& json) override;
 
     /////////////////////////////////////////////
-    /// TimeKeeperInfo members
+    /// TimeKeeperState members
 
     /// <summary>
-    /// The TimeCounter frequency as measured by the interval between the two best timestamp exchanges with the TimeSource over the past two hours, in hz. 
+    /// The time counter frequency as measured by the interval between the two best timestamp exchanges with the time source over the past two hours, in Hz. 
     /// </summary>
     double getFrequency() const;
     void setFrequency(double value);
     bool frequencyIsSet() const;
     void unsetFrequency();
     /// <summary>
-    /// The estimated error in the TimeCounter frequency measurement, in hz.
+    /// The estimated error of the time counter frequency measurement, in Hz.
     /// </summary>
     double getFrequencyError() const;
     void setFrequencyError(double value);
     bool frequencyErrorIsSet() const;
     void unsetFrequency_error();
     /// <summary>
-    /// The TimeCounter frequency as measured by the interval between the two best timestamp exchanges with the TimeSource over the past hour, in hz. This value is used to help determine TimeCounter drift. 
+    /// The time counter frequency as measured by the interval between the two best timestamp exchanges with the time source over the past hour, in Hz. This value is used to help determine time stamp error due to time counter frequency drift. 
     /// </summary>
     double getLocalFrequency() const;
     void setLocalFrequency(double value);
     bool localFrequencyIsSet() const;
     void unsetLocal_frequency();
     /// <summary>
-    /// The estimated error in the local TimeCounter frequency measurement, in hz.
+    /// The estimated error of the local time counter frequency measurement, in Hz.
     /// </summary>
     double getLocalFrequencyError() const;
     void setLocalFrequencyError(double value);
     bool localFrequencyErrorIsSet() const;
     void unsetLocal_frequency_error();
     /// <summary>
-    /// The offset applied to TimeCounter derived timestamp values, in seconds.  This value comes from the system host clock. 
+    /// The offset applied to time counter derived timestamp values, in seconds.  This value comes from the system host clock. 
     /// </summary>
     double getOffset() const;
     void setOffset(double value);
         /// <summary>
-    /// Indicates if the clock is synchronized to the source
+    /// The time keeper is considered to be synced to the time source if a clock offset, theta, has been calculated and applied within the past 20 minutes. 
     /// </summary>
     bool isSynced() const;
     void setSynced(bool value);
     bool syncedIsSet() const;
     void unsetSynced();
     /// <summary>
-    /// The calculated correction to apply to the offset, based on the measured TimeCounter frequency and TimeSource timestamps. 
+    /// The calculated correction to apply to the offset, based on the measured time counter frequency and time source timestamps. 
     /// </summary>
     double getTheta() const;
     void setTheta(double value);
@@ -116,4 +116,4 @@ protected:
 }
 }
 
-#endif /* TimeKeeperInfo_H_ */
+#endif /* TimeKeeperState_H_ */

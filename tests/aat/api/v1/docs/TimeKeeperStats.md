@@ -10,7 +10,7 @@ Name | Type | Description | Notes
 **round_trip_times** | [**TimeKeeperStatsRoundTripTimes**](TimeKeeperStatsRoundTripTimes.md) |  | 
 **theta_accept** | **float** | The number of times the theta calculation has been updated. | 
 **theta_reject** | **float** | Then umber of times the theta calculation has been rejected due to excessive delta between old and new values.  | 
-**timestamps** | **float** | The number of timestamps in the current working set of timestamps. | 
+**timestamps** | **float** | The number of timestamps in the current working set of timestamps. Old timestamps are dropped from the history of timestamps as they become irrelevant.  | 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

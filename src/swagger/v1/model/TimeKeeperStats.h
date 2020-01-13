@@ -84,7 +84,7 @@ public:
     double getThetaReject() const;
     void setThetaReject(double value);
         /// <summary>
-    /// The number of timestamps in the current working set of timestamps.
+    /// The number of timestamps in the current working set of timestamps. Old timestamps are dropped from the history of timestamps as they become irrelevant. 
     /// </summary>
     double getTimestamps() const;
     void setTimestamps(double value);

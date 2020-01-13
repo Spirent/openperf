@@ -103,7 +103,7 @@ class TimeSourceStatsNtp(object):
     def stratum(self):
         """Gets the stratum of this TimeSourceStatsNtp.  # noqa: E501
 
-        Distance from a reference clock, in network hops.  # noqa: E501
+        Time source distance from a NTP reference clock, in network hops.   # noqa: E501
 
         :return: The stratum of this TimeSourceStatsNtp.  # noqa: E501
         :rtype: int
@@ -114,7 +114,7 @@ class TimeSourceStatsNtp(object):
     def stratum(self, stratum):
         """Sets the stratum of this TimeSourceStatsNtp.
 
-        Distance from a reference clock, in network hops.  # noqa: E501
+        Time source distance from a NTP reference clock, in network hops.   # noqa: E501
 
         :param stratum: The stratum of this TimeSourceStatsNtp.  # noqa: E501
         :type: int

@@ -11,13 +11,13 @@
 */
 
 
-#include "TimeKeeperInfo.h"
+#include "TimeKeeperState.h"
 
 namespace swagger {
 namespace v1 {
 namespace model {
 
-TimeKeeperInfo::TimeKeeperInfo()
+TimeKeeperState::TimeKeeperState()
 {
     m_Frequency = 0.0;
     m_FrequencyIsSet = false;
@@ -35,16 +35,16 @@ TimeKeeperInfo::TimeKeeperInfo()
     
 }
 
-TimeKeeperInfo::~TimeKeeperInfo()
+TimeKeeperState::~TimeKeeperState()
 {
 }
 
-void TimeKeeperInfo::validate()
+void TimeKeeperState::validate()
 {
     // TODO: implement validation
 }
 
-nlohmann::json TimeKeeperInfo::toJson() const
+nlohmann::json TimeKeeperState::toJson() const
 {
     nlohmann::json val = nlohmann::json::object();
 
@@ -78,7 +78,7 @@ nlohmann::json TimeKeeperInfo::toJson() const
     return val;
 }
 
-void TimeKeeperInfo::fromJson(nlohmann::json& val)
+void TimeKeeperState::fromJson(nlohmann::json& val)
 {
     if(val.find("frequency") != val.end())
     {
@@ -109,114 +109,114 @@ void TimeKeeperInfo::fromJson(nlohmann::json& val)
 }
 
 
-double TimeKeeperInfo::getFrequency() const
+double TimeKeeperState::getFrequency() const
 {
     return m_Frequency;
 }
-void TimeKeeperInfo::setFrequency(double value)
+void TimeKeeperState::setFrequency(double value)
 {
     m_Frequency = value;
     m_FrequencyIsSet = true;
 }
-bool TimeKeeperInfo::frequencyIsSet() const
+bool TimeKeeperState::frequencyIsSet() const
 {
     return m_FrequencyIsSet;
 }
-void TimeKeeperInfo::unsetFrequency()
+void TimeKeeperState::unsetFrequency()
 {
     m_FrequencyIsSet = false;
 }
-double TimeKeeperInfo::getFrequencyError() const
+double TimeKeeperState::getFrequencyError() const
 {
     return m_Frequency_error;
 }
-void TimeKeeperInfo::setFrequencyError(double value)
+void TimeKeeperState::setFrequencyError(double value)
 {
     m_Frequency_error = value;
     m_Frequency_errorIsSet = true;
 }
-bool TimeKeeperInfo::frequencyErrorIsSet() const
+bool TimeKeeperState::frequencyErrorIsSet() const
 {
     return m_Frequency_errorIsSet;
 }
-void TimeKeeperInfo::unsetFrequency_error()
+void TimeKeeperState::unsetFrequency_error()
 {
     m_Frequency_errorIsSet = false;
 }
-double TimeKeeperInfo::getLocalFrequency() const
+double TimeKeeperState::getLocalFrequency() const
 {
     return m_Local_frequency;
 }
-void TimeKeeperInfo::setLocalFrequency(double value)
+void TimeKeeperState::setLocalFrequency(double value)
 {
     m_Local_frequency = value;
     m_Local_frequencyIsSet = true;
 }
-bool TimeKeeperInfo::localFrequencyIsSet() const
+bool TimeKeeperState::localFrequencyIsSet() const
 {
     return m_Local_frequencyIsSet;
 }
-void TimeKeeperInfo::unsetLocal_frequency()
+void TimeKeeperState::unsetLocal_frequency()
 {
     m_Local_frequencyIsSet = false;
 }
-double TimeKeeperInfo::getLocalFrequencyError() const
+double TimeKeeperState::getLocalFrequencyError() const
 {
     return m_Local_frequency_error;
 }
-void TimeKeeperInfo::setLocalFrequencyError(double value)
+void TimeKeeperState::setLocalFrequencyError(double value)
 {
     m_Local_frequency_error = value;
     m_Local_frequency_errorIsSet = true;
 }
-bool TimeKeeperInfo::localFrequencyErrorIsSet() const
+bool TimeKeeperState::localFrequencyErrorIsSet() const
 {
     return m_Local_frequency_errorIsSet;
 }
-void TimeKeeperInfo::unsetLocal_frequency_error()
+void TimeKeeperState::unsetLocal_frequency_error()
 {
     m_Local_frequency_errorIsSet = false;
 }
-double TimeKeeperInfo::getOffset() const
+double TimeKeeperState::getOffset() const
 {
     return m_Offset;
 }
-void TimeKeeperInfo::setOffset(double value)
+void TimeKeeperState::setOffset(double value)
 {
     m_Offset = value;
     
 }
-bool TimeKeeperInfo::isSynced() const
+bool TimeKeeperState::isSynced() const
 {
     return m_Synced;
 }
-void TimeKeeperInfo::setSynced(bool value)
+void TimeKeeperState::setSynced(bool value)
 {
     m_Synced = value;
     m_SyncedIsSet = true;
 }
-bool TimeKeeperInfo::syncedIsSet() const
+bool TimeKeeperState::syncedIsSet() const
 {
     return m_SyncedIsSet;
 }
-void TimeKeeperInfo::unsetSynced()
+void TimeKeeperState::unsetSynced()
 {
     m_SyncedIsSet = false;
 }
-double TimeKeeperInfo::getTheta() const
+double TimeKeeperState::getTheta() const
 {
     return m_Theta;
 }
-void TimeKeeperInfo::setTheta(double value)
+void TimeKeeperState::setTheta(double value)
 {
     m_Theta = value;
     m_ThetaIsSet = true;
 }
-bool TimeKeeperInfo::thetaIsSet() const
+bool TimeKeeperState::thetaIsSet() const
 {
     return m_ThetaIsSet;
 }
-void TimeKeeperInfo::unsetTheta()
+void TimeKeeperState::unsetTheta()
 {
     m_ThetaIsSet = false;
 }

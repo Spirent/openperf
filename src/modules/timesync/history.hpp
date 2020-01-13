@@ -85,11 +85,6 @@ public:
 
     void prune(time_t time);
 
-    // template <typename Argument>
-    // using history_apply_function = void (*)(const timestamp& ts,
-    //                                        counter::hz f_local,
-    //                                        Argument& arg);
-
     using history_range =
         std::pair<history_container::iterator, history_container::iterator>;
     template <typename Function, typename Argument>
