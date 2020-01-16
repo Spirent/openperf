@@ -1,4 +1,4 @@
-PIO_DEPENDS += dpdk
+PIO_DEPENDS += dpdk timesync
 
 PIO_DRIVER_SOURCES += \
 	arg_parser.cpp \
@@ -8,6 +8,7 @@ PIO_DRIVER_SOURCES += \
 	flow_filter.cpp \
 	mac_filter.cpp \
 	port_filter.cpp \
+	port_timestamper.cpp \
 	queue_utils.cpp \
 	topology_utils.cpp \
 	model/physical_port.cpp \

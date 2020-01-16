@@ -142,19 +142,19 @@ static void setup_recycler_callback(openperf::core::event_loop& loop,
     loop.add(timeout.count(), &callbacks, recycler);
 }
 
-static port::filter&
-get_port_filter(std::vector<worker_controller::filter_ptr>& filters,
-                uint16_t port_id)
+template <typename T>
+T& get_unique_port_object(std::vector<std::unique_ptr<T>>& things,
+                          uint16_t port_id)
 {
-    auto filter =
-        std::find_if(std::begin(filters), std::end(filters), [&](auto& f) {
-            return (port_id == f->port_id());
+    auto item =
+        std::find_if(std::begin(things), std::end(things), [&](auto& thing) {
+            return (port_id == thing->port_id());
         });
 
-    /* Port filter should *always* exist */
-    assert(filter != filters.end());
+    /* Thing should always exist */
+    assert(item != things.end());
 
-    return (*(filter->get()));
+    return (*(item->get()));
 }
 
 static void maybe_enable_rxq_tag_detection(const port::filter& filter)
@@ -235,9 +235,19 @@ worker_controller::worker_controller(void* context,
     auto port_info = get_port_info();
 
     /* Setup port filters */
-    for (auto& info : port_info) {
-        m_filters.push_back(std::make_unique<port::filter>(info.id()));
-    }
+    std::transform(
+        std::begin(port_info),
+        std::end(port_info),
+        std::back_inserter(m_filters),
+        [](auto& info) { return (std::make_unique<port::filter>(info.id())); });
+
+    /* Setup up timestampers */
+    std::transform(std::begin(port_info),
+                   std::end(port_info),
+                   std::back_inserter(m_timestampers),
+                   [](auto& info) {
+                       return (std::make_unique<port::timestamper>(info.id()));
+                   });
 
     /* Construct our necessary transmit schedulers and metadata */
     for (auto& d : topology::queue_distribute(port_info)) {
@@ -296,6 +306,7 @@ worker_controller::worker_controller(worker_controller&& other)
     , m_tx_loads(std::move(other.m_tx_loads))
     , m_tx_workers(std::move(other.m_tx_workers))
     , m_filters(std::move(other.m_filters))
+    , m_timestampers(std::move(other.m_timestampers))
 {}
 
 worker_controller& worker_controller::operator=(worker_controller&& other)
@@ -312,6 +323,7 @@ worker_controller& worker_controller::operator=(worker_controller&& other)
         m_tx_loads = std::move(other.m_tx_loads);
         m_tx_workers = std::move(other.m_tx_workers);
         m_filters = std::move(other.m_filters);
+        m_timestampers = std::move(other.m_timestampers);
     }
     return (*this);
 }
@@ -449,7 +461,7 @@ void worker_controller::add_interface(std::string_view port_id,
                                  + ") already exists in FIB");
     }
 
-    auto& filter = get_port_filter(m_filters, *port_idx);
+    auto& filter = get_unique_port_object(m_filters, *port_idx);
     filter.add_mac_address(mac,
                            [&]() { maybe_disable_rxq_tag_detection(filter); });
 
@@ -477,7 +489,7 @@ void worker_controller::del_interface(std::string_view port_id,
     auto to_delete = m_fib->remove_interface(*port_idx, mac);
     m_recycler->writer_add_gc_callback([to_delete]() { delete to_delete; });
 
-    auto& filter = get_port_filter(m_filters, *port_idx);
+    auto& filter = get_unique_port_object(m_filters, *port_idx);
     filter.del_mac_address(mac,
                            [&]() { maybe_enable_rxq_tag_detection(filter); });
 
@@ -492,10 +504,9 @@ void worker_controller::del_interface(std::string_view port_id,
 template <typename Vector, typename Item>
 bool contains_match(const Vector& vector, const Item& match)
 {
-    for (auto& item : vector) {
-        if (item == match) return (true);
-    }
-    return (false);
+    return (std::any_of(std::begin(vector), std::end(vector), [&](auto& item) {
+        return (item == match);
+    }));
 }
 
 tl::expected<void, int> worker_controller::add_sink(std::string_view src_id,
@@ -519,8 +530,15 @@ tl::expected<void, int> worker_controller::add_sink(std::string_view src_id,
     auto to_delete = m_fib->insert_sink(*port_idx, std::move(sink));
     m_recycler->writer_add_gc_callback([to_delete]() { delete to_delete; });
 
-    /* Disable filtering so the sink can get all incoming packets */
-    get_port_filter(m_filters, *port_idx).disable();
+    /*
+     * If we just added the first analyzer to the port.  Disable port filtering
+     * so that the sink can receive all incoming packets and enable
+     * time-stamping so that it can see when they arrived.
+     */
+    if (m_fib->get_sinks(*port_idx).size() == 1) {
+        get_unique_port_object(m_filters, *port_idx).disable();
+        get_unique_port_object(m_timestampers, *port_idx).enable();
+    }
 
     return {};
 }
@@ -542,10 +560,13 @@ void worker_controller::del_sink(std::string_view src_id,
     auto to_delete = m_fib->remove_sink(*port_idx, std::move(sink));
     m_recycler->writer_add_gc_callback([to_delete]() { delete to_delete; });
 
-    /* If we just removed the last sink on the port, re-enable the port filter
+    /*
+     * If we just removed the last sink on the port, re-enable the port
+     * filter and disable time-stamping.
      */
     if (m_fib->get_sinks(*port_idx).empty()) {
-        get_port_filter(m_filters, *port_idx).enable();
+        get_unique_port_object(m_filters, *port_idx).enable();
+        get_unique_port_object(m_timestampers, *port_idx).disable();
     }
 }
 
