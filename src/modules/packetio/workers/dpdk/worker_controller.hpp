@@ -11,10 +11,13 @@
 #include "packetio/generic_event_loop.hpp"
 #include "packetio/generic_workers.hpp"
 #include "packetio/drivers/dpdk/port_filter.hpp"
+#include "packetio/drivers/dpdk/port_timestamper.hpp"
 #include "packetio/workers/dpdk/callback.hpp"
 #include "packetio/workers/dpdk/tx_scheduler.hpp"
 #include "packetio/workers/dpdk/worker_api.hpp"
 #include "utils/hash_combine.hpp"
+
+struct rte_eth_rxtx_callback;
 
 namespace openperf::core {
 class event_loop;
@@ -69,11 +72,14 @@ public:
     void del_task(std::string_view task_id);
 
     using load_map = std::unordered_map<unsigned, uint64_t>;
+    using rx_callback_map =
+        std::map<std::pair<uint16_t, uint16_t>, rte_eth_rxtx_callback*>;
     using task_map = std::unordered_map<core::uuid, callback>;
     using worker_map = std::map<std::pair<uint16_t, uint16_t>, unsigned>;
 
     using txsched_ptr = std::unique_ptr<tx_scheduler>;
     using filter_ptr = std::unique_ptr<port::filter>;
+    using timestamper_ptr = std::unique_ptr<port::timestamper>;
 
 private:
     void* m_context;                              /* 0MQ context */
@@ -89,7 +95,8 @@ private:
     load_map m_tx_loads;     /* map from worker id --> worker load */
     worker_map m_tx_workers; /* map from (port id, queue id) --> worker id */
 
-    std::vector<filter_ptr> m_filters; /* Port filters */
+    std::vector<filter_ptr> m_filters;           /* Port filters */
+    std::vector<timestamper_ptr> m_timestampers; /* Port timestampers */
 };
 
 } // namespace openperf::packetio::dpdk

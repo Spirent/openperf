@@ -21,6 +21,12 @@ uint16_t length(const packet_buffer* buffer)
     return (rte_pktmbuf_pkt_len(buffer));
 }
 
+timesync::chrono::realtime::time_point timestamp(const packet_buffer* buffer)
+{
+    using clock = openperf::timesync::chrono::realtime;
+    return (clock::time_point{clock::duration{buffer->timestamp}});
+}
+
 void length(packet_buffer* buffer, uint16_t size)
 {
     rte_pktmbuf_data_len(buffer) = size;

@@ -4,6 +4,8 @@
 #include <cstdint>
 #include <cstddef>
 
+#include "timesync/chrono.hpp"
+
 namespace openperf::packetio::packets {
 
 struct packet_buffer;
@@ -12,6 +14,8 @@ uint16_t max_length(const packet_buffer* buffer);
 
 uint16_t length(const packet_buffer* buffer);
 void length(packet_buffer*, uint16_t length);
+
+timesync::chrono::realtime::time_point timestamp(const packet_buffer* buffer);
 
 void* to_data(packet_buffer* buffer);
 const void* to_data(const packet_buffer* buffer);
