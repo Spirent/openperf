@@ -17,6 +17,8 @@ void length(packet_buffer*, uint16_t length);
 
 timesync::chrono::realtime::time_point timestamp(const packet_buffer* buffer);
 
+uint32_t rss_hash(const packet_buffer* buffer);
+
 void* to_data(packet_buffer* buffer);
 const void* to_data(const packet_buffer* buffer);
 
