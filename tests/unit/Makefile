@@ -8,64 +8,46 @@ OP_ROOT := $(realpath ../../)
 OP_TARGET := tests
 include $(OP_ROOT)/mk/bootstrap.mk
 
-BUILD_DIR := $(OP_BUILD_ROOT)/obj/unit
-TARGET_DIR := $(OP_BUILD_ROOT)/bin
+TEST_BIN_DIR := $(OP_BUILD_ROOT)/bin
+TEST_OBJ_DIR := $(OP_BUILD_ROOT)/obj/unit
+TEST_SRC_DIR := $(OP_ROOT)/tests/unit
 
-SRC_DEPENDS :=
-BLD_DEPENDS := api_test catch config_file framework packetio_test pistache timesync_test
+TEST_DEPENDS := catch
+TEST_SOURCES := test_main.cpp
+TEST_FLAGS :=
 
 ###
-# Framework test files
+# Pull in test files
 ###
-SOURCES := \
-	test_main.cpp \
-	framework/test_config_file_utils.cpp \
-	framework/test_config_utils.cpp \
-	framework/test_enum_flags.cpp \
-	framework/test_hashtab.cpp \
-	framework/test_init_factory.cpp \
-	framework/test_list.cpp \
-	framework/test_logging.cpp \
-	framework/test_mac_address.cpp \
-	framework/test_ipv4_address.cpp \
-	framework/test_ipv4_network.cpp \
-	framework/test_offset_ptr.cpp \
-	framework/test_std_allocator.cpp \
-	framework/test_task.cpp \
-	framework/test_units_rate.cpp \
-	framework/test_uuid.cpp \
-	modules/api/test_api_internal_client.cpp \
-	modules/packetio/test_forwarding_table.cpp \
-	modules/packetio/test_recycle.cpp \
-	modules/packetio/test_transmit_table.cpp \
-	modules/socket/test_circular_buffer.cpp \
-	modules/socket/test_event_queue.cpp \
-	modules/timesync/test_bintime.cpp \
-	modules/timesync/test_clock.cpp \
-	modules/timesync/test_history.cpp
+include $(TEST_SRC_DIR)/framework/directory.mk
+include $(TEST_SRC_DIR)/lib/spirent_pga/directory.mk
+include $(TEST_SRC_DIR)/modules/api/directory.mk
+include $(TEST_SRC_DIR)/modules/packetio/directory.mk
+include $(TEST_SRC_DIR)/modules/socket/directory.mk
+include $(TEST_SRC_DIR)/modules/timesync/directory.mk
 
-OBJECTS := $(call op_generate_objects,$(SOURCES),$(BUILD_DIR))
+TEST_OBJECTS := $(call op_generate_objects,$(TEST_SOURCES),$(TEST_OBJ_DIR))
 
 # Pull in dependencies
--include $(OBJECTS:.o=.d)
-$(call op_include_dependencies,$(BLD_DEPENDS))
+-include $(TEST_OBJECTS:.o=.d)
+$(call op_include_dependencies,$(TEST_DEPENDS))
 
 OP_CONFIG_OPTS += --enable-static=yes --enable-shared=no
 OP_CPPFLAGS += $(addprefix -I,$(sort $(OP_INC_DIRS)))
 OP_LDFLAGS += $(addprefix -L,$(sort $(OP_LIB_DIRS)))
 
 # Build rules
-$(eval $(call op_generate_build_rules,$(SOURCES),,BUILD_DIR,BLD_DEPENDS))
+$(eval $(call op_generate_build_rules,$(TEST_SOURCES),,TEST_OBJ_DIR,TEST_DEPENDS,TEST_FLAGS))
 
 # Need to fix immer at some point
-$(BUILD_DIR)/modules/packetio/%.o: OP_CPPFLAGS += -Wno-unused-parameter -Wno-shadow
+$(TEST_OBJ_DIR)/modules/packetio/%.o: OP_CPPFLAGS += -Wno-unused-parameter -Wno-shadow
 
-$(TARGET_DIR)/test_openperf: $(OBJECTS) $(BLD_DEPENDS)
-	$(call op_link_binary,$@,$(OBJECTS))
+$(TEST_BIN_DIR)/test_openperf: $(TEST_OBJECTS) $(TEST_DEPENDS)
+	$(call op_link_binary,$@,$(TEST_OBJECTS))
 
 .PHONY: test_openperf
-test_openperf: $(TARGET_DIR)/test_openperf
-	$(TARGET_DIR)/test_openperf
+test_openperf: $(TEST_BIN_DIR)/test_openperf
+	$(TEST_BIN_DIR)/test_openperf
 
 .PHONY: clean
 clean:

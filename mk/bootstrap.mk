@@ -31,6 +31,19 @@ OP_INC_DIRS := $(OP_ROOT)/src
 OP_LIB_DIRS :=
 OP_CONFIG_OPTS :=
 
+# ISPC related build variables
+OP_ISPC := ispc
+
+# The decision to only target AVX instruction sets is arbitrary; change if needed.
+# However, we specifically use a 128 bit wide AVX1 target, even though AVX supports
+# 256 bit wide registers, for improved performance on older AMD chips.  Those chips
+# emulate AVX2 instructions using 2 x 128 bit wide registers (and hence 256 bit wide
+# AVX runs more slowly than 128 bit wide AVX in some cases).
+OP_ISPC_TARGETS := \
+        avx1-i32x4 \
+        avx2-i32x8 \
+        avx512skx-i32x16
+
 OP_BUILD_DEPENDENCIES :=
 
 # Detect and update build environment flags
