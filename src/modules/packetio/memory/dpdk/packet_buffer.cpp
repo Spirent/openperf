@@ -27,6 +27,8 @@ timesync::chrono::realtime::time_point timestamp(const packet_buffer* buffer)
     return (clock::time_point{clock::duration{buffer->timestamp}});
 }
 
+uint32_t rss_hash(const packet_buffer* buffer) { return (buffer->hash.rss); }
+
 void length(packet_buffer* buffer, uint16_t size)
 {
     rte_pktmbuf_data_len(buffer) = size;
