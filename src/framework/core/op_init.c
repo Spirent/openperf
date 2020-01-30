@@ -8,6 +8,25 @@
 
 #include "config/op_config_file.hpp"
 
+/*
+ * XXX: Do nothing implementation to break the dependency between
+ * the framework and config_file libraries.
+ */
+int __attribute__((weak))
+op_config_file_find(int argc __attribute__((unused)),
+                    char* const argv[] __attribute__((unused)))
+{
+    return (0);
+}
+
+char* __attribute__((weak))
+op_config_file_get_value_str(const char* param __attribute__((unused)),
+                             char* value __attribute__((unused)),
+                             int len __attribute__((unused)))
+{
+    return (NULL);
+}
+
 void op_init(void* context, int argc, char* argv[])
 {
     /*
