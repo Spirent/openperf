@@ -2,7 +2,7 @@
 # Makefile component for API code
 #
 
-API_DEPENDS += expected pistache json versions
+API_DEPENDS += config_file expected json pistache swagger_model versions
 
 API_SOURCES += \
 	api_config_file_resources.cpp \
@@ -25,7 +25,7 @@ $(API_VERSIONED_OBJECTS): OP_CPPFLAGS += \
 	-DBUILD_TIMESTAMP="\"$(TIMESTAMP)\"" \
 	-DBUILD_VERSION="\"$(GIT_VERSION)\""
 
-API_TEST_DEPENDS += expected pistache
+API_TEST_DEPENDS += expected pistache swagger_model
 
 API_TEST_SOURCES += \
 	api_config_file_resources.cpp \

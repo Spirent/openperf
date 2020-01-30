@@ -31,10 +31,13 @@ OP_LDLIBS += -Wl,--whole-archive -l$(CFGFILE_LIBRARY) -Wl,--no-whole-archive $(C
 -include $(CFGFILE_OBJECTS:.o=.d)
 $(call op_include_dependencies,$(CFGFILE_DEPENDS))
 
+# Needed to shutup yaml-cpp warnings
+CFGFILE_FLAGS := -Wno-shadow
+
 ###
 # Build rules
 ###
-$(eval $(call op_generate_build_rules,$(CFGFILE_SOURCES),CFGFILE_SRC_DIR,CFGFILE_OBJ_DIR,CFGFILE_DEPENDS))
+$(eval $(call op_generate_build_rules,$(CFGFILE_SOURCES),CFGFILE_SRC_DIR,CFGFILE_OBJ_DIR,CFGFILE_DEPENDS,CFGFILE_FLAGS))
 $(eval $(call op_generate_clean_rules,config_file,CFGFILE_TARGET,CFGFILE_OBJECTS))
 
 # XXX: I don't know why this explicit dependency is necessary to pull in yaml_cpp.

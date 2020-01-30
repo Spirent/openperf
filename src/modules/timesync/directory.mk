@@ -2,7 +2,7 @@
 # Makefile component to specify timesync code
 #
 
-TS_DEPENDS += api digestible expected framework json pistache versions
+TS_DEPENDS += api digestible expected framework json pistache swagger_model versions
 
 TS_SOURCES += \
 	api_transmogrify.cpp \
@@ -30,7 +30,7 @@ $(TS_OBJ_DIR)/init.o: OP_CPPFLAGS += \
 	-DBUILD_NUMBER="\"$(BUILD_NUMBER)\"" \
 	-DBUILD_TIMESTAMP="\"$(TIMESTAMP)\"" \
 
-TS_TEST_DEPENDS += digestible expected
+TS_TEST_DEPENDS += digestible expected framework
 
 TS_TEST_SOURCES += \
 	clock.cpp \
