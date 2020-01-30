@@ -1,12 +1,13 @@
-#ifndef _OP_PACKETIO_RECYCLE_HPP_
-#define _OP_PACKETIO_RECYCLE_HPP_
+#ifndef _OP_UTILS_RECYCLE_HPP_
+#define _OP_UTILS_RECYCLE_HPP_
 
+#include <array>
 #include <atomic>
 #include <bitset>
 #include <functional>
 #include <map>
 
-namespace openperf::packetio::recycle {
+namespace openperf::utils::recycle {
 
 /**
  * The depot contains all the logic and machinery necessary to implement
@@ -73,6 +74,6 @@ public:
     ~guard();
 };
 
-} // namespace openperf::packetio::recycle
+} // namespace openperf::utils::recycle
 
-#endif /* _OP_PACKETIO_RECYCLE_HPP_ */
+#endif /* _OP_UTILS_RECYCLE_HPP_ */

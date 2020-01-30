@@ -1,7 +1,7 @@
 #include "core/op_log.h"
-#include "packetio/recycle.hpp"
+#include "utils/recycle.hpp"
 
-namespace openperf::packetio::recycle {
+namespace openperf::utils::recycle {
 
 template <int NumReaders>
 depot<NumReaders>::depot()
@@ -113,4 +113,4 @@ template <int NumReaders> guard<NumReaders>::~guard()
     m_depot.reader_idle(m_id);
 }
 
-} // namespace openperf::packetio::recycle
+} // namespace openperf::utils::recycle

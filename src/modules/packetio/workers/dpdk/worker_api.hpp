@@ -11,9 +11,9 @@
 #include "packetio/drivers/dpdk/dpdk.h"
 #include "packetio/forwarding_table.hpp"
 #include "packetio/generic_sink.hpp"
-#include "packetio/recycle.hpp"
 #include "packetio/transmit_table.hpp"
 #include "packetio/workers/dpdk/tx_source.hpp"
+#include "utils/recycle.hpp"
 
 namespace openperf::packetio::dpdk {
 class callback;
@@ -29,7 +29,7 @@ static constexpr uint16_t pkt_burst_size = 64;
 using fib =
     packetio::forwarding_table<netif, packets::generic_sink, RTE_MAX_ETHPORTS>;
 using tib = packetio::transmit_table<dpdk::tx_source>;
-using recycler = packetio::recycle::depot<RTE_MAX_LCORE>;
+using recycler = utils::recycle::depot<RTE_MAX_LCORE>;
 
 /**
  * The types of things workers know how to deal with.
