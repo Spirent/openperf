@@ -433,8 +433,7 @@ static void run_pollable(run_args&& args)
     while (!messages) {
         auto& events = poller.poll();
         {
-            auto guard =
-                packetio::recycle::guard(*args.recycler, rte_lcore_id());
+            auto guard = utils::recycle::guard(*args.recycler, rte_lcore_id());
             for (auto& event : events) {
                 std::visit(
                     utils::overloaded_visitor(
