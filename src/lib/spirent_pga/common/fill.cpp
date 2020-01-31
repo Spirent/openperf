@@ -16,7 +16,7 @@ uint32_t prbs(uint8_t payload[], uint16_t length, uint32_t seed)
     switch (reinterpret_cast<uintptr_t>(payload) & 0x3) {
     case 1: {
         auto next = prbs::step(seed);
-        payload[idx++] = (~seed >>  8) & 0xff;
+        payload[idx++] = (~seed >> 8) & 0xff;
         payload[idx++] = (~seed >> 16) & 0xff;
         payload[idx++] = (~seed >> 24) & 0xff;
         seed = seed << 24 | next >> 8;
@@ -38,8 +38,8 @@ uint32_t prbs(uint8_t payload[], uint16_t length, uint32_t seed)
     }
 
     auto aligned_length = (length - idx) / 4;
-    seed = functions.fill_prbs_aligned_impl(reinterpret_cast<uint32_t*>(&payload[idx]),
-                                            aligned_length, seed);
+    seed = functions.fill_prbs_aligned_impl(
+        reinterpret_cast<uint32_t*>(&payload[idx]), aligned_length, seed);
 
     /*
      * Check and handle any remaining unaligned payload past the last
@@ -63,7 +63,7 @@ uint32_t prbs(uint8_t payload[], uint16_t length, uint32_t seed)
     case 3: {
         auto next = prbs::step(seed);
         payload[idx++] = ~seed & 0xff;
-        payload[idx++] = (~seed >>  8) & 0xff;
+        payload[idx++] = (~seed >> 8) & 0xff;
         payload[idx++] = (~seed >> 16) & 0xff;
         seed = seed << 24 | next >> 8;
         break;
@@ -83,8 +83,8 @@ void fixed(uint8_t payload[], uint16_t length, uint8_t value)
     }
 
     auto aligned_length = (length - idx) / 4;
-    value = functions.fill_step_aligned_impl(reinterpret_cast<uint32_t*>(&payload[idx]),
-                                             aligned_length, value, 0);
+    value = functions.fill_step_aligned_impl(
+        reinterpret_cast<uint32_t*>(&payload[idx]), aligned_length, value, 0);
 
     idx += aligned_length * 4;
     while (idx < length && reinterpret_cast<uintptr_t>(&payload[idx]) & 0x3) {
@@ -102,8 +102,8 @@ void decr(uint8_t payload[], uint16_t length, uint8_t value)
     }
 
     auto aligned_length = (length - idx) / 4;
-    value = functions.fill_step_aligned_impl(reinterpret_cast<uint32_t*>(&payload[idx]),
-                                             aligned_length, value, -1);
+    value = functions.fill_step_aligned_impl(
+        reinterpret_cast<uint32_t*>(&payload[idx]), aligned_length, value, -1);
 
     idx += aligned_length * 4;
     while (idx < length && reinterpret_cast<uintptr_t>(&payload[idx]) & 0x3) {
@@ -121,8 +121,8 @@ void incr(uint8_t payload[], uint16_t length, uint8_t value)
     }
 
     auto aligned_length = (length - idx) / 4;
-    value = functions.fill_step_aligned_impl(reinterpret_cast<uint32_t*>(&payload[idx]),
-                                             aligned_length, value, 1);
+    value = functions.fill_step_aligned_impl(
+        reinterpret_cast<uint32_t*>(&payload[idx]), aligned_length, value, 1);
 
     idx += aligned_length * 4;
     while (idx < length && reinterpret_cast<uintptr_t>(&payload[idx]) & 0x3) {
@@ -130,4 +130,4 @@ void incr(uint8_t payload[], uint16_t length, uint8_t value)
     }
 }
 
-}
+} // namespace pga::fill

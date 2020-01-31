@@ -25,16 +25,14 @@ std::chrono::nanoseconds measure_function_runtime(Function&& f, Args&&... args)
 
     auto start = clock::now();
     unsigned count = 0;
-    std::generate_n(std::back_inserter(runtimes),
-                    iterations(),
-                    [&](){
-                        std::invoke(std::forward<Function>(f), std::forward<Args>(args)...);
-                        return (clock::now() - start) / (++count);
-                    });
+    std::generate_n(std::back_inserter(runtimes), iterations(), [&]() {
+        std::invoke(std::forward<Function>(f), std::forward<Args>(args)...);
+        return (clock::now() - start) / (++count);
+    });
 
     return (*std::min_element(begin(runtimes), end(runtimes)));
 }
 
-}
+} // namespace pga::benchmark
 
 #endif /* _LIB_SPIRENT_PGA_BENCHMARK_H_ */

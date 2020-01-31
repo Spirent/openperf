@@ -2,7 +2,8 @@
 
 namespace scalar {
 
-uint16_t decode_signatures(const uint8_t* const payloads[], uint16_t count,
+uint16_t decode_signatures(const uint8_t* const payloads[],
+                           uint16_t count,
                            uint32_t stream_ids[],
                            uint32_t sequence_numbers[],
                            uint32_t timestamps_lo[],
@@ -45,4 +46,4 @@ uint16_t decode_signatures(const uint8_t* const payloads[], uint16_t count,
     return (nb_sigs);
 }
 
-}
+} // namespace scalar

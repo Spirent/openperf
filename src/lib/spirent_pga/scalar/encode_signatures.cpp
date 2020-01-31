@@ -5,7 +5,9 @@ namespace scalar {
 void encode_signatures(uint8_t* destinations[],
                        const uint32_t stream_ids[],
                        const uint32_t sequence_numbers[],
-                       uint64_t timestamp, int flags, uint16_t count)
+                       uint64_t timestamp,
+                       int flags,
+                       uint16_t count)
 {
     for (uint16_t i = 0; i < count; i++) {
         auto signature = reinterpret_cast<uint32_t*>(destinations[i]);
@@ -28,7 +30,8 @@ void encode_signatures(uint8_t* destinations[],
          * Signature is xor'ed with a mask based on the complement
          * of sequence byte 0; get the mask.
          */
-        auto mask = pga::signature::get_scramble_mask((sequence_numbers[i] & 0xff) ^ 0xff);
+        auto mask = pga::signature::get_scramble_mask(
+            (sequence_numbers[i] & 0xff) ^ 0xff);
         signature[0] ^= mask[0];
         signature[1] ^= mask[1];
         signature[2] ^= mask[2];
@@ -36,4 +39,4 @@ void encode_signatures(uint8_t* destinations[],
     }
 }
 
-}
+} // namespace scalar

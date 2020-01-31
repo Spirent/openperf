@@ -46,10 +46,13 @@ uint16_t sum(const uint8_t data[], uint16_t length)
     auto aligned_length = (length - idx) / 4;
 
     /* Handing off to our vector functions is never a win for short lengths */
-    sum += (aligned_length < 16  /* 16 x 32 bits = 64 bytes */
-            ? scalar::checksum_data_aligned(reinterpret_cast<const uint32_t*>(&data[idx]), aligned_length)
-            : functions.checksum_data_aligned_impl(reinterpret_cast<const uint32_t*>(&data[idx]),
-                                                   aligned_length));
+    sum +=
+        (aligned_length < 16 /* 16 x 32 bits = 64 bytes */
+             ? scalar::checksum_data_aligned(
+                 reinterpret_cast<const uint32_t*>(&data[idx]), aligned_length)
+             : functions.checksum_data_aligned_impl(
+                 reinterpret_cast<const uint32_t*>(&data[idx]),
+                 aligned_length));
 
     /* Handle any trailing unaligned data */
     idx += aligned_length * 4;
@@ -70,21 +73,24 @@ uint16_t sum(const uint8_t data[], uint16_t length)
     return (fold32(fold64(sum)));
 }
 
-void ipv4_headers(const uint8_t* ipv4_headers[], uint16_t count,
+void ipv4_headers(const uint8_t* ipv4_headers[],
+                  uint16_t count,
                   uint32_t checksums[])
 {
     auto& functions = functions::instance();
     functions.checksum_ipv4_headers_impl(ipv4_headers, count, checksums);
 }
 
-static void ipv4_pseudoheaders(const uint8_t* ipv4_headers[], uint16_t count,
+static void ipv4_pseudoheaders(const uint8_t* ipv4_headers[],
+                               uint16_t count,
                                uint32_t checksums[])
 {
     auto& functions = functions::instance();
     functions.checksum_ipv4_pseudoheaders_impl(ipv4_headers, count, checksums);
 }
 
-void ipv4_tcpudp(const uint8_t* ipv4_headers[], uint16_t count,
+void ipv4_tcpudp(const uint8_t* ipv4_headers[],
+                 uint16_t count,
                  uint32_t checksums[])
 {
     static constexpr int csum_loop_count = 32;
@@ -98,20 +104,24 @@ void ipv4_tcpudp(const uint8_t* ipv4_headers[], uint16_t count,
         ipv4_pseudoheaders(ipv4_headers + offset, loop_count, tmp.data());
 
         /*
-         * Now add the L4 payload checksum to the pseudoheader checksum and store
-         * that in the output vector
+         * Now add the L4 payload checksum to the pseudoheader checksum and
+         * store that in the output vector
          */
-        std::transform(tmp.data(), tmp.data() + loop_count, ipv4_headers + offset,
-                       checksums + offset,
-                       [](uint32_t& csum, const uint8_t* ptr) -> uint32_t {
-                           auto ipv4 = reinterpret_cast<const headers::ipv4*>(ptr);
-                           uint16_t length = ntohs(ipv4->length) - sizeof(headers::ipv4);
-                           uint32_t total = csum + sum(ptr + sizeof(headers::ipv4), length);
-                           return (fold32(std::numeric_limits<uint32_t>::max() ^ total));
-                       });
+        std::transform(
+            tmp.data(),
+            tmp.data() + loop_count,
+            ipv4_headers + offset,
+            checksums + offset,
+            [](uint32_t& csum, const uint8_t* ptr) -> uint32_t {
+                auto ipv4 = reinterpret_cast<const headers::ipv4*>(ptr);
+                uint16_t length = ntohs(ipv4->length) - sizeof(headers::ipv4);
+                uint32_t total =
+                    csum + sum(ptr + sizeof(headers::ipv4), length);
+                return (fold32(std::numeric_limits<uint32_t>::max() ^ total));
+            });
 
         offset += loop_count;
     }
 }
 
-}
+} // namespace pga::checksum

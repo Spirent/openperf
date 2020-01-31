@@ -20,18 +20,12 @@ constexpr uint32_t shift_left(uint32_t value, unsigned count)
 
 constexpr uint32_t step(uint32_t seed)
 {
-    constexpr uint32_t masks[] = {
-        0xffffffff,
-        0xfffffe00,
-        0x00003fff
-    };
+    constexpr uint32_t masks[] = {0xffffffff, 0xfffffe00, 0x00003fff};
 
-    return ((shift_left(seed, 9) & masks[0])
-            ^ (shift_left(seed, 14) & masks[1])
+    return ((shift_left(seed, 9) & masks[0]) ^ (shift_left(seed, 14) & masks[1])
             ^ (shift_left(seed, 19) & masks[2]));
 }
 
-}
-
+} // namespace pga::prbs
 
 #endif /* _LIB_SPIRENT_PGA_COMMON_PRBS_H_ */

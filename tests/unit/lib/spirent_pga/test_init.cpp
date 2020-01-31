@@ -5,7 +5,8 @@ TEST_CASE("spirent pga initialization", "[spirent-pga]")
 {
     auto& functions = pga::functions::instance();
 
-    SECTION("functions") {
+    SECTION("functions")
+    {
         /* All functions should be non-null if initialization works */
         REQUIRE(functions.encode_signatures_impl.best != nullptr);
         REQUIRE(functions.decode_signatures_impl.best != nullptr);
@@ -14,7 +15,8 @@ TEST_CASE("spirent pga initialization", "[spirent-pga]")
         REQUIRE(functions.verify_prbs_aligned_impl.best != nullptr);
     }
 
-    SECTION("warnings") {
+    SECTION("warnings")
+    {
         /*
          * Log a warning if we have vector implementations we can't test
          * due to the host CPU.  Since all functions families are compiled
@@ -22,8 +24,8 @@ TEST_CASE("spirent pga initialization", "[spirent-pga]")
          */
         unsigned vector_fn_count = 0;
         for (auto instruction_set : pga::test::vector_instruction_sets()) {
-            auto test_fn = pga::test::get_function(functions.encode_signatures_impl,
-                                                   instruction_set);
+            auto test_fn = pga::test::get_function(
+                functions.encode_signatures_impl, instruction_set);
             if (!test_fn) {
                 /* instruction set wasn't a target for this build; skip */
                 continue;
@@ -33,7 +35,8 @@ TEST_CASE("spirent pga initialization", "[spirent-pga]")
 
             /* Un-testable functions; generate a warning */
             if (!pga::instruction_set::available(instruction_set)) {
-                WARN("Skipping " << pga::instruction_set::to_string(instruction_set)
+                WARN("Skipping "
+                     << pga::instruction_set::to_string(instruction_set)
                      << " function tests due to lack of host CPU support.");
             }
         }
