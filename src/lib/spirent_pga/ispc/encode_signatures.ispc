@@ -1,6 +1,5 @@
 
 #include "signature_scramble.h"
-#include "aos_soa_5.h"
 
 export void encode_signatures(unsigned int8* uniform destinations[],
                               unsigned int32 const uniform stream_ids[],

@@ -6,7 +6,8 @@ using ticks = std::chrono::time_point<clock>;
 
 static constexpr unsigned timer_calc_iterations = 100;
 
-struct tau {
+struct tau
+{
     clock::duration accuracy;
     clock::duration precision;
 };
@@ -15,10 +16,8 @@ static tau calculate_tau(unsigned iterations)
 {
     std::vector<ticks> timestamps;
     timestamps.reserve(iterations);
-    std::generate_n(std::begin(timestamps),
-                    iterations,
-                    [](){ return (clock::now()); });
-
+    std::generate_n(
+        std::begin(timestamps), iterations, []() { return (clock::now()); });
 
     /*
      * std::adjacent_differnce seems like an obvious choice here, but it
@@ -30,9 +29,8 @@ static tau calculate_tau(unsigned iterations)
         intervals.emplace_back(timestamps[i + 1] - timestamps[i]);
     }
 
-    return (tau{ .accuracy = *std::max_element(begin(intervals),
-                                               end(intervals)),
-                 .precision = clock::duration(1) });
+    return (tau{.accuracy = *std::max_element(begin(intervals), end(intervals)),
+                .precision = clock::duration(1)});
 }
 
 static unsigned calculate_benchmark_iterations(unsigned timer_iterations)
@@ -43,8 +41,9 @@ static unsigned calculate_benchmark_iterations(unsigned timer_iterations)
 
 unsigned iterations()
 {
-    static auto iterations_ = calculate_benchmark_iterations(timer_calc_iterations);
+    static auto iterations_ =
+        calculate_benchmark_iterations(timer_calc_iterations);
     return (iterations_);
 }
 
-}
+} // namespace pga::benchmark

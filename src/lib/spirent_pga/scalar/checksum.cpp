@@ -26,9 +26,12 @@ void checksum_ipv4_headers(const uint8_t* ipv4_header_ptrs[],
                            uint16_t count,
                            uint32_t checksums[])
 {
-    std::transform(ipv4_header_ptrs, ipv4_header_ptrs + count, checksums,
+    std::transform(ipv4_header_ptrs,
+                   ipv4_header_ptrs + count,
+                   checksums,
                    [](const uint8_t* ptr) {
-                       auto header = reinterpret_cast<const pga::headers::ipv4*>(ptr);
+                       auto header =
+                           reinterpret_cast<const pga::headers::ipv4*>(ptr);
 
                        uint64_t sum = header->data[0];
                        sum += header->data[1];
@@ -45,34 +48,37 @@ void checksum_ipv4_pseudoheaders(const uint8_t* ipv4_header_ptrs[],
                                  uint16_t count,
                                  uint32_t checksums[])
 {
-    std::transform(ipv4_header_ptrs, ipv4_header_ptrs + count, checksums,
-                   [](const uint8_t* ptr) {
-                       auto ipv4 = reinterpret_cast<const pga::headers::ipv4*>(ptr);
+    std::transform(
+        ipv4_header_ptrs,
+        ipv4_header_ptrs + count,
+        checksums,
+        [](const uint8_t* ptr) {
+            auto ipv4 = reinterpret_cast<const pga::headers::ipv4*>(ptr);
 
-                       auto pheader = pga::headers::ipv4_pseudo{
-                           .src_address = ipv4->src_address,
-                           .dst_address = ipv4->dst_address,
-                           .zero = 0,
-                           .protocol = ipv4->protocol,
-                           .length = htons(static_cast<uint16_t>(ntohs(ipv4->length)
-                                                                 - sizeof(pga::headers::ipv4)))
-                       };
+            auto pheader = pga::headers::ipv4_pseudo{
+                .src_address = ipv4->src_address,
+                .dst_address = ipv4->dst_address,
+                .zero = 0,
+                .protocol = ipv4->protocol,
+                .length = htons(static_cast<uint16_t>(
+                    ntohs(ipv4->length) - sizeof(pga::headers::ipv4)))};
 
-                       uint64_t sum = pheader.data[0];
-                       sum += pheader.data[1];
-                       sum += pheader.data[2];
+            uint64_t sum = pheader.data[0];
+            sum += pheader.data[1];
+            sum += pheader.data[2];
 
-                       return (fold32(fold64(sum)));
-                   });
+            return (fold32(fold64(sum)));
+        });
 }
 
 uint32_t checksum_data_aligned(const uint32_t data[], uint16_t length)
 {
-    uint64_t sum = std::accumulate(data, data + length, uint64_t{0},
-                                   [](const auto& left, const auto& right) {
-                                       return (left + right);
-                                   });
+    uint64_t sum = std::accumulate(
+        data,
+        data + length,
+        uint64_t{0},
+        [](const auto& left, const auto& right) { return (left + right); });
     return (fold64(sum));
 }
 
-}
+} // namespace scalar

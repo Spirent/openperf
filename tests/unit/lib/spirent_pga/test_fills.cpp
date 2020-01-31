@@ -7,23 +7,27 @@
 
 TEST_CASE("fill functions", "[spirent-pga]")
 {
-    SECTION("implementations") {
+    SECTION("implementations")
+    {
         auto& functions = pga::functions::instance();
         constexpr uint16_t buffer_length = 128;
         std::array<uint32_t, buffer_length> buffer;
 
         /* Check that all functions generate valid fill data correctly */
-        SECTION("constant") {
+        SECTION("constant")
+        {
             unsigned const_tests = 0;
             for (auto instruction_set : pga::test::instruction_sets()) {
-                auto fill_fn = pga::test::get_function(functions.fill_step_aligned_impl,
-                                                       instruction_set);
+                auto fill_fn = pga::test::get_function(
+                    functions.fill_step_aligned_impl, instruction_set);
 
-                if (!(fill_fn && pga::instruction_set::available(instruction_set))) {
+                if (!(fill_fn
+                      && pga::instruction_set::available(instruction_set))) {
                     continue;
                 }
 
-                INFO("instruction set = " << pga::instruction_set::to_string(instruction_set));
+                INFO("instruction set = "
+                     << pga::instruction_set::to_string(instruction_set));
 
                 const_tests++;
 
@@ -33,32 +37,37 @@ TEST_CASE("fill functions", "[spirent-pga]")
                 fill_fn(buffer.data(), buffer.size(), 0x00, 0x00);
 
                 /* Sum of all 0's is 0 */
-                auto sum = std::accumulate(std::begin(buffer), std::end(buffer), 0UL);
+                auto sum =
+                    std::accumulate(std::begin(buffer), std::end(buffer), 0UL);
                 REQUIRE(sum == 0);
 
                 /* The difference between 0's is 0 */
                 std::array<uint32_t, buffer_length> difference;
-                std::adjacent_difference(std::begin(buffer), std::end(buffer),
+                std::adjacent_difference(std::begin(buffer),
+                                         std::end(buffer),
                                          std::begin(difference));
                 /* As is there sum */
-                auto adj_sum = std::accumulate(std::begin(difference) + 1,
-                                               std::end(difference), 0UL);
+                auto adj_sum = std::accumulate(
+                    std::begin(difference) + 1, std::end(difference), 0UL);
                 REQUIRE(adj_sum == 0);
             }
             REQUIRE(const_tests > 1);
         }
 
-        SECTION("increment") {
+        SECTION("increment")
+        {
             unsigned incr_tests = 0;
             for (auto instruction_set : pga::test::instruction_sets()) {
-                auto fill_fn = pga::test::get_function(functions.fill_step_aligned_impl,
-                                                       instruction_set);
+                auto fill_fn = pga::test::get_function(
+                    functions.fill_step_aligned_impl, instruction_set);
 
-                if (!(fill_fn && pga::instruction_set::available(instruction_set))) {
+                if (!(fill_fn
+                      && pga::instruction_set::available(instruction_set))) {
                     continue;
                 }
 
-                INFO("instruction set = " << pga::instruction_set::to_string(instruction_set));
+                INFO("instruction set = "
+                     << pga::instruction_set::to_string(instruction_set));
 
                 incr_tests++;
 
@@ -75,27 +84,30 @@ TEST_CASE("fill functions", "[spirent-pga]")
 
                 /* The difference between each *byte* should be 2 */
                 std::array<uint8_t, length> difference;
-                std::adjacent_difference(data, data + length,
-                                         std::begin(difference));
+                std::adjacent_difference(
+                    data, data + length, std::begin(difference));
                 /* So the sum is 2 * (length - 1) */
-                auto adj_sum = std::accumulate(std::begin(difference) + 1,
-                                               std::end(difference), 0);
+                auto adj_sum = std::accumulate(
+                    std::begin(difference) + 1, std::end(difference), 0);
                 REQUIRE(adj_sum == (length - 1) * 2);
             }
             REQUIRE(incr_tests > 1);
         }
 
-        SECTION("decrement") {
+        SECTION("decrement")
+        {
             unsigned decr_tests = 0;
             for (auto instruction_set : pga::test::instruction_sets()) {
-                auto fill_fn = pga::test::get_function(functions.fill_step_aligned_impl,
-                                                       instruction_set);
+                auto fill_fn = pga::test::get_function(
+                    functions.fill_step_aligned_impl, instruction_set);
 
-                if (!(fill_fn && pga::instruction_set::available(instruction_set))) {
+                if (!(fill_fn
+                      && pga::instruction_set::available(instruction_set))) {
                     continue;
                 }
 
-                INFO("instruction set = " << pga::instruction_set::to_string(instruction_set));
+                INFO("instruction set = "
+                     << pga::instruction_set::to_string(instruction_set));
 
                 decr_tests++;
 
@@ -112,11 +124,11 @@ TEST_CASE("fill functions", "[spirent-pga]")
 
                 /* The difference between each *byte* should be 254 (e.g. -2) */
                 std::array<uint8_t, length> difference;
-                std::adjacent_difference(data, data + length,
-                                         std::begin(difference));
+                std::adjacent_difference(
+                    data, data + length, std::begin(difference));
                 /* So the sum is 254 * (length - 1) */
-                auto adj_sum = std::accumulate(std::begin(difference) + 1,
-                                               std::end(difference), 0);
+                auto adj_sum = std::accumulate(
+                    std::begin(difference) + 1, std::end(difference), 0);
                 REQUIRE(adj_sum == (length - 1) * 254);
             }
             REQUIRE(decr_tests > 1);

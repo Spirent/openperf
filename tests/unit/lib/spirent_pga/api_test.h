@@ -24,6 +24,6 @@ using instruction_set_list = std::vector<instruction_set::type>;
 
 instruction_set_list instruction_sets();
 instruction_set_list vector_instruction_sets();
-}
+} // namespace pga::test
 
 #endif /* _LIB_SPIRENT_PGA_API_TEST_H_ */

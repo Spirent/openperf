@@ -55,19 +55,21 @@ void pga_log_info(FILE* output);
  * @return
  *   non-zero 16 bit checksum
  */
-uint16_t pga_checksum_udp(const uint8_t payload[], const uint8_t mask[], uint16_t length);
+uint16_t pga_checksum_udp(const uint8_t payload[],
+                          const uint8_t mask[],
+                          uint16_t length);
 
 /**
  * These enums define specific signature bit field values.
  */
 enum pga_signature_prbs {
-    enable,   /**< Payload contains PRBS data */
-    disable   /**< Payload does not contain PRBS data */
+    enable, /**< Payload contains PRBS data */
+    disable /**< Payload does not contain PRBS data */
 };
 
 enum pga_signature_timestamp {
-    first,  /**< Timestamp refers to the first bit of the containing frame */
-    last    /**< Timestamp refers to the last bit of the containing frame */
+    first, /**< Timestamp refers to the first bit of the containing frame */
+    last   /**< Timestamp refers to the last bit of the containing frame */
 };
 
 /**
@@ -107,11 +109,11 @@ int pga_signature_flag(enum pga_signature_prbs prbs,
                        enum pga_signature_timestamp ts);
 
 /**
- * Attempt to decode Spirent signatures.  Signature data is written to the output
- * arrays sequentially.  That is, if there are m payloads, but only n signatures
- * detected, where n < m, then the output arrays will contain data in indexes
- * [0, n).
- * Note that the output arrays should be at least as large as the payloads array.
+ * Attempt to decode Spirent signatures.  Signature data is written to the
+ * output arrays sequentially.  That is, if there are m payloads, but only n
+ * signatures detected, where n < m, then the output arrays will contain data in
+ * indexes [0, n). Note that the output arrays should be at least as large as
+ * the payloads array.
  *
  * @param[in] payloads
  *   array of pointers to suspected signature data
@@ -129,7 +131,8 @@ int pga_signature_flag(enum pga_signature_prbs prbs,
  * @return
  *   The number of decode signatures.
  */
-uint16_t pga_signatures_decode(const uint8_t* payloads[], uint16_t count,
+uint16_t pga_signatures_decode(const uint8_t* payloads[],
+                               uint16_t count,
                                uint32_t stream_ids[],
                                uint32_t sequence_numbers[],
                                uint64_t tx_timestamps[],
@@ -157,7 +160,9 @@ uint16_t pga_signatures_decode(const uint8_t* payloads[], uint16_t count,
 void pga_signatures_encode(uint8_t* destinations[],
                            const uint32_t stream_ids[],
                            const uint32_t sequence_numbers[],
-                           uint64_t timestamp, int flags, uint16_t count);
+                           uint64_t timestamp,
+                           int flags,
+                           uint16_t count);
 
 /**
  * Write constant octets to payloads
@@ -171,7 +176,10 @@ void pga_signatures_encode(uint8_t* destinations[],
  * @param[in] base
  *   the value to write to payloads
  */
-void pga_fill_const(uint8_t* payloads[], uint16_t lengths[], uint16_t count, uint8_t base);
+void pga_fill_const(uint8_t* payloads[],
+                    uint16_t lengths[],
+                    uint16_t count,
+                    uint8_t base);
 
 /**
  * Write decrementing octets to payloads.  Each subsequent octet written to
@@ -184,9 +192,13 @@ void pga_fill_const(uint8_t* payloads[], uint16_t lengths[], uint16_t count, uin
  * @param[in] count
  *   the number of payloads
  * @param[in] base
- *   the initial value to write to each payload, e.g. the value of payloads[i][0]
+ *   the initial value to write to each payload, e.g. the value of
+ *   payloads[i][0]
  */
-void  pga_fill_decr(uint8_t* payloads[], uint16_t lengths[], uint16_t count, uint8_t base);
+void pga_fill_decr(uint8_t* payloads[],
+                   uint16_t lengths[],
+                   uint16_t count,
+                   uint8_t base);
 
 /**
  * Write incrementing octets to paylods.  Each subsequent octet written to
@@ -199,13 +211,18 @@ void  pga_fill_decr(uint8_t* payloads[], uint16_t lengths[], uint16_t count, uin
  * @param[in] count
  *   the number of payloads
  * @param[in] base
- *   the initial value to write to each payload, e.g. the value of payloads[i][0]
+ *   the initial value to write to each payload, e.g. the value of
+ *   payloads[i][0]
  */
-void  pga_fill_incr(uint8_t* payloads[], uint16_t lengths[], uint16_t count, uint8_t base);
+void pga_fill_incr(uint8_t* payloads[],
+                   uint16_t lengths[],
+                   uint16_t count,
+                   uint8_t base);
 
 /**
- * Write PRBS data to payloads.  The PRBS sequence will continue across payloads.
- * The returned value may be used continue the sequence to a new set of payloads.
+ * Write PRBS data to payloads.  The PRBS sequence will continue across
+ * payloads. The returned value may be used continue the sequence to a new set
+ * of payloads.
  *
  * @param[in] payloads
  *   array of pointers to write fill data to
@@ -219,7 +236,10 @@ void  pga_fill_incr(uint8_t* payloads[], uint16_t lengths[], uint16_t count, uin
  * @return
  *   the seed value for the next 4 octets of data
  */
-uint32_t pga_fill_prbs(uint8_t* payloads[], uint16_t lengths[], uint16_t count, uint32_t seed);
+uint32_t pga_fill_prbs(uint8_t* payloads[],
+                       uint16_t lengths[],
+                       uint16_t count,
+                       uint32_t seed);
 
 /**
  * Verify PRBS data pointed to by payloads.
@@ -237,7 +257,9 @@ uint32_t pga_fill_prbs(uint8_t* payloads[], uint16_t lengths[], uint16_t count, 
  *   - true: bit errors detected; see bit_errors array for details
  *   - false: no bit errors detected
  */
-bool pga_verify_prbs(uint8_t* payloads[], uint16_t lengths[], uint16_t count,
+bool pga_verify_prbs(uint8_t* payloads[],
+                     uint16_t lengths[],
+                     uint16_t count,
                      uint32_t bit_errors[]);
 
 /**
@@ -251,7 +273,8 @@ bool pga_verify_prbs(uint8_t* payloads[], uint16_t lengths[], uint16_t count,
  *   output array of checksums; checksum[i] contains the checksum of the i'th
  *   header
  */
-void pga_checksum_ipv4_headers(const uint8_t* ipv4_headers[], uint16_t count,
+void pga_checksum_ipv4_headers(const uint8_t* ipv4_headers[],
+                               uint16_t count,
                                uint32_t checksums[]);
 
 /**
@@ -266,7 +289,8 @@ void pga_checksum_ipv4_headers(const uint8_t* ipv4_headers[], uint16_t count,
  *   output array of checksums; checksum[i] contains the checksum for the i'th
  *   header/payload
  */
-void pga_checksum_ipv4_tcpudp(const uint8_t* ipv4_headers[], uint16_t count,
+void pga_checksum_ipv4_tcpudp(const uint8_t* ipv4_headers[],
+                              uint16_t count,
                               uint32_t checksums[]);
 
 #ifdef __cplusplus

@@ -46,32 +46,34 @@ constexpr bool avx512skx_enabled = true;
 constexpr bool avx512skx_enabled = false;
 #endif
 
-enum class type { NONE = 0,
-                  SCALAR,
-                  AUTO,
-                  SSE2,
-                  SSE4,
-                  AVX,
-                  AVX2,
-                  AVX512SKX,
-                  MAX };
+enum class type {
+    NONE = 0,
+    SCALAR,
+    AUTO,
+    SSE2,
+    SSE4,
+    AVX,
+    AVX2,
+    AVX512SKX,
+    MAX
+};
 
 template <typename Key, typename Value, typename... Pairs>
 constexpr auto associative_array(Pairs&&... pairs)
     -> std::array<std::pair<Key, Value>, sizeof...(pairs)>
 {
-    return {{ std::forward<Pairs>(pairs)... }};
+    return {{std::forward<Pairs>(pairs)...}};
 }
 
 constexpr std::string_view to_string(type t)
 {
     constexpr auto type_names = associative_array<type, std::string_view>(
-        std::pair(type::SCALAR,    "scalar"),
-        std::pair(type::AUTO,      "ISPC automatic"),
-        std::pair(type::SSE2,      "SSE2"),
-        std::pair(type::SSE4,      "SSE4"),
-        std::pair(type::AVX,       "AVX"),
-        std::pair(type::AVX2,      "AVX2"),
+        std::pair(type::SCALAR, "scalar"),
+        std::pair(type::AUTO, "ISPC automatic"),
+        std::pair(type::SSE2, "SSE2"),
+        std::pair(type::SSE4, "SSE4"),
+        std::pair(type::AVX, "AVX"),
+        std::pair(type::AVX2, "AVX2"),
         std::pair(type::AVX512SKX, "AVX512"));
 
     auto cursor = std::begin(type_names), end = std::end(type_names);
@@ -86,12 +88,12 @@ constexpr std::string_view to_string(type t)
 constexpr bool enabled(type t)
 {
     constexpr auto sets_enabled = associative_array<type, bool>(
-        std::pair(type::SCALAR,    scalar_enabled),
-        std::pair(type::AUTO,      automatic_enabled),
-        std::pair(type::SSE2,      sse2_enabled),
-        std::pair(type::SSE4,      sse4_enabled),
-        std::pair(type::AVX,       avx_enabled),
-        std::pair(type::AVX2,      avx2_enabled),
+        std::pair(type::SCALAR, scalar_enabled),
+        std::pair(type::AUTO, automatic_enabled),
+        std::pair(type::SSE2, sse2_enabled),
+        std::pair(type::SSE4, sse4_enabled),
+        std::pair(type::AVX, avx_enabled),
+        std::pair(type::AVX2, avx2_enabled),
         std::pair(type::AVX512SKX, avx512skx_enabled));
 
     auto cursor = std::begin(sets_enabled), end = std::end(sets_enabled);
@@ -104,6 +106,6 @@ constexpr bool enabled(type t)
 
 bool available(type t);
 
-}
+} // namespace pga::instruction_set
 
 #endif /* _LIB_SPIRENT_PGA_INSTRUCTION_SET_H_ */
