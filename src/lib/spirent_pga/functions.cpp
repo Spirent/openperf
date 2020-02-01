@@ -4,10 +4,11 @@
 
 namespace pga {
 
-constexpr uint16_t nb_ipv4_headers = 32;
+constexpr uint16_t nb_items = 32;
+constexpr uint16_t nb_ipv4_headers = nb_items;
 constexpr uint16_t ipv4_header_length = 20; /* octets */
 
-constexpr uint16_t nb_signatures = 32;
+constexpr uint16_t nb_signatures = nb_items;
 constexpr uint16_t signature_length = 20;    /* octets */
 constexpr uint16_t fill_buffer_length = 128; /* quadlets */
 
@@ -127,6 +128,31 @@ void initialize_verify_prbs(function_wrapper<verify_prbs_aligned_fn>& wrapper)
     wrapper.init(buffer.data(), buffer.size(), ~buffer[0]);
 }
 
+void initialize_unpack_and_sum_indexicals(
+    function_wrapper<unpack_and_sum_indexicals_fn>& wrapper)
+{
+    std::array<uint32_t, nb_items> fields;
+    std::fill_n(fields.data(), fields.size(), 0x33333333);
+
+    std::array<uint32_t, 3> masks = {0xf, 0xf0, 0x300};
+
+    std::array<uint64_t, 16> counter_a;
+    std::array<uint64_t, 16> counter_b;
+    std::array<uint64_t, 16> counter_c;
+    std::fill_n(counter_a.data(), counter_a.size(), 0);
+    std::fill_n(counter_b.data(), counter_b.size(), 0);
+    std::fill_n(counter_c.data(), counter_c.size(), 0);
+
+    std::array<uint64_t*, 3> counters = {
+        counter_a.data(), counter_b.data(), counter_c.data()};
+
+    wrapper.init(fields.data(),
+                 fields.size(),
+                 masks.data(),
+                 masks.size(),
+                 counters.data());
+}
+
 functions::functions()
 {
     initialize_checksum_ipv4_headers(checksum_ipv4_headers_impl);
@@ -137,6 +163,7 @@ functions::functions()
     initialize_fill_step(fill_step_aligned_impl);
     initialize_fill_prbs(fill_prbs_aligned_impl);
     initialize_verify_prbs(verify_prbs_aligned_impl);
+    initialize_unpack_and_sum_indexicals(unpack_and_sum_indexicals_impl);
 }
 
 } // namespace pga

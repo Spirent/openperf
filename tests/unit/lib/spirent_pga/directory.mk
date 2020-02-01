@@ -7,7 +7,8 @@ TEST_SOURCES += \
 	lib/spirent_pga/test_init.cpp \
 	lib/spirent_pga/test_fills.cpp \
 	lib/spirent_pga/test_prbs.cpp \
-	lib/spirent_pga/test_signatures.cpp
+	lib/spirent_pga/test_signatures.cpp \
+	lib/spirent_pga/test_unpack_and_sum.cpp
 
 ifeq ($(ARCH),x86_64)
 	TEST_SOURCES += lib/spirent_pga/api_test_x86.cpp

@@ -5,4 +5,5 @@ PGA_SOURCES += \
 	scalar/encode_signatures.cpp \
 	scalar/decode_signatures.cpp \
 	scalar/fill_step.cpp \
-	scalar/prbs.cpp
+	scalar/prbs.cpp \
+	scalar/unpack_and_sum.cpp
