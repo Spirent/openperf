@@ -74,6 +74,16 @@ using fill_prbs_aligned_fn = uint32_t (*)(uint32_t[], uint16_t, uint32_t);
 ISPC_FUNCTION_WRAPPER_INIT(
     uint32_t, fill_prbs_aligned, uint32_t[], uint16_t, uint32_t);
 
+using unpack_and_sum_indexicals_fn = void (*)(
+    const uint32_t[], uint16_t, const uint32_t[], uint16_t, uint64_t*[]);
+ISPC_FUNCTION_WRAPPER_INIT(void,
+                           unpack_and_sum_indexicals,
+                           const uint32_t[],
+                           uint16_t,
+                           const uint32_t[],
+                           uint16_t,
+                           uint64_t*[]);
+
 /*
  * Unfortunately, ispc doesn't properly return structs, so this 64 bit value is
  * composed of both the next expected payload value and the bit error count in
@@ -129,6 +139,9 @@ struct functions : singleton<functions>
 
     function_wrapper<verify_prbs_aligned_fn> verify_prbs_aligned_impl = {
         "PRBS verification", nullptr};
+
+    function_wrapper<unpack_and_sum_indexicals_fn>
+        unpack_and_sum_indexicals_impl = {"unpack and sum indexicals", nullptr};
 };
 
 } // namespace pga

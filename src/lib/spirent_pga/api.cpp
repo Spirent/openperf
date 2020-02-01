@@ -70,6 +70,11 @@ void pga_log_info(FILE* output)
         functions.verify_prbs_aligned_impl.name,
         pga::instruction_set::to_string(
             pga::get_instruction_set(functions.verify_prbs_aligned_impl)));
+    pga_log_implementation_info(
+        output,
+        functions.unpack_and_sum_indexicals_impl.name,
+        pga::instruction_set::to_string(pga::get_instruction_set(
+            functions.unpack_and_sum_indexicals_impl)));
 }
 
 int pga_signature_flag(enum pga_signature_prbs prbs,
@@ -183,5 +188,16 @@ void pga_checksum_ipv4_tcpudp(const uint8_t* ipv4_headers[],
                               uint32_t checksums[])
 {
     pga::checksum::ipv4_tcpudp(ipv4_headers, count, checksums);
+}
+
+void pga_unpack_and_sum_indexicals(const uint32_t indexicals[],
+                                   uint16_t nb_indexicals,
+                                   const uint32_t masks[],
+                                   uint16_t nb_masks,
+                                   uint64_t* counters[])
+{
+    auto& functions = pga::functions::instance();
+    functions.unpack_and_sum_indexicals_impl(
+        indexicals, nb_indexicals, masks, nb_masks, counters);
 }
 }
