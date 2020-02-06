@@ -99,6 +99,19 @@ enum pga_signature_timestamp pga_timestamp_flag(int flags)
                              : pga_signature_timestamp::first);
 }
 
+enum pga_signature_status pga_status_flag(int flags)
+{
+    return (flags & (1 << 2) ? pga_signature_status::valid
+                             : pga_signature_status::invalid);
+}
+
+uint16_t pga_signatures_crc_filter(const uint8_t* payloads[],
+                                   uint16_t count,
+                                   int crc_matches[])
+{
+    return (pga::signature::crc_filter(payloads, count, crc_matches));
+}
+
 uint16_t pga_signatures_decode(const uint8_t* payloads[],
                                uint16_t count,
                                uint32_t stream_ids[],

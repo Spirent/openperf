@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <cassert>
+#include <numeric>
 
 #include "crc.h"
 #include "spirent_pga/functions.h"
@@ -37,6 +38,19 @@ static uint16_t calculate_crc16(const uint8_t data[], uint16_t length)
               >> 16));
 }
 
+uint16_t
+crc_filter(const uint8_t* payloads[], uint16_t count, int crc_matches[])
+{
+    std::transform(
+        payloads, payloads + count, crc_matches, [](const auto& payload) {
+            auto signature =
+                reinterpret_cast<const spirent_signature*>(payload);
+            return (signature->crc == calculate_crc16(signature->data, 16));
+        });
+
+    return (std::accumulate(crc_matches, crc_matches + count, 0));
+}
+
 uint16_t decode(const uint8_t* payloads[],
                 uint16_t count,
                 uint32_t stream_ids[],
@@ -45,7 +59,6 @@ uint16_t decode(const uint8_t* payloads[],
                 int flags[])
 {
     static constexpr uint16_t decode_loop_count = 32;
-    std::array<const uint8_t*, decode_loop_count> signatures;
     std::array<uint32_t, decode_loop_count> timestamp_lo;
     std::array<uint32_t, decode_loop_count> timestamp_hi;
 
@@ -57,35 +70,20 @@ uint16_t decode(const uint8_t* payloads[],
 
     for (uint16_t i = 0; i < nb_loops; i++) {
         auto end = begin + distribute(count, nb_loops, i);
-        auto copied = 0;
 
-        /* Step 1: Figure out which payloads have valid signature CRCs */
-        std::copy_if(
-            payloads + begin,
-            payloads + end,
-            signatures.data(),
-            [&](const auto& payload) {
-                auto signature =
-                    reinterpret_cast<const spirent_signature*>(payload);
-                auto match =
-                    (signature->crc == calculate_crc16(signature->data, 16));
-                copied += match;
-                return (match);
-            });
-
-        /* Step 2: Hand off all matches to our actual analyzer function */
+        /* Hand the payloads off to our decode function */
         auto loop_signatures =
-            functions.decode_signatures_impl(signatures.data(),
-                                             copied,
-                                             stream_ids + nb_signatures,
-                                             sequence_numbers + nb_signatures,
+            functions.decode_signatures_impl(payloads + begin,
+                                             end - begin,
+                                             stream_ids + begin,
+                                             sequence_numbers + begin,
                                              timestamp_lo.data(),
                                              timestamp_hi.data(),
-                                             flags + nb_signatures);
+                                             flags + begin);
 
-        /* Step 3: Merge hi/lo timestamp data together */
+        /* Then merge hi/lo timestamp data together */
         std::transform(timestamp_hi.data(),
-                       timestamp_hi.data() + loop_signatures,
+                       timestamp_hi.data() + end - begin,
                        timestamp_lo.data(),
                        timestamps + nb_signatures,
                        [](auto& hi, auto& lo) {

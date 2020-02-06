@@ -72,6 +72,11 @@ enum pga_signature_timestamp {
     last   /**< Timestamp refers to the last bit of the containing frame */
 };
 
+enum pga_signature_status {
+    invalid, /**< signature data is invalid */
+    valid,   /**< signature data is valid */
+};
+
 /**
  * Retrieve the signature PRBS value from the specified flag
  *
@@ -95,6 +100,17 @@ enum pga_signature_prbs pga_prbs_flag(int flag);
 enum pga_signature_timestamp pga_timestamp_flag(int flag);
 
 /**
+ * Retrieve the signature status value from the specified flag
+ *
+ * @param[in] flag
+ *   signature flag returned by decode function
+ *
+ * @return
+ *   status value of flag
+ */
+enum pga_signature_status pga_status_flag(int flag);
+
+/**
  * Generate a signature flag value from specified PRBS and timestamp settings.
  *
  * @param[in] prbs
@@ -103,17 +119,35 @@ enum pga_signature_timestamp pga_timestamp_flag(int flag);
  *   signature timestamp setting
  *
  * @return
- *  signature flag value as used by the encode/decode functions
+ *  signature flag value as used by the encode functions
  */
 int pga_signature_flag(enum pga_signature_prbs prbs,
                        enum pga_signature_timestamp ts);
 
 /**
- * Attempt to decode Spirent signatures.  Signature data is written to the
- * output arrays sequentially.  That is, if there are m payloads, but only n
- * signatures detected, where n < m, then the output arrays will contain data in
- * indexes [0, n). Note that the output arrays should be at least as large as
- * the payloads array.
+ * Filter payload data by comparing the payload with the expected Spirent
+ * signature CRC.  The result of the comparison is written to the crc_matches
+ * array, with a non-zero value indicating a match.
+ *
+ * @param[in] payloads
+ *   array of pointers to suspected signature data
+ * @param[in] count
+ *   the length of the payloads array
+ * @param[out] crc_matches
+ *   indicates whether the associated payload contains a match or not
+ *
+ * @return
+ *   the number of payloads with CRC matches
+ */
+uint16_t pga_signatures_crc_filter(const uint8_t* payloads[],
+                                   uint16_t count,
+                                   int crc_matches[]);
+
+/**
+ * Attempt to decode Spirent signatures.  Data for the i'th payload value is
+ * written to the i'th index of the output arrays.  Consult flags[i] to
+ * determine if the i'th payload contained valid signature data before using
+ * other associated output values.
  *
  * @param[in] payloads
  *   array of pointers to suspected signature data
