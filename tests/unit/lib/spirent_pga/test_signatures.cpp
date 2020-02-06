@@ -171,11 +171,13 @@ TEST_CASE("signature functions", "[spirent-pga]")
                                        return (out == in);
                                    }));
 
-                /* All flag values should be the same for this test */
-                REQUIRE(
-                    std::all_of(std::begin(out_flags),
-                                std::end(out_flags),
-                                [&](const auto& x) { return (x == flags); }));
+                /* All flag values should be valid */
+                REQUIRE(std::all_of(std::begin(out_flags),
+                                    std::end(out_flags),
+                                    [&](const auto& x) {
+                                        return (pga_status_flag(x)
+                                                == pga_signature_status::valid);
+                                    }));
             }
             REQUIRE(decode_tests > 1);
         }

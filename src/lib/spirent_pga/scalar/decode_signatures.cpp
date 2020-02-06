@@ -2,6 +2,8 @@
 
 namespace scalar {
 
+static constexpr int is_valid = (1 << 2);
+
 uint16_t decode_signatures(const uint8_t* const payloads[],
                            uint16_t count,
                            uint32_t stream_ids[],
@@ -26,20 +28,25 @@ uint16_t decode_signatures(const uint8_t* const payloads[],
 
         /* Verify that the scramble_key and byte 10 are complements */
         uint8_t byte10 = (signature[2] >> 8) & 0xff;
-        if (scramble_key != byte10) continue;
+        if (scramble_key != byte10) {
+            flags[i] = 0;
+            continue;
+        }
 
         /* Perform enhanced detection check */
         uint16_t edm1 = ~(signature[1] >> 8) & 0xffff;
         uint16_t edm2 = (signature[1] << 8 | signature[2] >> 24) & 0xffff;
-        if (edm1 != edm2) continue;
+        if (edm1 != edm2) {
+            flags[i] = 0;
+            continue;
+        }
 
         /* Valid signature found; copy data out */
-        stream_ids[nb_sigs] = signature[0] << 8 | signature[1] >> 24;
-        sequence_numbers[nb_sigs] = signature[1] << 24 | signature[2] >> 8;
-        timestamps_lo[nb_sigs] = signature[2] << 24 | signature[3] >> 8;
-        timestamps_hi[nb_sigs] = (signature[3] >> 2) & 0x3f;
-        flags[nb_sigs] = signature[3] & 0x3;
-
+        stream_ids[i] = signature[0] << 8 | signature[1] >> 24;
+        sequence_numbers[i] = signature[1] << 24 | signature[2] >> 8;
+        timestamps_lo[i] = signature[2] << 24 | signature[3] >> 8;
+        timestamps_hi[i] = (signature[3] >> 2) & 0x3f;
+        flags[i] = is_valid | (signature[3] & 0x3);
         nb_sigs++;
     }
 
