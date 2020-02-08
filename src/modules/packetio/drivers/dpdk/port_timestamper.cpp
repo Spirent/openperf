@@ -51,6 +51,7 @@ static uint16_t timestamp_packets(uint16_t port_id,
     std::for_each(std::make_reverse_iterator(packets + nb_packets),
                   std::make_reverse_iterator(packets),
                   [&](auto& m) {
+                      m->ol_flags |= PKT_RX_TIMESTAMP;
                       m->timestamp = (now - offset).count();
                       offset += ns_per_quanta
                                 * (rte_pktmbuf_pkt_len(m) + ethernet_overhead)
@@ -120,40 +121,13 @@ void callback_timestamper::disable()
         });
 }
 
-null_timestamper::null_timestamper(uint16_t port_id)
-    : m_port(port_id)
-{}
-
-uint16_t null_timestamper::port_id() const { return (m_port); }
-
-void null_timestamper::enable() {}
-void null_timestamper::disable() {}
-
-static timestamper::timestamper_strategy make_timestamper(uint16_t port_id)
+static timestamper::variant_type make_timestamper(uint16_t port_id)
 {
     return (callback_timestamper(port_id));
 }
 
 timestamper::timestamper(uint16_t port_id)
-    : m_timestamper(make_timestamper(port_id))
+    : feature(make_timestamper(port_id))
 {}
-
-uint16_t timestamper::port_id() const
-{
-    auto id_visitor = [](auto& stamper) { return stamper.port_id(); };
-    return (std::visit(id_visitor, m_timestamper));
-}
-
-void timestamper::enable()
-{
-    auto enable_visitor = [](auto& stamper) { return stamper.enable(); };
-    std::visit(enable_visitor, m_timestamper);
-}
-
-void timestamper::disable()
-{
-    auto disable_visitor = [](auto& stamper) { return stamper.disable(); };
-    std::visit(disable_visitor, m_timestamper);
-}
 
 } // namespace openperf::packetio::dpdk::port

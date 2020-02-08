@@ -5,9 +5,17 @@
 #include <memory>
 #include <string>
 
+#include "utils/enum_flags.hpp"
+
 namespace openperf::packetio::packets {
 
 struct packet_buffer;
+
+enum class sink_feature_flags {
+    none = 0,
+    rx_timestamp = (1 << 0),
+    spirent_signature_decode = (1 << 1),
+};
 
 class generic_sink
 {
@@ -22,6 +30,11 @@ public:
     uint16_t push(packet_buffer* const packets[], uint16_t length) const
     {
         return (m_self->push(packets, length));
+    }
+
+    bool uses_feature(enum sink_feature_flags flags) const
+    {
+        return (m_self->uses_feature(flags));
     }
 
     bool operator==(const generic_sink& other) const
@@ -39,6 +52,7 @@ private:
     {
         virtual ~sink_concept() = default;
         virtual std::string id() const = 0;
+        virtual bool uses_feature(enum sink_feature_flags) const = 0;
         virtual uint16_t push(packet_buffer* const packets[],
                               uint16_t length) = 0;
         virtual std::any get_pointer() noexcept = 0;
@@ -51,6 +65,11 @@ private:
         {}
 
         std::string id() const override { return (m_sink.id()); }
+
+        bool uses_feature(enum sink_feature_flags flags) const override
+        {
+            return (m_sink.uses_feature(flags));
+        }
 
         uint16_t push(packet_buffer* const packets[], uint16_t length) override
         {
@@ -69,5 +88,7 @@ private:
 };
 
 } // namespace openperf::packetio::packets
+
+declare_enum_flags(openperf::packetio::packets::sink_feature_flags);
 
 #endif /* _OP_PACKETIO_GENERIC_SINK_HPP_ */

@@ -1,4 +1,4 @@
-PIO_DEPENDS += dpdk timesync
+PIO_DEPENDS += dpdk timesync spirent_pga
 
 PIO_DRIVER_SOURCES += \
 	arg_parser.cpp \
@@ -7,9 +7,14 @@ PIO_DRIVER_SOURCES += \
 	eal.cpp \
 	flow_filter.cpp \
 	mac_filter.cpp \
+	mbuf_signature.cpp \
 	port_filter.cpp \
+	port_signature_decoder.cpp \
 	port_timestamper.cpp \
 	queue_utils.cpp \
 	topology_utils.cpp \
 	model/physical_port.cpp \
 	model/port_info.cpp
+
+# Needed to use the "experimental" API for DPDK's dynamic mbufs
+$(PIO_OBJ_DIR)/drivers/dpdk/mbuf_signature.o: OP_CPPFLAGS += -Wno-deprecated-declarations

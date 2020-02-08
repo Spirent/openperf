@@ -241,6 +241,15 @@ worker_controller::worker_controller(void* context,
         std::back_inserter(m_filters),
         [](auto& info) { return (std::make_unique<port::filter>(info.id())); });
 
+    /* Setup up signature decoders */
+    std::transform(
+        std::begin(port_info),
+        std::end(port_info),
+        std::back_inserter(m_sigdecoders),
+        [](auto& info) {
+            return (std::make_unique<port::signature_decoder>(info.id()));
+        });
+
     /* Setup up timestampers */
     std::transform(std::begin(port_info),
                    std::end(port_info),
@@ -306,6 +315,7 @@ worker_controller::worker_controller(worker_controller&& other)
     , m_tx_loads(std::move(other.m_tx_loads))
     , m_tx_workers(std::move(other.m_tx_workers))
     , m_filters(std::move(other.m_filters))
+    , m_sigdecoders(std::move(other.m_sigdecoders))
     , m_timestampers(std::move(other.m_timestampers))
 {}
 
@@ -323,6 +333,7 @@ worker_controller& worker_controller::operator=(worker_controller&& other)
         m_tx_loads = std::move(other.m_tx_loads);
         m_tx_workers = std::move(other.m_tx_workers);
         m_filters = std::move(other.m_filters);
+        m_sigdecoders = std::move(other.m_sigdecoders);
         m_timestampers = std::move(other.m_timestampers);
     }
     return (*this);
@@ -509,6 +520,44 @@ bool contains_match(const Vector& vector, const Item& match)
     }));
 }
 
+template <typename ForwardingTable, typename FeatureVector>
+void maybe_toggle_sink_feature(const ForwardingTable& fib,
+                               size_t port_idx,
+                               FeatureVector& features,
+                               packets::sink_feature_flags flags)
+{
+    const auto& sinks = fib->get_sinks(port_idx);
+    if (std::any_of(std::begin(sinks), std::end(sinks), [&](const auto& sink) {
+            return (sink.uses_feature(flags));
+        })) {
+        get_unique_port_object(features, port_idx).enable();
+    } else {
+        get_unique_port_object(features, port_idx).disable();
+    }
+}
+
+void worker_controller::maybe_update_sink_features(size_t port_idx)
+{
+    /* Disable the port filter if we have any attached sinks */
+    if (m_fib->get_sinks(port_idx).empty()) {
+        get_unique_port_object(m_filters, port_idx).enable();
+    } else {
+        get_unique_port_object(m_filters, port_idx).disable();
+    }
+
+    /* Toggle features based on attached sink requirements */
+    maybe_toggle_sink_feature(
+        m_fib,
+        port_idx,
+        m_sigdecoders,
+        packets::sink_feature_flags::spirent_signature_decode);
+
+    maybe_toggle_sink_feature(m_fib,
+                              port_idx,
+                              m_timestampers,
+                              packets::sink_feature_flags::rx_timestamp);
+}
+
 tl::expected<void, int> worker_controller::add_sink(std::string_view src_id,
                                                     packets::generic_sink sink)
 {
@@ -530,15 +579,7 @@ tl::expected<void, int> worker_controller::add_sink(std::string_view src_id,
     auto to_delete = m_fib->insert_sink(*port_idx, std::move(sink));
     m_recycler->writer_add_gc_callback([to_delete]() { delete to_delete; });
 
-    /*
-     * If we just added the first analyzer to the port.  Disable port filtering
-     * so that the sink can receive all incoming packets and enable
-     * time-stamping so that it can see when they arrived.
-     */
-    if (m_fib->get_sinks(*port_idx).size() == 1) {
-        get_unique_port_object(m_filters, *port_idx).disable();
-        get_unique_port_object(m_timestampers, *port_idx).enable();
-    }
+    maybe_update_sink_features(*port_idx);
 
     return {};
 }
@@ -560,14 +601,7 @@ void worker_controller::del_sink(std::string_view src_id,
     auto to_delete = m_fib->remove_sink(*port_idx, std::move(sink));
     m_recycler->writer_add_gc_callback([to_delete]() { delete to_delete; });
 
-    /*
-     * If we just removed the last sink on the port, re-enable the port
-     * filter and disable time-stamping.
-     */
-    if (m_fib->get_sinks(*port_idx).empty()) {
-        get_unique_port_object(m_filters, *port_idx).enable();
-        get_unique_port_object(m_timestampers, *port_idx).disable();
-    }
+    maybe_update_sink_features(*port_idx);
 }
 
 /*
