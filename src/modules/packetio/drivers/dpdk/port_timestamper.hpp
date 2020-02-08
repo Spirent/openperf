@@ -2,7 +2,8 @@
 #define _OP_PACKETIO_DPDK_PORT_TIMESTAMPER_HPP_
 
 #include <map>
-#include <variant>
+
+#include "packetio/drivers/dpdk/port_feature_toggle.hpp"
 
 struct rte_eth_rxtx_callback;
 
@@ -29,35 +30,11 @@ private:
     uint16_t m_port;
 };
 
-class null_timestamper
+struct timestamper
+    : port_feature_toggle<timestamper, callback_timestamper, null_feature>
 {
-public:
-    null_timestamper(uint16_t port_id);
-
-    uint16_t port_id() const;
-
-    void enable();
-    void disable();
-
-private:
-    uint16_t m_port;
-};
-
-class timestamper
-{
-public:
+    variant_type feature;
     timestamper(uint16_t port_id);
-
-    uint16_t port_id() const;
-
-    void enable();
-    void disable();
-
-    using timestamper_strategy =
-        std::variant<callback_timestamper, null_timestamper>;
-
-private:
-    timestamper_strategy m_timestamper;
 };
 
 } // namespace openperf::packetio::dpdk::port

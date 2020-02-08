@@ -11,6 +11,7 @@
 #include "packetio/generic_event_loop.hpp"
 #include "packetio/generic_workers.hpp"
 #include "packetio/drivers/dpdk/port_filter.hpp"
+#include "packetio/drivers/dpdk/port_signature_decoder.hpp"
 #include "packetio/drivers/dpdk/port_timestamper.hpp"
 #include "packetio/workers/dpdk/callback.hpp"
 #include "packetio/workers/dpdk/tx_scheduler.hpp"
@@ -79,9 +80,12 @@ public:
 
     using txsched_ptr = std::unique_ptr<tx_scheduler>;
     using filter_ptr = std::unique_ptr<port::filter>;
+    using sigdecoder_ptr = std::unique_ptr<port::signature_decoder>;
     using timestamper_ptr = std::unique_ptr<port::timestamper>;
 
 private:
+    void maybe_update_sink_features(size_t port_idx);
+
     void* m_context;                              /* 0MQ context */
     driver::generic_driver& m_driver;             /* generic driver reference */
     std::unique_ptr<worker::client> m_workers;    /* worker command client */
@@ -96,6 +100,7 @@ private:
     worker_map m_tx_workers; /* map from (port id, queue id) --> worker id */
 
     std::vector<filter_ptr> m_filters;           /* Port filters */
+    std::vector<sigdecoder_ptr> m_sigdecoders;   /* Port signature decoders */
     std::vector<timestamper_ptr> m_timestampers; /* Port timestampers */
 };
 

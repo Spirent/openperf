@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <cstddef>
+#include <optional>
 
 #include "timesync/chrono.hpp"
 
@@ -15,9 +16,19 @@ uint16_t max_length(const packet_buffer* buffer);
 uint16_t length(const packet_buffer* buffer);
 void length(packet_buffer*, uint16_t length);
 
-timesync::chrono::realtime::time_point timestamp(const packet_buffer* buffer);
+timesync::chrono::realtime::time_point
+rx_timestamp(const packet_buffer* buffer);
 
 uint32_t rss_hash(const packet_buffer* buffer);
+
+uint32_t type(const packet_buffer* buffer);
+
+std::optional<uint32_t> signature_stream_id(const packet_buffer* buffer);
+
+std::optional<uint32_t> signature_sequence_number(const packet_buffer* buffer);
+
+std::optional<timesync::chrono::realtime::time_point>
+signature_tx_timestamp(const packet_buffer* buffer);
 
 void* to_data(packet_buffer* buffer);
 const void* to_data(const packet_buffer* buffer);
