@@ -1,0 +1,726 @@
+parameters:
+  id:
+    name: id
+    in: path
+    description: Unique resource identifier
+    type: string
+    format: string
+    required: true
+
+paths:
+  /interfaces:
+    get:
+      operationId: ListInterfaces
+      tags:
+        - Interfaces
+      summary: List network interfaces
+      description: >
+        The `interfaces` endpoint returns all network interfaces that are
+        available for use as stack entry/exit points.
+      parameters:
+        - name: port_id
+          in: query
+          description: Filter by port id
+          required: false
+          type: string
+        - name: eth_mac_address
+          in: query
+          description: Filter by Ethernet MAC address
+          required: false
+          type: string
+        - name: ipv4_address
+          in: query
+          description: Filter by IPv4 address
+          required: false
+          type: string
+      responses:
+        200:
+          description: Success
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/Interface"
+    post:
+      operationId: CreateInterface
+      tags:
+        - Interfaces
+      summary: Create a network interface
+      description: Create a new network interface.
+      parameters:
+        - name: interface
+          in: body
+          description: New network interface
+          required: true
+          schema:
+            $ref: "#/definitions/Interface"
+      responses:
+        201:
+          description: Success
+          schema:
+            $ref: "#/definitions/Interface"
+
+  /interfaces/{id}:
+    get:
+      operationId: GetInterface
+      tags:
+        - Interfaces
+      summary: Get a network interface
+      description: Returns a network interface, by id.
+      parameters:
+        - $ref: "#/parameters/id"
+      responses:
+        200:
+          description: Success
+          schema:
+            $ref: "#/definitions/Interface"
+    delete:
+      operationId: DeleteInterface
+      tags:
+        - Interfaces
+      summary: Delete a network interface
+      description: Deletes an existing interface. Idempotent.
+      parameters:
+        - $ref: "#/parameters/id"
+      responses:
+        204:
+          description: No Content
+
+  /interfaces/x/bulk-create:
+    post:
+      operationId: BulkCreateInterfaces
+      tags:
+        - Interfaces
+      summary: Bulk create network interfaces
+      description: >
+        Create multiple network interfaces. Requests are processed in an
+        all-or-nothing manner, i.e. a single network interface creation failure
+        causes all network interface creations for this request to fail.
+      parameters:
+        - name: create
+          in: body
+          description: Bulk creation
+          required: true
+          schema:
+            type: object
+            title: BulkCreateInterfacesRequest
+            description: Parameters for the bulk create operation
+            properties:
+              items:
+                type: array
+                description: List of network interfaces
+                items:
+                  $ref: "#/definitions/Interface"
+                minItems: 1
+            required:
+              - items
+      responses:
+        200:
+          description: Success
+          schema:
+            type: object
+            title: BulkCreateInterfacesResponse
+            properties:
+              items:
+                type: array
+                description: List of network interfaces
+                items:
+                  $ref: "#/definitions/Interface"
+                minItems: 1
+            required:
+              - items
+
+  /interfaces/x/bulk-delete:
+    post:
+      operationId: BulkDeleteInterfaces
+      tags:
+        - Interfaces
+      summary: Bulk delete network interfaces
+      description: >
+        Best-effort delete multiple network interfaces. Non-existent interface
+        ids do not cause errors. Idempotent.
+      parameters:
+        - name: delete
+          in: body
+          description: Bulk delete
+          required: true
+          schema:
+            type: object
+            title: BulkDeleteInterfacesRequest
+            description: Parameters for the bulk delete operation
+            properties:
+              ids:
+                type: array
+                description: List of interface identifiers
+                items:
+                  type: string
+                minItems: 1
+            required:
+              - ids
+      responses:
+        204:
+          description: No Content
+
+  /ports:
+    get:
+      operationId: ListPorts
+      tags:
+        - Ports
+      summary: List ports
+      description: >
+        The `ports` endpoint returns all physical ports and port-equivalents
+        that are available for network interfaces.
+      parameters:
+        - name: kind
+          in: query
+          description: Filter by kind
+          required: false
+          type: string
+      responses:
+        200:
+          description: Success
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/Port"
+    post:
+      operationId: CreatePort
+      tags:
+        - Ports
+      summary: Create a port
+      description: Create a new port-equivalent, e.g. a bonded port.
+      parameters:
+        - name: port
+          in: body
+          description: New port
+          required: true
+          schema:
+            $ref: "#/definitions/Port"
+      responses:
+        201:
+          description: Success
+          schema:
+            $ref: "#/definitions/Port"
+
+  /ports/{id}:
+    get:
+      operationId: GetPort
+      tags:
+        - Ports
+      summary: Get a port
+      description: Returns a port, by id.
+      parameters:
+        - $ref: "#/parameters/id"
+      responses:
+        200:
+          description: Success
+          schema:
+            $ref: "#/definitions/Port"
+    put:
+      operationId: UpdatePort
+      tags:
+        - Ports
+      summary: Update a port
+      description: "Updates an existing port's configuration. Idempotent."
+      parameters:
+        - $ref: "#/parameters/id"
+        - name: port
+          in: body
+          description: Updated port
+          required: true
+          schema:
+            $ref: "#/definitions/Port"
+      responses:
+        200:
+          description: Success
+          schema:
+            $ref: "#/definitions/Port"
+    delete:
+      operationId: DeletePort
+      tags:
+        - Ports
+      summary: Delete a port
+      description: Deletes an existing port equivalent, e.g. a bonded port. Idempotent.
+      parameters:
+        - $ref: "#/parameters/id"
+      responses:
+        204:
+          description: No Content
+
+  /stacks:
+    get:
+      operationId: ListStacks
+      tags:
+        - Stacks
+      summary: List stacks
+      description: The `stacks` endpoint returns all TCP/IP stacks.
+      responses:
+        200:
+          description: Success
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/Stack"
+
+  /stacks/{id}:
+    get:
+      operationId: GetStack
+      tags:
+        - Stacks
+      summary: Get a stack
+      description: Returns a stack, by id.
+      parameters:
+        - $ref: "#/parameters/id"
+      responses:
+        200:
+          description: Success
+          schema:
+            $ref: "#/definitions/Stack"
+
+definitions:
+  Interface:
+    type: object
+    description: Network interface
+    properties:
+      id:
+        type: string
+        description: Unique interface identifier
+      port_id:
+        type: string
+        description: Port identifier
+      config:
+        type: object
+        description: Interface configuration
+        properties:
+          protocols:
+            type: array
+            description: >
+              A stack of protocol configurations, beginning with the outermost
+              protocol (i.e. closest to the physical port)
+            items:
+              $ref: "#/definitions/InterfaceProtocolConfig"
+            minItems: 1
+        required:
+          - protocols
+      stats:
+        $ref: "#/definitions/InterfaceStats"
+    required:
+      - id
+      - port_id
+      - config
+      - stats
+
+  InterfaceProtocolConfig:
+    type: object
+    description: Network interface protocol configuration
+    properties:
+      eth:
+        type: object
+        description: Ethernet protocol configuration
+        properties:
+          mac_address:
+            type: string
+            description: MAC address
+        required:
+          - mac_address
+      ipv4:
+        type: object
+        description: IPv4 protocol configuration
+        properties:
+          method:
+            type: string
+            description: Configuration method
+            enum:
+              - static
+              - dhcp
+          static:
+            type: object
+            description: Static configuration parameters
+            properties:
+              address:
+                type: string
+                description: IP address
+              prefix_length:
+                type: integer
+                description: Prefix length
+                format: int32
+              gateway:
+                type: string
+                description: Default gateway
+            required:
+              - address
+              - prefix_length
+          dhcp:
+            type: object
+            description: DHCP configuration parameters
+            properties:
+              hostname:
+                type: string
+                description: Hostname to be requested
+              client:
+                type: string
+                description: Client identifier
+        required:
+          - method
+
+  InterfaceStats:
+    type: object
+    description: Per-interface statistics
+    properties:
+      rx_packets:
+        type: integer
+        description: Received packets
+        format: int64
+      tx_packets:
+        type: integer
+        description: Transmitted packets
+        format: int64
+      rx_bytes:
+        type: integer
+        description: Received bytes
+        format: int64
+      tx_bytes:
+        type: integer
+        description: Transmitted bytes
+        format: int64
+      rx_errors:
+        type: integer
+        description: Receive-side errors
+        format: int64
+      tx_errors:
+        type: integer
+        description: Transmit-side errors
+        format: int64
+    required:
+      - rx_packets
+      - tx_packets
+      - rx_bytes
+      - tx_bytes
+      - rx_errors
+      - tx_errors
+
+  Port:
+    type: object
+    description: Physical port or port-equivalent (e.g. bonded ports)
+    properties:
+      id:
+        type: string
+        description: Unique port identifier
+      kind:
+        type: string
+        description: Port kind
+        enum:
+          - dpdk
+          - host
+          - bond
+      config:
+        $ref: "#/definitions/PortConfig"
+      status:
+        $ref: "#/definitions/PortStatus"
+      stats:
+        $ref: "#/definitions/PortStats"
+    required:
+      - id
+      - kind
+      - config
+      - status
+      - stats
+
+  PortConfig:
+    type: object
+    description: Port configuration
+    properties:
+      dpdk:
+        type: object
+        description: DPDK-specific configuration information
+        properties:
+          auto_negotiation:
+            type: boolean
+            description: Enable link auto-negotiation
+          speed:
+            type: integer
+            description: Manually-configured port speed (in Mbps)
+            format: int64
+          duplex:
+            type: string
+            description: Manually-configured port duplex
+            enum:
+              - full
+              - half
+        required:
+          - auto_negotiation
+      #host:
+      bond:
+        type: object
+        description: Bond-specific configuration information
+        properties:
+          mode:
+            type: string
+            description: Port bonding mode
+            enum:
+              - lag_802_3_ad
+          ports:
+            type: array
+            description: Unique identifiers of bonded ports
+            items:
+              type: string
+            minItems: 1
+        required:
+          - mode
+          - ports
+
+  PortStats:
+    type: object
+    description: Port statistics
+    properties:
+      rx_packets:
+        type: integer
+        description: Received packets
+        format: int64
+      tx_packets:
+        type: integer
+        description: Transmitted packets
+        format: int64
+      rx_bytes:
+        type: integer
+        description: Received bytes
+        format: int64
+      tx_bytes:
+        type: integer
+        description: Transmitted bytes
+        format: int64
+      rx_errors:
+        type: integer
+        description: Receive-side errors
+        format: int64
+      tx_errors:
+        type: integer
+        description: Transmit-side errors
+        format: int64
+    required:
+      - rx_packets
+      - tx_packets
+      - rx_bytes
+      - tx_bytes
+      - rx_errors
+      - tx_errors
+
+  PortStatus:
+    type: object
+    description: Port status
+    properties:
+      link:
+        type: string
+        description: Link status
+        enum:
+          - up
+          - down
+          - unknown
+      speed:
+        type: integer
+        description: Port speed (in Mbps)
+        format: int64
+      duplex:
+        type: string
+        description: Port duplex
+        enum:
+          - full
+          - half
+          - unknown
+    required:
+      - link
+      - speed
+      - duplex
+
+  Stack:
+    type: object
+    description: A TCP/IP stack instance
+    properties:
+      id:
+        type: string
+        description: Unique stack identifier
+      stats:
+        $ref: "#/definitions/StackStats"
+    required:
+      - id
+      - stats
+
+  StackElementStats:
+    type: object
+    description: Stack element statistics
+    properties:
+      used:
+        type: integer
+        description: Used (elements)
+        format: int32
+      max:
+        type: integer
+        description: Maximum (elements)
+        format: int32
+      errors:
+        type: integer
+        description: Errors (count)
+        format: int32
+    required:
+      - used
+      - max
+      - errors
+
+  StackMemoryStats:
+    type: object
+    description: Stack memory statistics
+    properties:
+      name:
+        type: string
+        description: Pool name
+      available:
+        type: integer
+        description: Available (bytes free)
+        format: int64
+      used:
+        type: integer
+        description: Used (bytes allocated)
+        format: int64
+      max:
+        type: integer
+        description: Maximum (bytes allocated)
+        format: int64
+      errors:
+        type: integer
+        description: Errors (count)
+        format: int64
+      illegal:
+        type: integer
+        description: Illegal operations (count)
+        format: int64
+    required:
+      - name
+      - available
+      - used
+      - max
+      - errors
+      - illegal
+
+  StackProtocolStats:
+    type: object
+    description: Stack per-protocol statistics
+    properties:
+      tx_packets:
+        type: integer
+        description: Transmitted packets
+        format: int64
+      rx_packets:
+        type: integer
+        description: Received packets
+        format: int64
+      forwarded_packets:
+        type: integer
+        description: Forwarded packets
+        format: int64
+      dropped_packets:
+        type: integer
+        description: Dropped packets
+        format: int64
+      checksum_errors:
+        type: integer
+        description: Checksum errors
+        format: int64
+      length_errors:
+        type: integer
+        description: Invalid length errors
+        format: int64
+      memory_errors:
+        type: integer
+        description: Out of memory errors
+        format: int64
+      routing_errors:
+        type: integer
+        description: Routing errors
+        format: int64
+      protocol_errors:
+        type: integer
+        description: Protocol error
+        format: int64
+      option_errors:
+        type: integer
+        description: Errors in options
+        format: int64
+      misc_errors:
+        type: integer
+        description: Miscellaneous errors
+        format: int64
+      cache_hits:
+        type: integer
+        description: Cache hits
+        format: int64
+    required:
+      - tx_packets
+      - rx_packets
+      - forwarded_packets
+      - dropped_packets
+      - checksum_errors
+      - length_errors
+      - memory_errors
+      - routing_errors
+      - protocol_errors
+      - option_errors
+      - misc_errors
+      - cache_hits
+
+  StackStats:
+    type: object
+    description: Stack statistics
+    properties:
+      arp:
+        $ref: "#/definitions/StackProtocolStats"
+      ipv4:
+        $ref: "#/definitions/StackProtocolStats"
+      ipv4_frag:
+        $ref: "#/definitions/StackProtocolStats"
+      icmpv4:
+        $ref: "#/definitions/StackProtocolStats"
+      igmp:
+        $ref: "#/definitions/StackProtocolStats"
+      nd:
+        $ref: "#/definitions/StackProtocolStats"
+      ipv6:
+        $ref: "#/definitions/StackProtocolStats"
+      ipv6_frag:
+        $ref: "#/definitions/StackProtocolStats"
+      icmpv6:
+        $ref: "#/definitions/StackProtocolStats"
+      mld:
+        $ref: "#/definitions/StackProtocolStats"
+      udp:
+        $ref: "#/definitions/StackProtocolStats"
+      tcp:
+        $ref: "#/definitions/StackProtocolStats"
+      heap:
+        $ref: "#/definitions/StackMemoryStats"
+      pools:
+        type: array
+        items:
+          $ref: "#/definitions/StackMemoryStats"
+      sems:
+        $ref: "#/definitions/StackElementStats"
+      mutexes:
+        $ref: "#/definitions/StackElementStats"
+      mboxes:
+        $ref: "#/definitions/StackElementStats"
+    required:
+      - arp
+      - ipv4
+      - ipv4_frag
+      - icmpv4
+      - igmp
+      - nd
+      - ipv6
+      - ipv6_frag
+      - icmpv6
+      - mld
+      - udp
+      - tcp
+      - heap
+      - pools
+      - sems
+      - mutexes
+      - mboxes
