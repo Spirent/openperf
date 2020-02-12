@@ -178,3 +178,74 @@ definitions:
         readOnly: true
     required:
       - version
+
+  ###
+  # Module model definitions go here
+  # Note: `swagger-codegen` extracts the model objects from the path definitions,
+  # so adding them here isn't strictly necessary.  However, other code generators,
+  # e.g. `go-swagger`, are stricter in their interpretation of the swagger
+  # specification and require all objects to be explicitly defined.
+  ###
+
+  ###
+  # PacketIO definitions
+  ###
+  Interface:
+    $ref: ./modules/packetio.yaml#/definitions/Interface
+
+  InterfaceProtocolConfig:
+    $ref: ./modules/packetio.yaml#/definitions/InterfaceProtocolConfig
+
+  InterfaceStats:
+    $ref: ./modules/packetio.yaml#/definitions/InterfaceStats
+
+  Port:
+    $ref: ./modules/packetio.yaml#/definitions/Port
+
+  PortConfig:
+    $ref: ./modules/packetio.yaml#/definitions/PortConfig
+
+  PortStats:
+    $ref: ./modules/packetio.yaml#/definitions/PortStats
+
+  PortStatus:
+    $ref: ./modules/packetio.yaml#/definitions/PortStatus
+
+  Stack:
+    $ref: ./modules/packetio.yaml#/definitions/Stack
+
+  StackElementStats:
+    $ref: ./modules/packetio.yaml#/definitions/StackElementStats
+
+  StackMemoryStats:
+    $ref: ./modules/packetio.yaml#/definitions/StackMemoryStats
+
+  StackProtocolStats:
+    $ref: ./modules/packetio.yaml#/definitions/StackProtocolStats
+
+  StackStats:
+    $ref: ./modules/packetio.yaml#/definitions/StackStats
+
+  ###
+  # Timesync definitions
+  ###
+  TimeCounter:
+    $ref: ./modules/timesync.yaml#/definitions/TimeCounter
+
+  TimeKeeperState:
+    $ref: ./modules/timesync.yaml#/definitions/TimeKeeperState
+
+  TimeKeeperStats:
+    $ref: ./modules/timesync.yaml#/definitions/TimeKeeperStats
+
+  TimeKeeper:
+    $ref: ./modules/timesync.yaml#/definitions/TimeKeeper
+
+  TimeSourceConfig:
+    $ref: ./modules/timesync.yaml#/definitions/TimeSourceConfig
+
+  TimeSourceStats:
+    $ref: ./modules/timesync.yaml#/definitions/TimeSourceStats
+
+  TimeSource:
+    $ref: ./modules/timesync.yaml#/definitions/TimeSource
