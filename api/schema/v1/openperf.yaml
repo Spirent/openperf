@@ -39,9 +39,7 @@ tags:
   - name: Modules
   - name: Ports
   - name: Stacks
-  - name: TimeCounters
-  - name: TimeKeeper
-  - name: TimeSources
+  - name: TimeSync
 
 basePath: /
 
