@@ -71,8 +71,7 @@ class TimeKeeperState(object):
         if local_frequency_error is not None:
             self.local_frequency_error = local_frequency_error
         self.offset = offset
-        if synced is not None:
-            self.synced = synced
+        self.synced = synced
         if theta is not None:
             self.theta = theta
 

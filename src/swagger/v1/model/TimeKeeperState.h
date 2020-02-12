@@ -85,9 +85,7 @@ public:
     /// </summary>
     bool isSynced() const;
     void setSynced(bool value);
-    bool syncedIsSet() const;
-    void unsetSynced();
-    /// <summary>
+        /// <summary>
     /// The calculated correction to apply to the offset, based on the measured time counter frequency and time source timestamps. 
     /// </summary>
     double getTheta() const;
@@ -107,7 +105,7 @@ protected:
     double m_Offset;
 
     bool m_Synced;
-    bool m_SyncedIsSet;
+
     double m_Theta;
     bool m_ThetaIsSet;
 };
