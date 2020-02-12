@@ -1,3 +1,3 @@
 #!/bin/sh
 
-exec java -jar $(dirname "$0")/swagger-codegen-cli-2.3.1.jar "$@"
+exec java -jar $(dirname "$0")/swagger-codegen-cli-2.4.12.jar "$@"
