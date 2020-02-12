@@ -29,7 +29,6 @@ TimeKeeperState::TimeKeeperState()
     m_Local_frequency_errorIsSet = false;
     m_Offset = 0.0;
     m_Synced = false;
-    m_SyncedIsSet = false;
     m_Theta = 0.0;
     m_ThetaIsSet = false;
     
@@ -65,10 +64,7 @@ nlohmann::json TimeKeeperState::toJson() const
         val["local_frequency_error"] = m_Local_frequency_error;
     }
     val["offset"] = m_Offset;
-    if(m_SyncedIsSet)
-    {
-        val["synced"] = m_Synced;
-    }
+    val["synced"] = m_Synced;
     if(m_ThetaIsSet)
     {
         val["theta"] = m_Theta;
@@ -97,10 +93,7 @@ void TimeKeeperState::fromJson(nlohmann::json& val)
         setLocalFrequencyError(val.at("local_frequency_error"));
     }
     setOffset(val.at("offset"));
-    if(val.find("synced") != val.end())
-    {
-        setSynced(val.at("synced"));
-    }
+    setSynced(val.at("synced"));
     if(val.find("theta") != val.end())
     {
         setTheta(val.at("theta"));
@@ -193,15 +186,7 @@ bool TimeKeeperState::isSynced() const
 void TimeKeeperState::setSynced(bool value)
 {
     m_Synced = value;
-    m_SyncedIsSet = true;
-}
-bool TimeKeeperState::syncedIsSet() const
-{
-    return m_SyncedIsSet;
-}
-void TimeKeeperState::unsetSynced()
-{
-    m_SyncedIsSet = false;
+    
 }
 double TimeKeeperState::getTheta() const
 {

@@ -1033,7 +1033,7 @@ definitions:
         format: double
     required:
       - offset
-      - boolean
+      - synced
 
   TimeKeeperStats:
     type: object
