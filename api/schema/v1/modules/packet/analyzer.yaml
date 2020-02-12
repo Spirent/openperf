@@ -1,0 +1,1018 @@
+paths:
+  /analyzers:
+    get:
+      operationId: ListAnalyzers
+      tags:
+        - Analyzers
+      summary: List packet analyzers
+      description: |
+        The `analyzers` endpoint returns all packet analyzers that are
+        configured to collect and report port and stream statistics.
+      parameters:
+        - name: port_id
+          in: query
+          description: Filter by port id
+          required: false
+          type: string
+        - name: interface_id
+          in: query
+          description: Filter by interface id
+          required: false
+          type: string
+      responses:
+        200:
+          description: Success
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/Analyzer"
+    post:
+      operationId: CreateAnalyzer
+      tags:
+        - Analyzers
+      summary: Create a packet analyzer
+      description: Create a new packet analyzer.
+      parameters:
+        - name: analyzer
+          in: body
+          description: New packet analyzer
+          required: true
+          schema:
+            $ref: "#/definitions/Analyzer"
+      responses:
+        201:
+          description: Created
+          headers:
+            Location:
+              description: URI of created analyzer
+              type: string
+          schema:
+            $ref: "#/definitions/Analyzer"
+    delete:
+      operationId: DeleteAnalyzers
+      tags:
+        - Analyzers
+      summary: Delete all packet analyzers
+      description: |
+        Delete all inactive packet analyzers and their results. Idempotent.
+      responses:
+        204:
+          description: No Content
+
+  /analyzers/{id}:
+    get:
+      operationId: GetAnalyzer
+      tags:
+        - Analyzers
+      summary: Get a packet analyzer
+      description: Return a packet analyzer by id.
+      parameters:
+        - $ref: "#/parameters/id"
+      responses:
+        200:
+          description: Success
+          schema:
+            $ref: "#/definitions/Analyzer"
+    delete:
+      operationId: DeleteAnalyzer
+      tags:
+        - Analyzers
+      summary: Delete a packet analyzer
+      description: |
+        Delete a stopped packet analyzer by id. Also delete all results
+        created by this analyzer. Idempotent.
+      parameters:
+        - $ref: "#/parameters/id"
+      responses:
+        204:
+          description: No Content
+
+  /analyzers/{id}/start:
+    post:
+      operationId: StartAnalyzer
+      tags:
+        - Analyzers
+      summary: Start analyzing and collecting packet statistics.
+      description: |
+        Used to start a non-running analyzer. Creates a new analyzer
+        result on success.
+      parameters:
+        - name: start
+          in: body
+          description: Start analyzer options
+          required: false
+          schema:
+            $ref: "#/definitions/StartAnalyzerRequest"
+      responses:
+        201:
+          description: Created
+          headers:
+            Location:
+              description: URI to created analyzer result object
+              type: string
+          schema:
+            $ref: "#/definitions/AnalyzerResult"
+
+  /analyzers/{id}/stop:
+    post:
+      operationId: StopAnalyzer
+      tags:
+        - Analyzers
+      summary: Stop analyzing and collecting packet statistics
+      description: Use to halt a running analyzer. Idempotent.
+      responses:
+        204:
+          description: No Content
+
+  /analyzers/x/bulk-create:
+    post:
+      operationId: BulkCreateAnalyzers
+      tags:
+        - Analyzers
+      summary: Bulk create packet analyzers
+      description: |
+        Create multiple packet analyzers. Requests are processed in an
+        all-or-nothing manner, i.e. a single analyzer creation failure
+        causes all analyzer creations for this request to fail.
+      parameters:
+        - name: create
+          in: body
+          description: Bulk creation
+          required: true
+          schema:
+            type: object
+            title: BulkCreateAnalyzersRequest
+            description: Parameters for the bulk create operation
+            properties:
+              items:
+                type: array
+                description: List of packet analyzers
+                items:
+                  $ref: "#/definitions/Analyzer"
+                minItems: 1
+            required:
+              - items
+      responses:
+        200:
+          description: Success
+          schema:
+            type: object
+            title: BulkCreateAnalyzersResponse
+            properties:
+              items:
+                type: array
+                description: List of packet analyzers
+                items:
+                  $ref: "#/definitions/Analyzer"
+                minItems: 1
+            required:
+              - items
+
+  /analyzers/x/bulk-delete:
+    post:
+      operationId: BulkDeleteAnalyzers
+      tags:
+        - Analyzers
+      summary: Bulk delete packet analyzers
+      description: |
+        Delete multiple packet analyzers in a best-effort manner. Analyzers
+        can only be deleted when inactive. Active or Non-existant analyzer ids
+        do not cause errors. Idempotent.
+      parameters:
+        - name: delete
+          in: body
+          description: Bulk delete
+          required: true
+          schema:
+            type: object
+            title: BulkDeleteAnalyzersRequest
+            description: Parameters for the bulk delete operation
+            properties:
+              ids:
+                type: array
+                description: List of packet analyzers
+                items:
+                  type: string
+                minItems: 1
+            required:
+              - ids
+      responses:
+        204:
+          description: No Content
+
+  /analyzers/x/bulk-start:
+    post:
+      operationId: BulkStartAnalyzers
+      tags:
+        - Analyzers
+      summary: Bulk start packet analyzers
+      description: Start multiple packet analyzers simultaneously
+      parameters:
+        - name: start
+          in: body
+          description: Bulk start
+          required: true
+          schema:
+            type: object
+            title: BulkStartAnalyzersRequest
+            description: Parameters for the bulk start operation
+            properties:
+              ids:
+                type: array
+                description: List of analyzer identifiers
+                items:
+                  type: string
+                minItems: 1
+              start:
+                $ref: "#/definitions/StartAnalyzerRequest"
+            required:
+              - ids
+      responses:
+        200:
+          description: Success
+          schema:
+            type: object
+            title: BulkStartAnalyzersResponse
+            properties:
+              items:
+                type: array
+                description: List of analyzer results
+                items:
+                  $ref: "#/definitions/AnalyzerResult"
+                minItems: 1
+            required:
+              - items
+
+  /analyzers/x/bulk-stop:
+    post:
+      operationId: BulkStopAnalyzers
+      tags:
+        - Analyzers
+      summary: Bulk stop packet analyzers
+      description: Stop multiple packet analyzers simultaneously
+      parameters:
+        - name: stop
+          in: body
+          description: Bulk stop
+          required: true
+          schema:
+            type: object
+            title: BulkStopAnalyzerRrequest
+            description: Parameters for the bulk stop operation
+            properties:
+              ids:
+                type: array
+                description: List of analyzer identifiers
+                items:
+                  type: string
+                minItems: 1
+            required:
+              - ids
+      responses:
+        204:
+          description: No Content
+
+  /analyzer-results:
+    get:
+      operationId: ListAnalyzerResults
+      tags:
+        - Analyzers
+      summary: List analyzer results
+      description: |
+        The `analyzer-results` endpoint returns all analyzer results created
+        by analyzer instances.
+      parameters:
+        - name: port_id
+          in: query
+          description: Filter by receive port id
+          required: false
+          type: string
+        - name: interface_id
+          in: query
+          description: Filter by receive interface id
+          required: false
+          type: string
+      responses:
+        200:
+          description: Success
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/AnalyzerResult"
+    delete:
+      operationId: DeleteAnalyzerResults
+      tags:
+        - Analyzers
+      summary: Delete all analyzer results
+      description: Delete all inactive packet analyzer results
+      responses:
+        204:
+          description: No Content
+
+  /analyzer-results/{id}:
+    get:
+      operationId: GetAnalyzerResult
+      tags:
+        - Analyzers
+      summary: Get a packet analyzer result
+      description: Returns results from a packet analyzer by result id.
+      parameters:
+        - $ref: "#/parameters/id"
+      responses:
+        200:
+          description: Success
+          schema:
+            $ref: "#/definitions/AnalyzerResult"
+    delete:
+      operationId: DeleteAnalyzerResult
+      tags:
+        - Analyzers
+      summary: Delete a packet analyzer result
+      description: |
+        Delete an inactive packet analyzer result. Also deletes all child
+        rx-stream objects. Idempotent.
+      parameters:
+        - $ref: "#/parameters/id"
+      responses:
+        204:
+          description: No Content
+
+  /rx-streams:
+    get:
+      operationId: ListRxStreams
+      tags:
+        - Analyzers
+      summary: List received packet streams
+      description: |
+        The `rx-streams` endpoint returns all packet streams that have been
+        received by analyzer instances.
+      parameters:
+        - name: analyzer_id
+          in: query
+          description: Filter by receive analyzer id
+          required: false
+          type: string
+        - name: interface_id
+          in: query
+          description: Filter by receive interface id
+          required: false
+          type: string
+        - name: port_id
+          in: query
+          description: Filter by receive port id
+          required: false
+          type: string
+      responses:
+        200:
+          description: Success
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/RxStream"
+
+  /rx-streams/{id}:
+    get:
+      operationId: GetRxStream
+      tags:
+        - Analyzers
+      summary: Get packet stream counters for a single stream
+      description: Returns packet stream counters by id.
+      parameters:
+        - $ref: "#/parameters/id"
+      responses:
+        200:
+          description: Success
+          schema:
+            $ref: "#/definitions/RxStream"
+
+definitions:
+  Analyzer:
+    type: object
+    description: |
+      Packet analyzer; analyzers count received traffic and generate statistics
+      using various analysis methods.
+    properties:
+      id:
+        type: string
+        description: Unique analyzer identifier
+      config:
+        $ref: "#/definitions/AnalyzerConfig"
+      running:
+        type: boolean
+        description: |
+          Indicates whether this object is currently analyzing packets or not.
+    required:
+      - id
+      - config
+      - running
+
+  AnalyzerConfig:
+    type: object
+    description: |
+      Packet analzyer configuration; the configuration specifies what packets
+      are analyzed and what results are calculated.
+    properties:
+      source:
+        type: string
+        description: |
+          Specifies the unique port or interface identifier for this analyzer.
+      filter:
+        type: string
+        description: |
+          Berkley Packet Filter (BPF) rules that matches input packets for this
+          analyzer to count. An empty rule, the default, matches all frames.
+      protocol_counters:
+        type: string
+        description: |
+          Specify the level of detail to analyze received packets for protocols.
+          Each counter depends on all previously counters.
+        enum:
+          - ethernet_counters
+          - ip_counters
+          - protocol_counters
+          - tunnel_counters
+          - tunnel_ethernet_counters
+          - tunnel_ip_counters
+          - tunnel_protocol_counters
+        default: protocol_counters
+      stream_counters:
+        type: array
+        description: |
+          List of results to generate per stream for received packets.
+          Sequencing, latency, and jitter results require Spirent signatures
+          in the received packets.
+        items:
+          type: string
+          enum:
+            - frame_count
+            - frame_length
+            - advanced_sequencing
+            - interarrival_time
+            - latency
+            - jitter_ipdv
+            - jitter_rfc
+            - prbs
+          default: frame_count
+          uniqueItems: true
+      required:
+        - source
+        - port_counters
+        - stream_counters
+
+  AnalyzerResult:
+    type: object
+    description: Results collected by a running packet analyzer
+    properties:
+      id:
+        type: string
+        description: Unique analyzer result identifier
+      analyzer_id:
+        type: string
+        description: Unique analyzer identifier that generated this result
+      active:
+        type: boolean
+        description: Indicates whether the result is currently receiving updates
+      duration:
+        $ref: "#/definitions/DurationRemainder"
+      protocol_counters:
+        $ref: "#/definitions/AnalyzerProtocolCounters"
+      stream_counters:
+        $ref: "#/definitions/AnalyzerStreamCounters"
+      streams:
+        type: array
+        description: |
+          List of unique stream ids included in stats. Individual stream
+          statistics may be queried via the `rx-streams` endpoint.
+        items:
+          type: string
+    required:
+      - id
+      - active
+      - duration
+      - protocol_counters
+      - stream_counters
+      - streams
+
+  AnalyzerProtocolCounters:
+    type: object
+    description: Result counters for protocols
+    properties:
+      ethernet:
+        type: object
+        description: Layer 2 protocol counters
+        properties:
+          ip:
+            type: integer
+            description: Number of IPv4/IPv6 frames
+            format: int64
+          timesync:
+            type: integer
+            description: Number of Precision Time Protocol frames
+            format: int64
+          arp:
+            type: integer
+            description: Number of Address Resolution Protocol frames
+            format: int64
+          lldp:
+            type: integer
+            description: Number of Link Layer Discover Protocol frames
+            format: int64
+          nsh:
+            type: integer
+            description: Number of Network Service Header frames
+            format: int64
+          vlan:
+            type: integer
+            description: Number of Virtual LAN frames
+            format: int64
+          qinq:
+            type: integer
+            description: Number of Queue-in-Queue frames
+            format: int64
+          pppoe:
+            type: integer
+            description: Number of PPP over Ethernet frames
+            format: int64
+          fcoe:
+            type: integer
+            description: Number of Fiber Channel over Ethernet frames
+            format: int64
+          mpls:
+            type: integer
+            description: Number of Multi Protocol Label Switched frames
+            format: int64
+        required:
+          - ip
+          - timesync
+          - arp
+          - lldp
+          - nsh
+          - vlan
+          - qinq
+          - pppoe
+          - fcoe
+          - mpls
+      ip:
+        type: object
+        description: Layer 3 protocol counters
+        properties:
+          ipv4:
+            type: integer
+            description: Number of IPv4 packets without extensions
+            format: int64
+          ipv4_ext:
+            type: integer
+            description: Number of IPv4 packets with well-known extensions
+            format: int64
+          ipv4_ext_unknown:
+            type: integer
+            description: Number of IPv4 packets with unknown extensions
+            format: int64
+          ipv6:
+            type: integer
+            description: Number of IPv6 packets without extensions
+            format: int64
+          ipv6_ext:
+            type: integer
+            description: Number of IPv6 packets with well-known extensions
+            format: int64
+          ipv6_ext_unknown:
+            type: integer
+            description: Number of IPv6 packets with unknown extensions
+            format: int64
+        required:
+          - ipv4
+          - ipv4_ext
+          - ipv4_ext_unknown
+          - ipv6
+          - ipv6_ext
+          - ipv6_ext_unknown
+      protocol:
+        type: object
+        description: Layer 4 protocol counters
+        properties:
+          tcp:
+            type: integer
+            description: Number of Transmission Control Protocol packets
+            format: int64
+          udp:
+            type: integer
+            description: Number of User Data Protocol packets
+            format: int64
+          fragmented:
+            type: integer
+            description: Number of fragmented packets
+            format: int64
+          sctp:
+            type: integer
+            description: Number of Stream Control Transmission Protocol packets
+            format: int64
+          icmp:
+            type: integer
+            description: Number of Internet Control Message Protocol packets
+            format: int64
+          non_fragmented:
+            type: integer
+            description: Number of non-fragmented packets
+            format: int64
+          igmp:
+            type: integer
+            description: Number of Internet Group Management Protocol packets
+            format: int64
+        required:
+          - tcp
+          - udp
+          - fragmented
+          - sctp
+          - icmp
+          - non_fragmented
+          - igmp
+      tunnel:
+        type: object
+        description: Tunnel protocol counters
+        properties:
+          ip:
+            type: integer
+            description: Number of IP in IP packets
+            format: int64
+          gre:
+            type: integer
+            description: Number of Generic Routing Encapsulation packets
+            format: int64
+          vxlan:
+            type: integer
+            description: Number of Virtual eXtensible LAN packets
+            format: int64
+          nvgre:
+            type: integer
+            description: Number of Network Virtualization using GRE packets
+            format: int64
+          geneve:
+            type: integer
+            description: Number of Generic Network Virtualization Encapsulation packets
+            format: int64
+          grenat:
+            type: integer
+            description: Number of Teredo, VXLAN, or GRE packets on limited hardware
+            format: int64
+          gtpc:
+            type: integer
+            description: Number of GPRS Tunneling Protocol control packets
+            format: int64
+          gtpu:
+            type: integer
+            description: Number of GPRS Tunneling Protocol user packets
+            format: int64
+          esp:
+            type: integer
+            description: Number of IP Encapsulating Security Payload packets
+            format: int64
+          l2tp:
+            type: integer
+            description: Number of Layer 2 Tunneling Protocol packets
+            format: int64
+          vxlan_gpe:
+            type: integer
+            description: Number of VXLAN Generic Protocol Extension packets
+            format: int64
+          mpls_in_gre:
+            type: integer
+            description: Number of MPLS-in-GRE packets (RFC 4023)
+            format: int64
+          mpls_in_udp:
+            type: integer
+            description: Number of MPLS-in-UDP packets (RFC 7510)
+            format: int64
+        required:
+          - ip
+          - gre
+          - vxlan
+          - nvgre
+          - geneve
+          - grenat
+          - gtpc
+          - gtpu
+          - esp
+          - l2tp
+          - vxlan_gpe
+          - mpls_in_gre
+          - mpls_in_udp
+      inner_ethernet:
+        type: object
+        description: Inner layer 2 protocol counters
+        properties:
+          ip:
+            type: integer
+            description: Number of IPv6/IPv6 frames
+            format: int64
+          vlan:
+            type: integer
+            description: Number of Virtual LAN frames
+            format: int64
+          qinq:
+            type: integer
+            description: Number of Queue-in-Queue frames
+            format: int64
+        required:
+          - ip
+          - vlan
+          - qinq
+      inner_ip:
+        type: object
+        description: Inner layer 3 protocol counters
+        properties:
+          ipv4:
+            type: integer
+            description: Number of IPv4 packets without extensions
+            format: int64
+          ipv4_ext:
+            type: integer
+            description: Number of IPv4 packets with well-known extensions
+            format: int64
+          ipv4_ext_unknown:
+            type: integer
+            description: Number of IPv4 packets with unknown extensions
+            format: int64
+          ipv6:
+            type: integer
+            description: Number of IPv6 packets without extensions
+            format: int64
+          ipv6_ext:
+            type: integer
+            description: Number of IPv6 packets with well-known extensions
+            format: int64
+          ipv6_ext_unknown:
+            type: integer
+            description: Number of IPv6 packets with unknown extensions
+            format: int64
+        required:
+          - ipv4
+          - ipv4_ext
+          - ipv4_ext_unknown
+          - ipv6
+          - ipv6_ext
+          - ipv6_ext_unknown
+      inner_protocol:
+        type: object
+        description: Inner layer 4 protocol counters
+        properties:
+          tcp:
+            type: integer
+            description: Number of Transmission Control Protocol packets
+            format: int64
+          udp:
+            type: integer
+            description: Number of User Data Protocol packets
+            format: int64
+          fragmented:
+            type: integer
+            description: Number of fragmented packets
+            format: int64
+          sctp:
+            type: integer
+            description: Number of Stream Control Transmission Protocol packets
+            format: int64
+          icmp:
+            type: integer
+            description: Number of Internet Control Message Protocol packets
+            format: int64
+          non_fragmented:
+            type: integer
+            description: Number of non-fragmented packets
+            format: int64
+        required:
+          - tcp
+          - udp
+          - fragmented
+          - sctp
+          - icmp
+          - non_fragmented
+      frame_count:
+        type: integer
+        description: Number of received packets
+        format: int64
+      timestamp_first:
+        type: string
+        description: Timestamp of first received packet
+        format: date-time
+      timestamp_last:
+        type: string
+        description: Timestamp of last received packed
+        format: date-time
+    required:
+      - frame_count
+      - timestamp_first
+      - timestamp_last
+
+  AnalyzerStreamSummaryCounters:
+    type: object
+    description: Summary results for per-packet statistics
+    properties:
+      min:
+        type: integer
+        description: Minimum value
+        format: int64
+      max:
+        type: integer
+        description: Maximum value
+        format: int64
+      total:
+        type: integer
+        description: Sum of all received values
+        format: int64
+      variance:
+        type: integer
+        description: Variance of received values
+        format: int64
+    required:
+      - total
+
+  AnalyzerStreamCounters:
+    type: object
+    description: Result counters for streams
+    properties:
+      frame_length:
+        type: object
+        description: Frame length result counters
+        properties:
+          summary:
+            $ref: "#/definitions/AnalyzerStreamSummaryCounters"
+          units:
+            type: string
+            description: Frame length result units
+            enum:
+              - octets
+        required:
+          - summary
+          - units
+      interarrival:
+        type: object
+        description: Inter-arrival time result counters
+        properties:
+          summary:
+            $ref: "#/definitions/AnalyzerStreamSummaryCounters"
+          units:
+            type: string
+            description: Inter-arrival time measurement units
+            enum:
+              - nanoseconds
+        required:
+          - summary
+          - units
+      jitter_ipdv:
+        type: object
+        description: Jitter (RFC 3393) result counters
+        properties:
+          summary:
+            $ref: "#/definitions/AnalyzerStreamSummaryCounters"
+          units:
+            type: string
+            description: Jitter time measurement units
+            enum:
+              - nanoseconds
+        required:
+          - summary
+          - units
+      jitter_rfc:
+        type: object
+        description: Jitter (RFC 4737) result counters
+        properties:
+          summary:
+            $ref: "#/definitions/AnalyzerStreamSummaryCounters"
+          units:
+            type: string
+            description: Jitter time measurement units
+            enum:
+              - nanoseconds
+        required:
+          - summary
+          - units
+      latency:
+        type: object
+        description: Latency result counters
+        properties:
+          summary:
+            $ref: "#/definitions/AnalyzerStreamSummaryCounters"
+          units:
+            type: string
+            description: Latency measurement units
+            enum:
+              - nanoseconds
+        required:
+          - summary
+          - units
+      sequence:
+        type: object
+        description: Advanced Sequencing result counters
+        properties:
+          dropped:
+            type: integer
+            description: Number of packets expected but not yet received
+            format: int64
+          duplicate:
+            type: integer
+            description: Number of duplicate packets received
+            format: int64
+          late:
+            type: integer
+            description: Number of late packets received
+            format: int64
+          reordered:
+            type: integer
+            description: Number of reordered packets received
+            format: int64
+          in_order:
+            type: integer
+            description: Number of packets received in the expected sequence
+            format: int64
+          run_length:
+            type: integer
+            description: Number of packets received in sequence
+            format: int64
+        required:
+          - dropped
+          - duplicate
+          - late
+          - reordered
+          - in_order
+          - run_length
+      frame_count:
+        type: integer
+        description: Number of received packets
+        format: int64
+      timestamp_first:
+        type: string
+        description: Timestamp of first received packet
+        format: date-time
+      timestamp_last:
+        type: string
+        description: Timestamp of last received packed
+        format: date-time
+    required:
+      - frame_count
+      - timestamp_first
+      - timestamp_last
+
+  DurationRemainder:
+    type: object
+    description: Specifies how much type remains for an object to be active
+    properties:
+      mode:
+        type: string
+        description: Specifies how the duration is measured
+        enum:
+          - indefinite
+          - seconds
+          - frames
+      duration:
+        type: integer
+        description: Specifies the remaining duration for definite durations
+        format: int64
+    required:
+      - mode
+
+  RxStream:
+    type: object
+    description: Counters for a stream of packets
+    properties:
+      id:
+        type: string
+        description: Unique received stream identifier
+      analyzer_id:
+        type: string
+        description: Unique analyzer identifier that observed this stream
+      port_id:
+        type: string
+        description: Unique identifier of receiving port
+      interface_id:
+        type: string
+        description: Unique identifier of receiving interface
+      counters:
+        $ref: "#/definitions/AnalyzerStreamCounters"
+    required:
+      - id
+      - analyzer_id
+      - port_id
+      - counters
+
+  StartAnalyzerRequest:
+    type: object
+    description: Analyzer run-time configuration options
+    properties:
+      duration:
+        type: object
+        description: Specifies how long the analyzer should run
+        properties:
+          mode:
+            type: string
+            description: Specifies how the duration is measured
+            enum:
+              - seconds
+              - frames
+          length:
+            type: integer
+            description: Specifies the duration value
+            format: int64
+      required:
+        - mode
+        - length

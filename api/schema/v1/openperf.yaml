@@ -107,6 +107,45 @@ paths:
     $ref: ./modules/packetio.yaml#/paths/~1stacks~1{id}
 
   ###
+  # Packet Analyzer Paths
+  ###
+  /packet/analyzers:
+    $ref: ./modules/packet/analyzer.yaml#/paths/~1analyzers
+
+  /packet/analyzers/{id}:
+    $ref: ./modules/packet/analyzer.yaml#/paths/~1analyzers~1{id}
+
+  /packet/analyzers/{id}/start:
+    $ref: ./modules/packet/analyzer.yaml#/paths/~1analyzers~1{id}~1start
+
+  /packet/analyzers/{id}/stop:
+    $ref: ./modules/packet/analyzer.yaml#/paths/~1analyzers~1{id}~1stop
+
+  /packet/analyzers/x/bulk-create:
+    $ref: ./modules/packet/analyzer.yaml#/paths/~1analyzers~1x~1bulk-create
+
+  /packet/analyzers/x/bulk-delete:
+    $ref: ./modules/packet/analyzer.yaml#/paths/~1analyzers~1x~1bulk-delete
+
+  /packet/analyzers/x/bulk-start:
+    $ref: ./modules/packet/analyzer.yaml#/paths/~1analyzers~1x~1bulk-start
+
+  /packet/analyzers/x/bulk-stop:
+    $ref: ./modules/packet/analyzer.yaml#/paths/~1analyzers~1x~1bulk-stop
+
+  /packet/analyzer-results:
+    $ref: ./modules/packet/analyzer.yaml#/paths/~1analyzer-results
+
+  /packet/analyzer-results/{id}:
+    $ref: ./modules/packet/analyzer.yaml#/paths/~1analyzer-results~1{id}
+
+  /packet/rx-streams:
+    $ref: ./modules/packet/analyzer.yaml#/paths/~1rx-streams
+
+  /packet/rx-streams/{id}:
+    $ref: ./modules/packet/analyzer.yaml#/paths/~1rx-streams~1{id}
+
+  ###
   # Timesync paths
   ###
   /time-counters:
