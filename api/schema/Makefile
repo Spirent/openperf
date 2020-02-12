@@ -4,7 +4,7 @@ AAT_DIR			= $(TOP_DIR)/tests/aat
 AAT_TEMPLATE_DIR	= $(AAT_DIR)/template
 AAT_OUTPUT_DIR		= $(AAT_DIR)/api
 SWAGGER_CODEGEN		= $(TOP_DIR)/deps/swagger-codegen/swagger-codegen
-SWAGGER_SPECS		= $(wildcard v*/*.yaml)
+SWAGGER_SPECS		= $(wildcard v*/openperf.yaml)
 
 SWAGGER_VERSIONS = $(patsubst %/,%,$(sort $(dir $(SWAGGER_SPECS))))
 
