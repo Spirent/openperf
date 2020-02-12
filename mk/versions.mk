@@ -24,8 +24,9 @@ ifeq ($(BUILD_NUMBER),)
   endif
 endif
 
-#Generate current timestamp per organizational requirements.
-TIMESTAMP := $(shell date -u +%Y-%m-%dT%H:%M:%S%Z)
+#Generate current timestamp per organizational requirements (ISO 8601).
+#This is the portable version of GNU date's --iso-8601 option.
+TIMESTAMP := $(shell date +%Y-%m-%dT%H:%M:%S%z | sed 's@^.\{22\}@&:@')
 
 # This dummy target allows us to treat versions as a standard dependency
 .PHONY: versions
