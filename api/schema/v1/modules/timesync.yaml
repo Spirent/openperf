@@ -12,7 +12,7 @@ paths:
     get:
       operationId: ListTimeCounters
       tags:
-        - TimeCounters
+        - TimeSync
       summary: List time counters
       description: |
         The `time-counters` endpoint returns all local time counters
@@ -30,7 +30,7 @@ paths:
     get:
       operationId: GetTimeCounter
       tags:
-        - TimeCounters
+        - TimeSync
       summary: Get a time counter
       description: Returns a time counter, by id.
       parameters:
@@ -45,7 +45,7 @@ paths:
     get:
       operationId: GetTimeKeeper
       tags:
-        - TimeKeeper
+        - TimeSync
       summary: Get a time keeper.
       description: Returns the system time keeper, aka clock.
       responses:
@@ -58,7 +58,7 @@ paths:
     get:
       operationId: ListTimeSources
       tags:
-        - TimeSources
+        - TimeSync
       summary: List reference clocks
       description: |
         The `time-sources` endpoint returns all time sources
@@ -73,7 +73,7 @@ paths:
     post:
       operationId: CreateTimeSource
       tags:
-        - TimeSources
+        - TimeSync
       summary: Register a time source for time syncing.
       description: |
         Registers a new time source for time syncing. Time sources are
@@ -95,7 +95,7 @@ paths:
     get:
       operationId: GetTimeSource
       tags:
-        - TimeSources
+        - TimeSync
       summary: Get a time source
       description: Get a time source, by id.
       parameters:
@@ -108,7 +108,7 @@ paths:
     delete:
       operationId: DeleteTimeSource
       tags:
-        - TimeSources
+        - TimeSync
       summary: Delete a time source
       description: Deletes an existing time source. Idempotent.
       parameters:
