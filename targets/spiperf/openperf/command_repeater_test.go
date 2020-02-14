@@ -15,7 +15,7 @@ var _ = Describe("CommandRepeater, ", func() {
 	const assertEpsilon = 15 * time.Second
 
 	var (
-		opReqOut chan *Command
+		opCmdOut chan *Command
 		cancelFn context.CancelFunc
 		ctx      context.Context
 		crReturn chan error
@@ -26,13 +26,13 @@ var _ = Describe("CommandRepeater, ", func() {
 	BeforeEach(func() {
 
 		crReturn = make(chan error)
-		opReqOut = make(chan *Command)
+		opCmdOut = make(chan *Command)
 		command = &Command{
 			Request: &GetTimeRequest{},
 		}
 		cr = &CommandRepeater{
-			Command:            command,
-			OpenperfController: opReqOut,
+			Command:        command,
+			OpenperfCmdOut: opCmdOut,
 		}
 
 	})
@@ -45,7 +45,7 @@ var _ = Describe("CommandRepeater, ", func() {
 
 		Context("using the minimum interval, ", func() {
 			BeforeEach(func() {
-				cr.Interval = MinimumInterval
+				cr.Interval = CommandRepeaterMinimumInterval
 				cr.Responses = make(chan interface{})
 				go func(ctx context.Context, cr *CommandRepeater) {
 					crReturn <- RunCommandRepeater(ctx, cr)
@@ -68,7 +68,7 @@ var _ = Describe("CommandRepeater, ", func() {
 								close(req.Done)
 							}
 						}
-					}(opCtx, opReqOut)
+					}(opCtx, opCmdOut)
 
 					for i := 0; i < responsesToRead; i++ {
 						resp := <-cr.Responses
@@ -111,7 +111,7 @@ var _ = Describe("CommandRepeater, ", func() {
 
 			Context("when the openperf controller doesn't provide a response, ", func() {
 				It("terminates when canceled", func(done Done) {
-					<-opReqOut
+					<-opCmdOut
 
 					Eventually(crReturn).ShouldNot(Receive())
 
@@ -137,7 +137,7 @@ var _ = Describe("CommandRepeater, ", func() {
 								close(req.Done)
 							}
 						}
-					}(opCtx, opReqOut)
+					}(opCtx, opCmdOut)
 
 					for i := 0; i < responsesToRead; i++ {
 						resp := <-cr.Responses
