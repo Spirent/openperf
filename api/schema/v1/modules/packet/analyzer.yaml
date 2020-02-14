@@ -9,14 +9,9 @@ paths:
         The `analyzers` endpoint returns all packet analyzers that are
         configured to collect and report port and stream statistics.
       parameters:
-        - name: port_id
+        - name: source_id
           in: query
-          description: Filter by port id
-          required: false
-          type: string
-        - name: interface_id
-          in: query
-          description: Filter by interface id
+          description: Filter by source id
           required: false
           type: string
       responses:
@@ -257,7 +252,7 @@ paths:
           required: true
           schema:
             type: object
-            title: BulkStopAnalyzerRrequest
+            title: BulkStopAnalyzersRequest
             description: Parameters for the bulk stop operation
             properties:
               ids:
@@ -282,14 +277,9 @@ paths:
         The `analyzer-results` endpoint returns all analyzer results created
         by analyzer instances.
       parameters:
-        - name: port_id
+        - name: source_id
           in: query
-          description: Filter by receive port id
-          required: false
-          type: string
-        - name: interface_id
-          in: query
-          description: Filter by receive interface id
+          description: Filter by receive port or interface id
           required: false
           type: string
       responses:
@@ -352,14 +342,9 @@ paths:
           description: Filter by receive analyzer id
           required: false
           type: string
-        - name: interface_id
+        - name: source_id
           in: query
-          description: Filter by receive interface id
-          required: false
-          type: string
-        - name: port_id
-          in: query
-          description: Filter by receive port id
+          description: Filter by receive port or interface id
           required: false
           type: string
       responses:
@@ -409,10 +394,10 @@ definitions:
   AnalyzerConfig:
     type: object
     description: |
-      Packet analzyer configuration; the configuration specifies what packets
+      Packet analyzer configuration; the configuration specifies what packets
       are analyzed and what results are calculated.
     properties:
-      source:
+      source_id:
         type: string
         description: |
           Specifies the unique port or interface identifier for this analyzer.
@@ -422,19 +407,24 @@ definitions:
           Berkley Packet Filter (BPF) rules that matches input packets for this
           analyzer to count. An empty rule, the default, matches all frames.
       protocol_counters:
-        type: string
+        type: array
         description: |
-          Specify the level of detail to analyze received packets for protocols.
-          Each counter depends on all previously counters.
-        enum:
-          - ethernet_counters
-          - ip_counters
-          - protocol_counters
-          - tunnel_counters
-          - tunnel_ethernet_counters
-          - tunnel_ip_counters
-          - tunnel_protocol_counters
-        default: protocol_counters
+          List of protocol counters to update per analyzer for received packets.
+        items:
+          type: string
+          enum:
+            - ethernet
+            - ip
+            - protocol
+            - tunnel
+            - tunnel_ethernet
+            - tunnel_ip
+            - tunnel_protocol
+          default:
+            - ethernet
+            - ip
+            - protocol
+          uniqueItems: true
       stream_counters:
         type: array
         description: |
@@ -452,7 +442,8 @@ definitions:
             - jitter_ipdv
             - jitter_rfc
             - prbs
-          default: frame_count
+          default:
+            - frame_count
           uniqueItems: true
       required:
         - source
@@ -981,12 +972,9 @@ definitions:
       analyzer_id:
         type: string
         description: Unique analyzer identifier that observed this stream
-      port_id:
+      source_id:
         type: string
-        description: Unique identifier of receiving port
-      interface_id:
-        type: string
-        description: Unique identifier of receiving interface
+        description: Unique identifier of receiving port or interface
       counters:
         $ref: "#/definitions/AnalyzerStreamCounters"
     required:
