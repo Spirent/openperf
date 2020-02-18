@@ -49,11 +49,11 @@ type GetGeneratorResponse struct {
 	Running bool
 }
 
-type GetStatsRequest struct {
+type GetRxStatsRequest struct {
 }
 
 //FIXME: hack. Change to using swagger-generated results object asap.
-type GetStatsResponse struct {
+type GetRxStatsResponse struct {
 	Timestamp uint64
 	TxPackets uint64
 	TxBytes   uint64
@@ -65,4 +65,14 @@ type GetTimeRequest struct {
 //FIXME: hack. Change to using swagger-generated results object asap.
 type GetTimeResponse struct {
 	SystemTime time.Time
+}
+
+type GetTxStatsRequest struct {
+}
+
+//FIXME: hack. Change to using swagger-generated results object asap.
+type GetTxStatsResponse struct {
+	Timestamp uint64
+	TxPackets uint64
+	TxBytes   uint64
 }

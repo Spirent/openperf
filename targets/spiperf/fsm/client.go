@@ -14,7 +14,7 @@ import (
 	"github.com/kr/pretty"
 )
 
-const FSMVersion = "1.0"
+const Version = "1.0"
 
 // Client is the FSM for the client stuff in spiperf
 type Client struct {
@@ -43,21 +43,17 @@ type Client struct {
 	// TestConfiguration keeps track of the test configuration.
 	TestConfiguration Configuration
 
+	// StatsPollInterval how often to poll relevant local statistics. This does not impact results output.
+	StatsPollInterval time.Duration
+
+	// GeneratorPollInterval how often to poll the generator resource to see if it's still transmitting.
+	GeneratorPollInterval time.Duration
+
 	// state tracks the state machine's current state as a string.
 	state atomic.Value
 
 	// startTime is the time at which traffic will begin transmitting.
 	startTime time.Time
-
-	// opRunstatePollReq keeps track of traffic runstate between FSM states.
-	opRunstatePollReq *openperf.CommandRepeater
-
-	// opStatsPollReq keeps track of traffic result polling.
-	opStatsPollReq *openperf.CommandRepeater
-
-	statsReqCancel context.CancelFunc
-
-	runstateReqCancel context.CancelFunc
 }
 
 func (c *Client) enter(state string) {
@@ -89,6 +85,12 @@ func (c *Client) Run(ctx context.Context) error {
 	if c.OpenperfTimeout <= 0 {
 		return &InternalError{Message: "Invalid Openperf Timeout"}
 	}
+	if c.GeneratorPollInterval <= 0 {
+		return &InternalError{Message: "Invalid generator polling interval"}
+	}
+	if c.StatsPollInterval <= 0 {
+		return &InternalError{Message: "Invalid stats polling interval"}
+	}
 	// if c.TestConfiguration == nil {
 	// 	return &InternalError{Message: "Invalid Test Configuration"}
 	// }
@@ -115,14 +117,13 @@ func (c *Client) connect(ctx context.Context) (clientStateFunc, error) {
 	c.PeerCmdOut <- &msg.Message{
 		Type: msg.HelloType,
 		Value: &msg.Hello{
-			Version: FSMVersion,
+			Version: Version,
 		},
 	}
 
 	// Wait for reply
 	timeout := time.After(c.PeerTimeout)
 	select {
-	//FIXME: overkill?
 	case reply, ok := <-c.PeerRespIn:
 		if !ok {
 			return nil, &InternalError{Message: "Error reading from peer response channel"}
@@ -133,15 +134,14 @@ func (c *Client) connect(ctx context.Context) (clientStateFunc, error) {
 		}
 
 		// Verify remote version matches our version.
-		if serverVersion := reply.Value.(*msg.Hello).Version; serverVersion != FSMVersion {
-			return nil, &InternalError{Message: fmt.Sprintf("Mismatch between server and client versions. Client version is %s and server reports as %s\n", FSMVersion, serverVersion)}
+		if serverVersion := reply.Value.(*msg.Hello).Version; serverVersion != Version {
+			return nil, &InternalError{Message: fmt.Sprintf("Mismatch between server and client versions. Client version is %s and server reports as %s\n", Version, serverVersion)}
 		}
 
 	case <-timeout:
 		return nil, &TimeoutError{Message: "Timed out waiting for server reply to Hello message."}
 	}
 
-	fmt.Println("EXIT - connect")
 	return (*Client).configure, nil
 
 }
@@ -167,7 +167,8 @@ func (c *Client) configure(ctx context.Context) (clientStateFunc, error) {
 		}
 
 		serverPrams := reply.Value.(*msg.ServerParametersResponse)
-		//FIXME: this just for now to get the unit tests off the ground. Full validation will happen later.
+		//XXX: full validation of server's parameters will be done here.
+		//This line is to exercise the error path via unit test.
 		if _, err := url.Parse(serverPrams.OpenperfURL); err != nil {
 			return nil, &InvalidConfigurationError{Message: fmt.Sprintf("Got invalid OpenPerf URL from server: %s", serverPrams.OpenperfURL)}
 		}
@@ -175,15 +176,13 @@ func (c *Client) configure(ctx context.Context) (clientStateFunc, error) {
 	case <-timeout:
 		return nil, &TimeoutError{Message: "Timed out waiting for server reply to get parameters message."}
 	}
-	// FIXME: Build test configuration.
+
+	//XXX: test configuration will be built here.
 
 	// Send configuration to server.
 	c.PeerCmdOut <- &msg.Message{
-		Type: msg.SetConfigType,
-		Value: &msg.ServerConfiguration{
-			TransmitDuration: 10,
-			FixedFrameSize:   128,
-		},
+		Type:  msg.SetConfigType,
+		Value: &msg.ServerConfiguration{},
 	}
 
 	// Wait for an ACK.
@@ -194,8 +193,6 @@ func (c *Client) configure(ctx context.Context) (clientStateFunc, error) {
 	}
 
 	// Switch to Ready state.
-
-	fmt.Println("EXIT - configure")
 	return (*Client).ready, nil
 }
 
@@ -218,10 +215,8 @@ func (c *Client) ready(ctx context.Context) (clientStateFunc, error) {
 	switch resp := req.Response.(type) {
 	case *models.TimeKeeper:
 		val := time.Time(conv.DateTimeValue(resp.Time))
-		//calc start time
+		//calculate start time
 		c.startTime = val.Add(c.StartDelay)
-
-		fmt.Printf("client sleeping for %s", time.Until(c.startTime).String())
 
 		//send start time to server
 		c.PeerCmdOut <- &msg.Message{
@@ -239,7 +234,6 @@ func (c *Client) ready(ctx context.Context) (clientStateFunc, error) {
 		return nil, &InvalidConfigurationError{Message: reply.Value.(string)}
 	}
 
-	fmt.Println("EXIT - ready")
 	// switch to armed state
 	return (*Client).armed, nil
 }
@@ -248,88 +242,104 @@ func (c *Client) ready(ctx context.Context) (clientStateFunc, error) {
 func (c *Client) armed(ctx context.Context) (clientStateFunc, error) {
 	c.enter("armed")
 
-	// Wait for then to become now.
+	// Wait for then to become now (aka test to start.)
 	time.Sleep(time.Until(c.startTime))
 
-	var statsReqCtx context.Context
-	statsReqCtx, c.statsReqCancel = context.WithCancel(ctx)
-	c.opStatsPollReq = &openperf.CommandRepeater{
-		Command:            &openperf.Command{Request: &openperf.GetStatsRequest{}},
-		Interval:           time.Second * 1,
-		OpenperfController: c.OpenperfCmdOut,
-		Responses:          make(chan interface{})}
-	go openperf.RunCommandRepeater(statsReqCtx, c.opStatsPollReq)
+	return (*Client).running, nil
+}
 
-	fmt.Println("EXIT - armed")
-	// Change to correct running state.
+// running tracks FSM state where client is only sending traffic.
+func (c *Client) running(ctx context.Context) (clientStateFunc, error) {
+	c.enter("running")
+
+	// generatorPollResp channel to receive responses from polling Openperf generator resource.
+	var generatorPollResp chan interface{}
+	// generatorPollCancel stop generator polling.
+	var generatorPollCancel context.CancelFunc
+
+	// txStatsPollResp channel to receive responses from polling local Openperf transmit stats.
+	var txStatsPollResp chan interface{}
+	// txStatsPollCancel stop polling local Openperf transmit stats.
+	var txStatsPollCancel context.CancelFunc
+
+	// rxStatsPollResp channel to receive responses from polling local Openperf receive stats.
+	var rxStatsPollResp chan interface{}
+	// rxStatsPollCancel stop polling local Openperf receive stats.
+	var rxStatsPollCancel context.CancelFunc
+
+	var clientRunning bool
+	var serverRunning bool
 
 	switch {
 	case c.TestConfiguration.UpstreamRate > 0 && c.TestConfiguration.DownstreamRate > 0:
-
-		var runstateReqCtx context.Context
-		runstateReqCtx, c.runstateReqCancel = context.WithCancel(ctx)
-		c.opRunstatePollReq = &openperf.CommandRepeater{
+		// Start up generator polling (to check runstate)
+		var generatorReqCtx context.Context
+		generatorReqCtx, generatorPollCancel = context.WithCancel(ctx)
+		generatorPollResp = make(chan interface{})
+		go openperf.RunCommandRepeater(generatorReqCtx, &openperf.CommandRepeater{
 			Command:            &openperf.Command{Request: &openperf.GetGeneratorRequest{}},
-			Interval:           time.Second * 1,
+			Interval:           c.GeneratorPollInterval,
 			OpenperfController: c.OpenperfCmdOut,
-			Responses:          make(chan interface{})}
-		go openperf.RunCommandRepeater(runstateReqCtx, c.opRunstatePollReq)
+			Responses:          generatorPollResp})
 
-		return (*Client).runningTxRx, nil
+		// Start up transmit stats polling
+		var txStatReqCtx context.Context
+		txStatReqCtx, txStatsPollCancel = context.WithCancel(ctx)
+		txStatsPollResp = make(chan interface{})
+		go openperf.RunCommandRepeater(txStatReqCtx, &openperf.CommandRepeater{
+			Command:            &openperf.Command{Request: &openperf.GetTxStatsRequest{}},
+			Interval:           c.StatsPollInterval,
+			OpenperfController: c.OpenperfCmdOut,
+			Responses:          txStatsPollResp})
+
+		// Start up receive stats polling
+		var rxStatReqCtx context.Context
+		rxStatReqCtx, rxStatsPollCancel = context.WithCancel(ctx)
+		rxStatsPollResp = make(chan interface{})
+		go openperf.RunCommandRepeater(rxStatReqCtx, &openperf.CommandRepeater{
+			Command:            &openperf.Command{Request: &openperf.GetRxStatsRequest{}},
+			Interval:           c.StatsPollInterval,
+			OpenperfController: c.OpenperfCmdOut,
+			Responses:          rxStatsPollResp})
+
+		clientRunning = true
+		serverRunning = true
+
 	case c.TestConfiguration.UpstreamRate > 0:
-
-		var runstateReqCtx context.Context
-		runstateReqCtx, c.runstateReqCancel = context.WithCancel(ctx)
-		c.opRunstatePollReq = &openperf.CommandRepeater{
+		var generatorReqCtx context.Context
+		generatorReqCtx, generatorPollCancel = context.WithCancel(ctx)
+		generatorPollResp = make(chan interface{})
+		go openperf.RunCommandRepeater(generatorReqCtx, &openperf.CommandRepeater{
 			Command:            &openperf.Command{Request: &openperf.GetGeneratorRequest{}},
-			Interval:           time.Second * 1,
+			Interval:           c.GeneratorPollInterval,
 			OpenperfController: c.OpenperfCmdOut,
-			Responses:          make(chan interface{})}
-		go openperf.RunCommandRepeater(runstateReqCtx, c.opRunstatePollReq)
+			Responses:          generatorPollResp})
 
-		return (*Client).runningTx, nil
+		var txStatReqCtx context.Context
+		txStatReqCtx, txStatsPollCancel = context.WithCancel(ctx)
+		txStatsPollResp = make(chan interface{})
+		go openperf.RunCommandRepeater(txStatReqCtx, &openperf.CommandRepeater{
+			Command:            &openperf.Command{Request: &openperf.GetTxStatsRequest{}},
+			Interval:           c.StatsPollInterval,
+			OpenperfController: c.OpenperfCmdOut,
+			Responses:          txStatsPollResp})
+
+		clientRunning = true
+		serverRunning = false
+
 	case c.TestConfiguration.DownstreamRate > 0:
-		return (*Client).runningRx, nil
+		var rxStatReqCtx context.Context
+		rxStatReqCtx, rxStatsPollCancel = context.WithCancel(ctx)
+		rxStatsPollResp = make(chan interface{})
+		go openperf.RunCommandRepeater(rxStatReqCtx, &openperf.CommandRepeater{
+			Command:            &openperf.Command{Request: &openperf.GetRxStatsRequest{}},
+			Interval:           c.StatsPollInterval,
+			OpenperfController: c.OpenperfCmdOut,
+			Responses:          rxStatsPollResp})
+
+		clientRunning = false
+		serverRunning = true
 	}
-
-	return nil, &InternalError{Message: "upstream and downstream data rates are both zero."}
-}
-
-// runningRx tracks FSM state where client is only receiving traffic.
-func (c *Client) runningRx(ctx context.Context) (clientStateFunc, error) {
-	c.enter("runningRx")
-
-	// Loop reading from notification channel. Until we see the stop notification from the server.
-	//FIXME: make the timeout max(client_duration, server_duration) + fudge_factor
-	timeout := time.After(20 * time.Second)
-Done:
-	for {
-		select {
-		case notif := <-c.PeerNotifIn: //FIXME: make comma-ok here. might get nil returned.
-			switch notif.Type {
-			case msg.ErrorType:
-				//Write out error.
-				return nil, &InternalError{Message: notif.Value.(string)}
-			case msg.StopNotificationType:
-				//Test is done.
-				break Done
-			case msg.StatsNotificationType:
-				fmt.Println("got some stats from the server. should be only server tx stats.")
-
-				//FIXME add a go routine to handle client side stats?
-			}
-		case <-timeout:
-			return nil, &TimeoutError{Message: "Server did not send stop notification within expected time window."}
-		}
-	}
-
-	fmt.Println("EXIT - runningRx")
-	return (*Client).done, nil
-}
-
-// runningTx tracks FSM state where client is only sending traffic.
-func (c *Client) runningTx(ctx context.Context) (clientStateFunc, error) {
-	c.enter("runningTx")
 
 Done:
 	for {
@@ -342,107 +352,79 @@ Done:
 			case msg.ErrorType:
 				//Write out error.
 				return nil, &InternalError{Message: notif.Value.(string)}
-			case msg.StopNotificationType:
-				//This is an error. Not expecting a stop here since server isn't transmitting.
-				return nil, &MessagingError{Message: "Got unexpected server done notification"}
+			case msg.TransmitDoneType:
+				serverRunning = false
+				rxStatsPollCancel()
+				//FIXME: check for redundant messages here?
+
+				//fmt.Println("got msg.TransmitDoneType")
+				if !clientRunning {
+					break Done
+				}
 			case msg.StatsNotificationType:
-				fmt.Println("got some stats from the server. should only be server rx stats.")
 				//FIXME add a go routine to handle client side stats?
 			}
-		case stat, ok := <-c.opStatsPollReq.Responses:
+		case txStat, ok := <-txStatsPollResp:
 			if !ok {
-				//Something went wrong. Wait till command finishes and read Result.
-				//<-c.opStatsPollReq.Responses
-				//return nil, &InternalError{Message: c.opStatsPollReq.Result.(error).Error()}
+				txStatsPollResp = nil
+				continue
 			}
-			pretty.Println(stat)
+			pretty.Println(txStat)
 			//FIXME do something with the local tx stats.
-		case gen, ok := <-c.opRunstatePollReq.Responses:
+		case rxStat, ok := <-rxStatsPollResp:
 			if !ok {
-
+				rxStatsPollResp = nil
+				continue
+			}
+			pretty.Println(rxStat)
+			//FIXME do something with the local rx stats.
+		case gen, ok := <-generatorPollResp:
+			if !ok {
+				generatorPollResp = nil //FIXME: this might be redundant.
+				continue
 			}
 
 			generator, genOk := gen.(*openperf.GetGeneratorResponse)
 			if !genOk {
-				c.statsReqCancel()
-				c.runstateReqCancel()
+				generatorPollCancel()
+				txStatsPollCancel()
 				return nil, &InternalError{Message: gen.(error).Error()}
 			}
 
 			if !generator.Running {
-				fmt.Println("\t\tgenerator stopped running!")
-				//Stop local stats polling.
-				c.statsReqCancel()
-
-				//Stop runstate polling.
-				c.runstateReqCancel()
-
-				lastStat, ok := <-c.opStatsPollReq.Responses
-				if ok {
-					//do something with lastStat
-					fmt.Printf("%T", lastStat)
+				if !clientRunning {
+					// Handle case where an extra poll response comes through
+					// even after canceling. This is not an error.
+					continue
 				}
 
-				fmt.Println("\tsending notification to the server that we're done transmitting.")
+				//Stop local tx stats polling.
+				txStatsPollCancel()
 
-				// But first tell server we're done transmitting. No ACK expected.
-				//FIXME: needed to simulate a nonblocking fire-and-forget notification here.
-				//Idea from here: https://blog.golang.org/go-concurrency-patterns-timing-out-and
-				//go func(cl *Client) {
+				//Stop runstate polling.
+				generatorPollCancel()
+
+				lastStat, ok := <-txStatsPollResp
+				if ok {
+					//do something with lastStat
+					fmt.Print("last stat: ")
+					pretty.Println(lastStat)
+				}
+
+				// Tell server we're done transmitting. No ACK expected.
 				c.PeerCmdOut <- &msg.Message{
 					Type: msg.TransmitDoneType,
 				}
-				//}(c)
 
-				break Done
-			}
-		}
-	}
-
-	fmt.Println("EXIT - runningTx")
-	return (*Client).done, nil
-}
-
-// runningTxRx tracks FSM state where client is both sending and receiving traffic.
-func (c *Client) runningTxRx(ctx context.Context) (clientStateFunc, error) {
-	c.enter("runningTxRx")
-
-	//FIXME: this is for now. once the OP interface is working select{} will use a OP polling channel
-	// to figure out when transmission is done.
-	// For now the 3 second timeout is to coordinate with the unit tests.
-	testDone := time.After(3 * time.Second)
-
-	for {
-		select {
-		case notif := <-c.PeerNotifIn:
-			switch notif.Type {
-			case msg.ErrorType:
-				//Write out error.
-				return nil, &InternalError{Message: notif.Value.(string)}
-			case msg.StopNotificationType:
-				//Server is done transmitting. Switch to Tx-only state.
-				return (*Client).runningTx, nil
-			case msg.StatsNotificationType:
-				fmt.Println("got some stats from the server. should be tx and rx server stats.")
-				//FIXME add a go routine to handle client side stats?
-			}
-		case <-testDone:
-			//Client is done transmitting. Switch to Rx-only state.
-			// But first tell server we're done transmitting. No ACK expected.
-			//FIXME: needed to simulate a nonblocking fire-and-forget notification here.
-			//Idea from here: https://blog.golang.org/go-concurrency-patterns-timing-out-and
-			go func(cl *Client) {
-				cl.PeerCmdOut <- &msg.Message{
-					Type: msg.TransmitDoneType,
+				clientRunning = false
+				if !serverRunning {
+					break Done
 				}
-			}(c)
-			return (*Client).runningRx, nil
+			}
 		}
 	}
 
-	fmt.Println("EXIT - runningTxRx")
-	//Test shouldn't get here. But the compiler gets cranky if there's no return here.
-	return nil, &InternalError{Message: "Did not switch out of both sides transmitting state correctly."}
+	return (*Client).done, nil
 }
 
 // done tracks the FSM state immediately after traffic has stopped. Used to collate results.
@@ -461,8 +443,6 @@ func (c *Client) done(ctx context.Context) (clientStateFunc, error) {
 		return nil, &MessagingError{Message: reply.Value.(string)}
 	}
 
-	fmt.Println("EXIT - done")
-
 	return (*Client).disconnect, nil
 }
 
@@ -475,35 +455,35 @@ func (c *Client) disconnect(ctx context.Context) (clientStateFunc, error) {
 	}
 
 	//FIXME: close cmd out channel here?
-	fmt.Println("EXIT - disconnect")
 	return (*Client).cleanup, nil
 }
 
 func (c *Client) cleanup(ctx context.Context) (clientStateFunc, error) {
 	c.enter("cleanup")
 
-	//Delete the generator we created.
-	reqDone := make(chan struct{})
-	req := &openperf.Command{
-		Request: &openperf.DeleteGeneratorRequest{
-			Id: "Generator-one"},
-		Done: reqDone,
-		Ctx:  ctx,
-	}
-
-	c.OpenperfCmdOut <- req
-
-	timeout := time.After(c.OpenperfTimeout)
-	select {
-	case <-reqDone:
-		if req.Response != nil {
-			// error!
+	if c.TestConfiguration.UpstreamRate > 0 {
+		//Delete the generator we created.
+		reqDone := make(chan struct{})
+		req := &openperf.Command{
+			Request: &openperf.DeleteGeneratorRequest{
+				Id: "Generator-one"},
+			Done: reqDone,
+			Ctx:  ctx,
 		}
 
-	case <-timeout:
-		//OP took too long to respond.
+		c.OpenperfCmdOut <- req
+
+		timeout := time.After(c.OpenperfTimeout)
+		select {
+		case <-reqDone:
+			if req.Response != nil {
+				// error!
+			}
+
+		case <-timeout:
+			//OP took too long to respond.
+		}
 	}
 
-	fmt.Println("EXIT - cleanup")
 	return nil, nil
 }

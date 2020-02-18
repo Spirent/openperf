@@ -35,20 +35,22 @@ var _ = Describe("Client FSM,", func() {
 	)
 
 	BeforeEach(func() {
-		peerCmdOut = make(chan *msg.Message)
-		peerRespIn = make(chan *msg.Message)
-		peerNotifIn = make(chan *msg.Message)
+		peerCmdOut = make(chan *msg.Message, 1)
+		peerRespIn = make(chan *msg.Message, 1)
+		peerNotifIn = make(chan *msg.Message, 1)
 		opCmdOut = make(chan *openperf.Command)
 		fsmReturn = make(chan error)
 
 		fsm = &Client{
-			PeerCmdOut:      peerCmdOut,
-			PeerRespIn:      peerRespIn,
-			PeerNotifIn:     peerNotifIn,
-			OpenperfCmdOut:  opCmdOut,
-			PeerTimeout:     500 * time.Millisecond,
-			OpenperfTimeout: 500 * time.Millisecond,
-			StartDelay:      1 * time.Second,
+			PeerCmdOut:            peerCmdOut,
+			PeerRespIn:            peerRespIn,
+			PeerNotifIn:           peerNotifIn,
+			OpenperfCmdOut:        opCmdOut,
+			PeerTimeout:           500 * time.Millisecond,
+			OpenperfTimeout:       500 * time.Millisecond,
+			StartDelay:            1 * time.Second,
+			StatsPollInterval:     500 * time.Millisecond,
+			GeneratorPollInterval: 500 * time.Millisecond,
 		}
 
 		ctx, cancelFunc = context.WithCancel(context.Background())
@@ -66,12 +68,14 @@ var _ = Describe("Client FSM,", func() {
 			Expect(command).NotTo(BeNil())
 			Expect(command.Type).To(Equal(msg.HelloType))
 			Expect(command.Value).To(BeAssignableToTypeOf(&msg.Hello{}))
-			//FIXME: make local object here.			hello:=
-			Expect(command.Value.(*msg.Hello).Version).ToNot(BeEmpty())
+			hello := &msg.Hello{
+				Version: Version,
+			}
+			Expect(command.Value).To(Equal(hello))
 
 			Expect(fsm.State()).To(Equal("connect"))
 			close(done)
-		}) //FIXME add timeout here.
+		}, assertEpsilon.Seconds())
 
 		Context("when peer responds with a different version, ", func() {
 			It("terminates with a version mismatch error", func(done Done) {
@@ -127,7 +131,7 @@ var _ = Describe("Client FSM,", func() {
 				peerRespIn <- &msg.Message{
 					Type: msg.HelloType,
 					Value: &msg.Hello{
-						Version: "1.0",
+						Version: Version,
 					},
 				}
 
@@ -184,12 +188,11 @@ var _ = Describe("Client FSM,", func() {
 			// * client -> server
 			// * server <-> client
 			// As an optimization the common error paths are only exercised on the
-			//  server -> client path.
+			//  client -> server path.
 			// This needs to be done prior to returning the server parameters since
 			//  the client builds the configuration immediately after getting this response.
 
 			Context("server returns valid parameters, test has client -> server traffic, ", func() {
-				//FIXME: declare server configuration msg variable here?
 				BeforeEach(func() {
 
 					fsm.TestConfiguration.UpstreamRate = 100
@@ -206,8 +209,8 @@ var _ = Describe("Client FSM,", func() {
 					Expect(command).ToNot(BeNil())
 					Expect(command.Type).To(Equal(msg.SetConfigType))
 					Expect(command.Value).ToNot(BeNil())
-					Expect(command.Value).To(BeAssignableToTypeOf(&msg.ServerConfiguration{}))
-					//FIXME inspect fields of message to verify correctness.
+					serverCfg := &msg.ServerConfiguration{}
+					Expect(command.Value).To(Equal(serverCfg))
 				})
 
 				Context("when server NACKs configuration from client, ", func() {
@@ -233,8 +236,14 @@ var _ = Describe("Client FSM,", func() {
 							Type: msg.AckType,
 						}
 
+						Eventually(func() string { return fsm.State() }).Should(Equal("ready"))
+
 						//Openperf get time command
 						openperfGetTimeCmd = <-opCmdOut
+						Expect(openperfGetTimeCmd).ToNot(BeNil())
+						Expect(openperfGetTimeCmd.Request).To(BeAssignableToTypeOf(&openperf.GetTimeRequest{}))
+						Expect(openperfGetTimeCmd.Done).ToNot(BeNil())
+						Expect(openperfGetTimeCmd.Response).To(BeNil())
 					})
 
 					Context("when openperf command times out, ", func() {
@@ -277,13 +286,10 @@ var _ = Describe("Client FSM,", func() {
 							startCmd = <-peerCmdOut
 
 							Expect(startCmd).ToNot(BeNil())
-							Expect(startCmd).ToNot(BeNil())
 							Expect(startCmd.Type).To(Equal(msg.StartCommandType))
 							Expect(startCmd.Value).ToNot(BeNil())
 							Expect(startCmd.Value).To(BeAssignableToTypeOf(&msg.StartCommand{}))
-							//Expect(startCmd.Value.(*msg.StartCommand).StartTime).To(BeNumerically(">", 0))
-							//require start command time to be roughly now + StartDelay
-							//also other stuff.
+							Expect(startCmd.Value.(*msg.StartCommand).StartTime).To(BeTemporally("~", time.Now().Add(fsm.StartDelay), time.Millisecond*250))
 
 							close(done)
 						})
@@ -305,144 +311,48 @@ var _ = Describe("Client FSM,", func() {
 						})
 
 						Context("server ACKs start command, it transitions to armed state, sleeps until start time, it transitions to runningTx state, client is transmitting, ", func() {
-							//var opPollStatsReq *openperf.Request
-							// killPollStats write an error to have polling command
-							// canceled and the error written into the Result field.
-							//var killPollStats chan error
-							//var killPollStats context.CancelFunc
-							//var opPollRunstateReq *openperf.RequestRepeater
-							// killPollRunstate write an error to have polling command
-							// canceled and the error written into the Result field.
-							//var killPollRunstate chan error
-							//var killPollRunstate context.CancelFunc
-
-							var runstateStatsHandler *runstateStatsPollHandler
-							var statsHandlerError chan struct{}
-							var runstateHandlerError chan struct{}
+							var runstateStatsResponder *openperfResponder
+							var txStatsResponderError chan struct{}
+							var runstateResponderError chan struct{}
 							const runstatePollCount = 3
-							var runstateHandlerCancel context.CancelFunc
+							var runstateStatsResponderCancel context.CancelFunc
 							//client starts up a runstate poll command here.
 							BeforeEach(func(done Done) {
-								//fmt.Println("going to send ack to client.")
 								//ACK start command.
 								peerRespIn <- &msg.Message{
 									Type: msg.AckType,
 								}
 
-								//fmt.Println("going to sleep till start time.")
-								//pretty.Println(startCmd)
-								// Client sleeps here until start time.
-								fmt.Printf("server sleeping for %s\n", time.Until(startCmd.Value.(*msg.StartCommand).StartTime).String())
-								time.Sleep(time.Until(startCmd.Value.(*msg.StartCommand).StartTime))
-
-								statsHandlerError = make(chan struct{})
-								runstateHandlerError = make(chan struct{})
-								runstateStatsHandler = &runstateStatsPollHandler{
-									OPCmdIn:           opCmdOut,
-									ErrorRunstate:     runstateHandlerError,
-									ErrorStats:        statsHandlerError,
-									RunstatePollCount: runstatePollCount,
-								}
-								var handlerCtx context.Context
-								handlerCtx, runstateHandlerCancel = context.WithCancel(context.Background())
-								go handleRunstateStatsResponses(handlerCtx, runstateStatsHandler)
-								// opPollStatsReq = <-opCmdOut
-								// Expect(opPollStatsReq).NotTo(BeNil())
-								// Expect(opPollStatsReq.Done).NotTo(BeNil())
-								// Expect(opPollStatsReq.Command).NotTo(BeNil())
-								// Expect(opPollStatsReq.Response).To(BeNil())
-								// Expect(opPollStatsReq.Command).To(BeAssignableToTypeOf(&openperf.PollStatsCommand{}))
-								//FIXME: add additional verification here.
-
-								//killPollStats = make(chan error)
-								// var pollStatsCtx context.Context
-								// pollStatsCtx, killPollStats = context.WithCancel(context.Background())
-
-								// opPollRunstateReq = <-opCmdOut
-								// Expect(opPollRunstateReq).NotTo(BeNil())
-								// Expect(opPollRunstateReq.Done).NotTo(BeNil())
-								// Expect(opPollRunstateReq.Command).NotTo(BeNil())
-								// Expect(opPollRunstateReq.Response).To(BeNil())
-								// Expect(opPollRunstateReq.Command).To(BeAssignableToTypeOf(&openperf.PollRunstateCommand{}))
-								//FIXME: add additional verifications here.
-
-								//killPollRunstate = make(chan error)
-								//var pollRunstateCtx context.Context
-								//pollRunstateCtx, killPollRunstate = context.WithCancel(context.Background())
-
-								// Go routine to simulate Openperf poll stats handler.
-								// go func(killPoll context.Context, perReq *openperf.PeriodicRequest) {
-								// 	req := perReq.Request.(*openperf.Request)
-								// Done:
-								// 	for {
-								// 		select {
-								// 		case <-killPoll.Done():
-								// 			//req.Result = err
-								// 			//req.Result = killPoll.Err()
-								// 			break Done
-								// 		case <-time.After(cmd.Interval):
-								// 			//Send a stats notification to Output chan.
-								// 			perReq.Responses <- &openperf.GetStatsResponse{
-								// 				Timestamp: uint64(time.Now().Unix())}
-								// 		case <-req.Ctx.Done():
-								// 			//Done polling stats.
-								// 			break Done
-								// 		}
-								// 	}
-
-								// 	close(perReq.Responses)
-								// 	close(req.Done)
-								// }(pollStatsCtx, opPollStatsReq)
-
-								// Go routine to simulate Openperf poll runstate handler.
-								// go func(killPoll context.Context, perReq *openperf.PeriodicRequest) {
-								// 	req := perReq.Request.(*openperf.Request)
-								// Done:
-								// 	for {
-								// 		select {
-								// 		case <-killPoll.Done():
-								// 			//req.Result = err
-								// 			//req.Result = killPoll.Err()
-								// 			break Done
-								// 		case <-time.After(cmd.Interval):
-								// 			//Send a stats notification to Output chan.
-								// 			perReq.Responses <- &openperf.GetPortResponse{}
-								// 		case <-perReq.Ctx.Done():
-								// 			//Done polling stats.
-								// 			break Done
-								// 		}
-								// 	}
-
-								// 	close(cmd.Output)
-								// 	close(req.Done)
-								// }(pollRunstateCtx, opPollRunstateReq)
-
-								// Go routine to simulate Openperf poll runstate handler.
-								// go func(killPoll context.Context, req *openperf.Request) {
-
-								// 	select {
-								// 	case err := <-killChan:
-								// 		req.Result = err
-								// 	case <-time.After(1 * time.Second): //FIXME!
-								// 		req.Result = nil
-								// 	}
-
-								// 	close(req.Done)
-								// }(killPollRunstate, opPollRunstateReq)
-
-								// Client switches to runningTx state here.
-
-								//fmt.Println("going to wait for runningTx state.")
 								Eventually(func() string {
 									return fsm.State()
-								}).Should(Equal("runningTx"))
+								}).Should(Equal("armed"))
+
+								// Client sleeps here until start time.
+								time.Sleep(time.Until(startCmd.Value.(*msg.StartCommand).StartTime))
+
+								txStatsResponderError = make(chan struct{})
+								runstateResponderError = make(chan struct{})
+								runstateStatsResponder = &openperfResponder{
+									OPCmdIn:           opCmdOut,
+									ErrorRunstate:     runstateResponderError,
+									ErrorTxStats:      txStatsResponderError,
+									RunstatePollCount: runstatePollCount,
+								}
+								var responderCtx context.Context
+								responderCtx, runstateStatsResponderCancel = context.WithCancel(context.Background())
+								go handleOpenperfResponses(responderCtx, runstateStatsResponder)
+
+								// Client switches to running state here.
+
+								Eventually(func() string {
+									return fsm.State()
+								}).Should(Equal("running"))
 
 								close(done)
 							}, assertEpsilon.Seconds())
 
 							Context("when server sends an error on notification channel, ", func() {
 								It("exits with an error", func(done Done) {
-									//fmt.Println("going to send error stats notification.")
 									peerNotifIn <- &msg.Message{
 										Type:  msg.ErrorType,
 										Value: "error with rx stats",
@@ -458,7 +368,7 @@ var _ = Describe("Client FSM,", func() {
 
 							Context("when openperf returns an error while polling runstate, ", func() {
 								It("exits with an error", func(done Done) {
-									runstateHandlerError <- struct{}{}
+									runstateResponderError <- struct{}{}
 
 									val := <-fsmReturn
 									Expect(val).To(BeAssignableToTypeOf(&InternalError{}))
@@ -470,59 +380,52 @@ var _ = Describe("Client FSM,", func() {
 
 							})
 
-							Context("when server sends an unexpected stop notification, ", func() {
-								It("exits with an error", func(done Done) {
-									peerNotifIn <- &msg.Message{
-										Type: msg.StopNotificationType,
-									}
-
-									Eventually(fsmReturn).Should(Receive(
-										BeAssignableToTypeOf(&MessagingError{})))
-									Expect(peerCmdOut).To(BeClosed())
-
-									close(done)
-								})
-							})
-
 							Context("server sends notifications, test completes, it switches to the done state, ", func() {
 								BeforeEach(func(done Done) {
-								Finished:
-									for {
-										select {
-										case <-time.After(1 * time.Second):
-											peerNotifIn <- &msg.Message{
-												Type: msg.StatsNotificationType,
-												Value: &msg.RuntimeStats{
-													Timestamp: uint64(time.Now().Unix()),
-												},
+									statsNotifDone := make(chan struct{})
+									go func() {
+										for {
+											select {
+											case <-statsNotifDone:
+												return
+											case <-time.After(1 * time.Second):
+												peerNotifIn <- &msg.Message{
+													Type: msg.StatsNotificationType,
+													Value: &msg.RuntimeStats{
+														Timestamp: uint64(time.Now().Unix()),
+													},
+												}
 											}
-
-										case cmd := <-peerCmdOut:
-											Expect(cmd).NotTo(BeNil())
-											Expect(cmd.Type).To(Equal(msg.TransmitDoneType))
-
-											break Finished
 										}
-									}
+									}()
 
-									runstateHandlerCancel()
+									cmd := <-peerCmdOut
+									Expect(cmd).NotTo(BeNil())
+									Expect(cmd.Type).To(Equal(msg.TransmitDoneType))
+									Expect(cmd.Value).To(BeNil())
+									close(statsNotifDone)
+
+									runstateStatsResponderCancel()
 
 									Eventually(func() string {
 										return fsm.State()
 									}).Should(Equal("done"))
 
-									cmd := <-peerCmdOut
+									cmd = <-peerCmdOut
 									Expect(cmd).NotTo(BeNil())
 									Expect(cmd.Type).To(Equal(msg.GetFinalStatsType))
+									Expect(cmd.Value).To(BeNil())
 
 									close(done)
 								}, assertEpsilon.Seconds())
 
 								Context("when server sends an error instead of final stats, ", func() {
-									It("exits with an error", func() {
+									It("exits with an error", func(done Done) {
 										peerRespIn <- &msg.Message{
 											Type:  msg.ErrorType,
 											Value: "error gathering final stats"}
+
+										close(done)
 									})
 
 								})
@@ -535,13 +438,14 @@ var _ = Describe("Client FSM,", func() {
 												TransmitFrames: uint64(420)},
 										}
 
-										Eventually(func() string {
-											return fsm.State()
-										}).Should(Equal("disconnect"))
+										// Eventually(func() string {
+										// 	return fsm.State()
+										// }).Should(Equal("disconnect"))
 
 										cmd := <-peerCmdOut
 										Expect(cmd).NotTo(BeNil())
 										Expect(cmd.Type).To(Equal(msg.CleanupType))
+										Expect(cmd.Value).To(BeNil())
 
 										Eventually(func() string {
 											return fsm.State()
@@ -551,8 +455,9 @@ var _ = Describe("Client FSM,", func() {
 									})
 
 									Context("when Openperf errors with cleanup, ", func() {
-										It("exits with an error", func() {
+										It("exits with an error", func(done Done) {
 
+											close(done)
 										})
 
 									})
@@ -562,10 +467,12 @@ var _ = Describe("Client FSM,", func() {
 											req := <-opCmdOut
 											Expect(req).NotTo(BeNil())
 											Expect(req.Request).To(BeAssignableToTypeOf(&openperf.DeleteGeneratorRequest{}))
+											Expect(req.Ctx).ToNot(BeNil())
+											Expect(req.Done).ToNot(BeNil())
+											Expect(req.Response).To(BeNil())
+
 											close(req.Done)
 
-											fmt.Println("reading final fsm state")
-											//Eventually(fsmReturn).Should(Receive(BeNil()))
 											res := <-fsmReturn
 											Expect(res).To(BeNil())
 
@@ -576,7 +483,7 @@ var _ = Describe("Client FSM,", func() {
 							})
 
 							AfterEach(func() {
-								runstateHandlerCancel()
+								runstateStatsResponderCancel()
 							})
 
 						})
@@ -585,7 +492,6 @@ var _ = Describe("Client FSM,", func() {
 			})
 
 			Context("server returns valid parameters, test has server -> client traffic, ", func() {
-				//FIXME: declare server configuration msg variable here?
 				BeforeEach(func() {
 
 					fsm.TestConfiguration.UpstreamRate = 0
@@ -614,6 +520,152 @@ var _ = Describe("Client FSM,", func() {
 							Type: msg.AckType,
 						}
 
+						Eventually(func() string { return fsm.State() }).Should(Equal("ready"))
+
+						//Openperf get time command
+						openperfGetTimeCmd = <-opCmdOut
+						Expect(openperfGetTimeCmd).ToNot(BeNil())
+						Expect(openperfGetTimeCmd.Request).To(BeAssignableToTypeOf(&openperf.GetTimeRequest{}))
+						Expect(openperfGetTimeCmd.Done).ToNot(BeNil())
+						Expect(openperfGetTimeCmd.Response).To(BeNil())
+					})
+
+					Context("openperf returns the current time, ", func() {
+						var startCmd *msg.Message
+						BeforeEach(func(done Done) {
+							openperfGetTimeCmd.Response = &models.TimeKeeper{Time: conv.DateTime(strfmt.DateTime(time.Now()))}
+							close(openperfGetTimeCmd.Done)
+
+							startCmd = <-peerCmdOut
+
+							Expect(startCmd).ToNot(BeNil())
+							Expect(startCmd).ToNot(BeNil())
+							Expect(startCmd.Type).To(Equal(msg.StartCommandType))
+							Expect(startCmd.Value).ToNot(BeNil())
+							Expect(startCmd.Value).To(BeAssignableToTypeOf(&msg.StartCommand{}))
+
+							close(done)
+						})
+
+						Context("server ACKs start command, it transitions to armed state, sleeps until start time, it transitions to running state, server is transmitting, ", func() {
+							var runstateStatsResponder *openperfResponder
+							var rxStatsResponderError chan struct{}
+							var runstateResponderError chan struct{}
+							const runstatePollCount = 3
+							var runstateStatsResponderCancel context.CancelFunc
+							//client starts up a runstate poll command here.
+							BeforeEach(func(done Done) {
+								//ACK start command.
+								peerRespIn <- &msg.Message{
+									Type: msg.AckType,
+								}
+
+								// Client sleeps here until start time.
+								time.Sleep(time.Until(startCmd.Value.(*msg.StartCommand).StartTime))
+
+								rxStatsResponderError = make(chan struct{})
+								runstateResponderError = make(chan struct{})
+								runstateStatsResponder = &openperfResponder{
+									OPCmdIn:           opCmdOut,
+									ErrorRunstate:     runstateResponderError,
+									ErrorRxStats:      rxStatsResponderError,
+									RunstatePollCount: runstatePollCount,
+								}
+								var responderCtx context.Context
+								responderCtx, runstateStatsResponderCancel = context.WithCancel(context.Background())
+								go handleOpenperfResponses(responderCtx, runstateStatsResponder)
+
+								// Client switches to running state here.
+
+								close(done)
+							}, assertEpsilon.Seconds())
+
+							Context("server sends notifications, test completes, it switches to the done state, ", func() {
+								BeforeEach(func(done Done) {
+
+									for i := 0; i < 4; i++ {
+										peerNotifIn <- &msg.Message{
+											Type: msg.StatsNotificationType,
+											Value: &msg.RuntimeStats{
+												Timestamp: uint64(time.Now().Unix()),
+											},
+										}
+										time.Sleep(500 * time.Millisecond)
+									}
+
+									peerNotifIn <- &msg.Message{
+										Type: msg.TransmitDoneType,
+									}
+
+									runstateStatsResponderCancel()
+
+									Eventually(func() string {
+										return fsm.State()
+									}).Should(Equal("done"))
+
+									cmd := <-peerCmdOut
+									Expect(cmd).NotTo(BeNil())
+									Expect(cmd.Type).To(Equal(msg.GetFinalStatsType))
+									Expect(cmd.Value).To(BeNil())
+
+									close(done)
+								}, assertEpsilon.Seconds())
+
+								Context("server sends final stats, ", func() {
+									It("switches to the disconnect state", func(done Done) {
+										peerRespIn <- &msg.Message{
+											Type: msg.FinalStatsType,
+											Value: &msg.FinalStats{
+												TransmitFrames: uint64(420)},
+										}
+
+										// Eventually(func() string {
+										// 	return fsm.State()
+										// }).Should(Equal("disconnect"))
+
+										close(done)
+									})
+
+								})
+							})
+
+							AfterEach(func() {
+								runstateStatsResponderCancel()
+							})
+						})
+					})
+				})
+			})
+
+			Context("server returns valid parameters, test has server <-> client traffic, ", func() {
+				BeforeEach(func() {
+
+					fsm.TestConfiguration.UpstreamRate = 100
+					fsm.TestConfiguration.DownstreamRate = 100
+
+					peerRespIn <- &msg.Message{
+						Type: msg.ServerParametersResponseType,
+						Value: &msg.ServerParametersResponse{
+							OpenperfURL: "http://localhost:9000",
+						},
+					}
+
+					command := <-peerCmdOut
+					Expect(command).ToNot(BeNil())
+					Expect(command.Type).To(Equal(msg.SetConfigType))
+					Expect(command.Value).ToNot(BeNil())
+					Expect(command.Value).To(BeAssignableToTypeOf(&msg.ServerConfiguration{}))
+				})
+				Context("server ACKs configuration from client, it transitions to ready state, ", func() {
+					var openperfGetTimeCmd *openperf.Command
+					BeforeEach(func() {
+						//Ack setconfig
+						peerRespIn <- &msg.Message{
+							Type: msg.AckType,
+						}
+
+						Eventually(func() string { return fsm.State() }).Should(Equal("ready"))
+
 						//Openperf get time command
 						openperfGetTimeCmd = <-opCmdOut
 					})
@@ -631,13 +683,202 @@ var _ = Describe("Client FSM,", func() {
 							Expect(startCmd.Type).To(Equal(msg.StartCommandType))
 							Expect(startCmd.Value).ToNot(BeNil())
 							Expect(startCmd.Value).To(BeAssignableToTypeOf(&msg.StartCommand{}))
-							//Expect(startCmd.Value.(*msg.StartCommand).StartTime).To(BeNumerically(">", 0))
-							//require start command time to be roughly now + StartDelay
-							//also other stuff.
 
 							close(done)
 						})
 
+						Context("server ACKs start command, it transitions to armed state, sleeps until start time, it transitions to running state, server and client are transmitting, ", func() {
+							var runstateStatsResponder *openperfResponder
+							//var rxStatsResponderError chan struct{}
+							//var txStatsResponderError chan struct{}
+							//var runstateResponderError chan struct{}
+							var setRunstatePollCount chan int
+							const runstatePollCount = 30 //This will be reduced by the channel above.
+							var runstateStatsResponderCancel context.CancelFunc
+							//client starts up a runstate poll command here.
+							BeforeEach(func(done Done) {
+								//ACK start command.
+								peerRespIn <- &msg.Message{
+									Type: msg.AckType,
+								}
+
+								Eventually(func() string {
+									return fsm.State()
+								}).Should(Equal("armed"))
+
+								// Client sleeps here until start time.
+								time.Sleep(time.Until(startCmd.Value.(*msg.StartCommand).StartTime))
+
+								//FIXME: make sure all these end up getting use. Else don't make them.
+								//rxStatsResponderError = make(chan struct{})
+								//txStatsResponderError = make(chan struct{})
+								//runstateResponderError = make(chan struct{})
+								setRunstatePollCount = make(chan int)
+								runstateStatsResponder = &openperfResponder{
+									OPCmdIn: opCmdOut,
+									//ErrorRunstate:        runstateResponderError,
+									//ErrorRxStats:         rxStatsResponderError,
+									//ErrorTxStats:         txStatsResponderError,
+									RunstatePollCount:    runstatePollCount,
+									NewRunstatePollCount: setRunstatePollCount,
+								}
+								var responderCtx context.Context
+								responderCtx, runstateStatsResponderCancel = context.WithCancel(context.Background())
+								go handleOpenperfResponses(responderCtx, runstateStatsResponder)
+
+								// Client switches to running state here.
+								Eventually(func() string {
+									return fsm.State()
+								}).Should(Equal("running"))
+
+								close(done)
+							}, assertEpsilon.Seconds())
+
+							// At this point either server or client will stop first.
+							// Both are tested below for completeness
+
+							Context("server sends notifications, server stops transmitting, ", func() {
+								BeforeEach(func(done Done) {
+
+									for i := 0; i < 4; i++ {
+										peerNotifIn <- &msg.Message{
+											Type: msg.StatsNotificationType,
+											Value: &msg.RuntimeStats{
+												Timestamp: uint64(time.Now().Unix()),
+											},
+										}
+										time.Sleep(500 * time.Millisecond)
+									}
+
+									peerNotifIn <- &msg.Message{
+										Type: msg.TransmitDoneType,
+									}
+
+									Expect(fsm.State()).To(Equal("running"))
+
+									close(done)
+								}, assertEpsilon.Seconds())
+
+								Context("client continues to run, client stops, ", func() {
+									BeforeEach(func(done Done) {
+										//Sleep to simulate client running for a bit more.
+										time.Sleep(1 * time.Second)
+
+										setRunstatePollCount <- int(0)
+
+										cmd := <-peerCmdOut
+										Expect(cmd).NotTo(BeNil())
+										Expect(cmd.Type).To(Equal(msg.TransmitDoneType))
+										Expect(cmd.Value).To(BeNil())
+
+										runstateStatsResponderCancel()
+
+										Eventually(func() string {
+											return fsm.State()
+										}).Should(Equal("done"))
+
+										cmd = <-peerCmdOut
+										Expect(cmd).NotTo(BeNil())
+										Expect(cmd.Type).To(Equal(msg.GetFinalStatsType))
+										Expect(cmd.Value).To(BeNil())
+
+										close(done)
+									}, assertEpsilon.Seconds())
+
+									Context("server sends final stats, ", func() {
+										It("switches to the disconnect state", func(done Done) {
+											peerRespIn <- &msg.Message{
+												Type: msg.FinalStatsType,
+												Value: &msg.FinalStats{
+													TransmitFrames: uint64(420)},
+											}
+
+											// Eventually(func() string {
+											// 	return fsm.State()
+											// }).Should(Equal("disconnect"))
+
+											close(done)
+
+										})
+
+									})
+
+								})
+							})
+
+							Context("server sends notifications, client stops transmitting, ", func() {
+								var statsNotifDone chan struct{}
+								BeforeEach(func(done Done) {
+									statsNotifDone = make(chan struct{})
+									go func() {
+									Done:
+										for {
+											select {
+											case <-statsNotifDone:
+												break Done
+											case <-time.After(1 * time.Second):
+												peerNotifIn <- &msg.Message{
+													Type: msg.StatsNotificationType,
+													Value: &msg.RuntimeStats{
+														Timestamp: uint64(time.Now().Unix()),
+													},
+												}
+											}
+										}
+									}()
+
+									setRunstatePollCount <- int(0)
+
+									cmd := <-peerCmdOut
+									Expect(cmd).NotTo(BeNil())
+									Expect(cmd.Type).To(Equal(msg.TransmitDoneType))
+
+									Expect(fsm.State()).To(Equal("running"))
+
+									close(done)
+								}, assertEpsilon.Seconds())
+
+								Context("server continues to run, server stops, ", func() {
+									BeforeEach(func(done Done) {
+										//Sleep to simulate server running for a bit more.
+										time.Sleep(1 * time.Second)
+
+										close(statsNotifDone)
+										peerNotifIn <- &msg.Message{
+											Type: msg.TransmitDoneType,
+										}
+
+										cmd := <-peerCmdOut
+										Expect(cmd).NotTo(BeNil())
+										Expect(cmd.Type).To(Equal(msg.GetFinalStatsType))
+
+										Expect(fsm.State()).To(Equal("done"))
+
+										runstateStatsResponderCancel()
+
+										close(done)
+									}, assertEpsilon.Seconds())
+
+									Context("server sends final stats, ", func() {
+										It("switches to the disconnect state", func(done Done) {
+											peerRespIn <- &msg.Message{
+												Type: msg.FinalStatsType,
+												Value: &msg.FinalStats{
+													TransmitFrames: uint64(420)},
+											}
+
+											// Eventually(func() string {
+											// 	return fsm.State()
+											// }).Should(Equal("disconnect"))
+
+											close(done)
+
+										}, assertEpsilon.Seconds())
+
+									})
+								})
+							})
+						})
 					})
 				})
 			})
@@ -648,19 +889,18 @@ var _ = Describe("Client FSM,", func() {
 	})
 })
 
-//AfterEach(func() {
-//Eventually(fsmReturn).Should(Receive(BeNil()))
-//})
-
-//})
-
-type runstateStatsPollHandler struct {
+// Unit test utilities
+type openperfResponder struct {
 	OPCmdIn chan *openperf.Command
+
+	NewRunstatePollCount <-chan int
 
 	// ErrorRunstate write an error here to have it appear in the runstate Request's Response field.
 	ErrorRunstate chan struct{}
-	// ErrorStats write an error here to have it appear in the stats Request's Response field.
-	ErrorStats chan struct{}
+	// ErrorRxStats write an error here to have it appear in the stats Request's Response field.
+	ErrorRxStats chan struct{}
+	// ErrorTxStats write an error here to have it appear in the stats Request's Response field.
+	ErrorTxStats chan struct{}
 
 	//runstatePollCount how many times should the "port" object return running == true.
 	RunstatePollCount int
@@ -672,25 +912,33 @@ func makeOPGeneratorResponse(running bool) *openperf.GetGeneratorResponse {
 	}
 }
 
-func makeOPStatsResponse() *openperf.GetStatsResponse {
+func makeOPTxStatsResponse() *openperf.GetTxStatsResponse {
 
-	return &openperf.GetStatsResponse{
+	return &openperf.GetTxStatsResponse{
 		Timestamp: uint64(time.Now().Unix()),
 	}
 }
 
-func handleRunstateStatsResponses(ctx context.Context, handler *runstateStatsPollHandler) {
-	runstatePollsRemaining := handler.RunstatePollCount
-	var statsErr bool = false
+func makeOPRxStatsResponse() *openperf.GetRxStatsResponse {
+
+	return &openperf.GetRxStatsResponse{
+		Timestamp: uint64(time.Now().Unix()),
+	}
+}
+
+func handleOpenperfResponses(ctx context.Context, responder *openperfResponder) {
+	runstatePollsRemaining := responder.RunstatePollCount
+	var rxStatsErr bool = false
+	var txStatsErr bool = false
 	var runstateErr bool = false
+
 Done:
 	for {
 		select {
 		case <-ctx.Done():
 			break Done
 
-		case req, ok := <-handler.OPCmdIn:
-			fmt.Println("got command in handler")
+		case req, ok := <-responder.OPCmdIn:
 			if !ok {
 				fmt.Println("something went really wrong!")
 			}
@@ -709,19 +957,32 @@ Done:
 				}
 				close(req.Done)
 
-			case *openperf.GetStatsRequest:
-				if statsErr == true {
-					req.Response = errors.New("error reading stats from Openperf.")
-					statsErr = false
+			case *openperf.GetTxStatsRequest:
+				if txStatsErr == true {
+					req.Response = errors.New("error reading tx stats from Openperf.")
+					txStatsErr = false
 				} else {
-					req.Response = makeOPStatsResponse()
+					req.Response = makeOPTxStatsResponse()
+				}
+				close(req.Done)
+
+			case *openperf.GetRxStatsRequest:
+				if rxStatsErr == true {
+					req.Response = errors.New("error reading rx stats from Openperf.")
+					rxStatsErr = false
+				} else {
+					req.Response = makeOPRxStatsResponse()
 				}
 				close(req.Done)
 			}
-		case <-handler.ErrorRunstate:
+		case <-responder.ErrorRunstate:
 			runstateErr = true
-		case <-handler.ErrorStats:
-			statsErr = true
+		case <-responder.ErrorTxStats:
+			txStatsErr = true
+		case <-responder.ErrorRxStats:
+			rxStatsErr = true
+		case val := <-responder.NewRunstatePollCount:
+			runstatePollsRemaining = val
 		}
 	}
 }
