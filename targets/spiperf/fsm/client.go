@@ -16,19 +16,19 @@ import (
 
 const Version = "1.0"
 
-// Client is the FSM for the client stuff in spiperf
+// Client is the FSM for spiperf when run in client mode.
 type Client struct {
 	// PeerCmdOut sends commands to the server Spiperf instance.
-	PeerCmdOut chan *msg.Message
+	PeerCmdOut chan<- *msg.Message
 
 	// PeerRespIn receives responses from the server Spiperf instance.
-	PeerRespIn chan *msg.Message
+	PeerRespIn <-chan *msg.Message
 
 	// PeerNotifIn receives notifications from the server Spiperf instance.
-	PeerNotifIn chan *msg.Message
+	PeerNotifIn <-chan *msg.Message
 
 	// OpenperfCmdOut channel to send commands to Openperf Controller.
-	OpenperfCmdOut chan *openperf.Command
+	OpenperfCmdOut chan<- *openperf.Command
 
 	// PeerTimeout specifies the maximum time the FSM  will wait for responses from the peer instance.
 	PeerTimeout time.Duration
@@ -58,7 +58,6 @@ type Client struct {
 
 func (c *Client) enter(state string) {
 	c.state.Store(state)
-	fmt.Printf("ENTER - %s\n", state)
 }
 
 func (c *Client) State() (state string) {
@@ -91,23 +90,21 @@ func (c *Client) Run(ctx context.Context) error {
 	if c.StatsPollInterval <= 0 {
 		return &InternalError{Message: "Invalid stats polling interval"}
 	}
-	// if c.TestConfiguration == nil {
-	// 	return &InternalError{Message: "Invalid Test Configuration"}
-	// }
 
 	defer func() {
 		close(c.PeerCmdOut)
 	}()
 
+	var retVal error
 	f := (*Client).connect
 	for f != nil {
 		var err error
-		if f, err = f(c, ctx); err != nil {
-			return err
+		if f, err = f(c, ctx); err != nil && retVal == nil {
+			retVal = err
 		}
 	}
 
-	return nil
+	return retVal
 }
 
 func (c *Client) connect(ctx context.Context) (clientStateFunc, error) {
@@ -179,6 +176,9 @@ func (c *Client) configure(ctx context.Context) (clientStateFunc, error) {
 
 	//XXX: test configuration will be built here.
 
+	//XXX: local Openperf will be configured here.
+	//From here on out any error must jump to the cleanup state before exiting.
+
 	// Send configuration to server.
 	c.PeerCmdOut <- &msg.Message{
 		Type:  msg.SetConfigType,
@@ -189,7 +189,7 @@ func (c *Client) configure(ctx context.Context) (clientStateFunc, error) {
 	reply := <-c.PeerRespIn
 
 	if reply.Type != msg.AckType {
-		return nil, &InvalidConfigurationError{Message: reply.Value.(string)}
+		return (*Client).cleanup, &InvalidConfigurationError{Message: reply.Value.(string)}
 	}
 
 	// Switch to Ready state.
@@ -224,14 +224,14 @@ func (c *Client) ready(ctx context.Context) (clientStateFunc, error) {
 			Value: &msg.StartCommand{StartTime: c.startTime},
 		}
 	case error:
-		return nil, &InternalError{Message: resp.Error()}
+		return (*Client).cleanup, &InternalError{Message: resp.Error()}
 	}
 
 	// wait for ack to start time message.
 	reply := <-c.PeerRespIn
 
 	if reply.Type != msg.AckType {
-		return nil, &InvalidConfigurationError{Message: reply.Value.(string)}
+		return (*Client).cleanup, &InvalidConfigurationError{Message: reply.Value.(string)}
 	}
 
 	// switch to armed state
@@ -271,6 +271,7 @@ func (c *Client) running(ctx context.Context) (clientStateFunc, error) {
 	var serverRunning bool
 
 	switch {
+	// client <--> server traffic
 	case c.TestConfiguration.UpstreamRate > 0 && c.TestConfiguration.DownstreamRate > 0:
 		// Start up generator polling (to check runstate)
 		var generatorReqCtx context.Context
@@ -305,7 +306,9 @@ func (c *Client) running(ctx context.Context) (clientStateFunc, error) {
 		clientRunning = true
 		serverRunning = true
 
+	// client -> server traffic
 	case c.TestConfiguration.UpstreamRate > 0:
+		// Start up generator polling (to check runstate)
 		var generatorReqCtx context.Context
 		generatorReqCtx, generatorPollCancel = context.WithCancel(ctx)
 		generatorPollResp = make(chan interface{})
@@ -315,6 +318,7 @@ func (c *Client) running(ctx context.Context) (clientStateFunc, error) {
 			OpenperfController: c.OpenperfCmdOut,
 			Responses:          generatorPollResp})
 
+		// Start up transmit stats polling
 		var txStatReqCtx context.Context
 		txStatReqCtx, txStatsPollCancel = context.WithCancel(ctx)
 		txStatsPollResp = make(chan interface{})
@@ -327,7 +331,9 @@ func (c *Client) running(ctx context.Context) (clientStateFunc, error) {
 		clientRunning = true
 		serverRunning = false
 
+	// server -> client traffic
 	case c.TestConfiguration.DownstreamRate > 0:
+		// Start up receive stats polling
 		var rxStatReqCtx context.Context
 		rxStatReqCtx, rxStatsPollCancel = context.WithCancel(ctx)
 		rxStatsPollResp = make(chan interface{})
@@ -346,41 +352,54 @@ Done:
 		select {
 		case notif, ok := <-c.PeerNotifIn:
 			if !ok {
+				return (*Client).cleanup, &InternalError{Message: "error reading peer spiperf notifications."}
 			}
 
 			switch notif.Type {
 			case msg.ErrorType:
 				//Write out error.
-				return nil, &InternalError{Message: notif.Value.(string)}
+				return (*Client).cleanup, &InternalError{Message: notif.Value.(string)}
 			case msg.TransmitDoneType:
 				serverRunning = false
 				rxStatsPollCancel()
-				//FIXME: check for redundant messages here?
 
-				//fmt.Println("got msg.TransmitDoneType")
 				if !clientRunning {
 					break Done
 				}
 			case msg.StatsNotificationType:
-				//FIXME add a go routine to handle client side stats?
+				//XXX: statistics from the server will be processed here.
 			}
 		case txStat, ok := <-txStatsPollResp:
 			if !ok {
 				txStatsPollResp = nil
 				continue
 			}
-			pretty.Println(txStat)
-			//FIXME do something with the local tx stats.
+
+			stats, ok := txStat.(*openperf.GetTxStatsResponse)
+			if !ok {
+				generatorPollCancel()
+				txStatsPollCancel()
+				return (*Client).cleanup, &InternalError{Message: txStat.(error).Error()}
+			}
+			pretty.Println(stats)
+			//XXX: Tx stats will be processed here.
+
 		case rxStat, ok := <-rxStatsPollResp:
 			if !ok {
 				rxStatsPollResp = nil
 				continue
 			}
-			pretty.Println(rxStat)
-			//FIXME do something with the local rx stats.
+			stats, ok := rxStat.(*openperf.GetRxStatsResponse)
+			if !ok {
+				rxStatsPollCancel()
+				return (*Client).cleanup, &InternalError{Message: rxStat.(error).Error()}
+			}
+			pretty.Println(stats)
+			//XXX: Rx stats will be processed here.
+
 		case gen, ok := <-generatorPollResp:
 			if !ok {
-				generatorPollResp = nil //FIXME: this might be redundant.
+				generatorPollResp = nil
 				continue
 			}
 
@@ -388,7 +407,7 @@ Done:
 			if !genOk {
 				generatorPollCancel()
 				txStatsPollCancel()
-				return nil, &InternalError{Message: gen.(error).Error()}
+				return (*Client).cleanup, &InternalError{Message: gen.(error).Error()}
 			}
 
 			if !generator.Running {
@@ -440,21 +459,9 @@ func (c *Client) done(ctx context.Context) (clientStateFunc, error) {
 	reply := <-c.PeerRespIn
 
 	if reply.Type != msg.FinalStatsType {
-		return nil, &MessagingError{Message: reply.Value.(string)}
+		return (*Client).cleanup, &MessagingError{Message: reply.Value.(string)}
 	}
 
-	return (*Client).disconnect, nil
-}
-
-// disconnect tracks FSM state that disconnects from the server spiperf instance.
-func (c *Client) disconnect(ctx context.Context) (clientStateFunc, error) {
-	c.enter("disconnect")
-
-	c.PeerCmdOut <- &msg.Message{
-		Type: msg.CleanupType,
-	}
-
-	//FIXME: close cmd out channel here?
 	return (*Client).cleanup, nil
 }
 
@@ -477,7 +484,7 @@ func (c *Client) cleanup(ctx context.Context) (clientStateFunc, error) {
 		select {
 		case <-reqDone:
 			if req.Response != nil {
-				// error!
+				return nil, &InternalError{Message: req.Response.(error).Error()}
 			}
 
 		case <-timeout:

@@ -2,6 +2,7 @@ package msg
 
 import "time"
 
+// Message type definitions
 const (
 	AckType                      = "ACK" //No message value needed.
 	ErrorType                    = "ERROR"
@@ -12,11 +13,9 @@ const (
 	SetConfigType                = "SETCONFIG"
 	StartCommandType             = "STARTCOMMAND"
 	StatsNotificationType        = "STATSNOTIFICATION"
-	StopNotificationType         = "STOPNOTIFICATION" //No message value needed.
 	TransmitDoneType             = "TRANSMITDONE"
 	GetFinalStatsType            = "GETFINALSTATS"
 	FinalStatsType               = "FINALSTATS"
-	CleanupType                  = "CLEANUP" //No message value needed.
 )
 
 // Message is a message envelope for communication between spiperf instances.
@@ -40,20 +39,22 @@ type ServerParametersResponse struct {
 
 // ServerConfiguration sends the server's view of the test configuration to the server.
 type ServerConfiguration struct {
-	TransmitDuration uint
-	FixedFrameSize   uint
+	TransmitDuration uint `json:"transmit_duration"`
+	FixedFrameSize   uint `json:"fixed_frame_size"`
 }
 
 // StartCommand tells the server what time the test starts running.
 // At the given time the server will start transmitting and/or receiving packets.
 type StartCommand struct {
-	StartTime time.Time
+	StartTime time.Time `json:"start_time"`
 }
 
+// RuntimeStats convey stats while test is running.
 type RuntimeStats struct {
-	Timestamp uint64
+	Timestamp uint64 `json:"timestamp"`
 }
 
+// FinalStats convey final set of stats sampled after the test completes.
 type FinalStats struct {
-	TransmitFrames uint64
+	TransmitFrames uint64 `json:"transmit_frames"`
 }

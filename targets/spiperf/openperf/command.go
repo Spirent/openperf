@@ -2,7 +2,6 @@ package openperf
 
 import (
 	"context"
-	"time"
 )
 
 // Command encapsulates an Openperf REST API request and reply.
@@ -37,40 +36,43 @@ func (c *Command) SignalDone(res interface{}) {
 	}
 }
 
+// DeleteGeneratorRequest request Openperf to delete specified generator resource.
 type DeleteGeneratorRequest struct {
 	Id string
 }
 
+// GetGeneratorRequest request Openperf to return configured generator resource.
 type GetGeneratorRequest struct {
 }
 
-//FIXME: hack. Change to using swagger-generated results object asap.
+// GetGeneratorResponse response from Openperf containing the requested generator resource.
+//XXX: placeholder until the Openperf generator API is ready.
 type GetGeneratorResponse struct {
 	Running bool
 }
 
+// GetRxStatsRequest request Openperf to return relevant receive statistics.
 type GetRxStatsRequest struct {
 }
 
-//FIXME: hack. Change to using swagger-generated results object asap.
+// GetRxStatsResponse response from Openperf containing requested receive statistics.
+//XXX: most probably a placeholder until the Openperf analyzer API is ready.
 type GetRxStatsResponse struct {
 	Timestamp uint64
 	TxPackets uint64
 	TxBytes   uint64
 }
 
+// GetTimeRequest request Openperf instance current time.
 type GetTimeRequest struct {
 }
 
-//FIXME: hack. Change to using swagger-generated results object asap.
-type GetTimeResponse struct {
-	SystemTime time.Time
-}
-
+// GetTxStatsRequest request Openperf to return relevant transmit statistics.
 type GetTxStatsRequest struct {
 }
 
-//FIXME: hack. Change to using swagger-generated results object asap.
+// GetTxStatsResponse response containing requested transmit statistics.
+//XXX: most probably a placeholder until the Openperf generator API is ready.
 type GetTxStatsResponse struct {
 	Timestamp uint64
 	TxPackets uint64

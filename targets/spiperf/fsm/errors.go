@@ -1,30 +1,17 @@
 package fsm
 
-type InvalidCommandError struct {
-	Message string
-	Err     error
-}
-
-func (e *InvalidCommandError) Error() string {
-	return "Invalid command: " + e.Message //+ ": " + e.Err.Error()
-}
-
-type InvalidConfigurationError struct {
-	Message string
-	Err     error
-}
-
+// InternalError returned when a not-otherwise-specified error occurs.
 type InternalError struct {
 	Message string
 	Err     error
 }
 
-type TimeoutError struct {
-	Message string
-	Err     error
+func (e *InternalError) Error() string {
+	return "Internal Error Occurred: " + e.Message //+ ": " + e.Err.Error()
 }
 
-type MessagingError struct {
+// InvalidConfigurationError returned when a configuration contains invalid parameters.
+type InvalidConfigurationError struct {
 	Message string
 	Err     error
 }
@@ -33,14 +20,22 @@ func (e *InvalidConfigurationError) Error() string {
 	return "Invalid configuration: " + e.Message //+ ": " + e.Err.Error()
 }
 
-func (e *InternalError) Error() string {
-	return "Internal Error Occurred: " + e.Message //+ ": " + e.Err.Error()
-}
-
-func (e *TimeoutError) Error() string {
-	return "Timeout Error Occurred: " + e.Message //+ ": " + e.Err.Error()
+// MessagingError returned when there is an issue with messaging between peer spiperf instances.
+type MessagingError struct {
+	Message string
+	Err     error
 }
 
 func (e *MessagingError) Error() string {
 	return "Messaging Error Error Occurred: " + e.Message //+ ": " + e.Err.Error()
+}
+
+// TimeoutError returned when an operation times out.
+type TimeoutError struct {
+	Message string
+	Err     error
+}
+
+func (e *TimeoutError) Error() string {
+	return "Timeout Error Occurred: " + e.Message //+ ": " + e.Err.Error()
 }

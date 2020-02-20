@@ -1,9 +1,8 @@
 package fsm
 
+// Configuration repository of information for a spiperf test.
 type Configuration struct {
 	OpenperfURL string
-
-	TransmitDirection string //FIXME: make this an enum {up, down, both}. Do we even need this?
 
 	UpstreamRate   uint
 	DownstreamRate uint
@@ -15,12 +14,13 @@ type Configuration struct {
 	FixedFrameSize        *uint
 	FrameSizeDistribution string
 
-	IMIXGenomeCode *string //FIXME double-check what the REST API is expecting (array vs single string)
+	IMIXGenomeCode *string //XXX: double-check what the REST API is expecting (array vs single string)
 
 	ClientAddresses *AddressConfiguration
 	ServerAddresses *AddressConfiguration
 }
 
+// AddressConfiguration store list of protocol headers and associated addresses.
 type AddressConfiguration struct {
 	ProtocolList []string
 	AddressList  []string
