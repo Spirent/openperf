@@ -222,6 +222,8 @@ static void rx_sink_dispatch(const fib* fib,
                              uint16_t n)
 {
     for (auto& sink : fib->get_sinks(rxq->port_id())) {
+        if (!sink.active()) { continue; }
+
         OP_LOG(OP_LOG_TRACE,
                "Dispatching packets to sink %s\n",
                sink.id().c_str());

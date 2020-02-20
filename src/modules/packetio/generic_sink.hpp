@@ -27,6 +27,8 @@ public:
 
     std::string id() const { return (m_self->id()); }
 
+    bool active() const { return (m_self->active()); }
+
     uint16_t push(packet_buffer* const packets[], uint16_t length) const
     {
         return (m_self->push(packets, length));
@@ -52,6 +54,7 @@ private:
     {
         virtual ~sink_concept() = default;
         virtual std::string id() const = 0;
+        virtual bool active() const = 0;
         virtual bool uses_feature(enum sink_feature_flags) const = 0;
         virtual uint16_t push(packet_buffer* const packets[],
                               uint16_t length) = 0;
@@ -65,6 +68,8 @@ private:
         {}
 
         std::string id() const override { return (m_sink.id()); }
+
+        bool active() const override { return (m_sink.active()); }
 
         bool uses_feature(enum sink_feature_flags flags) const override
         {
