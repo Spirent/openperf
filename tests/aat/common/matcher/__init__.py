@@ -9,6 +9,10 @@ from common.matcher.interface import be_valid_interface
 # module.py
 from common.matcher.module import be_valid_module
 
+# packet_analyzer.py
+from common.matcher.packet_analyzer import be_valid_packet_analyzer
+from common.matcher.packet_analyzer import be_valid_packet_analyzer_result
+
 # port.py
 from common.matcher.port import be_valid_port
 
