@@ -11,7 +11,10 @@ namespace openperf::core {
 
 class uuid
 {
-    alignas(8) uint8_t m_octets[16];
+    alignas(8) std::array<uint8_t, 16> m_octets;
+
+    friend bool operator<(const uuid&, const uuid&);
+    friend bool operator==(const uuid&, const uuid&);
 
 public:
     static uuid random() /* constructor for random uuid */
@@ -81,7 +84,7 @@ public:
         }
     }
 
-    uuid(const uint8_t data[15])
+    uuid(const uint8_t data[16])
         : m_octets{data[0],
                    data[1],
                    data[2],
@@ -120,16 +123,18 @@ public:
     }
 
     const uint8_t* data() const { return (&m_octets[0]); }
+
+    uint8_t* data() { return (&m_octets[0]); }
 };
 
 inline bool operator==(const uuid& lhs, const uuid& rhs)
 {
-    return (lhs[0] == rhs[0] && lhs[1] == rhs[1] && lhs[2] == rhs[2]
-            && lhs[3] == rhs[3] && lhs[4] == rhs[4] && lhs[5] == rhs[5]
-            && lhs[6] == rhs[6] && lhs[7] == rhs[7] && lhs[8] == rhs[8]
-            && lhs[9] == rhs[9] && lhs[10] == rhs[10] && lhs[11] == rhs[11]
-            && lhs[12] == rhs[12] && lhs[13] == rhs[13] && lhs[14] == rhs[14]
-            && lhs[15] == rhs[15]);
+    return (lhs.m_octets == rhs.m_octets);
+}
+
+inline bool operator<(const uuid& lhs, const uuid& rhs)
+{
+    return (lhs.m_octets < rhs.m_octets);
 }
 
 inline std::string to_string(const uuid& uuid)
