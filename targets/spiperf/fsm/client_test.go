@@ -368,6 +368,10 @@ var _ = Describe("Client FSM,", func() {
 										Value: "error with rx stats",
 									}
 
+									// Wait for the system to get into the cleanup state, else
+									// there could be in-flight poll requests.
+									Eventually(func() string { return fsm.State() }).Should(Equal("cleanup"))
+
 									drainCleanupRequests(opCmdOut)
 
 									Eventually(fsmReturn).Should(Receive(
@@ -376,13 +380,16 @@ var _ = Describe("Client FSM,", func() {
 									Expect(fsm.State()).To(Equal("cleanup"))
 
 									close(done)
-								})
+								}, assertEpsilon.Seconds())
 							})
 
 							Context("when openperf returns an error while polling generator, ", func() {
 								It("exits with an error", func(done Done) {
 									runstateResponderError <- struct{}{}
 
+									// Wait for the system to get into the cleanup state, else
+									// there could be in-flight poll requests.
+									Eventually(func() string { return fsm.State() }).Should(Equal("cleanup"))
 									drainCleanupRequests(opCmdOut)
 
 									val := <-fsmReturn
@@ -400,6 +407,9 @@ var _ = Describe("Client FSM,", func() {
 								It("exits with an error", func(done Done) {
 									txStatsResponderError <- struct{}{}
 
+									// Wait for the system to get into the cleanup state, else
+									// there could be in-flight poll requests.
+									Eventually(func() string { return fsm.State() }).Should(Equal("cleanup"))
 									drainCleanupRequests(opCmdOut)
 
 									val := <-fsmReturn
@@ -621,6 +631,12 @@ var _ = Describe("Client FSM,", func() {
 							Context("when openperf returns an error while polling Rx stats, ", func() {
 								It("exits with an error", func(done Done) {
 									rxStatsResponderError <- struct{}{}
+
+									// Wait for the system to get into the cleanup state, else
+									// there could be in-flight poll requests.
+									Eventually(func() string { return fsm.State() }).Should(Equal("cleanup"))
+
+									drainCleanupRequests(opCmdOut)
 
 									val := <-fsmReturn
 									Expect(val).To(BeAssignableToTypeOf(&InternalError{}))
@@ -942,6 +958,10 @@ func drainCleanupRequests(opCmd chan *openperf.Command) {
 		case <-time.After(500 * time.Millisecond):
 			return
 		case cmd := <-opCmd:
+			switch cmd.Request.(type) {
+			case *openperf.GetGeneratorRequest, *openperf.GetRxStatsRequest, *openperf.GetTxStatsRequest:
+				fmt.Fprintln(GinkgoWriter, "Info: Openperf Command from a poll request received by Unit Tests after running state finished. Not necessarily an error since poll requests are sent asynchronously.")
+			}
 			close(cmd.Done)
 		}
 	}
