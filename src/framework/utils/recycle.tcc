@@ -88,20 +88,21 @@ template <int NumReaders> void depot<NumReaders>::writer_process_gc_callbacks()
 }
 
 template <int NumReaders>
-void depot<NumReaders>::reader_checkpoint(size_t reader_id)
+void depot<NumReaders>::reader_checkpoint(size_t reader_id) const
 {
     auto v = m_writer_version.load(std::memory_order_consume);
     m_reader_states[reader_id].version.store(v, std::memory_order_release);
 }
 
-template <int NumReaders> void depot<NumReaders>::reader_idle(size_t reader_id)
+template <int NumReaders>
+void depot<NumReaders>::reader_idle(size_t reader_id) const
 {
     m_reader_states[reader_id].version.store(idle_version,
                                              std::memory_order_release);
 }
 
 template <int NumReaders>
-guard<NumReaders>::guard(depot<NumReaders>& depot, size_t reader_id)
+guard<NumReaders>::guard(const depot<NumReaders>& depot, size_t reader_id)
     : m_depot(depot)
     , m_id(reader_id)
 {

@@ -33,7 +33,7 @@ template <int NumReaders> class depot
      */
     struct alignas(cache_line_size) reader_state
     {
-        std::atomic_size_t version;
+        mutable std::atomic_size_t version;
     };
     alignas(
         cache_line_size) std::array<reader_state, NumReaders> m_reader_states;
@@ -56,8 +56,8 @@ public:
     /**
      * Thread safe reader functions
      **/
-    void reader_checkpoint(size_t reader_id);
-    void reader_idle(size_t reader_id);
+    void reader_checkpoint(size_t reader_id) const;
+    void reader_idle(size_t reader_id) const;
 };
 
 /**
@@ -66,11 +66,11 @@ public:
  **/
 template <int NumReaders> class guard
 {
-    depot<NumReaders>& m_depot;
+    const depot<NumReaders>& m_depot;
     size_t m_id;
 
 public:
-    guard(depot<NumReaders>& depot, size_t reader_id);
+    guard(const depot<NumReaders>& depot, size_t reader_id);
     ~guard();
 };
 
