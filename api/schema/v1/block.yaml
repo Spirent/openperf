@@ -1,0 +1,535 @@
+swagger: "2.0"
+
+info:
+  title: Openperf Block I/O Generation API
+  description: REST API interface to Openperf block I/O module
+  termsOfService: TODO
+  contact:
+    name: "Spirent, Inc."
+    url: "http://spirent.com"
+    email: "support@spirent.com"
+  license:
+    name: "TBD"
+    url: "https://github.com/Spirent/openperf/blob/master/LICENSE"
+  version: "1"
+
+schemes:
+  - http
+  - https
+
+host: localhost
+
+produces:
+  - application/json
+
+consumes:
+  - application/json
+
+parameters:
+  id:
+    name: id
+    in: path
+    description: Unique resource identifier
+    type: string
+    format: string
+    required: true
+
+tags:
+  - name: BlockDevices
+  - name: BlockFiles
+  - name: BlockGenerators
+
+basePath: /
+
+paths:
+  /block-devices:
+    get:
+      operationId: ListBlockDevices
+      tags:
+        - BlockDevices
+      summary: List block devices
+      description: The `block-devices` endpoint returns all block devices that are eligible as load generation targets.
+      responses:
+        200:
+          description: Success
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/BlockDevice"
+
+  /block-devices/{id}:
+    get:
+      operationId: GetBlockDevice
+      tags:
+        - BlockDevices
+      summary: Get a block device
+      description: Returns a block device, by id.
+      parameters:
+        - $ref: "#/parameters/id"
+      responses:
+        200:
+          description: Success
+          schema:
+            $ref: "#/definitions/BlockDevice"
+
+  /block-files:
+    get:
+      operationId: ListBlockFiles
+      tags:
+        - BlockFiles
+      summary: List block files
+      description: The `block-files` endpoint returns all block files that are eligible as load generation targets.
+      responses:
+        200:
+          description: Success
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/BlockFile"
+    post:
+      operationId: CreateBlockFile
+      tags:
+        - BlockFiles
+      summary: Create a block file
+      description: Create a new block file.
+      parameters:
+        - name: file
+          in: body
+          description: New block file
+          required: true
+          schema:
+            $ref: "#/definitions/BlockFile"
+      responses:
+        201:
+          description: Success
+          headers:
+            Location:
+              description: URI of created block file
+              type: string
+          schema:
+            $ref: "#/definitions/BlockFile"
+
+  /block-files/{id}:
+    get:
+      operationId: GetBlockFile
+      tags:
+        - BlockFiles
+      summary: Get a block file
+      description: Returns a block file, by id.
+      parameters:
+        - $ref: "#/parameters/id"
+      responses:
+        200:
+          description: Success
+          schema:
+            $ref: "#/definitions/BlockFile"
+    delete:
+      operationId: DeleteBlockFile
+      tags:
+        - BlockFiles
+      summary: Delete a block file
+      description: Deletes an existing block file. Idempotent.
+      parameters:
+        - $ref: "#/parameters/id"
+      responses:
+        204:
+          description: No Content
+
+  /block-generators:
+    get:
+      operationId: ListGenerators
+      tags:
+        - BlockGenerators
+      summary: List block generators
+      description: The `block-generators` endpoint returns all of the configured block generators.
+      responses:
+        200:
+          description: Success
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/BlockGenerator"
+    post:
+      operationId: CreateBlockGenerator
+      tags:
+        - BlockGenerators
+      summary: Create a block generator
+      description: Create a new block generator
+      parameters:
+        - name: generator
+          in: body
+          description: New block generator
+          required: true
+          schema:
+            $ref: "#/definitions/BlockGenerator"
+      responses:
+        201:
+          description: Success
+          headers:
+            Location:
+              description: URI of created block generator
+              type: string
+          schema:
+            $ref: "#/definitions/BlockGenerator"
+
+  /block-generators/{id}:
+    get:
+      operationId: GetBlockGenerator
+      tags:
+        - BlockGenerators
+      summary: Get a block generator
+      description: Returns a block generator, by id.
+      parameters:
+        - $ref: "#/parameters/id"
+      responses:
+        200:
+          description: Success
+          schema:
+            $ref: "#/definitions/BlockGenerator"
+    delete:
+      operationId: DeleteBlockGenerator
+      tags:
+        - BlockGenerators
+      summary: Delete a block generator
+      description: Deletes an existing block generator. Idempotent.
+      parameters:
+        - $ref: "#/parameters/id"
+      responses:
+        204:
+          description: Block generator successfully deleted
+
+  /block-generators/{id}/start:
+    post:
+      operationId: StartBlockGenerator
+      tags:
+        - BlockGenerators
+      summary: Start a block generator
+      description: Start an existing block generator. Idempotent.
+      parameters:
+        - $ref: "#/parameters/id"
+      responses:
+        204:
+          description: Block generator successfully started
+
+  /block-generators/{id}/stop:
+    post:
+      operationId: StopBlockGenerator
+      tags:
+        - BlockGenerators
+      summary: Stop a block generator
+      description: Stop a running block generator. Idempotent.
+      parameters:
+        - $ref: "#/parameters/id"
+      responses:
+        204:
+          description: Block generator successfully stopped
+
+  /block-generators/x/bulk-start:
+    post:
+      operationId: BulkStartBlockGenerators
+      tags:
+        - BlockGenerators
+      summary: Tell multiple block generators to start
+      description: Start multiple block generators.
+      parameters:
+        - name: bulk_start
+          in: body
+          description: Bulk start
+          required: true
+          schema:
+            type: object
+            title: BulkStartBlockGeneratorsRequest
+            description: Parameters for the bulk start operation
+            properties:
+              items:
+                type: array
+                description: List of block generator identifiers
+                items:
+                  type: string
+                minItems: 1
+            required:
+              - items
+      responses:
+        200:
+          description: Success
+          schema:
+            type: object
+            title: BulkStartBlockGeneratorsResponse
+            properties:
+              succeeded:
+                type: array
+                description: List of started block generator identifiers
+                items:
+                  type: string
+              failed:
+                type: array
+                description: List of failed block generator identifiers
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                    error:
+                      type: string
+                      description: Cause of Block Generator start failure
+                  required:
+                    - id
+
+  /block-generators/x/bulk-stop:
+    post:
+      operationId: BulkStopBlockGenerators
+      tags:
+        - BlockGenerators
+      summary: Bulk stop block generators
+      description: Best-effort stop multiple block generators. Non-existent block generator ids do not cause errors. Idempotent.
+      parameters:
+        - name: bulk_stop
+          in: body
+          description: Bulk stop
+          required: true
+          schema:
+            type: object
+            title: BulkStopBlockGeneratorsRequest
+            description: Parameters for the bulk stop operation
+            properties:
+              ids:
+                type: array
+                description: List of block generator identifiers
+                items:
+                  type: string
+                minItems: 1
+            required:
+              - ids
+      responses:
+        204:
+          description: No Content
+
+  /block-generator-results:
+    get:
+      operationId: ListBlockGeneratorResults
+      tags:
+        - BlockGenerators
+      summary: List block generator results
+      description: The `block-generator-results` endpoint returns all of the results produced by running block generators.
+      responses:
+        200:
+          description: Success
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/BlockGeneratorResult"
+
+  /block-generator-results/{id}:
+    get:
+      operationId: GetBlockGeneratorResult
+      tags:
+        - BlockGenerators
+      summary: Get a result from a block generator
+      description: Returns results from a block generator by result id.
+      parameters:
+        - $ref: "#/parameters/id"
+      responses:
+        200:
+          description: Success
+          schema:
+            $ref: "#/definitions/BlockGeneratorResult"
+    delete:
+      operationId: DeleteBlockGeneratorResult
+      tags:
+        - BlockGenerators
+      summary: Delete results from a block generator. Idempotent.
+      parameters:
+        - $ref: "#/parameters/id"
+      responses:
+        204:
+          description: No Content
+
+definitions:
+  BlockDevice:
+    type: object
+    description: Block device
+    properties:
+      id:
+        type: string
+        description: Unique device identifier
+      path:
+        type: string
+        description: Resource pathname
+      size:
+        type: integer
+        description: Resource size (in bytes)
+        format: int64
+      info:
+        type: string
+        description: Any info related to the current block device
+      usable:
+        type: boolean
+        description: Indicates whether it is safe to use this device for block I/O load generation
+    required:
+      - id
+      - path
+      - size
+      - usable
+
+  BlockFile:
+    type: object
+    description: Block file
+    properties:
+      id:
+        type: string
+        description: Unique file identifier
+      file_size:
+        type: integer
+        description: Size of test file (in bytes)
+        format: int64
+        minimum: 64
+      init_percent_complete:
+        type: integer
+        description: Percentage of initialization completed so far
+        format: int32
+      path:
+        type: string
+        description: Resource pathname
+      state:
+        type: string
+        description: State of resource
+        enum:
+          - none
+          - init
+          - ready
+    required:
+      - id
+      - file_size
+      - path
+      - state
+
+  BlockGenerator:
+    type: object
+    description: Block generator
+    properties:
+      id:
+        type: string
+        description: Unique file identifier
+      config:
+        $ref: "#/definitions/BlockGeneratorConfig"
+      resource_id:
+        type: string
+        description: Unique device or file identifier
+      running:
+        type: boolean
+        description: Indicates whether this generator is currently running.
+    required:
+      - config
+      - id
+      - resource_id
+      - running
+
+  BlockGeneratorConfig:
+    type: object
+    description: Block generator configuration
+    properties:
+      queue_depth:
+        type: integer
+        description: Number of simultaneous (asynchronous) operations
+        minimum: 1
+      reads_per_sec:
+        type: integer
+        description: Number of read operations to perform per second
+        minimum: 0
+      read_size:
+        type: integer
+        description: Number of bytes to use for each read operation
+        minimum: 1
+      writes_per_sec:
+        type: integer
+        description: Number of write operations to perform per second
+        minimum: 0
+      write_size:
+        type: integer
+        description: Number of bytes to use for each write operation
+        minimum: 1
+      pattern:
+        type: string
+        description: IO access pattern
+        enum:
+          - random
+          - sequential
+          - reverse
+    required:
+      - queue_depth
+      - reads_per_sec
+      - read_size
+      - writes_per_sec
+      - write_size
+      - pattern
+
+  BlockGeneratorResult:
+    type: object
+    description: Results collected by a running generator
+    properties:
+      id:
+        type: string
+        description: Unique generator result identifier
+      active:
+        type: boolean
+        description: Indicates whether the result is currently being updated
+      timestamp:
+        type: string
+        description: ISO8601-formatted date
+        format: date-time
+      read:
+        $ref: "#/definitions/BlockGeneratorStats"
+      write:
+        $ref: "#/definitions/BlockGeneratorStats"
+    required:
+      - id
+      - active
+      - timestamp
+      - read
+      - write
+
+  BlockGeneratorStats:
+    type: object
+    description: Block generator statistics
+    properties:
+      ops_target:
+        type: integer
+        description: The intended number of operations performed
+        format: int64
+      ops_actual:
+        type: integer
+        description: The actual number of operations performed
+        format: int64
+      bytes_target:
+        type: integer
+        description: The intended number of bytes read or written
+        format: int64
+      bytes_actual:
+        type: integer
+        description: The actual number of bytes read or written
+        format: int64
+      io_errors:
+        type: integer
+        description: The number of io_errors observed during reading or writing
+        format: int64
+      latency:
+        type: integer
+        description: The total amount of time required to perform all operations (in nanoseconds)
+        format: int64
+      latency_min:
+        type: integer
+        description: The minimum observed latency value (in nanoseconds)
+        format: int64
+      latency_max:
+        type: integer
+        description: The maximum observed latency value (in nanoseconds)
+        format: int64
+    required:
+      - ops_target
+      - ops_actual
+      - bytes_target
+      - bytes_actual
+      - io_errors
+      - latency
+      - latency_min
+      - latency_max
