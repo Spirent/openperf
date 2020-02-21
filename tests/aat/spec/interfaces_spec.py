@@ -7,8 +7,8 @@ import client.models
 from common import Config, Service
 from common.helper import (empty_interface,
                            example_interface,
-                           as_interface_protocol,
-                           ipv4_interface)
+                           ipv4_interface,
+                           make_interface_protocols)
 from common.matcher import be_valid_interface, raise_api_exception
 
 
@@ -112,7 +112,7 @@ with description('Interfaces,', 'interfaces') as self:
 
             with description('Ethernet protocol,'):
                 with before.each:
-                    self.intf.config.protocols = map(as_interface_protocol, [
+                    self.intf.config.protocols = make_interface_protocols([
                         client.models.InterfaceProtocolConfigEth()
                     ])
 
@@ -162,7 +162,7 @@ with description('Interfaces,', 'interfaces') as self:
 
             with description('IPv4 protocol,'):
                 with before.each:
-                    self.intf.config.protocols = map(as_interface_protocol, [
+                    self.intf.config.protocols = make_interface_protocols([
                         client.models.InterfaceProtocolConfigEth(mac_address='00:01:5c:a1:ab:1e'),
                         client.models.InterfaceProtocolConfigIpv4()
                     ])
@@ -271,7 +271,7 @@ with description('Interfaces,', 'interfaces') as self:
 
             with description('User-defined ID,'):
                 with before.each:
-                    self.intf.config.protocols = map(as_interface_protocol, [
+                    self.intf.config.protocols = make_interface_protocols([
                         client.models.InterfaceProtocolConfigEth()
                     ])
 
