@@ -18,8 +18,8 @@ from common import Config, Service
 ###
 CONFIG = Config(os.path.join(os.path.dirname(__file__),
                              os.environ.get('MAMBA_CONFIG', 'config.yaml')))
-PING = subprocess.check_output('which ping'.split()).rstrip()
-NC = subprocess.check_output('which nc'.split()).rstrip()
+PING = subprocess.check_output('which ping'.split()).decode().rstrip()
+NC = subprocess.check_output('which nc'.split()).decode().rstrip()
 
 POLL_TIMEOUT = 5 * 1000               # poll timeout in ms
 BULK_TRANSMIT_SIZE = 4 * 1024 * 1024  #  4 MB
@@ -124,6 +124,7 @@ def wait_for_keyword(output_stream, keyword):
         for fd, event in events:
             if event & select.POLLIN:
                 data = os.read(fd, 1024)
+                data = data.decode()
                 if data.find(keyword) >= 0:
                     found = True
             else:
@@ -260,7 +261,7 @@ def do_bulk_data_transfer(api_client, reader_id, writer_id, domain, protocol):
                     elif event & select.POLLOUT:
                         length = min(max(io_size - total_written, 0), io_chunk)
                         data = ''.join(random.choice(string.printable) for _ in range(length))
-                        total_written += os.write(fd, data)
+                        total_written += os.write(fd, data.encode())
                         if total_written == io_size:
                             poller.unregister(fd)
                     else:
