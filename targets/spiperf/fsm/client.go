@@ -14,11 +14,9 @@ import (
 	"github.com/kr/pretty"
 )
 
-const Version = "1.0"
-
 // Client is the FSM for spiperf when run in client mode.
 type Client struct {
-	// PeerCmdOut sends commands to the server Spiperf instance.
+	// PeerCmdOut sends commands to the peer's server FSM.
 	PeerCmdOut chan<- *msg.Message
 
 	// PeerRespIn receives responses from the server Spiperf instance.
@@ -27,7 +25,7 @@ type Client struct {
 	// PeerNotifIn receives notifications from the server Spiperf instance.
 	PeerNotifIn <-chan *msg.Message
 
-	// OpenperfCmdOut channel to send commands to Openperf Controller.
+	// OpenperfCmdOut sends commands to Openperf Controller.
 	OpenperfCmdOut chan<- *openperf.Command
 
 	// PeerTimeout specifies the maximum time the FSM  will wait for responses from the peer instance.
@@ -36,17 +34,16 @@ type Client struct {
 	// OpenperfTimeout specifies the maximum time the FSM will wait for responses from the Openperf instance.
 	OpenperfTimeout time.Duration
 
-	// StartDelay how much extra time to add to the requested start time so server and client start
-	// traffic generation and analysis at the same time.
+	// StartDelay added to start time so server and client start traffic generation and analysis at the same time.
 	StartDelay time.Duration
 
 	// TestConfiguration keeps track of the test configuration.
 	TestConfiguration Configuration
 
-	// StatsPollInterval how often to poll relevant local statistics. This does not impact results output.
+	// StatsPollInterval how often to poll local Openperf statistics. This does not impact results output.
 	StatsPollInterval time.Duration
 
-	// GeneratorPollInterval how often to poll the generator resource to see if it's still transmitting.
+	// GeneratorPollInterval how often to poll local Openperf generator resource to see if it's still transmitting.
 	GeneratorPollInterval time.Duration
 
 	// state tracks the state machine's current state as a string.
@@ -70,35 +67,46 @@ type clientStateFunc func(*Client, context.Context) (clientStateFunc, error)
 func (c *Client) Run(ctx context.Context) error {
 
 	if c.PeerCmdOut == nil {
-		return &InternalError{Message: "Invalid Command Out Channel"}
+		return &InternalError{Message: "invalid command out channel"}
 	}
 	if c.PeerRespIn == nil {
-		return &InternalError{Message: "Invalid Response In Channel"}
+		return &InternalError{Message: "invalid response in channel"}
 	}
 	if c.PeerNotifIn == nil {
-		return &InternalError{Message: "Invalid Notification In Channel"}
+		return &InternalError{Message: "invalid notification in channel"}
 	}
 	if c.PeerTimeout <= 0 {
-		return &InternalError{Message: "Invalid Peer Timeout"}
+		return &InternalError{Message: "invalid peer timeout"}
+	}
+	if c.PeerTimeout == 0 {
+		c.PeerTimeout = DefaultPeerTimeout
 	}
 	if c.OpenperfTimeout <= 0 {
-		return &InternalError{Message: "Invalid Openperf Timeout"}
+		return &InternalError{Message: "invalid openperf timeout"}
+	}
+	if c.OpenperfTimeout == 0 {
+		c.OpenperfTimeout = DefaultOpenperfTimeout
 	}
 	if c.GeneratorPollInterval <= 0 {
-		return &InternalError{Message: "Invalid generator polling interval"}
+		return &InternalError{Message: "invalid generator polling interval"}
+	}
+	if c.GeneratorPollInterval == 0 {
+		c.GeneratorPollInterval = DefaultGeneratorPollInterval
 	}
 	if c.StatsPollInterval <= 0 {
-		return &InternalError{Message: "Invalid stats polling interval"}
+		return &InternalError{Message: "invalid stats polling interval"}
+	}
+	if c.StatsPollInterval == 0 {
+		c.StatsPollInterval = DefaultStatsPollInterval
 	}
 
-	defer func() {
-		close(c.PeerCmdOut)
-	}()
+	defer close(c.PeerCmdOut)
 
 	var retVal error
 	f := (*Client).connect
 	for f != nil {
 		var err error
+		//Goal here is to keep the first error since any subsequent errors are probably a result of that.
 		if f, err = f(c, ctx); err != nil && retVal == nil {
 			retVal = err
 		}
@@ -110,11 +118,11 @@ func (c *Client) Run(ctx context.Context) error {
 func (c *Client) connect(ctx context.Context) (clientStateFunc, error) {
 	c.enter("connect")
 
-	// Send GetVersion message to remote spiperf
+	// Exchange version information with our peer to verify compatibility.
 	c.PeerCmdOut <- &msg.Message{
 		Type: msg.HelloType,
 		Value: &msg.Hello{
-			Version: Version,
+			PeerProtocolVersion: msg.Version,
 		},
 	}
 
@@ -131,8 +139,8 @@ func (c *Client) connect(ctx context.Context) (clientStateFunc, error) {
 		}
 
 		// Verify remote version matches our version.
-		if serverVersion := reply.Value.(*msg.Hello).Version; serverVersion != Version {
-			return nil, &InternalError{Message: fmt.Sprintf("Mismatch between server and client versions. Client version is %s and server reports as %s\n", Version, serverVersion)}
+		if serverProtocolVersion := reply.Value.(*msg.Hello).PeerProtocolVersion; serverProtocolVersion != msg.Version {
+			return nil, &InternalError{Message: fmt.Sprintf("Mismatch between server and client versions. Client version is %s and server reports as %s\n", msg.Version, serverProtocolVersion)}
 		}
 
 	case <-timeout:
@@ -248,7 +256,7 @@ func (c *Client) armed(ctx context.Context) (clientStateFunc, error) {
 	return (*Client).running, nil
 }
 
-// running tracks FSM state where client is only sending traffic.
+// running tracks FSM state where data stream(s) are transmitting (aka test is running.)
 func (c *Client) running(ctx context.Context) (clientStateFunc, error) {
 	c.enter("running")
 
@@ -267,8 +275,10 @@ func (c *Client) running(ctx context.Context) (clientStateFunc, error) {
 	// rxStatsPollCancel stop polling local Openperf receive stats.
 	var rxStatsPollCancel context.CancelFunc
 
-	var clientRunning bool
-	var serverRunning bool
+	var (
+		clientRunning bool
+		serverRunning bool
+	)
 
 	switch {
 	// client <--> server traffic
@@ -283,6 +293,8 @@ func (c *Client) running(ctx context.Context) (clientStateFunc, error) {
 			OpenperfController: c.OpenperfCmdOut,
 			Responses:          generatorPollResp})
 
+		defer generatorPollCancel()
+
 		// Start up transmit stats polling
 		var txStatReqCtx context.Context
 		txStatReqCtx, txStatsPollCancel = context.WithCancel(ctx)
@@ -293,6 +305,8 @@ func (c *Client) running(ctx context.Context) (clientStateFunc, error) {
 			OpenperfController: c.OpenperfCmdOut,
 			Responses:          txStatsPollResp})
 
+		defer txStatsPollCancel()
+
 		// Start up receive stats polling
 		var rxStatReqCtx context.Context
 		rxStatReqCtx, rxStatsPollCancel = context.WithCancel(ctx)
@@ -302,6 +316,8 @@ func (c *Client) running(ctx context.Context) (clientStateFunc, error) {
 			Interval:           c.StatsPollInterval,
 			OpenperfController: c.OpenperfCmdOut,
 			Responses:          rxStatsPollResp})
+
+		defer rxStatsPollCancel()
 
 		clientRunning = true
 		serverRunning = true
@@ -318,6 +334,8 @@ func (c *Client) running(ctx context.Context) (clientStateFunc, error) {
 			OpenperfController: c.OpenperfCmdOut,
 			Responses:          generatorPollResp})
 
+		defer generatorPollCancel()
+
 		// Start up transmit stats polling
 		var txStatReqCtx context.Context
 		txStatReqCtx, txStatsPollCancel = context.WithCancel(ctx)
@@ -327,6 +345,8 @@ func (c *Client) running(ctx context.Context) (clientStateFunc, error) {
 			Interval:           c.StatsPollInterval,
 			OpenperfController: c.OpenperfCmdOut,
 			Responses:          txStatsPollResp})
+
+		defer txStatsPollCancel()
 
 		clientRunning = true
 		serverRunning = false
@@ -343,6 +363,8 @@ func (c *Client) running(ctx context.Context) (clientStateFunc, error) {
 			OpenperfController: c.OpenperfCmdOut,
 			Responses:          rxStatsPollResp})
 
+		defer rxStatsPollCancel()
+
 		clientRunning = false
 		serverRunning = true
 	}
@@ -357,7 +379,6 @@ Done:
 
 			switch notif.Type {
 			case msg.ErrorType:
-				//Write out error.
 				return (*Client).cleanup, &InternalError{Message: notif.Value.(string)}
 			case msg.TransmitDoneType:
 				serverRunning = false
@@ -377,8 +398,6 @@ Done:
 
 			stats, ok := txStat.(*openperf.GetTxStatsResponse)
 			if !ok {
-				generatorPollCancel()
-				txStatsPollCancel()
 				return (*Client).cleanup, &InternalError{Message: txStat.(error).Error()}
 			}
 			pretty.Println(stats)
@@ -391,7 +410,6 @@ Done:
 			}
 			stats, ok := rxStat.(*openperf.GetRxStatsResponse)
 			if !ok {
-				rxStatsPollCancel()
 				return (*Client).cleanup, &InternalError{Message: rxStat.(error).Error()}
 			}
 			pretty.Println(stats)
@@ -405,8 +423,6 @@ Done:
 
 			generator, genOk := gen.(*openperf.GetGeneratorResponse)
 			if !genOk {
-				generatorPollCancel()
-				txStatsPollCancel()
 				return (*Client).cleanup, &InternalError{Message: gen.(error).Error()}
 			}
 

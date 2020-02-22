@@ -26,7 +26,7 @@ type Message struct {
 
 // Hello initiates a session between client and server spiperf instances.
 type Hello struct {
-	Version string `json:"version"`
+	PeerProtocolVersion string `json:"peer_protocol_version"`
 }
 
 // ServerParametersResponse conveys the server's parameters to the client.

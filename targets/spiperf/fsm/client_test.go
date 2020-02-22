@@ -3,7 +3,6 @@ package fsm_test
 import (
 	"context"
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/go-openapi/strfmt"
@@ -67,7 +66,7 @@ var _ = Describe("Client FSM,", func() {
 			Expect(command.Type).To(Equal(msg.HelloType))
 			Expect(command.Value).To(BeAssignableToTypeOf(&msg.Hello{}))
 			hello := &msg.Hello{
-				Version: Version,
+				PeerProtocolVersion: msg.Version,
 			}
 			Expect(command.Value).To(Equal(hello))
 
@@ -80,7 +79,7 @@ var _ = Describe("Client FSM,", func() {
 				peerRespIn <- &msg.Message{
 					Type: msg.HelloType,
 					Value: &msg.Hello{
-						Version: "9.90",
+						PeerProtocolVersion: "9.90",
 					},
 				}
 
@@ -129,7 +128,7 @@ var _ = Describe("Client FSM,", func() {
 				peerRespIn <- &msg.Message{
 					Type: msg.HelloType,
 					Value: &msg.Hello{
-						Version: Version,
+						PeerProtocolVersion: msg.Version,
 					},
 				}
 
@@ -218,7 +217,7 @@ var _ = Describe("Client FSM,", func() {
 							Value: "error with configuration",
 						}
 
-						drainCleanupRequests(opCmdOut)
+						drainOpenperfCommands(opCmdOut, peerCmdOut)
 
 						Eventually(fsmReturn).Should(Receive(
 							BeAssignableToTypeOf(&InvalidConfigurationError{})))
@@ -247,7 +246,7 @@ var _ = Describe("Client FSM,", func() {
 						Expect(openperfGetTimeCmd.Response).To(BeNil())
 					})
 
-					Context("when openperf command times out, ", func() {
+					Context("when openperf get time command times out, ", func() {
 						It("exits with an error", func(done Done) {
 							// Openperf requests will never instantaneously time out.
 							// Sleep here for a little while to more accurately reflect reality.
@@ -255,7 +254,7 @@ var _ = Describe("Client FSM,", func() {
 							openperfGetTimeCmd.Response = context.DeadlineExceeded
 							close(openperfGetTimeCmd.Done)
 
-							drainCleanupRequests(opCmdOut)
+							drainOpenperfCommands(opCmdOut, peerCmdOut)
 
 							Eventually(fsmReturn).Should(Receive(
 								BeAssignableToTypeOf(&InternalError{})))
@@ -268,12 +267,12 @@ var _ = Describe("Client FSM,", func() {
 
 					})
 
-					Context("when openperf controller returns an error, ", func() {
+					Context("when openperf get time command returns an error, ", func() {
 						It("exits with an error", func(done Done) {
 							openperfGetTimeCmd.Response = errors.New("error getting command from Openperf")
 							close(openperfGetTimeCmd.Done)
 
-							drainCleanupRequests(opCmdOut)
+							drainOpenperfCommands(opCmdOut, peerCmdOut)
 
 							Eventually(fsmReturn).Should(
 								Receive(BeAssignableToTypeOf(&InternalError{})))
@@ -308,7 +307,7 @@ var _ = Describe("Client FSM,", func() {
 									Value: "error with configuration",
 								}
 
-								drainCleanupRequests(opCmdOut)
+								drainOpenperfCommands(opCmdOut, peerCmdOut)
 
 								Eventually(fsmReturn).Should(Receive(
 									BeAssignableToTypeOf(&InvalidConfigurationError{})))
@@ -321,12 +320,22 @@ var _ = Describe("Client FSM,", func() {
 						})
 
 						Context("server ACKs start command, it transitions to armed state, sleeps until start time, it transitions to runningTx state, client is transmitting, ", func() {
-							var runstateStatsResponder *openperfResponder
-							var txStatsResponderError chan struct{}
-							var runstateResponderError chan struct{}
+
+							// At this point the test is running and we need to respond to
+							// async requests from the client. Prior to this the Openperf requests
+							// were done synchronously and the async responder wasn't necessary.
+							// Also, the async responder will "drain" any requests that aren't poll
+							// requests. Calling drainOpenperfCommands() is not needed and would
+							// introduce timing issues.
+							var (
+								runstateStatsResponder       *openperfResponder
+								txStatsResponderError        chan struct{}
+								runstateResponderError       chan struct{}
+								genDoneResponderError        chan struct{}
+								runstateStatsResponderCancel context.CancelFunc
+							)
 							const runstatePollCount = 3
-							var runstateStatsResponderCancel context.CancelFunc
-							//client starts up a runstate poll command here.
+
 							BeforeEach(func(done Done) {
 								//ACK start command.
 								peerRespIn <- &msg.Message{
@@ -342,11 +351,13 @@ var _ = Describe("Client FSM,", func() {
 
 								txStatsResponderError = make(chan struct{})
 								runstateResponderError = make(chan struct{})
+								genDoneResponderError = make(chan struct{})
 								runstateStatsResponder = &openperfResponder{
 									OPCmdIn:           opCmdOut,
 									ErrorRunstate:     runstateResponderError,
 									ErrorTxStats:      txStatsResponderError,
 									RunstatePollCount: runstatePollCount,
+									ErrorDeleteGen:    genDoneResponderError,
 								}
 								var responderCtx context.Context
 								responderCtx, runstateStatsResponderCancel = context.WithCancel(context.Background())
@@ -372,8 +383,6 @@ var _ = Describe("Client FSM,", func() {
 									// there could be in-flight poll requests.
 									Eventually(func() string { return fsm.State() }).Should(Equal("cleanup"))
 
-									drainCleanupRequests(opCmdOut)
-
 									Eventually(fsmReturn).Should(Receive(
 										BeAssignableToTypeOf(&InternalError{})))
 									Expect(peerCmdOut).To(BeClosed())
@@ -390,7 +399,6 @@ var _ = Describe("Client FSM,", func() {
 									// Wait for the system to get into the cleanup state, else
 									// there could be in-flight poll requests.
 									Eventually(func() string { return fsm.State() }).Should(Equal("cleanup"))
-									drainCleanupRequests(opCmdOut)
 
 									val := <-fsmReturn
 									Expect(val).To(BeAssignableToTypeOf(&InternalError{}))
@@ -410,7 +418,6 @@ var _ = Describe("Client FSM,", func() {
 									// Wait for the system to get into the cleanup state, else
 									// there could be in-flight poll requests.
 									Eventually(func() string { return fsm.State() }).Should(Equal("cleanup"))
-									drainCleanupRequests(opCmdOut)
 
 									val := <-fsmReturn
 									Expect(val).To(BeAssignableToTypeOf(&InternalError{}))
@@ -448,8 +455,6 @@ var _ = Describe("Client FSM,", func() {
 									Expect(cmd.Value).To(BeNil())
 									close(statsNotifDone)
 
-									runstateStatsResponderCancel()
-
 									Eventually(func() string {
 										return fsm.State()
 									}).Should(Equal("done"))
@@ -468,8 +473,6 @@ var _ = Describe("Client FSM,", func() {
 											Type:  msg.ErrorType,
 											Value: "error gathering final stats"}
 
-										drainCleanupRequests(opCmdOut)
-
 										Eventually(fsmReturn).Should(Receive(
 											BeAssignableToTypeOf(&MessagingError{})))
 										Expect(peerCmdOut).To(BeClosed())
@@ -480,8 +483,11 @@ var _ = Describe("Client FSM,", func() {
 
 								})
 
-								Context("server sends final stats, it switches to the cleanup state, ", func() {
-									BeforeEach(func(done Done) {
+								Context("server sends final stats, it switches to the cleanup state, when Openperf errors with cleanup, ", func() {
+									It("exits with an error", func(done Done) {
+
+										genDoneResponderError <- struct{}{}
+
 										peerRespIn <- &msg.Message{
 											Type: msg.FinalStatsType,
 											Value: &msg.FinalStats{
@@ -492,44 +498,31 @@ var _ = Describe("Client FSM,", func() {
 											return fsm.State()
 										}).Should(Equal("cleanup"))
 
+										Eventually(fsmReturn).Should(Receive(
+											BeAssignableToTypeOf(&InternalError{})))
+										Expect(peerCmdOut).To(BeClosed())
+										Expect(fsm.State()).To(Equal("cleanup"))
+
 										close(done)
-									})
-
-									Context("when Openperf errors with cleanup, ", func() {
-										It("exits with an error", func(done Done) {
-											req := <-opCmdOut
-											req.Response = errors.New("error cleaning up")
-											close(req.Done)
-
-											Eventually(fsmReturn).Should(Receive(
-												BeAssignableToTypeOf(&InternalError{})))
-											Expect(peerCmdOut).To(BeClosed())
-											Expect(fsm.State()).To(Equal("cleanup"))
-
-											close(done)
-										})
 
 									})
+								})
 
-									Context("it cleans up, ", func() {
-										It("returns without error.", func(done Done) {
-											req := <-opCmdOut
-											Expect(req).NotTo(BeNil())
-											Expect(req.Request).To(BeAssignableToTypeOf(&openperf.DeleteGeneratorRequest{}))
-											Expect(req.Ctx).ToNot(BeNil())
-											Expect(req.Done).ToNot(BeNil())
-											Expect(req.Response).To(BeNil())
+								Context("server sends final stats, it switches to the cleanup state, when it cleans up, ", func() {
+									It("returns without error.", func(done Done) {
+										peerRespIn <- &msg.Message{
+											Type: msg.FinalStatsType,
+											Value: &msg.FinalStats{
+												TransmitFrames: uint64(420)},
+										}
 
-											close(req.Done)
+										res := <-fsmReturn
+										Expect(res).To(BeNil())
 
-											res := <-fsmReturn
-											Expect(res).To(BeNil())
+										Expect(fsm.State()).To(Equal("cleanup"))
 
-											Expect(fsm.State()).To(Equal("cleanup"))
-
-											close(done)
-										}, assertEpsilon.Seconds())
-									})
+										close(done)
+									}, assertEpsilon.Seconds())
 								})
 							})
 
@@ -636,8 +629,6 @@ var _ = Describe("Client FSM,", func() {
 									// there could be in-flight poll requests.
 									Eventually(func() string { return fsm.State() }).Should(Equal("cleanup"))
 
-									drainCleanupRequests(opCmdOut)
-
 									val := <-fsmReturn
 									Expect(val).To(BeAssignableToTypeOf(&InternalError{}))
 									Expect(peerCmdOut).To(BeClosed())
@@ -665,8 +656,6 @@ var _ = Describe("Client FSM,", func() {
 									peerNotifIn <- &msg.Message{
 										Type: msg.TransmitDoneType,
 									}
-
-									runstateStatsResponderCancel()
 
 									Eventually(func() string {
 										return fsm.State()
@@ -951,17 +940,14 @@ var _ = Describe("Client FSM,", func() {
 
 // Unit test utilities
 
-func drainCleanupRequests(opCmd chan *openperf.Command) {
+func drainOpenperfCommands(opCmd chan *openperf.Command, peerCmdOut chan *msg.Message) {
 
 	for {
 		select {
-		case <-time.After(500 * time.Millisecond):
+		// FSM closes peerCmdOut when it terminates. Use this to know if more Openperf requests are coming.
+		case <-peerCmdOut:
 			return
 		case cmd := <-opCmd:
-			switch cmd.Request.(type) {
-			case *openperf.GetGeneratorRequest, *openperf.GetRxStatsRequest, *openperf.GetTxStatsRequest:
-				fmt.Fprintln(GinkgoWriter, "Info: Openperf Command from a poll request received by Unit Tests after running state finished. Not necessarily an error since poll requests are sent asynchronously.")
-			}
 			close(cmd.Done)
 		}
 	}
@@ -970,16 +956,19 @@ func drainCleanupRequests(opCmd chan *openperf.Command) {
 type openperfResponder struct {
 	OPCmdIn chan *openperf.Command
 
+	// NewRunstatePollCount write the number of runstate requests that will have running set to true.
 	NewRunstatePollCount <-chan int
 
-	// ErrorRunstate write an error here to have it appear in the runstate Request's Response field.
+	// ErrorRunstate write and the next runstate request will respond with an error.
 	ErrorRunstate <-chan struct{}
-	// ErrorRxStats write an error here to have it appear in the stats Request's Response field.
+	// ErrorRxStats write and the next Rx stats request will respond with an error.
 	ErrorRxStats <-chan struct{}
-	// ErrorTxStats write an error here to have it appear in the stats Request's Response field.
+	// ErrorTxStats write and the next Tx stats request will respond with an error.
 	ErrorTxStats <-chan struct{}
+	// ErrorDeleteGen write and the next Delete Generator request will respond with an error.
+	ErrorDeleteGen <-chan struct{}
 
-	//runstatePollCount how many times should the "port" object return running == true.
+	// RunstatePollCount how many times should the "port" object return running == true.
 	RunstatePollCount int
 }
 
@@ -1005,9 +994,12 @@ func makeOPRxStatsResponse() *openperf.GetRxStatsResponse {
 
 func handleOpenperfResponses(ctx context.Context, responder *openperfResponder) {
 	runstatePollsRemaining := responder.RunstatePollCount
-	var rxStatsErr bool = false
-	var txStatsErr bool = false
-	var runstateErr bool = false
+	var (
+		rxStatsErr   bool = false
+		txStatsErr   bool = false
+		runstateErr  bool = false
+		deleteGenErr bool = false
+	)
 
 Done:
 	for {
@@ -1017,8 +1009,13 @@ Done:
 
 		case req, ok := <-responder.OPCmdIn:
 			if !ok {
-				fmt.Println("something went really wrong!")
+				return
 			}
+
+			Expect(req).ToNot(BeNil())
+			Expect(req.Ctx).ToNot(BeNil())
+			Expect(req.Done).ToNot(BeNil())
+			//Expect(req.Response).To(BeNil())
 
 			switch req.Request.(type) {
 			case *openperf.GetGeneratorRequest:
@@ -1032,26 +1029,32 @@ Done:
 					runstatePollsRemaining--
 					req.Response = makeOPGeneratorResponse(true)
 				}
-				close(req.Done)
 
 			case *openperf.GetTxStatsRequest:
-				if txStatsErr == true {
+				if txStatsErr {
 					req.Response = errors.New("error reading tx stats from Openperf.")
 					txStatsErr = false
 				} else {
 					req.Response = makeOPTxStatsResponse()
 				}
-				close(req.Done)
 
 			case *openperf.GetRxStatsRequest:
-				if rxStatsErr == true {
+				if rxStatsErr {
 					req.Response = errors.New("error reading rx stats from Openperf.")
 					rxStatsErr = false
 				} else {
 					req.Response = makeOPRxStatsResponse()
 				}
-				close(req.Done)
+
+			case *openperf.DeleteGeneratorRequest:
+				if deleteGenErr {
+					req.Response = errors.New("error deleting generator resource.")
+					deleteGenErr = false
+				}
+
 			}
+			close(req.Done)
+
 		case <-responder.ErrorRunstate:
 			runstateErr = true
 		case <-responder.ErrorTxStats:
@@ -1060,6 +1063,8 @@ Done:
 			rxStatsErr = true
 		case val := <-responder.NewRunstatePollCount:
 			runstatePollsRemaining = val
+		case <-responder.ErrorDeleteGen:
+			deleteGenErr = true
 		}
 	}
 }
