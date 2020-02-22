@@ -21,8 +21,8 @@
 
 #include "ModelBase.h"
 
-#include "PortStatus.h"
 #include "PortConfig.h"
+#include "PortStatus.h"
 #include "PortStats.h"
 #include <string>
 
