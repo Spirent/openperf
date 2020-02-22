@@ -33,21 +33,24 @@ class AnalyzerStreamSummaryCounters(object):
     swagger_types = {
         'min': 'int',
         'max': 'int',
-        'total': 'int'
+        'total': 'int',
+        'std_dev': 'int'
     }
 
     attribute_map = {
         'min': 'min',
         'max': 'max',
-        'total': 'total'
+        'total': 'total',
+        'std_dev': 'std_dev'
     }
 
-    def __init__(self, min=None, max=None, total=None):  # noqa: E501
+    def __init__(self, min=None, max=None, total=None, std_dev=None):  # noqa: E501
         """AnalyzerStreamSummaryCounters - a model defined in Swagger"""  # noqa: E501
 
         self._min = None
         self._max = None
         self._total = None
+        self._std_dev = None
         self.discriminator = None
 
         if min is not None:
@@ -55,6 +58,8 @@ class AnalyzerStreamSummaryCounters(object):
         if max is not None:
             self.max = max
         self.total = total
+        if std_dev is not None:
+            self.std_dev = std_dev
 
     @property
     def min(self):
@@ -121,6 +126,28 @@ class AnalyzerStreamSummaryCounters(object):
         :type: int
         """
         self._total = total
+
+    @property
+    def std_dev(self):
+        """Gets the std_dev of this AnalyzerStreamSummaryCounters.  # noqa: E501
+
+        Standard deviation of received values  # noqa: E501
+
+        :return: The std_dev of this AnalyzerStreamSummaryCounters.  # noqa: E501
+        :rtype: int
+        """
+        return self._std_dev
+
+    @std_dev.setter
+    def std_dev(self, std_dev):
+        """Sets the std_dev of this AnalyzerStreamSummaryCounters.
+
+        Standard deviation of received values  # noqa: E501
+
+        :param std_dev: The std_dev of this AnalyzerStreamSummaryCounters.  # noqa: E501
+        :type: int
+        """
+        self._std_dev = std_dev
 
     def to_dict(self):
         """Returns the model properties as a dict"""

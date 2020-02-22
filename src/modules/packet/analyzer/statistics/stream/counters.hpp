@@ -28,12 +28,19 @@ struct is_duration<std::chrono::duration<Rep, Period>> : std::true_type
 {};
 
 /**
- * Summary statistics track min/max/total value.  We have two distinct
- * types:  one for tracking integral values and another for tracking
- * duration.
+ * Summary statistics track min/max/total value and variance.  We have two
+ * distinct versions of this structure: one for tracking arithmetic values
+ * and one for tracking durations.
  * Note that each instance requires two types: one for the min/max value
  * and one for the total.  We typically use a smaller value for min/max
- * to conserve space.  We need a tuple for every received stream.
+ * to conserve space.  We need a tuple for every received stream, so conserving
+ * space here has scalability benefits.
+ * A third type, based on float, is used to track variance and average.
+ * We prefer float over double for a number of reasons:
+ * - floats are smaller
+ * - floats are faster on the system I benchmarked (though both floats and
+ *   doubles are both faster that 64 bit integers!)
+ * - we don't need the extra resolution
  */
 template <typename...> struct summary;
 
@@ -42,28 +49,36 @@ struct summary<ValueType, SumType>
 {
     using pop_t = ValueType;
     using sum_t = SumType;
+    using var_t = float;
 
-    static_assert(std::is_arithmetic_v<pop_t>);
-    static_assert(std::is_arithmetic_v<sum_t>);
-    static_assert(std::is_convertible_v<pop_t, sum_t>);
+    static_assert(std::is_arithmetic_v<pop_t>, "ValueType must be arithemtic");
+    static_assert(std::is_arithmetic_v<sum_t>, "SumType must be arithmetic");
+    static_assert(std::is_convertible_v<pop_t, var_t>);
 
     pop_t min = std::numeric_limits<pop_t>::max();
     pop_t max = std::numeric_limits<pop_t>::min();
     sum_t total = sum_t{0};
+    var_t m2 = var_t{0};
 };
 
-template <typename Rep1, typename Period1, typename Rep2, typename Period2>
-struct summary<std::chrono::duration<Rep1, Period1>,
-               std::chrono::duration<Rep2, Period2>>
+template <typename Rep1, typename Rep2, typename Period>
+struct summary<std::chrono::duration<Rep1, Period>,
+               std::chrono::duration<Rep2, Period>>
 {
-    using pop_t = std::chrono::duration<Rep1, Period1>;
-    using sum_t = std::chrono::duration<Rep2, Period2>;
-    static_assert(std::is_convertible_v<pop_t, sum_t>,
-                  "Populate duration must be convertible to summary duration");
+    using pop_t = std::chrono::duration<Rep1, Period>;
+    using sum_t = std::chrono::duration<Rep2, Period>;
+    using var_t = std::chrono::duration<float, Period>;
+
+    static_assert(
+        std::is_convertible_v<pop_t, sum_t>,
+        "Population duration must be convertible to summary duration");
+    static_assert(std::is_convertible_v<Rep1, float>,
+                  "Population representation must be convertible to float");
 
     pop_t min = pop_t::max();
     pop_t max = pop_t::min();
     sum_t total = sum_t::zero();
+    var_t m2 = var_t::zero();
 };
 
 struct frame_length final : summary<uint16_t, int64_t>
@@ -147,20 +162,110 @@ update(sequencing& stat, uint32_t seq_num, uint32_t late_threshold) noexcept
 }
 
 template <typename SummaryStat>
-inline void update(SummaryStat& stat,
-                   typename SummaryStat::pop_t value) noexcept
+inline std::enable_if_t<std::is_arithmetic_v<typename SummaryStat::pop_t>, void>
+update(SummaryStat& stat,
+       typename SummaryStat::pop_t value,
+       statistics::stat_t count) noexcept
 {
     if (value < stat.min) { stat.min = value; }
     if (value > stat.max) { stat.max = value; }
     stat.total += value;
+
+    if (stat.min != stat.max) { /* iff count > 1 */
+        /*
+         * The variance calculation below is based on Welford's online algorithm
+         * to generate variance:
+         * https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance
+         * However, we've performed some algebra on the standard implementation
+         * in order to minimize the number of CPU instructions.
+         *
+         * Let value = v, total = t, and count = c.
+         * Given m2_next = m2 + (v - mean_prev) * (v - mean_curr)
+         *               = m2 + (v - (t - v) / (c - 1)) * (v - t / c)
+         *               = m2 + ((cv - v - t + v) / (c - 1)) * ((cv - t) / c)
+         *               = m2 + ((cv - t)^2) / (c * (c - 1))
+         *
+         * Note: casting `count` to a float should eliminate almost any
+         * reasonable potential for multiplication overflow, since FLT_MAX ~
+         * 2^128.
+         */
+        const auto c = static_cast<float>(count);
+        auto tmp = (c * value) - stat.total;
+        auto num = tmp * tmp;
+        auto den = c * (c - 1);
+        stat.m2 += num / den;
+    }
 }
 
-inline void update(latency& stat, typename latency::pop_t value) noexcept
+template <typename SummaryStat>
+inline std::enable_if_t<is_duration<typename SummaryStat::pop_t>::value, void>
+update(SummaryStat& stat,
+       typename SummaryStat::pop_t value,
+       statistics::stat_t count) noexcept
 {
     if (value < stat.min) { stat.min = value; }
     if (value > stat.max) { stat.max = value; }
     stat.total += value;
+
+    if (stat.min != stat.max) { /* iff count > 1 */
+        /* See algorithm comment above */
+        const auto c = static_cast<float>(count);
+        auto tmp = (c * value) - stat.total;
+        auto num = tmp * tmp.count();
+        auto den = c * (c - 1);
+        stat.m2 += num / den;
+    }
+}
+
+inline void update(latency& stat,
+                   typename latency::pop_t value,
+                   statistics::stat_t count) noexcept
+{
     stat.last_ = value;
+    update<latency>(stat, value, count);
+}
+
+template <typename SumType, typename VarianceType>
+std::enable_if_t<std::is_arithmetic_v<VarianceType>, VarianceType>
+add_variance(statistics::stat_t x_count,
+             SumType x_total,
+             VarianceType x_m2,
+             statistics::stat_t y_count,
+             SumType y_total,
+             VarianceType y_m2)
+{
+    if (x_count + y_count == 0) { return VarianceType{0}; }
+
+    const auto x_avg = x_count ? static_cast<VarianceType>(x_total) / x_count
+                               : VarianceType{0};
+    const auto y_avg = y_count ? static_cast<VarianceType>(y_total) / y_count
+                               : VarianceType{0};
+    const auto delta = x_avg - y_avg;
+    return (x_m2 + y_m2
+            + ((delta * delta) * x_count * y_count / (x_count + y_count)));
+}
+
+template <typename SumType, typename VarianceType>
+std::enable_if_t<is_duration<VarianceType>::value, VarianceType>
+add_variance(statistics::stat_t x_count,
+             SumType x_total,
+             VarianceType x_m2,
+             statistics::stat_t y_count,
+             SumType y_total,
+             VarianceType y_m2)
+{
+    if (x_count + y_count == 0) { return VarianceType::zero(); }
+
+    const auto x_avg =
+        x_count ? std::chrono::duration_cast<VarianceType>(x_total) / x_count
+                : VarianceType::zero();
+    const auto y_avg =
+        y_count ? std::chrono::duration_cast<VarianceType>(y_total) / y_count
+                : VarianceType::zero();
+    const auto delta = x_avg - y_avg;
+    return (
+        x_m2 + y_m2
+        + ((delta * delta.count()) * x_count * y_count / (x_count + y_count)));
 }
 
 /**
@@ -181,12 +286,15 @@ void update(StatsTuple& tuple,
     update(frames, 1, rx);
     if constexpr (has_type<interarrival, StatsTuple>::value) {
         if (last_rx) {
-            update(get_counter<interarrival, StatsTuple>(tuple), rx - *last_rx);
+            update(get_counter<interarrival, StatsTuple>(tuple),
+                   rx - *last_rx,
+                   frames.count - 1);
         }
     }
 
     if constexpr (has_type<frame_length, StatsTuple>::value) {
-        update(get_counter<frame_length, StatsTuple>(tuple), length);
+        update(
+            get_counter<frame_length, StatsTuple>(tuple), length, frames.count);
     }
 
     if constexpr (has_type<sequencing, StatsTuple>::value) {
@@ -200,12 +308,14 @@ void update(StatsTuple& tuple,
             auto& latency_stats = get_counter<latency, StatsTuple>(tuple);
             auto last_delay = latency_stats.last();
             auto delay = rx - *tx;
-            update(latency_stats, delay);
+            update(latency_stats, delay, frames.count);
 
             if (last_delay) {
                 if constexpr (has_type<jitter_rfc, StatsTuple>::value) {
                     auto jitter = abs(delay - *last_delay);
-                    update(get_counter<jitter_rfc, StatsTuple>(tuple), jitter);
+                    update(get_counter<jitter_rfc, StatsTuple>(tuple),
+                           jitter,
+                           frames.count);
                 }
 
                 if constexpr (has_type<jitter_ipdv, StatsTuple>::value) {
@@ -215,7 +325,8 @@ void update(StatsTuple& tuple,
                         /* frame is in sequence */
                         auto jitter = abs(delay - *last_delay);
                         update(get_counter<jitter_ipdv, StatsTuple>(tuple),
-                               jitter);
+                               jitter,
+                               frames.count);
                     }
                 }
             }
@@ -267,6 +378,20 @@ void dump(std::ostream& os, const StatsTuple& tuple)
         dump(os, get_counter<latency, StatsTuple>(tuple));
     }
 }
+
+/*
+ * Enforce hard limit on the expected worst case tuple size.
+ * This is totally a self imposed limit, but let's now blow
+ * past it without a good reason to do so.
+ */
+static_assert(sizeof(std::tuple<counter,
+                                frame_length,
+                                interarrival,
+                                sequencing,
+                                latency,
+                                jitter_rfc>)
+                  <= 192,
+              "Stream count structures are too large!");
 
 } // namespace openperf::packet::analyzer::statistics::stream
 
