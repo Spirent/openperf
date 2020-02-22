@@ -24,6 +24,8 @@ AnalyzerStreamSummaryCounters::AnalyzerStreamSummaryCounters()
     m_Max = 0L;
     m_MaxIsSet = false;
     m_Total = 0L;
+    m_Std_dev = 0L;
+    m_Std_devIsSet = false;
     
 }
 
@@ -49,6 +51,10 @@ nlohmann::json AnalyzerStreamSummaryCounters::toJson() const
         val["max"] = m_Max;
     }
     val["total"] = m_Total;
+    if(m_Std_devIsSet)
+    {
+        val["std_dev"] = m_Std_dev;
+    }
     
 
     return val;
@@ -65,6 +71,10 @@ void AnalyzerStreamSummaryCounters::fromJson(nlohmann::json& val)
         setMax(val.at("max"));
     }
     setTotal(val.at("total"));
+    if(val.find("std_dev") != val.end())
+    {
+        setStdDev(val.at("std_dev"));
+    }
     
 }
 
@@ -111,6 +121,23 @@ void AnalyzerStreamSummaryCounters::setTotal(int64_t value)
 {
     m_Total = value;
     
+}
+int64_t AnalyzerStreamSummaryCounters::getStdDev() const
+{
+    return m_Std_dev;
+}
+void AnalyzerStreamSummaryCounters::setStdDev(int64_t value)
+{
+    m_Std_dev = value;
+    m_Std_devIsSet = true;
+}
+bool AnalyzerStreamSummaryCounters::stdDevIsSet() const
+{
+    return m_Std_devIsSet;
+}
+void AnalyzerStreamSummaryCounters::unsetStd_dev()
+{
+    m_Std_devIsSet = false;
 }
 
 }

@@ -201,4 +201,122 @@ TEST_CASE("stream counters", "[packet_analyzer]")
             }
         }
     }
+
+    SECTION("summary stats, ")
+    {
+        SECTION("variance, ")
+        {
+            const auto test_data = {3, 5, 7, 7, 38};
+            /*
+             * Expected variance for our test data is 214.  However, the
+             * variance is stored as a sum and needs to be divided by (n - 1).
+             */
+            const auto m2_exp = Approx(214 * (test_data.size() - 1));
+
+            SECTION("double values, ")
+            {
+                using test_summary_type = stream::summary<double, double>;
+
+                SECTION("verify stats, ")
+                {
+                    auto test_summary = test_summary_type{};
+                    auto idx = 0;
+                    for (auto& item : test_data) {
+                        update(test_summary, item, ++idx);
+                    }
+
+                    REQUIRE(test_summary.min == 3);
+                    REQUIRE(test_summary.max == 38);
+                    REQUIRE(test_summary.total
+                            == std::accumulate(
+                                std::begin(test_data), std::end(test_data), 0));
+
+                    REQUIRE(test_summary.m2 == m2_exp);
+                }
+
+                SECTION("verify weighted addition, ")
+                {
+                    auto sum1 = test_summary_type{};
+                    auto sum2 = test_summary_type{};
+
+                    update(sum1, 3, 1);
+                    update(sum1, 5, 2);
+                    update(sum1, 7, 3);
+
+                    update(sum2, 7, 1);
+                    update(sum2, 38, 2);
+
+                    auto m2 = stream::add_variance(
+                        3, sum1.total, sum1.m2, 2, sum2.total, sum2.m2);
+                    REQUIRE(m2 == m2_exp);
+                }
+            }
+
+            SECTION("integer values, ")
+            {
+                using test_summary_type = stream::summary<int, int>;
+                auto test_summary = test_summary_type{};
+
+                auto idx = 0;
+                for (auto& item : test_data) {
+                    update(test_summary, item, ++idx);
+                }
+
+                SECTION("verify stats, ")
+                {
+                    REQUIRE(test_summary.min == 3);
+                    REQUIRE(test_summary.max == 38);
+                    REQUIRE(test_summary.total
+                            == std::accumulate(
+                                std::begin(test_data), std::end(test_data), 0));
+
+                    REQUIRE(test_summary.m2 == m2_exp);
+                }
+            }
+
+            SECTION("duration values, ")
+            {
+                using test_summary_type =
+                    stream::summary<std::chrono::nanoseconds,
+                                    std::chrono::nanoseconds>;
+                SECTION("verify stats, ")
+                {
+                    auto test_summary = test_summary_type{};
+
+                    auto idx = 0;
+                    for (auto& item : test_data) {
+                        update(test_summary,
+                               std::chrono::nanoseconds{item},
+                               ++idx);
+                    }
+
+                    REQUIRE(test_summary.min.count() == 3);
+                    REQUIRE(test_summary.max.count() == 38);
+                    REQUIRE(test_summary.total.count()
+                            == std::accumulate(
+                                std::begin(test_data), std::end(test_data), 0));
+
+                    REQUIRE(test_summary.m2.count() == m2_exp);
+                }
+
+                SECTION("verify weighted addition, ")
+                {
+                    auto sum1 = test_summary_type{};
+                    auto sum2 = test_summary_type{};
+
+                    using namespace std::chrono_literals;
+                    update(sum1, 3ns, 1);
+                    update(sum1, 5ns, 2);
+                    update(sum1, 7ns, 3);
+
+                    update(sum2, 7ns, 1);
+                    update(sum2, 38ns, 2);
+
+                    auto m2 = stream::add_variance(
+                        3, sum1.total, sum1.m2, 2, sum2.total, sum2.m2);
+                    REQUIRE(m2.count() == m2_exp);
+                }
+            }
+        }
+    }
 }

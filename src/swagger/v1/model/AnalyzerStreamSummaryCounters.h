@@ -66,7 +66,14 @@ public:
     /// </summary>
     int64_t getTotal() const;
     void setTotal(int64_t value);
-    
+        /// <summary>
+    /// Standard deviation of received values
+    /// </summary>
+    int64_t getStdDev() const;
+    void setStdDev(int64_t value);
+    bool stdDevIsSet() const;
+    void unsetStd_dev();
+
 protected:
     int64_t m_Min;
     bool m_MinIsSet;
@@ -74,6 +81,8 @@ protected:
     bool m_MaxIsSet;
     int64_t m_Total;
 
+    int64_t m_Std_dev;
+    bool m_Std_devIsSet;
 };
 
 }

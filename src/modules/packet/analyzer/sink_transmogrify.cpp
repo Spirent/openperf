@@ -65,7 +65,20 @@ inline void maybe_add_summary_tuple(const GenericCounter& x,
 {
     if (x.template holds<StatTuple>()) {
         auto& sum_tuple = sum.template get<StatTuple>();
+        auto sum_count = sum.template get<statistics::counter>().count;
         auto& x_tuple = x.template get<StatTuple>();
+        auto x_count = x.template get<statistics::counter>().count;
+
+        /*
+         * XXX: We need the totals of each tuple to calculate the variance,
+         * hence we update the variance sum before adding anything else.
+         */
+        sum_tuple.m2 = statistics::stream::add_variance(sum_count,
+                                                        sum_tuple.total,
+                                                        sum_tuple.m2,
+                                                        x_count,
+                                                        x_tuple.total,
+                                                        x_tuple.m2);
 
         sum_tuple.max = std::max(sum_tuple.max, x_tuple.max);
         sum_tuple.min = std::min(sum_tuple.min, x_tuple.min);
@@ -323,6 +336,9 @@ to_swagger(const SummaryTuple& src, statistics::stat_t count)
     if (src.total.count()) {
         dst->setMin(src.min.count());
         dst->setMax(src.max.count());
+        if (src.min.count() != src.max.count()) {
+            dst->setStdDev(std::sqrt(src.m2.count() / (count - 1)));
+        }
     }
 
     return (dst);
@@ -341,6 +357,9 @@ to_swagger(const SummaryTuple& src, statistics::stat_t count)
     if (src.total) {
         dst->setMin(src.min);
         dst->setMax(src.max);
+        if (src.min != src.max) {
+            dst->setStdDev(std::sqrt(src.m2 / count - 1));
+        }
     }
 
     return (dst);
