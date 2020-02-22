@@ -170,6 +170,9 @@ class TimeKeeperStatsRoundTripTimes(object):
                 ))
             else:
                 result[attr] = value
+        if issubclass(TimeKeeperStatsRoundTripTimes, dict):
+            for key, value in self.items():
+                result[key] = value
 
         return result
 

@@ -375,6 +375,9 @@ class StackProtocolStats(object):
                 ))
             else:
                 result[attr] = value
+        if issubclass(StackProtocolStats, dict):
+            for key, value in self.items():
+                result[key] = value
 
         return result
 

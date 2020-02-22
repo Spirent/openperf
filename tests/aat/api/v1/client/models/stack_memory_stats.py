@@ -219,6 +219,9 @@ class StackMemoryStats(object):
                 ))
             else:
                 result[attr] = value
+        if issubclass(StackMemoryStats, dict):
+            for key, value in self.items():
+                result[key] = value
 
         return result
 

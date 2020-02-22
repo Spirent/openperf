@@ -38,18 +38,18 @@ class PortsApi(object):
 
         Create a new port-equivalent, e.g. a bonded port.  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async=True
-        >>> thread = api.create_port(port, async=True)
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.create_port(port, async_req=True)
         >>> result = thread.get()
 
-        :param async bool
+        :param async_req bool
         :param Port port: New port (required)
         :return: Port
                  If the method is called asynchronously,
                  returns the request thread.
         """
         kwargs['_return_http_data_only'] = True
-        if kwargs.get('async'):
+        if kwargs.get('async_req'):
             return self.create_port_with_http_info(port, **kwargs)  # noqa: E501
         else:
             (data) = self.create_port_with_http_info(port, **kwargs)  # noqa: E501
@@ -60,11 +60,11 @@ class PortsApi(object):
 
         Create a new port-equivalent, e.g. a bonded port.  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async=True
-        >>> thread = api.create_port_with_http_info(port, async=True)
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.create_port_with_http_info(port, async_req=True)
         >>> result = thread.get()
 
-        :param async bool
+        :param async_req bool
         :param Port port: New port (required)
         :return: Port
                  If the method is called asynchronously,
@@ -72,7 +72,7 @@ class PortsApi(object):
         """
 
         all_params = ['port']  # noqa: E501
-        all_params.append('async')
+        all_params.append('async_req')
         all_params.append('_return_http_data_only')
         all_params.append('_preload_content')
         all_params.append('_request_timeout')
@@ -126,7 +126,7 @@ class PortsApi(object):
             files=local_var_files,
             response_type='Port',  # noqa: E501
             auth_settings=auth_settings,
-            async=params.get('async'),
+            async_req=params.get('async_req'),
             _return_http_data_only=params.get('_return_http_data_only'),
             _preload_content=params.get('_preload_content', True),
             _request_timeout=params.get('_request_timeout'),
@@ -137,18 +137,18 @@ class PortsApi(object):
 
         Deletes an existing port equivalent, e.g. a bonded port. Idempotent.  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async=True
-        >>> thread = api.delete_port(id, async=True)
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.delete_port(id, async_req=True)
         >>> result = thread.get()
 
-        :param async bool
+        :param async_req bool
         :param str id: Unique resource identifier (required)
         :return: None
                  If the method is called asynchronously,
                  returns the request thread.
         """
         kwargs['_return_http_data_only'] = True
-        if kwargs.get('async'):
+        if kwargs.get('async_req'):
             return self.delete_port_with_http_info(id, **kwargs)  # noqa: E501
         else:
             (data) = self.delete_port_with_http_info(id, **kwargs)  # noqa: E501
@@ -159,11 +159,11 @@ class PortsApi(object):
 
         Deletes an existing port equivalent, e.g. a bonded port. Idempotent.  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async=True
-        >>> thread = api.delete_port_with_http_info(id, async=True)
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.delete_port_with_http_info(id, async_req=True)
         >>> result = thread.get()
 
-        :param async bool
+        :param async_req bool
         :param str id: Unique resource identifier (required)
         :return: None
                  If the method is called asynchronously,
@@ -171,7 +171,7 @@ class PortsApi(object):
         """
 
         all_params = ['id']  # noqa: E501
-        all_params.append('async')
+        all_params.append('async_req')
         all_params.append('_return_http_data_only')
         all_params.append('_preload_content')
         all_params.append('_request_timeout')
@@ -225,7 +225,7 @@ class PortsApi(object):
             files=local_var_files,
             response_type=None,  # noqa: E501
             auth_settings=auth_settings,
-            async=params.get('async'),
+            async_req=params.get('async_req'),
             _return_http_data_only=params.get('_return_http_data_only'),
             _preload_content=params.get('_preload_content', True),
             _request_timeout=params.get('_request_timeout'),
@@ -236,18 +236,18 @@ class PortsApi(object):
 
         Returns a port, by id.  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async=True
-        >>> thread = api.get_port(id, async=True)
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.get_port(id, async_req=True)
         >>> result = thread.get()
 
-        :param async bool
+        :param async_req bool
         :param str id: Unique resource identifier (required)
         :return: Port
                  If the method is called asynchronously,
                  returns the request thread.
         """
         kwargs['_return_http_data_only'] = True
-        if kwargs.get('async'):
+        if kwargs.get('async_req'):
             return self.get_port_with_http_info(id, **kwargs)  # noqa: E501
         else:
             (data) = self.get_port_with_http_info(id, **kwargs)  # noqa: E501
@@ -258,11 +258,11 @@ class PortsApi(object):
 
         Returns a port, by id.  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async=True
-        >>> thread = api.get_port_with_http_info(id, async=True)
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.get_port_with_http_info(id, async_req=True)
         >>> result = thread.get()
 
-        :param async bool
+        :param async_req bool
         :param str id: Unique resource identifier (required)
         :return: Port
                  If the method is called asynchronously,
@@ -270,7 +270,7 @@ class PortsApi(object):
         """
 
         all_params = ['id']  # noqa: E501
-        all_params.append('async')
+        all_params.append('async_req')
         all_params.append('_return_http_data_only')
         all_params.append('_preload_content')
         all_params.append('_request_timeout')
@@ -324,7 +324,7 @@ class PortsApi(object):
             files=local_var_files,
             response_type='Port',  # noqa: E501
             auth_settings=auth_settings,
-            async=params.get('async'),
+            async_req=params.get('async_req'),
             _return_http_data_only=params.get('_return_http_data_only'),
             _preload_content=params.get('_preload_content', True),
             _request_timeout=params.get('_request_timeout'),
@@ -335,18 +335,18 @@ class PortsApi(object):
 
         The `ports` endpoint returns all physical ports and port-equivalents that are available for network interfaces.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async=True
-        >>> thread = api.list_ports(async=True)
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.list_ports(async_req=True)
         >>> result = thread.get()
 
-        :param async bool
+        :param async_req bool
         :param str kind: Filter by kind
         :return: list[Port]
                  If the method is called asynchronously,
                  returns the request thread.
         """
         kwargs['_return_http_data_only'] = True
-        if kwargs.get('async'):
+        if kwargs.get('async_req'):
             return self.list_ports_with_http_info(**kwargs)  # noqa: E501
         else:
             (data) = self.list_ports_with_http_info(**kwargs)  # noqa: E501
@@ -357,11 +357,11 @@ class PortsApi(object):
 
         The `ports` endpoint returns all physical ports and port-equivalents that are available for network interfaces.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async=True
-        >>> thread = api.list_ports_with_http_info(async=True)
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.list_ports_with_http_info(async_req=True)
         >>> result = thread.get()
 
-        :param async bool
+        :param async_req bool
         :param str kind: Filter by kind
         :return: list[Port]
                  If the method is called asynchronously,
@@ -369,7 +369,7 @@ class PortsApi(object):
         """
 
         all_params = ['kind']  # noqa: E501
-        all_params.append('async')
+        all_params.append('async_req')
         all_params.append('_return_http_data_only')
         all_params.append('_preload_content')
         all_params.append('_request_timeout')
@@ -419,7 +419,7 @@ class PortsApi(object):
             files=local_var_files,
             response_type='list[Port]',  # noqa: E501
             auth_settings=auth_settings,
-            async=params.get('async'),
+            async_req=params.get('async_req'),
             _return_http_data_only=params.get('_return_http_data_only'),
             _preload_content=params.get('_preload_content', True),
             _request_timeout=params.get('_request_timeout'),
@@ -430,11 +430,11 @@ class PortsApi(object):
 
         Updates an existing port's configuration. Idempotent.  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async=True
-        >>> thread = api.update_port(id, port, async=True)
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.update_port(id, port, async_req=True)
         >>> result = thread.get()
 
-        :param async bool
+        :param async_req bool
         :param str id: Unique resource identifier (required)
         :param Port port: Updated port (required)
         :return: Port
@@ -442,7 +442,7 @@ class PortsApi(object):
                  returns the request thread.
         """
         kwargs['_return_http_data_only'] = True
-        if kwargs.get('async'):
+        if kwargs.get('async_req'):
             return self.update_port_with_http_info(id, port, **kwargs)  # noqa: E501
         else:
             (data) = self.update_port_with_http_info(id, port, **kwargs)  # noqa: E501
@@ -453,11 +453,11 @@ class PortsApi(object):
 
         Updates an existing port's configuration. Idempotent.  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async=True
-        >>> thread = api.update_port_with_http_info(id, port, async=True)
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.update_port_with_http_info(id, port, async_req=True)
         >>> result = thread.get()
 
-        :param async bool
+        :param async_req bool
         :param str id: Unique resource identifier (required)
         :param Port port: Updated port (required)
         :return: Port
@@ -466,7 +466,7 @@ class PortsApi(object):
         """
 
         all_params = ['id', 'port']  # noqa: E501
-        all_params.append('async')
+        all_params.append('async_req')
         all_params.append('_return_http_data_only')
         all_params.append('_preload_content')
         all_params.append('_request_timeout')
@@ -526,7 +526,7 @@ class PortsApi(object):
             files=local_var_files,
             response_type='Port',  # noqa: E501
             auth_settings=auth_settings,
-            async=params.get('async'),
+            async_req=params.get('async_req'),
             _return_http_data_only=params.get('_return_http_data_only'),
             _preload_content=params.get('_preload_content', True),
             _request_timeout=params.get('_request_timeout'),

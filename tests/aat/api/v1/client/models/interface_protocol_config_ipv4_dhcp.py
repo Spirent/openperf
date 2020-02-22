@@ -117,6 +117,9 @@ class InterfaceProtocolConfigIpv4Dhcp(object):
                 ))
             else:
                 result[attr] = value
+        if issubclass(InterfaceProtocolConfigIpv4Dhcp, dict):
+            for key, value in self.items():
+                result[key] = value
 
         return result
 

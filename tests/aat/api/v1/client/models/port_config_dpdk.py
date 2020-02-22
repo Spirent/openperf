@@ -143,6 +143,9 @@ class PortConfigDpdk(object):
                 ))
             else:
                 result[attr] = value
+        if issubclass(PortConfigDpdk, dict):
+            for key, value in self.items():
+                result[key] = value
 
         return result
 

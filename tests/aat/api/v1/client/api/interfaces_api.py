@@ -38,18 +38,18 @@ class InterfacesApi(object):
 
         Create multiple network interfaces. Requests are processed in an all-or-nothing manner, i.e. a single network interface creation failure causes all network interface creations for this request to fail.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async=True
-        >>> thread = api.bulk_create_interfaces(create, async=True)
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.bulk_create_interfaces(create, async_req=True)
         >>> result = thread.get()
 
-        :param async bool
+        :param async_req bool
         :param BulkCreateInterfacesRequest create: Bulk creation (required)
         :return: BulkCreateInterfacesResponse
                  If the method is called asynchronously,
                  returns the request thread.
         """
         kwargs['_return_http_data_only'] = True
-        if kwargs.get('async'):
+        if kwargs.get('async_req'):
             return self.bulk_create_interfaces_with_http_info(create, **kwargs)  # noqa: E501
         else:
             (data) = self.bulk_create_interfaces_with_http_info(create, **kwargs)  # noqa: E501
@@ -60,11 +60,11 @@ class InterfacesApi(object):
 
         Create multiple network interfaces. Requests are processed in an all-or-nothing manner, i.e. a single network interface creation failure causes all network interface creations for this request to fail.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async=True
-        >>> thread = api.bulk_create_interfaces_with_http_info(create, async=True)
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.bulk_create_interfaces_with_http_info(create, async_req=True)
         >>> result = thread.get()
 
-        :param async bool
+        :param async_req bool
         :param BulkCreateInterfacesRequest create: Bulk creation (required)
         :return: BulkCreateInterfacesResponse
                  If the method is called asynchronously,
@@ -72,7 +72,7 @@ class InterfacesApi(object):
         """
 
         all_params = ['create']  # noqa: E501
-        all_params.append('async')
+        all_params.append('async_req')
         all_params.append('_return_http_data_only')
         all_params.append('_preload_content')
         all_params.append('_request_timeout')
@@ -126,7 +126,7 @@ class InterfacesApi(object):
             files=local_var_files,
             response_type='BulkCreateInterfacesResponse',  # noqa: E501
             auth_settings=auth_settings,
-            async=params.get('async'),
+            async_req=params.get('async_req'),
             _return_http_data_only=params.get('_return_http_data_only'),
             _preload_content=params.get('_preload_content', True),
             _request_timeout=params.get('_request_timeout'),
@@ -137,18 +137,18 @@ class InterfacesApi(object):
 
         Best-effort delete multiple network interfaces. Non-existent interface ids do not cause errors. Idempotent.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async=True
-        >>> thread = api.bulk_delete_interfaces(delete, async=True)
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.bulk_delete_interfaces(delete, async_req=True)
         >>> result = thread.get()
 
-        :param async bool
+        :param async_req bool
         :param BulkDeleteInterfacesRequest delete: Bulk delete (required)
         :return: None
                  If the method is called asynchronously,
                  returns the request thread.
         """
         kwargs['_return_http_data_only'] = True
-        if kwargs.get('async'):
+        if kwargs.get('async_req'):
             return self.bulk_delete_interfaces_with_http_info(delete, **kwargs)  # noqa: E501
         else:
             (data) = self.bulk_delete_interfaces_with_http_info(delete, **kwargs)  # noqa: E501
@@ -159,11 +159,11 @@ class InterfacesApi(object):
 
         Best-effort delete multiple network interfaces. Non-existent interface ids do not cause errors. Idempotent.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async=True
-        >>> thread = api.bulk_delete_interfaces_with_http_info(delete, async=True)
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.bulk_delete_interfaces_with_http_info(delete, async_req=True)
         >>> result = thread.get()
 
-        :param async bool
+        :param async_req bool
         :param BulkDeleteInterfacesRequest delete: Bulk delete (required)
         :return: None
                  If the method is called asynchronously,
@@ -171,7 +171,7 @@ class InterfacesApi(object):
         """
 
         all_params = ['delete']  # noqa: E501
-        all_params.append('async')
+        all_params.append('async_req')
         all_params.append('_return_http_data_only')
         all_params.append('_preload_content')
         all_params.append('_request_timeout')
@@ -225,7 +225,7 @@ class InterfacesApi(object):
             files=local_var_files,
             response_type=None,  # noqa: E501
             auth_settings=auth_settings,
-            async=params.get('async'),
+            async_req=params.get('async_req'),
             _return_http_data_only=params.get('_return_http_data_only'),
             _preload_content=params.get('_preload_content', True),
             _request_timeout=params.get('_request_timeout'),
@@ -236,18 +236,18 @@ class InterfacesApi(object):
 
         Create a new network interface.  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async=True
-        >>> thread = api.create_interface(interface, async=True)
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.create_interface(interface, async_req=True)
         >>> result = thread.get()
 
-        :param async bool
+        :param async_req bool
         :param Interface interface: New network interface (required)
         :return: Interface
                  If the method is called asynchronously,
                  returns the request thread.
         """
         kwargs['_return_http_data_only'] = True
-        if kwargs.get('async'):
+        if kwargs.get('async_req'):
             return self.create_interface_with_http_info(interface, **kwargs)  # noqa: E501
         else:
             (data) = self.create_interface_with_http_info(interface, **kwargs)  # noqa: E501
@@ -258,11 +258,11 @@ class InterfacesApi(object):
 
         Create a new network interface.  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async=True
-        >>> thread = api.create_interface_with_http_info(interface, async=True)
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.create_interface_with_http_info(interface, async_req=True)
         >>> result = thread.get()
 
-        :param async bool
+        :param async_req bool
         :param Interface interface: New network interface (required)
         :return: Interface
                  If the method is called asynchronously,
@@ -270,7 +270,7 @@ class InterfacesApi(object):
         """
 
         all_params = ['interface']  # noqa: E501
-        all_params.append('async')
+        all_params.append('async_req')
         all_params.append('_return_http_data_only')
         all_params.append('_preload_content')
         all_params.append('_request_timeout')
@@ -324,7 +324,7 @@ class InterfacesApi(object):
             files=local_var_files,
             response_type='Interface',  # noqa: E501
             auth_settings=auth_settings,
-            async=params.get('async'),
+            async_req=params.get('async_req'),
             _return_http_data_only=params.get('_return_http_data_only'),
             _preload_content=params.get('_preload_content', True),
             _request_timeout=params.get('_request_timeout'),
@@ -335,18 +335,18 @@ class InterfacesApi(object):
 
         Deletes an existing interface. Idempotent.  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async=True
-        >>> thread = api.delete_interface(id, async=True)
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.delete_interface(id, async_req=True)
         >>> result = thread.get()
 
-        :param async bool
+        :param async_req bool
         :param str id: Unique resource identifier (required)
         :return: None
                  If the method is called asynchronously,
                  returns the request thread.
         """
         kwargs['_return_http_data_only'] = True
-        if kwargs.get('async'):
+        if kwargs.get('async_req'):
             return self.delete_interface_with_http_info(id, **kwargs)  # noqa: E501
         else:
             (data) = self.delete_interface_with_http_info(id, **kwargs)  # noqa: E501
@@ -357,11 +357,11 @@ class InterfacesApi(object):
 
         Deletes an existing interface. Idempotent.  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async=True
-        >>> thread = api.delete_interface_with_http_info(id, async=True)
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.delete_interface_with_http_info(id, async_req=True)
         >>> result = thread.get()
 
-        :param async bool
+        :param async_req bool
         :param str id: Unique resource identifier (required)
         :return: None
                  If the method is called asynchronously,
@@ -369,7 +369,7 @@ class InterfacesApi(object):
         """
 
         all_params = ['id']  # noqa: E501
-        all_params.append('async')
+        all_params.append('async_req')
         all_params.append('_return_http_data_only')
         all_params.append('_preload_content')
         all_params.append('_request_timeout')
@@ -423,7 +423,7 @@ class InterfacesApi(object):
             files=local_var_files,
             response_type=None,  # noqa: E501
             auth_settings=auth_settings,
-            async=params.get('async'),
+            async_req=params.get('async_req'),
             _return_http_data_only=params.get('_return_http_data_only'),
             _preload_content=params.get('_preload_content', True),
             _request_timeout=params.get('_request_timeout'),
@@ -434,18 +434,18 @@ class InterfacesApi(object):
 
         Returns a network interface, by id.  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async=True
-        >>> thread = api.get_interface(id, async=True)
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.get_interface(id, async_req=True)
         >>> result = thread.get()
 
-        :param async bool
+        :param async_req bool
         :param str id: Unique resource identifier (required)
         :return: Interface
                  If the method is called asynchronously,
                  returns the request thread.
         """
         kwargs['_return_http_data_only'] = True
-        if kwargs.get('async'):
+        if kwargs.get('async_req'):
             return self.get_interface_with_http_info(id, **kwargs)  # noqa: E501
         else:
             (data) = self.get_interface_with_http_info(id, **kwargs)  # noqa: E501
@@ -456,11 +456,11 @@ class InterfacesApi(object):
 
         Returns a network interface, by id.  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async=True
-        >>> thread = api.get_interface_with_http_info(id, async=True)
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.get_interface_with_http_info(id, async_req=True)
         >>> result = thread.get()
 
-        :param async bool
+        :param async_req bool
         :param str id: Unique resource identifier (required)
         :return: Interface
                  If the method is called asynchronously,
@@ -468,7 +468,7 @@ class InterfacesApi(object):
         """
 
         all_params = ['id']  # noqa: E501
-        all_params.append('async')
+        all_params.append('async_req')
         all_params.append('_return_http_data_only')
         all_params.append('_preload_content')
         all_params.append('_request_timeout')
@@ -522,7 +522,7 @@ class InterfacesApi(object):
             files=local_var_files,
             response_type='Interface',  # noqa: E501
             auth_settings=auth_settings,
-            async=params.get('async'),
+            async_req=params.get('async_req'),
             _return_http_data_only=params.get('_return_http_data_only'),
             _preload_content=params.get('_preload_content', True),
             _request_timeout=params.get('_request_timeout'),
@@ -533,11 +533,11 @@ class InterfacesApi(object):
 
         The `interfaces` endpoint returns all network interfaces that are available for use as stack entry/exit points.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async=True
-        >>> thread = api.list_interfaces(async=True)
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.list_interfaces(async_req=True)
         >>> result = thread.get()
 
-        :param async bool
+        :param async_req bool
         :param str port_id: Filter by port id
         :param str eth_mac_address: Filter by Ethernet MAC address
         :param str ipv4_address: Filter by IPv4 address
@@ -546,7 +546,7 @@ class InterfacesApi(object):
                  returns the request thread.
         """
         kwargs['_return_http_data_only'] = True
-        if kwargs.get('async'):
+        if kwargs.get('async_req'):
             return self.list_interfaces_with_http_info(**kwargs)  # noqa: E501
         else:
             (data) = self.list_interfaces_with_http_info(**kwargs)  # noqa: E501
@@ -557,11 +557,11 @@ class InterfacesApi(object):
 
         The `interfaces` endpoint returns all network interfaces that are available for use as stack entry/exit points.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async=True
-        >>> thread = api.list_interfaces_with_http_info(async=True)
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.list_interfaces_with_http_info(async_req=True)
         >>> result = thread.get()
 
-        :param async bool
+        :param async_req bool
         :param str port_id: Filter by port id
         :param str eth_mac_address: Filter by Ethernet MAC address
         :param str ipv4_address: Filter by IPv4 address
@@ -571,7 +571,7 @@ class InterfacesApi(object):
         """
 
         all_params = ['port_id', 'eth_mac_address', 'ipv4_address']  # noqa: E501
-        all_params.append('async')
+        all_params.append('async_req')
         all_params.append('_return_http_data_only')
         all_params.append('_preload_content')
         all_params.append('_request_timeout')
@@ -625,7 +625,7 @@ class InterfacesApi(object):
             files=local_var_files,
             response_type='list[Interface]',  # noqa: E501
             auth_settings=auth_settings,
-            async=params.get('async'),
+            async_req=params.get('async_req'),
             _return_http_data_only=params.get('_return_http_data_only'),
             _preload_content=params.get('_preload_content', True),
             _request_timeout=params.get('_request_timeout'),
