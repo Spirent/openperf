@@ -170,6 +170,9 @@ class ModuleVersion(object):
                 ))
             else:
                 result[attr] = value
+        if issubclass(ModuleVersion, dict):
+            for key, value in self.items():
+                result[key] = value
 
         return result
 

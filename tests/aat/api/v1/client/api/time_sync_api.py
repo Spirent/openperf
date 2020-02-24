@@ -38,18 +38,18 @@ class TimeSyncApi(object):
 
         Registers a new time source for time syncing. Time sources are immutable.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async=True
-        >>> thread = api.create_time_source(timesource, async=True)
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.create_time_source(timesource, async_req=True)
         >>> result = thread.get()
 
-        :param async bool
+        :param async_req bool
         :param TimeSource timesource: New time source (required)
         :return: TimeSource
                  If the method is called asynchronously,
                  returns the request thread.
         """
         kwargs['_return_http_data_only'] = True
-        if kwargs.get('async'):
+        if kwargs.get('async_req'):
             return self.create_time_source_with_http_info(timesource, **kwargs)  # noqa: E501
         else:
             (data) = self.create_time_source_with_http_info(timesource, **kwargs)  # noqa: E501
@@ -60,11 +60,11 @@ class TimeSyncApi(object):
 
         Registers a new time source for time syncing. Time sources are immutable.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async=True
-        >>> thread = api.create_time_source_with_http_info(timesource, async=True)
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.create_time_source_with_http_info(timesource, async_req=True)
         >>> result = thread.get()
 
-        :param async bool
+        :param async_req bool
         :param TimeSource timesource: New time source (required)
         :return: TimeSource
                  If the method is called asynchronously,
@@ -72,7 +72,7 @@ class TimeSyncApi(object):
         """
 
         all_params = ['timesource']  # noqa: E501
-        all_params.append('async')
+        all_params.append('async_req')
         all_params.append('_return_http_data_only')
         all_params.append('_preload_content')
         all_params.append('_request_timeout')
@@ -126,7 +126,7 @@ class TimeSyncApi(object):
             files=local_var_files,
             response_type='TimeSource',  # noqa: E501
             auth_settings=auth_settings,
-            async=params.get('async'),
+            async_req=params.get('async_req'),
             _return_http_data_only=params.get('_return_http_data_only'),
             _preload_content=params.get('_preload_content', True),
             _request_timeout=params.get('_request_timeout'),
@@ -137,18 +137,18 @@ class TimeSyncApi(object):
 
         Deletes an existing time source. Idempotent.  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async=True
-        >>> thread = api.delete_time_source(id, async=True)
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.delete_time_source(id, async_req=True)
         >>> result = thread.get()
 
-        :param async bool
+        :param async_req bool
         :param str id: Unique resource identifier (required)
         :return: None
                  If the method is called asynchronously,
                  returns the request thread.
         """
         kwargs['_return_http_data_only'] = True
-        if kwargs.get('async'):
+        if kwargs.get('async_req'):
             return self.delete_time_source_with_http_info(id, **kwargs)  # noqa: E501
         else:
             (data) = self.delete_time_source_with_http_info(id, **kwargs)  # noqa: E501
@@ -159,11 +159,11 @@ class TimeSyncApi(object):
 
         Deletes an existing time source. Idempotent.  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async=True
-        >>> thread = api.delete_time_source_with_http_info(id, async=True)
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.delete_time_source_with_http_info(id, async_req=True)
         >>> result = thread.get()
 
-        :param async bool
+        :param async_req bool
         :param str id: Unique resource identifier (required)
         :return: None
                  If the method is called asynchronously,
@@ -171,7 +171,7 @@ class TimeSyncApi(object):
         """
 
         all_params = ['id']  # noqa: E501
-        all_params.append('async')
+        all_params.append('async_req')
         all_params.append('_return_http_data_only')
         all_params.append('_preload_content')
         all_params.append('_request_timeout')
@@ -225,7 +225,7 @@ class TimeSyncApi(object):
             files=local_var_files,
             response_type=None,  # noqa: E501
             auth_settings=auth_settings,
-            async=params.get('async'),
+            async_req=params.get('async_req'),
             _return_http_data_only=params.get('_return_http_data_only'),
             _preload_content=params.get('_preload_content', True),
             _request_timeout=params.get('_request_timeout'),
@@ -236,18 +236,18 @@ class TimeSyncApi(object):
 
         Returns a time counter, by id.  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async=True
-        >>> thread = api.get_time_counter(id, async=True)
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.get_time_counter(id, async_req=True)
         >>> result = thread.get()
 
-        :param async bool
+        :param async_req bool
         :param str id: Unique resource identifier (required)
         :return: TimeCounter
                  If the method is called asynchronously,
                  returns the request thread.
         """
         kwargs['_return_http_data_only'] = True
-        if kwargs.get('async'):
+        if kwargs.get('async_req'):
             return self.get_time_counter_with_http_info(id, **kwargs)  # noqa: E501
         else:
             (data) = self.get_time_counter_with_http_info(id, **kwargs)  # noqa: E501
@@ -258,11 +258,11 @@ class TimeSyncApi(object):
 
         Returns a time counter, by id.  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async=True
-        >>> thread = api.get_time_counter_with_http_info(id, async=True)
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.get_time_counter_with_http_info(id, async_req=True)
         >>> result = thread.get()
 
-        :param async bool
+        :param async_req bool
         :param str id: Unique resource identifier (required)
         :return: TimeCounter
                  If the method is called asynchronously,
@@ -270,7 +270,7 @@ class TimeSyncApi(object):
         """
 
         all_params = ['id']  # noqa: E501
-        all_params.append('async')
+        all_params.append('async_req')
         all_params.append('_return_http_data_only')
         all_params.append('_preload_content')
         all_params.append('_request_timeout')
@@ -324,7 +324,7 @@ class TimeSyncApi(object):
             files=local_var_files,
             response_type='TimeCounter',  # noqa: E501
             auth_settings=auth_settings,
-            async=params.get('async'),
+            async_req=params.get('async_req'),
             _return_http_data_only=params.get('_return_http_data_only'),
             _preload_content=params.get('_preload_content', True),
             _request_timeout=params.get('_request_timeout'),
@@ -335,17 +335,17 @@ class TimeSyncApi(object):
 
         Returns the system time keeper, aka clock.  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async=True
-        >>> thread = api.get_time_keeper(async=True)
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.get_time_keeper(async_req=True)
         >>> result = thread.get()
 
-        :param async bool
+        :param async_req bool
         :return: TimeKeeper
                  If the method is called asynchronously,
                  returns the request thread.
         """
         kwargs['_return_http_data_only'] = True
-        if kwargs.get('async'):
+        if kwargs.get('async_req'):
             return self.get_time_keeper_with_http_info(**kwargs)  # noqa: E501
         else:
             (data) = self.get_time_keeper_with_http_info(**kwargs)  # noqa: E501
@@ -356,18 +356,18 @@ class TimeSyncApi(object):
 
         Returns the system time keeper, aka clock.  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async=True
-        >>> thread = api.get_time_keeper_with_http_info(async=True)
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.get_time_keeper_with_http_info(async_req=True)
         >>> result = thread.get()
 
-        :param async bool
+        :param async_req bool
         :return: TimeKeeper
                  If the method is called asynchronously,
                  returns the request thread.
         """
 
         all_params = []  # noqa: E501
-        all_params.append('async')
+        all_params.append('async_req')
         all_params.append('_return_http_data_only')
         all_params.append('_preload_content')
         all_params.append('_request_timeout')
@@ -415,7 +415,7 @@ class TimeSyncApi(object):
             files=local_var_files,
             response_type='TimeKeeper',  # noqa: E501
             auth_settings=auth_settings,
-            async=params.get('async'),
+            async_req=params.get('async_req'),
             _return_http_data_only=params.get('_return_http_data_only'),
             _preload_content=params.get('_preload_content', True),
             _request_timeout=params.get('_request_timeout'),
@@ -426,18 +426,18 @@ class TimeSyncApi(object):
 
         Get a time source, by id.  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async=True
-        >>> thread = api.get_time_source(id, async=True)
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.get_time_source(id, async_req=True)
         >>> result = thread.get()
 
-        :param async bool
+        :param async_req bool
         :param str id: Unique resource identifier (required)
         :return: TimeSource
                  If the method is called asynchronously,
                  returns the request thread.
         """
         kwargs['_return_http_data_only'] = True
-        if kwargs.get('async'):
+        if kwargs.get('async_req'):
             return self.get_time_source_with_http_info(id, **kwargs)  # noqa: E501
         else:
             (data) = self.get_time_source_with_http_info(id, **kwargs)  # noqa: E501
@@ -448,11 +448,11 @@ class TimeSyncApi(object):
 
         Get a time source, by id.  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async=True
-        >>> thread = api.get_time_source_with_http_info(id, async=True)
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.get_time_source_with_http_info(id, async_req=True)
         >>> result = thread.get()
 
-        :param async bool
+        :param async_req bool
         :param str id: Unique resource identifier (required)
         :return: TimeSource
                  If the method is called asynchronously,
@@ -460,7 +460,7 @@ class TimeSyncApi(object):
         """
 
         all_params = ['id']  # noqa: E501
-        all_params.append('async')
+        all_params.append('async_req')
         all_params.append('_return_http_data_only')
         all_params.append('_preload_content')
         all_params.append('_request_timeout')
@@ -514,7 +514,7 @@ class TimeSyncApi(object):
             files=local_var_files,
             response_type='TimeSource',  # noqa: E501
             auth_settings=auth_settings,
-            async=params.get('async'),
+            async_req=params.get('async_req'),
             _return_http_data_only=params.get('_return_http_data_only'),
             _preload_content=params.get('_preload_content', True),
             _request_timeout=params.get('_request_timeout'),
@@ -525,17 +525,17 @@ class TimeSyncApi(object):
 
         The `time-counters` endpoint returns all local time counters that are available for measuring the passage of time.  This list is for informational purposes only.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async=True
-        >>> thread = api.list_time_counters(async=True)
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.list_time_counters(async_req=True)
         >>> result = thread.get()
 
-        :param async bool
+        :param async_req bool
         :return: list[TimeCounter]
                  If the method is called asynchronously,
                  returns the request thread.
         """
         kwargs['_return_http_data_only'] = True
-        if kwargs.get('async'):
+        if kwargs.get('async_req'):
             return self.list_time_counters_with_http_info(**kwargs)  # noqa: E501
         else:
             (data) = self.list_time_counters_with_http_info(**kwargs)  # noqa: E501
@@ -546,18 +546,18 @@ class TimeSyncApi(object):
 
         The `time-counters` endpoint returns all local time counters that are available for measuring the passage of time.  This list is for informational purposes only.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async=True
-        >>> thread = api.list_time_counters_with_http_info(async=True)
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.list_time_counters_with_http_info(async_req=True)
         >>> result = thread.get()
 
-        :param async bool
+        :param async_req bool
         :return: list[TimeCounter]
                  If the method is called asynchronously,
                  returns the request thread.
         """
 
         all_params = []  # noqa: E501
-        all_params.append('async')
+        all_params.append('async_req')
         all_params.append('_return_http_data_only')
         all_params.append('_preload_content')
         all_params.append('_request_timeout')
@@ -605,7 +605,7 @@ class TimeSyncApi(object):
             files=local_var_files,
             response_type='list[TimeCounter]',  # noqa: E501
             auth_settings=auth_settings,
-            async=params.get('async'),
+            async_req=params.get('async_req'),
             _return_http_data_only=params.get('_return_http_data_only'),
             _preload_content=params.get('_preload_content', True),
             _request_timeout=params.get('_request_timeout'),
@@ -616,17 +616,17 @@ class TimeSyncApi(object):
 
         The `time-sources` endpoint returns all time sources that are used for syncing the local time.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async=True
-        >>> thread = api.list_time_sources(async=True)
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.list_time_sources(async_req=True)
         >>> result = thread.get()
 
-        :param async bool
+        :param async_req bool
         :return: list[TimeSource]
                  If the method is called asynchronously,
                  returns the request thread.
         """
         kwargs['_return_http_data_only'] = True
-        if kwargs.get('async'):
+        if kwargs.get('async_req'):
             return self.list_time_sources_with_http_info(**kwargs)  # noqa: E501
         else:
             (data) = self.list_time_sources_with_http_info(**kwargs)  # noqa: E501
@@ -637,18 +637,18 @@ class TimeSyncApi(object):
 
         The `time-sources` endpoint returns all time sources that are used for syncing the local time.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async=True
-        >>> thread = api.list_time_sources_with_http_info(async=True)
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.list_time_sources_with_http_info(async_req=True)
         >>> result = thread.get()
 
-        :param async bool
+        :param async_req bool
         :return: list[TimeSource]
                  If the method is called asynchronously,
                  returns the request thread.
         """
 
         all_params = []  # noqa: E501
-        all_params.append('async')
+        all_params.append('async_req')
         all_params.append('_return_http_data_only')
         all_params.append('_preload_content')
         all_params.append('_request_timeout')
@@ -696,7 +696,7 @@ class TimeSyncApi(object):
             files=local_var_files,
             response_type='list[TimeSource]',  # noqa: E501
             auth_settings=auth_settings,
-            async=params.get('async'),
+            async_req=params.get('async_req'),
             _return_http_data_only=params.get('_return_http_data_only'),
             _preload_content=params.get('_preload_content', True),
             _request_timeout=params.get('_request_timeout'),

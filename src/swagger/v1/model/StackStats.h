@@ -21,8 +21,8 @@
 
 #include "ModelBase.h"
 
-#include "StackProtocolStats.h"
 #include "StackElementStats.h"
+#include "StackProtocolStats.h"
 #include <vector>
 #include "StackMemoryStats.h"
 

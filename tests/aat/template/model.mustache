@@ -6,10 +6,6 @@ import pprint
 import re  # noqa: F401
 
 import six
-{{#imports}}{{#-first}}
-{{/-first}}
-{{import}}  # noqa: F401,E501
-{{/imports}}
 
 
 {{#models}}
@@ -128,6 +124,9 @@ class {{classname}}(object):
                 ))
             else:
                 result[attr] = value
+        if issubclass({{classname}}, dict):
+            for key, value in self.items():
+                result[key] = value
 
         return result
 

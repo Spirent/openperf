@@ -35,6 +35,13 @@ clean:
 	@cd tests/unit && $(MAKE) clean
 	@rm -f compile_commands.json
 
+# Generate code from schema definition
+# These files are checked in so only need to manually rebuild when schema changes
+# and then check in the affected files.
+.PHONY: schema_codegen
+schema_codegen:
+	@cd api/schema && $(MAKE)
+
 ###
 # Targets for code formatting and analysis
 ###
