@@ -18,6 +18,12 @@ RUN apt-get clean && \
     llvm-${LLVM_VERSION} llvm-${LLVM_VERSION}-dev \
     lld-${LLVM_VERSION} bear
 
+# Install Intel SPMD Program Compiler (ISPC)
+ENV ISPC_VERSION 1.12.0
+RUN wget -q -O - https://sourceforge.net/projects/ispcmirror/files/v${ISPC_VERSION}/ispc-v${ISPC_VERSION}-linux.tar.gz \
+    | tar -C /opt -xvz && \
+    ln -s /opt/ispc-v${ISPC_VERSION}-linux/bin/ispc /usr/local/bin/ispc
+
 # Fix up toolchain names
 RUN update-alternatives --install /usr/bin/clang clang /usr/bin/clang-${LLVM_VERSION} ${LLVM_VERSION} \
                         --slave /usr/bin/clang++ clang++ /usr/bin/clang++-${LLVM_VERSION} && \
