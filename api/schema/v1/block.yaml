@@ -196,7 +196,7 @@ paths:
         - $ref: "#/parameters/id"
       responses:
         204:
-          description: Block generator successfully deleted
+          description: No Content
 
   /block-generators/{id}/start:
     post:
@@ -209,7 +209,7 @@ paths:
         - $ref: "#/parameters/id"
       responses:
         204:
-          description: Block generator successfully started
+          description: No Content
 
   /block-generators/{id}/stop:
     post:
@@ -222,7 +222,7 @@ paths:
         - $ref: "#/parameters/id"
       responses:
         204:
-          description: Block generator successfully stopped
+          description: No Content
 
   /block-generators/x/bulk-start:
     post:
