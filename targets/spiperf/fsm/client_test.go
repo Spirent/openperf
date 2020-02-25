@@ -83,7 +83,9 @@ var _ = Describe("Client FSM,", func() {
 					},
 				}
 
-				Eventually(fsmReturn).Should(Receive(BeAssignableToTypeOf(&InternalError{})))
+				ret := <-fsmReturn
+				Expect(ret).To(BeAssignableToTypeOf(&VersionMismatchError{}))
+				Expect(ret.Error()).ToNot(BeEmpty())
 				Expect(peerCmdOut).To(BeClosed())
 
 				close(done)
@@ -98,25 +100,62 @@ var _ = Describe("Client FSM,", func() {
 					Value: "server error",
 				}
 
-				Eventually(fsmReturn).Should(Receive(BeAssignableToTypeOf(&InternalError{})))
+				ret := <-fsmReturn
+				Expect(ret).To(BeAssignableToTypeOf(&PeerError{}))
+				Expect(ret.Error()).ToNot(BeEmpty())
 				Expect(peerCmdOut).To(BeClosed())
 
 				close(done)
 			})
 		})
 
-		Context("when peer does not respond to hello message", func() {
+		Context("when peer responds with an unexpected message type, ", func() {
 			It("terminates with an error", func(done Done) {
-				Eventually(fsmReturn).Should(Receive(BeAssignableToTypeOf(&TimeoutError{})))
+				peerRespIn <- &msg.Message{
+					Type: msg.GetConfigType,
+				}
+
+				ret := <-fsmReturn
+				Expect(ret).To(BeAssignableToTypeOf(&UnexpectedPeerRespError{}))
+				Expect(ret.Error()).ToNot(BeEmpty())
+				Expect(peerCmdOut).To(BeClosed())
+
+				close(done)
+			})
+		})
+
+		Context("when peer responds with an incorrect message value, ", func() {
+			It("terminates with an error", func(done Done) {
+				peerRespIn <- &msg.Message{
+					Type:  msg.HelloType,
+					Value: &msg.StartCommand{},
+				}
+
+				ret := <-fsmReturn
+				Expect(ret).To(BeAssignableToTypeOf(&MessagingError{}))
+				Expect(ret.Error()).ToNot(BeEmpty())
+				Expect(peerCmdOut).To(BeClosed())
+
+				close(done)
+			})
+		})
+
+		Context("when peer does not respond to hello message, ", func() {
+			It("terminates with an error", func(done Done) {
+				ret := <-fsmReturn
+				Expect(ret).To(BeAssignableToTypeOf(&TimeoutError{}))
+				Expect(ret.Error()).ToNot(BeEmpty())
 				Expect(peerCmdOut).To(BeClosed())
 				close(done)
 			})
 		})
 
-		Context("when peer response channel returns an error", func() {
+		Context("when peer response channel returns an error, ", func() {
 			It("terminates with an error", func(done Done) {
 				close(peerRespIn)
-				Eventually(fsmReturn).Should(Receive(BeAssignableToTypeOf(&InternalError{})))
+				ret := <-fsmReturn
+				Expect(ret).To(BeAssignableToTypeOf(&MessagingError{}))
+				Expect(ret.Error()).ToNot(BeEmpty())
 				Expect(peerCmdOut).To(BeClosed())
 				close(done)
 			})
@@ -149,8 +188,11 @@ var _ = Describe("Client FSM,", func() {
 						Value: "server error",
 					}
 
-					Eventually(fsmReturn).Should(Receive(BeAssignableToTypeOf(&InternalError{})))
+					ret := <-fsmReturn
+					Expect(ret).To(BeAssignableToTypeOf(&PeerError{}))
+					Expect(ret.Error()).ToNot(BeEmpty())
 					Expect(peerCmdOut).To(BeClosed())
+
 					close(done)
 				})
 			})
@@ -164,8 +206,10 @@ var _ = Describe("Client FSM,", func() {
 						},
 					}
 
-					Eventually(fsmReturn).Should(Receive(
-						BeAssignableToTypeOf(&InvalidConfigurationError{})))
+					ret := <-fsmReturn
+					Expect(ret).To(
+						BeAssignableToTypeOf(&InvalidConfigurationError{}))
+					Expect(ret.Error()).ToNot(BeEmpty())
 					Expect(peerCmdOut).To(BeClosed())
 
 					close(done)
@@ -174,8 +218,46 @@ var _ = Describe("Client FSM,", func() {
 
 			Context("when server does not respond to get param message", func() {
 				It("terminates with an error", func(done Done) {
-					Eventually(fsmReturn).Should(Receive(BeAssignableToTypeOf(&TimeoutError{})))
+					ret := <-fsmReturn
+					Expect(ret).To(BeAssignableToTypeOf(&TimeoutError{}))
+					Expect(ret.Error()).ToNot(BeEmpty())
 					Expect(peerCmdOut).To(BeClosed())
+
+					close(done)
+				})
+			})
+
+			Context("when server returns an incorrect message type, ", func() {
+				It("terminates with an error", func(done Done) {
+					peerRespIn <- &msg.Message{
+						Type:  msg.HelloType,
+						Value: &msg.Hello{},
+					}
+
+					ret := <-fsmReturn
+					Expect(ret).To(
+						BeAssignableToTypeOf(&UnexpectedPeerRespError{}))
+					Expect(ret.Error()).ToNot(BeEmpty())
+					Expect(peerCmdOut).To(BeClosed())
+
+					close(done)
+				})
+			})
+
+			Context("when server returns an incorrect Value, ", func() {
+				It("terminates with an error", func(done Done) {
+					peerRespIn <- &msg.Message{
+						Type:  msg.ServerParametersResponseType,
+						Value: &msg.FinalStats{},
+					}
+
+					ret := <-fsmReturn
+					Expect(ret).To(
+						BeAssignableToTypeOf(&MessagingError{}))
+					Expect(ret.Error()).ToNot(BeEmpty())
+					Expect(ret.Error()).ToNot(BeEmpty())
+					Expect(peerCmdOut).To(BeClosed())
+
 					close(done)
 				})
 			})
@@ -210,6 +292,18 @@ var _ = Describe("Client FSM,", func() {
 					Expect(command.Value).To(Equal(serverCfg))
 				})
 
+				Context("when server does not ACK set configuration message, ", func() {
+					It("exits with an error", func(done Done) {
+						drainOpenperfCommands(opCmdOut, peerCmdOut)
+
+						ret := <-fsmReturn
+						Expect(ret).To(BeAssignableToTypeOf(&TimeoutError{}))
+						Expect(ret.Error()).ToNot(BeEmpty())
+						Expect(fsm.State()).To(Equal("cleanup"))
+						close(done)
+					}, assertEpsilon.Seconds())
+				})
+
 				Context("when server NACKs configuration from client, ", func() {
 					It("exits with an error", func(done Done) {
 						peerRespIn <- &msg.Message{
@@ -219,13 +313,35 @@ var _ = Describe("Client FSM,", func() {
 
 						drainOpenperfCommands(opCmdOut, peerCmdOut)
 
-						Eventually(fsmReturn).Should(Receive(
-							BeAssignableToTypeOf(&InvalidConfigurationError{})))
+						ret := <-fsmReturn
+						Expect(ret).To(
+							BeAssignableToTypeOf(&PeerError{}))
+						Expect(ret.Error()).ToNot(BeEmpty())
 						Expect(peerCmdOut).To(BeClosed())
 						Expect(fsm.State()).To(Equal("cleanup"))
 
 						close(done)
 					}, assertEpsilon.Seconds())
+				})
+
+				Context("when server sends unexpected message type, ", func() {
+					It("exits with an error", func(done Done) {
+						peerRespIn <- &msg.Message{
+							Type: msg.GetConfigType,
+						}
+
+						drainOpenperfCommands(opCmdOut, peerCmdOut)
+
+						ret := <-fsmReturn
+						Expect(ret).To(
+							BeAssignableToTypeOf(&UnexpectedPeerRespError{}))
+						Expect(ret.Error()).ToNot(BeEmpty())
+						Expect(peerCmdOut).To(BeClosed())
+						Expect(fsm.State()).To(Equal("cleanup"))
+
+						close(done)
+					})
+
 				})
 
 				Context("server ACKs configuration from client, it transitions to ready state, ", func() {
@@ -309,8 +425,48 @@ var _ = Describe("Client FSM,", func() {
 
 								drainOpenperfCommands(opCmdOut, peerCmdOut)
 
-								Eventually(fsmReturn).Should(Receive(
-									BeAssignableToTypeOf(&InvalidConfigurationError{})))
+								ret := <-fsmReturn
+								Expect(ret).To(
+									BeAssignableToTypeOf(&PeerError{}))
+								Expect(ret.Error()).ToNot(BeEmpty())
+								Expect(peerCmdOut).To(BeClosed())
+								Expect(fsm.State()).To(Equal("cleanup"))
+
+								close(done)
+
+							})
+						})
+
+						Context("when server does not respond to start command, ", func() {
+							It("exits with an error", func(done Done) {
+
+								drainOpenperfCommands(opCmdOut, peerCmdOut)
+
+								ret := <-fsmReturn
+								Expect(ret).To(
+									BeAssignableToTypeOf(&TimeoutError{}))
+								Expect(ret.Error()).ToNot(BeEmpty())
+								Expect(peerCmdOut).To(BeClosed())
+								Expect(fsm.State()).To(Equal("cleanup"))
+
+								close(done)
+
+							})
+						})
+
+						Context("when server sends unexpected response to start command, ", func() {
+							It("exits with an error", func(done Done) {
+								peerRespIn <- &msg.Message{
+									Type:  msg.HelloType,
+									Value: &msg.Hello{},
+								}
+
+								drainOpenperfCommands(opCmdOut, peerCmdOut)
+
+								ret := <-fsmReturn
+								Expect(ret).To(
+									BeAssignableToTypeOf(&UnexpectedPeerRespError{}))
+								Expect(ret.Error()).ToNot(BeEmpty())
 								Expect(peerCmdOut).To(BeClosed())
 								Expect(fsm.State()).To(Equal("cleanup"))
 
@@ -473,8 +629,44 @@ var _ = Describe("Client FSM,", func() {
 											Type:  msg.ErrorType,
 											Value: "error gathering final stats"}
 
-										Eventually(fsmReturn).Should(Receive(
-											BeAssignableToTypeOf(&MessagingError{})))
+										ret := <-fsmReturn
+										Expect(ret).To(
+											BeAssignableToTypeOf(&PeerError{}))
+										Expect(ret.Error()).ToNot(BeEmpty())
+										Expect(peerCmdOut).To(BeClosed())
+										Expect(fsm.State()).To(Equal("cleanup"))
+
+										close(done)
+									})
+
+								})
+
+								Context("when server does not send any final stats, ", func() {
+									It("exits with an error", func(done Done) {
+
+										ret := <-fsmReturn
+										Expect(ret).To(
+											BeAssignableToTypeOf(&TimeoutError{}))
+										Expect(ret.Error()).ToNot(BeEmpty())
+										Expect(peerCmdOut).To(BeClosed())
+										Expect(fsm.State()).To(Equal("cleanup"))
+
+										close(done)
+									})
+
+								})
+
+								Context("when server sends an unexpected message instead of final stats, ", func() {
+									It("exits with an error", func(done Done) {
+										peerRespIn <- &msg.Message{
+											Type:  msg.HelloType,
+											Value: &msg.Hello{},
+										}
+
+										ret := <-fsmReturn
+										Expect(ret).To(
+											BeAssignableToTypeOf(&UnexpectedPeerRespError{}))
+										Expect(ret.Error()).ToNot(BeEmpty())
 										Expect(peerCmdOut).To(BeClosed())
 										Expect(fsm.State()).To(Equal("cleanup"))
 
@@ -491,7 +683,7 @@ var _ = Describe("Client FSM,", func() {
 										peerRespIn <- &msg.Message{
 											Type: msg.FinalStatsType,
 											Value: &msg.FinalStats{
-												TransmitFrames: uint64(420)},
+												TransmitFrames: uint64(260)},
 										}
 
 										Eventually(func() string {

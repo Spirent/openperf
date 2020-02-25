@@ -127,59 +127,62 @@ func (c *Client) connect(ctx context.Context) (clientStateFunc, error) {
 	}
 
 	// Wait for reply
-	timeout := time.After(c.PeerTimeout)
-	select {
-	case reply, ok := <-c.PeerRespIn:
-		if !ok {
-			return nil, &InternalError{Message: "Error reading from peer response channel"}
+	reply, ok := c.waitForPeerResponse()
+	if ok != nil {
+		return nil, ok
+	}
+
+	switch reply.Type {
+	case msg.HelloType:
+		//Verify remote version matches our version.
+		if helloMsg, ok := reply.Value.(*msg.Hello); ok {
+			if helloMsg.PeerProtocolVersion != msg.Version {
+				return nil, &VersionMismatchError{Message: fmt.Sprintf("Mismatch between server and client versions. Client version is %s and server reports as %s\n", msg.Version, helloMsg.PeerProtocolVersion)}
+			}
+		} else {
+			return nil, &MessagingError{Message: "Unexpected value type in hello message reply"}
 		}
 
-		if reply.Type == msg.ErrorType {
-			return nil, &InternalError{Message: reply.Value.(string)}
-		}
-
-		// Verify remote version matches our version.
-		if serverProtocolVersion := reply.Value.(*msg.Hello).PeerProtocolVersion; serverProtocolVersion != msg.Version {
-			return nil, &InternalError{Message: fmt.Sprintf("Mismatch between server and client versions. Client version is %s and server reports as %s\n", msg.Version, serverProtocolVersion)}
-		}
-
-	case <-timeout:
-		return nil, &TimeoutError{Message: "Timed out waiting for server reply to Hello message."}
+	case msg.ErrorType:
+		return nil, &PeerError{Message: reply.Value.(string)}
+	default:
+		return nil, &UnexpectedPeerRespError{Message: fmt.Sprintf("got unexpected message type %s. Expected %s.", reply.Type, msg.HelloType)}
 	}
 
 	return (*Client).configure, nil
-
 }
 
 func (c *Client) configure(ctx context.Context) (clientStateFunc, error) {
 	c.enter("configure")
 
-	// Send GetConfig to server.
+	// Get server's configuration parameters (i.e. CLI arguments)
 	c.PeerCmdOut <- &msg.Message{
 		Type: msg.GetConfigType,
 	}
 
 	// Wait for response.
-	timeout := time.After(c.PeerTimeout)
-	select {
-	case reply, ok := <-c.PeerRespIn:
-		if !ok {
-			return nil, &InternalError{Message: "Error reading from peer response channel"}
+	reply, ok := c.waitForPeerResponse()
+	if ok != nil {
+		return nil, ok
+	}
+
+	switch reply.Type {
+	case msg.ServerParametersResponseType:
+		if serverPrams, ok := reply.Value.(*msg.ServerParametersResponse); ok {
+			//XXX: full validation of server's parameters will be done here.
+			//This line is to exercise the error path via unit test.
+			if _, err := url.Parse(serverPrams.OpenperfURL); err != nil {
+				return nil, &InvalidConfigurationError{Message: fmt.Sprintf("Got invalid OpenPerf URL from server: %s", serverPrams.OpenperfURL)}
+			}
+		} else {
+			return nil, &MessagingError{Message: "Unexpected value type in server parameters reply"}
 		}
 
-		if reply.Type == msg.ErrorType {
-			return nil, &InternalError{Message: reply.Value.(string)}
-		}
+	case msg.ErrorType:
+		return nil, &PeerError{Message: reply.Value.(string)}
 
-		serverPrams := reply.Value.(*msg.ServerParametersResponse)
-		//XXX: full validation of server's parameters will be done here.
-		//This line is to exercise the error path via unit test.
-		if _, err := url.Parse(serverPrams.OpenperfURL); err != nil {
-			return nil, &InvalidConfigurationError{Message: fmt.Sprintf("Got invalid OpenPerf URL from server: %s", serverPrams.OpenperfURL)}
-		}
-
-	case <-timeout:
-		return nil, &TimeoutError{Message: "Timed out waiting for server reply to get parameters message."}
+	default:
+		return nil, &UnexpectedPeerRespError{Message: fmt.Sprintf("got unexpected message type %s. Expected %s.", reply.Type, msg.ServerParametersResponseType)}
 	}
 
 	//XXX: test configuration will be built here.
@@ -194,10 +197,20 @@ func (c *Client) configure(ctx context.Context) (clientStateFunc, error) {
 	}
 
 	// Wait for an ACK.
-	reply := <-c.PeerRespIn
+	reply, ok = c.waitForPeerResponse()
+	if ok != nil {
+		return (*Client).cleanup, ok
+	}
 
-	if reply.Type != msg.AckType {
-		return (*Client).cleanup, &InvalidConfigurationError{Message: reply.Value.(string)}
+	switch reply.Type {
+
+	case msg.AckType:
+
+	case msg.ErrorType:
+		return (*Client).cleanup, &PeerError{Message: reply.Value.(string)}
+
+	default:
+		return (*Client).cleanup, &UnexpectedPeerRespError{Message: fmt.Sprintf("got unexpected message type %s. Expected %s.", reply.Type, msg.AckType)}
 	}
 
 	// Switch to Ready state.
@@ -208,7 +221,8 @@ func (c *Client) ready(ctx context.Context) (clientStateFunc, error) {
 	c.enter("ready")
 
 	reqDone := make(chan struct{})
-	opCtx, _ := context.WithTimeout(ctx, c.OpenperfTimeout)
+	opCtx, opCancel := context.WithTimeout(ctx, c.OpenperfTimeout)
+	defer opCancel()
 	req := &openperf.Command{
 		Request: &openperf.GetTimeRequest{},
 		Done:    reqDone,
@@ -217,7 +231,7 @@ func (c *Client) ready(ctx context.Context) (clientStateFunc, error) {
 
 	c.OpenperfCmdOut <- req
 
-	// Wait for request to finish one way or another.
+	// Wait for request to finish one way or another. OP controller ensures this never gets stuck.
 	<-reqDone
 	//Results are done. Or it timed out.
 	switch resp := req.Response.(type) {
@@ -235,11 +249,21 @@ func (c *Client) ready(ctx context.Context) (clientStateFunc, error) {
 		return (*Client).cleanup, &InternalError{Message: resp.Error()}
 	}
 
-	// wait for ack to start time message.
-	reply := <-c.PeerRespIn
+	// Wait for an ACK to start message.
+	reply, ok := c.waitForPeerResponse()
+	if ok != nil {
+		return (*Client).cleanup, ok
+	}
 
-	if reply.Type != msg.AckType {
-		return (*Client).cleanup, &InvalidConfigurationError{Message: reply.Value.(string)}
+	switch reply.Type {
+
+	case msg.AckType:
+
+	case msg.ErrorType:
+		return (*Client).cleanup, &PeerError{Message: reply.Value.(string)}
+
+	default:
+		return (*Client).cleanup, &UnexpectedPeerRespError{Message: fmt.Sprintf("got unexpected message type %s. Expected %s.", reply.Type, msg.AckType)}
 	}
 
 	// switch to armed state
@@ -471,11 +495,20 @@ func (c *Client) done(ctx context.Context) (clientStateFunc, error) {
 		Type: msg.GetFinalStatsType,
 	}
 
-	// wait for values
-	reply := <-c.PeerRespIn
+	//Wait for EOT results from server.
+	reply, ok := c.waitForPeerResponse()
+	if ok != nil {
+		return (*Client).cleanup, ok
+	}
 
-	if reply.Type != msg.FinalStatsType {
-		return (*Client).cleanup, &MessagingError{Message: reply.Value.(string)}
+	switch reply.Type {
+	case msg.FinalStatsType:
+		//XXX: final stats will be processed here.
+	case msg.ErrorType:
+		return (*Client).cleanup, &PeerError{Message: reply.Value.(string)}
+
+	default:
+		return (*Client).cleanup, &UnexpectedPeerRespError{Message: fmt.Sprintf("got unexpected message type %s. Expected %s.", reply.Type, msg.FinalStatsType)}
 	}
 
 	return (*Client).cleanup, nil
@@ -509,4 +542,18 @@ func (c *Client) cleanup(ctx context.Context) (clientStateFunc, error) {
 	}
 
 	return nil, nil
+}
+
+func (c *Client) waitForPeerResponse() (*msg.Message, error) {
+
+	select {
+	case resp, ok := <-c.PeerRespIn:
+		if !ok {
+			return nil, &MessagingError{Message: "error reading from peer response channel."}
+		}
+
+		return resp, nil
+	case <-time.After(c.PeerTimeout):
+		return nil, &TimeoutError{Message: "waiting for a reply from peer."}
+	}
 }
