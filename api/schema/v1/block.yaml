@@ -361,6 +361,7 @@ definitions:
       - id
       - path
       - size
+      - info
       - usable
 
   BlockFile:
@@ -392,6 +393,7 @@ definitions:
     required:
       - id
       - file_size
+      - init_percent_complete
       - path
       - state
 
