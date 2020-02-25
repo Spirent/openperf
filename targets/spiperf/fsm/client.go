@@ -308,38 +308,17 @@ func (c *Client) running(ctx context.Context) (clientStateFunc, error) {
 	// client <--> server traffic
 	case c.TestConfiguration.UpstreamRate > 0 && c.TestConfiguration.DownstreamRate > 0:
 		// Start up generator polling (to check runstate)
-		var generatorReqCtx context.Context
-		generatorReqCtx, generatorPollCancel = context.WithCancel(ctx)
-		generatorPollResp = make(chan interface{})
-		go openperf.RunCommandRepeater(generatorReqCtx, &openperf.CommandRepeater{
-			Command:            &openperf.Command{Request: &openperf.GetGeneratorRequest{}},
-			Interval:           c.GeneratorPollInterval,
-			OpenperfController: c.OpenperfCmdOut,
-			Responses:          generatorPollResp})
+		generatorPollResp, generatorPollCancel = c.makeOpenperfCmdRepeater(ctx, &openperf.Command{Request: &openperf.GetGeneratorRequest{}}, c.GeneratorPollInterval)
 
 		defer generatorPollCancel()
 
 		// Start up transmit stats polling
-		var txStatReqCtx context.Context
-		txStatReqCtx, txStatsPollCancel = context.WithCancel(ctx)
-		txStatsPollResp = make(chan interface{})
-		go openperf.RunCommandRepeater(txStatReqCtx, &openperf.CommandRepeater{
-			Command:            &openperf.Command{Request: &openperf.GetTxStatsRequest{}},
-			Interval:           c.StatsPollInterval,
-			OpenperfController: c.OpenperfCmdOut,
-			Responses:          txStatsPollResp})
+		txStatsPollResp, txStatsPollCancel = c.makeOpenperfCmdRepeater(ctx, &openperf.Command{Request: &openperf.GetTxStatsRequest{}}, c.StatsPollInterval)
 
 		defer txStatsPollCancel()
 
 		// Start up receive stats polling
-		var rxStatReqCtx context.Context
-		rxStatReqCtx, rxStatsPollCancel = context.WithCancel(ctx)
-		rxStatsPollResp = make(chan interface{})
-		go openperf.RunCommandRepeater(rxStatReqCtx, &openperf.CommandRepeater{
-			Command:            &openperf.Command{Request: &openperf.GetRxStatsRequest{}},
-			Interval:           c.StatsPollInterval,
-			OpenperfController: c.OpenperfCmdOut,
-			Responses:          rxStatsPollResp})
+		rxStatsPollResp, rxStatsPollCancel = c.makeOpenperfCmdRepeater(ctx, &openperf.Command{Request: &openperf.GetRxStatsRequest{}}, c.StatsPollInterval)
 
 		defer rxStatsPollCancel()
 
@@ -349,26 +328,12 @@ func (c *Client) running(ctx context.Context) (clientStateFunc, error) {
 	// client -> server traffic
 	case c.TestConfiguration.UpstreamRate > 0:
 		// Start up generator polling (to check runstate)
-		var generatorReqCtx context.Context
-		generatorReqCtx, generatorPollCancel = context.WithCancel(ctx)
-		generatorPollResp = make(chan interface{})
-		go openperf.RunCommandRepeater(generatorReqCtx, &openperf.CommandRepeater{
-			Command:            &openperf.Command{Request: &openperf.GetGeneratorRequest{}},
-			Interval:           c.GeneratorPollInterval,
-			OpenperfController: c.OpenperfCmdOut,
-			Responses:          generatorPollResp})
+		generatorPollResp, generatorPollCancel = c.makeOpenperfCmdRepeater(ctx, &openperf.Command{Request: &openperf.GetGeneratorRequest{}}, c.GeneratorPollInterval)
 
 		defer generatorPollCancel()
 
 		// Start up transmit stats polling
-		var txStatReqCtx context.Context
-		txStatReqCtx, txStatsPollCancel = context.WithCancel(ctx)
-		txStatsPollResp = make(chan interface{})
-		go openperf.RunCommandRepeater(txStatReqCtx, &openperf.CommandRepeater{
-			Command:            &openperf.Command{Request: &openperf.GetTxStatsRequest{}},
-			Interval:           c.StatsPollInterval,
-			OpenperfController: c.OpenperfCmdOut,
-			Responses:          txStatsPollResp})
+		txStatsPollResp, txStatsPollCancel = c.makeOpenperfCmdRepeater(ctx, &openperf.Command{Request: &openperf.GetTxStatsRequest{}}, c.StatsPollInterval)
 
 		defer txStatsPollCancel()
 
@@ -378,14 +343,7 @@ func (c *Client) running(ctx context.Context) (clientStateFunc, error) {
 	// server -> client traffic
 	case c.TestConfiguration.DownstreamRate > 0:
 		// Start up receive stats polling
-		var rxStatReqCtx context.Context
-		rxStatReqCtx, rxStatsPollCancel = context.WithCancel(ctx)
-		rxStatsPollResp = make(chan interface{})
-		go openperf.RunCommandRepeater(rxStatReqCtx, &openperf.CommandRepeater{
-			Command:            &openperf.Command{Request: &openperf.GetRxStatsRequest{}},
-			Interval:           c.StatsPollInterval,
-			OpenperfController: c.OpenperfCmdOut,
-			Responses:          rxStatsPollResp})
+		rxStatsPollResp, rxStatsPollCancel = c.makeOpenperfCmdRepeater(ctx, &openperf.Command{Request: &openperf.GetRxStatsRequest{}}, c.StatsPollInterval)
 
 		defer rxStatsPollCancel()
 
@@ -556,4 +514,18 @@ func (c *Client) waitForPeerResponse() (*msg.Message, error) {
 	case <-time.After(c.PeerTimeout):
 		return nil, &TimeoutError{Message: "waiting for a reply from peer."}
 	}
+}
+
+func (c *Client) makeOpenperfCmdRepeater(ctx context.Context, cmd *openperf.Command, interval time.Duration) (responses chan interface{}, cancelFn context.CancelFunc) {
+	var requestCtx context.Context
+	requestCtx, cancelFn = context.WithCancel(ctx)
+	responses = make(chan interface{})
+	go openperf.RunCommandRepeater(requestCtx, &openperf.CommandRepeater{
+		Command:            cmd,
+		Interval:           interval,
+		OpenperfController: c.OpenperfCmdOut,
+		Responses:          responses})
+
+	return
+
 }
