@@ -233,14 +233,14 @@ paths:
             title: BulkStartBlockGeneratorsRequest
             description: Parameters for the bulk start operation
             properties:
-              items:
+              ids:
                 type: array
                 description: List of block generator identifiers
                 items:
                   type: string
                 minItems: 1
             required:
-              - items
+              - ids
       responses:
         200:
           description: Success
