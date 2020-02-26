@@ -1,7 +1,5 @@
 package msg
 
-import "time"
-
 // Message type definitions
 const (
 	AckType                      = "ACK" //No message value needed.
@@ -18,13 +16,13 @@ const (
 	FinalStatsType               = "FINALSTATS"
 )
 
-// Message is a message envelope for communication between spiperf instances.
+// Message is a message envelope for communication between peers.
 type Message struct {
 	Type  string      `json:"type"`
 	Value interface{} `json:"value,omitempty"`
 }
 
-// Hello initiates a session between client and server spiperf instances.
+// Hello initiates a session between client and server instances.
 type Hello struct {
 	PeerProtocolVersion string `json:"peer_protocol_version"`
 }
@@ -46,12 +44,12 @@ type ServerConfiguration struct {
 // StartCommand tells the server what time the test starts running.
 // At the given time the server will start transmitting and/or receiving packets.
 type StartCommand struct {
-	StartTime time.Time `json:"start_time"`
+	StartTime string `json:"start_time"`
 }
 
 // RuntimeStats convey stats while test is running.
 type RuntimeStats struct {
-	Timestamp uint64 `json:"timestamp"`
+	Timestamp string `json:"timestamp"`
 }
 
 // FinalStats convey final set of stats sampled after the test completes.

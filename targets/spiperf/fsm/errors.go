@@ -7,7 +7,7 @@ type InternalError struct {
 }
 
 func (e *InternalError) Error() string {
-	return "Internal Error Occurred: " + e.Message //+ ": " + e.Err.Error()
+	return "internal error occurred: " + e.Message //+ ": " + e.Err.Error()
 }
 
 // InvalidConfigurationError returned when a configuration contains invalid parameters.
@@ -17,7 +17,7 @@ type InvalidConfigurationError struct {
 }
 
 func (e *InvalidConfigurationError) Error() string {
-	return "Invalid configuration: " + e.Message //+ ": " + e.Err.Error()
+	return "invalid configuration: " + e.Message //+ ": " + e.Err.Error()
 }
 
 // MessagingError returned when there is an issue with messaging between peer spiperf instances.
@@ -27,7 +27,7 @@ type MessagingError struct {
 }
 
 func (e *MessagingError) Error() string {
-	return "Messaging Error Error Occurred: " + e.Message //+ ": " + e.Err.Error()
+	return "messaging error occurred: " + e.Message //+ ": " + e.Err.Error()
 }
 
 // PeerError returned when peer responds with an error message.
@@ -37,7 +37,7 @@ type OpenperfError struct {
 }
 
 func (e *OpenperfError) Error() string {
-	return "Error response from Openperf: " + e.Message
+	return "error response from Openperf: " + e.Message
 }
 
 // PeerError returned when peer responds with an error message.
@@ -47,17 +47,17 @@ type PeerError struct {
 }
 
 func (e *PeerError) Error() string {
-	return "Error response from peer: " + e.Message
+	return "error response from peer: " + e.Message
 }
 
-// TimeoutError returned when an operation times out.
+// TimeoutError returned when an operation times out. Operations include peer and Openperf communication.
 type TimeoutError struct {
 	Message string
 	Err     error
 }
 
 func (e *TimeoutError) Error() string {
-	return "Operation timed out: " + e.Message //+ ": " + e.Err.Error()
+	return "operation timed out: " + e.Message //+ ": " + e.Err.Error()
 }
 
 // UnexpectedOpenperfRespError returned when Openperf sends an unexpected type of response.
@@ -67,7 +67,7 @@ type UnexpectedOpenperfRespError struct {
 }
 
 func (e *UnexpectedOpenperfRespError) Error() string {
-	return "Unexpected Openperf response error: " + e.Message
+	return "unexpected Openperf response error: " + e.Message
 
 }
 
@@ -78,7 +78,7 @@ type UnexpectedPeerRespError struct {
 }
 
 func (e *UnexpectedPeerRespError) Error() string {
-	return "Unexpected peer response error: " + e.Message
+	return "unexpected peer response error: " + e.Message
 
 }
 
@@ -89,5 +89,5 @@ type VersionMismatchError struct {
 }
 
 func (e *VersionMismatchError) Error() string {
-	return "Version mismatch: " + e.Message
+	return "version mismatch: " + e.Message
 }

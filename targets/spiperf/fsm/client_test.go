@@ -273,8 +273,8 @@ var _ = Describe("Client FSM,", func() {
 			Context("server returns valid parameters, test has client -> server traffic, ", func() {
 				BeforeEach(func() {
 
-					fsm.TestConfiguration.UpstreamRate = 100
-					fsm.TestConfiguration.DownstreamRate = 0
+					fsm.TestConfiguration.UpstreamRateBps = 100
+					fsm.TestConfiguration.DownstreamRateBps = 0
 
 					peerRespIn <- &msg.Message{
 						Type: msg.ServerParametersResponseType,
@@ -410,7 +410,9 @@ var _ = Describe("Client FSM,", func() {
 							Expect(startCmd.Type).To(Equal(msg.StartCommandType))
 							Expect(startCmd.Value).ToNot(BeNil())
 							Expect(startCmd.Value).To(BeAssignableToTypeOf(&msg.StartCommand{}))
-							Expect(startCmd.Value.(*msg.StartCommand).StartTime).To(BeTemporally("~", time.Now().Add(fsm.StartDelay), time.Millisecond*250))
+							startTime, err := time.Parse(TimeFormatString, startCmd.Value.(*msg.StartCommand).StartTime)
+							Expect(err).To(BeNil())
+							Expect(startTime).To(BeTemporally("~", time.Now().Add(fsm.StartDelay), time.Millisecond*1000))
 
 							close(done)
 						})
@@ -501,8 +503,10 @@ var _ = Describe("Client FSM,", func() {
 									return fsm.State()
 								}).Should(Equal("armed"))
 
+								startTime, err := time.Parse(TimeFormatString, startCmd.Value.(*msg.StartCommand).StartTime)
+								Expect(err).To(BeNil())
 								// Client sleeps here until start time.
-								time.Sleep(time.Until(startCmd.Value.(*msg.StartCommand).StartTime))
+								time.Sleep(time.Until(startTime))
 
 								txStatsResponderError = make(chan struct{})
 								runstateResponderError = make(chan struct{})
@@ -534,10 +538,6 @@ var _ = Describe("Client FSM,", func() {
 										Value: "error with rx stats",
 									}
 
-									// Wait for the system to get into the cleanup state, else
-									// there could be in-flight poll requests.
-									Eventually(func() string { return fsm.State() }).Should(Equal("cleanup"))
-
 									ret := <-fsmReturn
 									Expect(ret).To(BeAssignableToTypeOf(&PeerError{}))
 									Expect(peerCmdOut).To(BeClosed())
@@ -550,10 +550,6 @@ var _ = Describe("Client FSM,", func() {
 							Context("when openperf returns an error while polling generator, ", func() {
 								It("exits with an error", func(done Done) {
 									runstateResponderError <- struct{}{}
-
-									// Wait for the system to get into the cleanup state, else
-									// there could be in-flight poll requests.
-									Eventually(func() string { return fsm.State() }).Should(Equal("cleanup"))
 
 									val := <-fsmReturn
 									Expect(val).To(BeAssignableToTypeOf(&OpenperfError{}))
@@ -569,10 +565,6 @@ var _ = Describe("Client FSM,", func() {
 							Context("when openperf returns an error while polling Tx stats, ", func() {
 								It("exits with an error", func(done Done) {
 									txStatsResponderError <- struct{}{}
-
-									// Wait for the system to get into the cleanup state, else
-									// there could be in-flight poll requests.
-									Eventually(func() string { return fsm.State() }).Should(Equal("cleanup"))
 
 									val := <-fsmReturn
 									Expect(val).To(BeAssignableToTypeOf(&OpenperfError{}))
@@ -597,7 +589,7 @@ var _ = Describe("Client FSM,", func() {
 												peerNotifIn <- &msg.Message{
 													Type: msg.StatsNotificationType,
 													Value: &msg.RuntimeStats{
-														Timestamp: uint64(time.Now().Unix()),
+														Timestamp: time.Now().Format(TimeFormatString),
 													},
 												}
 											}
@@ -728,8 +720,8 @@ var _ = Describe("Client FSM,", func() {
 			Context("server returns valid parameters, test has server -> client traffic, ", func() {
 				BeforeEach(func() {
 
-					fsm.TestConfiguration.UpstreamRate = 0
-					fsm.TestConfiguration.DownstreamRate = 100
+					fsm.TestConfiguration.UpstreamRateBps = 0
+					fsm.TestConfiguration.DownstreamRateBps = 100
 
 					peerRespIn <- &msg.Message{
 						Type: msg.ServerParametersResponseType,
@@ -793,8 +785,10 @@ var _ = Describe("Client FSM,", func() {
 									Type: msg.AckType,
 								}
 
+								startTime, err := time.Parse(TimeFormatString, startCmd.Value.(*msg.StartCommand).StartTime)
+								Expect(err).To(BeNil())
 								// Client sleeps here until start time.
-								time.Sleep(time.Until(startCmd.Value.(*msg.StartCommand).StartTime))
+								time.Sleep(time.Until(startTime))
 
 								rxStatsResponderError = make(chan struct{})
 								runstateStatsResponder = &openperfResponder{
@@ -817,7 +811,7 @@ var _ = Describe("Client FSM,", func() {
 
 									// Wait for the system to get into the cleanup state, else
 									// there could be in-flight poll requests.
-									Eventually(func() string { return fsm.State() }).Should(Equal("cleanup"))
+									Eventually(func() string { return fsm.State() }, 2*time.Second).Should(Equal("cleanup"))
 
 									val := <-fsmReturn
 									Expect(val).To(BeAssignableToTypeOf(&OpenperfError{}))
@@ -837,7 +831,7 @@ var _ = Describe("Client FSM,", func() {
 										peerNotifIn <- &msg.Message{
 											Type: msg.StatsNotificationType,
 											Value: &msg.RuntimeStats{
-												Timestamp: uint64(time.Now().Unix()),
+												Timestamp: time.Now().Format(TimeFormatString),
 											},
 										}
 										time.Sleep(500 * time.Millisecond)
@@ -888,8 +882,8 @@ var _ = Describe("Client FSM,", func() {
 			Context("server returns valid parameters, test has server <-> client traffic, ", func() {
 				BeforeEach(func() {
 
-					fsm.TestConfiguration.UpstreamRate = 100
-					fsm.TestConfiguration.DownstreamRate = 100
+					fsm.TestConfiguration.UpstreamRateBps = 100
+					fsm.TestConfiguration.DownstreamRateBps = 100
 
 					peerRespIn <- &msg.Message{
 						Type: msg.ServerParametersResponseType,
@@ -952,8 +946,10 @@ var _ = Describe("Client FSM,", func() {
 									return fsm.State()
 								}).Should(Equal("armed"))
 
+								startTime, err := time.Parse(TimeFormatString, startCmd.Value.(*msg.StartCommand).StartTime)
+								Expect(err).To(BeNil())
 								// Client sleeps here until start time.
-								time.Sleep(time.Until(startCmd.Value.(*msg.StartCommand).StartTime))
+								time.Sleep(time.Until(startTime))
 
 								setRunstatePollCount = make(chan int)
 								runstateStatsResponder = &openperfResponder{
@@ -983,7 +979,7 @@ var _ = Describe("Client FSM,", func() {
 										peerNotifIn <- &msg.Message{
 											Type: msg.StatsNotificationType,
 											Value: &msg.RuntimeStats{
-												Timestamp: uint64(time.Now().Unix()),
+												Timestamp: time.Now().Format(TimeFormatString),
 											},
 										}
 										time.Sleep(500 * time.Millisecond)
@@ -1059,7 +1055,7 @@ var _ = Describe("Client FSM,", func() {
 												peerNotifIn <- &msg.Message{
 													Type: msg.StatsNotificationType,
 													Value: &msg.RuntimeStats{
-														Timestamp: uint64(time.Now().Unix()),
+														Timestamp: time.Now().Format(TimeFormatString),
 													},
 												}
 											}
@@ -1205,7 +1201,6 @@ Done:
 			Expect(req).ToNot(BeNil())
 			Expect(req.Ctx).ToNot(BeNil())
 			Expect(req.Done).ToNot(BeNil())
-			//Expect(req.Response).To(BeNil())
 
 			switch req.Request.(type) {
 			case *openperf.GetGeneratorRequest:

@@ -1,18 +1,19 @@
 package fsm
 
-// Configuration repository of information for a spiperf test.
-type Configuration struct {
-	OpenperfURL string
+import "net/url"
 
-	UpstreamRate   uint
-	DownstreamRate uint
+// Configuration repository of information for a test.
+type Configuration struct {
+	OpenperfURL *url.URL
+
+	UpstreamRateBps   uint64
+	DownstreamRateBps uint64
 
 	TransmitDuration uint
 	DurationUnits    string
 
 	// FixedFrameSize points to a fixed value. Should be nil when using IMIX mode.
-	FixedFrameSize        *uint
-	FrameSizeDistribution string
+	FixedFrameSize *uint
 
 	IMIXGenomeCode *string //XXX: double-check what the REST API is expecting (array vs single string)
 

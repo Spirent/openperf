@@ -13,6 +13,8 @@ import (
 	"github.com/kr/pretty"
 )
 
+const TimeFormatString = time.RFC3339
+
 // Client is the FSM for spiperf when run in client mode.
 type Client struct {
 	// PeerCmdOut sends commands to the peer's server FSM.
@@ -242,7 +244,7 @@ func (c *Client) ready(ctx context.Context) (clientStateFunc, error) {
 		//send start time to server
 		c.PeerCmdOut <- &msg.Message{
 			Type:  msg.StartCommandType,
-			Value: &msg.StartCommand{StartTime: c.startTime},
+			Value: &msg.StartCommand{StartTime: c.startTime.Format(TimeFormatString)},
 		}
 	case error:
 		return (*Client).cleanup, &OpenperfError{Message: resp.Error()}
@@ -308,7 +310,7 @@ func (c *Client) running(ctx context.Context) (clientStateFunc, error) {
 
 	switch {
 	// client <--> server traffic
-	case c.TestConfiguration.UpstreamRate > 0 && c.TestConfiguration.DownstreamRate > 0:
+	case c.TestConfiguration.UpstreamRateBps > 0 && c.TestConfiguration.DownstreamRateBps > 0:
 		// Start up generator polling (to check runstate)
 		generatorPollResp, generatorPollCancel = c.makeOpenperfCmdRepeater(ctx, &openperf.Command{Request: &openperf.GetGeneratorRequest{}}, c.GeneratorPollInterval)
 
@@ -328,7 +330,7 @@ func (c *Client) running(ctx context.Context) (clientStateFunc, error) {
 		serverRunning = true
 
 	// client -> server traffic
-	case c.TestConfiguration.UpstreamRate > 0:
+	case c.TestConfiguration.UpstreamRateBps > 0:
 		// Start up generator polling (to check runstate)
 		generatorPollResp, generatorPollCancel = c.makeOpenperfCmdRepeater(ctx, &openperf.Command{Request: &openperf.GetGeneratorRequest{}}, c.GeneratorPollInterval)
 
@@ -343,7 +345,7 @@ func (c *Client) running(ctx context.Context) (clientStateFunc, error) {
 		serverRunning = false
 
 	// server -> client traffic
-	case c.TestConfiguration.DownstreamRate > 0:
+	case c.TestConfiguration.DownstreamRateBps > 0:
 		// Start up receive stats polling
 		rxStatsPollResp, rxStatsPollCancel = c.makeOpenperfCmdRepeater(ctx, &openperf.Command{Request: &openperf.GetRxStatsRequest{}}, c.StatsPollInterval)
 
@@ -495,7 +497,7 @@ func (c *Client) done(ctx context.Context) (clientStateFunc, error) {
 func (c *Client) cleanup(ctx context.Context) (clientStateFunc, error) {
 	c.enter("cleanup")
 
-	if c.TestConfiguration.UpstreamRate > 0 {
+	if c.TestConfiguration.UpstreamRateBps > 0 {
 		//Delete the generator we created.
 		reqDone := make(chan struct{})
 		req := &openperf.Command{
