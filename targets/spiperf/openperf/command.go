@@ -2,6 +2,8 @@ package openperf
 
 import (
 	"context"
+
+	"github.com/Spirent/openperf/targets/spiperf/openperf/v1/models"
 )
 
 // Command encapsulates an Openperf REST API request and reply.
@@ -66,6 +68,8 @@ type GetRxStatsResponse struct {
 // GetTimeRequest request Openperf instance current time.
 type GetTimeRequest struct {
 }
+
+type GetTimeResponse models.TimeKeeper
 
 // GetTxStatsRequest request Openperf to return relevant transmit statistics.
 type GetTxStatsRequest struct {

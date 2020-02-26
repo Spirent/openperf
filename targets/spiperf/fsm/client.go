@@ -9,7 +9,6 @@ import (
 
 	"github.com/Spirent/openperf/targets/spiperf/msg"
 	"github.com/Spirent/openperf/targets/spiperf/openperf"
-	"github.com/Spirent/openperf/targets/spiperf/openperf/v1/models"
 	"github.com/go-openapi/strfmt/conv"
 	"github.com/kr/pretty"
 )
@@ -235,7 +234,7 @@ func (c *Client) ready(ctx context.Context) (clientStateFunc, error) {
 	<-reqDone
 	//Results are done. Or it timed out.
 	switch resp := req.Response.(type) {
-	case *models.TimeKeeper:
+	case *openperf.GetTimeResponse:
 		val := time.Time(conv.DateTimeValue(resp.Time))
 		//calculate start time
 		c.startTime = val.Add(c.StartDelay)
@@ -246,7 +245,10 @@ func (c *Client) ready(ctx context.Context) (clientStateFunc, error) {
 			Value: &msg.StartCommand{StartTime: c.startTime},
 		}
 	case error:
-		return (*Client).cleanup, &InternalError{Message: resp.Error()}
+		return (*Client).cleanup, &OpenperfError{Message: resp.Error()}
+
+	default:
+		return (*Client).cleanup, &UnexpectedOpenperfRespError{Message: "unexpected response from OP for GetTimeRequest"}
 	}
 
 	// Wait for an ACK to start message.
@@ -356,12 +358,12 @@ Done:
 		select {
 		case notif, ok := <-c.PeerNotifIn:
 			if !ok {
-				return (*Client).cleanup, &InternalError{Message: "error reading peer spiperf notifications."}
+				return (*Client).cleanup, &MessagingError{Message: "error reading peer spiperf notifications."}
 			}
 
 			switch notif.Type {
 			case msg.ErrorType:
-				return (*Client).cleanup, &InternalError{Message: notif.Value.(string)}
+				return (*Client).cleanup, &PeerError{Message: notif.Value.(string)}
 			case msg.TransmitDoneType:
 				serverRunning = false
 				rxStatsPollCancel()
@@ -371,6 +373,8 @@ Done:
 				}
 			case msg.StatsNotificationType:
 				//XXX: statistics from the server will be processed here.
+			default:
+				return (*Client).cleanup, &UnexpectedPeerRespError{Message: "unexpected notification type."}
 			}
 		case txStat, ok := <-txStatsPollResp:
 			if !ok {
@@ -378,24 +382,35 @@ Done:
 				continue
 			}
 
-			stats, ok := txStat.(*openperf.GetTxStatsResponse)
-			if !ok {
-				return (*Client).cleanup, &InternalError{Message: txStat.(error).Error()}
+			switch stats := txStat.(type) {
+			case *openperf.GetTxStatsResponse:
+				//do stuff.
+				pretty.Println(stats)
+				//XXX: Tx stats will be processed here.
+			case error:
+				return (*Client).cleanup, &OpenperfError{Message: stats.Error()}
+
+			default:
+				return (*Client).cleanup, &UnexpectedOpenperfRespError{Message: "unexpected notification type."}
 			}
-			pretty.Println(stats)
-			//XXX: Tx stats will be processed here.
 
 		case rxStat, ok := <-rxStatsPollResp:
 			if !ok {
 				rxStatsPollResp = nil
 				continue
 			}
-			stats, ok := rxStat.(*openperf.GetRxStatsResponse)
-			if !ok {
-				return (*Client).cleanup, &InternalError{Message: rxStat.(error).Error()}
+
+			switch stats := rxStat.(type) {
+			case *openperf.GetRxStatsResponse:
+				pretty.Println(stats)
+				//XXX: Rx stats will be processed here.
+			case error:
+				return (*Client).cleanup, &OpenperfError{Message: stats.Error()}
+
+			default:
+				return (*Client).cleanup, &UnexpectedOpenperfRespError{Message: "unexpected notification type."}
+
 			}
-			pretty.Println(stats)
-			//XXX: Rx stats will be processed here.
 
 		case gen, ok := <-generatorPollResp:
 			if !ok {
@@ -403,40 +418,45 @@ Done:
 				continue
 			}
 
-			generator, genOk := gen.(*openperf.GetGeneratorResponse)
-			if !genOk {
-				return (*Client).cleanup, &InternalError{Message: gen.(error).Error()}
-			}
+			switch generator := gen.(type) {
+			case *openperf.GetGeneratorResponse:
 
-			if !generator.Running {
-				if !clientRunning {
-					// Handle case where an extra poll response comes through
-					// even after canceling. This is not an error.
-					continue
+				if !generator.Running {
+					if !clientRunning {
+						// Handle case where an extra poll response comes through
+						// even after canceling. This is not an error.
+						continue
+					}
+
+					//Stop local tx stats polling.
+					txStatsPollCancel()
+
+					//Stop runstate polling.
+					generatorPollCancel()
+
+					lastStat, ok := <-txStatsPollResp
+					if ok {
+						//do something with lastStat
+						fmt.Print("last stat: ")
+						pretty.Println(lastStat)
+						//FIXME: check type here.
+					}
+
+					// Tell server we're done transmitting. No ACK expected.
+					c.PeerCmdOut <- &msg.Message{
+						Type: msg.TransmitDoneType,
+					}
+
+					clientRunning = false
+					if !serverRunning {
+						break Done
+					}
 				}
+			case error:
+				return (*Client).cleanup, &OpenperfError{Message: generator.Error()}
 
-				//Stop local tx stats polling.
-				txStatsPollCancel()
-
-				//Stop runstate polling.
-				generatorPollCancel()
-
-				lastStat, ok := <-txStatsPollResp
-				if ok {
-					//do something with lastStat
-					fmt.Print("last stat: ")
-					pretty.Println(lastStat)
-				}
-
-				// Tell server we're done transmitting. No ACK expected.
-				c.PeerCmdOut <- &msg.Message{
-					Type: msg.TransmitDoneType,
-				}
-
-				clientRunning = false
-				if !serverRunning {
-					break Done
-				}
+			default:
+				return (*Client).cleanup, &UnexpectedOpenperfRespError{Message: "unexpected notification type."}
 			}
 		}
 	}
@@ -491,7 +511,7 @@ func (c *Client) cleanup(ctx context.Context) (clientStateFunc, error) {
 		select {
 		case <-reqDone:
 			if req.Response != nil {
-				return nil, &InternalError{Message: req.Response.(error).Error()}
+				return nil, &OpenperfError{Message: req.Response.(error).Error()}
 			}
 
 		case <-timeout:

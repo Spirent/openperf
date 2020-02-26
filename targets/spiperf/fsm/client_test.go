@@ -13,7 +13,6 @@ import (
 	. "github.com/Spirent/openperf/targets/spiperf/fsm"
 	"github.com/Spirent/openperf/targets/spiperf/msg"
 	"github.com/Spirent/openperf/targets/spiperf/openperf"
-	"github.com/Spirent/openperf/targets/spiperf/openperf/v1/models"
 )
 
 var _ = Describe("Client FSM,", func() {
@@ -372,8 +371,8 @@ var _ = Describe("Client FSM,", func() {
 
 							drainOpenperfCommands(opCmdOut, peerCmdOut)
 
-							Eventually(fsmReturn).Should(Receive(
-								BeAssignableToTypeOf(&InternalError{})))
+							ret := <-fsmReturn
+							Expect(ret).To(BeAssignableToTypeOf(&OpenperfError{}))
 							Expect(peerCmdOut).To(BeClosed())
 							Expect(fsm.State()).To(Equal("cleanup"))
 
@@ -390,8 +389,8 @@ var _ = Describe("Client FSM,", func() {
 
 							drainOpenperfCommands(opCmdOut, peerCmdOut)
 
-							Eventually(fsmReturn).Should(
-								Receive(BeAssignableToTypeOf(&InternalError{})))
+							ret := <-fsmReturn
+							Expect(ret).To(BeAssignableToTypeOf(&OpenperfError{}))
 							Expect(peerCmdOut).To(BeClosed())
 							Expect(fsm.State()).To(Equal("cleanup"))
 
@@ -402,7 +401,7 @@ var _ = Describe("Client FSM,", func() {
 					Context("openperf returns the current time, ", func() {
 						var startCmd *msg.Message
 						BeforeEach(func(done Done) {
-							openperfGetTimeCmd.Response = &models.TimeKeeper{Time: conv.DateTime(strfmt.DateTime(time.Now()))}
+							openperfGetTimeCmd.Response = &openperf.GetTimeResponse{Time: conv.DateTime(strfmt.DateTime(time.Now()))}
 							close(openperfGetTimeCmd.Done)
 
 							startCmd = <-peerCmdOut
@@ -539,8 +538,8 @@ var _ = Describe("Client FSM,", func() {
 									// there could be in-flight poll requests.
 									Eventually(func() string { return fsm.State() }).Should(Equal("cleanup"))
 
-									Eventually(fsmReturn).Should(Receive(
-										BeAssignableToTypeOf(&InternalError{})))
+									ret := <-fsmReturn
+									Expect(ret).To(BeAssignableToTypeOf(&PeerError{}))
 									Expect(peerCmdOut).To(BeClosed())
 									Expect(fsm.State()).To(Equal("cleanup"))
 
@@ -557,7 +556,7 @@ var _ = Describe("Client FSM,", func() {
 									Eventually(func() string { return fsm.State() }).Should(Equal("cleanup"))
 
 									val := <-fsmReturn
-									Expect(val).To(BeAssignableToTypeOf(&InternalError{}))
+									Expect(val).To(BeAssignableToTypeOf(&OpenperfError{}))
 									Expect(peerCmdOut).To(BeClosed())
 									Expect(fsm.State()).To(Equal("cleanup"))
 
@@ -576,7 +575,7 @@ var _ = Describe("Client FSM,", func() {
 									Eventually(func() string { return fsm.State() }).Should(Equal("cleanup"))
 
 									val := <-fsmReturn
-									Expect(val).To(BeAssignableToTypeOf(&InternalError{}))
+									Expect(val).To(BeAssignableToTypeOf(&OpenperfError{}))
 									Expect(peerCmdOut).To(BeClosed())
 									Expect(fsm.State()).To(Equal("cleanup"))
 
@@ -630,8 +629,7 @@ var _ = Describe("Client FSM,", func() {
 											Value: "error gathering final stats"}
 
 										ret := <-fsmReturn
-										Expect(ret).To(
-											BeAssignableToTypeOf(&PeerError{}))
+										Expect(ret).To(BeAssignableToTypeOf(&PeerError{}))
 										Expect(ret.Error()).ToNot(BeEmpty())
 										Expect(peerCmdOut).To(BeClosed())
 										Expect(fsm.State()).To(Equal("cleanup"))
@@ -690,8 +688,8 @@ var _ = Describe("Client FSM,", func() {
 											return fsm.State()
 										}).Should(Equal("cleanup"))
 
-										Eventually(fsmReturn).Should(Receive(
-											BeAssignableToTypeOf(&InternalError{})))
+										ret := <-fsmReturn
+										Expect(ret).To(BeAssignableToTypeOf(&OpenperfError{}))
 										Expect(peerCmdOut).To(BeClosed())
 										Expect(fsm.State()).To(Equal("cleanup"))
 
@@ -769,7 +767,7 @@ var _ = Describe("Client FSM,", func() {
 					Context("openperf returns the current time, ", func() {
 						var startCmd *msg.Message
 						BeforeEach(func(done Done) {
-							openperfGetTimeCmd.Response = &models.TimeKeeper{Time: conv.DateTime(strfmt.DateTime(time.Now()))}
+							openperfGetTimeCmd.Response = &openperf.GetTimeResponse{Time: conv.DateTime(strfmt.DateTime(time.Now()))}
 							close(openperfGetTimeCmd.Done)
 
 							startCmd = <-peerCmdOut
@@ -822,7 +820,7 @@ var _ = Describe("Client FSM,", func() {
 									Eventually(func() string { return fsm.State() }).Should(Equal("cleanup"))
 
 									val := <-fsmReturn
-									Expect(val).To(BeAssignableToTypeOf(&InternalError{}))
+									Expect(val).To(BeAssignableToTypeOf(&OpenperfError{}))
 									Expect(peerCmdOut).To(BeClosed())
 									Expect(fsm.State()).To(Equal("cleanup"))
 
@@ -924,7 +922,7 @@ var _ = Describe("Client FSM,", func() {
 					Context("openperf returns the current time, ", func() {
 						var startCmd *msg.Message
 						BeforeEach(func(done Done) {
-							openperfGetTimeCmd.Response = &models.TimeKeeper{Time: conv.DateTime(strfmt.DateTime(time.Now()))}
+							openperfGetTimeCmd.Response = &openperf.GetTimeResponse{Time: conv.DateTime(strfmt.DateTime(time.Now()))}
 							close(openperfGetTimeCmd.Done)
 
 							startCmd = <-peerCmdOut

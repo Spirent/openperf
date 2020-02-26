@@ -31,6 +31,16 @@ func (e *MessagingError) Error() string {
 }
 
 // PeerError returned when peer responds with an error message.
+type OpenperfError struct {
+	Message string
+	Err     error
+}
+
+func (e *OpenperfError) Error() string {
+	return "Error response from Openperf: " + e.Message
+}
+
+// PeerError returned when peer responds with an error message.
 type PeerError struct {
 	Message string
 	Err     error
@@ -48,6 +58,17 @@ type TimeoutError struct {
 
 func (e *TimeoutError) Error() string {
 	return "Operation timed out: " + e.Message //+ ": " + e.Err.Error()
+}
+
+// UnexpectedOpenperfRespError returned when Openperf sends an unexpected type of response.
+type UnexpectedOpenperfRespError struct {
+	Message string
+	Err     error
+}
+
+func (e *UnexpectedOpenperfRespError) Error() string {
+	return "Unexpected Openperf response error: " + e.Message
+
 }
 
 // UnexpectedPeerRespError returned when peer sends an unexpected response type.
