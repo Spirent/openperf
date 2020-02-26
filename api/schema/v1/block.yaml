@@ -401,7 +401,7 @@ definitions:
     properties:
       id:
         type: string
-        description: Unique file identifier
+        description: Block generator identifier
       config:
         $ref: "#/definitions/BlockGeneratorConfig"
       resource_id:
