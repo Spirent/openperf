@@ -12,6 +12,7 @@
 #include "core/op_log.h"
 #include "core/op_thread.h"
 #include "packetio/drivers/dpdk/dpdk.h"
+#include "packetio/drivers/dpdk/mbuf_signature.hpp"
 #include "packetio/drivers/dpdk/queue_utils.hpp"
 #include "packetio/memory/dpdk/pbuf_utils.h"
 #include "packetio/workers/dpdk/callback.hpp"
@@ -133,10 +134,10 @@ static std::pair<size_t, size_t> partition_mbufs(rte_mbuf* const incoming[],
     return std::make_pair(ucast_idx, mcast_idx);
 }
 
-static void rx_interface_dispatch(const fib* fib,
-                                  const rx_queue* rxq,
-                                  rte_mbuf* incoming[],
-                                  uint16_t n)
+static void rx_stack_dispatch(const fib* fib,
+                              const rx_queue* rxq,
+                              rte_mbuf* incoming[],
+                              uint16_t n)
 {
     /*
      * If we don't have hardware LRO support, try to coalesce some
@@ -214,6 +215,34 @@ static void rx_interface_dispatch(const fib* fib,
         }
         rte_pktmbuf_free(nunicast[i]);
     }
+}
+
+static void rx_interface_dispatch(const fib* fib,
+                                  const rx_queue* rxq,
+                                  rte_mbuf* incoming[],
+                                  uint16_t n)
+{
+    /*
+     * We don't want to burden the stack with signature frames, so
+     * filter out anything that definitely has a signature before
+     * handing any packets to the stack.
+     */
+    std::array<rte_mbuf*, pkt_burst_size> to_free, to_stack;
+    uint16_t nb_to_free = 0, nb_to_stack = 0;
+    std::for_each(incoming, incoming + n, [&](auto& mbuf) {
+        if (mbuf_signature_avail(mbuf)) {
+            to_free[nb_to_free++] = mbuf;
+        } else {
+            to_stack[nb_to_stack++] = mbuf;
+        }
+    });
+
+    if (nb_to_stack) {
+        rx_stack_dispatch(fib, rxq, to_stack.data(), nb_to_stack);
+    }
+
+    std::for_each(
+        to_free.data(), to_free.data() + nb_to_free, rte_pktmbuf_free);
 }
 
 static void rx_sink_dispatch(const fib* fib,
@@ -441,15 +470,18 @@ static void run_pollable(run_args&& args)
                     utils::overloaded_visitor(
                         [&](callback* cb) { cb->run_callback(args.loop); },
                         [&](rx_queue* rxq) {
-                            while (rx_burst(args.fib, rxq) == pkt_burst_size)
-                                ;
                             do {
+                                while (rx_burst(args.fib, rxq)
+                                       == pkt_burst_size) {
+                                    rte_pause();
+                                }
                                 rxq->enable();
                             } while (rx_burst(args.fib, rxq));
                         },
                         [](tx_queue* txq) {
-                            while (tx_burst(txq) == pkt_burst_size)
-                                ;
+                            while (tx_burst(txq) == pkt_burst_size) {
+                                rte_pause();
+                            }
                             txq->enable();
                         },
                         [](tx_scheduler* scheduler) { scheduler->run(); },
@@ -495,6 +527,8 @@ static void run_spinning(run_args&& args)
                 pkts += service_event(args.loop, args.fib, q);
             }
         } while (pkts);
+
+        rte_pause();
 
         /* All queues are idle; check callbacks */
         for (auto& event : poller.poll(0)) {
