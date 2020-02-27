@@ -2,6 +2,8 @@
 #include <cassert>
 #include <numeric>
 
+#include "arpa/inet.h"
+
 #include "crc.h"
 #include "spirent_pga/functions.h"
 
@@ -45,7 +47,8 @@ crc_filter(const uint8_t* payloads[], uint16_t count, int crc_matches[])
         payloads, payloads + count, crc_matches, [](const auto& payload) {
             auto signature =
                 reinterpret_cast<const spirent_signature*>(payload);
-            return (signature->crc == calculate_crc16(signature->data, 16));
+            return (ntohs(signature->crc)
+                    == calculate_crc16(signature->data, 16));
         });
 
     return (std::accumulate(crc_matches, crc_matches + count, 0));

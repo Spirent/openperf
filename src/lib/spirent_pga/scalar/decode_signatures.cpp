@@ -1,3 +1,4 @@
+#include "arpa/inet.h"
 #include "signature_scramble.h"
 
 namespace scalar {
@@ -19,12 +20,12 @@ uint16_t decode_signatures(const uint8_t* const payloads[],
         auto data = reinterpret_cast<const uint32_t*>(payloads[i]);
 
         /* Unscramble the possible signature data */
-        uint8_t scramble_key = ~(data[0] >> 24);
+        uint8_t scramble_key = ~(data[0] & 0xff);
         auto mask = pga::signature::get_scramble_mask(scramble_key ^ 0xff);
-        signature[0] = data[0] ^ mask[0];
-        signature[1] = data[1] ^ mask[1];
-        signature[2] = data[2] ^ mask[2];
-        signature[3] = data[3] ^ mask[3];
+        signature[0] = ntohl(data[0]) ^ mask[0];
+        signature[1] = ntohl(data[1]) ^ mask[1];
+        signature[2] = ntohl(data[2]) ^ mask[2];
+        signature[3] = ntohl(data[3]) ^ mask[3];
 
         /* Verify that the scramble_key and byte 10 are complements */
         uint8_t byte10 = (signature[2] >> 8) & 0xff;
