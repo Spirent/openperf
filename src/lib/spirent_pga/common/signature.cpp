@@ -16,14 +16,6 @@ struct spirent_signature
     uint16_t cheater;
 } __attribute__((packed));
 
-template <typename T>
-static __attribute__((const)) T distribute(T total, T buckets, T n)
-{
-    assert(n < buckets);
-    auto base = total / buckets;
-    return (n < total % buckets ? base + 1 : base);
-}
-
 static uint16_t calculate_crc16(const uint8_t data[], uint16_t length)
 {
     static constexpr DECLARE_ALIGNED(
@@ -40,11 +32,26 @@ static uint16_t calculate_crc16(const uint8_t data[], uint16_t length)
               >> 16));
 }
 
+static constexpr auto prefetch_offset = 8;
+
 uint16_t
 crc_filter(const uint8_t* payloads[], uint16_t count, int crc_matches[])
 {
+    /*
+     * Unless the user has already done something with the payload, it is
+     * unlikely to be in the CPU cache.  Hence, we explicitly prefetch
+     * the payload before calculating the CRC.
+     */
+    auto offset = std::min(static_cast<int>(count), prefetch_offset);
+
+    std::for_each(payloads, payloads + offset, [](const auto& payload) {
+        __builtin_prefetch(payload);
+    });
+
     std::transform(
-        payloads, payloads + count, crc_matches, [](const auto& payload) {
+        payloads, payloads + count, crc_matches, [&](const auto& payload) {
+            if (offset < count) { __builtin_prefetch(payloads[offset++]); }
+
             auto signature =
                 reinterpret_cast<const spirent_signature*>(payload);
             return (ntohs(signature->crc)
@@ -61,23 +68,24 @@ uint16_t decode(const uint8_t* payloads[],
                 uint64_t timestamps[],
                 int flags[])
 {
-    static constexpr uint16_t decode_loop_count = 32;
+    /* Note: decode_loop_count should be a multiple of all vector widths */
+    static constexpr auto decode_loop_count = 32;
     std::array<uint32_t, decode_loop_count> timestamp_lo;
     std::array<uint32_t, decode_loop_count> timestamp_hi;
 
     auto& functions = functions::instance();
 
-    uint16_t nb_loops = (count + (decode_loop_count - 1)) / decode_loop_count;
     uint16_t nb_signatures = 0;
     uint16_t begin = 0;
 
-    for (uint16_t i = 0; i < nb_loops; i++) {
-        auto end = begin + distribute(count, nb_loops, i);
+    while (begin < count) {
+        auto end = begin + std::min(decode_loop_count, count - begin);
+        auto loop_count = end - begin;
 
         /* Hand the payloads off to our decode function */
         auto loop_signatures =
             functions.decode_signatures_impl(payloads + begin,
-                                             end - begin,
+                                             loop_count,
                                              stream_ids + begin,
                                              sequence_numbers + begin,
                                              timestamp_lo.data(),
@@ -86,7 +94,7 @@ uint16_t decode(const uint8_t* payloads[],
 
         /* Then merge hi/lo timestamp data together */
         std::transform(timestamp_hi.data(),
-                       timestamp_hi.data() + end - begin,
+                       timestamp_hi.data() + loop_count,
                        timestamp_lo.data(),
                        timestamps + nb_signatures,
                        [](auto& hi, auto& lo) {
