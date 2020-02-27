@@ -4,6 +4,7 @@ TEST_DEPENDS += spirent_pga
 
 TEST_SOURCES += \
 	lib/spirent_pga/test_checksums.cpp \
+	lib/spirent_pga/test_decode.cpp \
 	lib/spirent_pga/test_init.cpp \
 	lib/spirent_pga/test_fills.cpp \
 	lib/spirent_pga/test_prbs.cpp \

@@ -1,3 +1,4 @@
+#include "inet.h"
 #include "signature_scramble.h"
 
 static const int is_valid = (1 << 2);
@@ -14,6 +15,7 @@ decode_signatures(const unsigned int8* const uniform payloads[],
     uniform int scratch[4 * programCount];
 
     /* We treat the signature as 4 x 32 bit integers */
+    unsigned int<4> data;
     unsigned int<4> mask;
     unsigned int<4> signature;
 
@@ -27,18 +29,18 @@ decode_signatures(const unsigned int8* const uniform payloads[],
 
         /* and transform the array data into a SIMD friendly format */
         aos_to_soa4(&scratch[0],
-                    (varying int*)&signature[0],
-                    (varying int*)&signature[1],
-                    (varying int*)&signature[2],
-                    (varying int*)&signature[3]);
+                    (varying int*)&data[0],
+                    (varying int*)&data[1],
+                    (varying int*)&data[2],
+                    (varying int*)&data[3]);
 
         /* Descramble the signature data */
-        unsigned int8 scramble_key = ~(signature[0] >> 24);
+        unsigned int8 scramble_key = ~(data[0] & 0xff);
         get_scramble_mask(scramble_key ^ 0xff, mask);
-        signature[0] ^= mask[0];
-        signature[1] ^= mask[1];
-        signature[2] ^= mask[2];
-        signature[3] ^= mask[3];
+        signature[0] = ntohl(data[0]) ^ mask[0];
+        signature[1] = ntohl(data[1]) ^ mask[1];
+        signature[2] = ntohl(data[2]) ^ mask[2];
+        signature[3] = ntohl(data[3]) ^ mask[3];
 
         /* Verify that the scramble_key and byte10 are complements */
         unsigned int8 byte10 = (signature[2] >> 8) & 0xff;

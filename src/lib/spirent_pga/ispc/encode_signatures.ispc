@@ -1,4 +1,4 @@
-
+#include "inet.h"
 #include "signature_scramble.h"
 
 export void encode_signatures(unsigned int8* uniform destinations[],
@@ -11,6 +11,7 @@ export void encode_signatures(unsigned int8* uniform destinations[],
     uniform int scratch[4 * programCount];
 
     /* We treat the signature as 4 x 32 bit integers */
+    unsigned int<4> data;
     unsigned int<4> mask;
     unsigned int<4> signature;
 
@@ -23,18 +24,18 @@ export void encode_signatures(unsigned int8* uniform destinations[],
         unsigned int<2> ts = { timestamp + i >> 32, timestamp + i };
 
         /* Shuffle everything into place */
-        signature[0] = stream_ids[i] >> 8;
+        data[0] = stream_ids[i] >> 8;
 
-        signature[1] = stream_ids[i] << 24;
-        signature[1] |= ((sequence_numbers[i] >> 8) & 0xffff00) ^ 0xffff00;
-        signature[1] |= (sequence_numbers[i] >> 24);
+        data[1] = stream_ids[i] << 24;
+        data[1] |= ((sequence_numbers[i] >> 8) & 0xffff00) ^ 0xffff00;
+        data[1] |= (sequence_numbers[i] >> 24);
 
-        signature[2] = sequence_numbers[i] << 8;
-        signature[2] |= ts.y >> 24;
+        data[2] = sequence_numbers[i] << 8;
+        data[2] |= ts.y >> 24;
 
-        signature[3] = ts.y << 8;
-        signature[3] |= (ts.x << 2) & 0xfc;
-        signature[3] |= flags & 0x3;
+        data[3] = ts.y << 8;
+        data[3] |= (ts.x << 2) & 0xfc;
+        data[3] |= flags & 0x3;
 
         /*
          * Signature is xor'ed with a mask based on the complement
@@ -42,10 +43,10 @@ export void encode_signatures(unsigned int8* uniform destinations[],
          */
         get_scramble_mask((sequence_numbers[i] & 0xff) ^ 0xff, mask);
 
-        signature[0] ^= mask[0];
-        signature[1] ^= mask[1];
-        signature[2] ^= mask[2];
-        signature[3] ^= mask[3];
+        signature[0] = htonl(data[0] ^ mask[0]);
+        signature[1] = htonl(data[1] ^ mask[1]);
+        signature[2] = htonl(data[2] ^ mask[2]);
+        signature[3] = htonl(data[3] ^ mask[3]);
 
         /* Write signature data out as an array of structs in our scratch area */
         soa_to_aos4((int)signature[0],
