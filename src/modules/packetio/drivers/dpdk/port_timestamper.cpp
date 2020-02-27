@@ -9,6 +9,23 @@
 
 namespace openperf::packetio::dpdk::port {
 
+static uint32_t get_link_speed_safe(uint16_t port_id)
+{
+    /* Query the port's link speed */
+    struct rte_eth_link link;
+    rte_eth_link_get_nowait(port_id, &link);
+
+    /*
+     * Check the link status.  Sometimes, we get packets before
+     * the port internals realize the link is up.  If that's the
+     * case, then return the maximum speed of the port as a
+     * safe default.
+     */
+    return (link.link_status == ETH_LINK_UP
+                ? link.link_speed
+                : model::port_info(port_id).max_speed());
+}
+
 static uint16_t timestamp_packets(uint16_t port_id,
                                   [[maybe_unused]] uint16_t queue_id,
                                   rte_mbuf* packets[],
@@ -19,44 +36,37 @@ static uint16_t timestamp_packets(uint16_t port_id,
     using namespace openperf::units;
     using clock = openperf::timesync::chrono::realtime;
 
-    static constexpr auto ethernet_bytes = 8U;
-    static constexpr auto ethernet_overhead = 20U;
-    static constexpr auto ethernet_quanta = 64U;
-
-    /* Find the current link speed */
-    struct rte_eth_link link;
-    rte_eth_link_get_nowait(port_id, &link);
+    /* Ethernet preamble + CRC */
+    static constexpr auto ethernet_overhead = 24U;
+    static constexpr auto ethernet_octets = 8U;
 
     /*
-     * Calculate nanoseconds per quanta;
-     * nanoseconds per byte is less than 1 nanosecond at 100G speeds!
-     * (and hence, too small for us to use)
+     * An octet takes less than 1 nanosecond at 100G speeds, so
+     * calculate offsets in picoseconds.
      */
-    using bps = rate<uint64_t>;
     using mbps = rate<uint64_t, megabits>;
+    using nanoseconds = std::chrono::nanoseconds;
+    using picoseconds = std::chrono::duration<int64_t, std::pico>;
 
-    auto ns_per_quanta = to_duration<std::chrono::nanoseconds>(
-        rate_cast<bps>(mbps(link.link_speed))
-        / (ethernet_bytes * ethernet_quanta));
+    auto ps_per_octet =
+        to_duration<picoseconds>(mbps(get_link_speed_safe(port_id)))
+        * ethernet_octets;
 
     /*
-     * Iterate through the packet array in reverse order.  For each packet,
-     * increase the offset by the transmit time for that packet.
-     * This allows us to calculate the maximum realistic receive timestamp
-     * for each packet.
+     * Iterate through the packets. Assign each packet the current timestamp
+     * plus the sum of the bit-times of all preceding packets.
      */
     auto now = clock::now().time_since_epoch();
-    auto offset = clock::duration::zero();
+    auto rx_octets = 0U;
 
-    std::for_each(std::make_reverse_iterator(packets + nb_packets),
-                  std::make_reverse_iterator(packets),
-                  [&](auto& m) {
-                      m->ol_flags |= PKT_RX_TIMESTAMP;
-                      m->timestamp = (now - offset).count();
-                      offset += ns_per_quanta
-                                * (rte_pktmbuf_pkt_len(m) + ethernet_overhead)
-                                / ethernet_quanta;
-                  });
+    std::for_each(packets, packets + nb_packets, [&](auto& m) {
+        m->ol_flags |= PKT_RX_TIMESTAMP;
+        m->timestamp = (now
+                        + std::chrono::duration_cast<nanoseconds>(
+                            rx_octets * ps_per_octet))
+                           .count();
+        rx_octets += rte_pktmbuf_pkt_len(m) + ethernet_overhead;
+    });
 
     return (nb_packets);
 }
