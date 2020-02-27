@@ -4,18 +4,18 @@ import "github.com/Spirent/openperf/targets/spiperf/openperf"
 
 // Message type definitions
 const (
-	AckType                      = "ACK" //No message value needed.
-	ErrorType                    = "ERROR"
-	HelloType                    = "HELLO"
-	GetParametersMessageType     = "GETPARAMETERS"
-	ServerParametersResponseType = "SERVERPARAMETERSRESPONSE"
-	GetConfigType                = "GETCONFIG"
-	SetConfigType                = "SETCONFIG"
-	StartCommandType             = "STARTCOMMAND"
-	StatsNotificationType        = "STATSNOTIFICATION"
-	TransmitDoneType             = "TRANSMITDONE"
-	GetFinalStatsType            = "GETFINALSTATS"
-	FinalStatsType               = "FINALSTATS"
+	AckType                 = "AckType" //No message value needed.
+	ErrorType               = "ErrorType"
+	HelloType               = "HelloType"
+	GetServerParametersType = "GetServerParametersType"
+	ServerParametersType    = "ServerParametersType"
+	GetConfigType           = "GetConfigType"
+	SetConfigType           = "SetConfigType"
+	StartCommandType        = "StartCommandType"
+	StatsNotificationType   = "StatsNotificationType"
+	TransmitDoneType        = "TransmitDoneType"
+	GetFinalStatsType       = "GetFinalStatsType"
+	FinalStatsType          = "FinalStatsType"
 )
 
 // Message is a message envelope for communication between peers.

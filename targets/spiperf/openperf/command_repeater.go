@@ -7,15 +7,15 @@ import (
 	"time"
 )
 
-// MinimumInterval shortest time allowed between CommandRepeater commands to Openperf.
-// This value is somewhat arbitrary, but is required so callers can reasonably cancel
-// the Run() function.
-const MinimumInterval = 10 * time.Millisecond
+// CommandRepeaterMinimumInterval shortest time allowed between CommandRepeater commands
+// to Openperf. This value is somewhat arbitrary, but is required so callers
+// can reasonably cancel the Run() function.
+const CommandRepeaterMinimumInterval = 10 * time.Millisecond
 
 // CommandRepeater repeatedly send the same Command to an Openperf instance.
 // This should only ever be used for GET requests.
 type CommandRepeater struct {
-	// Cmd command to repeatedly send. Must be allocated by the client and must not be nil.
+	// Command what to repeatedly send. Must be allocated by the client and must not be nil.
 	Command *Command
 
 	// Interval between sending Cmd to Openperf.
@@ -25,13 +25,13 @@ type CommandRepeater struct {
 	// by the caller and must not be nil. This channel is closed when RunCommandRepeater() returns.
 	Responses chan interface{}
 
-	// OpenperfController channel to send Command to Openperf on. RequestRepeater will never
+	// OpenperfCmdOut channel to send Command to Openperf on. CommandRepeater will never
 	// close this channel.
-	OpenperfController chan<- *Command
+	OpenperfCmdOut chan<- *Command
 }
 
-// RunRequestRepeater transmit Request every Interval until canceled by ctx.
-func RunCommandRepeater(ctx context.Context, cr *CommandRepeater) error {
+// Run transmit Command every Interval until canceled by ctx.
+func (cr *CommandRepeater) Run(ctx context.Context) error {
 
 	if cr == nil {
 		return errors.New("Cannot pass nil CommandRepeater to Run")
@@ -41,12 +41,12 @@ func RunCommandRepeater(ctx context.Context, cr *CommandRepeater) error {
 		return errors.New("CommandRepeater.Command must not be nil")
 	}
 
-	if cr.OpenperfController == nil {
-		return errors.New("CommandRepeater.OpenperfController must not be nil")
+	if cr.OpenperfCmdOut == nil {
+		return errors.New("CommandRepeater.OpenperfCmdOut must not be nil")
 	}
 
-	if cr.Interval < MinimumInterval {
-		return fmt.Errorf("CommandRepeater.Interval must be >= %dms", MinimumInterval.Milliseconds())
+	if cr.Interval < CommandRepeaterMinimumInterval {
+		return fmt.Errorf("CommandRepeater.Interval must be >= %s", CommandRepeaterMinimumInterval)
 	}
 
 	if cr.Responses == nil {
@@ -55,6 +55,7 @@ func RunCommandRepeater(ctx context.Context, cr *CommandRepeater) error {
 
 	cr.Command.Ctx = ctx
 
+	defer close(cr.Responses)
 Done:
 	for {
 		select {
@@ -68,7 +69,7 @@ Done:
 			cmd.Done = make(chan struct{})
 
 			// Send Request to Openperf.
-			cr.OpenperfController <- cmd
+			cr.OpenperfCmdOut <- cmd
 
 			// Wait for Openperf to signal request done and response ready.
 			<-cmd.Done
@@ -77,8 +78,6 @@ Done:
 			cr.Responses <- cmd.Response
 		}
 	}
-
-	close(cr.Responses)
 
 	return nil
 }

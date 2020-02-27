@@ -22,15 +22,15 @@ var _ = Describe("Client FSM,", func() {
 	const assertEpsilon = time.Second * 15
 
 	var (
-		peerCmdOut  chan *msg.Message
-		peerRespIn  chan *msg.Message
-		peerNotifIn chan *msg.Message
-		opCmdOut    chan *openperf.Command
-		statsOut    chan *Stats
-		fsmReturn   chan error
-		fsm         *Client
-		ctx         context.Context
-		cancelFunc  context.CancelFunc
+		peerCmdOut         chan *msg.Message
+		peerRespIn         chan *msg.Message
+		peerNotifIn        chan *msg.Message
+		opCmdOut           chan *openperf.Command
+		dataStreamStatsOut chan *Stats
+		fsmReturn          chan error
+		fsm                *Client
+		ctx                context.Context
+		cancelFunc         context.CancelFunc
 	)
 
 	BeforeEach(func() {
@@ -38,7 +38,7 @@ var _ = Describe("Client FSM,", func() {
 		peerRespIn = make(chan *msg.Message, 1)
 		peerNotifIn = make(chan *msg.Message, 1)
 		opCmdOut = make(chan *openperf.Command)
-		statsOut = make(chan *Stats, 1)
+		dataStreamStatsOut = make(chan *Stats, 1)
 		fsmReturn = make(chan error)
 
 		fsm = &Client{
@@ -46,7 +46,7 @@ var _ = Describe("Client FSM,", func() {
 			PeerRespIn:            peerRespIn,
 			PeerNotifIn:           peerNotifIn,
 			OpenperfCmdOut:        opCmdOut,
-			StatsOut:              statsOut,
+			DataStreamStatsOut:    dataStreamStatsOut,
 			PeerTimeout:           500 * time.Millisecond,
 			OpenperfTimeout:       500 * time.Millisecond,
 			StartDelay:            1 * time.Second,
@@ -190,7 +190,7 @@ var _ = Describe("Client FSM,", func() {
 
 				go func() {
 					defer GinkgoRecover()
-					handleStatsOutput(statsHandlerCtx, statsOut)
+					handleStatsOutput(statsHandlerCtx, dataStreamStatsOut)
 				}()
 
 				close(done)
@@ -215,7 +215,7 @@ var _ = Describe("Client FSM,", func() {
 			Context("when server returns invalid parameters, ", func() {
 				It("terminates with an error", func(done Done) {
 					peerRespIn <- &msg.Message{
-						Type: msg.ServerParametersResponseType,
+						Type: msg.ServerParametersType,
 						Value: &msg.ServerParametersResponse{
 							OpenperfURL: ":http://localhost:9000",
 						},
@@ -262,7 +262,7 @@ var _ = Describe("Client FSM,", func() {
 			Context("when server returns an incorrect Value, ", func() {
 				It("terminates with an error", func(done Done) {
 					peerRespIn <- &msg.Message{
-						Type:  msg.ServerParametersResponseType,
+						Type:  msg.ServerParametersType,
 						Value: &msg.FinalStats{},
 					}
 
@@ -293,7 +293,7 @@ var _ = Describe("Client FSM,", func() {
 					fsm.TestConfiguration.DownstreamRateBps = 0
 
 					peerRespIn <- &msg.Message{
-						Type: msg.ServerParametersResponseType,
+						Type: msg.ServerParametersType,
 						Value: &msg.ServerParametersResponse{
 							OpenperfURL: "http://localhost:9000",
 						},
@@ -745,7 +745,7 @@ var _ = Describe("Client FSM,", func() {
 					fsm.TestConfiguration.DownstreamRateBps = 100
 
 					peerRespIn <- &msg.Message{
-						Type: msg.ServerParametersResponseType,
+						Type: msg.ServerParametersType,
 						Value: &msg.ServerParametersResponse{
 							OpenperfURL: "http://localhost:9000",
 						},
@@ -911,7 +911,7 @@ var _ = Describe("Client FSM,", func() {
 					fsm.TestConfiguration.DownstreamRateBps = 100
 
 					peerRespIn <- &msg.Message{
-						Type: msg.ServerParametersResponseType,
+						Type: msg.ServerParametersType,
 						Value: &msg.ServerParametersResponse{
 							OpenperfURL: "http://localhost:9000",
 						},

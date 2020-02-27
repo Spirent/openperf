@@ -19,13 +19,13 @@ type Command struct {
 	Ctx context.Context
 
 	// Done is closed by the Openperf Controller after the request has been sent
-	// and a response (or error condition) has returned. After this occurs, the
+	// and a response (or error) has returned. After this occurs, the
 	// requester may safely check Response. No values are ever sent on this channel.
 	// It is provided by the requester, however if the requester doesn't care
 	// to synchronize on request completion then Done may be nil.
 	Done chan struct{}
 
-	// Response is a pointer to a request-specific result type. It is
+	// Response is a pointer to a request-specific result type or an error. It is
 	// allocated by the Openperf Controller and should only be read by
 	// the requester after the Done channel is closed (or the requester risks a data race).
 	Response interface{}
@@ -45,6 +45,7 @@ type DeleteGeneratorRequest struct {
 
 // GetGeneratorRequest request Openperf to return configured generator resource.
 type GetGeneratorRequest struct {
+	Id string
 }
 
 // GetGeneratorResponse response from Openperf containing the requested generator resource.

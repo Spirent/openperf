@@ -10,10 +10,12 @@ type Configuration struct {
 	DownstreamRateBps uint64
 
 	TransmitDuration uint
-	DurationUnits    string
+	//XXX: string type is a placeholder. Per PR review suggestion:
+	//"replace this with a type, e.g. TestDuration and write code like
+	//func ParseTestDuration(s string) (TestDuration, error) with associated unit tests"
+	DurationUnits string
 
-	// FixedFrameSize points to a fixed value. Should be nil when using IMIX mode.
-	FixedFrameSize *uint
+	FixedFrameSize uint
 
 	IMIXGenomeCode *string //XXX: double-check what the REST API is expecting (array vs single string)
 
