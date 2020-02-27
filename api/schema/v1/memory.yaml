@@ -1,0 +1,406 @@
+swagger: "2.0"
+
+info:
+  title: Openperf Memory I/O Generation API
+  description: REST API interface to Openperf memory I/O module
+  termsOfService: TODO
+  contact:
+    name: "Spirent, Inc."
+    url: "http://spirent.com"
+    email: "support@spirent.com"
+  license:
+    name: "TBD"
+    url: "https://github.com/Spirent/openperf/blob/master/LICENSE"
+  version: "1"
+
+schemes:
+  - http
+  - https
+
+host: localhost
+
+produces:
+  - application/json
+
+consumes:
+  - application/json
+
+parameters:
+  id:
+    name: id
+    in: path
+    description: Unique resource identifier
+    type: string
+    format: string
+    required: true
+
+tags:
+  - name: MemoryGenerator
+
+basePath: /
+
+paths:
+  /memory-generators:
+    get:
+      operationId: ListMemoryGenerators
+      tags:
+        - MemoryGenerator
+      summary: List memory generators
+      description: The `memory-generators` endpoint returns all of the configured memory generators.
+      responses:
+        200:
+          description: Success
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/MemoryGenerator"
+    post:
+      operationId: CreateMemoryGenerator
+      tags:
+        - MemoryGenerator
+      summary: Create a memory generator
+      description: Create a new memory generator
+      parameters:
+        - name: generator
+          in: body
+          description: New memory generator
+          required: true
+          schema:
+            $ref: "#/definitions/MemoryGenerator"
+      responses:
+        201:
+          description: Success
+          schema:
+            $ref: "#/definitions/MemoryGenerator"
+
+  /memory-generators/{id}:
+    get:
+      operationId: GetMemoryGenerator
+      tags:
+        - MemoryGenerator
+      summary: Get a memory generator
+      description: Returns a memory generator, by id.
+      parameters:
+        - $ref: "#/parameters/id"
+      responses:
+        200:
+          description: Success
+          schema:
+            $ref: "#/definitions/MemoryGenerator"
+    delete:
+      operationId: DeleteMemoryGenerator
+      tags:
+        - MemoryGenerator
+      summary: Delete a memory generator
+      description: Deletes an existing memory generator. Idempotent.
+      parameters:
+        - $ref: "#/parameters/id"
+      responses:
+        204:
+          description: No Content
+
+  /memory-generators/{id}/start:
+    post:
+      operationId: StartMemoryGenerator
+      tags:
+        - MemoryGenerator
+      summary: Start a memory generator
+      description: Start an existing memory generator. Idempotent.
+      parameters:
+        - $ref: "#/parameters/id"
+      responses:
+        204:
+          description: No Content
+
+  /memory-generators/{id}/stop:
+    post:
+      operationId: StopMemoryGenerator
+      tags:
+        - MemoryGenerator
+      summary: Stop a memory generator
+      description: Stop a running memory generator. Idempotent.
+      parameters:
+        - $ref: "#/parameters/id"
+      responses:
+        204:
+          description: No Content
+
+  /memory-generators/x/bulk-start:
+    post:
+      operationId: BulkStartMemoryGenerators
+      tags:
+        - MemoryGenerator
+      summary: Tell multiple memory generators to start
+      description: Start multiple memory generators.
+      parameters:
+        - name: bulk_start
+          in: body
+          description: Bulk start
+          required: true
+          schema:
+            type: object
+            title: BulkStartMemoryGeneratorsRequest
+            description: Parameters for the bulk start operation
+            properties:
+              ids:
+                type: array
+                description: List of memory generator identifiers
+                items:
+                  type: string
+                minItems: 1
+            required:
+              - ids
+      responses:
+        200:
+          description: Success
+          schema:
+            type: object
+            title: BulkStartMemoryGeneratorsResponse
+            properties:
+              succeeded:
+                type: array
+                description: List of started memory generator identifiers
+                items:
+                  type: string
+              failed:
+                type: array
+                description: List of failed memory generator identifiers
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                    error:
+                      type: string
+                      description: Cause of Memory Generator start failure
+                  required:
+                    - id
+
+  /memory-generators/x/bulk-stop:
+    post:
+      operationId: BulkStopMemoryGenerators
+      tags:
+        - MemoryGenerator
+      summary: Bulk stop memory generators
+      description: Best-effort stop multiple memory generators. Non-existent memory generator ids do not cause errors. Idempotent.
+      parameters:
+        - name: bulk_stop
+          in: body
+          description: Bulk stop
+          required: true
+          schema:
+            type: object
+            title: BulkStopMemoryGeneratorsRequest
+            description: Parameters for the bulk stop operation
+            properties:
+              ids:
+                type: array
+                description: List of memory generator identifiers
+                items:
+                  type: string
+                minItems: 1
+            required:
+              - ids
+      responses:
+        204:
+          description: No Content
+
+  /memory-generator-results:
+    get:
+      operationId: ListMemoryGeneratorResults
+      tags:
+        - MemoryGenerator
+      summary: List memory generator results
+      description: The `memory-generator-results` endpoint returns all of the results produced by running memory generators.
+      responses:
+        200:
+          description: Success
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/MemoryGeneratorResult"
+
+  /memory-generator-results/{id}:
+    get:
+      operationId: GetMemoryGeneratorResult
+      tags:
+        - MemoryGenerator
+      summary: Get a result from a memory generator
+      description: Returns results from a memory generator by result id.
+      parameters:
+        - $ref: "#/parameters/id"
+      responses:
+        200:
+          description: Success
+          schema:
+            $ref: "#/definitions/MemoryGeneratorResult"
+    delete:
+      operationId: DeleteMemoryGeneratorResult
+      tags:
+        - MemoryGenerator
+      summary: Delete results from a memory generator. Idempotent.
+      parameters:
+        - $ref: "#/parameters/id"
+      responses:
+        204:
+          description: No Content
+
+  /memory-info:
+    get:
+      operationId: MemoryInfo
+      tags:
+        - MemoryGenerator
+      summary: Get a memory info
+      description: The `memory-info` endpoint returns memory info values such as total and free memory size 
+      responses:
+        200:
+          description: Success
+          schema:
+            type: object
+            properties: 
+              total_memory:
+                type: integer
+                description: Total amount of RAM (in bytes)
+                format: int64
+              free_memory:
+                type: integer
+                description: Amount of free memory currently available (in bytes)
+                format: int64
+
+definitions:
+  MemoryGenerator:
+    type: object
+    description: Memory generator
+    properties:
+      id:
+        type: string
+        description: Unique file identifier
+      config:
+        $ref: "#/definitions/MemoryGeneratorConfig"
+      running:
+        type: boolean
+        description: Indicates whether this generator is currently running.
+    required:
+      - id
+      - config
+      - running
+
+  MemoryGeneratorConfig:
+    type: object
+    description: Memory generator configuration
+    properties:
+      buffer_size:
+        type: integer
+        description: Memory size constraint. The buffer can never be larger than the value specified (in bytes)
+        minimum: 64
+      reads_per_sec:
+        type: integer
+        description: Number of read operations to perform per second
+        minimum: 1
+      read_size:
+        type: integer
+        description: Number of bytes to use for each read operation
+        minimum: 1
+      read_threads:
+        type: integer
+        description: Number of read worker threads
+        minimum: 1
+      writes_per_sec:
+        type: integer
+        description: Number of write operations to perform per second
+        minimum: 1
+      write_size:
+        type: integer
+        description: Number of bytes to use for each write operation
+        minimum: 1
+      write_threads:
+        type: integer
+        description: Number of write worker threads
+        minimum: 1
+      pattern:
+        type: string
+        description: IO access pattern
+        enum: 
+          - random
+          - sequential
+          - reverse
+    required:
+      - buffer_size
+      - reads_per_sec
+      - read_size
+      - read_threads
+      - writes_per_sec
+      - write_size
+      - write_threads
+      - pattern
+
+  MemoryGeneratorResult:
+    type: object
+    description: Results collected by a running generator
+    properties:
+      id:
+        type: string
+        description: Unique generator result identifier
+      active:
+        type: boolean
+        description: Indicates whether the result is currently being updated
+      timestamp:
+        type: string
+        description: ISO8601-formatted date
+        format: date-time
+      read:
+        $ref: "#/definitions/MemoryGeneratorStats"
+      write:
+        $ref: "#/definitions/MemoryGeneratorStats"
+    required:
+      - id
+      - active
+      - timestamp
+      - read
+      - write
+
+  MemoryGeneratorStats:
+    type: object
+    description: Memory generator statistics
+    properties:
+      ops_target:
+        type: integer
+        description: The intended number of operations performed
+        format: int64
+      ops_actual:
+        type: integer
+        description: The actual number of operations performed
+        format: int64
+      bytes_target:
+        type: integer
+        description: The intended number of bytes read or written
+        format: int64
+      bytes_actual:
+        type: integer
+        description: The actual number of bytes read or written
+        format: int64
+      io_errors:
+        type: integer
+        description: The number of io_errors observed during reading or writing
+        format: int64
+      latency:
+        type: integer
+        description: The total amount of time required to perform all operations (in nanoseconds)
+        format: int64
+      latency_min:
+        type: integer
+        description: The minimum observed latency value (in nanoseconds)
+        format: int64
+      latency_max:
+        type: integer
+        description: The maximum observed latency value (in nanoseconds)
+        format: int64
+    required:
+      - ops_target
+      - ops_actual
+      - bytes_target
+      - bytes_actual
+      - io_errors
+      - latency
+      - latency_min
+      - latency_max
