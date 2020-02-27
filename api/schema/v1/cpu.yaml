@@ -1,0 +1,436 @@
+swagger: "2.0"
+
+info:
+  title: Openperf CPU Generation API
+  description: REST API interface to Openperf CPU module
+  termsOfService: TODO
+  contact:
+    name: "Spirent, Inc."
+    url: "http://spirent.com"
+    email: "support@spirent.com"
+  license:
+    name: "TBD"
+    url: "https://github.com/Spirent/openperf/blob/master/LICENSE"
+  version: "1"
+
+schemes:
+  - http
+  - https
+
+host: localhost
+
+produces:
+  - application/json
+
+consumes:
+  - application/json
+
+parameters:
+  id:
+    name: id
+    in: path
+    description: Unique resource identifier
+    type: string
+    format: string
+    required: true
+
+tags:
+  - name: CpuGenerator
+
+basePath: /
+
+paths:
+  /cpu-generators:
+    get:
+      operationId: ListGenerators
+      tags:
+        - CpuGenerator
+      summary: List CPU generators
+      description: The `cpu-generators` endpoint returns all of the configured CPU generators.
+      responses:
+        200:
+          description: Success
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/CpuGenerator"
+    post:
+      operationId: CreateCpuGenerator
+      tags:
+        - CpuGenerator
+      summary: Create a CPU generator
+      description: Create a new CPU generator
+      parameters:
+        - name: generator
+          in: body
+          description: New CPU generator
+          required: true
+          schema:
+            $ref: "#/definitions/CpuGenerator"
+      responses:
+        201:
+          description: Success
+          schema:
+            $ref: "#/definitions/CpuGenerator"
+
+  /cpu-generators/{id}:
+    get:
+      operationId: GetCpuGenerator
+      tags:
+        - CpuGenerator
+      summary: Get a CPU generator
+      description: Returns a CPU generator, by id.
+      parameters:
+        - $ref: "#/parameters/id"
+      responses:
+        200:
+          description: Success
+          schema:
+            $ref: "#/definitions/CpuGenerator"
+    delete:
+      operationId: DeleteCpuGenerator
+      tags:
+        - CpuGenerator
+      summary: Delete a CPU generator
+      description: Deletes an existing CPU generator. Idempotent.
+      parameters:
+        - $ref: "#/parameters/id"
+      responses:
+        204:
+          description: No Content
+
+  /cpu-generators/{id}/start:
+    post:
+      operationId: StartCpuGenerator
+      tags:
+        - CpuGenerator
+      summary: Start a CPU generator
+      description: Start an existing CPU generator. Idempotent.
+      parameters:
+        - $ref: "#/parameters/id"
+      responses:
+        204:
+          description: No Content
+
+  /cpu-generators/{id}/stop:
+    post:
+      operationId: StopCpuGenerator
+      tags:
+        - CpuGenerator
+      summary: Stop a CPU generator
+      description: Stop a running CPU generator. Idempotent.
+      parameters:
+        - $ref: "#/parameters/id"
+      responses:
+        204:
+          description: No Content
+
+  /cpu-generators/x/bulk-start:
+    post:
+      operationId: BulkStartCpuGenerators
+      tags:
+        - CpuGenerator
+      summary: Tell multiple CPU generators to start
+      description: Start multiple CPU generators.
+      parameters:
+        - name: bulk_start
+          in: body
+          description: Bulk start
+          required: true
+          schema:
+            type: object
+            title: CpuGeneratorsRequest
+            description: Parameters for the bulk start operation
+            properties:
+              ids:
+                type: array
+                description: List of CPU generator identifiers
+                items:
+                  type: string
+                minItems: 1
+            required:
+              - ids
+      responses:
+        200:
+          description: Success
+          schema:
+            type: object
+            title: CpuGeneratorsResponse
+            properties:
+              succeeded:
+                type: array
+                description: List of started CPU generator identifiers
+                items:
+                  type: string
+              failed:
+                type: array
+                description: List of failed CPU generator identifiers
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                    error:
+                      type: string
+                      description: Cause of CPU Generator start failure
+                  required:
+                    - id
+
+  /cpu-generators/x/bulk-stop:
+    post:
+      operationId: BulkStopCpuGenerators
+      tags:
+        - CpuGenerator
+      summary: Bulk stop CPU generators
+      description: Best-effort stop multiple CPU generators. Non-existent CPU generator ids do not cause errors. Idempotent.
+      parameters:
+        - name: bulk_stop
+          in: body
+          description: Bulk stop
+          required: true
+          schema:
+            type: object
+            title: CpuGeneratorsRequest
+            description: Parameters for the bulk stop operation
+            properties:
+              ids:
+                type: array
+                description: List of CPU generator identifiers
+                items:
+                  type: string
+                minItems: 1
+            required:
+              - ids
+      responses:
+        204:
+          description: No Content
+
+  /cpu-generator-results:
+    get:
+      operationId: ListCpuGeneratorResults
+      tags:
+        - CpuGenerator
+      summary: List CPU generator results
+      description: The `cpu-generator-results` endpoint returns all of the results produced by running CPU generators.
+      responses:
+        200:
+          description: Success
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/CpuGeneratorResult"
+
+  /cpu-generator-results/{id}:
+    get:
+      operationId: GetCpuGeneratorResult
+      tags:
+        - CpuGenerator
+      summary: Get a result from a CPU generator
+      description: Returns results from a CPU generator by result id.
+      parameters:
+        - $ref: "#/parameters/id"
+      responses:
+        200:
+          description: Success
+          schema:
+            $ref: "#/definitions/CpuGeneratorResult"
+    delete:
+      operationId: DeleteCpuGeneratorResult
+      tags:
+        - CpuGenerator
+      summary: Delete results from a CPU generator. Idempotent.
+      parameters:
+        - $ref: "#/parameters/id"
+      responses:
+        204:
+          description: No Content
+
+  /cpu-info:
+    get:
+      operationId: CpuInfo
+      tags:
+        - CpuGenerator
+      summary: Get a CPU info
+      description: The `cpu-info` endpoint returns CPU system info
+      responses:
+        200:
+          description: Success
+          schema:
+            type: object
+            properties: 
+              cores:
+                type: integer
+                description: Number of cores
+              cache_line_size:
+                type: integer
+                description: Processor cache line size 
+                format: int64
+              architecture:
+                type: string
+                description: Processor architecture name
+
+definitions:
+  CpuGenerator:
+    type: object
+    description: CPU generator
+    properties:
+      id:
+        type: string
+        description: Unique CPU generator identifier
+      config:
+        $ref: "#/definitions/CpuGeneratorConfig"
+      running:
+        type: boolean
+        description: Indicates whether this generator is currently running.
+    required:
+      - id
+      - config
+      - running
+
+  CpuGeneratorConfig:
+    title: CpuGeneratorConfig
+    type: array
+    minItems: 1
+    items:
+      $ref: "#/definitions/CpuGeneratorCoreConfig"
+
+  CpuGeneratorCoreConfig:
+    title: CpuGeneratorCoreConfig
+    type: object
+    description: Configuration for a single core
+    properties:
+      utilization:
+        type: number
+        description: CPU load generation setpoint
+        format: double
+        minimum: 0
+        maximum: 100
+      targets:
+        type: array
+        items:
+          type: object
+          properties:
+            instruction_set:
+              type: string
+              description: CPU load instruction set
+            data_size:
+              type: number
+              description: Number of bits to use for data type in chosen instruction set
+              format: integer
+            operation:
+              type: string
+              description: CPU load target operation, actual for chosen instruction set
+            weight:
+              type: number
+              description: Targeted load ratio
+              format: integer
+          required:
+            - instruction_set
+            - data_size
+            - operation
+            - weight
+        description: Instruction set targets (operations)
+        minItems: 1
+    required:
+      - utilization
+      - targets
+
+  CpuGeneratorResult:
+    type: object
+    description: Results collected by a running generator
+    properties:
+      id:
+        type: string
+        description: Unique generator result identifier
+      active:
+        type: boolean
+        description: Indicates whether the result is currently being updated
+      timestamp:
+        type: string
+        description: ISO8601-formatted date
+        format: date-time
+      stats:
+        $ref: "#/definitions/CpuGeneratorStats"
+    required:
+      - id
+      - active
+      - timestamp
+      - stats
+
+  CpuGeneratorStats:
+    title: CpuGeneratorStats
+    type: object
+    description: CPU generator statistics
+    properties:
+      cores:
+        type: array
+        description: Statistics of the CPU cores (in the order they were specified in generator configuration)
+        items:
+          $ref: "#/definitions/CpuGeneratorCoreStats"
+    required:
+      - cores
+  
+  CpuGeneratorCoreStats:
+    title: CpuGeneratorCoreStats
+    type: object
+    description: Core statistics
+    properties:
+      available:
+        type: integer
+        description: The total amount of CPU time available
+        format: int64
+      utilization:
+        type: integer
+        description: The amount of CPU time used
+        format: int64
+      system:
+        type: integer
+        description: The amount of system time used, e.g. kernel or system calls
+        format: int64
+      user:
+        type: integer
+        description: The amount of user time used, e.g. inceptiond code
+        format: int64
+      steal:
+        type: integer
+        description: The amount of time the hypervisor reported our virtual cores were blocked
+        format: int64
+      error:
+        type: integer
+        description: The difference between intended and actual CPU utilization
+        format: int64
+      targets:
+        type: array
+        description: Statistics of the instruction sets (in the order they were specified in core configuration)
+        items:
+          $ref: "#/definitions/CpuGeneratorTargetStats"
+    required:
+      - available
+      - utilization
+      - system
+      - user
+      - steal
+      - error
+      - targets
+
+  CpuGeneratorTargetStats:
+    title: CpuGeneratorTargetStats
+    type: object
+    description: Instruction set statistics
+    properties:
+      cycles:
+        type: integer
+        description: The total amount of finished instruction set cycles
+        format: int64
+      latency_min:
+        type: integer
+        description: The minimum amount of time required to perform one instruction set cycle (in nanoseconds)
+        format: int64
+      latency_max:
+        type: integer
+        description: The maximum amount of time required to perform one instruction set cycle (in nanoseconds)
+        format: int64
+    required:
+      - cycles
+      - latency_min
+      - latency_max
