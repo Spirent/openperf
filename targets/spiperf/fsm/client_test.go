@@ -3,12 +3,14 @@ package fsm_test
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/go-openapi/strfmt"
 	"github.com/go-openapi/strfmt/conv"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/types"
 
 	. "github.com/Spirent/openperf/targets/spiperf/fsm"
 	"github.com/Spirent/openperf/targets/spiperf/msg"
@@ -24,6 +26,7 @@ var _ = Describe("Client FSM,", func() {
 		peerRespIn  chan *msg.Message
 		peerNotifIn chan *msg.Message
 		opCmdOut    chan *openperf.Command
+		statsOut    chan *Stats
 		fsmReturn   chan error
 		fsm         *Client
 		ctx         context.Context
@@ -35,6 +38,7 @@ var _ = Describe("Client FSM,", func() {
 		peerRespIn = make(chan *msg.Message, 1)
 		peerNotifIn = make(chan *msg.Message, 1)
 		opCmdOut = make(chan *openperf.Command)
+		statsOut = make(chan *Stats, 1)
 		fsmReturn = make(chan error)
 
 		fsm = &Client{
@@ -42,6 +46,7 @@ var _ = Describe("Client FSM,", func() {
 			PeerRespIn:            peerRespIn,
 			PeerNotifIn:           peerNotifIn,
 			OpenperfCmdOut:        opCmdOut,
+			StatsOut:              statsOut,
 			PeerTimeout:           500 * time.Millisecond,
 			OpenperfTimeout:       500 * time.Millisecond,
 			StartDelay:            1 * time.Second,
@@ -162,6 +167,8 @@ var _ = Describe("Client FSM,", func() {
 		})
 
 		Context("peer returns server parameters, it transitions to the configure state, ", func() {
+			var cancelStatsHandler context.CancelFunc
+
 			BeforeEach(func(done Done) {
 				peerRespIn <- &msg.Message{
 					Type: msg.HelloType,
@@ -176,6 +183,15 @@ var _ = Describe("Client FSM,", func() {
 				Expect(command.Value).To(BeNil())
 
 				Expect(fsm.State()).To(Equal("configure"))
+
+				// Start up handler for the StatsOut channel.
+				var statsHandlerCtx context.Context
+				statsHandlerCtx, cancelStatsHandler = context.WithCancel(context.Background())
+
+				go func() {
+					defer GinkgoRecover()
+					handleStatsOutput(statsHandlerCtx, statsOut)
+				}()
 
 				close(done)
 			})
@@ -520,7 +536,10 @@ var _ = Describe("Client FSM,", func() {
 								}
 								var responderCtx context.Context
 								responderCtx, runstateStatsResponderCancel = context.WithCancel(context.Background())
-								go handleOpenperfResponses(responderCtx, runstateStatsResponder)
+								go func() {
+									defer GinkgoRecover()
+									handleOpenperfResponses(responderCtx, runstateStatsResponder)
+								}()
 
 								// Client switches to running state here.
 
@@ -589,7 +608,9 @@ var _ = Describe("Client FSM,", func() {
 												peerNotifIn <- &msg.Message{
 													Type: msg.StatsNotificationType,
 													Value: &msg.RuntimeStats{
-														Timestamp: time.Now().Format(TimeFormatString),
+														RxStats: &openperf.GetRxStatsResponse{
+															Timestamp: time.Now().Format(TimeFormatString),
+														},
 													},
 												}
 											}
@@ -798,8 +819,10 @@ var _ = Describe("Client FSM,", func() {
 								}
 								var responderCtx context.Context
 								responderCtx, runstateStatsResponderCancel = context.WithCancel(context.Background())
-								go handleOpenperfResponses(responderCtx, runstateStatsResponder)
-
+								go func() {
+									defer GinkgoRecover()
+									handleOpenperfResponses(responderCtx, runstateStatsResponder)
+								}()
 								// Client switches to running state here.
 
 								close(done)
@@ -831,7 +854,9 @@ var _ = Describe("Client FSM,", func() {
 										peerNotifIn <- &msg.Message{
 											Type: msg.StatsNotificationType,
 											Value: &msg.RuntimeStats{
-												Timestamp: time.Now().Format(TimeFormatString),
+												TxStats: &openperf.GetTxStatsResponse{
+													Timestamp: time.Now().Format(TimeFormatString),
+												},
 											},
 										}
 										time.Sleep(500 * time.Millisecond)
@@ -959,8 +984,10 @@ var _ = Describe("Client FSM,", func() {
 								}
 								var responderCtx context.Context
 								responderCtx, runstateStatsResponderCancel = context.WithCancel(context.Background())
-								go handleOpenperfResponses(responderCtx, runstateStatsResponder)
-
+								go func() {
+									defer GinkgoRecover()
+									handleOpenperfResponses(responderCtx, runstateStatsResponder)
+								}()
 								// Client switches to running state here.
 								Eventually(func() string {
 									return fsm.State()
@@ -979,7 +1006,12 @@ var _ = Describe("Client FSM,", func() {
 										peerNotifIn <- &msg.Message{
 											Type: msg.StatsNotificationType,
 											Value: &msg.RuntimeStats{
-												Timestamp: time.Now().Format(TimeFormatString),
+												TxStats: &openperf.GetTxStatsResponse{
+													Timestamp: time.Now().Format(TimeFormatString),
+												},
+												RxStats: &openperf.GetRxStatsResponse{
+													Timestamp: time.Now().Format(TimeFormatString),
+												},
 											},
 										}
 										time.Sleep(500 * time.Millisecond)
@@ -1055,7 +1087,9 @@ var _ = Describe("Client FSM,", func() {
 												peerNotifIn <- &msg.Message{
 													Type: msg.StatsNotificationType,
 													Value: &msg.RuntimeStats{
-														Timestamp: time.Now().Format(TimeFormatString),
+														RxStats: &openperf.GetRxStatsResponse{
+															Timestamp: time.Now().Format(TimeFormatString),
+														},
 													},
 												}
 											}
@@ -1117,6 +1151,11 @@ var _ = Describe("Client FSM,", func() {
 					})
 				})
 			})
+
+			AfterEach(func(done Done) {
+				cancelStatsHandler()
+				close(done)
+			}, assertEpsilon.Seconds())
 		})
 	})
 	AfterEach(func() {
@@ -1167,14 +1206,14 @@ func makeOPGeneratorResponse(running bool) *openperf.GetGeneratorResponse {
 func makeOPTxStatsResponse() *openperf.GetTxStatsResponse {
 
 	return &openperf.GetTxStatsResponse{
-		Timestamp: uint64(time.Now().Unix()),
+		Timestamp: time.Now().Format(TimeFormatString),
 	}
 }
 
 func makeOPRxStatsResponse() *openperf.GetRxStatsResponse {
 
 	return &openperf.GetRxStatsResponse{
-		Timestamp: uint64(time.Now().Unix()),
+		Timestamp: time.Now().Format(TimeFormatString),
 	}
 }
 
@@ -1252,4 +1291,54 @@ Done:
 			deleteGenErr = true
 		}
 	}
+}
+
+func handleStatsOutput(ctx context.Context, stats chan *Stats) {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case message := <-stats:
+			Expect(message).ToNot(BeNil())
+			Expect(message.Kind).To(BeStatsKind())
+
+			switch message.Kind {
+			case UpstreamTxKind:
+				Expect(message.Values).To(BeAssignableToTypeOf(&openperf.GetTxStatsResponse{}))
+			case UpstreamRxKind:
+				Expect(message.Values).To(BeAssignableToTypeOf(&openperf.GetRxStatsResponse{}))
+			case DownstreamTxKind:
+				Expect(message.Values).To(BeAssignableToTypeOf(&openperf.GetTxStatsResponse{}))
+			case DownstreamRxKind:
+				Expect(message.Values).To(BeAssignableToTypeOf(&openperf.GetRxStatsResponse{}))
+
+			}
+		}
+	}
+}
+
+func BeStatsKind() types.GomegaMatcher {
+	return &statsKindMatcher{}
+}
+
+type statsKindMatcher struct {
+}
+
+func (matcher *statsKindMatcher) Match(actual interface{}) (success bool, err error) {
+
+	val, ok := actual.(StatsKind)
+	if !ok {
+		return false, fmt.Errorf("BeStatsKind matcher expects a StatsKind, got %T", actual)
+	}
+
+	return val == UpstreamTxKind || val == UpstreamRxKind || val == DownstreamTxKind || val == DownstreamRxKind, nil
+
+}
+
+func (matcher *statsKindMatcher) FailureMessage(actual interface{}) (message string) {
+	return fmt.Sprintf("Expected %s to be one of %s, %s, %s, or %s\n", actual, UpstreamTxKind, UpstreamRxKind, DownstreamTxKind, DownstreamRxKind)
+}
+
+func (matcher *statsKindMatcher) NegatedFailureMessage(actual interface{}) (message string) {
+	return fmt.Sprintf("Expected %s to not be one of %s, %s, %s, or %s\n", actual, UpstreamTxKind, UpstreamRxKind, DownstreamTxKind, DownstreamRxKind)
 }

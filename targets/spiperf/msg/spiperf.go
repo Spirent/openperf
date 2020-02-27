@@ -1,5 +1,7 @@
 package msg
 
+import "github.com/Spirent/openperf/targets/spiperf/openperf"
+
 // Message type definitions
 const (
 	AckType                      = "ACK" //No message value needed.
@@ -49,7 +51,8 @@ type StartCommand struct {
 
 // RuntimeStats convey stats while test is running.
 type RuntimeStats struct {
-	Timestamp string `json:"timestamp"`
+	TxStats *openperf.GetTxStatsResponse `json:"get_tx_stats,omitempty"`
+	RxStats *openperf.GetRxStatsResponse `json:"get_rx_stats,omitempty"`
 }
 
 // FinalStats convey final set of stats sampled after the test completes.

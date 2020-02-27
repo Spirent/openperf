@@ -60,7 +60,7 @@ type GetRxStatsRequest struct {
 // GetRxStatsResponse response from Openperf containing requested receive statistics.
 //XXX: most probably a placeholder until the Openperf analyzer API is ready.
 type GetRxStatsResponse struct {
-	Timestamp uint64
+	Timestamp string
 	TxPackets uint64
 	TxBytes   uint64
 }
@@ -78,7 +78,7 @@ type GetTxStatsRequest struct {
 // GetTxStatsResponse response containing requested transmit statistics.
 //XXX: most probably a placeholder until the Openperf generator API is ready.
 type GetTxStatsResponse struct {
-	Timestamp uint64
+	Timestamp string
 	TxPackets uint64
 	TxBytes   uint64
 }

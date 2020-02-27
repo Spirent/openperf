@@ -10,7 +10,6 @@ import (
 	"github.com/Spirent/openperf/targets/spiperf/msg"
 	"github.com/Spirent/openperf/targets/spiperf/openperf"
 	"github.com/go-openapi/strfmt/conv"
-	"github.com/kr/pretty"
 )
 
 const TimeFormatString = time.RFC3339
@@ -28,6 +27,9 @@ type Client struct {
 
 	// OpenperfCmdOut sends commands to Openperf Controller.
 	OpenperfCmdOut chan<- *openperf.Command
+
+	// StatsOut output channel for test data stream statistics.
+	StatsOut chan<- *Stats
 
 	// PeerTimeout specifies the maximum time the FSM  will wait for responses from the peer instance.
 	PeerTimeout time.Duration
@@ -75,6 +77,9 @@ func (c *Client) Run(ctx context.Context) error {
 	}
 	if c.PeerNotifIn == nil {
 		return &InternalError{Message: "invalid notification in channel"}
+	}
+	if c.StatsOut == nil {
+		return &InternalError{Message: "invalid stats output channel"}
 	}
 	if c.PeerTimeout <= 0 {
 		return &InternalError{Message: "invalid peer timeout"}
@@ -374,7 +379,17 @@ Done:
 					break Done
 				}
 			case msg.StatsNotificationType:
-				//XXX: statistics from the server will be processed here.
+				if stats, ok := notif.Value.(*msg.RuntimeStats); ok {
+					if stats.TxStats != nil {
+						c.StatsOut <- &Stats{Kind: DownstreamTxKind, Values: stats.TxStats}
+					}
+
+					if stats.RxStats != nil {
+						c.StatsOut <- &Stats{Kind: UpstreamRxKind, Values: stats.RxStats}
+					}
+				} else {
+					return (*Client).cleanup, &MessagingError{Message: "Unexpected value type in server stats notification"}
+				}
 			default:
 				return (*Client).cleanup, &UnexpectedPeerRespError{Message: "unexpected notification type."}
 			}
@@ -386,9 +401,7 @@ Done:
 
 			switch stats := txStat.(type) {
 			case *openperf.GetTxStatsResponse:
-				//do stuff.
-				pretty.Println(stats)
-				//XXX: Tx stats will be processed here.
+				c.StatsOut <- &Stats{Kind: UpstreamTxKind, Values: stats}
 			case error:
 				return (*Client).cleanup, &OpenperfError{Message: stats.Error()}
 
@@ -404,8 +417,7 @@ Done:
 
 			switch stats := rxStat.(type) {
 			case *openperf.GetRxStatsResponse:
-				pretty.Println(stats)
-				//XXX: Rx stats will be processed here.
+				c.StatsOut <- &Stats{Kind: DownstreamRxKind, Values: stats}
 			case error:
 				return (*Client).cleanup, &OpenperfError{Message: stats.Error()}
 
@@ -436,12 +448,20 @@ Done:
 					//Stop runstate polling.
 					generatorPollCancel()
 
+					// Check if there's an in-flight GetTxStatsResponse waiting for us.
+					// Not having it is not an error.
 					lastStat, ok := <-txStatsPollResp
 					if ok {
-						//do something with lastStat
-						fmt.Print("last stat: ")
-						pretty.Println(lastStat)
-						//FIXME: check type here.
+						switch stat := lastStat.(type) {
+						case *openperf.GetTxStatsResponse:
+							c.StatsOut <- &Stats{Kind: UpstreamTxKind, Values: stat}
+						case error:
+							return (*Client).cleanup, &OpenperfError{Message: stat.Error()}
+
+						default:
+							return (*Client).cleanup, &UnexpectedOpenperfRespError{Message: "unexpected notification type."}
+
+						}
 					}
 
 					// Tell server we're done transmitting. No ACK expected.
