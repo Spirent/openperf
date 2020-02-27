@@ -274,7 +274,7 @@ definitions:
     properties:
       id:
         type: string
-        description: Unique file identifier
+        description: Unique memory generator identifier
       config:
         $ref: "#/definitions/MemoryGeneratorConfig"
       running:
