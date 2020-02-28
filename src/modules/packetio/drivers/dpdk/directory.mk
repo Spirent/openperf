@@ -10,6 +10,7 @@ PIO_DRIVER_SOURCES += \
 	mbuf_signature.cpp \
 	port_filter.cpp \
 	port_signature_decoder.cpp \
+	port_signature_decoder_utils.cpp \
 	port_timestamper.cpp \
 	queue_utils.cpp \
 	topology_utils.cpp \

@@ -14,8 +14,14 @@ struct mbuf_signature
     uint32_t sig_stream_id;
     uint32_t sig_seq_num;
 
-    static constexpr auto flag_shift = 48U;
-    static constexpr auto timestamp_mask = 0xffffffffffffULL;
+    /*
+     * We use the upper 2 bits of the timestamp to store the flags.
+     * The lower 62 bits contain the wall-clock time in nanoseconds
+     * since the start of the UNIX epoch, e.g. 1970.  The 62 bit counter
+     * will roll over sometime in 2116.
+     */
+    static constexpr auto flag_shift = 62U;
+    static constexpr auto timestamp_mask = 0x3fffffffffffffffULL;
     uint64_t sig_timestamp_flags;
 };
 
