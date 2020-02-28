@@ -88,7 +88,7 @@ var _ = Describe("Client FSM,", func() {
 				}
 
 				ret := <-fsmReturn
-				Expect(ret).To(BeAssignableToTypeOf(&VersionMismatchError{}))
+				Expect(ret).To(BeAssignableToTypeOf(&PeerError{}))
 				Expect(ret.Error()).ToNot(BeEmpty())
 				Expect(peerCmdOut).To(BeClosed())
 
@@ -101,7 +101,7 @@ var _ = Describe("Client FSM,", func() {
 			It("terminates with an error", func(done Done) {
 				peerRespIn <- &msg.Message{
 					Type:  msg.ErrorType,
-					Value: "server error",
+					Value: errors.New("server error"),
 				}
 
 				ret := <-fsmReturn
@@ -120,7 +120,7 @@ var _ = Describe("Client FSM,", func() {
 				}
 
 				ret := <-fsmReturn
-				Expect(ret).To(BeAssignableToTypeOf(&UnexpectedPeerRespError{}))
+				Expect(ret).To(BeAssignableToTypeOf(&PeerError{}))
 				Expect(ret.Error()).ToNot(BeEmpty())
 				Expect(peerCmdOut).To(BeClosed())
 
@@ -136,7 +136,7 @@ var _ = Describe("Client FSM,", func() {
 				}
 
 				ret := <-fsmReturn
-				Expect(ret).To(BeAssignableToTypeOf(&MessagingError{}))
+				Expect(ret).To(BeAssignableToTypeOf(&PeerError{}))
 				Expect(ret.Error()).ToNot(BeEmpty())
 				Expect(peerCmdOut).To(BeClosed())
 
@@ -158,7 +158,7 @@ var _ = Describe("Client FSM,", func() {
 			It("terminates with an error", func(done Done) {
 				close(peerRespIn)
 				ret := <-fsmReturn
-				Expect(ret).To(BeAssignableToTypeOf(&MessagingError{}))
+				Expect(ret).To(BeAssignableToTypeOf(&PeerError{}))
 				Expect(ret.Error()).ToNot(BeEmpty())
 				Expect(peerCmdOut).To(BeClosed())
 				close(done)
@@ -200,7 +200,7 @@ var _ = Describe("Client FSM,", func() {
 				It("terminates with an error", func(done Done) {
 					peerRespIn <- &msg.Message{
 						Type:  msg.ErrorType,
-						Value: "server error",
+						Value: errors.New("server error"),
 					}
 
 					ret := <-fsmReturn
@@ -251,7 +251,7 @@ var _ = Describe("Client FSM,", func() {
 
 					ret := <-fsmReturn
 					Expect(ret).To(
-						BeAssignableToTypeOf(&UnexpectedPeerRespError{}))
+						BeAssignableToTypeOf(&PeerError{}))
 					Expect(ret.Error()).ToNot(BeEmpty())
 					Expect(peerCmdOut).To(BeClosed())
 
@@ -268,13 +268,31 @@ var _ = Describe("Client FSM,", func() {
 
 					ret := <-fsmReturn
 					Expect(ret).To(
-						BeAssignableToTypeOf(&MessagingError{}))
-					Expect(ret.Error()).ToNot(BeEmpty())
+						BeAssignableToTypeOf(&PeerError{}))
 					Expect(ret.Error()).ToNot(BeEmpty())
 					Expect(peerCmdOut).To(BeClosed())
 
 					close(done)
 				})
+			})
+
+			Context("when server disconnects unexpectedly instead of returning a value, ", func() {
+				It("terminates with an error", func(done Done) {
+					peerNotifIn <- &msg.Message{
+						Type:  msg.PeerDisconnectLocalType,
+						Value: &msg.PeerDisconnectLocalNotif{Err: errors.New("JSON encoder error")},
+					}
+
+					ret := <-fsmReturn
+					Expect(ret).To(
+						BeAssignableToTypeOf(&UnexpectedPeerDisconnectError{}))
+					Expect(ret.Error()).ToNot(BeEmpty())
+					Expect(ret.(*UnexpectedPeerDisconnectError).Local).To(BeTrue())
+					Expect(peerCmdOut).To(BeClosed())
+
+					close(done)
+				})
+
 			})
 
 			// At this point the test diverges along three paths based on test traffic flow:
@@ -323,7 +341,7 @@ var _ = Describe("Client FSM,", func() {
 					It("exits with an error", func(done Done) {
 						peerRespIn <- &msg.Message{
 							Type:  msg.ErrorType,
-							Value: "error with configuration",
+							Value: errors.New("error with configuration"),
 						}
 
 						drainOpenperfCommands(opCmdOut, peerCmdOut)
@@ -349,7 +367,7 @@ var _ = Describe("Client FSM,", func() {
 
 						ret := <-fsmReturn
 						Expect(ret).To(
-							BeAssignableToTypeOf(&UnexpectedPeerRespError{}))
+							BeAssignableToTypeOf(&PeerError{}))
 						Expect(ret.Error()).ToNot(BeEmpty())
 						Expect(peerCmdOut).To(BeClosed())
 						Expect(fsm.State()).To(Equal("cleanup"))
@@ -437,7 +455,7 @@ var _ = Describe("Client FSM,", func() {
 							It("exits with an error", func(done Done) {
 								peerRespIn <- &msg.Message{
 									Type:  msg.ErrorType,
-									Value: "error with configuration",
+									Value: errors.New("error with configuration"),
 								}
 
 								drainOpenperfCommands(opCmdOut, peerCmdOut)
@@ -482,7 +500,7 @@ var _ = Describe("Client FSM,", func() {
 
 								ret := <-fsmReturn
 								Expect(ret).To(
-									BeAssignableToTypeOf(&UnexpectedPeerRespError{}))
+									BeAssignableToTypeOf(&PeerError{}))
 								Expect(ret.Error()).ToNot(BeEmpty())
 								Expect(peerCmdOut).To(BeClosed())
 								Expect(fsm.State()).To(Equal("cleanup"))
@@ -490,6 +508,60 @@ var _ = Describe("Client FSM,", func() {
 								close(done)
 
 							})
+						})
+
+						Context("server ACKs start command, when peer disconnects during armed state, ", func() {
+							It("exits with an error", func(done Done) {
+								//ACK start command.
+								peerRespIn <- &msg.Message{
+									Type: msg.AckType,
+								}
+
+								peerNotifIn <- &msg.Message{
+									Type:  msg.PeerDisconnectRemoteType,
+									Value: &msg.PeerDisconnectRemoteNotif{Err: "aborting test."},
+								}
+
+								drainOpenperfCommands(opCmdOut, peerCmdOut)
+
+								ret := <-fsmReturn
+								Expect(ret).To(
+									BeAssignableToTypeOf(&UnexpectedPeerDisconnectError{}))
+								Expect(ret.Error()).ToNot(BeEmpty())
+								Expect(ret.(*UnexpectedPeerDisconnectError).Local).To(BeFalse())
+								Expect(peerCmdOut).To(BeClosed())
+								Expect(fsm.State()).To(Equal("cleanup"))
+
+								close(done)
+							}, assertEpsilon.Seconds())
+
+						})
+
+						Context("server ACKs start command, when local peer interface errors during armed state, ", func() {
+							It("exits with an error", func(done Done) {
+								//ACK start command.
+								peerRespIn <- &msg.Message{
+									Type: msg.AckType,
+								}
+
+								peerNotifIn <- &msg.Message{
+									Type:  msg.PeerDisconnectLocalType,
+									Value: &msg.PeerDisconnectLocalNotif{Err: errors.New("unexpected local peer communcation error")},
+								}
+
+								drainOpenperfCommands(opCmdOut, peerCmdOut)
+
+								ret := <-fsmReturn
+								Expect(ret).To(
+									BeAssignableToTypeOf(&UnexpectedPeerDisconnectError{}))
+								Expect(ret.Error()).ToNot(BeEmpty())
+								Expect(ret.(*UnexpectedPeerDisconnectError).Local).To(BeTrue())
+								Expect(peerCmdOut).To(BeClosed())
+								Expect(fsm.State()).To(Equal("cleanup"))
+
+								close(done)
+							}, assertEpsilon.Seconds())
+
 						})
 
 						Context("server ACKs start command, it transitions to armed state, sleeps until start time, it transitions to runningTx state, client is transmitting, ", func() {
@@ -554,7 +626,7 @@ var _ = Describe("Client FSM,", func() {
 								It("exits with an error", func(done Done) {
 									peerNotifIn <- &msg.Message{
 										Type:  msg.ErrorType,
-										Value: "error with rx stats",
+										Value: errors.New("error with rx stats"),
 									}
 
 									ret := <-fsmReturn
@@ -564,6 +636,27 @@ var _ = Describe("Client FSM,", func() {
 
 									close(done)
 								}, assertEpsilon.Seconds())
+							})
+
+							Context("when server disconnects while test is running, ", func() {
+								It("exits with an error", func(done Done) {
+									peerNotifIn <- &msg.Message{
+										Type:  msg.PeerDisconnectRemoteType,
+										Value: &msg.PeerDisconnectRemoteNotif{Err: "aborting test."},
+									}
+
+									ret := <-fsmReturn
+									Expect(ret).To(
+										BeAssignableToTypeOf(&UnexpectedPeerDisconnectError{}))
+									Expect(ret.Error()).ToNot(BeEmpty())
+									Expect(ret.(*UnexpectedPeerDisconnectError).Local).To(BeFalse())
+									Expect(peerCmdOut).To(BeClosed())
+									Expect(fsm.State()).To(Equal("cleanup"))
+
+									close(done)
+
+								}, assertEpsilon.Seconds())
+
 							})
 
 							Context("when openperf returns an error while polling generator, ", func() {
@@ -607,7 +700,7 @@ var _ = Describe("Client FSM,", func() {
 											case <-time.After(1 * time.Second):
 												peerNotifIn <- &msg.Message{
 													Type: msg.StatsNotificationType,
-													Value: &msg.RuntimeStats{
+													Value: &msg.DataStreamStats{
 														RxStats: &openperf.GetRxStatsResponse{
 															Timestamp: time.Now().Format(TimeFormatString),
 														},
@@ -639,7 +732,7 @@ var _ = Describe("Client FSM,", func() {
 									It("exits with an error", func(done Done) {
 										peerRespIn <- &msg.Message{
 											Type:  msg.ErrorType,
-											Value: "error gathering final stats"}
+											Value: errors.New("error gathering final stats")}
 
 										ret := <-fsmReturn
 										Expect(ret).To(BeAssignableToTypeOf(&PeerError{}))
@@ -676,7 +769,7 @@ var _ = Describe("Client FSM,", func() {
 
 										ret := <-fsmReturn
 										Expect(ret).To(
-											BeAssignableToTypeOf(&UnexpectedPeerRespError{}))
+											BeAssignableToTypeOf(&PeerError{}))
 										Expect(ret.Error()).ToNot(BeEmpty())
 										Expect(peerCmdOut).To(BeClosed())
 										Expect(fsm.State()).To(Equal("cleanup"))
@@ -694,7 +787,8 @@ var _ = Describe("Client FSM,", func() {
 										peerRespIn <- &msg.Message{
 											Type: msg.FinalStatsType,
 											Value: &msg.FinalStats{
-												TransmitFrames: uint64(260)},
+												RxStats: &openperf.GetRxStatsResponse{Timestamp: time.Now().Format(TimeFormatString)},
+											},
 										}
 
 										Eventually(func() string {
@@ -716,7 +810,8 @@ var _ = Describe("Client FSM,", func() {
 										peerRespIn <- &msg.Message{
 											Type: msg.FinalStatsType,
 											Value: &msg.FinalStats{
-												TransmitFrames: uint64(420)},
+												RxStats: &openperf.GetRxStatsResponse{Timestamp: time.Now().Format(TimeFormatString)},
+											},
 										}
 
 										res := <-fsmReturn
@@ -853,7 +948,7 @@ var _ = Describe("Client FSM,", func() {
 									for i := 0; i < 4; i++ {
 										peerNotifIn <- &msg.Message{
 											Type: msg.StatsNotificationType,
-											Value: &msg.RuntimeStats{
+											Value: &msg.DataStreamStats{
 												TxStats: &openperf.GetTxStatsResponse{
 													Timestamp: time.Now().Format(TimeFormatString),
 												},
@@ -883,7 +978,8 @@ var _ = Describe("Client FSM,", func() {
 										peerRespIn <- &msg.Message{
 											Type: msg.FinalStatsType,
 											Value: &msg.FinalStats{
-												TransmitFrames: uint64(420)},
+												TxStats: &openperf.GetTxStatsResponse{Timestamp: time.Now().Format(TimeFormatString)},
+											},
 										}
 
 										Eventually(func() string {
@@ -1005,7 +1101,7 @@ var _ = Describe("Client FSM,", func() {
 									for i := 0; i < 4; i++ {
 										peerNotifIn <- &msg.Message{
 											Type: msg.StatsNotificationType,
-											Value: &msg.RuntimeStats{
+											Value: &msg.DataStreamStats{
 												TxStats: &openperf.GetTxStatsResponse{
 													Timestamp: time.Now().Format(TimeFormatString),
 												},
@@ -1038,8 +1134,6 @@ var _ = Describe("Client FSM,", func() {
 										Expect(cmd.Type).To(Equal(msg.TransmitDoneType))
 										Expect(cmd.Value).To(BeNil())
 
-										runstateStatsResponderCancel()
-
 										Eventually(func() string {
 											return fsm.State()
 										}).Should(Equal("done"))
@@ -1057,16 +1151,20 @@ var _ = Describe("Client FSM,", func() {
 											peerRespIn <- &msg.Message{
 												Type: msg.FinalStatsType,
 												Value: &msg.FinalStats{
-													TransmitFrames: uint64(420)},
+													TxStats: &openperf.GetTxStatsResponse{Timestamp: time.Now().Format(TimeFormatString)},
+													RxStats: &openperf.GetRxStatsResponse{Timestamp: time.Now().Format(TimeFormatString)},
+												},
 											}
 
 											Eventually(func() string {
 												return fsm.State()
 											}).Should(Equal("cleanup"))
 
+											runstateStatsResponderCancel()
+
 											close(done)
 
-										})
+										}, assertEpsilon.Seconds())
 
 									})
 
@@ -1086,7 +1184,7 @@ var _ = Describe("Client FSM,", func() {
 											case <-time.After(1 * time.Second):
 												peerNotifIn <- &msg.Message{
 													Type: msg.StatsNotificationType,
-													Value: &msg.RuntimeStats{
+													Value: &msg.DataStreamStats{
 														RxStats: &openperf.GetRxStatsResponse{
 															Timestamp: time.Now().Format(TimeFormatString),
 														},
@@ -1123,8 +1221,6 @@ var _ = Describe("Client FSM,", func() {
 
 										Expect(fsm.State()).To(Equal("done"))
 
-										runstateStatsResponderCancel()
-
 										close(done)
 									}, assertEpsilon.Seconds())
 
@@ -1133,7 +1229,9 @@ var _ = Describe("Client FSM,", func() {
 											peerRespIn <- &msg.Message{
 												Type: msg.FinalStatsType,
 												Value: &msg.FinalStats{
-													TransmitFrames: uint64(420)},
+													TxStats: &openperf.GetTxStatsResponse{Timestamp: time.Now().Format(TimeFormatString)},
+													RxStats: &openperf.GetRxStatsResponse{Timestamp: time.Now().Format(TimeFormatString)},
+												},
 											}
 
 											Eventually(func() string {
@@ -1146,6 +1244,11 @@ var _ = Describe("Client FSM,", func() {
 
 									})
 								})
+							})
+
+							AfterEach(func(done Done) {
+								runstateStatsResponderCancel()
+								close(done)
 							})
 						})
 					})

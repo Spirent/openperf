@@ -48,7 +48,7 @@ var _ = Describe("CommandRepeater, ", func() {
 				cr.Interval = CommandRepeaterMinimumInterval
 				cr.Responses = make(chan interface{})
 				go func(ctx context.Context, cr *CommandRepeater) {
-					crReturn <- RunCommandRepeater(ctx, cr)
+					crReturn <- cr.Run(ctx)
 				}(ctx, cr)
 			})
 
@@ -95,7 +95,7 @@ var _ = Describe("CommandRepeater, ", func() {
 				cr.Responses = make(chan interface{})
 
 				go func(ctx context.Context, cr *CommandRepeater) {
-					crReturn <- RunCommandRepeater(ctx, cr)
+					crReturn <- cr.Run(ctx)
 				}(ctx, cr)
 			})
 

@@ -2,6 +2,7 @@ package fsm
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/url"
 	"sync/atomic"
@@ -70,46 +71,46 @@ type clientStateFunc func(*Client, context.Context) (clientStateFunc, error)
 func (c *Client) Run(ctx context.Context) error {
 
 	if c.PeerCmdOut == nil {
-		return &InternalError{Message: "invalid peer command out channel"}
+		return &InvalidParamError{What: "PeerCmdOut", Actual: "nil", Expected: "non-nil"}
 	}
 	if c.PeerRespIn == nil {
-		return &InternalError{Message: "invalid peer response in channel"}
+		return &InvalidParamError{What: "PeerRespIn", Actual: "nil", Expected: "non-nil"}
 	}
 	if c.PeerNotifIn == nil {
-		return &InternalError{Message: "invalid peer notification in channel"}
+		return &InvalidParamError{What: "PeerNotifIn", Actual: "nil", Expected: "non-nil"}
 	}
 	if c.OpenperfCmdOut == nil {
-		return &InternalError{Message: "invalid Openperf command output channel"}
+		return &InvalidParamError{What: "OpenperfCmdOut", Actual: "nil", Expected: "non-nil"}
 	}
 	if c.DataStreamStatsOut == nil {
-		return &InternalError{Message: "invalid data stream stats output channel"}
+		return &InvalidParamError{What: "DataStreamStatsOut", Actual: "nil", Expected: "non-nil"}
 	}
 	if c.PeerTimeout < 0 {
-		return &InternalError{Message: "invalid peer timeout"}
+		return &InvalidParamError{What: "PeerTimeout", Actual: fmt.Sprintf("%s", c.PeerTimeout), Expected: ">= 0"}
 	}
 	if c.PeerTimeout == 0 {
 		c.PeerTimeout = DefaultPeerTimeout
 	}
 	if c.OpenperfTimeout < 0 {
-		return &InternalError{Message: "invalid Openperf timeout"}
+		return &InvalidParamError{What: "OpenperfTimeout", Actual: fmt.Sprintf("%s", c.OpenperfTimeout), Expected: ">= 0"}
 	}
 	if c.OpenperfTimeout == 0 {
 		c.OpenperfTimeout = DefaultOpenperfTimeout
 	}
 	if c.StartDelay < 0 {
-		return &InternalError{Message: "invalid start delay"}
+		return &InvalidParamError{What: "StartDelay", Actual: fmt.Sprintf("%s", c.StartDelay), Expected: ">= 0"}
 	}
 	if c.StartDelay == 0 {
 		c.StartDelay = DefaultStartDelay
 	}
 	if c.StatsPollInterval < 0 {
-		return &InternalError{Message: "invalid stats polling interval"}
+		return &InvalidParamError{What: "StatsPollInterval", Actual: fmt.Sprintf("%s", c.StatsPollInterval), Expected: ">= 0"}
 	}
 	if c.StatsPollInterval == 0 {
 		c.StatsPollInterval = DefaultStatsPollInterval
 	}
 	if c.GeneratorPollInterval < 0 {
-		return &InternalError{Message: "invalid generator polling interval"}
+		return &InvalidParamError{What: "GeneratorPollInterval", Actual: fmt.Sprintf("%s", c.GeneratorPollInterval), Expected: ">= 0"}
 	}
 	if c.GeneratorPollInterval == 0 {
 		c.GeneratorPollInterval = DefaultGeneratorPollInterval
@@ -142,19 +143,23 @@ func (c *Client) connect(ctx context.Context) (clientStateFunc, error) {
 	}
 
 	// Wait for reply
-	reply, repErr := c.waitForPeerResponse(msg.HelloType)
-	if repErr != nil {
-		return nil, repErr
+	reply, err := c.waitForPeerResponse(msg.HelloType)
+	if err != nil {
+		return nil, err
 	}
 
 	//Verify remote version matches our version.
-	helloMsg, msgOk := reply.Value.(*msg.Hello)
-	if !msgOk {
-		return nil, &MessagingError{Message: "Unexpected value type in hello message reply"}
+	helloMsg, ok := reply.Value.(*msg.Hello)
+	if !ok {
+		return nil, &PeerError{What: fmt.Sprintf("message with type %s, ", reply.Type),
+			Actual:   fmt.Sprintf("%T", reply.Value),
+			Expected: fmt.Sprintf("%T", msg.Hello{})}
 	}
 
 	if helloMsg.PeerProtocolVersion != msg.Version {
-		return nil, &VersionMismatchError{Message: fmt.Sprintf("Mismatch between server and client versions. Client version is %s and server reports as %s\n", msg.Version, helloMsg.PeerProtocolVersion)}
+		return nil, &PeerError{Actual: msg.Version,
+			Expected: helloMsg.PeerProtocolVersion,
+			What:     "client and server version mismatch"}
 	}
 
 	return (*Client).configure, nil
@@ -176,13 +181,19 @@ func (c *Client) configure(ctx context.Context) (clientStateFunc, error) {
 
 	serverPrams, msgOk := reply.Value.(*msg.ServerParametersResponse)
 	if !msgOk {
-		return nil, &MessagingError{Message: "Unexpected value type in server parameters reply"}
+		return nil, &PeerError{What: fmt.Sprintf("message with type %s, ", reply.Type),
+			Actual:   fmt.Sprintf("%T", reply.Value),
+			Expected: fmt.Sprintf("%T", &msg.ServerParametersResponse{})}
 	}
 
 	//XXX: full validation of server's parameters will be done here.
 	//This line is to exercise the error path via unit test.
 	if _, err := url.Parse(serverPrams.OpenperfURL); err != nil {
-		return nil, &InvalidConfigurationError{Message: fmt.Sprintf("Got invalid OpenPerf URL from server: %s", serverPrams.OpenperfURL)}
+		return nil, &InvalidConfigurationError{
+			What:     "OpenperfURL",
+			Actual:   serverPrams.OpenperfURL,
+			Expected: "<a valid URL>",
+		}
 	}
 
 	//XXX: test configuration will be built here.
@@ -235,10 +246,13 @@ func (c *Client) ready(ctx context.Context) (clientStateFunc, error) {
 			Value: &msg.StartCommand{StartTime: c.startTime.Format(TimeFormatString)},
 		}
 	case error:
-		return (*Client).cleanup, &OpenperfError{Message: resp.Error()}
+		return (*Client).cleanup, &OpenperfError{Err: resp}
 
 	default:
-		return (*Client).cleanup, &UnexpectedOpenperfRespError{Message: "unexpected response from OP for GetTimeRequest"}
+		return (*Client).cleanup, &OpenperfError{
+			Actual:   fmt.Sprintf("%T", req.Response),
+			Expected: "openperf.GetTimeResponse",
+			What:     "sent an openperf.GetTimeRequest and got an unexpected response. "}
 	}
 
 	// Wait for an ACK to start message.
@@ -256,7 +270,45 @@ func (c *Client) armed(ctx context.Context) (clientStateFunc, error) {
 	c.enter("armed")
 
 	// Wait for then to become now (aka test to start.)
-	time.Sleep(time.Until(c.startTime))
+	// Also make sure peer didn't disappear on us.
+Done:
+	for {
+		select {
+		case <-time.After(time.Until(c.startTime)):
+			break Done
+
+		case notif, ok := <-c.PeerNotifIn:
+			if !ok {
+				return (*Client).cleanup, &PeerError{What: "error reading peer notifications."}
+			}
+
+			switch notif.Type {
+			case msg.StatsNotificationType:
+				// There is a chance the server will start sending stats
+				// before we switch to the running state.
+				// This is not an error and we need to handle accordingly.
+				if err := c.handleStatsNotification(notif); err != nil {
+					return (*Client).cleanup, err
+				}
+
+			case msg.PeerDisconnectLocalType, msg.PeerDisconnectRemoteType:
+				// Return an error here. Peer should not have disconnected.
+				err := processUnexpectedPeerDisconnect(notif)
+				return (*Client).cleanup, err
+
+			default:
+				return (*Client).cleanup, &PeerError{
+					What:   "unexpected response from peer",
+					Actual: notif.Type,
+					Expected: fmt.Sprintf("one of: %s, %s, or %s",
+						msg.StatsNotificationType,
+						msg.PeerDisconnectRemoteType,
+						msg.PeerDisconnectLocalType),
+				}
+			}
+
+		}
+	}
 
 	return (*Client).running, nil
 }
@@ -337,12 +389,10 @@ Done:
 		select {
 		case notif, ok := <-c.PeerNotifIn:
 			if !ok {
-				return (*Client).cleanup, &MessagingError{Message: "error reading peer notifications."}
+				return (*Client).cleanup, &PeerError{Err: errors.New("error reading peer notifications.")}
 			}
 
 			switch notif.Type {
-			case msg.ErrorType:
-				return (*Client).cleanup, &PeerError{Message: notif.Value.(string)}
 			case msg.TransmitDoneType:
 				serverRunning = false
 				rxStatsPollCancel()
@@ -350,22 +400,27 @@ Done:
 				if !clientRunning {
 					break Done
 				}
+
 			case msg.StatsNotificationType:
-				stats, ok := notif.Value.(*msg.RuntimeStats)
-				if !ok {
-					return (*Client).cleanup, &MessagingError{Message: "Unexpected value type in server stats notification"}
+				if err := c.handleStatsNotification(notif); err != nil {
+					return (*Client).cleanup, err
 				}
 
-				if stats.TxStats != nil {
-					c.DataStreamStatsOut <- &Stats{Kind: DownstreamTxKind, Values: stats.TxStats}
-				}
-
-				if stats.RxStats != nil {
-					c.DataStreamStatsOut <- &Stats{Kind: UpstreamRxKind, Values: stats.RxStats}
-				}
+			case msg.PeerDisconnectLocalType, msg.PeerDisconnectRemoteType:
+				// Return an error here. Peer should not have disconnected.
+				err := processUnexpectedPeerDisconnect(notif)
+				return (*Client).cleanup, err
 
 			default:
-				return (*Client).cleanup, &UnexpectedPeerRespError{Message: "unexpected notification type."}
+				return (*Client).cleanup, &PeerError{
+					What:   "unexpected response from peer",
+					Actual: notif.Type,
+					Expected: fmt.Sprintf("one of: %s, %s, %s, or %s",
+						msg.TransmitDoneType,
+						msg.StatsNotificationType,
+						msg.PeerDisconnectRemoteType,
+						msg.PeerDisconnectLocalType),
+				}
 			}
 		case txStat, ok := <-txStatsPollResp:
 			if !ok {
@@ -377,10 +432,14 @@ Done:
 			case *openperf.GetTxStatsResponse:
 				c.DataStreamStatsOut <- &Stats{Kind: UpstreamTxKind, Values: stats}
 			case error:
-				return (*Client).cleanup, &OpenperfError{Message: stats.Error()}
+				return (*Client).cleanup, &OpenperfError{Err: stats}
 
 			default:
-				return (*Client).cleanup, &UnexpectedOpenperfRespError{Message: "unexpected notification type."}
+				return (*Client).cleanup, &OpenperfError{
+					Actual:   fmt.Sprintf("%T", txStat),
+					Expected: "openperf.GetTxStatsResponse",
+					What:     "sent an openperf.GetTxStatsRequest and got an unexpected response. ",
+				}
 			}
 
 		case rxStat, ok := <-rxStatsPollResp:
@@ -393,10 +452,14 @@ Done:
 			case *openperf.GetRxStatsResponse:
 				c.DataStreamStatsOut <- &Stats{Kind: DownstreamRxKind, Values: stats}
 			case error:
-				return (*Client).cleanup, &OpenperfError{Message: stats.Error()}
+				return (*Client).cleanup, &OpenperfError{Err: stats}
 
 			default:
-				return (*Client).cleanup, &UnexpectedOpenperfRespError{Message: "unexpected notification type."}
+				return (*Client).cleanup, &OpenperfError{
+					Actual:   fmt.Sprintf("%T", rxStat),
+					Expected: "openperf.GetRxStatsResponse",
+					What:     "sent an openperf.GetRxStatsRequest and got an unexpected response. ",
+				}
 
 			}
 
@@ -433,10 +496,14 @@ Done:
 					case *openperf.GetTxStatsResponse:
 						c.DataStreamStatsOut <- &Stats{Kind: UpstreamTxKind, Values: stat}
 					case error:
-						return (*Client).cleanup, &OpenperfError{Message: stat.Error()}
+						return (*Client).cleanup, &OpenperfError{Err: stat}
 
 					default:
-						return (*Client).cleanup, &UnexpectedOpenperfRespError{Message: "unexpected notification type."}
+						return (*Client).cleanup, &OpenperfError{
+							Actual:   fmt.Sprintf("%T", lastStat),
+							Expected: "openperf.GetTxStatsResponse",
+							What:     "sent an openperf.GetTxStatsRequest and got an unexpected response. ",
+						}
 
 					}
 				}
@@ -452,10 +519,14 @@ Done:
 				}
 
 			case error:
-				return (*Client).cleanup, &OpenperfError{Message: generator.Error()}
+				return (*Client).cleanup, &OpenperfError{Err: generator}
 
 			default:
-				return (*Client).cleanup, &UnexpectedOpenperfRespError{Message: "unexpected notification type."}
+				return (*Client).cleanup, &OpenperfError{
+					Actual:   fmt.Sprintf("%T", gen),
+					Expected: "openperf.GetGeneratorResponse",
+					What:     "sent an openperf.GetGeneratorRequest and got an unexpected response. ",
+				}
 			}
 		}
 	}
@@ -468,17 +539,18 @@ func (c *Client) done(ctx context.Context) (clientStateFunc, error) {
 	c.enter("done")
 
 	//Get EOT results from server.
-	c.PeerCmdOut <- &msg.Message{
-		Type: msg.GetFinalStatsType,
+	if err := c.getFinalServerStats(); err != nil {
+		return (*Client).cleanup, err
 	}
 
-	//Wait for EOT results from server.
-	_, ok := c.waitForPeerResponse(msg.FinalStatsType)
-	if ok != nil {
-		return (*Client).cleanup, ok
+	//Get EOT results from client (aka local Openperf).
+	if err := c.getFinalClientTxStats(ctx); err != nil {
+		return (*Client).cleanup, err
 	}
 
-	//XXX: final stats will be processed here.
+	if err := c.getFinalClientRxStats(ctx); err != nil {
+		return (*Client).cleanup, err
+	}
 
 	return (*Client).cleanup, nil
 }
@@ -491,23 +563,20 @@ func (c *Client) cleanup(ctx context.Context) (clientStateFunc, error) {
 		reqDone := make(chan struct{})
 		req := &openperf.Command{
 			Request: &openperf.DeleteGeneratorRequest{
-				Id: "Generator-one"},
+				Id: "Generator-one"}, //XXX: hardcoded for now as a placeholder.
 			Done: reqDone,
 			Ctx:  ctx,
 		}
 
 		c.OpenperfCmdOut <- req
 
-		timeout := time.After(c.OpenperfTimeout)
-		select {
-		case <-reqDone:
-			if req.Response != nil {
-				return nil, &OpenperfError{Message: req.Response.(error).Error()}
-			}
+		// Wait for request to finish one way or another. OP controller ensures this never gets stuck.
+		<-reqDone
 
-		case <-timeout:
-			//OP took too long to respond.
+		if req.Response != nil {
+			return nil, &OpenperfError{Err: req.Response.(error)}
 		}
+
 	}
 
 	return nil, nil
@@ -515,25 +584,233 @@ func (c *Client) cleanup(ctx context.Context) (clientStateFunc, error) {
 
 func (c *Client) waitForPeerResponse(expectedType string) (*msg.Message, error) {
 
-	select {
-	case resp, ok := <-c.PeerRespIn:
-		if !ok {
-			return nil, &MessagingError{Message: "error reading from peer response channel."}
+	for {
+		select {
+		case resp, ok := <-c.PeerRespIn:
+			if !ok {
+				return nil, &PeerError{What: "error reading from peer response channel."}
+			}
+
+			switch resp.Type {
+			case expectedType:
+				return resp, nil
+
+			case msg.ErrorType:
+				val, ok := resp.Value.(error)
+				if !ok {
+					return nil, &PeerError{}
+				}
+				return nil, &PeerError{Err: val}
+			}
+
+			return nil, &PeerError{
+				What:     "unexpected response from peer",
+				Actual:   resp.Type,
+				Expected: expectedType}
+
+		case notif, ok := <-c.PeerNotifIn:
+
+			if !ok {
+				return nil, &PeerError{What: "error reading from peer notification channel."}
+			}
+
+			switch notif.Type {
+			case msg.PeerDisconnectLocalType, msg.PeerDisconnectRemoteType:
+				return nil, processUnexpectedPeerDisconnect(notif)
+
+			case msg.StatsNotificationType:
+				// Sometimes upstream-only tests can have an in-flight stats notification from
+				// the server when the TransmitDoneType message is sent.
+				// Handle it here lest the stats are lost.
+				if err := c.handleStatsNotification(notif); err != nil {
+					return nil, err
+				}
+			default:
+				return nil, &PeerError{
+					What:   "unexpected response from peer",
+					Actual: notif.Type,
+					Expected: fmt.Sprintf("one of: %s, %s, or %s",
+						msg.PeerDisconnectRemoteType,
+						msg.PeerDisconnectLocalType,
+						msg.StatsNotificationType),
+				}
+
+			}
+
+		case <-time.After(c.PeerTimeout):
+			return nil, &TimeoutError{Operation: "waiting for a reply from peer."}
 		}
-
-		switch resp.Type {
-		case expectedType:
-			return resp, nil
-
-		case msg.ErrorType:
-			return nil, &PeerError{Message: resp.Value.(string)}
-		}
-
-		return nil, &UnexpectedPeerRespError{Message: fmt.Sprintf("got unexpected message type %s. Expected %s.", resp.Type, expectedType)}
-
-	case <-time.After(c.PeerTimeout):
-		return nil, &TimeoutError{Message: "waiting for a reply from peer."}
 	}
+
+	return nil, &InternalError{Message: "waiting for a peer response."}
+}
+
+func (c *Client) handleStatsNotification(notif *msg.Message) error {
+	stats, ok := notif.Value.(*msg.DataStreamStats)
+	if !ok {
+		return &PeerError{
+			What:     fmt.Sprintf("message with type %s, ", notif.Type),
+			Actual:   fmt.Sprintf("%T", notif.Value),
+			Expected: fmt.Sprintf("%T", &msg.DataStreamStats{}),
+		}
+	}
+
+	if stats.TxStats != nil {
+		c.DataStreamStatsOut <- &Stats{Kind: DownstreamTxKind, Values: stats.TxStats}
+	}
+
+	if stats.RxStats != nil {
+		c.DataStreamStatsOut <- &Stats{Kind: UpstreamRxKind, Values: stats.RxStats}
+	}
+
+	return nil
+}
+
+func processUnexpectedPeerDisconnect(notif *msg.Message) error {
+
+	switch notif.Type {
+	case msg.PeerDisconnectLocalType:
+		peerDisconn, ok := notif.Value.(*msg.PeerDisconnectLocalNotif)
+		if !ok {
+			return &PeerError{
+				What:     fmt.Sprintf("message with type %s, ", notif.Type),
+				Actual:   fmt.Sprintf("%T", notif.Value),
+				Expected: fmt.Sprintf("%T", &msg.PeerDisconnectLocalNotif{}),
+			}
+		}
+
+		return &UnexpectedPeerDisconnectError{Err: peerDisconn.Err, Local: true}
+
+	case msg.PeerDisconnectRemoteType:
+		peerDisconn, ok := notif.Value.(*msg.PeerDisconnectRemoteNotif)
+		if !ok {
+			return &PeerError{
+				What:     fmt.Sprintf("message with type %s, ", notif.Type),
+				Actual:   fmt.Sprintf("%T", notif.Value),
+				Expected: fmt.Sprintf("%T", &msg.PeerDisconnectRemoteNotif{}),
+			}
+		}
+
+		return &UnexpectedPeerDisconnectError{Err: errors.New(peerDisconn.Err), Local: false}
+
+	default:
+		return &PeerError{
+			What:   "unexpected response from peer",
+			Actual: notif.Type,
+			Expected: fmt.Sprintf("one of: %s or %s",
+				msg.PeerDisconnectRemoteType,
+				msg.PeerDisconnectLocalType),
+		}
+	}
+}
+
+func (c *Client) getFinalServerStats() error {
+	c.PeerCmdOut <- &msg.Message{
+		Type: msg.GetFinalStatsType,
+	}
+
+	//Wait for EOT results from server.
+	resp, respErr := c.waitForPeerResponse(msg.FinalStatsType)
+	if respErr != nil {
+		return respErr
+	}
+
+	stats, ok := resp.Value.(*msg.FinalStats)
+	if !ok {
+		return &PeerError{
+			What:     fmt.Sprintf("message with type %s, ", resp.Type),
+			Actual:   fmt.Sprintf("%T", resp.Value),
+			Expected: fmt.Sprintf("%T", &msg.FinalStats{}),
+		}
+	}
+
+	if stats.TxStats != nil {
+		c.DataStreamStatsOut <- &Stats{Kind: DownstreamTxKind, Values: stats.TxStats, Final: true}
+	}
+
+	if stats.RxStats != nil {
+		c.DataStreamStatsOut <- &Stats{Kind: UpstreamRxKind, Values: stats.RxStats, Final: true}
+	}
+
+	return nil
+}
+
+func (c *Client) getFinalClientTxStats(ctx context.Context) error {
+
+	// Do we need to get TxStats?
+	if c.TestConfiguration.UpstreamRateBps <= 0 {
+		return nil
+	}
+
+	reqDone := make(chan struct{})
+	opCtx, opCancel := context.WithTimeout(ctx, c.OpenperfTimeout)
+	defer opCancel()
+
+	req := &openperf.Command{
+		Request: &openperf.GetTxStatsRequest{},
+		Done:    reqDone,
+		Ctx:     opCtx,
+	}
+
+	c.OpenperfCmdOut <- req
+
+	<-reqDone
+
+	switch resp := req.Response.(type) {
+	case *openperf.GetTxStatsResponse:
+		c.DataStreamStatsOut <- &Stats{Kind: UpstreamTxKind, Values: resp, Final: true}
+
+	case error:
+		return resp
+
+	default:
+		return &OpenperfError{
+			Actual:   fmt.Sprintf("%T", req.Response),
+			Expected: "openperf.GetTxStatsResponse",
+			What:     "sent an openperf.GetTxStatsRequest and got an unexpected response. ",
+		}
+	}
+
+	return nil
+}
+
+func (c *Client) getFinalClientRxStats(ctx context.Context) error {
+
+	// Do we need to get RxStats?
+	if c.TestConfiguration.DownstreamRateBps <= 0 {
+		return nil
+	}
+
+	reqDone := make(chan struct{})
+	opCtx, opCancel := context.WithTimeout(ctx, c.OpenperfTimeout)
+	defer opCancel()
+
+	req := &openperf.Command{
+		Request: &openperf.GetRxStatsRequest{},
+		Done:    reqDone,
+		Ctx:     opCtx,
+	}
+
+	c.OpenperfCmdOut <- req
+
+	<-reqDone
+
+	switch resp := req.Response.(type) {
+	case *openperf.GetRxStatsResponse:
+		c.DataStreamStatsOut <- &Stats{Kind: DownstreamRxKind, Values: resp, Final: true}
+
+	case error:
+		return resp
+
+	default:
+		return &OpenperfError{
+			Actual:   fmt.Sprintf("%T", req.Response),
+			Expected: "openperf.GetRxStatsResponse",
+			What:     "sent an openperf.GetRxStatsRequest and got an unexpected response. ",
+		}
+	}
+
+	return nil
 }
 
 func (c *Client) startOpenperfCmdRepeater(ctx context.Context, cmd *openperf.Command, interval time.Duration) (responses chan interface{}, cancelFn context.CancelFunc) {
