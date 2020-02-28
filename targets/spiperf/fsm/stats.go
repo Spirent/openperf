@@ -3,13 +3,14 @@ package fsm
 type StatsKind string
 
 const (
-	UpstreamTxKind   = "UpstreamTxKind"
-	UpstreamRxKind   = "UpstreamRxKind"
 	DownstreamTxKind = "DownstreamTxKind"
 	DownstreamRxKind = "DownstreamRxKind"
+	UpstreamTxKind   = "UpstreamTxKind"
+	UpstreamRxKind   = "UpstreamRxKind"
 )
 
 type Stats struct {
+	Final  bool
 	Kind   StatsKind
 	Values interface{}
 }
