@@ -101,7 +101,7 @@ var _ = Describe("Client FSM,", func() {
 			It("terminates with an error", func(done Done) {
 				peerRespIn <- &msg.Message{
 					Type:  msg.ErrorType,
-					Value: "server error",
+					Value: errors.New("server error"),
 				}
 
 				ret := <-fsmReturn
@@ -136,7 +136,7 @@ var _ = Describe("Client FSM,", func() {
 				}
 
 				ret := <-fsmReturn
-				Expect(ret).To(BeAssignableToTypeOf(&MessagingError{}))
+				Expect(ret).To(BeAssignableToTypeOf(&MalformedPeerMessageError{}))
 				Expect(ret.Error()).ToNot(BeEmpty())
 				Expect(peerCmdOut).To(BeClosed())
 
@@ -200,7 +200,7 @@ var _ = Describe("Client FSM,", func() {
 				It("terminates with an error", func(done Done) {
 					peerRespIn <- &msg.Message{
 						Type:  msg.ErrorType,
-						Value: "server error",
+						Value: errors.New("server error"),
 					}
 
 					ret := <-fsmReturn
@@ -268,7 +268,7 @@ var _ = Describe("Client FSM,", func() {
 
 					ret := <-fsmReturn
 					Expect(ret).To(
-						BeAssignableToTypeOf(&MessagingError{}))
+						BeAssignableToTypeOf(&MalformedPeerMessageError{}))
 					Expect(ret.Error()).ToNot(BeEmpty())
 					Expect(ret.Error()).ToNot(BeEmpty())
 					Expect(peerCmdOut).To(BeClosed())
@@ -323,7 +323,7 @@ var _ = Describe("Client FSM,", func() {
 					It("exits with an error", func(done Done) {
 						peerRespIn <- &msg.Message{
 							Type:  msg.ErrorType,
-							Value: "error with configuration",
+							Value: errors.New("error with configuration"),
 						}
 
 						drainOpenperfCommands(opCmdOut, peerCmdOut)
@@ -437,7 +437,7 @@ var _ = Describe("Client FSM,", func() {
 							It("exits with an error", func(done Done) {
 								peerRespIn <- &msg.Message{
 									Type:  msg.ErrorType,
-									Value: "error with configuration",
+									Value: errors.New("error with configuration"),
 								}
 
 								drainOpenperfCommands(opCmdOut, peerCmdOut)
@@ -554,7 +554,7 @@ var _ = Describe("Client FSM,", func() {
 								It("exits with an error", func(done Done) {
 									peerNotifIn <- &msg.Message{
 										Type:  msg.ErrorType,
-										Value: "error with rx stats",
+										Value: errors.New("error with rx stats"),
 									}
 
 									ret := <-fsmReturn
@@ -639,7 +639,7 @@ var _ = Describe("Client FSM,", func() {
 									It("exits with an error", func(done Done) {
 										peerRespIn <- &msg.Message{
 											Type:  msg.ErrorType,
-											Value: "error gathering final stats"}
+											Value: errors.New("error gathering final stats")}
 
 										ret := <-fsmReturn
 										Expect(ret).To(BeAssignableToTypeOf(&PeerError{}))
