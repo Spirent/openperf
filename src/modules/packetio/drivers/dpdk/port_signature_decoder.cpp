@@ -8,6 +8,8 @@
 #include "spirent_pga/api.h"
 #include "utils/soa_container.hpp"
 
+#include "timesync/chrono.hpp"
+
 namespace openperf::packetio::dpdk::port {
 
 static constexpr auto chunk_size = 32U;
@@ -15,23 +17,58 @@ static constexpr auto signature_size = 20U;
 
 template <typename T> using chunk_array = std::array<T, chunk_size>;
 
+/*
+ * The timestamp in the Spirent signature field is 38 bits long and
+ * contains 2.5ns ticks. Hence, we have 400000000 ticks per second
+ * and need to mask out the lower 38 bits when calculating the
+ * wall-clock offset.
+ */
+static constexpr uint64_t offset_mask = 0xffffffc000000000;
+using phxtime = std::chrono::duration<int64_t, std::ratio<1, 400000000>>;
+
+inline int64_t to_nanoseconds(const phxtime timestamp, const phxtime offset)
+{
+    return (
+        std::chrono::duration_cast<std::chrono::nanoseconds>(timestamp + offset)
+            .count());
+}
+
+inline phxtime get_phxtime_offset(const std::chrono::seconds epoch_offset)
+{
+    auto now = timesync::chrono::realtime::now();
+
+    auto phx_offset = std::chrono::duration_cast<phxtime>(now.time_since_epoch()
+                                                          - epoch_offset);
+    auto phx_fudge = phxtime{phx_offset.count() & offset_mask};
+    return (epoch_offset + phx_fudge);
+}
+
 static uint16_t detect_signatures([[maybe_unused]] uint16_t port_id,
                                   [[maybe_unused]] uint16_t queue_id,
                                   rte_mbuf* packets[],
                                   uint16_t nb_packets,
                                   [[maybe_unused]] uint16_t max_packets,
-                                  [[maybe_unused]] void* user_param)
+                                  void* user_param)
 {
-    using payload_container =
-        utils::soa_container<chunk_array,
-                             std::tuple<const uint8_t*, std::byte[20]>>;
-    using sig_container =
-        utils::soa_container<chunk_array,
-                             std::tuple<uint32_t, uint32_t, uint64_t, int>>;
+    using payload_container = openperf::utils::
+        soa_container<chunk_array, std::tuple<const uint8_t*, std::byte[20]>>;
+    using sig_container = openperf::utils::soa_container<
+        chunk_array,
+        std::tuple<uint32_t, uint32_t, uint64_t, int>>;
 
     payload_container payloads;
     sig_container signatures;
     auto crc_matches = std::array<int, chunk_size>{};
+
+    /*
+     * Given the epoch offset, find the offset that will shift the 38 bit,
+     * 2.5 ns timestamp field to the current wall clock time, in nanoseconds.
+     * The epoch_offset should be the number of seconds since the beginning
+     * of the current year.
+     */
+    auto epoch_offset =
+        std::chrono::seconds{reinterpret_cast<time_t>(user_param)};
+    auto offset = get_phxtime_offset(epoch_offset);
 
     auto start = 0U;
     while (start < nb_packets) {
@@ -72,11 +109,13 @@ static uint16_t detect_signatures([[maybe_unused]] uint16_t port_id,
                 if (crc_matches[idx]
                     && (pga_status_flag(std::get<3>(sig))
                         == pga_signature_status::valid)) {
-                    mbuf_signature_set(packets[start + idx],
-                                       std::get<0>(sig),
-                                       std::get<1>(sig),
-                                       std::get<2>(sig),
-                                       std::get<3>(sig));
+
+                    mbuf_signature_set(
+                        packets[start + idx],
+                        std::get<0>(sig),
+                        std::get<1>(sig),
+                        to_nanoseconds(phxtime{std::get<2>(sig)}, offset),
+                        std::get<3>(sig));
                 }
             }
         }
@@ -126,9 +165,11 @@ void callback_signature_decoder::enable()
            "Enabling software Spirent signature detection on port %u\n",
            m_port);
 
+    auto offset = utils::get_timestamp_epoch_offset();
+
     for (auto q = 0U; q < model::port_info(port_id()).rx_queue_count(); q++) {
-        auto cb =
-            rte_eth_add_rx_callback(port_id(), q, detect_signatures, nullptr);
+        auto cb = rte_eth_add_rx_callback(
+            port_id(), q, detect_signatures, reinterpret_cast<void*>(offset));
         if (!cb) {
             throw std::runtime_error("Could not add timestamp callback");
         }

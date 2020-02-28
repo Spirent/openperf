@@ -99,6 +99,20 @@ struct realtime
 
         return (time_point(to_duration(bt + th->offset)));
     }
+
+    static std::time_t to_time_t(const time_point& tp) noexcept
+    {
+        return (std::time_t(std::chrono::duration_cast<std::chrono::seconds>(
+                                tp.time_since_epoch())
+                                .count()));
+    }
+
+    static time_point from_time_t(std::time_t t) noexcept
+    {
+        using from_t = std::chrono::time_point<realtime, std::chrono::seconds>;
+        return (std::chrono::time_point_cast<realtime::duration>(
+            from_t{std::chrono::seconds{t}}));
+    }
 };
 
 struct monotime
