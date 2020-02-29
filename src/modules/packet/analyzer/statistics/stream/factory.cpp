@@ -93,12 +93,14 @@ auto make_counters_constructor_index(std::index_sequence<I...>)
  * Since our possible flag values range from [0, all_stream_counters],
  * we can use an integer sequence to handle generating every value without
  * having to manually enumerate every one.
+ * Note: we have to add one because make_index_sequence generates values from
+ * 0 to n-1.
  */
 generic_stream_counters
 make_counters(openperf::utils::bit_flags<stream_flags> flags)
 {
     const static auto constructors = stream::make_counters_constructor_index(
-        std::make_index_sequence<stream::to_value(all_stream_counters)>{});
+        std::make_index_sequence<stream::to_value(all_stream_counters) + 1>{});
     return (constructors[stream::to_value(flags)]());
 }
 
