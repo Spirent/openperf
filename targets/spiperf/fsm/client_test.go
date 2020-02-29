@@ -270,11 +270,29 @@ var _ = Describe("Client FSM,", func() {
 					Expect(ret).To(
 						BeAssignableToTypeOf(&MalformedPeerMessageError{}))
 					Expect(ret.Error()).ToNot(BeEmpty())
-					Expect(ret.Error()).ToNot(BeEmpty())
 					Expect(peerCmdOut).To(BeClosed())
 
 					close(done)
 				})
+			})
+
+			Context("when server disconnects unexpectedly instead of returning a value, ", func() {
+				It("terminates with an error", func(done Done) {
+					peerNotifIn <- &msg.Message{
+						Type:  msg.PeerDisconnectLocalType,
+						Value: &msg.PeerDisconnectLocalNotif{Err: errors.New("JSON encoder error")},
+					}
+
+					ret := <-fsmReturn
+					Expect(ret).To(
+						BeAssignableToTypeOf(&UnexpectedPeerDisconnectError{}))
+					Expect(ret.Error()).ToNot(BeEmpty())
+					Expect(ret.(*UnexpectedPeerDisconnectError).Local).To(BeTrue())
+					Expect(peerCmdOut).To(BeClosed())
+
+					close(done)
+				})
+
 			})
 
 			// At this point the test diverges along three paths based on test traffic flow:
@@ -492,6 +510,60 @@ var _ = Describe("Client FSM,", func() {
 							})
 						})
 
+						Context("server ACKs start command, when peer disconnects during armed state, ", func() {
+							It("exits with an error", func(done Done) {
+								//ACK start command.
+								peerRespIn <- &msg.Message{
+									Type: msg.AckType,
+								}
+
+								peerNotifIn <- &msg.Message{
+									Type:  msg.PeerDisconnectRemoteType,
+									Value: &msg.PeerDisconnectRemoteNotif{Err: "aborting test."},
+								}
+
+								drainOpenperfCommands(opCmdOut, peerCmdOut)
+
+								ret := <-fsmReturn
+								Expect(ret).To(
+									BeAssignableToTypeOf(&UnexpectedPeerDisconnectError{}))
+								Expect(ret.Error()).ToNot(BeEmpty())
+								Expect(ret.(*UnexpectedPeerDisconnectError).Local).To(BeFalse())
+								Expect(peerCmdOut).To(BeClosed())
+								Expect(fsm.State()).To(Equal("cleanup"))
+
+								close(done)
+							}, assertEpsilon.Seconds())
+
+						})
+
+						Context("server ACKs start command, when local peer interface errors during armed state, ", func() {
+							It("exits with an error", func(done Done) {
+								//ACK start command.
+								peerRespIn <- &msg.Message{
+									Type: msg.AckType,
+								}
+
+								peerNotifIn <- &msg.Message{
+									Type:  msg.PeerDisconnectLocalType,
+									Value: &msg.PeerDisconnectLocalNotif{Err: errors.New("unexpected local peer communcation error")},
+								}
+
+								drainOpenperfCommands(opCmdOut, peerCmdOut)
+
+								ret := <-fsmReturn
+								Expect(ret).To(
+									BeAssignableToTypeOf(&UnexpectedPeerDisconnectError{}))
+								Expect(ret.Error()).ToNot(BeEmpty())
+								Expect(ret.(*UnexpectedPeerDisconnectError).Local).To(BeTrue())
+								Expect(peerCmdOut).To(BeClosed())
+								Expect(fsm.State()).To(Equal("cleanup"))
+
+								close(done)
+							}, assertEpsilon.Seconds())
+
+						})
+
 						Context("server ACKs start command, it transitions to armed state, sleeps until start time, it transitions to runningTx state, client is transmitting, ", func() {
 
 							// At this point the test is running and we need to respond to
@@ -558,12 +630,33 @@ var _ = Describe("Client FSM,", func() {
 									}
 
 									ret := <-fsmReturn
-									Expect(ret).To(BeAssignableToTypeOf(&PeerError{}))
+									Expect(ret).To(BeAssignableToTypeOf(&UnexpectedPeerRespError{}))
 									Expect(peerCmdOut).To(BeClosed())
 									Expect(fsm.State()).To(Equal("cleanup"))
 
 									close(done)
 								}, assertEpsilon.Seconds())
+							})
+
+							Context("when server disconnects while test is running, ", func() {
+								It("exits with an error", func(done Done) {
+									peerNotifIn <- &msg.Message{
+										Type:  msg.PeerDisconnectRemoteType,
+										Value: &msg.PeerDisconnectRemoteNotif{Err: "aborting test."},
+									}
+
+									ret := <-fsmReturn
+									Expect(ret).To(
+										BeAssignableToTypeOf(&UnexpectedPeerDisconnectError{}))
+									Expect(ret.Error()).ToNot(BeEmpty())
+									Expect(ret.(*UnexpectedPeerDisconnectError).Local).To(BeFalse())
+									Expect(peerCmdOut).To(BeClosed())
+									Expect(fsm.State()).To(Equal("cleanup"))
+
+									close(done)
+
+								}, assertEpsilon.Seconds())
+
 							})
 
 							Context("when openperf returns an error while polling generator, ", func() {

@@ -270,7 +270,44 @@ func (c *Client) armed(ctx context.Context) (clientStateFunc, error) {
 	c.enter("armed")
 
 	// Wait for then to become now (aka test to start.)
-	time.Sleep(time.Until(c.startTime))
+	// Also make sure peer didn't disappear on us.
+Done:
+	for {
+		select {
+		case <-time.After(time.Until(c.startTime)):
+			break Done
+
+		case notif, ok := <-c.PeerNotifIn:
+			if !ok {
+				return (*Client).cleanup, &MessagingError{Err: errors.New("error reading peer notifications.")}
+			}
+
+			switch notif.Type {
+			case msg.StatsNotificationType:
+				// There is a chance the server will start sending stats
+				// before we switch to the running state.
+				// This is not an error and we need to handle accordingly.
+				if err := c.handleStatsNotification(notif); err != nil {
+					return (*Client).cleanup, err
+				}
+
+			case msg.PeerDisconnectLocalType, msg.PeerDisconnectRemoteType:
+				// Return an error here. Peer should not have disconnected.
+				err := processUnexpectedPeerDisconnect(notif)
+				return (*Client).cleanup, err
+
+			default:
+				return (*Client).cleanup, &UnexpectedPeerRespError{
+					Actual: notif.Type,
+					Expected: fmt.Sprintf("one of: %s, %s, or %s",
+						msg.StatsNotificationType,
+						msg.PeerDisconnectRemoteType,
+						msg.PeerDisconnectLocalType),
+				}
+			}
+
+		}
+	}
 
 	return (*Client).running, nil
 }
@@ -355,12 +392,6 @@ Done:
 			}
 
 			switch notif.Type {
-			case msg.ErrorType:
-				val, ok := notif.Value.(error)
-				if !ok {
-					return (*Client).cleanup, &PeerError{}
-				}
-				return (*Client).cleanup, &PeerError{Err: val}
 			case msg.TransmitDoneType:
 				serverRunning = false
 				rxStatsPollCancel()
@@ -368,28 +399,25 @@ Done:
 				if !clientRunning {
 					break Done
 				}
+
 			case msg.StatsNotificationType:
-				stats, ok := notif.Value.(*msg.RuntimeStats)
-				if !ok {
-					return (*Client).cleanup, &MalformedPeerMessageError{
-						Type:              msg.StatsNotificationType,
-						ActualValueType:   fmt.Sprintf("%T", notif.Value),
-						ExpectedValueType: fmt.Sprintf("%T", &msg.RuntimeStats{}),
-					}
+				if err := c.handleStatsNotification(notif); err != nil {
+					return (*Client).cleanup, err
 				}
 
-				if stats.TxStats != nil {
-					c.DataStreamStatsOut <- &Stats{Kind: DownstreamTxKind, Values: stats.TxStats}
-				}
-
-				if stats.RxStats != nil {
-					c.DataStreamStatsOut <- &Stats{Kind: UpstreamRxKind, Values: stats.RxStats}
-				}
+			case msg.PeerDisconnectLocalType, msg.PeerDisconnectRemoteType:
+				// Return an error here. Peer should not have disconnected.
+				err := processUnexpectedPeerDisconnect(notif)
+				return (*Client).cleanup, err
 
 			default:
 				return (*Client).cleanup, &UnexpectedPeerRespError{
-					Actual:   notif.Type,
-					Expected: msg.TransmitDoneType + " or " + msg.StatsNotificationType,
+					Actual: notif.Type,
+					Expected: fmt.Sprintf("one of: %s, %s, %s, or %s",
+						msg.TransmitDoneType,
+						msg.StatsNotificationType,
+						msg.PeerDisconnectRemoteType,
+						msg.PeerDisconnectLocalType),
 				}
 			}
 		case txStat, ok := <-txStatsPollResp:
@@ -556,28 +584,118 @@ func (c *Client) cleanup(ctx context.Context) (clientStateFunc, error) {
 
 func (c *Client) waitForPeerResponse(expectedType string) (*msg.Message, error) {
 
-	select {
-	case resp, ok := <-c.PeerRespIn:
-		if !ok {
-			return nil, &MessagingError{Err: errors.New("error reading from peer response channel.")}
-		}
-
-		switch resp.Type {
-		case expectedType:
-			return resp, nil
-
-		case msg.ErrorType:
-			val, ok := resp.Value.(error)
+	for {
+		select {
+		case resp, ok := <-c.PeerRespIn:
 			if !ok {
-				return nil, &PeerError{}
+				return nil, &MessagingError{Err: errors.New("error reading from peer response channel.")}
 			}
-			return nil, &PeerError{Err: val}
+
+			switch resp.Type {
+			case expectedType:
+				return resp, nil
+
+			case msg.ErrorType:
+				val, ok := resp.Value.(error)
+				if !ok {
+					return nil, &PeerError{}
+				}
+				return nil, &PeerError{Err: val}
+			}
+
+			return nil, &UnexpectedPeerRespError{Actual: resp.Type, Expected: expectedType}
+
+		case notif, ok := <-c.PeerNotifIn:
+
+			if !ok {
+				return nil, &MessagingError{Err: errors.New("error reading from peer notification channel.")}
+			}
+
+			switch notif.Type {
+			case msg.PeerDisconnectLocalType, msg.PeerDisconnectRemoteType:
+				return nil, processUnexpectedPeerDisconnect(notif)
+
+			case msg.StatsNotificationType:
+				// Sometimes upstream-only tests can have an in-flight stats notification from
+				// the server when the TransmitDoneType message is sent.
+				// Handle it here lest the stats are lost.
+				if err := c.handleStatsNotification(notif); err != nil {
+					return nil, err
+				}
+			default:
+				return nil, &UnexpectedPeerRespError{
+					Actual: notif.Type,
+					Expected: fmt.Sprintf("one of: %s, %s, or %s",
+						msg.PeerDisconnectRemoteType,
+						msg.PeerDisconnectLocalType,
+						msg.StatsNotificationType),
+				}
+
+			}
+
+		case <-time.After(c.PeerTimeout):
+			return nil, &TimeoutError{Operation: "waiting for a reply from peer."}
+		}
+	}
+
+	return nil, &InternalError{Message: "waiting for a peer response."}
+}
+
+func (c *Client) handleStatsNotification(notif *msg.Message) error {
+	stats, ok := notif.Value.(*msg.RuntimeStats)
+	if !ok {
+		return &MalformedPeerMessageError{
+			Type:              msg.StatsNotificationType,
+			ActualValueType:   fmt.Sprintf("%T", notif.Value),
+			ExpectedValueType: fmt.Sprintf("%T", &msg.RuntimeStats{}),
+		}
+	}
+
+	if stats.TxStats != nil {
+		c.DataStreamStatsOut <- &Stats{Kind: DownstreamTxKind, Values: stats.TxStats}
+	}
+
+	if stats.RxStats != nil {
+		c.DataStreamStatsOut <- &Stats{Kind: UpstreamRxKind, Values: stats.RxStats}
+	}
+
+	return nil
+}
+
+func processUnexpectedPeerDisconnect(notif *msg.Message) error {
+
+	switch notif.Type {
+	case msg.PeerDisconnectLocalType:
+		peerDisconn, ok := notif.Value.(*msg.PeerDisconnectLocalNotif)
+		if !ok {
+			return &MalformedPeerMessageError{
+				Type:              notif.Type,
+				ActualValueType:   fmt.Sprintf("%T", notif.Value),
+				ExpectedValueType: fmt.Sprintf("%T", &msg.PeerDisconnectLocalNotif{}),
+			}
 		}
 
-		return nil, &UnexpectedPeerRespError{Actual: resp.Type, Expected: expectedType}
+		return &UnexpectedPeerDisconnectError{Err: peerDisconn.Err, Local: true}
 
-	case <-time.After(c.PeerTimeout):
-		return nil, &TimeoutError{Operation: "waiting for a reply from peer."}
+	case msg.PeerDisconnectRemoteType:
+		peerDisconn, ok := notif.Value.(*msg.PeerDisconnectRemoteNotif)
+		if !ok {
+			return &MalformedPeerMessageError{
+				Type:              notif.Type,
+				ActualValueType:   fmt.Sprintf("%T", notif.Value),
+				ExpectedValueType: fmt.Sprintf("%T", &msg.PeerDisconnectRemoteNotif{}),
+			}
+		}
+
+		return &UnexpectedPeerDisconnectError{Err: errors.New(peerDisconn.Err), Local: false}
+
+	default:
+		return &UnexpectedPeerRespError{
+			Actual: notif.Type,
+			Expected: fmt.Sprintf("one of: %s or %s",
+				msg.PeerDisconnectRemoteType,
+				msg.PeerDisconnectLocalType),
+		}
 	}
 }
 

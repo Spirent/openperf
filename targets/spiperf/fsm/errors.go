@@ -140,6 +140,35 @@ func (e *UnexpectedOpenperfRespError) Error() string {
 
 }
 
+// UnexpectedPeerDisconnectError returned when peer unexpectedly disconnects.
+// Disconnect can be remote (i.e. peer tells us it cannot continue) or
+// local (i.e. TCP connection closes or JSON encode/decode error.)
+type UnexpectedPeerDisconnectError struct {
+
+	//Local true if the source of the disconnect was the local instance, false otherwise.
+	Local bool
+
+	//Err optional child error.
+	Err error
+}
+
+func (e *UnexpectedPeerDisconnectError) Error() string {
+
+	childError := "unspecified error"
+	if e.Err != nil {
+		childError = e.Err.Error()
+	}
+
+	var source string
+	if e.Local {
+		source = "local"
+	} else {
+		source = "remote"
+	}
+
+	return fmt.Sprintf("unexpected peer disconnect due to %s error: %s", source, childError)
+}
+
 // UnexpectedPeerRespError returned when peer sends an unexpected response type.
 type UnexpectedPeerRespError struct {
 	//Actual response value.
