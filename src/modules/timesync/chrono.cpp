@@ -9,9 +9,9 @@ namespace detail {
 
 static bintime time_at(const timehands& th, counter::ticks t)
 {
-    return (th.ref.ticks < t
-                ? th.offset + to_bintime(t - th.ref.ticks, th.ref.freq)
-                : th.offset - to_bintime(th.ref.ticks - t, th.ref.freq));
+    const auto& data = (t < th.t_lerp ? th.lerp : th.ref);
+    return (th.t_zero < t ? data.offset + to_bintime(t - th.t_zero, data.freq)
+                          : data.offset - to_bintime(th.t_zero - t, data.freq));
 }
 
 using namespace std::chrono_literals;
@@ -24,14 +24,23 @@ std::chrono::duration<ToRep> to_seconds(std::chrono::duration<Rep, Period> from)
 }
 
 /*
- * Return a value between [100, 1] ppm based on the amount we need to adjust.
+ * Return a value between [200, 2] ppm based on the amount we need to adjust.
+ * The lower bound on the slew is to ensure that the clock converges in a
+ * finite amount of time. The longer we take to converge with the reference
+ * time, the farther it will drift!
  */
 template <class Rep, class Period>
-double get_clock_skew(std::chrono::duration<Rep, Period> d)
+double get_clock_slew(std::chrono::duration<Rep, Period> d)
 {
-    static constexpr auto scalar = 1 / 60.0;
-    return (d > d.zero() ? std::clamp((d * scalar).count(), 1e-6, 1e-4)
-                         : std::clamp((d * scalar).count(), -1e-4, -1e-6));
+    /*
+     * Arbitrary scalar value.  The trick is to find a slew slow enough that
+     * the clock doesn't oscillate noticeably, but not so slow that the
+     * reference clock drifts away before we can catch it.
+     */
+    static constexpr auto scalar = 1 / 20.0;
+    auto scaled = to_seconds<double>(d) * scalar;
+    return (d > d.zero() ? std::clamp(scaled.count(), 2e-6, 2e-4)
+                         : std::clamp(scaled.count(), -2e-4, -2e-6));
 }
 
 } // namespace detail
@@ -50,13 +59,13 @@ void keeper::setup(counter::timecounter* tc)
     auto ticks2 = tc->now();
 
     /* Naively assume now is halfway between ticks1 and ticks2 */
-    th.ref.ticks = ticks1 + ((ticks2 - ticks1) >> 1);
+    th.t_zero = ticks1 + ((ticks2 - ticks1) >> 1);
 
     /* Convert the clock to a bintime value */
-    th.offset = to_bintime(now.time_since_epoch());
+    th.ref.offset = to_bintime(now.time_since_epoch());
 
     /* No lerping, yet */
-    th.lerp.ticks = th.ref.ticks;
+    th.t_lerp = th.t_zero;
     th.generation.store(1, std::memory_order_release);
     m_now.store(std::addressof(th), std::memory_order_release);
     m_idx++;
@@ -92,14 +101,12 @@ int keeper::sync(const bintime& timestamp, counter::ticks t, counter::hz freq)
          * to 0 and are free to update the structure.
          */
         th_next->counter = th->counter;
-        th_next->offset = timestamp;
-        th_next->ref.ticks = t;
+        th_next->ref.offset = timestamp;
+        th_next->t_zero = t;
+        th_next->t_lerp = t; /* might not need to lerp */
         th_next->ref.freq = freq;
         th_next->ref.scalar = ((1ULL << 63) / freq.count()) << 1;
         th_next->lerp = th_next->ref;
-
-        /* the realtime of tick t using th_next should be the given timestamp */
-        assert(detail::time_at(*th_next, t) == timestamp);
 
         /*
          * Figure out how to incorporate this new timestamp information.
@@ -113,20 +120,28 @@ int keeper::sync(const bintime& timestamp, counter::ticks t, counter::hz freq)
                        "Jumping clock by %.09f seconds.\n",
                        detail::to_seconds<double>(jump).count());
             } else {
+                auto slew = detail::get_clock_slew(jump);
                 OP_LOG(OP_LOG_DEBUG,
-                       "Slewing clock by %.09f seconds\n",
-                       detail::to_seconds<double>(jump).count());
-                th_next->lerp.freq = counter::hz{static_cast<uint64_t>(
-                    freq.count() * (1 + detail::get_clock_skew(jump)))};
+                       "Slewing clock by %.09f seconds at %d ppm\n",
+                       detail::to_seconds<double>(jump).count(),
+                       static_cast<int>(slew * 1000000));
+                th_next->lerp.offset = detail::time_at(*th, t);
+                th_next->lerp.freq = counter::hz{
+                    static_cast<uint64_t>(freq.count() * (1 + slew))};
                 th_next->lerp.scalar =
                     ((1ULL << 63) / th_next->lerp.freq.count()) << 1;
-                th_next->lerp.ticks =
-                    th_next->ref.ticks
-                    + static_cast<counter::ticks>(
-                        detail::to_seconds<double>(std::chrono::abs(jump))
-                            .count()
-                        * th_next->lerp.freq.count());
-                assert(th_next->lerp.ticks >= th_next->ref.ticks);
+
+                /* Figure out how long it will take to make up the jump */
+                auto slew_ticks = static_cast<counter::ticks>(
+                    th_next->lerp.freq.count()
+                    * detail::to_seconds<double>(jump).count() / slew);
+                th_next->t_lerp = th_next->t_zero + slew_ticks;
+
+                /* Slewed time should be continuous */
+                assert(
+                    std::chrono::abs(to_duration(
+                        detail::time_at(*th, t) - detail::time_at(*th_next, t)))
+                    <= std::chrono::nanoseconds{1});
             }
         }
 

@@ -77,7 +77,7 @@ static bintime get_clock_offset()
 
     std::generate_n(offsets.data(), offset_calc_trials, []() {
         using sys_clock = std::chrono::high_resolution_clock;
-        using ref_clock = timesync::chrono::realtime;
+        using ref_clock = timesync::chrono::monotime;
         auto x1 = sys_clock::now();
         auto x2 = ref_clock::now();
         auto y1 = ref_clock::now();
@@ -117,7 +117,7 @@ static bintime get_clock_offset()
 static counter::ticks to_ticks(const timeval& tv)
 {
     auto local_ts = to_bintime(tv) - get_clock_offset();
-    auto [ref_time, ref_ticks] = chrono::realtime_ticks();
+    auto [ref_time, ref_ticks] = chrono::monotime_ticks();
     auto delta = ref_time - local_ts;
     auto freq = counter::frequency().count();
     auto dt = freq * delta.bt_sec + ((freq * (delta.bt_frac >> 32)) >> 32);
