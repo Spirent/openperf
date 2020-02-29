@@ -65,12 +65,15 @@ auto make_counters_constructor_index(std::index_sequence<I...>)
  * Since our possible flag values range from [0, all_protocol_counters],
  * we can use an integer sequence to handle generating every value without
  * having to manually enumerate every one.
+ * Note: we have to add one because make_index_sequence generates values from
+ * 0 to n-1.
  */
 generic_protocol_counters
 make_counters(openperf::utils::bit_flags<protocol_flags> flags)
 {
     const static auto constructors = protocol::make_counters_constructor_index(
-        std::make_index_sequence<protocol::to_value(all_protocol_counters)>{});
+        std::make_index_sequence<protocol::to_value(all_protocol_counters)
+                                 + 1>{});
     return (constructors[protocol::to_value(flags)]());
 }
 

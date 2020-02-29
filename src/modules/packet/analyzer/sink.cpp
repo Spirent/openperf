@@ -1,3 +1,6 @@
+#include <mutex>
+#include <thread>
+
 #include "packetio/internal_client.hpp"
 #include "packetio/internal_worker.hpp"
 #include "packetio/packet_buffer.hpp"
@@ -12,6 +15,8 @@ namespace openperf::packet::analyzer {
 template class statistics::stream::counter_map<
     statistics::generic_stream_counters>;
 
+static std::once_flag stream_counter_factory_init;
+
 sink_result::sink_result(const sink& parent_)
     : parent(parent_)
     , stream_shards(parent.worker_count())
@@ -21,6 +26,18 @@ sink_result::sink_result(const sink& parent_)
         std::back_inserter(protocol_shards), parent.worker_count(), [&]() {
             return (statistics::make_counters(parent.protocol_counters()));
         });
+
+    /*
+     * The counter factory functions don't perform their initialization until
+     * called.  The protocol counter factory was initialized above, however,
+     * we don't create stream counters until we receive a packet.  Hence, if
+     * we haven't done so already, ask the stream factory for a dummy counter
+     * now so that we can initialize it here instead of on the sink's fast path.
+     */
+    std::call_once(stream_counter_factory_init, []() {
+        [[maybe_unused]] auto stream_counters =
+            statistics::make_counters(statistics::all_stream_counters);
+    });
 }
 
 const std::vector<sink_result::protocol_shard>& sink_result::protocols() const
