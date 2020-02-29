@@ -11,18 +11,19 @@ namespace openperf::timesync::chrono {
 
 struct timehands_data
 {
-    counter::ticks ticks; /**< timecounter tick reference */
-    counter::hz freq;     /**< frequency to use for clock measurements */
-    uint64_t scalar;      /**< conversion factor for ticks --> bintime fraction
-                           * (1 << 64) / freq */
+    bintime offset;   /**< clock offset at reference tick value */
+    counter::hz freq; /**< frequency to use for clock measurements */
+    uint64_t scalar;  /**< conversion factor for ticks --> bintime fraction
+                       * (1 << 64) / freq */
 };
 
 struct timehands
 {
     counter::timecounter* counter; /**< counter to use for time measurements */
-    bintime offset;                /**< clock offset at reference tick value */
     timehands_data ref;            /**< reference data */
     timehands_data lerp;           /**< linear interpolation data */
+    counter::ticks t_zero;         /**< reference tick value */
+    counter::ticks t_lerp; /**< tick value where ref and lerp intersect */
     std::atomic<unsigned> generation; /**< structure version */
 };
 
@@ -40,29 +41,19 @@ public:
     timehands* timehands_now() const;
 };
 
-inline std::pair<bintime, counter::ticks> realtime_ticks()
+inline std::pair<bintime, counter::ticks> monotime_ticks()
 {
     using sec_t = decltype(bintime().bt_sec);
 
-    timehands* th = nullptr;
-    auto ticks = counter::ticks{0};
-    auto gen = 0U;
+    auto tc = counter::timecounter_now.load(std::memory_order_relaxed);
+    auto freq = tc->frequency().count();
+    auto scalar = ((1ULL << 63) / freq) << 1;
+    auto ticks = tc->now();
 
-    do {
-        th = keeper::instance().timehands_now();
-        gen = th->generation.load(std::memory_order_consume);
-        ticks = th->counter->now();
-    } while (gen == 0 || gen != th->generation.load(std::memory_order_consume));
+    auto now = bintime{.bt_sec = static_cast<sec_t>(ticks / freq),
+                       .bt_frac = (ticks % freq) * scalar};
 
-    assert(th);
-
-    /* Note: no linear interpolating here */
-    auto delta = ticks - th->ref.ticks;
-    auto freq = th->ref.freq.count();
-    auto bt = bintime{.bt_sec = static_cast<sec_t>(delta / freq),
-                      .bt_frac = (delta % freq) * th->ref.scalar};
-
-    return {bt + th->offset, ticks};
+    return {now, ticks};
 }
 
 struct realtime
@@ -91,13 +82,13 @@ struct realtime
 
         assert(th);
 
-        auto delta = ticks - th->ref.ticks;
-        auto data = (ticks < th->lerp.ticks ? &th->lerp : &th->ref);
-        auto freq = data->freq.count();
+        auto delta = ticks - th->t_zero;
+        const auto& data = (ticks < th->t_lerp ? th->lerp : th->ref);
+        auto freq = data.freq.count();
         auto bt = bintime{.bt_sec = static_cast<sec_t>(delta / freq),
-                          .bt_frac = (delta % freq) * data->scalar};
+                          .bt_frac = (delta % freq) * data.scalar};
 
-        return (time_point(to_duration(bt + th->offset)));
+        return (time_point(to_duration(bt + data.offset)));
     }
 
     static std::time_t to_time_t(const time_point& tp) noexcept
