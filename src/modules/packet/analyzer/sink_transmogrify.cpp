@@ -334,10 +334,17 @@ to_swagger(const SummaryTuple& src, statistics::stat_t count)
 
     dst->setTotal(src.total.count());
     if (src.total.count()) {
-        dst->setMin(src.min.count());
-        dst->setMax(src.max.count());
+        dst->setMin(
+            std::chrono::duration_cast<std::chrono::nanoseconds>(src.min)
+                .count());
+        dst->setMax(
+            std::chrono::duration_cast<std::chrono::nanoseconds>(src.max)
+                .count());
         if (src.min.count() != src.max.count()) {
-            dst->setStdDev(std::sqrt(src.m2.count() / (count - 1)));
+            dst->setStdDev(std::sqrt(
+                std::chrono::duration_cast<std::chrono::nanoseconds>(src.m2)
+                    .count()
+                / (count - 1)));
         }
     }
 

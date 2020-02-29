@@ -61,13 +61,13 @@ struct summary<ValueType, SumType>
     var_t m2 = var_t{0};
 };
 
-template <typename Rep1, typename Rep2, typename Period>
-struct summary<std::chrono::duration<Rep1, Period>,
-               std::chrono::duration<Rep2, Period>>
+template <typename Rep1, typename Rep2, typename Period1, typename Period2>
+struct summary<std::chrono::duration<Rep1, Period1>,
+               std::chrono::duration<Rep2, Period2>>
 {
-    using pop_t = std::chrono::duration<Rep1, Period>;
-    using sum_t = std::chrono::duration<Rep2, Period>;
-    using var_t = std::chrono::duration<float, Period>;
+    using pop_t = std::chrono::duration<Rep1, Period1>;
+    using sum_t = std::chrono::duration<Rep2, Period2>;
+    using var_t = std::chrono::duration<float, Period1>;
 
     static_assert(
         std::is_convertible_v<pop_t, sum_t>,
@@ -90,18 +90,39 @@ struct frame_length final : summary<uint16_t, int64_t>
  * totally overkill for our use, but there aren't any sizes
  * in between...
  */
-using short_duration = std::chrono::duration<int32_t, std::nano>;
 using long_duration = std::chrono::duration<int64_t, std::nano>;
+using short_duration = std::chrono::duration<int32_t, std::nano>;
+using ushort_duration = std::chrono::duration<uint32_t, std::nano>;
 
 struct interarrival final : summary<long_duration, long_duration>
 {};
 
-struct jitter_ipdv final : summary<short_duration, long_duration>
+/*
+ * In order to fit all possible values, jitter_ipdv needs to have twice the
+ * range of latency.  It must be able to store the difference between
+ * latency::max() and latency::min(). To do that with a signed, 32-bit value
+ * we use 2ns as our unit.
+ * This version of jitter is defined in RFC 3393.
+ */
+using jitter_duration =
+    std::chrono::duration<int32_t,
+                          std::ratio_multiply<std::ratio<2>, std::nano>>;
+
+struct jitter_ipdv final : summary<jitter_duration, long_duration>
 {};
 
-struct jitter_rfc final : summary<short_duration, long_duration>
+/*
+ * Jitter RFC uses an absolute value, so we can simply use an unsigned
+ * population value to cover the range.
+ * This version of jitter is defined in RFC 4689
+ */
+struct jitter_rfc final : summary<ushort_duration, long_duration>
 {};
 
+/*
+ * Latency is more properly called delay.  It is also known as one-way delay.
+ * It is calculated by subtracting the receive time from the transmit time.
+ */
 struct latency final : summary<short_duration, long_duration>
 {
     long_duration last_ = long_duration::zero();
@@ -312,7 +333,7 @@ void update(StatsTuple& tuple,
 
             if (last_delay) {
                 if constexpr (has_type<jitter_rfc, StatsTuple>::value) {
-                    auto jitter = abs(delay - *last_delay);
+                    auto jitter = std::chrono::abs(delay - *last_delay);
                     update(get_counter<jitter_rfc, StatsTuple>(tuple),
                            jitter,
                            frames.count);
@@ -323,7 +344,9 @@ void update(StatsTuple& tuple,
                     if (get_counter<sequencing, StatsTuple>(tuple).run_length
                         > 1) {
                         /* frame is in sequence */
-                        auto jitter = abs(delay - *last_delay);
+                        auto jitter =
+                            std::chrono::duration_cast<jitter_ipdv::pop_t>(
+                                delay - *last_delay);
                         update(get_counter<jitter_ipdv, StatsTuple>(tuple),
                                jitter,
                                frames.count);
