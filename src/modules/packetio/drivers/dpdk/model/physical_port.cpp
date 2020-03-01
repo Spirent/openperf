@@ -126,12 +126,12 @@ static __attribute__((const)) uint64_t filter_tx_offloads(uint64_t tx_capa)
                | DEV_TX_OFFLOAD_MULTI_SEGS));
 }
 
-static rte_eth_conf make_rte_eth_conf(port_info& info, bool use_rss)
+static rte_eth_conf make_rte_eth_conf(port_info& info)
 {
     return {.link_speeds = ETH_LINK_SPEED_AUTONEG,
             .rxmode =
                 {
-                    .mq_mode = use_rss ? ETH_MQ_RX_RSS : ETH_MQ_RX_NONE,
+                    .mq_mode = ETH_MQ_RX_RSS,
                     .max_rx_pkt_len = info.max_rx_pktlen(),
                     .offloads = filter_rx_offloads(info.rx_offloads()),
                 },
@@ -165,7 +165,7 @@ physical_port::config(const port::config_data& c)
     /* Acquire some useful data about our port... */
     auto info = port_info(m_idx);
 
-    rte_eth_conf port_conf = make_rte_eth_conf(info, info.rx_queue_count() > 1);
+    rte_eth_conf port_conf = make_rte_eth_conf(info);
 
     /* Auto-negotiation is the default config. */
     if (dpdk_config.auto_negotiation) {
@@ -336,7 +336,7 @@ physical_port::low_level_config(uint16_t nb_rxqs, uint16_t nb_txqs)
 {
     auto info = port_info(m_idx);
 
-    rte_eth_conf port_conf = make_rte_eth_conf(info, nb_rxqs > 1);
+    rte_eth_conf port_conf = make_rte_eth_conf(info);
 
     auto result = apply_port_config(info, port_conf, nb_rxqs, nb_txqs);
     if (!result) { return (result); }
