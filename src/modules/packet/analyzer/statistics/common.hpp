@@ -26,7 +26,7 @@ template <typename Clock> struct timestamp_clock
 struct counter : timestamp_clock<clock_t>
 {
     stat_t count = 0;
-    timestamp first_ = timestamp::min();
+    timestamp first_ = timestamp::max();
     timestamp last_ = timestamp::min();
 
     std::optional<timestamp> first() const
