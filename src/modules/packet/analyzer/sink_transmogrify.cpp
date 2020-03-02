@@ -140,8 +140,6 @@ inline void add_stream_counters(const statistics::generic_stream_counters& x,
 {
     using namespace openperf::packet::analyzer::statistics;
 
-    sum.get<counter>() += x.get<counter>();
-
     if (x.holds<stream::sequencing>()) {
         auto& sum_seq = sum.get<stream::sequencing>();
         const auto& x_seq = x.get<stream::sequencing>();
@@ -158,6 +156,12 @@ inline void add_stream_counters(const statistics::generic_stream_counters& x,
     maybe_add_summary_tuple<stream::jitter_ipdv>(x, sum);
     maybe_add_summary_tuple<stream::jitter_rfc>(x, sum);
     maybe_add_summary_tuple<stream::latency>(x, sum);
+
+    /*
+     * XXX: Sum the counter structure last.  "Adding" the summary tuples
+     * together requires the frame count to be correct for each tuple.
+     */
+    sum.get<counter>() += x.get<counter>();
 }
 
 inline statistics::generic_stream_counters
@@ -365,7 +369,7 @@ to_swagger(const SummaryTuple& src, statistics::stat_t count)
         dst->setMin(src.min);
         dst->setMax(src.max);
         if (src.min != src.max) {
-            dst->setStdDev(std::sqrt(src.m2 / count - 1));
+            dst->setStdDev(std::sqrt(src.m2 / (count - 1)));
         }
     }
 
