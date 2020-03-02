@@ -537,18 +537,23 @@ func (c *Client) done(ctx context.Context) (clientStateFunc, error) {
 	c.enter("done")
 
 	//Get EOT results from server.
-	c.PeerCmdOut <- &msg.Message{
-		Type: msg.GetFinalStatsType,
+	if err := c.getFinalServerStats(); err != nil {
+		return (*Client).cleanup, err
 	}
 
-	//Wait for EOT results from server.
-	_, ok := c.waitForPeerResponse(msg.FinalStatsType)
-	if ok != nil {
-		return (*Client).cleanup, ok
+	fmt.Println("got final server stats; getting final client tx stats.")
+
+	//Get EOT results from client (aka local Openperf).
+	if err := c.getFinalClientTxStats(ctx); err != nil {
+		return (*Client).cleanup, err
 	}
 
-	//XXX: final stats will be processed here.
+	fmt.Println("got final client tx stats; getting final client rx stats.")
+	if err := c.getFinalClientRxStats(ctx); err != nil {
+		return (*Client).cleanup, err
+	}
 
+	fmt.Println("done in done state.")
 	return (*Client).cleanup, nil
 }
 
@@ -642,12 +647,12 @@ func (c *Client) waitForPeerResponse(expectedType string) (*msg.Message, error) 
 }
 
 func (c *Client) handleStatsNotification(notif *msg.Message) error {
-	stats, ok := notif.Value.(*msg.RuntimeStats)
+	stats, ok := notif.Value.(*msg.DataStreamStats)
 	if !ok {
 		return &MalformedPeerMessageError{
 			Type:              msg.StatsNotificationType,
 			ActualValueType:   fmt.Sprintf("%T", notif.Value),
-			ExpectedValueType: fmt.Sprintf("%T", &msg.RuntimeStats{}),
+			ExpectedValueType: fmt.Sprintf("%T", &msg.DataStreamStats{}),
 		}
 	}
 
@@ -697,6 +702,115 @@ func processUnexpectedPeerDisconnect(notif *msg.Message) error {
 				msg.PeerDisconnectLocalType),
 		}
 	}
+}
+
+func (c *Client) getFinalServerStats() error {
+	c.PeerCmdOut <- &msg.Message{
+		Type: msg.GetFinalStatsType,
+	}
+
+	//Wait for EOT results from server.
+	resp, respErr := c.waitForPeerResponse(msg.FinalStatsType)
+	if respErr != nil {
+		return respErr
+	}
+
+	stats, ok := resp.Value.(*msg.FinalStats)
+	if !ok {
+		return &MalformedPeerMessageError{
+			Type:              resp.Type,
+			ActualValueType:   fmt.Sprintf("%T", resp.Value),
+			ExpectedValueType: fmt.Sprintf("%T", &msg.FinalStats{}),
+		}
+	}
+
+	if stats.TxStats != nil {
+		c.DataStreamStatsOut <- &Stats{Kind: DownstreamTxKind, Values: stats.TxStats, Final: true}
+	}
+
+	if stats.RxStats != nil {
+		c.DataStreamStatsOut <- &Stats{Kind: UpstreamRxKind, Values: stats.RxStats, Final: true}
+	}
+
+	return nil
+}
+
+func (c *Client) getFinalClientTxStats(ctx context.Context) error {
+
+	// Do we need to get TxStats?
+	if c.TestConfiguration.UpstreamRateBps <= 0 {
+		return nil
+	}
+
+	reqDone := make(chan struct{})
+	opCtx, opCancel := context.WithTimeout(ctx, c.OpenperfTimeout)
+	defer opCancel()
+
+	req := &openperf.Command{
+		Request: &openperf.GetTxStatsRequest{},
+		Done:    reqDone,
+		Ctx:     opCtx,
+	}
+
+	c.OpenperfCmdOut <- req
+
+	<-reqDone
+
+	switch resp := req.Response.(type) {
+	case *openperf.GetTxStatsResponse:
+		c.DataStreamStatsOut <- &Stats{Kind: UpstreamTxKind, Values: resp, Final: true}
+
+	case error:
+		return resp
+
+	default:
+		return &UnexpectedOpenperfRespError{
+			Actual:   fmt.Sprintf("%T", req.Response),
+			Expected: "openperf.GetTxStatsResponse",
+			Request:  "openperf.GetTxStatsRequest",
+		}
+	}
+
+	return nil
+}
+
+func (c *Client) getFinalClientRxStats(ctx context.Context) error {
+
+	// Do we need to get RxStats?
+	if c.TestConfiguration.DownstreamRateBps <= 0 {
+		return nil
+	}
+
+	reqDone := make(chan struct{})
+	opCtx, opCancel := context.WithTimeout(ctx, c.OpenperfTimeout)
+	defer opCancel()
+
+	req := &openperf.Command{
+		Request: &openperf.GetRxStatsRequest{},
+		Done:    reqDone,
+		Ctx:     opCtx,
+	}
+
+	c.OpenperfCmdOut <- req
+
+	<-reqDone
+
+	switch resp := req.Response.(type) {
+	case *openperf.GetRxStatsResponse:
+		c.DataStreamStatsOut <- &Stats{Kind: DownstreamRxKind, Values: resp, Final: true}
+
+	case error:
+		return resp
+
+	default:
+		return &UnexpectedOpenperfRespError{
+			Actual:   fmt.Sprintf("%T", req.Response),
+			Expected: "openperf.GetRxStatsResponse",
+			Request:  "openperf.GetRxStatsRequest",
+		}
+	}
+
+	return nil
 }
 
 func (c *Client) startOpenperfCmdRepeater(ctx context.Context, cmd *openperf.Command, interval time.Duration) (responses chan interface{}, cancelFn context.CancelFunc) {

@@ -700,7 +700,7 @@ var _ = Describe("Client FSM,", func() {
 											case <-time.After(1 * time.Second):
 												peerNotifIn <- &msg.Message{
 													Type: msg.StatsNotificationType,
-													Value: &msg.RuntimeStats{
+													Value: &msg.DataStreamStats{
 														RxStats: &openperf.GetRxStatsResponse{
 															Timestamp: time.Now().Format(TimeFormatString),
 														},
@@ -787,7 +787,8 @@ var _ = Describe("Client FSM,", func() {
 										peerRespIn <- &msg.Message{
 											Type: msg.FinalStatsType,
 											Value: &msg.FinalStats{
-												TransmitFrames: uint64(260)},
+												RxStats: &openperf.GetRxStatsResponse{Timestamp: time.Now().Format(TimeFormatString)},
+											},
 										}
 
 										Eventually(func() string {
@@ -809,7 +810,8 @@ var _ = Describe("Client FSM,", func() {
 										peerRespIn <- &msg.Message{
 											Type: msg.FinalStatsType,
 											Value: &msg.FinalStats{
-												TransmitFrames: uint64(420)},
+												RxStats: &openperf.GetRxStatsResponse{Timestamp: time.Now().Format(TimeFormatString)},
+											},
 										}
 
 										res := <-fsmReturn
@@ -946,7 +948,7 @@ var _ = Describe("Client FSM,", func() {
 									for i := 0; i < 4; i++ {
 										peerNotifIn <- &msg.Message{
 											Type: msg.StatsNotificationType,
-											Value: &msg.RuntimeStats{
+											Value: &msg.DataStreamStats{
 												TxStats: &openperf.GetTxStatsResponse{
 													Timestamp: time.Now().Format(TimeFormatString),
 												},
@@ -976,7 +978,8 @@ var _ = Describe("Client FSM,", func() {
 										peerRespIn <- &msg.Message{
 											Type: msg.FinalStatsType,
 											Value: &msg.FinalStats{
-												TransmitFrames: uint64(420)},
+												TxStats: &openperf.GetTxStatsResponse{Timestamp: time.Now().Format(TimeFormatString)},
+											},
 										}
 
 										Eventually(func() string {
@@ -1098,7 +1101,7 @@ var _ = Describe("Client FSM,", func() {
 									for i := 0; i < 4; i++ {
 										peerNotifIn <- &msg.Message{
 											Type: msg.StatsNotificationType,
-											Value: &msg.RuntimeStats{
+											Value: &msg.DataStreamStats{
 												TxStats: &openperf.GetTxStatsResponse{
 													Timestamp: time.Now().Format(TimeFormatString),
 												},
@@ -1131,8 +1134,6 @@ var _ = Describe("Client FSM,", func() {
 										Expect(cmd.Type).To(Equal(msg.TransmitDoneType))
 										Expect(cmd.Value).To(BeNil())
 
-										runstateStatsResponderCancel()
-
 										Eventually(func() string {
 											return fsm.State()
 										}).Should(Equal("done"))
@@ -1150,16 +1151,20 @@ var _ = Describe("Client FSM,", func() {
 											peerRespIn <- &msg.Message{
 												Type: msg.FinalStatsType,
 												Value: &msg.FinalStats{
-													TransmitFrames: uint64(420)},
+													TxStats: &openperf.GetTxStatsResponse{Timestamp: time.Now().Format(TimeFormatString)},
+													RxStats: &openperf.GetRxStatsResponse{Timestamp: time.Now().Format(TimeFormatString)},
+												},
 											}
 
 											Eventually(func() string {
 												return fsm.State()
 											}).Should(Equal("cleanup"))
 
+											runstateStatsResponderCancel()
+
 											close(done)
 
-										})
+										}, assertEpsilon.Seconds())
 
 									})
 
@@ -1179,7 +1184,7 @@ var _ = Describe("Client FSM,", func() {
 											case <-time.After(1 * time.Second):
 												peerNotifIn <- &msg.Message{
 													Type: msg.StatsNotificationType,
-													Value: &msg.RuntimeStats{
+													Value: &msg.DataStreamStats{
 														RxStats: &openperf.GetRxStatsResponse{
 															Timestamp: time.Now().Format(TimeFormatString),
 														},
@@ -1216,8 +1221,6 @@ var _ = Describe("Client FSM,", func() {
 
 										Expect(fsm.State()).To(Equal("done"))
 
-										runstateStatsResponderCancel()
-
 										close(done)
 									}, assertEpsilon.Seconds())
 
@@ -1226,7 +1229,9 @@ var _ = Describe("Client FSM,", func() {
 											peerRespIn <- &msg.Message{
 												Type: msg.FinalStatsType,
 												Value: &msg.FinalStats{
-													TransmitFrames: uint64(420)},
+													TxStats: &openperf.GetTxStatsResponse{Timestamp: time.Now().Format(TimeFormatString)},
+													RxStats: &openperf.GetRxStatsResponse{Timestamp: time.Now().Format(TimeFormatString)},
+												},
 											}
 
 											Eventually(func() string {
@@ -1239,6 +1244,11 @@ var _ = Describe("Client FSM,", func() {
 
 									})
 								})
+							})
+
+							AfterEach(func(done Done) {
+								runstateStatsResponderCancel()
+								close(done)
 							})
 						})
 					})

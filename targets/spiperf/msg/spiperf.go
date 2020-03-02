@@ -27,9 +27,7 @@ type Message struct {
 }
 
 // FinalStats convey final set of stats sampled after the test completes.
-type FinalStats struct {
-	TransmitFrames uint64 `json:"transmit_frames"`
-}
+type FinalStats DataStreamStats
 
 // Hello initiates a session between client and server instances.
 type Hello struct {
@@ -51,8 +49,8 @@ type PeerDisconnectRemoteNotif struct {
 	Err string `json:"err,omitempty"`
 }
 
-// RuntimeStats convey stats while test is running.
-type RuntimeStats struct {
+// DataStreamStats convey stats while test is running.
+type DataStreamStats struct {
 	TxStats *openperf.GetTxStatsResponse `json:"get_tx_stats,omitempty"`
 	RxStats *openperf.GetRxStatsResponse `json:"get_rx_stats,omitempty"`
 }
