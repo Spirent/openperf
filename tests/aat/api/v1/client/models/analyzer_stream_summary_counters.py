@@ -170,6 +170,9 @@ class AnalyzerStreamSummaryCounters(object):
                 ))
             else:
                 result[attr] = value
+        if issubclass(AnalyzerStreamSummaryCounters, dict):
+            for key, value in self.items():
+                result[key] = value
 
         return result
 

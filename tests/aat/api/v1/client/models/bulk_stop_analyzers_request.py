@@ -89,6 +89,9 @@ class BulkStopAnalyzersRequest(object):
                 ))
             else:
                 result[attr] = value
+        if issubclass(BulkStopAnalyzersRequest, dict):
+            for key, value in self.items():
+                result[key] = value
 
         return result
 

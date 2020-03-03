@@ -141,6 +141,9 @@ class AnalyzerProtocolCountersInnerEthernet(object):
                 ))
             else:
                 result[attr] = value
+        if issubclass(AnalyzerProtocolCountersInnerEthernet, dict):
+            for key, value in self.items():
+                result[key] = value
 
         return result
 

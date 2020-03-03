@@ -21,9 +21,9 @@
 
 #include "ModelBase.h"
 
-#include "TimeKeeperStats.h"
 #include "TimeKeeperState.h"
 #include <string>
+#include "TimeKeeperStats.h"
 
 namespace swagger {
 namespace v1 {

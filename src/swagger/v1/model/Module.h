@@ -21,8 +21,8 @@
 
 #include "ModelBase.h"
 
-#include "ModuleVersion.h"
 #include <string>
+#include "ModuleVersion.h"
 
 namespace swagger {
 namespace v1 {

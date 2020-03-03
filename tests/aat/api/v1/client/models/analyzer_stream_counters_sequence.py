@@ -219,6 +219,9 @@ class AnalyzerStreamCountersSequence(object):
                 ))
             else:
                 result[attr] = value
+        if issubclass(AnalyzerStreamCountersSequence, dict):
+            for key, value in self.items():
+                result[key] = value
 
         return result
 

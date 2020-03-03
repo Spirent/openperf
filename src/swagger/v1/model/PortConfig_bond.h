@@ -21,8 +21,8 @@
 
 #include "ModelBase.h"
 
-#include <vector>
 #include <string>
+#include <vector>
 
 namespace swagger {
 namespace v1 {
