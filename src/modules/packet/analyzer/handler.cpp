@@ -7,7 +7,7 @@
 
 #include "swagger/v1/model/Analyzer.h"
 #include "swagger/v1/model/AnalyzerResult.h"
-#include "swagger/v1/model/RxStream.h"
+#include "swagger/v1/model/RxFlow.h"
 
 namespace openperf::packet::analyzer::api {
 
@@ -48,9 +48,9 @@ public:
     void delete_analyzer_result(const request_type& request,
                                 response_type response);
 
-    /* Rx stream operations */
-    void list_rx_streams(const request_type& request, response_type response);
-    void get_rx_stream(const request_type& request, response_type response);
+    /* Rx flow operations */
+    void list_rx_flows(const request_type& request, response_type response);
+    void get_rx_flow(const request_type& request, response_type response);
 
 private:
     std::unique_ptr<void, op_socket_deleter> m_socket;
@@ -103,8 +103,8 @@ handler::handler(void* context, Pistache::Rest::Router& router)
            "/packet/analyzer-results/:id",
            bind(&handler::delete_analyzer_result, this));
 
-    Get(router, "/packet/rx-streams", bind(&handler::list_rx_streams, this));
-    Get(router, "/packet/rx-streams/:id", bind(&handler::get_rx_stream, this));
+    Get(router, "/packet/rx-flows", bind(&handler::list_rx_flows, this));
+    Get(router, "/packet/rx-flows/:id", bind(&handler::get_rx_flow, this));
 }
 
 using namespace Pistache;
@@ -492,10 +492,9 @@ void handler::delete_analyzer_result(const request_type& request,
     }
 }
 
-void handler::list_rx_streams(const request_type& request,
-                              response_type response)
+void handler::list_rx_flows(const request_type& request, response_type response)
 {
-    auto api_request = request_list_rx_streams{};
+    auto api_request = request_list_rx_flows{};
 
     set_optional_filter(
         request, api_request.filter, filter_key_type::analyzer_id);
@@ -505,21 +504,21 @@ void handler::list_rx_streams(const request_type& request,
 
     auto api_reply = submit_request(m_socket.get(), std::move(api_request));
 
-    if (auto reply = std::get_if<reply_rx_streams>(&api_reply)) {
+    if (auto reply = std::get_if<reply_rx_flows>(&api_reply)) {
         response.headers().add<Http::Header::ContentType>(
             MIME(Application, Json));
-        auto streams = nlohmann::json::array();
-        std::transform(std::begin(reply->streams),
-                       std::end(reply->streams),
-                       std::back_inserter(streams),
+        auto flows = nlohmann::json::array();
+        std::transform(std::begin(reply->flows),
+                       std::end(reply->flows),
+                       std::back_inserter(flows),
                        [](const auto& result) { return (result->toJson()); });
-        response.send(Http::Code::Ok, streams.dump());
+        response.send(Http::Code::Ok, flows.dump());
     } else {
         handle_reply_error(api_reply, std::move(response));
     }
 }
 
-void handler::get_rx_stream(const request_type& request, response_type response)
+void handler::get_rx_flow(const request_type& request, response_type response)
 {
     auto id = request.param(":id").as<std::string>();
     if (auto res = config::op_config_validate_id_string(id); !res) {
@@ -527,13 +526,13 @@ void handler::get_rx_stream(const request_type& request, response_type response)
         return;
     }
 
-    auto api_reply = submit_request(m_socket.get(), request_get_rx_stream{id});
+    auto api_reply = submit_request(m_socket.get(), request_get_rx_flow{id});
 
-    if (auto reply = std::get_if<reply_rx_streams>(&api_reply)) {
-        assert(reply->streams.size() == 1);
+    if (auto reply = std::get_if<reply_rx_flows>(&api_reply)) {
+        assert(reply->flows.size() == 1);
         response.headers().add<Http::Header::ContentType>(
             MIME(Application, Json));
-        response.send(Http::Code::Ok, reply->streams[0]->toJson().dump());
+        response.send(Http::Code::Ok, reply->flows[0]->toJson().dump());
     } else {
         handle_reply_error(api_reply, std::move(response));
     }

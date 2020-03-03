@@ -46,14 +46,14 @@ nlohmann::json AnalyzerResult::toJson() const
     }
     val["active"] = m_Active;
     val["protocol_counters"] = ModelBase::toJson(m_Protocol_counters);
-    val["stream_counters"] = ModelBase::toJson(m_Stream_counters);
+    val["flow_counters"] = ModelBase::toJson(m_Flow_counters);
     {
         nlohmann::json jsonArray;
-        for( auto& item : m_Streams )
+        for( auto& item : m_Flows )
         {
             jsonArray.push_back(ModelBase::toJson(item));
         }
-        val["streams"] = jsonArray;
+        val["flows"] = jsonArray;
             }
     
 
@@ -70,11 +70,11 @@ void AnalyzerResult::fromJson(nlohmann::json& val)
     }
     setActive(val.at("active"));
     {
-        m_Streams.clear();
+        m_Flows.clear();
         nlohmann::json jsonArray;
-                for( auto& item : val["streams"] )
+                for( auto& item : val["flows"] )
         {
-            m_Streams.push_back(item);
+            m_Flows.push_back(item);
             
         }
     }
@@ -126,18 +126,18 @@ void AnalyzerResult::setProtocolCounters(std::shared_ptr<AnalyzerProtocolCounter
     m_Protocol_counters = value;
     
 }
-std::shared_ptr<AnalyzerStreamCounters> AnalyzerResult::getStreamCounters() const
+std::shared_ptr<AnalyzerFlowCounters> AnalyzerResult::getFlowCounters() const
 {
-    return m_Stream_counters;
+    return m_Flow_counters;
 }
-void AnalyzerResult::setStreamCounters(std::shared_ptr<AnalyzerStreamCounters> value)
+void AnalyzerResult::setFlowCounters(std::shared_ptr<AnalyzerFlowCounters> value)
 {
-    m_Stream_counters = value;
+    m_Flow_counters = value;
     
 }
-std::vector<std::string>& AnalyzerResult::getStreams()
+std::vector<std::string>& AnalyzerResult::getFlows()
 {
-    return m_Streams;
+    return m_Flows;
 }
 
 }

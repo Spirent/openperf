@@ -245,6 +245,9 @@ class AnalyzerProtocolCountersProtocol(object):
                 ))
             else:
                 result[attr] = value
+        if issubclass(AnalyzerProtocolCountersProtocol, dict):
+            for key, value in self.items():
+                result[key] = value
 
         return result
 

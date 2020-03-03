@@ -15,10 +15,10 @@ Method | HTTP request | Description
 [**delete_analyzers**](AnalyzersApi.md#delete_analyzers) | **DELETE** /packet/analyzers | Delete all packet analyzers
 [**get_analyzer**](AnalyzersApi.md#get_analyzer) | **GET** /packet/analyzers/{id} | Get a packet analyzer
 [**get_analyzer_result**](AnalyzersApi.md#get_analyzer_result) | **GET** /packet/analyzer-results/{id} | Get a packet analyzer result
-[**get_rx_stream**](AnalyzersApi.md#get_rx_stream) | **GET** /packet/rx-streams/{id} | Get packet stream counters for a single stream
+[**get_rx_flow**](AnalyzersApi.md#get_rx_flow) | **GET** /packet/rx-flows/{id} | Get packet flow counters for a single flow
 [**list_analyzer_results**](AnalyzersApi.md#list_analyzer_results) | **GET** /packet/analyzer-results | List analyzer results
 [**list_analyzers**](AnalyzersApi.md#list_analyzers) | **GET** /packet/analyzers | List packet analyzers
-[**list_rx_streams**](AnalyzersApi.md#list_rx_streams) | **GET** /packet/rx-streams | List received packet streams
+[**list_rx_flows**](AnalyzersApi.md#list_rx_flows) | **GET** /packet/rx-flows | List received packet flows
 [**start_analyzer**](AnalyzersApi.md#start_analyzer) | **POST** /packet/analyzers/{id}/start | Start analyzing and collecting packet statistics.
 [**stop_analyzer**](AnalyzersApi.md#stop_analyzer) | **POST** /packet/analyzers/{id}/stop | Stop analyzing and collecting packet statistics
 
@@ -313,7 +313,7 @@ No authorization required
 
 Delete a packet analyzer result
 
-Delete an inactive packet analyzer result. Also deletes all child rx-stream objects. Idempotent. 
+Delete an inactive packet analyzer result. Also deletes all child rx-flow objects. Idempotent. 
 
 ### Example
 ```python
@@ -537,12 +537,12 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **get_rx_stream**
-> RxStream get_rx_stream(id)
+# **get_rx_flow**
+> RxFlow get_rx_flow(id)
 
-Get packet stream counters for a single stream
+Get packet flow counters for a single flow
 
-Returns packet stream counters by id.
+Returns packet flow counters by id.
 
 ### Example
 ```python
@@ -557,11 +557,11 @@ api_instance = client.AnalyzersApi()
 id = 'id_example' # str | Unique resource identifier
 
 try:
-    # Get packet stream counters for a single stream
-    api_response = api_instance.get_rx_stream(id)
+    # Get packet flow counters for a single flow
+    api_response = api_instance.get_rx_flow(id)
     pprint(api_response)
 except ApiException as e:
-    print("Exception when calling AnalyzersApi->get_rx_stream: %s\n" % e)
+    print("Exception when calling AnalyzersApi->get_rx_flow: %s\n" % e)
 ```
 
 ### Parameters
@@ -572,7 +572,7 @@ Name | Type | Description  | Notes
 
 ### Return type
 
-[**RxStream**](RxStream.md)
+[**RxFlow**](RxFlow.md)
 
 ### Authorization
 
@@ -640,7 +640,7 @@ No authorization required
 
 List packet analyzers
 
-The `analyzers` endpoint returns all packet analyzers that are configured to collect and report port and stream statistics. 
+The `analyzers` endpoint returns all packet analyzers that are configured to collect and report port and flow statistics. 
 
 ### Example
 ```python
@@ -683,12 +683,12 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **list_rx_streams**
-> list[RxStream] list_rx_streams(analyzer_id=analyzer_id, source_id=source_id)
+# **list_rx_flows**
+> list[RxFlow] list_rx_flows(analyzer_id=analyzer_id, source_id=source_id)
 
-List received packet streams
+List received packet flows
 
-The `rx-streams` endpoint returns all packet streams that have been received by analyzer instances. 
+The `rx-flows` endpoint returns all packet flows that have been received by analyzer instances. 
 
 ### Example
 ```python
@@ -704,11 +704,11 @@ analyzer_id = 'analyzer_id_example' # str | Filter by receive analyzer id (optio
 source_id = 'source_id_example' # str | Filter by receive port or interface id (optional)
 
 try:
-    # List received packet streams
-    api_response = api_instance.list_rx_streams(analyzer_id=analyzer_id, source_id=source_id)
+    # List received packet flows
+    api_response = api_instance.list_rx_flows(analyzer_id=analyzer_id, source_id=source_id)
     pprint(api_response)
 except ApiException as e:
-    print("Exception when calling AnalyzersApi->list_rx_streams: %s\n" % e)
+    print("Exception when calling AnalyzersApi->list_rx_flows: %s\n" % e)
 ```
 
 ### Parameters
@@ -720,7 +720,7 @@ Name | Type | Description  | Notes
 
 ### Return type
 
-[**list[RxStream]**](RxStream.md)
+[**list[RxFlow]**](RxFlow.md)
 
 ### Authorization
 

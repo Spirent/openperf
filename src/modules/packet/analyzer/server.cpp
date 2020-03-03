@@ -4,7 +4,7 @@
 
 #include "swagger/v1/model/Analyzer.h"
 #include "swagger/v1/model/AnalyzerResult.h"
-#include "swagger/v1/model/RxStream.h"
+#include "swagger/v1/model/RxFlow.h"
 
 #include "utils/overloaded_visitor.hpp"
 
@@ -120,11 +120,11 @@ static std::string to_string(const request_msg& request)
                            [](const request_delete_analyzer_result& request) {
                                return ("delete analyzer result " + request.id);
                            },
-                           [](const request_list_rx_streams&) {
-                               return (std::string("list rx streams"));
+                           [](const request_list_rx_flows&) {
+                               return (std::string("list rx flows"));
                            },
-                           [](const request_get_rx_stream& request) {
-                               return ("get rx stream " + request.id);
+                           [](const request_get_rx_flow& request) {
+                               return ("get rx flow " + request.id);
                            }),
                        request));
 }
@@ -226,13 +226,12 @@ protocol_counters_config to_protocol_counters(std::vector<std::string>& names)
     return (counters);
 }
 
-stream_counters_config to_stream_counters(std::vector<std::string>& names)
+flow_counters_config to_flow_counters(std::vector<std::string>& names)
 {
-    auto counters =
-        stream_counters_config{statistics::stream_flags::frame_count};
+    auto counters = flow_counters_config{statistics::flow_flags::frame_count};
 
     std::for_each(std::begin(names), std::end(names), [&](const auto& name) {
-        counters |= statistics::to_stream_flag(name);
+        counters |= statistics::to_flow_flag(name);
     });
 
     return (counters);
@@ -248,9 +247,8 @@ reply_msg server::handle_request(const request_create_analyzer& request)
         config.protocol_counters =
             to_protocol_counters(user_config->getProtocolCounters());
     }
-    if (!user_config->getStreamCounters().empty()) {
-        config.stream_counters =
-            to_stream_counters(user_config->getStreamCounters());
+    if (!user_config->getFlowCounters().empty()) {
+        config.flow_counters = to_flow_counters(user_config->getFlowCounters());
     }
     if (!request.analyzer->getId().empty()) {
         config.id = request.analyzer->getId();
@@ -487,7 +485,7 @@ reply_msg server::handle_request(const request_delete_analyzer_result& request)
     return (reply_ok{});
 }
 
-reply_msg server::handle_request(const request_list_rx_streams& request)
+reply_msg server::handle_request(const request_list_rx_flows& request)
 {
     auto compare = std::function<bool(const result_map::value_type& pair)>{};
     if (!request.filter) {
@@ -513,7 +511,7 @@ reply_msg server::handle_request(const request_list_rx_streams& request)
 
     assert(compare);
 
-    auto reply = reply_rx_streams{};
+    auto reply = reply_rx_flows{};
 
     std::for_each(
         std::begin(m_results),
@@ -521,7 +519,7 @@ reply_msg server::handle_request(const request_list_rx_streams& request)
         [&](const auto& result_pair) {
             if (!compare(result_pair)) { return; }
 
-            auto& shards = result_pair.second->streams();
+            auto& shards = result_pair.second->flows();
             std::for_each(
                 std::begin(shards), std::end(shards), [&](const auto& shard) {
                     uint16_t idx = 0;
@@ -529,12 +527,12 @@ reply_msg server::handle_request(const request_list_rx_streams& request)
                     std::transform(
                         std::begin(shard.second),
                         std::end(shard.second),
-                        std::back_inserter(reply.streams),
+                        std::back_inserter(reply.flows),
                         [&](const auto& pair) {
-                            return (to_swagger(rx_stream_id(result_pair.first,
-                                                            idx,
-                                                            pair.first.first,
-                                                            pair.first.second),
+                            return (to_swagger(rx_flow_id(result_pair.first,
+                                                          idx,
+                                                          pair.first.first,
+                                                          pair.first.second),
                                                result_pair.first,
                                                pair.second));
                         });
@@ -544,28 +542,28 @@ reply_msg server::handle_request(const request_list_rx_streams& request)
     return (reply);
 }
 
-reply_msg server::handle_request(const request_get_rx_stream& request)
+reply_msg server::handle_request(const request_get_rx_flow& request)
 {
     auto id = to_uuid(request.id);
     if (!id) { return (to_error(error_type::NOT_FOUND)); }
 
-    auto [min_id, shard_idx, hash, stream_id] = rx_stream_tuple(*id);
+    auto [min_id, shard_idx, hash, stream_id] = rx_flow_tuple(*id);
 
     auto it = m_results.lower_bound(min_id);
     if (it == std::end(m_results)) { return (to_error(error_type::NOT_FOUND)); }
 
     const auto& result = it->second;
-    if (shard_idx >= result->streams().size()) {
+    if (shard_idx >= result->flows().size()) {
         return (to_error(error_type::NOT_FOUND));
     }
 
-    const auto& shard = result->streams()[shard_idx];
+    const auto& shard = result->flows()[shard_idx];
     auto guard = utils::recycle::guard(shard.first, 0);
     auto counters = shard.second.find(hash, stream_id);
     if (!counters) { return (to_error(error_type::NOT_FOUND)); }
 
-    auto reply = reply_rx_streams{};
-    reply.streams.emplace_back(to_swagger(*id, it->first, *counters));
+    auto reply = reply_rx_flows{};
+    reply.flows.emplace_back(to_swagger(*id, it->first, *counters));
     return (reply);
 }
 

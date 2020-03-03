@@ -1,7 +1,7 @@
 #include "packet/analyzer/api.hpp"
 
+#include "packet/analyzer/statistics/generic_flow_counters.hpp"
 #include "packet/analyzer/statistics/generic_protocol_counters.hpp"
-#include "packet/analyzer/statistics/generic_stream_counters.hpp"
 
 #include "swagger/v1/model/Analyzer.h"
 
@@ -31,10 +31,9 @@ bool is_valid(const analyzer_type& analyzer, std::vector<std::string>& errors)
         }
     }
 
-    for (auto& item : config->getStreamCounters()) {
-        if (statistics::to_stream_flag(item)
-            == statistics::stream_flags::none) {
-            errors.emplace_back("Stream counter (" + item
+    for (auto& item : config->getFlowCounters()) {
+        if (statistics::to_flow_flag(item) == statistics::flow_flags::none) {
+            errors.emplace_back("Flow counter (" + item
                                 + ") is not recognized.");
         }
     }

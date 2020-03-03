@@ -21,12 +21,12 @@ def get_first_port_id(api_client):
     return ports[0].id
 
 
-def analyzer_model(api_client, protocol_counters = None, stream_counters = None):
+def analyzer_model(api_client, protocol_counters = None, flow_counters = None):
     config = client.models.AnalyzerConfig()
     if protocol_counters:
         config.protocol_counters = protocol_counters
-    if stream_counters:
-        config.stream_counters = stream_counters
+    if flow_counters:
+        config.flow_counters = flow_counters
 
     ta = client.models.Analyzer()
     ta.source_id = get_first_port_id(api_client)
@@ -54,9 +54,9 @@ with description('Packet Analyzer,', 'packet_analyzer') as self:
                     expect(lambda: self.api.api_client.call_api('/packet/analyzer-results', 'PUT')).to(
                         raise_api_exception(405, headers={'Allow': "DELETE, GET"}))
 
-            with description('/packet/rx-streams,'):
+            with description('/packet/rx-flows,'):
                 with it('returns 405'):
-                    expect(lambda: self.api.api_client.call_api('/packet/rx-streams', 'PUT')).to(
+                    expect(lambda: self.api.api_client.call_api('/packet/rx-flows', 'PUT')).to(
                         raise_api_exception(405, headers={'Allow': "GET"}))
 
         with description('list analyzers,'):
@@ -123,10 +123,10 @@ with description('Packet Analyzer,', 'packet_analyzer') as self:
                     ana.config.protocol_counters = ['foo']
                     expect(lambda: self.api.create_analyzer(ana)).to(raise_api_exception(400))
 
-            with description('invalid stream counter'):
+            with description('invalid flow counter'):
                 with it('returns 400'):
                     ana = analyzer_model(self.api.api_client)
-                    ana.config.stream_counters = ['bar']
+                    ana.config.flow_counters = ['bar']
                     expect(lambda: self.api.create_analyzer(ana)).to(raise_api_exception(400))
 
         with description('delete analyzer,'):
@@ -223,11 +223,11 @@ with description('Packet Analyzer,', 'packet_analyzer') as self:
         ###
         # XXX: Fill these in when we can make some packets
         ###
-        with description('list rx streams,'):
+        with description('list rx flows,'):
             with _it('need a way to generate packets'):
                 assert False
 
-        with description('get rx stream, '):
+        with description('get rx flow, '):
             with _it('need a way to generate packets'):
                 assert False
 

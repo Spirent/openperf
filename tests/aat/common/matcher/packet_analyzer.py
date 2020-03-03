@@ -11,8 +11,8 @@ class _be_valid_packet_analyzer(Matcher):
         expect(analyzer.source_id).not_to(be_empty)
         expect(analyzer.active).not_to(be_none)
         expect(analyzer.config).to(be_a(client.models.AnalyzerConfig))
+        expect(analyzer.config.flow_counters).not_to(be_empty)
         expect(analyzer.config.protocol_counters).not_to(be_empty)
-        expect(analyzer.config.stream_counters).not_to(be_empty)
         return True, ['is valid packet analyzer']
 
 
@@ -22,9 +22,9 @@ class _be_valid_packet_analyzer_result(Matcher):
         expect(result.id).not_to(be_empty)
         expect(result.analyzer_id).not_to(be_empty)
         expect(result.active).not_to(be_none)
+        expect(result.flow_counters).to(be_a(client.models.AnalyzerFlowCounters))
+        expect(result.flow_counters.frame_count).not_to(be_none)
         expect(result.protocol_counters).to(be_a(client.models.AnalyzerProtocolCounters))
-        expect(result.stream_counters).to(be_a(client.models.AnalyzerStreamCounters))
-        expect(result.stream_counters.frame_count).not_to(be_none)
         return True, ['is valid packet analyzer result']
 
 

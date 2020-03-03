@@ -21,8 +21,8 @@
 
 #include "ModelBase.h"
 
-#include "Interface_config.h"
 #include "InterfaceStats.h"
+#include "Interface_config.h"
 #include <string>
 
 namespace swagger {
