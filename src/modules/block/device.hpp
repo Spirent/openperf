@@ -79,12 +79,12 @@ bool is_raw_device(const std::string id)
     return (true);
 }
 
-BlockDevice* get_block_device(std::string id)
+std::unique_ptr<BlockDevice> get_block_device(std::string id)
 {
     if (!is_raw_device(id))
         return NULL;
         
-    BlockDevice* blkdev = new BlockDevice();
+    auto blkdev = std::make_unique<BlockDevice>();
     blkdev->setId(id);
     blkdev->setPath(id);
     blkdev->setSize(get_block_device_size(id));
@@ -94,7 +94,7 @@ BlockDevice* get_block_device(std::string id)
     return blkdev;
 }
 
-std::vector<BlockDevice*> block_devices_list()
+std::vector<std::unique_ptr<BlockDevice>> block_devices_list()
 {
     DIR *dir = NULL;
     struct dirent *entry = NULL;
@@ -105,7 +105,7 @@ std::vector<BlockDevice*> block_devices_list()
         throw std::runtime_error("Could not open directory");
     }
 
-    std::vector<BlockDevice*> devices;
+    std::vector<std::unique_ptr<BlockDevice>> devices;
 
     while ((entry = readdir(dir)) != NULL) {
         if (entry->d_type == DT_DIR)

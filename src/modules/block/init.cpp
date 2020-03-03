@@ -84,8 +84,7 @@ void op_block_fini(void* state)
 
 REGISTER_MODULE(block,
                 INIT_MODULE_INFO("block",
-                                 "Core module comprising block generator stack "
-                                 "",
+                                 "Core module comprising block generator stack",
                                  openperf::block::module_version),
                 new openperf::block::service(),
                 nullptr,
