@@ -13,12 +13,12 @@ PA_SOURCES += \
 	sink.cpp \
 	sink_transmogrify.cpp \
 	statistics/common.cpp \
+	statistics/flow/factory.cpp \
+	statistics/flow/counters.cpp \
+	statistics/flow/utils.cpp \
 	statistics/protocol/factory.cpp \
 	statistics/protocol/counters.cpp \
 	statistics/protocol/utils.cpp \
-	statistics/stream/factory.cpp \
-	statistics/stream/counters.cpp \
-	statistics/stream/utils.cpp \
 	utils.cpp
 
 $(PA_OBJ_DIR)/api_transmogrify.o: OP_CXXFLAGS += -Wno-unused-parameter

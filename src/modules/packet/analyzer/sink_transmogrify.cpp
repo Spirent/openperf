@@ -7,7 +7,7 @@
 
 #include "swagger/v1/model/Analyzer.h"
 #include "swagger/v1/model/AnalyzerResult.h"
-#include "swagger/v1/model/RxStream.h"
+#include "swagger/v1/model/RxFlow.h"
 
 namespace openperf::packet::analyzer::api {
 
@@ -22,12 +22,12 @@ static void to_swagger(api::protocol_counters_config src,
     }
 }
 
-static void to_swagger(api::stream_counters_config src,
+static void to_swagger(api::flow_counters_config src,
                        std::vector<std::string>& dst)
 {
     auto value = 1;
-    while (value <= statistics::all_stream_counters.value) {
-        auto flag = statistics::stream_flags{value};
+    while (value <= statistics::all_flow_counters.value) {
+        auto flag = statistics::flow_flags{value};
         if (src & flag) { dst.emplace_back(statistics::to_name(flag)); }
         value <<= 1;
     }
@@ -43,7 +43,7 @@ analyzer_ptr to_swagger(const sink& src)
 
     auto config = std::make_shared<swagger::v1::model::AnalyzerConfig>();
     to_swagger(src.protocol_counters(), config->getProtocolCounters());
-    to_swagger(src.stream_counters(), config->getStreamCounters());
+    to_swagger(src.flow_counters(), config->getFlowCounters());
 
     dst->setConfig(config);
 
@@ -73,12 +73,12 @@ inline void maybe_add_summary_tuple(const GenericCounter& x,
          * XXX: We need the totals of each tuple to calculate the variance,
          * hence we update the variance sum before adding anything else.
          */
-        sum_tuple.m2 = statistics::stream::add_variance(sum_count,
-                                                        sum_tuple.total,
-                                                        sum_tuple.m2,
-                                                        x_count,
-                                                        x_tuple.total,
-                                                        x_tuple.m2);
+        sum_tuple.m2 = statistics::flow::add_variance(sum_count,
+                                                      sum_tuple.total,
+                                                      sum_tuple.m2,
+                                                      x_count,
+                                                      x_tuple.total,
+                                                      x_tuple.m2);
 
         sum_tuple.max = std::max(sum_tuple.max, x_tuple.max);
         sum_tuple.min = std::min(sum_tuple.min, x_tuple.min);
@@ -116,8 +116,8 @@ sum_counters(protocol_counters_config config,
     return (sum);
 }
 
-inline void copy_stream_counters(const statistics::generic_stream_counters& src,
-                                 statistics::generic_stream_counters& dst)
+inline void copy_flow_counters(const statistics::generic_flow_counters& src,
+                               statistics::generic_flow_counters& dst)
 {
     using namespace openperf::packet::analyzer::statistics;
 
@@ -126,23 +126,23 @@ inline void copy_stream_counters(const statistics::generic_stream_counters& src,
 
     do {
         dst.get<counter>() = frame_count;
-        maybe_copy_counter_tuple<stream::sequencing>(src, dst);
-        maybe_copy_counter_tuple<stream::frame_length>(src, dst);
-        maybe_copy_counter_tuple<stream::interarrival>(src, dst);
-        maybe_copy_counter_tuple<stream::jitter_ipdv>(src, dst);
-        maybe_copy_counter_tuple<stream::jitter_rfc>(src, dst);
-        maybe_copy_counter_tuple<stream::latency>(src, dst);
+        maybe_copy_counter_tuple<flow::sequencing>(src, dst);
+        maybe_copy_counter_tuple<flow::frame_length>(src, dst);
+        maybe_copy_counter_tuple<flow::interarrival>(src, dst);
+        maybe_copy_counter_tuple<flow::jitter_ipdv>(src, dst);
+        maybe_copy_counter_tuple<flow::jitter_rfc>(src, dst);
+        maybe_copy_counter_tuple<flow::latency>(src, dst);
     } while (dst.get<counter>().count != frame_count.count);
 }
 
-inline void add_stream_counters(const statistics::generic_stream_counters& x,
-                                statistics::generic_stream_counters& sum)
+inline void add_flow_counters(const statistics::generic_flow_counters& x,
+                              statistics::generic_flow_counters& sum)
 {
     using namespace openperf::packet::analyzer::statistics;
 
-    if (x.holds<stream::sequencing>()) {
-        auto& sum_seq = sum.get<stream::sequencing>();
-        const auto& x_seq = x.get<stream::sequencing>();
+    if (x.holds<flow::sequencing>()) {
+        auto& sum_seq = sum.get<flow::sequencing>();
+        const auto& x_seq = x.get<flow::sequencing>();
 
         sum_seq.dropped += x_seq.dropped;
         sum_seq.duplicate += x_seq.duplicate;
@@ -151,11 +151,11 @@ inline void add_stream_counters(const statistics::generic_stream_counters& x,
         sum_seq.in_order += x_seq.in_order;
     }
 
-    maybe_add_summary_tuple<stream::frame_length>(x, sum);
-    maybe_add_summary_tuple<stream::interarrival>(x, sum);
-    maybe_add_summary_tuple<stream::jitter_ipdv>(x, sum);
-    maybe_add_summary_tuple<stream::jitter_rfc>(x, sum);
-    maybe_add_summary_tuple<stream::latency>(x, sum);
+    maybe_add_summary_tuple<flow::frame_length>(x, sum);
+    maybe_add_summary_tuple<flow::interarrival>(x, sum);
+    maybe_add_summary_tuple<flow::jitter_ipdv>(x, sum);
+    maybe_add_summary_tuple<flow::jitter_rfc>(x, sum);
+    maybe_add_summary_tuple<flow::latency>(x, sum);
 
     /*
      * XXX: Sum the counter structure last.  "Adding" the summary tuples
@@ -164,9 +164,9 @@ inline void add_stream_counters(const statistics::generic_stream_counters& x,
     sum.get<counter>() += x.get<counter>();
 }
 
-inline statistics::generic_stream_counters
-sum_counters(stream_counters_config config,
-             const std::vector<sink_result::stream_shard>& src)
+inline statistics::generic_flow_counters
+sum_counters(flow_counters_config config,
+             const std::vector<sink_result::flow_shard>& src)
 {
     auto sum = make_counters(config);
     auto tmp = make_counters(config);
@@ -176,8 +176,8 @@ sum_counters(stream_counters_config config,
         std::for_each(std::begin(shard.second),
                       std::end(shard.second),
                       [&](const auto& pair) {
-                          copy_stream_counters(pair.second, tmp);
-                          add_stream_counters(tmp, sum);
+                          copy_flow_counters(pair.second, tmp);
+                          add_flow_counters(tmp, sum);
                       });
     });
 
@@ -185,7 +185,7 @@ sum_counters(stream_counters_config config,
 }
 
 static void to_swagger(const core::uuid& result_id,
-                       const std::vector<sink_result::stream_shard>& src,
+                       const std::vector<sink_result::flow_shard>& src,
                        std::vector<std::string>& dst)
 {
     uint16_t idx = 0;
@@ -195,7 +195,7 @@ static void to_swagger(const core::uuid& result_id,
             std::begin(shard.second),
             std::end(shard.second),
             [&](const auto& pair) {
-                dst.emplace_back(core::to_string(rx_stream_id(
+                dst.emplace_back(core::to_string(rx_flow_id(
                     result_id, idx, pair.first.first, pair.first.second)));
             });
         idx++;
@@ -330,11 +330,11 @@ struct is_duration<std::chrono::duration<Rep, Period>> : std::true_type
 template <typename SummaryTuple>
 std::enable_if_t<
     is_duration<typename SummaryTuple::pop_t>::value,
-    std::shared_ptr<swagger::v1::model::AnalyzerStreamSummaryCounters>>
+    std::shared_ptr<swagger::v1::model::AnalyzerFlowSummaryCounters>>
 to_swagger(const SummaryTuple& src, statistics::stat_t count)
 {
     auto dst =
-        std::make_shared<swagger::v1::model::AnalyzerStreamSummaryCounters>();
+        std::make_shared<swagger::v1::model::AnalyzerFlowSummaryCounters>();
 
     dst->setTotal(src.total.count());
     if (src.total.count()) {
@@ -358,11 +358,11 @@ to_swagger(const SummaryTuple& src, statistics::stat_t count)
 template <typename SummaryTuple>
 std::enable_if_t<
     std::is_arithmetic_v<typename SummaryTuple::pop_t>,
-    std::shared_ptr<swagger::v1::model::AnalyzerStreamSummaryCounters>>
+    std::shared_ptr<swagger::v1::model::AnalyzerFlowSummaryCounters>>
 to_swagger(const SummaryTuple& src, statistics::stat_t count)
 {
     auto dst =
-        std::make_shared<swagger::v1::model::AnalyzerStreamSummaryCounters>();
+        std::make_shared<swagger::v1::model::AnalyzerFlowSummaryCounters>();
 
     dst->setTotal(src.total);
     if (src.total) {
@@ -396,8 +396,8 @@ std::string to_rfc3339(std::chrono::time_point<Clock> from)
 }
 
 static void populate_counters(
-    const statistics::generic_stream_counters& src,
-    std::shared_ptr<swagger::v1::model::AnalyzerStreamCounters>& dst)
+    const statistics::generic_flow_counters& src,
+    std::shared_ptr<swagger::v1::model::AnalyzerFlowCounters>& dst)
 {
     using namespace openperf::packet::analyzer::statistics;
 
@@ -411,10 +411,10 @@ static void populate_counters(
         dst->setTimestampLast(to_rfc3339(frame_count.last_));
     }
 
-    if (src.holds<stream::sequencing>()) {
-        const auto& s_src = src.get<stream::sequencing>();
+    if (src.holds<flow::sequencing>()) {
+        const auto& s_src = src.get<flow::sequencing>();
         auto s_dst = std::make_shared<
-            swagger::v1::model::AnalyzerStreamCounters_sequence>();
+            swagger::v1::model::AnalyzerFlowCounters_sequence>();
 
         s_dst->setDropped(s_src.dropped);
         s_dst->setDuplicate(s_src.duplicate);
@@ -425,52 +425,52 @@ static void populate_counters(
 
         dst->setSequence(s_dst);
     }
-    if (src.holds<stream::interarrival>()) {
+    if (src.holds<flow::interarrival>()) {
         auto s_dst = std::make_shared<
-            swagger::v1::model::AnalyzerStreamCounters_interarrival>();
+            swagger::v1::model::AnalyzerFlowCounters_interarrival>();
 
         s_dst->setSummary(
-            to_swagger(src.get<stream::interarrival>(), frame_count.count - 1));
+            to_swagger(src.get<flow::interarrival>(), frame_count.count - 1));
         s_dst->setUnits(ns);
 
         dst->setInterarrival(s_dst);
     }
-    if (src.holds<stream::frame_length>()) {
+    if (src.holds<flow::frame_length>()) {
         auto s_dst = std::make_shared<
-            swagger::v1::model::AnalyzerStreamCounters_frame_length>();
+            swagger::v1::model::AnalyzerFlowCounters_frame_length>();
 
         s_dst->setSummary(
-            to_swagger(src.get<stream::frame_length>(), frame_count.count));
+            to_swagger(src.get<flow::frame_length>(), frame_count.count));
         s_dst->setUnits(octets);
 
         dst->setFrameLength(s_dst);
     }
-    if (src.holds<stream::jitter_ipdv>()) {
+    if (src.holds<flow::jitter_ipdv>()) {
         auto s_dst = std::make_shared<
-            swagger::v1::model::AnalyzerStreamCounters_jitter_ipdv>();
+            swagger::v1::model::AnalyzerFlowCounters_jitter_ipdv>();
 
         s_dst->setSummary(
-            to_swagger(src.get<stream::jitter_ipdv>(), frame_count.count));
+            to_swagger(src.get<flow::jitter_ipdv>(), frame_count.count));
         s_dst->setUnits(ns);
 
         dst->setJitterIpdv(s_dst);
     }
-    if (src.holds<stream::jitter_rfc>()) {
+    if (src.holds<flow::jitter_rfc>()) {
         auto s_dst = std::make_shared<
-            swagger::v1::model::AnalyzerStreamCounters_jitter_rfc>();
+            swagger::v1::model::AnalyzerFlowCounters_jitter_rfc>();
 
         s_dst->setSummary(
-            to_swagger(src.get<stream::jitter_rfc>(), frame_count.count));
+            to_swagger(src.get<flow::jitter_rfc>(), frame_count.count));
         s_dst->setUnits(ns);
 
         dst->setJitterRfc(s_dst);
     }
-    if (src.holds<stream::latency>()) {
+    if (src.holds<flow::latency>()) {
         auto s_dst = std::make_shared<
-            swagger::v1::model::AnalyzerStreamCounters_latency>();
+            swagger::v1::model::AnalyzerFlowCounters_latency>();
 
         s_dst->setSummary(
-            to_swagger(src.get<stream::latency>(), frame_count.count));
+            to_swagger(src.get<flow::latency>(), frame_count.count));
         s_dst->setUnits(ns);
 
         dst->setLatency(s_dst);
@@ -492,29 +492,29 @@ analyzer_result_ptr to_swagger(const core::uuid& id, const sink_result& src)
         protocol_counters);
     dst->setProtocolCounters(protocol_counters);
 
-    auto stream_counters =
-        std::make_shared<swagger::v1::model::AnalyzerStreamCounters>();
-    populate_counters(sum_counters(src.parent.stream_counters(), src.streams()),
-                      stream_counters);
-    dst->setStreamCounters(stream_counters);
+    auto flow_counters =
+        std::make_shared<swagger::v1::model::AnalyzerFlowCounters>();
+    populate_counters(sum_counters(src.parent.flow_counters(), src.flows()),
+                      flow_counters);
+    dst->setFlowCounters(flow_counters);
 
-    to_swagger(id, src.streams(), dst->getStreams());
+    to_swagger(id, src.flows(), dst->getFlows());
 
     return (dst);
 }
 
-rx_stream_ptr to_swagger(const core::uuid& id,
-                         const core::uuid& result_id,
-                         const statistics::generic_stream_counters& counters)
+rx_flow_ptr to_swagger(const core::uuid& id,
+                       const core::uuid& result_id,
+                       const statistics::generic_flow_counters& counters)
 {
-    auto dst = std::make_unique<swagger::v1::model::RxStream>();
+    auto dst = std::make_unique<swagger::v1::model::RxFlow>();
 
     dst->setId(core::to_string(id));
     dst->setAnalyzerResultId(core::to_string(result_id));
-    auto stream_counters =
-        std::make_shared<swagger::v1::model::AnalyzerStreamCounters>();
-    populate_counters(counters, stream_counters);
-    dst->setCounters(stream_counters);
+    auto flow_counters =
+        std::make_shared<swagger::v1::model::AnalyzerFlowCounters>();
+    populate_counters(counters, flow_counters);
+    dst->setCounters(flow_counters);
 
     return (dst);
 }
@@ -522,10 +522,10 @@ rx_stream_ptr to_swagger(const core::uuid& id,
 static constexpr auto signature_stream_id_sentinel =
     std::numeric_limits<uint32_t>::max();
 
-core::uuid rx_stream_id(const core::uuid& result_id,
-                        uint16_t shard_idx,
-                        uint32_t rss_hash,
-                        std::optional<uint32_t> signature_stream_id)
+core::uuid rx_flow_id(const core::uuid& result_id,
+                      uint16_t shard_idx,
+                      uint32_t rss_hash,
+                      std::optional<uint32_t> signature_stream_id)
 {
     assert(shard_idx < 1024);
 
@@ -553,7 +553,7 @@ core::uuid rx_stream_id(const core::uuid& result_id,
 }
 
 std::tuple<core::uuid, uint16_t, uint32_t, std::optional<uint32_t>>
-rx_stream_tuple(const core::uuid& id)
+rx_flow_tuple(const core::uuid& id)
 {
     auto min_id = core::uuid{};
     std::copy_n(id.data(), 6, min_id.data());

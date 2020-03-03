@@ -5,21 +5,20 @@
 #include "packetio/internal_worker.hpp"
 #include "packetio/packet_buffer.hpp"
 #include "packet/analyzer/sink.hpp"
-#include "packet/analyzer/statistics/stream/counter_map.tcc"
+#include "packet/analyzer/statistics/flow/counter_map.tcc"
 #include "spirent_pga/api.h"
 #include "utils/flat_memoize.hpp"
 
 namespace openperf::packet::analyzer {
 
 /* Instantiate our templatized data structures */
-template class statistics::stream::counter_map<
-    statistics::generic_stream_counters>;
+template class statistics::flow::counter_map<statistics::generic_flow_counters>;
 
-static std::once_flag stream_counter_factory_init;
+static std::once_flag flow_counter_factory_init;
 
 sink_result::sink_result(const sink& parent_)
     : parent(parent_)
-    , stream_shards(parent.worker_count())
+    , flow_shards(parent.worker_count())
 {
     assert(parent.worker_count());
     std::generate_n(
@@ -30,13 +29,13 @@ sink_result::sink_result(const sink& parent_)
     /*
      * The counter factory functions don't perform their initialization until
      * called.  The protocol counter factory was initialized above, however,
-     * we don't create stream counters until we receive a packet.  Hence, if
-     * we haven't done so already, ask the stream factory for a dummy counter
+     * we don't create flow counters until we receive a packet.  Hence, if
+     * we haven't done so already, ask the flow factory for a dummy counter
      * now so that we can initialize it here instead of on the sink's fast path.
      */
-    std::call_once(stream_counter_factory_init, []() {
-        [[maybe_unused]] auto stream_counters =
-            statistics::make_counters(statistics::all_stream_counters);
+    std::call_once(flow_counter_factory_init, []() {
+        [[maybe_unused]] auto flow_counters =
+            statistics::make_counters(statistics::all_flow_counters);
     });
 }
 
@@ -45,9 +44,9 @@ const std::vector<sink_result::protocol_shard>& sink_result::protocols() const
     return (protocol_shards);
 }
 
-const std::vector<sink_result::stream_shard>& sink_result::streams() const
+const std::vector<sink_result::flow_shard>& sink_result::flows() const
 {
-    return (stream_shards);
+    return (flow_shards);
 }
 
 std::vector<uint8_t> sink::make_indexes(std::vector<unsigned>& ids)
@@ -62,17 +61,17 @@ std::vector<uint8_t> sink::make_indexes(std::vector<unsigned>& ids)
 sink::sink(const sink_config& config, std::vector<unsigned> rx_ids)
     : m_id(config.id)
     , m_source(config.source)
-    , m_protocol_counters(config.protocol_counters)
-    , m_stream_counters(config.stream_counters)
     , m_indexes(sink::make_indexes(rx_ids))
+    , m_flow_counters(config.flow_counters)
+    , m_protocol_counters(config.protocol_counters)
 {}
 
 sink::sink(sink&& other)
     : m_id(std::move(other.m_id))
     , m_source(std::move(other.m_source))
-    , m_protocol_counters(other.m_protocol_counters)
-    , m_stream_counters(other.m_stream_counters)
     , m_indexes(std::move(other.m_indexes))
+    , m_flow_counters(other.m_flow_counters)
+    , m_protocol_counters(other.m_protocol_counters)
     , m_results(other.m_results.load())
 {}
 
@@ -81,9 +80,9 @@ sink& sink::operator=(sink&& other)
     if (this != &other) {
         m_id = std::move(other.m_id);
         m_source = std::move(other.m_source);
-        m_protocol_counters = other.m_protocol_counters;
-        m_stream_counters = other.m_stream_counters;
         m_indexes = std::move(other.m_indexes);
+        m_flow_counters = other.m_flow_counters;
+        m_protocol_counters = other.m_protocol_counters;
         m_results.store(other.m_results);
     }
 
@@ -99,9 +98,9 @@ api::protocol_counters_config sink::protocol_counters() const
     return (m_protocol_counters);
 }
 
-api::stream_counters_config sink::stream_counters() const
+api::flow_counters_config sink::flow_counters() const
 {
-    return (m_stream_counters);
+    return (m_flow_counters);
 }
 
 size_t sink::worker_count() const { return (m_indexes.size()); }
@@ -136,18 +135,18 @@ bool sink::uses_feature(packetio::packets::sink_feature_flags flags) const
 
     /*
      * Intelligently determine what features we need based on our
-     * stream statistics configuration.
+     * flow statistics configuration.
      */
-    constexpr auto signature_stats = (statistics::stream_flags::sequencing
-                                      | statistics::stream_flags::latency
-                                      | statistics::stream_flags::jitter_ipdv
-                                      | statistics::stream_flags::jitter_rfc);
+    constexpr auto signature_stats =
+        (statistics::flow_flags::sequencing | statistics::flow_flags::latency
+         | statistics::flow_flags::jitter_ipdv
+         | statistics::flow_flags::jitter_rfc);
 
     /* We always need rx_timestamps */
     auto needed = openperf::utils::bit_flags<sink_feature_flags>{
         sink_feature_flags::rx_timestamp};
 
-    if (m_stream_counters & signature_stats) {
+    if (m_flow_counters & signature_stats) {
         needed |= sink_feature_flags::spirent_signature_decode;
     }
 
@@ -183,24 +182,24 @@ sink::push(const openperf::packetio::packets::packet_buffer* const packets[],
         start = end;
     }
 
-    /* Update stream statistics */
-    auto& streams = results->stream_shards[m_indexes[id]];
+    /* Update flow statistics */
+    auto& flows = results->flow_shards[m_indexes[id]];
     auto cache = openperf::utils::flat_memoize<64>(
         [&](uint32_t rss_hash, std::optional<uint32_t> stream_id) {
-            return (streams.second.find(rss_hash, stream_id));
+            return (flows.second.find(rss_hash, stream_id));
         });
 
     std::for_each(packets, packets + packets_length, [&](const auto& packet) {
         auto hash = packets::rss_hash(packet);
         auto stream_id = packets::signature_stream_id(packet);
         auto counters = cache(hash, stream_id);
-        if (!counters) { /* New stream; create stats */
-            auto to_delete = streams.second.insert(
-                hash, stream_id, statistics::make_counters(m_stream_counters));
+        if (!counters) { /* New flow; create stats */
+            auto to_delete = flows.second.insert(
+                hash, stream_id, statistics::make_counters(m_flow_counters));
 
             counters = cache.retry(hash, stream_id);
             assert(counters);
-            streams.first.writer_add_gc_callback(
+            flows.first.writer_add_gc_callback(
                 [to_delete]() { delete to_delete; });
         }
         counters->update(packets::length(packet),
@@ -209,7 +208,7 @@ sink::push(const openperf::packetio::packets::packet_buffer* const packets[],
                          packets::signature_sequence_number(packet));
     });
 
-    streams.first.writer_process_gc_callbacks();
+    flows.first.writer_process_gc_callbacks();
 
     return (packets_length);
 }

@@ -51,11 +51,11 @@ nlohmann::json AnalyzerConfig::toJson() const
             }
     {
         nlohmann::json jsonArray;
-        for( auto& item : m_Stream_counters )
+        for( auto& item : m_Flow_counters )
         {
             jsonArray.push_back(ModelBase::toJson(item));
         }
-        val["stream_counters"] = jsonArray;
+        val["flow_counters"] = jsonArray;
             }
     
 
@@ -79,11 +79,11 @@ void AnalyzerConfig::fromJson(nlohmann::json& val)
         }
     }
     {
-        m_Stream_counters.clear();
+        m_Flow_counters.clear();
         nlohmann::json jsonArray;
-                for( auto& item : val["stream_counters"] )
+                for( auto& item : val["flow_counters"] )
         {
-            m_Stream_counters.push_back(item);
+            m_Flow_counters.push_back(item);
             
         }
     }
@@ -112,9 +112,9 @@ std::vector<std::string>& AnalyzerConfig::getProtocolCounters()
 {
     return m_Protocol_counters;
 }
-std::vector<std::string>& AnalyzerConfig::getStreamCounters()
+std::vector<std::string>& AnalyzerConfig::getFlowCounters()
 {
-    return m_Stream_counters;
+    return m_Flow_counters;
 }
 
 }

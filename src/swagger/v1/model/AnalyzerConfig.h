@@ -61,16 +61,16 @@ public:
     /// </summary>
     std::vector<std::string>& getProtocolCounters();
         /// <summary>
-    /// List of results to generate per stream for received packets. Sequencing, latency, and jitter results require Spirent signatures in the received packets. 
+    /// List of results to generate per flow for received packets. Sequencing, latency, and jitter results require Spirent signatures in the received packets. 
     /// </summary>
-    std::vector<std::string>& getStreamCounters();
+    std::vector<std::string>& getFlowCounters();
     
 protected:
     std::string m_Filter;
     bool m_FilterIsSet;
     std::vector<std::string> m_Protocol_counters;
 
-    std::vector<std::string> m_Stream_counters;
+    std::vector<std::string> m_Flow_counters;
 
 };
 

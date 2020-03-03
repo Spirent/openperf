@@ -16,7 +16,7 @@ paths:
       summary: List packet analyzers
       description: |
         The `analyzers` endpoint returns all packet analyzers that are
-        configured to collect and report port and stream statistics.
+        configured to collect and report port and flow statistics.
       parameters:
         - name: source_id
           in: query
@@ -329,21 +329,21 @@ paths:
       summary: Delete a packet analyzer result
       description: |
         Delete an inactive packet analyzer result. Also deletes all child
-        rx-stream objects. Idempotent.
+        rx-flow objects. Idempotent.
       parameters:
         - $ref: "#/parameters/id"
       responses:
         204:
           description: No Content
 
-  /rx-streams:
+  /rx-flows:
     get:
-      operationId: ListRxStreams
+      operationId: ListRxFlows
       tags:
         - Analyzers
-      summary: List received packet streams
+      summary: List received packet flows
       description: |
-        The `rx-streams` endpoint returns all packet streams that have been
+        The `rx-flows` endpoint returns all packet flows that have been
         received by analyzer instances.
       parameters:
         - name: analyzer_id
@@ -362,22 +362,22 @@ paths:
           schema:
             type: array
             items:
-              $ref: "#/definitions/RxStream"
+              $ref: "#/definitions/RxFlow"
 
-  /rx-streams/{id}:
+  /rx-flows/{id}:
     get:
-      operationId: GetRxStream
+      operationId: GetRxFlow
       tags:
         - Analyzers
-      summary: Get packet stream counters for a single stream
-      description: Returns packet stream counters by id.
+      summary: Get packet flow counters for a single flow
+      description: Returns packet flow counters by id.
       parameters:
         - $ref: "#/parameters/id"
       responses:
         200:
           description: Success
           schema:
-            $ref: "#/definitions/RxStream"
+            $ref: "#/definitions/RxFlow"
 
 definitions:
   Analyzer:
@@ -432,10 +432,10 @@ definitions:
             - tunnel_ip
             - tunnel_protocol
           uniqueItems: true
-      stream_counters:
+      flow_counters:
         type: array
         description: |
-          List of results to generate per stream for received packets.
+          List of results to generate per flow for received packets.
           Sequencing, latency, and jitter results require Spirent signatures
           in the received packets.
         items:
@@ -454,7 +454,7 @@ definitions:
           uniqueItems: true
     required:
       - protocol_counters
-      - stream_counters
+      - flow_counters
 
   AnalyzerResult:
     type: object
@@ -471,21 +471,21 @@ definitions:
         description: Indicates whether the result is currently receiving updates
       protocol_counters:
         $ref: "#/definitions/AnalyzerProtocolCounters"
-      stream_counters:
-        $ref: "#/definitions/AnalyzerStreamCounters"
-      streams:
+      flow_counters:
+        $ref: "#/definitions/AnalyzerFlowCounters"
+      flows:
         type: array
         description: |
-          List of unique stream ids included in stats. Individual stream
-          statistics may be queried via the `rx-streams` endpoint.
+          List of unique flow ids included in stats. Individual flow
+          statistics may be queried via the `rx-flows` endpoint.
         items:
           type: string
     required:
       - id
       - active
       - protocol_counters
-      - stream_counters
-      - streams
+      - flow_counters
+      - flows
 
   AnalyzerProtocolCounters:
     type: object
@@ -833,7 +833,7 @@ definitions:
           - icmp
           - non_fragmented
 
-  AnalyzerStreamSummaryCounters:
+  AnalyzerFlowSummaryCounters:
     type: object
     description: Summary results for per-packet statistics
     properties:
@@ -860,16 +860,16 @@ definitions:
     required:
       - total
 
-  AnalyzerStreamCounters:
+  AnalyzerFlowCounters:
     type: object
-    description: Result counters for streams
+    description: Result counters for flows
     properties:
       frame_length:
         type: object
         description: Frame length result counters
         properties:
           summary:
-            $ref: "#/definitions/AnalyzerStreamSummaryCounters"
+            $ref: "#/definitions/AnalyzerFlowSummaryCounters"
           units:
             type: string
             description: Frame length result units
@@ -883,7 +883,7 @@ definitions:
         description: Inter-arrival time result counters
         properties:
           summary:
-            $ref: "#/definitions/AnalyzerStreamSummaryCounters"
+            $ref: "#/definitions/AnalyzerFlowSummaryCounters"
           units:
             type: string
             description: Inter-arrival time measurement units
@@ -897,7 +897,7 @@ definitions:
         description: Jitter (RFC 3393) result counters
         properties:
           summary:
-            $ref: "#/definitions/AnalyzerStreamSummaryCounters"
+            $ref: "#/definitions/AnalyzerFlowSummaryCounters"
           units:
             type: string
             description: Jitter time measurement units
@@ -911,7 +911,7 @@ definitions:
         description: Jitter (RFC 4737) result counters
         properties:
           summary:
-            $ref: "#/definitions/AnalyzerStreamSummaryCounters"
+            $ref: "#/definitions/AnalyzerFlowSummaryCounters"
           units:
             type: string
             description: Jitter time measurement units
@@ -925,7 +925,7 @@ definitions:
         description: Latency result counters
         properties:
           summary:
-            $ref: "#/definitions/AnalyzerStreamSummaryCounters"
+            $ref: "#/definitions/AnalyzerFlowSummaryCounters"
           units:
             type: string
             description: Latency measurement units
@@ -991,18 +991,18 @@ definitions:
     required:
       - frame_count
 
-  RxStream:
+  RxFlow:
     type: object
-    description: Counters for a stream of packets
+    description: Counters for a flow of packets
     properties:
       id:
         type: string
-        description: Unique received stream identifier
+        description: Unique received flow identifier
       analyzer_result_id:
         type: string
-        description: Unique analyzer result identifier that observed this stream
+        description: Unique analyzer result identifier that observed this flow
       counters:
-        $ref: "#/definitions/AnalyzerStreamCounters"
+        $ref: "#/definitions/AnalyzerFlowCounters"
     required:
       - id
       - analyzer_result_id

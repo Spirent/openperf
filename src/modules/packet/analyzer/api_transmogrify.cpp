@@ -5,7 +5,7 @@
 
 #include "swagger/v1/model/Analyzer.h"
 #include "swagger/v1/model/AnalyzerResult.h"
-#include "swagger/v1/model/RxStream.h"
+#include "swagger/v1/model/RxFlow.h"
 
 namespace openperf::packet::analyzer::api {
 
@@ -162,11 +162,11 @@ serialized_msg serialize_request(request_msg&& msg)
                                                     request.id.data(),
                                                     request.id.length()));
                            },
-                           [&](request_list_rx_streams& request) {
+                           [&](request_list_rx_flows& request) {
                                return (zmq_msg_init(&serialized.data,
                                                     std::move(request.filter)));
                            },
-                           [&](const request_get_rx_stream& request) {
+                           [&](const request_get_rx_flow& request) {
                                return (zmq_msg_init(&serialized.data,
                                                     request.id.data(),
                                                     request.id.length()));
@@ -191,8 +191,8 @@ serialized_msg serialize_reply(reply_msg&& msg)
                      return (zmq_msg_init(&serialized.data,
                                           reply.analyzer_results));
                  },
-                 [&](reply_rx_streams& reply) {
-                     return (zmq_msg_init(&serialized.data, reply.streams));
+                 [&](reply_rx_flows& reply) {
+                     return (zmq_msg_init(&serialized.data, reply.flows));
                  },
                  [&](const reply_ok&) {
                      return (zmq_msg_init(&serialized.data, 0));
@@ -260,15 +260,15 @@ tl::expected<request_msg, int> deserialize_request(const serialized_msg& msg)
                               zmq_msg_size(&msg.data));
         return (request_delete_analyzer_result{std::move(id)});
     }
-    case utils::variant_index<request_msg, request_list_rx_streams>(): {
-        auto request = request_list_rx_streams{};
+    case utils::variant_index<request_msg, request_list_rx_flows>(): {
+        auto request = request_list_rx_flows{};
         request.filter.reset(*zmq_msg_data<filter_map_type**>(&msg.data));
         return (request);
     }
-    case utils::variant_index<request_msg, request_get_rx_stream>(): {
+    case utils::variant_index<request_msg, request_get_rx_flow>(): {
         auto id = std::string(zmq_msg_data<char*>(&msg.data),
                               zmq_msg_size(&msg.data));
-        return (request_get_rx_stream{std::move(id)});
+        return (request_get_rx_flow{std::move(id)});
     }
     }
 
@@ -300,13 +300,13 @@ tl::expected<reply_msg, int> deserialize_reply(const serialized_msg& msg)
         });
         return (reply);
     }
-    case utils::variant_index<reply_msg, reply_rx_streams>(): {
-        auto size = zmq_msg_size(&msg.data) / sizeof(rx_stream_type*);
-        auto data = zmq_msg_data<rx_stream_type**>(&msg.data);
+    case utils::variant_index<reply_msg, reply_rx_flows>(): {
+        auto size = zmq_msg_size(&msg.data) / sizeof(rx_flow_type*);
+        auto data = zmq_msg_data<rx_flow_type**>(&msg.data);
 
-        auto reply = reply_rx_streams{};
+        auto reply = reply_rx_flows{};
         std::for_each(data, data + size, [&](const auto& ptr) {
-            reply.streams.emplace_back(ptr);
+            reply.flows.emplace_back(ptr);
         });
         return (reply);
     }

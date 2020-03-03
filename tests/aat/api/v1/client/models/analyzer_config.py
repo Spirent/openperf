@@ -33,27 +33,27 @@ class AnalyzerConfig(object):
     swagger_types = {
         'filter': 'str',
         'protocol_counters': 'list[str]',
-        'stream_counters': 'list[str]'
+        'flow_counters': 'list[str]'
     }
 
     attribute_map = {
         'filter': 'filter',
         'protocol_counters': 'protocol_counters',
-        'stream_counters': 'stream_counters'
+        'flow_counters': 'flow_counters'
     }
 
-    def __init__(self, filter=None, protocol_counters=None, stream_counters=None):  # noqa: E501
+    def __init__(self, filter=None, protocol_counters=None, flow_counters=None):  # noqa: E501
         """AnalyzerConfig - a model defined in Swagger"""  # noqa: E501
 
         self._filter = None
         self._protocol_counters = None
-        self._stream_counters = None
+        self._flow_counters = None
         self.discriminator = None
 
         if filter is not None:
             self.filter = filter
         self.protocol_counters = protocol_counters
-        self.stream_counters = stream_counters
+        self.flow_counters = flow_counters
 
     @property
     def filter(self):
@@ -100,26 +100,26 @@ class AnalyzerConfig(object):
         self._protocol_counters = protocol_counters
 
     @property
-    def stream_counters(self):
-        """Gets the stream_counters of this AnalyzerConfig.  # noqa: E501
+    def flow_counters(self):
+        """Gets the flow_counters of this AnalyzerConfig.  # noqa: E501
 
-        List of results to generate per stream for received packets. Sequencing, latency, and jitter results require Spirent signatures in the received packets.   # noqa: E501
+        List of results to generate per flow for received packets. Sequencing, latency, and jitter results require Spirent signatures in the received packets.   # noqa: E501
 
-        :return: The stream_counters of this AnalyzerConfig.  # noqa: E501
+        :return: The flow_counters of this AnalyzerConfig.  # noqa: E501
         :rtype: list[str]
         """
-        return self._stream_counters
+        return self._flow_counters
 
-    @stream_counters.setter
-    def stream_counters(self, stream_counters):
-        """Sets the stream_counters of this AnalyzerConfig.
+    @flow_counters.setter
+    def flow_counters(self, flow_counters):
+        """Sets the flow_counters of this AnalyzerConfig.
 
-        List of results to generate per stream for received packets. Sequencing, latency, and jitter results require Spirent signatures in the received packets.   # noqa: E501
+        List of results to generate per flow for received packets. Sequencing, latency, and jitter results require Spirent signatures in the received packets.   # noqa: E501
 
-        :param stream_counters: The stream_counters of this AnalyzerConfig.  # noqa: E501
+        :param flow_counters: The flow_counters of this AnalyzerConfig.  # noqa: E501
         :type: list[str]
         """
-        self._stream_counters = stream_counters
+        self._flow_counters = flow_counters
 
     def to_dict(self):
         """Returns the model properties as a dict"""
@@ -142,6 +142,9 @@ class AnalyzerConfig(object):
                 ))
             else:
                 result[attr] = value
+        if issubclass(AnalyzerConfig, dict):
+            for key, value in self.items():
+                result[key] = value
 
         return result
 

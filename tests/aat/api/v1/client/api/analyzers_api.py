@@ -38,18 +38,18 @@ class AnalyzersApi(object):
 
         Create multiple packet analyzers. Requests are processed in an all-or-nothing manner, i.e. a single analyzer creation failure causes all analyzer creations for this request to fail.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async=True
-        >>> thread = api.bulk_create_analyzers(create, async=True)
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.bulk_create_analyzers(create, async_req=True)
         >>> result = thread.get()
 
-        :param async bool
+        :param async_req bool
         :param BulkCreateAnalyzersRequest create: Bulk creation (required)
         :return: BulkCreateAnalyzersResponse
                  If the method is called asynchronously,
                  returns the request thread.
         """
         kwargs['_return_http_data_only'] = True
-        if kwargs.get('async'):
+        if kwargs.get('async_req'):
             return self.bulk_create_analyzers_with_http_info(create, **kwargs)  # noqa: E501
         else:
             (data) = self.bulk_create_analyzers_with_http_info(create, **kwargs)  # noqa: E501
@@ -60,11 +60,11 @@ class AnalyzersApi(object):
 
         Create multiple packet analyzers. Requests are processed in an all-or-nothing manner, i.e. a single analyzer creation failure causes all analyzer creations for this request to fail.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async=True
-        >>> thread = api.bulk_create_analyzers_with_http_info(create, async=True)
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.bulk_create_analyzers_with_http_info(create, async_req=True)
         >>> result = thread.get()
 
-        :param async bool
+        :param async_req bool
         :param BulkCreateAnalyzersRequest create: Bulk creation (required)
         :return: BulkCreateAnalyzersResponse
                  If the method is called asynchronously,
@@ -72,7 +72,7 @@ class AnalyzersApi(object):
         """
 
         all_params = ['create']  # noqa: E501
-        all_params.append('async')
+        all_params.append('async_req')
         all_params.append('_return_http_data_only')
         all_params.append('_preload_content')
         all_params.append('_request_timeout')
@@ -126,7 +126,7 @@ class AnalyzersApi(object):
             files=local_var_files,
             response_type='BulkCreateAnalyzersResponse',  # noqa: E501
             auth_settings=auth_settings,
-            async=params.get('async'),
+            async_req=params.get('async_req'),
             _return_http_data_only=params.get('_return_http_data_only'),
             _preload_content=params.get('_preload_content', True),
             _request_timeout=params.get('_request_timeout'),
@@ -137,18 +137,18 @@ class AnalyzersApi(object):
 
         Delete multiple packet analyzers in a best-effort manner. Analyzers can only be deleted when inactive. Active or Non-existant analyzer ids do not cause errors. Idempotent.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async=True
-        >>> thread = api.bulk_delete_analyzers(delete, async=True)
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.bulk_delete_analyzers(delete, async_req=True)
         >>> result = thread.get()
 
-        :param async bool
+        :param async_req bool
         :param BulkDeleteAnalyzersRequest delete: Bulk delete (required)
         :return: None
                  If the method is called asynchronously,
                  returns the request thread.
         """
         kwargs['_return_http_data_only'] = True
-        if kwargs.get('async'):
+        if kwargs.get('async_req'):
             return self.bulk_delete_analyzers_with_http_info(delete, **kwargs)  # noqa: E501
         else:
             (data) = self.bulk_delete_analyzers_with_http_info(delete, **kwargs)  # noqa: E501
@@ -159,11 +159,11 @@ class AnalyzersApi(object):
 
         Delete multiple packet analyzers in a best-effort manner. Analyzers can only be deleted when inactive. Active or Non-existant analyzer ids do not cause errors. Idempotent.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async=True
-        >>> thread = api.bulk_delete_analyzers_with_http_info(delete, async=True)
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.bulk_delete_analyzers_with_http_info(delete, async_req=True)
         >>> result = thread.get()
 
-        :param async bool
+        :param async_req bool
         :param BulkDeleteAnalyzersRequest delete: Bulk delete (required)
         :return: None
                  If the method is called asynchronously,
@@ -171,7 +171,7 @@ class AnalyzersApi(object):
         """
 
         all_params = ['delete']  # noqa: E501
-        all_params.append('async')
+        all_params.append('async_req')
         all_params.append('_return_http_data_only')
         all_params.append('_preload_content')
         all_params.append('_request_timeout')
@@ -225,7 +225,7 @@ class AnalyzersApi(object):
             files=local_var_files,
             response_type=None,  # noqa: E501
             auth_settings=auth_settings,
-            async=params.get('async'),
+            async_req=params.get('async_req'),
             _return_http_data_only=params.get('_return_http_data_only'),
             _preload_content=params.get('_preload_content', True),
             _request_timeout=params.get('_request_timeout'),
@@ -236,18 +236,18 @@ class AnalyzersApi(object):
 
         Start multiple packet analyzers simultaneously  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async=True
-        >>> thread = api.bulk_start_analyzers(start, async=True)
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.bulk_start_analyzers(start, async_req=True)
         >>> result = thread.get()
 
-        :param async bool
+        :param async_req bool
         :param BulkStartAnalyzersRequest start: Bulk start (required)
         :return: BulkStartAnalyzersResponse
                  If the method is called asynchronously,
                  returns the request thread.
         """
         kwargs['_return_http_data_only'] = True
-        if kwargs.get('async'):
+        if kwargs.get('async_req'):
             return self.bulk_start_analyzers_with_http_info(start, **kwargs)  # noqa: E501
         else:
             (data) = self.bulk_start_analyzers_with_http_info(start, **kwargs)  # noqa: E501
@@ -258,11 +258,11 @@ class AnalyzersApi(object):
 
         Start multiple packet analyzers simultaneously  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async=True
-        >>> thread = api.bulk_start_analyzers_with_http_info(start, async=True)
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.bulk_start_analyzers_with_http_info(start, async_req=True)
         >>> result = thread.get()
 
-        :param async bool
+        :param async_req bool
         :param BulkStartAnalyzersRequest start: Bulk start (required)
         :return: BulkStartAnalyzersResponse
                  If the method is called asynchronously,
@@ -270,7 +270,7 @@ class AnalyzersApi(object):
         """
 
         all_params = ['start']  # noqa: E501
-        all_params.append('async')
+        all_params.append('async_req')
         all_params.append('_return_http_data_only')
         all_params.append('_preload_content')
         all_params.append('_request_timeout')
@@ -324,7 +324,7 @@ class AnalyzersApi(object):
             files=local_var_files,
             response_type='BulkStartAnalyzersResponse',  # noqa: E501
             auth_settings=auth_settings,
-            async=params.get('async'),
+            async_req=params.get('async_req'),
             _return_http_data_only=params.get('_return_http_data_only'),
             _preload_content=params.get('_preload_content', True),
             _request_timeout=params.get('_request_timeout'),
@@ -335,18 +335,18 @@ class AnalyzersApi(object):
 
         Stop multiple packet analyzers simultaneously  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async=True
-        >>> thread = api.bulk_stop_analyzers(stop, async=True)
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.bulk_stop_analyzers(stop, async_req=True)
         >>> result = thread.get()
 
-        :param async bool
+        :param async_req bool
         :param BulkStopAnalyzersRequest stop: Bulk stop (required)
         :return: None
                  If the method is called asynchronously,
                  returns the request thread.
         """
         kwargs['_return_http_data_only'] = True
-        if kwargs.get('async'):
+        if kwargs.get('async_req'):
             return self.bulk_stop_analyzers_with_http_info(stop, **kwargs)  # noqa: E501
         else:
             (data) = self.bulk_stop_analyzers_with_http_info(stop, **kwargs)  # noqa: E501
@@ -357,11 +357,11 @@ class AnalyzersApi(object):
 
         Stop multiple packet analyzers simultaneously  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async=True
-        >>> thread = api.bulk_stop_analyzers_with_http_info(stop, async=True)
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.bulk_stop_analyzers_with_http_info(stop, async_req=True)
         >>> result = thread.get()
 
-        :param async bool
+        :param async_req bool
         :param BulkStopAnalyzersRequest stop: Bulk stop (required)
         :return: None
                  If the method is called asynchronously,
@@ -369,7 +369,7 @@ class AnalyzersApi(object):
         """
 
         all_params = ['stop']  # noqa: E501
-        all_params.append('async')
+        all_params.append('async_req')
         all_params.append('_return_http_data_only')
         all_params.append('_preload_content')
         all_params.append('_request_timeout')
@@ -423,7 +423,7 @@ class AnalyzersApi(object):
             files=local_var_files,
             response_type=None,  # noqa: E501
             auth_settings=auth_settings,
-            async=params.get('async'),
+            async_req=params.get('async_req'),
             _return_http_data_only=params.get('_return_http_data_only'),
             _preload_content=params.get('_preload_content', True),
             _request_timeout=params.get('_request_timeout'),
@@ -434,18 +434,18 @@ class AnalyzersApi(object):
 
         Create a new packet analyzer.  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async=True
-        >>> thread = api.create_analyzer(analyzer, async=True)
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.create_analyzer(analyzer, async_req=True)
         >>> result = thread.get()
 
-        :param async bool
+        :param async_req bool
         :param Analyzer analyzer: New packet analyzer (required)
         :return: Analyzer
                  If the method is called asynchronously,
                  returns the request thread.
         """
         kwargs['_return_http_data_only'] = True
-        if kwargs.get('async'):
+        if kwargs.get('async_req'):
             return self.create_analyzer_with_http_info(analyzer, **kwargs)  # noqa: E501
         else:
             (data) = self.create_analyzer_with_http_info(analyzer, **kwargs)  # noqa: E501
@@ -456,11 +456,11 @@ class AnalyzersApi(object):
 
         Create a new packet analyzer.  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async=True
-        >>> thread = api.create_analyzer_with_http_info(analyzer, async=True)
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.create_analyzer_with_http_info(analyzer, async_req=True)
         >>> result = thread.get()
 
-        :param async bool
+        :param async_req bool
         :param Analyzer analyzer: New packet analyzer (required)
         :return: Analyzer
                  If the method is called asynchronously,
@@ -468,7 +468,7 @@ class AnalyzersApi(object):
         """
 
         all_params = ['analyzer']  # noqa: E501
-        all_params.append('async')
+        all_params.append('async_req')
         all_params.append('_return_http_data_only')
         all_params.append('_preload_content')
         all_params.append('_request_timeout')
@@ -522,7 +522,7 @@ class AnalyzersApi(object):
             files=local_var_files,
             response_type='Analyzer',  # noqa: E501
             auth_settings=auth_settings,
-            async=params.get('async'),
+            async_req=params.get('async_req'),
             _return_http_data_only=params.get('_return_http_data_only'),
             _preload_content=params.get('_preload_content', True),
             _request_timeout=params.get('_request_timeout'),
@@ -533,18 +533,18 @@ class AnalyzersApi(object):
 
         Delete a stopped packet analyzer by id. Also delete all results created by this analyzer. Idempotent.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async=True
-        >>> thread = api.delete_analyzer(id, async=True)
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.delete_analyzer(id, async_req=True)
         >>> result = thread.get()
 
-        :param async bool
+        :param async_req bool
         :param str id: Unique resource identifier (required)
         :return: None
                  If the method is called asynchronously,
                  returns the request thread.
         """
         kwargs['_return_http_data_only'] = True
-        if kwargs.get('async'):
+        if kwargs.get('async_req'):
             return self.delete_analyzer_with_http_info(id, **kwargs)  # noqa: E501
         else:
             (data) = self.delete_analyzer_with_http_info(id, **kwargs)  # noqa: E501
@@ -555,11 +555,11 @@ class AnalyzersApi(object):
 
         Delete a stopped packet analyzer by id. Also delete all results created by this analyzer. Idempotent.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async=True
-        >>> thread = api.delete_analyzer_with_http_info(id, async=True)
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.delete_analyzer_with_http_info(id, async_req=True)
         >>> result = thread.get()
 
-        :param async bool
+        :param async_req bool
         :param str id: Unique resource identifier (required)
         :return: None
                  If the method is called asynchronously,
@@ -567,7 +567,7 @@ class AnalyzersApi(object):
         """
 
         all_params = ['id']  # noqa: E501
-        all_params.append('async')
+        all_params.append('async_req')
         all_params.append('_return_http_data_only')
         all_params.append('_preload_content')
         all_params.append('_request_timeout')
@@ -621,7 +621,7 @@ class AnalyzersApi(object):
             files=local_var_files,
             response_type=None,  # noqa: E501
             auth_settings=auth_settings,
-            async=params.get('async'),
+            async_req=params.get('async_req'),
             _return_http_data_only=params.get('_return_http_data_only'),
             _preload_content=params.get('_preload_content', True),
             _request_timeout=params.get('_request_timeout'),
@@ -630,20 +630,20 @@ class AnalyzersApi(object):
     def delete_analyzer_result(self, id, **kwargs):  # noqa: E501
         """Delete a packet analyzer result  # noqa: E501
 
-        Delete an inactive packet analyzer result. Also deletes all child rx-stream objects. Idempotent.   # noqa: E501
+        Delete an inactive packet analyzer result. Also deletes all child rx-flow objects. Idempotent.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async=True
-        >>> thread = api.delete_analyzer_result(id, async=True)
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.delete_analyzer_result(id, async_req=True)
         >>> result = thread.get()
 
-        :param async bool
+        :param async_req bool
         :param str id: Unique resource identifier (required)
         :return: None
                  If the method is called asynchronously,
                  returns the request thread.
         """
         kwargs['_return_http_data_only'] = True
-        if kwargs.get('async'):
+        if kwargs.get('async_req'):
             return self.delete_analyzer_result_with_http_info(id, **kwargs)  # noqa: E501
         else:
             (data) = self.delete_analyzer_result_with_http_info(id, **kwargs)  # noqa: E501
@@ -652,13 +652,13 @@ class AnalyzersApi(object):
     def delete_analyzer_result_with_http_info(self, id, **kwargs):  # noqa: E501
         """Delete a packet analyzer result  # noqa: E501
 
-        Delete an inactive packet analyzer result. Also deletes all child rx-stream objects. Idempotent.   # noqa: E501
+        Delete an inactive packet analyzer result. Also deletes all child rx-flow objects. Idempotent.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async=True
-        >>> thread = api.delete_analyzer_result_with_http_info(id, async=True)
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.delete_analyzer_result_with_http_info(id, async_req=True)
         >>> result = thread.get()
 
-        :param async bool
+        :param async_req bool
         :param str id: Unique resource identifier (required)
         :return: None
                  If the method is called asynchronously,
@@ -666,7 +666,7 @@ class AnalyzersApi(object):
         """
 
         all_params = ['id']  # noqa: E501
-        all_params.append('async')
+        all_params.append('async_req')
         all_params.append('_return_http_data_only')
         all_params.append('_preload_content')
         all_params.append('_request_timeout')
@@ -720,7 +720,7 @@ class AnalyzersApi(object):
             files=local_var_files,
             response_type=None,  # noqa: E501
             auth_settings=auth_settings,
-            async=params.get('async'),
+            async_req=params.get('async_req'),
             _return_http_data_only=params.get('_return_http_data_only'),
             _preload_content=params.get('_preload_content', True),
             _request_timeout=params.get('_request_timeout'),
@@ -731,17 +731,17 @@ class AnalyzersApi(object):
 
         Delete all inactive packet analyzer results  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async=True
-        >>> thread = api.delete_analyzer_results(async=True)
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.delete_analyzer_results(async_req=True)
         >>> result = thread.get()
 
-        :param async bool
+        :param async_req bool
         :return: None
                  If the method is called asynchronously,
                  returns the request thread.
         """
         kwargs['_return_http_data_only'] = True
-        if kwargs.get('async'):
+        if kwargs.get('async_req'):
             return self.delete_analyzer_results_with_http_info(**kwargs)  # noqa: E501
         else:
             (data) = self.delete_analyzer_results_with_http_info(**kwargs)  # noqa: E501
@@ -752,18 +752,18 @@ class AnalyzersApi(object):
 
         Delete all inactive packet analyzer results  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async=True
-        >>> thread = api.delete_analyzer_results_with_http_info(async=True)
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.delete_analyzer_results_with_http_info(async_req=True)
         >>> result = thread.get()
 
-        :param async bool
+        :param async_req bool
         :return: None
                  If the method is called asynchronously,
                  returns the request thread.
         """
 
         all_params = []  # noqa: E501
-        all_params.append('async')
+        all_params.append('async_req')
         all_params.append('_return_http_data_only')
         all_params.append('_preload_content')
         all_params.append('_request_timeout')
@@ -811,7 +811,7 @@ class AnalyzersApi(object):
             files=local_var_files,
             response_type=None,  # noqa: E501
             auth_settings=auth_settings,
-            async=params.get('async'),
+            async_req=params.get('async_req'),
             _return_http_data_only=params.get('_return_http_data_only'),
             _preload_content=params.get('_preload_content', True),
             _request_timeout=params.get('_request_timeout'),
@@ -822,17 +822,17 @@ class AnalyzersApi(object):
 
         Delete all inactive packet analyzers and their results. Idempotent.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async=True
-        >>> thread = api.delete_analyzers(async=True)
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.delete_analyzers(async_req=True)
         >>> result = thread.get()
 
-        :param async bool
+        :param async_req bool
         :return: None
                  If the method is called asynchronously,
                  returns the request thread.
         """
         kwargs['_return_http_data_only'] = True
-        if kwargs.get('async'):
+        if kwargs.get('async_req'):
             return self.delete_analyzers_with_http_info(**kwargs)  # noqa: E501
         else:
             (data) = self.delete_analyzers_with_http_info(**kwargs)  # noqa: E501
@@ -843,18 +843,18 @@ class AnalyzersApi(object):
 
         Delete all inactive packet analyzers and their results. Idempotent.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async=True
-        >>> thread = api.delete_analyzers_with_http_info(async=True)
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.delete_analyzers_with_http_info(async_req=True)
         >>> result = thread.get()
 
-        :param async bool
+        :param async_req bool
         :return: None
                  If the method is called asynchronously,
                  returns the request thread.
         """
 
         all_params = []  # noqa: E501
-        all_params.append('async')
+        all_params.append('async_req')
         all_params.append('_return_http_data_only')
         all_params.append('_preload_content')
         all_params.append('_request_timeout')
@@ -902,7 +902,7 @@ class AnalyzersApi(object):
             files=local_var_files,
             response_type=None,  # noqa: E501
             auth_settings=auth_settings,
-            async=params.get('async'),
+            async_req=params.get('async_req'),
             _return_http_data_only=params.get('_return_http_data_only'),
             _preload_content=params.get('_preload_content', True),
             _request_timeout=params.get('_request_timeout'),
@@ -913,18 +913,18 @@ class AnalyzersApi(object):
 
         Return a packet analyzer by id.  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async=True
-        >>> thread = api.get_analyzer(id, async=True)
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.get_analyzer(id, async_req=True)
         >>> result = thread.get()
 
-        :param async bool
+        :param async_req bool
         :param str id: Unique resource identifier (required)
         :return: Analyzer
                  If the method is called asynchronously,
                  returns the request thread.
         """
         kwargs['_return_http_data_only'] = True
-        if kwargs.get('async'):
+        if kwargs.get('async_req'):
             return self.get_analyzer_with_http_info(id, **kwargs)  # noqa: E501
         else:
             (data) = self.get_analyzer_with_http_info(id, **kwargs)  # noqa: E501
@@ -935,11 +935,11 @@ class AnalyzersApi(object):
 
         Return a packet analyzer by id.  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async=True
-        >>> thread = api.get_analyzer_with_http_info(id, async=True)
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.get_analyzer_with_http_info(id, async_req=True)
         >>> result = thread.get()
 
-        :param async bool
+        :param async_req bool
         :param str id: Unique resource identifier (required)
         :return: Analyzer
                  If the method is called asynchronously,
@@ -947,7 +947,7 @@ class AnalyzersApi(object):
         """
 
         all_params = ['id']  # noqa: E501
-        all_params.append('async')
+        all_params.append('async_req')
         all_params.append('_return_http_data_only')
         all_params.append('_preload_content')
         all_params.append('_request_timeout')
@@ -1001,7 +1001,7 @@ class AnalyzersApi(object):
             files=local_var_files,
             response_type='Analyzer',  # noqa: E501
             auth_settings=auth_settings,
-            async=params.get('async'),
+            async_req=params.get('async_req'),
             _return_http_data_only=params.get('_return_http_data_only'),
             _preload_content=params.get('_preload_content', True),
             _request_timeout=params.get('_request_timeout'),
@@ -1012,18 +1012,18 @@ class AnalyzersApi(object):
 
         Returns results from a packet analyzer by result id.  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async=True
-        >>> thread = api.get_analyzer_result(id, async=True)
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.get_analyzer_result(id, async_req=True)
         >>> result = thread.get()
 
-        :param async bool
+        :param async_req bool
         :param str id: Unique resource identifier (required)
         :return: AnalyzerResult
                  If the method is called asynchronously,
                  returns the request thread.
         """
         kwargs['_return_http_data_only'] = True
-        if kwargs.get('async'):
+        if kwargs.get('async_req'):
             return self.get_analyzer_result_with_http_info(id, **kwargs)  # noqa: E501
         else:
             (data) = self.get_analyzer_result_with_http_info(id, **kwargs)  # noqa: E501
@@ -1034,11 +1034,11 @@ class AnalyzersApi(object):
 
         Returns results from a packet analyzer by result id.  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async=True
-        >>> thread = api.get_analyzer_result_with_http_info(id, async=True)
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.get_analyzer_result_with_http_info(id, async_req=True)
         >>> result = thread.get()
 
-        :param async bool
+        :param async_req bool
         :param str id: Unique resource identifier (required)
         :return: AnalyzerResult
                  If the method is called asynchronously,
@@ -1046,7 +1046,7 @@ class AnalyzersApi(object):
         """
 
         all_params = ['id']  # noqa: E501
-        all_params.append('async')
+        all_params.append('async_req')
         all_params.append('_return_http_data_only')
         all_params.append('_preload_content')
         all_params.append('_request_timeout')
@@ -1100,52 +1100,52 @@ class AnalyzersApi(object):
             files=local_var_files,
             response_type='AnalyzerResult',  # noqa: E501
             auth_settings=auth_settings,
-            async=params.get('async'),
+            async_req=params.get('async_req'),
             _return_http_data_only=params.get('_return_http_data_only'),
             _preload_content=params.get('_preload_content', True),
             _request_timeout=params.get('_request_timeout'),
             collection_formats=collection_formats)
 
-    def get_rx_stream(self, id, **kwargs):  # noqa: E501
-        """Get packet stream counters for a single stream  # noqa: E501
+    def get_rx_flow(self, id, **kwargs):  # noqa: E501
+        """Get packet flow counters for a single flow  # noqa: E501
 
-        Returns packet stream counters by id.  # noqa: E501
+        Returns packet flow counters by id.  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async=True
-        >>> thread = api.get_rx_stream(id, async=True)
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.get_rx_flow(id, async_req=True)
         >>> result = thread.get()
 
-        :param async bool
+        :param async_req bool
         :param str id: Unique resource identifier (required)
-        :return: RxStream
+        :return: RxFlow
                  If the method is called asynchronously,
                  returns the request thread.
         """
         kwargs['_return_http_data_only'] = True
-        if kwargs.get('async'):
-            return self.get_rx_stream_with_http_info(id, **kwargs)  # noqa: E501
+        if kwargs.get('async_req'):
+            return self.get_rx_flow_with_http_info(id, **kwargs)  # noqa: E501
         else:
-            (data) = self.get_rx_stream_with_http_info(id, **kwargs)  # noqa: E501
+            (data) = self.get_rx_flow_with_http_info(id, **kwargs)  # noqa: E501
             return data
 
-    def get_rx_stream_with_http_info(self, id, **kwargs):  # noqa: E501
-        """Get packet stream counters for a single stream  # noqa: E501
+    def get_rx_flow_with_http_info(self, id, **kwargs):  # noqa: E501
+        """Get packet flow counters for a single flow  # noqa: E501
 
-        Returns packet stream counters by id.  # noqa: E501
+        Returns packet flow counters by id.  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async=True
-        >>> thread = api.get_rx_stream_with_http_info(id, async=True)
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.get_rx_flow_with_http_info(id, async_req=True)
         >>> result = thread.get()
 
-        :param async bool
+        :param async_req bool
         :param str id: Unique resource identifier (required)
-        :return: RxStream
+        :return: RxFlow
                  If the method is called asynchronously,
                  returns the request thread.
         """
 
         all_params = ['id']  # noqa: E501
-        all_params.append('async')
+        all_params.append('async_req')
         all_params.append('_return_http_data_only')
         all_params.append('_preload_content')
         all_params.append('_request_timeout')
@@ -1155,14 +1155,14 @@ class AnalyzersApi(object):
             if key not in all_params:
                 raise TypeError(
                     "Got an unexpected keyword argument '%s'"
-                    " to method get_rx_stream" % key
+                    " to method get_rx_flow" % key
                 )
             params[key] = val
         del params['kwargs']
         # verify the required parameter 'id' is set
         if ('id' not in params or
                 params['id'] is None):
-            raise ValueError("Missing the required parameter `id` when calling `get_rx_stream`")  # noqa: E501
+            raise ValueError("Missing the required parameter `id` when calling `get_rx_flow`")  # noqa: E501
 
         collection_formats = {}
 
@@ -1190,16 +1190,16 @@ class AnalyzersApi(object):
         auth_settings = []  # noqa: E501
 
         return self.api_client.call_api(
-            '/packet/rx-streams/{id}', 'GET',
+            '/packet/rx-flows/{id}', 'GET',
             path_params,
             query_params,
             header_params,
             body=body_params,
             post_params=form_params,
             files=local_var_files,
-            response_type='RxStream',  # noqa: E501
+            response_type='RxFlow',  # noqa: E501
             auth_settings=auth_settings,
-            async=params.get('async'),
+            async_req=params.get('async_req'),
             _return_http_data_only=params.get('_return_http_data_only'),
             _preload_content=params.get('_preload_content', True),
             _request_timeout=params.get('_request_timeout'),
@@ -1210,11 +1210,11 @@ class AnalyzersApi(object):
 
         The `analyzer-results` endpoint returns all analyzer results created by analyzer instances.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async=True
-        >>> thread = api.list_analyzer_results(async=True)
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.list_analyzer_results(async_req=True)
         >>> result = thread.get()
 
-        :param async bool
+        :param async_req bool
         :param str analyzer_id: Filter by analyzer id
         :param str source_id: Filter by receive port or interface id
         :return: list[AnalyzerResult]
@@ -1222,7 +1222,7 @@ class AnalyzersApi(object):
                  returns the request thread.
         """
         kwargs['_return_http_data_only'] = True
-        if kwargs.get('async'):
+        if kwargs.get('async_req'):
             return self.list_analyzer_results_with_http_info(**kwargs)  # noqa: E501
         else:
             (data) = self.list_analyzer_results_with_http_info(**kwargs)  # noqa: E501
@@ -1233,11 +1233,11 @@ class AnalyzersApi(object):
 
         The `analyzer-results` endpoint returns all analyzer results created by analyzer instances.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async=True
-        >>> thread = api.list_analyzer_results_with_http_info(async=True)
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.list_analyzer_results_with_http_info(async_req=True)
         >>> result = thread.get()
 
-        :param async bool
+        :param async_req bool
         :param str analyzer_id: Filter by analyzer id
         :param str source_id: Filter by receive port or interface id
         :return: list[AnalyzerResult]
@@ -1246,7 +1246,7 @@ class AnalyzersApi(object):
         """
 
         all_params = ['analyzer_id', 'source_id']  # noqa: E501
-        all_params.append('async')
+        all_params.append('async_req')
         all_params.append('_return_http_data_only')
         all_params.append('_preload_content')
         all_params.append('_request_timeout')
@@ -1298,7 +1298,7 @@ class AnalyzersApi(object):
             files=local_var_files,
             response_type='list[AnalyzerResult]',  # noqa: E501
             auth_settings=auth_settings,
-            async=params.get('async'),
+            async_req=params.get('async_req'),
             _return_http_data_only=params.get('_return_http_data_only'),
             _preload_content=params.get('_preload_content', True),
             _request_timeout=params.get('_request_timeout'),
@@ -1307,20 +1307,20 @@ class AnalyzersApi(object):
     def list_analyzers(self, **kwargs):  # noqa: E501
         """List packet analyzers  # noqa: E501
 
-        The `analyzers` endpoint returns all packet analyzers that are configured to collect and report port and stream statistics.   # noqa: E501
+        The `analyzers` endpoint returns all packet analyzers that are configured to collect and report port and flow statistics.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async=True
-        >>> thread = api.list_analyzers(async=True)
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.list_analyzers(async_req=True)
         >>> result = thread.get()
 
-        :param async bool
+        :param async_req bool
         :param str source_id: Filter by source id
         :return: list[Analyzer]
                  If the method is called asynchronously,
                  returns the request thread.
         """
         kwargs['_return_http_data_only'] = True
-        if kwargs.get('async'):
+        if kwargs.get('async_req'):
             return self.list_analyzers_with_http_info(**kwargs)  # noqa: E501
         else:
             (data) = self.list_analyzers_with_http_info(**kwargs)  # noqa: E501
@@ -1329,13 +1329,13 @@ class AnalyzersApi(object):
     def list_analyzers_with_http_info(self, **kwargs):  # noqa: E501
         """List packet analyzers  # noqa: E501
 
-        The `analyzers` endpoint returns all packet analyzers that are configured to collect and report port and stream statistics.   # noqa: E501
+        The `analyzers` endpoint returns all packet analyzers that are configured to collect and report port and flow statistics.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async=True
-        >>> thread = api.list_analyzers_with_http_info(async=True)
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.list_analyzers_with_http_info(async_req=True)
         >>> result = thread.get()
 
-        :param async bool
+        :param async_req bool
         :param str source_id: Filter by source id
         :return: list[Analyzer]
                  If the method is called asynchronously,
@@ -1343,7 +1343,7 @@ class AnalyzersApi(object):
         """
 
         all_params = ['source_id']  # noqa: E501
-        all_params.append('async')
+        all_params.append('async_req')
         all_params.append('_return_http_data_only')
         all_params.append('_preload_content')
         all_params.append('_request_timeout')
@@ -1393,54 +1393,54 @@ class AnalyzersApi(object):
             files=local_var_files,
             response_type='list[Analyzer]',  # noqa: E501
             auth_settings=auth_settings,
-            async=params.get('async'),
+            async_req=params.get('async_req'),
             _return_http_data_only=params.get('_return_http_data_only'),
             _preload_content=params.get('_preload_content', True),
             _request_timeout=params.get('_request_timeout'),
             collection_formats=collection_formats)
 
-    def list_rx_streams(self, **kwargs):  # noqa: E501
-        """List received packet streams  # noqa: E501
+    def list_rx_flows(self, **kwargs):  # noqa: E501
+        """List received packet flows  # noqa: E501
 
-        The `rx-streams` endpoint returns all packet streams that have been received by analyzer instances.   # noqa: E501
+        The `rx-flows` endpoint returns all packet flows that have been received by analyzer instances.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async=True
-        >>> thread = api.list_rx_streams(async=True)
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.list_rx_flows(async_req=True)
         >>> result = thread.get()
 
-        :param async bool
+        :param async_req bool
         :param str analyzer_id: Filter by receive analyzer id
         :param str source_id: Filter by receive port or interface id
-        :return: list[RxStream]
+        :return: list[RxFlow]
                  If the method is called asynchronously,
                  returns the request thread.
         """
         kwargs['_return_http_data_only'] = True
-        if kwargs.get('async'):
-            return self.list_rx_streams_with_http_info(**kwargs)  # noqa: E501
+        if kwargs.get('async_req'):
+            return self.list_rx_flows_with_http_info(**kwargs)  # noqa: E501
         else:
-            (data) = self.list_rx_streams_with_http_info(**kwargs)  # noqa: E501
+            (data) = self.list_rx_flows_with_http_info(**kwargs)  # noqa: E501
             return data
 
-    def list_rx_streams_with_http_info(self, **kwargs):  # noqa: E501
-        """List received packet streams  # noqa: E501
+    def list_rx_flows_with_http_info(self, **kwargs):  # noqa: E501
+        """List received packet flows  # noqa: E501
 
-        The `rx-streams` endpoint returns all packet streams that have been received by analyzer instances.   # noqa: E501
+        The `rx-flows` endpoint returns all packet flows that have been received by analyzer instances.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async=True
-        >>> thread = api.list_rx_streams_with_http_info(async=True)
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.list_rx_flows_with_http_info(async_req=True)
         >>> result = thread.get()
 
-        :param async bool
+        :param async_req bool
         :param str analyzer_id: Filter by receive analyzer id
         :param str source_id: Filter by receive port or interface id
-        :return: list[RxStream]
+        :return: list[RxFlow]
                  If the method is called asynchronously,
                  returns the request thread.
         """
 
         all_params = ['analyzer_id', 'source_id']  # noqa: E501
-        all_params.append('async')
+        all_params.append('async_req')
         all_params.append('_return_http_data_only')
         all_params.append('_preload_content')
         all_params.append('_request_timeout')
@@ -1450,7 +1450,7 @@ class AnalyzersApi(object):
             if key not in all_params:
                 raise TypeError(
                     "Got an unexpected keyword argument '%s'"
-                    " to method list_rx_streams" % key
+                    " to method list_rx_flows" % key
                 )
             params[key] = val
         del params['kwargs']
@@ -1483,16 +1483,16 @@ class AnalyzersApi(object):
         auth_settings = []  # noqa: E501
 
         return self.api_client.call_api(
-            '/packet/rx-streams', 'GET',
+            '/packet/rx-flows', 'GET',
             path_params,
             query_params,
             header_params,
             body=body_params,
             post_params=form_params,
             files=local_var_files,
-            response_type='list[RxStream]',  # noqa: E501
+            response_type='list[RxFlow]',  # noqa: E501
             auth_settings=auth_settings,
-            async=params.get('async'),
+            async_req=params.get('async_req'),
             _return_http_data_only=params.get('_return_http_data_only'),
             _preload_content=params.get('_preload_content', True),
             _request_timeout=params.get('_request_timeout'),
@@ -1503,18 +1503,18 @@ class AnalyzersApi(object):
 
         Used to start a non-running analyzer. Creates a new analyzer result on success.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async=True
-        >>> thread = api.start_analyzer(id, async=True)
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.start_analyzer(id, async_req=True)
         >>> result = thread.get()
 
-        :param async bool
+        :param async_req bool
         :param str id: Unique resource identifier (required)
         :return: AnalyzerResult
                  If the method is called asynchronously,
                  returns the request thread.
         """
         kwargs['_return_http_data_only'] = True
-        if kwargs.get('async'):
+        if kwargs.get('async_req'):
             return self.start_analyzer_with_http_info(id, **kwargs)  # noqa: E501
         else:
             (data) = self.start_analyzer_with_http_info(id, **kwargs)  # noqa: E501
@@ -1525,11 +1525,11 @@ class AnalyzersApi(object):
 
         Used to start a non-running analyzer. Creates a new analyzer result on success.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async=True
-        >>> thread = api.start_analyzer_with_http_info(id, async=True)
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.start_analyzer_with_http_info(id, async_req=True)
         >>> result = thread.get()
 
-        :param async bool
+        :param async_req bool
         :param str id: Unique resource identifier (required)
         :return: AnalyzerResult
                  If the method is called asynchronously,
@@ -1537,7 +1537,7 @@ class AnalyzersApi(object):
         """
 
         all_params = ['id']  # noqa: E501
-        all_params.append('async')
+        all_params.append('async_req')
         all_params.append('_return_http_data_only')
         all_params.append('_preload_content')
         all_params.append('_request_timeout')
@@ -1591,7 +1591,7 @@ class AnalyzersApi(object):
             files=local_var_files,
             response_type='AnalyzerResult',  # noqa: E501
             auth_settings=auth_settings,
-            async=params.get('async'),
+            async_req=params.get('async_req'),
             _return_http_data_only=params.get('_return_http_data_only'),
             _preload_content=params.get('_preload_content', True),
             _request_timeout=params.get('_request_timeout'),
@@ -1602,18 +1602,18 @@ class AnalyzersApi(object):
 
         Use to halt a running analyzer. Idempotent.  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async=True
-        >>> thread = api.stop_analyzer(id, async=True)
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.stop_analyzer(id, async_req=True)
         >>> result = thread.get()
 
-        :param async bool
+        :param async_req bool
         :param str id: Unique resource identifier (required)
         :return: None
                  If the method is called asynchronously,
                  returns the request thread.
         """
         kwargs['_return_http_data_only'] = True
-        if kwargs.get('async'):
+        if kwargs.get('async_req'):
             return self.stop_analyzer_with_http_info(id, **kwargs)  # noqa: E501
         else:
             (data) = self.stop_analyzer_with_http_info(id, **kwargs)  # noqa: E501
@@ -1624,11 +1624,11 @@ class AnalyzersApi(object):
 
         Use to halt a running analyzer. Idempotent.  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async=True
-        >>> thread = api.stop_analyzer_with_http_info(id, async=True)
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.stop_analyzer_with_http_info(id, async_req=True)
         >>> result = thread.get()
 
-        :param async bool
+        :param async_req bool
         :param str id: Unique resource identifier (required)
         :return: None
                  If the method is called asynchronously,
@@ -1636,7 +1636,7 @@ class AnalyzersApi(object):
         """
 
         all_params = ['id']  # noqa: E501
-        all_params.append('async')
+        all_params.append('async_req')
         all_params.append('_return_http_data_only')
         all_params.append('_preload_content')
         all_params.append('_request_timeout')
@@ -1690,7 +1690,7 @@ class AnalyzersApi(object):
             files=local_var_files,
             response_type=None,  # noqa: E501
             auth_settings=auth_settings,
-            async=params.get('async'),
+            async_req=params.get('async_req'),
             _return_http_data_only=params.get('_return_http_data_only'),
             _preload_content=params.get('_preload_content', True),
             _request_timeout=params.get('_request_timeout'),

@@ -17,6 +17,14 @@ from __future__ import absolute_import
 # import models into model package
 from client.models.analyzer import Analyzer
 from client.models.analyzer_config import AnalyzerConfig
+from client.models.analyzer_flow_counters import AnalyzerFlowCounters
+from client.models.analyzer_flow_counters_frame_length import AnalyzerFlowCountersFrameLength
+from client.models.analyzer_flow_counters_interarrival import AnalyzerFlowCountersInterarrival
+from client.models.analyzer_flow_counters_jitter_ipdv import AnalyzerFlowCountersJitterIpdv
+from client.models.analyzer_flow_counters_jitter_rfc import AnalyzerFlowCountersJitterRfc
+from client.models.analyzer_flow_counters_latency import AnalyzerFlowCountersLatency
+from client.models.analyzer_flow_counters_sequence import AnalyzerFlowCountersSequence
+from client.models.analyzer_flow_summary_counters import AnalyzerFlowSummaryCounters
 from client.models.analyzer_protocol_counters import AnalyzerProtocolCounters
 from client.models.analyzer_protocol_counters_ethernet import AnalyzerProtocolCountersEthernet
 from client.models.analyzer_protocol_counters_inner_ethernet import AnalyzerProtocolCountersInnerEthernet
@@ -26,14 +34,6 @@ from client.models.analyzer_protocol_counters_ip import AnalyzerProtocolCounters
 from client.models.analyzer_protocol_counters_protocol import AnalyzerProtocolCountersProtocol
 from client.models.analyzer_protocol_counters_tunnel import AnalyzerProtocolCountersTunnel
 from client.models.analyzer_result import AnalyzerResult
-from client.models.analyzer_stream_counters import AnalyzerStreamCounters
-from client.models.analyzer_stream_counters_frame_length import AnalyzerStreamCountersFrameLength
-from client.models.analyzer_stream_counters_interarrival import AnalyzerStreamCountersInterarrival
-from client.models.analyzer_stream_counters_jitter_ipdv import AnalyzerStreamCountersJitterIpdv
-from client.models.analyzer_stream_counters_jitter_rfc import AnalyzerStreamCountersJitterRfc
-from client.models.analyzer_stream_counters_latency import AnalyzerStreamCountersLatency
-from client.models.analyzer_stream_counters_sequence import AnalyzerStreamCountersSequence
-from client.models.analyzer_stream_summary_counters import AnalyzerStreamSummaryCounters
 from client.models.bulk_create_analyzers_request import BulkCreateAnalyzersRequest
 from client.models.bulk_create_analyzers_response import BulkCreateAnalyzersResponse
 from client.models.bulk_create_interfaces_request import BulkCreateInterfacesRequest
@@ -59,7 +59,7 @@ from client.models.port_config_bond import PortConfigBond
 from client.models.port_config_dpdk import PortConfigDpdk
 from client.models.port_stats import PortStats
 from client.models.port_status import PortStatus
-from client.models.rx_stream import RxStream
+from client.models.rx_flow import RxFlow
 from client.models.stack import Stack
 from client.models.stack_element_stats import StackElementStats
 from client.models.stack_memory_stats import StackMemoryStats

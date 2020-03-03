@@ -22,8 +22,8 @@
 #include "ModelBase.h"
 
 #include "AnalyzerProtocolCounters.h"
+#include "AnalyzerFlowCounters.h"
 #include <string>
-#include "AnalyzerStreamCounters.h"
 #include <vector>
 
 namespace swagger {
@@ -76,12 +76,12 @@ public:
         /// <summary>
     /// 
     /// </summary>
-    std::shared_ptr<AnalyzerStreamCounters> getStreamCounters() const;
-    void setStreamCounters(std::shared_ptr<AnalyzerStreamCounters> value);
+    std::shared_ptr<AnalyzerFlowCounters> getFlowCounters() const;
+    void setFlowCounters(std::shared_ptr<AnalyzerFlowCounters> value);
         /// <summary>
-    /// List of unique stream ids included in stats. Individual stream statistics may be queried via the &#x60;rx-streams&#x60; endpoint. 
+    /// List of unique flow ids included in stats. Individual flow statistics may be queried via the &#x60;rx-flows&#x60; endpoint. 
     /// </summary>
-    std::vector<std::string>& getStreams();
+    std::vector<std::string>& getFlows();
     
 protected:
     std::string m_Id;
@@ -92,9 +92,9 @@ protected:
 
     std::shared_ptr<AnalyzerProtocolCounters> m_Protocol_counters;
 
-    std::shared_ptr<AnalyzerStreamCounters> m_Stream_counters;
+    std::shared_ptr<AnalyzerFlowCounters> m_Flow_counters;
 
-    std::vector<std::string> m_Streams;
+    std::vector<std::string> m_Flows;
 
 };
 

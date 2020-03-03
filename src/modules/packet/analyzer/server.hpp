@@ -56,8 +56,8 @@ public:
     reply_msg handle_request(const request_get_analyzer_result&);
     reply_msg handle_request(const request_delete_analyzer_result&);
 
-    reply_msg handle_request(const request_list_rx_streams&);
-    reply_msg handle_request(const request_get_rx_stream&);
+    reply_msg handle_request(const request_list_rx_flows&);
+    reply_msg handle_request(const request_get_rx_flow&);
 };
 
 } // namespace openperf::packet::analyzer::api

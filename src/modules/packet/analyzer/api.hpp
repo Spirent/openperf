@@ -11,14 +11,14 @@
 #include "json.hpp"
 #include "tl/expected.hpp"
 
+#include "packet/analyzer/statistics/generic_flow_counters.hpp"
 #include "packet/analyzer/statistics/generic_protocol_counters.hpp"
-#include "packet/analyzer/statistics/generic_stream_counters.hpp"
 
 namespace swagger::v1::model {
 
 class Analyzer;
 class AnalyzerResult;
-class RxStream;
+class RxFlow;
 
 } // namespace swagger::v1::model
 
@@ -47,8 +47,7 @@ inline constexpr std::string_view endpoint =
 
 using protocol_counters_config =
     openperf::utils::bit_flags<statistics::protocol_flags>;
-using stream_counters_config =
-    openperf::utils::bit_flags<statistics::stream_flags>;
+using flow_counters_config = openperf::utils::bit_flags<statistics::flow_flags>;
 
 using analyzer_type = swagger::v1::model::Analyzer;
 using analyzer_ptr = std::unique_ptr<analyzer_type>;
@@ -56,8 +55,8 @@ using analyzer_ptr = std::unique_ptr<analyzer_type>;
 using analyzer_result_type = swagger::v1::model::AnalyzerResult;
 using analyzer_result_ptr = std::unique_ptr<analyzer_result_type>;
 
-using rx_stream_type = swagger::v1::model::RxStream;
-using rx_stream_ptr = std::unique_ptr<rx_stream_type>;
+using rx_flow_type = swagger::v1::model::RxFlow;
+using rx_flow_ptr = std::unique_ptr<rx_flow_type>;
 
 enum class filter_key_type { none, analyzer_id, source_id };
 using filter_map_type = std::map<filter_key_type, std::string>;
@@ -156,12 +155,12 @@ struct request_delete_analyzer_result
     std::string id;
 };
 
-struct request_list_rx_streams
+struct request_list_rx_flows
 {
     filter_map_ptr filter;
 };
 
-struct request_get_rx_stream
+struct request_get_rx_flow
 {
     std::string id;
 };
@@ -176,9 +175,9 @@ struct reply_analyzer_results
     std::vector<analyzer_result_ptr> analyzer_results;
 };
 
-struct reply_rx_streams
+struct reply_rx_flows
 {
-    std::vector<rx_stream_ptr> streams;
+    std::vector<rx_flow_ptr> flows;
 };
 
 using request_msg = std::variant<request_list_analyzers,
@@ -192,8 +191,8 @@ using request_msg = std::variant<request_list_analyzers,
                                  request_delete_analyzer_results,
                                  request_get_analyzer_result,
                                  request_delete_analyzer_result,
-                                 request_list_rx_streams,
-                                 request_get_rx_stream>;
+                                 request_list_rx_flows,
+                                 request_get_rx_flow>;
 
 struct reply_ok
 {};
@@ -213,7 +212,7 @@ struct reply_error
 
 using reply_msg = std::variant<reply_analyzers,
                                reply_analyzer_results,
-                               reply_rx_streams,
+                               reply_rx_flows,
                                reply_ok,
                                reply_error>;
 
@@ -236,17 +235,17 @@ reply_error to_error(error_type type, int value = 0);
 
 analyzer_ptr to_swagger(const sink&);
 analyzer_result_ptr to_swagger(const core::uuid& id, const sink_result& result);
-rx_stream_ptr to_swagger(const core::uuid& id,
-                         const core::uuid& result_id,
-                         const statistics::generic_stream_counters& counters);
+rx_flow_ptr to_swagger(const core::uuid& id,
+                       const core::uuid& result_id,
+                       const statistics::generic_flow_counters& counters);
 
 core::uuid
-rx_stream_id(const core::uuid& result_id,
-             uint16_t shard_idx,
-             uint32_t rss_hash,
-             std::optional<uint32_t> signature_stream_id = std::nullopt);
+rx_flow_id(const core::uuid& result_id,
+           uint16_t shard_idx,
+           uint32_t rss_hash,
+           std::optional<uint32_t> signature_stream_id = std::nullopt);
 std::tuple<core::uuid, uint16_t, uint32_t, std::optional<uint32_t>>
-rx_stream_tuple(const core::uuid& rx_stream_id);
+rx_flow_tuple(const core::uuid& rx_flow_id);
 
 /* Validation routines */
 bool is_valid(const analyzer_type&, std::vector<std::string>&);

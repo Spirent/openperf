@@ -137,11 +137,11 @@ paths:
   /packet/analyzer-results/{id}:
     $ref: ./modules/packet/analyzer.yaml#/paths/~1analyzer-results~1{id}
 
-  /packet/rx-streams:
-    $ref: ./modules/packet/analyzer.yaml#/paths/~1rx-streams
+  /packet/rx-flows:
+    $ref: ./modules/packet/analyzer.yaml#/paths/~1rx-flows
 
-  /packet/rx-streams/{id}:
-    $ref: ./modules/packet/analyzer.yaml#/paths/~1rx-streams~1{id}
+  /packet/rx-flows/{id}:
+    $ref: ./modules/packet/analyzer.yaml#/paths/~1rx-flows~1{id}
 
   ###
   # Timesync paths
@@ -280,14 +280,14 @@ definitions:
   AnalyzerProtocolCounters:
     $ref: ./modules/packet/analyzer.yaml#/definitions/AnalyzerProtocolCounters
 
-  AnalyzerStreamSummaryCounters:
-    $ref: ./modules/packet/analyzer.yaml#/definitions/AnalyzerStreamSummaryCounters
+  AnalyzerFlowSummaryCounters:
+    $ref: ./modules/packet/analyzer.yaml#/definitions/AnalyzerFlowSummaryCounters
 
-  AnalyzerStreamCounters:
-    $ref: ./modules/packet/analyzer.yaml#/definitions/AnalyzerStreamCounters
+  AnalyzerFlowCounters:
+    $ref: ./modules/packet/analyzer.yaml#/definitions/AnalyzerFlowCounters
 
-  RxStream:
-    $ref: ./modules/packet/analyzer.yaml#/definitions/RxStream
+  RxFlow:
+    $ref: ./modules/packet/analyzer.yaml#/definitions/RxFlow
 
   ###
   # Timesync definitions

@@ -89,6 +89,9 @@ class BulkDeleteAnalyzersRequest(object):
                 ))
             else:
                 result[attr] = value
+        if issubclass(BulkDeleteAnalyzersRequest, dict):
+            for key, value in self.items():
+                result[key] = value
 
         return result
 
