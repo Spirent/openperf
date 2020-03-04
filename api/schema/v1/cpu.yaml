@@ -430,15 +430,5 @@ definitions:
         type: integer
         description: The total amount of finished instruction set cycles
         format: int64
-      latency_min:
-        type: integer
-        description: The minimum amount of time required to perform one instruction set cycle (in nanoseconds)
-        format: int64
-      latency_max:
-        type: integer
-        description: The maximum amount of time required to perform one instruction set cycle (in nanoseconds)
-        format: int64
     required:
       - cycles
-      - latency_min
-      - latency_max
