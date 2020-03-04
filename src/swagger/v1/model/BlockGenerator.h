@@ -50,7 +50,7 @@ public:
     /// BlockGenerator members
 
     /// <summary>
-    /// Unique file identifier
+    /// Block generator identifier
     /// </summary>
     std::string getId() const;
     void setId(std::string value);

@@ -4,15 +4,23 @@
 #include "block/server.hpp"
 #include "block/device.hpp"
 #include "block/block_file.hpp"
+#include "config/op_config_utils.hpp"
+#include "swagger/v1/model/BlockFile.h"
 
 namespace openperf::block::api {
 
 using json = nlohmann::json;
+using namespace swagger::v1::model;
 
 std::string to_string(request_type type)
 {
     const static std::unordered_map<request_type, std::string> request_types = {
         {request_type::LIST_DEVICES, "LIST_INTERFACES"},
+        {request_type::GET_DEVICE, "GET_DEVICE"},
+        {request_type::LIST_FILES, "LIST_FILES"},
+        {request_type::CREATE_FILE, "CREATE_FILE"},
+        {request_type::GET_FILE, "GET_FILE"},
+        {request_type::DELETE_FILE, "DELETE_FILE"},
         {request_type::NONE, "UNKNOWN"} /* Overloaded */
     };
 
@@ -40,7 +48,7 @@ void server::handle_list_devices_request(json& reply)
 {
     json jints = json::array();
 
-    for (auto device : device::block_devices_list()) {
+    for (const auto & device : device::block_devices_list()) {
         jints.emplace_back(device->toJson());
     }
 
@@ -51,15 +59,12 @@ void server::handle_list_devices_request(json& reply)
 void server::handle_get_device_request(json& request, json& reply)
 {
     auto blkdev = device::get_block_device(request["id"]);
-
-    if (blkdev == NULL)
-    {
-        reply["code"] = reply_code::NO_DEVICE;
-    }
-    else 
-    {
+    if (blkdev) std::cout << blkdev.get() << '\n'; else std::cout << "(null)\n";
+    if (blkdev) {
         reply["code"] = reply_code::OK;
         reply["data"] = blkdev->toJson().dump();
+    } else {
+        reply["code"] = reply_code::NO_DEVICE;
     }
 }
 
@@ -77,18 +82,33 @@ void server::handle_list_block_files_request(json& reply)
 
 void server::handle_create_block_file_request(json& request, json& reply)
 {
-    auto blkfile = blk_file_stack.get_block_file(request["id"]);
-
-    reply["code"] = reply_code::OK;
-    reply["data"] = blkfile->toJson().dump();
+    try {
+        auto block_file_model =
+            json::parse(request["data"].get<std::string>()).get<BlockFile>();
+        
+        if (auto id_check = config::op_config_validate_id_string(block_file_model.getId()); !id_check)
+            throw std::runtime_error(id_check.error().c_str());
+        
+        auto blkfile = blk_file_stack.create_block_file(block_file_model);
+        
+        reply["code"] = reply_code::OK;
+        reply["data"] = blkfile->toJson().dump();
+    } catch (const json::exception& e) {
+        reply["code"] = reply_code::BAD_INPUT;
+        reply["error"] = json_error(e.id, e.what());
+    }
 }
 
 void server::handle_get_block_file_request(json& request, json& reply)
 {
     auto blkfile = blk_file_stack.get_block_file(request["id"]);
 
-    reply["code"] = reply_code::OK;
-    reply["data"] = blkfile->toJson().dump();
+    if (blkfile == NULL) {
+        reply["code"] = reply_code::NO_FILE;
+    } else {
+        reply["code"] = reply_code::OK;
+        reply["data"] = blkfile->toJson().dump();
+    }
 }
 
 void server::handle_delete_block_file_request(json& request, json& reply)
