@@ -324,6 +324,7 @@ definitions:
               type: number
               description: Targeted load ratio
               format: integer
+              minimum: 1
           required:
             - instruction_set
             - data_size
@@ -347,7 +348,7 @@ definitions:
         description: Indicates whether the result is currently being updated
       timestamp:
         type: string
-        description: ISO8601-formatted date
+        description: The ISO8601-formatted date of the last result update
         format: date-time
       stats:
         $ref: "#/definitions/CpuGeneratorStats"
@@ -389,7 +390,7 @@ definitions:
         format: int64
       user:
         type: integer
-        description: The amount of user time used, e.g. inceptiond code
+        description: The amount of user time used, e.g. openperf code
         format: int64
       steal:
         type: integer
@@ -409,7 +410,6 @@ definitions:
       - utilization
       - system
       - user
-      - steal
       - error
       - targets
 
