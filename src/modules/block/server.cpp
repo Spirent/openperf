@@ -72,9 +72,8 @@ void server::handle_list_block_files_request(json& reply)
 {
     json jints = json::array();
 
-    for (auto blkfile : blk_file_stack.block_files_list()) {
+    for (auto & blkfile : blk_file_stack.block_files_list())
         jints.emplace_back(blkfile->toJson());
-    }
 
     reply["code"] = reply_code::OK;
     reply["data"] = jints.dump();
@@ -83,16 +82,21 @@ void server::handle_list_block_files_request(json& reply)
 void server::handle_create_block_file_request(json& request, json& reply)
 {
     try {
-        auto block_file_model =
-            json::parse(request["data"].get<std::string>()).get<BlockFile>();
+        auto block_file_model = json::parse(request["data"].get<std::string>());
+        BlockFile block_file;
+        block_file.fromJson(block_file_model);
         
-        if (auto id_check = config::op_config_validate_id_string(block_file_model.getId()); !id_check)
+        if (auto id_check = config::op_config_validate_id_string(block_file.getId()); !id_check)
             throw std::runtime_error(id_check.error().c_str());
         
-        auto blkfile = blk_file_stack.create_block_file(block_file_model);
-        
+        auto result = blk_file_stack.create_block_file(block_file);
+        if (!result) { throw std::runtime_error(result.error()); }
+
         reply["code"] = reply_code::OK;
-        reply["data"] = blkfile->toJson().dump();
+        reply["data"] = result.value()->toJson().dump();
+   } catch (const std::runtime_error& e) {
+        reply["code"] = reply_code::BAD_INPUT;
+        reply["error"] = json_error(EINVAL, e.what());
     } catch (const json::exception& e) {
         reply["code"] = reply_code::BAD_INPUT;
         reply["error"] = json_error(e.id, e.what());
@@ -114,7 +118,6 @@ void server::handle_get_block_file_request(json& request, json& reply)
 void server::handle_delete_block_file_request(json& request, json& reply)
 {
     blk_file_stack.delete_block_file(request["id"]);
-    
     reply["code"] = reply_code::OK;
 }
 
@@ -169,7 +172,6 @@ int server::handle_request(const op_event_data* data)
                 ENOSYS,
                 "Request type not implemented in block server");
         }
-
         std::vector<uint8_t> reply_buffer = json::to_cbor(reply);
         if ((send_or_err = zmq_send(
                  data->socket, reply_buffer.data(), reply_buffer.size(), 0))
@@ -184,9 +186,7 @@ int server::handle_request(const op_event_data* data)
                    to_string(type).c_str());
         }
     }
-
     zmq_msg_close(&request_msg);
-
     return (((recv_or_err < 0 || send_or_err < 0) && errno == ETERM) ? -1 : 0);
 }
 

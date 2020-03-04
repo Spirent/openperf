@@ -1,7 +1,7 @@
 #ifndef _OP_BLOCK_DEVICE_HPP_
 #define _OP_BLOCK_DEVICE_HPP_
 
-
+#include "core/op_core.h"
 #include <dirent.h>
 #include <fcntl.h>
 #include <linux/fs.h>
