@@ -313,13 +313,21 @@ definitions:
             instruction_set:
               type: string
               description: CPU load instruction set
+              enum:
+              - scalar
             data_size:
               type: number
               description: Number of bits to use for data type in chosen instruction set
               format: integer
+              enum:
+              - 32
+              - 64
             operation:
               type: string
               description: CPU load target operation, actual for chosen instruction set
+              enum:
+              - float
+              - int
             weight:
               type: number
               description: Targeted load ratio
