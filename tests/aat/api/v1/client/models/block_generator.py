@@ -64,7 +64,7 @@ class BlockGenerator(object):
     def id(self):
         """Gets the id of this BlockGenerator.  # noqa: E501
 
-        Unique file identifier  # noqa: E501
+        Block generator identifier  # noqa: E501
 
         :return: The id of this BlockGenerator.  # noqa: E501
         :rtype: str
@@ -75,7 +75,7 @@ class BlockGenerator(object):
     def id(self, id):
         """Sets the id of this BlockGenerator.
 
-        Unique file identifier  # noqa: E501
+        Block generator identifier  # noqa: E501
 
         :param id: The id of this BlockGenerator.  # noqa: E501
         :type: str

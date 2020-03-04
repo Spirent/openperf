@@ -82,8 +82,7 @@ bool is_raw_device(const std::string id)
 std::unique_ptr<BlockDevice> get_block_device(std::string id)
 {
     if (!is_raw_device(id))
-        return NULL;
-        
+        return std::unique_ptr<BlockDevice>(nullptr);
     auto blkdev = std::make_unique<BlockDevice>();
     blkdev->setId(id);
     blkdev->setPath(id);
@@ -111,8 +110,8 @@ std::vector<std::unique_ptr<BlockDevice>> block_devices_list()
         if (entry->d_type == DT_DIR)
             continue;  /* skip directories */
 
-        if (auto blkdev = get_block_device(entry->d_name); blkdev != NULL)
-            devices.push_back(blkdev);
+        if (auto blkdev = get_block_device(entry->d_name); blkdev)
+            devices.push_back(std::move(blkdev));
     }
 
     closedir(dir);
