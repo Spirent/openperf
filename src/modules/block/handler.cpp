@@ -173,10 +173,17 @@ void handler::create_file(const Rest::Request& request,
     json api_reply = submit_request(m_socket.get(), api_request);
 
     response.headers().add<Http::Header::ContentType>(MIME(Application, Json));
-    if (api_reply["code"].get<api::reply_code>() == api::reply_code::OK) {
-        response.send(Http::Code::Ok, api_reply["data"].get<std::string>());
-    } else {
-        response.send(Http::Code::Internal_Server_Error,
+    
+    switch (api_reply["code"].get<api::reply_code>()) {
+        case api::reply_code::OK:
+            response.send(Http::Code::Ok, api_reply["data"].get<std::string>());
+            break;
+        case api::reply_code::BAD_INPUT:
+            response.send(Http::Code::Bad_Request,
+                      api_reply["error"].get<std::string>());
+            break;
+        default:
+            response.send(Http::Code::Internal_Server_Error,
                       api_reply["error"].get<std::string>());
     }
 }
@@ -224,7 +231,7 @@ void handler::delete_file(const Rest::Request& request,
 
     response.headers().add<Http::Header::ContentType>(MIME(Application, Json));
     if (api_reply["code"].get<api::reply_code>() == api::reply_code::OK) {
-        response.send(Http::Code::Ok, api_reply["data"].get<std::string>());
+        response.send(Http::Code::Ok);
     } else {
         response.send(Http::Code::Internal_Server_Error,
                       api_reply["error"].get<std::string>());
