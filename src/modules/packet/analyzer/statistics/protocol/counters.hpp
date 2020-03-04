@@ -8,6 +8,34 @@
 
 namespace openperf::packet::analyzer::statistics::protocol {
 
+/*
+ * These packet_type_counters are designed to provide accumulators for DPDK's
+ * packet type field.
+ *
+ * The packet type field is a 32 bit field with sub-fields containing values
+ * indicating the protocol at the different layers of the packet.  For example,
+ * an Ethernet/IPv4/UDP packet would have the packet type value 0x211 while
+ * an Ethernet/IPv6/ICMP packet would have the value 0x541.
+ *
+ * The sub-fields are as follows:
+ * - bits 31:28 are currently unused
+ * - bits 27:24 contain the inner layer 4 type
+ * - bits 23:20 contain the inner layer 3 type
+ * - bits 19:16 contain the inner layer 2 type
+ * - bits 15:12 contain the tunnel type
+ * - bits 11:8 contain the layer 4 type (or outer type if tunneled)
+ * - bits 7:4 contain the layer 3 type (or outer type if tunneled)
+ * - bits 3:0 contain the layer 2 type (or outer type if tunneled)
+ *
+ * Each derived type contains a mask indicating which bits are specific to that
+ * type and an enum that maps the counter name to an index.  Clients access
+ * individual counter values by using the index enum, e.g.
+ * object[object::index::enum].
+ *
+ * Note: some packet type index values are unused and that is reflected in both
+ * the mask and the enum values.
+ */
+
 template <size_t Size> struct packet_type_counters
 {
     static_assert((Size & (Size - 1)) == 0); /* must be power of two */
@@ -60,7 +88,7 @@ template <size_t Size> struct packet_type_counters
     }
 };
 
-struct ethernet : public packet_type_counters<16>
+struct ethernet final : public packet_type_counters<16>
 {
     static constexpr uint32_t mask = 0xf;
 
@@ -88,7 +116,7 @@ struct ethernet : public packet_type_counters<16>
     {}
 };
 
-struct ip : packet_type_counters<16>
+struct ip final : packet_type_counters<16>
 {
     static constexpr uint32_t mask = 0xf0;
 
@@ -116,7 +144,7 @@ struct ip : packet_type_counters<16>
     {}
 };
 
-struct protocol : packet_type_counters<8>
+struct protocol final : packet_type_counters<8>
 {
     static constexpr uint32_t mask = 0x700;
 
@@ -137,7 +165,7 @@ struct protocol : packet_type_counters<8>
     {}
 };
 
-struct tunnel : packet_type_counters<16>
+struct tunnel final : packet_type_counters<16>
 {
     static constexpr uint32_t mask = 0xf000;
 
@@ -165,7 +193,7 @@ struct tunnel : packet_type_counters<16>
     {}
 };
 
-struct inner_ethernet : packet_type_counters<4>
+struct inner_ethernet final : packet_type_counters<4>
 {
     static constexpr uint32_t mask = 0x30000;
 
@@ -182,7 +210,7 @@ struct inner_ethernet : packet_type_counters<4>
     {}
 };
 
-struct inner_ip : packet_type_counters<8>
+struct inner_ip final : packet_type_counters<8>
 {
     static constexpr uint32_t mask = 0x700000;
 
@@ -203,7 +231,7 @@ struct inner_ip : packet_type_counters<8>
     {}
 };
 
-struct inner_protocol : packet_type_counters<8>
+struct inner_protocol final : packet_type_counters<8>
 {
     static constexpr uint32_t mask = 0x7000000;
 
