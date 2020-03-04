@@ -467,7 +467,7 @@ definitions:
         description: Indicates whether the result is currently being updated
       timestamp:
         type: string
-        description: ISO8601-formatted date
+        description: The ISO8601-formatted date of the last result update
         format: date-time
       read:
         $ref: "#/definitions/BlockGeneratorStats"
