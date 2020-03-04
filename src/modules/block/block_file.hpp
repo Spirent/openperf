@@ -9,14 +9,14 @@ namespace openperf::block::file {
     
 class block_file_stack {
 private: 
-    std::vector<BlockFile*>  block_files;
+    std::vector<std::shared_ptr<BlockFile>>  block_files;
 
 public:
     block_file_stack(){};
 
-    std::vector<BlockFile*> block_files_list();
-    BlockFile* create_block_file(BlockFile* block_file);
-    BlockFile* get_block_file(std::string id);
+    std::vector<std::shared_ptr<BlockFile>> block_files_list();
+    std::shared_ptr<BlockFile> create_block_file(BlockFile& block_file);
+    std::shared_ptr<BlockFile> get_block_file(std::string id);
     void delete_block_file(std::string id);
 };
 

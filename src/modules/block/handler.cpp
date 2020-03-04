@@ -7,11 +7,13 @@
 #include "config/op_config_utils.hpp"
 #include "core/op_core.h"
 #include "block/api.hpp"
+#include "swagger/v1/model/BlockFile.h"
 
 namespace opneperf::block {
 
 using namespace Pistache;
 using json = nlohmann::json;
+using namespace swagger::v1::model;
 namespace api = openperf::block::api;
 
 class handler : public openperf::api::route::handler::registrar<handler>
@@ -132,10 +134,15 @@ void handler::get_device(const Rest::Request& request,
     json api_reply = submit_request(m_socket.get(), api_request);
 
     response.headers().add<Http::Header::ContentType>(MIME(Application, Json));
-    if (api_reply["code"].get<api::reply_code>() == api::reply_code::OK) {
-        response.send(Http::Code::Ok, api_reply["data"].get<std::string>());
-    } else {
-        response.send(Http::Code::Internal_Server_Error,
+    switch (api_reply["code"].get<api::reply_code>()) {
+        case api::reply_code::OK:
+            response.send(Http::Code::Ok, api_reply["data"].get<std::string>());
+            break;
+        case api::reply_code::NO_DEVICE:
+            response.send(Http::Code::Not_Found);
+            break;
+        default:
+            response.send(Http::Code::Internal_Server_Error,
                       api_reply["error"].get<std::string>());
     }
 }
@@ -160,13 +167,8 @@ void handler::list_files(const Rest::Request&,
 void handler::create_file(const Rest::Request& request,
                                  Http::ResponseWriter response)
 {
-    auto id = request.param(":id").as<std::string>();
-    if (auto res = openperf::config::op_config_validate_id_string(id); !res) {
-        response.send(Http::Code::Not_Found, res.error());
-        return;
-    }
-
-    json api_request = {{"type", api::request_type::CREATE_FILE}, {"id", id}};
+    json api_request = {{"type", api::request_type::CREATE_FILE},
+                        {"data", request.body()}};
 
     json api_reply = submit_request(m_socket.get(), api_request);
 
@@ -193,10 +195,16 @@ void handler::get_file(const Rest::Request& request,
     json api_reply = submit_request(m_socket.get(), api_request);
 
     response.headers().add<Http::Header::ContentType>(MIME(Application, Json));
-    if (api_reply["code"].get<api::reply_code>() == api::reply_code::OK) {
-        response.send(Http::Code::Ok, api_reply["data"].get<std::string>());
-    } else {
-        response.send(Http::Code::Internal_Server_Error,
+
+    switch (api_reply["code"].get<api::reply_code>()) {
+        case api::reply_code::OK:
+            response.send(Http::Code::Ok, api_reply["data"].get<std::string>());
+            break;
+        case api::reply_code::NO_FILE:
+            response.send(Http::Code::Not_Found);
+            break;
+        default:
+            response.send(Http::Code::Internal_Server_Error,
                       api_reply["error"].get<std::string>());
     }
 }
