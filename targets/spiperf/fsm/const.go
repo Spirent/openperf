@@ -8,4 +8,5 @@ const (
 	DefaultStartDelay            = 3 * time.Second
 	DefaultStatsPollInterval     = 1 * time.Second
 	DefaultGeneratorPollInterval = 1 * time.Second
+	TimeFormatString             = time.RFC3339Nano
 )

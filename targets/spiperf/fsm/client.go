@@ -13,8 +13,6 @@ import (
 	"github.com/go-openapi/strfmt/conv"
 )
 
-const TimeFormatString = time.RFC3339Nano
-
 // Client FSM that handles client mode.
 type Client struct {
 	// PeerCmdOut sends commands to the peer's Server FSM.
