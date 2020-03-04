@@ -257,6 +257,7 @@ paths:
           description: Success
           schema:
             type: object
+            title: MemoryInfoResult
             properties: 
               total_memory:
                 type: integer
