@@ -31,11 +31,8 @@ struct service
 
     void init(void* context)
     {
-        m_block_file_stack =
-            std::make_unique<openperf::block::file::block_file_stack>();
-
         m_server =
-            std::make_unique<openperf::block::api::server>(context, *m_loop, *m_block_file_stack);
+            std::make_unique<openperf::block::api::server>(context, *m_loop);
 
         m_shutdown.reset(op_socket_get_server(
             context, ZMQ_REQ, "inproc://block_shutdown_canary"));
@@ -57,7 +54,6 @@ struct service
     std::unique_ptr<openperf::core::event_loop> m_loop =
         std::make_unique<openperf::core::event_loop>();
     std::unique_ptr<openperf::block::api::server> m_server;
-    std::unique_ptr<block::file::block_file_stack> m_block_file_stack;
     std::unique_ptr<void, op_socket_deleter> m_shutdown;
     std::thread m_service;
 };

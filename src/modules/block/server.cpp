@@ -3,7 +3,6 @@
 #include "block/api.hpp"
 #include "block/server.hpp"
 #include "block/device.hpp"
-#include "block/block_file.hpp"
 #include "config/op_config_utils.hpp"
 #include "swagger/v1/model/BlockFile.h"
 
@@ -71,7 +70,7 @@ void server::handle_list_block_files_request(json& reply)
 {
     json jints = json::array();
 
-    for (auto & blkfile : blk_file_stack.block_files_list())
+    for (auto & blkfile : blk_file_stack->block_files_list())
         jints.emplace_back(blkfile->toJson());
 
     reply["code"] = reply_code::OK;
@@ -93,7 +92,7 @@ void server::handle_create_block_file_request(json& request, json& reply)
             block_file.setId(core::to_string(core::uuid::random()));
         }
 
-        auto result = blk_file_stack.create_block_file(block_file);
+        auto result = blk_file_stack->create_block_file(block_file);
         if (!result) { throw std::runtime_error(result.error()); }
 
         reply["code"] = reply_code::OK;
@@ -109,7 +108,7 @@ void server::handle_create_block_file_request(json& request, json& reply)
 
 void server::handle_get_block_file_request(json& request, json& reply)
 {
-    auto blkfile = blk_file_stack.get_block_file(request["id"]);
+    auto blkfile = blk_file_stack->get_block_file(request["id"]);
 
     if (blkfile == NULL) {
         reply["code"] = reply_code::NO_FILE;
@@ -121,7 +120,65 @@ void server::handle_get_block_file_request(json& request, json& reply)
 
 void server::handle_delete_block_file_request(json& request, json& reply)
 {
-    blk_file_stack.delete_block_file(request["id"]);
+    blk_file_stack->delete_block_file(request["id"]);
+    reply["code"] = reply_code::OK;
+}
+
+void server::handle_list_generators_request(json& reply)
+{
+    json jints = json::array();
+
+    for (auto & blkgenerator : blk_generator_stack->block_generators_list())
+        jints.emplace_back(blkgenerator->toJson());
+
+    reply["code"] = reply_code::OK;
+    reply["data"] = jints.dump();
+}
+
+void server::handle_create_generator_request(json& request, json& reply)
+{
+    try {
+        auto block_generator_model = json::parse(request["data"].get<std::string>());
+        BlockGenerator block_generator;
+        block_generator.fromJson(block_generator_model);
+        
+        if (auto id_check = config::op_config_validate_id_string(block_generator.getId()); !id_check)
+            throw std::runtime_error(id_check.error().c_str());
+        
+        // If user did not specify an id create one for them.
+        if (block_generator.getId() == core::empty_id_string) {
+            block_generator.setId(core::to_string(core::uuid::random()));
+        }
+
+        auto result = blk_generator_stack->create_block_generator(block_generator);
+        if (!result) { throw std::runtime_error(result.error()); }
+
+        reply["code"] = reply_code::OK;
+        reply["data"] = result.value()->toJson().dump();
+   } catch (const std::runtime_error& e) {
+        reply["code"] = reply_code::BAD_INPUT;
+        reply["error"] = json_error(EINVAL, e.what());
+    } catch (const json::exception& e) {
+        reply["code"] = reply_code::BAD_INPUT;
+        reply["error"] = json_error(e.id, e.what());
+    }
+}
+
+void server::handle_get_generator_request(json& request, json& reply)
+{
+    auto blkgenerator = blk_generator_stack->get_block_generator(request["id"]);
+
+    if (blkgenerator == NULL) {
+        reply["code"] = reply_code::NO_FILE;
+    } else {
+        reply["code"] = reply_code::OK;
+        reply["data"] = blkgenerator->toJson().dump();
+    }
+}
+
+void server::handle_delete_generator_request(json& request, json& reply)
+{
+    blk_generator_stack->delete_block_generator(request["id"]);
     reply["code"] = reply_code::OK;
 }
 
@@ -170,6 +227,18 @@ int server::handle_request(const op_event_data* data)
         case request_type::DELETE_FILE:
             handle_delete_block_file_request(request, reply);
             break;
+        case request_type::LIST_GENERATORS:
+            handle_list_generators_request(reply);
+            break;
+        case request_type::CREATE_GENERATOR:
+            handle_create_generator_request(request, reply);
+            break;
+        case request_type::GET_GENERATOR:
+            handle_get_generator_request(request, reply);
+            break;
+        case request_type::DELETE_GENERATOR:
+            handle_delete_generator_request(request, reply);
+            break;
         default:
             reply["code"] = reply_code::ERROR;
             reply["error"] = json_error(
@@ -200,9 +269,10 @@ static int _handle_rpc_request(const op_event_data* data, void* arg)
     return s->handle_request(data);
 }
 
-server::server(void* context, openperf::core::event_loop& loop, block::file::block_file_stack& blk_file_stack)
+server::server(void* context, openperf::core::event_loop& loop)
     : m_socket(op_socket_get_server(context, ZMQ_REP, endpoint.data()))
-    , blk_file_stack(blk_file_stack)
+    , blk_file_stack(std::make_unique<file::block_file_stack>())
+    , blk_generator_stack(std::make_unique<generator::block_generator_stack>())
 {
     struct op_event_callbacks callbacks = {.on_read = _handle_rpc_request};
     loop.add(m_socket.get(), &callbacks, this);

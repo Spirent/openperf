@@ -8,7 +8,8 @@ namespace openperf::block::file {
 
 using namespace swagger::v1::model;
 
-typedef std::map<std::string, std::shared_ptr<BlockFile>> BlockFileMap;
+typedef std::shared_ptr<BlockFile> BlockFilePtr;
+typedef std::map<std::string, BlockFilePtr> BlockFileMap;
 
 class block_file_stack {
 private: 
@@ -17,9 +18,9 @@ private:
 public:
     block_file_stack(){};
 
-    std::vector<std::shared_ptr<BlockFile>> block_files_list();
-    tl::expected<std::shared_ptr<BlockFile>, std::string> create_block_file(BlockFile& block_file);
-    std::shared_ptr<BlockFile> get_block_file(std::string id);
+    std::vector<BlockFilePtr> block_files_list();
+    tl::expected<BlockFilePtr, std::string> create_block_file(BlockFile& block_file);
+    BlockFilePtr get_block_file(std::string id);
     void delete_block_file(std::string id);
 };
 
