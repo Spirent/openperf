@@ -1,0 +1,981 @@
+parameters:
+  id:
+    name: id
+    in: path
+    description: Unique resource identifier
+    type: string
+    format: string
+    required: true
+
+paths:
+  /generators:
+    get:
+      operationId: ListGenerators
+      tags:
+        - PacketGenerators
+      summary: List packet generators
+      description: |
+        The `generators` endpoint returns all packet generators that are
+        configured to transmit test traffic.
+      parameters:
+        - name: target_id
+          in: query
+          description: Filter by target id
+          required: false
+          type: string
+      responses:
+        200:
+          description: Success
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/PacketGenerator"
+    post:
+      operationId: CreateGenerator
+      tags:
+        - PacketGenerators
+      summary: Create a new packet generator
+      parameters:
+        - name: generator
+          in: body
+          description: New packet generator
+          required: true
+          schema:
+            $ref: "#/definitions/PacketGenerator"
+      responses:
+        201:
+          description: Created
+          headers:
+            Location:
+              description: URI of created generator
+              type: string
+          schema:
+            $ref: "#/definitions/PacketGenerator"
+    delete:
+      operationId: DeleteGenerators
+      tags:
+        - PacketGenerators
+      summary: Delete all packet generators
+      description: |
+        Delete all inactive packet generators and their results. Idempotent.
+      responses:
+        204:
+          description: No Content
+
+  /generators/{id}:
+    get:
+      operationId: GetGenerator
+      tags:
+        - PacketGenerators
+      summary: Get a packet generator
+      description: Return a packet generator, by id.
+      parameters:
+        - $ref: "#/parameters/id"
+      responses:
+        200:
+          description: Success
+          schema:
+            $ref: "#/definitions/PacketGenerator"
+    delete:
+      operationId: DeleteGenerator
+      tags:
+        - PacketGenerators
+      summary: Delete a packet generator
+      description: |
+        Delete a stopped packet generator by id. Also delete all results
+        created by this generator. Idempotent.
+      parameters:
+        - $ref: "#/parameters/id"
+      responses:
+        204:
+          description: No Content
+
+  /generators/{id}/start:
+    post:
+      operationId: StartGenerator
+      tags:
+        - PacketGenerators
+      summary: Start generating packets
+      description: |
+        Used to start a non-running generator. Creates a new generator result
+        upon success.
+      parameters:
+        - $ref: "#/parameters/id"
+      responses:
+        201:
+          description: Created
+          headers:
+            Location:
+              description: URI to created generator result object
+              type: string
+          schema:
+            $ref: "#/definitions/PacketGeneratorResult"
+
+  /generators/{id}/stop:
+    post:
+      operationId: StopGenerator
+      tags:
+        - PacketGenerators
+      summary: Stop generating packets.
+      description: Use to halt a running generator. Idempotent.
+      parameters:
+        - $ref: "#/parameters/id"
+      responses:
+        204:
+          description: No Content
+
+  /generators/x/bulk-create:
+    post:
+      operationId: BulkCreateGenerators
+      tags:
+        - PacketGenerators
+      summary: Bulk create packet generators
+      description: |
+        Create multiple packet generators. Requests are processed in an
+        all-or-nothing manner, i.e. a single generator creation failure
+        causes all generator creations for this request to fail.
+      parameters:
+        - name: create
+          in: body
+          description: Bulk creation
+          required: true
+          schema:
+            type: object
+            title: BulkCreateGeneratorsRequest
+            description: Parameters for the bulk create operation
+            properties:
+              items:
+                type: array
+                description: List of packet generators
+                items:
+                  $ref: "#/definitions/PacketGenerator"
+                minItems: 1
+            required:
+              - items
+      responses:
+        200:
+          description: Success
+          schema:
+            type: object
+            title: BulkCreateGeneratorsResponse
+            properties:
+              items:
+                type: array
+                description: List of packet generators
+                items:
+                  $ref: "#/definitions/PacketGenerator"
+                minItems: 1
+            required:
+              - items
+
+  /generators/x/bulk-delete:
+    post:
+      operationId: BulkDeleteGenerators
+      tags:
+        - PacketGenerators
+      summary: Bulk delete packet generators
+      description: |
+        Delete multiple packet generators in a best-effort manner. Generators
+        can only be deleted when inactive. Active or Non-existant generator ids
+        do not cause errors. Idempotent.
+      parameters:
+        - name: delete
+          in: body
+          description: Bulk delete
+          required: true
+          schema:
+            type: object
+            title: BulkDeleteGeneratorsRequest
+            description: Parameters for the bulk delete operation
+            properties:
+              ids:
+                type: array
+                description: List of packet generators
+                items:
+                  type: string
+                minItems: 1
+            required:
+              - ids
+      responses:
+        204:
+          description: No Content
+
+  /generators/x/bulk-start:
+    post:
+      operationId: BulkStartGenerators
+      tags:
+        - PacketGenerators
+      summary: Bulk start packet generators
+      description: Start multiple packet generators simultaneously
+      parameters:
+        - name: start
+          in: body
+          description: Bulk start
+          required: true
+          schema:
+            type: object
+            title: BulkStartGeneratorsRequest
+            description: Parameters for the bulk start operation
+            properties:
+              ids:
+                type: array
+                description: List of packet generator identifiers
+                items:
+                  type: string
+                minItems: 1
+            required:
+              - ids
+      responses:
+        200:
+          description: Success
+          schema:
+            type: object
+            title: BulkStartGeneratorsResponse
+            properties:
+              items:
+                type: array
+                description: List of packet generator results
+                items:
+                  $ref: "#/definitions/PacketGeneratorResult"
+                minItems: 1
+            required:
+              - items
+
+  /generators/x/bulk-stop:
+    post:
+      operationId: BulkStopGenerators
+      tags:
+        - PacketGenerators
+      summary: Bulk stop packet generators
+      description: Stop multiple packet generators simultaneously
+      parameters:
+        - name: stop
+          in: body
+          description: Bulk stop
+          required: true
+          schema:
+            type: object
+            title: BulkStopGeneratorsRequest
+            description: Parameters for the bulk stop operation
+            properties:
+              ids:
+                type: array
+                description: List of packet generator identifiers
+                items:
+                  type: string
+                minItems: 1
+            required:
+              - ids
+      responses:
+        204:
+          description: No Content
+
+  /generators/x/toggle:
+    post:
+      operationId: ToggleGenerators
+      tags:
+        - PacketGenerators
+      summary: Replace a running generator with a stopped generator
+      description: |
+        Atomically swap a running generator with an idle generator.
+        Upon success, the idle generator will be in the run state and
+        the previously running generator will be stopped.
+      parameters:
+        - name: toggle
+          in: body
+          description: Generator toggle
+          required: true
+          schema:
+            type: object
+            title: ToggleGeneratorsRequest
+            description: Parameters for the toggle operation
+            properties:
+              replace:
+                type: string
+                description: The unique id of the running generator
+              with:
+                type: string
+                description: The unique id of the stopped generator
+            required:
+              - replace
+              - with
+      responses:
+        201:
+          description: Created
+          headers:
+            Location:
+              description: URI to created generator result object
+              type: string
+          schema:
+            $ref: "#/definitions/PacketGeneratorResult"
+
+  /generator-results:
+    get:
+      operationId: ListGeneratorResults
+      tags:
+        - PacketGenerators
+      summary: List generator results
+      description: |
+        The `generator-results` endpoint returns all generator results created
+        by generator instances.
+      parameters:
+        - name: generator_id
+          in: query
+          description: Filter by generator id
+          required: false
+          type: string
+        - name: target_id
+          in: query
+          description: Filter by target port or interface id
+          required: false
+          type: string
+      responses:
+        200:
+          description: Success
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/PacketGeneratorResult"
+    delete:
+      operationId: DeleteGeneratorResults
+      tags:
+        - PacketGenerators
+      summary: Delete all generator results
+      description: Delete all inactive generator results
+      responses:
+        204:
+          description: No Content
+
+  /generator-results/{id}:
+    get:
+      operationId: GetGeneratorResult
+      tags:
+        - PacketGenerators
+      summary: Get a packet generator result
+      description: Returns results from a packet generator by result id.
+      parameters:
+        - $ref: "#/parameters/id"
+      responses:
+        200:
+          description: Success
+          schema:
+            $ref: "#/definitions/PacketGeneratorResult"
+    delete:
+      operationId: DeleteGeneratorResult
+      tags:
+        - PacketGenerators
+      summary: Delete a packet generator result
+      description: |
+        Delete an inactive packet generator result. Also deletes all child
+        tx-flow objects. Idempotent.
+      parameters:
+        - $ref: "#/parameters/id"
+      responses:
+        204:
+          description: No Content
+
+  /tx-flows:
+    get:
+      operationId: ListTxFlows
+      tags:
+        - PacketGenerators
+      summary: List packet generator transmit flows
+      description: |
+        The `tx-flows` endpoint returns all packet flows that are generated
+        by packet generators.
+      parameters:
+        - name: generator_id
+          in: query
+          description: Filter by packet generator id
+          required: false
+          type: string
+        - name: target_id
+          in: query
+          description: Filter by target port or interface id
+          required: false
+          type: string
+      responses:
+        200:
+          description: Success
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/TxFlow"
+
+  /tx-flows/{id}:
+    get:
+      operationId: GetTxFlow
+      tags:
+        - PacketGenerators
+      summary: Get a transmit packet flow
+      description: Returns a transmit packet flow by id.
+      parameters:
+        - $ref: "#/parameters/id"
+      responses:
+        200:
+          description: Success
+          schema:
+            $ref: "#/definitions/TxFlow"
+
+definitions:
+  PacketGenerator:
+    type: object
+    description: Packet generator
+    properties:
+      id:
+        type: string
+        description: Unique generator identifier
+      target_id:
+        type: string
+        description: |
+          Specifies the unique target for packets from this generator. This
+          id may refer to either a port or an interface id.
+      active:
+        type: boolean
+        description: |
+          Indicates whether this object is currently generating packets or not.
+      config:
+        $ref: "#/definitions/PacketGeneratorConfig"
+    required:
+      - id
+      - target_id
+      - active
+      - config
+
+  PacketGeneratorConfig:
+    type: object
+    description: Packet generator configuration
+    properties:
+      traffic:
+        type: array
+        description: List of packet sequence definitions
+        items:
+          type: object
+          description: packet sequences to transmit with possible repeats
+          properties:
+            definition:
+              $ref: "#/definitions/TrafficDefinition"
+            repeat:
+              type: integer
+              description: number of times to repeat this sequence
+              format: int32
+              default: 0
+              minimum: 0
+          required:
+            - definition
+        minItems: 1
+      load:
+        $ref: "#/definitions/TrafficLoad"
+      order:
+        type: string
+        description: |
+          Tells the generator how to sequence multiple traffic definitions. Only
+          needed if more than one traffic definition is present.
+        enum:
+          - round-robin
+          - sequential
+    required:
+      - traffic
+      - load
+
+  PacketGeneratorFlowCounters:
+    type: object
+    description: Packet generator statistics
+    properties:
+      errors:
+        type: integer
+        description: The number of packets not transmitted due to errors
+        format: int64
+        minimum: 0
+      octets_actual:
+        type: integer
+        description: The total number of octets that have been transmitted
+        format: int64
+        minimum: 0
+      octets_intended:
+        type: integer
+        description: The total number of octets that should have been transmitted
+        format: int64
+        minimum: 0
+      packets_actual:
+        type: integer
+        description: The total number of packets that have been transmitted
+        format: int64
+        minimum: 0
+      packets_intended:
+        type: integer
+        description: The total number of packets that should have been transmitted
+        format: int64
+        minimum: 0
+      timestamp_first:
+        type: string
+        description: The timestamp of the first transmitted packet
+        format: date-time
+      timestamp_last:
+        type: string
+        description: The timestamp of the most recently transmitted packet
+        format: date-time
+    required:
+      - errors
+      - octets_actual
+      - octets_intended
+      - packets_actual
+      - packets_intended
+
+  PacketGeneratorResult:
+    type: object
+    description: Results produced by a packet generator
+    properties:
+      id:
+        type: string
+        description: Unique generator result identifier
+      active:
+        type: boolean
+        description: Indicates whether this result is currently being updated
+      duration:
+        $ref: ./common.yaml#/definitions/DurationRemainder
+      flow_counters:
+        $ref: "#/definitions/PacketGeneratorFlowCounters"
+      flows:
+        type: array
+        description: |
+          List of unique flow ids included in stats. Individual flow
+          statistics may be queried via the `tx-flows` endpoint.
+        items:
+          type: string
+    required:
+      - id
+      - active
+      - duration
+      - flow_counters
+      - flows
+
+  TrafficDefinition:
+    type: object
+    description: Describes a sequence of traffic for a packet generator to transmit
+    properties:
+      descriptors:
+        type: array
+        description: |
+          A list of packet templates with modifiers that describe all packets
+          to send as part of this traffic definition.
+        items:
+          type: object
+          description: Packet descriptor with relative weight
+          properties:
+            packet:
+              $ref: "#/definitions/TrafficPacketTemplate"
+            weight:
+              type: integer
+              description: Relative weight for this packet
+              format: int32
+              minimum: 1
+          required:
+            - descriptor
+            - weight
+        minItems: 1
+    required:
+      - descriptors
+
+  TrafficLength:
+    type: object
+    description: Specifies length of generated packets
+    properties:
+      method:
+        type: string
+        description: packet length specification method
+        enum:
+          - fixed
+          - list
+          - sequence
+      fixed:
+        type: object
+        description: Specifies a fixed packet lengths
+        properties:
+          length:
+            type: integer
+            description: Fixed packet length
+            format: int32
+            minimum: 64
+        required:
+          - length
+      list:
+        type: object
+        description: Specifies a list of packet lengths
+        properties:
+          lengths:
+            type: array
+            description: List of packet lengths
+            items:
+              type: integer
+              format: int32
+              minimum: 64
+            minItems: 1
+        required:
+          - lengths
+      sequence:
+        type: object
+        description: Specifies a sequence of packet lengths
+        properties:
+          count:
+            type: integer
+            description: The number of different packet lengths
+            format: int32
+            minimum: 1
+          start:
+            type: integer
+            description: The first length in the sequence
+            format: int32
+            minimum: 64
+          stop:
+            type: integer
+            description: The last length in the sequence
+            format: int32
+            minimum: 64
+        required:
+          - count
+          - start
+
+  TrafficLoad:
+    type: object
+    description: Describes the transmit load of a packet generator
+    properties:
+      burst:
+        type: integer
+        description: |
+          Tells the generator how many packets to transmit as part of an
+          atomic transmit operation. Larger burst sizes are more efficient.
+        format: int32
+        default: 1
+        minimum: 1
+      rate:
+        type: object
+        description: The transmit packet rate
+        properties:
+          period:
+            type: string
+            description: unit of time for the rate
+            enum:
+              - second
+              - minute
+              - hour
+          value:
+            type: integer
+            description: number of packets per period
+            format: int64
+            minimum: 1
+        required:
+          - period
+          - value
+      units:
+        type: string
+        description: The transmit units for the packet generator
+        enum:
+          - frames
+          - octets
+    required:
+      - rate
+      - units
+
+  TrafficPacketTemplate:
+    type: object
+    description: Defines a set of packets for the packet generator
+    properties:
+      protocols:
+        type: array
+        description: |
+          Ordered list of packet protocols. Packets are constructed
+          by iterating over the sequence of protocols.
+        items:
+          $ref: "#/definitions/TrafficProtocol"
+        minItems: 1
+      length:
+        $ref: "#/definitions/TrafficLength"
+      modifier_tie:
+        type: string
+        description: |
+          Specifies how modifiers from different protocols are combined in the
+          packet template
+        default: zip
+        enum:
+          - cartesian
+          - zip
+    required:
+      - protocols
+      - length
+
+  TrafficProtocol:
+    type: object
+    description: A traffic protocol definition for a traffic generator
+    properties:
+      modifiers:
+        type: object
+        description: Specifies how to modify fields of the template
+        properties:
+          items:
+            type: array
+            description: List of traffic protocol modifiers
+            items:
+              $ref: "#/definitions/TrafficProtocolModifier"
+            minItems: 1
+          tie:
+            type: string
+            description: |
+              Specifies how modifier tuples are generated when multiple
+              modifiers are listed.
+            default: zip
+            enum:
+              - cartesian
+              - zip
+        required:
+          - items
+      protocol:
+        type: string
+        description: protocol type
+        enum:
+          - custom
+          - ethernet
+          - ipv4
+          - ipv6
+          - tcp
+          - udp
+          - signature
+      custom:
+        $ref: ./common.yaml#/definitions/PacketProtocolCustom
+      ethernet:
+        $ref: ./common.yaml#/definitions/PacketProtocolEthernet
+      ipv4:
+        $ref: ./common.yaml#/definitions/PacketProtocolIpv4
+      ipv6:
+        $ref: ./common.yaml#/definitions/PacketProtocolIpv6
+      signature:
+        $ref: ./common.yaml#/definitions/PacketProtocolSpirentSignature
+      tcp:
+        $ref: ./common.yaml#/definitions/PacketProtocolTcp
+      udp:
+        $ref: ./common.yaml#/definitions/PacketProtocolUdp
+    required:
+      - protocol
+
+  TrafficProtocolModifier:
+    type: object
+    description: Specifies how to modify protocol data
+    properties:
+      name:
+        type: string
+        description: |
+          Packet protocol field to modify. Context determines what field
+          names are valid and what data is expected in the modifier.
+      permute:
+        type: boolean
+        description: |
+          Specifies whether to pseudo-randomly order the modifier values
+      field:
+        $ref: "#/definitions/TrafficProtocolFieldModifier"
+      ipv4:
+        $ref: "#/definitions/TrafficProtocolIpv4Modifier"
+      ipv6:
+        $ref: "#/definitions/TrafficProtocolIpv6Modifier"
+      mac:
+        $ref: "#/definitions/TrafficProtocolMacModifier"
+    required:
+      - name
+      - permute
+
+  # XXX: The swagger/pistache code generator creates unbuildable code for
+  # integer arrays with format = int64.  So, leave out the format here
+  # for now.  Luckily, no non-address fields are larger than 32 bits.
+  TrafficProtocolFieldModifier:
+    type: object
+    description: |
+      Specifies how to modify a protocol data field. Maximum values are
+      determined by the field to modify.
+    properties:
+      method:
+        type: string
+        description: Modifier method
+        enum:
+          - list
+          - sequence
+      list:
+        type: array
+        description: |
+          List of modifier values. Context determines what values are valid.
+        items:
+          type: integer
+          minimum: 0
+        minItems: 1
+      sequence:
+        type: object
+        description: |
+          Specifies a sequence of values. Context determines what values are
+          valid.
+        properties:
+          count:
+            type: integer
+            description: The number of values in the sequence
+            minimum: 1
+          start:
+            type: integer
+            description: The first value in the sequence
+            minimum: 0
+          stop:
+            type: integer
+            description: The last value in the sequence
+            minimum: 0
+          skip:
+            type: array
+            description: List of values in the sequence to skip
+            items:
+              type: integer
+              minimum: 0
+        required:
+          - count
+          - start
+    required:
+      - field
+      - method
+
+  TrafficProtocolIpv4Modifier:
+    type: object
+    description: Specifies how to modify an IPv4 address
+    properties:
+      method:
+        type: string
+        description: Modifier method
+        enum:
+          - list
+          - sequence
+      list:
+        type: array
+        description: List of IPv4 addresses
+        items:
+          $ref: ./common.yaml#/definitions/Ipv4Address
+        minItems: 1
+      sequence:
+        type: object
+        description: Specifies a sequence of IPv4 addresses
+        properties:
+          count:
+            type: integer
+            description: The number of addresses in the sequence
+            format: int32
+            minimum: 1
+          start:
+            $ref: ./common.yaml#/definitions/Ipv4Address
+          stop:
+            $ref: ./common.yaml#/definitions/Ipv4Address
+          skip:
+            type: array
+            description: List of addresses in the sequence to skip
+            items:
+              $ref: ./common.yaml#/definitions/Ipv4Address
+        required:
+          - count
+          - start
+    required:
+      - field
+      - method
+
+  TrafficProtocolIpv6Modifier:
+    type: object
+    description: Specifies how to modify an IPv6 address
+    properties:
+      method:
+        type: string
+        description: Modifier method
+        enum:
+          - list
+          - sequence
+      list:
+        type: array
+        description: List of IPv6 addresses
+        items:
+          $ref: ./common.yaml#/definitions/Ipv6Address
+        minItems: 1
+      sequence:
+        type: object
+        description: Specifies a sequence of IPv6 addresses
+        properties:
+          count:
+            type: integer
+            description: The number of addresses in the sequence
+            format: int32
+            minimum: 1
+          start:
+            $ref: ./common.yaml#/definitions/Ipv6Address
+          stop:
+            $ref: ./common.yaml#/definitions/Ipv6Address
+          skip:
+            type: array
+            description: List of addresses in the sequence to skip
+            items:
+              $ref: ./common.yaml#/definitions/Ipv6Address
+        required:
+          - count
+          - start
+    required:
+      - field
+      - method
+
+  TrafficProtocolMacModifier:
+    type: object
+    description: Specifies how to modify an Ethernet MAC address
+    properties:
+      method:
+        type: string
+        description: Modifier method
+        enum:
+          - list
+          - sequence
+      list:
+        type: array
+        description: List of MAC addresses
+        items:
+          $ref: ./common.yaml#/definitions/MacAddress
+          minItems: 1
+      sequence:
+        type: object
+        description: Specifies a sequence of MAC addresses
+        properties:
+          count:
+            type: integer
+            description: The number of addresses in the sequence
+            format: int32
+            minimum: 1
+          start:
+            $ref: ./common.yaml#/definitions/MacAddress
+          stop:
+            $ref: ./common.yaml#/definitions/MacAddress
+          skip:
+            type: array
+            description: List of addresses in the sequence to skip
+            items:
+              $ref: ./common.yaml#/definitions/MacAddress
+        required:
+          - count
+          - start
+    required:
+      - field
+      - method
+
+  TxFlow:
+    type: object
+    description: A transmitted packet flow
+    properties:
+      id:
+        type: string
+        description: Unique transmit flow identifier
+      generator_id:
+        type: string
+        description: Unique generator identifier that transmitted this flow
+      stream_id:
+        type: integer
+        description: Spirent signature stream id
+        format: int64
+      counters:
+        $ref: "#/definitions/PacketGeneratorFlowCounters"
+    required:
+      - id
+      - generator_id
+      - counters
