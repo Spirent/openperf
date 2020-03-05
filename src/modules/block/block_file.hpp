@@ -4,9 +4,9 @@
 #include "swagger/v1/model/BlockFile.h"
 #include "tl/expected.hpp"
 
-using namespace swagger::v1::model;
-
 namespace openperf::block::file {
+
+using namespace swagger::v1::model;
 
 typedef std::map<std::string, std::shared_ptr<BlockFile>> BlockFileMap;
 

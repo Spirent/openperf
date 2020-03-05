@@ -1,7 +1,5 @@
 #include "block/block_file.hpp"
 
-using namespace swagger::v1::model;
-
 namespace openperf::block::file {
 
 std::vector<std::shared_ptr<BlockFile>> block_file_stack::block_files_list()
