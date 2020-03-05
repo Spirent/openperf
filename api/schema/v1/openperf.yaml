@@ -37,6 +37,7 @@ parameters:
 tags:
   - name: Interfaces
   - name: Modules
+  - name: PacketGenerators
   - name: Ports
   - name: Stacks
   - name: TimeSync
@@ -142,6 +143,48 @@ paths:
 
   /packet/rx-flows/{id}:
     $ref: ./modules/packet/analyzer.yaml#/paths/~1rx-flows~1{id}
+
+  ###
+  # Packet Generator Paths
+  ###
+  /packet/generators:
+    $ref: ./modules/packet/generator.yaml#/paths/~1generators
+
+  /packet/generators/{id}:
+    $ref: ./modules/packet/generator.yaml#/paths/~1generators~1{id}
+
+  /packet/generators/{id}/start:
+    $ref: ./modules/packet/generator.yaml#/paths/~1generators~1{id}~1start
+
+  /packet/generators/{id}/stop:
+    $ref: ./modules/packet/generator.yaml#/paths/~1generators~1{id}~1stop
+
+  /packet/generators/x/bulk-create:
+    $ref: ./modules/packet/generator.yaml#/paths/~1generators~1x~1bulk-create
+
+  /packet/generators/x/bulk-delete:
+    $ref: ./modules/packet/generator.yaml#/paths/~1generators~1x~1bulk-delete
+
+  /packet/generators/x/bulk-start:
+    $ref: ./modules/packet/generator.yaml#/paths/~1generators~1x~1bulk-start
+
+  /packet/generators/x/bulk-stop:
+    $ref: ./modules/packet/generator.yaml#/paths/~1generators~1x~1bulk-stop
+
+  /packet/generators/x/toggle:
+    $ref: ./modules/packet/generator.yaml#/paths/~1generators~1x~1toggle
+
+  /packet/generator-results:
+    $ref: ./modules/packet/generator.yaml#/paths/~1generator-results
+
+  /packet/generator-results/{id}:
+    $ref: ./modules/packet/generator.yaml#/paths/~1generator-results~1{id}
+
+  /packet/tx-flows:
+    $ref: ./modules/packet/generator.yaml#/paths/~1tx-flows
+
+  /packet/tx-flows/{id}:
+    $ref: ./modules/packet/generator.yaml#/paths/~1tx-flows~1{id}
 
   ###
   # Timesync paths
@@ -266,6 +309,33 @@ definitions:
     $ref: ./modules/packetio.yaml#/definitions/StackStats
 
   ###
+  # Packet Module shared definitions
+  ###
+  DurationRemainder:
+    $ref: ./modules/packet/common.yaml#/definitions/DurationRemainder
+
+  PacketProtocolCustom:
+    $ref: ./modules/packet/common.yaml#/definitions/PacketProtocolCustom
+
+  PacketProtocolEthernet:
+    $ref: ./modules/packet/common.yaml#/definitions/PacketProtocolEthernet
+
+  PacketProtocolIpv4:
+    $ref: ./modules/packet/common.yaml#/definitions/PacketProtocolIpv4
+
+  PacketProtocolIpv6:
+    $ref: ./modules/packet/common.yaml#/definitions/PacketProtocolIpv6
+
+  PacketProtocolSpirentSignature:
+    $ref: ./modules/packet/common.yaml#/definitions/PacketProtocolSpirentSignature
+
+  PacketProtocolTcp:
+    $ref: ./modules/packet/common.yaml#/definitions/PacketProtocolTcp
+
+  PacketProtocolUdp:
+    $ref: ./modules/packet/common.yaml#/definitions/PacketProtocolUdp
+
+  ###
   # Packet Analyzer definitions
   ###
   Analyzer:
@@ -288,6 +358,42 @@ definitions:
 
   RxFlow:
     $ref: ./modules/packet/analyzer.yaml#/definitions/RxFlow
+
+  ###
+  # Packet Generator definitions
+  ###
+  PacketGenerator:
+    $ref: ./modules/packet/generator.yaml#/definitions/PacketGenerator
+
+  PacketGeneratorConfig:
+    $ref: ./modules/packet/generator.yaml#/definitions/PacketGeneratorConfig
+
+  PacketGeneratorFlowCounters:
+    $ref: ./modules/packet/generator.yaml#/definitions/PacketGeneratorFlowCounters
+
+  PacketGeneratorResult:
+    $ref: ./modules/packet/generator.yaml#/definitions/PacketGeneratorResult
+
+  TrafficDefinition:
+    $ref: ./modules/packet/generator.yaml#/definitions/TrafficDefinition
+
+  TrafficLength:
+    $ref: ./modules/packet/generator.yaml#/definitions/TrafficLength
+
+  TrafficLoad:
+    $ref: ./modules/packet/generator.yaml#/definitions/TrafficLoad
+
+  TrafficPacketTemplate:
+    $ref: ./modules/packet/generator.yaml#/definitions/TrafficPacketTemplate
+
+  TrafficProtocol:
+    $ref: ./modules/packet/generator.yaml#/definitions/TrafficProtocol
+
+  TrafficProtocolModifier:
+    $ref: ./modules/packet/generator.yaml#/definitions/TrafficProtocolModifier
+
+  TxFlow:
+    $ref: ./modules/packet/generator.yaml#/definitions/TxFlow
 
   ###
   # Timesync definitions
