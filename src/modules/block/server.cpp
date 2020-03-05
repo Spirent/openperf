@@ -88,13 +88,13 @@ void server::handle_create_block_file_request(json& request, json& reply)
         if (auto id_check = config::op_config_validate_id_string(block_file.getId()); !id_check)
             throw std::runtime_error(id_check.error().c_str());
         
+        // If user did not specify an id create one for them.
+        if (block_file.getId() == core::empty_id_string) {
+            block_file.setId(core::to_string(core::uuid::random()));
+        }
+
         auto result = blk_file_stack.create_block_file(block_file);
         if (!result) { throw std::runtime_error(result.error()); }
-
-        // If user did not specify an id create one for them.
-        if (result.value()->getId() == core::empty_id_string) {
-            result.value()->setId(core::to_string(core::uuid::random()));
-        }
 
         reply["code"] = reply_code::OK;
         reply["data"] = result.value()->toJson().dump();
