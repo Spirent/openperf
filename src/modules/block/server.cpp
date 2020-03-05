@@ -9,7 +9,6 @@
 
 namespace openperf::block::api {
 
-using json = nlohmann::json;
 using namespace swagger::v1::model;
 
 std::string to_string(request_type type)
@@ -91,6 +90,11 @@ void server::handle_create_block_file_request(json& request, json& reply)
         
         auto result = blk_file_stack.create_block_file(block_file);
         if (!result) { throw std::runtime_error(result.error()); }
+
+        // If user did not specify an id create one for them.
+        if (result.value()->getId() == core::empty_id_string) {
+            result.value()->setId(core::to_string(core::uuid::random()));
+        }
 
         reply["code"] = reply_code::OK;
         reply["data"] = result.value()->toJson().dump();
