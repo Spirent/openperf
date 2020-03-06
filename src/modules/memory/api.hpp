@@ -37,6 +37,6 @@ enum class reply_code {
 std::string to_string(request_type type);
 std::string to_string(reply_code code);
 
-} // namespace: openperf::memory::api
+} // namespace openperf::memory::api
 
 #endif // _OP_MEMORY_API_HPP_
