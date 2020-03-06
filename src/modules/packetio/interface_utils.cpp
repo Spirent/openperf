@@ -9,6 +9,7 @@
 #include "swagger/v1/model/Interface.h"
 #include "packetio/generic_interface.hpp"
 #include "utils/overloaded_visitor.hpp"
+#include "core/op_log.h"
 
 namespace openperf {
 namespace packetio {
@@ -28,6 +29,12 @@ static void validate(const eth_protocol_config& eth,
                             + net::to_string(eth.address)
                             + ") is not allowed.");
     }
+}
+
+static void validate(const ipv4_auto_protocol_config&,
+                     std::vector<std::string>&)
+{
+    /* Auto config is always valid */
 }
 
 static void validate(const ipv4_dhcp_protocol_config&,
@@ -70,7 +77,7 @@ static void validate(const ipv4_static_protocol_config& ipv4,
                 "Gateway address (" + net::to_string(*ipv4.gateway)
                 + ") is not in the same broadcast domain as interface ("
                 + net::to_string(
-                    net::ipv4_network(ipv4.address, ipv4.prefix_length))
+                      net::ipv4_network(ipv4.address, ipv4.prefix_length))
                 + ").");
         }
     }
@@ -80,6 +87,9 @@ static void validate(const ipv4_protocol_config& ipv4,
                      std::vector<std::string>& errors)
 {
     auto visitor = utils::overloaded_visitor(
+        [&](const ipv4_auto_protocol_config& auto_ipv4) {
+            validate(auto_ipv4, errors);
+        },
         [&](const ipv4_dhcp_protocol_config& dhcp_ipv4) {
             validate(dhcp_ipv4, errors);
         },
@@ -88,6 +98,89 @@ static void validate(const ipv4_protocol_config& ipv4,
         });
 
     std::visit(visitor, ipv4);
+}
+
+static void validate_ipv6_common(const ipv6_common_protocol_config& config,
+                                 std::vector<std::string>& errors)
+{
+    /* check optional link local address */
+    if (config.link_local_address) {
+        if (!config.link_local_address->is_linklocal()) {
+            errors.emplace_back("Cannot use non link local address ("
+                                + net::to_string(*config.link_local_address)
+                                + ") for link local address.");
+        }
+    }
+}
+static void validate(const ipv6_auto_protocol_config& config,
+                     std::vector<std::string>& errors)
+{
+    validate_ipv6_common(config, errors);
+}
+
+static void validate(const ipv6_dhcp6_protocol_config& config,
+                     std::vector<std::string>& errors)
+{
+    validate_ipv6_common(config, errors);
+}
+
+static void validate(const ipv6_static_protocol_config& config,
+                     std::vector<std::string>& errors)
+{
+    validate_ipv6_common(config, errors);
+
+    if (config.prefix_length > 128) {
+        errors.emplace_back("Prefix length ("
+                            + std::to_string(config.prefix_length)
+                            + ") is too big.");
+    }
+    if (config.address.is_loopback()) {
+        errors.emplace_back("Cannot use loopback address ("
+                            + net::to_string(config.address)
+                            + ") for interface.");
+    } else if (config.address.is_multicast()) {
+        errors.emplace_back("Cannot use multicast address ("
+                            + net::to_string(config.address)
+                            + ") for interface.");
+    }
+
+    /* check optional gateway */
+    if (config.gateway) {
+        if (config.gateway->is_loopback()) {
+            errors.emplace_back("Cannot use loopback address ("
+                                + net::to_string(*config.gateway)
+                                + ") for gateway.");
+        } else if (config.gateway->is_multicast()) {
+            errors.emplace_back("Cannot use multicast address ("
+                                + net::to_string(*config.gateway)
+                                + ") for gateway.");
+        } else if (net::ipv6_network(*config.gateway, config.prefix_length)
+                   != net::ipv6_network(config.address, config.prefix_length)) {
+            errors.emplace_back(
+                "Gateway address (" + net::to_string(*config.gateway)
+                + ") is not in the same broadcast domain as interface ("
+                + net::to_string(
+                      net::ipv6_network(config.address, config.prefix_length))
+                + ").");
+        }
+    }
+}
+
+static void validate(const ipv6_protocol_config& ipv6,
+                     std::vector<std::string>& errors)
+{
+    auto visitor = utils::overloaded_visitor(
+        [&](const ipv6_auto_protocol_config& auto_ipv6) {
+            validate(auto_ipv6, errors);
+        },
+        [&](const ipv6_dhcp6_protocol_config& dhcp_ipv6) {
+            validate(dhcp_ipv6, errors);
+        },
+        [&](const ipv6_static_protocol_config& static_ipv6) {
+            validate(static_ipv6, errors);
+        });
+
+    std::visit(visitor, ipv6);
 }
 
 /**
@@ -137,6 +230,10 @@ static bool is_valid(config_data& config, std::vector<std::string>& errors)
             protocol_counter[typeid(ipv4)]++;
             validate(ipv4, errors);
         },
+        [&](const ipv6_protocol_config& ipv6) {
+            protocol_counter[typeid(ipv6)]++;
+            validate(ipv6, errors);
+        },
         [&](const std::monostate&) {
             errors.emplace_back(
                 "No valid interface protocol configuration found.");
@@ -159,6 +256,13 @@ static bool is_valid(config_data& config, std::vector<std::string>& errors)
         count > 1) {
         errors.emplace_back(
             "At most one IPv4 protocol configuration is allowed per interface, "
+            "not "
+            + std::to_string(count) + ".");
+    }
+    if (auto count = protocol_counter[typeid(ipv6_protocol_config)];
+        count > 1) {
+        errors.emplace_back(
+            "At most one IPv6 protocol configuration is allowed per interface, "
             "not "
             + std::to_string(count) + ".");
     }
@@ -217,10 +321,91 @@ from_swagger(std::shared_ptr<InterfaceProtocolConfig_ipv4> config)
 {
     ipv4_protocol_config to_return;
 
-    if (config->staticIsSet()) {
+    if (config->getMethod() == "auto") {
+        to_return = ipv4_auto_protocol_config{};
+    } else if (config->getMethod() == "dhcp") {
+        if (config->dhcpIsSet()) {
+            to_return = from_swagger(config->getDhcp());
+        } else {
+            to_return = ipv4_dhcp_protocol_config{};
+        }
+    } else if (config->getMethod() == "static") {
+        if (!config->staticIsSet()) {
+            OP_LOG(OP_LOG_ERROR,
+                   "IPv4 interface config method was static and no static "
+                   "config was provided\n");
+            return to_return;
+        }
         to_return = from_swagger(config->getStatic());
-    } else if (config->dhcpIsSet()) {
-        to_return = from_swagger(config->getDhcp());
+    }
+
+    return (to_return);
+}
+
+static ipv6_dhcp6_protocol_config
+from_swagger(std::shared_ptr<InterfaceProtocolConfig_ipv6_dhcp6> config)
+{
+    ipv6_dhcp6_protocol_config to_return;
+
+    to_return.stateless = config->isStateless();
+
+    return (to_return);
+}
+
+static ipv6_static_protocol_config
+from_swagger(std::shared_ptr<InterfaceProtocolConfig_ipv6_static> config)
+{
+    ipv6_static_protocol_config to_return;
+
+    if (config->gatewayIsSet()) {
+        to_return.gateway =
+            std::make_optional(net::ipv6_address(config->getGateway()));
+    }
+
+    to_return.address = net::ipv6_address(config->getAddress());
+    /* XXX: Can't use small ints in swagger, so cut this value down. */
+    to_return.prefix_length =
+        config->getPrefixLength() & std::numeric_limits<uint8_t>::max();
+
+    return (to_return);
+}
+
+static ipv6_protocol_config
+from_swagger(std::shared_ptr<InterfaceProtocolConfig_ipv6> config)
+{
+    ipv6_protocol_config to_return;
+    std::optional<net::ipv6_address> link_local_address;
+
+    if (config->linkLocalAddressIsSet()) {
+        link_local_address = std::make_optional(
+            net::ipv6_address(config->getLinkLocalAddress()));
+    }
+
+    if (config->getMethod() == "auto") {
+        ipv6_auto_protocol_config protocol_config;
+        protocol_config.link_local_address = link_local_address;
+        to_return = protocol_config;
+    } else if (config->getMethod() == "dhcp6") {
+        if (config->dhcp6IsSet()) {
+            auto protocol_config = from_swagger(config->getDhcp6());
+            protocol_config.link_local_address = link_local_address;
+            to_return = protocol_config;
+        } else {
+            auto protocol_config =
+                ipv6_dhcp6_protocol_config{.stateless = true};
+            protocol_config.link_local_address = link_local_address;
+            to_return = protocol_config;
+        }
+    } else if (config->getMethod() == "static") {
+        if (!config->staticIsSet()) {
+            OP_LOG(OP_LOG_ERROR,
+                   "IPv6 interface config method was static and no static "
+                   "config was provided\n");
+            return to_return;
+        }
+        auto protocol_config = from_swagger(config->getStatic());
+        protocol_config.link_local_address = link_local_address;
+        to_return = protocol_config;
     }
 
     return (to_return);
@@ -235,6 +420,8 @@ from_swagger(std::shared_ptr<InterfaceProtocolConfig> config)
         to_return = from_swagger(config->getEth());
     } else if (config->ipv4IsSet()) {
         to_return = from_swagger(config->getIpv4());
+    } else if (config->ipv6IsSet()) {
+        to_return = from_swagger(config->getIpv6());
     }
 
     return (to_return);
@@ -311,6 +498,7 @@ make_swagger_protocol_config(const ipv4_protocol_config& ipv4)
     auto config = std::make_shared<InterfaceProtocolConfig_ipv4>();
 
     auto visitor = utils::overloaded_visitor(
+        [&](const ipv4_auto_protocol_config&) { config->setMethod("auto"); },
         [&](const ipv4_dhcp_protocol_config& dhcp_ipv4) {
             config->setDhcp(make_swagger_protocol_config(dhcp_ipv4));
             config->setMethod("dhcp");
@@ -321,6 +509,65 @@ make_swagger_protocol_config(const ipv4_protocol_config& ipv4)
         });
 
     std::visit(visitor, ipv4);
+
+    return (config);
+}
+
+static std::shared_ptr<InterfaceProtocolConfig_ipv6_dhcp6>
+make_swagger_protocol_config(const ipv6_dhcp6_protocol_config& dhcp6_ipv6)
+{
+    auto config = std::make_shared<InterfaceProtocolConfig_ipv6_dhcp6>();
+
+    config->setStateless(dhcp6_ipv6.stateless);
+
+    return (config);
+}
+
+static std::shared_ptr<InterfaceProtocolConfig_ipv6_static>
+make_swagger_protocol_config(const ipv6_static_protocol_config& static_ipv6)
+{
+    auto config = std::make_shared<InterfaceProtocolConfig_ipv6_static>();
+
+    if (static_ipv6.gateway) {
+        config->setGateway(to_string(*static_ipv6.gateway));
+    }
+    config->setAddress(to_string(static_ipv6.address));
+    config->setPrefixLength(static_ipv6.prefix_length);
+
+    return (config);
+}
+
+static std::shared_ptr<InterfaceProtocolConfig_ipv6>
+make_swagger_protocol_config(const ipv6_protocol_config& ipv6)
+{
+    auto config = std::make_shared<InterfaceProtocolConfig_ipv6>();
+
+    auto visitor = utils::overloaded_visitor(
+        [&](const ipv6_auto_protocol_config& auto_ipv6) {
+            config->setMethod("auto");
+            if (auto_ipv6.link_local_address) {
+                config->setLinkLocalAddress(
+                    to_string(*auto_ipv6.link_local_address));
+            }
+        },
+        [&](const ipv6_dhcp6_protocol_config& dhcp6_ipv6) {
+            config->setDhcp6(make_swagger_protocol_config(dhcp6_ipv6));
+            config->setMethod("dhcp6");
+            if (dhcp6_ipv6.link_local_address) {
+                config->setLinkLocalAddress(
+                    to_string(*dhcp6_ipv6.link_local_address));
+            }
+        },
+        [&](const ipv6_static_protocol_config& static_ipv6) {
+            config->setStatic(make_swagger_protocol_config(static_ipv6));
+            config->setMethod("static");
+            if (static_ipv6.link_local_address) {
+                config->setLinkLocalAddress(
+                    to_string(*static_ipv6.link_local_address));
+            }
+        });
+
+    std::visit(visitor, ipv6);
 
     return (config);
 }
@@ -336,6 +583,9 @@ make_swagger_protocol_config(const protocol_config& protocol)
         },
         [&](const ipv4_protocol_config& ipv4) {
             config->setIpv4(make_swagger_protocol_config(ipv4));
+        },
+        [&](const ipv6_protocol_config& ipv6) {
+            config->setIpv6(make_swagger_protocol_config(ipv6));
         },
         [](const std::monostate&) {
             /* Nothing to do */

@@ -48,10 +48,11 @@ static void udp_receive(
 }
 
 udp_socket::udp_socket(openperf::socket::server::allocator& allocator,
+                       enum lwip_ip_addr_type ip_type,
                        int flags)
     : m_channel(new (allocator.allocate(sizeof(dgram_channel)))
                     dgram_channel(flags, allocator))
-    , m_pcb(udp_new())
+    , m_pcb(udp_new_ip_type(ip_type))
 {
     if (!m_pcb) { throw std::runtime_error("Out of UDP pcb's!"); }
 
@@ -160,7 +161,8 @@ static tl::expected<socklen_t, int> do_udp_get_name(const ip_addr_t& ip_addr,
         slength = sizeof(sockaddr_in);
         break;
     }
-    case IPADDR_TYPE_V6: {
+    case IPADDR_TYPE_V6:
+    case IPADDR_TYPE_ANY: {
         struct sockaddr_in6* sa6 = reinterpret_cast<sockaddr_in6*>(&sstorage);
         sa6->sin6_family = AF_INET6;
         sa6->sin6_port = htons(ip_port);
@@ -195,6 +197,9 @@ udp_socket::do_getsockopt(const udp_pcb* pcb,
     case IPPROTO_IP:
         return (
             do_ip_getsockopt(reinterpret_cast<const ip_pcb*>(pcb), getsockopt));
+    case IPPROTO_IPV6:
+        return (do_ip6_getsockopt(reinterpret_cast<const ip_pcb*>(pcb),
+                                  getsockopt));
     default:
         return (tl::make_unexpected(ENOPROTOOPT));
     }
@@ -209,6 +214,8 @@ udp_socket::do_setsockopt(udp_pcb* pcb,
         return (do_sock_setsockopt(reinterpret_cast<ip_pcb*>(pcb), setsockopt));
     case IPPROTO_IP:
         return (do_ip_setsockopt(reinterpret_cast<ip_pcb*>(pcb), setsockopt));
+    case IPPROTO_IPV6:
+        return (do_ip6_setsockopt(reinterpret_cast<ip_pcb*>(pcb), setsockopt));
     default:
         return (tl::make_unexpected(ENOPROTOOPT));
     }

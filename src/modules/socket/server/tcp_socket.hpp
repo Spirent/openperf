@@ -70,7 +70,9 @@ class tcp_socket : public socket_state_machine<tcp_socket, tcp_socket_state>
                tcp_pcb* pcb);
 
 public:
-    tcp_socket(openperf::socket::server::allocator& allocator, int flags);
+    tcp_socket(openperf::socket::server::allocator& allocator,
+               enum lwip_ip_addr_type ip_type,
+               int flags);
     ~tcp_socket();
 
     tcp_socket(const tcp_socket&) = delete;

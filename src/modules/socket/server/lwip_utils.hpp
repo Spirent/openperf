@@ -22,6 +22,11 @@ tl::expected<socklen_t, int> do_ip_getsockopt(const ip_pcb*,
 tl::expected<void, int> do_ip_setsockopt(ip_pcb*,
                                          const api::request_setsockopt&);
 
+tl::expected<socklen_t, int> do_ip6_getsockopt(const ip_pcb*,
+                                               const api::request_getsockopt&);
+tl::expected<void, int> do_ip6_setsockopt(ip_pcb*,
+                                          const api::request_setsockopt&);
+
 void get_tcp_info(const tcp_pcb*, tcp_info&);
 
 } // namespace server

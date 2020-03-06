@@ -64,15 +64,19 @@ static void _handle_list_interfaces_request(generic_stack& stack,
     auto port_id = get_optional_key<std::string>(request, "port_id");
     auto mac_addr = get_optional_key<std::string>(request, "eth_mac_address");
     auto ipv4_addr = get_optional_key<std::string>(request, "ipv4_address");
+    auto ipv6_addr = get_optional_key<std::string>(request, "ipv6_address");
 
     json jints = json::array();
 
     for (auto id : stack.interface_ids()) {
         auto intf = stack.interface(id);
-        if ((!port_id && !mac_addr && !ipv4_addr)
+        if ((!port_id && !mac_addr && !ipv4_addr && !ipv6_addr)
             || (port_id && port_id == intf->port_id())
             || (mac_addr && mac_addr == intf->mac_address())
-            || (ipv4_addr && ipv4_addr == intf->ipv4_address())) {
+            || (ipv4_addr && ipv4_addr == intf->ipv4_address())
+            || (ipv6_addr
+                && (ipv6_addr == intf->ipv6_address()
+                    || ipv6_addr == intf->ipv6_linklocal_address()))) {
             jints.emplace_back(make_swagger_interface(*intf)->toJson());
         }
     }

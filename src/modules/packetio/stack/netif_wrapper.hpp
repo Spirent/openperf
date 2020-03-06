@@ -26,6 +26,8 @@ public:
     std::string port_id() const;
     std::string mac_address() const;
     std::string ipv4_address() const;
+    std::string ipv6_address() const;
+    std::string ipv6_linklocal_address() const;
     interface::config_data config() const;
     std::any data() const;
     interface::stats_data stats() const;

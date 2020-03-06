@@ -170,6 +170,99 @@ do_ip_setsockopt(ip_pcb* pcb, const api::request_setsockopt& setsockopt)
     return {};
 }
 
+tl::expected<socklen_t, int>
+do_ip6_getsockopt(const ip_pcb* pcb, const api::request_getsockopt& getsockopt)
+{
+    assert(getsockopt.level == IPPROTO_IPV6);
+
+    socklen_t slength = 0;
+    switch (getsockopt.optname) {
+    case IPV6_TCLASS: {
+        int tos = pcb->tos;
+        auto result = copy_out(getsockopt.id.pid, getsockopt.optval, tos);
+        if (!result) return (tl::make_unexpected(result.error()));
+        slength = sizeof(tos);
+        break;
+    }
+    case IPV6_HOPLIMIT: {
+        int ttl = pcb->ttl;
+        auto result = copy_out(getsockopt.id.pid, getsockopt.optval, ttl);
+        if (!result) return (tl::make_unexpected(result.error()));
+        slength = sizeof(ttl);
+        break;
+    }
+    case IPV6_RECVHOPLIMIT: {
+        // FIXME: Need this for ping6 to print out ttl values
+        break;
+    }
+    case IPV6_V6ONLY: {
+        int v6only = IP_IS_V6_VAL(pcb->local_ip);
+        auto result = copy_out(getsockopt.id.pid, getsockopt.optval, v6only);
+        if (!result) return (tl::make_unexpected(result.error()));
+        slength = sizeof(v6only);
+        break;
+    }
+    default:
+        return (tl::make_unexpected(ENOPROTOOPT));
+    }
+
+    return (slength);
+}
+
+tl::expected<void, int>
+do_ip6_setsockopt(ip_pcb* pcb, const api::request_setsockopt& setsockopt)
+{
+    assert(setsockopt.level == IPPROTO_IPV6);
+
+    switch (setsockopt.optname) {
+    case IPV6_TCLASS: {
+        auto tos = copy_in(setsockopt.id.pid,
+                           reinterpret_cast<const int*>(setsockopt.optval));
+        if (!tos) return (tl::make_unexpected(tos.error()));
+        if (*tos < 0 || *tos > 255) return (tl::make_unexpected(EINVAL));
+        pcb->tos = *tos;
+        break;
+    }
+    case IPV6_HOPLIMIT: {
+        auto ttl = copy_in(setsockopt.id.pid,
+                           reinterpret_cast<const int*>(setsockopt.optval));
+        if (!ttl) return (tl::make_unexpected(ttl.error()));
+        if (*ttl < 0 || *ttl > 255) return (tl::make_unexpected(EINVAL));
+        pcb->ttl = *ttl;
+        break;
+    }
+    case IPV6_RECVHOPLIMIT: {
+        // FIXME: Need this for ping6 to print out ttl values
+        break;
+    }
+    case IPV6_V6ONLY: {
+        auto v6only = copy_in(setsockopt.id.pid,
+                              reinterpret_cast<const int*>(setsockopt.optval));
+        if (!v6only) return (tl::make_unexpected(v6only.error()));
+        if (*v6only) {
+            if (!IP_IS_V6_VAL(pcb->local_ip)) {
+                if (!IP_IS_ANY_TYPE_VAL(pcb->local_ip))
+                    return (tl::make_unexpected(EINVAL));
+                IP_SET_TYPE_VAL(pcb->local_ip, IPADDR_TYPE_V6);
+                IP_SET_TYPE_VAL(pcb->remote_ip, IPADDR_TYPE_V6);
+            }
+        } else {
+            if (!IP_IS_ANY_TYPE_VAL(pcb->local_ip)) {
+                if (!IP_IS_V6_VAL(pcb->local_ip))
+                    return (tl::make_unexpected(EINVAL));
+                IP_SET_TYPE_VAL(pcb->local_ip, IPADDR_TYPE_ANY);
+                IP_SET_TYPE_VAL(pcb->remote_ip, IPADDR_TYPE_ANY);
+            }
+        }
+        break;
+    }
+    default:
+        return (tl::make_unexpected(ENOPROTOOPT));
+    }
+
+    return {};
+}
+
 static int lwip_to_linux_state(enum tcp_state state)
 {
     switch (state) {

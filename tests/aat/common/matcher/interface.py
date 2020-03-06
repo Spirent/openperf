@@ -31,10 +31,17 @@ class _be_valid_ipv4_protocol_config(Matcher):
         return True, ['is valid ipv4 protocol']
 
 
+class _be_valid_ipv6_protocol_config(Matcher):
+    def _match(self, p):
+        expect(p).to(be_a(client.models.InterfaceProtocolConfigIpv6))
+        return True, ['is valid ipv6 protocol']
+
+
 class _be_valid_protocol(Matcher):
     _matchers = {
         'eth': _be_valid_eth_protocol_config(),
         'ipv4': _be_valid_ipv4_protocol_config(),
+        'ipv6': _be_valid_ipv6_protocol_config(),
     }
 
     def _match(self, pc):

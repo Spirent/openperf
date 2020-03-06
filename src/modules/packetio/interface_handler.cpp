@@ -125,7 +125,8 @@ void handler::list_interfaces(const Rest::Request& request,
      * Note: MAC addresses have ':' characters, and so might be URL encoded;
      * just decode everything that comes in.
      */
-    for (auto& s : {"port_id", "eth_mac_address", "ipv4_address"}) {
+    for (auto& s :
+         {"port_id", "eth_mac_address", "ipv4_address", "ipv6_address"}) {
         if (request.query().has(s)) {
             api_request[s] = simple_url_decode(request.query().get(s).get());
         }
