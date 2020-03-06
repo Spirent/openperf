@@ -3,6 +3,7 @@
 
 #include "core/op_core.h"
 #include "json.hpp"
+#include "block/device.hpp"
 #include "block/block_file.hpp"
 #include "block/generator_stack.hpp"
 
@@ -14,6 +15,7 @@ class server
 {
 private:
     std::unique_ptr<void, op_socket_deleter> m_socket;
+    std::unique_ptr<device::block_device_stack> blk_device_stack;
     std::unique_ptr<file::block_file_stack> blk_file_stack;
     std::unique_ptr<generator::block_generator_stack> blk_generator_stack;
 
