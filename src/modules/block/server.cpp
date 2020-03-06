@@ -46,7 +46,7 @@ void server::handle_list_devices_request(json& reply)
 {
     json jints = json::array();
 
-    for (const auto & device : device::block_devices_list()) {
+    for (const auto& device : device::block_devices_list()) {
         jints.emplace_back(device->toJson());
     }
 
@@ -57,7 +57,10 @@ void server::handle_list_devices_request(json& reply)
 void server::handle_get_device_request(json& request, json& reply)
 {
     auto blkdev = device::get_block_device(request["id"]);
-    if (blkdev) std::cout << blkdev.get() << '\n'; else std::cout << "(null)\n";
+    if (blkdev)
+        std::cout << blkdev.get() << '\n';
+    else
+        std::cout << "(null)\n";
     if (blkdev) {
         reply["code"] = reply_code::OK;
         reply["data"] = blkdev->toJson().dump();
@@ -70,7 +73,7 @@ void server::handle_list_block_files_request(json& reply)
 {
     json jints = json::array();
 
-    for (auto & blkfile : blk_file_stack->block_files_list())
+    for (auto& blkfile : blk_file_stack->block_files_list())
         jints.emplace_back(blkfile->toJson());
 
     reply["code"] = reply_code::OK;
@@ -83,10 +86,12 @@ void server::handle_create_block_file_request(json& request, json& reply)
         auto block_file_model = json::parse(request["data"].get<std::string>());
         BlockFile block_file;
         block_file.fromJson(block_file_model);
-        
-        if (auto id_check = config::op_config_validate_id_string(block_file.getId()); !id_check)
+
+        if (auto id_check =
+                config::op_config_validate_id_string(block_file.getId());
+            !id_check)
             throw std::runtime_error(id_check.error().c_str());
-        
+
         // If user did not specify an id create one for them.
         if (block_file.getId() == core::empty_id_string) {
             block_file.setId(core::to_string(core::uuid::random()));
@@ -97,7 +102,7 @@ void server::handle_create_block_file_request(json& request, json& reply)
 
         reply["code"] = reply_code::OK;
         reply["data"] = result.value()->toJson().dump();
-   } catch (const std::runtime_error& e) {
+    } catch (const std::runtime_error& e) {
         reply["code"] = reply_code::BAD_INPUT;
         reply["error"] = json_error(EINVAL, e.what());
     } catch (const json::exception& e) {
@@ -128,7 +133,7 @@ void server::handle_list_generators_request(json& reply)
 {
     json jints = json::array();
 
-    for (auto & blkgenerator : blk_generator_stack->block_generators_list())
+    for (auto& blkgenerator : blk_generator_stack->block_generators_list())
         jints.emplace_back(blkgenerator->toJson());
 
     reply["code"] = reply_code::OK;
@@ -138,24 +143,28 @@ void server::handle_list_generators_request(json& reply)
 void server::handle_create_generator_request(json& request, json& reply)
 {
     try {
-        auto block_generator_model = json::parse(request["data"].get<std::string>());
+        auto block_generator_model =
+            json::parse(request["data"].get<std::string>());
         BlockGenerator block_generator;
         block_generator.fromJson(block_generator_model);
-        
-        if (auto id_check = config::op_config_validate_id_string(block_generator.getId()); !id_check)
+
+        if (auto id_check =
+                config::op_config_validate_id_string(block_generator.getId());
+            !id_check)
             throw std::runtime_error(id_check.error().c_str());
-        
+
         // If user did not specify an id create one for them.
         if (block_generator.getId() == core::empty_id_string) {
             block_generator.setId(core::to_string(core::uuid::random()));
         }
 
-        auto result = blk_generator_stack->create_block_generator(block_generator);
+        auto result =
+            blk_generator_stack->create_block_generator(block_generator);
         if (!result) { throw std::runtime_error(result.error()); }
 
         reply["code"] = reply_code::OK;
         reply["data"] = result.value()->toJson().dump();
-   } catch (const std::runtime_error& e) {
+    } catch (const std::runtime_error& e) {
         reply["code"] = reply_code::BAD_INPUT;
         reply["error"] = json_error(EINVAL, e.what());
     } catch (const json::exception& e) {
@@ -193,7 +202,7 @@ int server::handle_request(const op_event_data* data)
     while (
         (recv_or_err = zmq_msg_recv(&request_msg, data->socket, ZMQ_DONTWAIT))
         > 0) {
-        
+
         std::vector<uint8_t> request_buffer(
             static_cast<uint8_t*>(zmq_msg_data(&request_msg)),
             static_cast<uint8_t*>(zmq_msg_data(&request_msg))
@@ -205,9 +214,8 @@ int server::handle_request(const op_event_data* data)
                                 : request["type"].get<request_type>();
         json reply;
 
-        OP_LOG(
-                OP_LOG_TRACE, "Received %s request\n", to_string(type).c_str());
-        
+        OP_LOG(OP_LOG_TRACE, "Received %s request\n", to_string(type).c_str());
+
         switch (type) {
         case request_type::LIST_DEVICES:
             handle_list_devices_request(reply);
@@ -242,8 +250,7 @@ int server::handle_request(const op_event_data* data)
         default:
             reply["code"] = reply_code::ERROR;
             reply["error"] = json_error(
-                ENOSYS,
-                "Request type not implemented in block server");
+                ENOSYS, "Request type not implemented in block server");
         }
         std::vector<uint8_t> reply_buffer = json::to_cbor(reply);
         if ((send_or_err = zmq_send(

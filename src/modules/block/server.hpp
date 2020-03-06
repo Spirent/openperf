@@ -30,7 +30,7 @@ private:
 
 public:
     server(void* context, core::event_loop& loop);
-    
+
     int handle_request(const op_event_data* data);
 };
 
