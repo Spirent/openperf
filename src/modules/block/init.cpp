@@ -9,7 +9,7 @@
 
 namespace openperf::block {
 
-    static constexpr int module_version = 1;
+static constexpr int module_version = 1;
 
 static int handle_zmq_shutdown(const op_event_data* data,
                                void* arg __attribute__((unused)))
@@ -58,7 +58,7 @@ struct service
     std::thread m_service;
 };
 
-} // namespace block::timesync
+} // namespace openperf::block
 
 extern "C" {
 

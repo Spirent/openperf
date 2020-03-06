@@ -29,14 +29,19 @@ uint64_t get_block_device_size(const std::string id)
 
     int fd = open(devname, O_RDONLY);
     if (fd < 0) {
-        OP_LOG(OP_LOG_ERROR, "Could not open device %s: %s\n",
-                devname, strerror(errno));
+        OP_LOG(OP_LOG_ERROR,
+               "Could not open device %s: %s\n",
+               devname,
+               strerror(errno));
         return (0);
     }
 
     if (ioctl(fd, BLKGETSIZE, &nb_blocks) == -1) {
-        OP_LOG(OP_LOG_ERROR, "BLKGETSIZE ioctl call failed for %s (fd = %d): %s\n",
-                devname, fd, strerror(errno));
+        OP_LOG(OP_LOG_ERROR,
+               "BLKGETSIZE ioctl call failed for %s (fd = %d): %s\n",
+               devname,
+               fd,
+               strerror(errno));
         close(fd);
         return (0);
     }
@@ -46,10 +51,7 @@ uint64_t get_block_device_size(const std::string id)
     return (nb_blocks << 9);
 }
 
-std::string get_block_device_info(const std::string)
-{
-    return "";
-}
+std::string get_block_device_info(const std::string) { return ""; }
 
 int is_block_device_usable(const std::string id)
 {
@@ -57,7 +59,7 @@ int is_block_device_usable(const std::string id)
      * Disallow block I/O on both the boot disk, vblk0, and the primary
      * OS partition, vblk0.1.
      */
-    const char *boot_regex = "vblk0([.]1)?$";
+    const char* boot_regex = "vblk0([.]1)?$";
     const std::regex id_regex(boot_regex);
     return !std::regex_match(id, id_regex);
 }
@@ -69,20 +71,18 @@ bool is_raw_device(const std::string id)
 
     snprintf(devname, PATH_MAX, "%s/%s", device_dir.c_str(), id.c_str());
 
-    if ((stat(devname, &st)) != 0
-        || !S_ISBLK(st.st_mode))
-        return (false);  /* Not a block device */
+    if ((stat(devname, &st)) != 0 || !S_ISBLK(st.st_mode))
+        return (false); /* Not a block device */
 
     if (minor(st.st_rdev) != 0)
-        return (false);  /* Not an unpartioned block device */
+        return (false); /* Not an unpartioned block device */
 
     return (true);
 }
 
 std::unique_ptr<BlockDevice> get_block_device(std::string id)
 {
-    if (!is_raw_device(id))
-        return std::unique_ptr<BlockDevice>(nullptr);
+    if (!is_raw_device(id)) return std::unique_ptr<BlockDevice>(nullptr);
     auto blkdev = std::make_unique<BlockDevice>();
     blkdev->setId(id);
     blkdev->setPath(id);
@@ -95,20 +95,21 @@ std::unique_ptr<BlockDevice> get_block_device(std::string id)
 
 std::vector<std::unique_ptr<BlockDevice>> block_devices_list()
 {
-    DIR *dir = NULL;
-    struct dirent *entry = NULL;
+    DIR* dir = NULL;
+    struct dirent* entry = NULL;
 
     if ((dir = opendir(device_dir.c_str())) == NULL) {
-        OP_LOG(OP_LOG_ERROR, "Could not open directory %s: %s\n",
-                device_dir.c_str(), strerror(errno));
+        OP_LOG(OP_LOG_ERROR,
+               "Could not open directory %s: %s\n",
+               device_dir.c_str(),
+               strerror(errno));
         throw std::runtime_error("Could not open directory");
     }
 
     std::vector<std::unique_ptr<BlockDevice>> devices;
 
     while ((entry = readdir(dir)) != NULL) {
-        if (entry->d_type == DT_DIR)
-            continue;  /* skip directories */
+        if (entry->d_type == DT_DIR) continue; /* skip directories */
 
         if (auto blkdev = get_block_device(entry->d_name); blkdev)
             devices.push_back(std::move(blkdev));

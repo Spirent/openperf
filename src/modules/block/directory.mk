@@ -6,7 +6,7 @@ BLOCK_DEPENDS += versions
 
 BLOCK_SOURCES += \
 	block_file.cpp \
-	generator.cpp \
+	generator_stack.cpp \
 	init.cpp \
 	handler.cpp \
 	server.cpp
