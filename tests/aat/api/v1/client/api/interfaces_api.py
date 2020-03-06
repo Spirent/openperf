@@ -541,6 +541,7 @@ class InterfacesApi(object):
         :param str port_id: Filter by port id
         :param str eth_mac_address: Filter by Ethernet MAC address
         :param str ipv4_address: Filter by IPv4 address
+        :param str ipv6_address: Filter by IPv6 address
         :return: list[Interface]
                  If the method is called asynchronously,
                  returns the request thread.
@@ -565,12 +566,13 @@ class InterfacesApi(object):
         :param str port_id: Filter by port id
         :param str eth_mac_address: Filter by Ethernet MAC address
         :param str ipv4_address: Filter by IPv4 address
+        :param str ipv6_address: Filter by IPv6 address
         :return: list[Interface]
                  If the method is called asynchronously,
                  returns the request thread.
         """
 
-        all_params = ['port_id', 'eth_mac_address', 'ipv4_address']  # noqa: E501
+        all_params = ['port_id', 'eth_mac_address', 'ipv4_address', 'ipv6_address']  # noqa: E501
         all_params.append('async_req')
         all_params.append('_return_http_data_only')
         all_params.append('_preload_content')
@@ -597,6 +599,8 @@ class InterfacesApi(object):
             query_params.append(('eth_mac_address', params['eth_mac_address']))  # noqa: E501
         if 'ipv4_address' in params:
             query_params.append(('ipv4_address', params['ipv4_address']))  # noqa: E501
+        if 'ipv6_address' in params:
+            query_params.append(('ipv6_address', params['ipv6_address']))  # noqa: E501
 
         header_params = {}
 
