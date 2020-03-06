@@ -2,7 +2,6 @@
 
 #include "block/api.hpp"
 #include "block/server.hpp"
-#include "block/device.hpp"
 #include "config/op_config_utils.hpp"
 #include "swagger/v1/model/BlockFile.h"
 
@@ -46,7 +45,7 @@ void server::handle_list_devices_request(json& reply)
 {
     json jints = json::array();
 
-    for (const auto& device : device::block_devices_list()) {
+    for (const auto& device : blk_device_stack->block_devices_list()) {
         jints.emplace_back(device->toJson());
     }
 
@@ -56,7 +55,7 @@ void server::handle_list_devices_request(json& reply)
 
 void server::handle_get_device_request(json& request, json& reply)
 {
-    auto blkdev = device::get_block_device(request["id"]);
+    auto blkdev = blk_device_stack->get_block_device(request["id"]);
     if (blkdev)
         std::cout << blkdev.get() << '\n';
     else
@@ -278,6 +277,7 @@ static int _handle_rpc_request(const op_event_data* data, void* arg)
 
 server::server(void* context, openperf::core::event_loop& loop)
     : m_socket(op_socket_get_server(context, ZMQ_REP, endpoint.data()))
+    , blk_device_stack(std::make_unique<device::block_device_stack>())
     , blk_file_stack(std::make_unique<file::block_file_stack>())
     , blk_generator_stack(std::make_unique<generator::block_generator_stack>())
 {
