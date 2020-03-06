@@ -44,7 +44,9 @@ class udp_socket : public socket_state_machine<udp_socket, udp_socket_state>
     std::unique_ptr<udp_pcb, udp_pcb_deleter> m_pcb; /* lwIP pcb */
 
 public:
-    udp_socket(openperf::socket::server::allocator& allocator, int flags);
+    udp_socket(openperf::socket::server::allocator& allocator,
+               enum lwip_ip_addr_type ip_type,
+               int flags);
     ~udp_socket() = default;
 
     udp_socket(const udp_socket&) = delete;

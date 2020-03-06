@@ -19,6 +19,8 @@ struct dgram_ipv4_addr
 struct dgram_ipv6_addr
 {
     uint32_t addr[4];
+    /* LWIP_IPV6_SCOPES adds zone field in lwpip ip6_addr_t */
+    uint8_t zone;
 };
 
 /* Congruent to lwIP ip_addr_t; otherwise we'd use a variant */
@@ -40,7 +42,7 @@ class dgram_channel_addr
 
 public:
     dgram_channel_addr()
-        : m_addr({{{0, 0, 0, 0}}, dgram_ip_addr::type::IPv4})
+        : m_addr({{{{0, 0, 0, 0}, 0}}, dgram_ip_addr::type::IPv4})
         , m_port(0)
     {}
 
@@ -50,13 +52,13 @@ public:
     {}
 
     dgram_channel_addr(uint32_t addr, in_port_t port)
-        : m_addr({{{addr, 0, 0, 0}}, dgram_ip_addr::type::IPv4})
+        : m_addr({{{{addr, 0, 0, 0}, 0}}, dgram_ip_addr::type::IPv4})
         , m_port(port)
     {}
 
     dgram_channel_addr(const uint32_t addr[], in_port_t port)
-        : m_addr(
-            {{{addr[0], addr[1], addr[2], addr[3]}}, dgram_ip_addr::type::IPv6})
+        : m_addr({{{{addr[0], addr[1], addr[2], addr[3]}, 0}},
+                  dgram_ip_addr::type::IPv6})
         , m_port(port)
     {}
 

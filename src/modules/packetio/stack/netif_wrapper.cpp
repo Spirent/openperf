@@ -28,6 +28,28 @@ std::string netif_wrapper::ipv4_address() const
         net::ipv4_address(ntohl(ip_2_ip4(&m_netif->ip_addr)->addr))));
 }
 
+std::string netif_wrapper::ipv6_address() const
+{
+    for (int i = 0; i < LWIP_IPV6_NUM_ADDRESSES; ++i) {
+        if (ip6_addr_isinvalid(netif_ip6_addr_state(m_netif, i))) continue;
+        auto addr = netif_ip6_addr(m_netif, i);
+        if (ip6_addr_islinklocal(addr)) continue;
+        return net::to_string(net::ipv6_address((const uint8_t*)addr->addr));
+    }
+    return net::to_string(net::ipv6_address());
+}
+
+std::string netif_wrapper::ipv6_linklocal_address() const
+{
+    for (int i = 0; i < LWIP_IPV6_NUM_ADDRESSES; ++i) {
+        if (ip6_addr_isinvalid(netif_ip6_addr_state(m_netif, i))) continue;
+        auto addr = netif_ip6_addr(m_netif, i);
+        if (!ip6_addr_islinklocal(addr)) continue;
+        return net::to_string(net::ipv6_address((const uint8_t*)addr->addr));
+    }
+    return net::to_string(net::ipv6_address());
+}
+
 std::any netif_wrapper::data() const { return (m_netif); }
 
 interface::config_data netif_wrapper::config() const { return (m_config); }

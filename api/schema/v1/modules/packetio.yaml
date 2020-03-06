@@ -33,6 +33,11 @@ paths:
           description: Filter by IPv4 address
           required: false
           type: string
+        - name: ipv6_address
+          in: query
+          description: Filter by IPv6 address
+          required: false
+          type: string
       responses:
         200:
           description: Success
@@ -332,6 +337,7 @@ definitions:
             enum:
               - static
               - dhcp
+              - auto
           static:
             type: object
             description: Static configuration parameters
@@ -359,6 +365,49 @@ definitions:
               client:
                 type: string
                 description: Client identifier
+        required:
+          - method
+      ipv6:
+        type: object
+        description: IPv6 protocol configuration
+        properties:
+          method:
+            type: string
+            description: Configuration method
+            enum:
+              - static
+              - dhcp6
+              - auto
+          link_local_address:
+            type: string
+            description: IPv6 link local address
+          static:
+            type: object
+            description: Static configuration parameters
+            properties:
+              address:
+                type: string
+                description: IPv6 address
+              prefix_length:
+                type: integer
+                description: Prefix length
+                format: int32
+              gateway:
+                type: string
+                description: Default gateway
+            required:
+              - address
+              - prefix_length
+          dhcp6:
+            type: object
+            description: DHCPv6 configuration parameters
+            properties:
+              stateless:
+                type: boolean
+                description: Stateless DHCPv6
+                default: True
+            required:
+              - stateless
         required:
           - method
 

@@ -5,12 +5,18 @@
 
 #include "lwip/netifapi.h"
 #include "lwip/snmp.h"
+#if LWIP_IPV6
+#include "lwip/ethip6.h"
+#endif
 
 #include "packetio/drivers/dpdk/dpdk.h"
 #include "packetio/drivers/dpdk/model/port_info.hpp"
 #include "packetio/memory/dpdk/pbuf_utils.h"
 #include "packetio/stack/dpdk/net_interface.hpp"
 #include "packetio/stack/dpdk/offload_utils.hpp"
+#if LWIP_IPV6
+#include "packetio/stack/ipv6_netifapi.h"
+#endif
 #include "utils/overloaded_visitor.hpp"
 
 namespace openperf {
@@ -216,9 +222,11 @@ static err_t net_interface_dpdk_init(netif* netif)
 
     netif->output = etharp_output;
 
-#if LWIP_IPV6 && LWIP_IPV6_MLD
+#if LWIP_IPV6
+    netif->output_ip6 = ethip6_output;
+#if LWIP_IPV6_MLD
     netif->flags |= NETIF_FLAG_MLD6;
-    /* TODO: IPv6 setup */
+#endif
 #endif
 
     /* Finally, check link status and set UP flag if needed */
@@ -245,7 +253,7 @@ static int net_interface_link_status_change(uint16_t port_id,
                 : netifapi_netif_set_link_down(netif));
 }
 
-static err_t setup_ipv4_interface(
+static err_t configure_ipv4_interface(
     const std::optional<interface::ipv4_protocol_config> ipv4_config,
     netif& netif)
 {
@@ -260,61 +268,160 @@ static err_t setup_ipv4_interface(
                     ip4_addr netmask = {htonl(to_netmask(ipv4.prefix_length))};
                     ip4_addr gateway = {
                         ipv4.gateway ? htonl(ipv4.gateway->data()) : 0};
-                    netif_error = (netifapi_netif_add(&netif,
-                                                      &address,
-                                                      &netmask,
-                                                      &gateway,
-                                                      netif.state,
-                                                      net_interface_dpdk_init,
-                                                      net_interface_rx)
-                                   || netifapi_netif_set_up(&netif));
+                    netif_error = netifapi_netif_set_addr(
+                        &netif, &address, &netmask, &gateway);
                 },
+                [&](const interface::ipv4_auto_protocol_config&) {},
                 [&](const interface::ipv4_dhcp_protocol_config& dhcp) {
                     if (dhcp.hostname) {
                         netif_set_hostname(&netif,
                                            dhcp.hostname.value().c_str());
                     }
-                    netif_error = (netifapi_netif_add(&netif,
-                                                      nullptr,
-                                                      nullptr,
-                                                      nullptr,
-                                                      netif.state,
-                                                      net_interface_dpdk_init,
-                                                      net_interface_rx)
-                                   || netifapi_netif_set_up(&netif)
-                                   || netifapi_dhcp_start(&netif));
                 }),
             *ipv4_config);
+    }
+    return (netif_error);
+}
+
+static err_t
+start_ipv4_interface(const std::optional<interface::ipv4_protocol_config> ipv4,
+                     netif& netif)
+{
+    err_t netif_error = ERR_OK;
+
+    if (ipv4) {
+        std::visit(utils::overloaded_visitor(
+                       [&](const interface::ipv4_static_protocol_config&) {},
+                       [&](const interface::ipv4_auto_protocol_config&) {
+                           netif_error = netifapi_autoip_start(&netif);
+                       },
+                       [&](const interface::ipv4_dhcp_protocol_config&) {
+                           netif_error = netifapi_dhcp_start(&netif);
+                       }),
+                   *ipv4);
+    }
+    return (netif_error);
+}
+
+static void
+stop_ipv4_interface(const std::optional<interface::ipv4_protocol_config> ipv4,
+                    netif& netif)
+{
+    if (ipv4) {
+        std::visit(utils::overloaded_visitor(
+                       [&](const interface::ipv4_static_protocol_config&) {},
+                       [&](const interface::ipv4_auto_protocol_config&) {
+                           netifapi_autoip_stop(&netif);
+                       },
+                       [&](const interface::ipv4_dhcp_protocol_config&) {
+                           netifapi_dhcp_release(&netif);
+                           netifapi_dhcp_stop(&netif);
+                       }),
+                   *ipv4);
+    }
+}
+
+#if LWIP_IPV6
+
+static err_t configure_ipv6_interface_link_local_address(
+    netif& netif, const std::optional<net::ipv6_address>& addr)
+{
+    if (addr) {
+        struct ip6_addr ip6_addr;
+        addr->to_net_array(ip6_addr.addr);
+        err_t err = netifapi_netif_add_ip6_address(&netif, &ip6_addr, NULL);
+        return err;
     } else {
-        /* No explicit IPv4 config; use AutoIP to pick a link-local IPv4 address
-         */
-        netif_error =
-            (netifapi_netif_add(&netif,
-                                nullptr,
-                                nullptr,
-                                nullptr,
-                                netif.state,
-                                net_interface_dpdk_init,
-                                net_interface_rx)
-             || netifapi_netif_set_up(&netif) || netifapi_autoip_start(&netif));
+        /* Add auto link local IPv6 address */
+        return netifapi_netif_create_ip6_linklocal_address(&netif, 1);
+    }
+}
+
+static err_t configure_ipv6_interface(
+    const std::optional<interface::ipv6_protocol_config> ipv6_config,
+    netif& netif)
+{
+    err_t netif_error = ERR_OK;
+
+    if (ipv6_config) {
+        std::visit(
+            utils::overloaded_visitor(
+                [&](const interface::ipv6_static_protocol_config& config) {
+                    netif_error = configure_ipv6_interface_link_local_address(
+                        netif, config.link_local_address);
+                    if (netif_error != ERR_OK) return;
+
+                    struct ip6_addr address;
+                    config.address.to_net_array(address.addr);
+                    netif_error =
+                        netifapi_netif_add_ip6_address(&netif, &address, NULL);
+                    // TODO:
+                    //   LWPIP doesn't support
+                    //     IPv6 gateway (no route table)
+                    //     Prefix lengtth (always uses /64)
+                },
+                [&](const interface::ipv6_auto_protocol_config& config) {
+                    netif_error = configure_ipv6_interface_link_local_address(
+                        netif, config.link_local_address);
+                    if (netif_error != ERR_OK) return;
+
+                    netif_set_ip6_autoconfig_enabled(&netif, 1);
+                },
+                [&](const interface::ipv6_dhcp6_protocol_config& config) {
+                    netif_error = configure_ipv6_interface_link_local_address(
+                        netif, config.link_local_address);
+                    if (netif_error != ERR_OK) return;
+
+                    if (config.stateless)
+                        netif_set_ip6_autoconfig_enabled(&netif, 1);
+                    else
+                        netif_set_ip6_autoconfig_enabled(&netif, 0);
+                }),
+            *ipv6_config);
     }
 
     return (netif_error);
 }
 
-static void
-unset_ipv4_interface(const std::optional<interface::ipv4_protocol_config> ipv4,
+static err_t
+start_ipv6_interface(const std::optional<interface::ipv6_protocol_config> ipv6,
                      netif& netif)
 {
-    if (ipv4
-        && std::holds_alternative<interface::ipv4_dhcp_protocol_config>(
-            *ipv4)) {
-        netifapi_dhcp_release(&netif);
-        netifapi_dhcp_stop(&netif);
-    } else if (!ipv4) {
-        netifapi_autoip_stop(&netif);
+    err_t netif_error = ERR_OK;
+
+    if (ipv6) {
+        std::visit(utils::overloaded_visitor(
+                       [&](const interface::ipv6_static_protocol_config&) {},
+                       [&](const interface::ipv6_auto_protocol_config&) {},
+                       [&](const interface::ipv6_dhcp6_protocol_config& dhcp) {
+                           if (dhcp.stateless)
+                               netif_error =
+                                   netifapi_dhcp6_enable_stateless(&netif);
+                           else
+                               netif_error =
+                                   netifapi_dhcp6_enable_stateful(&netif);
+                       }),
+                   *ipv6);
+    }
+    return (netif_error);
+}
+
+static void
+stop_ipv6_interface(const std::optional<interface::ipv6_protocol_config> ipv6,
+                    netif& netif)
+{
+    if (ipv6) {
+        std::visit(utils::overloaded_visitor(
+                       [&](const interface::ipv6_static_protocol_config&) {},
+                       [&](const interface::ipv6_auto_protocol_config&) {},
+                       [&](const interface::ipv6_dhcp6_protocol_config&) {
+                           netifapi_dhcp6_disable(&netif);
+                       }),
+                   *ipv6);
     }
 }
+
+#endif // LWIP_IPV6
 
 net_interface::net_interface(std::string_view id,
                              int port_index,
@@ -329,10 +436,13 @@ net_interface::net_interface(std::string_view id,
     m_netif.state = this;
 
     /* Setup the stack interface */
-    err_t netif_error = setup_ipv4_interface(
-        get_protocol_config<interface::ipv4_protocol_config>(m_config),
-        m_netif);
-    if (netif_error) { throw std::runtime_error(lwip_strerr(netif_error)); }
+    configure();
+    try {
+        up();
+    } catch (...) {
+        unconfigure();
+        throw;
+    }
 
     /**
      * Update queuing strategy if necessary; direct is the default.
@@ -346,16 +456,102 @@ net_interface::net_interface(std::string_view id,
 
 net_interface::~net_interface()
 {
+    try {
+        down();
+        unconfigure();
+    } catch (const std::exception &e) {
+        OP_LOG(OP_LOG_ERROR, "Exception occured in net_interface destructor.   %s", e.what());
+    }
+}
+
+void net_interface::configure()
+{
+    err_t netif_error = netifapi_netif_add(&m_netif,
+                                           nullptr,
+                                           nullptr,
+                                           nullptr,
+                                           m_netif.state,
+                                           net_interface_dpdk_init,
+                                           net_interface_rx);
+    if (netif_error) { throw std::runtime_error(lwip_strerr(netif_error)); }
+
+    netif_error = configure_ipv4_interface(
+        get_protocol_config<interface::ipv4_protocol_config>(m_config),
+        m_netif);
+    if (netif_error) {
+        netifapi_netif_remove(&m_netif);
+        throw std::runtime_error(lwip_strerr(netif_error));
+    }
+
+#if LWIP_IPV6
+    netif_error = configure_ipv6_interface(
+        get_protocol_config<interface::ipv6_protocol_config>(m_config),
+        m_netif);
+    if (netif_error) {
+        netifapi_netif_remove(&m_netif);
+        throw std::runtime_error(lwip_strerr(netif_error));
+    }
+#endif // LWIP_IPV6
+}
+
+void net_interface::unconfigure()
+{
+    if (is_up()) down();
+
     rte_eth_dev_callback_unregister(m_port_index,
                                     RTE_ETH_EVENT_INTR_LSC,
                                     net_interface_link_status_change,
                                     &m_netif);
 
-    unset_ipv4_interface(
+    netifapi_netif_remove(&m_netif);
+}
+
+bool net_interface::is_up() const
+{
+    return (m_netif.flags & NETIF_FLAG_UP) ? true : false;
+}
+
+void net_interface::up()
+{
+    if (is_up()) return;
+
+    err_t netif_error = netifapi_netif_set_up(&m_netif);
+    if (netif_error) { throw std::runtime_error(lwip_strerr(netif_error)); }
+
+    netif_error = start_ipv4_interface(
         get_protocol_config<interface::ipv4_protocol_config>(m_config),
         m_netif);
+    if (netif_error) {
+        down();
+        throw std::runtime_error(lwip_strerr(netif_error));
+    }
+
+#if LWIP_IPV6
+    netif_error = start_ipv6_interface(
+        get_protocol_config<interface::ipv6_protocol_config>(m_config),
+        m_netif);
+    if (netif_error) {
+        down();
+        throw std::runtime_error(lwip_strerr(netif_error));
+    }
+#endif // LWIP_IPV6
+}
+
+void net_interface::down()
+{
+    if (!is_up()) return;
+
+    stop_ipv4_interface(
+        get_protocol_config<interface::ipv4_protocol_config>(m_config),
+        m_netif);
+
+#if LWIP_IPV6
+    stop_ipv6_interface(
+        get_protocol_config<interface::ipv6_protocol_config>(m_config),
+        m_netif);
+#endif // LWIP_IPV6
+
     netifapi_netif_set_down(&m_netif);
-    netifapi_netif_remove(&m_netif);
 }
 
 void net_interface::handle_link_state_change(bool link_up)

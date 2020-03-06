@@ -33,6 +33,12 @@
 #define LWIP_AUTOIP 1
 #define LWIP_DHCP_AUTOIP_COOP 1
 #define DHCP_DOES_ARP_CHECK 1 /* let's be a good net-citizen */
+#define LWIP_IPV6_AUTOCONFIG 1
+#define LWIP_IPV6_DHCP6 1
+#define LWIP_IPV6_SEND_ROUTER_SOLICIT 1
+/* Duplicate address detection is disabled for now because AAT has no way to
+ * check when IP becomes enabled */
+#define LWIP_IPV6_DUP_DETECT_ATTEMPTS 0
 
 /* Miscellaneous options */
 #define LWIP_STATS 1
@@ -53,7 +59,9 @@
 #define PBUF_PRIVATE_SIZE 64
 
 /* IP options */
+/* Disabled fragmentation for TCP GSO which creates segments > MTU */
 #define IP_FRAG 0
+#define LWIP_IPV6_FRAG 0
 
 /* TCP options */
 #define LWIP_TCP_SACK_OUT 1
@@ -88,6 +96,9 @@
 #define MEMCPY(dst, src, len) PACKETIO_MEMCPY(dst, src, len)
 #define SMEMCPY(dst, src, len) PACKETIO_MEMCPY(dst, src, len)
 #define MEMMOVE(dst, src, len) PACKETIO_MEMCPY(dst, src, len)
+
+/* Random number generator (used by dhcp6) */
+#define LWIP_RAND() rand()
 
 /* We've already got these */
 #define LWIP_DONT_PROVIDE_BYTEORDER_FUNCTIONS 1

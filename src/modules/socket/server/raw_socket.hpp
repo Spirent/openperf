@@ -39,6 +39,7 @@ class raw_socket : public socket_state_machine<raw_socket, raw_socket_state>
 {
 public:
     raw_socket(openperf::socket::server::allocator& allocator,
+               enum lwip_ip_addr_type ip_type,
                int flags,
                int protocol,
                raw_recv_fn recv_callback = nullptr);

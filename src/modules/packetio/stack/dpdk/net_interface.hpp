@@ -43,6 +43,10 @@ public:
 
     void handle_link_state_change(bool link_up);
 
+    bool is_up() const;
+    void up();
+    void down();
+
     err_t handle_rx(struct pbuf*);
     err_t handle_rx_notify();
 
@@ -52,6 +56,9 @@ public:
         std::variant<netif_rx_strategy::direct, netif_rx_strategy::queueing>;
 
 private:
+    void configure();
+    void unconfigure();
+
     const std::string m_id;
     const int m_port_index; /* DPDK port index, that is */
     const unsigned m_max_gso_length;

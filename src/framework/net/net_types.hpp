@@ -4,5 +4,7 @@
 #include "net/mac_address.hpp"
 #include "net/ipv4_address.hpp"
 #include "net/ipv4_network.hpp"
+#include "net/ipv6_address.hpp"
+#include "net/ipv6_network.hpp"
 
 #endif /* _OP_FRAMEWORK_NET_NET_TYPES_HPP_ */

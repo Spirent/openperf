@@ -5,8 +5,6 @@
 
 #include "tl/expected.hpp"
 
-#include "socket/server/compat/linux/icmp.h"
-
 #include "socket/server/allocator.hpp"
 #include "socket/server/generic_socket.hpp"
 #include "socket/server/raw_socket.hpp"
@@ -21,6 +19,7 @@ class icmp_socket : public raw_socket
 {
 public:
     icmp_socket(openperf::socket::server::allocator& allocator,
+                enum lwip_ip_addr_type ip_type,
                 int flags,
                 int protocol);
     ~icmp_socket() = default;
@@ -48,6 +47,12 @@ private:
      */
     using icmp_filter = std::bitset<256>;
     icmp_filter m_filter;
+
+    tl::expected<socklen_t, int>
+    do_icmp6_getsockopt(const raw_pcb*, const api::request_getsockopt&);
+
+    tl::expected<void, int> do_icmp6_setsockopt(raw_pcb*,
+                                                const api::request_setsockopt&);
 };
 
 } // namespace server
