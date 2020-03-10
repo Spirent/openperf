@@ -1,6 +1,6 @@
 /**
-* OpenPerf API
-* REST API interface for OpenPerf
+* Openperf Memory I/O Generation API
+* REST API interface to Openperf memory I/O module
 *
 * OpenAPI spec version: 1
 * Contact: support@spirent.com
@@ -55,13 +55,6 @@ public:
     std::string getId() const;
     void setId(std::string value);
         /// <summary>
-    /// Memory generator identifier that generated this result
-    /// </summary>
-    std::string getGeneratorId() const;
-    void setGeneratorId(std::string value);
-    bool generatorIdIsSet() const;
-    void unsetGenerator_id();
-    /// <summary>
     /// Indicates whether the result is currently being updated
     /// </summary>
     bool isActive() const;
@@ -85,8 +78,6 @@ public:
 protected:
     std::string m_Id;
 
-    std::string m_Generator_id;
-    bool m_Generator_idIsSet;
     bool m_Active;
 
     std::string m_Timestamp;

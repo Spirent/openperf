@@ -1,6 +1,6 @@
 /**
-* OpenPerf API
-* REST API interface for OpenPerf
+* Openperf Memory I/O Generation API
+* REST API interface to Openperf memory I/O module
 *
 * OpenAPI spec version: 1
 * Contact: support@spirent.com
@@ -20,8 +20,6 @@ namespace model {
 MemoryGeneratorResult::MemoryGeneratorResult()
 {
     m_Id = "";
-    m_Generator_id = "";
-    m_Generator_idIsSet = false;
     m_Active = false;
     m_Timestamp = "";
     
@@ -41,10 +39,6 @@ nlohmann::json MemoryGeneratorResult::toJson() const
     nlohmann::json val = nlohmann::json::object();
 
     val["id"] = ModelBase::toJson(m_Id);
-    if(m_Generator_idIsSet)
-    {
-        val["generator_id"] = ModelBase::toJson(m_Generator_id);
-    }
     val["active"] = m_Active;
     val["timestamp"] = ModelBase::toJson(m_Timestamp);
     val["read"] = ModelBase::toJson(m_Read);
@@ -57,11 +51,6 @@ nlohmann::json MemoryGeneratorResult::toJson() const
 void MemoryGeneratorResult::fromJson(nlohmann::json& val)
 {
     setId(val.at("id"));
-    if(val.find("generator_id") != val.end())
-    {
-        setGeneratorId(val.at("generator_id"));
-        
-    }
     setActive(val.at("active"));
     setTimestamp(val.at("timestamp"));
     
@@ -76,23 +65,6 @@ void MemoryGeneratorResult::setId(std::string value)
 {
     m_Id = value;
     
-}
-std::string MemoryGeneratorResult::getGeneratorId() const
-{
-    return m_Generator_id;
-}
-void MemoryGeneratorResult::setGeneratorId(std::string value)
-{
-    m_Generator_id = value;
-    m_Generator_idIsSet = true;
-}
-bool MemoryGeneratorResult::generatorIdIsSet() const
-{
-    return m_Generator_idIsSet;
-}
-void MemoryGeneratorResult::unsetGenerator_id()
-{
-    m_Generator_idIsSet = false;
 }
 bool MemoryGeneratorResult::isActive() const
 {
