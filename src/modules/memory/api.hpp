@@ -37,6 +37,10 @@ enum class reply_code {
 std::string to_string(request_type type);
 std::string to_string(reply_code code);
 
+inline std::string json_error(int code, const char* message) {
+    return nlohmann::json({{"code", code}, {"message", message}}).dump();
+}
+
 } // namespace openperf::memory::api
 
 #endif // _OP_MEMORY_API_HPP_

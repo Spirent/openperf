@@ -36,7 +36,7 @@ json submit_request(void* socket, json& request)
                != static_cast<int>(request_buffer.size())
         || zmq_msg_recv(&reply_msg, socket, 0) == -1) {
         return {{"code", reply_code::ERROR},
-                {"error", {{"code", errno}, {"message", zmq_strerror(errno)}}}};
+                {"error", json_error(errno, zmq_strerror(errno))}};
     }
 
     OP_LOG(OP_LOG_TRACE, "Received %s reply\n", to_string(type).c_str());
@@ -262,8 +262,7 @@ void handler::bulk_start_generators(const Rest::Request& request,
             response.send(Http::Code::No_Content);
         }
     } catch (const json::parse_error& e) {
-        json json_error = {{"code", e.id}, {"message", e.what()}};
-        response.send(Http::Code::Bad_Request, json_error);
+        response.send(Http::Code::Bad_Request, json_error(e.id, e.what()));
     }
 }
 
@@ -280,8 +279,7 @@ void handler::bulk_stop_generators(const Rest::Request& request,
             response.send(Http::Code::No_Content);
         }
     } catch (const json::parse_error& e) {
-        json json_error = {{"code", e.id}, {"message", e.what()}};
-        response.send(Http::Code::Bad_Request, json_error);
+        response.send(Http::Code::Bad_Request, json_error(e.id, e.what()));
     }
 }
 
