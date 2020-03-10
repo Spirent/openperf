@@ -9,6 +9,8 @@
 
 namespace openperf::core {
 
+static const std::string empty_id_string = "none";
+
 class uuid
 {
     alignas(8) std::array<uint8_t, 16> m_octets;

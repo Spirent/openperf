@@ -7,7 +7,9 @@ MEMGEN_DEPENDS += versions
 MEMGEN_SOURCES += \
 	init.cpp \
 	handler.cpp \
-	server.cpp
+	server.cpp \
+	generator_stack.cpp \
+	info.cpp
 
 MEMGEN_VERSIONED_FILES := init.cpp
 MEMGEN_UNVERSIONED_OBJECTS := \
