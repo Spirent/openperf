@@ -9,7 +9,7 @@ using namespace swagger::v1::model;
 
 typedef std::shared_ptr<MemoryInfoResult> MemoryInfoResultPointer;
 
-class memory_info 
+class memory_info
 {
 public:
     MemoryInfoResultPointer get() const;

@@ -13,17 +13,18 @@ typedef std::shared_ptr<MemoryGenerator> MemoryGeneratorPointer;
 class generator_stack
 {
 private:
-    typedef std::unordered_map<std::string, MemoryGeneratorPointer> MemoryGeneratorMap;
+    typedef std::unordered_map<std::string, MemoryGeneratorPointer>
+        MemoryGeneratorMap;
     MemoryGeneratorMap generators;
 
 public:
     std::vector<MemoryGeneratorPointer> list() const;
     MemoryGeneratorPointer get(const std::string& id) const;
     bool contains(const std::string& id) const;
-    
+
     void erase(const std::string& id);
-    tl::expected<MemoryGeneratorPointer, std::string> create(const MemoryGenerator& generator);
-    
+    tl::expected<MemoryGeneratorPointer, std::string>
+    create(const MemoryGenerator& generator);
 };
 
 } // namespace openperf::memory::generator

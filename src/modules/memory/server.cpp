@@ -54,8 +54,7 @@ server::server(void* context, openperf::core::event_loop& loop)
 {
     // Setup event loop
     struct op_event_callbacks callbacks = {
-        .on_read = [](const op_event_data* data, void* arg) -> int
-        {
+        .on_read = [](const op_event_data* data, void* arg) -> int {
             auto s = reinterpret_cast<server*>(arg);
             return s->handle_rpc_request(data);
         }};
@@ -166,18 +165,19 @@ json server::handle_json_request(const json& request)
     }
 }
 
-json server::list_generators() { 
+json server::list_generators()
+{
     json jdata = json::array();
 
     for (auto& generator : generator_stack->list()) {
         jdata.emplace_back(generator->toJson());
     }
 
-    return json{{"code", reply_code::OK},
-        {"data", jdata.dump()}}; 
+    return json{{"code", reply_code::OK}, {"data", jdata.dump()}};
 }
 
-json server::create_generator(const json& request) { 
+json server::create_generator(const json& request)
+{
     try {
         auto json_data = request["data"];
         MemoryGenerator memory_generator_model;
@@ -186,120 +186,120 @@ json server::create_generator(const json& request) {
         auto id_check = config::op_config_validate_id_string(
             memory_generator_model.getId());
 
-        if (!id_check) {
-            throw std::runtime_error(
-                id_check.error().c_str());
-        }
+        if (!id_check) { throw std::runtime_error(id_check.error().c_str()); }
 
         if (memory_generator_model.getId() == core::empty_id_string) {
-            memory_generator_model.setId(
-                core::to_string(core::uuid::random()));
+            memory_generator_model.setId(core::to_string(core::uuid::random()));
         }
 
         auto result = generator_stack->create(memory_generator_model);
-        if (!result) {
-            throw std::runtime_error(result.error());
-        }
+        if (!result) { throw std::runtime_error(result.error()); }
 
         return json{{"code", reply_code::OK},
-            {"data", result.value()->toJson().dump()}};
+                    {"data", result.value()->toJson().dump()}};
     } catch (const std::runtime_error& e) {
         return json{{"code", reply_code::BAD_INPUT},
-            {"error", json_error(EINVAL, e.what())}};
+                    {"error", json_error(EINVAL, e.what())}};
     } catch (const json::exception& e) {
         return json{{"code", reply_code::BAD_INPUT},
-            {"error", json_error(e.id, e.what())}};
+                    {"error", json_error(e.id, e.what())}};
     }
 }
 
-json server::get_generator(const json& request) { 
+json server::get_generator(const json& request)
+{
     auto generator = generator_stack->get(request["id"]);
 
     if (generator != nullptr) {
         return json{{"code", reply_code::OK},
-            {"data", generator->toJson().dump()}}; 
+                    {"data", generator->toJson().dump()}};
     }
 
     return json{"code", reply_code::NO_GENERATOR};
 }
 
-json server::delete_generator(const json& request) { 
+json server::delete_generator(const json& request)
+{
     auto id = request["id"];
     if (generator_stack->contains(id)) {
         generator_stack->erase(id);
-        return json{"code", reply_code::OK}; 
+        return json{"code", reply_code::OK};
     }
 
     return json{"code", reply_code::NO_GENERATOR};
 }
 
-json server::start_generator(const json& request) { 
+json server::start_generator(const json& request)
+{
     auto id = request["id"];
     if (generator_stack->contains(id)) {
-        //TODO: call start
+        // TODO: call start
         return json{"code", reply_code::OK};
     }
 
-    return json{"code", reply_code::NO_GENERATOR}; 
+    return json{"code", reply_code::NO_GENERATOR};
 }
 
-json server::stop_generator(const json& request) { 
+json server::stop_generator(const json& request)
+{
     auto id = request["id"];
     if (generator_stack->contains(id)) {
-        //TODO: call stop
+        // TODO: call stop
         return json{"code", reply_code::OK};
     }
 
-    return json{"code", reply_code::NO_GENERATOR}; 
+    return json{"code", reply_code::NO_GENERATOR};
 }
 
-json server::bulk_start_generators(const json& request) {
+json server::bulk_start_generators(const json& request)
+{
     auto ids = request["ids"];
     auto successed = json::array();
     auto failed = json::array();
 
     for (auto& id : ids) {
-        //TODO: call start
+        // TODO: call start
         successed.emplace_back(id);
     }
 
-    return json{"code", reply_code::NO_GENERATOR}; 
+    return json{"code", reply_code::NO_GENERATOR};
 }
 
-json server::bulk_stop_generators(const json& request) { 
+json server::bulk_stop_generators(const json& request)
+{
     auto ids = request["ids"];
     auto successed = json::array();
     auto failed = json::array();
 
     for (auto& id : ids) {
-        //TODO: call stop
+        // TODO: call stop
         successed.emplace_back(id);
     }
-    
-    return json{"code", reply_code::NO_GENERATOR}; 
+
+    return json{"code", reply_code::NO_GENERATOR};
 }
 
-json server::list_results() { 
-    return json{};
-}
+json server::list_results() { return json{}; }
 
-json server::get_result(const json& /*request*/) { 
+json server::get_result(const json& /*request*/)
+{
     return json{"code", reply_code::NO_RESULT};
 }
 
-json server::delete_result(const json& /*request*/) { 
+json server::delete_result(const json& /*request*/)
+{
     return json{"code", reply_code::NO_RESULT};
 }
 
-json server::get_info() { 
+json server::get_info()
+{
     auto info = memory_info->get();
     if (info != nullptr) {
-        return json{{"code", reply_code::OK},
-            {"data", info->toJson().dump()}};
+        return json{{"code", reply_code::OK}, {"data", info->toJson().dump()}};
     }
 
     return json{{"code", reply_code::ERROR},
-        {"error", json_error(-1, "Unexpected error")}};
+                {"error", json_error(-1, "Unexpected error")}};
 }
 
 } // namespace openperf::memory::api
