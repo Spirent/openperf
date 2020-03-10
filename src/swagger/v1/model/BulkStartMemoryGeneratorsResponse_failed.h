@@ -10,33 +10,32 @@
 * Do not edit the class manually.
 */
 /*
- * BulkStopMemoryGeneratorsRequest.h
+ * BulkStartMemoryGeneratorsResponse_failed.h
  *
- * Parameters for the bulk stop operation
+ * 
  */
 
-#ifndef BulkStopMemoryGeneratorsRequest_H_
-#define BulkStopMemoryGeneratorsRequest_H_
+#ifndef BulkStartMemoryGeneratorsResponse_failed_H_
+#define BulkStartMemoryGeneratorsResponse_failed_H_
 
 
 #include "ModelBase.h"
 
 #include <string>
-#include <vector>
 
 namespace swagger {
 namespace v1 {
 namespace model {
 
 /// <summary>
-/// Parameters for the bulk stop operation
+/// 
 /// </summary>
-class  BulkStopMemoryGeneratorsRequest
+class  BulkStartMemoryGeneratorsResponse_failed
     : public ModelBase
 {
 public:
-    BulkStopMemoryGeneratorsRequest();
-    virtual ~BulkStopMemoryGeneratorsRequest();
+    BulkStartMemoryGeneratorsResponse_failed();
+    virtual ~BulkStartMemoryGeneratorsResponse_failed();
 
     /////////////////////////////////////////////
     /// ModelBase overrides
@@ -47,20 +46,30 @@ public:
     void fromJson(nlohmann::json& json) override;
 
     /////////////////////////////////////////////
-    /// BulkStopMemoryGeneratorsRequest members
+    /// BulkStartMemoryGeneratorsResponse_failed members
 
     /// <summary>
-    /// List of memory generator identifiers
+    /// 
     /// </summary>
-    std::vector<std::string>& getIds();
-    
-protected:
-    std::vector<std::string> m_Ids;
+    std::string getId() const;
+    void setId(std::string value);
+        /// <summary>
+    /// Cause of Memory Generator start failure
+    /// </summary>
+    std::string getError() const;
+    void setError(std::string value);
+    bool errorIsSet() const;
+    void unsetError();
 
+protected:
+    std::string m_Id;
+
+    std::string m_Error;
+    bool m_ErrorIsSet;
 };
 
 }
 }
 }
 
-#endif /* BulkStopMemoryGeneratorsRequest_H_ */
+#endif /* BulkStartMemoryGeneratorsResponse_failed_H_ */
