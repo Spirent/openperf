@@ -37,7 +37,8 @@ enum class reply_code {
 std::string to_string(request_type type);
 std::string to_string(reply_code code);
 
-inline std::string json_error(int code, const char* message) {
+inline std::string json_error(int code, const char* message)
+{
     return nlohmann::json({{"code", code}, {"message", message}}).dump();
 }
 
