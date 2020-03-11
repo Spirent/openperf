@@ -1,6 +1,5 @@
-
-#include <json.hpp>
 #include <zmq.h>
+#include <json.hpp>
 
 #include "api/api_route_handler.hpp"
 #include "memory/api.hpp"
@@ -91,7 +90,7 @@ public:
 
 handler::handler(void* context, Rest::Router& router)
     : socket(op_socket_get_client(
-        context, ZMQ_REQ, openperf::memory::api::endpoint.data()))
+          context, ZMQ_REQ, openperf::memory::api::endpoint.data()))
 {
     Rest::Routes::Get(router,
                       "/memory-generators",
@@ -132,7 +131,7 @@ handler::handler(void* context, Rest::Router& router)
                          Rest::Routes::bind(&handler::delete_result, this));
 
     Rest::Routes::Get(
-        router, "/memory_info", Rest::Routes::bind(&handler::get_info, this));
+        router, "/memory-info", Rest::Routes::bind(&handler::get_info, this));
 }
 
 void handler::list_generators(const Rest::Request& /*request*/,
