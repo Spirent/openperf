@@ -51,10 +51,13 @@ std::string to_string(reply_code code)
 
 server::server(void* context, openperf::core::event_loop& loop)
     : m_socket(op_socket_get_server(context, ZMQ_REP, endpoint.data()))
+    , generator_stack(std::make_unique<generator::generator_stack>())
+    , memory_info(std::make_unique<info::memory_info>())
 {
     // Setup event loop
     struct op_event_callbacks callbacks = {
-        .on_read = [](const op_event_data* data, void* arg) -> int {
+        .on_read = [](const op_event_data* data, void* arg) -> int
+        {
             auto s = reinterpret_cast<server*>(arg);
             return s->handle_rpc_request(data);
         }};
@@ -179,9 +182,16 @@ json server::list_generators()
 json server::create_generator(const json& request)
 {
     try {
-        auto json_data = request["data"];
+        auto json_object = json::parse(request["data"].get<std::string>());
+
         MemoryGenerator memory_generator_model;
-        memory_generator_model.fromJson(json_data);
+        memory_generator_model.fromJson(json_object);
+        memory_generator_model.setConfig([&]() {
+            MemoryGeneratorConfig memory_generator_config;
+            memory_generator_config.fromJson(json_object["config"]);
+            return std::make_shared<MemoryGeneratorConfig>(
+                memory_generator_config);
+        }());
 
         auto id_check = config::op_config_validate_id_string(
             memory_generator_model.getId());

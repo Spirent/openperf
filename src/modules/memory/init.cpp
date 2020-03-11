@@ -1,8 +1,8 @@
 #include <thread>
-
 #include <zmq.h>
 
 #include "core/op_core.h"
+#include "memory/server.hpp"
 
 namespace openperf::memory {
 
@@ -25,7 +25,7 @@ private:
     std::thread m_service;
 
     std::unique_ptr<openperf::core::event_loop> m_loop;
-    // std::unique_ptr<openperf::memory::api::server> m_server;
+    std::unique_ptr<openperf::memory::api::server> m_server;
     std::unique_ptr<void, op_socket_deleter> m_shutdown;
 
 public:
@@ -37,8 +37,8 @@ public:
     void init(void* context)
     {
         m_loop = std::make_unique<openperf::core::event_loop>();
-        // m_server =
-        //    std::make_unique<openperf::memory::api::server>(context, *m_loop);
+        m_server =
+            std::make_unique<openperf::memory::api::server>(context, *m_loop);
         m_shutdown.reset(op_socket_get_server(
             context, ZMQ_REQ, "inproc://memory_shutdown_canary"));
     }
@@ -82,7 +82,7 @@ void memory_generator_fini(void* state)
 }
 
 REGISTER_MODULE(memgen,
-                INIT_MODULE_INFO("memgen",
+                INIT_MODULE_INFO("memory",
                                  "Module for make memory load",
                                  openperf::memory::module_version),
                 new openperf::memory::service(),
