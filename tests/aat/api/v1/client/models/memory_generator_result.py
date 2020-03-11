@@ -1,9 +1,9 @@
 # coding: utf-8
 
 """
-    OpenPerf API
+    Openperf Memory I/O Generation API
 
-    REST API interface for OpenPerf  # noqa: E501
+    REST API interface to Openperf memory I/O module  # noqa: E501
 
     OpenAPI spec version: 1
     Contact: support@spirent.com
@@ -32,7 +32,6 @@ class MemoryGeneratorResult(object):
     """
     swagger_types = {
         'id': 'str',
-        'generator_id': 'str',
         'active': 'bool',
         'timestamp': 'datetime',
         'read': 'MemoryGeneratorStats',
@@ -41,18 +40,16 @@ class MemoryGeneratorResult(object):
 
     attribute_map = {
         'id': 'id',
-        'generator_id': 'generator_id',
         'active': 'active',
         'timestamp': 'timestamp',
         'read': 'read',
         'write': 'write'
     }
 
-    def __init__(self, id=None, generator_id=None, active=None, timestamp=None, read=None, write=None):  # noqa: E501
+    def __init__(self, id=None, active=None, timestamp=None, read=None, write=None):  # noqa: E501
         """MemoryGeneratorResult - a model defined in Swagger"""  # noqa: E501
 
         self._id = None
-        self._generator_id = None
         self._active = None
         self._timestamp = None
         self._read = None
@@ -60,8 +57,6 @@ class MemoryGeneratorResult(object):
         self.discriminator = None
 
         self.id = id
-        if generator_id is not None:
-            self.generator_id = generator_id
         self.active = active
         self.timestamp = timestamp
         self.read = read
@@ -88,28 +83,6 @@ class MemoryGeneratorResult(object):
         :type: str
         """
         self._id = id
-
-    @property
-    def generator_id(self):
-        """Gets the generator_id of this MemoryGeneratorResult.  # noqa: E501
-
-        Memory generator identifier that generated this result  # noqa: E501
-
-        :return: The generator_id of this MemoryGeneratorResult.  # noqa: E501
-        :rtype: str
-        """
-        return self._generator_id
-
-    @generator_id.setter
-    def generator_id(self, generator_id):
-        """Sets the generator_id of this MemoryGeneratorResult.
-
-        Memory generator identifier that generated this result  # noqa: E501
-
-        :param generator_id: The generator_id of this MemoryGeneratorResult.  # noqa: E501
-        :type: str
-        """
-        self._generator_id = generator_id
 
     @property
     def active(self):
