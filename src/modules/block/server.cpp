@@ -3,11 +3,12 @@
 #include "block/api.hpp"
 #include "block/server.hpp"
 #include "config/op_config_utils.hpp"
-#include "swagger/v1/model/BlockFile.h"
+#include "modules/block/generator.hpp"
 
 namespace openperf::block::api {
 
 using namespace swagger::v1::model;
+using namespace openperf::block::generator;
 
 std::string to_string(request_type type)
 {
@@ -142,23 +143,21 @@ void server::handle_list_generators_request(json& reply)
 void server::handle_create_generator_request(json& request, json& reply)
 {
     try {
-        auto block_generator_model =
+        json block_generator_model =
             json::parse(request["data"].get<std::string>());
-        BlockGenerator block_generator;
-        block_generator.fromJson(block_generator_model);
-
+        
         if (auto id_check =
-                config::op_config_validate_id_string(block_generator.getId());
+                config::op_config_validate_id_string(block_generator_model["id"]);
             !id_check)
             throw std::runtime_error(id_check.error().c_str());
 
         // If user did not specify an id create one for them.
-        if (block_generator.getId() == core::empty_id_string) {
-            block_generator.setId(core::to_string(core::uuid::random()));
+        if (block_generator_model["id"] == core::empty_id_string) {
+           block_generator_model["id"] = (core::to_string(core::uuid::random()));
         }
 
         auto result =
-            blk_generator_stack->create_block_generator(block_generator);
+            blk_generator_stack->create_block_generator(block_generator_model);
         if (!result) { throw std::runtime_error(result.error()); }
 
         reply["code"] = reply_code::OK;
