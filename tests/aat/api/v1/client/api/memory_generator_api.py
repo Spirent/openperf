@@ -1,9 +1,9 @@
 # coding: utf-8
 
 """
-    OpenPerf API
+    Openperf Memory I/O Generation API
 
-    REST API interface for OpenPerf  # noqa: E501
+    REST API interface to Openperf memory I/O module  # noqa: E501
 
     OpenAPI spec version: 1
     Contact: support@spirent.com
@@ -44,7 +44,7 @@ class MemoryGeneratorApi(object):
 
         :param async_req bool
         :param BulkStartMemoryGeneratorsRequest bulk_start: Bulk start (required)
-        :return: list[MemoryGeneratorResult]
+        :return: BulkStartMemoryGeneratorsResponse
                  If the method is called asynchronously,
                  returns the request thread.
         """
@@ -66,7 +66,7 @@ class MemoryGeneratorApi(object):
 
         :param async_req bool
         :param BulkStartMemoryGeneratorsRequest bulk_start: Bulk start (required)
-        :return: list[MemoryGeneratorResult]
+        :return: BulkStartMemoryGeneratorsResponse
                  If the method is called asynchronously,
                  returns the request thread.
         """
@@ -124,7 +124,7 @@ class MemoryGeneratorApi(object):
             body=body_params,
             post_params=form_params,
             files=local_var_files,
-            response_type='list[MemoryGeneratorResult]',  # noqa: E501
+            response_type='BulkStartMemoryGeneratorsResponse',  # noqa: E501
             auth_settings=auth_settings,
             async_req=params.get('async_req'),
             _return_http_data_only=params.get('_return_http_data_only'),
@@ -1000,7 +1000,7 @@ class MemoryGeneratorApi(object):
     def start_memory_generator(self, id, **kwargs):  # noqa: E501
         """Start a memory generator  # noqa: E501
 
-        Start an existing memory generator.  # noqa: E501
+        Start an existing memory generator. Idempotent.  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
         >>> thread = api.start_memory_generator(id, async_req=True)
@@ -1008,7 +1008,7 @@ class MemoryGeneratorApi(object):
 
         :param async_req bool
         :param str id: Unique resource identifier (required)
-        :return: MemoryGeneratorResult
+        :return: None
                  If the method is called asynchronously,
                  returns the request thread.
         """
@@ -1022,7 +1022,7 @@ class MemoryGeneratorApi(object):
     def start_memory_generator_with_http_info(self, id, **kwargs):  # noqa: E501
         """Start a memory generator  # noqa: E501
 
-        Start an existing memory generator.  # noqa: E501
+        Start an existing memory generator. Idempotent.  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
         >>> thread = api.start_memory_generator_with_http_info(id, async_req=True)
@@ -1030,7 +1030,7 @@ class MemoryGeneratorApi(object):
 
         :param async_req bool
         :param str id: Unique resource identifier (required)
-        :return: MemoryGeneratorResult
+        :return: None
                  If the method is called asynchronously,
                  returns the request thread.
         """
@@ -1088,7 +1088,7 @@ class MemoryGeneratorApi(object):
             body=body_params,
             post_params=form_params,
             files=local_var_files,
-            response_type='MemoryGeneratorResult',  # noqa: E501
+            response_type=None,  # noqa: E501
             auth_settings=auth_settings,
             async_req=params.get('async_req'),
             _return_http_data_only=params.get('_return_http_data_only'),
