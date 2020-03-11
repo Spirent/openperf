@@ -5,7 +5,7 @@ namespace openperf::memory::generator {
 std::vector<MemoryGeneratorPointer> generator_stack::list() const
 {
     std::vector<MemoryGeneratorPointer> list;
-    for (auto& pair : generators) list.push_back(pair.second);
+    for (auto& pair : generators) { list.push_back(pair.second); }
 
     return list;
 }
