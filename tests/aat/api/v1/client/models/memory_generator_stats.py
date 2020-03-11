@@ -1,9 +1,9 @@
 # coding: utf-8
 
 """
-    OpenPerf API
+    Openperf Memory I/O Generation API
 
-    REST API interface for OpenPerf  # noqa: E501
+    REST API interface to Openperf memory I/O module  # noqa: E501
 
     OpenAPI spec version: 1
     Contact: support@spirent.com
