@@ -291,7 +291,7 @@ Done:
 
 			case msg.PeerDisconnectLocalType, msg.PeerDisconnectRemoteType:
 				// Return an error here. Peer should not have disconnected.
-				err := processUnexpectedPeerDisconnect(notif)
+				err := c.processUnexpectedPeerDisconnect(notif)
 				return (*Client).cleanup, err
 
 			default:
@@ -406,7 +406,7 @@ Done:
 
 			case msg.PeerDisconnectLocalType, msg.PeerDisconnectRemoteType:
 				// Return an error here. Peer should not have disconnected.
-				err := processUnexpectedPeerDisconnect(notif)
+				err := c.processUnexpectedPeerDisconnect(notif)
 				return (*Client).cleanup, err
 
 			default:
@@ -614,7 +614,7 @@ func (c *Client) waitForPeerResponse(expectedType string) (*msg.Message, error) 
 
 			switch notif.Type {
 			case msg.PeerDisconnectLocalType, msg.PeerDisconnectRemoteType:
-				return nil, processUnexpectedPeerDisconnect(notif)
+				return nil, c.processUnexpectedPeerDisconnect(notif)
 
 			case msg.StatsNotificationType:
 				// Sometimes upstream-only tests can have an in-flight stats notification from
@@ -664,7 +664,7 @@ func (c *Client) handleStatsNotification(notif *msg.Message) error {
 	return nil
 }
 
-func processUnexpectedPeerDisconnect(notif *msg.Message) error {
+func (c *Client) processUnexpectedPeerDisconnect(notif *msg.Message) error {
 
 	switch notif.Type {
 	case msg.PeerDisconnectLocalType:
