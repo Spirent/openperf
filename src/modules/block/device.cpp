@@ -1,4 +1,3 @@
-#include "modules/block/device.hpp"
 #include "core/op_core.h"
 #include <dirent.h>
 #include <fcntl.h>
@@ -8,6 +7,7 @@
 #include <sys/stat.h>
 #include <sys/sysmacros.h>
 #include <mntent.h>
+#include "device.hpp"
 
 namespace openperf::block::device {
 
@@ -18,12 +18,12 @@ block_device_stack::block_device_stack()
 
 void block_device_stack::init_block_device_stack()
 {
-    DIR* dir = NULL;
-    struct dirent* entry = NULL;
+    DIR* dir = nullptr;
+    struct dirent* entry = nullptr;
 
     block_devices.clear();
 
-    if ((dir = opendir(device_dir.c_str())) == NULL) {
+    if ((dir = opendir(device_dir.c_str())) == nullptr) {
         OP_LOG(OP_LOG_ERROR,
                "Could not open directory %s: %s\n",
                device_dir.c_str(),
@@ -31,7 +31,7 @@ void block_device_stack::init_block_device_stack()
         return;
     }
 
-    while ((entry = readdir(dir)) != NULL) {
+    while ((entry = readdir(dir)) != nullptr) {
         if (entry->d_type == DT_DIR) continue; /* skip directories */
 
         if (!is_raw_device(entry->d_name)) continue;
@@ -111,7 +111,7 @@ bool block_device_stack::is_raw_device(const std::string id)
 BlockDevicePtr block_device_stack::get_block_device(std::string id)
 {
     if (block_devices.count(id)) return block_devices.at(id);
-    return NULL;
+    return nullptr;
 }
 
 std::vector<BlockDevicePtr> block_device_stack::block_devices_list()
