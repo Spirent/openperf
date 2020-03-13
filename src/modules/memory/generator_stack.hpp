@@ -2,29 +2,33 @@
 #define _MEMORY_GENERATOR_STACK_HPP_
 
 #include "swagger/v1/model/MemoryGenerator.h"
-#include "tl/expected.hpp"
+#include "memory/generator.hpp"
 
 namespace openperf::memory::generator {
 
-using namespace swagger::v1::model;
+namespace model = swagger::v1::model;
 
-typedef std::shared_ptr<MemoryGenerator> MemoryGeneratorPointer;
+typedef std::forward_list< std::reference_wrapper<const model::MemoryGenerator> > MemoryGeneratorList;
 
 class generator_stack
 {
 private:
-    typedef std::unordered_map<std::string, MemoryGeneratorPointer>
-        MemoryGeneratorMap;
-    MemoryGeneratorMap generators;
+    typedef std::unordered_map<std::string, generator> generator_map;
+    generator_map _collection;
 
 public:
-    std::vector<MemoryGeneratorPointer> list() const;
-    MemoryGeneratorPointer get(const std::string& id) const;
+    const MemoryGeneratorList list() const;
+    const model::MemoryGenerator& get(const std::string& id) const;
     bool contains(const std::string& id) const;
 
     void erase(const std::string& id);
-    tl::expected<MemoryGeneratorPointer, std::string>
-    create(const MemoryGenerator& generator);
+    const model::MemoryGenerator& create(const model::MemoryGenerator& generator);
+    void clear();
+
+    void start();
+    void start(const std::string& id);
+    void stop();
+    void stop(const std::string& id);
 };
 
 } // namespace openperf::memory::generator

@@ -5,7 +5,6 @@
 #include "core/op_core.h"
 
 #include "memory/generator_stack.hpp"
-#include "memory/info.hpp"
 
 namespace openperf::memory::api {
 
@@ -16,7 +15,6 @@ class server
 private:
     std::unique_ptr<void, op_socket_deleter> m_socket;
     std::unique_ptr<generator::generator_stack> generator_stack;
-    std::unique_ptr<info::memory_info> memory_info;
 
 public:
     server(void* context, core::event_loop& loop);
