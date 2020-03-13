@@ -1,43 +1,89 @@
-#include "memory/generator_stack.hpp"
+#include "generator_stack.hpp"
+#include "generator.hpp"
+#include "core/op_core.h"
+#include "config/op_config_utils.hpp"
 
 namespace openperf::memory::generator {
 
-std::vector<MemoryGeneratorPointer> generator_stack::list() const
+const MemoryGeneratorList generator_stack::list() const
 {
-    std::vector<MemoryGeneratorPointer> list;
-    for (auto& pair : generators) { list.push_back(pair.second); }
+    MemoryGeneratorList list;
+    for (auto& pair : _collection) { 
+        list.push_front(pair.second.model()); 
+    }
 
     return list;
 }
 
 bool generator_stack::contains(const std::string& id) const
 {
-    // return generators.contains(id); // C++20
-    return generators.count(id); // Legacy variant
+    // return _collection.contains(id); // C++20
+    return _collection.count(id); // Legacy variant
 }
 
-MemoryGeneratorPointer generator_stack::get(const std::string& id) const
+const model::MemoryGenerator& generator_stack::get(const std::string& id) const
 {
-    try {
-        return generators.at(id);
-    } catch (std::out_of_range) {
-        return nullptr;
+    return _collection.at(id).model();
+}
+
+void generator_stack::erase(const std::string& id) { 
+    _collection.erase(id); 
+}
+
+const model::MemoryGenerator& generator_stack::create(const model::MemoryGenerator& g_model)
+{
+    auto id_check = config::op_config_validate_id_string(g_model.getId());
+    if (!id_check) { 
+        throw std::invalid_argument(
+            id_check.error().c_str()); 
+    }
+
+    auto internal_model = g_model;
+    if (internal_model.getId() == core::empty_id_string) {
+        internal_model.setId(core::to_string(core::uuid::random()));
+    } else if (contains(internal_model.getId())) {
+        throw std::invalid_argument(
+            "Memory generator with id '"
+            + internal_model.getId() + "' already exists.");
+    }
+
+    auto result = _collection.emplace(internal_model.getId(), internal_model);
+    if (!result.second) {
+        throw std::runtime_error(
+            "Unexpected error on inserting MemoryGenerator with id '"
+            + internal_model.getId() + "' to collection.");
+    }
+
+    return result.first->second.model();
+}
+
+void generator_stack::clear()
+{
+    _collection.clear();
+}
+
+void generator_stack::start()
+{
+    for (auto& generator : _collection) {
+        generator.second.start();
     }
 }
 
-void generator_stack::erase(const std::string& id) { generators.erase(id); }
-
-tl::expected<MemoryGeneratorPointer, std::string>
-generator_stack::create(const MemoryGenerator& generator)
+void generator_stack::start(const std::string& id)
 {
-    if (contains(generator.getId()))
-        return tl::make_unexpected("Memory generator with id '"
-                                   + generator.getId() + "' already exists.");
+    _collection.at(id).start();
+}
 
-    auto ptr = MemoryGeneratorPointer(new MemoryGenerator(generator));
-    generators.emplace(generator.getId(), ptr);
+void generator_stack::stop()
+{
+    for (auto& generator : _collection) {
+        generator.second.stop();
+    }
+}
 
-    return ptr;
+void generator_stack::stop(const std::string& id)
+{
+    _collection.at(id).stop();
 }
 
 } // namespace openperf::memory::generator
