@@ -28,7 +28,7 @@ block_file_stack::create_block_file(BlockFile& block_file_model)
 BlockFilePtr block_file_stack::get_block_file(std::string id)
 {
     if (block_files.count(id)) return block_files.at(id);
-    return NULL;
+    return nullptr;
 }
 
 void block_file_stack::delete_block_file(std::string id)

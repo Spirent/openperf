@@ -274,7 +274,7 @@ void handler::delete_file(const Rest::Request& request,
 
     response.headers().add<Http::Header::ContentType>(MIME(Application, Json));
     if (api_reply["code"].get<api::reply_code>() == api::reply_code::OK) {
-        response.send(Http::Code::Ok);
+        response.send(Http::Code::No_Content);
     } else {
         response.send(Http::Code::Internal_Server_Error,
                       api_reply["error"].get<std::string>());
@@ -365,7 +365,7 @@ void handler::delete_generator(const Rest::Request& request,
 
     response.headers().add<Http::Header::ContentType>(MIME(Application, Json));
     if (api_reply["code"].get<api::reply_code>() == api::reply_code::OK) {
-        response.send(Http::Code::Ok);
+        response.send(Http::Code::No_Content);
     } else {
         response.send(Http::Code::Internal_Server_Error,
                       api_reply["error"].get<std::string>());
@@ -375,8 +375,12 @@ void handler::delete_generator(const Rest::Request& request,
 void handler::start_generator(const Rest::Request& request,
                               Http::ResponseWriter response)
 {
-    json api_request = {{"type", api::request_type::START_GENERATOR},
-                        {"data", request.body()}};
+    auto id = request.param(":id").as<std::string>();
+    if (auto res = openperf::config::op_config_validate_id_string(id); !res) {
+        response.send(Http::Code::Not_Found, res.error());
+        return;
+    }
+    json api_request = {{"type", api::request_type::START_GENERATOR}, {"id", id}};
 
     json api_reply = submit_request(m_socket.get(), api_request);
 
@@ -384,11 +388,10 @@ void handler::start_generator(const Rest::Request& request,
 
     switch (api_reply["code"].get<api::reply_code>()) {
     case api::reply_code::OK:
-        response.send(Http::Code::Ok, api_reply["data"].get<std::string>());
+        response.send(Http::Code::No_Content);
         break;
-    case api::reply_code::BAD_INPUT:
-        response.send(Http::Code::Bad_Request,
-                      api_reply["error"].get<std::string>());
+    case api::reply_code::NO_GENERATOR:
+        response.send(Http::Code::Not_Found);
         break;
     default:
         response.send(Http::Code::Internal_Server_Error,
@@ -399,8 +402,13 @@ void handler::start_generator(const Rest::Request& request,
 void handler::stop_generator(const Rest::Request& request,
                              Http::ResponseWriter response)
 {
-    json api_request = {{"type", api::request_type::STOP_GENERATOR},
-                        {"data", request.body()}};
+    auto id = request.param(":id").as<std::string>();
+    if (auto res = openperf::config::op_config_validate_id_string(id); !res) {
+        response.send(Http::Code::Not_Found, res.error());
+        return;
+    }
+
+    json api_request = {{"type", api::request_type::STOP_GENERATOR}, {"id", id}};
 
     json api_reply = submit_request(m_socket.get(), api_request);
 
@@ -408,11 +416,10 @@ void handler::stop_generator(const Rest::Request& request,
 
     switch (api_reply["code"].get<api::reply_code>()) {
     case api::reply_code::OK:
-        response.send(Http::Code::Ok, api_reply["data"].get<std::string>());
+        response.send(Http::Code::No_Content);
         break;
-    case api::reply_code::BAD_INPUT:
-        response.send(Http::Code::Bad_Request,
-                      api_reply["error"].get<std::string>());
+    case api::reply_code::NO_GENERATOR:
+        response.send(Http::Code::Not_Found);
         break;
     default:
         response.send(Http::Code::Internal_Server_Error,

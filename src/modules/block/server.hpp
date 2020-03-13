@@ -29,7 +29,8 @@ private:
     void handle_create_generator_request(json& request, json& reply);
     void handle_get_generator_request(json& request, json& reply);
     void handle_delete_generator_request(json& request, json& reply);
-
+    void handle_start_generator_request(json& request, json& reply);
+    void handle_stop_generator_request(json& request, json& reply);
 public:
     server(void* context, core::event_loop& loop);
 
