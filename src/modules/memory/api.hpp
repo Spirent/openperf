@@ -7,7 +7,7 @@
 
 namespace openperf::memory::api {
 
-constexpr std::string_view endpoint = "inproc://openperf_memory";
+constexpr auto endpoint = "inproc://openperf_memory";
 
 enum class request_type {
     NONE = 0,

@@ -3,16 +3,17 @@
 
 #include "swagger/v1/model/MemoryInfoResult.h"
 
-namespace openperf::memory::info {
+namespace openperf::memory {
 
-using namespace swagger::v1::model;
-
-typedef std::shared_ptr<MemoryInfoResult> MemoryInfoResultPointer;
+namespace model = swagger::v1::model;
 
 class memory_info
 {
 public:
-    MemoryInfoResultPointer get() const;
+    static model::MemoryInfoResult get();
+
+private:
+    memory_info() {}
 };
 
 } // namespace openperf::memory::info
