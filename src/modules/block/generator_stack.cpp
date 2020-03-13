@@ -26,10 +26,10 @@ block_generator_stack::create_block_generator(json& block_generator_model)
     return blkgenerator_ptr;
 }
 
-block_generator_ptr block_generator_stack::get_block_generator(std::string id)
+block_generator_ptr block_generator_stack::get_block_generator(std::string id) const
 {
     if (block_generators.count(id)) return block_generators.at(id);
-    return NULL;
+    return nullptr;
 }
 
 void block_generator_stack::delete_block_generator(std::string id)

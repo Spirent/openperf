@@ -1,7 +1,7 @@
 #ifndef _OP_BLOCK_GENERATOR_STACK_HPP_
 #define _OP_BLOCK_GENERATOR_STACK_HPP_
 
-#include "modules/block/generator.hpp"
+#include "block/generator.hpp"
 #include "tl/expected.hpp"
 
 namespace openperf::block::generator {
@@ -22,7 +22,7 @@ public:
 
     std::vector<block_generator_ptr> block_generators_list();
     tl::expected<block_generator_ptr, std::string> create_block_generator(json& block_generator_model);
-    block_generator_ptr get_block_generator(std::string id);
+    block_generator_ptr get_block_generator(std::string id) const;
     void delete_block_generator(std::string id);
 };
 

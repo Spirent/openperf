@@ -30,7 +30,7 @@ enum class request_type {
     BULK_STOP_GENERATORS
 };
 
-enum class reply_code { NONE = 0, OK, NO_DEVICE, NO_FILE, BAD_INPUT, ERROR };
+enum class reply_code { NONE = 0, OK, NO_DEVICE, NO_FILE, NO_GENERATOR, BAD_INPUT, ERROR };
 
 std::string to_string(request_type type);
 std::string to_string(reply_code code);

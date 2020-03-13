@@ -3,7 +3,7 @@
 #include "block/api.hpp"
 #include "block/server.hpp"
 #include "config/op_config_utils.hpp"
-#include "modules/block/generator.hpp"
+#include "block/generator.hpp"
 
 namespace openperf::block::api {
 
@@ -19,6 +19,14 @@ std::string to_string(request_type type)
         {request_type::CREATE_FILE, "CREATE_FILE"},
         {request_type::GET_FILE, "GET_FILE"},
         {request_type::DELETE_FILE, "DELETE_FILE"},
+        {request_type::LIST_GENERATORS, "LIST_GENERATORS"},
+        {request_type::CREATE_GENERATOR, "CREATE_GENERATOR"},
+        {request_type::GET_GENERATOR, "GET_GENERATOR"},
+        {request_type::DELETE_GENERATOR, "DELETE_GENERATOR"},
+        {request_type::START_GENERATOR, "START_GENERATOR"},
+        {request_type::STOP_GENERATOR, "STOP_GENERATOR"},
+        {request_type::BULK_START_GENERATORS, "BULK_START_GENERATORS"},
+        {request_type::BULK_STOP_GENERATORS, "BULK_STOP_GENERATORS"},
         {request_type::NONE, "UNKNOWN"} /* Overloaded */
     };
 
@@ -32,6 +40,8 @@ std::string to_string(reply_code code)
     const static std::unordered_map<reply_code, std::string> reply_codes = {
         {reply_code::OK, "OK"},
         {reply_code::NO_DEVICE, "NO_DEVICE"},
+        {reply_code::NO_FILE, "NO_FILE"},
+        {reply_code::NO_GENERATOR, "NO_GENERATOR"},
         {reply_code::BAD_INPUT, "BAD_INPUT"},
         {reply_code::ERROR, "ERROR"},
         {reply_code::NONE, "UNKNOWN"}, /* Overloaded */
@@ -115,7 +125,7 @@ void server::handle_get_block_file_request(json& request, json& reply)
 {
     auto blkfile = blk_file_stack->get_block_file(request["id"]);
 
-    if (blkfile == NULL) {
+    if (blkfile == nullptr) {
         reply["code"] = reply_code::NO_FILE;
     } else {
         reply["code"] = reply_code::OK;
@@ -175,8 +185,8 @@ void server::handle_get_generator_request(json& request, json& reply)
 {
     auto blkgenerator = blk_generator_stack->get_block_generator(request["id"]);
 
-    if (blkgenerator == NULL) {
-        reply["code"] = reply_code::NO_FILE;
+    if (blkgenerator == nullptr) {
+        reply["code"] = reply_code::NO_GENERATOR;
     } else {
         reply["code"] = reply_code::OK;
         reply["data"] = blkgenerator->toJson().dump();
@@ -186,6 +196,30 @@ void server::handle_get_generator_request(json& request, json& reply)
 void server::handle_delete_generator_request(json& request, json& reply)
 {
     blk_generator_stack->delete_block_generator(request["id"]);
+    reply["code"] = reply_code::OK;
+}
+
+void server::handle_start_generator_request(json& request, json& reply)
+{
+    auto blkgenerator = blk_generator_stack->get_block_generator(request["id"]);
+    if (blkgenerator == nullptr) {
+        reply["code"] = reply_code::NO_GENERATOR;
+        return;
+    }
+    blkgenerator->start();
+    reply["code"] = reply_code::OK;
+}
+
+void server::handle_stop_generator_request(json& request, json& reply)
+{
+    auto blkgenerator = blk_generator_stack->get_block_generator(request["id"]);
+
+    if (blkgenerator == nullptr) {
+        reply["code"] = reply_code::NO_GENERATOR;
+        return;
+    } 
+
+    blkgenerator->stop();
     reply["code"] = reply_code::OK;
 }
 
@@ -244,6 +278,12 @@ int server::handle_request(const op_event_data* data)
             break;
         case request_type::DELETE_GENERATOR:
             handle_delete_generator_request(request, reply);
+            break;
+        case request_type::START_GENERATOR:
+            handle_start_generator_request(request, reply);
+            break;
+        case request_type::STOP_GENERATOR:
+            handle_stop_generator_request(request, reply);
             break;
         default:
             reply["code"] = reply_code::ERROR;
