@@ -1,11 +1,9 @@
 #include "memory/server.hpp"
 
 #include "memory/api.hpp"
+#include "memory/info.hpp"
 #include "swagger/v1/model/MemoryGenerator.h"
 #include "swagger/v1/model/MemoryGeneratorConfig.h"
-
-#include "core/op_core.h"
-#include "config/op_config_utils.hpp"
 
 namespace openperf::memory::api {
 
@@ -50,9 +48,8 @@ std::string to_string(reply_code code)
 }
 
 server::server(void* context, openperf::core::event_loop& loop)
-    : m_socket(op_socket_get_server(context, ZMQ_REP, endpoint.data()))
+    : m_socket(op_socket_get_server(context, ZMQ_REP, endpoint))
     , generator_stack(std::make_unique<generator::generator_stack>())
-    , memory_info(std::make_unique<info::memory_info>())
 {
     // Setup event loop
     struct op_event_callbacks callbacks = {
@@ -172,8 +169,8 @@ json server::list_generators()
 {
     json jdata = json::array();
 
-    for (auto& generator : generator_stack->list()) {
-        jdata.emplace_back(generator->toJson());
+    for (const MemoryGenerator& generator : generator_stack->list()) {
+        jdata.emplace_back(generator.toJson());
     }
 
     return json{{"code", reply_code::OK}, {"data", jdata.dump()}};
@@ -184,29 +181,24 @@ json server::create_generator(const json& request)
     try {
         auto json_object = json::parse(request["data"].get<std::string>());
 
+        // MemoryGenerator.fromJson() automatically not parse
+        // inner object MemoryConfigGenerator, so we need construct
+        // and assign it manualy
         MemoryGenerator memory_generator_model;
         memory_generator_model.fromJson(json_object);
         memory_generator_model.setConfig([&]() {
-            MemoryGeneratorConfig memory_generator_config;
-            memory_generator_config.fromJson(json_object["config"]);
-            return std::make_shared<MemoryGeneratorConfig>(
-                memory_generator_config);
+            MemoryGeneratorConfig config;
+            config.fromJson(json_object["config"]);
+            return std::make_shared<MemoryGeneratorConfig>(config);
         }());
 
-        auto id_check = config::op_config_validate_id_string(
-            memory_generator_model.getId());
-
-        if (!id_check) { throw std::runtime_error(id_check.error().c_str()); }
-
-        if (memory_generator_model.getId() == core::empty_id_string) {
-            memory_generator_model.setId(core::to_string(core::uuid::random()));
+        try {
+            auto result_model = generator_stack->create(memory_generator_model);
+            return json{{"code", reply_code::OK},
+                        {"data", result_model.toJson().dump()}};
+        } catch (std::invalid_argument e) {
+            throw std::runtime_error(e.what()); 
         }
-
-        auto result = generator_stack->create(memory_generator_model);
-        if (!result) { throw std::runtime_error(result.error()); }
-
-        return json{{"code", reply_code::OK},
-                    {"data", result.value()->toJson().dump()}};
     } catch (const std::runtime_error& e) {
         return json{{"code", reply_code::BAD_INPUT},
                     {"error", json_error(EINVAL, e.what())}};
@@ -218,11 +210,12 @@ json server::create_generator(const json& request)
 
 json server::get_generator(const json& request)
 {
-    auto generator = generator_stack->get(request["id"]);
-
-    if (generator != nullptr) {
+    auto id = request["id"].get<std::string>();
+    
+    if (generator_stack->contains(id)) {
+        auto model = generator_stack->get(id);
         return json{{"code", reply_code::OK},
-                    {"data", generator->toJson().dump()}};
+                    {"data", model.toJson().dump()}};
     }
 
     return json{"code", reply_code::NO_GENERATOR};
@@ -243,7 +236,7 @@ json server::start_generator(const json& request)
 {
     auto id = request["id"];
     if (generator_stack->contains(id)) {
-        // TODO: call start
+        generator_stack->start(id);
         return json{"code", reply_code::OK};
     }
 
@@ -254,7 +247,7 @@ json server::stop_generator(const json& request)
 {
     auto id = request["id"];
     if (generator_stack->contains(id)) {
-        // TODO: call stop
+        generator_stack->stop(id);
         return json{"code", reply_code::OK};
     }
 
@@ -268,7 +261,7 @@ json server::bulk_start_generators(const json& request)
     auto failed = json::array();
 
     for (auto& id : ids) {
-        // TODO: call start
+        generator_stack->start(id);
         successed.emplace_back(id);
     }
 
@@ -282,7 +275,7 @@ json server::bulk_stop_generators(const json& request)
     auto failed = json::array();
 
     for (auto& id : ids) {
-        // TODO: call stop
+        generator_stack->stop(id);
         successed.emplace_back(id);
     }
 
@@ -303,13 +296,13 @@ json server::delete_result(const json& /*request*/)
 
 json server::get_info()
 {
-    auto info = memory_info->get();
-    if (info != nullptr) {
-        return json{{"code", reply_code::OK}, {"data", info->toJson().dump()}};
+    try {
+        return json{{"code", reply_code::OK}, 
+            {"data", memory_info::get().toJson().dump()}};
+    } catch (std::exception e) {
+        return json{{"code", reply_code::ERROR},
+                    {"error", json_error(-1, e.what())}};
     }
-
-    return json{{"code", reply_code::ERROR},
-                {"error", json_error(-1, "Unexpected error")}};
 }
 
 } // namespace openperf::memory::api
