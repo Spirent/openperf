@@ -124,7 +124,7 @@ with description('Interfaces,', 'interfaces') as self:
                         intfs = self.api.list_interfaces(ipv6_address='')
                         expect(intfs).to(be_empty)
 
-            with description('IPv4Andv6,'):
+            with description('both IPv4 and IPv6,'):
                 with before.each:
                     intf = self.api.create_interface(example_ipv4andv6_interface(self.api.api_client))
                     expect(intf).to(be_valid_interface)

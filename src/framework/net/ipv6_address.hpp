@@ -5,8 +5,7 @@
 #include <string>
 #include <array>
 
-namespace openperf {
-namespace net {
+namespace openperf::net {
 
 /**
  * Immutable IPv6 Address
@@ -20,7 +19,7 @@ public:
     static constexpr size_t SIZE_IN_U32 = SIZE / sizeof(uint32_t);
     static constexpr size_t SIZE_IN_U64 = SIZE / sizeof(uint64_t);
 
-    typedef std::array<uint8_t, SIZE> data_u8_t;
+    using data_u8_t = std::array<uint8_t, SIZE>;
 
     ipv6_address();
     ipv6_address(const std::string& str);
@@ -35,13 +34,13 @@ public:
     const data_u8_t& data() const { return m_data; }
     uint8_t operator[](size_t idx) const;
 
-    void to_host_array(uint16_t* data) const;
-    void to_host_array(uint32_t* data) const;
-    void to_host_array(uint64_t* data) const;
+    void to_host_array(uint16_t data[SIZE_IN_U16]) const;
+    void to_host_array(uint32_t data[SIZE_IN_U32]) const;
+    void to_host_array(uint64_t data[SIZE_IN_U64]) const;
 
-    void to_net_array(uint16_t* data) const;
-    void to_net_array(uint32_t* data) const;
-    void to_net_array(uint64_t* data) const;
+    void to_net_array(uint16_t data[SIZE_IN_U16]) const;
+    void to_net_array(uint32_t data[SIZE_IN_U32]) const;
+    void to_net_array(uint64_t data[SIZE_IN_U64]) const;
 
     uint16_t get_host_u16(size_t idx) const;
     uint32_t get_host_u32(size_t idx) const;
@@ -60,7 +59,7 @@ public:
                                   const ipv6_address& rhs);
 
 private:
-    data_u8_t m_data;
+    alignas(16) data_u8_t m_data;
 
     void set_host_u16(size_t idx, uint16_t val);
     void set_host_u32(size_t idx, uint32_t val);
@@ -102,7 +101,6 @@ inline std::ostream& operator<<(std::ostream& os, const ipv6_address& value)
     return os;
 }
 
-} // namespace net
-} // namespace openperf
+} // namespace openperf::net
 
 #endif /* _OP_FRAMEWORK_NET_IPV6_ADDRESS_HPP_ */

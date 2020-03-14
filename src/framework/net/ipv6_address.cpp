@@ -1,11 +1,12 @@
 #include <cstring>
 #include <stdexcept>
 #include <arpa/inet.h>
+#include <algorithm>
 
 #include "net/ipv6_address.hpp"
+#include "net/byte_swap.hpp"
 
-namespace openperf {
-namespace net {
+namespace openperf::net {
 
 ipv6_address::ipv6_address()
     : m_data{}
@@ -28,10 +29,10 @@ ipv6_address::ipv6_address(std::initializer_list<uint8_t> data)
 
 ipv6_address::ipv6_address(const uint8_t data[SIZE])
 {
-    std::copy(data, data + SIZE, m_data.begin());
+    std::copy_n(data, SIZE, m_data.begin());
 }
 
-ipv6_address::ipv6_address(data_u8_t data)
+ipv6_address::ipv6_address(ipv6_address::data_u8_t data)
     : m_data(data)
 {}
 
@@ -60,34 +61,34 @@ uint8_t ipv6_address::operator[](size_t idx) const
     return m_data[idx];
 }
 
-void ipv6_address::to_host_array(uint16_t* data) const
+void ipv6_address::to_host_array(uint16_t data[SIZE_IN_U16]) const
 {
     for (size_t i = 0; i < SIZE_IN_U16; ++i) { data[i] = get_host_u16(i); }
 }
 
-void ipv6_address::to_host_array(uint32_t* data) const
+void ipv6_address::to_host_array(uint32_t data[SIZE_IN_U32]) const
 {
     for (size_t i = 0; i < SIZE_IN_U32; ++i) { data[i] = get_host_u32(i); }
 }
 
-void ipv6_address::to_host_array(uint64_t* data) const
+void ipv6_address::to_host_array(uint64_t data[SIZE_IN_U64]) const
 {
     for (size_t i = 0; i < SIZE_IN_U64; ++i) { data[i] = get_host_u64(i); }
 }
 
-void ipv6_address::to_net_array(uint16_t* data) const
+void ipv6_address::to_net_array(uint16_t data[SIZE_IN_U16]) const
 {
-    std::memcpy((void*)data, m_data.data(), SIZE);
+    std::memcpy(data, m_data.data(), SIZE);
 }
 
-void ipv6_address::to_net_array(uint32_t* data) const
+void ipv6_address::to_net_array(uint32_t data[SIZE_IN_U32]) const
 {
-    std::memcpy((void*)data, m_data.data(), SIZE);
+    std::memcpy(data, m_data.data(), SIZE);
 }
 
-void ipv6_address::to_net_array(uint64_t* data) const
+void ipv6_address::to_net_array(uint64_t data[SIZE_IN_U64]) const
 {
-    std::memcpy((void*)data, m_data.data(), SIZE);
+    std::memcpy(data, m_data.data(), SIZE);
 }
 
 uint16_t ipv6_address::get_host_u16(size_t idx) const
@@ -96,9 +97,9 @@ uint16_t ipv6_address::get_host_u16(size_t idx) const
         throw std::out_of_range(std::to_string(idx) + " is not between 0 and "
                                 + std::to_string(SIZE_IN_U16 - 1));
     }
-    const uint8_t* ptr = m_data.data() + idx * sizeof(uint16_t);
-    uint16_t val = (uint16_t)ptr[0] << 8 | (uint16_t)ptr[1];
-    return val;
+    auto ptr = reinterpret_cast<const uint16_t*>(m_data.data()
+                                                 + idx * sizeof(uint16_t));
+    return ntohs(*ptr);
 }
 
 void ipv6_address::set_host_u16(size_t idx, uint16_t val)
@@ -107,9 +108,9 @@ void ipv6_address::set_host_u16(size_t idx, uint16_t val)
         throw std::out_of_range(std::to_string(idx) + " is not between 0 and "
                                 + std::to_string(SIZE_IN_U16 - 1));
     }
-    uint8_t* ptr = m_data.data() + idx * sizeof(uint16_t);
-    ptr[0] = (uint8_t)(val >> 8);
-    ptr[1] = (uint8_t)val;
+    auto ptr =
+        reinterpret_cast<uint16_t*>(m_data.data() + idx * sizeof(uint16_t));
+    *ptr = htons(val);
 }
 
 uint32_t ipv6_address::get_host_u32(size_t idx) const
@@ -118,10 +119,9 @@ uint32_t ipv6_address::get_host_u32(size_t idx) const
         throw std::out_of_range(std::to_string(idx) + " is not between 0 and "
                                 + std::to_string(SIZE_IN_U32 - 1));
     }
-    const uint8_t* ptr = m_data.data() + idx * sizeof(uint32_t);
-    uint32_t val = (uint32_t)ptr[0] << 24 | (uint32_t)ptr[1] << 16
-                   | (uint32_t)ptr[2] << 8 | (uint32_t)ptr[3];
-    return val;
+    auto ptr = reinterpret_cast<const uint32_t*>(m_data.data()
+                                                 + idx * sizeof(uint32_t));
+    return ntohl(*ptr);
 }
 
 void ipv6_address::set_host_u32(size_t idx, uint32_t val)
@@ -130,11 +130,9 @@ void ipv6_address::set_host_u32(size_t idx, uint32_t val)
         throw std::out_of_range(std::to_string(idx) + " is not between 0 and "
                                 + std::to_string(SIZE_IN_U32 - 1));
     }
-    uint8_t* ptr = m_data.data() + idx * sizeof(uint32_t);
-    ptr[0] = (uint8_t)(val >> 24);
-    ptr[1] = (uint8_t)(val >> 16);
-    ptr[2] = (uint8_t)(val >> 8);
-    ptr[3] = (uint8_t)val;
+    auto ptr =
+        reinterpret_cast<uint32_t*>(m_data.data() + idx * sizeof(uint32_t));
+    *ptr = htonl(val);
 }
 
 uint64_t ipv6_address::get_host_u64(size_t idx) const
@@ -143,13 +141,9 @@ uint64_t ipv6_address::get_host_u64(size_t idx) const
         throw std::out_of_range(std::to_string(idx) + " is not between 0 and "
                                 + std::to_string(SIZE_IN_U64 - 1));
     }
-    const uint8_t* ptr = m_data.data() + idx * sizeof(uint64_t);
-    uint64_t val = (uint64_t)ptr[0] << 56 | (uint64_t)ptr[1] << 48
-                   | (uint64_t)ptr[2] << 40 | (uint64_t)ptr[3] << 32
-                   | (uint64_t)ptr[4] << 24 | (uint64_t)ptr[5] << 16
-                   | (uint64_t)ptr[6] << 8 | (uint64_t)ptr[7];
-
-    return val;
+    auto ptr = reinterpret_cast<const uint64_t*>(m_data.data()
+                                                 + idx * sizeof(uint64_t));
+    return ntohll(*ptr);
 }
 
 void ipv6_address::set_host_u64(size_t idx, uint64_t val)
@@ -158,15 +152,9 @@ void ipv6_address::set_host_u64(size_t idx, uint64_t val)
         throw std::out_of_range(std::to_string(idx) + " is not between 0 and "
                                 + std::to_string(SIZE_IN_U64 - 1));
     }
-    uint8_t* ptr = m_data.data() + idx * sizeof(uint64_t);
-    ptr[0] = (uint8_t)(val >> 56);
-    ptr[1] = (uint8_t)(val >> 48);
-    ptr[2] = (uint8_t)(val >> 40);
-    ptr[3] = (uint8_t)(val >> 32);
-    ptr[4] = (uint8_t)(val >> 24);
-    ptr[5] = (uint8_t)(val >> 16);
-    ptr[6] = (uint8_t)(val >> 8);
-    ptr[7] = (uint8_t)val;
+    auto ptr =
+        reinterpret_cast<uint64_t*>(m_data.data() + idx * sizeof(uint64_t));
+    *ptr = htonll(val);
 }
 
 std::string to_string(const ipv6_address& addr)
@@ -190,9 +178,11 @@ int compare(const ipv6_address& lhs, const ipv6_address& rhs)
 ipv6_address operator&(const ipv6_address& lhs, const ipv6_address& rhs)
 {
     ipv6_address result;
-    for (size_t i = 0; i < ipv6_address::SIZE; ++i) {
-        result.m_data[i] = lhs.m_data[i] & rhs.m_data[i];
-    }
+    std::transform(lhs.m_data.begin(),
+                   lhs.m_data.end(),
+                   rhs.m_data.begin(),
+                   result.m_data.begin(),
+                   [](uint8_t lv, uint8_t rv) { return (lv & rv); });
     return result;
 }
 
@@ -214,5 +204,4 @@ ipv6_address ipv6_address::make_prefix_mask(uint8_t prefix_length)
     return addr;
 }
 
-} // namespace net
-} // namespace openperf
+} // namespace openperf::net

@@ -1,6 +1,13 @@
 /**
- * netifapi function for ipv6 are not provided for lwip
- * since
+ * netifapi functions for IPv6
+ *
+ * lwip provides netifapi functions for IPv4 which support stack
+ * configuration while the stack is running by sending messages
+ * between threads instead of using a global lock mutex.
+ *
+ * Since lwip does not provide netifapi functions for IPv6 and
+ * openperf is configured with global locking disabled, the
+ * necessary netifapi functions are implemented here.
  */
 
 #include "lwip/opt.h"

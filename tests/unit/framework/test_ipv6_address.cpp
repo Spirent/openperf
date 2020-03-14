@@ -70,6 +70,38 @@ TEST_CASE("ipv6_address functionality checks", "[ipv6_address]")
         REQUIRE_THROWS(test[16]);
     }
 
+    SECTION("get u16")
+    {
+        auto addr = ipv6_address("1011:1213:1415:1617:1819:1a1b:1c1d:1e1f");
+        REQUIRE(addr.get_host_u16(0) == 0x1011);
+        REQUIRE(addr.get_host_u16(1) == 0x1213);
+        REQUIRE(addr.get_host_u16(2) == 0x1415);
+        REQUIRE(addr.get_host_u16(3) == 0x1617);
+        REQUIRE(addr.get_host_u16(4) == 0x1819);
+        REQUIRE(addr.get_host_u16(5) == 0x1a1b);
+        REQUIRE(addr.get_host_u16(6) == 0x1c1d);
+        REQUIRE(addr.get_host_u16(7) == 0x1e1f);
+        REQUIRE_THROWS(addr.get_host_u16(8));
+    }
+
+    SECTION("get u32")
+    {
+        auto addr = ipv6_address("1011:1213:1415:1617:1819:1a1b:1c1d:1e1f");
+        REQUIRE(addr.get_host_u32(0) == 0x10111213);
+        REQUIRE(addr.get_host_u32(1) == 0x14151617);
+        REQUIRE(addr.get_host_u32(2) == 0x18191a1b);
+        REQUIRE(addr.get_host_u32(3) == 0x1c1d1e1f);
+        REQUIRE_THROWS(addr.get_host_u32(4));
+    }
+
+    SECTION("get u64")
+    {
+        auto addr = ipv6_address("1011:1213:1415:1617:1819:1a1b:1c1d:1e1f");
+        REQUIRE(addr.get_host_u64(0) == 0x1011121314151617);
+        REQUIRE(addr.get_host_u64(1) == 0x18191a1b1c1d1e1f);
+        REQUIRE_THROWS(addr.get_host_u64(2));
+    }
+
     SECTION("loopback recognition check")
     {
         REQUIRE(ipv6_address("::1").is_loopback());

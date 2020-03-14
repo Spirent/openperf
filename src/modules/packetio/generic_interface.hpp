@@ -114,11 +114,17 @@ public:
 
     std::string mac_address() const { return m_self->mac_address(); }
 
-    std::string ipv4_address() const { return m_self->ipv4_address(); }
+    std::optional<std::string> ipv4_address() const
+    {
+        return m_self->ipv4_address();
+    }
 
-    std::string ipv6_address() const { return m_self->ipv6_address(); }
+    std::optional<std::string> ipv6_address() const
+    {
+        return m_self->ipv6_address();
+    }
 
-    std::string ipv6_linklocal_address() const
+    std::optional<std::string> ipv6_linklocal_address() const
     {
         return m_self->ipv6_linklocal_address();
     }
@@ -136,9 +142,9 @@ private:
         virtual std::string id() const = 0;
         virtual std::string port_id() const = 0;
         virtual std::string mac_address() const = 0;
-        virtual std::string ipv4_address() const = 0;
-        virtual std::string ipv6_address() const = 0;
-        virtual std::string ipv6_linklocal_address() const = 0;
+        virtual std::optional<std::string> ipv4_address() const = 0;
+        virtual std::optional<std::string> ipv6_address() const = 0;
+        virtual std::optional<std::string> ipv6_linklocal_address() const = 0;
         virtual config_data config() const = 0;
         virtual std::any data() const = 0;
         virtual stats_data stats() const = 0;
@@ -160,17 +166,17 @@ private:
             return m_interface.mac_address();
         }
 
-        std::string ipv4_address() const override
+        std::optional<std::string> ipv4_address() const override
         {
             return m_interface.ipv4_address();
         }
 
-        std::string ipv6_address() const override
+        std::optional<std::string> ipv6_address() const override
         {
             return m_interface.ipv6_address();
         }
 
-        std::string ipv6_linklocal_address() const override
+        std::optional<std::string> ipv6_linklocal_address() const override
         {
             return m_interface.ipv6_linklocal_address();
         }

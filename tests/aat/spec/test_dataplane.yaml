@@ -53,7 +53,7 @@ resources:
         - ipv6:
             method: static
             static:
-              address: "fd00:0:1::1"
+              address: "2001:2::1"
               prefix_length: 64
 
   /interfaces/dataplane-client-v6:
@@ -65,6 +65,6 @@ resources:
         - ipv6:
             method: static
             static:
-              address: "fd00:0:1::2"
+              address: "2001:2::2"
               prefix_length: 64
 
