@@ -5,8 +5,6 @@
 
 #include "core/op_core.h"
 #include "block/server.hpp"
-#include "block/block_file.hpp"
-
 namespace openperf::block {
 
 static constexpr int module_version = 1;
