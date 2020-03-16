@@ -4,10 +4,12 @@
 #include "memory/info.hpp"
 #include "swagger/v1/model/MemoryGenerator.h"
 #include "swagger/v1/model/MemoryGeneratorConfig.h"
+#include "memory/GeneratorConfig.hpp"
+#include "memory/GeneratorConfigConverters.hpp"
 
 namespace openperf::memory::api {
 
-using namespace swagger::v1::model;
+namespace model = ::swagger::v1::model;
 
 // ENUM to STRING converters
 std::string to_string(request_type type)
@@ -49,12 +51,11 @@ std::string to_string(reply_code code)
 
 server::server(void* context, openperf::core::event_loop& loop)
     : m_socket(op_socket_get_server(context, ZMQ_REP, endpoint))
-    , generator_stack(std::make_unique<generator::generator_stack>())
+    , generator_stack(std::make_unique<generator::GeneratorCollection>())
 {
     // Setup event loop
     struct op_event_callbacks callbacks = {
-        .on_read = [](const op_event_data* data, void* arg) -> int
-        {
+        .on_read = [](const op_event_data* data, void* arg) -> int {
             auto s = reinterpret_cast<server*>(arg);
             return s->handle_rpc_request(data);
         }};
@@ -169,8 +170,13 @@ json server::list_generators()
 {
     json jdata = json::array();
 
-    for (const MemoryGenerator& generator : generator_stack->list()) {
-        jdata.emplace_back(generator.toJson());
+    for (const GeneratorConfig& generator : generator_stack->list()) {
+        model::MemoryGenerator model;
+        model.setRunning(generator.isRunning());
+        model.setConfig(std::make_shared<model::MemoryGeneratorConfig>(
+            configToSwaggerModel(generator)));
+
+        jdata.emplace_back(model.toJson());
     }
 
     return json{{"code", reply_code::OK}, {"data", jdata.dump()}};
@@ -184,20 +190,32 @@ json server::create_generator(const json& request)
         // MemoryGenerator.fromJson() automatically not parse
         // inner object MemoryConfigGenerator, so we need construct
         // and assign it manualy
-        MemoryGenerator memory_generator_model;
-        memory_generator_model.fromJson(json_object);
-        memory_generator_model.setConfig([&]() {
-            MemoryGeneratorConfig config;
-            config.fromJson(json_object["config"]);
-            return std::make_shared<MemoryGeneratorConfig>(config);
+        model::MemoryGenerator generator_model;
+        generator_model.fromJson(json_object);
+        // memory_generator_model.setConfig([&]() {
+        //    MemoryGeneratorConfig config;
+        //    config.fromJson(json_object["config"]);
+        //    return std::make_shared<MemoryGeneratorConfig>(config);
+        //}());
+
+        GeneratorConfig config = swaggerModelToConfig([&json_object]() {
+            model::MemoryGeneratorConfig config_model;
+            config_model.fromJson(json_object["config"]);
+            return config_model;
         }());
 
         try {
-            auto result_model = generator_stack->create(memory_generator_model);
+            auto result =
+                generator_stack->create(generator_model.getId(), config);
+            model::MemoryGenerator swagger_model;
+            swagger_model.setConfig(
+                std::make_shared<model::MemoryGeneratorConfig>(
+                    configToSwaggerModel(result)));
+
             return json{{"code", reply_code::OK},
-                        {"data", result_model.toJson().dump()}};
+                        {"data", swagger_model.toJson().dump()}};
         } catch (std::invalid_argument e) {
-            throw std::runtime_error(e.what()); 
+            throw std::runtime_error(e.what());
         }
     } catch (const std::runtime_error& e) {
         return json{{"code", reply_code::BAD_INPUT},
@@ -211,11 +229,13 @@ json server::create_generator(const json& request)
 json server::get_generator(const json& request)
 {
     auto id = request["id"].get<std::string>();
-    
+
     if (generator_stack->contains(id)) {
-        auto model = generator_stack->get(id);
-        return json{{"code", reply_code::OK},
-                    {"data", model.toJson().dump()}};
+        model::MemoryGenerator model;
+        model.setConfig(std::make_shared<model::MemoryGeneratorConfig>(
+            configToSwaggerModel(generator_stack->get(id))));
+
+        return json{{"code", reply_code::OK}, {"data", model.toJson().dump()}};
     }
 
     return json{"code", reply_code::NO_GENERATOR};
@@ -297,8 +317,8 @@ json server::delete_result(const json& /*request*/)
 json server::get_info()
 {
     try {
-        return json{{"code", reply_code::OK}, 
-            {"data", memory_info::get().toJson().dump()}};
+        return json{{"code", reply_code::OK},
+                    {"data", memory_info::get().toJson().dump()}};
     } catch (std::exception e) {
         return json{{"code", reply_code::ERROR},
                     {"error", json_error(-1, e.what())}};

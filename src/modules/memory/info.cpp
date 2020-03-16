@@ -23,9 +23,8 @@ model::MemoryInfoResult memory_info::get()
            "Could not get system information. Error: %s",
            strerror(errno));
 
-    throw std::runtime_error(
-       "Could not get system information. Error: " 
-       + std::string(strerror(errno)));
+    throw std::runtime_error("Could not get system information. Error: "
+                             + std::string(strerror(errno)));
 }
 
-} // namespace openperf::memory::info
+} // namespace openperf::memory
