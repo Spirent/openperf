@@ -1,12 +1,15 @@
 #ifndef _OP_TASK_BASE_HPP_
 #define _OP_TASK_BASE_HPP_
 
-class task_base 
+#include <list>
+
+class TaskBase
 {
 public:
-    virtual ~task_base() {};
-
+    virtual ~TaskBase(){};
     virtual void run() = 0;
 };
+
+typedef std::list<std::unique_ptr<TaskBase>> TaskList;
 
 #endif // _OP_TASK_BASE_HPP_
