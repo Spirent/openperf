@@ -16,6 +16,6 @@ private:
     memory_info() {}
 };
 
-} // namespace openperf::memory::info
+} // namespace openperf::memory
 
 #endif // _MEMORY_INFO_HPP_
