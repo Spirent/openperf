@@ -5,14 +5,16 @@
 BLOCK_DEPENDS += versions
 
 BLOCK_SOURCES += \
-	block_file.cpp \
-	device.cpp \
-	generator.cpp \
+	file_stack.cpp \
+	device_stack.cpp \
+	block_generator.cpp \
 	generator_stack.cpp \
 	init.cpp \
 	handler.cpp \
 	server.cpp \
 	worker.cpp
+
+include $(BLOCK_SRC_DIR)/models/directory.mk
 
 BLOCK_VERSIONED_FILES := init.cpp
 BLOCK_UNVERSIONED_OBJECTS :=\

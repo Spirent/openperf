@@ -3,7 +3,8 @@
 #include "block/api.hpp"
 #include "block/server.hpp"
 #include "config/op_config_utils.hpp"
-#include "block/generator.hpp"
+#include "block/block_generator.hpp"
+#include "utils.hpp"
 
 namespace openperf::block::api {
 
@@ -57,7 +58,7 @@ void server::handle_list_devices_request(json& reply)
     json jints = json::array();
 
     for (const auto& device : blk_device_stack->block_devices_list()) {
-        jints.emplace_back(device->toJson());
+        jints.emplace_back(make_swagger(*device)->toJson());
     }
 
     reply["code"] = reply_code::OK;
@@ -73,7 +74,7 @@ void server::handle_get_device_request(json& request, json& reply)
         std::cout << "(null)\n";
     if (blkdev) {
         reply["code"] = reply_code::OK;
-        reply["data"] = blkdev->toJson().dump();
+        reply["data"] = make_swagger(*blkdev)->toJson().dump();
     } else {
         reply["code"] = reply_code::NO_DEVICE;
     }
@@ -83,8 +84,8 @@ void server::handle_list_block_files_request(json& reply)
 {
     json jints = json::array();
 
-    for (auto& blkfile : blk_file_stack->block_files_list())
-        jints.emplace_back(blkfile->toJson());
+    for (auto& blkfile : blk_file_stack->files_list())
+        jints.emplace_back(make_swagger(*blkfile)->toJson());
 
     reply["code"] = reply_code::OK;
     reply["data"] = jints.dump();
@@ -107,11 +108,11 @@ void server::handle_create_block_file_request(json& request, json& reply)
             block_file.setId(core::to_string(core::uuid::random()));
         }
 
-        auto result = blk_file_stack->create_block_file(block_file);
+        auto result = blk_file_stack->create_block_file(*from_swagger(block_file));
         if (!result) { throw std::runtime_error(result.error()); }
 
         reply["code"] = reply_code::OK;
-        reply["data"] = result.value()->toJson().dump();
+        reply["data"] = make_swagger(*result.value())->toJson().dump();
     } catch (const std::runtime_error& e) {
         reply["code"] = reply_code::BAD_INPUT;
         reply["error"] = json_error(EINVAL, e.what());
@@ -129,7 +130,7 @@ void server::handle_get_block_file_request(json& request, json& reply)
         reply["code"] = reply_code::NO_FILE;
     } else {
         reply["code"] = reply_code::OK;
-        reply["data"] = blkfile->toJson().dump();
+        reply["data"] = make_swagger(*blkfile)->toJson().dump();
     }
 }
 
@@ -144,7 +145,7 @@ void server::handle_list_generators_request(json& reply)
     json jints = json::array();
 
     for (auto& blkgenerator : blk_generator_stack->block_generators_list())
-        jints.emplace_back(blkgenerator->toJson());
+        jints.emplace_back(make_swagger(*blkgenerator)->toJson());
 
     reply["code"] = reply_code::OK;
     reply["data"] = jints.dump();
@@ -153,25 +154,34 @@ void server::handle_list_generators_request(json& reply)
 void server::handle_create_generator_request(json& request, json& reply)
 {
     try {
-        json block_generator_model =
+        json block_generator_json =
             json::parse(request["data"].get<std::string>());
         
         if (auto id_check =
-                config::op_config_validate_id_string(block_generator_model["id"]);
+                config::op_config_validate_id_string(block_generator_json["id"]);
             !id_check)
             throw std::runtime_error(id_check.error().c_str());
 
         // If user did not specify an id create one for them.
-        if (block_generator_model["id"] == core::empty_id_string) {
-           block_generator_model["id"] = (core::to_string(core::uuid::random()));
+        if (block_generator_json["id"] == core::empty_id_string) {
+           block_generator_json["id"] = (core::to_string(core::uuid::random()));
         }
 
+        auto block_generator_model = [&](){
+            auto g = BlockGenerator();
+            g.fromJson(block_generator_json);
+            auto gc = BlockGeneratorConfig();
+            gc.fromJson(block_generator_json["config"]);
+            g.setConfig(std::make_shared<BlockGeneratorConfig>(gc));
+            return g;
+        }();
+
         auto result =
-            blk_generator_stack->create_block_generator(block_generator_model);
+            blk_generator_stack->create_block_generator(*from_swagger(block_generator_model));
         if (!result) { throw std::runtime_error(result.error()); }
 
         reply["code"] = reply_code::OK;
-        reply["data"] = result.value()->toJson().dump();
+        reply["data"] = make_swagger(*result.value())->toJson().dump();
     } catch (const std::runtime_error& e) {
         reply["code"] = reply_code::BAD_INPUT;
         reply["error"] = json_error(EINVAL, e.what());
@@ -189,7 +199,7 @@ void server::handle_get_generator_request(json& request, json& reply)
         reply["code"] = reply_code::NO_GENERATOR;
     } else {
         reply["code"] = reply_code::OK;
-        reply["data"] = blkgenerator->toJson().dump();
+        reply["data"] = make_swagger(*blkgenerator)->toJson().dump();
     }
 }
 
@@ -316,9 +326,9 @@ static int _handle_rpc_request(const op_event_data* data, void* arg)
 
 server::server(void* context, openperf::core::event_loop& loop)
     : m_socket(op_socket_get_server(context, ZMQ_REP, endpoint.data()))
-    , blk_device_stack(std::make_unique<device::block_device_stack>())
-    , blk_file_stack(std::make_unique<file::block_file_stack>())
-    , blk_generator_stack(std::make_unique<generator::block_generator_stack>())
+    , blk_device_stack(std::make_unique<device::device_stack>())
+    , blk_file_stack(std::make_unique<file::file_stack>())
+    , blk_generator_stack(std::make_unique<generator::generator_stack>())
 {
     struct op_event_callbacks callbacks = {.on_read = _handle_rpc_request};
     loop.add(m_socket.get(), &callbacks, this);

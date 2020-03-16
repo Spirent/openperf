@@ -7,16 +7,16 @@
 #include <sys/stat.h>
 #include <sys/sysmacros.h>
 #include <mntent.h>
-#include "device.hpp"
+#include "device_stack.hpp"
 
 namespace openperf::block::device {
 
-block_device_stack::block_device_stack()
+device_stack::device_stack()
 {
-    init_block_device_stack();
+    init_device_stack();
 }
 
-void block_device_stack::init_block_device_stack()
+void device_stack::init_device_stack()
 {
     DIR* dir = nullptr;
     struct dirent* entry = nullptr;
@@ -36,20 +36,20 @@ void block_device_stack::init_block_device_stack()
 
         if (!is_raw_device(entry->d_name)) continue;
 
-        auto blkdev = new BlockDevice();
-        blkdev->setId(core::to_string(core::uuid::random()));
-        blkdev->setPath(device_dir + "/" + std::string(entry->d_name));
-        blkdev->setSize(get_block_device_size(entry->d_name));
-        blkdev->setUsable(is_block_device_usable(entry->d_name));
-        blkdev->setInfo(get_block_device_info(entry->d_name));
+        auto blkdev = new model::device();
+        blkdev->set_id(core::to_string(core::uuid::random()));
+        blkdev->set_path(device_dir + "/" + std::string(entry->d_name));
+        blkdev->set_size(get_block_device_size(entry->d_name));
+        blkdev->set_usable(is_block_device_usable(entry->d_name));
+        blkdev->set_info(get_block_device_info(entry->d_name));
 
-        block_devices.emplace(blkdev->getId(), BlockDevicePtr(blkdev));
+        block_devices.emplace(blkdev->get_id(), device_ptr(blkdev));
     }
 
     closedir(dir);
 }
 
-uint64_t block_device_stack::get_block_device_size(const std::string id)
+uint64_t device_stack::get_block_device_size(const std::string id)
 {
     off_t nb_blocks = 0;
     char devname[PATH_MAX + 1];
@@ -79,9 +79,9 @@ uint64_t block_device_stack::get_block_device_size(const std::string id)
     return (nb_blocks << 9);
 }
 
-std::string block_device_stack::get_block_device_info(const std::string) { return ""; }
+std::string device_stack::get_block_device_info(const std::string) { return ""; }
 
-int block_device_stack::is_block_device_usable(const std::string id)
+int device_stack::is_block_device_usable(const std::string id)
 {
     /*
      * Disallow block I/O on both the boot disk, vblk0, and the primary
@@ -92,7 +92,7 @@ int block_device_stack::is_block_device_usable(const std::string id)
     return !std::regex_match(id, id_regex);
 }
 
-bool block_device_stack::is_raw_device(const std::string id)
+bool device_stack::is_raw_device(const std::string id)
 {
     char devname[PATH_MAX + 1];
     struct stat st;
@@ -108,15 +108,15 @@ bool block_device_stack::is_raw_device(const std::string id)
     return (true);
 }
 
-BlockDevicePtr block_device_stack::get_block_device(std::string id)
+device_ptr device_stack::get_block_device(std::string id)
 {
     if (block_devices.count(id)) return block_devices.at(id);
     return nullptr;
 }
 
-std::vector<BlockDevicePtr> block_device_stack::block_devices_list()
+std::vector<device_ptr> device_stack::block_devices_list()
 {
-    std::vector<BlockDevicePtr> blkdevice_list;
+    std::vector<device_ptr> blkdevice_list;
     for (auto blkdevice_pair : block_devices) {
         blkdevice_list.push_back(blkdevice_pair.second);
     }
