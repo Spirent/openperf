@@ -11,13 +11,13 @@ void file::set_id(const std::string& value)
     id = value;
 }
 
-int64_t file::get_file_size() const
+int64_t file::get_size() const
 {
-    return file_size;
+    return size;
 }
-void file::set_file_size(const int64_t value)
+void file::set_size(const int64_t value)
 {
-    file_size = value;
+    size = value;
 }
 
 int32_t file::get_init_percent_complete() const

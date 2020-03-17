@@ -14,6 +14,7 @@ class block_generator : public model::block_generator
 private:
     block_worker_ptr blkworker;
     worker_config generate_worker_config(const model::block_generator_config& generator_config);
+    int open_resource(const std::string& resource_id);
     
 public:
     ~block_generator() {}

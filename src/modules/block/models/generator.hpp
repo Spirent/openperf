@@ -5,13 +5,19 @@
 
 namespace openperf::block::model {
 
+enum class block_generation_pattern {
+    RANDOM,
+    SEQUENTIAL,
+    REVERSE
+};
+
 struct block_generator_config {
     int32_t queue_depth;
     int32_t reads_per_sec;
     int32_t read_size;
     int32_t writes_per_sec;
     int32_t write_size;
-    std::string pattern;
+    block_generation_pattern pattern;
 };
 
 class block_generator

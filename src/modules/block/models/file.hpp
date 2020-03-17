@@ -8,17 +8,20 @@ class file
 {
 private:
     std::string id;
-    int64_t file_size;
+    int64_t size;
     int32_t init_percent_complete;
     std::string path;
     std::string state;
 
 public:
+    file() = default;
+    file(const file &) = default;
+
     std::string get_id() const;
     void set_id(const std::string& value);
     
-    int64_t get_file_size() const;
-    void set_file_size(const int64_t value);
+    int64_t get_size() const;
+    void set_size(const int64_t value);
     
     int32_t get_init_percent_complete() const;
     void set_init_percent_complete(const int32_t value);
