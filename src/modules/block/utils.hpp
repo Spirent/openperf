@@ -12,6 +12,30 @@
 using namespace swagger::v1::model;
 using namespace openperf::block::model;
 
+const static std::unordered_map<block_generation_pattern, std::string> block_generation_pattern_strings = {
+    {block_generation_pattern::RANDOM, "random"},
+    {block_generation_pattern::SEQUENTIAL, "sequential"},
+    {block_generation_pattern::REVERSE, "reverse"},
+};
+
+const static std::unordered_map<std::string, block_generation_pattern> block_generation_patterns = {
+    {"random", block_generation_pattern::RANDOM},
+    {"sequential", block_generation_pattern::SEQUENTIAL},
+    {"reverse", block_generation_pattern::REVERSE},
+};
+
+std::string to_string(const block_generation_pattern& pattern) {
+    if (block_generation_pattern_strings.count(pattern))
+        return block_generation_pattern_strings.at(pattern);
+    return "unknown";
+}
+
+block_generation_pattern block_generation_pattern_from_string(const std::string& value) {
+    if (block_generation_patterns.count(value))
+        return block_generation_patterns.at(value);
+    throw std::runtime_error("Pattern \"" + value + "\" is unknown");
+}
+
 static std::shared_ptr<BlockDevice>
 make_swagger(const device& p_device)
 {
@@ -31,7 +55,7 @@ make_swagger(const file& p_file)
     f->setId(p_file.get_id());
     f->setPath(p_file.get_path());
     f->setState(p_file.get_state());
-    f->setFileSize(p_file.get_file_size());
+    f->setFileSize(p_file.get_size());
     f->setInitPercentComplete(p_file.get_init_percent_complete());
     return f;
 }
@@ -45,7 +69,7 @@ make_swagger(const block_generator& p_generator)
     generator->setRunning(p_generator.is_running());
     
     auto config = std::make_shared<BlockGeneratorConfig>();
-    config->setPattern(p_generator.get_config().pattern);
+    config->setPattern(to_string(p_generator.get_config().pattern));
     config->setQueueDepth(p_generator.get_config().queue_depth);
     config->setReadSize(p_generator.get_config().read_size);
     config->setReadsPerSec(p_generator.get_config().reads_per_sec);
@@ -64,7 +88,7 @@ from_swagger(const BlockFile& p_file)
     f->set_id(p_file.getId());
     f->set_path(p_file.getPath());
     f->set_state(p_file.getState());
-    f->set_file_size(p_file.getFileSize());
+    f->set_size(p_file.getFileSize());
     f->set_init_percent_complete(p_file.getInitPercentComplete());
     return f;
 }
@@ -78,7 +102,7 @@ from_swagger(const BlockGenerator& p_generator)
     generator->set_running(p_generator.isRunning());
     
     block_generator_config config;
-    config.pattern = p_generator.getConfig()->getPattern();
+    config.pattern = block_generation_pattern_from_string(p_generator.getConfig()->getPattern());
     config.queue_depth = p_generator.getConfig()->getQueueDepth();
     config.read_size = p_generator.getConfig()->getReadSize();
     config.reads_per_sec = p_generator.getConfig()->getReadsPerSec();

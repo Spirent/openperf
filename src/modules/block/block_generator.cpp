@@ -1,4 +1,6 @@
 #include "block_generator.hpp"
+#include "file_stack.hpp"
+#include "device_stack.hpp"
 
 namespace openperf::block::generator {
 
@@ -6,7 +8,8 @@ block_generator::block_generator(const model::block_generator& generator_model)
     : model::block_generator(generator_model)
 {
     auto config = generate_worker_config(get_config());
-    blkworker = block_worker_ptr(new block_worker(config, is_running(), get_config().pattern));
+    auto fd = open_resource(get_resource_id());
+    blkworker = block_worker_ptr(new block_worker(config, fd, is_running(), get_config().pattern));
 }
 
 void block_generator::start() 
@@ -26,7 +29,23 @@ void block_generator::set_сonfig(const model::block_generator_config& value)
 
 void block_generator::set_resource_id(const std::string& value)
 {
+    auto fd = open_resource(value);
+
+    blkworker->set_resource_descriptor(fd);
     model::block_generator::set_resource_id(value);
+
+}
+
+int block_generator::open_resource(const std::string& resource_id)
+{
+    int fd = -1;
+    if (auto blk_file = block::file::file_stack::instance().get_block_file(resource_id); blk_file) {
+        fd = blk_file->vopen();
+    } else 
+    if (auto blk_dev = block::device::device_stack::instance().get_block_device(resource_id); blk_dev) {
+        fd = blk_dev->vopen();
+    }
+    return fd;
 }
 
 void block_generator::set_running(bool value)

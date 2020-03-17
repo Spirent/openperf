@@ -7,6 +7,7 @@
 #include <thread>
 #include <vector>
 #include "block/worker_task.hpp"
+#include "block/models/generator.hpp"
 #include "core/op_core.h"
 
 namespace openperf::block::worker {
@@ -38,16 +39,20 @@ private:
     std::unique_ptr<void, op_socket_deleter> m_socket;
     std::unique_ptr<std::thread> worker_tread;
     
+    void worker_loop(void* context);
     template<typename T>
     void add_task(T* task);
-    void worker_loop(void* context);
+    void clean_tasks();
     void update_state();
+
 public:
-    block_worker(const worker_config& p_config, bool p_running, const std::string& pattern);
+    block_worker(const worker_config& p_config, int fd, bool p_running, const model::block_generation_pattern& pattern);
     ~block_worker();
 
     void set_running(bool p_running);
-    void set_pattern(const std::string& pattern);
+    bool is_running() const;
+    void set_resource_descriptor(int fd);
+    void set_pattern(const model::block_generation_pattern& pattern);
 };
 
 } // namespace openperf::block::worker

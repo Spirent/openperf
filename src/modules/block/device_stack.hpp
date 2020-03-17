@@ -1,17 +1,27 @@
 #ifndef _OP_BLOCK_DEVICE_HPP_
 #define _OP_BLOCK_DEVICE_HPP_
 
-#include "models/device.hpp"
 #include <vector>
+#include "models/device.hpp"
+#include "models/virtual_device.hpp"
+#include "utils/singleton.hpp"
 
 namespace openperf::block::device {
 
-typedef std::shared_ptr<model::device> device_ptr;
+
+class device : public model::device, public virtual_device {
+public:
+    ~device() {};
+    int vopen();
+    void vclose();
+};
+
+typedef std::shared_ptr<device> device_ptr;
 typedef std::map<std::string, device_ptr> device_map;
 
 static const std::string device_dir = "/dev";
 
-class device_stack {
+class device_stack : public utils::singleton<device_stack>{
 private:
     device_map block_devices;
 

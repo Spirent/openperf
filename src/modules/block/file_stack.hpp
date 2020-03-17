@@ -5,13 +5,23 @@
 #include <memory>
 #include "models/file.hpp"
 #include "tl/expected.hpp"
+#include "models/virtual_device.hpp"
+#include "utils/singleton.hpp"
 
 namespace openperf::block::file {
 
-typedef std::shared_ptr<model::file> block_file_ptr;
+class file : public model::file, public virtual_device {
+public:
+    file(const model::file& f);
+    ~file(){};
+    int vopen();
+    void vclose();
+};
+
+typedef std::shared_ptr<file> block_file_ptr;
 typedef std::map<std::string, block_file_ptr> block_file_map;
 
-class file_stack
+class file_stack : public utils::singleton<file_stack>
 {
 private:
     block_file_map block_files;
