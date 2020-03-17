@@ -1,18 +1,19 @@
 #ifndef _MEMORY_GENERATOR_STACK_HPP_
 #define _MEMORY_GENERATOR_STACK_HPP_
 
-#include "memory/Generator.hpp"
 #include <forward_list>
+
+#include "memory/Generator.hpp"
+#include "memory/GeneratorConfig.hpp"
 
 namespace openperf::memory::generator {
 
-typedef std::forward_list<GeneratorConfig> GeneratorConfigList;
+typedef std::unordered_map<std::string, GeneratorConfig> GeneratorConfigList;
 
 class GeneratorCollection
 {
 private:
-    typedef std::unordered_map<std::string, Generator> GeneratorMap;
-    GeneratorMap _collection;
+    std::unordered_map<std::string, Generator> _collection;
 
 public:
     GeneratorCollection() {}
@@ -31,9 +32,6 @@ public:
     void start(const std::string& id);
     void stop();
     void stop(const std::string& id);
-
-private:
-    GeneratorConfig collectConfig(const std::string& id) const;
 };
 
 } // namespace openperf::memory::generator

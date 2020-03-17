@@ -1,63 +1,50 @@
-#include "Worker.hpp"
+#include "memory/Worker.hpp"
 
 #include <zmq.h>
 #include <iostream>
 
 namespace openperf::memory::generator {
 
-// Functions
-// void thread_loop(void* context)
-//{
-//    std::cout << "Thread " << std::hex << std::this_thread::get_id()
-//              << " started" << std::endl;
-//    auto socket = std::unique_ptr<void, op_socket_deleter>(
-//        op_socket_get_client(context, ZMQ_REP, endpoint_prefix));
-//
-//    bool running = false;
-//    GeneratorConfig config;
-//
-//    for (;;) {
-//        int recv = zmq_recv(
-//            socket.get(), &config, sizeof(config), running ? ZMQ_NOBLOCK : 0);
-//        if (recv < 0 && errno != EAGAIN) {
-//            std::cerr << "Shutdown" << std::endl;
-//            break;
-//        }
-//
-//        std::cout << "Thread work" << std::endl;
-//        if (running) {
-//            // for (auto& task : _tasks) {
-//            //    task.get().run();
-//            //}
-//        }
-//    }
-//
-//    std::cout << "Thread " << std::hex << std::this_thread::get_id()
-//              << " finished" << std::endl;
-//}
-
-// Class: Worker
+// Constructors & Destructor
 Worker::Worker()
-    : _paused(true)
-    , _stopped(true)
-    , _context(zmq_ctx_new())
+    : _zmq_context(zmq_ctx_new())
+    , _zmq_socket(op_socket_get_server(_zmq_context, ZMQ_PAIR, endpoint_prefix))
 {
-    _zmqSocket = ZmqSocketPointer(
-        op_socket_get_server(_context, ZMQ_PAIR, endpoint_prefix));
+    _state.paused = true;
+    _state.stopped = true;
+    _state.buffer_size = 16;
+    _state.block_size = 1;
+    _state.op_per_sec = 1;
 }
+
+Worker::Worker(const Worker::Config& config)
+    : Worker()
+{
+    setConfig(config);
+}
+
+Worker::Worker(Worker&& worker)
+    : _zmq_context(std::move(worker._zmq_context))
+    , _zmq_socket(std::move(worker._zmq_socket))
+    , _thread(std::move(worker._thread))
+    , _tasks(std::move(worker._tasks))
+    , _state(worker._state)
+{}
 
 Worker::~Worker()
 {
     if (_thread.joinable()) {
         _thread.detach();
-        _stopped = true;
-        _paused = false;
+        _state.stopped = true;
+        _state.paused = false;
         update();
     }
 
-    zmq_ctx_shutdown(_context);
+    zmq_ctx_shutdown(_zmq_context);
+    zmq_ctx_term(_zmq_context);
 }
 
+// Methods : public
 void Worker::addTask(std::unique_ptr<TaskBase> task)
 {
     _tasks.emplace_front(std::move(task));
@@ -65,11 +52,10 @@ void Worker::addTask(std::unique_ptr<TaskBase> task)
 
 void Worker::start()
 {
-    std::cout << "Start method worker: " << _stopped << std::endl;
-    if (!_stopped) return;
-    _stopped = false;
-    std::cout << "Start worker" << std::endl;
+    if (!_state.stopped) return;
+    _state.stopped = false;
 
+    std::cout << "Start worker" << std::endl;
     // if (_thread.joinable()) _thread.detach();
     _thread = std::thread([this]() { loop(); });
     update();
@@ -77,54 +63,61 @@ void Worker::start()
 
 void Worker::stop()
 {
-    if (_stopped) return;
-    _stopped = true;
+    if (_state.stopped) return;
+    _state.stopped = true;
     _thread.detach();
     update();
 }
 
 void Worker::pause()
 {
-    if (_paused) return;
-    _paused = true;
+    if (_state.paused) return;
+    _state.paused = true;
     update();
 }
 
 void Worker::resume()
 {
-    if (!_paused) return;
-    _paused = false;
+    if (!_state.paused) return;
+    _state.paused = false;
     update();
 }
 
+void Worker::setConfig(const Worker::Config& c)
+{ 
+    if (!c.stopped) start();
+    _state = c; 
+    update();
+}
+
+// Methods : private
 void Worker::loop()
 {
     std::cout << "Thread " << std::hex << std::this_thread::get_id()
               << " started" << std::endl;
     auto socket = std::unique_ptr<void, op_socket_deleter>(
-        op_socket_get_client(_context, ZMQ_PAIR, endpoint_prefix));
+        op_socket_get_client(_zmq_context, ZMQ_PAIR, endpoint_prefix));
 
-    ZmqMessage msg{.running = false, .stopping = false};
+    Worker::Config msg{.paused = true, .stopped = false};
 
     for (;;) {
-        std::cout << "Thread bf r: " << msg.running << ", s: " << msg.stopping
-                  << std::endl;
         int recv = zmq_recv(
-            socket.get(), &msg, sizeof(msg), msg.running ? ZMQ_NOBLOCK : 0);
+            socket.get(), &msg, sizeof(msg), msg.paused ? 0 : ZMQ_NOBLOCK);
         if (recv < 0 && errno != EAGAIN) {
             std::cerr << "Shutdown" << std::endl;
             break;
         }
-        std::cout << "Thread af r: " << msg.running << ", s: " << msg.stopping
+
+        std::cout << "Thread " << std::this_thread::get_id() 
+                  << " pause: " << msg.paused << ", stop: " << msg.stopped
                   << std::endl;
 
-        if (msg.stopping) {
+        if (msg.stopped) {
             std::cout << "Gracesfully shutdown" << std::endl;
             break;
         }
 
-        std::cout << "Thread work" << std::endl;
-        if (msg.running) {
+        if (!msg.paused) {
             for (auto& task : _tasks) { task->run(); }
         }
     }
@@ -135,9 +128,8 @@ void Worker::loop()
 
 void Worker::update()
 {
-    ZmqMessage msg{.running = !_paused, .stopping = _stopped};
-
-    zmq_send(_zmqSocket.get(), &msg, sizeof(msg), 0);
+    if (_state.stopped) return;
+    zmq_send(_zmq_socket.get(), &_state, sizeof(_state), 0);
     std::cout << "Worker::update()" << std::endl;
 }
 
