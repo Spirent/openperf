@@ -1,6 +1,7 @@
-#include "core/op_core.h"
-#include <dirent.h>
+
 #include <fcntl.h>
+#include <unistd.h>
+#include <dirent.h>
 #include <linux/fs.h>
 #include <regex>
 #include <sys/ioctl.h>
@@ -8,8 +9,22 @@
 #include <sys/sysmacros.h>
 #include <mntent.h>
 #include "device_stack.hpp"
+#include "core/op_core.h"
 
 namespace openperf::block::device {
+
+int device::vopen()
+{
+    if ((fd = open(get_path().c_str(), O_RDWR)) < 0) {
+        return fd = -ENOSPC;
+    }
+    return fd;
+}
+
+void device::vclose()
+{
+    close(fd);
+}
 
 device_stack::device_stack()
 {
@@ -36,7 +51,7 @@ void device_stack::init_device_stack()
 
         if (!is_raw_device(entry->d_name)) continue;
 
-        auto blkdev = new model::device();
+        auto blkdev = new device();
         blkdev->set_id(core::to_string(core::uuid::random()));
         blkdev->set_path(device_dir + "/" + std::string(entry->d_name));
         blkdev->set_size(get_block_device_size(entry->d_name));

@@ -1,6 +1,24 @@
+#include <fcntl.h>
+#include <unistd.h>
 #include "block/file_stack.hpp"
 
 namespace openperf::block::file {
+
+file::file(const model::file& f)
+    : model::file(f) {}
+
+int file::vopen()
+{
+    if ((fd = open(get_path().c_str(), O_RDWR)) < 0) {
+        return fd = -ENOSPC;
+    }
+    return fd;
+}
+
+void file::vclose()
+{
+    close(fd);
+}
 
 std::vector<block_file_ptr> file_stack::files_list()
 {
@@ -19,7 +37,7 @@ file_stack::create_block_file(model::file& block_file_model)
         return tl::make_unexpected("File " + block_file_model.get_id()
                                    + " already exists.");
 
-    auto blkblock_file_ptr = block_file_ptr(new model::file(block_file_model));
+    auto blkblock_file_ptr = block_file_ptr(new file(block_file_model));
     block_files.emplace(block_file_model.get_id(), blkblock_file_ptr);
 
     return blkblock_file_ptr;

@@ -7,7 +7,7 @@
 namespace openperf::block::worker 
 {
 
-block_worker::block_worker(const worker_config& p_config, bool p_running, const std::string& pattern):
+block_worker::block_worker(const worker_config& p_config, int p_fd, bool p_running, const model::block_generation_pattern& pattern):
     m_context(zmq_ctx_new()),
     m_socket(op_socket_get_server(m_context, ZMQ_PAIR, endpoint_prefix))
 {
@@ -18,17 +18,26 @@ block_worker::block_worker(const worker_config& p_config, bool p_running, const 
 
     state.config = p_config;
     state.running = p_running;
-
-    if (pattern == "random") {
-        add_task<worker_task_random>(new worker::worker_task_random());
-    }
+    state.fd = p_fd;
+    set_pattern(pattern);
+    update_state();
 }
 
 block_worker::~block_worker() 
 {
     zmq_ctx_shutdown(m_context);
     worker_tread->detach();
-    tasks.clear();
+}
+
+bool block_worker::is_running() const
+{
+    return state.running;
+}
+
+void block_worker::set_resource_descriptor(int fd)
+{
+    state.fd = fd;
+    update_state();
 }
 
 void block_worker::set_running(bool p_running) 
@@ -37,12 +46,24 @@ void block_worker::set_running(bool p_running)
     update_state();
 }
 
-void block_worker::set_pattern(const std::string& pattern)
+void block_worker::set_pattern(const model::block_generation_pattern& pattern)
 {
-    if (pattern == "random") {
-        add_task<worker_task_random>(new worker::worker_task_random());
+    if (is_running()) {
+        OP_LOG(OP_LOG_ERROR, "Cannot change pattern while worker is running");
+        return;
     }
-    update_state();
+    clean_tasks();
+    switch (pattern) {
+    case model::block_generation_pattern::RANDOM:
+        add_task<worker_task_random>(new worker::worker_task_random());
+        break;
+    case model::block_generation_pattern::SEQUENTIAL:
+        add_task<worker_task_random>(new worker::worker_task_random());
+        break;
+    case model::block_generation_pattern::REVERSE:
+        add_task<worker_task_random>(new worker::worker_task_random());
+        break;
+    }
 }
 
 void block_worker::update_state()
@@ -83,5 +104,10 @@ void block_worker::add_task(T* task)
 {
     tasks.push_back(worker_task_ptr(task));
 };
+
+void block_worker::clean_tasks()
+{
+    tasks.clear();
+}
 
 } // namespace openperf::block::worker
