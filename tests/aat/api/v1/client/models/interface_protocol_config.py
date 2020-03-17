@@ -32,25 +32,30 @@ class InterfaceProtocolConfig(object):
     """
     swagger_types = {
         'eth': 'InterfaceProtocolConfigEth',
-        'ipv4': 'InterfaceProtocolConfigIpv4'
+        'ipv4': 'InterfaceProtocolConfigIpv4',
+        'ipv6': 'InterfaceProtocolConfigIpv6'
     }
 
     attribute_map = {
         'eth': 'eth',
-        'ipv4': 'ipv4'
+        'ipv4': 'ipv4',
+        'ipv6': 'ipv6'
     }
 
-    def __init__(self, eth=None, ipv4=None):  # noqa: E501
+    def __init__(self, eth=None, ipv4=None, ipv6=None):  # noqa: E501
         """InterfaceProtocolConfig - a model defined in Swagger"""  # noqa: E501
 
         self._eth = None
         self._ipv4 = None
+        self._ipv6 = None
         self.discriminator = None
 
         if eth is not None:
             self.eth = eth
         if ipv4 is not None:
             self.ipv4 = ipv4
+        if ipv6 is not None:
+            self.ipv6 = ipv6
 
     @property
     def eth(self):
@@ -91,6 +96,26 @@ class InterfaceProtocolConfig(object):
         :type: InterfaceProtocolConfigIpv4
         """
         self._ipv4 = ipv4
+
+    @property
+    def ipv6(self):
+        """Gets the ipv6 of this InterfaceProtocolConfig.  # noqa: E501
+
+
+        :return: The ipv6 of this InterfaceProtocolConfig.  # noqa: E501
+        :rtype: InterfaceProtocolConfigIpv6
+        """
+        return self._ipv6
+
+    @ipv6.setter
+    def ipv6(self, ipv6):
+        """Sets the ipv6 of this InterfaceProtocolConfig.
+
+
+        :param ipv6: The ipv6 of this InterfaceProtocolConfig.  # noqa: E501
+        :type: InterfaceProtocolConfigIpv6
+        """
+        self._ipv6 = ipv6
 
     def to_dict(self):
         """Returns the model properties as a dict"""

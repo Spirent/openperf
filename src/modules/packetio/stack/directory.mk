@@ -14,6 +14,7 @@ PIO_SOURCES += \
 	stack/netif_wrapper.cpp \
 	stack/tcp_in.c \
 	stack/tcp_out.c \
-	stack/tcpip.cpp
+	stack/tcpip.cpp \
+	stack/ipv6_netifapi.c
 
 PIO_SOURCES += $(addprefix stack/$(OP_PACKETIO_DRIVER)/,$(PIO_STACK_SOURCES))

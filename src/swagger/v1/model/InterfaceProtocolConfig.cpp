@@ -21,6 +21,7 @@ InterfaceProtocolConfig::InterfaceProtocolConfig()
 {
     m_EthIsSet = false;
     m_Ipv4IsSet = false;
+    m_Ipv6IsSet = false;
     
 }
 
@@ -44,6 +45,10 @@ nlohmann::json InterfaceProtocolConfig::toJson() const
     if(m_Ipv4IsSet)
     {
         val["ipv4"] = ModelBase::toJson(m_Ipv4);
+    }
+    if(m_Ipv6IsSet)
+    {
+        val["ipv6"] = ModelBase::toJson(m_Ipv6);
     }
     
 
@@ -69,6 +74,16 @@ void InterfaceProtocolConfig::fromJson(nlohmann::json& val)
             std::shared_ptr<InterfaceProtocolConfig_ipv4> newItem(new InterfaceProtocolConfig_ipv4());
             newItem->fromJson(val["ipv4"]);
             setIpv4( newItem );
+        }
+        
+    }
+    if(val.find("ipv6") != val.end())
+    {
+        if(!val["ipv6"].is_null())
+        {
+            std::shared_ptr<InterfaceProtocolConfig_ipv6> newItem(new InterfaceProtocolConfig_ipv6());
+            newItem->fromJson(val["ipv6"]);
+            setIpv6( newItem );
         }
         
     }
@@ -109,6 +124,23 @@ bool InterfaceProtocolConfig::ipv4IsSet() const
 void InterfaceProtocolConfig::unsetIpv4()
 {
     m_Ipv4IsSet = false;
+}
+std::shared_ptr<InterfaceProtocolConfig_ipv6> InterfaceProtocolConfig::getIpv6() const
+{
+    return m_Ipv6;
+}
+void InterfaceProtocolConfig::setIpv6(std::shared_ptr<InterfaceProtocolConfig_ipv6> value)
+{
+    m_Ipv6 = value;
+    m_Ipv6IsSet = true;
+}
+bool InterfaceProtocolConfig::ipv6IsSet() const
+{
+    return m_Ipv6IsSet;
+}
+void InterfaceProtocolConfig::unsetIpv6()
+{
+    m_Ipv6IsSet = false;
 }
 
 }

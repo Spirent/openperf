@@ -49,6 +49,13 @@ struct pbuf* packetio_memory_pbuf_synchronize(struct rte_mbuf* m_head)
         p->tot_len = m_chain_len;
         p->len = rte_pktmbuf_data_len(m);
         p->type_internal = (uint8_t)PBUF_POOL;
+        if (RTE_MBUF_HAS_EXTBUF(m) || (m->ol_flags & IND_ATTACHED_MBUF)) {
+            /* If mbuf data is external/indirect (e.g. mbuf was cloned for
+             * multicast dispatch) the pbuf header is not contiguous to the pbuf
+             * data.  Clearing this flag disables additional error checking.
+             */
+            p->type_internal &= ~(PBUF_TYPE_FLAG_STRUCT_DATA_CONTIGUOUS);
+        }
         p->flags = 0;
         p->ref = 1;
         p->if_idx = NETIF_NO_INDEX;

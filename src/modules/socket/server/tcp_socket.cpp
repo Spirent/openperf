@@ -173,10 +173,11 @@ tcp_socket::tcp_socket(openperf::socket::server::allocator* allocator,
 }
 
 tcp_socket::tcp_socket(openperf::socket::server::allocator& allocator,
+                       enum lwip_ip_addr_type ip_type,
                        int flags)
     : m_channel(new (allocator.allocate(sizeof(stream_channel)))
                     stream_channel(flags, allocator))
-    , m_pcb(tcp_new())
+    , m_pcb(tcp_new_ip_type(ip_type))
 {
     ::tcp_arg(m_pcb.get(), this);
     ::tcp_poll(m_pcb.get(), nullptr, 2U);
@@ -536,7 +537,8 @@ static tl::expected<socklen_t, int> do_tcp_get_name(const ip_addr_t& ip_addr,
         slength = sizeof(sockaddr_in);
         break;
     }
-    case IPADDR_TYPE_V6: {
+    case IPADDR_TYPE_V6:
+    case IPADDR_TYPE_ANY: {
         struct sockaddr_in6* sa6 = reinterpret_cast<sockaddr_in6*>(&sstorage);
         sa6->sin6_family = AF_INET6;
         sa6->sin6_port = htons(ip_port);
@@ -664,6 +666,9 @@ tcp_socket::do_getsockopt(const tcp_pcb* pcb,
     case IPPROTO_IP:
         return (
             do_ip_getsockopt(reinterpret_cast<const ip_pcb*>(pcb), getsockopt));
+    case IPPROTO_IPV6:
+        return (do_ip6_getsockopt(reinterpret_cast<const ip_pcb*>(pcb),
+                                  getsockopt));
     case IPPROTO_TCP:
         return (do_tcp_getsockopt(pcb, getsockopt));
     default:
@@ -711,6 +716,8 @@ tcp_socket::do_setsockopt(tcp_pcb* pcb,
         return (do_sock_setsockopt(reinterpret_cast<ip_pcb*>(pcb), setsockopt));
     case IPPROTO_IP:
         return (do_ip_setsockopt(reinterpret_cast<ip_pcb*>(pcb), setsockopt));
+    case IPPROTO_IPV6:
+        return (do_ip6_setsockopt(reinterpret_cast<ip_pcb*>(pcb), setsockopt));
     case IPPROTO_TCP:
         return (do_tcp_setsockopt(pcb, setsockopt));
     default:

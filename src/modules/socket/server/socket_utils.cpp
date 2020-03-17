@@ -23,16 +23,23 @@ make_socket(openperf::socket::server::allocator& allocator,
         return (tl::make_unexpected(EAFNOSUPPORT));
     }
 
+    /* Use dual stack for IPv6 sockets by default.
+     * setsockopt() IPV6_V6ONLY can be used to change it.
+     */
+    enum lwip_ip_addr_type ip_type =
+        (domain == AF_INET) ? IPADDR_TYPE_V4 : IPADDR_TYPE_ANY;
+
     /* Mask out the options included with the type */
     switch (type & 0xff) {
     case SOCK_DGRAM:
         switch (protocol) {
         case IPPROTO_IP:
         case IPPROTO_UDP:
-            return (generic_socket(udp_socket(allocator, type)));
+            return (generic_socket(udp_socket(allocator, ip_type, type)));
         case IPPROTO_ICMP:
         case IPPROTO_ICMPV6:
-            return (generic_socket(icmp_socket(allocator, type, protocol)));
+            return (generic_socket(
+                icmp_socket(allocator, ip_type, type, protocol)));
         default:
             return (tl::make_unexpected(EACCES));
         }
@@ -40,7 +47,7 @@ make_socket(openperf::socket::server::allocator& allocator,
         switch (protocol) {
         case IPPROTO_IP:
         case IPPROTO_TCP:
-            return (generic_socket(tcp_socket(allocator, type)));
+            return (generic_socket(tcp_socket(allocator, ip_type, type)));
         default:
             return (tl::make_unexpected(EACCES));
         }
@@ -48,9 +55,11 @@ make_socket(openperf::socket::server::allocator& allocator,
         switch (protocol) {
         case IPPROTO_ICMP:
         case IPPROTO_ICMPV6:
-            return (generic_socket(icmp_socket(allocator, type, protocol)));
+            return (generic_socket(
+                icmp_socket(allocator, ip_type, type, protocol)));
         default:
-            return (generic_socket(raw_socket(allocator, type, protocol)));
+            return (
+                generic_socket(raw_socket(allocator, ip_type, type, protocol)));
         }
     default:
         return (tl::make_unexpected(EPROTONOSUPPORT));

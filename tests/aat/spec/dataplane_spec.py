@@ -103,7 +103,13 @@ def is_server_interface(interface_id):
 def get_interface_address(api_client, interface_id, domain):
     intf = api_client.get_interface(interface_id)
     if domain == socket.AF_INET:
-        return intf.config.protocols[-1].ipv4.static.address
+        for protocol in intf.config.protocols:
+            if protocol.ipv4:
+                return protocol.ipv4.static.address
+    elif domain == socket.AF_INET6:
+        for protocol in intf.config.protocols:
+            if protocol.ipv6:
+                return protocol.ipv6.static.address
     else:
         raise AttributeError('Unsupported domain')
 
@@ -169,7 +175,7 @@ def create_connected_endpoints(api_client, reader_id, writer_id, domain, protoco
 
     server_input = None
     if is_server_interface(writer_id):
-        writer = subprocess.Popen(nc_command(server_ip_addr, protocol=protocol, listen=True),
+        writer = subprocess.Popen(nc_command(server_ip_addr, version=domain, protocol=protocol, listen=True),
                                   stdin=subprocess.PIPE,
                                   stdout=null,
                                   stderr=subprocess.PIPE,
@@ -179,7 +185,7 @@ def create_connected_endpoints(api_client, reader_id, writer_id, domain, protoco
         server_input = writer.stdin
 
     if is_server_interface(reader_id):
-        reader = subprocess.Popen(nc_command(server_ip_addr, protocol=protocol, listen=True),
+        reader = subprocess.Popen(nc_command(server_ip_addr, version=domain, protocol=protocol, listen=True),
                                   stdin=subprocess.PIPE,
                                   stdout=subprocess.PIPE,
                                   stderr=subprocess.PIPE,
@@ -200,7 +206,7 @@ def create_connected_endpoints(api_client, reader_id, writer_id, domain, protoco
 
     client_output = None
     if not is_server_interface(writer_id):
-        writer = subprocess.Popen(nc_command(server_ip_addr, protocol=protocol, verbose=True),
+        writer = subprocess.Popen(nc_command(server_ip_addr, version=domain, protocol=protocol, verbose=True),
                                   stdin=subprocess.PIPE,
                                   stdout=null,
                                   stderr=subprocess.PIPE,
@@ -210,7 +216,7 @@ def create_connected_endpoints(api_client, reader_id, writer_id, domain, protoco
         client_output = writer.stderr
 
     if not is_server_interface(reader_id):
-        reader = subprocess.Popen(nc_command(server_ip_addr, protocol=protocol, verbose=True),
+        reader = subprocess.Popen(nc_command(server_ip_addr, version=domain, protocol=protocol, verbose=True),
                                   stdin=null,
                                   stdout=subprocess.PIPE,
                                   stderr=subprocess.PIPE,
@@ -287,7 +293,7 @@ def do_ping(api_client, ping_binary, src_id, dst_id, domain):
     dst_ip = get_interface_address(api_client, dst_id, domain)
 
     with open(os.devnull, 'w') as null:
-        p = subprocess.Popen(ping_command(ping_binary, dst_ip),
+        p = subprocess.Popen(ping_command(ping_binary, dst_ip, domain),
                              stdout=null, stderr=null,
                              env={'LD_PRELOAD': shim.config.path,
                                   'OP_BINDTODEVICE': src_id})
@@ -302,8 +308,8 @@ with description('Dataplane,', 'dataplane') as self:
         self.process = service.start()
         self.api = client.api.InterfacesApi(service.client())
 
-    with description('ipv4,'):
-        with description('ping,'):
+    with description('ipv4,', 'dataplane:ipv4'):
+        with description('ping,', 'dataplane:ipv4:ping'):
             with before.all:
                 # By default, ping is a privileged process.  We need it unprivileged
                 # to use LD_PRELOAD, so just make a copy as a regular user.
@@ -327,7 +333,7 @@ with description('Dataplane,', 'dataplane') as self:
             with after.all:
                 shutil.rmtree(self.temp_dir)
 
-        with description('tcp,'):
+        with description('tcp,', 'dataplane:ipv4:tcp'):
             with description('bulk data transfer,'):
                 with description('client to server,'):
                     with it('succeeds'):
@@ -389,7 +395,7 @@ with description('Dataplane,', 'dataplane') as self:
                         expect(server_tx_stop - server_tx_start) \
                             .to(be_above_or_equal(BULK_TRANSMIT_SIZE))
 
-        with description('udp,'):
+        with description('udp,', 'dataplane:ipv4:udp'):
             with description('bulk data transfer,'):
                 with description('client to server,'):
                     with it('succeeds,'):
@@ -448,6 +454,166 @@ with description('Dataplane,', 'dataplane') as self:
                                                                'tx_bytes')
                         client_rx_stop = get_interface_counter(self.api,
                                                                'dataplane-client',
+                                                               'rx_bytes')
+
+                        expect(read).to(be_above_or_equal(expected_transmit(socket.IPPROTO_UDP)))
+                        expect(written).to(be_above_or_equal(expected_transmit(socket.IPPROTO_UDP)))
+
+                        expect(client_rx_stop - client_rx_start) \
+                            .to(be_above_or_equal(read))
+                        expect(server_tx_stop - server_tx_start) \
+                            .to(be_above_or_equal(written))
+
+    with description('ipv6,', 'dataplane:ipv6'):
+        # TODO: Add support to API so we can wait for IPv6 duplicate address detection to complete
+        #       Currently IPv6 duplicate address detection is disabled in lwipopts.h with:
+        #       LWIP_IPV6_DUP_DETECT_ATTEMPTS 0
+
+        with description('ping,', 'dataplane:ipv6:ping'):
+            with before.all:
+                # By default, ping is a privileged process.  We need it unprivileged
+                # to use LD_PRELOAD, so just make a copy as a regular user.
+                self.temp_dir = tempfile.mkdtemp()
+                shutil.copy(PING, self.temp_dir)
+                self.temp_ping = os.path.join(self.temp_dir, os.path.basename(PING))
+                expect(os.path.isfile(self.temp_ping))
+
+            with description('client interface,'):
+                with it('succeeds'):
+                    do_ping(self.api, self.temp_ping,
+                            'dataplane-client-v6', 'dataplane-server-v6',
+                            socket.AF_INET6)
+
+            with description('server interface,'):
+                with it('succeeds'):
+                    do_ping(self.api, self.temp_ping,
+                            'dataplane-server-v6', 'dataplane-client-v6',
+                            socket.AF_INET6)
+
+            with after.all:
+                shutil.rmtree(self.temp_dir)
+
+        with description('tcp,', 'dataplane:ipv6:tcp'):
+            with description('bulk data transfer,'):
+                with description('client to server,'):
+                    with it('succeeds'):
+                        server_rx_start = get_interface_counter(self.api,
+                                                                'dataplane-server-v6',
+                                                                'rx_bytes')
+                        client_tx_start = get_interface_counter(self.api,
+                                                                'dataplane-client-v6',
+                                                                'tx_bytes')
+
+                        read, written = do_bulk_data_transfer(self.api,
+                                                              'dataplane-server-v6',
+                                                              'dataplane-client-v6',
+                                                              socket.AF_INET6,
+                                                              socket.IPPROTO_TCP)
+
+                        server_rx_stop = get_interface_counter(self.api,
+                                                               'dataplane-server-v6',
+                                                               'rx_bytes')
+                        client_tx_stop = get_interface_counter(self.api,
+                                                               'dataplane-client-v6',
+                                                               'tx_bytes')
+
+                        expect(read).to(equal(BULK_TRANSMIT_SIZE))
+                        expect(written).to(equal(BULK_TRANSMIT_SIZE))
+
+                        expect(server_rx_stop - server_rx_start) \
+                            .to(be_above_or_equal(BULK_TRANSMIT_SIZE))
+                        expect(client_tx_stop - client_tx_start) \
+                            .to(be_above_or_equal(BULK_TRANSMIT_SIZE))
+
+                with description('server to client,'):
+                    with it('succeeds'):
+                        server_tx_start = get_interface_counter(self.api,
+                                                                'dataplane-server-v6',
+                                                                'tx_bytes')
+                        client_rx_start = get_interface_counter(self.api,
+                                                                'dataplane-client-v6',
+                                                                'rx_bytes')
+
+                        read, written = do_bulk_data_transfer(self.api,
+                                                              'dataplane-client-v6',
+                                                              'dataplane-server-v6',
+                                                              socket.AF_INET6,
+                                                              socket.IPPROTO_TCP)
+
+                        server_tx_stop = get_interface_counter(self.api,
+                                                               'dataplane-server-v6',
+                                                               'tx_bytes')
+                        client_rx_stop = get_interface_counter(self.api,
+                                                               'dataplane-client-v6',
+                                                               'rx_bytes')
+
+                        expect(read).to(equal(BULK_TRANSMIT_SIZE))
+                        expect(written).to(equal(BULK_TRANSMIT_SIZE))
+
+                        expect(client_rx_stop - client_rx_start) \
+                            .to(be_above_or_equal(BULK_TRANSMIT_SIZE))
+                        expect(server_tx_stop - server_tx_start) \
+                            .to(be_above_or_equal(BULK_TRANSMIT_SIZE))
+
+        with description('udp,', 'dataplane:ipv6:udp'):
+            with description('bulk data transfer,'):
+                with description('client to server,'):
+                    with it('succeeds,'):
+                        server_rx_start = get_interface_counter(self.api,
+                                                                'dataplane-server-v6',
+                                                                'rx_bytes')
+                        client_tx_start = get_interface_counter(self.api,
+                                                                'dataplane-client-v6',
+                                                                'tx_bytes')
+
+                        read, written = do_bulk_data_transfer(self.api,
+                                                              'dataplane-server-v6',
+                                                              'dataplane-client-v6',
+                                                              socket.AF_INET6,
+                                                              socket.IPPROTO_UDP)
+
+                        server_rx_stop = get_interface_counter(self.api,
+                                                               'dataplane-server-v6',
+                                                               'rx_bytes')
+                        client_tx_stop = get_interface_counter(self.api,
+                                                               'dataplane-client-v6',
+                                                               'tx_bytes')
+
+                        # Note: `nc` uses up to 16k for buffering input data.
+                        # However, that much data will not fit in a single UDP
+                        # packet.  Currently, the stack doesn't fragment outgoing
+                        # packets, so we can lose some data, even when testing
+                        # back to back across ring devices.
+                        # Note 2: When using UDP, `nc` sends probe packets, so we can
+                        # read more data that we sent, but that's ok.
+                        expect(read).to(be_above_or_equal(expected_transmit(socket.IPPROTO_UDP)))
+                        expect(written).to(be_above_or_equal(expected_transmit(socket.IPPROTO_UDP)))
+
+                        expect(server_rx_stop - server_rx_start) \
+                            .to(be_above_or_equal(read))
+                        expect(client_tx_stop - client_tx_start) \
+                            .to(be_above_or_equal(written))
+
+                with description('server to client,'):
+                    with it('succeeds'):
+                        server_tx_start = get_interface_counter(self.api,
+                                                                'dataplane-server-v6',
+                                                                'tx_bytes')
+                        client_rx_start = get_interface_counter(self.api,
+                                                                'dataplane-client-v6',
+                                                                'rx_bytes')
+
+                        read, written = do_bulk_data_transfer(self.api,
+                                                              'dataplane-client-v6',
+                                                              'dataplane-server-v6',
+                                                              socket.AF_INET6,
+                                                              socket.IPPROTO_UDP)
+
+                        server_tx_stop = get_interface_counter(self.api,
+                                                               'dataplane-server-v6',
+                                                               'tx_bytes')
+                        client_rx_stop = get_interface_counter(self.api,
+                                                               'dataplane-client-v6',
                                                                'rx_bytes')
 
                         expect(read).to(be_above_or_equal(expected_transmit(socket.IPPROTO_UDP)))

@@ -15,11 +15,29 @@ def empty_interface(api_client):
     return i
 
 
-def example_interface(api_client):
+def example_ipv4_interface(api_client):
     i = empty_interface(api_client)
     i.config.protocols = make_interface_protocols([
         client.models.InterfaceProtocolConfigEth(mac_address='00:00:00:00:00:01'),
         client.models.InterfaceProtocolConfigIpv4(method='static', static=client.models.InterfaceProtocolConfigIpv4Static(address='1.1.1.1', prefix_length=24)),
+    ])
+    return i
+
+
+def example_ipv6_interface(api_client):
+    i = empty_interface(api_client)
+    i.config.protocols = make_interface_protocols([
+        client.models.InterfaceProtocolConfigEth(mac_address='00:00:00:00:00:01'),
+        client.models.InterfaceProtocolConfigIpv6(method='static', static=client.models.InterfaceProtocolConfigIpv6Static(address='fd00::1', prefix_length=64)),
+    ])
+    return i
+
+def example_ipv4andv6_interface(api_client):
+    i = empty_interface(api_client)
+    i.config.protocols = make_interface_protocols([
+        client.models.InterfaceProtocolConfigEth(mac_address='00:00:00:00:00:01'),
+        client.models.InterfaceProtocolConfigIpv4(method='static', static=client.models.InterfaceProtocolConfigIpv4Static(address='1.1.1.1', prefix_length=24)),
+        client.models.InterfaceProtocolConfigIpv6(method='static', static=client.models.InterfaceProtocolConfigIpv6Static(address='fd00::1', prefix_length=64)),
     ])
     return i
 
@@ -37,15 +55,23 @@ def random_mac(port_id):
 
 def ipv4_interface(api_client, **kwargs):
     i = empty_interface(api_client)
-    if 'ipv4_address' in kwargs:
+    method = kwargs.get('method', None)
+    if method == None and 'ipv4_address' in kwargs:
+        method = 'static'
+    if method == 'static':
         i.config.protocols = make_interface_protocols([
             client.models.InterfaceProtocolConfigEth(mac_address=random_mac(i.port_id)),
             client.models.InterfaceProtocolConfigIpv4(
                 method='static',
                 static=client.models.InterfaceProtocolConfigIpv4Static(
                     address=kwargs['ipv4_address'],
-                    prefix_length=kwargs['prefix_length'] if 'prefix_length' in kwargs else 24,
-                    gateway=kwargs['gateway'] if 'gateway' in kwargs else None))
+                    prefix_length=kwargs.get('prefix_length', 24),
+                    gateway=kwargs.get('gateway', None)))
+        ])
+    elif method == 'auto':
+        i.config.protocols = make_interface_protocols([
+            client.models.InterfaceProtocolConfigEth(mac_address=random_mac(i.port_id)),
+            client.models.InterfaceProtocolConfigIpv4(method='auto')
         ])
     else:
         i.config.protocols = make_interface_protocols([
@@ -53,6 +79,40 @@ def ipv4_interface(api_client, **kwargs):
             client.models.InterfaceProtocolConfigIpv4(
                 method='dhcp',
                 dhcp=client.models.InterfaceProtocolConfigIpv4Dhcp())
+        ])
+    return i
+
+
+def ipv6_interface(api_client, **kwargs):
+    i = empty_interface(api_client)
+    method = kwargs.get('method', None)
+    if method == None and 'ipv6_address' in kwargs:
+        method = 'static'
+    if method == 'static':
+        i.config.protocols = make_interface_protocols([
+            client.models.InterfaceProtocolConfigEth(mac_address=random_mac(i.port_id)),
+            client.models.InterfaceProtocolConfigIpv6(
+                method='static',
+                link_local_address=kwargs.get('ipv6_link_local_address', None),
+                static=client.models.InterfaceProtocolConfigIpv6Static(
+                    address=kwargs['ipv6_address'],
+                    prefix_length=kwargs.get('prefix_length', 64),
+                    gateway=kwargs.get('gateway', None)))
+        ])
+    elif method == 'auto':
+        i.config.protocols = make_interface_protocols([
+            client.models.InterfaceProtocolConfigEth(mac_address=random_mac(i.port_id)),
+            client.models.InterfaceProtocolConfigIpv6(
+                method='auto',
+                link_local_address=kwargs.get('ipv6_link_local_address', None))
+        ])
+    else:
+        i.config.protocols = make_interface_protocols([
+            client.models.InterfaceProtocolConfigEth(mac_address=random_mac(i.port_id)),
+            client.models.InterfaceProtocolConfigIpv6(
+                method='dhcp6',
+                link_local_address=kwargs.get('ipv6_link_local_address', None),
+                dhcp6=client.models.InterfaceProtocolConfigIpv6Dhcp6(stateless=True))
         ])
     return i
 

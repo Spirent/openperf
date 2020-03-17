@@ -251,7 +251,7 @@ No authorization required
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **list_interfaces**
-> list[Interface] list_interfaces(port_id=port_id, eth_mac_address=eth_mac_address, ipv4_address=ipv4_address)
+> list[Interface] list_interfaces(port_id=port_id, eth_mac_address=eth_mac_address, ipv4_address=ipv4_address, ipv6_address=ipv6_address)
 
 List network interfaces
 
@@ -270,10 +270,11 @@ api_instance = client.InterfacesApi()
 port_id = 'port_id_example' # str | Filter by port id (optional)
 eth_mac_address = 'eth_mac_address_example' # str | Filter by Ethernet MAC address (optional)
 ipv4_address = 'ipv4_address_example' # str | Filter by IPv4 address (optional)
+ipv6_address = 'ipv6_address_example' # str | Filter by IPv6 address (optional)
 
 try:
     # List network interfaces
-    api_response = api_instance.list_interfaces(port_id=port_id, eth_mac_address=eth_mac_address, ipv4_address=ipv4_address)
+    api_response = api_instance.list_interfaces(port_id=port_id, eth_mac_address=eth_mac_address, ipv4_address=ipv4_address, ipv6_address=ipv6_address)
     pprint(api_response)
 except ApiException as e:
     print("Exception when calling InterfacesApi->list_interfaces: %s\n" % e)
@@ -286,6 +287,7 @@ Name | Type | Description  | Notes
  **port_id** | **str**| Filter by port id | [optional] 
  **eth_mac_address** | **str**| Filter by Ethernet MAC address | [optional] 
  **ipv4_address** | **str**| Filter by IPv4 address | [optional] 
+ **ipv6_address** | **str**| Filter by IPv6 address | [optional] 
 
 ### Return type
 

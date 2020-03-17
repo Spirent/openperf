@@ -21,6 +21,7 @@
 
 #include "ModelBase.h"
 
+#include "InterfaceProtocolConfig_ipv6.h"
 #include "InterfaceProtocolConfig_eth.h"
 #include "InterfaceProtocolConfig_ipv4.h"
 
@@ -63,12 +64,21 @@ public:
     void setIpv4(std::shared_ptr<InterfaceProtocolConfig_ipv4> value);
     bool ipv4IsSet() const;
     void unsetIpv4();
+    /// <summary>
+    /// 
+    /// </summary>
+    std::shared_ptr<InterfaceProtocolConfig_ipv6> getIpv6() const;
+    void setIpv6(std::shared_ptr<InterfaceProtocolConfig_ipv6> value);
+    bool ipv6IsSet() const;
+    void unsetIpv6();
 
 protected:
     std::shared_ptr<InterfaceProtocolConfig_eth> m_Eth;
     bool m_EthIsSet;
     std::shared_ptr<InterfaceProtocolConfig_ipv4> m_Ipv4;
     bool m_Ipv4IsSet;
+    std::shared_ptr<InterfaceProtocolConfig_ipv6> m_Ipv6;
+    bool m_Ipv6IsSet;
 };
 
 }

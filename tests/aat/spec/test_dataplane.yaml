@@ -43,3 +43,28 @@ resources:
             static:
               address: "198.19.1.10"
               prefix_length: 15
+
+  /interfaces/dataplane-server-v6:
+    port_id: port0
+    config:
+      protocols:
+        - eth:
+            mac_address: "00:10:94:66:1a:2b"
+        - ipv6:
+            method: static
+            static:
+              address: "2001:2::1"
+              prefix_length: 64
+
+  /interfaces/dataplane-client-v6:
+    port_id: port1
+    config:
+      protocols:
+        - eth:
+            mac_address: "00:10:94:66:2b:03"
+        - ipv6:
+            method: static
+            static:
+              address: "2001:2::2"
+              prefix_length: 64
+
