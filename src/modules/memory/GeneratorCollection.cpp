@@ -1,5 +1,5 @@
-#include "GeneratorCollection.hpp"
-#include "Generator.hpp"
+#include "memory/GeneratorCollection.hpp"
+#include "memory/Generator.hpp"
 #include "core/op_core.h"
 #include "config/op_config_utils.hpp"
 
@@ -9,7 +9,7 @@ GeneratorConfigList GeneratorCollection::list() const
 {
     GeneratorConfigList list;
     for (const auto& pair : _collection) {
-        list.push_front(collectConfig(pair.first));
+        list.emplace(pair.first, get(pair.first));
     }
 
     return list;
@@ -23,8 +23,16 @@ bool GeneratorCollection::contains(const std::string& id) const
 
 GeneratorConfig GeneratorCollection::get(const std::string& id) const
 {
-    // auto config = _collection.at(id).config();
-    return collectConfig(id);
+    auto& g = _collection.at(id);
+    return GeneratorConfig::create()
+        .setBufferSize(g.readWorkerConfig().buffer_size)
+        .setReadThreads(g.readWorkers())
+        .setReadSize(g.readWorkerConfig().block_size)
+        .setReadsPerSec(g.readWorkerConfig().op_per_sec)
+        .setWriteThreads(g.writeWorkers())
+        .setWriteSize(g.writeWorkerConfig().block_size)
+        .setWritesPerSec(g.writeWorkerConfig().op_per_sec)
+        .setRunning(g.isRunning() && !g.isPaused());
 }
 
 void GeneratorCollection::erase(const std::string& id)
@@ -46,10 +54,31 @@ GeneratorConfig GeneratorCollection::create(const std::string& id,
                                     + "' already exists.");
     }
 
-    auto result = _collection.emplace(
-        new_id,
-        Generator::Config{.read_threads = config.readThreads(),
-                          .write_threads = config.writeThreads()});
+    Generator gen;
+    gen.setReadWorkers(config.readThreads());
+    gen.setReadWorkerConfig(
+        Worker::Config {
+            .buffer_size = config.bufferSize(),
+            .op_per_sec = config.readsPerSec(),
+            .block_size = config.readSize()
+        }
+    );
+
+    gen.setWriteWorkers(config.writeThreads());
+    gen.setWriteWorkerConfig(
+        Worker::Config {
+            .buffer_size = config.bufferSize(),
+            .op_per_sec = config.writesPerSec(),
+            .block_size = config.writeSize()
+        }
+    );
+
+    gen.setRunning(config.isRunning());
+    auto result = _collection.emplace(new_id, std::move(gen));
+    //auto result = _collection.emplace(
+    //    new_id,
+    //    Generator::Config{.read_threads = config.readThreads(),
+    //                      .write_threads = config.writeThreads()});
 
     if (!result.second) {
         throw std::runtime_error(
@@ -57,7 +86,7 @@ GeneratorConfig GeneratorCollection::create(const std::string& id,
             + "' to collection.");
     }
 
-    return collectConfig(new_id);
+    return get(new_id);
 }
 
 void GeneratorCollection::clear() { _collection.clear(); }
@@ -66,13 +95,15 @@ void GeneratorCollection::start()
 {
     for (auto& generator : _collection) {
         generator.second.resume();
-        // generator.second.start();
+        generator.second.start();
     }
 }
 
 void GeneratorCollection::start(const std::string& id)
 {
-    _collection.at(id).resume();
+    auto& generator = _collection.at(id);
+    generator.resume();
+    generator.start();
 }
 
 void GeneratorCollection::stop()
@@ -86,17 +117,6 @@ void GeneratorCollection::stop()
 void GeneratorCollection::stop(const std::string& id)
 {
     _collection.at(id).pause();
-}
-
-GeneratorConfig GeneratorCollection::collectConfig(const std::string& id) const
-{
-    GeneratorConfig config;
-    auto& g = _collection.at(id);
-
-    config.setReadThreads(g.readThreads());
-    config.setWriteThreads(g.writeThreads());
-
-    return config;
 }
 
 } // namespace openperf::memory::generator
