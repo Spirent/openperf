@@ -1,4 +1,4 @@
-#include "config/op_config_file.h"
+#include "config/op_config_file.hpp"
 #include "core/op_core.h"
 
 MAKE_OPTION_DATA(main,

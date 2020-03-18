@@ -14,11 +14,11 @@
 #include "rte_net.h"
 #include "zmq.h"
 
-#include "config/op_config_file.h"
+#include "config/op_config_file.hpp"
 #include "core/op_core.h"
-#include "packetio/internal_client.h"
-#include "packetio/internal_worker.h"
-#include "packetio/packet_buffer.h"
+#include "packetio/internal_client.hpp"
+#include "packetio/internal_worker.hpp"
+#include "packetio/packet_buffer.hpp"
 
 #include "simple_counter.h"
 
@@ -37,6 +37,7 @@ struct alignas(64) sink_worker_data
 class test_sink
 {
     openperf::core::uuid m_id;
+    bool m_active;
     std::vector<unsigned> m_indexes;
     std::vector<sink_worker_data> m_data;
 
@@ -52,12 +53,14 @@ class test_sink
 public:
     test_sink(openperf::core::uuid uuid, std::vector<unsigned> rx_ids)
         : m_id(std::move(uuid))
+        , m_active(true)
         , m_indexes(make_indexes(rx_ids))
         , m_data(rx_ids.size())
     {}
 
     test_sink(test_sink&& other)
         : m_id(other.m_id)
+        , m_active(true)
         , m_indexes(std::move(other.m_indexes))
         , m_data(std::move(other.m_data))
     {}
@@ -73,6 +76,15 @@ public:
     }
 
     std::string id() const { return (openperf::core::to_string(m_id)); }
+
+    bool active() const { return m_active; }
+
+    bool uses_feature([
+        [maybe_unused]] openperf::packetio::packets::sink_feature_flags
+                          sink_feature_flags) const
+    {
+        return false;
+    }
 
     std::vector<packet_counter*> counters()
     {
