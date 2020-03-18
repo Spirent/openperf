@@ -1,7 +1,7 @@
 #ifndef _OP_BLOCK_FILE_STACK_HPP_
 #define _OP_BLOCK_FILE_STACK_HPP_
 
-#include <map>
+#include <unordered_map>
 #include <memory>
 #include "models/file.hpp"
 #include "tl/expected.hpp"
@@ -19,7 +19,7 @@ public:
 };
 
 typedef std::shared_ptr<file> block_file_ptr;
-typedef std::map<std::string, block_file_ptr> block_file_map;
+typedef std::unordered_map<std::string, block_file_ptr> block_file_map;
 
 class file_stack : public utils::singleton<file_stack>
 {

@@ -2,6 +2,7 @@
 #define _OP_BLOCK_DEVICE_HPP_
 
 #include <vector>
+#include <unordered_map>
 #include "models/device.hpp"
 #include "models/virtual_device.hpp"
 #include "utils/singleton.hpp"
@@ -17,7 +18,7 @@ public:
 };
 
 typedef std::shared_ptr<device> device_ptr;
-typedef std::map<std::string, device_ptr> device_map;
+typedef std::unordered_map<std::string, device_ptr> device_map;
 
 static const std::string device_dir = "/dev";
 
