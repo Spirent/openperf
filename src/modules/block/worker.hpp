@@ -1,6 +1,7 @@
 #ifndef _OP_BLOCK_GENERATOR_WORKER_HPP_
 #define _OP_BLOCK_GENERATOR_WORKER_HPP_
 
+#include <aio.h>
 #include <condition_variable>
 #include <memory>
 #include <mutex>
@@ -16,6 +17,14 @@ constexpr auto endpoint_prefix = "inproc://openperf_block_worker";
 
 typedef std::unique_ptr<worker_task> worker_task_ptr;
 typedef std::vector<worker_task_ptr> worker_task_vec;
+
+struct operation_config {
+    int fd;
+    __off64_t offset;
+    uint8_t *aio_buffer;
+    size_t block_size;
+    int (*queue_aio_op)(struct aiocb *aiocb);
+};
 
 struct worker_config {
     int32_t queue_depth;
@@ -39,6 +48,7 @@ private:
     std::unique_ptr<void, op_socket_deleter> m_socket;
     std::unique_ptr<std::thread> worker_tread;
     
+    void submit_aio_op(const operation_config& op_config);
     void worker_loop(void* context);
     template<typename T>
     void add_task(T* task);
