@@ -1,7 +1,7 @@
 #include "worker.hpp"
 #include "core/op_core.h"
 #include "zmq.h"
-#include "block/workers/random.hpp"
+#include "workers/random.hpp"
 
 
 namespace openperf::block::worker 
@@ -25,7 +25,7 @@ block_worker::block_worker(const worker_config& p_config, int p_fd, bool p_runni
 
 block_worker::~block_worker() 
 {
-    zmq_ctx_shutdown(m_context);
+    zmq_ctx_term(m_context);
     worker_tread->detach();
 }
 
@@ -68,7 +68,27 @@ void block_worker::set_pattern(const model::block_generation_pattern& pattern)
 
 void block_worker::update_state()
 {
-    zmq_send(m_socket.get(), std::addressof(state), sizeof(state), 0);
+    zmq_send(m_socket.get(), std::addressof(state), sizeof(state), ZMQ_NOBLOCK);
+}
+
+void block_worker::submit_aio_op(const operation_config& op_config) {
+    //auto buf = malloc(p_state.config.read_size);
+
+    auto ai = ((struct aiocb) {
+            .aio_fildes = op_config.fd,
+            .aio_offset = op_config.offset,//p_state.config.read_size,
+            .aio_buf = nullptr,
+            .aio_nbytes = op_config.block_size,
+            .aio_reqprio = 0,
+            .aio_sigevent.sigev_notify = SIGEV_NONE,
+    });
+
+    aio_write(&ai);
+    struct timespec timeout = { .tv_sec = 1, .tv_nsec = 0 };
+    const struct aiocb *aiocblist[1] = {&ai};
+    aio_suspend(aiocblist, 1, &timeout);
+    printf("error: %d\n", aio_error(&ai));
+    aio_return(&ai);
 }
 
 void block_worker::worker_loop(void* context)
@@ -89,6 +109,12 @@ void block_worker::worker_loop(void* context)
             break;
         }
         if (running) {
+            printf("%d\n", fd);
+            submit_aio_op((worker_state){
+                config,
+                running,
+                fd
+            });
             for (auto& task : tasks) {
                 task->read();
                 task->write();

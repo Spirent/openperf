@@ -326,8 +326,8 @@ static int _handle_rpc_request(const op_event_data* data, void* arg)
 
 server::server(void* context, openperf::core::event_loop& loop)
     : m_socket(op_socket_get_server(context, ZMQ_REP, endpoint.data()))
-    , blk_device_stack(std::make_unique<device::device_stack>())
-    , blk_file_stack(std::make_unique<file::file_stack>())
+    , blk_device_stack(std::unique_ptr<device::device_stack>(&device::device_stack::instance()))
+    , blk_file_stack(std::unique_ptr<file::file_stack>(&file::file_stack::instance()))
     , blk_generator_stack(std::make_unique<generator::generator_stack>())
 {
     struct op_event_callbacks callbacks = {.on_read = _handle_rpc_request};

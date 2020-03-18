@@ -1,14 +1,14 @@
 #ifndef _OP_BLOCK_GENERATOR_STACK_HPP_
 #define _OP_BLOCK_GENERATOR_STACK_HPP_
 
-#include <map>
+#include <unordered_map>
 #include "block/block_generator.hpp"
 #include "tl/expected.hpp"
 
 namespace openperf::block::generator {
 
 typedef std::shared_ptr<block_generator> block_generator_ptr;
-typedef std::map<std::string, block_generator_ptr> block_generator_map;
+typedef std::unordered_map<std::string, block_generator_ptr> block_generator_map;
 
 class generator_stack
 {

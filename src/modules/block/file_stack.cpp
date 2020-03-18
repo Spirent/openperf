@@ -10,7 +10,7 @@ file::file(const model::file& f)
 int file::vopen()
 {
     if ((fd = open(get_path().c_str(), O_RDWR)) < 0) {
-        return fd = -ENOSPC;
+        return (-errno);
     }
     return fd;
 }

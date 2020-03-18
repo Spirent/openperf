@@ -1,3 +1,5 @@
+#include <cstring>
+#include <stdexcept>
 #include "block_generator.hpp"
 #include "file_stack.hpp"
 #include "device_stack.hpp"
@@ -9,6 +11,8 @@ block_generator::block_generator(const model::block_generator& generator_model)
 {
     auto config = generate_worker_config(get_config());
     auto fd = open_resource(get_resource_id());
+    if (fd < 0)
+        throw std::runtime_error("Cannot open resource: " + std::string(std::strerror(-fd)));
     blkworker = block_worker_ptr(new block_worker(config, fd, is_running(), get_config().pattern));
 }
 
