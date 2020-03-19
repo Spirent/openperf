@@ -19,10 +19,12 @@ namespace model {
 
 PacketProtocolEthernet::PacketProtocolEthernet()
 {
-    m_SourceIsSet = false;
+    m_Destination = "";
     m_DestinationIsSet = false;
-    m_Ethertype = 0;
-    m_EthertypeIsSet = false;
+    m_Ether_type = 0;
+    m_Ether_typeIsSet = false;
+    m_Source = "";
+    m_SourceIsSet = false;
     
 }
 
@@ -39,17 +41,17 @@ nlohmann::json PacketProtocolEthernet::toJson() const
 {
     nlohmann::json val = nlohmann::json::object();
 
-    if(m_SourceIsSet)
-    {
-        val["source"] = ModelBase::toJson(m_Source);
-    }
     if(m_DestinationIsSet)
     {
         val["destination"] = ModelBase::toJson(m_Destination);
     }
-    if(m_EthertypeIsSet)
+    if(m_Ether_typeIsSet)
     {
-        val["ethertype"] = m_Ethertype;
+        val["ether_type"] = m_Ether_type;
+    }
+    if(m_SourceIsSet)
+    {
+        val["source"] = ModelBase::toJson(m_Source);
     }
     
 
@@ -58,56 +60,29 @@ nlohmann::json PacketProtocolEthernet::toJson() const
 
 void PacketProtocolEthernet::fromJson(nlohmann::json& val)
 {
-    if(val.find("source") != val.end())
-    {
-        if(!val["source"].is_null())
-        {
-            std::shared_ptr<MacAddress> newItem(new MacAddress());
-            newItem->fromJson(val["source"]);
-            setSource( newItem );
-        }
-        
-    }
     if(val.find("destination") != val.end())
     {
-        if(!val["destination"].is_null())
-        {
-            std::shared_ptr<MacAddress> newItem(new MacAddress());
-            newItem->fromJson(val["destination"]);
-            setDestination( newItem );
-        }
+        setDestination(val.at("destination"));
         
     }
-    if(val.find("ethertype") != val.end())
+    if(val.find("ether_type") != val.end())
     {
-        setEthertype(val.at("ethertype"));
+        setEtherType(val.at("ether_type"));
+    }
+    if(val.find("source") != val.end())
+    {
+        setSource(val.at("source"));
+        
     }
     
 }
 
 
-std::shared_ptr<MacAddress> PacketProtocolEthernet::getSource() const
-{
-    return m_Source;
-}
-void PacketProtocolEthernet::setSource(std::shared_ptr<MacAddress> value)
-{
-    m_Source = value;
-    m_SourceIsSet = true;
-}
-bool PacketProtocolEthernet::sourceIsSet() const
-{
-    return m_SourceIsSet;
-}
-void PacketProtocolEthernet::unsetSource()
-{
-    m_SourceIsSet = false;
-}
-std::shared_ptr<MacAddress> PacketProtocolEthernet::getDestination() const
+std::string PacketProtocolEthernet::getDestination() const
 {
     return m_Destination;
 }
-void PacketProtocolEthernet::setDestination(std::shared_ptr<MacAddress> value)
+void PacketProtocolEthernet::setDestination(std::string value)
 {
     m_Destination = value;
     m_DestinationIsSet = true;
@@ -120,22 +95,39 @@ void PacketProtocolEthernet::unsetDestination()
 {
     m_DestinationIsSet = false;
 }
-int32_t PacketProtocolEthernet::getEthertype() const
+int32_t PacketProtocolEthernet::getEtherType() const
 {
-    return m_Ethertype;
+    return m_Ether_type;
 }
-void PacketProtocolEthernet::setEthertype(int32_t value)
+void PacketProtocolEthernet::setEtherType(int32_t value)
 {
-    m_Ethertype = value;
-    m_EthertypeIsSet = true;
+    m_Ether_type = value;
+    m_Ether_typeIsSet = true;
 }
-bool PacketProtocolEthernet::ethertypeIsSet() const
+bool PacketProtocolEthernet::etherTypeIsSet() const
 {
-    return m_EthertypeIsSet;
+    return m_Ether_typeIsSet;
 }
-void PacketProtocolEthernet::unsetEthertype()
+void PacketProtocolEthernet::unsetEther_type()
 {
-    m_EthertypeIsSet = false;
+    m_Ether_typeIsSet = false;
+}
+std::string PacketProtocolEthernet::getSource() const
+{
+    return m_Source;
+}
+void PacketProtocolEthernet::setSource(std::string value)
+{
+    m_Source = value;
+    m_SourceIsSet = true;
+}
+bool PacketProtocolEthernet::sourceIsSet() const
+{
+    return m_SourceIsSet;
+}
+void PacketProtocolEthernet::unsetSource()
+{
+    m_SourceIsSet = false;
 }
 
 }

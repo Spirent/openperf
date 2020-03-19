@@ -70,17 +70,7 @@ void TrafficProtocolMacModifier::fromJson(nlohmann::json& val)
         {
         for( auto& item : val["list"] )
         {
-            
-            if(item.is_null())
-            {
-                m_List.push_back( std::shared_ptr<MacAddress>(nullptr) );
-            }
-            else
-            {
-                std::shared_ptr<MacAddress> newItem(new MacAddress());
-                newItem->fromJson(item);
-                m_List.push_back( newItem );
-            }
+            m_List.push_back(item);
             
         }
         }
@@ -108,7 +98,7 @@ void TrafficProtocolMacModifier::setMethod(std::string value)
     m_Method = value;
     
 }
-std::vector<std::shared_ptr<MacAddress>>& TrafficProtocolMacModifier::getList()
+std::vector<std::string>& TrafficProtocolMacModifier::getList()
 {
     return m_List;
 }

@@ -1,0 +1,13 @@
+udp:
+  fields:
+    source:
+      format: number
+      length: 16
+    destination:
+      format: number
+      length: 16
+    length:
+      format: number
+      length: 16
+    checksum:
+      length: 16

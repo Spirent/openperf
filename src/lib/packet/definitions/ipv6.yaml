@@ -1,0 +1,20 @@
+IPv6:
+  fields:
+    version:
+      length: 4
+    traffic_class:
+      length: 8
+    flow_label:
+      length: 20
+    payload_length:
+      format: number
+      length: 16
+    next_header:
+      length: 8
+    hop_limit:
+      format: number
+      length: 8
+    source:
+      format: ipv6
+    destination:
+      format: ipv6

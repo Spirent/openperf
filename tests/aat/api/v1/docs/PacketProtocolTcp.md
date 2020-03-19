@@ -3,15 +3,16 @@
 ## Properties
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**source_port** | [**TcpIpPort**](TcpIpPort.md) |  | 
-**destination_port** | [**TcpIpPort**](TcpIpPort.md) |  | 
-**sequence_number** | **int** | sequence number field | [optional] 
-**ack_number** | **int** | ACK number field | [optional] 
-**data_offset** | **int** | offset to data from the start of the TCP header | [optional] 
-**flags** | **list[str]** | TCP header flags | [optional] 
-**window** | **int** | sequence window field | [optional] 
-**checksum** | **int** | checksum field | [optional] 
-**urgent_pointer** | **int** | urgent pointer field | [optional] 
+**ack** | **int** | tcp ack | [optional] 
+**checksum** | **int** | tcp checksum | [optional] 
+**data_offset** | **int** | tcp data offset | [optional] 
+**destination** | **int** | tcp destination | [optional] 
+**flags** | **list[str]** | tcp flags | [optional] 
+**reserved** | **int** | tcp reserved | [optional] 
+**sequence** | **int** | tcp sequence | [optional] 
+**source** | **int** | tcp source | [optional] 
+**urgent_pointer** | **int** | tcp urgent pointer | [optional] 
+**window** | **int** | tcp window | [optional] 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

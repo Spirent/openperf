@@ -22,7 +22,6 @@
 #include "ModelBase.h"
 
 #include <string>
-#include "Ipv4Address.h"
 #include "TrafficProtocolIpv4Modifier_sequence.h"
 #include <vector>
 
@@ -59,7 +58,7 @@ public:
         /// <summary>
     /// List of IPv4 addresses
     /// </summary>
-    std::vector<std::shared_ptr<Ipv4Address>>& getList();
+    std::vector<std::string>& getList();
     bool listIsSet() const;
     void unsetList();
     /// <summary>
@@ -73,7 +72,7 @@ public:
 protected:
     std::string m_Method;
 
-    std::vector<std::shared_ptr<Ipv4Address>> m_List;
+    std::vector<std::string> m_List;
     bool m_ListIsSet;
     std::shared_ptr<TrafficProtocolIpv4Modifier_sequence> m_Sequence;
     bool m_SequenceIsSet;

@@ -22,6 +22,8 @@
 #include "ModelBase.h"
 
 #include "PacketProtocolIpv4.h"
+#include "PacketProtocolMpls.h"
+#include "PacketProtocolVlan.h"
 #include "PacketProtocolEthernet.h"
 #include "PacketProtocolUdp.h"
 #include "PacketProtocolCustom.h"
@@ -78,6 +80,13 @@ public:
     /// <summary>
     /// 
     /// </summary>
+    std::shared_ptr<PacketProtocolSpirentSignature> getSignature() const;
+    void setSignature(std::shared_ptr<PacketProtocolSpirentSignature> value);
+    bool signatureIsSet() const;
+    void unsetSignature();
+    /// <summary>
+    /// 
+    /// </summary>
     std::shared_ptr<PacketProtocolEthernet> getEthernet() const;
     void setEthernet(std::shared_ptr<PacketProtocolEthernet> value);
     bool ethernetIsSet() const;
@@ -99,10 +108,10 @@ public:
     /// <summary>
     /// 
     /// </summary>
-    std::shared_ptr<PacketProtocolSpirentSignature> getSignature() const;
-    void setSignature(std::shared_ptr<PacketProtocolSpirentSignature> value);
-    bool signatureIsSet() const;
-    void unsetSignature();
+    std::shared_ptr<PacketProtocolMpls> getMpls() const;
+    void setMpls(std::shared_ptr<PacketProtocolMpls> value);
+    bool mplsIsSet() const;
+    void unsetMpls();
     /// <summary>
     /// 
     /// </summary>
@@ -117,6 +126,13 @@ public:
     void setUdp(std::shared_ptr<PacketProtocolUdp> value);
     bool udpIsSet() const;
     void unsetUdp();
+    /// <summary>
+    /// 
+    /// </summary>
+    std::shared_ptr<PacketProtocolVlan> getVlan() const;
+    void setVlan(std::shared_ptr<PacketProtocolVlan> value);
+    bool vlanIsSet() const;
+    void unsetVlan();
 
 protected:
     std::shared_ptr<TrafficProtocol_modifiers> m_Modifiers;
@@ -125,18 +141,22 @@ protected:
 
     std::shared_ptr<PacketProtocolCustom> m_Custom;
     bool m_CustomIsSet;
+    std::shared_ptr<PacketProtocolSpirentSignature> m_Signature;
+    bool m_SignatureIsSet;
     std::shared_ptr<PacketProtocolEthernet> m_Ethernet;
     bool m_EthernetIsSet;
     std::shared_ptr<PacketProtocolIpv4> m_Ipv4;
     bool m_Ipv4IsSet;
     std::shared_ptr<PacketProtocolIpv6> m_Ipv6;
     bool m_Ipv6IsSet;
-    std::shared_ptr<PacketProtocolSpirentSignature> m_Signature;
-    bool m_SignatureIsSet;
+    std::shared_ptr<PacketProtocolMpls> m_Mpls;
+    bool m_MplsIsSet;
     std::shared_ptr<PacketProtocolTcp> m_Tcp;
     bool m_TcpIsSet;
     std::shared_ptr<PacketProtocolUdp> m_Udp;
     bool m_UdpIsSet;
+    std::shared_ptr<PacketProtocolVlan> m_Vlan;
+    bool m_VlanIsSet;
 };
 
 }

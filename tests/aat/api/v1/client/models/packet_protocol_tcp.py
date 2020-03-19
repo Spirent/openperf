@@ -31,215 +31,94 @@ class PacketProtocolTcp(object):
                             and the value is json key in definition.
     """
     swagger_types = {
-        'source_port': 'TcpIpPort',
-        'destination_port': 'TcpIpPort',
-        'sequence_number': 'int',
-        'ack_number': 'int',
-        'data_offset': 'int',
-        'flags': 'list[str]',
-        'window': 'int',
+        'ack': 'int',
         'checksum': 'int',
-        'urgent_pointer': 'int'
+        'data_offset': 'int',
+        'destination': 'int',
+        'flags': 'list[str]',
+        'reserved': 'int',
+        'sequence': 'int',
+        'source': 'int',
+        'urgent_pointer': 'int',
+        'window': 'int'
     }
 
     attribute_map = {
-        'source_port': 'source_port',
-        'destination_port': 'destination_port',
-        'sequence_number': 'sequence_number',
-        'ack_number': 'ack_number',
-        'data_offset': 'data_offset',
-        'flags': 'flags',
-        'window': 'window',
+        'ack': 'ack',
         'checksum': 'checksum',
-        'urgent_pointer': 'urgent_pointer'
+        'data_offset': 'data_offset',
+        'destination': 'destination',
+        'flags': 'flags',
+        'reserved': 'reserved',
+        'sequence': 'sequence',
+        'source': 'source',
+        'urgent_pointer': 'urgent_pointer',
+        'window': 'window'
     }
 
-    def __init__(self, source_port=None, destination_port=None, sequence_number=None, ack_number=None, data_offset=None, flags=None, window=None, checksum=None, urgent_pointer=None):  # noqa: E501
+    def __init__(self, ack=None, checksum=None, data_offset=None, destination=None, flags=None, reserved=None, sequence=None, source=None, urgent_pointer=None, window=None):  # noqa: E501
         """PacketProtocolTcp - a model defined in Swagger"""  # noqa: E501
 
-        self._source_port = None
-        self._destination_port = None
-        self._sequence_number = None
-        self._ack_number = None
-        self._data_offset = None
-        self._flags = None
-        self._window = None
+        self._ack = None
         self._checksum = None
+        self._data_offset = None
+        self._destination = None
+        self._flags = None
+        self._reserved = None
+        self._sequence = None
+        self._source = None
         self._urgent_pointer = None
+        self._window = None
         self.discriminator = None
 
-        self.source_port = source_port
-        self.destination_port = destination_port
-        if sequence_number is not None:
-            self.sequence_number = sequence_number
-        if ack_number is not None:
-            self.ack_number = ack_number
-        if data_offset is not None:
-            self.data_offset = data_offset
-        if flags is not None:
-            self.flags = flags
-        if window is not None:
-            self.window = window
+        if ack is not None:
+            self.ack = ack
         if checksum is not None:
             self.checksum = checksum
+        if data_offset is not None:
+            self.data_offset = data_offset
+        if destination is not None:
+            self.destination = destination
+        if flags is not None:
+            self.flags = flags
+        if reserved is not None:
+            self.reserved = reserved
+        if sequence is not None:
+            self.sequence = sequence
+        if source is not None:
+            self.source = source
         if urgent_pointer is not None:
             self.urgent_pointer = urgent_pointer
+        if window is not None:
+            self.window = window
 
     @property
-    def source_port(self):
-        """Gets the source_port of this PacketProtocolTcp.  # noqa: E501
+    def ack(self):
+        """Gets the ack of this PacketProtocolTcp.  # noqa: E501
 
+        tcp ack  # noqa: E501
 
-        :return: The source_port of this PacketProtocolTcp.  # noqa: E501
-        :rtype: TcpIpPort
-        """
-        return self._source_port
-
-    @source_port.setter
-    def source_port(self, source_port):
-        """Sets the source_port of this PacketProtocolTcp.
-
-
-        :param source_port: The source_port of this PacketProtocolTcp.  # noqa: E501
-        :type: TcpIpPort
-        """
-        self._source_port = source_port
-
-    @property
-    def destination_port(self):
-        """Gets the destination_port of this PacketProtocolTcp.  # noqa: E501
-
-
-        :return: The destination_port of this PacketProtocolTcp.  # noqa: E501
-        :rtype: TcpIpPort
-        """
-        return self._destination_port
-
-    @destination_port.setter
-    def destination_port(self, destination_port):
-        """Sets the destination_port of this PacketProtocolTcp.
-
-
-        :param destination_port: The destination_port of this PacketProtocolTcp.  # noqa: E501
-        :type: TcpIpPort
-        """
-        self._destination_port = destination_port
-
-    @property
-    def sequence_number(self):
-        """Gets the sequence_number of this PacketProtocolTcp.  # noqa: E501
-
-        sequence number field  # noqa: E501
-
-        :return: The sequence_number of this PacketProtocolTcp.  # noqa: E501
+        :return: The ack of this PacketProtocolTcp.  # noqa: E501
         :rtype: int
         """
-        return self._sequence_number
+        return self._ack
 
-    @sequence_number.setter
-    def sequence_number(self, sequence_number):
-        """Sets the sequence_number of this PacketProtocolTcp.
+    @ack.setter
+    def ack(self, ack):
+        """Sets the ack of this PacketProtocolTcp.
 
-        sequence number field  # noqa: E501
+        tcp ack  # noqa: E501
 
-        :param sequence_number: The sequence_number of this PacketProtocolTcp.  # noqa: E501
+        :param ack: The ack of this PacketProtocolTcp.  # noqa: E501
         :type: int
         """
-        self._sequence_number = sequence_number
-
-    @property
-    def ack_number(self):
-        """Gets the ack_number of this PacketProtocolTcp.  # noqa: E501
-
-        ACK number field  # noqa: E501
-
-        :return: The ack_number of this PacketProtocolTcp.  # noqa: E501
-        :rtype: int
-        """
-        return self._ack_number
-
-    @ack_number.setter
-    def ack_number(self, ack_number):
-        """Sets the ack_number of this PacketProtocolTcp.
-
-        ACK number field  # noqa: E501
-
-        :param ack_number: The ack_number of this PacketProtocolTcp.  # noqa: E501
-        :type: int
-        """
-        self._ack_number = ack_number
-
-    @property
-    def data_offset(self):
-        """Gets the data_offset of this PacketProtocolTcp.  # noqa: E501
-
-        offset to data from the start of the TCP header  # noqa: E501
-
-        :return: The data_offset of this PacketProtocolTcp.  # noqa: E501
-        :rtype: int
-        """
-        return self._data_offset
-
-    @data_offset.setter
-    def data_offset(self, data_offset):
-        """Sets the data_offset of this PacketProtocolTcp.
-
-        offset to data from the start of the TCP header  # noqa: E501
-
-        :param data_offset: The data_offset of this PacketProtocolTcp.  # noqa: E501
-        :type: int
-        """
-        self._data_offset = data_offset
-
-    @property
-    def flags(self):
-        """Gets the flags of this PacketProtocolTcp.  # noqa: E501
-
-        TCP header flags  # noqa: E501
-
-        :return: The flags of this PacketProtocolTcp.  # noqa: E501
-        :rtype: list[str]
-        """
-        return self._flags
-
-    @flags.setter
-    def flags(self, flags):
-        """Sets the flags of this PacketProtocolTcp.
-
-        TCP header flags  # noqa: E501
-
-        :param flags: The flags of this PacketProtocolTcp.  # noqa: E501
-        :type: list[str]
-        """
-        self._flags = flags
-
-    @property
-    def window(self):
-        """Gets the window of this PacketProtocolTcp.  # noqa: E501
-
-        sequence window field  # noqa: E501
-
-        :return: The window of this PacketProtocolTcp.  # noqa: E501
-        :rtype: int
-        """
-        return self._window
-
-    @window.setter
-    def window(self, window):
-        """Sets the window of this PacketProtocolTcp.
-
-        sequence window field  # noqa: E501
-
-        :param window: The window of this PacketProtocolTcp.  # noqa: E501
-        :type: int
-        """
-        self._window = window
+        self._ack = ack
 
     @property
     def checksum(self):
         """Gets the checksum of this PacketProtocolTcp.  # noqa: E501
 
-        checksum field  # noqa: E501
+        tcp checksum  # noqa: E501
 
         :return: The checksum of this PacketProtocolTcp.  # noqa: E501
         :rtype: int
@@ -250,7 +129,7 @@ class PacketProtocolTcp(object):
     def checksum(self, checksum):
         """Sets the checksum of this PacketProtocolTcp.
 
-        checksum field  # noqa: E501
+        tcp checksum  # noqa: E501
 
         :param checksum: The checksum of this PacketProtocolTcp.  # noqa: E501
         :type: int
@@ -258,10 +137,142 @@ class PacketProtocolTcp(object):
         self._checksum = checksum
 
     @property
+    def data_offset(self):
+        """Gets the data_offset of this PacketProtocolTcp.  # noqa: E501
+
+        tcp data offset  # noqa: E501
+
+        :return: The data_offset of this PacketProtocolTcp.  # noqa: E501
+        :rtype: int
+        """
+        return self._data_offset
+
+    @data_offset.setter
+    def data_offset(self, data_offset):
+        """Sets the data_offset of this PacketProtocolTcp.
+
+        tcp data offset  # noqa: E501
+
+        :param data_offset: The data_offset of this PacketProtocolTcp.  # noqa: E501
+        :type: int
+        """
+        self._data_offset = data_offset
+
+    @property
+    def destination(self):
+        """Gets the destination of this PacketProtocolTcp.  # noqa: E501
+
+        tcp destination  # noqa: E501
+
+        :return: The destination of this PacketProtocolTcp.  # noqa: E501
+        :rtype: int
+        """
+        return self._destination
+
+    @destination.setter
+    def destination(self, destination):
+        """Sets the destination of this PacketProtocolTcp.
+
+        tcp destination  # noqa: E501
+
+        :param destination: The destination of this PacketProtocolTcp.  # noqa: E501
+        :type: int
+        """
+        self._destination = destination
+
+    @property
+    def flags(self):
+        """Gets the flags of this PacketProtocolTcp.  # noqa: E501
+
+        tcp flags  # noqa: E501
+
+        :return: The flags of this PacketProtocolTcp.  # noqa: E501
+        :rtype: list[str]
+        """
+        return self._flags
+
+    @flags.setter
+    def flags(self, flags):
+        """Sets the flags of this PacketProtocolTcp.
+
+        tcp flags  # noqa: E501
+
+        :param flags: The flags of this PacketProtocolTcp.  # noqa: E501
+        :type: list[str]
+        """
+        self._flags = flags
+
+    @property
+    def reserved(self):
+        """Gets the reserved of this PacketProtocolTcp.  # noqa: E501
+
+        tcp reserved  # noqa: E501
+
+        :return: The reserved of this PacketProtocolTcp.  # noqa: E501
+        :rtype: int
+        """
+        return self._reserved
+
+    @reserved.setter
+    def reserved(self, reserved):
+        """Sets the reserved of this PacketProtocolTcp.
+
+        tcp reserved  # noqa: E501
+
+        :param reserved: The reserved of this PacketProtocolTcp.  # noqa: E501
+        :type: int
+        """
+        self._reserved = reserved
+
+    @property
+    def sequence(self):
+        """Gets the sequence of this PacketProtocolTcp.  # noqa: E501
+
+        tcp sequence  # noqa: E501
+
+        :return: The sequence of this PacketProtocolTcp.  # noqa: E501
+        :rtype: int
+        """
+        return self._sequence
+
+    @sequence.setter
+    def sequence(self, sequence):
+        """Sets the sequence of this PacketProtocolTcp.
+
+        tcp sequence  # noqa: E501
+
+        :param sequence: The sequence of this PacketProtocolTcp.  # noqa: E501
+        :type: int
+        """
+        self._sequence = sequence
+
+    @property
+    def source(self):
+        """Gets the source of this PacketProtocolTcp.  # noqa: E501
+
+        tcp source  # noqa: E501
+
+        :return: The source of this PacketProtocolTcp.  # noqa: E501
+        :rtype: int
+        """
+        return self._source
+
+    @source.setter
+    def source(self, source):
+        """Sets the source of this PacketProtocolTcp.
+
+        tcp source  # noqa: E501
+
+        :param source: The source of this PacketProtocolTcp.  # noqa: E501
+        :type: int
+        """
+        self._source = source
+
+    @property
     def urgent_pointer(self):
         """Gets the urgent_pointer of this PacketProtocolTcp.  # noqa: E501
 
-        urgent pointer field  # noqa: E501
+        tcp urgent pointer  # noqa: E501
 
         :return: The urgent_pointer of this PacketProtocolTcp.  # noqa: E501
         :rtype: int
@@ -272,12 +283,34 @@ class PacketProtocolTcp(object):
     def urgent_pointer(self, urgent_pointer):
         """Sets the urgent_pointer of this PacketProtocolTcp.
 
-        urgent pointer field  # noqa: E501
+        tcp urgent pointer  # noqa: E501
 
         :param urgent_pointer: The urgent_pointer of this PacketProtocolTcp.  # noqa: E501
         :type: int
         """
         self._urgent_pointer = urgent_pointer
+
+    @property
+    def window(self):
+        """Gets the window of this PacketProtocolTcp.  # noqa: E501
+
+        tcp window  # noqa: E501
+
+        :return: The window of this PacketProtocolTcp.  # noqa: E501
+        :rtype: int
+        """
+        return self._window
+
+    @window.setter
+    def window(self, window):
+        """Sets the window of this PacketProtocolTcp.
+
+        tcp window  # noqa: E501
+
+        :param window: The window of this PacketProtocolTcp.  # noqa: E501
+        :type: int
+        """
+        self._window = window
 
     def to_dict(self):
         """Returns the model properties as a dict"""

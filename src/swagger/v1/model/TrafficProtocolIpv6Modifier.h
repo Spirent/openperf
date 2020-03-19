@@ -21,7 +21,6 @@
 
 #include "ModelBase.h"
 
-#include "Ipv6Address.h"
 #include "TrafficProtocolIpv6Modifier_sequence.h"
 #include <string>
 #include <vector>
@@ -59,7 +58,7 @@ public:
         /// <summary>
     /// List of IPv6 addresses
     /// </summary>
-    std::vector<std::shared_ptr<Ipv6Address>>& getList();
+    std::vector<std::string>& getList();
     bool listIsSet() const;
     void unsetList();
     /// <summary>
@@ -73,7 +72,7 @@ public:
 protected:
     std::string m_Method;
 
-    std::vector<std::shared_ptr<Ipv6Address>> m_List;
+    std::vector<std::string> m_List;
     bool m_ListIsSet;
     std::shared_ptr<TrafficProtocolIpv6Modifier_sequence> m_Sequence;
     bool m_SequenceIsSet;

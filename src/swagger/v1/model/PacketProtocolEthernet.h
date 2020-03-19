@@ -12,7 +12,7 @@
 /*
  * PacketProtocolEthernet.h
  *
- * Defines an Ethernet header
+ * Describes an Ethernet header
  */
 
 #ifndef PacketProtocolEthernet_H_
@@ -21,14 +21,14 @@
 
 #include "ModelBase.h"
 
-#include "MacAddress.h"
+#include <string>
 
 namespace swagger {
 namespace v1 {
 namespace model {
 
 /// <summary>
-/// Defines an Ethernet header
+/// Describes an Ethernet header
 /// </summary>
 class  PacketProtocolEthernet
     : public ModelBase
@@ -49,34 +49,34 @@ public:
     /// PacketProtocolEthernet members
 
     /// <summary>
-    /// 
+    /// Ethernet MAC destination address
     /// </summary>
-    std::shared_ptr<MacAddress> getSource() const;
-    void setSource(std::shared_ptr<MacAddress> value);
-    bool sourceIsSet() const;
-    void unsetSource();
-    /// <summary>
-    /// 
-    /// </summary>
-    std::shared_ptr<MacAddress> getDestination() const;
-    void setDestination(std::shared_ptr<MacAddress> value);
+    std::string getDestination() const;
+    void setDestination(std::string value);
     bool destinationIsSet() const;
     void unsetDestination();
     /// <summary>
-    /// Ethernet Ethertype
+    /// Ethernet ether type
     /// </summary>
-    int32_t getEthertype() const;
-    void setEthertype(int32_t value);
-    bool ethertypeIsSet() const;
-    void unsetEthertype();
+    int32_t getEtherType() const;
+    void setEtherType(int32_t value);
+    bool etherTypeIsSet() const;
+    void unsetEther_type();
+    /// <summary>
+    /// Ethernet MAC source address
+    /// </summary>
+    std::string getSource() const;
+    void setSource(std::string value);
+    bool sourceIsSet() const;
+    void unsetSource();
 
 protected:
-    std::shared_ptr<MacAddress> m_Source;
-    bool m_SourceIsSet;
-    std::shared_ptr<MacAddress> m_Destination;
+    std::string m_Destination;
     bool m_DestinationIsSet;
-    int32_t m_Ethertype;
-    bool m_EthertypeIsSet;
+    int32_t m_Ether_type;
+    bool m_Ether_typeIsSet;
+    std::string m_Source;
+    bool m_SourceIsSet;
 };
 
 }

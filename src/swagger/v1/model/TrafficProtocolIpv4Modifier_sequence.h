@@ -21,7 +21,7 @@
 
 #include "ModelBase.h"
 
-#include "Ipv4Address.h"
+#include <string>
 #include <vector>
 
 namespace swagger {
@@ -55,32 +55,32 @@ public:
     int32_t getCount() const;
     void setCount(int32_t value);
         /// <summary>
-    /// 
+    /// First IPv4 address in the sequence
     /// </summary>
-    std::shared_ptr<Ipv4Address> getStart() const;
-    void setStart(std::shared_ptr<Ipv4Address> value);
+    std::string getStart() const;
+    void setStart(std::string value);
         /// <summary>
-    /// 
+    /// Last IPv4 address in the sequence
     /// </summary>
-    std::shared_ptr<Ipv4Address> getStop() const;
-    void setStop(std::shared_ptr<Ipv4Address> value);
+    std::string getStop() const;
+    void setStop(std::string value);
     bool stopIsSet() const;
     void unsetStop();
     /// <summary>
     /// List of addresses in the sequence to skip
     /// </summary>
-    std::vector<std::shared_ptr<Ipv4Address>>& getSkip();
+    std::vector<std::string>& getSkip();
     bool skipIsSet() const;
     void unsetSkip();
 
 protected:
     int32_t m_Count;
 
-    std::shared_ptr<Ipv4Address> m_Start;
+    std::string m_Start;
 
-    std::shared_ptr<Ipv4Address> m_Stop;
+    std::string m_Stop;
     bool m_StopIsSet;
-    std::vector<std::shared_ptr<Ipv4Address>> m_Skip;
+    std::vector<std::string> m_Skip;
     bool m_SkipIsSet;
 };
 

@@ -21,7 +21,7 @@
 
 #include "ModelBase.h"
 
-#include "MacAddress.h"
+#include <string>
 #include <vector>
 
 namespace swagger {
@@ -55,32 +55,32 @@ public:
     int32_t getCount() const;
     void setCount(int32_t value);
         /// <summary>
-    /// 
+    /// The first MAC address in the sequence
     /// </summary>
-    std::shared_ptr<MacAddress> getStart() const;
-    void setStart(std::shared_ptr<MacAddress> value);
+    std::string getStart() const;
+    void setStart(std::string value);
         /// <summary>
-    /// 
+    /// The last MAC address in the sequence
     /// </summary>
-    std::shared_ptr<MacAddress> getStop() const;
-    void setStop(std::shared_ptr<MacAddress> value);
+    std::string getStop() const;
+    void setStop(std::string value);
     bool stopIsSet() const;
     void unsetStop();
     /// <summary>
     /// List of addresses in the sequence to skip
     /// </summary>
-    std::vector<std::shared_ptr<MacAddress>>& getSkip();
+    std::vector<std::string>& getSkip();
     bool skipIsSet() const;
     void unsetSkip();
 
 protected:
     int32_t m_Count;
 
-    std::shared_ptr<MacAddress> m_Start;
+    std::string m_Start;
 
-    std::shared_ptr<MacAddress> m_Stop;
+    std::string m_Stop;
     bool m_StopIsSet;
-    std::vector<std::shared_ptr<MacAddress>> m_Skip;
+    std::vector<std::string> m_Skip;
     bool m_SkipIsSet;
 };
 

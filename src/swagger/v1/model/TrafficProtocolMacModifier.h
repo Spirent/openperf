@@ -23,7 +23,6 @@
 
 #include <string>
 #include "TrafficProtocolMacModifier_sequence.h"
-#include "MacAddress.h"
 #include <vector>
 
 namespace swagger {
@@ -59,7 +58,7 @@ public:
         /// <summary>
     /// List of MAC addresses
     /// </summary>
-    std::vector<std::shared_ptr<MacAddress>>& getList();
+    std::vector<std::string>& getList();
     bool listIsSet() const;
     void unsetList();
     /// <summary>
@@ -73,7 +72,7 @@ public:
 protected:
     std::string m_Method;
 
-    std::vector<std::shared_ptr<MacAddress>> m_List;
+    std::vector<std::string> m_List;
     bool m_ListIsSet;
     std::shared_ptr<TrafficProtocolMacModifier_sequence> m_Sequence;
     bool m_SequenceIsSet;

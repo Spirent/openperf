@@ -742,18 +742,22 @@ definitions:
           - signature
       custom:
         $ref: ./common.yaml#/definitions/PacketProtocolCustom
-      ethernet:
-        $ref: ./common.yaml#/definitions/PacketProtocolEthernet
-      ipv4:
-        $ref: ./common.yaml#/definitions/PacketProtocolIpv4
-      ipv6:
-        $ref: ./common.yaml#/definitions/PacketProtocolIpv6
       signature:
         $ref: ./common.yaml#/definitions/PacketProtocolSpirentSignature
+      ethernet:
+        $ref: ./protocol.yaml#/definitions/PacketProtocolEthernet
+      ipv4:
+        $ref: ./protocol.yaml#/definitions/PacketProtocolIpv4
+      ipv6:
+        $ref: ./protocol.yaml#/definitions/PacketProtocolIpv6
+      mpls:
+        $ref: ./protocol.yaml#/definitions/PacketProtocolMpls
       tcp:
-        $ref: ./common.yaml#/definitions/PacketProtocolTcp
+        $ref: ./protocol.yaml#/definitions/PacketProtocolTcp
       udp:
-        $ref: ./common.yaml#/definitions/PacketProtocolUdp
+        $ref: ./protocol.yaml#/definitions/PacketProtocolUdp
+      vlan:
+        $ref: ./protocol.yaml#/definitions/PacketProtocolVlan
     required:
       - protocol
 
@@ -850,7 +854,8 @@ definitions:
         type: array
         description: List of IPv4 addresses
         items:
-          $ref: ./common.yaml#/definitions/Ipv4Address
+          type: string
+          pattern: ^((25[0-5]|2[0-4][0-9]|[01]?[1-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|[01]?[1-9]?[0-9])$
         minItems: 1
       sequence:
         type: object
@@ -862,14 +867,19 @@ definitions:
             format: int32
             minimum: 1
           start:
-            $ref: ./common.yaml#/definitions/Ipv4Address
+            type: string
+            description: First IPv4 address in the sequence
+            pattern: ^((25[0-5]|2[0-4][0-9]|[01]?[1-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|[01]?[1-9]?[0-9])$
           stop:
-            $ref: ./common.yaml#/definitions/Ipv4Address
+            type: string
+            description: Last IPv4 address in the sequence
+            pattern: ^((25[0-5]|2[0-4][0-9]|[01]?[1-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|[01]?[1-9]?[0-9])$
           skip:
             type: array
             description: List of addresses in the sequence to skip
             items:
-              $ref: ./common.yaml#/definitions/Ipv4Address
+              type: string
+              pattern: ^((25[0-5]|2[0-4][0-9]|[01]?[1-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|[01]?[1-9]?[0-9])$
         required:
           - count
           - start
@@ -891,7 +901,8 @@ definitions:
         type: array
         description: List of IPv6 addresses
         items:
-          $ref: ./common.yaml#/definitions/Ipv6Address
+          type: string
+          pattern: ^((::[0-9a-fA-F]{1,4})|([0-9a-fA-F]{1,4}::)|(([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F])|(([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}))$
         minItems: 1
       sequence:
         type: object
@@ -903,14 +914,19 @@ definitions:
             format: int32
             minimum: 1
           start:
-            $ref: ./common.yaml#/definitions/Ipv6Address
+            type: string
+            description: First IPv6 address in the sequence
+            pattern: ^((::[0-9a-fA-F]{1,4})|([0-9a-fA-F]{1,4}::)|(([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F])|(([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}))$
           stop:
-            $ref: ./common.yaml#/definitions/Ipv6Address
+            type: string
+            description: Last IPv6 address in the sequence
+            pattern: ^((::[0-9a-fA-F]{1,4})|([0-9a-fA-F]{1,4}::)|(([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F])|(([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}))$
           skip:
             type: array
             description: List of addresses in the sequence to skip
             items:
-              $ref: ./common.yaml#/definitions/Ipv6Address
+              type: string
+              pattern: ^((::[0-9a-fA-F]{1,4})|([0-9a-fA-F]{1,4}::)|(([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F])|(([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}))$
         required:
           - count
           - start
@@ -932,8 +948,9 @@ definitions:
         type: array
         description: List of MAC addresses
         items:
-          $ref: ./common.yaml#/definitions/MacAddress
-          minItems: 1
+          type: string
+          pattern: ^([0-9a-fA-F]{1,2}(.|-|:)){5}[0-9a-fA-F]{1,2}$
+        minItems: 1
       sequence:
         type: object
         description: Specifies a sequence of MAC addresses
@@ -944,14 +961,19 @@ definitions:
             format: int32
             minimum: 1
           start:
-            $ref: ./common.yaml#/definitions/MacAddress
+            type: string
+            description: The first MAC address in the sequence
+            pattern: ^([0-9a-fA-F]{1,2}(.|-|:)){5}[0-9a-fA-F]{1,2}$
           stop:
-            $ref: ./common.yaml#/definitions/MacAddress
+            type: string
+            description: The last MAC address in the sequence
+            pattern: ^([0-9a-fA-F]{1,2}(.|-|:)){5}[0-9a-fA-F]{1,2}$
           skip:
             type: array
             description: List of addresses in the sequence to skip
             items:
-              $ref: ./common.yaml#/definitions/MacAddress
+              type: string
+              pattern: ^([0-9a-fA-F]{1,2}(.|-|:)){5}[0-9a-fA-F]{1,2}$
         required:
           - count
           - start
