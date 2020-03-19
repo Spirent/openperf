@@ -12,7 +12,7 @@
 /*
  * PacketProtocolIpv6.h
  *
- * Defines an IPv6 header
+ * Describes an IPv6 header
  */
 
 #ifndef PacketProtocolIpv6_H_
@@ -21,14 +21,14 @@
 
 #include "ModelBase.h"
 
-#include "Ipv6Address.h"
+#include <string>
 
 namespace swagger {
 namespace v1 {
 namespace model {
 
 /// <summary>
-/// Defines an IPv6 header
+/// Describes an IPv6 header
 /// </summary>
 class  PacketProtocolIpv6
     : public ModelBase
@@ -49,77 +49,79 @@ public:
     /// PacketProtocolIpv6 members
 
     /// <summary>
-    /// IP header version
+    /// IPv6 destination address
     /// </summary>
-    int32_t getVersion() const;
-    void setVersion(int32_t value);
-    bool versionIsSet() const;
-    void unsetVersion();
+    std::string getDestination() const;
+    void setDestination(std::string value);
+    bool destinationIsSet() const;
+    void unsetDestination();
     /// <summary>
-    /// IP traffic class field
-    /// </summary>
-    int32_t getTrafficClass() const;
-    void setTrafficClass(int32_t value);
-    bool trafficClassIsSet() const;
-    void unsetTraffic_class();
-    /// <summary>
-    /// IP flow label field
+    /// IPv6 flow label
     /// </summary>
     int32_t getFlowLabel() const;
     void setFlowLabel(int32_t value);
     bool flowLabelIsSet() const;
     void unsetFlow_label();
     /// <summary>
-    /// IP payload length
-    /// </summary>
-    int32_t getPayloadLength() const;
-    void setPayloadLength(int32_t value);
-    bool payloadLengthIsSet() const;
-    void unsetPayload_length();
-    /// <summary>
-    /// IP next header field
-    /// </summary>
-    int32_t getNextHeader() const;
-    void setNextHeader(int32_t value);
-    bool nextHeaderIsSet() const;
-    void unsetNext_header();
-    /// <summary>
-    /// IP hop limit field
+    /// IPv6 hop limit
     /// </summary>
     int32_t getHopLimit() const;
     void setHopLimit(int32_t value);
     bool hopLimitIsSet() const;
     void unsetHop_limit();
     /// <summary>
-    /// 
+    /// IPv6 next header
     /// </summary>
-    std::shared_ptr<Ipv6Address> getSource() const;
-    void setSource(std::shared_ptr<Ipv6Address> value);
+    int32_t getNextHeader() const;
+    void setNextHeader(int32_t value);
+    bool nextHeaderIsSet() const;
+    void unsetNext_header();
+    /// <summary>
+    /// IPv6 payload length
+    /// </summary>
+    int32_t getPayloadLength() const;
+    void setPayloadLength(int32_t value);
+    bool payloadLengthIsSet() const;
+    void unsetPayload_length();
+    /// <summary>
+    /// IPv6 source address
+    /// </summary>
+    std::string getSource() const;
+    void setSource(std::string value);
     bool sourceIsSet() const;
     void unsetSource();
     /// <summary>
-    /// 
+    /// IPv6 traffic class
     /// </summary>
-    std::shared_ptr<Ipv6Address> getDestination() const;
-    void setDestination(std::shared_ptr<Ipv6Address> value);
-    
+    int32_t getTrafficClass() const;
+    void setTrafficClass(int32_t value);
+    bool trafficClassIsSet() const;
+    void unsetTraffic_class();
+    /// <summary>
+    /// IPv6 version
+    /// </summary>
+    int32_t getVersion() const;
+    void setVersion(int32_t value);
+    bool versionIsSet() const;
+    void unsetVersion();
+
 protected:
-    int32_t m_Version;
-    bool m_VersionIsSet;
-    int32_t m_Traffic_class;
-    bool m_Traffic_classIsSet;
+    std::string m_Destination;
+    bool m_DestinationIsSet;
     int32_t m_Flow_label;
     bool m_Flow_labelIsSet;
-    int32_t m_Payload_length;
-    bool m_Payload_lengthIsSet;
-    int32_t m_Next_header;
-    bool m_Next_headerIsSet;
     int32_t m_Hop_limit;
     bool m_Hop_limitIsSet;
-    std::shared_ptr<Ipv6Address> m_Source;
+    int32_t m_Next_header;
+    bool m_Next_headerIsSet;
+    int32_t m_Payload_length;
+    bool m_Payload_lengthIsSet;
+    std::string m_Source;
     bool m_SourceIsSet;
-    std::shared_ptr<Ipv6Address> m_Destination;
-
+    int32_t m_Traffic_class;
+    bool m_Traffic_classIsSet;
+    int32_t m_Version;
+    bool m_VersionIsSet;
 };
 
 }

@@ -19,19 +19,25 @@ namespace model {
 
 PacketProtocolTcp::PacketProtocolTcp()
 {
-    m_Sequence_number = 0L;
-    m_Sequence_numberIsSet = false;
-    m_Ack_number = 0L;
-    m_Ack_numberIsSet = false;
-    m_Data_offset = 0;
-    m_Data_offsetIsSet = false;
-    m_FlagsIsSet = false;
-    m_Window = 0;
-    m_WindowIsSet = false;
+    m_Ack = 0L;
+    m_AckIsSet = false;
     m_Checksum = 0;
     m_ChecksumIsSet = false;
+    m_Data_offset = 0;
+    m_Data_offsetIsSet = false;
+    m_Destination = 0;
+    m_DestinationIsSet = false;
+    m_FlagsIsSet = false;
+    m_Reserved = 0;
+    m_ReservedIsSet = false;
+    m_Sequence = 0L;
+    m_SequenceIsSet = false;
+    m_Source = 0;
+    m_SourceIsSet = false;
     m_Urgent_pointer = 0;
     m_Urgent_pointerIsSet = false;
+    m_Window = 0;
+    m_WindowIsSet = false;
     
 }
 
@@ -48,19 +54,21 @@ nlohmann::json PacketProtocolTcp::toJson() const
 {
     nlohmann::json val = nlohmann::json::object();
 
-    val["source_port"] = ModelBase::toJson(m_Source_port);
-    val["destination_port"] = ModelBase::toJson(m_Destination_port);
-    if(m_Sequence_numberIsSet)
+    if(m_AckIsSet)
     {
-        val["sequence_number"] = m_Sequence_number;
+        val["ack"] = m_Ack;
     }
-    if(m_Ack_numberIsSet)
+    if(m_ChecksumIsSet)
     {
-        val["ack_number"] = m_Ack_number;
+        val["checksum"] = m_Checksum;
     }
     if(m_Data_offsetIsSet)
     {
         val["data_offset"] = m_Data_offset;
+    }
+    if(m_DestinationIsSet)
+    {
+        val["destination"] = m_Destination;
     }
     {
         nlohmann::json jsonArray;
@@ -74,17 +82,25 @@ nlohmann::json PacketProtocolTcp::toJson() const
             val["flags"] = jsonArray;
         }
     }
-    if(m_WindowIsSet)
+    if(m_ReservedIsSet)
     {
-        val["window"] = m_Window;
+        val["reserved"] = m_Reserved;
     }
-    if(m_ChecksumIsSet)
+    if(m_SequenceIsSet)
     {
-        val["checksum"] = m_Checksum;
+        val["sequence"] = m_Sequence;
+    }
+    if(m_SourceIsSet)
+    {
+        val["source"] = m_Source;
     }
     if(m_Urgent_pointerIsSet)
     {
         val["urgent_pointer"] = m_Urgent_pointer;
+    }
+    if(m_WindowIsSet)
+    {
+        val["window"] = m_Window;
     }
     
 
@@ -93,17 +109,21 @@ nlohmann::json PacketProtocolTcp::toJson() const
 
 void PacketProtocolTcp::fromJson(nlohmann::json& val)
 {
-    if(val.find("sequence_number") != val.end())
+    if(val.find("ack") != val.end())
     {
-        setSequenceNumber(val.at("sequence_number"));
+        setAck(val.at("ack"));
     }
-    if(val.find("ack_number") != val.end())
+    if(val.find("checksum") != val.end())
     {
-        setAckNumber(val.at("ack_number"));
+        setChecksum(val.at("checksum"));
     }
     if(val.find("data_offset") != val.end())
     {
         setDataOffset(val.at("data_offset"));
+    }
+    if(val.find("destination") != val.end())
+    {
+        setDestination(val.at("destination"));
     }
     {
         m_Flags.clear();
@@ -117,119 +137,46 @@ void PacketProtocolTcp::fromJson(nlohmann::json& val)
         }
         }
     }
-    if(val.find("window") != val.end())
+    if(val.find("reserved") != val.end())
     {
-        setWindow(val.at("window"));
+        setReserved(val.at("reserved"));
     }
-    if(val.find("checksum") != val.end())
+    if(val.find("sequence") != val.end())
     {
-        setChecksum(val.at("checksum"));
+        setSequence(val.at("sequence"));
+    }
+    if(val.find("source") != val.end())
+    {
+        setSource(val.at("source"));
     }
     if(val.find("urgent_pointer") != val.end())
     {
         setUrgentPointer(val.at("urgent_pointer"));
     }
+    if(val.find("window") != val.end())
+    {
+        setWindow(val.at("window"));
+    }
     
 }
 
 
-std::shared_ptr<TcpIpPort> PacketProtocolTcp::getSourcePort() const
+int64_t PacketProtocolTcp::getAck() const
 {
-    return m_Source_port;
+    return m_Ack;
 }
-void PacketProtocolTcp::setSourcePort(std::shared_ptr<TcpIpPort> value)
+void PacketProtocolTcp::setAck(int64_t value)
 {
-    m_Source_port = value;
-    
+    m_Ack = value;
+    m_AckIsSet = true;
 }
-std::shared_ptr<TcpIpPort> PacketProtocolTcp::getDestinationPort() const
+bool PacketProtocolTcp::ackIsSet() const
 {
-    return m_Destination_port;
+    return m_AckIsSet;
 }
-void PacketProtocolTcp::setDestinationPort(std::shared_ptr<TcpIpPort> value)
+void PacketProtocolTcp::unsetAck()
 {
-    m_Destination_port = value;
-    
-}
-int64_t PacketProtocolTcp::getSequenceNumber() const
-{
-    return m_Sequence_number;
-}
-void PacketProtocolTcp::setSequenceNumber(int64_t value)
-{
-    m_Sequence_number = value;
-    m_Sequence_numberIsSet = true;
-}
-bool PacketProtocolTcp::sequenceNumberIsSet() const
-{
-    return m_Sequence_numberIsSet;
-}
-void PacketProtocolTcp::unsetSequence_number()
-{
-    m_Sequence_numberIsSet = false;
-}
-int64_t PacketProtocolTcp::getAckNumber() const
-{
-    return m_Ack_number;
-}
-void PacketProtocolTcp::setAckNumber(int64_t value)
-{
-    m_Ack_number = value;
-    m_Ack_numberIsSet = true;
-}
-bool PacketProtocolTcp::ackNumberIsSet() const
-{
-    return m_Ack_numberIsSet;
-}
-void PacketProtocolTcp::unsetAck_number()
-{
-    m_Ack_numberIsSet = false;
-}
-int32_t PacketProtocolTcp::getDataOffset() const
-{
-    return m_Data_offset;
-}
-void PacketProtocolTcp::setDataOffset(int32_t value)
-{
-    m_Data_offset = value;
-    m_Data_offsetIsSet = true;
-}
-bool PacketProtocolTcp::dataOffsetIsSet() const
-{
-    return m_Data_offsetIsSet;
-}
-void PacketProtocolTcp::unsetData_offset()
-{
-    m_Data_offsetIsSet = false;
-}
-std::vector<std::string>& PacketProtocolTcp::getFlags()
-{
-    return m_Flags;
-}
-bool PacketProtocolTcp::flagsIsSet() const
-{
-    return m_FlagsIsSet;
-}
-void PacketProtocolTcp::unsetFlags()
-{
-    m_FlagsIsSet = false;
-}
-int32_t PacketProtocolTcp::getWindow() const
-{
-    return m_Window;
-}
-void PacketProtocolTcp::setWindow(int32_t value)
-{
-    m_Window = value;
-    m_WindowIsSet = true;
-}
-bool PacketProtocolTcp::windowIsSet() const
-{
-    return m_WindowIsSet;
-}
-void PacketProtocolTcp::unsetWindow()
-{
-    m_WindowIsSet = false;
+    m_AckIsSet = false;
 }
 int32_t PacketProtocolTcp::getChecksum() const
 {
@@ -248,6 +195,103 @@ void PacketProtocolTcp::unsetChecksum()
 {
     m_ChecksumIsSet = false;
 }
+int32_t PacketProtocolTcp::getDataOffset() const
+{
+    return m_Data_offset;
+}
+void PacketProtocolTcp::setDataOffset(int32_t value)
+{
+    m_Data_offset = value;
+    m_Data_offsetIsSet = true;
+}
+bool PacketProtocolTcp::dataOffsetIsSet() const
+{
+    return m_Data_offsetIsSet;
+}
+void PacketProtocolTcp::unsetData_offset()
+{
+    m_Data_offsetIsSet = false;
+}
+int32_t PacketProtocolTcp::getDestination() const
+{
+    return m_Destination;
+}
+void PacketProtocolTcp::setDestination(int32_t value)
+{
+    m_Destination = value;
+    m_DestinationIsSet = true;
+}
+bool PacketProtocolTcp::destinationIsSet() const
+{
+    return m_DestinationIsSet;
+}
+void PacketProtocolTcp::unsetDestination()
+{
+    m_DestinationIsSet = false;
+}
+std::vector<std::string>& PacketProtocolTcp::getFlags()
+{
+    return m_Flags;
+}
+bool PacketProtocolTcp::flagsIsSet() const
+{
+    return m_FlagsIsSet;
+}
+void PacketProtocolTcp::unsetFlags()
+{
+    m_FlagsIsSet = false;
+}
+int32_t PacketProtocolTcp::getReserved() const
+{
+    return m_Reserved;
+}
+void PacketProtocolTcp::setReserved(int32_t value)
+{
+    m_Reserved = value;
+    m_ReservedIsSet = true;
+}
+bool PacketProtocolTcp::reservedIsSet() const
+{
+    return m_ReservedIsSet;
+}
+void PacketProtocolTcp::unsetReserved()
+{
+    m_ReservedIsSet = false;
+}
+int64_t PacketProtocolTcp::getSequence() const
+{
+    return m_Sequence;
+}
+void PacketProtocolTcp::setSequence(int64_t value)
+{
+    m_Sequence = value;
+    m_SequenceIsSet = true;
+}
+bool PacketProtocolTcp::sequenceIsSet() const
+{
+    return m_SequenceIsSet;
+}
+void PacketProtocolTcp::unsetSequence()
+{
+    m_SequenceIsSet = false;
+}
+int32_t PacketProtocolTcp::getSource() const
+{
+    return m_Source;
+}
+void PacketProtocolTcp::setSource(int32_t value)
+{
+    m_Source = value;
+    m_SourceIsSet = true;
+}
+bool PacketProtocolTcp::sourceIsSet() const
+{
+    return m_SourceIsSet;
+}
+void PacketProtocolTcp::unsetSource()
+{
+    m_SourceIsSet = false;
+}
 int32_t PacketProtocolTcp::getUrgentPointer() const
 {
     return m_Urgent_pointer;
@@ -264,6 +308,23 @@ bool PacketProtocolTcp::urgentPointerIsSet() const
 void PacketProtocolTcp::unsetUrgent_pointer()
 {
     m_Urgent_pointerIsSet = false;
+}
+int32_t PacketProtocolTcp::getWindow() const
+{
+    return m_Window;
+}
+void PacketProtocolTcp::setWindow(int32_t value)
+{
+    m_Window = value;
+    m_WindowIsSet = true;
+}
+bool PacketProtocolTcp::windowIsSet() const
+{
+    return m_WindowIsSet;
+}
+void PacketProtocolTcp::unsetWindow()
+{
+    m_WindowIsSet = false;
 }
 
 }

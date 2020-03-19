@@ -32,9 +32,9 @@ class TrafficProtocolIpv4ModifierSequence(object):
     """
     swagger_types = {
         'count': 'int',
-        'start': 'Ipv4Address',
-        'stop': 'Ipv4Address',
-        'skip': 'list[Ipv4Address]'
+        'start': 'str',
+        'stop': 'str',
+        'skip': 'list[str]'
     }
 
     attribute_map = {
@@ -86,9 +86,10 @@ class TrafficProtocolIpv4ModifierSequence(object):
     def start(self):
         """Gets the start of this TrafficProtocolIpv4ModifierSequence.  # noqa: E501
 
+        First IPv4 address in the sequence  # noqa: E501
 
         :return: The start of this TrafficProtocolIpv4ModifierSequence.  # noqa: E501
-        :rtype: Ipv4Address
+        :rtype: str
         """
         return self._start
 
@@ -96,9 +97,10 @@ class TrafficProtocolIpv4ModifierSequence(object):
     def start(self, start):
         """Sets the start of this TrafficProtocolIpv4ModifierSequence.
 
+        First IPv4 address in the sequence  # noqa: E501
 
         :param start: The start of this TrafficProtocolIpv4ModifierSequence.  # noqa: E501
-        :type: Ipv4Address
+        :type: str
         """
         self._start = start
 
@@ -106,9 +108,10 @@ class TrafficProtocolIpv4ModifierSequence(object):
     def stop(self):
         """Gets the stop of this TrafficProtocolIpv4ModifierSequence.  # noqa: E501
 
+        Last IPv4 address in the sequence  # noqa: E501
 
         :return: The stop of this TrafficProtocolIpv4ModifierSequence.  # noqa: E501
-        :rtype: Ipv4Address
+        :rtype: str
         """
         return self._stop
 
@@ -116,9 +119,10 @@ class TrafficProtocolIpv4ModifierSequence(object):
     def stop(self, stop):
         """Sets the stop of this TrafficProtocolIpv4ModifierSequence.
 
+        Last IPv4 address in the sequence  # noqa: E501
 
         :param stop: The stop of this TrafficProtocolIpv4ModifierSequence.  # noqa: E501
-        :type: Ipv4Address
+        :type: str
         """
         self._stop = stop
 
@@ -129,7 +133,7 @@ class TrafficProtocolIpv4ModifierSequence(object):
         List of addresses in the sequence to skip  # noqa: E501
 
         :return: The skip of this TrafficProtocolIpv4ModifierSequence.  # noqa: E501
-        :rtype: list[Ipv4Address]
+        :rtype: list[str]
         """
         return self._skip
 
@@ -140,7 +144,7 @@ class TrafficProtocolIpv4ModifierSequence(object):
         List of addresses in the sequence to skip  # noqa: E501
 
         :param skip: The skip of this TrafficProtocolIpv4ModifierSequence.  # noqa: E501
-        :type: list[Ipv4Address]
+        :type: list[str]
         """
         self._skip = skip
 

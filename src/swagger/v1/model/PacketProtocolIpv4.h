@@ -12,7 +12,7 @@
 /*
  * PacketProtocolIpv4.h
  *
- * 
+ * Describes an IPv4 header
  */
 
 #ifndef PacketProtocolIpv4_H_
@@ -22,7 +22,6 @@
 #include "ModelBase.h"
 
 #include <string>
-#include "Ipv4Address.h"
 #include <vector>
 
 namespace swagger {
@@ -30,7 +29,7 @@ namespace v1 {
 namespace model {
 
 /// <summary>
-/// 
+/// Describes an IPv4 header
 /// </summary>
 class  PacketProtocolIpv4
     : public ModelBase
@@ -51,112 +50,123 @@ public:
     /// PacketProtocolIpv4 members
 
     /// <summary>
-    /// IP header version
-    /// </summary>
-    int32_t getVersion() const;
-    void setVersion(int32_t value);
-    bool versionIsSet() const;
-    void unsetVersion();
-    /// <summary>
-    /// IP header length
-    /// </summary>
-    int32_t getHeaderLength() const;
-    void setHeaderLength(int32_t value);
-    bool headerLengthIsSet() const;
-    void unsetHeader_length();
-    /// <summary>
-    /// Type of Service field
-    /// </summary>
-    int32_t getTos() const;
-    void setTos(int32_t value);
-    bool tosIsSet() const;
-    void unsetTos();
-    /// <summary>
-    /// IP packet length (include payload)
-    /// </summary>
-    int32_t getPacketLength() const;
-    void setPacketLength(int32_t value);
-    bool packetLengthIsSet() const;
-    void unsetPacket_length();
-    /// <summary>
-    /// Identification field
-    /// </summary>
-    int32_t getId() const;
-    void setId(int32_t value);
-    bool idIsSet() const;
-    void unsetId();
-    /// <summary>
-    /// IP header flags
-    /// </summary>
-    std::vector<std::string>& getFlags();
-    bool flagsIsSet() const;
-    void unsetFlags();
-    /// <summary>
-    /// IP fragment offset
-    /// </summary>
-    int32_t getFragmentOffset() const;
-    void setFragmentOffset(int32_t value);
-    bool fragmentOffsetIsSet() const;
-    void unsetFragment_offset();
-    /// <summary>
-    /// Time To Live field
-    /// </summary>
-    int32_t getTtl() const;
-    void setTtl(int32_t value);
-    bool ttlIsSet() const;
-    void unsetTtl();
-    /// <summary>
-    /// Protocol field
-    /// </summary>
-    int32_t getProtocol() const;
-    void setProtocol(int32_t value);
-    bool protocolIsSet() const;
-    void unsetProtocol();
-    /// <summary>
-    /// IPv4 header checksum
+    /// IPv4 checksum
     /// </summary>
     int32_t getChecksum() const;
     void setChecksum(int32_t value);
     bool checksumIsSet() const;
     void unsetChecksum();
     /// <summary>
-    /// 
+    /// IPv4 destination address
     /// </summary>
-    std::shared_ptr<Ipv4Address> getSource() const;
-    void setSource(std::shared_ptr<Ipv4Address> value);
+    std::string getDestination() const;
+    void setDestination(std::string value);
+    bool destinationIsSet() const;
+    void unsetDestination();
+    /// <summary>
+    /// IPv4 dscp
+    /// </summary>
+    int32_t getDscp() const;
+    void setDscp(int32_t value);
+    bool dscpIsSet() const;
+    void unsetDscp();
+    /// <summary>
+    /// IPv4 ecn
+    /// </summary>
+    std::string getEcn() const;
+    void setEcn(std::string value);
+    bool ecnIsSet() const;
+    void unsetEcn();
+    /// <summary>
+    /// IPv4 flags
+    /// </summary>
+    std::vector<std::string>& getFlags();
+    bool flagsIsSet() const;
+    void unsetFlags();
+    /// <summary>
+    /// IPv4 fragment offset
+    /// </summary>
+    int32_t getFragmentOffset() const;
+    void setFragmentOffset(int32_t value);
+    bool fragmentOffsetIsSet() const;
+    void unsetFragment_offset();
+    /// <summary>
+    /// IPv4 header length
+    /// </summary>
+    int32_t getHeaderLength() const;
+    void setHeaderLength(int32_t value);
+    bool headerLengthIsSet() const;
+    void unsetHeader_length();
+    /// <summary>
+    /// IPv4 identification
+    /// </summary>
+    int32_t getIdentification() const;
+    void setIdentification(int32_t value);
+    bool identificationIsSet() const;
+    void unsetIdentification();
+    /// <summary>
+    /// IPv4 protocol
+    /// </summary>
+    int32_t getProtocol() const;
+    void setProtocol(int32_t value);
+    bool protocolIsSet() const;
+    void unsetProtocol();
+    /// <summary>
+    /// IPv4 source address
+    /// </summary>
+    std::string getSource() const;
+    void setSource(std::string value);
     bool sourceIsSet() const;
     void unsetSource();
     /// <summary>
-    /// 
+    /// IPv4 time to live
     /// </summary>
-    std::shared_ptr<Ipv4Address> getDestination() const;
-    void setDestination(std::shared_ptr<Ipv4Address> value);
-    
+    int32_t getTimeToLive() const;
+    void setTimeToLive(int32_t value);
+    bool timeToLiveIsSet() const;
+    void unsetTime_to_live();
+    /// <summary>
+    /// IPv4 total length
+    /// </summary>
+    int32_t getTotalLength() const;
+    void setTotalLength(int32_t value);
+    bool totalLengthIsSet() const;
+    void unsetTotal_length();
+    /// <summary>
+    /// IPv4 version
+    /// </summary>
+    int32_t getVersion() const;
+    void setVersion(int32_t value);
+    bool versionIsSet() const;
+    void unsetVersion();
+
 protected:
-    int32_t m_Version;
-    bool m_VersionIsSet;
-    int32_t m_Header_length;
-    bool m_Header_lengthIsSet;
-    int32_t m_Tos;
-    bool m_TosIsSet;
-    int32_t m_Packet_length;
-    bool m_Packet_lengthIsSet;
-    int32_t m_Id;
-    bool m_IdIsSet;
+    int32_t m_Checksum;
+    bool m_ChecksumIsSet;
+    std::string m_Destination;
+    bool m_DestinationIsSet;
+    int32_t m_Dscp;
+    bool m_DscpIsSet;
+    std::string m_Ecn;
+    bool m_EcnIsSet;
     std::vector<std::string> m_Flags;
     bool m_FlagsIsSet;
     int32_t m_Fragment_offset;
     bool m_Fragment_offsetIsSet;
-    int32_t m_Ttl;
-    bool m_TtlIsSet;
+    int32_t m_Header_length;
+    bool m_Header_lengthIsSet;
+    int32_t m_Identification;
+    bool m_IdentificationIsSet;
     int32_t m_Protocol;
     bool m_ProtocolIsSet;
-    int32_t m_Checksum;
-    bool m_ChecksumIsSet;
-    std::shared_ptr<Ipv4Address> m_Source;
+    std::string m_Source;
     bool m_SourceIsSet;
-    std::shared_ptr<Ipv4Address> m_Destination;
-
+    int32_t m_Time_to_live;
+    bool m_Time_to_liveIsSet;
+    int32_t m_Total_length;
+    bool m_Total_lengthIsSet;
+    int32_t m_Version;
+    bool m_VersionIsSet;
 };
 
 }

@@ -34,38 +34,44 @@ class TrafficProtocol(object):
         'modifiers': 'TrafficProtocolModifiers',
         'protocol': 'str',
         'custom': 'PacketProtocolCustom',
+        'signature': 'PacketProtocolSpirentSignature',
         'ethernet': 'PacketProtocolEthernet',
         'ipv4': 'PacketProtocolIpv4',
         'ipv6': 'PacketProtocolIpv6',
-        'signature': 'PacketProtocolSpirentSignature',
+        'mpls': 'PacketProtocolMpls',
         'tcp': 'PacketProtocolTcp',
-        'udp': 'PacketProtocolUdp'
+        'udp': 'PacketProtocolUdp',
+        'vlan': 'PacketProtocolVlan'
     }
 
     attribute_map = {
         'modifiers': 'modifiers',
         'protocol': 'protocol',
         'custom': 'custom',
+        'signature': 'signature',
         'ethernet': 'ethernet',
         'ipv4': 'ipv4',
         'ipv6': 'ipv6',
-        'signature': 'signature',
+        'mpls': 'mpls',
         'tcp': 'tcp',
-        'udp': 'udp'
+        'udp': 'udp',
+        'vlan': 'vlan'
     }
 
-    def __init__(self, modifiers=None, protocol=None, custom=None, ethernet=None, ipv4=None, ipv6=None, signature=None, tcp=None, udp=None):  # noqa: E501
+    def __init__(self, modifiers=None, protocol=None, custom=None, signature=None, ethernet=None, ipv4=None, ipv6=None, mpls=None, tcp=None, udp=None, vlan=None):  # noqa: E501
         """TrafficProtocol - a model defined in Swagger"""  # noqa: E501
 
         self._modifiers = None
         self._protocol = None
         self._custom = None
+        self._signature = None
         self._ethernet = None
         self._ipv4 = None
         self._ipv6 = None
-        self._signature = None
+        self._mpls = None
         self._tcp = None
         self._udp = None
+        self._vlan = None
         self.discriminator = None
 
         if modifiers is not None:
@@ -73,18 +79,22 @@ class TrafficProtocol(object):
         self.protocol = protocol
         if custom is not None:
             self.custom = custom
+        if signature is not None:
+            self.signature = signature
         if ethernet is not None:
             self.ethernet = ethernet
         if ipv4 is not None:
             self.ipv4 = ipv4
         if ipv6 is not None:
             self.ipv6 = ipv6
-        if signature is not None:
-            self.signature = signature
+        if mpls is not None:
+            self.mpls = mpls
         if tcp is not None:
             self.tcp = tcp
         if udp is not None:
             self.udp = udp
+        if vlan is not None:
+            self.vlan = vlan
 
     @property
     def modifiers(self):
@@ -149,6 +159,26 @@ class TrafficProtocol(object):
         self._custom = custom
 
     @property
+    def signature(self):
+        """Gets the signature of this TrafficProtocol.  # noqa: E501
+
+
+        :return: The signature of this TrafficProtocol.  # noqa: E501
+        :rtype: PacketProtocolSpirentSignature
+        """
+        return self._signature
+
+    @signature.setter
+    def signature(self, signature):
+        """Sets the signature of this TrafficProtocol.
+
+
+        :param signature: The signature of this TrafficProtocol.  # noqa: E501
+        :type: PacketProtocolSpirentSignature
+        """
+        self._signature = signature
+
+    @property
     def ethernet(self):
         """Gets the ethernet of this TrafficProtocol.  # noqa: E501
 
@@ -209,24 +239,24 @@ class TrafficProtocol(object):
         self._ipv6 = ipv6
 
     @property
-    def signature(self):
-        """Gets the signature of this TrafficProtocol.  # noqa: E501
+    def mpls(self):
+        """Gets the mpls of this TrafficProtocol.  # noqa: E501
 
 
-        :return: The signature of this TrafficProtocol.  # noqa: E501
-        :rtype: PacketProtocolSpirentSignature
+        :return: The mpls of this TrafficProtocol.  # noqa: E501
+        :rtype: PacketProtocolMpls
         """
-        return self._signature
+        return self._mpls
 
-    @signature.setter
-    def signature(self, signature):
-        """Sets the signature of this TrafficProtocol.
+    @mpls.setter
+    def mpls(self, mpls):
+        """Sets the mpls of this TrafficProtocol.
 
 
-        :param signature: The signature of this TrafficProtocol.  # noqa: E501
-        :type: PacketProtocolSpirentSignature
+        :param mpls: The mpls of this TrafficProtocol.  # noqa: E501
+        :type: PacketProtocolMpls
         """
-        self._signature = signature
+        self._mpls = mpls
 
     @property
     def tcp(self):
@@ -267,6 +297,26 @@ class TrafficProtocol(object):
         :type: PacketProtocolUdp
         """
         self._udp = udp
+
+    @property
+    def vlan(self):
+        """Gets the vlan of this TrafficProtocol.  # noqa: E501
+
+
+        :return: The vlan of this TrafficProtocol.  # noqa: E501
+        :rtype: PacketProtocolVlan
+        """
+        return self._vlan
+
+    @vlan.setter
+    def vlan(self, vlan):
+        """Sets the vlan of this TrafficProtocol.
+
+
+        :param vlan: The vlan of this TrafficProtocol.  # noqa: E501
+        :type: PacketProtocolVlan
+        """
+        self._vlan = vlan
 
     def to_dict(self):
         """Returns the model properties as a dict"""

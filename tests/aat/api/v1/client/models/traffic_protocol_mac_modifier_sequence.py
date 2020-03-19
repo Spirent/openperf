@@ -32,9 +32,9 @@ class TrafficProtocolMacModifierSequence(object):
     """
     swagger_types = {
         'count': 'int',
-        'start': 'MacAddress',
-        'stop': 'MacAddress',
-        'skip': 'list[MacAddress]'
+        'start': 'str',
+        'stop': 'str',
+        'skip': 'list[str]'
     }
 
     attribute_map = {
@@ -86,9 +86,10 @@ class TrafficProtocolMacModifierSequence(object):
     def start(self):
         """Gets the start of this TrafficProtocolMacModifierSequence.  # noqa: E501
 
+        The first MAC address in the sequence  # noqa: E501
 
         :return: The start of this TrafficProtocolMacModifierSequence.  # noqa: E501
-        :rtype: MacAddress
+        :rtype: str
         """
         return self._start
 
@@ -96,9 +97,10 @@ class TrafficProtocolMacModifierSequence(object):
     def start(self, start):
         """Sets the start of this TrafficProtocolMacModifierSequence.
 
+        The first MAC address in the sequence  # noqa: E501
 
         :param start: The start of this TrafficProtocolMacModifierSequence.  # noqa: E501
-        :type: MacAddress
+        :type: str
         """
         self._start = start
 
@@ -106,9 +108,10 @@ class TrafficProtocolMacModifierSequence(object):
     def stop(self):
         """Gets the stop of this TrafficProtocolMacModifierSequence.  # noqa: E501
 
+        The last MAC address in the sequence  # noqa: E501
 
         :return: The stop of this TrafficProtocolMacModifierSequence.  # noqa: E501
-        :rtype: MacAddress
+        :rtype: str
         """
         return self._stop
 
@@ -116,9 +119,10 @@ class TrafficProtocolMacModifierSequence(object):
     def stop(self, stop):
         """Sets the stop of this TrafficProtocolMacModifierSequence.
 
+        The last MAC address in the sequence  # noqa: E501
 
         :param stop: The stop of this TrafficProtocolMacModifierSequence.  # noqa: E501
-        :type: MacAddress
+        :type: str
         """
         self._stop = stop
 
@@ -129,7 +133,7 @@ class TrafficProtocolMacModifierSequence(object):
         List of addresses in the sequence to skip  # noqa: E501
 
         :return: The skip of this TrafficProtocolMacModifierSequence.  # noqa: E501
-        :rtype: list[MacAddress]
+        :rtype: list[str]
         """
         return self._skip
 
@@ -140,7 +144,7 @@ class TrafficProtocolMacModifierSequence(object):
         List of addresses in the sequence to skip  # noqa: E501
 
         :param skip: The skip of this TrafficProtocolMacModifierSequence.  # noqa: E501
-        :type: list[MacAddress]
+        :type: list[str]
         """
         self._skip = skip
 

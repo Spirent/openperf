@@ -70,17 +70,7 @@ void TrafficProtocolIpv6Modifier::fromJson(nlohmann::json& val)
         {
         for( auto& item : val["list"] )
         {
-            
-            if(item.is_null())
-            {
-                m_List.push_back( std::shared_ptr<Ipv6Address>(nullptr) );
-            }
-            else
-            {
-                std::shared_ptr<Ipv6Address> newItem(new Ipv6Address());
-                newItem->fromJson(item);
-                m_List.push_back( newItem );
-            }
+            m_List.push_back(item);
             
         }
         }
@@ -108,7 +98,7 @@ void TrafficProtocolIpv6Modifier::setMethod(std::string value)
     m_Method = value;
     
 }
-std::vector<std::shared_ptr<Ipv6Address>>& TrafficProtocolIpv6Modifier::getList()
+std::vector<std::string>& TrafficProtocolIpv6Modifier::getList()
 {
     return m_List;
 }

@@ -18,7 +18,7 @@ OP_CC := $(CC) -flto=thin
 OP_CXX := $(CXX) -flto=thin
 OP_COPTS := -march=native
 OP_CSTD := -std=gnu11  # c++11 with GNU extensions
-OP_CXXSTD := -std=c++17
+OP_CXXSTD := -std=gnu++17
 OP_CFLAGS := $(OP_CSTD)
 OP_CPPFLAGS := -Wall -Werror -Wextra -Wpedantic -Wshadow -Wno-gnu \
 	-MMD -MP -fstack-protector-strong

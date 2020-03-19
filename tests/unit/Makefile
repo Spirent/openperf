@@ -20,6 +20,7 @@ TEST_FLAGS :=
 # Pull in test files
 ###
 include $(TEST_SRC_DIR)/framework/directory.mk
+include $(TEST_SRC_DIR)/lib/packet/directory.mk
 include $(TEST_SRC_DIR)/lib/spirent_pga/directory.mk
 include $(TEST_SRC_DIR)/modules/api/directory.mk
 include $(TEST_SRC_DIR)/modules/block/directory.mk
