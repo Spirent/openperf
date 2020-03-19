@@ -40,6 +40,7 @@ tags:
   - name: Ports
   - name: Stacks
   - name: TimeSync
+  - name: BlockGenerator
 
 basePath: /
 
@@ -160,6 +161,45 @@ paths:
 
   /time-sources/{id}:
     $ref: ./modules/timesync.yaml#/paths/~1time-sources~1{id}
+
+  ###
+  # Block paths
+  ###
+  /block-devices:
+    $ref: ./modules/block.yaml#/paths/~1block-devices
+
+  /block-devices/{id}:
+    $ref: ./modules/block.yaml#/paths/~1block-devices~1{id}
+
+  /block-files:
+    $ref: ./modules/block.yaml#/paths/~1block-files
+
+  /block-files/{id}:
+    $ref: ./modules/block.yaml#/paths/~1block-files~1{id}
+
+  /block-generators:
+    $ref: ./modules/block.yaml#/paths/~1block-generators
+
+  /block-generators/{id}:
+    $ref: ./modules/block.yaml#/paths/~1block-generators~1{id}
+
+  /block-generators/{id}/start:
+    $ref: ./modules/block.yaml#/paths/~1block-generators~1{id}~1start
+
+  /block-generators/{id}/stop:
+    $ref: ./modules/block.yaml#/paths/~1block-generators~1{id}~1stop
+
+  /block-generators/x/bulk-start:
+    $ref: ./modules/block.yaml#/paths/~1block-generators~1x~1bulk-start
+
+  /block-generators/x/bulk-stop:
+    $ref: ./modules/block.yaml#/paths/~1block-generators~1x~1bulk-stop
+
+  /block-generator-results:
+    $ref: ./modules/block.yaml#/paths/~1block-generator-results
+
+  /block-generator-results/{id}:
+    $ref: ./modules/block.yaml#/paths/~1block-generator-results~1{id}
 
 definitions:
   Module:
@@ -312,3 +352,24 @@ definitions:
 
   TimeSource:
     $ref: ./modules/timesync.yaml#/definitions/TimeSource
+
+  ###
+  # Block definitions
+  ###
+  BlockDevice:
+    $ref: ./modules/timesync.yaml#/definitions/BlockDevice
+
+  BlockFile:
+    $ref: ./modules/timesync.yaml#/definitions/BlockFile
+
+  BlockGenerator:
+    $ref: ./modules/timesync.yaml#/definitions/BlockGenerator
+
+  BlockGeneratorConfig:
+    $ref: ./modules/timesync.yaml#/definitions/BlockGeneratorConfig
+
+  BlockGeneratorResult:
+    $ref: ./modules/timesync.yaml#/definitions/BlockGeneratorResult
+
+  BlockGeneratorStats:
+    $ref: ./modules/timesync.yaml#/definitions/BlockGeneratorStats
