@@ -26,7 +26,7 @@ void block_generator::stop()
     set_running(false);
 }
 
-void block_generator::set_сonfig(const model::block_generator_config& value)
+void block_generator::set_config(const model::block_generator_config& value)
 {
     model::block_generator::set_config(value);
 }
@@ -50,6 +50,17 @@ int block_generator::open_resource(const std::string& resource_id)
         fd = blk_dev->vopen();
     }
     return fd;
+}
+
+size_t block_generator::get_resource_size(const std::string& resource_id)
+{
+    if (auto blk_file = block::file::file_stack::instance().get_block_file(resource_id); blk_file) {
+        return blk_file->get_size();
+    } else 
+    if (auto blk_dev = block::device::device_stack::instance().get_block_device(resource_id); blk_dev) {
+        return blk_file->get_size();
+    }
+    return 0;
 }
 
 void block_generator::set_running(bool value)
