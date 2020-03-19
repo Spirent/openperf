@@ -185,7 +185,7 @@ paths:
 
   /block-generators/{id}/start:
     $ref: ./modules/block.yaml#/paths/~1block-generators~1{id}~1start
-  
+
   /block-generators/{id}/stop:
     $ref: ./modules/block.yaml#/paths/~1block-generators~1{id}~1stop
 
