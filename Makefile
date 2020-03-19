@@ -35,12 +35,25 @@ clean:
 	@cd tests/unit && $(MAKE) clean
 	@rm -f compile_commands.json
 
-# Generate code from schema definition
-# These files are checked in so only need to manually rebuild when schema changes
-# and then check in the affected files.
+# Generate code from schema definitions
+# Since generated code is stored in the repo, manual generation is only required
+# when the schema files are updated.  Commit any schema changes and resulting
+# generated code updates back to the source repository.
+.PHONY: codegen
+codegen: schema_codegen
+
 .PHONY: schema_codegen
-schema_codegen:
+schema_codegen: packet_protocol_codegen
 	@cd api/schema && $(MAKE)
+
+.PHONY: packet_protocol_codegen
+packet_protocol_codegen: libpacket_codegen
+	@cd src/modules/packet/protocol && $(MAKE)
+
+.PHONY: libpacket_codegen
+libpacket_codegen:
+	@cd src/lib/packet && $(MAKE)
+
 
 ###
 # Targets for code formatting and analysis
@@ -68,6 +81,8 @@ pretty-c:
 pretty-cpp:
 	@find src targets tests \
 		-path src/swagger -prune -o \
+		-path src/lib/packet/protocol -prune -o \
+		-path src/modules/packet/protocol/transmogrify -prune -o \
 		-type f \( \
 			-iname \*.cpp -o \
 			-iname \*.hpp -o \
@@ -79,7 +94,11 @@ pretty-cpp:
 # a rule to build it.
 .PHONY: tidy
 tidy: compile_commands.json
-	@find src -path src/swagger -prune -o -iname \*.cpp -print0 \
+	@find src \
+		-path src/swagger -prune -o \
+		-path src/lib/packet/protocol -prune -o \
+		-path src/modules/packet/protocol/transmogrify -prune -o \
+		-iname \*.cpp -print0 \
 		| xargs -0 run-clang-tidy -quiet \
 			-header-filter='^$(shell pwd)/src/.*hpp,-^$(shell pwd)/src/modules/socket/dpdk/.*hpp' \
 			-extra-arg=-Wno-shadow

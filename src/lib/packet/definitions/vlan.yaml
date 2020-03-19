@@ -1,0 +1,21 @@
+vlan:
+  fields:
+    priority:
+      format: enumeration
+      length: 3
+      items:
+        - network_control: 7
+        - internetwork_control: 6
+        - voice: 5
+        - video: 4
+        - critical_app: 3
+        - excellent_effort: 2
+        - background: 1
+        - best_effort: 0
+      uniqueItems: true
+    drop_eligible:
+      length: 1
+    id:
+      length: 12
+    ether_type:
+      length: 16

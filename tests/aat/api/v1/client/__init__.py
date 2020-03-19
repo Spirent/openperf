@@ -72,9 +72,6 @@ from client.models.interface_protocol_config_ipv4 import InterfaceProtocolConfig
 from client.models.interface_protocol_config_ipv4_dhcp import InterfaceProtocolConfigIpv4Dhcp
 from client.models.interface_protocol_config_ipv4_static import InterfaceProtocolConfigIpv4Static
 from client.models.interface_stats import InterfaceStats
-from client.models.ipv4_address import Ipv4Address
-from client.models.ipv6_address import Ipv6Address
-from client.models.mac_address import MacAddress
 from client.models.module import Module
 from client.models.module_version import ModuleVersion
 from client.models.packet_generator import PacketGenerator
@@ -86,9 +83,11 @@ from client.models.packet_protocol_custom import PacketProtocolCustom
 from client.models.packet_protocol_ethernet import PacketProtocolEthernet
 from client.models.packet_protocol_ipv4 import PacketProtocolIpv4
 from client.models.packet_protocol_ipv6 import PacketProtocolIpv6
+from client.models.packet_protocol_mpls import PacketProtocolMpls
 from client.models.packet_protocol_spirent_signature import PacketProtocolSpirentSignature
 from client.models.packet_protocol_tcp import PacketProtocolTcp
 from client.models.packet_protocol_udp import PacketProtocolUdp
+from client.models.packet_protocol_vlan import PacketProtocolVlan
 from client.models.port import Port
 from client.models.port_config import PortConfig
 from client.models.port_config_bond import PortConfigBond
@@ -101,7 +100,6 @@ from client.models.stack_element_stats import StackElementStats
 from client.models.stack_memory_stats import StackMemoryStats
 from client.models.stack_protocol_stats import StackProtocolStats
 from client.models.stack_stats import StackStats
-from client.models.tcp_ip_port import TcpIpPort
 from client.models.time_counter import TimeCounter
 from client.models.time_keeper import TimeKeeper
 from client.models.time_keeper_state import TimeKeeperState

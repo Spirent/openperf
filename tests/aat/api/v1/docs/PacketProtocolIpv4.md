@@ -3,18 +3,19 @@
 ## Properties
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**version** | **int** | IP header version | [optional] [default to 4]
-**header_length** | **int** | IP header length | [optional] [default to 20]
-**tos** | **int** | Type of Service field | [optional] [default to 0]
-**packet_length** | **int** | IP packet length (include payload) | [optional] 
-**id** | **int** | Identification field | [optional] 
-**flags** | **list[str]** | IP header flags | [optional] 
-**fragment_offset** | **int** | IP fragment offset | [optional] [default to 0]
-**ttl** | **int** | Time To Live field | [optional] 
-**protocol** | **int** | Protocol field | [optional] 
-**checksum** | **int** | IPv4 header checksum | [optional] 
-**source** | [**Ipv4Address**](Ipv4Address.md) |  | [optional] 
-**destination** | [**Ipv4Address**](Ipv4Address.md) |  | 
+**checksum** | **int** | IPv4 checksum | [optional] 
+**destination** | **str** | IPv4 destination address | [optional] 
+**dscp** | **int** | IPv4 dscp | [optional] 
+**ecn** | **str** | IPv4 ecn | [optional] 
+**flags** | **list[str]** | IPv4 flags | [optional] 
+**fragment_offset** | **int** | IPv4 fragment offset | [optional] 
+**header_length** | **int** | IPv4 header length | [optional] 
+**identification** | **int** | IPv4 identification | [optional] 
+**protocol** | **int** | IPv4 protocol | [optional] 
+**source** | **str** | IPv4 source address | [optional] 
+**time_to_live** | **int** | IPv4 time to live | [optional] 
+**total_length** | **int** | IPv4 total length | [optional] 
+**version** | **int** | IPv4 version | [optional] 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

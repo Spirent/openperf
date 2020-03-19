@@ -31,59 +31,40 @@ class PacketProtocolEthernet(object):
                             and the value is json key in definition.
     """
     swagger_types = {
-        'source': 'MacAddress',
-        'destination': 'MacAddress',
-        'ethertype': 'int'
+        'destination': 'str',
+        'ether_type': 'int',
+        'source': 'str'
     }
 
     attribute_map = {
-        'source': 'source',
         'destination': 'destination',
-        'ethertype': 'ethertype'
+        'ether_type': 'ether_type',
+        'source': 'source'
     }
 
-    def __init__(self, source=None, destination=None, ethertype=None):  # noqa: E501
+    def __init__(self, destination=None, ether_type=None, source=None):  # noqa: E501
         """PacketProtocolEthernet - a model defined in Swagger"""  # noqa: E501
 
-        self._source = None
         self._destination = None
-        self._ethertype = None
+        self._ether_type = None
+        self._source = None
         self.discriminator = None
 
-        if source is not None:
-            self.source = source
         if destination is not None:
             self.destination = destination
-        if ethertype is not None:
-            self.ethertype = ethertype
-
-    @property
-    def source(self):
-        """Gets the source of this PacketProtocolEthernet.  # noqa: E501
-
-
-        :return: The source of this PacketProtocolEthernet.  # noqa: E501
-        :rtype: MacAddress
-        """
-        return self._source
-
-    @source.setter
-    def source(self, source):
-        """Sets the source of this PacketProtocolEthernet.
-
-
-        :param source: The source of this PacketProtocolEthernet.  # noqa: E501
-        :type: MacAddress
-        """
-        self._source = source
+        if ether_type is not None:
+            self.ether_type = ether_type
+        if source is not None:
+            self.source = source
 
     @property
     def destination(self):
         """Gets the destination of this PacketProtocolEthernet.  # noqa: E501
 
+        Ethernet MAC destination address  # noqa: E501
 
         :return: The destination of this PacketProtocolEthernet.  # noqa: E501
-        :rtype: MacAddress
+        :rtype: str
         """
         return self._destination
 
@@ -91,33 +72,56 @@ class PacketProtocolEthernet(object):
     def destination(self, destination):
         """Sets the destination of this PacketProtocolEthernet.
 
+        Ethernet MAC destination address  # noqa: E501
 
         :param destination: The destination of this PacketProtocolEthernet.  # noqa: E501
-        :type: MacAddress
+        :type: str
         """
         self._destination = destination
 
     @property
-    def ethertype(self):
-        """Gets the ethertype of this PacketProtocolEthernet.  # noqa: E501
+    def ether_type(self):
+        """Gets the ether_type of this PacketProtocolEthernet.  # noqa: E501
 
-        Ethernet Ethertype  # noqa: E501
+        Ethernet ether type  # noqa: E501
 
-        :return: The ethertype of this PacketProtocolEthernet.  # noqa: E501
+        :return: The ether_type of this PacketProtocolEthernet.  # noqa: E501
         :rtype: int
         """
-        return self._ethertype
+        return self._ether_type
 
-    @ethertype.setter
-    def ethertype(self, ethertype):
-        """Sets the ethertype of this PacketProtocolEthernet.
+    @ether_type.setter
+    def ether_type(self, ether_type):
+        """Sets the ether_type of this PacketProtocolEthernet.
 
-        Ethernet Ethertype  # noqa: E501
+        Ethernet ether type  # noqa: E501
 
-        :param ethertype: The ethertype of this PacketProtocolEthernet.  # noqa: E501
+        :param ether_type: The ether_type of this PacketProtocolEthernet.  # noqa: E501
         :type: int
         """
-        self._ethertype = ethertype
+        self._ether_type = ether_type
+
+    @property
+    def source(self):
+        """Gets the source of this PacketProtocolEthernet.  # noqa: E501
+
+        Ethernet MAC source address  # noqa: E501
+
+        :return: The source of this PacketProtocolEthernet.  # noqa: E501
+        :rtype: str
+        """
+        return self._source
+
+    @source.setter
+    def source(self, source):
+        """Sets the source of this PacketProtocolEthernet.
+
+        Ethernet MAC source address  # noqa: E501
+
+        :param source: The source of this PacketProtocolEthernet.  # noqa: E501
+        :type: str
+        """
+        self._source = source
 
     def to_dict(self):
         """Returns the model properties as a dict"""

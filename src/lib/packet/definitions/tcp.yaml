@@ -1,0 +1,39 @@
+tcp:
+  fields:
+    source:
+      format: number
+      length: 16
+    destination:
+      format: number
+      length: 16
+    sequence:
+      format: number
+      length: 32
+    ack:
+      format: number
+      length: 32
+    data_offset:
+      length: 4
+      multipleOf: 4
+    reserved:
+      length: 3
+    flags:
+      format: enumeration
+      length: 9
+      items:
+        - ns:  256
+        - cwr: 128
+        - ece: 64
+        - urg: 32
+        - ack: 16
+        - psh: 8
+        - rst: 4
+        - syn: 2
+        - fin: 1
+    window:
+      format: number
+      length: 16
+    checksum:
+      length: 16
+    urgent_pointer:
+      length: 16

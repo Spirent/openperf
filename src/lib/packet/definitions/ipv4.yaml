@@ -1,0 +1,44 @@
+IPv4:
+  fields:
+    version:
+      length: 4
+    header_length:
+      length: 4
+      multipleOf: 4
+    dscp:
+      length: 6
+    ecn:
+      length: 2
+      format: enumeration
+      items:
+        - non_ect: 0
+        - ect_0: 2
+        - ect_1: 1
+        - ce: 3
+      uniqueItems: true
+    total_length:
+      format: number
+      length: 16
+    identification:
+      length: 16
+    flags:
+      length: 3
+      format: enumeration
+      items:
+        - evil_bit: 4
+        - dont_fragment: 2
+        - more_fragments: 1
+    fragment_offset:
+      length: 13
+      multipleOf: 8
+    time_to_live:
+      format: number
+      length: 8
+    protocol:
+      length: 8
+    checksum:
+      length: 16
+    source:
+      format: ipv4
+    destination:
+      format: ipv4

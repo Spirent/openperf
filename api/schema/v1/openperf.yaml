@@ -317,23 +317,32 @@ definitions:
   PacketProtocolCustom:
     $ref: ./modules/packet/common.yaml#/definitions/PacketProtocolCustom
 
-  PacketProtocolEthernet:
-    $ref: ./modules/packet/common.yaml#/definitions/PacketProtocolEthernet
-
-  PacketProtocolIpv4:
-    $ref: ./modules/packet/common.yaml#/definitions/PacketProtocolIpv4
-
-  PacketProtocolIpv6:
-    $ref: ./modules/packet/common.yaml#/definitions/PacketProtocolIpv6
-
   PacketProtocolSpirentSignature:
     $ref: ./modules/packet/common.yaml#/definitions/PacketProtocolSpirentSignature
 
+  ###
+  # Packet Module protocol definitions
+  ###
+  PacketProtocolEthernet:
+    $ref: ./modules/packet/protocols.yaml#/definitions/PacketProtocolEthernet
+
+  PacketProtocolIpv4:
+    $ref: ./modules/packet/protocols.yaml#/definitions/PacketProtocolIpv4
+
+  PacketProtocolIpv6:
+    $ref: ./modules/packet/protocols.yaml#/definitions/PacketProtocolIpv6
+
+  PacketProtocolMpls:
+    $ref: ./modules/packet/protocols.yaml#/definitions/PacketProtocolMpls
+
   PacketProtocolTcp:
-    $ref: ./modules/packet/common.yaml#/definitions/PacketProtocolTcp
+    $ref: ./modules/packet/protocols.yaml#/definitions/PacketProtocolTcp
 
   PacketProtocolUdp:
-    $ref: ./modules/packet/common.yaml#/definitions/PacketProtocolUdp
+    $ref: ./modules/packet/protocols.yaml#/definitions/PacketProtocolUdp
+
+  PacketProtocolVlan:
+    $ref: ./modules/packet/protocols.yaml#/definitions/PacketProtocolVlan
 
   ###
   # Packet Analyzer definitions

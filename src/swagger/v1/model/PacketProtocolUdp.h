@@ -12,7 +12,7 @@
 /*
  * PacketProtocolUdp.h
  *
- * Defines a UDP header
+ * Describes a udp header
  */
 
 #ifndef PacketProtocolUdp_H_
@@ -21,14 +21,13 @@
 
 #include "ModelBase.h"
 
-#include "TcpIpPort.h"
 
 namespace swagger {
 namespace v1 {
 namespace model {
 
 /// <summary>
-/// Defines a UDP header
+/// Describes a udp header
 /// </summary>
 class  PacketProtocolUdp
     : public ModelBase
@@ -49,39 +48,43 @@ public:
     /// PacketProtocolUdp members
 
     /// <summary>
-    /// 
+    /// udp checksum
     /// </summary>
-    std::shared_ptr<TcpIpPort> getSourcePort() const;
-    void setSourcePort(std::shared_ptr<TcpIpPort> value);
-        /// <summary>
-    /// 
+    int32_t getChecksum() const;
+    void setChecksum(int32_t value);
+    bool checksumIsSet() const;
+    void unsetChecksum();
+    /// <summary>
+    /// udp destination
     /// </summary>
-    std::shared_ptr<TcpIpPort> getDestinationPort() const;
-    void setDestinationPort(std::shared_ptr<TcpIpPort> value);
-        /// <summary>
-    /// header plus payload length
+    int32_t getDestination() const;
+    void setDestination(int32_t value);
+    bool destinationIsSet() const;
+    void unsetDestination();
+    /// <summary>
+    /// udp length
     /// </summary>
     int32_t getLength() const;
     void setLength(int32_t value);
     bool lengthIsSet() const;
     void unsetLength();
     /// <summary>
-    /// checksum field
+    /// udp source
     /// </summary>
-    int32_t getChecksum() const;
-    void setChecksum(int32_t value);
-    bool checksumIsSet() const;
-    void unsetChecksum();
+    int32_t getSource() const;
+    void setSource(int32_t value);
+    bool sourceIsSet() const;
+    void unsetSource();
 
 protected:
-    std::shared_ptr<TcpIpPort> m_Source_port;
-
-    std::shared_ptr<TcpIpPort> m_Destination_port;
-
-    int32_t m_Length;
-    bool m_LengthIsSet;
     int32_t m_Checksum;
     bool m_ChecksumIsSet;
+    int32_t m_Destination;
+    bool m_DestinationIsSet;
+    int32_t m_Length;
+    bool m_LengthIsSet;
+    int32_t m_Source;
+    bool m_SourceIsSet;
 };
 
 }

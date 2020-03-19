@@ -3,14 +3,14 @@
 ## Properties
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**version** | **int** | IP header version | [optional] [default to 6]
-**traffic_class** | **int** | IP traffic class field | [optional] [default to 0]
-**flow_label** | **int** | IP flow label field | [optional] [default to 0]
-**payload_length** | **int** | IP payload length | [optional] 
-**next_header** | **int** | IP next header field | [optional] 
-**hop_limit** | **int** | IP hop limit field | [optional] [default to 0]
-**source** | [**Ipv6Address**](Ipv6Address.md) |  | [optional] 
-**destination** | [**Ipv6Address**](Ipv6Address.md) |  | 
+**destination** | **str** | IPv6 destination address | [optional] 
+**flow_label** | **int** | IPv6 flow label | [optional] 
+**hop_limit** | **int** | IPv6 hop limit | [optional] 
+**next_header** | **int** | IPv6 next header | [optional] 
+**payload_length** | **int** | IPv6 payload length | [optional] 
+**source** | **str** | IPv6 source address | [optional] 
+**traffic_class** | **int** | IPv6 traffic class | [optional] 
+**version** | **int** | IPv6 version | [optional] 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

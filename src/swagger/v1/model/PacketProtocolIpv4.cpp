@@ -19,26 +19,31 @@ namespace model {
 
 PacketProtocolIpv4::PacketProtocolIpv4()
 {
-    m_Version = 0;
-    m_VersionIsSet = false;
-    m_Header_length = 0;
-    m_Header_lengthIsSet = false;
-    m_Tos = 0;
-    m_TosIsSet = false;
-    m_Packet_length = 0;
-    m_Packet_lengthIsSet = false;
-    m_Id = 0;
-    m_IdIsSet = false;
+    m_Checksum = 0;
+    m_ChecksumIsSet = false;
+    m_Destination = "";
+    m_DestinationIsSet = false;
+    m_Dscp = 0;
+    m_DscpIsSet = false;
+    m_Ecn = "";
+    m_EcnIsSet = false;
     m_FlagsIsSet = false;
     m_Fragment_offset = 0;
     m_Fragment_offsetIsSet = false;
-    m_Ttl = 0;
-    m_TtlIsSet = false;
+    m_Header_length = 0;
+    m_Header_lengthIsSet = false;
+    m_Identification = 0;
+    m_IdentificationIsSet = false;
     m_Protocol = 0;
     m_ProtocolIsSet = false;
-    m_Checksum = 0;
-    m_ChecksumIsSet = false;
+    m_Source = "";
     m_SourceIsSet = false;
+    m_Time_to_live = 0;
+    m_Time_to_liveIsSet = false;
+    m_Total_length = 0;
+    m_Total_lengthIsSet = false;
+    m_Version = 0;
+    m_VersionIsSet = false;
     
 }
 
@@ -55,25 +60,21 @@ nlohmann::json PacketProtocolIpv4::toJson() const
 {
     nlohmann::json val = nlohmann::json::object();
 
-    if(m_VersionIsSet)
+    if(m_ChecksumIsSet)
     {
-        val["version"] = m_Version;
+        val["checksum"] = m_Checksum;
     }
-    if(m_Header_lengthIsSet)
+    if(m_DestinationIsSet)
     {
-        val["header_length"] = m_Header_length;
+        val["destination"] = ModelBase::toJson(m_Destination);
     }
-    if(m_TosIsSet)
+    if(m_DscpIsSet)
     {
-        val["tos"] = m_Tos;
+        val["dscp"] = m_Dscp;
     }
-    if(m_Packet_lengthIsSet)
+    if(m_EcnIsSet)
     {
-        val["packet_length"] = m_Packet_length;
-    }
-    if(m_IdIsSet)
-    {
-        val["id"] = m_Id;
+        val["ecn"] = ModelBase::toJson(m_Ecn);
     }
     {
         nlohmann::json jsonArray;
@@ -91,23 +92,34 @@ nlohmann::json PacketProtocolIpv4::toJson() const
     {
         val["fragment_offset"] = m_Fragment_offset;
     }
-    if(m_TtlIsSet)
+    if(m_Header_lengthIsSet)
     {
-        val["ttl"] = m_Ttl;
+        val["header_length"] = m_Header_length;
+    }
+    if(m_IdentificationIsSet)
+    {
+        val["identification"] = m_Identification;
     }
     if(m_ProtocolIsSet)
     {
         val["protocol"] = m_Protocol;
     }
-    if(m_ChecksumIsSet)
-    {
-        val["checksum"] = m_Checksum;
-    }
     if(m_SourceIsSet)
     {
         val["source"] = ModelBase::toJson(m_Source);
     }
-    val["destination"] = ModelBase::toJson(m_Destination);
+    if(m_Time_to_liveIsSet)
+    {
+        val["time_to_live"] = m_Time_to_live;
+    }
+    if(m_Total_lengthIsSet)
+    {
+        val["total_length"] = m_Total_length;
+    }
+    if(m_VersionIsSet)
+    {
+        val["version"] = m_Version;
+    }
     
 
     return val;
@@ -115,25 +127,23 @@ nlohmann::json PacketProtocolIpv4::toJson() const
 
 void PacketProtocolIpv4::fromJson(nlohmann::json& val)
 {
-    if(val.find("version") != val.end())
+    if(val.find("checksum") != val.end())
     {
-        setVersion(val.at("version"));
+        setChecksum(val.at("checksum"));
     }
-    if(val.find("header_length") != val.end())
+    if(val.find("destination") != val.end())
     {
-        setHeaderLength(val.at("header_length"));
+        setDestination(val.at("destination"));
+        
     }
-    if(val.find("tos") != val.end())
+    if(val.find("dscp") != val.end())
     {
-        setTos(val.at("tos"));
+        setDscp(val.at("dscp"));
     }
-    if(val.find("packet_length") != val.end())
+    if(val.find("ecn") != val.end())
     {
-        setPacketLength(val.at("packet_length"));
-    }
-    if(val.find("id") != val.end())
-    {
-        setId(val.at("id"));
+        setEcn(val.at("ecn"));
+        
     }
     {
         m_Flags.clear();
@@ -151,116 +161,106 @@ void PacketProtocolIpv4::fromJson(nlohmann::json& val)
     {
         setFragmentOffset(val.at("fragment_offset"));
     }
-    if(val.find("ttl") != val.end())
+    if(val.find("header_length") != val.end())
     {
-        setTtl(val.at("ttl"));
+        setHeaderLength(val.at("header_length"));
+    }
+    if(val.find("identification") != val.end())
+    {
+        setIdentification(val.at("identification"));
     }
     if(val.find("protocol") != val.end())
     {
         setProtocol(val.at("protocol"));
     }
-    if(val.find("checksum") != val.end())
-    {
-        setChecksum(val.at("checksum"));
-    }
     if(val.find("source") != val.end())
     {
-        if(!val["source"].is_null())
-        {
-            std::shared_ptr<Ipv4Address> newItem(new Ipv4Address());
-            newItem->fromJson(val["source"]);
-            setSource( newItem );
-        }
+        setSource(val.at("source"));
         
+    }
+    if(val.find("time_to_live") != val.end())
+    {
+        setTimeToLive(val.at("time_to_live"));
+    }
+    if(val.find("total_length") != val.end())
+    {
+        setTotalLength(val.at("total_length"));
+    }
+    if(val.find("version") != val.end())
+    {
+        setVersion(val.at("version"));
     }
     
 }
 
 
-int32_t PacketProtocolIpv4::getVersion() const
+int32_t PacketProtocolIpv4::getChecksum() const
 {
-    return m_Version;
+    return m_Checksum;
 }
-void PacketProtocolIpv4::setVersion(int32_t value)
+void PacketProtocolIpv4::setChecksum(int32_t value)
 {
-    m_Version = value;
-    m_VersionIsSet = true;
+    m_Checksum = value;
+    m_ChecksumIsSet = true;
 }
-bool PacketProtocolIpv4::versionIsSet() const
+bool PacketProtocolIpv4::checksumIsSet() const
 {
-    return m_VersionIsSet;
+    return m_ChecksumIsSet;
 }
-void PacketProtocolIpv4::unsetVersion()
+void PacketProtocolIpv4::unsetChecksum()
 {
-    m_VersionIsSet = false;
+    m_ChecksumIsSet = false;
 }
-int32_t PacketProtocolIpv4::getHeaderLength() const
+std::string PacketProtocolIpv4::getDestination() const
 {
-    return m_Header_length;
+    return m_Destination;
 }
-void PacketProtocolIpv4::setHeaderLength(int32_t value)
+void PacketProtocolIpv4::setDestination(std::string value)
 {
-    m_Header_length = value;
-    m_Header_lengthIsSet = true;
+    m_Destination = value;
+    m_DestinationIsSet = true;
 }
-bool PacketProtocolIpv4::headerLengthIsSet() const
+bool PacketProtocolIpv4::destinationIsSet() const
 {
-    return m_Header_lengthIsSet;
+    return m_DestinationIsSet;
 }
-void PacketProtocolIpv4::unsetHeader_length()
+void PacketProtocolIpv4::unsetDestination()
 {
-    m_Header_lengthIsSet = false;
+    m_DestinationIsSet = false;
 }
-int32_t PacketProtocolIpv4::getTos() const
+int32_t PacketProtocolIpv4::getDscp() const
 {
-    return m_Tos;
+    return m_Dscp;
 }
-void PacketProtocolIpv4::setTos(int32_t value)
+void PacketProtocolIpv4::setDscp(int32_t value)
 {
-    m_Tos = value;
-    m_TosIsSet = true;
+    m_Dscp = value;
+    m_DscpIsSet = true;
 }
-bool PacketProtocolIpv4::tosIsSet() const
+bool PacketProtocolIpv4::dscpIsSet() const
 {
-    return m_TosIsSet;
+    return m_DscpIsSet;
 }
-void PacketProtocolIpv4::unsetTos()
+void PacketProtocolIpv4::unsetDscp()
 {
-    m_TosIsSet = false;
+    m_DscpIsSet = false;
 }
-int32_t PacketProtocolIpv4::getPacketLength() const
+std::string PacketProtocolIpv4::getEcn() const
 {
-    return m_Packet_length;
+    return m_Ecn;
 }
-void PacketProtocolIpv4::setPacketLength(int32_t value)
+void PacketProtocolIpv4::setEcn(std::string value)
 {
-    m_Packet_length = value;
-    m_Packet_lengthIsSet = true;
+    m_Ecn = value;
+    m_EcnIsSet = true;
 }
-bool PacketProtocolIpv4::packetLengthIsSet() const
+bool PacketProtocolIpv4::ecnIsSet() const
 {
-    return m_Packet_lengthIsSet;
+    return m_EcnIsSet;
 }
-void PacketProtocolIpv4::unsetPacket_length()
+void PacketProtocolIpv4::unsetEcn()
 {
-    m_Packet_lengthIsSet = false;
-}
-int32_t PacketProtocolIpv4::getId() const
-{
-    return m_Id;
-}
-void PacketProtocolIpv4::setId(int32_t value)
-{
-    m_Id = value;
-    m_IdIsSet = true;
-}
-bool PacketProtocolIpv4::idIsSet() const
-{
-    return m_IdIsSet;
-}
-void PacketProtocolIpv4::unsetId()
-{
-    m_IdIsSet = false;
+    m_EcnIsSet = false;
 }
 std::vector<std::string>& PacketProtocolIpv4::getFlags()
 {
@@ -291,22 +291,39 @@ void PacketProtocolIpv4::unsetFragment_offset()
 {
     m_Fragment_offsetIsSet = false;
 }
-int32_t PacketProtocolIpv4::getTtl() const
+int32_t PacketProtocolIpv4::getHeaderLength() const
 {
-    return m_Ttl;
+    return m_Header_length;
 }
-void PacketProtocolIpv4::setTtl(int32_t value)
+void PacketProtocolIpv4::setHeaderLength(int32_t value)
 {
-    m_Ttl = value;
-    m_TtlIsSet = true;
+    m_Header_length = value;
+    m_Header_lengthIsSet = true;
 }
-bool PacketProtocolIpv4::ttlIsSet() const
+bool PacketProtocolIpv4::headerLengthIsSet() const
 {
-    return m_TtlIsSet;
+    return m_Header_lengthIsSet;
 }
-void PacketProtocolIpv4::unsetTtl()
+void PacketProtocolIpv4::unsetHeader_length()
 {
-    m_TtlIsSet = false;
+    m_Header_lengthIsSet = false;
+}
+int32_t PacketProtocolIpv4::getIdentification() const
+{
+    return m_Identification;
+}
+void PacketProtocolIpv4::setIdentification(int32_t value)
+{
+    m_Identification = value;
+    m_IdentificationIsSet = true;
+}
+bool PacketProtocolIpv4::identificationIsSet() const
+{
+    return m_IdentificationIsSet;
+}
+void PacketProtocolIpv4::unsetIdentification()
+{
+    m_IdentificationIsSet = false;
 }
 int32_t PacketProtocolIpv4::getProtocol() const
 {
@@ -325,28 +342,11 @@ void PacketProtocolIpv4::unsetProtocol()
 {
     m_ProtocolIsSet = false;
 }
-int32_t PacketProtocolIpv4::getChecksum() const
-{
-    return m_Checksum;
-}
-void PacketProtocolIpv4::setChecksum(int32_t value)
-{
-    m_Checksum = value;
-    m_ChecksumIsSet = true;
-}
-bool PacketProtocolIpv4::checksumIsSet() const
-{
-    return m_ChecksumIsSet;
-}
-void PacketProtocolIpv4::unsetChecksum()
-{
-    m_ChecksumIsSet = false;
-}
-std::shared_ptr<Ipv4Address> PacketProtocolIpv4::getSource() const
+std::string PacketProtocolIpv4::getSource() const
 {
     return m_Source;
 }
-void PacketProtocolIpv4::setSource(std::shared_ptr<Ipv4Address> value)
+void PacketProtocolIpv4::setSource(std::string value)
 {
     m_Source = value;
     m_SourceIsSet = true;
@@ -359,14 +359,56 @@ void PacketProtocolIpv4::unsetSource()
 {
     m_SourceIsSet = false;
 }
-std::shared_ptr<Ipv4Address> PacketProtocolIpv4::getDestination() const
+int32_t PacketProtocolIpv4::getTimeToLive() const
 {
-    return m_Destination;
+    return m_Time_to_live;
 }
-void PacketProtocolIpv4::setDestination(std::shared_ptr<Ipv4Address> value)
+void PacketProtocolIpv4::setTimeToLive(int32_t value)
 {
-    m_Destination = value;
-    
+    m_Time_to_live = value;
+    m_Time_to_liveIsSet = true;
+}
+bool PacketProtocolIpv4::timeToLiveIsSet() const
+{
+    return m_Time_to_liveIsSet;
+}
+void PacketProtocolIpv4::unsetTime_to_live()
+{
+    m_Time_to_liveIsSet = false;
+}
+int32_t PacketProtocolIpv4::getTotalLength() const
+{
+    return m_Total_length;
+}
+void PacketProtocolIpv4::setTotalLength(int32_t value)
+{
+    m_Total_length = value;
+    m_Total_lengthIsSet = true;
+}
+bool PacketProtocolIpv4::totalLengthIsSet() const
+{
+    return m_Total_lengthIsSet;
+}
+void PacketProtocolIpv4::unsetTotal_length()
+{
+    m_Total_lengthIsSet = false;
+}
+int32_t PacketProtocolIpv4::getVersion() const
+{
+    return m_Version;
+}
+void PacketProtocolIpv4::setVersion(int32_t value)
+{
+    m_Version = value;
+    m_VersionIsSet = true;
+}
+bool PacketProtocolIpv4::versionIsSet() const
+{
+    return m_VersionIsSet;
+}
+void PacketProtocolIpv4::unsetVersion()
+{
+    m_VersionIsSet = false;
 }
 
 }
