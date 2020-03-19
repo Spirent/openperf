@@ -42,6 +42,7 @@ tags:
   - name: TimeSync
   - name: BlockGenerator
   - name: MemoryGenerator
+  - name: CpuGenerator
 
 basePath: /
 
@@ -232,6 +233,36 @@ paths:
   /memory-info:
     $ref: ./modules/memory.yaml#/paths/~1memory-info
 
+  ###
+  # CPU paths
+  ###
+  /cpu-generators:
+    $ref: ./modules/cpu.yaml#/paths/~1cpu-generators
+
+  /cpu-generators/{id}:
+    $ref: ./modules/cpu.yaml#/paths/~1cpu-generators~1{id}
+
+  /cpu-generators/{id}/start:
+    $ref: ./modules/cpu.yaml#/paths/~1cpu-generators~1{id}~1start
+
+  /cpu-generators/{id}/stop:
+    $ref: ./modules/cpu.yaml#/paths/~1cpu-generators~1{id}~1stop
+
+  /cpu-generators/x/bulk-start:
+    $ref: ./modules/cpu.yaml#/paths/~1cpu-generators~1x~1bulk-start
+
+  /cpu-generators/x/bulk-stop:
+    $ref: ./modules/cpu.yaml#/paths/~1cpu-generators~1x~1bulk-stop
+
+  /cpu-generator-results:
+    $ref: ./modules/cpu.yaml#/paths/~1cpu-generator-results
+
+  /cpu-generator-results/{id}:
+    $ref: ./modules/cpu.yaml#/paths/~1cpu-generator-results~1{id}
+
+  /cpu-info:
+    $ref: ./modules/cpu.yaml#/paths/~1cpu-info
+
 definitions:
   Module:
     type: object
@@ -419,3 +450,27 @@ definitions:
 
   MemoryGeneratorStats:
     $ref: ./modules/memory.yaml#/definitions/MemoryGeneratorStats
+
+  ###
+  # CPU definitions
+  ###
+  CpuGenerator:
+    $ref: ./modules/cpu.yaml#/definitions/CpuGenerator
+
+  CpuGeneratorConfig:
+    $ref: ./modules/cpu.yaml#/definitions/CpuGeneratorConfig
+
+  CpuGeneratorCoreConfig:
+    $ref: ./modules/cpu.yaml#/definitions/CpuGeneratorCoreConfig
+
+  CpuGeneratorResult:
+    $ref: ./modules/cpu.yaml#/definitions/CpuGeneratorResult
+
+  CpuGeneratorStats:
+    $ref: ./modules/cpu.yaml#/definitions/CpuGeneratorStats
+
+  CpuGeneratorCoreStats:
+    $ref: ./modules/cpu.yaml#/definitions/CpuGeneratorCoreStats
+
+  CpuGeneratorTargetStats:
+    $ref: ./modules/cpu.yaml#/definitions/CpuGeneratorTargetStats

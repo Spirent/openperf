@@ -1,30 +1,3 @@
-swagger: "2.0"
-
-info:
-  title: Openperf CPU Generation API
-  description: REST API interface to Openperf CPU module
-  termsOfService: TODO
-  contact:
-    name: "Spirent, Inc."
-    url: "http://spirent.com"
-    email: "support@spirent.com"
-  license:
-    name: "TBD"
-    url: "https://github.com/Spirent/openperf/blob/master/LICENSE"
-  version: "1"
-
-schemes:
-  - http
-  - https
-
-host: localhost
-
-produces:
-  - application/json
-
-consumes:
-  - application/json
-
 parameters:
   id:
     name: id
@@ -33,11 +6,6 @@ parameters:
     type: string
     format: string
     required: true
-
-tags:
-  - name: CpuGenerator
-
-basePath: /
 
 paths:
   /cpu-generators:
@@ -257,13 +225,13 @@ paths:
           description: Success
           schema:
             type: object
-            properties: 
+            properties:
               cores:
                 type: integer
                 description: Number of cores
               cache_line_size:
                 type: integer
-                description: Processor cache line size 
+                description: Processor cache line size
                 format: int64
               architecture:
                 type: string
@@ -378,7 +346,7 @@ definitions:
           $ref: "#/definitions/CpuGeneratorCoreStats"
     required:
       - cores
-  
+
   CpuGeneratorCoreStats:
     title: CpuGeneratorCoreStats
     type: object
