@@ -1,0 +1,11 @@
+MPLS:
+  fields:
+    label:
+      length: 20
+    traffic_class:
+      length: 3
+    bottom_of_stack:
+      length: 1
+    ttl:
+      format: number
+      length: 8

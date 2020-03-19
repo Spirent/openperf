@@ -20,6 +20,8 @@ namespace model {
 TrafficProtocolMacModifier_sequence::TrafficProtocolMacModifier_sequence()
 {
     m_Count = 0;
+    m_Start = "";
+    m_Stop = "";
     m_StopIsSet = false;
     m_SkipIsSet = false;
     
@@ -64,14 +66,10 @@ nlohmann::json TrafficProtocolMacModifier_sequence::toJson() const
 void TrafficProtocolMacModifier_sequence::fromJson(nlohmann::json& val)
 {
     setCount(val.at("count"));
+    setStart(val.at("start"));
     if(val.find("stop") != val.end())
     {
-        if(!val["stop"].is_null())
-        {
-            std::shared_ptr<MacAddress> newItem(new MacAddress());
-            newItem->fromJson(val["stop"]);
-            setStop( newItem );
-        }
+        setStop(val.at("stop"));
         
     }
     {
@@ -81,17 +79,7 @@ void TrafficProtocolMacModifier_sequence::fromJson(nlohmann::json& val)
         {
         for( auto& item : val["skip"] )
         {
-            
-            if(item.is_null())
-            {
-                m_Skip.push_back( std::shared_ptr<MacAddress>(nullptr) );
-            }
-            else
-            {
-                std::shared_ptr<MacAddress> newItem(new MacAddress());
-                newItem->fromJson(item);
-                m_Skip.push_back( newItem );
-            }
+            m_Skip.push_back(item);
             
         }
         }
@@ -109,20 +97,20 @@ void TrafficProtocolMacModifier_sequence::setCount(int32_t value)
     m_Count = value;
     
 }
-std::shared_ptr<MacAddress> TrafficProtocolMacModifier_sequence::getStart() const
+std::string TrafficProtocolMacModifier_sequence::getStart() const
 {
     return m_Start;
 }
-void TrafficProtocolMacModifier_sequence::setStart(std::shared_ptr<MacAddress> value)
+void TrafficProtocolMacModifier_sequence::setStart(std::string value)
 {
     m_Start = value;
     
 }
-std::shared_ptr<MacAddress> TrafficProtocolMacModifier_sequence::getStop() const
+std::string TrafficProtocolMacModifier_sequence::getStop() const
 {
     return m_Stop;
 }
-void TrafficProtocolMacModifier_sequence::setStop(std::shared_ptr<MacAddress> value)
+void TrafficProtocolMacModifier_sequence::setStop(std::string value)
 {
     m_Stop = value;
     m_StopIsSet = true;
@@ -135,7 +123,7 @@ void TrafficProtocolMacModifier_sequence::unsetStop()
 {
     m_StopIsSet = false;
 }
-std::vector<std::shared_ptr<MacAddress>>& TrafficProtocolMacModifier_sequence::getSkip()
+std::vector<std::string>& TrafficProtocolMacModifier_sequence::getSkip()
 {
     return m_Skip;
 }

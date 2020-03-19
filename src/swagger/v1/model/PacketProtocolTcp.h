@@ -12,7 +12,7 @@
 /*
  * PacketProtocolTcp.h
  *
- * Defines a TCP header
+ * Describes a tcp header
  */
 
 #ifndef PacketProtocolTcp_H_
@@ -23,14 +23,13 @@
 
 #include <string>
 #include <vector>
-#include "TcpIpPort.h"
 
 namespace swagger {
 namespace v1 {
 namespace model {
 
 /// <summary>
-/// Defines a TCP header
+/// Describes a tcp header
 /// </summary>
 class  PacketProtocolTcp
     : public ModelBase
@@ -51,83 +50,96 @@ public:
     /// PacketProtocolTcp members
 
     /// <summary>
-    /// 
+    /// tcp ack
     /// </summary>
-    std::shared_ptr<TcpIpPort> getSourcePort() const;
-    void setSourcePort(std::shared_ptr<TcpIpPort> value);
-        /// <summary>
-    /// 
-    /// </summary>
-    std::shared_ptr<TcpIpPort> getDestinationPort() const;
-    void setDestinationPort(std::shared_ptr<TcpIpPort> value);
-        /// <summary>
-    /// sequence number field
-    /// </summary>
-    int64_t getSequenceNumber() const;
-    void setSequenceNumber(int64_t value);
-    bool sequenceNumberIsSet() const;
-    void unsetSequence_number();
+    int64_t getAck() const;
+    void setAck(int64_t value);
+    bool ackIsSet() const;
+    void unsetAck();
     /// <summary>
-    /// ACK number field
-    /// </summary>
-    int64_t getAckNumber() const;
-    void setAckNumber(int64_t value);
-    bool ackNumberIsSet() const;
-    void unsetAck_number();
-    /// <summary>
-    /// offset to data from the start of the TCP header
-    /// </summary>
-    int32_t getDataOffset() const;
-    void setDataOffset(int32_t value);
-    bool dataOffsetIsSet() const;
-    void unsetData_offset();
-    /// <summary>
-    /// TCP header flags
-    /// </summary>
-    std::vector<std::string>& getFlags();
-    bool flagsIsSet() const;
-    void unsetFlags();
-    /// <summary>
-    /// sequence window field
-    /// </summary>
-    int32_t getWindow() const;
-    void setWindow(int32_t value);
-    bool windowIsSet() const;
-    void unsetWindow();
-    /// <summary>
-    /// checksum field
+    /// tcp checksum
     /// </summary>
     int32_t getChecksum() const;
     void setChecksum(int32_t value);
     bool checksumIsSet() const;
     void unsetChecksum();
     /// <summary>
-    /// urgent pointer field
+    /// tcp data offset
+    /// </summary>
+    int32_t getDataOffset() const;
+    void setDataOffset(int32_t value);
+    bool dataOffsetIsSet() const;
+    void unsetData_offset();
+    /// <summary>
+    /// tcp destination
+    /// </summary>
+    int32_t getDestination() const;
+    void setDestination(int32_t value);
+    bool destinationIsSet() const;
+    void unsetDestination();
+    /// <summary>
+    /// tcp flags
+    /// </summary>
+    std::vector<std::string>& getFlags();
+    bool flagsIsSet() const;
+    void unsetFlags();
+    /// <summary>
+    /// tcp reserved
+    /// </summary>
+    int32_t getReserved() const;
+    void setReserved(int32_t value);
+    bool reservedIsSet() const;
+    void unsetReserved();
+    /// <summary>
+    /// tcp sequence
+    /// </summary>
+    int64_t getSequence() const;
+    void setSequence(int64_t value);
+    bool sequenceIsSet() const;
+    void unsetSequence();
+    /// <summary>
+    /// tcp source
+    /// </summary>
+    int32_t getSource() const;
+    void setSource(int32_t value);
+    bool sourceIsSet() const;
+    void unsetSource();
+    /// <summary>
+    /// tcp urgent pointer
     /// </summary>
     int32_t getUrgentPointer() const;
     void setUrgentPointer(int32_t value);
     bool urgentPointerIsSet() const;
     void unsetUrgent_pointer();
+    /// <summary>
+    /// tcp window
+    /// </summary>
+    int32_t getWindow() const;
+    void setWindow(int32_t value);
+    bool windowIsSet() const;
+    void unsetWindow();
 
 protected:
-    std::shared_ptr<TcpIpPort> m_Source_port;
-
-    std::shared_ptr<TcpIpPort> m_Destination_port;
-
-    int64_t m_Sequence_number;
-    bool m_Sequence_numberIsSet;
-    int64_t m_Ack_number;
-    bool m_Ack_numberIsSet;
-    int32_t m_Data_offset;
-    bool m_Data_offsetIsSet;
-    std::vector<std::string> m_Flags;
-    bool m_FlagsIsSet;
-    int32_t m_Window;
-    bool m_WindowIsSet;
+    int64_t m_Ack;
+    bool m_AckIsSet;
     int32_t m_Checksum;
     bool m_ChecksumIsSet;
+    int32_t m_Data_offset;
+    bool m_Data_offsetIsSet;
+    int32_t m_Destination;
+    bool m_DestinationIsSet;
+    std::vector<std::string> m_Flags;
+    bool m_FlagsIsSet;
+    int32_t m_Reserved;
+    bool m_ReservedIsSet;
+    int64_t m_Sequence;
+    bool m_SequenceIsSet;
+    int32_t m_Source;
+    bool m_SourceIsSet;
     int32_t m_Urgent_pointer;
     bool m_Urgent_pointerIsSet;
+    int32_t m_Window;
+    bool m_WindowIsSet;
 };
 
 }

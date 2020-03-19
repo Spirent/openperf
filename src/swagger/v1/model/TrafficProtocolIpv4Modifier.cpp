@@ -70,17 +70,7 @@ void TrafficProtocolIpv4Modifier::fromJson(nlohmann::json& val)
         {
         for( auto& item : val["list"] )
         {
-            
-            if(item.is_null())
-            {
-                m_List.push_back( std::shared_ptr<Ipv4Address>(nullptr) );
-            }
-            else
-            {
-                std::shared_ptr<Ipv4Address> newItem(new Ipv4Address());
-                newItem->fromJson(item);
-                m_List.push_back( newItem );
-            }
+            m_List.push_back(item);
             
         }
         }
@@ -108,7 +98,7 @@ void TrafficProtocolIpv4Modifier::setMethod(std::string value)
     m_Method = value;
     
 }
-std::vector<std::shared_ptr<Ipv4Address>>& TrafficProtocolIpv4Modifier::getList()
+std::vector<std::string>& TrafficProtocolIpv4Modifier::getList()
 {
     return m_List;
 }

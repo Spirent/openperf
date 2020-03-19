@@ -32,7 +32,7 @@ class TrafficProtocolMacModifier(object):
     """
     swagger_types = {
         'method': 'str',
-        'list': 'list[MacAddress]',
+        'list': 'list[str]',
         'sequence': 'TrafficProtocolMacModifierSequence'
     }
 
@@ -85,7 +85,7 @@ class TrafficProtocolMacModifier(object):
         List of MAC addresses  # noqa: E501
 
         :return: The list of this TrafficProtocolMacModifier.  # noqa: E501
-        :rtype: list[MacAddress]
+        :rtype: list[str]
         """
         return self._list
 
@@ -96,7 +96,7 @@ class TrafficProtocolMacModifier(object):
         List of MAC addresses  # noqa: E501
 
         :param list: The list of this TrafficProtocolMacModifier.  # noqa: E501
-        :type: list[MacAddress]
+        :type: list[str]
         """
         self._list = list
 

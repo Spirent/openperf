@@ -32,7 +32,7 @@ class TrafficProtocolIpv4Modifier(object):
     """
     swagger_types = {
         'method': 'str',
-        'list': 'list[Ipv4Address]',
+        'list': 'list[str]',
         'sequence': 'TrafficProtocolIpv4ModifierSequence'
     }
 
@@ -85,7 +85,7 @@ class TrafficProtocolIpv4Modifier(object):
         List of IPv4 addresses  # noqa: E501
 
         :return: The list of this TrafficProtocolIpv4Modifier.  # noqa: E501
-        :rtype: list[Ipv4Address]
+        :rtype: list[str]
         """
         return self._list
 
@@ -96,7 +96,7 @@ class TrafficProtocolIpv4Modifier(object):
         List of IPv4 addresses  # noqa: E501
 
         :param list: The list of this TrafficProtocolIpv4Modifier.  # noqa: E501
-        :type: list[Ipv4Address]
+        :type: list[str]
         """
         self._list = list
 

@@ -4,7 +4,7 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **method** | **str** | Modifier method | 
-**list** | [**list[MacAddress]**](MacAddress.md) | List of MAC addresses | [optional] 
+**list** | **list[str]** | List of MAC addresses | [optional] 
 **sequence** | [**TrafficProtocolMacModifierSequence**](TrafficProtocolMacModifierSequence.md) |  | [optional] 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)

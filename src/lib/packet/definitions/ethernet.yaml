@@ -1,0 +1,8 @@
+Ethernet:
+  fields:
+    destination:
+      format: mac
+    source:
+      format: mac
+    ether_type:
+      length: 16

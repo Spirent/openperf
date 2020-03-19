@@ -22,12 +22,14 @@ TrafficProtocol::TrafficProtocol()
     m_ModifiersIsSet = false;
     m_Protocol = "";
     m_CustomIsSet = false;
+    m_SignatureIsSet = false;
     m_EthernetIsSet = false;
     m_Ipv4IsSet = false;
     m_Ipv6IsSet = false;
-    m_SignatureIsSet = false;
+    m_MplsIsSet = false;
     m_TcpIsSet = false;
     m_UdpIsSet = false;
+    m_VlanIsSet = false;
     
 }
 
@@ -53,6 +55,10 @@ nlohmann::json TrafficProtocol::toJson() const
     {
         val["custom"] = ModelBase::toJson(m_Custom);
     }
+    if(m_SignatureIsSet)
+    {
+        val["signature"] = ModelBase::toJson(m_Signature);
+    }
     if(m_EthernetIsSet)
     {
         val["ethernet"] = ModelBase::toJson(m_Ethernet);
@@ -65,9 +71,9 @@ nlohmann::json TrafficProtocol::toJson() const
     {
         val["ipv6"] = ModelBase::toJson(m_Ipv6);
     }
-    if(m_SignatureIsSet)
+    if(m_MplsIsSet)
     {
-        val["signature"] = ModelBase::toJson(m_Signature);
+        val["mpls"] = ModelBase::toJson(m_Mpls);
     }
     if(m_TcpIsSet)
     {
@@ -76,6 +82,10 @@ nlohmann::json TrafficProtocol::toJson() const
     if(m_UdpIsSet)
     {
         val["udp"] = ModelBase::toJson(m_Udp);
+    }
+    if(m_VlanIsSet)
+    {
+        val["vlan"] = ModelBase::toJson(m_Vlan);
     }
     
 
@@ -102,6 +112,16 @@ void TrafficProtocol::fromJson(nlohmann::json& val)
             std::shared_ptr<PacketProtocolCustom> newItem(new PacketProtocolCustom());
             newItem->fromJson(val["custom"]);
             setCustom( newItem );
+        }
+        
+    }
+    if(val.find("signature") != val.end())
+    {
+        if(!val["signature"].is_null())
+        {
+            std::shared_ptr<PacketProtocolSpirentSignature> newItem(new PacketProtocolSpirentSignature());
+            newItem->fromJson(val["signature"]);
+            setSignature( newItem );
         }
         
     }
@@ -135,13 +155,13 @@ void TrafficProtocol::fromJson(nlohmann::json& val)
         }
         
     }
-    if(val.find("signature") != val.end())
+    if(val.find("mpls") != val.end())
     {
-        if(!val["signature"].is_null())
+        if(!val["mpls"].is_null())
         {
-            std::shared_ptr<PacketProtocolSpirentSignature> newItem(new PacketProtocolSpirentSignature());
-            newItem->fromJson(val["signature"]);
-            setSignature( newItem );
+            std::shared_ptr<PacketProtocolMpls> newItem(new PacketProtocolMpls());
+            newItem->fromJson(val["mpls"]);
+            setMpls( newItem );
         }
         
     }
@@ -162,6 +182,16 @@ void TrafficProtocol::fromJson(nlohmann::json& val)
             std::shared_ptr<PacketProtocolUdp> newItem(new PacketProtocolUdp());
             newItem->fromJson(val["udp"]);
             setUdp( newItem );
+        }
+        
+    }
+    if(val.find("vlan") != val.end())
+    {
+        if(!val["vlan"].is_null())
+        {
+            std::shared_ptr<PacketProtocolVlan> newItem(new PacketProtocolVlan());
+            newItem->fromJson(val["vlan"]);
+            setVlan( newItem );
         }
         
     }
@@ -211,6 +241,23 @@ bool TrafficProtocol::customIsSet() const
 void TrafficProtocol::unsetCustom()
 {
     m_CustomIsSet = false;
+}
+std::shared_ptr<PacketProtocolSpirentSignature> TrafficProtocol::getSignature() const
+{
+    return m_Signature;
+}
+void TrafficProtocol::setSignature(std::shared_ptr<PacketProtocolSpirentSignature> value)
+{
+    m_Signature = value;
+    m_SignatureIsSet = true;
+}
+bool TrafficProtocol::signatureIsSet() const
+{
+    return m_SignatureIsSet;
+}
+void TrafficProtocol::unsetSignature()
+{
+    m_SignatureIsSet = false;
 }
 std::shared_ptr<PacketProtocolEthernet> TrafficProtocol::getEthernet() const
 {
@@ -263,22 +310,22 @@ void TrafficProtocol::unsetIpv6()
 {
     m_Ipv6IsSet = false;
 }
-std::shared_ptr<PacketProtocolSpirentSignature> TrafficProtocol::getSignature() const
+std::shared_ptr<PacketProtocolMpls> TrafficProtocol::getMpls() const
 {
-    return m_Signature;
+    return m_Mpls;
 }
-void TrafficProtocol::setSignature(std::shared_ptr<PacketProtocolSpirentSignature> value)
+void TrafficProtocol::setMpls(std::shared_ptr<PacketProtocolMpls> value)
 {
-    m_Signature = value;
-    m_SignatureIsSet = true;
+    m_Mpls = value;
+    m_MplsIsSet = true;
 }
-bool TrafficProtocol::signatureIsSet() const
+bool TrafficProtocol::mplsIsSet() const
 {
-    return m_SignatureIsSet;
+    return m_MplsIsSet;
 }
-void TrafficProtocol::unsetSignature()
+void TrafficProtocol::unsetMpls()
 {
-    m_SignatureIsSet = false;
+    m_MplsIsSet = false;
 }
 std::shared_ptr<PacketProtocolTcp> TrafficProtocol::getTcp() const
 {
@@ -313,6 +360,23 @@ bool TrafficProtocol::udpIsSet() const
 void TrafficProtocol::unsetUdp()
 {
     m_UdpIsSet = false;
+}
+std::shared_ptr<PacketProtocolVlan> TrafficProtocol::getVlan() const
+{
+    return m_Vlan;
+}
+void TrafficProtocol::setVlan(std::shared_ptr<PacketProtocolVlan> value)
+{
+    m_Vlan = value;
+    m_VlanIsSet = true;
+}
+bool TrafficProtocol::vlanIsSet() const
+{
+    return m_VlanIsSet;
+}
+void TrafficProtocol::unsetVlan()
+{
+    m_VlanIsSet = false;
 }
 
 }

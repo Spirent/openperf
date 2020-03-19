@@ -19,10 +19,14 @@ namespace model {
 
 PacketProtocolUdp::PacketProtocolUdp()
 {
-    m_Length = 0;
-    m_LengthIsSet = false;
     m_Checksum = 0;
     m_ChecksumIsSet = false;
+    m_Destination = 0;
+    m_DestinationIsSet = false;
+    m_Length = 0;
+    m_LengthIsSet = false;
+    m_Source = 0;
+    m_SourceIsSet = false;
     
 }
 
@@ -39,15 +43,21 @@ nlohmann::json PacketProtocolUdp::toJson() const
 {
     nlohmann::json val = nlohmann::json::object();
 
-    val["source_port"] = ModelBase::toJson(m_Source_port);
-    val["destination_port"] = ModelBase::toJson(m_Destination_port);
+    if(m_ChecksumIsSet)
+    {
+        val["checksum"] = m_Checksum;
+    }
+    if(m_DestinationIsSet)
+    {
+        val["destination"] = m_Destination;
+    }
     if(m_LengthIsSet)
     {
         val["length"] = m_Length;
     }
-    if(m_ChecksumIsSet)
+    if(m_SourceIsSet)
     {
-        val["checksum"] = m_Checksum;
+        val["source"] = m_Source;
     }
     
 
@@ -56,35 +66,59 @@ nlohmann::json PacketProtocolUdp::toJson() const
 
 void PacketProtocolUdp::fromJson(nlohmann::json& val)
 {
-    if(val.find("length") != val.end())
-    {
-        setLength(val.at("length"));
-    }
     if(val.find("checksum") != val.end())
     {
         setChecksum(val.at("checksum"));
     }
+    if(val.find("destination") != val.end())
+    {
+        setDestination(val.at("destination"));
+    }
+    if(val.find("length") != val.end())
+    {
+        setLength(val.at("length"));
+    }
+    if(val.find("source") != val.end())
+    {
+        setSource(val.at("source"));
+    }
     
 }
 
 
-std::shared_ptr<TcpIpPort> PacketProtocolUdp::getSourcePort() const
+int32_t PacketProtocolUdp::getChecksum() const
 {
-    return m_Source_port;
+    return m_Checksum;
 }
-void PacketProtocolUdp::setSourcePort(std::shared_ptr<TcpIpPort> value)
+void PacketProtocolUdp::setChecksum(int32_t value)
 {
-    m_Source_port = value;
-    
+    m_Checksum = value;
+    m_ChecksumIsSet = true;
 }
-std::shared_ptr<TcpIpPort> PacketProtocolUdp::getDestinationPort() const
+bool PacketProtocolUdp::checksumIsSet() const
 {
-    return m_Destination_port;
+    return m_ChecksumIsSet;
 }
-void PacketProtocolUdp::setDestinationPort(std::shared_ptr<TcpIpPort> value)
+void PacketProtocolUdp::unsetChecksum()
 {
-    m_Destination_port = value;
-    
+    m_ChecksumIsSet = false;
+}
+int32_t PacketProtocolUdp::getDestination() const
+{
+    return m_Destination;
+}
+void PacketProtocolUdp::setDestination(int32_t value)
+{
+    m_Destination = value;
+    m_DestinationIsSet = true;
+}
+bool PacketProtocolUdp::destinationIsSet() const
+{
+    return m_DestinationIsSet;
+}
+void PacketProtocolUdp::unsetDestination()
+{
+    m_DestinationIsSet = false;
 }
 int32_t PacketProtocolUdp::getLength() const
 {
@@ -103,22 +137,22 @@ void PacketProtocolUdp::unsetLength()
 {
     m_LengthIsSet = false;
 }
-int32_t PacketProtocolUdp::getChecksum() const
+int32_t PacketProtocolUdp::getSource() const
 {
-    return m_Checksum;
+    return m_Source;
 }
-void PacketProtocolUdp::setChecksum(int32_t value)
+void PacketProtocolUdp::setSource(int32_t value)
 {
-    m_Checksum = value;
-    m_ChecksumIsSet = true;
+    m_Source = value;
+    m_SourceIsSet = true;
 }
-bool PacketProtocolUdp::checksumIsSet() const
+bool PacketProtocolUdp::sourceIsSet() const
 {
-    return m_ChecksumIsSet;
+    return m_SourceIsSet;
 }
-void PacketProtocolUdp::unsetChecksum()
+void PacketProtocolUdp::unsetSource()
 {
-    m_ChecksumIsSet = false;
+    m_SourceIsSet = false;
 }
 
 }

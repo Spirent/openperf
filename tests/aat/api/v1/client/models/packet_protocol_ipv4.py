@@ -31,279 +31,87 @@ class PacketProtocolIpv4(object):
                             and the value is json key in definition.
     """
     swagger_types = {
-        'version': 'int',
-        'header_length': 'int',
-        'tos': 'int',
-        'packet_length': 'int',
-        'id': 'int',
+        'checksum': 'int',
+        'destination': 'str',
+        'dscp': 'int',
+        'ecn': 'str',
         'flags': 'list[str]',
         'fragment_offset': 'int',
-        'ttl': 'int',
+        'header_length': 'int',
+        'identification': 'int',
         'protocol': 'int',
-        'checksum': 'int',
-        'source': 'Ipv4Address',
-        'destination': 'Ipv4Address'
+        'source': 'str',
+        'time_to_live': 'int',
+        'total_length': 'int',
+        'version': 'int'
     }
 
     attribute_map = {
-        'version': 'version',
-        'header_length': 'header_length',
-        'tos': 'tos',
-        'packet_length': 'packet_length',
-        'id': 'id',
+        'checksum': 'checksum',
+        'destination': 'destination',
+        'dscp': 'dscp',
+        'ecn': 'ecn',
         'flags': 'flags',
         'fragment_offset': 'fragment_offset',
-        'ttl': 'ttl',
+        'header_length': 'header_length',
+        'identification': 'identification',
         'protocol': 'protocol',
-        'checksum': 'checksum',
         'source': 'source',
-        'destination': 'destination'
+        'time_to_live': 'time_to_live',
+        'total_length': 'total_length',
+        'version': 'version'
     }
 
-    def __init__(self, version=4, header_length=20, tos=0, packet_length=None, id=None, flags=None, fragment_offset=0, ttl=None, protocol=None, checksum=None, source=None, destination=None):  # noqa: E501
+    def __init__(self, checksum=None, destination=None, dscp=None, ecn=None, flags=None, fragment_offset=None, header_length=None, identification=None, protocol=None, source=None, time_to_live=None, total_length=None, version=None):  # noqa: E501
         """PacketProtocolIpv4 - a model defined in Swagger"""  # noqa: E501
 
-        self._version = None
-        self._header_length = None
-        self._tos = None
-        self._packet_length = None
-        self._id = None
+        self._checksum = None
+        self._destination = None
+        self._dscp = None
+        self._ecn = None
         self._flags = None
         self._fragment_offset = None
-        self._ttl = None
+        self._header_length = None
+        self._identification = None
         self._protocol = None
-        self._checksum = None
         self._source = None
-        self._destination = None
+        self._time_to_live = None
+        self._total_length = None
+        self._version = None
         self.discriminator = None
 
-        if version is not None:
-            self.version = version
-        if header_length is not None:
-            self.header_length = header_length
-        if tos is not None:
-            self.tos = tos
-        if packet_length is not None:
-            self.packet_length = packet_length
-        if id is not None:
-            self.id = id
+        if checksum is not None:
+            self.checksum = checksum
+        if destination is not None:
+            self.destination = destination
+        if dscp is not None:
+            self.dscp = dscp
+        if ecn is not None:
+            self.ecn = ecn
         if flags is not None:
             self.flags = flags
         if fragment_offset is not None:
             self.fragment_offset = fragment_offset
-        if ttl is not None:
-            self.ttl = ttl
+        if header_length is not None:
+            self.header_length = header_length
+        if identification is not None:
+            self.identification = identification
         if protocol is not None:
             self.protocol = protocol
-        if checksum is not None:
-            self.checksum = checksum
         if source is not None:
             self.source = source
-        self.destination = destination
-
-    @property
-    def version(self):
-        """Gets the version of this PacketProtocolIpv4.  # noqa: E501
-
-        IP header version  # noqa: E501
-
-        :return: The version of this PacketProtocolIpv4.  # noqa: E501
-        :rtype: int
-        """
-        return self._version
-
-    @version.setter
-    def version(self, version):
-        """Sets the version of this PacketProtocolIpv4.
-
-        IP header version  # noqa: E501
-
-        :param version: The version of this PacketProtocolIpv4.  # noqa: E501
-        :type: int
-        """
-        self._version = version
-
-    @property
-    def header_length(self):
-        """Gets the header_length of this PacketProtocolIpv4.  # noqa: E501
-
-        IP header length  # noqa: E501
-
-        :return: The header_length of this PacketProtocolIpv4.  # noqa: E501
-        :rtype: int
-        """
-        return self._header_length
-
-    @header_length.setter
-    def header_length(self, header_length):
-        """Sets the header_length of this PacketProtocolIpv4.
-
-        IP header length  # noqa: E501
-
-        :param header_length: The header_length of this PacketProtocolIpv4.  # noqa: E501
-        :type: int
-        """
-        self._header_length = header_length
-
-    @property
-    def tos(self):
-        """Gets the tos of this PacketProtocolIpv4.  # noqa: E501
-
-        Type of Service field  # noqa: E501
-
-        :return: The tos of this PacketProtocolIpv4.  # noqa: E501
-        :rtype: int
-        """
-        return self._tos
-
-    @tos.setter
-    def tos(self, tos):
-        """Sets the tos of this PacketProtocolIpv4.
-
-        Type of Service field  # noqa: E501
-
-        :param tos: The tos of this PacketProtocolIpv4.  # noqa: E501
-        :type: int
-        """
-        self._tos = tos
-
-    @property
-    def packet_length(self):
-        """Gets the packet_length of this PacketProtocolIpv4.  # noqa: E501
-
-        IP packet length (include payload)  # noqa: E501
-
-        :return: The packet_length of this PacketProtocolIpv4.  # noqa: E501
-        :rtype: int
-        """
-        return self._packet_length
-
-    @packet_length.setter
-    def packet_length(self, packet_length):
-        """Sets the packet_length of this PacketProtocolIpv4.
-
-        IP packet length (include payload)  # noqa: E501
-
-        :param packet_length: The packet_length of this PacketProtocolIpv4.  # noqa: E501
-        :type: int
-        """
-        self._packet_length = packet_length
-
-    @property
-    def id(self):
-        """Gets the id of this PacketProtocolIpv4.  # noqa: E501
-
-        Identification field  # noqa: E501
-
-        :return: The id of this PacketProtocolIpv4.  # noqa: E501
-        :rtype: int
-        """
-        return self._id
-
-    @id.setter
-    def id(self, id):
-        """Sets the id of this PacketProtocolIpv4.
-
-        Identification field  # noqa: E501
-
-        :param id: The id of this PacketProtocolIpv4.  # noqa: E501
-        :type: int
-        """
-        self._id = id
-
-    @property
-    def flags(self):
-        """Gets the flags of this PacketProtocolIpv4.  # noqa: E501
-
-        IP header flags  # noqa: E501
-
-        :return: The flags of this PacketProtocolIpv4.  # noqa: E501
-        :rtype: list[str]
-        """
-        return self._flags
-
-    @flags.setter
-    def flags(self, flags):
-        """Sets the flags of this PacketProtocolIpv4.
-
-        IP header flags  # noqa: E501
-
-        :param flags: The flags of this PacketProtocolIpv4.  # noqa: E501
-        :type: list[str]
-        """
-        self._flags = flags
-
-    @property
-    def fragment_offset(self):
-        """Gets the fragment_offset of this PacketProtocolIpv4.  # noqa: E501
-
-        IP fragment offset  # noqa: E501
-
-        :return: The fragment_offset of this PacketProtocolIpv4.  # noqa: E501
-        :rtype: int
-        """
-        return self._fragment_offset
-
-    @fragment_offset.setter
-    def fragment_offset(self, fragment_offset):
-        """Sets the fragment_offset of this PacketProtocolIpv4.
-
-        IP fragment offset  # noqa: E501
-
-        :param fragment_offset: The fragment_offset of this PacketProtocolIpv4.  # noqa: E501
-        :type: int
-        """
-        self._fragment_offset = fragment_offset
-
-    @property
-    def ttl(self):
-        """Gets the ttl of this PacketProtocolIpv4.  # noqa: E501
-
-        Time To Live field  # noqa: E501
-
-        :return: The ttl of this PacketProtocolIpv4.  # noqa: E501
-        :rtype: int
-        """
-        return self._ttl
-
-    @ttl.setter
-    def ttl(self, ttl):
-        """Sets the ttl of this PacketProtocolIpv4.
-
-        Time To Live field  # noqa: E501
-
-        :param ttl: The ttl of this PacketProtocolIpv4.  # noqa: E501
-        :type: int
-        """
-        self._ttl = ttl
-
-    @property
-    def protocol(self):
-        """Gets the protocol of this PacketProtocolIpv4.  # noqa: E501
-
-        Protocol field  # noqa: E501
-
-        :return: The protocol of this PacketProtocolIpv4.  # noqa: E501
-        :rtype: int
-        """
-        return self._protocol
-
-    @protocol.setter
-    def protocol(self, protocol):
-        """Sets the protocol of this PacketProtocolIpv4.
-
-        Protocol field  # noqa: E501
-
-        :param protocol: The protocol of this PacketProtocolIpv4.  # noqa: E501
-        :type: int
-        """
-        self._protocol = protocol
+        if time_to_live is not None:
+            self.time_to_live = time_to_live
+        if total_length is not None:
+            self.total_length = total_length
+        if version is not None:
+            self.version = version
 
     @property
     def checksum(self):
         """Gets the checksum of this PacketProtocolIpv4.  # noqa: E501
 
-        IPv4 header checksum  # noqa: E501
+        IPv4 checksum  # noqa: E501
 
         :return: The checksum of this PacketProtocolIpv4.  # noqa: E501
         :rtype: int
@@ -314,7 +122,7 @@ class PacketProtocolIpv4(object):
     def checksum(self, checksum):
         """Sets the checksum of this PacketProtocolIpv4.
 
-        IPv4 header checksum  # noqa: E501
+        IPv4 checksum  # noqa: E501
 
         :param checksum: The checksum of this PacketProtocolIpv4.  # noqa: E501
         :type: int
@@ -322,32 +130,13 @@ class PacketProtocolIpv4(object):
         self._checksum = checksum
 
     @property
-    def source(self):
-        """Gets the source of this PacketProtocolIpv4.  # noqa: E501
-
-
-        :return: The source of this PacketProtocolIpv4.  # noqa: E501
-        :rtype: Ipv4Address
-        """
-        return self._source
-
-    @source.setter
-    def source(self, source):
-        """Sets the source of this PacketProtocolIpv4.
-
-
-        :param source: The source of this PacketProtocolIpv4.  # noqa: E501
-        :type: Ipv4Address
-        """
-        self._source = source
-
-    @property
     def destination(self):
         """Gets the destination of this PacketProtocolIpv4.  # noqa: E501
 
+        IPv4 destination address  # noqa: E501
 
         :return: The destination of this PacketProtocolIpv4.  # noqa: E501
-        :rtype: Ipv4Address
+        :rtype: str
         """
         return self._destination
 
@@ -355,11 +144,254 @@ class PacketProtocolIpv4(object):
     def destination(self, destination):
         """Sets the destination of this PacketProtocolIpv4.
 
+        IPv4 destination address  # noqa: E501
 
         :param destination: The destination of this PacketProtocolIpv4.  # noqa: E501
-        :type: Ipv4Address
+        :type: str
         """
         self._destination = destination
+
+    @property
+    def dscp(self):
+        """Gets the dscp of this PacketProtocolIpv4.  # noqa: E501
+
+        IPv4 dscp  # noqa: E501
+
+        :return: The dscp of this PacketProtocolIpv4.  # noqa: E501
+        :rtype: int
+        """
+        return self._dscp
+
+    @dscp.setter
+    def dscp(self, dscp):
+        """Sets the dscp of this PacketProtocolIpv4.
+
+        IPv4 dscp  # noqa: E501
+
+        :param dscp: The dscp of this PacketProtocolIpv4.  # noqa: E501
+        :type: int
+        """
+        self._dscp = dscp
+
+    @property
+    def ecn(self):
+        """Gets the ecn of this PacketProtocolIpv4.  # noqa: E501
+
+        IPv4 ecn  # noqa: E501
+
+        :return: The ecn of this PacketProtocolIpv4.  # noqa: E501
+        :rtype: str
+        """
+        return self._ecn
+
+    @ecn.setter
+    def ecn(self, ecn):
+        """Sets the ecn of this PacketProtocolIpv4.
+
+        IPv4 ecn  # noqa: E501
+
+        :param ecn: The ecn of this PacketProtocolIpv4.  # noqa: E501
+        :type: str
+        """
+        self._ecn = ecn
+
+    @property
+    def flags(self):
+        """Gets the flags of this PacketProtocolIpv4.  # noqa: E501
+
+        IPv4 flags  # noqa: E501
+
+        :return: The flags of this PacketProtocolIpv4.  # noqa: E501
+        :rtype: list[str]
+        """
+        return self._flags
+
+    @flags.setter
+    def flags(self, flags):
+        """Sets the flags of this PacketProtocolIpv4.
+
+        IPv4 flags  # noqa: E501
+
+        :param flags: The flags of this PacketProtocolIpv4.  # noqa: E501
+        :type: list[str]
+        """
+        self._flags = flags
+
+    @property
+    def fragment_offset(self):
+        """Gets the fragment_offset of this PacketProtocolIpv4.  # noqa: E501
+
+        IPv4 fragment offset  # noqa: E501
+
+        :return: The fragment_offset of this PacketProtocolIpv4.  # noqa: E501
+        :rtype: int
+        """
+        return self._fragment_offset
+
+    @fragment_offset.setter
+    def fragment_offset(self, fragment_offset):
+        """Sets the fragment_offset of this PacketProtocolIpv4.
+
+        IPv4 fragment offset  # noqa: E501
+
+        :param fragment_offset: The fragment_offset of this PacketProtocolIpv4.  # noqa: E501
+        :type: int
+        """
+        self._fragment_offset = fragment_offset
+
+    @property
+    def header_length(self):
+        """Gets the header_length of this PacketProtocolIpv4.  # noqa: E501
+
+        IPv4 header length  # noqa: E501
+
+        :return: The header_length of this PacketProtocolIpv4.  # noqa: E501
+        :rtype: int
+        """
+        return self._header_length
+
+    @header_length.setter
+    def header_length(self, header_length):
+        """Sets the header_length of this PacketProtocolIpv4.
+
+        IPv4 header length  # noqa: E501
+
+        :param header_length: The header_length of this PacketProtocolIpv4.  # noqa: E501
+        :type: int
+        """
+        self._header_length = header_length
+
+    @property
+    def identification(self):
+        """Gets the identification of this PacketProtocolIpv4.  # noqa: E501
+
+        IPv4 identification  # noqa: E501
+
+        :return: The identification of this PacketProtocolIpv4.  # noqa: E501
+        :rtype: int
+        """
+        return self._identification
+
+    @identification.setter
+    def identification(self, identification):
+        """Sets the identification of this PacketProtocolIpv4.
+
+        IPv4 identification  # noqa: E501
+
+        :param identification: The identification of this PacketProtocolIpv4.  # noqa: E501
+        :type: int
+        """
+        self._identification = identification
+
+    @property
+    def protocol(self):
+        """Gets the protocol of this PacketProtocolIpv4.  # noqa: E501
+
+        IPv4 protocol  # noqa: E501
+
+        :return: The protocol of this PacketProtocolIpv4.  # noqa: E501
+        :rtype: int
+        """
+        return self._protocol
+
+    @protocol.setter
+    def protocol(self, protocol):
+        """Sets the protocol of this PacketProtocolIpv4.
+
+        IPv4 protocol  # noqa: E501
+
+        :param protocol: The protocol of this PacketProtocolIpv4.  # noqa: E501
+        :type: int
+        """
+        self._protocol = protocol
+
+    @property
+    def source(self):
+        """Gets the source of this PacketProtocolIpv4.  # noqa: E501
+
+        IPv4 source address  # noqa: E501
+
+        :return: The source of this PacketProtocolIpv4.  # noqa: E501
+        :rtype: str
+        """
+        return self._source
+
+    @source.setter
+    def source(self, source):
+        """Sets the source of this PacketProtocolIpv4.
+
+        IPv4 source address  # noqa: E501
+
+        :param source: The source of this PacketProtocolIpv4.  # noqa: E501
+        :type: str
+        """
+        self._source = source
+
+    @property
+    def time_to_live(self):
+        """Gets the time_to_live of this PacketProtocolIpv4.  # noqa: E501
+
+        IPv4 time to live  # noqa: E501
+
+        :return: The time_to_live of this PacketProtocolIpv4.  # noqa: E501
+        :rtype: int
+        """
+        return self._time_to_live
+
+    @time_to_live.setter
+    def time_to_live(self, time_to_live):
+        """Sets the time_to_live of this PacketProtocolIpv4.
+
+        IPv4 time to live  # noqa: E501
+
+        :param time_to_live: The time_to_live of this PacketProtocolIpv4.  # noqa: E501
+        :type: int
+        """
+        self._time_to_live = time_to_live
+
+    @property
+    def total_length(self):
+        """Gets the total_length of this PacketProtocolIpv4.  # noqa: E501
+
+        IPv4 total length  # noqa: E501
+
+        :return: The total_length of this PacketProtocolIpv4.  # noqa: E501
+        :rtype: int
+        """
+        return self._total_length
+
+    @total_length.setter
+    def total_length(self, total_length):
+        """Sets the total_length of this PacketProtocolIpv4.
+
+        IPv4 total length  # noqa: E501
+
+        :param total_length: The total_length of this PacketProtocolIpv4.  # noqa: E501
+        :type: int
+        """
+        self._total_length = total_length
+
+    @property
+    def version(self):
+        """Gets the version of this PacketProtocolIpv4.  # noqa: E501
+
+        IPv4 version  # noqa: E501
+
+        :return: The version of this PacketProtocolIpv4.  # noqa: E501
+        :rtype: int
+        """
+        return self._version
+
+    @version.setter
+    def version(self, version):
+        """Sets the version of this PacketProtocolIpv4.
+
+        IPv4 version  # noqa: E501
+
+        :param version: The version of this PacketProtocolIpv4.  # noqa: E501
+        :type: int
+        """
+        self._version = version
 
     def to_dict(self):
         """Returns the model properties as a dict"""

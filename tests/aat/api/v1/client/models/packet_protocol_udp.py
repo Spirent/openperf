@@ -31,102 +31,42 @@ class PacketProtocolUdp(object):
                             and the value is json key in definition.
     """
     swagger_types = {
-        'source_port': 'TcpIpPort',
-        'destination_port': 'TcpIpPort',
+        'checksum': 'int',
+        'destination': 'int',
         'length': 'int',
-        'checksum': 'int'
+        'source': 'int'
     }
 
     attribute_map = {
-        'source_port': 'source_port',
-        'destination_port': 'destination_port',
+        'checksum': 'checksum',
+        'destination': 'destination',
         'length': 'length',
-        'checksum': 'checksum'
+        'source': 'source'
     }
 
-    def __init__(self, source_port=None, destination_port=None, length=None, checksum=None):  # noqa: E501
+    def __init__(self, checksum=None, destination=None, length=None, source=None):  # noqa: E501
         """PacketProtocolUdp - a model defined in Swagger"""  # noqa: E501
 
-        self._source_port = None
-        self._destination_port = None
-        self._length = None
         self._checksum = None
+        self._destination = None
+        self._length = None
+        self._source = None
         self.discriminator = None
 
-        self.source_port = source_port
-        self.destination_port = destination_port
-        if length is not None:
-            self.length = length
         if checksum is not None:
             self.checksum = checksum
-
-    @property
-    def source_port(self):
-        """Gets the source_port of this PacketProtocolUdp.  # noqa: E501
-
-
-        :return: The source_port of this PacketProtocolUdp.  # noqa: E501
-        :rtype: TcpIpPort
-        """
-        return self._source_port
-
-    @source_port.setter
-    def source_port(self, source_port):
-        """Sets the source_port of this PacketProtocolUdp.
-
-
-        :param source_port: The source_port of this PacketProtocolUdp.  # noqa: E501
-        :type: TcpIpPort
-        """
-        self._source_port = source_port
-
-    @property
-    def destination_port(self):
-        """Gets the destination_port of this PacketProtocolUdp.  # noqa: E501
-
-
-        :return: The destination_port of this PacketProtocolUdp.  # noqa: E501
-        :rtype: TcpIpPort
-        """
-        return self._destination_port
-
-    @destination_port.setter
-    def destination_port(self, destination_port):
-        """Sets the destination_port of this PacketProtocolUdp.
-
-
-        :param destination_port: The destination_port of this PacketProtocolUdp.  # noqa: E501
-        :type: TcpIpPort
-        """
-        self._destination_port = destination_port
-
-    @property
-    def length(self):
-        """Gets the length of this PacketProtocolUdp.  # noqa: E501
-
-        header plus payload length  # noqa: E501
-
-        :return: The length of this PacketProtocolUdp.  # noqa: E501
-        :rtype: int
-        """
-        return self._length
-
-    @length.setter
-    def length(self, length):
-        """Sets the length of this PacketProtocolUdp.
-
-        header plus payload length  # noqa: E501
-
-        :param length: The length of this PacketProtocolUdp.  # noqa: E501
-        :type: int
-        """
-        self._length = length
+        if destination is not None:
+            self.destination = destination
+        if length is not None:
+            self.length = length
+        if source is not None:
+            self.source = source
 
     @property
     def checksum(self):
         """Gets the checksum of this PacketProtocolUdp.  # noqa: E501
 
-        checksum field  # noqa: E501
+        udp checksum  # noqa: E501
 
         :return: The checksum of this PacketProtocolUdp.  # noqa: E501
         :rtype: int
@@ -137,12 +77,78 @@ class PacketProtocolUdp(object):
     def checksum(self, checksum):
         """Sets the checksum of this PacketProtocolUdp.
 
-        checksum field  # noqa: E501
+        udp checksum  # noqa: E501
 
         :param checksum: The checksum of this PacketProtocolUdp.  # noqa: E501
         :type: int
         """
         self._checksum = checksum
+
+    @property
+    def destination(self):
+        """Gets the destination of this PacketProtocolUdp.  # noqa: E501
+
+        udp destination  # noqa: E501
+
+        :return: The destination of this PacketProtocolUdp.  # noqa: E501
+        :rtype: int
+        """
+        return self._destination
+
+    @destination.setter
+    def destination(self, destination):
+        """Sets the destination of this PacketProtocolUdp.
+
+        udp destination  # noqa: E501
+
+        :param destination: The destination of this PacketProtocolUdp.  # noqa: E501
+        :type: int
+        """
+        self._destination = destination
+
+    @property
+    def length(self):
+        """Gets the length of this PacketProtocolUdp.  # noqa: E501
+
+        udp length  # noqa: E501
+
+        :return: The length of this PacketProtocolUdp.  # noqa: E501
+        :rtype: int
+        """
+        return self._length
+
+    @length.setter
+    def length(self, length):
+        """Sets the length of this PacketProtocolUdp.
+
+        udp length  # noqa: E501
+
+        :param length: The length of this PacketProtocolUdp.  # noqa: E501
+        :type: int
+        """
+        self._length = length
+
+    @property
+    def source(self):
+        """Gets the source of this PacketProtocolUdp.  # noqa: E501
+
+        udp source  # noqa: E501
+
+        :return: The source of this PacketProtocolUdp.  # noqa: E501
+        :rtype: int
+        """
+        return self._source
+
+    @source.setter
+    def source(self, source):
+        """Sets the source of this PacketProtocolUdp.
+
+        udp source  # noqa: E501
+
+        :param source: The source of this PacketProtocolUdp.  # noqa: E501
+        :type: int
+        """
+        self._source = source
 
     def to_dict(self):
         """Returns the model properties as a dict"""
