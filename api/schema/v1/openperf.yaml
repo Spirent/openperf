@@ -41,6 +41,7 @@ tags:
   - name: Stacks
   - name: TimeSync
   - name: BlockGenerator
+  - name: MemoryGenerator
 
 basePath: /
 
@@ -200,6 +201,36 @@ paths:
 
   /block-generator-results/{id}:
     $ref: ./modules/block.yaml#/paths/~1block-generator-results~1{id}
+
+  ###
+  # Memory paths
+  ###
+  /memory-generators:
+    $ref: ./modules/memory.yaml#/paths/~1memory-generators
+
+  /memory-generators/{id}:
+    $ref: ./modules/memory.yaml#/paths/~1memory-generators~1{id}
+
+  /memory-generators/{id}/start:
+    $ref: ./modules/memory.yaml#/paths/~1memory-generators~1{id}~1start
+
+  /memory-generators/{id}/stop:
+    $ref: ./modules/memory.yaml#/paths/~1memory-generators~1{id}~1stop
+
+  /memory-generators/x/bulk-start:
+    $ref: ./modules/memory.yaml#/paths/~1memory-generators~1x~1bulk-start
+
+  /memory-generators/x/bulk-stop:
+    $ref: ./modules/memory.yaml#/paths/~1memory-generators~1x~1bulk-stop
+
+  /memory-generator-results:
+    $ref: ./modules/memory.yaml#/paths/~1memory-generator-results
+
+  /memory-generator-results/{id}:
+    $ref: ./modules/memory.yaml#/paths/~1memory-generator-results~1{id}
+
+  /memory-info:
+    $ref: ./modules/memory.yaml#/paths/~1memory-info
 
 definitions:
   Module:
@@ -373,3 +404,18 @@ definitions:
 
   BlockGeneratorStats:
     $ref: ./modules/block.yaml#/definitions/BlockGeneratorStats
+
+  ###
+  # Memory definitions
+  ###
+  MemoryGenerator:
+    $ref: ./modules/memory.yaml#/definitions/MemoryGenerator
+
+  MemoryGeneratorConfig:
+    $ref: ./modules/memory.yaml#/definitions/MemoryGeneratorConfig
+
+  MemoryGeneratorResult:
+    $ref: ./modules/memory.yaml#/definitions/MemoryGeneratorResult
+
+  MemoryGeneratorStats:
+    $ref: ./modules/memory.yaml#/definitions/MemoryGeneratorStats
