@@ -86,6 +86,20 @@ public:
         m_self->del_source(dst_id, source);
     }
 
+    tl::expected<void, int> add_interface_sink(std::string_view port_id,
+                                               std::string_view interface_id,
+                                               packets::generic_sink sink)
+    {
+        return (m_self->add_interface_sink(port_id, interface_id, sink));
+    }
+
+    void del_interface_sink(std::string_view port_id,
+                            std::string_view interface_id,
+                            packets::generic_sink sink)
+    {
+        m_self->del_interface_sink(port_id, interface_id, sink);
+    }
+
     tl::expected<std::string, int> add_task(context ctx,
                                             std::string_view name,
                                             event_loop::event_notifier notify,
@@ -131,6 +145,13 @@ private:
         add_source(std::string_view dst_id, packets::generic_source source) = 0;
         virtual void del_source(std::string_view dst_id,
                                 packets::generic_source source) = 0;
+        virtual tl::expected<void, int>
+        add_interface_sink(std::string_view port_id,
+                           std::string_view interface_id,
+                           packets::generic_sink sink) = 0;
+        virtual void del_interface_sink(std::string_view port_id,
+                                        std::string_view interface_id,
+                                        packets::generic_sink sink) = 0;
         virtual tl::expected<std::string, int>
         add_task(context ctx,
                  std::string_view name,
@@ -187,6 +208,21 @@ private:
                       packets::generic_sink sink) override
         {
             m_workers.del_sink(src_id, sink);
+        }
+
+        tl::expected<void, int>
+        add_interface_sink(std::string_view port_id,
+                           std::string_view interface_id,
+                           packets::generic_sink sink) override
+        {
+            return (m_workers.add_interface_sink(port_id, interface_id, sink));
+        }
+
+        void del_interface_sink(std::string_view port_id,
+                                std::string_view interface_id,
+                                packets::generic_sink sink) override
+        {
+            m_workers.del_interface_sink(port_id, interface_id, sink);
         }
 
         tl::expected<void, int>

@@ -26,6 +26,28 @@ reply_msg handle_request(workers::generic_workers& workers,
 }
 
 reply_msg handle_request(workers::generic_workers& workers,
+                         const request_interface_sink_add& request)
+{
+    auto result = workers.add_interface_sink(request.data.port_id,
+                                             request.data.interface_id,
+                                             std::move(request.data.sink));
+    if (!result) {
+        return (reply_error{result.error()});
+    } else {
+        return (reply_ok{});
+    }
+}
+
+reply_msg handle_request(workers::generic_workers& workers,
+                         const request_interface_sink_del& request)
+{
+    workers.del_interface_sink(request.data.port_id,
+                               request.data.interface_id,
+                               std::move(request.data.sink));
+    return (reply_ok{});
+}
+
+reply_msg handle_request(workers::generic_workers& workers,
                          const request_source_add& request)
 {
     auto result =
@@ -106,6 +128,17 @@ static std::string to_string(request_msg& request)
             [](const request_source_del& msg) {
                 return ("delete source " + std::string(msg.data.source.id())
                         + " from destination " + std::string(msg.data.dst_id));
+            },
+            [](const request_interface_sink_add& msg) {
+                return ("add interface sink " + std::string(msg.data.sink.id())
+                        + " to port " + std::string(msg.data.port_id)
+                        + " interface + " + std::string(msg.data.interface_id));
+            },
+            [](const request_interface_sink_del& msg) {
+                return ("delete interface sink "
+                        + std::string(msg.data.sink.id()) + " from port "
+                        + std::string(msg.data.port_id) + "interface +"
+                        + std::string(msg.data.interface_id));
             },
             [](const request_task_add& msg) {
                 return ("add task " + std::string(msg.data.name));

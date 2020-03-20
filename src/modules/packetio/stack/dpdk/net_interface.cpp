@@ -459,8 +459,10 @@ net_interface::~net_interface()
     try {
         down();
         unconfigure();
-    } catch (const std::exception &e) {
-        OP_LOG(OP_LOG_ERROR, "Exception occured in net_interface destructor.   %s", e.what());
+    } catch (const std::exception& e) {
+        OP_LOG(OP_LOG_ERROR,
+               "Exception occured in net_interface destructor.   %s",
+               e.what());
     }
 }
 
