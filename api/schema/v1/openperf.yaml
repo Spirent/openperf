@@ -357,19 +357,19 @@ definitions:
   # Block definitions
   ###
   BlockDevice:
-    $ref: ./modules/timesync.yaml#/definitions/BlockDevice
+    $ref: ./modules/block.yaml#/definitions/BlockDevice
 
   BlockFile:
-    $ref: ./modules/timesync.yaml#/definitions/BlockFile
+    $ref: ./modules/block.yaml#/definitions/BlockFile
 
   BlockGenerator:
-    $ref: ./modules/timesync.yaml#/definitions/BlockGenerator
+    $ref: ./modules/block.yaml#/definitions/BlockGenerator
 
   BlockGeneratorConfig:
-    $ref: ./modules/timesync.yaml#/definitions/BlockGeneratorConfig
+    $ref: ./modules/block.yaml#/definitions/BlockGeneratorConfig
 
   BlockGeneratorResult:
-    $ref: ./modules/timesync.yaml#/definitions/BlockGeneratorResult
+    $ref: ./modules/block.yaml#/definitions/BlockGeneratorResult
 
   BlockGeneratorStats:
-    $ref: ./modules/timesync.yaml#/definitions/BlockGeneratorStats
+    $ref: ./modules/block.yaml#/definitions/BlockGeneratorStats
