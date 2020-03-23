@@ -2,7 +2,7 @@
 # Makefile component for Memory Generator module
 #
 
-MEMGEN_DEPENDS += versions
+MEMGEN_DEPENDS += swagger_model json versions
 
 MEMGEN_SOURCES += \
 	init.cpp \
@@ -12,7 +12,8 @@ MEMGEN_SOURCES += \
 	info.cpp \
 	Worker.cpp \
 	Generator.cpp \
-	GeneratorConfig.cpp  
+	GeneratorConfig.cpp \
+	task_memory.cpp
 
 MEMGEN_VERSIONED_FILES := init.cpp
 MEMGEN_UNVERSIONED_OBJECTS := \
