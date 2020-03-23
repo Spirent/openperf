@@ -41,7 +41,7 @@ void generator_collection::erase(const std::string& id)
 }
 
 generator_config generator_collection::create(const std::string& id,
-                                            const generator_config& config)
+                                              const generator_config& config)
 {
     auto id_check = config::op_config_validate_id_string(id);
     if (!id_check) { throw std::invalid_argument(id_check.error().c_str()); }
@@ -56,14 +56,16 @@ generator_config generator_collection::create(const std::string& id,
 
     generator gen;
     gen.set_read_workers(config.read_threads());
-    gen.set_read_worker_config(worker::config{.buffer_size = config.buffer_size(),
-                                           .op_per_sec = config.reads_per_sec(),
-                                           .block_size = config.read_size()});
+    gen.set_read_config(
+        task_memory_read::config{.buffer_size = config.buffer_size(),
+                       .op_per_sec = config.reads_per_sec(),
+                       .block_size = config.read_size()});
 
     gen.set_write_workers(config.write_threads());
-    gen.set_write_worker_config(worker::config{.buffer_size = config.buffer_size(),
-                                            .op_per_sec = config.writes_per_sec(),
-                                            .block_size = config.write_size()});
+    gen.set_write_config(
+        task_memory_write::config{.buffer_size = config.buffer_size(),
+                       .op_per_sec = config.writes_per_sec(),
+                       .block_size = config.write_size()});
 
     gen.set_running(config.is_running());
     auto result = _collection.emplace(new_id, std::move(gen));
@@ -111,4 +113,4 @@ void generator_collection::stop(const std::string& id)
     _collection.at(id).pause();
 }
 
-} // namespace openperf::memory::generator
+} // namespace openperf::memory

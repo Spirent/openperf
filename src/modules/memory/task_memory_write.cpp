@@ -20,4 +20,4 @@ size_t task_memory_write::spin(uint64_t nb_ops, size_t* op_idx)
     return nb_ops;
 }
 
-}
+} // namespace openperf::memory::internal

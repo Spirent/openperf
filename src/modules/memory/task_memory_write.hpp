@@ -5,8 +5,7 @@
 
 namespace openperf::memory::internal {
 
-class task_memory_write 
-    : public task_memory
+class task_memory_write : public task_memory
 {
 private:
     size_t spin(uint64_t nb_ops, size_t* op_idx) override;
@@ -15,4 +14,3 @@ private:
 } // namespace openperf::memory::internal
 
 #endif // _OP_MEMORY_TASK_MEMORY_WRITE_HPP_
-
