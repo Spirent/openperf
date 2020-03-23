@@ -1,9 +1,9 @@
-#include "GeneratorConfig.hpp"
+#include "generator_config.hpp"
 #include <cassert>
 
 namespace openperf::memory {
 
-bool GeneratorConfig::operator==(const GeneratorConfig& other) const
+bool generator_config::operator==(const generator_config& other) const
 {
     return _running == other._running && _buffer_size == other._buffer_size
            && _reads_per_sec == other._reads_per_sec
@@ -14,55 +14,55 @@ bool GeneratorConfig::operator==(const GeneratorConfig& other) const
            && _write_threads == other._write_threads;
 }
 
-GeneratorConfig& GeneratorConfig::setRunning(bool running)
+generator_config& generator_config::set_running(bool running)
 {
     _running = running;
     return *this;
 }
 
-GeneratorConfig& GeneratorConfig::setBufferSize(int size)
+generator_config& generator_config::set_buffer_size(int size)
 {
     assert(size > 0);
     _buffer_size = size;
     return *this;
 }
 
-GeneratorConfig& GeneratorConfig::setReadsPerSec(int rps)
+generator_config& generator_config::set_reads_per_sec(int rps)
 {
     assert(rps > 0);
     _reads_per_sec = rps;
     return *this;
 }
 
-GeneratorConfig& GeneratorConfig::setReadSize(int size)
+generator_config& generator_config::set_read_size(int size)
 {
     assert(size > 0);
     _read_size = size;
     return *this;
 }
 
-GeneratorConfig& GeneratorConfig::setReadThreads(int number)
+generator_config& generator_config::set_read_threads(int number)
 {
     assert(number > 0);
     _read_threads = number;
     return *this;
 }
 
-GeneratorConfig& GeneratorConfig::setWritesPerSec(int wps)
+generator_config& generator_config::set_writes_per_sec(int wps)
 {
     assert(wps > 0);
     _writes_per_sec = wps;
     return *this;
 }
 
-GeneratorConfig& GeneratorConfig::setWriteSize(int size)
+generator_config& generator_config::set_write_size(int size)
 {
     assert(size > 0);
     _write_size = size;
     return *this;
 }
 
-GeneratorConfig& GeneratorConfig::setWriteThreads(int number)
+generator_config& generator_config::set_write_threads(int number)
 {
     assert(number > 0);
     _write_threads = number;
