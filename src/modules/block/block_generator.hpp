@@ -13,7 +13,7 @@ class block_generator : public model::block_generator
 {
 private:
     block_worker_ptr blkworker;
-    worker_config generate_worker_config(const model::block_generator_config& generator_config);
+    worker_config generate_worker_config(const model::block_generator_config& generator_config, const size_t& resource_size);
     int open_resource(const std::string& resource_id);
     size_t get_resource_size(const std::string& resource_id);
 public:
