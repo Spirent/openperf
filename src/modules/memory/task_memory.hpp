@@ -5,12 +5,13 @@
 #include <atomic>
 #include <vector>
 
-#include "memory/TaskBase.hpp"
+#include "memory/task.hpp"
 #include "memory/io_pattern.hpp"
 
-namespace openperf::memory::generator {
+namespace openperf::memory::internal {
 
-class task_memory : public TaskBase
+class task_memory 
+    : public openperf::generator::generic::task
 {
 public:
     struct config_msg
@@ -29,9 +30,7 @@ public:
         //} callback;
     };
 
-private:
-    bool _read = true;
-
+protected:
     uint64_t _cache_size = 16;
     io_pattern _pattern;
     size_t _block_size;
@@ -86,7 +85,6 @@ public:
     task_memory();
 
     void run() override;
-    size_t spin(uint64_t nb_ops, size_t* op_idx);
     int set_config(const config_msg&);
 
     void set_buffer_size(size_t);
@@ -104,13 +102,14 @@ public:
     uint64_t bytes() const { return _stats.bytes; }
     uint64_t errors() const { return _stats.errors; }
 
+protected:
+    virtual size_t spin(uint64_t nb_ops, size_t* op_idx) = 0;
+
 private:
-    size_t read_spin(uint64_t nb_ops, size_t* op_idx);
-    size_t write_spin(uint64_t nb_ops, size_t* op_idx);
     void scratch_allocate(size_t size);
     void scratch_free();
 };
 
-} // namespace openperf::memory::generator
+} // namespace openperf::memory::internal
 
 #endif // _OP_MEMORY_TASK_MEMORY_HPP_

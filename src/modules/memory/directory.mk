@@ -8,12 +8,14 @@ MEMGEN_SOURCES += \
 	init.cpp \
 	handler.cpp \
 	server.cpp \
-	GeneratorCollection.cpp \
+	generator_collection.cpp \
 	info.cpp \
-	Worker.cpp \
-	Generator.cpp \
-	GeneratorConfig.cpp \
-	task_memory.cpp
+	worker.cpp \
+	generator.cpp \
+	generator_config.cpp \
+	task_memory.cpp \
+	task_memory_read.cpp \
+	task_memory_write.cpp
 
 MEMGEN_VERSIONED_FILES := init.cpp
 MEMGEN_UNVERSIONED_OBJECTS := \

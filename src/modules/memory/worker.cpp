@@ -1,12 +1,12 @@
-#include "memory/Worker.hpp"
+#include "memory/worker.hpp"
 
 #include <zmq.h>
 #include <iostream>
 
-namespace openperf::memory::generator {
+namespace openperf::memory::internal {
 
 // Constructors & Destructor
-Worker::Worker()
+worker::worker()
     : _zmq_context(zmq_ctx_new())
     , _zmq_socket(op_socket_get_server(_zmq_context, ZMQ_PAIR, endpoint_prefix))
 {
@@ -17,13 +17,13 @@ Worker::Worker()
     _state.op_per_sec = 1;
 }
 
-Worker::Worker(const Worker::Config& config)
-    : Worker()
+worker::worker(const worker::config& config)
+    : worker()
 {
-    setConfig(config);
+    set_config(config);
 }
 
-Worker::Worker(Worker&& worker)
+worker::worker(worker&& worker)
     : _zmq_context(std::move(worker._zmq_context))
     , _zmq_socket(std::move(worker._zmq_socket))
     , _thread(std::move(worker._thread))
@@ -31,9 +31,9 @@ Worker::Worker(Worker&& worker)
     , _state(worker._state)
 {}
 
-Worker::~Worker()
+worker::~worker()
 {
-    std::cout << "Worker::~Worker()" << std::endl;
+    std::cout << "worker::~worker()" << std::endl;
     if (_thread.joinable()) {
         _thread.detach();
         _state.stopped = true;
@@ -47,12 +47,12 @@ Worker::~Worker()
 }
 
 // Methods : public
-void Worker::addTask(std::unique_ptr<TaskBase> task)
+void worker::add_task(std::unique_ptr<task> task)
 {
     _tasks.emplace_front(std::move(task));
 }
 
-void Worker::start()
+void worker::start()
 {
     if (!_state.stopped) return;
     _state.stopped = false;
@@ -63,7 +63,7 @@ void Worker::start()
     update();
 }
 
-void Worker::stop()
+void worker::stop()
 {
     if (_state.stopped) return;
     _state.stopped = true;
@@ -71,21 +71,21 @@ void Worker::stop()
     update();
 }
 
-void Worker::pause()
+void worker::pause()
 {
     if (_state.paused) return;
     _state.paused = true;
     update();
 }
 
-void Worker::resume()
+void worker::resume()
 {
     if (!_state.paused) return;
     _state.paused = false;
     update();
 }
 
-void Worker::setConfig(const Worker::Config& c)
+void worker::set_config(const worker::config& c)
 {
     if (!c.stopped) start();
     _state = c;
@@ -93,14 +93,14 @@ void Worker::setConfig(const Worker::Config& c)
 }
 
 // Methods : private
-void Worker::loop()
+void worker::loop()
 {
     std::cout << "Thread " << std::hex << std::this_thread::get_id()
               << " started" << std::endl;
     auto socket = std::unique_ptr<void, op_socket_deleter>(
         op_socket_get_client(_zmq_context, ZMQ_PAIR, endpoint_prefix));
 
-    Worker::Config msg{.paused = true, .stopped = false};
+    worker::config msg{.paused = true, .stopped = false};
 
     for (;;) {
         int recv = zmq_recv(
@@ -128,11 +128,11 @@ void Worker::loop()
               << " finished" << std::endl;
 }
 
-void Worker::update()
+void worker::update()
 {
-    if (isFinished()) return;
+    if (is_finished()) return;
     zmq_send(_zmq_socket.get(), &_state, sizeof(_state), 0); // ZMQ_NOBLOCK);
-    std::cout << "Worker::update()" << std::endl;
+    std::cout << "worker::update()" << std::endl;
 }
 
 } // namespace openperf::memory::generator
