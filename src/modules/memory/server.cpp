@@ -4,8 +4,8 @@
 #include "memory/info.hpp"
 #include "swagger/v1/model/MemoryGenerator.h"
 #include "swagger/v1/model/MemoryGeneratorConfig.h"
-#include "memory/GeneratorConfig.hpp"
-#include "memory/GeneratorConfigConverters.hpp"
+#include "memory/generator_config.hpp"
+#include "memory/generator_config_converters.hpp"
 
 namespace openperf::memory::api {
 
@@ -51,7 +51,7 @@ std::string to_string(reply_code code)
 
 server::server(void* context, openperf::core::event_loop& loop)
     : m_socket(op_socket_get_server(context, ZMQ_REP, endpoint))
-    , generator_stack(std::make_unique<generator::GeneratorCollection>())
+    , generator_stack(std::make_unique<memory::generator_collection>())
 {
     // Setup event loop
     struct op_event_callbacks callbacks = {
@@ -173,7 +173,7 @@ json server::list_generators()
     for (const auto& kv_pair : generator_stack->list()) {
         model::MemoryGenerator model;
         model.setId(kv_pair.first);
-        model.setRunning(kv_pair.second.isRunning());
+        model.setRunning(kv_pair.second.is_running());
         model.setConfig(std::make_shared<model::MemoryGeneratorConfig>(
             configToSwaggerModel(kv_pair.second)));
 
@@ -191,7 +191,7 @@ json server::create_generator(const json& request)
         model::MemoryGenerator generator_model;
         generator_model.fromJson(json_object);
 
-        GeneratorConfig config = swaggerModelToConfig([&json_object]() {
+        generator_config config = swaggerModelToConfig([&json_object]() {
             model::MemoryGeneratorConfig config_model;
             config_model.fromJson(json_object["config"]);
             return config_model;
@@ -201,7 +201,7 @@ json server::create_generator(const json& request)
             auto result =
                 generator_stack->create(generator_model.getId(), config);
 
-            generator_model.setRunning(result.isRunning());
+            generator_model.setRunning(result.is_running());
             generator_model.setConfig(
                 std::make_shared<model::MemoryGeneratorConfig>(
                     configToSwaggerModel(result)));
@@ -229,7 +229,7 @@ json server::get_generator(const json& request)
 
         model::MemoryGenerator model;
         model.setId(id);
-        model.setRunning(g.isRunning());
+        model.setRunning(g.is_running());
         model.setConfig(std::make_shared<model::MemoryGeneratorConfig>(
             configToSwaggerModel(g)));
 
