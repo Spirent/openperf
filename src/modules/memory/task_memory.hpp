@@ -4,31 +4,26 @@
 #include <cstddef>
 #include <atomic>
 #include <vector>
+#include <mutex>
 
 #include "memory/task.hpp"
 #include "memory/io_pattern.hpp"
 
 namespace openperf::memory::internal {
 
-class task_memory 
-    : public openperf::generator::generic::task
+class task_memory : public openperf::generator::generic::task
 {
 public:
-    struct config_msg
+    struct config
     {
         size_t block_size;
         size_t buffer_size;
         size_t op_per_sec;
         io_pattern pattern;
-        // struct {
-        //    uint8_t *ptr;
-        //    size_t size;
-        //} buffer;
-        // struct {
-        //    void (*fn)(void *, uint64_t);
-        //    void *arg;
-        //} callback;
     };
+
+private:
+    std::mutex _mutex;
 
 protected:
     uint64_t _cache_size = 16;
@@ -37,7 +32,7 @@ protected:
     size_t _op_per_sec;
     size_t _buffer_size;
 
-    struct worker_config
+    struct
     {
         // struct op_packed_array *indexes;
         std::vector<unsigned> indexes;
@@ -49,11 +44,6 @@ protected:
         size_t op_per_sec;
         enum io_pattern pattern;
     } _config;
-
-    // struct scratch_area {
-    //    void* buffer
-    //    size_t size;
-    //} _scratch;
 
     void* _scratch_buffer;
     size_t _scratch_size;
@@ -85,7 +75,7 @@ public:
     task_memory();
 
     void run() override;
-    int set_config(const config_msg&);
+    int set_config(const task_memory::config&);
 
     void set_buffer_size(size_t);
     void set_block_size(size_t);

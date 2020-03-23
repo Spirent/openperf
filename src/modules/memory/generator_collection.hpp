@@ -27,7 +27,7 @@ public:
 
     void erase(const std::string& id);
     generator_config create(const std::string& id,
-                           const generator_config& config);
+                            const generator_config& config);
     void clear();
 
     void start();
@@ -36,6 +36,6 @@ public:
     void stop(const std::string& id);
 };
 
-} // namespace openperf::memory::generator
+} // namespace openperf::memory
 
 #endif // _MEMORY_GENERATOR_STACK_HPP_

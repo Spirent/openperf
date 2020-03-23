@@ -39,17 +39,17 @@ void icp_generator_sleep_until(uint64_t wake_time)
             sleep.tv_nsec = ns_to_sleep % NS_PER_SECOND;
         }
 
-        nanosleep(&sleep, NULL);
+        nanosleep(&sleep, nullptr);
     }
 }
 
 // Constructors & Destructor
 task_memory::task_memory()
 {
-    set_config(config_msg{.block_size = 8,
-                          .buffer_size = 64,
-                          .op_per_sec = 8,
-                          .pattern = GENERATOR_PATTERN_RANDOM});
+    //set_config(config_msg{.block_size = 8,
+    //                      .buffer_size = 64,
+    //                      .op_per_sec = 8,
+    //                      .pattern = GENERATOR_PATTERN_RANDOM});
     scratch_allocate(4096);
     //_config.op_per_sec = 0;
     //[](uint64_t total, size_t buckets, size_t n) {
@@ -59,8 +59,9 @@ task_memory::task_memory()
     //} (10, 64, 8);
 }
 
-int task_memory::set_config(const config_msg& msg)
+int task_memory::set_config(const task_memory::config& msg)
 {
+    std::lock_guard<std::mutex> lock(_mutex);
     // assert(msg->type == MEMORY_MSG_CONFIG);
 
     // io blocks in buffer
@@ -196,6 +197,7 @@ int task_memory::set_config(const config_msg& msg)
 
 void task_memory::run()
 {
+    if (!_mutex.try_lock()) return;
     /* If we have a rate to generate, then we need indexes */
     assert(_config.op_per_sec == 0 || _config.indexes.size() > 0);
 
@@ -263,9 +265,11 @@ void task_memory::run()
         to_do_ops -= spin_ops;
     }
 
-    std::cout << std::dec << "Ops: " << _total.operations
-              << ", Rt: " << _total.run_time << ", Rate: " << _total.avg_rate
-              << ", St: " << _total.sleep_time << std::endl;
+    std::cout << std::dec << "TOps: " << _total.operations
+              << ", TRt: " << _total.run_time
+              << ", TAvgRate: " << _total.avg_rate
+              << ", TSt: " << _total.sleep_time << std::endl;
+    _mutex.unlock();
 }
 
 void task_memory::scratch_allocate(size_t size)
@@ -276,7 +280,7 @@ void task_memory::scratch_allocate(size_t size)
 
     if (posix_memalign(&_scratch_buffer, _cache_size, size) != 0) {
         OP_LOG(OP_LOG_ERROR, "Could not allocate scratch area!\n");
-        _scratch_buffer = NULL;
+        _scratch_buffer = nullptr;
     } else {
         _scratch_size = size;
     }
@@ -286,7 +290,7 @@ void task_memory::scratch_free()
 {
     if (_scratch_buffer) {
         free(_scratch_buffer);
-        _scratch_buffer = NULL;
+        _scratch_buffer = nullptr;
     }
 
     _scratch_size = 0;
