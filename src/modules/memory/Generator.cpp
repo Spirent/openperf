@@ -1,5 +1,6 @@
 #include "Generator.hpp"
 #include "TaskConsole.hpp"
+#include "task_memory.hpp"
 
 namespace openperf::memory::generator {
 
@@ -9,9 +10,7 @@ Generator::Generator()
     , _write_threads(0)
     , _runned(false)
     , _paused(false)
-{
-
-}
+{}
 
 Generator::Generator(Generator&& g)
     : _read_threads(g._read_threads)
@@ -22,9 +21,7 @@ Generator::Generator(Generator&& g)
     , _writeWorkers(std::move(g._writeWorkers))
     , _readWorkerConfig(g._readWorkerConfig)
     , _writeWorkerConfig(g._writeWorkerConfig)
-{
-
-}
+{}
 
 // Methods : public
 void Generator::setRunning(bool running)
@@ -94,6 +91,7 @@ void Generator::setReadWorkers(unsigned int number)
         for (; _read_threads < number; ++_read_threads) {
             std::unique_ptr<Worker> worker(new Worker(_readWorkerConfig));
             worker->addTask(std::unique_ptr<TaskBase>(new TaskConsole));
+            worker->addTask(std::unique_ptr<task_memory>(new task_memory));
 
             _readWorkers.push_front(std::move(worker));
         }
@@ -130,17 +128,13 @@ void Generator::setWriteWorkers(unsigned int number)
 void Generator::setReadWorkerConfig(const Worker::Config& config)
 {
     _readWorkerConfig = config;
-    for (auto& w : _readWorkers) {
-       w->setConfig(_readWorkerConfig); 
-    }
+    for (auto& w : _readWorkers) { w->setConfig(_readWorkerConfig); }
 }
 
 void Generator::setWriteWorkerConfig(const Worker::Config& config)
 {
     _writeWorkerConfig = config;
-    for (auto& w : _writeWorkers) {
-       w->setConfig(_writeWorkerConfig); 
-    }
+    for (auto& w : _writeWorkers) { w->setConfig(_writeWorkerConfig); }
 }
 
 // Methods : private
