@@ -1,14 +1,12 @@
 #include "memory/task_memory.hpp"
 
-#include <cassert>
 #include <cstdint>
 #include <chrono>
-#include <cstring>
 
 #include "core/op_core.h"
 #include "core/op_random.h"
 
-namespace openperf::memory::generator {
+namespace openperf::memory::internal {
 
 using namespace openperf::core::utils;
 
@@ -270,41 +268,6 @@ void task_memory::run()
               << ", St: " << _total.sleep_time << std::endl;
 }
 
-size_t task_memory::read_spin(uint64_t nb_ops, size_t* op_idx)
-{
-    assert(*op_idx < _config.op_index_max);
-    for (size_t i = 0; i < nb_ops; i++) {
-        // unsigned idx = op_packed_array_get(_config.indexes, (*op_idx)++);
-        unsigned idx = _config.indexes.at((*op_idx)++);
-        std::memcpy(_scratch_buffer,
-                    _config.buffer + idx * _config.op_block_size,
-                    _config.op_block_size);
-        if (*op_idx == _config.op_index_max) { *op_idx = _config.op_index_min; }
-    }
-
-    return nb_ops;
-}
-
-size_t task_memory::write_spin(uint64_t nb_ops, size_t* op_idx)
-{
-    assert(*op_idx < _config.op_index_max);
-    for (size_t i = 0; i < nb_ops; i++) {
-        // unsigned idx = op_packed_array_get(_config.indexes, (*op_idx)++);
-        unsigned idx = _config.indexes.at((*op_idx)++);
-        std::memcpy(_config.buffer + (idx * _config.op_block_size),
-                    _scratch_buffer,
-                    _config.op_block_size);
-        if (*op_idx == _config.op_index_max) { *op_idx = _config.op_index_min; }
-    }
-
-    return nb_ops;
-}
-
-size_t task_memory::spin(uint64_t nb_ops, size_t* op_idx)
-{
-    return (_read) ? read_spin(nb_ops, op_idx) : write_spin(nb_ops, op_idx);
-}
-
 void task_memory::scratch_allocate(size_t size)
 {
     // static uint64_t cachelinesize = 0;
@@ -329,4 +292,4 @@ void task_memory::scratch_free()
     _scratch_size = 0;
 }
 
-} // namespace openperf::memory::generator
+} // namespace openperf::memory::internal

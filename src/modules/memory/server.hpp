@@ -4,7 +4,7 @@
 #include "json.hpp"
 #include "core/op_core.h"
 
-#include "memory/GeneratorCollection.hpp"
+#include "memory/generator_collection.hpp"
 
 namespace openperf::memory::api {
 
@@ -14,7 +14,7 @@ class server
 {
 private:
     std::unique_ptr<void, op_socket_deleter> m_socket;
-    std::unique_ptr<generator::GeneratorCollection> generator_stack;
+    std::unique_ptr<memory::generator_collection> generator_stack;
 
 public:
     server(void* context, core::event_loop& loop);
