@@ -10,7 +10,7 @@ parameters:
 paths:
   /cpu-generators:
     get:
-      operationId: ListGenerators
+      operationId: ListCpuGenerators
       tags:
         - CpuGenerator
       summary: List CPU generators
