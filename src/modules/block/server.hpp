@@ -15,8 +15,8 @@ class server
 {
 private:
     std::unique_ptr<void, op_socket_deleter> m_socket;
-    std::unique_ptr<device::device_stack> blk_device_stack;
-    std::unique_ptr<file::file_stack> blk_file_stack;
+    device::device_stack* blk_device_stack;
+    file::file_stack* blk_file_stack;
     std::unique_ptr<generator::generator_stack> blk_generator_stack;
 
     void handle_list_devices_request(json& reply);
