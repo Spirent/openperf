@@ -1,0 +1,332 @@
+#include "memory/task_memory.hpp"
+
+#include <cassert>
+#include <cstdint>
+#include <chrono>
+#include <cstring>
+
+#include "core/op_core.h"
+#include "core/op_random.h"
+
+namespace openperf::memory::generator {
+
+using namespace openperf::core::utils;
+
+const uint64_t NS_PER_SECOND = 1000000000ULL;
+
+static const uint64_t QUANTA_MS = 10;
+static const uint64_t MS_TO_NS = 1000000;
+static const size_t MAX_SPIN_OPS = 5000;
+
+// TODO: need to modified
+uint64_t icp_timestamp_now()
+{
+    return std::chrono::duration_cast<std::chrono::nanoseconds>(
+               std::chrono::system_clock::now().time_since_epoch())
+        .count();
+}
+
+void icp_generator_sleep_until(uint64_t wake_time)
+{
+    uint64_t now = 0, ns_to_sleep = 0;
+    struct timespec sleep = {0, 0};
+
+    while ((now = icp_timestamp_now()) < wake_time) {
+        ns_to_sleep = wake_time - now;
+
+        if (ns_to_sleep < NS_PER_SECOND) {
+            sleep.tv_nsec = ns_to_sleep;
+        } else {
+            sleep.tv_sec = ns_to_sleep / NS_PER_SECOND;
+            sleep.tv_nsec = ns_to_sleep % NS_PER_SECOND;
+        }
+
+        nanosleep(&sleep, NULL);
+    }
+}
+
+// Constructors & Destructor
+task_memory::task_memory()
+{
+    set_config(config_msg{.block_size = 8,
+                          .buffer_size = 64,
+                          .op_per_sec = 8,
+                          .pattern = GENERATOR_PATTERN_RANDOM});
+    scratch_allocate(4096);
+    //_config.op_per_sec = 0;
+    //[](uint64_t total, size_t buckets, size_t n) {
+    //    assert(n < buckets);
+    //    uint64_t base = total / buckets;
+    //    return (n < total % buckets ? base + 1 : base);
+    //} (10, 64, 8);
+}
+
+int task_memory::set_config(const config_msg& msg)
+{
+    // assert(msg->type == MEMORY_MSG_CONFIG);
+
+    // io blocks in buffer
+    size_t nb_blocks = (msg.block_size ? msg.buffer_size / msg.block_size : 0);
+
+    ///* packed arrays are limited to 32 bi t unsigned integers */
+    // if (nb_blocks > UINT_MAX) {
+    //    OP_LOG(OP_LOG_ERROR, "Too many memory indexes!\n");
+    //    return -1;
+    //}
+
+    /*
+     * Need to update our indexes if the number of blocks or the pattern
+     * has changed.
+     */
+    if (nb_blocks
+        && (nb_blocks != _config.op_index_max
+            || msg.pattern != _config.pattern)) {
+
+        // if (_config.indexes) {
+        //    op_packed_array_free(&_config.indexes);
+        //}
+        // assert(!_config.indexes);
+        //_config.indexes = op_packed_array_allocate(nb_blocks, nb_blocks);
+        // if (!_config.indexes) {
+        //    OP_LOG(OP_LOG_ERROR, "Could not allocate %zu element index
+        //    array\n",
+        //            nb_blocks);
+        //    _config.op_index_min = 0;
+        //    _config.op_index_max = 0;
+        //    return (-1);
+        //}
+        try {
+            _config.indexes.resize(nb_blocks);
+        } catch (std::exception e) {
+            OP_LOG(OP_LOG_ERROR,
+                   "Could not allocate %zu element index array\n",
+                   nb_blocks);
+            _config.op_index_min = 0;
+            _config.op_index_max = 0;
+            return -1;
+        }
+
+        _config.op_index_min = 0;
+        _config.op_index_max = nb_blocks;
+
+        auto fill_vector = [this](unsigned start, int step) {
+            for (size_t i = 0; i < _config.indexes.size(); ++i) {
+                _config.indexes[i] = start + (i * step);
+            }
+        };
+
+        /* Fill in the indexes... */
+        switch (msg.pattern) {
+        case GENERATOR_PATTERN_RANDOM:
+            // op_packed_array_fill(_config.indexes, _config.op_index_min, 1);
+            fill_vector(_config.op_index_min, 1);
+            // Shuffle array contents using the Fisher-Yates shuffle algorithm
+            // op_packed_array_shuffle(_config.indexes);
+            for (size_t i = _config.indexes.size() - 1; i > 0; --i) {
+                auto j = op_random(i + 1);
+                auto swap = _config.indexes[i];
+                _config.indexes[i] = _config.indexes[j];
+                _config.indexes[j] = swap;
+            }
+            break;
+        case GENERATOR_PATTERN_SEQUENTIAL:
+            // op_packed_array_fill(_config.indexes, _config.op_index_min, 1);
+            fill_vector(_config.op_index_min, 1);
+            break;
+        case GENERATOR_PATTERN_REVERSE:
+            // op_packed_array_fill(_config.indexes, _config.op_index_max - 1,
+            // -1);
+            fill_vector(_config.op_index_max - 1, -1);
+            break;
+        default:
+            OP_LOG(OP_LOG_ERROR,
+                   "Unrecognized generator pattern: %d\n",
+                   msg.pattern);
+        }
+
+        _config.pattern = msg.pattern;
+    } else if (!nb_blocks) {
+        // if (_config.indexes) {
+        //    op_packed_array_free(&_config.indexes);
+        //}
+        _config.indexes.clear();
+        _config.op_index_min = 0;
+        _config.op_index_max = 0;
+        _config.pattern = GENERATOR_PATTERN_NONE;
+
+        /* XXX: Can't generate any load without indexes */
+        _config.op_per_sec = 0;
+    }
+
+    //_config.buffer = msg.buffer.ptr;
+    _config.buffer = new uint8_t[msg.buffer_size];
+
+    auto pseudo_random_fill = [](uint32_t* seedp, void* buffer, size_t length) {
+        uint32_t seed = *seedp;
+        uint32_t* ptr = reinterpret_cast<uint32_t*>(buffer);
+
+        for (size_t i = 0; i < length / 4; i++) {
+            uint32_t temp = (seed << 9) ^ (seed << 14);
+            seed = temp ^ (temp >> 23) ^ (temp >> 18);
+            *(ptr + i) = temp;
+        }
+
+        *seedp = seed;
+    };
+
+    if ((_config.op_block_size = msg.block_size) > _scratch_size) {
+        OP_LOG(OP_LOG_DEBUG,
+               "Reallocating scratch area (%zu --> %zu)\n",
+               _scratch_size,
+               msg.block_size);
+        // icp_generator_free_scratch_area(&_scratch);
+        scratch_free();
+        //_scratch = icp_generator_allocate_scratch_area(msg.block_size);
+        scratch_allocate(msg.block_size);
+        assert(_scratch_buffer);
+        uint32_t seed = op_random<uint32_t>();
+        pseudo_random_fill(&seed, _scratch_buffer, _scratch_size);
+    }
+
+    // WTF callback?
+    // if (msg.callback.fn && msg.callback.arg) {
+    //    msg.callback.fn(msg.callback.arg, 1);
+    //}
+
+    return 0;
+}
+
+void task_memory::run()
+{
+    /* If we have a rate to generate, then we need indexes */
+    assert(_config.op_per_sec == 0 || _config.indexes.size() > 0);
+
+    static __thread size_t op_index = 0;
+    if (op_index >= _config.op_index_max) { op_index = _config.op_index_min; }
+
+    /*
+     * Sleeping is problematic since you can't be sure if or when you'll
+     * wake up.  Hence, we dynamically solve for the number of memory
+     * operations to perform, to_do_ops, and for a requested time to sleep,
+     * sleep time, using the following system of equations:
+     *
+     * 1. (total.ops + to_do_ops)
+     *     / ((total.run + total.sleep) + (to_do_ops / total.avg_rate) + sleep
+     * time = rate
+     * 2. to_do_ops / total.avg_rate + sleep_time = quanta
+     *
+     * We use Cramer's rule to solve for to_do_ops and sleep time.  We are
+     * guaranteed a solution because our determinant is always 1.  However,
+     * our solution could be negative, so clamp our answers before using.
+     */
+    uint64_t to_do_ops, ns_to_sleep;
+    double ops_per_ns = (double)_config.op_per_sec / NS_PER_SECOND;
+
+    double a[2] = {1 - (ops_per_ns / _total.avg_rate), 1.0 / _total.avg_rate};
+    double b[2] = {-ops_per_ns, 1};
+    double c[2] = {ops_per_ns * (_total.run_time + _total.sleep_time)
+                       - _total.operations,
+                   QUANTA_MS * MS_TO_NS};
+    to_do_ops = std::max(0.0, c[0] * b[1] - b[0] * c[1]);
+    ns_to_sleep = std::max(
+        0.0, std::min(a[0] * c[1] - c[0] * a[1], (double)QUANTA_MS * MS_TO_NS));
+
+    uint64_t t1 = icp_timestamp_now();
+    if (ns_to_sleep) {
+        icp_generator_sleep_until(t1 + ns_to_sleep);
+        _total.sleep_time += icp_timestamp_now() - t1;
+    }
+    /*
+     * Perform load operations in small bursts so that we can update our
+     * thread statistics periodically.
+     */
+    uint64_t deadline = icp_timestamp_now() + (QUANTA_MS * MS_TO_NS);
+    uint64_t t2;
+    std::cout << std::dec << "tdo: " << to_do_ops << ", deadline: " << deadline
+              << ", to_sleep: " << ns_to_sleep << std::endl;
+    while (to_do_ops && (t2 = icp_timestamp_now()) < deadline) {
+        size_t spin_ops = std::min(MAX_SPIN_OPS, to_do_ops);
+        size_t nb_ops = spin(spin_ops, &op_index);
+        uint64_t run_time =
+            std::max(icp_timestamp_now() - t2, 1lu); /* prevent divide by 0 */
+
+        /* Update per thread statistics */
+        _stats.time_ns += run_time;
+        _stats.operations += nb_ops;
+        _stats.bytes += nb_ops * _config.op_block_size;
+
+        /* Update local counters */
+        _total.run_time += run_time;
+        _total.operations += nb_ops;
+        _total.avg_rate +=
+            ((double)(nb_ops / run_time) - _total.avg_rate + 4.0 / run_time)
+            / 5;
+
+        to_do_ops -= spin_ops;
+    }
+
+    std::cout << std::dec << "Ops: " << _total.operations
+              << ", Rt: " << _total.run_time << ", Rate: " << _total.avg_rate
+              << ", St: " << _total.sleep_time << std::endl;
+}
+
+size_t task_memory::read_spin(uint64_t nb_ops, size_t* op_idx)
+{
+    assert(*op_idx < _config.op_index_max);
+    for (size_t i = 0; i < nb_ops; i++) {
+        // unsigned idx = op_packed_array_get(_config.indexes, (*op_idx)++);
+        unsigned idx = _config.indexes.at((*op_idx)++);
+        std::memcpy(_scratch_buffer,
+                    _config.buffer + idx * _config.op_block_size,
+                    _config.op_block_size);
+        if (*op_idx == _config.op_index_max) { *op_idx = _config.op_index_min; }
+    }
+
+    return nb_ops;
+}
+
+size_t task_memory::write_spin(uint64_t nb_ops, size_t* op_idx)
+{
+    assert(*op_idx < _config.op_index_max);
+    for (size_t i = 0; i < nb_ops; i++) {
+        // unsigned idx = op_packed_array_get(_config.indexes, (*op_idx)++);
+        unsigned idx = _config.indexes.at((*op_idx)++);
+        std::memcpy(_config.buffer + (idx * _config.op_block_size),
+                    _scratch_buffer,
+                    _config.op_block_size);
+        if (*op_idx == _config.op_index_max) { *op_idx = _config.op_index_min; }
+    }
+
+    return nb_ops;
+}
+
+size_t task_memory::spin(uint64_t nb_ops, size_t* op_idx)
+{
+    return (_read) ? read_spin(nb_ops, op_idx) : write_spin(nb_ops, op_idx);
+}
+
+void task_memory::scratch_allocate(size_t size)
+{
+    // static uint64_t cachelinesize = 0;
+    // if (!cachelinesize) {
+    //    icp_config_get_value(sysinfo_cacheline_size, &cachelinesize);
+
+    if (posix_memalign(&_scratch_buffer, _cache_size, size) != 0) {
+        OP_LOG(OP_LOG_ERROR, "Could not allocate scratch area!\n");
+        _scratch_buffer = NULL;
+    } else {
+        _scratch_size = size;
+    }
+}
+
+void task_memory::scratch_free()
+{
+    if (_scratch_buffer) {
+        free(_scratch_buffer);
+        _scratch_buffer = NULL;
+    }
+
+    _scratch_size = 0;
+}
+
+} // namespace openperf::memory::generator

@@ -27,7 +27,7 @@ private:
 public:
     // Constructors & Destructor
     Generator();
-    Generator(Generator &&);
+    Generator(Generator&&);
     Generator(const Generator&) = delete;
 
     // Methods
@@ -35,9 +35,15 @@ public:
     inline bool isPaused() const { return _paused; }
     inline unsigned int readWorkers() const { return _read_threads; }
     inline unsigned int writeWorkers() const { return _write_threads; }
-    inline const Worker::Config& readWorkerConfig() const { return _readWorkerConfig; }
-    inline const Worker::Config& writeWorkerConfig() const { return _writeWorkerConfig; }
-    
+    inline const Worker::Config& readWorkerConfig() const
+    {
+        return _readWorkerConfig;
+    }
+    inline const Worker::Config& writeWorkerConfig() const
+    {
+        return _writeWorkerConfig;
+    }
+
     void resume();
     void pause();
 

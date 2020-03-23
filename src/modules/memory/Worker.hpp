@@ -31,19 +31,19 @@ private:
         unsigned int block_size;
     };
 
+    static constexpr auto endpoint_prefix = "inproc://openperf_memory_Worker";
+
 private:
     void* _zmq_context;
     std::unique_ptr<void, op_socket_deleter> _zmq_socket;
     std::thread _thread;
     std::forward_list<std::unique_ptr<TaskBase>> _tasks;
-    //bool _paused;
-    //bool _stopped;
-    //unsigned int _buffer_size;
-    //unsigned int _op_per_sec;
-    //unsigned int _block_size;
+    // bool _paused;
+    // bool _stopped;
+    // unsigned int _buffer_size;
+    // unsigned int _op_per_sec;
+    // unsigned int _block_size;
     Config _state;
-
-    static constexpr auto endpoint_prefix = "inproc://openperf_memory_Worker";
 
 public:
     Worker();
@@ -51,7 +51,7 @@ public:
     Worker(const Worker&) = delete;
     Worker(const Worker::Config&);
     ~Worker();
-    
+
     void start();
     void stop();
     void pause();

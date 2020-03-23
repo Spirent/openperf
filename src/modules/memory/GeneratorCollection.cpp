@@ -56,26 +56,18 @@ GeneratorConfig GeneratorCollection::create(const std::string& id,
 
     Generator gen;
     gen.setReadWorkers(config.readThreads());
-    gen.setReadWorkerConfig(
-        Worker::Config {
-            .buffer_size = config.bufferSize(),
-            .op_per_sec = config.readsPerSec(),
-            .block_size = config.readSize()
-        }
-    );
+    gen.setReadWorkerConfig(Worker::Config{.buffer_size = config.bufferSize(),
+                                           .op_per_sec = config.readsPerSec(),
+                                           .block_size = config.readSize()});
 
     gen.setWriteWorkers(config.writeThreads());
-    gen.setWriteWorkerConfig(
-        Worker::Config {
-            .buffer_size = config.bufferSize(),
-            .op_per_sec = config.writesPerSec(),
-            .block_size = config.writeSize()
-        }
-    );
+    gen.setWriteWorkerConfig(Worker::Config{.buffer_size = config.bufferSize(),
+                                            .op_per_sec = config.writesPerSec(),
+                                            .block_size = config.writeSize()});
 
     gen.setRunning(config.isRunning());
     auto result = _collection.emplace(new_id, std::move(gen));
-    //auto result = _collection.emplace(
+    // auto result = _collection.emplace(
     //    new_id,
     //    Generator::Config{.read_threads = config.readThreads(),
     //                      .write_threads = config.writeThreads()});
