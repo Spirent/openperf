@@ -33,6 +33,7 @@ Worker::Worker(Worker&& worker)
 
 Worker::~Worker()
 {
+    std::cout << "Worker::~Worker()" << std::endl;
     if (_thread.joinable()) {
         _thread.detach();
         _state.stopped = true;
@@ -40,6 +41,7 @@ Worker::~Worker()
         update();
     }
 
+    zmq_close(_zmq_socket.get());
     zmq_ctx_shutdown(_zmq_context);
     zmq_ctx_term(_zmq_context);
 }
@@ -55,8 +57,8 @@ void Worker::start()
     if (!_state.stopped) return;
     _state.stopped = false;
 
-    std::cout << "Start worker" << std::endl;
-    // if (_thread.joinable()) _thread.detach();
+    std::cout << "Start worker " << _state.stopped << " " << _state.paused
+              << std::endl;
     _thread = std::thread([this]() { loop(); });
     update();
 }
@@ -84,9 +86,9 @@ void Worker::resume()
 }
 
 void Worker::setConfig(const Worker::Config& c)
-{ 
+{
     if (!c.stopped) start();
-    _state = c; 
+    _state = c;
     update();
 }
 
@@ -108,7 +110,7 @@ void Worker::loop()
             break;
         }
 
-        std::cout << "Thread " << std::this_thread::get_id() 
+        std::cout << "Thread " << std::this_thread::get_id()
                   << " pause: " << msg.paused << ", stop: " << msg.stopped
                   << std::endl;
 
@@ -128,8 +130,8 @@ void Worker::loop()
 
 void Worker::update()
 {
-    if (_state.stopped) return;
-    zmq_send(_zmq_socket.get(), &_state, sizeof(_state), 0);
+    if (isFinished()) return;
+    zmq_send(_zmq_socket.get(), &_state, sizeof(_state), 0); // ZMQ_NOBLOCK);
     std::cout << "Worker::update()" << std::endl;
 }
 

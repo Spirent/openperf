@@ -200,7 +200,7 @@ json server::create_generator(const json& request)
         try {
             auto result =
                 generator_stack->create(generator_model.getId(), config);
-                
+
             generator_model.setRunning(result.isRunning());
             generator_model.setConfig(
                 std::make_shared<model::MemoryGeneratorConfig>(
