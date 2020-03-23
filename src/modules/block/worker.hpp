@@ -7,28 +7,13 @@
 #include <mutex>
 #include <thread>
 #include <vector>
-#include "models/generator.hpp"
 #include "core/op_core.h"
+#include "worker_pattern.hpp"
 
 namespace openperf::block::worker {
 
 constexpr auto endpoint_prefix = "inproc://openperf_block_worker";
 typedef model::block_generation_pattern worker_pattern;
-
-struct pattern_state {
-    off_t min;
-    off_t max;
-    off_t idx;
-};
-
-struct operation_config {
-    int fd;
-    size_t f_size;
-    size_t block_size;
-    uint8_t* buffer;
-    off_t offset;
-    int (*queue_aio_op)(struct aiocb *aiocb);
-};
 
 struct worker_config {
     size_t f_size;
@@ -39,20 +24,18 @@ struct worker_config {
     size_t write_size;
 };
 
-struct worker_state {
-    worker_config config;
-    bool running;
-    int fd;
-    worker_pattern pattern;
-};
-
 class block_worker {
 private:
-    worker_state state;
+    struct {
+        worker_config config;
+        bool running;
+        int fd;
+        worker_pattern pattern;
+    } state;
     void *m_context;
-    std::unique_ptr<void> m_socket;
+    void *m_socket;
     std::unique_ptr<std::thread> worker_tread;
-    
+
     void worker_loop(void* context);
     void update_state();
 

@@ -9,7 +9,7 @@ namespace openperf::block::generator {
 block_generator::block_generator(const model::block_generator& generator_model)
     : model::block_generator(generator_model)
 {
-    auto config = generate_worker_config(get_config());
+    auto config = generate_worker_config(get_config(), get_resource_size(get_resource_id()));
     auto fd = open_resource(get_resource_id());
     if (fd < 0)
         throw std::runtime_error("Cannot open resource: " + std::string(std::strerror(-fd)));
@@ -69,13 +69,14 @@ void block_generator::set_running(bool value)
     blkworker->set_running(value);
 }
 
-worker_config block_generator::generate_worker_config(const model::block_generator_config& generator_config) {
+worker_config block_generator::generate_worker_config(const model::block_generator_config& generator_config, const size_t& resource_size) {
     worker_config w_config;
     w_config.queue_depth = generator_config.queue_depth;
     w_config.read_size = generator_config.read_size;
     w_config.reads_per_sec = generator_config.reads_per_sec;
     w_config.write_size = generator_config.write_size;
     w_config.writes_per_sec = generator_config.writes_per_sec;
+    w_config.f_size = resource_size;
     return w_config;
 }
 

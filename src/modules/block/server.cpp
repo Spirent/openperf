@@ -156,7 +156,7 @@ void server::handle_create_generator_request(json& request, json& reply)
     try {
         json block_generator_json =
             json::parse(request["data"].get<std::string>());
-        
+
         if (auto id_check =
                 config::op_config_validate_id_string(block_generator_json["id"]);
             !id_check)
@@ -227,7 +227,7 @@ void server::handle_stop_generator_request(json& request, json& reply)
     if (blkgenerator == nullptr) {
         reply["code"] = reply_code::NO_GENERATOR;
         return;
-    } 
+    }
 
     blkgenerator->stop();
     reply["code"] = reply_code::OK;
@@ -326,8 +326,8 @@ static int _handle_rpc_request(const op_event_data* data, void* arg)
 
 server::server(void* context, openperf::core::event_loop& loop)
     : m_socket(op_socket_get_server(context, ZMQ_REP, endpoint.data()))
-    , blk_device_stack(std::unique_ptr<device::device_stack>(&device::device_stack::instance()))
-    , blk_file_stack(std::unique_ptr<file::file_stack>(&file::file_stack::instance()))
+    , blk_device_stack(&device::device_stack::instance())
+    , blk_file_stack(&file::file_stack::instance())
     , blk_generator_stack(std::make_unique<generator::generator_stack>())
 {
     struct op_event_callbacks callbacks = {.on_read = _handle_rpc_request};
