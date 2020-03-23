@@ -76,9 +76,16 @@ public:
     const interface_sinks*
     find_interface_and_sinks(uint16_t port_idx,
                              const net::mac_address& mac) const;
+    /**
+     * Visit all the interfaces sinks.
+     *
+     * This function is not intended for use in the fast path packet dispatch.
+     * Due to std::function performance overhead it is better to use
+     * get_interfaces().
+     */
     void visit_interface_sinks(
         uint16_t port_idx,
-        std::function<bool(Interface* ifp, const Sink& sink)> visitor) const;
+        std::function<bool(Interface* ifp, const Sink& sink)>&& visitor) const;
 };
 
 } // namespace openperf::packetio

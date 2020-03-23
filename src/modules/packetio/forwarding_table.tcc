@@ -230,7 +230,7 @@ forwarding_table<Interface, Sink, MaxPorts>::find_interface_and_sinks(
 
 template <typename Interface, typename Sink, int MaxPorts>
 void
-forwarding_table<Interface, Sink, MaxPorts>::visit_interface_sinks(uint16_t port_idx, std::function<bool(Interface *ifp, const Sink &sink)> visitor) const
+forwarding_table<Interface, Sink, MaxPorts>::visit_interface_sinks(uint16_t port_idx, std::function<bool(Interface *ifp, const Sink &sink)> &&visitor) const
 {
     assert(port_idx < MaxPorts);
 

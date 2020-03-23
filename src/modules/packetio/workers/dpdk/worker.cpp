@@ -209,16 +209,18 @@ static void rx_interface_sink_push_multicast_burst(const fib* fib,
 {
     // Multicast dispatch to all sinks on port
     // This will be slow when there are a lot of interfaces
-    fib->visit_interface_sinks(rxq->port_id(), [&](auto ifp, const auto& sink) {
-        if (sink.active()) {
-            OP_LOG(OP_LOG_TRACE,
-                   "Dispatching packets to sink %s\n",
-                   sink.id().c_str());
-            sink.push(
-                reinterpret_cast<packets::packet_buffer* const*>(incoming), n);
+    for (auto [idx, entry] : fib->get_interfaces(rxq->port_id())) {
+        for (auto& sink : entry.sinks) {
+            if (sink.active()) {
+                OP_LOG(OP_LOG_TRACE,
+                       "Dispatching packets to sink %s\n",
+                       sink.id().c_str());
+                sink.push(
+                    reinterpret_cast<packets::packet_buffer* const*>(incoming),
+                    n);
+            }
         }
-        return true;
-    });
+    }
 }
 
 /**
