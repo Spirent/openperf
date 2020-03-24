@@ -31,6 +31,8 @@ private:
     void handle_delete_generator_request(json& request, json& reply);
     void handle_start_generator_request(json& request, json& reply);
     void handle_stop_generator_request(json& request, json& reply);
+    void handle_bulk_start_generators_request(json& request, json& reply);
+    void handle_bulk_stop_generators_request(json& request, json& reply);
 public:
     server(void* context, core::event_loop& loop);
 

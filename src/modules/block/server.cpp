@@ -5,6 +5,9 @@
 #include "config/op_config_utils.hpp"
 #include "block/block_generator.hpp"
 #include "utils.hpp"
+#include "swagger/v1/model/BulkStartBlockGeneratorsRequest.h"
+#include "swagger/v1/model/BulkStartBlockGeneratorsResponse.h"
+#include "swagger/v1/model/BulkStopBlockGeneratorsRequest.h"
 
 namespace openperf::block::api {
 
@@ -233,6 +236,65 @@ void server::handle_stop_generator_request(json& request, json& reply)
     reply["code"] = reply_code::OK;
 }
 
+void server::handle_bulk_start_generators_request(json& request, json& reply)
+{
+    try {
+        BulkStartBlockGeneratorsRequest req;
+        BulkStartBlockGeneratorsResponse resp;
+
+        json parsed_request = json::parse(request["data"].get<std::string>());
+        req.fromJson(parsed_request);
+
+        for (auto &id : req.getIds()) {
+            auto blkgenerator = blk_generator_stack->get_block_generator(id);
+            if (blkgenerator == nullptr) {
+                reply["code"] = reply_code::NO_GENERATOR;
+                auto failed_generator = new BulkStartBlockGeneratorsResponse_failed();
+                failed_generator->setId(id);
+                failed_generator->setError("Not Found");
+                resp.getFailed().push_back(std::shared_ptr<BulkStartBlockGeneratorsResponse_failed>(failed_generator));
+                continue;
+            }
+            blkgenerator->start();
+            resp.getSucceeded().push_back(blkgenerator->get_id());
+        }
+
+        reply["data"] = resp.toJson().dump();
+        reply["code"] = reply_code::OK;
+    } catch (const std::runtime_error& e) {
+        reply["code"] = reply_code::BAD_INPUT;
+        reply["error"] = json_error(EINVAL, e.what());
+    } catch (const json::exception& e) {
+        reply["code"] = reply_code::BAD_INPUT;
+        reply["error"] = json_error(e.id, e.what());
+    }
+}
+
+void server::handle_bulk_stop_generators_request(json& request, json& reply)
+{
+    try {
+        BulkStopBlockGeneratorsRequest req;
+        json parsed_request = json::parse(request["data"].get<std::string>());
+        req.fromJson(parsed_request);
+
+        for (auto &id : req.getIds()) {
+            auto blkgenerator = blk_generator_stack->get_block_generator(id);
+            if (blkgenerator == nullptr) {
+                continue;
+            }
+
+            blkgenerator->stop();
+        }
+        reply["code"] = reply_code::OK;
+    } catch (const std::runtime_error& e) {
+        reply["code"] = reply_code::BAD_INPUT;
+        reply["error"] = json_error(EINVAL, e.what());
+    } catch (const json::exception& e) {
+        reply["code"] = reply_code::BAD_INPUT;
+        reply["error"] = json_error(e.id, e.what());
+    }
+}
+
 int server::handle_request(const op_event_data* data)
 {
     int recv_or_err = 0;
@@ -295,6 +357,18 @@ int server::handle_request(const op_event_data* data)
         case request_type::STOP_GENERATOR:
             handle_stop_generator_request(request, reply);
             break;
+        case request_type::BULK_START_GENERATORS:
+            handle_bulk_start_generators_request(request, reply);
+            break;
+        case request_type::BULK_STOP_GENERATORS:
+            handle_bulk_stop_generators_request(request, reply);
+            break;
+        case request_type::LIST_GENERATOR_RESULTS:
+            handle_list_generators_request(reply);
+        case request_type::GET_GENERATOR_RESULT:
+            handle_get_generator_request(request, reply);
+        case request_type::DELETE_GENERATOR_RESULT:
+            handle_delete_generator_request(request, reply);
         default:
             reply["code"] = reply_code::ERROR;
             reply["error"] = json_error(
