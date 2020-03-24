@@ -1,11 +1,7 @@
 #include "memory/generator.hpp"
-#include "memory/task.hpp"
-#include "memory/task_console.hpp"
 #include "memory/task_memory.hpp"
 
 namespace openperf::memory::internal {
-
-using namespace openperf::generator::generic;
 
 // Constructors & Destructor
 generator::generator()
@@ -95,12 +91,13 @@ void generator::set_read_workers(unsigned int number)
     } else {
         for (; _read_threads < number; ++_read_threads) {
             worker_ptr w(new worker<task_memory_read>());
-            //w->add_task(std::unique_ptr<task_memory>(new task_memory_read));
-            //w->add_task(std::unique_ptr<task>(new task_console("worker read")));
+            // w->add_task(std::unique_ptr<task_memory>(new task_memory_read));
+            // w->add_task(std::unique_ptr<task>(new task_console("worker
+            // read")));
             _read_workers.push_front(std::move(w));
-            
-            //auto p = worker<task_memory_read>();
-            //worker<task_memory> p1 = std::move(p);
+
+            // auto p = worker<task_memory_read>();
+            // worker<task_memory> p1 = std::move(p);
             //_write_workers.emplace_front(
             //    new worker<task_memory_read>);
         }
@@ -124,7 +121,7 @@ void generator::set_write_workers(unsigned int number)
         }
     } else {
         for (; _write_threads < number; ++_write_threads) {
-            //auto w = std::make_unique<worker<task_memory_write>>();
+            // auto w = std::make_unique<worker<task_memory_write>>();
             //_write_workers.push_front(std::move(w));
             //_write_workers.emplace_front(
             //    new worker<task_memory_write>());
@@ -137,7 +134,7 @@ void generator::set_write_workers(unsigned int number)
 void generator::set_read_config(const task_memory_read::config_t& config)
 {
     _read_config = config;
-    for (auto& w : _read_workers) { 
+    for (auto& w : _read_workers) {
         auto wt = dynamic_cast<worker<task_memory_read>*>(w.get());
         wt->set_config(_read_config);
     }
@@ -146,7 +143,7 @@ void generator::set_read_config(const task_memory_read::config_t& config)
 void generator::set_write_config(const task_memory_write::config_t& config)
 {
     _write_config = config;
-    for (auto& w : _write_workers) { 
+    for (auto& w : _write_workers) {
         auto wt = dynamic_cast<worker<task_memory_write>*>(w.get());
         wt->set_config(_read_config);
     }
