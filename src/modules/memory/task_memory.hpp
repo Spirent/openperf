@@ -4,46 +4,42 @@
 #include <cstddef>
 #include <atomic>
 #include <vector>
-#include <mutex>
 
 #include "memory/task.hpp"
 #include "memory/io_pattern.hpp"
 
 namespace openperf::memory::internal {
 
-class task_memory : public openperf::generator::generic::task
+struct task_memory_config
 {
-public:
-    struct config
-    {
-        size_t block_size;
-        size_t buffer_size;
-        size_t op_per_sec;
-        io_pattern pattern;
-    };
+    size_t block_size;
+    size_t buffer_size;
+    size_t op_per_sec;
+    io_pattern pattern;
+};
 
-private:
-    std::mutex _mutex;
-
+class task_memory : 
+    public openperf::generator::generic::task<task_memory_config>
+{
 protected:
     uint64_t _cache_size = 16;
-    io_pattern _pattern;
-    size_t _block_size;
-    size_t _op_per_sec;
-    size_t _buffer_size;
+    uint8_t* _buffer;
+    // struct op_packed_array *indexes;
+    std::vector<unsigned> _indexes;
+    size_t _op_index_min;
+    size_t _op_index_max;
+    //io_pattern _pattern;
+    //size_t _block_size;
+    //size_t _op_per_sec;
+    //size_t _buffer_size;
 
-    struct
-    {
-        // struct op_packed_array *indexes;
-        std::vector<unsigned> indexes;
-        uint8_t* buffer;
-        size_t op_index_min;
-        size_t op_index_max;
-
-        size_t op_block_size;
-        size_t op_per_sec;
-        enum io_pattern pattern;
-    } _config;
+    //struct
+    //{
+    //    size_t op_block_size;
+    //    size_t op_per_sec;
+    //    enum io_pattern pattern;
+    //}
+    task_memory_config _config;
 
     void* _scratch_buffer;
     size_t _scratch_size;
@@ -75,17 +71,19 @@ public:
     task_memory();
 
     void run() override;
-    int set_config(const task_memory::config&);
+    void set_config(const task_memory_config&) override;
+    
+    task_memory_config config() const override { return _config; }
 
     void set_buffer_size(size_t);
     void set_block_size(size_t);
     void set_rate(size_t);
     void set_pattern(io_pattern);
 
-    size_t buffer_size() const { return _buffer_size; }
-    size_t block_size() const { return _block_size; }
-    size_t rate() const { return _op_per_sec; }
-    io_pattern pattern() const { return _pattern; }
+    size_t buffer_size() const { return _config.buffer_size; }
+    size_t block_size() const { return _config.block_size; }
+    size_t rate() const { return _config.op_per_sec; }
+    io_pattern pattern() const { return _config.pattern; }
 
     uint64_t time_ns() const { return _stats.time_ns; }
     uint64_t operations() const { return _stats.operations; }

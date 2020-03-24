@@ -57,15 +57,19 @@ generator_config generator_collection::create(const std::string& id,
     generator gen;
     gen.set_read_workers(config.read_threads());
     gen.set_read_config(
-        task_memory_read::config{.buffer_size = config.buffer_size(),
+        task_memory_read::config_t{
+                     .buffer_size = config.buffer_size(),
                        .op_per_sec = config.reads_per_sec(),
-                       .block_size = config.read_size()});
+                       .block_size = config.read_size(),
+                       .pattern = config.pattern()});
 
     gen.set_write_workers(config.write_threads());
     gen.set_write_config(
-        task_memory_write::config{.buffer_size = config.buffer_size(),
+        task_memory_write::config_t{
+                        .buffer_size = config.buffer_size(),
                        .op_per_sec = config.writes_per_sec(),
-                       .block_size = config.write_size()});
+                       .block_size = config.write_size(),
+                       .pattern = config.pattern()});
 
     gen.set_running(config.is_running());
     auto result = _collection.emplace(new_id, std::move(gen));

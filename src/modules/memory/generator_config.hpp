@@ -1,6 +1,8 @@
 #ifndef _OP_MEMORY_GENERATOR_CONFIG_HPP_
 #define _OP_MEMORY_GENERATOR_CONFIG_HPP_
 
+#include "memory/io_pattern.hpp"
+
 namespace openperf::memory {
 
 class generator_config
@@ -14,6 +16,7 @@ private:
     unsigned int _writes_per_sec;
     unsigned int _write_size;
     unsigned int _write_threads;
+    io_pattern   _pattern;
 
 public:
     inline static generator_config create() { return generator_config(); }
@@ -26,6 +29,7 @@ public:
     inline unsigned int writes_per_sec() const { return _writes_per_sec; }
     inline unsigned int write_size() const { return _write_size; }
     inline unsigned int write_threads() const { return _write_threads; }
+    inline io_pattern pattern() const { return _pattern; }
 
     bool operator==(const generator_config&) const;
 
@@ -37,6 +41,7 @@ public:
     generator_config& set_writes_per_sec(int);
     generator_config& set_write_size(int);
     generator_config& set_write_threads(int);
+    inline generator_config& set_pattern(io_pattern pat) { _pattern = pat; return *this; }
 };
 
 } // namespace openperf::memory
