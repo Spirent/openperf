@@ -1,14 +1,21 @@
 #include "memory/task_memory.hpp"
 
 #include <cstdint>
-#include <chrono>
 
 #include "core/op_core.h"
-#include "core/op_random.h"
+#include "utils/random.hpp"
+#include "timesync/chrono.hpp"
 
 namespace openperf::memory::internal {
 
-using namespace openperf::core::utils;
+using openperf::utils::random_uniform;
+
+auto time_ns()
+{
+    return openperf::timesync::chrono::realtime::now()
+        .time_since_epoch()
+        .count();
+};
 
 const uint64_t NS_PER_SECOND = 1000000000ULL;
 
@@ -16,20 +23,12 @@ static const uint64_t QUANTA_MS = 10;
 static const uint64_t MS_TO_NS = 1000000;
 static const size_t MAX_SPIN_OPS = 5000;
 
-// TODO: need to modified
-uint64_t icp_timestamp_now()
-{
-    return std::chrono::duration_cast<std::chrono::nanoseconds>(
-               std::chrono::system_clock::now().time_since_epoch())
-        .count();
-}
-
 void icp_generator_sleep_until(uint64_t wake_time)
 {
     uint64_t now = 0, ns_to_sleep = 0;
     struct timespec sleep = {0, 0};
 
-    while ((now = icp_timestamp_now()) < wake_time) {
+    while ((now = time_ns()) < wake_time) {
         ns_to_sleep = wake_time - now;
 
         if (ns_to_sleep < NS_PER_SECOND) {
@@ -47,9 +46,9 @@ void icp_generator_sleep_until(uint64_t wake_time)
 task_memory::task_memory()
 {
     set_config(config_t{.block_size = 8,
-                          .buffer_size = 64,
-                          .op_per_sec = 8,
-                          .pattern = GENERATOR_PATTERN_RANDOM});
+                        .buffer_size = 64,
+                        .op_per_sec = 8,
+                        .pattern = GENERATOR_PATTERN_RANDOM});
     scratch_allocate(4096);
     //_config.op_per_sec = 0;
     //[](uint64_t total, size_t buckets, size_t n) {
@@ -77,8 +76,7 @@ void task_memory::set_config(const task_memory_config& msg)
      * has changed.
      */
     if (nb_blocks
-        && (nb_blocks != _op_index_max
-            || msg.pattern != _config.pattern)) {
+        && (nb_blocks != _op_index_max || msg.pattern != _config.pattern)) {
 
         // if (_indexes) {
         //    op_packed_array_free(&_indexes);
@@ -121,7 +119,7 @@ void task_memory::set_config(const task_memory_config& msg)
             // Shuffle array contents using the Fisher-Yates shuffle algorithm
             // op_packed_array_shuffle(_indexes);
             for (size_t i = _indexes.size() - 1; i > 0; --i) {
-                auto j = op_random(i + 1);
+                auto j = random_uniform(i + 1);
                 auto swap = _indexes[i];
                 _indexes[i] = _indexes[j];
                 _indexes[j] = swap;
@@ -184,7 +182,7 @@ void task_memory::set_config(const task_memory_config& msg)
         //_scratch = icp_generator_allocate_scratch_area(msg.block_size);
         scratch_allocate(msg.block_size);
         assert(_scratch_buffer);
-        uint32_t seed = op_random<uint32_t>();
+        uint32_t seed = random_uniform<uint32_t>();
         pseudo_random_fill(&seed, _scratch_buffer, _scratch_size);
     }
 
@@ -231,24 +229,24 @@ void task_memory::run()
     ns_to_sleep = std::max(
         0.0, std::min(a[0] * c[1] - c[0] * a[1], (double)QUANTA_MS * MS_TO_NS));
 
-    uint64_t t1 = icp_timestamp_now();
+    uint64_t t1 = time_ns();
     if (ns_to_sleep) {
         icp_generator_sleep_until(t1 + ns_to_sleep);
-        _total.sleep_time += icp_timestamp_now() - t1;
+        _total.sleep_time += time_ns() - t1;
     }
     /*
      * Perform load operations in small bursts so that we can update our
      * thread statistics periodically.
      */
-    uint64_t deadline = icp_timestamp_now() + (QUANTA_MS * MS_TO_NS);
+    uint64_t deadline = time_ns() + (QUANTA_MS * MS_TO_NS);
     uint64_t t2;
     std::cout << std::dec << "tdo: " << to_do_ops << ", deadline: " << deadline
               << ", to_sleep: " << ns_to_sleep << std::endl;
-    while (to_do_ops && (t2 = icp_timestamp_now()) < deadline) {
+    while (to_do_ops && (t2 = time_ns()) < deadline) {
         size_t spin_ops = std::min(MAX_SPIN_OPS, to_do_ops);
         size_t nb_ops = spin(spin_ops, &op_index);
         uint64_t run_time =
-            std::max(icp_timestamp_now() - t2, 1lu); /* prevent divide by 0 */
+            std::max(time_ns() - t2, 1lu); /* prevent divide by 0 */
 
         /* Update per thread statistics */
         _stats.time_ns += run_time;

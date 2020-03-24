@@ -3,17 +3,19 @@
 
 #include <forward_list>
 
+#include "utils/worker/worker.hpp"
 #include "memory/generator_config.hpp"
-#include "memory/worker.hpp"
 #include "memory/task_memory_read.hpp"
 #include "memory/task_memory_write.hpp"
 
 namespace openperf::memory::internal {
 
+using namespace openperf::utils::worker;
+
 class generator
 {
 private:
-    typedef std::unique_ptr<worker_interface> worker_ptr;
+    typedef std::unique_ptr<workable> worker_ptr;
     typedef std::forward_list<worker_ptr> workers;
 
 private:

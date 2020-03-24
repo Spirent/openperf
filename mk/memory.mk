@@ -2,46 +2,46 @@
 # Makefile component for memory generator
 #
 
-MEMGEN_REQ_VARS := \
+MEMORY_REQ_VARS := \
 	OP_ROOT \
 	OP_BUILD_ROOT
-$(call op_check_vars,$(MEMGEN_REQ_VARS))
+$(call op_check_vars,$(MEMORY_REQ_VARS))
 
-MEMGEN_SOURCES :=
-MEMGEN_INCLUDES :=
-MEMGEN_DEPENDS :=
-MEMGEN_LIBS :=
+MEMORY_SOURCES :=
+MEMORY_INCLUDES :=
+MEMORY_DEPENDS :=
+MEMORY_LIBS :=
 
-MEMGEN_SRC_DIR := $(OP_ROOT)/src/modules/memory
-MEMGEN_OBJ_DIR := $(OP_BUILD_ROOT)/obj/modules/memory
-MEMGEN_LIB_DIR := $(OP_BUILD_ROOT)/lib
+MEMORY_SRC_DIR := $(OP_ROOT)/src/modules/memory
+MEMORY_OBJ_DIR := $(OP_BUILD_ROOT)/obj/modules/memory
+MEMORY_LIB_DIR := $(OP_BUILD_ROOT)/lib
 
-include $(MEMGEN_SRC_DIR)/directory.mk
+include $(MEMORY_SRC_DIR)/directory.mk
 
-MEMGEN_OBJECTS := $(call op_generate_objects,$(MEMGEN_SOURCES),$(MEMGEN_OBJ_DIR))
+MEMORY_OBJECTS := $(call op_generate_objects,$(MEMORY_SOURCES),$(MEMORY_OBJ_DIR))
 
-MEMGEN_INC_DIRS := $(dir $(MEMGEN_SRC_DIR)) $(addprefix $(MEMGEN_SRC_DIR)/,$(MEMGEN_INCLUDES))
-MEMGEN_FLAGS := $(addprefix -I,$(MEMGEN_INC_DIRS))
+MEMORY_INC_DIRS := $(dir $(MEMORY_SRC_DIR)) $(addprefix $(MEMORY_SRC_DIR)/,$(MEMORY_INCLUDES))
+MEMORY_FLAGS := $(addprefix -I,$(MEMORY_INC_DIRS))
 
-MEMGEN_LIBRARY := openperf_memory
-MEMGEN_TARGET := $(MEMGEN_LIB_DIR)/lib$(MEMGEN_LIBRARY).a
+MEMORY_LIBRARY := openperf_memory
+MEMORY_TARGET := $(MEMORY_LIB_DIR)/lib$(MEMORY_LIBRARY).a
 
-OP_INC_DIRS += $(MEMGEN_INC_DIRS)
-OP_LIB_DIRS += $(MEMGEN_LIB_DIR)
-OP_LDLIBS += -Wl,--whole-archive -l$(MEMGEN_LIBRARY) -Wl,--no-whole-archive $(MEMGEN_LIBS)
+OP_INC_DIRS += $(MEMORY_INC_DIRS)
+OP_LIB_DIRS += $(MEMORY_LIB_DIR)
+OP_LDLIBS += -Wl,--whole-archive -l$(MEMORY_LIBRARY) -Wl,--no-whole-archive $(MEMORY_LIBS)
 
 # Load dependencies
--include $(MEMGEN_OBJECTS:.o=.d)
-$(call op_include_dependencies,$(MEMGEN_DEPENDS))
+-include $(MEMORY_OBJECTS:.o=.d)
+$(call op_include_dependencies,$(MEMORY_DEPENDS))
 
 ###
 # Build rules
 ###
-$(eval $(call op_generate_build_rules,$(MEMGEN_SOURCES),MEMGEN_SRC_DIR,MEMGEN_OBJ_DIR,MEMGEN_DEPENDS))
-$(eval $(call op_generate_clean_rules,memory,MEMGEN_TARGET,MEMGEN_OBJECTS))
+$(eval $(call op_generate_build_rules,$(MEMORY_SOURCES),MEMORY_SRC_DIR,MEMORY_OBJ_DIR,MEMORY_DEPENDS))
+$(eval $(call op_generate_clean_rules,memory,MEMORY_TARGET,MEMORY_OBJECTS))
 
-$(MEMGEN_TARGET): $(MEMGEN_OBJECTS)
-	$(call op_link_library,$@,$(MEMGEN_OBJECTS))
+$(MEMORY_TARGET): $(MEMORY_OBJECTS)
+	$(call op_link_library,$@,$(MEMORY_OBJECTS))
 
 .PHONY: memory
-memory: $(MEMGEN_TARGET)
+memory: $(MEMORY_TARGET)

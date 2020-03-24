@@ -16,7 +16,7 @@ private:
     unsigned int _writes_per_sec;
     unsigned int _write_size;
     unsigned int _write_threads;
-    io_pattern   _pattern;
+    io_pattern _pattern;
 
 public:
     inline static generator_config create() { return generator_config(); }
@@ -41,7 +41,11 @@ public:
     generator_config& set_writes_per_sec(int);
     generator_config& set_write_size(int);
     generator_config& set_write_threads(int);
-    inline generator_config& set_pattern(io_pattern pat) { _pattern = pat; return *this; }
+    inline generator_config& set_pattern(io_pattern pat)
+    {
+        _pattern = pat;
+        return *this;
+    }
 };
 
 } // namespace openperf::memory
