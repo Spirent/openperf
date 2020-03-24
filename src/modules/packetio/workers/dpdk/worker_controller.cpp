@@ -580,108 +580,97 @@ tl::expected<void, int> worker_controller::add_sink(std::string_view src_id,
                                                     packets::generic_sink sink)
 {
     auto port_idx = m_driver.port_index(src_id);
-    if (!port_idx) { return (tl::make_unexpected(EINVAL)); }
+    if (port_idx) {
+        if (contains_match(m_fib->get_sinks(*port_idx), sink)) {
+            return (tl::make_unexpected(EALREADY));
+        }
 
-    if (contains_match(m_fib->get_sinks(*port_idx), sink)) {
-        return (tl::make_unexpected(EALREADY));
+        OP_LOG(OP_LOG_DEBUG,
+               "Adding sink %s to port %.*s (idx = %u)\n",
+               sink.id().c_str(),
+               static_cast<int>(src_id.length()),
+               src_id.data(),
+               *port_idx);
+
+        auto to_delete = m_fib->insert_sink(*port_idx, std::move(sink));
+        m_recycler->writer_add_gc_callback([to_delete]() { delete to_delete; });
+
+        maybe_update_sink_features(*port_idx);
+
+        return {};
     }
 
-    OP_LOG(OP_LOG_DEBUG,
-           "Adding sink %s to port %.*s (idx = %u)\n",
-           sink.id().c_str(),
-           static_cast<int>(src_id.length()),
-           src_id.data(),
-           *port_idx);
+    auto ifp = m_fib->find_interface(src_id);
+    if (ifp) {
+        auto& interface = dpdk::to_interface(ifp);
+        auto mac = net::mac_address(ifp->hwaddr);
 
-    auto to_delete = m_fib->insert_sink(*port_idx, std::move(sink));
-    m_recycler->writer_add_gc_callback([to_delete]() { delete to_delete; });
+        auto sinks = m_fib->find_interface_sinks(interface.port_index(), mac);
+        if (!sinks) { return (tl::make_unexpected(EINVAL)); }
+        if (contains_match(*sinks, sink)) {
+            return (tl::make_unexpected(EALREADY));
+        }
 
-    maybe_update_sink_features(*port_idx);
+        OP_LOG(OP_LOG_DEBUG,
+               "Adding sink %s to port %s (idx = %u) interface=%s\n",
+               sink.id().c_str(),
+               interface.port_id().c_str(),
+               interface.port_index(),
+               interface.id().c_str());
 
-    return {};
+        auto to_delete = m_fib->insert_interface_sink(
+            interface.port_index(), mac, ifp, std::move(sink));
+        m_recycler->writer_add_gc_callback([to_delete]() { delete to_delete; });
+
+        maybe_update_sink_features(interface.port_index());
+
+        return {};
+    }
+
+    return (tl::make_unexpected(EINVAL));
 }
 
 void worker_controller::del_sink(std::string_view src_id,
                                  packets::generic_sink sink)
 {
     auto port_idx = m_driver.port_index(src_id);
-    if (!port_idx) return;
+    if (port_idx) {
+        OP_LOG(OP_LOG_DEBUG,
+               "Deleting sink %s from port %.*s (idx = %u)\n",
+               sink.id().c_str(),
+               static_cast<int>(src_id.length()),
+               src_id.data(),
+               *port_idx);
 
-    OP_LOG(OP_LOG_DEBUG,
-           "Deleting sink %s from port %.*s (idx = %u)\n",
-           sink.id().c_str(),
-           static_cast<int>(src_id.length()),
-           src_id.data(),
-           *port_idx);
+        auto to_delete = m_fib->remove_sink(*port_idx, std::move(sink));
+        m_recycler->writer_add_gc_callback([to_delete]() { delete to_delete; });
 
-    auto to_delete = m_fib->remove_sink(*port_idx, std::move(sink));
-    m_recycler->writer_add_gc_callback([to_delete]() { delete to_delete; });
-
-    maybe_update_sink_features(*port_idx);
-}
-
-tl::expected<void, int>
-worker_controller::add_interface_sink(std::string_view port_id,
-                                      std::string_view interface_id,
-                                      packets::generic_sink sink)
-{
-    auto port_idx = m_driver.port_index(port_id);
-    if (!port_idx) { return (tl::make_unexpected(EINVAL)); }
-
-    auto ifp = m_fib->find_interface(*port_idx, interface_id);
-    if (!ifp) { return (tl::make_unexpected(EINVAL)); }
-
-    auto mac = net::mac_address(ifp->hwaddr);
-    auto sinks = m_fib->find_interface_sinks(*port_idx, mac);
-    if (!sinks) { return (tl::make_unexpected(EINVAL)); }
-    if (contains_match(*sinks, sink)) {
-        return (tl::make_unexpected(EALREADY));
+        maybe_update_sink_features(*port_idx);
+        return;
     }
 
-    OP_LOG(OP_LOG_DEBUG,
-           "Adding sink %s to port %.*s (idx = %u) interface=%.*s\n",
-           sink.id().c_str(),
-           static_cast<int>(port_id.length()),
-           port_id.data(),
-           *port_idx,
-           static_cast<int>(interface_id.length()),
-           interface_id.data());
+    auto ifp = m_fib->find_interface(src_id);
+    if (ifp) {
+        auto& interface = dpdk::to_interface(ifp);
+        auto mac = net::mac_address(ifp->hwaddr);
 
-    auto to_delete =
-        m_fib->insert_interface_sink(*port_idx, mac, ifp, std::move(sink));
-    m_recycler->writer_add_gc_callback([to_delete]() { delete to_delete; });
+        auto sinks = m_fib->find_interface_sinks(interface.port_index(), mac);
+        if (!sinks) return;
 
-    maybe_update_sink_features(*port_idx);
+        OP_LOG(OP_LOG_DEBUG,
+               "Deleting sink %s from port %s (idx = %u) interface %s\n",
+               sink.id().c_str(),
+               interface.port_id().c_str(),
+               interface.port_index(),
+               interface.id().c_str());
 
-    return {};
-}
+        auto to_delete = m_fib->remove_interface_sink(
+            interface.port_index(), mac, ifp, std::move(sink));
+        m_recycler->writer_add_gc_callback([to_delete]() { delete to_delete; });
 
-void worker_controller::del_interface_sink(std::string_view port_id,
-                                           std::string_view interface_id,
-                                           packets::generic_sink sink)
-{
-    auto port_idx = m_driver.port_index(port_id);
-    if (!port_idx) return;
-
-    auto ifp = m_fib->find_interface(*port_idx, interface_id);
-    if (!ifp) return;
-
-    auto mac = net::mac_address(ifp->hwaddr);
-
-    OP_LOG(OP_LOG_DEBUG,
-           "Deleting sink %s from port %.*s (idx = %u) interface %.*s\n",
-           sink.id().c_str(),
-           static_cast<int>(port_id.length()),
-           port_id.data(),
-           *port_idx,
-           static_cast<int>(interface_id.length()),
-           interface_id.data());
-
-    auto to_delete =
-        m_fib->remove_interface_sink(*port_idx, mac, ifp, std::move(sink));
-    m_recycler->writer_add_gc_callback([to_delete]() { delete to_delete; });
-
-    maybe_update_sink_features(*port_idx);
+        maybe_update_sink_features(interface.port_index());
+        return;
+    }
 }
 
 /*

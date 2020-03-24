@@ -157,68 +157,6 @@ tl::expected<void, int> client::del_source(std::string_view dst_id,
     return (tl::make_unexpected(EBADMSG));
 }
 
-tl::expected<void, int>
-client::add_interface_sink(std::string_view port_id,
-                           std::string_view interface_id,
-                           packets::generic_sink sink)
-{
-    if (port_id.length() > name_length_max) {
-        OP_LOG(OP_LOG_ERROR,
-               "Port ID, %.*s, is too big\n",
-               static_cast<int>(port_id.length()),
-               port_id.data());
-        return (tl::make_unexpected(ENOMEM));
-    }
-
-    auto request =
-        request_interface_sink_add{.data = {.sink = std::move(sink)}};
-    std::copy_n(port_id.data(), port_id.length(), request.data.port_id);
-    std::copy_n(
-        interface_id.data(), interface_id.length(), request.data.interface_id);
-
-    auto reply = do_request(m_socket.get(), request);
-    if (!reply) { return (tl::make_unexpected(reply.error())); }
-
-    if (auto success = std::get_if<reply_ok>(&reply.value())) {
-        return {};
-    } else if (auto error = std::get_if<reply_error>(&reply.value())) {
-        return (tl::make_unexpected(error->value));
-    }
-
-    return (tl::make_unexpected(EBADMSG));
-}
-
-tl::expected<void, int>
-client::del_interface_sink(std::string_view port_id,
-                           std::string_view interface_id,
-                           packets::generic_sink sink)
-{
-    if (port_id.length() > name_length_max) {
-        OP_LOG(OP_LOG_ERROR,
-               "Port ID, %.*s, is too big\n",
-               static_cast<int>(port_id.length()),
-               port_id.data());
-        return (tl::make_unexpected(ENOMEM));
-    }
-
-    auto request =
-        request_interface_sink_del{.data = {.sink = std::move(sink)}};
-    std::copy_n(port_id.data(), port_id.length(), request.data.port_id);
-    std::copy_n(
-        interface_id.data(), interface_id.length(), request.data.interface_id);
-
-    auto reply = do_request(m_socket.get(), request);
-    if (!reply) { return (tl::make_unexpected(reply.error())); }
-
-    if (auto success = std::get_if<reply_ok>(&reply.value())) {
-        return {};
-    } else if (auto error = std::get_if<reply_error>(&reply.value())) {
-        return (tl::make_unexpected(error->value));
-    }
-
-    return (tl::make_unexpected(EBADMSG));
-}
-
 tl::expected<std::string, int>
 client::add_task_impl(workers::context ctx,
                       std::string_view name,

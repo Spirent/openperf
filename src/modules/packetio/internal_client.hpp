@@ -45,13 +45,6 @@ public:
     tl::expected<void, int> del_source(std::string_view dst_id,
                                        packets::generic_source source);
 
-    tl::expected<void, int> add_interface_sink(std::string_view port_id,
-                                               std::string_view interface_id,
-                                               packets::generic_sink sink);
-    tl::expected<void, int> del_interface_sink(std::string_view port_id,
-                                               std::string_view interface_id,
-                                               packets::generic_sink sink);
-
     tl::expected<std::string, int> add_task(workers::context ctx,
                                             std::string_view name,
                                             event_loop::event_notifier notify,
