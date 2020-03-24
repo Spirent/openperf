@@ -5,7 +5,7 @@
 #include <atomic>
 #include <vector>
 
-#include "memory/task.hpp"
+#include "utils/worker/task.hpp"
 #include "memory/io_pattern.hpp"
 
 namespace openperf::memory::internal {
@@ -18,8 +18,7 @@ struct task_memory_config
     io_pattern pattern;
 };
 
-class task_memory : 
-    public openperf::generator::generic::task<task_memory_config>
+class task_memory : public openperf::utils::worker::task<task_memory_config>
 {
 protected:
     uint64_t _cache_size = 16;
@@ -28,12 +27,12 @@ protected:
     std::vector<unsigned> _indexes;
     size_t _op_index_min;
     size_t _op_index_max;
-    //io_pattern _pattern;
-    //size_t _block_size;
-    //size_t _op_per_sec;
-    //size_t _buffer_size;
+    // io_pattern _pattern;
+    // size_t _block_size;
+    // size_t _op_per_sec;
+    // size_t _buffer_size;
 
-    //struct
+    // struct
     //{
     //    size_t op_block_size;
     //    size_t op_per_sec;
@@ -72,7 +71,7 @@ public:
 
     void run() override;
     void set_config(const task_memory_config&) override;
-    
+
     task_memory_config config() const override { return _config; }
 
     void set_buffer_size(size_t);
