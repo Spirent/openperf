@@ -32,6 +32,10 @@ const std::string_view endpoint = "inproc://op_packetio_workers_control";
 
 static constexpr int mbuf_prefetch_offset = 8;
 
+static const rte_gro_param gro_params = {.gro_types = RTE_GRO_TCP_IPV4,
+                                         .max_flow_num = pkt_burst_size,
+                                         .max_item_per_flow = pkt_burst_size};
+
 /**
  * We only have two states we transition between, based on our messages:
  * stopped and started.  We use each struct as a tag for each state.  And
@@ -113,7 +117,7 @@ rx_partition_unicast_mbufs(rte_mbuf* const incoming[],
 {
     uint16_t ucast_idx = 0, mcast_idx = 0;
 
-    std::for_each(incoming, incoming + n, [&](auto& mbuf) {
+    std::for_each(incoming, incoming + n, [&](auto mbuf) {
         auto ifp = rx_mbuf_get_ifp(mbuf);
         if (ifp) {
             unicast[ucast_idx++] = mbuf;
@@ -133,7 +137,7 @@ static std::pair<uint16_t, uint16_t> rx_partition_signature_mbufs(
 {
     uint16_t nb_nonsig = 0, nb_sig = 0;
 
-    std::for_each(incoming, incoming + n, [&](auto& mbuf) {
+    std::for_each(incoming, incoming + n, [&](auto mbuf) {
         if (mbuf_signature_avail(mbuf)) {
             sig[nb_sig++] = mbuf;
         } else {
@@ -153,7 +157,7 @@ static std::pair<uint16_t, uint16_t> rx_partition_hwtag_mbufs(
 {
     uint16_t nb_to_stack = 0, nb_to_free = 0;
 
-    std::for_each(incoming, incoming + n, [&](auto& mbuf) {
+    std::for_each(incoming, incoming + n, [&](auto mbuf) {
         if ((mbuf->ol_flags & PKT_RX_FDIR) && mbuf->hash.fdir.hi) {
             to_stack[nb_to_stack++] = mbuf;
         } else {
@@ -165,9 +169,9 @@ static std::pair<uint16_t, uint16_t> rx_partition_hwtag_mbufs(
 }
 
 /**
- * Resolve interfaces for the packets and store interface in the packet ancilary
- * data.  If the mbuf is destined to an interface which is not found, the mbuf
- * is added to the list of packets to free.
+ * Resolve interfaces for the packets and store interface in the packet
+ * ancillary data.  If the mbuf is destined to an interface which is not found,
+ * the mbuf is added to the list of packets to free.
  */
 static std::pair<uint16_t, uint16_t> rx_resolve_interfaces(const fib* fib,
                                                            const rx_queue* rxq,
@@ -470,10 +474,6 @@ static void rx_interface_dispatch(const fib* fib,
          * packets before handing them up the stack.
          */
         if (!(rxq->flags() & rx_feature_flags::hardware_lro)) {
-            static const rte_gro_param gro_params = {
-                .gro_types = RTE_GRO_TCP_IPV4,
-                .max_flow_num = pkt_burst_size,
-                .max_item_per_flow = pkt_burst_size};
             nb_to_stack = rte_gro_reassemble_burst(
                 to_stack.data(), nb_to_stack, &gro_params);
         }
@@ -500,10 +500,6 @@ static void rx_interface_dispatch(const fib* fib,
          * packets before handing them up the stack.
          */
         if (!(rxq->flags() & rx_feature_flags::hardware_lro)) {
-            static const rte_gro_param gro_params = {
-                .gro_types = RTE_GRO_TCP_IPV4,
-                .max_flow_num = pkt_burst_size,
-                .max_item_per_flow = pkt_burst_size};
             nb_to_stack = rte_gro_reassemble_burst(
                 to_stack.data(), nb_to_stack, &gro_params);
         }
@@ -526,7 +522,7 @@ static void rx_interface_dispatch(const fib* fib,
     }
 
     /* ... and free all the non-stack packets */
-    std::for_each(to_free.data(), to_free.data() + nb_to_free, [](auto& mbuf) {
+    std::for_each(to_free.data(), to_free.data() + nb_to_free, [](auto mbuf) {
         rx_mbuf_set_ifp(mbuf, nullptr); // Clear just to be safe
         rte_pktmbuf_free(mbuf);
     });

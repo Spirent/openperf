@@ -579,8 +579,7 @@ void worker_controller::maybe_update_sink_features(size_t port_idx)
 tl::expected<void, int> worker_controller::add_sink(std::string_view src_id,
                                                     packets::generic_sink sink)
 {
-    auto port_idx = m_driver.port_index(src_id);
-    if (port_idx) {
+    if (auto port_idx = m_driver.port_index(src_id)) {
         if (contains_match(m_fib->get_sinks(*port_idx), sink)) {
             return (tl::make_unexpected(EALREADY));
         }
@@ -600,8 +599,7 @@ tl::expected<void, int> worker_controller::add_sink(std::string_view src_id,
         return {};
     }
 
-    auto ifp = m_fib->find_interface(src_id);
-    if (ifp) {
+    if (auto ifp = m_fib->find_interface(src_id)) {
         auto& interface = dpdk::to_interface(ifp);
         auto mac = net::mac_address(ifp->hwaddr);
 
@@ -633,8 +631,7 @@ tl::expected<void, int> worker_controller::add_sink(std::string_view src_id,
 void worker_controller::del_sink(std::string_view src_id,
                                  packets::generic_sink sink)
 {
-    auto port_idx = m_driver.port_index(src_id);
-    if (port_idx) {
+    if (auto port_idx = m_driver.port_index(src_id)) {
         OP_LOG(OP_LOG_DEBUG,
                "Deleting sink %s from port %.*s (idx = %u)\n",
                sink.id().c_str(),
@@ -649,8 +646,7 @@ void worker_controller::del_sink(std::string_view src_id,
         return;
     }
 
-    auto ifp = m_fib->find_interface(src_id);
-    if (ifp) {
+    if (auto ifp = m_fib->find_interface(src_id)) {
         auto& interface = dpdk::to_interface(ifp);
         auto mac = net::mac_address(ifp->hwaddr);
 
