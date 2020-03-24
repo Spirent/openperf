@@ -1,11 +1,14 @@
+#include <aio.h>
 #include "worker.hpp"
-#include "core/op_core.h"
 #include "zmq.h"
-#include "utils/random.hpp"
-#include <time.h>
+#include "core/op_core.h"
 #include "timesync/chrono.hpp"
+
 namespace openperf::block::worker
 {
+
+constexpr auto endpoint_prefix = "inproc://openperf_block_worker";
+typedef timesync::chrono::realtime realtime;
 
 struct operation_config {
     int fd;
@@ -311,8 +314,8 @@ void block_worker::worker_loop(void* context)
     data.running = false;
     data.buf = 0;
     auto msg = new worker_msg();
-    auto read_timestamp = timesync::chrono::realtime::now().time_since_epoch().count();
-    auto write_timestamp = timesync::chrono::realtime::now().time_since_epoch().count();
+    auto read_timestamp = realtime::now().time_since_epoch().count();
+    auto write_timestamp = realtime::now().time_since_epoch().count();
 
     for (;;)
     {
@@ -328,8 +331,8 @@ void block_worker::worker_loop(void* context)
             data.ops = (operation_state*)malloc(data.config.queue_depth * sizeof(operation_state));
 
             data.pattern.reset(get_first_block(data.config.f_size, data.config.read_size), get_last_block(data.config.f_size, data.config.read_size),msg->pattern);
-            read_timestamp = timesync::chrono::realtime::now().time_since_epoch().count();
-            write_timestamp = timesync::chrono::realtime::now().time_since_epoch().count();
+            read_timestamp = realtime::now().time_since_epoch().count();
+            write_timestamp = realtime::now().time_since_epoch().count();
         }
         if (data.running) {
             if (read_timestamp < write_timestamp) {
@@ -339,11 +342,11 @@ void block_worker::worker_loop(void* context)
                 worker_spin(data, aio_write);
                 write_timestamp += std::nano::den / data.config.writes_per_sec;
             }
+            auto next_ts = std::min(read_timestamp, write_timestamp);
+            auto now = realtime::now().time_since_epoch().count();
+            if (next_ts > now)
+                std::this_thread::sleep_for(std::chrono::nanoseconds(next_ts - now));
         }
-        auto next_ts = std::min(read_timestamp, write_timestamp);
-        auto now = timesync::chrono::realtime::now().time_since_epoch().count();
-        if (next_ts > now)
-            std::this_thread::sleep_for(std::chrono::nanoseconds(next_ts - now));
     }
     free(msg);
     if (data.buf)
