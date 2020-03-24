@@ -1,5 +1,5 @@
-#ifndef _OP_BLOCK_DEVICE_HPP_
-#define _OP_BLOCK_DEVICE_HPP_
+#ifndef _OP_BLOCK_DEVICE_STACK_HPP_
+#define _OP_BLOCK_DEVICE_STACK_HPP_
 
 #include <vector>
 #include <unordered_map>
@@ -40,4 +40,4 @@ public:
 
 } // namespace openperf::block::device
 
-#endif /* _OP_BLOCK_DEVICE_HPP_ */
+#endif /* _OP_BLOCK_DEVICE_STACK_HPP_ */
