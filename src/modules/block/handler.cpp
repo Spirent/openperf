@@ -63,6 +63,15 @@ public:
 
     void bulk_stop_generators(const Rest::Request& request,
                               Http::ResponseWriter response);
+
+    void list_generator_results(const Rest::Request& request,
+                               Http::ResponseWriter response);
+
+    void get_generator_result(const Rest::Request& request,
+                              Http::ResponseWriter response);
+
+    void delete_generator_result(const Rest::Request& request,
+                              Http::ResponseWriter response);
 };
 
 json submit_request(void* socket, json& request)
@@ -148,6 +157,15 @@ handler::handler(void* context, Rest::Router& router)
         router,
         "/block-generators/x/bulk-stop",
         Rest::Routes::bind(&handler::bulk_stop_generators, this));
+    Rest::Routes::Get(router,
+                      "/block-generator-results",
+                      Rest::Routes::bind(&handler::list_generator_results, this));
+    Rest::Routes::Get(router,
+                      "/block-generator-results/:id",
+                      Rest::Routes::bind(&handler::get_generator_result, this));
+    Rest::Routes::Delete(router,
+                         "/block-generator-results/:id",
+                         Rest::Routes::bind(&handler::delete_generator_result, this));
 }
 
 void handler::list_devices(const Rest::Request&, Http::ResponseWriter response)
@@ -434,7 +452,6 @@ void handler::bulk_start_generators(const Rest::Request& request,
                         {"data", request.body()}};
 
     json api_reply = submit_request(m_socket.get(), api_request);
-
     response.headers().add<Http::Header::ContentType>(MIME(Application, Json));
 
     switch (api_reply["code"].get<api::reply_code>()) {
@@ -463,7 +480,7 @@ void handler::bulk_stop_generators(const Rest::Request& request,
 
     switch (api_reply["code"].get<api::reply_code>()) {
     case api::reply_code::OK:
-        response.send(Http::Code::Ok, api_reply["data"].get<std::string>());
+        response.send(Http::Code::No_Content);
         break;
     case api::reply_code::BAD_INPUT:
         response.send(Http::Code::Bad_Request,
@@ -474,5 +491,73 @@ void handler::bulk_stop_generators(const Rest::Request& request,
                       api_reply["error"].get<std::string>());
     }
 }
+
+void handler::list_generator_results(const Rest::Request&,
+                              Http::ResponseWriter response)
+{
+    json api_request = {{"type", api::request_type::LIST_GENERATORS}};
+
+    json api_reply = submit_request(m_socket.get(), api_request);
+
+    response.headers().add<Http::Header::ContentType>(MIME(Application, Json));
+    if (api_reply["code"].get<api::reply_code>() == api::reply_code::OK) {
+        response.send(Http::Code::Ok, api_reply["data"].get<std::string>());
+    } else {
+        response.send(Http::Code::Internal_Server_Error,
+                      api_reply["error"].get<std::string>());
+    }
+}
+
+void handler::get_generator_result(const Rest::Request& request,
+                            Http::ResponseWriter response)
+{
+    auto id = request.param(":id").as<std::string>();
+    if (auto res = openperf::config::op_config_validate_id_string(id); !res) {
+        response.send(Http::Code::Not_Found, res.error());
+        return;
+    }
+
+    json api_request = {{"type", api::request_type::GET_GENERATOR}, {"id", id}};
+
+    json api_reply = submit_request(m_socket.get(), api_request);
+
+    response.headers().add<Http::Header::ContentType>(MIME(Application, Json));
+
+    switch (api_reply["code"].get<api::reply_code>()) {
+    case api::reply_code::OK:
+        response.send(Http::Code::Ok, api_reply["data"].get<std::string>());
+        break;
+    case api::reply_code::NO_FILE:
+        response.send(Http::Code::Not_Found);
+        break;
+    default:
+        response.send(Http::Code::Internal_Server_Error,
+                      api_reply["error"].get<std::string>());
+    }
+}
+
+void handler::delete_generator_result(const Rest::Request& request,
+                               Http::ResponseWriter response)
+{
+    auto id = request.param(":id").as<std::string>();
+    if (auto res = openperf::config::op_config_validate_id_string(id); !res) {
+        response.send(Http::Code::Not_Found, res.error());
+        return;
+    }
+
+    json api_request = {{"type", api::request_type::DELETE_GENERATOR},
+                        {"id", id}};
+
+    json api_reply = submit_request(m_socket.get(), api_request);
+
+    response.headers().add<Http::Header::ContentType>(MIME(Application, Json));
+    if (api_reply["code"].get<api::reply_code>() == api::reply_code::OK) {
+        response.send(Http::Code::No_Content);
+    } else {
+        response.send(Http::Code::Internal_Server_Error,
+                      api_reply["error"].get<std::string>());
+    }
+}
+
 
 } // namespace opneperf::block
