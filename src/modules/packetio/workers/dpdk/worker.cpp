@@ -92,80 +92,26 @@ static bool all_pollable(const std::vector<task_ptr>& tasks)
     return (true);
 }
 
+/**
+ * Set the interface pointer the mbuf will be dispatched to.
+ *
+ * This interface pointer is only valid for unicast packets during parts of the
+ * rx dispatch.
+ */
 static void rx_mbuf_set_ifp(rte_mbuf* mbuf, netif* ifp)
 {
     mbuf->userdata = ifp;
 }
 
+/**
+ * Get the interface pointer the mbuf will be dispatchd to.
+ *
+ * This interface pointer is only valid for unicast packets during parts of the
+ * rx dispatch.
+ */
 netif* rx_mbuf_get_ifp(rte_mbuf* mbuf)
 {
     return reinterpret_cast<netif*>(mbuf->userdata);
-}
-
-/*
- * Partition the mbufs into unicast and non-unicast packets.
- *
- * This function must be called after the interfaces have been resolved.
- * After interfaces have been resolved all unicast packets should be assigned an
- * interface.
- */
-static std::pair<uint16_t, uint16_t>
-rx_partition_unicast_mbufs(rte_mbuf* const incoming[],
-                           uint16_t n,
-                           rte_mbuf* unicast[],
-                           rte_mbuf* multicast[])
-{
-    uint16_t ucast_idx = 0, mcast_idx = 0;
-
-    std::for_each(incoming, incoming + n, [&](auto mbuf) {
-        auto ifp = rx_mbuf_get_ifp(mbuf);
-        if (ifp) {
-            unicast[ucast_idx++] = mbuf;
-        } else {
-            multicast[mcast_idx++] = mbuf;
-        }
-    });
-
-    return std::make_pair(ucast_idx, mcast_idx);
-}
-
-/**
- * Partition mbufs into signature and non-signature packets
- */
-static std::pair<uint16_t, uint16_t> rx_partition_signature_mbufs(
-    rte_mbuf* incoming[], uint16_t n, rte_mbuf* nonsig[], rte_mbuf* sig[])
-{
-    uint16_t nb_nonsig = 0, nb_sig = 0;
-
-    std::for_each(incoming, incoming + n, [&](auto mbuf) {
-        if (mbuf_signature_avail(mbuf)) {
-            sig[nb_sig++] = mbuf;
-        } else {
-            nonsig[nb_nonsig++] = mbuf;
-        }
-    });
-
-    return std::make_pair(nb_nonsig, nb_sig);
-}
-
-/**
- * Partition hw tagged mbufs into packets which should be delivered to the
- * stack and packets which should be freed.
- */
-static std::pair<uint16_t, uint16_t> rx_partition_hwtag_mbufs(
-    rte_mbuf* incoming[], uint16_t n, rte_mbuf* to_stack[], rte_mbuf* to_free[])
-{
-    uint16_t nb_to_stack = 0, nb_to_free = 0;
-
-    std::for_each(incoming, incoming + n, [&](auto mbuf) {
-        if ((mbuf->ol_flags & PKT_RX_FDIR) && mbuf->hash.fdir.hi) {
-            to_stack[nb_to_stack++] = mbuf;
-        } else {
-            to_free[nb_to_free++] = mbuf;
-        }
-    });
-
-    return std::make_pair(nb_to_stack, nb_to_free);
 }
 
 /**
@@ -192,7 +138,7 @@ static std::pair<uint16_t, uint16_t> rx_resolve_interfaces(const fib* fib,
     prefetch_for_each(
         incoming,
         incoming + n,
-        [&](auto mbuf) {
+        [](auto mbuf) {
             /* prefetch mbuf payload */
             rte_prefetch0(rte_pktmbuf_mtod(mbuf, void*));
         },
@@ -307,7 +253,7 @@ rx_interface_sink_dispatch(const fib* fib,
     prefetch_for_each(
         incoming,
         incoming + n,
-        [&](auto mbuf) {
+        [](auto mbuf) {
             /* prefetch mbuf payload */
             rte_prefetch0(rte_pktmbuf_mtod(mbuf, void*));
         },
@@ -379,17 +325,16 @@ static void rx_stack_dispatch(const fib* fib,
 {
     std::array<rte_mbuf*, pkt_burst_size> unicast, nunicast;
 
-    auto [nb_ucast, nb_nucast] = rx_partition_unicast_mbufs(
-        incoming, n, unicast.data(), nunicast.data());
+    // Split up the unicast and non-unicast packets
+    auto [unicast_last, nunicast_last] = std::partition_copy(
+        incoming, incoming + n, unicast.data(), nunicast.data(), [](auto mbuf) {
+            // Unicast packets should have a non null interace
+            return rx_mbuf_get_ifp(mbuf);
+        });
 
-    /* ... and dispatch */
-    for (size_t i = 0; i < nb_ucast; i++) {
-        auto mbuf = unicast[i];
+    // Dispatch unicast packets
+    std::for_each(unicast.data(), unicast_last, [](auto mbuf) {
         auto ifp = rx_mbuf_get_ifp(mbuf);
-        if (!ifp) {
-            rte_pktmbuf_free(mbuf);
-            continue;
-        }
         rx_mbuf_set_ifp(mbuf, nullptr); // Clear just to be safe
 
         OP_LOG(OP_LOG_TRACE,
@@ -402,7 +347,7 @@ static void rx_stack_dispatch(const fib* fib,
             MIB2_STATS_NETIF_INC_ATOMIC(ifp, ifindiscards);
             rte_pktmbuf_free(mbuf);
         }
-    }
+    });
 
     /*
      * Dispatch all non-unicast packets to all interfaces.
@@ -411,7 +356,7 @@ static void rx_stack_dispatch(const fib* fib,
      * packet buffer.  This allows each receiving interface to adjust
      * their payload pointers as necessary while parsing the headers.
      */
-    for (size_t i = 0; i < nb_nucast; i++) {
+    std::for_each(nunicast.data(), nunicast_last, [&](auto mbuf) {
         for (auto [idx, entry] : fib->get_interfaces(rxq->port_id())) {
             auto ifp = entry.ifp;
 
@@ -421,7 +366,7 @@ static void rx_stack_dispatch(const fib* fib,
                    ifp->name[1],
                    ifp->num);
 
-            auto clone = rte_pktmbuf_clone(nunicast[i], nunicast[i]->pool);
+            auto clone = rte_pktmbuf_clone(mbuf, mbuf->pool);
             if (!clone
                 || ifp->input(packetio_memory_pbuf_synchronize(clone), ifp)
                        != ERR_OK) {
@@ -430,8 +375,8 @@ static void rx_stack_dispatch(const fib* fib,
                     clone); /* Note: this free handles null correctly */
             }
         }
-        rte_pktmbuf_free(nunicast[i]);
-    }
+        rte_pktmbuf_free(mbuf);
+    });
 }
 
 static void rx_interface_dispatch(const fib* fib,
@@ -441,6 +386,7 @@ static void rx_interface_dispatch(const fib* fib,
 {
     uint16_t nb_to_free = 0, nb_to_stack = 0;
     std::array<rte_mbuf*, pkt_burst_size> to_stack, to_free;
+    auto has_hardware_tags = (rxq->flags() & rx_feature_flags::hardware_tags);
 
     if (fib->has_interface_sinks(rxq->port_id())) {
         // Dispatch packets to interface sinks and lookup interfaces
@@ -449,25 +395,27 @@ static void rx_interface_dispatch(const fib* fib,
         nb_to_stack = nb_resolved;
         nb_to_free += nb_unresolved;
 
-        // Filter signature packets from being processed by the stack
-        auto [nb_nosig, nb_sig] =
-            rx_partition_signature_mbufs(to_stack.data(),
-                                         nb_to_stack,
-                                         to_stack.data(),
-                                         to_free.data() + nb_to_free);
-        nb_to_stack = nb_nosig;
-        nb_to_free += nb_sig;
-
-        // Filter packets using hardware tags
-        if (rxq->flags() & rx_feature_flags::hardware_tags) {
-            auto [nb_hwtag_ok, nb_hwtag_error] =
-                rx_partition_hwtag_mbufs(to_stack.data(),
-                                         nb_to_stack,
-                                         to_stack.data(),
-                                         to_free.data() + nb_to_free);
-            nb_to_stack = nb_hwtag_ok;
-            nb_to_free += nb_hwtag_error;
-        }
+        auto [to_stack_last, to_free_last] =
+            std::partition_copy(to_stack.data(),
+                                to_stack.data() + nb_to_stack,
+                                to_stack.data(),
+                                to_free.data() + nb_to_free,
+                                [&](auto mbuf) {
+                                    // Filter signature packets from being
+                                    // processed by the stack
+                                    if (mbuf_signature_avail(mbuf))
+                                        return false;
+                                    if (has_hardware_tags) {
+                                        // Filter packets with hardware tags
+                                        if (!(mbuf->ol_flags & PKT_RX_FDIR)
+                                            || !mbuf->hash.fdir.hi) {
+                                            return false;
+                                        }
+                                    }
+                                    return true;
+                                });
+        nb_to_stack = std::distance(to_stack.data(), to_stack_last);
+        nb_to_free = std::distance(to_free.data(), to_free_last);
 
         /*
          * If we don't have hardware LRO support, try to coalesce some
@@ -478,22 +426,27 @@ static void rx_interface_dispatch(const fib* fib,
                 to_stack.data(), nb_to_stack, &gro_params);
         }
     } else {
-        // Filter signature packets from being processed by the stack
-        auto [nb_nosig, nb_sig] = rx_partition_signature_mbufs(
-            incoming, n, to_stack.data(), to_free.data());
-        nb_to_stack = nb_nosig;
-        nb_to_free += nb_sig;
-
-        // Filter packets using hardware tags
-        if (rxq->flags() & rx_feature_flags::hardware_tags) {
-            auto [nb_hwtag_ok, nb_hwtag_error] =
-                rx_partition_hwtag_mbufs(to_stack.data(),
-                                         nb_to_stack,
-                                         to_stack.data(),
-                                         to_free.data() + nb_to_free);
-            nb_to_stack = nb_hwtag_ok;
-            nb_to_free += nb_hwtag_error;
-        }
+        auto [to_stack_last, to_free_last] =
+            std::partition_copy(incoming,
+                                incoming + n,
+                                to_stack.data(),
+                                to_free.data(),
+                                [&](auto mbuf) {
+                                    // Filter signature packets from being
+                                    // processed by the stack
+                                    if (mbuf_signature_avail(mbuf))
+                                        return false;
+                                    if (has_hardware_tags) {
+                                        // Filter packets with hardware tags
+                                        if (!(mbuf->ol_flags & PKT_RX_FDIR)
+                                            || !mbuf->hash.fdir.hi) {
+                                            return false;
+                                        }
+                                    }
+                                    return true;
+                                });
+        nb_to_stack = std::distance(to_stack.data(), to_stack_last);
+        nb_to_free = std::distance(to_free.data(), to_free_last);
 
         /*
          * If we don't have hardware LRO support, try to coalesce some
