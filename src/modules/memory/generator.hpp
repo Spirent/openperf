@@ -13,7 +13,7 @@ namespace openperf::memory::internal {
 class generator
 {
 private:
-    typedef std::unique_ptr<worker> worker_ptr;
+    typedef std::unique_ptr<worker_interface> worker_ptr;
     typedef std::forward_list<worker_ptr> workers;
 
 private:
@@ -23,10 +23,8 @@ private:
     bool _paused;
     workers _read_workers;
     workers _write_workers;
-    task_memory_read::config _read_config;
-    task_memory_write::config _write_config;
-    //worker::config _read_worker_config;
-    //worker::config _write_worker_config;
+    task_memory_config _read_config;
+    task_memory_config _write_config;
 
 public:
     // Constructors & Destructor
@@ -40,11 +38,11 @@ public:
     inline bool is_paused() const { return _paused; }
     inline unsigned int read_workers() const { return _read_threads; }
     inline unsigned int write_workers() const { return _write_threads; }
-    inline const task_memory_read::config& read_worker_config() const
+    inline const task_memory_config& read_worker_config() const
     {
         return _read_config;
     }
-    inline const task_memory_write::config& write_worker_config() const
+    inline const task_memory_config& write_worker_config() const
     {
         return _write_config;
     }
@@ -58,9 +56,9 @@ public:
 
     void set_running(bool);
     void set_read_workers(unsigned int);
-    void set_read_config(const task_memory_read::config&);
+    void set_read_config(const task_memory_config&);
     void set_write_workers(unsigned int);
-    void set_write_config(const task_memory_write::config&);
+    void set_write_config(const task_memory_config&);
 
 private:
     void for_each_worker(void(worker_ptr&));

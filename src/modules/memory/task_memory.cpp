@@ -46,10 +46,10 @@ void icp_generator_sleep_until(uint64_t wake_time)
 // Constructors & Destructor
 task_memory::task_memory()
 {
-    //set_config(config_msg{.block_size = 8,
-    //                      .buffer_size = 64,
-    //                      .op_per_sec = 8,
-    //                      .pattern = GENERATOR_PATTERN_RANDOM});
+    set_config(config_t{.block_size = 8,
+                          .buffer_size = 64,
+                          .op_per_sec = 8,
+                          .pattern = GENERATOR_PATTERN_RANDOM});
     scratch_allocate(4096);
     //_config.op_per_sec = 0;
     //[](uint64_t total, size_t buckets, size_t n) {
@@ -59,9 +59,8 @@ task_memory::task_memory()
     //} (10, 64, 8);
 }
 
-int task_memory::set_config(const task_memory::config& msg)
+void task_memory::set_config(const task_memory_config& msg)
 {
-    std::lock_guard<std::mutex> lock(_mutex);
     // assert(msg->type == MEMORY_MSG_CONFIG);
 
     // io blocks in buffer
@@ -78,64 +77,64 @@ int task_memory::set_config(const task_memory::config& msg)
      * has changed.
      */
     if (nb_blocks
-        && (nb_blocks != _config.op_index_max
+        && (nb_blocks != _op_index_max
             || msg.pattern != _config.pattern)) {
 
-        // if (_config.indexes) {
-        //    op_packed_array_free(&_config.indexes);
+        // if (_indexes) {
+        //    op_packed_array_free(&_indexes);
         //}
-        // assert(!_config.indexes);
-        //_config.indexes = op_packed_array_allocate(nb_blocks, nb_blocks);
-        // if (!_config.indexes) {
+        // assert(!_indexes);
+        //_indexes = op_packed_array_allocate(nb_blocks, nb_blocks);
+        // if (!_indexes) {
         //    OP_LOG(OP_LOG_ERROR, "Could not allocate %zu element index
         //    array\n",
         //            nb_blocks);
-        //    _config.op_index_min = 0;
-        //    _config.op_index_max = 0;
+        //    _op_index_min = 0;
+        //    _op_index_max = 0;
         //    return (-1);
         //}
         try {
-            _config.indexes.resize(nb_blocks);
+            _indexes.resize(nb_blocks);
         } catch (std::exception e) {
             OP_LOG(OP_LOG_ERROR,
                    "Could not allocate %zu element index array\n",
                    nb_blocks);
-            _config.op_index_min = 0;
-            _config.op_index_max = 0;
-            return -1;
+            _op_index_min = 0;
+            _op_index_max = 0;
+            return;
         }
 
-        _config.op_index_min = 0;
-        _config.op_index_max = nb_blocks;
+        _op_index_min = 0;
+        _op_index_max = nb_blocks;
 
         auto fill_vector = [this](unsigned start, int step) {
-            for (size_t i = 0; i < _config.indexes.size(); ++i) {
-                _config.indexes[i] = start + (i * step);
+            for (size_t i = 0; i < _indexes.size(); ++i) {
+                _indexes[i] = start + (i * step);
             }
         };
 
         /* Fill in the indexes... */
         switch (msg.pattern) {
         case GENERATOR_PATTERN_RANDOM:
-            // op_packed_array_fill(_config.indexes, _config.op_index_min, 1);
-            fill_vector(_config.op_index_min, 1);
+            // op_packed_array_fill(_indexes, _op_index_min, 1);
+            fill_vector(_op_index_min, 1);
             // Shuffle array contents using the Fisher-Yates shuffle algorithm
-            // op_packed_array_shuffle(_config.indexes);
-            for (size_t i = _config.indexes.size() - 1; i > 0; --i) {
+            // op_packed_array_shuffle(_indexes);
+            for (size_t i = _indexes.size() - 1; i > 0; --i) {
                 auto j = op_random(i + 1);
-                auto swap = _config.indexes[i];
-                _config.indexes[i] = _config.indexes[j];
-                _config.indexes[j] = swap;
+                auto swap = _indexes[i];
+                _indexes[i] = _indexes[j];
+                _indexes[j] = swap;
             }
             break;
         case GENERATOR_PATTERN_SEQUENTIAL:
-            // op_packed_array_fill(_config.indexes, _config.op_index_min, 1);
-            fill_vector(_config.op_index_min, 1);
+            // op_packed_array_fill(_indexes, _op_index_min, 1);
+            fill_vector(_op_index_min, 1);
             break;
         case GENERATOR_PATTERN_REVERSE:
-            // op_packed_array_fill(_config.indexes, _config.op_index_max - 1,
+            // op_packed_array_fill(_indexes, _op_index_max - 1,
             // -1);
-            fill_vector(_config.op_index_max - 1, -1);
+            fill_vector(_op_index_max - 1, -1);
             break;
         default:
             OP_LOG(OP_LOG_ERROR,
@@ -145,20 +144,22 @@ int task_memory::set_config(const task_memory::config& msg)
 
         _config.pattern = msg.pattern;
     } else if (!nb_blocks) {
-        // if (_config.indexes) {
-        //    op_packed_array_free(&_config.indexes);
+        // if (_indexes) {
+        //    op_packed_array_free(&_indexes);
         //}
-        _config.indexes.clear();
-        _config.op_index_min = 0;
-        _config.op_index_max = 0;
+        _indexes.clear();
+        _op_index_min = 0;
+        _op_index_max = 0;
         _config.pattern = GENERATOR_PATTERN_NONE;
 
         /* XXX: Can't generate any load without indexes */
         _config.op_per_sec = 0;
     }
 
-    //_config.buffer = msg.buffer.ptr;
-    _config.buffer = new uint8_t[msg.buffer_size];
+    //_buffer = msg.buffer.ptr;
+    std::cout << "TEST " << msg.buffer_size << std::endl;
+    _buffer = new uint8_t[msg.buffer_size];
+    std::cout << "TEST" << std::endl;
 
     auto pseudo_random_fill = [](uint32_t* seedp, void* buffer, size_t length) {
         uint32_t seed = *seedp;
@@ -173,7 +174,7 @@ int task_memory::set_config(const task_memory::config& msg)
         *seedp = seed;
     };
 
-    if ((_config.op_block_size = msg.block_size) > _scratch_size) {
+    if ((_config.block_size = msg.block_size) > _scratch_size) {
         OP_LOG(OP_LOG_DEBUG,
                "Reallocating scratch area (%zu --> %zu)\n",
                _scratch_size,
@@ -187,22 +188,21 @@ int task_memory::set_config(const task_memory::config& msg)
         pseudo_random_fill(&seed, _scratch_buffer, _scratch_size);
     }
 
+    _config = msg;
+
     // WTF callback?
     // if (msg.callback.fn && msg.callback.arg) {
     //    msg.callback.fn(msg.callback.arg, 1);
     //}
-
-    return 0;
 }
 
 void task_memory::run()
 {
-    if (!_mutex.try_lock()) return;
     /* If we have a rate to generate, then we need indexes */
-    assert(_config.op_per_sec == 0 || _config.indexes.size() > 0);
+    assert(_config.op_per_sec == 0 || _indexes.size() > 0);
 
     static __thread size_t op_index = 0;
-    if (op_index >= _config.op_index_max) { op_index = _config.op_index_min; }
+    if (op_index >= _op_index_max) { op_index = _op_index_min; }
 
     /*
      * Sleeping is problematic since you can't be sure if or when you'll
@@ -253,7 +253,7 @@ void task_memory::run()
         /* Update per thread statistics */
         _stats.time_ns += run_time;
         _stats.operations += nb_ops;
-        _stats.bytes += nb_ops * _config.op_block_size;
+        _stats.bytes += nb_ops * _config.block_size;
 
         /* Update local counters */
         _total.run_time += run_time;
@@ -269,7 +269,6 @@ void task_memory::run()
               << ", TRt: " << _total.run_time
               << ", TAvgRate: " << _total.avg_rate
               << ", TSt: " << _total.sleep_time << std::endl;
-    _mutex.unlock();
 }
 
 void task_memory::scratch_allocate(size_t size)

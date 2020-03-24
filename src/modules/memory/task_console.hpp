@@ -7,7 +7,7 @@
 
 namespace openperf::generator::generic {
 
-class task_console : public openperf::generator::generic::task
+class task_console : public openperf::generator::generic::task<bool>
 {
 private:
     std::string _msg;
