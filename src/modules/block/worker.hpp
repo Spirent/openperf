@@ -1,18 +1,15 @@
 #ifndef _OP_BLOCK_GENERATOR_WORKER_HPP_
 #define _OP_BLOCK_GENERATOR_WORKER_HPP_
 
-#include <aio.h>
 #include <condition_variable>
 #include <memory>
 #include <mutex>
 #include <thread>
 #include <vector>
-#include "core/op_core.h"
 #include "worker_pattern.hpp"
 
 namespace openperf::block::worker {
 
-constexpr auto endpoint_prefix = "inproc://openperf_block_worker";
 typedef model::block_generation_pattern worker_pattern;
 
 struct worker_config {
