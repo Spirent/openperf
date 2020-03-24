@@ -12,8 +12,8 @@ BLOCK_SOURCES += \
 	init.cpp \
 	handler.cpp \
 	server.cpp \
-	worker_pattern.cpp \
-	worker.cpp
+	pattern_generator.cpp \
+	task.cpp
 
 include $(BLOCK_SRC_DIR)/models/directory.mk
 
