@@ -2,7 +2,6 @@
 #define _OP_BLOCK_GENERATOR_WORKER_PATTERN_HPP_
 
 #include "models/generator.hpp"
-#include <unordered_map>
 
 namespace openperf::block::worker
 {
@@ -10,7 +9,7 @@ namespace openperf::block::worker
 class pattern_generator {
 private:
     typedef off_t (pattern_generator::*generation_method_t)();
-    
+
     off_t min;
     off_t max;
     off_t idx;

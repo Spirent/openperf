@@ -1,3 +1,4 @@
+#include <unordered_map>
 #include "worker_pattern.hpp"
 #include "utils/random.hpp"
 
@@ -52,7 +53,7 @@ void pattern_generator::reset(off_t p_min, off_t p_max, model::block_generation_
     max = p_max;
     idx = -1;
 
-    const std::unordered_map<model::block_generation_pattern, generation_method_t> generation_methods = {
+    const static std::unordered_map<model::block_generation_pattern, generation_method_t> generation_methods = {
         {model::block_generation_pattern::RANDOM, &pattern_generator::pattern_random},
         {model::block_generation_pattern::REVERSE, &pattern_generator::pattern_reverse},
         {model::block_generation_pattern::SEQUENTIAL, &pattern_generator::pattern_sequential},
