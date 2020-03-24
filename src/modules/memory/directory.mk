@@ -10,7 +10,6 @@ MEMGEN_SOURCES += \
 	server.cpp \
 	generator_collection.cpp \
 	info.cpp \
-	worker.cpp \
 	generator.cpp \
 	generator_config.cpp \
 	task_memory.cpp \
