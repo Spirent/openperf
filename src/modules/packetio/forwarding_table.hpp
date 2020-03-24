@@ -21,6 +21,7 @@ namespace openperf::packetio {
 template <typename Interface, typename Sink, int MaxPorts>
 class forwarding_table
 {
+public:
     struct interface_sinks
     {
         Interface* ifp;
@@ -29,14 +30,8 @@ class forwarding_table
 
     using interface_map = immer::map<net::mac_address, interface_sinks>;
     using sink_vector = immer::flex_vector<Sink>;
-
     static constexpr unsigned mac_address_length = 6;
 
-    std::array<std::atomic<interface_map*>, MaxPorts> m_interfaces;
-    std::array<std::atomic<sink_vector*>, MaxPorts> m_port_sinks;
-    std::array<std::atomic<int>, MaxPorts> m_port_interface_sink_count;
-
-public:
     forwarding_table();
     ~forwarding_table();
 
@@ -86,6 +81,11 @@ public:
     void visit_interface_sinks(
         uint16_t port_idx,
         std::function<bool(Interface* ifp, const Sink& sink)>&& visitor) const;
+
+private:
+    std::array<std::atomic<interface_map*>, MaxPorts> m_interfaces;
+    std::array<std::atomic<sink_vector*>, MaxPorts> m_port_sinks;
+    std::array<std::atomic<int>, MaxPorts> m_port_interface_sink_count;
 };
 
 } // namespace openperf::packetio
