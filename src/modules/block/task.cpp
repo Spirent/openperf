@@ -1,13 +1,11 @@
-#include <aio.h>
-#include "worker.hpp"
-#include "zmq.h"
+#include <thread>
+#include "task.hpp"
 #include "core/op_core.h"
 #include "timesync/chrono.hpp"
 
 namespace openperf::block::worker
 {
 
-constexpr auto endpoint_prefix = "inproc://openperf_block_worker";
 typedef timesync::chrono::realtime realtime;
 
 struct operation_config {
@@ -18,94 +16,6 @@ struct operation_config {
     off_t offset;
     int (*queue_aio_op)(aiocb *aiocb);
 };
-
-enum aio_state {
-    IDLE = 0,
-    PENDING,
-    COMPLETE,
-    FAILED,
-};
-
-struct operation_state {
-    uint64_t start_ns;
-    uint64_t stop_ns;
-    uint64_t io_bytes;
-    enum aio_state state;
-    aiocb aiocb;
-};
-
-struct worker_data {
-    worker_config config;
-    bool running;
-    int fd;
-    pattern_generator pattern;
-    operation_state *ops;
-    uint8_t* buf;
-};
-
-struct worker_msg {
-    worker_config config;
-    bool running;
-    int fd;
-    worker_pattern pattern;
-};
-
-block_worker::block_worker(const worker_config& p_config, int p_fd, bool p_running, const model::block_generation_pattern& pattern):
-    m_context(zmq_ctx_new()),
-    m_socket(op_socket_get_server(m_context, ZMQ_PAIR, endpoint_prefix))
-{
-    auto p_thread = new std::thread([this]() {
-        worker_loop(m_context);
-    });
-    worker_tread = std::unique_ptr<std::thread>(p_thread);
-
-    state.config = p_config;
-    state.running = p_running;
-    state.fd = p_fd;
-
-    set_pattern(pattern);
-    update_state();
-}
-
-block_worker::~block_worker()
-{
-    zmq_close(m_socket);
-    zmq_ctx_shutdown(m_context);
-    zmq_ctx_term(m_context);
-    worker_tread->detach();
-}
-
-bool block_worker::is_running() const
-{
-    return state.running;
-}
-
-void block_worker::set_resource_descriptor(int fd)
-{
-    state.fd = fd;
-    update_state();
-}
-
-void block_worker::set_running(bool p_running)
-{
-    state.running = p_running;
-    update_state();
-}
-
-void block_worker::set_pattern(const worker_pattern& pattern)
-{
-    if (is_running()) {
-        OP_LOG(OP_LOG_ERROR, "Cannot change pattern while worker is running");
-        return;
-    }
-    state.pattern = pattern;
-    update_state();
-}
-
-void block_worker::update_state()
-{
-    zmq_send(m_socket, std::addressof(state), sizeof(state), ZMQ_NOBLOCK);
-}
 
 static off_t get_first_block(size_t, size_t)
 {
@@ -214,20 +124,36 @@ int err = 0;
     return (err);
 }
 
-static size_t worker_spin(worker_data& data, int (*queue_aio_op)(aiocb *aiocb))
+block_task::block_task()
+    : aio_ops(0)
+    , buf(0)
+{
+
+}
+
+block_task::~block_task()
+{
+    if (buf)
+        delete buf;
+    if (aio_ops)
+        delete aio_ops;
+}
+
+
+size_t block_task::worker_spin(int (*queue_aio_op)(aiocb *aiocb))
 {
     int32_t total_ops = 0;
     int32_t pending_ops = 0;
     auto op_conf = (operation_config){
-        data.fd,
-        data.config.f_size,
-        data.config.read_size,
-        data.buf,
-        data.pattern.generate(),
+        config.fd,
+        config.f_size,
+        config.read_size,
+        buf,
+        pattern.generate(),
         queue_aio_op
     };
-    for (int32_t i = 0; i < data.config.queue_depth; ++i) {
-        auto aio_op = &data.ops[i];
+    for (int32_t i = 0; i < config.queue_depth; ++i) {
+        auto aio_op = &aio_ops[i];
         if (submit_aio_op(op_conf, aio_op) == 0) {
             pending_ops++;
         } else if (aio_op->state == FAILED) {
@@ -240,7 +166,7 @@ static size_t worker_spin(worker_data& data, int (*queue_aio_op)(aiocb *aiocb))
         }
     }
     while (pending_ops) {
-        if (wait_for_aio_ops(data.ops, data.config.queue_depth) != 0) {
+        if (wait_for_aio_ops(aio_ops, config.queue_depth) != 0) {
             /*
              * Eek!  Waiting failed, so cancel pending operations.
              * The aio_cancel function only has two documented failure modes:
@@ -248,7 +174,7 @@ static size_t worker_spin(worker_data& data, int (*queue_aio_op)(aiocb *aiocb))
              * 2) aio_cancel not supported
              * We consider either of these conditions to be fatal.
              */
-            if (aio_cancel(data.fd, NULL) == -1) {
+            if (aio_cancel(config.fd, NULL) == -1) {
                 //icp_exit("Could not cancel pending AIO operatons: %s\n", strerror(errno));
             }
         }
@@ -256,8 +182,8 @@ static size_t worker_spin(worker_data& data, int (*queue_aio_op)(aiocb *aiocb))
          * Find the completed op and fire off another one to
          * take it's place.
          */
-        for (int32_t i = 0; i < data.config.queue_depth; ++i) {
-            auto aio_op = &data.ops[i];
+        for (int32_t i = 0; i < config.queue_depth; ++i) {
+            auto aio_op = &aio_ops[i];
             if (complete_aio_op(aio_op) == 0) {
                 /* found it; update stats */
                 total_ops++;
@@ -289,7 +215,7 @@ static size_t worker_spin(worker_data& data, int (*queue_aio_op)(aiocb *aiocb))
                 }
 
                 /* if we haven't hit our total or deadline, then fire off another op */
-                if ((total_ops + pending_ops) >= data.config.queue_depth
+                if ((total_ops + pending_ops) >= config.queue_depth
                     //|| icp_timestamp_now() >= deadline
                     || submit_aio_op(op_conf, aio_op) != 0) {
                     // if any condition is true, we have one less pending op
@@ -306,51 +232,36 @@ static size_t worker_spin(worker_data& data, int (*queue_aio_op)(aiocb *aiocb))
     return (total_ops);
 }
 
-void block_worker::worker_loop(void* context)
+void block_task::set_config(const task_config_t& p_config)
 {
-    auto socket = std::unique_ptr<void, op_socket_deleter>(op_socket_get_client(context, ZMQ_PAIR, endpoint_prefix));
-    worker_data data;
-    data.fd = -1;
-    data.running = false;
-    data.buf = 0;
-    auto msg = new worker_msg();
-    auto read_timestamp = realtime::now().time_since_epoch().count();
-    auto write_timestamp = realtime::now().time_since_epoch().count();
+    config = p_config;
 
-    for (;;)
-    {
-        int recv = zmq_recv(socket.get(), msg, sizeof(worker_msg), data.running ? ZMQ_NOBLOCK : 0);
-        if (recv < 0 && errno != EAGAIN) {
-            break;
-        }
-        if (recv > 0) {
-            data.running = msg->running;
-            data.config = msg->config;
-            data.fd = msg->fd;
-            data.buf = (uint8_t*)realloc(data.buf, data.config.queue_depth * std::max(data.config.read_size, data.config.write_size));
-            data.ops = (operation_state*)malloc(data.config.queue_depth * sizeof(operation_state));
+    buf = (uint8_t*)realloc(buf, config.queue_depth * std::max(config.read_size, config.write_size));
+    aio_ops = (operation_state*)realloc(aio_ops, config.queue_depth * sizeof(operation_state));
+    pattern.reset(get_first_block(config.f_size, config.read_size), get_last_block(config.f_size, config.read_size), config.pattern);
 
-            data.pattern.reset(get_first_block(data.config.f_size, data.config.read_size), get_last_block(data.config.f_size, data.config.read_size),msg->pattern);
-            read_timestamp = realtime::now().time_since_epoch().count();
-            write_timestamp = realtime::now().time_since_epoch().count();
-        }
-        if (data.running) {
-            if (read_timestamp < write_timestamp) {
-                worker_spin(data, aio_read);
-                read_timestamp += std::nano::den / data.config.reads_per_sec;
-            } else {
-                worker_spin(data, aio_write);
-                write_timestamp += std::nano::den / data.config.writes_per_sec;
-            }
-            auto next_ts = std::min(read_timestamp, write_timestamp);
-            auto now = realtime::now().time_since_epoch().count();
-            if (next_ts > now)
-                std::this_thread::sleep_for(std::chrono::nanoseconds(next_ts - now));
-        }
+    read_timestamp = realtime::now().time_since_epoch().count();
+    write_timestamp = realtime::now().time_since_epoch().count();
+}
+
+task_config_t block_task::get_config() const
+{
+    return config;
+}
+
+void block_task::run()
+{
+    if (read_timestamp < write_timestamp) {
+        worker_spin(aio_read);
+        read_timestamp += std::nano::den / config.reads_per_sec;
+    } else {
+        worker_spin(aio_write);
+        write_timestamp += std::nano::den / config.writes_per_sec;
     }
-    free(msg);
-    if (data.buf)
-        delete data.buf;
+    auto next_ts = std::min(read_timestamp, write_timestamp);
+    auto now = realtime::now().time_since_epoch().count();
+    if (next_ts > now)
+        std::this_thread::sleep_for(std::chrono::nanoseconds(next_ts - now));
 }
 
 } // namespace openperf::block::worker

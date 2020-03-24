@@ -1,5 +1,5 @@
 #include <unordered_map>
-#include "worker_pattern.hpp"
+#include "pattern_generator.hpp"
 #include "utils/random.hpp"
 
 namespace openperf::block::worker
