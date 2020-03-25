@@ -19,8 +19,8 @@ private:
     typedef std::forward_list<worker_ptr> workers;
 
 private:
-    unsigned int _read_threads;
-    unsigned int _write_threads;
+    unsigned _read_threads;
+    unsigned _write_threads;
     bool _stopped;
     bool _paused;
     workers _read_workers;
@@ -38,8 +38,8 @@ public:
     inline bool is_stopped() const { return _stopped; }
     inline bool is_running() const { return !(_paused || _stopped); }
     inline bool is_paused() const { return _paused; }
-    inline unsigned int read_workers() const { return _read_threads; }
-    inline unsigned int write_workers() const { return _write_threads; }
+    inline unsigned read_workers() const { return _read_threads; }
+    inline unsigned write_workers() const { return _write_threads; }
     inline const task_memory_config& read_worker_config() const
     {
         return _read_config;
@@ -57,9 +57,9 @@ public:
     void restart();
 
     void running(bool);
-    void read_workers(unsigned int);
+    void read_workers(unsigned);
+    void write_workers(unsigned);
     void read_config(const task_memory_config&);
-    void write_workers(unsigned int);
     void write_config(const task_memory_config&);
 
 private:

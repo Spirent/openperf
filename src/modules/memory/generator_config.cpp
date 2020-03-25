@@ -11,7 +11,8 @@ bool generator_config::operator==(const generator_config& other) const
            && _read_threads == other._read_threads
            && _writes_per_sec == other._writes_per_sec
            && _write_size == other._write_size
-           && _write_threads == other._write_threads;
+           && _write_threads == other._write_threads
+           && _pattern == other._pattern;
 }
 
 generator_config& generator_config::running(bool running)
@@ -43,7 +44,7 @@ generator_config& generator_config::read_size(int size)
 
 generator_config& generator_config::read_threads(int number)
 {
-    assert(number > 0);
+    assert(number >= 0);
     _read_threads = number;
     return *this;
 }
@@ -64,8 +65,14 @@ generator_config& generator_config::write_size(int size)
 
 generator_config& generator_config::write_threads(int number)
 {
-    assert(number > 0);
+    assert(number >= 0);
     _write_threads = number;
+    return *this;
+}
+
+generator_config& generator_config::pattern(io_pattern pattern)
+{
+    _pattern = pattern;
     return *this;
 }
 

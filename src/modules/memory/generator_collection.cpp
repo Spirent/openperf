@@ -26,6 +26,7 @@ generator_config generator_collection::get(const std::string& id) const
     auto& g = _collection.at(id);
     return generator_config::create()
         .buffer_size(g.read_worker_config().buffer_size)
+        .pattern(g.read_worker_config().pattern)
         .read_threads(g.read_workers())
         .read_size(g.read_worker_config().block_size)
         .reads_per_sec(g.read_worker_config().op_per_sec)
@@ -68,13 +69,8 @@ generator_config generator_collection::create(const std::string& id,
                                     .op_per_sec = config.writes_per_sec(),
                                     .block_size = config.write_size(),
                                     .pattern = config.pattern()});
-
     gen.running(config.is_running());
     auto result = _collection.emplace(new_id, std::move(gen));
-    // auto result = _collection.emplace(
-    //    new_id,
-    //    Generator::Config{.read_threads = config.readThreads(),
-    //                      .write_threads = config.writeThreads()});
 
     if (!result.second) {
         throw std::runtime_error(
