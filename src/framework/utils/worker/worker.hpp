@@ -42,6 +42,7 @@ private:
 private:
     bool _paused;
     bool _stopped;
+    typename T::config_t _config;
     void* _zmq_context;
     std::unique_ptr<void, op_socket_deleter> _zmq_socket;
     std::thread _thread;
@@ -51,6 +52,7 @@ public:
     worker();
     worker(worker&&);
     worker(const worker&) = delete;
+    explicit worker(const typename T::config_t&);
     ~worker();
 
     void start() override;
@@ -62,7 +64,7 @@ public:
     inline bool is_running() const override { return !(_paused || _stopped); }
     inline bool is_finished() const override { return _stopped; }
 
-    void set_config(const typename T::config_t&);
+    void config(const typename T::config_t&);
 
 private:
     void loop();
@@ -84,10 +86,21 @@ template <class T>
 worker<T>::worker(worker&& w)
     : _paused(w._paused)
     , _stopped(w._stopped)
+    , _config(std::move(w._config))
     , _zmq_context(std::move(w._zmq_context))
     , _zmq_socket(std::move(w._zmq_socket))
     , _thread(std::move(w._thread))
     , _task(std::move(w._task))
+{}
+
+template <class T>
+worker<T>::worker(const typename T::config_t& c)
+    : _paused(true)
+    , _stopped(true)
+    , _config(c)
+    , _zmq_context(zmq_ctx_new())
+    , _zmq_socket(op_socket_get_server(_zmq_context, ZMQ_PAIR, endpoint_prefix))
+    , _task(new T)
 {}
 
 template <class T> worker<T>::~worker()
@@ -111,15 +124,15 @@ template <class T> void worker<T>::start()
     _stopped = false;
 
     _thread = std::thread([this]() { loop(); });
-    update();
+    config(_config);
 }
 
 template <class T> void worker<T>::stop()
 {
     if (_stopped) return;
+    send_message(worker::message{.stop = true, .pause = _paused});
     _stopped = true;
-    _thread.detach();
-    update();
+    _thread.join();
 }
 
 template <class T> void worker<T>::pause()
@@ -136,8 +149,10 @@ template <class T> void worker<T>::resume()
     update();
 }
 
-template <class T> void worker<T>::set_config(const typename T::config_t& c)
+template <class T> void worker<T>::config(const typename T::config_t& c)
 {
+    _config = c;
+    if (is_finished()) return;
     send_message(worker::message{
         .stop = _stopped, .pause = _paused, .reconf = true, .config = c});
 }
@@ -149,6 +164,7 @@ template <class T> void worker<T>::loop()
         op_socket_get_client(_zmq_context, ZMQ_PAIR, endpoint_prefix));
 
     worker::message msg{.stop = false, .pause = true, .reconf = false};
+    bool paused = true;
 
     for (;;) {
         int recv = zmq_recv(
@@ -158,10 +174,21 @@ template <class T> void worker<T>::loop()
             break;
         }
 
-        if (msg.stop) { break; }
-        if (msg.reconf) { _task->set_config(msg.config); }
+        if (msg.reconf) {
+            _task->config(msg.config);
+            msg.reconf = false;
+        }
 
-        _task->run();
+        if (paused && !(msg.pause || msg.stop)) { _task->resume(); }
+
+        if (!paused && (msg.pause || msg.stop)) { _task->pause(); }
+
+        paused = msg.pause;
+
+        if (msg.stop) { break; }
+        if (msg.pause) { continue; }
+
+        _task->spin();
     }
 }
 

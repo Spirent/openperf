@@ -69,8 +69,8 @@ protected:
 public:
     task_memory();
 
-    void run() override;
-    void set_config(const task_memory_config&) override;
+    void spin() override;
+    void config(const task_memory_config&) override;
 
     task_memory_config config() const override { return _config; }
 
@@ -90,7 +90,7 @@ public:
     uint64_t errors() const { return _stats.errors; }
 
 protected:
-    virtual size_t spin(uint64_t nb_ops, size_t* op_idx) = 0;
+    virtual size_t operation(uint64_t nb_ops, size_t* op_idx) = 0;
 
 private:
     void scratch_allocate(size_t size);
