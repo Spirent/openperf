@@ -23,7 +23,7 @@ generator::generator(generator&& g)
 {}
 
 // Methods : public
-void generator::set_running(bool running)
+void generator::running(bool running)
 {
     if (running) {
         start();
@@ -75,7 +75,7 @@ void generator::pause()
     _paused = true;
 }
 
-void generator::set_read_workers(unsigned int number)
+void generator::read_workers(unsigned int number)
 {
     assert(number >= 0);
     if (number == 0) {
@@ -106,7 +106,7 @@ void generator::set_read_workers(unsigned int number)
     _read_threads = number;
 }
 
-void generator::set_write_workers(unsigned int number)
+void generator::write_workers(unsigned int number)
 {
     assert(number >= 0);
     if (number == 0) {
@@ -131,7 +131,7 @@ void generator::set_write_workers(unsigned int number)
     _write_threads = number;
 }
 
-void generator::set_read_config(const task_memory_read::config_t& config)
+void generator::read_config(const task_memory_read::config_t& config)
 {
     _read_config = config;
     for (auto& w : _read_workers) {
@@ -140,7 +140,7 @@ void generator::set_read_config(const task_memory_read::config_t& config)
     }
 }
 
-void generator::set_write_config(const task_memory_write::config_t& config)
+void generator::write_config(const task_memory_write::config_t& config)
 {
     _write_config = config;
     for (auto& w : _write_workers) {

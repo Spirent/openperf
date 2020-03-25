@@ -25,14 +25,14 @@ generator_config generator_collection::get(const std::string& id) const
 {
     auto& g = _collection.at(id);
     return generator_config::create()
-        .set_buffer_size(g.read_worker_config().buffer_size)
-        .set_read_threads(g.read_workers())
-        .set_read_size(g.read_worker_config().block_size)
-        .set_reads_per_sec(g.read_worker_config().op_per_sec)
-        .set_write_threads(g.write_workers())
-        .set_write_size(g.write_worker_config().block_size)
-        .set_writes_per_sec(g.write_worker_config().op_per_sec)
-        .set_running(g.is_running() && !g.is_paused());
+        .buffer_size(g.read_worker_config().buffer_size)
+        .read_threads(g.read_workers())
+        .read_size(g.read_worker_config().block_size)
+        .reads_per_sec(g.read_worker_config().op_per_sec)
+        .write_threads(g.write_workers())
+        .write_size(g.write_worker_config().block_size)
+        .writes_per_sec(g.write_worker_config().op_per_sec)
+        .running(g.is_running() && !g.is_paused());
 }
 
 void generator_collection::erase(const std::string& id)
@@ -55,21 +55,21 @@ generator_config generator_collection::create(const std::string& id,
     }
 
     generator gen;
-    gen.set_read_workers(config.read_threads());
-    gen.set_read_config(
+    gen.read_workers(config.read_threads());
+    gen.read_config(
         task_memory_read::config_t{.buffer_size = config.buffer_size(),
                                    .op_per_sec = config.reads_per_sec(),
                                    .block_size = config.read_size(),
                                    .pattern = config.pattern()});
 
-    gen.set_write_workers(config.write_threads());
-    gen.set_write_config(
+    gen.write_workers(config.write_threads());
+    gen.write_config(
         task_memory_write::config_t{.buffer_size = config.buffer_size(),
                                     .op_per_sec = config.writes_per_sec(),
                                     .block_size = config.write_size(),
                                     .pattern = config.pattern()});
 
-    gen.set_running(config.is_running());
+    gen.running(config.is_running());
     auto result = _collection.emplace(new_id, std::move(gen));
     // auto result = _collection.emplace(
     //    new_id,
