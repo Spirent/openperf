@@ -33,15 +33,15 @@ public:
 
     bool operator==(const generator_config&) const;
 
-    generator_config& set_running(bool);
-    generator_config& set_buffer_size(int);
-    generator_config& set_reads_per_sec(int);
-    generator_config& set_read_size(int);
-    generator_config& set_read_threads(int);
-    generator_config& set_writes_per_sec(int);
-    generator_config& set_write_size(int);
-    generator_config& set_write_threads(int);
-    inline generator_config& set_pattern(io_pattern pat)
+    generator_config& running(bool);
+    generator_config& buffer_size(int);
+    generator_config& reads_per_sec(int);
+    generator_config& read_size(int);
+    generator_config& read_threads(int);
+    generator_config& writes_per_sec(int);
+    generator_config& write_size(int);
+    generator_config& write_threads(int);
+    inline generator_config& pattern(io_pattern pat)
     {
         _pattern = pat;
         return *this;
