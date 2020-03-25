@@ -136,7 +136,7 @@ void generator::set_read_config(const task_memory_read::config_t& config)
     _read_config = config;
     for (auto& w : _read_workers) {
         auto wt = dynamic_cast<worker<task_memory_read>*>(w.get());
-        wt->set_config(_read_config);
+        wt->config(_read_config);
     }
 }
 
@@ -145,7 +145,7 @@ void generator::set_write_config(const task_memory_write::config_t& config)
     _write_config = config;
     for (auto& w : _write_workers) {
         auto wt = dynamic_cast<worker<task_memory_write>*>(w.get());
-        wt->set_config(_read_config);
+        wt->config(_read_config);
     }
 }
 
