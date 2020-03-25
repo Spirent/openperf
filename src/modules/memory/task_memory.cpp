@@ -8,6 +8,7 @@
 
 namespace openperf::memory::internal {
 
+using openperf::utils::random;
 using openperf::utils::random_uniform;
 
 auto time_ns()
@@ -45,10 +46,10 @@ void icp_generator_sleep_until(uint64_t wake_time)
 // Constructors & Destructor
 task_memory::task_memory()
 {
-    set_config(config_t{.block_size = 8,
-                        .buffer_size = 64,
-                        .op_per_sec = 8,
-                        .pattern = GENERATOR_PATTERN_RANDOM});
+    config(config_t{.block_size = 8,
+                    .buffer_size = 64,
+                    .op_per_sec = 8,
+                    .pattern = GENERATOR_PATTERN_RANDOM});
     scratch_allocate(4096);
     //_config.op_per_sec = 0;
     //[](uint64_t total, size_t buckets, size_t n) {
@@ -58,7 +59,7 @@ task_memory::task_memory()
     //} (10, 64, 8);
 }
 
-void task_memory::set_config(const task_memory_config& msg)
+void task_memory::config(const task_memory_config& msg)
 {
     // assert(msg->type == MEMORY_MSG_CONFIG);
 
@@ -182,7 +183,7 @@ void task_memory::set_config(const task_memory_config& msg)
         //_scratch = icp_generator_allocate_scratch_area(msg.block_size);
         scratch_allocate(msg.block_size);
         assert(_scratch_buffer);
-        uint32_t seed = random_uniform<uint32_t>();
+        uint32_t seed = random<uint32_t>();
         pseudo_random_fill(&seed, _scratch_buffer, _scratch_size);
     }
 
@@ -194,7 +195,7 @@ void task_memory::set_config(const task_memory_config& msg)
     //}
 }
 
-void task_memory::run()
+void task_memory::spin()
 {
     /* If we have a rate to generate, then we need indexes */
     assert(_config.op_per_sec == 0 || _indexes.size() > 0);
@@ -244,7 +245,7 @@ void task_memory::run()
               << ", to_sleep: " << ns_to_sleep << std::endl;
     while (to_do_ops && (t2 = time_ns()) < deadline) {
         size_t spin_ops = std::min(MAX_SPIN_OPS, to_do_ops);
-        size_t nb_ops = spin(spin_ops, &op_index);
+        size_t nb_ops = operation(spin_ops, &op_index);
         uint64_t run_time =
             std::max(time_ns() - t2, 1lu); /* prevent divide by 0 */
 
