@@ -41,11 +41,7 @@ public:
     generator_config& writes_per_sec(int);
     generator_config& write_size(int);
     generator_config& write_threads(int);
-    inline generator_config& pattern(io_pattern pat)
-    {
-        _pattern = pat;
-        return *this;
-    }
+    generator_config& pattern(io_pattern);
 };
 
 } // namespace openperf::memory

@@ -11,7 +11,7 @@ namespace openperf::memory::internal {
 using openperf::utils::random;
 using openperf::utils::random_uniform;
 
-auto time_ns()
+uint64_t time_ns()
 {
     return openperf::timesync::chrono::realtime::now()
         .time_since_epoch()
@@ -24,7 +24,7 @@ static const uint64_t QUANTA_MS = 10;
 static const uint64_t MS_TO_NS = 1000000;
 static const size_t MAX_SPIN_OPS = 5000;
 
-void icp_generator_sleep_until(uint64_t wake_time)
+void op_generator_sleep_until(uint64_t wake_time)
 {
     uint64_t now = 0, ns_to_sleep = 0;
     struct timespec sleep = {0, 0};
@@ -45,11 +45,13 @@ void icp_generator_sleep_until(uint64_t wake_time)
 
 // Constructors & Destructor
 task_memory::task_memory()
+    : _config{ .pattern = io_pattern::NONE }
+    , _buffer(nullptr)
+    , _op_index_min(0)
+    , _op_index_max(0)
+    , _scratch_buffer(nullptr)
+    , _scratch_size(0)
 {
-    config(config_t{.block_size = 8,
-                    .buffer_size = 64,
-                    .op_per_sec = 8,
-                    .pattern = GENERATOR_PATTERN_RANDOM});
     scratch_allocate(4096);
     //_config.op_per_sec = 0;
     //[](uint64_t total, size_t buckets, size_t n) {
@@ -61,6 +63,7 @@ task_memory::task_memory()
 
 void task_memory::config(const task_memory_config& msg)
 {
+    assert(msg.pattern != io_pattern::NONE);
     // assert(msg->type == MEMORY_MSG_CONFIG);
 
     // io blocks in buffer
@@ -100,7 +103,8 @@ void task_memory::config(const task_memory_config& msg)
                    nb_blocks);
             _op_index_min = 0;
             _op_index_max = 0;
-            return;
+            throw std::exception(e);
+            //return;
         }
 
         _op_index_min = 0;
@@ -114,7 +118,16 @@ void task_memory::config(const task_memory_config& msg)
 
         /* Fill in the indexes... */
         switch (msg.pattern) {
-        case GENERATOR_PATTERN_RANDOM:
+        case io_pattern::SEQUENTIAL:
+            // op_packed_array_fill(_indexes, _op_index_min, 1);
+            fill_vector(_op_index_min, 1);
+            break;
+        case io_pattern::REVERSE:
+            // op_packed_array_fill(_indexes, _op_index_max - 1,
+            // -1);
+            fill_vector(_op_index_max - 1, -1);
+            break;
+        case io_pattern::RANDOM:
             // op_packed_array_fill(_indexes, _op_index_min, 1);
             fill_vector(_op_index_min, 1);
             // Shuffle array contents using the Fisher-Yates shuffle algorithm
@@ -125,15 +138,6 @@ void task_memory::config(const task_memory_config& msg)
                 _indexes[i] = _indexes[j];
                 _indexes[j] = swap;
             }
-            break;
-        case GENERATOR_PATTERN_SEQUENTIAL:
-            // op_packed_array_fill(_indexes, _op_index_min, 1);
-            fill_vector(_op_index_min, 1);
-            break;
-        case GENERATOR_PATTERN_REVERSE:
-            // op_packed_array_fill(_indexes, _op_index_max - 1,
-            // -1);
-            fill_vector(_op_index_max - 1, -1);
             break;
         default:
             OP_LOG(OP_LOG_ERROR,
@@ -149,16 +153,14 @@ void task_memory::config(const task_memory_config& msg)
         _indexes.clear();
         _op_index_min = 0;
         _op_index_max = 0;
-        _config.pattern = GENERATOR_PATTERN_NONE;
+        _config.pattern = io_pattern::NONE;
 
         /* XXX: Can't generate any load without indexes */
         _config.op_per_sec = 0;
     }
 
     //_buffer = msg.buffer.ptr;
-    std::cout << "TEST " << msg.buffer_size << std::endl;
     _buffer = new uint8_t[msg.buffer_size];
-    std::cout << "TEST" << std::endl;
 
     auto pseudo_random_fill = [](uint32_t* seedp, void* buffer, size_t length) {
         uint32_t seed = *seedp;
@@ -198,6 +200,7 @@ void task_memory::config(const task_memory_config& msg)
 void task_memory::spin()
 {
     /* If we have a rate to generate, then we need indexes */
+    assert(_config.pattern != io_pattern::NONE);
     assert(_config.op_per_sec == 0 || _indexes.size() > 0);
 
     static __thread size_t op_index = 0;
@@ -232,7 +235,7 @@ void task_memory::spin()
 
     uint64_t t1 = time_ns();
     if (ns_to_sleep) {
-        icp_generator_sleep_until(t1 + ns_to_sleep);
+        op_generator_sleep_until(t1 + ns_to_sleep);
         _total.sleep_time += time_ns() - t1;
     }
     /*
@@ -241,8 +244,8 @@ void task_memory::spin()
      */
     uint64_t deadline = time_ns() + (QUANTA_MS * MS_TO_NS);
     uint64_t t2;
-    std::cout << std::dec << "tdo: " << to_do_ops << ", deadline: " << deadline
-              << ", to_sleep: " << ns_to_sleep << std::endl;
+    //std::cout << std::dec << "tdo: " << to_do_ops << ", deadline: " << deadline
+    //          << ", to_sleep: " << ns_to_sleep << std::endl;
     while (to_do_ops && (t2 = time_ns()) < deadline) {
         size_t spin_ops = std::min(MAX_SPIN_OPS, to_do_ops);
         size_t nb_ops = operation(spin_ops, &op_index);
@@ -264,10 +267,21 @@ void task_memory::spin()
         to_do_ops -= spin_ops;
     }
 
-    std::cout << std::dec << "TOps: " << _total.operations
-              << ", TRt: " << _total.run_time
-              << ", TAvgRate: " << _total.avg_rate
-              << ", TSt: " << _total.sleep_time << std::endl;
+    static auto t = time_ns();
+    if (time_ns() - t > 1000 * MS_TO_NS ) {
+    std::cout << std::dec << "Total: { Ops: " << _total.operations
+              << ", runtime: " << _total.run_time
+              << ", avg: " << _total.avg_rate
+              << ", sleep: " << _total.sleep_time
+              << " } " << std::endl;
+
+    std::cout << std::dec << "Stats: { time: " << _stats.time_ns
+              << ", ops: " << _stats.operations
+              << ", bytes: " << _stats.bytes
+              << ", errors: " << _stats.errors
+              << " } " << std::endl;
+              t = time_ns();
+    }
 }
 
 void task_memory::scratch_allocate(size_t size)

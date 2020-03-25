@@ -21,6 +21,7 @@ struct task_memory_config
 class task_memory : public openperf::utils::worker::task<task_memory_config>
 {
 protected:
+    task_memory_config _config;
     uint64_t _cache_size = 16;
     uint8_t* _buffer;
     // struct op_packed_array *indexes;
@@ -38,7 +39,6 @@ protected:
     //    size_t op_per_sec;
     //    enum io_pattern pattern;
     //}
-    task_memory_config _config;
 
     void* _scratch_buffer;
     size_t _scratch_size;
@@ -57,13 +57,13 @@ protected:
     struct stats
     {
         std::atomic_uint_fast64_t
-            time_ns; /**< The number of ns required for the operations */
+            time_ns = 0; /**< The number of ns required for the operations */
         std::atomic_uint_fast64_t
-            operations; /**< The number of operations performed */
+            operations = 0; /**< The number of operations performed */
         std::atomic_uint_fast64_t
-            bytes; /**< The number of bytes read or written */
+            bytes = 0; /**< The number of bytes read or written */
         std::atomic_uint_fast64_t
-            errors; /**< The number of errors during reading or writing */
+            errors = 0; /**< The number of errors during reading or writing */
     } _stats;
 
 public:
@@ -73,21 +73,6 @@ public:
     void config(const task_memory_config&) override;
 
     task_memory_config config() const override { return _config; }
-
-    //void buffer_size(size_t);
-    //void block_size(size_t);
-    //void rate(size_t);
-    //void pattern(io_pattern);
-
-    //size_t buffer_size() const { return _config.buffer_size; }
-    //size_t block_size() const { return _config.block_size; }
-    //size_t rate() const { return _config.op_per_sec; }
-    //io_pattern pattern() const { return _config.pattern; }
-
-    uint64_t time_ns() const { return _stats.time_ns; }
-    uint64_t operations() const { return _stats.operations; }
-    uint64_t bytes() const { return _stats.bytes; }
-    uint64_t errors() const { return _stats.errors; }
 
 protected:
     virtual size_t operation(uint64_t nb_ops, size_t* op_idx) = 0;
