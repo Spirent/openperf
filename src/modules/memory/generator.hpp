@@ -56,11 +56,11 @@ public:
     void stop();
     void restart();
 
-    void set_running(bool);
-    void set_read_workers(unsigned int);
-    void set_read_config(const task_memory_config&);
-    void set_write_workers(unsigned int);
-    void set_write_config(const task_memory_config&);
+    void running(bool);
+    void read_workers(unsigned int);
+    void read_config(const task_memory_config&);
+    void write_workers(unsigned int);
+    void write_config(const task_memory_config&);
 
 private:
     void for_each_worker(void(worker_ptr&));
