@@ -168,7 +168,7 @@ template <class T> void worker<T>::loop()
 
     for (;;) {
         int recv = zmq_recv(
-            socket.get(), &msg, sizeof(msg), msg.pause ? 0 : ZMQ_NOBLOCK);
+            socket.get(), &msg, sizeof(msg), paused ? 0 : ZMQ_NOBLOCK);
         if (recv < 0 && errno != EAGAIN) {
             OP_LOG(OP_LOG_ERROR, "worker thread shutdown");
             break;
