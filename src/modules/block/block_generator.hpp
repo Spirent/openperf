@@ -18,6 +18,7 @@ private:
     block_worker_ptr blkworker;
     task_config_t generate_worker_config();
     int open_resource(const std::string& resource_id);
+    void close_resource(const std::string& resource_id);
     size_t get_resource_size(const std::string& resource_id);
 public:
     ~block_generator();

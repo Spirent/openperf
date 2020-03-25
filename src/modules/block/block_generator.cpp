@@ -17,6 +17,7 @@ block_generator::block_generator(const model::block_generator& generator_model)
 block_generator::~block_generator()
 {
     blkworker->stop();
+    close_resource(get_resource_id());
 }
 
 void block_generator::start()
@@ -36,6 +37,7 @@ void block_generator::set_config(const model::block_generator_config& value)
 
 void block_generator::set_resource_id(const std::string& value)
 {
+    close_resource(get_resource_id());
     model::block_generator::set_resource_id(value);
     generate_worker_config();
 }
@@ -50,6 +52,16 @@ int block_generator::open_resource(const std::string& resource_id)
         fd = blk_dev->vopen();
     }
     return fd;
+}
+
+void block_generator::close_resource(const std::string& resource_id)
+{
+    if (auto blk_file = block::file::file_stack::instance().get_block_file(resource_id); blk_file) {
+        blk_file->vclose();
+    } else
+    if (auto blk_dev = block::device::device_stack::instance().get_block_device(resource_id); blk_dev) {
+        blk_dev->vclose();
+    }
 }
 
 size_t block_generator::get_resource_size(const std::string& resource_id)
