@@ -5,21 +5,17 @@
 
 namespace openperf::utils {
 
-template <class T = int>
-static T random()
+template <class T = int> static T random()
 {
     T res;
     static std::mt19937_64 generator{std::random_device()()};
     static std::uniform_int_distribution<uint8_t> dist(0, 255);
     uint8_t* data = reinterpret_cast<uint8_t*>(&res);
-    for (size_t i = 0; i < sizeof(T); i++) {
-        data[i] = dist(generator);
-    }
+    for (size_t i = 0; i < sizeof(T); i++) { data[i] = dist(generator); }
     return res;
 }
 
-template <class T>
-static T random_uniform(T lower_bound, T upper_bound)
+template <class T> static T random_uniform(T lower_bound, T upper_bound)
 {
     const auto min = std::min(lower_bound, upper_bound);
     const auto max = std::max(lower_bound, upper_bound);
@@ -33,8 +29,7 @@ static T random_uniform(T lower_bound, T upper_bound)
     return res;
 }
 
-template <class T>
-static T random_uniform(T max)
+template <class T> static T random_uniform(T max)
 {
     return random_uniform(T(0), max);
 }

@@ -10,10 +10,13 @@ public:
 
 public:
     virtual ~task(){};
-    virtual void run() = 0;
-    virtual void set_config(const T&) = 0;
+    virtual void spin() = 0;
 
+    virtual void config(const T&) = 0;
     virtual T config() const = 0;
+
+    virtual void resume(){};
+    virtual void pause(){};
 };
 
 } // namespace openperf::utils::worker
