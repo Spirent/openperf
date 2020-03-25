@@ -127,6 +127,9 @@ int err = 0;
 block_task::block_task()
     : aio_ops(0)
     , buf(0)
+    , read_timestamp(0)
+    , write_timestamp(0)
+    , pause_timestamp(0)
 {
 
 }
@@ -145,14 +148,14 @@ size_t block_task::worker_spin(int (*queue_aio_op)(aiocb *aiocb))
     int32_t total_ops = 0;
     int32_t pending_ops = 0;
     auto op_conf = (operation_config){
-        config.fd,
-        config.f_size,
-        config.read_size,
+        task_config.fd,
+        task_config.f_size,
+        task_config.read_size,
         buf,
         pattern.generate(),
         queue_aio_op
     };
-    for (int32_t i = 0; i < config.queue_depth; ++i) {
+    for (int32_t i = 0; i < task_config.queue_depth; ++i) {
         auto aio_op = &aio_ops[i];
         if (submit_aio_op(op_conf, aio_op) == 0) {
             pending_ops++;
@@ -166,7 +169,7 @@ size_t block_task::worker_spin(int (*queue_aio_op)(aiocb *aiocb))
         }
     }
     while (pending_ops) {
-        if (wait_for_aio_ops(aio_ops, config.queue_depth) != 0) {
+        if (wait_for_aio_ops(aio_ops, task_config.queue_depth) != 0) {
             /*
              * Eek!  Waiting failed, so cancel pending operations.
              * The aio_cancel function only has two documented failure modes:
@@ -174,7 +177,7 @@ size_t block_task::worker_spin(int (*queue_aio_op)(aiocb *aiocb))
              * 2) aio_cancel not supported
              * We consider either of these conditions to be fatal.
              */
-            if (aio_cancel(config.fd, NULL) == -1) {
+            if (aio_cancel(task_config.fd, NULL) == -1) {
                 //icp_exit("Could not cancel pending AIO operatons: %s\n", strerror(errno));
             }
         }
@@ -182,7 +185,7 @@ size_t block_task::worker_spin(int (*queue_aio_op)(aiocb *aiocb))
          * Find the completed op and fire off another one to
          * take it's place.
          */
-        for (int32_t i = 0; i < config.queue_depth; ++i) {
+        for (int32_t i = 0; i < task_config.queue_depth; ++i) {
             auto aio_op = &aio_ops[i];
             if (complete_aio_op(aio_op) == 0) {
                 /* found it; update stats */
@@ -215,7 +218,7 @@ size_t block_task::worker_spin(int (*queue_aio_op)(aiocb *aiocb))
                 }
 
                 /* if we haven't hit our total or deadline, then fire off another op */
-                if ((total_ops + pending_ops) >= config.queue_depth
+                if ((total_ops + pending_ops) >= task_config.queue_depth
                     //|| icp_timestamp_now() >= deadline
                     || submit_aio_op(op_conf, aio_op) != 0) {
                     // if any condition is true, we have one less pending op
@@ -232,31 +235,39 @@ size_t block_task::worker_spin(int (*queue_aio_op)(aiocb *aiocb))
     return (total_ops);
 }
 
-void block_task::set_config(const task_config_t& p_config)
+void block_task::config(const task_config_t& p_config)
 {
-    config = p_config;
+    task_config = p_config;
 
-    buf = (uint8_t*)realloc(buf, config.queue_depth * std::max(config.read_size, config.write_size));
-    aio_ops = (operation_state*)realloc(aio_ops, config.queue_depth * sizeof(operation_state));
-    pattern.reset(get_first_block(config.f_size, config.read_size), get_last_block(config.f_size, config.read_size), config.pattern);
-
-    read_timestamp = realtime::now().time_since_epoch().count();
-    write_timestamp = realtime::now().time_since_epoch().count();
+    buf = (uint8_t*)realloc(buf, task_config.queue_depth * std::max(task_config.read_size, task_config.write_size));
+    aio_ops = (operation_state*)realloc(aio_ops, task_config.queue_depth * sizeof(operation_state));
+    pattern.reset(get_first_block(task_config.f_size, task_config.read_size), get_last_block(task_config.f_size, task_config.read_size), task_config.pattern);
 }
 
-task_config_t block_task::get_config() const
+task_config_t block_task::config() const
 {
-    return config;
+    return task_config;
 }
 
-void block_task::run()
+void block_task::resume()
+{
+    read_timestamp += realtime::now().time_since_epoch().count() - pause_timestamp;
+    write_timestamp += realtime::now().time_since_epoch().count() - pause_timestamp;
+}
+
+void block_task::pause()
+{
+    pause_timestamp = realtime::now().time_since_epoch().count();
+}
+
+void block_task::spin()
 {
     if (read_timestamp < write_timestamp) {
         worker_spin(aio_read);
-        read_timestamp += std::nano::den / config.reads_per_sec;
+        read_timestamp += std::nano::den / task_config.reads_per_sec;
     } else {
         worker_spin(aio_write);
-        write_timestamp += std::nano::den / config.writes_per_sec;
+        write_timestamp += std::nano::den / task_config.writes_per_sec;
     }
     auto next_ts = std::min(read_timestamp, write_timestamp);
     auto now = realtime::now().time_since_epoch().count();

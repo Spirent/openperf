@@ -37,11 +37,11 @@ struct operation_state {
 
 class block_task : public utils::worker::task<task_config_t> {
 private:
-    task_config_t config;
+    task_config_t task_config;
     operation_state *aio_ops;
     uint8_t* buf;
     pattern_generator pattern;
-    int64_t read_timestamp, write_timestamp;
+    int64_t read_timestamp, write_timestamp, pause_timestamp;
 
     size_t worker_spin(int (*queue_aio_op)(aiocb *aiocb));
 
@@ -49,9 +49,11 @@ public:
     block_task();
     ~block_task();
 
-    void run();
-    void set_config(const task_config_t&);
-    task_config_t get_config() const;
+    void spin();
+    void config(const task_config_t&);
+    task_config_t config() const;
+    void resume();
+    void pause();
 };
 
 } // namespace openperf::block::worker

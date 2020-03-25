@@ -10,9 +10,13 @@ block_generator::block_generator(const model::block_generator& generator_model)
     : model::block_generator(generator_model)
 {
     auto config = generate_worker_config();
+    blkworker = block_worker_ptr(new block_worker(config));
+    blkworker->start();
+}
 
-    blkworker = block_worker_ptr(new block_worker());
-    blkworker->set_config(config);
+block_generator::~block_generator()
+{
+    blkworker->stop();
 }
 
 void block_generator::start()
@@ -52,8 +56,7 @@ size_t block_generator::get_resource_size(const std::string& resource_id)
 {
     if (auto blk_file = block::file::file_stack::instance().get_block_file(resource_id); blk_file) {
         return blk_file->get_size();
-    } else
-    if (auto blk_dev = block::device::device_stack::instance().get_block_device(resource_id); blk_dev) {
+    } else if (auto blk_dev = block::device::device_stack::instance().get_block_device(resource_id); blk_dev) {
         return blk_file->get_size();
     }
     return 0;

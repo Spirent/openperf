@@ -20,7 +20,7 @@ private:
     int open_resource(const std::string& resource_id);
     size_t get_resource_size(const std::string& resource_id);
 public:
-    ~block_generator() {}
+    ~block_generator();
     block_generator(const model::block_generator& generator_model);
     void start();
     void stop();
