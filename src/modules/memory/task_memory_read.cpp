@@ -5,7 +5,7 @@
 
 namespace openperf::memory::internal {
 
-size_t task_memory_read::spin(uint64_t nb_ops, size_t* op_idx)
+size_t task_memory_read::operation(uint64_t nb_ops, size_t* op_idx)
 {
     assert(*op_idx < _op_index_max);
     for (size_t i = 0; i < nb_ops; i++) {
