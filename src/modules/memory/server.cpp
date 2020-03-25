@@ -175,7 +175,7 @@ json server::list_generators()
         model.setId(kv_pair.first);
         model.setRunning(kv_pair.second.is_running());
         model.setConfig(std::make_shared<model::MemoryGeneratorConfig>(
-            configToSwaggerModel(kv_pair.second)));
+            config_to_swagger_model(kv_pair.second)));
 
         jdata.emplace_back(model.toJson());
     }
@@ -191,7 +191,7 @@ json server::create_generator(const json& request)
         model::MemoryGenerator generator_model;
         generator_model.fromJson(json_object);
 
-        generator_config config = swaggerModelToConfig([&json_object]() {
+        generator_config config = swagger_model_to_config([&json_object]() {
             model::MemoryGeneratorConfig config_model;
             config_model.fromJson(json_object["config"]);
             return config_model;
@@ -204,7 +204,7 @@ json server::create_generator(const json& request)
             generator_model.setRunning(result.is_running());
             generator_model.setConfig(
                 std::make_shared<model::MemoryGeneratorConfig>(
-                    configToSwaggerModel(result)));
+                    config_to_swagger_model(result)));
 
             return json{{"code", reply_code::OK},
                         {"data", generator_model.toJson().dump()}};
@@ -231,7 +231,7 @@ json server::get_generator(const json& request)
         model.setId(id);
         model.setRunning(g.is_running());
         model.setConfig(std::make_shared<model::MemoryGeneratorConfig>(
-            configToSwaggerModel(g)));
+            config_to_swagger_model(g)));
 
         return json{{"code", reply_code::OK}, {"data", model.toJson().dump()}};
     }

@@ -74,15 +74,15 @@ public:
 
     task_memory_config config() const override { return _config; }
 
-    void set_buffer_size(size_t);
-    void set_block_size(size_t);
-    void set_rate(size_t);
-    void set_pattern(io_pattern);
+    //void buffer_size(size_t);
+    //void block_size(size_t);
+    //void rate(size_t);
+    //void pattern(io_pattern);
 
-    size_t buffer_size() const { return _config.buffer_size; }
-    size_t block_size() const { return _config.block_size; }
-    size_t rate() const { return _config.op_per_sec; }
-    io_pattern pattern() const { return _config.pattern; }
+    //size_t buffer_size() const { return _config.buffer_size; }
+    //size_t block_size() const { return _config.block_size; }
+    //size_t rate() const { return _config.op_per_sec; }
+    //io_pattern pattern() const { return _config.pattern; }
 
     uint64_t time_ns() const { return _stats.time_ns; }
     uint64_t operations() const { return _stats.operations; }

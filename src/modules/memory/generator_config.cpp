@@ -14,55 +14,55 @@ bool generator_config::operator==(const generator_config& other) const
            && _write_threads == other._write_threads;
 }
 
-generator_config& generator_config::set_running(bool running)
+generator_config& generator_config::running(bool running)
 {
     _running = running;
     return *this;
 }
 
-generator_config& generator_config::set_buffer_size(int size)
+generator_config& generator_config::buffer_size(int size)
 {
     assert(size > 0);
     _buffer_size = size;
     return *this;
 }
 
-generator_config& generator_config::set_reads_per_sec(int rps)
+generator_config& generator_config::reads_per_sec(int rps)
 {
     assert(rps > 0);
     _reads_per_sec = rps;
     return *this;
 }
 
-generator_config& generator_config::set_read_size(int size)
+generator_config& generator_config::read_size(int size)
 {
     assert(size > 0);
     _read_size = size;
     return *this;
 }
 
-generator_config& generator_config::set_read_threads(int number)
+generator_config& generator_config::read_threads(int number)
 {
     assert(number > 0);
     _read_threads = number;
     return *this;
 }
 
-generator_config& generator_config::set_writes_per_sec(int wps)
+generator_config& generator_config::writes_per_sec(int wps)
 {
     assert(wps > 0);
     _writes_per_sec = wps;
     return *this;
 }
 
-generator_config& generator_config::set_write_size(int size)
+generator_config& generator_config::write_size(int size)
 {
     assert(size > 0);
     _write_size = size;
     return *this;
 }
 
-generator_config& generator_config::set_write_threads(int number)
+generator_config& generator_config::write_threads(int number)
 {
     assert(number > 0);
     _write_threads = number;

@@ -9,20 +9,20 @@ namespace openperf::memory {
 
 namespace swagger = ::swagger::v1::model;
 
-generator_config swaggerModelToConfig(const model::MemoryGeneratorConfig& m)
+generator_config swagger_model_to_config(const model::MemoryGeneratorConfig& m)
 {
     return generator_config::create()
-        .set_buffer_size(m.getBufferSize())
-        .set_read_size(m.getReadSize())
-        .set_reads_per_sec(m.getReadsPerSec())
-        .set_read_threads(m.getReadThreads())
-        .set_write_size(m.getWriteSize())
-        .set_writes_per_sec(m.getWritesPerSec())
-        .set_write_threads(m.getWriteThreads());
+        .buffer_size(m.getBufferSize())
+        .read_size(m.getReadSize())
+        .reads_per_sec(m.getReadsPerSec())
+        .read_threads(m.getReadThreads())
+        .write_size(m.getWriteSize())
+        .writes_per_sec(m.getWritesPerSec())
+        .write_threads(m.getWriteThreads());
 }
 
 swagger::MemoryGeneratorConfig
-configToSwaggerModel(const generator_config& config)
+config_to_swagger_model(const generator_config& config)
 {
     swagger::MemoryGeneratorConfig config_model;
     config_model.setBufferSize(config.buffer_size());
