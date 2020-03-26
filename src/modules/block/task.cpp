@@ -1,7 +1,6 @@
 #include <thread>
 #include "task.hpp"
 #include "core/op_core.h"
-#include "timesync/chrono.hpp"
 
 namespace openperf::block::worker
 {
@@ -27,6 +26,17 @@ static off_t get_last_block(size_t file_size, size_t io_size)
     return static_cast<off_t>(file_size / io_size);
 }
 
+inline static int64_t now() {
+    return realtime::now().time_since_epoch().count();
+}
+
+inline static task_stat_t generate_default_stat()
+{
+    return {realtime::now(),{0,0,0,0,0,0,0,0},{0,0,0,0,0,0,0,0}};
+}
+
+
+
 static int submit_aio_op(const operation_config& op_config, operation_state *op_state) {
     struct aiocb *aio = &op_state->aiocb;
     *aio = ((aiocb) {
@@ -45,6 +55,7 @@ static int submit_aio_op(const operation_config& op_config, operation_state *op_
     op_state->io_bytes = 0;
 
     /* Submit operation to the kernel */
+    printf("/* Submit operation to the kernel */ %d \n", op_config.fd);
     if (op_config.queue_aio_op(aio) == -1) {
         if (errno == EAGAIN) {
             OP_LOG(OP_LOG_WARNING, "AIO queue is full!\n");
@@ -103,7 +114,7 @@ int err = 0;
     case 0: {
         /* AIO operation completed */
         ssize_t nb_bytes = aio_return(aiocb);
-        aio_op->stop_ns = 0;//icp_timestamp_now();
+        aio_op->stop_ns = now();
         aio_op->io_bytes = nb_bytes;
         aio_op->state = COMPLETE;
         break;
@@ -125,11 +136,16 @@ int err = 0;
 }
 
 block_task::block_task()
-    : aio_ops(0)
+    : stat1(generate_default_stat())
+    , stat2(generate_default_stat())
+    , task_stat(&stat1)
+    , at_stat(&stat2)
+    , aio_ops(0)
     , buf(0)
     , read_timestamp(0)
     , write_timestamp(0)
     , pause_timestamp(0)
+    , start_timestamp(0)
 {
 
 }
@@ -143,8 +159,10 @@ block_task::~block_task()
 }
 
 
-size_t block_task::worker_spin(int (*queue_aio_op)(aiocb *aiocb))
+size_t block_task::worker_spin(int (*queue_aio_op)(aiocb *aiocb), task_operation_stat_t& op_stat)
 {
+    uint_fast64_t ns_min = UINT64_MAX;
+    uint_fast64_t ns_max = 0;
     int32_t total_ops = 0;
     int32_t pending_ops = 0;
     auto op_conf = (operation_config){
@@ -161,8 +179,8 @@ size_t block_task::worker_spin(int (*queue_aio_op)(aiocb *aiocb))
             pending_ops++;
         } else if (aio_op->state == FAILED) {
             total_ops++;
-            //atomic_inc(&stats->operations, 1);
-            //atomic_inc(&stats->errors, 1);
+            op_stat.ops_actual ++;
+            op_stat.errors ++;
         } else {
             /* temporary queueing error */
             break;
@@ -178,7 +196,7 @@ size_t block_task::worker_spin(int (*queue_aio_op)(aiocb *aiocb))
              * We consider either of these conditions to be fatal.
              */
             if (aio_cancel(task_config.fd, NULL) == -1) {
-                //icp_exit("Could not cancel pending AIO operatons: %s\n", strerror(errno));
+                OP_LOG(OP_LOG_ERROR, "Could not cancel pending AIO operatons: %s\n", strerror(errno));
             }
         }
         /*
@@ -194,22 +212,22 @@ size_t block_task::worker_spin(int (*queue_aio_op)(aiocb *aiocb))
                 {
                 case COMPLETE:
                 {
-                    //atomic_inc(&stats->operations, 1);
-                    //atomic_inc(&stats->bytes, aio_op->io_bytes);
+                    op_stat.ops_actual ++;
+                    op_stat.bytes_actual += aio_op->io_bytes;
 
-                    /*uint64_t op_ns = aio_op->stop_ns - aio_op->start_ns;
-                    atomic_inc(&stats->ns_total, op_ns);
-                    if (op_ns < atomic_get(&stats->ns_min)) {
-                        atomic_set(&stats->ns_min, op_ns);
+                    uint64_t op_ns = aio_op->stop_ns - aio_op->start_ns;
+                    op_stat.latency += op_ns;
+                    if (op_ns < ns_min) {
+                        ns_min = op_ns;
                     }
-                    if (op_ns > atomic_get(&stats->ns_max)) {
-                        atomic_set(&stats->ns_max, op_ns);
-                    }*/
+                    if (op_ns > ns_max) {
+                        ns_max = op_ns;
+                    }
                     break;
                 }
                 case FAILED:
-                    //atomic_inc(&stats->operations, 1);
-                    //atomic_inc(&stats->errors, 1);
+                    op_stat.ops_actual ++;
+                    op_stat.errors ++;
                     break;
                 default:
                     OP_LOG(OP_LOG_WARNING, "Completed AIO operation in %d state?\n",
@@ -225,13 +243,17 @@ size_t block_task::worker_spin(int (*queue_aio_op)(aiocb *aiocb))
                     pending_ops--;
                     if (aio_op->state == FAILED) {
                         total_ops++;
-                        //atomic_inc(&stats->operations, 1);
-                        //atomic_inc(&stats->errors, 1);
+                        op_stat.ops_actual++;
+                        op_stat.errors++;
                     }
                 }
             }
         }
     }
+
+    op_stat.latency_max += ns_max;
+    op_stat.latency_min += (ns_min == UINT64_MAX ? 0 : ns_min);
+
     return (total_ops);
 }
 
@@ -251,28 +273,62 @@ task_config_t block_task::config() const
 
 void block_task::resume()
 {
-    read_timestamp += realtime::now().time_since_epoch().count() - pause_timestamp;
-    write_timestamp += realtime::now().time_since_epoch().count() - pause_timestamp;
+    read_timestamp += now() - pause_timestamp;
+    write_timestamp += now() - pause_timestamp;
+    start_timestamp += now() - pause_timestamp;
 }
 
 void block_task::pause()
 {
-    pause_timestamp = realtime::now().time_since_epoch().count();
+    pause_timestamp = now();
+}
+
+task_stat_t block_task::stat() const
+{
+    return *at_stat;
+}
+
+void block_task::clear_stat()
+{
+    *at_stat = generate_default_stat();
+    reset_stat = true;
 }
 
 void block_task::spin()
 {
-    if (read_timestamp < write_timestamp) {
-        worker_spin(aio_read);
-        read_timestamp += std::nano::den / task_config.reads_per_sec;
-    } else {
-        worker_spin(aio_write);
-        write_timestamp += std::nano::den / task_config.writes_per_sec;
+    if (reset_stat.load()) {
+        reset_stat = false;
+        *task_stat = generate_default_stat();
+        start_timestamp = now();
     }
+
     auto next_ts = std::min(read_timestamp, write_timestamp);
-    auto now = realtime::now().time_since_epoch().count();
-    if (next_ts > now)
-        std::this_thread::sleep_for(std::chrono::nanoseconds(next_ts - now));
+    auto before_sleep_time = now();
+    if (next_ts > before_sleep_time)
+        std::this_thread::sleep_for(std::chrono::nanoseconds(next_ts - before_sleep_time));
+
+    size_t nb_ops;
+    auto cur_time = now();
+    if (read_timestamp < write_timestamp) {
+        nb_ops = worker_spin(aio_read, task_stat->read);
+        read_timestamp += std::nano::den / task_config.reads_per_sec;
+        task_stat->read.ops_target = (cur_time - start_timestamp) * task_config.reads_per_sec / std::nano::den;
+        task_stat->read.bytes_target = task_stat->read.ops_target * task_config.read_size;
+    } else {
+        nb_ops = worker_spin(aio_write, task_stat->write);
+        write_timestamp += std::nano::den / task_config.writes_per_sec;
+        task_stat->write.ops_target = (cur_time - start_timestamp) * task_config.writes_per_sec / std::nano::den;
+        task_stat->write.bytes_target = task_stat->write.ops_target * task_config.write_size;
+    }
+
+    if (reset_stat.load()) {
+        reset_stat = false;
+        *task_stat = generate_default_stat();
+    }
+    task_stat = at_stat.exchange(task_stat);
+    *task_stat = *at_stat.load();
+
+
 }
 
 } // namespace openperf::block::worker

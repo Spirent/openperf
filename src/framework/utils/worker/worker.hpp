@@ -65,6 +65,7 @@ public:
     inline bool is_finished() const override { return _stopped; }
     inline typename T::config_t config() const { return _task->config(); }
     inline typename T::stat_t stat() const { return _task->stat(); };
+    inline void clear_stat() { return _task->clear_stat(); };
 
     void config(const typename T::config_t&);
 
