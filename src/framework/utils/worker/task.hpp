@@ -3,10 +3,11 @@
 
 namespace openperf::utils::worker {
 
-template <class T> class task
+template <class T, class U> class task
 {
 public:
     typedef T config_t;
+    typedef U stat_t;
 
 public:
     virtual ~task(){};
@@ -14,6 +15,9 @@ public:
 
     virtual void config(const T&) = 0;
     virtual T config() const = 0;
+
+    virtual U stat() const = 0;
+    virtual void clear_stat() = 0;
 
     virtual void resume(){};
     virtual void pause(){};

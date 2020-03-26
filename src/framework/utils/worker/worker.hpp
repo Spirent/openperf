@@ -37,9 +37,8 @@ private:
         typename T::config_t config;
     };
 
-
 private:
-    const std::string _endpoint;
+    constexpr static auto _endpoint = "inproc://worker-p2p";
 
     bool _paused;
     bool _stopped;
@@ -64,6 +63,8 @@ public:
     inline bool is_paused() const override { return _paused; }
     inline bool is_running() const override { return !(_paused || _stopped); }
     inline bool is_finished() const override { return _stopped; }
+    inline typename T::config_t config() const { return _task->config(); }
+    inline typename T::stat_t stat() const { return _task->stat(); };
 
     void config(const typename T::config_t&);
 
@@ -76,18 +77,16 @@ private:
 // Constructors & Destructor
 template <class T>
 worker<T>::worker()
-    : _endpoint("inproc://openperf-worker-" + std::to_string((uintptr_t)this))
-    , _paused(true)
+    : _paused(true)
     , _stopped(true)
     , _task(new T)
     , _zmq_context(zmq_ctx_new())
-    , _zmq_socket(op_socket_get_server(_zmq_context, ZMQ_PAIR, _endpoint.c_str()))
+    , _zmq_socket(op_socket_get_server(_zmq_context, ZMQ_PAIR, _endpoint))
 {}
 
 template <class T>
 worker<T>::worker(worker&& w)
-    : _endpoint(w._endpoint)
-    , _paused(w._paused)
+    : _paused(w._paused)
     , _stopped(w._stopped)
     , _config(std::move(w._config))
     , _task(std::move(w._task))
@@ -109,7 +108,8 @@ template <class T> worker<T>::~worker()
         _stopped = true;
         _paused = false;
         update();
-        _thread.join();
+        //_thread.join();
+        _thread.detach();
     }
 
     zmq_close(_zmq_socket.get());
@@ -161,7 +161,7 @@ template <class T> void worker<T>::config(const typename T::config_t& c)
 template <class T> void worker<T>::loop()
 {
     auto socket = std::unique_ptr<void, op_socket_deleter>(
-        op_socket_get_client(_zmq_context, ZMQ_PAIR, _endpoint.c_str()));
+        op_socket_get_client(_zmq_context, ZMQ_PAIR, _endpoint));
 
     worker::message msg{.stop = false, .pause = true, .reconf = false};
     bool paused = true;
