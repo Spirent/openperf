@@ -80,6 +80,41 @@ void block_generator::set_running(bool value)
         blkworker->resume();
     else
         blkworker->pause();
+
+    model::block_generator::set_running(value);
+}
+
+
+
+block_result_ptr block_generator::stat()
+{
+    auto worker_stat = blkworker->stat();
+
+    auto generate_gen_stat = [](const task_operation_stat_t& task_stat){
+        model::block_generator_statistics gen_stat;
+        gen_stat.bytes_actual = task_stat.bytes_actual;
+        gen_stat.bytes_target = task_stat.bytes_target;
+        gen_stat.io_errors = task_stat.errors;
+        gen_stat.ops_actual = task_stat.ops_actual;
+        gen_stat.ops_target = task_stat.ops_target;
+        gen_stat.latency = task_stat.latency;
+        gen_stat.latency_min = task_stat.latency_min;
+        gen_stat.latency_max = task_stat.latency_max;
+        return gen_stat;
+    };
+
+    auto gen_stat = std::make_shared<model::block_generator_result>();
+    gen_stat->set_id(get_id());
+    gen_stat->set_active(is_running());
+    gen_stat->set_read_stats(generate_gen_stat(worker_stat.read));
+    gen_stat->set_write_stats(generate_gen_stat(worker_stat.write));
+    gen_stat->set_timestamp(worker_stat.updated);
+    return gen_stat;
+}
+
+void block_generator::clear_stat()
+{
+    blkworker->clear_stat();
 }
 
 task_config_t block_generator::generate_worker_config() {

@@ -3,6 +3,7 @@
 
 #include "task.hpp"
 #include "models/generator.hpp"
+#include "models/generator_result.hpp"
 #include "utils/worker/worker.hpp"
 
 namespace openperf::block::generator {
@@ -11,6 +12,7 @@ using namespace openperf::block::worker;
 
 typedef utils::worker::worker<block_task> block_worker;
 typedef std::unique_ptr<block_worker> block_worker_ptr;
+using block_result_ptr = std::shared_ptr<model::block_generator_result>;
 
 class block_generator : public model::block_generator
 {
@@ -29,6 +31,8 @@ public:
     void set_config(const model::block_generator_config& value);
     void set_resource_id(const std::string& value);
     void set_running(bool value);
+    block_result_ptr stat();
+    void clear_stat();
 };
 
 } // namespace openperf::block::generator
