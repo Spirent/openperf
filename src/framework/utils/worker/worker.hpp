@@ -37,16 +37,17 @@ private:
         typename T::config_t config;
     };
 
-    static constexpr auto endpoint_prefix = "inproc://openperf-worker";
 
 private:
+    const std::string _endpoint;
+
     bool _paused;
     bool _stopped;
     typename T::config_t _config;
+    std::unique_ptr<T> _task;
     void* _zmq_context;
     std::unique_ptr<void, op_socket_deleter> _zmq_socket;
     std::thread _thread;
-    std::unique_ptr<T> _task;
 
 public:
     worker();
@@ -75,41 +76,40 @@ private:
 // Constructors & Destructor
 template <class T>
 worker<T>::worker()
-    : _paused(true)
+    : _endpoint("inproc://openperf-worker-" + std::to_string((uintptr_t)this))
+    , _paused(true)
     , _stopped(true)
-    , _zmq_context(zmq_ctx_new())
-    , _zmq_socket(op_socket_get_server(_zmq_context, ZMQ_PAIR, endpoint_prefix))
     , _task(new T)
+    , _zmq_context(zmq_ctx_new())
+    , _zmq_socket(op_socket_get_server(_zmq_context, ZMQ_PAIR, _endpoint.c_str()))
 {}
 
 template <class T>
 worker<T>::worker(worker&& w)
-    : _paused(w._paused)
+    : _endpoint(w._endpoint)
+    , _paused(w._paused)
     , _stopped(w._stopped)
     , _config(std::move(w._config))
+    , _task(std::move(w._task))
     , _zmq_context(std::move(w._zmq_context))
     , _zmq_socket(std::move(w._zmq_socket))
     , _thread(std::move(w._thread))
-    , _task(std::move(w._task))
 {}
 
 template <class T>
 worker<T>::worker(const typename T::config_t& c)
-    : _paused(true)
-    , _stopped(true)
-    , _config(c)
-    , _zmq_context(zmq_ctx_new())
-    , _zmq_socket(op_socket_get_server(_zmq_context, ZMQ_PAIR, endpoint_prefix))
-    , _task(new T)
-{}
+    : worker()
+{
+    _config = c;
+}
 
 template <class T> worker<T>::~worker()
 {
     if (_thread.joinable()) {
-        _thread.detach();
         _stopped = true;
         _paused = false;
         update();
+        _thread.join();
     }
 
     zmq_close(_zmq_socket.get());
@@ -161,7 +161,7 @@ template <class T> void worker<T>::config(const typename T::config_t& c)
 template <class T> void worker<T>::loop()
 {
     auto socket = std::unique_ptr<void, op_socket_deleter>(
-        op_socket_get_client(_zmq_context, ZMQ_PAIR, endpoint_prefix));
+        op_socket_get_client(_zmq_context, ZMQ_PAIR, _endpoint.c_str()));
 
     worker::message msg{.stop = false, .pause = true, .reconf = false};
     bool paused = true;
