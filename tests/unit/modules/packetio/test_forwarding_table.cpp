@@ -20,14 +20,14 @@ struct test_sink
     bool operator==(const test_sink& other) const { return (id == other.id); }
 };
 
-template class openperf::packetio::
-    forwarding_table<test_interface, test_sink, max_ports>;
-
 template <>
 std::string openperf::packetio::get_interface_id(test_interface* ifp)
 {
     return (ifp->id);
 }
+
+template class openperf::packetio::
+    forwarding_table<test_interface, test_sink, max_ports>;
 
 using forwarding_table =
     openperf::packetio::forwarding_table<test_interface, test_sink, max_ports>;
@@ -68,9 +68,58 @@ TEST_CASE("forwarding table functionality", "[forwarding table]")
                 REQUIRE(!ptr);
             }
         }
+
+        SECTION("insert sink, ")
+        {
+            REQUIRE(!table.has_interface_sinks(port1));
+
+            auto sink1 = test_sink{"sink_1"};
+            auto to_delete = table.insert_interface_sink(
+                port1, mac1, std::addressof(ifp1), sink1);
+            REQUIRE(to_delete);
+            delete to_delete;
+
+            REQUIRE(table.has_interface_sinks(port1));
+            REQUIRE(!table.has_interface_sinks(port1 + 1));
+
+            SECTION("find sink, ")
+            {
+                auto found = table.find_interface_and_sinks(port1, mac1);
+                REQUIRE(found != nullptr);
+                REQUIRE(found->sinks.size() == 1);
+                REQUIRE(found->sinks.size() == 1);
+                REQUIRE(found->sinks[0].id == sink1.id);
+
+                auto not_found =
+                    table.find_interface_and_sinks(port1 + 1, mac1);
+                REQUIRE(not_found == nullptr);
+
+                auto wrong_mac = openperf::net::mac_address{
+                    0x00, 0x01, 0x02, 0xbb, 0xaa, 0xdd};
+                not_found =
+                    table.find_interface_and_sinks(port1 + 1, wrong_mac);
+                REQUIRE(not_found == nullptr);
+
+                SECTION("remove sink, ")
+                {
+                    REQUIRE(table.has_interface_sinks(port1));
+
+                    to_delete = table.remove_interface_sink(
+                        port1, mac1, std::addressof(ifp1), sink1);
+                    REQUIRE(to_delete);
+                    delete to_delete;
+
+                    found = table.find_interface_and_sinks(port1, mac1);
+                    REQUIRE(found);
+                    REQUIRE(found->sinks.empty());
+
+                    REQUIRE(!table.has_interface_sinks(port1));
+                }
+            }
+        }
     }
 
-    SECTION("insert sink, ")
+    SECTION("insert port sink, ")
     {
         auto sink1 = test_sink{"sink_1"};
         auto port1 = static_cast<uint16_t>(3);
@@ -88,7 +137,7 @@ TEST_CASE("forwarding table functionality", "[forwarding table]")
             auto sink_vec2 = table.get_sinks(port1 + 1);
             REQUIRE(sink_vec2.empty());
 
-            SECTION("remove interface, ")
+            SECTION("remove sink, ")
             {
                 to_delete = table.remove_sink(port1, sink1);
                 REQUIRE(to_delete);
@@ -102,11 +151,10 @@ TEST_CASE("forwarding table functionality", "[forwarding table]")
 
     SECTION("insert many interfaces, ")
     {
-        static constexpr unsigned many_interfaces = 20;
+        static constexpr unsigned interfaces_per_port = 2;
         static constexpr unsigned many_ports = 10;
-
-        /* make sure we get the same number of interfaces on each port */
-        static_assert(many_interfaces % many_ports == 0);
+        static constexpr unsigned many_interfaces =
+            many_ports * interfaces_per_port;
 
         /* Create a map of port, mac --> interfaces and load them into our table
          */
@@ -161,9 +209,100 @@ TEST_CASE("forwarding table functionality", "[forwarding table]")
                 }
             }
         }
+
+        SECTION("insert many sinks, ")
+        {
+            constexpr unsigned sinks_per_interface = 3;
+            std::map<std::string, std::array<test_sink, sinks_per_interface>>
+                interface_sinks;
+
+            for (unsigned port_id = 0; port_id < many_ports; ++port_id) {
+                REQUIRE(!table.has_interface_sinks(port_id));
+            }
+
+            for (auto& [key, value] : interfaces) {
+                auto& sinks = interface_sinks[value.id];
+                for (auto& sink : sinks) {
+                    auto uuid = openperf::core::uuid::random();
+                    sink.id = openperf::core::to_string(uuid);
+                    auto to_delete = table.insert_interface_sink(
+                        key.first, key.second, std::addressof(value), sink);
+                    delete to_delete;
+                }
+            }
+
+            for (unsigned port_id = 0; port_id < many_ports; ++port_id) {
+                REQUIRE(table.has_interface_sinks(port_id));
+            }
+
+            SECTION("find sinks, ")
+            {
+                for (auto& [key, value] : interfaces) {
+                    auto& sinks = interface_sinks[value.id];
+                    auto found =
+                        table.find_interface_and_sinks(key.first, key.second);
+                    REQUIRE(found != nullptr);
+                    REQUIRE(sinks.size() == found->sinks.size());
+                    for (size_t i = 0; i < sinks.size(); ++i) {
+                        REQUIRE(sinks[i].id == found->sinks[i].id);
+                    }
+                }
+            }
+
+            SECTION("visit all sinks, ")
+            {
+                for (unsigned port_id = 0; port_id < many_ports; ++port_id) {
+                    std::map<test_interface*, unsigned> interface_sink_counts;
+                    table.visit_interface_sinks(
+                        0, [&](auto ifp, const auto& sink) {
+                            ++interface_sink_counts[ifp];
+                            return true;
+                        });
+
+                    REQUIRE(interface_sink_counts.size()
+                            == interfaces_per_port);
+
+                    // Verify every interface had expected number of sinks
+                    for (auto [ifp, count] : interface_sink_counts) {
+                        REQUIRE(count == sinks_per_interface);
+                    }
+                }
+            }
+
+            SECTION("visit some sinks, ")
+            {
+                for (unsigned port_id = 0; port_id < many_ports; ++port_id) {
+                    unsigned visited = 0;
+                    table.visit_interface_sinks(
+                        0, [&](test_interface*, const test_sink&) {
+                            ++visited;
+                            return (visited != 3);
+                        });
+
+                    REQUIRE(visited == 3);
+                }
+            }
+
+            SECTION("remove sinks, ")
+            {
+                for (auto& [key, value] : interfaces) {
+                    auto& sinks = interface_sinks[value.id];
+                    for (const auto& sink : sinks) {
+                        auto to_delete = table.remove_interface_sink(
+                            key.first, key.second, std::addressof(value), sink);
+                        REQUIRE(to_delete);
+                        delete to_delete;
+                    }
+                }
+
+                for (unsigned port_id = 0; port_id < many_ports; ++port_id) {
+                    REQUIRE(!table.has_interface_sinks(port_id));
+                }
+            }
+        }
     }
 
-    SECTION("insert many sinks, ")
+    SECTION("insert many port sinks, ")
     {
         static constexpr unsigned many_sinks = 8;
         static constexpr uint16_t port0 = 0;

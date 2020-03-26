@@ -9,8 +9,8 @@
 #include "zmq.h"
 
 #include "core/op_core.h"
-#include "packetio/internal_client.h"
-#include "packetio/packet_buffer.h"
+#include "packetio/internal_client.hpp"
+#include "packetio/packet_buffer.hpp"
 #include "packet_counter.h"
 
 static bool _op_done = false;
@@ -43,12 +43,14 @@ static void log_counter(packet_counter<T>& counter, double delta)
 class test_sink
 {
     openperf::core::uuid m_id;
+    bool m_active;
     std::unique_ptr<packet_counter<uint64_t>> m_counter;
     std::thread m_logger;
 
 public:
     test_sink(uint16_t port_id)
         : m_id(openperf::core::uuid::random())
+        , m_active(true)
         , m_counter(std::make_unique<packet_counter<uint64_t>>(
               "Port " + std::to_string(port_id)))
     {
@@ -69,6 +71,7 @@ public:
 
     test_sink(test_sink&& other)
         : m_id(other.m_id)
+        , m_active(true)
         , m_counter(std::move(other.m_counter))
         , m_logger(std::move(other.m_logger))
     {}
@@ -89,6 +92,15 @@ public:
     }
 
     std::string id() const { return (openperf::core::to_string(m_id)); }
+
+    bool active() const { return m_active; }
+
+    bool uses_feature([
+        [maybe_unused]] openperf::packetio::packets::sink_feature_flags
+                          sink_feature_flags) const
+    {
+        return false;
+    }
 
     uint16_t push(openperf::packetio::packets::packet_buffer* const packets[],
                   uint16_t length) const

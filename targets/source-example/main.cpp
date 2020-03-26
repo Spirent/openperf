@@ -9,11 +9,11 @@
 #include "zmq.h"
 
 #include "core/op_core.h"
-#include "core/op_uuid.h"
-#include "net/net_types.h"
-#include "units/rate.h"
-#include "packetio/internal_client.h"
-#include "packetio/packet_buffer.h"
+#include "core/op_uuid.hpp"
+#include "net/net_types.hpp"
+#include "units/rate.hpp"
+#include "packetio/internal_client.hpp"
+#include "packetio/packet_buffer.hpp"
 
 #include "rte_ether.h"
 #include "rte_ip.h"

@@ -18,58 +18,60 @@ serialized_msg serialize_request(const request_msg& msg)
     serialized_msg serialized;
     auto error =
         (message::zmq_msg_init(&serialized.type, msg.index())
-         || std::visit(
-             utils::overloaded_visitor(
-                 [&](const request_sink_add& sink_add) {
-                     return (
-                         message::zmq_msg_init(&serialized.data,
-                                               std::addressof(sink_add.data),
-                                               sizeof(sink_add.data)));
-                 },
-                 [&](const request_sink_del& sink_del) {
-                     return (
-                         message::zmq_msg_init(&serialized.data,
-                                               std::addressof(sink_del.data),
-                                               sizeof(sink_del.data)));
-                 },
-                 [&](const request_source_add& source_add) {
-                     return (
-                         message::zmq_msg_init(&serialized.data,
-                                               std::addressof(source_add.data),
-                                               sizeof(source_add.data)));
-                 },
-                 [&](const request_source_del& source_del) {
-                     return (
-                         message::zmq_msg_init(&serialized.data,
-                                               std::addressof(source_del.data),
-                                               sizeof(source_del.data)));
-                 },
-                 [&](const request_task_add& task_add) {
-                     return (
-                         message::zmq_msg_init(&serialized.data,
-                                               std::addressof(task_add.data),
-                                               sizeof(task_add.data)));
-                 },
-                 [&](const request_task_del& task_del) {
-                     return (message::zmq_msg_init(&serialized.data,
-                                                   task_del.task_id.data(),
-                                                   task_del.task_id.length()));
-                 },
-                 [&](const request_worker_rx_ids& rx_ids) {
-                     return (rx_ids.object_id ? message::zmq_msg_init(
-                                 &serialized.data,
-                                 rx_ids.object_id->data(),
-                                 rx_ids.object_id->length())
-                                              : zmq_msg_init(&serialized.data));
-                 },
-                 [&](const request_worker_tx_ids& tx_ids) {
-                     return (tx_ids.object_id ? message::zmq_msg_init(
-                                 &serialized.data,
-                                 tx_ids.object_id->data(),
-                                 tx_ids.object_id->length())
-                                              : zmq_msg_init(&serialized.data));
-                 }),
-             msg));
+         || std::visit(utils::overloaded_visitor(
+                           [&](const request_sink_add& sink_add) {
+                               return (message::zmq_msg_init(
+                                   &serialized.data,
+                                   std::addressof(sink_add.data),
+                                   sizeof(sink_add.data)));
+                           },
+                           [&](const request_sink_del& sink_del) {
+                               return (message::zmq_msg_init(
+                                   &serialized.data,
+                                   std::addressof(sink_del.data),
+                                   sizeof(sink_del.data)));
+                           },
+                           [&](const request_source_add& source_add) {
+                               return (message::zmq_msg_init(
+                                   &serialized.data,
+                                   std::addressof(source_add.data),
+                                   sizeof(source_add.data)));
+                           },
+                           [&](const request_source_del& source_del) {
+                               return (message::zmq_msg_init(
+                                   &serialized.data,
+                                   std::addressof(source_del.data),
+                                   sizeof(source_del.data)));
+                           },
+                           [&](const request_task_add& task_add) {
+                               return (message::zmq_msg_init(
+                                   &serialized.data,
+                                   std::addressof(task_add.data),
+                                   sizeof(task_add.data)));
+                           },
+                           [&](const request_task_del& task_del) {
+                               return (message::zmq_msg_init(
+                                   &serialized.data,
+                                   task_del.task_id.data(),
+                                   task_del.task_id.length()));
+                           },
+                           [&](const request_worker_rx_ids& rx_ids) {
+                               return (rx_ids.object_id
+                                           ? message::zmq_msg_init(
+                                                 &serialized.data,
+                                                 rx_ids.object_id->data(),
+                                                 rx_ids.object_id->length())
+                                           : zmq_msg_init(&serialized.data));
+                           },
+                           [&](const request_worker_tx_ids& tx_ids) {
+                               return (tx_ids.object_id
+                                           ? message::zmq_msg_init(
+                                                 &serialized.data,
+                                                 tx_ids.object_id->data(),
+                                                 tx_ids.object_id->length())
+                                           : zmq_msg_init(&serialized.data));
+                           }),
+                       msg));
     if (error) { throw std::bad_alloc(); }
 
     return (serialized);
@@ -81,32 +83,33 @@ serialized_msg serialize_reply(const reply_msg& msg)
     auto error =
         (message::zmq_msg_init(&serialized.type, msg.index())
          || std::visit(
-             utils::overloaded_visitor(
-                 [&](const reply_task_add& task_add) {
-                     return (message::zmq_msg_init(&serialized.data,
-                                                   task_add.task_id.data(),
-                                                   task_add.task_id.length()));
-                 },
-                 [&](const reply_worker_ids& worker_ids) {
-                     /*
-                      * ZMQ wants the length in bytes, so we have to scale the
-                      * length of the vector up to match.
-                      */
-                     auto scalar =
-                         sizeof(decltype(worker_ids.worker_ids)::value_type);
-                     return (message::zmq_msg_init(
-                         &serialized.data,
-                         worker_ids.worker_ids.data(),
-                         scalar * worker_ids.worker_ids.size()));
-                 },
-                 [&](const reply_ok&) {
-                     return (message::zmq_msg_init(&serialized.data, 0));
-                 },
-                 [&](const reply_error& error) {
-                     return (
-                         message::zmq_msg_init(&serialized.data, error.value));
-                 }),
-             msg));
+                utils::overloaded_visitor(
+                    [&](const reply_task_add& task_add) {
+                        return (
+                            message::zmq_msg_init(&serialized.data,
+                                                  task_add.task_id.data(),
+                                                  task_add.task_id.length()));
+                    },
+                    [&](const reply_worker_ids& worker_ids) {
+                        /*
+                         * ZMQ wants the length in bytes, so we have to scale
+                         * the length of the vector up to match.
+                         */
+                        auto scalar =
+                            sizeof(decltype(worker_ids.worker_ids)::value_type);
+                        return (message::zmq_msg_init(
+                            &serialized.data,
+                            worker_ids.worker_ids.data(),
+                            scalar * worker_ids.worker_ids.size()));
+                    },
+                    [&](const reply_ok&) {
+                        return (message::zmq_msg_init(&serialized.data, 0));
+                    },
+                    [&](const reply_error& error) {
+                        return (message::zmq_msg_init(&serialized.data,
+                                                      error.value));
+                    }),
+                msg));
     if (error) { throw std::bad_alloc(); }
 
     return (serialized);

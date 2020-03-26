@@ -527,9 +527,21 @@ void maybe_toggle_sink_feature(const ForwardingTable& fib,
                                packets::sink_feature_flags flags)
 {
     const auto& sinks = fib->get_sinks(port_idx);
-    if (std::any_of(std::begin(sinks), std::end(sinks), [&](const auto& sink) {
+    bool enabled =
+        std::any_of(std::begin(sinks), std::end(sinks), [&](const auto& sink) {
             return (sink.uses_feature(flags));
-        })) {
+        });
+    if (!enabled) {
+        fib->visit_interface_sinks(
+            port_idx, [&](netif*, const packets::generic_sink& sink) {
+                if (sink.uses_feature(flags)) {
+                    enabled = true;
+                    return false;
+                }
+                return true;
+            });
+    }
+    if (enabled) {
         get_unique_port_object(features, port_idx).enable();
     } else {
         get_unique_port_object(features, port_idx).disable();
@@ -538,8 +550,14 @@ void maybe_toggle_sink_feature(const ForwardingTable& fib,
 
 void worker_controller::maybe_update_sink_features(size_t port_idx)
 {
+    bool has_interface_sinks = false;
+    m_fib->visit_interface_sinks(port_idx,
+                                 [&](netif*, const packets::generic_sink&) {
+                                     has_interface_sinks = true;
+                                     return false;
+                                 });
     /* Disable the port filter if we have any attached sinks */
-    if (m_fib->get_sinks(port_idx).empty()) {
+    if (m_fib->get_sinks(port_idx).empty() && !has_interface_sinks) {
         get_unique_port_object(m_filters, port_idx).enable();
     } else {
         get_unique_port_object(m_filters, port_idx).disable();
@@ -561,47 +579,94 @@ void worker_controller::maybe_update_sink_features(size_t port_idx)
 tl::expected<void, int> worker_controller::add_sink(std::string_view src_id,
                                                     packets::generic_sink sink)
 {
-    /* Only support port sinks for now */
-    auto port_idx = m_driver.port_index(src_id);
-    if (!port_idx) { return (tl::make_unexpected(EINVAL)); }
+    if (auto port_idx = m_driver.port_index(src_id)) {
+        if (contains_match(m_fib->get_sinks(*port_idx), sink)) {
+            return (tl::make_unexpected(EALREADY));
+        }
 
-    if (contains_match(m_fib->get_sinks(*port_idx), sink)) {
-        return (tl::make_unexpected(EALREADY));
+        OP_LOG(OP_LOG_DEBUG,
+               "Adding sink %s to port %.*s (idx = %u)\n",
+               sink.id().c_str(),
+               static_cast<int>(src_id.length()),
+               src_id.data(),
+               *port_idx);
+
+        auto to_delete = m_fib->insert_sink(*port_idx, std::move(sink));
+        m_recycler->writer_add_gc_callback([to_delete]() { delete to_delete; });
+
+        maybe_update_sink_features(*port_idx);
+
+        return {};
     }
 
-    OP_LOG(OP_LOG_DEBUG,
-           "Adding sink %s to port %.*s (idx = %u)\n",
-           sink.id().c_str(),
-           static_cast<int>(src_id.length()),
-           src_id.data(),
-           *port_idx);
+    if (auto ifp = m_fib->find_interface(src_id)) {
+        auto& interface = dpdk::to_interface(ifp);
+        auto mac = net::mac_address(ifp->hwaddr);
 
-    auto to_delete = m_fib->insert_sink(*port_idx, std::move(sink));
-    m_recycler->writer_add_gc_callback([to_delete]() { delete to_delete; });
+        auto sinks = m_fib->find_interface_sinks(interface.port_index(), mac);
+        if (!sinks) { return (tl::make_unexpected(EINVAL)); }
+        if (contains_match(*sinks, sink)) {
+            return (tl::make_unexpected(EALREADY));
+        }
 
-    maybe_update_sink_features(*port_idx);
+        OP_LOG(OP_LOG_DEBUG,
+               "Adding sink %s to port %s (idx = %u) interface=%s\n",
+               sink.id().c_str(),
+               interface.port_id().c_str(),
+               interface.port_index(),
+               interface.id().c_str());
 
-    return {};
+        auto to_delete = m_fib->insert_interface_sink(
+            interface.port_index(), mac, ifp, std::move(sink));
+        m_recycler->writer_add_gc_callback([to_delete]() { delete to_delete; });
+
+        maybe_update_sink_features(interface.port_index());
+
+        return {};
+    }
+
+    return (tl::make_unexpected(EINVAL));
 }
 
 void worker_controller::del_sink(std::string_view src_id,
                                  packets::generic_sink sink)
 {
-    /* Only support port sinks for now */
-    auto port_idx = m_driver.port_index(src_id);
-    if (!port_idx) return;
+    if (auto port_idx = m_driver.port_index(src_id)) {
+        OP_LOG(OP_LOG_DEBUG,
+               "Deleting sink %s from port %.*s (idx = %u)\n",
+               sink.id().c_str(),
+               static_cast<int>(src_id.length()),
+               src_id.data(),
+               *port_idx);
 
-    OP_LOG(OP_LOG_DEBUG,
-           "Deleting sink %s from port %.*s (idx = %u)\n",
-           sink.id().c_str(),
-           static_cast<int>(src_id.length()),
-           src_id.data(),
-           *port_idx);
+        auto to_delete = m_fib->remove_sink(*port_idx, std::move(sink));
+        m_recycler->writer_add_gc_callback([to_delete]() { delete to_delete; });
 
-    auto to_delete = m_fib->remove_sink(*port_idx, std::move(sink));
-    m_recycler->writer_add_gc_callback([to_delete]() { delete to_delete; });
+        maybe_update_sink_features(*port_idx);
+        return;
+    }
 
-    maybe_update_sink_features(*port_idx);
+    if (auto ifp = m_fib->find_interface(src_id)) {
+        auto& interface = dpdk::to_interface(ifp);
+        auto mac = net::mac_address(ifp->hwaddr);
+
+        auto sinks = m_fib->find_interface_sinks(interface.port_index(), mac);
+        if (!sinks) return;
+
+        OP_LOG(OP_LOG_DEBUG,
+               "Deleting sink %s from port %s (idx = %u) interface %s\n",
+               sink.id().c_str(),
+               interface.port_id().c_str(),
+               interface.port_index(),
+               interface.id().c_str());
+
+        auto to_delete = m_fib->remove_interface_sink(
+            interface.port_index(), mac, ifp, std::move(sink));
+        m_recycler->writer_add_gc_callback([to_delete]() { delete to_delete; });
+
+        maybe_update_sink_features(interface.port_index());
+        return;
+    }
 }
 
 /*
@@ -695,6 +760,7 @@ worker_controller::add_source(std::string_view dst_id,
                               packets::generic_source source)
 {
     /* Only support port sources for now */
+    // TODO: Lookup interface if no port found
     auto port_idx = m_driver.port_index(dst_id);
     if (!port_idx) { return (tl::make_unexpected(EINVAL)); }
 
@@ -706,15 +772,15 @@ worker_controller::add_source(std::string_view dst_id,
         get_queue_and_worker_idx(m_tx_workers, m_tx_loads, *port_idx);
     m_tx_loads[worker_idx] += get_source_load(source);
 
-    OP_LOG(
-        OP_LOG_DEBUG,
-        "Adding source %s to port %.*s (idx = %u, queue = %u) on worker %u\n",
-        source.id().c_str(),
-        static_cast<int>(dst_id.length()),
-        dst_id.data(),
-        *port_idx,
-        queue_idx,
-        worker_idx);
+    OP_LOG(OP_LOG_DEBUG,
+           "Adding source %s to port %.*s (idx = %u, queue = %u) on worker "
+           "%u\n",
+           source.id().c_str(),
+           static_cast<int>(dst_id.length()),
+           dst_id.data(),
+           *port_idx,
+           queue_idx,
+           worker_idx);
 
     auto to_delete = m_tib->insert_source(
         *port_idx, queue_idx, tx_source(*port_idx, std::move(source)));
@@ -727,6 +793,7 @@ void worker_controller::del_source(std::string_view dst_id,
                                    packets::generic_source source)
 {
     /* Only support port sources for now */
+    // TODO: Lookup interface if no port found
     auto port_idx = m_driver.port_index(dst_id);
     if (!port_idx) return;
 
@@ -739,7 +806,8 @@ void worker_controller::del_source(std::string_view dst_id,
     if (worker_load > source_load) worker_load -= source_load;
 
     OP_LOG(OP_LOG_DEBUG,
-           "Deleting source %s from port %.*s (idx = %u, queue = %u) on worker "
+           "Deleting source %s from port %.*s (idx = %u, queue = %u) on "
+           "worker "
            "%u\n",
            source.id().c_str(),
            static_cast<int>(dst_id.length()),
