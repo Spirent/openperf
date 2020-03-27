@@ -2,7 +2,7 @@
 # Makefile component to specify timesync code
 #
 
-BLOCK_DEPENDS += api expected framework json pistache swagger_model versions
+BLOCK_DEPENDS += api expected framework json pistache swagger_model timesync versions
 
 BLOCK_SOURCES += \
 	file_stack.cpp \

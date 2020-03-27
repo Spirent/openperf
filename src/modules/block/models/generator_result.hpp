@@ -45,7 +45,7 @@ public:
 protected:
     std::string id;
     bool active;
-    std::string timestamp;
+    time_point timestamp;
     block_generator_statistics read_stats;
     block_generator_statistics write_stats;
 };

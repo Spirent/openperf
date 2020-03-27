@@ -31,8 +31,9 @@ public:
     void set_config(const model::block_generator_config& value);
     void set_resource_id(const std::string& value);
     void set_running(bool value);
-    block_result_ptr stat();
-    void clear_stat();
+
+    block_result_ptr get_statistics() const;
+    void clear_statistics();
 };
 
 } // namespace openperf::block::generator

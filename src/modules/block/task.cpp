@@ -5,7 +5,7 @@
 namespace openperf::block::worker
 {
 
-typedef timesync::chrono::realtime realtime;
+using realtime=timesync::chrono::realtime;
 
 struct operation_config {
     int fd;
@@ -50,12 +50,11 @@ static int submit_aio_op(const operation_config& op_config, operation_state *op_
 
     /* Reset stat related variables */
     op_state->state = PENDING;
-    op_state->start_ns = 0;//icp_timestamp_now();
-    op_state->stop_ns = 0;
+    op_state->start_ns = now();
+    op_state->stop_ns = op_state->start_ns;
     op_state->io_bytes = 0;
 
     /* Submit operation to the kernel */
-    printf("/* Submit operation to the kernel */ %d \n", op_config.fd);
     if (op_config.queue_aio_op(aio) == -1) {
         if (errno == EAGAIN) {
             OP_LOG(OP_LOG_WARNING, "AIO queue is full!\n");
@@ -136,10 +135,9 @@ int err = 0;
 }
 
 block_task::block_task()
-    : stat1(generate_default_stat())
-    , stat2(generate_default_stat())
-    , task_stat(&stat1)
-    , at_stat(&stat2)
+    : actual_stat(generate_default_stat())
+    , shared_stat(generate_default_stat())
+    , at_stat(&shared_stat)
     , aio_ops(0)
     , buf(0)
     , read_timestamp(0)
@@ -159,12 +157,13 @@ block_task::~block_task()
 }
 
 
-size_t block_task::worker_spin(int (*queue_aio_op)(aiocb *aiocb), task_operation_stat_t& op_stat)
+size_t block_task::worker_spin(int (*queue_aio_op)(aiocb *aiocb), size_t block_size, task_operation_stat_t& op_stat, int64_t deadline)
 {
     uint_fast64_t ns_min = UINT64_MAX;
     uint_fast64_t ns_max = 0;
     int32_t total_ops = 0;
     int32_t pending_ops = 0;
+    int32_t queue_depth = (task_config.queue_depth < block_size) ? task_config.queue_depth : block_size;
     auto op_conf = (operation_config){
         task_config.fd,
         task_config.f_size,
@@ -173,8 +172,9 @@ size_t block_task::worker_spin(int (*queue_aio_op)(aiocb *aiocb), task_operation
         pattern.generate(),
         queue_aio_op
     };
-    for (int32_t i = 0; i < task_config.queue_depth; ++i) {
+    for (int32_t i = 0; i < queue_depth; ++i) {
         auto aio_op = &aio_ops[i];
+        op_conf.block_size = block_size / queue_depth + ((i < int32_t(block_size % queue_depth)) ? 1 : 0);
         if (submit_aio_op(op_conf, aio_op) == 0) {
             pending_ops++;
         } else if (aio_op->state == FAILED) {
@@ -187,7 +187,7 @@ size_t block_task::worker_spin(int (*queue_aio_op)(aiocb *aiocb), task_operation
         }
     }
     while (pending_ops) {
-        if (wait_for_aio_ops(aio_ops, task_config.queue_depth) != 0) {
+        if (wait_for_aio_ops(aio_ops, queue_depth) != 0) {
             /*
              * Eek!  Waiting failed, so cancel pending operations.
              * The aio_cancel function only has two documented failure modes:
@@ -203,7 +203,7 @@ size_t block_task::worker_spin(int (*queue_aio_op)(aiocb *aiocb), task_operation
          * Find the completed op and fire off another one to
          * take it's place.
          */
-        for (int32_t i = 0; i < task_config.queue_depth; ++i) {
+        for (int32_t i = 0; i < queue_depth; ++i) {
             auto aio_op = &aio_ops[i];
             if (complete_aio_op(aio_op) == 0) {
                 /* found it; update stats */
@@ -236,8 +236,9 @@ size_t block_task::worker_spin(int (*queue_aio_op)(aiocb *aiocb), task_operation
                 }
 
                 /* if we haven't hit our total or deadline, then fire off another op */
-                if ((total_ops + pending_ops) >= task_config.queue_depth
-                    //|| icp_timestamp_now() >= deadline
+                op_conf.block_size = block_size / queue_depth + ((i < int32_t(block_size % queue_depth)) ? 1 : 0);
+                if ((total_ops + pending_ops) >= queue_depth
+                    || now() >= deadline
                     || submit_aio_op(op_conf, aio_op) != 0) {
                     // if any condition is true, we have one less pending op
                     pending_ops--;
@@ -298,7 +299,7 @@ void block_task::spin()
 {
     if (reset_stat.load()) {
         reset_stat = false;
-        *task_stat = generate_default_stat();
+        actual_stat = generate_default_stat();
         start_timestamp = now();
     }
 
@@ -310,25 +311,31 @@ void block_task::spin()
     size_t nb_ops;
     auto cur_time = now();
     if (read_timestamp < write_timestamp) {
-        nb_ops = worker_spin(aio_read, task_stat->read);
         read_timestamp += std::nano::den / task_config.reads_per_sec;
-        task_stat->read.ops_target = (cur_time - start_timestamp) * task_config.reads_per_sec / std::nano::den;
-        task_stat->read.bytes_target = task_stat->read.ops_target * task_config.read_size;
+        if (task_config.read_size > 0) {
+            nb_ops = worker_spin(aio_read, task_config.read_size, actual_stat.read, now() + std::nano::den);
+            auto cicles = (cur_time - start_timestamp) * task_config.reads_per_sec / std::nano::den + 1;
+            actual_stat.read.ops_target = cicles * task_config.queue_depth;
+            actual_stat.read.bytes_target = cicles * task_config.read_size;
+        }
     } else {
-        nb_ops = worker_spin(aio_write, task_stat->write);
         write_timestamp += std::nano::den / task_config.writes_per_sec;
-        task_stat->write.ops_target = (cur_time - start_timestamp) * task_config.writes_per_sec / std::nano::den;
-        task_stat->write.bytes_target = task_stat->write.ops_target * task_config.write_size;
+        if (task_config.write_size > 0) {
+            nb_ops = worker_spin(aio_write, task_config.write_size, actual_stat.write, now() + std::nano::den);
+            auto cicles = (cur_time - start_timestamp) * task_config.writes_per_sec / std::nano::den + 1;
+            actual_stat.write.ops_target = cicles * task_config.queue_depth;
+            actual_stat.write.bytes_target = cicles * task_config.write_size;
+        }
     }
+    actual_stat.updated = realtime::now();
 
     if (reset_stat.load()) {
         reset_stat = false;
-        *task_stat = generate_default_stat();
+        actual_stat = generate_default_stat();
+        start_timestamp = now();
     }
-    task_stat = at_stat.exchange(task_stat);
-    *task_stat = *at_stat.load();
 
-
+    *at_stat = actual_stat;
 }
 
 } // namespace openperf::block::worker
