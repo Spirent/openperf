@@ -495,7 +495,7 @@ void handler::bulk_stop_generators(const Rest::Request& request,
 void handler::list_generator_results(const Rest::Request&,
                               Http::ResponseWriter response)
 {
-    json api_request = {{"type", api::request_type::LIST_GENERATORS}};
+    json api_request = {{"type", api::request_type::LIST_GENERATOR_RESULTS}};
 
     json api_reply = submit_request(m_socket.get(), api_request);
 
@@ -517,7 +517,7 @@ void handler::get_generator_result(const Rest::Request& request,
         return;
     }
 
-    json api_request = {{"type", api::request_type::GET_GENERATOR}, {"id", id}};
+    json api_request = {{"type", api::request_type::GET_GENERATOR_RESULT}, {"id", id}};
 
     json api_reply = submit_request(m_socket.get(), api_request);
 
@@ -545,7 +545,7 @@ void handler::delete_generator_result(const Rest::Request& request,
         return;
     }
 
-    json api_request = {{"type", api::request_type::DELETE_GENERATOR},
+    json api_request = {{"type", api::request_type::DELETE_GENERATOR_RESULT},
                         {"id", id}};
 
     json api_reply = submit_request(m_socket.get(), api_request);

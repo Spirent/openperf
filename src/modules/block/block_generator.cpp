@@ -84,9 +84,7 @@ void block_generator::set_running(bool value)
     model::block_generator::set_running(value);
 }
 
-
-
-block_result_ptr block_generator::stat()
+block_result_ptr block_generator::get_statistics() const
 {
     auto worker_stat = blkworker->stat();
 
@@ -112,7 +110,7 @@ block_result_ptr block_generator::stat()
     return gen_stat;
 }
 
-void block_generator::clear_stat()
+void block_generator::clear_statistics()
 {
     blkworker->clear_stat();
 }

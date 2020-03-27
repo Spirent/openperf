@@ -295,6 +295,39 @@ void server::handle_bulk_stop_generators_request(json& request, json& reply)
     }
 }
 
+void server::handle_list_generator_results_request(json& reply)
+{
+    json jints = json::array();
+
+    for (auto& blkgenerator : blk_generator_stack->block_generators_list())
+        jints.emplace_back(make_swagger(*blkgenerator->get_statistics())->toJson());
+
+    reply["code"] = reply_code::OK;
+    reply["data"] = jints.dump();
+}
+
+void server::handle_get_generator_result_request(json& request, json& reply)
+{
+    auto blkgenerator = blk_generator_stack->get_block_generator(request["id"]);
+
+    if (blkgenerator == nullptr) {
+        reply["code"] = reply_code::NO_GENERATOR;
+    } else {
+        reply["code"] = reply_code::OK;
+        reply["data"] = make_swagger(*blkgenerator->get_statistics())->toJson().dump();
+    }
+}
+
+void server::handle_delete_generator_result_request(json& request, json& reply)
+{
+    auto blkgenerator = blk_generator_stack->get_block_generator(request["id"]);
+
+    if (blkgenerator != nullptr) {
+        blkgenerator->clear_statistics();
+        reply["code"] = reply_code::OK;
+    }
+}
+
 int server::handle_request(const op_event_data* data)
 {
     int recv_or_err = 0;
@@ -364,11 +397,14 @@ int server::handle_request(const op_event_data* data)
             handle_bulk_stop_generators_request(request, reply);
             break;
         case request_type::LIST_GENERATOR_RESULTS:
-            handle_list_generators_request(reply);
+            handle_list_generator_results_request(reply);
+            break;
         case request_type::GET_GENERATOR_RESULT:
-            handle_get_generator_request(request, reply);
+            handle_get_generator_result_request(request, reply);
+            break;
         case request_type::DELETE_GENERATOR_RESULT:
-            handle_delete_generator_request(request, reply);
+            handle_delete_generator_result_request(request, reply);
+            break;
         default:
             reply["code"] = reply_code::ERROR;
             reply["error"] = json_error(
