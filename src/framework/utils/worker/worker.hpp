@@ -66,6 +66,7 @@ public:
     inline typename T::config_t config() const { return _task->config(); }
     inline typename T::stat_t stat() const { return _task->stat(); };
 
+    inline void clear_stat() { _task->clear_stat(); }
     void config(const typename T::config_t&);
 
 private:
