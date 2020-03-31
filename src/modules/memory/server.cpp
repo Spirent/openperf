@@ -5,7 +5,7 @@
 #include "swagger/v1/model/MemoryGenerator.h"
 #include "swagger/v1/model/MemoryGeneratorConfig.h"
 #include "memory/generator_config.hpp"
-#include "memory/generator_config_converters.hpp"
+#include "memory/swagger_converters.hpp"
 
 namespace openperf::memory::api {
 
@@ -94,7 +94,6 @@ int server::handle_rpc_request(const op_event_data* data)
                    "Sent %s reply\n",
                    //"Sent %s reply to %s request\n",
                    to_string(reply["code"].get<reply_code>()).c_str());
-            // to_string(type).c_str());
         }
     }
 
@@ -170,12 +169,14 @@ json server::list_generators()
 {
     json jdata = json::array();
 
-    for (const auto& kv_pair : generator_stack->list()) {
+    for (auto& id : generator_stack->ids()) {
+        auto cfg = generator_stack->config(id);
+
         model::MemoryGenerator model;
-        model.setId(kv_pair.first);
-        model.setRunning(kv_pair.second.is_running());
+        model.setId(id);
+        model.setRunning(cfg.is_running());
         model.setConfig(std::make_shared<model::MemoryGeneratorConfig>(
-            config_to_swagger_model(kv_pair.second)));
+            to_swagger(cfg)));
 
         jdata.emplace_back(model.toJson());
     }
@@ -188,26 +189,28 @@ json server::create_generator(const json& request)
     try {
         auto json_object = json::parse(request["data"].get<std::string>());
 
-        model::MemoryGenerator generator_model;
-        generator_model.fromJson(json_object);
+        model::MemoryGenerator model;
+        model.fromJson(json_object);
 
-        generator_config config = swagger_model_to_config([&json_object]() {
-            model::MemoryGeneratorConfig config_model;
-            config_model.fromJson(json_object["config"]);
-            return config_model;
+        generator_config config = from_swagger([&json_object]() {
+            model::MemoryGeneratorConfig c_model;
+            c_model.fromJson(json_object["config"]);
+            return c_model;
         }());
 
         try {
-            auto result =
-                generator_stack->create(generator_model.getId(), config);
+            auto id =
+                generator_stack->create(model.getId(), config);
 
-            generator_model.setRunning(result.is_running());
-            generator_model.setConfig(
+            auto result = generator_stack->config(id);
+            model.setRunning(result.is_running());
+            model.setId(id);
+            model.setConfig(
                 std::make_shared<model::MemoryGeneratorConfig>(
-                    config_to_swagger_model(result)));
+                    to_swagger(result)));
 
             return json{{"code", reply_code::OK},
-                        {"data", generator_model.toJson().dump()}};
+                        {"data", model.toJson().dump()}};
         } catch (std::invalid_argument e) {
             throw std::runtime_error(e.what());
         }
@@ -225,13 +228,13 @@ json server::get_generator(const json& request)
     auto id = request["id"].get<std::string>();
 
     if (generator_stack->contains(id)) {
-        const auto& g = generator_stack->get(id);
+        const auto& g = generator_stack->config(id);
 
         model::MemoryGenerator model;
         model.setId(id);
         model.setRunning(g.is_running());
         model.setConfig(std::make_shared<model::MemoryGeneratorConfig>(
-            config_to_swagger_model(g)));
+            to_swagger(g)));
 
         return json{{"code", reply_code::OK}, {"data", model.toJson().dump()}};
     }
@@ -254,7 +257,8 @@ json server::start_generator(const json& request)
 {
     auto id = request["id"];
     if (generator_stack->contains(id)) {
-        generator_stack->start(id);
+        generator_stack->generator(id).resume();
+        generator_stack->generator(id).start();
         return json{"code", reply_code::OK};
     }
 
@@ -265,7 +269,7 @@ json server::stop_generator(const json& request)
 {
     auto id = request["id"];
     if (generator_stack->contains(id)) {
-        generator_stack->stop(id);
+        generator_stack->generator(id).pause();
         return json{"code", reply_code::OK};
     }
 
@@ -279,7 +283,7 @@ json server::bulk_start_generators(const json& request)
     auto failed = json::array();
 
     for (auto& id : ids) {
-        generator_stack->start(id);
+        generator_stack->generator(id).start();
         successed.emplace_back(id);
     }
 
@@ -293,22 +297,73 @@ json server::bulk_stop_generators(const json& request)
     auto failed = json::array();
 
     for (auto& id : ids) {
-        generator_stack->stop(id);
+        generator_stack->generator(id).stop();
         successed.emplace_back(id);
     }
 
     return json{"code", reply_code::NO_GENERATOR};
 }
 
-json server::list_results() { return json{}; }
-
-json server::get_result(const json& /*request*/)
+json server::list_results()
 {
+    json jdata = json::array();
+
+    for (auto& id : generator_stack->ids()) {
+        auto& gen = generator_stack->generator(id);
+
+        model::MemoryGeneratorResult result;
+        result.setId(id);
+        result.setActive(gen.is_running());
+        result.setTimestamp(to_iso8601(
+            std::max(gen.read_stat().timestamp, gen.write_stat().timestamp)));
+        result.setRead(
+            std::make_shared<model::MemoryGeneratorStats>(
+            to_swagger(gen.read_stat())));
+        result.setWrite(
+            std::make_shared<model::MemoryGeneratorStats>(
+            to_swagger(gen.read_stat())));
+
+        jdata.emplace_back(result.toJson());
+    }
+
+    return json{{"code", reply_code::OK}, {"data", jdata.dump()}};
+}
+
+json server::get_result(const json& request)
+{
+    auto id = request["id"].get<std::string>();
+    if (generator_stack->contains(id)) {
+        auto& gen = generator_stack->generator(id);
+
+        model::MemoryGeneratorResult result;
+        result.setId(id);
+        result.setActive(gen.is_running());
+        result.setTimestamp(to_iso8601(
+            std::max(gen.read_stat().timestamp, gen.write_stat().timestamp)));
+        result.setRead(
+            std::make_shared<model::MemoryGeneratorStats>(
+                to_swagger(gen.read_stat())));
+        result.setWrite(
+            std::make_shared<model::MemoryGeneratorStats>(
+                to_swagger(gen.write_stat())));
+
+        return json{
+            {"code", reply_code::OK},
+            {"data", result.toJson().dump()}
+        };
+    }
+
     return json{"code", reply_code::NO_RESULT};
 }
 
-json server::delete_result(const json& /*request*/)
+json server::delete_result(const json& request)
 {
+    auto id = request["id"].get<std::string>();
+    if (generator_stack->contains(id)) {
+        generator_stack->generator(id).clear_stat();
+        return json{"code", reply_code::OK};
+    }
+
     return json{"code", reply_code::NO_RESULT};
 }
 

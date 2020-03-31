@@ -2,7 +2,7 @@
 # Makefile component for Memory Generator module
 #
 
-MEMORY_DEPENDS += swagger_model json versions
+MEMORY_DEPENDS += api framework pistache swagger_model json versions
 
 MEMORY_SOURCES += \
 	init.cpp \

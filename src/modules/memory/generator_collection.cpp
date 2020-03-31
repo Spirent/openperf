@@ -5,11 +5,11 @@
 
 namespace openperf::memory {
 
-generator_configs generator_collection::list() const
+generator_collection::id_list generator_collection::ids() const
 {
-    generator_configs list;
+    id_list list;
     for (const auto& pair : _collection) {
-        list.emplace(pair.first, get(pair.first));
+        list.push_front(pair.first);
     }
 
     return list;
@@ -21,7 +21,7 @@ bool generator_collection::contains(const std::string& id) const
     return _collection.count(id); // Legacy variant
 }
 
-generator_config generator_collection::get(const std::string& id) const
+generator_config generator_collection::config(const std::string& id) const
 {
     auto& g = _collection.at(id);
     return generator_config::create()
@@ -36,12 +36,22 @@ generator_config generator_collection::get(const std::string& id) const
         .running(g.is_running() && !g.is_paused());
 }
 
+const generator& generator_collection::generator(const std::string& id) const
+{
+    return _collection.at(id);
+}
+
+generator& generator_collection::generator(const std::string& id)
+{
+    return _collection.at(id);
+}
+
 void generator_collection::erase(const std::string& id)
 {
     _collection.erase(id);
 }
 
-generator_config generator_collection::create(const std::string& id,
+std::string generator_collection::create(const std::string& id,
                                               const generator_config& config)
 {
     auto id_check = config::op_config_validate_id_string(id);
@@ -55,7 +65,7 @@ generator_config generator_collection::create(const std::string& id,
                                     + "' already exists.");
     }
 
-    generator gen;
+    class generator gen;
     gen.read_workers(config.read_threads());
     gen.read_config(
         task_memory_read::config_t{.buffer_size = config.buffer_size(),
@@ -78,7 +88,7 @@ generator_config generator_collection::create(const std::string& id,
             + "' to collection.");
     }
 
-    return get(new_id);
+    return new_id;
 }
 
 void generator_collection::clear() { _collection.clear(); }
@@ -91,24 +101,12 @@ void generator_collection::start()
     }
 }
 
-void generator_collection::start(const std::string& id)
-{
-    auto& generator = _collection.at(id);
-    generator.resume();
-    generator.start();
-}
-
 void generator_collection::stop()
 {
     for (auto& generator : _collection) {
         generator.second.pause();
         // generator.second.stop();
     }
-}
-
-void generator_collection::stop(const std::string& id)
-{
-    _collection.at(id).pause();
 }
 
 } // namespace openperf::memory

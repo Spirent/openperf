@@ -10,7 +10,7 @@ $(call op_check_vars,$(MEMORY_REQ_VARS))
 MEMORY_SOURCES :=
 MEMORY_INCLUDES :=
 MEMORY_DEPENDS :=
-MEMORY_LIBS :=
+MEMORY_LIBS := -latomic
 
 MEMORY_SRC_DIR := $(OP_ROOT)/src/modules/memory
 MEMORY_OBJ_DIR := $(OP_BUILD_ROOT)/obj/modules/memory

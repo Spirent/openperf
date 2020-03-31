@@ -23,6 +23,46 @@ generator::generator(generator&& g)
 {}
 
 // Methods : public
+memory_stat generator::read_stat() const
+{
+    memory_stat stat;
+    for (auto& ptr : _read_workers) {
+        auto w = reinterpret_cast<worker<task_memory>*>(ptr.get());
+        auto st = w->stat();
+        stat.bytes += st.bytes;
+        stat.bytes_target += st.bytes_target;
+        stat.errors += st.errors;
+        stat.operations += st.operations;
+        stat.operations_target += st.operations_target;
+        stat.time_ns += st.time_ns;
+        stat.latency_min = std::min(stat.latency_min, st.latency_min);
+        stat.latency_max = std::max(stat.latency_max, st.latency_max);
+        stat.timestamp = st.timestamp;
+    }
+
+    return stat;
+}
+
+memory_stat generator::write_stat() const
+{
+    memory_stat stat;
+    for (auto& ptr : _write_workers) {
+        auto w = reinterpret_cast<worker<task_memory>*>(ptr.get());
+        auto st = w->stat();
+        stat.bytes += st.bytes;
+        stat.bytes_target += st.bytes_target;
+        stat.errors += st.errors;
+        stat.operations += st.operations;
+        stat.operations_target += st.operations_target;
+        stat.time_ns += st.time_ns;
+        stat.latency_min = std::min(stat.latency_min, st.latency_min);
+        stat.latency_max = std::max(stat.latency_max, st.latency_max);
+        stat.timestamp = st.timestamp;
+    }
+
+    return stat;
+}
+
 void generator::running(bool running)
 {
     if (running) {
@@ -37,7 +77,7 @@ void generator::start()
 {
     if (!_stopped) return;
 
-    for_each_worker([](auto w) { w->start(); });
+    for_each_worker([](worker_ptr& w) { w->start(); });
     _stopped = false;
 }
 
@@ -45,7 +85,7 @@ void generator::stop()
 {
     if (_stopped) return;
 
-    for_each_worker([](auto w) { w->stop(); });
+    for_each_worker([](worker_ptr& w) { w->stop(); });
     _stopped = false;
 }
 
@@ -59,7 +99,7 @@ void generator::resume()
 {
     if (!_paused) return;
 
-    for_each_worker([](auto w) { w->resume(); });
+    for_each_worker([](worker_ptr& w) { w->resume(); });
     _paused = false;
 }
 
@@ -67,7 +107,7 @@ void generator::pause()
 {
     if (_paused) return;
 
-    for_each_worker([](auto w) { w->pause(); });
+    for_each_worker([](worker_ptr& w) { w->pause(); });
     _paused = true;
 }
 
@@ -135,11 +175,19 @@ void generator::write_config(const task_memory_write::config_t& config)
     }
 }
 
+void generator::clear_stat()
+{
+    for_each_worker([](worker_ptr& w){
+        auto wtm = reinterpret_cast<worker<task_memory>*>(w.get());
+        wtm->clear_stat();
+    });
+}
+
 // Methods : private
-void generator::for_each_worker(void (*callback)(worker_ptr&))
+void generator::for_each_worker(std::function<void(worker_ptr&)> function)
 {
     for (auto list : {&_read_workers, &_write_workers}) {
-        for (auto& worker : *list) { callback(worker); }
+        for (auto& worker : *list) { function(worker); }
     }
 }
 

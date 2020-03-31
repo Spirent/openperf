@@ -61,6 +61,12 @@ task_memory::task_memory()
     //} (10, 64, 8);
 }
 
+void task_memory::clear_stat()
+{
+    _stat.store(memory_stat());
+    _stat_clear = true;
+}
+
 void task_memory::config(const task_memory_config& msg)
 {
     assert(msg.pattern != io_pattern::NONE);
@@ -82,19 +88,6 @@ void task_memory::config(const task_memory_config& msg)
     if (nb_blocks
         && (nb_blocks != _op_index_max || msg.pattern != _config.pattern)) {
 
-        // if (_indexes) {
-        //    op_packed_array_free(&_indexes);
-        //}
-        // assert(!_indexes);
-        //_indexes = op_packed_array_allocate(nb_blocks, nb_blocks);
-        // if (!_indexes) {
-        //    OP_LOG(OP_LOG_ERROR, "Could not allocate %zu element index
-        //    array\n",
-        //            nb_blocks);
-        //    _op_index_min = 0;
-        //    _op_index_max = 0;
-        //    return (-1);
-        //}
         try {
             _indexes.resize(nb_blocks);
         } catch (std::exception e) {
@@ -104,7 +97,6 @@ void task_memory::config(const task_memory_config& msg)
             _op_index_min = 0;
             _op_index_max = 0;
             throw std::exception(e);
-            //return;
         }
 
         _op_index_min = 0;
@@ -119,19 +111,14 @@ void task_memory::config(const task_memory_config& msg)
         /* Fill in the indexes... */
         switch (msg.pattern) {
         case io_pattern::SEQUENTIAL:
-            // op_packed_array_fill(_indexes, _op_index_min, 1);
             fill_vector(_op_index_min, 1);
             break;
         case io_pattern::REVERSE:
-            // op_packed_array_fill(_indexes, _op_index_max - 1,
-            // -1);
             fill_vector(_op_index_max - 1, -1);
             break;
         case io_pattern::RANDOM:
-            // op_packed_array_fill(_indexes, _op_index_min, 1);
             fill_vector(_op_index_min, 1);
             // Shuffle array contents using the Fisher-Yates shuffle algorithm
-            // op_packed_array_shuffle(_indexes);
             for (size_t i = _indexes.size() - 1; i > 0; --i) {
                 auto j = random_uniform(i + 1);
                 auto swap = _indexes[i];
@@ -147,9 +134,6 @@ void task_memory::config(const task_memory_config& msg)
 
         _config.pattern = msg.pattern;
     } else if (!nb_blocks) {
-        // if (_indexes) {
-        //    op_packed_array_free(&_indexes);
-        //}
         _indexes.clear();
         _op_index_min = 0;
         _op_index_max = 0;
@@ -180,9 +164,7 @@ void task_memory::config(const task_memory_config& msg)
                "Reallocating scratch area (%zu --> %zu)\n",
                _scratch_size,
                msg.block_size);
-        // icp_generator_free_scratch_area(&_scratch);
         scratch_free();
-        //_scratch = icp_generator_allocate_scratch_area(msg.block_size);
         scratch_allocate(msg.block_size);
         assert(_scratch_buffer);
         uint32_t seed = random<uint32_t>();
@@ -205,6 +187,8 @@ void task_memory::spin()
 
     static __thread size_t op_index = 0;
     if (op_index >= _op_index_max) { op_index = _op_index_min; }
+
+    stat_t stat = _stat.load();
 
     /*
      * Sleeping is problematic since you can't be sure if or when you'll
@@ -253,9 +237,15 @@ void task_memory::spin()
             std::max(time_ns() - t2, 1lu); /* prevent divide by 0 */
 
         /* Update per thread statistics */
-        _stats.time_ns += run_time;
-        _stats.operations += nb_ops;
-        _stats.bytes += nb_ops * _config.block_size;
+        stat.operations += nb_ops;
+        stat.operations_target += spin_ops;
+        stat.bytes += nb_ops * _config.block_size;
+        stat.bytes_target += spin_ops * _config.block_size;
+        stat.time_ns += run_time;
+        stat.latency_min = std::min(stat.latency_min, run_time);
+        stat.latency_max = std::max(stat.latency_max, run_time);
+        stat.timestamp = time_ns();
+        //stat.errors = 0;
 
         /* Update local counters */
         _total.run_time += run_time;
@@ -275,13 +265,18 @@ void task_memory::spin()
               << ", sleep: " << _total.sleep_time
               << " } " << std::endl;
 
-    std::cout << std::dec << "Stats: { time: " << _stats.time_ns
-              << ", ops: " << _stats.operations
-              << ", bytes: " << _stats.bytes
-              << ", errors: " << _stats.errors
+    std::cout << std::dec << "Stats: { time: " << stat.time_ns
+              << ", ops: " << stat.operations
+              << ", bytes: " << stat.bytes
+              << ", errors: " << stat.errors
+              << ", ts: " << stat.timestamp
               << " } " << std::endl;
               t = time_ns();
     }
+
+    if (!_stat_clear)
+        _stat.store(stat);
+    _stat_clear = false;
 }
 
 void task_memory::scratch_allocate(size_t size)
