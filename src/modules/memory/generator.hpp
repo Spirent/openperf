@@ -48,6 +48,8 @@ public:
     {
         return _write_config;
     }
+    memory_stat read_stat() const;
+    memory_stat write_stat() const;
 
     void resume();
     void pause();
@@ -55,6 +57,7 @@ public:
     void start();
     void stop();
     void restart();
+    void clear_stat();
 
     void running(bool);
     void read_workers(unsigned);
@@ -63,7 +66,7 @@ public:
     void write_config(const task_memory_config&);
 
 private:
-    void for_each_worker(void(worker_ptr&));
+    void for_each_worker(std::function<void(worker_ptr&)>);
 };
 
 } // namespace openperf::memory::internal
