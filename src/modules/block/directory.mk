@@ -1,10 +1,11 @@
 #
-# Makefile component to specify timesync code
+# Makefile component to specify block code
 #
 
 BLOCK_DEPENDS += api expected framework json pistache swagger_model timesync versions
 
 BLOCK_SOURCES += \
+	api_transmogrify.cpp \
 	file_stack.cpp \
 	device_stack.cpp \
 	block_generator.cpp \
