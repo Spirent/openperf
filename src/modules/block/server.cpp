@@ -56,93 +56,6 @@ std::string to_string(reply_code code)
                 : reply_codes.at(code));
 }
 
-void server::handle_list_devices_request(json& reply)
-{
-    json jints = json::array();
-
-    for (const auto& device : blk_device_stack->block_devices_list()) {
-        jints.emplace_back(make_swagger(*device)->toJson());
-    }
-
-    reply["code"] = reply_code::OK;
-    reply["data"] = jints.dump();
-}
-
-void server::handle_get_device_request(json& request, json& reply)
-{
-    auto blkdev = blk_device_stack->get_block_device(request["id"]);
-    if (blkdev)
-        std::cout << blkdev.get() << '\n';
-    else
-        std::cout << "(null)\n";
-    if (blkdev) {
-        reply["code"] = reply_code::OK;
-        reply["data"] = make_swagger(*blkdev)->toJson().dump();
-    } else {
-        reply["code"] = reply_code::NO_DEVICE;
-    }
-}
-
-void server::handle_list_block_files_request(json& reply)
-{
-    json jints = json::array();
-
-    for (auto& blkfile : blk_file_stack->files_list())
-        jints.emplace_back(make_swagger(*blkfile)->toJson());
-
-    reply["code"] = reply_code::OK;
-    reply["data"] = jints.dump();
-}
-
-void server::handle_create_block_file_request(json& request, json& reply)
-{
-    try {
-        auto block_file_model = json::parse(request["data"].get<std::string>());
-        BlockFile block_file;
-        block_file.fromJson(block_file_model);
-
-        if (auto id_check =
-                config::op_config_validate_id_string(block_file.getId());
-            !id_check)
-            throw std::runtime_error(id_check.error().c_str());
-
-        // If user did not specify an id create one for them.
-        if (block_file.getId() == core::empty_id_string) {
-            block_file.setId(core::to_string(core::uuid::random()));
-        }
-
-        auto result = blk_file_stack->create_block_file(*from_swagger(block_file));
-        if (!result) { throw std::runtime_error(result.error()); }
-
-        reply["code"] = reply_code::OK;
-        reply["data"] = make_swagger(*result.value())->toJson().dump();
-    } catch (const std::runtime_error& e) {
-        reply["code"] = reply_code::BAD_INPUT;
-        reply["error"] = json_error(EINVAL, e.what());
-    } catch (const json::exception& e) {
-        reply["code"] = reply_code::BAD_INPUT;
-        reply["error"] = json_error(e.id, e.what());
-    }
-}
-
-void server::handle_get_block_file_request(json& request, json& reply)
-{
-    auto blkfile = blk_file_stack->get_block_file(request["id"]);
-
-    if (blkfile == nullptr) {
-        reply["code"] = reply_code::NO_FILE;
-    } else {
-        reply["code"] = reply_code::OK;
-        reply["data"] = make_swagger(*blkfile)->toJson().dump();
-    }
-}
-
-void server::handle_delete_block_file_request(json& request, json& reply)
-{
-    blk_file_stack->delete_block_file(request["id"]);
-    reply["code"] = reply_code::OK;
-}
-
 void server::handle_list_generators_request(json& reply)
 {
     json jints = json::array();
@@ -328,6 +241,73 @@ void server::handle_delete_generator_result_request(json& request, json& reply)
     }
 }
 
+reply_msg server::handle_request(const request_block_device_list&)
+{
+    auto reply = reply_block_devices{};
+    for (auto device : blk_device_stack->block_devices_list()) {
+        reply.devices.emplace_back(api::to_api_model(*device));
+    }
+    return reply;
+}
+
+reply_msg server::handle_request(const request_block_device& request)
+{
+    auto reply = reply_block_devices{};
+    auto blkdev = blk_device_stack->get_block_device(request.id);
+
+    if (!blkdev) { return to_error(api::error_type::NOT_FOUND); }
+    reply.devices.emplace_back(api::to_api_model(*blkdev));
+
+    return reply;
+}
+
+reply_msg server::handle_request(const request_block_file_list&)
+{
+    auto reply = reply_block_files{};
+    for (auto blkfile : blk_file_stack->files_list()) {
+        reply.files.emplace_back(api::to_api_model(*blkfile));
+    }
+
+    return reply;
+}
+
+reply_msg server::handle_request(const request_block_file& request)
+{
+    auto reply = reply_block_files{};
+    auto blkfile = blk_file_stack->get_block_file(request.id);
+
+    if (!blkfile) { return to_error(api::error_type::NOT_FOUND); }
+    reply.files.emplace_back(api::to_api_model(*blkfile));
+
+    return reply;
+}
+
+reply_msg server::handle_request(const request_block_file_add& request)
+{
+    if (auto id_check =
+            config::op_config_validate_id_string(request.source.id);
+        !id_check)
+        return (to_error(error_type::EAI_ERROR));
+
+    auto block_file_model = api::from_api_model(request.source);
+    // If user did not specify an id create one for them.
+    if (block_file_model->get_id() == core::empty_id_string) {
+        block_file_model->set_id(core::to_string(core::uuid::random()));
+    }
+    auto result = blk_file_stack->create_block_file(*block_file_model);
+    if (!result) { return to_error(error_type::NOT_FOUND); }
+
+    auto reply = reply_block_files{};
+    reply.files.emplace_back(api::to_api_model(*result.value()));
+    return reply;
+}
+
+reply_msg server::handle_request(const request_block_file_del& request)
+{
+    blk_file_stack->delete_block_file(request.id);
+    return reply_ok{};
+}
+
 int server::handle_request(const op_event_data* data)
 {
     int recv_or_err = 0;
@@ -354,24 +334,6 @@ int server::handle_request(const op_event_data* data)
         OP_LOG(OP_LOG_TRACE, "Received %s request\n", to_string(type).c_str());
 
         switch (type) {
-        case request_type::LIST_DEVICES:
-            handle_list_devices_request(reply);
-            break;
-        case request_type::GET_DEVICE:
-            handle_get_device_request(request, reply);
-            break;
-        case request_type::LIST_FILES:
-            handle_list_block_files_request(reply);
-            break;
-        case request_type::CREATE_FILE:
-            handle_create_block_file_request(request, reply);
-            break;
-        case request_type::GET_FILE:
-            handle_get_block_file_request(request, reply);
-            break;
-        case request_type::DELETE_FILE:
-            handle_delete_block_file_request(request, reply);
-            break;
         case request_type::LIST_GENERATORS:
             handle_list_generators_request(reply);
             break;
@@ -431,13 +393,29 @@ int server::handle_request(const op_event_data* data)
 static int _handle_rpc_request(const op_event_data* data, void* arg)
 {
     auto s = reinterpret_cast<server*>(arg);
-    return s->handle_request(data);
+
+    auto reply_errors = 0;
+    while (auto request = recv_message(data->socket, ZMQ_DONTWAIT)
+                              .and_then(deserialize_request)) {
+        auto request_visitor = [&](auto& request) -> reply_msg {
+            return (s->handle_request(request));
+        };
+        auto reply = std::visit(request_visitor, *request);
+        if (send_message(data->socket, serialize_reply(reply)) == -1) {
+            reply_errors++;
+            OP_LOG(
+                OP_LOG_ERROR, "Error sending reply: %s\n", zmq_strerror(errno));
+            continue;
+        }
+    }
+
+    return ((reply_errors || errno == ETERM) ? -1 : 0);
 }
 
 server::server(void* context, openperf::core::event_loop& loop)
     : m_socket(op_socket_get_server(context, ZMQ_REP, endpoint.data()))
-    , blk_device_stack(&device::device_stack::instance())
-    , blk_file_stack(&file::file_stack::instance())
+    , blk_device_stack(&device_stack::instance())
+    , blk_file_stack(&file_stack::instance())
     , blk_generator_stack(std::make_unique<generator::generator_stack>())
 {
     struct op_event_callbacks callbacks = {.on_read = _handle_rpc_request};

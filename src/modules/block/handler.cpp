@@ -74,6 +74,28 @@ public:
                               Http::ResponseWriter response);
 };
 
+enum Http::Code to_code(const api::reply_error& error)
+{
+    switch (error.info.type) {
+    case api::error_type::NOT_FOUND:
+        return (Http::Code::Not_Found);
+    default:
+        return (Http::Code::Internal_Server_Error);
+    }
+}
+
+const char* to_string(const api::reply_error& error)
+{
+    switch (error.info.type) {
+    case api::error_type::NOT_FOUND:
+        return ("");
+    case api::error_type::ZMQ_ERROR:
+        return (zmq_strerror(error.info.value));
+    default:
+        return ("unknown error type");
+    }
+}
+
 json submit_request(void* socket, json& request)
 {
     auto type = request["type"].get<api::request_type>();
@@ -168,18 +190,39 @@ handler::handler(void* context, Rest::Router& router)
                          Rest::Routes::bind(&handler::delete_generator_result, this));
 }
 
+api::reply_msg submit_request(void* socket, const api::request_msg& request)
+{
+    if (auto error = api::send_message(socket, api::serialize_request(request));
+        error != 0) {
+        return (to_error(api::error_type::ZMQ_ERROR, error));
+    }
+    auto reply = api::recv_message(socket).and_then(api::deserialize_reply);
+    if (!reply) {
+        return (to_error(api::error_type::ZMQ_ERROR, reply.error()));
+    }
+
+    return (*reply);
+}
+
 void handler::list_devices(const Rest::Request&, Http::ResponseWriter response)
 {
-    json api_request = {{"type", api::request_type::LIST_DEVICES}};
-
-    json api_reply = submit_request(m_socket.get(), api_request);
-
-    response.headers().add<Http::Header::ContentType>(MIME(Application, Json));
-    if (api_reply["code"].get<api::reply_code>() == api::reply_code::OK) {
-        response.send(Http::Code::Ok, api_reply["data"].get<std::string>());
+    auto api_reply =
+        submit_request(m_socket.get(), api::request_block_device_list{});
+    if (auto reply = std::get_if<api::reply_block_devices>(&api_reply)) {
+        response.headers().add<Http::Header::ContentType>(
+            MIME(Application, Json));
+        auto devices = json::array();
+        std::transform(std::begin(reply->devices),
+                       std::end(reply->devices),
+                       std::back_inserter(devices),
+                       [](const auto& device) {
+                           return (api::to_swagger(device)->toJson());
+                       });
+        response.send(Http::Code::Ok, devices.dump());
+    } else if (auto error = std::get_if<api::reply_error>(&api_reply)) {
+        response.send(to_code(*error), to_string(*error));
     } else {
-        response.send(Http::Code::Internal_Server_Error,
-                      api_reply["error"].get<std::string>());
+        response.send(Http::Code::Internal_Server_Error);
     }
 }
 
@@ -192,60 +235,68 @@ void handler::get_device(const Rest::Request& request,
         return;
     }
 
-    json api_request = {{"type", api::request_type::GET_DEVICE}, {"id", id}};
-
-    json api_reply = submit_request(m_socket.get(), api_request);
-
-    response.headers().add<Http::Header::ContentType>(MIME(Application, Json));
-    switch (api_reply["code"].get<api::reply_code>()) {
-    case api::reply_code::OK:
-        response.send(Http::Code::Ok, api_reply["data"].get<std::string>());
-        break;
-    case api::reply_code::NO_DEVICE:
-        response.send(Http::Code::Not_Found);
-        break;
-    default:
-        response.send(Http::Code::Internal_Server_Error,
-                      api_reply["error"].get<std::string>());
+    auto api_reply =
+        submit_request(m_socket.get(), api::request_block_device{id: id});
+    if (auto reply = std::get_if<api::reply_block_devices>(&api_reply)) {
+        response.headers().add<Http::Header::ContentType>(
+            MIME(Application, Json));
+        response.send(Http::Code::Ok, api::to_swagger(reply->devices.at(0))->toJson().dump());
+    } else if (auto error = std::get_if<api::reply_error>(&api_reply)) {
+        response.send(to_code(*error), to_string(*error));
+    } else {
+        response.send(Http::Code::Internal_Server_Error);
     }
 }
 
 void handler::list_files(const Rest::Request&, Http::ResponseWriter response)
 {
-    json api_request = {{"type", api::request_type::LIST_FILES}};
-
-    json api_reply = submit_request(m_socket.get(), api_request);
-
-    response.headers().add<Http::Header::ContentType>(MIME(Application, Json));
-    if (api_reply["code"].get<api::reply_code>() == api::reply_code::OK) {
-        response.send(Http::Code::Ok, api_reply["data"].get<std::string>());
+    auto api_reply =
+        submit_request(m_socket.get(), api::request_block_file_list{});
+    if (auto reply = std::get_if<api::reply_block_files>(&api_reply)) {
+        response.headers().add<Http::Header::ContentType>(
+            MIME(Application, Json));
+        auto files = json::array();
+        std::transform(std::begin(reply->files),
+                       std::end(reply->files),
+                       std::back_inserter(files),
+                       [](const auto& blkfile) {
+                           return (api::to_swagger(blkfile)->toJson());
+                       });
+        response.send(Http::Code::Ok, files.dump());
+    } else if (auto error = std::get_if<api::reply_error>(&api_reply)) {
+        response.send(to_code(*error), to_string(*error));
     } else {
-        response.send(Http::Code::Internal_Server_Error,
-                      api_reply["error"].get<std::string>());
+        response.send(Http::Code::Internal_Server_Error);
     }
 }
 
 void handler::create_file(const Rest::Request& request,
                           Http::ResponseWriter response)
 {
-    json api_request = {{"type", api::request_type::CREATE_FILE},
-                        {"data", request.body()}};
+    try {
+        auto file_json = json::parse(request.body());
+        BlockFile file_model;
+        file_model.fromJson(file_json);
 
-    json api_reply = submit_request(m_socket.get(), api_request);
-
-    response.headers().add<Http::Header::ContentType>(MIME(Application, Json));
-
-    switch (api_reply["code"].get<api::reply_code>()) {
-    case api::reply_code::OK:
-        response.send(Http::Code::Ok, api_reply["data"].get<std::string>());
-        break;
-    case api::reply_code::BAD_INPUT:
-        response.send(Http::Code::Bad_Request,
-                      api_reply["error"].get<std::string>());
-        break;
-    default:
-        response.send(Http::Code::Internal_Server_Error,
-                      api_reply["error"].get<std::string>());
+        auto api_reply =
+            submit_request(m_socket.get(), api::request_block_file_add{api::from_swagger(file_model)});
+        if (auto reply = std::get_if<api::reply_block_files>(&api_reply)) {
+            assert(!reply->files.empty());
+            response.headers().add<Http::Header::ContentType>(
+                MIME(Application, Json));
+            response.send(Http::Code::Ok,
+                          to_swagger(reply->files.front())->toJson().dump());
+        } else if (auto error = std::get_if<api::reply_error>(&api_reply)) {
+            response.send(to_code(*error), to_string(*error));
+        } else {
+            response.send(Http::Code::Internal_Server_Error);
+        }
+    } catch (const json::exception& e) {
+        response.headers().add<Http::Header::ContentType>(
+            MIME(Application, Json));
+        response.send(
+            Http::Code::Bad_Request,
+            nlohmann::json({{"code", e.id}, {"message", e.what()}}).dump());
     }
 }
 
@@ -258,22 +309,16 @@ void handler::get_file(const Rest::Request& request,
         return;
     }
 
-    json api_request = {{"type", api::request_type::GET_FILE}, {"id", id}};
-
-    json api_reply = submit_request(m_socket.get(), api_request);
-
-    response.headers().add<Http::Header::ContentType>(MIME(Application, Json));
-
-    switch (api_reply["code"].get<api::reply_code>()) {
-    case api::reply_code::OK:
-        response.send(Http::Code::Ok, api_reply["data"].get<std::string>());
-        break;
-    case api::reply_code::NO_FILE:
-        response.send(Http::Code::Not_Found);
-        break;
-    default:
-        response.send(Http::Code::Internal_Server_Error,
-                      api_reply["error"].get<std::string>());
+    auto api_reply =
+        submit_request(m_socket.get(), api::request_block_file{id: id});
+    if (auto reply = std::get_if<api::reply_block_files>(&api_reply)) {
+        response.headers().add<Http::Header::ContentType>(
+            MIME(Application, Json));
+        response.send(Http::Code::Ok, api::to_swagger(reply->files.front())->toJson().dump());
+    } else if (auto error = std::get_if<api::reply_error>(&api_reply)) {
+        response.send(to_code(*error), to_string(*error));
+    } else {
+        response.send(Http::Code::Internal_Server_Error);
     }
 }
 
@@ -286,17 +331,11 @@ void handler::delete_file(const Rest::Request& request,
         return;
     }
 
-    json api_request = {{"type", api::request_type::DELETE_FILE}, {"id", id}};
-
-    json api_reply = submit_request(m_socket.get(), api_request);
-
-    response.headers().add<Http::Header::ContentType>(MIME(Application, Json));
-    if (api_reply["code"].get<api::reply_code>() == api::reply_code::OK) {
-        response.send(Http::Code::No_Content);
-    } else {
-        response.send(Http::Code::Internal_Server_Error,
-                      api_reply["error"].get<std::string>());
-    }
+    auto api_reply =
+        submit_request(m_socket.get(), api::request_block_file_del{id: id});
+    response.headers().add<Http::Header::ContentType>(
+        MIME(Application, Json));
+    response.send(Http::Code::No_Content);
 }
 
 void handler::list_generators(const Rest::Request&,
