@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <atomic>
 #include <vector>
+#include <limits>
 
 #include "utils/worker/task.hpp"
 #include "memory/io_pattern.hpp"
@@ -18,27 +19,29 @@ struct task_memory_config
     io_pattern pattern;
 };
 
-class task_memory : public openperf::utils::worker::task<task_memory_config>
+struct memory_stat
+{
+    uint64_t operations = 0; //< The number of operations performed
+    uint64_t operations_target = 0;
+    uint64_t bytes = 0; //< The number of bytes read or written
+    uint64_t bytes_target = 0;
+    uint64_t errors = 0; //< The number of errors during reading or writing
+    uint64_t time_ns = 0; //< The number of ns required for the operations
+    uint64_t latency_max = 0;
+    uint64_t latency_min = std::numeric_limits<uint64_t>::max();
+    uint64_t timestamp = 0;
+};
+
+class task_memory :
+    public openperf::utils::worker::task<task_memory_config, memory_stat>
 {
 protected:
     task_memory_config _config;
     uint64_t _cache_size = 16;
     uint8_t* _buffer;
-    // struct op_packed_array *indexes;
     std::vector<unsigned> _indexes;
     size_t _op_index_min;
     size_t _op_index_max;
-    // io_pattern _pattern;
-    // size_t _block_size;
-    // size_t _op_per_sec;
-    // size_t _buffer_size;
-
-    // struct
-    //{
-    //    size_t op_block_size;
-    //    size_t op_per_sec;
-    //    enum io_pattern pattern;
-    //}
 
     void* _scratch_buffer;
     size_t _scratch_size;
@@ -51,28 +54,18 @@ protected:
         double avg_rate = 100000000;
     } _total;
 
-    /**
-     * Structure describing the statistics collected from worker threads
-     */
-    struct stats
-    {
-        std::atomic_uint_fast64_t
-            time_ns = 0; /**< The number of ns required for the operations */
-        std::atomic_uint_fast64_t
-            operations = 0; /**< The number of operations performed */
-        std::atomic_uint_fast64_t
-            bytes = 0; /**< The number of bytes read or written */
-        std::atomic_uint_fast64_t
-            errors = 0; /**< The number of errors during reading or writing */
-    } _stats;
+    std::atomic<stat_t> _stat;
+    std::atomic_bool _stat_clear;
 
 public:
     task_memory();
 
     void spin() override;
-    void config(const task_memory_config&) override;
+    void config(const config_t&) override;
+    void clear_stat() override;
 
-    task_memory_config config() const override { return _config; }
+    inline config_t config() const override { return _config; }
+    inline stat_t stat() const override { return _stat.load(); }
 
 protected:
     virtual size_t operation(uint64_t nb_ops, size_t* op_idx) = 0;
