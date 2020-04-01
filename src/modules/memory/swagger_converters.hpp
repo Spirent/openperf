@@ -14,7 +14,7 @@ namespace openperf::memory {
 namespace swagger = ::swagger::v1::model;
 
 namespace {
-io_pattern from_string(const std::string& str)
+io_pattern from_string(std::string_view str)
 {
     if (str == "random") return io_pattern::RANDOM;
     if (str == "sequential") return io_pattern::SEQUENTIAL;
@@ -50,8 +50,7 @@ generator_config from_swagger(const model::MemoryGeneratorConfig& m)
         .pattern(from_string(m.getPattern()));
 }
 
-swagger::MemoryGeneratorConfig
-to_swagger(const generator_config& config)
+swagger::MemoryGeneratorConfig to_swagger(const generator_config& config)
 {
     swagger::MemoryGeneratorConfig model;
     model.setBufferSize(config.buffer_size());
@@ -66,8 +65,7 @@ to_swagger(const generator_config& config)
     return model;
 }
 
-swagger::MemoryGeneratorStats
-to_swagger(const memory_stat& stat)
+swagger::MemoryGeneratorStats to_swagger(const memory_stat& stat)
 {
     swagger::MemoryGeneratorStats model;
     model.setBytesActual(stat.bytes);
