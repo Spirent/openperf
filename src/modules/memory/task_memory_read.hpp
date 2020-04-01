@@ -7,6 +7,9 @@ namespace openperf::memory::internal {
 
 class task_memory_read : public openperf::memory::internal::task_memory
 {
+public:
+    using task_memory::task_memory;
+
 private:
     size_t operation(uint64_t nb_ops, size_t* op_idx) override;
 };
