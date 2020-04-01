@@ -177,7 +177,7 @@ void generator::write_config(const task_memory_write::config_t& config)
 
 void generator::clear_stat()
 {
-    for_each_worker([](worker_ptr& w){
+    for_each_worker([](worker_ptr& w) {
         auto wtm = reinterpret_cast<worker<task_memory>*>(w.get());
         wtm->clear_stat();
     });
