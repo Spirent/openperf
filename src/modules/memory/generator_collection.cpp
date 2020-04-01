@@ -8,9 +8,7 @@ namespace openperf::memory {
 generator_collection::id_list generator_collection::ids() const
 {
     id_list list;
-    for (const auto& pair : _collection) {
-        list.push_front(pair.first);
-    }
+    for (const auto& pair : _collection) { list.push_front(pair.first); }
 
     return list;
 }
@@ -52,7 +50,7 @@ void generator_collection::erase(const std::string& id)
 }
 
 std::string generator_collection::create(const std::string& id,
-                                              const generator_config& config)
+                                         const generator_config& config)
 {
     auto id_check = config::op_config_validate_id_string(id);
     if (!id_check) { throw std::invalid_argument(id_check.error().c_str()); }

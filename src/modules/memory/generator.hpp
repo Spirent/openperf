@@ -15,8 +15,8 @@ using namespace openperf::utils::worker;
 class generator
 {
 private:
-    typedef std::unique_ptr<workable> worker_ptr;
-    typedef std::forward_list<worker_ptr> workers;
+    using worker_ptr = std::unique_ptr<workable>;
+    using workers = std::forward_list<worker_ptr>;
 
 private:
     unsigned _read_threads;

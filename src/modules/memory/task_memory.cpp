@@ -45,7 +45,7 @@ void op_generator_sleep_until(uint64_t wake_time)
 
 // Constructors & Destructor
 task_memory::task_memory()
-    : _config{ .pattern = io_pattern::NONE }
+    : _config{.pattern = io_pattern::NONE}
     , _buffer(nullptr)
     , _op_index_min(0)
     , _op_index_max(0)
@@ -228,7 +228,8 @@ void task_memory::spin()
      */
     uint64_t deadline = time_ns() + (QUANTA_MS * MS_TO_NS);
     uint64_t t2;
-    //std::cout << std::dec << "tdo: " << to_do_ops << ", deadline: " << deadline
+    // std::cout << std::dec << "tdo: " << to_do_ops << ", deadline: " <<
+    // deadline
     //          << ", to_sleep: " << ns_to_sleep << std::endl;
     while (to_do_ops && (t2 = time_ns()) < deadline) {
         size_t spin_ops = std::min(MAX_SPIN_OPS, to_do_ops);
@@ -245,7 +246,7 @@ void task_memory::spin()
         stat.latency_min = std::min(stat.latency_min, run_time);
         stat.latency_max = std::max(stat.latency_max, run_time);
         stat.timestamp = time_ns();
-        //stat.errors = 0;
+        // stat.errors = 0;
 
         /* Update local counters */
         _total.run_time += run_time;
@@ -258,24 +259,20 @@ void task_memory::spin()
     }
 
     static auto t = time_ns();
-    if (time_ns() - t > 1000 * MS_TO_NS ) {
-    std::cout << std::dec << "Total: { Ops: " << _total.operations
-              << ", runtime: " << _total.run_time
-              << ", avg: " << _total.avg_rate
-              << ", sleep: " << _total.sleep_time
-              << " } " << std::endl;
+    if (time_ns() - t > 1000 * MS_TO_NS) {
+        std::cout << std::dec << "Total: { Ops: " << _total.operations
+                  << ", runtime: " << _total.run_time
+                  << ", avg: " << _total.avg_rate
+                  << ", sleep: " << _total.sleep_time << " } " << std::endl;
 
-    std::cout << std::dec << "Stats: { time: " << stat.time_ns
-              << ", ops: " << stat.operations
-              << ", bytes: " << stat.bytes
-              << ", errors: " << stat.errors
-              << ", ts: " << stat.timestamp
-              << " } " << std::endl;
-              t = time_ns();
+        std::cout << std::dec << "Stats: { time: " << stat.time_ns
+                  << ", ops: " << stat.operations << ", bytes: " << stat.bytes
+                  << ", errors: " << stat.errors << ", ts: " << stat.timestamp
+                  << " } " << std::endl;
+        t = time_ns();
     }
 
-    if (!_stat_clear)
-        _stat.store(stat);
+    if (!_stat_clear) _stat.store(stat);
     _stat_clear = false;
 }
 

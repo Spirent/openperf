@@ -24,8 +24,7 @@ public:
 
     void clear();
     void erase(const std::string& id);
-    std::string create(const std::string& id,
-                            const generator_config& config);
+    std::string create(const std::string& id, const generator_config& config);
 
     class generator& generator(const std::string& id);
     const class generator& generator(const std::string& id) const;

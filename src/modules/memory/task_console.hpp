@@ -13,8 +13,8 @@ private:
     std::string _msg;
 
 public:
-    task_console() {}
-    task_console(const std::string& msg)
+    task_console() = default;
+    explicit task_console(std::string_view msg)
         : _msg(msg)
     {}
 

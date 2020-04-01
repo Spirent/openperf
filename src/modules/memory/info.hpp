@@ -10,10 +10,9 @@ namespace model = swagger::v1::model;
 class memory_info
 {
 public:
-    static model::MemoryInfoResult get();
+    memory_info() = delete;
 
-private:
-    memory_info() {}
+    static model::MemoryInfoResult get();
 };
 
 } // namespace openperf::memory
