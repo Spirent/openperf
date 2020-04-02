@@ -14,17 +14,19 @@ Configuration and management of network ports and interfaces is defined in this
 ## Dependencies
 
 OpenPerf is written in modern C/C++, e.g. C11 and C++17. The build process is
-handled via `make` and uses [clang](https://clang.llvm.org) by default.  OpenPerf
-also depends on some 3rd party components:
+handled via `make` and uses [clang](https://clang.llvm.org) by default.  Some
+high performance library code is compiled by [ispc](https://ispc.github.io).
 
-* [DPDK](https://www.dpdk.org) - used for network drivers and packet buffers
-* [expected](https://github.com/TartanLlama/expected) - a std::expected implementation
-* [json](https://github.com/nlohmann/json) - a modern JSON library for C++
+OpenPerf also depends on some 3rd party components:
+
 * [ZeroMQ](http://zeromq.org) - a distributed messaging library
+* [DPDK](https://www.dpdk.org) - used for network drivers and packet buffers
 * [lwip](https://savannah.nongnu.org/projects/lwip/) - a lightweight IP stack
 * [pistache](http://pistache.io) - a C++ REST framework with [Swagger](https://swagger.io)
   support
+* [json](https://github.com/nlohmann/json) - a modern JSON library for C++
 * [yaml-cpp](https://github.com/jbeder/yaml-cpp) - a YAML parser and emitter in C++ matching the YAML 1.2 spec.
+* [expected](https://github.com/TartanLlama/expected) - a std::expected implementation
 * [immer](https://sinusoid.es/immer/index.html) - a library of persistent and immutable data structures written in C++.
 
 Unit tests are written with [catch2](https://github.com/catchorg/Catch2), a modern C++
@@ -72,5 +74,5 @@ used with any program via the LD_PRELOAD environment variable.  Consult the
 [getting started guide](doc/GETTING_STARTED.md) for example usage.
 
 Additionally, users can create their own modules to link directly into the OpenPerf
-binary to allow direct access to the packetio and socket module. For more information, 
+binary to allow direct access to the packetio and socket module. For more information,
 refer to the [developer guide](doc/dev-guide/).
