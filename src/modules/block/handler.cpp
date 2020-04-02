@@ -84,54 +84,6 @@ enum Http::Code to_code(const api::reply_error& error)
     }
 }
 
-const char* to_string(const api::reply_error& error)
-{
-    switch (error.info.type) {
-    case api::error_type::NOT_FOUND:
-        return ("");
-    case api::error_type::ZMQ_ERROR:
-        return (zmq_strerror(error.info.value));
-    default:
-        return ("unknown error type");
-    }
-}
-
-json submit_request(void* socket, json& request)
-{
-    auto type = request["type"].get<api::request_type>();
-    switch (type) {
-    case api::request_type::LIST_DEVICES:
-        OP_LOG(OP_LOG_TRACE,
-               "Sending %s request for interface %s\n",
-               to_string(type).c_str(),
-               request["id"].get<std::string>().c_str());
-        break;
-    default:
-        OP_LOG(OP_LOG_TRACE, "Sending %s request\n", to_string(type).c_str());
-    }
-
-    std::vector<uint8_t> request_buffer = json::to_cbor(request);
-    zmq_msg_t reply_msg;
-    if (zmq_msg_init(&reply_msg) == -1
-        || zmq_send(socket, request_buffer.data(), request_buffer.size(), 0)
-               != static_cast<int>(request_buffer.size())
-        || zmq_msg_recv(&reply_msg, socket, 0) == -1) {
-        return {{"code", api::reply_code::ERROR},
-                {"error", api::json_error(errno, zmq_strerror(errno))}};
-    }
-
-    OP_LOG(OP_LOG_TRACE, "Received %s reply\n", to_string(type).c_str());
-
-    std::vector<uint8_t> reply_buffer(
-        static_cast<uint8_t*>(zmq_msg_data(&reply_msg)),
-        static_cast<uint8_t*>(zmq_msg_data(&reply_msg))
-            + zmq_msg_size(&reply_msg));
-
-    zmq_msg_close(&reply_msg);
-
-    return json::from_cbor(reply_buffer);
-}
-
 handler::handler(void* context, Rest::Router& router)
     : m_socket(op_socket_get_client(context, ZMQ_REQ, api::endpoint.data()))
 {
@@ -200,7 +152,6 @@ api::reply_msg submit_request(void* socket, const api::request_msg& request)
     if (!reply) {
         return (to_error(api::error_type::ZMQ_ERROR, reply.error()));
     }
-
     return (*reply);
 }
 
@@ -220,7 +171,7 @@ void handler::list_devices(const Rest::Request&, Http::ResponseWriter response)
                        });
         response.send(Http::Code::Ok, devices.dump());
     } else if (auto error = std::get_if<api::reply_error>(&api_reply)) {
-        response.send(to_code(*error), to_string(*error));
+        response.send(to_code(*error), api::to_string(error->info));
     } else {
         response.send(Http::Code::Internal_Server_Error);
     }
@@ -242,7 +193,7 @@ void handler::get_device(const Rest::Request& request,
             MIME(Application, Json));
         response.send(Http::Code::Ok, api::to_swagger(reply->devices.at(0))->toJson().dump());
     } else if (auto error = std::get_if<api::reply_error>(&api_reply)) {
-        response.send(to_code(*error), to_string(*error));
+        response.send(to_code(*error), api::to_string(error->info));
     } else {
         response.send(Http::Code::Internal_Server_Error);
     }
@@ -264,7 +215,7 @@ void handler::list_files(const Rest::Request&, Http::ResponseWriter response)
                        });
         response.send(Http::Code::Ok, files.dump());
     } else if (auto error = std::get_if<api::reply_error>(&api_reply)) {
-        response.send(to_code(*error), to_string(*error));
+        response.send(to_code(*error), api::to_string(error->info));
     } else {
         response.send(Http::Code::Internal_Server_Error);
     }
@@ -287,7 +238,7 @@ void handler::create_file(const Rest::Request& request,
             response.send(Http::Code::Ok,
                           to_swagger(reply->files.front())->toJson().dump());
         } else if (auto error = std::get_if<api::reply_error>(&api_reply)) {
-            response.send(to_code(*error), to_string(*error));
+            response.send(to_code(*error), api::to_string(error->info));
         } else {
             response.send(Http::Code::Internal_Server_Error);
         }
@@ -316,7 +267,7 @@ void handler::get_file(const Rest::Request& request,
             MIME(Application, Json));
         response.send(Http::Code::Ok, api::to_swagger(reply->files.front())->toJson().dump());
     } else if (auto error = std::get_if<api::reply_error>(&api_reply)) {
-        response.send(to_code(*error), to_string(*error));
+        response.send(to_code(*error), api::to_string(error->info));
     } else {
         response.send(Http::Code::Internal_Server_Error);
     }
@@ -327,7 +278,7 @@ void handler::delete_file(const Rest::Request& request,
 {
     auto id = request.param(":id").as<std::string>();
     if (auto res = openperf::config::op_config_validate_id_string(id); !res) {
-        response.send(Http::Code::Not_Found, res.error());
+        response.send(Http::Code::No_Content);
         return;
     }
 
@@ -341,40 +292,56 @@ void handler::delete_file(const Rest::Request& request,
 void handler::list_generators(const Rest::Request&,
                               Http::ResponseWriter response)
 {
-    json api_request = {{"type", api::request_type::LIST_GENERATORS}};
-
-    json api_reply = submit_request(m_socket.get(), api_request);
-
-    response.headers().add<Http::Header::ContentType>(MIME(Application, Json));
-    if (api_reply["code"].get<api::reply_code>() == api::reply_code::OK) {
-        response.send(Http::Code::Ok, api_reply["data"].get<std::string>());
+    auto api_reply =
+        submit_request(m_socket.get(), api::request_block_generator_list{});
+    if (auto reply = std::get_if<api::reply_block_generators>(&api_reply)) {
+        response.headers().add<Http::Header::ContentType>(
+            MIME(Application, Json));
+        auto generators = json::array();
+        std::transform(std::begin(reply->generators),
+                       std::end(reply->generators),
+                       std::back_inserter(generators),
+                       [](const auto& blkgenerator) {
+                           return (api::to_swagger(blkgenerator)->toJson());
+                       });
+        response.send(Http::Code::Ok, generators.dump());
+    } else if (auto error = std::get_if<api::reply_error>(&api_reply)) {
+        response.send(to_code(*error), api::to_string(error->info));
     } else {
-        response.send(Http::Code::Internal_Server_Error,
-                      api_reply["error"].get<std::string>());
+        response.send(Http::Code::Internal_Server_Error);
     }
 }
 
 void handler::create_generator(const Rest::Request& request,
                                Http::ResponseWriter response)
 {
-    json api_request = {{"type", api::request_type::CREATE_GENERATOR},
-                        {"data", request.body()}};
+    try {
+        auto generator_json = json::parse(request.body());
+        BlockGenerator generator_model;
+        generator_model.fromJson(generator_json);
+        auto gc = BlockGeneratorConfig();
+        gc.fromJson(generator_json["config"]);
+        generator_model.setConfig(std::make_shared<BlockGeneratorConfig>(gc));
 
-    json api_reply = submit_request(m_socket.get(), api_request);
-
-    response.headers().add<Http::Header::ContentType>(MIME(Application, Json));
-
-    switch (api_reply["code"].get<api::reply_code>()) {
-    case api::reply_code::OK:
-        response.send(Http::Code::Ok, api_reply["data"].get<std::string>());
-        break;
-    case api::reply_code::BAD_INPUT:
-        response.send(Http::Code::Bad_Request,
-                      api_reply["error"].get<std::string>());
-        break;
-    default:
-        response.send(Http::Code::Internal_Server_Error,
-                      api_reply["error"].get<std::string>());
+        auto api_reply =
+            submit_request(m_socket.get(), api::request_block_generator_add{api::from_swagger(generator_model)});
+        if (auto reply = std::get_if<api::reply_block_generators>(&api_reply)) {
+            assert(!reply->generators.empty());
+            response.headers().add<Http::Header::ContentType>(
+                MIME(Application, Json));
+            response.send(Http::Code::Ok,
+                          to_swagger(reply->generators.front())->toJson().dump());
+        } else if (auto error = std::get_if<api::reply_error>(&api_reply)) {
+            response.send(to_code(*error), api::to_string(error->info));
+        } else {
+            response.send(Http::Code::Internal_Server_Error);
+        }
+    } catch (const json::exception& e) {
+        response.headers().add<Http::Header::ContentType>(
+            MIME(Application, Json));
+        response.send(
+            Http::Code::Bad_Request,
+            nlohmann::json({{"code", e.id}, {"message", e.what()}}).dump());
     }
 }
 
@@ -387,22 +354,16 @@ void handler::get_generator(const Rest::Request& request,
         return;
     }
 
-    json api_request = {{"type", api::request_type::GET_GENERATOR}, {"id", id}};
-
-    json api_reply = submit_request(m_socket.get(), api_request);
-
-    response.headers().add<Http::Header::ContentType>(MIME(Application, Json));
-
-    switch (api_reply["code"].get<api::reply_code>()) {
-    case api::reply_code::OK:
-        response.send(Http::Code::Ok, api_reply["data"].get<std::string>());
-        break;
-    case api::reply_code::NO_FILE:
-        response.send(Http::Code::Not_Found);
-        break;
-    default:
-        response.send(Http::Code::Internal_Server_Error,
-                      api_reply["error"].get<std::string>());
+    auto api_reply =
+        submit_request(m_socket.get(), api::request_block_generator{id: id});
+    if (auto reply = std::get_if<api::reply_block_generators>(&api_reply)) {
+        response.headers().add<Http::Header::ContentType>(
+            MIME(Application, Json));
+        response.send(Http::Code::Ok, api::to_swagger(reply->generators.front())->toJson().dump());
+    } else if (auto error = std::get_if<api::reply_error>(&api_reply)) {
+        response.send(to_code(*error), api::to_string(error->info));
+    } else {
+        response.send(Http::Code::Internal_Server_Error);
     }
 }
 
@@ -411,22 +372,14 @@ void handler::delete_generator(const Rest::Request& request,
 {
     auto id = request.param(":id").as<std::string>();
     if (auto res = openperf::config::op_config_validate_id_string(id); !res) {
-        response.send(Http::Code::Not_Found, res.error());
+        response.send(Http::Code::No_Content);
         return;
     }
-
-    json api_request = {{"type", api::request_type::DELETE_GENERATOR},
-                        {"id", id}};
-
-    json api_reply = submit_request(m_socket.get(), api_request);
-
-    response.headers().add<Http::Header::ContentType>(MIME(Application, Json));
-    if (api_reply["code"].get<api::reply_code>() == api::reply_code::OK) {
-        response.send(Http::Code::No_Content);
-    } else {
-        response.send(Http::Code::Internal_Server_Error,
-                      api_reply["error"].get<std::string>());
-    }
+    auto api_reply =
+        submit_request(m_socket.get(), api::request_block_generator_del{id: id});
+    response.headers().add<Http::Header::ContentType>(
+        MIME(Application, Json));
+    response.send(Http::Code::No_Content);
 }
 
 void handler::start_generator(const Rest::Request& request,
@@ -437,22 +390,17 @@ void handler::start_generator(const Rest::Request& request,
         response.send(Http::Code::Not_Found, res.error());
         return;
     }
-    json api_request = {{"type", api::request_type::START_GENERATOR}, {"id", id}};
 
-    json api_reply = submit_request(m_socket.get(), api_request);
-
-    response.headers().add<Http::Header::ContentType>(MIME(Application, Json));
-
-    switch (api_reply["code"].get<api::reply_code>()) {
-    case api::reply_code::OK:
+    auto api_reply =
+        submit_request(m_socket.get(), api::request_block_generator_start{id: id});
+    if (std::get_if<api::reply_ok>(&api_reply)) {
+        response.headers().add<Http::Header::ContentType>(
+            MIME(Application, Json));
         response.send(Http::Code::No_Content);
-        break;
-    case api::reply_code::NO_GENERATOR:
-        response.send(Http::Code::Not_Found);
-        break;
-    default:
-        response.send(Http::Code::Internal_Server_Error,
-                      api_reply["error"].get<std::string>());
+    } else if (auto error = std::get_if<api::reply_error>(&api_reply)) {
+        response.send(to_code(*error), api::to_string(error->info));
+    } else {
+        response.send(Http::Code::Internal_Server_Error);
     }
 }
 
@@ -465,85 +413,79 @@ void handler::stop_generator(const Rest::Request& request,
         return;
     }
 
-    json api_request = {{"type", api::request_type::STOP_GENERATOR}, {"id", id}};
-
-    json api_reply = submit_request(m_socket.get(), api_request);
-
-    response.headers().add<Http::Header::ContentType>(MIME(Application, Json));
-
-    switch (api_reply["code"].get<api::reply_code>()) {
-    case api::reply_code::OK:
+    auto api_reply =
+        submit_request(m_socket.get(), api::request_block_generator_stop{id: id});
+    if (std::get_if<api::reply_ok>(&api_reply)) {
+        response.headers().add<Http::Header::ContentType>(
+            MIME(Application, Json));
         response.send(Http::Code::No_Content);
-        break;
-    case api::reply_code::NO_GENERATOR:
-        response.send(Http::Code::Not_Found);
-        break;
-    default:
-        response.send(Http::Code::Internal_Server_Error,
-                      api_reply["error"].get<std::string>());
+    } else if (auto error = std::get_if<api::reply_error>(&api_reply)) {
+        response.send(to_code(*error), api::to_string(error->info));
+    } else {
+        response.send(Http::Code::Internal_Server_Error);
     }
 }
 
 void handler::bulk_start_generators(const Rest::Request& request,
                                     Http::ResponseWriter response)
 {
-    json api_request = {{"type", api::request_type::BULK_START_GENERATORS},
-                        {"data", request.body()}};
+    auto request_json = json::parse(request.body());
+    BulkStartBlockGeneratorsRequest request_model;
+    request_model.fromJson(request_json);
 
-    json api_reply = submit_request(m_socket.get(), api_request);
-    response.headers().add<Http::Header::ContentType>(MIME(Application, Json));
-
-    switch (api_reply["code"].get<api::reply_code>()) {
-    case api::reply_code::OK:
-        response.send(Http::Code::Ok, api_reply["data"].get<std::string>());
-        break;
-    case api::reply_code::BAD_INPUT:
-        response.send(Http::Code::Bad_Request,
-                      api_reply["error"].get<std::string>());
-        break;
-    default:
-        response.send(Http::Code::Internal_Server_Error,
-                      api_reply["error"].get<std::string>());
+    auto api_reply =
+        submit_request(m_socket.get(), api::from_swagger(request_model));
+    if (auto res = std::get_if<api::reply_block_generator_bulk_start>(&api_reply)) {
+        response.headers().add<Http::Header::ContentType>(
+            MIME(Application, Json));
+        response.send(Http::Code::Ok, api::to_swagger(*res)->toJson().dump());
+    } else if (auto error = std::get_if<api::reply_error>(&api_reply)) {
+        response.send(to_code(*error), api::to_string(error->info));
+    } else {
+        response.send(Http::Code::Internal_Server_Error);
     }
 }
 
 void handler::bulk_stop_generators(const Rest::Request& request,
                                    Http::ResponseWriter response)
 {
-    json api_request = {{"type", api::request_type::BULK_STOP_GENERATORS},
-                        {"data", request.body()}};
+    auto request_json = json::parse(request.body());
+    BulkStopBlockGeneratorsRequest request_model;
+    request_model.fromJson(request_json);
 
-    json api_reply = submit_request(m_socket.get(), api_request);
-
-    response.headers().add<Http::Header::ContentType>(MIME(Application, Json));
-
-    switch (api_reply["code"].get<api::reply_code>()) {
-    case api::reply_code::OK:
+    auto api_reply =
+        submit_request(m_socket.get(), api::from_swagger(request_model));
+    if (std::get_if<api::reply_ok>(&api_reply)) {
+        response.headers().add<Http::Header::ContentType>(
+            MIME(Application, Json));
         response.send(Http::Code::No_Content);
-        break;
-    case api::reply_code::BAD_INPUT:
-        response.send(Http::Code::Bad_Request,
-                      api_reply["error"].get<std::string>());
-        break;
-    default:
-        response.send(Http::Code::Internal_Server_Error,
-                      api_reply["error"].get<std::string>());
+    } else if (auto error = std::get_if<api::reply_error>(&api_reply)) {
+        response.send(to_code(*error), api::to_string(error->info));
+    } else {
+        response.send(Http::Code::Internal_Server_Error);
     }
 }
 
 void handler::list_generator_results(const Rest::Request&,
                               Http::ResponseWriter response)
 {
-    json api_request = {{"type", api::request_type::LIST_GENERATOR_RESULTS}};
-
-    json api_reply = submit_request(m_socket.get(), api_request);
-
-    response.headers().add<Http::Header::ContentType>(MIME(Application, Json));
-    if (api_reply["code"].get<api::reply_code>() == api::reply_code::OK) {
-        response.send(Http::Code::Ok, api_reply["data"].get<std::string>());
+    auto api_reply =
+        submit_request(m_socket.get(), api::request_block_generator_result_list{});
+    if (auto reply = std::get_if<api::reply_block_generator_results>(&api_reply)) {
+        response.headers().add<Http::Header::ContentType>(
+            MIME(Application, Json));
+        auto results = json::array();
+        std::transform(std::begin(reply->results),
+                       std::end(reply->results),
+                       std::back_inserter(results),
+                       [](const auto& result) {
+                           return (api::to_swagger(result)->toJson());
+                       });
+        response.send(Http::Code::Ok, results.dump());
+    } else if (auto error = std::get_if<api::reply_error>(&api_reply)) {
+        response.send(to_code(*error), api::to_string(error->info));
     } else {
-        response.send(Http::Code::Internal_Server_Error,
-                      api_reply["error"].get<std::string>());
+        response.send(Http::Code::Internal_Server_Error);
     }
 }
 
@@ -556,22 +498,16 @@ void handler::get_generator_result(const Rest::Request& request,
         return;
     }
 
-    json api_request = {{"type", api::request_type::GET_GENERATOR_RESULT}, {"id", id}};
-
-    json api_reply = submit_request(m_socket.get(), api_request);
-
-    response.headers().add<Http::Header::ContentType>(MIME(Application, Json));
-
-    switch (api_reply["code"].get<api::reply_code>()) {
-    case api::reply_code::OK:
-        response.send(Http::Code::Ok, api_reply["data"].get<std::string>());
-        break;
-    case api::reply_code::NO_FILE:
-        response.send(Http::Code::Not_Found);
-        break;
-    default:
-        response.send(Http::Code::Internal_Server_Error,
-                      api_reply["error"].get<std::string>());
+    auto api_reply =
+        submit_request(m_socket.get(), api::request_block_generator_result{id: id});
+    if (auto reply = std::get_if<api::reply_block_generator_results>(&api_reply)) {
+        response.headers().add<Http::Header::ContentType>(
+            MIME(Application, Json));
+        response.send(Http::Code::Ok, api::to_swagger(reply->results.front())->toJson().dump());
+    } else if (auto error = std::get_if<api::reply_error>(&api_reply)) {
+        response.send(to_code(*error), api::to_string(error->info));
+    } else {
+        response.send(Http::Code::Internal_Server_Error);
     }
 }
 
@@ -580,23 +516,16 @@ void handler::delete_generator_result(const Rest::Request& request,
 {
     auto id = request.param(":id").as<std::string>();
     if (auto res = openperf::config::op_config_validate_id_string(id); !res) {
-        response.send(Http::Code::Not_Found, res.error());
+        response.send(Http::Code::No_Content);
         return;
     }
-
-    json api_request = {{"type", api::request_type::DELETE_GENERATOR_RESULT},
-                        {"id", id}};
-
-    json api_reply = submit_request(m_socket.get(), api_request);
-
-    response.headers().add<Http::Header::ContentType>(MIME(Application, Json));
-    if (api_reply["code"].get<api::reply_code>() == api::reply_code::OK) {
-        response.send(Http::Code::No_Content);
-    } else {
-        response.send(Http::Code::Internal_Server_Error,
-                      api_reply["error"].get<std::string>());
-    }
+    auto api_reply =
+        submit_request(m_socket.get(), api::request_block_generator_result_del{id: id});
+    response.headers().add<Http::Header::ContentType>(
+        MIME(Application, Json));
+    response.send(Http::Code::No_Content);
 }
+
 
 
 } // namespace opneperf::block
