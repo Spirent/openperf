@@ -16,14 +16,16 @@ tl::expected<block_generator_ptr, std::string>
 generator_stack::create_block_generator(const model::block_generator& block_generator_model)
 {
     if (get_block_generator(block_generator_model.get_id()))
-        return tl::make_unexpected("File " + static_cast<std::string>(block_generator_model.get_id())
+        return tl::make_unexpected("Generator " + static_cast<std::string>(block_generator_model.get_id())
                                    + " already exists.");
-
-    auto blkgenerator_ptr =
-        block_generator_ptr(new block_generator(block_generator_model));
-    block_generators.emplace(blkgenerator_ptr->get_id(), blkgenerator_ptr);
-
-    return blkgenerator_ptr;
+    try {
+        auto blkgenerator_ptr =
+            block_generator_ptr(new block_generator(block_generator_model));
+        block_generators.emplace(blkgenerator_ptr->get_id(), blkgenerator_ptr);
+        return blkgenerator_ptr;
+    } catch (const std::runtime_error e) {
+        return tl::make_unexpected("Cannot open resource " + static_cast<std::string>(block_generator_model.get_resource_id()));
+    }
 }
 
 block_generator_ptr generator_stack::get_block_generator(std::string id) const

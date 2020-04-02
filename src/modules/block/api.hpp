@@ -11,6 +11,9 @@
 #include "models/generator.hpp"
 #include "models/generator_result.hpp"
 #include "swagger/v1/model/BlockGenerator.h"
+#include "swagger/v1/model/BulkStartBlockGeneratorsRequest.h"
+#include "swagger/v1/model/BulkStopBlockGeneratorsRequest.h"
+#include "swagger/v1/model/BulkStartBlockGeneratorsResponse.h"
 #include "swagger/v1/model/BlockGeneratorResult.h"
 #include "swagger/v1/model/BlockFile.h"
 #include "swagger/v1/model/BlockDevice.h"
@@ -19,26 +22,13 @@ namespace openperf::block::api {
 
 const std::string endpoint = "inproc://openperf_block";
 using namespace swagger::v1::model;
+using time_point = std::chrono::time_point<timesync::chrono::realtime>;
 
 /**
  * List of supported server requests.
  */
 enum class request_type {
     NONE = 0,
-    LIST_DEVICES,
-    GET_DEVICE,
-    LIST_FILES,
-    CREATE_FILE,
-    GET_FILE,
-    DELETE_FILE,
-    LIST_GENERATORS,
-    CREATE_GENERATOR,
-    GET_GENERATOR,
-    DELETE_GENERATOR,
-    START_GENERATOR,
-    STOP_GENERATOR,
-    BULK_START_GENERATORS,
-    BULK_STOP_GENERATORS,
     LIST_GENERATOR_RESULTS,
     GET_GENERATOR_RESULT,
     DELETE_GENERATOR_RESULT
@@ -82,6 +72,27 @@ struct generator
         int32_t write_size;
         model::block_generation_pattern pattern;
     } config;
+};
+
+struct generator_stats
+{
+    int64_t ops_target;
+    int64_t ops_actual;
+    int64_t bytes_target;
+    int64_t bytes_actual;
+    int64_t io_errors;
+    int64_t latency;
+    int64_t latency_min;
+    int64_t latency_max;
+};
+
+struct generator_result
+{
+    char id[id_max_length];
+    bool active;
+    time_point timestamp;
+    generator_stats read_stats;
+    generator_stats write_stats;
 };
 
 enum class error_type { NONE = 0, NOT_FOUND, EAI_ERROR, ZMQ_ERROR };
@@ -147,12 +158,30 @@ struct request_block_generator_stop
 
 struct request_block_generator_bulk_start
 {
-    std::vector<char[id_max_length]> ids;
+    struct container {
+        char id[id_max_length];
+    };
+    std::vector<container> ids;
 };
 
 struct request_block_generator_bulk_stop
 {
-    std::vector<char[id_max_length]> ids;
+    struct container {
+        char id[id_max_length];
+    };
+    std::vector<container> ids;
+};
+
+struct request_block_generator_result_list{};
+
+struct request_block_generator_result
+{
+    std::string id;
+};
+
+struct request_block_generator_result_del
+{
+    std::string id;
 };
 
 /* zmq api reply models */
@@ -170,6 +199,21 @@ struct reply_block_files
 struct reply_block_generators
 {
     std::vector<generator> generators;
+};
+
+struct failed_generator {
+    char id[id_max_length];
+    typed_error err;
+};
+
+struct reply_block_generator_bulk_start
+{
+    std::vector<failed_generator> failed;
+};
+
+struct reply_block_generator_results
+{
+    std::vector<generator_result> results;
 };
 
 struct reply_ok
@@ -193,11 +237,16 @@ using request_msg = std::variant<request_block_device_list,
                                  request_block_generator_start,
                                  request_block_generator_stop,
                                  request_block_generator_bulk_start,
-                                 request_block_generator_bulk_stop>;
+                                 request_block_generator_bulk_stop,
+                                 request_block_generator_result_list,
+                                 request_block_generator_result,
+                                 request_block_generator_result_del>;
 
 using reply_msg = std::variant<reply_block_devices,
                                reply_block_files,
                                reply_block_generators,
+                               reply_block_generator_bulk_start,
+                               reply_block_generator_results,
                                reply_ok,
                                reply_error>;
 
@@ -221,13 +270,22 @@ int send_message(void* socket, serialized_msg&& msg);
 tl::expected<serialized_msg, int> recv_message(void* socket, int flags = 0);
 
 reply_error to_error(error_type type, int value = 0);
+const char* to_string(const api::typed_error&);
 std::shared_ptr<BlockDevice> to_swagger(const device&);
 std::shared_ptr<BlockFile> to_swagger(const file&);
+std::shared_ptr<BlockGenerator> to_swagger(const generator&);
+std::shared_ptr<BlockGeneratorResult> to_swagger(const generator_result&);
+std::shared_ptr<BulkStartBlockGeneratorsResponse> to_swagger(const reply_block_generator_bulk_start&);
 file from_swagger(const BlockFile&);
-std::shared_ptr<model::block_generator> from_swagger(const BlockGenerator& p_generator);
+generator from_swagger(const BlockGenerator&);
+request_block_generator_bulk_start from_swagger(BulkStartBlockGeneratorsRequest&);
+request_block_generator_bulk_stop from_swagger(BulkStopBlockGeneratorsRequest&);
 device to_api_model(const model::device&);
 file to_api_model(const model::file&);
+generator to_api_model(const model::block_generator&);
+generator_result to_api_model(const model::block_generator_result&);
 std::shared_ptr<model::file> from_api_model(const file&);
+std::shared_ptr<model::block_generator> from_api_model(const generator&);
 
 inline std::string json_error(int code, const char* message)
 {
