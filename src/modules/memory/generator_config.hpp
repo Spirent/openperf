@@ -1,6 +1,7 @@
 #ifndef _OP_MEMORY_GENERATOR_CONFIG_HPP_
 #define _OP_MEMORY_GENERATOR_CONFIG_HPP_
 
+#include <cinttypes>
 #include "memory/io_pattern.hpp"
 
 namespace openperf::memory {
@@ -8,7 +9,6 @@ namespace openperf::memory {
 class generator_config
 {
 private:
-    bool _running;
     unsigned int _buffer_size;
     unsigned int _reads_per_sec;
     unsigned int _read_size;
@@ -21,7 +21,6 @@ private:
 public:
     inline static generator_config create() { return generator_config(); }
 
-    inline bool is_running() const { return _running; }
     inline unsigned int buffer_size() const { return _buffer_size; }
     inline unsigned int reads_per_sec() const { return _reads_per_sec; }
     inline unsigned int read_size() const { return _read_size; }
@@ -33,7 +32,6 @@ public:
 
     bool operator==(const generator_config&) const;
 
-    generator_config& running(bool);
     generator_config& buffer_size(int);
     generator_config& reads_per_sec(int);
     generator_config& read_size(int);

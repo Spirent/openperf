@@ -21,17 +21,17 @@ bool generator_collection::contains(const std::string& id) const
 
 generator_config generator_collection::config(const std::string& id) const
 {
-    auto& g = _collection.at(id);
+    auto& gen = _collection.at(id);
+    auto conf = gen.config();
     return generator_config::create()
-        .buffer_size(g.read_worker_config().buffer_size)
-        .pattern(g.read_worker_config().pattern)
-        .read_threads(g.read_workers())
-        .read_size(g.read_worker_config().block_size)
-        .reads_per_sec(g.read_worker_config().op_per_sec)
-        .write_threads(g.write_workers())
-        .write_size(g.write_worker_config().block_size)
-        .writes_per_sec(g.write_worker_config().op_per_sec)
-        .running(g.is_running() && !g.is_paused());
+        .buffer_size(conf.buffer_size)
+        .read_threads(conf.read_threads)
+        .pattern(conf.read.pattern)
+        .read_size(conf.read.block_size)
+        .reads_per_sec(conf.read.op_per_sec)
+        .write_threads(conf.write_threads)
+        .write_size(conf.write.block_size)
+        .writes_per_sec(conf.write.op_per_sec);
 }
 
 const generator& generator_collection::generator(const std::string& id) const
@@ -64,20 +64,17 @@ std::string generator_collection::create(const std::string& id,
     }
 
     class generator gen;
-    gen.read_workers(config.read_threads());
-    gen.read_config(
-        task_memory_read::config_t{.buffer_size = config.buffer_size(),
-                                   .op_per_sec = config.reads_per_sec(),
-                                   .block_size = config.read_size(),
-                                   .pattern = config.pattern()});
+    gen.config(
+        generator::config_t{.buffer_size = config.buffer_size(),
+                            .read_threads = config.read_threads(),
+                            .write_threads = config.write_threads(),
+                            .read = {.block_size = config.read_size(),
+                                     .op_per_sec = config.reads_per_sec(),
+                                     .pattern = config.pattern()},
+                            .write = {.block_size = config.write_size(),
+                                      .op_per_sec = config.writes_per_sec(),
+                                      .pattern = config.pattern()}});
 
-    gen.write_workers(config.write_threads());
-    gen.write_config(
-        task_memory_write::config_t{.buffer_size = config.buffer_size(),
-                                    .op_per_sec = config.writes_per_sec(),
-                                    .block_size = config.write_size(),
-                                    .pattern = config.pattern()});
-    gen.running(config.is_running());
     auto result = _collection.emplace(new_id, std::move(gen));
 
     if (!result.second) {

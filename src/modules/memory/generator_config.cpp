@@ -5,7 +5,7 @@ namespace openperf::memory {
 
 bool generator_config::operator==(const generator_config& other) const
 {
-    return _running == other._running && _buffer_size == other._buffer_size
+    return _buffer_size == other._buffer_size
            && _reads_per_sec == other._reads_per_sec
            && _read_size == other._read_size
            && _read_threads == other._read_threads
@@ -13,12 +13,6 @@ bool generator_config::operator==(const generator_config& other) const
            && _write_size == other._write_size
            && _write_threads == other._write_threads
            && _pattern == other._pattern;
-}
-
-generator_config& generator_config::running(bool running)
-{
-    _running = running;
-    return *this;
 }
 
 generator_config& generator_config::buffer_size(int size)
