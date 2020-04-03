@@ -3,7 +3,7 @@
 
 #include <iomanip>
 
-#include "generator_config.hpp"
+#include "memory/generator.hpp"
 #include "swagger/v1/model/MemoryGenerator.h"
 #include "swagger/v1/model/MemoryGeneratorConfig.h"
 #include "swagger/v1/model/MemoryGeneratorResult.h"
@@ -14,7 +14,7 @@ namespace openperf::memory {
 namespace swagger = ::swagger::v1::model;
 
 namespace {
-io_pattern from_string(std::string_view str)
+static io_pattern from_string(std::string_view str)
 {
     if (str == "random") return io_pattern::RANDOM;
     if (str == "sequential") return io_pattern::SEQUENTIAL;
@@ -22,7 +22,7 @@ io_pattern from_string(std::string_view str)
     return io_pattern::NONE;
 }
 
-std::string to_string(io_pattern pattern)
+static std::string to_string(io_pattern pattern)
 {
     switch (pattern) {
     case io_pattern::RANDOM:
@@ -37,35 +37,44 @@ std::string to_string(io_pattern pattern)
 }
 } // namespace
 
-generator_config from_swagger(const model::MemoryGeneratorConfig& m)
+static generator::config_t from_swagger(const model::MemoryGeneratorConfig& m)
 {
-    return generator_config::create()
-        .buffer_size(m.getBufferSize())
-        .read_size(m.getReadSize())
-        .reads_per_sec(m.getReadsPerSec())
-        .read_threads(m.getReadThreads())
-        .write_size(m.getWriteSize())
-        .writes_per_sec(m.getWritesPerSec())
-        .write_threads(m.getWriteThreads())
-        .pattern(from_string(m.getPattern()));
+    return generator::config_t {
+        .buffer_size = static_cast<size_t>(m.getBufferSize()),
+        .read_threads = static_cast<size_t>(m.getReadThreads()),
+        .write_threads = static_cast<size_t>(m.getWriteThreads()),
+        .read = {
+            .block_size = static_cast<size_t>(m.getReadSize()),
+            .op_per_sec = static_cast<size_t>(m.getReadsPerSec()),
+            .pattern = from_string(m.getPattern()),
+        },
+        .write = {
+            .block_size = static_cast<size_t>(m.getWriteSize()),
+            .op_per_sec = static_cast<size_t>(m.getWritesPerSec()),
+            .pattern = from_string(m.getPattern()),
+        }
+    };
 }
 
-swagger::MemoryGeneratorConfig to_swagger(const generator_config& config)
+static swagger::MemoryGeneratorConfig to_swagger(const generator::config_t& config)
 {
     swagger::MemoryGeneratorConfig model;
-    model.setBufferSize(config.buffer_size());
-    model.setReadSize(config.read_size());
-    model.setReadsPerSec(config.reads_per_sec());
-    model.setReadThreads(config.read_threads());
-    model.setWriteSize(config.write_size());
-    model.setWritesPerSec(config.writes_per_sec());
-    model.setWriteThreads(config.write_threads());
-    model.setPattern(to_string(config.pattern()));
+    model.setBufferSize(config.buffer_size);
+    model.setReadThreads(config.read_threads);
+    model.setWriteThreads(config.write_threads);
+
+    model.setReadSize(config.read.block_size);
+    model.setReadsPerSec(config.read.op_per_sec);
+
+    model.setWriteSize(config.write.block_size);
+    model.setWritesPerSec(config.write.op_per_sec);
+
+    model.setPattern(to_string(config.read.pattern));
 
     return model;
 }
 
-swagger::MemoryGeneratorStats to_swagger(const memory_stat& stat)
+static swagger::MemoryGeneratorStats to_swagger(const memory_stat& stat)
 {
     swagger::MemoryGeneratorStats model;
     model.setBytesActual(stat.bytes);
@@ -80,7 +89,7 @@ swagger::MemoryGeneratorStats to_swagger(const memory_stat& stat)
     return model;
 }
 
-std::string to_iso8601(uint64_t nanos)
+static std::string to_iso8601(uint64_t nanos)
 {
     std::cout << "Nanos: " << nanos << std::endl;
     std::chrono::nanoseconds ns(nanos);
