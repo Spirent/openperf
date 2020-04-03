@@ -4,7 +4,6 @@
 #include <forward_list>
 
 #include "utils/worker/worker.hpp"
-#include "memory/generator_config.hpp"
 #include "memory/task_memory_read.hpp"
 #include "memory/task_memory_write.hpp"
 
