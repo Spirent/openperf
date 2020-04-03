@@ -1,6 +1,8 @@
 #include "memory/task_memory.hpp"
 
 #include <cstdint>
+#include <cinttypes>
+#include <sys/mman.h>
 
 #include "core/op_core.h"
 #include "utils/random.hpp"
@@ -43,23 +45,46 @@ void op_generator_sleep_until(uint64_t wake_time)
     }
 }
 
+static uint64_t _get_cache_line_size(void)
+{
+    FILE* f = NULL;
+    uint64_t cachelinesize = 0;
+
+    f = fopen("/sys/devices/system/cpu/cpu0/cache/index0/coherency_line_size",
+              "r");
+    if (!f) {
+        OP_LOG(OP_LOG_WARNING,
+               "Could not determine cache line size. "
+               "Assuming 64 byte cache lines.\n");
+        cachelinesize = 64;
+    } else {
+        fscanf(f, "%" PRIu64, &cachelinesize);
+        fclose(f);
+    }
+
+    return (cachelinesize);
+}
+
 // Constructors & Destructor
 task_memory::task_memory()
     : _config{.pattern = io_pattern::NONE}
-    , _buffer(nullptr)
     , _op_index_min(0)
     , _op_index_max(0)
-    , _scratch_buffer(nullptr)
-    , _scratch_size(0)
+    , _buffer(nullptr)
+    , _scratch{.ptr = nullptr, .size = 0}
 {
-    scratch_allocate(4096);
-    //_config.op_per_sec = 0;
+    // scratch_allocate(4096);
+    // icp_generator_distribute
     //[](uint64_t total, size_t buckets, size_t n) {
     //    assert(n < buckets);
     //    uint64_t base = total / buckets;
     //    return (n < total % buckets ? base + 1 : base);
     //} (10, 64, 8);
 }
+
+task_memory::task_memory(const task_memory_config& conf) { config(conf); }
+
+task_memory::~task_memory() { scratch_free(); }
 
 void task_memory::clear_stat()
 {
@@ -69,17 +94,11 @@ void task_memory::clear_stat()
 
 void task_memory::config(const task_memory_config& msg)
 {
+    std::cout << "Applying config" << std::endl;
     assert(msg.pattern != io_pattern::NONE);
-    // assert(msg->type == MEMORY_MSG_CONFIG);
 
     // io blocks in buffer
-    size_t nb_blocks = (msg.block_size ? msg.buffer_size / msg.block_size : 0);
-
-    ///* packed arrays are limited to 32 bi t unsigned integers */
-    // if (nb_blocks > UINT_MAX) {
-    //    OP_LOG(OP_LOG_ERROR, "Too many memory indexes!\n");
-    //    return -1;
-    //}
+    size_t nb_blocks = (msg.block_size ? msg.buffer.size / msg.block_size : 0);
 
     /*
      * Need to update our indexes if the number of blocks or the pattern
@@ -143,8 +162,13 @@ void task_memory::config(const task_memory_config& msg)
         _config.op_per_sec = 0;
     }
 
-    //_buffer = msg.buffer.ptr;
-    _buffer = new uint8_t[msg.buffer_size];
+    std::cout << "Applying config" << std::endl;
+    _buffer = reinterpret_cast<uint8_t*>(msg.buffer.ptr);
+    //_buffer = (uint8_t*)mmap(NULL, msg.buffer.size, PROT_READ | PROT_WRITE,
+    //        MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
+    std::cout << "Ptr: " << (__ptr_t)msg.buffer.ptr
+                << " <=> " << (__ptr_t) _buffer << std::endl;
+    _buffer[20] = 134;
 
     auto pseudo_random_fill = [](uint32_t* seedp, void* buffer, size_t length) {
         uint32_t seed = *seedp;
@@ -159,24 +183,18 @@ void task_memory::config(const task_memory_config& msg)
         *seedp = seed;
     };
 
-    if ((_config.block_size = msg.block_size) > _scratch_size) {
+    if ((_config.block_size = msg.block_size) > _scratch.size) {
         OP_LOG(OP_LOG_DEBUG,
                "Reallocating scratch area (%zu --> %zu)\n",
-               _scratch_size,
+               _scratch.size,
                msg.block_size);
-        scratch_free();
         scratch_allocate(msg.block_size);
-        assert(_scratch_buffer);
+        assert(_scratch.ptr);
         uint32_t seed = random<uint32_t>();
-        pseudo_random_fill(&seed, _scratch_buffer, _scratch_size);
+        pseudo_random_fill(&seed, _scratch.ptr, _scratch.size);
     }
 
     _config = msg;
-
-    // WTF callback?
-    // if (msg.callback.fn && msg.callback.arg) {
-    //    msg.callback.fn(msg.callback.arg, 1);
-    //}
 }
 
 void task_memory::spin()
@@ -228,9 +246,6 @@ void task_memory::spin()
      */
     uint64_t deadline = time_ns() + (QUANTA_MS * MS_TO_NS);
     uint64_t t2;
-    // std::cout << std::dec << "tdo: " << to_do_ops << ", deadline: " <<
-    // deadline
-    //          << ", to_sleep: " << ns_to_sleep << std::endl;
     while (to_do_ops && (t2 = time_ns()) < deadline) {
         size_t spin_ops = std::min(MAX_SPIN_OPS, to_do_ops);
         size_t nb_ops = operation(spin_ops, &op_index);
@@ -258,46 +273,35 @@ void task_memory::spin()
         to_do_ops -= spin_ops;
     }
 
-    static auto t = time_ns();
-    if (time_ns() - t > 1000 * MS_TO_NS) {
-        std::cout << std::dec << "Total: { Ops: " << _total.operations
-                  << ", runtime: " << _total.run_time
-                  << ", avg: " << _total.avg_rate
-                  << ", sleep: " << _total.sleep_time << " } " << std::endl;
-
-        std::cout << std::dec << "Stats: { time: " << stat.time_ns
-                  << ", ops: " << stat.operations << ", bytes: " << stat.bytes
-                  << ", errors: " << stat.errors << ", ts: " << stat.timestamp
-                  << " } " << std::endl;
-        t = time_ns();
-    }
-
     if (!_stat_clear) _stat.store(stat);
     _stat_clear = false;
 }
 
 void task_memory::scratch_allocate(size_t size)
 {
-    // static uint64_t cachelinesize = 0;
-    // if (!cachelinesize) {
-    //    icp_config_get_value(sysinfo_cacheline_size, &cachelinesize);
+    if (size == _scratch.size) return;
 
-    if (posix_memalign(&_scratch_buffer, _cache_size, size) != 0) {
-        OP_LOG(OP_LOG_ERROR, "Could not allocate scratch area!\n");
-        _scratch_buffer = nullptr;
-    } else {
-        _scratch_size = size;
+    static uint64_t cache_line_size = 0;
+    if (!cache_line_size) cache_line_size = _get_cache_line_size();
+
+    scratch_free();
+    if (size > 0) {
+        if (posix_memalign(&_scratch.ptr, cache_line_size, size) != 0) {
+            OP_LOG(OP_LOG_ERROR, "Could not allocate scratch area!\n");
+            _scratch.ptr = nullptr;
+        } else {
+            _scratch.size = size;
+        }
     }
 }
 
 void task_memory::scratch_free()
 {
-    if (_scratch_buffer) {
-        free(_scratch_buffer);
-        _scratch_buffer = nullptr;
+    if (_scratch.ptr != nullptr) {
+        free(_scratch.ptr);
+        _scratch.ptr = nullptr;
+        _scratch.size = 0;
     }
-
-    _scratch_size = 0;
 }
 
 } // namespace openperf::memory::internal

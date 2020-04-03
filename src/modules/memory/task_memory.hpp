@@ -1,35 +1,25 @@
 #ifndef _OP_MEMORY_TASK_MEMORY_HPP_
 #define _OP_MEMORY_TASK_MEMORY_HPP_
 
-#include <cstddef>
 #include <atomic>
 #include <vector>
-#include <limits>
 
 #include "utils/worker/task.hpp"
 #include "memory/io_pattern.hpp"
+#include "memory/memory_stat.h"
 
 namespace openperf::memory::internal {
 
 struct task_memory_config
 {
-    size_t block_size;
-    size_t buffer_size;
-    size_t op_per_sec;
-    io_pattern pattern;
-};
-
-struct memory_stat
-{
-    uint64_t operations = 0; //< The number of operations performed
-    uint64_t operations_target = 0;
-    uint64_t bytes = 0; //< The number of bytes read or written
-    uint64_t bytes_target = 0;
-    uint64_t errors = 0;  //< The number of errors during reading or writing
-    uint64_t time_ns = 0; //< The number of ns required for the operations
-    uint64_t latency_max = 0;
-    uint64_t latency_min = std::numeric_limits<uint64_t>::max();
-    uint64_t timestamp = 0;
+    size_t block_size = 0;
+    size_t op_per_sec = 0;
+    io_pattern pattern = io_pattern::NONE;
+    struct
+    {
+        void* ptr = nullptr;
+        size_t size = 0;
+    } buffer;
 };
 
 class task_memory
@@ -37,14 +27,16 @@ class task_memory
 {
 protected:
     task_memory_config _config;
-    uint64_t _cache_size = 16;
-    uint8_t* _buffer;
     std::vector<unsigned> _indexes;
     size_t _op_index_min;
     size_t _op_index_max;
+    uint8_t* _buffer;
 
-    void* _scratch_buffer;
-    size_t _scratch_size;
+    struct
+    {
+        void* ptr;
+        size_t size;
+    } _scratch;
 
     struct total
     {
@@ -59,6 +51,8 @@ protected:
 
 public:
     task_memory();
+    explicit task_memory(const task_memory_config&);
+    ~task_memory();
 
     void spin() override;
     void config(const config_t&) override;

@@ -14,43 +14,53 @@ using namespace openperf::utils::worker;
 
 class generator
 {
+public:
+    struct config_t
+    {
+        size_t buffer_size = 0;
+        size_t read_threads = 0;
+        size_t write_threads = 0;
+        struct
+        {
+            size_t block_size = 0;
+            size_t op_per_sec = 0;
+            io_pattern pattern = io_pattern::NONE;
+        } read, write;
+    };
+
+    struct stat_t
+    {
+        uint64_t timestamp;
+        memory_stat read;
+        memory_stat write;
+    };
+
 private:
     using worker_ptr = std::unique_ptr<workable>;
     using workers = std::forward_list<worker_ptr>;
 
 private:
-    unsigned _read_threads;
-    unsigned _write_threads;
     bool _stopped;
     bool _paused;
     workers _read_workers;
     workers _write_workers;
-    task_memory_config _read_config;
-    task_memory_config _write_config;
+    config_t _config;
+
+    struct
+    {
+        void* ptr;
+        size_t size;
+    } _buffer;
 
 public:
     // Constructors & Destructor
     generator();
     generator(generator&&);
     generator(const generator&) = delete;
+    explicit generator(const generator::config_t&);
+    ~generator();
 
     // Methods
-    inline bool is_stopped() const { return _stopped; }
-    inline bool is_running() const { return !(_paused || _stopped); }
-    inline bool is_paused() const { return _paused; }
-    inline unsigned read_workers() const { return _read_threads; }
-    inline unsigned write_workers() const { return _write_threads; }
-    inline const task_memory_config& read_worker_config() const
-    {
-        return _read_config;
-    }
-    inline const task_memory_config& write_worker_config() const
-    {
-        return _write_config;
-    }
-    memory_stat read_stat() const;
-    memory_stat write_stat() const;
-
     void resume();
     void pause();
 
@@ -59,15 +69,42 @@ public:
     void restart();
     void clear_stat();
 
-    void running(bool);
-    void read_workers(unsigned);
-    void write_workers(unsigned);
-    void read_config(const task_memory_config&);
-    void write_config(const task_memory_config&);
+    void config(const generator::config_t&);
+
+    generator::config_t config() const;
+    generator::stat_t stat() const;
+
+    inline bool is_stopped() const { return _stopped; }
+    inline bool is_running() const { return !(_paused || _stopped); }
+    inline bool is_paused() const { return _paused; }
 
 private:
+    void free_buffer();
+    void resize_buffer(size_t);
     void for_each_worker(std::function<void(worker_ptr&)>);
+    void spread_config(generator::workers&, const task_memory_config&);
+
+    template <class T> void reallocate_workers(generator::workers&, unsigned);
 };
+
+template <class T>
+void generator::reallocate_workers(generator::workers& wkrs, unsigned num)
+{
+    assert(num >= 0);
+    if (num == 0) {
+        wkrs.clear();
+        return;
+    }
+
+    auto size = std::distance(wkrs.begin(), wkrs.end());
+    if (num < size) {
+        for (; size > num; --size) { wkrs.pop_front(); }
+    } else {
+        for (; size < num; ++size) {
+            wkrs.emplace_front(std::make_unique<worker<T>>());
+        }
+    }
+}
 
 } // namespace openperf::memory::internal
 
