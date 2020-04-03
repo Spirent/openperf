@@ -3,7 +3,6 @@
 
 #include <cinttypes>
 #include <sys/mman.h>
-#include <fcntl.h>
 
 namespace openperf::memory::internal {
 
@@ -23,9 +22,17 @@ generator::generator(generator&& g)
     , _buffer{.ptr = nullptr, .size = 0}
 {}
 
-generator::generator(const generator::config_t& c) { config(c); }
+generator::generator(const generator::config_t& c)
+    : generator()
+{
+    config(c);
+}
 
-generator::~generator() { free_buffer(); }
+generator::~generator()
+{
+    stop();
+    free_buffer();
+}
 
 // Methods : public
 void generator::start()
@@ -130,17 +137,19 @@ void generator::for_each_worker(std::function<void(worker_ptr&)> function)
 
 void generator::free_buffer()
 {
-    if (_buffer.ptr != MAP_FAILED && _buffer.size) {
-        if (munmap(_buffer.ptr, _buffer.size) == -1) {
-            OP_LOG(OP_LOG_ERROR,
-                   "Failed to unallocate %zu"
-                   " bytes of memory: %s\n",
-                   _buffer.size,
-                   strerror(errno));
-        }
+    if (_buffer.ptr == nullptr) return;
+    if (_buffer.ptr == MAP_FAILED) return;
 
-        _buffer.ptr = MAP_FAILED;
+    if (munmap(_buffer.ptr, _buffer.size) == -1) {
+        OP_LOG(OP_LOG_ERROR,
+               "Failed to unallocate %zu"
+               " bytes of memory: %s\n",
+               _buffer.size,
+               strerror(errno));
     }
+
+    _buffer.ptr = MAP_FAILED;
+    _buffer.size = 0;
 }
 
 void generator::resize_buffer(size_t size)
@@ -157,13 +166,15 @@ void generator::resize_buffer(size_t size)
     free_buffer();
     if (size > 0) {
         OP_LOG(OP_LOG_INFO,
-            "Reallocating buffer (%zu => %zu)\n",
-            _buffer.size, size);
-        //_buffer.ptr = malloc(size);
-        int fd = open("/dev/mem", O_RDWR);
-        _buffer.ptr = mmap(NULL, size, PROT_READ | PROT_WRITE,
-            MAP_SHARED, fd, 0);
-            //MAP_ANONYMOUS | MAP_PRIVATE, fd, 0);
+               "Reallocating buffer (%zu => %zu)\n",
+               _buffer.size,
+               size);
+        _buffer.ptr = mmap(NULL,
+                           size,
+                           PROT_READ | PROT_WRITE,
+                           MAP_ANONYMOUS | MAP_PRIVATE,
+                           -1,
+                           0);
         if (_buffer.ptr == MAP_FAILED) {
             OP_LOG(OP_LOG_ERROR,
                    "Failed to allocate %" PRIu64 " byte memory buffer\n",
