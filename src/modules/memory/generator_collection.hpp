@@ -2,7 +2,6 @@
 #define _MEMORY_GENERATOR_STACK_HPP_
 
 #include "memory/generator.hpp"
-#include "memory/generator_config.hpp"
 
 namespace openperf::memory {
 
@@ -24,11 +23,11 @@ public:
 
     void clear();
     void erase(const std::string& id);
-    std::string create(const std::string& id, const generator_config& config);
+    std::string create(const std::string& id, const generator::config_t& config);
 
     class generator& generator(const std::string& id);
     const class generator& generator(const std::string& id) const;
-    generator_config config(const std::string& id) const;
+    //generator_config config(const std::string& id) const;
     bool contains(const std::string& id) const;
     id_list ids() const;
 };

@@ -67,8 +67,7 @@ static uint64_t _get_cache_line_size(void)
 
 // Constructors & Destructor
 task_memory::task_memory()
-    : _config{.pattern = io_pattern::NONE}
-    , _op_index_min(0)
+    : _op_index_min(0)
     , _op_index_max(0)
     , _buffer(nullptr)
     , _scratch{.ptr = nullptr, .size = 0}
@@ -206,8 +205,6 @@ void task_memory::spin()
     static __thread size_t op_index = 0;
     if (op_index >= _op_index_max) { op_index = _op_index_min; }
 
-    stat_t stat = _stat.load();
-
     /*
      * Sleeping is problematic since you can't be sure if or when you'll
      * wake up.  Hence, we dynamically solve for the number of memory
@@ -244,6 +241,7 @@ void task_memory::spin()
      * Perform load operations in small bursts so that we can update our
      * thread statistics periodically.
      */
+    stat_t stat;
     uint64_t deadline = time_ns() + (QUANTA_MS * MS_TO_NS);
     uint64_t t2;
     while (to_do_ops && (t2 = time_ns()) < deadline) {
@@ -253,14 +251,24 @@ void task_memory::spin()
             std::max(time_ns() - t2, 1lu); /* prevent divide by 0 */
 
         /* Update per thread statistics */
-        stat.operations += nb_ops;
-        stat.operations_target += spin_ops;
-        stat.bytes += nb_ops * _config.block_size;
-        stat.bytes_target += spin_ops * _config.block_size;
-        stat.time_ns += run_time;
-        stat.latency_min = std::min(stat.latency_min, run_time);
-        stat.latency_max = std::max(stat.latency_max, run_time);
-        stat.timestamp = time_ns();
+        stat += stat_t {
+            .operations = nb_ops,
+            .operations_target = spin_ops,
+            .bytes = nb_ops * _config.block_size,
+            .bytes_target = spin_ops * _config.block_size,
+            .time_ns = run_time,
+            .latency_min = run_time,
+            .latency_max = run_time,
+            .timestamp = time_ns(),
+        };
+        //stat.operations += nb_ops;
+        //stat.operations_target += spin_ops;
+        //stat.bytes += nb_ops * _config.block_size;
+        //stat.bytes_target += spin_ops * _config.block_size;
+        //stat.time_ns += run_time;
+        //stat.latency_min = std::min(stat.latency_min, run_time);
+        //stat.latency_max = std::max(stat.latency_max, run_time);
+        //stat.timestamp = time_ns();
         // stat.errors = 0;
 
         /* Update local counters */
@@ -273,7 +281,10 @@ void task_memory::spin()
         to_do_ops -= spin_ops;
     }
 
-    if (!_stat_clear) _stat.store(stat);
+    if (!_stat_clear) {
+        stat += _stat.load();
+        _stat.store(stat);
+    }
     _stat_clear = false;
 }
 
