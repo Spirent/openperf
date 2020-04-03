@@ -11,7 +11,6 @@ MEMORY_SOURCES += \
 	generator_collection.cpp \
 	info.cpp \
 	generator.cpp \
-	generator_config.cpp \
 	task_memory.cpp \
 	task_memory_read.cpp \
 	task_memory_write.cpp

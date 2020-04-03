@@ -4,7 +4,6 @@
 #include "memory/info.hpp"
 #include "swagger/v1/model/MemoryGenerator.h"
 #include "swagger/v1/model/MemoryGeneratorConfig.h"
-#include "memory/generator_config.hpp"
 #include "memory/swagger_converters.hpp"
 
 namespace openperf::memory::api {
@@ -170,7 +169,7 @@ json server::list_generators()
     json jdata = json::array();
 
     for (auto& id : generator_stack->ids()) {
-        auto cfg = generator_stack->config(id);
+        auto cfg = generator_stack->generator(id).config();
 
         model::MemoryGenerator model;
         model.setId(id);
@@ -192,7 +191,7 @@ json server::create_generator(const json& request)
         model::MemoryGenerator model;
         model.fromJson(json_object);
 
-        generator_config config = from_swagger([&json_object]() {
+        generator::config_t config = from_swagger([&json_object]() {
             model::MemoryGeneratorConfig c_model;
             c_model.fromJson(json_object["config"]);
             return c_model;
@@ -201,7 +200,7 @@ json server::create_generator(const json& request)
         try {
             auto id = generator_stack->create(model.getId(), config);
 
-            auto result = generator_stack->config(id);
+            auto result = generator_stack->generator(id).config();
             //model.setRunning(result.is_running());
             model.setId(id);
             model.setConfig(std::make_shared<model::MemoryGeneratorConfig>(
@@ -226,7 +225,7 @@ json server::get_generator(const json& request)
     auto id = request["id"].get<std::string>();
 
     if (generator_stack->contains(id)) {
-        const auto& g = generator_stack->config(id);
+        const auto& g = generator_stack->generator(id).config();
 
         model::MemoryGenerator model;
         model.setId(id);
