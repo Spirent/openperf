@@ -13,20 +13,20 @@ namespace openperf::memory::internal {
 using openperf::utils::random;
 using openperf::utils::random_uniform;
 
-uint64_t time_ns()
-{
-    return openperf::timesync::chrono::realtime::now()
-        .time_since_epoch()
-        .count();
-};
-
 const uint64_t NS_PER_SECOND = 1000000000ULL;
 
 static const uint64_t QUANTA_MS = 10;
 static const uint64_t MS_TO_NS = 1000000;
 static const size_t MAX_SPIN_OPS = 5000;
 
-void op_generator_sleep_until(uint64_t wake_time)
+static uint64_t time_ns()
+{
+    return openperf::timesync::chrono::realtime::now()
+        .time_since_epoch()
+        .count();
+};
+
+static void op_generator_sleep_until(uint64_t wake_time)
 {
     uint64_t now = 0, ns_to_sleep = 0;
     struct timespec sleep = {0, 0};
@@ -45,7 +45,7 @@ void op_generator_sleep_until(uint64_t wake_time)
     }
 }
 
-static uint64_t _get_cache_line_size(void)
+static uint64_t _get_cache_line_size()
 {
     FILE* f = NULL;
     uint64_t cachelinesize = 0;
@@ -71,29 +71,24 @@ task_memory::task_memory()
     , _op_index_max(0)
     , _buffer(nullptr)
     , _scratch{.ptr = nullptr, .size = 0}
-{
-    // scratch_allocate(4096);
-    // icp_generator_distribute
-    //[](uint64_t total, size_t buckets, size_t n) {
-    //    assert(n < buckets);
-    //    uint64_t base = total / buckets;
-    //    return (n < total % buckets ? base + 1 : base);
-    //} (10, 64, 8);
-}
+{}
 
-task_memory::task_memory(const task_memory_config& conf) { config(conf); }
+task_memory::task_memory(const task_memory_config& conf)
+    : task_memory()
+{
+    config(conf);
+}
 
 task_memory::~task_memory() { scratch_free(); }
 
 void task_memory::clear_stat()
 {
-    _stat.store(memory_stat());
+    _stat.store(memory_stat{});
     _stat_clear = true;
 }
 
 void task_memory::config(const task_memory_config& msg)
 {
-    std::cout << "Applying config" << std::endl;
     assert(msg.pattern != io_pattern::NONE);
 
     // io blocks in buffer
@@ -151,6 +146,12 @@ void task_memory::config(const task_memory_config& msg)
         }
 
         _config.pattern = msg.pattern;
+        // icp_generator_distribute
+        //_config.op_per_sec = [](uint64_t total, size_t buckets, size_t n) {
+        //    assert(n < buckets);
+        //    uint64_t base = total / buckets;
+        //    return (n < total % buckets ? base + 1 : base);
+        //} (10, 64, 8);
     } else if (!nb_blocks) {
         _indexes.clear();
         _op_index_min = 0;
@@ -161,13 +162,7 @@ void task_memory::config(const task_memory_config& msg)
         _config.op_per_sec = 0;
     }
 
-    std::cout << "Applying config" << std::endl;
     _buffer = reinterpret_cast<uint8_t*>(msg.buffer.ptr);
-    //_buffer = (uint8_t*)mmap(NULL, msg.buffer.size, PROT_READ | PROT_WRITE,
-    //        MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
-    std::cout << "Ptr: " << (__ptr_t)msg.buffer.ptr
-                << " <=> " << (__ptr_t) _buffer << std::endl;
-    _buffer[20] = 134;
 
     auto pseudo_random_fill = [](uint32_t* seedp, void* buffer, size_t length) {
         uint32_t seed = *seedp;
@@ -251,7 +246,7 @@ void task_memory::spin()
             std::max(time_ns() - t2, 1lu); /* prevent divide by 0 */
 
         /* Update per thread statistics */
-        stat += stat_t {
+        stat += stat_t{
             .operations = nb_ops,
             .operations_target = spin_ops,
             .bytes = nb_ops * _config.block_size,
@@ -261,15 +256,6 @@ void task_memory::spin()
             .latency_max = run_time,
             .timestamp = time_ns(),
         };
-        //stat.operations += nb_ops;
-        //stat.operations_target += spin_ops;
-        //stat.bytes += nb_ops * _config.block_size;
-        //stat.bytes_target += spin_ops * _config.block_size;
-        //stat.time_ns += run_time;
-        //stat.latency_min = std::min(stat.latency_min, run_time);
-        //stat.latency_max = std::max(stat.latency_max, run_time);
-        //stat.timestamp = time_ns();
-        // stat.errors = 0;
 
         /* Update local counters */
         _total.run_time += run_time;

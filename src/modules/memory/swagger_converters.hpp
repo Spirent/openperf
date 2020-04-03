@@ -39,24 +39,25 @@ static std::string to_string(io_pattern pattern)
 
 static generator::config_t from_swagger(const model::MemoryGeneratorConfig& m)
 {
-    return generator::config_t {
+    return generator::config_t{
         .buffer_size = static_cast<size_t>(m.getBufferSize()),
         .read_threads = static_cast<size_t>(m.getReadThreads()),
         .write_threads = static_cast<size_t>(m.getWriteThreads()),
-        .read = {
-            .block_size = static_cast<size_t>(m.getReadSize()),
-            .op_per_sec = static_cast<size_t>(m.getReadsPerSec()),
-            .pattern = from_string(m.getPattern()),
-        },
+        .read =
+            {
+                .block_size = static_cast<size_t>(m.getReadSize()),
+                .op_per_sec = static_cast<size_t>(m.getReadsPerSec()),
+                .pattern = from_string(m.getPattern()),
+            },
         .write = {
             .block_size = static_cast<size_t>(m.getWriteSize()),
             .op_per_sec = static_cast<size_t>(m.getWritesPerSec()),
             .pattern = from_string(m.getPattern()),
-        }
-    };
+        }};
 }
 
-static swagger::MemoryGeneratorConfig to_swagger(const generator::config_t& config)
+static swagger::MemoryGeneratorConfig
+to_swagger(const generator::config_t& config)
 {
     swagger::MemoryGeneratorConfig model;
     model.setBufferSize(config.buffer_size);
@@ -91,7 +92,6 @@ static swagger::MemoryGeneratorStats to_swagger(const memory_stat& stat)
 
 static std::string to_iso8601(uint64_t nanos)
 {
-    std::cout << "Nanos: " << nanos << std::endl;
     std::chrono::nanoseconds ns(nanos);
     auto t = std::chrono::system_clock::to_time_t(
         std::chrono::system_clock::time_point(ns));
@@ -100,7 +100,6 @@ static std::string to_iso8601(uint64_t nanos)
     os << std::put_time(gmtime(&t), "%FT%T") << "." << std::setfill('0')
        << std::setw(6) << (ns - sec).count() << "Z";
 
-    std::cout << "Time: " << os.str() << std::endl;
     return os.str();
 }
 

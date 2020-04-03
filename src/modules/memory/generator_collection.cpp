@@ -19,21 +19,6 @@ bool generator_collection::contains(const std::string& id) const
     return _collection.count(id); // Legacy variant
 }
 
-//generator_config generator_collection::config(const std::string& id) const
-//{
-//    auto& gen = _collection.at(id);
-//    auto conf = gen.config();
-//    return generator_config::create()
-//        .buffer_size(conf.buffer_size)
-//        .read_threads(conf.read_threads)
-//        .pattern(conf.read.pattern)
-//        .read_size(conf.read.block_size)
-//        .reads_per_sec(conf.read.op_per_sec)
-//        .write_threads(conf.write_threads)
-//        .write_size(conf.write.block_size)
-//        .writes_per_sec(conf.write.op_per_sec);
-//}
-
 const generator& generator_collection::generator(const std::string& id) const
 {
     return _collection.at(id);
@@ -78,18 +63,22 @@ void generator_collection::clear() { _collection.clear(); }
 
 void generator_collection::start()
 {
-    for (auto& generator : _collection) {
-        generator.second.resume();
-        generator.second.start();
-    }
+    for (auto& generator : _collection) { generator.second.start(); }
 }
 
 void generator_collection::stop()
 {
-    for (auto& generator : _collection) {
-        generator.second.pause();
-        // generator.second.stop();
-    }
+    for (auto& generator : _collection) { generator.second.stop(); }
+}
+
+void generator_collection::pause()
+{
+    for (auto& generator : _collection) { generator.second.pause(); }
+}
+
+void generator_collection::resume()
+{
+    for (auto& generator : _collection) { generator.second.resume(); }
 }
 
 } // namespace openperf::memory

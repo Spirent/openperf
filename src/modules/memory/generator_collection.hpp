@@ -20,14 +20,16 @@ public:
 
     void start();
     void stop();
+    void pause();
+    void resume();
 
     void clear();
     void erase(const std::string& id);
-    std::string create(const std::string& id, const generator::config_t& config);
+    std::string create(const std::string& id,
+                       const generator::config_t& config);
 
     class generator& generator(const std::string& id);
     const class generator& generator(const std::string& id) const;
-    //generator_config config(const std::string& id) const;
     bool contains(const std::string& id) const;
     id_list ids() const;
 };
