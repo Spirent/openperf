@@ -11,11 +11,11 @@ void file::set_id(const std::string& value)
     id = value;
 }
 
-int64_t file::get_size() const
+uint64_t file::get_size() const
 {
     return size;
 }
-void file::set_size(const int64_t value)
+void file::set_size(const uint64_t value)
 {
     size = value;
 }
@@ -38,11 +38,12 @@ void file::set_path(const std::string& value)
     path = value;
 }
 
-std::string file::get_state() const
+file_state file::get_state() const
 {
     return state;
 }
-void file::set_state(const std::string& value)
+
+void file::set_state(const file_state& value)
 {
     state = value;
 }

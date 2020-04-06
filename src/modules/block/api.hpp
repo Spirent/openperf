@@ -38,6 +38,7 @@ static constexpr size_t id_max_length = 64;
 static constexpr size_t path_max_length = PATH_MAX;
 static constexpr size_t device_info_max_length = 1024;
 static constexpr size_t file_state_max_length = 64;
+static constexpr size_t err_max_length = 256;
 
 /* zmq api objects models */
 
@@ -54,8 +55,8 @@ struct file
 {
     char id[id_max_length];
     char path[path_max_length];
-    int64_t size;
-    char state[file_state_max_length];
+    uint64_t size;
+    model::file_state state;
     int32_t init_percent_complete;
 };
 
@@ -95,12 +96,13 @@ struct generator_result
     generator_stats write_stats;
 };
 
-enum class error_type { NONE = 0, NOT_FOUND, EAI_ERROR, ZMQ_ERROR };
+enum class error_type { NONE = 0, NOT_FOUND, EAI_ERROR, ZMQ_ERROR, CUSTOM_ERROR };
 
 struct typed_error
 {
     error_type type = error_type::NONE;
-    int value = 0;
+    int code = 0;
+    char value[err_max_length];
 };
 
 /* zmq api request models */
@@ -269,7 +271,7 @@ tl::expected<reply_msg, int> deserialize_reply(const serialized_msg& msg);
 int send_message(void* socket, serialized_msg&& msg);
 tl::expected<serialized_msg, int> recv_message(void* socket, int flags = 0);
 
-reply_error to_error(error_type type, int value = 0);
+reply_error to_error(error_type type, int code = 0, std::string value = "");
 const char* to_string(const api::typed_error&);
 std::shared_ptr<BlockDevice> to_swagger(const device&);
 std::shared_ptr<BlockFile> to_swagger(const file&);

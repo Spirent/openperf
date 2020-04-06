@@ -1,6 +1,8 @@
 #include <thread>
+#include <limits>
 #include "task.hpp"
 #include "core/op_core.h"
+#include "utils/random.hpp"
 
 namespace openperf::block::worker
 {
@@ -16,9 +18,9 @@ struct operation_config {
     int (*queue_aio_op)(aiocb *aiocb);
 };
 
-static off_t get_first_block(size_t, size_t)
+static off_t get_first_block(size_t header_size, size_t io_size)
 {
-    return 0;
+    return (header_size + io_size - 1) / io_size;
 }
 
 static off_t get_last_block(size_t file_size, size_t io_size)
@@ -34,8 +36,6 @@ inline static task_stat_t generate_default_stat()
 {
     return {realtime::now(),{0,0,0,0,0,0,0,0},{0,0,0,0,0,0,0,0}};
 }
-
-
 
 static int submit_aio_op(const operation_config& op_config, operation_state *op_state) {
     struct aiocb *aio = &op_state->aiocb;
@@ -258,13 +258,27 @@ size_t block_task::worker_spin(int (*queue_aio_op)(aiocb *aiocb), size_t block_s
     return (total_ops);
 }
 
+void pseudo_random_fill(void *buffer, size_t length)
+{
+    uint32_t seed = utils::random_uniform<uint32_t>(UINT32_MAX);
+    uint32_t *ptr = (uint32_t*)buffer;
+
+    for (size_t i = 0; i < length / 4; i++) {
+        uint32_t temp = (seed << 9) ^ (seed << 14);
+        seed = temp ^ (temp >> 23) ^ (temp >> 18);
+        *(ptr + i) = temp;
+    }
+}
+
 void block_task::config(const task_config_t& p_config)
 {
     task_config = p_config;
 
-    buf = (uint8_t*)realloc(buf, task_config.queue_depth * std::max(task_config.read_size, task_config.write_size));
+    auto buf_len = task_config.queue_depth * std::max(task_config.read_size, task_config.write_size);
+    buf = (uint8_t*)realloc(buf, buf_len);
+    pseudo_random_fill(buf, buf_len);
     aio_ops = (operation_state*)realloc(aio_ops, task_config.queue_depth * sizeof(operation_state));
-    pattern.reset(get_first_block(task_config.f_size, task_config.read_size), get_last_block(task_config.f_size, task_config.read_size), task_config.pattern);
+    pattern.reset(get_first_block(task_config.header_size, task_config.read_size), get_last_block(task_config.f_size, task_config.read_size), task_config.pattern);
 }
 
 task_config_t block_task::config() const
@@ -302,6 +316,14 @@ void block_task::spin()
         actual_stat = generate_default_stat();
         start_timestamp = now();
     }
+
+    if (!task_config.reads_per_sec && !task_config.writes_per_sec)
+        throw std::runtime_error();
+
+    if (!task_config.reads_per_sec)
+        read_timestamp = std::numeric_limits<decltype(read_timestamp)>().max();
+    if (!task_config.writes_per_sec)
+        write_timestamp = std::numeric_limits<decltype(write_timestamp)>().max();
 
     auto next_ts = std::min(read_timestamp, write_timestamp);
     auto before_sleep_time = now();

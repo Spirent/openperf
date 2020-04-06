@@ -6,7 +6,7 @@
 namespace openperf::block::model {
 
 class device {
-private:
+protected:
     std::string id;
     std::string path;
     int64_t size;
@@ -20,8 +20,8 @@ public:
     std::string get_path() const;
     void set_path(const std::string& value);
 
-    int64_t get_size() const;
-    void set_size(const int64_t value);
+    uint64_t get_size() const;
+    void set_size(const uint64_t value);
 
     std::string get_info() const;
     void set_info(const std::string& value);
