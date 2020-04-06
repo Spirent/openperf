@@ -5,17 +5,22 @@
 #include <memory>
 #include "models/file.hpp"
 #include "tl/expected.hpp"
-#include "models/virtual_device.hpp"
+#include "virtual_device.hpp"
 #include "utils/singleton.hpp"
 
 namespace openperf::block::file {
 
 class file : public model::file, public virtual_device {
+protected:
+    void scrub_done() override;
+    void scrub_update(double) override;
 public:
     file(const model::file& f);
     ~file(){};
-    int vopen();
-    void vclose();
+    int vopen() override;
+    void vclose() override;
+    uint64_t get_size() const override;
+    uint64_t get_header_size() const override;
 };
 
 typedef std::shared_ptr<file> block_file_ptr;

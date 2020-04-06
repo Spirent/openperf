@@ -16,6 +16,7 @@ using time_point = std::chrono::time_point<timesync::chrono::realtime>;
 struct task_config_t {
     int fd;
     size_t f_size;
+    size_t header_size;
     size_t queue_depth;
     int32_t reads_per_sec;
     size_t read_size;

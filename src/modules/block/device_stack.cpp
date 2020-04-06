@@ -18,12 +18,18 @@ int device::vopen()
     if ((fd = open(get_path().c_str(), O_RDWR)) < 0) {
         return fd = -ENOSPC;
     }
+
     return fd;
 }
 
 void device::vclose()
 {
     close(fd);
+}
+
+uint64_t device::get_size() const
+{
+    return model::device::get_size();
 }
 
 device_stack::device_stack()

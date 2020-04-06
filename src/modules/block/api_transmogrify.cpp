@@ -1,6 +1,7 @@
 #include <zmq.h>
 #include <sstream>
 #include <iomanip>
+#include <netdb.h>
 #include "block/api.hpp"
 #include "utils/overloaded_visitor.hpp"
 #include "utils/variant_index.hpp"
@@ -76,13 +77,41 @@ std::string to_string(const model::block_generation_pattern& pattern) {
     return "unknown";
 }
 
+const static std::unordered_map<std::string, model::file_state> block_file_states = {
+    {"none", model::file_state::NONE},
+    {"init", model::file_state::INIT},
+    {"ready", model::file_state::READY},
+};
+
+const static std::unordered_map<model::file_state, std::string> block_file_state_strings = {
+    {model::file_state::NONE, "none"},
+    {model::file_state::INIT, "init"},
+    {model::file_state::READY, "ready"},
+};
+
+model::file_state block_file_state_from_string(const std::string& value) {
+    if (block_file_states.count(value))
+        return block_file_states.at(value);
+    throw std::runtime_error("Pattern \"" + value + "\" is unknown");
+}
+
+std::string to_string(const model::file_state& pattern) {
+    if (block_file_state_strings.count(pattern))
+        return block_file_state_strings.at(pattern);
+    return "unknown";
+}
+
 const char* to_string(const api::typed_error& error)
 {
     switch (error.type) {
     case api::error_type::NOT_FOUND:
         return ("");
+    case api::error_type::EAI_ERROR:
+        return (gai_strerror(error.code));
     case api::error_type::ZMQ_ERROR:
-        return (zmq_strerror(error.value));
+        return (zmq_strerror(error.code));
+    case api::error_type::CUSTOM_ERROR:
+        return error.value;
     default:
         return ("unknown error type");
     }
@@ -413,9 +442,12 @@ tl::expected<serialized_msg, int> recv_message(void* socket, int flags)
     return (msg);
 }
 
-reply_error to_error(error_type type, int value)
+reply_error to_error(error_type type, int code, std::string value)
 {
-    return (reply_error{.info = typed_error{.type = type, .value = value}});
+    auto err = reply_error{.info = typed_error{.type = type, .code = code}};
+    value.copy(err.info.value, err_max_length - 1);
+    err.info.value[std::min(value.length(), err_max_length)] = '\0';
+    return err;
 }
 
 std::shared_ptr<BlockDevice> to_swagger(const device& p_device)
@@ -436,7 +468,7 @@ std::shared_ptr<BlockFile> to_swagger(const file& p_file)
     blkfile->setPath(p_file.path);
     blkfile->setFileSize(p_file.size);
     blkfile->setInitPercentComplete(p_file.init_percent_complete);
-    blkfile->setState(p_file.state);
+    blkfile->setState(to_string(p_file.state));
     return blkfile;
 }
 
@@ -517,9 +549,9 @@ file from_swagger(const BlockFile& p_file)
     auto f = file{};
     f.size = p_file.getFileSize();
     f.init_percent_complete = p_file.getInitPercentComplete();
+    f.state = block_file_state_from_string(p_file.getState());
     copy_string(p_file.getId(), f.id, id_max_length);
     copy_string(p_file.getPath(), f.path, path_max_length);
-    copy_string(p_file.getState(), f.state, file_state_max_length);
     return f;
 }
 
@@ -576,9 +608,9 @@ file to_api_model(const model::file& p_file)
     auto f = file{};
     f.size = p_file.get_size();
     f.init_percent_complete = p_file.get_init_percent_complete();
+    f.state = p_file.get_state();
     copy_string(p_file.get_id(), f.id, id_max_length);
     copy_string(p_file.get_path(), f.path, path_max_length);
-    copy_string(p_file.get_state(), f.state, file_state_max_length);
     return f;
 }
 
@@ -631,7 +663,6 @@ std::shared_ptr<model::file> from_api_model(const file& p_file)
     auto f = std::make_shared<model::file>();
     f->set_id(p_file.id);
     f->set_path(p_file.path);
-    f->set_state(p_file.state);
     f->set_size(p_file.size);
     f->set_init_percent_complete(p_file.init_percent_complete);
     return f;

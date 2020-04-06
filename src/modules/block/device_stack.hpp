@@ -4,7 +4,7 @@
 #include <vector>
 #include <unordered_map>
 #include "models/device.hpp"
-#include "models/virtual_device.hpp"
+#include "virtual_device.hpp"
 #include "utils/singleton.hpp"
 
 namespace openperf::block::device {
@@ -15,6 +15,7 @@ public:
     ~device() {};
     int vopen();
     void vclose();
+    uint64_t get_size() const;
 };
 
 typedef std::shared_ptr<device> device_ptr;

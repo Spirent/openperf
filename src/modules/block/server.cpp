@@ -67,7 +67,7 @@ reply_msg server::handle_request(const request_block_file_add& request)
         block_file_model->set_id(core::to_string(core::uuid::random()));
     }
     auto result = blk_file_stack->create_block_file(*block_file_model);
-    if (!result) { return to_error(error_type::NOT_FOUND); }
+    if (!result) { return to_error(error_type::CUSTOM_ERROR, 0, result.error()); }
 
     auto reply = reply_block_files{};
     reply.files.emplace_back(api::to_api_model(*result.value()));

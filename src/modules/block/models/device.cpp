@@ -22,12 +22,12 @@ void device::set_path(const std::string& value)
     path = value;
 }
 
-int64_t device::get_size() const
+uint64_t device::get_size() const
 {
     return size;
 }
 
-void device::set_size(const int64_t value)
+void device::set_size(const uint64_t value)
 {
     size = value;
 }
