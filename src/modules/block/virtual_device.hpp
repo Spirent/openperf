@@ -45,6 +45,12 @@ public:
     }
 };
 
+class virtual_device_stack {
+public:
+    virtual ~virtual_device_stack() = default;
+    virtual std::shared_ptr<virtual_device> get_vdev(const std::string&) const = 0;
+};
+
 }
 
 #endif

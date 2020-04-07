@@ -18,8 +18,8 @@ private:
 public:
     generator_stack(){};
 
-    std::vector<block_generator_ptr> block_generators_list();
-    tl::expected<block_generator_ptr, std::string> create_block_generator(const model::block_generator& block_generator_model);
+    std::vector<block_generator_ptr> block_generators_list() const;
+    tl::expected<block_generator_ptr, std::string> create_block_generator(const model::block_generator& block_generator_model, const std::vector<virtual_device_stack*> vdev_stack_list);
     block_generator_ptr get_block_generator(std::string id) const;
     void delete_block_generator(std::string id);
 };
