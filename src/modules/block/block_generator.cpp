@@ -14,6 +14,8 @@ block_generator::block_generator(const model::block_generator& generator_model, 
     auto config = generate_worker_config(get_config());
     blkworker = block_worker_ptr(new block_worker(config));
     blkworker->start();
+    if (is_running())
+        blkworker->resume();
 }
 
 block_generator::~block_generator()

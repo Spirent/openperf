@@ -22,6 +22,9 @@ off_t pattern_generator::pattern_sequential()
         idx = min;
     }
 
+    if (idx < min)
+        idx = min;
+
     return idx;
 }
 
