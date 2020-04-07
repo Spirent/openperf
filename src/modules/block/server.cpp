@@ -63,7 +63,7 @@ reply_msg server::handle_request(const request_block_file_add& request)
 
     auto block_file_model = api::from_api_model(request.source);
     // If user did not specify an id create one for them.
-    if (block_file_model->get_id() == core::empty_id_string) {
+    if (block_file_model->get_id() == api::empty_id_string) {
         block_file_model->set_id(core::to_string(core::uuid::random()));
     }
     auto result = blk_file_stack->create_block_file(*block_file_model);
@@ -110,7 +110,7 @@ reply_msg server::handle_request(const request_block_generator_add& request)
 
     auto block_generator_model = api::from_api_model(request.source);
     // If user did not specify an id create one for them.kjuolpik
-    if (block_generator_model->get_id() == core::empty_id_string) {
+    if (block_generator_model->get_id() == api::empty_id_string) {
         block_generator_model->set_id(core::to_string(core::uuid::random()));
     }
 
