@@ -23,8 +23,8 @@ public:
     uint64_t get_header_size() const override;
 };
 
-typedef std::shared_ptr<file> block_file_ptr;
-typedef std::unordered_map<std::string, block_file_ptr> block_file_map;
+using block_file_ptr = std::shared_ptr<file>;
+using block_file_map = std::unordered_map<std::string, block_file_ptr>;
 
 class file_stack : public virtual_device_stack
 {

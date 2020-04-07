@@ -11,8 +11,8 @@ namespace openperf::block::generator {
 
 using namespace openperf::block::worker;
 
-typedef utils::worker::worker<block_task> block_worker;
-typedef std::unique_ptr<block_worker> block_worker_ptr;
+using block_worker = utils::worker::worker<block_task>;
+using block_worker_ptr = std::unique_ptr<block_worker>;
 using block_result_ptr = std::shared_ptr<model::block_generator_result>;
 
 class block_generator : public model::block_generator

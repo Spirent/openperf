@@ -7,8 +7,8 @@
 
 namespace openperf::block::generator {
 
-typedef std::shared_ptr<block_generator> block_generator_ptr;
-typedef std::unordered_map<std::string, block_generator_ptr> block_generator_map;
+using block_generator_ptr = std::shared_ptr<block_generator>;
+using block_generator_map = std::unordered_map<std::string, block_generator_ptr>;
 
 class generator_stack
 {
