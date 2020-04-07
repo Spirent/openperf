@@ -26,7 +26,7 @@ public:
     file(const file &) = default;
 
     std::string get_id() const;
-    void set_id(const std::string& value);
+    void set_id(std::string_view value);
 
     uint64_t get_size() const;
     void set_size(const uint64_t value);
@@ -35,7 +35,7 @@ public:
     void set_init_percent_complete(const int32_t value);
 
     std::string get_path() const;
-    void set_path(const std::string& value);
+    void set_path(std::string_view value);
 
     file_state get_state() const;
     void set_state(const file_state& value);

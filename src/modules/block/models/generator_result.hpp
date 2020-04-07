@@ -28,7 +28,7 @@ public:
     block_generator_result(const block_generator_result &) = default;
 
     std::string get_id() const;
-    void set_id(const std::string& value);
+    void set_id(std::string_view value);
 
     bool is_active() const;
     void set_active(bool value);

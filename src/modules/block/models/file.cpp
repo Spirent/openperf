@@ -6,7 +6,7 @@ std::string file::get_id() const
 {
     return id;
 }
-void file::set_id(const std::string& value)
+void file::set_id(std::string_view value)
 {
     id = value;
 }
@@ -33,7 +33,7 @@ std::string file::get_path() const
 {
     return path;
 }
-void file::set_path(const std::string& value)
+void file::set_path(std::string_view value)
 {
     path = value;
 }

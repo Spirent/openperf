@@ -21,7 +21,7 @@ public:
 using device_ptr = std::shared_ptr<device>;
 using device_map = std::unordered_map<std::string, device_ptr>;
 
-static const std::string device_dir = "/dev";
+static constexpr std::string_view device_dir = "/dev";
 
 class device_stack : public virtual_device_stack
 {
@@ -29,10 +29,10 @@ private:
     device_map block_devices;
 
     void init_device_stack();
-    uint64_t get_block_device_size(const std::string& id);
-    std::string get_block_device_info(const std::string& id);
-    int is_block_device_usable(const std::string& id);
-    bool is_raw_device(const std::string& id);
+    uint64_t get_block_device_size(std::string_view id);
+    std::string get_block_device_info(std::string_view id);
+    int is_block_device_usable(std::string_view id);
+    bool is_raw_device(std::string_view id);
 
 public:
     device_stack();

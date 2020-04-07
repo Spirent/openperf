@@ -7,7 +7,7 @@ std::string device::get_id() const
     return id;
 }
 
-void device::set_id(const std::string& value)
+void device::set_id(std::string_view value)
 {
     id = value;
 }
@@ -17,7 +17,7 @@ std::string device::get_path() const
     return path;
 }
 
-void device::set_path(const std::string& value)
+void device::set_path(std::string_view value)
 {
     path = value;
 }
@@ -37,7 +37,7 @@ std::string device::get_info() const
     return info;
 }
 
-void device::set_info(const std::string& value)
+void device::set_info(std::string_view value)
 {
     info = value;
 }

@@ -48,7 +48,7 @@ static void close(serialized_msg& msg)
     zmq_close(&msg.data);
 }
 
-void copy_string(const std::string& str, char* ch_arr, size_t max_length) {
+void copy_string(std::string_view str, char* ch_arr, size_t max_length) {
     str.copy(ch_arr, max_length - 1);
     ch_arr[std::min(str.length(), max_length - 1)] = '\0';
 }
