@@ -18,8 +18,8 @@ public:
     uint64_t get_size() const;
 };
 
-typedef std::shared_ptr<device> device_ptr;
-typedef std::unordered_map<std::string, device_ptr> device_map;
+using device_ptr = std::shared_ptr<device>;
+using device_map = std::unordered_map<std::string, device_ptr>;
 
 static const std::string device_dir = "/dev";
 

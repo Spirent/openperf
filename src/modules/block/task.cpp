@@ -28,13 +28,9 @@ static off_t get_last_block(size_t file_size, size_t io_size)
     return static_cast<off_t>(file_size / io_size);
 }
 
-inline static int64_t now() {
-    return realtime::now().time_since_epoch().count();
-}
-
 inline static task_stat_t generate_default_stat()
 {
-    return {realtime::now(),{0,0,0,0,0,0,0,0},{0,0,0,0,0,0,0,0}};
+    return {ref_clock::now(),{0,0,0,0,0,0,0,0},{0,0,0,0,0,0,0,0}};
 }
 
 static int submit_aio_op(const operation_config& op_config, operation_state *op_state) {
@@ -50,7 +46,7 @@ static int submit_aio_op(const operation_config& op_config, operation_state *op_
 
     /* Reset stat related variables */
     op_state->state = PENDING;
-    op_state->start_ns = now();
+    op_state->start_ns = ref_clock::now().time_since_epoch().count();
     op_state->stop_ns = op_state->start_ns;
     op_state->io_bytes = 0;
 
@@ -68,7 +64,7 @@ static int submit_aio_op(const operation_config& op_config, operation_state *op_
     return 0;
 }
 
-static int wait_for_aio_ops(operation_state *aio_ops,
+static int wait_for_aio_ops(std::vector<operation_state> aio_ops,
                              size_t nb_ops) {
 
     const aiocb *aiocblist[nb_ops];
@@ -78,9 +74,8 @@ static int wait_for_aio_ops(operation_state *aio_ops,
      * operations.
      */
     for (size_t i = 0; i < nb_ops; ++i) {
-        if (aio_ops[i].state == PENDING) {
-            /* add it to our list */
-            aiocblist[nb_cbs++] = &aio_ops[i].aiocb;
+        if (aio_ops.at(i).state == PENDING) {
+            aiocblist[nb_cbs++] = &aio_ops.at(i).aiocb;
         }
     }
 
@@ -113,7 +108,7 @@ int err = 0;
     case 0: {
         /* AIO operation completed */
         ssize_t nb_bytes = aio_return(aiocb);
-        aio_op->stop_ns = now();
+        aio_op->stop_ns = ref_clock::now().time_since_epoch().count();
         aio_op->io_bytes = nb_bytes;
         aio_op->state = COMPLETE;
         break;
@@ -139,26 +134,19 @@ block_task::block_task()
     , shared_stat(generate_default_stat())
     , at_stat(&shared_stat)
     , reset_stat(false)
-    , aio_ops(0)
-    , buf(0)
-    , read_timestamp(0)
-    , write_timestamp(0)
-    , pause_timestamp(0)
-    , start_timestamp(0)
+    , read_timestamp(ref_clock::now())
+    , write_timestamp(ref_clock::now())
+    , pause_timestamp(ref_clock::now())
+    , start_timestamp(ref_clock::now())
 {
 
 }
 
 block_task::~block_task()
-{
-    if (buf)
-        delete buf;
-    if (aio_ops)
-        delete aio_ops;
-}
+{}
 
 
-size_t block_task::worker_spin(int (*queue_aio_op)(aiocb *aiocb), size_t block_size, task_operation_stat_t& op_stat, int64_t deadline)
+size_t block_task::worker_spin(int (*queue_aio_op)(aiocb *aiocb), size_t block_size, task_operation_stat_t& op_stat, time_point deadline)
 {
     uint_fast64_t ns_min = UINT64_MAX;
     uint_fast64_t ns_max = 0;
@@ -169,7 +157,7 @@ size_t block_task::worker_spin(int (*queue_aio_op)(aiocb *aiocb), size_t block_s
         task_config.fd,
         task_config.f_size,
         task_config.read_size,
-        buf,
+        buf.data(),
         pattern.generate(),
         queue_aio_op
     };
@@ -186,6 +174,7 @@ size_t block_task::worker_spin(int (*queue_aio_op)(aiocb *aiocb), size_t block_s
             /* temporary queueing error */
             break;
         }
+        op_conf.buffer += op_conf.block_size;
     }
     while (pending_ops) {
         if (wait_for_aio_ops(aio_ops, queue_depth) != 0) {
@@ -239,7 +228,7 @@ size_t block_task::worker_spin(int (*queue_aio_op)(aiocb *aiocb), size_t block_s
                 /* if we haven't hit our total or deadline, then fire off another op */
                 op_conf.block_size = block_size / queue_depth + ((i < int32_t(block_size % queue_depth)) ? 1 : 0);
                 if ((total_ops + pending_ops) >= queue_depth
-                    || now() >= deadline
+                    || ref_clock::now() >= deadline
                     || submit_aio_op(op_conf, aio_op) != 0) {
                     // if any condition is true, we have one less pending op
                     pending_ops--;
@@ -276,9 +265,9 @@ void block_task::config(const task_config_t& p_config)
     task_config = p_config;
 
     auto buf_len = task_config.queue_depth * std::max(task_config.read_size, task_config.write_size);
-    buf = (uint8_t*)realloc(buf, buf_len);
-    pseudo_random_fill(buf, buf_len);
-    aio_ops = (operation_state*)realloc(aio_ops, task_config.queue_depth * sizeof(operation_state));
+    buf.resize(buf_len);
+    pseudo_random_fill(buf.data(), buf.size());
+    aio_ops.resize(task_config.queue_depth);
     pattern.reset(get_first_block(task_config.header_size, task_config.read_size), get_last_block(task_config.f_size, task_config.read_size), task_config.pattern);
 }
 
@@ -289,14 +278,14 @@ task_config_t block_task::config() const
 
 void block_task::resume()
 {
-    read_timestamp += now() - pause_timestamp;
-    write_timestamp += now() - pause_timestamp;
-    start_timestamp += now() - pause_timestamp;
+    read_timestamp += ref_clock::now() - pause_timestamp;
+    write_timestamp += ref_clock::now() - pause_timestamp;
+    start_timestamp += ref_clock::now() - pause_timestamp;
 }
 
 void block_task::pause()
 {
-    pause_timestamp = now();
+    pause_timestamp = ref_clock::now();
 }
 
 task_stat_t block_task::stat() const
@@ -315,7 +304,7 @@ void block_task::spin()
     if (reset_stat.load()) {
         reset_stat = false;
         actual_stat = generate_default_stat();
-        start_timestamp = now();
+        start_timestamp = ref_clock::now();
     }
 
     if (!task_config.reads_per_sec && !task_config.writes_per_sec)
@@ -327,25 +316,25 @@ void block_task::spin()
         write_timestamp = std::numeric_limits<decltype(write_timestamp)>().max();
 
     auto next_ts = std::min(read_timestamp, write_timestamp);
-    auto before_sleep_time = now();
+    auto before_sleep_time = ref_clock::now();
     if (next_ts > before_sleep_time)
-        std::this_thread::sleep_for(std::chrono::nanoseconds(next_ts - before_sleep_time));
+        std::this_thread::sleep_for(next_ts - before_sleep_time);
 
     size_t nb_ops;
-    auto cur_time = now();
+    auto cur_time = ref_clock::now();
     if (read_timestamp < write_timestamp) {
-        read_timestamp += std::nano::den / task_config.reads_per_sec;
+        read_timestamp += std::chrono::nanoseconds(std::nano::den / task_config.reads_per_sec);
         if (task_config.read_size > 0) {
-            nb_ops = worker_spin(aio_read, task_config.read_size, actual_stat.read, now() + std::nano::den);
-            auto cicles = (cur_time - start_timestamp) * task_config.reads_per_sec / std::nano::den + 1;
+            nb_ops = worker_spin(aio_read, task_config.read_size, actual_stat.read, ref_clock::now() + std::chrono::seconds(1));
+            auto cicles = (cur_time - start_timestamp).count() * task_config.reads_per_sec / std::nano::den + 1;
             actual_stat.read.ops_target = cicles * task_config.queue_depth;
             actual_stat.read.bytes_target = cicles * task_config.read_size;
         }
     } else {
-        write_timestamp += std::nano::den / task_config.writes_per_sec;
+        write_timestamp += std::chrono::nanoseconds(std::nano::den / task_config.writes_per_sec);
         if (task_config.write_size > 0) {
-            nb_ops = worker_spin(aio_write, task_config.write_size, actual_stat.write, now() + std::nano::den);
-            auto cicles = (cur_time - start_timestamp) * task_config.writes_per_sec / std::nano::den + 1;
+            nb_ops = worker_spin(aio_write, task_config.write_size, actual_stat.write, ref_clock::now() + std::chrono::seconds(1));
+            auto cicles = (cur_time - start_timestamp).count() * task_config.writes_per_sec / std::nano::den + 1;
             actual_stat.write.ops_target = cicles * task_config.queue_depth;
             actual_stat.write.bytes_target = cicles * task_config.write_size;
         }
@@ -355,7 +344,7 @@ void block_task::spin()
     if (reset_stat.load()) {
         reset_stat = false;
         actual_stat = generate_default_stat();
-        start_timestamp = now();
+        start_timestamp = ref_clock::now();
     }
 
     *at_stat = actual_stat;
