@@ -87,7 +87,6 @@ enum Http::Code to_code(const api::reply_error& error)
 handler::handler(void* context, Rest::Router& router)
     : m_socket(op_socket_get_client(context, ZMQ_REQ, api::endpoint.data()))
 {
-    /* Time counter handlers */
     Rest::Routes::Get(router,
                       "/block-devices",
                       Rest::Routes::bind(&handler::list_devices, this));

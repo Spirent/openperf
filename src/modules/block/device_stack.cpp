@@ -70,7 +70,7 @@ void device_stack::init_device_stack()
     closedir(dir);
 }
 
-uint64_t device_stack::get_block_device_size(const std::string id)
+uint64_t device_stack::get_block_device_size(const std::string& id)
 {
     off_t nb_blocks = 0;
     char devname[PATH_MAX + 1];
@@ -100,20 +100,14 @@ uint64_t device_stack::get_block_device_size(const std::string id)
     return (nb_blocks << 9);
 }
 
-std::string device_stack::get_block_device_info(const std::string) { return ""; }
+std::string device_stack::get_block_device_info(const std::string&) { return ""; }
 
-int device_stack::is_block_device_usable(const std::string id)
+int device_stack::is_block_device_usable(const std::string&)
 {
-    /*
-     * Disallow block I/O on both the boot disk, vblk0, and the primary
-     * OS partition, vblk0.1.
-     */
-    const char* boot_regex = "vblk0([.]1)?$";
-    const std::regex id_regex(boot_regex);
-    return !std::regex_match(id, id_regex);
+    return true;
 }
 
-bool device_stack::is_raw_device(const std::string id)
+bool device_stack::is_raw_device(const std::string& id)
 {
     char devname[PATH_MAX + 1];
     struct stat st;
@@ -129,7 +123,7 @@ bool device_stack::is_raw_device(const std::string id)
     return (true);
 }
 
-device_ptr device_stack::get_block_device(std::string id)
+device_ptr device_stack::get_block_device(const std::string& id)
 {
     if (block_devices.count(id)) return block_devices.at(id);
     return nullptr;

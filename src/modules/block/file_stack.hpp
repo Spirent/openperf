@@ -32,13 +32,13 @@ private:
     block_file_map block_files;
 
 public:
-    file_stack(){};
+    file_stack() = default;
 
     std::vector<block_file_ptr> files_list();
     tl::expected<block_file_ptr, std::string>
-    create_block_file(model::file& block_file);
-    block_file_ptr get_block_file(std::string id);
-    void delete_block_file(std::string id);
+    create_block_file(const model::file& block_file);
+    block_file_ptr get_block_file(const std::string& id);
+    void delete_block_file(const std::string& id);
 };
 
 } // namespace openperf::block::file

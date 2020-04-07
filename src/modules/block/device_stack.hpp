@@ -28,14 +28,14 @@ private:
     device_map block_devices;
 
     void init_device_stack();
-    uint64_t get_block_device_size(const std::string id);
-    std::string get_block_device_info(const std::string);
-    int is_block_device_usable(const std::string id);
-    bool is_raw_device(const std::string id);
+    uint64_t get_block_device_size(const std::string& id);
+    std::string get_block_device_info(const std::string& id);
+    int is_block_device_usable(const std::string& id);
+    bool is_raw_device(const std::string& id);
 
 public:
     device_stack();
-    device_ptr get_block_device(std::string id);
+    device_ptr get_block_device(const std::string& id);
     std::vector<device_ptr> block_devices_list();
 };
 
