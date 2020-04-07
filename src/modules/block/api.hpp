@@ -21,6 +21,8 @@
 namespace openperf::block::api {
 
 const std::string endpoint = "inproc://openperf_block";
+static const std::string empty_id_string = "none";
+
 using namespace swagger::v1::model;
 using time_point = std::chrono::time_point<timesync::chrono::realtime>;
 
