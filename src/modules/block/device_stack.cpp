@@ -44,10 +44,10 @@ void device_stack::init_device_stack()
 
     block_devices.clear();
 
-    if ((dir = opendir(device_dir.c_str())) == nullptr) {
+    if ((dir = opendir(device_dir.data())) == nullptr) {
         OP_LOG(OP_LOG_ERROR,
                "Could not open directory %s: %s\n",
-               device_dir.c_str(),
+               device_dir.data(),
                strerror(errno));
         return;
     }
@@ -59,7 +59,7 @@ void device_stack::init_device_stack()
 
         auto blkdev = new device();
         blkdev->set_id(core::to_string(core::uuid::random()));
-        blkdev->set_path(device_dir + "/" + std::string(entry->d_name));
+        blkdev->set_path(std::string(device_dir) + "/" + std::string(entry->d_name));
         blkdev->set_size(get_block_device_size(entry->d_name));
         blkdev->set_usable(is_block_device_usable(entry->d_name));
         blkdev->set_info(get_block_device_info(entry->d_name));
@@ -70,11 +70,11 @@ void device_stack::init_device_stack()
     closedir(dir);
 }
 
-uint64_t device_stack::get_block_device_size(const std::string& id)
+uint64_t device_stack::get_block_device_size(std::string_view id)
 {
     off_t nb_blocks = 0;
     char devname[PATH_MAX + 1];
-    snprintf(devname, PATH_MAX, "%s/%s", device_dir.c_str(), id.c_str());
+    snprintf(devname, PATH_MAX, "%s/%s", device_dir.data(), id.data());
 
     int fd = open(devname, O_RDONLY);
     if (fd < 0) {
@@ -100,19 +100,19 @@ uint64_t device_stack::get_block_device_size(const std::string& id)
     return (nb_blocks << 9);
 }
 
-std::string device_stack::get_block_device_info(const std::string&) { return ""; }
+std::string device_stack::get_block_device_info(std::string_view) { return ""; }
 
-int device_stack::is_block_device_usable(const std::string&)
+int device_stack::is_block_device_usable(std::string_view)
 {
     return true;
 }
 
-bool device_stack::is_raw_device(const std::string& id)
+bool device_stack::is_raw_device(std::string_view id)
 {
     char devname[PATH_MAX + 1];
     struct stat st;
 
-    snprintf(devname, PATH_MAX, "%s/%s", device_dir.c_str(), id.c_str());
+    snprintf(devname, PATH_MAX, "%s/%s", device_dir.data(), id.data());
 
     if ((stat(devname, &st)) != 0 || !S_ISBLK(st.st_mode))
         return (false); /* Not a block device */

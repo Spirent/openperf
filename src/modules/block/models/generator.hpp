@@ -25,13 +25,13 @@ public:
     block_generator(const block_generator &) = default;
 
     std::string get_id() const;
-    void set_id(const std::string& value);
+    void set_id(std::string_view value);
 
     block_generator_config get_config() const;
     void set_config(const block_generator_config& value);
 
     std::string get_resource_id() const;
-    void set_resource_id(const std::string& value);
+    void set_resource_id(std::string_view value);
 
     bool is_running() const;
     void set_running(const bool value);

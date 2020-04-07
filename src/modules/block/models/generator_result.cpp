@@ -7,7 +7,7 @@ std::string block_generator_result::get_id() const
     return id;
 }
 
-void block_generator_result::set_id(const std::string& value)
+void block_generator_result::set_id(std::string_view value)
 {
     id = value;
 }
