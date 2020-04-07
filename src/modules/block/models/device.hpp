@@ -5,7 +5,8 @@
 
 namespace openperf::block::model {
 
-class device {
+class device
+{
 protected:
     std::string id;
     std::string path;
@@ -30,6 +31,6 @@ public:
     void set_usable(const bool value);
 };
 
-} // openperf::block::model
+} // namespace openperf::block::model
 
 #endif // _OP_BLOCK_DEVICE_MODEL_HPP_

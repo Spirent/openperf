@@ -65,13 +65,13 @@ public:
                               Http::ResponseWriter response);
 
     void list_generator_results(const Rest::Request& request,
-                               Http::ResponseWriter response);
+                                Http::ResponseWriter response);
 
     void get_generator_result(const Rest::Request& request,
                               Http::ResponseWriter response);
 
     void delete_generator_result(const Rest::Request& request,
-                              Http::ResponseWriter response);
+                                 Http::ResponseWriter response);
 };
 
 enum Http::Code to_code(const api::reply_error& error)
@@ -130,15 +130,17 @@ handler::handler(void* context, Rest::Router& router)
         router,
         "/block-generators/x/bulk-stop",
         Rest::Routes::bind(&handler::bulk_stop_generators, this));
-    Rest::Routes::Get(router,
-                      "/block-generator-results",
-                      Rest::Routes::bind(&handler::list_generator_results, this));
+    Rest::Routes::Get(
+        router,
+        "/block-generator-results",
+        Rest::Routes::bind(&handler::list_generator_results, this));
     Rest::Routes::Get(router,
                       "/block-generator-results/:id",
                       Rest::Routes::bind(&handler::get_generator_result, this));
-    Rest::Routes::Delete(router,
-                         "/block-generator-results/:id",
-                         Rest::Routes::bind(&handler::delete_generator_result, this));
+    Rest::Routes::Delete(
+        router,
+        "/block-generator-results/:id",
+        Rest::Routes::bind(&handler::delete_generator_result, this));
 }
 
 api::reply_msg submit_request(void* socket, const api::request_msg& request)
@@ -186,11 +188,12 @@ void handler::get_device(const Rest::Request& request,
     }
 
     auto api_reply =
-        submit_request(m_socket.get(), api::request_block_device{id: id});
+        submit_request(m_socket.get(), api::request_block_device{id : id});
     if (auto reply = std::get_if<api::reply_block_devices>(&api_reply)) {
         response.headers().add<Http::Header::ContentType>(
             MIME(Application, Json));
-        response.send(Http::Code::Ok, api::to_swagger(reply->devices.at(0))->toJson().dump());
+        response.send(Http::Code::Ok,
+                      api::to_swagger(reply->devices.at(0))->toJson().dump());
     } else if (auto error = std::get_if<api::reply_error>(&api_reply)) {
         response.send(to_code(*error), api::to_string(error->info));
     } else {
@@ -228,8 +231,9 @@ void handler::create_file(const Rest::Request& request,
         BlockFile file_model;
         file_model.fromJson(file_json);
 
-        auto api_reply =
-            submit_request(m_socket.get(), api::request_block_file_add{api::from_swagger(file_model)});
+        auto api_reply = submit_request(
+            m_socket.get(),
+            api::request_block_file_add{api::from_swagger(file_model)});
         if (auto reply = std::get_if<api::reply_block_files>(&api_reply)) {
             assert(!reply->files.empty());
             response.headers().add<Http::Header::ContentType>(
@@ -260,11 +264,12 @@ void handler::get_file(const Rest::Request& request,
     }
 
     auto api_reply =
-        submit_request(m_socket.get(), api::request_block_file{id: id});
+        submit_request(m_socket.get(), api::request_block_file{id : id});
     if (auto reply = std::get_if<api::reply_block_files>(&api_reply)) {
         response.headers().add<Http::Header::ContentType>(
             MIME(Application, Json));
-        response.send(Http::Code::Ok, api::to_swagger(reply->files.front())->toJson().dump());
+        response.send(Http::Code::Ok,
+                      api::to_swagger(reply->files.front())->toJson().dump());
     } else if (auto error = std::get_if<api::reply_error>(&api_reply)) {
         response.send(to_code(*error), api::to_string(error->info));
     } else {
@@ -282,9 +287,8 @@ void handler::delete_file(const Rest::Request& request,
     }
 
     auto api_reply =
-        submit_request(m_socket.get(), api::request_block_file_del{id: id});
-    response.headers().add<Http::Header::ContentType>(
-        MIME(Application, Json));
+        submit_request(m_socket.get(), api::request_block_file_del{id : id});
+    response.headers().add<Http::Header::ContentType>(MIME(Application, Json));
     response.send(Http::Code::No_Content);
 }
 
@@ -323,13 +327,16 @@ void handler::create_generator(const Rest::Request& request,
         generator_model.setConfig(std::make_shared<BlockGeneratorConfig>(gc));
 
         auto api_reply =
-            submit_request(m_socket.get(), api::request_block_generator_add{api::from_swagger(generator_model)});
+            submit_request(m_socket.get(),
+                           api::request_block_generator_add{
+                               api::from_swagger(generator_model)});
         if (auto reply = std::get_if<api::reply_block_generators>(&api_reply)) {
             assert(!reply->generators.empty());
             response.headers().add<Http::Header::ContentType>(
                 MIME(Application, Json));
-            response.send(Http::Code::Ok,
-                          to_swagger(reply->generators.front())->toJson().dump());
+            response.send(
+                Http::Code::Ok,
+                to_swagger(reply->generators.front())->toJson().dump());
         } else if (auto error = std::get_if<api::reply_error>(&api_reply)) {
             response.send(to_code(*error), api::to_string(error->info));
         } else {
@@ -354,11 +361,13 @@ void handler::get_generator(const Rest::Request& request,
     }
 
     auto api_reply =
-        submit_request(m_socket.get(), api::request_block_generator{id: id});
+        submit_request(m_socket.get(), api::request_block_generator{id : id});
     if (auto reply = std::get_if<api::reply_block_generators>(&api_reply)) {
         response.headers().add<Http::Header::ContentType>(
             MIME(Application, Json));
-        response.send(Http::Code::Ok, api::to_swagger(reply->generators.front())->toJson().dump());
+        response.send(
+            Http::Code::Ok,
+            api::to_swagger(reply->generators.front())->toJson().dump());
     } else if (auto error = std::get_if<api::reply_error>(&api_reply)) {
         response.send(to_code(*error), api::to_string(error->info));
     } else {
@@ -374,10 +383,9 @@ void handler::delete_generator(const Rest::Request& request,
         response.send(Http::Code::No_Content);
         return;
     }
-    auto api_reply =
-        submit_request(m_socket.get(), api::request_block_generator_del{id: id});
-    response.headers().add<Http::Header::ContentType>(
-        MIME(Application, Json));
+    auto api_reply = submit_request(m_socket.get(),
+                                    api::request_block_generator_del{id : id});
+    response.headers().add<Http::Header::ContentType>(MIME(Application, Json));
     response.send(Http::Code::No_Content);
 }
 
@@ -390,8 +398,8 @@ void handler::start_generator(const Rest::Request& request,
         return;
     }
 
-    auto api_reply =
-        submit_request(m_socket.get(), api::request_block_generator_start{id: id});
+    auto api_reply = submit_request(
+        m_socket.get(), api::request_block_generator_start{id : id});
     if (std::get_if<api::reply_ok>(&api_reply)) {
         response.headers().add<Http::Header::ContentType>(
             MIME(Application, Json));
@@ -412,8 +420,8 @@ void handler::stop_generator(const Rest::Request& request,
         return;
     }
 
-    auto api_reply =
-        submit_request(m_socket.get(), api::request_block_generator_stop{id: id});
+    auto api_reply = submit_request(m_socket.get(),
+                                    api::request_block_generator_stop{id : id});
     if (std::get_if<api::reply_ok>(&api_reply)) {
         response.headers().add<Http::Header::ContentType>(
             MIME(Application, Json));
@@ -434,7 +442,8 @@ void handler::bulk_start_generators(const Rest::Request& request,
 
     auto api_reply =
         submit_request(m_socket.get(), api::from_swagger(request_model));
-    if (auto res = std::get_if<api::reply_block_generator_bulk_start>(&api_reply)) {
+    if (auto res =
+            std::get_if<api::reply_block_generator_bulk_start>(&api_reply)) {
         response.headers().add<Http::Header::ContentType>(
             MIME(Application, Json));
         response.send(Http::Code::Ok, api::to_swagger(*res)->toJson().dump());
@@ -466,11 +475,12 @@ void handler::bulk_stop_generators(const Rest::Request& request,
 }
 
 void handler::list_generator_results(const Rest::Request&,
-                              Http::ResponseWriter response)
+                                     Http::ResponseWriter response)
 {
-    auto api_reply =
-        submit_request(m_socket.get(), api::request_block_generator_result_list{});
-    if (auto reply = std::get_if<api::reply_block_generator_results>(&api_reply)) {
+    auto api_reply = submit_request(m_socket.get(),
+                                    api::request_block_generator_result_list{});
+    if (auto reply =
+            std::get_if<api::reply_block_generator_results>(&api_reply)) {
         response.headers().add<Http::Header::ContentType>(
             MIME(Application, Json));
         auto results = json::array();
@@ -489,7 +499,7 @@ void handler::list_generator_results(const Rest::Request&,
 }
 
 void handler::get_generator_result(const Rest::Request& request,
-                            Http::ResponseWriter response)
+                                   Http::ResponseWriter response)
 {
     auto id = request.param(":id").as<std::string>();
     if (auto res = openperf::config::op_config_validate_id_string(id); !res) {
@@ -497,12 +507,14 @@ void handler::get_generator_result(const Rest::Request& request,
         return;
     }
 
-    auto api_reply =
-        submit_request(m_socket.get(), api::request_block_generator_result{id: id});
-    if (auto reply = std::get_if<api::reply_block_generator_results>(&api_reply)) {
+    auto api_reply = submit_request(
+        m_socket.get(), api::request_block_generator_result{id : id});
+    if (auto reply =
+            std::get_if<api::reply_block_generator_results>(&api_reply)) {
         response.headers().add<Http::Header::ContentType>(
             MIME(Application, Json));
-        response.send(Http::Code::Ok, api::to_swagger(reply->results.front())->toJson().dump());
+        response.send(Http::Code::Ok,
+                      api::to_swagger(reply->results.front())->toJson().dump());
     } else if (auto error = std::get_if<api::reply_error>(&api_reply)) {
         response.send(to_code(*error), api::to_string(error->info));
     } else {
@@ -511,20 +523,17 @@ void handler::get_generator_result(const Rest::Request& request,
 }
 
 void handler::delete_generator_result(const Rest::Request& request,
-                               Http::ResponseWriter response)
+                                      Http::ResponseWriter response)
 {
     auto id = request.param(":id").as<std::string>();
     if (auto res = openperf::config::op_config_validate_id_string(id); !res) {
         response.send(Http::Code::No_Content);
         return;
     }
-    auto api_reply =
-        submit_request(m_socket.get(), api::request_block_generator_result_del{id: id});
-    response.headers().add<Http::Header::ContentType>(
-        MIME(Application, Json));
+    auto api_reply = submit_request(
+        m_socket.get(), api::request_block_generator_result_del{id : id});
+    response.headers().add<Http::Header::ContentType>(MIME(Application, Json));
     response.send(Http::Code::No_Content);
 }
-
-
 
 } // namespace opneperf::block

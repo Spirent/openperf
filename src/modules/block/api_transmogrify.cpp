@@ -48,54 +48,63 @@ static void close(serialized_msg& msg)
     zmq_close(&msg.data);
 }
 
-void copy_string(std::string_view str, char* ch_arr, size_t max_length) {
+void copy_string(std::string_view str, char* ch_arr, size_t max_length)
+{
     str.copy(ch_arr, max_length - 1);
     ch_arr[std::min(str.length(), max_length - 1)] = '\0';
 }
 
-const static std::unordered_map<std::string, model::block_generation_pattern> block_generation_patterns = {
-    {"random", model::block_generation_pattern::RANDOM},
-    {"sequential", model::block_generation_pattern::SEQUENTIAL},
-    {"reverse", model::block_generation_pattern::REVERSE},
+const static std::unordered_map<std::string, model::block_generation_pattern>
+    block_generation_patterns = {
+        {"random", model::block_generation_pattern::RANDOM},
+        {"sequential", model::block_generation_pattern::SEQUENTIAL},
+        {"reverse", model::block_generation_pattern::REVERSE},
 };
 
-const static std::unordered_map<model::block_generation_pattern, std::string> block_generation_pattern_strings = {
-    {model::block_generation_pattern::RANDOM, "random"},
-    {model::block_generation_pattern::SEQUENTIAL, "sequential"},
-    {model::block_generation_pattern::REVERSE, "reverse"},
+const static std::unordered_map<model::block_generation_pattern, std::string>
+    block_generation_pattern_strings = {
+        {model::block_generation_pattern::RANDOM, "random"},
+        {model::block_generation_pattern::SEQUENTIAL, "sequential"},
+        {model::block_generation_pattern::REVERSE, "reverse"},
 };
 
-model::block_generation_pattern block_generation_pattern_from_string(const std::string& value) {
+model::block_generation_pattern
+block_generation_pattern_from_string(const std::string& value)
+{
     if (block_generation_patterns.count(value))
         return block_generation_patterns.at(value);
     throw std::runtime_error("Pattern \"" + value + "\" is unknown");
 }
 
-std::string to_string(const model::block_generation_pattern& pattern) {
+std::string to_string(const model::block_generation_pattern& pattern)
+{
     if (block_generation_pattern_strings.count(pattern))
         return block_generation_pattern_strings.at(pattern);
     return "unknown";
 }
 
-const static std::unordered_map<std::string, model::file_state> block_file_states = {
-    {"none", model::file_state::NONE},
-    {"init", model::file_state::INIT},
-    {"ready", model::file_state::READY},
+const static std::unordered_map<std::string, model::file_state>
+    block_file_states = {
+        {"none", model::file_state::NONE},
+        {"init", model::file_state::INIT},
+        {"ready", model::file_state::READY},
 };
 
-const static std::unordered_map<model::file_state, std::string> block_file_state_strings = {
-    {model::file_state::NONE, "none"},
-    {model::file_state::INIT, "init"},
-    {model::file_state::READY, "ready"},
+const static std::unordered_map<model::file_state, std::string>
+    block_file_state_strings = {
+        {model::file_state::NONE, "none"},
+        {model::file_state::INIT, "init"},
+        {model::file_state::READY, "ready"},
 };
 
-model::file_state block_file_state_from_string(const std::string& value) {
-    if (block_file_states.count(value))
-        return block_file_states.at(value);
+model::file_state block_file_state_from_string(const std::string& value)
+{
+    if (block_file_states.count(value)) return block_file_states.at(value);
     throw std::runtime_error("Pattern \"" + value + "\" is unknown");
 }
 
-std::string to_string(const model::file_state& pattern) {
+std::string to_string(const model::file_state& pattern)
+{
     if (block_file_state_strings.count(pattern))
         return block_file_state_strings.at(pattern);
     return "unknown";
@@ -123,89 +132,91 @@ serialized_msg serialize_request(const request_msg& msg)
     auto error =
         (zmq_msg_init(&serialized.type, msg.index())
          || std::visit(
-             utils::overloaded_visitor(
-                [&](const request_block_device_list&) {
-                    return (zmq_msg_init(&serialized.data));
-                },
-                [&](const request_block_device& blkdevice) {
-                    return (zmq_msg_init(&serialized.data,
-                                          blkdevice.id.data(),
-                                          blkdevice.id.length()));
-                },
-                [&](const request_block_file_list&) {
-                    return (zmq_msg_init(&serialized.data));
-                },
-                [&](const request_block_file& blkfile) {
-                    return (zmq_msg_init(&serialized.data,
-                                          blkfile.id.data(),
-                                          blkfile.id.length()));
-                },
-                [&](const request_block_file_add& blkfile) {
-                    return (zmq_msg_init(&serialized.data,
-                                          std::addressof(blkfile.source),
-                                          sizeof(blkfile.source)));
-                },
-                [&](const request_block_file_del& blkfile) {
-                    return (zmq_msg_init(&serialized.data,
-                                          blkfile.id.data(),
-                                          blkfile.id.length()));
-                },
-                [&](const request_block_generator_list&) {
-                    return (zmq_msg_init(&serialized.data));
-                },
-                [&](const request_block_generator& blkgenerator) {
-                    return (zmq_msg_init(&serialized.data,
-                                          blkgenerator.id.data(),
-                                          blkgenerator.id.length()));
-                },
-                [&](const request_block_generator_add& blkgenerator) {
-                    return (zmq_msg_init(&serialized.data,
-                                          std::addressof(blkgenerator.source),
-                                          sizeof(blkgenerator.source)));
-                },
-                [&](const request_block_generator_del& blkgenerator) {
-                    return (zmq_msg_init(&serialized.data,
-                                          blkgenerator.id.data(),
-                                          blkgenerator.id.length()));
-                },
-                [&](const request_block_generator_start& blkgenerator) {
-                    return (zmq_msg_init(&serialized.data,
-                                          blkgenerator.id.data(),
-                                          blkgenerator.id.length()));
-                },
-                [&](const request_block_generator_stop& blkgenerator) {
-                    return (zmq_msg_init(&serialized.data,
-                                          blkgenerator.id.data(),
-                                          blkgenerator.id.length()));
-                },
-                [&](const request_block_generator_bulk_start& blkgenerator) {
-                    auto scalar =
-                         sizeof(decltype(blkgenerator.ids)::value_type);
-                    return (zmq_msg_init(&serialized.data,
-                                          blkgenerator.ids.data(),
-                                          scalar * blkgenerator.ids.size()));
-                },
-                [&](const request_block_generator_bulk_stop& blkgenerator) {
-                    auto scalar =
-                         sizeof(decltype(blkgenerator.ids)::value_type);
-                    return (zmq_msg_init(&serialized.data,
-                                          blkgenerator.ids.data(),
-                                          scalar * blkgenerator.ids.size()));
-                },
-                [&](const request_block_generator_result_list&) {
-                    return (zmq_msg_init(&serialized.data));
-                },
-                [&](const request_block_generator_result& result) {
-                    return (zmq_msg_init(&serialized.data,
-                                          result.id.data(),
-                                          result.id.length()));
-                },
-                [&](const request_block_generator_result_del& result) {
-                    return (zmq_msg_init(&serialized.data,
-                                          result.id.data(),
-                                          result.id.length()));
-                }),
-             msg));
+                utils::overloaded_visitor(
+                    [&](const request_block_device_list&) {
+                        return (zmq_msg_init(&serialized.data));
+                    },
+                    [&](const request_block_device& blkdevice) {
+                        return (zmq_msg_init(&serialized.data,
+                                             blkdevice.id.data(),
+                                             blkdevice.id.length()));
+                    },
+                    [&](const request_block_file_list&) {
+                        return (zmq_msg_init(&serialized.data));
+                    },
+                    [&](const request_block_file& blkfile) {
+                        return (zmq_msg_init(&serialized.data,
+                                             blkfile.id.data(),
+                                             blkfile.id.length()));
+                    },
+                    [&](const request_block_file_add& blkfile) {
+                        return (zmq_msg_init(&serialized.data,
+                                             std::addressof(blkfile.source),
+                                             sizeof(blkfile.source)));
+                    },
+                    [&](const request_block_file_del& blkfile) {
+                        return (zmq_msg_init(&serialized.data,
+                                             blkfile.id.data(),
+                                             blkfile.id.length()));
+                    },
+                    [&](const request_block_generator_list&) {
+                        return (zmq_msg_init(&serialized.data));
+                    },
+                    [&](const request_block_generator& blkgenerator) {
+                        return (zmq_msg_init(&serialized.data,
+                                             blkgenerator.id.data(),
+                                             blkgenerator.id.length()));
+                    },
+                    [&](const request_block_generator_add& blkgenerator) {
+                        return (
+                            zmq_msg_init(&serialized.data,
+                                         std::addressof(blkgenerator.source),
+                                         sizeof(blkgenerator.source)));
+                    },
+                    [&](const request_block_generator_del& blkgenerator) {
+                        return (zmq_msg_init(&serialized.data,
+                                             blkgenerator.id.data(),
+                                             blkgenerator.id.length()));
+                    },
+                    [&](const request_block_generator_start& blkgenerator) {
+                        return (zmq_msg_init(&serialized.data,
+                                             blkgenerator.id.data(),
+                                             blkgenerator.id.length()));
+                    },
+                    [&](const request_block_generator_stop& blkgenerator) {
+                        return (zmq_msg_init(&serialized.data,
+                                             blkgenerator.id.data(),
+                                             blkgenerator.id.length()));
+                    },
+                    [&](const request_block_generator_bulk_start&
+                            blkgenerator) {
+                        auto scalar =
+                            sizeof(decltype(blkgenerator.ids)::value_type);
+                        return (zmq_msg_init(&serialized.data,
+                                             blkgenerator.ids.data(),
+                                             scalar * blkgenerator.ids.size()));
+                    },
+                    [&](const request_block_generator_bulk_stop& blkgenerator) {
+                        auto scalar =
+                            sizeof(decltype(blkgenerator.ids)::value_type);
+                        return (zmq_msg_init(&serialized.data,
+                                             blkgenerator.ids.data(),
+                                             scalar * blkgenerator.ids.size()));
+                    },
+                    [&](const request_block_generator_result_list&) {
+                        return (zmq_msg_init(&serialized.data));
+                    },
+                    [&](const request_block_generator_result& result) {
+                        return (zmq_msg_init(&serialized.data,
+                                             result.id.data(),
+                                             result.id.length()));
+                    },
+                    [&](const request_block_generator_result_del& result) {
+                        return (zmq_msg_init(&serialized.data,
+                                             result.id.data(),
+                                             result.id.length()));
+                    }),
+                msg));
     if (error) { throw std::bad_alloc(); }
 
     return (serialized);
@@ -217,69 +228,71 @@ serialized_msg serialize_reply(const reply_msg& msg)
     auto error =
         (zmq_msg_init(&serialized.type, msg.index())
          || std::visit(
-             utils::overloaded_visitor(
-                 [&](const reply_block_devices& blkdevices) {
-                     /*
-                      * ZMQ wants the length in bytes, so we have to scale the
-                      * length of the vector up to match.
-                      */
-                     auto scalar =
-                         sizeof(decltype(blkdevices.devices)::value_type);
-                     return (zmq_msg_init(&serialized.data,
-                                          blkdevices.devices.data(),
-                                          scalar * blkdevices.devices.size()));
-                 },
-                 [&](const reply_block_files& blkfiles) {
-                     /*
-                      * ZMQ wants the length in bytes, so we have to scale the
-                      * length of the vector up to match.
-                      */
-                     auto scalar =
-                         sizeof(decltype(blkfiles.files)::value_type);
-                     return (zmq_msg_init(&serialized.data,
-                                          blkfiles.files.data(),
-                                          scalar * blkfiles.files.size()));
-                 },
-                 [&](const reply_block_generators& blkgenerators) {
-                     /*
-                      * ZMQ wants the length in bytes, so we have to scale the
-                      * length of the vector up to match.
-                      */
-                     auto scalar =
-                         sizeof(decltype(blkgenerators.generators)::value_type);
-                     return (zmq_msg_init(&serialized.data,
-                                          blkgenerators.generators.data(),
-                                          scalar * blkgenerators.generators.size()));
-                 },
-                 [&](const reply_block_generator_bulk_start& reply) {
-                     /*
-                      * ZMQ wants the length in bytes, so we have to scale the
-                      * length of the vector up to match.
-                      */
-                     auto scalar =
-                         sizeof(decltype(reply.failed)::value_type);
-                     return (zmq_msg_init(&serialized.data,
-                                          reply.failed.data(),
-                                          scalar * reply.failed.size()));
-                 },
-                 [&](const reply_block_generator_results& results) {
-                     /*
-                      * ZMQ wants the length in bytes, so we have to scale the
-                      * length of the vector up to match.
-                      */
-                     auto scalar =
-                         sizeof(decltype(results.results)::value_type);
-                     return (zmq_msg_init(&serialized.data,
-                                          results.results.data(),
-                                          scalar * results.results.size()));
-                 },
-                 [&](const reply_ok&) {
-                     return (zmq_msg_init(&serialized.data, 0));
-                 },
-                 [&](const reply_error& error) {
-                     return (zmq_msg_init(&serialized.data, error.info));
-                 }),
-             msg));
+                utils::overloaded_visitor(
+                    [&](const reply_block_devices& blkdevices) {
+                        /*
+                         * ZMQ wants the length in bytes, so we have to scale
+                         * the length of the vector up to match.
+                         */
+                        auto scalar =
+                            sizeof(decltype(blkdevices.devices)::value_type);
+                        return (
+                            zmq_msg_init(&serialized.data,
+                                         blkdevices.devices.data(),
+                                         scalar * blkdevices.devices.size()));
+                    },
+                    [&](const reply_block_files& blkfiles) {
+                        /*
+                         * ZMQ wants the length in bytes, so we have to scale
+                         * the length of the vector up to match.
+                         */
+                        auto scalar =
+                            sizeof(decltype(blkfiles.files)::value_type);
+                        return (zmq_msg_init(&serialized.data,
+                                             blkfiles.files.data(),
+                                             scalar * blkfiles.files.size()));
+                    },
+                    [&](const reply_block_generators& blkgenerators) {
+                        /*
+                         * ZMQ wants the length in bytes, so we have to scale
+                         * the length of the vector up to match.
+                         */
+                        auto scalar = sizeof(
+                            decltype(blkgenerators.generators)::value_type);
+                        return (zmq_msg_init(
+                            &serialized.data,
+                            blkgenerators.generators.data(),
+                            scalar * blkgenerators.generators.size()));
+                    },
+                    [&](const reply_block_generator_bulk_start& reply) {
+                        /*
+                         * ZMQ wants the length in bytes, so we have to scale
+                         * the length of the vector up to match.
+                         */
+                        auto scalar =
+                            sizeof(decltype(reply.failed)::value_type);
+                        return (zmq_msg_init(&serialized.data,
+                                             reply.failed.data(),
+                                             scalar * reply.failed.size()));
+                    },
+                    [&](const reply_block_generator_results& results) {
+                        /*
+                         * ZMQ wants the length in bytes, so we have to scale
+                         * the length of the vector up to match.
+                         */
+                        auto scalar =
+                            sizeof(decltype(results.results)::value_type);
+                        return (zmq_msg_init(&serialized.data,
+                                             results.results.data(),
+                                             scalar * results.results.size()));
+                    },
+                    [&](const reply_ok&) {
+                        return (zmq_msg_init(&serialized.data, 0));
+                    },
+                    [&](const reply_error& error) {
+                        return (zmq_msg_init(&serialized.data, error.info));
+                    }),
+                msg));
     if (error) { throw std::bad_alloc(); }
 
     return (serialized);
@@ -294,8 +307,7 @@ tl::expected<request_msg, int> deserialize_request(const serialized_msg& msg)
         return (request_block_device_list{});
     }
     case utils::variant_index<request_msg, request_block_device>(): {
-        std::string id(zmq_msg_data<char*>(&msg.data),
-                       zmq_msg_size(&msg.data));
+        std::string id(zmq_msg_data<char*>(&msg.data), zmq_msg_size(&msg.data));
         return (request_block_device{std::move(id)});
     }
     case utils::variant_index<request_msg, request_block_file_list>(): {
@@ -305,64 +317,72 @@ tl::expected<request_msg, int> deserialize_request(const serialized_msg& msg)
         return (request_block_file_add{*zmq_msg_data<file*>(&msg.data)});
     }
     case utils::variant_index<request_msg, request_block_file>(): {
-        std::string id(zmq_msg_data<char*>(&msg.data),
-                       zmq_msg_size(&msg.data));
+        std::string id(zmq_msg_data<char*>(&msg.data), zmq_msg_size(&msg.data));
         return (request_block_file{std::move(id)});
     }
     case utils::variant_index<request_msg, request_block_file_del>(): {
-        std::string id(zmq_msg_data<char*>(&msg.data),
-                       zmq_msg_size(&msg.data));
+        std::string id(zmq_msg_data<char*>(&msg.data), zmq_msg_size(&msg.data));
         return (request_block_file_del{std::move(id)});
     }
     case utils::variant_index<request_msg, request_block_generator_list>(): {
         return (request_block_generator_list{});
     }
     case utils::variant_index<request_msg, request_block_generator_add>(): {
-        return (request_block_generator_add{*zmq_msg_data<generator*>(&msg.data)});
+        return (
+            request_block_generator_add{*zmq_msg_data<generator*>(&msg.data)});
     }
     case utils::variant_index<request_msg, request_block_generator>(): {
-        std::string id(zmq_msg_data<char*>(&msg.data),
-                       zmq_msg_size(&msg.data));
+        std::string id(zmq_msg_data<char*>(&msg.data), zmq_msg_size(&msg.data));
         return (request_block_generator{std::move(id)});
     }
     case utils::variant_index<request_msg, request_block_generator_del>(): {
-        std::string id(zmq_msg_data<char*>(&msg.data),
-                       zmq_msg_size(&msg.data));
+        std::string id(zmq_msg_data<char*>(&msg.data), zmq_msg_size(&msg.data));
         return (request_block_generator_del{std::move(id)});
     }
     case utils::variant_index<request_msg, request_block_generator_start>(): {
-        std::string id(zmq_msg_data<char*>(&msg.data),
-                       zmq_msg_size(&msg.data));
+        std::string id(zmq_msg_data<char*>(&msg.data), zmq_msg_size(&msg.data));
         return (request_block_generator_start{std::move(id)});
     }
     case utils::variant_index<request_msg, request_block_generator_stop>(): {
-        std::string id(zmq_msg_data<char*>(&msg.data),
-                       zmq_msg_size(&msg.data));
+        std::string id(zmq_msg_data<char*>(&msg.data), zmq_msg_size(&msg.data));
         return (request_block_generator_stop{std::move(id)});
     }
-    case utils::variant_index<request_msg, request_block_generator_bulk_start>(): {
-        auto data = zmq_msg_data<request_block_generator_bulk_start::container*>(&msg.data);
-        std::vector<request_block_generator_bulk_start::container> blkgenerators(
-            data, data + zmq_msg_size<request_block_generator_bulk_start::container>(&msg.data));
+    case utils::variant_index<request_msg,
+                              request_block_generator_bulk_start>(): {
+        auto data =
+            zmq_msg_data<request_block_generator_bulk_start::container*>(
+                &msg.data);
+        std::vector<request_block_generator_bulk_start::container>
+            blkgenerators(
+                data,
+                data
+                    + zmq_msg_size<
+                          request_block_generator_bulk_start::container>(
+                          &msg.data));
         return (request_block_generator_bulk_start{std::move(blkgenerators)});
     }
-    case utils::variant_index<request_msg, request_block_generator_bulk_stop>(): {
-        auto data = zmq_msg_data<request_block_generator_bulk_stop::container*>(&msg.data);
+    case utils::variant_index<request_msg,
+                              request_block_generator_bulk_stop>(): {
+        auto data = zmq_msg_data<request_block_generator_bulk_stop::container*>(
+            &msg.data);
         std::vector<request_block_generator_bulk_stop::container> blkgenerators(
-            data, data + zmq_msg_size<request_block_generator_bulk_stop::container>(&msg.data));
+            data,
+            data
+                + zmq_msg_size<request_block_generator_bulk_stop::container>(
+                      &msg.data));
         return (request_block_generator_bulk_stop{std::move(blkgenerators)});
     }
-    case utils::variant_index<request_msg, request_block_generator_result_list>(): {
+    case utils::variant_index<request_msg,
+                              request_block_generator_result_list>(): {
         return (request_block_generator_result_list{});
     }
     case utils::variant_index<request_msg, request_block_generator_result>(): {
-        std::string id(zmq_msg_data<char*>(&msg.data),
-                       zmq_msg_size(&msg.data));
+        std::string id(zmq_msg_data<char*>(&msg.data), zmq_msg_size(&msg.data));
         return (request_block_generator_result{std::move(id)});
     }
-    case utils::variant_index<request_msg, request_block_generator_result_del>(): {
-        std::string id(zmq_msg_data<char*>(&msg.data),
-                       zmq_msg_size(&msg.data));
+    case utils::variant_index<request_msg,
+                              request_block_generator_result_del>(): {
+        std::string id(zmq_msg_data<char*>(&msg.data), zmq_msg_size(&msg.data));
         return (request_block_generator_result_del{std::move(id)});
     }
     }
@@ -377,14 +397,13 @@ tl::expected<reply_msg, int> deserialize_reply(const serialized_msg& msg)
     switch (idx) {
     case utils::variant_index<reply_msg, reply_block_devices>(): {
         auto data = zmq_msg_data<device*>(&msg.data);
-        std::vector<device> blkdevices(
-            data, data + zmq_msg_size<device>(&msg.data));
+        std::vector<device> blkdevices(data,
+                                       data + zmq_msg_size<device>(&msg.data));
         return (reply_block_devices{std::move(blkdevices)});
     }
     case utils::variant_index<reply_msg, reply_block_files>(): {
         auto data = zmq_msg_data<file*>(&msg.data);
-        std::vector<file> blkfiles(
-            data, data + zmq_msg_size<file>(&msg.data));
+        std::vector<file> blkfiles(data, data + zmq_msg_size<file>(&msg.data));
         return (reply_block_files{std::move(blkfiles)});
     }
     case utils::variant_index<reply_msg, reply_block_generators>(): {
@@ -491,19 +510,20 @@ std::shared_ptr<BlockGenerator> to_swagger(const generator& p_gen)
     return gen;
 }
 
-std::shared_ptr<BulkStartBlockGeneratorsResponse> to_swagger(const reply_block_generator_bulk_start& request)
+std::shared_ptr<BulkStartBlockGeneratorsResponse>
+to_swagger(const reply_block_generator_bulk_start& request)
 {
     auto resp = std::make_shared<BulkStartBlockGeneratorsResponse>();
     for (auto gen : request.failed) {
         if (gen.err.type == error_type::NONE) {
             resp->getSucceeded().push_back(gen.id);
         } else {
-            auto failed = std::make_shared<BulkStartBlockGeneratorsResponse_failed>();
+            auto failed =
+                std::make_shared<BulkStartBlockGeneratorsResponse_failed>();
             failed->setId(gen.id);
             failed->setError(to_string(gen.err));
             resp->getFailed().push_back(failed);
         }
-
     }
     return resp;
 }
@@ -518,14 +538,16 @@ std::string to_rfc3339(std::chrono::duration<Rep, Period> from)
     return (os.str());
 }
 
-std::shared_ptr<BlockGeneratorResult> to_swagger(const generator_result& p_gen_result)
+std::shared_ptr<BlockGeneratorResult>
+to_swagger(const generator_result& p_gen_result)
 {
     auto gen_res = std::make_shared<BlockGeneratorResult>();
     gen_res->setId(p_gen_result.id);
     gen_res->setActive(p_gen_result.active);
-    gen_res->setTimestamp(to_rfc3339(p_gen_result.timestamp.time_since_epoch()));
+    gen_res->setTimestamp(
+        to_rfc3339(p_gen_result.timestamp.time_since_epoch()));
 
-    auto generate_gen_stat = [](const generator_stats& gen_stat){
+    auto generate_gen_stat = [](const generator_stats& gen_stat) {
         auto stat = std::make_shared<BlockGeneratorStats>();
         stat->setBytesActual(gen_stat.bytes_actual);
         stat->setBytesTarget(gen_stat.bytes_target);
@@ -561,7 +583,8 @@ generator from_swagger(const BlockGenerator& p_gen)
     copy_string(p_gen.getId(), gen.id, id_max_length);
     copy_string(p_gen.getResourceId(), gen.resource_id, id_max_length);
     gen.running = p_gen.isRunning();
-    gen.config.pattern = block_generation_pattern_from_string(p_gen.getConfig()->getPattern());
+    gen.config.pattern =
+        block_generation_pattern_from_string(p_gen.getConfig()->getPattern());
     gen.config.queue_depth = p_gen.getConfig()->getQueueDepth();
     gen.config.read_size = p_gen.getConfig()->getReadSize();
     gen.config.reads_per_sec = p_gen.getConfig()->getReadsPerSec();
@@ -570,7 +593,8 @@ generator from_swagger(const BlockGenerator& p_gen)
     return gen;
 }
 
-request_block_generator_bulk_start from_swagger(BulkStartBlockGeneratorsRequest& request)
+request_block_generator_bulk_start
+from_swagger(BulkStartBlockGeneratorsRequest& request)
 {
     request_block_generator_bulk_start req;
     for (auto id : request.getIds()) {
@@ -581,7 +605,8 @@ request_block_generator_bulk_start from_swagger(BulkStartBlockGeneratorsRequest&
     return req;
 }
 
-request_block_generator_bulk_stop from_swagger(BulkStopBlockGeneratorsRequest& request)
+request_block_generator_bulk_stop
+from_swagger(BulkStopBlockGeneratorsRequest& request)
 {
     request_block_generator_bulk_stop req;
     for (auto id : request.getIds()) {
@@ -638,19 +663,19 @@ generator_result to_api_model(const model::block_generator_result& p_gen_result)
     gen_res.active = p_gen_result.is_active();
     gen_res.timestamp = p_gen_result.get_timestamp();
 
-    auto generate_gen_stat = [](const model::block_generator_statistics& gen_stat){
-        generator_stats stat;
-        stat.bytes_actual = gen_stat.bytes_actual;
-        stat.bytes_target = gen_stat.bytes_target;
-        stat.io_errors = gen_stat.io_errors;
-        stat.ops_actual = gen_stat.ops_actual;
-        stat.ops_target = gen_stat.ops_target;
-        stat.latency = gen_stat.latency;
-        stat.latency_min = gen_stat.latency_min;
-        stat.latency_max = gen_stat.latency_max;
-        return stat;
-    };
-
+    auto generate_gen_stat =
+        [](const model::block_generator_statistics& gen_stat) {
+            generator_stats stat;
+            stat.bytes_actual = gen_stat.bytes_actual;
+            stat.bytes_target = gen_stat.bytes_target;
+            stat.io_errors = gen_stat.io_errors;
+            stat.ops_actual = gen_stat.ops_actual;
+            stat.ops_target = gen_stat.ops_target;
+            stat.latency = gen_stat.latency;
+            stat.latency_min = gen_stat.latency_min;
+            stat.latency_max = gen_stat.latency_max;
+            return stat;
+        };
 
     gen_res.read_stats = generate_gen_stat(p_gen_result.get_read_stats());
     gen_res.write_stats = generate_gen_stat(p_gen_result.get_write_stats());
@@ -674,15 +699,13 @@ std::shared_ptr<model::block_generator> from_api_model(const generator& p_gen)
     gen->set_id(p_gen.id);
     gen->set_resource_id(p_gen.resource_id);
     gen->set_running(p_gen.running);
-    gen->set_config((model::block_generator_config){
-        p_gen.config.queue_depth,
-        p_gen.config.reads_per_sec,
-        p_gen.config.read_size,
-        p_gen.config.writes_per_sec,
-        p_gen.config.write_size,
-        p_gen.config.pattern
-    });
+    gen->set_config((model::block_generator_config){p_gen.config.queue_depth,
+                                                    p_gen.config.reads_per_sec,
+                                                    p_gen.config.read_size,
+                                                    p_gen.config.writes_per_sec,
+                                                    p_gen.config.write_size,
+                                                    p_gen.config.pattern});
     return gen;
 }
 
-}
+} // namespace openperf::block::api

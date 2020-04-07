@@ -6,7 +6,9 @@
 
 namespace openperf::block::generator {
 
-block_generator::block_generator(const model::block_generator& generator_model, const std::vector<virtual_device_stack*> vdev_stack_list)
+block_generator::block_generator(
+    const model::block_generator& generator_model,
+    const std::vector<virtual_device_stack*> vdev_stack_list)
     : model::block_generator(generator_model)
     , vdev_stack_list(vdev_stack_list)
 {
@@ -14,8 +16,7 @@ block_generator::block_generator(const model::block_generator& generator_model, 
     auto config = generate_worker_config(get_config());
     blkworker = block_worker_ptr(new block_worker(config));
     blkworker->start();
-    if (is_running())
-        blkworker->resume();
+    if (is_running()) blkworker->resume();
 }
 
 block_generator::~block_generator()
@@ -24,15 +25,9 @@ block_generator::~block_generator()
     blkdevice->vclose();
 }
 
-void block_generator::start()
-{
-    set_running(true);
-}
+void block_generator::start() { set_running(true); }
 
-void block_generator::stop()
-{
-    set_running(false);
-}
+void block_generator::stop() { set_running(false); }
 
 void block_generator::set_config(const model::block_generator_config& value)
 {
@@ -44,8 +39,7 @@ void block_generator::set_resource_id(const std::string& value)
 {
     auto dev = blkdevice;
     update_resource(value);
-    if (dev)
-        blkdevice->vclose();
+    if (dev) blkdevice->vclose();
     blkworker->config(generate_worker_config(get_config()));
     model::block_generator::set_resource_id(value);
 }
@@ -59,11 +53,11 @@ void block_generator::update_resource(const std::string& resource_id)
             break;
         }
     }
-    if (!vdev_ptr)
-        throw std::runtime_error("Unknown resource: " + resource_id);
+    if (!vdev_ptr) throw std::runtime_error("Unknown resource: " + resource_id);
 
     if (auto result = vdev_ptr->vopen(); !result)
-        throw std::runtime_error("Cannot open resource: " + std::string(std::strerror(result.error())));
+        throw std::runtime_error("Cannot open resource: "
+                                 + std::string(std::strerror(result.error())));
 
     blkdevice = vdev_ptr;
 }
@@ -82,7 +76,7 @@ block_result_ptr block_generator::get_statistics() const
 {
     auto worker_stat = blkworker->stat();
 
-    auto generate_gen_stat = [](const task_operation_stat_t& task_stat){
+    auto generate_gen_stat = [](const task_operation_stat_t& task_stat) {
         model::block_generator_statistics gen_stat;
         gen_stat.bytes_actual = task_stat.bytes_actual;
         gen_stat.bytes_target = task_stat.bytes_target;
@@ -104,12 +98,11 @@ block_result_ptr block_generator::get_statistics() const
     return gen_stat;
 }
 
-void block_generator::clear_statistics()
-{
-    blkworker->clear_stat();
-}
+void block_generator::clear_statistics() { blkworker->clear_stat(); }
 
-task_config_t block_generator::generate_worker_config(const model::block_generator_config& p_config) {
+task_config_t block_generator::generate_worker_config(
+    const model::block_generator_config& p_config)
+{
     task_config_t w_config;
     w_config.queue_depth = p_config.queue_depth;
     w_config.read_size = p_config.read_size;

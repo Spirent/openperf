@@ -10,7 +10,8 @@ namespace openperf::block::model {
 
 using time_point = std::chrono::time_point<timesync::chrono::realtime>;
 
-struct block_generator_statistics {
+struct block_generator_statistics
+{
     int64_t ops_target;
     int64_t ops_actual;
     int64_t bytes_target;
@@ -25,7 +26,7 @@ class block_generator_result
 {
 public:
     block_generator_result() = default;
-    block_generator_result(const block_generator_result &) = default;
+    block_generator_result(const block_generator_result&) = default;
 
     std::string get_id() const;
     void set_id(std::string_view value);
@@ -50,6 +51,6 @@ protected:
     block_generator_statistics write_stats;
 };
 
-} // openperf::block::model
+} // namespace openperf::block::model
 
 #endif // _OP_BLOCK_GENERATOR_RESULT_MODEL_HPP_
