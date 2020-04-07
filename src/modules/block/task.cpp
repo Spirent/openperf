@@ -318,7 +318,7 @@ void block_task::spin()
     }
 
     if (!task_config.reads_per_sec && !task_config.writes_per_sec)
-        throw std::runtime_error();
+        throw std::runtime_error("Could not spin worker: no block operation was specified");
 
     if (!task_config.reads_per_sec)
         read_timestamp = std::numeric_limits<decltype(read_timestamp)>().max();

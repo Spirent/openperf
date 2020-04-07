@@ -85,7 +85,12 @@ file_stack::create_block_file(const model::file& block_file_model)
     return blkblock_file_ptr;
 }
 
-block_file_ptr file_stack::get_block_file(const std::string& id)
+std::shared_ptr<virtual_device> file_stack::get_vdev(const std::string& id) const
+{
+    return get_block_file(id);
+}
+
+block_file_ptr file_stack::get_block_file(const std::string& id) const
 {
     if (block_files.count(id)) return block_files.at(id);
     return nullptr;

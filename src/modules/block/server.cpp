@@ -114,7 +114,7 @@ reply_msg server::handle_request(const request_block_generator_add& request)
         block_generator_model->set_id(core::to_string(core::uuid::random()));
     }
 
-    auto result = blk_generator_stack->create_block_generator(*block_generator_model);
+    auto result = blk_generator_stack->create_block_generator(*block_generator_model, {blk_file_stack.get(), blk_device_stack.get()});
     if (!result) { return to_error(error_type::NOT_FOUND); }
     auto reply = reply_block_generators{};
     reply.generators.emplace_back(api::to_api_model(*result.value()));
@@ -234,10 +234,11 @@ static int _handle_rpc_request(const op_event_data* data, void* arg)
 
 server::server(void* context, openperf::core::event_loop& loop)
     : m_socket(op_socket_get_server(context, ZMQ_REP, endpoint.data()))
-    , blk_device_stack(&device_stack::instance())
-    , blk_file_stack(&file_stack::instance())
+    , blk_device_stack(std::make_unique<device_stack>())
+    , blk_file_stack(std::make_unique<file_stack>())
     , blk_generator_stack(std::make_unique<generator_stack>())
 {
+    
     struct op_event_callbacks callbacks = {.on_read = _handle_rpc_request};
     loop.add(m_socket.get(), &callbacks, this);
 }

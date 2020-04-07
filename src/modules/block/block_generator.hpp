@@ -19,12 +19,13 @@ class block_generator : public model::block_generator
 {
 private:
     block_worker_ptr blkworker;
+    std::vector<virtual_device_stack*> vdev_stack_list;
     std::shared_ptr<virtual_device> blkdevice;
     task_config_t generate_worker_config(const model::block_generator_config&);
     void update_resource(const std::string&);
 public:
     ~block_generator();
-    block_generator(const model::block_generator& generator_model);
+    block_generator(const model::block_generator& generator_model, const std::vector<virtual_device_stack*> vdev_stack_list);
     void start();
     void stop();
 

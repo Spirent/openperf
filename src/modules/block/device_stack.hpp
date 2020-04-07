@@ -23,7 +23,8 @@ typedef std::unordered_map<std::string, device_ptr> device_map;
 
 static const std::string device_dir = "/dev";
 
-class device_stack : public utils::singleton<device_stack>{
+class device_stack : public virtual_device_stack
+{
 private:
     device_map block_devices;
 
@@ -35,7 +36,8 @@ private:
 
 public:
     device_stack();
-    device_ptr get_block_device(const std::string& id);
+    device_ptr get_block_device(const std::string& id) const;
+    std::shared_ptr<virtual_device> get_vdev(const std::string& id) const override;
     std::vector<device_ptr> block_devices_list();
 };
 

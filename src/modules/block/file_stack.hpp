@@ -16,7 +16,7 @@ protected:
     void scrub_update(double) override;
 public:
     file(const model::file& f);
-    ~file(){};
+    ~file() = default;
     int vopen() override;
     void vclose() override;
     uint64_t get_size() const override;
@@ -26,18 +26,19 @@ public:
 typedef std::shared_ptr<file> block_file_ptr;
 typedef std::unordered_map<std::string, block_file_ptr> block_file_map;
 
-class file_stack : public utils::singleton<file_stack>
+class file_stack : public virtual_device_stack
 {
 private:
     block_file_map block_files;
 
 public:
     file_stack() = default;
-
+    ~file_stack() = default;
     std::vector<block_file_ptr> files_list();
     tl::expected<block_file_ptr, std::string>
     create_block_file(const model::file& block_file);
-    block_file_ptr get_block_file(const std::string& id);
+    std::shared_ptr<virtual_device> get_vdev(const std::string& id) const override;
+    block_file_ptr get_block_file(const std::string& id) const;
     void delete_block_file(const std::string& id);
 };
 

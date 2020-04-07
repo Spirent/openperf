@@ -6,8 +6,9 @@
 
 namespace openperf::block::generator {
 
-block_generator::block_generator(const model::block_generator& generator_model)
+block_generator::block_generator(const model::block_generator& generator_model, const std::vector<virtual_device_stack*> vdev_stack_list)
     : model::block_generator(generator_model)
+    , vdev_stack_list(vdev_stack_list)
 {
     update_resource(get_resource_id());
     auto config = generate_worker_config(get_config());
@@ -49,16 +50,20 @@ void block_generator::set_resource_id(const std::string& value)
 
 void block_generator::update_resource(const std::string& resource_id)
 {
-    if (auto blk_file = block::file::file_stack::instance().get_block_file(resource_id); blk_file) {
-        blkdevice = blk_file;
-    } else if (auto blk_dev = block::device::device_stack::instance().get_block_device(resource_id); blk_dev) {
-        blkdevice = blk_dev;
-    } else {
-        throw std::runtime_error("Unknown resource: " + resource_id);
+    std::shared_ptr<virtual_device> vdev_ptr;
+    for (auto vdev_stack : vdev_stack_list) {
+        if (auto vdev = vdev_stack->get_vdev(resource_id)) {
+            vdev_ptr = vdev;
+            break;
+        }
     }
+    if (!vdev_ptr)
+        throw std::runtime_error("Unknown resource: " + resource_id);
 
-    if (auto fd = blkdevice->vopen(); fd < 0)
+    if (auto fd = vdev_ptr->vopen(); fd < 0)
         throw std::runtime_error("Cannot open resource: " + std::string(std::strerror(-fd)));
+
+    blkdevice = vdev_ptr;
 }
 
 void block_generator::set_running(bool value)
