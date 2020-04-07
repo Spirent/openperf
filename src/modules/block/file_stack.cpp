@@ -70,7 +70,7 @@ std::vector<block_file_ptr> file_stack::files_list()
 }
 
 tl::expected<block_file_ptr, std::string>
-file_stack::create_block_file(model::file& block_file_model)
+file_stack::create_block_file(const model::file& block_file_model)
 {
     if (get_block_file(block_file_model.get_id()))
         return tl::make_unexpected("File " + block_file_model.get_id()
@@ -85,13 +85,13 @@ file_stack::create_block_file(model::file& block_file_model)
     return blkblock_file_ptr;
 }
 
-block_file_ptr file_stack::get_block_file(std::string id)
+block_file_ptr file_stack::get_block_file(const std::string& id)
 {
     if (block_files.count(id)) return block_files.at(id);
     return nullptr;
 }
 
-void file_stack::delete_block_file(std::string id)
+void file_stack::delete_block_file(const std::string& id)
 {
     block_files.erase(id);
 }

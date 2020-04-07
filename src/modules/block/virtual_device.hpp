@@ -40,7 +40,7 @@ public:
     void queue_scrub();
     virtual uint64_t get_size() const = 0;
     virtual uint64_t get_header_size() const { return 0; };
-    int get_fd() {
+    int get_fd() const {
         return fd;
     }
 };
