@@ -22,6 +22,7 @@ private:
     std::unique_ptr<device_stack> blk_device_stack;
     std::unique_ptr<file_stack> blk_file_stack;
     std::unique_ptr<generator_stack> blk_generator_stack;
+
 public:
     server(void* context, core::event_loop& loop);
 

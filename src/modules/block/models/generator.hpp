@@ -5,12 +5,9 @@
 
 namespace openperf::block::model {
 
-enum class block_generation_pattern {
-    RANDOM,
-    SEQUENTIAL,
-    REVERSE
-};
-struct block_generator_config {
+enum class block_generation_pattern { RANDOM, SEQUENTIAL, REVERSE };
+struct block_generator_config
+{
     int32_t queue_depth;
     int32_t reads_per_sec;
     int32_t read_size;
@@ -22,7 +19,7 @@ class block_generator
 {
 public:
     block_generator() = default;
-    block_generator(const block_generator &) = default;
+    block_generator(const block_generator&) = default;
 
     std::string get_id() const;
     void set_id(std::string_view value);
@@ -43,6 +40,6 @@ protected:
     bool running;
 };
 
-} // openperf::block::model
+} // namespace openperf::block::model
 
 #endif // _OP_BLOCK_GENERATOR_MODEL_HPP_

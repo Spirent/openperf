@@ -10,10 +10,14 @@
 
 namespace openperf::block::file {
 
-class file : public model::file, public virtual_device {
+class file
+    : public model::file
+    , public virtual_device
+{
 protected:
     void scrub_done() override;
     void scrub_update(double) override;
+
 public:
     file(const model::file& f);
     ~file() = default;
@@ -37,7 +41,8 @@ public:
     std::vector<block_file_ptr> files_list();
     tl::expected<block_file_ptr, std::string>
     create_block_file(const model::file& block_file);
-    std::shared_ptr<virtual_device> get_vdev(const std::string& id) const override;
+    std::shared_ptr<virtual_device>
+    get_vdev(const std::string& id) const override;
     block_file_ptr get_block_file(const std::string& id) const;
     void delete_block_file(const std::string& id);
 };

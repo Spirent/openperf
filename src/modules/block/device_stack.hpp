@@ -9,10 +9,12 @@
 
 namespace openperf::block::device {
 
-
-class device : public model::device, public virtual_device {
+class device
+    : public model::device
+    , public virtual_device
+{
 public:
-    ~device() {};
+    ~device(){};
     tl::expected<int, int> vopen();
     void vclose();
     uint64_t get_size() const;
@@ -37,7 +39,8 @@ private:
 public:
     device_stack();
     device_ptr get_block_device(const std::string& id) const;
-    std::shared_ptr<virtual_device> get_vdev(const std::string& id) const override;
+    std::shared_ptr<virtual_device>
+    get_vdev(const std::string& id) const override;
     std::vector<device_ptr> block_devices_list();
 };
 

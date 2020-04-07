@@ -67,7 +67,8 @@ struct generator
     char id[id_max_length];
     char resource_id[id_max_length];
     bool running;
-    struct {
+    struct
+    {
         int32_t queue_depth;
         int32_t reads_per_sec;
         int32_t read_size;
@@ -98,7 +99,13 @@ struct generator_result
     generator_stats write_stats;
 };
 
-enum class error_type { NONE = 0, NOT_FOUND, EAI_ERROR, ZMQ_ERROR, CUSTOM_ERROR };
+enum class error_type {
+    NONE = 0,
+    NOT_FOUND,
+    EAI_ERROR,
+    ZMQ_ERROR,
+    CUSTOM_ERROR
+};
 
 struct typed_error
 {
@@ -109,13 +116,15 @@ struct typed_error
 
 /* zmq api request models */
 
-struct request_block_device_list{};
+struct request_block_device_list
+{};
 
 struct request_block_device
 {
     std::string id;
 };
-struct request_block_file_list{};
+struct request_block_file_list
+{};
 
 struct request_block_file
 {
@@ -132,7 +141,8 @@ struct request_block_file_del
     std::string id;
 };
 
-struct request_block_generator_list{};
+struct request_block_generator_list
+{};
 
 struct request_block_generator
 {
@@ -149,7 +159,6 @@ struct request_block_generator_del
     std::string id;
 };
 
-
 struct request_block_generator_start
 {
     std::string id;
@@ -162,7 +171,8 @@ struct request_block_generator_stop
 
 struct request_block_generator_bulk_start
 {
-    struct container {
+    struct container
+    {
         char id[id_max_length];
     };
     std::vector<container> ids;
@@ -170,13 +180,15 @@ struct request_block_generator_bulk_start
 
 struct request_block_generator_bulk_stop
 {
-    struct container {
+    struct container
+    {
         char id[id_max_length];
     };
     std::vector<container> ids;
 };
 
-struct request_block_generator_result_list{};
+struct request_block_generator_result_list
+{};
 
 struct request_block_generator_result
 {
@@ -205,7 +217,8 @@ struct reply_block_generators
     std::vector<generator> generators;
 };
 
-struct failed_generator {
+struct failed_generator
+{
     char id[id_max_length];
     typed_error err;
 };
@@ -260,7 +273,15 @@ struct serialized_msg
     zmq_msg_t data;
 };
 
-enum class reply_code { NONE = 0, OK, NO_DEVICE, NO_FILE, NO_GENERATOR, BAD_INPUT, ERROR };
+enum class reply_code {
+    NONE = 0,
+    OK,
+    NO_DEVICE,
+    NO_FILE,
+    NO_GENERATOR,
+    BAD_INPUT,
+    ERROR
+};
 
 std::string to_string(request_type type);
 std::string to_string(reply_code code);
@@ -279,10 +300,12 @@ std::shared_ptr<BlockDevice> to_swagger(const device&);
 std::shared_ptr<BlockFile> to_swagger(const file&);
 std::shared_ptr<BlockGenerator> to_swagger(const generator&);
 std::shared_ptr<BlockGeneratorResult> to_swagger(const generator_result&);
-std::shared_ptr<BulkStartBlockGeneratorsResponse> to_swagger(const reply_block_generator_bulk_start&);
+std::shared_ptr<BulkStartBlockGeneratorsResponse>
+to_swagger(const reply_block_generator_bulk_start&);
 file from_swagger(const BlockFile&);
 generator from_swagger(const BlockGenerator&);
-request_block_generator_bulk_start from_swagger(BulkStartBlockGeneratorsRequest&);
+request_block_generator_bulk_start
+from_swagger(BulkStartBlockGeneratorsRequest&);
 request_block_generator_bulk_stop from_swagger(BulkStopBlockGeneratorsRequest&);
 device to_api_model(const model::device&);
 file to_api_model(const model::file&);

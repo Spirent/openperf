@@ -23,7 +23,7 @@ protected:
 
 public:
     file() = default;
-    file(const file &) = default;
+    file(const file&) = default;
 
     std::string get_id() const;
     void set_id(std::string_view value);
@@ -40,6 +40,6 @@ public:
     file_state get_state() const;
     void set_state(const file_state& value);
 };
-} // openperf::block::model
+} // namespace openperf::block::model
 
 #endif // _OP_BLOCK_FILE_MODEL_HPP_

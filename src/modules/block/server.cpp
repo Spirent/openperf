@@ -56,8 +56,7 @@ reply_msg server::handle_request(const request_block_file& request)
 
 reply_msg server::handle_request(const request_block_file_add& request)
 {
-    if (auto id_check =
-            config::op_config_validate_id_string(request.source.id);
+    if (auto id_check = config::op_config_validate_id_string(request.source.id);
         !id_check)
         return (to_error(error_type::EAI_ERROR));
 
@@ -67,7 +66,9 @@ reply_msg server::handle_request(const request_block_file_add& request)
         block_file_model->set_id(core::to_string(core::uuid::random()));
     }
     auto result = blk_file_stack->create_block_file(*block_file_model);
-    if (!result) { return to_error(error_type::CUSTOM_ERROR, 0, result.error()); }
+    if (!result) {
+        return to_error(error_type::CUSTOM_ERROR, 0, result.error());
+    }
 
     auto reply = reply_block_files{};
     reply.files.emplace_back(api::to_api_model(*result.value()));
@@ -103,8 +104,7 @@ reply_msg server::handle_request(const request_block_generator& request)
 
 reply_msg server::handle_request(const request_block_generator_add& request)
 {
-    if (auto id_check =
-            config::op_config_validate_id_string(request.source.id);
+    if (auto id_check = config::op_config_validate_id_string(request.source.id);
         !id_check)
         return (to_error(error_type::EAI_ERROR));
 
@@ -114,7 +114,8 @@ reply_msg server::handle_request(const request_block_generator_add& request)
         block_generator_model->set_id(core::to_string(core::uuid::random()));
     }
 
-    auto result = blk_generator_stack->create_block_generator(*block_generator_model, {blk_file_stack.get(), blk_device_stack.get()});
+    auto result = blk_generator_stack->create_block_generator(
+        *block_generator_model, {blk_file_stack.get(), blk_device_stack.get()});
     if (!result) { return to_error(error_type::NOT_FOUND); }
     auto reply = reply_block_generators{};
     reply.generators.emplace_back(api::to_api_model(*result.value()));
@@ -147,11 +148,12 @@ reply_msg server::handle_request(const request_block_generator_stop& request)
     return api::reply_ok{};
 }
 
-reply_msg server::handle_request(const request_block_generator_bulk_start& request)
+reply_msg
+server::handle_request(const request_block_generator_bulk_start& request)
 {
     auto reply = api::reply_block_generator_bulk_start{};
 
-    for (auto &req : request.ids) {
+    for (auto& req : request.ids) {
         auto blkgenerator = blk_generator_stack->get_block_generator(req.id);
         if (!blkgenerator) {
             auto fg = api::failed_generator{};
@@ -169,9 +171,10 @@ reply_msg server::handle_request(const request_block_generator_bulk_start& reque
     return reply;
 }
 
-reply_msg server::handle_request(const request_block_generator_bulk_stop& request)
+reply_msg
+server::handle_request(const request_block_generator_bulk_stop& request)
 {
-    for (auto &id : request.ids) {
+    for (auto& id : request.ids) {
         auto blkgenerator = blk_generator_stack->get_block_generator(id.id);
         if (!blkgenerator) { continue; }
         blkgenerator->stop();
@@ -183,7 +186,8 @@ reply_msg server::handle_request(const request_block_generator_result_list&)
 {
     auto reply = reply_block_generator_results{};
     for (auto blkgenerator : blk_generator_stack->block_generators_list()) {
-        reply.results.emplace_back(api::to_api_model(*blkgenerator->get_statistics()));
+        reply.results.emplace_back(
+            api::to_api_model(*blkgenerator->get_statistics()));
     }
 
     return reply;
@@ -195,12 +199,14 @@ reply_msg server::handle_request(const request_block_generator_result& request)
     auto blkgenerator = blk_generator_stack->get_block_generator(request.id);
 
     if (!blkgenerator) { return to_error(api::error_type::NOT_FOUND); }
-    reply.results.emplace_back(api::to_api_model(*blkgenerator->get_statistics()));
+    reply.results.emplace_back(
+        api::to_api_model(*blkgenerator->get_statistics()));
 
     return reply;
 }
 
-reply_msg server::handle_request(const request_block_generator_result_del& request)
+reply_msg
+server::handle_request(const request_block_generator_result_del& request)
 {
     auto blkgenerator = blk_generator_stack->get_block_generator(request.id);
 
@@ -238,7 +244,7 @@ server::server(void* context, openperf::core::event_loop& loop)
     , blk_file_stack(std::make_unique<file_stack>())
     , blk_generator_stack(std::make_unique<generator_stack>())
 {
-    
+
     struct op_event_callbacks callbacks = {.on_read = _handle_rpc_request};
     loop.add(m_socket.get(), &callbacks, this);
 }

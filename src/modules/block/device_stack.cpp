@@ -22,20 +22,11 @@ tl::expected<int, int> device::vopen()
     return fd;
 }
 
-void device::vclose()
-{
-    close(fd);
-}
+void device::vclose() { close(fd); }
 
-uint64_t device::get_size() const
-{
-    return model::device::get_size();
-}
+uint64_t device::get_size() const { return model::device::get_size(); }
 
-device_stack::device_stack()
-{
-    init_device_stack();
-}
+device_stack::device_stack() { init_device_stack(); }
 
 void device_stack::init_device_stack()
 {
@@ -59,7 +50,8 @@ void device_stack::init_device_stack()
 
         auto blkdev = new device();
         blkdev->set_id(core::to_string(core::uuid::random()));
-        blkdev->set_path(std::string(device_dir) + "/" + std::string(entry->d_name));
+        blkdev->set_path(std::string(device_dir) + "/"
+                         + std::string(entry->d_name));
         blkdev->set_size(get_block_device_size(entry->d_name));
         blkdev->set_usable(is_block_device_usable(entry->d_name));
         blkdev->set_info(get_block_device_info(entry->d_name));
@@ -102,10 +94,7 @@ uint64_t device_stack::get_block_device_size(std::string_view id)
 
 std::string device_stack::get_block_device_info(std::string_view) { return ""; }
 
-int device_stack::is_block_device_usable(std::string_view)
-{
-    return true;
-}
+int device_stack::is_block_device_usable(std::string_view) { return true; }
 
 bool device_stack::is_raw_device(std::string_view id)
 {
@@ -129,7 +118,8 @@ device_ptr device_stack::get_block_device(const std::string& id) const
     return nullptr;
 }
 
-std::shared_ptr<virtual_device> device_stack::get_vdev(const std::string& id) const
+std::shared_ptr<virtual_device>
+device_stack::get_vdev(const std::string& id) const
 {
     return get_block_device(id);
 }

@@ -18,8 +18,7 @@ file::file(const model::file& f)
 
 tl::expected<int, int> file::vopen()
 {
-    if (fd >= 0)
-        return fd;
+    if (fd >= 0) return fd;
 
     if ((fd = open(get_path().c_str(), O_RDWR | O_CREAT)) < 0) {
         return tl::make_unexpected(errno);
@@ -38,10 +37,7 @@ void file::vclose()
     fd = -1;
 }
 
-uint64_t file::get_size() const
-{
-    return model::file::get_size();
-}
+uint64_t file::get_size() const { return model::file::get_size(); }
 
 uint64_t file::get_header_size() const
 {
@@ -54,10 +50,7 @@ void file::scrub_done()
     set_init_percent_complete(100);
 }
 
-void file::scrub_update(double p)
-{
-    set_init_percent_complete(100 * p);
-}
+void file::scrub_update(double p) { set_init_percent_complete(100 * p); }
 
 std::vector<block_file_ptr> file_stack::files_list()
 {
@@ -77,18 +70,22 @@ file_stack::create_block_file(const model::file& block_file_model)
                                    + " already exists.");
 
     if (block_file_model.get_size() <= block_generator_vdev_header_size)
-        return tl::make_unexpected("File size less than header size (" + std::to_string(block_generator_vdev_header_size) + " bytes)");
+        return tl::make_unexpected(
+            "File size less than header size ("
+            + std::to_string(block_generator_vdev_header_size) + " bytes)");
 
     try {
         auto blkblock_file_ptr = block_file_ptr(new file(block_file_model));
         block_files.emplace(block_file_model.get_id(), blkblock_file_ptr);
         return blkblock_file_ptr;
     } catch (const std::runtime_error e) {
-        return tl::make_unexpected("Cannot create file: " + std::string(e.what()));
+        return tl::make_unexpected("Cannot create file: "
+                                   + std::string(e.what()));
     }
 }
 
-std::shared_ptr<virtual_device> file_stack::get_vdev(const std::string& id) const
+std::shared_ptr<virtual_device>
+file_stack::get_vdev(const std::string& id) const
 {
     return get_block_file(id);
 }
