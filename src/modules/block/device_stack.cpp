@@ -13,10 +13,10 @@
 
 namespace openperf::block::device {
 
-int device::vopen()
+tl::expected<int, int> device::vopen()
 {
     if ((fd = open(get_path().c_str(), O_RDWR)) < 0) {
-        return fd = -ENOSPC;
+        return tl::make_unexpected(ENOSPC);
     }
 
     return fd;

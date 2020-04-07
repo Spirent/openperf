@@ -13,7 +13,7 @@ namespace openperf::block::device {
 class device : public model::device, public virtual_device {
 public:
     ~device() {};
-    int vopen();
+    tl::expected<int, int> vopen();
     void vclose();
     uint64_t get_size() const;
 };

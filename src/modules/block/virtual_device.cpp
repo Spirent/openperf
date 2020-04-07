@@ -34,16 +34,15 @@ int virtual_device::write_header()
 
 void virtual_device::queue_scrub()
 {
-    if (auto err = vopen(); err < 0) {
-        OP_LOG(OP_LOG_ERROR, "Cannot open vdev device to generate scrub: %s\n", strerror(-err));
-        return;
+    if (auto result = vopen(); !result) {
+        throw std::runtime_error("Cannot open vdev device to generate scrub: " + std::string(strerror(result.error())));
     }
 
     struct virtual_device_header header = {};
     int read_or_err = pread(fd, &header, sizeof(header), 0);
     vclose();
     if (read_or_err == -1) {
-        OP_LOG(OP_LOG_ERROR, "Cannot read vdev device header: %s\n", strerror(errno));
+        throw std::runtime_error("Cannot read vdev device header: " + std::string(strerror(errno)));
         return;
     } else if (read_or_err >= (int)sizeof(header)
                && strncmp(header.tag, VIRTUAL_DEVICE_HEADER_TAG, VIRTUAL_DEVICE_HEADER_TAG_LENGTH) == 0) {
@@ -77,8 +76,8 @@ void virtual_device::scrub_worker(size_t start, size_t stop)
         return;
     }
 
-    if (vopen() < 0) {
-        OP_LOG(OP_LOG_ERROR, "Cannot open vdev: %s\n", strerror(errno));
+    if (auto result = vopen(); !result) {
+        OP_LOG(OP_LOG_ERROR, "Cannot open vdev: %s\n", strerror(result.error()));
         return;
     }
 

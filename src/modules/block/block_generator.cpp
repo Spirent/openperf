@@ -60,8 +60,8 @@ void block_generator::update_resource(const std::string& resource_id)
     if (!vdev_ptr)
         throw std::runtime_error("Unknown resource: " + resource_id);
 
-    if (auto fd = vdev_ptr->vopen(); fd < 0)
-        throw std::runtime_error("Cannot open resource: " + std::string(std::strerror(-fd)));
+    if (auto result = vdev_ptr->vopen(); !result)
+        throw std::runtime_error("Cannot open resource: " + std::string(std::strerror(result.error())));
 
     blkdevice = vdev_ptr;
 }
