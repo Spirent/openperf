@@ -16,13 +16,13 @@ file::file(const model::file& f)
     queue_scrub();
 }
 
-int file::vopen()
+tl::expected<int, int> file::vopen()
 {
     if (fd >= 0)
         return fd;
 
     if ((fd = open(get_path().c_str(), O_RDWR | O_CREAT)) < 0) {
-        return (-errno);
+        return tl::make_unexpected(errno);
     }
 
     /* Disable readahead */
@@ -79,10 +79,13 @@ file_stack::create_block_file(const model::file& block_file_model)
     if (block_file_model.get_size() <= block_generator_vdev_header_size)
         return tl::make_unexpected("File size less than header size (" + std::to_string(block_generator_vdev_header_size) + " bytes)");
 
-    auto blkblock_file_ptr = block_file_ptr(new file(block_file_model));
-    block_files.emplace(block_file_model.get_id(), blkblock_file_ptr);
-
-    return blkblock_file_ptr;
+    try {
+        auto blkblock_file_ptr = block_file_ptr(new file(block_file_model));
+        block_files.emplace(block_file_model.get_id(), blkblock_file_ptr);
+        return blkblock_file_ptr;
+    } catch (const std::runtime_error e) {
+        return tl::make_unexpected("Cannot create file: " + std::string(e.what()));
+    }
 }
 
 std::shared_ptr<virtual_device> file_stack::get_vdev(const std::string& id) const

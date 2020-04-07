@@ -4,6 +4,7 @@
 #include <stdexcept>
 #include <atomic>
 #include <thread>
+#include <tl/expected.hpp>
 #include "timesync/bintime.hpp"
 
 namespace openperf::block {
@@ -35,7 +36,7 @@ protected:
 public:
     virtual_device();
     virtual ~virtual_device();
-    virtual int vopen() = 0;
+    virtual tl::expected<int, int> vopen() = 0;
     virtual void vclose() = 0;
     void queue_scrub();
     virtual uint64_t get_size() const = 0;
