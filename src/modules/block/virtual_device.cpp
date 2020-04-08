@@ -94,13 +94,13 @@ void virtual_device::scrub_worker(size_t start, size_t stop)
     write_header();
 
     auto current = start;
-    uint8_t* buf = (uint8_t*)malloc(SCRUB_BUFFER_SIZE);
+    std::vector<uint8_t> buf(SCRUB_BUFFER_SIZE, 0);
     while (!deleted && current < stop) {
-        pseudo_random_fill(buf, SCRUB_BUFFER_SIZE);
+        pseudo_random_fill(buf.data(), SCRUB_BUFFER_SIZE);
         auto aio = ((aiocb){
             .aio_fildes = fd,
             .aio_offset = static_cast<off_t>(current),
-            .aio_buf = buf,
+            .aio_buf = buf.data(),
             .aio_nbytes = std::min(SCRUB_BUFFER_SIZE, stop - current),
             .aio_reqprio = 0,
             .aio_sigevent.sigev_notify = SIGEV_NONE,
@@ -117,7 +117,6 @@ void virtual_device::scrub_worker(size_t start, size_t stop)
         scrub_update((double)(current - start) / (stop - start));
     }
 
-    delete buf;
     vclose();
     scrub_done();
 }

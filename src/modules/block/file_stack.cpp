@@ -50,7 +50,7 @@ void file::scrub_done()
     set_init_percent_complete(100);
 }
 
-void file::scrub_update(double p) { set_init_percent_complete(100 * p); }
+void file::scrub_update(double p) { set_init_percent_complete(static_cast<int32_t>(100 * p)); }
 
 std::vector<block_file_ptr> file_stack::files_list()
 {
