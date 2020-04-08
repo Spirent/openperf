@@ -29,13 +29,6 @@ using time_point = std::chrono::time_point<timesync::chrono::realtime>;
 /**
  * List of supported server requests.
  */
-enum class request_type {
-    NONE = 0,
-    LIST_GENERATOR_RESULTS,
-    GET_GENERATOR_RESULT,
-    DELETE_GENERATOR_RESULT
-};
-
 static constexpr size_t id_max_length = 64;
 static constexpr size_t path_max_length = PATH_MAX;
 static constexpr size_t device_info_max_length = 1024;
@@ -283,7 +276,6 @@ enum class reply_code {
     ERROR
 };
 
-std::string to_string(request_type type);
 std::string to_string(reply_code code);
 serialized_msg serialize_request(const request_msg& request);
 serialized_msg serialize_reply(const reply_msg& reply);
@@ -313,11 +305,6 @@ generator to_api_model(const model::block_generator&);
 generator_result to_api_model(const model::block_generator_result&);
 std::shared_ptr<model::file> from_api_model(const file&);
 std::shared_ptr<model::block_generator> from_api_model(const generator&);
-
-inline std::string json_error(int code, const char* message)
-{
-    return (nlohmann::json({{"code", code}, {"message", message}}).dump());
-}
 
 extern const std::string endpoint;
 

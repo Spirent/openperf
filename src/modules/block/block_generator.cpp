@@ -14,7 +14,7 @@ block_generator::block_generator(
 {
     update_resource(get_resource_id());
     auto config = generate_worker_config(get_config());
-    blkworker = block_worker_ptr(new block_worker(config));
+    blkworker = std::make_unique<block_worker>(config);
     blkworker->start();
     if (is_running()) blkworker->resume();
 }

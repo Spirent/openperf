@@ -75,7 +75,7 @@ file_stack::create_block_file(const model::file& block_file_model)
             + std::to_string(block_generator_vdev_header_size) + " bytes)");
 
     try {
-        auto blkblock_file_ptr = block_file_ptr(new file(block_file_model));
+        auto blkblock_file_ptr = std::make_shared<file>(block_file_model);
         block_files.emplace(block_file_model.get_id(), blkblock_file_ptr);
         return blkblock_file_ptr;
     } catch (const std::runtime_error e) {

@@ -48,7 +48,7 @@ void device_stack::init_device_stack()
 
         if (!is_raw_device(entry->d_name)) continue;
 
-        auto blkdev = new device();
+        auto blkdev = std::make_shared<device>();
         blkdev->set_id(core::to_string(core::uuid::random()));
         blkdev->set_path(std::string(device_dir) + "/"
                          + std::string(entry->d_name));
@@ -56,7 +56,7 @@ void device_stack::init_device_stack()
         blkdev->set_usable(is_block_device_usable(entry->d_name));
         blkdev->set_info(get_block_device_info(entry->d_name));
 
-        block_devices.emplace(blkdev->get_id(), device_ptr(blkdev));
+        block_devices.emplace(blkdev->get_id(), blkdev);
     }
 
     closedir(dir);

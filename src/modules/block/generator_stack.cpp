@@ -23,8 +23,7 @@ generator_stack::create_block_generator(
             + static_cast<std::string>(block_generator_model.get_id())
             + " already exists.");
     try {
-        auto blkgenerator_ptr = block_generator_ptr(
-            new block_generator(block_generator_model, vdev_stack_list));
+        auto blkgenerator_ptr = std::make_shared<block_generator>(block_generator_model, vdev_stack_list);
         block_generators.emplace(blkgenerator_ptr->get_id(), blkgenerator_ptr);
         return blkgenerator_ptr;
     } catch (const std::runtime_error e) {
