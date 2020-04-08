@@ -2,51 +2,8 @@
 
 #include "memory/api.hpp"
 #include "memory/info.hpp"
-#include "swagger/v1/model/MemoryGenerator.h"
-#include "swagger/v1/model/MemoryGeneratorConfig.h"
-#include "memory/swagger_converters.hpp"
 
 namespace openperf::memory::api {
-
-namespace model = ::swagger::v1::model;
-
-// ENUM to STRING converters
-std::string to_string(request_type type)
-{
-    const static std::unordered_map<request_type, std::string> request_types = {
-        {request_type::LIST_GENERATORS, "LIST_GENERATORS"},
-        {request_type::CREATE_GENERATOR, "CREATE_GENERATOR"},
-        {request_type::GET_GENERATOR, "GET_GENERATOR"},
-        {request_type::DELETE_GENERATOR, "DELETE_GENERATOR"},
-        {request_type::START_GENERATOR, "START_GENERATOR"},
-        {request_type::STOP_GENERATOR, "STOP_GENERATOR"},
-        {request_type::BULK_START_GENERATORS, "BULK_START_GENERATORS"},
-        {request_type::BULK_STOP_GENERATORS, "BULK_STOP_GENERATORS"},
-        {request_type::LIST_RESULTS, "LIST_RESULTS"},
-        {request_type::GET_RESULT, "GET_RESULT"},
-        {request_type::DELETE_RESULT, "DELETE_RESULT"},
-        {request_type::GET_INFO, "GET_INFO"},
-        {request_type::NONE, "UNKNOWN"}};
-
-    return request_types.find(type) == request_types.end()
-               ? request_types.at(request_type::NONE)
-               : request_types.at(type);
-}
-
-std::string to_string(reply_code code)
-{
-    const static std::unordered_map<reply_code, std::string> reply_codes = {
-        {reply_code::OK, "OK"},
-        {reply_code::NO_GENERATOR, "NO_GENERATOR"},
-        {reply_code::NO_RESULT, "NO_RESULT"},
-        {reply_code::BAD_INPUT, "BAD_INPUT"},
-        {reply_code::ERROR, "ERROR"},
-        {reply_code::NONE, "UNKNOWN"}};
-
-    return reply_codes.find(code) == reply_codes.end()
-               ? reply_codes.at(reply_code::NONE)
-               : reply_codes.at(code);
-}
 
 server::server(void* context, openperf::core::event_loop& loop)
     : m_socket(op_socket_get_server(context, ZMQ_REP, endpoint))
@@ -63,329 +20,183 @@ server::server(void* context, openperf::core::event_loop& loop)
 
 int server::handle_rpc_request(const op_event_data* data)
 {
-    int recv_or_err = 0;
-    int send_or_err = 0;
-    zmq_msg_t request_msg;
+    auto reply_errors = 0;
+    while (auto request = recv_message(data->socket, ZMQ_DONTWAIT)
+                              .and_then(deserialize_request)) {
+        auto request_visitor = [&](auto& request) -> api_reply {
+            return (handle_request(request));
+        };
+        auto reply = std::visit(request_visitor, *request);
 
-    if (zmq_msg_init(&request_msg) == -1) {
-        throw std::runtime_error(zmq_strerror(errno));
-    }
-
-    while (
-        (recv_or_err = zmq_msg_recv(&request_msg, data->socket, ZMQ_DONTWAIT))
-        > 0) {
-        std::vector<uint8_t> request_buffer(
-            static_cast<uint8_t*>(zmq_msg_data(&request_msg)),
-            static_cast<uint8_t*>(zmq_msg_data(&request_msg))
-                + zmq_msg_size(&request_msg));
-
-        json reply = handle_json_request(json::from_cbor(request_buffer));
-
-        std::vector<uint8_t> reply_buffer = json::to_cbor(reply);
-        if ((send_or_err = zmq_send(
-                 data->socket, reply_buffer.data(), reply_buffer.size(), 0))
-            != static_cast<int>(reply_buffer.size())) {
-            OP_LOG(OP_LOG_ERROR,
-                   "Request reply failed: %s\n",
-                   zmq_strerror(errno));
-        } else {
-            OP_LOG(OP_LOG_TRACE,
-                   "Sent %s reply\n",
-                   //"Sent %s reply to %s request\n",
-                   to_string(reply["code"].get<reply_code>()).c_str());
+        if (send_message(data->socket, serialize(reply)) == -1) {
+            reply_errors++;
+            OP_LOG(
+                OP_LOG_ERROR, "Error sending reply: %s\n", zmq_strerror(errno));
+            continue;
         }
     }
 
-    zmq_msg_close(&request_msg);
-
-    return (((recv_or_err < 0 || send_or_err < 0) && errno == ETERM) ? -1 : 0);
+    return ((reply_errors || errno == ETERM) ? -1 : 0);
 }
 
-json server::handle_json_request(const json& request)
+api_reply server::handle_request(const request::generator::list&)
 {
-    request_type type = request.find("type") == request.end()
-                            ? request_type::NONE
-                            : request["type"].get<request_type>();
-
-    switch (type) {
-    case request_type::GET_GENERATOR:
-    case request_type::CREATE_GENERATOR:
-    case request_type::DELETE_GENERATOR:
-    case request_type::START_GENERATOR:
-    case request_type::STOP_GENERATOR:
-        OP_LOG(OP_LOG_TRACE,
-               "Received %s request for generator %s\n",
-               to_string(type).c_str(),
-               request["id"].get<std::string>().c_str());
-        break;
-    case request_type::GET_RESULT:
-    case request_type::DELETE_RESULT:
-        OP_LOG(OP_LOG_TRACE,
-               "Received %s request for result %s\n",
-               to_string(type).c_str(),
-               request["id"].get<std::string>().c_str());
-        break;
-    default:
-        OP_LOG(OP_LOG_TRACE, "Received %s request\n", to_string(type).c_str());
-    }
-
-    switch (type) {
-    case request_type::LIST_GENERATORS:
-        return list_generators();
-    case request_type::GET_GENERATOR:
-        return get_generator(request);
-    case request_type::CREATE_GENERATOR:
-        return create_generator(request);
-    case request_type::DELETE_GENERATOR:
-        return delete_generator(request);
-    case request_type::START_GENERATOR:
-        return start_generator(request);
-    case request_type::STOP_GENERATOR:
-        return stop_generator(request);
-    case request_type::BULK_START_GENERATORS:
-        return bulk_start_generators(request);
-    case request_type::BULK_STOP_GENERATORS:
-        return bulk_stop_generators(request);
-    case request_type::LIST_RESULTS:
-        return list_results();
-    case request_type::GET_RESULT:
-        return get_result(request);
-    case request_type::DELETE_RESULT:
-        return delete_result(request);
-    case request_type::GET_INFO:
-        return get_info();
-    default:
-        return json{
-            {"code", reply_code::ERROR},
-            {"error",
-             {{"code", ENOSYS},
-              {"message",
-               "Request type not implemented in packetio interface server"}}}};
-    }
-}
-
-json server::list_generators()
-{
-    json jdata = json::array();
-
-    for (auto& id : generator_stack->ids()) {
+    reply::generator::list list;
+    for (auto id : generator_stack->ids()) {
         const auto& gnr = generator_stack->generator(id);
-
-        model::MemoryGenerator model;
-        model.setId(id);
-        model.setRunning(gnr.is_running());
-        model.setConfig(std::make_shared<model::MemoryGeneratorConfig>(
-            to_swagger(gnr.config())));
-
-        jdata.emplace_back(model.toJson());
+        reply::generator::item item{
+            {.id = id}, .is_running = gnr.is_running(), .config = gnr.config()};
+        list.push_back(item);
     }
 
-    return json{{"code", reply_code::OK}, {"data", jdata.dump()}};
+    return list;
 }
 
-json server::create_generator(const json& request)
+api_reply server::handle_request(const request::generator::get& req)
+{
+    if (generator_stack->contains(req.id)) {
+        auto& gnr = generator_stack->generator(req.id);
+
+        reply::generator::item reply{
+            req, .is_running = gnr.is_running(), .config = gnr.config()};
+        return reply;
+    }
+
+    return reply::error{.type = reply::error::NOT_FOUND};
+}
+
+api_reply server::handle_request(const request::generator::erase& req)
+{
+    if (generator_stack->contains(req.id)) {
+        generator_stack->erase(req.id);
+        return reply::ok{};
+    }
+
+    return reply::error{.type = reply::error::NOT_FOUND};
+}
+
+api_reply server::handle_request(const request::generator::create& req)
 {
     try {
-        auto json_object = json::parse(request["data"].get<std::string>());
+        auto id = generator_stack->create(req.id, req.config);
+        auto& gnr = generator_stack->generator(id);
 
-        model::MemoryGenerator model;
-        model.fromJson(json_object);
-
-        generator::config_t config = from_swagger([&json_object]() {
-            model::MemoryGeneratorConfig c_model;
-            c_model.fromJson(json_object["config"]);
-            return c_model;
-        }());
-
-        try {
-            auto id = generator_stack->create(model.getId(), config);
-            auto& gnr = generator_stack->generator(id);
-
-            if (model.isRunning()) {
-                gnr.resume();
-                gnr.start();
-            }
-
-            model.setId(id);
-            model.setRunning(gnr.is_running());
-            model.setConfig(std::make_shared<model::MemoryGeneratorConfig>(
-                to_swagger(gnr.config())));
-
-            return json{{"code", reply_code::OK},
-                        {"data", model.toJson().dump()}};
-        } catch (std::invalid_argument e) {
-            throw std::runtime_error(e.what());
+        if (req.is_running) {
+            gnr.resume();
+            gnr.start();
         }
-    } catch (const std::runtime_error& e) {
-        return json{{"code", reply_code::BAD_INPUT},
-                    {"error", json_error(EINVAL, e.what())}};
-    } catch (const json::exception& e) {
-        return json{{"code", reply_code::BAD_INPUT},
-                    {"error", json_error(e.id, e.what())}};
+
+        auto reply = reply::generator::item{
+            {.id = id}, .is_running = gnr.is_running(), .config = gnr.config()};
+        return reply;
+    } catch (std::invalid_argument e) {
+        return reply::error{.type = reply::error::EXISTS};
     }
 }
 
-json server::get_generator(const json& request)
+api_reply server::handle_request(const request::generator::stop& req)
 {
-    auto id = request["id"].get<std::string>();
-
-    if (generator_stack->contains(id)) {
-        const auto& gnr = generator_stack->generator(id);
-
-        model::MemoryGenerator model;
-        model.setId(id);
-        model.setRunning(gnr.is_running());
-        model.setConfig(std::make_shared<model::MemoryGeneratorConfig>(
-            to_swagger(gnr.config())));
-
-        return json{{"code", reply_code::OK}, {"data", model.toJson().dump()}};
+    if (generator_stack->contains(req.id)) {
+        generator_stack->generator(req.id).pause();
+        return reply::ok{};
     }
 
-    return json{"code", reply_code::NO_GENERATOR};
+    return reply::error{.type = reply::error::NOT_FOUND};
 }
 
-json server::delete_generator(const json& request)
+api_reply server::handle_request(const request::generator::start& req)
 {
-    auto id = request["id"];
-    if (generator_stack->contains(id)) {
-        generator_stack->erase(id);
-        return json{"code", reply_code::OK};
+    if (generator_stack->contains(req.id)) {
+        generator_stack->generator(req.id).resume();
+        return reply::ok{};
     }
 
-    return json{"code", reply_code::NO_GENERATOR};
+    return reply::error{.type = reply::error::NOT_FOUND};
 }
 
-json server::start_generator(const json& request)
+api_reply server::handle_request(const request::generator::bulk::start& req)
 {
-    auto id = request["id"];
-    if (generator_stack->contains(id)) {
+    reply::generator::bulk::list reply;
+    for (auto id : req) {
+        if (!generator_stack->contains(id)) {
+            reply.push_back(reply::generator::bulk::result{
+                id, reply::generator::bulk::result::NOT_FOUND});
+            continue;
+        }
+
         auto& gnr = generator_stack->generator(id);
-        if (gnr.is_stopped()) gnr.start();
 
+        gnr.start();
         gnr.resume();
-        return json{"code", reply_code::OK};
+
+        reply.push_back(reply::generator::bulk::result{
+            id,
+            (gnr.is_running()) ? reply::generator::bulk::result::SUCCESS
+                               : reply::generator::bulk::result::FAIL});
     }
 
-    return json{"code", reply_code::NO_GENERATOR};
+    return reply;
 }
 
-json server::stop_generator(const json& request)
+api_reply server::handle_request(const request::generator::bulk::stop& req)
 {
-    auto id = request["id"];
-    if (generator_stack->contains(id)) {
-        generator_stack->generator(id).pause();
-        return json{"code", reply_code::OK};
-    }
+    reply::generator::bulk::list reply;
+    for (auto id : req) {
+        if (!generator_stack->contains(id)) {
+            reply.push_back(reply::generator::bulk::result{
+                id, reply::generator::bulk::result::NOT_FOUND});
+            continue;
+        }
 
-    return json{"code", reply_code::NO_GENERATOR};
-}
-
-json server::bulk_start_generators(const json& request)
-{
-    auto ids = request["ids"];
-    auto succeeded = json::array();
-    auto failed = json::array();
-
-    for (auto& id : ids) {
-        auto& gnr = generator_stack->generator(id);
-        if (gnr.is_stopped()) gnr.start();
-
-        gnr.resume();
-        if (gnr.is_running())
-            succeeded.push_back(id);
-        else
-            failed.push_back(id);
-    }
-
-    return json{{"code", reply_code::OK},
-                {"data", {{"succeeded", succeeded}, {"failed", failed}}}};
-}
-
-json server::bulk_stop_generators(const json& request)
-{
-    auto ids = request["ids"];
-    auto succeeded = json::array();
-    auto failed = json::array();
-
-    for (auto& id : ids) {
         auto& gnr = generator_stack->generator(id);
 
         gnr.pause();
-        if (gnr.is_running())
-            succeeded.push_back(id);
-        else
-            failed.push_back(id);
+
+        reply.push_back(reply::generator::bulk::result{
+            id,
+            (gnr.is_running()) ? reply::generator::bulk::result::FAIL
+                               : reply::generator::bulk::result::SUCCESS});
     }
 
-    return json{{"code", reply_code::OK},
-                {"data", {{"succeeded", succeeded}, {"failed", failed}}}};
+    return reply;
 }
 
-json server::list_results()
+api_reply server::handle_request(const request::statistic::list&)
 {
-    json jdata = json::array();
+    reply::statistic::list list;
+    for (auto id : generator_stack->ids()) {
+        reply::statistic::item item{{.id = id},
+                                    generator_stack->generator(id).stat()};
 
-    for (auto& id : generator_stack->ids()) {
-        const auto& gnr = generator_stack->generator(id);
-        auto stat = gnr.stat();
-
-        model::MemoryGeneratorResult result;
-        result.setId(id);
-        result.setActive(gnr.is_running());
-        result.setTimestamp(to_iso8601(stat.timestamp));
-        result.setRead(std::make_shared<model::MemoryGeneratorStats>(
-            to_swagger(stat.read)));
-        result.setWrite(std::make_shared<model::MemoryGeneratorStats>(
-            to_swagger(stat.write)));
-
-        jdata.emplace_back(result.toJson());
+        list.push_back(item);
     }
 
-    return json{{"code", reply_code::OK}, {"data", jdata.dump()}};
+    return list;
 }
 
-json server::get_result(const json& request)
+api_reply server::handle_request(const request::statistic::get& req)
 {
-    auto id = request["id"].get<std::string>();
-    if (generator_stack->contains(id)) {
-        const auto& gnr = generator_stack->generator(id);
-        auto stat = gnr.stat();
-
-        model::MemoryGeneratorResult result;
-        result.setId(id);
-        result.setActive(gnr.is_running());
-        result.setTimestamp(to_iso8601(stat.timestamp));
-        result.setRead(std::make_shared<model::MemoryGeneratorStats>(
-            to_swagger(stat.read)));
-        result.setWrite(std::make_shared<model::MemoryGeneratorStats>(
-            to_swagger(stat.write)));
-
-        return json{{"code", reply_code::OK}, {"data", result.toJson().dump()}};
+    if (generator_stack->contains(req.id)) {
+        return reply::statistic::item{
+            req, generator_stack->generator(req.id).stat()};
     }
 
-    return json{"code", reply_code::NO_RESULT};
+    return reply::error{.type = reply::error::NOT_FOUND};
 }
 
-json server::delete_result(const json& request)
+api_reply server::handle_request(const request::statistic::erase& req)
 {
-    auto id = request["id"].get<std::string>();
-    if (generator_stack->contains(id)) {
-        generator_stack->generator(id).clear_stat();
-        return json{"code", reply_code::OK};
+    if (generator_stack->contains(req.id)) {
+        generator_stack->generator(req.id).clear_stat();
+        return reply::ok{};
     }
 
-    return json{"code", reply_code::NO_RESULT};
+    return reply::error{.type = reply::error::NOT_FOUND};
 }
 
-json server::get_info()
+api_reply server::handle_request(const request::info&)
 {
-    try {
-        return json{{"code", reply_code::OK},
-                    {"data", memory_info::get().toJson().dump()}};
-    } catch (std::exception e) {
-        return json{{"code", reply_code::ERROR},
-                    {"error", json_error(-1, e.what())}};
-    }
+    return reply::info{memory_info::get()};
 }
 
 } // namespace openperf::memory::api
