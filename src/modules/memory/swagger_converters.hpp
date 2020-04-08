@@ -3,15 +3,23 @@
 
 #include <iomanip>
 
+#include "memory/info.hpp"
 #include "memory/generator.hpp"
+#include "swagger/v1/model/MemoryInfoResult.h"
 #include "swagger/v1/model/MemoryGenerator.h"
 #include "swagger/v1/model/MemoryGeneratorConfig.h"
 #include "swagger/v1/model/MemoryGeneratorResult.h"
 #include "swagger/v1/model/MemoryGeneratorStats.h"
+#include "swagger/v1/model/BulkStopMemoryGeneratorsRequest.h"
+#include "swagger/v1/model/BulkStartMemoryGeneratorsRequest.h"
 
-namespace openperf::memory {
+namespace openperf::memory::api {
 
 namespace swagger = ::swagger::v1::model;
+using config_t = memory::internal::generator::config_t;
+using stat_t = memory::internal::generator::stat_t;
+using memory_stat = memory::internal::memory_stat;
+using info_t = memory::memory_info::info_t;
 
 namespace {
 static io_pattern from_string(std::string_view str)
@@ -37,9 +45,9 @@ static std::string to_string(io_pattern pattern)
 }
 } // namespace
 
-static generator::config_t from_swagger(const model::MemoryGeneratorConfig& m)
+static config_t from_swagger(const swagger::MemoryGeneratorConfig& m)
 {
-    return generator::config_t{
+    return config_t{
         .buffer_size = static_cast<size_t>(m.getBufferSize()),
         .read_threads = static_cast<size_t>(m.getReadThreads()),
         .write_threads = static_cast<size_t>(m.getWriteThreads()),
@@ -56,8 +64,7 @@ static generator::config_t from_swagger(const model::MemoryGeneratorConfig& m)
         }};
 }
 
-static swagger::MemoryGeneratorConfig
-to_swagger(const generator::config_t& config)
+static swagger::MemoryGeneratorConfig to_swagger(const config_t& config)
 {
     swagger::MemoryGeneratorConfig model;
     model.setBufferSize(config.buffer_size);
@@ -71,6 +78,17 @@ to_swagger(const generator::config_t& config)
     model.setWritesPerSec(config.write.op_per_sec);
 
     model.setPattern(to_string(config.read.pattern));
+
+    return model;
+}
+
+static swagger::MemoryGenerator to_swagger(const reply::generator::item& g)
+{
+    swagger::MemoryGenerator model;
+    model.setId(g.id);
+    model.setRunning(g.is_running);
+    model.setConfig(
+        std::make_shared<swagger::MemoryGeneratorConfig>(to_swagger(g.config)));
 
     return model;
 }
@@ -103,6 +121,29 @@ static std::string to_iso8601(uint64_t nanos)
     return os.str();
 }
 
-} // namespace openperf::memory
+static swagger::MemoryGeneratorResult
+to_swagger(const reply::statistic::item& i)
+{
+    swagger::MemoryGeneratorResult model;
+    model.setId(i.id);
+    model.setTimestamp(to_iso8601(i.timestamp));
+    model.setRead(
+        std::make_shared<swagger::MemoryGeneratorStats>(to_swagger(i.read)));
+    model.setWrite(
+        std::make_shared<swagger::MemoryGeneratorStats>(to_swagger(i.write)));
+
+    return model;
+}
+
+static swagger::MemoryInfoResult to_swagger(const info_t& info)
+{
+    swagger::MemoryInfoResult model;
+    model.setFreeMemory(info.free);
+    model.setTotalMemory(info.total);
+
+    return model;
+}
+
+} // namespace openperf::memory::api
 
 #endif // _OP_MEMORY_SWAGGER_CONVERTERS_HPP_
