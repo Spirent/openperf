@@ -323,13 +323,12 @@ void block_task::spin()
     if (next_ts > before_sleep_time)
         std::this_thread::sleep_for(next_ts - before_sleep_time);
 
-    size_t nb_ops;
     auto cur_time = ref_clock::now();
     if (read_timestamp < write_timestamp) {
-        read_timestamp += std::chrono::nanoseconds(std::nano::den
-                                                   / task_config.reads_per_sec);
+        auto rps = (task_config.reads_per_sec > 0) ? task_config.reads_per_sec : 1;
+        read_timestamp += std::chrono::nanoseconds(std::nano::den / rps);
         if (task_config.read_size > 0) {
-            nb_ops = worker_spin(aio_read,
+            worker_spin(aio_read,
                                  task_config.read_size,
                                  actual_stat.read,
                                  ref_clock::now() + std::chrono::seconds(1));
@@ -340,10 +339,10 @@ void block_task::spin()
             actual_stat.read.bytes_target = cicles * task_config.read_size;
         }
     } else {
-        write_timestamp += std::chrono::nanoseconds(
-            std::nano::den / task_config.writes_per_sec);
+        auto wps = (task_config.writes_per_sec > 0) ? task_config.writes_per_sec : 1;
+        write_timestamp += std::chrono::nanoseconds(std::nano::den / wps);
         if (task_config.write_size > 0) {
-            nb_ops = worker_spin(aio_write,
+            worker_spin(aio_write,
                                  task_config.write_size,
                                  actual_stat.write,
                                  ref_clock::now() + std::chrono::seconds(1));
