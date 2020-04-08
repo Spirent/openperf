@@ -5,6 +5,7 @@
 MEMORY_DEPENDS += api framework pistache swagger_model json versions
 
 MEMORY_SOURCES += \
+	api_transmogrify.cpp \
 	init.cpp \
 	handler.cpp \
 	server.cpp \

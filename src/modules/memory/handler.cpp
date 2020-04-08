@@ -6,48 +6,38 @@
 
 #include "core/op_core.h"
 #include "config/op_config_utils.hpp"
+#include "memory/swagger_converters.hpp"
 
 namespace openperf::memory::api {
 
+namespace model = ::swagger::v1::model;
 using json = nlohmann::json;
 using namespace Pistache;
 
-json submit_request(void* socket, json& request)
+enum Http::Code to_code(const api::reply::error& error)
 {
-    auto type = request["type"].get<request_type>();
-
-    switch (type) {
-    case request_type::GET_GENERATOR:
-    case request_type::DELETE_GENERATOR:
-        OP_LOG(OP_LOG_TRACE,
-               "Sending %s request for interface %s\n",
-               to_string(type).c_str(),
-               request["id"].get<std::string>().c_str());
-        break;
+    switch (error.type) {
+    case api::reply::error::NOT_FOUND:
+        return Http::Code::Not_Found;
+    case api::reply::error::EAI_ERROR:
+        return Http::Code::Unprocessable_Entity;
     default:
-        OP_LOG(OP_LOG_TRACE, "Sending %s request\n", to_string(type).c_str());
+        return Http::Code::Internal_Server_Error;
     }
+}
 
-    std::vector<uint8_t> request_buffer = json::to_cbor(request);
-    zmq_msg_t reply_msg;
-    if (zmq_msg_init(&reply_msg) == -1
-        || zmq_send(socket, request_buffer.data(), request_buffer.size(), 0)
-               != static_cast<int>(request_buffer.size())
-        || zmq_msg_recv(&reply_msg, socket, 0) == -1) {
-        return {{"code", reply_code::ERROR},
-                {"error", json_error(errno, zmq_strerror(errno))}};
+const char* to_string(const api::reply::error& error)
+{
+    switch (error.type) {
+    case api::reply::error::NOT_FOUND:
+        return "";
+    case api::reply::error::EAI_ERROR:
+        return gai_strerror(error.value);
+    case api::reply::error::ZMQ_ERROR:
+        return zmq_strerror(error.value);
+    default:
+        return "unknown error type";
     }
-
-    OP_LOG(OP_LOG_TRACE, "Received %s reply\n", to_string(type).c_str());
-
-    std::vector<uint8_t> reply_buffer(
-        static_cast<uint8_t*>(zmq_msg_data(&reply_msg)),
-        static_cast<uint8_t*>(zmq_msg_data(&reply_msg))
-            + zmq_msg_size(&reply_msg));
-
-    zmq_msg_close(&reply_msg);
-
-    return json::from_cbor(reply_buffer);
 }
 
 class handler : public openperf::api::route::handler::registrar<handler>
@@ -55,37 +45,29 @@ class handler : public openperf::api::route::handler::registrar<handler>
 private:
     std::unique_ptr<void, op_socket_deleter> socket;
 
-public:
-    handler(void* context, Rest::Router& router);
+private:
+    api::api_reply submit_request(const api::api_request&);
 
-    void list_generators(const Rest::Request& request,
-                         Http::ResponseWriter response);
-    void create_generator(const Rest::Request& request,
-                          Http::ResponseWriter response);
-    void get_generator(const Rest::Request& request,
-                       Http::ResponseWriter response);
-    void delete_generator(const Rest::Request& request,
-                          Http::ResponseWriter response);
-    void start_generator(const Rest::Request& request,
-                         Http::ResponseWriter response);
-    void stop_generator(const Rest::Request& request,
-                        Http::ResponseWriter response);
+public:
+    handler(void* context, Rest::Router&);
+
+    void list_generators(const Rest::Request&, Http::ResponseWriter);
+    void create_generator(const Rest::Request&, Http::ResponseWriter);
+    void get_generator(const Rest::Request&, Http::ResponseWriter);
+    void delete_generator(const Rest::Request&, Http::ResponseWriter);
+    void start_generator(const Rest::Request&, Http::ResponseWriter);
+    void stop_generator(const Rest::Request&, Http::ResponseWriter);
 
     // Bulk memory generator actions
-    void bulk_start_generators(const Rest::Request& request,
-                               Http::ResponseWriter response);
-    void bulk_stop_generators(const Rest::Request& request,
-                              Http::ResponseWriter response);
+    void bulk_start_generators(const Rest::Request&, Http::ResponseWriter);
+    void bulk_stop_generators(const Rest::Request&, Http::ResponseWriter);
 
     // Memory generator results
-    void list_results(const Rest::Request& request,
-                      Http::ResponseWriter response);
-    void get_result(const Rest::Request& request,
-                    Http::ResponseWriter response);
-    void delete_result(const Rest::Request& request,
-                       Http::ResponseWriter response);
+    void list_results(const Rest::Request&, Http::ResponseWriter);
+    void get_result(const Rest::Request&, Http::ResponseWriter);
+    void delete_result(const Rest::Request&, Http::ResponseWriter);
 
-    void get_info(const Rest::Request& request, Http::ResponseWriter response);
+    void get_info(const Rest::Request&, Http::ResponseWriter);
 };
 
 handler::handler(void* context, Rest::Router& router)
@@ -134,43 +116,59 @@ handler::handler(void* context, Rest::Router& router)
         router, "/memory-info", Rest::Routes::bind(&handler::get_info, this));
 }
 
-void handler::list_generators(const Rest::Request& /*request*/,
+void handler::list_generators(const Rest::Request&,
                               Http::ResponseWriter response)
 {
-    json api_request = {{"type", request_type::LIST_GENERATORS}};
-    json api_reply = submit_request(socket.get(), api_request);
 
-    response.headers().add<Http::Header::ContentType>(MIME(Application, Json));
-    if (api_reply["code"].get<reply_code>() == reply_code::OK) {
-        response.send(Http::Code::Ok, api_reply["data"].get<std::string>());
+    auto api_reply = submit_request(request::generator::list{});
+
+    if (auto list = std::get_if<reply::generator::list>(&api_reply)) {
+        auto array = json::array();
+        for (auto item : *list) { array.push_back(to_swagger(item).toJson()); }
+
+        response.headers().add<Http::Header::ContentType>(
+            MIME(Application, Json));
+        response.send(Http::Code::Ok, array.dump());
         return;
     }
 
-    response.send(Http::Code::Internal_Server_Error,
-                  api_reply["error"].get<std::string>());
+    response.send(Http::Code::Internal_Server_Error);
 }
 
 void handler::create_generator(const Rest::Request& request,
                                Http::ResponseWriter response)
 {
-    json api_request = {{"type", request_type::CREATE_GENERATOR},
-                        {"data", request.body()}};
+    auto json_obj = json::parse(request.body());
 
-    json api_reply = submit_request(socket.get(), api_request);
+    model::MemoryGenerator model;
+    model.fromJson(json_obj);
 
-    response.headers().add<Http::Header::ContentType>(MIME(Application, Json));
-    switch (api_reply["code"].get<reply_code>()) {
-    case reply_code::OK:
-        response.send(Http::Code::Ok, api_reply["data"].get<std::string>());
-        break;
-    case reply_code::BAD_INPUT:
-        response.send(Http::Code::Bad_Request,
-                      api_reply["error"].get<std::string>());
-        break;
-    default:
-        response.send(Http::Code::Internal_Server_Error,
-                      api_reply["error"].get<std::string>());
+    auto api_reply = submit_request(
+        request::generator::create{{.id = model.getId()},
+                                   .is_running = model.isRunning(),
+                                   .config = [&]() {
+                                       model::MemoryGeneratorConfig model;
+                                       model.fromJson(json_obj["config"]);
+                                       return from_swagger(model);
+                                   }()});
+
+    if (auto item = std::get_if<reply::generator::item>(&api_reply)) {
+        response.headers().add<Http::Header::ContentType>(
+            MIME(Application, Json));
+        response.send(Http::Code::Created, to_swagger(*item).toJson().dump());
+        return;
+    } else if (auto error = std::get_if<reply::error>(&api_reply)) {
+        if (error->type == reply::error::EXISTS) {
+            response.send(
+                Http::Code::Bad_Request,
+                json{"error",
+                     "Memory generator with id '" + model.getId() + "' exists"}
+                    .dump());
+            return;
+        }
     }
+
+    response.send(Http::Code::Internal_Server_Error);
 }
 
 void handler::get_generator(const Rest::Request& request,
@@ -182,24 +180,21 @@ void handler::get_generator(const Rest::Request& request,
         return;
     }
 
-    json api_request = {{"type", request_type::GET_GENERATOR}, {"id", id}};
+    auto api_reply = submit_request(request::generator::get{{.id = id}});
 
-    json api_reply = submit_request(socket.get(), api_request);
-    switch (api_reply["code"].get<reply_code>()) {
-    case reply_code::OK:
+    if (auto r = std::get_if<reply::generator::item>(&api_reply)) {
         response.headers().add<Http::Header::ContentType>(
             MIME(Application, Json));
-        response.send(Http::Code::Ok, api_reply["data"].get<std::string>());
-        break;
-    case reply_code::NO_GENERATOR:
-        response.send(Http::Code::Not_Found);
-        break;
-    default:
-        response.headers().add<Http::Header::ContentType>(
-            MIME(Application, Json));
-        response.send(Http::Code::Internal_Server_Error,
-                      api_reply["error"].get<std::string>());
+        response.send(Http::Code::Ok, to_swagger(*r).toJson().dump());
+        return;
+    } else if (auto error = std::get_if<reply::error>(&api_reply)) {
+        if (error->type == reply::error::NOT_FOUND) {
+            response.send(Http::Code::No_Content);
+            return;
+        }
     }
+
+    response.send(Http::Code::Internal_Server_Error);
 }
 
 void handler::delete_generator(const Rest::Request& request,
@@ -211,9 +206,7 @@ void handler::delete_generator(const Rest::Request& request,
         return;
     }
 
-    json api_request = {{"type", request_type::DELETE_GENERATOR}, {"id", id}};
-
-    submit_request(socket.get(), api_request);
+    submit_request(request::generator::erase{{.id = id}});
     response.send(Http::Code::No_Content);
 }
 
@@ -226,9 +219,7 @@ void handler::start_generator(const Rest::Request& request,
         return;
     }
 
-    json api_request = {{"type", request_type::START_GENERATOR}, {"id", id}};
-
-    submit_request(socket.get(), api_request);
+    submit_request(request::generator::start{{.id = id}});
     response.send(Http::Code::No_Content);
 }
 
@@ -241,9 +232,7 @@ void handler::stop_generator(const Rest::Request& request,
         return;
     }
 
-    json api_request = {{"type", request_type::STOP_GENERATOR}, {"id", id}};
-
-    submit_request(socket.get(), api_request);
+    submit_request(request::generator::stop{{.id = id}});
     response.send(Http::Code::No_Content);
 }
 
@@ -251,52 +240,73 @@ void handler::stop_generator(const Rest::Request& request,
 void handler::bulk_start_generators(const Rest::Request& request,
                                     Http::ResponseWriter response)
 {
-    try {
-        json body = json::parse(request.body());
-        if (body.find("ids") != body.end()) {
-            json api_request = {{"type", request_type::BULK_START_GENERATORS},
-                                {"ids", body["ids"]}};
+    auto json_obj = json::parse(request.body());
 
-            submit_request(socket.get(), api_request);
-            response.send(Http::Code::No_Content);
+    model::BulkStartMemoryGeneratorsRequest model;
+    model.fromJson(json_obj);
+
+    request::generator::bulk::start req;
+    for (auto& id : model.getIds()) { req.push_back(id); }
+
+    auto api_reply = submit_request(req);
+    if (auto list = std::get_if<reply::generator::bulk::list>(&api_reply)) {
+        using code = reply::generator::bulk::result;
+
+        auto succeeded = json::array();
+        auto failed = json::array();
+        for (auto& r : *list) {
+            switch (r.code) {
+            case code::SUCCESS:
+                succeeded.push_back(r.id);
+                break;
+            case code::NOT_FOUND:
+                failed.push_back({{"id", r.id}, {"error", "not exists"}});
+                break;
+            case code::FAIL:
+                failed.push_back({{"id", r.id}, {"error", "failed"}});
+            }
         }
-    } catch (const json::parse_error& e) {
-        response.send(Http::Code::Bad_Request, json_error(e.id, e.what()));
+
+        response.send(
+            Http::Code::Ok,
+            json{{"succeeded", succeeded}, {"failed", failed}}.dump());
+        return;
     }
+
+    response.send(Http::Code::No_Content);
 }
 
 void handler::bulk_stop_generators(const Rest::Request& request,
                                    Http::ResponseWriter response)
 {
-    try {
-        json body = json::parse(request.body());
-        if (body.find("ids") != body.end()) {
-            json api_request = {{"type", request_type::BULK_STOP_GENERATORS},
-                                {"ids", body["ids"]}};
+    auto json_obj = json::parse(request.body());
 
-            submit_request(socket.get(), api_request);
-            response.send(Http::Code::No_Content);
-        }
-    } catch (const json::parse_error& e) {
-        response.send(Http::Code::Bad_Request, json_error(e.id, e.what()));
-    }
+    model::BulkStopMemoryGeneratorsRequest model;
+    model.fromJson(json_obj);
+
+    request::generator::bulk::stop req;
+    for (auto& id : model.getIds()) { req.push_back(id); }
+
+    auto api_reply = submit_request(req);
+    response.send(Http::Code::No_Content);
 }
 
 // Memory generator results
-void handler::list_results(const Rest::Request& /*request*/,
-                           Http::ResponseWriter response)
+void handler::list_results(const Rest::Request&, Http::ResponseWriter response)
 {
-    json api_request = {{"type", request_type::LIST_RESULTS}};
-    json api_reply = submit_request(socket.get(), api_request);
+    auto api_reply = submit_request(request::statistic::list{});
 
-    response.headers().add<Http::Header::ContentType>(MIME(Application, Json));
-    if (api_reply["code"].get<reply_code>() == reply_code::OK) {
-        response.send(Http::Code::Ok, api_reply["data"].get<std::string>());
+    if (auto list = std::get_if<reply::statistic::list>(&api_reply)) {
+        auto array = json::array();
+        for (auto item : *list) { array.push_back(to_swagger(item).toJson()); }
+
+        response.headers().add<Http::Header::ContentType>(
+            MIME(Application, Json));
+        response.send(Http::Code::Ok, array.dump());
         return;
     }
 
-    response.send(Http::Code::Internal_Server_Error,
-                  api_reply["error"].get<std::string>());
+    response.send(Http::Code::Internal_Server_Error);
 }
 
 void handler::get_result(const Rest::Request& request,
@@ -308,24 +318,20 @@ void handler::get_result(const Rest::Request& request,
         return;
     }
 
-    json api_request = {{"type", request_type::GET_RESULT}, {"id", id}};
-
-    json api_reply = submit_request(socket.get(), api_request);
-    switch (api_reply["code"].get<reply_code>()) {
-    case reply_code::OK:
+    auto api_reply = submit_request(request::statistic::get{{.id = id}});
+    if (auto item = std::get_if<reply::statistic::item>(&api_reply)) {
         response.headers().add<Http::Header::ContentType>(
             MIME(Application, Json));
-        response.send(Http::Code::Ok, api_reply["data"].get<std::string>());
-        break;
-    case reply_code::NO_RESULT:
-        response.send(Http::Code::Not_Found);
-        break;
-    default:
-        response.headers().add<Http::Header::ContentType>(
-            MIME(Application, Json));
-        response.send(Http::Code::Internal_Server_Error,
-                      api_reply["error"].get<std::string>());
+        response.send(Http::Code::Ok, to_swagger(*item).toJson().dump());
+        return;
+    } else if (auto error = std::get_if<reply::error>(&api_reply)) {
+        if (error->type == reply::error::NOT_FOUND) {
+            response.send(Http::Code::No_Content);
+            return;
+        }
     }
+
+    response.send(Http::Code::Internal_Server_Error);
 }
 
 void handler::delete_result(const Rest::Request& request,
@@ -337,26 +343,41 @@ void handler::delete_result(const Rest::Request& request,
         return;
     }
 
-    json api_request = {{"type", request_type::DELETE_RESULT}, {"id", id}};
-
-    submit_request(socket.get(), api_request);
+    submit_request(request::statistic::erase{{.id = id}});
     response.send(Http::Code::No_Content);
 }
 
-void handler::get_info(const Rest::Request& /*request*/,
-                       Http::ResponseWriter response)
+void handler::get_info(const Rest::Request&, Http::ResponseWriter response)
 {
-    json api_request = {{"type", request_type::GET_INFO}};
-    json api_reply = submit_request(socket.get(), api_request);
+    auto api_reply = submit_request(request::info{});
 
-    response.headers().add<Http::Header::ContentType>(MIME(Application, Json));
-    if (api_reply["code"].get<reply_code>() == reply_code::OK) {
-        response.send(Http::Code::Ok, api_reply["data"].get<std::string>());
+    if (auto info = std::get_if<reply::info>(&api_reply)) {
+        response.headers().add<Http::Header::ContentType>(
+            MIME(Application, Json));
+        response.send(Http::Code::Ok, to_swagger(*info).toJson().dump());
         return;
     }
 
-    response.send(Http::Code::Internal_Server_Error,
-                  api_reply["error"].get<std::string>());
+    response.send(Http::Code::Internal_Server_Error);
+}
+
+// Methods : private
+api::api_reply handler::submit_request(const api::api_request& request)
+{
+    if (auto error = api::send_message(socket.get(), api::serialize(request));
+        error != 0) {
+        return api::reply::error{.type = api::reply::error::ZMQ_ERROR,
+                                 .value = error};
+    }
+
+    auto reply =
+        api::recv_message(socket.get()).and_then(api::deserialize_reply);
+    if (!reply) {
+        return api::reply::error{.type = api::reply::error::ZMQ_ERROR,
+                                 .value = reply.error()};
+    }
+
+    return *reply;
 }
 
 } // namespace openperf::memory::api
