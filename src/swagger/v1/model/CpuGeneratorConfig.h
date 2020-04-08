@@ -12,7 +12,7 @@
 /*
  * CpuGeneratorConfig.h
  *
- * 
+ * Cpu Generator Configuration
  */
 
 #ifndef CpuGeneratorConfig_H_
@@ -29,7 +29,7 @@ namespace v1 {
 namespace model {
 
 /// <summary>
-/// 
+/// Cpu Generator Configuration
 /// </summary>
 class  CpuGeneratorConfig
     : public ModelBase
@@ -49,8 +49,16 @@ public:
     /////////////////////////////////////////////
     /// CpuGeneratorConfig members
 
+    /// <summary>
+    /// 
+    /// </summary>
+    std::vector<std::shared_ptr<CpuGeneratorCoreConfig>>& getCores();
+    bool coresIsSet() const;
+    void unsetCores();
 
 protected:
+    std::vector<std::shared_ptr<CpuGeneratorCoreConfig>> m_Cores;
+    bool m_CoresIsSet;
 };
 
 }

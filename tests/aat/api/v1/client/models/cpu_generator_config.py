@@ -31,14 +31,41 @@ class CpuGeneratorConfig(object):
                             and the value is json key in definition.
     """
     swagger_types = {
+        'cores': 'list[CpuGeneratorCoreConfig]'
     }
 
     attribute_map = {
+        'cores': 'cores'
     }
 
-    def __init__(self):  # noqa: E501
+    def __init__(self, cores=None):  # noqa: E501
         """CpuGeneratorConfig - a model defined in Swagger"""  # noqa: E501
+
+        self._cores = None
         self.discriminator = None
+
+        if cores is not None:
+            self.cores = cores
+
+    @property
+    def cores(self):
+        """Gets the cores of this CpuGeneratorConfig.  # noqa: E501
+
+
+        :return: The cores of this CpuGeneratorConfig.  # noqa: E501
+        :rtype: list[CpuGeneratorCoreConfig]
+        """
+        return self._cores
+
+    @cores.setter
+    def cores(self, cores):
+        """Sets the cores of this CpuGeneratorConfig.
+
+
+        :param cores: The cores of this CpuGeneratorConfig.  # noqa: E501
+        :type: list[CpuGeneratorCoreConfig]
+        """
+        self._cores = cores
 
     def to_dict(self):
         """Returns the model properties as a dict"""

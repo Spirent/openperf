@@ -19,6 +19,7 @@ namespace model {
 
 CpuGeneratorConfig::CpuGeneratorConfig()
 {
+    m_CoresIsSet = false;
     
 }
 
@@ -35,6 +36,18 @@ nlohmann::json CpuGeneratorConfig::toJson() const
 {
     nlohmann::json val = nlohmann::json::object();
 
+    {
+        nlohmann::json jsonArray;
+        for( auto& item : m_Cores )
+        {
+            jsonArray.push_back(ModelBase::toJson(item));
+        }
+        
+        if(jsonArray.size() > 0)
+        {
+            val["cores"] = jsonArray;
+        }
+    }
     
 
     return val;
@@ -42,10 +55,44 @@ nlohmann::json CpuGeneratorConfig::toJson() const
 
 void CpuGeneratorConfig::fromJson(nlohmann::json& val)
 {
+    {
+        m_Cores.clear();
+        nlohmann::json jsonArray;
+        if(val.find("cores") != val.end())
+        {
+        for( auto& item : val["cores"] )
+        {
+            
+            if(item.is_null())
+            {
+                m_Cores.push_back( std::shared_ptr<CpuGeneratorCoreConfig>(nullptr) );
+            }
+            else
+            {
+                std::shared_ptr<CpuGeneratorCoreConfig> newItem(new CpuGeneratorCoreConfig());
+                newItem->fromJson(item);
+                m_Cores.push_back( newItem );
+            }
+            
+        }
+        }
+    }
     
 }
 
 
+std::vector<std::shared_ptr<CpuGeneratorCoreConfig>>& CpuGeneratorConfig::getCores()
+{
+    return m_Cores;
+}
+bool CpuGeneratorConfig::coresIsSet() const
+{
+    return m_CoresIsSet;
+}
+void CpuGeneratorConfig::unsetCores()
+{
+    m_CoresIsSet = false;
+}
 
 }
 }
