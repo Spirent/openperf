@@ -18,6 +18,6 @@ void block_generator::set_resource_id(std::string_view value)
 }
 
 bool block_generator::is_running() const { return m_running; }
-void block_generator::set_running(const bool value) { m_running = value; }
+void block_generator::set_running(bool is_running) { m_running = is_running; }
 
 } // namespace openperf::block::model

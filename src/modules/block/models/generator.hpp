@@ -31,7 +31,7 @@ public:
     void set_resource_id(std::string_view value);
 
     bool is_running() const;
-    void set_running(const bool value);
+    void set_running(bool);
 
 protected:
     std::string m_id;

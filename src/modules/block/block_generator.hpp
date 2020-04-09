@@ -31,9 +31,9 @@ public:
     void start();
     void stop();
 
-    void set_config(const model::block_generator_config& value);
+    void set_config(const model::block_generator_config&);
     void set_resource_id(std::string_view);
-    void set_running(bool value);
+    void set_running(bool);
 
     block_result_ptr get_statistics() const;
     void clear_statistics();
