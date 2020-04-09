@@ -112,14 +112,14 @@ bool device_stack::is_raw_device(std::string_view id)
     return (true);
 }
 
-device_ptr device_stack::get_block_device(const std::string& id) const
+device_ptr device_stack::get_block_device(std::string_view id) const
 {
-    if (block_devices.count(id)) return block_devices.at(id);
+    if (block_devices.count(std::string(id))) return block_devices.at(std::string(id));
     return nullptr;
 }
 
 std::shared_ptr<virtual_device>
-device_stack::get_vdev(const std::string& id) const
+device_stack::get_vdev(std::string_view id) const
 {
     return get_block_device(id);
 }

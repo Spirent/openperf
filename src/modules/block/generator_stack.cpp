@@ -34,15 +34,15 @@ generator_stack::create_block_generator(
     }
 }
 
-block_generator_ptr generator_stack::get_block_generator(std::string id) const
+block_generator_ptr generator_stack::get_block_generator(std::string_view id) const
 {
-    if (block_generators.count(id)) return block_generators.at(id);
+    if (block_generators.count(std::string(id))) return block_generators.at(std::string(id));
     return nullptr;
 }
 
-void generator_stack::delete_block_generator(std::string id)
+void generator_stack::delete_block_generator(std::string_view id)
 {
-    block_generators.erase(id);
+    block_generators.erase(std::string(id));
 }
 
 } // namespace openperf::block::generator

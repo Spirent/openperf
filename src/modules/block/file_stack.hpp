@@ -42,9 +42,9 @@ public:
     tl::expected<block_file_ptr, std::string>
     create_block_file(const model::file& block_file);
     std::shared_ptr<virtual_device>
-    get_vdev(const std::string& id) const override;
-    block_file_ptr get_block_file(const std::string& id) const;
-    void delete_block_file(const std::string& id);
+    get_vdev(std::string_view id) const override;
+    block_file_ptr get_block_file(std::string_view id) const;
+    void delete_block_file(std::string_view id);
 };
 
 } // namespace openperf::block::file
