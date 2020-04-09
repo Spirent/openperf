@@ -10,7 +10,6 @@
 
 namespace openperf::memory::internal {
 
-using openperf::utils::random;
 using openperf::utils::random_uniform;
 
 const uint64_t NS_PER_SECOND = 1000000000ULL;
@@ -184,7 +183,7 @@ void task_memory::config(const task_memory_config& msg)
                msg.block_size);
         scratch_allocate(msg.block_size);
         assert(_scratch.ptr);
-        uint32_t seed = random<uint32_t>();
+        uint32_t seed = random_uniform<uint32_t>();
         pseudo_random_fill(&seed, _scratch.ptr, _scratch.size);
     }
 
@@ -223,9 +222,9 @@ void task_memory::spin()
     double c[2] = {ops_per_ns * (_total.run_time + _total.sleep_time)
                        - _total.operations,
                    QUANTA_MS * MS_TO_NS};
-    to_do_ops = std::max(0.0, c[0] * b[1] - b[0] * c[1]);
-    ns_to_sleep = std::max(
-        0.0, std::min(a[0] * c[1] - c[0] * a[1], (double)QUANTA_MS * MS_TO_NS));
+    to_do_ops = static_cast<uint64_t>(std::max(0.0, c[0] * b[1] - b[0] * c[1]));
+    ns_to_sleep = static_cast<uint64_t>(std::max(
+        0.0, std::min(a[0] * c[1] - c[0] * a[1], (double)QUANTA_MS * MS_TO_NS)));
 
     uint64_t t1 = time_ns();
     if (ns_to_sleep) {
@@ -261,8 +260,7 @@ void task_memory::spin()
         _total.run_time += run_time;
         _total.operations += nb_ops;
         _total.avg_rate +=
-            ((double)(nb_ops / run_time) - _total.avg_rate + 4.0 / run_time)
-            / 5;
+            (nb_ops / (double)run_time - _total.avg_rate + 4.0 / run_time) / 5.0;
 
         to_do_ops -= spin_ops;
     }
