@@ -44,7 +44,11 @@ public:
     void queue_scrub();
     virtual uint64_t get_size() const = 0;
     virtual uint64_t get_header_size() const { return 0; };
-    int get_fd() const { return m_fd; }
+    std::optional<int> get_fd() const {
+        if (m_fd < 0)
+            return std::nullopt;
+        return m_fd;
+    }
 };
 
 class virtual_device_stack

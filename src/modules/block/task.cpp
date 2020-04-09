@@ -20,11 +20,13 @@ struct operation_config
 
 static off_t get_first_block(size_t header_size, size_t io_size)
 {
+    assert(io_size);
     return (header_size + io_size - 1) / io_size;
 }
 
 static off_t get_last_block(size_t file_size, size_t io_size)
 {
+    assert(io_size);
     return static_cast<off_t>(file_size / io_size);
 }
 

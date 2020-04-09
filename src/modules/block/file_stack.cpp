@@ -2,6 +2,7 @@
 #include <unistd.h>
 #include <cstring>
 #include "block/file_stack.hpp"
+#include "core/op_log.h"
 
 namespace openperf::block::file {
 
@@ -33,7 +34,9 @@ tl::expected<int, int> file::vopen()
 
 void file::vclose()
 {
-    close(m_fd);
+    if (auto res = close(m_fd); res < 0) {
+        OP_LOG(OP_LOG_ERROR, "Cannot close file %s: %s", get_path().c_str(), strerror(errno));
+    }
     m_fd = -1;
 }
 

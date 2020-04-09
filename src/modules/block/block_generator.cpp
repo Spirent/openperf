@@ -103,6 +103,9 @@ void block_generator::clear_statistics() { m_worker->clear_stat(); }
 task_config_t block_generator::generate_worker_config(
     const model::block_generator_config& p_config)
 {
+    auto fd = m_vdev->get_fd();
+    assert(fd);
+
     task_config_t w_config;
     w_config.queue_depth = p_config.queue_depth;
     w_config.read_size = p_config.read_size;
@@ -110,7 +113,7 @@ task_config_t block_generator::generate_worker_config(
     w_config.write_size = p_config.write_size;
     w_config.writes_per_sec = p_config.writes_per_sec;
     w_config.pattern = p_config.pattern;
-    w_config.fd = m_vdev->get_fd();
+    w_config.fd = fd.value();
     w_config.f_size = m_vdev->get_size();
     w_config.header_size = m_vdev->get_header_size();
     return w_config;
