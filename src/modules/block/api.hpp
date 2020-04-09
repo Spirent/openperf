@@ -95,7 +95,6 @@ struct generator_result
 enum class error_type {
     NONE = 0,
     NOT_FOUND,
-    EAI_ERROR,
     ZMQ_ERROR,
     CUSTOM_ERROR
 };
