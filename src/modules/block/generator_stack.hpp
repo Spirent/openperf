@@ -14,7 +14,7 @@ using block_generator_map =
 class generator_stack
 {
 private:
-    block_generator_map block_generators;
+    block_generator_map m_block_generators;
 
 public:
     generator_stack(){};

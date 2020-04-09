@@ -15,14 +15,14 @@ namespace openperf::block::device {
 
 tl::expected<int, int> device::vopen()
 {
-    if ((fd = open(get_path().c_str(), O_RDWR)) < 0) {
+    if ((m_fd = open(get_path().c_str(), O_RDWR)) < 0) {
         return tl::make_unexpected(ENOSPC);
     }
 
-    return fd;
+    return m_fd;
 }
 
-void device::vclose() { close(fd); }
+void device::vclose() { close(m_fd); }
 
 uint64_t device::get_size() const { return model::device::get_size(); }
 
@@ -33,7 +33,7 @@ void device_stack::init_device_stack()
     DIR* dir = nullptr;
     struct dirent* entry = nullptr;
 
-    block_devices.clear();
+    m_block_devices.clear();
 
     if ((dir = opendir(device_dir.data())) == nullptr) {
         OP_LOG(OP_LOG_ERROR,
@@ -56,7 +56,7 @@ void device_stack::init_device_stack()
         blkdev->set_usable(is_block_device_usable(entry->d_name));
         blkdev->set_info(get_block_device_info(entry->d_name));
 
-        block_devices.emplace(blkdev->get_id(), blkdev);
+        m_block_devices.emplace(blkdev->get_id(), blkdev);
     }
 
     closedir(dir);
@@ -114,7 +114,7 @@ bool device_stack::is_raw_device(std::string_view id)
 
 device_ptr device_stack::get_block_device(std::string_view id) const
 {
-    if (block_devices.count(std::string(id))) return block_devices.at(std::string(id));
+    if (m_block_devices.count(std::string(id))) return m_block_devices.at(std::string(id));
     return nullptr;
 }
 
@@ -127,7 +127,7 @@ device_stack::get_vdev(std::string_view id) const
 std::vector<device_ptr> device_stack::block_devices_list()
 {
     std::vector<device_ptr> blkdevice_list;
-    for (auto blkdevice_pair : block_devices) {
+    for (auto blkdevice_pair : m_block_devices) {
         blkdevice_list.push_back(blkdevice_pair.second);
     }
 

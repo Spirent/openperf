@@ -8,11 +8,11 @@ namespace openperf::block::model {
 class device
 {
 protected:
-    std::string id;
-    std::string path;
-    int64_t size;
-    std::string info;
-    bool usable;
+    std::string m_id;
+    std::string m_path;
+    int64_t m_size;
+    std::string m_info;
+    bool m_usable;
 
 public:
     std::string get_id() const;

@@ -44,11 +44,11 @@ public:
     void set_write_stats(const block_generator_statistics& value);
 
 protected:
-    std::string id;
-    bool active;
-    time_point timestamp;
-    block_generator_statistics read_stats;
-    block_generator_statistics write_stats;
+    std::string m_id;
+    bool m_active;
+    time_point m_timestamp;
+    block_generator_statistics m_read_stats;
+    block_generator_statistics m_write_stats;
 };
 
 } // namespace openperf::block::model

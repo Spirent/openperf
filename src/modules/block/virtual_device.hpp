@@ -28,9 +28,9 @@ const size_t block_generator_vdev_header_size = sizeof(virtual_device_header);
 class virtual_device
 {
 protected:
-    std::atomic_int fd = -1;
-    std::thread scrub_thread;
-    std::atomic_bool deleted;
+    std::atomic_int m_fd = -1;
+    std::thread m_scrub_thread;
+    std::atomic_bool m_deleted;
     int write_header();
     void scrub_worker(size_t start, size_t stop);
     virtual void scrub_done(){};
@@ -44,7 +44,7 @@ public:
     void queue_scrub();
     virtual uint64_t get_size() const = 0;
     virtual uint64_t get_header_size() const { return 0; };
-    int get_fd() const { return fd; }
+    int get_fd() const { return m_fd; }
 };
 
 class virtual_device_stack

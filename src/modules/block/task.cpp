@@ -135,14 +135,14 @@ static int complete_aio_op(struct operation_state* aio_op)
 }
 
 block_task::block_task()
-    : actual_stat(generate_default_stat())
-    , shared_stat(generate_default_stat())
-    , at_stat(&shared_stat)
-    , reset_stat(false)
-    , read_timestamp(ref_clock::now())
-    , write_timestamp(ref_clock::now())
-    , pause_timestamp(ref_clock::now())
-    , start_timestamp(ref_clock::now())
+    : m_actual_stat(generate_default_stat())
+    , m_shared_stat(generate_default_stat())
+    , m_at_stat(&m_shared_stat)
+    , m_reset_stat(false)
+    , m_read_timestamp(ref_clock::now())
+    , m_write_timestamp(ref_clock::now())
+    , m_pause_timestamp(ref_clock::now())
+    , m_start_timestamp(ref_clock::now())
 {}
 
 block_task::~block_task() {}
@@ -156,17 +156,17 @@ size_t block_task::worker_spin(int (*queue_aio_op)(aiocb* aiocb),
     uint_fast64_t ns_max = 0;
     int32_t total_ops = 0;
     int32_t pending_ops = 0;
-    int32_t queue_depth = (task_config.queue_depth < block_size)
-                              ? task_config.queue_depth
+    int32_t queue_depth = (m_task_config.queue_depth < block_size)
+                              ? m_task_config.queue_depth
                               : block_size;
-    auto op_conf = (operation_config){task_config.fd,
-                                      task_config.f_size,
-                                      task_config.read_size,
-                                      buf.data(),
-                                      pattern.generate(),
+    auto op_conf = (operation_config){m_task_config.fd,
+                                      m_task_config.f_size,
+                                      m_task_config.read_size,
+                                      m_buf.data(),
+                                      m_pattern.generate(),
                                       queue_aio_op};
     for (int32_t i = 0; i < queue_depth; ++i) {
-        auto aio_op = &aio_ops[i];
+        auto aio_op = &m_aio_ops[i];
         op_conf.block_size =
             block_size / queue_depth
             + ((i < int32_t(block_size % queue_depth)) ? 1 : 0);
@@ -183,7 +183,7 @@ size_t block_task::worker_spin(int (*queue_aio_op)(aiocb* aiocb),
         op_conf.buffer += op_conf.block_size;
     }
     while (pending_ops) {
-        if (wait_for_aio_ops(aio_ops, queue_depth) != 0) {
+        if (wait_for_aio_ops(m_aio_ops, queue_depth) != 0) {
             /*
              * Eek!  Waiting failed, so cancel pending operations.
              * The aio_cancel function only has two documented failure modes:
@@ -191,7 +191,7 @@ size_t block_task::worker_spin(int (*queue_aio_op)(aiocb* aiocb),
              * 2) aio_cancel not supported
              * We consider either of these conditions to be fatal.
              */
-            if (aio_cancel(task_config.fd, NULL) == -1) {
+            if (aio_cancel(m_task_config.fd, NULL) == -1) {
                 OP_LOG(OP_LOG_ERROR,
                        "Could not cancel pending AIO operatons: %s\n",
                        strerror(errno));
@@ -202,7 +202,7 @@ size_t block_task::worker_spin(int (*queue_aio_op)(aiocb* aiocb),
          * take it's place.
          */
         for (int32_t i = 0; i < queue_depth; ++i) {
-            auto aio_op = &aio_ops[i];
+            auto aio_op = &m_aio_ops[i];
             if (complete_aio_op(aio_op) == 0) {
                 /* found it; update stats */
                 total_ops++;
@@ -268,100 +268,100 @@ void pseudo_random_fill(void* buffer, size_t length)
 
 void block_task::config(const task_config_t& p_config)
 {
-    task_config = p_config;
+    m_task_config = p_config;
 
-    auto buf_len = task_config.queue_depth
-                   * std::max(task_config.read_size, task_config.write_size);
-    buf.resize(buf_len);
-    pseudo_random_fill(buf.data(), buf.size());
-    aio_ops.resize(task_config.queue_depth);
-    pattern.reset(
-        get_first_block(task_config.header_size, task_config.read_size),
-        get_last_block(task_config.f_size, task_config.read_size),
-        task_config.pattern);
+    auto buf_len = m_task_config.queue_depth
+                   * std::max(m_task_config.read_size, m_task_config.write_size);
+    m_buf.resize(buf_len);
+    pseudo_random_fill(m_buf.data(), m_buf.size());
+    m_aio_ops.resize(m_task_config.queue_depth);
+    m_pattern.reset(
+        get_first_block(m_task_config.header_size, m_task_config.read_size),
+        get_last_block(m_task_config.f_size, m_task_config.read_size),
+        m_task_config.pattern);
 }
 
-task_config_t block_task::config() const { return task_config; }
+task_config_t block_task::config() const { return m_task_config; }
 
 void block_task::resume()
 {
-    read_timestamp += ref_clock::now() - pause_timestamp;
-    write_timestamp += ref_clock::now() - pause_timestamp;
-    start_timestamp += ref_clock::now() - pause_timestamp;
+    m_read_timestamp += ref_clock::now() - m_pause_timestamp;
+    m_write_timestamp += ref_clock::now() - m_pause_timestamp;
+    m_start_timestamp += ref_clock::now() - m_pause_timestamp;
 }
 
-void block_task::pause() { pause_timestamp = ref_clock::now(); }
+void block_task::pause() { m_pause_timestamp = ref_clock::now(); }
 
-task_stat_t block_task::stat() const { return *at_stat; }
+task_stat_t block_task::stat() const { return *m_at_stat; }
 
 void block_task::clear_stat()
 {
-    *at_stat = generate_default_stat();
-    reset_stat = true;
+    *m_at_stat = generate_default_stat();
+    m_reset_stat = true;
 }
 
 void block_task::spin()
 {
-    if (reset_stat.load()) {
-        reset_stat = false;
-        actual_stat = generate_default_stat();
-        start_timestamp = ref_clock::now();
+    if (m_reset_stat.load()) {
+        m_reset_stat = false;
+        m_actual_stat = generate_default_stat();
+        m_start_timestamp = ref_clock::now();
     }
 
-    if (!task_config.reads_per_sec && !task_config.writes_per_sec)
+    if (!m_task_config.reads_per_sec && !m_task_config.writes_per_sec)
         throw std::runtime_error(
             "Could not spin worker: no block operation was specified");
 
-    if (!task_config.reads_per_sec)
-        read_timestamp = std::numeric_limits<decltype(read_timestamp)>().max();
-    if (!task_config.writes_per_sec)
-        write_timestamp =
-            std::numeric_limits<decltype(write_timestamp)>().max();
+    if (!m_task_config.reads_per_sec)
+        m_read_timestamp = std::numeric_limits<decltype(m_read_timestamp)>().max();
+    if (!m_task_config.writes_per_sec)
+        m_write_timestamp =
+            std::numeric_limits<decltype(m_write_timestamp)>().max();
 
-    auto next_ts = std::min(read_timestamp, write_timestamp);
+    auto next_ts = std::min(m_read_timestamp, m_write_timestamp);
     auto before_sleep_time = ref_clock::now();
     if (next_ts > before_sleep_time)
         std::this_thread::sleep_for(next_ts - before_sleep_time);
 
     auto cur_time = ref_clock::now();
-    if (read_timestamp < write_timestamp) {
-        auto rps = (task_config.reads_per_sec > 0) ? task_config.reads_per_sec : 1;
-        read_timestamp += std::chrono::nanoseconds(std::nano::den / rps);
-        if (task_config.read_size > 0) {
+    if (m_read_timestamp < m_write_timestamp) {
+        auto rps = (m_task_config.reads_per_sec > 0) ? m_task_config.reads_per_sec : 1;
+        m_read_timestamp += std::chrono::nanoseconds(std::nano::den / rps);
+        if (m_task_config.read_size > 0) {
             worker_spin(aio_read,
-                                 task_config.read_size,
-                                 actual_stat.read,
+                                 m_task_config.read_size,
+                                 m_actual_stat.read,
                                  ref_clock::now() + std::chrono::seconds(1));
-            auto cicles = (cur_time - start_timestamp).count()
-                              * task_config.reads_per_sec / std::nano::den
+            auto cicles = (cur_time - m_start_timestamp).count()
+                              * m_task_config.reads_per_sec / std::nano::den
                           + 1;
-            actual_stat.read.ops_target = cicles * task_config.queue_depth;
-            actual_stat.read.bytes_target = cicles * task_config.read_size;
+            m_actual_stat.read.ops_target = cicles * m_task_config.queue_depth;
+            m_actual_stat.read.bytes_target = cicles * m_task_config.read_size;
         }
     } else {
-        auto wps = (task_config.writes_per_sec > 0) ? task_config.writes_per_sec : 1;
-        write_timestamp += std::chrono::nanoseconds(std::nano::den / wps);
-        if (task_config.write_size > 0) {
+        auto wps = (m_task_config.writes_per_sec > 0) ? m_task_config.writes_per_sec : 1;
+        m_write_timestamp += std::chrono::nanoseconds(std::nano::den / wps);
+        if (m_task_config.write_size > 0) {
             worker_spin(aio_write,
-                                 task_config.write_size,
-                                 actual_stat.write,
+                                 m_task_config.write_size,
+                                 m_actual_stat.write,
                                  ref_clock::now() + std::chrono::seconds(1));
-            auto cicles = (cur_time - start_timestamp).count()
-                              * task_config.writes_per_sec / std::nano::den
+            auto cicles = (cur_time - m_start_timestamp).count()
+                              * m_task_config.writes_per_sec / std::nano::den
                           + 1;
-            actual_stat.write.ops_target = cicles * task_config.queue_depth;
-            actual_stat.write.bytes_target = cicles * task_config.write_size;
+            m_actual_stat.write.ops_target = cicles * m_task_config.queue_depth;
+            m_actual_stat.write.bytes_target = cicles * m_task_config.write_size;
         }
     }
-    actual_stat.updated = realtime::now();
+    m_actual_stat.updated = realtime::now();
 
-    if (reset_stat.load()) {
-        reset_stat = false;
-        actual_stat = generate_default_stat();
-        start_timestamp = ref_clock::now();
+    if (m_reset_stat.load()) {
+        m_reset_stat = false;
+        m_actual_stat = generate_default_stat();
+        m_start_timestamp = ref_clock::now();
     }
 
-    *at_stat = actual_stat;
+    *m_at_stat = m_actual_stat;
 }
 
 } // namespace openperf::block::worker
