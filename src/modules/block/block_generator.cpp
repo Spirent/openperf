@@ -77,16 +77,16 @@ block_result_ptr block_generator::get_statistics() const
     auto worker_stat = m_worker->stat();
 
     auto generate_gen_stat = [](const task_operation_stat_t& task_stat) {
-        model::block_generator_statistics gen_stat;
-        gen_stat.bytes_actual = task_stat.bytes_actual;
-        gen_stat.bytes_target = task_stat.bytes_target;
-        gen_stat.io_errors = task_stat.errors;
-        gen_stat.ops_actual = task_stat.ops_actual;
-        gen_stat.ops_target = task_stat.ops_target;
-        gen_stat.latency = task_stat.latency;
-        gen_stat.latency_min = task_stat.latency_min;
-        gen_stat.latency_max = task_stat.latency_max;
-        return gen_stat;
+        return model::block_generator_statistics {
+            .bytes_actual = static_cast<int64_t>(task_stat.bytes_actual),
+            .bytes_target = static_cast<int64_t>(task_stat.bytes_target),
+            .io_errors = static_cast<int64_t>(task_stat.errors),
+            .ops_actual = static_cast<int64_t>(task_stat.ops_actual),
+            .ops_target = static_cast<int64_t>(task_stat.ops_target),
+            .latency = static_cast<int64_t>(task_stat.latency),
+            .latency_min = static_cast<int64_t>(task_stat.latency_min),
+            .latency_max = static_cast<int64_t>(task_stat.latency_max)
+        };
     };
 
     auto gen_stat = std::make_shared<model::block_generator_result>();
