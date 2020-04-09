@@ -31,7 +31,8 @@ int virtual_device::write_header()
             VIRTUAL_DEVICE_HEADER_TAG,
             VIRTUAL_DEVICE_HEADER_TAG_LENGTH);
 
-    return (pwrite(m_fd, &header, sizeof(header), 0) == sizeof(header) ? 0 : -1);
+    return (pwrite(m_fd, &header, sizeof(header), 0) == sizeof(header) ? 0
+                                                                       : -1);
 }
 
 void virtual_device::queue_scrub()

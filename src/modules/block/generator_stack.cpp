@@ -23,8 +23,10 @@ generator_stack::create_block_generator(
             + static_cast<std::string>(block_generator_model.get_id())
             + " already exists.");
     try {
-        auto blkgenerator_ptr = std::make_shared<block_generator>(block_generator_model, vdev_stack_list);
-        m_block_generators.emplace(blkgenerator_ptr->get_id(), blkgenerator_ptr);
+        auto blkgenerator_ptr = std::make_shared<block_generator>(
+            block_generator_model, vdev_stack_list);
+        m_block_generators.emplace(blkgenerator_ptr->get_id(),
+                                   blkgenerator_ptr);
         return blkgenerator_ptr;
     } catch (const std::runtime_error e) {
         return tl::make_unexpected(
@@ -34,9 +36,11 @@ generator_stack::create_block_generator(
     }
 }
 
-block_generator_ptr generator_stack::get_block_generator(std::string_view id) const
+block_generator_ptr
+generator_stack::get_block_generator(std::string_view id) const
 {
-    if (m_block_generators.count(std::string(id))) return m_block_generators.at(std::string(id));
+    if (m_block_generators.count(std::string(id)))
+        return m_block_generators.at(std::string(id));
     return nullptr;
 }
 
