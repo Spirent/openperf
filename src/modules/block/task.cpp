@@ -332,11 +332,11 @@ void block_task::spin()
                                  m_task_config.read_size,
                                  m_actual_stat.read,
                                  ref_clock::now() + std::chrono::seconds(1));
-            auto cicles = (cur_time - m_start_timestamp).count()
+            auto cycles = (cur_time - m_start_timestamp).count()
                               * m_task_config.reads_per_sec / std::nano::den
                           + 1;
-            m_actual_stat.read.ops_target = cicles * m_task_config.queue_depth;
-            m_actual_stat.read.bytes_target = cicles * m_task_config.read_size;
+            m_actual_stat.read.ops_target = cycles * m_task_config.queue_depth;
+            m_actual_stat.read.bytes_target = cycles * m_task_config.read_size;
         }
     } else {
         auto wps = (m_task_config.writes_per_sec > 0) ? m_task_config.writes_per_sec : 1;
@@ -346,11 +346,11 @@ void block_task::spin()
                                  m_task_config.write_size,
                                  m_actual_stat.write,
                                  ref_clock::now() + std::chrono::seconds(1));
-            auto cicles = (cur_time - m_start_timestamp).count()
+            auto cycles = (cur_time - m_start_timestamp).count()
                               * m_task_config.writes_per_sec / std::nano::den
                           + 1;
-            m_actual_stat.write.ops_target = cicles * m_task_config.queue_depth;
-            m_actual_stat.write.bytes_target = cicles * m_task_config.write_size;
+            m_actual_stat.write.ops_target = cycles * m_task_config.queue_depth;
+            m_actual_stat.write.bytes_target = cycles * m_task_config.write_size;
         }
     }
     m_actual_stat.updated = realtime::now();
