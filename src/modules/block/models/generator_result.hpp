@@ -9,6 +9,7 @@
 namespace openperf::block::model {
 
 using time_point = std::chrono::time_point<timesync::chrono::realtime>;
+using duration = std::chrono::duration<uint64_t, std::nano>;
 
 struct block_generator_statistics
 {
@@ -17,9 +18,9 @@ struct block_generator_statistics
     int64_t bytes_target;
     int64_t bytes_actual;
     int64_t io_errors;
-    int64_t latency;
-    int64_t latency_min;
-    int64_t latency_max;
+    duration latency;
+    duration latency_min;
+    duration latency_max;
 };
 
 class block_generator_result

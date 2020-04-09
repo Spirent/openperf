@@ -13,7 +13,7 @@ namespace openperf::block::worker {
 using worker_pattern = model::block_generation_pattern;
 using time_point = std::chrono::time_point<timesync::chrono::realtime>;
 using ref_clock = timesync::chrono::monotime;
-
+using duration = std::chrono::duration<uint64_t, std::nano>;
 struct task_config_t
 {
     int fd;
@@ -29,17 +29,14 @@ struct task_config_t
 
 struct task_operation_stat_t
 {
-    uint_fast64_t ops_target; /* The intended number of operations performed */
-    uint_fast64_t ops_actual; /* The actual number of operations performed */
-    uint_fast64_t
-        bytes_target; /* The intended number of bytes read or written */
-    uint_fast64_t bytes_actual; /* The actual number of bytes read or written */
-    uint_fast64_t
-        errors; /* The number of io_errors observed during reading or writing */
-    uint_fast64_t latency; /* The total amount of time required to perform all
-                              operations */
-    uint_fast64_t latency_min; /* The minimum observed latency value */
-    uint_fast64_t latency_max; /* The maximum observed latency value */
+    uint_fast64_t ops_target = 0; /* The intended number of operations performed */
+    uint_fast64_t ops_actual = 0; /* The actual number of operations performed */
+    uint_fast64_t bytes_target = 0; /* The intended number of bytes read or written */
+    uint_fast64_t bytes_actual = 0; /* The actual number of bytes read or written */
+    uint_fast64_t errors = 0; /* The number of io_errors observed during reading or writing */
+    duration latency = duration::zero(); /* The total amount of time required to perform all operations */
+    duration latency_min = duration::zero(); /* The minimum observed latency value */
+    duration latency_max = duration::zero(); /* The maximum observed latency value */
 };
 
 struct task_stat_t
@@ -58,8 +55,8 @@ enum aio_state {
 
 struct operation_state
 {
-    uint64_t start_ns;
-    uint64_t stop_ns;
+    time_point start;
+    time_point stop;
     uint64_t io_bytes;
     enum aio_state state;
     aiocb aiocb;
