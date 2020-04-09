@@ -109,7 +109,7 @@ reply_msg server::handle_request(const request_block_generator_add& request)
         return (to_error(error_type::EAI_ERROR));
 
     auto block_generator_model = api::from_api_model(request.source);
-    // If user did not specify an id create one for them.kjuolpik
+    // If user did not specify an id create one for them.
     if (block_generator_model->get_id() == api::empty_id_string) {
         block_generator_model->set_id(core::to_string(core::uuid::random()));
     }

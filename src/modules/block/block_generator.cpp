@@ -62,14 +62,14 @@ void block_generator::update_resource(std::string_view resource_id)
     m_vdev = vdev_ptr;
 }
 
-void block_generator::set_running(bool value)
+void block_generator::set_running(bool is_running)
 {
-    if (value)
+    if (is_running)
         m_worker->resume();
     else
         m_worker->pause();
 
-    model::block_generator::set_running(value);
+    model::block_generator::set_running(is_running);
 }
 
 block_result_ptr block_generator::get_statistics() const
