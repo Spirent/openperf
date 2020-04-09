@@ -12,7 +12,8 @@ template <class T> static T random_uniform(T lower_bound, T upper_bound)
     return dist(generator);
 }
 
-template <class T> static T random_uniform(T max)
+template <class T>
+static T random_uniform(T max = std::numeric_limits<T>::max())
 {
     return random_uniform(T(0), max);
 }
