@@ -15,14 +15,22 @@ namespace openperf::block::device {
 
 tl::expected<int, int> device::vopen()
 {
+    if (m_fd >= 0) return m_fd;
+
     if ((m_fd = open(get_path().c_str(), O_RDWR)) < 0) {
-        return tl::make_unexpected(ENOSPC);
+        return tl::make_unexpected(errno);
     }
 
     return m_fd;
 }
 
-void device::vclose() { close(m_fd); }
+void device::vclose()
+{
+    if (auto res = close(m_fd); res < 0) {
+        OP_LOG(OP_LOG_ERROR, "Cannot close device %s: %s", get_path().c_str(), strerror(errno));
+    }
+    m_fd = -1;
+}
 
 uint64_t device::get_size() const { return model::device::get_size(); }
 
@@ -54,7 +62,7 @@ void device_stack::init_device_stack()
                          + std::string(entry->d_name));
         blkdev->set_size(get_block_device_size(entry->d_name));
         blkdev->set_usable(is_block_device_usable(entry->d_name));
-        blkdev->set_info(get_block_device_info(entry->d_name));
+        blkdev->set_info(get_block_device_info(entry->d_name).value_or(""));
 
         m_block_devices.emplace(blkdev->get_id(), blkdev);
     }
@@ -92,9 +100,14 @@ uint64_t device_stack::get_block_device_size(std::string_view id)
     return (nb_blocks << 9);
 }
 
-std::string device_stack::get_block_device_info(std::string_view) { return ""; }
+std::optional<std::string> device_stack::get_block_device_info(std::string_view) {
+    return std::nullopt;
+}
 
-int device_stack::is_block_device_usable(std::string_view) { return true; }
+int device_stack::is_block_device_usable(std::string_view id)
+{
+    return get_block_device_size(id) > 0;
+}
 
 bool device_stack::is_raw_device(std::string_view id)
 {

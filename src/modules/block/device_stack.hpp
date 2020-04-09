@@ -32,7 +32,7 @@ private:
 
     void init_device_stack();
     uint64_t get_block_device_size(std::string_view id);
-    std::string get_block_device_info(std::string_view id);
+    std::optional<std::string> get_block_device_info(std::string_view id);
     int is_block_device_usable(std::string_view id);
     bool is_raw_device(std::string_view id);
 
