@@ -83,9 +83,9 @@ block_result_ptr block_generator::get_statistics() const
             .io_errors = static_cast<int64_t>(task_stat.errors),
             .ops_actual = static_cast<int64_t>(task_stat.ops_actual),
             .ops_target = static_cast<int64_t>(task_stat.ops_target),
-            .latency = static_cast<int64_t>(task_stat.latency),
-            .latency_min = static_cast<int64_t>(task_stat.latency_min),
-            .latency_max = static_cast<int64_t>(task_stat.latency_max)
+            .latency = task_stat.latency,
+            .latency_min = task_stat.latency_min,
+            .latency_max = task_stat.latency_max
         };
     };
 

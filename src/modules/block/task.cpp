@@ -33,7 +33,7 @@ static off_t get_last_block(size_t file_size, size_t io_size)
 inline static task_stat_t generate_default_stat()
 {
     return {
-        ref_clock::now(), {0, 0, 0, 0, 0, 0, 0, 0}, {0, 0, 0, 0, 0, 0, 0, 0}};
+        ref_clock::now(), {}, {}};
 }
 
 static int submit_aio_op(const operation_config& op_config,
@@ -52,8 +52,8 @@ static int submit_aio_op(const operation_config& op_config,
 
     /* Reset stat related variables */
     op_state->state = PENDING;
-    op_state->start_ns = ref_clock::now().time_since_epoch().count();
-    op_state->stop_ns = op_state->start_ns;
+    op_state->start = ref_clock::now();
+    op_state->stop = op_state->start;
     op_state->io_bytes = 0;
 
     /* Submit operation to the kernel */
@@ -115,7 +115,7 @@ static int complete_aio_op(struct operation_state* aio_op)
     case 0: {
         /* AIO operation completed */
         ssize_t nb_bytes = aio_return(aiocb);
-        aio_op->stop_ns = ref_clock::now().time_since_epoch().count();
+        aio_op->stop = ref_clock::now();
         aio_op->io_bytes = nb_bytes;
         aio_op->state = COMPLETE;
         break;
@@ -127,7 +127,7 @@ static int complete_aio_op(struct operation_state* aio_op)
     default:
         /* could be canceled or error; we don't make a distinction */
         aio_return(aiocb); /* free resources */
-        aio_op->start_ns = 0;
+        aio_op->stop = ref_clock::now();
         aio_op->io_bytes = 0;
         aio_op->state = FAILED;
         err = 0;
@@ -154,8 +154,8 @@ size_t block_task::worker_spin(int (*queue_aio_op)(aiocb* aiocb),
                                task_operation_stat_t& op_stat,
                                time_point deadline)
 {
-    uint_fast64_t ns_min = UINT64_MAX;
-    uint_fast64_t ns_max = 0;
+    duration latency_min = duration::max();
+    duration latency_max = duration::zero();
     int32_t total_ops = 0;
     int32_t pending_ops = 0;
     int32_t queue_depth = (m_task_config.queue_depth < block_size)
@@ -213,10 +213,10 @@ size_t block_task::worker_spin(int (*queue_aio_op)(aiocb* aiocb),
                     op_stat.ops_actual++;
                     op_stat.bytes_actual += aio_op->io_bytes;
 
-                    uint64_t op_ns = aio_op->stop_ns - aio_op->start_ns;
+                    auto op_ns = aio_op->stop - aio_op->start;
                     op_stat.latency += op_ns;
-                    if (op_ns < ns_min) { ns_min = op_ns; }
-                    if (op_ns > ns_max) { ns_max = op_ns; }
+                    if (op_ns < latency_min) { latency_min = op_ns; }
+                    if (op_ns > latency_max) { latency_max = op_ns; }
                     break;
                 }
                 case FAILED:
@@ -250,8 +250,8 @@ size_t block_task::worker_spin(int (*queue_aio_op)(aiocb* aiocb),
         }
     }
 
-    op_stat.latency_max += ns_max;
-    op_stat.latency_min += (ns_min == UINT64_MAX ? 0 : ns_min);
+    op_stat.latency_max += latency_max;
+    op_stat.latency_min += (latency_min == duration::max() ? duration::zero() : latency_min);
 
     return (total_ops);
 }

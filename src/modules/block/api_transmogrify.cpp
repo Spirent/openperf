@@ -669,9 +669,9 @@ generator_result to_api_model(const model::block_generator_result& p_gen_result)
             stat.io_errors = gen_stat.io_errors;
             stat.ops_actual = gen_stat.ops_actual;
             stat.ops_target = gen_stat.ops_target;
-            stat.latency = gen_stat.latency;
-            stat.latency_min = gen_stat.latency_min;
-            stat.latency_max = gen_stat.latency_max;
+            stat.latency = gen_stat.latency.count();
+            stat.latency_min = gen_stat.latency_min.count();
+            stat.latency_max = gen_stat.latency_max.count();
             return stat;
         };
 
