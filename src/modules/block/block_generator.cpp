@@ -53,7 +53,9 @@ void block_generator::update_resource(std::string_view resource_id)
             break;
         }
     }
-    if (!vdev_ptr) throw std::runtime_error("Unknown resource: " + std::string(resource_id));
+    if (!vdev_ptr)
+        throw std::runtime_error("Unknown resource: "
+                                 + std::string(resource_id));
 
     if (auto result = vdev_ptr->vopen(); !result)
         throw std::runtime_error("Cannot open resource: "
@@ -77,7 +79,7 @@ block_result_ptr block_generator::get_statistics() const
     auto worker_stat = m_worker->stat();
 
     auto generate_gen_stat = [](const task_operation_stat_t& task_stat) {
-        return model::block_generator_statistics {
+        return model::block_generator_statistics{
             .bytes_actual = static_cast<int64_t>(task_stat.bytes_actual),
             .bytes_target = static_cast<int64_t>(task_stat.bytes_target),
             .io_errors = static_cast<int64_t>(task_stat.errors),
@@ -85,8 +87,7 @@ block_result_ptr block_generator::get_statistics() const
             .ops_target = static_cast<int64_t>(task_stat.ops_target),
             .latency = task_stat.latency,
             .latency_min = task_stat.latency_min,
-            .latency_max = task_stat.latency_max
-        };
+            .latency_max = task_stat.latency_max};
     };
 
     auto gen_stat = std::make_shared<model::block_generator_result>();

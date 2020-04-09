@@ -92,12 +92,7 @@ struct generator_result
     generator_stats write_stats;
 };
 
-enum class error_type {
-    NONE = 0,
-    NOT_FOUND,
-    ZMQ_ERROR,
-    CUSTOM_ERROR
-};
+enum class error_type { NONE = 0, NOT_FOUND, ZMQ_ERROR, CUSTOM_ERROR };
 
 struct typed_error
 {

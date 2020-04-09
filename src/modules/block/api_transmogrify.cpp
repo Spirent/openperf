@@ -73,7 +73,8 @@ block_generation_pattern_from_string(std::string_view value)
 {
     if (block_generation_patterns.count(std::string(value)))
         return block_generation_patterns.at(std::string(value));
-    throw std::runtime_error("Pattern \"" + std::string(value) + "\" is unknown");
+    throw std::runtime_error("Pattern \"" + std::string(value)
+                             + "\" is unknown");
 }
 
 std::string to_string(const model::block_generation_pattern& pattern)
@@ -99,8 +100,10 @@ const static std::unordered_map<model::file_state, std::string>
 
 model::file_state block_file_state_from_string(std::string_view value)
 {
-    if (block_file_states.count(std::string(value))) return block_file_states.at(std::string(value));
-    throw std::runtime_error("Pattern \"" + std::string(value) + "\" is unknown");
+    if (block_file_states.count(std::string(value)))
+        return block_file_states.at(std::string(value));
+    throw std::runtime_error("Pattern \"" + std::string(value)
+                             + "\" is unknown");
 }
 
 std::string to_string(const model::file_state& pattern)

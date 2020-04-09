@@ -35,7 +35,10 @@ tl::expected<int, int> file::vopen()
 void file::vclose()
 {
     if (auto res = close(m_fd); res < 0) {
-        OP_LOG(OP_LOG_ERROR, "Cannot close file %s: %s", get_path().c_str(), strerror(errno));
+        OP_LOG(OP_LOG_ERROR,
+               "Cannot close file %s: %s",
+               get_path().c_str(),
+               strerror(errno));
     }
     m_fd = -1;
 }
@@ -53,7 +56,10 @@ void file::scrub_done()
     set_init_percent_complete(100);
 }
 
-void file::scrub_update(double p) { set_init_percent_complete(static_cast<int32_t>(100 * p)); }
+void file::scrub_update(double p)
+{
+    set_init_percent_complete(static_cast<int32_t>(100 * p));
+}
 
 std::vector<block_file_ptr> file_stack::files_list()
 {
@@ -87,15 +93,15 @@ file_stack::create_block_file(const model::file& block_file_model)
     }
 }
 
-std::shared_ptr<virtual_device>
-file_stack::get_vdev(std::string_view id) const
+std::shared_ptr<virtual_device> file_stack::get_vdev(std::string_view id) const
 {
     return get_block_file(std::string(id));
 }
 
 block_file_ptr file_stack::get_block_file(std::string_view id) const
 {
-    if (m_block_files.count(std::string(id))) return m_block_files.at(std::string(id));
+    if (m_block_files.count(std::string(id)))
+        return m_block_files.at(std::string(id));
     return nullptr;
 }
 

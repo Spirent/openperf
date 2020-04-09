@@ -27,7 +27,10 @@ tl::expected<int, int> device::vopen()
 void device::vclose()
 {
     if (auto res = close(m_fd); res < 0) {
-        OP_LOG(OP_LOG_ERROR, "Cannot close device %s: %s", get_path().c_str(), strerror(errno));
+        OP_LOG(OP_LOG_ERROR,
+               "Cannot close device %s: %s",
+               get_path().c_str(),
+               strerror(errno));
     }
     m_fd = -1;
 }
@@ -100,7 +103,8 @@ uint64_t device_stack::get_block_device_size(std::string_view id)
     return (nb_blocks << 9);
 }
 
-std::optional<std::string> device_stack::get_block_device_info(std::string_view) {
+std::optional<std::string> device_stack::get_block_device_info(std::string_view)
+{
     return std::nullopt;
 }
 
@@ -127,7 +131,8 @@ bool device_stack::is_raw_device(std::string_view id)
 
 device_ptr device_stack::get_block_device(std::string_view id) const
 {
-    if (m_block_devices.count(std::string(id))) return m_block_devices.at(std::string(id));
+    if (m_block_devices.count(std::string(id)))
+        return m_block_devices.at(std::string(id));
     return nullptr;
 }
 
