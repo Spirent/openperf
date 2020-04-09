@@ -18,9 +18,9 @@ using block_result_ptr = std::shared_ptr<model::block_generator_result>;
 class block_generator : public model::block_generator
 {
 private:
-    block_worker_ptr blkworker;
-    std::vector<virtual_device_stack*> vdev_stack_list;
-    std::shared_ptr<virtual_device> blkdevice;
+    block_worker_ptr m_worker;
+    std::vector<virtual_device_stack*> m_vdev_stack_list;
+    std::shared_ptr<virtual_device> m_vdev;
     task_config_t generate_worker_config(const model::block_generator_config&);
     void update_resource(std::string_view);
 

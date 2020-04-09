@@ -34,10 +34,10 @@ public:
     void set_running(const bool value);
 
 protected:
-    std::string id;
-    block_generator_config config;
-    std::string resource_id;
-    bool running;
+    std::string m_id;
+    block_generator_config m_config;
+    std::string m_resource_id;
+    bool m_running;
 };
 
 } // namespace openperf::block::model

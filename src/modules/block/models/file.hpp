@@ -15,11 +15,11 @@ enum file_state {
 class file
 {
 protected:
-    std::string id;
-    std::atomic_int64_t size;
-    std::atomic_int32_t init_percent_complete;
-    std::string path;
-    std::atomic<file_state> state;
+    std::string m_id;
+    std::atomic_int64_t m_size;
+    std::atomic_int32_t m_init_percent_complete;
+    std::string m_path;
+    std::atomic<file_state> m_state;
 
 public:
     file() = default;

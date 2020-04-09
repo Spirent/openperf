@@ -33,7 +33,7 @@ using block_file_map = std::unordered_map<std::string, block_file_ptr>;
 class file_stack : public virtual_device_stack
 {
 private:
-    block_file_map block_files;
+    block_file_map m_block_files;
 
 public:
     file_stack() = default;

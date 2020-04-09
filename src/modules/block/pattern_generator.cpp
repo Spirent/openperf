@@ -8,32 +8,32 @@ off_t pattern_generator::pattern_blank() { return 0; }
 
 off_t pattern_generator::pattern_random()
 {
-    idx = min + utils::random_uniform(max - min);
-    return static_cast<off_t>(idx);
+    m_idx = m_min + utils::random_uniform(m_max - m_min);
+    return static_cast<off_t>(m_idx);
 }
 
 off_t pattern_generator::pattern_sequential()
 {
-    if (++idx >= max) { idx = min; }
+    if (++m_idx >= m_max) { m_idx = m_min; }
 
-    if (idx < min) idx = min;
+    if (m_idx < m_min) m_idx = m_min;
 
-    return idx;
+    return m_idx;
 }
 
 off_t pattern_generator::pattern_reverse()
 {
-    if (--idx < min) { idx = max - 1; }
+    if (--m_idx < m_min) { m_idx = m_max - 1; }
 
-    return idx;
+    return m_idx;
 }
 
 pattern_generator::pattern_generator()
-    : min(0)
-    , max(0)
-    , idx(-1)
+    : m_min(0)
+    , m_max(0)
+    , m_idx(-1)
 {
-    generation_method = &pattern_generator::pattern_blank;
+    m_generation_method = &pattern_generator::pattern_blank;
 }
 
 pattern_generator::pattern_generator(off_t p_min,
@@ -47,9 +47,9 @@ void pattern_generator::reset(off_t p_min,
                               off_t p_max,
                               model::block_generation_pattern p_pattern)
 {
-    min = p_min;
-    max = p_max;
-    idx = -1;
+    m_min = p_min;
+    m_max = p_max;
+    m_idx = -1;
 
     const static std::unordered_map<model::block_generation_pattern,
                                     generation_method_t>
@@ -62,9 +62,9 @@ void pattern_generator::reset(off_t p_min,
              &pattern_generator::pattern_sequential},
         };
 
-    generation_method = generation_methods.at(p_pattern);
+    m_generation_method = generation_methods.at(p_pattern);
 }
 
-off_t pattern_generator::generate() { return (this->*generation_method)(); }
+off_t pattern_generator::generate() { return (this->*m_generation_method)(); }
 
 } // namespace openperf::block::worker

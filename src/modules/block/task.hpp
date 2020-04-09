@@ -68,15 +68,15 @@ struct operation_state
 class block_task : public utils::worker::task<task_config_t, task_stat_t>
 {
 private:
-    task_config_t task_config;
-    task_stat_t actual_stat, shared_stat; // Switchable actual statistics
-    std::atomic<task_stat_t*> at_stat;    // Statistics to return
-    std::atomic_bool reset_stat; // True if statistics have to be reseted
-    std::vector<operation_state> aio_ops;
-    std::vector<uint8_t> buf;
-    pattern_generator pattern;
-    time_point read_timestamp, write_timestamp, pause_timestamp,
-        start_timestamp;
+    task_config_t m_task_config;
+    task_stat_t m_actual_stat, m_shared_stat; // Switchable actual statistics
+    std::atomic<task_stat_t*> m_at_stat;    // Statistics to return
+    std::atomic_bool m_reset_stat; // True if statistics have to be reseted
+    std::vector<operation_state> m_aio_ops;
+    std::vector<uint8_t> m_buf;
+    pattern_generator m_pattern;
+    time_point m_read_timestamp, m_write_timestamp, m_pause_timestamp,
+        m_start_timestamp;
 
     size_t worker_spin(int (*queue_aio_op)(aiocb* aiocb),
                        size_t block_size,

@@ -28,7 +28,7 @@ static constexpr std::string_view device_dir = "/dev";
 class device_stack : public virtual_device_stack
 {
 private:
-    device_map block_devices;
+    device_map m_block_devices;
 
     void init_device_stack();
     uint64_t get_block_device_size(std::string_view id);

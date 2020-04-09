@@ -5,7 +5,7 @@ namespace openperf::block::generator {
 std::vector<block_generator_ptr> generator_stack::block_generators_list() const
 {
     std::vector<block_generator_ptr> blkgenerators_list;
-    for (auto blkgenerator_pair : block_generators) {
+    for (auto blkgenerator_pair : m_block_generators) {
         blkgenerators_list.push_back(blkgenerator_pair.second);
     }
 
@@ -24,7 +24,7 @@ generator_stack::create_block_generator(
             + " already exists.");
     try {
         auto blkgenerator_ptr = std::make_shared<block_generator>(block_generator_model, vdev_stack_list);
-        block_generators.emplace(blkgenerator_ptr->get_id(), blkgenerator_ptr);
+        m_block_generators.emplace(blkgenerator_ptr->get_id(), blkgenerator_ptr);
         return blkgenerator_ptr;
     } catch (const std::runtime_error e) {
         return tl::make_unexpected(
@@ -36,13 +36,13 @@ generator_stack::create_block_generator(
 
 block_generator_ptr generator_stack::get_block_generator(std::string_view id) const
 {
-    if (block_generators.count(std::string(id))) return block_generators.at(std::string(id));
+    if (m_block_generators.count(std::string(id))) return m_block_generators.at(std::string(id));
     return nullptr;
 }
 
 void generator_stack::delete_block_generator(std::string_view id)
 {
-    block_generators.erase(std::string(id));
+    m_block_generators.erase(std::string(id));
 }
 
 } // namespace openperf::block::generator

@@ -10,19 +10,19 @@ block_generator::block_generator(
     const model::block_generator& generator_model,
     const std::vector<virtual_device_stack*> vdev_stack_list)
     : model::block_generator(generator_model)
-    , vdev_stack_list(vdev_stack_list)
+    , m_vdev_stack_list(vdev_stack_list)
 {
     update_resource(get_resource_id());
     auto config = generate_worker_config(get_config());
-    blkworker = std::make_unique<block_worker>(config);
-    blkworker->start();
-    if (is_running()) blkworker->resume();
+    m_worker = std::make_unique<block_worker>(config);
+    m_worker->start();
+    if (is_running()) m_worker->resume();
 }
 
 block_generator::~block_generator()
 {
-    blkworker->stop();
-    blkdevice->vclose();
+    m_worker->stop();
+    m_vdev->vclose();
 }
 
 void block_generator::start() { set_running(true); }
@@ -31,23 +31,23 @@ void block_generator::stop() { set_running(false); }
 
 void block_generator::set_config(const model::block_generator_config& value)
 {
-    blkworker->config(generate_worker_config(value));
+    m_worker->config(generate_worker_config(value));
     model::block_generator::set_config(value);
 }
 
 void block_generator::set_resource_id(std::string_view value)
 {
-    auto dev = blkdevice;
+    auto dev = m_vdev;
     update_resource(std::string(value));
-    if (dev) blkdevice->vclose();
-    blkworker->config(generate_worker_config(get_config()));
+    if (dev) m_vdev->vclose();
+    m_worker->config(generate_worker_config(get_config()));
     model::block_generator::set_resource_id(std::string(value));
 }
 
 void block_generator::update_resource(std::string_view resource_id)
 {
     std::shared_ptr<virtual_device> vdev_ptr;
-    for (auto vdev_stack : vdev_stack_list) {
+    for (auto vdev_stack : m_vdev_stack_list) {
         if (auto vdev = vdev_stack->get_vdev(std::string(resource_id))) {
             vdev_ptr = vdev;
             break;
@@ -59,22 +59,22 @@ void block_generator::update_resource(std::string_view resource_id)
         throw std::runtime_error("Cannot open resource: "
                                  + std::string(std::strerror(result.error())));
 
-    blkdevice = vdev_ptr;
+    m_vdev = vdev_ptr;
 }
 
 void block_generator::set_running(bool value)
 {
     if (value)
-        blkworker->resume();
+        m_worker->resume();
     else
-        blkworker->pause();
+        m_worker->pause();
 
     model::block_generator::set_running(value);
 }
 
 block_result_ptr block_generator::get_statistics() const
 {
-    auto worker_stat = blkworker->stat();
+    auto worker_stat = m_worker->stat();
 
     auto generate_gen_stat = [](const task_operation_stat_t& task_stat) {
         model::block_generator_statistics gen_stat;
@@ -98,7 +98,7 @@ block_result_ptr block_generator::get_statistics() const
     return gen_stat;
 }
 
-void block_generator::clear_statistics() { blkworker->clear_stat(); }
+void block_generator::clear_statistics() { m_worker->clear_stat(); }
 
 task_config_t block_generator::generate_worker_config(
     const model::block_generator_config& p_config)
@@ -110,9 +110,9 @@ task_config_t block_generator::generate_worker_config(
     w_config.write_size = p_config.write_size;
     w_config.writes_per_sec = p_config.writes_per_sec;
     w_config.pattern = p_config.pattern;
-    w_config.fd = blkdevice->get_fd();
-    w_config.f_size = blkdevice->get_size();
-    w_config.header_size = blkdevice->get_header_size();
+    w_config.fd = m_vdev->get_fd();
+    w_config.f_size = m_vdev->get_size();
+    w_config.header_size = m_vdev->get_header_size();
     return w_config;
 }
 

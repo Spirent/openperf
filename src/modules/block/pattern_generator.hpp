@@ -10,10 +10,10 @@ class pattern_generator
 private:
     typedef off_t (pattern_generator::*generation_method_t)();
 
-    off_t min;
-    off_t max;
-    off_t idx;
-    generation_method_t generation_method;
+    off_t m_min;
+    off_t m_max;
+    off_t m_idx;
+    generation_method_t m_generation_method;
 
     off_t pattern_blank();
     off_t pattern_random();

@@ -18,23 +18,23 @@ file::file(const model::file& f)
 
 tl::expected<int, int> file::vopen()
 {
-    if (fd >= 0) return fd;
+    if (m_fd >= 0) return m_fd;
 
-    if ((fd = open(get_path().c_str(), O_RDWR | O_CREAT)) < 0) {
+    if ((m_fd = open(get_path().c_str(), O_RDWR | O_CREAT)) < 0) {
         return tl::make_unexpected(errno);
     }
 
     /* Disable readahead */
-    posix_fadvise(fd, 0, 1, POSIX_FADV_RANDOM);
-    fcntl(fd, F_SETFL, O_SYNC | O_RSYNC);
+    posix_fadvise(m_fd, 0, 1, POSIX_FADV_RANDOM);
+    fcntl(m_fd, F_SETFL, O_SYNC | O_RSYNC);
 
-    return fd;
+    return m_fd;
 }
 
 void file::vclose()
 {
-    close(fd);
-    fd = -1;
+    close(m_fd);
+    m_fd = -1;
 }
 
 uint64_t file::get_size() const { return model::file::get_size(); }
@@ -55,7 +55,7 @@ void file::scrub_update(double p) { set_init_percent_complete(static_cast<int32_
 std::vector<block_file_ptr> file_stack::files_list()
 {
     std::vector<block_file_ptr> blkfiles_list;
-    for (auto blkfile_pair : block_files) {
+    for (auto blkfile_pair : m_block_files) {
         blkfiles_list.push_back(blkfile_pair.second);
     }
 
@@ -76,7 +76,7 @@ file_stack::create_block_file(const model::file& block_file_model)
 
     try {
         auto blkblock_file_ptr = std::make_shared<file>(block_file_model);
-        block_files.emplace(block_file_model.get_id(), blkblock_file_ptr);
+        m_block_files.emplace(block_file_model.get_id(), blkblock_file_ptr);
         return blkblock_file_ptr;
     } catch (const std::runtime_error e) {
         return tl::make_unexpected("Cannot create file: "
@@ -92,13 +92,13 @@ file_stack::get_vdev(std::string_view id) const
 
 block_file_ptr file_stack::get_block_file(std::string_view id) const
 {
-    if (block_files.count(std::string(id))) return block_files.at(std::string(id));
+    if (m_block_files.count(std::string(id))) return m_block_files.at(std::string(id));
     return nullptr;
 }
 
 void file_stack::delete_block_file(std::string_view id)
 {
-    block_files.erase(std::string(id));
+    m_block_files.erase(std::string(id));
 }
 
 } // namespace openperf::block::file
