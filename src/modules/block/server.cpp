@@ -58,7 +58,7 @@ reply_msg server::handle_request(const request_block_file_add& request)
 {
     if (auto id_check = config::op_config_validate_id_string(request.source.id);
         !id_check)
-        return (to_error(error_type::EAI_ERROR));
+        return (to_error(error_type::NOT_FOUND));
 
     auto block_file_model = api::from_api_model(request.source);
     // If user did not specify an id create one for them.
@@ -106,7 +106,7 @@ reply_msg server::handle_request(const request_block_generator_add& request)
 {
     if (auto id_check = config::op_config_validate_id_string(request.source.id);
         !id_check)
-        return (to_error(error_type::EAI_ERROR));
+        return (to_error(error_type::NOT_FOUND));
 
     auto block_generator_model = api::from_api_model(request.source);
     // If user did not specify an id create one for them.

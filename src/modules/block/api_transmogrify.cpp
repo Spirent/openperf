@@ -115,8 +115,6 @@ const char* to_string(const api::typed_error& error)
     switch (error.type) {
     case api::error_type::NOT_FOUND:
         return ("");
-    case api::error_type::EAI_ERROR:
-        return (gai_strerror(error.code));
     case api::error_type::ZMQ_ERROR:
         return (zmq_strerror(error.code));
     case api::error_type::CUSTOM_ERROR:
