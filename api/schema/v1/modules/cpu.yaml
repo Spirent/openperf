@@ -258,7 +258,7 @@ definitions:
   CpuGeneratorConfig:
     title: CpuGeneratorConfig
     type: object
-    description: Cpu Generator Configuration
+    description: CPU Generator Configuration
     properties:
       cores:
         type: array

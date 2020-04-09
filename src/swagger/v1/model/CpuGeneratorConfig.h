@@ -12,7 +12,7 @@
 /*
  * CpuGeneratorConfig.h
  *
- * Cpu Generator Configuration
+ * CPU Generator Configuration
  */
 
 #ifndef CpuGeneratorConfig_H_
@@ -29,7 +29,7 @@ namespace v1 {
 namespace model {
 
 /// <summary>
-/// Cpu Generator Configuration
+/// CPU Generator Configuration
 /// </summary>
 class  CpuGeneratorConfig
     : public ModelBase
