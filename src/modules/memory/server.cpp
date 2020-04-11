@@ -1,5 +1,4 @@
 #include "memory/server.hpp"
-
 #include "memory/api.hpp"
 #include "memory/info.hpp"
 
@@ -91,6 +90,8 @@ api_reply server::handle_request(const request::generator::create& req)
         return reply;
     } catch (std::invalid_argument e) {
         return reply::error{.type = reply::error::EXISTS};
+    } catch (std::domain_error e) {
+        return reply::error{.type = reply::error::INVALID_ID};
     }
 }
 
