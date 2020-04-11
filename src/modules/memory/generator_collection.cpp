@@ -37,26 +37,27 @@ void generator_collection::erase(const std::string& id)
 std::string generator_collection::create(const std::string& id,
                                          const generator::config_t& config)
 {
-    auto id_check = config::op_config_validate_id_string(id);
-    if (!id_check) { throw std::invalid_argument(id_check.error().c_str()); }
+    auto gid = [this](const std::string& id) {
+        if (id.empty()) return core::to_string(core::uuid::random());
 
-    auto new_id = id;
-    if (new_id == core::empty_id_string) {
-        new_id = core::to_string(core::uuid::random());
-    } else if (contains(new_id)) {
-        throw std::invalid_argument("Memory generator with id '" + new_id
-                                    + "' already exists.");
-    }
+        if (auto id_check = config::op_config_validate_id_string(id); !id_check)
+            throw std::domain_error(id_check.error().c_str());
 
-    auto result = _collection.emplace(new_id, config);
+        if (contains(id))
+            throw std::invalid_argument("Memory generator with id '" + id
+                                        + "' already exists.");
 
+        return id;
+    };
+
+    auto result = _collection.emplace(gid(id), config);
     if (!result.second) {
         throw std::runtime_error(
-            "Unexpected error on inserting GeneratorConfig with id '" + new_id
+            "Unexpected error on inserting GeneratorConfig with id '" + id
             + "' to collection.");
     }
 
-    return new_id;
+    return result.first->first;
 }
 
 void generator_collection::clear() { _collection.clear(); }

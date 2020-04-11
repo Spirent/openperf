@@ -20,6 +20,7 @@ using config_t = memory::internal::generator::config_t;
 using stat_t = memory::internal::generator::stat_t;
 using memory_stat = memory::internal::memory_stat;
 using info_t = memory::memory_info::info_t;
+using io_pattern = memory::internal::io_pattern;
 
 namespace {
 static io_pattern from_string(std::string_view str)
