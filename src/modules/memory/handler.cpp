@@ -14,30 +14,9 @@ namespace model = ::swagger::v1::model;
 using json = nlohmann::json;
 using namespace Pistache;
 
-enum Http::Code to_code(const api::reply::error& error)
+std::string json_error(std::string_view msg)
 {
-    switch (error.type) {
-    case api::reply::error::NOT_FOUND:
-        return Http::Code::Not_Found;
-    case api::reply::error::EAI_ERROR:
-        return Http::Code::Unprocessable_Entity;
-    default:
-        return Http::Code::Internal_Server_Error;
-    }
-}
-
-const char* to_string(const api::reply::error& error)
-{
-    switch (error.type) {
-    case api::reply::error::NOT_FOUND:
-        return "";
-    case api::reply::error::EAI_ERROR:
-        return gai_strerror(error.value);
-    case api::reply::error::ZMQ_ERROR:
-        return zmq_strerror(error.value);
-    default:
-        return "unknown error type";
-    }
+    return json{"error", msg}.dump();
 }
 
 class handler : public openperf::api::route::handler::registrar<handler>
@@ -51,6 +30,7 @@ private:
 public:
     handler(void* context, Rest::Router&);
 
+    // Memory generator actions
     void list_generators(const Rest::Request&, Http::ResponseWriter);
     void create_generator(const Rest::Request&, Http::ResponseWriter);
     void get_generator(const Rest::Request&, Http::ResponseWriter);
@@ -62,11 +42,12 @@ public:
     void bulk_start_generators(const Rest::Request&, Http::ResponseWriter);
     void bulk_stop_generators(const Rest::Request&, Http::ResponseWriter);
 
-    // Memory generator results
+    // Memory generator statistic actions
     void list_results(const Rest::Request&, Http::ResponseWriter);
     void get_result(const Rest::Request&, Http::ResponseWriter);
     void delete_result(const Rest::Request&, Http::ResponseWriter);
 
+    // Memory information
     void get_info(const Rest::Request&, Http::ResponseWriter);
 };
 
@@ -158,12 +139,24 @@ void handler::create_generator(const Rest::Request& request,
         response.send(Http::Code::Created, to_swagger(*item).toJson().dump());
         return;
     } else if (auto error = std::get_if<reply::error>(&api_reply)) {
-        if (error->type == reply::error::EXISTS) {
+        switch (error->type) {
+        case reply::error::EXISTS:
+            response.send(Http::Code::Bad_Request,
+                          json_error("Memory generator with ID '"
+                                     + model.getId() + "' exists"));
+            return;
+
+        case reply::error::INVALID_ID:
             response.send(
                 Http::Code::Bad_Request,
-                json{"error",
-                     "Memory generator with id '" + model.getId() + "' exists"}
-                    .dump());
+                json_error("Invalid ID format '" + model.getId() + "'"));
+            return;
+
+        default:
+            response.send(
+                Http::Code::Bad_Request,
+                json_error("Unknown error: " + std::to_string((int)error->type)
+                           + " : " + std::to_string(error->value)));
             return;
         }
     }

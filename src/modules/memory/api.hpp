@@ -24,7 +24,6 @@ struct serialized_msg
 
 using config_t = openperf::memory::internal::generator::config_t;
 using stat_t = openperf::memory::internal::generator::stat_t;
-// using id_t = char[64];
 
 struct id_t
 {
@@ -110,7 +109,7 @@ struct ok : message
 {};
 struct error : message
 {
-    enum { NONE = 0, NOT_FOUND, EXISTS, EAI_ERROR, ZMQ_ERROR } type = NONE;
+    enum { NONE = 0, NOT_FOUND, EXISTS, INVALID_ID, ZMQ_ERROR } type = NONE;
     int value = 0;
 };
 using info = memory_info::info_t;
