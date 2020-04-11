@@ -7,9 +7,8 @@ namespace openperf::memory {
 
 memory_info::info_t memory_info::get()
 {
-    struct sysinfo info;
-    memset(&info, 0, sizeof(info));
-
+    struct sysinfo info
+    {};
     if (sysinfo(&info) == 0) {
         return info_t{
             .total = info.totalram * info.mem_unit,
