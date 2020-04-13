@@ -105,7 +105,11 @@ void handler::list_generators(const Rest::Request&,
 
     if (auto list = std::get_if<reply::generator::list>(&api_reply)) {
         auto array = json::array();
-        for (auto item : *list) { array.push_back(to_swagger(item).toJson()); }
+        std::transform(
+            list->begin(),
+            list->end(),
+            std::back_inserter(array),
+            [](auto item) -> json { return to_swagger(item).toJson(); });
 
         response.headers().add<Http::Header::ContentType>(
             MIME(Application, Json));
@@ -285,7 +289,11 @@ void handler::list_results(const Rest::Request&, Http::ResponseWriter response)
 
     if (auto list = std::get_if<reply::statistic::list>(&api_reply)) {
         auto array = json::array();
-        for (auto item : *list) { array.push_back(to_swagger(item).toJson()); }
+        std::transform(
+            list->begin(),
+            list->end(),
+            std::back_inserter(array),
+            [](auto item) -> json { return to_swagger(item).toJson(); });
 
         response.headers().add<Http::Header::ContentType>(
             MIME(Application, Json));
