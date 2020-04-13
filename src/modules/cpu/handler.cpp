@@ -7,10 +7,12 @@
 #include "config/op_config_utils.hpp"
 #include "core/op_core.h"
 #include "api.hpp"
+#include "swagger/v1/model/CpuGenerator.h"
 
 namespace opneperf::cpu {
 
 using namespace Pistache;
+using namespace swagger::v1::model;
 using json = nlohmann::json;
 namespace api = openperf::cpu::api;
 
@@ -147,25 +149,24 @@ void handler::list_generators(const Rest::Request&,
 void handler::create_generator(const Rest::Request& request,
                                Http::ResponseWriter response)
 {
-    /*try {
+try {
         auto generator_json = json::parse(request.body());
-        BlockGenerator generator_model;
+        CpuGenerator generator_model;
         generator_model.fromJson(generator_json);
-        auto gc = BlockGeneratorConfig();
+        auto gc = CpuGeneratorConfig();
         gc.fromJson(generator_json["config"]);
-        generator_model.setConfig(std::make_shared<BlockGeneratorConfig>(gc));
+        generator_model.setConfig(std::make_shared<CpuGeneratorConfig>(gc));
 
         auto api_reply =
             submit_request(m_socket.get(),
-                           api::request_block_generator_add{
+                           api::request_cpu_generator_add{
                                api::from_swagger(generator_model)});
-        if (auto reply = std::get_if<api::reply_block_generators>(&api_reply)) {
+        if (auto reply = std::get_if<api::reply_cpu_generators>(&api_reply)) {
             assert(!reply->generators.empty());
             response.headers().add<Http::Header::ContentType>(
                 MIME(Application, Json));
-            response.send(
-                Http::Code::Ok,
-                to_swagger(reply->generators.front())->toJson().dump());
+            response.send(Http::Code::Ok);
+               // to_swagger(reply->generators.front())->toJson().dump());
         } else if (auto error = std::get_if<api::reply_error>(&api_reply)) {
             response.send(to_code(*error), api::to_string(error->info));
         } else {
@@ -177,8 +178,7 @@ void handler::create_generator(const Rest::Request& request,
         response.send(
             Http::Code::Bad_Request,
             nlohmann::json({{"code", e.id}, {"message", e.what()}}).dump());
-    }*/
-    response.send(Http::Code::Internal_Server_Error, request.body());
+    }
 }
 
 void handler::get_generator(const Rest::Request& request,
