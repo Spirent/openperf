@@ -28,6 +28,9 @@ static constexpr size_t err_max_length = 256;
 
 /* zmq api objects models */
 
+using cpu_generator_t = model::cpu_generator;
+using cpu_generator_ptr = std::unique_ptr<cpu_generator_t>;
+
 struct generator_target_config
 {
     model::cpu_instruction_set instruction_set;
@@ -38,7 +41,6 @@ struct generator_target_config
 
 struct generator_core_config
 {
-    size_t targets_size;
     std::vector<generator_target_config> targets;
 };
 
@@ -46,7 +48,6 @@ struct generator
 {
     char id[id_max_length];
     bool running;
-    size_t config_size;
     std::vector<generator_core_config> cores_config;
 };
 
@@ -84,7 +85,7 @@ struct request_cpu_generator
 
 struct request_cpu_generator_add
 {
-    generator source;
+    cpu_generator_ptr source;
 };
 
 struct request_cpu_generator_del
@@ -137,8 +138,7 @@ struct request_cpu_generator_result_del
 
 struct reply_cpu_generators
 {
-    size_t generators_size;
-    std::vector<generator> generators;
+    std::vector<cpu_generator_ptr> generators;
 };
 
 struct failed_generator
@@ -186,12 +186,11 @@ using reply_msg = std::variant<reply_cpu_generators,
 struct serialized_msg
 {
     zmq_msg_t type;
-    zmq_msg_t data_size;
-    std::vector<zmq_msg_t> data;
+    zmq_msg_t data;
 };
 
-serialized_msg serialize_request(const request_msg& request);
-serialized_msg serialize_reply(const reply_msg& reply);
+serialized_msg serialize_request(request_msg&& request);
+serialized_msg serialize_reply(reply_msg&& reply);
 
 tl::expected<request_msg, int> deserialize_request(const serialized_msg& msg);
 tl::expected<reply_msg, int> deserialize_reply(const serialized_msg& msg);
@@ -201,7 +200,8 @@ tl::expected<serialized_msg, int> recv_message(void* socket, int flags = 0);
 
 reply_error to_error(error_type type, int code = 0, std::string value = "");
 const char* to_string(const api::typed_error&);
-generator from_swagger(const CpuGenerator&);
+model::cpu_generator from_swagger(const CpuGenerator&);
+std::shared_ptr<CpuGenerator> to_swagger(const model::cpu_generator&);
 
 extern const std::string endpoint;
 

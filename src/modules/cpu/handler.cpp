@@ -109,9 +109,9 @@ handler::handler(void* context, Rest::Router& router)
         Rest::Routes::bind(&handler::delete_generator_result, this));
 }
 
-api::reply_msg submit_request(void* socket, const api::request_msg& request)
+api::reply_msg submit_request(void* socket, api::request_msg&& request)
 {
-    if (auto error = api::send_message(socket, api::serialize_request(request));
+    if (auto error = api::send_message(socket, api::serialize_request(std::forward<api::request_msg>(request)));
         error != 0) {
         return (to_error(api::error_type::ZMQ_ERROR, error));
     }
@@ -119,7 +119,7 @@ api::reply_msg submit_request(void* socket, const api::request_msg& request)
     if (!reply) {
         return (to_error(api::error_type::ZMQ_ERROR, reply.error()));
     }
-    return (*reply);
+    return (std::move(*reply));
 }
 
 void handler::list_generators(const Rest::Request&,
@@ -157,16 +157,16 @@ try {
         gc.fromJson(generator_json["config"]);
         generator_model.setConfig(std::make_shared<CpuGeneratorConfig>(gc));
 
+        auto api_request = api::request_cpu_generator_add{
+            std::make_unique<api::cpu_generator_t>(api::from_swagger(generator_model))
+        };
         auto api_reply =
-            submit_request(m_socket.get(),
-                           api::request_cpu_generator_add{
-                               api::from_swagger(generator_model)});
+            submit_request(m_socket.get(), std::move(api_request));
         if (auto reply = std::get_if<api::reply_cpu_generators>(&api_reply)) {
             assert(!reply->generators.empty());
             response.headers().add<Http::Header::ContentType>(
                 MIME(Application, Json));
-            response.send(Http::Code::Ok);
-               // to_swagger(reply->generators.front())->toJson().dump());
+            response.send(Http::Code::Ok, api::to_swagger(*reply->generators.front())->toJson().dump());
         } else if (auto error = std::get_if<api::reply_error>(&api_reply)) {
             response.send(to_code(*error), api::to_string(error->info));
         } else {

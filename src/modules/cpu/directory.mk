@@ -10,6 +10,8 @@ CPU_SOURCES += \
 	handler.cpp \
 	server.cpp
 
+include $(CPU_SRC_DIR)/models/directory.mk
+
 CPU_VERSIONED_FILES := init.cpp
 CPU_UNVERSIONED_OBJECTS :=\
 	$(call op_generate_objects,$(filter-out $(CPU_VERSIONED_FILES),$(CPU_SOURCES)),$(CPU_OBJ_DIR))
