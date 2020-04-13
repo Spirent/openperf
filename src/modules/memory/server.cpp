@@ -41,12 +41,14 @@ int server::handle_rpc_request(const op_event_data* data)
 api_reply server::handle_request(const request::generator::list&)
 {
     reply::generator::list list;
-    for (auto id : generator_stack->ids()) {
-        const auto& gnr = generator_stack->generator(id);
-        reply::generator::item item{
-            {.id = id}, .is_running = gnr.is_running(), .config = gnr.config()};
-        list.push_back(item);
-    }
+    auto ids = generator_stack->ids();
+    std::transform(
+        ids.begin(), ids.end(), std::back_inserter(list), [&](auto id) -> auto {
+            const auto& gnr = generator_stack->generator(id);
+            return reply::generator::item{{.id = id},
+                                          .is_running = gnr.is_running(),
+                                          .config = gnr.config()};
+        });
 
     return list;
 }
@@ -166,13 +168,13 @@ api_reply server::handle_request(const request::generator::bulk::stop& req)
 
 api_reply server::handle_request(const request::statistic::list&)
 {
+    auto ids = generator_stack->ids();
     reply::statistic::list list;
-    for (auto id : generator_stack->ids()) {
-        reply::statistic::item item{{.id = id},
-                                    generator_stack->generator(id).stat()};
-
-        list.push_back(item);
-    }
+    std::transform(
+        ids.begin(), ids.end(), std::back_inserter(list), [&](auto id) -> auto {
+            return reply::statistic::item{
+                {.id = id}, generator_stack->generator(id).stat()};
+        });
 
     return list;
 }
