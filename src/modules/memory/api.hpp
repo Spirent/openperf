@@ -122,16 +122,6 @@ struct item : id_message
 };
 using list = std::vector<item>;
 
-namespace bulk {
-struct result
-{
-    id_t id;
-    enum { SUCCESS = 0, NOT_FOUND, FAIL } code;
-};
-
-using list = std::vector<result>;
-} // namespace bulk
-
 } // namespace generator
 
 namespace statistic {
@@ -163,7 +153,6 @@ using api_reply = std::variant<reply::ok,
                                reply::info,
                                reply::generator::list,
                                reply::generator::item,
-                               reply::generator::bulk::list,
                                reply::statistic::list,
                                reply::statistic::item>;
 

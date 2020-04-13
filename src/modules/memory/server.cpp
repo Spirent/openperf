@@ -117,49 +117,51 @@ api_reply server::handle_request(const request::generator::start& req)
 
 api_reply server::handle_request(const request::generator::bulk::start& req)
 {
-    reply::generator::bulk::list reply;
     for (auto id : req) {
-        if (!generator_stack->contains(id)) {
-            reply.push_back(reply::generator::bulk::result{
-                id, reply::generator::bulk::result::NOT_FOUND});
-            continue;
-        }
-
-        auto& gnr = generator_stack->generator(id);
-
-        gnr.start();
-        gnr.resume();
-
-        reply.push_back(reply::generator::bulk::result{
-            id,
-            (gnr.is_running()) ? reply::generator::bulk::result::SUCCESS
-                               : reply::generator::bulk::result::FAIL});
+        if (!generator_stack->contains(id))
+            return reply::error{.type = reply::error::NOT_FOUND};
     }
 
-    return reply;
+    std::forward_list<std::string> not_runned_before;
+    for (auto id : req) {
+        auto& generator = generator_stack->generator(id);
+        if (!generator.is_running()) not_runned_before.emplace_front(id);
+
+        generator.start();
+        generator.resume();
+        if (!generator.is_running()) {
+            for (auto& rollback_id : not_runned_before) {
+                generator_stack->generator(rollback_id).pause();
+            }
+            return reply::error{};
+        }
+    }
+
+    return reply::ok{};
 }
 
 api_reply server::handle_request(const request::generator::bulk::stop& req)
 {
-    reply::generator::bulk::list reply;
     for (auto id : req) {
-        if (!generator_stack->contains(id)) {
-            reply.push_back(reply::generator::bulk::result{
-                id, reply::generator::bulk::result::NOT_FOUND});
-            continue;
-        }
-
-        auto& gnr = generator_stack->generator(id);
-
-        gnr.pause();
-
-        reply.push_back(reply::generator::bulk::result{
-            id,
-            (gnr.is_running()) ? reply::generator::bulk::result::FAIL
-                               : reply::generator::bulk::result::SUCCESS});
+        if (!generator_stack->contains(id))
+            return reply::error{.type = reply::error::NOT_FOUND};
     }
 
-    return reply;
+    std::forward_list<std::string> runned_before;
+    for (auto id : req) {
+        auto& generator = generator_stack->generator(id);
+        if (generator.is_running()) runned_before.emplace_front(id);
+
+        generator.pause();
+        if (generator.is_running()) {
+            for (auto& rollback_id : runned_before) {
+                generator_stack->generator(rollback_id).resume();
+            }
+            return reply::error{};
+        }
+    }
+
+    return reply::ok{};
 }
 
 api_reply server::handle_request(const request::statistic::list&)

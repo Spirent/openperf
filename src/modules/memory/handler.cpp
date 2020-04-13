@@ -242,31 +242,16 @@ void handler::bulk_start_generators(const Rest::Request& request,
     for (auto& id : model.getIds()) { req.push_back(id); }
 
     auto api_reply = submit_request(req);
-    if (auto list = std::get_if<reply::generator::bulk::list>(&api_reply)) {
-        using code = reply::generator::bulk::result;
-
-        auto succeeded = json::array();
-        auto failed = json::array();
-        for (auto& r : *list) {
-            switch (r.code) {
-            case code::SUCCESS:
-                succeeded.push_back(r.id);
-                break;
-            case code::NOT_FOUND:
-                failed.push_back({{"id", r.id}, {"error", "not exists"}});
-                break;
-            case code::FAIL:
-                failed.push_back({{"id", r.id}, {"error", "failed"}});
-            }
-        }
-
-        response.send(
-            Http::Code::Ok,
-            json{{"succeeded", succeeded}, {"failed", failed}}.dump());
+    if (auto list = std::get_if<reply::error>(&api_reply)) {
+        response.send(Http::Code::Not_Found,
+                      json_error("At least one generator not found by ID"));
+        return;
+    } else if (auto ok = std::get_if<reply::ok>(&api_reply)) {
+        response.send(Http::Code::Ok);
         return;
     }
 
-    response.send(Http::Code::No_Content);
+    response.send(Http::Code::Internal_Server_Error);
 }
 
 void handler::bulk_stop_generators(const Rest::Request& request,
@@ -281,7 +266,16 @@ void handler::bulk_stop_generators(const Rest::Request& request,
     for (auto& id : model.getIds()) { req.push_back(id); }
 
     auto api_reply = submit_request(req);
-    response.send(Http::Code::No_Content);
+    if (auto list = std::get_if<reply::error>(&api_reply)) {
+        response.send(Http::Code::Not_Found,
+                      json_error("At least one generator not found by ID"));
+        return;
+    } else if (auto ok = std::get_if<reply::ok>(&api_reply)) {
+        response.send(Http::Code::Ok);
+        return;
+    }
+
+    response.send(Http::Code::Internal_Server_Error);
 }
 
 // Memory generator results
