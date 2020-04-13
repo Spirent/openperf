@@ -83,7 +83,8 @@ static swagger::MemoryGeneratorConfig to_swagger(const config_t& config)
     return model;
 }
 
-static swagger::MemoryGenerator to_swagger(const reply::generator::item& g)
+static swagger::MemoryGenerator
+to_swagger(const reply::generator::item::item_data& g)
 {
     swagger::MemoryGenerator model;
     model.setId(g.id);
@@ -123,15 +124,15 @@ static std::string to_iso8601(uint64_t nanos)
 }
 
 static swagger::MemoryGeneratorResult
-to_swagger(const reply::statistic::item& i)
+to_swagger(const reply::statistic::item::item_data& i)
 {
     swagger::MemoryGeneratorResult model;
     model.setId(i.id);
-    model.setTimestamp(to_iso8601(i.timestamp));
-    model.setRead(
-        std::make_shared<swagger::MemoryGeneratorStats>(to_swagger(i.read)));
-    model.setWrite(
-        std::make_shared<swagger::MemoryGeneratorStats>(to_swagger(i.write)));
+    model.setTimestamp(to_iso8601(i.stat.timestamp));
+    model.setRead(std::make_shared<swagger::MemoryGeneratorStats>(
+        to_swagger(i.stat.read)));
+    model.setWrite(std::make_shared<swagger::MemoryGeneratorStats>(
+        to_swagger(i.stat.write)));
 
     return model;
 }
