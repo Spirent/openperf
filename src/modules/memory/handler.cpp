@@ -25,7 +25,7 @@ private:
     std::unique_ptr<void, op_socket_deleter> socket;
 
 private:
-    api::api_reply submit_request(const api::api_request&);
+    api::api_reply submit_request(api::api_request&&);
 
 public:
     handler(void* context, Rest::Router&);
@@ -100,14 +100,13 @@ handler::handler(void* context, Rest::Router& router)
 void handler::list_generators(const Rest::Request&,
                               Http::ResponseWriter response)
 {
-
     auto api_reply = submit_request(request::generator::list{});
 
     if (auto list = std::get_if<reply::generator::list>(&api_reply)) {
         auto array = json::array();
         std::transform(
-            list->begin(),
-            list->end(),
+            list->data->begin(),
+            list->data->end(),
             std::back_inserter(array),
             [](auto item) -> json { return to_swagger(item).toJson(); });
 
@@ -128,19 +127,21 @@ void handler::create_generator(const Rest::Request& request,
     model::MemoryGenerator model;
     model.fromJson(json_obj);
 
-    auto api_reply = submit_request(
-        request::generator::create{{.id = model.getId()},
-                                   .is_running = model.isRunning(),
-                                   .config = [&]() {
-                                       model::MemoryGeneratorConfig model;
-                                       model.fromJson(json_obj["config"]);
-                                       return from_swagger(model);
-                                   }()});
+    request::generator::create::create_data data{
+        .id = model.getId(), .is_running = model.isRunning(), .config = [&]() {
+            model::MemoryGeneratorConfig model;
+            model.fromJson(json_obj["config"]);
+            return from_swagger(model);
+        }()};
+    auto api_reply = submit_request(request::generator::create{
+        std::make_unique<request::generator::create::create_data>(
+            std::move(data))});
 
     if (auto item = std::get_if<reply::generator::item>(&api_reply)) {
         response.headers().add<Http::Header::ContentType>(
             MIME(Application, Json));
-        response.send(Http::Code::Created, to_swagger(*item).toJson().dump());
+        response.send(Http::Code::Created,
+                      to_swagger(*item->data).toJson().dump());
         return;
     } else if (auto error = std::get_if<reply::error>(&api_reply)) {
         switch (error->type) {
@@ -182,7 +183,7 @@ void handler::get_generator(const Rest::Request& request,
     if (auto r = std::get_if<reply::generator::item>(&api_reply)) {
         response.headers().add<Http::Header::ContentType>(
             MIME(Application, Json));
-        response.send(Http::Code::Ok, to_swagger(*r).toJson().dump());
+        response.send(Http::Code::Ok, to_swagger(*r->data).toJson().dump());
         return;
     } else if (auto error = std::get_if<reply::error>(&api_reply)) {
         if (error->type == reply::error::NOT_FOUND) {
@@ -242,10 +243,9 @@ void handler::bulk_start_generators(const Rest::Request& request,
     model::BulkStartMemoryGeneratorsRequest model;
     model.fromJson(json_obj);
 
-    request::generator::bulk::start req;
-    for (auto& id : model.getIds()) { req.push_back(id); }
-
-    auto api_reply = submit_request(req);
+    auto api_reply = submit_request(request::generator::bulk::start{
+        {std::make_unique<std::vector<std::string>>(
+            std::move(model.getIds()))}});
     if (auto list = std::get_if<reply::error>(&api_reply)) {
         response.send(Http::Code::Not_Found,
                       json_error("At least one generator not found by ID"));
@@ -266,10 +266,9 @@ void handler::bulk_stop_generators(const Rest::Request& request,
     model::BulkStopMemoryGeneratorsRequest model;
     model.fromJson(json_obj);
 
-    request::generator::bulk::stop req;
-    for (auto& id : model.getIds()) { req.push_back(id); }
-
-    auto api_reply = submit_request(req);
+    auto api_reply = submit_request(request::generator::bulk::stop{
+        {std::make_unique<std::vector<std::string>>(
+            std::move(model.getIds()))}});
     if (auto list = std::get_if<reply::error>(&api_reply)) {
         response.send(Http::Code::Not_Found,
                       json_error("At least one generator not found by ID"));
@@ -290,8 +289,8 @@ void handler::list_results(const Rest::Request&, Http::ResponseWriter response)
     if (auto list = std::get_if<reply::statistic::list>(&api_reply)) {
         auto array = json::array();
         std::transform(
-            list->begin(),
-            list->end(),
+            list->data->begin(),
+            list->data->end(),
             std::back_inserter(array),
             [](auto item) -> json { return to_swagger(item).toJson(); });
 
@@ -317,7 +316,7 @@ void handler::get_result(const Rest::Request& request,
     if (auto item = std::get_if<reply::statistic::item>(&api_reply)) {
         response.headers().add<Http::Header::ContentType>(
             MIME(Application, Json));
-        response.send(Http::Code::Ok, to_swagger(*item).toJson().dump());
+        response.send(Http::Code::Ok, to_swagger(*item->data).toJson().dump());
         return;
     } else if (auto error = std::get_if<reply::error>(&api_reply)) {
         if (error->type == reply::error::NOT_FOUND) {
@@ -357,9 +356,10 @@ void handler::get_info(const Rest::Request&, Http::ResponseWriter response)
 }
 
 // Methods : private
-api::api_reply handler::submit_request(const api::api_request& request)
+api::api_reply handler::submit_request(api::api_request&& request)
 {
-    if (auto error = api::send_message(socket.get(), api::serialize(request));
+    if (auto error = api::send_message(
+            socket.get(), api::serialize(std::forward<api_request>(request)));
         error != 0) {
         return api::reply::error{.type = api::reply::error::ZMQ_ERROR,
                                  .value = error};
@@ -372,7 +372,7 @@ api::api_reply handler::submit_request(const api::api_request& request)
                                  .value = reply.error()};
     }
 
-    return *reply;
+    return std::move(*reply);
 }
 
 } // namespace openperf::memory::api

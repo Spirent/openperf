@@ -16,51 +16,14 @@ namespace openperf::memory::api {
 static constexpr auto endpoint = "inproc://openperf_memory";
 
 // ZMQ message structs
-struct serialized_msg
-{
-    zmq_msg_t type;
-    zmq_msg_t data;
-};
-
 using config_t = openperf::memory::internal::generator::config_t;
 using stat_t = openperf::memory::internal::generator::stat_t;
-
-struct id_t
-{
-    char id[64];
-
-    id_t() = default;
-    id_t(std::string_view str) { operator=(str); }
-
-    id_t(const std::string& str) { operator=(str); }
-
-    id_t& operator=(std::string_view str)
-    {
-        strncpy(reinterpret_cast<char*>(id), str.data(), sizeof(id));
-        return *this;
-    }
-
-    id_t& operator=(const std::string& str)
-    {
-        strncpy(reinterpret_cast<char*>(id), str.data(), sizeof(id));
-        return *this;
-    }
-
-    operator std::string_view()
-    {
-        return std::string_view(reinterpret_cast<char*>(id), sizeof(id));
-    }
-
-    operator std::string() const { return std::string(id); }
-};
-
-using id_list = std::vector<id_t>;
 
 struct message
 {};
 struct id_message : message
 {
-    id_t id;
+    std::string id;
 };
 
 namespace request {
@@ -69,16 +32,24 @@ struct info : message
 {};
 
 namespace generator {
+
+using config_ptr = std::unique_ptr<config_t>;
 struct list : message
 {};
 struct get : id_message
 {};
 struct erase : id_message
 {};
-struct create : id_message
+struct create
 {
-    bool is_running;
-    config_t config;
+    struct create_data
+    {
+        std::string id;
+        bool is_running;
+        config_t config;
+    };
+
+    std::unique_ptr<create_data> data;
 };
 struct stop : id_message
 {};
@@ -86,6 +57,11 @@ struct start : id_message
 {};
 
 namespace bulk {
+
+struct id_list
+{
+    std::unique_ptr<std::vector<std::string>> data;
+};
 struct start : id_list
 {};
 struct stop : id_list
@@ -115,22 +91,43 @@ struct error : message
 using info = memory_info::info_t;
 
 namespace generator {
-struct item : id_message
+struct item
 {
-    bool is_running;
-    config_t config;
+    struct item_data
+    {
+        std::string id;
+        bool is_running;
+        config_t config;
+    };
+
+    std::unique_ptr<item_data> data;
 };
-using list = std::vector<item>;
+
+struct list
+{
+    std::unique_ptr<std::vector<item::item_data>> data;
+};
 
 } // namespace generator
 
 namespace statistic {
 struct item
-    : id_message
-    , stat_t
-{};
+{
+    struct item_data
+    {
+        std::string id;
+        stat_t stat;
+    };
 
-using list = std::vector<item>;
+    using data_ptr = std::unique_ptr<item_data>;
+    data_ptr data;
+};
+
+struct list
+{
+    std::unique_ptr<std::vector<item::item_data>> data;
+};
+
 } // namespace statistic
 } // namespace reply
 
@@ -156,11 +153,17 @@ using api_reply = std::variant<reply::ok,
                                reply::statistic::list,
                                reply::statistic::item>;
 
+struct serialized_msg
+{
+    zmq_msg_t type;
+    zmq_msg_t data;
+};
+
 int send_message(void* socket, serialized_msg&& msg);
 tl::expected<serialized_msg, int> recv_message(void* socket, int flags = 0);
 
-serialized_msg serialize(const api_request& request);
-serialized_msg serialize(const api_reply& reply);
+serialized_msg serialize(api_request&& request);
+serialized_msg serialize(api_reply&& reply);
 
 tl::expected<api_request, int> deserialize_request(const serialized_msg& msg);
 tl::expected<api_reply, int> deserialize_reply(const serialized_msg& msg);
