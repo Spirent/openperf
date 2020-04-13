@@ -119,12 +119,6 @@ serialized_msg serialize(const api_reply& msg)
                  [&](const reply::generator::item& item) {
                      return zmq_msg_init(&serialized.data, &item, sizeof(item));
                  },
-                 [&](const reply::generator::bulk::list& list) {
-                     return zmq_msg_init(&serialized.data,
-                                         list.data(),
-                                         sizeof(reply::generator::bulk::result)
-                                             * list.size());
-                 },
                  [&](const reply::statistic::list& list) {
                      return zmq_msg_init(&serialized.data,
                                          list.data(),
@@ -247,14 +241,6 @@ tl::expected<api_reply, int> deserialize_reply(const serialized_msg& msg)
         auto array = zmq_msg_data<reply::generator::item*>(&msg.data);
 
         reply::generator::list list;
-        for (size_t i = 0; i < size; ++i) list.push_back(array[i]);
-        return list;
-    }
-    case utils::variant_index<api_reply, reply::generator::bulk::list>(): {
-        auto size = zmq_msg_size<reply::generator::bulk::result>(&msg.data);
-        auto array = zmq_msg_data<reply::generator::bulk::result*>(&msg.data);
-
-        reply::generator::bulk::list list;
         for (size_t i = 0; i < size; ++i) list.push_back(array[i]);
         return list;
     }
