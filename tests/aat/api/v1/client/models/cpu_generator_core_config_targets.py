@@ -32,9 +32,9 @@ class CpuGeneratorCoreConfigTargets(object):
     """
     swagger_types = {
         'instruction_set': 'str',
-        'data_size': 'float',
+        'data_size': 'int',
         'operation': 'str',
-        'weight': 'float'
+        'weight': 'int'
     }
 
     attribute_map = {
@@ -87,7 +87,7 @@ class CpuGeneratorCoreConfigTargets(object):
         Number of bits to use for data type in chosen instruction set  # noqa: E501
 
         :return: The data_size of this CpuGeneratorCoreConfigTargets.  # noqa: E501
-        :rtype: float
+        :rtype: int
         """
         return self._data_size
 
@@ -98,7 +98,7 @@ class CpuGeneratorCoreConfigTargets(object):
         Number of bits to use for data type in chosen instruction set  # noqa: E501
 
         :param data_size: The data_size of this CpuGeneratorCoreConfigTargets.  # noqa: E501
-        :type: float
+        :type: int
         """
         self._data_size = data_size
 
@@ -131,7 +131,7 @@ class CpuGeneratorCoreConfigTargets(object):
         Targeted load ratio  # noqa: E501
 
         :return: The weight of this CpuGeneratorCoreConfigTargets.  # noqa: E501
-        :rtype: float
+        :rtype: int
         """
         return self._weight
 
@@ -142,7 +142,7 @@ class CpuGeneratorCoreConfigTargets(object):
         Targeted load ratio  # noqa: E501
 
         :param weight: The weight of this CpuGeneratorCoreConfigTargets.  # noqa: E501
-        :type: float
+        :type: int
         """
         self._weight = weight
 

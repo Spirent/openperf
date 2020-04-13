@@ -20,9 +20,9 @@ namespace model {
 CpuGeneratorCoreConfig_targets::CpuGeneratorCoreConfig_targets()
 {
     m_Instruction_set = "";
-    m_Data_size = 0.0;
+    m_Data_size = 0;
     m_Operation = "";
-    m_Weight = 0.0;
+    m_Weight = 0;
     
 }
 
@@ -67,11 +67,11 @@ void CpuGeneratorCoreConfig_targets::setInstructionSet(std::string value)
     m_Instruction_set = value;
     
 }
-double CpuGeneratorCoreConfig_targets::getDataSize() const
+int32_t CpuGeneratorCoreConfig_targets::getDataSize() const
 {
     return m_Data_size;
 }
-void CpuGeneratorCoreConfig_targets::setDataSize(double value)
+void CpuGeneratorCoreConfig_targets::setDataSize(int32_t value)
 {
     m_Data_size = value;
     
@@ -85,11 +85,11 @@ void CpuGeneratorCoreConfig_targets::setOperation(std::string value)
     m_Operation = value;
     
 }
-double CpuGeneratorCoreConfig_targets::getWeight() const
+int32_t CpuGeneratorCoreConfig_targets::getWeight() const
 {
     return m_Weight;
 }
-void CpuGeneratorCoreConfig_targets::setWeight(double value)
+void CpuGeneratorCoreConfig_targets::setWeight(int32_t value)
 {
     m_Weight = value;
     

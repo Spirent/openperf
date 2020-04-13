@@ -288,9 +288,8 @@ definitions:
               enum:
               - scalar
             data_size:
-              type: number
+              type: integer
               description: Number of bits to use for data type in chosen instruction set
-              format: integer
               enum:
               - 32
               - 64
@@ -301,9 +300,8 @@ definitions:
               - float
               - int
             weight:
-              type: number
+              type: integer
               description: Targeted load ratio
-              format: integer
               minimum: 1
           required:
             - instruction_set
