@@ -30,8 +30,8 @@ reply_msg server::handle_request(const request_cpu_generator&)
 
 reply_msg server::handle_request(const request_cpu_generator_add& request)
 {
-    printf("Request %s\n", request.source.id);
-    printf("Request %u\n", request.source.cores_config.front().targets.front().data_size);
+    printf("Request %s\n", request.source->get_id().c_str());
+    printf("Request %u\n", request.source->get_config().cores.front().targets.front().data_size);
     /*
     if (auto id_check = config::op_config_validate_id_string(request.source.id);
         !id_check)
@@ -48,7 +48,7 @@ reply_msg server::handle_request(const request_cpu_generator_add& request)
     if (!result) { return to_error(error_type::NOT_FOUND); }
     */
     auto reply = reply_cpu_generators{};
-    //reply.generators.emplace_back(api::to_api_model(*result.value()));
+    reply.generators.emplace_back(std::make_unique<model::cpu_generator>(*request.source));
     return reply;
 }
 
@@ -157,7 +157,7 @@ static int _handle_rpc_request(const op_event_data* data, void* arg)
             return (s->handle_request(request));
         };
         auto reply = std::visit(request_visitor, *request);
-        if (send_message(data->socket, serialize_reply(reply)) == -1) {
+        if (send_message(data->socket, serialize_reply(std::move(reply))) == -1) {
             reply_errors++;
             OP_LOG(
                 OP_LOG_ERROR, "Error sending reply: %s\n", zmq_strerror(errno));
