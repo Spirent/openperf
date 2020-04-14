@@ -17,7 +17,10 @@ from __future__ import absolute_import
 
 # import apis into sdk package
 from client.api.analyzers_api import AnalyzersApi
+from client.api.block_generator_api import BlockGeneratorApi
+from client.api.cpu_generator_api import CpuGeneratorApi
 from client.api.interfaces_api import InterfacesApi
+from client.api.memory_generator_api import MemoryGeneratorApi
 from client.api.modules_api import ModulesApi
 from client.api.ports_api import PortsApi
 from client.api.stacks_api import StacksApi
@@ -46,6 +49,12 @@ from client.models.analyzer_protocol_counters_ip import AnalyzerProtocolCounters
 from client.models.analyzer_protocol_counters_protocol import AnalyzerProtocolCountersProtocol
 from client.models.analyzer_protocol_counters_tunnel import AnalyzerProtocolCountersTunnel
 from client.models.analyzer_result import AnalyzerResult
+from client.models.block_device import BlockDevice
+from client.models.block_file import BlockFile
+from client.models.block_generator import BlockGenerator
+from client.models.block_generator_config import BlockGeneratorConfig
+from client.models.block_generator_result import BlockGeneratorResult
+from client.models.block_generator_stats import BlockGeneratorStats
 from client.models.bulk_create_analyzers_request import BulkCreateAnalyzersRequest
 from client.models.bulk_create_analyzers_response import BulkCreateAnalyzersResponse
 from client.models.bulk_create_interfaces_request import BulkCreateInterfacesRequest
@@ -54,7 +63,22 @@ from client.models.bulk_delete_analyzers_request import BulkDeleteAnalyzersReque
 from client.models.bulk_delete_interfaces_request import BulkDeleteInterfacesRequest
 from client.models.bulk_start_analyzers_request import BulkStartAnalyzersRequest
 from client.models.bulk_start_analyzers_response import BulkStartAnalyzersResponse
+from client.models.bulk_start_block_generators_request import BulkStartBlockGeneratorsRequest
+from client.models.bulk_start_cpu_generators_request import BulkStartCpuGeneratorsRequest
+from client.models.bulk_start_memory_generators_request import BulkStartMemoryGeneratorsRequest
 from client.models.bulk_stop_analyzers_request import BulkStopAnalyzersRequest
+from client.models.bulk_stop_block_generators_request import BulkStopBlockGeneratorsRequest
+from client.models.bulk_stop_cpu_generators_request import BulkStopCpuGeneratorsRequest
+from client.models.bulk_stop_memory_generators_request import BulkStopMemoryGeneratorsRequest
+from client.models.cpu_generator import CpuGenerator
+from client.models.cpu_generator_config import CpuGeneratorConfig
+from client.models.cpu_generator_core_config import CpuGeneratorCoreConfig
+from client.models.cpu_generator_core_config_targets import CpuGeneratorCoreConfigTargets
+from client.models.cpu_generator_core_stats import CpuGeneratorCoreStats
+from client.models.cpu_generator_result import CpuGeneratorResult
+from client.models.cpu_generator_stats import CpuGeneratorStats
+from client.models.cpu_generator_target_stats import CpuGeneratorTargetStats
+from client.models.inline_response200 import InlineResponse200
 from client.models.interface import Interface
 from client.models.interface_config import InterfaceConfig
 from client.models.interface_protocol_config import InterfaceProtocolConfig
@@ -66,6 +90,11 @@ from client.models.interface_protocol_config_ipv6 import InterfaceProtocolConfig
 from client.models.interface_protocol_config_ipv6_dhcp6 import InterfaceProtocolConfigIpv6Dhcp6
 from client.models.interface_protocol_config_ipv6_static import InterfaceProtocolConfigIpv6Static
 from client.models.interface_stats import InterfaceStats
+from client.models.memory_generator import MemoryGenerator
+from client.models.memory_generator_config import MemoryGeneratorConfig
+from client.models.memory_generator_result import MemoryGeneratorResult
+from client.models.memory_generator_stats import MemoryGeneratorStats
+from client.models.memory_info_result import MemoryInfoResult
 from client.models.module import Module
 from client.models.module_version import ModuleVersion
 from client.models.port import Port
