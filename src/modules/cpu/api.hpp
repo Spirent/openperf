@@ -9,7 +9,9 @@
 #include "json.hpp"
 #include "timesync/chrono.hpp"
 #include "models/generator.hpp"
+#include "models/generator_result.hpp"
 #include "swagger/v1/model/CpuGenerator.h"
+#include "swagger/v1/model/CpuGeneratorResult.h"
 
 namespace openperf::cpu::api {
 
@@ -29,34 +31,10 @@ static constexpr size_t err_max_length = 256;
 /* zmq api objects models */
 
 using cpu_generator_t = model::cpu_generator;
+using cpu_generator_result_t = model::cpu_generator_result;
 using cpu_generator_ptr = std::unique_ptr<cpu_generator_t>;
-
-struct generator_target_config
-{
-    model::cpu_instruction_set instruction_set;
-    uint data_size;
-    model::cpu_operation operation;
-    uint weight;
-};
-
-struct generator_core_config
-{
-    std::vector<generator_target_config> targets;
-};
-
-struct generator
-{
-    char id[id_max_length];
-    bool running;
-    std::vector<generator_core_config> cores_config;
-};
-
-struct generator_result
-{
-    char id[id_max_length];
-    bool active;
-    time_point timestamp;
-};
+using cpu_generator_result_ptr = std::unique_ptr<cpu_generator_result_t>;
+using string_ptr = std::unique_ptr<std::string>;
 
 enum class error_type {
     NONE = 0,
@@ -105,20 +83,12 @@ struct request_cpu_generator_stop
 
 struct request_cpu_generator_bulk_start
 {
-    struct container
-    {
-        char id[id_max_length];
-    };
-    std::vector<container> ids;
+    std::vector<string_ptr> ids;
 };
 
 struct request_cpu_generator_bulk_stop
 {
-    struct container
-    {
-        char id[id_max_length];
-    };
-    std::vector<container> ids;
+    std::vector<string_ptr> ids;
 };
 
 struct request_cpu_generator_result_list
@@ -141,20 +111,9 @@ struct reply_cpu_generators
     std::vector<cpu_generator_ptr> generators;
 };
 
-struct failed_generator
-{
-    char id[id_max_length];
-    typed_error err;
-};
-
-struct reply_cpu_generator_bulk_start
-{
-    std::vector<failed_generator> failed;
-};
-
 struct reply_cpu_generator_results
 {
-    std::vector<generator_result> results;
+    std::vector<cpu_generator_result_ptr> results;
 };
 
 struct reply_ok
@@ -178,7 +137,6 @@ using request_msg = std::variant<request_cpu_generator_list,
                                  request_cpu_generator_result_del>;
 
 using reply_msg = std::variant<reply_cpu_generators,
-                               reply_cpu_generator_bulk_start,
                                reply_cpu_generator_results,
                                reply_ok,
                                reply_error>;
@@ -202,6 +160,7 @@ reply_error to_error(error_type type, int code = 0, std::string value = "");
 const char* to_string(const api::typed_error&);
 model::cpu_generator from_swagger(const CpuGenerator&);
 std::shared_ptr<CpuGenerator> to_swagger(const model::cpu_generator&);
+std::shared_ptr<CpuGeneratorResult> to_swagger(const model::cpu_generator_result&);
 
 extern const std::string endpoint;
 

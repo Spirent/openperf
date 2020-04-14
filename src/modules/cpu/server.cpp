@@ -9,106 +9,115 @@ namespace openperf::cpu::api {
 reply_msg server::handle_request(const request_cpu_generator_list&)
 {
     auto reply = reply_cpu_generators{};
-    /*for (auto blkgenerator : blk_generator_stack->cpu_generators_list()) {
-        reply.generators.emplace_back(api::to_api_model(*blkgenerator));
-    }*/
+    for (auto generator : m_generator_stack->cpu_generators_list()) {
+        auto reply_generator_model = model::cpu_generator(*generator);
+        reply.generators.emplace_back(std::make_unique<model::cpu_generator>(reply_generator_model));
+    }
 
     return reply;
 }
 
 
-reply_msg server::handle_request(const request_cpu_generator&)
+reply_msg server::handle_request(const request_cpu_generator& request)
 {
-    auto reply = reply_cpu_generators{};
-    /*auto blkgenerator = blk_generator_stack->get_cpu_generator(request.id);
+    auto generator = m_generator_stack->get_cpu_generator(request.id);
 
-    if (!blkgenerator) { return to_error(api::error_type::NOT_FOUND); }
-    reply.generators.emplace_back(api::to_api_model(*blkgenerator));*/
+    if (!generator) { return to_error(api::error_type::NOT_FOUND); }
+
+    auto reply = reply_cpu_generators{};
+    auto reply_generator_model = model::cpu_generator(*generator);
+    reply.generators.emplace_back(std::make_unique<model::cpu_generator>(reply_generator_model));
 
     return reply;
 }
 
 reply_msg server::handle_request(const request_cpu_generator_add& request)
 {
-    printf("Request %s\n", request.source->get_id().c_str());
-    printf("Request %u\n", request.source->get_config().cores.front().targets.front().data_size);
-    /*
-    if (auto id_check = config::op_config_validate_id_string(request.source.id);
+    if (auto id_check = config::op_config_validate_id_string(request.source->get_id());
         !id_check)
         return (to_error(error_type::EAI_ERROR));
 
-    auto cpu_generator_model = api::from_api_model(request.source);
     // If user did not specify an id create one for them.kjuolpik
-    if (cpu_generator_model->get_id() == api::empty_id_string) {
-        cpu_generator_model->set_id(core::to_string(core::uuid::random()));
+    if (request.source->get_id() == api::empty_id_string) {
+        request.source->set_id(core::to_string(core::uuid::random()));
     }
 
-    auto result = blk_generator_stack->create_cpu_generator(
-        *cpu_generator_model, {blk_file_stack.get(), blk_device_stack.get()});
+    auto result = m_generator_stack->create_cpu_generator(*request.source);
     if (!result) { return to_error(error_type::NOT_FOUND); }
-    */
+
     auto reply = reply_cpu_generators{};
-    reply.generators.emplace_back(std::make_unique<model::cpu_generator>(*request.source));
+    auto reply_generator_model = model::cpu_generator(*result.value());
+    reply.generators.emplace_back(std::make_unique<model::cpu_generator>(reply_generator_model));
     return reply;
 }
 
-reply_msg server::handle_request(const request_cpu_generator_del& )
+reply_msg server::handle_request(const request_cpu_generator_del& request)
 {
-    //blk_generator_stack->delete_cpu_generator(request.id);
+    m_generator_stack->delete_cpu_generator(request.id);
     return reply_ok{};
 }
 
-reply_msg server::handle_request(const request_cpu_generator_start& )
+reply_msg server::handle_request(const request_cpu_generator_start& request)
 {
-    /*auto blkgenerator = blk_generator_stack->get_cpu_generator(request.id);
+    auto generator = m_generator_stack->get_cpu_generator(request.id);
 
-    if (!blkgenerator) { return to_error(api::error_type::NOT_FOUND); }
-    blkgenerator->start();
-    */
-    return api::reply_ok{};
+    if (!generator) { return to_error(api::error_type::NOT_FOUND); }
+    auto stats = generator->start();
+
+    auto reply = reply_cpu_generator_results{};
+    auto reply_model = model::cpu_generator_result(*stats);
+    reply.results.emplace_back(std::make_unique<model::cpu_generator_result>(reply_model));
+    return reply;
 }
 
-reply_msg server::handle_request(const request_cpu_generator_stop& )
+reply_msg server::handle_request(const request_cpu_generator_stop& request)
 {
-    /*auto blkgenerator = blk_generator_stack->get_cpu_generator(request.id);
+    auto generator = m_generator_stack->get_cpu_generator(request.id);
 
-    if (!blkgenerator) { return api::reply_ok{}; }
-    blkgenerator->stop();*/
+    if (!generator) { return api::reply_ok{}; }
+    generator->stop();
 
     return api::reply_ok{};
 }
 
 reply_msg
-server::handle_request(const request_cpu_generator_bulk_start& )
+server::handle_request(const request_cpu_generator_bulk_start& request)
 {
-    auto reply = api::reply_cpu_generator_bulk_start{};
-    /*
-    for (auto& req : request.ids) {
-        auto blkgenerator = blk_generator_stack->get_cpu_generator(req.id);
-        if (!blkgenerator) {
-            auto fg = api::failed_generator{};
-            memcpy(fg.id, req.id, sizeof(req.id));
-            fg.err = to_error(api::error_type::NOT_FOUND).info;
-            reply.failed.push_back(fg);
-            continue;
+    auto reply = reply_cpu_generator_results{};
+
+    for (size_t i = 0; i < request.ids.size(); ++i)
+    {
+        auto generator = m_generator_stack->get_cpu_generator(*request.ids[i]);
+        if (!generator) {
+            for (size_t j = 0; j < request.ids.size(); ++j) {
+                auto generator_to_stop = m_generator_stack->get_cpu_generator(*request.ids[i]);
+                if (generator_to_stop) {
+                    generator_to_stop->stop();
+                }
+            }
+            return to_error(api::error_type::NOT_FOUND, 0, "Generator " + *request.ids[i] + " not found");
         }
-        blkgenerator->start();
-        auto fg = api::failed_generator{};
-        memcpy(fg.id, req.id, sizeof(req.id));
-        fg.err = to_error(api::error_type::NONE).info;
-        reply.failed.push_back(fg);
-    }*/
+        auto stats = generator->start();
+
+        auto reply_model = model::cpu_generator_result(*stats);
+        reply.results.emplace_back(std::make_unique<model::cpu_generator_result>(reply_model));
+    }
+
     return reply;
 }
 
 reply_msg
-server::handle_request(const request_cpu_generator_bulk_stop& )
+server::handle_request(const request_cpu_generator_bulk_stop& request)
 {
-    /*for (auto& id : request.ids) {
-        auto blkgenerator = blk_generator_stack->get_cpu_generator(id.id);
-        if (!blkgenerator) { continue; }
-        blkgenerator->stop();
-    }*/
+   for (auto & id : request.ids)
+    {
+        auto generator = m_generator_stack->get_cpu_generator(*id);
+        if (!generator) {
+            continue;
+        }
+        generator->stop();
+    }
+
     return api::reply_ok{};
 }
 
@@ -170,7 +179,7 @@ static int _handle_rpc_request(const op_event_data* data, void* arg)
 
 server::server(void* context, openperf::core::event_loop& loop)
     : m_socket(op_socket_get_server(context, ZMQ_REP, endpoint.data()))
-    //, blk_generator_stack(std::make_unique<generator_stack>())
+    , m_generator_stack(std::make_unique<generator_stack>())
 {
 
     struct op_event_callbacks callbacks = {.on_read = _handle_rpc_request};

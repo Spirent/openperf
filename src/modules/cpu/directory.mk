@@ -8,7 +8,9 @@ CPU_SOURCES += \
 	api_transmogrify.cpp \
 	init.cpp \
 	handler.cpp \
-	server.cpp
+	server.cpp \
+	generator.cpp \
+	generator_stack.cpp
 
 include $(CPU_SRC_DIR)/models/directory.mk
 

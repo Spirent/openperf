@@ -140,20 +140,12 @@ serialized_msg serialize_request(request_msg&& msg)
                                              cpu_generator.id.data(),
                                              cpu_generator.id.length()));
                     },
-                    [&](const request_cpu_generator_bulk_start&
+                    [&](request_cpu_generator_bulk_start&
                             cpu_generator) {
-                        auto scalar =
-                            sizeof(decltype(cpu_generator.ids)::value_type);
-                        return (zmq_msg_init(&serialized.data,
-                                             cpu_generator.ids.data(),
-                                             scalar * cpu_generator.ids.size()));
+                        return (zmq_msg_init(&serialized.data, cpu_generator.ids));
                     },
-                    [&](const request_cpu_generator_bulk_stop& cpu_generator) {
-                        auto scalar =
-                            sizeof(decltype(cpu_generator.ids)::value_type);
-                        return (zmq_msg_init(&serialized.data,
-                                             cpu_generator.ids.data(),
-                                             scalar * cpu_generator.ids.size()));
+                    [&](request_cpu_generator_bulk_stop& cpu_generator) {
+                        return (zmq_msg_init(&serialized.data, cpu_generator.ids));
                     },
                     [&](const request_cpu_generator_result_list&) {
                         return (zmq_msg_init(&serialized.data));
@@ -184,18 +176,7 @@ serialized_msg serialize_reply(reply_msg&& msg)
                     [&](reply_cpu_generators& reply) {
                         return (zmq_msg_init(&serialized.data, reply.generators));
                     },
-                    [&](const reply_cpu_generator_bulk_start& reply) {
-                        /*
-                         * ZMQ wants the length in bytes, so we have to scale
-                         * the length of the vector up to match.
-                         */
-                        auto scalar =
-                            sizeof(decltype(reply.failed)::value_type);
-                        return (zmq_msg_init(&serialized.data,
-                                             reply.failed.data(),
-                                             scalar * reply.failed.size()));
-                    },
-                    [&](const reply_cpu_generator_results& reply) {
+                    [&](reply_cpu_generator_results& reply) {
                         /*
                          * ZMQ wants the length in bytes, so we have to scale
                          * the length of the vector up to match.
@@ -249,28 +230,25 @@ tl::expected<request_msg, int> deserialize_request(const serialized_msg& msg)
     }
     case utils::variant_index<request_msg,
                               request_cpu_generator_bulk_start>(): {
-        auto data =
-            zmq_msg_data<request_cpu_generator_bulk_start::container*>(
-                &msg.data);
-        std::vector<request_cpu_generator_bulk_start::container>
-            cpu_generators(
-                data,
-                data
-                    + zmq_msg_size<
-                          request_cpu_generator_bulk_start::container>(
-                          &msg.data));
-        return (request_cpu_generator_bulk_start{std::move(cpu_generators)});
+        auto size = zmq_msg_size(&msg.data) / sizeof(string_ptr);
+        auto data = zmq_msg_data<std::string**>(&msg.data);
+
+        auto reply = request_cpu_generator_bulk_start{};
+        std::for_each(data, data + size, [&](const auto& ptr) {
+            reply.ids.emplace_back(ptr);
+        });
+        return (reply);
     }
     case utils::variant_index<request_msg,
                               request_cpu_generator_bulk_stop>(): {
-        auto data = zmq_msg_data<request_cpu_generator_bulk_stop::container*>(
-            &msg.data);
-        std::vector<request_cpu_generator_bulk_stop::container> cpu_generators(
-            data,
-            data
-                + zmq_msg_size<request_cpu_generator_bulk_stop::container>(
-                      &msg.data));
-        return (request_cpu_generator_bulk_stop{std::move(cpu_generators)});
+        auto size = zmq_msg_size(&msg.data) / sizeof(string_ptr);
+        auto data = zmq_msg_data<std::string**>(&msg.data);
+
+        auto reply = request_cpu_generator_bulk_start{};
+        std::for_each(data, data + size, [&](const auto& ptr) {
+            reply.ids.emplace_back(ptr);
+        });
+        return (reply);
     }
     case utils::variant_index<request_msg,
                               request_cpu_generator_result_list>(): {
@@ -305,17 +283,15 @@ tl::expected<reply_msg, int> deserialize_reply(const serialized_msg& msg)
         });
         return (reply);
     }
-    case utils::variant_index<reply_msg, reply_cpu_generator_bulk_start>(): {
-        auto data = zmq_msg_data<failed_generator*>(&msg.data);
-        std::vector<failed_generator> failed_generators(
-            data, data + zmq_msg_size<failed_generator>(&msg.data));
-        return (reply_cpu_generator_bulk_start{std::move(failed_generators)});
-    }
     case utils::variant_index<reply_msg, reply_cpu_generator_results>(): {
-        auto data = zmq_msg_data<generator_result*>(&msg.data);
-        std::vector<generator_result> results(
-            data, data + zmq_msg_size<generator_result>(&msg.data));
-        return (reply_cpu_generator_results{std::move(results)});
+       auto size = zmq_msg_size(&msg.data) / sizeof(cpu_generator_result_t*);
+        auto data = zmq_msg_data<cpu_generator_result_t**>(&msg.data);
+
+        auto reply = reply_cpu_generator_results{};
+        std::for_each(data, data + size, [&](const auto& ptr) {
+            reply.results.emplace_back(ptr);
+        });
+        return (reply);
     }
     case utils::variant_index<reply_msg, reply_ok>():
         return (reply_ok{});
@@ -409,6 +385,17 @@ reply_error to_error(error_type type, int code, std::string value)
     return err;
 }
 
+template <typename Rep, typename Period>
+std::string to_rfc3339(std::chrono::duration<Rep, Period> from)
+{
+    auto tv = openperf::timesync::to_timeval(from);
+    std::stringstream os;
+    os << std::put_time(gmtime(&tv.tv_sec), "%FT%T") << "." << std::setfill('0')
+       << std::setw(6) << tv.tv_usec << "Z";
+    return (os.str());
+}
+
+
 model::cpu_generator from_swagger(const CpuGenerator& p_gen)
 {
     model::cpu_generator gen;
@@ -459,5 +446,31 @@ std::shared_ptr<CpuGenerator> to_swagger(const model::cpu_generator& p_gen)
     return gen;
 }
 
+std::shared_ptr<CpuGeneratorResult> to_swagger(const model::cpu_generator_result& p_result)
+{
+    auto gen = std::make_shared<CpuGeneratorResult>();
+    gen->setId(p_result.get_id());
+    gen->setActive(p_result.is_active());
+    gen->setTimestamp(to_rfc3339(p_result.get_timestamp().time_since_epoch()));
+    auto cores_stats = p_result.get_stats().cores;
+    auto cpu_stats = std::make_shared<CpuGeneratorStats>();
+    for (auto p_stats : cores_stats) {
+        auto core_stats = std::make_shared<CpuGeneratorCoreStats>();
+        core_stats->setAvailable(p_stats.available);
+        core_stats->setError(p_stats.error);
+        core_stats->setSteal(p_stats.steal);
+        core_stats->setSystem(p_stats.system);
+        core_stats->setUser(p_stats.user);
+        core_stats->setUtilization(p_stats.utilization);
+        for (auto p_target : p_stats.targets) {
+            auto target = std::make_shared<CpuGeneratorTargetStats>();
+            target->setCycles(p_target.cycles);
+            core_stats->getTargets().push_back(target);
+        }
+        cpu_stats->getCores().push_back(core_stats);
+    }
+    gen->setStats(cpu_stats);
+    return gen;
+}
 
 } // namespace openperf::cpu::api

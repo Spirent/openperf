@@ -5,15 +5,18 @@
 #include "core/op_core.h"
 
 #include "api.hpp"
+#include "generator_stack.hpp"
 
 namespace openperf::cpu::api {
 
+using generator_stack = cpu::generator::generator_stack;
 using json = nlohmann::json;
+
 class server
 {
 private:
     std::unique_ptr<void, op_socket_deleter> m_socket;
-    //std::unique_ptr<generator_stack> blk_generator_stack;
+    std::unique_ptr<generator_stack> m_generator_stack;
 
 public:
     server(void* context, core::event_loop& loop);
