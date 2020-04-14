@@ -68,6 +68,10 @@ paths:
       responses:
         201:
           description: Success
+          headers:
+            Location:
+              description: ID of created block file
+              type: string
           schema:
             $ref: "#/definitions/BlockFile"
 
@@ -127,6 +131,10 @@ paths:
       responses:
         201:
           description: Success
+          headers:
+            Location:
+              description: ID of created block generator
+              type: string
           schema:
             $ref: "#/definitions/BlockGenerator"
 
@@ -162,12 +170,18 @@ paths:
       tags:
         - BlockGenerator
       summary: Start a block generator
-      description: Start an existing block generator. Idempotent.
+      description: Start an existing block generator.
       parameters:
         - $ref: "#/parameters/id"
       responses:
-        204:
-          description: No Content
+        201:
+          description: Created
+          headers:
+            Location:
+              description: ID of created block generator result
+              type: string
+          schema:
+            $ref: "#/definitions/BlockGeneratorResult"
 
   /block-generators/{id}/stop:
     post:
@@ -211,27 +225,10 @@ paths:
         200:
           description: Success
           schema:
-            type: object
-            title: BulkStartBlockGeneratorsResponse
-            properties:
-              succeeded:
-                type: array
-                description: List of started block generator identifiers
-                items:
-                  type: string
-              failed:
-                type: array
-                description: List of failed block generator identifiers
-                items:
-                  type: object
-                  properties:
-                    id:
-                      type: string
-                    error:
-                      type: string
-                      description: Cause of Block Generator start failure
-                  required:
-                    - id
+            type: array
+            description: List started block generators results
+            items:
+              $ref: "#/definitions/BlockGeneratorResult"
 
   /block-generators/x/bulk-stop:
     post:
@@ -430,6 +427,9 @@ definitions:
       id:
         type: string
         description: Unique generator result identifier
+      generator_id:
+        type: string
+        description: Block generator identifier that generated this result
       active:
         type: boolean
         description: Indicates whether the result is currently being updated

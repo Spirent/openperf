@@ -38,6 +38,10 @@ paths:
       responses:
         201:
           description: Success
+          headers:
+            Location:
+              description: ID of created CPU generator
+              type: string
           schema:
             $ref: "#/definitions/CpuGenerator"
 
@@ -73,12 +77,18 @@ paths:
       tags:
         - CpuGenerator
       summary: Start a CPU generator
-      description: Start an existing CPU generator. Idempotent.
+      description: Start an existing CPU generator.
       parameters:
         - $ref: "#/parameters/id"
       responses:
-        204:
-          description: No Content
+        201:
+          description: Created
+          headers:
+            Location:
+              description: ID of created CPU generator result
+              type: string
+          schema:
+            $ref: "#/definitions/CpuGeneratorResult"
 
   /cpu-generators/{id}/stop:
     post:
@@ -122,27 +132,10 @@ paths:
         200:
           description: Success
           schema:
-            type: object
-            title: CpuGeneratorsResponse
-            properties:
-              succeeded:
-                type: array
-                description: List of started CPU generator identifiers
-                items:
-                  type: string
-              failed:
-                type: array
-                description: List of failed CPU generator identifiers
-                items:
-                  type: object
-                  properties:
-                    id:
-                      type: string
-                    error:
-                      type: string
-                      description: Cause of CPU Generator start failure
-                  required:
-                    - id
+            type: array
+            description: List started CPU generators results
+            items:
+              $ref: "#/definitions/CpuGeneratorResult"
 
   /cpu-generators/x/bulk-stop:
     post:
@@ -321,6 +314,9 @@ definitions:
       id:
         type: string
         description: Unique generator result identifier
+      generator_id:
+        type: string
+        description: CPU generator identifier that generated this result
       active:
         type: boolean
         description: Indicates whether the result is currently being updated
