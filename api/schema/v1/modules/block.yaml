@@ -67,10 +67,10 @@ paths:
             $ref: "#/definitions/BlockFile"
       responses:
         201:
-          description: Success
+          description: Created
           headers:
             Location:
-              description: ID of created block file
+              description: URI of created block file
               type: string
           schema:
             $ref: "#/definitions/BlockFile"
@@ -130,10 +130,10 @@ paths:
             $ref: "#/definitions/BlockGenerator"
       responses:
         201:
-          description: Success
+          description: Created
           headers:
             Location:
-              description: ID of created block generator
+              description: URI of created block generator
               type: string
           schema:
             $ref: "#/definitions/BlockGenerator"
@@ -178,7 +178,7 @@ paths:
           description: Created
           headers:
             Location:
-              description: ID of created block generator result
+              description: URI of created block generator result
               type: string
           schema:
             $ref: "#/definitions/BlockGeneratorResult"

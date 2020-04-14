@@ -37,10 +37,10 @@ paths:
             $ref: "#/definitions/CpuGenerator"
       responses:
         201:
-          description: Success
+          description: Created
           headers:
             Location:
-              description: ID of created CPU generator
+              description: URI of created CPU generator
               type: string
           schema:
             $ref: "#/definitions/CpuGenerator"
@@ -85,7 +85,7 @@ paths:
           description: Created
           headers:
             Location:
-              description: ID of created CPU generator result
+              description: URI of created CPU generator result
               type: string
           schema:
             $ref: "#/definitions/CpuGeneratorResult"

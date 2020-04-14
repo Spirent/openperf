@@ -37,10 +37,10 @@ paths:
             $ref: "#/definitions/MemoryGenerator"
       responses:
         201:
-          description: Success
+          description: Created
           headers:
             Location:
-              description: ID of created memory generator
+              description: URI of created memory generator
               type: string
           schema:
             $ref: "#/definitions/MemoryGenerator"
@@ -85,7 +85,7 @@ paths:
           description: Created
           headers:
             Location:
-              description: ID of created memory generator result
+              description: URI of created memory generator result
               type: string
           schema:
             $ref: "#/definitions/MemoryGeneratorResult"
