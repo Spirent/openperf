@@ -117,7 +117,7 @@ paths:
           required: true
           schema:
             type: object
-            title: CpuGeneratorsRequest
+            title: BulkStartCpuGeneratorsRequest
             description: Parameters for the bulk start operation
             properties:
               ids:
@@ -151,7 +151,7 @@ paths:
           required: true
           schema:
             type: object
-            title: CpuGeneratorsRequest
+            title: BulkStopCpuGeneratorsRequest
             description: Parameters for the bulk stop operation
             properties:
               ids:
