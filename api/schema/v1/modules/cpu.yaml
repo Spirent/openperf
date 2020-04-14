@@ -257,10 +257,14 @@ definitions:
 
   CpuGeneratorConfig:
     title: CpuGeneratorConfig
-    type: array
-    minItems: 1
-    items:
-      $ref: "#/definitions/CpuGeneratorCoreConfig"
+    type: object
+    description: CPU Generator Configuration
+    properties:
+      cores:
+        type: array
+        minItems: 1
+        items:
+          $ref: "#/definitions/CpuGeneratorCoreConfig"
 
   CpuGeneratorCoreConfig:
     title: CpuGeneratorCoreConfig
