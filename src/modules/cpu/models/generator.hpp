@@ -44,9 +44,9 @@ public:
     void set_running(const bool value);
 
 protected:
-    std::string id;
-    cpu_generator_config config;
-    bool running;
+    std::string m_id;
+    cpu_generator_config m_config;
+    bool m_running;
 };
 
 } // namespace openperf::cpu::model
