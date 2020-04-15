@@ -37,7 +37,11 @@ paths:
             $ref: "#/definitions/MemoryGenerator"
       responses:
         201:
-          description: Success
+          description: Created
+          headers:
+            Location:
+              description: URI of created memory generator
+              type: string
           schema:
             $ref: "#/definitions/MemoryGenerator"
 
@@ -73,12 +77,18 @@ paths:
       tags:
         - MemoryGenerator
       summary: Start a memory generator
-      description: Start an existing memory generator. Idempotent.
+      description: Start an existing memory generator.
       parameters:
         - $ref: "#/parameters/id"
       responses:
-        204:
-          description: No Content
+        201:
+          description: Created
+          headers:
+            Location:
+              description: URI of created memory generator result
+              type: string
+          schema:
+            $ref: "#/definitions/MemoryGeneratorResult"
 
   /memory-generators/{id}/stop:
     post:
@@ -122,27 +132,10 @@ paths:
         200:
           description: Success
           schema:
-            type: object
-            title: BulkStartMemoryGeneratorsResponse
-            properties:
-              succeeded:
-                type: array
-                description: List of started memory generator identifiers
-                items:
-                  type: string
-              failed:
-                type: array
-                description: List of failed memory generator identifiers
-                items:
-                  type: object
-                  properties:
-                    id:
-                      type: string
-                    error:
-                      type: string
-                      description: Cause of Memory Generator start failure
-                  required:
-                    - id
+            type: array
+            description: List started memory generators results
+            items:
+              $ref: "#/definitions/MemoryGeneratorResult"
 
   /memory-generators/x/bulk-stop:
     post:
@@ -219,14 +212,14 @@ paths:
       tags:
         - MemoryGenerator
       summary: Get a memory info
-      description: The `memory-info` endpoint returns memory info values such as total and free memory size 
+      description: The `memory-info` endpoint returns memory info values such as total and free memory size
       responses:
         200:
           description: Success
           schema:
             type: object
             title: MemoryInfoResult
-            properties: 
+            properties:
               total_memory:
                 type: integer
                 description: Total amount of RAM (in bytes)
@@ -289,7 +282,7 @@ definitions:
       pattern:
         type: string
         description: IO access pattern
-        enum: 
+        enum:
           - random
           - sequential
           - reverse
@@ -310,6 +303,9 @@ definitions:
       id:
         type: string
         description: Unique generator result identifier
+      generator_id:
+        type: string
+        description: Memory generator identifier that generated this result
       active:
         type: boolean
         description: Indicates whether the result is currently being updated

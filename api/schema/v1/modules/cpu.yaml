@@ -37,7 +37,11 @@ paths:
             $ref: "#/definitions/CpuGenerator"
       responses:
         201:
-          description: Success
+          description: Created
+          headers:
+            Location:
+              description: URI of created CPU generator
+              type: string
           schema:
             $ref: "#/definitions/CpuGenerator"
 
@@ -73,12 +77,18 @@ paths:
       tags:
         - CpuGenerator
       summary: Start a CPU generator
-      description: Start an existing CPU generator. Idempotent.
+      description: Start an existing CPU generator.
       parameters:
         - $ref: "#/parameters/id"
       responses:
-        204:
-          description: No Content
+        201:
+          description: Created
+          headers:
+            Location:
+              description: URI of created CPU generator result
+              type: string
+          schema:
+            $ref: "#/definitions/CpuGeneratorResult"
 
   /cpu-generators/{id}/stop:
     post:
@@ -107,7 +117,7 @@ paths:
           required: true
           schema:
             type: object
-            title: CpuGeneratorsRequest
+            title: BulkStartCpuGeneratorsRequest
             description: Parameters for the bulk start operation
             properties:
               ids:
@@ -122,27 +132,10 @@ paths:
         200:
           description: Success
           schema:
-            type: object
-            title: CpuGeneratorsResponse
-            properties:
-              succeeded:
-                type: array
-                description: List of started CPU generator identifiers
-                items:
-                  type: string
-              failed:
-                type: array
-                description: List of failed CPU generator identifiers
-                items:
-                  type: object
-                  properties:
-                    id:
-                      type: string
-                    error:
-                      type: string
-                      description: Cause of CPU Generator start failure
-                  required:
-                    - id
+            type: array
+            description: List started CPU generators results
+            items:
+              $ref: "#/definitions/CpuGeneratorResult"
 
   /cpu-generators/x/bulk-stop:
     post:
@@ -158,7 +151,7 @@ paths:
           required: true
           schema:
             type: object
-            title: CpuGeneratorsRequest
+            title: BulkStopCpuGeneratorsRequest
             description: Parameters for the bulk stop operation
             properties:
               ids:
@@ -257,10 +250,14 @@ definitions:
 
   CpuGeneratorConfig:
     title: CpuGeneratorConfig
-    type: array
-    minItems: 1
-    items:
-      $ref: "#/definitions/CpuGeneratorCoreConfig"
+    type: object
+    description: CPU Generator Configuration
+    properties:
+      cores:
+        type: array
+        minItems: 1
+        items:
+          $ref: "#/definitions/CpuGeneratorCoreConfig"
 
   CpuGeneratorCoreConfig:
     title: CpuGeneratorCoreConfig
@@ -284,9 +281,8 @@ definitions:
               enum:
               - scalar
             data_size:
-              type: number
+              type: integer
               description: Number of bits to use for data type in chosen instruction set
-              format: integer
               enum:
               - 32
               - 64
@@ -297,9 +293,8 @@ definitions:
               - float
               - int
             weight:
-              type: number
+              type: integer
               description: Targeted load ratio
-              format: integer
               minimum: 1
           required:
             - instruction_set
@@ -319,6 +314,9 @@ definitions:
       id:
         type: string
         description: Unique generator result identifier
+      generator_id:
+        type: string
+        description: CPU generator identifier that generated this result
       active:
         type: boolean
         description: Indicates whether the result is currently being updated
