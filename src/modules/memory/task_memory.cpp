@@ -70,6 +70,8 @@ task_memory::task_memory()
     , _op_index_max(0)
     , _buffer(nullptr)
     , _scratch{.ptr = nullptr, .size = 0}
+    , _stat(&_stat_data)
+    , _stat_clear(true)
 {}
 
 task_memory::task_memory(const task_memory_config& conf)
@@ -80,10 +82,11 @@ task_memory::task_memory(const task_memory_config& conf)
 
 task_memory::~task_memory() { scratch_free(); }
 
-void task_memory::clear_stat()
+task_memory::stat_t task_memory::stat() const
 {
-    _stat.store(memory_stat{});
-    _stat_clear = true;
+    return (_stat_clear)
+        ? stat_t{}
+        : *_stat.load();
 }
 
 void task_memory::config(const task_memory_config& msg)
@@ -196,6 +199,11 @@ void task_memory::spin()
     assert(_config.pattern != io_pattern::NONE);
     assert(_config.op_per_sec == 0 || _indexes.size() > 0);
 
+    if (_stat_clear) {
+        _stat_data = stat_t{};
+        _stat_clear = false;
+    }
+
     static __thread size_t op_index = 0;
     if (op_index >= _op_index_max) { op_index = _op_index_min; }
 
@@ -267,11 +275,10 @@ void task_memory::spin()
         to_do_ops -= spin_ops;
     }
 
-    if (!_stat_clear) {
-        stat += _stat.load();
-        _stat.store(stat);
-    }
-    _stat_clear = false;
+    stat += _stat_data;
+    _stat.store(&stat);
+    _stat_data = stat;
+    _stat.store(&_stat_data);
 }
 
 void task_memory::scratch_allocate(size_t size)
