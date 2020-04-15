@@ -262,7 +262,6 @@ void task_memory::spin()
             .time_ns = run_time,
             .latency_min = run_time,
             .latency_max = run_time,
-            .timestamp = time_ns(),
         };
 
         /* Update local counters */
