@@ -19,6 +19,28 @@ std::string json_error(std::string_view msg)
     return json{"error", msg}.dump();
 }
 
+void response_error(Http::ResponseWriter& rsp, reply::error error)
+{
+    switch (error.type) {
+        case reply::error::NOT_FOUND:
+            rsp.send(Http::Code::Not_Found);
+            break;
+        case reply::error::EXISTS:
+            rsp.headers().add<Http::Header::ContentType>(
+                MIME(Application, Json));
+            rsp.send(Http::Code::Bad_Request,
+                json_error("Item with such ID already existst"));
+            break;
+        case reply::error::INVALID_ID:
+            rsp.headers().add<Http::Header::ContentType>(
+                MIME(Application, Json));
+            rsp.send(Http::Code::Bad_Request,
+                json_error("Invalid ID format"));
+        default:
+            rsp.send(Http::Code::Internal_Server_Error);
+    }
+}
+
 class handler : public openperf::api::route::handler::registrar<handler>
 {
 private:
@@ -116,6 +138,11 @@ void handler::list_generators(const Rest::Request&,
         return;
     }
 
+    if (auto error = std::get_if<reply::error>(&api_reply)) {
+        response_error(response, *error);
+        return;
+    }
+
     response.send(Http::Code::Internal_Server_Error);
 }
 
@@ -143,27 +170,11 @@ void handler::create_generator(const Rest::Request& request,
         response.send(Http::Code::Created,
                       to_swagger(*item->data).toJson().dump());
         return;
-    } else if (auto error = std::get_if<reply::error>(&api_reply)) {
-        switch (error->type) {
-        case reply::error::EXISTS:
-            response.send(Http::Code::Bad_Request,
-                          json_error("Memory generator with ID '"
-                                     + model.getId() + "' exists"));
-            return;
+    }
 
-        case reply::error::INVALID_ID:
-            response.send(
-                Http::Code::Bad_Request,
-                json_error("Invalid ID format '" + model.getId() + "'"));
-            return;
-
-        default:
-            response.send(
-                Http::Code::Bad_Request,
-                json_error("Unknown error: " + std::to_string((int)error->type)
-                           + " : " + std::to_string(error->value)));
-            return;
-        }
+    if (auto error = std::get_if<reply::error>(&api_reply)) {
+        response_error(response, *error);
+        return;
     }
 
     response.send(Http::Code::Internal_Server_Error);
@@ -174,7 +185,7 @@ void handler::get_generator(const Rest::Request& request,
 {
     auto id = request.param(":id").as<std::string>();
     if (auto res = config::op_config_validate_id_string(id); !res) {
-        response.send(Http::Code::Not_Found, res.error());
+        response.send(Http::Code::Bad_Request, res.error());
         return;
     }
 
@@ -185,11 +196,11 @@ void handler::get_generator(const Rest::Request& request,
             MIME(Application, Json));
         response.send(Http::Code::Ok, to_swagger(*r->data).toJson().dump());
         return;
-    } else if (auto error = std::get_if<reply::error>(&api_reply)) {
-        if (error->type == reply::error::NOT_FOUND) {
-            response.send(Http::Code::No_Content);
-            return;
-        }
+    }
+
+    if (auto error = std::get_if<reply::error>(&api_reply)) {
+        response_error(response, *error);
+        return;
     }
 
     response.send(Http::Code::Internal_Server_Error);
@@ -200,12 +211,22 @@ void handler::delete_generator(const Rest::Request& request,
 {
     auto id = request.param(":id").as<std::string>();
     if (auto res = config::op_config_validate_id_string(id); !res) {
-        response.send(Http::Code::Not_Found, res.error());
+        response.send(Http::Code::Bad_Request, res.error());
         return;
     }
 
-    submit_request(request::generator::erase{{.id = id}});
-    response.send(Http::Code::No_Content);
+    auto api_reply = submit_request(request::generator::erase{{.id = id}});
+    if (auto ok = std::get_if<reply::ok>(&api_reply)) {
+        response.send(Http::Code::No_Content);
+        return;
+    }
+
+    if (auto error = std::get_if<reply::error>(&api_reply)) {
+        response_error(response, *error);
+        return;
+    }
+
+    response.send(Http::Code::Internal_Server_Error);
 }
 
 void handler::start_generator(const Rest::Request& request,
@@ -213,12 +234,22 @@ void handler::start_generator(const Rest::Request& request,
 {
     auto id = request.param(":id").as<std::string>();
     if (auto res = config::op_config_validate_id_string(id); !res) {
-        response.send(Http::Code::Not_Found, res.error());
+        response.send(Http::Code::Bad_Request, res.error());
         return;
     }
 
-    submit_request(request::generator::start{{.id = id}});
-    response.send(Http::Code::No_Content);
+    auto api_reply = submit_request(request::generator::start{{.id = id}});
+    if (auto ok = std::get_if<reply::ok>(&api_reply)) {
+        response.send(Http::Code::No_Content);
+        return;
+    }
+
+    if (auto error = std::get_if<reply::error>(&api_reply)) {
+        response_error(response, *error);
+        return;
+    }
+
+    response.send(Http::Code::Internal_Server_Error);
 }
 
 void handler::stop_generator(const Rest::Request& request,
@@ -230,8 +261,18 @@ void handler::stop_generator(const Rest::Request& request,
         return;
     }
 
-    submit_request(request::generator::stop{{.id = id}});
-    response.send(Http::Code::No_Content);
+    auto api_reply = submit_request(request::generator::stop{{.id = id}});
+    if (auto ok = std::get_if<reply::ok>(&api_reply)) {
+        response.send(Http::Code::No_Content);
+        return;
+    }
+
+    if (auto error = std::get_if<reply::error>(&api_reply)) {
+        response_error(response, *error);
+        return;
+    }
+
+    response.send(Http::Code::Internal_Server_Error);
 }
 
 // Bulk memory generator actions
@@ -246,12 +287,14 @@ void handler::bulk_start_generators(const Rest::Request& request,
     auto api_reply = submit_request(request::generator::bulk::start{
         {std::make_unique<std::vector<std::string>>(
             std::move(model.getIds()))}});
-    if (auto list = std::get_if<reply::error>(&api_reply)) {
-        response.send(Http::Code::Not_Found,
-                      json_error("At least one generator not found by ID"));
-        return;
-    } else if (auto ok = std::get_if<reply::ok>(&api_reply)) {
+
+    if (auto ok = std::get_if<reply::ok>(&api_reply)) {
         response.send(Http::Code::Ok);
+        return;
+    }
+
+    if (auto error = std::get_if<reply::error>(&api_reply)) {
+        response_error(response, *error);
         return;
     }
 
@@ -269,12 +312,14 @@ void handler::bulk_stop_generators(const Rest::Request& request,
     auto api_reply = submit_request(request::generator::bulk::stop{
         {std::make_unique<std::vector<std::string>>(
             std::move(model.getIds()))}});
-    if (auto list = std::get_if<reply::error>(&api_reply)) {
-        response.send(Http::Code::Not_Found,
-                      json_error("At least one generator not found by ID"));
-        return;
-    } else if (auto ok = std::get_if<reply::ok>(&api_reply)) {
+
+    if (auto ok = std::get_if<reply::ok>(&api_reply)) {
         response.send(Http::Code::Ok);
+        return;
+    }
+
+    if (auto error = std::get_if<reply::error>(&api_reply)) {
+        response_error(response, *error);
         return;
     }
 
@@ -300,6 +345,11 @@ void handler::list_results(const Rest::Request&, Http::ResponseWriter response)
         return;
     }
 
+    if (auto error = std::get_if<reply::error>(&api_reply)) {
+        response_error(response, *error);
+        return;
+    }
+
     response.send(Http::Code::Internal_Server_Error);
 }
 
@@ -308,7 +358,7 @@ void handler::get_result(const Rest::Request& request,
 {
     auto id = request.param(":id").as<std::string>();
     if (auto res = config::op_config_validate_id_string(id); !res) {
-        response.send(Http::Code::Not_Found, res.error());
+        response.send(Http::Code::Bad_Request, res.error());
         return;
     }
 
@@ -318,11 +368,11 @@ void handler::get_result(const Rest::Request& request,
             MIME(Application, Json));
         response.send(Http::Code::Ok, to_swagger(*item->data).toJson().dump());
         return;
-    } else if (auto error = std::get_if<reply::error>(&api_reply)) {
-        if (error->type == reply::error::NOT_FOUND) {
-            response.send(Http::Code::No_Content);
-            return;
-        }
+    }
+
+    if (auto error = std::get_if<reply::error>(&api_reply)) {
+        response_error(response, *error);
+        return;
     }
 
     response.send(Http::Code::Internal_Server_Error);
@@ -333,11 +383,16 @@ void handler::delete_result(const Rest::Request& request,
 {
     auto id = request.param(":id").as<std::string>();
     if (auto res = config::op_config_validate_id_string(id); !res) {
-        response.send(Http::Code::Not_Found, res.error());
+        response.send(Http::Code::Bad_Request, res.error());
         return;
     }
 
-    submit_request(request::statistic::erase{{.id = id}});
+    auto api_reply = submit_request(request::statistic::erase{{.id = id}});
+    if (auto error = std::get_if<reply::error>(&api_reply)) {
+        response_error(response, *error);
+        return;
+    }
+
     response.send(Http::Code::No_Content);
 }
 
@@ -349,6 +404,11 @@ void handler::get_info(const Rest::Request&, Http::ResponseWriter response)
         response.headers().add<Http::Header::ContentType>(
             MIME(Application, Json));
         response.send(Http::Code::Ok, to_swagger(*info).toJson().dump());
+        return;
+    }
+
+    if (auto error = std::get_if<reply::error>(&api_reply)) {
+        response_error(response, *error);
         return;
     }
 

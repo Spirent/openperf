@@ -141,8 +141,9 @@ serialized_msg serialize(api_reply&& msg)
                                return zmq_msg_init(
                                    &serialized.data, &info, sizeof(info));
                            },
-                           [&](const reply::error&) {
-                               return zmq_msg_init(&serialized.data);
+                           [&](const reply::error& error) {
+                               return zmq_msg_init(&serialized.data,
+                                   &error, sizeof(error));
                            },
                            [&](const message&) {
                                return zmq_msg_init(&serialized.data);
