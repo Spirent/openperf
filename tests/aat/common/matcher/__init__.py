@@ -23,3 +23,8 @@ from common.matcher.stack import be_valid_stack
 from common.matcher.timesync import be_valid_counter
 from common.matcher.timesync import be_valid_keeper
 from common.matcher.timesync import be_valid_source
+
+# memory.py
+from common.matcher.memory import be_valid_memory_generator
+from common.matcher.memory import be_valid_memory_generator_result
+from common.matcher.memory import be_valid_memory_info
