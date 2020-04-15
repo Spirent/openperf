@@ -1,4 +1,4 @@
-# InlineResponse200
+# CpuInfoResult
 
 ## Properties
 Name | Type | Description | Notes

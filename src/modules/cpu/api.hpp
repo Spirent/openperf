@@ -10,10 +10,12 @@
 #include "timesync/chrono.hpp"
 #include "models/generator.hpp"
 #include "models/generator_result.hpp"
+#include "models/cpu_info.hpp"
 #include "swagger/v1/model/CpuGenerator.h"
 #include "swagger/v1/model/CpuGeneratorResult.h"
 #include "swagger/v1/model/BulkStartCpuGeneratorsRequest.h"
 #include "swagger/v1/model/BulkStopCpuGeneratorsRequest.h"
+#include "swagger/v1/model/CpuInfoResult.h"
 
 namespace openperf::cpu::api {
 
@@ -36,6 +38,8 @@ using cpu_generator_t = model::cpu_generator;
 using cpu_generator_result_t = model::cpu_generator_result;
 using cpu_generator_ptr = std::unique_ptr<cpu_generator_t>;
 using cpu_generator_result_ptr = std::unique_ptr<cpu_generator_result_t>;
+using cpu_info_t = model::cpu_info;
+using cpu_info_ptr = std::unique_ptr<cpu_info_t>;
 using string_ptr = std::unique_ptr<std::string>;
 
 enum class error_type {
@@ -106,6 +110,8 @@ struct request_cpu_generator_result_del
     std::string id;
 };
 
+struct request_cpu_info{};
+
 /* zmq api reply models */
 
 struct reply_cpu_generators
@@ -116,6 +122,11 @@ struct reply_cpu_generators
 struct reply_cpu_generator_results
 {
     std::vector<cpu_generator_result_ptr> results;
+};
+
+struct reply_cpu_info
+{
+    cpu_info_ptr info;
 };
 
 struct reply_ok
@@ -136,10 +147,12 @@ using request_msg = std::variant<request_cpu_generator_list,
                                  request_cpu_generator_bulk_stop,
                                  request_cpu_generator_result_list,
                                  request_cpu_generator_result,
-                                 request_cpu_generator_result_del>;
+                                 request_cpu_generator_result_del,
+                                 request_cpu_info>;
 
 using reply_msg = std::variant<reply_cpu_generators,
                                reply_cpu_generator_results,
+                               reply_cpu_info,
                                reply_ok,
                                reply_error>;
 
@@ -165,6 +178,7 @@ request_cpu_generator_bulk_start from_swagger(BulkStartCpuGeneratorsRequest&);
 request_cpu_generator_bulk_stop from_swagger(BulkStopCpuGeneratorsRequest&);
 std::shared_ptr<CpuGenerator> to_swagger(const model::cpu_generator&);
 std::shared_ptr<CpuGeneratorResult> to_swagger(const model::cpu_generator_result&);
+std::shared_ptr<CpuInfoResult> to_swagger(const model::cpu_info&);
 
 extern const std::string endpoint;
 

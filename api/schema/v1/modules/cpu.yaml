@@ -218,6 +218,7 @@ paths:
           description: Success
           schema:
             type: object
+            title: CpuInfoResult
             properties:
               cores:
                 type: integer
