@@ -11,13 +11,13 @@
 */
 
 
-#include "Inline_response_200.h"
+#include "CpuInfoResult.h"
 
 namespace swagger {
 namespace v1 {
 namespace model {
 
-Inline_response_200::Inline_response_200()
+CpuInfoResult::CpuInfoResult()
 {
     m_Cores = 0;
     m_CoresIsSet = false;
@@ -28,16 +28,16 @@ Inline_response_200::Inline_response_200()
     
 }
 
-Inline_response_200::~Inline_response_200()
+CpuInfoResult::~CpuInfoResult()
 {
 }
 
-void Inline_response_200::validate()
+void CpuInfoResult::validate()
 {
     // TODO: implement validation
 }
 
-nlohmann::json Inline_response_200::toJson() const
+nlohmann::json CpuInfoResult::toJson() const
 {
     nlohmann::json val = nlohmann::json::object();
 
@@ -58,7 +58,7 @@ nlohmann::json Inline_response_200::toJson() const
     return val;
 }
 
-void Inline_response_200::fromJson(nlohmann::json& val)
+void CpuInfoResult::fromJson(nlohmann::json& val)
 {
     if(val.find("cores") != val.end())
     {
@@ -77,54 +77,54 @@ void Inline_response_200::fromJson(nlohmann::json& val)
 }
 
 
-int32_t Inline_response_200::getCores() const
+int32_t CpuInfoResult::getCores() const
 {
     return m_Cores;
 }
-void Inline_response_200::setCores(int32_t value)
+void CpuInfoResult::setCores(int32_t value)
 {
     m_Cores = value;
     m_CoresIsSet = true;
 }
-bool Inline_response_200::coresIsSet() const
+bool CpuInfoResult::coresIsSet() const
 {
     return m_CoresIsSet;
 }
-void Inline_response_200::unsetCores()
+void CpuInfoResult::unsetCores()
 {
     m_CoresIsSet = false;
 }
-int64_t Inline_response_200::getCacheLineSize() const
+int64_t CpuInfoResult::getCacheLineSize() const
 {
     return m_Cache_line_size;
 }
-void Inline_response_200::setCacheLineSize(int64_t value)
+void CpuInfoResult::setCacheLineSize(int64_t value)
 {
     m_Cache_line_size = value;
     m_Cache_line_sizeIsSet = true;
 }
-bool Inline_response_200::cacheLineSizeIsSet() const
+bool CpuInfoResult::cacheLineSizeIsSet() const
 {
     return m_Cache_line_sizeIsSet;
 }
-void Inline_response_200::unsetCache_line_size()
+void CpuInfoResult::unsetCache_line_size()
 {
     m_Cache_line_sizeIsSet = false;
 }
-std::string Inline_response_200::getArchitecture() const
+std::string CpuInfoResult::getArchitecture() const
 {
     return m_Architecture;
 }
-void Inline_response_200::setArchitecture(std::string value)
+void CpuInfoResult::setArchitecture(std::string value)
 {
     m_Architecture = value;
     m_ArchitectureIsSet = true;
 }
-bool Inline_response_200::architectureIsSet() const
+bool CpuInfoResult::architectureIsSet() const
 {
     return m_ArchitectureIsSet;
 }
-void Inline_response_200::unsetArchitecture()
+void CpuInfoResult::unsetArchitecture()
 {
     m_ArchitectureIsSet = false;
 }

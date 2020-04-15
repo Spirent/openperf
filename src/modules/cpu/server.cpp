@@ -156,6 +156,16 @@ server::handle_request(const request_cpu_generator_result_del& request)
     return reply_ok{};
 }
 
+reply_msg server::handle_request(const request_cpu_info&)
+{
+    auto reply = reply_cpu_info{
+        .info = std::make_unique<model::cpu_info>()
+    };
+    //reply.info = ;
+
+    return reply;
+}
+
 static int _handle_rpc_request(const op_event_data* data, void* arg)
 {
     auto s = reinterpret_cast<server*>(arg);

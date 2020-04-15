@@ -55,6 +55,9 @@ public:
 
     void delete_generator_result(const Rest::Request& request,
                                  Http::ResponseWriter response);
+
+    void get_cpu_info(const Rest::Request& request,
+                                 Http::ResponseWriter response);
 };
 
 enum Http::Code to_code(const api::reply_error& error)
@@ -107,6 +110,7 @@ handler::handler(void* context, Rest::Router& router)
         router,
         "/cpu-generator-results/:id",
         Rest::Routes::bind(&handler::delete_generator_result, this));
+    Rest::Routes::Get(router, "/cpu-info", Rest::Routes::bind(&handler::get_cpu_info, this));
 }
 
 api::reply_msg submit_request(void* socket, api::request_msg&& request)
@@ -364,6 +368,19 @@ void handler::delete_generator_result(const Rest::Request& request,
     submit_request(m_socket.get(), api::request_cpu_generator_result_del{id});
     response.headers().add<Http::Header::ContentType>(MIME(Application, Json));
     response.send(Http::Code::No_Content);
+}
+
+void handler::get_cpu_info(const Rest::Request&, Http::ResponseWriter response)
+{
+    auto api_reply =
+        submit_request(m_socket.get(), api::request_cpu_info{});
+    if (auto reply = std::get_if<api::reply_cpu_info>(&api_reply)) {
+        response.headers().add<Http::Header::ContentType>(
+            MIME(Application, Json));
+        response.send(Http::Code::Ok, api::to_swagger(*reply->info)->toJson().dump());
+    } else {
+        response.send(Http::Code::Internal_Server_Error);
+    }
 }
 
 } // namespace opneperf::cpu

@@ -159,6 +159,9 @@ serialized_msg serialize_request(request_msg&& msg)
                         return (zmq_msg_init(&serialized.data,
                                              result.id.data(),
                                              result.id.length()));
+                    },
+                    [&](const request_cpu_info&) {
+                        return (zmq_msg_init(&serialized.data));
                     }),
                 msg));
     if (error) { throw std::bad_alloc(); }
@@ -178,6 +181,9 @@ serialized_msg serialize_reply(reply_msg&& msg)
                     },
                     [&](reply_cpu_generator_results& reply) {
                         return (zmq_msg_init(&serialized.data, reply.results));
+                    },
+                    [&](reply_cpu_info& reply) {
+                        return (zmq_msg_init(&serialized.data, std::move(reply.info)));
                     },
                     [&](const reply_ok&) {
                         return (zmq_msg_init(&serialized.data, 0));
@@ -255,6 +261,11 @@ tl::expected<request_msg, int> deserialize_request(const serialized_msg& msg)
         std::string id(zmq_msg_data<char*>(&msg.data), zmq_msg_size(&msg.data));
         return (request_cpu_generator_result_del{std::move(id)});
     }
+    case utils::variant_index<request_msg,
+                              request_cpu_info>(): {
+        return (request_cpu_info{});
+    }
+
     }
 
     return (tl::make_unexpected(EINVAL));
@@ -283,6 +294,11 @@ tl::expected<reply_msg, int> deserialize_reply(const serialized_msg& msg)
         std::for_each(data, data + size, [&](const auto& ptr) {
             reply.results.emplace_back(ptr);
         });
+        return (reply);
+    }
+    case utils::variant_index<reply_msg, reply_cpu_info>(): {
+        auto reply = reply_cpu_info{};
+        reply.info.reset(*zmq_msg_data<cpu_info_t**>(&msg.data));
         return (reply);
     }
     case utils::variant_index<reply_msg, reply_ok>():
@@ -483,6 +499,15 @@ std::shared_ptr<CpuGeneratorResult> to_swagger(const model::cpu_generator_result
     }
     gen->setStats(cpu_stats);
     return gen;
+}
+
+std::shared_ptr<CpuInfoResult> to_swagger(const model::cpu_info& p_cpu_info)
+{
+    auto cpu_info = std::make_shared<CpuInfoResult>();
+    cpu_info->setArchitecture(p_cpu_info.get_architecture());
+    cpu_info->setCacheLineSize(p_cpu_info.get_cache_line_size());
+    cpu_info->setCores(p_cpu_info.get_cores());
+    return cpu_info;
 }
 
 } // namespace openperf::cpu::api

@@ -32,6 +32,7 @@ public:
     reply_msg handle_request(const request_cpu_generator_result_list&);
     reply_msg handle_request(const request_cpu_generator_result&);
     reply_msg handle_request(const request_cpu_generator_result_del&);
+    reply_msg handle_request(const request_cpu_info&);
 };
 
 } // namespace openperf::cpu::api
