@@ -3,11 +3,14 @@
 
 #include <cinttypes>
 #include <limits>
+#include <chrono>
 
 namespace openperf::memory::internal {
 
 struct memory_stat
 {
+    using timestamp_t = std::chrono::system_clock::time_point;
+
     uint64_t operations = 0; //< The number of operations performed
     uint64_t operations_target = 0;
     uint64_t bytes = 0; //< The number of bytes read or written
@@ -15,8 +18,9 @@ struct memory_stat
     uint64_t time_ns = 0; //< The number of ns required for the operations
     uint64_t latency_min = std::numeric_limits<uint64_t>::max();
     uint64_t latency_max = 0;
-    uint64_t timestamp = 0;
     uint64_t errors = 0; //< The number of errors during reading or writing
+    timestamp_t timestamp =
+        std::chrono::system_clock::now();
 
     memory_stat& operator+=(const memory_stat& st)
     {
