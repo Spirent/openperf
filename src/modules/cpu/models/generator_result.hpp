@@ -40,6 +40,9 @@ public:
     std::string get_id() const;
     void set_id(std::string_view value);
 
+    std::string get_generator_id() const;
+    void set_generator_id(std::string_view value);
+
     bool is_active() const;
     void set_active(bool value);
 
@@ -51,6 +54,7 @@ public:
 
 protected:
     std::string m_id;
+    std::string m_generator_id;
     bool m_active;
     time_point m_timestamp;
     cpu_generator_stats m_stats;

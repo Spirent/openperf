@@ -1,6 +1,7 @@
 #include <cstring>
 #include <stdexcept>
 #include "generator.hpp"
+#include "core/op_uuid.hpp"
 
 namespace openperf::cpu::generator {
 
@@ -33,9 +34,11 @@ void cpu_generator::set_running(bool value)
 cpu_result_ptr cpu_generator::get_statistics() const
 {
     auto gen_stat = std::make_shared<model::cpu_generator_result>();
-    gen_stat->set_id(get_id());
+    gen_stat->set_id(core::to_string(core::uuid::random()));
+    gen_stat->set_generator_id(get_id());
     gen_stat->set_active(is_running());
     gen_stat->set_timestamp(model::time_point::clock::now());
+    gen_stat->set_stats({});
     return gen_stat;
 }
 
