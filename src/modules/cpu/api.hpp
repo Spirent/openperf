@@ -12,6 +12,8 @@
 #include "models/generator_result.hpp"
 #include "swagger/v1/model/CpuGenerator.h"
 #include "swagger/v1/model/CpuGeneratorResult.h"
+#include "swagger/v1/model/BulkStartCpuGeneratorsRequest.h"
+#include "swagger/v1/model/BulkStopCpuGeneratorsRequest.h"
 
 namespace openperf::cpu::api {
 
@@ -159,6 +161,8 @@ tl::expected<serialized_msg, int> recv_message(void* socket, int flags = 0);
 reply_error to_error(error_type type, int code = 0, std::string value = "");
 const char* to_string(const api::typed_error&);
 model::cpu_generator from_swagger(const CpuGenerator&);
+request_cpu_generator_bulk_start from_swagger(BulkStartCpuGeneratorsRequest&);
+request_cpu_generator_bulk_stop from_swagger(BulkStopCpuGeneratorsRequest&);
 std::shared_ptr<CpuGenerator> to_swagger(const model::cpu_generator&);
 std::shared_ptr<CpuGeneratorResult> to_swagger(const model::cpu_generator_result&);
 

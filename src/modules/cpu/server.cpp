@@ -124,34 +124,35 @@ server::handle_request(const request_cpu_generator_bulk_stop& request)
 reply_msg server::handle_request(const request_cpu_generator_result_list&)
 {
     auto reply = reply_cpu_generator_results{};
-    /*for (auto blkgenerator : blk_generator_stack->cpu_generators_list()) {
-        reply.results.emplace_back(
-            api::to_api_model(*blkgenerator->get_statistics()));
-    }*/
+    for (auto generator : m_generator_stack->cpu_generators_list()) {
+        auto reply_model = model::cpu_generator_result(*generator->get_statistics());
+        reply.results.emplace_back(std::make_unique<model::cpu_generator_result>(reply_model));
+    }
 
     return reply;
 }
 
-reply_msg server::handle_request(const request_cpu_generator_result& )
+reply_msg server::handle_request(const request_cpu_generator_result& request)
 {
-    auto reply = reply_cpu_generator_results{};
-    /*auto blkgenerator = blk_generator_stack->get_cpu_generator(request.id);
+    auto generator = m_generator_stack->get_cpu_generator(request.id);
 
-    if (!blkgenerator) { return to_error(api::error_type::NOT_FOUND); }
-    reply.results.emplace_back(
-        api::to_api_model(*blkgenerator->get_statistics()));
-    */
+    if (!generator) { return to_error(api::error_type::NOT_FOUND); }
+
+    auto reply = reply_cpu_generator_results{};
+    auto reply_model = model::cpu_generator_result(*generator->get_statistics());
+    reply.results.emplace_back(std::make_unique<model::cpu_generator_result>(reply_model));
+
     return reply;
 }
 
 reply_msg
-server::handle_request(const request_cpu_generator_result_del& )
+server::handle_request(const request_cpu_generator_result_del& request)
 {
-    /*auto blkgenerator = blk_generator_stack->get_cpu_generator(request.id);
+     auto generator = m_generator_stack->get_cpu_generator(request.id);
 
-    if (!blkgenerator) { return reply_ok{}; }
-    blkgenerator->clear_statistics();
-    */
+    if (!generator) { return reply_ok{}; }
+
+    generator->clear_statistics();
     return reply_ok{};
 }
 

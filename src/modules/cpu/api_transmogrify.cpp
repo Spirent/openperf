@@ -177,15 +177,7 @@ serialized_msg serialize_reply(reply_msg&& msg)
                         return (zmq_msg_init(&serialized.data, reply.generators));
                     },
                     [&](reply_cpu_generator_results& reply) {
-                        /*
-                         * ZMQ wants the length in bytes, so we have to scale
-                         * the length of the vector up to match.
-                         */
-                        auto scalar =
-                            sizeof(decltype(reply.results)::value_type);
-                        return (zmq_msg_init(&serialized.data,
-                                             reply.results.data(),
-                                             scalar * reply.results.size()));
+                        return (zmq_msg_init(&serialized.data, reply.results));
                     },
                     [&](const reply_ok&) {
                         return (zmq_msg_init(&serialized.data, 0));
@@ -244,7 +236,7 @@ tl::expected<request_msg, int> deserialize_request(const serialized_msg& msg)
         auto size = zmq_msg_size(&msg.data) / sizeof(string_ptr);
         auto data = zmq_msg_data<std::string**>(&msg.data);
 
-        auto reply = request_cpu_generator_bulk_start{};
+        auto reply = request_cpu_generator_bulk_stop{};
         std::for_each(data, data + size, [&](const auto& ptr) {
             reply.ids.emplace_back(ptr);
         });
@@ -422,6 +414,25 @@ model::cpu_generator from_swagger(const CpuGenerator& p_gen)
     return gen;
 }
 
+request_cpu_generator_bulk_start from_swagger(BulkStartCpuGeneratorsRequest& request)
+{
+    request_cpu_generator_bulk_start result;
+    for (auto & id : request.getIds()) {
+        result.ids.push_back(std::make_unique<std::string>(id));
+    }
+    return result;
+}
+
+request_cpu_generator_bulk_stop from_swagger(BulkStopCpuGeneratorsRequest& request)
+{
+    request_cpu_generator_bulk_stop result;
+    for (auto & id : request.getIds()) {
+        result.ids.push_back(std::make_unique<std::string>(id));
+    }
+    return result;
+}
+
+
 std::shared_ptr<CpuGenerator> to_swagger(const model::cpu_generator& p_gen)
 {
     auto gen = std::make_shared<CpuGenerator>();
@@ -450,6 +461,7 @@ std::shared_ptr<CpuGeneratorResult> to_swagger(const model::cpu_generator_result
 {
     auto gen = std::make_shared<CpuGeneratorResult>();
     gen->setId(p_result.get_id());
+    gen->setGeneratorId(p_result.get_generator_id());
     gen->setActive(p_result.is_active());
     gen->setTimestamp(to_rfc3339(p_result.get_timestamp().time_since_epoch()));
     auto cores_stats = p_result.get_stats().cores;
