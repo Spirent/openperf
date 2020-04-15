@@ -46,7 +46,8 @@ protected:
         double avg_rate = 100000000;
     } _total;
 
-    std::atomic<stat_t> _stat;
+    stat_t _stat_data;
+    std::atomic<stat_t*> _stat;
     std::atomic_bool _stat_clear;
 
 public:
@@ -56,10 +57,10 @@ public:
 
     void spin() override;
     void config(const config_t&) override;
-    void clear_stat() override;
+    inline void clear_stat() override { _stat_clear = true; };
 
+    stat_t stat() const override;
     inline config_t config() const override { return _config; }
-    inline stat_t stat() const override { return _stat.load(); }
 
 protected:
     virtual size_t operation(uint64_t nb_ops, size_t* op_idx) = 0;
