@@ -110,15 +110,15 @@ static swagger::MemoryGeneratorStats to_swagger(const memory_stat& stat)
     return model;
 }
 
-static std::string to_iso8601(uint64_t nanos)
+static std::string to_iso8601(const memory_stat::timestamp_t& ts)
 {
-    std::chrono::nanoseconds ns(nanos);
-    auto t = std::chrono::system_clock::to_time_t(
-        std::chrono::system_clock::time_point(ns));
-    auto sec = std::chrono::duration_cast<std::chrono::seconds>(ns);
+    auto t = std::chrono::system_clock::to_time_t(ts);
+    auto nanos =
+        std::chrono::time_point_cast<std::chrono::nanoseconds>(ts)
+        - std::chrono::time_point_cast<std::chrono::seconds>(ts);
     std::stringstream os;
     os << std::put_time(gmtime(&t), "%FT%T") << "." << std::setfill('0')
-       << std::setw(6) << (ns - sec).count() << "Z";
+       << std::setw(6) << nanos.count() << "Z";
 
     return os.str();
 }
