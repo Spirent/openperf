@@ -29,7 +29,7 @@ public:
 
     struct stat_t
     {
-        uint64_t timestamp;
+        memory_stat::timestamp_t timestamp;
         memory_stat read;
         memory_stat write;
     };
