@@ -29,3 +29,8 @@ from common.matcher.block import be_valid_block_generator
 from common.matcher.block import be_valid_block_generator_result
 from common.matcher.block import be_valid_block_device
 from common.matcher.block import be_valid_block_file
+
+# memory.py
+from common.matcher.memory import be_valid_memory_generator
+from common.matcher.memory import be_valid_memory_generator_result
+from common.matcher.memory import be_valid_memory_info
