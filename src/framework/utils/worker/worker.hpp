@@ -83,7 +83,7 @@ worker<T>::worker()
     , m_stopped(true)
     , m_task(new T)
     , m_zmq_context(zmq_init(0))
-    , m_zmq_socket(op_socket_get_server(m_zmq_context, ZMQ_PAIR, _endpoint))
+    , m_zmq_socket(op_socket_get_server(m_zmq_context, ZMQ_PUSH, _endpoint))
 {}
 
 template <class T>
@@ -162,7 +162,7 @@ template <class T> void worker<T>::config(const typename T::config_t& c)
 template <class T> void worker<T>::loop()
 {
     auto socket = std::unique_ptr<void, op_socket_deleter>(
-        op_socket_get_client(m_zmq_context, ZMQ_PAIR, _endpoint));
+        op_socket_get_client(m_zmq_context, ZMQ_PULL, _endpoint));
 
     worker::message msg{.stop = false, .pause = true, .reconf = false};
     bool paused = true;
@@ -181,7 +181,6 @@ template <class T> void worker<T>::loop()
         }
 
         if (paused && !(msg.pause || msg.stop)) { m_task->resume(); }
-
         if (!paused && (msg.pause || msg.stop)) { m_task->pause(); }
 
         paused = msg.pause;
