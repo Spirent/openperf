@@ -2,6 +2,14 @@
 
 namespace openperf::block::model {
 
+file::file(const file& f)
+    : m_id(f.get_id())
+    , m_size(f.get_size())
+    , m_init_percent_complete(f.get_init_percent_complete())
+    , m_path(f.get_path())
+    , m_state(f.get_state())
+{}
+
 std::string file::get_id() const { return m_id; }
 void file::set_id(std::string_view value) { m_id = value; }
 

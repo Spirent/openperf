@@ -6,14 +6,15 @@
 #include "api/api_route_handler.hpp"
 #include "config/op_config_utils.hpp"
 #include "core/op_core.h"
-#include "block/api.hpp"
-#include "swagger/v1/model/BlockFile.h"
+#include "api.hpp"
 
 namespace opneperf::block {
 
-using namespace Pistache;
-using json = nlohmann::json;
 using namespace swagger::v1::model;
+using namespace Pistache;
+using request_type = Pistache::Rest::Request;
+using response_type = Pistache::Http::ResponseWriter;
+using json = nlohmann::json;
 namespace api = openperf::block::api;
 
 class handler : public openperf::api::route::handler::registrar<handler>
@@ -79,9 +80,29 @@ enum Http::Code to_code(const api::reply_error& error)
     switch (error.info.type) {
     case api::error_type::NOT_FOUND:
         return (Http::Code::Not_Found);
+    case api::error_type::CUSTOM_ERROR:
+        return (Http::Code::Bad_Request);
     default:
         return (Http::Code::Internal_Server_Error);
     }
+}
+
+static std::optional<std::string>
+maybe_get_request_uri(const request_type& request)
+{
+    if (request.headers().has<Http::Header::Host>()) {
+        auto host_header = request.headers().get<Http::Header::Host>();
+
+        /*
+         * XXX: Assuming http here.  I don't know how to get the type
+         * of the connection from Pistache...  But for now, that doesn't
+         * matter.
+         */
+        return ("http://" + host_header->host() + ":"
+                + host_header->port().toString() + request.resource() + "/");
+    }
+
+    return (std::nullopt);
 }
 
 handler::handler(void* context, Rest::Router& router)
@@ -143,9 +164,9 @@ handler::handler(void* context, Rest::Router& router)
         Rest::Routes::bind(&handler::delete_generator_result, this));
 }
 
-api::reply_msg submit_request(void* socket, const api::request_msg& request)
+api::reply_msg submit_request(void* socket, api::request_msg&& request)
 {
-    if (auto error = api::send_message(socket, api::serialize_request(request));
+    if (auto error = api::send_message(socket, api::serialize_request(std::forward<api::request_msg>(request)));
         error != 0) {
         return (to_error(api::error_type::ZMQ_ERROR, error));
     }
@@ -153,7 +174,7 @@ api::reply_msg submit_request(void* socket, const api::request_msg& request)
     if (!reply) {
         return (to_error(api::error_type::ZMQ_ERROR, reply.error()));
     }
-    return (*reply);
+    return (std::move(*reply));
 }
 
 void handler::list_devices(const Rest::Request&, Http::ResponseWriter response)
@@ -168,7 +189,7 @@ void handler::list_devices(const Rest::Request&, Http::ResponseWriter response)
                        std::end(reply->devices),
                        std::back_inserter(devices),
                        [](const auto& device) {
-                           return (api::to_swagger(device)->toJson());
+                           return (api::to_swagger(*device)->toJson());
                        });
         response.send(Http::Code::Ok, devices.dump());
     } else if (auto error = std::get_if<api::reply_error>(&api_reply)) {
@@ -193,7 +214,7 @@ void handler::get_device(const Rest::Request& request,
         response.headers().add<Http::Header::ContentType>(
             MIME(Application, Json));
         response.send(Http::Code::Ok,
-                      api::to_swagger(reply->devices.at(0))->toJson().dump());
+                      api::to_swagger(*reply->devices.at(0))->toJson().dump());
     } else if (auto error = std::get_if<api::reply_error>(&api_reply)) {
         response.send(to_code(*error), api::to_string(error->info));
     } else {
@@ -213,7 +234,7 @@ void handler::list_files(const Rest::Request&, Http::ResponseWriter response)
                        std::end(reply->files),
                        std::back_inserter(files),
                        [](const auto& blkfile) {
-                           return (api::to_swagger(blkfile)->toJson());
+                           return (api::to_swagger(*blkfile)->toJson());
                        });
         response.send(Http::Code::Ok, files.dump());
     } else if (auto error = std::get_if<api::reply_error>(&api_reply)) {
@@ -233,13 +254,16 @@ void handler::create_file(const Rest::Request& request,
 
         auto api_reply = submit_request(
             m_socket.get(),
-            api::request_block_file_add{api::from_swagger(file_model)});
+            api::request_block_file_add{std::make_unique<api::file_t>(api::from_swagger(file_model))});
         if (auto reply = std::get_if<api::reply_block_files>(&api_reply)) {
             assert(!reply->files.empty());
             response.headers().add<Http::Header::ContentType>(
                 MIME(Application, Json));
-            response.send(Http::Code::Ok,
-                          to_swagger(reply->files.front())->toJson().dump());
+            if (auto uri = maybe_get_request_uri(request); uri.has_value()) {
+                response.headers().add<Http::Header::Location>(
+                    *uri + reply->files.front()->get_id());
+            }
+            response.send(Http::Code::Created, api::to_swagger(*reply->files.front())->toJson().dump());
         } else if (auto error = std::get_if<api::reply_error>(&api_reply)) {
             response.send(to_code(*error), api::to_string(error->info));
         } else {
@@ -269,7 +293,7 @@ void handler::get_file(const Rest::Request& request,
         response.headers().add<Http::Header::ContentType>(
             MIME(Application, Json));
         response.send(Http::Code::Ok,
-                      api::to_swagger(reply->files.front())->toJson().dump());
+                      api::to_swagger(*reply->files.front())->toJson().dump());
     } else if (auto error = std::get_if<api::reply_error>(&api_reply)) {
         response.send(to_code(*error), api::to_string(error->info));
     } else {
@@ -305,7 +329,7 @@ void handler::list_generators(const Rest::Request&,
                        std::end(reply->generators),
                        std::back_inserter(generators),
                        [](const auto& blkgenerator) {
-                           return (api::to_swagger(blkgenerator)->toJson());
+                           return (api::to_swagger(*blkgenerator)->toJson());
                        });
         response.send(Http::Code::Ok, generators.dump());
     } else if (auto error = std::get_if<api::reply_error>(&api_reply)) {
@@ -329,14 +353,18 @@ void handler::create_generator(const Rest::Request& request,
         auto api_reply =
             submit_request(m_socket.get(),
                            api::request_block_generator_add{
-                               api::from_swagger(generator_model)});
+                               std::make_unique<api::generator_t>(api::from_swagger(generator_model))});
         if (auto reply = std::get_if<api::reply_block_generators>(&api_reply)) {
             assert(!reply->generators.empty());
             response.headers().add<Http::Header::ContentType>(
                 MIME(Application, Json));
+            if (auto uri = maybe_get_request_uri(request); uri.has_value()) {
+                response.headers().add<Http::Header::Location>(
+                    *uri + reply->generators.front()->get_id());
+            }
             response.send(
-                Http::Code::Ok,
-                to_swagger(reply->generators.front())->toJson().dump());
+                Http::Code::Created,
+                api::to_swagger(*reply->generators.front())->toJson().dump());
         } else if (auto error = std::get_if<api::reply_error>(&api_reply)) {
             response.send(to_code(*error), api::to_string(error->info));
         } else {
@@ -367,7 +395,7 @@ void handler::get_generator(const Rest::Request& request,
             MIME(Application, Json));
         response.send(
             Http::Code::Ok,
-            api::to_swagger(reply->generators.front())->toJson().dump());
+            api::to_swagger(*reply->generators.front())->toJson().dump());
     } else if (auto error = std::get_if<api::reply_error>(&api_reply)) {
         response.send(to_code(*error), api::to_string(error->info));
     } else {
@@ -400,10 +428,16 @@ void handler::start_generator(const Rest::Request& request,
 
     auto api_reply = submit_request(
         m_socket.get(), api::request_block_generator_start{id : id});
-    if (std::get_if<api::reply_ok>(&api_reply)) {
+    if (auto reply =
+            std::get_if<api::reply_block_generator_results>(&api_reply)) {
         response.headers().add<Http::Header::ContentType>(
             MIME(Application, Json));
-        response.send(Http::Code::No_Content);
+        if (auto uri = maybe_get_request_uri(request); uri.has_value()) {
+            response.headers().add<Http::Header::Location>(
+                *uri + reply->results.front()->get_id());
+        }
+        response.send(Http::Code::Created,
+                      api::to_swagger(*reply->results.front())->toJson().dump());
     } else if (auto error = std::get_if<api::reply_error>(&api_reply)) {
         response.send(to_code(*error), api::to_string(error->info));
     } else {
@@ -442,11 +476,18 @@ void handler::bulk_start_generators(const Rest::Request& request,
 
     auto api_reply =
         submit_request(m_socket.get(), api::from_swagger(request_model));
-    if (auto res =
-            std::get_if<api::reply_block_generator_bulk_start>(&api_reply)) {
+    if (auto reply =
+            std::get_if<api::reply_block_generator_results>(&api_reply)) {
         response.headers().add<Http::Header::ContentType>(
             MIME(Application, Json));
-        response.send(Http::Code::Ok, api::to_swagger(*res)->toJson().dump());
+        auto results = json::array();
+        std::transform(std::begin(reply->results),
+                       std::end(reply->results),
+                       std::back_inserter(results),
+                       [](const auto& result) {
+                           return (api::to_swagger(*result)->toJson());
+                       });
+        response.send(Http::Code::Ok, results.dump());
     } else if (auto error = std::get_if<api::reply_error>(&api_reply)) {
         response.send(to_code(*error), api::to_string(error->info));
     } else {
@@ -488,7 +529,7 @@ void handler::list_generator_results(const Rest::Request&,
                        std::end(reply->results),
                        std::back_inserter(results),
                        [](const auto& result) {
-                           return (api::to_swagger(result)->toJson());
+                           return (api::to_swagger(*result)->toJson());
                        });
         response.send(Http::Code::Ok, results.dump());
     } else if (auto error = std::get_if<api::reply_error>(&api_reply)) {
@@ -514,7 +555,7 @@ void handler::get_generator_result(const Rest::Request& request,
         response.headers().add<Http::Header::ContentType>(
             MIME(Application, Json));
         response.send(Http::Code::Ok,
-                      api::to_swagger(reply->results.front())->toJson().dump());
+                      api::to_swagger(*reply->results.front())->toJson().dump());
     } else if (auto error = std::get_if<api::reply_error>(&api_reply)) {
         response.send(to_code(*error), api::to_string(error->info));
     } else {

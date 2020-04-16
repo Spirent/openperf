@@ -28,7 +28,7 @@ public:
     ~block_generator();
     block_generator(const model::block_generator& generator_model,
                     const std::vector<virtual_device_stack*> vdev_stack_list);
-    void start();
+    block_result_ptr start();
     void stop();
 
     void set_config(const model::block_generator_config&);

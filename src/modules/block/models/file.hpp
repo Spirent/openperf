@@ -23,7 +23,7 @@ protected:
 
 public:
     file() = default;
-    file(const file&) = default;
+    file(const file&);
 
     std::string get_id() const;
     void set_id(std::string_view value);

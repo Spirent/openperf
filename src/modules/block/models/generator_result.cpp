@@ -6,6 +6,10 @@ std::string block_generator_result::get_id() const { return m_id; }
 
 void block_generator_result::set_id(std::string_view value) { m_id = value; }
 
+std::string block_generator_result::get_generator_id() const { return m_generator_id; }
+
+void block_generator_result::set_generator_id(std::string_view value) { m_generator_id = value; }
+
 bool block_generator_result::is_active() const { return m_active; }
 
 void block_generator_result::set_active(bool value) { m_active = value; }

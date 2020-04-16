@@ -32,7 +32,7 @@ static off_t get_last_block(size_t file_size, size_t io_size)
 
 inline static task_stat_t generate_default_stat()
 {
-    return {ref_clock::now(), {}, {}};
+    return {core::to_string(core::uuid::random()), ref_clock::now(), {}, {}};
 }
 
 static int submit_aio_op(const operation_config& op_config,
@@ -137,7 +137,7 @@ static int complete_aio_op(struct operation_state* aio_op)
 
 block_task::block_task()
     : m_actual_stat(generate_default_stat())
-    , m_shared_stat(generate_default_stat())
+    , m_shared_stat(m_actual_stat)
     , m_at_stat(&m_shared_stat)
     , m_reset_stat(false)
     , m_read_timestamp(ref_clock::now())
@@ -307,7 +307,7 @@ void block_task::spin()
 {
     if (m_reset_stat.load()) {
         m_reset_stat = false;
-        m_actual_stat = generate_default_stat();
+        m_actual_stat = *m_at_stat;
         m_start_timestamp = ref_clock::now();
     }
 
@@ -365,7 +365,7 @@ void block_task::spin()
 
     if (m_reset_stat.load()) {
         m_reset_stat = false;
-        m_actual_stat = generate_default_stat();
+        m_actual_stat = *m_at_stat;
         m_start_timestamp = ref_clock::now();
     }
 

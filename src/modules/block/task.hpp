@@ -49,6 +49,7 @@ struct task_operation_stat_t
 
 struct task_stat_t
 {
+    std::string id;
     time_point updated; /* Date of the last result update */
     task_operation_stat_t read;
     task_operation_stat_t write;

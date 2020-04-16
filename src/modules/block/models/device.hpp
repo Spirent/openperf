@@ -15,6 +15,9 @@ protected:
     bool m_usable;
 
 public:
+    device() = default;
+    device(const device&) = default;
+
     std::string get_id() const;
     void set_id(std::string_view value);
 

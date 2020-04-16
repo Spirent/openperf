@@ -25,7 +25,10 @@ block_generator::~block_generator()
     m_vdev->vclose();
 }
 
-void block_generator::start() { set_running(true); }
+block_result_ptr block_generator::start() {
+    set_running(true);
+    return get_statistics();
+}
 
 void block_generator::stop() { set_running(false); }
 
@@ -91,7 +94,8 @@ block_result_ptr block_generator::get_statistics() const
     };
 
     auto gen_stat = std::make_shared<model::block_generator_result>();
-    gen_stat->set_id(get_id());
+    gen_stat->set_id(worker_stat.id);
+    gen_stat->set_generator_id(get_id());
     gen_stat->set_active(is_running());
     gen_stat->set_read_stats(generate_gen_stat(worker_stat.read));
     gen_stat->set_write_stats(generate_gen_stat(worker_stat.write));
