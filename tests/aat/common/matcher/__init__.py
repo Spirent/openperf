@@ -13,6 +13,10 @@ from common.matcher.module import be_valid_module
 from common.matcher.packet_analyzer import be_valid_packet_analyzer
 from common.matcher.packet_analyzer import be_valid_packet_analyzer_result
 
+# packet_capture.py
+from common.matcher.packet_capture import be_valid_packet_capture
+from common.matcher.packet_capture import be_valid_packet_capture_result
+
 # port.py
 from common.matcher.port import be_valid_port
 

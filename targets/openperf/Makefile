@@ -15,7 +15,7 @@ all: $(OP_TARGET)
 SOURCES := main.c
 OBJECTS := $(call op_generate_objects,$(SOURCES),$(BUILD_DIR))
 
-BUILD_DEPS := api config_file framework packetio packet_analyzer socket_server timesync block memory
+BUILD_DEPS := api config_file framework packetio packet_analyzer packet_capture socket_server timesync block memory
 OP_PACKETIO_DRIVER ?= dpdk
 
 # Pull in dependencies
