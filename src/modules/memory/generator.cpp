@@ -48,7 +48,7 @@ void generator::stop()
     if (_stopped) return;
 
     for_each_worker([](worker_ptr& w) { w->stop(); });
-    _stopped = false;
+    _stopped = true;
 }
 
 void generator::restart()
@@ -73,7 +73,7 @@ void generator::pause()
     _paused = true;
 }
 
-void generator::clear_stat()
+void generator::reset()
 {
     for_each_worker([](worker_ptr& w) {
         auto wtm = reinterpret_cast<worker<task_memory>*>(w.get());
@@ -83,22 +83,23 @@ void generator::clear_stat()
 
 generator::stat_t generator::stat() const
 {
-    generator::stat_t stat;
+    generator::stat_t result_stat;
 
-    auto& rstat = stat.read;
+    auto& rstat = result_stat.read;
     for (auto& ptr : _read_workers) {
         auto w = reinterpret_cast<worker<task_memory>*>(ptr.get());
         rstat += w->stat();
     }
 
-    auto& wstat = stat.write;
+    auto& wstat = result_stat.write;
     for (auto& ptr : _write_workers) {
         auto w = reinterpret_cast<worker<task_memory>*>(ptr.get());
         wstat += w->stat();
     }
 
-    stat.timestamp = std::max(rstat.timestamp, wstat.timestamp);
-    return stat;
+    result_stat.timestamp = std::max(rstat.timestamp, wstat.timestamp);
+    result_stat.active = is_running();
+    return result_stat;
 }
 
 generator::config_t generator::config() const { return _config; }
