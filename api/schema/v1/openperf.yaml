@@ -147,6 +147,45 @@ paths:
     $ref: ./modules/packet/analyzer.yaml#/paths/~1rx-flows~1{id}
 
   ###
+  # Packet Capture Paths
+  ###
+  /packet/captures:
+    $ref: ./modules/packet/capture.yaml#/paths/~1captures
+
+  /packet/captures/{id}:
+    $ref: ./modules/packet/capture.yaml#/paths/~1captures~1{id}
+
+  /packet/captures/{id}/start:
+    $ref: ./modules/packet/capture.yaml#/paths/~1captures~1{id}~1start
+
+  /packet/captures/{id}/stop:
+    $ref: ./modules/packet/capture.yaml#/paths/~1captures~1{id}~1stop
+
+  /packet/captures/x/bulk-create:
+    $ref: ./modules/packet/capture.yaml#/paths/~1captures~1x~1bulk-create
+
+  /packet/captures/x/bulk-delete:
+    $ref: ./modules/packet/capture.yaml#/paths/~1captures~1x~1bulk-delete
+
+  /packet/captures/x/bulk-start:
+    $ref: ./modules/packet/capture.yaml#/paths/~1captures~1x~1bulk-start
+
+  /packet/captures/x/bulk-stop:
+    $ref: ./modules/packet/capture.yaml#/paths/~1captures~1x~1bulk-stop
+
+  /packet/capture-results:
+    $ref: ./modules/packet/capture.yaml#/paths/~1capture-results
+
+  /packet/capture-results/{id}:
+    $ref: ./modules/packet/capture.yaml#/paths/~1capture-results~1{id}
+
+  /packet/capture-results/{id}/pcap:
+    $ref: ./modules/packet/capture.yaml#/paths/~1capture-results~1{id}~1pcap
+
+  /packet/capture-results/{id}/live:
+    $ref: ./modules/packet/capture.yaml#/paths/~1capture-results~1{id}~1live
+
+  ###
   # Timesync paths
   ###
   /time-counters:

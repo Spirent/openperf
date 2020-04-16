@@ -1,0 +1,500 @@
+parameters:
+  id:
+    name: id
+    in: path
+    description: Unique resource identifier
+    type: string
+    format: string
+    required: true
+
+paths:
+  /captures:
+    get:
+      operationId: ListCaptures
+      tags:
+        - PacketCaptures
+      summary: List packet capture
+      description: |
+        The `captures` endpoint returns all configured packet captures.
+      parameters:
+        - name: source_id
+          in: query
+          description: Filter by source id
+          required: false
+          type: string
+      responses:
+        200:
+          description: Success
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/PacketCapture"
+    post:
+      operationId: CreateCapture
+      tags:
+        - PacketCaptures
+      summary: Create a packet capture
+      description: Create a new packet capture.
+      parameters:
+        - name: capture
+          in: body
+          description: New packet capture
+          required: true
+          schema:
+            $ref: "#/definitions/PacketCapture"
+      responses:
+        201:
+          description: Created
+          headers:
+            Location:
+              description: URI of created capture
+              type: string
+          schema:
+            $ref: "#/definitions/PacketCapture"
+    delete:
+      operationId: DeleteCaptures
+      tags:
+        - PacketCaptures
+      summary: Delete all packet captures
+      description: |
+        Delete all inactive packet captures.
+        Also deletes captured packets and results associated with the capture.  Idempotent.
+      responses:
+        204:
+          description: No Content
+
+  /captures/{id}:
+    get:
+      operationId: GetCapture
+      tags:
+        - PacketCaptures
+      summary: Get a packet capture
+      description: Return a packet capture by id.
+      parameters:
+        - $ref: "#/parameters/id"
+      responses:
+        200:
+          description: Success
+          schema:
+            $ref: "#/definitions/PacketCapture"
+    delete:
+      operationId: DeleteCapture
+      tags:
+        - PacketCaptures
+      summary: Delete a packet capture
+      description: |
+        Delete a stopped packet capture by id.
+        Also deletes results and captured packets associated with the capture. Idempotent.
+      parameters:
+        - $ref: "#/parameters/id"
+      responses:
+        204:
+          description: No Content
+
+  /captures/{id}/start:
+    post:
+      operationId: StartCapture
+      tags:
+        - PacketCaptures
+      summary: Start packet capture.
+      description: |
+        Used to start a non-running capture. Creates a new capture.
+        result on success.
+      parameters:
+        - $ref: "#/parameters/id"
+      responses:
+        201:
+          description: Created
+          headers:
+            Location:
+              description: URI to created capture result object
+              type: string
+          schema:
+            $ref: "#/definitions/PacketCaptureResult"
+
+  /captures/{id}/stop:
+    post:
+      operationId: StopCapture
+      tags:
+        - PacketCaptures
+      summary: Stop packet capture.
+      description: Use to halt a running capture. Idempotent.
+      parameters:
+        - $ref: "#/parameters/id"
+      responses:
+        204:
+          description: No Content
+
+  /captures/x/bulk-create:
+    post:
+      operationId: BulkCreateCaptures
+      tags:
+        - PacketCaptures
+      summary: Bulk create packet captures
+      description: |
+        Create multiple packet captures. Requests are processed in an
+        all-or-nothing manner, i.e. a single capture creation failure
+        causes all capture creations for this request to fail.
+      parameters:
+        - name: create
+          in: body
+          description: Bulk creation
+          required: true
+          schema:
+            type: object
+            title: BulkCreateCapturesRequest
+            description: Parameters for the bulk create operation
+            properties:
+              items:
+                type: array
+                description: List of packet captures
+                items:
+                  $ref: "#/definitions/PacketCapture"
+                minItems: 1
+            required:
+              - items
+      responses:
+        200:
+          description: Success
+          schema:
+            type: object
+            title: BulkCreateCapturesResponse
+            properties:
+              items:
+                type: array
+                description: List of packet captures
+                items:
+                  $ref: "#/definitions/PacketCapture"
+                minItems: 1
+            required:
+              - items
+
+  /captures/x/bulk-delete:
+    post:
+      operationId: BulkDeleteCaptures
+      tags:
+        - PacketCaptures
+      summary: Bulk delete packet captures
+      description: |
+        Delete multiple packet captures in a best-effort manner. Captures
+        can only be deleted when inactive. Active or Non-existant capture ids
+        do not cause errors.  Also deletes results and captured packets
+        associated with the capture. Idempotent.
+      parameters:
+        - name: delete
+          in: body
+          description: Bulk delete
+          required: true
+          schema:
+            type: object
+            title: BulkDeleteCapturesRequest
+            description: Parameters for the bulk delete operation
+            properties:
+              ids:
+                type: array
+                description: List of packet captures
+                items:
+                  type: string
+                minItems: 1
+            required:
+              - ids
+      responses:
+        204:
+          description: No Content
+
+  /captures/x/bulk-start:
+    post:
+      operationId: BulkStartCaptures
+      tags:
+        - PacketCaptures
+      summary: Bulk start packet captures
+      description: Start multiple packet captures simultaneously
+      parameters:
+        - name: start
+          in: body
+          description: Bulk start
+          required: true
+          schema:
+            type: object
+            title: BulkStartCapturesRequest
+            description: Parameters for the bulk start operation
+            properties:
+              ids:
+                type: array
+                description: List of capture identifiers
+                items:
+                  type: string
+                minItems: 1
+            required:
+              - ids
+      responses:
+        200:
+          description: Success
+          schema:
+            type: object
+            title: BulkStartCapturesResponse
+            properties:
+              items:
+                type: array
+                description: List of capture results
+                items:
+                  $ref: "#/definitions/PacketCaptureResult"
+                minItems: 1
+            required:
+              - items
+
+  /captures/x/bulk-stop:
+    post:
+      operationId: BulkStopCaptures
+      tags:
+        - PacketCaptures
+      summary: Bulk stop packet captures
+      description: Stop multiple packet captures simultaneously
+      parameters:
+        - name: stop
+          in: body
+          description: Bulk stop
+          required: true
+          schema:
+            type: object
+            title: BulkStopCapturesRequest
+            description: Parameters for the bulk stop operation
+            properties:
+              ids:
+                type: array
+                description: List of capture identifiers
+                items:
+                  type: string
+                minItems: 1
+            required:
+              - ids
+      responses:
+        204:
+          description: No Content
+
+  /capture-results:
+    get:
+      operationId: ListCaptureResults
+      tags:
+        - PacketCaptures
+      summary: List capture results
+      description: |
+        The `capture-results` endpoint returns all capture results created
+        by capture instances.
+      parameters:
+        - name: capture_id
+          in: query
+          description: Filter by capture id
+          required: false
+          type: string
+        - name: source_id
+          in : query
+          description: Filter by receive port or interface id
+          required: false
+          type: string
+      responses:
+        200:
+          description: Success
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/PacketCaptureResult"
+    delete:
+      operationId: DeleteCaptureResults
+      tags:
+        - PacketCaptures
+      summary: Delete all capture results
+      description: Delete all inactive packet capture results.
+        Also deletes captured packets associated with the results.
+      responses:
+        204:
+          description: No Content
+
+  /capture-results/{id}:
+    get:
+      operationId: GetCaptureResult
+      tags:
+        - PacketCaptures
+      summary: Get a packet capture result
+      description: Returns results from a packet capture by result id.
+      parameters:
+        - $ref: "#/parameters/id"
+      responses:
+        200:
+          description: Success
+          schema:
+            $ref: "#/definitions/PacketCaptureResult"
+    delete:
+      operationId: DeleteCaptureResult
+      tags:
+        - PacketCaptures
+      summary: Delete a packet capture result
+      description: |
+        Delete an inactive packet capture result.
+        Also deletes captured packets associated with the results.
+      parameters:
+        - $ref: "#/parameters/id"
+      responses:
+        204:
+          description: No Content
+
+  /capture-results/{id}/pcap:
+    get:
+      operationId: GetCapturePcap
+      tags:
+        - PacketCaptures
+      summary: Get a packet data as a pcap file
+      description: Returns a pcap file of the captured data.
+      parameters:
+        - $ref: "#/parameters/id"
+      produces:
+        - application/x-pcapng
+      responses:
+        200:
+          description: Success
+          schema:
+            type: file
+            format: binary
+
+  /capture-results/{id}/live:
+    get:
+      operationId: GetCaptureLive
+      tags:
+        - PacketCaptures
+      summary: Get live capture packet data as a pcap file
+      description: Returns a pcap file of the captured data.
+      parameters:
+        - $ref: "#/parameters/id"
+      produces:
+        - application/x-pcapng
+      responses:
+        200:
+          description: Success
+          schema:
+            type: file
+            format: binary
+
+
+definitions:
+  PacketCapture:
+    type: object
+    description: |
+      Packet capture; captures packets.
+    properties:
+      id:
+        type: string
+        description: Unique capture identifier
+      source_id:
+        type: string
+        description: |
+          Specifies the unique source of packets for this capture. This
+          id may refer to either a port or an interface.
+      active:
+        type: boolean
+        description: |
+          Indicates whether this object is currently capturing packets or not.
+      config:
+        $ref: "#/definitions/PacketCaptureConfig"
+    required:
+      - id
+      - source_id
+      - active
+      - config
+
+  PacketCaptureConfig:
+    type: object
+    description: |
+      Packet capture configuration; the configuration controls the capture
+      behavior.
+    properties:
+      mode:
+        type: string
+        description: Capture mode
+        enum:
+          - buffer
+          - live
+        default: buffer
+      buffer_wrap:
+        type: boolean
+        description: |
+          Indicates whether capture wraps when it reaches the end of the
+          buffer.  When buffer wrap is enabled capture will continue until
+          capture is stopped with the stop command or a stop trigger.
+        default: false
+      buffer_size:
+        type: integer
+        description: Capture buffer size in bytes.
+        format: int64
+        minimum: 4096
+        default: 16777216
+      packet_size:
+        type: integer
+        description: Maximum length of packet to capture.
+          If the packet is larger than the packet size, the packet is
+          truncated. 
+        format: int32
+        minimum: 1
+      filter:
+        type: string
+        description: |
+          Berkley Packet Filter (BPF) rules that matches packets to
+          capture.  An empty rule, the default, matches all frames.
+      start_trigger:
+        type: string
+        description: |
+          Berkley Packet Filter (BPF) rules used to trigger the start
+          of packet capture.  When a trigger condition is specified,
+          the capture start command puts capture into an armed state
+          and capture will only begin when the trigger condition occurs.
+      stop_trigger:
+        type: string
+        description: |
+          Berkley Packet Filter (BPF) rules used to trigger the stop
+          of packet capture.
+      duration:
+        type: integer
+        description: |
+          Maximum time duration for the capture in msec.
+        format: int64
+        minimum: 1
+    required:
+      - mode
+      - buffer_size
+
+  PacketCaptureResult:
+    type: object
+    description: Packet capture results
+    properties:
+      id:
+        type: string
+        description: Unique capture result identifier
+      capture_id:
+        type: string
+        description: Unique capture identifier that generated this result
+      active:
+        type: boolean
+        description: |
+          Indicates whether this object is currently capturing packets or not.
+      state:
+        type: string
+        description: Capture state
+        enum:
+          - stopped
+          - armed
+          - running
+      packets:
+        type: integer
+        description: Number of packets captured
+        format: int64
+        minimum: 0
+      bytes:
+        type: integer
+        description: Number of bytes captured
+        format: int64
+        minimum: 0
+    required:
+      - id
+      - capture_id
+      - state
+      - packets
+      - bytes
