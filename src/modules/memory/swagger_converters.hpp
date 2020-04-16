@@ -113,9 +113,8 @@ static swagger::MemoryGeneratorStats to_swagger(const memory_stat& stat)
 static std::string to_iso8601(const memory_stat::timestamp_t& ts)
 {
     auto t = std::chrono::system_clock::to_time_t(ts);
-    auto nanos =
-        std::chrono::time_point_cast<std::chrono::nanoseconds>(ts)
-        - std::chrono::time_point_cast<std::chrono::seconds>(ts);
+    auto nanos = std::chrono::time_point_cast<std::chrono::nanoseconds>(ts)
+                 - std::chrono::time_point_cast<std::chrono::seconds>(ts);
     std::stringstream os;
     os << std::put_time(gmtime(&t), "%FT%T") << "." << std::setfill('0')
        << std::setw(6) << nanos.count() << "Z";
@@ -128,6 +127,7 @@ to_swagger(const reply::statistic::item::item_data& i)
 {
     swagger::MemoryGeneratorResult model;
     model.setId(i.id);
+    model.setActive(i.stat.active);
     model.setTimestamp(to_iso8601(i.stat.timestamp));
     model.setRead(std::make_shared<swagger::MemoryGeneratorStats>(
         to_swagger(i.stat.read)));

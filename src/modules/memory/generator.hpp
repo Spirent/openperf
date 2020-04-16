@@ -29,6 +29,7 @@ public:
 
     struct stat_t
     {
+        bool active;
         memory_stat::timestamp_t timestamp;
         memory_stat read;
         memory_stat write;
@@ -66,7 +67,7 @@ public:
     void start();
     void stop();
     void restart();
-    void clear_stat();
+    void reset();
 
     void config(const generator::config_t&);
 
