@@ -21,9 +21,9 @@
 
 #include "ModelBase.h"
 
-#include "InterfaceProtocolConfig_ipv6_static.h"
-#include "InterfaceProtocolConfig_ipv6_dhcp6.h"
 #include <string>
+#include "InterfaceProtocolConfig_ipv6_dhcp6.h"
+#include "InterfaceProtocolConfig_ipv6_static.h"
 
 namespace swagger {
 namespace v1 {
