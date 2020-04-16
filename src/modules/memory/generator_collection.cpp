@@ -1,4 +1,4 @@
-#include "memory/generator_generators.hpp"
+#include "memory/generator_collection.hpp"
 #include "memory/generator.hpp"
 #include "core/op_core.h"
 #include "config/op_config_utils.hpp"
@@ -87,7 +87,7 @@ void generator_collection::clear()
 
 void generator_collection::start()
 {
-    for (auto& entry : _collection) {
+    for (auto& entry : _generators) {
         auto& g7r = entry.second;
         if (g7r.is_stopped()) {
             auto stat_id = core::to_string(core::uuid::random());
@@ -111,7 +111,7 @@ void generator_collection::start(const std::string& id)
 
 void generator_collection::stop()
 {
-    for (auto& entry : _collection) {
+    for (auto& entry : _generators) {
         auto& g7r = entry.second;
         if (!g7r.is_stopped()) {
             g7r.stop();
@@ -135,7 +135,7 @@ void generator_collection::stop(const std::string& id)
 
 void generator_collection::pause()
 {
-    for (auto& entry : _collection) { entry.second.pause(); }
+    for (auto& entry : _generators) { entry.second.pause(); }
 }
 
 void generator_collection::pause(const std::string& id)
@@ -145,7 +145,7 @@ void generator_collection::pause(const std::string& id)
 
 void generator_collection::resume()
 {
-    for (auto& entry : _collection) { entry.second.resume(); }
+    for (auto& entry : _generators) { entry.second.resume(); }
 }
 
 void generator_collection::resume(const std::string& id)
