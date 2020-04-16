@@ -116,6 +116,13 @@ static std::string to_string(const request_msg& request)
                            },
                            [](const request_delete_capture_result& request) {
                                return ("delete capture result " + request.id);
+                           },
+                           [](const request_create_capture_reader&) {
+                               return (std::string("create capture reader"));
+                           },
+                           [](const request_delete_capture_reader& request) {
+                               return (std::string("delete capture reader "
+                                                   + request.id));
                            }),
                        request));
 }
@@ -280,6 +287,10 @@ reply_msg server::handle_request(const request_delete_captures&)
     /* Remove sinks from our workers */
     std::for_each(cursor, std::end(m_sinks), [&](auto& item) {
         remove_sink(m_client, item);
+        // Remove all results for this sink
+        erase_if(m_results, [&](const auto& pair) {
+            return (&pair.second->parent == &item.template get<sink>());
+        });
     });
 
     /* And erase from existence */
@@ -312,8 +323,13 @@ reply_msg server::handle_request(const request_delete_capture& request)
                               sink_id_comparator{});
 
     if (result != std::end(m_sinks) && !result->template get<sink>().active()) {
-        /* Delete this capture */
+        // Remove sink from worker
         remove_sink(m_client, *result);
+        // Remove all results for this sink
+        erase_if(m_results, [&](const auto& pair) {
+            return (&pair.second->parent == &result->template get<sink>());
+        });
+        // Delete this capture
         m_sinks.erase(std::remove(result, std::next(result), *result),
                       std::end(m_sinks));
     }
@@ -341,6 +357,10 @@ reply_msg server::handle_request(const request_start_capture& request)
 
     auto& id = item.first->first;
     auto& result = item.first->second;
+
+    // Create capture buffer and associate with results object
+    result->buffer = std::make_shared<capture_buffer_file>(
+        openperf::core::to_string(id) + ".pcapng", false);
 
     impl.start(result.get());
 
@@ -430,8 +450,42 @@ reply_msg server::handle_request(const request_get_capture_result& request)
 reply_msg server::handle_request(const request_delete_capture_result& request)
 {
     if (auto id = to_uuid(request.id); id.has_value()) {
-        if (auto result = m_results.find(*id); result != std::end(m_results)) {
-            if (!result->second->parent.active()) { m_results.erase(*id); }
+        if (auto item = m_results.find(*id); item != std::end(m_results)) {
+            auto& result = item->second;
+            if (!result->parent.active()) { m_results.erase(*id); }
+        }
+    }
+
+    return (reply_ok{});
+}
+
+reply_msg server::handle_request(const request_create_capture_reader& request)
+{
+    auto id = to_uuid(request.id);
+    if (!id) { return (to_error(error_type::NOT_FOUND)); }
+
+    auto item = m_results.find(*id);
+    if (item == std::end(m_results)) {
+        return (to_error(error_type::NOT_FOUND));
+    }
+    auto& result = item->second;
+
+    if (result->reader) {
+        // Only support 1 reader per capture results
+        return (to_error(error_type::POSIX, EEXIST));
+    }
+
+    result->reader = std::make_shared<reader>(result->buffer);
+
+    return reply_capture_reader{result->reader};
+}
+
+reply_msg server::handle_request(const request_delete_capture_reader& request)
+{
+    if (auto id = to_uuid(request.id); id.has_value()) {
+        if (auto item = m_results.find(*id); item != std::end(m_results)) {
+            auto& result = item->second;
+            result->reader.reset();
         }
     }
 

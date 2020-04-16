@@ -4,3 +4,4 @@ expects
 mamba
 pyyaml
 validators
+scapy

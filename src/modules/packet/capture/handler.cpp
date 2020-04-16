@@ -1,9 +1,11 @@
 #include <zmq.h>
+#include <sys/stat.h>
 
 #include "api/api_route_handler.hpp"
 #include "config/op_config_utils.hpp"
 #include "core/op_core.h"
 #include "packet/capture/api.hpp"
+#include "packet/capture/pcap_handler.hpp"
 
 #include "swagger/v1/model/PacketCapture.h"
 #include "swagger/v1/model/PacketCaptureResult.h"
@@ -46,6 +48,10 @@ public:
                             response_type response);
     void delete_capture_result(const request_type& request,
                                response_type response);
+    void get_capture_result_pcap(const request_type& request,
+                                 response_type response);
+    void get_capture_result_live(const request_type& request,
+                                 response_type response);
 
 private:
     std::unique_ptr<void, op_socket_deleter> m_socket;
@@ -97,6 +103,13 @@ handler::handler(void* context, Pistache::Rest::Router& router)
     Delete(router,
            "/packet/capture-results/:id",
            bind(&handler::delete_capture_result, this));
+
+    Get(router,
+        "/packet/capture-results/:id/pcap",
+        bind(&handler::get_capture_result_pcap, this));
+    Get(router,
+        "/packet/capture-results/:id/live",
+        bind(&handler::get_capture_result_live, this));
 }
 
 using namespace Pistache;
@@ -476,6 +489,44 @@ void handler::delete_capture_result(const request_type& request,
 
     if (auto reply = std::get_if<reply_ok>(&api_reply)) {
         response.send(Http::Code::No_Content);
+    } else {
+        handle_reply_error(api_reply, std::move(response));
+    }
+}
+
+void handler::get_capture_result_pcap(const request_type& request,
+                                      response_type response)
+{
+    auto id = request.param(":id").as<std::string>();
+    if (auto res = config::op_config_validate_id_string(id); !res) {
+        response.send(Http::Code::Not_Found, res.error());
+        return;
+    }
+
+    auto api_reply =
+        submit_request(m_socket.get(), request_create_capture_reader{id});
+
+    if (auto reply = std::get_if<reply_capture_reader>(&api_reply)) {
+        server_capture_pcap(response, reply->reader);
+    } else {
+        handle_reply_error(api_reply, std::move(response));
+    }
+}
+
+void handler::get_capture_result_live(const request_type& request,
+                                      response_type response)
+{
+    auto id = request.param(":id").as<std::string>();
+    if (auto res = config::op_config_validate_id_string(id); !res) {
+        response.send(Http::Code::Not_Found, res.error());
+        return;
+    }
+
+    auto api_reply =
+        submit_request(m_socket.get(), request_create_capture_reader{id});
+
+    if (auto reply = std::get_if<reply_capture_reader>(&api_reply)) {
+        server_capture_pcap(response, reply->reader);
     } else {
         handle_reply_error(api_reply, std::move(response));
     }

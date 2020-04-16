@@ -25,7 +25,7 @@ OP_CPPFLAGS := -Wall -Werror -Wextra -Wpedantic -Wshadow -Wno-gnu \
 OP_CXXFLAGS := -Wno-c11-extensions -Wno-nested-anon-types -Wno-c99-extensions $(OP_CXXSTD)
 OP_DEFINES :=
 OP_LDFLAGS :=
-OP_LDLIBS :=
+OP_LDLIBS := -lstdc++fs
 OP_LDOPTS := -fuse-ld=lld
 OP_INC_DIRS := $(OP_ROOT)/src
 OP_LIB_DIRS :=

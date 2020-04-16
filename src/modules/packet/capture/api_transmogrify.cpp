@@ -32,6 +32,25 @@ static auto zmq_msg_init(zmq_msg_t* msg, std::unique_ptr<T> value)
 }
 
 template <typename T>
+static auto zmq_msg_init(zmq_msg_t* msg, std::shared_ptr<T> value)
+{
+    using shared_ptr_type = std::shared_ptr<T>;
+
+    // Allocate a shared_ptr to hold extra reference when passed over channel
+    auto holder = std::make_unique<shared_ptr_type>(value);
+
+    if (auto error = zmq_msg_init_size(msg, sizeof(shared_ptr_type*));
+        error != 0) {
+        return (error);
+    }
+    value.reset();
+
+    auto ptr = reinterpret_cast<shared_ptr_type**>(zmq_msg_data(msg));
+    *ptr = holder.release();
+    return (0);
+}
+
+template <typename T>
 static auto zmq_msg_init(zmq_msg_t* msg, const T* buffer, size_t length)
 {
     if (auto error = zmq_msg_init_size(msg, length); error != 0) {
@@ -160,6 +179,16 @@ serialized_msg serialize_request(request_msg&& msg)
                                return (zmq_msg_init(&serialized.data,
                                                     request.id.data(),
                                                     request.id.length()));
+                           },
+                           [&](const request_create_capture_reader& request) {
+                               return (zmq_msg_init(&serialized.data,
+                                                    request.id.data(),
+                                                    request.id.length()));
+                           },
+                           [&](const request_delete_capture_reader& request) {
+                               return (zmq_msg_init(&serialized.data,
+                                                    request.id.data(),
+                                                    request.id.length()));
                            }),
                        msg));
     if (error) { throw std::bad_alloc(); }
@@ -180,6 +209,9 @@ serialized_msg serialize_reply(reply_msg&& msg)
                     [&](reply_capture_results& reply) {
                         return (zmq_msg_init(&serialized.data,
                                              reply.capture_results));
+                    },
+                    [&](reply_capture_reader& reply) {
+                        return (zmq_msg_init(&serialized.data, reply.reader));
                     },
                     [&](const reply_ok&) {
                         return (zmq_msg_init(&serialized.data, 0));
@@ -247,6 +279,16 @@ tl::expected<request_msg, int> deserialize_request(const serialized_msg& msg)
                               zmq_msg_size(&msg.data));
         return (request_delete_capture_result{std::move(id)});
     }
+    case utils::variant_index<request_msg, request_create_capture_reader>(): {
+        auto id = std::string(zmq_msg_data<char*>(&msg.data),
+                              zmq_msg_size(&msg.data));
+        return (request_create_capture_reader{std::move(id)});
+    }
+    case utils::variant_index<request_msg, request_delete_capture_reader>(): {
+        auto id = std::string(zmq_msg_data<char*>(&msg.data),
+                              zmq_msg_size(&msg.data));
+        return (request_delete_capture_reader{std::move(id)});
+    }
     }
 
     return (tl::make_unexpected(EINVAL));
@@ -276,6 +318,13 @@ tl::expected<reply_msg, int> deserialize_reply(const serialized_msg& msg)
             reply.capture_results.emplace_back(ptr);
         });
         return (reply);
+    }
+    case utils::variant_index<reply_msg, reply_capture_reader>(): {
+        auto holder_ptr = zmq_msg_data<std::shared_ptr<reader>**>(&msg.data);
+        assert(holder_ptr);
+        std::unique_ptr<std::shared_ptr<reader>> holder(*holder_ptr);
+        auto reply = reply_capture_reader{*holder};
+        return reply;
     }
     case utils::variant_index<reply_msg, reply_ok>():
         return (reply_ok{});

@@ -6,8 +6,11 @@ CAP_DEPENDS += immer packetio spirent_pga timesync
 
 CAP_SOURCES += \
         api_transmogrify.cpp \
+        capture_buffer.cpp \
         handler.cpp \
         init.cpp \
+        pcap_handler.cpp \
+        pistache_utils.cpp \
     	server.cpp \
     	sink.cpp \
         sink_transmogrify.cpp \
@@ -28,3 +31,9 @@ $(CAP_OBJ_DIR)/init.o: OP_CPPFLAGS += \
 	-DBUILD_COMMIT="\"$(GIT_COMMIT)\"" \
 	-DBUILD_NUMBER="\"$(BUILD_NUMBER)\"" \
 	-DBUILD_TIMESTAMP="\"$(TIMESTAMP)\""
+
+CAP_TEST_DEPENDS += digestible expected framework
+
+CAP_TEST_SOURCES += \
+        capture_buffer.cpp
+

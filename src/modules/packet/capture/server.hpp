@@ -55,6 +55,9 @@ public:
     reply_msg handle_request(const request_delete_capture_results&);
     reply_msg handle_request(const request_get_capture_result&);
     reply_msg handle_request(const request_delete_capture_result&);
+
+    reply_msg handle_request(const request_create_capture_reader&);
+    reply_msg handle_request(const request_delete_capture_reader&);
 };
 
 } // namespace openperf::packet::capture::api
