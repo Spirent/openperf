@@ -10,7 +10,8 @@ server::server(void* context, openperf::core::event_loop& loop)
 {
     // Setup event loop
     struct op_event_callbacks callbacks = {
-        .on_read = [](const op_event_data* data, void* arg) -> int {
+        .on_read = [](const op_event_data* data, void* arg) -> int
+        {
             auto s = reinterpret_cast<server*>(arg);
             return s->handle_rpc_request(data);
         }};
@@ -45,17 +46,16 @@ api_reply server::handle_request(const request::generator::list&)
     reply::generator::list list{
         std::make_unique<std::vector<reply::generator::item::item_data>>()};
     auto ids = generator_stack->ids();
-    std::transform(
-        ids.begin(),
-        ids.end(),
-        std::back_inserter(*list.data),
-        [&](auto id) -> auto {
-            const auto& gnr = generator_stack->generator(id);
-            return reply::generator::item::item_data{.id = id,
-                                                     .is_running =
-                                                         gnr.is_running(),
-                                                     .config = gnr.config()};
-        });
+    std::transform(ids.begin(),
+                   ids.end(),
+                   std::back_inserter(*list.data),
+                   [&](auto id) -> auto {
+                       const auto& gnr = generator_stack->generator(id);
+                       return reply::generator::item::item_data{
+                           .id = id,
+                           .is_running = gnr.is_running(),
+                           .config = gnr.config()};
+                   });
 
     return list;
 }
@@ -63,7 +63,7 @@ api_reply server::handle_request(const request::generator::list&)
 api_reply server::handle_request(const request::generator::get& req)
 {
     if (generator_stack->contains(req.id)) {
-        auto& gnr = generator_stack->generator(req.id);
+        const auto& gnr = generator_stack->generator(req.id);
 
         reply::generator::item::item_data data{
             req.id, .is_running = gnr.is_running(), .config = gnr.config()};
@@ -90,13 +90,9 @@ api_reply server::handle_request(const request::generator::create& req)
 {
     try {
         auto id = generator_stack->create(req.data->id, req.data->config);
-        auto& gnr = generator_stack->generator(id);
+        if (req.data->is_running) { generator_stack->start(id); }
 
-        if (req.data->is_running) {
-            gnr.resume();
-            gnr.start();
-        }
-
+        const auto& gnr = generator_stack->generator(id);
         reply::generator::item::item_data data{
             .id = id, .is_running = gnr.is_running(), .config = gnr.config()};
         auto reply = reply::generator::item{
@@ -113,7 +109,7 @@ api_reply server::handle_request(const request::generator::create& req)
 api_reply server::handle_request(const request::generator::stop& req)
 {
     if (generator_stack->contains(req.id)) {
-        generator_stack->generator(req.id).pause();
+        generator_stack->stop(req.id);
         return reply::ok{};
     }
 
@@ -123,9 +119,7 @@ api_reply server::handle_request(const request::generator::stop& req)
 api_reply server::handle_request(const request::generator::start& req)
 {
     if (generator_stack->contains(req.id)) {
-        auto& generator = generator_stack->generator(req.id);
-        generator.start();
-        generator.resume();
+        generator_stack->start(req.id);
         return reply::ok{};
     }
 
@@ -141,14 +135,13 @@ api_reply server::handle_request(const request::generator::bulk::start& req)
 
     std::forward_list<std::string> not_runned_before;
     for (auto id : *req.data) {
-        auto& generator = generator_stack->generator(id);
-        if (!generator.is_running()) not_runned_before.emplace_front(id);
+        const auto& gnr = generator_stack->generator(id);
+        if (!gnr.is_running()) not_runned_before.emplace_front(id);
 
-        generator.start();
-        generator.resume();
-        if (!generator.is_running()) {
+        generator_stack->start(id);
+        if (!gnr.is_running()) {
             for (auto& rollback_id : not_runned_before) {
-                generator_stack->generator(rollback_id).pause();
+                generator_stack->stop(rollback_id);
             }
             return reply::error{};
         }
@@ -169,10 +162,10 @@ api_reply server::handle_request(const request::generator::bulk::stop& req)
         auto& generator = generator_stack->generator(id);
         if (generator.is_running()) runned_before.emplace_front(id);
 
-        generator.pause();
+        generator_stack->stop(id);
         if (generator.is_running()) {
             for (auto& rollback_id : runned_before) {
-                generator_stack->generator(rollback_id).resume();
+                generator_stack->start(rollback_id);
             }
             return reply::error{};
         }
@@ -183,26 +176,25 @@ api_reply server::handle_request(const request::generator::bulk::stop& req)
 
 api_reply server::handle_request(const request::statistic::list&)
 {
-    auto ids = generator_stack->ids();
+    auto ids = generator_stack->stats();
     reply::statistic::list list{
         std::make_unique<std::vector<reply::statistic::item::item_data>>()};
-    std::transform(
-        ids.begin(),
-        ids.end(),
-        std::back_inserter(*list.data),
-        [&](auto id) -> auto {
-            return reply::statistic::item::item_data{
-                .id = id, generator_stack->generator(id).stat()};
-        });
+    std::transform(ids.begin(),
+                   ids.end(),
+                   std::back_inserter(*list.data),
+                   [&](auto id) -> auto {
+                       return reply::statistic::item::item_data{
+                           .id = id, generator_stack->stat(id)};
+                   });
 
     return list;
 }
 
 api_reply server::handle_request(const request::statistic::get& req)
 {
-    if (generator_stack->contains(req.id)) {
-        reply::statistic::item::item_data data{
-            req.id, generator_stack->generator(req.id).stat()};
+    if (generator_stack->contains_stat(req.id)) {
+        reply::statistic::item::item_data data{req.id,
+                                               generator_stack->stat(req.id)};
         return reply::statistic::item{
             std::make_unique<reply::statistic::item::item_data>(
                 std::move(data))};
@@ -213,9 +205,11 @@ api_reply server::handle_request(const request::statistic::get& req)
 
 api_reply server::handle_request(const request::statistic::erase& req)
 {
-    if (generator_stack->contains(req.id)) {
-        generator_stack->generator(req.id).clear_stat();
-        return reply::ok{};
+    if (generator_stack->contains_stat(req.id)) {
+        if (generator_stack->erase_stat(req.id))
+            return reply::ok{};
+
+        return reply::error{ .type = reply::error::ACTIVE_STAT };
     }
 
     return reply::error{.type = reply::error::NOT_FOUND};

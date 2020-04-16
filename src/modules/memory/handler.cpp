@@ -22,22 +22,24 @@ std::string json_error(std::string_view msg)
 void response_error(Http::ResponseWriter& rsp, reply::error error)
 {
     switch (error.type) {
-        case reply::error::NOT_FOUND:
-            rsp.send(Http::Code::Not_Found);
-            break;
-        case reply::error::EXISTS:
-            rsp.headers().add<Http::Header::ContentType>(
-                MIME(Application, Json));
-            rsp.send(Http::Code::Bad_Request,
-                json_error("Item with such ID already existst"));
-            break;
-        case reply::error::INVALID_ID:
-            rsp.headers().add<Http::Header::ContentType>(
-                MIME(Application, Json));
-            rsp.send(Http::Code::Bad_Request,
-                json_error("Invalid ID format"));
-        default:
-            rsp.send(Http::Code::Internal_Server_Error);
+    case reply::error::NOT_FOUND:
+        rsp.send(Http::Code::Not_Found);
+        break;
+    case reply::error::EXISTS:
+        rsp.headers().add<Http::Header::ContentType>(MIME(Application, Json));
+        rsp.send(Http::Code::Bad_Request,
+                 json_error("Item with such ID already existst"));
+        break;
+    case reply::error::INVALID_ID:
+        rsp.headers().add<Http::Header::ContentType>(MIME(Application, Json));
+        rsp.send(Http::Code::Bad_Request, json_error("Invalid ID format"));
+        break;
+    case reply::error::ACTIVE_STAT:
+        rsp.headers().add<Http::Header::ContentType>(MIME(Application, Json));
+        rsp.send(Http::Code::Bad_Request, json_error("Trying to remove active statistics"));
+        break;
+    default:
+        rsp.send(Http::Code::Internal_Server_Error);
     }
 }
 
@@ -74,8 +76,8 @@ public:
 };
 
 handler::handler(void* context, Rest::Router& router)
-    : socket(
-        op_socket_get_client(context, ZMQ_REQ, openperf::memory::api::endpoint))
+    : socket(op_socket_get_client(
+          context, ZMQ_REQ, openperf::memory::api::endpoint))
 {
     Rest::Routes::Get(router,
                       "/memory-generators",

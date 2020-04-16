@@ -84,9 +84,7 @@ task_memory::~task_memory() { scratch_free(); }
 
 task_memory::stat_t task_memory::stat() const
 {
-    return (_stat_clear)
-        ? stat_t{}
-        : *_stat.load();
+    return (_stat_clear) ? stat_t{} : *_stat.load();
 }
 
 void task_memory::config(const task_memory_config& msg)

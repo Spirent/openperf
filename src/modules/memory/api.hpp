@@ -85,7 +85,7 @@ struct ok : message
 {};
 struct error : message
 {
-    enum { NONE = 0, NOT_FOUND, EXISTS, INVALID_ID, ZMQ_ERROR } type = NONE;
+    enum { NONE = 0, ACTIVE_STAT, NOT_FOUND, EXISTS, INVALID_ID, ZMQ_ERROR } type = NONE;
     int value = 0;
 };
 using info = memory_info::info_t;
