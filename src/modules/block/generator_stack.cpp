@@ -110,7 +110,7 @@ block_generator_result_ptr generator_stack::get_statistics(std::string_view id) 
         return nullptr;
 
     auto result = m_block_results.at(std::string(id));
-    std::visit(
+    auto stat = std::visit(
         utils::overloaded_visitor(
             [&](const block_generator_ptr& generator) {
                 return generator->get_statistics();
@@ -120,7 +120,7 @@ block_generator_result_ptr generator_stack::get_statistics(std::string_view id) 
             }),
     result);
 
-    return nullptr;
+    return stat;
 }
 
 void generator_stack::delete_statistics(std::string_view id)

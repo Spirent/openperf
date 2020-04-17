@@ -133,7 +133,9 @@ reply_msg server::handle_request(const request_block_generator_start& request)
         return to_error(api::error_type::NOT_FOUND);
     }
 
-    return api::reply_ok{};
+    auto reply = reply_block_generator_results{};
+    reply.results.emplace_back(std::make_unique<model::block_generator_result>(*result.value()));
+    return reply;
 }
 
 reply_msg server::handle_request(const request_block_generator_stop& request)
@@ -148,21 +150,22 @@ server::handle_request(const request_block_generator_bulk_start& request)
 {
     auto reply = reply_block_generator_results{};
 
-    for (size_t i = 0; i < request.ids.size(); ++i)
+    for (auto& id : request.ids)
     {
-        auto generator = m_generator_stack->get_block_generator(*request.ids[i]);
-        if (!generator) {
-            for (size_t j = 0; j < i; ++j) {
-                auto generator_to_stop = m_generator_stack->get_block_generator(*request.ids[j]);
-                if (generator_to_stop) {
-                    generator_to_stop->stop();
-                }
+        auto stats = m_generator_stack->start_generator(*id);
+        if (!stats || !stats.value()) {
+            for (auto& stat : reply.results) {
+                m_generator_stack->stop_generator(stat->get_generator_id());
+                m_generator_stack->delete_statistics(stat->get_id());
             }
-            return to_error(api::error_type::CUSTOM_ERROR, 0, "Generator " + *request.ids[i] + " not found");
-         }
-        auto stats = generator->start();
+            if (!stats) {
+                return to_error(api::error_type::CUSTOM_ERROR, 0, "Generator " + *id + " not found");
+            } else {
+                return to_error(api::error_type::CUSTOM_ERROR, 0, stats.error());
+            }
+        }
 
-        auto reply_model = model::block_generator_result(*stats);
+        auto reply_model = model::block_generator_result(*stats.value());
         reply.results.emplace_back(std::make_unique<model::block_generator_result>(reply_model));
     }
 
@@ -173,9 +176,7 @@ reply_msg
 server::handle_request(const request_block_generator_bulk_stop& request)
 {
     for (auto& id : request.ids) {
-        auto blkgenerator = m_generator_stack->get_block_generator(*id);
-        if (!blkgenerator) { continue; }
-        blkgenerator->stop();
+        m_generator_stack->stop_generator(*id);
     }
     return api::reply_ok{};
 }
@@ -183,8 +184,8 @@ server::handle_request(const request_block_generator_bulk_stop& request)
 reply_msg server::handle_request(const request_block_generator_result_list&)
 {
     auto reply = reply_block_generator_results{};
-    for (auto blkgenerator : m_generator_stack->block_generators_list()) {
-        reply.results.emplace_back(std::make_unique<model::block_generator_result>(*blkgenerator->get_statistics()));
+    for (auto stat : m_generator_stack->list_statistics()) {
+        reply.results.emplace_back(std::make_unique<model::block_generator_result>(*stat));
     }
 
     return reply;
@@ -193,10 +194,10 @@ reply_msg server::handle_request(const request_block_generator_result_list&)
 reply_msg server::handle_request(const request_block_generator_result& request)
 {
     auto reply = reply_block_generator_results{};
-    auto blkgenerator = m_generator_stack->get_block_generator(request.id);
+    auto stat = m_generator_stack->get_statistics(request.id);
 
-    if (!blkgenerator) { return to_error(api::error_type::NOT_FOUND); }
-    reply.results.emplace_back(std::make_unique<model::block_generator_result>(*blkgenerator->get_statistics()));
+    if (!stat) { return to_error(api::error_type::NOT_FOUND); }
+    reply.results.emplace_back(std::make_unique<model::block_generator_result>(*stat));
 
     return reply;
 }
@@ -204,11 +205,7 @@ reply_msg server::handle_request(const request_block_generator_result& request)
 reply_msg
 server::handle_request(const request_block_generator_result_del& request)
 {
-    auto blkgenerator = m_generator_stack->get_block_generator(request.id);
-
-    if (!blkgenerator) { return reply_ok{}; }
-    blkgenerator->clear_statistics();
-
+    m_generator_stack->delete_statistics(request.id);
     return reply_ok{};
 }
 
