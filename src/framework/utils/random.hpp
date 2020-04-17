@@ -18,6 +18,18 @@ static T random_uniform(T max = std::numeric_limits<T>::max())
     return random_uniform(T(0), max);
 }
 
+static auto op_pseudo_random_fill(void* buffer, size_t length)
+{
+    uint32_t seed = random_uniform<uint32_t>();
+    uint32_t* ptr = reinterpret_cast<uint32_t*>(buffer);
+
+    for (size_t i = 0; i < length / 4; i++) {
+        uint32_t temp = (seed << 9) ^ (seed << 14);
+        seed = temp ^ (temp >> 23) ^ (temp >> 18);
+        *(ptr + i) = temp;
+    }
+}
+
 } // namespace openperf::utils
 
 #endif // _OP_UTILS_RANDOM_HPP_
