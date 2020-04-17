@@ -10,6 +10,7 @@
 
 namespace openperf::memory::internal {
 
+using openperf::utils::op_pseudo_random_fill;
 using openperf::utils::random_uniform;
 
 const uint64_t NS_PER_SECOND = 1000000000ULL;
@@ -164,19 +165,6 @@ void task_memory::config(const task_memory_config& msg)
 
     _buffer = reinterpret_cast<uint8_t*>(msg.buffer.ptr);
 
-    auto pseudo_random_fill = [](uint32_t* seedp, void* buffer, size_t length) {
-        uint32_t seed = *seedp;
-        uint32_t* ptr = reinterpret_cast<uint32_t*>(buffer);
-
-        for (size_t i = 0; i < length / 4; i++) {
-            uint32_t temp = (seed << 9) ^ (seed << 14);
-            seed = temp ^ (temp >> 23) ^ (temp >> 18);
-            *(ptr + i) = temp;
-        }
-
-        *seedp = seed;
-    };
-
     if ((_config.block_size = msg.block_size) > _scratch.size) {
         OP_LOG(OP_LOG_DEBUG,
                "Reallocating scratch area (%zu --> %zu)\n",
@@ -184,8 +172,7 @@ void task_memory::config(const task_memory_config& msg)
                msg.block_size);
         scratch_allocate(msg.block_size);
         assert(_scratch.ptr);
-        uint32_t seed = random_uniform<uint32_t>();
-        pseudo_random_fill(&seed, _scratch.ptr, _scratch.size);
+        op_pseudo_random_fill(_scratch.ptr, _scratch.size);
     }
 
     _config = msg;
