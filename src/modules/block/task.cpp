@@ -249,9 +249,8 @@ size_t block_task::worker_spin(int (*queue_aio_op)(aiocb* aiocb),
         }
     }
 
-    op_stat.latency_max += latency_max;
-    op_stat.latency_min +=
-        (latency_min == duration::max() ? duration::zero() : latency_min);
+    op_stat.latency_max = std::max(op_stat.latency_max, latency_max);
+    op_stat.latency_min = std::min(op_stat.latency_min, latency_min);
 
     return (total_ops);
 }
@@ -295,7 +294,11 @@ void block_task::resume()
 
 void block_task::pause() { m_pause_timestamp = ref_clock::now(); }
 
-task_stat_t block_task::stat() const { return *m_at_stat; }
+task_stat_t block_task::stat() const {
+    auto res = *m_at_stat;
+    res.read.latency_min = (res.read.latency_min == duration::max()) ? duration::min() : res.read.latency_min;
+    return res;
+}
 
 void block_task::clear_stat()
 {

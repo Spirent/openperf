@@ -81,7 +81,7 @@ worker<T>::worker()
     : m_paused(true)
     , m_stopped(true)
     , m_task(new T)
-    , m_zmq_context(zmq_ctx_new())
+    , m_zmq_context(zmq_init(0))
     , m_zmq_socket(op_socket_get_server(m_zmq_context, ZMQ_PAIR, _endpoint))
 {}
 

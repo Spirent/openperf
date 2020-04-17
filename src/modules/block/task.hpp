@@ -42,7 +42,7 @@ struct task_operation_stat_t
     duration latency = duration::zero(); /* The total amount of time required to
                                             perform all operations */
     duration latency_min =
-        duration::zero(); /* The minimum observed latency value */
+        duration::max(); /* The minimum observed latency value */
     duration latency_max =
         duration::zero(); /* The maximum observed latency value */
 };
