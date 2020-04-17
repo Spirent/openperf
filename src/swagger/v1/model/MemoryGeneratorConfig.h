@@ -1,6 +1,6 @@
 /**
-* Openperf Memory I/O Generation API
-* REST API interface to Openperf memory I/O module
+* OpenPerf API
+* REST API interface for OpenPerf
 *
 * OpenAPI spec version: 1
 * Contact: support@spirent.com

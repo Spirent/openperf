@@ -19,7 +19,7 @@ Method | HTTP request | Description
 
 
 # **bulk_start_memory_generators**
-> BulkStartMemoryGeneratorsResponse bulk_start_memory_generators(bulk_start)
+> list[MemoryGeneratorResult] bulk_start_memory_generators(bulk_start)
 
 Tell multiple memory generators to start
 
@@ -53,7 +53,7 @@ Name | Type | Description  | Notes
 
 ### Return type
 
-[**BulkStartMemoryGeneratorsResponse**](BulkStartMemoryGeneratorsResponse.md)
+[**list[MemoryGeneratorResult]**](MemoryGeneratorResult.md)
 
 ### Authorization
 
@@ -482,11 +482,11 @@ No authorization required
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **start_memory_generator**
-> start_memory_generator(id)
+> MemoryGeneratorResult start_memory_generator(id)
 
 Start a memory generator
 
-Start an existing memory generator. Idempotent.
+Start an existing memory generator.
 
 ### Example
 ```python
@@ -502,7 +502,8 @@ id = 'id_example' # str | Unique resource identifier
 
 try:
     # Start a memory generator
-    api_instance.start_memory_generator(id)
+    api_response = api_instance.start_memory_generator(id)
+    pprint(api_response)
 except ApiException as e:
     print("Exception when calling MemoryGeneratorApi->start_memory_generator: %s\n" % e)
 ```
@@ -515,7 +516,7 @@ Name | Type | Description  | Notes
 
 ### Return type
 
-void (empty response body)
+[**MemoryGeneratorResult**](MemoryGeneratorResult.md)
 
 ### Authorization
 

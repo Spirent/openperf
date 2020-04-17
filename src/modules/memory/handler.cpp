@@ -36,7 +36,8 @@ void response_error(Http::ResponseWriter& rsp, reply::error error)
         break;
     case reply::error::ACTIVE_STAT:
         rsp.headers().add<Http::Header::ContentType>(MIME(Application, Json));
-        rsp.send(Http::Code::Bad_Request, json_error("Trying to remove active statistics"));
+        rsp.send(Http::Code::Bad_Request,
+                 json_error("Trying to remove active statistics"));
         break;
     default:
         rsp.send(Http::Code::Internal_Server_Error);
@@ -241,8 +242,13 @@ void handler::start_generator(const Rest::Request& request,
     }
 
     auto api_reply = submit_request(request::generator::start{{.id = id}});
-    if (auto ok = std::get_if<reply::ok>(&api_reply)) {
-        response.send(Http::Code::No_Content);
+    if (auto item = std::get_if<reply::statistic::item>(&api_reply)) {
+        auto model = to_swagger(*item->data);
+        response.headers().add<Http::Header::ContentType>(
+            MIME(Application, Json));
+        response.headers().add<Http::Header::Location>(
+            "/memory-generator-results/" + model.getId());
+        response.send(Http::Code::Created, model.toJson().dump());
         return;
     }
 
@@ -290,8 +296,17 @@ void handler::bulk_start_generators(const Rest::Request& request,
         {std::make_unique<std::vector<std::string>>(
             std::move(model.getIds()))}});
 
-    if (auto ok = std::get_if<reply::ok>(&api_reply)) {
-        response.send(Http::Code::Ok);
+    if (auto list = std::get_if<reply::statistic::list>(&api_reply)) {
+        auto array = json::array();
+        std::transform(
+            list->data->begin(),
+            list->data->end(),
+            std::back_inserter(array),
+            [](auto item) -> json { return to_swagger(item).toJson(); });
+
+        response.headers().add<Http::Header::ContentType>(
+            MIME(Application, Json));
+        response.send(Http::Code::Ok, array.dump());
         return;
     }
 
@@ -316,7 +331,7 @@ void handler::bulk_stop_generators(const Rest::Request& request,
             std::move(model.getIds()))}});
 
     if (auto ok = std::get_if<reply::ok>(&api_reply)) {
-        response.send(Http::Code::Ok);
+        response.send(Http::Code::No_Content);
         return;
     }
 

@@ -43,19 +43,21 @@ int server::handle_rpc_request(const op_event_data* data)
 
 api_reply server::handle_request(const request::generator::list&)
 {
+    auto id_to_config_transformer = [&](auto& id) -> auto
+    {
+        const auto& gnr = generator_stack->generator(id);
+        return reply::generator::item::item_data{
+            .id = id, .is_running = gnr.is_running(), .config = gnr.config()};
+    };
+
     reply::generator::list list{
         std::make_unique<std::vector<reply::generator::item::item_data>>()};
+
     auto ids = generator_stack->ids();
     std::transform(ids.begin(),
                    ids.end(),
                    std::back_inserter(*list.data),
-                   [&](auto id) -> auto {
-                       const auto& gnr = generator_stack->generator(id);
-                       return reply::generator::item::item_data{
-                           .id = id,
-                           .is_running = gnr.is_running(),
-                           .config = gnr.config()};
-                   });
+                   id_to_config_transformer);
 
     return list;
 }
@@ -120,7 +122,14 @@ api_reply server::handle_request(const request::generator::start& req)
 {
     if (generator_stack->contains(req.id)) {
         generator_stack->start(req.id);
-        return reply::ok{};
+        auto stat = generator_stack->stat(req.id);
+        reply::statistic::item::item_data data{.id = stat.id,
+                                               .generator_id =
+                                                   stat.generator_id,
+                                               .stat = stat.stat};
+        return reply::statistic::item{
+            std::make_unique<reply::statistic::item::item_data>(
+                std::move(data))};
     }
 
     return reply::error{.type = reply::error::NOT_FOUND};
@@ -132,6 +141,17 @@ api_reply server::handle_request(const request::generator::bulk::start& req)
         if (!generator_stack->contains(id))
             return reply::error{.type = reply::error::NOT_FOUND};
     }
+
+    auto stat_transformer = [](const auto& stat) -> auto
+    {
+        return reply::statistic::item::item_data{.id = stat.id,
+                                                 .generator_id =
+                                                     stat.generator_id,
+                                                 .stat = stat.stat};
+    };
+
+    reply::statistic::list list{
+        std::make_unique<std::vector<reply::statistic::item::item_data>>()};
 
     std::forward_list<std::string> not_runned_before;
     for (auto id : *req.data) {
@@ -145,9 +165,11 @@ api_reply server::handle_request(const request::generator::bulk::start& req)
             }
             return reply::error{};
         }
+
+        list.data->push_back(stat_transformer(generator_stack->stat(id)));
     }
 
-    return reply::ok{};
+    return list;
 }
 
 api_reply server::handle_request(const request::generator::bulk::stop& req)
@@ -176,16 +198,22 @@ api_reply server::handle_request(const request::generator::bulk::stop& req)
 
 api_reply server::handle_request(const request::statistic::list&)
 {
-    auto ids = generator_stack->stats();
+    auto stat_transformer = [](const auto& stat) -> auto
+    {
+        return reply::statistic::item::item_data{.id = stat.id,
+                                                 .generator_id =
+                                                     stat.generator_id,
+                                                 .stat = stat.stat};
+    };
+
     reply::statistic::list list{
         std::make_unique<std::vector<reply::statistic::item::item_data>>()};
-    std::transform(ids.begin(),
-                   ids.end(),
+
+    auto stat_list = generator_stack->stats();
+    std::transform(stat_list.begin(),
+                   stat_list.end(),
                    std::back_inserter(*list.data),
-                   [&](auto id) -> auto {
-                       return reply::statistic::item::item_data{
-                           .id = id, generator_stack->stat(id)};
-                   });
+                   stat_transformer);
 
     return list;
 }
@@ -193,8 +221,11 @@ api_reply server::handle_request(const request::statistic::list&)
 api_reply server::handle_request(const request::statistic::get& req)
 {
     if (generator_stack->contains_stat(req.id)) {
-        reply::statistic::item::item_data data{req.id,
-                                               generator_stack->stat(req.id)};
+        auto stat = generator_stack->stat(req.id);
+        reply::statistic::item::item_data data{.id = stat.id,
+                                               .generator_id =
+                                                   stat.generator_id,
+                                               .stat = stat.stat};
         return reply::statistic::item{
             std::make_unique<reply::statistic::item::item_data>(
                 std::move(data))};
@@ -206,10 +237,9 @@ api_reply server::handle_request(const request::statistic::get& req)
 api_reply server::handle_request(const request::statistic::erase& req)
 {
     if (generator_stack->contains_stat(req.id)) {
-        if (generator_stack->erase_stat(req.id))
-            return reply::ok{};
+        if (generator_stack->erase_stat(req.id)) return reply::ok{};
 
-        return reply::error{ .type = reply::error::ACTIVE_STAT };
+        return reply::error{.type = reply::error::ACTIVE_STAT};
     }
 
     return reply::error{.type = reply::error::NOT_FOUND};
