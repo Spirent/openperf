@@ -64,6 +64,14 @@ private:
     bool m_use_last = 0;
 };
 
+class transfer_context
+{
+public:
+    virtual ~transfer_context() = default;
+    virtual void set_reader(reader* reader) = 0;
+    virtual size_t get_total_length() const = 0;
+};
+
 struct sink_result
 {
     sink_result(const sink& p);
@@ -74,7 +82,7 @@ struct sink_result
     std::atomic<capture_state> state = capture_state::STOPPED;
 
     std::shared_ptr<capture_buffer_file> buffer;
-    std::shared_ptr<reader> reader;
+    std::shared_ptr<transfer_context> transfer;
 };
 
 class sink

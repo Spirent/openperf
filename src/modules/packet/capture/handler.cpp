@@ -503,11 +503,18 @@ void handler::get_capture_result_pcap(const request_type& request,
         return;
     }
 
-    auto api_reply =
-        submit_request(m_socket.get(), request_create_capture_reader{id});
+    std::shared_ptr<transfer_context> transfer =
+        create_pcap_transfer_context(response);
 
-    if (auto reply = std::get_if<reply_capture_reader>(&api_reply)) {
-        server_capture_pcap(response, reply->reader);
+    auto api_reply = submit_request(
+        m_socket.get(), request_create_capture_transfer{id, transfer});
+
+    if (auto reply = std::get_if<reply_ok>(&api_reply)) {
+        auto result = send_pcap_response_header(response, transfer);
+        if (result.isRejected()) return;
+        assert(result.isFulfilled());
+
+        serve_capture_pcap(transfer);
     } else {
         handle_reply_error(api_reply, std::move(response));
     }
@@ -522,11 +529,18 @@ void handler::get_capture_result_live(const request_type& request,
         return;
     }
 
-    auto api_reply =
-        submit_request(m_socket.get(), request_create_capture_reader{id});
+    std::shared_ptr<transfer_context> transfer =
+        create_pcap_transfer_context(response);
 
-    if (auto reply = std::get_if<reply_capture_reader>(&api_reply)) {
-        server_capture_pcap(response, reply->reader);
+    auto api_reply = submit_request(
+        m_socket.get(), request_create_capture_transfer{id, transfer});
+
+    if (auto reply = std::get_if<reply_ok>(&api_reply)) {
+        auto result = send_pcap_response_header(response, transfer);
+        if (result.isRejected()) return;
+        assert(result.isFulfilled());
+
+        serve_capture_pcap(transfer);
     } else {
         handle_reply_error(api_reply, std::move(response));
     }

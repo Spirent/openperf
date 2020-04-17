@@ -28,7 +28,7 @@ namespace openperf::packet::capture {
 
 class sink;
 struct sink_result;
-class reader;
+class transfer_context;
 
 namespace api {
 
@@ -56,8 +56,6 @@ using capture_result_ptr = std::unique_ptr<capture_result_type>;
 enum class filter_key_type { none, capture_id, source_id };
 using filter_map_type = std::map<filter_key_type, std::string>;
 using filter_map_ptr = std::unique_ptr<filter_map_type>;
-
-using capture_reader_ptr = std::shared_ptr<reader>;
 
 /*
  * Provide a mechanism for associating type information with
@@ -152,12 +150,13 @@ struct request_delete_capture_result
     std::string id;
 };
 
-struct request_create_capture_reader
+struct request_create_capture_transfer
 {
     std::string id;
+    std::shared_ptr<transfer_context> transfer;
 };
 
-struct request_delete_capture_reader
+struct request_delete_capture_transfer
 {
     std::string id;
 };
@@ -172,11 +171,6 @@ struct reply_capture_results
     std::vector<capture_result_ptr> capture_results;
 };
 
-struct reply_capture_reader
-{
-    std::shared_ptr<reader> reader;
-};
-
 using request_msg = std::variant<request_list_captures,
                                  request_create_capture,
                                  request_delete_captures,
@@ -188,8 +182,8 @@ using request_msg = std::variant<request_list_captures,
                                  request_delete_capture_results,
                                  request_get_capture_result,
                                  request_delete_capture_result,
-                                 request_create_capture_reader,
-                                 request_delete_capture_reader>;
+                                 request_create_capture_transfer,
+                                 request_delete_capture_transfer>;
 
 struct reply_ok
 {};
@@ -207,11 +201,8 @@ struct reply_error
     typed_error info;
 };
 
-using reply_msg = std::variant<reply_captures,
-                               reply_capture_results,
-                               reply_capture_reader,
-                               reply_ok,
-                               reply_error>;
+using reply_msg =
+    std::variant<reply_captures, reply_capture_results, reply_ok, reply_error>;
 
 struct serialized_msg
 {

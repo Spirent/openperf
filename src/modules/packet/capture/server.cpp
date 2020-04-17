@@ -117,11 +117,11 @@ static std::string to_string(const request_msg& request)
                            [](const request_delete_capture_result& request) {
                                return ("delete capture result " + request.id);
                            },
-                           [](const request_create_capture_reader&) {
-                               return (std::string("create capture reader"));
+                           [](const request_create_capture_transfer&) {
+                               return (std::string("create capture transfer"));
                            },
-                           [](const request_delete_capture_reader& request) {
-                               return (std::string("delete capture reader "
+                           [](const request_delete_capture_transfer& request) {
+                               return (std::string("delete capture transfer "
                                                    + request.id));
                            }),
                        request));
@@ -459,7 +459,7 @@ reply_msg server::handle_request(const request_delete_capture_result& request)
     return (reply_ok{});
 }
 
-reply_msg server::handle_request(const request_create_capture_reader& request)
+reply_msg server::handle_request(request_create_capture_transfer& request)
 {
     auto id = to_uuid(request.id);
     if (!id) { return (to_error(error_type::NOT_FOUND)); }
@@ -470,22 +470,23 @@ reply_msg server::handle_request(const request_create_capture_reader& request)
     }
     auto& result = item->second;
 
-    if (result->reader) {
+    if (result->transfer) {
         // Only support 1 reader per capture results
         return (to_error(error_type::POSIX, EEXIST));
     }
 
-    result->reader = std::make_shared<reader>(result->buffer);
+    result->transfer = request.transfer;
+    result->transfer->set_reader(new reader(result->buffer));
 
-    return reply_capture_reader{result->reader};
+    return (reply_ok{});
 }
 
-reply_msg server::handle_request(const request_delete_capture_reader& request)
+reply_msg server::handle_request(const request_delete_capture_transfer& request)
 {
     if (auto id = to_uuid(request.id); id.has_value()) {
         if (auto item = m_results.find(*id); item != std::end(m_results)) {
             auto& result = item->second;
-            result->reader.reset();
+            result->transfer.reset();
         }
     }
 

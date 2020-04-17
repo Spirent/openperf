@@ -32,25 +32,6 @@ static auto zmq_msg_init(zmq_msg_t* msg, std::unique_ptr<T> value)
 }
 
 template <typename T>
-static auto zmq_msg_init(zmq_msg_t* msg, std::shared_ptr<T> value)
-{
-    using shared_ptr_type = std::shared_ptr<T>;
-
-    // Allocate a shared_ptr to hold extra reference when passed over channel
-    auto holder = std::make_unique<shared_ptr_type>(value);
-
-    if (auto error = zmq_msg_init_size(msg, sizeof(shared_ptr_type*));
-        error != 0) {
-        return (error);
-    }
-    value.reset();
-
-    auto ptr = reinterpret_cast<shared_ptr_type**>(zmq_msg_data(msg));
-    *ptr = holder.release();
-    return (0);
-}
-
-template <typename T>
 static auto zmq_msg_init(zmq_msg_t* msg, const T* buffer, size_t length)
 {
     if (auto error = zmq_msg_init_size(msg, length); error != 0) {
@@ -130,67 +111,93 @@ serialized_msg serialize_request(request_msg&& msg)
     serialized_msg serialized;
     auto error =
         (zmq_msg_init(&serialized.type, msg.index())
-         || std::visit(utils::overloaded_visitor(
-                           [&](request_list_captures& request) {
-                               return (zmq_msg_init(&serialized.data,
-                                                    std::move(request.filter)));
-                           },
-                           [&](request_create_capture& request) {
-                               return (
-                                   zmq_msg_init(&serialized.data,
-                                                std::move(request.capture)));
-                           },
-                           [&](const request_delete_captures&) {
-                               return (zmq_msg_init(&serialized.data, 0));
-                           },
-                           [&](const request_get_capture& request) {
-                               return (zmq_msg_init(&serialized.data,
-                                                    request.id.data(),
-                                                    request.id.length()));
-                           },
-                           [&](const request_delete_capture& request) {
-                               return (zmq_msg_init(&serialized.data,
-                                                    request.id.data(),
-                                                    request.id.length()));
-                           },
-                           [&](request_start_capture& request) {
-                               return (zmq_msg_init(&serialized.data,
-                                                    request.id.data(),
-                                                    request.id.length()));
-                           },
-                           [&](const request_stop_capture& request) {
-                               return (zmq_msg_init(&serialized.data,
-                                                    request.id.data(),
-                                                    request.id.length()));
-                           },
-                           [&](request_list_capture_results& request) {
-                               return (zmq_msg_init(&serialized.data,
-                                                    std::move(request.filter)));
-                           },
-                           [&](const request_delete_capture_results& request) {
-                               return (zmq_msg_init(&serialized.data, 0));
-                           },
-                           [&](const request_get_capture_result& request) {
-                               return (zmq_msg_init(&serialized.data,
-                                                    request.id.data(),
-                                                    request.id.length()));
-                           },
-                           [&](const request_delete_capture_result& request) {
-                               return (zmq_msg_init(&serialized.data,
-                                                    request.id.data(),
-                                                    request.id.length()));
-                           },
-                           [&](const request_create_capture_reader& request) {
-                               return (zmq_msg_init(&serialized.data,
-                                                    request.id.data(),
-                                                    request.id.length()));
-                           },
-                           [&](const request_delete_capture_reader& request) {
-                               return (zmq_msg_init(&serialized.data,
-                                                    request.id.data(),
-                                                    request.id.length()));
-                           }),
-                       msg));
+         || std::visit(
+                utils::overloaded_visitor(
+                    [&](request_list_captures& request) {
+                        return (zmq_msg_init(&serialized.data,
+                                             std::move(request.filter)));
+                    },
+                    [&](request_create_capture& request) {
+                        return (zmq_msg_init(&serialized.data,
+                                             std::move(request.capture)));
+                    },
+                    [&](const request_delete_captures&) {
+                        return (zmq_msg_init(&serialized.data, 0));
+                    },
+                    [&](const request_get_capture& request) {
+                        return (zmq_msg_init(&serialized.data,
+                                             request.id.data(),
+                                             request.id.length()));
+                    },
+                    [&](const request_delete_capture& request) {
+                        return (zmq_msg_init(&serialized.data,
+                                             request.id.data(),
+                                             request.id.length()));
+                    },
+                    [&](request_start_capture& request) {
+                        return (zmq_msg_init(&serialized.data,
+                                             request.id.data(),
+                                             request.id.length()));
+                    },
+                    [&](const request_stop_capture& request) {
+                        return (zmq_msg_init(&serialized.data,
+                                             request.id.data(),
+                                             request.id.length()));
+                    },
+                    [&](request_list_capture_results& request) {
+                        return (zmq_msg_init(&serialized.data,
+                                             std::move(request.filter)));
+                    },
+                    [&](const request_delete_capture_results& request) {
+                        return (zmq_msg_init(&serialized.data, 0));
+                    },
+                    [&](const request_get_capture_result& request) {
+                        return (zmq_msg_init(&serialized.data,
+                                             request.id.data(),
+                                             request.id.length()));
+                    },
+                    [&](const request_delete_capture_result& request) {
+                        return (zmq_msg_init(&serialized.data,
+                                             request.id.data(),
+                                             request.id.length()));
+                    },
+                    [&](request_create_capture_transfer& request) {
+                        // The create_capture_transfer message has a
+                        // shared_ptr<transfer_context>.
+                        // There is no standard way to increment
+                        // the ref count on a shared porint, so
+                        // instead of passing object directly,
+                        // a shared_ptr is allocated and passed.
+                        // This ensures a reference is always held.
+                        std::vector<uint8_t> buffer(
+                            sizeof(&request.transfer) + request.id.length(), 0);
+
+                        // Allocate shared_ptr and add to buffer
+                        auto transfer =
+                            std::make_unique<std::shared_ptr<transfer_context>>(
+                                request.transfer);
+                        *(std::shared_ptr<transfer_context>**)(&buffer[0]) =
+                            transfer.get();
+                        std::copy(
+                            request.id.data(),
+                            request.id.data() + request.id.length(),
+                            buffer.begin()
+                                + sizeof(std::shared_ptr<transfer_context>*));
+
+                        auto msg_err = zmq_msg_init(
+                            &serialized.data, buffer.data(), buffer.size());
+                        if (!msg_err) {
+                            // Release the pointer if no errors
+                            transfer.release();
+                        }
+                        return msg_err;
+                    },
+                    [&](const request_delete_capture_transfer& request) {
+                        return (zmq_msg_init(&serialized.data,
+                                             request.id.data(),
+                                             request.id.length()));
+                    }),
+                msg));
     if (error) { throw std::bad_alloc(); }
 
     return (serialized);
@@ -209,9 +216,6 @@ serialized_msg serialize_reply(reply_msg&& msg)
                     [&](reply_capture_results& reply) {
                         return (zmq_msg_init(&serialized.data,
                                              reply.capture_results));
-                    },
-                    [&](reply_capture_reader& reply) {
-                        return (zmq_msg_init(&serialized.data, reply.reader));
                     },
                     [&](const reply_ok&) {
                         return (zmq_msg_init(&serialized.data, 0));
@@ -279,15 +283,25 @@ tl::expected<request_msg, int> deserialize_request(const serialized_msg& msg)
                               zmq_msg_size(&msg.data));
         return (request_delete_capture_result{std::move(id)});
     }
-    case utils::variant_index<request_msg, request_create_capture_reader>(): {
-        auto id = std::string(zmq_msg_data<char*>(&msg.data),
-                              zmq_msg_size(&msg.data));
-        return (request_create_capture_reader{std::move(id)});
+    case utils::variant_index<request_msg, request_create_capture_transfer>(): {
+        auto request = request_create_capture_transfer{};
+        // Read the temporary shared_ptr and assign to unique_ptr so
+        // it will get deleted.
+        std::unique_ptr<std::shared_ptr<transfer_context>> transfer;
+        transfer.reset(
+            *zmq_msg_data<std::shared_ptr<transfer_context>**>(&msg.data));
+        auto offset = sizeof(std::shared_ptr<transfer_context>*);
+        // Read the variable length ID
+        auto id = std::string(zmq_msg_data<char*>(&msg.data) + offset,
+                              zmq_msg_size(&msg.data) - offset);
+        request.id = std::move(id);
+        request.transfer = *transfer;
+        return request;
     }
-    case utils::variant_index<request_msg, request_delete_capture_reader>(): {
+    case utils::variant_index<request_msg, request_delete_capture_transfer>(): {
         auto id = std::string(zmq_msg_data<char*>(&msg.data),
                               zmq_msg_size(&msg.data));
-        return (request_delete_capture_reader{std::move(id)});
+        return (request_delete_capture_transfer{std::move(id)});
     }
     }
 
@@ -318,13 +332,6 @@ tl::expected<reply_msg, int> deserialize_reply(const serialized_msg& msg)
             reply.capture_results.emplace_back(ptr);
         });
         return (reply);
-    }
-    case utils::variant_index<reply_msg, reply_capture_reader>(): {
-        auto holder_ptr = zmq_msg_data<std::shared_ptr<reader>**>(&msg.data);
-        assert(holder_ptr);
-        std::unique_ptr<std::shared_ptr<reader>> holder(*holder_ptr);
-        auto reply = reply_capture_reader{*holder};
-        return reply;
     }
     case utils::variant_index<reply_msg, reply_ok>():
         return (reply_ok{});
