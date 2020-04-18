@@ -61,7 +61,7 @@ std::string get_last_chunk_str()
 }
 
 ssize_t
-send_to_peer(Pistache::Tcp::Peer& peer, void* data, size_t len, int flags)
+send_to_peer(Pistache::Tcp::Peer& peer, const void* data, size_t len, int flags)
 {
     int result;
 #ifdef PISTACHE_USE_SSL
@@ -85,7 +85,7 @@ send_to_peer(Pistache::Tcp::Peer& peer, void* data, size_t len, int flags)
 
 ssize_t
 send_to_peer_timeout(Pistache::Tcp::Peer& peer,
-                     void* data,
+                     const void* data,
                      size_t len,
                      int flags,
                      const std::chrono::duration<int64_t, std::milli>& timeout)
@@ -94,8 +94,12 @@ send_to_peer_timeout(Pistache::Tcp::Peer& peer,
 
     while (total_sent < len) {
         auto remain = (len - total_sent);
-        auto nsent = send_to_peer(
-            peer, (void*)((uint8_t*)data + total_sent), remain, flags);
+        auto nsent =
+            send_to_peer(peer,
+                         reinterpret_cast<void*>(
+                             reinterpret_cast<uintptr_t>(data) + total_sent),
+                         remain,
+                         flags);
         if (nsent < 0) {
             // Unable to send
             break;

@@ -20,12 +20,14 @@ std::string get_chunk_trailer_str();
 
 std::string get_last_chunk_str();
 
-ssize_t
-send_to_peer(Pistache::Tcp::Peer& peer, void* data, size_t len, int flags);
+ssize_t send_to_peer(Pistache::Tcp::Peer& peer,
+                     const void* data,
+                     size_t len,
+                     int flags);
 
 ssize_t
 send_to_peer_timeout(Pistache::Tcp::Peer& peer,
-                     void* data,
+                     const void* data,
                      size_t len,
                      int flags,
                      const std::chrono::duration<int64_t, std::milli>& timeout =

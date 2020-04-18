@@ -97,6 +97,8 @@ send_pcap_response_header(Pistache::Http::ResponseWriter& response,
 
     // FIXME:
     // Need way to disable pistache threads from accessing/removing the peer
+    // Since peer is not supposed to write to the connection this should only
+    // be an issue if the connection is closed.
 
     // Send the HTTP response header
     auto str = os.str();
@@ -267,25 +269,94 @@ protected:
     size_t m_buffer_length = 0;
 };
 
-class pcap_writer
+class pcap_transfer_context : public transfer_context
 {
 public:
-    pcap_writer(std::shared_ptr<Pistache::Tcp::Peer> peer)
+    virtual ~pcap_transfer_context() = default;
+
+    void set_reader(reader* reader) override { m_reader.reset(reader); }
+
+    virtual Pistache::Async::Promise<ssize_t> start() = 0;
+
+protected:
+    std::shared_ptr<reader> m_reader;
+    Pistache::Async::Deferred<ssize_t> m_deferred;
+};
+
+class pcap_thread_transfer_context : public pcap_transfer_context
+{
+public:
+    pcap_thread_transfer_context(std::shared_ptr<Pistache::Tcp::Peer> peer,
+                                 bool chunked = false)
         : m_peer(peer)
+        , m_writer(std::make_unique<pcap_buffered_writer>())
+        , m_buffer_sent(0)
+        , m_total_bytes_sent(0)
+        , m_error(false)
+        , m_chunked(chunked)
     {}
 
-    size_t calc_length(reader& reader) { return m_buffer.calc_length(reader); }
-
-    bool write_start()
+    virtual ~pcap_thread_transfer_context()
     {
+        if (m_thread) {
+            // Make sure thread is dead
+            m_thread->join();
+        }
+    }
+
+    size_t get_total_length() const override
+    {
+        // Currently code will enable chunk encoding if returned length is 0
+        if (m_chunked) return 0;
+        return m_writer->calc_length(*m_reader);
+    }
+
+    Pistache::Async::Promise<ssize_t> start() override
+    {
+        auto promise = Pistache::Async::Promise<ssize_t>(
+            [&](Pistache::Async::Deferred<ssize_t> deferred) mutable {
+                m_deferred = std::move(deferred);
+            });
+
+        m_total_bytes_sent = 0;
         m_buffer_sent = 0;
         m_error = false;
-        if (!m_buffer.write_start()) {
-            m_error = true;
-            return false;
+
+        m_reader->rewind();
+
+        // Send the Capture data from a thread
+        m_thread = std::make_unique<std::thread>([&]() { transfer(); });
+        return promise;
+    }
+
+private:
+    void transfer()
+    {
+        m_writer->write_start();
+
+        while (!m_reader->is_done() && !m_error) {
+            m_reader->read([&](auto& packet) {
+                if (!write_packet(packet)) return false;
+                return true;
+            });
         }
 
-        return flush();
+        if (!m_error) {
+            m_writer->write_end();
+            flush();
+            if (m_chunked) { write_chunk_end(); }
+        }
+
+        if (m_error) {
+            // Error writing data
+            m_deferred.reject(Pistache::Error("Failed sending pcap data"));
+            return;
+        }
+
+        // FIXME:
+        // Need some way to enable the peer in pistache thread again.
+        // This should be done through a message for thread safety.
+        m_deferred.resolve((ssize_t)m_total_bytes_sent);
     }
 
     bool write_packet(buffer_data& packet)
@@ -301,10 +372,10 @@ public:
         block_hdr.block_total_length = pcapng::pad_block_length(
             sizeof(block_hdr) + sizeof(uint32_t) + packet.captured_len);
 
-        if (block_hdr.block_total_length > m_buffer.get_available_length()) {
+        if (block_hdr.block_total_length > m_writer->get_available_length()) {
             if (!flush()) { return false; }
             if (block_hdr.block_total_length
-                > m_buffer.get_available_length()) {
+                > m_writer->get_available_length()) {
                 // Packet is too big for buffer so just send directly
                 return send_header_and_data(
                     reinterpret_cast<uint8_t*>(&block_hdr),
@@ -313,55 +384,100 @@ public:
                     packet.captured_len);
             }
         }
-        return m_buffer.write_packet_block(block_hdr, packet.data);
+        return m_writer->write_packet_block(block_hdr, packet.data);
     }
 
-    bool write_end()
+    bool write_chunk_end()
     {
-        m_buffer.write_end();
-        return flush();
+        auto last_chunk_str = get_last_chunk_str();
+        auto n = send_to_peer_timeout(
+            *m_peer, last_chunk_str.c_str(), last_chunk_str.length(), 0);
+        if (n < 0) {
+            m_error = true;
+            return false;
+        }
+        return true;
     }
 
     bool flush()
     {
-        auto length = m_buffer.get_length();
+        auto length = m_writer->get_length();
         if (length == 0) return true;
 
-        // FIXME: Add support for chunk header
         auto remain = length - m_buffer_sent;
         if (remain) {
-            auto n = send_to_peer_timeout(
-                *m_peer, m_buffer.get_data() + m_buffer_sent, remain, 0);
-            if (n < 0) {
-                m_error = true;
-                return false;
+            ssize_t nsent = 0;
+            if (m_chunked) {
+                auto chunk_header_str = get_chunk_header_str(remain);
+                if (send_to_peer_timeout(*m_peer,
+                                         chunk_header_str.c_str(),
+                                         chunk_header_str.length(),
+                                         MSG_MORE)
+                    != (int)chunk_header_str.length()) {
+                    m_error = true;
+                    return false;
+                }
+
+                // If all data doesn't get sent then need to treat it as an
+                // error because we already said how much we were going to write
+                nsent = send_to_peer_timeout(
+                    *m_peer, m_writer->get_data() + m_buffer_sent, remain, 0);
+                if (nsent != (int)remain) {
+                    m_error = true;
+                    return false;
+                }
+
+                auto chunk_trailer_str = get_chunk_trailer_str();
+                if (send_to_peer_timeout(*m_peer,
+                                         chunk_trailer_str.c_str(),
+                                         chunk_trailer_str.length(),
+                                         0)
+                    != (int)chunk_trailer_str.length()) {
+                    m_error = true;
+                    return false;
+                }
+            } else {
+                // If all data doesn't get sent then not necessarily an error
+                // because data will still be in the buffer.
+                nsent = send_to_peer_timeout(
+                    *m_peer, m_writer->get_data() + m_buffer_sent, remain, 0);
+                if (nsent < 0) {
+                    m_error = true;
+                    return false;
+                }
             }
-            m_buffer_sent += n;
-            m_total_bytes_sent += n;
+
+            m_buffer_sent += nsent;
+            m_total_bytes_sent += nsent;
         }
         if (m_buffer_sent == length) {
-            m_buffer.flush();
+            m_writer->flush();
             m_buffer_sent = 0;
             return true;
         }
         return false;
     }
 
-    bool is_error() const { return m_error; }
-
-    size_t get_total_bytes_sent() const { return m_total_bytes_sent; }
-    void set_total_bytes_sent(size_t bytes) { m_total_bytes_sent = bytes; }
-
-private:
     bool send_header_and_data(const uint8_t* hdr,
                               size_t hdr_len,
                               const uint8_t* data,
                               size_t data_len)
     {
-        // FIXME: Add support for chunk header
-
         uint32_t total_block_len = pcapng::pad_block_length(hdr_len + data_len);
         auto pad_len = (total_block_len - hdr_len - data_len);
+
+        if (m_chunked) {
+            auto chunk_header_str = get_chunk_header_str(total_block_len);
+            if (send_to_peer_timeout(*m_peer,
+                                     chunk_header_str.c_str(),
+                                     chunk_header_str.length(),
+                                     MSG_MORE)
+                != (int)chunk_header_str.length()) {
+                m_error = true;
+                return false;
+            }
+        }
+
         if (send_to_peer_timeout(*m_peer, (void*)hdr, hdr_len, MSG_MORE)
             != (ssize_t)hdr_len) {
             m_error = true;
@@ -390,88 +506,27 @@ private:
             return false;
         }
         m_total_bytes_sent += sizeof(total_block_len);
+        if (m_chunked) {
+            auto chunk_trailer_str = get_chunk_trailer_str();
+            if (send_to_peer_timeout(*m_peer,
+                                     chunk_trailer_str.c_str(),
+                                     chunk_trailer_str.length(),
+                                     0)
+                != (int)chunk_trailer_str.length()) {
+                m_error = true;
+                return false;
+            }
+        }
         return true;
     }
 
-    std::shared_ptr<Pistache::Tcp::Peer> m_peer;
-    pcap_buffered_writer m_buffer;
-    size_t m_buffer_sent = 0;
-    size_t m_total_bytes_sent = 0;
-    bool m_error = false;
-};
-
-class pcap_transfer_context : public transfer_context
-{
-public:
-    virtual ~pcap_transfer_context() = default;
-
-    void set_reader(reader* reader) override { m_reader.reset(reader); }
-
-    virtual Pistache::Async::Promise<ssize_t> start() = 0;
-
-protected:
-    std::shared_ptr<reader> m_reader;
-    Pistache::Async::Deferred<ssize_t> m_deferred;
-};
-
-class pcap_thread_transfer_context : public pcap_transfer_context
-{
-public:
-    pcap_thread_transfer_context(std::shared_ptr<Pistache::Tcp::Peer> peer)
-    {
-        m_writer = std::make_unique<pcap_writer>(peer);
-    }
-
-    virtual ~pcap_thread_transfer_context()
-    {
-        if (m_thread) {
-            // Make sure thread is dead
-            m_thread->join();
-        }
-    }
-
-    size_t get_total_length() const override
-    {
-        return m_writer->calc_length(*m_reader);
-    }
-
-    Pistache::Async::Promise<ssize_t> start() override
-    {
-        auto promise = Pistache::Async::Promise<ssize_t>(
-            [&](Pistache::Async::Deferred<ssize_t> deferred) mutable {
-                m_deferred = std::move(deferred);
-            });
-        // Send the Capture data from a thread
-        m_thread = std::make_unique<std::thread>([&]() { transfer(); });
-        return promise;
-    }
-
-    void transfer()
-    {
-        m_writer->write_start();
-        while (!m_reader->is_done() && !m_writer->is_error()) {
-            m_reader->read([&](auto& packet) {
-                if (!m_writer->write_packet(packet)) return false;
-                return true;
-            });
-        }
-        if (m_writer->is_error()) {
-            // Error writing data
-            m_deferred.reject(Pistache::Error("Failed sending pcap data"));
-            return;
-        }
-        m_writer->write_end();
-
-        // FIXME: Need some way to enable the peer in pistache
-        // thread again.
-        //        This should be done through a message for
-        //        thread safety
-        m_deferred.resolve((ssize_t)m_writer->get_total_bytes_sent());
-    }
-
-private:
-    std::unique_ptr<pcap_writer> m_writer;
     std::unique_ptr<std::thread> m_thread;
+    std::shared_ptr<Pistache::Tcp::Peer> m_peer;
+    std::unique_ptr<pcap_buffered_writer> m_writer;
+    size_t m_buffer_sent;
+    size_t m_total_bytes_sent;
+    bool m_error;
+    bool m_chunked;
 };
 
 class pcap_async_transfer_context : public pcap_transfer_context
@@ -479,7 +534,7 @@ class pcap_async_transfer_context : public pcap_transfer_context
 public:
     pcap_async_transfer_context(std::shared_ptr<Pistache::Tcp::Peer> peer,
                                 Pistache::Tcp::Transport* transport,
-                                bool chunked = true)
+                                bool chunked = false)
         : m_transport(transport)
         , m_peer(peer)
         , m_writer(std::make_unique<pcap_buffered_writer>())
@@ -503,10 +558,63 @@ public:
                 m_deferred = std::move(deferred);
             });
 
+        m_reader->rewind();
+
         m_writer->write_start();
         transfer();
 
         return promise;
+    }
+
+private:
+    Pistache::Async::Promise<ssize_t> flush()
+    {
+        auto length = m_writer->get_length();
+
+        if (length == 0) {
+            return Pistache::Async::Promise<ssize_t>::resolved(0);
+        }
+
+        Pistache::RawBuffer buffer((char*)m_writer->get_data(), length);
+        m_writer->flush();
+        if (!m_chunked) {
+            return m_transport->asyncWrite(m_peer->fd(), buffer)
+                .then(
+                    [&](ssize_t length) {
+                        m_total_bytes_sent += length;
+                        return transfer();
+                    },
+                    [&](std::exception_ptr& eptr) {
+                        m_deferred.reject(
+                            Pistache::Error("Failed sending pcap data"));
+                        return Pistache::Async::Promise<ssize_t>::rejected(
+                            eptr);
+                    });
+        } else {
+            auto chunk_header_str = get_chunk_header_str(buffer.size());
+
+            return m_transport
+                ->asyncWrite(m_peer->fd(),
+                             Pistache::RawBuffer(chunk_header_str,
+                                                 chunk_header_str.length()),
+                             MSG_MORE)
+                .then(
+                    [&](ssize_t) {
+                        return m_transport->asyncWrite(m_peer->fd(), buffer);
+                    },
+                    Pistache::Async::Throw)
+                .then(
+                    [&](ssize_t) {
+                        auto chunk_trailer_str = get_chunk_trailer_str();
+                        return m_transport->asyncWrite(
+                            m_peer->fd(),
+                            Pistache::RawBuffer(chunk_trailer_str,
+                                                chunk_trailer_str.length()));
+                    },
+                    Pistache::Async::Throw)
+                .then([&](ssize_t) { return transfer(); },
+                      Pistache::Async::Throw);
+        }
     }
 
     Pistache::Async::Promise<ssize_t> transfer()
@@ -519,52 +627,9 @@ public:
             });
         }
 
-        if (m_reader->is_done()) { m_writer->write_end(); }
-
-        auto length = m_writer->get_length();
-        if (length) {
-            Pistache::RawBuffer buffer((char*)m_writer->get_data(), length);
-            m_writer->flush();
-            if (!m_chunked) {
-                return m_transport->asyncWrite(m_peer->fd(), buffer)
-                    .then(
-                        [&](ssize_t length) {
-                            m_total_bytes_sent += length;
-                            return transfer();
-                        },
-                        [&](std::exception_ptr& eptr) {
-                            m_deferred.reject(
-                                Pistache::Error("Failed sending pcap data"));
-                            return Pistache::Async::Promise<ssize_t>::rejected(
-                                eptr);
-                        });
-            } else {
-                auto chunk_header_str = get_chunk_header_str(buffer.size());
-
-                return m_transport
-                    ->asyncWrite(m_peer->fd(),
-                                 Pistache::RawBuffer(chunk_header_str,
-                                                     chunk_header_str.length()),
-                                 MSG_MORE)
-                    .then(
-                        [&](ssize_t) {
-                            return m_transport->asyncWrite(m_peer->fd(),
-                                                           buffer);
-                        },
-                        Pistache::Async::Throw)
-                    .then(
-                        [&](ssize_t) {
-                            auto chunk_trailer_str = get_chunk_trailer_str();
-                            return m_transport->asyncWrite(
-                                m_peer->fd(),
-                                Pistache::RawBuffer(
-                                    chunk_trailer_str,
-                                    chunk_trailer_str.length()));
-                        },
-                        Pistache::Async::Throw)
-                    .then([&](ssize_t) { return transfer(); },
-                          Pistache::Async::Throw);
-            }
+        if (m_writer->get_length() != 0) {
+            if (m_reader->is_done()) { m_writer->write_end(); }
+            return flush();
         }
 
         if (m_chunked) {
@@ -574,14 +639,10 @@ public:
                 Pistache::RawBuffer(last_chunk_str, last_chunk_str.length()));
         }
 
-        // FIXME:
-        // Need some way to enable the peer in pistache thread again.
-        // This should be done through a message for thread safety
         m_deferred.resolve(m_total_bytes_sent);
         return Pistache::Async::Promise<ssize_t>::resolved(m_total_bytes_sent);
     }
 
-private:
     Pistache::Tcp::Transport* m_transport;
     std::shared_ptr<Pistache::Tcp::Peer> m_peer;
     std::unique_ptr<pcap_buffered_writer> m_writer;
@@ -606,6 +667,7 @@ Pistache::Async::Promise<ssize_t>
 serve_capture_pcap(std::shared_ptr<transfer_context> context)
 {
     auto pcontext = dynamic_cast<pcap_transfer_context*>(context.get());
+    assert(pcontext);
     return pcontext->start();
 }
 
