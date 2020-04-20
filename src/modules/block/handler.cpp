@@ -306,14 +306,21 @@ void handler::delete_file(const Rest::Request& request,
 {
     auto id = request.param(":id").as<std::string>();
     if (auto res = openperf::config::op_config_validate_id_string(id); !res) {
-        response.send(Http::Code::No_Content);
+        response.send(Http::Code::Not_Found);
         return;
     }
 
     auto api_reply =
         submit_request(m_socket.get(), api::request_block_file_del{id : id});
-    response.headers().add<Http::Header::ContentType>(MIME(Application, Json));
-    response.send(Http::Code::No_Content);
+    if (auto reply = std::get_if<api::reply_ok>(&api_reply)) {
+        response.headers().add<Http::Header::ContentType>(
+            MIME(Application, Json));
+        response.send(Http::Code::No_Content);
+    } else if (auto error = std::get_if<api::reply_error>(&api_reply)) {
+        response.send(to_code(*error), api::to_string(error->info));
+    } else {
+        response.send(Http::Code::Internal_Server_Error);
+    }
 }
 
 void handler::list_generators(const Rest::Request&,
@@ -408,13 +415,20 @@ void handler::delete_generator(const Rest::Request& request,
 {
     auto id = request.param(":id").as<std::string>();
     if (auto res = openperf::config::op_config_validate_id_string(id); !res) {
-        response.send(Http::Code::No_Content);
+        response.send(Http::Code::Not_Found);
         return;
     }
     auto api_reply = submit_request(m_socket.get(),
                                     api::request_block_generator_del{id : id});
-    response.headers().add<Http::Header::ContentType>(MIME(Application, Json));
-    response.send(Http::Code::No_Content);
+    if (auto reply = std::get_if<api::reply_ok>(&api_reply)) {
+        response.headers().add<Http::Header::ContentType>(
+            MIME(Application, Json));
+        response.send(Http::Code::No_Content);
+    } else if (auto error = std::get_if<api::reply_error>(&api_reply)) {
+        response.send(to_code(*error), api::to_string(error->info));
+    } else {
+        response.send(Http::Code::Internal_Server_Error);
+    }
 }
 
 void handler::start_generator(const Rest::Request& request,
@@ -568,13 +582,20 @@ void handler::delete_generator_result(const Rest::Request& request,
 {
     auto id = request.param(":id").as<std::string>();
     if (auto res = openperf::config::op_config_validate_id_string(id); !res) {
-        response.send(Http::Code::No_Content);
+        response.send(Http::Code::Not_Found);
         return;
     }
     auto api_reply = submit_request(
         m_socket.get(), api::request_block_generator_result_del{id : id});
-    response.headers().add<Http::Header::ContentType>(MIME(Application, Json));
-    response.send(Http::Code::No_Content);
+    if (auto reply = std::get_if<api::reply_ok>(&api_reply)) {
+        response.headers().add<Http::Header::ContentType>(
+            MIME(Application, Json));
+        response.send(Http::Code::No_Content);
+    } else if (auto error = std::get_if<api::reply_error>(&api_reply)) {
+        response.send(to_code(*error), api::to_string(error->info));
+    } else {
+        response.send(Http::Code::Internal_Server_Error);
+    }
 }
 
 } // namespace opneperf::block

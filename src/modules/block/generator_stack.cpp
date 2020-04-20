@@ -29,9 +29,9 @@ generator_stack::create_block_generator(
         m_block_generators.emplace(blkgenerator_ptr->get_id(),
                                    blkgenerator_ptr);
         return blkgenerator_ptr;
-    } catch (const std::runtime_error e) {
+    } catch (const std::runtime_error& e) {
         return tl::make_unexpected(
-            "Cannot open resource "
+            "Cannot use resource: "
             + static_cast<std::string>(
                   block_generator_model.get_resource_id()));
     }
@@ -45,16 +45,16 @@ generator_stack::get_block_generator(std::string_view id) const
     return nullptr;
 }
 
-void generator_stack::delete_block_generator(std::string_view id)
+bool generator_stack::delete_block_generator(std::string_view id)
 {
     auto gen = get_block_generator(id);
     if (!gen)
-        return;
+        return false;
     if (gen->is_running()) {
         stop_generator(id);
     }
 
-    m_block_generators.erase(std::string(id));
+    return (m_block_generators.erase(std::string(id)) > 0);
 }
 
 tl::expected<block_generator_result_ptr, std::string> generator_stack::start_generator(std::string_view id)
@@ -72,18 +72,21 @@ tl::expected<block_generator_result_ptr, std::string> generator_stack::start_gen
     return result;
 }
 
-void generator_stack::stop_generator(std::string_view id)
+bool generator_stack::stop_generator(std::string_view id)
 {
     auto gen = get_block_generator(id);
+    if (!gen)
+        return false;
+
     if (!gen->is_running()) {
-        return;
+        return true;
     }
 
     gen->stop();
     auto result = gen->get_statistics();
     m_block_results[result->get_id()] = result;
     gen->clear_statistics();
-    return;
+    return true;
 }
 
 std::vector<block_generator_result_ptr> generator_stack::list_statistics() const
@@ -123,10 +126,10 @@ block_generator_result_ptr generator_stack::get_statistics(std::string_view id) 
     return stat;
 }
 
-void generator_stack::delete_statistics(std::string_view id)
+bool generator_stack::delete_statistics(std::string_view id)
 {
     if (!m_block_results.count(std::string(id)))
-        return;
+        return false;
 
     auto result = m_block_results.at(std::string(id));
     std::visit(
@@ -138,6 +141,7 @@ void generator_stack::delete_statistics(std::string_view id)
                 m_block_results.erase(std::string(id));
             }),
     result);
+    return true;
 }
 
 } // namespace openperf::block::generator

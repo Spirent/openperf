@@ -75,8 +75,11 @@ reply_msg server::handle_request(const request_block_file_add& request)
 
 reply_msg server::handle_request(const request_block_file_del& request)
 {
-    m_file_stack->delete_block_file(request.id);
-    return reply_ok{};
+    if (m_file_stack->delete_block_file(request.id)) {
+        return reply_ok{};
+    } else {
+        return to_error(api::error_type::NOT_FOUND);
+    }
 }
 
 reply_msg server::handle_request(const request_block_generator_list&)
@@ -111,7 +114,7 @@ reply_msg server::handle_request(const request_block_generator_add& request)
     }
 
     auto result = m_generator_stack->create_block_generator(*request.source, {m_file_stack.get(), m_device_stack.get()});
-    if (!result) { (to_error(error_type::CUSTOM_ERROR, 0, result.error())); }
+    if (!result) { return (to_error(error_type::CUSTOM_ERROR, 0, result.error())); }
     auto reply = reply_block_generators{};
     reply.generators.emplace_back(std::make_unique<model::block_generator>(*result.value()));
     return reply;
@@ -119,8 +122,11 @@ reply_msg server::handle_request(const request_block_generator_add& request)
 
 reply_msg server::handle_request(const request_block_generator_del& request)
 {
-    m_generator_stack->delete_block_generator(request.id);
-    return reply_ok{};
+    if (m_generator_stack->delete_block_generator(request.id)) {
+        return reply_ok{};
+    } else {
+        return to_error(api::error_type::NOT_FOUND);
+    }
 }
 
 reply_msg server::handle_request(const request_block_generator_start& request)
@@ -140,9 +146,11 @@ reply_msg server::handle_request(const request_block_generator_start& request)
 
 reply_msg server::handle_request(const request_block_generator_stop& request)
 {
-    m_generator_stack->stop_generator(request.id);
-
-    return api::reply_ok{};
+    if (m_generator_stack->stop_generator(request.id)) {
+        return reply_ok{};
+    } else {
+        return to_error(api::error_type::NOT_FOUND);
+    }
 }
 
 reply_msg
@@ -175,9 +183,13 @@ server::handle_request(const request_block_generator_bulk_start& request)
 reply_msg
 server::handle_request(const request_block_generator_bulk_stop& request)
 {
+    bool failed = false;
     for (auto& id : request.ids) {
-        m_generator_stack->stop_generator(*id);
+        failed = failed || !m_generator_stack->stop_generator(*id);
     }
+    if (failed)
+        return to_error(api::error_type::CUSTOM_ERROR, 0, "Some generators from the list were not found");
+
     return api::reply_ok{};
 }
 
@@ -205,8 +217,11 @@ reply_msg server::handle_request(const request_block_generator_result& request)
 reply_msg
 server::handle_request(const request_block_generator_result_del& request)
 {
-    m_generator_stack->delete_statistics(request.id);
-    return reply_ok{};
+    if (m_generator_stack->delete_statistics(request.id)) {
+        return reply_ok{};
+    } else {
+        return to_error(api::error_type::NOT_FOUND);
+    }
 }
 
 static int _handle_rpc_request(const op_event_data* data, void* arg)

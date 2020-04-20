@@ -87,7 +87,7 @@ file_stack::create_block_file(const model::file& block_file_model)
         auto blkblock_file_ptr = std::make_shared<file>(block_file_model);
         m_block_files.emplace(block_file_model.get_id(), blkblock_file_ptr);
         return blkblock_file_ptr;
-    } catch (const std::runtime_error e) {
+    } catch (const std::runtime_error& e) {
         return tl::make_unexpected("Cannot create file: "
                                    + std::string(e.what()));
     }
@@ -105,9 +105,9 @@ block_file_ptr file_stack::get_block_file(std::string_view id) const
     return nullptr;
 }
 
-void file_stack::delete_block_file(std::string_view id)
+bool file_stack::delete_block_file(std::string_view id)
 {
-    m_block_files.erase(std::string(id));
+    return (m_block_files.erase(std::string(id)) > 0);
 }
 
 } // namespace openperf::block::file
