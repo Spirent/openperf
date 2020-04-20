@@ -8,18 +8,18 @@ namespace openperf::memory::internal {
 
 // Constructors & Destructor
 generator::generator()
-    : _stopped(true)
-    , _paused(true)
-    , _buffer{.ptr = nullptr, .size = 0}
+    : m_stopped(true)
+    , m_paused(true)
+    , m_buffer{.ptr = nullptr, .size = 0}
 {}
 
 generator::generator(generator&& g)
-    : _stopped(g._stopped)
-    , _paused(g._paused)
-    , _read_workers(std::move(g._read_workers))
-    , _write_workers(std::move(g._write_workers))
-    , _config(g._config)
-    , _buffer{.ptr = nullptr, .size = 0}
+    : m_stopped(g.m_stopped)
+    , m_paused(g.m_paused)
+    , m_read_workers(std::move(g.m_read_workers))
+    , m_write_workers(std::move(g.m_write_workers))
+    , m_config(g.m_config)
+    , m_buffer{.ptr = nullptr, .size = 0}
 {}
 
 generator::generator(const generator::config_t& c)
@@ -37,18 +37,18 @@ generator::~generator()
 // Methods : public
 void generator::start()
 {
-    if (!_stopped) return;
+    if (!m_stopped) return;
 
     for_each_worker([](worker_ptr& w) { w->start(); });
-    _stopped = false;
+    m_stopped = false;
 }
 
 void generator::stop()
 {
-    if (_stopped) return;
+    if (m_stopped) return;
 
     for_each_worker([](worker_ptr& w) { w->stop(); });
-    _stopped = true;
+    m_stopped = true;
 }
 
 void generator::restart()
@@ -59,18 +59,18 @@ void generator::restart()
 
 void generator::resume()
 {
-    if (!_paused) return;
+    if (!m_paused) return;
 
     for_each_worker([](worker_ptr& w) { w->resume(); });
-    _paused = false;
+    m_paused = false;
 }
 
 void generator::pause()
 {
-    if (_paused) return;
+    if (m_paused) return;
 
     for_each_worker([](worker_ptr& w) { w->pause(); });
-    _paused = true;
+    m_paused = true;
 }
 
 void generator::reset()
@@ -86,13 +86,13 @@ generator::stat_t generator::stat() const
     generator::stat_t result_stat;
 
     auto& rstat = result_stat.read;
-    for (auto& ptr : _read_workers) {
+    for (auto& ptr : m_read_workers) {
         auto w = reinterpret_cast<worker<task_memory>*>(ptr.get());
         rstat += w->stat();
     }
 
     auto& wstat = result_stat.write;
-    for (auto& ptr : _write_workers) {
+    for (auto& ptr : m_write_workers) {
         auto w = reinterpret_cast<worker<task_memory>*>(ptr.get());
         wstat += w->stat();
     }
@@ -102,60 +102,60 @@ generator::stat_t generator::stat() const
     return result_stat;
 }
 
-generator::config_t generator::config() const { return _config; }
+generator::config_t generator::config() const { return m_config; }
 
 void generator::config(const generator::config_t& cfg)
 {
     pause();
     resize_buffer(cfg.buffer_size);
-    reallocate_workers<task_memory_read>(_read_workers, cfg.read_threads);
-    reallocate_workers<task_memory_write>(_write_workers, cfg.write_threads);
+    reallocate_workers<task_memory_read>(m_read_workers, cfg.read_threads);
+    reallocate_workers<task_memory_write>(m_write_workers, cfg.write_threads);
 
-    spread_config(_read_workers,
+    spread_config(m_read_workers,
                   task_memory_config{
                       .block_size = cfg.read.block_size,
                       .op_per_sec = cfg.read.op_per_sec,
                       .pattern = cfg.read.pattern,
-                      .buffer = {.ptr = _buffer.ptr, .size = _buffer.size}});
-    spread_config(_write_workers,
+                      .buffer = {.ptr = m_buffer.ptr, .size = m_buffer.size}});
+    spread_config(m_write_workers,
                   task_memory_config{
                       .block_size = cfg.write.block_size,
                       .op_per_sec = cfg.write.op_per_sec,
                       .pattern = cfg.write.pattern,
-                      .buffer = {.ptr = _buffer.ptr, .size = _buffer.size}});
+                      .buffer = {.ptr = m_buffer.ptr, .size = m_buffer.size}});
 
-    _config = cfg;
+    m_config = cfg;
     resume();
 }
 
 // Methods : private
 void generator::for_each_worker(std::function<void(worker_ptr&)> function)
 {
-    for (auto list : {&_read_workers, &_write_workers}) {
+    for (auto list : {&m_read_workers, &m_write_workers}) {
         for (auto& worker : *list) { function(worker); }
     }
 }
 
 void generator::free_buffer()
 {
-    if (_buffer.ptr == nullptr) return;
-    if (_buffer.ptr == MAP_FAILED) return;
+    if (m_buffer.ptr == nullptr) return;
+    if (m_buffer.ptr == MAP_FAILED) return;
 
-    if (munmap(_buffer.ptr, _buffer.size) == -1) {
+    if (munmap(m_buffer.ptr, m_buffer.size) == -1) {
         OP_LOG(OP_LOG_ERROR,
                "Failed to unallocate %zu"
                " bytes of memory: %s\n",
-               _buffer.size,
+               m_buffer.size,
                strerror(errno));
     }
 
-    _buffer.ptr = MAP_FAILED;
-    _buffer.size = 0;
+    m_buffer.ptr = MAP_FAILED;
+    m_buffer.size = 0;
 }
 
 void generator::resize_buffer(size_t size)
 {
-    if (size == _buffer.size) return;
+    if (size == m_buffer.size) return;
 
     /*
      * We use mmap/munmap here instead of the standard allocation functions
@@ -168,21 +168,21 @@ void generator::resize_buffer(size_t size)
     if (size > 0) {
         OP_LOG(OP_LOG_INFO,
                "Reallocating buffer (%zu => %zu)\n",
-               _buffer.size,
+               m_buffer.size,
                size);
-        _buffer.ptr = mmap(NULL,
+        m_buffer.ptr = mmap(NULL,
                            size,
                            PROT_READ | PROT_WRITE,
                            MAP_ANONYMOUS | MAP_PRIVATE,
                            -1,
                            0);
-        if (_buffer.ptr == MAP_FAILED) {
+        if (m_buffer.ptr == MAP_FAILED) {
             OP_LOG(OP_LOG_ERROR,
                    "Failed to allocate %" PRIu64 " byte memory buffer\n",
                    size);
             return;
         }
-        _buffer.size = size;
+        m_buffer.size = size;
     }
 }
 

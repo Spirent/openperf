@@ -12,7 +12,7 @@ class server
 {
 private:
     std::unique_ptr<void, op_socket_deleter> m_socket;
-    std::unique_ptr<memory::generator_collection> generator_stack;
+    std::unique_ptr<memory::generator_collection> m_generator_stack;
 
 public:
     server(void* context, core::event_loop& loop);
