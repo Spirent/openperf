@@ -6,7 +6,7 @@
 
 #include "utils/worker/task.hpp"
 #include "memory/io_pattern.hpp"
-#include "memory/memory_stat.h"
+#include "memory/memory_stat.hpp"
 
 namespace openperf::memory::internal {
 
