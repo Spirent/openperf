@@ -358,9 +358,15 @@ reply_msg server::handle_request(const request_start_capture& request)
     auto& id = item.first->first;
     auto& result = item.first->second;
 
-    // Create capture buffer and associate with results object
-    result->buffer = std::make_shared<capture_buffer_file>(
-        openperf::core::to_string(id) + ".pcapng", false);
+    // Create capture buffers and associate with result object
+    auto idx = 0;
+    std::generate_n(
+        std::back_inserter(result->buffers), impl.worker_count(), [&]() {
+            return std::make_unique<capture_buffer_file>(
+                openperf::core::to_string(id) + "-" + std::to_string(++idx)
+                    + ".pcapng",
+                false);
+        });
 
     impl.start(result.get());
 
@@ -415,7 +421,8 @@ reply_msg server::handle_request(const request_list_capture_results& request)
                  std::end(m_results),
                  std::back_inserter(reply.capture_results),
                  compare,
-                 [](const auto& item) {
+                 [](auto& item) {
+                     item.second->update_stats();
                      return (to_swagger(item.first, *item.second));
                  });
 
@@ -440,6 +447,7 @@ reply_msg server::handle_request(const request_get_capture_result& request)
     if (result == std::end(m_results)) {
         return (to_error(error_type::NOT_FOUND));
     }
+    result->second->update_stats();
 
     auto reply = reply_capture_results{};
     reply.capture_results.emplace_back(
@@ -451,6 +459,7 @@ reply_msg server::handle_request(const request_delete_capture_result& request)
 {
     if (auto id = to_uuid(request.id); id.has_value()) {
         if (auto item = m_results.find(*id); item != std::end(m_results)) {
+            // FIXME: Should only allow delete if no transfer in progress
             auto& result = item->second;
             if (!result->parent.active()) { m_results.erase(*id); }
         }
@@ -471,12 +480,28 @@ reply_msg server::handle_request(request_create_capture_transfer& request)
     auto& result = item->second;
 
     if (result->transfer) {
-        // Only support 1 reader per capture results
+        // Only support 1 transfer per capture results
         return (to_error(error_type::POSIX, EEXIST));
     }
 
     result->transfer = request.transfer;
-    result->transfer->set_reader(new reader(result->buffer));
+    if (result->buffers.size() == 1) {
+        auto reader = std::unique_ptr<capture_buffer_reader>(
+            new capture_buffer_file_reader(*(result->buffers[0])));
+        result->transfer->set_reader(reader);
+    } else {
+        std::vector<std::unique_ptr<capture_buffer_reader>> readers;
+        std::transform(result->buffers.begin(),
+                       result->buffers.end(),
+                       std::back_inserter(readers),
+                       [&](auto& buffer) {
+                           return std::make_unique<capture_buffer_file_reader>(
+                               *buffer);
+                       });
+        auto reader = std::unique_ptr<capture_buffer_reader>(
+            new multi_capture_buffer_reader(std::move(readers)));
+        result->transfer->set_reader(reader);
+    }
 
     return (reply_ok{});
 }

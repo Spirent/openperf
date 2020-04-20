@@ -26,49 +26,11 @@ struct sink_config
     std::string source;
 };
 
-class reader
-{
-public:
-    reader(std::shared_ptr<capture_buffer_file> buffer)
-        : m_buffer(buffer)
-        , m_iter(buffer->begin())
-    {}
-
-    bool is_done() const { return m_iter == m_buffer->end(); }
-
-    template <class T> size_t read(T&& func)
-    {
-        size_t count = 0;
-        if (m_use_last) {
-            if (!func((*m_iter))) return false;
-            m_use_last = false;
-            ++count;
-        }
-        for (auto end = m_buffer->end(); m_iter != end; ++m_iter) {
-            if (!func(*m_iter)) {
-                m_use_last = true;
-                return count;
-            }
-            ++count;
-        }
-        return count;
-    }
-
-    buffer_stats get_stats() const { return m_buffer->get_stats(); }
-
-    void rewind() { m_iter = m_buffer->begin(); }
-
-private:
-    std::shared_ptr<capture_buffer_file> m_buffer;
-    capture_buffer_file::iterator m_iter;
-    bool m_use_last = 0;
-};
-
 class transfer_context
 {
 public:
     virtual ~transfer_context() = default;
-    virtual void set_reader(reader* reader) = 0;
+    virtual void set_reader(std::unique_ptr<capture_buffer_reader>& reader) = 0;
     virtual size_t get_total_length() const = 0;
 };
 
@@ -76,12 +38,14 @@ struct sink_result
 {
     sink_result(const sink& p);
 
+    void update_stats();
+
     const sink& parent;
     std::atomic<int64_t> packets;
     std::atomic<int64_t> bytes;
     std::atomic<capture_state> state = capture_state::STOPPED;
 
-    std::shared_ptr<capture_buffer_file> buffer;
+    std::vector<std::unique_ptr<capture_buffer_file>> buffers;
     std::shared_ptr<transfer_context> transfer;
 };
 

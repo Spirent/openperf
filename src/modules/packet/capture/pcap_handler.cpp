@@ -124,7 +124,7 @@ class pcap_buffered_writer
 public:
     pcap_buffered_writer() {}
 
-    size_t calc_length(reader& reader)
+    size_t calc_length(capture_buffer_reader& reader)
     {
         size_t header_length =
             pcapng::pad_block_length(sizeof(pcapng::section_block)
@@ -239,7 +239,7 @@ public:
         return true;
     }
 
-    bool write_packet(buffer_data& packet)
+    bool write_packet(capture_packet& packet)
     {
         // Add packet block header
         pcapng::enhanced_packet_block block_hdr;
@@ -274,12 +274,15 @@ class pcap_transfer_context : public transfer_context
 public:
     virtual ~pcap_transfer_context() = default;
 
-    void set_reader(reader* reader) override { m_reader.reset(reader); }
+    void set_reader(std::unique_ptr<capture_buffer_reader>& reader) override
+    {
+        m_reader.reset(reader.release());
+    }
 
     virtual Pistache::Async::Promise<ssize_t> start() = 0;
 
 protected:
-    std::shared_ptr<reader> m_reader;
+    std::unique_ptr<capture_buffer_reader> m_reader;
     Pistache::Async::Deferred<ssize_t> m_deferred;
 };
 
@@ -359,7 +362,7 @@ private:
         m_deferred.resolve((ssize_t)m_total_bytes_sent);
     }
 
-    bool write_packet(buffer_data& packet)
+    bool write_packet(capture_packet& packet)
     {
         // Add packet block header
         pcapng::enhanced_packet_block block_hdr;

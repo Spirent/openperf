@@ -25,6 +25,20 @@ sink_result::sink_result(const sink& parent_)
     : parent(parent_)
 {}
 
+void sink_result::update_stats()
+{
+    buffer_stats total{0, 0};
+
+    std::for_each(buffers.begin(), buffers.end(), [&](auto& buffer) {
+        auto stats = buffer->get_stats();
+        total.bytes += stats.bytes;
+        total.packets += stats.packets;
+    });
+
+    bytes = total.bytes;
+    packets = total.packets;
+}
+
 std::vector<uint8_t> sink::make_indexes(std::vector<unsigned>& ids)
 {
     std::vector<uint8_t> indexes(*max_element(std::begin(ids), std::end(ids)));
@@ -145,13 +159,13 @@ uint16_t sink::push(const packetio::packets::packet_buffer* const packets[],
     constexpr int burst_size = 64;
     assert(packets_length < burst_size);
 
-    // const auto id = internal::worker::get_id();
+    const auto id = packetio::internal::worker::get_id();
 
     auto results = m_results.load(std::memory_order_consume);
 
     if (results) {
         auto state = results->state.load(std::memory_order_consume);
-        auto& buffer = results->buffer;
+        auto& buffer = results->buffers[m_indexes[id]];
         auto start = packets;
         auto length = packets_length;
 
@@ -178,11 +192,6 @@ uint16_t sink::push(const packetio::packets::packet_buffer* const packets[],
         } else {
             buffer->push(start, length);
         }
-
-        // TODO: Should probably only update stats when buffer is full
-        auto stats = buffer->get_stats();
-        results->packets = stats.packets;
-        results->bytes = stats.bytes;
     }
 
     return (packets_length);

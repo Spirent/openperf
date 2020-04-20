@@ -226,7 +226,7 @@ capture_buffer_file::iterator capture_buffer_file::end()
     return capture_buffer_file::iterator(*this, true);
 }
 
-buffer_stats capture_buffer_file::get_stats() { return m_stats; }
+buffer_stats capture_buffer_file::get_stats() const { return m_stats; }
 
 capture_buffer_file::iterator::iterator(capture_buffer_file& buffer, bool eof)
     : m_fp_read(nullptr)
@@ -253,13 +253,13 @@ capture_buffer_file::iterator::iterator(capture_buffer_file& buffer, bool eof)
 capture_buffer_file::iterator::iterator(capture_buffer_file::iterator&& rhs)
     : m_fp_read(rhs.m_fp_read)
     , m_read_offset(rhs.m_read_offset)
-    , m_buffer_data(std::move(rhs.m_buffer_data))
+    , m_capture_packet(std::move(rhs.m_capture_packet))
     , m_read_buffer(std::move(rhs.m_read_buffer))
     , m_eof(rhs.m_eof)
 {
     rhs.m_fp_read = nullptr;
     rhs.m_read_offset = 0;
-    m_buffer_data.data = &m_read_buffer[0];
+    m_capture_packet.data = &m_read_buffer[0];
 }
 
 capture_buffer_file::iterator::~iterator()
@@ -275,10 +275,10 @@ operator=(capture_buffer_file::iterator&& rhs)
 {
     m_fp_read = rhs.m_fp_read;
     m_read_offset = rhs.m_read_offset;
-    m_buffer_data = std::move(rhs.m_buffer_data);
+    m_capture_packet = std::move(rhs.m_capture_packet);
     m_read_buffer = std::move(rhs.m_read_buffer);
     m_eof = rhs.m_eof;
-    m_buffer_data.data = &m_read_buffer[0];
+    m_capture_packet.data = &m_read_buffer[0];
 
     rhs.m_fp_read = nullptr;
     rhs.m_read_offset = 0;
@@ -366,12 +366,68 @@ bool capture_buffer_file::iterator::next()
     uint64_t timestamp =
         (uint64_t)block_hdr.timestamp_high << 32 | block_hdr.timestamp_low;
 
-    m_buffer_data.timestamp = timestamp;
-    m_buffer_data.captured_len = block_hdr.captured_len;
-    m_buffer_data.packet_len = block_hdr.packet_len;
-    m_buffer_data.data = &m_read_buffer[0];
+    m_capture_packet.timestamp = timestamp;
+    m_capture_packet.captured_len = block_hdr.captured_len;
+    m_capture_packet.packet_len = block_hdr.packet_len;
+    m_capture_packet.data = &m_read_buffer[0];
 
     return true;
+}
+
+multi_capture_buffer_reader::multi_capture_buffer_reader(
+    std::vector<reader_ptr>&& readers)
+    : m_readers(std::move(readers))
+{
+    populate_timestamp_priority_list();
+}
+
+bool multi_capture_buffer_reader::is_done() const
+{
+    return m_reader_priority.empty();
+}
+
+capture_packet& multi_capture_buffer_reader::get()
+{
+    return m_reader_priority.top()->get();
+}
+
+bool multi_capture_buffer_reader::next()
+{
+    if (m_reader_priority.empty()) return false;
+
+    auto reader = m_reader_priority.top();
+    m_reader_priority.pop();
+    if (reader->next()) { m_reader_priority.push(reader); }
+    return !m_reader_priority.empty();
+}
+
+buffer_stats multi_capture_buffer_reader::get_stats() const
+{
+    buffer_stats total{0, 0};
+    for (auto& reader : m_readers) {
+        auto s = reader->get_stats();
+        total.packets += s.packets;
+        total.bytes += s.bytes;
+    }
+    return total;
+}
+
+void multi_capture_buffer_reader::rewind()
+{
+    for (auto& reader : m_readers) { reader->rewind(); }
+    populate_timestamp_priority_list();
+}
+
+void multi_capture_buffer_reader::populate_timestamp_priority_list()
+{
+    // Clear existing items
+    while (!m_reader_priority.empty()) { m_reader_priority.pop(); }
+
+    // Add all the readers
+    for (auto& reader : m_readers) {
+        if (reader->is_done()) continue;
+        m_reader_priority.push(reader.get());
+    }
 }
 
 } // namespace openperf::packet::capture
