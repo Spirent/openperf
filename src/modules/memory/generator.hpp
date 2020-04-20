@@ -40,17 +40,17 @@ private:
     using workers = std::forward_list<worker_ptr>;
 
 private:
-    bool _stopped;
-    bool _paused;
-    workers _read_workers;
-    workers _write_workers;
-    config_t _config;
+    bool m_stopped;
+    bool m_paused;
+    workers m_read_workers;
+    workers m_write_workers;
+    config_t m_config;
 
     struct
     {
         void* ptr;
         size_t size;
-    } _buffer;
+    } m_buffer;
 
 public:
     // Constructors & Destructor
@@ -74,9 +74,9 @@ public:
     generator::config_t config() const;
     generator::stat_t stat() const;
 
-    inline bool is_stopped() const { return _stopped; }
-    inline bool is_running() const { return !(_paused || _stopped); }
-    inline bool is_paused() const { return _paused; }
+    inline bool is_stopped() const { return m_stopped; }
+    inline bool is_running() const { return !(m_paused || m_stopped); }
+    inline bool is_paused() const { return m_paused; }
 
 private:
     void free_buffer();

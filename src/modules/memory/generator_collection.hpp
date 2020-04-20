@@ -27,9 +27,9 @@ private:
     using stat_variant = std::variant<generator_ref, stat_t>;
 
 private:
-    std::unordered_map<std::string, generator> _generators;
-    std::unordered_map<std::string, stat_variant> _stats;
-    std::unordered_map<std::string, std::string> _id_map;
+    std::unordered_map<std::string, generator> m_generators;
+    std::unordered_map<std::string, stat_variant> m_stats;
+    std::unordered_map<std::string, std::string> m_id_map;
 
 public:
     generator_collection() = default;
