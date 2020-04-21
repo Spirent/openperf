@@ -56,13 +56,14 @@ reply_msg server::handle_request(const request_block_file& request)
 
 reply_msg server::handle_request(const request_block_file_add& request)
 {
+    // If user did not specify an id create one for them.
+    if (request.source->get_id().empty()) {
+        request.source->set_id(core::to_string(core::uuid::random()));
+    }
+
     if (auto id_check = config::op_config_validate_id_string(request.source->get_id()); !id_check)
         return (to_error(error_type::CUSTOM_ERROR, 0, "Id is not valid"));
 
-    // If user did not specify an id create one for them.
-    if (request.source->get_id() == api::empty_id_string) {
-        request.source->set_id(core::to_string(core::uuid::random()));
-    }
     auto result = m_file_stack->create_block_file(*request.source);
     if (!result) {
         return to_error(error_type::CUSTOM_ERROR, 0, result.error());
@@ -105,13 +106,13 @@ reply_msg server::handle_request(const request_block_generator& request)
 
 reply_msg server::handle_request(const request_block_generator_add& request)
 {
-    if (auto id_check = config::op_config_validate_id_string(request.source->get_id()); !id_check)
-        return (to_error(error_type::CUSTOM_ERROR, 0, "Id is not valid"));
-
     // If user did not specify an id create one for them.
-    if (request.source->get_id() == api::empty_id_string) {
+    if (request.source->get_id().empty()) {
         request.source->set_id(core::to_string(core::uuid::random()));
     }
+
+    if (auto id_check = config::op_config_validate_id_string(request.source->get_id()); !id_check)
+        return (to_error(error_type::CUSTOM_ERROR, 0, "Id is not valid"));
 
     auto result = m_generator_stack->create_block_generator(*request.source, {m_file_stack.get(), m_device_stack.get()});
     if (!result) { return (to_error(error_type::CUSTOM_ERROR, 0, result.error())); }

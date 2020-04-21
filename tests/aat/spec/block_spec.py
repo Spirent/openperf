@@ -18,7 +18,7 @@ CONFIG = Config(os.path.join(os.path.dirname(__file__),
 
 def generator_model(resource_id = None):
     bg = client.models.BlockGenerator()
-    bg.id = 'none'
+    bg.id = ''
     bg.resource_id = resource_id
     bg.running = False
     bg.config = client.models.BlockGeneratorConfig()
@@ -33,7 +33,7 @@ def generator_model(resource_id = None):
 
 def file_model(file_size = None, path = None):
     ba = client.models.BlockFile()
-    ba.id = 'none'
+    ba.id = ''
     ba.file_size = file_size
     ba.path = path
     ba.init_percent_complete = 0

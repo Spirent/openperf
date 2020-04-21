@@ -22,7 +22,6 @@ namespace openperf::block::api {
 using namespace swagger::v1::model;
 
 const std::string endpoint = "inproc://openperf_block";
-static constexpr std::string_view empty_id_string = "none";
 
 using device_t = model::device;
 using device_ptr = std::unique_ptr<device_t>;
