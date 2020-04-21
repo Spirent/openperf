@@ -246,7 +246,7 @@ with description('Block,', 'block') as self:
                     expect(lambda: self.api.create_block_generator(gen)).to(raise_api_exception(400))
 
         with description('delete generator,'):
-            with description('by existing c id,'):
+            with description('by existing id,'):
                 with before.each:
                     file = self.api.create_block_file(file_model(1024, '/tmp/foo'))
                     expect(file).to(be_valid_block_file)
