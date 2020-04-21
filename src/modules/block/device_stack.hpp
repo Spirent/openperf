@@ -38,9 +38,9 @@ private:
 
 public:
     device_stack();
-    device_ptr get_block_device(std::string_view id) const;
+    device_ptr get_block_device(const std::string& id) const;
     std::shared_ptr<virtual_device>
-    get_vdev(std::string_view id) const override;
+    get_vdev(const std::string& id) const override;
     std::vector<device_ptr> block_devices_list();
 };
 

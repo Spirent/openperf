@@ -38,14 +38,14 @@ generator_stack::create_block_generator(
 }
 
 block_generator_ptr
-generator_stack::get_block_generator(std::string_view id) const
+generator_stack::get_block_generator(const std::string& id) const
 {
-    if (m_block_generators.count(std::string(id)))
-        return m_block_generators.at(std::string(id));
+    if (m_block_generators.count(id))
+        return m_block_generators.at(id);
     return nullptr;
 }
 
-bool generator_stack::delete_block_generator(std::string_view id)
+bool generator_stack::delete_block_generator(const std::string& id)
 {
     auto gen = get_block_generator(id);
     if (!gen)
@@ -54,10 +54,10 @@ bool generator_stack::delete_block_generator(std::string_view id)
         stop_generator(id);
     }
 
-    return (m_block_generators.erase(std::string(id)) > 0);
+    return (m_block_generators.erase(id) > 0);
 }
 
-tl::expected<block_generator_result_ptr, std::string> generator_stack::start_generator(std::string_view id)
+tl::expected<block_generator_result_ptr, std::string> generator_stack::start_generator(const std::string& id)
 {
     auto gen = get_block_generator(id);
     if (!gen)
@@ -72,7 +72,7 @@ tl::expected<block_generator_result_ptr, std::string> generator_stack::start_gen
     return result;
 }
 
-bool generator_stack::stop_generator(std::string_view id)
+bool generator_stack::stop_generator(const std::string& id)
 {
     auto gen = get_block_generator(id);
     if (!gen)
@@ -107,12 +107,12 @@ std::vector<block_generator_result_ptr> generator_stack::list_statistics() const
     return result_list;
 }
 
-block_generator_result_ptr generator_stack::get_statistics(std::string_view id) const
+block_generator_result_ptr generator_stack::get_statistics(const std::string& id) const
 {
-    if (!m_block_results.count(std::string(id)))
+    if (!m_block_results.count(id))
         return nullptr;
 
-    auto result = m_block_results.at(std::string(id));
+    auto result = m_block_results.at(id);
     auto stat = std::visit(
         utils::overloaded_visitor(
             [&](const block_generator_ptr& generator) {
@@ -126,19 +126,19 @@ block_generator_result_ptr generator_stack::get_statistics(std::string_view id) 
     return stat;
 }
 
-bool generator_stack::delete_statistics(std::string_view id)
+bool generator_stack::delete_statistics(const std::string& id)
 {
-    if (!m_block_results.count(std::string(id)))
+    if (!m_block_results.count(id))
         return false;
 
-    auto result = m_block_results.at(std::string(id));
+    auto result = m_block_results.at(id);
     std::visit(
         utils::overloaded_visitor(
             [&](const block_generator_ptr&) {
                 // Do nothing
             },
             [&](const block_generator_result_ptr&) {
-                m_block_results.erase(std::string(id));
+                m_block_results.erase(id);
             }),
     result);
     return true;

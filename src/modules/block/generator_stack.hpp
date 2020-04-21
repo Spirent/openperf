@@ -29,13 +29,13 @@ public:
     tl::expected<block_generator_ptr, std::string> create_block_generator(
         const model::block_generator& block_generator_model,
         const std::vector<virtual_device_stack*> vdev_stack_list);
-    block_generator_ptr get_block_generator(std::string_view id) const;
-    bool delete_block_generator(std::string_view id);
-    tl::expected<block_generator_result_ptr, std::string> start_generator(std::string_view id);
-    bool stop_generator(std::string_view id);
+    block_generator_ptr get_block_generator(const std::string& id) const;
+    bool delete_block_generator(const std::string& id);
+    tl::expected<block_generator_result_ptr, std::string> start_generator(const std::string& id);
+    bool stop_generator(const std::string& id);
     std::vector<block_generator_result_ptr> list_statistics() const;
-    block_generator_result_ptr get_statistics(std::string_view id) const;
-    bool delete_statistics(std::string_view id);
+    block_generator_result_ptr get_statistics(const std::string& id) const;
+    bool delete_statistics(const std::string& id);
 };
 
 } // namespace openperf::block::generator

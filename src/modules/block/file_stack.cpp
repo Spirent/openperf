@@ -93,21 +93,21 @@ file_stack::create_block_file(const model::file& block_file_model)
     }
 }
 
-std::shared_ptr<virtual_device> file_stack::get_vdev(std::string_view id) const
+std::shared_ptr<virtual_device> file_stack::get_vdev(const std::string& id) const
 {
-    return get_block_file(std::string(id));
+    return get_block_file(id);
 }
 
-block_file_ptr file_stack::get_block_file(std::string_view id) const
+block_file_ptr file_stack::get_block_file(const std::string& id) const
 {
-    if (m_block_files.count(std::string(id)))
-        return m_block_files.at(std::string(id));
+    if (m_block_files.count(id))
+        return m_block_files.at(id);
     return nullptr;
 }
 
-bool file_stack::delete_block_file(std::string_view id)
+bool file_stack::delete_block_file(const std::string& id)
 {
-    return (m_block_files.erase(std::string(id)) > 0);
+    return (m_block_files.erase(id) > 0);
 }
 
 } // namespace openperf::block::file

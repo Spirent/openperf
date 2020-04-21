@@ -56,7 +56,7 @@ class virtual_device_stack
 public:
     virtual ~virtual_device_stack() = default;
     virtual std::shared_ptr<virtual_device>
-        get_vdev(std::string_view) const = 0;
+    get_vdev(const std::string&) const = 0;
 };
 
 } // namespace openperf::block

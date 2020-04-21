@@ -38,27 +38,26 @@ void block_generator::set_config(const model::block_generator_config& value)
     model::block_generator::set_config(value);
 }
 
-void block_generator::set_resource_id(std::string_view value)
+void block_generator::set_resource_id(const std::string& value)
 {
     auto dev = m_vdev;
-    update_resource(std::string(value));
+    update_resource(value);
     if (dev) m_vdev->vclose();
     m_worker->config(generate_worker_config(get_config()));
-    model::block_generator::set_resource_id(std::string(value));
+    model::block_generator::set_resource_id(value);
 }
 
-void block_generator::update_resource(std::string_view resource_id)
+void block_generator::update_resource(const std::string& resource_id)
 {
     std::shared_ptr<virtual_device> vdev_ptr;
     for (auto vdev_stack : m_vdev_stack_list) {
-        if (auto vdev = vdev_stack->get_vdev(std::string(resource_id))) {
+        if (auto vdev = vdev_stack->get_vdev(resource_id)) {
             vdev_ptr = vdev;
             break;
         }
     }
     if (!vdev_ptr)
-        throw std::runtime_error("Unknown resource: "
-                                 + std::string(resource_id));
+        throw std::runtime_error("Unknown resource: " + resource_id);
 
     if (auto result = vdev_ptr->vopen(); !result)
         throw std::runtime_error("Cannot open resource: "

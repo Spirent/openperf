@@ -22,7 +22,7 @@ private:
     std::vector<virtual_device_stack*> m_vdev_stack_list;
     std::shared_ptr<virtual_device> m_vdev;
     task_config_t generate_worker_config(const model::block_generator_config&);
-    void update_resource(std::string_view);
+    void update_resource(const std::string&);
 
 public:
     ~block_generator();
@@ -32,7 +32,7 @@ public:
     void stop();
 
     void set_config(const model::block_generator_config&);
-    void set_resource_id(std::string_view);
+    void set_resource_id(const std::string&);
     void set_running(bool);
 
     block_result_ptr get_statistics() const;
