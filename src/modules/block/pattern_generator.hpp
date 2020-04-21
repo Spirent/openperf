@@ -5,6 +5,8 @@
 
 namespace openperf::block::worker {
 
+using generation_pattern = model::block_generation_pattern;
+
 class pattern_generator
 {
 private:
@@ -24,9 +26,9 @@ public:
     pattern_generator();
     pattern_generator(off_t min,
                       off_t max,
-                      model::block_generation_pattern pattern);
+                      generation_pattern pattern);
     off_t generate();
-    void reset(off_t min, off_t max, model::block_generation_pattern pattern);
+    void reset(off_t min, off_t max, generation_pattern pattern);
 };
 
 } // namespace openperf::block::worker

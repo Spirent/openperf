@@ -1,3 +1,4 @@
+#include <cassert>
 #include <unordered_map>
 #include "pattern_generator.hpp"
 #include "utils/random.hpp"
@@ -8,7 +9,7 @@ off_t pattern_generator::pattern_blank() { return 0; }
 
 off_t pattern_generator::pattern_random()
 {
-    m_idx = m_min + utils::random_uniform(m_max - m_min);
+    m_idx = utils::random_uniform(m_min, m_max);
     return static_cast<off_t>(m_idx);
 }
 
@@ -30,7 +31,7 @@ off_t pattern_generator::pattern_reverse()
 
 pattern_generator::pattern_generator()
     : m_min(0)
-    , m_max(0)
+    , m_max(1)
     , m_idx(-1)
 {
     m_generation_method = &pattern_generator::pattern_blank;
@@ -38,27 +39,30 @@ pattern_generator::pattern_generator()
 
 pattern_generator::pattern_generator(off_t p_min,
                                      off_t p_max,
-                                     model::block_generation_pattern p_pattern)
+                                     generation_pattern p_pattern)
 {
     reset(p_min, p_max, p_pattern);
 }
 
 void pattern_generator::reset(off_t p_min,
                               off_t p_max,
-                              model::block_generation_pattern p_pattern)
+                              generation_pattern p_pattern)
 {
+    if (p_min >= p_max)
+        throw std::runtime_error("The minimum value is equal or greater than the maximum value");
+
     m_min = p_min;
     m_max = p_max;
-    m_idx = -1;
+    m_idx = p_min - 1;
 
-    const static std::unordered_map<model::block_generation_pattern,
+    const static std::unordered_map<generation_pattern,
                                     generation_method_t>
         generation_methods = {
-            {model::block_generation_pattern::RANDOM,
+            {generation_pattern::RANDOM,
              &pattern_generator::pattern_random},
-            {model::block_generation_pattern::REVERSE,
+            {generation_pattern::REVERSE,
              &pattern_generator::pattern_reverse},
-            {model::block_generation_pattern::SEQUENTIAL,
+            {generation_pattern::SEQUENTIAL,
              &pattern_generator::pattern_sequential},
         };
 

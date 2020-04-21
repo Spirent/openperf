@@ -28,3 +28,8 @@ $(BLOCK_OBJ_DIR)/init.o: OP_CPPFLAGS += \
 	-DBUILD_COMMIT="\"$(GIT_COMMIT)\"" \
 	-DBUILD_NUMBER="\"$(BUILD_NUMBER)\"" \
 	-DBUILD_TIMESTAMP="\"$(TIMESTAMP)\"" \
+
+BLOCK_TEST_DEPENDS += digestible expected framework
+
+BLOCK_TEST_SOURCES += \
+	pattern_generator.cpp

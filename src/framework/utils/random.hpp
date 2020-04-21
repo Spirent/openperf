@@ -8,7 +8,7 @@ namespace openperf::utils {
 template <class T> static T random_uniform(T lower_bound, T upper_bound)
 {
     static std::mt19937_64 generator{std::random_device()()};
-    std::uniform_int_distribution<T> dist(lower_bound, upper_bound);
+    std::uniform_int_distribution<T> dist(lower_bound, upper_bound - 1);
     return dist(generator);
 }
 
