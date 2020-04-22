@@ -9,20 +9,20 @@ definitions:
     type: object
     description: Specifies how much time remains for an object to be active
     properties:
-      mode:
+      unit:
         type: string
         description: Specifies how the duration is measured
         enum:
           - indefinite
           - frames
           - seconds
-      duration:
+      value:
         type: integer
         description: Specifies the remaining duration for definite durations
         format: int64
         minimum: 0
     required:
-      - mode
+      - unit
 
   PacketProtocolCustom:
     type: object
@@ -32,25 +32,3 @@ definitions:
         $ref: "#/definitions/BinaryString"
     required:
       - data
-
-  # The spirent_pga fills are limited at this point. Additional fill types TBD.
-  PacketProtocolSpirentSignature:
-    type: object
-    description: Defines a Spirent test signature and optional payload
-    properties:
-      fill_type:
-        type: string
-        description: Specifies optional payload fill method
-        default: "none"
-        enum:
-          - constant
-          - decrement
-          - increment
-          - none
-          - prbs
-      fill_value:
-        type: integer
-        description: The base value to use for filling
-        format: int32
-        minimum: 0
-        maximum: 255
