@@ -31,51 +31,53 @@ class PacketGeneratorConfig(object):
                             and the value is json key in definition.
     """
     swagger_types = {
-        'traffic': 'list[PacketGeneratorConfigTraffic]',
+        'duration': 'TrafficDuration',
         'load': 'TrafficLoad',
-        'order': 'str'
+        'order': 'str',
+        'traffic': 'list[TrafficDefinition]'
     }
 
     attribute_map = {
-        'traffic': 'traffic',
+        'duration': 'duration',
         'load': 'load',
-        'order': 'order'
+        'order': 'order',
+        'traffic': 'traffic'
     }
 
-    def __init__(self, traffic=None, load=None, order=None):  # noqa: E501
+    def __init__(self, duration=None, load=None, order=None, traffic=None):  # noqa: E501
         """PacketGeneratorConfig - a model defined in Swagger"""  # noqa: E501
 
-        self._traffic = None
+        self._duration = None
         self._load = None
         self._order = None
+        self._traffic = None
         self.discriminator = None
 
-        self.traffic = traffic
+        self.duration = duration
         self.load = load
         if order is not None:
             self.order = order
+        self.traffic = traffic
 
     @property
-    def traffic(self):
-        """Gets the traffic of this PacketGeneratorConfig.  # noqa: E501
+    def duration(self):
+        """Gets the duration of this PacketGeneratorConfig.  # noqa: E501
 
-        List of packet sequence definitions  # noqa: E501
 
-        :return: The traffic of this PacketGeneratorConfig.  # noqa: E501
-        :rtype: list[PacketGeneratorConfigTraffic]
+        :return: The duration of this PacketGeneratorConfig.  # noqa: E501
+        :rtype: TrafficDuration
         """
-        return self._traffic
+        return self._duration
 
-    @traffic.setter
-    def traffic(self, traffic):
-        """Sets the traffic of this PacketGeneratorConfig.
+    @duration.setter
+    def duration(self, duration):
+        """Sets the duration of this PacketGeneratorConfig.
 
-        List of packet sequence definitions  # noqa: E501
 
-        :param traffic: The traffic of this PacketGeneratorConfig.  # noqa: E501
-        :type: list[PacketGeneratorConfigTraffic]
+        :param duration: The duration of this PacketGeneratorConfig.  # noqa: E501
+        :type: TrafficDuration
         """
-        self._traffic = traffic
+        self._duration = duration
 
     @property
     def load(self):
@@ -118,6 +120,28 @@ class PacketGeneratorConfig(object):
         :type: str
         """
         self._order = order
+
+    @property
+    def traffic(self):
+        """Gets the traffic of this PacketGeneratorConfig.  # noqa: E501
+
+        List of traffic definitions  # noqa: E501
+
+        :return: The traffic of this PacketGeneratorConfig.  # noqa: E501
+        :rtype: list[TrafficDefinition]
+        """
+        return self._traffic
+
+    @traffic.setter
+    def traffic(self, traffic):
+        """Sets the traffic of this PacketGeneratorConfig.
+
+        List of traffic definitions  # noqa: E501
+
+        :param traffic: The traffic of this PacketGeneratorConfig.  # noqa: E501
+        :type: list[TrafficDefinition]
+        """
+        self._traffic = traffic
 
     def to_dict(self):
         """Returns the model properties as a dict"""

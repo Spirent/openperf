@@ -19,8 +19,8 @@ namespace model {
 
 TrafficLoad::TrafficLoad()
 {
-    m_Burst = 0;
-    m_BurstIsSet = false;
+    m_Burst_size = 0;
+    m_Burst_sizeIsSet = false;
     m_Units = "";
     
 }
@@ -38,9 +38,9 @@ nlohmann::json TrafficLoad::toJson() const
 {
     nlohmann::json val = nlohmann::json::object();
 
-    if(m_BurstIsSet)
+    if(m_Burst_sizeIsSet)
     {
-        val["burst"] = m_Burst;
+        val["burst_size"] = m_Burst_size;
     }
     val["rate"] = ModelBase::toJson(m_Rate);
     val["units"] = ModelBase::toJson(m_Units);
@@ -51,31 +51,31 @@ nlohmann::json TrafficLoad::toJson() const
 
 void TrafficLoad::fromJson(nlohmann::json& val)
 {
-    if(val.find("burst") != val.end())
+    if(val.find("burst_size") != val.end())
     {
-        setBurst(val.at("burst"));
+        setBurstSize(val.at("burst_size"));
     }
     setUnits(val.at("units"));
     
 }
 
 
-int32_t TrafficLoad::getBurst() const
+int32_t TrafficLoad::getBurstSize() const
 {
-    return m_Burst;
+    return m_Burst_size;
 }
-void TrafficLoad::setBurst(int32_t value)
+void TrafficLoad::setBurstSize(int32_t value)
 {
-    m_Burst = value;
-    m_BurstIsSet = true;
+    m_Burst_size = value;
+    m_Burst_sizeIsSet = true;
 }
-bool TrafficLoad::burstIsSet() const
+bool TrafficLoad::burstSizeIsSet() const
 {
-    return m_BurstIsSet;
+    return m_Burst_sizeIsSet;
 }
-void TrafficLoad::unsetBurst()
+void TrafficLoad::unsetBurst_size()
 {
-    m_BurstIsSet = false;
+    m_Burst_sizeIsSet = false;
 }
 std::shared_ptr<TrafficLoad_rate> TrafficLoad::getRate() const
 {

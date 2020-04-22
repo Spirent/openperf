@@ -10,32 +10,32 @@
 * Do not edit the class manually.
 */
 /*
- * TrafficLength_list.h
+ * TrafficDuration_time.h
  *
- * Specifies a list of packet lengths
+ * Describes the transmit time
  */
 
-#ifndef TrafficLength_list_H_
-#define TrafficLength_list_H_
+#ifndef TrafficDuration_time_H_
+#define TrafficDuration_time_H_
 
 
 #include "ModelBase.h"
 
-#include <vector>
+#include <string>
 
 namespace swagger {
 namespace v1 {
 namespace model {
 
 /// <summary>
-/// Specifies a list of packet lengths
+/// Describes the transmit time
 /// </summary>
-class  TrafficLength_list
+class  TrafficDuration_time
     : public ModelBase
 {
 public:
-    TrafficLength_list();
-    virtual ~TrafficLength_list();
+    TrafficDuration_time();
+    virtual ~TrafficDuration_time();
 
     /////////////////////////////////////////////
     /// ModelBase overrides
@@ -46,15 +46,23 @@ public:
     void fromJson(nlohmann::json& json) override;
 
     /////////////////////////////////////////////
-    /// TrafficLength_list members
+    /// TrafficDuration_time members
 
     /// <summary>
-    /// List of packet lengths
+    /// Specifies the value for time based transmission
     /// </summary>
-    std::vector<int32_t>& getLengths();
+    int32_t getValue() const;
+    void setValue(int32_t value);
+        /// <summary>
+    /// Specifies the units for value
+    /// </summary>
+    std::string getUnits() const;
+    void setUnits(std::string value);
     
 protected:
-    std::vector<int32_t> m_Lengths;
+    int32_t m_Value;
+
+    std::string m_Units;
 
 };
 
@@ -62,4 +70,4 @@ protected:
 }
 }
 
-#endif /* TrafficLength_list_H_ */
+#endif /* TrafficDuration_time_H_ */

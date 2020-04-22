@@ -19,7 +19,6 @@ namespace model {
 
 TrafficProtocolIpv4Modifier::TrafficProtocolIpv4Modifier()
 {
-    m_Method = "";
     m_ListIsSet = false;
     m_SequenceIsSet = false;
     
@@ -38,7 +37,6 @@ nlohmann::json TrafficProtocolIpv4Modifier::toJson() const
 {
     nlohmann::json val = nlohmann::json::object();
 
-    val["method"] = ModelBase::toJson(m_Method);
     {
         nlohmann::json jsonArray;
         for( auto& item : m_List )
@@ -62,7 +60,6 @@ nlohmann::json TrafficProtocolIpv4Modifier::toJson() const
 
 void TrafficProtocolIpv4Modifier::fromJson(nlohmann::json& val)
 {
-    setMethod(val.at("method"));
     {
         m_List.clear();
         nlohmann::json jsonArray;
@@ -89,15 +86,6 @@ void TrafficProtocolIpv4Modifier::fromJson(nlohmann::json& val)
 }
 
 
-std::string TrafficProtocolIpv4Modifier::getMethod() const
-{
-    return m_Method;
-}
-void TrafficProtocolIpv4Modifier::setMethod(std::string value)
-{
-    m_Method = value;
-    
-}
 std::vector<std::string>& TrafficProtocolIpv4Modifier::getList()
 {
     return m_List;

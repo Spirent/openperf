@@ -23,7 +23,6 @@
 
 #include "TrafficProtocol.h"
 #include <string>
-#include "TrafficLength.h"
 #include <vector>
 
 namespace swagger {
@@ -56,11 +55,6 @@ public:
     /// </summary>
     std::vector<std::shared_ptr<TrafficProtocol>>& getProtocols();
         /// <summary>
-    /// 
-    /// </summary>
-    std::shared_ptr<TrafficLength> getLength() const;
-    void setLength(std::shared_ptr<TrafficLength> value);
-        /// <summary>
     /// Specifies how modifiers from different protocols are combined in the packet template 
     /// </summary>
     std::string getModifierTie() const;
@@ -70,8 +64,6 @@ public:
 
 protected:
     std::vector<std::shared_ptr<TrafficProtocol>> m_Protocols;
-
-    std::shared_ptr<TrafficLength> m_Length;
 
     std::string m_Modifier_tie;
     bool m_Modifier_tieIsSet;

@@ -12,7 +12,7 @@
 /*
  * TrafficLength.h
  *
- * Specifies length of generated packets
+ * Specifies length of generated packets. At least one property must be set. 
  */
 
 #ifndef TrafficLength_H_
@@ -22,16 +22,14 @@
 #include "ModelBase.h"
 
 #include "TrafficLength_sequence.h"
-#include "TrafficLength_list.h"
-#include <string>
-#include "TrafficLength_fixed.h"
+#include <vector>
 
 namespace swagger {
 namespace v1 {
 namespace model {
 
 /// <summary>
-/// Specifies length of generated packets
+/// Specifies length of generated packets. At least one property must be set. 
 /// </summary>
 class  TrafficLength
     : public ModelBase
@@ -52,24 +50,16 @@ public:
     /// TrafficLength members
 
     /// <summary>
-    /// packet length specification method
+    /// Fixed packet length
     /// </summary>
-    std::string getMethod() const;
-    void setMethod(std::string value);
-    bool methodIsSet() const;
-    void unsetMethod();
-    /// <summary>
-    /// 
-    /// </summary>
-    std::shared_ptr<TrafficLength_fixed> getFixed() const;
-    void setFixed(std::shared_ptr<TrafficLength_fixed> value);
+    int32_t getFixed() const;
+    void setFixed(int32_t value);
     bool fixedIsSet() const;
     void unsetFixed();
     /// <summary>
-    /// 
+    /// List of packet lengths
     /// </summary>
-    std::shared_ptr<TrafficLength_list> getList() const;
-    void setList(std::shared_ptr<TrafficLength_list> value);
+    std::vector<int32_t>& getList();
     bool listIsSet() const;
     void unsetList();
     /// <summary>
@@ -81,11 +71,9 @@ public:
     void unsetSequence();
 
 protected:
-    std::string m_Method;
-    bool m_MethodIsSet;
-    std::shared_ptr<TrafficLength_fixed> m_Fixed;
+    int32_t m_Fixed;
     bool m_FixedIsSet;
-    std::shared_ptr<TrafficLength_list> m_List;
+    std::vector<int32_t> m_List;
     bool m_ListIsSet;
     std::shared_ptr<TrafficLength_sequence> m_Sequence;
     bool m_SequenceIsSet;

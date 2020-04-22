@@ -51,11 +51,6 @@ public:
     /// TrafficProtocolMacModifier members
 
     /// <summary>
-    /// Modifier method
-    /// </summary>
-    std::string getMethod() const;
-    void setMethod(std::string value);
-        /// <summary>
     /// List of MAC addresses
     /// </summary>
     std::vector<std::string>& getList();
@@ -70,8 +65,6 @@ public:
     void unsetSequence();
 
 protected:
-    std::string m_Method;
-
     std::vector<std::string> m_List;
     bool m_ListIsSet;
     std::shared_ptr<TrafficProtocolMacModifier_sequence> m_Sequence;

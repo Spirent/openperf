@@ -31,30 +31,25 @@ class TrafficLength(object):
                             and the value is json key in definition.
     """
     swagger_types = {
-        'method': 'str',
-        'fixed': 'TrafficLengthFixed',
-        'list': 'TrafficLengthList',
+        'fixed': 'int',
+        'list': 'list[int]',
         'sequence': 'TrafficLengthSequence'
     }
 
     attribute_map = {
-        'method': 'method',
         'fixed': 'fixed',
         'list': 'list',
         'sequence': 'sequence'
     }
 
-    def __init__(self, method=None, fixed=None, list=None, sequence=None):  # noqa: E501
+    def __init__(self, fixed=None, list=None, sequence=None):  # noqa: E501
         """TrafficLength - a model defined in Swagger"""  # noqa: E501
 
-        self._method = None
         self._fixed = None
         self._list = None
         self._sequence = None
         self.discriminator = None
 
-        if method is not None:
-            self.method = method
         if fixed is not None:
             self.fixed = fixed
         if list is not None:
@@ -63,34 +58,13 @@ class TrafficLength(object):
             self.sequence = sequence
 
     @property
-    def method(self):
-        """Gets the method of this TrafficLength.  # noqa: E501
-
-        packet length specification method  # noqa: E501
-
-        :return: The method of this TrafficLength.  # noqa: E501
-        :rtype: str
-        """
-        return self._method
-
-    @method.setter
-    def method(self, method):
-        """Sets the method of this TrafficLength.
-
-        packet length specification method  # noqa: E501
-
-        :param method: The method of this TrafficLength.  # noqa: E501
-        :type: str
-        """
-        self._method = method
-
-    @property
     def fixed(self):
         """Gets the fixed of this TrafficLength.  # noqa: E501
 
+        Fixed packet length  # noqa: E501
 
         :return: The fixed of this TrafficLength.  # noqa: E501
-        :rtype: TrafficLengthFixed
+        :rtype: int
         """
         return self._fixed
 
@@ -98,9 +72,10 @@ class TrafficLength(object):
     def fixed(self, fixed):
         """Sets the fixed of this TrafficLength.
 
+        Fixed packet length  # noqa: E501
 
         :param fixed: The fixed of this TrafficLength.  # noqa: E501
-        :type: TrafficLengthFixed
+        :type: int
         """
         self._fixed = fixed
 
@@ -108,9 +83,10 @@ class TrafficLength(object):
     def list(self):
         """Gets the list of this TrafficLength.  # noqa: E501
 
+        List of packet lengths  # noqa: E501
 
         :return: The list of this TrafficLength.  # noqa: E501
-        :rtype: TrafficLengthList
+        :rtype: list[int]
         """
         return self._list
 
@@ -118,9 +94,10 @@ class TrafficLength(object):
     def list(self, list):
         """Sets the list of this TrafficLength.
 
+        List of packet lengths  # noqa: E501
 
         :param list: The list of this TrafficLength.  # noqa: E501
-        :type: TrafficLengthList
+        :type: list[int]
         """
         self._list = list
 

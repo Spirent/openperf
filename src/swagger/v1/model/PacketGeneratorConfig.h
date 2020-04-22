@@ -22,7 +22,8 @@
 #include "ModelBase.h"
 
 #include <string>
-#include "PacketGeneratorConfig_traffic.h"
+#include "TrafficDefinition.h"
+#include "TrafficDuration.h"
 #include "TrafficLoad.h"
 #include <vector>
 
@@ -52,9 +53,10 @@ public:
     /// PacketGeneratorConfig members
 
     /// <summary>
-    /// List of packet sequence definitions
+    /// 
     /// </summary>
-    std::vector<std::shared_ptr<PacketGeneratorConfig_traffic>>& getTraffic();
+    std::shared_ptr<TrafficDuration> getDuration() const;
+    void setDuration(std::shared_ptr<TrafficDuration> value);
         /// <summary>
     /// 
     /// </summary>
@@ -67,14 +69,20 @@ public:
     void setOrder(std::string value);
     bool orderIsSet() const;
     void unsetOrder();
-
+    /// <summary>
+    /// List of traffic definitions
+    /// </summary>
+    std::vector<std::shared_ptr<TrafficDefinition>>& getTraffic();
+    
 protected:
-    std::vector<std::shared_ptr<PacketGeneratorConfig_traffic>> m_Traffic;
+    std::shared_ptr<TrafficDuration> m_Duration;
 
     std::shared_ptr<TrafficLoad> m_Load;
 
     std::string m_Order;
     bool m_OrderIsSet;
+    std::vector<std::shared_ptr<TrafficDefinition>> m_Traffic;
+
 };
 
 }

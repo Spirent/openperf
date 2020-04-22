@@ -3,7 +3,6 @@
 ## Properties
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**method** | **str** | Modifier method | 
 **list** | **list[str]** | List of IPv6 addresses | [optional] 
 **sequence** | [**TrafficProtocolIpv6ModifierSequence**](TrafficProtocolIpv6ModifierSequence.md) |  | [optional] 
 

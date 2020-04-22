@@ -31,42 +31,116 @@ class TrafficDefinition(object):
                             and the value is json key in definition.
     """
     swagger_types = {
-        'descriptors': 'list[TrafficDefinitionDescriptors]'
+        'packet': 'TrafficPacketTemplate',
+        'length': 'TrafficLength',
+        'signature': 'SpirentSignature',
+        'weight': 'int'
     }
 
     attribute_map = {
-        'descriptors': 'descriptors'
+        'packet': 'packet',
+        'length': 'length',
+        'signature': 'signature',
+        'weight': 'weight'
     }
 
-    def __init__(self, descriptors=None):  # noqa: E501
+    def __init__(self, packet=None, length=None, signature=None, weight=1):  # noqa: E501
         """TrafficDefinition - a model defined in Swagger"""  # noqa: E501
 
-        self._descriptors = None
+        self._packet = None
+        self._length = None
+        self._signature = None
+        self._weight = None
         self.discriminator = None
 
-        self.descriptors = descriptors
+        self.packet = packet
+        self.length = length
+        if signature is not None:
+            self.signature = signature
+        if weight is not None:
+            self.weight = weight
 
     @property
-    def descriptors(self):
-        """Gets the descriptors of this TrafficDefinition.  # noqa: E501
+    def packet(self):
+        """Gets the packet of this TrafficDefinition.  # noqa: E501
 
-        A list of packet templates with modifiers that describe all packets to send as part of this traffic definition.   # noqa: E501
 
-        :return: The descriptors of this TrafficDefinition.  # noqa: E501
-        :rtype: list[TrafficDefinitionDescriptors]
+        :return: The packet of this TrafficDefinition.  # noqa: E501
+        :rtype: TrafficPacketTemplate
         """
-        return self._descriptors
+        return self._packet
 
-    @descriptors.setter
-    def descriptors(self, descriptors):
-        """Sets the descriptors of this TrafficDefinition.
+    @packet.setter
+    def packet(self, packet):
+        """Sets the packet of this TrafficDefinition.
 
-        A list of packet templates with modifiers that describe all packets to send as part of this traffic definition.   # noqa: E501
 
-        :param descriptors: The descriptors of this TrafficDefinition.  # noqa: E501
-        :type: list[TrafficDefinitionDescriptors]
+        :param packet: The packet of this TrafficDefinition.  # noqa: E501
+        :type: TrafficPacketTemplate
         """
-        self._descriptors = descriptors
+        self._packet = packet
+
+    @property
+    def length(self):
+        """Gets the length of this TrafficDefinition.  # noqa: E501
+
+
+        :return: The length of this TrafficDefinition.  # noqa: E501
+        :rtype: TrafficLength
+        """
+        return self._length
+
+    @length.setter
+    def length(self, length):
+        """Sets the length of this TrafficDefinition.
+
+
+        :param length: The length of this TrafficDefinition.  # noqa: E501
+        :type: TrafficLength
+        """
+        self._length = length
+
+    @property
+    def signature(self):
+        """Gets the signature of this TrafficDefinition.  # noqa: E501
+
+
+        :return: The signature of this TrafficDefinition.  # noqa: E501
+        :rtype: SpirentSignature
+        """
+        return self._signature
+
+    @signature.setter
+    def signature(self, signature):
+        """Sets the signature of this TrafficDefinition.
+
+
+        :param signature: The signature of this TrafficDefinition.  # noqa: E501
+        :type: SpirentSignature
+        """
+        self._signature = signature
+
+    @property
+    def weight(self):
+        """Gets the weight of this TrafficDefinition.  # noqa: E501
+
+        Relative weight of this packet definition  # noqa: E501
+
+        :return: The weight of this TrafficDefinition.  # noqa: E501
+        :rtype: int
+        """
+        return self._weight
+
+    @weight.setter
+    def weight(self, weight):
+        """Sets the weight of this TrafficDefinition.
+
+        Relative weight of this packet definition  # noqa: E501
+
+        :param weight: The weight of this TrafficDefinition.  # noqa: E501
+        :type: int
+        """
+        self._weight = weight
 
     def to_dict(self):
         """Returns the model properties as a dict"""

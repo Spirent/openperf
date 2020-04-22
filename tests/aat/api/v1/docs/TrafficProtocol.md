@@ -4,9 +4,7 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **modifiers** | [**TrafficProtocolModifiers**](TrafficProtocolModifiers.md) |  | [optional] 
-**protocol** | **str** | protocol type | 
 **custom** | [**PacketProtocolCustom**](PacketProtocolCustom.md) |  | [optional] 
-**signature** | [**PacketProtocolSpirentSignature**](PacketProtocolSpirentSignature.md) |  | [optional] 
 **ethernet** | [**PacketProtocolEthernet**](PacketProtocolEthernet.md) |  | [optional] 
 **ipv4** | [**PacketProtocolIpv4**](PacketProtocolIpv4.md) |  | [optional] 
 **ipv6** | [**PacketProtocolIpv6**](PacketProtocolIpv6.md) |  | [optional] 

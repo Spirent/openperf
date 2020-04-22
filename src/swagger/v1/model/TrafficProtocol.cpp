@@ -20,9 +20,7 @@ namespace model {
 TrafficProtocol::TrafficProtocol()
 {
     m_ModifiersIsSet = false;
-    m_Protocol = "";
     m_CustomIsSet = false;
-    m_SignatureIsSet = false;
     m_EthernetIsSet = false;
     m_Ipv4IsSet = false;
     m_Ipv6IsSet = false;
@@ -50,14 +48,9 @@ nlohmann::json TrafficProtocol::toJson() const
     {
         val["modifiers"] = ModelBase::toJson(m_Modifiers);
     }
-    val["protocol"] = ModelBase::toJson(m_Protocol);
     if(m_CustomIsSet)
     {
         val["custom"] = ModelBase::toJson(m_Custom);
-    }
-    if(m_SignatureIsSet)
-    {
-        val["signature"] = ModelBase::toJson(m_Signature);
     }
     if(m_EthernetIsSet)
     {
@@ -104,7 +97,6 @@ void TrafficProtocol::fromJson(nlohmann::json& val)
         }
         
     }
-    setProtocol(val.at("protocol"));
     if(val.find("custom") != val.end())
     {
         if(!val["custom"].is_null())
@@ -112,16 +104,6 @@ void TrafficProtocol::fromJson(nlohmann::json& val)
             std::shared_ptr<PacketProtocolCustom> newItem(new PacketProtocolCustom());
             newItem->fromJson(val["custom"]);
             setCustom( newItem );
-        }
-        
-    }
-    if(val.find("signature") != val.end())
-    {
-        if(!val["signature"].is_null())
-        {
-            std::shared_ptr<PacketProtocolSpirentSignature> newItem(new PacketProtocolSpirentSignature());
-            newItem->fromJson(val["signature"]);
-            setSignature( newItem );
         }
         
     }
@@ -216,15 +198,6 @@ void TrafficProtocol::unsetModifiers()
 {
     m_ModifiersIsSet = false;
 }
-std::string TrafficProtocol::getProtocol() const
-{
-    return m_Protocol;
-}
-void TrafficProtocol::setProtocol(std::string value)
-{
-    m_Protocol = value;
-    
-}
 std::shared_ptr<PacketProtocolCustom> TrafficProtocol::getCustom() const
 {
     return m_Custom;
@@ -241,23 +214,6 @@ bool TrafficProtocol::customIsSet() const
 void TrafficProtocol::unsetCustom()
 {
     m_CustomIsSet = false;
-}
-std::shared_ptr<PacketProtocolSpirentSignature> TrafficProtocol::getSignature() const
-{
-    return m_Signature;
-}
-void TrafficProtocol::setSignature(std::shared_ptr<PacketProtocolSpirentSignature> value)
-{
-    m_Signature = value;
-    m_SignatureIsSet = true;
-}
-bool TrafficProtocol::signatureIsSet() const
-{
-    return m_SignatureIsSet;
-}
-void TrafficProtocol::unsetSignature()
-{
-    m_SignatureIsSet = false;
 }
 std::shared_ptr<PacketProtocolEthernet> TrafficProtocol::getEthernet() const
 {
