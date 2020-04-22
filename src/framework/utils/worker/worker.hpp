@@ -38,7 +38,7 @@ private:
     };
 
 private:
-    constexpr static auto _endpoint = "inproc://worker-p2p";
+    constexpr static auto m_endpoint = "inproc://worker-p2p";
 
     bool m_paused;
     bool m_stopped;
@@ -65,9 +65,8 @@ public:
     inline bool is_finished() const override { return m_stopped; }
     inline typename T::config_t config() const { return m_task->config(); }
     inline typename T::stat_t stat() const { return m_task->stat(); };
-    inline void clear_stat() { return m_task->clear_stat(); };
 
-    inline void clear_stat() { _task->clear_stat(); }
+    inline void clear_stat() { m_task->clear_stat(); }
     void config(const typename T::config_t&);
 
 private:
@@ -83,7 +82,7 @@ worker<T>::worker()
     , m_stopped(true)
     , m_task(new T)
     , m_zmq_context(zmq_init(0))
-    , m_zmq_socket(op_socket_get_server(m_zmq_context, ZMQ_PUSH, _endpoint))
+    , m_zmq_socket(op_socket_get_server(m_zmq_context, ZMQ_PUSH, m_endpoint))
 {}
 
 template <class T>
@@ -162,7 +161,7 @@ template <class T> void worker<T>::config(const typename T::config_t& c)
 template <class T> void worker<T>::loop()
 {
     auto socket = std::unique_ptr<void, op_socket_deleter>(
-        op_socket_get_client(m_zmq_context, ZMQ_PULL, _endpoint));
+        op_socket_get_client(m_zmq_context, ZMQ_PULL, m_endpoint));
 
     worker::message msg{.stop = false, .pause = true, .reconf = false};
     bool paused = true;
@@ -206,7 +205,7 @@ template <class T> void worker<T>::send_message(const worker::message& msg)
 {
     if (is_finished()) return;
 
-    zmq_send(m_zmq_socket.get(), &msg, sizeof(msg), 0); // ZMQ_NOBLOCK);
+    zmq_send(m_zmq_socket.get(), &msg, sizeof(msg), 0);
 }
 
 } // namespace openperf::utils::worker
