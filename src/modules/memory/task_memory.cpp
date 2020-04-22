@@ -1,58 +1,87 @@
 #include "memory/task_memory.hpp"
 
+#include <algorithm>
 #include <cstdint>
-#include <cinttypes>
+#include <chrono>
+#include <tuple>
+#include <thread>
 #include <sys/mman.h>
 
 #include "core/op_core.h"
 #include "utils/random.hpp"
-#include "timesync/chrono.hpp"
 
 namespace openperf::memory::internal {
+
+using namespace std::chrono_literals;
 
 using openperf::utils::op_pseudo_random_fill;
 using openperf::utils::random_uniform;
 
-const uint64_t NS_PER_SECOND = 1000000000ULL;
+constexpr auto QUANTA = 10ms;
+constexpr size_t MAX_SPIN_OPS = 5000;
 
-static const uint64_t QUANTA_MS = 10;
-static const uint64_t MS_TO_NS = 1000000;
-static const size_t MAX_SPIN_OPS = 5000;
-
-static uint64_t time_ns()
+auto calc_ops_and_sleep(const task_memory::total_t& total, size_t ops_per_sec)
 {
-    return openperf::timesync::chrono::realtime::now()
-        .time_since_epoch()
-        .count();
-};
+    /*
+     * Sleeping is problematic since you can't be sure if or when you'll
+     * wake up.  Hence, we dynamically solve for the number of memory
+     * operations to perform, to_do_ops, and for a requested time to sleep,
+     * sleep time, using the following system of equations:
+     *
+     * 1. (m_total.operations + to_do_ops) /
+     *      ((m_total.run_time + m_total.sleep_time)
+     *      + (to_do_ops / m_total.avg_rate) + sleep_time = ops_per_ns
+     * 2. to_do_ops / total.avg_rate + sleep_time = quanta
+     *
+     * We use Cramer's rule to solve for to_do_ops and sleep time.  We are
+     * guaranteed a solution because our determinant is always 1.  However,
+     * our solution could be negative, so clamp our answers before using.
+     */
+    double ops_per_ns = (double)ops_per_sec / std::nano::den;
+    double a[2] = {1 - (ops_per_ns / total.avg_rate), 1.0 / total.avg_rate};
+    double b[2] = {-ops_per_ns, 1};
+    double c[2] = {ops_per_ns * (total.run_time + total.sleep_time).count()
+                       - total.operations,
+                   std::chrono::nanoseconds(QUANTA).count()};
 
-static void _generator_sleep_until(uint64_t wake_time)
+    // Tuple: to_do_ops, ns_to_sleep
+    return std::make_tuple(
+        static_cast<uint64_t>(std::max(0.0, c[0] * b[1] - b[0] * c[1])),
+        std::chrono::nanoseconds(
+            static_cast<std::chrono::nanoseconds::rep>(std::max(
+                0.0,
+                std::min(a[0] * c[1] - c[0] * a[1],
+                         (double)std::chrono::nanoseconds(QUANTA).count())))));
+}
+
+std::vector<unsigned> index_vector(size_t size, io_pattern pattern)
 {
-    uint64_t now = 0, ns_to_sleep = 0;
-    struct timespec sleep = {0, 0};
+    std::vector<unsigned> v_index(size);
+    std::iota(v_index.begin(), v_index.end(), 0);
 
-    while ((now = time_ns()) < wake_time) {
-        ns_to_sleep = wake_time - now;
-
-        if (ns_to_sleep < NS_PER_SECOND) {
-            sleep.tv_nsec = ns_to_sleep;
-        } else {
-            sleep.tv_sec = ns_to_sleep / NS_PER_SECOND;
-            sleep.tv_nsec = ns_to_sleep % NS_PER_SECOND;
-        }
-
-        nanosleep(&sleep, nullptr);
+    switch (pattern) {
+    case io_pattern::SEQUENTIAL:
+        break;
+    case io_pattern::REVERSE:
+        std::reverse(v_index.begin(), v_index.end());
+        break;
+    case io_pattern::RANDOM:
+        std::shuffle(v_index.begin(), v_index.end(), std::random_device());
+        break;
+    default:
+        OP_LOG(OP_LOG_ERROR, "Unrecognized generator pattern: %d\n", pattern);
     }
+
+    return v_index;
 }
 
 static uint64_t _get_cache_line_size()
 {
-    FILE* f = NULL;
-    uint64_t cachelinesize = 0;
+    constexpr auto fname =
+        "/sys/devices/system/cpu/cpu0/cache/index0/coherency_line_size";
 
-    f = fopen("/sys/devices/system/cpu/cpu0/cache/index0/coherency_line_size",
-              "r");
-    if (!f) {
+    uint64_t cachelinesize = 0;
+    if (FILE* f = fopen(fname, "r"); !f) {
         OP_LOG(OP_LOG_WARNING,
                "Could not determine cache line size. "
                "Assuming 64 byte cache lines.\n");
@@ -62,14 +91,12 @@ static uint64_t _get_cache_line_size()
         fclose(f);
     }
 
-    return (cachelinesize);
+    return cachelinesize;
 }
 
 // Constructors & Destructor
 task_memory::task_memory()
-    : m_op_index_min(0)
-    , m_op_index_max(0)
-    , m_buffer(nullptr)
+    : m_buffer(nullptr)
     , m_scratch{.ptr = nullptr, .size = 0}
     , m_stat(&m_stat_data)
     , m_stat_clear(true)
@@ -100,63 +127,26 @@ void task_memory::config(const task_memory_config& msg)
      * has changed.
      */
     if (nb_blocks
-        && (nb_blocks != m_op_index_max || msg.pattern != m_config.pattern)) {
+        && (nb_blocks != m_indexes.size() || msg.pattern != m_config.pattern)) {
 
         try {
-            m_indexes.resize(nb_blocks);
+            m_indexes = index_vector(nb_blocks, msg.pattern);
+            m_config.pattern = msg.pattern;
         } catch (std::exception e) {
             OP_LOG(OP_LOG_ERROR,
                    "Could not allocate %zu element index array\n",
                    nb_blocks);
-            m_op_index_min = 0;
-            m_op_index_max = 0;
             throw std::exception(e);
         }
 
-        m_op_index_min = 0;
-        m_op_index_max = nb_blocks;
-
-        auto fill_vector = [this](unsigned start, int step) {
-            for (size_t i = 0; i < m_indexes.size(); ++i) {
-                m_indexes[i] = start + (i * step);
-            }
-        };
-
-        /* Fill in the indexes... */
-        switch (msg.pattern) {
-        case io_pattern::SEQUENTIAL:
-            fill_vector(m_op_index_min, 1);
-            break;
-        case io_pattern::REVERSE:
-            fill_vector(m_op_index_max - 1, -1);
-            break;
-        case io_pattern::RANDOM:
-            fill_vector(m_op_index_min, 1);
-            // Shuffle array contents using the Fisher-Yates shuffle algorithm
-            for (size_t i = m_indexes.size() - 1; i > 0; --i) {
-                auto j = random_uniform(i + 1);
-                auto swap = m_indexes[i];
-                m_indexes[i] = m_indexes[j];
-                m_indexes[j] = swap;
-            }
-            break;
-        default:
-            OP_LOG(OP_LOG_ERROR,
-                   "Unrecognized generator pattern: %d\n",
-                   msg.pattern);
-        }
-
-        m_config.pattern = msg.pattern;
         // icp_generator_distribute
-        //m_config.op_per_sec = [](uint64_t total, size_t buckets, size_t n) {
+        // m_config.op_per_sec = [](uint64_t total, size_t buckets, size_t n) {
         //    assert(n < buckets);
         //    uint64_t base = total / buckets;
         //    return (n < total % buckets ? base + 1 : base);
         //} (10, 64, 8);
     } else if (!nb_blocks) {
         m_indexes.clear();
-        m_op_index_min = 0;
-        m_op_index_max = 0;
         m_config.pattern = io_pattern::NONE;
 
         /* XXX: Can't generate any load without indexes */
@@ -190,53 +180,28 @@ void task_memory::spin()
     }
 
     static __thread size_t op_index = 0;
-    if (op_index >= m_op_index_max) { op_index = m_op_index_min; }
+    if (op_index >= m_indexes.size()) { op_index = 0; }
 
-    /*
-     * Sleeping is problematic since you can't be sure if or when you'll
-     * wake up.  Hence, we dynamically solve for the number of memory
-     * operations to perform, to_do_ops, and for a requested time to sleep,
-     * sleep time, using the following system of equations:
-     *
-     * 1. (total.ops + to_do_ops)
-     *     / ((total.run + total.sleep) + (to_do_ops / total.avg_rate) + sleep
-     * time = rate
-     * 2. to_do_ops / total.avg_rate + sleep_time = quanta
-     *
-     * We use Cramer's rule to solve for to_do_ops and sleep time.  We are
-     * guaranteed a solution because our determinant is always 1.  However,
-     * our solution could be negative, so clamp our answers before using.
-     */
-    uint64_t to_do_ops, ns_to_sleep;
-    double ops_per_ns = (double)m_config.op_per_sec / NS_PER_SECOND;
+    auto tuple = calc_ops_and_sleep(m_total, m_config.op_per_sec);
+    auto to_do_ops = std::get<0>(tuple);
 
-    double a[2] = {1 - (ops_per_ns / m_total.avg_rate), 1.0 / m_total.avg_rate};
-    double b[2] = {-ops_per_ns, 1};
-    double c[2] = {ops_per_ns * (m_total.run_time + m_total.sleep_time)
-                       - m_total.operations,
-                   QUANTA_MS * MS_TO_NS};
-    to_do_ops = static_cast<uint64_t>(std::max(0.0, c[0] * b[1] - b[0] * c[1]));
-    ns_to_sleep = static_cast<uint64_t>(std::max(
-        0.0,
-        std::min(a[0] * c[1] - c[0] * a[1], (double)QUANTA_MS * MS_TO_NS)));
-
-    uint64_t t1 = time_ns();
-    if (ns_to_sleep) {
-        _generator_sleep_until(t1 + ns_to_sleep);
-        m_total.sleep_time += time_ns() - t1;
+    if (auto ns_to_sleep = std::get<1>(tuple); ns_to_sleep.count()) {
+        auto t1 = std::chrono::system_clock::now();
+        std::this_thread::sleep_for(ns_to_sleep);
+        m_total.sleep_time += std::chrono::system_clock::now() - t1;
     }
     /*
      * Perform load operations in small bursts so that we can update our
      * thread statistics periodically.
      */
     stat_t stat;
-    uint64_t deadline = time_ns() + (QUANTA_MS * MS_TO_NS);
-    uint64_t t2;
-    while (to_do_ops && (t2 = time_ns()) < deadline) {
+    auto deadline = std::chrono::system_clock::now() + QUANTA;
+    auto t2 = std::chrono::system_clock::now();
+    while (to_do_ops && (t2 = std::chrono::system_clock::now()) < deadline) {
         size_t spin_ops = std::min(MAX_SPIN_OPS, to_do_ops);
         size_t nb_ops = operation(spin_ops, &op_index);
-        uint64_t run_time =
-            std::max(time_ns() - t2, 1lu); /* prevent divide by 0 */
+        auto run_time = std::max(std::chrono::system_clock::now() - t2,
+                                 1ns); /* prevent divide by 0 */
 
         /* Update per thread statistics */
         stat += stat_t{
@@ -244,7 +209,7 @@ void task_memory::spin()
             .operations_target = spin_ops,
             .bytes = nb_ops * m_config.block_size,
             .bytes_target = spin_ops * m_config.block_size,
-            .time_ns = run_time,
+            .time = run_time,
             .latency_min = run_time,
             .latency_max = run_time,
         };
@@ -252,9 +217,9 @@ void task_memory::spin()
         /* Update local counters */
         m_total.run_time += run_time;
         m_total.operations += nb_ops;
-        m_total.avg_rate +=
-            (nb_ops / (double)run_time - m_total.avg_rate + 4.0 / run_time)
-            / 5.0;
+        m_total.avg_rate += (nb_ops / (double)run_time.count()
+                             - m_total.avg_rate + 4.0 / run_time.count())
+                            / 5.0;
 
         to_do_ops -= spin_ops;
     }

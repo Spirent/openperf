@@ -171,11 +171,11 @@ void generator::resize_buffer(size_t size)
                m_buffer.size,
                size);
         m_buffer.ptr = mmap(NULL,
-                           size,
-                           PROT_READ | PROT_WRITE,
-                           MAP_ANONYMOUS | MAP_PRIVATE,
-                           -1,
-                           0);
+                            size,
+                            PROT_READ | PROT_WRITE,
+                            MAP_ANONYMOUS | MAP_PRIVATE,
+                            -1,
+                            0);
         if (m_buffer.ptr == MAP_FAILED) {
             OP_LOG(OP_LOG_ERROR,
                    "Failed to allocate %" PRIu64 " byte memory buffer\n",

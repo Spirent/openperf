@@ -100,12 +100,12 @@ static swagger::MemoryGeneratorStats to_swagger(const memory_stat& stat)
     swagger::MemoryGeneratorStats model;
     model.setBytesActual(stat.bytes);
     model.setBytesTarget(stat.bytes_target);
-    model.setIoErrors(stat.errors);
-    model.setLatency(stat.time_ns);
-    model.setLatencyMax(stat.latency_max);
-    model.setLatencyMin(stat.latency_min);
+    model.setLatency(std::chrono::nanoseconds(stat.time).count());
+    model.setLatencyMax(std::chrono::nanoseconds(stat.latency_max).count());
+    model.setLatencyMin(std::chrono::nanoseconds(stat.latency_min).count());
     model.setOpsActual(stat.operations);
     model.setOpsTarget(stat.operations_target);
+    model.setIoErrors(stat.errors);
 
     return model;
 }
