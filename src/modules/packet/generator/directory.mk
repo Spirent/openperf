@@ -2,11 +2,34 @@
 # Makefile component to build Packet Generator code
 #
 
-PG_DEPENDS += api framework versions
+PG_DEPENDS += api framework versions packet_protocol range_v3
 
 PG_SOURCES += \
+	api_strings.cpp \
+	api_transmogrify.cpp \
 	handler.cpp \
-	init.cpp
+	init.cpp \
+	server.cpp \
+	source.cpp \
+	source_transmogrify.cpp \
+	traffic_transmogrify.cpp \
+	traffic/length.cpp \
+	traffic/header/explode.cpp \
+	traffic/header/utils.cpp \
+	traffic/header/expand_impl/ethernet.cpp \
+	traffic/header/expand_impl/mpls.cpp \
+	traffic/header/expand_impl/vlan.cpp \
+	traffic/header/expand_impl/ipv4.cpp \
+	traffic/header/expand_impl/ipv6.cpp \
+	traffic/header/expand_impl/tcp.cpp \
+	traffic/header/expand_impl/udp.cpp \
+	traffic/protocol/ethernet.cpp \
+	traffic/packet_template.cpp \
+	traffic/protocol/ip.cpp \
+	traffic/protocol/mpls.cpp \
+	traffic/protocol/vlan.cpp \
+	traffic/sequence.cpp \
+	validation.cpp
 
 PG_VERSIONED_FILES := init.cpp
 PG_UNVERSIONED_OBJECTS :=\
