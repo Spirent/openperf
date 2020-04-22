@@ -25,3 +25,8 @@ $(MEMORY_OBJ_DIR)/init.o: OP_CPPFLAGS += \
 	-DBUILD_COMMIT="\"$(GIT_COMMIT)\"" \
 	-DBUILD_NUMBER="\"$(BUILD_NUMBER)\"" \
 	-DBUILD_TIMESTAMP="\"$(TIMESTAMP)\""
+
+MEMORY_TEST_DEPENDS += framework
+
+MEMORY_TEST_SOURCES += \
+	task_memory.cpp
