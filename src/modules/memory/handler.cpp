@@ -170,8 +170,8 @@ void handler::create_generator(const Rest::Request& request,
     if (auto item = std::get_if<reply::generator::item>(&api_reply)) {
         response.headers().add<Http::Header::ContentType>(
             MIME(Application, Json));
-        response.headers().add<Http::Header::Location>(
-            "/memory-generators/" + item->data->id);
+        response.headers().add<Http::Header::Location>("/memory-generators/"
+                                                       + item->data->id);
         response.send(Http::Code::Created,
                       to_swagger(*item->data).toJson().dump());
         return;

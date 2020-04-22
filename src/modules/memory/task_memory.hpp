@@ -25,11 +25,18 @@ struct task_memory_config
 class task_memory
     : public openperf::utils::worker::task<task_memory_config, memory_stat>
 {
+public:
+    struct total_t
+    {
+        size_t operations = 0;
+        double avg_rate = 100000000;
+        std::chrono::nanoseconds run_time = 0ns;
+        std::chrono::nanoseconds sleep_time = 0ns;
+    };
+
 protected:
     task_memory_config m_config;
     std::vector<unsigned> m_indexes;
-    size_t m_op_index_min;
-    size_t m_op_index_max;
     uint8_t* m_buffer;
 
     struct
@@ -38,14 +45,7 @@ protected:
         size_t size;
     } m_scratch;
 
-    struct total
-    {
-        size_t operations = 0;
-        size_t run_time = 0;
-        size_t sleep_time = 0;
-        double avg_rate = 100000000;
-    } m_total;
-
+    total_t m_total;
     stat_t m_stat_data;
     std::atomic<stat_t*> m_stat;
     std::atomic_bool m_stat_clear;
@@ -53,7 +53,7 @@ protected:
 public:
     task_memory();
     explicit task_memory(const task_memory_config&);
-    ~task_memory();
+    ~task_memory() override;
 
     void spin() override;
     void config(const config_t&) override;
