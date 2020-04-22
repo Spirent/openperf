@@ -22,7 +22,6 @@
 #include "ModelBase.h"
 
 #include "TrafficProtocolFieldModifier_sequence.h"
-#include <string>
 #include <vector>
 
 namespace swagger {
@@ -51,11 +50,6 @@ public:
     /// TrafficProtocolFieldModifier members
 
     /// <summary>
-    /// Modifier method
-    /// </summary>
-    std::string getMethod() const;
-    void setMethod(std::string value);
-        /// <summary>
     /// List of modifier values. Context determines what values are valid. 
     /// </summary>
     std::vector<int32_t>& getList();
@@ -70,8 +64,6 @@ public:
     void unsetSequence();
 
 protected:
-    std::string m_Method;
-
     std::vector<int32_t> m_List;
     bool m_ListIsSet;
     std::shared_ptr<TrafficProtocolFieldModifier_sequence> m_Sequence;

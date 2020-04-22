@@ -32,29 +32,29 @@ class TxFlow(object):
     """
     swagger_types = {
         'id': 'str',
-        'generator_id': 'str',
+        'generator_result_id': 'str',
         'stream_id': 'int',
         'counters': 'PacketGeneratorFlowCounters'
     }
 
     attribute_map = {
         'id': 'id',
-        'generator_id': 'generator_id',
+        'generator_result_id': 'generator_result_id',
         'stream_id': 'stream_id',
         'counters': 'counters'
     }
 
-    def __init__(self, id=None, generator_id=None, stream_id=None, counters=None):  # noqa: E501
+    def __init__(self, id=None, generator_result_id=None, stream_id=None, counters=None):  # noqa: E501
         """TxFlow - a model defined in Swagger"""  # noqa: E501
 
         self._id = None
-        self._generator_id = None
+        self._generator_result_id = None
         self._stream_id = None
         self._counters = None
         self.discriminator = None
 
         self.id = id
-        self.generator_id = generator_id
+        self.generator_result_id = generator_result_id
         if stream_id is not None:
             self.stream_id = stream_id
         self.counters = counters
@@ -82,26 +82,26 @@ class TxFlow(object):
         self._id = id
 
     @property
-    def generator_id(self):
-        """Gets the generator_id of this TxFlow.  # noqa: E501
+    def generator_result_id(self):
+        """Gets the generator_result_id of this TxFlow.  # noqa: E501
 
-        Unique generator identifier that transmitted this flow  # noqa: E501
+        Unique generator result identifier that recorded this flow  # noqa: E501
 
-        :return: The generator_id of this TxFlow.  # noqa: E501
+        :return: The generator_result_id of this TxFlow.  # noqa: E501
         :rtype: str
         """
-        return self._generator_id
+        return self._generator_result_id
 
-    @generator_id.setter
-    def generator_id(self, generator_id):
-        """Sets the generator_id of this TxFlow.
+    @generator_result_id.setter
+    def generator_result_id(self, generator_result_id):
+        """Sets the generator_result_id of this TxFlow.
 
-        Unique generator identifier that transmitted this flow  # noqa: E501
+        Unique generator result identifier that recorded this flow  # noqa: E501
 
-        :param generator_id: The generator_id of this TxFlow.  # noqa: E501
+        :param generator_result_id: The generator_result_id of this TxFlow.  # noqa: E501
         :type: str
         """
-        self._generator_id = generator_id
+        self._generator_result_id = generator_result_id
 
     @property
     def stream_id(self):

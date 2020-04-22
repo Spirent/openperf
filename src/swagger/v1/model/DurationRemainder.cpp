@@ -19,9 +19,9 @@ namespace model {
 
 DurationRemainder::DurationRemainder()
 {
-    m_Mode = "";
-    m_Duration = 0L;
-    m_DurationIsSet = false;
+    m_Unit = "";
+    m_Value = 0L;
+    m_ValueIsSet = false;
     
 }
 
@@ -38,10 +38,10 @@ nlohmann::json DurationRemainder::toJson() const
 {
     nlohmann::json val = nlohmann::json::object();
 
-    val["mode"] = ModelBase::toJson(m_Mode);
-    if(m_DurationIsSet)
+    val["unit"] = ModelBase::toJson(m_Unit);
+    if(m_ValueIsSet)
     {
-        val["duration"] = m_Duration;
+        val["value"] = m_Value;
     }
     
 
@@ -50,40 +50,40 @@ nlohmann::json DurationRemainder::toJson() const
 
 void DurationRemainder::fromJson(nlohmann::json& val)
 {
-    setMode(val.at("mode"));
-    if(val.find("duration") != val.end())
+    setUnit(val.at("unit"));
+    if(val.find("value") != val.end())
     {
-        setDuration(val.at("duration"));
+        setValue(val.at("value"));
     }
     
 }
 
 
-std::string DurationRemainder::getMode() const
+std::string DurationRemainder::getUnit() const
 {
-    return m_Mode;
+    return m_Unit;
 }
-void DurationRemainder::setMode(std::string value)
+void DurationRemainder::setUnit(std::string value)
 {
-    m_Mode = value;
+    m_Unit = value;
     
 }
-int64_t DurationRemainder::getDuration() const
+int64_t DurationRemainder::getValue() const
 {
-    return m_Duration;
+    return m_Value;
 }
-void DurationRemainder::setDuration(int64_t value)
+void DurationRemainder::setValue(int64_t value)
 {
-    m_Duration = value;
-    m_DurationIsSet = true;
+    m_Value = value;
+    m_ValueIsSet = true;
 }
-bool DurationRemainder::durationIsSet() const
+bool DurationRemainder::valueIsSet() const
 {
-    return m_DurationIsSet;
+    return m_ValueIsSet;
 }
-void DurationRemainder::unsetDuration()
+void DurationRemainder::unsetValue()
 {
-    m_DurationIsSet = false;
+    m_ValueIsSet = false;
 }
 
 }

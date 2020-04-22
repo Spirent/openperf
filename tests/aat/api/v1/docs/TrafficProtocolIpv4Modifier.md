@@ -3,7 +3,6 @@
 ## Properties
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**method** | **str** | Modifier method | 
 **list** | **list[str]** | List of IPv4 addresses | [optional] 
 **sequence** | [**TrafficProtocolIpv4ModifierSequence**](TrafficProtocolIpv4ModifierSequence.md) |  | [optional] 
 

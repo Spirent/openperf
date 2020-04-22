@@ -20,7 +20,10 @@ namespace model {
 PacketGeneratorResult::PacketGeneratorResult()
 {
     m_Id = "";
+    m_Generator_id = "";
+    m_Generator_idIsSet = false;
     m_Active = false;
+    m_RemainingIsSet = false;
     
 }
 
@@ -38,8 +41,11 @@ nlohmann::json PacketGeneratorResult::toJson() const
     nlohmann::json val = nlohmann::json::object();
 
     val["id"] = ModelBase::toJson(m_Id);
+    if(m_Generator_idIsSet)
+    {
+        val["generator_id"] = ModelBase::toJson(m_Generator_id);
+    }
     val["active"] = m_Active;
-    val["duration"] = ModelBase::toJson(m_Duration);
     val["flow_counters"] = ModelBase::toJson(m_Flow_counters);
     {
         nlohmann::json jsonArray;
@@ -49,6 +55,10 @@ nlohmann::json PacketGeneratorResult::toJson() const
         }
         val["flows"] = jsonArray;
             }
+    if(m_RemainingIsSet)
+    {
+        val["remaining"] = ModelBase::toJson(m_Remaining);
+    }
     
 
     return val;
@@ -57,6 +67,11 @@ nlohmann::json PacketGeneratorResult::toJson() const
 void PacketGeneratorResult::fromJson(nlohmann::json& val)
 {
     setId(val.at("id"));
+    if(val.find("generator_id") != val.end())
+    {
+        setGeneratorId(val.at("generator_id"));
+        
+    }
     setActive(val.at("active"));
     {
         m_Flows.clear();
@@ -66,6 +81,16 @@ void PacketGeneratorResult::fromJson(nlohmann::json& val)
             m_Flows.push_back(item);
             
         }
+    }
+    if(val.find("remaining") != val.end())
+    {
+        if(!val["remaining"].is_null())
+        {
+            std::shared_ptr<DurationRemainder> newItem(new DurationRemainder());
+            newItem->fromJson(val["remaining"]);
+            setRemaining( newItem );
+        }
+        
     }
     
 }
@@ -80,6 +105,23 @@ void PacketGeneratorResult::setId(std::string value)
     m_Id = value;
     
 }
+std::string PacketGeneratorResult::getGeneratorId() const
+{
+    return m_Generator_id;
+}
+void PacketGeneratorResult::setGeneratorId(std::string value)
+{
+    m_Generator_id = value;
+    m_Generator_idIsSet = true;
+}
+bool PacketGeneratorResult::generatorIdIsSet() const
+{
+    return m_Generator_idIsSet;
+}
+void PacketGeneratorResult::unsetGenerator_id()
+{
+    m_Generator_idIsSet = false;
+}
 bool PacketGeneratorResult::isActive() const
 {
     return m_Active;
@@ -87,15 +129,6 @@ bool PacketGeneratorResult::isActive() const
 void PacketGeneratorResult::setActive(bool value)
 {
     m_Active = value;
-    
-}
-std::shared_ptr<DurationRemainder> PacketGeneratorResult::getDuration() const
-{
-    return m_Duration;
-}
-void PacketGeneratorResult::setDuration(std::shared_ptr<DurationRemainder> value)
-{
-    m_Duration = value;
     
 }
 std::shared_ptr<PacketGeneratorFlowCounters> PacketGeneratorResult::getFlowCounters() const
@@ -110,6 +143,23 @@ void PacketGeneratorResult::setFlowCounters(std::shared_ptr<PacketGeneratorFlowC
 std::vector<std::string>& PacketGeneratorResult::getFlows()
 {
     return m_Flows;
+}
+std::shared_ptr<DurationRemainder> PacketGeneratorResult::getRemaining() const
+{
+    return m_Remaining;
+}
+void PacketGeneratorResult::setRemaining(std::shared_ptr<DurationRemainder> value)
+{
+    m_Remaining = value;
+    m_RemainingIsSet = true;
+}
+bool PacketGeneratorResult::remainingIsSet() const
+{
+    return m_RemainingIsSet;
+}
+void PacketGeneratorResult::unsetRemaining()
+{
+    m_RemainingIsSet = false;
 }
 
 }

@@ -19,7 +19,6 @@ namespace model {
 
 TrafficProtocolFieldModifier::TrafficProtocolFieldModifier()
 {
-    m_Method = "";
     m_ListIsSet = false;
     m_SequenceIsSet = false;
     
@@ -38,7 +37,6 @@ nlohmann::json TrafficProtocolFieldModifier::toJson() const
 {
     nlohmann::json val = nlohmann::json::object();
 
-    val["method"] = ModelBase::toJson(m_Method);
     {
         nlohmann::json jsonArray;
         for( auto& item : m_List )
@@ -62,7 +60,6 @@ nlohmann::json TrafficProtocolFieldModifier::toJson() const
 
 void TrafficProtocolFieldModifier::fromJson(nlohmann::json& val)
 {
-    setMethod(val.at("method"));
     {
         m_List.clear();
         nlohmann::json jsonArray;
@@ -89,15 +86,6 @@ void TrafficProtocolFieldModifier::fromJson(nlohmann::json& val)
 }
 
 
-std::string TrafficProtocolFieldModifier::getMethod() const
-{
-    return m_Method;
-}
-void TrafficProtocolFieldModifier::setMethod(std::string value)
-{
-    m_Method = value;
-    
-}
 std::vector<int32_t>& TrafficProtocolFieldModifier::getList()
 {
     return m_List;

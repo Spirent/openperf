@@ -37,6 +37,12 @@ nlohmann::json PacketGeneratorConfig::toJson() const
 {
     nlohmann::json val = nlohmann::json::object();
 
+    val["duration"] = ModelBase::toJson(m_Duration);
+    val["load"] = ModelBase::toJson(m_Load);
+    if(m_OrderIsSet)
+    {
+        val["order"] = ModelBase::toJson(m_Order);
+    }
     {
         nlohmann::json jsonArray;
         for( auto& item : m_Traffic )
@@ -45,11 +51,6 @@ nlohmann::json PacketGeneratorConfig::toJson() const
         }
         val["traffic"] = jsonArray;
             }
-    val["load"] = ModelBase::toJson(m_Load);
-    if(m_OrderIsSet)
-    {
-        val["order"] = ModelBase::toJson(m_Order);
-    }
     
 
     return val;
@@ -57,6 +58,11 @@ nlohmann::json PacketGeneratorConfig::toJson() const
 
 void PacketGeneratorConfig::fromJson(nlohmann::json& val)
 {
+    if(val.find("order") != val.end())
+    {
+        setOrder(val.at("order"));
+        
+    }
     {
         m_Traffic.clear();
         nlohmann::json jsonArray;
@@ -65,29 +71,29 @@ void PacketGeneratorConfig::fromJson(nlohmann::json& val)
             
             if(item.is_null())
             {
-                m_Traffic.push_back( std::shared_ptr<PacketGeneratorConfig_traffic>(nullptr) );
+                m_Traffic.push_back( std::shared_ptr<TrafficDefinition>(nullptr) );
             }
             else
             {
-                std::shared_ptr<PacketGeneratorConfig_traffic> newItem(new PacketGeneratorConfig_traffic());
+                std::shared_ptr<TrafficDefinition> newItem(new TrafficDefinition());
                 newItem->fromJson(item);
                 m_Traffic.push_back( newItem );
             }
             
         }
     }
-    if(val.find("order") != val.end())
-    {
-        setOrder(val.at("order"));
-        
-    }
     
 }
 
 
-std::vector<std::shared_ptr<PacketGeneratorConfig_traffic>>& PacketGeneratorConfig::getTraffic()
+std::shared_ptr<TrafficDuration> PacketGeneratorConfig::getDuration() const
 {
-    return m_Traffic;
+    return m_Duration;
+}
+void PacketGeneratorConfig::setDuration(std::shared_ptr<TrafficDuration> value)
+{
+    m_Duration = value;
+    
 }
 std::shared_ptr<TrafficLoad> PacketGeneratorConfig::getLoad() const
 {
@@ -114,6 +120,10 @@ bool PacketGeneratorConfig::orderIsSet() const
 void PacketGeneratorConfig::unsetOrder()
 {
     m_OrderIsSet = false;
+}
+std::vector<std::shared_ptr<TrafficDefinition>>& PacketGeneratorConfig::getTraffic()
+{
+    return m_Traffic;
 }
 
 }

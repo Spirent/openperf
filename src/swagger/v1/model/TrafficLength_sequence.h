@@ -21,6 +21,7 @@
 
 #include "ModelBase.h"
 
+#include <vector>
 
 namespace swagger {
 namespace v1 {
@@ -64,6 +65,12 @@ public:
     void setStop(int32_t value);
     bool stopIsSet() const;
     void unsetStop();
+    /// <summary>
+    /// List of lengths in the sequence to skip
+    /// </summary>
+    std::vector<int32_t>& getSkip();
+    bool skipIsSet() const;
+    void unsetSkip();
 
 protected:
     int32_t m_Count;
@@ -72,6 +79,8 @@ protected:
 
     int32_t m_Stop;
     bool m_StopIsSet;
+    std::vector<int32_t> m_Skip;
+    bool m_SkipIsSet;
 };
 
 }

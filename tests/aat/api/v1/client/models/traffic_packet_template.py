@@ -32,26 +32,22 @@ class TrafficPacketTemplate(object):
     """
     swagger_types = {
         'protocols': 'list[TrafficProtocol]',
-        'length': 'TrafficLength',
         'modifier_tie': 'str'
     }
 
     attribute_map = {
         'protocols': 'protocols',
-        'length': 'length',
         'modifier_tie': 'modifier_tie'
     }
 
-    def __init__(self, protocols=None, length=None, modifier_tie='zip'):  # noqa: E501
+    def __init__(self, protocols=None, modifier_tie='zip'):  # noqa: E501
         """TrafficPacketTemplate - a model defined in Swagger"""  # noqa: E501
 
         self._protocols = None
-        self._length = None
         self._modifier_tie = None
         self.discriminator = None
 
         self.protocols = protocols
-        self.length = length
         if modifier_tie is not None:
             self.modifier_tie = modifier_tie
 
@@ -76,26 +72,6 @@ class TrafficPacketTemplate(object):
         :type: list[TrafficProtocol]
         """
         self._protocols = protocols
-
-    @property
-    def length(self):
-        """Gets the length of this TrafficPacketTemplate.  # noqa: E501
-
-
-        :return: The length of this TrafficPacketTemplate.  # noqa: E501
-        :rtype: TrafficLength
-        """
-        return self._length
-
-    @length.setter
-    def length(self, length):
-        """Sets the length of this TrafficPacketTemplate.
-
-
-        :param length: The length of this TrafficPacketTemplate.  # noqa: E501
-        :type: TrafficLength
-        """
-        self._length = length
 
     @property
     def modifier_tie(self):

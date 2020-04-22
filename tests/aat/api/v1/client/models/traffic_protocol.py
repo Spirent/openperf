@@ -32,9 +32,7 @@ class TrafficProtocol(object):
     """
     swagger_types = {
         'modifiers': 'TrafficProtocolModifiers',
-        'protocol': 'str',
         'custom': 'PacketProtocolCustom',
-        'signature': 'PacketProtocolSpirentSignature',
         'ethernet': 'PacketProtocolEthernet',
         'ipv4': 'PacketProtocolIpv4',
         'ipv6': 'PacketProtocolIpv6',
@@ -46,9 +44,7 @@ class TrafficProtocol(object):
 
     attribute_map = {
         'modifiers': 'modifiers',
-        'protocol': 'protocol',
         'custom': 'custom',
-        'signature': 'signature',
         'ethernet': 'ethernet',
         'ipv4': 'ipv4',
         'ipv6': 'ipv6',
@@ -58,13 +54,11 @@ class TrafficProtocol(object):
         'vlan': 'vlan'
     }
 
-    def __init__(self, modifiers=None, protocol=None, custom=None, signature=None, ethernet=None, ipv4=None, ipv6=None, mpls=None, tcp=None, udp=None, vlan=None):  # noqa: E501
+    def __init__(self, modifiers=None, custom=None, ethernet=None, ipv4=None, ipv6=None, mpls=None, tcp=None, udp=None, vlan=None):  # noqa: E501
         """TrafficProtocol - a model defined in Swagger"""  # noqa: E501
 
         self._modifiers = None
-        self._protocol = None
         self._custom = None
-        self._signature = None
         self._ethernet = None
         self._ipv4 = None
         self._ipv6 = None
@@ -76,11 +70,8 @@ class TrafficProtocol(object):
 
         if modifiers is not None:
             self.modifiers = modifiers
-        self.protocol = protocol
         if custom is not None:
             self.custom = custom
-        if signature is not None:
-            self.signature = signature
         if ethernet is not None:
             self.ethernet = ethernet
         if ipv4 is not None:
@@ -117,28 +108,6 @@ class TrafficProtocol(object):
         self._modifiers = modifiers
 
     @property
-    def protocol(self):
-        """Gets the protocol of this TrafficProtocol.  # noqa: E501
-
-        protocol type  # noqa: E501
-
-        :return: The protocol of this TrafficProtocol.  # noqa: E501
-        :rtype: str
-        """
-        return self._protocol
-
-    @protocol.setter
-    def protocol(self, protocol):
-        """Sets the protocol of this TrafficProtocol.
-
-        protocol type  # noqa: E501
-
-        :param protocol: The protocol of this TrafficProtocol.  # noqa: E501
-        :type: str
-        """
-        self._protocol = protocol
-
-    @property
     def custom(self):
         """Gets the custom of this TrafficProtocol.  # noqa: E501
 
@@ -157,26 +126,6 @@ class TrafficProtocol(object):
         :type: PacketProtocolCustom
         """
         self._custom = custom
-
-    @property
-    def signature(self):
-        """Gets the signature of this TrafficProtocol.  # noqa: E501
-
-
-        :return: The signature of this TrafficProtocol.  # noqa: E501
-        :rtype: PacketProtocolSpirentSignature
-        """
-        return self._signature
-
-    @signature.setter
-    def signature(self, signature):
-        """Sets the signature of this TrafficProtocol.
-
-
-        :param signature: The signature of this TrafficProtocol.  # noqa: E501
-        :type: PacketProtocolSpirentSignature
-        """
-        self._signature = signature
 
     @property
     def ethernet(self):

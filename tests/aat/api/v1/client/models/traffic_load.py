@@ -31,51 +31,51 @@ class TrafficLoad(object):
                             and the value is json key in definition.
     """
     swagger_types = {
-        'burst': 'int',
+        'burst_size': 'int',
         'rate': 'TrafficLoadRate',
         'units': 'str'
     }
 
     attribute_map = {
-        'burst': 'burst',
+        'burst_size': 'burst_size',
         'rate': 'rate',
         'units': 'units'
     }
 
-    def __init__(self, burst=1, rate=None, units=None):  # noqa: E501
+    def __init__(self, burst_size=1, rate=None, units=None):  # noqa: E501
         """TrafficLoad - a model defined in Swagger"""  # noqa: E501
 
-        self._burst = None
+        self._burst_size = None
         self._rate = None
         self._units = None
         self.discriminator = None
 
-        if burst is not None:
-            self.burst = burst
+        if burst_size is not None:
+            self.burst_size = burst_size
         self.rate = rate
         self.units = units
 
     @property
-    def burst(self):
-        """Gets the burst of this TrafficLoad.  # noqa: E501
+    def burst_size(self):
+        """Gets the burst_size of this TrafficLoad.  # noqa: E501
 
         Tells the generator how many packets to transmit as part of an atomic transmit operation. Larger burst sizes are more efficient.   # noqa: E501
 
-        :return: The burst of this TrafficLoad.  # noqa: E501
+        :return: The burst_size of this TrafficLoad.  # noqa: E501
         :rtype: int
         """
-        return self._burst
+        return self._burst_size
 
-    @burst.setter
-    def burst(self, burst):
-        """Sets the burst of this TrafficLoad.
+    @burst_size.setter
+    def burst_size(self, burst_size):
+        """Sets the burst_size of this TrafficLoad.
 
         Tells the generator how many packets to transmit as part of an atomic transmit operation. Larger burst sizes are more efficient.   # noqa: E501
 
-        :param burst: The burst of this TrafficLoad.  # noqa: E501
+        :param burst_size: The burst_size of this TrafficLoad.  # noqa: E501
         :type: int
         """
-        self._burst = burst
+        self._burst_size = burst_size
 
     @property
     def rate(self):

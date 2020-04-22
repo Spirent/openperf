@@ -21,8 +21,9 @@
 
 #include "ModelBase.h"
 
-#include <vector>
-#include "TrafficDefinition_descriptors.h"
+#include "TrafficPacketTemplate.h"
+#include "SpirentSignature.h"
+#include "TrafficLength.h"
 
 namespace swagger {
 namespace v1 {
@@ -50,13 +51,39 @@ public:
     /// TrafficDefinition members
 
     /// <summary>
-    /// A list of packet templates with modifiers that describe all packets to send as part of this traffic definition. 
+    /// 
     /// </summary>
-    std::vector<std::shared_ptr<TrafficDefinition_descriptors>>& getDescriptors();
-    
-protected:
-    std::vector<std::shared_ptr<TrafficDefinition_descriptors>> m_Descriptors;
+    std::shared_ptr<TrafficPacketTemplate> getPacket() const;
+    void setPacket(std::shared_ptr<TrafficPacketTemplate> value);
+        /// <summary>
+    /// 
+    /// </summary>
+    std::shared_ptr<TrafficLength> getLength() const;
+    void setLength(std::shared_ptr<TrafficLength> value);
+        /// <summary>
+    /// 
+    /// </summary>
+    std::shared_ptr<SpirentSignature> getSignature() const;
+    void setSignature(std::shared_ptr<SpirentSignature> value);
+    bool signatureIsSet() const;
+    void unsetSignature();
+    /// <summary>
+    /// Relative weight of this packet definition
+    /// </summary>
+    int32_t getWeight() const;
+    void setWeight(int32_t value);
+    bool weightIsSet() const;
+    void unsetWeight();
 
+protected:
+    std::shared_ptr<TrafficPacketTemplate> m_Packet;
+
+    std::shared_ptr<TrafficLength> m_Length;
+
+    std::shared_ptr<SpirentSignature> m_Signature;
+    bool m_SignatureIsSet;
+    int32_t m_Weight;
+    bool m_WeightIsSet;
 };
 
 }

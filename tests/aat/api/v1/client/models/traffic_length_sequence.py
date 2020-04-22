@@ -33,27 +33,32 @@ class TrafficLengthSequence(object):
     swagger_types = {
         'count': 'int',
         'start': 'int',
-        'stop': 'int'
+        'stop': 'int',
+        'skip': 'list[int]'
     }
 
     attribute_map = {
         'count': 'count',
         'start': 'start',
-        'stop': 'stop'
+        'stop': 'stop',
+        'skip': 'skip'
     }
 
-    def __init__(self, count=None, start=None, stop=None):  # noqa: E501
+    def __init__(self, count=None, start=None, stop=None, skip=None):  # noqa: E501
         """TrafficLengthSequence - a model defined in Swagger"""  # noqa: E501
 
         self._count = None
         self._start = None
         self._stop = None
+        self._skip = None
         self.discriminator = None
 
         self.count = count
         self.start = start
         if stop is not None:
             self.stop = stop
+        if skip is not None:
+            self.skip = skip
 
     @property
     def count(self):
@@ -120,6 +125,28 @@ class TrafficLengthSequence(object):
         :type: int
         """
         self._stop = stop
+
+    @property
+    def skip(self):
+        """Gets the skip of this TrafficLengthSequence.  # noqa: E501
+
+        List of lengths in the sequence to skip  # noqa: E501
+
+        :return: The skip of this TrafficLengthSequence.  # noqa: E501
+        :rtype: list[int]
+        """
+        return self._skip
+
+    @skip.setter
+    def skip(self, skip):
+        """Sets the skip of this TrafficLengthSequence.
+
+        List of lengths in the sequence to skip  # noqa: E501
+
+        :param skip: The skip of this TrafficLengthSequence.  # noqa: E501
+        :type: list[int]
+        """
+        self._skip = skip
 
     def to_dict(self):
         """Returns the model properties as a dict"""

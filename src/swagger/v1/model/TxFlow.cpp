@@ -20,7 +20,7 @@ namespace model {
 TxFlow::TxFlow()
 {
     m_Id = "";
-    m_Generator_id = "";
+    m_Generator_result_id = "";
     m_Stream_id = 0L;
     m_Stream_idIsSet = false;
     
@@ -40,7 +40,7 @@ nlohmann::json TxFlow::toJson() const
     nlohmann::json val = nlohmann::json::object();
 
     val["id"] = ModelBase::toJson(m_Id);
-    val["generator_id"] = ModelBase::toJson(m_Generator_id);
+    val["generator_result_id"] = ModelBase::toJson(m_Generator_result_id);
     if(m_Stream_idIsSet)
     {
         val["stream_id"] = m_Stream_id;
@@ -54,7 +54,7 @@ nlohmann::json TxFlow::toJson() const
 void TxFlow::fromJson(nlohmann::json& val)
 {
     setId(val.at("id"));
-    setGeneratorId(val.at("generator_id"));
+    setGeneratorResultId(val.at("generator_result_id"));
     if(val.find("stream_id") != val.end())
     {
         setStreamId(val.at("stream_id"));
@@ -72,13 +72,13 @@ void TxFlow::setId(std::string value)
     m_Id = value;
     
 }
-std::string TxFlow::getGeneratorId() const
+std::string TxFlow::getGeneratorResultId() const
 {
-    return m_Generator_id;
+    return m_Generator_result_id;
 }
-void TxFlow::setGeneratorId(std::string value)
+void TxFlow::setGeneratorResultId(std::string value)
 {
-    m_Generator_id = value;
+    m_Generator_result_id = value;
     
 }
 int64_t TxFlow::getStreamId() const

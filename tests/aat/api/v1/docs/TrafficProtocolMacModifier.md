@@ -3,7 +3,6 @@
 ## Properties
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**method** | **str** | Modifier method | 
 **list** | **list[str]** | List of MAC addresses | [optional] 
 **sequence** | [**TrafficProtocolMacModifierSequence**](TrafficProtocolMacModifierSequence.md) |  | [optional] 
 
