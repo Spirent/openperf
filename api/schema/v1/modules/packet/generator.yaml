@@ -446,24 +446,8 @@ definitions:
     type: object
     description: Packet generator configuration
     properties:
-      traffic:
-        type: array
-        description: List of packet sequence definitions
-        items:
-          type: object
-          description: packet sequences to transmit with possible repeats
-          properties:
-            definition:
-              $ref: "#/definitions/TrafficDefinition"
-            repeat:
-              type: integer
-              description: number of times to repeat this sequence
-              format: int32
-              default: 0
-              minimum: 0
-          required:
-            - definition
-        minItems: 1
+      duration:
+        $ref: "#/definitions/TrafficDuration"
       load:
         $ref: "#/definitions/TrafficLoad"
       order:
@@ -474,9 +458,16 @@ definitions:
         enum:
           - round-robin
           - sequential
+      traffic:
+        type: array
+        description: List of traffic definitions
+        items:
+          $ref: "#/definitions/TrafficDefinition"
+        minItems: 1
     required:
-      - traffic
+      - duration
       - load
+      - traffic
 
   PacketGeneratorFlowCounters:
     type: object
@@ -529,11 +520,12 @@ definitions:
       id:
         type: string
         description: Unique generator result identifier
+      generator_id:
+        type: string
+        description: Unique generator identifier that produced this result
       active:
         type: boolean
         description: Indicates whether this result is currently being updated
-      duration:
-        $ref: ./common.yaml#/definitions/DurationRemainder
       flow_counters:
         $ref: "#/definitions/PacketGeneratorFlowCounters"
       flows:
@@ -543,76 +535,135 @@ definitions:
           statistics may be queried via the `tx-flows` endpoint.
         items:
           type: string
+      remaining:
+        $ref: ./common.yaml#/definitions/DurationRemainder
     required:
       - id
       - active
-      - duration
       - flow_counters
       - flows
+
+  SpirentSignature:
+    type: object
+    description: Configures Spirent test signature
+    properties:
+      stream_id:
+        type: integer
+        description: |
+          Stream IDs are created for each flow of the definition. This
+          property specifies the ID to use for the first flow. Subsequent
+          flows will use incremented IDs. For example, if a traffic
+          definitions contains 20 flows with a first_stream_id value of
+          1, then the definition will use 1-20 for stream ids.
+        format: int32
+      fill:
+        type: object
+        description: Specifies optional packet payload fill
+        properties:
+          constant:
+            type: integer
+            description: Constant, repeating fill value for payload
+            format: int32
+            minimum: 0
+            maximum: 65535
+          decrement:
+            type: integer
+            description: Decrement octet values for payload
+            format: int32
+            minimum: 0
+            maximum: 255
+          increment:
+            type: integer
+            description: Increment octet values for payload
+            format: int32
+            minimum: 0
+            maximum: 255
+          prbs:
+            type: boolean
+            description: Use pseudo random bit sequence for payload
+      latency:
+        type: string
+        description: Indicates timestamp offset
+        enum:
+          - start_of_frame
+          - end_of_frame
+    required:
+      - stream_id
+      - latency
 
   TrafficDefinition:
     type: object
     description: Describes a sequence of traffic for a packet generator to transmit
     properties:
-      descriptors:
-        type: array
-        description: |
-          A list of packet templates with modifiers that describe all packets
-          to send as part of this traffic definition.
-        items:
-          type: object
-          description: Packet descriptor with relative weight
-          properties:
-            packet:
-              $ref: "#/definitions/TrafficPacketTemplate"
-            weight:
-              type: integer
-              description: Relative weight for this packet
-              format: int32
-              minimum: 1
-          required:
-            - descriptor
-            - weight
-        minItems: 1
+      packet:
+        $ref: "#/definitions/TrafficPacketTemplate"
+      length:
+        $ref: "#/definitions/TrafficLength"
+      signature:
+        $ref: "#/definitions/SpirentSignature"
+      weight:
+        type: integer
+        description: Relative weight of this packet definition
+        format: int32
+        minimum: 1
+        default: 1
     required:
-      - descriptors
+      - packet
+      - length
+
+  TrafficDuration:
+    type: object
+    description: |
+      Describes how long a packet generator should transmit traffic once
+      started. Only one property may be set.
+    properties:
+      continuous:
+        type: boolean
+        description: Indicates there is no duration limit when set.
+      frames:
+        type: integer
+        description: Specifies the duration as number of transmitted frames.
+        format: int32
+        minimum: 1
+      time:
+        type: object
+        description: Describes the transmit time
+        properties:
+          value:
+            type: integer
+            description: Specifies the value for time based transmission
+            format: int32
+            minimum: 1
+          units:
+            type: string
+            description: Specifies the units for value
+            enum:
+              - hours
+              - minutes
+              - seconds
+              - milliseconds
+        required:
+          - value
+          - units
 
   TrafficLength:
     type: object
-    description: Specifies length of generated packets
+    description: |
+      Specifies length of generated packets. At least one property must be set.
     properties:
-      method:
-        type: string
-        description: packet length specification method
-        enum:
-          - fixed
-          - list
-          - sequence
       fixed:
-        type: object
-        description: Specifies a fixed packet lengths
-        properties:
-          length:
-            type: integer
-            description: Fixed packet length
-            format: int32
-            minimum: 64
-        required:
-          - length
+        type: integer
+        description: Fixed packet length
+        format: int32
+        minimum: 64
       list:
-        type: object
-        description: Specifies a list of packet lengths
-        properties:
-          lengths:
-            type: array
-            description: List of packet lengths
-            items:
-              type: integer
-              format: int32
-              minimum: 64
-            minItems: 1
-        required:
-          - lengths
+        type: array
+        description: List of packet lengths
+        items:
+          type: integer
+          format: int32
+          minimum: 64
+          minItems: 1
       sequence:
         type: object
         description: Specifies a sequence of packet lengths
@@ -632,6 +683,13 @@ definitions:
             description: The last length in the sequence
             format: int32
             minimum: 64
+          skip:
+            type: array
+            description: List of lengths in the sequence to skip
+            items:
+              type: integer
+              format: int32
+              minimum: 64
         required:
           - count
           - start
@@ -640,7 +698,7 @@ definitions:
     type: object
     description: Describes the transmit load of a packet generator
     properties:
-      burst:
+      burst_size:
         type: integer
         description: |
           Tells the generator how many packets to transmit as part of an
@@ -648,6 +706,7 @@ definitions:
         format: int32
         default: 1
         minimum: 1
+        maximum: 65535
       rate:
         type: object
         description: The transmit packet rate
@@ -689,8 +748,6 @@ definitions:
         items:
           $ref: "#/definitions/TrafficProtocol"
         minItems: 1
-      length:
-        $ref: "#/definitions/TrafficLength"
       modifier_tie:
         type: string
         description: |
@@ -702,11 +759,12 @@ definitions:
           - zip
     required:
       - protocols
-      - length
 
   TrafficProtocol:
     type: object
-    description: A traffic protocol definition for a traffic generator
+    description: |
+      A traffic protocol definition for a traffic generator. At least one
+      packet protocol must be set.
     properties:
       modifiers:
         type: object
@@ -729,21 +787,8 @@ definitions:
               - zip
         required:
           - items
-      protocol:
-        type: string
-        description: protocol type
-        enum:
-          - custom
-          - ethernet
-          - ipv4
-          - ipv6
-          - tcp
-          - udp
-          - signature
       custom:
         $ref: ./common.yaml#/definitions/PacketProtocolCustom
-      signature:
-        $ref: ./common.yaml#/definitions/PacketProtocolSpirentSignature
       ethernet:
         $ref: ./protocol.yaml#/definitions/PacketProtocolEthernet
       ipv4:
@@ -758,8 +803,6 @@ definitions:
         $ref: ./protocol.yaml#/definitions/PacketProtocolUdp
       vlan:
         $ref: ./protocol.yaml#/definitions/PacketProtocolVlan
-    required:
-      - protocol
 
   TrafficProtocolModifier:
     type: object
@@ -795,12 +838,6 @@ definitions:
       Specifies how to modify a protocol data field. Maximum values are
       determined by the field to modify.
     properties:
-      method:
-        type: string
-        description: Modifier method
-        enum:
-          - list
-          - sequence
       list:
         type: array
         description: |
@@ -836,20 +873,11 @@ definitions:
         required:
           - count
           - start
-    required:
-      - field
-      - method
 
   TrafficProtocolIpv4Modifier:
     type: object
     description: Specifies how to modify an IPv4 address
     properties:
-      method:
-        type: string
-        description: Modifier method
-        enum:
-          - list
-          - sequence
       list:
         type: array
         description: List of IPv4 addresses
@@ -883,20 +911,11 @@ definitions:
         required:
           - count
           - start
-    required:
-      - field
-      - method
 
   TrafficProtocolIpv6Modifier:
     type: object
     description: Specifies how to modify an IPv6 address
     properties:
-      method:
-        type: string
-        description: Modifier method
-        enum:
-          - list
-          - sequence
       list:
         type: array
         description: List of IPv6 addresses
@@ -930,20 +949,11 @@ definitions:
         required:
           - count
           - start
-    required:
-      - field
-      - method
 
   TrafficProtocolMacModifier:
     type: object
     description: Specifies how to modify an Ethernet MAC address
     properties:
-      method:
-        type: string
-        description: Modifier method
-        enum:
-          - list
-          - sequence
       list:
         type: array
         description: List of MAC addresses
@@ -977,9 +987,6 @@ definitions:
         required:
           - count
           - start
-    required:
-      - field
-      - method
 
   TxFlow:
     type: object
@@ -988,9 +995,9 @@ definitions:
       id:
         type: string
         description: Unique transmit flow identifier
-      generator_id:
+      generator_result_id:
         type: string
-        description: Unique generator identifier that transmitted this flow
+        description: Unique generator result identifier that recorded this flow
       stream_id:
         type: integer
         description: Spirent signature stream id
@@ -999,5 +1006,5 @@ definitions:
         $ref: "#/definitions/PacketGeneratorFlowCounters"
     required:
       - id
-      - generator_id
+      - generator_result_id
       - counters
