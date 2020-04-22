@@ -118,7 +118,6 @@ from client.models.packet_capture_config import PacketCaptureConfig
 from client.models.packet_capture_result import PacketCaptureResult
 from client.models.packet_generator import PacketGenerator
 from client.models.packet_generator_config import PacketGeneratorConfig
-from client.models.packet_generator_config_traffic import PacketGeneratorConfigTraffic
 from client.models.packet_generator_flow_counters import PacketGeneratorFlowCounters
 from client.models.packet_generator_result import PacketGeneratorResult
 from client.models.packet_protocol_custom import PacketProtocolCustom
@@ -126,7 +125,6 @@ from client.models.packet_protocol_ethernet import PacketProtocolEthernet
 from client.models.packet_protocol_ipv4 import PacketProtocolIpv4
 from client.models.packet_protocol_ipv6 import PacketProtocolIpv6
 from client.models.packet_protocol_mpls import PacketProtocolMpls
-from client.models.packet_protocol_spirent_signature import PacketProtocolSpirentSignature
 from client.models.packet_protocol_tcp import PacketProtocolTcp
 from client.models.packet_protocol_udp import PacketProtocolUdp
 from client.models.packet_protocol_vlan import PacketProtocolVlan
@@ -137,6 +135,8 @@ from client.models.port_config_dpdk import PortConfigDpdk
 from client.models.port_stats import PortStats
 from client.models.port_status import PortStatus
 from client.models.rx_flow import RxFlow
+from client.models.spirent_signature import SpirentSignature
+from client.models.spirent_signature_fill import SpirentSignatureFill
 from client.models.stack import Stack
 from client.models.stack_element_stats import StackElementStats
 from client.models.stack_memory_stats import StackMemoryStats
@@ -154,10 +154,9 @@ from client.models.time_source_stats import TimeSourceStats
 from client.models.time_source_stats_ntp import TimeSourceStatsNtp
 from client.models.toggle_generators_request import ToggleGeneratorsRequest
 from client.models.traffic_definition import TrafficDefinition
-from client.models.traffic_definition_descriptors import TrafficDefinitionDescriptors
+from client.models.traffic_duration import TrafficDuration
+from client.models.traffic_duration_time import TrafficDurationTime
 from client.models.traffic_length import TrafficLength
-from client.models.traffic_length_fixed import TrafficLengthFixed
-from client.models.traffic_length_list import TrafficLengthList
 from client.models.traffic_length_sequence import TrafficLengthSequence
 from client.models.traffic_load import TrafficLoad
 from client.models.traffic_load_rate import TrafficLoadRate

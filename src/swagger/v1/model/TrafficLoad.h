@@ -52,10 +52,10 @@ public:
     /// <summary>
     /// Tells the generator how many packets to transmit as part of an atomic transmit operation. Larger burst sizes are more efficient. 
     /// </summary>
-    int32_t getBurst() const;
-    void setBurst(int32_t value);
-    bool burstIsSet() const;
-    void unsetBurst();
+    int32_t getBurstSize() const;
+    void setBurstSize(int32_t value);
+    bool burstSizeIsSet() const;
+    void unsetBurst_size();
     /// <summary>
     /// 
     /// </summary>
@@ -68,8 +68,8 @@ public:
     void setUnits(std::string value);
     
 protected:
-    int32_t m_Burst;
-    bool m_BurstIsSet;
+    int32_t m_Burst_size;
+    bool m_Burst_sizeIsSet;
     std::shared_ptr<TrafficLoad_rate> m_Rate;
 
     std::string m_Units;

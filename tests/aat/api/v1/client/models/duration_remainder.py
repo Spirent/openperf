@@ -31,69 +31,69 @@ class DurationRemainder(object):
                             and the value is json key in definition.
     """
     swagger_types = {
-        'mode': 'str',
-        'duration': 'int'
+        'unit': 'str',
+        'value': 'int'
     }
 
     attribute_map = {
-        'mode': 'mode',
-        'duration': 'duration'
+        'unit': 'unit',
+        'value': 'value'
     }
 
-    def __init__(self, mode=None, duration=None):  # noqa: E501
+    def __init__(self, unit=None, value=None):  # noqa: E501
         """DurationRemainder - a model defined in Swagger"""  # noqa: E501
 
-        self._mode = None
-        self._duration = None
+        self._unit = None
+        self._value = None
         self.discriminator = None
 
-        self.mode = mode
-        if duration is not None:
-            self.duration = duration
+        self.unit = unit
+        if value is not None:
+            self.value = value
 
     @property
-    def mode(self):
-        """Gets the mode of this DurationRemainder.  # noqa: E501
+    def unit(self):
+        """Gets the unit of this DurationRemainder.  # noqa: E501
 
         Specifies how the duration is measured  # noqa: E501
 
-        :return: The mode of this DurationRemainder.  # noqa: E501
+        :return: The unit of this DurationRemainder.  # noqa: E501
         :rtype: str
         """
-        return self._mode
+        return self._unit
 
-    @mode.setter
-    def mode(self, mode):
-        """Sets the mode of this DurationRemainder.
+    @unit.setter
+    def unit(self, unit):
+        """Sets the unit of this DurationRemainder.
 
         Specifies how the duration is measured  # noqa: E501
 
-        :param mode: The mode of this DurationRemainder.  # noqa: E501
+        :param unit: The unit of this DurationRemainder.  # noqa: E501
         :type: str
         """
-        self._mode = mode
+        self._unit = unit
 
     @property
-    def duration(self):
-        """Gets the duration of this DurationRemainder.  # noqa: E501
+    def value(self):
+        """Gets the value of this DurationRemainder.  # noqa: E501
 
         Specifies the remaining duration for definite durations  # noqa: E501
 
-        :return: The duration of this DurationRemainder.  # noqa: E501
+        :return: The value of this DurationRemainder.  # noqa: E501
         :rtype: int
         """
-        return self._duration
+        return self._value
 
-    @duration.setter
-    def duration(self, duration):
-        """Sets the duration of this DurationRemainder.
+    @value.setter
+    def value(self, value):
+        """Sets the value of this DurationRemainder.
 
         Specifies the remaining duration for definite durations  # noqa: E501
 
-        :param duration: The duration of this DurationRemainder.  # noqa: E501
+        :param value: The value of this DurationRemainder.  # noqa: E501
         :type: int
         """
-        self._duration = duration
+        self._value = value
 
     def to_dict(self):
         """Returns the model properties as a dict"""

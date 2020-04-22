@@ -45,7 +45,6 @@ nlohmann::json TrafficPacketTemplate::toJson() const
         }
         val["protocols"] = jsonArray;
             }
-    val["length"] = ModelBase::toJson(m_Length);
     if(m_Modifier_tieIsSet)
     {
         val["modifier_tie"] = ModelBase::toJson(m_Modifier_tie);
@@ -88,15 +87,6 @@ void TrafficPacketTemplate::fromJson(nlohmann::json& val)
 std::vector<std::shared_ptr<TrafficProtocol>>& TrafficPacketTemplate::getProtocols()
 {
     return m_Protocols;
-}
-std::shared_ptr<TrafficLength> TrafficPacketTemplate::getLength() const
-{
-    return m_Length;
-}
-void TrafficPacketTemplate::setLength(std::shared_ptr<TrafficLength> value)
-{
-    m_Length = value;
-    
 }
 std::string TrafficPacketTemplate::getModifierTie() const
 {

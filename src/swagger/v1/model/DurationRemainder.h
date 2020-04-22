@@ -51,21 +51,21 @@ public:
     /// <summary>
     /// Specifies how the duration is measured
     /// </summary>
-    std::string getMode() const;
-    void setMode(std::string value);
+    std::string getUnit() const;
+    void setUnit(std::string value);
         /// <summary>
     /// Specifies the remaining duration for definite durations
     /// </summary>
-    int64_t getDuration() const;
-    void setDuration(int64_t value);
-    bool durationIsSet() const;
-    void unsetDuration();
+    int64_t getValue() const;
+    void setValue(int64_t value);
+    bool valueIsSet() const;
+    void unsetValue();
 
 protected:
-    std::string m_Mode;
+    std::string m_Unit;
 
-    int64_t m_Duration;
-    bool m_DurationIsSet;
+    int64_t m_Value;
+    bool m_ValueIsSet;
 };
 
 }

@@ -19,8 +19,7 @@ namespace model {
 
 TrafficLength::TrafficLength()
 {
-    m_Method = "";
-    m_MethodIsSet = false;
+    m_Fixed = 0;
     m_FixedIsSet = false;
     m_ListIsSet = false;
     m_SequenceIsSet = false;
@@ -40,17 +39,21 @@ nlohmann::json TrafficLength::toJson() const
 {
     nlohmann::json val = nlohmann::json::object();
 
-    if(m_MethodIsSet)
-    {
-        val["method"] = ModelBase::toJson(m_Method);
-    }
     if(m_FixedIsSet)
     {
-        val["fixed"] = ModelBase::toJson(m_Fixed);
+        val["fixed"] = m_Fixed;
     }
-    if(m_ListIsSet)
     {
-        val["list"] = ModelBase::toJson(m_List);
+        nlohmann::json jsonArray;
+        for( auto& item : m_List )
+        {
+            jsonArray.push_back(ModelBase::toJson(item));
+        }
+        
+        if(jsonArray.size() > 0)
+        {
+            val["list"] = jsonArray;
+        }
     }
     if(m_SequenceIsSet)
     {
@@ -63,30 +66,21 @@ nlohmann::json TrafficLength::toJson() const
 
 void TrafficLength::fromJson(nlohmann::json& val)
 {
-    if(val.find("method") != val.end())
-    {
-        setMethod(val.at("method"));
-        
-    }
     if(val.find("fixed") != val.end())
     {
-        if(!val["fixed"].is_null())
-        {
-            std::shared_ptr<TrafficLength_fixed> newItem(new TrafficLength_fixed());
-            newItem->fromJson(val["fixed"]);
-            setFixed( newItem );
-        }
-        
+        setFixed(val.at("fixed"));
     }
-    if(val.find("list") != val.end())
     {
-        if(!val["list"].is_null())
+        m_List.clear();
+        nlohmann::json jsonArray;
+        if(val.find("list") != val.end())
         {
-            std::shared_ptr<TrafficLength_list> newItem(new TrafficLength_list());
-            newItem->fromJson(val["list"]);
-            setList( newItem );
+        for( auto& item : val["list"] )
+        {
+            m_List.push_back(item);
+            
         }
-        
+        }
     }
     if(val.find("sequence") != val.end())
     {
@@ -102,28 +96,11 @@ void TrafficLength::fromJson(nlohmann::json& val)
 }
 
 
-std::string TrafficLength::getMethod() const
-{
-    return m_Method;
-}
-void TrafficLength::setMethod(std::string value)
-{
-    m_Method = value;
-    m_MethodIsSet = true;
-}
-bool TrafficLength::methodIsSet() const
-{
-    return m_MethodIsSet;
-}
-void TrafficLength::unsetMethod()
-{
-    m_MethodIsSet = false;
-}
-std::shared_ptr<TrafficLength_fixed> TrafficLength::getFixed() const
+int32_t TrafficLength::getFixed() const
 {
     return m_Fixed;
 }
-void TrafficLength::setFixed(std::shared_ptr<TrafficLength_fixed> value)
+void TrafficLength::setFixed(int32_t value)
 {
     m_Fixed = value;
     m_FixedIsSet = true;
@@ -136,14 +113,9 @@ void TrafficLength::unsetFixed()
 {
     m_FixedIsSet = false;
 }
-std::shared_ptr<TrafficLength_list> TrafficLength::getList() const
+std::vector<int32_t>& TrafficLength::getList()
 {
     return m_List;
-}
-void TrafficLength::setList(std::shared_ptr<TrafficLength_list> value)
-{
-    m_List = value;
-    m_ListIsSet = true;
 }
 bool TrafficLength::listIsSet() const
 {

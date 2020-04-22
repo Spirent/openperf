@@ -31,52 +31,26 @@ class TrafficProtocolFieldModifier(object):
                             and the value is json key in definition.
     """
     swagger_types = {
-        'method': 'str',
         'list': 'list[int]',
         'sequence': 'TrafficProtocolFieldModifierSequence'
     }
 
     attribute_map = {
-        'method': 'method',
         'list': 'list',
         'sequence': 'sequence'
     }
 
-    def __init__(self, method=None, list=None, sequence=None):  # noqa: E501
+    def __init__(self, list=None, sequence=None):  # noqa: E501
         """TrafficProtocolFieldModifier - a model defined in Swagger"""  # noqa: E501
 
-        self._method = None
         self._list = None
         self._sequence = None
         self.discriminator = None
 
-        self.method = method
         if list is not None:
             self.list = list
         if sequence is not None:
             self.sequence = sequence
-
-    @property
-    def method(self):
-        """Gets the method of this TrafficProtocolFieldModifier.  # noqa: E501
-
-        Modifier method  # noqa: E501
-
-        :return: The method of this TrafficProtocolFieldModifier.  # noqa: E501
-        :rtype: str
-        """
-        return self._method
-
-    @method.setter
-    def method(self, method):
-        """Sets the method of this TrafficProtocolFieldModifier.
-
-        Modifier method  # noqa: E501
-
-        :param method: The method of this TrafficProtocolFieldModifier.  # noqa: E501
-        :type: str
-        """
-        self._method = method
 
     @property
     def list(self):

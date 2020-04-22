@@ -19,6 +19,9 @@ namespace model {
 
 TrafficDefinition::TrafficDefinition()
 {
+    m_SignatureIsSet = false;
+    m_Weight = 0;
+    m_WeightIsSet = false;
     
 }
 
@@ -35,14 +38,16 @@ nlohmann::json TrafficDefinition::toJson() const
 {
     nlohmann::json val = nlohmann::json::object();
 
+    val["packet"] = ModelBase::toJson(m_Packet);
+    val["length"] = ModelBase::toJson(m_Length);
+    if(m_SignatureIsSet)
     {
-        nlohmann::json jsonArray;
-        for( auto& item : m_Descriptors )
-        {
-            jsonArray.push_back(ModelBase::toJson(item));
-        }
-        val["descriptors"] = jsonArray;
-            }
+        val["signature"] = ModelBase::toJson(m_Signature);
+    }
+    if(m_WeightIsSet)
+    {
+        val["weight"] = m_Weight;
+    }
     
 
     return val;
@@ -50,32 +55,75 @@ nlohmann::json TrafficDefinition::toJson() const
 
 void TrafficDefinition::fromJson(nlohmann::json& val)
 {
+    if(val.find("signature") != val.end())
     {
-        m_Descriptors.clear();
-        nlohmann::json jsonArray;
-                for( auto& item : val["descriptors"] )
+        if(!val["signature"].is_null())
         {
-            
-            if(item.is_null())
-            {
-                m_Descriptors.push_back( std::shared_ptr<TrafficDefinition_descriptors>(nullptr) );
-            }
-            else
-            {
-                std::shared_ptr<TrafficDefinition_descriptors> newItem(new TrafficDefinition_descriptors());
-                newItem->fromJson(item);
-                m_Descriptors.push_back( newItem );
-            }
-            
+            std::shared_ptr<SpirentSignature> newItem(new SpirentSignature());
+            newItem->fromJson(val["signature"]);
+            setSignature( newItem );
         }
+        
+    }
+    if(val.find("weight") != val.end())
+    {
+        setWeight(val.at("weight"));
     }
     
 }
 
 
-std::vector<std::shared_ptr<TrafficDefinition_descriptors>>& TrafficDefinition::getDescriptors()
+std::shared_ptr<TrafficPacketTemplate> TrafficDefinition::getPacket() const
 {
-    return m_Descriptors;
+    return m_Packet;
+}
+void TrafficDefinition::setPacket(std::shared_ptr<TrafficPacketTemplate> value)
+{
+    m_Packet = value;
+    
+}
+std::shared_ptr<TrafficLength> TrafficDefinition::getLength() const
+{
+    return m_Length;
+}
+void TrafficDefinition::setLength(std::shared_ptr<TrafficLength> value)
+{
+    m_Length = value;
+    
+}
+std::shared_ptr<SpirentSignature> TrafficDefinition::getSignature() const
+{
+    return m_Signature;
+}
+void TrafficDefinition::setSignature(std::shared_ptr<SpirentSignature> value)
+{
+    m_Signature = value;
+    m_SignatureIsSet = true;
+}
+bool TrafficDefinition::signatureIsSet() const
+{
+    return m_SignatureIsSet;
+}
+void TrafficDefinition::unsetSignature()
+{
+    m_SignatureIsSet = false;
+}
+int32_t TrafficDefinition::getWeight() const
+{
+    return m_Weight;
+}
+void TrafficDefinition::setWeight(int32_t value)
+{
+    m_Weight = value;
+    m_WeightIsSet = true;
+}
+bool TrafficDefinition::weightIsSet() const
+{
+    return m_WeightIsSet;
+}
+void TrafficDefinition::unsetWeight()
+{
+    m_WeightIsSet = false;
 }
 
 }

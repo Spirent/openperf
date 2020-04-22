@@ -23,6 +23,7 @@ TrafficLength_sequence::TrafficLength_sequence()
     m_Start = 0;
     m_Stop = 0;
     m_StopIsSet = false;
+    m_SkipIsSet = false;
     
 }
 
@@ -45,6 +46,18 @@ nlohmann::json TrafficLength_sequence::toJson() const
     {
         val["stop"] = m_Stop;
     }
+    {
+        nlohmann::json jsonArray;
+        for( auto& item : m_Skip )
+        {
+            jsonArray.push_back(ModelBase::toJson(item));
+        }
+        
+        if(jsonArray.size() > 0)
+        {
+            val["skip"] = jsonArray;
+        }
+    }
     
 
     return val;
@@ -57,6 +70,18 @@ void TrafficLength_sequence::fromJson(nlohmann::json& val)
     if(val.find("stop") != val.end())
     {
         setStop(val.at("stop"));
+    }
+    {
+        m_Skip.clear();
+        nlohmann::json jsonArray;
+        if(val.find("skip") != val.end())
+        {
+        for( auto& item : val["skip"] )
+        {
+            m_Skip.push_back(item);
+            
+        }
+        }
     }
     
 }
@@ -96,6 +121,18 @@ bool TrafficLength_sequence::stopIsSet() const
 void TrafficLength_sequence::unsetStop()
 {
     m_StopIsSet = false;
+}
+std::vector<int32_t>& TrafficLength_sequence::getSkip()
+{
+    return m_Skip;
+}
+bool TrafficLength_sequence::skipIsSet() const
+{
+    return m_SkipIsSet;
+}
+void TrafficLength_sequence::unsetSkip()
+{
+    m_SkipIsSet = false;
 }
 
 }

@@ -32,35 +32,41 @@ class PacketGeneratorResult(object):
     """
     swagger_types = {
         'id': 'str',
+        'generator_id': 'str',
         'active': 'bool',
-        'duration': 'DurationRemainder',
         'flow_counters': 'PacketGeneratorFlowCounters',
-        'flows': 'list[str]'
+        'flows': 'list[str]',
+        'remaining': 'DurationRemainder'
     }
 
     attribute_map = {
         'id': 'id',
+        'generator_id': 'generator_id',
         'active': 'active',
-        'duration': 'duration',
         'flow_counters': 'flow_counters',
-        'flows': 'flows'
+        'flows': 'flows',
+        'remaining': 'remaining'
     }
 
-    def __init__(self, id=None, active=None, duration=None, flow_counters=None, flows=None):  # noqa: E501
+    def __init__(self, id=None, generator_id=None, active=None, flow_counters=None, flows=None, remaining=None):  # noqa: E501
         """PacketGeneratorResult - a model defined in Swagger"""  # noqa: E501
 
         self._id = None
+        self._generator_id = None
         self._active = None
-        self._duration = None
         self._flow_counters = None
         self._flows = None
+        self._remaining = None
         self.discriminator = None
 
         self.id = id
+        if generator_id is not None:
+            self.generator_id = generator_id
         self.active = active
-        self.duration = duration
         self.flow_counters = flow_counters
         self.flows = flows
+        if remaining is not None:
+            self.remaining = remaining
 
     @property
     def id(self):
@@ -85,6 +91,28 @@ class PacketGeneratorResult(object):
         self._id = id
 
     @property
+    def generator_id(self):
+        """Gets the generator_id of this PacketGeneratorResult.  # noqa: E501
+
+        Unique generator identifier that produced this result  # noqa: E501
+
+        :return: The generator_id of this PacketGeneratorResult.  # noqa: E501
+        :rtype: str
+        """
+        return self._generator_id
+
+    @generator_id.setter
+    def generator_id(self, generator_id):
+        """Sets the generator_id of this PacketGeneratorResult.
+
+        Unique generator identifier that produced this result  # noqa: E501
+
+        :param generator_id: The generator_id of this PacketGeneratorResult.  # noqa: E501
+        :type: str
+        """
+        self._generator_id = generator_id
+
+    @property
     def active(self):
         """Gets the active of this PacketGeneratorResult.  # noqa: E501
 
@@ -105,26 +133,6 @@ class PacketGeneratorResult(object):
         :type: bool
         """
         self._active = active
-
-    @property
-    def duration(self):
-        """Gets the duration of this PacketGeneratorResult.  # noqa: E501
-
-
-        :return: The duration of this PacketGeneratorResult.  # noqa: E501
-        :rtype: DurationRemainder
-        """
-        return self._duration
-
-    @duration.setter
-    def duration(self, duration):
-        """Sets the duration of this PacketGeneratorResult.
-
-
-        :param duration: The duration of this PacketGeneratorResult.  # noqa: E501
-        :type: DurationRemainder
-        """
-        self._duration = duration
 
     @property
     def flow_counters(self):
@@ -167,6 +175,26 @@ class PacketGeneratorResult(object):
         :type: list[str]
         """
         self._flows = flows
+
+    @property
+    def remaining(self):
+        """Gets the remaining of this PacketGeneratorResult.  # noqa: E501
+
+
+        :return: The remaining of this PacketGeneratorResult.  # noqa: E501
+        :rtype: DurationRemainder
+        """
+        return self._remaining
+
+    @remaining.setter
+    def remaining(self, remaining):
+        """Sets the remaining of this PacketGeneratorResult.
+
+
+        :param remaining: The remaining of this PacketGeneratorResult.  # noqa: E501
+        :type: DurationRemainder
+        """
+        self._remaining = remaining
 
     def to_dict(self):
         """Returns the model properties as a dict"""

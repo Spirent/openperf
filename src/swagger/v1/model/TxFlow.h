@@ -55,10 +55,10 @@ public:
     std::string getId() const;
     void setId(std::string value);
         /// <summary>
-    /// Unique generator identifier that transmitted this flow
+    /// Unique generator result identifier that recorded this flow
     /// </summary>
-    std::string getGeneratorId() const;
-    void setGeneratorId(std::string value);
+    std::string getGeneratorResultId() const;
+    void setGeneratorResultId(std::string value);
         /// <summary>
     /// Spirent signature stream id
     /// </summary>
@@ -75,7 +75,7 @@ public:
 protected:
     std::string m_Id;
 
-    std::string m_Generator_id;
+    std::string m_Generator_result_id;
 
     int64_t m_Stream_id;
     bool m_Stream_idIsSet;

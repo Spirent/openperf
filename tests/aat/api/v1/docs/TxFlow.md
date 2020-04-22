@@ -4,7 +4,7 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **id** | **str** | Unique transmit flow identifier | 
-**generator_id** | **str** | Unique generator identifier that transmitted this flow | 
+**generator_result_id** | **str** | Unique generator result identifier that recorded this flow | 
 **stream_id** | **int** | Spirent signature stream id | [optional] 
 **counters** | [**PacketGeneratorFlowCounters**](PacketGeneratorFlowCounters.md) |  | 
 

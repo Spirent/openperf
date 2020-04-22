@@ -57,15 +57,17 @@ public:
     std::string getId() const;
     void setId(std::string value);
         /// <summary>
+    /// Unique generator identifier that produced this result
+    /// </summary>
+    std::string getGeneratorId() const;
+    void setGeneratorId(std::string value);
+    bool generatorIdIsSet() const;
+    void unsetGenerator_id();
+    /// <summary>
     /// Indicates whether this result is currently being updated
     /// </summary>
     bool isActive() const;
     void setActive(bool value);
-        /// <summary>
-    /// 
-    /// </summary>
-    std::shared_ptr<DurationRemainder> getDuration() const;
-    void setDuration(std::shared_ptr<DurationRemainder> value);
         /// <summary>
     /// 
     /// </summary>
@@ -75,18 +77,27 @@ public:
     /// List of unique flow ids included in stats. Individual flow statistics may be queried via the &#x60;tx-flows&#x60; endpoint. 
     /// </summary>
     std::vector<std::string>& getFlows();
-    
+        /// <summary>
+    /// 
+    /// </summary>
+    std::shared_ptr<DurationRemainder> getRemaining() const;
+    void setRemaining(std::shared_ptr<DurationRemainder> value);
+    bool remainingIsSet() const;
+    void unsetRemaining();
+
 protected:
     std::string m_Id;
 
+    std::string m_Generator_id;
+    bool m_Generator_idIsSet;
     bool m_Active;
-
-    std::shared_ptr<DurationRemainder> m_Duration;
 
     std::shared_ptr<PacketGeneratorFlowCounters> m_Flow_counters;
 
     std::vector<std::string> m_Flows;
 
+    std::shared_ptr<DurationRemainder> m_Remaining;
+    bool m_RemainingIsSet;
 };
 
 }

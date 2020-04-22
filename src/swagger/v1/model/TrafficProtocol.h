@@ -12,7 +12,7 @@
 /*
  * TrafficProtocol.h
  *
- * A traffic protocol definition for a traffic generator
+ * A traffic protocol definition for a traffic generator. At least one packet protocol must be set. 
  */
 
 #ifndef TrafficProtocol_H_
@@ -29,16 +29,14 @@
 #include "PacketProtocolCustom.h"
 #include "PacketProtocolIpv6.h"
 #include "TrafficProtocol_modifiers.h"
-#include <string>
 #include "PacketProtocolTcp.h"
-#include "PacketProtocolSpirentSignature.h"
 
 namespace swagger {
 namespace v1 {
 namespace model {
 
 /// <summary>
-/// A traffic protocol definition for a traffic generator
+/// A traffic protocol definition for a traffic generator. At least one packet protocol must be set. 
 /// </summary>
 class  TrafficProtocol
     : public ModelBase
@@ -66,24 +64,12 @@ public:
     bool modifiersIsSet() const;
     void unsetModifiers();
     /// <summary>
-    /// protocol type
-    /// </summary>
-    std::string getProtocol() const;
-    void setProtocol(std::string value);
-        /// <summary>
     /// 
     /// </summary>
     std::shared_ptr<PacketProtocolCustom> getCustom() const;
     void setCustom(std::shared_ptr<PacketProtocolCustom> value);
     bool customIsSet() const;
     void unsetCustom();
-    /// <summary>
-    /// 
-    /// </summary>
-    std::shared_ptr<PacketProtocolSpirentSignature> getSignature() const;
-    void setSignature(std::shared_ptr<PacketProtocolSpirentSignature> value);
-    bool signatureIsSet() const;
-    void unsetSignature();
     /// <summary>
     /// 
     /// </summary>
@@ -137,12 +123,8 @@ public:
 protected:
     std::shared_ptr<TrafficProtocol_modifiers> m_Modifiers;
     bool m_ModifiersIsSet;
-    std::string m_Protocol;
-
     std::shared_ptr<PacketProtocolCustom> m_Custom;
     bool m_CustomIsSet;
-    std::shared_ptr<PacketProtocolSpirentSignature> m_Signature;
-    bool m_SignatureIsSet;
     std::shared_ptr<PacketProtocolEthernet> m_Ethernet;
     bool m_EthernetIsSet;
     std::shared_ptr<PacketProtocolIpv4> m_Ipv4;
