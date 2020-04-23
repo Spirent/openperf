@@ -23,3 +23,9 @@ from common.matcher.stack import be_valid_stack
 from common.matcher.timesync import be_valid_counter
 from common.matcher.timesync import be_valid_keeper
 from common.matcher.timesync import be_valid_source
+
+# block.py
+from common.matcher.block import be_valid_block_generator
+from common.matcher.block import be_valid_block_generator_result
+from common.matcher.block import be_valid_block_device
+from common.matcher.block import be_valid_block_file
