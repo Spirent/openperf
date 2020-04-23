@@ -3,13 +3,22 @@
 
 #include "models/generator.hpp"
 #include "models/generator_result.hpp"
+#include "utils/worker/worker.hpp"
+#include "temp_task.hpp"
 
 namespace openperf::cpu::generator {
 
+using namespace openperf::cpu::worker;
+
+using cpu_worker = utils::worker::worker<cpu_task>;
+using cpu_worker_ptr = std::unique_ptr<cpu_worker>;
+using cpu_worker_vec = std::vector<cpu_worker_ptr>;
 using cpu_result_ptr = std::shared_ptr<model::cpu_generator_result>;
 
 class cpu_generator : public model::cpu_generator
 {
+    cpu_worker_vec m_workers;
+
 public:
     ~cpu_generator();
     cpu_generator(const model::cpu_generator& generator_model);
@@ -21,6 +30,8 @@ public:
 
     cpu_result_ptr get_statistics() const;
     void clear_statistics();
+
+    task_config_t generate_worker_config(const model::cpu_generator_core_config&);
 };
 
 } // namespace openperf::cpu::generator
