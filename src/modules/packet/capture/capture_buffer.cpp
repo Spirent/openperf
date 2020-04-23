@@ -131,26 +131,7 @@ capture_buffer_file::~capture_buffer_file()
     }
 }
 
-capture_buffer_file::capture_buffer_file(capture_buffer_file&& rhs)
-    : m_filename(rhs.m_filename)
-    , m_keep_file(rhs.m_keep_file)
-    , m_fp_write(rhs.m_fp_write)
-    , m_stats(rhs.m_stats)
-{
-    rhs.m_fp_write = nullptr;
-}
-
-capture_buffer_file& capture_buffer_file::operator=(capture_buffer_file&& rhs)
-{
-    m_filename = rhs.m_filename;
-    m_keep_file = rhs.m_keep_file;
-    m_fp_write = rhs.m_fp_write;
-    m_stats = rhs.m_stats;
-    rhs.m_fp_write = nullptr;
-    return *this;
-}
-
-int capture_buffer_file::push(
+int capture_buffer_file::write_packets(
     const openperf::packetio::packets::packet_buffer* const packets[],
     uint16_t packets_length)
 {
@@ -215,81 +196,54 @@ int capture_buffer_file::push(
     return 0;
 }
 
-capture_buffer_file::iterator capture_buffer_file::begin()
+std::unique_ptr<capture_buffer_reader> capture_buffer_file::create_reader()
 {
-    fflush(m_fp_write);
-    return capture_buffer_file::iterator(*this, false);
-}
-
-capture_buffer_file::iterator capture_buffer_file::end()
-{
-    return capture_buffer_file::iterator(*this, true);
+    return std::unique_ptr<capture_buffer_reader>(
+        new capture_buffer_file_reader(*this));
 }
 
 capture_buffer_stats capture_buffer_file::get_stats() const { return m_stats; }
 
-capture_buffer_file::iterator::iterator(capture_buffer_file& buffer, bool eof)
-    : m_fp_read(nullptr)
+void capture_buffer_file::flush()
+{
+    if (m_fp_write) { fflush(m_fp_write); }
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////
+
+capture_buffer_file_reader::capture_buffer_file_reader(
+    capture_buffer_file& buffer)
+    : m_buffer(buffer)
+    , m_fp_read(nullptr)
     , m_read_offset(0)
-    , m_eof(eof)
+    , m_eof(false)
 {
-    if (!eof) {
-        m_fp_read = fopen(buffer.m_filename.c_str(), "r");
-        if (!m_fp_read) {
-            throw std::runtime_error(
-                std::string("Failed opening PCAP file for read.  ")
-                + buffer.m_filename);
-        }
-        if (!read_file_header()) {
-            fclose(m_fp_read);
-            throw std::runtime_error(
-                std::string("Failed reading PCAP file header.  ")
-                + buffer.m_filename);
-        }
-        next();
+    auto filename = buffer.get_filename();
+    buffer.flush();
+
+    m_fp_read = fopen(filename.c_str(), "r");
+    if (!m_fp_read) {
+        throw std::runtime_error(
+            std::string("Failed opening PCAP file for read.  ") + filename);
     }
-}
-
-capture_buffer_file::iterator::iterator(capture_buffer_file::iterator&& rhs)
-    : m_fp_read(rhs.m_fp_read)
-    , m_read_offset(rhs.m_read_offset)
-    , m_capture_packet(std::move(rhs.m_capture_packet))
-    , m_read_buffer(std::move(rhs.m_read_buffer))
-    , m_eof(rhs.m_eof)
-{
-    rhs.m_fp_read = nullptr;
-    rhs.m_read_offset = 0;
-    m_capture_packet.data = &m_read_buffer[0];
-}
-
-capture_buffer_file::iterator::~iterator()
-{
-    if (m_fp_read) {
+    if (!read_file_header()) {
         fclose(m_fp_read);
-        m_fp_read = nullptr;
+        throw std::runtime_error(
+            std::string("Failed reading PCAP file header.  ") + filename);
     }
+    next();
 }
 
-capture_buffer_file::iterator& capture_buffer_file::iterator::
-operator=(capture_buffer_file::iterator&& rhs)
+capture_buffer_file_reader::~capture_buffer_file_reader()
 {
-    m_fp_read = rhs.m_fp_read;
-    m_read_offset = rhs.m_read_offset;
-    m_capture_packet = std::move(rhs.m_capture_packet);
-    m_read_buffer = std::move(rhs.m_read_buffer);
-    m_eof = rhs.m_eof;
-    m_capture_packet.data = &m_read_buffer[0];
-
-    rhs.m_fp_read = nullptr;
-    rhs.m_read_offset = 0;
-
-    return *this;
+    if (m_fp_read) { fclose(m_fp_read); }
 }
 
-bool capture_buffer_file::iterator::read_file_header()
+bool capture_buffer_file_reader::read_file_header()
 {
-    rewind(m_fp_read);
+    ::rewind(m_fp_read);
     m_read_offset = 0;
+    m_eof = false;
 
     // Read the pcap section header
     pcapng::section_block section;
@@ -334,7 +288,11 @@ bool capture_buffer_file::iterator::read_file_header()
     return false;
 }
 
-bool capture_buffer_file::iterator::next()
+bool capture_buffer_file_reader::is_done() const { return m_eof; }
+
+capture_packet& capture_buffer_file_reader::get() { return m_capture_packet; }
+
+bool capture_buffer_file_reader::next()
 {
     pcapng::enhanced_packet_block block_hdr;
 
@@ -373,6 +331,19 @@ bool capture_buffer_file::iterator::next()
 
     return true;
 }
+
+capture_buffer_stats capture_buffer_file_reader::get_stats() const
+{
+    return m_buffer.get_stats();
+}
+
+void capture_buffer_file_reader::rewind()
+{
+    read_file_header();
+    next();
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////
 
 multi_capture_buffer_reader::multi_capture_buffer_reader(
     std::vector<reader_ptr>&& readers)
@@ -416,6 +387,15 @@ void multi_capture_buffer_reader::rewind()
 {
     for (auto& reader : m_readers) { reader->rewind(); }
     populate_timestamp_priority_list();
+}
+
+size_t multi_capture_buffer_reader::get_offset() const
+{
+    size_t offset = 0;
+    std::for_each(m_readers.begin(), m_readers.end(), [&](const auto& reader) {
+        offset += reader->get_offset();
+    });
+    return offset;
 }
 
 void multi_capture_buffer_reader::populate_timestamp_priority_list()

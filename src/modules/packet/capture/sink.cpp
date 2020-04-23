@@ -187,9 +187,9 @@ uint16_t sink::push(const packetio::packets::packet_buffer* const packets[],
                 filtered;
             length = check_filter_condition(start, length, filtered.data());
             if (length == 0) return packets_length;
-            buffer->push(filtered.data(), length);
+            buffer->write_packets(filtered.data(), length);
         } else {
-            buffer->push(start, length);
+            buffer->write_packets(start, length);
         }
     }
 

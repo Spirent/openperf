@@ -98,10 +98,7 @@ std::unique_ptr<capture_buffer_reader> create_multi_capture_buffer_reader(
     std::transform(buffers.begin(),
                    buffers.end(),
                    std::back_inserter(readers),
-                   [&](auto& buffer) {
-                       return std::make_unique<capture_buffer_file_reader>(
-                           *buffer);
-                   });
+                   [&](auto& buffer) { return buffer->create_reader(); });
     return std::unique_ptr<capture_buffer_reader>(
         new multi_capture_buffer_reader(std::move(readers)));
 }
@@ -136,7 +133,7 @@ void fill_capture_buffers_ipv4(
             reinterpret_cast<uint8_t*>(packet_buffer.data) + sizeof(eth_hdr));
         ipv4->packet_id = ntohs(i);
         auto buffer_idx = ((i / burst_size) + start_buffer) % num_buffers;
-        buffers[buffer_idx]->push(packet_buffers.data(), 1);
+        buffers[buffer_idx]->write_packets(packet_buffers.data(), 1);
     }
 }
 
@@ -207,7 +204,7 @@ TEST_CASE("capture buffer", "[packet_capture]")
                 auto ipv4 = reinterpret_cast<ipv4_hdr*>(packet_buffers.data()
                                                         + sizeof(eth_hdr));
                 ipv4->packet_id = ntohs(i);
-                buffer.push(packet_buffers.data(), 1);
+                buffer.write_packets(packet_buffers.data(), 1);
             }
 
             SECTION("iterator, ")
@@ -224,13 +221,13 @@ TEST_CASE("capture buffer", "[packet_capture]")
             SECTION("reader, ")
             {
                 int counted = 0;
-                capture_buffer_file_reader reader(buffer);
-                while (!reader.is_done()) {
-                    auto& p = reader.get();
+                auto reader = buffer.create_reader();
+                while (!reader->is_done()) {
+                    auto& p = reader->get();
                     REQUIRE(p.hdr.packet_len == packet_buffer.length);
                     REQUIRE(p.hdr.captured_len == packet_buffer.length);
                     ++counted;
-                    reader.next();
+                    reader->next();
                 }
                 REQUIRE(counted == packet_count);
             }

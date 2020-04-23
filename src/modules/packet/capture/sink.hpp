@@ -43,7 +43,7 @@ struct sink_result
     const sink& parent;
     std::atomic<capture_state> state = capture_state::STOPPED;
 
-    std::vector<std::unique_ptr<capture_buffer_file>> buffers;
+    std::vector<std::unique_ptr<capture_buffer>> buffers;
     std::shared_ptr<transfer_context> transfer;
 };
 

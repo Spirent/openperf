@@ -362,10 +362,10 @@ reply_msg server::handle_request(const request_start_capture& request)
     auto idx = 0;
     std::generate_n(
         std::back_inserter(result->buffers), impl.worker_count(), [&]() {
-            return std::make_unique<capture_buffer_file>(
-                openperf::core::to_string(id) + "-" + std::to_string(++idx)
-                    + ".pcapng",
-                false);
+            auto filename = openperf::core::to_string(id) + "-"
+                            + std::to_string(++idx) + ".pcapng";
+            return std::unique_ptr<capture_buffer>(
+                new capture_buffer_file(filename, false));
         });
 
     impl.start(result.get());
@@ -483,18 +483,14 @@ reply_msg server::handle_request(request_create_capture_transfer& request)
 
     result->transfer = request.transfer;
     if (result->buffers.size() == 1) {
-        auto reader = std::unique_ptr<capture_buffer_reader>(
-            new capture_buffer_file_reader(*(result->buffers[0])));
+        auto reader = result->buffers[0]->create_reader();
         result->transfer->set_reader(reader);
     } else {
         std::vector<std::unique_ptr<capture_buffer_reader>> readers;
         std::transform(result->buffers.begin(),
                        result->buffers.end(),
                        std::back_inserter(readers),
-                       [&](auto& buffer) {
-                           return std::make_unique<capture_buffer_file_reader>(
-                               *buffer);
-                       });
+                       [&](auto& buffer) { return buffer->create_reader(); });
         auto reader = std::unique_ptr<capture_buffer_reader>(
             new multi_capture_buffer_reader(std::move(readers)));
         result->transfer->set_reader(reader);
