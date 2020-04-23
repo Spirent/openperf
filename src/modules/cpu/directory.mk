@@ -11,6 +11,7 @@ CPU_SOURCES += \
 	server.cpp \
 	generator.cpp \
 	generator_stack.cpp \
+	temp_task.cpp \
 	cpu_info.cpp
 
 include $(CPU_SRC_DIR)/models/directory.mk
