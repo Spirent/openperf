@@ -22,6 +22,7 @@ include $(CPU_SRC_DIR)/directory.mk
 
 CPU_OBJECTS := $(call op_generate_objects,$(CPU_SOURCES),$(CPU_OBJ_DIR))
 
+CPU_FLAGS := -DARCH="\"$(ARCH)\""
 CPU_LIBRARY := openperf_cpu
 CPU_TARGET := $(CPU_LIB_DIR)/lib$(CPU_LIBRARY).a
 
@@ -34,7 +35,7 @@ $(call op_include_dependencies,$(CPU_DEPENDS))
 ###
 # Build rules
 ###
-$(eval $(call op_generate_build_rules,$(CPU_SOURCES),CPU_SRC_DIR,CPU_OBJ_DIR,CPU_DEPENDS))
+$(eval $(call op_generate_build_rules,$(CPU_SOURCES),CPU_SRC_DIR,CPU_OBJ_DIR,CPU_DEPENDS,CPU_FLAGS))
 $(eval $(call op_generate_clean_rules,cpu,CPU_TARGET,CPU_OBJECTS))
 
 $(CPU_TARGET): $(CPU_OBJECTS)

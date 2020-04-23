@@ -10,7 +10,8 @@ CPU_SOURCES += \
 	handler.cpp \
 	server.cpp \
 	generator.cpp \
-	generator_stack.cpp
+	generator_stack.cpp \
+	cpu_info.cpp
 
 include $(CPU_SRC_DIR)/models/directory.mk
 

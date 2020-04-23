@@ -3,6 +3,7 @@
 #include "api.hpp"
 #include "server.hpp"
 #include "config/op_config_utils.hpp"
+#include "cpu_info.hpp"
 
 namespace openperf::cpu::api {
 
@@ -161,7 +162,9 @@ reply_msg server::handle_request(const request_cpu_info&)
     auto reply = reply_cpu_info{
         .info = std::make_unique<model::cpu_info>()
     };
-    //reply.info = ;
+    reply.info->set_architecture(info::architecture());
+    reply.info->set_cores(info::cores_count());
+    reply.info->set_cache_line_size(info::cache_line_size());
 
     return reply;
 }
