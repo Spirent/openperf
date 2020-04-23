@@ -42,6 +42,7 @@ public:
     virtual tl::expected<int, int> vopen() = 0;
     virtual void vclose() = 0;
     void queue_scrub();
+    void terminate_scrub();
     virtual uint64_t get_size() const = 0;
     virtual uint64_t get_header_size() const { return 0; };
     std::optional<int> get_fd() const
