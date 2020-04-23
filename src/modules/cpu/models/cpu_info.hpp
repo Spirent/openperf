@@ -1,9 +1,7 @@
 #ifndef _OP_CPU_INFO_MODEL_HPP_
 #define _OP_CPU_INFO_MODEL_HPP_
 
-#include <chrono>
 #include <string>
-#include <memory>
 
 namespace openperf::cpu::model {
 
