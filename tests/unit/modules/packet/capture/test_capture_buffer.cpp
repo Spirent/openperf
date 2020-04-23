@@ -149,14 +149,14 @@ verify_ipv4_incrementing_timestamp_and_packet_id(capture_buffer_reader& reader)
 
     while (!reader.is_done()) {
         auto& packet = reader.get();
-        REQUIRE(packet.packet_len != 0);
-        REQUIRE(packet.captured_len <= packet.packet_len);
+        REQUIRE(packet.hdr.packet_len != 0);
+        REQUIRE(packet.hdr.captured_len <= packet.hdr.packet_len);
         auto ipv4 = reinterpret_cast<ipv4_hdr*>(packet.data + sizeof(eth_hdr));
         if (counted > 0) {
-            REQUIRE(packet.timestamp > prev_timestamp);
+            REQUIRE(packet.hdr.timestamp > prev_timestamp);
             REQUIRE(ntohs(ipv4->packet_id) == (prev_packet_id + 1));
         }
-        prev_timestamp = packet.timestamp;
+        prev_timestamp = packet.hdr.timestamp;
         prev_packet_id = ntohs(ipv4->packet_id);
         ++counted;
         reader.next();
@@ -214,8 +214,8 @@ TEST_CASE("capture buffer", "[packet_capture]")
             {
                 int counted = 0;
                 for (auto& p : buffer) {
-                    REQUIRE(p.packet_len == packet_buffer.length);
-                    REQUIRE(p.captured_len == packet_buffer.length);
+                    REQUIRE(p.hdr.packet_len == packet_buffer.length);
+                    REQUIRE(p.hdr.captured_len == packet_buffer.length);
                     ++counted;
                 }
                 REQUIRE(counted == packet_count);
@@ -227,8 +227,8 @@ TEST_CASE("capture buffer", "[packet_capture]")
                 capture_buffer_file_reader reader(buffer);
                 while (!reader.is_done()) {
                     auto& p = reader.get();
-                    REQUIRE(p.packet_len == packet_buffer.length);
-                    REQUIRE(p.captured_len == packet_buffer.length);
+                    REQUIRE(p.hdr.packet_len == packet_buffer.length);
+                    REQUIRE(p.hdr.captured_len == packet_buffer.length);
                     ++counted;
                     reader.next();
                 }

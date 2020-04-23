@@ -38,11 +38,9 @@ struct sink_result
 {
     sink_result(const sink& p);
 
-    void update_stats();
+    capture_buffer_stats get_stats() const;
 
     const sink& parent;
-    std::atomic<int64_t> packets;
-    std::atomic<int64_t> bytes;
     std::atomic<capture_state> state = capture_state::STOPPED;
 
     std::vector<std::unique_ptr<capture_buffer_file>> buffers;

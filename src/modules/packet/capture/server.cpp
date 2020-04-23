@@ -417,14 +417,12 @@ reply_msg server::handle_request(const request_list_capture_results& request)
 
     assert(compare);
 
-    transform_if(std::begin(m_results),
-                 std::end(m_results),
-                 std::back_inserter(reply.capture_results),
-                 compare,
-                 [](auto& item) {
-                     item.second->update_stats();
-                     return (to_swagger(item.first, *item.second));
-                 });
+    transform_if(
+        std::begin(m_results),
+        std::end(m_results),
+        std::back_inserter(reply.capture_results),
+        compare,
+        [](auto& item) { return (to_swagger(item.first, *item.second)); });
 
     return (reply);
 }
@@ -447,7 +445,6 @@ reply_msg server::handle_request(const request_get_capture_result& request)
     if (result == std::end(m_results)) {
         return (to_error(error_type::NOT_FOUND));
     }
-    result->second->update_stats();
 
     auto reply = reply_capture_results{};
     reply.capture_results.emplace_back(

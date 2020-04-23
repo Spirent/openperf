@@ -33,8 +33,10 @@ capture_result_ptr to_swagger(const core::uuid& id, const sink_result& src)
     dst->setActive(src.parent.active());
 
     dst->setState(to_string(src.state.load(std::memory_order_consume)));
-    dst->setPackets(src.packets);
-    dst->setBytes(src.bytes);
+
+    auto stats = src.get_stats();
+    dst->setPackets(stats.packets);
+    dst->setBytes(stats.bytes);
 
     return (dst);
 }

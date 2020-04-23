@@ -13,15 +13,20 @@ struct packet_buffer;
 
 namespace openperf::packet::capture {
 
-struct capture_packet
+struct capture_packet_hdr
 {
     uint64_t timestamp;
     uint32_t captured_len;
     uint32_t packet_len;
+};
+
+struct capture_packet
+{
+    capture_packet_hdr hdr;
     uint8_t* data;
 };
 
-struct buffer_stats
+struct capture_buffer_stats
 {
     uint64_t packets;
     uint64_t bytes;
@@ -87,13 +92,13 @@ public:
     iterator begin();
     iterator end();
 
-    buffer_stats get_stats() const;
+    capture_buffer_stats get_stats() const;
 
 private:
     std::string m_filename;
     bool m_keep_file;
     FILE* m_fp_write;
-    buffer_stats m_stats;
+    capture_buffer_stats m_stats;
 };
 
 class capture_buffer_reader
@@ -107,7 +112,7 @@ public:
 
     virtual bool next() = 0;
 
-    virtual buffer_stats get_stats() const = 0;
+    virtual capture_buffer_stats get_stats() const = 0;
 
     virtual void rewind() = 0;
 
@@ -146,7 +151,10 @@ public:
         return (++m_iter) != m_end;
     }
 
-    buffer_stats get_stats() const override { return m_buffer.get_stats(); }
+    capture_buffer_stats get_stats() const override
+    {
+        return m_buffer.get_stats();
+    }
 
     void rewind() override
     {
@@ -172,7 +180,7 @@ struct greater_than
 
         if (a_done || b_done) { return (int)a_done > (int)b_done; }
 
-        return a->get().timestamp > b->get().timestamp;
+        return a->get().hdr.timestamp > b->get().hdr.timestamp;
     }
 };
 
@@ -190,7 +198,7 @@ public:
 
     bool next() override;
 
-    buffer_stats get_stats() const override;
+    capture_buffer_stats get_stats() const override;
 
     void rewind() override;
 

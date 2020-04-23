@@ -25,9 +25,9 @@ sink_result::sink_result(const sink& parent_)
     : parent(parent_)
 {}
 
-void sink_result::update_stats()
+capture_buffer_stats sink_result::get_stats() const
 {
-    buffer_stats total{0, 0};
+    capture_buffer_stats total{0, 0};
 
     std::for_each(buffers.begin(), buffers.end(), [&](auto& buffer) {
         auto stats = buffer->get_stats();
@@ -35,8 +35,7 @@ void sink_result::update_stats()
         total.packets += stats.packets;
     });
 
-    bytes = total.bytes;
-    packets = total.packets;
+    return total;
 }
 
 std::vector<uint8_t> sink::make_indexes(std::vector<unsigned>& ids)

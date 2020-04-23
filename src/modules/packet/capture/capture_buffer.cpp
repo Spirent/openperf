@@ -226,7 +226,7 @@ capture_buffer_file::iterator capture_buffer_file::end()
     return capture_buffer_file::iterator(*this, true);
 }
 
-buffer_stats capture_buffer_file::get_stats() const { return m_stats; }
+capture_buffer_stats capture_buffer_file::get_stats() const { return m_stats; }
 
 capture_buffer_file::iterator::iterator(capture_buffer_file& buffer, bool eof)
     : m_fp_read(nullptr)
@@ -366,9 +366,9 @@ bool capture_buffer_file::iterator::next()
     uint64_t timestamp =
         (uint64_t)block_hdr.timestamp_high << 32 | block_hdr.timestamp_low;
 
-    m_capture_packet.timestamp = timestamp;
-    m_capture_packet.captured_len = block_hdr.captured_len;
-    m_capture_packet.packet_len = block_hdr.packet_len;
+    m_capture_packet.hdr.timestamp = timestamp;
+    m_capture_packet.hdr.captured_len = block_hdr.captured_len;
+    m_capture_packet.hdr.packet_len = block_hdr.packet_len;
     m_capture_packet.data = &m_read_buffer[0];
 
     return true;
@@ -401,9 +401,9 @@ bool multi_capture_buffer_reader::next()
     return !m_reader_priority.empty();
 }
 
-buffer_stats multi_capture_buffer_reader::get_stats() const
+capture_buffer_stats multi_capture_buffer_reader::get_stats() const
 {
-    buffer_stats total{0, 0};
+    capture_buffer_stats total{0, 0};
     for (auto& reader : m_readers) {
         auto s = reader->get_stats();
         total.packets += s.packets;

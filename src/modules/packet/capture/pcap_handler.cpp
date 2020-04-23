@@ -137,7 +137,7 @@ public:
         reader.read([&](auto& buffer) {
             length += pcapng::pad_block_length(
                 sizeof(pcapng::enhanced_packet_block) + sizeof(uint32_t)
-                + buffer.captured_len);
+                + buffer.hdr.captured_len);
             return true;
         });
         reader.rewind();
@@ -245,12 +245,12 @@ public:
         pcapng::enhanced_packet_block block_hdr;
         block_hdr.block_type = pcapng::block_type::ENHANCED_PACKET;
         block_hdr.interface_id = 0;
-        block_hdr.timestamp_high = packet.timestamp >> 32;
-        block_hdr.timestamp_low = packet.timestamp;
-        block_hdr.captured_len = packet.captured_len;
-        block_hdr.packet_len = packet.packet_len;
+        block_hdr.timestamp_high = packet.hdr.timestamp >> 32;
+        block_hdr.timestamp_low = packet.hdr.timestamp;
+        block_hdr.captured_len = packet.hdr.captured_len;
+        block_hdr.packet_len = packet.hdr.packet_len;
         block_hdr.block_total_length = pcapng::pad_block_length(
-            sizeof(block_hdr) + sizeof(uint32_t) + packet.captured_len);
+            sizeof(block_hdr) + sizeof(uint32_t) + packet.hdr.captured_len);
         return write_packet_block(block_hdr, packet.data);
     }
 
@@ -368,12 +368,12 @@ private:
         pcapng::enhanced_packet_block block_hdr;
         block_hdr.block_type = pcapng::block_type::ENHANCED_PACKET;
         block_hdr.interface_id = 0;
-        block_hdr.timestamp_high = packet.timestamp >> 32;
-        block_hdr.timestamp_low = packet.timestamp;
-        block_hdr.captured_len = packet.captured_len;
-        block_hdr.packet_len = packet.packet_len;
+        block_hdr.timestamp_high = packet.hdr.timestamp >> 32;
+        block_hdr.timestamp_low = packet.hdr.timestamp;
+        block_hdr.captured_len = packet.hdr.captured_len;
+        block_hdr.packet_len = packet.hdr.packet_len;
         block_hdr.block_total_length = pcapng::pad_block_length(
-            sizeof(block_hdr) + sizeof(uint32_t) + packet.captured_len);
+            sizeof(block_hdr) + sizeof(uint32_t) + packet.hdr.captured_len);
 
         if (block_hdr.block_total_length > m_writer->get_available_length()) {
             if (!flush()) { return false; }
@@ -384,7 +384,7 @@ private:
                     reinterpret_cast<uint8_t*>(&block_hdr),
                     sizeof(block_hdr),
                     packet.data,
-                    packet.captured_len);
+                    packet.hdr.captured_len);
             }
         }
         return m_writer->write_packet_block(block_hdr, packet.data);
