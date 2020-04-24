@@ -58,6 +58,9 @@ public:
 
     reply_msg handle_request(request_create_capture_transfer&);
     reply_msg handle_request(const request_delete_capture_transfer&);
+
+private:
+    bool has_active_transfer(const sink& sink) const;
 };
 
 } // namespace openperf::packet::capture::api

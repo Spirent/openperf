@@ -29,6 +29,15 @@ namespace openperf::packet::capture {
 class sink;
 struct sink_result;
 class transfer_context;
+class capture_buffer_reader;
+
+class transfer_context
+{
+public:
+    virtual ~transfer_context() = default;
+    virtual void set_reader(std::unique_ptr<capture_buffer_reader>& reader) = 0;
+    virtual bool is_done() const = 0;
+};
 
 namespace api {
 
@@ -150,10 +159,18 @@ struct request_delete_capture_result
     std::string id;
 };
 
+/**
+ * The request_create_capture_transfer message is used to attach a transfer
+ * object to the capture results object.  If this message is successful the
+ * capture results object will own the transfer object but the transfer object
+ * may still be used by the transfer thread.
+ *
+ * The transfer object should not be deleted until the transfer is completed.
+ */
 struct request_create_capture_transfer
 {
     std::string id;
-    std::shared_ptr<transfer_context> transfer;
+    transfer_context* transfer;
 };
 
 struct request_delete_capture_transfer

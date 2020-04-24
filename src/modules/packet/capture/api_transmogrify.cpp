@@ -162,35 +162,18 @@ serialized_msg serialize_request(request_msg&& msg)
                                              request.id.length()));
                     },
                     [&](request_create_capture_transfer& request) {
-                        // The create_capture_transfer message has a
-                        // shared_ptr<transfer_context>.
-                        // There is no standard way to increment
-                        // the ref count on a shared porint, so
-                        // instead of passing object directly,
-                        // a shared_ptr is allocated and passed.
-                        // This ensures a reference is always held.
                         std::vector<uint8_t> buffer(
                             sizeof(&request.transfer) + request.id.length(), 0);
+                        auto ptr = &buffer[0];
 
-                        // Allocate shared_ptr and add to buffer
-                        auto transfer =
-                            std::make_unique<std::shared_ptr<transfer_context>>(
-                                request.transfer);
-                        *(std::shared_ptr<transfer_context>**)(&buffer[0]) =
-                            transfer.get();
-                        std::copy(
-                            request.id.data(),
-                            request.id.data() + request.id.length(),
-                            buffer.begin()
-                                + sizeof(std::shared_ptr<transfer_context>*));
+                        *(transfer_context**)(ptr) = request.transfer;
+                        ptr += sizeof(transfer_context*);
+                        std::copy(request.id.data(),
+                                  request.id.data() + request.id.length(),
+                                  ptr);
 
-                        auto msg_err = zmq_msg_init(
-                            &serialized.data, buffer.data(), buffer.size());
-                        if (!msg_err) {
-                            // Release the pointer if no errors
-                            transfer.release();
-                        }
-                        return msg_err;
+                        return (zmq_msg_init(
+                            &serialized.data, buffer.data(), buffer.size()));
                     },
                     [&](const request_delete_capture_transfer& request) {
                         return (zmq_msg_init(&serialized.data,
@@ -285,17 +268,14 @@ tl::expected<request_msg, int> deserialize_request(const serialized_msg& msg)
     }
     case utils::variant_index<request_msg, request_create_capture_transfer>(): {
         auto request = request_create_capture_transfer{};
-        // Read the temporary shared_ptr and assign to unique_ptr so
-        // it will get deleted.
-        std::unique_ptr<std::shared_ptr<transfer_context>> transfer;
-        transfer.reset(
-            *zmq_msg_data<std::shared_ptr<transfer_context>**>(&msg.data));
-        auto offset = sizeof(std::shared_ptr<transfer_context>*);
+        auto start = zmq_msg_data<uint8_t*>(&msg.data);
+        auto ptr = start;
+        request.transfer = *(transfer_context**)(ptr);
+        ptr += sizeof(transfer_context*);
         // Read the variable length ID
-        auto id = std::string(zmq_msg_data<char*>(&msg.data) + offset,
-                              zmq_msg_size(&msg.data) - offset);
+        auto id = std::string(reinterpret_cast<char*>(ptr),
+                              zmq_msg_size(&msg.data) - (ptr - start));
         request.id = std::move(id);
-        request.transfer = *transfer;
         return request;
     }
     case utils::variant_index<request_msg, request_delete_capture_transfer>(): {

@@ -1,3 +1,6 @@
+#ifndef _OP_PCAP_IO_HPP_
+#define _OP_PCAP_IO_HPP_
+
 /* Enhanced Packet Block without actual packet, options, and trailing
    Block Total Length */
 
@@ -107,3 +110,5 @@ struct enhanced_packet_block
 } __attribute__((packed));
 
 } // namespace openperf::packet::capture::pcapng
+
+#endif // _OP_PCAP_IO_HPP_

@@ -8,12 +8,37 @@
 
 #include "packet/capture/pcap_handler.hpp"
 #include "packet/capture/pcap_io.hpp"
+#include "packet/capture/pcap_writer.hpp"
 #include "packet/capture/capture_buffer.hpp"
 #include "packet/capture/pistache_utils.hpp"
 
 using namespace openperf::pistache_utils;
 
 namespace openperf::packet::capture::api {
+
+class pcap_transfer_context : public transfer_context
+{
+public:
+    virtual ~pcap_transfer_context() = default;
+
+    void set_reader(std::unique_ptr<capture_buffer_reader>& reader) override
+    {
+        m_reader.reset(reader.release());
+    }
+
+    bool is_done() const override { return m_done; }
+
+    void set_done(bool done) { m_done = done; }
+
+    virtual Pistache::Async::Promise<ssize_t> start() = 0;
+
+    virtual size_t get_total_length() const = 0;
+
+protected:
+    std::unique_ptr<capture_buffer_reader> m_reader;
+    Pistache::Async::Deferred<ssize_t> m_deferred;
+    bool m_done = false;
+};
 
 Pistache::Async::Promise<ssize_t>
 send_pcap_response_header_async(Pistache::Http::ResponseWriter& response,
@@ -55,10 +80,11 @@ send_pcap_response_header_async(Pistache::Http::ResponseWriter& response,
 
 Pistache::Async::Promise<ssize_t>
 send_pcap_response_header_async(Pistache::Http::ResponseWriter& response,
-                                std::shared_ptr<transfer_context> context)
+                                transfer_context& context)
 {
-    return send_pcap_response_header_async(response,
-                                           context->get_total_length());
+    return send_pcap_response_header_async(
+        response,
+        dynamic_cast<pcap_transfer_context&>(context).get_total_length());
 }
 
 Pistache::Async::Promise<ssize_t>
@@ -114,177 +140,12 @@ send_pcap_response_header(Pistache::Http::ResponseWriter& response,
 
 Pistache::Async::Promise<ssize_t>
 send_pcap_response_header(Pistache::Http::ResponseWriter& response,
-                          std::shared_ptr<transfer_context> context)
+                          transfer_context& context)
 {
-    return send_pcap_response_header(response, context->get_total_length());
+    return send_pcap_response_header(
+        response,
+        dynamic_cast<pcap_transfer_context&>(context).get_total_length());
 }
-
-class pcap_buffered_writer
-{
-public:
-    pcap_buffered_writer() {}
-
-    size_t calc_length(capture_buffer_reader& reader)
-    {
-        size_t header_length =
-            pcapng::pad_block_length(sizeof(pcapng::section_block)
-                                     + sizeof(uint32_t))
-            + pcapng::pad_block_length(
-                  sizeof(pcapng::interface_description_block) + sizeof(uint32_t)
-                  + sizeof(pcapng::interface_default_options));
-        size_t length = header_length;
-        reader.rewind();
-        reader.read([&](auto& buffer) {
-            length += pcapng::pad_block_length(
-                sizeof(pcapng::enhanced_packet_block) + sizeof(uint32_t)
-                + buffer.hdr.captured_len);
-            return true;
-        });
-        reader.rewind();
-
-        return length;
-    }
-
-    bool write_start()
-    {
-        uint8_t* ptr = m_buffer.data();
-        m_buffer_length = 0;
-
-        {
-            pcapng::section_block section;
-
-            auto unpadded_block_length = sizeof(section) + sizeof(uint32_t);
-            auto block_length = pcapng::pad_block_length(unpadded_block_length);
-
-            section.block_type = pcapng::block_type::SECTION;
-            section.block_total_length = block_length;
-            section.byte_order_magic = pcapng::BYTE_ORDER_MAGIC;
-            section.major_version = 1;
-            section.minor_version = 0;
-            section.section_length = pcapng::SECTION_LENGTH_UNSPECIFIED;
-            std::copy(reinterpret_cast<uint8_t*>(&section),
-                      reinterpret_cast<uint8_t*>(&section) + sizeof(section),
-                      ptr + m_buffer_length);
-            m_buffer_length += section.block_total_length;
-            std::copy(reinterpret_cast<uint8_t*>(&section.block_total_length),
-                      reinterpret_cast<uint8_t*>(&section.block_total_length)
-                          + sizeof(section.block_total_length),
-                      ptr + m_buffer_length
-                          - sizeof(section.block_total_length));
-        }
-
-        {
-            pcapng::interface_default_options interface_options;
-
-            memset(&interface_options, 0, sizeof(interface_options));
-            interface_options.ts_resol.hdr.option_code =
-                pcapng::interface_option_type::IF_TSRESOL;
-            interface_options.ts_resol.hdr.option_length = 1;
-            interface_options.ts_resol.resolution = 9; // nano seconds
-            interface_options.opt_end.hdr.option_code =
-                pcapng::interface_option_type::OPT_END;
-            interface_options.opt_end.hdr.option_length = 0;
-
-            pcapng::interface_description_block interface_description;
-            auto unpadded_block_length = sizeof(interface_description)
-                                         + sizeof(uint32_t)
-                                         + sizeof(interface_options);
-            auto block_length = pcapng::pad_block_length(unpadded_block_length);
-
-            interface_description.block_type =
-                pcapng::block_type::INTERFACE_DESCRIPTION;
-            interface_description.block_total_length = block_length;
-            interface_description.link_type = pcapng::link_type::ETHERNET;
-            interface_description.reserved = 0;
-            interface_description.snap_len = 16384;
-
-            std::copy(reinterpret_cast<uint8_t*>(&interface_description),
-                      reinterpret_cast<uint8_t*>(&interface_description)
-                          + sizeof(interface_description),
-                      ptr + m_buffer_length);
-            std::copy(reinterpret_cast<uint8_t*>(&interface_options),
-                      reinterpret_cast<uint8_t*>(&interface_options)
-                          + sizeof(interface_options),
-                      ptr + m_buffer_length + sizeof(interface_description));
-            m_buffer_length += interface_description.block_total_length;
-            std::copy(reinterpret_cast<uint8_t*>(
-                          &interface_description.block_total_length),
-                      reinterpret_cast<uint8_t*>(
-                          &interface_description.block_total_length)
-                          + sizeof(interface_description.block_total_length),
-                      ptr + m_buffer_length
-                          - sizeof(interface_description.block_total_length));
-        }
-        assert(m_buffer_length < m_buffer.size());
-        return true;
-    }
-
-    bool write_packet_block(pcapng::enhanced_packet_block& block_hdr,
-                            uint8_t* block_data)
-    {
-        uint8_t* ptr = m_buffer.data();
-        auto remain = m_buffer.size() - m_buffer_length;
-        if (block_hdr.block_total_length > remain) { return false; }
-        std::copy(reinterpret_cast<uint8_t*>(&block_hdr),
-                  reinterpret_cast<uint8_t*>(&block_hdr) + sizeof(block_hdr),
-                  ptr + m_buffer_length);
-        std::copy(block_data,
-                  block_data + block_hdr.captured_len,
-                  ptr + m_buffer_length + sizeof(block_hdr));
-        m_buffer_length += block_hdr.block_total_length;
-        std::copy(reinterpret_cast<uint8_t*>(&block_hdr.block_total_length),
-                  reinterpret_cast<uint8_t*>(&block_hdr.block_total_length)
-                      + sizeof(block_hdr.block_total_length),
-                  ptr + m_buffer_length - sizeof(block_hdr.block_total_length));
-        return true;
-    }
-
-    bool write_packet(capture_packet& packet)
-    {
-        // Add packet block header
-        pcapng::enhanced_packet_block block_hdr;
-        block_hdr.block_type = pcapng::block_type::ENHANCED_PACKET;
-        block_hdr.interface_id = 0;
-        block_hdr.timestamp_high = packet.hdr.timestamp >> 32;
-        block_hdr.timestamp_low = packet.hdr.timestamp;
-        block_hdr.captured_len = packet.hdr.captured_len;
-        block_hdr.packet_len = packet.hdr.packet_len;
-        block_hdr.block_total_length = pcapng::pad_block_length(
-            sizeof(block_hdr) + sizeof(uint32_t) + packet.hdr.captured_len);
-        return write_packet_block(block_hdr, packet.data);
-    }
-
-    bool write_end() { return true; }
-
-    uint8_t* get_data() { return m_buffer.data(); };
-    size_t get_length() const { return m_buffer_length; }
-    size_t get_available_length() const
-    {
-        return m_buffer.size() - m_buffer_length;
-    }
-    void flush() { m_buffer_length = 0; }
-
-protected:
-    std::array<uint8_t, 16384> m_buffer;
-    size_t m_buffer_length = 0;
-};
-
-class pcap_transfer_context : public transfer_context
-{
-public:
-    virtual ~pcap_transfer_context() = default;
-
-    void set_reader(std::unique_ptr<capture_buffer_reader>& reader) override
-    {
-        m_reader.reset(reader.release());
-    }
-
-    virtual Pistache::Async::Promise<ssize_t> start() = 0;
-
-protected:
-    std::unique_ptr<capture_buffer_reader> m_reader;
-    Pistache::Async::Deferred<ssize_t> m_deferred;
-};
 
 class pcap_thread_transfer_context : public pcap_transfer_context
 {
@@ -353,6 +214,7 @@ private:
         if (m_error) {
             // Error writing data
             m_deferred.reject(Pistache::Error("Failed sending pcap data"));
+            m_done = true;
             return;
         }
 
@@ -360,6 +222,7 @@ private:
         // Need some way to enable the peer in pistache thread again.
         // This should be done through a message for thread safety.
         m_deferred.resolve((ssize_t)m_total_bytes_sent);
+        m_done = true;
     }
 
     bool write_packet(capture_packet& packet)
@@ -590,6 +453,7 @@ private:
                     [&](std::exception_ptr& eptr) {
                         m_deferred.reject(
                             Pistache::Error("Failed sending pcap data"));
+                        m_done = true;
                         return Pistache::Async::Promise<ssize_t>::rejected(
                             eptr);
                     });
@@ -605,7 +469,13 @@ private:
                     [&](ssize_t) {
                         return m_transport->asyncWrite(m_peer->fd(), buffer);
                     },
-                    Pistache::Async::Throw)
+                    [&](std::exception_ptr& eptr) {
+                        m_deferred.reject(
+                            Pistache::Error("Failed sending chunk header"));
+                        m_done = true;
+                        return Pistache::Async::Promise<ssize_t>::rejected(
+                            eptr);
+                    })
                 .then(
                     [&](ssize_t) {
                         auto chunk_trailer_str = get_chunk_trailer_str();
@@ -614,9 +484,21 @@ private:
                             Pistache::RawBuffer(chunk_trailer_str,
                                                 chunk_trailer_str.length()));
                     },
-                    Pistache::Async::Throw)
+                    [&](std::exception_ptr& eptr) {
+                        m_deferred.reject(
+                            Pistache::Error("Failed sending pcap data"));
+                        m_done = true;
+                        return Pistache::Async::Promise<ssize_t>::rejected(
+                            eptr);
+                    })
                 .then([&](ssize_t) { return transfer(); },
-                      Pistache::Async::Throw);
+                      [&](std::exception_ptr& eptr) {
+                          m_deferred.reject(
+                              Pistache::Error("Failed sending chunk trailer"));
+                          m_done = true;
+                          return Pistache::Async::Promise<ssize_t>::rejected(
+                              eptr);
+                      });
         }
     }
 
@@ -643,7 +525,11 @@ private:
         }
 
         m_deferred.resolve(m_total_bytes_sent);
-        return Pistache::Async::Promise<ssize_t>::resolved(m_total_bytes_sent);
+        auto result =
+            Pistache::Async::Promise<ssize_t>::resolved(m_total_bytes_sent);
+
+        m_done = true;
+        return result;
     }
 
     Pistache::Tcp::Transport* m_transport;
@@ -653,25 +539,22 @@ private:
     bool m_chunked;
 };
 
-std::shared_ptr<transfer_context>
+std::unique_ptr<transfer_context>
 create_pcap_transfer_context(Pistache::Http::ResponseWriter& response)
 {
 #if 1
-    std::shared_ptr<transfer_context> context{
+    std::unique_ptr<transfer_context> context{
         new pcap_thread_transfer_context(response.peer())};
 #else
-    std::shared_ptr<transfer_context> context{new pcap_async_transfer_context(
+    std::unique_ptr<transfer_context> context{new pcap_async_transfer_context(
         response.peer(), get_tcp_transport(response))};
 #endif
     return context;
 }
 
-Pistache::Async::Promise<ssize_t>
-serve_capture_pcap(std::shared_ptr<transfer_context> context)
+Pistache::Async::Promise<ssize_t> serve_capture_pcap(transfer_context& context)
 {
-    auto pcontext = dynamic_cast<pcap_transfer_context*>(context.get());
-    assert(pcontext);
-    return pcontext->start();
+    return dynamic_cast<pcap_transfer_context&>(context).start();
 }
 
 } // namespace openperf::packet::capture::api

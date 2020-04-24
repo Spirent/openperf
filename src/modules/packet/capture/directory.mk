@@ -10,6 +10,7 @@ CAP_SOURCES += \
         handler.cpp \
         init.cpp \
         pcap_handler.cpp \
+        pcap_writer.cpp \
         pistache_utils.cpp \
     	server.cpp \
     	sink.cpp \

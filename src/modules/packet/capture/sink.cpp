@@ -38,6 +38,11 @@ capture_buffer_stats sink_result::get_stats() const
     return total;
 }
 
+bool sink_result::has_active_transfer() const
+{
+    return (transfer.get() && !transfer->is_done());
+}
+
 std::vector<uint8_t> sink::make_indexes(std::vector<unsigned>& ids)
 {
     std::vector<uint8_t> indexes(*max_element(std::begin(ids), std::end(ids)));

@@ -503,18 +503,20 @@ void handler::get_capture_result_pcap(const request_type& request,
         return;
     }
 
-    std::shared_ptr<transfer_context> transfer =
-        create_pcap_transfer_context(response);
+    auto transfer_ptr = create_pcap_transfer_context(response);
 
-    auto api_reply = submit_request(
-        m_socket.get(), request_create_capture_transfer{id, transfer});
+    auto api_reply =
+        submit_request(m_socket.get(),
+                       request_create_capture_transfer{id, transfer_ptr.get()});
 
     if (auto reply = std::get_if<reply_ok>(&api_reply)) {
-        auto result = send_pcap_response_header(response, transfer);
+        // Request was successful so no longer own the transfer object
+        auto transfer = transfer_ptr.release();
+        auto result = send_pcap_response_header(response, *transfer);
         if (result.isRejected()) return;
         assert(result.isFulfilled());
 
-        serve_capture_pcap(transfer);
+        serve_capture_pcap(*transfer);
     } else {
         handle_reply_error(api_reply, std::move(response));
     }
@@ -529,18 +531,20 @@ void handler::get_capture_result_live(const request_type& request,
         return;
     }
 
-    std::shared_ptr<transfer_context> transfer =
-        create_pcap_transfer_context(response);
+    auto transfer_ptr = create_pcap_transfer_context(response);
 
-    auto api_reply = submit_request(
-        m_socket.get(), request_create_capture_transfer{id, transfer});
+    auto api_reply =
+        submit_request(m_socket.get(),
+                       request_create_capture_transfer{id, transfer_ptr.get()});
 
     if (auto reply = std::get_if<reply_ok>(&api_reply)) {
-        auto result = send_pcap_response_header(response, transfer);
+        // Request was successful so no longer own the transfer object
+        auto transfer = transfer_ptr.release();
+        auto result = send_pcap_response_header(response, *transfer);
         if (result.isRejected()) return;
         assert(result.isFulfilled());
 
-        serve_capture_pcap(transfer);
+        serve_capture_pcap(*transfer);
     } else {
         handle_reply_error(api_reply, std::move(response));
     }

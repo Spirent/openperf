@@ -236,7 +236,10 @@ capture_buffer_file_reader::capture_buffer_file_reader(
 
 capture_buffer_file_reader::~capture_buffer_file_reader()
 {
-    if (m_fp_read) { fclose(m_fp_read); }
+    if (m_fp_read) {
+        fclose(m_fp_read);
+        m_fp_read = nullptr;
+    }
 }
 
 bool capture_buffer_file_reader::read_file_header()

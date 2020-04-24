@@ -184,6 +184,19 @@ server::server(void* context, core::event_loop& loop)
     m_loop.add(m_socket.get(), &callbacks, this);
 }
 
+bool server::has_active_transfer(const sink& sink) const
+{
+    auto found =
+        std::find_if(m_results.begin(), m_results.end(), [&](const auto& pair) {
+            auto& result = pair.second;
+            if (&result->parent == &sink) {
+                if (result->has_active_transfer()) { return true; }
+            }
+            return false;
+        });
+    return (found != m_results.end());
+}
+
 reply_msg server::handle_request(const request_list_captures& request)
 {
     auto reply = reply_captures{};
@@ -280,16 +293,19 @@ reply_msg server::handle_request(const request_delete_captures&)
      * all of the inactive ones.
      */
     auto cursor = std::stable_partition(
-        std::begin(m_sinks), std::end(m_sinks), [](const auto& item) {
-            return (item.template get<sink>().active());
+        std::begin(m_sinks), std::end(m_sinks), [&](const auto& item) {
+            auto& sink_ref = item.template get<sink>();
+            if (has_active_transfer(sink_ref)) return true;
+            return (sink_ref.active());
         });
 
     /* Remove sinks from our workers */
     std::for_each(cursor, std::end(m_sinks), [&](auto& item) {
         remove_sink(m_client, item);
         // Remove all results for this sink
+        auto& sink_ref = item.template get<sink>();
         erase_if(m_results, [&](const auto& pair) {
-            return (&pair.second->parent == &item.template get<sink>());
+            return (&pair.second->parent == &sink_ref);
         });
     });
 
@@ -430,8 +446,13 @@ reply_msg server::handle_request(const request_list_capture_results& request)
 reply_msg server::handle_request(const request_delete_capture_results&)
 {
     /* Delete all inactive results */
-    erase_if(m_results,
-             [](const auto& pair) { return (!pair.second->parent.active()); });
+    erase_if(m_results, [](const auto& pair) {
+        auto& result = pair.second;
+        if (result->transfer.get() && !result->transfer->is_done()) {
+            return false;
+        }
+        return (!result->parent.active());
+    });
 
     return (reply_ok{});
 }
@@ -456,8 +477,12 @@ reply_msg server::handle_request(const request_delete_capture_result& request)
 {
     if (auto id = to_uuid(request.id); id.has_value()) {
         if (auto item = m_results.find(*id); item != std::end(m_results)) {
-            // FIXME: Should only allow delete if no transfer in progress
             auto& result = item->second;
+            if (result->has_active_transfer()) {
+                OP_LOG(OP_LOG_ERROR,
+                       "Can not delete capture when transfer is in progress.");
+                return (to_error(error_type::POSIX, EBUSY));
+            }
             if (!result->parent.active()) { m_results.erase(*id); }
         }
     }
@@ -481,7 +506,7 @@ reply_msg server::handle_request(request_create_capture_transfer& request)
         return (to_error(error_type::POSIX, EEXIST));
     }
 
-    result->transfer = request.transfer;
+    result->transfer.reset(request.transfer);
     if (result->buffers.size() == 1) {
         auto reader = result->buffers[0]->create_reader();
         result->transfer->set_reader(reader);
@@ -504,6 +529,13 @@ reply_msg server::handle_request(const request_delete_capture_transfer& request)
     if (auto id = to_uuid(request.id); id.has_value()) {
         if (auto item = m_results.find(*id); item != std::end(m_results)) {
             auto& result = item->second;
+
+            if (result->has_active_transfer()) {
+                OP_LOG(
+                    OP_LOG_ERROR,
+                    "Can not delete capture transfer when it is in progress.");
+                return (to_error(error_type::POSIX, EBUSY));
+            }
             result->transfer.reset();
         }
     }

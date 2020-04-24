@@ -26,25 +26,18 @@ struct sink_config
     std::string source;
 };
 
-class transfer_context
-{
-public:
-    virtual ~transfer_context() = default;
-    virtual void set_reader(std::unique_ptr<capture_buffer_reader>& reader) = 0;
-    virtual size_t get_total_length() const = 0;
-};
-
 struct sink_result
 {
     sink_result(const sink& p);
 
     capture_buffer_stats get_stats() const;
+    bool has_active_transfer() const;
 
     const sink& parent;
     std::atomic<capture_state> state = capture_state::STOPPED;
 
     std::vector<std::unique_ptr<capture_buffer>> buffers;
-    std::shared_ptr<transfer_context> transfer;
+    std::unique_ptr<transfer_context> transfer;
 };
 
 class sink
