@@ -15,8 +15,7 @@ virtual_device::virtual_device()
 
 virtual_device::~virtual_device()
 {
-    m_deleted = true;
-    if (m_scrub_thread.joinable()) m_scrub_thread.join();
+    terminate_scrub();
 }
 
 int virtual_device::write_header()
@@ -64,6 +63,12 @@ void virtual_device::queue_scrub()
     m_scrub_thread = std::thread([this]() {
         scrub_worker(block_generator_vdev_header_size, get_size());
     });
+}
+
+void virtual_device::terminate_scrub()
+{
+    m_deleted = true;
+    if (m_scrub_thread.joinable()) m_scrub_thread.join();
 }
 
 void pseudo_random_fill(void* buffer, size_t length)

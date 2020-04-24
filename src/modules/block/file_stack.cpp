@@ -17,6 +17,11 @@ file::file(const model::file& f)
     queue_scrub();
 }
 
+file::~file()
+{
+    terminate_scrub();
+}
+
 tl::expected<int, int> file::vopen()
 {
     if (m_fd >= 0) return m_fd;
@@ -95,7 +100,10 @@ file_stack::create_block_file(const model::file& block_file_model)
 
 std::shared_ptr<virtual_device> file_stack::get_vdev(const std::string& id) const
 {
-    return get_block_file(id);
+    auto f = get_block_file(id);
+    if (!f || f->get_state() != model::file_state::READY)
+        return nullptr;
+    return f;
 }
 
 block_file_ptr file_stack::get_block_file(const std::string& id) const

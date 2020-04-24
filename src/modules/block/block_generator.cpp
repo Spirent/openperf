@@ -57,7 +57,7 @@ void block_generator::update_resource(const std::string& resource_id)
         }
     }
     if (!vdev_ptr)
-        throw std::runtime_error("Unknown resource: " + resource_id);
+        throw std::runtime_error("Unknown or unusable resource: " + resource_id);
 
     if (auto result = vdev_ptr->vopen(); !result)
         throw std::runtime_error("Cannot open resource: "

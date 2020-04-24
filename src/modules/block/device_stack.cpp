@@ -139,7 +139,10 @@ device_ptr device_stack::get_block_device(const std::string& id) const
 std::shared_ptr<virtual_device>
 device_stack::get_vdev(const std::string& id) const
 {
-    return get_block_device(id);
+    auto dev = get_block_device(id);
+    if (!dev || !dev->is_usable())
+        return nullptr;
+    return dev;
 }
 
 std::vector<device_ptr> device_stack::block_devices_list()

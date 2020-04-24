@@ -20,7 +20,7 @@ protected:
 
 public:
     file(const model::file& f);
-    ~file() = default;
+    ~file();
     tl::expected<int, int> vopen() override;
     void vclose() override;
     uint64_t get_size() const override;
