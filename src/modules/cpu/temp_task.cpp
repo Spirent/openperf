@@ -5,7 +5,7 @@ namespace openperf::cpu::worker
 {
 
 cpu_task::cpu_task()
-    : m_actual_stat({})
+    : m_actual_stat()
     , m_shared_stat(m_actual_stat)
     , m_at_stat(&m_shared_stat)
     , m_reset_stat(false)

@@ -23,14 +23,10 @@ using namespace swagger::v1::model;
 using time_point = std::chrono::time_point<timesync::chrono::realtime>;
 
 const std::string endpoint = "inproc://openperf_cpu";
-static constexpr std::string_view empty_id_string = "none";
 
 /**
  * List of supported server requests.
  */
-
-static constexpr size_t id_max_length = 64;
-static constexpr size_t err_max_length = 256;
 
 /* zmq api objects models */
 
@@ -40,12 +36,10 @@ using cpu_generator_ptr = std::unique_ptr<cpu_generator_t>;
 using cpu_generator_result_ptr = std::unique_ptr<cpu_generator_result_t>;
 using cpu_info_t = model::cpu_info;
 using cpu_info_ptr = std::unique_ptr<cpu_info_t>;
-using string_ptr = std::unique_ptr<std::string>;
 
 enum class error_type {
     NONE = 0,
     NOT_FOUND,
-    EAI_ERROR,
     ZMQ_ERROR,
     CUSTOM_ERROR
 };
@@ -54,7 +48,7 @@ struct typed_error
 {
     error_type type = error_type::NONE;
     int code = 0;
-    char value[err_max_length];
+    std::string value;
 };
 
 /* zmq api request models */
@@ -89,12 +83,12 @@ struct request_cpu_generator_stop
 
 struct request_cpu_generator_bulk_start
 {
-    std::vector<string_ptr> ids;
+    std::unique_ptr<std::vector<std::string>> ids;
 };
 
 struct request_cpu_generator_bulk_stop
 {
-    std::vector<string_ptr> ids;
+    std::unique_ptr<std::vector<std::string>> ids;
 };
 
 struct request_cpu_generator_result_list
@@ -134,7 +128,7 @@ struct reply_ok
 
 struct reply_error
 {
-    typed_error info;
+    std::unique_ptr<typed_error> info;
 };
 
 using request_msg = std::variant<request_cpu_generator_list,
@@ -171,11 +165,9 @@ tl::expected<reply_msg, int> deserialize_reply(const serialized_msg& msg);
 int send_message(void* socket, serialized_msg&& msg);
 tl::expected<serialized_msg, int> recv_message(void* socket, int flags = 0);
 
-reply_error to_error(error_type type, int code = 0, std::string value = "");
-const char* to_string(const api::typed_error&);
+reply_error to_error(error_type type, int code = 0, const std::string& value = "");
+std::string to_string(const api::typed_error&);
 model::cpu_generator from_swagger(const CpuGenerator&);
-request_cpu_generator_bulk_start from_swagger(BulkStartCpuGeneratorsRequest&);
-request_cpu_generator_bulk_stop from_swagger(BulkStopCpuGeneratorsRequest&);
 std::shared_ptr<CpuGenerator> to_swagger(const model::cpu_generator&);
 std::shared_ptr<CpuGeneratorResult> to_swagger(const model::cpu_generator_result&);
 std::shared_ptr<CpuInfoResult> to_swagger(const model::cpu_info&);

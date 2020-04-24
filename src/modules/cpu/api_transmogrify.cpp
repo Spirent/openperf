@@ -140,12 +140,11 @@ serialized_msg serialize_request(request_msg&& msg)
                                              cpu_generator.id.data(),
                                              cpu_generator.id.length()));
                     },
-                    [&](request_cpu_generator_bulk_start&
-                            cpu_generator) {
-                        return (zmq_msg_init(&serialized.data, cpu_generator.ids));
+                    [&](request_cpu_generator_bulk_start& request) {
+                        return (zmq_msg_init(&serialized.data, std::move(request.ids)));
                     },
-                    [&](request_cpu_generator_bulk_stop& cpu_generator) {
-                        return (zmq_msg_init(&serialized.data, cpu_generator.ids));
+                    [&](request_cpu_generator_bulk_stop& request) {
+                        return (zmq_msg_init(&serialized.data, std::move(request.ids)));
                     },
                     [&](const request_cpu_generator_result_list&) {
                         return (zmq_msg_init(&serialized.data));
@@ -188,8 +187,8 @@ serialized_msg serialize_reply(reply_msg&& msg)
                     [&](const reply_ok&) {
                         return (zmq_msg_init(&serialized.data, 0));
                     },
-                    [&](const reply_error& error) {
-                        return (zmq_msg_init(&serialized.data, error.info));
+                    [&](reply_error& error) {
+                        return (zmq_msg_init(&serialized.data, std::move(error.info)));
                     }),
                 msg));
     if (error) { throw std::bad_alloc(); }
@@ -228,25 +227,15 @@ tl::expected<request_msg, int> deserialize_request(const serialized_msg& msg)
     }
     case utils::variant_index<request_msg,
                               request_cpu_generator_bulk_start>(): {
-        auto size = zmq_msg_size(&msg.data) / sizeof(string_ptr);
-        auto data = zmq_msg_data<std::string**>(&msg.data);
-
-        auto reply = request_cpu_generator_bulk_start{};
-        std::for_each(data, data + size, [&](const auto& ptr) {
-            reply.ids.emplace_back(ptr);
-        });
-        return (reply);
+        auto request = request_cpu_generator_bulk_start{};
+        request.ids.reset(*zmq_msg_data<std::vector<std::string>**>(&msg.data));
+        return (request);
     }
     case utils::variant_index<request_msg,
                               request_cpu_generator_bulk_stop>(): {
-        auto size = zmq_msg_size(&msg.data) / sizeof(string_ptr);
-        auto data = zmq_msg_data<std::string**>(&msg.data);
-
-        auto reply = request_cpu_generator_bulk_stop{};
-        std::for_each(data, data + size, [&](const auto& ptr) {
-            reply.ids.emplace_back(ptr);
-        });
-        return (reply);
+        auto request = request_cpu_generator_bulk_stop{};
+        request.ids.reset(*zmq_msg_data<std::vector<std::string>**>(&msg.data));
+        return (request);
     }
     case utils::variant_index<request_msg,
                               request_cpu_generator_result_list>(): {
@@ -304,7 +293,9 @@ tl::expected<reply_msg, int> deserialize_reply(const serialized_msg& msg)
     case utils::variant_index<reply_msg, reply_ok>():
         return (reply_ok{});
     case utils::variant_index<reply_msg, reply_error>():
-        return (reply_error{*(zmq_msg_data<typed_error*>(&msg.data))});
+        auto reply = reply_error{};
+        reply.info.reset(*zmq_msg_data<typed_error**>(&msg.data));
+        return (reply);
     }
 
     return (tl::make_unexpected(EINVAL));
@@ -317,13 +308,11 @@ void copy_string(std::string_view str, char* ch_arr, size_t max_length)
     ch_arr[std::min(str.length(), max_length - 1)] = '\0';
 }
 
-const char* to_string(const api::typed_error& error)
+std::string to_string(const api::typed_error& error)
 {
     switch (error.type) {
     case api::error_type::NOT_FOUND:
         return ("");
-    case api::error_type::EAI_ERROR:
-        return (gai_strerror(error.code));
     case api::error_type::ZMQ_ERROR:
         return (zmq_strerror(error.code));
     case api::error_type::CUSTOM_ERROR:
@@ -385,11 +374,9 @@ std::string to_string(const model::cpu_operation& pattern)
     return "unknown";
 }
 
-reply_error to_error(error_type type, int code, std::string value)
+reply_error to_error(error_type type, int code, const std::string& value)
 {
-    auto err = reply_error{.info = typed_error{.type = type, .code = code}};
-    value.copy(err.info.value, err_max_length - 1);
-    err.info.value[std::min(value.length(), err_max_length)] = '\0';
+    auto err = reply_error{.info = std::make_unique<typed_error>((typed_error){.type = type, .code = code, .value = value})};
     return err;
 }
 
@@ -429,25 +416,6 @@ model::cpu_generator from_swagger(const CpuGenerator& p_gen)
     gen.set_config(cpu_config);
     return gen;
 }
-
-request_cpu_generator_bulk_start from_swagger(BulkStartCpuGeneratorsRequest& request)
-{
-    request_cpu_generator_bulk_start result;
-    for (auto & id : request.getIds()) {
-        result.ids.push_back(std::make_unique<std::string>(id));
-    }
-    return result;
-}
-
-request_cpu_generator_bulk_stop from_swagger(BulkStopCpuGeneratorsRequest& request)
-{
-    request_cpu_generator_bulk_stop result;
-    for (auto & id : request.getIds()) {
-        result.ids.push_back(std::make_unique<std::string>(id));
-    }
-    return result;
-}
-
 
 std::shared_ptr<CpuGenerator> to_swagger(const model::cpu_generator& p_gen)
 {
