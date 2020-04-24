@@ -301,13 +301,6 @@ tl::expected<reply_msg, int> deserialize_reply(const serialized_msg& msg)
     return (tl::make_unexpected(EINVAL));
 }
 
-
-void copy_string(std::string_view str, char* ch_arr, size_t max_length)
-{
-    str.copy(ch_arr, max_length - 1);
-    ch_arr[std::min(str.length(), max_length - 1)] = '\0';
-}
-
 std::string to_string(const api::typed_error& error)
 {
     switch (error.type) {
