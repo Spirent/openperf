@@ -33,15 +33,16 @@ class cpu_generator
 public:
     cpu_generator() = default;
     cpu_generator(const cpu_generator&) = default;
+    virtual ~cpu_generator() = default;
 
-    std::string get_id() const;
-    void set_id(std::string_view value);
+    virtual std::string get_id() const;
+    virtual void set_id(std::string_view value);
 
-    cpu_generator_config get_config() const;
-    void set_config(const cpu_generator_config& value);
+    virtual cpu_generator_config get_config() const;
+    virtual void set_config(const cpu_generator_config& value);
 
-    bool is_running() const;
-    void set_running(const bool value);
+    virtual bool is_running() const;
+    virtual void set_running(const bool value);
 
 protected:
     std::string m_id;
