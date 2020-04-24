@@ -36,10 +36,10 @@ reply_msg server::handle_request(const request_cpu_generator_add& request)
 {
     if (auto id_check = config::op_config_validate_id_string(request.source->get_id());
         !id_check)
-        return (to_error(error_type::EAI_ERROR));
+        return (to_error(error_type::NOT_FOUND));
 
     // If user did not specify an id create one for them.kjuolpik
-    if (request.source->get_id() == api::empty_id_string) {
+    if (request.source->get_id().empty()) {
         request.source->set_id(core::to_string(core::uuid::random()));
     }
 
@@ -86,17 +86,17 @@ server::handle_request(const request_cpu_generator_bulk_start& request)
 {
     auto reply = reply_cpu_generator_results{};
 
-    for (size_t i = 0; i < request.ids.size(); ++i)
+    for (size_t i = 0; i < request.ids->size(); ++i)
     {
-        auto generator = m_generator_stack->get_cpu_generator(*request.ids[i]);
+        auto generator = m_generator_stack->get_cpu_generator(request.ids->at(i));
         if (!generator) {
-            for (size_t j = 0; j < request.ids.size(); ++j) {
-                auto generator_to_stop = m_generator_stack->get_cpu_generator(*request.ids[i]);
+            for (size_t j = 0; j < i; ++j) {
+                auto generator_to_stop = m_generator_stack->get_cpu_generator(request.ids->at(i));
                 if (generator_to_stop) {
                     generator_to_stop->stop();
                 }
             }
-            return to_error(api::error_type::NOT_FOUND, 0, "Generator " + *request.ids[i] + " not found");
+            return to_error(api::error_type::NOT_FOUND, 0, "Generator " + request.ids->at(i) + " not found");
         }
         auto stats = generator->start();
 
@@ -110,9 +110,9 @@ server::handle_request(const request_cpu_generator_bulk_start& request)
 reply_msg
 server::handle_request(const request_cpu_generator_bulk_stop& request)
 {
-   for (auto & id : request.ids)
+   for (auto & id : *request.ids)
     {
-        auto generator = m_generator_stack->get_cpu_generator(*id);
+        auto generator = m_generator_stack->get_cpu_generator(id);
         if (!generator) {
             continue;
         }

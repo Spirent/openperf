@@ -12,10 +12,10 @@ public:
     cpu_info(const cpu_info&) = default;
 
     int32_t get_cores() const;
-    void set_cores(const int32_t&);
+    void set_cores(int32_t);
 
     int64_t get_cache_line_size() const;
-    void set_cache_line_size(const int64_t&);
+    void set_cache_line_size(int64_t);
 
     std::string get_architecture() const;
     void set_architecture(std::string_view value);
