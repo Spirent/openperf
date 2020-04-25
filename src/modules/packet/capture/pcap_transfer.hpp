@@ -1,5 +1,5 @@
-#ifndef _OP_PACKET_CAPTURE_PCAP_HPP_
-#define _OP_PACKET_CAPTURE_PCAP_HPP_
+#ifndef _OP_PACKET_CAPTURE_PCAP_TRANSFER_HPP_
+#define _OP_PACKET_CAPTURE_PCAP_TRANSFER_HPP_
 
 #include <pistache/http.h>
 
@@ -7,7 +7,7 @@ namespace openperf::packet::capture {
 class transfer_context;
 }
 
-namespace openperf::packet::capture::api {
+namespace openperf::packet::capture::pcap {
 
 std::unique_ptr<transfer_context>
 create_pcap_transfer_context(Pistache::Http::ResponseWriter& response);
@@ -18,6 +18,6 @@ send_pcap_response_header(Pistache::Http::ResponseWriter& response,
 
 Pistache::Async::Promise<ssize_t> serve_capture_pcap(transfer_context& context);
 
-} // namespace openperf::packet::capture::api
+} // namespace openperf::packet::capture::pcap
 
-#endif //_OP_PACKET_CAPTURE_PCAP_HPP_
+#endif // _OP_PACKET_CAPTURE_PCAP_TRANSFER_HPP_

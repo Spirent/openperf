@@ -3,25 +3,25 @@
 #include "packet/capture/pcap_writer.hpp"
 #include "packet/capture/capture_buffer.hpp"
 
-namespace openperf::packet::capture {
+namespace openperf::packet::capture::pcap {
 
 pcap_buffer_writer::pcap_buffer_writer() {}
 
 bool pcap_buffer_writer::write_section_block()
 {
     uint8_t* ptr = m_buffer.data();
-    pcapng::section_block section;
+    section_block section;
     auto unpadded_block_length = sizeof(section) + sizeof(uint32_t);
-    auto block_length = pcapng::pad_block_length(unpadded_block_length);
+    auto block_length = pad_block_length(unpadded_block_length);
 
     if (block_length > get_available_length()) return false;
 
-    section.block_type = pcapng::block_type::SECTION;
+    section.block_type = block_type::SECTION;
     section.block_total_length = block_length;
-    section.byte_order_magic = pcapng::BYTE_ORDER_MAGIC;
+    section.byte_order_magic = BYTE_ORDER_MAGIC;
     section.major_version = 1;
     section.minor_version = 0;
-    section.section_length = pcapng::SECTION_LENGTH_UNSPECIFIED;
+    section.section_length = SECTION_LENGTH_UNSPECIFIED;
     std::copy(reinterpret_cast<uint8_t*>(&section),
               reinterpret_cast<uint8_t*>(&section) + sizeof(section),
               ptr + m_buffer_length);
@@ -37,28 +37,26 @@ bool pcap_buffer_writer::write_section_block()
 bool pcap_buffer_writer::write_interface_block()
 {
     uint8_t* ptr = m_buffer.data();
-    pcapng::interface_default_options interface_options;
+    interface_default_options interface_options;
 
     memset(&interface_options, 0, sizeof(interface_options));
     interface_options.ts_resol.hdr.option_code =
-        pcapng::interface_option_type::IF_TSRESOL;
+        interface_option_type::IF_TSRESOL;
     interface_options.ts_resol.hdr.option_length = 1;
     interface_options.ts_resol.resolution = 9; // nano seconds
-    interface_options.opt_end.hdr.option_code =
-        pcapng::interface_option_type::OPT_END;
+    interface_options.opt_end.hdr.option_code = interface_option_type::OPT_END;
     interface_options.opt_end.hdr.option_length = 0;
 
-    pcapng::interface_description_block interface_description;
+    interface_description_block interface_description;
     auto unpadded_block_length = sizeof(interface_description)
                                  + sizeof(uint32_t) + sizeof(interface_options);
-    auto block_length = pcapng::pad_block_length(unpadded_block_length);
+    auto block_length = pad_block_length(unpadded_block_length);
 
     if (block_length > get_available_length()) return false;
 
-    interface_description.block_type =
-        pcapng::block_type::INTERFACE_DESCRIPTION;
+    interface_description.block_type = block_type::INTERFACE_DESCRIPTION;
     interface_description.block_total_length = block_length;
-    interface_description.link_type = pcapng::link_type::ETHERNET;
+    interface_description.link_type = link_type::ETHERNET;
     interface_description.reserved = 0;
     interface_description.snap_len = 16384;
 
@@ -94,22 +92,22 @@ bool pcap_buffer_writer::write_file_header()
 
 bool pcap_buffer_writer::write_packet(const capture_packet& packet)
 {
-    pcapng::enhanced_packet_block block_hdr;
+    enhanced_packet_block block_hdr;
 
-    block_hdr.block_type = pcapng::block_type::ENHANCED_PACKET;
+    block_hdr.block_type = block_type::ENHANCED_PACKET;
     block_hdr.interface_id = 0;
     block_hdr.timestamp_high = packet.hdr.timestamp >> 32;
     block_hdr.timestamp_low = packet.hdr.timestamp;
     block_hdr.captured_len = packet.hdr.captured_len;
     block_hdr.packet_len = packet.hdr.packet_len;
-    block_hdr.block_total_length = pcapng::pad_block_length(
+    block_hdr.block_total_length = pad_block_length(
         sizeof(block_hdr) + sizeof(uint32_t) + packet.hdr.captured_len);
 
     return write_packet_block(block_hdr, packet.data);
 }
 
 bool pcap_buffer_writer::write_packet_block(
-    const pcapng::enhanced_packet_block& block_hdr, const uint8_t* block_data)
+    const enhanced_packet_block& block_hdr, const uint8_t* block_data)
 {
     uint8_t* ptr = m_buffer.data();
 
@@ -129,4 +127,4 @@ bool pcap_buffer_writer::write_packet_block(
     return true;
 }
 
-} // namespace openperf::packet::capture
+} // namespace openperf::packet::capture::pcap

@@ -1,12 +1,13 @@
 #ifndef _OP_PCAP_WRITER_HPP_
 #define _OP_PCAP_WRITER_HPP_
 
-#include "packet/capture/pcap_io.hpp"
+#include "packet/capture/pcap_defs.hpp"
 
 namespace openperf::packet::capture {
-
 struct capture_packet;
-class capture_buffer_reader;
+}
+
+namespace openperf::packet::capture::pcap {
 
 class pcap_buffer_writer
 {
@@ -21,7 +22,7 @@ public:
 
     bool write_packet(const capture_packet& packet);
 
-    bool write_packet_block(const pcapng::enhanced_packet_block& block_hdr,
+    bool write_packet_block(const enhanced_packet_block& block_hdr,
                             const uint8_t* block_data);
 
     bool write_file_trailer() { return true; }
@@ -38,18 +39,15 @@ public:
     {
         static size_t file_header_length()
         {
-            return pcapng::pad_block_length(sizeof(pcapng::section_block)
-                                            + sizeof(uint32_t))
-                   + pcapng::pad_block_length(
-                         sizeof(pcapng::interface_description_block)
-                         + sizeof(uint32_t)
-                         + sizeof(pcapng::interface_default_options));
+            return pad_block_length(sizeof(section_block) + sizeof(uint32_t))
+                   + pad_block_length(sizeof(interface_description_block)
+                                      + sizeof(uint32_t)
+                                      + sizeof(interface_default_options));
         }
         static size_t packet_length(uint8_t captured_len)
         {
-            return pcapng::pad_block_length(
-                sizeof(pcapng::enhanced_packet_block) + sizeof(uint32_t)
-                + captured_len);
+            return pad_block_length(sizeof(enhanced_packet_block)
+                                    + sizeof(uint32_t) + captured_len);
         }
         static size_t file_trailer_length() { return 0; }
     };
@@ -59,6 +57,6 @@ private:
     size_t m_buffer_length = 0;
 };
 
-} // namespace openperf::packet::capture
+} // namespace openperf::packet::capture::pcap
 
 #endif // _OP_PCAP_WRITER_HPP_

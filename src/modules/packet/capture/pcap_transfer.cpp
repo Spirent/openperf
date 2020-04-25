@@ -5,16 +5,19 @@
 #include "core/op_core.h"
 #include "packet/capture/api.hpp"
 #include "packet/capture/sink.hpp"
-
-#include "packet/capture/pcap_handler.hpp"
-#include "packet/capture/pcap_io.hpp"
-#include "packet/capture/pcap_writer.hpp"
 #include "packet/capture/capture_buffer.hpp"
+
+#include "packet/capture/pcap_defs.hpp"
+#include "packet/capture/pcap_writer.hpp"
+#include "packet/capture/pcap_transfer.hpp"
+
 #include "packet/capture/pistache_utils.hpp"
 
 using namespace openperf::pistache_utils;
 
-namespace openperf::packet::capture::api {
+namespace openperf::packet::capture::pcap {
+
+const std::string PCAPNG_MIME_TYPE = "application/x-pcapng";
 
 size_t calc_pcap_file_length(capture_buffer_reader& reader)
 {
@@ -61,7 +64,7 @@ send_pcap_response_header_async(Pistache::Http::ResponseWriter& response,
                                 uint32_t pcap_size)
 {
     auto mime_type =
-        Pistache::Http::Mime::MediaType::fromString("application/x-pcapng");
+        Pistache::Http::Mime::MediaType::fromString(PCAPNG_MIME_TYPE);
 
     // Update response headers
     auto& headers = response.headers();
@@ -108,7 +111,7 @@ send_pcap_response_header(Pistache::Http::ResponseWriter& response,
                           uint32_t pcap_size)
 {
     auto mime_type =
-        Pistache::Http::Mime::MediaType::fromString("application/x-pcapng");
+        Pistache::Http::Mime::MediaType::fromString(PCAPNG_MIME_TYPE);
 
     // Update response headers
     auto& headers = response.headers();
@@ -201,11 +204,15 @@ public:
 
         m_reader->rewind();
 
+        // Disable the peer so Pistache doesn't do anything with it while
+        // it is being used in the transfer thread.
         transport_peer_disable(*m_transport, *m_peer);
 
-        // Send the Capture data from a thread
+        // Send the Capture data from a worker thread
         m_thread = std::make_unique<std::thread>([&]() {
             transfer();
+
+            // Exec peer enable in Pistache transport reactor thread
             transport_exec(*m_transport, [&]() {
                 transport_peer_enable(*m_transport, *m_peer);
             });
@@ -227,7 +234,12 @@ private:
         }
 
         if (!m_error) {
-            m_writer->write_file_trailer();
+            if (!m_writer->write_file_trailer()) {
+                flush();
+                if (!m_writer->write_file_trailer()) {
+                    OP_LOG(OP_LOG_ERROR, "Failed writing pcap trailer");
+                }
+            }
             flush();
             if (m_chunked) { write_chunk_end(); }
         }
@@ -243,17 +255,17 @@ private:
         m_done = true;
     }
 
-    bool write_packet(capture_packet& packet)
+    bool write_packet(const capture_packet& packet)
     {
-        // Add packet block header
-        pcapng::enhanced_packet_block block_hdr;
-        block_hdr.block_type = pcapng::block_type::ENHANCED_PACKET;
+        enhanced_packet_block block_hdr;
+
+        block_hdr.block_type = block_type::ENHANCED_PACKET;
         block_hdr.interface_id = 0;
         block_hdr.timestamp_high = packet.hdr.timestamp >> 32;
         block_hdr.timestamp_low = packet.hdr.timestamp;
         block_hdr.captured_len = packet.hdr.captured_len;
         block_hdr.packet_len = packet.hdr.packet_len;
-        block_hdr.block_total_length = pcapng::pad_block_length(
+        block_hdr.block_total_length = pad_block_length(
             sizeof(block_hdr) + sizeof(uint32_t) + packet.hdr.captured_len);
 
         if (block_hdr.block_total_length > m_writer->get_available_length()) {
@@ -347,7 +359,7 @@ private:
                               const uint8_t* data,
                               size_t data_len)
     {
-        uint32_t total_block_len = pcapng::pad_block_length(hdr_len + data_len);
+        uint32_t total_block_len = pad_block_length(hdr_len + data_len);
         auto pad_len = (total_block_len - hdr_len - data_len);
 
         if (m_chunked) {
@@ -426,6 +438,7 @@ public:
         , m_total_bytes_sent(0)
         , m_chunked(chunked)
         , m_error(false)
+        , m_wrote_trailer(false)
     {}
 
     virtual ~pcap_async_transfer_context() {}
@@ -446,6 +459,7 @@ public:
 
         m_total_bytes_sent = 0;
         m_error = false;
+        m_wrote_trailer = false;
 
         m_reader->rewind();
 
@@ -531,17 +545,26 @@ private:
 
     Pistache::Async::Promise<ssize_t> transfer()
     {
-        // Fill the buffer
         if (!m_reader->is_done()) {
+            // Fill the buffer
             m_reader->read([&](auto& packet) {
                 if (!m_writer->write_packet(packet)) return false;
                 return true;
             });
 
-            if (m_writer->get_length() != 0) {
-                if (m_reader->is_done()) { m_writer->write_file_trailer(); }
-                return flush();
+            if (m_reader->is_done()) {
+                if (m_writer->write_file_trailer()) { m_wrote_trailer = true; }
             }
+
+            // Send the buffer
+            if (m_writer->get_length() != 0) { return flush(); }
+        }
+
+        if (!m_wrote_trailer) {
+            if (m_writer->write_file_trailer()) { m_wrote_trailer = true; }
+
+            // Send the buffer
+            if (m_writer->get_length() != 0) { return flush(); }
         }
 
         if (m_chunked) {
@@ -565,6 +588,7 @@ private:
     ssize_t m_total_bytes_sent;
     bool m_chunked;
     bool m_error;
+    bool m_wrote_trailer;
 };
 
 std::unique_ptr<transfer_context>
@@ -585,4 +609,4 @@ Pistache::Async::Promise<ssize_t> serve_capture_pcap(transfer_context& context)
     return dynamic_cast<pcap_transfer_context&>(context).start();
 }
 
-} // namespace openperf::packet::capture::api
+} // namespace openperf::packet::capture::pcap

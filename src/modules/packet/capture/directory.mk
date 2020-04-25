@@ -9,7 +9,7 @@ CAP_SOURCES += \
         capture_buffer.cpp \
         handler.cpp \
         init.cpp \
-        pcap_handler.cpp \
+        pcap_transfer.cpp \
         pcap_writer.cpp \
         pistache_utils.cpp \
     	server.cpp \

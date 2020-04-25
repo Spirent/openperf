@@ -1,10 +1,7 @@
-#ifndef _OP_PCAP_IO_HPP_
-#define _OP_PCAP_IO_HPP_
+#ifndef _OP_PACKET_CAPTURE_PCAP_DEFS_HPP_
+#define _OP_PACKET_CAPTURE_PCAP_DEFS_HPP_
 
-/* Enhanced Packet Block without actual packet, options, and trailing
-   Block Total Length */
-
-namespace openperf::packet::capture::pcapng {
+namespace openperf::packet::capture::pcap {
 
 enum common_option_type : uint16_t { OPT_END = 0, COMMENT = 1 };
 
@@ -109,6 +106,6 @@ struct enhanced_packet_block
     uint32_t packet_len;
 } __attribute__((packed));
 
-} // namespace openperf::packet::capture::pcapng
+} // namespace openperf::packet::capture::pcap
 
-#endif // _OP_PCAP_IO_HPP_
+#endif // _OP_PACKET_CAPTURE_PCAP_DEFS_HPP_
