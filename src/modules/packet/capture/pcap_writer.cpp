@@ -1,35 +1,13 @@
 
 #include "core/op_core.h"
 #include "packet/capture/pcap_writer.hpp"
-#include "packet/capture/pcap_io.hpp"
 #include "packet/capture/capture_buffer.hpp"
 
 namespace openperf::packet::capture {
 
-pcap_buffered_writer::pcap_buffered_writer() {}
+pcap_buffer_writer::pcap_buffer_writer() {}
 
-size_t pcap_buffered_writer::calc_length(capture_buffer_reader& reader)
-{
-    size_t header_length =
-        pcapng::pad_block_length(sizeof(pcapng::section_block)
-                                 + sizeof(uint32_t))
-        + pcapng::pad_block_length(sizeof(pcapng::interface_description_block)
-                                   + sizeof(uint32_t)
-                                   + sizeof(pcapng::interface_default_options));
-    size_t length = header_length;
-    reader.rewind();
-    reader.read([&](auto& buffer) {
-        length += pcapng::pad_block_length(sizeof(pcapng::enhanced_packet_block)
-                                           + sizeof(uint32_t)
-                                           + buffer.hdr.captured_len);
-        return true;
-    });
-    reader.rewind();
-
-    return length;
-}
-
-bool pcap_buffered_writer::write_section_block()
+bool pcap_buffer_writer::write_section_block()
 {
     uint8_t* ptr = m_buffer.data();
     pcapng::section_block section;
@@ -56,7 +34,7 @@ bool pcap_buffered_writer::write_section_block()
     return true;
 }
 
-bool pcap_buffered_writer::write_interface_block()
+bool pcap_buffer_writer::write_interface_block()
 {
     uint8_t* ptr = m_buffer.data();
     pcapng::interface_default_options interface_options;
@@ -103,7 +81,7 @@ bool pcap_buffered_writer::write_interface_block()
     return true;
 }
 
-bool pcap_buffered_writer::write_start()
+bool pcap_buffer_writer::write_file_header()
 {
     m_buffer_length = 0;
 
@@ -114,7 +92,7 @@ bool pcap_buffered_writer::write_start()
     return true;
 }
 
-bool pcap_buffered_writer::write_packet(const capture_packet& packet)
+bool pcap_buffer_writer::write_packet(const capture_packet& packet)
 {
     pcapng::enhanced_packet_block block_hdr;
 
@@ -130,7 +108,7 @@ bool pcap_buffered_writer::write_packet(const capture_packet& packet)
     return write_packet_block(block_hdr, packet.data);
 }
 
-bool pcap_buffered_writer::write_packet_block(
+bool pcap_buffer_writer::write_packet_block(
     const pcapng::enhanced_packet_block& block_hdr, const uint8_t* block_data)
 {
     uint8_t* ptr = m_buffer.data();

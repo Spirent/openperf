@@ -1,10 +1,15 @@
 #include <poll.h>
+#include <sys/types.h>
+#include <sys/syscall.h>
+#include <unistd.h>
 #include <climits>
 
 #include "packet/capture/pistache_utils.hpp"
 #include "core/op_core.h"
 
 namespace openperf::pistache_utils {
+
+static int gettid() { return syscall(__NR_gettid); }
 
 bool write_status_line(std::ostream& os,
                        Pistache::Http::Version version,
@@ -117,15 +122,15 @@ send_to_peer_timeout(Pistache::Tcp::Peer& peer,
     return total_sent;
 }
 
-Pistache::Tcp::Transport*
-get_tcp_transport(Pistache::Http::ResponseWriter& writer)
+Pistache::Tcp::Transport* get_transport(Pistache::Http::ResponseWriter& writer)
 {
-    // HACK to get the Tcp Transport object from the ResponseWriter.
+    // HACK!!!!!
+    //
     // The ResponseWriter class has a private transport_ member variable
     // but doesn't provide any way to get at it.
     //
-    // As a work around an indentical class is defined with
-    // all of the members exposed as public members.
+    // As a work around, a class is defined with identical memory layout
+    // and all of the members exposed as public members.
     //
     class MockResponseWriter : public Pistache::Http::Response
     {
@@ -138,7 +143,81 @@ get_tcp_transport(Pistache::Http::ResponseWriter& writer)
     static_assert(sizeof(MockResponseWriter)
                   == sizeof(Pistache::Http::ResponseWriter));
 
-    return reinterpret_cast<MockResponseWriter*>(&writer)->transport_;
+    // Need to use reinterpret_cast because using a fake type
+    auto transport = reinterpret_cast<MockResponseWriter*>(&writer)->transport_;
+
+    OP_LOG(OP_LOG_DEBUG,
+           "Retrived Transport %p from ResponseWriter.",
+           (void*)transport);
+
+    assert(transport);
+
+    return transport;
+}
+
+void transport_peer_disable(Pistache::Tcp::Transport& transport,
+                            Pistache::Tcp::Peer& peer)
+{
+    OP_LOG(OP_LOG_DEBUG,
+           "Disabling Pistache peer fd %d. (current tid=%d)",
+           peer.fd(),
+           (int)gettid());
+
+    // Ideally we would remove the peer from the reactor, but there is no
+    // easy way to do that without major modifications to Pistache, so
+    // instead just disable the fd so the reactor won't touch it.
+    transport.reactor()->modifyFd(transport.key(),
+                                  peer.fd(),
+                                  Pistache::Polling::NotifyOn::None,
+                                  Pistache::Polling::Mode::Edge);
+}
+
+void transport_peer_enable(Pistache::Tcp::Transport& transport,
+                           Pistache::Tcp::Peer& peer)
+{
+    OP_LOG(OP_LOG_DEBUG,
+           "Enabling Pistache peer fd %d. (current tid=%d)",
+           peer.fd(),
+           (int)gettid());
+
+    transport.reactor()->modifyFd(transport.key(),
+                                  peer.fd(),
+                                  Pistache::Polling::NotifyOn::Read,
+                                  Pistache::Polling::Mode::Edge);
+}
+
+void transport_exec(Pistache::Tcp::Transport& transport,
+                    std::function<void()>&& func)
+{
+    auto timer_fd = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK);
+
+    assert(timer_fd > 0);
+    if (timer_fd < 0) {
+        OP_LOG(OP_LOG_ERROR, "Could not create timerfd");
+        return;
+    }
+
+    OP_LOG(OP_LOG_DEBUG,
+           "Arming timer to invoke function from transport thread. (current "
+           "tid=%d)",
+           (int)gettid());
+
+    auto result = Pistache::Async::Promise<uint64_t>(
+        [&](Pistache::Async::Deferred<uint64_t> deferred) {
+            transport.armTimer(timer_fd,
+                               std::chrono::duration<int64_t, std::milli>{1},
+                               std::move(deferred));
+        });
+    result.then([=](uint64_t numWakeup) { func(); },
+                [=](std::exception_ptr exc) { std::rethrow_exception(exc); });
+
+    OP_LOG(OP_LOG_DEBUG,
+           "Waiting for timer function to complete. (current tid=%d)",
+           (int)gettid());
+    while (result.isPending()) { usleep(1000); }
+    OP_LOG(OP_LOG_DEBUG, "Timer completed. (current tid=%d)", (int)gettid());
+
+    close(timer_fd);
 }
 
 } // namespace openperf::pistache_utils

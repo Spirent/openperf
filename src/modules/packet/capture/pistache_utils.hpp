@@ -33,8 +33,16 @@ send_to_peer_timeout(Pistache::Tcp::Peer& peer,
                      const std::chrono::duration<int64_t, std::milli>& timeout =
                          std::chrono::duration<int64_t, std::milli>{5000});
 
-Pistache::Tcp::Transport*
-get_tcp_transport(Pistache::Http::ResponseWriter& writer);
+Pistache::Tcp::Transport* get_transport(Pistache::Http::ResponseWriter& writer);
+
+void transport_peer_disable(Pistache::Tcp::Transport& transport,
+                            Pistache::Tcp::Peer& peer);
+
+void transport_peer_enable(Pistache::Tcp::Transport& transport,
+                           Pistache::Tcp::Peer& peer);
+
+void transport_exec(Pistache::Tcp::Transport& transport,
+                    std::function<void()>&& func);
 
 } // namespace openperf::pistache_utils
 

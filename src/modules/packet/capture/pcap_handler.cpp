@@ -16,6 +16,22 @@ using namespace openperf::pistache_utils;
 
 namespace openperf::packet::capture::api {
 
+size_t calc_pcap_file_length(capture_buffer_reader& reader)
+{
+    size_t length = pcap_buffer_writer::traits::file_header_length()
+                    + pcap_buffer_writer::traits::file_trailer_length();
+
+    reader.rewind();
+    reader.read([&](auto& buffer) {
+        length +=
+            pcap_buffer_writer::traits::packet_length(buffer.hdr.captured_len);
+        return true;
+    });
+    reader.rewind();
+
+    return length;
+}
+
 class pcap_transfer_context : public transfer_context
 {
 public:
@@ -72,7 +88,7 @@ send_pcap_response_header_async(Pistache::Http::ResponseWriter& response,
             Pistache::Error("Response exceeded buffer size"));
     }
 
-    auto* transport = get_tcp_transport(response);
+    auto transport = get_transport(response);
     auto peer = response.peer();
 
     return transport->asyncWrite(peer->fd(), buf->buffer(), MSG_MORE);
@@ -121,11 +137,6 @@ send_pcap_response_header(Pistache::Http::ResponseWriter& response,
 
     auto peer = response.peer();
 
-    // FIXME:
-    // Need way to disable pistache threads from accessing/removing the peer
-    // Since peer is not supposed to write to the connection this should only
-    // be an issue if the connection is closed.
-
     // Send the HTTP response header
     auto str = os.str();
     auto header_bytes_sent =
@@ -151,13 +162,15 @@ class pcap_thread_transfer_context : public pcap_transfer_context
 {
 public:
     pcap_thread_transfer_context(std::shared_ptr<Pistache::Tcp::Peer> peer,
+                                 Pistache::Tcp::Transport* transport,
                                  bool chunked = false)
-        : m_peer(peer)
-        , m_writer(std::make_unique<pcap_buffered_writer>())
+        : m_transport(transport)
+        , m_peer(peer)
+        , m_writer(std::make_unique<pcap_buffer_writer>())
         , m_buffer_sent(0)
         , m_total_bytes_sent(0)
-        , m_error(false)
         , m_chunked(chunked)
+        , m_error(false)
     {}
 
     virtual ~pcap_thread_transfer_context()
@@ -172,7 +185,7 @@ public:
     {
         // Currently code will enable chunk encoding if returned length is 0
         if (m_chunked) return 0;
-        return m_writer->calc_length(*m_reader);
+        return calc_pcap_file_length(*m_reader);
     }
 
     Pistache::Async::Promise<ssize_t> start() override
@@ -188,15 +201,23 @@ public:
 
         m_reader->rewind();
 
+        transport_peer_disable(*m_transport, *m_peer);
+
         // Send the Capture data from a thread
-        m_thread = std::make_unique<std::thread>([&]() { transfer(); });
+        m_thread = std::make_unique<std::thread>([&]() {
+            transfer();
+            transport_exec(*m_transport, [&]() {
+                transport_peer_enable(*m_transport, *m_peer);
+            });
+        });
+
         return promise;
     }
 
 private:
     void transfer()
     {
-        m_writer->write_start();
+        m_writer->write_file_header();
 
         while (!m_reader->is_done() && !m_error) {
             m_reader->read([&](auto& packet) {
@@ -206,7 +227,7 @@ private:
         }
 
         if (!m_error) {
-            m_writer->write_end();
+            m_writer->write_file_trailer();
             flush();
             if (m_chunked) { write_chunk_end(); }
         }
@@ -218,9 +239,6 @@ private:
             return;
         }
 
-        // FIXME:
-        // Need some way to enable the peer in pistache thread again.
-        // This should be done through a message for thread safety.
         m_deferred.resolve((ssize_t)m_total_bytes_sent);
         m_done = true;
     }
@@ -387,12 +405,13 @@ private:
     }
 
     std::unique_ptr<std::thread> m_thread;
+    Pistache::Tcp::Transport* m_transport;
     std::shared_ptr<Pistache::Tcp::Peer> m_peer;
-    std::unique_ptr<pcap_buffered_writer> m_writer;
+    std::unique_ptr<pcap_buffer_writer> m_writer;
     size_t m_buffer_sent;
     size_t m_total_bytes_sent;
-    bool m_error;
     bool m_chunked;
+    bool m_error;
 };
 
 class pcap_async_transfer_context : public pcap_transfer_context
@@ -403,9 +422,10 @@ public:
                                 bool chunked = false)
         : m_transport(transport)
         , m_peer(peer)
-        , m_writer(std::make_unique<pcap_buffered_writer>())
+        , m_writer(std::make_unique<pcap_buffer_writer>())
         , m_total_bytes_sent(0)
         , m_chunked(chunked)
+        , m_error(false)
     {}
 
     virtual ~pcap_async_transfer_context() {}
@@ -414,7 +434,7 @@ public:
     {
         // Currently code will enable chunk encoding if returned length is 0
         if (m_chunked) return 0;
-        return m_writer->calc_length(*m_reader);
+        return calc_pcap_file_length(*m_reader);
     }
 
     Pistache::Async::Promise<ssize_t> start() override
@@ -424,9 +444,12 @@ public:
                 m_deferred = std::move(deferred);
             });
 
+        m_total_bytes_sent = 0;
+        m_error = false;
+
         m_reader->rewind();
 
-        m_writer->write_start();
+        m_writer->write_file_header();
         transfer();
 
         return promise;
@@ -454,6 +477,7 @@ private:
                         m_deferred.reject(
                             Pistache::Error("Failed sending pcap data"));
                         m_done = true;
+                        m_error = true;
                         return Pistache::Async::Promise<ssize_t>::rejected(
                             eptr);
                     });
@@ -473,6 +497,7 @@ private:
                         m_deferred.reject(
                             Pistache::Error("Failed sending chunk header"));
                         m_done = true;
+                        m_error = true;
                         return Pistache::Async::Promise<ssize_t>::rejected(
                             eptr);
                     })
@@ -488,6 +513,7 @@ private:
                         m_deferred.reject(
                             Pistache::Error("Failed sending pcap data"));
                         m_done = true;
+                        m_error = true;
                         return Pistache::Async::Promise<ssize_t>::rejected(
                             eptr);
                     })
@@ -496,6 +522,7 @@ private:
                           m_deferred.reject(
                               Pistache::Error("Failed sending chunk trailer"));
                           m_done = true;
+                          m_error = true;
                           return Pistache::Async::Promise<ssize_t>::rejected(
                               eptr);
                       });
@@ -505,16 +532,16 @@ private:
     Pistache::Async::Promise<ssize_t> transfer()
     {
         // Fill the buffer
-        while (!m_reader->is_done()) {
+        if (!m_reader->is_done()) {
             m_reader->read([&](auto& packet) {
                 if (!m_writer->write_packet(packet)) return false;
                 return true;
             });
-        }
 
-        if (m_writer->get_length() != 0) {
-            if (m_reader->is_done()) { m_writer->write_end(); }
-            return flush();
+            if (m_writer->get_length() != 0) {
+                if (m_reader->is_done()) { m_writer->write_file_trailer(); }
+                return flush();
+            }
         }
 
         if (m_chunked) {
@@ -534,20 +561,21 @@ private:
 
     Pistache::Tcp::Transport* m_transport;
     std::shared_ptr<Pistache::Tcp::Peer> m_peer;
-    std::unique_ptr<pcap_buffered_writer> m_writer;
+    std::unique_ptr<pcap_buffer_writer> m_writer;
     ssize_t m_total_bytes_sent;
     bool m_chunked;
+    bool m_error;
 };
 
 std::unique_ptr<transfer_context>
 create_pcap_transfer_context(Pistache::Http::ResponseWriter& response)
 {
 #if 1
-    std::unique_ptr<transfer_context> context{
-        new pcap_thread_transfer_context(response.peer())};
+    std::unique_ptr<transfer_context> context{new pcap_thread_transfer_context(
+        response.peer(), get_transport(response))};
 #else
     std::unique_ptr<transfer_context> context{new pcap_async_transfer_context(
-        response.peer(), get_tcp_transport(response))};
+        response.peer(), get_transport(response))};
 #endif
     return context;
 }

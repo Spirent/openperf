@@ -1,23 +1,19 @@
 #ifndef _OP_PCAP_WRITER_HPP_
 #define _OP_PCAP_WRITER_HPP_
 
-namespace openperf::packet::capture {
+#include "packet/capture/pcap_io.hpp"
 
-namespace pcapng {
-struct enhanced_packet_block;
-}
+namespace openperf::packet::capture {
 
 struct capture_packet;
 class capture_buffer_reader;
 
-class pcap_buffered_writer
+class pcap_buffer_writer
 {
 public:
-    pcap_buffered_writer();
+    pcap_buffer_writer();
 
-    size_t calc_length(capture_buffer_reader& reader);
-
-    bool write_start();
+    bool write_file_header();
 
     bool write_section_block();
 
@@ -28,7 +24,7 @@ public:
     bool write_packet_block(const pcapng::enhanced_packet_block& block_hdr,
                             const uint8_t* block_data);
 
-    bool write_end() { return true; }
+    bool write_file_trailer() { return true; }
 
     const uint8_t* get_data() const { return m_buffer.data(); };
     size_t get_length() const { return m_buffer_length; }
@@ -37,6 +33,26 @@ public:
         return m_buffer.size() - m_buffer_length;
     }
     void flush() { m_buffer_length = 0; }
+
+    struct traits
+    {
+        static size_t file_header_length()
+        {
+            return pcapng::pad_block_length(sizeof(pcapng::section_block)
+                                            + sizeof(uint32_t))
+                   + pcapng::pad_block_length(
+                         sizeof(pcapng::interface_description_block)
+                         + sizeof(uint32_t)
+                         + sizeof(pcapng::interface_default_options));
+        }
+        static size_t packet_length(uint8_t captured_len)
+        {
+            return pcapng::pad_block_length(
+                sizeof(pcapng::enhanced_packet_block) + sizeof(uint32_t)
+                + captured_len);
+        }
+        static size_t file_trailer_length() { return 0; }
+    };
 
 private:
     std::array<uint8_t, 16384> m_buffer;
