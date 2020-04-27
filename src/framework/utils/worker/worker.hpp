@@ -4,6 +4,7 @@
 #include <zmq.h>
 #include <thread>
 #include <forward_list>
+#include <atomic>
 
 #include "core/op_core.h"
 #include "utils/worker/task.hpp"
@@ -120,10 +121,16 @@ template <class T> worker<T>::~worker()
 // Methods : public
 template <class T> void worker<T>::start()
 {
+    static std::atomic_uint thread_number = 0;
+
     if (!m_stopped) return;
     m_stopped = false;
 
-    m_thread = std::thread([this]() { loop(); });
+    m_thread = std::thread([this]() {
+        op_thread_setname(
+            ("op_tworker_" + std::to_string(++thread_number)).c_str());
+        loop();
+    });
     config(m_config);
 }
 

@@ -9,6 +9,7 @@
 
 #include "core/op_core.h"
 #include "utils/random.hpp"
+#include "timesync/chrono.hpp"
 
 namespace openperf::memory::internal {
 
@@ -16,6 +17,8 @@ using namespace std::chrono_literals;
 
 using openperf::utils::op_pseudo_random_fill;
 using openperf::utils::random_uniform;
+
+auto now = openperf::timesync::chrono::monotime::now;
 
 constexpr auto QUANTA = 10ms;
 constexpr size_t MAX_SPIN_OPS = 5000;
@@ -186,22 +189,21 @@ void task_memory::spin()
     auto to_do_ops = std::get<0>(tuple);
 
     if (auto ns_to_sleep = std::get<1>(tuple); ns_to_sleep.count()) {
-        auto t1 = std::chrono::system_clock::now();
+        auto t1 = now();
         std::this_thread::sleep_for(ns_to_sleep);
-        m_total.sleep_time += std::chrono::system_clock::now() - t1;
+        m_total.sleep_time += now() - t1;
     }
     /*
      * Perform load operations in small bursts so that we can update our
      * thread statistics periodically.
      */
     stat_t stat;
-    auto deadline = std::chrono::system_clock::now() + QUANTA;
-    auto t2 = std::chrono::system_clock::now();
-    while (to_do_ops && (t2 = std::chrono::system_clock::now()) < deadline) {
+    auto deadline = now() + QUANTA;
+    auto t2 = now();
+    while (to_do_ops && (t2 = now()) < deadline) {
         size_t spin_ops = std::min(MAX_SPIN_OPS, to_do_ops);
         size_t nb_ops = operation(spin_ops, &op_index);
-        auto run_time = std::max(std::chrono::system_clock::now() - t2,
-                                 1ns); /* prevent divide by 0 */
+        auto run_time = std::max(now() - t2, 1ns); /* prevent divide by 0 */
 
         /* Update per thread statistics */
         stat += stat_t{

@@ -25,8 +25,8 @@ struct memory_stat
     uint64_t bytes = 0;
     uint64_t bytes_target = 0;
     std::chrono::nanoseconds time = 0ns;
-    std::chrono::nanoseconds latency_min = 0ns;
-    std::chrono::nanoseconds latency_max = 0ns;
+    std::chrono::nanoseconds latency_min = std::chrono::nanoseconds::max();
+    std::chrono::nanoseconds latency_max = std::chrono::nanoseconds::min();
     timestamp_t timestamp = std::chrono::system_clock::now();
     uint64_t errors = 0;
 
