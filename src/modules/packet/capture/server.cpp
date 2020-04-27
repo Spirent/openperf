@@ -501,8 +501,12 @@ reply_msg server::handle_request(request_create_capture_transfer& request)
     }
     auto& result = item->second;
 
-    if (result->transfer) {
-        // Only support 1 transfer per capture results
+    if (result->transfer && !result->transfer->is_done()) {
+        // Only support 1 active transfer per capture result
+        OP_LOG(OP_LOG_ERROR,
+               "Capture pcap transfer request for id %s rejected.  "
+               "Another transfer is still in progress.",
+               request.id.c_str());
         return (to_error(error_type::POSIX, EEXIST));
     }
 

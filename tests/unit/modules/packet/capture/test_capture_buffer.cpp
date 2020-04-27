@@ -143,9 +143,35 @@ verify_ipv4_incrementing_timestamp_and_packet_id(capture_buffer_reader& reader)
     size_t counted = 0;
     uint16_t prev_packet_id = 0;
     uint64_t prev_timestamp = 0;
+    std::array<capture_packet*, 16> packets;
 
     while (!reader.is_done()) {
-        auto& packet = reader.get();
+        auto n = reader.read_packets(packets.data(), packets.size());
+        std::for_each(packets.data(), packets.data() + n, [&](auto packet) {
+            REQUIRE(packet->hdr.packet_len != 0);
+            REQUIRE(packet->hdr.captured_len <= packet->hdr.packet_len);
+            auto ipv4 =
+                reinterpret_cast<ipv4_hdr*>(packet->data + sizeof(eth_hdr));
+            if (counted > 0) {
+                REQUIRE(packet->hdr.timestamp > prev_timestamp);
+                REQUIRE(ntohs(ipv4->packet_id) == (prev_packet_id + 1));
+            }
+            prev_timestamp = packet->hdr.timestamp;
+            prev_packet_id = ntohs(ipv4->packet_id);
+            ++counted;
+        });
+    }
+    return counted;
+}
+
+size_t verify_ipv4_incrementing_timestamp_and_packet_id_iterator(
+    capture_buffer_reader& reader)
+{
+    size_t counted = 0;
+    uint16_t prev_packet_id = 0;
+    uint64_t prev_timestamp = 0;
+
+    for (auto& packet : reader) {
         REQUIRE(packet.hdr.packet_len != 0);
         REQUIRE(packet.hdr.captured_len <= packet.hdr.packet_len);
         auto ipv4 = reinterpret_cast<ipv4_hdr*>(packet.data + sizeof(eth_hdr));
@@ -156,7 +182,6 @@ verify_ipv4_incrementing_timestamp_and_packet_id(capture_buffer_reader& reader)
         prev_timestamp = packet.hdr.timestamp;
         prev_packet_id = ntohs(ipv4->packet_id);
         ++counted;
-        reader.next();
     }
     return counted;
 }
@@ -210,9 +235,9 @@ TEST_CASE("capture buffer", "[packet_capture]")
             SECTION("iterator, ")
             {
                 int counted = 0;
-                for (auto& p : buffer) {
-                    REQUIRE(p.hdr.packet_len == packet_buffer.length);
-                    REQUIRE(p.hdr.captured_len == packet_buffer.length);
+                for (auto& packet : buffer) {
+                    REQUIRE(packet.hdr.packet_len == packet_buffer.length);
+                    REQUIRE(packet.hdr.captured_len == packet_buffer.length);
                     ++counted;
                 }
                 REQUIRE(counted == packet_count);
@@ -222,12 +247,18 @@ TEST_CASE("capture buffer", "[packet_capture]")
             {
                 int counted = 0;
                 auto reader = buffer.create_reader();
+                std::array<capture_packet*, 16> packets;
                 while (!reader->is_done()) {
-                    auto& p = reader->get();
-                    REQUIRE(p.hdr.packet_len == packet_buffer.length);
-                    REQUIRE(p.hdr.captured_len == packet_buffer.length);
-                    ++counted;
-                    reader->next();
+                    auto n =
+                        reader->read_packets(packets.data(), packets.size());
+                    std::for_each(
+                        packets.data(), packets.data() + n, [&](auto& packet) {
+                            REQUIRE(packet->hdr.packet_len
+                                    == packet_buffer.length);
+                            REQUIRE(packet->hdr.captured_len
+                                    == packet_buffer.length);
+                            ++counted;
+                        });
                 }
                 REQUIRE(counted == packet_count);
             }
@@ -251,6 +282,23 @@ TEST_CASE("capture buffer", "[packet_capture]")
                 auto reader = create_multi_capture_buffer_reader(buffers);
                 auto counted =
                     verify_ipv4_incrementing_timestamp_and_packet_id(*reader);
+                REQUIRE(counted == packet_count);
+            }
+
+            SECTION("interleaved, burst size 1, iterator")
+            {
+                const size_t num_buffers = 5;
+                std::vector<std::unique_ptr<capture_buffer_file>> buffers;
+                create_capture_buffers(buffers, num_buffers);
+
+                const size_t packet_count = 1000;
+                const size_t burst_size = 1;
+                fill_capture_buffers_ipv4(buffers, packet_count, burst_size);
+
+                auto reader = create_multi_capture_buffer_reader(buffers);
+                auto counted =
+                    verify_ipv4_incrementing_timestamp_and_packet_id_iterator(
+                        *reader);
                 REQUIRE(counted == packet_count);
             }
 

@@ -230,7 +230,6 @@ capture_buffer_file_reader::capture_buffer_file_reader(
         throw std::runtime_error(
             std::string("Failed reading PCAP file header.  ") + filename);
     }
-    next();
 }
 
 capture_buffer_file_reader::~capture_buffer_file_reader()
@@ -292,46 +291,93 @@ bool capture_buffer_file_reader::read_file_header()
 
 bool capture_buffer_file_reader::is_done() const { return m_eof; }
 
-capture_packet& capture_buffer_file_reader::get() { return m_capture_packet; }
-
-bool capture_buffer_file_reader::next()
+size_t capture_buffer_file_reader::read_packets(capture_packet* packets[],
+                                                size_t count)
 {
+    const size_t max_packet_size = 16384;
+
+    if (count > m_packets.size()) {
+        // Allocate buffer space for all packets
+        m_packets.resize(count);
+        m_packet_data.resize(count * max_packet_size);
+    }
+
+    uint8_t* data_ptr = &m_packet_data[0];
     pcap::enhanced_packet_block block_hdr;
-
-    if (fread(&block_hdr, sizeof(block_hdr), 1, m_fp_read) != 1) {
-        m_eof = true;
-        return false;
-    }
-    m_read_offset += sizeof(block_hdr);
-    if (block_hdr.block_type != pcap::block_type::ENHANCED_PACKET) {
-        OP_LOG(OP_LOG_ERROR,
-               "Unexepcted PCAP block type %" PRIu32,
-               block_hdr.block_type);
-        m_eof = true;
-        return false;
-    }
-
-    if (auto remain = block_hdr.block_total_length - sizeof(block_hdr)) {
-        m_read_buffer.resize(remain);
-        if (fread(&m_read_buffer[0], remain, 1, m_fp_read) != 1) {
-            OP_LOG(OP_LOG_ERROR,
-                   "Failed reading PCAP enhanced packet block data %zu",
-                   remain);
+    size_t i = 0;
+    while (i < count) {
+        if (fread(&block_hdr, sizeof(block_hdr), 1, m_fp_read) != 1) {
             m_eof = true;
-            return false;
+            break;
         }
-        m_read_offset += remain;
+        m_read_offset += sizeof(block_hdr);
+        if (block_hdr.block_type != pcap::block_type::ENHANCED_PACKET) {
+            OP_LOG(OP_LOG_ERROR,
+                   "Unexepcted PCAP block type %" PRIu32,
+                   block_hdr.block_type);
+            m_eof = true;
+            break;
+        }
+
+        auto block_remain = block_hdr.block_total_length - sizeof(block_hdr);
+        size_t block_data_len =
+            block_remain - sizeof(block_hdr.block_total_length);
+        if (block_hdr.captured_len > block_data_len) {
+            OP_LOG(OP_LOG_ERROR,
+                   "PCAP block captured_len %" PRIu32
+                   " is > block data length %zu",
+                   block_hdr.captured_len,
+                   block_data_len);
+            block_hdr.captured_len = block_data_len;
+        }
+
+        uint64_t timestamp =
+            (uint64_t)block_hdr.timestamp_high << 32 | block_hdr.timestamp_low;
+
+        m_packets[i].hdr.timestamp = timestamp;
+        m_packets[i].hdr.captured_len = block_hdr.captured_len;
+        m_packets[i].hdr.packet_len = block_hdr.packet_len;
+        m_packets[i].data = data_ptr;
+
+        if (block_remain < max_packet_size) {
+            if (fread(data_ptr, block_remain, 1, m_fp_read) != 1) {
+                OP_LOG(OP_LOG_ERROR,
+                       "Failed reading PCAP enhanced packet block data %zu",
+                       block_remain);
+                m_eof = true;
+                break;
+            }
+            m_read_offset += block_remain;
+        } else {
+            if (block_hdr.captured_len > max_packet_size) {
+                OP_LOG(OP_LOG_ERROR,
+                       "Unexepcted PCAP block too large %" PRIu32,
+                       block_hdr.block_total_length);
+                block_hdr.captured_len = max_packet_size;
+            }
+            if (fread(data_ptr, max_packet_size, 1, m_fp_read) != 1) {
+                OP_LOG(OP_LOG_ERROR,
+                       "Failed reading PCAP enhanced packet block data %zu",
+                       max_packet_size);
+                m_eof = true;
+                break;
+            }
+            m_read_offset += max_packet_size;
+            block_remain -= max_packet_size;
+            if (fseek(m_fp_read, block_remain, SEEK_CUR) != 0) {
+                OP_LOG(OP_LOG_ERROR,
+                       "Failed skipping PCAP enhanced packet block data %zu",
+                       block_remain);
+                m_eof = true;
+                break;
+            }
+            m_read_offset += block_remain;
+        }
+        data_ptr += pcap::pad_block_length(block_hdr.captured_len);
+        packets[i] = &m_packets[i];
+        ++i;
     }
-
-    uint64_t timestamp =
-        (uint64_t)block_hdr.timestamp_high << 32 | block_hdr.timestamp_low;
-
-    m_capture_packet.hdr.timestamp = timestamp;
-    m_capture_packet.hdr.captured_len = block_hdr.captured_len;
-    m_capture_packet.hdr.packet_len = block_hdr.packet_len;
-    m_capture_packet.data = &m_read_buffer[0];
-
-    return true;
+    return i;
 }
 
 capture_buffer_stats capture_buffer_file_reader::get_stats() const
@@ -339,46 +385,73 @@ capture_buffer_stats capture_buffer_file_reader::get_stats() const
     return m_buffer.get_stats();
 }
 
-void capture_buffer_file_reader::rewind()
-{
-    read_file_header();
-    next();
-}
+void capture_buffer_file_reader::rewind() { read_file_header(); }
 
 //////////////////////////////////////////////////////////////////////////////////////////////
 
 multi_capture_buffer_reader::multi_capture_buffer_reader(
-    std::vector<reader_ptr>&& readers)
-    : m_readers(std::move(readers))
+    std::vector<std::unique_ptr<capture_buffer_reader>>&& readers)
+    : m_reader_pending(nullptr)
 {
+    m_readers.reserve(readers.size());
+    for (auto& reader : readers) {
+        m_readers.emplace_back(burst_reader_type(std::move(reader)));
+    }
     populate_timestamp_priority_list();
 }
 
 bool multi_capture_buffer_reader::is_done() const
 {
-    return m_reader_priority.empty();
+    return m_reader_priority.empty() && (m_reader_pending == nullptr);
 }
 
-capture_packet& multi_capture_buffer_reader::get()
+size_t multi_capture_buffer_reader::read_packets(capture_packet* packets[],
+                                                 size_t count)
 {
-    return m_reader_priority.top()->get();
-}
+    if (m_reader_pending) {
+        m_reader_pending->read_packets();
+        if (!m_reader_pending->is_done()) {
+            m_reader_priority.push(m_reader_pending);
+        }
+        m_reader_pending = nullptr;
+    }
 
-bool multi_capture_buffer_reader::next()
-{
-    if (m_reader_priority.empty()) return false;
+    if (m_reader_priority.empty()) return 0;
 
     auto reader = m_reader_priority.top();
     m_reader_priority.pop();
-    if (reader->next()) { m_reader_priority.push(reader); }
-    return !m_reader_priority.empty();
+
+    uint64_t last_timestamp =
+        m_reader_priority.empty()
+            ? 0xffffffffffffffff
+            : m_reader_priority.top()->get()->hdr.timestamp;
+    size_t i = 0;
+    auto n = std::min(count, reader->m_packets.available());
+    while (i < n) {
+        auto packet = reader->get();
+        if (packet->hdr.timestamp > last_timestamp) break;
+        packets[i] = packet;
+        ++i;
+        ++(reader->m_packets.offset);
+    }
+
+    if (!reader->m_packets.is_empty()) {
+        m_reader_priority.push(reader);
+    } else {
+        // Can't sort the reader without having packets, but can't get
+        // new packets without invalidating stuff we may have returned.
+        // So need to defer read_packets() until this function is called again.
+        m_reader_pending = reader;
+    }
+
+    return i;
 }
 
 capture_buffer_stats multi_capture_buffer_reader::get_stats() const
 {
     capture_buffer_stats total{0, 0};
     for (auto& reader : m_readers) {
-        auto s = reader->get_stats();
+        auto s = reader.get_stats();
         total.packets += s.packets;
         total.bytes += s.bytes;
     }
@@ -387,7 +460,8 @@ capture_buffer_stats multi_capture_buffer_reader::get_stats() const
 
 void multi_capture_buffer_reader::rewind()
 {
-    for (auto& reader : m_readers) { reader->rewind(); }
+    m_reader_pending = nullptr;
+    for (auto& reader : m_readers) { reader.rewind(); }
     populate_timestamp_priority_list();
 }
 
@@ -395,7 +469,7 @@ size_t multi_capture_buffer_reader::get_offset() const
 {
     size_t offset = 0;
     std::for_each(m_readers.begin(), m_readers.end(), [&](const auto& reader) {
-        offset += reader->get_offset();
+        offset += reader.get_offset();
     });
     return offset;
 }
@@ -407,8 +481,8 @@ void multi_capture_buffer_reader::populate_timestamp_priority_list()
 
     // Add all the readers
     for (auto& reader : m_readers) {
-        if (reader->is_done()) continue;
-        m_reader_priority.push(reader.get());
+        if (reader.is_done()) continue;
+        m_reader_priority.push(&reader);
     }
 }
 

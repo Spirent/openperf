@@ -25,11 +25,10 @@ size_t calc_pcap_file_length(capture_buffer_reader& reader)
                     + pcap_buffer_writer::traits::file_trailer_length();
 
     reader.rewind();
-    reader.read([&](auto& buffer) {
+    for (auto& packet : reader) {
         length +=
-            pcap_buffer_writer::traits::packet_length(buffer.hdr.captured_len);
-        return true;
-    });
+            pcap_buffer_writer::traits::packet_length(packet.hdr.captured_len);
+    };
     reader.rewind();
 
     return length;
@@ -226,11 +225,12 @@ private:
     {
         m_writer->write_file_header();
 
+        std::array<capture_packet*, 16> packets;
         while (!m_reader->is_done() && !m_error) {
-            m_reader->read([&](auto& packet) {
-                if (!write_packet(packet)) return false;
-                return true;
-            });
+            auto n = m_reader->read_packets(packets.data(), packets.size());
+            std::for_each(packets.data(),
+                          packets.data() + n,
+                          [&](auto& packet) { write_packet(*packet); });
         }
 
         if (!m_error) {
@@ -462,6 +462,7 @@ public:
         m_wrote_trailer = false;
 
         m_reader->rewind();
+        m_burst = std::make_unique<burst_reader_type>(m_reader.get());
 
         m_writer->write_file_header();
         transfer();
@@ -545,12 +546,14 @@ private:
 
     Pistache::Async::Promise<ssize_t> transfer()
     {
-        if (!m_reader->is_done()) {
+        bool is_done = m_burst->is_done();
+        if (!is_done) {
             // Fill the buffer
-            m_reader->read([&](auto& packet) {
-                if (!m_writer->write_packet(packet)) return false;
-                return true;
-            });
+            while (!is_done) {
+                auto packet = *(m_burst->get());
+                if (!m_writer->write_packet(packet)) break;
+                is_done = m_burst->next();
+            }
 
             if (m_reader->is_done()) {
                 if (m_writer->write_file_trailer()) { m_wrote_trailer = true; }
@@ -582,9 +585,13 @@ private:
         return result;
     }
 
+    using burst_reader_type =
+        capture_burst_reader<capture_buffer_reader*, capture_packet*>;
+
     Pistache::Tcp::Transport* m_transport;
     std::shared_ptr<Pistache::Tcp::Peer> m_peer;
     std::unique_ptr<pcap_buffer_writer> m_writer;
+    std::unique_ptr<burst_reader_type> m_burst;
     ssize_t m_total_bytes_sent;
     bool m_chunked;
     bool m_error;
