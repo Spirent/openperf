@@ -7,6 +7,7 @@
 #include <atomic>
 
 #include "core/op_core.h"
+#include "core/op_thread.h"
 #include "utils/worker/task.hpp"
 
 namespace openperf::utils::worker {
@@ -16,7 +17,7 @@ class workable
 public:
     virtual ~workable() = default;
 
-    virtual void start() = 0;
+    virtual void start(std::optional<int> core_id = std::nullopt) = 0;
     virtual void stop() = 0;
     virtual void pause() = 0;
     virtual void resume() = 0;
@@ -49,6 +50,7 @@ private:
     std::unique_ptr<void, op_socket_deleter> m_zmq_socket;
     std::thread m_thread;
     std::string m_thread_name;
+    std::atomic_int affinity_core;
 
 public:
     worker(std::string_view thread_name = "worker");
@@ -57,7 +59,7 @@ public:
     explicit worker(const typename T::config_t&);
     ~worker() override;
 
-    void start() override;
+    void start(std::optional<int> core_id = std::nullopt) override;
     void stop() override;
     void pause() override;
     void resume() override;
@@ -72,6 +74,7 @@ public:
     void config(const typename T::config_t&);
 
 private:
+    void setup_affinity();
     void loop();
     void update();
     void send_message(const worker::message&);
@@ -120,17 +123,23 @@ template <class T> worker<T>::~worker()
 }
 
 // Methods : public
-template <class T> void worker<T>::start()
+template <class T> void worker<T>::start(std::optional<int> core_id)
 {
     static std::atomic_uint thread_number = 0;
 
     if (!m_stopped) return;
     m_stopped = false;
+    if (core_id) {
+        affinity_core = core_id.value();
+    } else {
+        affinity_core = -1;
+    }
 
     m_thread = std::thread([this]() {
-        op_thread_setname(
-            ("op_" + m_thread_name + "_" + std::to_string(++thread_number))
-                .c_str());
+        op_thread_setname(("op_" + m_thread_name
+            + "_" + std::to_string(++thread_number)
+            ).c_str());
+        setup_affinity();
         loop();
     });
     config(m_config);
@@ -167,6 +176,14 @@ template <class T> void worker<T>::config(const typename T::config_t& c)
 }
 
 // Methods : private
+template <class T> void worker<T>::setup_affinity()
+{
+    if (affinity_core < 0)
+        return;
+    if (auto err = op_thread_set_affinity(affinity_core))
+        OP_LOG(OP_LOG_ERROR, "Cannot set worker thread affinity: %s", std::strerror(err));
+}
+
 template <class T> void worker<T>::loop()
 {
 

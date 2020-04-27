@@ -18,6 +18,9 @@ using cpu_result_ptr = std::shared_ptr<model::cpu_generator_result>;
 class cpu_generator : public model::cpu_generator
 {
     cpu_worker_vec m_workers;
+    void configure_workers(const model::cpu_generator_config& p_conf);
+    bool check_instruction_set_supported(model::cpu_instruction_set);
+    task_config_t generate_worker_config(const model::cpu_generator_core_config&);
 
 public:
     ~cpu_generator();
@@ -31,7 +34,6 @@ public:
     cpu_result_ptr get_statistics() const;
     void clear_statistics();
 
-    task_config_t generate_worker_config(const model::cpu_generator_core_config&);
 };
 
 } // namespace openperf::cpu::generator
