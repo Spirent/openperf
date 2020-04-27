@@ -24,6 +24,7 @@ void cpu_task::spin()
         m_reset_stat = false;
         m_actual_stat = *m_at_stat;
     }
+    *m_at_stat = m_actual_stat;
 }
 
 void cpu_task::config(const task_config_t&)

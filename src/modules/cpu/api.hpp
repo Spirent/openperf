@@ -166,6 +166,7 @@ int send_message(void* socket, serialized_msg&& msg);
 tl::expected<serialized_msg, int> recv_message(void* socket, int flags = 0);
 
 reply_error to_error(error_type type, int code = 0, const std::string& value = "");
+std::string to_string(const model::cpu_instruction_set& pattern);
 std::string to_string(const api::typed_error&);
 model::cpu_generator from_swagger(const CpuGenerator&);
 std::shared_ptr<CpuGenerator> to_swagger(const model::cpu_generator&);
