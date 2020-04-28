@@ -83,6 +83,14 @@ void yaml_json_emitter::OnMapEnd()
     m_state_stack.pop();
 }
 
+void yaml_json_emitter::OnNull(const Mark& mark __attribute__((unused)),
+                               anchor_t anchor __attribute__((unused)))
+{
+    assert(m_state_stack.top() == State::WaitingForValue);
+    m_emitter << Flow << BeginMap << EndMap;
+    m_state_stack.top() = State::WaitingForKey;
+}
+
 void yaml_json_emitter::BeginNode()
 {
     if (m_state_stack.empty()) return;
