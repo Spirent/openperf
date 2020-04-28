@@ -88,18 +88,12 @@ enum Http::Code to_code(const api::reply_error& error)
 }
 
 static std::optional<std::string>
-maybe_get_request_uri(const request_type& request)
+maybe_get_host_uri(const request_type& request)
 {
     if (request.headers().has<Http::Header::Host>()) {
         auto host_header = request.headers().get<Http::Header::Host>();
-
-        /*
-         * XXX: Assuming http here.  I don't know how to get the type
-         * of the connection from Pistache...  But for now, that doesn't
-         * matter.
-         */
         return ("http://" + host_header->host() + ":"
-                + host_header->port().toString() + request.resource() + "/");
+                + host_header->port().toString());
     }
 
     return (std::nullopt);
@@ -259,9 +253,9 @@ void handler::create_file(const Rest::Request& request,
             assert(!reply->files.empty());
             response.headers().add<Http::Header::ContentType>(
                 MIME(Application, Json));
-            if (auto uri = maybe_get_request_uri(request); uri.has_value()) {
+            if (auto uri = maybe_get_host_uri(request); uri.has_value()) {
                 response.headers().add<Http::Header::Location>(
-                    *uri + reply->files.front()->get_id());
+                    *uri + request.resource() + "/" + reply->files.front()->get_id());
             }
             response.send(Http::Code::Created, api::to_swagger(*reply->files.front())->toJson().dump());
         } else if (auto error = std::get_if<api::reply_error>(&api_reply)) {
@@ -365,9 +359,9 @@ void handler::create_generator(const Rest::Request& request,
             assert(!reply->generators.empty());
             response.headers().add<Http::Header::ContentType>(
                 MIME(Application, Json));
-            if (auto uri = maybe_get_request_uri(request); uri.has_value()) {
+            if (auto uri = maybe_get_host_uri(request); uri.has_value()) {
                 response.headers().add<Http::Header::Location>(
-                    *uri + reply->generators.front()->get_id());
+                    *uri + request.resource() + "/" + reply->generators.front()->get_id());
             }
             response.send(
                 Http::Code::Created,
@@ -446,9 +440,9 @@ void handler::start_generator(const Rest::Request& request,
             std::get_if<api::reply_block_generator_results>(&api_reply)) {
         response.headers().add<Http::Header::ContentType>(
             MIME(Application, Json));
-        if (auto uri = maybe_get_request_uri(request); uri.has_value()) {
-            response.headers().add<Http::Header::Location>(
-                *uri + reply->results.front()->get_id());
+        if (auto uri = maybe_get_host_uri(request); uri.has_value()) {
+                response.headers().add<Http::Header::Location>(
+                    *uri + "/block-generator-results/" + reply->results.front()->get_id());
         }
         response.send(Http::Code::Created,
                       api::to_swagger(*reply->results.front())->toJson().dump());
