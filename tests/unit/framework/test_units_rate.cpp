@@ -106,6 +106,18 @@ TEST_CASE("rates", "[rate]")
         REQUIRE(five % 2 == one);
     }
 
+    SECTION("duration multiplication, ")
+    {
+        /* A rate times a duration equals a scalar value */
+        using per_minute = openperf::units::rate<unsigned, std::ratio<1, 60>>;
+
+        auto r = per_minute{600};
+
+        REQUIRE(r * std::chrono::seconds{60} == 600);
+        REQUIRE(r * std::chrono::milliseconds{1000} == 10);
+        REQUIRE(r * std::chrono::hours{1} == 600 * 60);
+    }
+
     SECTION("periods, ")
     {
         /* Suppose we have a 6 cylinder engine... */
