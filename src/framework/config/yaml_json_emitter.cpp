@@ -78,9 +78,24 @@ void yaml_json_emitter::OnMapStart(const Mark& mark __attribute__((unused)),
 
 void yaml_json_emitter::OnMapEnd()
 {
+    // If we're waiting for a value at the end of a map entry,
+    // then assume we're dealing with an empty object.  Add it.
+    if (m_state_stack.top() == State::WaitingForValue) {
+        BeginNode();
+        m_emitter << Flow << BeginMap << EndMap;
+    }
+
     m_emitter << EndMap;
     assert(m_state_stack.top() == State::WaitingForKey);
     m_state_stack.pop();
+}
+
+void yaml_json_emitter::OnNull(const Mark& mark __attribute__((unused)),
+                               anchor_t anchor __attribute__((unused)))
+{
+    assert(m_state_stack.top() == State::WaitingForValue);
+    m_emitter << Flow << BeginMap << EndMap;
+    m_state_stack.top() = State::WaitingForKey;
 }
 
 void yaml_json_emitter::BeginNode()

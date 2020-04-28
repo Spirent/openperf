@@ -31,8 +31,7 @@ public:
                     EmitterStyle::value style) override;
     void OnMapEnd() override;
     void OnNull(const Mark& mark __attribute__((unused)),
-                anchor_t anchor __attribute__((unused))) override
-    {}
+                anchor_t anchor __attribute__((unused))) override;
     void OnScalar(const Mark& mark,
                   const std::string& tag,
                   anchor_t anchor,
