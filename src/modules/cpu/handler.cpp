@@ -14,6 +14,9 @@ namespace opneperf::cpu {
 using namespace Pistache;
 using namespace swagger::v1::model;
 using json = nlohmann::json;
+using request_type = Pistache::Rest::Request;
+using response_type = Pistache::Http::ResponseWriter;
+
 namespace api = openperf::cpu::api;
 
 class handler : public openperf::api::route::handler::registrar<handler>
@@ -68,6 +71,17 @@ enum Http::Code to_code(const api::reply_error& error)
     default:
         return (Http::Code::Internal_Server_Error);
     }
+}
+
+static std::optional<std::string>
+maybe_get_host_uri(const request_type& request)
+{
+    if (request.headers().has<Http::Header::Host>()) {
+        auto host_header = request.headers().get<Http::Header::Host>();
+        return ("http://" + host_header->host() + ":" + host_header->port().toString());
+    }
+
+    return (std::nullopt);
 }
 
 handler::handler(void* context, Rest::Router& router)
@@ -169,6 +183,9 @@ void handler::create_generator(const Rest::Request& request,
             assert(!reply->generators.empty());
             response.headers().add<Http::Header::ContentType>(
                 MIME(Application, Json));
+            if (auto uri = maybe_get_host_uri(request); uri.has_value()) {
+                response.headers().add<Http::Header::Location>(*uri + request.resource() + "/" + reply->generators.front()->get_id());
+            }
             response.send(Http::Code::Created, api::to_swagger(*reply->generators.front())->toJson().dump());
         } else if (auto error = std::get_if<api::reply_error>(&api_reply)) {
             response.send(to_code(*error), api::to_string(*error->info));
@@ -234,6 +251,9 @@ void handler::start_generator(const Rest::Request& request,
     if (auto reply = std::get_if<api::reply_cpu_generator_results>(&api_reply)) {
         assert(!reply->results.empty());
         response.headers().add<Http::Header::ContentType>(MIME(Application, Json));
+        if (auto uri = maybe_get_host_uri(request); uri.has_value()) {
+                response.headers().add<Http::Header::Location>(*uri + "/cpu-generator-results/" + reply->results.front()->get_id());
+        }
         response.send(Http::Code::Created, api::to_swagger(*reply->results.front())->toJson().dump());
     } else if (auto error = std::get_if<api::reply_error>(&api_reply)) {
         response.send(to_code(*error), api::to_string(*error->info));
