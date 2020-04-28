@@ -21,7 +21,7 @@ static packet_pool make_packet_pool(uint16_t port_idx,
      */
     return (packet_pool(source.id(),
                         info.socket_id(),
-                        source.max_packet_length(),
+                        source.max_packet_length() + RTE_PKTMBUF_HEADROOM,
                         info.tx_desc_count() + 2 * worker::pkt_burst_size,
                         2 * worker::pkt_burst_size));
 }
