@@ -4,6 +4,7 @@
 #include <any>
 #include <memory>
 #include <string>
+#include <typeindex>
 
 #include "utils/enum_flags.hpp"
 
@@ -46,7 +47,11 @@ public:
 
     template <typename Sink> Sink& get() const
     {
-        return (*(std::any_cast<Sink*>(m_self->get_pointer())));
+        if (std::type_index(typeid(Sink))
+            == std::type_index(m_self->type_info())) {
+            return (static_cast<sink_model<Sink>&>(*m_self).m_sink);
+        }
+        throw std::bad_cast();
     }
 
 private:
@@ -58,7 +63,7 @@ private:
         virtual bool uses_feature(enum sink_feature_flags) const = 0;
         virtual uint16_t push(packet_buffer* const packets[],
                               uint16_t length) = 0;
-        virtual std::any get_pointer() noexcept = 0;
+        virtual const std::type_info& type_info() const = 0;
     };
 
     template <typename Sink> struct sink_model final : sink_concept
@@ -81,9 +86,9 @@ private:
             return (m_sink.push(packets, length));
         }
 
-        std::any get_pointer() noexcept override
+        const std::type_info& type_info() const override
         {
-            return (std::addressof(m_sink));
+            return (typeid(Sink));
         }
 
         Sink m_sink;
