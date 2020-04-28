@@ -4,6 +4,7 @@
 #include "core/op_uuid.hpp"
 #include "api.hpp"
 #include "lib/spirent_pga/instruction_set.h"
+#include "cpu_info.hpp"
 
 namespace openperf::cpu::generator {
 
@@ -77,6 +78,10 @@ void cpu_generator::clear_statistics() {
 void cpu_generator::configure_workers(const model::cpu_generator_config& p_conf) {
     m_workers.clear();
     int core_id = -1;
+
+    if (static_cast<int32_t>(p_conf.cores.size()) > info::cores_count())
+        throw std::runtime_error("Could not configure more cores than available (" + std::to_string(info::cores_count()) + ")?");
+
     for (auto & core_conf : p_conf.cores) {
         for (auto &target : core_conf.targets)
             if (!check_instruction_set_supported(target.instruction_set))
