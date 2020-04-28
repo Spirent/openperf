@@ -38,7 +38,7 @@ reply_msg server::handle_request(const request_cpu_generator_add& request)
         !id_check)
         return (to_error(error_type::NOT_FOUND));
 
-    // If user did not specify an id create one for them.kjuolpik
+    // If user did not specify an id create one for them.
     if (request.source->get_id().empty()) {
         request.source->set_id(core::to_string(core::uuid::random()));
     }
