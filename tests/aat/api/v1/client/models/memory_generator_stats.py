@@ -71,8 +71,10 @@ class MemoryGeneratorStats(object):
         self.bytes_actual = bytes_actual
         self.io_errors = io_errors
         self.latency = latency
-        self.latency_min = latency_min
-        self.latency_max = latency_max
+        if latency_min is not None:
+            self.latency_min = latency_min
+        if latency_max is not None:
+            self.latency_max = latency_max
 
     @property
     def ops_target(self):

@@ -103,15 +103,21 @@ static swagger::MemoryGeneratorStats to_swagger(const memory_stat& stat)
     model.setLatency(
         std::chrono::duration_cast<std::chrono::nanoseconds>(stat.time)
             .count());
-    model.setLatencyMax(
-        std::chrono::duration_cast<std::chrono::nanoseconds>(stat.latency_max)
-            .count());
-    model.setLatencyMin(
-        std::chrono::duration_cast<std::chrono::nanoseconds>(stat.latency_min)
-            .count());
     model.setOpsActual(stat.operations);
     model.setOpsTarget(stat.operations_target);
     model.setIoErrors(stat.errors);
+
+    if (stat.latency_max.has_value()) {
+        model.setLatencyMax(
+            std::chrono::duration_cast<std::chrono::nanoseconds>(
+                stat.latency_max.value()).count());
+    }
+
+    if (stat.latency_min.has_value()) {
+        model.setLatencyMin(
+            std::chrono::duration_cast<std::chrono::nanoseconds>(
+                stat.latency_min.value()).count());
+    }
 
     return model;
 }

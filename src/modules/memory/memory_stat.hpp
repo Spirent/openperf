@@ -2,12 +2,22 @@
 #define _OP_MEMORY_STAT_
 
 #include <cinttypes>
-#include <limits>
 #include <chrono>
+#include <optional>
+#include <functional>
 
 namespace openperf::memory::internal {
 
 using namespace std::chrono_literals;
+
+template<class T>
+std::optional<T> bind_binary(std::function<T (T, T)> f, std::optional<T> v1, std::optional<T> v2)
+{
+    if (v1.has_value() && v2.has_value())
+        return f(v1.value(), v2.value());
+
+    return (v1.has_value()) ? v1 : v2;
+}
 
 struct memory_stat
 {
@@ -25,8 +35,8 @@ struct memory_stat
     uint64_t bytes = 0;
     uint64_t bytes_target = 0;
     std::chrono::nanoseconds time = 0ns;
-    std::chrono::nanoseconds latency_min = std::chrono::nanoseconds::max();
-    std::chrono::nanoseconds latency_max = std::chrono::nanoseconds::min();
+    std::optional<std::chrono::nanoseconds> latency_min;
+    std::optional<std::chrono::nanoseconds> latency_max;
     timestamp_t timestamp = std::chrono::system_clock::now();
     uint64_t errors = 0;
 
@@ -38,11 +48,15 @@ struct memory_stat
         operations += st.operations;
         operations_target += st.operations_target;
         time += st.time;
-        latency_min =
-            std::min((latency_min != 0ns) ? latency_min : st.latency_min,
-                     (st.latency_min != 0ns) ? st.latency_min : latency_min);
-        latency_max = std::max(latency_max, st.latency_max);
         timestamp = std::max(timestamp, st.timestamp);
+
+        latency_min = bind_binary<std::chrono::nanoseconds>(
+            [] (auto a, auto b) { return std::min(a, b); },
+                latency_min, st.latency_min);
+
+        latency_max = bind_binary<std::chrono::nanoseconds>(
+            [] (auto a, auto b) { return std::max(a, b); },
+                latency_max, st.latency_max);
 
         return *this;
     }
