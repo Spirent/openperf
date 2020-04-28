@@ -34,14 +34,14 @@ reply_msg server::handle_request(const request_cpu_generator& request)
 
 reply_msg server::handle_request(const request_cpu_generator_add& request)
 {
-    if (auto id_check = config::op_config_validate_id_string(request.source->get_id());
-        !id_check)
-        return (to_error(error_type::NOT_FOUND));
-
     // If user did not specify an id create one for them.
     if (request.source->get_id().empty()) {
         request.source->set_id(core::to_string(core::uuid::random()));
     }
+
+    if (auto id_check = config::op_config_validate_id_string(request.source->get_id());
+        !id_check)
+        return (to_error(error_type::NOT_FOUND));
 
     auto result = m_generator_stack->create_cpu_generator(*request.source);
     if (!result) { return to_error(error_type::NOT_FOUND); }
