@@ -33,7 +33,7 @@ OP_LDLIBS += -l$(PKT_LIBRARY)
 # Build rules
 ###
 $(eval $(call op_generate_build_rules,$(PKT_SOURCES),PKT_SRC_DIR,PKT_OBJ_DIR,PKT_DEPENDS))
-$(eval $(call op_generate_clean_rules,packet_analyzer,PKT_TARGET,PKT_OBJECTS))
+$(eval $(call op_generate_clean_rules,packet,PKT_TARGET,PKT_OBJECTS))
 
 $(PKT_TARGET): $(PKT_OBJECTS)
 	$(call op_link_library,$@,$(PKT_OBJECTS))
