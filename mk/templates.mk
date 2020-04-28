@@ -10,7 +10,7 @@
 # We use a predefined tracking variable to ensure we only include a dependency
 # once.
 define op_include_dependency
-ifeq (,$(findstring $(1),$(OP_BUILD_DEPENDENCIES)))
+ifeq (,$(filter $(1),$(OP_BUILD_DEPENDENCIES)))
 include $(OP_ROOT)/mk/$(1).mk
 OP_BUILD_DEPENDENCIES += $(1)
 endif
