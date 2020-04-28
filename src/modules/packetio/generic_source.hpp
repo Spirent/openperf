@@ -4,6 +4,7 @@
 #include <any>
 #include <memory>
 #include <string>
+#include <typeindex>
 
 #include "units/rate.hpp"
 
@@ -50,7 +51,11 @@ public:
 
     template <typename Source> Source& get() const
     {
-        return (*(std::any_cast<Source*>(m_self->get_pointer())));
+        if (std::type_index(typeid(Source))
+            == std::type_index(m_self->type_info())) {
+            return (static_cast<source_model<Source>&>(*m_self).m_source);
+        }
+        throw std::bad_cast();
     }
 
 private:
@@ -65,7 +70,7 @@ private:
         virtual uint16_t transform(packet_buffer* input[],
                                    uint16_t input_length,
                                    packet_buffer* output[]) = 0;
-        virtual std::any get_pointer() noexcept = 0;
+        virtual const std::type_info& type_info() const = 0;
     };
 
     /**
@@ -136,7 +141,7 @@ private:
             if constexpr (has_max_packet_length<Source>::value) {
                 return (m_source.max_packet_length());
             } else {
-                return (1500);
+                return (1514);
             }
         }
 
@@ -152,9 +157,9 @@ private:
             return (m_source.transform(input, input_length, output));
         }
 
-        std::any get_pointer() noexcept override
+        const std::type_info& type_info() const override
         {
-            return (std::addressof(m_source));
+            return (typeid(Source));
         }
 
         Source m_source;

@@ -7,6 +7,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <typeindex>
 #include <variant>
 
 namespace openperf::packetio::event_loop {
@@ -50,7 +51,11 @@ public:
 
     template <typename EventLoop> EventLoop& get() const
     {
-        return (*(std::any_cast<EventLoop*>(m_self->get_pointer())));
+        if (std::type_index(typeid(EventLoop))
+            == std::type_index(m_self->type_info())) {
+            return (static_cast<event_loop_model<EventLoop>&>(*m_self).m_loop);
+        }
+        throw std::bad_cast();
     }
 
 private:
@@ -63,7 +68,7 @@ private:
                                   std::optional<delete_handler> on_delete,
                                   std::any arg) noexcept = 0;
         virtual void del_callback(event_notifier notify) noexcept = 0;
-        virtual std::any get_pointer() noexcept = 0;
+        virtual const std::type_info& type_info() const = 0;
     };
 
     template <typename EventLoop>
@@ -88,9 +93,9 @@ private:
             return (m_loop.del_callback(notify));
         }
 
-        std::any get_pointer() noexcept override
+        const std::type_info& type_info() const override
         {
-            return (std::addressof(m_loop));
+            return (typeid(EventLoop));
         }
 
         EventLoop m_loop;
