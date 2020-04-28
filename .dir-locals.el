@@ -52,6 +52,7 @@
                                      (concat root "deps/json/single_include/nlohmann")
                                      (concat root "deps/lwip/src/include")
                                      (concat root "deps/pistache/include")
+                                     (concat root "deps/range-v3/include")
                                      (concat root "src/")
                                      (concat root "src/framework")
                                      (concat root "src/lib")
