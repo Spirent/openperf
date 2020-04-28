@@ -17,7 +17,7 @@ class workable
 public:
     virtual ~workable() = default;
 
-    virtual void start(std::optional<int> core_id = std::nullopt) = 0;
+    virtual void start(int core_id = -1) = 0;
     virtual void stop() = 0;
     virtual void pause() = 0;
     virtual void resume() = 0;
@@ -59,7 +59,7 @@ public:
     explicit worker(const typename T::config_t&);
     ~worker() override;
 
-    void start(std::optional<int> core_id = std::nullopt) override;
+    void start(int core_id = -1) override;
     void stop() override;
     void pause() override;
     void resume() override;
@@ -74,7 +74,7 @@ public:
     void config(const typename T::config_t&);
 
 private:
-    void setup_affinity();
+    void setup_affinity(int core_id);
     void loop();
     void update();
     void send_message(const worker::message&);
@@ -123,23 +123,19 @@ template <class T> worker<T>::~worker()
 }
 
 // Methods : public
-template <class T> void worker<T>::start(std::optional<int> core_id)
+template <class T> void worker<T>::start(int core_id)
 {
     static std::atomic_uint thread_number = 0;
 
     if (!m_stopped) return;
     m_stopped = false;
-    if (core_id) {
-        affinity_core = core_id.value();
-    } else {
-        affinity_core = -1;
-    }
 
-    m_thread = std::thread([this]() {
+    m_thread = std::thread([this, core_id]() {
         op_thread_setname(("op_" + m_thread_name
             + "_" + std::to_string(++thread_number)
             ).c_str());
-        setup_affinity();
+
+        setup_affinity(core_id);
         loop();
     });
     config(m_config);
@@ -176,11 +172,11 @@ template <class T> void worker<T>::config(const typename T::config_t& c)
 }
 
 // Methods : private
-template <class T> void worker<T>::setup_affinity()
+template <class T> void worker<T>::setup_affinity(int core_id)
 {
-    if (affinity_core < 0)
+    if (core_id < 0)
         return;
-    if (auto err = op_thread_set_affinity(affinity_core))
+    if (auto err = op_thread_set_affinity(core_id))
         OP_LOG(OP_LOG_ERROR, "Cannot set worker thread affinity: %s", std::strerror(err));
 }
 
