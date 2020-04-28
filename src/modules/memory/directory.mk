@@ -2,7 +2,7 @@
 # Makefile component for Memory Generator module
 #
 
-MEMORY_DEPENDS += api framework pistache swagger_model json versions
+MEMORY_DEPENDS += api framework pistache swagger_model json versions timesync
 
 MEMORY_SOURCES += \
 	api_transmogrify.cpp \
