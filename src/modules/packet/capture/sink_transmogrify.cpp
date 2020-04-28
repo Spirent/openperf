@@ -10,6 +10,12 @@
 
 namespace openperf::packet::capture::api {
 
+std::string to_filter_string(void* filter)
+{
+    // TODO: Add support for BPF filters
+    return "";
+}
+
 capture_ptr to_swagger(const sink& src)
 {
     auto dst = std::make_unique<swagger::v1::model::PacketCapture>();
@@ -19,6 +25,17 @@ capture_ptr to_swagger(const sink& src)
     dst->setActive(src.active());
 
     auto config = std::make_shared<swagger::v1::model::PacketCaptureConfig>();
+    config->setMode(to_string(src.get_capture_mode()));
+    config->setBufferWrap(src.get_buffer_wrap());
+    if (auto packet_size = src.get_capture_len(); packet_size != UINT32_MAX)
+        config->setPacketSize(packet_size);
+    if (auto duration = src.get_duration()) config->setDuration(duration);
+    if (auto filter = src.get_filter())
+        config->setFilter(to_filter_string(filter));
+    if (auto trigger = src.get_start_trigger())
+        config->setStartTrigger(to_filter_string(trigger));
+    if (auto trigger = src.get_stop_trigger())
+        config->setStopTrigger(to_filter_string(trigger));
     dst->setConfig(config);
 
     return (dst);

@@ -9,10 +9,130 @@
 
 namespace openperf::packet::capture {
 
+constexpr size_t max_packet_size = 16384;
+
+capture_buffer_mem::capture_buffer_mem(size_t size)
+    : m_mem_size(size)
+    , m_start_addr(nullptr)
+    , m_end_addr(nullptr)
+    , m_cur_addr(nullptr)
+    , m_stats{0, 0}
+    , m_full(false)
+{
+    m_mem = std::make_unique<uint8_t[]>(m_mem_size);
+    m_start_addr = m_mem.get();
+    m_end_addr = m_mem.get() + m_mem_size;
+    m_cur_addr = m_start_addr;
+}
+
+capture_buffer_mem::~capture_buffer_mem() {}
+
+int capture_buffer_mem::write_packets(
+    const openperf::packetio::packets::packet_buffer* const packets[],
+    uint16_t packets_length)
+{
+    capture_packet_hdr hdr;
+    for (uint16_t i = 0; i < packets_length; ++i) {
+        auto& packet = packets[i];
+        auto timestamp = openperf::packetio::packets::rx_timestamp(packet);
+        auto data = openperf::packetio::packets::to_data(packet);
+        hdr.packet_len = openperf::packetio::packets::length(packet);
+        hdr.captured_len =
+            hdr.packet_len; // TODO: Currently capturing all of packet data
+        hdr.timestamp =
+            std::chrono::time_point_cast<std::chrono::nanoseconds>(timestamp)
+                .time_since_epoch()
+                .count();
+        auto padded_data_len = pad_capture_data_len(hdr.captured_len);
+        if (m_cur_addr + sizeof(hdr) + padded_data_len > m_end_addr) {
+            m_full = true;
+            return -1;
+        }
+        *reinterpret_cast<capture_packet_hdr*>(m_cur_addr) = hdr;
+        m_cur_addr += sizeof(hdr);
+        std::copy(reinterpret_cast<const uint8_t*>(data),
+                  reinterpret_cast<const uint8_t*>(data) + hdr.captured_len,
+                  m_cur_addr);
+        m_cur_addr += padded_data_len;
+        m_stats.packets += 1;
+        m_stats.bytes += hdr.captured_len;
+    }
+
+    return 0;
+}
+
+std::unique_ptr<capture_buffer_reader> capture_buffer_mem::create_reader()
+{
+    return std::make_unique<capture_buffer_mem_reader>(*this);
+}
+
+capture_buffer_stats capture_buffer_mem::get_stats() const { return m_stats; }
+
+///////////////////////////////////////////////////////////////////////////////
+
+capture_buffer_mem_reader::capture_buffer_mem_reader(capture_buffer_mem& buffer)
+    : m_buffer(buffer)
+    , m_cur_addr(nullptr)
+    , m_end_addr(nullptr)
+    , m_read_offset(0)
+    , m_eof(false)
+{
+    rewind();
+}
+
+capture_buffer_mem_reader::~capture_buffer_mem_reader() {}
+
+bool capture_buffer_mem_reader::is_done() const { return m_eof; }
+
+size_t capture_buffer_mem_reader::read_packets(capture_packet* packets[],
+                                               size_t count)
+{
+    if (count > m_packets.size()) {
+        // Allocate buffer space for all packets
+        m_packets.resize(count);
+    }
+
+    size_t i = 0;
+    while (i < count) {
+        auto& packet = m_packets[i];
+        if (m_cur_addr + sizeof(packet.hdr) > m_end_addr) {
+            m_eof = true;
+            break;
+        }
+        packet.hdr = *reinterpret_cast<capture_packet_hdr*>(m_cur_addr);
+        m_cur_addr += sizeof(packet.hdr);
+        if (m_cur_addr + packet.hdr.captured_len > m_end_addr) {
+            m_eof = true;
+            break;
+        }
+        packet.data = m_cur_addr;
+        m_cur_addr += pad_capture_data_len(packet.hdr.captured_len);
+        packets[i] = &packet;
+        ++i;
+    }
+    return i;
+}
+
+capture_buffer_stats capture_buffer_mem_reader::get_stats() const
+{
+    return m_buffer.get_stats();
+}
+
+void capture_buffer_mem_reader::rewind()
+{
+    m_read_offset = 0;
+    m_cur_addr = m_buffer.get_start_addr();
+    m_end_addr = m_buffer.get_cur_addr();
+    m_eof = false;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 capture_buffer_file::capture_buffer_file(std::string_view filename,
                                          bool keep_file)
     : m_filename(filename)
     , m_keep_file(keep_file)
+    , m_full(false)
     , m_fp_write(nullptr)
     , m_stats{0, 0}
 {
@@ -140,7 +260,7 @@ int capture_buffer_file::write_packets(
 
     for (uint16_t i = 0; i < packets_length; ++i) {
         auto packet = packets[i];
-        auto captured_len = openperf::packetio::packets::length(packet);
+        auto packet_len = openperf::packetio::packets::length(packet);
         auto timestamp = openperf::packetio::packets::rx_timestamp(packet);
 
         // timestamp is set from interace description block
@@ -150,26 +270,31 @@ int capture_buffer_file::write_packets(
                 .time_since_epoch()
                 .count();
 
+        block_hdr.packet_len = packet_len;
+        block_hdr.captured_len =
+            packet_len; // TODO: Currently capturing all of packet data
+        block_hdr.timestamp_high = (ts >> 32);
+        block_hdr.timestamp_low = ts;
+
         auto unpadded_block_length =
-            sizeof(block_hdr) + captured_len + sizeof(uint32_t);
+            sizeof(block_hdr) + block_hdr.captured_len + sizeof(uint32_t);
         auto block_length = pcap::pad_block_length(unpadded_block_length);
         auto pad_length = block_length - unpadded_block_length;
 
         block_hdr.block_total_length = block_length;
-        block_hdr.packet_len = captured_len; // FIXME:
-        block_hdr.captured_len = captured_len;
-        block_hdr.timestamp_high = (ts >> 32);
-        block_hdr.timestamp_low = ts;
+
         if (fwrite(&block_hdr, sizeof(block_hdr), 1, m_fp_write) != 1) {
             OP_LOG(OP_LOG_ERROR, "Failed writing enhanced packet block header");
+            m_full = true;
             return -1;
         }
 
         auto data = openperf::packetio::packets::to_data(packet);
-        if (fwrite(data, captured_len, 1, m_fp_write) != 1) {
+        if (fwrite(data, block_hdr.captured_len, 1, m_fp_write) != 1) {
             OP_LOG(OP_LOG_ERROR,
                    "Failed writing enhanced packet block data %" PRIu32,
-                   captured_len);
+                   block_hdr.captured_len);
+            m_full = true;
             return -1;
         }
         if (pad_length) {
@@ -177,6 +302,7 @@ int capture_buffer_file::write_packets(
             if (fwrite(&pad_data, pad_length, 1, m_fp_write) != 1) {
                 OP_LOG(OP_LOG_ERROR,
                        "Failed writing enhanced packet block pad");
+                m_full = true;
                 return -1;
             }
         }
@@ -187,10 +313,11 @@ int capture_buffer_file::write_packets(
             != 1) {
             OP_LOG(OP_LOG_ERROR,
                    "Failed writing enhanced packet block trailing size");
+            m_full = true;
             return -1;
         }
         ++(m_stats.packets);
-        m_stats.bytes += captured_len;
+        m_stats.bytes += block_hdr.captured_len;
     }
     return 0;
 }
@@ -208,7 +335,7 @@ void capture_buffer_file::flush()
     if (m_fp_write) { fflush(m_fp_write); }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 
 capture_buffer_file_reader::capture_buffer_file_reader(
     capture_buffer_file& buffer)
@@ -294,8 +421,6 @@ bool capture_buffer_file_reader::is_done() const { return m_eof; }
 size_t capture_buffer_file_reader::read_packets(capture_packet* packets[],
                                                 size_t count)
 {
-    const size_t max_packet_size = 16384;
-
     if (count > m_packets.size()) {
         // Allocate buffer space for all packets
         m_packets.resize(count);
@@ -387,7 +512,7 @@ capture_buffer_stats capture_buffer_file_reader::get_stats() const
 
 void capture_buffer_file_reader::rewind() { read_file_header(); }
 
-//////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 
 multi_capture_buffer_reader::multi_capture_buffer_reader(
     std::vector<std::unique_ptr<capture_buffer_reader>>&& readers)
@@ -423,7 +548,7 @@ size_t multi_capture_buffer_reader::read_packets(capture_packet* packets[],
 
     uint64_t last_timestamp =
         m_reader_priority.empty()
-            ? 0xffffffffffffffff
+            ? UINT64_MAX
             : m_reader_priority.top()->get()->hdr.timestamp;
     size_t i = 0;
     auto n = std::min(count, reader->m_packets.available());

@@ -27,6 +27,12 @@ struct capture_packet
     uint8_t* data;
 };
 
+// Pad capture data length to 4 byte boundaries
+static inline uint32_t pad_capture_data_len(uint32_t length)
+{
+    return (length + 3) & ~(uint32_t)0x03;
+}
+
 struct capture_buffer_stats
 {
     uint64_t packets;
@@ -296,6 +302,13 @@ public:
         uint16_t packets_length) = 0;
 
     /**
+     * Checks if the capture buffer is full.
+     * @return true when the buffer is full or
+     *         false if the buffer is not full.
+     */
+    virtual bool is_full() const = 0;
+
+    /**
      * Creates a capture_buffer_reader object to read packets from the
      * capture buffer.
      */
@@ -318,6 +331,71 @@ public:
 };
 
 /**
+ * Capture buffer implementation which writes to a memory.
+ */
+class capture_buffer_mem : public capture_buffer
+{
+public:
+    capture_buffer_mem(size_t size);
+    capture_buffer_mem(const capture_buffer_mem&) = delete;
+    virtual ~capture_buffer_mem();
+
+    int write_packets(
+        const openperf::packetio::packets::packet_buffer* const packets[],
+        uint16_t packets_length) override;
+
+    bool is_full() const override { return m_full; }
+
+    std::unique_ptr<capture_buffer_reader> create_reader() override;
+
+    capture_buffer_stats get_stats() const override;
+
+    uint8_t* get_start_addr() const { return m_start_addr; }
+    uint8_t* get_cur_addr() const { return m_cur_addr; }
+
+private:
+    std::unique_ptr<uint8_t[]> m_mem;
+    size_t m_mem_size;
+
+    uint8_t* m_start_addr;
+    uint8_t* m_end_addr;
+    uint8_t* m_cur_addr;
+
+    capture_buffer_stats m_stats;
+    bool m_full;
+};
+
+/**
+ * Capture buffer reader class for reading from a capture_buffer_mem
+ * object.
+ */
+class capture_buffer_mem_reader : public capture_buffer_reader
+{
+public:
+    capture_buffer_mem_reader(capture_buffer_mem& buffer);
+    capture_buffer_mem_reader(const capture_buffer_mem_reader&) = delete;
+    virtual ~capture_buffer_mem_reader();
+
+    bool is_done() const override;
+
+    size_t read_packets(capture_packet* packets[], size_t count) override;
+
+    capture_buffer_stats get_stats() const override;
+
+    size_t get_offset() const override { return m_read_offset; }
+
+    void rewind() override;
+
+private:
+    capture_buffer_mem& m_buffer;
+    uint8_t* m_cur_addr;
+    uint8_t* m_end_addr;
+    ssize_t m_read_offset;
+    std::vector<capture_packet> m_packets;
+    bool m_eof;
+};
+
+/**
  * Capture buffer implementation which writes to a pcap
  * file using stdio for read/write.
  *
@@ -334,6 +412,8 @@ public:
         const openperf::packetio::packets::packet_buffer* const packets[],
         uint16_t packets_length) override;
 
+    bool is_full() const override { return m_full; }
+
     std::unique_ptr<capture_buffer_reader> create_reader() override;
 
     capture_buffer_stats get_stats() const override;
@@ -345,6 +425,7 @@ public:
 private:
     std::string m_filename;
     bool m_keep_file;
+    bool m_full;
     FILE* m_fp_write;
     capture_buffer_stats m_stats;
 };

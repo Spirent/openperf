@@ -79,20 +79,18 @@ static void create_ipv4_packet(mock_packet_buffer& packet_buffer,
 }
 
 void create_capture_buffers(
-    std::vector<std::unique_ptr<capture_buffer_file>>& buffers, size_t count)
+    std::vector<std::unique_ptr<capture_buffer>>& buffers, size_t count)
 {
+    const size_t capture_buffer_size = 1 * 1024 * 1024;
     buffers.reserve(count);
     for (size_t i = 0; i < count; ++i) {
-        auto capture_filename =
-            std::string("test-") + std::to_string(i) + std::string(".pcapng");
-        buffers.emplace_back(
-            std::make_unique<capture_buffer_file>(capture_filename));
-        REQUIRE(std::filesystem::exists(capture_filename));
+        buffers.emplace_back(std::unique_ptr<capture_buffer>(
+            new capture_buffer_mem(capture_buffer_size)));
     }
 }
 
 std::unique_ptr<capture_buffer_reader> create_multi_capture_buffer_reader(
-    std::vector<std::unique_ptr<capture_buffer_file>>& buffers)
+    std::vector<std::unique_ptr<capture_buffer>>& buffers)
 {
     std::vector<std::unique_ptr<capture_buffer_reader>> readers;
     std::transform(buffers.begin(),
@@ -104,7 +102,7 @@ std::unique_ptr<capture_buffer_reader> create_multi_capture_buffer_reader(
 }
 
 void fill_capture_buffers_ipv4(
-    std::vector<std::unique_ptr<capture_buffer_file>>& buffers,
+    std::vector<std::unique_ptr<capture_buffer>>& buffers,
     size_t packet_count,
     size_t burst_size,
     size_t start_buffer = 0)
@@ -188,6 +186,78 @@ size_t verify_ipv4_incrementing_timestamp_and_packet_id_iterator(
 
 TEST_CASE("capture buffer", "[packet_capture]")
 {
+    SECTION("mem, ")
+    {
+        SECTION("create, ")
+        {
+            capture_buffer_mem buffer(16 * 1024 * 1024);
+            auto stats = buffer.get_stats();
+            REQUIRE(stats.packets == 0);
+            REQUIRE(stats.bytes == 0);
+        }
+
+        SECTION("write and read, ")
+        {
+            mock_packet_buffer packet_buffer;
+            std::array<uint8_t, 4096> packet_data;
+            const uint32_t payload_size = 64;
+
+            auto now = std::chrono::duration_cast<std::chrono::nanoseconds>(
+                           std::chrono::system_clock::now().time_since_epoch())
+                           .count();
+
+            create_ipv4_packet(packet_buffer,
+                               packet_data.data(),
+                               packet_data.size(),
+                               payload_size,
+                               now);
+
+            std::array<struct packet_buffer*, 1> packet_buffers;
+            packet_buffers[0] =
+                reinterpret_cast<struct packet_buffer*>(&packet_buffer);
+
+            const int packet_count = 100;
+            capture_buffer_mem buffer(16 * 1024 * 1024);
+            for (int i = 0; i < packet_count; ++i) {
+                auto ipv4 = reinterpret_cast<ipv4_hdr*>(packet_buffers.data()
+                                                        + sizeof(eth_hdr));
+                ipv4->packet_id = ntohs(i);
+                buffer.write_packets(packet_buffers.data(), 1);
+            }
+
+            SECTION("iterator, ")
+            {
+                int counted = 0;
+                for (auto& packet : buffer) {
+                    REQUIRE(packet.hdr.packet_len == packet_buffer.length);
+                    REQUIRE(packet.hdr.captured_len == packet_buffer.length);
+                    ++counted;
+                }
+                REQUIRE(counted == packet_count);
+            }
+
+            SECTION("reader, ")
+            {
+                int counted = 0;
+                auto reader = buffer.create_reader();
+                std::array<capture_packet*, 16> packets;
+                while (!reader->is_done()) {
+                    auto n =
+                        reader->read_packets(packets.data(), packets.size());
+                    std::for_each(
+                        packets.data(), packets.data() + n, [&](auto& packet) {
+                            REQUIRE(packet->hdr.packet_len
+                                    == packet_buffer.length);
+                            REQUIRE(packet->hdr.captured_len
+                                    == packet_buffer.length);
+                            ++counted;
+                        });
+                }
+                REQUIRE(counted == packet_count);
+            }
+        }
+    }
+
     SECTION("file, ")
     {
         const char* capture_filename = "unit_test.pcapng";
@@ -272,7 +342,7 @@ TEST_CASE("capture buffer", "[packet_capture]")
             SECTION("interleaved, burst size 1")
             {
                 const size_t num_buffers = 5;
-                std::vector<std::unique_ptr<capture_buffer_file>> buffers;
+                std::vector<std::unique_ptr<capture_buffer>> buffers;
                 create_capture_buffers(buffers, num_buffers);
 
                 const size_t packet_count = 1000;
@@ -288,7 +358,7 @@ TEST_CASE("capture buffer", "[packet_capture]")
             SECTION("interleaved, burst size 1, iterator")
             {
                 const size_t num_buffers = 5;
-                std::vector<std::unique_ptr<capture_buffer_file>> buffers;
+                std::vector<std::unique_ptr<capture_buffer>> buffers;
                 create_capture_buffers(buffers, num_buffers);
 
                 const size_t packet_count = 1000;
@@ -305,7 +375,7 @@ TEST_CASE("capture buffer", "[packet_capture]")
             SECTION("interleaved, burst size 2")
             {
                 const size_t num_buffers = 5;
-                std::vector<std::unique_ptr<capture_buffer_file>> buffers;
+                std::vector<std::unique_ptr<capture_buffer>> buffers;
                 create_capture_buffers(buffers, num_buffers);
 
                 const size_t packet_count = 1000;
@@ -321,7 +391,7 @@ TEST_CASE("capture buffer", "[packet_capture]")
             SECTION("interleaved, burst size 4, starting w/ last buffer")
             {
                 const size_t num_buffers = 5;
-                std::vector<std::unique_ptr<capture_buffer_file>> buffers;
+                std::vector<std::unique_ptr<capture_buffer>> buffers;
                 create_capture_buffers(buffers, num_buffers);
 
                 const size_t packet_count = 1000;
@@ -338,7 +408,7 @@ TEST_CASE("capture buffer", "[packet_capture]")
             SECTION("no overlap")
             {
                 const size_t num_buffers = 5;
-                std::vector<std::unique_ptr<capture_buffer_file>> buffers;
+                std::vector<std::unique_ptr<capture_buffer>> buffers;
                 create_capture_buffers(buffers, num_buffers);
 
                 const size_t packet_count = 1000;

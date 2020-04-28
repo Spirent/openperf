@@ -203,15 +203,16 @@ reply_msg server::handle_request(const request_list_captures& request)
 
     if (request.filter && request.filter->count(filter_key_type::source_id)) {
         auto& source = (*request.filter)[filter_key_type::source_id];
-        transform_if(std::begin(m_sinks),
-                     std::end(m_sinks),
-                     std::back_inserter(reply.captures),
-                     [&](const auto& item) {
-                         return (item.template get<sink>().source() == source);
-                     },
-                     [](const auto& item) {
-                         return (to_swagger(item.template get<sink>()));
-                     });
+        transform_if(
+            std::begin(m_sinks),
+            std::end(m_sinks),
+            std::back_inserter(reply.captures),
+            [&](const auto& item) {
+                return (item.template get<sink>().source() == source);
+            },
+            [](const auto& item) {
+                return (to_swagger(item.template get<sink>()));
+            });
     } else {
         /* return all captures */
         std::transform(std::begin(m_sinks),
@@ -227,11 +228,28 @@ reply_msg server::handle_request(const request_list_captures& request)
 
 reply_msg server::handle_request(const request_create_capture& request)
 {
-    auto config = sink_config{.source = request.capture->getSourceId()};
+    auto config = sink_config{.source = request.capture->getSourceId(),
+                              .capture_len = UINT32_MAX,
+                              .duration = 0};
 
     auto user_config = request.capture->getConfig();
     assert(user_config);
-
+    config.capture_mode = capture_mode_from_string(user_config->getMode());
+    config.buffer_wrap = user_config->isBufferWrap();
+    config.buffer_size = user_config->getBufferSize();
+    if (user_config->packetSizeIsSet())
+        config.capture_len = user_config->getPacketSize();
+    if (user_config->durationIsSet())
+        config.duration = user_config->getDuration();
+    if (user_config->filterIsSet()) {
+        // TODO: user_config->getFilter();
+    }
+    if (user_config->startTriggerIsSet()) {
+        // TODO: user_config->getStartTrigger();
+    }
+    if (user_config->stopTriggerIsSet()) {
+        // TODO: user_config->getStopTrigger();
+    }
     if (!request.capture->getId().empty()) {
         config.id = request.capture->getId();
     }
@@ -374,15 +392,34 @@ reply_msg server::handle_request(const request_start_capture& request)
     auto& id = item.first->first;
     auto& result = item.first->second;
 
-    // Create capture buffers and associate with result object
-    auto idx = 0;
-    std::generate_n(
-        std::back_inserter(result->buffers), impl.worker_count(), [&]() {
-            auto filename = openperf::core::to_string(id) + "-"
-                            + std::to_string(++idx) + ".pcapng";
-            return std::unique_ptr<capture_buffer>(
-                new capture_buffer_file(filename, false));
-        });
+    try {
+        // Create capture buffers and associate with result object
+#if 0
+        auto idx = 0;
+        std::generate_n(
+            std::back_inserter(result->buffers), impl.worker_count(), [&]() {
+                auto filename = openperf::core::to_string(id) + "-"
+                                + std::to_string(++idx) + ".pcapng";
+                return std::unique_ptr<capture_buffer>(
+                    new capture_buffer_file(filename, false));
+            });
+#else
+        std::generate_n(
+            std::back_inserter(result->buffers), impl.worker_count(), [&]() {
+                return std::unique_ptr<capture_buffer>(
+                    new capture_buffer_mem(impl.get_buffer_size()));
+            });
+#endif
+    } catch (const std::bad_alloc& e) {
+        OP_LOG(OP_LOG_ERROR, "Failed allocating capture buffer.  %s", e.what());
+        auto count = m_results.erase(id);
+        if (count == 0) {
+            OP_LOG(OP_LOG_ERROR,
+                   "Failed removing capture result %s",
+                   to_string(id).c_str());
+        }
+        return (to_error(error_type::POSIX, ENOMEM));
+    }
 
     impl.start(result.get());
 

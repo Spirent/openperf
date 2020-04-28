@@ -21,6 +21,23 @@ std::string to_string(const capture_state& state)
     }
 }
 
+std::string to_string(const capture_mode mode)
+{
+    switch (mode) {
+    case capture_mode::BUFFER:
+        return "buffer";
+    case capture_mode::LIVE:
+        return "live";
+    }
+}
+
+capture_mode capture_mode_from_string(const std::string_view str)
+{
+    if (str == "buffer") { return capture_mode::BUFFER; }
+    if (str == "live") { return capture_mode::LIVE; }
+    return capture_mode::BUFFER;
+}
+
 sink_result::sink_result(const sink& parent_)
     : parent(parent_)
 {}
@@ -55,17 +72,29 @@ std::vector<uint8_t> sink::make_indexes(std::vector<unsigned>& ids)
 sink::sink(const sink_config& config, std::vector<unsigned> rx_ids)
     : m_id(config.id)
     , m_source(config.source)
-    , m_indexes(sink::make_indexes(rx_ids))
+    , m_capture_mode(config.capture_mode)
+    , m_buffer_wrap(config.buffer_wrap)
+    , m_buffer_size(config.buffer_size)
+    , m_capture_len(config.capture_len)
+    , m_duration(config.duration)
     , m_filter(nullptr)
-    , m_trigger(nullptr)
+    , m_start_trigger(nullptr)
+    , m_stop_trigger(nullptr)
+    , m_indexes(sink::make_indexes(rx_ids))
 {}
 
 sink::sink(sink&& other)
     : m_id(std::move(other.m_id))
     , m_source(std::move(other.m_source))
-    , m_indexes(std::move(other.m_indexes))
+    , m_capture_mode(other.m_capture_mode)
+    , m_buffer_wrap(other.m_buffer_wrap)
+    , m_buffer_size(other.m_buffer_size)
+    , m_capture_len(other.m_capture_len)
+    , m_duration(other.m_duration)
     , m_filter(std::move(other.m_filter))
-    , m_trigger(std::move(other.m_trigger))
+    , m_start_trigger(std::move(other.m_start_trigger))
+    , m_stop_trigger(std::move(other.m_stop_trigger))
+    , m_indexes(std::move(other.m_indexes))
     , m_results(other.m_results.load())
 {}
 
@@ -74,9 +103,15 @@ sink& sink::operator=(sink&& other)
     if (this != &other) {
         m_id = std::move(other.m_id);
         m_source = std::move(other.m_source);
-        m_indexes = std::move(other.m_indexes);
+        m_capture_mode = other.m_capture_mode;
+        m_buffer_wrap = other.m_buffer_wrap;
+        m_buffer_size = other.m_buffer_size;
+        m_capture_len = other.m_capture_len;
+        m_duration = other.m_duration;
         m_filter = std::move(other.m_filter);
-        m_trigger = std::move(other.m_trigger);
+        m_start_trigger = std::move(other.m_start_trigger);
+        m_stop_trigger = std::move(other.m_stop_trigger);
+        m_indexes = std::move(other.m_indexes);
         m_results.store(other.m_results);
     }
 
@@ -119,7 +154,8 @@ void sink::stop()
 
 bool sink::active() const
 {
-    return (m_results.load(std::memory_order_relaxed) != nullptr);
+    auto result = m_results.load(std::memory_order_relaxed);
+    return (result != nullptr && result->state != capture_state::STOPPED);
 }
 
 bool sink::uses_feature(packetio::packets::sink_feature_flags flags) const
@@ -133,7 +169,15 @@ bool sink::uses_feature(packetio::packets::sink_feature_flags flags) const
     return (bool(needed & flags));
 }
 
-uint16_t sink::check_trigger_condition(
+uint16_t sink::check_start_trigger_condition(
+    const packetio::packets::packet_buffer* const packets[],
+    uint16_t packets_length) const
+{
+    // TODO: Add support for trigger
+    return 0;
+}
+
+uint16_t sink::check_stop_trigger_condition(
     const packetio::packets::packet_buffer* const packets[],
     uint16_t packets_length) const
 {
@@ -172,18 +216,30 @@ uint16_t sink::push(const packetio::packets::packet_buffer* const packets[],
         auto& buffer = results->buffers[m_indexes[id]];
         auto start = packets;
         auto length = packets_length;
+        bool stopping = false;
 
         if (state != capture_state::STARTED) {
             if (state == capture_state::ARMED) {
                 auto trigger_offset =
-                    check_trigger_condition(packets, packets_length);
-                if (trigger_offset > packets_length) return packets_length;
+                    check_start_trigger_condition(packets, packets_length);
+                if (trigger_offset >= packets_length) {
+                    // Start not triggered yet
+                    return packets_length;
+                }
                 state = capture_state::STARTED;
                 results->state = state;
                 start += trigger_offset;
                 length -= trigger_offset;
             } else {
                 return packets_length;
+            }
+        }
+
+        if (m_stop_trigger) {
+            auto trigger_offset = check_stop_trigger_condition(packets, length);
+            if (trigger_offset < length) {
+                length = trigger_offset + 1;
+                stopping = true;
             }
         }
 
@@ -195,6 +251,10 @@ uint16_t sink::push(const packetio::packets::packet_buffer* const packets[],
             buffer->write_packets(filtered.data(), length);
         } else {
             buffer->write_packets(start, length);
+        }
+
+        if (stopping || buffer->is_full()) {
+            results->state = capture_state::STOPPED;
         }
     }
 
