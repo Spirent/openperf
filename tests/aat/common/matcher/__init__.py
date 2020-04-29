@@ -13,6 +13,18 @@ from common.matcher.module import be_valid_module
 from common.matcher.packet_analyzer import be_valid_packet_analyzer
 from common.matcher.packet_analyzer import be_valid_packet_analyzer_result
 
+# packet_generator.py
+from common.matcher.packet_generator import be_valid_packet_generator
+from common.matcher.packet_generator import be_valid_packet_generator_config
+from common.matcher.packet_generator import be_valid_packet_generator_flow_counters
+from common.matcher.packet_generator import be_valid_packet_generator_result
+from common.matcher.packet_generator import be_valid_transmit_flow
+from common.matcher.packet_generator import be_valid_traffic_definition
+from common.matcher.packet_generator import be_valid_traffic_duration
+from common.matcher.packet_generator import be_valid_traffic_length
+from common.matcher.packet_generator import be_valid_traffic_load
+from common.matcher.packet_generator import be_valid_traffic_packet_template
+
 # port.py
 from common.matcher.port import be_valid_port
 
