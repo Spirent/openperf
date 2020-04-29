@@ -11,14 +11,14 @@ public:
     cpu_info() = default;
     cpu_info(const cpu_info&) = default;
 
-    int32_t get_cores() const;
-    void set_cores(int32_t);
+    inline int32_t cores() const { return m_cores; }
+    inline void cores(int32_t cores) { m_cores = cores; }
 
-    int64_t get_cache_line_size() const;
-    void set_cache_line_size(int64_t);
+    inline int64_t cache_line_size() const { return m_cache_line_size; }
+    inline void cache_line_size(int64_t size) { m_cache_line_size = size; }
 
-    std::string get_architecture() const;
-    void set_architecture(std::string_view value);
+    inline std::string architecture() const { return m_architecture; }
+    inline void architecture(std::string_view arch) { m_architecture = arch; }
 
 protected:
     int32_t m_cores;

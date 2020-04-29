@@ -9,7 +9,7 @@ namespace openperf::cpu::model {
 enum class cpu_instruction_set { SCALAR };
 enum class cpu_operation { INT, FLOAT };
 
-struct cpu_generator_target_config
+struct generator_target_config
 {
     cpu_instruction_set instruction_set;
     uint data_size;
@@ -17,36 +17,36 @@ struct cpu_generator_target_config
     uint weight;
 };
 
-struct cpu_generator_core_config
+struct generator_core_config
 {
     double utilization;
-    std::vector<cpu_generator_target_config> targets;
+    std::vector<generator_target_config> targets;
 };
 
-struct cpu_generator_config
+struct generator_config
 {
-    std::vector<cpu_generator_core_config> cores;
+    std::vector<generator_core_config> cores;
 };
 
-class cpu_generator
+class generator
 {
 public:
-    cpu_generator() = default;
-    cpu_generator(const cpu_generator&) = default;
-    virtual ~cpu_generator() = default;
+    generator() = default;
+    generator(const generator&) = default;
+    virtual ~generator() = default;
 
-    virtual std::string get_id() const;
-    virtual void set_id(std::string_view value);
+    inline virtual std::string id() const { return m_id; }
+    inline virtual void id(std::string_view id) { m_id = id; }
 
-    virtual cpu_generator_config get_config() const;
-    virtual void set_config(const cpu_generator_config& value);
+    inline virtual generator_config config() const { return m_config; }
+    inline virtual void config(const generator_config& value) { m_config = value; }
 
-    virtual bool is_running() const;
-    virtual void set_running(const bool value);
+    inline virtual bool running() const { return m_running; }
+    inline virtual void running(bool value) { m_running = value; }
 
 protected:
     std::string m_id;
-    cpu_generator_config m_config;
+    generator_config m_config;
     bool m_running;
 };
 

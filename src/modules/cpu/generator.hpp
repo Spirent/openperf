@@ -13,27 +13,26 @@ using namespace openperf::cpu::worker;
 using cpu_worker = utils::worker::worker<cpu_task>;
 using cpu_worker_ptr = std::unique_ptr<cpu_worker>;
 using cpu_worker_vec = std::vector<cpu_worker_ptr>;
-using cpu_result_ptr = std::shared_ptr<model::cpu_generator_result>;
 
-class cpu_generator : public model::cpu_generator
+class generator : public model::generator
 {
     cpu_worker_vec m_workers;
-    void configure_workers(const model::cpu_generator_config& p_conf);
+    void configure_workers(const model::generator_config& p_conf);
     bool check_instruction_set_supported(model::cpu_instruction_set);
-    task_config_t generate_worker_config(const model::cpu_generator_core_config&);
+    task_config_t generate_worker_config(const model::generator_core_config&);
 
 public:
-    ~cpu_generator();
-    cpu_generator(const model::cpu_generator& generator_model);
-    cpu_result_ptr start();
+    ~generator() override;
+    generator(const model::generator& generator_model);
+
+    void start();
     void stop();
 
-    void set_config(const model::cpu_generator_config& value);
+    void set_config(const model::generator_config& value);
     void set_running(bool value);
 
-    cpu_result_ptr get_statistics() const;
+    model::generator_result statistics() const;
     void clear_statistics();
-
 };
 
 } // namespace openperf::cpu::generator

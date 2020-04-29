@@ -384,38 +384,38 @@ std::string to_rfc3339(std::chrono::duration<Rep, Period> from)
 }
 
 
-model::cpu_generator from_swagger(const CpuGenerator& p_gen)
+model::generator from_swagger(const CpuGenerator& p_gen)
 {
-    model::cpu_generator gen;
-    gen.set_id(p_gen.getId());
-    gen.set_running(p_gen.isRunning());
+    model::generator gen;
+    gen.id(p_gen.getId());
+    gen.running(p_gen.isRunning());
     auto cores_config = p_gen.getConfig()->getCores();
-    model::cpu_generator_config cpu_config;
+    model::generator_config config;
     for (auto p_conf : cores_config) {
         auto targets = p_conf->getTargets();
-        model::cpu_generator_core_config core_conf {
+        model::generator_core_config core_conf {
             .utilization = p_conf->getUtilization()
         };
         for (auto p_target : targets) {
-            core_conf.targets.push_back(model::cpu_generator_target_config {
+            core_conf.targets.push_back(model::generator_target_config {
                 .instruction_set = cpu_instruction_set_from_string(p_target->getInstructionSet()),
                 .data_size = static_cast<uint>(p_target->getDataSize()),
                 .operation = cpu_operation_from_string(p_target->getOperation()),
                 .weight = static_cast<uint>(p_target->getWeight())
             });
         }
-        cpu_config.cores.push_back(core_conf);
+        config.cores.push_back(core_conf);
     }
-    gen.set_config(cpu_config);
+    gen.config(config);
     return gen;
 }
 
-std::shared_ptr<CpuGenerator> to_swagger(const model::cpu_generator& p_gen)
+std::shared_ptr<CpuGenerator> to_swagger(const model::generator& p_gen)
 {
     auto gen = std::make_shared<CpuGenerator>();
-    gen->setId(p_gen.get_id());
-    gen->setRunning(p_gen.is_running());
-    auto cores_config = p_gen.get_config().cores;
+    gen->setId(p_gen.id());
+    gen->setRunning(p_gen.running());
+    auto cores_config = p_gen.config().cores;
     auto cpu_config = std::make_shared<CpuGeneratorConfig>();
     for (auto p_conf : cores_config) {
         auto core_conf = std::make_shared<CpuGeneratorCoreConfig>();
@@ -434,14 +434,14 @@ std::shared_ptr<CpuGenerator> to_swagger(const model::cpu_generator& p_gen)
     return gen;
 }
 
-std::shared_ptr<CpuGeneratorResult> to_swagger(const model::cpu_generator_result& p_result)
+std::shared_ptr<CpuGeneratorResult> to_swagger(const model::generator_result& p_result)
 {
     auto gen = std::make_shared<CpuGeneratorResult>();
-    gen->setId(p_result.get_id());
-    gen->setGeneratorId(p_result.get_generator_id());
-    gen->setActive(p_result.is_active());
-    gen->setTimestamp(to_rfc3339(p_result.get_timestamp().time_since_epoch()));
-    auto cores_stats = p_result.get_stats().cores;
+    gen->setId(p_result.id());
+    gen->setGeneratorId(p_result.generator_id());
+    gen->setActive(p_result.active());
+    gen->setTimestamp(to_rfc3339(p_result.timestamp().time_since_epoch()));
+    auto cores_stats = p_result.stats().cores;
     auto cpu_stats = std::make_shared<CpuGeneratorStats>();
     for (auto p_stats : cores_stats) {
         auto core_stats = std::make_shared<CpuGeneratorCoreStats>();
@@ -465,9 +465,9 @@ std::shared_ptr<CpuGeneratorResult> to_swagger(const model::cpu_generator_result
 std::shared_ptr<CpuInfoResult> to_swagger(const model::cpu_info& p_cpu_info)
 {
     auto cpu_info = std::make_shared<CpuInfoResult>();
-    cpu_info->setArchitecture(p_cpu_info.get_architecture());
-    cpu_info->setCacheLineSize(p_cpu_info.get_cache_line_size());
-    cpu_info->setCores(p_cpu_info.get_cores());
+    cpu_info->setArchitecture(p_cpu_info.architecture());
+    cpu_info->setCacheLineSize(p_cpu_info.cache_line_size());
+    cpu_info->setCores(p_cpu_info.cores());
     return cpu_info;
 }
 

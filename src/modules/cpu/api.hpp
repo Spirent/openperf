@@ -30,8 +30,8 @@ const std::string endpoint = "inproc://openperf_cpu";
 
 /* zmq api objects models */
 
-using cpu_generator_t = model::cpu_generator;
-using cpu_generator_result_t = model::cpu_generator_result;
+using cpu_generator_t = model::generator;
+using cpu_generator_result_t = model::generator_result;
 using cpu_generator_ptr = std::unique_ptr<cpu_generator_t>;
 using cpu_generator_result_ptr = std::unique_ptr<cpu_generator_result_t>;
 using cpu_info_t = model::cpu_info;
@@ -168,9 +168,9 @@ tl::expected<serialized_msg, int> recv_message(void* socket, int flags = 0);
 reply_error to_error(error_type type, int code = 0, const std::string& value = "");
 std::string to_string(const model::cpu_instruction_set& pattern);
 std::string to_string(const api::typed_error&);
-model::cpu_generator from_swagger(const CpuGenerator&);
-std::shared_ptr<CpuGenerator> to_swagger(const model::cpu_generator&);
-std::shared_ptr<CpuGeneratorResult> to_swagger(const model::cpu_generator_result&);
+model::generator from_swagger(const CpuGenerator&);
+std::shared_ptr<CpuGenerator> to_swagger(const model::generator&);
+std::shared_ptr<CpuGeneratorResult> to_swagger(const model::generator_result&);
 std::shared_ptr<CpuInfoResult> to_swagger(const model::cpu_info&);
 
 extern const std::string endpoint;

@@ -10,12 +10,12 @@ namespace openperf::cpu::model {
 
 using time_point = std::chrono::time_point<timesync::chrono::realtime>;
 
-struct cpu_generator_target_stats
+struct generator_target_stats
 {
     uint64_t cycles;
 };
 
-struct cpu_generator_core_stats
+struct generator_core_stats
 {
     uint64_t available;
     uint64_t utilization;
@@ -23,41 +23,41 @@ struct cpu_generator_core_stats
     uint64_t user;
     uint64_t steal;
     uint64_t error;
-    std::vector<cpu_generator_target_stats> targets;
+    std::vector<generator_target_stats> targets;
 };
 
-struct cpu_generator_stats
+struct generator_stats
 {
-    std::vector<cpu_generator_core_stats> cores;
+    std::vector<generator_core_stats> cores;
 };
 
-class cpu_generator_result
+class generator_result
 {
 public:
-    cpu_generator_result() = default;
-    cpu_generator_result(const cpu_generator_result&) = default;
+    generator_result() = default;
+    generator_result(const generator_result&) = default;
 
-    std::string get_id() const;
-    void set_id(std::string_view value);
+    inline std::string id() const { return m_id; }
+    inline void id(std::string_view id) { m_id = id; }
 
-    std::string get_generator_id() const;
-    void set_generator_id(std::string_view value);
+    inline std::string generator_id() const { return m_generator_id; }
+    inline void generator_id(std::string_view id) { m_generator_id = id; }
 
-    bool is_active() const;
-    void set_active(bool value);
+    inline bool active() const { return m_active; }
+    inline void active(bool active) { m_active = active; }
 
-    time_point get_timestamp() const;
-    void set_timestamp(const time_point& value);
+    inline time_point timestamp() const { return m_timestamp; }
+    inline void timestamp(const time_point& time) { m_timestamp = time; }
 
-    cpu_generator_stats get_stats() const;
-    void set_stats(const cpu_generator_stats& value);
+    inline generator_stats stats() const { return m_stats; }
+    inline void stats(const generator_stats& stats) { m_stats = stats; }
 
 protected:
     std::string m_id;
     std::string m_generator_id;
     bool m_active;
     time_point m_timestamp;
-    cpu_generator_stats m_stats;
+    generator_stats m_stats;
 };
 
 } // namespace openperf::cpu::model

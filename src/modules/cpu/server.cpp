@@ -10,9 +10,9 @@ namespace openperf::cpu::api {
 reply_msg server::handle_request(const request_cpu_generator_list&)
 {
     auto reply = reply_cpu_generators{};
-    for (auto generator : m_generator_stack->cpu_generators_list()) {
-        auto reply_generator_model = model::cpu_generator(*generator);
-        reply.generators.emplace_back(std::make_unique<model::cpu_generator>(reply_generator_model));
+    for (auto generator : m_generator_stack->list()) {
+        auto reply_generator_model = model::generator(*generator);
+        reply.generators.emplace_back(std::make_unique<model::generator>(reply_generator_model));
     }
 
     return reply;
@@ -21,13 +21,13 @@ reply_msg server::handle_request(const request_cpu_generator_list&)
 
 reply_msg server::handle_request(const request_cpu_generator& request)
 {
-    auto generator = m_generator_stack->get_cpu_generator(request.id);
+    auto generator = m_generator_stack->generator(request.id);
 
     if (!generator) { return to_error(api::error_type::NOT_FOUND); }
 
     auto reply = reply_cpu_generators{};
-    auto reply_generator_model = model::cpu_generator(*generator);
-    reply.generators.emplace_back(std::make_unique<model::cpu_generator>(reply_generator_model));
+    auto reply_generator_model = model::generator(*generator);
+    reply.generators.emplace_back(std::make_unique<model::generator>(reply_generator_model));
 
     return reply;
 }
@@ -35,45 +35,48 @@ reply_msg server::handle_request(const request_cpu_generator& request)
 reply_msg server::handle_request(const request_cpu_generator_add& request)
 {
     // If user did not specify an id create one for them.
-    if (request.source->get_id().empty()) {
-        request.source->set_id(core::to_string(core::uuid::random()));
+    if (request.source->id().empty()) {
+        request.source->id(core::to_string(core::uuid::random()));
     }
 
-    if (auto id_check = config::op_config_validate_id_string(request.source->get_id());
+    if (auto id_check = config::op_config_validate_id_string(request.source->id());
         !id_check)
         return (to_error(error_type::NOT_FOUND));
 
-    auto result = m_generator_stack->create_cpu_generator(*request.source);
+    auto result = m_generator_stack->create(*request.source);
     if (!result) { return to_error(error_type::NOT_FOUND); }
 
     auto reply = reply_cpu_generators{};
-    auto reply_generator_model = model::cpu_generator(*result.value());
-    reply.generators.emplace_back(std::make_unique<model::cpu_generator>(reply_generator_model));
+    auto reply_generator_model = model::generator(*result.value());
+    reply.generators.emplace_back(std::make_unique<model::generator>(reply_generator_model));
     return reply;
 }
 
 reply_msg server::handle_request(const request_cpu_generator_del& request)
 {
-    m_generator_stack->delete_cpu_generator(request.id);
+    m_generator_stack->erase(request.id);
     return reply_ok{};
 }
 
 reply_msg server::handle_request(const request_cpu_generator_start& request)
 {
-    auto generator = m_generator_stack->get_cpu_generator(request.id);
+    auto generator = m_generator_stack->generator(request.id);
 
     if (!generator) { return to_error(api::error_type::NOT_FOUND); }
-    auto stats = generator->start();
+    generator->start();
+
+    //TODO:
+    auto reply_model = model::generator_result();
+    //    m_generator_stack->statistics(request.id));
 
     auto reply = reply_cpu_generator_results{};
-    auto reply_model = model::cpu_generator_result(*stats);
-    reply.results.emplace_back(std::make_unique<model::cpu_generator_result>(reply_model));
+    reply.results.emplace_back(std::make_unique<model::generator_result>(reply_model));
     return reply;
 }
 
 reply_msg server::handle_request(const request_cpu_generator_stop& request)
 {
-    auto generator = m_generator_stack->get_cpu_generator(request.id);
+    auto generator = m_generator_stack->generator(request.id);
 
     if (!generator) { return api::reply_ok{}; }
     generator->stop();
@@ -88,20 +91,24 @@ server::handle_request(const request_cpu_generator_bulk_start& request)
 
     for (size_t i = 0; i < request.ids->size(); ++i)
     {
-        auto generator = m_generator_stack->get_cpu_generator(request.ids->at(i));
+        auto generator = m_generator_stack->generator(request.ids->at(i));
         if (!generator) {
             for (size_t j = 0; j < i; ++j) {
-                auto generator_to_stop = m_generator_stack->get_cpu_generator(request.ids->at(i));
+                auto generator_to_stop = m_generator_stack->generator(request.ids->at(i));
                 if (generator_to_stop) {
                     generator_to_stop->stop();
                 }
             }
-            return to_error(api::error_type::NOT_FOUND, 0, "Generator " + request.ids->at(i) + " not found");
+            return to_error(api::error_type::NOT_FOUND, 0,
+                "Generator " + request.ids->at(i) + " not found");
         }
-        auto stats = generator->start();
+        generator->start();
 
-        auto reply_model = model::cpu_generator_result(*stats);
-        reply.results.emplace_back(std::make_unique<model::cpu_generator_result>(reply_model));
+        //TODO:
+        auto reply_model = model::generator_result();
+        //    m_generator_stack->statistics(request.ids->at(i)));
+
+        reply.results.emplace_back(std::make_unique<model::generator_result>(reply_model));
     }
 
     return reply;
@@ -112,7 +119,7 @@ server::handle_request(const request_cpu_generator_bulk_stop& request)
 {
    for (auto & id : *request.ids)
     {
-        auto generator = m_generator_stack->get_cpu_generator(id);
+        auto generator = m_generator_stack->generator(id);
         if (!generator) {
             continue;
         }
@@ -125,9 +132,9 @@ server::handle_request(const request_cpu_generator_bulk_stop& request)
 reply_msg server::handle_request(const request_cpu_generator_result_list&)
 {
     auto reply = reply_cpu_generator_results{};
-    for (auto generator : m_generator_stack->cpu_generators_list()) {
-        auto reply_model = model::cpu_generator_result(*generator->get_statistics());
-        reply.results.emplace_back(std::make_unique<model::cpu_generator_result>(reply_model));
+    for (auto generator : m_generator_stack->list()) {
+        auto reply_model = model::generator_result(generator->statistics());
+        reply.results.emplace_back(std::make_unique<model::generator_result>(reply_model));
     }
 
     return reply;
@@ -135,13 +142,13 @@ reply_msg server::handle_request(const request_cpu_generator_result_list&)
 
 reply_msg server::handle_request(const request_cpu_generator_result& request)
 {
-    auto generator = m_generator_stack->get_cpu_generator(request.id);
+    auto generator = m_generator_stack->generator(request.id);
 
     if (!generator) { return to_error(api::error_type::NOT_FOUND); }
 
     auto reply = reply_cpu_generator_results{};
-    auto reply_model = model::cpu_generator_result(*generator->get_statistics());
-    reply.results.emplace_back(std::make_unique<model::cpu_generator_result>(reply_model));
+    auto reply_model = model::generator_result(generator->statistics());
+    reply.results.emplace_back(std::make_unique<model::generator_result>(reply_model));
 
     return reply;
 }
@@ -149,11 +156,7 @@ reply_msg server::handle_request(const request_cpu_generator_result& request)
 reply_msg
 server::handle_request(const request_cpu_generator_result_del& request)
 {
-     auto generator = m_generator_stack->get_cpu_generator(request.id);
-
-    if (!generator) { return reply_ok{}; }
-
-    generator->clear_statistics();
+    m_generator_stack->erase_statistics(request.id);
     return reply_ok{};
 }
 
@@ -162,9 +165,9 @@ reply_msg server::handle_request(const request_cpu_info&)
     auto reply = reply_cpu_info{
         .info = std::make_unique<model::cpu_info>()
     };
-    reply.info->set_architecture(info::architecture());
-    reply.info->set_cores(info::cores_count());
-    reply.info->set_cache_line_size(info::cache_line_size());
+    reply.info->architecture(info::architecture());
+    reply.info->cores(info::cores_count());
+    reply.info->cache_line_size(info::cache_line_size());
 
     return reply;
 }

@@ -184,7 +184,7 @@ void handler::create_generator(const Rest::Request& request,
             response.headers().add<Http::Header::ContentType>(
                 MIME(Application, Json));
             if (auto uri = maybe_get_host_uri(request); uri.has_value()) {
-                response.headers().add<Http::Header::Location>(*uri + request.resource() + "/" + reply->generators.front()->get_id());
+                response.headers().add<Http::Header::Location>(*uri + request.resource() + "/" + reply->generators.front()->id());
             }
             response.send(Http::Code::Created, api::to_swagger(*reply->generators.front())->toJson().dump());
         } else if (auto error = std::get_if<api::reply_error>(&api_reply)) {
@@ -252,7 +252,9 @@ void handler::start_generator(const Rest::Request& request,
         assert(!reply->results.empty());
         response.headers().add<Http::Header::ContentType>(MIME(Application, Json));
         if (auto uri = maybe_get_host_uri(request); uri.has_value()) {
-                response.headers().add<Http::Header::Location>(*uri + "/cpu-generator-results/" + reply->results.front()->get_id());
+            response.headers().add<Http::Header::Location>(
+                *uri + "/cpu-generator-results/"
+                + reply->results.front()->id());
         }
         response.send(Http::Code::Created, api::to_swagger(*reply->results.front())->toJson().dump());
     } else if (auto error = std::get_if<api::reply_error>(&api_reply)) {
