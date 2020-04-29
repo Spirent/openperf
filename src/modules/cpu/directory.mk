@@ -11,7 +11,6 @@ CPU_SOURCES += \
 	server.cpp \
 	generator.cpp \
 	generator_stack.cpp \
-	temp_task.cpp \
 	task_cpu.cpp \
 	cpu_info.cpp
 

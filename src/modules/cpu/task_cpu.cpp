@@ -2,11 +2,12 @@
 #include "core/op_log.h"
 #include "cpu/target_scalar.hpp"
 
+
 namespace openperf::cpu::internal
 {
 
 task_cpu::task_cpu()
-    : m_stat(&m_stat_data)
+    : m_stat(&m_stat_shared)
     , m_stat_clear(false)
 {}
 
@@ -16,22 +17,27 @@ task_cpu::task_cpu(const task_cpu::config_t& conf)
     config(conf);
 }
 
+void task_cpu::update_shared_stat()
+{
+    m_stat.store(&m_stat_active);
+    m_stat_shared = m_stat_active;
+    m_stat.store(&m_stat_shared);
+}
+
 void task_cpu::spin()
 {
     if (m_stat_clear) {
-        m_stat_data = {};
+        m_stat_active = {};
+        update_shared_stat();
         m_stat_clear = false;
     }
 
-    stat_t stat;
+    size_t counter = 0;
     for (auto& target : m_targets) {
-        stat.cycles.push_back(target->operation());
+        m_stat_active.targets[counter++].cycles += target->operation();
     }
 
-    stat += m_stat_data;
-    m_stat.store(&stat);
-    m_stat_data = stat;
-    m_stat.store(&m_stat_data);
+    update_shared_stat();
 }
 
 void task_cpu::config(const task_cpu::config_t& conf)
@@ -39,7 +45,10 @@ void task_cpu::config(const task_cpu::config_t& conf)
     OP_LOG(OP_LOG_INFO, "Set config\n");
 
     m_targets.clear();
+    m_stat_active.targets.clear();
     for (auto& t_conf : conf.targets) {
+        m_stat_active.targets.push_back({});
+
         switch (t_conf.set)
         {
         case instruction_set::SCALAR:
@@ -54,6 +63,7 @@ void task_cpu::config(const task_cpu::config_t& conf)
             break;
         }
     }
+    update_shared_stat();
 }
 
 task_cpu::stat_t task_cpu::stat() const

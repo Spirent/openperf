@@ -28,6 +28,10 @@ struct task_cpu_config {
     std::vector<target_config> targets;
 };
 
+struct target_cpu_stat {
+    uint64_t cycles;
+};
+
 struct task_cpu_stat {
     uint64_t available = 0;
     uint64_t utilization = 0;
@@ -35,26 +39,31 @@ struct task_cpu_stat {
     uint64_t user = 0;
     uint64_t steal = 0;
     uint64_t error = 0;
-    std::vector<uint64_t> cycles;
+    std::vector<target_cpu_stat> targets;
 
-    task_cpu_stat& operator+= (const task_cpu_stat& other) {
-        available += other.available;
-        utilization += other.utilization;
-        system += other.system;
-        user += other.user;
-        steal += other.steal;
-        error += other.error;
+    task_cpu_stat() = default;
 
-        auto min_cores = std::min(cycles.size(), other.cycles.size());
-        for (size_t i = 0; i < min_cores; ++i)
-            cycles[i] += other.cycles[i];
+    task_cpu_stat(const task_cpu_stat& other) {
+        copy(other);
+    }
 
+    task_cpu_stat& operator= (const task_cpu_stat& other) {
+        copy(other);
         return *this;
     }
 
-    task_cpu_stat operator+(const task_cpu_stat& other) const {
-        task_cpu_stat stat{};
-        return stat += other;
+private:
+    void copy (const task_cpu_stat& other) {
+        available = other.available;
+        utilization = other.utilization;
+        system = other.system;
+        user = other.user;
+        steal = other.steal;
+        error = other.error;
+
+        targets.resize(other.targets.size());
+        for (size_t i = 0; i < other.targets.size(); ++i)
+            targets[i] = other.targets[i];
     }
 };
 
@@ -65,12 +74,14 @@ class task_cpu :
 
 private:
     config_t m_config;
-    stat_t m_stat_data;
+    stat_t m_stat_shared, m_stat_active;
 
     std::atomic<stat_t*> m_stat;
     std::atomic_bool m_stat_clear;
 
     std::forward_list<target_ptr> m_targets;
+
+    void update_shared_stat();
 
 public:
     task_cpu();
