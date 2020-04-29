@@ -101,7 +101,7 @@ void generator::reallocate_workers(generator::workers& wkrs, unsigned num)
         for (; size > num; --size) { wkrs.pop_front(); }
     } else {
         for (; size < num; ++size) {
-            wkrs.emplace_front(std::make_unique<worker<T>>());
+            wkrs.emplace_front(std::make_unique<worker<T>>("mem"));
         }
     }
 }

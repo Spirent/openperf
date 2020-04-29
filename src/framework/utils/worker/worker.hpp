@@ -48,9 +48,10 @@ private:
     void* m_zmq_context;
     std::unique_ptr<void, op_socket_deleter> m_zmq_socket;
     std::thread m_thread;
+    std::string m_thread_name;
 
 public:
-    worker();
+    worker(std::string_view thread_name = "worker");
     worker(worker&&);
     worker(const worker&) = delete;
     explicit worker(const typename T::config_t&);
@@ -78,12 +79,13 @@ private:
 
 // Constructors & Destructor
 template <class T>
-worker<T>::worker()
+worker<T>::worker(std::string_view thread_name)
     : m_paused(true)
     , m_stopped(true)
     , m_task(new T)
     , m_zmq_context(zmq_init(0))
     , m_zmq_socket(op_socket_get_server(m_zmq_context, ZMQ_PUSH, m_endpoint))
+    , m_thread_name(thread_name)
 {}
 
 template <class T>
@@ -95,6 +97,7 @@ worker<T>::worker(worker&& w)
     , m_zmq_context(std::move(w.m_zmq_context))
     , m_zmq_socket(std::move(w.m_zmq_socket))
     , m_thread(std::move(w.m_thread))
+    , m_thread_name(std::move(w.m_thread_name))
 {}
 
 template <class T>
@@ -128,7 +131,7 @@ template <class T> void worker<T>::start()
 
     m_thread = std::thread([this]() {
         op_thread_setname(
-            ("op_tworker_" + std::to_string(++thread_number)).c_str());
+            ("op_" + m_thread_name + "_" + std::to_string(++thread_number)).c_str());
         loop();
     });
     config(m_config);
