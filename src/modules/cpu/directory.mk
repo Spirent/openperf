@@ -12,10 +12,10 @@ CPU_SOURCES += \
 	generator.cpp \
 	generator_stack.cpp \
 	temp_task.cpp \
+	task_cpu.cpp \
 	cpu_info.cpp
 
 include $(PGA_SRC_DIR)/ispc/directory.mk
-include $(CPU_SRC_DIR)/models/directory.mk
 
 CPU_VERSIONED_FILES := init.cpp
 CPU_UNVERSIONED_OBJECTS :=\

@@ -8,28 +8,27 @@
 
 namespace openperf::cpu::generator {
 
-cpu_generator::cpu_generator(const model::cpu_generator& generator_model)
-    : model::cpu_generator(generator_model)
+generator::generator(const model::generator& generator_model)
+    : model::generator(generator_model)
 {
-    configure_workers(get_config());
+    configure_workers(config());
 }
 
-cpu_generator::~cpu_generator()
+generator::~generator()
 {
     for (auto & worker : m_workers)
         worker->stop();
 }
 
-cpu_result_ptr cpu_generator::start() {
+void generator::start() {
     set_running(true);
-    return get_statistics();
 }
 
-void cpu_generator::stop() { set_running(false); }
+void generator::stop() { set_running(false); }
 
-void cpu_generator::set_config(const model::cpu_generator_config& p_conf)
+void generator::set_config(const model::generator_config& p_conf)
 {
-    if (is_running())
+    if (running())
         throw std::runtime_error("Cannot change config of running generator");
 
     for (auto & worker : m_workers) {
@@ -38,10 +37,10 @@ void cpu_generator::set_config(const model::cpu_generator_config& p_conf)
 
     configure_workers(p_conf);
 
-    model::cpu_generator::set_config(p_conf);
+    model::generator::config(p_conf);
 }
 
-void cpu_generator::set_running(bool is_running)
+void generator::set_running(bool is_running)
 {
     for (auto & worker : m_workers) {
         if (is_running)
@@ -49,33 +48,33 @@ void cpu_generator::set_running(bool is_running)
         else
             worker->pause();
     }
-    model::cpu_generator::set_running(is_running);
+    model::generator::running(is_running);
 }
 
-cpu_result_ptr cpu_generator::get_statistics() const
+model::generator_result generator::statistics() const
 {
-    auto gen_stat = std::make_shared<model::cpu_generator_result>();
-    gen_stat->set_id(core::to_string(core::uuid::random()));
-    gen_stat->set_generator_id(get_id());
-    gen_stat->set_active(is_running());
-    gen_stat->set_timestamp(model::time_point::clock::now());
-    model::cpu_generator_stats stats;
+    auto gen_stat = model::generator_result{};
+    gen_stat.id(core::to_string(core::uuid::random()));
+    gen_stat.generator_id(id());
+    gen_stat.active(running());
+    gen_stat.timestamp(model::time_point::clock::now());
+    model::generator_stats stats;
     for (auto & worker : m_workers) {
         stats.cores.push_back({
             .available = worker->stat().cycles
         });
     }
-    gen_stat->set_stats(stats);
+    gen_stat.stats(stats);
     return gen_stat;
 }
 
-void cpu_generator::clear_statistics() {
+void generator::clear_statistics() {
     for (auto & worker : m_workers) {
         worker->clear_stat();
     }
 }
 
-void cpu_generator::configure_workers(const model::cpu_generator_config& p_conf) {
+void generator::configure_workers(const model::generator_config& p_conf) {
     m_workers.clear();
     int core_id = -1;
 
@@ -93,13 +92,13 @@ void cpu_generator::configure_workers(const model::cpu_generator_config& p_conf)
     }
 }
 
-task_config_t cpu_generator::generate_worker_config(const model::cpu_generator_core_config&)
+task_config_t generator::generate_worker_config(const model::generator_core_config&)
 {
     task_config_t w_config;
     return w_config;
 }
 
-bool cpu_generator::check_instruction_set_supported(model::cpu_instruction_set p_iset)
+bool generator::check_instruction_set_supported(model::cpu_instruction_set p_iset)
 {
     using namespace pga::instruction_set;
     switch (p_iset)
