@@ -8,8 +8,26 @@
 
 namespace openperf::cpu::generator {
 
+const static std::unordered_map<model::cpu_instruction_set, instruction_set>
+    cpu_instruction_sets = {
+        {model::cpu_instruction_set::SCALAR, instruction_set::SCALAR},
+};
+
+const static std::unordered_map<uint32_t, target::data_size_t>
+    cpu_data_sizes = {
+        {32, target::data_size_t::BIT_32},
+        {64, target::data_size_t::BIT_64},
+};
+
+const static std::unordered_map<model::cpu_operation, target::operation_t>
+    cpu_operations = {
+        {model::cpu_operation::INT, target::operation_t::INT},
+        {model::cpu_operation::FLOAT, target::operation_t::FLOAT},
+};
+
 generator::generator(const model::generator& generator_model)
-    : model::generator(generator_model)
+    : model::generator(generator_model),
+    result_id(core::to_string(core::uuid::random()))
 {
     configure_workers(config());
 }
@@ -20,8 +38,9 @@ generator::~generator()
         worker->stop();
 }
 
-void generator::start() {
+model::generator_result generator::start() {
     set_running(true);
+    return statistics();
 }
 
 void generator::stop() { set_running(false); }
@@ -54,15 +73,16 @@ void generator::set_running(bool is_running)
 model::generator_result generator::statistics() const
 {
     auto gen_stat = model::generator_result{};
-    gen_stat.id(core::to_string(core::uuid::random()));
+    gen_stat.id(result_id);
     gen_stat.generator_id(id());
     gen_stat.active(running());
     gen_stat.timestamp(model::time_point::clock::now());
     model::generator_stats stats;
     for (auto & worker : m_workers) {
-        stats.cores.push_back({
-            .available = worker->stat().cycles
-        });
+        stats.cores.push_back({});
+        for (auto & target : worker->stat().targets) {
+            stats.cores.back().targets.push_back({target.cycles});
+        }
     }
     gen_stat.stats(stats);
     return gen_stat;
@@ -72,6 +92,7 @@ void generator::clear_statistics() {
     for (auto & worker : m_workers) {
         worker->clear_stat();
     }
+    result_id = core::to_string(core::uuid::random());
 }
 
 void generator::configure_workers(const model::generator_config& p_conf) {
@@ -92,9 +113,23 @@ void generator::configure_workers(const model::generator_config& p_conf) {
     }
 }
 
-task_config_t generator::generate_worker_config(const model::generator_core_config&)
+task_cpu_config generator::generate_worker_config(const model::generator_core_config& p_conf)
 {
-    task_config_t w_config;
+    task_cpu_config w_config;
+    try {
+        for (auto & target : p_conf.targets) {
+            w_config.targets.push_back(target_config{
+                .set = cpu_instruction_sets.at(target.instruction_set),
+                .weight = target.weight,
+                .data_size = cpu_data_sizes.at(target.data_size),
+                .operation = cpu_operations.at(target.operation)
+            });
+
+        }
+    } catch (const std::out_of_range& e) {
+        throw std::runtime_error("Undefined configuration");
+    }
+
     return w_config;
 }
 

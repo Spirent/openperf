@@ -4,28 +4,29 @@
 #include "models/generator.hpp"
 #include "models/generator_result.hpp"
 #include "utils/worker/worker.hpp"
-#include "temp_task.hpp"
+#include "task_cpu.hpp"
 
 namespace openperf::cpu::generator {
 
-using namespace openperf::cpu::worker;
+using namespace openperf::cpu::internal;
 
-using cpu_worker = utils::worker::worker<cpu_task>;
+using cpu_worker = utils::worker::worker<task_cpu>;
 using cpu_worker_ptr = std::unique_ptr<cpu_worker>;
 using cpu_worker_vec = std::vector<cpu_worker_ptr>;
 
 class generator : public model::generator
 {
     cpu_worker_vec m_workers;
+    std::string result_id;
     void configure_workers(const model::generator_config& p_conf);
     bool check_instruction_set_supported(model::cpu_instruction_set);
-    task_config_t generate_worker_config(const model::generator_core_config&);
+    task_cpu_config generate_worker_config(const model::generator_core_config&);
 
 public:
     ~generator() override;
     generator(const model::generator& generator_model);
 
-    void start();
+    model::generator_result start();
     void stop();
 
     void set_config(const model::generator_config& value);

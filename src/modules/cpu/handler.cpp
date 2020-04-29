@@ -68,6 +68,8 @@ enum Http::Code to_code(const api::reply_error& error)
     switch (error.info->type) {
     case api::error_type::NOT_FOUND:
         return (Http::Code::Not_Found);
+    case api::error_type::CUSTOM_ERROR:
+        return (Http::Code::Bad_Request);
     default:
         return (Http::Code::Internal_Server_Error);
     }
@@ -206,7 +208,7 @@ void handler::get_generator(const Rest::Request& request,
 {
     auto id = request.param(":id").as<std::string>();
     if (auto res = openperf::config::op_config_validate_id_string(id); !res) {
-        response.send(Http::Code::Not_Found, res.error());
+        response.send(Http::Code::Bad_Request, res.error());
         return;
     }
 
@@ -228,7 +230,7 @@ void handler::delete_generator(const Rest::Request& request,
 {
     auto id = request.param(":id").as<std::string>();
     if (auto res = openperf::config::op_config_validate_id_string(id); !res) {
-        response.send(Http::Code::No_Content);
+        response.send(Http::Code::Bad_Request, res.error());
         return;
     }
 
@@ -242,7 +244,7 @@ void handler::start_generator(const Rest::Request& request,
 {
     auto id = request.param(":id").as<std::string>();
     if (auto res = openperf::config::op_config_validate_id_string(id); !res) {
-        response.send(Http::Code::Not_Found, res.error());
+        response.send(Http::Code::Bad_Request, res.error());
         return;
     }
 
@@ -269,7 +271,7 @@ void handler::stop_generator(const Rest::Request& request,
 {
     auto id = request.param(":id").as<std::string>();
     if (auto res = openperf::config::op_config_validate_id_string(id); !res) {
-        response.send(Http::Code::Not_Found, res.error());
+        response.send(Http::Code::Bad_Request, res.error());
         return;
     }
 
@@ -383,7 +385,7 @@ void handler::get_generator_result(const Rest::Request& request,
 {
     auto id = request.param(":id").as<std::string>();
     if (auto res = openperf::config::op_config_validate_id_string(id); !res) {
-        response.send(Http::Code::Not_Found, res.error());
+        response.send(Http::Code::Bad_Request, res.error());
         return;
     }
 
@@ -405,7 +407,7 @@ void handler::delete_generator_result(const Rest::Request& request,
 {
     auto id = request.param(":id").as<std::string>();
     if (auto res = openperf::config::op_config_validate_id_string(id); !res) {
-        response.send(Http::Code::No_Content);
+        response.send(Http::Code::Bad_Request, res.error());
         return;
     }
 

@@ -12,15 +12,10 @@ namespace openperf::cpu::generator {
 class generator_stack
 {
 public:
-    struct statistic_t {
-        std::string id;
-        std::string generator_id;
-        model::generator_result statistics;
-    };
 
 private:
     using generator_ptr = std::shared_ptr<generator>;
-    using statistic_variant = std::variant<generator_ptr, statistic_t>;
+    using statistic_variant = std::variant<generator_ptr, model::generator_result>;
 
 private:
     std::unordered_map<std::string, generator_ptr> m_generators;
@@ -31,12 +26,17 @@ public:
     generator_stack() = default;
 
     tl::expected<generator_ptr, std::string> create(const model::generator&);
-    void erase(const std::string&);
-    bool erase_statistics(const std::string&);
 
     generator_ptr generator(const std::string&) const;
-    statistic_t statistics(const std::string&) const;
     std::vector<generator_ptr> list() const;
+    bool erase(const std::string&);
+
+    tl::expected<model::generator_result, std::string> statistics(const std::string&) const;
+    std::vector<model::generator_result> list_statistics() const;
+    bool erase_statistics(const std::string&);
+
+    tl::expected<model::generator_result, std::string> start_generator(const std::string& id);
+    bool stop_generator(const std::string& id);
 };
 
 } // namespace openperf::cpu::generator

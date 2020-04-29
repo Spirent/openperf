@@ -41,10 +41,10 @@ reply_msg server::handle_request(const request_cpu_generator_add& request)
 
     if (auto id_check = config::op_config_validate_id_string(request.source->id());
         !id_check)
-        return (to_error(error_type::NOT_FOUND));
+        return (to_error(error_type::CUSTOM_ERROR, 0,  "Id is not valid"));
 
     auto result = m_generator_stack->create(*request.source);
-    if (!result) { return to_error(error_type::NOT_FOUND); }
+    if (!result) { return to_error(error_type::CUSTOM_ERROR, 0, result.error()); }
 
     auto reply = reply_cpu_generators{};
     auto reply_generator_model = model::generator(*result.value());
@@ -54,34 +54,39 @@ reply_msg server::handle_request(const request_cpu_generator_add& request)
 
 reply_msg server::handle_request(const request_cpu_generator_del& request)
 {
-    m_generator_stack->erase(request.id);
+    if (auto id_check = config::op_config_validate_id_string(request.id); !id_check)
+        return (to_error(error_type::CUSTOM_ERROR, 0, "Id is not valid"));
+
+    if (!m_generator_stack->erase(request.id)) {
+        return to_error(api::error_type::NOT_FOUND);
+    }
+
     return reply_ok{};
 }
 
 reply_msg server::handle_request(const request_cpu_generator_start& request)
 {
     auto generator = m_generator_stack->generator(request.id);
-
     if (!generator) { return to_error(api::error_type::NOT_FOUND); }
-    generator->start();
 
-    //TODO:
-    auto reply_model = model::generator_result();
-    //    m_generator_stack->statistics(request.id));
+    auto result = m_generator_stack->start_generator(request.id);
+    if (!result) { return to_error(api::error_type::CUSTOM_ERROR, 0, result.error()); }
 
     auto reply = reply_cpu_generator_results{};
-    reply.results.emplace_back(std::make_unique<model::generator_result>(reply_model));
+    reply.results.emplace_back(std::make_unique<model::generator_result>(result.value()));
     return reply;
 }
 
 reply_msg server::handle_request(const request_cpu_generator_stop& request)
 {
-    auto generator = m_generator_stack->generator(request.id);
+    if (auto id_check = config::op_config_validate_id_string(request.id); !id_check)
+        return (to_error(error_type::CUSTOM_ERROR, 0,  "Id is not valid"));
 
-    if (!generator) { return api::reply_ok{}; }
-    generator->stop();
+    if (!m_generator_stack->stop_generator(request.id)) {
+        return to_error(api::error_type::NOT_FOUND);
+    }
 
-    return api::reply_ok{};
+    return reply_ok{};
 }
 
 reply_msg
@@ -89,42 +94,33 @@ server::handle_request(const request_cpu_generator_bulk_start& request)
 {
     auto reply = reply_cpu_generator_results{};
 
-    for (size_t i = 0; i < request.ids->size(); ++i)
+    for (auto& id : *request.ids)
     {
-        auto generator = m_generator_stack->generator(request.ids->at(i));
-        if (!generator) {
-            for (size_t j = 0; j < i; ++j) {
-                auto generator_to_stop = m_generator_stack->generator(request.ids->at(i));
-                if (generator_to_stop) {
-                    generator_to_stop->stop();
-                }
+        auto stats = m_generator_stack->start_generator(id);
+        if (!stats) {
+            for (auto& stat : reply.results) {
+                m_generator_stack->stop_generator(stat->generator_id());
+                m_generator_stack->erase_statistics(stat->id());
             }
-            return to_error(api::error_type::NOT_FOUND, 0,
-                "Generator " + request.ids->at(i) + " not found");
+            return to_error(api::error_type::CUSTOM_ERROR, 0, stats.error());
         }
-        generator->start();
 
-        //TODO:
-        auto reply_model = model::generator_result();
-        //    m_generator_stack->statistics(request.ids->at(i)));
-
+        auto reply_model = model::generator_result(stats.value());
         reply.results.emplace_back(std::make_unique<model::generator_result>(reply_model));
     }
 
-    return reply;
+     return reply;
 }
 
 reply_msg
 server::handle_request(const request_cpu_generator_bulk_stop& request)
 {
-   for (auto & id : *request.ids)
-    {
-        auto generator = m_generator_stack->generator(id);
-        if (!generator) {
-            continue;
-        }
-        generator->stop();
+   bool failed = false;
+    for (auto& id : *request.ids) {
+        failed = failed || !m_generator_stack->stop_generator(id);
     }
+    if (failed)
+        return to_error(api::error_type::CUSTOM_ERROR, 0, "Some generators from the list were not found");
 
     return api::reply_ok{};
 }
@@ -132,9 +128,8 @@ server::handle_request(const request_cpu_generator_bulk_stop& request)
 reply_msg server::handle_request(const request_cpu_generator_result_list&)
 {
     auto reply = reply_cpu_generator_results{};
-    for (auto generator : m_generator_stack->list()) {
-        auto reply_model = model::generator_result(generator->statistics());
-        reply.results.emplace_back(std::make_unique<model::generator_result>(reply_model));
+    for (auto stat : m_generator_stack->list_statistics()) {
+        reply.results.emplace_back(std::make_unique<model::generator_result>(stat));
     }
 
     return reply;
@@ -142,13 +137,11 @@ reply_msg server::handle_request(const request_cpu_generator_result_list&)
 
 reply_msg server::handle_request(const request_cpu_generator_result& request)
 {
-    auto generator = m_generator_stack->generator(request.id);
-
-    if (!generator) { return to_error(api::error_type::NOT_FOUND); }
-
     auto reply = reply_cpu_generator_results{};
-    auto reply_model = model::generator_result(generator->statistics());
-    reply.results.emplace_back(std::make_unique<model::generator_result>(reply_model));
+    auto stat = m_generator_stack->statistics(request.id);
+
+    if (!stat) { return to_error(api::error_type::NOT_FOUND); }
+    reply.results.emplace_back(std::make_unique<model::generator_result>(stat.value()));
 
     return reply;
 }
@@ -156,7 +149,11 @@ reply_msg server::handle_request(const request_cpu_generator_result& request)
 reply_msg
 server::handle_request(const request_cpu_generator_result_del& request)
 {
-    m_generator_stack->erase_statistics(request.id);
+    if (auto id_check = config::op_config_validate_id_string(request.id); !id_check)
+        return (to_error(error_type::CUSTOM_ERROR, 0, "Id is not valid"));
+    if (!m_generator_stack->erase_statistics(request.id)) {
+        return to_error(api::error_type::NOT_FOUND);
+    }
     return reply_ok{};
 }
 
