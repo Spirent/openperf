@@ -24,6 +24,7 @@ std::shared_ptr<swagger::v1::model::PacketProtocolUdp> to_swagger(libpacket::pro
 libpacket::protocol::udp to_protocol(const std::shared_ptr<swagger::v1::model::PacketProtocolUdp>& src)
 {
     auto dst = libpacket::protocol::udp{};
+    set_udp_defaults(dst);
 
     if (src) {
         if (src->sourceIsSet())

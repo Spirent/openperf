@@ -357,6 +357,9 @@ def write_to_libpacket_conversions(output, name, data):
         write_cr(output)
 
 
+def has_defaults(data):
+    return sum(list(map(lambda p: 1 if 'default' in p else 0, data.values()))) > 0
+
 def write_to_libpacket_impl(output, name, data):
     format_dispatch = {
         'ipv4': write_set_libpacket_value_address,
@@ -369,6 +372,8 @@ def write_to_libpacket_impl(output, name, data):
     output.write('{}\n'.format(to_libpacket_declaration(name, arg)))
     with cpp_scope(output) as f:
         f.write('auto dst = {}{{}};\n'.format(to_libpacket_object(name)))
+        if has_defaults(data):
+            f.write('set_{}_defaults(dst);\n'.format(name.lower()))
         write_cr(output)
 
         with cpp_scope(f, 'if ({}) {{'.format(arg)) as b:

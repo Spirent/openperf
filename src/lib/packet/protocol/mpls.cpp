@@ -42,6 +42,11 @@ uint8_t get_mpls_ttl(const mpls& header) noexcept
  * MPLS setter implementations
  **/
 
+void set_mpls_defaults(mpls& header) noexcept
+{
+    set_mpls_ttl(header, 64);
+}
+
 void set_mpls_label(mpls& header, uint32_t value) noexcept
 {
     value <<= 4;

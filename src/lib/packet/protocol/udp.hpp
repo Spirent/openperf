@@ -53,6 +53,7 @@ uint16_t get_udp_checksum(const udp& header) noexcept;
  * udp set functions
  **/
 
+void set_udp_defaults(udp& header) noexcept;
 void set_udp_source(udp& header, uint16_t value) noexcept;
 void set_udp_destination(udp& header, uint16_t value) noexcept;
 void set_udp_length(udp& header, uint16_t value) noexcept;

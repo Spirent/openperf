@@ -51,6 +51,7 @@ uint8_t get_mpls_ttl(const mpls& header) noexcept;
  * MPLS set functions
  **/
 
+void set_mpls_defaults(mpls& header) noexcept;
 void set_mpls_label(mpls& header, uint32_t value) noexcept;
 void set_mpls_traffic_class(mpls& header, uint32_t value) noexcept;
 void set_mpls_bottom_of_stack(mpls& header, bool value) noexcept;

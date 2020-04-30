@@ -56,7 +56,7 @@ class PacketProtocolTcp(object):
         'window': 'window'
     }
 
-    def __init__(self, ack=None, checksum=None, data_offset=None, destination=None, flags=None, reserved=None, sequence=None, source=None, urgent_pointer=None, window=None):  # noqa: E501
+    def __init__(self, ack=None, checksum=None, data_offset=None, destination=3357, flags=None, reserved=None, sequence=None, source=3357, urgent_pointer=None, window=None):  # noqa: E501
         """PacketProtocolTcp - a model defined in Swagger"""  # noqa: E501
 
         self._ack = None

@@ -63,6 +63,13 @@ const type::ipv6_address& get_ipv6_destination(const ipv6& header) noexcept
  * IPv6 setter implementations
  **/
 
+void set_ipv6_defaults(ipv6& header) noexcept
+{
+    set_ipv6_version(header, 6);
+    set_ipv6_next_header(header, 59);
+    set_ipv6_hop_limit(header, 64);
+}
+
 void set_ipv6_version(ipv6& header, uint32_t value) noexcept
 {
     value <<= 28;

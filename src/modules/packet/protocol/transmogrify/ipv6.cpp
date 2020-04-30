@@ -28,6 +28,7 @@ std::shared_ptr<swagger::v1::model::PacketProtocolIpv6> to_swagger(libpacket::pr
 libpacket::protocol::ipv6 to_protocol(const std::shared_ptr<swagger::v1::model::PacketProtocolIpv6>& src)
 {
     auto dst = libpacket::protocol::ipv6{};
+    set_ipv6_defaults(dst);
 
     if (src) {
         if (src->versionIsSet())
