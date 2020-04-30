@@ -52,7 +52,7 @@ class PacketProtocolIpv6(object):
         'version': 'version'
     }
 
-    def __init__(self, destination=None, flow_label=None, hop_limit=None, next_header=None, payload_length=None, source=None, traffic_class=None, version=None):  # noqa: E501
+    def __init__(self, destination=None, flow_label=None, hop_limit=64, next_header=59, payload_length=None, source=None, traffic_class=None, version=6):  # noqa: E501
         """PacketProtocolIpv6 - a model defined in Swagger"""  # noqa: E501
 
         self._destination = None

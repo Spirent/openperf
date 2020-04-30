@@ -64,6 +64,7 @@ const type::ipv6_address& get_ipv6_destination(const ipv6& header) noexcept;
  * IPv6 set functions
  **/
 
+void set_ipv6_defaults(ipv6& header) noexcept;
 void set_ipv6_version(ipv6& header, uint32_t value) noexcept;
 void set_ipv6_traffic_class(ipv6& header, uint32_t value) noexcept;
 void set_ipv6_flow_label(ipv6& header, uint32_t value) noexcept;

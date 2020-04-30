@@ -9,3 +9,4 @@ MPLS:
     ttl:
       format: number
       length: 8
+      default: 64

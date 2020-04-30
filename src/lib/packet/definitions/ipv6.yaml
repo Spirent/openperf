@@ -2,6 +2,7 @@ IPv6:
   fields:
     version:
       length: 4
+      default: 6
     traffic_class:
       length: 8
     flow_label:
@@ -11,9 +12,11 @@ IPv6:
       length: 16
     next_header:
       length: 8
+      default: 59 # no next header
     hop_limit:
       format: number
       length: 8
+      default: 64
     source:
       format: ipv6
     destination:

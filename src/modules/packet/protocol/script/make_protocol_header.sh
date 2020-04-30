@@ -28,7 +28,7 @@ EOF
         if [ -z ${PREFIX} ]; then
             echo "#include \"${header}\"" >> ${OUTPUT_FILE}
         else
-            echo "#include \"${PREFIX}/$(dirname ${header}/$(basename ${header}))\"" >> ${OUTPUT_FILE}
+            echo "#include \"${PREFIX}/$(dirname ${header})/$(basename ${header})\"" >> ${OUTPUT_FILE}
         fi
     done
 
