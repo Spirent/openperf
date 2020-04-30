@@ -1,9 +1,10 @@
-from mamba import description, before, after
-from expects import *
 import os
-
 import client.api
 import client.models
+
+from mamba import description, before, after
+from expects import *
+from expects.matchers import Matcher
 from common import Config, Service
 from common.matcher import (be_valid_block_device,
                             be_valid_block_file,
@@ -52,6 +53,13 @@ def bulk_stop_model(ids):
     bsbgr.ids = ids
     return bsbgr
 
+class has_location(Matcher):
+    def __init__(self, expected):
+        self._expected = CONFIG.service().base_url + expected
+
+    def _match(self, subject):
+        expect(subject).to(have_key('Location'))
+        return subject['Location'] == self._expected, []
 
 with description('Block,', 'block') as self:
     with description('REST API,'):
@@ -136,6 +144,19 @@ with description('Block,', 'block') as self:
                     expect(lambda: self.api.get_block_file('f_oo')).to(raise_api_exception(404))
 
         with description('create file,'):
+            with description("succeeds,"):
+                with before.all:
+                    self._result = self.api.create_block_file_with_http_info(file_model(1024, '/tmp/foo'))
+
+                with it('succeeded'):
+                    expect(self._result[1]).to(equal(201))
+
+                with it('has valid Location header,'):
+                    expect(self._result[2]).to(has_location('/block-files/' + self._result[0].id))
+
+                with it('has a valid block file'):
+                    expect(self._result[0]).to(be_valid_block_file)
+
             with description('empty id,'):
                 with it('returns 400'):
                     file = file_model(1024, '/tmp/foo')
@@ -165,18 +186,6 @@ with description('Block,', 'block') as self:
             with description('invalid id,'):
                 with it('returns 404'):
                     expect(lambda: self.api.delete_block_file('f_oo')).to(raise_api_exception(404))
-
-        with description('create file,'):
-            with description('empty id,'):
-                with it('returns 400'):
-                    file = file_model(1024, '/tmp/foo')
-                    file.id = None
-                    expect(lambda: self.api.create_block_file(file)).to(raise_api_exception(400))
-
-            with description('invalid path'):
-                with it('returns 400'):
-                    file = file_model(1024, '/tmp/foo/foo')
-                    expect(lambda: self.api.create_block_file(file)).to(raise_api_exception(400))
 
         with description('list generators,'):
             with before.each:
@@ -215,6 +224,22 @@ with description('Block,', 'block') as self:
                     expect(lambda: self.api.get_block_generator('f_oo')).to(raise_api_exception(404))
 
         with description('create generator,'):
+            with description("succeeds,"):
+                with before.all:
+                    file = self.api.create_block_file(file_model(1024, '/tmp/foo'))
+                    expect(file).to(be_valid_block_file)
+                    self.file = file
+                    self._result = self.api.create_block_generator_with_http_info(generator_model(file.id))
+
+                with it('succeeded'):
+                    expect(self._result[1]).to(equal(201))
+
+                with it('has valid Location header,'):
+                    expect(self._result[2]).to(has_location('/block-generators/' + self._result[0].id))
+
+                with it('has a valid block generator'):
+                    expect(self._result[0]).to(be_valid_block_generator)
+
             with description('empty source id,'):
                 with it('returns 400'):
                     gen = generator_model()
@@ -273,15 +298,16 @@ with description('Block,', 'block') as self:
                 file = self.api.create_block_file(file_model(1024, '/tmp/foo'))
                 expect(file).to(be_valid_block_file)
                 self.file = file
-                gen = self.api.create_block_generator(generator_model(file.id))
+                gen = self.api.create_block_generator(generator_model(self.file.id))
                 expect(gen).to(be_valid_block_generator)
                 self.gen = gen
 
             with description('by existing id,'):
-                with it('succeeds'):
-                    result = self.api.start_block_generator(self.gen.id)
-                    expect(result).to(be_valid_block_generator_result)
-                    expect(self.api.get_block_generator(self.gen.id).running).to(be_true)
+                with it('succeeded'):
+                    result = self.api.start_block_generator_with_http_info(self.gen.id)
+                    expect(result[1]).to(equal(201))
+                    expect(result[2]).to(has_location('/block-generator-results/' + result[0].id))
+                    expect(result[0]).to(be_valid_block_generator_result)
 
             with description('running generator,'):
                 with it('returns 400'):
@@ -295,11 +321,6 @@ with description('Block,', 'block') as self:
             with description('invalid id,'):
                 with it('returns 404'):
                     expect(lambda: self.api.start_block_generator('f_oo')).to(raise_api_exception(404))
-
-            with after.each:
-                for gen in self.api.list_generators():
-                    if gen.running:
-                        self.api.stop_block_generator(gen.id)
 
         with description('stop running generator,'):
             with before.each:
