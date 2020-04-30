@@ -229,7 +229,7 @@ reply_msg server::handle_request(const request_list_captures& request)
 reply_msg server::handle_request(const request_create_capture& request)
 {
     auto config = sink_config{.source = request.capture->getSourceId(),
-                              .capture_len = UINT32_MAX,
+                              .max_packet_size = UINT32_MAX,
                               .duration = 0};
 
     auto user_config = request.capture->getConfig();
@@ -238,7 +238,7 @@ reply_msg server::handle_request(const request_create_capture& request)
     config.buffer_wrap = user_config->isBufferWrap();
     config.buffer_size = user_config->getBufferSize();
     if (user_config->packetSizeIsSet())
-        config.capture_len = user_config->getPacketSize();
+        config.max_packet_size = user_config->getPacketSize();
     if (user_config->durationIsSet())
         config.duration = user_config->getDuration();
     if (user_config->filterIsSet()) {
@@ -371,6 +371,30 @@ reply_msg server::handle_request(const request_delete_capture& request)
     return (reply_ok{});
 }
 
+std::unique_ptr<capture_buffer>
+create_capture_buffer([[maybe_unused]] const core::uuid& id,
+                      [[maybe_unused]] const sink& sink,
+                      [[maybe_unused]] int worker)
+{
+    switch (sink.get_capture_mode()) {
+    case capture_mode::BUFFER: {
+        return std::unique_ptr<capture_buffer>(new capture_buffer_mem(
+            sink.get_buffer_size(), sink.get_max_packet_size()));
+    }
+    case capture_mode::LIVE: {
+        // TODO: Add support for live capture mode
+        OP_LOG(OP_LOG_ERROR, "Live capture mode is not supported yet.");
+        throw std::bad_alloc();
+    }
+    case capture_mode::FILE: {
+        auto filename = openperf::core::to_string(id) + "-"
+                        + std::to_string(worker) + ".pcapng";
+        return std::unique_ptr<capture_buffer>(new capture_buffer_file(
+            filename, false, sink.get_max_packet_size()));
+    }
+    }
+}
+
 reply_msg server::handle_request(const request_start_capture& request)
 {
     auto found = binary_find(std::begin(m_sinks),
@@ -393,23 +417,11 @@ reply_msg server::handle_request(const request_start_capture& request)
     auto& result = item.first->second;
 
     try {
-        // Create capture buffers and associate with result object
-#if 0
-        auto idx = 0;
-        std::generate_n(
-            std::back_inserter(result->buffers), impl.worker_count(), [&]() {
-                auto filename = openperf::core::to_string(id) + "-"
-                                + std::to_string(++idx) + ".pcapng";
-                return std::unique_ptr<capture_buffer>(
-                    new capture_buffer_file(filename, false));
-            });
-#else
-        std::generate_n(
-            std::back_inserter(result->buffers), impl.worker_count(), [&]() {
-                return std::unique_ptr<capture_buffer>(
-                    new capture_buffer_mem(impl.get_buffer_size()));
-            });
-#endif
+        // Create capture buffers for each worker and add to result object
+        for (size_t worker = 0, n = impl.worker_count(); worker < n; ++worker) {
+            result->buffers.emplace_back(
+                create_capture_buffer(id, impl, worker));
+        }
     } catch (const std::bad_alloc& e) {
         OP_LOG(OP_LOG_ERROR, "Failed allocating capture buffer.  %s", e.what());
         auto count = m_results.erase(id);

@@ -28,6 +28,8 @@ std::string to_string(const capture_mode mode)
         return "buffer";
     case capture_mode::LIVE:
         return "live";
+    case capture_mode::FILE:
+        return "file";
     }
 }
 
@@ -35,6 +37,7 @@ capture_mode capture_mode_from_string(const std::string_view str)
 {
     if (str == "buffer") { return capture_mode::BUFFER; }
     if (str == "live") { return capture_mode::LIVE; }
+    if (str == "file") { return capture_mode::FILE; }
     return capture_mode::BUFFER;
 }
 
@@ -75,7 +78,7 @@ sink::sink(const sink_config& config, std::vector<unsigned> rx_ids)
     , m_capture_mode(config.capture_mode)
     , m_buffer_wrap(config.buffer_wrap)
     , m_buffer_size(config.buffer_size)
-    , m_capture_len(config.capture_len)
+    , m_max_packet_size(config.max_packet_size)
     , m_duration(config.duration)
     , m_filter(nullptr)
     , m_start_trigger(nullptr)
@@ -89,7 +92,7 @@ sink::sink(sink&& other)
     , m_capture_mode(other.m_capture_mode)
     , m_buffer_wrap(other.m_buffer_wrap)
     , m_buffer_size(other.m_buffer_size)
-    , m_capture_len(other.m_capture_len)
+    , m_max_packet_size(other.m_max_packet_size)
     , m_duration(other.m_duration)
     , m_filter(std::move(other.m_filter))
     , m_start_trigger(std::move(other.m_start_trigger))
@@ -106,7 +109,7 @@ sink& sink::operator=(sink&& other)
         m_capture_mode = other.m_capture_mode;
         m_buffer_wrap = other.m_buffer_wrap;
         m_buffer_size = other.m_buffer_size;
-        m_capture_len = other.m_capture_len;
+        m_max_packet_size = other.m_max_packet_size;
         m_duration = other.m_duration;
         m_filter = std::move(other.m_filter);
         m_start_trigger = std::move(other.m_start_trigger);

@@ -20,7 +20,7 @@ enum class capture_state { STOPPED, ARMED, STARTED };
 
 std::string to_string(const capture_state& state);
 
-enum class capture_mode { BUFFER, LIVE };
+enum class capture_mode { BUFFER, LIVE, FILE };
 
 std::string to_string(const capture_mode mode);
 
@@ -30,11 +30,11 @@ struct sink_config
 {
     std::string id = core::to_string(core::uuid::random());
     std::string source;
+    uint64_t buffer_size;
+    uint64_t duration;
+    uint32_t max_packet_size;
     capture_mode capture_mode;
     bool buffer_wrap;
-    uint64_t buffer_size;
-    uint32_t capture_len;
-    uint64_t duration;
 };
 
 struct sink_result
@@ -68,7 +68,7 @@ public:
     capture_mode get_capture_mode() const { return m_capture_mode; }
     bool get_buffer_wrap() const { return m_buffer_wrap; }
     uint64_t get_buffer_size() const { return m_buffer_size; }
-    uint32_t get_capture_len() const { return m_capture_len; }
+    uint32_t get_max_packet_size() const { return m_max_packet_size; }
     uint64_t get_duration() const { return m_duration; }
     void* get_filter() const { return m_filter; }
     void* get_start_trigger() const { return m_start_trigger; }
@@ -105,7 +105,7 @@ private:
     capture_mode m_capture_mode;
     bool m_buffer_wrap;
     uint64_t m_buffer_size;
-    uint32_t m_capture_len;
+    uint32_t m_max_packet_size;
     uint64_t m_duration;
     void* m_filter = nullptr;        // TODO:
     void* m_start_trigger = nullptr; // TODO:

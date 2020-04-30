@@ -49,10 +49,13 @@ static void create_ipv4_packet(mock_packet_buffer& packet_buffer,
                                size_t payload_size,
                                uint64_t timestamp)
 {
-    std::array<uint8_t, 4> src_ip{1, 0, 0, 1};
-    std::array<uint8_t, 4> dst_ip{1, 0, 0, 2};
-    std::array<uint8_t, 6> src_mac{0x10, 0, 0, 0, 0, 1};
-    std::array<uint8_t, 6> dst_mac{0x10, 0, 0, 0, 0, 2};
+    const std::array<uint8_t, 4> src_ip{1, 0, 0, 1};
+    const std::array<uint8_t, 4> dst_ip{1, 0, 0, 2};
+    const std::array<uint8_t, 6> src_mac{0x10, 0, 0, 0, 0, 1};
+    const std::array<uint8_t, 6> dst_mac{0x10, 0, 0, 0, 0, 2};
+
+    assert(sizeof(eth_hdr) + sizeof(ipv4_hdr) + FCS_SIZE + payload_size
+           <= data_size);
 
     packet_buffer.data = data;
     packet_buffer.data_length = data_size;
@@ -190,10 +193,20 @@ TEST_CASE("capture buffer", "[packet_capture]")
     {
         SECTION("create, ")
         {
-            capture_buffer_mem buffer(16 * 1024 * 1024);
-            auto stats = buffer.get_stats();
-            REQUIRE(stats.packets == 0);
-            REQUIRE(stats.bytes == 0);
+            SECTION("success")
+            {
+                capture_buffer_mem buffer(1 * 1024 * 1024);
+                auto stats = buffer.get_stats();
+                REQUIRE(stats.packets == 0);
+                REQUIRE(stats.bytes == 0);
+            }
+            SECTION("failure, too large")
+            {
+                // Try to allocate 1 TB of memory
+                REQUIRE_THROWS_AS(
+                    capture_buffer_mem(1024ULL * 1024 * 1024 * 1024),
+                    std::bad_alloc);
+            }
         }
 
         SECTION("write and read, ")
@@ -217,13 +230,18 @@ TEST_CASE("capture buffer", "[packet_capture]")
                 reinterpret_cast<struct packet_buffer*>(&packet_buffer);
 
             const int packet_count = 100;
-            capture_buffer_mem buffer(16 * 1024 * 1024);
+            capture_buffer_mem buffer(1 * 1024 * 1024);
             for (int i = 0; i < packet_count; ++i) {
-                auto ipv4 = reinterpret_cast<ipv4_hdr*>(packet_buffers.data()
+                auto ipv4 = reinterpret_cast<ipv4_hdr*>(packet_data.data()
                                                         + sizeof(eth_hdr));
                 ipv4->packet_id = ntohs(i);
                 buffer.write_packets(packet_buffers.data(), 1);
             }
+
+            // Validate buffer stats
+            auto stats = buffer.get_stats();
+            REQUIRE(stats.packets == packet_count);
+            REQUIRE(stats.bytes == packet_count * packet_buffer.length);
 
             SECTION("iterator, ")
             {
@@ -256,6 +274,151 @@ TEST_CASE("capture buffer", "[packet_capture]")
                 REQUIRE(counted == packet_count);
             }
         }
+
+        SECTION("write and read, trucated packets")
+        {
+            mock_packet_buffer packet_buffer;
+            std::array<uint8_t, 4096> packet_data;
+            const uint32_t payload_size = packet_data.size() - sizeof(eth_hdr)
+                                          - sizeof(ipv4_hdr) - FCS_SIZE;
+            const uint32_t capture_max_packet_size = 1500;
+
+            auto now = std::chrono::duration_cast<std::chrono::nanoseconds>(
+                           std::chrono::system_clock::now().time_since_epoch())
+                           .count();
+
+            create_ipv4_packet(packet_buffer,
+                               packet_data.data(),
+                               packet_data.size(),
+                               payload_size,
+                               now);
+
+            std::array<struct packet_buffer*, 1> packet_buffers;
+            packet_buffers[0] =
+                reinterpret_cast<struct packet_buffer*>(&packet_buffer);
+
+            const int packet_count = 100;
+            capture_buffer_mem buffer(1 * 1024 * 1024, capture_max_packet_size);
+
+            for (int i = 0; i < packet_count; ++i) {
+                auto ipv4 = reinterpret_cast<ipv4_hdr*>(packet_data.data()
+                                                        + sizeof(eth_hdr));
+                ipv4->packet_id = ntohs(i);
+                buffer.write_packets(packet_buffers.data(), 1);
+            }
+
+            // Validate buffer stats
+            auto stats = buffer.get_stats();
+            REQUIRE(stats.packets == packet_count);
+            REQUIRE(stats.bytes == packet_count * capture_max_packet_size);
+
+            int counted = 0;
+            for (auto& packet : buffer) {
+                REQUIRE(packet.hdr.packet_len == packet_buffer.length);
+                REQUIRE(packet.hdr.captured_len == capture_max_packet_size);
+                ++counted;
+            }
+            REQUIRE(counted == packet_count);
+        }
+
+        SECTION("write and read, trucated packets")
+        {
+            mock_packet_buffer packet_buffer;
+            std::array<uint8_t, 4096> packet_data;
+            const uint32_t payload_size = packet_data.size() - sizeof(eth_hdr)
+                                          - sizeof(ipv4_hdr) - FCS_SIZE;
+            const uint32_t capture_max_packet_size = 1500;
+
+            auto now = std::chrono::duration_cast<std::chrono::nanoseconds>(
+                           std::chrono::system_clock::now().time_since_epoch())
+                           .count();
+
+            create_ipv4_packet(packet_buffer,
+                               packet_data.data(),
+                               packet_data.size(),
+                               payload_size,
+                               now);
+
+            std::array<struct packet_buffer*, 1> packet_buffers;
+            packet_buffers[0] =
+                reinterpret_cast<struct packet_buffer*>(&packet_buffer);
+
+            const int packet_count = 100;
+            capture_buffer_mem buffer(1 * 1024 * 1024, capture_max_packet_size);
+
+            for (int i = 0; i < packet_count; ++i) {
+                auto ipv4 = reinterpret_cast<ipv4_hdr*>(packet_data.data()
+                                                        + sizeof(eth_hdr));
+                ipv4->packet_id = ntohs(i);
+                buffer.write_packets(packet_buffers.data(), 1);
+            }
+
+            // Validate buffer stats
+            auto stats = buffer.get_stats();
+            REQUIRE(stats.packets == packet_count);
+            REQUIRE(stats.bytes == packet_count * capture_max_packet_size);
+
+            int counted = 0;
+            for (auto& packet : buffer) {
+                REQUIRE(packet.hdr.packet_len == packet_buffer.length);
+                REQUIRE(packet.hdr.captured_len == capture_max_packet_size);
+                ++counted;
+            }
+            REQUIRE(counted == packet_count);
+        }
+
+        SECTION("write and read to full buffer")
+        {
+            mock_packet_buffer packet_buffer;
+            std::array<uint8_t, 4096> packet_data;
+            const uint32_t payload_size = packet_data.size() - sizeof(eth_hdr)
+                                          - sizeof(ipv4_hdr) - FCS_SIZE;
+
+            auto now = std::chrono::duration_cast<std::chrono::nanoseconds>(
+                           std::chrono::system_clock::now().time_since_epoch())
+                           .count();
+
+            create_ipv4_packet(packet_buffer,
+                               packet_data.data(),
+                               packet_data.size(),
+                               payload_size,
+                               now);
+
+            std::array<struct packet_buffer*, 1> packet_buffers;
+            packet_buffers[0] =
+                reinterpret_cast<struct packet_buffer*>(&packet_buffer);
+
+            capture_buffer_mem buffer(1 * 1024 * 1024);
+
+            // Write packets until buffer gets full
+            uint32_t i = 0;
+            while (true) {
+                auto ipv4 = reinterpret_cast<ipv4_hdr*>(packet_data.data()
+                                                        + sizeof(eth_hdr));
+                ipv4->packet_id = ntohs(i);
+                if (buffer.write_packets(packet_buffers.data(), 1) < 0) break;
+                ++i;
+            }
+            REQUIRE(buffer.is_full());
+            auto packet_count = i;
+
+            // Buffer should be full so write should fail
+            REQUIRE(buffer.write_packets(packet_buffers.data(), 1) < 0);
+
+            // Validate buffer stats
+            auto stats = buffer.get_stats();
+            REQUIRE(stats.packets == packet_count);
+            REQUIRE(stats.bytes == packet_count * packet_data.size());
+
+            // Validate packets in buffer
+            int counted = 0;
+            for (auto& packet : buffer) {
+                REQUIRE(packet.hdr.packet_len == packet_buffer.length);
+                REQUIRE(packet.hdr.captured_len == packet_data.size());
+                ++counted;
+            }
+            REQUIRE(counted == packet_count);
+        }
     }
 
     SECTION("file, ")
@@ -264,12 +427,22 @@ TEST_CASE("capture buffer", "[packet_capture]")
 
         SECTION("create, ")
         {
+            SECTION("success")
             {
-                capture_buffer_file buffer(capture_filename);
-                REQUIRE(std::filesystem::exists(capture_filename));
+                {
+                    capture_buffer_file buffer(capture_filename);
+                    REQUIRE(std::filesystem::exists(capture_filename));
+                }
+                std::remove(capture_filename);
+                REQUIRE(!std::filesystem::exists(capture_filename));
             }
-            std::remove(capture_filename);
-            REQUIRE(!std::filesystem::exists(capture_filename));
+
+            SECTION("failure, bad path")
+            {
+                REQUIRE_THROWS_AS(
+                    capture_buffer_file("/tmp/bad_path_to_file/file.pcapng"),
+                    std::runtime_error);
+            }
         }
 
         SECTION("write and read, ")
@@ -296,7 +469,7 @@ TEST_CASE("capture buffer", "[packet_capture]")
             capture_buffer_file buffer(capture_filename);
             REQUIRE(std::filesystem::exists(capture_filename));
             for (int i = 0; i < packet_count; ++i) {
-                auto ipv4 = reinterpret_cast<ipv4_hdr*>(packet_buffers.data()
+                auto ipv4 = reinterpret_cast<ipv4_hdr*>(packet_data.data()
                                                         + sizeof(eth_hdr));
                 ipv4->packet_id = ntohs(i);
                 buffer.write_packets(packet_buffers.data(), 1);

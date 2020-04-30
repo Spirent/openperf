@@ -27,11 +27,11 @@ def get_nth_port_id(api_client, index):
     return ports[index].id
 
 
-def capture_model(api_client, id = None):
+def capture_model(api_client, id = None, buffer_size=16*1024*1024):
     if not id:
         id = get_nth_port_id(api_client, 0)
 
-    config = client.models.PacketCaptureConfig(mode='buffer', buffer_size=16*1024*1024)
+    config = client.models.PacketCaptureConfig(mode='buffer', buffer_size=buffer_size)
     capture = client.models.PacketCapture()
     capture.source_id = id
     capture.config = config
@@ -228,6 +228,16 @@ with description('Packet Capture,', 'packet_capture') as self:
             with description('non-existent capture id,'):
                 with it('returns 404'):
                     expect(lambda: self.api.start_capture('foo')).to(raise_api_exception(404))
+
+        with description('start capture, buffer too large'):
+            with it('returns 400'):
+                # Try to allocate capture with 1 TB or memory
+                cap = self.api.create_capture(capture_model(self.api.api_client, buffer_size = 1024*1024*1024*1024))
+                expect(cap).to(be_valid_packet_capture)
+                self.capture = cap
+                # Capture memory is allocated when the capture is started
+                # so memory allocation failure occurs on start
+                expect(lambda: self.api.start_capture(self.capture.id)).to(raise_api_exception(400))
 
         with description('stop running capture,'):
             with before.each:

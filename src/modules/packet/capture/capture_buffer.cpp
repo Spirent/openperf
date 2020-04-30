@@ -1,6 +1,8 @@
 #include <cinttypes>
 #include <cstdio>
 #include <filesystem>
+#include <sys/mman.h>
+#include <unistd.h>
 
 #include "core/op_log.h"
 #include "packet/capture/capture_buffer.hpp"
@@ -9,23 +11,58 @@
 
 namespace openperf::packet::capture {
 
-constexpr size_t max_packet_size = 16384;
+constexpr size_t MAX_PACKET_SIZE = 16384;
 
-capture_buffer_mem::capture_buffer_mem(size_t size)
-    : m_mem_size(size)
+/**
+ * Round x up to the nearest multiple of 'multiple'.
+ */
+template <typename T> static __attribute__((const)) T round_up(T x, T multiple)
+{
+    assert(multiple); /* don't want a multiple of 0 */
+    auto remainder = x % multiple;
+    return (remainder == 0 ? x : x + multiple - remainder);
+}
+
+capture_buffer_mem::capture_buffer_mem(uint64_t size, uint32_t max_packet_size)
+    : m_mem(nullptr)
+    , m_mem_size(0)
     , m_start_addr(nullptr)
     , m_end_addr(nullptr)
     , m_cur_addr(nullptr)
     , m_stats{0, 0}
+    , m_max_packet_size(max_packet_size)
     , m_full(false)
 {
-    m_mem = std::make_unique<uint8_t[]>(m_mem_size);
-    m_start_addr = m_mem.get();
-    m_end_addr = m_mem.get() + m_mem_size;
+    const size_t page_size = sysconf(_SC_PAGESIZE);
+    m_mem_size = round_up(size, page_size);
+    m_mem =
+        reinterpret_cast<uint8_t*>(std::aligned_alloc(page_size, m_mem_size));
+    if (!m_mem) { throw std::bad_alloc(); }
+    OP_LOG(OP_LOG_INFO,
+           "allocated capture buffer memory address %p size %zu",
+           reinterpret_cast<void*>(m_mem),
+           m_mem_size);
+
+    if (mlock(m_mem, m_mem_size) < 0) {
+        OP_LOG(OP_LOG_WARNING,
+               "Unable to mlock capture memory address %p size %zu",
+               reinterpret_cast<void*>(m_mem),
+               m_mem_size);
+    }
+
+    m_start_addr = m_mem;
+    m_end_addr = m_mem + m_mem_size;
     m_cur_addr = m_start_addr;
 }
 
-capture_buffer_mem::~capture_buffer_mem() {}
+capture_buffer_mem::~capture_buffer_mem()
+{
+    if (m_mem) {
+        munlock(m_mem, m_mem_size);
+        free(m_mem);
+        m_mem = nullptr;
+    }
+}
 
 int capture_buffer_mem::write_packets(
     const openperf::packetio::packets::packet_buffer* const packets[],
@@ -37,8 +74,7 @@ int capture_buffer_mem::write_packets(
         auto timestamp = openperf::packetio::packets::rx_timestamp(packet);
         auto data = openperf::packetio::packets::to_data(packet);
         hdr.packet_len = openperf::packetio::packets::length(packet);
-        hdr.captured_len =
-            hdr.packet_len; // TODO: Currently capturing all of packet data
+        hdr.captured_len = std::min(hdr.packet_len, m_max_packet_size);
         hdr.timestamp =
             std::chrono::time_point_cast<std::chrono::nanoseconds>(timestamp)
                 .time_since_epoch()
@@ -129,10 +165,12 @@ void capture_buffer_mem_reader::rewind()
 ///////////////////////////////////////////////////////////////////////////////
 
 capture_buffer_file::capture_buffer_file(std::string_view filename,
-                                         bool keep_file)
+                                         bool keep_file,
+                                         uint32_t max_packet_size)
     : m_filename(filename)
     , m_keep_file(keep_file)
     , m_full(false)
+    , m_max_packet_size(max_packet_size)
     , m_fp_write(nullptr)
     , m_stats{0, 0}
 {
@@ -272,7 +310,7 @@ int capture_buffer_file::write_packets(
 
         block_hdr.packet_len = packet_len;
         block_hdr.captured_len =
-            packet_len; // TODO: Currently capturing all of packet data
+            std::min(uint32_t(packet_len), m_max_packet_size);
         block_hdr.timestamp_high = (ts >> 32);
         block_hdr.timestamp_low = ts;
 
@@ -424,7 +462,7 @@ size_t capture_buffer_file_reader::read_packets(capture_packet* packets[],
     if (count > m_packets.size()) {
         // Allocate buffer space for all packets
         m_packets.resize(count);
-        m_packet_data.resize(count * max_packet_size);
+        m_packet_data.resize(count * MAX_PACKET_SIZE);
     }
 
     uint8_t* data_ptr = &m_packet_data[0];
@@ -464,7 +502,8 @@ size_t capture_buffer_file_reader::read_packets(capture_packet* packets[],
         m_packets[i].hdr.packet_len = block_hdr.packet_len;
         m_packets[i].data = data_ptr;
 
-        if (block_remain < max_packet_size) {
+        if (block_remain < MAX_PACKET_SIZE) {
+            // Read the packet data and trailing size  if there is enough space
             if (fread(data_ptr, block_remain, 1, m_fp_read) != 1) {
                 OP_LOG(OP_LOG_ERROR,
                        "Failed reading PCAP enhanced packet block data %zu",
@@ -474,21 +513,24 @@ size_t capture_buffer_file_reader::read_packets(capture_packet* packets[],
             }
             m_read_offset += block_remain;
         } else {
-            if (block_hdr.captured_len > max_packet_size) {
+            // Data is too large to all fit in the buffer so read as much as
+            // possible and skip over the rest
+            if (block_hdr.captured_len > MAX_PACKET_SIZE) {
+                // Not an error when just skipping trailing size bytes
                 OP_LOG(OP_LOG_ERROR,
                        "Unexepcted PCAP block too large %" PRIu32,
                        block_hdr.block_total_length);
-                block_hdr.captured_len = max_packet_size;
+                block_hdr.captured_len = MAX_PACKET_SIZE;
             }
-            if (fread(data_ptr, max_packet_size, 1, m_fp_read) != 1) {
+            if (fread(data_ptr, MAX_PACKET_SIZE, 1, m_fp_read) != 1) {
                 OP_LOG(OP_LOG_ERROR,
                        "Failed reading PCAP enhanced packet block data %zu",
-                       max_packet_size);
+                       MAX_PACKET_SIZE);
                 m_eof = true;
                 break;
             }
-            m_read_offset += max_packet_size;
-            block_remain -= max_packet_size;
+            m_read_offset += MAX_PACKET_SIZE;
+            block_remain -= MAX_PACKET_SIZE;
             if (fseek(m_fp_read, block_remain, SEEK_CUR) != 0) {
                 OP_LOG(OP_LOG_ERROR,
                        "Failed skipping PCAP enhanced packet block data %zu",
@@ -498,7 +540,7 @@ size_t capture_buffer_file_reader::read_packets(capture_packet* packets[],
             }
             m_read_offset += block_remain;
         }
-        data_ptr += pcap::pad_block_length(block_hdr.captured_len);
+        data_ptr += pad_capture_data_len(block_hdr.captured_len);
         packets[i] = &m_packets[i];
         ++i;
     }

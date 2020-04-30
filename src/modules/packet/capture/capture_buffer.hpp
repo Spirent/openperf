@@ -336,7 +336,7 @@ public:
 class capture_buffer_mem : public capture_buffer
 {
 public:
-    capture_buffer_mem(size_t size);
+    capture_buffer_mem(uint64_t size, uint32_t max_packet_size = UINT32_MAX);
     capture_buffer_mem(const capture_buffer_mem&) = delete;
     virtual ~capture_buffer_mem();
 
@@ -354,14 +354,15 @@ public:
     uint8_t* get_cur_addr() const { return m_cur_addr; }
 
 private:
-    std::unique_ptr<uint8_t[]> m_mem;
-    size_t m_mem_size;
+    uint8_t* m_mem;
+    uint64_t m_mem_size;
 
     uint8_t* m_start_addr;
     uint8_t* m_end_addr;
     uint8_t* m_cur_addr;
 
     capture_buffer_stats m_stats;
+    uint32_t m_max_packet_size;
     bool m_full;
 };
 
@@ -404,7 +405,9 @@ private:
 class capture_buffer_file : public capture_buffer
 {
 public:
-    capture_buffer_file(std::string_view filename, bool keep_file = false);
+    capture_buffer_file(std::string_view filename,
+                        bool keep_file = false,
+                        uint32_t max_packet_size = UINT32_MAX);
     capture_buffer_file(const capture_buffer_file&) = delete;
     virtual ~capture_buffer_file();
 
@@ -426,6 +429,7 @@ private:
     std::string m_filename;
     bool m_keep_file;
     bool m_full;
+    uint32_t m_max_packet_size;
     FILE* m_fp_write;
     capture_buffer_stats m_stats;
 };

@@ -5,12 +5,12 @@ import client.models
 
 
 class _be_valid_packet_capture(Matcher):
-    def _match(self, analyzer):
-        expect(analyzer).to(be_a(client.models.PacketCapture))
-        expect(analyzer.id).not_to(be_empty)
-        expect(analyzer.source_id).not_to(be_empty)
-        expect(analyzer.active).not_to(be_none)
-        expect(analyzer.config).to(be_a(client.models.PacketCaptureConfig))
+    def _match(self, capture):
+        expect(capture).to(be_a(client.models.PacketCapture))
+        expect(capture.id).not_to(be_empty)
+        expect(capture.source_id).not_to(be_empty)
+        expect(capture.active).not_to(be_none)
+        expect(capture.config).to(be_a(client.models.PacketCaptureConfig))
         return True, ['is valid packet capture']
 
 
