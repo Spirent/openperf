@@ -26,6 +26,11 @@ struct target_config {
 
 struct task_cpu_config {
     std::vector<target_config> targets;
+    task_cpu_config() = default;
+    task_cpu_config(const task_cpu_config& other) {
+        for (size_t i = 0; i < other.targets.size(); ++i)
+            targets.push_back(other.targets[i]);
+    }
 };
 
 struct target_cpu_stat {

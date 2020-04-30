@@ -107,7 +107,8 @@ tl::expected<model::generator_result, std::string> generator_stack::start_genera
         return tl::make_unexpected("Generator is already in running state");
     }
 
-    auto result = gen->start();
+    gen->start();
+    auto result = gen->statistics();
     m_statistics[result.id()] = gen;
     return result;
 }
