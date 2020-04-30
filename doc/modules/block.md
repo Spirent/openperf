@@ -4,6 +4,10 @@ The **Block** module is the core of OpenPerf, handling block devices I/O load ge
 
 ## Block device
 
+Hardware- or pseudo- device, providing an ability for block I/O load generation.
+
+### Block device api model
+
 ```json
 {
     "id": "83b1ab46-e661-4725-6b91-2318bdbe2b34",
@@ -21,6 +25,10 @@ The **Block** module is the core of OpenPerf, handling block devices I/O load ge
 * **usable** - indicates whether it is safe to use this device for block I/O load generation
 
 ## Block file
+
+An interface for a block device, providing an ability for block I/O load generation with specifing file system path and maximum size, limiting block I/O load generation.
+
+### Block file api model
 
 ```json
 {
@@ -42,6 +50,11 @@ The **Block** module is the core of OpenPerf, handling block devices I/O load ge
     * **ready** - file is ready for I/O load generation
 
 ## Block generator
+
+Component of Openperf core, providing an ability for block I/O load generation. Requires block resource such as Block File or Block Device.
+Running generator cannot be deleted.
+
+### Block generator api model
 
 ```json
 {
@@ -80,6 +93,11 @@ Leave *reads_per_sec* or *writes_per_sec* as zero value to ignore operation whil
 Start block generator command returns Block Generator Result, created for the particular start. Response location header contains uri of created result.
 
 ## Block generator result
+
+Statistics of block I/O load generation, unique for each block generator start. After activity has stopped it is independent from block generator, generated this result.
+Active generator result cannot be deleted.
+
+### Block generato result api model
 
 ```json
 {
@@ -124,3 +142,163 @@ Start block generator command returns Block Generator Result, created for the pa
     * **latency_min** - the minimum observed latency value (in nanoseconds)
     * **ops_actual** - the actual number of operations performed
     * **ops_target** - the intended number of operations performed
+
+## Commands flow
+
+### Create Block File or use Block Device instead
+
+```bash
+curl --location --request POST '<OPENPERF_HOST>:<OPENPERF_PORT>/block-files' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "id": "",
+    "file_size": 63999836160,
+    "path": "/tmp/foo",
+    "init_percent_complete": 0,
+    "state": "none"
+}'
+```
+Response:
+```
+< HTTP/1.1 201 Created
+< Location: http://<OPENPERF_HOST>:<OPENPERF_PORT>/block-files/96a41125-3ecc-40f0-5833-5dccf6383dcd
+< Content-Type: application/json
+< Content-Length: 124
+{
+    "file_size":63999836160,
+    "id":"96a41125-3ecc-40f0-5833-5dccf6383dcd",
+    "init_percent_complete":0,
+    "path":"/tmp/foo",
+    "state":"init"
+}
+```
+
+### Create Block Generator
+```bash
+curl --location --request POST '<OPENPERF_HOST>:<OPENPERF_PORT>/block-generators' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+  "id": "",
+  "config": {
+    "queue_depth": 2,
+    "reads_per_sec": 100,
+    "read_size": 10485,
+    "writes_per_sec": 100,
+    "write_size": 10485,
+    "pattern": "random"
+  },
+  "resource_id": "96a41125-3ecc-40f0-5833-5dccf6383dcd",
+  "running": false
+}'
+```
+Response:
+```
+< HTTP/1.1 201 Created
+< Location: http://<OPENPERF_HOST>:<OPENPERF_PORT>/block-generators/e57815f4-a56c-4286-5799-bace8f1125f7
+< Content-Type: application/json
+< Content-Length: 230
+{
+    "config": {
+        "pattern":"random",
+        "queue_depth":2,
+        "read_size":10485,
+        "reads_per_sec":100,
+        "write_size":10485,
+        "writes_per_sec":100
+    },
+    "id":"e57815f4-a56c-4286-5799-bace8f1125f7",
+    "resource_id":"96a41125-3ecc-40f0-5833-5dccf6383dcd",
+    "running":false
+}
+```
+ss
+### Start existing Block Generator
+
+```bash
+curl --location --request POST '<OPENPERF_HOST>:<OPENPERF_PORT>/block-generators/e57815f4-a56c-4286-5799-bace8f1125f7/start'
+```
+Response:
+```
+< HTTP/1.1 201 Created
+< Location: http://<OPENPERF_HOST>:<OPENPERF_PORT>/block-generators/e57815f4-a56c-4286-5799-bace8f1125f7/start/3d03c5d7-6a5a-45d6-7711-5c8e7e26f66d
+< Content-Type: application/json
+< Content-Length: 419
+{
+    "active":true,
+    "generator_id":"e57815f4-a56c-4286-5799-bace8f1125f7",
+    "id":"8d3d25b6-b02c-48c4-5eb5-74cfcd3540cb",
+    "read": {
+        "bytes_actual":0,
+        "bytes_target":0,
+        "io_errors":0,
+        "latency":0,
+        "latency_max":0,
+        "latency_min":0,
+        "ops_actual":0,
+        "ops_target":0
+    },
+    "timestamp":"1970-01-14T08:46:14.183615Z",
+    "write": {
+        "bytes_actual":0,
+        "bytes_target":0,
+        "io_errors":0,
+        "latency":0,
+        "latency_max":0,
+        "latency_min":0,
+        "ops_actual":0,
+        "ops_target":0
+    }
+}
+```
+
+
+
+### Stop Block Generator
+
+```bash
+curl --location --request POST '<OPENPERF_HOST>:<OPENPERF_PORT>/block-generators/e57815f4-a56c-4286-5799-bace8f1125f7/stop'
+```
+Response:
+```
+< HTTP/1.1 204 No Content
+< Content-Type: application/json
+< Content-Length: 0
+```
+
+### Check the created Block Generator Result
+
+```bash
+curl --location --request GET '<OPENPERF_HOST>:<OPENPERF_PORT>/block-generator-results/3d03c5d7-6a5a-45d6-7711-5c8e7e26f66d'
+```
+Response:
+```
+< HTTP/1.1 200 OK
+< Content-Type: application/json
+< Content-Length: 483
+{
+    "active": false,
+    "generator_id": "e57815f4-a56c-4286-5799-bace8f1125f7",
+    "id": "8d3d25b6-b02c-48c4-5eb5-74cfcd3540cb",
+    "read": {
+        "bytes_actual": 2862405,
+        "bytes_target": 2862405,
+        "io_errors": 0,
+        "latency": 78215989,
+        "latency_max": 3665760,
+        "latency_min": 9887,
+        "ops_actual": 546,
+        "ops_target": 546
+    },
+    "timestamp": "2020-04-30T08:59:40.301996Z",
+    "write": {
+        "bytes_actual": 2862405,
+        "bytes_target": 2862405,
+        "io_errors": 0,
+        "latency": 47406175,
+        "latency_max": 1135615,
+        "latency_min": 24579,
+        "ops_actual": 546,
+        "ops_target": 546
+    }
+}
+```
