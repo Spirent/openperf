@@ -10,7 +10,7 @@
 #include "packetio/generic_sink.hpp"
 #include "utils/recycle.hpp"
 
-namespace openperf::packetio::packets {
+namespace openperf::packetio::packet {
 struct packet_buffer;
 }
 
@@ -89,24 +89,24 @@ public:
         return m_results.load(std::memory_order_consume);
     }
 
-    bool uses_feature(packetio::packets::sink_feature_flags flags) const;
+    bool uses_feature(packetio::packet::sink_feature_flags flags) const;
 
     uint16_t
-    push(const openperf::packetio::packets::packet_buffer* const packets[],
+    push(const openperf::packetio::packet::packet_buffer* const packets[],
          uint16_t count) const;
 
 private:
     static std::vector<uint8_t> make_indexes(std::vector<unsigned>& ids);
     uint16_t check_start_trigger_condition(
-        const openperf::packetio::packets::packet_buffer* const packets[],
+        const openperf::packetio::packet::packet_buffer* const packets[],
         uint16_t packets_length) const;
     uint16_t check_stop_trigger_condition(
-        const openperf::packetio::packets::packet_buffer* const packets[],
+        const openperf::packetio::packet::packet_buffer* const packets[],
         uint16_t packets_length) const;
     uint16_t check_filter_condition(
-        const openperf::packetio::packets::packet_buffer* const packets[],
+        const openperf::packetio::packet::packet_buffer* const packets[],
         uint16_t packets_length,
-        const openperf::packetio::packets::packet_buffer* filtered[]) const;
+        const openperf::packetio::packet::packet_buffer* filtered[]) const;
 
     std::string m_id;
     std::string m_source;

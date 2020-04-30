@@ -274,7 +274,7 @@ to_sequence(const swagger::v1::model::PacketGeneratorConfig& config)
 source_load to_load(const swagger::v1::model::TrafficLoad& load,
                     const traffic::sequence& sequence)
 {
-    using rep_type = typename packetio::packets::packets_per_hour::rep;
+    using rep_type = typename packetio::packet::packets_per_hour::rep;
     using packets_per_hour =
         openperf::units::rate<rep_type, std::ratio<1, 3600>>;
     using packets_per_minute =

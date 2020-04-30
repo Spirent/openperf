@@ -182,9 +182,9 @@ bool sink::active() const
     return (result != nullptr && result->state != capture_state::STOPPED);
 }
 
-bool sink::uses_feature(packetio::packets::sink_feature_flags flags) const
+bool sink::uses_feature(packetio::packet::sink_feature_flags flags) const
 {
-    using sink_feature_flags = packetio::packets::sink_feature_flags;
+    using sink_feature_flags = packetio::packet::sink_feature_flags;
 
     /* We always need rx_timestamps */
     auto needed = openperf::utils::bit_flags<sink_feature_flags>{
@@ -194,7 +194,7 @@ bool sink::uses_feature(packetio::packets::sink_feature_flags flags) const
 }
 
 uint16_t sink::check_start_trigger_condition(
-    [[maybe_unused]] const packetio::packets::packet_buffer* const packets[],
+    [[maybe_unused]] const packetio::packet::packet_buffer* const packets[],
     [[maybe_unused]] uint16_t packets_length) const
 {
     // TODO: Add support for trigger
@@ -202,7 +202,7 @@ uint16_t sink::check_start_trigger_condition(
 }
 
 uint16_t sink::check_stop_trigger_condition(
-    [[maybe_unused]] const packetio::packets::packet_buffer* const packets[],
+    [[maybe_unused]] const packetio::packet::packet_buffer* const packets[],
     [[maybe_unused]] uint16_t packets_length) const
 {
     // TODO: Add support for trigger
@@ -210,9 +210,9 @@ uint16_t sink::check_stop_trigger_condition(
 }
 
 uint16_t sink::check_filter_condition(
-    const packetio::packets::packet_buffer* const packets[],
+    const packetio::packet::packet_buffer* const packets[],
     uint16_t packets_length,
-    const packetio::packets::packet_buffer* filtered[]) const
+    const packetio::packet::packet_buffer* filtered[]) const
 {
     // TODO: Add support for filter
     auto end = std::copy_if(packets,
@@ -222,7 +222,7 @@ uint16_t sink::check_filter_condition(
     return std::distance(filtered, end);
 }
 
-uint16_t sink::push(const packetio::packets::packet_buffer* const packets[],
+uint16_t sink::push(const packetio::packet::packet_buffer* const packets[],
                     uint16_t packets_length) const
 {
     const auto id = packetio::internal::worker::get_id();
@@ -264,7 +264,7 @@ uint16_t sink::push(const packetio::packets::packet_buffer* const packets[],
 
     if (m_filter) {
         constexpr uint16_t max_burst_size = 64;
-        std::array<const packetio::packets::packet_buffer*, max_burst_size>
+        std::array<const packetio::packet::packet_buffer*, max_burst_size>
             filtered;
         auto remain = length;
         while (remain) {

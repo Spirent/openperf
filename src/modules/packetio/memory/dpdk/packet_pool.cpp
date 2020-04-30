@@ -105,25 +105,25 @@ packet_pool::packet_pool(std::string_view id,
            m_pool->socket_id);
 }
 
-packets::packet_buffer* packet_pool::get()
+packet::packet_buffer* packet_pool::get()
 {
-    return (reinterpret_cast<packets::packet_buffer*>(
+    return (reinterpret_cast<packet::packet_buffer*>(
         rte_pktmbuf_alloc(m_pool.get())));
 }
 
-uint16_t packet_pool::get(packets::packet_buffer* packets[], uint16_t count)
+uint16_t packet_pool::get(packet::packet_buffer* packets[], uint16_t count)
 {
     auto error = rte_pktmbuf_alloc_bulk(
         m_pool.get(), reinterpret_cast<rte_mbuf**>(packets), count);
     return (error ? 0 : count);
 }
 
-void packet_pool::put(packets::packet_buffer* packet)
+void packet_pool::put(packet::packet_buffer* packet)
 {
     rte_pktmbuf_free(reinterpret_cast<rte_mbuf*>(packet));
 }
 
-void packet_pool::put(packets::packet_buffer* const packets[], uint16_t count)
+void packet_pool::put(packet::packet_buffer* const packets[], uint16_t count)
 {
     std::for_each(packets, packets + count, [](auto packet) {
         rte_pktmbuf_free(reinterpret_cast<rte_mbuf*>(packet));

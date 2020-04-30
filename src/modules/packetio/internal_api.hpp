@@ -21,7 +21,7 @@ extern std::string_view endpoint;
 struct sink_data
 {
     char src_id[name_length_max];
-    packets::generic_sink sink;
+    packet::generic_sink sink;
 };
 
 struct request_sink_add
@@ -37,7 +37,7 @@ struct request_sink_del
 struct source_data
 {
     char dst_id[name_length_max];
-    packets::generic_source source;
+    packet::generic_source source;
 };
 
 struct request_source_add

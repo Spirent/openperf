@@ -3,7 +3,7 @@
 
 #include "packetio/packet_buffer.hpp"
 
-namespace openperf::packetio::packets {
+namespace openperf::packetio::packet {
 
 struct mock_packet_buffer
 {
@@ -20,6 +20,6 @@ struct mock_packet_buffer
     void* data = nullptr;
 };
 
-} // namespace openperf::packetio::packets
+} // namespace openperf::packetio::packet
 
 #endif // _OP_PACKETIO_MOCK_PACKET_BUFFER_HPP_

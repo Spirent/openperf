@@ -10,7 +10,7 @@
 struct rte_mempool;
 
 namespace openperf::packetio {
-namespace packets {
+namespace packet {
 struct packet_buffer;
 }
 
@@ -28,11 +28,11 @@ public:
                 uint16_t cache_size = 0);
     ~packet_pool() = default;
 
-    packets::packet_buffer* get();
-    uint16_t get(packets::packet_buffer* buffers[], uint16_t count);
+    packet::packet_buffer* get();
+    uint16_t get(packet::packet_buffer* buffers[], uint16_t count);
 
-    void put(packets::packet_buffer* buffer);
-    void put(packets::packet_buffer* const buffers[], uint16_t count);
+    void put(packet::packet_buffer* buffer);
+    void put(packet::packet_buffer* const buffers[], uint16_t count);
 };
 
 } // namespace dpdk

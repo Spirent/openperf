@@ -8,7 +8,7 @@
 
 #include "utils/enum_flags.hpp"
 
-namespace openperf::packetio::packets {
+namespace openperf::packetio::packet {
 
 struct packet_buffer;
 
@@ -97,8 +97,8 @@ private:
     std::shared_ptr<sink_concept> m_self;
 };
 
-} // namespace openperf::packetio::packets
+} // namespace openperf::packetio::packet
 
-declare_enum_flags(openperf::packetio::packets::sink_feature_flags);
+declare_enum_flags(openperf::packetio::packet::sink_feature_flags);
 
 #endif /* _OP_PACKETIO_GENERIC_SINK_HPP_ */
