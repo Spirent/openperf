@@ -1,74 +1,33 @@
 #ifndef _OP_CPU_TASK_CPU_HPP_
 #define _OP_CPU_TASK_CPU_HPP_
 
-#include <cinttypes>
 #include <atomic>
-#include <vector>
 #include <forward_list>
 #include <memory>
 
 #include "utils/worker/task.hpp"
 #include "cpu/target.hpp"
+#include "cpu/common.hpp"
+#include "cpu/task_cpu_stat.hpp"
 
-namespace openperf::cpu::internal
-{
-
-enum class instruction_set {
-    SCALAR = 1
-};
+namespace openperf::cpu::internal {
 
 struct target_config {
-    instruction_set set;
-    target::data_size_t data_size;
-    target::operation_t operation;
-    uint32_t weight;
+    cpu::instruction_set set;
+    cpu::data_size data_size;
+    cpu::operation operation;
+    uint64_t weight;
 };
 
 struct task_cpu_config {
+    double utilization = 0.0;
     std::vector<target_config> targets;
     task_cpu_config() = default;
-    task_cpu_config(const task_cpu_config& other) {
+    task_cpu_config(const task_cpu_config& other)
+        : utilization(other.utilization)
+    {
         for (size_t i = 0; i < other.targets.size(); ++i)
             targets.push_back(other.targets[i]);
-    }
-};
-
-struct target_cpu_stat {
-    uint64_t cycles;
-};
-
-struct task_cpu_stat {
-    uint64_t available = 0;
-    uint64_t utilization = 0;
-    uint64_t system = 0;
-    uint64_t user = 0;
-    uint64_t steal = 0;
-    uint64_t error = 0;
-    std::vector<target_cpu_stat> targets;
-
-    task_cpu_stat() = default;
-
-    task_cpu_stat(const task_cpu_stat& other) {
-        copy(other);
-    }
-
-    task_cpu_stat& operator= (const task_cpu_stat& other) {
-        copy(other);
-        return *this;
-    }
-
-private:
-    void copy (const task_cpu_stat& other) {
-        available = other.available;
-        utilization = other.utilization;
-        system = other.system;
-        user = other.user;
-        steal = other.steal;
-        error = other.error;
-
-        targets.resize(other.targets.size());
-        for (size_t i = 0; i < other.targets.size(); ++i)
-            targets[i] = other.targets[i];
     }
 };
 
@@ -77,6 +36,12 @@ class task_cpu :
 {
     using target_ptr = std::unique_ptr<target>;
 
+    struct target_meta {
+        uint64_t weight;
+        uint64_t runtime;
+        target_ptr target;
+    };
+
 private:
     config_t m_config;
     stat_t m_stat_shared, m_stat_active;
@@ -84,9 +49,10 @@ private:
     std::atomic<stat_t*> m_stat;
     std::atomic_bool m_stat_clear;
 
-    std::forward_list<target_ptr> m_targets;
-
-    void update_shared_stat();
+    uint64_t m_weights;
+    std::forward_list<target_meta> m_targets;
+    uint64_t m_targets_count;
+    double m_utilization;
 
 public:
     task_cpu();

@@ -4,7 +4,7 @@
 #include "models/generator.hpp"
 #include "models/generator_result.hpp"
 #include "utils/worker/worker.hpp"
-#include "task_cpu.hpp"
+#include "cpu/task_cpu.hpp"
 
 namespace openperf::cpu::generator {
 
@@ -19,7 +19,7 @@ class generator : public model::generator
     cpu_worker_vec m_workers;
     std::string result_id;
     void configure_workers(const model::generator_config& p_conf);
-    bool check_instruction_set_supported(model::cpu_instruction_set);
+    bool check_instruction_set_supported(cpu::instruction_set);
     task_cpu_config generate_worker_config(const model::generator_core_config&);
 
 public:
@@ -38,4 +38,4 @@ public:
 
 } // namespace openperf::cpu::generator
 
-#endif /* _OP_CPU_GENERATOR_HPP_ */
+#endif // _OP_CPU_GENERATOR_HPP_

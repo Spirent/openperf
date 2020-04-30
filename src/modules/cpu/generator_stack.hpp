@@ -41,4 +41,4 @@ public:
 
 } // namespace openperf::cpu::generator
 
-#endif /* _OP_CPU_GENERATOR_STACK_HPP_ */
+#endif // _OP_CPU_GENERATOR_STACK_HPP_

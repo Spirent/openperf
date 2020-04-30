@@ -17,4 +17,4 @@ std::string architecture()
     return ARCH;
 }
 
-}
+} // namespace openperf::cpu::info

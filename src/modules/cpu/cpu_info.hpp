@@ -14,6 +14,6 @@ int32_t cores_count();
 int64_t cache_line_size();
 std::string architecture();
 
-}
+} // namespace openperf::cpu::info
 
-#endif
+#endif // _OP_CPU_INFO_HPP_

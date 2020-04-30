@@ -170,10 +170,12 @@ void handler::create_generator(const Rest::Request& request,
 {
     try {
         auto generator_json = json::parse(request.body());
+
+        CpuGeneratorConfig gc;
+        gc.fromJson(generator_json["config"]);
+
         CpuGenerator generator_model;
         generator_model.fromJson(generator_json);
-        auto gc = CpuGeneratorConfig();
-        gc.fromJson(generator_json["config"]);
         generator_model.setConfig(std::make_shared<CpuGeneratorConfig>(gc));
 
         auto api_request = api::request_cpu_generator_add{

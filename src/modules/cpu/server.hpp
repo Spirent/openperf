@@ -37,4 +37,4 @@ public:
 
 } // namespace openperf::cpu::api
 
-#endif /* _OP_CPU_SERVER_HPP_ */
+#endif // _OP_CPU_SERVER_HPP_

@@ -315,52 +315,51 @@ std::string to_string(const api::typed_error& error)
     }
 }
 
-const static std::unordered_map<std::string, model::cpu_instruction_set>
+const static std::unordered_map<std::string, cpu::instruction_set>
     cpu_instruction_sets = {
-        {"scalar", model::cpu_instruction_set::SCALAR},
+        {"scalar", cpu::instruction_set::SCALAR},
 };
 
-const static std::unordered_map<model::cpu_instruction_set, std::string>
+const static std::unordered_map<cpu::instruction_set, std::string>
     cpu_instruction_set_strings = {
-        {model::cpu_instruction_set::SCALAR, "scalar"},
+        {cpu::instruction_set::SCALAR, "scalar"},
 };
 
-model::cpu_instruction_set
-cpu_instruction_set_from_string(const std::string& value)
+cpu::instruction_set cpu_instruction_set_from_string(const std::string& value)
 {
     if (cpu_instruction_sets.count(value))
         return cpu_instruction_sets.at(value);
-    throw std::runtime_error("Instruction set \"" + value + "\" is unknown");
+    throw std::runtime_error(
+        "Instruction set \"" + value + "\" is unknown");
 }
 
-std::string to_string(const model::cpu_instruction_set& pattern)
+std::string to_string(const cpu::instruction_set& pattern)
 {
     if (cpu_instruction_set_strings.count(pattern))
         return cpu_instruction_set_strings.at(pattern);
     return "unknown";
 }
 
-const static std::unordered_map<std::string, model::cpu_operation>
+const static std::unordered_map<std::string, cpu::operation>
     cpu_operations = {
-        {"int", model::cpu_operation::INT},
-        {"float", model::cpu_operation::FLOAT},
+        {"int", cpu::operation::INT},
+        {"float", cpu::operation::FLOAT},
 };
 
-const static std::unordered_map<model::cpu_operation, std::string>
+const static std::unordered_map<cpu::operation, std::string>
     cpu_operation_strings = {
-        {model::cpu_operation::INT, "int"},
-        {model::cpu_operation::FLOAT, "float"},
+        {cpu::operation::INT, "int"},
+        {cpu::operation::FLOAT, "float"},
 };
 
-model::cpu_operation
-cpu_operation_from_string(const std::string& value)
+cpu::operation cpu_operation_from_string(const std::string& value)
 {
     if (cpu_operations.count(value))
         return cpu_operations.at(value);
     throw std::runtime_error("Instruction set \"" + value + "\" is unknown");
 }
 
-std::string to_string(const model::cpu_operation& pattern)
+std::string to_string(const cpu::operation& pattern)
 {
     if (cpu_operation_strings.count(pattern))
         return cpu_operation_strings.at(pattern);
@@ -389,14 +388,14 @@ model::generator from_swagger(const CpuGenerator& p_gen)
     model::generator gen;
     gen.id(p_gen.getId());
     gen.running(p_gen.isRunning());
-    auto cores_config = p_gen.getConfig()->getCores();
+
     model::generator_config config;
-    for (auto p_conf : cores_config) {
-        auto targets = p_conf->getTargets();
+    for (auto p_conf : p_gen.getConfig()->getCores()) {
         model::generator_core_config core_conf {
             .utilization = p_conf->getUtilization()
         };
-        for (auto p_target : targets) {
+
+        for (auto p_target : p_conf->getTargets()) {
             core_conf.targets.push_back(model::generator_target_config {
                 .instruction_set = cpu_instruction_set_from_string(p_target->getInstructionSet()),
                 .data_size = static_cast<uint>(p_target->getDataSize()),
@@ -404,6 +403,7 @@ model::generator from_swagger(const CpuGenerator& p_gen)
                 .weight = static_cast<uint>(p_target->getWeight())
             });
         }
+
         config.cores.push_back(core_conf);
     }
     gen.config(config);

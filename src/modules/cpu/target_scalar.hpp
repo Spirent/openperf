@@ -3,6 +3,8 @@
 
 #include "cpu/target.hpp"
 
+namespace openperf::cpu::internal {
+
 class target_scalar
     : public target
 {
@@ -23,8 +25,10 @@ public:
             f_prev = tmp;
         }
 
-        return f;
+        return n;
     }
 };
+
+} // namespace openperf::cpu::internal
 
 #endif // _OP_CPU_TARGET_SCALAR_HPP_
