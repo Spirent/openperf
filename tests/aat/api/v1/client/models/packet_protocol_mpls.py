@@ -44,7 +44,7 @@ class PacketProtocolMpls(object):
         'ttl': 'ttl'
     }
 
-    def __init__(self, bottom_of_stack=None, label=None, traffic_class=None, ttl=None):  # noqa: E501
+    def __init__(self, bottom_of_stack=None, label=None, traffic_class=None, ttl=64):  # noqa: E501
         """PacketProtocolMpls - a model defined in Swagger"""  # noqa: E501
 
         self._bottom_of_stack = None

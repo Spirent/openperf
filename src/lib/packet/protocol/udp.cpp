@@ -38,6 +38,12 @@ uint16_t get_udp_checksum(const udp& header) noexcept
  * udp setter implementations
  **/
 
+void set_udp_defaults(udp& header) noexcept
+{
+    set_udp_source(header, 3357);
+    set_udp_destination(header, 3357);
+}
+
 void set_udp_source(udp& header, uint16_t value) noexcept
 {
     header.source = value;

@@ -18,26 +18,42 @@ def write_header(output):
 
 
 def to_ipv4(proto, field, data):
-    return {
+    prop = {
         'type': 'string',
         'description': 'IPv4 {} address'.format(field),
         'pattern': '^((25[0-5]|2[0-4][0-9]|[01]?[1-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|[01]?[1-9]?[0-9])$'
     }
 
+    if 'default' in data:
+        prop['default'] = data['default']
+
+    return prop
+
+
 def to_ipv6(proto, field, data):
-    return {
+    prop = {
         'type': 'string',
         'description': 'IPv6 {} address'.format(field),
         'pattern': '^((::[0-9a-fA-F]{1,4})|([0-9a-fA-F]{1,4}::)|(([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F])|(([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}))$'
     }
 
+    if 'default' in data:
+        prop['default'] = data['default']
+
+    return prop
+
 
 def to_mac(proto, field, data):
-    return {
+    prop = {
         'type': 'string',
         'description': 'Ethernet MAC {} address'.format(field),
         'pattern': '^([0-9a-fA-F]{1,2}(.|-|:)){5}[0-9a-fA-F]{1,2}$'
     }
+
+    if 'default' in data:
+        prop['default'] = data['default']
+
+    return prop
 
 
 def to_description(proto, field, data):
@@ -73,6 +89,9 @@ def to_number(proto, field, data):
         'maximum': max_value
     }
 
+    if 'default' in data:
+        prop['default'] = int(data['default'])
+
     if 'multipleOf' in data:
         prop['multipleOf'] = int(data['multipleOf'])
 
@@ -100,6 +119,9 @@ def to_enumeration(proto, field, data):
             }
         }
 
+    if 'default' in data:
+        prop['default'] = data['default']
+
     return prop
 
 
@@ -121,6 +143,7 @@ def to_property(proto, field, data):
         prop.update(format_dispatch[data['format']](proto, field, data))
     else:
         prop.update(to_number(proto, field, data))
+
 
     return prop
 

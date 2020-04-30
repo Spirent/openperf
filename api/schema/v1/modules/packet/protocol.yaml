@@ -65,6 +65,7 @@ definitions:
         multipleOf: 8
         type: integer
       header_length:
+        default: 20
         description: IPv4 header length
         format: int32
         maximum: 60
@@ -78,6 +79,7 @@ definitions:
         minimum: 0
         type: integer
       protocol:
+        default: 254
         description: IPv4 protocol
         format: int32
         maximum: 255
@@ -88,6 +90,7 @@ definitions:
         pattern: ^((25[0-5]|2[0-4][0-9]|[01]?[1-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|[01]?[1-9]?[0-9])$
         type: string
       time_to_live:
+        default: 64
         description: IPv4 time to live
         format: int32
         maximum: 255
@@ -100,6 +103,7 @@ definitions:
         minimum: 0
         type: integer
       version:
+        default: 4
         description: IPv4 version
         format: int32
         maximum: 15
@@ -120,12 +124,14 @@ definitions:
         minimum: 0
         type: integer
       hop_limit:
+        default: 64
         description: IPv6 hop limit
         format: int32
         maximum: 255
         minimum: 0
         type: integer
       next_header:
+        default: 59
         description: IPv6 next header
         format: int32
         maximum: 255
@@ -148,6 +154,7 @@ definitions:
         minimum: 0
         type: integer
       version:
+        default: 6
         description: IPv6 version
         format: int32
         maximum: 15
@@ -173,6 +180,7 @@ definitions:
         minimum: 0
         type: integer
       ttl:
+        default: 64
         description: MPLS ttl
         format: int32
         maximum: 255
@@ -202,6 +210,7 @@ definitions:
         multipleOf: 4
         type: integer
       destination:
+        default: 3357
         description: tcp destination
         format: int32
         maximum: 65535
@@ -235,6 +244,7 @@ definitions:
         minimum: 0
         type: integer
       source:
+        default: 3357
         description: tcp source
         format: int32
         maximum: 65535
@@ -263,6 +273,7 @@ definitions:
         minimum: 0
         type: integer
       destination:
+        default: 3357
         description: udp destination
         format: int32
         maximum: 65535
@@ -275,6 +286,7 @@ definitions:
         minimum: 0
         type: integer
       source:
+        default: 3357
         description: udp source
         format: int32
         maximum: 65535

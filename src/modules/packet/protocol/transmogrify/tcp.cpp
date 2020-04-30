@@ -113,6 +113,7 @@ static libpacket::type::bit_flags<libpacket::protocol::tcp::flags_value> to_tcp_
 libpacket::protocol::tcp to_protocol(const std::shared_ptr<swagger::v1::model::PacketProtocolTcp>& src)
 {
     auto dst = libpacket::protocol::tcp{};
+    set_tcp_defaults(dst);
 
     if (src) {
         if (src->sourceIsSet())

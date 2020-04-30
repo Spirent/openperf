@@ -3,9 +3,11 @@ udp:
     source:
       format: number
       length: 16
+      default: 3357
     destination:
       format: number
       length: 16
+      default: 3357
     length:
       format: number
       length: 16

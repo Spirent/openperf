@@ -75,6 +75,12 @@ uint16_t get_tcp_urgent_pointer(const tcp& header) noexcept
  * tcp setter implementations
  **/
 
+void set_tcp_defaults(tcp& header) noexcept
+{
+    set_tcp_source(header, 3357);
+    set_tcp_destination(header, 3357);
+}
+
 void set_tcp_source(tcp& header, uint16_t value) noexcept
 {
     header.source = value;

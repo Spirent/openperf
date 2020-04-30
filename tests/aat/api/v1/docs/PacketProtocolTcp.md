@@ -6,11 +6,11 @@ Name | Type | Description | Notes
 **ack** | **int** | tcp ack | [optional] 
 **checksum** | **int** | tcp checksum | [optional] 
 **data_offset** | **int** | tcp data offset | [optional] 
-**destination** | **int** | tcp destination | [optional] 
+**destination** | **int** | tcp destination | [optional] [default to 3357]
 **flags** | **list[str]** | tcp flags | [optional] 
 **reserved** | **int** | tcp reserved | [optional] 
 **sequence** | **int** | tcp sequence | [optional] 
-**source** | **int** | tcp source | [optional] 
+**source** | **int** | tcp source | [optional] [default to 3357]
 **urgent_pointer** | **int** | tcp urgent pointer | [optional] 
 **window** | **int** | tcp window | [optional] 
 

@@ -3,9 +3,11 @@ tcp:
     source:
       format: number
       length: 16
+      default: 3357
     destination:
       format: number
       length: 16
+      default: 3357
     sequence:
       format: number
       length: 32

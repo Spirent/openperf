@@ -44,7 +44,7 @@ class PacketProtocolUdp(object):
         'source': 'source'
     }
 
-    def __init__(self, checksum=None, destination=None, length=None, source=None):  # noqa: E501
+    def __init__(self, checksum=None, destination=3357, length=None, source=3357):  # noqa: E501
         """PacketProtocolUdp - a model defined in Swagger"""  # noqa: E501
 
         self._checksum = None

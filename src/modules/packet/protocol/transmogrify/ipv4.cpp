@@ -105,6 +105,7 @@ static libpacket::type::bit_flags<libpacket::protocol::ipv4::flags_value> to_ipv
 libpacket::protocol::ipv4 to_protocol(const std::shared_ptr<swagger::v1::model::PacketProtocolIpv4>& src)
 {
     auto dst = libpacket::protocol::ipv4{};
+    set_ipv4_defaults(dst);
 
     if (src) {
         if (src->versionIsSet())

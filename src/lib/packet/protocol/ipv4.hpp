@@ -94,6 +94,7 @@ const type::ipv4_address& get_ipv4_destination(const ipv4& header) noexcept;
  * IPv4 set functions
  **/
 
+void set_ipv4_defaults(ipv4& header) noexcept;
 void set_ipv4_version(ipv4& header, uint8_t value) noexcept;
 void set_ipv4_header_length(ipv4& header, uint8_t value) noexcept;
 void set_ipv4_dscp(ipv4& header, uint8_t value) noexcept;
