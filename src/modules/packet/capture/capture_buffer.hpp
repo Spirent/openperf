@@ -10,7 +10,7 @@
 
 #include "timesync/chrono.hpp"
 
-namespace openperf::packetio::packets {
+namespace openperf::packetio::packet {
 struct packet_buffer;
 }
 
@@ -305,7 +305,7 @@ public:
      * @return The number of packets which were written.
      */
     virtual uint16_t write_packets(
-        const openperf::packetio::packets::packet_buffer* const packets[],
+        const openperf::packetio::packet::packet_buffer* const packets[],
         uint16_t packets_length) = 0;
 
     /**
@@ -348,7 +348,7 @@ public:
     virtual ~capture_buffer_mem();
 
     uint16_t write_packets(
-        const openperf::packetio::packets::packet_buffer* const packets[],
+        const openperf::packetio::packet::packet_buffer* const packets[],
         uint16_t packets_length) override;
 
     bool is_full() const override { return m_full; }
@@ -418,7 +418,7 @@ public:
     virtual ~capture_buffer_mem_wrap() = default;
 
     uint16_t write_packets(
-        const openperf::packetio::packets::packet_buffer* const packets[],
+        const openperf::packetio::packet::packet_buffer* const packets[],
         uint16_t packets_length) override;
 
     bool is_full() const override { return m_full; }
@@ -490,7 +490,7 @@ public:
     virtual ~capture_buffer_file();
 
     uint16_t write_packets(
-        const openperf::packetio::packets::packet_buffer* const packets[],
+        const openperf::packetio::packet::packet_buffer* const packets[],
         uint16_t packets_length) override;
 
     bool is_full() const override { return m_full; }

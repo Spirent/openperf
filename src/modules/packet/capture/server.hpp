@@ -22,7 +22,7 @@ class server
      * vector.  That way we don't needlessly store each id
      * twice.
      */
-    using sink_value_type = packetio::packets::generic_sink;
+    using sink_value_type = packetio::packet::generic_sink;
     std::vector<sink_value_type> m_sinks;
 
     /*

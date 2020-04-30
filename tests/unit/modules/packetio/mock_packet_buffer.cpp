@@ -1,6 +1,6 @@
 #include "packetio/mock_packet_buffer.hpp"
 
-namespace openperf::packetio::packets {
+namespace openperf::packetio::packet {
 
 uint16_t max_length(const packet_buffer* buffer)
 {
@@ -95,4 +95,4 @@ void* front(packet_buffer* buffer)
     return 0;
 }
 
-} // namespace openperf::packetio::packets
+} // namespace openperf::packetio::packet

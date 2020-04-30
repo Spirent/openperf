@@ -16,6 +16,6 @@ template <> std::string get_interface_id(netif* ifp)
     return (dpdk::to_interface(ifp).id());
 }
 
-template class forwarding_table<netif, packets::generic_sink, RTE_MAX_ETHPORTS>;
+template class forwarding_table<netif, packet::generic_sink, RTE_MAX_ETHPORTS>;
 
 } // namespace openperf::packetio
