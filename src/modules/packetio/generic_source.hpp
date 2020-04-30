@@ -8,7 +8,7 @@
 
 #include "units/rate.hpp"
 
-namespace openperf::packetio::packets {
+namespace openperf::packetio::packet {
 
 struct packet_buffer;
 
@@ -168,6 +168,6 @@ private:
     std::shared_ptr<source_concept> m_self;
 };
 
-} // namespace openperf::packetio::packets
+} // namespace openperf::packetio::packet
 
 #endif /* _OP_PACKETIO_GENERIC_SOURCE_HPP_ */

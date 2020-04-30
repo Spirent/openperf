@@ -65,23 +65,23 @@ public:
     }
 
     tl::expected<void, int> add_sink(std::string_view src_id,
-                                     packets::generic_sink sink)
+                                     packet::generic_sink sink)
     {
         return (m_self->add_sink(src_id, sink));
     }
 
-    void del_sink(std::string_view src_id, packets::generic_sink sink)
+    void del_sink(std::string_view src_id, packet::generic_sink sink)
     {
         m_self->del_sink(src_id, sink);
     }
 
     tl::expected<void, int> add_source(std::string_view dst_id,
-                                       packets::generic_source source)
+                                       packet::generic_source source)
     {
         return (m_self->add_source(dst_id, source));
     }
 
-    void del_source(std::string_view dst_id, packets::generic_source source)
+    void del_source(std::string_view dst_id, packet::generic_source source)
     {
         m_self->del_source(dst_id, source);
     }
@@ -123,14 +123,14 @@ private:
                                    interface::generic_interface interface) = 0;
         virtual void del_interface(std::string_view port_id,
                                    interface::generic_interface interface) = 0;
-        virtual tl::expected<void, int>
-        add_sink(std::string_view src_id, packets::generic_sink sink) = 0;
+        virtual tl::expected<void, int> add_sink(std::string_view src_id,
+                                                 packet::generic_sink sink) = 0;
         virtual void del_sink(std::string_view src_id,
-                              packets::generic_sink sink) = 0;
+                              packet::generic_sink sink) = 0;
         virtual tl::expected<void, int>
-        add_source(std::string_view dst_id, packets::generic_source source) = 0;
+        add_source(std::string_view dst_id, packet::generic_source source) = 0;
         virtual void del_source(std::string_view dst_id,
-                                packets::generic_source source) = 0;
+                                packet::generic_source source) = 0;
         virtual tl::expected<std::string, int>
         add_task(context ctx,
                  std::string_view name,
@@ -178,26 +178,26 @@ private:
         }
 
         tl::expected<void, int> add_sink(std::string_view src_id,
-                                         packets::generic_sink sink) override
+                                         packet::generic_sink sink) override
         {
             return (m_workers.add_sink(src_id, sink));
         }
 
         void del_sink(std::string_view src_id,
-                      packets::generic_sink sink) override
+                      packet::generic_sink sink) override
         {
             m_workers.del_sink(src_id, sink);
         }
 
         tl::expected<void, int>
         add_source(std::string_view dst_id,
-                   packets::generic_source source) override
+                   packet::generic_source source) override
         {
             return (m_workers.add_source(dst_id, source));
         }
 
         void del_source(std::string_view dst_id,
-                        packets::generic_source source) override
+                        packet::generic_source source) override
         {
             m_workers.del_source(dst_id, source);
         }

@@ -149,7 +149,7 @@ serialized_msg serialize_request(request_msg&& msg)
                                return (zmq_msg_init(&serialized.data,
                                                     std::move(request.filter)));
                            },
-                           [&](const request_delete_analyzer_results& request) {
+                           [&](const request_delete_analyzer_results&) {
                                return (zmq_msg_init(&serialized.data, 0));
                            },
                            [&](const request_get_analyzer_result& request) {

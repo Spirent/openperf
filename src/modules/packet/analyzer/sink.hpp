@@ -70,11 +70,10 @@ public:
 
     bool active() const;
 
-    bool uses_feature(packetio::packets::sink_feature_flags flags) const;
+    bool uses_feature(packetio::packet::sink_feature_flags flags) const;
 
-    uint16_t
-    push(const openperf::packetio::packets::packet_buffer* const packets[],
-         uint16_t count) const;
+    uint16_t push(const packetio::packet::packet_buffer* const packets[],
+                  uint16_t count) const;
 
 private:
     static std::vector<uint8_t> make_indexes(std::vector<unsigned>& ids);

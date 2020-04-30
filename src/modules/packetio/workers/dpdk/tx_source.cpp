@@ -7,7 +7,7 @@
 namespace openperf::packetio::dpdk {
 
 static packet_pool make_packet_pool(uint16_t port_idx,
-                                    const packets::generic_source& source)
+                                    const packet::generic_source& source)
 {
     auto info = model::port_info(port_idx);
 
@@ -26,7 +26,7 @@ static packet_pool make_packet_pool(uint16_t port_idx,
                         2 * worker::pkt_burst_size));
 }
 
-tx_source::tx_source(uint16_t port_idx, packets::generic_source source)
+tx_source::tx_source(uint16_t port_idx, packet::generic_source source)
     : m_pool(make_packet_pool(port_idx, source))
     , m_source(std::move(source))
 {}
@@ -42,7 +42,7 @@ uint16_t tx_source::max_packet_length() const
     return (m_source.max_packet_length());
 }
 
-packets::packets_per_hour tx_source::packet_rate() const
+packet::packets_per_hour tx_source::packet_rate() const
 {
     return (m_source.packet_rate());
 }
@@ -50,7 +50,7 @@ packets::packets_per_hour tx_source::packet_rate() const
 uint16_t tx_source::pull(rte_mbuf* packets[], uint16_t count) const
 {
 
-    std::array<packets::packet_buffer*, worker::pkt_burst_size> tmp;
+    std::array<packet::packet_buffer*, worker::pkt_burst_size> tmp;
     assert(count <= tmp.size());
 
     auto n = m_pool.get(tmp.data(),
@@ -63,7 +63,7 @@ uint16_t tx_source::pull(rte_mbuf* packets[], uint16_t count) const
     }
 
     auto m = m_source.transform(
-        tmp.data(), n, reinterpret_cast<packets::packet_buffer**>(packets));
+        tmp.data(), n, reinterpret_cast<packet::packet_buffer**>(packets));
 
     /* Free any unused packet buffers */
     if (m < n) m_pool.put(tmp.data() + m, n - m);

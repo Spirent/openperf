@@ -37,13 +37,13 @@ public:
     get_worker_tx_ids(std::optional<std::string_view> obj_id = std::nullopt);
 
     tl::expected<void, int> add_sink(std::string_view src_id,
-                                     packets::generic_sink sink);
+                                     packet::generic_sink sink);
     tl::expected<void, int> del_sink(std::string_view src_id,
-                                     packets::generic_sink sink);
+                                     packet::generic_sink sink);
     tl::expected<void, int> add_source(std::string_view dst_id,
-                                       packets::generic_source source);
+                                       packet::generic_source source);
     tl::expected<void, int> del_source(std::string_view dst_id,
-                                       packets::generic_source source);
+                                       packet::generic_source source);
 
     tl::expected<std::string, int> add_task(workers::context ctx,
                                             std::string_view name,

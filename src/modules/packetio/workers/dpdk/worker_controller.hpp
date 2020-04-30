@@ -56,12 +56,12 @@ public:
                        interface::generic_interface interface);
 
     tl::expected<void, int> add_sink(std::string_view src_id,
-                                     packets::generic_sink sink);
-    void del_sink(std::string_view src_id, packets::generic_sink sink);
+                                     packet::generic_sink sink);
+    void del_sink(std::string_view src_id, packet::generic_sink sink);
 
     tl::expected<void, int> add_source(std::string_view dst_id,
-                                       packets::generic_source source);
-    void del_source(std::string_view dst_id, packets::generic_source source);
+                                       packet::generic_source source);
+    void del_source(std::string_view dst_id, packet::generic_source source);
 
     tl::expected<std::string, int>
     add_task(workers::context ctx,

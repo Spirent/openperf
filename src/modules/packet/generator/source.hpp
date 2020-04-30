@@ -62,14 +62,14 @@ public:
     uint16_t max_packet_length() const;
 
     uint16_t burst_size() const;
-    packetio::packets::packets_per_hour packet_rate() const;
+    packetio::packet::packets_per_hour packet_rate() const;
 
     void start(source_result* results);
     void stop();
 
-    uint16_t transform(packetio::packets::packet_buffer* input[],
+    uint16_t transform(packetio::packet::packet_buffer* input[],
                        uint16_t input_length,
-                       packetio::packets::packet_buffer* output[]) const;
+                       packetio::packet::packet_buffer* output[]) const;
 
 private:
     source_config m_config;

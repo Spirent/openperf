@@ -168,7 +168,7 @@ static std::pair<uint16_t, uint16_t> rx_resolve_interfaces(const fib* fib,
  */
 static void rx_interface_sink_push_unicast_burst(
     netif* ifp,
-    const std::vector<packets::generic_sink>& sinks,
+    const std::vector<packet::generic_sink>& sinks,
     rte_mbuf* incoming[],
     uint16_t n)
 {
@@ -181,8 +181,7 @@ static void rx_interface_sink_push_unicast_burst(
                ifp->name[1],
                ifp->num,
                sink.id().c_str());
-        sink.push(reinterpret_cast<packets::packet_buffer* const*>(incoming),
-                  n);
+        sink.push(reinterpret_cast<packet::packet_buffer* const*>(incoming), n);
     }
 }
 
@@ -210,7 +209,7 @@ static void rx_interface_sink_push_multicast_burst(const fib* fib,
                        ifp->num,
                        sink.id().c_str());
                 sink.push(
-                    reinterpret_cast<packets::packet_buffer* const*>(incoming),
+                    reinterpret_cast<packet::packet_buffer* const*>(incoming),
                     n);
             }
         }
@@ -492,8 +491,7 @@ static void rx_sink_dispatch(const fib* fib,
         OP_LOG(OP_LOG_TRACE,
                "Dispatching packets to sink %s\n",
                sink.id().c_str());
-        sink.push(reinterpret_cast<packets::packet_buffer* const*>(incoming),
-                  n);
+        sink.push(reinterpret_cast<packet::packet_buffer* const*>(incoming), n);
     }
 }
 

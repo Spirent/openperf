@@ -54,7 +54,7 @@ client::get_worker_tx_ids(std::optional<std::string_view> obj_id)
 }
 
 tl::expected<void, int> client::add_sink(std::string_view src_id,
-                                         packets::generic_sink sink)
+                                         packet::generic_sink sink)
 {
     if (src_id.length() > name_length_max) {
         OP_LOG(OP_LOG_ERROR,
@@ -80,7 +80,7 @@ tl::expected<void, int> client::add_sink(std::string_view src_id,
 }
 
 tl::expected<void, int> client::del_sink(std::string_view src_id,
-                                         packets::generic_sink sink)
+                                         packet::generic_sink sink)
 {
     if (src_id.length() > name_length_max) {
         OP_LOG(OP_LOG_ERROR,
@@ -106,7 +106,7 @@ tl::expected<void, int> client::del_sink(std::string_view src_id,
 }
 
 tl::expected<void, int> client::add_source(std::string_view dst_id,
-                                           packets::generic_source source)
+                                           packet::generic_source source)
 {
     if (dst_id.length() > name_length_max) {
         OP_LOG(OP_LOG_ERROR,
@@ -132,7 +132,7 @@ tl::expected<void, int> client::add_source(std::string_view dst_id,
 }
 
 tl::expected<void, int> client::del_source(std::string_view dst_id,
-                                           packets::generic_source source)
+                                           packet::generic_source source)
 {
     if (dst_id.length() > name_length_max) {
         OP_LOG(OP_LOG_ERROR,

@@ -4,7 +4,7 @@
 
 namespace openperf::packet::generator {
 
-using packets_per_hour = packetio::packets::packets_per_hour;
+using packets_per_hour = packetio::packet::packets_per_hour;
 
 source_result::source_result(const source& src)
     : parent(src)
@@ -66,7 +66,7 @@ uint16_t source::max_packet_length() const
 
 uint16_t source::burst_size() const { return (m_load.burst_size); }
 
-packetio::packets::packets_per_hour source::packet_rate() const
+packetio::packet::packets_per_hour source::packet_rate() const
 {
     return (m_load.rate);
 }
@@ -87,12 +87,10 @@ static size_t to_send_diff(size_t tx_count, size_t tx_limit)
     return (tx_count >= tx_limit ? 0 : tx_limit - tx_count);
 }
 
-uint16_t source::transform(packetio::packets::packet_buffer* input[],
+uint16_t source::transform(packetio::packet::packet_buffer* input[],
                            uint16_t input_length,
-                           packetio::packets::packet_buffer* output[]) const
+                           packetio::packet::packet_buffer* output[]) const
 {
-    using namespace openperf::packetio;
-
     auto results = m_results.load(std::memory_order_consume);
     if (!results) { return (0); }
 
@@ -103,7 +101,7 @@ uint16_t source::transform(packetio::packets::packet_buffer* input[],
                        : input_length;
 
     std::for_each(input, input + to_send, [&](auto buffer) {
-        auto data = packets::to_data<uint8_t>(buffer);
+        auto data = packetio::packet::to_data<uint8_t>(buffer);
 
         auto&& [flow_idx, hdr_desc, pkt_len] = std::visit(
             [&](const auto& seq) { return (seq[m_tx_idx++]); }, m_sequence);
@@ -115,7 +113,7 @@ uint16_t source::transform(packetio::packets::packet_buffer* input[],
         traffic::header::update_lengths(hdr_desc.key, data, pkt_len);
 
         /* Set length on the buffer */
-        packets::length(buffer, pkt_len + 4);
+        packetio::packet::length(buffer, pkt_len + 4);
 
         *output++ = buffer;
 

@@ -45,14 +45,14 @@ OutputIt transform_if(InputIt first,
 
 struct source_id_comparator
 {
-    bool operator()(const packetio::packets::generic_source& left,
+    bool operator()(const packetio::packet::generic_source& left,
                     std::string_view right)
     {
         return (left.id() < right);
     }
 
     bool operator()(std::string_view left,
-                    const packetio::packets::generic_source& right)
+                    const packetio::packet::generic_source& right)
     {
         return (left < right.id());
     }
@@ -249,7 +249,7 @@ reply_msg server::handle_request(const request_create_generator& request)
 }
 
 static void remove_source(packetio::internal::api::client& client,
-                          packetio::packets::generic_source& to_del)
+                          packetio::packet::generic_source& to_del)
 {
     if (auto success =
             client.del_source(to_del.template get<source>().target(), to_del);

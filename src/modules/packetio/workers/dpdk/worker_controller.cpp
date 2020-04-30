@@ -524,7 +524,7 @@ template <typename ForwardingTable, typename FeatureVector>
 void maybe_toggle_sink_feature(const ForwardingTable& fib,
                                size_t port_idx,
                                FeatureVector& features,
-                               packets::sink_feature_flags flags)
+                               packet::sink_feature_flags flags)
 {
     const auto& sinks = fib->get_sinks(port_idx);
     bool enabled =
@@ -533,7 +533,7 @@ void maybe_toggle_sink_feature(const ForwardingTable& fib,
         });
     if (!enabled) {
         fib->visit_interface_sinks(
-            port_idx, [&](netif*, const packets::generic_sink& sink) {
+            port_idx, [&](netif*, const packet::generic_sink& sink) {
                 if (sink.uses_feature(flags)) {
                     enabled = true;
                     return false;
@@ -552,7 +552,7 @@ void worker_controller::maybe_update_sink_features(size_t port_idx)
 {
     bool has_interface_sinks = false;
     m_fib->visit_interface_sinks(port_idx,
-                                 [&](netif*, const packets::generic_sink&) {
+                                 [&](netif*, const packet::generic_sink&) {
                                      has_interface_sinks = true;
                                      return false;
                                  });
@@ -568,16 +568,16 @@ void worker_controller::maybe_update_sink_features(size_t port_idx)
         m_fib,
         port_idx,
         m_sigdecoders,
-        packets::sink_feature_flags::spirent_signature_decode);
+        packet::sink_feature_flags::spirent_signature_decode);
 
     maybe_toggle_sink_feature(m_fib,
                               port_idx,
                               m_timestampers,
-                              packets::sink_feature_flags::rx_timestamp);
+                              packet::sink_feature_flags::rx_timestamp);
 }
 
 tl::expected<void, int> worker_controller::add_sink(std::string_view src_id,
-                                                    packets::generic_sink sink)
+                                                    packet::generic_sink sink)
 {
     if (auto port_idx = m_driver.port_index(src_id)) {
         if (contains_match(m_fib->get_sinks(*port_idx), sink)) {
@@ -629,7 +629,7 @@ tl::expected<void, int> worker_controller::add_sink(std::string_view src_id,
 }
 
 void worker_controller::del_sink(std::string_view src_id,
-                                 packets::generic_sink sink)
+                                 packet::generic_sink sink)
 {
     if (auto port_idx = m_driver.port_index(src_id)) {
         OP_LOG(OP_LOG_DEBUG,
@@ -739,7 +739,7 @@ get_queue_and_worker_idx(const worker_controller::worker_map& workers,
 }
 
 /* This judges load by interrupts/sec */
-uint64_t get_source_load(const packets::generic_source& source)
+uint64_t get_source_load(const packet::generic_source& source)
 {
     return ((source.packet_rate() / source.burst_size()).count());
 }
@@ -757,7 +757,7 @@ find_queue(worker::tib& tib, uint16_t port_idx, std::string_view source_id)
 
 tl::expected<void, int>
 worker_controller::add_source(std::string_view dst_id,
-                              packets::generic_source source)
+                              packet::generic_source source)
 {
     /* Only support port sources for now */
     // TODO: Lookup interface if no port found
@@ -790,7 +790,7 @@ worker_controller::add_source(std::string_view dst_id,
 }
 
 void worker_controller::del_source(std::string_view dst_id,
-                                   packets::generic_source source)
+                                   packet::generic_source source)
 {
     /* Only support port sources for now */
     // TODO: Lookup interface if no port found

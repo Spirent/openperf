@@ -22,7 +22,7 @@ class server
      * them in a map.  Just use a (sorted) vector so we don't
      * store id's twice.
      */
-    using source_value_type = packetio::packets::generic_source;
+    using source_value_type = packetio::packet::generic_source;
     std::vector<source_value_type> m_sources;
 
     /*
@@ -59,6 +59,6 @@ public:
     reply_msg handle_request(const request_get_tx_flow&);
 };
 
-}
+} // namespace openperf::packet::generator::api
 
 #endif /* _OP_PACKET_GENERATOR_SERVER_HPP_ */
