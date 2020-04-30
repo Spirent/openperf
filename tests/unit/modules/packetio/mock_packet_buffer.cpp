@@ -29,9 +29,10 @@ uint32_t rss_hash(const packet_buffer* buffer)
     return reinterpret_cast<const mock_packet_buffer*>(buffer)->rss_hash;
 }
 
-uint32_t type(const packet_buffer* buffer)
+packet_type::flags type(const packet_buffer* buffer)
 {
-    return reinterpret_cast<const mock_packet_buffer*>(buffer)->type;
+    auto* m = reinterpret_cast<const mock_packet_buffer*>(buffer);
+    return (packet_type::flags(m->type));
 }
 
 std::optional<uint32_t> signature_stream_id(const packet_buffer* buffer)

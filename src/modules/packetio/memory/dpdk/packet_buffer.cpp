@@ -17,7 +17,10 @@ uint16_t max_length(const packet_buffer* buffer)
     return (rte_pktmbuf_data_len(buffer));
 }
 
-uint32_t type(const packet_buffer* buffer) { return (buffer->packet_type); }
+packet_type::flags type(const packet_buffer* buffer)
+{
+    return (packet_type::flags(buffer->packet_type));
+}
 
 void* to_data(packet_buffer* buffer)
 {
@@ -60,9 +63,26 @@ void length(packet_buffer* buffer, uint16_t size)
     rte_pktmbuf_pkt_len(buffer) = size;
 }
 
-void type(packet_buffer* buffer, uint32_t flags)
+void tx_offload(packet_buffer* buffer,
+                header_lengths hdr_lens,
+                packet_type::flags flags)
 {
-    buffer->packet_type = flags;
+    uint64_t ol_flags = 0;
+    if (flags & packet_type::ip::ipv4) {
+        ol_flags |= (PKT_TX_IP_CKSUM | PKT_TX_IPV4);
+    }
+    if (flags & packet_type::ip::ipv6) { ol_flags |= PKT_TX_IPV6; }
+    if (flags & packet_type::protocol::udp) { ol_flags |= PKT_TX_UDP_CKSUM; }
+    if (flags & packet_type::protocol::tcp) { ol_flags |= PKT_TX_TCP_CKSUM; }
+
+    /* Update packet metadata */
+    buffer->ol_flags = ol_flags;
+    buffer->tx_offload = hdr_lens.value;
+}
+
+void type(packet_buffer* buffer, packet_type::flags flags)
+{
+    buffer->packet_type = flags.value;
 }
 
 uint16_t length(const packet_buffer* buffer)
