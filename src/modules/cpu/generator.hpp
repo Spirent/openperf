@@ -26,7 +26,7 @@ public:
     ~generator() override;
     generator(const model::generator& generator_model);
 
-    model::generator_result start();
+    void start();
     void stop();
 
     void set_config(const model::generator_config& value);

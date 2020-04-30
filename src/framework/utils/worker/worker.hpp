@@ -1,6 +1,7 @@
 #ifndef _OP_UTILS_WORKER_HPP_
 #define _OP_UTILS_WORKER_HPP_
 
+#include <memory>
 #include <zmq.h>
 #include <thread>
 #include <forward_list>
@@ -190,12 +191,18 @@ template <class T> void worker<T>::loop()
     bool paused = true;
 
     for (;;) {
-        int recv =
-            zmq_recv(socket.get(), &msg, sizeof(msg), paused ? 0 : ZMQ_NOBLOCK);
+        zmq_msg_t message;
+        zmq_msg_init(&message);
 
+        int recv = zmq_msg_recv(&message, socket.get(), paused ? 0 : ZMQ_NOBLOCK);
         if (recv < 0 && errno != EAGAIN) {
             OP_LOG(OP_LOG_ERROR, "worker thread shutdown");
             break;
+        }
+        if (recv > 0) {
+            std::unique_ptr<worker::message> ptr;
+            ptr.reset(*reinterpret_cast<worker::message**>(zmq_msg_data(const_cast<zmq_msg_t*>(&message))));
+            msg = *ptr;
         }
 
         if (msg.reconf) {
@@ -229,7 +236,16 @@ template <class T> void worker<T>::send_message(const worker::message& msg)
 {
     if (is_finished()) return;
 
-    zmq_send(m_zmq_socket.get(), &msg, sizeof(msg), 0);
+    zmq_msg_t data;
+    if (auto error = zmq_msg_init_size(&data, sizeof(worker::message*)); error != 0) {
+        return;
+    }
+
+    auto value = std::make_unique<worker::message>(msg);
+
+    auto ptr = reinterpret_cast<worker::message**>(zmq_msg_data(&data));
+    *ptr = value.release();
+    zmq_msg_send(&data, m_zmq_socket.get(), 0);
 }
 
 } // namespace openperf::utils::worker

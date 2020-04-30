@@ -38,9 +38,8 @@ generator::~generator()
         worker->stop();
 }
 
-model::generator_result generator::start() {
+void generator::start() {
     set_running(true);
-    return statistics();
 }
 
 void generator::stop() { set_running(false); }
