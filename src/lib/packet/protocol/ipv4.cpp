@@ -96,6 +96,14 @@ const type::ipv4_address& get_ipv4_destination(const ipv4& header) noexcept
  * IPv4 setter implementations
  **/
 
+void set_ipv4_defaults(ipv4& header) noexcept
+{
+    set_ipv4_version(header, 4);
+    set_ipv4_header_length(header, 20);
+    set_ipv4_time_to_live(header, 64);
+    set_ipv4_protocol(header, 254);
+}
+
 void set_ipv4_version(ipv4& header, uint8_t value) noexcept
 {
     value <<= 4;

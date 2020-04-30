@@ -24,6 +24,7 @@ std::shared_ptr<swagger::v1::model::PacketProtocolMpls> to_swagger(libpacket::pr
 libpacket::protocol::mpls to_protocol(const std::shared_ptr<swagger::v1::model::PacketProtocolMpls>& src)
 {
     auto dst = libpacket::protocol::mpls{};
+    set_mpls_defaults(dst);
 
     if (src) {
         if (src->labelIsSet())

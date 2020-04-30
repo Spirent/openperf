@@ -62,7 +62,7 @@ class PacketProtocolIpv4(object):
         'version': 'version'
     }
 
-    def __init__(self, checksum=None, destination=None, dscp=None, ecn=None, flags=None, fragment_offset=None, header_length=None, identification=None, protocol=None, source=None, time_to_live=None, total_length=None, version=None):  # noqa: E501
+    def __init__(self, checksum=None, destination=None, dscp=None, ecn=None, flags=None, fragment_offset=None, header_length=20, identification=None, protocol=254, source=None, time_to_live=64, total_length=None, version=4):  # noqa: E501
         """PacketProtocolIpv4 - a model defined in Swagger"""  # noqa: E501
 
         self._checksum = None

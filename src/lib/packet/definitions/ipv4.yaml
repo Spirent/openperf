@@ -2,9 +2,11 @@ IPv4:
   fields:
     version:
       length: 4
+      default: 4
     header_length:
       length: 4
       multipleOf: 4
+      default: 20
     dscp:
       length: 6
     ecn:
@@ -34,8 +36,10 @@ IPv4:
     time_to_live:
       format: number
       length: 8
+      default: 64
     protocol:
       length: 8
+      default: 254 # experimentation and testing
     checksum:
       length: 16
     source:

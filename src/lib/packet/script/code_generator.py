@@ -256,15 +256,20 @@ def get_setter_declaration(struct, field, arg_type):
         struct, field, arg_type))
 
 
-def get_field_translate_declaration(output, name, namespace = None):
+def get_field_translate_declaration(name, namespace = None):
     cpp_name = to_cpp_name(name)
     ns = '{}::'.format(namespace) if namespace else ''
     return 'enum {0}::field_name {1}get_field_name(std::string_view name) noexcept'.format(cpp_name, ns)
 
 
-def get_field_type_declaration(output, name, namespace = None):
+def get_field_type_declaration(name, namespace = None):
     ns = '{}::'.format(namespace) if namespace else ''
     return 'const std::type_info& {0}get_field_type({0}field_name field) noexcept'.format(ns)
+
+
+def get_defaults_setter_declaration(name, namespace = None):
+    cpp_name = to_cpp_name(name)
+    return 'void set_{0}_defaults({0}& header) noexcept'.format(cpp_name)
 
 
 def generate_field_data(fields):
@@ -293,6 +298,9 @@ def generate_field_data(fields):
                 'struct_name': loop_name,
                 'cpp_type': get_cpp_type(name, props, loop_bits),
             }
+
+            if 'default' in props:
+                out_fields[name]['default'] = props['default']
 
             if 'multipleOf' in props:
                 out_fields[name]['multipleOf'] = props['multipleOf']
@@ -346,6 +354,10 @@ def get_includes(data):
     return sorted(headers)
 
 
+def has_defaults(data):
+    return sum(list(map(lambda p: 1 if 'default' in p else 0, data.values()))) > 0
+
+
 """
 C++ header writing functions
 """
@@ -385,8 +397,8 @@ def write_header_struct(output, name, data):
 
         # Generate static functions
         write_cr(output)
-        s.write('static {};\n'.format(get_field_translate_declaration(output, name)))
-        s.write('static {};\n'.format(get_field_type_declaration(output, name)))
+        s.write('static {};\n'.format(get_field_translate_declaration(name)))
+        s.write('static {};\n'.format(get_field_type_declaration(name)))
         write_cr(output)
 
         s.write('template <typename Value>\n')
@@ -429,6 +441,9 @@ def write_cpp_header_contents(output, name, data):
 
     write_cr(output)
     write_comment(output, '{} set functions'.format(name))
+
+    if has_defaults(data):
+        output.write('{};\n'.format(get_defaults_setter_declaration(name)))
 
     for field, props in data.items():
         arg_type = get_cpp_function_type(cpp_name, field, props)
@@ -545,7 +560,7 @@ def generate_field_translate_impl(output, name, data):
     write_cr(output)
 
     cpp_name = to_cpp_name(name)
-    with cpp_scope(output, get_field_translate_declaration(output, name, cpp_name)) as f:
+    with cpp_scope(output, get_field_translate_declaration(name, cpp_name)) as f:
         f.write('constexpr auto field_names = associative_array<std::string_view, {0}::field_name>(\n'
                 .format(cpp_name))
         lines = list()
@@ -565,7 +580,7 @@ def generate_field_translate_impl(output, name, data):
 
 def generate_field_type_impl(output, name, data):
     cpp_name = to_cpp_name(name)
-    with cpp_scope(output, get_field_type_declaration(output, name, cpp_name)) as f:
+    with cpp_scope(output, get_field_type_declaration(name, cpp_name)) as f:
         with cpp_scope(f, 'switch (field) {') as s:
             for field, props in data.items():
                 base_type = get_cpp_base_type(cpp_name, field, props)
@@ -574,6 +589,16 @@ def generate_field_type_impl(output, name, data):
                 s.write('    return (typeid({}));\n'.format(base_type))
             s.write('default:\n')
             s.write('    return (typeid(nullptr));\n')
+
+
+def generate_default_setter_impl(output, name, data):
+    cpp_name = to_cpp_name(name)
+    with cpp_scope(output, get_defaults_setter_declaration(name, cpp_name)) as f:
+        for field, props in data.items():
+            if 'default' not in props:
+                continue
+
+            f.write('set_{0}_{1}(header, {2});\n'.format(cpp_name, field, props['default']))
 
 
 def generate_getters(struct, data):
@@ -601,6 +626,10 @@ def write_cpp_implementation_contents(output, name, data):
         write_cr(output)
 
     write_comment(output, '{} setter implementations'.format(name))
+
+    if has_defaults(data):
+        generate_default_setter_impl(output, name, data)
+        write_cr(output)
 
     nb_items = len(data.items())
     for idx, (field, props) in enumerate(data.items()):
