@@ -1,4 +1,4 @@
-#include "packet/generator/traffic/protocol/protocols.hpp"
+#include "packet/generator/traffic/protocol/all.hpp"
 #include "packet/generator/traffic/header/count.hpp"
 #include "packet/generator/traffic/header/expand.hpp"
 #include "packet/generator/traffic/header/explode.hpp"
@@ -94,13 +94,13 @@ template <size_t... N> auto make_dummy_configs(std::index_sequence<N...>)
     return (configs);
 }
 
+const static auto protocol_configs = make_dummy_configs(
+    std::make_index_sequence<std::variant_size_v<config_instance>>{});
+
 void update_lengths(const config_key& indexes,
                     uint8_t packet[],
                     uint16_t pkt_length) noexcept
 {
-    const static auto configs = make_dummy_configs(
-        std::make_index_sequence<std::variant_size_v<config_instance>>{});
-
     auto cursor = packet;
     auto offset = 0U;
 
@@ -112,7 +112,7 @@ void update_lengths(const config_key& indexes,
     };
 
     std::for_each(std::begin(indexes), std::end(indexes), [&](const auto& idx) {
-        std::visit(update_length_visitor, configs[idx]);
+        std::visit(update_length_visitor, protocol_configs[idx]);
     });
 }
 
@@ -126,6 +126,40 @@ config_key get_config_key(const config_container& configs) noexcept
                    [](const auto& config) { return (config.index()); });
 
     return (indexes);
+}
+
+using flags = packetio::packet::packet_type::flags;
+flags to_packet_type_flags(const config_key& indexes) noexcept
+{
+    auto type_flags = flags{0};
+
+    const auto update_flag_visitor = [&](const auto& config) {
+        using Protocol = decltype(config.header);
+        return (protocol::update_packet_type(type_flags, Protocol{}));
+    };
+
+    std::for_each(std::begin(indexes), std::end(indexes), [&](const auto& idx) {
+        type_flags = std::visit(update_flag_visitor, protocol_configs[idx]);
+    });
+
+    return (type_flags);
+}
+
+using header_lengths = packetio::packet::header_lengths;
+header_lengths to_packet_header_lengths(const config_key& indexes) noexcept
+{
+    auto lengths = header_lengths{};
+
+    const auto update_length_visitor = [&](const auto& config) {
+        using Protocol = decltype(config.header);
+        protocol::update_header_lengths(lengths, Protocol{});
+    };
+
+    std::for_each(std::begin(indexes), std::end(indexes), [&](const auto& idx) {
+        std::visit(update_length_visitor, protocol_configs[idx]);
+    });
+
+    return (lengths);
 }
 
 } // namespace openperf::packet::generator::traffic::header

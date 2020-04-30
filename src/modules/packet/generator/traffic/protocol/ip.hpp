@@ -2,6 +2,7 @@
 #define _OP_PACKET_GENERATOR_TRAFFIC_PROTOCOL_IP_HPP_
 
 #include "packet/protocol/protocols.hpp"
+#include "packetio/packet_buffer.hpp"
 
 namespace openperf::packet::generator::traffic::protocol {
 
@@ -38,6 +39,16 @@ void update_context(libpacket::protocol::ipv6&,
 
 void update_length(libpacket::protocol::ipv4&, uint16_t);
 void update_length(libpacket::protocol::ipv6&, uint16_t);
+
+using flags = packetio::packet::packet_type::flags;
+flags update_packet_type(flags flags, const libpacket::protocol::ipv4&);
+flags update_packet_type(flags flags, const libpacket::protocol::ipv6&);
+
+using header_lengths = packetio::packet::header_lengths;
+void update_header_lengths(header_lengths& lengths,
+                           const libpacket::protocol::ipv4&);
+void update_header_lengths(header_lengths& lengths,
+                           const libpacket::protocol::ipv6&);
 
 } // namespace openperf::packet::generator::traffic::protocol
 
