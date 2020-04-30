@@ -52,14 +52,14 @@ OutputIt transform_if(InputIt first,
 
 struct sink_id_comparator
 {
-    bool operator()(const packetio::packets::generic_sink& left,
+    bool operator()(const packetio::packet::generic_sink& left,
                     std::string_view right)
     {
         return (left.id() < right);
     }
 
     bool operator()(std::string_view left,
-                    const packetio::packets::generic_sink& right)
+                    const packetio::packet::generic_sink& right)
     {
         return (left < right.id());
     }
@@ -294,7 +294,7 @@ reply_msg server::handle_request(const request_create_capture& request)
 }
 
 static void remove_sink(packetio::internal::api::client& client,
-                        packetio::packets::generic_sink& to_add)
+                        packetio::packet::generic_sink& to_add)
 {
     if (auto success =
             client.del_sink(to_add.template get<sink>().source(), to_add);

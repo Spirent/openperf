@@ -129,9 +129,9 @@ bool sink::active() const
     return (m_results.load(std::memory_order_relaxed) != nullptr);
 };
 
-bool sink::uses_feature(packetio::packets::sink_feature_flags flags) const
+bool sink::uses_feature(packetio::packet::sink_feature_flags flags) const
 {
-    using sink_feature_flags = packetio::packets::sink_feature_flags;
+    using sink_feature_flags = packetio::packet::sink_feature_flags;
 
     /*
      * Intelligently determine what features we need based on our
@@ -153,14 +153,11 @@ bool sink::uses_feature(packetio::packets::sink_feature_flags flags) const
     return (bool(needed & flags));
 }
 
-uint16_t
-sink::push(const openperf::packetio::packets::packet_buffer* const packets[],
-           uint16_t packets_length) const
+uint16_t sink::push(const packetio::packet::packet_buffer* const packets[],
+                    uint16_t packets_length) const
 {
-    using namespace openperf::packetio;
-
     static constexpr int burst_size = 64;
-    const auto id = internal::worker::get_id();
+    const auto id = packetio::internal::worker::get_id();
     auto results = m_results.load(std::memory_order_consume);
 
     /* Update protocol statistics */
@@ -171,11 +168,12 @@ sink::push(const openperf::packetio::packets::packet_buffer* const packets[],
         uint16_t count = end - start;
 
         auto packet_types = std::array<uint32_t, burst_size>{};
-        std::transform(
-            packets + start,
-            packets + end,
-            packet_types.data(),
-            [](const auto& packet) { return (packets::type(packet)); });
+        std::transform(packets + start,
+                       packets + end,
+                       packet_types.data(),
+                       [](const auto& packet) {
+                           return (packetio::packet::type(packet));
+                       });
 
         protocol.update(packet_types.data(), count);
 
@@ -190,8 +188,8 @@ sink::push(const openperf::packetio::packets::packet_buffer* const packets[],
         });
 
     std::for_each(packets, packets + packets_length, [&](const auto& packet) {
-        auto hash = packets::rss_hash(packet);
-        auto stream_id = packets::signature_stream_id(packet);
+        auto hash = packetio::packet::rss_hash(packet);
+        auto stream_id = packetio::packet::signature_stream_id(packet);
         auto counters = cache(hash, stream_id);
         if (!counters) { /* New flow; create stats */
             auto to_delete = flows.second.insert(
@@ -202,10 +200,10 @@ sink::push(const openperf::packetio::packets::packet_buffer* const packets[],
             flows.first.writer_add_gc_callback(
                 [to_delete]() { delete to_delete; });
         }
-        counters->update(packets::length(packet),
-                         packets::rx_timestamp(packet),
-                         packets::signature_tx_timestamp(packet),
-                         packets::signature_sequence_number(packet));
+        counters->update(packetio::packet::length(packet),
+                         packetio::packet::rx_timestamp(packet),
+                         packetio::packet::signature_tx_timestamp(packet),
+                         packetio::packet::signature_sequence_number(packet));
     });
 
     flows.first.writer_process_gc_callbacks();

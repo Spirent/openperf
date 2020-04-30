@@ -100,18 +100,18 @@ capture_buffer_mem::~capture_buffer_mem()
     }
 }
 
-static inline void fill_capture_packet_hdr(
-    capture_packet_hdr& hdr,
-    const openperf::packetio::packets::packet_buffer* packet,
-    const uint32_t max_packet_size)
+static inline void
+fill_capture_packet_hdr(capture_packet_hdr& hdr,
+                        const openperf::packetio::packet::packet_buffer* packet,
+                        const uint32_t max_packet_size)
 {
-    hdr.timestamp = openperf::packetio::packets::rx_timestamp(packet);
-    hdr.packet_len = openperf::packetio::packets::length(packet);
+    hdr.timestamp = openperf::packetio::packet::rx_timestamp(packet);
+    hdr.packet_len = openperf::packetio::packet::length(packet);
     hdr.captured_len = std::min(hdr.packet_len, max_packet_size);
 }
 
 uint16_t capture_buffer_mem::write_packets(
-    const openperf::packetio::packets::packet_buffer* const packets[],
+    const openperf::packetio::packet::packet_buffer* const packets[],
     uint16_t packets_length)
 {
     capture_packet_hdr hdr;
@@ -121,7 +121,7 @@ uint16_t capture_buffer_mem::write_packets(
     // Write all packets or until the buffer is full
     for (uint16_t i = 0; i < packets_length; ++i) {
         auto& packet = packets[i];
-        auto data = openperf::packetio::packets::to_data(packet);
+        auto data = openperf::packetio::packet::to_data(packet);
 
         fill_capture_packet_hdr(hdr, packet, m_max_packet_size);
         auto padded_data_len = pad_capture_data_len(hdr.captured_len);
@@ -219,14 +219,14 @@ capture_buffer_mem_wrap::capture_buffer_mem_wrap(uint64_t size,
 {}
 
 uint16_t capture_buffer_mem_wrap::write_packets(
-    const openperf::packetio::packets::packet_buffer* const packets[],
+    const openperf::packetio::packet::packet_buffer* const packets[],
     uint16_t packets_length)
 {
     capture_packet_hdr hdr;
 
     for (uint16_t i = 0; i < packets_length; ++i) {
         auto& packet = packets[i];
-        auto data = openperf::packetio::packets::to_data(packet);
+        auto data = openperf::packetio::packet::to_data(packet);
 
         fill_capture_packet_hdr(hdr, packet, m_max_packet_size);
         auto padded_data_len = pad_capture_data_len(hdr.captured_len);
@@ -555,7 +555,7 @@ capture_buffer_file::~capture_buffer_file()
 }
 
 uint16_t capture_buffer_file::write_packets(
-    const openperf::packetio::packets::packet_buffer* const packets[],
+    const openperf::packetio::packet::packet_buffer* const packets[],
     uint16_t packets_length)
 {
     pcap::enhanced_packet_block block_hdr;
@@ -565,8 +565,8 @@ uint16_t capture_buffer_file::write_packets(
     if (m_full) { return 0; }
     for (uint16_t i = 0; i < packets_length; ++i) {
         auto packet = packets[i];
-        auto packet_len = openperf::packetio::packets::length(packet);
-        auto timestamp = openperf::packetio::packets::rx_timestamp(packet);
+        auto packet_len = openperf::packetio::packet::length(packet);
+        auto timestamp = openperf::packetio::packet::rx_timestamp(packet);
 
         // timestamp is set from interace description block
         // if_tsresol currently set to nanoseconds
@@ -594,7 +594,7 @@ uint16_t capture_buffer_file::write_packets(
             return i;
         }
 
-        auto data = openperf::packetio::packets::to_data(packet);
+        auto data = openperf::packetio::packet::to_data(packet);
         if (fwrite(data, block_hdr.captured_len, 1, m_fp_write) != 1) {
             OP_LOG(OP_LOG_ERROR,
                    "Failed writing enhanced packet block data %" PRIu32,

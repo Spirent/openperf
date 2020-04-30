@@ -54,14 +54,14 @@ OutputIt transform_if(InputIt first,
 
 struct sink_id_comparator
 {
-    bool operator()(const packetio::packets::generic_sink& left,
+    bool operator()(const packetio::packet::generic_sink& left,
                     std::string_view right)
     {
         return (left.id() < right);
     }
 
     bool operator()(std::string_view left,
-                    const packetio::packets::generic_sink& right)
+                    const packetio::packet::generic_sink& right)
     {
         return (left < right.id());
     }
@@ -293,14 +293,14 @@ reply_msg server::handle_request(const request_create_analyzer& request)
 }
 
 static void remove_sink(packetio::internal::api::client& client,
-                        packetio::packets::generic_sink& to_add)
+                        packetio::packet::generic_sink& to_del)
 {
     if (auto success =
-            client.del_sink(to_add.template get<sink>().source(), to_add);
+            client.del_sink(to_del.template get<sink>().source(), to_del);
         !success) {
         OP_LOG(OP_LOG_ERROR,
                "Failed to remove analyzer %s from packetio workers!\n",
-               to_add.id().c_str());
+               to_del.id().c_str());
     }
 }
 

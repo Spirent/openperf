@@ -9,7 +9,7 @@
 #include "packetio/mock_packet_buffer.hpp"
 
 using namespace openperf::packet::capture;
-using namespace openperf::packetio::packets;
+using namespace openperf::packetio::packet;
 
 struct eth_hdr
 {
