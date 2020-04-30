@@ -172,7 +172,7 @@ uint16_t sink::push(const packetio::packet::packet_buffer* const packets[],
                        packets + end,
                        packet_types.data(),
                        [](const auto& packet) {
-                           return (packetio::packet::type(packet));
+                           return (packetio::packet::type(packet).value);
                        });
 
         protocol.update(packet_types.data(), count);

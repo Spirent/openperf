@@ -23,10 +23,11 @@ PG_SOURCES += \
 	traffic/header/expand_impl/ipv6.cpp \
 	traffic/header/expand_impl/tcp.cpp \
 	traffic/header/expand_impl/udp.cpp \
-	traffic/protocol/ethernet.cpp \
 	traffic/packet_template.cpp \
+	traffic/protocol/ethernet.cpp \
 	traffic/protocol/ip.cpp \
 	traffic/protocol/mpls.cpp \
+	traffic/protocol/protocol.cpp \
 	traffic/protocol/vlan.cpp \
 	traffic/sequence.cpp \
 	validation.cpp

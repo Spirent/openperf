@@ -28,4 +28,25 @@ void update_context(libpacket::protocol::vlan& vlan,
     set_vlan_ether_type(vlan, traffic::protocol::ethernet::ether_type_mpls);
 }
 
+flags update_packet_type(flags flags, const libpacket::protocol::vlan&)
+{
+    using namespace openperf::packetio::packet;
+
+    switch (packet_type::ethernet(
+        (flags & packetio::packet::packet_type::ethernet::mask).value)) {
+    case packet_type::ethernet::vlan:
+        return ((flags & ~packet_type::ethernet::mask)
+                | packet_type::ethernet::qinq);
+    default:
+        return ((flags & ~packet_type::ethernet::mask)
+                | packet_type::ethernet::vlan);
+    }
+}
+
+void update_header_lengths(header_lengths& lengths,
+                           const libpacket::protocol::vlan&)
+{
+    lengths.layer2 += libpacket::protocol::vlan::protocol_length;
+}
+
 } // namespace openperf::packet::generator::traffic::protocol

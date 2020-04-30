@@ -32,4 +32,15 @@ void update_context(libpacket::protocol::ethernet& eth,
     set_ethernet_ether_type(eth, traffic::protocol::ethernet::ether_type_mpls);
 }
 
+flags update_packet_type(flags flags, const libpacket::protocol::ethernet&)
+{
+    return (flags | packetio::packet::packet_type::ethernet::ether);
+}
+
+void update_header_lengths(header_lengths& lengths,
+                           const libpacket::protocol::ethernet&)
+{
+    lengths.layer2 += libpacket::protocol::ethernet::protocol_length;
+}
+
 } // namespace openperf::packet::generator::traffic::protocol

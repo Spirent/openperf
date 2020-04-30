@@ -4,6 +4,7 @@
 #include <cstdint>
 
 #include "packet/protocol/protocols.hpp"
+#include "packetio/packet_buffer.hpp"
 
 namespace openperf::packet::generator::traffic::protocol {
 
@@ -17,6 +18,13 @@ void update_context(libpacket::protocol::mpls& mpls, const Next&)
 
     set_mpls_bottom_of_stack(mpls, true);
 }
+
+using flags = packetio::packet::packet_type::flags;
+flags update_packet_type(flags flags, const libpacket::protocol::mpls&);
+
+using header_lengths = packetio::packet::header_lengths;
+void update_header_lengths(header_lengths& lengths,
+                           const libpacket::protocol::mpls&);
 
 } // namespace openperf::packet::generator::traffic::protocol
 

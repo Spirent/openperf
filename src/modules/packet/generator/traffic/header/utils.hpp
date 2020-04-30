@@ -3,6 +3,7 @@
 
 #include "packet/generator/traffic/header/config.hpp"
 #include "packet/generator/traffic/header/container.hpp"
+#include "packetio/packet_buffer.hpp"
 
 namespace openperf::packet::generator::traffic::header {
 
@@ -20,6 +21,12 @@ config_key get_config_key(const config_container&) noexcept;
 void update_lengths(const config_key& indexes,
                     uint8_t packet[],
                     uint16_t pkt_length) noexcept;
+
+packetio::packet::packet_type::flags
+to_packet_type_flags(const config_key& key) noexcept;
+
+packetio::packet::header_lengths
+to_packet_header_lengths(const config_key& key) noexcept;
 
 } // namespace openperf::packet::generator::traffic::header
 
