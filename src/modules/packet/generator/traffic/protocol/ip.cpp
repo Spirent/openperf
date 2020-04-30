@@ -37,4 +37,28 @@ void update_length(libpacket::protocol::ipv6& ip, uint16_t length)
     set_ipv6_payload_length(ip, length > hdr_length ? length - hdr_length : 0);
 }
 
+flags update_packet_type(flags flags, const libpacket::protocol::ipv4&)
+{
+    using namespace openperf::packetio::packet;
+    return (flags | packet_type::ip::ipv4);
+}
+
+flags update_packet_type(flags flags, const libpacket::protocol::ipv6&)
+{
+    using namespace openperf::packetio::packet;
+    return (flags | packet_type::ip::ipv6);
+}
+
+void update_header_lengths(header_lengths& lengths,
+                           const libpacket::protocol::ipv4&)
+{
+    lengths.layer3 += libpacket::protocol::ipv4::protocol_length;
+}
+
+void update_header_lengths(header_lengths& lengths,
+                           const libpacket::protocol::ipv6&)
+{
+    lengths.layer3 += libpacket::protocol::ipv6::protocol_length;
+}
+
 } // namespace openperf::packet::generator::traffic::protocol

@@ -5,6 +5,7 @@
 #include <cstddef>
 #include <optional>
 
+#include "packetio/packet_type.hpp"
 #include "timesync/chrono.hpp"
 
 namespace openperf::packetio::packet {
@@ -15,7 +16,7 @@ struct packet_buffer;
  * Common functions
  */
 uint16_t max_length(const packet_buffer* buffer);
-uint32_t type(const packet_buffer* buffer);
+packet_type::flags type(const packet_buffer* buffer);
 
 void* to_data(packet_buffer* buffer);
 const void* to_data(const packet_buffer* buffer);
@@ -72,7 +73,23 @@ template <typename T> T* front(packet_buffer* buffer)
  * Tx functions, e.g. setters
  */
 void length(packet_buffer* buffer, uint16_t length);
-void type(packet_buffer* buffer, uint32_t flags);
+
+union header_lengths
+{
+    uint64_t value = 0;
+    struct
+    {
+        uint64_t layer2 : 7;
+        uint64_t layer3 : 9;
+        uint64_t layer4 : 8;
+        uint64_t tso_segsz : 16;
+        uint64_t unused : 24;
+    };
+};
+
+void tx_offload(packet_buffer* buffer,
+                header_lengths hdr_lens,
+                packet_type::flags flags);
 
 /**
  * Rx functions; some values are only set on receive path

@@ -109,11 +109,15 @@ uint16_t source::transform(packetio::packet::packet_buffer* input[],
         /* Copy the header into place */
         std::copy_n(hdr_desc.ptr, hdr_desc.len, data);
 
-        /* Set lengths on headers */
-        traffic::header::update_lengths(hdr_desc.key, data, pkt_len);
+        /* Set length on both buffer and headers*/
+        packetio::packet::length(buffer, pkt_len - 4);
+        traffic::header::update_lengths(hdr_desc.key, data, pkt_len - 4);
 
-        /* Set length on the buffer */
-        packetio::packet::length(buffer, pkt_len + 4);
+        /* Set packet type for offloads */
+        packetio::packet::tx_offload(
+            buffer,
+            traffic::header::to_packet_header_lengths(hdr_desc.key),
+            traffic::header::to_packet_type_flags(hdr_desc.key));
 
         *output++ = buffer;
 
