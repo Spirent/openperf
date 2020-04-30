@@ -3,18 +3,16 @@
 
 #include <string>
 #include <vector>
+#include "cpu/common.hpp"
 
 namespace openperf::cpu::model {
 
-enum class cpu_instruction_set { SCALAR };
-enum class cpu_operation { INT, FLOAT };
-
 struct generator_target_config
 {
-    cpu_instruction_set instruction_set;
-    uint data_size;
-    cpu_operation operation;
-    uint weight;
+    cpu::instruction_set instruction_set;
+    cpu::operation operation;
+    uint64_t data_size;
+    uint64_t weight;
 };
 
 struct generator_core_config
