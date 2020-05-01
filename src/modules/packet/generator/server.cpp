@@ -230,7 +230,9 @@ reply_msg server::handle_request(const request_create_generator& request)
     auto& item = m_sources.emplace_back(source(std::move(config)));
 
     /* Try to add source to the back-end workers */
-    if (auto success = m_client.add_source(config.target, item); !success) {
+    if (auto success =
+            m_client.add_source(request.generator->getTargetId(), item);
+        !success) {
         /* Delete the item we just added to the back of the vector */
         m_sources.erase(std::prev(std::end(m_sources)));
         return (to_error(error_type::POSIX, success.error()));

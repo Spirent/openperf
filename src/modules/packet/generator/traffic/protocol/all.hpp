@@ -12,14 +12,14 @@
 namespace openperf::packet::generator::traffic::protocol {
 
 template <typename Previous, typename Next>
-void update_context(Previous&, const Next&)
+void update_context(Previous&, const Next&) noexcept
 {
     /* dummy next header handler */
     OP_LOG(
         OP_LOG_WARNING, "No explicit definition for %s\n", __PRETTY_FUNCTION__);
 }
 
-template <typename Protocol> void update_length(Protocol&, uint16_t)
+template <typename Protocol> void update_length(Protocol&, uint16_t) noexcept
 {
     /* dummy length handler */
 }
