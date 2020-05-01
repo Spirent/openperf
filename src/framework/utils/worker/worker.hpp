@@ -130,8 +130,9 @@ template <class T> void worker<T>::start()
     m_stopped = false;
 
     m_thread = std::thread([this]() {
-        op_thread_setname(
-            ("op_" + m_thread_name + "_" + std::to_string(++thread_number)).c_str());
+        op_thread_setname(("op_" + m_thread_name
+            + "_" + std::to_string(++thread_number)
+            ).c_str());
         loop();
     });
     config(m_config);
@@ -170,6 +171,7 @@ template <class T> void worker<T>::config(const typename T::config_t& c)
 // Methods : private
 template <class T> void worker<T>::loop()
 {
+
     auto socket = std::unique_ptr<void, op_socket_deleter>(
         op_socket_get_client(m_zmq_context, ZMQ_PULL, m_endpoint));
 
@@ -177,8 +179,9 @@ template <class T> void worker<T>::loop()
     bool paused = true;
 
     for (;;) {
-        int recv =
-            zmq_recv(socket.get(), &msg, sizeof(msg), paused ? 0 : ZMQ_NOBLOCK);
+        int recv = zmq_recv(socket.get(), &msg, sizeof(msg),
+            paused ? 0 : ZMQ_NOBLOCK);
+
         if (recv < 0 && errno != EAGAIN) {
             OP_LOG(OP_LOG_ERROR, "worker thread shutdown");
             break;

@@ -6,11 +6,14 @@
 
 namespace openperf::memory::internal {
 
+static uint16_t serial_counter = 0;
+
 // Constructors & Destructor
 generator::generator()
     : m_stopped(true)
     , m_paused(true)
     , m_buffer{.ptr = nullptr, .size = 0}
+    , m_serial_number(++serial_counter)
 {}
 
 generator::generator(generator&& g)
@@ -20,6 +23,7 @@ generator::generator(generator&& g)
     , m_write_workers(std::move(g.m_write_workers))
     , m_config(g.m_config)
     , m_buffer{.ptr = nullptr, .size = 0}
+    , m_serial_number(g.m_serial_number)
 {}
 
 generator::generator(const generator::config_t& c)
