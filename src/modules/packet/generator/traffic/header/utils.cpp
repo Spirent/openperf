@@ -1,3 +1,5 @@
+#include <functional>
+
 #include "packet/generator/traffic/protocol/all.hpp"
 #include "packet/generator/traffic/header/count.hpp"
 #include "packet/generator/traffic/header/expand.hpp"
@@ -17,13 +19,16 @@ void adjacent_apply(InputIt cursor, InputIt last, BinaryOperation&& op)
 static void do_context_update(config_instance& previous,
                               const config_instance& next)
 {
-    auto context_visitor = [](auto& previous, const auto& next) {
+    assert(!previous.valueless_by_exception());
+    assert(!next.valueless_by_exception());
+
+    const auto context_visitor = [](auto& previous, const auto& next) {
         protocol::update_context(previous.header, next.header);
     };
     std::visit(context_visitor, previous, next);
 }
 
-config_container update_context_fields(config_container&& configs) noexcept
+config_container update_context_fields(config_container&& configs)
 {
     adjacent_apply(std::make_reverse_iterator(std::end(configs)),
                    std::make_reverse_iterator(std::begin(configs)),
@@ -38,7 +43,7 @@ constexpr auto count_headers_visitor = [](const auto& config) {
     return (count_headers(config));
 };
 
-static size_t count_headers_zip(const config_container& configs)
+static size_t count_headers_zip(const config_container& configs) noexcept
 {
     return (std::accumulate(
         std::begin(configs),
@@ -49,15 +54,16 @@ static size_t count_headers_zip(const config_container& configs)
         }));
 }
 
-static size_t count_headers_cartesian(const config_container& configs)
+static size_t count_headers_cartesian(const config_container& configs) noexcept
 {
-    return (std::accumulate(
-        std::begin(configs),
-        std::end(configs),
-        1UL,
-        [](size_t lhs, const auto& rhs) {
-            return (lhs * std::visit(count_headers_visitor, rhs));
-        }));
+    return (
+        std::accumulate(std::begin(configs),
+                        std::end(configs),
+                        1UL,
+                        [](size_t lhs, const auto& rhs) {
+                            return (std::multiplies{}(
+                                lhs, std::visit(count_headers_visitor, rhs)));
+                        }));
 }
 
 size_t count_headers(const config_container& configs, modifier_mux mux) noexcept
@@ -99,20 +105,20 @@ const static auto protocol_configs = make_dummy_configs(
 
 void update_lengths(const config_key& indexes,
                     uint8_t packet[],
-                    uint16_t pkt_length) noexcept
+                    uint16_t pkt_length)
 {
-    auto cursor = packet;
     auto offset = 0U;
 
     const auto update_length_visitor = [&](const auto& config) {
         using Protocol = decltype(config.header);
-        auto p = reinterpret_cast<Protocol*>(cursor + offset);
+        auto p = reinterpret_cast<Protocol*>(packet + offset);
         protocol::update_length(*p, pkt_length - offset);
-        offset += Protocol::protocol_length;
+        return (offset + Protocol::protocol_length);
     };
 
     std::for_each(std::begin(indexes), std::end(indexes), [&](const auto& idx) {
-        std::visit(update_length_visitor, protocol_configs[idx]);
+        assert(idx < protocol_configs.size());
+        offset = std::visit(update_length_visitor, protocol_configs[idx]);
     });
 }
 
@@ -139,6 +145,7 @@ flags to_packet_type_flags(const config_key& indexes) noexcept
     };
 
     std::for_each(std::begin(indexes), std::end(indexes), [&](const auto& idx) {
+        assert(idx < protocol_configs.size());
         type_flags = std::visit(update_flag_visitor, protocol_configs[idx]);
     });
 
@@ -152,11 +159,12 @@ header_lengths to_packet_header_lengths(const config_key& indexes) noexcept
 
     const auto update_length_visitor = [&](const auto& config) {
         using Protocol = decltype(config.header);
-        protocol::update_header_lengths(lengths, Protocol{});
+        return (protocol::update_header_lengths(lengths, Protocol{}));
     };
 
     std::for_each(std::begin(indexes), std::end(indexes), [&](const auto& idx) {
-        std::visit(update_length_visitor, protocol_configs[idx]);
+        assert(idx < protocol_configs.size());
+        lengths = std::visit(update_length_visitor, protocol_configs[idx]);
     });
 
     return (lengths);

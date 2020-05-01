@@ -9,20 +9,21 @@
 namespace openperf::packet::generator::traffic::protocol {
 
 void update_context(libpacket::protocol::vlan&,
-                    const libpacket::protocol::ipv4&);
+                    const libpacket::protocol::ipv4&) noexcept;
 void update_context(libpacket::protocol::vlan&,
-                    const libpacket::protocol::ipv6&);
+                    const libpacket::protocol::ipv6&) noexcept;
 void update_context(libpacket::protocol::vlan&,
-                    const libpacket::protocol::vlan&);
+                    const libpacket::protocol::vlan&) noexcept;
 void update_context(libpacket::protocol::vlan&,
-                    const libpacket::protocol::mpls&);
+                    const libpacket::protocol::mpls&) noexcept;
 
 using flags = packetio::packet::packet_type::flags;
-flags update_packet_type(flags flags, const libpacket::protocol::vlan&);
+flags update_packet_type(flags flags,
+                         const libpacket::protocol::vlan&) noexcept;
 
 using header_lengths = packetio::packet::header_lengths;
-void update_header_lengths(header_lengths& lengths,
-                           const libpacket::protocol::vlan&);
+header_lengths update_header_lengths(header_lengths& lengths,
+                                     const libpacket::protocol::vlan&) noexcept;
 
 } // namespace openperf::packet::generator::traffic::protocol
 

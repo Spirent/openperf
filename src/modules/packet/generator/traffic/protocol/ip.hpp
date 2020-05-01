@@ -28,27 +28,29 @@ inline constexpr uint8_t mpls_in_ip = 137;
 } // namespace ip
 
 void update_context(libpacket::protocol::ipv4&,
-                    const libpacket::protocol::tcp&);
+                    const libpacket::protocol::tcp&) noexcept;
 void update_context(libpacket::protocol::ipv4&,
-                    const libpacket::protocol::udp&);
+                    const libpacket::protocol::udp&) noexcept;
 
 void update_context(libpacket::protocol::ipv6&,
-                    const libpacket::protocol::tcp&);
+                    const libpacket::protocol::tcp&) noexcept;
 void update_context(libpacket::protocol::ipv6&,
-                    const libpacket::protocol::udp&);
+                    const libpacket::protocol::udp&) noexcept;
 
-void update_length(libpacket::protocol::ipv4&, uint16_t);
-void update_length(libpacket::protocol::ipv6&, uint16_t);
+void update_length(libpacket::protocol::ipv4&, uint16_t) noexcept;
+void update_length(libpacket::protocol::ipv6&, uint16_t) noexcept;
 
 using flags = packetio::packet::packet_type::flags;
-flags update_packet_type(flags flags, const libpacket::protocol::ipv4&);
-flags update_packet_type(flags flags, const libpacket::protocol::ipv6&);
+flags update_packet_type(flags flags,
+                         const libpacket::protocol::ipv4&) noexcept;
+flags update_packet_type(flags flags,
+                         const libpacket::protocol::ipv6&) noexcept;
 
 using header_lengths = packetio::packet::header_lengths;
-void update_header_lengths(header_lengths& lengths,
-                           const libpacket::protocol::ipv4&);
-void update_header_lengths(header_lengths& lengths,
-                           const libpacket::protocol::ipv6&);
+header_lengths update_header_lengths(header_lengths& lengths,
+                                     const libpacket::protocol::ipv4&) noexcept;
+header_lengths update_header_lengths(header_lengths& lengths,
+                                     const libpacket::protocol::ipv6&) noexcept;
 
 } // namespace openperf::packet::generator::traffic::protocol
 
