@@ -3,7 +3,18 @@ set -e
 TIDY_OUTPUT=$(mktemp)
 EXIT_CODE=0
 
-make tidy > ${TIDY_OUTPUT} 2> /dev/null
+# CirclCi needs constant feedback that it's doing something useful. Any
+# long running command without output could cause the job to fail, so
+# turn the tidy output into a concise series of periods; one per file.
+# We also write the full log to a temp file so we can parse it for
+# legitimate errors.
+# Note: the circleci/docker container needs output explicitly set to
+# unbuffered, otherwise no periods will be printed until the command
+# finishes. This is unnecessary when run from a regular terminal,
+# however.
+echo -n 'Analyzing files'
+make tidy 2> /dev/null | tee ${TIDY_OUTPUT} | grep 'clang-tidy' | stdbuf -o0 awk '{printf "."}'
+echo
 
 if [[ -n $(grep "error: " ${TIDY_OUTPUT}) ]]; then
     echo "clang-tidy errors detected; please fix them:"
