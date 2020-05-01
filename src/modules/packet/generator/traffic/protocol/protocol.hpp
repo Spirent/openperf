@@ -6,17 +6,17 @@
 
 namespace openperf::packet::generator::traffic::protocol {
 
-void update_length(libpacket::protocol::udp&, uint16_t);
+void update_length(libpacket::protocol::udp&, uint16_t) noexcept;
 
 using flags = packetio::packet::packet_type::flags;
-flags update_packet_type(flags flags, const libpacket::protocol::tcp&);
-flags update_packet_type(flags flags, const libpacket::protocol::udp&);
+flags update_packet_type(flags flags, const libpacket::protocol::tcp&) noexcept;
+flags update_packet_type(flags flags, const libpacket::protocol::udp&) noexcept;
 
 using header_lengths = packetio::packet::header_lengths;
-void update_header_lengths(header_lengths& lengths,
-                           const libpacket::protocol::tcp&);
-void update_header_lengths(header_lengths& lengths,
-                           const libpacket::protocol::udp&);
+header_lengths update_header_lengths(header_lengths& lengths,
+                                     const libpacket::protocol::tcp&) noexcept;
+header_lengths update_header_lengths(header_lengths& lengths,
+                                     const libpacket::protocol::udp&) noexcept;
 
 } // namespace openperf::packet::generator::traffic::protocol
 
