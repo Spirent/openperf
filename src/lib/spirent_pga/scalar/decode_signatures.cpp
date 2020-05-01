@@ -47,7 +47,7 @@ uint16_t decode_signatures(const uint8_t* const payloads[],
         sequence_numbers[i] = signature[1] << 24 | signature[2] >> 8;
         timestamps_lo[i] = signature[2] << 24 | signature[3] >> 8;
         timestamps_hi[i] = (signature[3] >> 2) & 0x3f;
-        flags[i] = is_valid | (signature[3] & 0x3);
+        flags[i] = is_valid | static_cast<int>(signature[3] & 0x3);
         nb_sigs++;
     }
 
