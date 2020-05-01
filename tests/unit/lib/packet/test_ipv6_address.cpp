@@ -29,8 +29,6 @@ TEST_CASE("ipv6 address", "[libpacket]")
         /* invalid */
         REQUIRE_THROWS(ipv6_address("2001:1"));
         REQUIRE_THROWS(ipv6_address("1.0.0.1"));
-        REQUIRE_THROWS(ipv6_address{
-            0x20, 0x01, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0});
     }
 
     SECTION("access by index")

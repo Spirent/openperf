@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cassert>
 #include <climits>
 #include <cstdint>
 #include <string>
@@ -95,13 +96,10 @@ template <size_t Octets> struct field
     using pointer = typename container::pointer;
     using const_pointer = typename container::const_pointer;
 
-    template <typename T> void store(const std::initializer_list<T>& value)
+    template <typename T>
+    constexpr void store(const std::initializer_list<T>& value) noexcept
     {
-        if (Octets != (value.size() * sizeof(T))) {
-            throw std::out_of_range("Initializer list must contain "
-                                    + std::to_string(value.size() * sizeof(T))
-                                    + " octets");
-        }
+        assert(Octets == value.size() * sizeof(T));
 
         auto ptr = reinterpret_cast<T*>(octets.data());
         std::transform(std::begin(value),
@@ -111,7 +109,8 @@ template <size_t Octets> struct field
     }
 
     template <typename T>
-    std::enable_if_t<Octets <= sizeof(T), void> store(T value) noexcept
+    constexpr std::enable_if_t<Octets <= sizeof(T), void>
+    store(T value) noexcept
     {
         auto tmp =
             bswap(static_cast<T>(value << ((sizeof(T) - Octets) * CHAR_BIT)));
@@ -120,7 +119,7 @@ template <size_t Octets> struct field
     }
 
     template <typename T, size_type N>
-    std::enable_if_t<Octets == (sizeof(T) * N), void>
+    constexpr std::enable_if_t<Octets == (sizeof(T) * N), void>
     store(const T value[N]) noexcept
     {
         auto ptr = reinterpret_cast<T*>(octets.data());
@@ -129,9 +128,12 @@ template <size_t Octets> struct field
     }
 
     field() = default;
-    field(const std::initializer_list<value_type>& value) { store(value); }
-    template <typename T> field(const T value) { store<T>(value); }
-    template <typename T, size_t N> field(const T value[N])
+    field(const std::initializer_list<value_type>& value) noexcept
+    {
+        store(value);
+    }
+    template <typename T> field(const T value) noexcept { store<T>(value); }
+    template <typename T, size_t N> field(const T value[N]) noexcept
     {
         store<T, N>(value);
     }
