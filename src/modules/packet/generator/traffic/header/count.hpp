@@ -10,7 +10,7 @@ constexpr auto config_length_visitor = [](const auto& config) {
 };
 
 template <typename PacketHeader>
-size_t count_headers_zip(const config<PacketHeader>& config)
+size_t count_headers_zip(const config<PacketHeader>& config) noexcept
 {
     return (std::accumulate(
         std::begin(config.modifiers),
@@ -23,19 +23,20 @@ size_t count_headers_zip(const config<PacketHeader>& config)
 }
 
 template <typename PacketHeader>
-size_t count_headers_cartesian(const config<PacketHeader>& config)
+size_t count_headers_cartesian(const config<PacketHeader>& config) noexcept
 {
     return (std::accumulate(
         std::begin(config.modifiers),
         std::end(config.modifiers),
         1UL,
         [](size_t lhs, const auto& rhs) {
-            return (lhs * std::visit(config_length_visitor, rhs.second));
+            return (std::multiplies{}(
+                lhs, std::visit(config_length_visitor, rhs.second)));
         }));
 }
 
 template <typename PacketHeader>
-size_t count_headers(const config<PacketHeader>& config)
+size_t count_headers(const config<PacketHeader>& config) noexcept
 {
     assert(!config.modifiers.empty());
 
