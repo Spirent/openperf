@@ -23,6 +23,8 @@ template <typename T> static __attribute__((const)) T round_up(T x, T multiple)
     return (remainder == 0 ? x : x + multiple - remainder);
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
 capture_buffer_mem::capture_buffer_mem(uint64_t size, uint32_t max_packet_size)
     : m_mem(nullptr)
     , m_mem_size(0)
@@ -64,6 +66,20 @@ capture_buffer_mem::~capture_buffer_mem()
     }
 }
 
+static inline void fill_capture_packet_hdr(
+    capture_packet_hdr& hdr,
+    const openperf::packetio::packets::packet_buffer* packet,
+    const uint32_t max_packet_size)
+{
+    auto timestamp = openperf::packetio::packets::rx_timestamp(packet);
+    hdr.packet_len = openperf::packetio::packets::length(packet);
+    hdr.captured_len = std::min(hdr.packet_len, max_packet_size);
+    hdr.timestamp =
+        std::chrono::time_point_cast<std::chrono::nanoseconds>(timestamp)
+            .time_since_epoch()
+            .count();
+}
+
 int capture_buffer_mem::write_packets(
     const openperf::packetio::packets::packet_buffer* const packets[],
     uint16_t packets_length)
@@ -71,14 +87,9 @@ int capture_buffer_mem::write_packets(
     capture_packet_hdr hdr;
     for (uint16_t i = 0; i < packets_length; ++i) {
         auto& packet = packets[i];
-        auto timestamp = openperf::packetio::packets::rx_timestamp(packet);
         auto data = openperf::packetio::packets::to_data(packet);
-        hdr.packet_len = openperf::packetio::packets::length(packet);
-        hdr.captured_len = std::min(hdr.packet_len, m_max_packet_size);
-        hdr.timestamp =
-            std::chrono::time_point_cast<std::chrono::nanoseconds>(timestamp)
-                .time_since_epoch()
-                .count();
+
+        fill_capture_packet_hdr(hdr, packet, m_max_packet_size);
         auto padded_data_len = pad_capture_data_len(hdr.captured_len);
         if (m_cur_addr + sizeof(hdr) + padded_data_len > m_end_addr) {
             m_full = true;
@@ -145,6 +156,7 @@ size_t capture_buffer_mem_reader::read_packets(capture_packet* packets[],
         m_cur_addr += pad_capture_data_len(packet.hdr.captured_len);
         packets[i] = &packet;
         ++i;
+        m_read_offset += pad_capture_data_len(packet.hdr.captured_len);
     }
     return i;
 }
@@ -159,6 +171,226 @@ void capture_buffer_mem_reader::rewind()
     m_read_offset = 0;
     m_cur_addr = m_buffer.get_start_addr();
     m_end_addr = m_buffer.get_cur_addr();
+    m_eof = false;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+capture_buffer_mem_wrap::capture_buffer_mem_wrap(uint64_t size,
+                                                 uint32_t max_packet_size)
+    : capture_buffer_mem(size, max_packet_size)
+    , m_wrap_addr(nullptr)
+    , m_wrap_end_addr(nullptr)
+{}
+
+int capture_buffer_mem_wrap::write_packets(
+    const openperf::packetio::packets::packet_buffer* const packets[],
+    uint16_t packets_length)
+{
+    capture_packet_hdr hdr;
+
+    for (uint16_t i = 0; i < packets_length; ++i) {
+        auto& packet = packets[i];
+        auto data = openperf::packetio::packets::to_data(packet);
+
+        fill_capture_packet_hdr(hdr, packet, m_max_packet_size);
+        auto padded_data_len = pad_capture_data_len(hdr.captured_len);
+        auto total_packet_len = sizeof(hdr) + padded_data_len;
+        // To simplify logic, packet hdr and data are always contiguous
+        if (m_cur_addr + total_packet_len > m_end_addr) {
+            if (m_wrap_addr > m_start_addr) {
+                // Remove old packets till end of buffer because these are
+                // considered discarded when wrap occurs
+                auto [packets, bytes] =
+                    count_packets_and_bytes(m_wrap_addr, m_wrap_end_addr);
+                m_stats.packets -= packets;
+                m_stats.bytes -= bytes;
+            }
+            m_wrap_addr = m_start_addr;
+            m_wrap_end_addr = m_cur_addr;
+            m_cur_addr = m_start_addr;
+        }
+        make_space_if_needed(total_packet_len);
+
+        *reinterpret_cast<capture_packet_hdr*>(m_cur_addr) = hdr;
+        m_cur_addr += sizeof(hdr);
+        std::copy(reinterpret_cast<const uint8_t*>(data),
+                  reinterpret_cast<const uint8_t*>(data) + hdr.captured_len,
+                  m_cur_addr);
+        m_cur_addr += padded_data_len;
+        m_stats.packets += 1;
+        m_stats.bytes += hdr.captured_len;
+    }
+
+    return 0;
+}
+
+std::pair<size_t, size_t>
+capture_buffer_mem_wrap::count_packets_and_bytes(uint8_t* start, uint8_t* end)
+{
+    std::pair<size_t, size_t> result{0, 0};
+    auto& [packets, bytes] = result;
+    uint8_t* p = start;
+    while (p < end) {
+        capture_packet_hdr* hdr = reinterpret_cast<capture_packet_hdr*>(p);
+        auto total_len = sizeof(*hdr) + pad_capture_data_len(hdr->captured_len);
+        assert(p + total_len <= end);
+        ++packets;
+        bytes += hdr->captured_len;
+        p += total_len;
+    }
+
+    return result;
+}
+
+void capture_buffer_mem_wrap::make_space_if_needed(size_t required_size)
+{
+    if (m_cur_addr > m_wrap_addr) {
+        // If current address is > wrap address then only need to worry about
+        // buff end caller should take care of wrap
+        assert(m_cur_addr + required_size <= m_end_addr);
+        return;
+    }
+    size_t available_size = m_wrap_addr - m_cur_addr;
+    size_t packets = 0;
+    size_t bytes = 0;
+    auto p = m_wrap_addr;
+    assert(m_wrap_addr);
+
+    // Remove packets until there is space or end of buffer is reached
+    while (available_size < required_size) {
+        if (p + sizeof(capture_packet_hdr) > m_wrap_end_addr) {
+            // Reached end of buffer
+            assert(p < m_end_addr);
+            available_size += (m_end_addr - p);
+            assert(available_size > required_size);
+            p = m_start_addr;
+            break;
+        }
+        capture_packet_hdr* hdr = reinterpret_cast<capture_packet_hdr*>(p);
+        auto total_len = sizeof(*hdr) + pad_capture_data_len(hdr->captured_len);
+        assert(p + total_len <= m_wrap_end_addr);
+        available_size += total_len;
+        ++packets;
+        bytes += hdr->captured_len;
+        p += total_len;
+    }
+    m_wrap_addr = p;
+    m_stats.packets -= packets;
+    m_stats.bytes -= bytes;
+}
+
+std::unique_ptr<capture_buffer_reader> capture_buffer_mem_wrap::create_reader()
+{
+    return std::make_unique<capture_buffer_mem_wrap_reader>(*this);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+capture_buffer_mem_wrap_reader::capture_buffer_mem_wrap_reader(
+    capture_buffer_mem_wrap& buffer)
+    : m_buffer(buffer)
+    , m_start_addr(nullptr)
+    , m_end_addr(nullptr)
+    , m_wrap_addr(nullptr)
+    , m_cur_addr(nullptr)
+    , m_read_offset(0)
+    , m_eof(false)
+{
+    rewind();
+}
+
+capture_buffer_mem_wrap_reader::~capture_buffer_mem_wrap_reader() {}
+
+bool capture_buffer_mem_wrap_reader::is_done() const { return m_eof; }
+
+size_t capture_buffer_mem_wrap_reader::read_packets(capture_packet* packets[],
+                                                    size_t count)
+{
+    if (count > m_packets.size()) {
+        // Allocate buffer space for all packets
+        m_packets.resize(count);
+    }
+
+    size_t i = 0;
+    while (i < count) {
+        auto& packet = m_packets[i];
+        auto end_addr = m_end_addr;
+        if (m_wrap_addr) {
+            if (m_cur_addr > m_wrap_addr) {
+                // After the wrap location
+                if (m_cur_addr + sizeof(packet.hdr) > m_end_addr) {
+                    m_cur_addr = m_start_addr;
+                    continue;
+                }
+            } else if (m_cur_addr < m_wrap_addr) {
+                // Before the wrap location
+                end_addr = m_wrap_addr;
+                if (m_cur_addr + sizeof(packet.hdr) > m_wrap_addr) {
+                    m_eof = true;
+                    break;
+                }
+            } else {
+                // On the wrap location
+                // It is possible the start and end could be the same place
+                // So either just starting or reached the end.
+                if (m_read_offset != 0) {
+                    // If any packets were read then this is the end
+                    m_eof = true;
+                    break;
+                }
+                if (m_cur_addr + sizeof(packet.hdr) > m_end_addr) {
+                    m_cur_addr = m_start_addr;
+                    continue;
+                }
+            }
+        } else {
+            // Simple case with no buffer wrapping
+            if (m_cur_addr + sizeof(packet.hdr) > m_end_addr) {
+                m_eof = true;
+                break;
+            }
+        }
+        packet.hdr = *reinterpret_cast<capture_packet_hdr*>(m_cur_addr);
+        m_cur_addr += sizeof(packet.hdr);
+        if (m_cur_addr + packet.hdr.captured_len > end_addr) {
+            m_eof = true;
+            break;
+        }
+        packet.data = m_cur_addr;
+        m_cur_addr += pad_capture_data_len(packet.hdr.captured_len);
+        packets[i] = &packet;
+        ++i;
+        m_read_offset += pad_capture_data_len(packet.hdr.captured_len);
+    }
+    return i;
+}
+
+capture_buffer_stats capture_buffer_mem_wrap_reader::get_stats() const
+{
+    return m_buffer.get_stats();
+}
+
+void capture_buffer_mem_wrap_reader::rewind()
+{
+    m_read_offset = 0;
+    bool wrapped = m_buffer.get_wrap_addr() != nullptr;
+
+    m_start_addr = m_buffer.get_start_addr();
+    if (wrapped) {
+        m_end_addr =
+            m_buffer
+                .get_wrap_end_addr(); // This marks end of last packet in buffer
+        m_wrap_addr =
+            m_buffer.get_cur_addr(); // Write pointer is at end of capture
+        m_cur_addr = m_buffer.get_wrap_addr(); // The wrap addr in buffer is 1st
+                                               // packet to read
+    } else {
+        // No wrap detected
+        m_end_addr = m_buffer.get_cur_addr();
+        m_cur_addr = m_start_addr;
+        m_wrap_addr = nullptr;
+    }
     m_eof = false;
 }
 

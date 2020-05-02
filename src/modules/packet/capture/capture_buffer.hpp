@@ -353,7 +353,7 @@ public:
     uint8_t* get_start_addr() const { return m_start_addr; }
     uint8_t* get_cur_addr() const { return m_cur_addr; }
 
-private:
+protected:
     uint8_t* m_mem;
     uint64_t m_mem_size;
 
@@ -387,10 +387,74 @@ public:
 
     void rewind() override;
 
-private:
+protected:
     capture_buffer_mem& m_buffer;
     uint8_t* m_cur_addr;
     uint8_t* m_end_addr;
+    ssize_t m_read_offset;
+    std::vector<capture_packet> m_packets;
+    bool m_eof;
+};
+
+/**
+ * Capture buffer implementation which writes to a memory and wraps
+ */
+class capture_buffer_mem_wrap : public capture_buffer_mem
+{
+public:
+    capture_buffer_mem_wrap(uint64_t size,
+                            uint32_t max_packet_size = UINT32_MAX);
+    capture_buffer_mem_wrap(const capture_buffer_mem_wrap&) = delete;
+    virtual ~capture_buffer_mem_wrap() = default;
+
+    int write_packets(
+        const openperf::packetio::packets::packet_buffer* const packets[],
+        uint16_t packets_length) override;
+
+    bool is_full() const override { return m_full; }
+
+    std::unique_ptr<capture_buffer_reader> create_reader() override;
+
+    uint8_t* get_wrap_addr() const { return m_wrap_addr; }
+    uint8_t* get_wrap_end_addr() const { return m_wrap_end_addr; }
+
+private:
+    std::pair<size_t, size_t> count_packets_and_bytes(uint8_t* start,
+                                                      uint8_t* end);
+    void make_space_if_needed(size_t required_size);
+
+    uint8_t* m_wrap_addr;
+    uint8_t* m_wrap_end_addr;
+};
+
+/**
+ * Capture buffer reader class for reading from a capture_buffer_mem
+ * object.
+ */
+class capture_buffer_mem_wrap_reader : public capture_buffer_reader
+{
+public:
+    capture_buffer_mem_wrap_reader(capture_buffer_mem_wrap& buffer);
+    capture_buffer_mem_wrap_reader(const capture_buffer_mem_wrap_reader&) =
+        delete;
+    virtual ~capture_buffer_mem_wrap_reader();
+
+    bool is_done() const override;
+
+    size_t read_packets(capture_packet* packets[], size_t count) override;
+
+    capture_buffer_stats get_stats() const override;
+
+    size_t get_offset() const override { return m_read_offset; }
+
+    void rewind() override;
+
+protected:
+    capture_buffer_mem_wrap& m_buffer;
+    uint8_t* m_start_addr;
+    uint8_t* m_end_addr;
+    uint8_t* m_wrap_addr;
+    uint8_t* m_cur_addr;
     ssize_t m_read_offset;
     std::vector<capture_packet> m_packets;
     bool m_eof;

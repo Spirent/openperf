@@ -59,6 +59,8 @@ public:
     reply_msg handle_request(request_create_capture_transfer&);
     reply_msg handle_request(const request_delete_capture_transfer&);
 
+    int handle_capture_stop_timer(uint32_t timeout_id);
+
 private:
     bool has_active_transfer(const sink& sink) const;
 };

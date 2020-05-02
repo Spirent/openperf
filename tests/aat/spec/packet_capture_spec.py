@@ -1,10 +1,12 @@
 from mamba import description, before, after
 from expects import *
+import datetime
 import os
 import socket
 import shutil
 import subprocess
 import tempfile
+import time
 
 import client.api
 import client.models
@@ -152,7 +154,7 @@ with description('Packet Capture,', 'packet_capture') as self:
 
             with description('filtered,'):
                 with description('by source_id,'):
-                    with it('returns an capture'):
+                    with it('returns a capture'):
                         captures = self.api.list_captures(source_id=self.capture.source_id)
                         expect(captures).not_to(be_empty)
                         for cap in captures:
@@ -306,37 +308,93 @@ with description('Packet Capture,', 'packet_capture') as self:
         # XXX: Fill these in when we actually implement the code....
         ###
         with description('capture packets,'):
-            with description('counters,'):
-                with it('has packets'):
-                    cap = self.api.create_capture(capture_model(self.api.api_client, 'dataplane-server'))
+            with description('manual stop,'):
+                with description('counters,'):
+                    with it('has packets'):
+                        cap = self.api.create_capture(capture_model(self.api.api_client, 'dataplane-server'))
+                        expect(cap).to(be_valid_packet_capture)
+                        self.capture = cap
+
+                        self.result = self.api.start_capture(self.capture.id)
+                        expect(self.result).to(be_valid_packet_capture_result)
+                        do_ping(self.intf_api, self.temp_ping,
+                                'dataplane-client', 'dataplane-server',
+                                socket.AF_INET, 4)
+                        self.api.stop_capture(self.capture.id)
+                        result = self.api.get_capture_result(id=self.result.id)
+                        expect(result.id).to(equal(self.result.id))
+                        expect(result.packets).to(be_above_or_equal(4))
+
+                with description('pcap,'):
+                    with it('returns pcap'):
+                        cap = self.api.create_capture(capture_model(self.api.api_client, 'dataplane-server'))
+                        expect(cap).to(be_valid_packet_capture)
+                        self.capture = cap
+
+                        self.result = self.api.start_capture(self.capture.id)
+                        expect(self.result).to(be_valid_packet_capture_result)
+                        do_ping(self.intf_api, self.temp_ping,
+                                'dataplane-client', 'dataplane-server',
+                                socket.AF_INET, 4)
+                        self.api.stop_capture(self.capture.id)
+                        result = self.api.get_capture_result(id=self.result.id)
+                        expect(result.id).to(equal(self.result.id))
+                        expect(result.packets).to(be_above_or_equal(4))
+
+                        if not has_scapy():
+                            print('\n!!!Install scapy for PCAP validation!!!')
+
+                        out_file = os.path.join(self.temp_dir, 'test.pcapng')
+
+                        # Retrieve PCAP using python API
+                        get_pcap(self.api, self.result.id, out_file)
+                        expect(os.path.exists(out_file)).to(equal(True))
+                        if has_scapy():
+                            expect(pcap_icmp_echo_request_count(out_file)).to(equal(4))
+                        os.remove(out_file)
+
+                        # Retrieve PCAP using wget
+                        get_pcap_with_wget(self.result.id, out_file)
+                        expect(os.path.exists(out_file)).to(equal(True))
+                        if has_scapy():
+                            expect(pcap_icmp_echo_request_count(out_file)).to(equal(4))
+                        os.remove(out_file)
+
+                        # Make sure HTTP connection is still working
+                        result = self.api.get_capture_result(id=self.result.id)
+                        expect(result.id).to(equal(self.result.id))
+                        expect(result.packets).to(be_above_or_equal(4))
+
+            with description('duration,'):
+                with it('stops automatically'):
+                    capture_duration_sec = 3
+                    cap = capture_model(self.api.api_client, 'dataplane-server')
+                    cap.config.duration = capture_duration_sec * 1000
+                    cap = self.api.create_capture(cap)
                     expect(cap).to(be_valid_packet_capture)
                     self.capture = cap
 
+                    start_time = datetime.datetime.now()
                     self.result = self.api.start_capture(self.capture.id)
                     expect(self.result).to(be_valid_packet_capture_result)
+                    expect(self.result.state == 'started')
                     do_ping(self.intf_api, self.temp_ping,
                             'dataplane-client', 'dataplane-server',
                             socket.AF_INET, 4)
-                    self.api.stop_capture(self.capture.id)
-                    result = self.api.get_capture_result(id=self.result.id)
+                    now = datetime.datetime.now()
+                    while (now - start_time).total_seconds() < (capture_duration_sec + 2):
+                        result = self.api.get_capture_result(id=self.result.id)
+                        if result.state == 'stopped':
+                            break
+                        time.sleep(1)
+                        now = datetime.datetime.now()
+                    expect((now - start_time)).to(be_above_or_equal(datetime.timedelta(seconds=capture_duration_sec)))
+                    if result.state != 'stopped':
+                        # If it didn't stop on time this is an error
+                        self.api.stop_capture(self.capture.id)
+                        expect(result.state == 'stopped')
                     expect(result.id).to(equal(self.result.id))
-                    expect(result.packets).to(be_above(4))
-
-            with description('pcap,'):
-                with it('returns pcap'):
-                    cap = self.api.create_capture(capture_model(self.api.api_client, 'dataplane-server'))
-                    expect(cap).to(be_valid_packet_capture)
-                    self.capture = cap
-
-                    self.result = self.api.start_capture(self.capture.id)
-                    expect(self.result).to(be_valid_packet_capture_result)
-                    do_ping(self.intf_api, self.temp_ping,
-                            'dataplane-client', 'dataplane-server',
-                            socket.AF_INET, 4)
-                    self.api.stop_capture(self.capture.id)
-                    result = self.api.get_capture_result(id=self.result.id)
-                    expect(result.id).to(equal(self.result.id))
-                    expect(result.packets).to(be_above(4))
+                    expect(result.packets).to(be_above_or_equal(4))
 
                     if not has_scapy():
                         print('\n!!!Install scapy for PCAP validation!!!')
@@ -349,18 +407,6 @@ with description('Packet Capture,', 'packet_capture') as self:
                     if has_scapy():
                         expect(pcap_icmp_echo_request_count(out_file)).to(equal(4))
                     os.remove(out_file)
-
-                    # Retrieve PCAP using wget
-                    get_pcap_with_wget(self.result.id, out_file)
-                    expect(os.path.exists(out_file)).to(equal(True))
-                    if has_scapy():
-                        expect(pcap_icmp_echo_request_count(out_file)).to(equal(4))
-                    os.remove(out_file)
-
-                    # Make sure HTTP connection is still working
-                    result = self.api.get_capture_result(id=self.result.id)
-                    expect(result.id).to(equal(self.result.id))
-                    expect(result.packets).to(be_above(4))
 
             with description('live,'):
                 with _it('TODO'):

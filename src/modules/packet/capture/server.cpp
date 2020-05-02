@@ -1,3 +1,4 @@
+#include <cinttypes>
 #include <zmq.h>
 
 #include "packet/capture/server.hpp"
@@ -378,6 +379,10 @@ create_capture_buffer([[maybe_unused]] const core::uuid& id,
 {
     switch (sink.get_capture_mode()) {
     case capture_mode::BUFFER: {
+        if (sink.get_buffer_wrap()) {
+            return std::unique_ptr<capture_buffer>(new capture_buffer_mem_wrap(
+                sink.get_buffer_size(), sink.get_max_packet_size()));
+        }
         return std::unique_ptr<capture_buffer>(new capture_buffer_mem(
             sink.get_buffer_size(), sink.get_max_packet_size()));
     }
@@ -393,6 +398,43 @@ create_capture_buffer([[maybe_unused]] const core::uuid& id,
             filename, false, sink.get_max_packet_size()));
     }
     }
+}
+
+static int handle_capture_stop(const struct op_event_data* data, void* arg)
+{
+    auto srv = reinterpret_cast<server*>(arg);
+    assert(srv);
+    return srv->handle_capture_stop_timer(data->timeout_id);
+}
+
+int server::handle_capture_stop_timer(uint32_t timeout_id)
+{
+    OP_LOG(OP_LOG_INFO, "Processing timer id %#" PRIx32, timeout_id);
+
+    auto found =
+        std::find_if(m_results.begin(), m_results.end(), [&](const auto& pair) {
+            auto& result = pair.second;
+            return (result->timeout_id == timeout_id);
+        });
+    if (found == m_results.end()) {
+        OP_LOG(OP_LOG_ERROR,
+               "Unable to find capture result matching timer id %#" PRIx32,
+               timeout_id);
+        return -1;
+    }
+    auto& id = found->first;
+    auto& result = found->second;
+    if (result->state != capture_state::STOPPED) {
+        OP_LOG(OP_LOG_INFO,
+               "Capture %s stopped due to duration timeout",
+               to_string(id).c_str());
+        // FIXME: Need to do some cleanup so we don't need a const_cast
+        const_cast<sink&>(result->parent).stop();
+        result->timeout_id = 0;
+        return -1;
+    }
+
+    return 0;
 }
 
 reply_msg server::handle_request(const request_start_capture& request)
@@ -435,6 +477,20 @@ reply_msg server::handle_request(const request_start_capture& request)
 
     impl.start(result.get());
 
+    if (auto duration = impl.get_duration()) {
+        // Setup a timer to check for capture completion
+        // TODO: When trigger is enabled this should actually only start when
+        // trigger occurs
+        auto callbacks = op_event_callbacks{.on_timeout = handle_capture_stop};
+        auto timeout =
+            std::chrono::duration<uint64_t, std::nano>{duration * 1000000};
+        m_loop.add((timeout).count(), &callbacks, this, &result->timeout_id);
+        OP_LOG(OP_LOG_INFO,
+               "Added capture duration timer id %#" PRIx32 " timeout %" PRId64,
+               result->timeout_id,
+               timeout.count());
+    }
+
     auto reply = reply_capture_results{};
     reply.capture_results.emplace_back(to_swagger(id, *result));
     return (reply);
@@ -448,6 +504,17 @@ reply_msg server::handle_request(const request_stop_capture& request)
                                  sink_id_comparator{});
         found != std::end(m_sinks)) {
         auto& impl = found->template get<sink>();
+
+        if (auto result = impl.get_result()) {
+            if (result->timeout_id) {
+                if (m_loop.disable(result->timeout_id) < 0) {
+                    OP_LOG(OP_LOG_ERROR,
+                           "Failed to disable capture duration timer %#" PRIx32,
+                           result->timeout_id);
+                }
+                result->timeout_id = 0;
+            }
+        }
         impl.stop();
     }
 

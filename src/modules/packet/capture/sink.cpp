@@ -43,6 +43,10 @@ capture_mode capture_mode_from_string(const std::string_view str)
 
 sink_result::sink_result(const sink& parent_)
     : parent(parent_)
+    , state(capture_state::STOPPED)
+    , start_time(0)
+    , stop_time(0)
+    , timeout_id(0)
 {}
 
 capture_buffer_stats sink_result::get_stats() const
@@ -131,6 +135,20 @@ void sink::start(sink_result* results)
 {
     // TODO: Add support for trigger condition
     results->state = capture_state::STARTED;
+    results->start_time =
+        std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::system_clock::now().time_since_epoch())
+            .count();
+    // Set expected stop time
+    // TODO:
+    // Ideally this will be in same time units/base as packet timestamp
+    // so sink can discard packets after stop_time and start trigger
+    // can determine stop_time from duration and packet timestamp.
+    if (m_duration) {
+        results->stop_time = results->start_time + m_duration;
+    } else {
+        results->stop_time = UINT64_MAX;
+    }
 
     m_results.store(results, std::memory_order_release);
 }
@@ -147,9 +165,15 @@ void sink::stop()
      * here, but that seems like overkill for something so unlikely to happen...
      */
     auto results = m_results.load(std::memory_order_consume);
+
     if (results) {
+        // TODO: This will not be thread safe when start/stop triggers are added
         if (results->state != capture_state::STOPPED) {
             results->state = capture_state::STOPPED;
+            results->stop_time =
+                std::chrono::duration_cast<std::chrono::milliseconds>(
+                    std::chrono::system_clock::now().time_since_epoch())
+                    .count();
         }
         m_results.store(nullptr, std::memory_order_release);
     }

@@ -46,9 +46,12 @@ struct sink_result
 
     const sink& parent;
     std::atomic<capture_state> state = capture_state::STOPPED;
+    uint64_t start_time;
+    uint64_t stop_time;
 
     std::vector<std::unique_ptr<capture_buffer>> buffers;
     std::unique_ptr<transfer_context> transfer;
+    uint32_t timeout_id;
 };
 
 class sink
@@ -80,6 +83,11 @@ public:
     void stop();
 
     bool active() const;
+
+    sink_result* get_result() const
+    {
+        return m_results.load(std::memory_order_consume);
+    }
 
     bool uses_feature(packetio::packets::sink_feature_flags flags) const;
 
