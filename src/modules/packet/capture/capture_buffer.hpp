@@ -352,6 +352,7 @@ public:
 
     uint8_t* get_start_addr() const { return m_start_addr; }
     uint8_t* get_cur_addr() const { return m_cur_addr; }
+    uint8_t* get_end_addr() const { return m_end_addr; }
 
 protected:
     uint8_t* m_mem;
