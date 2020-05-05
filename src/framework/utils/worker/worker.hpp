@@ -4,6 +4,7 @@
 #include <zmq.h>
 #include <thread>
 #include <forward_list>
+#include <atomic>
 
 #include "core/op_core.h"
 #include "utils/worker/task.hpp"
@@ -38,7 +39,7 @@ private:
     };
 
 private:
-    constexpr static auto _endpoint = "inproc://worker-p2p";
+    constexpr static auto m_endpoint = "inproc://worker-p2p";
 
     bool m_paused;
     bool m_stopped;
@@ -47,9 +48,10 @@ private:
     void* m_zmq_context;
     std::unique_ptr<void, op_socket_deleter> m_zmq_socket;
     std::thread m_thread;
+    std::string m_thread_name;
 
 public:
-    worker();
+    worker(std::string_view thread_name = "worker");
     worker(worker&&);
     worker(const worker&) = delete;
     explicit worker(const typename T::config_t&);
@@ -65,8 +67,8 @@ public:
     inline bool is_finished() const override { return m_stopped; }
     inline typename T::config_t config() const { return m_task->config(); }
     inline typename T::stat_t stat() const { return m_task->stat(); };
-    inline void clear_stat() { return m_task->clear_stat(); };
 
+    inline void clear_stat() { m_task->clear_stat(); }
     void config(const typename T::config_t&);
 
 private:
@@ -77,12 +79,13 @@ private:
 
 // Constructors & Destructor
 template <class T>
-worker<T>::worker()
+worker<T>::worker(std::string_view thread_name)
     : m_paused(true)
     , m_stopped(true)
     , m_task(new T)
     , m_zmq_context(zmq_init(0))
-    , m_zmq_socket(op_socket_get_server(m_zmq_context, ZMQ_PAIR, _endpoint))
+    , m_zmq_socket(op_socket_get_server(m_zmq_context, ZMQ_PUSH, m_endpoint))
+    , m_thread_name(thread_name)
 {}
 
 template <class T>
@@ -94,6 +97,7 @@ worker<T>::worker(worker&& w)
     , m_zmq_context(std::move(w.m_zmq_context))
     , m_zmq_socket(std::move(w.m_zmq_socket))
     , m_thread(std::move(w.m_thread))
+    , m_thread_name(std::move(w.m_thread_name))
 {}
 
 template <class T>
@@ -120,10 +124,17 @@ template <class T> worker<T>::~worker()
 // Methods : public
 template <class T> void worker<T>::start()
 {
+    static std::atomic_uint thread_number = 0;
+
     if (!m_stopped) return;
     m_stopped = false;
 
-    m_thread = std::thread([this]() { loop(); });
+    m_thread = std::thread([this]() {
+        op_thread_setname(("op_" + m_thread_name
+            + "_" + std::to_string(++thread_number)
+            ).c_str());
+        loop();
+    });
     config(m_config);
 }
 
@@ -160,15 +171,17 @@ template <class T> void worker<T>::config(const typename T::config_t& c)
 // Methods : private
 template <class T> void worker<T>::loop()
 {
+
     auto socket = std::unique_ptr<void, op_socket_deleter>(
-        op_socket_get_client(m_zmq_context, ZMQ_PAIR, _endpoint));
+        op_socket_get_client(m_zmq_context, ZMQ_PULL, m_endpoint));
 
     worker::message msg{.stop = false, .pause = true, .reconf = false};
     bool paused = true;
 
     for (;;) {
-        int recv = zmq_recv(
-            socket.get(), &msg, sizeof(msg), paused ? 0 : ZMQ_NOBLOCK);
+        int recv = zmq_recv(socket.get(), &msg, sizeof(msg),
+            paused ? 0 : ZMQ_NOBLOCK);
+
         if (recv < 0 && errno != EAGAIN) {
             OP_LOG(OP_LOG_ERROR, "worker thread shutdown");
             break;
@@ -180,7 +193,6 @@ template <class T> void worker<T>::loop()
         }
 
         if (paused && !(msg.pause || msg.stop)) { m_task->resume(); }
-
         if (!paused && (msg.pause || msg.stop)) { m_task->pause(); }
 
         paused = msg.pause;
@@ -206,7 +218,7 @@ template <class T> void worker<T>::send_message(const worker::message& msg)
 {
     if (is_finished()) return;
 
-    zmq_send(m_zmq_socket.get(), &msg, sizeof(msg), 0); // ZMQ_NOBLOCK);
+    zmq_send(m_zmq_socket.get(), &msg, sizeof(msg), 0);
 }
 
 } // namespace openperf::utils::worker
