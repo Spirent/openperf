@@ -13,7 +13,7 @@ PG_SOURCES += \
 	source.cpp \
 	source_transmogrify.cpp \
 	traffic_transmogrify.cpp \
-	traffic/length.cpp \
+	traffic/length_template.cpp \
 	traffic/header/explode.cpp \
 	traffic/header/utils.cpp \
 	traffic/header/expand_impl/ethernet.cpp \
