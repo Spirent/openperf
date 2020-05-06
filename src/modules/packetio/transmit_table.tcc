@@ -15,24 +15,10 @@ template <typename Source> transmit_table<Source>::~transmit_table()
 }
 
 template <typename Source>
-typename transmit_table<Source>::source_key transmit_table<Source>::to_key(
+typename transmit_table<Source>::key_type transmit_table<Source>::to_key(
     uint16_t port_idx, uint16_t queue_idx, std::string_view source_id)
 {
-    if (source_id.length() > key_buffer_length) {
-        OP_LOG(OP_LOG_WARNING,
-               "Truncating source id = %.*s to %zu characters\n",
-               static_cast<int>(source_id.length()),
-               source_id.data(),
-               key_buffer_length);
-    }
-
-    auto key = source_key{port_idx, queue_idx, {}};
-    auto& buffer = std::get<key_buffer_idx>(key);
-    std::copy_n(source_id.data(),
-                std::min(source_id.length(), key_buffer_length),
-                buffer.data());
-
-    return (key);
+    return {port_idx, queue_idx, std::string(source_id)};
 }
 
 /*
@@ -46,14 +32,14 @@ template <typename Source> struct key_comparator
     static constexpr auto key_port_idx = transmit_table<Source>::key_port_idx;
     static constexpr auto key_queue_idx = transmit_table<Source>::key_queue_idx;
 
-    bool operator()(const typename transmit_table<Source>::source_key& left,
-                    const typename transmit_table<Source>::source_pair& right)
+    bool operator()(const typename transmit_table<Source>::key_type& left,
+                    const typename transmit_table<Source>::value_type& right)
     {
         return (left < right.first);
     }
 
-    bool operator()(const typename transmit_table<Source>::source_pair& left,
-                    const typename transmit_table<Source>::source_key& right)
+    bool operator()(const typename transmit_table<Source>::value_type& left,
+                    const typename transmit_table<Source>::key_type& right)
     {
         return (left.first < right);
     }
@@ -64,8 +50,8 @@ template <typename Source> struct port_queue_comparator
     static constexpr auto key_port_idx = transmit_table<Source>::key_port_idx;
     static constexpr auto key_queue_idx = transmit_table<Source>::key_queue_idx;
 
-    bool operator()(const typename transmit_table<Source>::source_key& left,
-                    const typename transmit_table<Source>::source_pair& right)
+    bool operator()(const typename transmit_table<Source>::key_type& left,
+                    const typename transmit_table<Source>::value_type& right)
     {
         /* Turn port/queue indexes into a number and compare them */
         auto left_id =
@@ -78,8 +64,8 @@ template <typename Source> struct port_queue_comparator
         return (left_id < right_id);
     }
 
-    bool operator()(const typename transmit_table<Source>::source_pair& left,
-                    const typename transmit_table<Source>::source_key& right)
+    bool operator()(const typename transmit_table<Source>::value_type& left,
+                    const typename transmit_table<Source>::key_type& right)
     {
         /* Turn port/queue indexes into a number and compare them */
         auto left_id =
@@ -120,7 +106,7 @@ transmit_table<Source>::remove_source(uint16_t port_idx,
     auto range = std::equal_range(
         original->begin(), original->end(), key, key_comparator<Source>{});
     auto found = std::find_if(range.first, range.second, [&](const auto& item) {
-        return (item.first == key);
+        return (item.get().first == key);
     });
     if (found == range.second) return (nullptr);
     auto updated = new source_map{
@@ -158,14 +144,14 @@ transmit_table<Source>::get_sources(uint16_t port_idx, uint16_t queue_idx) const
 
 template <typename Source>
 const Source* transmit_table<Source>::get_source(
-    const transmit_table<Source>::source_key& key) const
+    const transmit_table<Source>::key_type& key) const
 {
     auto map = m_sources.load(std::memory_order_consume);
     auto range = std::equal_range(
         map->begin(), map->end(), key, key_comparator<Source>{});
     assert(std::distance(range.first, range.second) <= 1);
     return (std::distance(range.first, range.second) == 1
-                ? std::addressof(range.first->second)
+                ? std::addressof(range.first->get().second)
                 : nullptr);
 }
 

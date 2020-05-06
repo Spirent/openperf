@@ -30,8 +30,7 @@ TEST_CASE("transmit table functionality", "[transmit table]")
         {
             auto range = table.get_sources(0, 0);
             REQUIRE(std::distance(range.first, range.second) == 1);
-            auto s1_ptr = table.get_source(range.first->first);
-            REQUIRE(s1_ptr);
+            auto s1_ptr = table.get_source(range.first->get().first);
             REQUIRE(s1_ptr->id() == s1.id());
 
             SECTION("remove one, ")
@@ -100,7 +99,7 @@ TEST_CASE("transmit table functionality", "[transmit table]")
                     auto range = table.get_sources(pair.first, pair.second);
                     REQUIRE(std::distance(range.first, range.second) == 1);
 
-                    auto ptr = table.get_source(range.first->first);
+                    auto ptr = table.get_source(range.first->get().first);
                     REQUIRE(ptr);
                     REQUIRE(ptr->id()
                             == sources[pair.first * many_queues + pair.second]

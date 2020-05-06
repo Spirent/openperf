@@ -20,7 +20,7 @@ using time_point = std::chrono::time_point<clock>;
 struct entry
 {
     time_point deadline;
-    worker::tib::source_key key;
+    worker::tib::key_type key;
 };
 
 constexpr bool operator>(const entry& left, const entry& right);

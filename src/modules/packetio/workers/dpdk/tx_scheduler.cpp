@@ -151,8 +151,8 @@ void tx_scheduler::do_reschedule(const schedule::time_point& now)
     const auto& priority_vec = get_container(m_schedule);
 
     for (const auto& key_source : m_tib.get_sources(port_id(), queue_id())) {
-        const auto& key = key_source.first;
-        const auto& source = key_source.second;
+        const auto& key = key_source->first;
+        const auto& source = key_source->second;
         if (source.active()
             && std::none_of(
                 std::begin(priority_vec),
@@ -198,7 +198,7 @@ static bool have_active_sources(const worker::tib& tib,
     /* Check the forwarding table for matching events */
     auto range = tib.get_sources(port_idx, queue_idx);
     return (std::any_of(range.first, range.second, [](const auto& key_source) {
-        return (key_source.second.active());
+        return (key_source->second.active());
     }));
 }
 
@@ -459,9 +459,12 @@ void tx_scheduler::on_transition(const schedule::state_running& state)
     auto now = schedule::clock::now();
     if (m_schedule.empty()) {
         /* Generate a schedule for all available entities */
-        for (auto& [key, source] : m_tib.get_sources(port_id(), queue_id())) {
-            if (source.active())
+        for (auto&& pair : m_tib.get_sources(port_id(), queue_id())) {
+            const auto& key = pair->first;
+            const auto& source = pair->second;
+            if (source.active()) {
                 m_schedule.push({now + next_deadline(source), key});
+            }
         }
 
         /* Adjust timer to match schedule */

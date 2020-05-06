@@ -758,7 +758,9 @@ uint64_t get_source_load(const packet::generic_source& source)
 std::optional<uint16_t>
 find_queue(worker::tib& tib, uint16_t port_idx, std::string_view source_id)
 {
-    for (const auto& [key, source] : tib.get_sources(port_idx)) {
+    for (auto&& item : tib.get_sources(port_idx)) {
+        const auto& key = item->first;
+        const auto& source = item->second;
         if (source.id() == source_id) {
             return (std::get<worker::tib::key_queue_idx>(key));
         }
@@ -773,8 +775,8 @@ void maybe_toggle_source_feature(const TransmitTable& tib,
                                  packet::source_feature_flags flags)
 {
     const auto& range = tib->get_sources(port_idx);
-    if (std::any_of(range.first, range.second, [&](const auto& src) {
-            return (src.second.uses_feature(flags));
+    if (std::any_of(range.first, range.second, [&](const auto& item) {
+            return (item->second.uses_feature(flags));
         })) {
         get_unique_port_object(features, port_idx).enable();
     } else {
