@@ -19,6 +19,7 @@ using field_modifier_ptr =
 using packet_template_ptr =
     std::shared_ptr<swagger::v1::model::TrafficPacketTemplate>;
 using protocol_ptr = std::shared_ptr<swagger::v1::model::TrafficProtocol>;
+using signature_ptr = std::shared_ptr<swagger::v1::model::SpirentSignature>;
 
 const std::string id_string(const size_t def_idx)
 {
@@ -503,6 +504,41 @@ static void validate(const length_ptr& length,
     }
 }
 
+static void validate(const signature_ptr& sig, std::vector<std::string>& errors)
+{
+    if (sig->getStreamId() < 1) {
+        errors.emplace_back("Stream ID must be positive.");
+    }
+
+    if (sig->fillIsSet()) {
+        const auto& fill = sig->getFill();
+        if (fill->constantIsSet()) {
+            if (static_cast<unsigned>(fill->getConstant()) > 65535) {
+                errors.emplace_back(
+                    "Constant fill value must be less than 65535.");
+            }
+        } else if (fill->decrementIsSet()) {
+            if (static_cast<unsigned>(fill->getDecrement()) > 255) {
+                errors.emplace_back(
+                    "Decrement fill value must be less than 255.");
+            }
+        } else if (fill->incrementIsSet()) {
+            if (static_cast<unsigned>(fill->getIncrement()) > 255) {
+                errors.emplace_back(
+                    "Increment fill value must be less than 255.");
+            }
+        } else if (fill->prbsIsSet() && !fill->isPrbs()) {
+            errors.emplace_back("Invalid fill configuration.");
+        }
+    }
+
+    if (api::to_signature_latency_type(sig->getLatency())
+        == api::signature_latency_type::none) {
+        errors.emplace_back("Latency setting, " + sig->getLatency()
+                            + ", is invalid.");
+    }
+}
+
 static void validate(const definition_ptr& def,
                      const size_t def_idx,
                      std::vector<std::string>& errors)
@@ -529,6 +565,9 @@ static void validate(const definition_ptr& def,
         errors.emplace_back("Weight must be positive" + id_string(def_idx)
                             + ".");
     }
+
+    /* Maybe check signature config */
+    if (def->signatureIsSet()) { validate(def->getSignature(), errors); }
 }
 
 static void validate(const duration_ptr& duration,

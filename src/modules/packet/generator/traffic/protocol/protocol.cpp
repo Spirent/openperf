@@ -2,11 +2,6 @@
 
 namespace openperf::packet::generator::traffic::protocol {
 
-void update_length(libpacket::protocol::udp& udp, uint16_t length) noexcept
-{
-    set_udp_length(udp, length);
-}
-
 flags update_packet_type(flags flags, const libpacket::protocol::tcp&) noexcept
 {
     using namespace openperf::packetio::packet;
