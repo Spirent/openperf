@@ -142,18 +142,18 @@ size_t fill_capture_buffer_ipv4(capture_buffer& buffer,
         auto ipv4 = reinterpret_cast<ipv4_hdr*>(
             reinterpret_cast<uint8_t*>(packet_buffer.data) + sizeof(eth_hdr));
         ipv4->packet_id = ntohs(start_id + i);
-        if (buffer.write_packets(packet_buffers.data(), 1) < 0) { return i; }
+        if (buffer.write_packets(packet_buffers.data(), 1) != 1) { return i; }
     }
 
     return packet_count;
 }
 
-void fill_capture_buffers_ipv4(
-    std::vector<std::unique_ptr<capture_buffer>>& buffers,
-    size_t packet_count,
-    size_t burst_size,
-    size_t start_buffer = 0,
-    size_t payload_size = 64)
+size_t
+fill_capture_buffers_ipv4(std::vector<std::unique_ptr<capture_buffer>>& buffers,
+                          size_t packet_count,
+                          size_t burst_size,
+                          size_t start_buffer = 0,
+                          size_t payload_size = 64)
 {
     mock_packet_buffer packet_buffer;
     std::vector<uint8_t> packet_data;
@@ -177,8 +177,10 @@ void fill_capture_buffers_ipv4(
             reinterpret_cast<uint8_t*>(packet_buffer.data) + sizeof(eth_hdr));
         ipv4->packet_id = ntohs(i);
         auto buffer_idx = ((i / burst_size) + start_buffer) % num_buffers;
-        buffers[buffer_idx]->write_packets(packet_buffers.data(), 1);
+        if (buffers[buffer_idx]->write_packets(packet_buffers.data(), 1) != 1)
+            return i;
     }
+    return packet_count;
 }
 
 size_t
@@ -352,14 +354,14 @@ TEST_CASE("capture buffer", "[packet_capture]")
                 auto ipv4 = reinterpret_cast<ipv4_hdr*>(packet_data.data()
                                                         + sizeof(eth_hdr));
                 ipv4->packet_id = ntohs(i);
-                if (buffer.write_packets(packet_buffers.data(), 1) < 0) break;
+                if (buffer.write_packets(packet_buffers.data(), 1) != 1) break;
                 ++i;
             }
             REQUIRE(buffer.is_full());
             auto packet_count = i;
 
             // Buffer should be full so write should fail
-            REQUIRE(buffer.write_packets(packet_buffers.data(), 1) < 0);
+            REQUIRE(buffer.write_packets(packet_buffers.data(), 1) != 1);
 
             // Validate buffer stats
             auto stats = buffer.get_stats();
@@ -556,7 +558,7 @@ TEST_CASE("capture buffer", "[packet_capture]")
                 // The assumption is that this should always be at the end of
                 // the buffer.  When not at end of buffer could have 1 less
                 // packet than expected due to wrap case
-                REQUIRE(buffer.get_cur_addr() + buffer_bytes_per_packet
+                REQUIRE(buffer.get_write_addr() + buffer_bytes_per_packet
                         >= buffer.get_end_addr());
 
                 // Validate buffer stats
@@ -618,8 +620,6 @@ TEST_CASE("capture buffer", "[packet_capture]")
                 // Validate buffer stats
                 auto stats = buffer.get_stats();
                 REQUIRE(stats.packets <= max_packets_in_buffer);
-                std::cerr << "packets " << stats.packets << " bytes "
-                          << stats.bytes << std::endl;
 
                 // Validate packets in buffer
                 size_t counted;
@@ -637,14 +637,23 @@ TEST_CASE("capture buffer", "[packet_capture]")
 
         SECTION("create, ")
         {
-            SECTION("success")
+            SECTION("success, no keep")
             {
                 {
                     capture_buffer_file buffer(capture_filename);
                     REQUIRE(std::filesystem::exists(capture_filename));
                 }
-                std::remove(capture_filename);
                 REQUIRE(!std::filesystem::exists(capture_filename));
+            }
+
+            SECTION("success, keep")
+            {
+                {
+                    capture_buffer_file buffer(capture_filename, true);
+                    REQUIRE(std::filesystem::exists(capture_filename));
+                }
+                REQUIRE(std::filesystem::exists(capture_filename));
+                std::remove(capture_filename);
             }
 
             SECTION("failure, bad path")

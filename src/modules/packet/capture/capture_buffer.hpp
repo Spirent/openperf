@@ -44,12 +44,12 @@ struct capture_buffer_stats
  * and keeps track of how much of the burst has been
  * processed.
  */
-template <typename PacketPtrType, int BurstSize> class burst_holder
+template <typename PacketPtrType, uint16_t BurstSize> class burst_holder
 {
 public:
     bool is_empty() const { return (offset == count); }
 
-    size_t available() const { return (count - offset); }
+    uint16_t available() const { return (count - offset); }
 
     bool next()
     {
@@ -71,8 +71,8 @@ public:
 
     size_t get_buffer_size() const { return buffer.size(); }
 
-    size_t count = 0;
-    size_t offset = 0;
+    uint16_t count = 0;
+    uint16_t offset = 0;
 
     std::array<PacketPtrType, BurstSize> buffer;
 };
@@ -88,7 +88,7 @@ public:
  */
 template <class ReaderPtrType,
           typename PacketPtrType = capture_packet*,
-          int BurstSize = 8>
+          uint16_t BurstSize = 8>
 class capture_burst_reader
 {
 public:
@@ -166,7 +166,7 @@ public:
  */
 template <class ReaderPtrType,
           typename PacketPtrType = capture_packet*,
-          int BurstSize = 8>
+          uint16_t BurstSize = 8>
 class capture_reader_iterator
     : private capture_burst_reader<ReaderPtrType, PacketPtrType, BurstSize>
 {
@@ -246,7 +246,8 @@ public:
      * @param[in] count The size of the packets array.
      * @return The number of packets which were read.
      */
-    virtual size_t read_packets(capture_packet* packets[], size_t count) = 0;
+    virtual uint16_t read_packets(capture_packet* packets[],
+                                  uint16_t count) = 0;
 
     /**
      * Get stats from the attached capture_buffer object.
@@ -297,7 +298,7 @@ public:
      * @param packets_length The number of packets to write.
      * @return The number of packets which were written.
      */
-    virtual int write_packets(
+    virtual uint16_t write_packets(
         const openperf::packetio::packets::packet_buffer* const packets[],
         uint16_t packets_length) = 0;
 
@@ -340,7 +341,7 @@ public:
     capture_buffer_mem(const capture_buffer_mem&) = delete;
     virtual ~capture_buffer_mem();
 
-    int write_packets(
+    uint16_t write_packets(
         const openperf::packetio::packets::packet_buffer* const packets[],
         uint16_t packets_length) override;
 
@@ -351,8 +352,8 @@ public:
     capture_buffer_stats get_stats() const override;
 
     uint8_t* get_start_addr() const { return m_start_addr; }
-    uint8_t* get_cur_addr() const { return m_cur_addr; }
     uint8_t* get_end_addr() const { return m_end_addr; }
+    uint8_t* get_write_addr() const { return m_write_addr; }
 
 protected:
     uint8_t* m_mem;
@@ -360,7 +361,7 @@ protected:
 
     uint8_t* m_start_addr;
     uint8_t* m_end_addr;
-    uint8_t* m_cur_addr;
+    uint8_t* m_write_addr;
 
     capture_buffer_stats m_stats;
     uint32_t m_max_packet_size;
@@ -380,7 +381,7 @@ public:
 
     bool is_done() const override;
 
-    size_t read_packets(capture_packet* packets[], size_t count) override;
+    uint16_t read_packets(capture_packet* packets[], uint16_t count) override;
 
     capture_buffer_stats get_stats() const override;
 
@@ -390,7 +391,7 @@ public:
 
 protected:
     capture_buffer_mem& m_buffer;
-    uint8_t* m_cur_addr;
+    uint8_t* m_read_addr;
     uint8_t* m_end_addr;
     ssize_t m_read_offset;
     std::vector<capture_packet> m_packets;
@@ -408,7 +409,7 @@ public:
     capture_buffer_mem_wrap(const capture_buffer_mem_wrap&) = delete;
     virtual ~capture_buffer_mem_wrap() = default;
 
-    int write_packets(
+    uint16_t write_packets(
         const openperf::packetio::packets::packet_buffer* const packets[],
         uint16_t packets_length) override;
 
@@ -442,7 +443,7 @@ public:
 
     bool is_done() const override;
 
-    size_t read_packets(capture_packet* packets[], size_t count) override;
+    uint16_t read_packets(capture_packet* packets[], uint16_t count) override;
 
     capture_buffer_stats get_stats() const override;
 
@@ -455,7 +456,7 @@ protected:
     uint8_t* m_start_addr;
     uint8_t* m_end_addr;
     uint8_t* m_wrap_addr;
-    uint8_t* m_cur_addr;
+    uint8_t* m_read_addr;
     ssize_t m_read_offset;
     std::vector<capture_packet> m_packets;
     bool m_eof;
@@ -476,7 +477,7 @@ public:
     capture_buffer_file(const capture_buffer_file&) = delete;
     virtual ~capture_buffer_file();
 
-    int write_packets(
+    uint16_t write_packets(
         const openperf::packetio::packets::packet_buffer* const packets[],
         uint16_t packets_length) override;
 
@@ -512,7 +513,7 @@ public:
 
     bool is_done() const override;
 
-    size_t read_packets(capture_packet* packets[], size_t count) override;
+    uint16_t read_packets(capture_packet* packets[], uint16_t count) override;
 
     capture_buffer_stats get_stats() const override;
 
@@ -558,7 +559,7 @@ public:
 
     bool is_done() const override;
 
-    size_t read_packets(capture_packet* packets[], size_t count) override;
+    uint16_t read_packets(capture_packet* packets[], uint16_t count) override;
 
     capture_buffer_stats get_stats() const override;
 

@@ -30,7 +30,7 @@ capture_buffer_mem::capture_buffer_mem(uint64_t size, uint32_t max_packet_size)
     , m_mem_size(0)
     , m_start_addr(nullptr)
     , m_end_addr(nullptr)
-    , m_cur_addr(nullptr)
+    , m_write_addr(nullptr)
     , m_stats{0, 0}
     , m_max_packet_size(max_packet_size)
     , m_full(false)
@@ -54,7 +54,7 @@ capture_buffer_mem::capture_buffer_mem(uint64_t size, uint32_t max_packet_size)
 
     m_start_addr = m_mem;
     m_end_addr = m_mem + m_mem_size;
-    m_cur_addr = m_start_addr;
+    m_write_addr = m_start_addr;
 }
 
 capture_buffer_mem::~capture_buffer_mem()
@@ -80,32 +80,35 @@ static inline void fill_capture_packet_hdr(
             .count();
 }
 
-int capture_buffer_mem::write_packets(
+uint16_t capture_buffer_mem::write_packets(
     const openperf::packetio::packets::packet_buffer* const packets[],
     uint16_t packets_length)
 {
     capture_packet_hdr hdr;
+
+    if (m_full) { return 0; }
+
     for (uint16_t i = 0; i < packets_length; ++i) {
         auto& packet = packets[i];
         auto data = openperf::packetio::packets::to_data(packet);
 
         fill_capture_packet_hdr(hdr, packet, m_max_packet_size);
         auto padded_data_len = pad_capture_data_len(hdr.captured_len);
-        if (m_cur_addr + sizeof(hdr) + padded_data_len > m_end_addr) {
+        if (m_write_addr + sizeof(hdr) + padded_data_len > m_end_addr) {
             m_full = true;
-            return -1;
+            return i;
         }
-        *reinterpret_cast<capture_packet_hdr*>(m_cur_addr) = hdr;
-        m_cur_addr += sizeof(hdr);
+        *reinterpret_cast<capture_packet_hdr*>(m_write_addr) = hdr;
+        m_write_addr += sizeof(hdr);
         std::copy(reinterpret_cast<const uint8_t*>(data),
                   reinterpret_cast<const uint8_t*>(data) + hdr.captured_len,
-                  m_cur_addr);
-        m_cur_addr += padded_data_len;
+                  m_write_addr);
+        m_write_addr += padded_data_len;
         m_stats.packets += 1;
         m_stats.bytes += hdr.captured_len;
     }
 
-    return 0;
+    return packets_length;
 }
 
 std::unique_ptr<capture_buffer_reader> capture_buffer_mem::create_reader()
@@ -119,7 +122,7 @@ capture_buffer_stats capture_buffer_mem::get_stats() const { return m_stats; }
 
 capture_buffer_mem_reader::capture_buffer_mem_reader(capture_buffer_mem& buffer)
     : m_buffer(buffer)
-    , m_cur_addr(nullptr)
+    , m_read_addr(nullptr)
     , m_end_addr(nullptr)
     , m_read_offset(0)
     , m_eof(false)
@@ -131,29 +134,29 @@ capture_buffer_mem_reader::~capture_buffer_mem_reader() {}
 
 bool capture_buffer_mem_reader::is_done() const { return m_eof; }
 
-size_t capture_buffer_mem_reader::read_packets(capture_packet* packets[],
-                                               size_t count)
+uint16_t capture_buffer_mem_reader::read_packets(capture_packet* packets[],
+                                                 uint16_t count)
 {
     if (count > m_packets.size()) {
         // Allocate buffer space for all packets
         m_packets.resize(count);
     }
 
-    size_t i = 0;
+    uint16_t i = 0;
     while (i < count) {
         auto& packet = m_packets[i];
-        if (m_cur_addr + sizeof(packet.hdr) > m_end_addr) {
+        if (m_read_addr + sizeof(packet.hdr) > m_end_addr) {
             m_eof = true;
             break;
         }
-        packet.hdr = *reinterpret_cast<capture_packet_hdr*>(m_cur_addr);
-        m_cur_addr += sizeof(packet.hdr);
-        if (m_cur_addr + packet.hdr.captured_len > m_end_addr) {
+        packet.hdr = *reinterpret_cast<capture_packet_hdr*>(m_read_addr);
+        m_read_addr += sizeof(packet.hdr);
+        if (m_read_addr + packet.hdr.captured_len > m_end_addr) {
             m_eof = true;
             break;
         }
-        packet.data = m_cur_addr;
-        m_cur_addr += pad_capture_data_len(packet.hdr.captured_len);
+        packet.data = m_read_addr;
+        m_read_addr += pad_capture_data_len(packet.hdr.captured_len);
         packets[i] = &packet;
         ++i;
         m_read_offset += pad_capture_data_len(packet.hdr.captured_len);
@@ -169,8 +172,8 @@ capture_buffer_stats capture_buffer_mem_reader::get_stats() const
 void capture_buffer_mem_reader::rewind()
 {
     m_read_offset = 0;
-    m_cur_addr = m_buffer.get_start_addr();
-    m_end_addr = m_buffer.get_cur_addr();
+    m_read_addr = m_buffer.get_start_addr();
+    m_end_addr = m_buffer.get_write_addr();
     m_eof = false;
 }
 
@@ -183,7 +186,7 @@ capture_buffer_mem_wrap::capture_buffer_mem_wrap(uint64_t size,
     , m_wrap_end_addr(nullptr)
 {}
 
-int capture_buffer_mem_wrap::write_packets(
+uint16_t capture_buffer_mem_wrap::write_packets(
     const openperf::packetio::packets::packet_buffer* const packets[],
     uint16_t packets_length)
 {
@@ -197,7 +200,7 @@ int capture_buffer_mem_wrap::write_packets(
         auto padded_data_len = pad_capture_data_len(hdr.captured_len);
         auto total_packet_len = sizeof(hdr) + padded_data_len;
         // To simplify logic, packet hdr and data are always contiguous
-        if (m_cur_addr + total_packet_len > m_end_addr) {
+        if (m_write_addr + total_packet_len > m_end_addr) {
             if (m_wrap_addr > m_start_addr) {
                 // Remove old packets till end of buffer because these are
                 // considered discarded when wrap occurs
@@ -207,22 +210,22 @@ int capture_buffer_mem_wrap::write_packets(
                 m_stats.bytes -= bytes;
             }
             m_wrap_addr = m_start_addr;
-            m_wrap_end_addr = m_cur_addr;
-            m_cur_addr = m_start_addr;
+            m_wrap_end_addr = m_write_addr;
+            m_write_addr = m_start_addr;
         }
         make_space_if_needed(total_packet_len);
 
-        *reinterpret_cast<capture_packet_hdr*>(m_cur_addr) = hdr;
-        m_cur_addr += sizeof(hdr);
+        *reinterpret_cast<capture_packet_hdr*>(m_write_addr) = hdr;
+        m_write_addr += sizeof(hdr);
         std::copy(reinterpret_cast<const uint8_t*>(data),
                   reinterpret_cast<const uint8_t*>(data) + hdr.captured_len,
-                  m_cur_addr);
-        m_cur_addr += padded_data_len;
+                  m_write_addr);
+        m_write_addr += padded_data_len;
         m_stats.packets += 1;
         m_stats.bytes += hdr.captured_len;
     }
 
-    return 0;
+    return packets_length;
 }
 
 std::pair<size_t, size_t>
@@ -245,13 +248,13 @@ capture_buffer_mem_wrap::count_packets_and_bytes(uint8_t* start, uint8_t* end)
 
 void capture_buffer_mem_wrap::make_space_if_needed(size_t required_size)
 {
-    if (m_cur_addr > m_wrap_addr) {
+    if (m_write_addr > m_wrap_addr) {
         // If current address is > wrap address then only need to worry about
         // buff end caller should take care of wrap
-        assert(m_cur_addr + required_size <= m_end_addr);
+        assert(m_write_addr + required_size <= m_end_addr);
         return;
     }
-    size_t available_size = m_wrap_addr - m_cur_addr;
+    size_t available_size = m_wrap_addr - m_write_addr;
     size_t packets = 0;
     size_t bytes = 0;
     auto p = m_wrap_addr;
@@ -293,7 +296,7 @@ capture_buffer_mem_wrap_reader::capture_buffer_mem_wrap_reader(
     , m_start_addr(nullptr)
     , m_end_addr(nullptr)
     , m_wrap_addr(nullptr)
-    , m_cur_addr(nullptr)
+    , m_read_addr(nullptr)
     , m_read_offset(0)
     , m_eof(false)
 {
@@ -304,29 +307,29 @@ capture_buffer_mem_wrap_reader::~capture_buffer_mem_wrap_reader() {}
 
 bool capture_buffer_mem_wrap_reader::is_done() const { return m_eof; }
 
-size_t capture_buffer_mem_wrap_reader::read_packets(capture_packet* packets[],
-                                                    size_t count)
+uint16_t capture_buffer_mem_wrap_reader::read_packets(capture_packet* packets[],
+                                                      uint16_t count)
 {
     if (count > m_packets.size()) {
         // Allocate buffer space for all packets
         m_packets.resize(count);
     }
 
-    size_t i = 0;
+    uint16_t i = 0;
     while (i < count) {
         auto& packet = m_packets[i];
         auto end_addr = m_end_addr;
         if (m_wrap_addr) {
-            if (m_cur_addr > m_wrap_addr) {
+            if (m_read_addr > m_wrap_addr) {
                 // After the wrap location
-                if (m_cur_addr + sizeof(packet.hdr) > m_end_addr) {
-                    m_cur_addr = m_start_addr;
+                if (m_read_addr + sizeof(packet.hdr) > m_end_addr) {
+                    m_read_addr = m_start_addr;
                     continue;
                 }
-            } else if (m_cur_addr < m_wrap_addr) {
+            } else if (m_read_addr < m_wrap_addr) {
                 // Before the wrap location
                 end_addr = m_wrap_addr;
-                if (m_cur_addr + sizeof(packet.hdr) > m_wrap_addr) {
+                if (m_read_addr + sizeof(packet.hdr) > m_wrap_addr) {
                     m_eof = true;
                     break;
                 }
@@ -339,26 +342,26 @@ size_t capture_buffer_mem_wrap_reader::read_packets(capture_packet* packets[],
                     m_eof = true;
                     break;
                 }
-                if (m_cur_addr + sizeof(packet.hdr) > m_end_addr) {
-                    m_cur_addr = m_start_addr;
+                if (m_read_addr + sizeof(packet.hdr) > m_end_addr) {
+                    m_read_addr = m_start_addr;
                     continue;
                 }
             }
         } else {
             // Simple case with no buffer wrapping
-            if (m_cur_addr + sizeof(packet.hdr) > m_end_addr) {
+            if (m_read_addr + sizeof(packet.hdr) > m_end_addr) {
                 m_eof = true;
                 break;
             }
         }
-        packet.hdr = *reinterpret_cast<capture_packet_hdr*>(m_cur_addr);
-        m_cur_addr += sizeof(packet.hdr);
-        if (m_cur_addr + packet.hdr.captured_len > end_addr) {
+        packet.hdr = *reinterpret_cast<capture_packet_hdr*>(m_read_addr);
+        m_read_addr += sizeof(packet.hdr);
+        if (m_read_addr + packet.hdr.captured_len > end_addr) {
             m_eof = true;
             break;
         }
-        packet.data = m_cur_addr;
-        m_cur_addr += pad_capture_data_len(packet.hdr.captured_len);
+        packet.data = m_read_addr;
+        m_read_addr += pad_capture_data_len(packet.hdr.captured_len);
         packets[i] = &packet;
         ++i;
         m_read_offset += pad_capture_data_len(packet.hdr.captured_len);
@@ -382,13 +385,13 @@ void capture_buffer_mem_wrap_reader::rewind()
             m_buffer
                 .get_wrap_end_addr(); // This marks end of last packet in buffer
         m_wrap_addr =
-            m_buffer.get_cur_addr(); // Write pointer is at end of capture
-        m_cur_addr = m_buffer.get_wrap_addr(); // The wrap addr in buffer is 1st
-                                               // packet to read
+            m_buffer.get_write_addr(); // Write pointer is at end of capture
+        m_read_addr = m_buffer.get_wrap_addr(); // The wrap addr in buffer is
+                                                // 1st packet to read
     } else {
         // No wrap detected
-        m_end_addr = m_buffer.get_cur_addr();
-        m_cur_addr = m_start_addr;
+        m_end_addr = m_buffer.get_write_addr();
+        m_read_addr = m_start_addr;
         m_wrap_addr = nullptr;
     }
     m_eof = false;
@@ -520,7 +523,7 @@ capture_buffer_file::~capture_buffer_file()
     }
 }
 
-int capture_buffer_file::write_packets(
+uint16_t capture_buffer_file::write_packets(
     const openperf::packetio::packets::packet_buffer* const packets[],
     uint16_t packets_length)
 {
@@ -528,6 +531,7 @@ int capture_buffer_file::write_packets(
     block_hdr.block_type = pcap::block_type::ENHANCED_PACKET;
     block_hdr.interface_id = 0;
 
+    if (m_full) { return 0; }
     for (uint16_t i = 0; i < packets_length; ++i) {
         auto packet = packets[i];
         auto packet_len = openperf::packetio::packets::length(packet);
@@ -556,7 +560,7 @@ int capture_buffer_file::write_packets(
         if (fwrite(&block_hdr, sizeof(block_hdr), 1, m_fp_write) != 1) {
             OP_LOG(OP_LOG_ERROR, "Failed writing enhanced packet block header");
             m_full = true;
-            return -1;
+            return i;
         }
 
         auto data = openperf::packetio::packets::to_data(packet);
@@ -565,7 +569,7 @@ int capture_buffer_file::write_packets(
                    "Failed writing enhanced packet block data %" PRIu32,
                    block_hdr.captured_len);
             m_full = true;
-            return -1;
+            return i;
         }
         if (pad_length) {
             uint64_t pad_data = 0;
@@ -573,7 +577,7 @@ int capture_buffer_file::write_packets(
                 OP_LOG(OP_LOG_ERROR,
                        "Failed writing enhanced packet block pad");
                 m_full = true;
-                return -1;
+                return i;
             }
         }
         if (fwrite(&block_hdr.block_total_length,
@@ -584,12 +588,12 @@ int capture_buffer_file::write_packets(
             OP_LOG(OP_LOG_ERROR,
                    "Failed writing enhanced packet block trailing size");
             m_full = true;
-            return -1;
+            return i;
         }
         ++(m_stats.packets);
         m_stats.bytes += block_hdr.captured_len;
     }
-    return 0;
+    return packets_length;
 }
 
 std::unique_ptr<capture_buffer_reader> capture_buffer_file::create_reader()
@@ -688,8 +692,8 @@ bool capture_buffer_file_reader::read_file_header()
 
 bool capture_buffer_file_reader::is_done() const { return m_eof; }
 
-size_t capture_buffer_file_reader::read_packets(capture_packet* packets[],
-                                                size_t count)
+uint16_t capture_buffer_file_reader::read_packets(capture_packet* packets[],
+                                                  uint16_t count)
 {
     if (count > m_packets.size()) {
         // Allocate buffer space for all packets
@@ -699,7 +703,7 @@ size_t capture_buffer_file_reader::read_packets(capture_packet* packets[],
 
     uint8_t* data_ptr = &m_packet_data[0];
     pcap::enhanced_packet_block block_hdr;
-    size_t i = 0;
+    uint16_t i = 0;
     while (i < count) {
         if (fread(&block_hdr, sizeof(block_hdr), 1, m_fp_read) != 1) {
             m_eof = true;
@@ -804,8 +808,8 @@ bool multi_capture_buffer_reader::is_done() const
     return m_reader_priority.empty() && (m_reader_pending == nullptr);
 }
 
-size_t multi_capture_buffer_reader::read_packets(capture_packet* packets[],
-                                                 size_t count)
+uint16_t multi_capture_buffer_reader::read_packets(capture_packet* packets[],
+                                                   uint16_t count)
 {
     if (m_reader_pending) {
         m_reader_pending->read_packets();
@@ -824,7 +828,7 @@ size_t multi_capture_buffer_reader::read_packets(capture_packet* packets[],
         m_reader_priority.empty()
             ? UINT64_MAX
             : m_reader_priority.top()->get()->hdr.timestamp;
-    size_t i = 0;
+    uint16_t i = 0;
     auto n = std::min(count, reader->m_packets.available());
     while (i < n) {
         auto packet = reader->get();
