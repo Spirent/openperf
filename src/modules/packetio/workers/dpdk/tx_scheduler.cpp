@@ -261,42 +261,28 @@ static uint16_t do_transmit(uint16_t port_idx,
 
         /* Grab a burst of packets and attempt to transmit them. */
         auto to_send = source->pull(outgoing.data(), loop_burst);
-        auto prepared =
-            rte_eth_tx_prepare(port_idx, queue_idx, outgoing.data(), to_send);
-        if (prepared < to_send) {
-            OP_LOG(OP_LOG_WARNING,
-                   "Source %s returned %u untransmittable packets\n",
-                   source->id().c_str(),
-                   to_send - prepared);
-
-            /* Drop all un-sendable mbufs */
-            std::for_each(outgoing.data() + prepared,
-                          outgoing.data() + to_send,
-                          rte_pktmbuf_free);
-        }
-
-        total_to_send += prepared;
+        total_to_send += to_send;
         auto sent =
-            rte_eth_tx_burst(port_idx, queue_idx, outgoing.data(), prepared);
+            rte_eth_tx_burst(port_idx, queue_idx, outgoing.data(), to_send);
 
         /*
          * If we were unable to send all of the packets in our burst, retry
          * a few times before buffering the packets and returning.
          */
-        if (sent < prepared) {
+        if (sent < to_send) {
             unsigned retries = 0;
             do {
                 rte_pause();
                 sent += rte_eth_tx_burst(port_idx,
                                          queue_idx,
                                          outgoing.data() + sent,
-                                         prepared - sent);
-            } while (sent < prepared && ++retries < max_retries);
+                                         to_send - sent);
+            } while (sent < to_send && ++retries < max_retries);
 
             /* Queue is still full after our retries; buffer packets */
-            if (sent < prepared) {
+            if (sent < to_send) {
                 std::copy_n(outgoing.data() + sent,
-                            prepared - sent,
+                            to_send - sent,
                             std::back_inserter(untransmitted));
                 total_sent += sent;
                 break;
