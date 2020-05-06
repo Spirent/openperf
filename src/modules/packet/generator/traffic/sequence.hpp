@@ -1,95 +1,62 @@
 #ifndef _OP_PACKET_GENERATOR_TRAFFIC_SEQUENCE_HPP_
 #define _OP_PACKET_GENERATOR_TRAFFIC_SEQUENCE_HPP_
 
+#include "packet/generator/traffic/length_template.hpp"
 #include "packet/generator/traffic/packet_template.hpp"
+#include "packet/generator/traffic/signature_config.hpp"
+#include "utils/soa_container.hpp"
 
 namespace openperf::packet::generator::traffic {
 
-using definition = std::pair<packet_template, unsigned>;
+/* packet template, length_template, weight, signature config */
+using definition = std::tuple<packet_template,
+                              length_template,
+                              unsigned,
+                              std::optional<signature_config>>;
 using definition_container = std::vector<definition>;
 
-template <typename Strategy> class sequence_view
+class sequence
 {
 public:
-    /* flow idx, header descriptor, pkt length */
-    using view_type =
-        std::tuple<size_t, packet_template::header_descriptor, uint16_t>;
-    using packet_template_container = std::vector<packet_template>;
-    using iterator = view_iterator<sequence_view>;
-    using const_iterator = const iterator;
-
-    sequence_view() = default;
-    sequence_view(definition_container&& definitions);
-
-    virtual ~sequence_view() = default;
+    static sequence round_robin_sequence(definition_container&& definitions);
+    static sequence sequential_sequence(definition_container&& definitions);
 
     uint16_t max_packet_length() const;
 
-    /**
-     * The sum of packet lengths in a sequence iteration.  Dividing this
-     * number by the size() property gives your the average packet length.
-     */
     size_t sum_packet_lengths() const;
-
-    /**
-     * Calculate the sum of packet lengths for the number of packets up to
-     * pkt_idx. Note: pkt_idx may be larger than size.
-     */
     size_t sum_packet_lengths(size_t pkt_idx) const;
 
-    /* The number of unique flows */
+    bool has_signature_config() const;
+
     size_t flow_count() const;
 
-    /* The number of packets in a sequence iteration */
     size_t size() const;
 
-    view_type operator[](size_t idx) const;
-
-    bool operator==(const sequence_view& other) const;
-
-    iterator begin();
-    const_iterator begin() const;
-
-    iterator end();
-    const_iterator end() const;
+    uint16_t unpack(size_t start_idx,
+                    uint16_t count,
+                    unsigned flow_indexes[],
+                    const uint8_t* headers[],
+                    packetio::packet::header_lengths header_lengths[],
+                    packetio::packet::packet_type::flags header_flags[],
+                    std::optional<signature_config> signature_configs[],
+                    uint16_t pkt_lengths[]) const;
 
 protected:
-    const packet_template_container& templates() const;
+    enum class order_type { round_robin, sequential };
+    sequence(definition_container&& definitions, order_type order);
 
 private:
-    packet_template_container m_templates;
-    std::vector<unsigned> m_idx_offsets;
+    using soa_definition_container =
+        utils::soa_container<std::vector, definition>;
+    soa_definition_container m_definitions;
+
+    using index_pair = std::pair<uint16_t, uint16_t>;
+    using index_container = std::vector<index_pair>;
+
+    index_container m_packet_indexes;
+    index_container m_length_indexes;
+    std::vector<size_t> m_flow_offsets;
 };
-
-class round_robin_sequence final : public sequence_view<round_robin_sequence>
-{
-    std::vector<unsigned> m_weights;
-    std::vector<unsigned> m_weights_partial_sums;
-
-public:
-    round_robin_sequence() = default;
-    round_robin_sequence(definition_container&&);
-
-    size_t get_size() const;
-    std::pair<size_t, size_t> get_indexes(size_t) const;
-    bool operator==(const round_robin_sequence&) const;
-};
-
-struct sequential_sequence final : public sequence_view<sequential_sequence>
-{
-    std::vector<unsigned> m_lengths;
-    std::vector<unsigned> m_lengths_partial_sums;
-
-public:
-    sequential_sequence() = default;
-    sequential_sequence(definition_container&& config);
-
-    size_t get_size() const;
-    std::pair<size_t, size_t> get_indexes(size_t) const;
-    bool operator==(const sequential_sequence&) const;
-};
-
-using sequence = std::variant<round_robin_sequence, sequential_sequence>;
 
 } // namespace openperf::packet::generator::traffic
 

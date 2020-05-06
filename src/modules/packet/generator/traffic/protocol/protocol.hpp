@@ -6,8 +6,6 @@
 
 namespace openperf::packet::generator::traffic::protocol {
 
-void update_length(libpacket::protocol::udp&, uint16_t) noexcept;
-
 using flags = packetio::packet::packet_type::flags;
 flags update_packet_type(flags flags, const libpacket::protocol::tcp&) noexcept;
 flags update_packet_type(flags flags, const libpacket::protocol::udp&) noexcept;
