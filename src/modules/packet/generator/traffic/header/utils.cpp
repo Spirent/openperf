@@ -5,6 +5,7 @@
 #include "packet/generator/traffic/header/expand.hpp"
 #include "packet/generator/traffic/header/explode.hpp"
 #include "packet/generator/traffic/header/utils.hpp"
+#include "packetio/packet_buffer.hpp"
 
 namespace openperf::packet::generator::traffic::header {
 
@@ -102,25 +103,6 @@ template <size_t... N> auto make_dummy_configs(std::index_sequence<N...>)
 
 const static auto protocol_configs = make_dummy_configs(
     std::make_index_sequence<std::variant_size_v<config_instance>>{});
-
-void update_lengths(const config_key& indexes,
-                    uint8_t packet[],
-                    uint16_t pkt_length)
-{
-    auto offset = 0U;
-
-    const auto update_length_visitor = [&](const auto& config) {
-        using Protocol = decltype(config.header);
-        auto p = reinterpret_cast<Protocol*>(packet + offset);
-        protocol::update_length(*p, pkt_length - offset);
-        return (offset + Protocol::protocol_length);
-    };
-
-    std::for_each(std::begin(indexes), std::end(indexes), [&](const auto& idx) {
-        assert(idx < protocol_configs.size());
-        offset = std::visit(update_length_visitor, protocol_configs[idx]);
-    });
-}
 
 config_key get_config_key(const config_container& configs) noexcept
 {

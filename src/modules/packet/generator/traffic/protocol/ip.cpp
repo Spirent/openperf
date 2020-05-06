@@ -26,17 +26,6 @@ void update_context(libpacket::protocol::ipv6& ip,
     set_ipv6_next_header(ip, traffic::protocol::ip::udp);
 }
 
-void update_length(libpacket::protocol::ipv4& ip, uint16_t length) noexcept
-{
-    set_ipv4_total_length(ip, length);
-}
-
-void update_length(libpacket::protocol::ipv6& ip, uint16_t length) noexcept
-{
-    const auto hdr_length = libpacket::protocol::ipv6::protocol_length;
-    set_ipv6_payload_length(ip, length > hdr_length ? length - hdr_length : 0);
-}
-
 flags update_packet_type(flags flags, const libpacket::protocol::ipv4&) noexcept
 {
     using namespace openperf::packetio::packet;
