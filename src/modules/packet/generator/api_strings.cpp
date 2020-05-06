@@ -64,6 +64,11 @@ constexpr auto period_type_names =
         std::pair("second", period_type::seconds),
         std::pair("seconds", period_type::seconds));
 
+constexpr auto signature_latency_type_names =
+    associative_array<std::string_view, signature_latency_type>(
+        std::pair("start_of_frame", signature_latency_type::start_of_frame),
+        std::pair("end_of_frame", signature_latency_type::end_of_frame));
+
 /**
  * String -> type functions
  */
@@ -86,6 +91,11 @@ order_type to_order_type(std::string_view name)
 period_type to_period_type(std::string_view name)
 {
     return (to_api_type(period_type_names, name));
+}
+
+signature_latency_type to_signature_latency_type(std::string_view name)
+{
+    return (to_api_type(signature_latency_type_names, name));
 }
 
 /**

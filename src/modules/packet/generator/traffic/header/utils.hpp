@@ -18,10 +18,6 @@ container make_headers(const config_container&, modifier_mux) noexcept;
 
 config_key get_config_key(const config_container&) noexcept;
 
-void update_lengths(const config_key& indexes,
-                    uint8_t packet[],
-                    uint16_t pkt_length);
-
 packetio::packet::packet_type::flags
 to_packet_type_flags(const config_key& key) noexcept;
 

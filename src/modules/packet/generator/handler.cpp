@@ -521,7 +521,6 @@ void handler::list_tx_flows(const request_type& request, response_type response)
                        std::end(reply->flows),
                        std::back_inserter(flows),
                        [](const auto& result) { return (result->toJson()); });
-        std::cout << flows.dump(4) << std::endl;
         response.send(Http::Code::Ok, flows.dump());
     } else {
         handle_reply_error(api_reply, std::move(response));

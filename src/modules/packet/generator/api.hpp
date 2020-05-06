@@ -21,8 +21,10 @@ namespace swagger::v1::model {
 class PacketGenerator;
 class PacketGeneratorResult;
 class PacketGeneratorConfig;
+class SpirentSignature;
 class TrafficDefinition;
 class TrafficDuration;
+class TrafficLength;
 class TrafficLoad;
 class TxFlow;
 
@@ -123,6 +125,9 @@ load_type to_load_type(std::string_view name);
 
 enum class period_type { none = 0, hours, milliseconds, minutes, seconds };
 period_type to_period_type(std::string_view name);
+
+enum class signature_latency_type { none = 0, start_of_frame, end_of_frame };
+signature_latency_type to_signature_latency_type(std::string_view name);
 
 struct request_list_generators
 {
@@ -265,8 +270,14 @@ tx_flow_ptr to_swagger(const core::uuid& id,
 core::uuid tx_flow_id(const core::uuid&, size_t);
 std::pair<core::uuid, size_t> tx_flow_tuple(const core::uuid&);
 
+traffic::length_template
+to_length_template(const swagger::v1::model::TrafficLength&);
+
 traffic::packet_template
 to_packet_template(const swagger::v1::model::TrafficDefinition&);
+
+traffic::signature_config
+to_signature_config(const swagger::v1::model::SpirentSignature&);
 
 traffic::sequence to_sequence(const swagger::v1::model::PacketGeneratorConfig&);
 

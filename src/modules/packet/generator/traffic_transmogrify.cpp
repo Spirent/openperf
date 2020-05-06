@@ -2,12 +2,12 @@
 
 #include "packet/generator/api.hpp"
 #include "packet/generator/traffic/header/config.hpp"
-#include "packet/generator/traffic/length.hpp"
+#include "packet/generator/traffic/length_config.hpp"
+#include "packet/generator/traffic/signature_config.hpp"
 #include "packet/protocol/transmogrify/protocols.hpp"
+#include "spirent_pga/api.h"
 
 #include "swagger/v1/model/TrafficDefinition.h"
-#include "swagger/v1/model/TrafficLength.h"
-#include "swagger/v1/model/TrafficProtocol.h"
 
 namespace openperf::packet::generator::api {
 
@@ -262,6 +262,48 @@ to_length_config(const swagger::v1::model::TrafficLength& length)
     }
 }
 
+traffic::length_template
+to_length_template(const swagger::v1::model::TrafficLength& length)
+{
+    return (traffic::length_template(get_lengths(to_length_config(length))));
+}
+
+/**
+ * Signature transformation
+ */
+traffic::signature_config
+to_signature_config(const swagger::v1::model::SpirentSignature& signature)
+{
+    auto config = traffic::signature_config{
+        static_cast<uint32_t>(signature.getStreamId())};
+
+    auto prbs = pga_signature_prbs::disable;
+
+    if (signature.fillIsSet()) {
+        const auto& fill = signature.getFill();
+        if (fill->constantIsSet()) {
+            config.fill = traffic::signature_const_fill{
+                static_cast<uint16_t>(fill->getConstant())};
+        } else if (fill->decrementIsSet()) {
+            config.fill = traffic::signature_dec_fill{
+                static_cast<uint8_t>(fill->getDecrement())};
+        } else if (fill->incrementIsSet()) {
+            config.fill = traffic::signature_inc_fill{
+                static_cast<uint8_t>(fill->getIncrement())};
+        } else if (fill->prbsIsSet()) {
+            prbs = pga_signature_prbs::enable;
+        }
+    }
+
+    const auto latency_type = to_signature_latency_type(signature.getLatency());
+    auto ts_latch = (latency_type == signature_latency_type::start_of_frame
+                         ? pga_signature_timestamp::first
+                         : pga_signature_timestamp::last);
+    config.flags = pga_signature_flag(prbs, ts_latch);
+
+    return (config);
+}
+
 /**
  * Traffic Definition transformation
  */
@@ -280,8 +322,7 @@ to_packet_template(const swagger::v1::model::TrafficDefinition& definition)
 
     return (traffic::packet_template(
         traffic::header::update_context_fields(std::move(headers)),
-        to_modifier_mux(*pkt),
-        traffic::get_lengths(to_length_config(*definition.getLength()))));
+        to_modifier_mux(*pkt)));
 }
 
 } // namespace openperf::packet::generator::api

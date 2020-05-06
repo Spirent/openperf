@@ -3,7 +3,6 @@
 
 #include "packet/generator/api.hpp"
 #include "packet/generator/source.hpp"
-#include "packet/generator/traffic/length.hpp"
 
 #include "swagger/v1/model/PacketGenerator.h"
 #include "swagger/v1/model/PacketGeneratorResult.h"
@@ -30,7 +29,7 @@ std::string to_rfc3339(std::chrono::time_point<Clock> from)
     return (os.str());
 }
 
-static std::chrono::nanoseconds get_traffic_duration(
+static std::chrono::milliseconds get_traffic_duration(
     const std::shared_ptr<swagger::v1::model::TrafficDuration_time>& time)
 {
     auto period_type = api::to_period_type(time->getUnits());
@@ -77,13 +76,11 @@ static void populate_counters(
          * Use the actual recorded duration and target rate to generate
          * expected packet/octet counts.
          */
-        auto exp_packets = rate * (src.last_ - src.first_);
-
-        auto exp_octets = std::visit(
-            [&](const auto& seq) {
-                return (seq.sum_packet_lengths(exp_packets));
-            },
-            sequence);
+        auto exp_packets =
+            rate
+            * std::chrono::duration_cast<std::chrono::milliseconds>(
+                src.last_ - src.first_);
+        auto exp_octets = sequence.sum_packet_lengths(exp_packets);
 
         dst->setOctetsIntended(exp_octets);
         dst->setPacketsIntended(exp_packets);
@@ -239,15 +236,19 @@ traffic::definition_container to_definitions(
         api_defs)
 {
     auto defs = traffic::definition_container{};
-    std::transform(std::begin(api_defs),
-                   std::end(api_defs),
-                   std::back_inserter(defs),
-                   [](const auto& traffic_def) {
-                       return (std::pair(to_packet_template(*traffic_def),
-                                         traffic_def->weightIsSet()
-                                             ? traffic_def->getWeight()
-                                             : 1));
-                   });
+    std::transform(
+        std::begin(api_defs),
+        std::end(api_defs),
+        std::back_inserter(defs),
+        [](const auto& traffic_def) {
+            return (std::tuple(
+                to_packet_template(*traffic_def),
+                to_length_template(*traffic_def->getLength()),
+                traffic_def->weightIsSet() ? traffic_def->getWeight() : 1,
+                traffic_def->signatureIsSet() ? std::make_optional(
+                    to_signature_config(*traffic_def->getSignature()))
+                                              : std::nullopt));
+        });
 
     return (defs);
 }
@@ -260,14 +261,15 @@ to_sequence(const swagger::v1::model::PacketGeneratorConfig& config)
             .getTraffic());
 
     switch (api::to_order_type(config.getOrder())) {
-    case api::order_type::sequential:
-        return (traffic::sequential_sequence(std::move(definitions)));
+    case api::order_type::round_robin:
+        return (
+            traffic::sequence::round_robin_sequence(std::move(definitions)));
     default:
         OP_LOG(OP_LOG_WARNING,
-               "Unspecified sequence order: using round-robin\n");
+               "Unspecified sequencer order; using sequential\n");
         [[fallthrough]];
-    case api::order_type::round_robin:
-        return (traffic::round_robin_sequence(std::move(definitions)));
+    case api::order_type::sequential:
+        return (traffic::sequence::sequential_sequence(std::move(definitions)));
     }
 }
 
@@ -312,12 +314,7 @@ source_load to_load(const swagger::v1::model::TrafficLoad& load,
 
     if (api::to_load_type(load.getUnits()) == api::load_type::octets) {
         /* Divide rate value by average frame size to get frames/hour */
-        const auto length_visitor = [](const auto& seq) {
-            return (seq.sum_packet_lengths());
-        };
-        const auto size_visitor = [](const auto& seq) { return (seq.size()); };
-        rate = rate * std::visit(length_visitor, sequence)
-               / std::visit(size_visitor, sequence);
+        rate = rate * sequence.sum_packet_lengths() / sequence.size();
     }
 
     using burst_type = decltype(std::declval<source_load>().burst_size);

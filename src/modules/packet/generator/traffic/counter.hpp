@@ -55,7 +55,7 @@ inline void update(Counter& counter,
                    stat_t nb_octets,
                    typename Counter::timestamp tx) noexcept
 {
-    if (!counter.first()) { counter.first_ = tx; }
+    if (!counter.packet) { counter.first_ = tx; }
     counter.octet += nb_octets;
     counter.packet++;
     counter.last_ = tx;

@@ -37,9 +37,6 @@ void update_context(libpacket::protocol::ipv6&,
 void update_context(libpacket::protocol::ipv6&,
                     const libpacket::protocol::udp&) noexcept;
 
-void update_length(libpacket::protocol::ipv4&, uint16_t) noexcept;
-void update_length(libpacket::protocol::ipv6&, uint16_t) noexcept;
-
 using flags = packetio::packet::packet_type::flags;
 flags update_packet_type(flags flags,
                          const libpacket::protocol::ipv4&) noexcept;

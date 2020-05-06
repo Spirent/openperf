@@ -7,6 +7,7 @@
 #include "packetio/generic_source.hpp"
 #include "swagger/v1/model/PacketGeneratorConfig.h"
 #include "units/rate.hpp"
+#include "utils/soa_container.hpp"
 
 namespace openperf::packet::generator {
 
@@ -52,11 +53,10 @@ public:
     std::string id() const;
     std::string target() const;
     bool active() const;
+    bool uses_feature(packetio::packet::source_feature_flags flags) const;
 
     config_ptr config() const;
-
     const traffic::sequence& sequence() const;
-
     std::optional<size_t> tx_limit() const;
 
     uint16_t max_packet_length() const;
@@ -79,6 +79,27 @@ private:
 
     mutable size_t m_tx_idx = 0;
     mutable std::atomic<source_result*> m_results = nullptr;
+
+    /* Transform packets in chunks of this size */
+    static constexpr size_t chunk_size = 64U;
+
+    /*
+     * The default constructor of std::array initializes its contents to 0.
+     * As a result, we declare our packet data scratch area here so that we
+     * initialize the contents only once.  It's silly to do that every time
+     * the transmit thread wants packets.
+     */
+    template <typename T> using chunk_array = std::array<T, chunk_size>;
+    using pkt_data_container = openperf::utils::soa_container<
+        chunk_array,
+        std::tuple<unsigned,       /* flow idx */
+                   const uint8_t*, /* header ptr */
+                   packetio::packet::header_lengths,
+                   packetio::packet::packet_type::flags,
+                   std::optional<traffic::signature_config>,
+                   uint16_t>>; /* packet length */
+
+    mutable pkt_data_container m_packet_scratch = pkt_data_container{};
 };
 
 } // namespace openperf::packet::generator
