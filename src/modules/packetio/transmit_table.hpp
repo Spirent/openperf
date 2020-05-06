@@ -4,34 +4,26 @@
 #include <atomic>
 #include <utility>
 
+#include "immer/box.hpp"
 #include "immer/flex_vector.hpp"
 
 namespace openperf::packetio {
 
 template <typename Source> class transmit_table
 {
-    /*
-     * XXX: 64 is a biased, yet arbitrary constant.
-     * It is probably the host machines cache line size, which keeps our
-     * key/value pair limited to the size of a cache line.  Conveniently,
-     * it also gives us sufficient room to store a stringified UUID, which
-     * is the default id for sources.
-     */
-    static constexpr auto key_buffer_length =
-        64 - (2 * sizeof(uint16_t)) - sizeof(Source);
-
 public:
     transmit_table();
     ~transmit_table();
 
     static constexpr auto key_port_idx = 0;
     static constexpr auto key_queue_idx = 1;
-    static constexpr auto key_buffer_idx = 2;
+    static constexpr auto key_id_idx = 2;
 
-    using source_key =
-        std::tuple<uint16_t, uint16_t, std::array<char, key_buffer_length>>;
-    using source_pair = std::pair<source_key, Source>;
-    using source_map = immer::flex_vector<source_pair>;
+    using key_type = std::tuple<uint16_t, uint16_t, std::string>;
+    using mapped_type = Source;
+    using value_type = std::pair<key_type, mapped_type>;
+    using source_entry = immer::box<value_type>;
+    using source_map = immer::flex_vector<source_entry>;
 
     source_map*
     insert_source(uint16_t port_idx, uint16_t queue_idx, Source source);
@@ -45,14 +37,12 @@ public:
     std::pair<typename source_map::iterator, typename source_map::iterator>
     get_sources(uint16_t port_idx, uint16_t queue_idx) const;
 
-    const Source* get_source(const source_key& key) const;
+    const Source* get_source(const key_type&) const;
 
 private:
     std::atomic<source_map*> m_sources;
 
-    static source_key to_key(uint16_t, uint16_t, std::string_view);
-
-    static_assert(sizeof(source_key) + sizeof(Source) == 64);
+    static key_type to_key(uint16_t, uint16_t, std::string_view);
 };
 
 } // namespace openperf::packetio
