@@ -2,10 +2,13 @@
 #define _OP_PACKET_GENERATOR_TRAFFIC_HEADER_CONTAINER_HPP_
 
 #include <algorithm>
+#include <cassert>
 #include <numeric>
 #include <vector>
 
+#include "memory/aligned_allocator.hpp"
 #include "packet/generator/traffic/view_iterator.hpp"
+#include "utils/memcpy.hpp"
 
 namespace openperf::packet::generator::traffic::header {
 
@@ -14,9 +17,19 @@ namespace openperf::packet::generator::traffic::header {
  * Contained values are extracted via a view, e.g. a ptr and length.
  */
 
+template <typename T> constexpr T align_up(T value)
+{
+    constexpr auto mask = utils::memcpy_alignment_mask();
+    return ((value + mask) & ~mask);
+}
+
 class container
 {
-    std::vector<uint8_t> m_data;
+    using header_vector =
+        std::vector<uint8_t,
+                    openperf::memory::
+                        aligned_allocator<uint8_t, utils::memcpy_alignment()>>;
+    header_vector m_data;
     std::vector<uint16_t> m_lengths;
     std::vector<size_t> m_offsets;
 
@@ -28,11 +41,24 @@ public:
 
     void push_back(const value_type& value)
     {
+        /*
+         * Keep the start of each header aligned to an address our memcpy
+         * function likes.  Our aligned allocator will ensure that the start
+         * of the vector's buffer is also aligned.
+         */
+        auto offset = m_offsets.empty()
+                          ? 0
+                          : m_offsets.back() + align_up(m_lengths.back());
+        m_offsets.push_back(offset);
+
+        /* If we're unaligned, pad the header data out until we are */
+        assert(offset >= m_data.size());
+        if (auto to_fill = offset - m_data.size()) {
+            std::fill_n(std::back_inserter(m_data), to_fill, 0);
+        }
+
         std::copy_n(value.first, value.second, std::back_inserter(m_data));
         m_lengths.push_back(value.second);
-        m_offsets.empty()
-            ? m_offsets.push_back(0)
-            : m_offsets.push_back(m_offsets.back() + value.second);
     }
 
     void push_back(value_type&& value) { push_back(value); }

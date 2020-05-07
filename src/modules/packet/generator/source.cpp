@@ -1,6 +1,7 @@
 #include "packet/generator/api.hpp"
 #include "packet/generator/source.hpp"
 #include "packetio/packet_buffer.hpp"
+#include "utils/memcpy.hpp"
 
 namespace openperf::packet::generator {
 
@@ -99,16 +100,12 @@ static size_t to_send_diff(size_t tx_count, size_t tx_limit)
     return (tx_count >= tx_limit ? 0 : tx_limit - tx_count);
 }
 
-/*
- * The restricted src/dst pointers allow the compiler to use
- * memcpy instead of memmove.
- */
-static void copy_header(const uint8_t* __restrict src,
+inline void copy_header(const uint8_t* __restrict src,
                         packetio::packet::header_lengths hdr_len,
                         uint8_t* __restrict dst)
 {
     const auto len = hdr_len.layer2 + hdr_len.layer3 + hdr_len.layer4;
-    std::copy_n(src, len, dst);
+    utils::memcpy(dst, src, len);
 }
 
 uint16_t source::transform(packetio::packet::packet_buffer* input[],
