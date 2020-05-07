@@ -38,15 +38,21 @@ ISPC_FUNCTION_WRAPPER_INIT(uint32_t,
                            const uint32_t[],
                            uint16_t);
 
-using encode_signatures_fn = void (*)(
-    uint8_t*[], const uint32_t[], const uint32_t[], uint64_t, int, uint16_t);
+using encode_signatures_fn = void (*)(uint8_t*[],
+                                      const uint32_t[],
+                                      const uint32_t[],
+                                      const uint32_t[],
+                                      const uint32_t[],
+                                      const int[],
+                                      uint16_t);
 ISPC_FUNCTION_WRAPPER_INIT(void,
                            encode_signatures,
                            uint8_t*[],
                            const uint32_t[],
                            const uint32_t[],
-                           uint64_t,
-                           int,
+                           const uint32_t[],
+                           const uint32_t[],
+                           const int[],
                            uint16_t);
 
 using decode_signatures_fn = uint16_t (*)(const uint8_t* const[],
