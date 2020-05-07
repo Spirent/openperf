@@ -7,15 +7,14 @@ namespace scalar {
 void encode_signatures(uint8_t* destinations[],
                        const uint32_t stream_ids[],
                        const uint32_t sequence_numbers[],
-                       uint64_t timestamp,
-                       int flags,
+                       const uint32_t timestamps_hi[],
+                       const uint32_t timestamps_lo[],
+                       const int flags[],
                        uint16_t count)
 {
     std::array<uint32_t, 4> data;
 
     for (uint16_t i = 0; i < count; i++) {
-        auto ts = timestamp + i;
-
         data[0] = stream_ids[i] >> 8;
 
         data[1] = stream_ids[i] << 24;
@@ -23,11 +22,11 @@ void encode_signatures(uint8_t* destinations[],
         data[1] |= (sequence_numbers[i] >> 24);
 
         data[2] = sequence_numbers[i] << 8;
-        data[2] |= (ts >> 24) & 0xff;
+        data[2] |= (timestamps_lo[i] >> 24);
 
-        data[3] = ts << 8;
-        data[3] |= (ts >> 30) & 0xfc;
-        data[3] |= flags & 0x3;
+        data[3] = timestamps_lo[i] << 8;
+        data[3] |= (timestamps_hi[i] << 2) & 0xfc;
+        data[3] |= flags[i] & 0x3;
 
         /*
          * Signature is xor'ed with a mask based on the complement

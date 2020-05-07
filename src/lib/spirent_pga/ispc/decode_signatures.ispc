@@ -8,8 +8,8 @@ decode_signatures(const unsigned int8* const uniform payloads[],
                   uniform unsigned int16 count,
                   unsigned int32 uniform stream_ids[],
                   unsigned int32 uniform sequence_numbers[],
-                  unsigned int32 uniform timestamps_lo[],
                   unsigned int32 uniform timestamps_hi[],
+                  unsigned int32 uniform timestamps_lo[],
                   int32 uniform flags[])
 {
     uniform int scratch[4 * programCount];

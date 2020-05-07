@@ -4,8 +4,9 @@
 export void encode_signatures(unsigned int8* uniform destinations[],
                               unsigned int32 const uniform stream_ids[],
                               unsigned int32 const uniform sequence_numbers[],
-                              uniform unsigned int64 timestamp,
-                              uniform unsigned int flags,
+                              unsigned int32 const uniform timestamps_hi[],
+                              unsigned int32 const uniform timestamps_lo[],
+                              unsigned int const uniform flags[],
                               uniform unsigned int16 count)
 {
     uniform int scratch[4 * programCount];
@@ -16,13 +17,6 @@ export void encode_signatures(unsigned int8* uniform destinations[],
     unsigned int<4> signature;
 
     foreach (i = 0 ... count) {
-        /*
-         * Split the timestamp into 32 bit hi/lo values as it's
-         * faster to operate on 32 bit values when using SIMD lanes.
-         * Note: x = hi, y = lo
-         */
-        unsigned int<2> ts = { timestamp + i >> 32, timestamp + i };
-
         /* Shuffle everything into place */
         data[0] = stream_ids[i] >> 8;
 
@@ -31,11 +25,11 @@ export void encode_signatures(unsigned int8* uniform destinations[],
         data[1] |= (sequence_numbers[i] >> 24);
 
         data[2] = sequence_numbers[i] << 8;
-        data[2] |= ts.y >> 24;
+        data[2] |= timestamps_lo[i] >> 24;
 
-        data[3] = ts.y << 8;
-        data[3] |= (ts.x << 2) & 0xfc;
-        data[3] |= flags & 0x3;
+        data[3] = timestamps_lo[i] << 8;
+        data[3] |= (timestamps_hi[i] << 2) & 0xfc;
+        data[3] |= flags[i] & 0x3;
 
         /*
          * Signature is xor'ed with a mask based on the complement

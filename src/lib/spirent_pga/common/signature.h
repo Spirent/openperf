@@ -18,8 +18,8 @@ uint16_t decode(const uint8_t* payloads[],
 void encode(uint8_t* destinations[],
             const uint32_t stream_ids[],
             const uint32_t sequence_numbers[],
-            uint64_t timestamp,
-            int flags,
+            const uint64_t timestamps[],
+            const int flags[],
             uint16_t count);
 
 } // namespace pga::signature

@@ -126,12 +126,12 @@ uint16_t pga_signatures_decode(const uint8_t* payloads[],
 void pga_signatures_encode(uint8_t* destinations[],
                            const uint32_t stream_ids[],
                            const uint32_t sequence_numbers[],
-                           uint64_t timestamp,
-                           int flags,
+                           const uint64_t timestamps[],
+                           const int flags[],
                            uint16_t count)
 {
     pga::signature::encode(
-        destinations, stream_ids, sequence_numbers, timestamp, flags, count);
+        destinations, stream_ids, sequence_numbers, timestamps, flags, count);
 }
 
 void pga_fill_const(uint8_t* payloads[],
