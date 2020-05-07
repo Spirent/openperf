@@ -1,7 +1,9 @@
 #ifndef _OP_MEMORY_STD_ALLOCATOR_HPP_
 #define _OP_MEMORY_STD_ALLOCATOR_HPP_
 
-#include <memory>
+#include <cstddef>
+#include <cstdint>
+#include <new>
 
 namespace openperf::memory {
 
@@ -10,29 +12,45 @@ template <class T, class Impl> class std_allocator
     Impl m_impl;
 
 public:
+    using pointer = T*;
+    using const_pointer = const T*;
+    using reference = T&;
+    using const_reference = const T&;
     using value_type = T;
-    using pointer = value_type*;
-    using reference = value_type&;
-    using const_reference = value_type const&;
     using size_type = size_t;
-    // using difference_type = typename
-    // std::pointer_traits<pointer>::difference_type; using size_type       =
-    // std::make_unsigned_t<difference_type>;
+    using difference_type = ptrdiff_t;
+    using is_always_equal = std::false_type;
+    using propagate_on_container_move_assignment = std::true_type;
+
+    template <typename U> struct rebind
+    {
+        using other = std_allocator<U, Impl>;
+    };
 
     std_allocator(uintptr_t base, size_t size) noexcept
         : m_impl(base, size, sizeof(T)){};
 
-    value_type* allocate(size_t n)
-    {
-        return static_cast<value_type*>(m_impl.reserve(n * sizeof(value_type)));
-    }
+    ~std_allocator() = default;
 
-    void deallocate(value_type* ptr, size_t) noexcept { m_impl.release(ptr); }
+    std_allocator& operator=(const std_allocator&) = delete;
 
     size_type max_size() const noexcept
     {
         return (m_impl.size() / sizeof(value_type));
     }
+
+    pointer allocate(size_t n)
+    {
+        if (n == 0) { return (nullptr); }
+
+        if (n > max_size()) { throw std::bad_array_new_length(); }
+
+        auto ptr = m_impl.reserve(n * sizeof(value_type));
+        if (!ptr) { throw std::bad_alloc(); }
+        return (static_cast<pointer>(ptr));
+    }
+
+    void deallocate(value_type* ptr, size_t) noexcept { m_impl.release(ptr); }
 };
 
 template <class T, class U, class Impl>
