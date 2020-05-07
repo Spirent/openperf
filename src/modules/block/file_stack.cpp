@@ -26,7 +26,8 @@ tl::expected<int, int> file::vopen()
 {
     if (m_fd >= 0) return m_fd;
 
-    if ((m_fd = open(get_path().c_str(), O_RDWR | O_CREAT)) < 0) {
+    if ((m_fd = open(get_path().c_str(), O_RDWR | O_CREAT,
+                     S_IRUSR | S_IWUSR)) < 0) {
         return tl::make_unexpected(errno);
     }
 
