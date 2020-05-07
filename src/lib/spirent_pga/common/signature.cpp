@@ -70,8 +70,8 @@ uint16_t decode(const uint8_t* payloads[],
 {
     /* Note: decode_loop_count should be a multiple of all vector widths */
     static constexpr auto decode_loop_count = 32;
-    std::array<uint32_t, decode_loop_count> timestamp_lo;
-    std::array<uint32_t, decode_loop_count> timestamp_hi;
+    std::array<uint32_t, decode_loop_count> timestamps_hi;
+    std::array<uint32_t, decode_loop_count> timestamps_lo;
 
     auto& functions = functions::instance();
 
@@ -88,14 +88,14 @@ uint16_t decode(const uint8_t* payloads[],
                                              loop_count,
                                              stream_ids + begin,
                                              sequence_numbers + begin,
-                                             timestamp_lo.data(),
-                                             timestamp_hi.data(),
+                                             timestamps_hi.data(),
+                                             timestamps_lo.data(),
                                              flags + begin);
 
         /* Then merge hi/lo timestamp data together */
-        std::transform(timestamp_hi.data(),
-                       timestamp_hi.data() + loop_count,
-                       timestamp_lo.data(),
+        std::transform(timestamps_hi.data(),
+                       timestamps_hi.data() + loop_count,
+                       timestamps_lo.data(),
                        timestamps + nb_signatures,
                        [](auto& hi, auto& lo) {
                            /* Only 38 bits of the timestamp are valid */
@@ -110,18 +110,61 @@ uint16_t decode(const uint8_t* payloads[],
     return (nb_signatures);
 }
 
+template <typename InputIt, typename OutputIt, typename TransformFn>
+std::pair<OutputIt, OutputIt> transform_pair(InputIt first,
+                                             InputIt last,
+                                             OutputIt cursor1,
+                                             OutputIt cursor2,
+                                             TransformFn&& xform)
+{
+    std::for_each(first, last, [&](const auto& item) {
+        auto&& pair = xform(item);
+        *cursor1++ = pair.first;
+        *cursor2++ = pair.second;
+    });
+
+    return {cursor1, cursor2};
+}
+
 void encode(uint8_t* destinations[],
             const uint32_t stream_ids[],
             const uint32_t sequence_numbers[],
-            uint64_t timestamp,
-            int flags,
+            const uint64_t timestamps[],
+            const int flags[],
             uint16_t count)
 {
+    /* Note: encode_loop_count should be a multiple of all vector widths */
+    static constexpr auto encode_loop_count = 32;
+    std::array<uint32_t, encode_loop_count> timestamps_hi;
+    std::array<uint32_t, encode_loop_count> timestamps_lo;
+
     auto& functions = functions::instance();
 
-    /* Write the signature data into place */
-    functions.encode_signatures_impl(
-        destinations, stream_ids, sequence_numbers, timestamp, flags, count);
+    uint16_t begin = 0;
+    while (begin < count) {
+        auto end = begin + std::min(encode_loop_count, count - begin);
+        auto loop_count = end - begin;
+
+        /* Split the timestamps into hi/lo arrays */
+        transform_pair(timestamps + begin,
+                       timestamps + end,
+                       timestamps_hi.data(),
+                       timestamps_lo.data(),
+                       [](const auto& ts) -> std::pair<uint32_t, uint32_t> {
+                           return {ts >> 32, ts & 0xffffffff};
+                       });
+
+        /* Encode some signatures */
+        functions.encode_signatures_impl(destinations + begin,
+                                         stream_ids + begin,
+                                         sequence_numbers + begin,
+                                         timestamps_hi.data(),
+                                         timestamps_lo.data(),
+                                         flags + begin,
+                                         loop_count);
+
+        begin = end;
+    }
 
     /*
      * And calculate the CRC for each signature.
