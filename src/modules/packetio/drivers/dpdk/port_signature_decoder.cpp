@@ -5,6 +5,7 @@
 #include "packetio/drivers/dpdk/model/port_info.hpp"
 #include "packetio/drivers/dpdk/mbuf_signature.hpp"
 #include "packetio/drivers/dpdk/port_signature_decoder.hpp"
+#include "packetio/drivers/dpdk/port_signature_utils.hpp"
 #include "spirent_pga/api.h"
 #include "utils/soa_container.hpp"
 
@@ -17,29 +18,29 @@ static constexpr auto signature_size = 20U;
 
 template <typename T> using chunk_array = std::array<T, chunk_size>;
 
-/*
- * The timestamp in the Spirent signature field is 38 bits long and
- * contains 2.5ns ticks. Hence, we have 400000000 ticks per second
- * and need to mask out the lower 38 bits when calculating the
- * wall-clock offset.
- */
-static constexpr uint64_t offset_mask = 0xffffffc000000000;
-using phxtime = std::chrono::duration<int64_t, std::ratio<1, 400000000>>;
-
-inline int64_t to_nanoseconds(const phxtime timestamp, const phxtime offset)
+inline int64_t to_nanoseconds(const utils::phxtime timestamp,
+                              const utils::phxtime offset)
 {
     return (
         std::chrono::duration_cast<std::chrono::nanoseconds>(timestamp + offset)
             .count());
 }
 
-inline phxtime get_phxtime_offset(const std::chrono::seconds epoch_offset)
+/*
+ * The timestamp in the Spirent signature field is 38 bits long. So, we mask
+ * out the lower 32 bits when we calculate the offset to wall-clock time. Those
+ * lower bits come from the timestamp directly.
+ */
+template <typename Clock>
+inline utils::phxtime
+get_phxtime_offset(const std::chrono::seconds epoch_offset)
 {
-    auto now = timesync::chrono::realtime::now();
+    static constexpr uint64_t offset_mask = 0xffffffc000000000;
+    auto now = Clock::now();
 
-    auto phx_offset = std::chrono::duration_cast<phxtime>(now.time_since_epoch()
-                                                          - epoch_offset);
-    auto phx_fudge = phxtime{phx_offset.count() & offset_mask};
+    auto phx_offset = std::chrono::duration_cast<utils::phxtime>(
+        now.time_since_epoch() - epoch_offset);
+    auto phx_fudge = utils::phxtime{phx_offset.count() & offset_mask};
     return (epoch_offset + phx_fudge);
 }
 
@@ -52,12 +53,15 @@ static uint16_t detect_signatures([[maybe_unused]] uint16_t port_id,
 {
     using payload_container = openperf::utils::
         soa_container<chunk_array, std::tuple<const uint8_t*, std::byte[20]>>;
+
     using sig_container = openperf::utils::soa_container<
         chunk_array,
         std::tuple<uint32_t, uint32_t, uint64_t, int>>;
 
-    payload_container payloads;
-    sig_container signatures;
+    using clock = openperf::timesync::chrono::realtime;
+
+    auto payloads = payload_container{};
+    auto signatures = sig_container{};
     auto crc_matches = std::array<int, chunk_size>{};
 
     /*
@@ -68,7 +72,7 @@ static uint16_t detect_signatures([[maybe_unused]] uint16_t port_id,
      */
     auto epoch_offset =
         std::chrono::seconds{reinterpret_cast<time_t>(user_param)};
-    auto offset = get_phxtime_offset(epoch_offset);
+    auto offset = get_phxtime_offset<clock>(epoch_offset);
 
     auto start = 0U;
     while (start < nb_packets) {
@@ -110,11 +114,12 @@ static uint16_t detect_signatures([[maybe_unused]] uint16_t port_id,
                     && (pga_status_flag(std::get<3>(sig))
                         == pga_signature_status::valid)) {
 
-                    mbuf_signature_set(
+                    mbuf_signature_rx_set(
                         packets[start + idx],
                         std::get<0>(sig),
                         std::get<1>(sig),
-                        to_nanoseconds(phxtime{std::get<2>(sig)}, offset),
+                        to_nanoseconds(utils::phxtime{std::get<2>(sig)},
+                                       offset),
                         std::get<3>(sig));
                 }
             }
@@ -132,8 +137,6 @@ callback_signature_decoder::callback_signature_decoder(uint16_t port_id)
 
 callback_signature_decoder::~callback_signature_decoder()
 {
-    if (m_callbacks.empty()) return;
-
     std::for_each(
         std::begin(m_callbacks), std::end(m_callbacks), [&](auto& item) {
             rte_eth_remove_rx_callback(port_id(), item.first, item.second);
@@ -167,14 +170,21 @@ void callback_signature_decoder::enable()
 
     auto offset = utils::get_timestamp_epoch_offset();
 
-    for (auto q = 0U; q < model::port_info(port_id()).rx_queue_count(); q++) {
-        auto cb = rte_eth_add_rx_callback(
-            port_id(), q, detect_signatures, reinterpret_cast<void*>(offset));
-        if (!cb) {
-            throw std::runtime_error("Could not add timestamp callback");
-        }
-        m_callbacks.emplace(q, cb);
-    }
+    auto q = 0U;
+    std::generate_n(std::inserter(m_callbacks, std::begin(m_callbacks)),
+                    model::port_info(port_id()).rx_queue_count(),
+                    [&]() {
+                        auto cb = rte_eth_add_rx_callback(
+                            port_id(),
+                            q,
+                            detect_signatures,
+                            reinterpret_cast<void*>(offset));
+                        if (!cb) {
+                            throw std::runtime_error(
+                                "Could not add signature detection callback");
+                        }
+                        return (std::make_pair(q++, cb));
+                    });
 }
 
 void callback_signature_decoder::disable()
@@ -187,6 +197,8 @@ void callback_signature_decoder::disable()
         std::begin(m_callbacks), std::end(m_callbacks), [&](auto& item) {
             rte_eth_remove_rx_callback(port_id(), item.first, item.second);
         });
+
+    m_callbacks.clear();
 }
 
 static signature_decoder::variant_type make_signature_decoder(uint16_t port_id)
