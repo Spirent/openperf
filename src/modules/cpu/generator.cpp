@@ -61,19 +61,30 @@ void generator::set_running(bool is_running)
 
 model::generator_result generator::statistics() const
 {
-    std::cout << "Grab stat" << std::endl;
+    model::generator_stats stats;
+    for (auto & worker : m_workers) {
+        auto w_stat = worker->stat();
+
+        model::generator_core_stats core_stat;
+        core_stat.available = w_stat.available;
+        core_stat.system = w_stat.system;
+        core_stat.steal = w_stat.steal;
+        core_stat.error = w_stat.error;
+        core_stat.user = w_stat.user;
+        core_stat.utilization = w_stat.utilization;
+
+        for (auto & target : w_stat.targets) {
+            core_stat.targets.push_back({target.cycles});
+        }
+
+        stats.cores.push_back(core_stat);
+    }
+
     auto gen_stat = model::generator_result{};
     gen_stat.id(result_id);
     gen_stat.generator_id(id());
     gen_stat.active(running());
     gen_stat.timestamp(model::time_point::clock::now());
-    model::generator_stats stats;
-    for (auto & worker : m_workers) {
-        stats.cores.push_back({});
-        for (auto & target : worker->stat().targets) {
-            stats.cores.back().targets.push_back({target.cycles});
-        }
-    }
     gen_stat.stats(stats);
     return gen_stat;
 }

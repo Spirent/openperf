@@ -6,6 +6,7 @@
 #include <thread>
 #include <forward_list>
 #include <atomic>
+#include <cstring>
 
 #include "core/op_core.h"
 #include "core/op_thread.h"
@@ -238,9 +239,6 @@ template <class T> void worker<T>::send_message(const worker::message& msg)
 {
     if (is_finished()) return;
 
-<<<<<<< HEAD
-    zmq_send(m_zmq_socket.get(), &msg, sizeof(msg), 0);
-=======
     zmq_msg_t data;
     if (auto error = zmq_msg_init_size(&data, sizeof(worker::message*)); error != 0) {
         return;
@@ -251,7 +249,6 @@ template <class T> void worker<T>::send_message(const worker::message& msg)
     auto ptr = reinterpret_cast<worker::message**>(zmq_msg_data(&data));
     *ptr = value.release();
     zmq_msg_send(&data, m_zmq_socket.get(), 0);
->>>>>>> 771e5e7... Fix cpu generator config
 }
 
 } // namespace openperf::utils::worker

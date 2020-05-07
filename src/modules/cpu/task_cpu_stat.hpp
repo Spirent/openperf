@@ -8,6 +8,8 @@ namespace openperf::cpu::internal {
 
 struct target_cpu_stat {
     uint64_t cycles;
+    uint64_t ticks;
+    std::chrono::nanoseconds runtime;
 };
 
 struct task_cpu_stat {
