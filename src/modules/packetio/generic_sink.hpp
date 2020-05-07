@@ -60,9 +60,9 @@ private:
         virtual ~sink_concept() = default;
         virtual std::string id() const = 0;
         virtual bool active() const = 0;
-        virtual bool uses_feature(enum sink_feature_flags) const = 0;
         virtual uint16_t push(packet_buffer* const packets[],
                               uint16_t length) = 0;
+        virtual bool uses_feature(enum sink_feature_flags) const = 0;
         virtual const std::type_info& type_info() const = 0;
     };
 
@@ -76,14 +76,14 @@ private:
 
         bool active() const override { return (m_sink.active()); }
 
-        bool uses_feature(enum sink_feature_flags flags) const override
-        {
-            return (m_sink.uses_feature(flags));
-        }
-
         uint16_t push(packet_buffer* const packets[], uint16_t length) override
         {
             return (m_sink.push(packets, length));
+        }
+
+        bool uses_feature(enum sink_feature_flags flags) const override
+        {
+            return (m_sink.uses_feature(flags));
         }
 
         const std::type_info& type_info() const override

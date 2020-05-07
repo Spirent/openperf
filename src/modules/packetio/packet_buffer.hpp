@@ -91,6 +91,11 @@ void tx_offload(packet_buffer* buffer,
                 header_lengths hdr_lens,
                 packet_type::flags flags);
 
+void signature(packet_buffer* buffer,
+               uint32_t stream_id,
+               uint32_t seq_num,
+               int flags);
+
 /**
  * Rx functions; some values are only set on receive path
  */
