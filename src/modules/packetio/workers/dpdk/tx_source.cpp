@@ -35,6 +35,11 @@ std::string tx_source::id() const { return (m_source.id()); }
 
 bool tx_source::active() const { return (m_source.active()); }
 
+bool tx_source::uses_feature(packet::source_feature_flags flags) const
+{
+    return (m_source.uses_feature(flags));
+}
+
 uint16_t tx_source::burst_size() const { return (m_source.burst_size()); }
 
 uint16_t tx_source::max_packet_length() const
