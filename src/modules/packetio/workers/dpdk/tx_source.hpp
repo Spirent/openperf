@@ -28,6 +28,7 @@ public:
 
     std::string id() const;
     bool active() const;
+    bool uses_feature(packet::source_feature_flags flags) const;
     uint16_t burst_size() const;
     uint16_t max_packet_length() const;
     packet::packets_per_hour packet_rate() const;
