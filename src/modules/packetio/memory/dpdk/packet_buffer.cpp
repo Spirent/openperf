@@ -80,6 +80,14 @@ void tx_offload(packet_buffer* buffer,
     buffer->tx_offload = hdr_lens.value;
 }
 
+void signature(packet_buffer* buffer,
+               uint32_t stream_id,
+               uint32_t seq_num,
+               int flags)
+{
+    dpdk::mbuf_signature_tx_set(buffer, stream_id, seq_num, flags);
+}
+
 void type(packet_buffer* buffer, packet_type::flags flags)
 {
     buffer->packet_type = flags.value;

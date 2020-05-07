@@ -40,17 +40,6 @@ struct signature_decoder
     signature_decoder(uint16_t port_id);
 };
 
-namespace utils {
-
-/*
- * Spirent signature fields use timestamps epochs that begin with
- * the current year.  This function calculates the proper offset
- * from the UNIX epoch.
- */
-time_t get_timestamp_epoch_offset();
-
-} // namespace utils
-
 } // namespace openperf::packetio::dpdk::port
 
 #endif /* _OP_PACKETIO_DPDK_PORT_SIGNATURE_DECODER_HPP_ */

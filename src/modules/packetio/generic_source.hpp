@@ -7,12 +7,18 @@
 #include <typeindex>
 
 #include "units/rate.hpp"
+#include "utils/enum_flags.hpp"
 
 namespace openperf::packetio::packet {
 
 struct packet_buffer;
 
 using packets_per_hour = openperf::units::rate<uint64_t, std::ratio<1, 3600>>;
+
+enum class source_feature_flags {
+    none = 0,
+    spirent_signature_encode = (1 << 0),
+};
 
 class generic_source
 {
@@ -44,6 +50,11 @@ public:
         return (m_self->transform(input, input_length, output));
     }
 
+    bool uses_feature(enum source_feature_flags flags) const
+    {
+        return (m_self->uses_feature(flags));
+    }
+
     bool operator==(const generic_source& other) const
     {
         return (id() == other.id());
@@ -70,6 +81,7 @@ private:
         virtual uint16_t transform(packet_buffer* input[],
                                    uint16_t input_length,
                                    packet_buffer* output[]) = 0;
+        virtual bool uses_feature(enum source_feature_flags) const = 0;
         virtual const std::type_info& type_info() const = 0;
     };
 
@@ -83,8 +95,7 @@ private:
     {};
 
     template <typename T>
-    struct has_active<T, std::void_t<decltype(std::declval<T>().active())>>
-        : std::true_type
+    struct has_active<T, std::void_t<decltype(&T::active)>> : std::true_type
     {};
 
     /* uint16_t burst_size(); */
@@ -93,8 +104,7 @@ private:
     {};
 
     template <typename T>
-    struct has_burst_size<T,
-                          std::void_t<decltype(std::declval<T>().burst_size())>>
+    struct has_burst_size<T, std::void_t<decltype(&T::burst_size)>>
         : std::true_type
     {};
 
@@ -104,9 +114,17 @@ private:
     {};
 
     template <typename T>
-    struct has_max_packet_length<
-        T,
-        std::void_t<decltype(std::declval<T>().max_packet_length())>>
+    struct has_max_packet_length<T,
+                                 std::void_t<decltype(&T::max_packet_length)>>
+        : std::true_type
+    {};
+
+    template <typename T, typename = std::void_t<>>
+    struct has_uses_feature : std::false_type
+    {};
+
+    template <typename T>
+    struct has_uses_feature<T, std::void_t<decltype(&T::uses_feature)>>
         : std::true_type
     {};
 
@@ -157,6 +175,15 @@ private:
             return (m_source.transform(input, input_length, output));
         }
 
+        bool uses_feature(enum source_feature_flags flags) const override
+        {
+            if constexpr (has_uses_feature<Source>::value) {
+                return (m_source.uses_feature(flags));
+            } else {
+                return (false);
+            }
+        }
+
         const std::type_info& type_info() const override
         {
             return (typeid(Source));
@@ -169,5 +196,7 @@ private:
 };
 
 } // namespace openperf::packetio::packet
+
+declare_enum_flags(openperf::packetio::packet::source_feature_flags);
 
 #endif /* _OP_PACKETIO_GENERIC_SOURCE_HPP_ */

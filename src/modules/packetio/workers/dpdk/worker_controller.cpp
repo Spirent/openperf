@@ -241,7 +241,7 @@ worker_controller::worker_controller(void* context,
         std::back_inserter(m_filters),
         [](auto& info) { return (std::make_unique<port::filter>(info.id())); });
 
-    /* Setup up signature decoders */
+    /* Setup signature decoders */
     std::transform(
         std::begin(port_info),
         std::end(port_info),
@@ -250,7 +250,16 @@ worker_controller::worker_controller(void* context,
             return (std::make_unique<port::signature_decoder>(info.id()));
         });
 
-    /* Setup up timestampers */
+    /* Setup signature encoders */
+    std::transform(
+        std::begin(port_info),
+        std::end(port_info),
+        std::back_inserter(m_sigencoders),
+        [](auto& info) {
+            return (std::make_unique<port::signature_encoder>(info.id()));
+        });
+
+    /* Setup timestampers */
     std::transform(std::begin(port_info),
                    std::end(port_info),
                    std::back_inserter(m_timestampers),
@@ -316,6 +325,7 @@ worker_controller::worker_controller(worker_controller&& other) noexcept
     , m_tx_workers(std::move(other.m_tx_workers))
     , m_filters(std::move(other.m_filters))
     , m_sigdecoders(std::move(other.m_sigdecoders))
+    , m_sigencoders(std::move(other.m_sigencoders))
     , m_timestampers(std::move(other.m_timestampers))
 {}
 
@@ -335,6 +345,7 @@ worker_controller::operator=(worker_controller&& other) noexcept
         m_tx_workers = std::move(other.m_tx_workers);
         m_filters = std::move(other.m_filters);
         m_sigdecoders = std::move(other.m_sigdecoders);
+        m_sigencoders = std::move(other.m_sigencoders);
         m_timestampers = std::move(other.m_timestampers);
     }
     return (*this);
@@ -756,6 +767,32 @@ find_queue(worker::tib& tib, uint16_t port_idx, std::string_view source_id)
     return (std::nullopt);
 }
 
+template <typename TransmitTable, typename FeatureVector>
+void maybe_toggle_source_feature(const TransmitTable& tib,
+                                 size_t port_idx,
+                                 FeatureVector& features,
+                                 packet::source_feature_flags flags)
+{
+    const auto& range = tib->get_sources(port_idx);
+    if (std::any_of(range.first, range.second, [&](const auto& src) {
+            return (src.second.uses_feature(flags));
+        })) {
+        get_unique_port_object(features, port_idx).enable();
+    } else {
+        get_unique_port_object(features, port_idx).disable();
+    }
+}
+
+void worker_controller::maybe_update_source_features(size_t port_idx)
+{
+    /* Toggle features based on attached sink requirements */
+    maybe_toggle_source_feature(
+        m_tib,
+        port_idx,
+        m_sigencoders,
+        packet::source_feature_flags::spirent_signature_encode);
+}
+
 tl::expected<void, int>
 worker_controller::add_source(std::string_view dst_id,
                               packet::generic_source source)
@@ -786,6 +823,8 @@ worker_controller::add_source(std::string_view dst_id,
     auto to_delete = m_tib->insert_source(
         *port_idx, queue_idx, tx_source(*port_idx, std::move(source)));
     m_recycler->writer_add_gc_callback([to_delete]() { delete to_delete; });
+
+    maybe_update_source_features(*port_idx);
 
     return {};
 }
@@ -819,6 +858,8 @@ void worker_controller::del_source(std::string_view dst_id,
 
     auto to_delete = m_tib->remove_source(*port_idx, *queue_idx, source.id());
     m_recycler->writer_add_gc_callback([to_delete]() { delete to_delete; });
+
+    maybe_update_source_features(*port_idx);
 }
 
 tl::expected<std::string, int> worker_controller::add_task(
