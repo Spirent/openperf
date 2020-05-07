@@ -2,6 +2,9 @@
 #define _OP_CPU_TARGET_SCALAR_HPP_
 
 #include "cpu/target.hpp"
+#include <iostream>
+#include <vector>
+#include <algorithm>
 
 namespace openperf::cpu::internal {
 
@@ -13,19 +16,42 @@ public:
     ~target_scalar() override = default;
 
     uint64_t operation() const override {
-        int n = 90;
-        if (n <= 1) return 1;
+        switch (m_operation)
+        {
+        case cpu::operation::INT:
+            switch (m_data_size) {
+            case cpu::data_size::BIT_32:
+                return operation<uint32_t>();
+            case cpu::data_size::BIT_64:
+                return operation<uint64_t>();
+            }
+        case cpu::operation::FLOAT:
+            switch (m_data_size) {
+            case cpu::data_size::BIT_32:
+                return operation<float>();
+            case cpu::data_size::BIT_64:
+                return operation<double>();
+            }
+        }
+    }
 
-        uint64_t f = 1;
-        uint64_t f_prev = 1;
+private:
+    template<class T>
+    uint64_t operation() const {
+        constexpr size_t size = 1000;
 
-        for (int i = 2; i < n; ++i) {
-            uint64_t tmp = f;
-            f += f_prev;
-            f_prev = tmp;
+        std::vector<T> v1(size), v2(size), v3(size);
+
+        std::generate(v1.begin(), v1.end(), std::rand);
+        std::generate(v2.begin(), v2.end(), std::rand);
+        std::generate(v3.begin(), v3.end(), std::rand);
+
+        T result;
+        for (size_t i = 0; i < size; ++i) {
+            result = v1[i] + v2[i] * v3[i] / v1[i];
         }
 
-        return n;
+        return size;
     }
 };
 

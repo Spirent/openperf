@@ -4,6 +4,7 @@
 #include <atomic>
 #include <forward_list>
 #include <memory>
+#include <chrono>
 
 #include "utils/worker/task.hpp"
 #include "cpu/target.hpp"
@@ -38,7 +39,8 @@ class task_cpu :
 
     struct target_meta {
         uint64_t weight;
-        uint64_t runtime;
+        uint64_t ticks;
+        std::chrono::nanoseconds runtime;
         target_ptr target;
     };
 
@@ -50,6 +52,9 @@ private:
     std::atomic_bool m_stat_clear;
 
     uint64_t m_weights;
+    uint64_t m_weight_min;
+    uint64_t m_ticks;
+    std::chrono::nanoseconds m_time;
     std::forward_list<target_meta> m_targets;
     uint64_t m_targets_count;
     double m_utilization;

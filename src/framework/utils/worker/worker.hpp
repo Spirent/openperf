@@ -6,6 +6,7 @@
 #include <thread>
 #include <forward_list>
 #include <atomic>
+#include <cstring>
 
 #include "core/op_core.h"
 #include "core/op_thread.h"
