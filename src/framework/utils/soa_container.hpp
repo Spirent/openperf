@@ -1,3 +1,6 @@
+#ifndef _OP_UTILS_SOA_CONTAINER_HPP_
+#define _OP_UTILS_SOA_CONTAINER_HPP_
+
 #include <cstddef>
 #include <functional>
 #include <iostream>
@@ -19,15 +22,24 @@ struct soa_container_adapter<Container, Item<Types...>>
     using container_type = std::tuple<Container<Types>...>;
     using value_type = Item<Types...>;
 
+    static constexpr void
+    set(container_type& container, size_t idx, value_type&& value)
+    {
+        set_impl(container,
+                 idx,
+                 std::forward<value_type>(value),
+                 std::make_index_sequence<sizeof...(Types)>());
+    }
+
     static constexpr value_type get(container_type& container, size_t idx)
     {
         return (get_impl(
             container, idx, std::make_index_sequence<sizeof...(Types)>()));
     }
 
-    static constexpr void resize(container_type& container, size_t size)
+    static constexpr void reserve(container_type& container, size_t size)
     {
-        resize_impl(
+        reserve_impl(
             container, size, std::make_index_sequence<sizeof...(Types)>());
     }
 
@@ -61,6 +73,12 @@ struct soa_container_adapter<Container, Item<Types...>>
         return (std::get<Idx>(container).data());
     }
 
+    template <size_t Idx>
+    static constexpr const auto& get(const container_type& container)
+    {
+        return (std::get<Idx>(container));
+    }
+
     friend bool operator==(const container_type& left,
                            const container_type& right)
     {
@@ -78,12 +96,31 @@ private:
             std::reference_wrapper(std::get<Indexes>(container)[idx])...});
     }
 
-    template <size_t... Indexes>
-    static constexpr void resize_impl(container_type& container,
-                                      size_t size,
-                                      std::index_sequence<Indexes...>)
+    template <size_t Index>
+    static constexpr void
+    set_impl_setter(container_type& container, size_t idx, value_type&& value)
     {
-        (std::get<Indexes>(container).resize(size), ...);
+        std::get<Index>(container)[idx] =
+            std::get<Index>(std::forward<value_type>(value));
+    }
+
+    template <size_t... Indexes>
+    static constexpr void set_impl(container_type& container,
+                                   size_t idx,
+                                   value_type&& value,
+                                   std::index_sequence<Indexes...>)
+    {
+        (set_impl_setter<Indexes>(
+             container, idx, std::forward<value_type>(value)),
+         ...);
+    }
+
+    template <size_t... Indexes>
+    static constexpr void reserve_impl(container_type& container,
+                                       size_t size,
+                                       std::index_sequence<Indexes...>)
+    {
+        (std::get<Indexes>(container).reserve(size), ...);
     }
 
     template <size_t... Indexes>
@@ -191,6 +228,11 @@ struct soa_container
         adapter::push_back(m_adapter, std::forward<value_type>(value));
     }
 
+    void set(size_t idx, value_type&& value)
+    {
+        adapter::set(m_adapter, idx, std::forward<value_type>(value));
+    }
+
     bool empty() const { return (adapter::empty(m_adapter)); }
 
     size_t size() const { return (adapter::size(m_adapter)); }
@@ -199,11 +241,16 @@ struct soa_container
 
     value_type operator[](size_t idx) { return (adapter::get(m_adapter, idx)); }
 
-    void resize(size_t size) { adapter::resize(m_adapter, size); }
+    void reserve(size_t size) { adapter::reserve(m_adapter, size); }
 
     template <size_t Idx> std::tuple_element_t<Idx, value_type>* data()
     {
         return (adapter::template data<Idx>(m_adapter));
+    }
+
+    template <size_t Idx> const auto& get() const
+    {
+        return (adapter::template get<Idx>(m_adapter));
     }
 
     iterator begin() { return (iterator(this)); }
@@ -228,6 +275,8 @@ struct soa_container
 
 private:
     typename adapter::container_type m_adapter;
-}; // namespace openperf::utils
+};
 
 } // namespace openperf::utils
+
+#endif /* _OP_UTILS_SOA_CONTAINER_HPP_ */
