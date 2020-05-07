@@ -17,8 +17,8 @@ TEST_CASE("signature functions", "[spirent-pga]")
     /* Common reference data for all tests */
     constexpr uint16_t nb_signatures = 128;
     constexpr uint16_t nb_streams = 8;
-    constexpr uint64_t timestamp = 0xadeadbeef;
-    constexpr int flags = 0x1; /* last timestamp set */
+    constexpr uint64_t timestamp = 0x7d004000;
+    constexpr int flag_value = 0x1; /* last timestamp set */
 
     /*
      * This wacky signature array two step is due to our API.
@@ -29,12 +29,17 @@ TEST_CASE("signature functions", "[spirent-pga]")
     std::vector<uint8_t*> ref_signature_ptrs(nb_signatures);
     std::vector<uint32_t> stream_ids(nb_signatures);
     std::vector<uint32_t> sequence_nums(nb_signatures);
+    std::vector<uint32_t> timestamps_hi(nb_signatures);
+    std::vector<uint32_t> timestamps_lo(nb_signatures);
+    std::vector<int> flags(nb_signatures, flag_value);
 
     for (auto i = 0; i < nb_signatures; i++) {
         ref_signatures[i] = {{}, 0, 0};
         ref_signature_ptrs[i] = &ref_signatures[i].data[0];
         stream_ids[i] = i % nb_streams;
         sequence_nums[i] = i / nb_streams;
+        timestamps_hi[i] = timestamp >> 32;
+        timestamps_lo[i] = (timestamp & 0xffffffff) + i;
     }
 
     SECTION("implementations")
@@ -53,8 +58,9 @@ TEST_CASE("signature functions", "[spirent-pga]")
         scalar_fn(ref_signature_ptrs.data(),
                   stream_ids.data(),
                   sequence_nums.data(),
-                  timestamp,
-                  flags,
+                  timestamps_hi.data(),
+                  timestamps_lo.data(),
+                  flags.data(),
                   ref_signatures.size());
 
         SECTION("encoding")
@@ -89,8 +95,9 @@ TEST_CASE("signature functions", "[spirent-pga]")
                 vector_fn(vec_signature_ptrs.data(),
                           stream_ids.data(),
                           sequence_nums.data(),
-                          timestamp,
-                          flags,
+                          timestamps_hi.data(),
+                          timestamps_lo.data(),
+                          flags.data(),
                           vec_signatures.size());
 
                 /* Now, compare all signature data and the cheater field */
@@ -127,16 +134,16 @@ TEST_CASE("signature functions", "[spirent-pga]")
 
                 std::vector<uint32_t> out_stream_ids(nb_signatures);
                 std::vector<uint32_t> out_sequence_nums(nb_signatures);
-                std::vector<uint32_t> out_timestamps_lo(nb_signatures);
                 std::vector<uint32_t> out_timestamps_hi(nb_signatures);
+                std::vector<uint32_t> out_timestamps_lo(nb_signatures);
                 std::vector<int> out_flags(nb_signatures);
 
                 auto count = decode_fn(ref_signature_ptrs.data(),
                                        ref_signature_ptrs.size(),
                                        out_stream_ids.data(),
                                        out_sequence_nums.data(),
-                                       out_timestamps_lo.data(),
                                        out_timestamps_hi.data(),
+                                       out_timestamps_lo.data(),
                                        out_flags.data());
 
                 /* Did we find them all? */
@@ -149,27 +156,12 @@ TEST_CASE("signature functions", "[spirent-pga]")
                 REQUIRE(std::equal(std::begin(sequence_nums),
                                    std::end(sequence_nums),
                                    std::begin(out_sequence_nums)));
-
-                /*
-                 * Slightly non-standard use of std::equal() here.  We take the
-                 * hi and lo values and compare them to a known quantity.
-                 * Note: we expect the timestamp to increment by 1 for each
-                 * packet in a burst.  Two packets with the same transmit
-                 * timestamps are not allowed.
-                 */
-                auto offset = 0;
-                REQUIRE(std::equal(std::begin(out_timestamps_hi),
-                                   std::end(out_timestamps_hi),
-                                   std::begin(out_timestamps_lo),
-                                   [&](const auto& hi, const auto& lo) {
-                                       auto out =
-                                           static_cast<uint64_t>(hi) << 32 | lo;
-                                       /* XXX: signature timestamp is only 38
-                                        * bits long */
-                                       auto in = (timestamp + offset++)
-                                                 & 0x3fffffffff;
-                                       return (out == in);
-                                   }));
+                REQUIRE(std::equal(std::begin(timestamps_hi),
+                                   std::end(timestamps_hi),
+                                   std::begin(out_timestamps_hi)));
+                REQUIRE(std::equal(std::begin(timestamps_lo),
+                                   std::end(timestamps_lo),
+                                   std::begin(out_timestamps_lo)));
 
                 /* All flag values should be valid */
                 REQUIRE(std::all_of(std::begin(out_flags),
@@ -192,11 +184,21 @@ TEST_CASE("signature functions", "[spirent-pga]")
                 return (spirent_signature{{}, 0, 0});
             });
 
+        /* Generate a unified timestamp vector */
+        std::vector<uint64_t> timestamps{};
+        std::transform(std::begin(timestamps_hi),
+                       std::end(timestamps_hi),
+                       std::begin(timestamps_lo),
+                       std::back_inserter(timestamps),
+                       [](const auto& hi, const auto& lo) {
+                           return (static_cast<uint64_t>(hi) << 32 | lo);
+                       });
+
         pga_signatures_encode(ref_signature_ptrs.data(),
                               stream_ids.data(),
                               sequence_nums.data(),
-                              timestamp,
-                              flags,
+                              timestamps.data(),
+                              flags.data(),
                               ref_signature_ptrs.size());
 
         /*

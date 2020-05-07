@@ -52,18 +52,24 @@ void initialize_encode_signatures(
     std::array<uint8_t*, nb_signatures> signature_ptrs;
     std::array<uint32_t, nb_signatures> stream_ids;
     std::array<uint32_t, nb_signatures> sequence_nums;
+    std::array<uint32_t, nb_signatures> timestamps_hi;
+    std::array<uint32_t, nb_signatures> timestamps_lo;
+    std::array<int, nb_signatures> flags{0};
 
     for (auto i = 0; i < nb_signatures; i++) {
         signature_ptrs[i] = &signatures[i][0];
         stream_ids[i] = 0xc0ffee00 + i;
         sequence_nums[i] = i;
+        timestamps_hi[i] = 0xdead;
+        timestamps_lo[i] = 0xbeef000 + i;
     }
 
     wrapper.init(signature_ptrs.data(),
                  stream_ids.data(),
                  sequence_nums.data(),
-                 0xdeadbeef,
-                 0x0,
+                 timestamps_hi.data(),
+                 timestamps_lo.data(),
+                 flags.data(),
                  nb_signatures);
 }
 
@@ -74,11 +80,16 @@ void initialize_decode_signatures(
     std::array<uint8_t*, nb_signatures> signature_ptrs;
     std::array<uint32_t, nb_signatures> stream_ids;
     std::array<uint32_t, nb_signatures> sequence_nums;
+    std::array<uint32_t, nb_signatures> timestamps_hi;
+    std::array<uint32_t, nb_signatures> timestamps_lo;
+    std::array<int, nb_signatures> flags{0};
 
     for (auto i = 0; i < nb_signatures; i++) {
         signature_ptrs[i] = &signatures[i][0];
         stream_ids[i] = 0xc0ffee00 + i;
         sequence_nums[i] = i;
+        timestamps_hi[i] = 0xdead;
+        timestamps_lo[i] = 0xbeef000 + i;
     }
 
     /*
@@ -88,8 +99,9 @@ void initialize_decode_signatures(
     scalar::encode_signatures(signature_ptrs.data(),
                               stream_ids.data(),
                               sequence_nums.data(),
-                              0xdeadbeef,
-                              0x0,
+                              timestamps_hi.data(),
+                              timestamps_lo.data(),
+                              flags.data(),
                               nb_signatures);
 
     std::array<uint32_t, nb_signatures> out_stream_ids;
