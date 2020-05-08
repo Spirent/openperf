@@ -1,10 +1,11 @@
+#include <cstring>
 #include <stdexcept>
 
 #include "packet/type/mac_address.hpp"
 
 namespace libpacket::type {
 
-mac_address::mac_address(std::string_view input)
+static void set_octets_from_string(mac_address& mac, std::string_view input)
 {
     /* Sanity check input */
     static const std::string delimiters("-:.");
@@ -33,12 +34,22 @@ mac_address::mac_address(std::string_view input)
                                      + " is not between 0x00 and 0xff");
         }
 
-        octets[idx++] = value;
+        mac.octets[idx++] = value;
     }
     if (idx != 6) {
         throw std::runtime_error("Too few octets in MAC address "
                                  + std::string(input));
     }
+}
+
+mac_address::mac_address(const char* input)
+{
+    set_octets_from_string(*this, std::string_view(input, std::strlen(input)));
+}
+
+mac_address::mac_address(std::string_view input)
+{
+    set_octets_from_string(*this, input);
 }
 
 mac_address::mac_address(std::initializer_list<uint8_t> data)
