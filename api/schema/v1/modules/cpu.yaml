@@ -281,26 +281,21 @@ definitions:
               description: CPU load instruction set
               enum:
               - scalar
-            data_size:
-              type: integer
-              description: Number of bits to use for data type in chosen instruction set
-              enum:
-              - 32
-              - 64
-            operation:
+            data_type:
               type: string
               description: CPU load target operation, actual for chosen instruction set
               enum:
-              - float
-              - int
+              - int32
+              - int64
+              - float32
+              - float64
             weight:
               type: integer
               description: Targeted load ratio
               minimum: 1
           required:
             - instruction_set
-            - data_size
-            - operation
+            - data_type
             - weight
         description: Instruction set targets (operations)
         minItems: 1

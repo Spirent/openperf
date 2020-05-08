@@ -10,8 +10,7 @@ namespace openperf::cpu::model {
 struct generator_target_config
 {
     cpu::instruction_set instruction_set;
-    cpu::operation operation;
-    uint64_t data_size;
+    cpu::data_type data_type;
     uint64_t weight;
 };
 

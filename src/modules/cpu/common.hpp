@@ -7,13 +7,11 @@ enum class instruction_set {
     SCALAR = 1
 };
 
-enum class operation {
-    INT = 1, FLOAT
-};
-
-enum class data_size {
-    BIT_32 = 32,
-    BIT_64 = 64
+enum class data_type {
+    INT32 = 1,
+    INT64,
+    FLOAT32,
+    FLOAT64
 };
 
 } // namespace openperf::cpu::internal

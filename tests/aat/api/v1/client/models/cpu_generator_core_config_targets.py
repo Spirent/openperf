@@ -32,30 +32,26 @@ class CpuGeneratorCoreConfigTargets(object):
     """
     swagger_types = {
         'instruction_set': 'str',
-        'data_size': 'int',
-        'operation': 'str',
+        'data_type': 'str',
         'weight': 'int'
     }
 
     attribute_map = {
         'instruction_set': 'instruction_set',
-        'data_size': 'data_size',
-        'operation': 'operation',
+        'data_type': 'data_type',
         'weight': 'weight'
     }
 
-    def __init__(self, instruction_set=None, data_size=None, operation=None, weight=None):  # noqa: E501
+    def __init__(self, instruction_set=None, data_type=None, weight=None):  # noqa: E501
         """CpuGeneratorCoreConfigTargets - a model defined in Swagger"""  # noqa: E501
 
         self._instruction_set = None
-        self._data_size = None
-        self._operation = None
+        self._data_type = None
         self._weight = None
         self.discriminator = None
 
         self.instruction_set = instruction_set
-        self.data_size = data_size
-        self.operation = operation
+        self.data_type = data_type
         self.weight = weight
 
     @property
@@ -81,48 +77,26 @@ class CpuGeneratorCoreConfigTargets(object):
         self._instruction_set = instruction_set
 
     @property
-    def data_size(self):
-        """Gets the data_size of this CpuGeneratorCoreConfigTargets.  # noqa: E501
-
-        Number of bits to use for data type in chosen instruction set  # noqa: E501
-
-        :return: The data_size of this CpuGeneratorCoreConfigTargets.  # noqa: E501
-        :rtype: int
-        """
-        return self._data_size
-
-    @data_size.setter
-    def data_size(self, data_size):
-        """Sets the data_size of this CpuGeneratorCoreConfigTargets.
-
-        Number of bits to use for data type in chosen instruction set  # noqa: E501
-
-        :param data_size: The data_size of this CpuGeneratorCoreConfigTargets.  # noqa: E501
-        :type: int
-        """
-        self._data_size = data_size
-
-    @property
-    def operation(self):
-        """Gets the operation of this CpuGeneratorCoreConfigTargets.  # noqa: E501
+    def data_type(self):
+        """Gets the data_type of this CpuGeneratorCoreConfigTargets.  # noqa: E501
 
         CPU load target operation, actual for chosen instruction set  # noqa: E501
 
-        :return: The operation of this CpuGeneratorCoreConfigTargets.  # noqa: E501
+        :return: The data_type of this CpuGeneratorCoreConfigTargets.  # noqa: E501
         :rtype: str
         """
-        return self._operation
+        return self._data_type
 
-    @operation.setter
-    def operation(self, operation):
-        """Sets the operation of this CpuGeneratorCoreConfigTargets.
+    @data_type.setter
+    def data_type(self, data_type):
+        """Sets the data_type of this CpuGeneratorCoreConfigTargets.
 
         CPU load target operation, actual for chosen instruction set  # noqa: E501
 
-        :param operation: The operation of this CpuGeneratorCoreConfigTargets.  # noqa: E501
+        :param data_type: The data_type of this CpuGeneratorCoreConfigTargets.  # noqa: E501
         :type: str
         """
-        self._operation = operation
+        self._data_type = data_type
 
     @property
     def weight(self):

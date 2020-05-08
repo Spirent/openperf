@@ -8,12 +8,6 @@
 
 namespace openperf::cpu::generator {
 
-const static std::unordered_map<uint32_t, cpu::data_size>
-    cpu_data_sizes = {
-        {32, cpu::data_size::BIT_32},
-        {64, cpu::data_size::BIT_64},
-};
-
 generator::generator(const model::generator& generator_model)
     : model::generator(generator_model)
     , result_id(core::to_string(core::uuid::random()))
@@ -133,8 +127,7 @@ task_cpu_config generator::generate_worker_config(const model::generator_core_co
             w_config.targets.push_back(target_config{
                 .set = target.instruction_set,
                 .weight = target.weight,
-                .data_size = cpu_data_sizes.at(target.data_size),
-                .operation = target.operation
+                .data_type = target.data_type,
             });
         }
 

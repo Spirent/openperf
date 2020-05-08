@@ -16,22 +16,16 @@ public:
     ~target_scalar() override = default;
 
     uint64_t operation() const override {
-        switch (m_operation)
+        switch (m_data_type)
         {
-        case cpu::operation::INT:
-            switch (m_data_size) {
-            case cpu::data_size::BIT_32:
-                return operation<uint32_t>();
-            case cpu::data_size::BIT_64:
-                return operation<uint64_t>();
-            }
-        case cpu::operation::FLOAT:
-            switch (m_data_size) {
-            case cpu::data_size::BIT_32:
-                return operation<float>();
-            case cpu::data_size::BIT_64:
-                return operation<double>();
-            }
+        case cpu::data_type::INT32:
+            return operation<uint32_t>();
+        case cpu::data_type::INT64:
+            return operation<uint64_t>();
+        case cpu::data_type::FLOAT32:
+            return operation<float>();
+        case cpu::data_type::FLOAT64:
+            return operation<double>();
         }
     }
 

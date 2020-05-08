@@ -218,8 +218,7 @@ void task_cpu::config(const task_cpu::config_t& conf)
 
         std::cout << "Config: { weight: "
             << t_conf.weight << ", operation: "
-            << (int)t_conf.operation << ", data_size: "
-            << (int)t_conf.data_size << ", set: "
+            << (int)t_conf.data_type << ", set: "
             << (int)t_conf.set
             << " }" << std::endl;
 
@@ -228,7 +227,7 @@ void task_cpu::config(const task_cpu::config_t& conf)
         {
         case cpu::instruction_set::SCALAR:
             meta.target = std::make_unique<target_scalar>(
-                t_conf.data_size, t_conf.operation);
+                t_conf.data_type);
             break;
         default:
             throw std::runtime_error("Unknown instruction set "
