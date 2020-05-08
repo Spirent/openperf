@@ -80,7 +80,7 @@ class CpuGeneratorCoreConfigTargets(object):
     def data_type(self):
         """Gets the data_type of this CpuGeneratorCoreConfigTargets.  # noqa: E501
 
-        CPU load target operation, actual for chosen instruction set  # noqa: E501
+        CPU load target operation data type, actual for chosen instruction set  # noqa: E501
 
         :return: The data_type of this CpuGeneratorCoreConfigTargets.  # noqa: E501
         :rtype: str
@@ -91,7 +91,7 @@ class CpuGeneratorCoreConfigTargets(object):
     def data_type(self, data_type):
         """Sets the data_type of this CpuGeneratorCoreConfigTargets.
 
-        CPU load target operation, actual for chosen instruction set  # noqa: E501
+        CPU load target operation data type, actual for chosen instruction set  # noqa: E501
 
         :param data_type: The data_type of this CpuGeneratorCoreConfigTargets.  # noqa: E501
         :type: str

@@ -54,7 +54,7 @@ public:
     std::string getInstructionSet() const;
     void setInstructionSet(std::string value);
         /// <summary>
-    /// CPU load target operation, actual for chosen instruction set
+    /// CPU load target operation data type, actual for chosen instruction set
     /// </summary>
     std::string getDataType() const;
     void setDataType(std::string value);

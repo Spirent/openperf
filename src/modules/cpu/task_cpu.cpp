@@ -226,8 +226,29 @@ void task_cpu::config(const task_cpu::config_t& conf)
         switch (t_conf.set)
         {
         case cpu::instruction_set::SCALAR:
-            meta.target = std::make_unique<target_scalar>(
-                t_conf.data_type);
+            switch (t_conf.data_type)
+            {
+            case cpu::data_type::INT32:
+                meta.target =
+                    std::make_unique<target_scalar<uint32_t>>(
+                        t_conf.data_type);
+                break;
+            case cpu::data_type::INT64:
+                meta.target =
+                    std::make_unique<target_scalar<uint64_t>>(
+                        t_conf.data_type);
+                break;
+            case cpu::data_type::FLOAT32:
+                meta.target =
+                    std::make_unique<target_scalar<float>>(
+                        t_conf.data_type);
+                break;
+            case cpu::data_type::FLOAT64:
+                meta.target =
+                    std::make_unique<target_scalar<double>>(
+                        t_conf.data_type);
+                break;
+            }
             break;
         default:
             throw std::runtime_error("Unknown instruction set "
