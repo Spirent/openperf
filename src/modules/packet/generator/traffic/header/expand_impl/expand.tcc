@@ -33,7 +33,7 @@ void set_header_field(Header& header,
 }
 
 /**
- * Annoying, the ranges zip/cartesian functions return a pair like value
+ * Annoyingly, the ranges zip/cartesian functions return a pair like value
  * when the number of ranges == 2, so we need an explicit overload to
  * handle that case.
  */
@@ -127,7 +127,7 @@ container do_expand_cartesian(const Header& header,
      */
     auto range_visitor = [](const auto& config) {
         return (ranges::any_view<modifier::value, ranges::category::forward>(
-            to_range_cycle(config)));
+            to_range(config)));
     };
 
     auto modifier_tuples = std::apply(
@@ -246,7 +246,7 @@ template <typename Header> container expand(const config<Header>& config)
 {
     const auto nb_modifiers = config.modifiers.size();
 
-    assert(nb_modifiers == 1 || config.mux != modifier_mux::none);
+    assert(nb_modifiers <= 1 || config.mux != modifier_mux::none);
     assert(nb_modifiers <= Header::protocol_field_count);
 
     /*

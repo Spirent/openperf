@@ -573,11 +573,14 @@ static void validate(const definition_ptr& def,
 static void validate(const duration_ptr& duration,
                      std::vector<std::string>& errors)
 {
+    bool have_config = false;
     if (duration->continuousIsSet() && duration->isContinuous()) {
-        /* config is valid */
-        return;
-    } else if (duration->framesIsSet() && duration->getFrames() < 1) {
-        errors.emplace_back("Duration frame limit must be positive.");
+        have_config = true;
+    } else if (duration->framesIsSet()) {
+        if (duration->getFrames() < 1) {
+            errors.emplace_back("Duration frame limit must be positive.");
+        }
+        have_config = true;
     } else if (duration->timeIsSet()) {
         const auto& time = duration->getTime();
         if (time->getValue() < 1) {
@@ -587,7 +590,10 @@ static void validate(const duration_ptr& duration,
             errors.emplace_back("Duration time units, " + time->getUnits()
                                 + ", are invalid.");
         }
-    } else {
+        have_config = true;
+    }
+
+    if (!have_config) {
         errors.emplace_back("No duration configuration found.");
     }
 }

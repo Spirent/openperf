@@ -73,13 +73,13 @@ public:
 
     size_t get_size() const
     {
-        return (std::inner_product(
+        auto lcm = std::accumulate(
             std::begin(parent::m_template_sizes),
             std::end(parent::m_template_sizes),
-            std::begin(parent::m_template_scalars),
-            0U,
-            std::plus<size_t>{},
-            [](unsigned lhs, unsigned rhs) { return (lhs * rhs); }));
+            1UL,
+            [](size_t lhs, size_t rhs) { return (std::lcm(lhs, rhs)); });
+
+        return (lcm * m_weight_sums.back());
     }
 
     typename parent::view_type get_indexes(size_t idx) const
@@ -99,7 +99,7 @@ public:
 
         assert(static_cast<size_t>(offset) <= idx);
 
-        return {tmp_idx, idx - offset};
+        return {tmp_idx, (idx - offset) % parent::m_template_sizes[tmp_idx]};
     }
 };
 
@@ -147,7 +147,7 @@ public:
 
         assert(static_cast<size_t>(offset) <= idx);
 
-        return {tmp_idx, idx - offset};
+        return {tmp_idx, (idx - offset) % parent::m_template_sizes[tmp_idx]};
     }
 };
 
@@ -165,34 +165,32 @@ sequence sequence::sequential_sequence(definition_container&& definitions)
                      order_type::sequential));
 }
 
-sequence::sequence(definition_container&& definitions, order_type order)
+template <typename InputIt1,
+          typename InputIt2,
+          typename InputIt3,
+          typename T,
+          typename BinaryOp1,
+          typename BinaryOp2>
+T fancy_inner_product(InputIt1 cursor1,
+                      InputIt1 end,
+                      InputIt2 cursor2,
+                      InputIt3 cursor3,
+                      T sum,
+                      BinaryOp1 op1,
+                      BinaryOp2 op2)
 {
-    if (order == order_type::round_robin) {
-        auto rr_packet_gen = impl::round_robin<packet_template>(definitions);
-        m_packet_indexes.reserve(rr_packet_gen.size());
-        std::copy(std::begin(rr_packet_gen),
-                  std::end(rr_packet_gen),
-                  std::back_inserter(m_packet_indexes));
-
-        auto rr_length_gen = impl::round_robin<length_template>(definitions);
-        m_length_indexes.reserve(rr_length_gen.size());
-        std::copy(std::begin(rr_length_gen),
-                  std::end(rr_length_gen),
-                  std::back_inserter(m_length_indexes));
-    } else {
-        auto seq_packet_gen = impl::sequential<packet_template>(definitions);
-        m_packet_indexes.reserve(seq_packet_gen.size());
-        std::copy(std::begin(seq_packet_gen),
-                  std::end(seq_packet_gen),
-                  std::back_inserter(m_packet_indexes));
-
-        auto seq_length_gen = impl::sequential<length_template>(definitions);
-        m_length_indexes.reserve(seq_length_gen.size());
-        std::copy(std::begin(seq_length_gen),
-                  std::end(seq_length_gen),
-                  std::back_inserter(m_length_indexes));
+    while (cursor1 != end) {
+        sum += op1(*cursor1, op2(*cursor2, *cursor3));
+        cursor1++;
+        cursor2++;
+        cursor3++;
     }
 
+    return (sum);
+}
+
+sequence::sequence(definition_container&& definitions, order_type order)
+{
     m_definitions.reserve(definitions.size());
     std::transform(
         std::begin(definitions),
@@ -211,6 +209,66 @@ sequence::sequence(definition_container&& definitions, order_type order)
                        offset += pt.size();
                        return (tmp);
                    });
+
+    /*
+     * Both the sequence of packets and size depend on our order type.
+     * We consider the length of each definition to be the
+     * lcm(# packets, #lengths).
+     */
+    const auto& length_templates = m_definitions.get<1>();
+    const auto& weights = m_definitions.get<2>();
+
+    if (order == order_type::round_robin) {
+        auto rr_packet_gen = impl::round_robin<packet_template>(definitions);
+        m_packet_indexes.reserve(rr_packet_gen.size());
+        std::copy(std::begin(rr_packet_gen),
+                  std::end(rr_packet_gen),
+                  std::back_inserter(m_packet_indexes));
+
+        /*
+         * Definitions with weights > 1 might have repeated packets in the
+         * sequence before every packet has been generated. Use the lcm of
+         * all packet/length template lcm's to determine the minimum number
+         * of packets in the sequence.
+         */
+        auto flow_lcm =
+            std::inner_product(std::begin(packet_templates),
+                               std::end(packet_templates),
+                               std::begin(length_templates),
+                               1UL,
+                               std::lcm<uint64_t, uint64_t>,
+                               [](const auto& lhs, const auto& rhs) {
+                                   return (std::lcm(lhs.size(), rhs.size()));
+                               });
+
+        /* Then, scale by weight */
+        m_size = flow_lcm
+                 * std::accumulate(std::begin(weights), std::end(weights), 0UL);
+
+    } else {
+        auto seq_packet_gen = impl::sequential<packet_template>(definitions);
+        m_packet_indexes.reserve(seq_packet_gen.size());
+        std::copy(std::begin(seq_packet_gen),
+                  std::end(seq_packet_gen),
+                  std::back_inserter(m_packet_indexes));
+
+        /*
+         * Sequential generaiton iterates over each packet template in turn,
+         * so the total size is just the sum of weight * definition length.
+         * Unfortunately, there is no std algorithm for that, so use a custom
+         * one.
+         */
+        m_size =
+            fancy_inner_product(std::begin(weights),
+                                std::end(weights),
+                                std::begin(packet_templates),
+                                std::begin(length_templates),
+                                0UL,
+                                std::multiplies<size_t>{},
+                                [](const auto& lhs, const auto& rhs) {
+                                    return (std::lcm(lhs.size(), rhs.size()));
+                                });
+    }
 }
 
 uint16_t sequence::max_packet_length() const
@@ -224,30 +282,49 @@ uint16_t sequence::max_packet_length() const
                             }));
 }
 
+template <typename InputIt, typename Size, typename T, typename BinaryOp>
+T ring_accumulate_n(
+    InputIt first, InputIt last, InputIt cursor, Size n, T sum, BinaryOp&& op)
+{
+    auto idx = 0U;
+    while (idx++ < n) {
+        sum = op(std::move(sum), *cursor++);
+        if (cursor == last) { cursor = first; };
+    }
+
+    return (sum);
+}
+
 size_t sequence::sum_packet_lengths() const
 {
     const auto& length_templates = m_definitions.get<1>();
-    return (std::accumulate(
-        std::begin(m_length_indexes),
-        std::end(m_length_indexes),
+
+    return (ring_accumulate_n(
+        std::begin(m_packet_indexes),
+        std::end(m_packet_indexes),
+        std::begin(m_packet_indexes),
+        size(),
         0UL,
-        [&](size_t lhs, const auto& rhs) {
-            return (lhs + length_templates[rhs.first][rhs.second]);
+        [&](auto&& lhs, const auto& rhs) {
+            auto len_idx = rhs.second % length_templates[rhs.first].size();
+            return (lhs + length_templates[rhs.first][len_idx]);
         }));
 }
 
 size_t sequence::sum_packet_lengths(size_t idx) const
 {
     const auto& length_templates = m_definitions.get<1>();
-    auto q = lldiv(idx, m_length_indexes.size());
+    auto q = lldiv(idx, m_packet_indexes.size());
 
-    auto sum = std::accumulate(
-        std::begin(m_length_indexes),
-        std::begin(m_length_indexes) + q.rem,
-        0UL,
-        [&](size_t lhs, const auto& rhs) {
-            return (lhs + length_templates[rhs.first][rhs.second]);
-        });
+    auto sum =
+        std::accumulate(std::begin(m_packet_indexes),
+                        std::begin(m_packet_indexes) + q.rem,
+                        0UL,
+                        [&](size_t lhs, const auto& rhs) {
+                            auto len_idx =
+                                rhs.second % length_templates[rhs.first].size();
+                            return (lhs + length_templates[rhs.first][len_idx]);
+                        });
 
     if (q.quot) { sum += q.quot * sum_packet_lengths(); }
 
@@ -272,12 +349,7 @@ size_t sequence::flow_count() const
         [](size_t lhs, const auto& rhs) { return (lhs + rhs.size()); }));
 }
 
-size_t sequence::size() const
-{
-    const auto& packet_templates = m_definitions.get<0>();
-    const auto& length_templates = m_definitions.get<1>();
-    return (std::lcm(packet_templates.size(), length_templates.size()));
-}
+size_t sequence::size() const { return (m_size); }
 
 namespace detail {
 
@@ -413,18 +485,47 @@ uint16_t sequence::unpack(size_t start_idx,
                              sig_configs[pair.first]));
                      });
 
-    auto len_offset = start_idx % m_length_indexes.size();
     const auto& length_templates = m_definitions.get<1>();
-    ring_transform_n(std::begin(m_length_indexes),
-                     std::end(m_length_indexes),
-                     std::begin(m_length_indexes) + len_offset,
+    ring_transform_n(std::begin(m_packet_indexes),
+                     std::end(m_packet_indexes),
+                     std::begin(m_packet_indexes) + pkt_offset,
                      count,
                      pkt_lengths,
                      [&](const auto& pair) {
-                         return (length_templates[pair.first][pair.second]);
+                         auto len_idx =
+                             pair.second % length_templates[pair.first].size();
+                         return (length_templates[pair.first][len_idx]);
                      });
 
     return (count);
+}
+
+sequence::view_type sequence::operator[](size_t idx) const
+{
+    const auto& packet_templates = m_definitions.get<0>();
+    const auto& sig_configs = m_definitions.get<3>();
+    const auto& length_templates = m_definitions.get<1>();
+
+    auto pkt_key = m_packet_indexes[idx % m_packet_indexes.size()];
+    auto len_idx = pkt_key.second % length_templates[pkt_key.first].size();
+
+    return (std::make_tuple(m_flow_offsets[pkt_key.first] + pkt_key.second,
+                            packet_templates[pkt_key.first][pkt_key.second],
+                            packet_templates[pkt_key.first].header_lengths(),
+                            packet_templates[pkt_key.first].header_flags(),
+                            sig_configs[pkt_key.first],
+                            length_templates[pkt_key.first][len_idx]));
+}
+
+sequence::iterator sequence::begin() { return (iterator(*this)); }
+
+sequence::const_iterator sequence::begin() const { return (iterator(*this)); }
+
+sequence::iterator sequence::end() { return (iterator(*this, size())); }
+
+sequence::const_iterator sequence::end() const
+{
+    return (iterator(*this, size()));
 }
 
 } // namespace openperf::packet::generator::traffic
