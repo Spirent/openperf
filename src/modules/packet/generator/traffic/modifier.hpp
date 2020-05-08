@@ -98,7 +98,12 @@ auto to_sequence_field_range(const sequence_config<EndianField>& config)
                          [&](const auto& skip) { return (input == skip); }));
     });
 
-    return (iota | transform | filter);
+    /*
+     * Note: the trailing take_exactly is to handle cases where the items to
+     * skip aren't actually in the generated sequence.
+     */
+    return (iota | transform | filter
+            | ranges::views::take_exactly(config.count));
 }
 
 template <typename AddressField>
@@ -120,7 +125,12 @@ auto to_sequence_address_range(const sequence_config<AddressField>& config)
                          [&](const auto& skip) { return (input == skip); }));
     });
 
-    return (iota | transform | filter);
+    /*
+     * Note: the trailing take_exactly is to handle cases where the items to
+     * skip aren't actually in the generated sequence.
+     */
+    return (iota | transform | filter
+            | ranges::views::take_exactly(config.count));
 }
 
 } // namespace detail
