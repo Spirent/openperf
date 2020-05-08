@@ -15,8 +15,7 @@ namespace openperf::cpu::internal {
 
 struct target_config {
     cpu::instruction_set set;
-    cpu::data_size data_size;
-    cpu::operation operation;
+    cpu::data_type data_type;
     uint64_t weight;
 };
 

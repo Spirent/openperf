@@ -315,18 +315,13 @@ std::string to_string(const api::typed_error& error)
     }
 }
 
-const static std::unordered_map<std::string, cpu::instruction_set>
-    cpu_instruction_sets = {
-        {"scalar", cpu::instruction_set::SCALAR},
-};
-
-const static std::unordered_map<cpu::instruction_set, std::string>
-    cpu_instruction_set_strings = {
-        {cpu::instruction_set::SCALAR, "scalar"},
-};
-
 cpu::instruction_set cpu_instruction_set_from_string(const std::string& value)
 {
+    const static std::unordered_map<std::string, cpu::instruction_set>
+        cpu_instruction_sets = {
+            {"scalar", cpu::instruction_set::SCALAR},
+    };
+
     if (cpu_instruction_sets.count(value))
         return cpu_instruction_sets.at(value);
     throw std::runtime_error(
@@ -335,34 +330,43 @@ cpu::instruction_set cpu_instruction_set_from_string(const std::string& value)
 
 std::string to_string(const cpu::instruction_set& pattern)
 {
+    const static std::unordered_map<cpu::instruction_set, std::string>
+        cpu_instruction_set_strings = {
+            {cpu::instruction_set::SCALAR, "scalar"},
+    };
+
     if (cpu_instruction_set_strings.count(pattern))
         return cpu_instruction_set_strings.at(pattern);
     return "unknown";
 }
 
-const static std::unordered_map<std::string, cpu::operation>
-    cpu_operations = {
-        {"int", cpu::operation::INT},
-        {"float", cpu::operation::FLOAT},
-};
-
-const static std::unordered_map<cpu::operation, std::string>
-    cpu_operation_strings = {
-        {cpu::operation::INT, "int"},
-        {cpu::operation::FLOAT, "float"},
-};
-
-cpu::operation cpu_operation_from_string(const std::string& value)
+cpu::data_type cpu_data_type_from_string(const std::string& value)
 {
-    if (cpu_operations.count(value))
-        return cpu_operations.at(value);
+    const static std::unordered_map<std::string, cpu::data_type>
+        cpu_data_types = {
+            {"int32", cpu::data_type::INT32},
+            {"int64", cpu::data_type::INT64},
+            {"float32", cpu::data_type::FLOAT32},
+            {"float64", cpu::data_type::FLOAT64},
+    };
+
+    if (cpu_data_types.count(value))
+        return cpu_data_types.at(value);
     throw std::runtime_error("Instruction set \"" + value + "\" is unknown");
 }
 
-std::string to_string(const cpu::operation& pattern)
+std::string to_string(const cpu::data_type& pattern)
 {
-    if (cpu_operation_strings.count(pattern))
-        return cpu_operation_strings.at(pattern);
+    const static std::unordered_map<cpu::data_type, std::string>
+        cpu_data_type_strings = {
+            {cpu::data_type::INT32, "int32"},
+            {cpu::data_type::INT64, "int64"},
+            {cpu::data_type::FLOAT32, "float32"},
+            {cpu::data_type::FLOAT64, "float64"},
+    };
+
+    if (cpu_data_type_strings.count(pattern))
+        return cpu_data_type_strings.at(pattern);
     return "unknown";
 }
 
@@ -385,10 +389,6 @@ std::string to_rfc3339(std::chrono::duration<Rep, Period> from)
 
 model::generator from_swagger(const CpuGenerator& p_gen)
 {
-    model::generator gen;
-    gen.id(p_gen.getId());
-    gen.running(p_gen.isRunning());
-
     model::generator_config config;
     for (auto p_conf : p_gen.getConfig()->getCores()) {
         model::generator_core_config core_conf {
@@ -398,66 +398,70 @@ model::generator from_swagger(const CpuGenerator& p_gen)
         for (auto p_target : p_conf->getTargets()) {
             core_conf.targets.push_back(model::generator_target_config {
                 .instruction_set = cpu_instruction_set_from_string(p_target->getInstructionSet()),
-                .data_size = static_cast<uint>(p_target->getDataSize()),
-                .operation = cpu_operation_from_string(p_target->getOperation()),
+                .data_type = cpu_data_type_from_string(p_target->getDataType()),
                 .weight = static_cast<uint>(p_target->getWeight())
             });
         }
 
         config.cores.push_back(core_conf);
     }
+
+    model::generator gen;
+    gen.id(p_gen.getId());
+    gen.running(p_gen.isRunning());
     gen.config(config);
     return gen;
 }
 
 std::shared_ptr<CpuGenerator> to_swagger(const model::generator& p_gen)
 {
-    auto gen = std::make_shared<CpuGenerator>();
-    gen->setId(p_gen.id());
-    gen->setRunning(p_gen.running());
-    auto cores_config = p_gen.config().cores;
     auto cpu_config = std::make_shared<CpuGeneratorConfig>();
-    for (auto p_conf : cores_config) {
+    for (auto p_conf : p_gen.config().cores) {
         auto core_conf = std::make_shared<CpuGeneratorCoreConfig>();
-        core_conf->setUtilization(p_conf.utilization);
         for (auto p_target : p_conf.targets) {
             auto target = std::make_shared<CpuGeneratorCoreConfig_targets>();
-            target->setDataSize(p_target.data_size);
+            target->setDataType(to_string(p_target.data_type));
             target->setInstructionSet(to_string(p_target.instruction_set));
-            target->setOperation(to_string(p_target.operation));
             target->setWeight(p_target.weight);
             core_conf->getTargets().push_back(target);
         }
+
         cpu_config->getCores().push_back(core_conf);
+        core_conf->setUtilization(p_conf.utilization);
     }
+
+    auto gen = std::make_shared<CpuGenerator>();
+    gen->setId(p_gen.id());
+    gen->setRunning(p_gen.running());
     gen->setConfig(cpu_config);
     return gen;
 }
 
 std::shared_ptr<CpuGeneratorResult> to_swagger(const model::generator_result& p_result)
 {
-    auto gen = std::make_shared<CpuGeneratorResult>();
-    gen->setId(p_result.id());
-    gen->setGeneratorId(p_result.generator_id());
-    gen->setActive(p_result.active());
-    gen->setTimestamp(to_rfc3339(p_result.timestamp().time_since_epoch()));
-    auto cores_stats = p_result.stats().cores;
     auto cpu_stats = std::make_shared<CpuGeneratorStats>();
-    for (auto p_stats : cores_stats) {
+    for (auto p_stats : p_result.stats().cores) {
         auto core_stats = std::make_shared<CpuGeneratorCoreStats>();
-        core_stats->setAvailable(p_stats.available);
-        core_stats->setError(p_stats.error);
-        core_stats->setSteal(p_stats.steal);
-        core_stats->setSystem(p_stats.system);
-        core_stats->setUser(p_stats.user);
-        core_stats->setUtilization(p_stats.utilization);
         for (auto p_target : p_stats.targets) {
             auto target = std::make_shared<CpuGeneratorTargetStats>();
             target->setCycles(p_target.cycles);
             core_stats->getTargets().push_back(target);
         }
         cpu_stats->getCores().push_back(core_stats);
+
+        core_stats->setAvailable(p_stats.available);
+        core_stats->setError(p_stats.error);
+        core_stats->setSteal(p_stats.steal);
+        core_stats->setSystem(p_stats.system);
+        core_stats->setUser(p_stats.user);
+        core_stats->setUtilization(p_stats.utilization);
     }
+
+    auto gen = std::make_shared<CpuGeneratorResult>();
+    gen->setId(p_result.id());
+    gen->setGeneratorId(p_result.generator_id());
+    gen->setActive(p_result.active());
+    gen->setTimestamp(to_rfc3339(p_result.timestamp().time_since_epoch()));
     gen->setStats(cpu_stats);
     return gen;
 }

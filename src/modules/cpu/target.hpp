@@ -9,12 +9,11 @@ namespace openperf::cpu::internal {
 class target
 {
 protected:
-    cpu::data_size m_data_size;
-    cpu::operation m_operation;
+    cpu::data_type m_data_type;
 
 public:
-    target(cpu::data_size size, cpu::operation op)
-        : m_data_size(size), m_operation(op)
+    target(cpu::data_type dtype)
+        : m_data_type(dtype)
         {}
     virtual ~target() = default;
     virtual uint64_t operation() const = 0;
