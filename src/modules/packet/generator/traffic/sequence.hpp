@@ -18,6 +18,15 @@ using definition_container = std::vector<definition>;
 class sequence
 {
 public:
+    using view_type = std::tuple<unsigned,
+                                 const uint8_t*,
+                                 packetio::packet::header_lengths,
+                                 packetio::packet::packet_type::flags,
+                                 std::optional<signature_config>,
+                                 uint16_t>;
+    using iterator = view_iterator<sequence>;
+    using const_iterator = const iterator;
+
     static sequence round_robin_sequence(definition_container&& definitions);
     static sequence sequential_sequence(definition_container&& definitions);
 
@@ -41,6 +50,14 @@ public:
                     std::optional<signature_config> signature_configs[],
                     uint16_t pkt_lengths[]) const;
 
+    view_type operator[](size_t idx) const;
+
+    iterator begin();
+    const_iterator begin() const;
+
+    iterator end();
+    const_iterator end() const;
+
 protected:
     enum class order_type { round_robin, sequential };
     sequence(definition_container&& definitions, order_type order);
@@ -54,8 +71,8 @@ private:
     using index_container = std::vector<index_pair>;
 
     index_container m_packet_indexes;
-    index_container m_length_indexes;
     std::vector<size_t> m_flow_offsets;
+    size_t m_size;
 };
 
 } // namespace openperf::packet::generator::traffic
