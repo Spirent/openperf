@@ -12,7 +12,7 @@ public:
         : endian::field<6>()
     {}
 
-    // mac_address(const char*);
+    mac_address(const char*);
     mac_address(std::string_view);
     mac_address(std::initializer_list<uint8_t>);
     mac_address(const uint8_t[6]) noexcept;
