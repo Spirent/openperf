@@ -8,44 +8,48 @@
 
 namespace openperf::cpu::internal {
 
+template<class T>
 class target_scalar
     : public target
 {
-public:
-    using target::target;
-    ~target_scalar() override = default;
+private:
+    using square_matrix = std::vector<std::vector<T>>;
 
-    uint64_t operation() const override {
-        switch (m_data_type)
-        {
-        case cpu::data_type::INT32:
-            return operation<uint32_t>();
-        case cpu::data_type::INT64:
-            return operation<uint64_t>();
-        case cpu::data_type::FLOAT32:
-            return operation<float>();
-        case cpu::data_type::FLOAT64:
-            return operation<double>();
+    constexpr static size_t size = 50;
+
+    square_matrix matrix1;
+    square_matrix matrix2;
+
+public:
+    target_scalar(cpu::data_type dtype)
+        : target(dtype)
+    {
+        matrix1.resize(size);
+        matrix2.resize(size);
+        for (size_t i = 0; i < size; ++i) {
+            matrix1[i].resize(size);
+            matrix2[i].resize(size);
+            for (size_t j = 0; j < size; ++j) {
+                matrix1[i][j] = i * j;
+                matrix2[i][j] = size * size / (i * j + 1);
+            }
         }
     }
 
-private:
-    template<class T>
-    uint64_t operation() const {
-        constexpr size_t size = 1000;
+    ~target_scalar() override = default;
 
-        std::vector<T> v1(size), v2(size), v3(size);
-
-        std::generate(v1.begin(), v1.end(), std::rand);
-        std::generate(v2.begin(), v2.end(), std::rand);
-        std::generate(v3.begin(), v3.end(), std::rand);
-
-        T result;
+    [[clang::optnone]]
+    uint64_t operation() const override {
         for (size_t i = 0; i < size; ++i) {
-            result = v1[i] + v2[i] * v3[i] / v1[i];
+            for (size_t j = 0; j < size; ++j) {
+                T sum = 0;
+                for (size_t k = 0; k < size; ++k) {
+                    sum += matrix1[i][k] * matrix2[k][j];
+                }
+            }
         }
 
-        return size;
+        return size * size * size;
     }
 };
 

@@ -283,7 +283,7 @@ definitions:
               - scalar
             data_type:
               type: string
-              description: CPU load target operation, actual for chosen instruction set
+              description: CPU load target operation data type, actual for chosen instruction set
               enum:
               - int32
               - int64
