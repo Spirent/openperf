@@ -228,61 +228,61 @@ uint16_t sink::check_filter_condition(
 uint16_t sink::push(const packetio::packets::packet_buffer* const packets[],
                     uint16_t packets_length) const
 {
-    // TODO: add a generic_sink constant for max burst size?
-    // burst_size must be set larger than the largest burst which
-    // can be passed to a sink
-    constexpr int burst_size = 64;
-    assert(packets_length < burst_size);
-
     const auto id = packetio::internal::worker::get_id();
 
     auto results = m_results.load(std::memory_order_consume);
 
-    if (results) {
-        auto state = results->state.load(std::memory_order_consume);
-        auto& buffer = results->buffers[m_indexes[id]];
-        auto start = packets;
-        auto length = packets_length;
-        bool stopping = false;
+    if (!results) { return (0); }
 
-        if (state != capture_state::STARTED) {
-            if (state == capture_state::ARMED) {
-                auto trigger_offset =
-                    check_start_trigger_condition(packets, packets_length);
-                if (trigger_offset >= packets_length) {
-                    // Start not triggered yet
-                    return packets_length;
-                }
-                state = capture_state::STARTED;
-                results->state = state;
-                start += trigger_offset;
-                length -= trigger_offset;
-            } else {
+    auto state = results->state.load(std::memory_order_consume);
+    auto& buffer = results->buffers[m_indexes[id]];
+    auto start = packets;
+    auto length = packets_length;
+    bool stopping = false;
+
+    if (state != capture_state::STARTED) {
+        if (state == capture_state::ARMED) {
+            auto trigger_offset =
+                check_start_trigger_condition(packets, packets_length);
+            if (trigger_offset >= packets_length) {
+                // Start not triggered yet
                 return packets_length;
             }
-        }
-
-        if (m_stop_trigger) {
-            auto trigger_offset = check_stop_trigger_condition(packets, length);
-            if (trigger_offset < length) {
-                length = trigger_offset + 1;
-                stopping = true;
-            }
-        }
-
-        if (m_filter) {
-            std::array<const packetio::packets::packet_buffer*, burst_size>
-                filtered;
-            length = check_filter_condition(start, length, filtered.data());
-            if (length == 0) return packets_length;
-            buffer->write_packets(filtered.data(), length);
+            state = capture_state::STARTED;
+            results->state = state;
+            start += trigger_offset;
+            length -= trigger_offset;
         } else {
-            buffer->write_packets(start, length);
+            return packets_length;
         }
+    }
 
-        if (stopping || buffer->is_full()) {
-            results->state = capture_state::STOPPED;
+    if (m_stop_trigger) {
+        auto trigger_offset = check_stop_trigger_condition(packets, length);
+        if (trigger_offset < length) {
+            length = trigger_offset + 1;
+            stopping = true;
         }
+    }
+
+    if (m_filter) {
+        constexpr uint16_t max_burst_size = 64;
+        std::array<const packetio::packets::packet_buffer*, max_burst_size>
+            filtered;
+        auto remain = length;
+        while (remain) {
+            auto burst_size = std::min(max_burst_size, remain);
+            length = check_filter_condition(start, burst_size, filtered.data());
+            if (length) buffer->write_packets(filtered.data(), length);
+            start += burst_size;
+            remain -= burst_size;
+        }
+    } else {
+        buffer->write_packets(start, length);
+    }
+
+    if (stopping || buffer->is_full()) {
+        results->state = capture_state::STOPPED;
     }
 
     return (packets_length);
