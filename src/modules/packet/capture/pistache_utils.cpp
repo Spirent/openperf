@@ -214,7 +214,10 @@ void transport_exec(Pistache::Tcp::Transport& transport,
     OP_LOG(OP_LOG_DEBUG,
            "Waiting for timer function to complete. (current tid=%d)",
            (int)gettid());
-    while (result.isPending()) { usleep(1000); }
+
+    Pistache::Async::Barrier<uint64_t> barrier(result);
+    barrier.wait();
+
     OP_LOG(OP_LOG_DEBUG, "Timer completed. (current tid=%d)", (int)gettid());
 
     close(timer_fd);

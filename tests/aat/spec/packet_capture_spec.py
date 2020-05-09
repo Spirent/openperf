@@ -15,6 +15,7 @@ from common.matcher import (be_valid_packet_capture,
                             be_valid_packet_capture_result,
                             raise_api_exception)
 
+import scapy.all
 
 CONFIG = Config(os.path.join(os.path.dirname(__file__),
                              os.environ.get('MAMBA_CONFIG', 'config.yaml')))
@@ -95,14 +96,6 @@ def get_pcap_with_wget(id, out_file):
                              stdout=null, stderr=null, shell=True)
         p.wait()
         expect(p.returncode).to(equal(0))
-
-def has_scapy():
-    try:
-        import scapy.all
-        return True
-    except Exception as e:
-        print(repr(e))
-        return False
 
 def pcap_icmp_echo_request_count(pcap_file):
     count = 0
@@ -341,23 +334,18 @@ with description('Packet Capture,', 'packet_capture') as self:
                         expect(result.id).to(equal(self.result.id))
                         expect(result.packets).to(be_above_or_equal(4))
 
-                        if not has_scapy():
-                            print('\n!!!Install scapy for PCAP validation!!!')
-
                         out_file = os.path.join(self.temp_dir, 'test.pcapng')
 
                         # Retrieve PCAP using python API
                         get_pcap(self.api, self.result.id, out_file)
                         expect(os.path.exists(out_file)).to(equal(True))
-                        if has_scapy():
-                            expect(pcap_icmp_echo_request_count(out_file)).to(equal(4))
+                        expect(pcap_icmp_echo_request_count(out_file)).to(equal(4))
                         os.remove(out_file)
 
                         # Retrieve PCAP using wget
                         get_pcap_with_wget(self.result.id, out_file)
                         expect(os.path.exists(out_file)).to(equal(True))
-                        if has_scapy():
-                            expect(pcap_icmp_echo_request_count(out_file)).to(equal(4))
+                        expect(pcap_icmp_echo_request_count(out_file)).to(equal(4))
                         os.remove(out_file)
 
                         # Make sure HTTP connection is still working
@@ -396,16 +384,12 @@ with description('Packet Capture,', 'packet_capture') as self:
                     expect(result.id).to(equal(self.result.id))
                     expect(result.packets).to(be_above_or_equal(4))
 
-                    if not has_scapy():
-                        print('\n!!!Install scapy for PCAP validation!!!')
-
                     out_file = os.path.join(self.temp_dir, 'test.pcapng')
 
                     # Retrieve PCAP using python API
                     get_pcap(self.api, self.result.id, out_file)
                     expect(os.path.exists(out_file)).to(equal(True))
-                    if has_scapy():
-                        expect(pcap_icmp_echo_request_count(out_file)).to(equal(4))
+                    expect(pcap_icmp_echo_request_count(out_file)).to(equal(4))
                     os.remove(out_file)
 
             with description('live,'):
