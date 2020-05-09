@@ -22,14 +22,13 @@ bool pcap_buffer_writer::write_section_block()
     section.major_version = 1;
     section.minor_version = 0;
     section.section_length = SECTION_LENGTH_UNSPECIFIED;
-    std::copy(reinterpret_cast<uint8_t*>(&section),
-              reinterpret_cast<uint8_t*>(&section) + sizeof(section),
-              ptr + m_buffer_length);
+    std::copy_n(reinterpret_cast<uint8_t*>(&section),
+                sizeof(section),
+                ptr + m_buffer_length);
     m_buffer_length += section.block_total_length;
-    std::copy(reinterpret_cast<uint8_t*>(&section.block_total_length),
-              reinterpret_cast<uint8_t*>(&section.block_total_length)
-                  + sizeof(section.block_total_length),
-              ptr + m_buffer_length - sizeof(section.block_total_length));
+    std::copy_n(reinterpret_cast<uint8_t*>(&section.block_total_length),
+                sizeof(section.block_total_length),
+                ptr + m_buffer_length - sizeof(section.block_total_length));
 
     return true;
 }
@@ -60,19 +59,16 @@ bool pcap_buffer_writer::write_interface_block()
     interface_description.reserved = 0;
     interface_description.snap_len = 16384;
 
-    std::copy(reinterpret_cast<uint8_t*>(&interface_description),
-              reinterpret_cast<uint8_t*>(&interface_description)
-                  + sizeof(interface_description),
-              ptr + m_buffer_length);
-    std::copy(reinterpret_cast<uint8_t*>(&interface_options),
-              reinterpret_cast<uint8_t*>(&interface_options)
-                  + sizeof(interface_options),
-              ptr + m_buffer_length + sizeof(interface_description));
+    std::copy_n(reinterpret_cast<uint8_t*>(&interface_description),
+                sizeof(interface_description),
+                ptr + m_buffer_length);
+    std::copy_n(reinterpret_cast<uint8_t*>(&interface_options),
+                sizeof(interface_options),
+                ptr + m_buffer_length + sizeof(interface_description));
     m_buffer_length += interface_description.block_total_length;
-    std::copy(
+    std::copy_n(
         reinterpret_cast<uint8_t*>(&interface_description.block_total_length),
-        reinterpret_cast<uint8_t*>(&interface_description.block_total_length)
-            + sizeof(interface_description.block_total_length),
+        sizeof(interface_description.block_total_length),
         ptr + m_buffer_length
             - sizeof(interface_description.block_total_length));
 
@@ -113,17 +109,16 @@ bool pcap_buffer_writer::write_packet_block(
 
     if (block_hdr.block_total_length > get_available_length()) { return false; }
 
-    std::copy(reinterpret_cast<const uint8_t*>(&block_hdr),
-              reinterpret_cast<const uint8_t*>(&block_hdr) + sizeof(block_hdr),
-              ptr + m_buffer_length);
-    std::copy(block_data,
-              block_data + block_hdr.captured_len,
-              ptr + m_buffer_length + sizeof(block_hdr));
+    std::copy_n(reinterpret_cast<const uint8_t*>(&block_hdr),
+                sizeof(block_hdr),
+                ptr + m_buffer_length);
+    std::copy_n(block_data,
+                block_hdr.captured_len,
+                ptr + m_buffer_length + sizeof(block_hdr));
     m_buffer_length += block_hdr.block_total_length;
-    std::copy(reinterpret_cast<const uint8_t*>(&block_hdr.block_total_length),
-              reinterpret_cast<const uint8_t*>(&block_hdr.block_total_length)
-                  + sizeof(block_hdr.block_total_length),
-              ptr + m_buffer_length - sizeof(block_hdr.block_total_length));
+    std::copy_n(reinterpret_cast<const uint8_t*>(&block_hdr.block_total_length),
+                sizeof(block_hdr.block_total_length),
+                ptr + m_buffer_length - sizeof(block_hdr.block_total_length));
     return true;
 }
 
