@@ -16,7 +16,7 @@ OP_LIB_DIRS += $(CAP_LIB_DIR)
 
 CAP_SOURCES :=
 CAP_DEPENDS :=
-CAP_LDLIBS :=
+CAP_LDLIBS := -lstdc++fs
 
 include $(CAP_SRC_DIR)/directory.mk
 
