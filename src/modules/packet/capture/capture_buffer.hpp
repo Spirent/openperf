@@ -8,15 +8,19 @@
 #include <queue>
 #include <assert.h>
 
+#include "timesync/chrono.hpp"
+
 namespace openperf::packetio::packets {
 struct packet_buffer;
 }
 
 namespace openperf::packet::capture {
 
+using clock = openperf::timesync::chrono::realtime;
+
 struct capture_packet_hdr
 {
-    uint64_t timestamp;
+    clock::time_point timestamp;
     uint32_t captured_len;
     uint32_t packet_len;
 };
@@ -24,11 +28,11 @@ struct capture_packet_hdr
 struct capture_packet
 {
     capture_packet_hdr hdr;
-    uint8_t* data;
+    const uint8_t* data;
 };
 
 // Pad capture data length to 4 byte boundaries
-static inline uint32_t pad_capture_data_len(uint32_t length)
+constexpr uint32_t pad_capture_data_len(uint32_t length)
 {
     return (length + 3) & ~(uint32_t)0x03;
 }
@@ -60,7 +64,7 @@ public:
         return true;
     }
 
-    auto get()
+    PacketPtrType get() const
     {
         assert(count <= buffer.size());
         assert(offset < count);
@@ -74,7 +78,11 @@ public:
     uint16_t count = 0;
     uint16_t offset = 0;
 
-    std::array<PacketPtrType, BurstSize> buffer;
+    // std::remove_const<> for pointers doesn't remove the const before the type
+    using PacketType = typename std::remove_const<
+        typename std::remove_pointer<PacketPtrType>::type>::type;
+
+    std::array<PacketType*, BurstSize> buffer;
 };
 
 /**
@@ -95,11 +103,8 @@ public:
     capture_burst_reader()
         : m_reader{}
     {}
-    capture_burst_reader(ReaderPtrType& reader)
-        : m_reader(std::move(reader))
-    {}
     capture_burst_reader(ReaderPtrType&& reader)
-        : m_reader(std::move(reader))
+        : m_reader(std::forward<ReaderPtrType>(reader))
     {
         read_packets();
     }
@@ -140,7 +145,7 @@ public:
         return (m_packets.count > 0);
     }
 
-    PacketPtrType get() { return m_packets.get(); }
+    const PacketPtrType get() const { return m_packets.get(); }
 
     bool next()
     {
@@ -164,9 +169,7 @@ public:
  * capture_reader_iterator objects represents the end
  * of the capture.
  */
-template <class ReaderPtrType,
-          typename PacketPtrType = capture_packet*,
-          uint16_t BurstSize = 8>
+template <class ReaderPtrType, typename PacketPtrType, uint16_t BurstSize = 8>
 class capture_reader_iterator
     : private capture_burst_reader<ReaderPtrType, PacketPtrType, BurstSize>
 {
@@ -174,12 +177,16 @@ class capture_reader_iterator
         capture_burst_reader<ReaderPtrType, PacketPtrType, BurstSize>;
 
 public:
+    // iterator traits
+    using difference_type = std::ptrdiff_t;
+    using value_type = typename std::remove_pointer<PacketPtrType>::type;
+    using pointer = PacketPtrType;
+    using reference = value_type&;
+    using iterator_category = std::forward_iterator_tag;
+
     capture_reader_iterator() {}
-    capture_reader_iterator(ReaderPtrType& reader)
-        : base_type(std::move(reader))
-    {}
     capture_reader_iterator(ReaderPtrType&& reader)
-        : base_type(std::move(reader))
+        : base_type(std::forward<ReaderPtrType>(reader))
     {}
 
     capture_reader_iterator(const capture_reader_iterator&) = delete;
@@ -208,12 +215,9 @@ public:
         return *this;
     }
 
-    typename std::remove_pointer<PacketPtrType>::type& operator*()
-    {
-        return *base_type::get();
-    }
+    reference operator*() const { return *base_type::get(); }
 
-    PacketPtrType operator->() { return base_type::get(); }
+    pointer operator->() const { return base_type::get(); }
 };
 
 /**
@@ -224,7 +228,8 @@ public:
 class capture_buffer_reader
 {
 public:
-    using iterator = capture_reader_iterator<capture_buffer_reader*>;
+    using const_iterator =
+        capture_reader_iterator<capture_buffer_reader*, const capture_packet*>;
 
     virtual ~capture_buffer_reader() = default;
 
@@ -271,12 +276,12 @@ public:
      * so when an iterator is being used the read_packets() function
      * should not be called directly.
      */
-    iterator begin() { return iterator(this); }
+    const_iterator begin() { return const_iterator(this); }
 
     /**
      * Gets an iterator object representing the end of the capture.
      */
-    iterator end() { return iterator(); }
+    const_iterator end() { return const_iterator(); }
 };
 
 /**
@@ -287,8 +292,9 @@ public:
 class capture_buffer
 {
 public:
-    using iterator =
-        capture_reader_iterator<std::unique_ptr<capture_buffer_reader>>;
+    using const_iterator =
+        capture_reader_iterator<std::unique_ptr<capture_buffer_reader>,
+                                const capture_packet*>;
 
     virtual ~capture_buffer() = default;
 
@@ -323,12 +329,12 @@ public:
     /**
      * Gets an iterator object to iterate over the capture.
      */
-    iterator begin() { return iterator(create_reader()); }
+    const_iterator begin() { return const_iterator(create_reader()); }
 
     /**
      * Gets an iterator object representing the end of the capture.
      */
-    iterator end() { return iterator(); }
+    const_iterator end() { return const_iterator(); }
 };
 
 /**
@@ -390,6 +396,8 @@ public:
     void rewind() override;
 
 protected:
+    void init();
+
     capture_buffer_mem& m_buffer;
     uint8_t* m_read_addr;
     uint8_t* m_end_addr;
@@ -452,6 +460,8 @@ public:
     void rewind() override;
 
 protected:
+    void init();
+
     capture_buffer_mem_wrap& m_buffer;
     uint8_t* m_start_addr;
     uint8_t* m_end_addr;
@@ -471,8 +481,10 @@ protected:
 class capture_buffer_file : public capture_buffer
 {
 public:
+    enum class keep_file { disabled, enabled };
+
     capture_buffer_file(std::string_view filename,
-                        bool keep_file = false,
+                        keep_file keep_file = keep_file::disabled,
                         uint32_t max_packet_size = UINT32_MAX);
     capture_buffer_file(const capture_buffer_file&) = delete;
     virtual ~capture_buffer_file();
@@ -493,7 +505,7 @@ public:
 
 private:
     std::string m_filename;
-    bool m_keep_file;
+    keep_file m_keep_file;
     bool m_full;
     uint32_t m_max_packet_size;
     FILE* m_fp_write;
@@ -539,7 +551,7 @@ template <class ReaderHolderPtrType> struct greater_than
         bool a_done = a->is_done();
         bool b_done = b->is_done();
 
-        if (a_done || b_done) { return (int)a_done > (int)b_done; }
+        if (a_done || b_done) { return a_done > b_done; }
 
         return a->get()->hdr.timestamp > b->get()->hdr.timestamp;
     }

@@ -90,10 +90,15 @@ bool pcap_buffer_writer::write_packet(const capture_packet& packet)
 {
     enhanced_packet_block block_hdr;
 
+    auto timestamp = std::chrono::time_point_cast<std::chrono::nanoseconds>(
+                         packet.hdr.timestamp)
+                         .time_since_epoch()
+                         .count();
+
     block_hdr.block_type = block_type::ENHANCED_PACKET;
     block_hdr.interface_id = 0;
-    block_hdr.timestamp_high = packet.hdr.timestamp >> 32;
-    block_hdr.timestamp_low = packet.hdr.timestamp;
+    block_hdr.timestamp_high = timestamp >> 32;
+    block_hdr.timestamp_low = timestamp;
     block_hdr.captured_len = packet.hdr.captured_len;
     block_hdr.packet_len = packet.hdr.packet_len;
     block_hdr.block_total_length = pad_block_length(

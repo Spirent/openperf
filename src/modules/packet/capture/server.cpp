@@ -394,8 +394,10 @@ create_capture_buffer([[maybe_unused]] const core::uuid& id,
     case capture_mode::FILE: {
         auto filename = openperf::core::to_string(id) + "-"
                         + std::to_string(worker) + ".pcapng";
-        return std::unique_ptr<capture_buffer>(new capture_buffer_file(
-            filename, false, sink.get_max_packet_size()));
+        return std::unique_ptr<capture_buffer>(
+            new capture_buffer_file(filename,
+                                    capture_buffer_file::keep_file::disabled,
+                                    sink.get_max_packet_size()));
     }
     }
 }

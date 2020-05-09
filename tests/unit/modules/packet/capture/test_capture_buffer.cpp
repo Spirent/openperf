@@ -188,7 +188,7 @@ verify_ipv4_incrementing_timestamp_and_packet_id(capture_buffer_reader& reader)
 {
     size_t counted = 0;
     uint16_t prev_packet_id = 0;
-    uint64_t prev_timestamp = 0;
+    clock::time_point prev_timestamp;
     std::array<capture_packet*, 16> packets;
 
     while (!reader.is_done()) {
@@ -197,8 +197,8 @@ verify_ipv4_incrementing_timestamp_and_packet_id(capture_buffer_reader& reader)
             INFO("Packet offset " << counted);
             REQUIRE(packet->hdr.packet_len != 0);
             REQUIRE(packet->hdr.captured_len <= packet->hdr.packet_len);
-            auto ipv4 =
-                reinterpret_cast<ipv4_hdr*>(packet->data + sizeof(eth_hdr));
+            auto ipv4 = reinterpret_cast<const ipv4_hdr*>(packet->data
+                                                          + sizeof(eth_hdr));
             if (counted > 0) {
                 REQUIRE(packet->hdr.timestamp > prev_timestamp);
                 REQUIRE(ntohs(ipv4->packet_id) == (prev_packet_id + 1));
@@ -216,13 +216,14 @@ size_t verify_ipv4_incrementing_timestamp_and_packet_id_iterator(
 {
     size_t counted = 0;
     uint16_t prev_packet_id = 0;
-    uint64_t prev_timestamp = 0;
+    clock::time_point prev_timestamp;
 
     for (auto& packet : reader) {
         INFO("Packet offset " << counted);
         REQUIRE(packet.hdr.packet_len != 0);
         REQUIRE(packet.hdr.captured_len <= packet.hdr.packet_len);
-        auto ipv4 = reinterpret_cast<ipv4_hdr*>(packet.data + sizeof(eth_hdr));
+        auto ipv4 =
+            reinterpret_cast<const ipv4_hdr*>(packet.data + sizeof(eth_hdr));
         if (counted > 0) {
             REQUIRE(packet.hdr.timestamp > prev_timestamp);
             REQUIRE(ntohs(ipv4->packet_id) == (prev_packet_id + 1));
@@ -369,7 +370,7 @@ TEST_CASE("capture buffer", "[packet_capture]")
             REQUIRE(stats.bytes == packet_count * packet_size);
 
             // Validate packets in buffer
-            int counted = 0;
+            uint32_t counted = 0;
             for (auto& packet : buffer) {
                 REQUIRE(packet.hdr.packet_len == packet_size);
                 REQUIRE(packet.hdr.captured_len == packet_size);
@@ -649,7 +650,9 @@ TEST_CASE("capture buffer", "[packet_capture]")
             SECTION("success, keep")
             {
                 {
-                    capture_buffer_file buffer(capture_filename, true);
+                    capture_buffer_file buffer(
+                        capture_filename,
+                        capture_buffer_file::keep_file::enabled);
                     REQUIRE(std::filesystem::exists(capture_filename));
                 }
                 REQUIRE(std::filesystem::exists(capture_filename));
