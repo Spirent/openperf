@@ -438,6 +438,127 @@ static void validate(const packet_template_ptr& packet,
     }
 }
 
+template <typename FieldModifier>
+static std::optional<size_t> get_modifier_length(const FieldModifier& mod)
+{
+    if (mod->listIsSet()) {
+        return (mod->getList().size());
+    } else if (mod->sequenceIsSet()) {
+        return (mod->getSequence()->getCount());
+    } else {
+        return {};
+    }
+}
+
+static std::optional<size_t> get_modifier_length(const modifier_ptr& modifier)
+{
+    if (modifier->fieldIsSet()) {
+        return (get_modifier_length(modifier->getField()));
+    } else if (modifier->ipv4IsSet()) {
+        return (get_modifier_length(modifier->getIpv4()));
+    } else if (modifier->ipv6IsSet()) {
+        return (get_modifier_length(modifier->getIpv6()));
+    } else if (modifier->macIsSet()) {
+        return (get_modifier_length(modifier->getMac()));
+    } else {
+        return {};
+    }
+}
+
+/*
+ * If the total is less than any value in the container, then
+ * we must have had an overflow.
+ */
+template <typename Container, typename T>
+bool has_overflow(const Container& values, T total)
+{
+    return (std::any_of(std::begin(values),
+                        std::end(values),
+                        [&](const auto& x) { return (total < x); }));
+}
+
+static size_t count_headers(const protocol_ptr& protocol,
+                            const size_t def_idx,
+                            const size_t pkt_idx,
+                            const size_t proto_idx,
+                            std::vector<std::string>& errors)
+{
+    if (!protocol->modifiersIsSet()) { return (1); }
+
+    const auto& mod_container = protocol->getModifiers();
+    const auto& modifiers = mod_container->getItems();
+    std::vector<std::optional<size_t>> modifier_lengths{};
+    std::transform(
+        std::begin(modifiers),
+        std::end(modifiers),
+        std::back_inserter(modifier_lengths),
+        [](const auto& modifier) { return (get_modifier_length(modifier)); });
+
+    auto mux_type = mod_container->tieIsSet()
+                        ? to_mux_type(mod_container->getTie())
+                        : mux_type::zip;
+
+    auto total = (mux_type == mux_type::zip
+                      ? std::accumulate(std::begin(modifier_lengths),
+                                        std::end(modifier_lengths),
+                                        0UL,
+                                        [](size_t sum, const auto& opt) {
+                                            return (sum += opt.value_or(0));
+                                        })
+                      : std::accumulate(std::begin(modifier_lengths),
+                                        std::end(modifier_lengths),
+                                        1UL,
+                                        [](size_t product, const auto& opt) {
+                                            return (product *= opt.value_or(1));
+                                        }));
+
+    if (has_overflow(modifier_lengths, total)) {
+        errors.emplace_back("Modifier expansion results in index overflow"
+                            + id_string(def_idx, pkt_idx, proto_idx) + ".");
+    }
+
+    return (total);
+}
+
+static size_t count_flows(const packet_template_ptr& packet,
+                          const size_t def_idx,
+                          const size_t pkt_idx,
+                          std::vector<std::string>& errors)
+{
+    const auto& protocols = packet->getProtocols();
+    std::vector<size_t> header_lengths{};
+    auto proto_idx = 1U;
+    std::transform(std::begin(protocols),
+                   std::end(protocols),
+                   std::back_inserter(header_lengths),
+                   [&](const auto& protocol) {
+                       return (count_headers(
+                           protocol, def_idx, pkt_idx, proto_idx++, errors));
+                   });
+
+    auto mux_type = packet->modifierTieIsSet()
+                        ? to_mux_type(packet->getModifierTie())
+                        : mux_type::zip;
+
+    auto total =
+        (mux_type == mux_type::zip ? std::accumulate(std::begin(header_lengths),
+                                                     std::end(header_lengths),
+                                                     1UL,
+                                                     std::lcm<size_t, size_t>)
+                                   : std::accumulate(std::begin(header_lengths),
+                                                     std::end(header_lengths),
+                                                     1UL,
+                                                     std::multiplies<>{}));
+
+    if (has_overflow(header_lengths, total)) {
+        errors.emplace_back(
+            "Packet template expansion results in index overflow"
+            + id_string(def_idx, pkt_idx) + ".");
+    }
+
+    return (total);
+}
+
 static void validate(const length_ptr& length,
                      const size_t def_idx,
                      std::vector<std::string>& errors)
@@ -544,11 +665,13 @@ static void validate(const definition_ptr& def,
                      std::vector<std::string>& errors)
 {
     auto pkt_idx = 1U;
+    auto nb_flows = 0ULL;
     const auto& packet = def->getPacket();
     if (!packet) {
         errors.emplace_back("Packet template is required" + id_string(def_idx)
                             + ".");
     } else {
+        nb_flows += count_flows(packet, def_idx, pkt_idx, errors);
         validate(packet, def_idx, pkt_idx++, errors);
     }
 
@@ -566,8 +689,24 @@ static void validate(const definition_ptr& def,
                             + ".");
     }
 
-    /* Maybe check signature config */
-    if (def->signatureIsSet()) { validate(def->getSignature(), errors); }
+    /*
+     * Flow limit depends on presence of a signature configuration. The
+     * signature only has room for 64k flow indexes.
+     */
+    if (def->signatureIsSet()) {
+        validate(def->getSignature(), errors);
+        if (nb_flows > signature_flow_limit) {
+            errors.emplace_back("Flow count of " + std::to_string(nb_flows)
+                                + " exceeds signature flow limit of "
+                                + std::to_string(signature_flow_limit)
+                                + id_string(def_idx) + ".");
+        }
+    } else if (nb_flows > api_flow_limit) {
+        errors.emplace_back("Flow count of " + std::to_string(nb_flows)
+                            + " exceeds flow limit of "
+                            + std::to_string(api_flow_limit)
+                            + id_string(def_idx) + ".");
+    }
 }
 
 static void validate(const duration_ptr& duration,

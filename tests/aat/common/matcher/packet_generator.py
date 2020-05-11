@@ -24,6 +24,8 @@ class _be_valid_packet_generator(Matcher):
 class _be_valid_packet_generator_config(Matcher):
     def _match(self, config):
         expect(config).to(be_a(client.models.PacketGeneratorConfig))
+        if (config.flow_count):
+            expect(config.flow_count).to(be_above_or_equal(1))
         expect(config.duration).to(be_valid_traffic_duration)
         expect(config.load).to(be_valid_traffic_load)
         expect(config.traffic).not_to(be_empty)

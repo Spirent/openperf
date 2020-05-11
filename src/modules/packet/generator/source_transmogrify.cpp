@@ -49,14 +49,30 @@ static std::chrono::milliseconds get_traffic_duration(
     }
 }
 
-static void populate_counters(
-    const traffic::counter& src,
+static void populate_flow_counters(
+    const source_result& result,
+    size_t flow_idx,
     std::shared_ptr<swagger::v1::model::PacketGeneratorFlowCounters>& dst)
 {
+    const auto& src = result.counters[flow_idx];
     dst->setOctetsActual(src.octet);
     dst->setPacketsActual(src.packet);
 
     if (src.packet) {
+        /* Calculate expected packets/octets */
+        auto exp_seq_packets = std::llround(
+            result.parent.packet_rate()
+            * std::chrono::duration_cast<std::chrono::duration<double>>(
+                src.last_ - src.first_));
+
+        const auto& sequence = result.parent.sequence();
+        auto exp_octets =
+            sequence.sum_flow_packet_lengths(flow_idx, exp_seq_packets);
+        auto exp_packets = exp_seq_packets * sequence.flow_packets(flow_idx)
+                           / sequence.flow_count();
+
+        dst->setOctetsIntended(exp_octets);
+        dst->setPacketsIntended(exp_packets);
         dst->setTimestampFirst(to_rfc3339(src.first_));
         dst->setTimestampLast(to_rfc3339(src.last_));
     }
@@ -76,10 +92,10 @@ static void populate_counters(
          * Use the actual recorded duration and target rate to generate
          * expected packet/octet counts.
          */
-        auto exp_packets =
+        auto exp_packets = std::llround(
             rate
-            * std::chrono::duration_cast<std::chrono::milliseconds>(
-                src.last_ - src.first_);
+            * std::chrono::duration_cast<std::chrono::duration<double>>(
+                src.last_ - src.first_));
         auto exp_octets = sequence.sum_packet_lengths(exp_packets);
 
         dst->setOctetsIntended(exp_octets);
@@ -97,6 +113,7 @@ generator_ptr to_swagger(const source& src)
     dst->setTargetId(src.target());
     dst->setActive(src.active());
     dst->setConfig(src.config());
+    dst->getConfig()->setFlowCount(src.sequence().flow_count());
 
     return (dst);
 }
@@ -181,7 +198,8 @@ generator_result_ptr to_swagger(const core::uuid& id,
 
 tx_flow_ptr to_swagger(const core::uuid& id,
                        const core::uuid& result_id,
-                       const traffic::counter& counter)
+                       const source_result& result,
+                       size_t flow_idx)
 {
     auto dst = std::make_unique<swagger::v1::model::TxFlow>();
 
@@ -190,14 +208,27 @@ tx_flow_ptr to_swagger(const core::uuid& id,
 
     auto flow_counters =
         std::make_shared<swagger::v1::model::PacketGeneratorFlowCounters>();
-    populate_counters(counter, flow_counters);
+    populate_flow_counters(result, flow_idx, flow_counters);
     dst->setCounters(flow_counters);
 
     return (dst);
 }
 
+/*
+ * Generator result ID's contain the upper 10 bytes of a random UUID. The lower
+ * 6 bytes are used to indicate the flow index inside the result.
+ */
+core::uuid get_generator_result_id()
+{
+    auto id = core::uuid::random();
+    std::fill_n(id.data() + 10, 6, 0);
+    return (id);
+}
+
 core::uuid tx_flow_id(const core::uuid& result_id, size_t flow_idx)
 {
+    assert(flow_idx < 0xffffffffffff);
+    flow_idx += 1; /* offset flow idx by 1 */
     auto tmp = std::array<uint8_t, 16>{result_id[0],
                                        result_id[1],
                                        result_id[2],
@@ -206,8 +237,8 @@ core::uuid tx_flow_id(const core::uuid& result_id, size_t flow_idx)
                                        result_id[5],
                                        result_id[6],
                                        result_id[7],
-                                       static_cast<uint8_t>(flow_idx >> 56),
-                                       static_cast<uint8_t>(flow_idx >> 48),
+                                       result_id[8],
+                                       result_id[9],
                                        static_cast<uint8_t>(flow_idx >> 40),
                                        static_cast<uint8_t>(flow_idx >> 32),
                                        static_cast<uint8_t>(flow_idx >> 24),
@@ -221,14 +252,13 @@ core::uuid tx_flow_id(const core::uuid& result_id, size_t flow_idx)
 std::pair<core::uuid, size_t> tx_flow_tuple(const core::uuid& id)
 {
     auto min_id = core::uuid{};
-    std::copy_n(id.data(), 8, min_id.data());
+    std::copy_n(id.data(), 10, min_id.data());
 
     size_t flow_idx =
-        (static_cast<size_t>(id[8]) << 56 | static_cast<size_t>(id[9]) << 48
-         | static_cast<size_t>(id[10]) << 40 | static_cast<size_t>(id[11]) << 32
+        (static_cast<size_t>(id[10]) << 40 | static_cast<size_t>(id[11]) << 32
          | id[12] << 24 | id[13] << 16 | id[14] << 8 | id[15]);
 
-    return {min_id, flow_idx};
+    return {min_id, flow_idx - 1};
 }
 
 traffic::definition_container to_definitions(

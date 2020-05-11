@@ -14,6 +14,13 @@ protected:
     scalar_container m_template_scalars;
 
 public:
+    /*
+     * This sequence generator combines multiple weighted packet templates
+     * into a single sequence of packets. The generated output consists of
+     * a sequence of index pairs:
+     * - the first item indicates the packet template
+     * - the second item indicates the index in the packet sequence
+     */
     using view_type = std::pair<uint16_t, uint16_t>;
     using iterator = view_iterator<sequence_generator>;
     using const_iterator = const iterator;
@@ -28,6 +35,11 @@ public:
                        std::back_inserter(m_template_sizes),
                        [](auto&& item) {
                            const auto size = std::get<Template>(item).size();
+                           /*
+                            * XXX: this limitation is arbitrary, but done in the
+                            * interest of keeping the generated sequence as
+                            * small as possible.
+                            */
                            assert(size <= std::numeric_limits<uint16_t>::max());
                            return (size);
                        });
@@ -253,7 +265,7 @@ sequence::sequence(definition_container&& definitions, order_type order)
                   std::back_inserter(m_packet_indexes));
 
         /*
-         * Sequential generaiton iterates over each packet template in turn,
+         * Sequential generation iterates over each packet template in turn,
          * so the total size is just the sum of weight * definition length.
          * Unfortunately, there is no std algorithm for that, so use a custom
          * one.
@@ -329,6 +341,53 @@ size_t sequence::sum_packet_lengths(size_t idx) const
     if (q.quot) { sum += q.quot * sum_packet_lengths(); }
 
     return (sum);
+}
+
+template <typename InputIt, typename T, typename FilterOp, typename BinaryOp>
+T filter_accumulate(
+    InputIt cursor, InputIt last, T total, FilterOp&& filter, BinaryOp&& op)
+{
+    while (cursor != last) {
+        if (filter(*cursor)) { total = op(std::move(total), *cursor); }
+        ++cursor;
+    }
+
+    return (total);
+}
+
+size_t sequence::sum_flow_packet_lengths(unsigned flow_idx) const
+{
+    return (filter_accumulate(
+        std::begin(*this),
+        std::end(*this),
+        0UL,
+        [&](auto&& tuple) { return (std::get<0>(tuple) == flow_idx); },
+        [](size_t sum, auto&& tuple) { return (sum += std::get<5>(tuple)); }));
+}
+
+size_t sequence::sum_flow_packet_lengths(unsigned flow_idx,
+                                         size_t pkt_idx) const
+{
+    auto q = lldiv(pkt_idx, m_packet_indexes.size());
+
+    auto sum = filter_accumulate(
+        std::begin(*this),
+        std::next(std::begin(*this), q.rem),
+        0UL,
+        [&](auto&& tuple) { return (std::get<0>(tuple) == flow_idx); },
+        [](size_t sum, auto&& tuple) { return (sum += std::get<5>(tuple)); });
+
+    if (q.quot) { sum += q.quot * sum_flow_packet_lengths(flow_idx); }
+
+    return (sum);
+}
+
+size_t sequence::flow_packets(unsigned flow_idx) const
+{
+    return (
+        std::count_if(std::begin(*this), std::end(*this), [&](auto&& tuple) {
+            return (std::get<0>(tuple) == flow_idx);
+        }));
 }
 
 bool sequence::has_signature_config() const
