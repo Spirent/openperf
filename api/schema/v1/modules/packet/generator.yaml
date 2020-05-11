@@ -448,6 +448,11 @@ definitions:
     properties:
       duration:
         $ref: "#/definitions/TrafficDuration"
+      flow_count:
+        type: integer
+        description: Specifies the total number of flows in all traffic definitions
+        format: int64
+        minimum: 1
       load:
         $ref: "#/definitions/TrafficLoad"
       order:
