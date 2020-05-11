@@ -32,6 +32,7 @@ class PacketGeneratorConfig(object):
     """
     swagger_types = {
         'duration': 'TrafficDuration',
+        'flow_count': 'int',
         'load': 'TrafficLoad',
         'order': 'str',
         'traffic': 'list[TrafficDefinition]'
@@ -39,21 +40,25 @@ class PacketGeneratorConfig(object):
 
     attribute_map = {
         'duration': 'duration',
+        'flow_count': 'flow_count',
         'load': 'load',
         'order': 'order',
         'traffic': 'traffic'
     }
 
-    def __init__(self, duration=None, load=None, order=None, traffic=None):  # noqa: E501
+    def __init__(self, duration=None, flow_count=None, load=None, order=None, traffic=None):  # noqa: E501
         """PacketGeneratorConfig - a model defined in Swagger"""  # noqa: E501
 
         self._duration = None
+        self._flow_count = None
         self._load = None
         self._order = None
         self._traffic = None
         self.discriminator = None
 
         self.duration = duration
+        if flow_count is not None:
+            self.flow_count = flow_count
         self.load = load
         if order is not None:
             self.order = order
@@ -78,6 +83,28 @@ class PacketGeneratorConfig(object):
         :type: TrafficDuration
         """
         self._duration = duration
+
+    @property
+    def flow_count(self):
+        """Gets the flow_count of this PacketGeneratorConfig.  # noqa: E501
+
+        Specifies the total number of flows in all traffic definitions  # noqa: E501
+
+        :return: The flow_count of this PacketGeneratorConfig.  # noqa: E501
+        :rtype: int
+        """
+        return self._flow_count
+
+    @flow_count.setter
+    def flow_count(self, flow_count):
+        """Sets the flow_count of this PacketGeneratorConfig.
+
+        Specifies the total number of flows in all traffic definitions  # noqa: E501
+
+        :param flow_count: The flow_count of this PacketGeneratorConfig.  # noqa: E501
+        :type: int
+        """
+        self._flow_count = flow_count
 
     @property
     def load(self):

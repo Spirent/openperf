@@ -4,6 +4,7 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **duration** | [**TrafficDuration**](TrafficDuration.md) |  | 
+**flow_count** | **int** | Specifies the total number of flows in all traffic definitions | [optional] 
 **load** | [**TrafficLoad**](TrafficLoad.md) |  | 
 **order** | **str** | Tells the generator how to sequence multiple traffic definitions. Only needed if more than one traffic definition is present.  | [optional] 
 **traffic** | [**list[TrafficDefinition]**](TrafficDefinition.md) | List of traffic definitions | 
