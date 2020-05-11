@@ -58,6 +58,13 @@ public:
     std::shared_ptr<TrafficDuration> getDuration() const;
     void setDuration(std::shared_ptr<TrafficDuration> value);
         /// <summary>
+    /// Specifies the total number of flows in all traffic definitions
+    /// </summary>
+    int64_t getFlowCount() const;
+    void setFlowCount(int64_t value);
+    bool flowCountIsSet() const;
+    void unsetFlow_count();
+    /// <summary>
     /// 
     /// </summary>
     std::shared_ptr<TrafficLoad> getLoad() const;
@@ -77,6 +84,8 @@ public:
 protected:
     std::shared_ptr<TrafficDuration> m_Duration;
 
+    int64_t m_Flow_count;
+    bool m_Flow_countIsSet;
     std::shared_ptr<TrafficLoad> m_Load;
 
     std::string m_Order;

@@ -69,6 +69,9 @@ using filter_map_ptr = std::unique_ptr<filter_map_type>;
 inline constexpr uint16_t min_packet_length = 64;
 inline constexpr uint16_t max_packet_length = 9 * 1024;
 
+inline constexpr size_t signature_flow_limit = 64 * 1024 - 1;
+inline constexpr size_t api_flow_limit = (1ULL << 48) - 1;
+
 /*
  * Provide some mappings between REST API strings and strict
  * types. Since each set of strings is relatively small, we
@@ -265,7 +268,10 @@ generator_result_ptr to_swagger(const core::uuid& id,
 
 tx_flow_ptr to_swagger(const core::uuid& id,
                        const core::uuid& result_id,
-                       const traffic::counter& counter);
+                       const source_result& result,
+                       size_t flow_idx);
+
+core::uuid get_generator_result_id();
 
 core::uuid tx_flow_id(const core::uuid&, size_t);
 std::pair<core::uuid, size_t> tx_flow_tuple(const core::uuid&);

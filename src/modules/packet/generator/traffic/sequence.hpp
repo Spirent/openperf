@@ -18,29 +18,54 @@ using definition_container = std::vector<definition>;
 class sequence
 {
 public:
-    using view_type = std::tuple<unsigned,
-                                 const uint8_t*,
-                                 packetio::packet::header_lengths,
-                                 packetio::packet::packet_type::flags,
-                                 std::optional<signature_config>,
-                                 uint16_t>;
+    /* Everything needed to generate a packet: */
+    using view_type =
+        std::tuple<unsigned,                             /* flow idx */
+                   const uint8_t*,                       /* pointer to header */
+                   packetio::packet::header_lengths,     /* header length */
+                   packetio::packet::packet_type::flags, /* protocol flags */
+                   std::optional<signature_config>,      /* signature? */
+                   uint16_t>;                            /* packet length  */
     using iterator = view_iterator<sequence>;
     using const_iterator = const iterator;
 
+    /* Named constructors to simplify instantiation. */
     static sequence round_robin_sequence(definition_container&& definitions);
     static sequence sequential_sequence(definition_container&& definitions);
 
     uint16_t max_packet_length() const;
 
+    /* Retrieves the sum of packet lengths for a full sequence of packets. */
     size_t sum_packet_lengths() const;
+
+    /*
+     * Retrieves the sum of packet lengths from 0 to an arbitrary sequence
+     * index.
+     */
     size_t sum_packet_lengths(size_t pkt_idx) const;
 
+    /* Same as above, but for specific flow indexes */
+    size_t sum_flow_packet_lengths(unsigned flow_idx) const;
+    size_t sum_flow_packet_lengths(unsigned flow_idx, size_t pkt_idx) const;
+    /*
+     * Indicates that at least one packet in the sequence contains a
+     * signature configuration.
+     */
     bool has_signature_config() const;
 
+    /* The number of unique headers in the sequence. */
     size_t flow_count() const;
 
+    /* The number of occurences of the specified flow index in the sequence */
+    size_t flow_packets(unsigned flow_idx) const;
+
+    /*
+     * The size of the sequence in terms of header/length pairs. Each header
+     * is guaranteed to appear at least once in `size()` packets.
+     */
     size_t size() const;
 
+    /* Bulk retrieval of packet views from [start_idx, start_idx + count) */
     uint16_t unpack(size_t start_idx,
                     uint16_t count,
                     unsigned flow_indexes[],

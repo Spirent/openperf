@@ -327,6 +327,13 @@ reply_msg server::handle_request(const request_delete_generator& request)
     return (reply_ok{});
 }
 
+template <typename Map> static core::uuid get_unique_result_id(const Map& map)
+{
+    auto id = api::get_generator_result_id();
+    while (map.count(id)) { id = api::get_generator_result_id(); }
+    return (id);
+}
+
 reply_msg server::handle_request(const request_start_generator& request)
 {
     auto found = binary_find(std::begin(m_sources),
@@ -341,7 +348,8 @@ reply_msg server::handle_request(const request_start_generator& request)
     if (found->active()) { return (to_error(error_type::POSIX, EINVAL)); }
 
     auto& impl = found->template get<source>();
-    auto item = m_results.emplace(core::uuid::random(),
+
+    auto item = m_results.emplace(get_unique_result_id(m_results),
                                   std::make_unique<source_result>(impl));
     assert(item.second); /* source_result inserted */
 
@@ -472,24 +480,24 @@ reply_msg server::handle_request(const request_list_tx_flows& request)
 
     auto reply = reply_tx_flows{};
 
-    std::for_each(
-        std::begin(m_results),
-        std::end(m_results),
-        [&](const auto& result_pair) {
-            if (!compare(result_pair)) { return; }
+    std::for_each(std::begin(m_results),
+                  std::end(m_results),
+                  [&](const auto& result_pair) {
+                      if (!compare(result_pair)) { return; }
 
-            const auto& flows = result_pair.second->counters;
-            auto offset = 0U;
-            std::transform(
-                std::begin(flows),
-                std::end(flows),
-                std::back_inserter(reply.flows),
-                [&](const auto& flow) {
-                    return (to_swagger(tx_flow_id(result_pair.first, offset++),
-                                       result_pair.first,
-                                       flow));
-                });
-        });
+                      const auto& flows = result_pair.second->counters;
+                      auto offset = 0U;
+                      std::generate_n(
+                          std::back_inserter(reply.flows), flows.size(), [&]() {
+                              auto flow_ptr = to_swagger(
+                                  tx_flow_id(result_pair.first, offset),
+                                  result_pair.first,
+                                  *result_pair.second,
+                                  offset);
+                              offset++;
+                              return (flow_ptr);
+                          });
+                  });
 
     return (reply);
 }
@@ -510,8 +518,7 @@ reply_msg server::handle_request(const request_get_tx_flow& request)
     }
 
     auto reply = reply_tx_flows{};
-    reply.flows.emplace_back(
-        to_swagger(*id, it->first, result->counters[flow_idx]));
+    reply.flows.emplace_back(to_swagger(*id, it->first, *result, flow_idx));
     return (reply);
 }
 

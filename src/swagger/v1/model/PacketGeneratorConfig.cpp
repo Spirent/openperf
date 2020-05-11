@@ -19,6 +19,8 @@ namespace model {
 
 PacketGeneratorConfig::PacketGeneratorConfig()
 {
+    m_Flow_count = 0L;
+    m_Flow_countIsSet = false;
     m_Order = "";
     m_OrderIsSet = false;
     
@@ -38,6 +40,10 @@ nlohmann::json PacketGeneratorConfig::toJson() const
     nlohmann::json val = nlohmann::json::object();
 
     val["duration"] = ModelBase::toJson(m_Duration);
+    if(m_Flow_countIsSet)
+    {
+        val["flow_count"] = m_Flow_count;
+    }
     val["load"] = ModelBase::toJson(m_Load);
     if(m_OrderIsSet)
     {
@@ -58,6 +64,10 @@ nlohmann::json PacketGeneratorConfig::toJson() const
 
 void PacketGeneratorConfig::fromJson(nlohmann::json& val)
 {
+    if(val.find("flow_count") != val.end())
+    {
+        setFlowCount(val.at("flow_count"));
+    }
     if(val.find("order") != val.end())
     {
         setOrder(val.at("order"));
@@ -94,6 +104,23 @@ void PacketGeneratorConfig::setDuration(std::shared_ptr<TrafficDuration> value)
 {
     m_Duration = value;
     
+}
+int64_t PacketGeneratorConfig::getFlowCount() const
+{
+    return m_Flow_count;
+}
+void PacketGeneratorConfig::setFlowCount(int64_t value)
+{
+    m_Flow_count = value;
+    m_Flow_countIsSet = true;
+}
+bool PacketGeneratorConfig::flowCountIsSet() const
+{
+    return m_Flow_countIsSet;
+}
+void PacketGeneratorConfig::unsetFlow_count()
+{
+    m_Flow_countIsSet = false;
 }
 std::shared_ptr<TrafficLoad> PacketGeneratorConfig::getLoad() const
 {
