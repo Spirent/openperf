@@ -68,8 +68,8 @@ static void populate_flow_counters(
         const auto& sequence = result.parent.sequence();
         auto exp_octets =
             sequence.sum_flow_packet_lengths(flow_idx, exp_seq_packets);
-        auto exp_packets = exp_seq_packets * sequence.flow_packets(flow_idx)
-                           / sequence.flow_count();
+        auto exp_packets =
+            exp_seq_packets * sequence.flow_packets(flow_idx) / sequence.size();
 
         dst->setOctetsIntended(exp_octets);
         dst->setPacketsIntended(exp_packets);
@@ -210,6 +210,11 @@ tx_flow_ptr to_swagger(const core::uuid& id,
         std::make_shared<swagger::v1::model::PacketGeneratorFlowCounters>();
     populate_flow_counters(result, flow_idx, flow_counters);
     dst->setCounters(flow_counters);
+
+    if (auto stream_id =
+            result.parent.sequence().get_signature_stream_id(flow_idx)) {
+        dst->setStreamId(*stream_id);
+    }
 
     return (dst);
 }
