@@ -1,3 +1,4 @@
+#include <tuple>
 #include <vector>
 
 #include "catch.hpp"
@@ -212,20 +213,49 @@ TEST_CASE("signature functions", "[spirent-pga]")
                           REQUIRE(sig.cheater == 0);
                       });
 
-        /* Make sure the presence of the CRC doesn't impede decoding */
+        /* Verify that we can decode the CRC's */
+        std::vector<int> crc_matches(nb_signatures);
+        auto count = pga_signatures_crc_filter(
+            const_cast<const uint8_t**>(ref_signature_ptrs.data()),
+            nb_signatures,
+            crc_matches.data());
+        REQUIRE(count == nb_signatures);
+
+        /* Verify that we can decode all signature data correctly */
         std::vector<uint32_t> out_stream_ids(nb_signatures);
         std::vector<uint32_t> out_sequence_nums(nb_signatures);
         std::vector<uint64_t> out_timestamps(nb_signatures);
         std::vector<int> out_flags(nb_signatures);
 
         /* XXX: why is this cast needed at all?!?! */
-        auto count =
-            pga_signatures_decode((const uint8_t**)ref_signature_ptrs.data(),
-                                  ref_signature_ptrs.size(),
-                                  out_stream_ids.data(),
-                                  out_sequence_nums.data(),
-                                  out_timestamps.data(),
-                                  out_flags.data());
-        REQUIRE(count == nb_signatures);
+        pga_signatures_decode(
+            const_cast<const uint8_t**>(ref_signature_ptrs.data()),
+            ref_signature_ptrs.size(),
+            out_stream_ids.data(),
+            out_sequence_nums.data(),
+            out_timestamps.data(),
+            out_flags.data());
+        /* Verify decoded signature data */
+        REQUIRE(std::equal(std::begin(stream_ids),
+                           std::end(stream_ids),
+                           std::begin(out_stream_ids)));
+        REQUIRE(std::equal(std::begin(sequence_nums),
+                           std::end(sequence_nums),
+                           std::begin(out_sequence_nums)));
+        REQUIRE(std::equal(std::begin(timestamps),
+                           std::end(timestamps),
+                           std::begin(out_timestamps)));
+        REQUIRE(std::equal(std::begin(flags),
+                           std::end(flags),
+                           std::begin(out_flags),
+                           [](const auto& lhs, const auto& rhs) {
+                               return (
+                                   std::make_tuple(pga_signature_status::valid,
+                                                   pga_prbs_flag(lhs),
+                                                   pga_timestamp_flag(lhs))
+                                   == std::make_tuple(pga_status_flag(rhs),
+                                                      pga_prbs_flag(rhs),
+                                                      pga_timestamp_flag(rhs)));
+                           }));
     }
 }

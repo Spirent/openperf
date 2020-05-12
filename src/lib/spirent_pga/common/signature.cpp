@@ -173,7 +173,7 @@ void encode(uint8_t* destinations[],
      */
     std::for_each(destinations, destinations + count, [](auto& destination) {
         auto signature = reinterpret_cast<spirent_signature*>(destination);
-        signature->crc = calculate_crc16(signature->data, 16);
+        signature->crc = htons(calculate_crc16(signature->data, 16));
         signature->cheater = 0;
     });
 }
