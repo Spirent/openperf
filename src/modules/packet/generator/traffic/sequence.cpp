@@ -382,20 +382,40 @@ size_t sequence::sum_flow_packet_lengths(unsigned flow_idx,
     return (sum);
 }
 
-size_t sequence::flow_packets(unsigned flow_idx) const
-{
-    return (
-        std::count_if(std::begin(*this), std::end(*this), [&](auto&& tuple) {
-            return (std::get<0>(tuple) == flow_idx);
-        }));
-}
-
 bool sequence::has_signature_config() const
 {
     const auto& signature_configs = m_definitions.get<3>();
     return (std::any_of(std::begin(signature_configs),
                         std::end(signature_configs),
                         [](const auto& item) { return (item.has_value()); }));
+}
+
+inline uint32_t to_stream_id(uint16_t stream_id, uint16_t flow_id)
+{
+    return (stream_id << 16 | flow_id + 1);
+}
+
+std::optional<uint32_t>
+sequence::get_signature_stream_id(unsigned flow_idx) const
+{
+    /*
+     * Find the definition index for this flow index. Use
+     * our list of offsets to determine which definition contains
+     * this flow.
+     */
+    auto cursor = std::prev(std::upper_bound(
+        std::begin(m_flow_offsets), std::end(m_flow_offsets), flow_idx));
+    assert(cursor != std::end(m_flow_offsets));
+    auto def_idx = std::distance(std::begin(m_flow_offsets), cursor);
+
+    const auto& signature_configs = m_definitions.get<3>();
+    auto sig_config = signature_configs[def_idx];
+    if (!sig_config) { return (std::nullopt); }
+
+    assert(flow_idx >= m_flow_offsets[def_idx]);
+
+    return (to_stream_id(sig_config->stream_id,
+                         flow_idx - m_flow_offsets[def_idx]));
 }
 
 size_t sequence::flow_count() const
@@ -406,6 +426,14 @@ size_t sequence::flow_count() const
         std::end(packet_templates),
         0UL,
         [](size_t lhs, const auto& rhs) { return (lhs + rhs.size()); }));
+}
+
+size_t sequence::flow_packets(unsigned flow_idx) const
+{
+    return (
+        std::count_if(std::begin(*this), std::end(*this), [&](auto&& tuple) {
+            return (std::get<0>(tuple) == flow_idx);
+        }));
 }
 
 size_t sequence::size() const { return (m_size); }
@@ -513,6 +541,18 @@ OutputIt ring_transform_n(InputIt first,
     return (d_cursor);
 }
 
+inline std::optional<signature_config>
+maybe_update_signature_config(const std::optional<signature_config>& config,
+                              uint16_t flow_idx)
+{
+    if (!config) return (std::nullopt);
+
+    return (
+        signature_config{.stream_id = to_stream_id(config->stream_id, flow_idx),
+                         .flags = config->flags,
+                         .fill = config->fill});
+}
+
 uint16_t sequence::unpack(size_t start_idx,
                           uint16_t count,
                           unsigned flow_indexes[],
@@ -541,7 +581,8 @@ uint16_t sequence::unpack(size_t start_idx,
                              packet_templates[pair.first][pair.second],
                              packet_templates[pair.first].header_lengths(),
                              packet_templates[pair.first].header_flags(),
-                             sig_configs[pair.first]));
+                             maybe_update_signature_config(
+                                 sig_configs[pair.first], pair.second)));
                      });
 
     const auto& length_templates = m_definitions.get<1>();
@@ -572,7 +613,8 @@ sequence::view_type sequence::operator[](size_t idx) const
                             packet_templates[pkt_key.first][pkt_key.second],
                             packet_templates[pkt_key.first].header_lengths(),
                             packet_templates[pkt_key.first].header_flags(),
-                            sig_configs[pkt_key.first],
+                            maybe_update_signature_config(
+                                sig_configs[pkt_key.first], pkt_key.second),
                             length_templates[pkt_key.first][len_idx]));
 }
 
