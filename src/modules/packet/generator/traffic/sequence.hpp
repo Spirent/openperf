@@ -53,6 +53,9 @@ public:
      */
     bool has_signature_config() const;
 
+    /* Retrieve the stream if for the specified flow, if available. */
+    std::optional<uint32_t> get_signature_stream_id(unsigned flow_idx) const;
+
     /* The number of unique headers in the sequence. */
     size_t flow_count() const;
 
