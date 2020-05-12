@@ -97,7 +97,7 @@ Start block generator command returns Block Generator Result, created for the pa
 Statistics of block I/O load generation, unique for each block generator start. After activity has stopped it is independent from block generator, generated this result.
 Active generator result cannot be deleted.
 
-### Block generato result api model
+### Block generator result api model
 
 ```json
 {
