@@ -19,9 +19,12 @@ struct generator_core_stats
 {
     uint64_t available;
     uint64_t utilization;
-    uint64_t system;
-    uint64_t user;
-    uint64_t steal;
+    std::chrono::nanoseconds system;
+    std::chrono::nanoseconds user;
+    std::chrono::nanoseconds steal;
+    //uint64_t system;
+    //uint64_t user;
+    //uint64_t steal;
     uint64_t error;
     std::vector<generator_target_stats> targets;
 };

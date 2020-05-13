@@ -14,6 +14,12 @@ CPU_SOURCES += \
 	task_cpu.cpp \
 	cpu_info.cpp
 
+ifeq ($(PLATFORM), linux)
+	CPU_SOURCES += cpu_stats_linux.cpp
+else ifneq ($(PLATFORM), osv)
+	CPU_SOURCES += cpu_stats.cpp
+endif
+
 include $(PGA_SRC_DIR)/ispc/directory.mk
 
 CPU_VERSIONED_FILES := init.cpp
