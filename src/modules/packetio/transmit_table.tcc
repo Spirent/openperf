@@ -29,9 +29,6 @@ typename transmit_table<Source>::key_type transmit_table<Source>::to_key(
  */
 template <typename Source> struct key_comparator
 {
-    static constexpr auto key_port_idx = transmit_table<Source>::key_port_idx;
-    static constexpr auto key_queue_idx = transmit_table<Source>::key_queue_idx;
-
     bool operator()(const typename transmit_table<Source>::key_type& left,
                     const typename transmit_table<Source>::value_type& right)
     {
@@ -40,6 +37,23 @@ template <typename Source> struct key_comparator
 
     bool operator()(const typename transmit_table<Source>::value_type& left,
                     const typename transmit_table<Source>::key_type& right)
+    {
+        return (left.first < right);
+    }
+};
+
+template <typename Source> struct noalloc_key_comparator
+{
+    bool
+    operator()(const typename transmit_table<Source>::noalloc_key_type& left,
+               const typename transmit_table<Source>::value_type& right)
+    {
+        return (left < right.first);
+    }
+
+    bool
+    operator()(const typename transmit_table<Source>::value_type& left,
+               const typename transmit_table<Source>::noalloc_key_type& right)
     {
         return (left.first < right);
     }
@@ -149,6 +163,19 @@ const Source* transmit_table<Source>::get_source(
     auto map = m_sources.load(std::memory_order_consume);
     auto range = std::equal_range(
         map->begin(), map->end(), key, key_comparator<Source>{});
+    assert(std::distance(range.first, range.second) <= 1);
+    return (std::distance(range.first, range.second) == 1
+                ? std::addressof(range.first->get().second)
+                : nullptr);
+}
+
+template <typename Source>
+const Source* transmit_table<Source>::get_source(
+    const transmit_table<Source>::noalloc_key_type& key) const
+{
+    auto map = m_sources.load(std::memory_order_consume);
+    auto range = std::equal_range(
+        map->begin(), map->end(), key, noalloc_key_comparator<Source>{});
     assert(std::distance(range.first, range.second) <= 1);
     return (std::distance(range.first, range.second) == 1
                 ? std::addressof(range.first->get().second)
