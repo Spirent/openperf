@@ -13,9 +13,18 @@
 
 namespace openperf::packet::generator::traffic::modifier {
 
+/* Seems like a safe default... */
+using random_gen = std::default_random_engine;
+
+/*
+ * XXX: We can't lazily shuffle a range, so we use a mutable vector
+ * to store indexes which we can shuffle. This is a quick and dirty
+ * way to add shuffle support to our modifiers.
+ */
 template <typename Field> struct list_config
 {
-    std::vector<Field> items;
+    mutable std::vector<Field> items;
+    bool permute = false;
 
     size_t length() const noexcept { return (items.size()); }
 };
@@ -26,6 +35,9 @@ template <typename Field> struct sequence_config
     Field first = Field{0};
     std::optional<Field> last = std::nullopt;
     unsigned count = 0;
+
+    mutable std::vector<size_t> indexes;
+    bool permute = false;
 
     size_t length() const noexcept { return (count); }
 };
@@ -73,6 +85,10 @@ sequence_config_address_step(const sequence_config<AddressField>& config)
 
 template <typename Field> auto to_list_range(const list_config<Field>& config)
 {
+    if (config.permute) {
+        ranges::actions::shuffle(config.items, random_gen{});
+    }
+
     return (ranges::views::all(config.items));
 }
 
@@ -82,7 +98,18 @@ auto to_sequence_field_range(const sequence_config<EndianField>& config)
     static_assert(is_endian_field<EndianField>::value);
     static_assert(EndianField::width <= 4);
 
-    auto iota = ranges::views::iota(0U, config.count + config.skip.size());
+    const auto n = config.count + config.skip.size();
+    auto iota = ranges::views::iota(0U, n);
+
+    config.indexes.clear();
+    config.indexes.reserve(n);
+
+    if (config.permute) {
+        config.indexes |= ranges::actions::push_back(iota)
+                          | ranges::actions::shuffle(random_gen{});
+    } else {
+        config.indexes |= ranges::actions::push_back(iota);
+    }
 
     auto transform = ranges::views::transform(
         [&, step = sequence_config_field_step(config)](unsigned idx) {
@@ -102,7 +129,7 @@ auto to_sequence_field_range(const sequence_config<EndianField>& config)
      * Note: the trailing take_exactly is to handle cases where the items to
      * skip aren't actually in the generated sequence.
      */
-    return (iota | transform | filter
+    return (ranges::views::all(config.indexes) | transform | filter
             | ranges::views::take_exactly(config.count));
 }
 
@@ -111,7 +138,18 @@ auto to_sequence_address_range(const sequence_config<AddressField>& config)
 {
     static_assert(!is_endian_field<AddressField>::value);
 
-    auto iota = ranges::views::iota(0U, config.count + config.skip.size());
+    const auto n = config.count + config.skip.size();
+    auto iota = ranges::views::iota(0U, n);
+
+    config.indexes.clear();
+    config.indexes.reserve(n);
+
+    if (config.permute) {
+        config.indexes |= ranges::actions::push_back(iota)
+                          | ranges::actions::shuffle(random_gen{});
+    } else {
+        config.indexes |= ranges::actions::push_back(iota);
+    }
 
     auto transform = ranges::views::transform(
         [&, step = sequence_config_address_step(config)](unsigned idx) {
@@ -129,7 +167,7 @@ auto to_sequence_address_range(const sequence_config<AddressField>& config)
      * Note: the trailing take_exactly is to handle cases where the items to
      * skip aren't actually in the generated sequence.
      */
-    return (iota | transform | filter
+    return (ranges::views::all(config.indexes) | transform | filter
             | ranges::views::take_exactly(config.count));
 }
 
