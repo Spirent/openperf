@@ -91,7 +91,8 @@ reply_msg server::handle_request(const request_cpu_generator_stop& request)
 
 reply_msg server::handle_request(const request_cpu_generator_bulk_start& request)
 {
-    std::forward_list<std::pair<std::string, std::string>> not_runned_before;
+    using string_pair = std::pair<std::string, std::string>;
+    std::forward_list<string_pair> not_runned_before;
     auto rollback = [&not_runned_before,this]() {
         for (auto pair : not_runned_before) {
             m_generator_stack->stop_generator(pair.first);
@@ -100,7 +101,7 @@ reply_msg server::handle_request(const request_cpu_generator_bulk_start& request
     };
 
     auto reply = reply_cpu_generator_results{};
-    for (auto& id : *request.ids) {
+    for (auto & id : *request.ids) {
         auto gen = m_generator_stack->generator(id);
         if (gen == nullptr) {
             rollback();
@@ -128,10 +129,13 @@ reply_msg server::handle_request(const request_cpu_generator_bulk_start& request
 
 reply_msg server::handle_request(const request_cpu_generator_bulk_stop& request)
 {
-    for (auto& id : *request.ids)
-        if (!m_generator_stack->stop_generator(id))
+    for (auto & id : *request.ids)
+        if (!m_generator_stack->generator(id))
             return to_error(api::error_type::CUSTOM_ERROR, 0,
                 "Some generators from the list were not found");
+
+    for (auto & id : *request.ids)
+        m_generator_stack->stop_generator(id);
 
     return api::reply_ok{};
 }
@@ -195,8 +199,8 @@ static int _handle_rpc_request(const op_event_data* data, void* arg)
         auto reply = std::visit(request_visitor, *request);
         if (send_message(data->socket, serialize_reply(std::move(reply))) == -1) {
             reply_errors++;
-            OP_LOG(
-                OP_LOG_ERROR, "Error sending reply: %s\n", zmq_strerror(errno));
+            OP_LOG(OP_LOG_ERROR,
+                "Error sending reply: %s\n", zmq_strerror(errno));
             continue;
         }
     }
@@ -209,7 +213,9 @@ server::server(void* context, openperf::core::event_loop& loop)
     , m_generator_stack(std::make_unique<generator_stack>())
 {
 
-    struct op_event_callbacks callbacks = {.on_read = _handle_rpc_request};
+    struct op_event_callbacks callbacks = {
+        .on_read = _handle_rpc_request
+    };
     loop.add(m_socket.get(), &callbacks, this);
 }
 
