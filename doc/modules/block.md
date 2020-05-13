@@ -27,7 +27,7 @@ Hardware- or pseudo- device, providing an ability for block I/O load generation.
 ## Block file
 
 An interface for a block device, providing an ability for block I/O load generation with specifing file system path and maximum size, limiting block I/O load generation.
-If file was not exists or size was changed on create API command, file will be filled with generated pseudo random data.
+If the file does not exist or its size differs from the size provided in the create API command, the file will be resized and filled with generated pseudo random data.
 
 ### Block file api model
 
