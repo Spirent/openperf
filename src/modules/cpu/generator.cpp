@@ -33,12 +33,10 @@ void generator::set_config(const model::generator_config& p_conf)
         throw std::runtime_error(
             "Cannot change config of running generator");
 
-    for (auto & worker : m_workers) {
+    for (auto & worker : m_workers)
         worker->stop();
-    }
 
     configure_workers(p_conf);
-
     model::generator::config(p_conf);
 }
 
@@ -50,6 +48,7 @@ void generator::set_running(bool is_running)
         else
             worker->pause();
     }
+
     model::generator::running(is_running);
 }
 
@@ -67,9 +66,8 @@ model::generator_result generator::statistics() const
         core_stat.user = w_stat.user;
         core_stat.utilization = w_stat.utilization;
 
-        for (auto & target : w_stat.targets) {
+        for (auto & target : w_stat.targets)
             core_stat.targets.push_back({target.cycles});
-        }
 
         stats.cores.push_back(core_stat);
     }
@@ -84,9 +82,9 @@ model::generator_result generator::statistics() const
 }
 
 void generator::clear_statistics() {
-    for (auto & worker : m_workers) {
+    for (auto & worker : m_workers)
         worker->clear_stat();
-    }
+
     result_id = core::to_string(core::uuid::random());
 }
 
@@ -107,9 +105,6 @@ void generator::configure_workers(const model::generator_config& p_conf) {
                     + api::to_string(target.instruction_set)
                     + " is not supported");
 
-        std::cout << "Apply core config " << core_id
-            << " with utilization " << core_conf.utilization
-            << std::endl;
         auto cc = generate_worker_config(core_conf);
         m_workers.push_back(std::make_unique<cpu_worker>(cc));
         m_workers.back()->start(++core_id);
@@ -119,22 +114,21 @@ void generator::configure_workers(const model::generator_config& p_conf) {
 
 task_cpu_config generator::generate_worker_config(const model::generator_core_config& conf)
 {
-    try {
-        task_cpu_config w_config;
-        w_config.utilization = conf.utilization;
-
-        for (auto & target : conf.targets) {
-            w_config.targets.push_back(target_config{
-                .set = target.instruction_set,
-                .weight = target.weight,
-                .data_type = target.data_type,
-            });
-        }
-
-        return w_config;
-    } catch (const std::out_of_range& e) {
+    if (conf.targets.empty())
         throw std::runtime_error("Undefined configuration");
+
+    task_cpu_config w_config;
+    w_config.utilization = conf.utilization;
+
+    for (auto & target : conf.targets) {
+        w_config.targets.push_back(target_config{
+            .set = target.instruction_set,
+            .weight = target.weight,
+            .data_type = target.data_type,
+        });
     }
+
+    return w_config;
 }
 
 bool generator::check_instruction_set_supported(cpu::instruction_set p_iset)

@@ -11,8 +11,6 @@ namespace openperf::cpu::generator {
 
 class generator_stack
 {
-public:
-
 private:
     using generator_ptr = std::shared_ptr<generator>;
     using statistic_variant = std::variant<generator_ptr, model::generator_result>;
