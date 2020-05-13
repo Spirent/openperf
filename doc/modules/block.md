@@ -1,6 +1,6 @@
 # Block Module
 
-The **Block** module is the core of OpenPerf, handling block devices I/O load generation. It is defined as a `service` which runs multiple servers/stack and components.
+The **Block** module is the part of OpenPerf core, handling block devices I/O load generation.
 
 ## Block device
 
@@ -27,6 +27,7 @@ Hardware- or pseudo- device, providing an ability for block I/O load generation.
 ## Block file
 
 An interface for a block device, providing an ability for block I/O load generation with specifing file system path and maximum size, limiting block I/O load generation.
+If file was not exists or size was changed on create API command, file will be filled with generated pseudo random data.
 
 ### Block file api model
 
@@ -52,7 +53,6 @@ An interface for a block device, providing an ability for block I/O load generat
 ## Block generator
 
 Component of Openperf core, providing an ability for block I/O load generation. Requires block resource such as Block File or Block Device.
-Running generator cannot be deleted.
 
 ### Block generator api model
 
