@@ -63,13 +63,13 @@ def default_traffic_packet_template():
     return template
 
 
-def default_traffic_packet_template_with_modifiers():
+def default_traffic_packet_template_with_modifiers(permute_flag=None):
     mac_seq = client.models.TrafficProtocolMacModifierSequence()
     mac_seq.count = 10
     mac_seq.start = "00.00.01.00.00.01"
     mac_seq_mod = client.models.TrafficProtocolMacModifier(sequence=mac_seq)
     eth_modifier = client.models.TrafficProtocolModifier(name='destination',
-                                                         permute=False,
+                                                         permute=permute_flag if permute_flag else False,
                                                          mac=mac_seq_mod)
 
     addr_src_seq = client.models.TrafficProtocolIpv4ModifierSequence()
@@ -77,7 +77,7 @@ def default_traffic_packet_template_with_modifiers():
     addr_src_seq.start = '198.18.15.1'
     addr_src_mod = client.models.TrafficProtocolIpv4Modifier(sequence=addr_src_seq)
     ipv4_src_mod = client.models.TrafficProtocolModifier(name='source',
-                                                         permute=False,
+                                                         permute=permute_flag if permute_flag else False,
                                                          ipv4=addr_src_mod)
 
     addr_dst_seq = client.models.TrafficProtocolIpv4ModifierSequence()
@@ -85,7 +85,7 @@ def default_traffic_packet_template_with_modifiers():
     addr_dst_seq.start = '198.18.15.1'
     addr_dst_mod = client.models.TrafficProtocolIpv4Modifier(sequence=addr_dst_seq)
     ipv4_dst_mod = client.models.TrafficProtocolModifier(name='destination',
-                                                         permute=False,
+                                                         permute=permute_flag if permute_flag else False,
                                                          ipv4=addr_dst_mod)
 
 
@@ -209,7 +209,15 @@ with description('Packet Generator,', 'packet_generator') as self:
                         result = self.api.create_generator(gen)
                         expect(result).to(be_valid_packet_generator)
 
-                with description('signatures enabled,'):
+                with description('with permuted modifiers,'):
+                    with it('succeeds'):
+                        template = default_traffic_packet_template_with_modifiers(permute_flag=True)
+                        gen = generator_model(self.api.api_client)
+                        gen.config.traffic[0].packet = template
+                        result = self.api.create_generator(gen)
+                        expect(result).to(be_valid_packet_generator)
+
+                with description('with signatures enabled,'):
                     with it('succeeds'):
                         gen = generator_model(self.api.api_client)
                         gen.config.traffic[0].signature = client.models.SpirentSignature(
