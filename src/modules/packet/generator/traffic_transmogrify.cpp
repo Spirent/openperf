@@ -98,22 +98,29 @@ to_modifier_config(const swagger::v1::model::TrafficProtocolModifier& modifier)
     auto field_name = Protocol::get_field_name(modifier.getName());
     auto& field_type = Protocol::get_field_type(field_name);
 
+    auto config = modifier::config{};
+
     if (field_type == typeid(libpacket::type::ipv4_address)) {
         assert(modifier.ipv4IsSet());
-        return (detail::to_modifier_config<libpacket::type::ipv4_address>(
-            *modifier.getIpv4()));
+        config = detail::to_modifier_config<libpacket::type::ipv4_address>(
+            *modifier.getIpv4());
     } else if (field_type == typeid(libpacket::type::ipv6_address)) {
         assert(modifier.ipv6IsSet());
-        return (detail::to_modifier_config<libpacket::type::ipv6_address>(
-            *modifier.getIpv6()));
+        config = detail::to_modifier_config<libpacket::type::ipv6_address>(
+            *modifier.getIpv6());
     } else if (field_type == typeid(libpacket::type::mac_address)) {
         assert(modifier.macIsSet());
-        return (detail::to_modifier_config<libpacket::type::mac_address>(
-            *modifier.getMac()));
+        config = detail::to_modifier_config<libpacket::type::mac_address>(
+            *modifier.getMac());
     } else {
         assert(modifier.fieldIsSet());
-        return (detail::to_modifier_config<uint32_t>(*modifier.getField()));
+        config = detail::to_modifier_config<uint32_t>(*modifier.getField());
     }
+
+    std::visit([&](auto&& actual) { actual.permute = modifier.isPermute(); },
+               config);
+
+    return (config);
 }
 
 template <typename Protocol>
