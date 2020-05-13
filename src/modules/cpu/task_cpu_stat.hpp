@@ -3,8 +3,11 @@
 
 #include <cinttypes>
 #include <vector>
+#include <chrono>
 
 namespace openperf::cpu::internal {
+
+using namespace std::chrono_literals;
 
 struct target_cpu_stat {
     uint64_t cycles;
@@ -15,9 +18,12 @@ struct target_cpu_stat {
 struct task_cpu_stat {
     uint64_t available = 0;
     uint64_t utilization = 0;
-    uint64_t system = 0;
-    uint64_t user = 0;
-    uint64_t steal = 0;
+    std::chrono::nanoseconds system = 0ns;
+    std::chrono::nanoseconds user = 0ns;
+    std::chrono::nanoseconds steal = 0ns;
+    //uint64_t system = 0;
+    //uint64_t user = 0;
+    //uint64_t steal = 0;
     uint64_t error = 0;
     std::vector<target_cpu_stat> targets;
 

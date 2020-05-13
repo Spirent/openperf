@@ -1,14 +1,17 @@
 #include "cpu/task_cpu.hpp"
 #include "core/op_log.h"
 #include "cpu/target_scalar.hpp"
+#include "cpu/cpu_stats.hpp"
 
 #include <ctime>
 #include <iostream>
 #include <iomanip>
 #include <thread>
-#include "timesync/chrono.hpp"
+#include <chrono>
+#include <sys/resource.h>
+#include <sys/time.h>
 
-#include <unistd.h>
+#include "timesync/chrono.hpp"
 
 namespace openperf::cpu::internal {
 
@@ -18,75 +21,29 @@ auto now = openperf::timesync::chrono::monotime::now;
 
 constexpr auto QUANTA = 100ms;
 
-struct linux_proc_stats {
-    uint64_t user;
-    uint64_t nice;
-    uint64_t system;
-    uint64_t idle;
-    uint64_t iowait;
-    uint64_t irq;
-    uint64_t softirq;
-    uint64_t steal;
+struct utilization_time {
+    std::chrono::nanoseconds user;
+    std::chrono::nanoseconds system;
+    std::chrono::nanoseconds steal;
+    timesync::chrono::monotime::time_point timestamp = now();
 };
 
-linux_proc_stats cpu_stats_get_steal_time_us(void)
+static utilization_time _get_utilization_time()
 {
-    char tag[8];
-    FILE *procstat = NULL;
-    long ticks_per_sec = 0;
+    auto ru = rusage{};
+    getrusage(RUSAGE_SELF, &ru);
 
-    struct linux_proc_stats stats{};
+    auto time_system = std::chrono::seconds(ru.ru_stime.tv_sec)
+        + std::chrono::microseconds(ru.ru_stime.tv_usec);
 
-    while (true) {
-        if ((ticks_per_sec = sysconf(_SC_CLK_TCK)) == -1)
-            break;
+    auto time_user = std::chrono::seconds(ru.ru_utime.tv_sec)
+        + std::chrono::microseconds(ru.ru_utime.tv_usec);
 
-        assert(ticks_per_sec);
-
-        procstat = fopen("/proc/stat", "r");
-        if (!procstat)
-            break;
-
-        /* Read and throw away 'cpu ' */
-        if (fscanf(procstat, "%s ", tag) == EOF)
-            break;
-
-        /* Pull out the values of interest */
-        if (fscanf(procstat, "%" PRIu64 " ", &stats.user) == EOF)
-            break;
-
-        if (fscanf(procstat, "%" PRIu64 " ", &stats.nice) == EOF)
-            break;
-
-        if (fscanf(procstat, "%" PRIu64 " ", &stats.system) == EOF)
-            break;
-
-        if (fscanf(procstat, "%" PRIu64 " ", &stats.idle) == EOF)
-            break;
-
-        if (fscanf(procstat, "%" PRIu64 " ", &stats.iowait) == EOF)
-            break;
-
-        if (fscanf(procstat, "%" PRIu64 " ", &stats.irq) == EOF)
-            break;
-
-        if (fscanf(procstat, "%" PRIu64 " ", &stats.softirq) == EOF)
-            break;
-
-        if (fscanf(procstat, "%" PRIu64 " ", &stats.steal) == EOF)
-            break;
-
-        fclose(procstat);
-        procstat = NULL;
-
-        return stats;
-    }
-
-    /* Done; close the file */
-    //return ((stats.steal * US_PER_SECOND) / ticks_per_sec);
-    fclose(procstat);
-
-    throw std::runtime_error("Error fetch CPU stats");
+    return utilization_time{
+        .user = time_user,
+        .system = time_system,
+        .steal = cpu_stats_get_steal_time()
+    };
 }
 
 task_cpu::task_cpu()
@@ -127,10 +84,6 @@ void task_cpu::spin()
     m_time = 0ns;
     m_ticks = 0;
     for (auto& target : m_targets) {
-        //uint64_t calls =
-        //    quanta / 1000.0 * CLOCKS_PER_SEC * m_utilization / m_weights
-        //    * target.weight / target.ticks;
-
         uint64_t calls = time_frame / m_weights
             * target.weight / target.runtime.count();
 
@@ -167,17 +120,23 @@ void task_cpu::spin()
         stat.runtime += time;
     }
 
-    auto cpu_stat = cpu_stats_get_steal_time_us();
-    m_stat_active.system = cpu_stat.system;
-    m_stat_active.user = cpu_stat.user;
-    m_stat_active.steal = cpu_stat.steal;
-
-    std::cout << cpu_stat.system << " "
-        << cpu_stat.user << " "
-        << cpu_stat.steal << std::endl;
-    //m_stat_active.error = cpu_stat.
+    auto cpu_util = _get_utilization_time();
+    m_stat_active.system += cpu_util.system;
+    m_stat_active.user += cpu_util.user;
+    m_stat_active.steal += cpu_util.steal;
     //m_stat_active.available = cpu_stat.
     //m_stat_active.utilization =
+    //m_stat_active.error = cpu_stat.
+
+
+    //std::cout << "Utilization time {sys, usr}: { "
+    //    << utime.system.count()
+    //    << ", " << utime.user.count() << " }"
+    //    << std::endl;
+    std::cout << "Utilization time {sys, usr, steal}: { "
+        << cpu_util.system.count() << " "
+        << cpu_util.user.count() << " "
+        << cpu_util.steal.count() << std::endl;
 
     auto sleep_time = (now() - t1) * (1.0 - m_utilization) / m_utilization;
 

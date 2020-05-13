@@ -451,9 +451,9 @@ std::shared_ptr<CpuGeneratorResult> to_swagger(const model::generator_result& p_
 
         core_stats->setAvailable(p_stats.available);
         core_stats->setError(p_stats.error);
-        core_stats->setSteal(p_stats.steal);
-        core_stats->setSystem(p_stats.system);
-        core_stats->setUser(p_stats.user);
+        core_stats->setSteal(p_stats.steal.count());
+        core_stats->setSystem(p_stats.system.count());
+        core_stats->setUser(p_stats.user.count());
         core_stats->setUtilization(p_stats.utilization);
     }
 
