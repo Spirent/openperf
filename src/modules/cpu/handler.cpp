@@ -75,17 +75,6 @@ enum Http::Code to_code(const api::reply_error& error)
     }
 }
 
-static std::optional<std::string>
-maybe_get_host_uri(const request_type& request)
-{
-    if (request.headers().has<Http::Header::Host>()) {
-        auto host_header = request.headers().get<Http::Header::Host>();
-        return ("http://" + host_header->host() + ":" + host_header->port().toString());
-    }
-
-    return (std::nullopt);
-}
-
 handler::handler(void* context, Rest::Router& router)
     : m_socket(op_socket_get_client(context, ZMQ_REQ, api::endpoint.data()))
 {
@@ -187,9 +176,9 @@ void handler::create_generator(const Rest::Request& request,
             assert(!reply->generators.empty());
             response.headers().add<Http::Header::ContentType>(
                 MIME(Application, Json));
-            if (auto uri = maybe_get_host_uri(request); uri.has_value()) {
-                response.headers().add<Http::Header::Location>(*uri + request.resource() + "/" + reply->generators.front()->id());
-            }
+            response.headers().add<Http::Header::Location>(
+                "/cpu-generators/" + reply->generators.front()->id());
+
             response.send(Http::Code::Created, api::to_swagger(*reply->generators.front())->toJson().dump());
         } else if (auto error = std::get_if<api::reply_error>(&api_reply)) {
             response.send(to_code(*error), api::to_string(*error->info));
@@ -254,13 +243,13 @@ void handler::start_generator(const Rest::Request& request,
         submit_request(m_socket.get(), api::request_cpu_generator_start{id});
     if (auto reply = std::get_if<api::reply_cpu_generator_results>(&api_reply)) {
         assert(!reply->results.empty());
-        response.headers().add<Http::Header::ContentType>(MIME(Application, Json));
-        if (auto uri = maybe_get_host_uri(request); uri.has_value()) {
-            response.headers().add<Http::Header::Location>(
-                *uri + "/cpu-generator-results/"
-                + reply->results.front()->id());
-        }
-        response.send(Http::Code::Created, api::to_swagger(*reply->results.front())->toJson().dump());
+        response.headers().add<Http::Header::ContentType>(
+            MIME(Application, Json));
+        response.headers().add<Http::Header::Location>(
+            "/cpu-generator-results/" + reply->results.front()->id());
+
+        response.send(Http::Code::Created,
+            api::to_swagger(*reply->results.front())->toJson().dump());
     } else if (auto error = std::get_if<api::reply_error>(&api_reply)) {
         response.send(to_code(*error), api::to_string(*error->info));
     } else {
