@@ -1,33 +1,85 @@
-version: 2
+version: 2.1
+
 jobs:
-  build:
+  acceptance_tests:
     machine:
       image: circleci/classic:latest
-
     steps:
-      - checkout
-
+      - attach_workspace:
+          at: "~"
       - run:
-          name: Pull latest build container
+          name: Download latest openperf container
           command: docker pull spirentorion/openperf:latest
-
       - run:
           name: Run containerized build and test
-          command: docker run -it --privileged -v ~/project:/project spirentorion/openperf:latest /bin/bash -c "cd /project && bear make -j$(nproc) all && .circleci/run_clang_tidy.sh && make -j$(nproc) test"
-
+          command: docker run -it --privileged -v ~/project:/project spirentorion/openperf:latest /bin/bash -c "cd project && make -j$(nproc) test_aat"
       - run:
           name: Collect AAT log
           when: always
           command: |
             set -xe
-            mkdir -p /tmp/test
-            cp ~/project/tests/aat/*.log /tmp/test
+            mkdir -p /tmp/log
+            cp ~/project/tests/aat/*.log /tmp/log
+      - store_artifacts:
+          path: /tmp/log
 
+  build:
+    docker:
+      - image: spirentorion/openperf:latest
+    steps:
+      - checkout
+      - run:
+          # Use bear to generate the compilation database
+          # Force optimizations to target avx2; all of the CircleCI machines seem
+          # to support it and we don't want to get illegal instruction errors when
+          # we hand these objects off to the acceptance test job.
+          # Some of those build servers are fancy and support AVX512 which the default
+          # compile options will use, if available.
+          name: Build and generate compilation database
+          command: bear make -j $(nproc) OP_COPTS="-Os -gline-tables-only -march=core-avx2" all
       - store_artifacts:
           path: ~/project/build/openperf-linux-x86_64-testing/bin
-
       - store_artifacts:
           path: ~/project/build/libopenperf-shim-linux-x86_64-testing/lib
+      - persist_to_workspace:
+          root: "~"
+          paths:
+            - project
 
-      - store_artifacts:
-          path: /tmp/test
+  # Run the static analysis checks in the VM instead of a container.
+  # The analyzer needs the extra memory available in the machine.
+  # Default containers have 4GB, but default machines have 8GB.
+  static_analysis:
+    machine:
+      image: circleci/classic:latest
+    steps:
+      - attach_workspace:
+          at: "~"
+      - run:
+          name: Download latest openperf container
+          command: docker pull spirentorion/openperf:latest
+      - run:
+          name: Run static analysis checks
+          command: docker run -it -v ~/project:/project spirentorion/openperf:latest /bin/bash -c "cd project && .circleci/run_clang_tidy.sh"
+
+  unit_tests:
+    docker:
+      - image: spirentorion/openperf:latest
+    steps:
+      - checkout
+      - run:
+          name: Run unit tests
+          command: make test_unit -j $(nproc)
+
+workflows:
+  version: 2
+  ci_build:
+    jobs:
+      - build
+      - acceptance_tests:
+          requires:
+            - build
+      - static_analysis:
+          requires:
+            - build
+      - unit_tests

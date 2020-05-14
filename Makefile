@@ -24,7 +24,7 @@ test_aat: openperf libopenperf-shim
 	@cd tests/aat && $(MAKE)
 
 .PHONY: test_unit
-test_unit:
+test_unit: deps
 	@cd tests/unit && $(MAKE)
 
 .PHONY: clean
