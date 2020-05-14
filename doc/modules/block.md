@@ -90,11 +90,11 @@ Leave *reads_per_sec* or *writes_per_sec* as zero value to ignore operation whil
 
 ### Start block generator
 
-Start block generator command returns Block Generator Result, created for the particular start. Response location header contains uri of created result.
+Start block generator command returns Block Generator Result, created for the particular start. Response *Location* header contains uri of created result.
 
 ## Block generator result
 
-Statistics of block I/O load generation, unique for each block generator start. After activity has stopped it is independent from block generator, generated this result.
+Block I/O load generation statistics. Generator creates new *Result* with new unique ID on each Start request. While load generation is running, the result has *active* state and is being updated after each generation iteration. After the generator has completed load generation the result receives final statistics values and become inactive.
 Active generator result cannot be deleted.
 
 ### Block generator result api model
