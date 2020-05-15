@@ -1,7 +1,8 @@
 Checks: '-*,
         bugprone-*,
         -bugprone-suspicious-semicolon,
-        clang-analyzer-*'
+        clang-analyzer-*,
+        -clang-analyzer-osx.*'
 CheckOptions:
   - key: bugprone-assert-side-effect.AssertMacros
     value: assert, LWIP_ASSERT
