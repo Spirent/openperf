@@ -10,8 +10,7 @@
 
 #include "socket/client/stream_channel.hpp"
 
-namespace openperf {
-namespace socket {
+namespace openperf::socket {
 
 template class circular_buffer_consumer<client::stream_channel>;
 template class circular_buffer_producer<client::stream_channel>;
@@ -272,5 +271,4 @@ tl::expected<void, int> stream_channel::wait_writable()
 }
 
 } // namespace client
-} // namespace socket
-} // namespace openperf
+} // namespace openperf::socket

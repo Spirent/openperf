@@ -13,10 +13,7 @@
 
 #include "core/op_uuid.hpp"
 
-namespace openperf {
-namespace packetio {
-namespace interface {
-namespace api {
+namespace openperf::packetio::interface::api {
 
 const std::string endpoint = "inproc://op_packetio_interface";
 
@@ -275,7 +272,4 @@ server::server(void* context,
     loop.add(m_socket.get(), &callbacks, &stack);
 }
 
-} // namespace api
-} // namespace interface
-} // namespace packetio
-} // namespace openperf
+} // namespace openperf::packetio::interface::api

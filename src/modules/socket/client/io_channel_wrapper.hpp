@@ -7,9 +7,7 @@
 #include "socket/client/dgram_channel.hpp"
 #include "socket/client/stream_channel.hpp"
 
-namespace openperf {
-namespace socket {
-namespace client {
+namespace openperf::socket::client {
 
 class io_channel_wrapper
 {
@@ -48,8 +46,6 @@ public:
     tl::expected<void, int> wait_writable();
 };
 
-} // namespace client
-} // namespace socket
 } // namespace openperf
 
 #endif /* _OP_SOCKET_CLIENT_IO_CHANNEL_WRAPPER_HPP_ */

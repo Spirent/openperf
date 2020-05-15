@@ -5,10 +5,7 @@
 #include "packetio/stack_api.hpp"
 #include "packetio/stack_server.hpp"
 
-namespace openperf {
-namespace packetio {
-namespace stack {
-namespace api {
+namespace openperf::packetio::stack::api {
 
 const std::string endpoint = "inproc://op_packetio_stack";
 
@@ -90,7 +87,7 @@ static int handle_rpc_request(const op_event_data* data, void* arg)
                 + zmq_msg_size(&request_msg));
 
         json request = json::from_cbor(request_buffer);
-        request_type type = request["type"].get<request_type>();
+        auto type = request["type"].get<request_type>();
         json reply;
 
         switch (type) {
@@ -147,7 +144,4 @@ server::server(void* context,
     loop.add(m_socket.get(), &callbacks, &stack);
 }
 
-} // namespace api
-} // namespace stack
-} // namespace packetio
-} // namespace openperf
+} // namespace openperf::packetio::stack::api

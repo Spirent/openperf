@@ -62,7 +62,7 @@ extern "C" {
 
 int op_block_init(void* context, void* state)
 {
-    openperf::block::service* s =
+    auto* s =
         reinterpret_cast<openperf::block::service*>(state);
     s->init(context);
     s->start();
@@ -71,7 +71,7 @@ int op_block_init(void* context, void* state)
 
 void op_block_fini(void* state)
 {
-    openperf::block::service* s =
+    auto* s =
         reinterpret_cast<openperf::block::service*>(state);
     delete s;
 }

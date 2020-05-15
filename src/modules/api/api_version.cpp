@@ -2,8 +2,7 @@
 
 #include "api/api_route_handler.hpp"
 
-namespace openperf {
-namespace api {
+namespace openperf::api {
 
 using namespace Pistache;
 using json = nlohmann::json;
@@ -49,5 +48,4 @@ handler::handler(void* context __attribute__((unused)), Rest::Router& router)
     Rest::Routes::Get(router, "/version", version);
 }
 
-} // namespace api
-} // namespace openperf
+} // namespace openperf::api

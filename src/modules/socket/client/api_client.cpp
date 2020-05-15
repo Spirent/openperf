@@ -12,9 +12,7 @@
 #include "socket/process_control.hpp"
 #include "socket/client/api_client.hpp"
 
-namespace openperf {
-namespace socket {
-namespace api {
+namespace openperf::socket::api {
 
 client::client()
     : m_uuid(core::uuid::random())
@@ -106,7 +104,8 @@ void client::init(std::atomic_bool* init_flag)
     if (init.shm_info) {
         /* map shared address memory */
         auto shm_info = *init.shm_info;
-        m_shm.reset(new memory::shared_segment(shm_info.name, shm_info.size));
+        m_shm = std::make_unique<memory::shared_segment>(shm_info.name,
+                                                         shm_info.size);
 
         /* enable ptrace from server side */
         process_control::enable_ptrace(stderr, init.pid);
@@ -601,6 +600,4 @@ ssize_t client::writev(int s, const struct iovec* iov, int iovcnt)
     return (sendmsg(s, &msg, 0));
 }
 
-} // namespace api
-} // namespace socket
-} // namespace openperf
+} // namespace openperf::socket::api

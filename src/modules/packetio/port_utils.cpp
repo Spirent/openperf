@@ -7,9 +7,7 @@
 #include "packetio/generic_port.hpp"
 #include "utils/overloaded_visitor.hpp"
 
-namespace openperf {
-namespace packetio {
-namespace port {
+namespace openperf::packetio::port {
 
 using namespace swagger::v1::model;
 
@@ -265,6 +263,4 @@ std::shared_ptr<Port> make_swagger_port(const generic_port& in_port)
     return (out_port);
 }
 
-} // namespace port
-} // namespace packetio
-} // namespace openperf
+} // namespace openperf::packetio::port

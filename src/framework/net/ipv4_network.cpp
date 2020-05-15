@@ -2,8 +2,7 @@
 
 #include "net/ipv4_network.hpp"
 
-namespace openperf {
-namespace net {
+namespace openperf::net {
 
 ipv4_network::ipv4_network(const ipv4_address& addr, uint8_t prefix)
     : m_prefix(prefix)
@@ -40,5 +39,4 @@ int compare(const ipv4_network& lhs, const ipv4_network& rhs)
         return (0);
 }
 
-} // namespace net
-} // namespace openperf
+} // namespace openperf::net

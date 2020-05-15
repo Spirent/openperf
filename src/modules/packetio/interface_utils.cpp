@@ -11,9 +11,7 @@
 #include "utils/overloaded_visitor.hpp"
 #include "core/op_log.h"
 
-namespace openperf {
-namespace packetio {
-namespace interface {
+namespace openperf::packetio::interface {
 
 using namespace swagger::v1::model;
 
@@ -636,6 +634,4 @@ make_swagger_interface(const generic_interface& in_intf)
     return (out_intf);
 }
 
-} // namespace interface
-} // namespace packetio
-} // namespace openperf
+} // namespace openperf::packetio::interface
