@@ -1,6 +1,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <cstring>
+#include <vector>
 #include "block/file_stack.hpp"
 #include "core/op_log.h"
 
@@ -17,17 +18,14 @@ file::file(const model::file& f)
     queue_scrub();
 }
 
-file::~file()
-{
-    terminate_scrub();
-}
+file::~file() { terminate_scrub(); }
 
 tl::expected<int, int> file::vopen()
 {
     if (m_fd >= 0) return m_fd;
 
-    if ((m_fd = open(get_path().c_str(), O_RDWR | O_CREAT,
-                     S_IRUSR | S_IWUSR)) < 0) {
+    if ((m_fd = open(get_path().c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR))
+        < 0) {
         return tl::make_unexpected(errno);
     }
 
@@ -70,7 +68,7 @@ void file::scrub_update(double p)
 std::vector<block_file_ptr> file_stack::files_list()
 {
     std::vector<block_file_ptr> blkfiles_list;
-    for (auto blkfile_pair : m_block_files) {
+    for (const auto& blkfile_pair : m_block_files) {
         blkfiles_list.push_back(blkfile_pair.second);
     }
 
@@ -99,18 +97,17 @@ file_stack::create_block_file(const model::file& block_file_model)
     }
 }
 
-std::shared_ptr<virtual_device> file_stack::get_vdev(const std::string& id) const
+std::shared_ptr<virtual_device>
+file_stack::get_vdev(const std::string& id) const
 {
     auto f = get_block_file(id);
-    if (!f || f->get_state() != model::file_state::READY)
-        return nullptr;
+    if (!f || f->get_state() != model::file_state::READY) return nullptr;
     return f;
 }
 
 block_file_ptr file_stack::get_block_file(const std::string& id) const
 {
-    if (m_block_files.count(id))
-        return m_block_files.at(id);
+    if (m_block_files.count(id)) return m_block_files.at(id);
     return nullptr;
 }
 

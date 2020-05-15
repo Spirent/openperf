@@ -37,7 +37,7 @@ class server
 
     using event_loop = openperf::packetio::event_loop::generic_event_loop;
 
-    int handle_api_accept(event_loop& loop, std::any);
+    int handle_api_accept(event_loop& loop, const std::any&);
     int handle_api_client(event_loop& loop, std::any arg);
     void handle_api_error(std::any arg);
 

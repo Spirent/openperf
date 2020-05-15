@@ -763,9 +763,9 @@ static void run(run_args&& args)
     if (op_socket_has_messages(args.control)) return;
 
     if (args.rx_queues.empty() || all_pollable(args.rx_queues)) {
-        run_pollable(std::move(args));
+        run_pollable(std::forward<run_args>(args));
     } else {
-        run_spinning(std::move(args));
+        run_spinning(std::forward<run_args>(args));
     }
 }
 

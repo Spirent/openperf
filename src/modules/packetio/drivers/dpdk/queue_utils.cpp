@@ -164,6 +164,7 @@ static std::vector<descriptor>
 distribute_queues(const std::vector<model::port_info>& port_info)
 {
     std::vector<descriptor> descriptors;
+    descriptors.reserve(port_info.size());
 
     /* Simple case; one worker handling one queue per port */
     for (auto& info : port_info) {

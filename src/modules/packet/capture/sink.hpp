@@ -60,8 +60,8 @@ public:
     sink(const sink_config& config, std::vector<unsigned> rx_ids);
     ~sink() = default;
 
-    sink(sink&& other);
-    sink& operator=(sink&& other);
+    sink(sink&& other) noexcept;
+    sink& operator=(sink&& other) noexcept;
     sink(const sink& other) = delete;
     sink& operator=(const sink& other) = delete;
 

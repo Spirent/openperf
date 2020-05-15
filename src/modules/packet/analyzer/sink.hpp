@@ -56,8 +56,8 @@ public:
     sink(const sink_config& config, std::vector<unsigned> rx_ids);
     ~sink() = default;
 
-    sink(sink&& other);
-    sink& operator=(sink&& other);
+    sink(sink&& other) noexcept;
+    sink& operator=(sink&& other) noexcept;
 
     std::string id() const;
     std::string source() const;

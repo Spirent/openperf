@@ -194,15 +194,18 @@ tl::expected<reply_msg, int> deserialize_reply(const serialized_msg& msg);
 int send_message(void* socket, serialized_msg&& msg);
 tl::expected<serialized_msg, int> recv_message(void* socket, int flags = 0);
 
-reply_error to_error(error_type type, int code = 0, std::string value = "");
+reply_error
+to_error(error_type type, int code = 0, const std::string& value = "");
 const char* to_string(const api::typed_error&);
 std::shared_ptr<BlockDevice> to_swagger(const model::device&);
 std::shared_ptr<BlockFile> to_swagger(const model::file&);
 std::shared_ptr<BlockGenerator> to_swagger(const model::block_generator&);
-std::shared_ptr<BlockGeneratorResult> to_swagger(const model::block_generator_result&);
+std::shared_ptr<BlockGeneratorResult>
+to_swagger(const model::block_generator_result&);
 model::file from_swagger(const BlockFile&);
 model::block_generator from_swagger(const BlockGenerator&);
-request_block_generator_bulk_start from_swagger(BulkStartBlockGeneratorsRequest&);
+request_block_generator_bulk_start
+from_swagger(BulkStartBlockGeneratorsRequest&);
 request_block_generator_bulk_stop from_swagger(BulkStopBlockGeneratorsRequest&);
 
 extern const std::string endpoint;

@@ -77,7 +77,7 @@ static void validate(const ipv4_static_protocol_config& ipv4,
                 "Gateway address (" + net::to_string(*ipv4.gateway)
                 + ") is not in the same broadcast domain as interface ("
                 + net::to_string(
-                      net::ipv4_network(ipv4.address, ipv4.prefix_length))
+                    net::ipv4_network(ipv4.address, ipv4.prefix_length))
                 + ").");
         }
     }
@@ -160,7 +160,7 @@ static void validate(const ipv6_static_protocol_config& config,
                 "Gateway address (" + net::to_string(*config.gateway)
                 + ") is not in the same broadcast domain as interface ("
                 + net::to_string(
-                      net::ipv6_network(config.address, config.prefix_length))
+                    net::ipv6_network(config.address, config.prefix_length))
                 + ").");
         }
     }
@@ -276,14 +276,14 @@ static bool is_valid(config_data& config, std::vector<std::string>& errors)
 }
 
 static eth_protocol_config
-from_swagger(std::shared_ptr<InterfaceProtocolConfig_eth> config)
+from_swagger(const std::shared_ptr<InterfaceProtocolConfig_eth>& config)
 {
     return (eth_protocol_config{.address =
                                     net::mac_address(config->getMacAddress())});
 }
 
 static ipv4_dhcp_protocol_config
-from_swagger(std::shared_ptr<InterfaceProtocolConfig_ipv4_dhcp> config)
+from_swagger(const std::shared_ptr<InterfaceProtocolConfig_ipv4_dhcp>& config)
 {
     ipv4_dhcp_protocol_config to_return;
 
@@ -299,7 +299,7 @@ from_swagger(std::shared_ptr<InterfaceProtocolConfig_ipv4_dhcp> config)
 }
 
 static ipv4_static_protocol_config
-from_swagger(std::shared_ptr<InterfaceProtocolConfig_ipv4_static> config)
+from_swagger(const std::shared_ptr<InterfaceProtocolConfig_ipv4_static>& config)
 {
     ipv4_static_protocol_config to_return;
 
@@ -317,7 +317,7 @@ from_swagger(std::shared_ptr<InterfaceProtocolConfig_ipv4_static> config)
 }
 
 static ipv4_protocol_config
-from_swagger(std::shared_ptr<InterfaceProtocolConfig_ipv4> config)
+from_swagger(const std::shared_ptr<InterfaceProtocolConfig_ipv4>& config)
 {
     ipv4_protocol_config to_return;
 
@@ -343,7 +343,7 @@ from_swagger(std::shared_ptr<InterfaceProtocolConfig_ipv4> config)
 }
 
 static ipv6_dhcp6_protocol_config
-from_swagger(std::shared_ptr<InterfaceProtocolConfig_ipv6_dhcp6> config)
+from_swagger(const std::shared_ptr<InterfaceProtocolConfig_ipv6_dhcp6>& config)
 {
     ipv6_dhcp6_protocol_config to_return;
 
@@ -353,7 +353,7 @@ from_swagger(std::shared_ptr<InterfaceProtocolConfig_ipv6_dhcp6> config)
 }
 
 static ipv6_static_protocol_config
-from_swagger(std::shared_ptr<InterfaceProtocolConfig_ipv6_static> config)
+from_swagger(const std::shared_ptr<InterfaceProtocolConfig_ipv6_static>& config)
 {
     ipv6_static_protocol_config to_return;
 
@@ -371,7 +371,7 @@ from_swagger(std::shared_ptr<InterfaceProtocolConfig_ipv6_static> config)
 }
 
 static ipv6_protocol_config
-from_swagger(std::shared_ptr<InterfaceProtocolConfig_ipv6> config)
+from_swagger(const std::shared_ptr<InterfaceProtocolConfig_ipv6>& config)
 {
     ipv6_protocol_config to_return;
     std::optional<net::ipv6_address> link_local_address;
@@ -412,7 +412,7 @@ from_swagger(std::shared_ptr<InterfaceProtocolConfig_ipv6> config)
 }
 
 static protocol_config
-from_swagger(std::shared_ptr<InterfaceProtocolConfig> config)
+from_swagger(const std::shared_ptr<InterfaceProtocolConfig>& config)
 {
     protocol_config to_return;
 

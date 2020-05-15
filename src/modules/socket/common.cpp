@@ -77,7 +77,7 @@ api::io_channel_ptr to_pointer(api::io_channel_offset offset, const void* base)
                 return (reinterpret_cast<stream_channel*>(
                     reinterpret_cast<intptr_t>(base) + stream.offset));
             }),
-        std::move(offset)));
+        offset));
 }
 
 } // namespace api

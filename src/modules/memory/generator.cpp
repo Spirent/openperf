@@ -16,7 +16,7 @@ generator::generator()
     , m_serial_number(++serial_counter)
 {}
 
-generator::generator(generator&& g)
+generator::generator(generator&& g) noexcept
     : m_stopped(g.m_stopped)
     , m_paused(g.m_paused)
     , m_read_workers(std::move(g.m_read_workers))
@@ -25,6 +25,20 @@ generator::generator(generator&& g)
     , m_buffer{.ptr = nullptr, .size = 0}
     , m_serial_number(g.m_serial_number)
 {}
+
+generator& generator::operator=(generator&& g) noexcept
+{
+    if (this != &g) {
+        m_stopped = g.m_stopped;
+        m_paused = g.m_paused;
+        m_read_workers = std::move(g.m_read_workers);
+        m_write_workers = std::move(g.m_write_workers);
+        m_config = g.m_config;
+        m_buffer = {.ptr = nullptr, .size = 0};
+        m_serial_number = g.m_serial_number;
+    }
+    return (*this);
+}
 
 generator::generator(const generator::config_t& c)
     : generator()
@@ -133,13 +147,6 @@ void generator::config(const generator::config_t& cfg)
 }
 
 // Methods : private
-void generator::for_each_worker(std::function<void(worker_ptr&)> function)
-{
-    for (auto list : {&m_read_workers, &m_write_workers}) {
-        for (auto& worker : *list) { function(worker); }
-    }
-}
-
 void generator::free_buffer()
 {
     if (m_buffer.ptr == nullptr) return;

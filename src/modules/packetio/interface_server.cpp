@@ -68,7 +68,7 @@ static void _handle_list_interfaces_request(generic_stack& stack,
 
     json jints = json::array();
 
-    for (auto id : stack.interface_ids()) {
+    for (const auto& id : stack.interface_ids()) {
         auto intf = stack.interface(id);
         if ((!port_id && !mac_addr && !ipv4_addr && !ipv6_addr)
             || (port_id && port_id == intf->port_id())
@@ -171,14 +171,14 @@ static void _handle_bulk_create_interface_request(generic_stack& stack,
 
     /* If we get here, then we encountered an error; clean up created interfaces
      */
-    for (auto id : success_list) { stack.delete_interface(id); }
+    for (const auto& id : success_list) { stack.delete_interface(id); }
 }
 
 static void _handle_bulk_delete_interface_request(generic_stack& stack,
                                                   json& request,
                                                   json& reply)
 {
-    for (std::string request_id : request["ids"]) {
+    for (const auto& request_id : request["ids"]) {
         stack.delete_interface(request_id);
     }
     reply["code"] = reply_code::OK;

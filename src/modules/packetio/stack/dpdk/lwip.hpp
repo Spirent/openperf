@@ -22,8 +22,8 @@ public:
     ~lwip();
 
     /* stack is movable */
-    lwip& operator=(lwip&& other);
-    lwip(lwip&& other);
+    lwip& operator=(lwip&& other) noexcept;
+    lwip(lwip&& other) noexcept;
 
     /* stack is non-copyable */
     lwip(const lwip&) = delete;

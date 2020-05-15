@@ -9,7 +9,7 @@
 
 namespace openperf::pistache_utils {
 
-static int gettid() { return syscall(__NR_gettid); }
+static int gettid() { return (static_cast<int>(syscall(__NR_gettid))); }
 
 bool write_status_line(std::ostream& os,
                        Pistache::Http::Version version,
@@ -209,7 +209,9 @@ void transport_exec(Pistache::Tcp::Transport& transport,
                                std::move(deferred));
         });
     result.then([=](uint64_t numWakeup) { func(); },
-                [=](std::exception_ptr exc) { std::rethrow_exception(exc); });
+                [=](std::exception_ptr exc) {
+                    std::rethrow_exception(std::move(exc));
+                });
 
     OP_LOG(OP_LOG_DEBUG,
            "Waiting for timer function to complete. (current tid=%d)",

@@ -8,13 +8,14 @@
 
 namespace openperf::packetio::dpdk::worker {
 
-event_loop_adapter::event_loop_adapter(event_loop_adapter&& other)
+event_loop_adapter::event_loop_adapter(event_loop_adapter&& other) noexcept
     : m_additions(std::move(other.m_additions))
     , m_deletions(std::move(other.m_deletions))
     , m_runnables(std::move(other.m_runnables))
 {}
 
-event_loop_adapter& event_loop_adapter::operator=(event_loop_adapter&& other)
+event_loop_adapter&
+event_loop_adapter::operator=(event_loop_adapter&& other) noexcept
 {
     if (this != &other) {
         m_additions = std::move(other.m_additions);
@@ -76,12 +77,16 @@ bool event_loop_adapter::update_poller(epoll_poller& poller)
 bool event_loop_adapter::add_callback(
     std::string_view name,
     event_loop::event_notifier notify,
-    event_loop::event_handler on_event,
-    std::optional<event_loop::delete_handler> on_delete,
-    std::any arg) noexcept
+    event_loop::event_handler&& on_event,
+    std::optional<event_loop::delete_handler>&& on_delete,
+    std::any&& arg) noexcept
 {
     m_additions.push_back(
-        std::make_unique<callback>(name, notify, on_event, on_delete, arg));
+        std::make_unique<callback>(name,
+                                   notify,
+                                   std::forward<decltype(on_event)>(on_event),
+                                   std::forward<decltype(on_delete)>(on_delete),
+                                   std::forward<std::any>(arg)));
     return (true);
 }
 
