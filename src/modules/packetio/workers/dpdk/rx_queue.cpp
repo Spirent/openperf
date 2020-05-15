@@ -19,7 +19,7 @@ static std::optional<int> get_queue_fd(uint16_t port_id, uint16_t queue_id)
     return (fd);
 }
 
-static void ack_interrupt(int fd, void* arg)
+static void ack_interrupt(int, void* arg)
 {
     auto rxq = reinterpret_cast<rx_queue*>(arg);
     rxq->disable();
@@ -68,7 +68,7 @@ bool rx_queue::add(int poll_fd, void* data)
     return (!error);
 }
 
-bool rx_queue::del(int poll_fd, void* data)
+bool rx_queue::del(int poll_fd, void*)
 {
     auto fd = get_queue_fd(port_id(), queue_id());
     if (!fd) return (false);

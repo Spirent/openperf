@@ -286,8 +286,7 @@ void handler::create_analyzers(const request_type& request,
     }
 }
 
-void handler::delete_analyzers(const request_type& request,
-                               response_type response)
+void handler::delete_analyzers(const request_type&, response_type response)
 {
     auto api_reply = submit_request(m_socket.get(), request_delete_analyzers{});
 
@@ -437,7 +436,7 @@ void handler::list_analyzer_results(const request_type& request,
     }
 }
 
-void handler::delete_analyzer_results(const request_type& request,
+void handler::delete_analyzer_results(const request_type&,
                                       response_type response)
 {
     auto api_reply =

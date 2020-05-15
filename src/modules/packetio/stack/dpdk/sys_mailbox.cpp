@@ -131,7 +131,7 @@ void sys_mbox_free(sys_mbox_t* mboxp)
 int sys_mbox_fd(const sys_mbox_t* mboxp)
 {
     assert(mboxp);
-    const sys_mbox_t mbox = *mboxp;
+    const sys_mbox* mbox = *mboxp;
     return (mbox->fd());
 }
 

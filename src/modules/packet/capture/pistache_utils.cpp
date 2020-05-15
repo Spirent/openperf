@@ -161,7 +161,7 @@ void transport_peer_disable(Pistache::Tcp::Transport& transport,
     OP_LOG(OP_LOG_DEBUG,
            "Disabling Pistache peer fd %d. (current tid=%d)",
            peer.fd(),
-           (int)gettid());
+           gettid());
 
     // Ideally we would remove the peer from the reactor, but there is no
     // easy way to do that without major modifications to Pistache, so
@@ -178,7 +178,7 @@ void transport_peer_enable(Pistache::Tcp::Transport& transport,
     OP_LOG(OP_LOG_DEBUG,
            "Enabling Pistache peer fd %d. (current tid=%d)",
            peer.fd(),
-           (int)gettid());
+           gettid());
 
     transport.reactor()->modifyFd(transport.key(),
                                   peer.fd(),
@@ -200,7 +200,7 @@ void transport_exec(Pistache::Tcp::Transport& transport,
     OP_LOG(OP_LOG_DEBUG,
            "Arming timer to invoke function from transport thread. (current "
            "tid=%d)",
-           (int)gettid());
+           gettid());
 
     auto result = Pistache::Async::Promise<uint64_t>(
         [&](Pistache::Async::Deferred<uint64_t> deferred) {
@@ -208,19 +208,19 @@ void transport_exec(Pistache::Tcp::Transport& transport,
                                std::chrono::duration<int64_t, std::milli>{1},
                                std::move(deferred));
         });
-    result.then([=](uint64_t numWakeup) { func(); },
+    result.then([=]([[maybe_unused]] uint64_t numWakeup) { func(); },
                 [=](std::exception_ptr exc) {
                     std::rethrow_exception(std::move(exc));
                 });
 
     OP_LOG(OP_LOG_DEBUG,
            "Waiting for timer function to complete. (current tid=%d)",
-           (int)gettid());
+           gettid());
 
     Pistache::Async::Barrier<uint64_t> barrier(result);
     barrier.wait();
 
-    OP_LOG(OP_LOG_DEBUG, "Timer completed. (current tid=%d)", (int)gettid());
+    OP_LOG(OP_LOG_DEBUG, "Timer completed. (current tid=%d)", gettid());
 
     close(timer_fd);
 }
