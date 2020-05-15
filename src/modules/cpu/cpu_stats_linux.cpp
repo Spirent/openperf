@@ -7,6 +7,9 @@
 
 #include <unistd.h>
 
+#include <sys/resource.h>
+#include <sys/time.h>
+
 namespace openperf::cpu::internal {
 
 struct linux_proc_stats {
@@ -80,6 +83,23 @@ std::chrono::nanoseconds cpu_stats_get_steal_time()
     auto stats = get_cpu_stats();
     return std::chrono::nanoseconds(
         stats.steal * std::nano::den / ticks_per_sec);
+}
+
+utilization_time get_thread_utilization_time()
+{
+    auto ru = rusage{};
+    getrusage(RUSAGE_THREAD, &ru);
+
+    auto time_system = std::chrono::seconds(ru.ru_stime.tv_sec)
+        + std::chrono::microseconds(ru.ru_stime.tv_usec);
+
+    auto time_user = std::chrono::seconds(ru.ru_utime.tv_sec)
+        + std::chrono::microseconds(ru.ru_utime.tv_usec);
+
+    return utilization_time{
+        .user = time_user,
+        .system = time_system,
+    };
 }
 
 } // namespace openperf::cpu::internal

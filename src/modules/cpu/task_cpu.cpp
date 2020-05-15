@@ -8,8 +8,6 @@
 #include <iomanip>
 #include <thread>
 #include <chrono>
-#include <sys/resource.h>
-#include <sys/time.h>
 
 #include "timesync/chrono.hpp"
 
@@ -20,31 +18,6 @@ using namespace std::chrono_literals;
 auto now = openperf::timesync::chrono::monotime::now;
 
 constexpr auto QUANTA = 100ms;
-
-struct utilization_time {
-    std::chrono::nanoseconds user;
-    std::chrono::nanoseconds system;
-    std::chrono::nanoseconds steal;
-    timesync::chrono::monotime::time_point timestamp = now();
-};
-
-static utilization_time _get_utilization_time()
-{
-    auto ru = rusage{};
-    getrusage(RUSAGE_SELF, &ru);
-
-    auto time_system = std::chrono::seconds(ru.ru_stime.tv_sec)
-        + std::chrono::microseconds(ru.ru_stime.tv_usec);
-
-    auto time_user = std::chrono::seconds(ru.ru_utime.tv_sec)
-        + std::chrono::microseconds(ru.ru_utime.tv_usec);
-
-    return utilization_time{
-        .user = time_user,
-        .system = time_system,
-        .steal = cpu_stats_get_steal_time()
-    };
-}
 
 task_cpu::task_cpu()
     : m_stat(&m_stat_shared)
@@ -120,10 +93,11 @@ void task_cpu::spin()
         stat.runtime += time;
     }
 
-    auto cpu_util = _get_utilization_time();
-    m_stat_active.system += cpu_util.system;
-    m_stat_active.user += cpu_util.user;
-    m_stat_active.steal += cpu_util.steal;
+    auto cpu_util = get_thread_utilization_time();
+    m_stat_active.system = cpu_util.system;
+    m_stat_active.user = cpu_util.user;
+    m_stat_active.steal = cpu_util.steal;
+    //m_stat_active.steal += cpu_util.steal;
     //m_stat_active.available = cpu_stat.
     //m_stat_active.utilization =
     //m_stat_active.error = cpu_stat.
