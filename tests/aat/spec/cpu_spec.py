@@ -401,8 +401,9 @@ with description('CPU Generator Module', 'cpu') as self:
                     with it('stopped'):
                         request = client.models.BulkStopCpuGeneratorsRequest(
                             [g7r.id for g7r in self._g8s])
-                        expr = lambda: self._api.bulk_stop_cpu_generators(request)
-                        expect(expr).not_to(raise_api_exception(204))
+                        result = self._api.bulk_stop_cpu_generators_with_http_info(
+                          request, _return_http_data_only=False)
+                        expect(result[1]).to(equal(204))
 
                     with it('is not running'):
                         for g7r in self._g8s:
@@ -452,10 +453,12 @@ with description('CPU Generator Module', 'cpu') as self:
 
     with description('CPU Generator Results'):
         with before.all:
-            model = generator_model(self._api.api_client, running = True)
+            model = generator_model(self._api.api_client, running = False)
             g7r = self._api.create_cpu_generator(model)
             expect(g7r).to(be_valid_cpu_generator)
+            result = self._api.start_cpu_generator(g7r.id)
             self._g7r = g7r
+            self._result = result
 
         with after.all:
             self._api.delete_cpu_generator(self._g7r.id)
@@ -469,11 +472,6 @@ with description('CPU Generator Module', 'cpu') as self:
                         expect(result).to(be_valid_cpu_generator_result)
 
         with description('/cpu-generator-results/{id}'):
-            with before.all:
-                result = self._api.get_cpu_generator_result(self._g7r.id)
-                expect(result).to(be_valid_cpu_generator_result)
-                self._result = result
-
             with context('GET'):
                 with description('by existing ID'):
                     with it('success'):
@@ -492,9 +490,39 @@ with description('CPU Generator Module', 'cpu') as self:
 
             with context('DELETE'):
                 with description('by existing ID'):
-                    with it('removed (204)'):
-                        expr = lambda: self._api.delete_cpu_generator_result(self._result.id)
-                        expect(expr).not_to(raise_api_exception(204))
+                    with description('active result'):
+                        with it('exists'):
+                            result = self._api.get_cpu_generator_result(self._result.id)
+                            expect(result).to(be_valid_cpu_generator_result)
+
+                        with it('active'):
+                            result = self._api.get_cpu_generator_result(self._result.id)
+                            expect(result).to(be_valid_cpu_generator_result)
+                            expect(result.active).to(be_true)
+
+                        with it('not removed (400)'):
+                            result = lambda: self._api.delete_cpu_generator_result(self._result.id)
+                            expect(result).to(raise_api_exception(400))
+
+                    with description('inactive result'):
+                        with it('exists'):
+                            result = self._api.get_cpu_generator_result(self._result.id)
+                            expect(result).to(be_valid_cpu_generator_result)
+
+                        with it('not active'):
+                            self._api.stop_cpu_generator(self._g7r.id)
+                            result = self._api.get_cpu_generator_result(self._result.id)
+                            expect(result).to(be_valid_cpu_generator_result)
+                            expect(result.active).to(be_false)
+
+                        with it('removed (204)'):
+                            result = self._api.delete_cpu_generator_result_with_http_info(
+                                self._result.id, _return_http_data_only=False)
+                            expect(result[1]).to(equal(204))
+
+                        with it('not found (404)'):
+                            expr = lambda: self._api.get_cpu_generator_result(self._result.id)
+                            expect(expr).to(raise_api_exception(404))
 
                 with description('by non-existent ID'):
                     with it('not found (404)'):
