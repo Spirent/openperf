@@ -12,7 +12,7 @@ TEST_CASE("ipv6_address functionality checks", "[ipv6_address]")
         // default constructor is all zero
         REQUIRE(ipv6_address().data()
                 == std::array<uint8_t, 16>{
-                       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0});
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0});
 
         /* valid */
         auto ref = ipv6_address("2001::1");

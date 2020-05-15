@@ -34,13 +34,12 @@ TEST_CASE("memory stat addition", "[memory]")
                 == st1.operations_target + st2.operations_target);
         REQUIRE(st.time == st1.time + st2.time);
 
-
         REQUIRE(st.latency_min.has_value());
-        REQUIRE(st.latency_min.value() == std::min(
-            st1.latency_min.value(), st2.latency_min.value()));
+        REQUIRE(st.latency_min.value()
+                == std::min(st1.latency_min.value(), st2.latency_min.value()));
         REQUIRE(st.latency_max.has_value());
-        REQUIRE(st.latency_max.value() == std::max(
-            st1.latency_max.value(), st2.latency_max.value()));
+        REQUIRE(st.latency_max.value()
+                == std::max(st1.latency_max.value(), st2.latency_max.value()));
     }
 
     SECTION("random + empty")
