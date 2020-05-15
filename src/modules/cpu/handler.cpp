@@ -225,9 +225,18 @@ void handler::delete_generator(const Rest::Request& request,
         return;
     }
 
-    submit_request(m_socket.get(), api::request_cpu_generator_del{id});
-    response.headers().add<Http::Header::ContentType>(MIME(Application, Json));
-    response.send(Http::Code::No_Content);
+    auto api_reply = submit_request(
+        m_socket.get(), api::request_cpu_generator_del{id});
+
+    if (std::get_if<api::reply_ok>(&api_reply)) {
+        response.headers().add<Http::Header::ContentType>(
+            MIME(Application, Json));
+        response.send(Http::Code::No_Content);
+    } else if (auto error = std::get_if<api::reply_error>(&api_reply)) {
+        response.send(to_code(*error), api::to_string(*error->info));
+    } else {
+        response.send(Http::Code::Internal_Server_Error);
+    }
 }
 
 void handler::start_generator(const Rest::Request& request,
@@ -402,9 +411,17 @@ void handler::delete_generator_result(const Rest::Request& request,
         return;
     }
 
-    submit_request(m_socket.get(), api::request_cpu_generator_result_del{id});
-    response.headers().add<Http::Header::ContentType>(MIME(Application, Json));
-    response.send(Http::Code::No_Content);
+    auto api_reply = submit_request(
+        m_socket.get(), api::request_cpu_generator_result_del{id});
+    if (std::get_if<api::reply_ok>(&api_reply)) {
+        response.headers().add<Http::Header::ContentType>(
+            MIME(Application, Json));
+        response.send(Http::Code::No_Content);
+    } else if (auto error = std::get_if<api::reply_error>(&api_reply)) {
+        response.send(to_code(*error), api::to_string(*error->info));
+    } else {
+        response.send(Http::Code::Internal_Server_Error);
+    }
 }
 
 void handler::get_cpu_info(const Rest::Request&, Http::ResponseWriter response)
