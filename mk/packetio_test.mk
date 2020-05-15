@@ -11,6 +11,9 @@ $(call op_include_dependencies,$(PIOTEST_DEPENDS))
 
 OP_INC_DIRS += $(OP_ROOT)/src/modules
 
+# Add unit tests directory for utility headers
+OP_INC_DIRS += $(OP_ROOT)/tests/unit/modules
+
 ###
 # No build rules; header only for now
 ###
