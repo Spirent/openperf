@@ -49,19 +49,17 @@ void pattern_generator::reset(off_t p_min,
                               generation_pattern p_pattern)
 {
     if (p_min >= p_max)
-        throw std::runtime_error("The minimum value is equal or greater than the maximum value");
+        throw std::runtime_error(
+            "The minimum value is equal or greater than the maximum value");
 
     m_min = p_min;
     m_max = p_max;
     m_idx = p_min - 1;
 
-    const static std::unordered_map<generation_pattern,
-                                    generation_method_t>
+    const static std::unordered_map<generation_pattern, generation_method_t>
         generation_methods = {
-            {generation_pattern::RANDOM,
-             &pattern_generator::pattern_random},
-            {generation_pattern::REVERSE,
-             &pattern_generator::pattern_reverse},
+            {generation_pattern::RANDOM, &pattern_generator::pattern_random},
+            {generation_pattern::REVERSE, &pattern_generator::pattern_reverse},
             {generation_pattern::SEQUENTIAL,
              &pattern_generator::pattern_sequential},
         };

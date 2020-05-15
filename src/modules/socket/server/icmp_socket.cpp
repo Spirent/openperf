@@ -27,11 +27,10 @@ namespace server {
  */
 static uint8_t icmp_type(const pbuf*)
 {
-    return (
-        ip_current_is_v6()
-            ? ICMPH_TYPE(static_cast<const icmp6_hdr*>(ip_next_header_ptr()))
-            : ICMPH_TYPE(
-                  static_cast<const icmp_echo_hdr*>(ip_next_header_ptr())));
+    return (ip_current_is_v6() ? ICMPH_TYPE(
+                static_cast<const icmp6_hdr*>(ip_next_header_ptr()))
+                               : ICMPH_TYPE(static_cast<const icmp_echo_hdr*>(
+                                   ip_next_header_ptr())));
 }
 
 /* RAW receive function; payload should point to IP header */
@@ -93,11 +92,8 @@ icmp_socket::icmp_socket(openperf::socket::server::allocator& allocator,
                          enum lwip_ip_addr_type ip_type,
                          int flags,
                          int protocol)
-    : raw_socket(allocator,
-                 ip_type,
-                 flags,
-                 protocol,
-                 get_receive_function(flags & 0xff))
+    : raw_socket(
+        allocator, ip_type, flags, protocol, get_receive_function(flags & 0xff))
     , m_filter(0)
 {
     if (protocol == IPPROTO_ICMPV6) {

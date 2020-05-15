@@ -10,11 +10,11 @@ namespace openperf::memory::internal {
 
 using namespace std::chrono_literals;
 
-template<class T>
-std::optional<T> bind_binary(std::function<T (T, T)> f, std::optional<T> v1, std::optional<T> v2)
+template <class T>
+std::optional<T>
+bind_binary(std::function<T(T, T)> f, std::optional<T> v1, std::optional<T> v2)
 {
-    if (v1.has_value() && v2.has_value())
-        return f(v1.value(), v2.value());
+    if (v1.has_value() && v2.has_value()) return f(v1.value(), v2.value());
 
     return (v1.has_value()) ? v1 : v2;
 }
@@ -51,12 +51,14 @@ struct memory_stat
         timestamp = std::max(timestamp, st.timestamp);
 
         latency_min = bind_binary<std::chrono::nanoseconds>(
-            [] (auto a, auto b) { return std::min(a, b); },
-                latency_min, st.latency_min);
+            [](auto a, auto b) { return std::min(a, b); },
+            latency_min,
+            st.latency_min);
 
         latency_max = bind_binary<std::chrono::nanoseconds>(
-            [] (auto a, auto b) { return std::max(a, b); },
-                latency_max, st.latency_max);
+            [](auto a, auto b) { return std::max(a, b); },
+            latency_max,
+            st.latency_max);
 
         return *this;
     }

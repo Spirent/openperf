@@ -110,13 +110,15 @@ static swagger::MemoryGeneratorStats to_swagger(const memory_stat& stat)
     if (stat.latency_max.has_value()) {
         model.setLatencyMax(
             std::chrono::duration_cast<std::chrono::nanoseconds>(
-                stat.latency_max.value()).count());
+                stat.latency_max.value())
+                .count());
     }
 
     if (stat.latency_min.has_value()) {
         model.setLatencyMin(
             std::chrono::duration_cast<std::chrono::nanoseconds>(
-                stat.latency_min.value()).count());
+                stat.latency_min.value())
+                .count());
     }
 
     return model;

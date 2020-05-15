@@ -10,7 +10,8 @@ server::server(void* context, openperf::core::event_loop& loop)
 {
     // Setup event loop
     struct op_event_callbacks callbacks = {
-        .on_read = [](const op_event_data* data, void* arg) -> int {
+        .on_read = [](const op_event_data* data, void* arg) -> int
+        {
             auto s = reinterpret_cast<server*>(arg);
             return s->handle_rpc_request(data);
         }};

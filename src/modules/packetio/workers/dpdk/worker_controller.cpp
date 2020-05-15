@@ -319,8 +319,8 @@ worker_controller::worker_controller(worker_controller&& other) noexcept
     , m_timestampers(std::move(other.m_timestampers))
 {}
 
-worker_controller&
-worker_controller::operator=(worker_controller&& other) noexcept
+worker_controller& worker_controller::
+operator=(worker_controller&& other) noexcept
 {
     if (this != &other) {
         m_context = other.m_context;

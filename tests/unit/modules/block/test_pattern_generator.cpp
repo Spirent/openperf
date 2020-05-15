@@ -31,9 +31,7 @@ TEST_CASE("pattern_generator", "[block]")
 
         SECTION("zero sequece, ")
         {
-            for (size_t i = 0; i < 10; i++) {
-                REQUIRE(pg.generate() == 0);
-            }
+            for (size_t i = 0; i < 10; i++) { REQUIRE(pg.generate() == 0); }
         }
     }
 
@@ -53,20 +51,11 @@ TEST_CASE("pattern_generator", "[block]")
             }
         };
 
-        SECTION("zero sequece, ")
-        {
-            test(0, 1);
-        }
+        SECTION("zero sequece, ") { test(0, 1); }
 
-        SECTION("positive numbers, ")
-        {
-            test(0, 10);
-        }
+        SECTION("positive numbers, ") { test(0, 10); }
 
-        SECTION("negative numbers, ")
-        {
-            test(-15, -10);
-        }
+        SECTION("negative numbers, ") { test(-15, -10); }
     }
 
     SECTION("pattern SEQUENTIAL, ")
@@ -80,20 +69,11 @@ TEST_CASE("pattern_generator", "[block]")
             }
         };
 
-        SECTION("zero sequece, ")
-        {
-            test(0, 1);
-        }
+        SECTION("zero sequece, ") { test(0, 1); }
 
-        SECTION("positive numbers, ")
-        {
-            test(0, 10);
-        }
+        SECTION("positive numbers, ") { test(0, 10); }
 
-        SECTION("negative numbers, ")
-        {
-            test(-15, -10);
-        }
+        SECTION("negative numbers, ") { test(-15, -10); }
     }
 
     SECTION("pattern REVERSE, ")
@@ -107,19 +87,10 @@ TEST_CASE("pattern_generator", "[block]")
             }
         };
 
-        SECTION("zero sequece, ")
-        {
-            test(0, 1);
-        }
+        SECTION("zero sequece, ") { test(0, 1); }
 
-        SECTION("positive numbers, ")
-        {
-            test(0, 10);
-        }
+        SECTION("positive numbers, ") { test(0, 10); }
 
-        SECTION("negative numbers, ")
-        {
-            test(-15, -10);
-        }
+        SECTION("negative numbers, ") { test(-15, -10); }
     }
 }

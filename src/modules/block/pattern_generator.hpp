@@ -24,9 +24,7 @@ private:
 
 public:
     pattern_generator();
-    pattern_generator(off_t min,
-                      off_t max,
-                      generation_pattern pattern);
+    pattern_generator(off_t min, off_t max, generation_pattern pattern);
     off_t generate();
     void reset(off_t min, off_t max, generation_pattern pattern);
 };

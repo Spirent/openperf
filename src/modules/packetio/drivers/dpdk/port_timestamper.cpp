@@ -91,8 +91,8 @@ callback_timestamper::callback_timestamper(
     , m_port(other.m_port)
 {}
 
-callback_timestamper&
-callback_timestamper::operator=(callback_timestamper&& other) noexcept
+callback_timestamper& callback_timestamper::
+operator=(callback_timestamper&& other) noexcept
 {
     if (this != &other) {
         m_callbacks = std::move(other.m_callbacks);

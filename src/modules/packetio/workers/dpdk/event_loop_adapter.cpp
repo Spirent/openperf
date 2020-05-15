@@ -14,8 +14,8 @@ event_loop_adapter::event_loop_adapter(event_loop_adapter&& other) noexcept
     , m_runnables(std::move(other.m_runnables))
 {}
 
-event_loop_adapter&
-event_loop_adapter::operator=(event_loop_adapter&& other) noexcept
+event_loop_adapter& event_loop_adapter::
+operator=(event_loop_adapter&& other) noexcept
 {
     if (this != &other) {
         m_additions = std::move(other.m_additions);

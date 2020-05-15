@@ -13,10 +13,7 @@ virtual_device::virtual_device()
     : m_fd(-1)
 {}
 
-virtual_device::~virtual_device()
-{
-    terminate_scrub();
-}
+virtual_device::~virtual_device() { terminate_scrub(); }
 
 int virtual_device::write_header()
 {

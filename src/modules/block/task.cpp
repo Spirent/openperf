@@ -294,9 +294,12 @@ void block_task::resume()
 
 void block_task::pause() { m_pause_timestamp = ref_clock::now(); }
 
-task_stat_t block_task::stat() const {
+task_stat_t block_task::stat() const
+{
     auto res = *m_at_stat;
-    res.read.latency_min = (res.read.latency_min == duration::max()) ? duration::min() : res.read.latency_min;
+    res.read.latency_min = (res.read.latency_min == duration::max())
+                               ? duration::min()
+                               : res.read.latency_min;
     return res;
 }
 
