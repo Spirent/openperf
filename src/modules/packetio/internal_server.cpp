@@ -9,8 +9,7 @@ std::string_view endpoint = "inproc://op_packetio_internal";
 reply_msg handle_request(workers::generic_workers& workers,
                          const request_sink_add& request)
 {
-    auto result =
-        workers.add_sink(request.data.src_id, std::move(request.data.sink));
+    auto result = workers.add_sink(request.data.src_id, request.data.sink);
     if (!result) {
         return (reply_error{result.error()});
     } else {
@@ -21,15 +20,14 @@ reply_msg handle_request(workers::generic_workers& workers,
 reply_msg handle_request(workers::generic_workers& workers,
                          const request_sink_del& request)
 {
-    workers.del_sink(request.data.src_id, std::move(request.data.sink));
+    workers.del_sink(request.data.src_id, request.data.sink);
     return (reply_ok{});
 }
 
 reply_msg handle_request(workers::generic_workers& workers,
                          const request_source_add& request)
 {
-    auto result =
-        workers.add_source(request.data.dst_id, std::move(request.data.source));
+    auto result = workers.add_source(request.data.dst_id, request.data.source);
 
     if (!result) {
         return (reply_error{result.error()});
@@ -41,7 +39,7 @@ reply_msg handle_request(workers::generic_workers& workers,
 reply_msg handle_request(workers::generic_workers& workers,
                          const request_source_del& request)
 {
-    workers.del_source(request.data.dst_id, std::move(request.data.source));
+    workers.del_source(request.data.dst_id, request.data.source);
     return (reply_ok{});
 }
 

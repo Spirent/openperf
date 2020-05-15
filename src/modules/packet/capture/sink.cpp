@@ -90,7 +90,7 @@ sink::sink(const sink_config& config, std::vector<unsigned> rx_ids)
     , m_indexes(sink::make_indexes(rx_ids))
 {}
 
-sink::sink(sink&& other)
+sink::sink(sink&& other) noexcept
     : m_id(std::move(other.m_id))
     , m_source(std::move(other.m_source))
     , m_capture_mode(other.m_capture_mode)
@@ -98,14 +98,14 @@ sink::sink(sink&& other)
     , m_buffer_size(other.m_buffer_size)
     , m_max_packet_size(other.m_max_packet_size)
     , m_duration(other.m_duration)
-    , m_filter(std::move(other.m_filter))
-    , m_start_trigger(std::move(other.m_start_trigger))
-    , m_stop_trigger(std::move(other.m_stop_trigger))
+    , m_filter(other.m_filter)
+    , m_start_trigger(other.m_start_trigger)
+    , m_stop_trigger(other.m_stop_trigger)
     , m_indexes(std::move(other.m_indexes))
     , m_results(other.m_results.load())
 {}
 
-sink& sink::operator=(sink&& other)
+sink& sink::operator=(sink&& other) noexcept
 {
     if (this != &other) {
         m_id = std::move(other.m_id);
@@ -115,9 +115,9 @@ sink& sink::operator=(sink&& other)
         m_buffer_size = other.m_buffer_size;
         m_max_packet_size = other.m_max_packet_size;
         m_duration = other.m_duration;
-        m_filter = std::move(other.m_filter);
-        m_start_trigger = std::move(other.m_start_trigger);
-        m_stop_trigger = std::move(other.m_stop_trigger);
+        m_filter = other.m_filter;
+        m_start_trigger = other.m_start_trigger;
+        m_stop_trigger = other.m_stop_trigger;
         m_indexes = std::move(other.m_indexes);
         m_results.store(other.m_results);
     }

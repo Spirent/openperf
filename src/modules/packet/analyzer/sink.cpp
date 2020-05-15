@@ -66,7 +66,7 @@ sink::sink(const sink_config& config, std::vector<unsigned> rx_ids)
     , m_protocol_counters(config.protocol_counters)
 {}
 
-sink::sink(sink&& other)
+sink::sink(sink&& other) noexcept
     : m_id(std::move(other.m_id))
     , m_source(std::move(other.m_source))
     , m_indexes(std::move(other.m_indexes))
@@ -75,7 +75,7 @@ sink::sink(sink&& other)
     , m_results(other.m_results.load())
 {}
 
-sink& sink::operator=(sink&& other)
+sink& sink::operator=(sink&& other) noexcept
 {
     if (this != &other) {
         m_id = std::move(other.m_id);

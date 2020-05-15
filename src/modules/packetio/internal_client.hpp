@@ -21,15 +21,15 @@ class client
     add_task_impl(workers::context ctx,
                   std::string_view name,
                   event_loop::event_notifier notify,
-                  event_loop::event_handler on_event,
-                  std::optional<event_loop::delete_handler> on_delete,
-                  std::any arg);
+                  event_loop::event_handler&& on_event,
+                  std::optional<event_loop::delete_handler>&& on_delete,
+                  std::any&& arg);
 
 public:
     client(void* context);
 
-    client(client&& other);
-    client& operator=(client&& other);
+    client(client&& other) noexcept;
+    client& operator=(client&& other) noexcept;
 
     tl::expected<std::vector<unsigned>, int>
     get_worker_rx_ids(std::optional<std::string_view> obj_id = std::nullopt);

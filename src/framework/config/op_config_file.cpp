@@ -295,7 +295,7 @@ int op_config_file_find(int argc, char* const argv[])
                 std::begin(unknown_nodes),
                 std::end(unknown_nodes),
                 std::string(),
-                [&](const std::string& a, const std::string b) -> std::string {
+                [&](const std::string& a, const std::string& b) -> std::string {
                     return (a
                             + (a.length() == 0
                                    ? ""

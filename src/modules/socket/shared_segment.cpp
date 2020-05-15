@@ -57,7 +57,7 @@ shared_segment::shared_segment(const std::string_view path,
     m_initialized = create;
 }
 
-shared_segment::shared_segment(shared_segment&& other)
+shared_segment::shared_segment(shared_segment&& other) noexcept
     : m_path(std::move(other.m_path))
     , m_ptr(other.m_ptr)
     , m_size(other.m_size)
@@ -66,7 +66,7 @@ shared_segment::shared_segment(shared_segment&& other)
     other.m_initialized = false;
 }
 
-shared_segment& shared_segment::operator=(shared_segment&& other)
+shared_segment& shared_segment::operator=(shared_segment&& other) noexcept
 {
     if (this != &other) {
         m_path.swap(other.m_path);

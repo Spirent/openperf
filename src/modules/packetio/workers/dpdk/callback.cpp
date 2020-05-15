@@ -39,7 +39,7 @@ callback::callback(std::string_view name,
                    std::optional<event_loop::delete_handler> on_delete,
                    std::any arg)
     : m_name(name)
-    , m_notify(std::move(notifier))
+    , m_notify(notifier)
     , m_on_event(std::move(on_event))
     , m_on_delete(std::move(on_delete))
     , m_arg(std::move(arg))

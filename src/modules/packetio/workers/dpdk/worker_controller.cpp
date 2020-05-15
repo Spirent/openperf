@@ -303,7 +303,7 @@ worker_controller::~worker_controller()
     worker::port_queues::instance().unset();
 }
 
-worker_controller::worker_controller(worker_controller&& other)
+worker_controller::worker_controller(worker_controller&& other) noexcept
     : m_context(other.m_context)
     , m_driver(other.m_driver)
     , m_workers(std::move(other.m_workers))
@@ -319,7 +319,8 @@ worker_controller::worker_controller(worker_controller&& other)
     , m_timestampers(std::move(other.m_timestampers))
 {}
 
-worker_controller& worker_controller::operator=(worker_controller&& other)
+worker_controller&
+worker_controller::operator=(worker_controller&& other) noexcept
 {
     if (this != &other) {
         m_context = other.m_context;
@@ -454,8 +455,8 @@ worker_controller::get_transmit_function(std::string_view port_id) const
                        : to_transmit_function(worker::tx_queued));
 }
 
-void worker_controller::add_interface(std::string_view port_id,
-                                      interface::generic_interface interface)
+void worker_controller::add_interface(
+    std::string_view port_id, const interface::generic_interface& interface)
 {
     auto port_idx = m_driver.port_index(port_id);
     if (!port_idx) {
@@ -490,8 +491,8 @@ void worker_controller::add_interface(std::string_view port_id,
            *port_idx);
 }
 
-void worker_controller::del_interface(std::string_view port_id,
-                                      interface::generic_interface interface)
+void worker_controller::del_interface(
+    std::string_view port_id, const interface::generic_interface& interface)
 {
     auto port_idx = m_driver.port_index(port_id);
     if (!port_idx) return;
@@ -790,7 +791,7 @@ worker_controller::add_source(std::string_view dst_id,
 }
 
 void worker_controller::del_source(std::string_view dst_id,
-                                   packets::generic_source source)
+                                   const packets::generic_source& source)
 {
     /* Only support port sources for now */
     // TODO: Lookup interface if no port found
@@ -820,13 +821,13 @@ void worker_controller::del_source(std::string_view dst_id,
     m_recycler->writer_add_gc_callback([to_delete]() { delete to_delete; });
 }
 
-tl::expected<std::string, int>
-worker_controller::add_task(workers::context ctx,
-                            std::string_view name,
-                            event_loop::event_notifier notify,
-                            event_loop::event_handler on_event,
-                            std::optional<event_loop::delete_handler> on_delete,
-                            std::any arg)
+tl::expected<std::string, int> worker_controller::add_task(
+    workers::context ctx,
+    std::string_view name,
+    event_loop::event_notifier notify,
+    event_loop::event_handler&& on_event,
+    std::optional<event_loop::delete_handler>&& on_delete,
+    std::any&& arg)
 {
     /* XXX: We only know about stack tasks right now */
     if (ctx != workers::context::STACK) {
@@ -835,7 +836,12 @@ worker_controller::add_task(workers::context ctx,
 
     auto id = core::uuid::random();
     auto [it, success] =
-        m_tasks.try_emplace(id, name, notify, on_event, on_delete, arg);
+        m_tasks.try_emplace(id,
+                            name,
+                            notify,
+                            std::forward<decltype(on_event)>(on_event),
+                            std::forward<decltype(on_delete)>(on_delete),
+                            std::forward<std::any>(arg));
     if (!success) { return (tl::make_unexpected(EALREADY)); }
 
     OP_LOG(OP_LOG_DEBUG,

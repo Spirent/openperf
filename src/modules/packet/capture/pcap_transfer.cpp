@@ -167,7 +167,7 @@ public:
                                  Pistache::Tcp::Transport* transport,
                                  bool chunked = false)
         : m_transport(transport)
-        , m_peer(peer)
+        , m_peer(std::move(peer))
         , m_writer(std::make_unique<pcap_buffer_writer>())
         , m_buffer_sent(0)
         , m_total_bytes_sent(0)
@@ -438,7 +438,7 @@ public:
                                 Pistache::Tcp::Transport* transport,
                                 bool chunked = false)
         : m_transport(transport)
-        , m_peer(peer)
+        , m_peer(std::move(peer))
         , m_writer(std::make_unique<pcap_buffer_writer>())
         , m_total_bytes_sent(0)
         , m_chunked(chunked)

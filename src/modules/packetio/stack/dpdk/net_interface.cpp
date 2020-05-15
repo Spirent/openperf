@@ -254,7 +254,7 @@ static int net_interface_link_status_change(uint16_t port_id,
 }
 
 static err_t configure_ipv4_interface(
-    const std::optional<interface::ipv4_protocol_config> ipv4_config,
+    const std::optional<interface::ipv4_protocol_config>& ipv4_config,
     netif& netif)
 {
     err_t netif_error = ERR_OK;
@@ -284,7 +284,7 @@ static err_t configure_ipv4_interface(
 }
 
 static err_t
-start_ipv4_interface(const std::optional<interface::ipv4_protocol_config> ipv4,
+start_ipv4_interface(const std::optional<interface::ipv4_protocol_config>& ipv4,
                      netif& netif)
 {
     err_t netif_error = ERR_OK;
@@ -304,7 +304,7 @@ start_ipv4_interface(const std::optional<interface::ipv4_protocol_config> ipv4,
 }
 
 static void
-stop_ipv4_interface(const std::optional<interface::ipv4_protocol_config> ipv4,
+stop_ipv4_interface(const std::optional<interface::ipv4_protocol_config>& ipv4,
                     netif& netif)
 {
     if (ipv4) {
@@ -338,7 +338,7 @@ static err_t configure_ipv6_interface_link_local_address(
 }
 
 static err_t configure_ipv6_interface(
-    const std::optional<interface::ipv6_protocol_config> ipv6_config,
+    const std::optional<interface::ipv6_protocol_config>& ipv6_config,
     netif& netif)
 {
     err_t netif_error = ERR_OK;
@@ -384,7 +384,7 @@ static err_t configure_ipv6_interface(
 }
 
 static err_t
-start_ipv6_interface(const std::optional<interface::ipv6_protocol_config> ipv6,
+start_ipv6_interface(const std::optional<interface::ipv6_protocol_config>& ipv6,
                      netif& netif)
 {
     err_t netif_error = ERR_OK;
@@ -407,7 +407,7 @@ start_ipv6_interface(const std::optional<interface::ipv6_protocol_config> ipv6,
 }
 
 static void
-stop_ipv6_interface(const std::optional<interface::ipv6_protocol_config> ipv6,
+stop_ipv6_interface(const std::optional<interface::ipv6_protocol_config>& ipv6,
                     netif& netif)
 {
     if (ipv6) {

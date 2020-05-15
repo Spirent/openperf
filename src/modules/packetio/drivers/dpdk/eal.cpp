@@ -211,22 +211,25 @@ static void create_test_portpairs(unsigned test_portpairs)
     }
 }
 
-eal eal::test_environment(std::vector<std::string> args,
-                          std::unordered_map<int, std::string> port_ids,
+eal eal::test_environment(std::vector<std::string>&& args,
+                          std::unordered_map<int, std::string>&& port_ids,
                           unsigned test_portpairs)
 {
     assert(test_portpairs != 0);
-    return (eal(args, port_ids, test_portpairs));
+    return (eal(std::forward<decltype(args)>(args),
+                std::forward<decltype(port_ids)>(port_ids),
+                test_portpairs));
 }
 
-eal eal::real_environment(std::vector<std::string> args,
-                          std::unordered_map<int, std::string> port_ids)
+eal eal::real_environment(std::vector<std::string>&& args,
+                          std::unordered_map<int, std::string>&& port_ids)
 {
-    return (eal(args, port_ids));
+    return (eal(std::forward<decltype(args)>(args),
+                std::forward<decltype(port_ids)>(port_ids)));
 }
 
-eal::eal(std::vector<std::string> args,
-         std::unordered_map<int, std::string> port_ids,
+eal::eal(std::vector<std::string>&& args,
+         std::unordered_map<int, std::string>&& port_ids,
          unsigned test_portpairs)
     : m_initialized(false)
     , m_port_ids(port_ids)
@@ -362,7 +365,7 @@ eal::~eal()
 #pragma clang diagnostic pop
 };
 
-eal::eal(eal&& other)
+eal::eal(eal&& other) noexcept
     : m_initialized(other.m_initialized)
     , m_allocator(std::move(other.m_allocator))
     , m_bond_ports(std::move(other.m_bond_ports))
@@ -371,7 +374,7 @@ eal::eal(eal&& other)
     other.m_initialized = false;
 }
 
-eal& eal::operator=(eal&& other)
+eal& eal::operator=(eal&& other) noexcept
 {
     if (this != &other) {
         m_initialized = other.m_initialized;
@@ -448,7 +451,7 @@ eal::create_port(std::string_view id, const port::config_data& config)
 
     std::vector<int> port_indexes;
     /* Make sure that all ports in the vector actually exist */
-    for (auto port_id : std::get<port::bond_config>(config).ports) {
+    for (const auto& port_id : std::get<port::bond_config>(config).ports) {
         // Verify port id is valid.
         auto id_check = config::op_config_validate_id_string(port_id);
         if (!id_check) { return tl::make_unexpected(id_check.error()); }

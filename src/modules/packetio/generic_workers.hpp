@@ -92,8 +92,12 @@ public:
                                             event_loop::event_handler on_event,
                                             std::any arg)
     {
-        return (
-            m_self->add_task(ctx, name, notify, on_event, std::nullopt, arg));
+        return (m_self->add_task(ctx,
+                                 name,
+                                 notify,
+                                 std::move(on_event),
+                                 std::nullopt,
+                                 std::move(arg)));
     }
 
     tl::expected<std::string, int>
@@ -104,7 +108,12 @@ public:
              event_loop::delete_handler on_delete,
              std::any arg)
     {
-        return (m_self->add_task(ctx, name, notify, on_event, on_delete, arg));
+        return (m_self->add_task(ctx,
+                                 name,
+                                 notify,
+                                 std::move(on_event),
+                                 std::move(on_delete),
+                                 std::move(arg)));
     }
 
     void del_task(std::string_view task_id) { m_self->del_task(task_id); }
@@ -210,8 +219,12 @@ private:
                  std::optional<event_loop::delete_handler> on_delete,
                  std::any arg) override
         {
-            return (m_workers.add_task(
-                ctx, name, notify, on_event, on_delete, arg));
+            return (m_workers.add_task(ctx,
+                                       name,
+                                       notify,
+                                       std::move(on_event),
+                                       std::move(on_delete),
+                                       std::move(arg)));
         }
 
         void del_task(std::string_view task_id) override
