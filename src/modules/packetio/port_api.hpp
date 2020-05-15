@@ -13,9 +13,7 @@ namespace core {
 class event_loop;
 }
 
-namespace packetio {
-namespace port {
-namespace api {
+namespace packetio::port::api {
 
 enum class request_type {
     NONE = 0,
@@ -47,9 +45,7 @@ inline std::string json_error(int code, const char* message)
 
 extern const std::string endpoint;
 
-} // namespace api
-} // namespace port
-} // namespace packetio
+} // namespace packetio::port::api
 } // namespace openperf
 
 #endif /*_OP_PACKETIO_PORT_API_HPP_ */

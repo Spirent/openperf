@@ -10,14 +10,9 @@
 
 #include "packetio/generic_port.hpp"
 
-namespace openperf {
-namespace packetio {
-namespace driver {
+namespace openperf::packetio::driver {
 
-typedef uint16_t (*tx_burst)(int id,
-                             uint32_t hash,
-                             void* items[],
-                             uint16_t nb_items);
+using tx_burst = uint16_t (*)(int, uint32_t, void**, uint16_t);
 
 class generic_driver
 {
@@ -117,8 +112,6 @@ private:
 
 std::unique_ptr<generic_driver> make();
 
-} // namespace driver
-} // namespace packetio
-} // namespace openperf
+} // namespace openperf::packetio::driver
 
 #endif /* _OP_PACKETIO_GENERIC_DRIVER_HPP_ */

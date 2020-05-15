@@ -1,9 +1,7 @@
 #include "socket/api.hpp"
 #include "utils/overloaded_visitor.hpp"
 
-namespace openperf {
-namespace socket {
-namespace api {
+namespace openperf::socket::api {
 
 std::string client_socket(const std::string_view id)
 {
@@ -80,6 +78,4 @@ api::io_channel_ptr to_pointer(api::io_channel_offset offset, const void* base)
         offset));
 }
 
-} // namespace api
-} // namespace socket
-} // namespace openperf
+} // namespace openperf::socket::api

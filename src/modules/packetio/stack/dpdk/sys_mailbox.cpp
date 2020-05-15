@@ -115,7 +115,7 @@ extern "C" {
 err_t sys_mbox_new(sys_mbox_t* mboxp, int size)
 {
     assert(mboxp);
-    sys_mbox* m = new sys_mbox(size);
+    auto* m = new sys_mbox(size);
     SYS_STATS_INC_USED(mbox);
     *mboxp = m;
     return (ERR_OK);

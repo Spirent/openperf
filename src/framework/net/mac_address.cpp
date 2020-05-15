@@ -3,8 +3,7 @@
 
 #include "net/mac_address.hpp"
 
-namespace openperf {
-namespace net {
+namespace openperf::net {
 
 mac_address::mac_address()
     : m_octets{0, 0, 0, 0, 0, 0}
@@ -113,5 +112,4 @@ int compare(const mac_address& lhs, const mac_address& rhs)
     return std::memcmp(lhs.m_octets, rhs.m_octets, 6);
 }
 
-} // namespace net
-} // namespace openperf
+} // namespace openperf::net

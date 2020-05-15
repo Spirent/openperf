@@ -5,9 +5,7 @@
 #include <map>
 #include <vector>
 
-namespace openperf {
-namespace packetio {
-namespace dpdk {
+namespace openperf::packetio::dpdk {
 namespace model {
 class port_info;
 }
@@ -60,8 +58,6 @@ std::map<int, count>
 get_port_queue_counts(const std::vector<descriptor>& descriptors);
 
 } // namespace queue
-} // namespace dpdk
-} // namespace packetio
-} // namespace openperf
+} // namespace openperf::packetio::dpdk
 
 #endif /* _OP_PACKETIO_DPDK_QUEUE_UTILS_HPP_ */

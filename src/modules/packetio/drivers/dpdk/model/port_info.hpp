@@ -4,10 +4,7 @@
 #include <cstdint>
 #include "packetio/drivers/dpdk/dpdk.h"
 
-namespace openperf {
-namespace packetio {
-namespace dpdk {
-namespace model {
+namespace openperf::packetio::dpdk::model {
 
 class port_info
 {
@@ -52,9 +49,6 @@ private:
     const uint16_t m_id;
 };
 
-} // namespace model
-} // namespace dpdk
-} // namespace packetio
-} // namespace openperf
+} // namespace openperf::packetio::dpdk::model
 
 #endif /* _OP_PACKETIO_DPDK_MODEL_PORT_INFO_HPP_ */

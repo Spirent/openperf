@@ -35,10 +35,10 @@ template <typename T> class offset_ptr
     offset_ptr(no_init) {}
 
 public:
-    typedef T value_type;
-    typedef T& reference;
-    typedef T* pointer;
-    typedef std::random_access_iterator_tag iterator_category;
+    using value_type = T;
+    using reference = T&;
+    using pointer = T*;
+    using iterator_category = std::random_access_iterator_tag;
 
     static offset_ptr uninitialized() { return offset_ptr(no_init()); }
 

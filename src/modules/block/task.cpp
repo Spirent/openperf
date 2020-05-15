@@ -146,7 +146,7 @@ block_task::block_task()
     , m_start_timestamp(ref_clock::now())
 {}
 
-block_task::~block_task() {}
+block_task::~block_task() = default;
 
 size_t block_task::worker_spin(int (*queue_aio_op)(aiocb* aiocb),
                                size_t block_size,
@@ -192,7 +192,7 @@ size_t block_task::worker_spin(int (*queue_aio_op)(aiocb* aiocb),
              * 2) aio_cancel not supported
              * We consider either of these conditions to be fatal.
              */
-            if (aio_cancel(m_task_config.fd, NULL) == -1) {
+            if (aio_cancel(m_task_config.fd, nullptr) == -1) {
                 OP_LOG(OP_LOG_ERROR,
                        "Could not cancel pending AIO operatons: %s\n",
                        strerror(errno));
@@ -257,8 +257,8 @@ size_t block_task::worker_spin(int (*queue_aio_op)(aiocb* aiocb),
 
 void pseudo_random_fill(void* buffer, size_t length)
 {
-    uint32_t seed = utils::random_uniform<uint32_t>(UINT32_MAX);
-    uint32_t* ptr = (uint32_t*)buffer;
+    auto seed = utils::random_uniform<uint32_t>(UINT32_MAX);
+    auto* ptr = (uint32_t*)buffer;
 
     for (size_t i = 0; i < length / 4; i++) {
         uint32_t temp = (seed << 9) ^ (seed << 14);

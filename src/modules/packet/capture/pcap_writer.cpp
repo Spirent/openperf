@@ -5,8 +5,6 @@
 
 namespace openperf::packet::capture::pcap {
 
-pcap_buffer_writer::pcap_buffer_writer() {}
-
 bool pcap_buffer_writer::write_section_block()
 {
     uint8_t* ptr = m_buffer.data();

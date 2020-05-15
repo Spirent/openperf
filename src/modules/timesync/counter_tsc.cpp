@@ -36,7 +36,7 @@ static hz measure_tsc_frequency()
     return (hz{tsc_ticks * clock::duration{1s}.count() / clk_ticks.count()});
 }
 
-class tsc : public timecounter::registrar<tsc>
+class tsc final : public timecounter::registrar<tsc>
 {
 public:
     tsc()

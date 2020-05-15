@@ -3,8 +3,7 @@
 
 #include <memory>
 
-namespace openperf {
-namespace memory {
+namespace openperf::memory {
 
 template <class T, class Impl> class std_allocator
 {
@@ -50,7 +49,6 @@ bool operator!=(std_allocator<T, Impl> const& x,
     return !(x == y);
 }
 
-} // namespace memory
-} // namespace openperf
+} // namespace openperf::memory
 
 #endif /* _OP_MEMORY_STD_ALLOCATOR_HPP_ */

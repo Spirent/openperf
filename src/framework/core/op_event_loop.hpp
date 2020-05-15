@@ -5,15 +5,14 @@
 #include <memory>
 #include "core/op_event_loop.h"
 
-namespace openperf {
-namespace core {
+namespace openperf::core {
 
 class event_loop
 {
 public:
     event_loop()
         : m_loop(op_event_loop_allocate()){};
-    ~event_loop() {}
+    ~event_loop() = default;
 
     size_t count() { return op_event_loop_count(m_loop.get()); }
     void purge() { return op_event_loop_purge(m_loop.get()); }
@@ -96,6 +95,5 @@ private:
     std::unique_ptr<struct op_event_loop, loop_deleter> m_loop;
 };
 
-} // namespace core
-} // namespace openperf
+} // namespace openperf::core
 #endif /* _OP_EVENT_LOOP_HPP_ */

@@ -10,9 +10,7 @@ namespace core {
 class event_loop;
 }
 
-namespace packetio {
-namespace port {
-namespace api {
+namespace packetio::port::api {
 
 class server
 {
@@ -25,9 +23,7 @@ private:
     std::unique_ptr<void, op_socket_deleter> m_socket;
 };
 
-} // namespace api
-} // namespace port
-} // namespace packetio
+} // namespace packetio::port::api
 } // namespace openperf
 
 #endif /* _OP_PACKETIO_PORT_SERVER_HPP_ */

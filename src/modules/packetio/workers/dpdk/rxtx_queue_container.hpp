@@ -4,9 +4,7 @@
 #include <memory>
 #include <vector>
 
-namespace openperf {
-namespace packetio {
-namespace dpdk {
+namespace openperf::packetio::dpdk {
 
 template <typename RxQueue, typename TxQueue> class rxtx_queue_container
 {
@@ -54,8 +52,6 @@ public:
     }
 };
 
-} // namespace dpdk
-} // namespace packetio
-} // namespace openperf
+} // namespace openperf::packetio::dpdk
 
 #endif /* _OP_PACKETIO_DPDK_RXTX_QUEUE_CONTAINER_HPP_ */

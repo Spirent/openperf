@@ -10,9 +10,7 @@ static uint16_t serial_counter = 0;
 
 // Constructors & Destructor
 generator::generator()
-    : m_stopped(true)
-    , m_paused(true)
-    , m_buffer{.ptr = nullptr, .size = 0}
+    : m_buffer{.ptr = nullptr, .size = 0}
     , m_serial_number(++serial_counter)
 {}
 
@@ -181,7 +179,7 @@ void generator::resize_buffer(size_t size)
                "Reallocating buffer (%zu => %zu)\n",
                m_buffer.size,
                size);
-        m_buffer.ptr = mmap(NULL,
+        m_buffer.ptr = mmap(nullptr,
                             size,
                             PROT_READ | PROT_WRITE,
                             MAP_ANONYMOUS | MAP_PRIVATE,

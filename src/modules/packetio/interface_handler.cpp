@@ -5,10 +5,7 @@
 #include "packetio/interface_api.hpp"
 #include "config/op_config_utils.hpp"
 
-namespace openperf {
-namespace packetio {
-namespace interface {
-namespace api {
+namespace openperf::packetio::interface::api {
 
 using namespace Pistache;
 using json = nlohmann::json;
@@ -264,7 +261,4 @@ void handler::bulk_delete_interfaces(const Rest::Request& request,
     }
 }
 
-} // namespace api
-} // namespace interface
-} // namespace packetio
-} // namespace openperf
+} // namespace openperf::packetio::interface::api

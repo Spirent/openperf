@@ -2,7 +2,7 @@
 
 namespace openperf::socket::server {
 
-pbuf_vec::pbuf_vec() {}
+pbuf_vec::pbuf_vec() = default;
 
 pbuf_vec::pbuf_vec(struct pbuf* pbuf, void* payload, uint16_t length)
     : m_pbuf(pbuf)

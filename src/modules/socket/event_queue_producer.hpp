@@ -3,8 +3,7 @@
 
 #include <atomic>
 
-namespace openperf {
-namespace socket {
+namespace openperf::socket {
 
 template <typename Derived> class event_queue_producer
 {
@@ -27,7 +26,6 @@ public:
     int unblock();
 };
 
-} // namespace socket
-} // namespace openperf
+} // namespace openperf::socket
 
 #endif /* _OP_SOCKET_EVENT_QUEUE_PRODUCER_HPP_ */

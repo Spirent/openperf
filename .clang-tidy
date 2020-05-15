@@ -3,7 +3,14 @@ Checks: '-*,
         -bugprone-suspicious-semicolon,
         clang-analyzer-*,
         -clang-analyzer-osx.*,
+        modernize-concat-nested-namespaces,
+        modernize-deprecated-*,
+        modernize-make-*,
+        modernize-use-*,
+        -modernize-use-nodiscard,
         performance-*'
 CheckOptions:
   - key: bugprone-assert-side-effect.AssertMacros
     value: assert, LWIP_ASSERT
+  - key: modernize-use-default-member-init.UseAssignment
+    value: 1

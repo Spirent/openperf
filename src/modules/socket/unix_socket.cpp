@@ -9,8 +9,7 @@
 
 #include "socket/unix_socket.hpp"
 
-namespace openperf {
-namespace socket {
+namespace openperf::socket {
 
 void check_and_create_path(const std::string_view path)
 {
@@ -77,5 +76,4 @@ unix_socket::~unix_socket()
 
 int unix_socket::get() { return (m_fd); }
 
-} // namespace socket
-} // namespace openperf
+} // namespace openperf::socket

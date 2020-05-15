@@ -12,9 +12,7 @@ namespace core {
 class event_loop;
 }
 
-namespace packetio {
-namespace interface {
-namespace api {
+namespace packetio::interface::api {
 
 class server
 {
@@ -25,8 +23,6 @@ private:
     std::unique_ptr<void, op_socket_deleter> m_socket;
 };
 
-} // namespace api
-} // namespace interface
-} // namespace packetio
+} // namespace packetio::interface::api
 } // namespace openperf
 #endif /* _OP_PACKETIO_INTERFACE_SERVER_HPP_ */

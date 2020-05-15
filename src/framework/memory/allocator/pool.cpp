@@ -4,9 +4,7 @@
 
 #include "memory/allocator/pool.hpp"
 
-namespace openperf {
-namespace memory {
-namespace allocator {
+namespace openperf::memory::allocator {
 
 static __attribute__((const)) bool power_of_two(uint64_t x)
 {
@@ -57,6 +55,4 @@ size_t pool::size() const noexcept { return (m_upper - m_lower); }
 
 uintptr_t pool::base() const noexcept { return (m_lower); }
 
-} // namespace allocator
-} // namespace memory
-} // namespace openperf
+} // namespace openperf::memory::allocator

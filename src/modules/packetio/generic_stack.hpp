@@ -14,17 +14,11 @@
 #include "packetio/generic_interface.hpp"
 #include "packetio/generic_workers.hpp"
 
-namespace swagger {
-namespace v1 {
-namespace model {
+namespace swagger::v1::model {
 class Stack;
-}
-} // namespace v1
-} // namespace swagger
+} // namespace swagger::v1::model
 
-namespace openperf {
-namespace packetio {
-namespace stack {
+namespace openperf::packetio::stack {
 
 struct element_stats_data
 {
@@ -157,7 +151,5 @@ std::unique_ptr<generic_stack> make(driver::generic_driver& driver,
 std::shared_ptr<swagger::v1::model::Stack>
 make_swagger_stack(const generic_stack& stack);
 
-} // namespace stack
-} // namespace packetio
-} // namespace openperf
+} // namespace openperf::packetio::stack
 #endif /* _OP_PATCKETIO_GENERIC_STACK_HPP_ */

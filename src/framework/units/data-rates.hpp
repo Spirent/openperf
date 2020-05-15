@@ -9,16 +9,16 @@ namespace openperf::units {
  * Convenience typedefs for standard network rates
  **/
 
-typedef std::kilo kilobits;
-typedef std::ratio<1024L> kibibits;
-typedef std::mega megabits;
-typedef std::ratio<1024L * 1024L> mebibits;
-typedef std::giga gigabits;
-typedef std::ratio<1024L * 1024L * 1024L> gibibits;
-typedef std::tera terabits;
-typedef std::ratio<1024L * 1024L * 1024L * 1024L> tebibits;
+using kilobits = std::kilo;
+using kibibits = std::ratio<1024L>;
+using megabits = std::mega;
+using mebibits = std::ratio<1024L * 1024L>;
+using gigabits = std::giga;
+using gibibits = std::ratio<1024L * 1024L * 1024L>;
+using terabits = std::tera;
+using tebibits = std::ratio<1024L * 1024L * 1024L * 1024L>;
 
-typedef std::ratio<8> bytes;
+using bytes = std::ratio<8>;
 typedef std::ratio_multiply<kilobits, std::ratio<8>> kilobytes;
 typedef std::ratio_multiply<kibibits, std::ratio<8>> kibibytes;
 typedef std::ratio_multiply<megabits, std::ratio<8>> megabytes;

@@ -1,6 +1,6 @@
-#include "yaml_json_emitter.hpp"
-#include "assert.h"
+#include <cassert>
 
+#include "yaml_json_emitter.hpp"
 #include "op_config_file_utils.hpp"
 
 namespace openperf::config::file {
