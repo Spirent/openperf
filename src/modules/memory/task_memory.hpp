@@ -37,7 +37,7 @@ public:
 protected:
     task_memory_config m_config;
     std::vector<unsigned> m_indexes;
-    uint8_t* m_buffer;
+    uint8_t* m_buffer = nullptr;
 
     struct
     {

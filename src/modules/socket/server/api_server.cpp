@@ -180,7 +180,7 @@ server::server(void* context)
     }
 }
 
-server::~server() {}
+server::~server() = default;
 
 int server::start()
 {

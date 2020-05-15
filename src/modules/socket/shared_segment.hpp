@@ -3,8 +3,7 @@
 
 #include <string>
 
-namespace openperf {
-namespace memory {
+namespace openperf::memory {
 
 class shared_segment
 {
@@ -30,7 +29,6 @@ public:
     void* base() const { return (m_ptr); }
 };
 
-} // namespace memory
-} // namespace openperf
+} // namespace openperf::memory
 
 #endif /* _OP_MEMORY_SHARED_SEGMENT_HPP_ */

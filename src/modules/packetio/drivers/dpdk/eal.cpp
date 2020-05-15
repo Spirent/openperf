@@ -19,9 +19,7 @@
 #include "core/op_uuid.hpp"
 #include "config/op_config_utils.hpp"
 
-namespace openperf {
-namespace packetio {
-namespace dpdk {
+namespace openperf::packetio::dpdk {
 
 /*
  * This file acts as an intermediary between the lower DPDK layer and the
@@ -543,6 +541,4 @@ tl::expected<void, std::string> eal::delete_port(std::string_view id)
     return {};
 }
 
-} // namespace dpdk
-} // namespace packetio
-} // namespace openperf
+} // namespace openperf::packetio::dpdk

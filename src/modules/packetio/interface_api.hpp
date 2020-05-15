@@ -5,10 +5,7 @@
 
 #include "json.hpp"
 
-namespace openperf {
-namespace packetio {
-namespace interface {
-namespace api {
+namespace openperf::packetio::interface::api {
 
 /**
  * List of supported server requests.
@@ -35,8 +32,5 @@ inline std::string json_error(int code, const char* message)
 
 extern const std::string endpoint;
 
-} // namespace api
-} // namespace interface
-} // namespace packetio
-} // namespace openperf
+} // namespace openperf::packetio::interface::api
 #endif /* _OP_PACKETIO_INTERFACE_API_HPP_ */

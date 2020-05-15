@@ -9,17 +9,11 @@
 #include "json.hpp"
 #include "tl/expected.hpp"
 
-namespace swagger {
-namespace v1 {
-namespace model {
+namespace swagger::v1::model {
 class Port;
-}
-} // namespace v1
-} // namespace swagger
+} // namespace swagger::v1::model
 
-namespace openperf {
-namespace packetio {
-namespace port {
+namespace openperf::packetio::port {
 
 enum class link_status { LINK_UNKNOWN = 0, LINK_UP, LINK_DOWN };
 
@@ -158,8 +152,6 @@ private:
 std::shared_ptr<swagger::v1::model::Port>
 make_swagger_port(const generic_port&);
 
-} // namespace port
-} // namespace packetio
-} // namespace openperf
+} // namespace openperf::packetio::port
 
 #endif /* _OP_PACKETIO_GENERIC_PORT_HPP_ */

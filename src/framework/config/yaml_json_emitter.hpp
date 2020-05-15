@@ -21,27 +21,27 @@ public:
     yaml_json_emitter(std::ostringstream& output_string);
 
     void OnAlias(const Mark& mark __attribute__((unused)),
-                 anchor_t anchor __attribute__((unused)))
+                 anchor_t anchor __attribute__((unused))) override
     {}
-    void OnDocumentStart(const Mark& mark __attribute__((unused))) {}
-    void OnDocumentEnd() {}
+    void OnDocumentStart(const Mark& mark __attribute__((unused))) override {}
+    void OnDocumentEnd() override {}
     void OnMapStart(const Mark& mark,
                     const std::string& tag,
                     anchor_t anchor,
-                    EmitterStyle::value style);
-    void OnMapEnd();
+                    EmitterStyle::value style) override;
+    void OnMapEnd() override;
     void OnNull(const Mark& mark __attribute__((unused)),
-                anchor_t anchor __attribute__((unused)))
+                anchor_t anchor __attribute__((unused))) override
     {}
     void OnScalar(const Mark& mark,
                   const std::string& tag,
                   anchor_t anchor,
-                  const std::string& value);
+                  const std::string& value) override;
     void OnSequenceStart(const Mark& mark,
                          const std::string& tag,
                          anchor_t anchor,
-                         EmitterStyle::value style);
-    void OnSequenceEnd();
+                         EmitterStyle::value style) override;
+    void OnSequenceEnd() override;
 
 private:
     void BeginNode();

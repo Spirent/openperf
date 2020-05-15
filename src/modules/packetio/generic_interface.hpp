@@ -12,17 +12,11 @@
 
 #include "net/net_types.hpp"
 
-namespace swagger {
-namespace v1 {
-namespace model {
+namespace swagger::v1::model {
 class Interface;
-}
-} // namespace v1
-} // namespace swagger
+} // namespace swagger::v1::model
 
-namespace openperf {
-namespace packetio {
-namespace interface {
+namespace openperf::packetio::interface {
 
 struct stats_data
 {
@@ -204,8 +198,6 @@ std::optional<T> get_optional_key(const nlohmann::json& j, const char* key)
                 : std::nullopt);
 }
 
-} // namespace interface
-} // namespace packetio
-} // namespace openperf
+} // namespace openperf::packetio::interface
 
 #endif /* _OP_PACKETIO_GENERIC_INTERFACE_HPP_ */

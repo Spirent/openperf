@@ -9,9 +9,7 @@
 #include "socket/server/socket_utils.hpp"
 #include "utils/overloaded_visitor.hpp"
 
-namespace openperf {
-namespace socket {
-namespace server {
+namespace openperf::socket::server {
 
 tl::expected<generic_socket, int>
 make_socket(openperf::socket::server::allocator& allocator,
@@ -241,6 +239,4 @@ int server_fd(channel_variant& channel)
     return (std::visit(server_fd_visitor, channel));
 }
 
-} // namespace server
-} // namespace socket
-} // namespace openperf
+} // namespace openperf::socket::server

@@ -40,8 +40,8 @@ private:
     using workers = std::forward_list<worker_ptr>;
 
 private:
-    bool m_stopped;
-    bool m_paused;
+    bool m_stopped = true;
+    bool m_paused = true;
     workers m_read_workers;
     workers m_write_workers;
     config_t m_config;

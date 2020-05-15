@@ -221,7 +221,7 @@ err_t tcpip_callback(tcpip_callback_fn function, void* ctx)
     LWIP_ASSERT("Invalid mbox", sys_mbox_valid_val(tcpip_mbox));
 
     msg = (struct tcpip_msg*)memp_malloc(MEMP_TCPIP_MSG_API);
-    if (msg == NULL) { return ERR_MEM; }
+    if (msg == nullptr) { return ERR_MEM; }
 
     msg->type = TCPIP_MSG_CALLBACK;
     msg->msg.cb.function = function;
@@ -255,7 +255,7 @@ err_t tcpip_try_callback(tcpip_callback_fn function, void* ctx)
     LWIP_ASSERT("Invalid mbox", sys_mbox_valid_val(tcpip_mbox));
 
     msg = (struct tcpip_msg*)memp_malloc(MEMP_TCPIP_MSG_API);
-    if (msg == NULL) { return ERR_MEM; }
+    if (msg == nullptr) { return ERR_MEM; }
 
     msg->type = TCPIP_MSG_CALLBACK;
     msg->msg.cb.function = function;

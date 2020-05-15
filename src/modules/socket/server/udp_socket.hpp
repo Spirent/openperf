@@ -17,9 +17,7 @@
 struct udp_pcb;
 struct pbuf;
 
-namespace openperf {
-namespace socket {
-namespace server {
+namespace openperf::socket::server {
 
 struct udp_init
 {};
@@ -129,8 +127,6 @@ public:
 
 const char* to_string(const udp_socket_state&);
 
-} // namespace server
-} // namespace socket
-} // namespace openperf
+} // namespace openperf::socket::server
 
 #endif /* _OP_SOCKET_SERVER_UDP_SOCKET_HPP_ */

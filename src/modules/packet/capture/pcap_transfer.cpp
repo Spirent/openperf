@@ -37,8 +37,6 @@ size_t calc_pcap_file_length(capture_buffer_reader& reader)
 class pcap_transfer_context : public transfer_context
 {
 public:
-    virtual ~pcap_transfer_context() = default;
-
     void set_reader(std::unique_ptr<capture_buffer_reader>& reader) override
     {
         m_reader.reset(reader.release());
@@ -160,7 +158,7 @@ send_pcap_response_header(Pistache::Http::ResponseWriter& response,
         dynamic_cast<pcap_transfer_context&>(context).get_total_length());
 }
 
-class pcap_thread_transfer_context : public pcap_transfer_context
+class pcap_thread_transfer_context final : public pcap_transfer_context
 {
 public:
     pcap_thread_transfer_context(std::shared_ptr<Pistache::Tcp::Peer> peer,
@@ -175,7 +173,7 @@ public:
         , m_error(false)
     {}
 
-    virtual ~pcap_thread_transfer_context()
+    ~pcap_thread_transfer_context() override
     {
         if (m_thread) {
             // Make sure thread is dead
@@ -431,7 +429,7 @@ private:
     bool m_error;
 };
 
-class pcap_async_transfer_context : public pcap_transfer_context
+class pcap_async_transfer_context final : public pcap_transfer_context
 {
 public:
     pcap_async_transfer_context(std::shared_ptr<Pistache::Tcp::Peer> peer,
@@ -446,7 +444,7 @@ public:
         , m_wrote_trailer(false)
     {}
 
-    virtual ~pcap_async_transfer_context() {}
+    ~pcap_async_transfer_context() override = default;
 
     size_t get_total_length() const override
     {

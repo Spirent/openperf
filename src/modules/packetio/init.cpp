@@ -15,8 +15,7 @@
 #include "packetio/port_server.hpp"
 #include "packetio/stack_server.hpp"
 
-namespace openperf {
-namespace packetio {
+namespace openperf::packetio {
 
 static constexpr int module_version = 1;
 
@@ -88,15 +87,13 @@ struct service
     std::thread m_service;
 };
 
-} // namespace packetio
-} // namespace openperf
+} // namespace openperf::packetio
 
 extern "C" {
 
 int op_packetio_init(void* context, void* state)
 {
-    openperf::packetio::service* s =
-        reinterpret_cast<openperf::packetio::service*>(state);
+    auto* s = reinterpret_cast<openperf::packetio::service*>(state);
     s->init(context);
     s->start();
     return (0);
@@ -104,8 +101,7 @@ int op_packetio_init(void* context, void* state)
 
 void op_packetio_fini(void* state)
 {
-    openperf::packetio::service* s =
-        reinterpret_cast<openperf::packetio::service*>(state);
+    auto* s = reinterpret_cast<openperf::packetio::service*>(state);
     delete s;
 }
 

@@ -4,7 +4,7 @@
 #include <string>
 #include <optional>
 #include <variant>
-#include <limits.h>
+#include <climits>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <sys/uio.h>
@@ -14,8 +14,7 @@
 #include "core/op_uuid.hpp"
 #include "framework/memory/offset_ptr.hpp"
 
-namespace openperf {
-namespace socket {
+namespace openperf::socket {
 
 struct dgram_channel;
 struct stream_channel;
@@ -239,8 +238,7 @@ void set_message_fds(api::reply_msg&, const api::socket_fd_pair& fd_pair);
 api::io_channel_ptr to_pointer(api::io_channel_offset offset, const void* base);
 
 } // namespace api
-} // namespace socket
-} // namespace openperf
+} // namespace openperf::socket
 
 namespace std {
 

@@ -10,9 +10,7 @@
 #include "socket/event_queue_producer.hpp"
 #include "socket/stream_channel.hpp"
 
-namespace openperf {
-namespace socket {
-namespace server {
+namespace openperf::socket::server {
 
 /*
  * The server side stream channel owns the Tx buffer.
@@ -98,8 +96,6 @@ struct stream_channel_deleter
 typedef std::unique_ptr<stream_channel, stream_channel_deleter>
     stream_channel_ptr;
 
-} // namespace server
-} // namespace socket
-} // namespace openperf
+} // namespace openperf::socket::server
 
 #endif /* _OP_SOCKET_SERVER_STREAM_CHANNEL_HPP_ */

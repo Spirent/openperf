@@ -2,9 +2,7 @@
 
 using json = nlohmann::json;
 
-namespace swagger {
-namespace v1 {
-namespace model {
+namespace swagger::v1::model {
 
 void from_json(const json& j, Interface& interface)
 {
@@ -58,6 +56,4 @@ void from_json(const json& j, Port& port)
     }
 }
 
-} // namespace model
-} // namespace v1
-} // namespace swagger
+} // namespace swagger::v1::model

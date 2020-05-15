@@ -8,10 +8,7 @@ struct rte_eth_conf;
 struct rte_eth_dev_info;
 struct rte_mempool;
 
-namespace openperf {
-namespace packetio {
-namespace dpdk {
-namespace model {
+namespace openperf::packetio::dpdk::model {
 
 class port_info;
 
@@ -50,8 +47,5 @@ private:
                                                       uint16_t nb_txqs = 0);
 };
 
-} // namespace model
-} // namespace dpdk
-} // namespace packetio
-} // namespace openperf
+} // namespace openperf::packetio::dpdk::model
 #endif /* _OP_PACKETIO_DPDK_MODEL_PHYSICAL_PORT_HPP_ */

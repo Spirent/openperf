@@ -5,10 +5,7 @@
 #include "packetio/port_api.hpp"
 #include "config/op_config_utils.hpp"
 
-namespace openperf {
-namespace packetio {
-namespace port {
-namespace api {
+namespace openperf::packetio::port::api {
 
 using namespace Pistache;
 using json = nlohmann::json;
@@ -228,7 +225,4 @@ void handler::delete_port(const Rest::Request& request,
     }
 }
 
-} // namespace api
-} // namespace port
-} // namespace packetio
-} // namespace openperf
+} // namespace openperf::packetio::port::api

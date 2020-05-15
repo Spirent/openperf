@@ -19,9 +19,7 @@
 #endif
 #include "utils/overloaded_visitor.hpp"
 
-namespace openperf {
-namespace packetio {
-namespace dpdk {
+namespace openperf::packetio::dpdk {
 
 constexpr static char ifname_0 = 'i';
 constexpr static char ifname_1 = 'o';
@@ -109,7 +107,7 @@ static err_t net_interface_tx(netif* netif, pbuf* p)
     assert(netif);
     assert(p);
 
-    net_interface* ifp = reinterpret_cast<net_interface*>(netif->state);
+    auto* ifp = reinterpret_cast<net_interface*>(netif->state);
 
     MIB2_STATS_NETIF_ADD(netif, ifoutoctets, p->tot_len);
     if ((static_cast<uint8_t*>(p->payload)[0] & 1) == 0) {
@@ -134,7 +132,7 @@ static err_t net_interface_rx(pbuf* p, netif* netif)
     assert(p);
     assert(netif);
 
-    net_interface* ifp = reinterpret_cast<net_interface*>(netif->state);
+    auto* ifp = reinterpret_cast<net_interface*>(netif->state);
 
     MIB2_STATS_NETIF_ADD(netif, ifinoctets, p->tot_len);
     if ((static_cast<uint8_t*>(p->payload)[0] & 1) == 0) {
@@ -184,7 +182,7 @@ static err_t net_interface_rx(pbuf* p, netif* netif)
 
 static err_t net_interface_dpdk_init(netif* netif)
 {
-    net_interface* ifp = reinterpret_cast<net_interface*>(netif->state);
+    auto* ifp = reinterpret_cast<net_interface*>(netif->state);
 
     auto info = model::port_info(ifp->port_index());
 
@@ -245,7 +243,7 @@ static int net_interface_link_status_change(uint16_t port_id,
 {
     if (event != RTE_ETH_EVENT_INTR_LSC) { return (0); }
 
-    netif* netif = reinterpret_cast<struct netif*>(arg);
+    auto* netif = reinterpret_cast<struct netif*>(arg);
     rte_eth_link link;
     rte_eth_link_get_nowait(port_id, &link);
     return (link.link_status == ETH_LINK_UP
@@ -329,7 +327,7 @@ static err_t configure_ipv6_interface_link_local_address(
     if (addr) {
         struct ip6_addr ip6_addr;
         addr->to_net_array(ip6_addr.addr);
-        err_t err = netifapi_netif_add_ip6_address(&netif, &ip6_addr, NULL);
+        err_t err = netifapi_netif_add_ip6_address(&netif, &ip6_addr, nullptr);
         return err;
     } else {
         /* Add auto link local IPv6 address */
@@ -353,8 +351,8 @@ static err_t configure_ipv6_interface(
 
                     struct ip6_addr address;
                     config.address.to_net_array(address.addr);
-                    netif_error =
-                        netifapi_netif_add_ip6_address(&netif, &address, NULL);
+                    netif_error = netifapi_netif_add_ip6_address(
+                        &netif, &address, nullptr);
                     // TODO:
                     //   LWPIP doesn't support
                     //     IPv6 gateway (no route table)
@@ -631,6 +629,4 @@ const net_interface& to_interface(netif* ifp)
     return *(reinterpret_cast<net_interface*>(ifp->state));
 }
 
-} // namespace dpdk
-} // namespace packetio
-} // namespace openperf
+} // namespace openperf::packetio::dpdk

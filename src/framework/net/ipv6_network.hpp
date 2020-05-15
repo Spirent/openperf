@@ -3,8 +3,7 @@
 
 #include "net/ipv6_address.hpp"
 
-namespace openperf {
-namespace net {
+namespace openperf::net {
 
 /**
  * Immutable IPv6 Network
@@ -51,7 +50,6 @@ inline bool operator>=(const ipv6_network& lhs, const ipv6_network& rhs)
     return compare(lhs, rhs) >= 0;
 }
 
-} // namespace net
-} // namespace openperf
+} // namespace openperf::net
 
 #endif /* _OP_FRAMEWORK_NET_IPV6_NETWORK_HPP_ */

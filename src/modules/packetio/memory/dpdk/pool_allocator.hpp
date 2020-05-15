@@ -9,9 +9,7 @@
 #include "packetio/drivers/dpdk/queue_utils.hpp"
 #include "packetio/drivers/dpdk/model/port_info.hpp"
 
-namespace openperf {
-namespace packetio {
-namespace dpdk {
+namespace openperf::packetio::dpdk {
 
 class pool_allocator
 {
@@ -41,7 +39,5 @@ private:
     std::unordered_map<unsigned, mempool_ptr> m_ref_rom_mpools;
 };
 
-} // namespace dpdk
-} // namespace packetio
-} // namespace openperf
+} // namespace openperf::packetio::dpdk
 #endif /* _OP_PACKETIO_MEMORY_DPDK_POOL_ALLOCATOR_HPP_ */

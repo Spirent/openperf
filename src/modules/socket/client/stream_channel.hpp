@@ -9,9 +9,7 @@
 #include "socket/event_queue_producer.hpp"
 #include "socket/stream_channel.hpp"
 
-namespace openperf {
-namespace socket {
-namespace client {
+namespace openperf::socket::client {
 
 /*
  * The client side stream channel owns the Rx buffer.
@@ -82,8 +80,6 @@ public:
     tl::expected<void, int> wait_writable();
 };
 
-} // namespace client
-} // namespace socket
-} // namespace openperf
+} // namespace openperf::socket::client
 
 #endif /* _OP_SOCKET_CLIENT_STREAM_CHANNEL_HPP_ */

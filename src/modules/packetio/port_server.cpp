@@ -12,10 +12,7 @@
 #include "packetio/port_api.hpp"
 #include "packetio/port_server.hpp"
 
-namespace openperf {
-namespace packetio {
-namespace port {
-namespace api {
+namespace openperf::packetio::port::api {
 
 const std::string endpoint = "inproc://op_packetio_port";
 
@@ -177,7 +174,7 @@ static int _handle_rpc_request(const op_event_data* data, void* arg)
                 + zmq_msg_size(&request_msg));
 
         json request = json::from_cbor(request_buffer);
-        request_type type = request["type"].get<request_type>();
+        auto type = request["type"].get<request_type>();
         json reply;
 
         switch (type) {
@@ -245,7 +242,4 @@ server::server(void* context,
     loop.add(m_socket.get(), &callbacks, &driver);
 }
 
-} // namespace api
-} // namespace port
-} // namespace packetio
-} // namespace openperf
+} // namespace openperf::packetio::port::api

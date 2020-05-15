@@ -5,8 +5,7 @@
 
 #include "socket/api.hpp"
 
-namespace openperf {
-namespace socket {
+namespace openperf::socket {
 
 /*
  * Note: buffer names are from the point of view of the client,
@@ -60,7 +59,6 @@ struct stream_channel
     STREAM_CHANNEL_MEMBERS
 };
 
-} // namespace socket
-} // namespace openperf
+} // namespace openperf::socket
 
 #endif /* _OP_SOCKET_STREAM_CHANNEL_HPP_ */

@@ -7,10 +7,7 @@
 #include "packetio/stack_api.hpp"
 #include "config/op_config_utils.hpp"
 
-namespace openperf {
-namespace packetio {
-namespace stack {
-namespace api {
+namespace openperf::packetio::stack::api {
 
 using namespace Pistache;
 using json = nlohmann::json;
@@ -120,7 +117,4 @@ void handler::get_stack(const Rest::Request& request,
     }
 }
 
-} // namespace api
-} // namespace stack
-} // namespace packetio
-} // namespace openperf
+} // namespace openperf::packetio::stack::api

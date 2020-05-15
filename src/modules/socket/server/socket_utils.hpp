@@ -9,9 +9,7 @@
 #include "core/op_log.h"
 #include "lwip/ip_addr.h"
 
-namespace openperf {
-namespace socket {
-namespace server {
+namespace openperf::socket::server {
 
 template <typename Derived, typename StateVariant> class socket_state_machine
 {
@@ -26,7 +24,7 @@ public:
 
     api::reply_msg handle_request(const api::request_msg& request)
     {
-        Derived& child = static_cast<Derived&>(*this);
+        auto& child = static_cast<Derived&>(*this);
         auto [msg, next_state] = std::visit(
             [&](const auto& msg, const auto& s) -> on_request_reply {
                 return (child.on_request(msg, s));
@@ -77,8 +75,6 @@ tl::expected<void, int> copy_out(pid_t dst_pid, void* dst_ptr, int src);
 tl::expected<void, int>
 copy_out(pid_t dst_pid, void* dst_ptr, const void* src_ptr, socklen_t length);
 
-} // namespace server
-} // namespace socket
-} // namespace openperf
+} // namespace openperf::socket::server
 
 #endif /* _OP_SOCKET_SERVER_SOCKET_UTILS_HPP_ */

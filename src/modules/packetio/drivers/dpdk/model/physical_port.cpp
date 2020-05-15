@@ -4,10 +4,7 @@
 #include "packetio/drivers/dpdk/model/port_info.hpp"
 #include "packetio/drivers/dpdk/model/physical_port.hpp"
 
-namespace openperf {
-namespace packetio {
-namespace dpdk {
-namespace model {
+namespace openperf::packetio::dpdk::model {
 
 physical_port::physical_port(int idx, std::string_view id, rte_mempool* pool)
     : m_idx(idx)
@@ -344,7 +341,4 @@ physical_port::low_level_config(uint16_t nb_rxqs, uint16_t nb_txqs)
     return {};
 }
 
-} // namespace model
-} // namespace dpdk
-} // namespace packetio
-} // namespace openperf
+} // namespace openperf::packetio::dpdk::model

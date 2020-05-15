@@ -1,7 +1,7 @@
 #ifndef _OP_BLOCK_API_HPP_
 #define _OP_BLOCK_API_HPP_
 
-#include <limits.h>
+#include <climits>
 #include <string>
 #include <variant>
 #include <tl/expected.hpp>

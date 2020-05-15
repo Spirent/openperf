@@ -13,9 +13,7 @@
 #include "socket/unix_socket.hpp"
 #include "core/op_uuid.hpp"
 
-namespace openperf {
-namespace socket {
-namespace api {
+namespace openperf::socket::api {
 
 template <typename T> class thread_singleton
 {
@@ -30,7 +28,8 @@ public:
     thread_singleton& operator=(const thread_singleton) = delete;
 
 protected:
-    thread_singleton(){};
+    thread_singleton() = default;
+    ;
 };
 
 class client : public thread_singleton<client>
@@ -99,8 +98,6 @@ public:
     ssize_t writev(int s, const struct iovec* iov, int iovcnt);
 };
 
-} // namespace api
-} // namespace socket
-} // namespace openperf
+} // namespace openperf::socket::api
 
 #endif /* _OP_SOCKET_API_CLIENT_HPP_ */

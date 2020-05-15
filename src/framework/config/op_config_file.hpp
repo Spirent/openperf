@@ -121,19 +121,19 @@ std::optional<YAML::Node> op_config_get_param(std::string_view param);
 template <op_option_type T> struct op_option_type_maps;
 template <> struct op_option_type_maps<op_option_type::OP_OPTION_TYPE_NONE>
 {
-    typedef bool type;
+    using type = bool;
 };
 template <> struct op_option_type_maps<op_option_type::OP_OPTION_TYPE_STRING>
 {
-    typedef std::string type;
+    using type = std::string;
 };
 template <> struct op_option_type_maps<op_option_type::OP_OPTION_TYPE_LONG>
 {
-    typedef long type;
+    using type = long;
 };
 template <> struct op_option_type_maps<op_option_type::OP_OPTION_TYPE_DOUBLE>
 {
-    typedef double type;
+    using type = double;
 };
 template <> struct op_option_type_maps<op_option_type::OP_OPTION_TYPE_MAP>
 {
@@ -141,7 +141,7 @@ template <> struct op_option_type_maps<op_option_type::OP_OPTION_TYPE_MAP>
 };
 template <> struct op_option_type_maps<op_option_type::OP_OPTION_TYPE_LIST>
 {
-    typedef std::vector<std::string> type;
+    using type = std::vector<std::string>;
 };
 
 /*

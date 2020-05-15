@@ -6,9 +6,7 @@
 
 #include "memory/allocator/bsd_tree.h"
 
-namespace openperf {
-namespace memory {
-namespace allocator {
+namespace openperf::memory::allocator {
 namespace impl {
 
 struct heap_node
@@ -38,8 +36,6 @@ public:
     uintptr_t base() const noexcept;
 };
 
-} // namespace allocator
-} // namespace memory
-} // namespace openperf
+} // namespace openperf::memory::allocator
 
 #endif /* _OP_MEMORY_ALLOCATOR_FREE_LIST_HPP_ */

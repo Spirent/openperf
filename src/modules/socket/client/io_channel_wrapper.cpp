@@ -1,9 +1,7 @@
 #include "socket/client/io_channel_wrapper.hpp"
 #include "utils/overloaded_visitor.hpp"
 
-namespace openperf {
-namespace socket {
-namespace client {
+namespace openperf::socket::client {
 
 using io_channel = std::variant<dgram_channel*, stream_channel*>;
 
@@ -130,6 +128,4 @@ tl::expected<void, int> io_channel_wrapper::wait_writable()
     return (std::visit(wait_writable_visitor, m_channel));
 }
 
-} // namespace client
-} // namespace socket
-} // namespace openperf
+} // namespace openperf::socket::client

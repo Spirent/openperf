@@ -10,7 +10,7 @@
 #ifndef _OP_SOCKET_DPDK_MEMCPY_SSE_HPP_
 #define _OP_SOCKET_DPDK_MEMCPY_SSE_HPP_
 
-#include <stdint.h>
+#include <cstdint>
 #include <x86intrin.h>
 
 namespace dpdk::impl::sse {
@@ -250,8 +250,8 @@ static inline void rte_mov256(uint8_t* dst, const uint8_t* src)
 static inline void* rte_memcpy_generic(void* dst, const void* src, size_t n)
 {
     __m128i xmm0, xmm1, xmm2, xmm3, xmm4, xmm5, xmm6, xmm7, xmm8;
-    uintptr_t dstu = (uintptr_t)dst;
-    uintptr_t srcu = (uintptr_t)src;
+    auto dstu = (uintptr_t)dst;
+    auto srcu = (uintptr_t)src;
     void* ret = dst;
     size_t dstofss;
     size_t srcofs;

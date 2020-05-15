@@ -23,7 +23,7 @@
  * ----------------------------------------------------------------------
  */
 
-#include <limits.h>
+#include <climits>
 #include <sys/time.h>
 
 #include "timesync/chrono.hpp"

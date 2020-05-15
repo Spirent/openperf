@@ -14,8 +14,7 @@
 
 #include "socket/server/stream_channel.hpp"
 
-namespace openperf {
-namespace socket {
+namespace openperf::socket {
 
 template class circular_buffer_consumer<server::stream_channel>;
 template class circular_buffer_producer<server::stream_channel>;
@@ -246,5 +245,4 @@ void stream_channel::dump() const
 }
 
 } // namespace server
-} // namespace socket
-} // namespace openperf
+} // namespace openperf::socket

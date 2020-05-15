@@ -8,8 +8,7 @@
 #include "framework/memory/offset_ptr.hpp"
 #include "socket/api.hpp"
 
-namespace openperf {
-namespace socket {
+namespace openperf::socket {
 
 struct dgram_ipv4_addr
 {
@@ -38,12 +37,11 @@ struct dgram_ip_addr
 class dgram_channel_addr
 {
     dgram_ip_addr m_addr;
-    in_port_t m_port;
+    in_port_t m_port = 0;
 
 public:
     dgram_channel_addr()
         : m_addr({{{{0, 0, 0, 0}, 0}}, dgram_ip_addr::type::IPv4})
-        , m_port(0)
     {}
 
     dgram_channel_addr(const dgram_ip_addr* addr, in_port_t port)
@@ -120,7 +118,6 @@ struct dgram_channel
     DGRAM_CHANNEL_MEMBERS
 };
 
-} // namespace socket
-} // namespace openperf
+} // namespace openperf::socket
 
 #endif /* _OP_SOCKET_DGRAM_CHANNEL_HPP_ */

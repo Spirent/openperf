@@ -4,8 +4,7 @@
 #include <cstdint>
 #include <string>
 
-namespace openperf {
-namespace net {
+namespace openperf::net {
 
 class mac_address
 {
@@ -60,8 +59,7 @@ inline bool operator>=(const mac_address& lhs, const mac_address& rhs)
     return compare(lhs, rhs) >= 0;
 }
 
-} // namespace net
-} // namespace openperf
+} // namespace openperf::net
 
 namespace std {
 

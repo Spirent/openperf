@@ -5,9 +5,7 @@
 #include "packetio/stack/dpdk/offload_utils.hpp"
 #include "core/op_log.h"
 
-namespace openperf {
-namespace packetio {
-namespace dpdk {
+namespace openperf::packetio::dpdk {
 
 static uint16_t tcp_header_length(const rte_tcp_hdr* tcp)
 {
@@ -94,6 +92,4 @@ void set_tx_offload_metadata(rte_mbuf* mbuf, uint16_t mtu)
     rte_mbuf_sanity_check(mbuf, true);
 }
 
-} // namespace dpdk
-} // namespace packetio
-} // namespace openperf
+} // namespace openperf::packetio::dpdk

@@ -84,9 +84,6 @@ sink::sink(const sink_config& config, std::vector<unsigned> rx_ids)
     , m_buffer_size(config.buffer_size)
     , m_max_packet_size(config.max_packet_size)
     , m_duration(config.duration)
-    , m_filter(nullptr)
-    , m_start_trigger(nullptr)
-    , m_stop_trigger(nullptr)
     , m_indexes(sink::make_indexes(rx_ids))
 {}
 

@@ -4,8 +4,7 @@
 #include <atomic>
 #include <limits>
 
-namespace openperf {
-namespace socket {
+namespace openperf::socket {
 
 template <typename Derived> class event_queue_consumer
 {
@@ -38,7 +37,6 @@ public:
     int block_wait();
 };
 
-} // namespace socket
-} // namespace openperf
+} // namespace openperf::socket
 
 #endif /* _OP_SOCKET_EVENT_QUEUE_CONSUMER_HPP_ */

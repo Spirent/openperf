@@ -6,9 +6,7 @@
 
 #include <sys/queue.h>
 
-namespace openperf {
-namespace memory {
-namespace allocator {
+namespace openperf::memory::allocator {
 
 class intrusive_stack
 {
@@ -51,8 +49,6 @@ public:
     uintptr_t base() const noexcept;
 };
 
-} // namespace allocator
-} // namespace memory
-} // namespace openperf
+} // namespace openperf::memory::allocator
 
 #endif /* _OP_MEMORY_ALLOCATOR_POOL_HPP_ */

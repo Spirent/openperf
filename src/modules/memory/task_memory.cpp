@@ -99,8 +99,7 @@ static uint64_t _get_cache_line_size()
 
 // Constructors & Destructor
 task_memory::task_memory()
-    : m_buffer(nullptr)
-    , m_scratch{.ptr = nullptr, .size = 0}
+    : m_scratch{.ptr = nullptr, .size = 0}
     , m_stat(&m_stat_data)
     , m_stat_clear(true)
 {}

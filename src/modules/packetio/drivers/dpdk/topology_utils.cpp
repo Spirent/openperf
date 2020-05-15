@@ -8,10 +8,7 @@
 #include "packetio/drivers/dpdk/topology_utils.hpp"
 #include "core/op_log.h"
 
-namespace openperf {
-namespace packetio {
-namespace dpdk {
-namespace topology {
+namespace openperf::packetio::dpdk::topology {
 
 using cores_by_id = std::unordered_map<unsigned, std::vector<unsigned>>;
 
@@ -175,7 +172,4 @@ unsigned get_stack_lcore_id()
     return (max->second.front());
 }
 
-} // namespace topology
-} // namespace dpdk
-} // namespace packetio
-} // namespace openperf
+} // namespace openperf::packetio::dpdk::topology

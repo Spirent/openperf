@@ -7,9 +7,7 @@
 
 #include "core/op_modules.h"
 
-namespace openperf {
-namespace api {
-namespace modules {
+namespace openperf::api::modules {
 
 using namespace Pistache;
 using json = nlohmann::json;
@@ -123,6 +121,4 @@ void handler::get_module(const Rest::Request& request,
     response.send(Http::Code::Ok, out_mod->toJson().dump());
 }
 
-} // namespace modules
-} // namespace api
-} // namespace openperf
+} // namespace openperf::api::modules

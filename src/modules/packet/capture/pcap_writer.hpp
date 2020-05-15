@@ -12,8 +12,6 @@ namespace openperf::packet::capture::pcap {
 class pcap_buffer_writer
 {
 public:
-    pcap_buffer_writer();
-
     bool write_file_header();
 
     bool write_section_block();

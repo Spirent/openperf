@@ -51,7 +51,7 @@ template <typename Derived, typename StateVariant> class finite_state_machine
 public:
     void run()
     {
-        Derived& child = static_cast<Derived&>(*this);
+        auto& child = static_cast<Derived&>(*this);
         auto next_state = std::visit(
             [&](auto& state) -> std::optional<StateVariant> {
                 return (child.on_timeout(state));
@@ -95,7 +95,7 @@ class tx_scheduler
      */
     std::priority_queue<schedule::entry,
                         std::vector<schedule::entry>,
-                        std::greater<schedule::entry>>
+                        std::greater<>>
         m_schedule;
 
     schedule::time_point m_time_reschedule;

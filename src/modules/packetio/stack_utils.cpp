@@ -4,13 +4,11 @@
 #include "packetio/generic_stack.hpp"
 #include "utils/overloaded_visitor.hpp"
 
-namespace openperf {
-namespace packetio {
-namespace stack {
+namespace openperf::packetio::stack {
 
 using namespace swagger::v1::model;
 
-typedef void(protocol_getter)(std::shared_ptr<StackProtocolStats>);
+using protocol_getter = void(std::shared_ptr<StackProtocolStats>);
 
 static std::shared_ptr<StackProtocolStats>
 make_swagger_protocol_stats(const protocol_stats_data& src)
@@ -130,6 +128,4 @@ std::shared_ptr<Stack> make_swagger_stack(const generic_stack& in_stack)
     return (out_stack);
 }
 
-} // namespace stack
-} // namespace packetio
-} // namespace openperf
+} // namespace openperf::packetio::stack

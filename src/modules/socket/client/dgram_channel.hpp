@@ -9,9 +9,7 @@
 #include "socket/event_queue_producer.hpp"
 #include "socket/dgram_channel.hpp"
 
-namespace openperf {
-namespace socket {
-namespace client {
+namespace openperf::socket::client {
 
 class dgram_channel
     : public circular_buffer_consumer<dgram_channel>
@@ -79,8 +77,6 @@ public:
     tl::expected<void, int> wait_writable();
 };
 
-} // namespace client
-} // namespace socket
-} // namespace openperf
+} // namespace openperf::socket::client
 
 #endif /* _OP_SOCKET_CLIENT_DGRAM_CHANNEL_HPP_ */

@@ -4,13 +4,7 @@
 #include "lwip/pbuf.h"
 #include "socket/server/pbuf_queue.hpp"
 
-namespace openperf {
-namespace socket {
-namespace server {
-
-pbuf_queue::pbuf_queue()
-    : m_length(0)
-{}
+namespace openperf::socket::server {
 
 pbuf_queue::~pbuf_queue()
 {
@@ -92,6 +86,4 @@ size_t pbuf_queue::clear(size_t length)
     return (cleared);
 }
 
-} // namespace server
-} // namespace socket
-} // namespace openperf
+} // namespace openperf::socket::server

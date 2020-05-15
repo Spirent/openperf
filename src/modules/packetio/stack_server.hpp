@@ -8,9 +8,7 @@ namespace openperf {
 namespace core {
 class event_loop;
 }
-namespace packetio {
-namespace stack {
-namespace api {
+namespace packetio::stack::api {
 
 class server
 {
@@ -21,8 +19,6 @@ private:
     std::unique_ptr<void, op_socket_deleter> m_socket;
 };
 
-} // namespace api
-} // namespace stack
-} // namespace packetio
+} // namespace packetio::stack::api
 } // namespace openperf
 #endif /* _OP_PACKETIO_STACK_SERVER_HPP_ */

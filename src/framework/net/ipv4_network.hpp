@@ -3,8 +3,7 @@
 
 #include "net/ipv4_address.hpp"
 
-namespace openperf {
-namespace net {
+namespace openperf::net {
 
 class ipv4_network
 {
@@ -48,7 +47,6 @@ inline bool operator>=(const ipv4_network& lhs, const ipv4_network& rhs)
     return compare(lhs, rhs) >= 0;
 }
 
-} // namespace net
-} // namespace openperf
+} // namespace openperf::net
 
 #endif /* _OP_FRAMEWORK_NET_IPV4_NETWORK_HPP_ */

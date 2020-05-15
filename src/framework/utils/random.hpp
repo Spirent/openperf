@@ -20,8 +20,8 @@ static T random_uniform(T max = std::numeric_limits<T>::max())
 
 inline void op_pseudo_random_fill(void* buffer, size_t length)
 {
-    uint32_t seed = random_uniform<uint32_t>();
-    uint32_t* ptr = reinterpret_cast<uint32_t*>(buffer);
+    auto seed = random_uniform<uint32_t>();
+    auto* ptr = reinterpret_cast<uint32_t*>(buffer);
 
     for (size_t i = 0; i < length / sizeof(uint32_t); ++i) {
         uint32_t temp = (seed << 9) ^ (seed << 14);
