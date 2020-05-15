@@ -10,7 +10,7 @@
 
 namespace openperf::packet::capture::api {
 
-std::string to_filter_string(void* filter)
+std::string to_filter_string([[maybe_unused]] void* filter)
 {
     // TODO: Add support for BPF filters
     return "";

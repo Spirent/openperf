@@ -112,75 +112,75 @@ serialized_msg serialize_request(request_msg&& msg)
     auto error =
         (zmq_msg_init(&serialized.type, msg.index())
          || std::visit(
-                utils::overloaded_visitor(
-                    [&](request_list_captures& request) {
-                        return (zmq_msg_init(&serialized.data,
-                                             std::move(request.filter)));
-                    },
-                    [&](request_create_capture& request) {
-                        return (zmq_msg_init(&serialized.data,
-                                             std::move(request.capture)));
-                    },
-                    [&](const request_delete_captures&) {
-                        return (zmq_msg_init(&serialized.data, 0));
-                    },
-                    [&](const request_get_capture& request) {
-                        return (zmq_msg_init(&serialized.data,
-                                             request.id.data(),
-                                             request.id.length()));
-                    },
-                    [&](const request_delete_capture& request) {
-                        return (zmq_msg_init(&serialized.data,
-                                             request.id.data(),
-                                             request.id.length()));
-                    },
-                    [&](request_start_capture& request) {
-                        return (zmq_msg_init(&serialized.data,
-                                             request.id.data(),
-                                             request.id.length()));
-                    },
-                    [&](const request_stop_capture& request) {
-                        return (zmq_msg_init(&serialized.data,
-                                             request.id.data(),
-                                             request.id.length()));
-                    },
-                    [&](request_list_capture_results& request) {
-                        return (zmq_msg_init(&serialized.data,
-                                             std::move(request.filter)));
-                    },
-                    [&](const request_delete_capture_results& request) {
-                        return (zmq_msg_init(&serialized.data, 0));
-                    },
-                    [&](const request_get_capture_result& request) {
-                        return (zmq_msg_init(&serialized.data,
-                                             request.id.data(),
-                                             request.id.length()));
-                    },
-                    [&](const request_delete_capture_result& request) {
-                        return (zmq_msg_init(&serialized.data,
-                                             request.id.data(),
-                                             request.id.length()));
-                    },
-                    [&](request_create_capture_transfer& request) {
-                        std::vector<uint8_t> buffer(
-                            sizeof(&request.transfer) + request.id.length(), 0);
-                        auto ptr = &buffer[0];
+             utils::overloaded_visitor(
+                 [&](request_list_captures& request) {
+                     return (zmq_msg_init(&serialized.data,
+                                          std::move(request.filter)));
+                 },
+                 [&](request_create_capture& request) {
+                     return (zmq_msg_init(&serialized.data,
+                                          std::move(request.capture)));
+                 },
+                 [&](const request_delete_captures&) {
+                     return (zmq_msg_init(&serialized.data, 0));
+                 },
+                 [&](const request_get_capture& request) {
+                     return (zmq_msg_init(&serialized.data,
+                                          request.id.data(),
+                                          request.id.length()));
+                 },
+                 [&](const request_delete_capture& request) {
+                     return (zmq_msg_init(&serialized.data,
+                                          request.id.data(),
+                                          request.id.length()));
+                 },
+                 [&](request_start_capture& request) {
+                     return (zmq_msg_init(&serialized.data,
+                                          request.id.data(),
+                                          request.id.length()));
+                 },
+                 [&](const request_stop_capture& request) {
+                     return (zmq_msg_init(&serialized.data,
+                                          request.id.data(),
+                                          request.id.length()));
+                 },
+                 [&](request_list_capture_results& request) {
+                     return (zmq_msg_init(&serialized.data,
+                                          std::move(request.filter)));
+                 },
+                 [&](const request_delete_capture_results&) {
+                     return (zmq_msg_init(&serialized.data, 0));
+                 },
+                 [&](const request_get_capture_result& request) {
+                     return (zmq_msg_init(&serialized.data,
+                                          request.id.data(),
+                                          request.id.length()));
+                 },
+                 [&](const request_delete_capture_result& request) {
+                     return (zmq_msg_init(&serialized.data,
+                                          request.id.data(),
+                                          request.id.length()));
+                 },
+                 [&](request_create_capture_transfer& request) {
+                     std::vector<uint8_t> buffer(
+                         sizeof(&request.transfer) + request.id.length(), 0);
+                     auto ptr = &buffer[0];
 
-                        *(transfer_context**)(ptr) = request.transfer;
-                        ptr += sizeof(transfer_context*);
-                        std::copy(request.id.data(),
-                                  request.id.data() + request.id.length(),
-                                  ptr);
+                     *(transfer_context**)(ptr) = request.transfer;
+                     ptr += sizeof(transfer_context*);
+                     std::copy(request.id.data(),
+                               request.id.data() + request.id.length(),
+                               ptr);
 
-                        return (zmq_msg_init(
-                            &serialized.data, buffer.data(), buffer.size()));
-                    },
-                    [&](const request_delete_capture_transfer& request) {
-                        return (zmq_msg_init(&serialized.data,
-                                             request.id.data(),
-                                             request.id.length()));
-                    }),
-                msg));
+                     return (zmq_msg_init(
+                         &serialized.data, buffer.data(), buffer.size()));
+                 },
+                 [&](const request_delete_capture_transfer& request) {
+                     return (zmq_msg_init(&serialized.data,
+                                          request.id.data(),
+                                          request.id.length()));
+                 }),
+             msg));
     if (error) { throw std::bad_alloc(); }
 
     return (serialized);
@@ -192,21 +192,21 @@ serialized_msg serialize_reply(reply_msg&& msg)
     auto error =
         (zmq_msg_init(&serialized.type, msg.index())
          || std::visit(
-                utils::overloaded_visitor(
-                    [&](reply_captures& reply) {
-                        return (zmq_msg_init(&serialized.data, reply.captures));
-                    },
-                    [&](reply_capture_results& reply) {
-                        return (zmq_msg_init(&serialized.data,
-                                             reply.capture_results));
-                    },
-                    [&](const reply_ok&) {
-                        return (zmq_msg_init(&serialized.data, 0));
-                    },
-                    [&](const reply_error& error) {
-                        return (zmq_msg_init(&serialized.data, error.info));
-                    }),
-                msg));
+             utils::overloaded_visitor(
+                 [&](reply_captures& reply) {
+                     return (zmq_msg_init(&serialized.data, reply.captures));
+                 },
+                 [&](reply_capture_results& reply) {
+                     return (
+                         zmq_msg_init(&serialized.data, reply.capture_results));
+                 },
+                 [&](const reply_ok&) {
+                     return (zmq_msg_init(&serialized.data, 0));
+                 },
+                 [&](const reply_error& error) {
+                     return (zmq_msg_init(&serialized.data, error.info));
+                 }),
+             msg));
     if (error) { throw std::bad_alloc(); }
 
     return (serialized);

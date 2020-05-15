@@ -39,7 +39,7 @@ class pcap_transfer_context : public transfer_context
 public:
     void set_reader(std::unique_ptr<capture_buffer_reader>& reader) override
     {
-        m_reader.reset(reader.release());
+        m_reader = std::move(reader);
     }
 
     bool is_done() const override { return m_done; }
@@ -50,7 +50,16 @@ public:
 
     virtual size_t get_total_length() const = 0;
 
-protected:
+    capture_buffer_reader* reader() const { return (m_reader.get()); }
+
+    Pistache::Async::Deferred<ssize_t>& deferred() { return (m_deferred); }
+
+    void set_deferred(Pistache::Async::Deferred<ssize_t> deferred)
+    {
+        m_deferred = std::move(deferred);
+    }
+
+private:
     std::unique_ptr<capture_buffer_reader> m_reader;
     Pistache::Async::Deferred<ssize_t> m_deferred;
     bool m_done = false;
@@ -185,21 +194,21 @@ public:
     {
         // Currently code will enable chunk encoding if returned length is 0
         if (m_chunked) return 0;
-        return calc_pcap_file_length(*m_reader);
+        return calc_pcap_file_length(*reader());
     }
 
     Pistache::Async::Promise<ssize_t> start() override
     {
         auto promise = Pistache::Async::Promise<ssize_t>(
             [&](Pistache::Async::Deferred<ssize_t> deferred) mutable {
-                m_deferred = std::move(deferred);
+                set_deferred(std::move(deferred));
             });
 
         m_total_bytes_sent = 0;
         m_buffer_sent = 0;
         m_error = false;
 
-        m_reader->rewind();
+        reader()->rewind();
 
         // Disable the peer so Pistache doesn't do anything with it while
         // it is being used in the transfer thread.
@@ -224,8 +233,8 @@ private:
         m_writer->write_file_header();
 
         std::array<capture_packet*, 16> packets;
-        while (!m_reader->is_done() && !m_error) {
-            auto n = m_reader->read_packets(packets.data(), packets.size());
+        while (!reader()->is_done() && !m_error) {
+            auto n = reader()->read_packets(packets.data(), packets.size());
             std::for_each(packets.data(),
                           packets.data() + n,
                           [&](auto& packet) { write_packet(*packet); });
@@ -244,13 +253,13 @@ private:
 
         if (m_error) {
             // Error writing data
-            m_deferred.reject(Pistache::Error("Failed sending pcap data"));
-            m_done = true;
+            deferred().reject(Pistache::Error("Failed sending pcap data"));
+            set_done(true);
             return;
         }
 
-        m_deferred.resolve((ssize_t)m_total_bytes_sent);
-        m_done = true;
+        deferred().resolve((ssize_t)m_total_bytes_sent);
+        set_done(true);
     }
 
     bool write_packet(const capture_packet& packet)
@@ -450,22 +459,22 @@ public:
     {
         // Currently code will enable chunk encoding if returned length is 0
         if (m_chunked) return 0;
-        return calc_pcap_file_length(*m_reader);
+        return calc_pcap_file_length(*reader());
     }
 
     Pistache::Async::Promise<ssize_t> start() override
     {
         auto promise = Pistache::Async::Promise<ssize_t>(
             [&](Pistache::Async::Deferred<ssize_t> deferred) mutable {
-                m_deferred = std::move(deferred);
+                set_deferred(std::move(deferred));
             });
 
         m_total_bytes_sent = 0;
         m_error = false;
         m_wrote_trailer = false;
 
-        m_reader->rewind();
-        m_burst = std::make_unique<burst_reader_type>(m_reader.get());
+        reader()->rewind();
+        m_burst = std::make_unique<burst_reader_type>(reader());
 
         m_writer->write_file_header();
         transfer();
@@ -492,9 +501,9 @@ private:
                         return transfer();
                     },
                     [&](std::exception_ptr& eptr) {
-                        m_deferred.reject(
+                        deferred().reject(
                             Pistache::Error("Failed sending pcap data"));
-                        m_done = true;
+                        set_done(true);
                         m_error = true;
                         return Pistache::Async::Promise<ssize_t>::rejected(
                             eptr);
@@ -512,9 +521,9 @@ private:
                         return m_transport->asyncWrite(m_peer->fd(), buffer);
                     },
                     [&](std::exception_ptr& eptr) {
-                        m_deferred.reject(
+                        deferred().reject(
                             Pistache::Error("Failed sending chunk header"));
-                        m_done = true;
+                        set_done(true);
                         m_error = true;
                         return Pistache::Async::Promise<ssize_t>::rejected(
                             eptr);
@@ -528,18 +537,18 @@ private:
                                                 chunk_trailer_str.length()));
                     },
                     [&](std::exception_ptr& eptr) {
-                        m_deferred.reject(
+                        deferred().reject(
                             Pistache::Error("Failed sending pcap data"));
-                        m_done = true;
+                        set_done(true);
                         m_error = true;
                         return Pistache::Async::Promise<ssize_t>::rejected(
                             eptr);
                     })
                 .then([&](ssize_t) { return transfer(); },
                       [&](std::exception_ptr& eptr) {
-                          m_deferred.reject(
+                          deferred().reject(
                               Pistache::Error("Failed sending chunk trailer"));
-                          m_done = true;
+                          set_done(true);
                           m_error = true;
                           return Pistache::Async::Promise<ssize_t>::rejected(
                               eptr);
@@ -558,7 +567,7 @@ private:
                 is_done = m_burst->next();
             }
 
-            if (m_reader->is_done()) {
+            if (reader()->is_done()) {
                 if (m_writer->write_file_trailer()) { m_wrote_trailer = true; }
             }
 
@@ -580,11 +589,11 @@ private:
                 Pistache::RawBuffer(last_chunk_str, last_chunk_str.length()));
         }
 
-        m_deferred.resolve(m_total_bytes_sent);
+        deferred().resolve(m_total_bytes_sent);
         auto result =
             Pistache::Async::Promise<ssize_t>::resolved(m_total_bytes_sent);
 
-        m_done = true;
+        set_done(true);
         return result;
     }
 

@@ -16,7 +16,6 @@ namespace openperf::memory::internal {
 using namespace std::chrono_literals;
 
 using openperf::utils::op_pseudo_random_fill;
-using openperf::utils::random_uniform;
 
 auto now = openperf::timesync::chrono::monotime::now;
 
@@ -134,7 +133,7 @@ void task_memory::config(const task_memory_config& msg)
         try {
             m_indexes = index_vector(nb_blocks, msg.pattern);
             m_config.pattern = msg.pattern;
-        } catch (std::exception e) {
+        } catch (const std::exception& e) {
             OP_LOG(OP_LOG_ERROR,
                    "Could not allocate %zu element index array\n",
                    nb_blocks);
