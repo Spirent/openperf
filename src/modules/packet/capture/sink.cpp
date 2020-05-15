@@ -194,16 +194,16 @@ bool sink::uses_feature(packetio::packets::sink_feature_flags flags) const
 }
 
 uint16_t sink::check_start_trigger_condition(
-    const packetio::packets::packet_buffer* const packets[],
-    uint16_t packets_length) const
+    [[maybe_unused]] const packetio::packets::packet_buffer* const packets[],
+    [[maybe_unused]] uint16_t packets_length) const
 {
     // TODO: Add support for trigger
     return 0;
 }
 
 uint16_t sink::check_stop_trigger_condition(
-    const packetio::packets::packet_buffer* const packets[],
-    uint16_t packets_length) const
+    [[maybe_unused]] const packetio::packets::packet_buffer* const packets[],
+    [[maybe_unused]] uint16_t packets_length) const
 {
     // TODO: Add support for trigger
     return 0;

@@ -101,9 +101,9 @@ api_reply server::handle_request(const request::generator::create& req)
             std::make_unique<reply::generator::item::item_data>(
                 std::move(data))};
         return reply;
-    } catch (std::invalid_argument e) {
+    } catch (const std::invalid_argument&) {
         return reply::error{.type = reply::error::EXISTS};
-    } catch (std::domain_error e) {
+    } catch (const std::domain_error&) {
         return reply::error{.type = reply::error::INVALID_ID};
     }
 }
@@ -198,7 +198,7 @@ api_reply server::handle_request(const request::generator::bulk::stop& req)
     }
 
     return reply::ok{};
-} // namespace openperf::memory::api
+}
 
 api_reply server::handle_request(const request::statistic::list&)
 {
