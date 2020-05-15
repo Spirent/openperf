@@ -52,14 +52,22 @@ private:
         size_t size;
     } m_buffer;
 
-    const uint16_t m_serial_number;
+    uint16_t m_serial_number;
+
+    template <typename Function> void for_each_worker(Function&& function)
+    {
+        for (auto&& reader : m_read_workers) { function(reader); }
+        for (auto&& writer : m_write_workers) { function(writer); }
+    }
 
 public:
     // Constructors & Destructor
     generator();
-    generator(generator&&);
-    generator(const generator&) = delete;
     explicit generator(const generator::config_t&);
+    generator(const generator&) = delete;
+    generator& operator=(const generator&) = delete;
+    generator(generator&&) noexcept;
+    generator& operator=(generator&&) noexcept;
     ~generator();
 
     // Methods
@@ -104,8 +112,8 @@ void generator::reallocate_workers(generator::workers& wkrs, unsigned num)
     } else {
         for (; size < num; ++size) {
             wkrs.emplace_front(std::make_unique<worker<T>>(
-                "mem" + std::to_string(m_serial_number)
-                + "_" + std::to_string(num - size)));
+                "mem" + std::to_string(m_serial_number) + "_"
+                + std::to_string(num - size)));
         }
     }
 }

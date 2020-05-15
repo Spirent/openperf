@@ -185,13 +185,13 @@ flow_filter::~flow_filter()
     rte_flow_flush(m_port, nullptr);
 }
 
-flow_filter::flow_filter(flow_filter&& other)
+flow_filter::flow_filter(flow_filter&& other) noexcept
     : m_port(other.m_port)
     , m_flows(std::move(other.m_flows))
     , m_overflows(std::move(other.m_overflows))
 {}
 
-flow_filter& flow_filter::operator=(flow_filter&& other)
+flow_filter& flow_filter::operator=(flow_filter&& other) noexcept
 {
     if (this != &other) {
         m_port = other.m_port;

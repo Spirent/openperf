@@ -53,13 +53,13 @@ mac_filter::~mac_filter()
     maybe_disable_promiscuous_mode(m_port);
 }
 
-mac_filter::mac_filter(mac_filter&& other)
+mac_filter::mac_filter(mac_filter&& other) noexcept
     : m_port(other.m_port)
     , m_filtered(std::move(other.m_filtered))
     , m_overflowed(std::move(other.m_overflowed))
 {}
 
-mac_filter& mac_filter::operator=(mac_filter&& other)
+mac_filter& mac_filter::operator=(mac_filter&& other) noexcept
 {
     if (this != &other) {
         m_port = other.m_port;

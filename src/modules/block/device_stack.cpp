@@ -131,8 +131,7 @@ bool device_stack::is_raw_device(std::string_view id)
 
 device_ptr device_stack::get_block_device(const std::string& id) const
 {
-    if (m_block_devices.count(id))
-        return m_block_devices.at(id);
+    if (m_block_devices.count(id)) return m_block_devices.at(id);
     return nullptr;
 }
 
@@ -140,15 +139,14 @@ std::shared_ptr<virtual_device>
 device_stack::get_vdev(const std::string& id) const
 {
     auto dev = get_block_device(id);
-    if (!dev || !dev->is_usable())
-        return nullptr;
+    if (!dev || !dev->is_usable()) return nullptr;
     return dev;
 }
 
 std::vector<device_ptr> device_stack::block_devices_list()
 {
     std::vector<device_ptr> blkdevice_list;
-    for (auto blkdevice_pair : m_block_devices) {
+    for (const auto& blkdevice_pair : m_block_devices) {
         blkdevice_list.push_back(blkdevice_pair.second);
     }
 

@@ -179,7 +179,7 @@ lwip::~lwip()
     m_interfaces.clear();
 }
 
-lwip& lwip::operator=(lwip&& other)
+lwip& lwip::operator=(lwip&& other) noexcept
 {
     if (this != &other) {
         m_initialized = other.m_initialized;
@@ -208,7 +208,7 @@ lwip& lwip::operator=(lwip&& other)
     return (*this);
 }
 
-lwip::lwip(lwip&& other)
+lwip::lwip(lwip&& other) noexcept
     : m_initialized(other.m_initialized)
     , m_driver(other.m_driver)
     , m_workers(other.m_workers)

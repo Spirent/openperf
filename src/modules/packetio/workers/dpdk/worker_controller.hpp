@@ -35,8 +35,8 @@ public:
     ~worker_controller();
 
     /* controller is movable */
-    worker_controller& operator=(worker_controller&& other);
-    worker_controller(worker_controller&& other);
+    worker_controller& operator=(worker_controller&& other) noexcept;
+    worker_controller(worker_controller&& other) noexcept;
 
     /* controller is non-copyable */
     worker_controller(const worker_controller&) = delete;
@@ -51,9 +51,9 @@ public:
     get_transmit_function(std::string_view port_id) const;
 
     void add_interface(std::string_view port_id,
-                       interface::generic_interface interface);
+                       const interface::generic_interface& interface);
     void del_interface(std::string_view port_id,
-                       interface::generic_interface interface);
+                       const interface::generic_interface& interface);
 
     tl::expected<void, int> add_sink(std::string_view src_id,
                                      packets::generic_sink sink);
@@ -61,15 +61,16 @@ public:
 
     tl::expected<void, int> add_source(std::string_view dst_id,
                                        packets::generic_source source);
-    void del_source(std::string_view dst_id, packets::generic_source source);
+    void del_source(std::string_view dst_id,
+                    const packets::generic_source& source);
 
     tl::expected<std::string, int>
     add_task(workers::context ctx,
              std::string_view name,
              event_loop::event_notifier notify,
-             event_loop::event_handler on_event,
-             std::optional<event_loop::delete_handler> on_delete,
-             std::any arg);
+             event_loop::event_handler&& on_event,
+             std::optional<event_loop::delete_handler>&& on_delete,
+             std::any&& arg);
     void del_task(std::string_view task_id);
 
     using load_map = std::unordered_map<unsigned, uint64_t>;

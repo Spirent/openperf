@@ -30,8 +30,8 @@ public:
                       event_handler on_event,
                       std::any arg) noexcept
     {
-        return (
-            m_self->add_callback(name, notify, on_event, std::nullopt, arg));
+        return (m_self->add_callback(
+            name, notify, std::move(on_event), std::nullopt, std::move(arg)));
     }
 
     bool add_callback(std::string_view name,
@@ -40,7 +40,11 @@ public:
                       delete_handler on_delete,
                       std::any arg) noexcept
     {
-        return (m_self->add_callback(name, notify, on_event, on_delete, arg));
+        return (m_self->add_callback(name,
+                                     notify,
+                                     std::move(on_event),
+                                     std::move(on_delete),
+                                     std::move(arg)));
     }
 
     void del_callback(event_notifier notify) noexcept
@@ -79,8 +83,11 @@ private:
                           std::optional<delete_handler> on_delete,
                           std::any arg) noexcept override
         {
-            return (
-                m_loop.add_callback(name, notify, on_event, on_delete, arg));
+            return (m_loop.add_callback(name,
+                                        notify,
+                                        std::move(on_event),
+                                        std::move(on_delete),
+                                        std::move(arg)));
         }
 
         void del_callback(event_notifier notify) noexcept override

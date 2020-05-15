@@ -24,18 +24,19 @@ class eal
 {
 public:
     /* named constructors */
-    static eal test_environment(std::vector<std::string> args,
-                                std::unordered_map<int, std::string> port_ids,
+    static eal test_environment(std::vector<std::string>&& args,
+                                std::unordered_map<int, std::string>&& port_ids,
                                 unsigned test_portpairs);
 
-    static eal real_environment(std::vector<std::string> args,
-                                std::unordered_map<int, std::string> port_ids);
+    static eal
+    real_environment(std::vector<std::string>&& args,
+                     std::unordered_map<int, std::string>&& port_ids);
 
     ~eal();
 
     /* environment is movable */
-    eal& operator=(eal&& other);
-    eal(eal&& other);
+    eal& operator=(eal&& other) noexcept;
+    eal(eal&& other) noexcept;
 
     /* environment is non-copyable */
     eal(const eal&) = delete;
@@ -58,8 +59,8 @@ private:
     std::unordered_map<int, std::string> m_bond_ports;
     std::unordered_map<int, std::string> m_port_ids;
 
-    eal(std::vector<std::string> args,
-        std::unordered_map<int, std::string> port_ids,
+    eal(std::vector<std::string>&& args,
+        std::unordered_map<int, std::string>&& port_ids,
         unsigned test_portpairs = 0);
 };
 

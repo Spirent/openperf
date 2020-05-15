@@ -77,8 +77,8 @@ public:
 };
 
 handler::handler(void* context, Rest::Router& router)
-    : socket(op_socket_get_client(
-          context, ZMQ_REQ, openperf::memory::api::endpoint))
+    : socket(
+        op_socket_get_client(context, ZMQ_REQ, openperf::memory::api::endpoint))
 {
     Rest::Routes::Get(router,
                       "/memory-generators",
@@ -293,7 +293,7 @@ void handler::bulk_start_generators(const Rest::Request& request,
 
     model::BulkStartMemoryGeneratorsRequest model;
     model.fromJson(json_obj);
-    for (auto id : model.getIds()) {
+    for (const auto& id : model.getIds()) {
         if (auto res = config::op_config_validate_id_string(id); !res) {
             response.send(Http::Code::Bad_Request, res.error());
             return;
@@ -333,7 +333,7 @@ void handler::bulk_stop_generators(const Rest::Request& request,
 
     model::BulkStopMemoryGeneratorsRequest model;
     model.fromJson(json_obj);
-    for (auto id : model.getIds()) {
+    for (const auto& id : model.getIds()) {
         if (auto res = config::op_config_validate_id_string(id); !res) {
             response.send(Http::Code::Bad_Request, res.error());
             return;

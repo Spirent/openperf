@@ -28,7 +28,7 @@ tl::expected<void, std::string> op_config_file_process_resources()
                                     + std::string(e.what())));
     }
 
-    for (auto resource : root_node["resources"]) {
+    for (auto&& resource : root_node["resources"]) {
         auto [path, id] = op_config_split_path_id(resource.first.Scalar());
 
         // Verify we have a valid id.

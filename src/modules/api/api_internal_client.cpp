@@ -22,7 +22,7 @@ static auto internal_api_request(Http::RequestBuilder& request_builder,
 
     std::pair<Http::Code, std::string> result;
     response.then(
-        [&result](Http::Response response) {
+        [&result](const Http::Response& response) {
             result.first = response.code();
             result.second = response.body();
         },

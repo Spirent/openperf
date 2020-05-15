@@ -97,8 +97,8 @@ public:
     flow_filter(uint16_t port_id);
     ~flow_filter();
 
-    flow_filter(flow_filter&&);
-    flow_filter& operator=(flow_filter&&);
+    flow_filter(flow_filter&&) noexcept;
+    flow_filter& operator=(flow_filter&&) noexcept;
 
     uint16_t port_id() const;
 
@@ -140,8 +140,8 @@ public:
     mac_filter(uint16_t port_id);
     ~mac_filter();
 
-    mac_filter(mac_filter&&);
-    mac_filter& operator=(mac_filter&&);
+    mac_filter(mac_filter&&) noexcept;
+    mac_filter& operator=(mac_filter&&) noexcept;
 
     uint16_t port_id() const;
 

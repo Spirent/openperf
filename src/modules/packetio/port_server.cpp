@@ -68,7 +68,7 @@ _handle_list_ports_request(generic_driver& driver, json& request, json& reply)
     auto kind = get_optional_key<std::string>(request, "kind");
     json jports = json::array();
 
-    for (auto id : driver.port_ids()) {
+    for (const auto& id : driver.port_ids()) {
         auto port = driver.port(id);
         if (!kind || *kind == port->kind()) {
             jports.emplace_back(make_swagger_port(*port)->toJson());

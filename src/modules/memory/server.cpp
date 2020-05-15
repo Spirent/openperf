@@ -10,8 +10,7 @@ server::server(void* context, openperf::core::event_loop& loop)
 {
     // Setup event loop
     struct op_event_callbacks callbacks = {
-        .on_read = [](const op_event_data* data, void* arg) -> int
-        {
+        .on_read = [](const op_event_data* data, void* arg) -> int {
             auto s = reinterpret_cast<server*>(arg);
             return s->handle_rpc_request(data);
         }};
@@ -137,9 +136,11 @@ api_reply server::handle_request(const request::generator::start& req)
 
 api_reply server::handle_request(const request::generator::bulk::start& req)
 {
-    for (auto id : *req.data) {
-        if (!m_generator_stack->contains(id))
-            return reply::error{.type = reply::error::NOT_FOUND};
+    if (std::any_of(
+            std::begin(*req.data), std::end(*req.data), [&](const auto& id) {
+                return (m_generator_stack->contains(id) == false);
+            })) {
+        return reply::error{.type = reply::error::NOT_FOUND};
     }
 
     auto stat_transformer = [](const auto& stat) -> auto
@@ -154,7 +155,7 @@ api_reply server::handle_request(const request::generator::bulk::start& req)
         std::make_unique<std::vector<reply::statistic::item::item_data>>()};
 
     std::forward_list<std::string> not_runned_before;
-    for (auto id : *req.data) {
+    for (const auto& id : *req.data) {
         const auto& gnr = m_generator_stack->generator(id);
         if (!gnr.is_running()) not_runned_before.emplace_front(id);
 
@@ -174,13 +175,15 @@ api_reply server::handle_request(const request::generator::bulk::start& req)
 
 api_reply server::handle_request(const request::generator::bulk::stop& req)
 {
-    for (auto id : *req.data) {
-        if (!m_generator_stack->contains(id))
-            return reply::error{.type = reply::error::NOT_FOUND};
+    if (std::any_of(
+            std::begin(*req.data), std::end(*req.data), [&](const auto& id) {
+                return (m_generator_stack->contains(id) == false);
+            })) {
+        return reply::error{.type = reply::error::NOT_FOUND};
     }
 
     std::forward_list<std::string> runned_before;
-    for (auto id : *req.data) {
+    for (const auto& id : *req.data) {
         auto& generator = m_generator_stack->generator(id);
         if (generator.is_running()) runned_before.emplace_front(id);
 
@@ -194,7 +197,7 @@ api_reply server::handle_request(const request::generator::bulk::stop& req)
     }
 
     return reply::ok{};
-}
+} // namespace openperf::memory::api
 
 api_reply server::handle_request(const request::statistic::list&)
 {

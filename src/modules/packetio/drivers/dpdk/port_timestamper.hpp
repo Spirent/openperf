@@ -15,8 +15,8 @@ public:
     callback_timestamper(uint16_t port_id);
     ~callback_timestamper();
 
-    callback_timestamper(callback_timestamper&&);
-    callback_timestamper& operator=(callback_timestamper&&);
+    callback_timestamper(callback_timestamper&&) noexcept;
+    callback_timestamper& operator=(callback_timestamper&&) noexcept;
 
     uint16_t port_id() const;
 

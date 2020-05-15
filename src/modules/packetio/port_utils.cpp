@@ -115,7 +115,7 @@ static bool is_valid(config_data& config, std::vector<std::string>& errors)
     return (errors.size() == 0);
 }
 
-static bond_config from_swagger(std::shared_ptr<PortConfig_bond> config)
+static bond_config from_swagger(const std::shared_ptr<PortConfig_bond>& config)
 {
     bond_config to_return;
 
@@ -128,7 +128,7 @@ static bond_config from_swagger(std::shared_ptr<PortConfig_bond> config)
     return (to_return);
 }
 
-static dpdk_config from_swagger(std::shared_ptr<PortConfig_dpdk> config)
+static dpdk_config from_swagger(const std::shared_ptr<PortConfig_dpdk>& config)
 {
     dpdk_config to_return;
     to_return.auto_negotiation = config->isAutoNegotiation();

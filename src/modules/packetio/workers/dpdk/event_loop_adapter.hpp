@@ -19,16 +19,16 @@ public:
     event_loop_adapter() = default;
     ~event_loop_adapter() = default;
 
-    event_loop_adapter(event_loop_adapter&& other);
-    event_loop_adapter& operator=(event_loop_adapter&& other);
+    event_loop_adapter(event_loop_adapter&& other) noexcept;
+    event_loop_adapter& operator=(event_loop_adapter&& other) noexcept;
 
     bool update_poller(epoll_poller& poller);
 
     bool add_callback(std::string_view name,
                       event_loop::event_notifier notify,
-                      event_loop::event_handler on_event,
-                      std::optional<event_loop::delete_handler> on_delete,
-                      std::any arg) noexcept;
+                      event_loop::event_handler&& on_event,
+                      std::optional<event_loop::delete_handler>&& on_delete,
+                      std::any&& arg) noexcept;
     void del_callback(event_loop::event_notifier notify) noexcept;
 
 private:

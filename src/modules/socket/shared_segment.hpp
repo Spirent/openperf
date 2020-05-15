@@ -19,8 +19,8 @@ public:
                    bool create = false);
     ~shared_segment();
 
-    shared_segment& operator=(shared_segment&& other);
-    shared_segment(shared_segment&& other);
+    shared_segment& operator=(shared_segment&& other) noexcept;
+    shared_segment(shared_segment&& other) noexcept;
 
     shared_segment(const shared_segment&) = delete;
     shared_segment& operator=(const shared_segment&&) = delete;

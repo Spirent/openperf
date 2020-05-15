@@ -210,7 +210,7 @@ void server::stop()
     m_task.clear();
 }
 
-int server::handle_api_accept(event_loop& loop, std::any)
+int server::handle_api_accept(event_loop& loop, const std::any&)
 {
     /**
      * Every connection represents a new thread that wants to access our

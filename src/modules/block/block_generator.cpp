@@ -8,7 +8,7 @@ namespace openperf::block::generator {
 
 block_generator::block_generator(
     const model::block_generator& generator_model,
-    const std::vector<virtual_device_stack*> vdev_stack_list)
+    const std::vector<virtual_device_stack*>& vdev_stack_list)
     : model::block_generator(generator_model)
     , m_vdev_stack_list(vdev_stack_list)
 {
@@ -25,7 +25,8 @@ block_generator::~block_generator()
     m_vdev->vclose();
 }
 
-block_result_ptr block_generator::start() {
+block_result_ptr block_generator::start()
+{
     set_running(true);
     return get_statistics();
 }
@@ -57,7 +58,8 @@ void block_generator::update_resource(const std::string& resource_id)
         }
     }
     if (!vdev_ptr)
-        throw std::runtime_error("Unknown or unusable resource: " + resource_id);
+        throw std::runtime_error("Unknown or unusable resource: "
+                                 + resource_id);
 
     if (auto result = vdev_ptr->vopen(); !result)
         throw std::runtime_error("Cannot open resource: "

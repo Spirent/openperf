@@ -19,11 +19,11 @@ client::client(void* context)
     : m_socket(op_socket_get_client(context, ZMQ_REQ, endpoint.data()))
 {}
 
-client::client(client&& other)
+client::client(client&& other) noexcept
     : m_socket(std::move(other.m_socket))
 {}
 
-client& client::operator=(client&& other)
+client& client::operator=(client&& other) noexcept
 {
     if (this != &other) { m_socket = std::move(other.m_socket); }
     return (*this);
@@ -161,15 +161,16 @@ tl::expected<std::string, int>
 client::add_task_impl(workers::context ctx,
                       std::string_view name,
                       event_loop::event_notifier notify,
-                      event_loop::event_handler on_event,
-                      std::optional<event_loop::delete_handler> on_delete,
-                      std::any arg)
+                      event_loop::event_handler&& on_event,
+                      std::optional<event_loop::delete_handler>&& on_delete,
+                      std::any&& arg)
 {
-    auto request = request_task_add{.data = {.ctx = ctx,
-                                             .notifier = notify,
-                                             .on_event = on_event,
-                                             .on_delete = on_delete,
-                                             .arg = arg}};
+    auto request = request_task_add{
+        .data = {.ctx = ctx,
+                 .notifier = notify,
+                 .on_event = std::forward<decltype(on_event)>(on_event),
+                 .on_delete = std::forward<decltype(on_delete)>(on_delete),
+                 .arg = std::forward<std::any>(arg)}};
 
     if (name.length() > name_length_max) {
         OP_LOG(OP_LOG_WARNING,
@@ -201,7 +202,8 @@ client::add_task(workers::context ctx,
                  event_loop::event_handler on_event,
                  std::any arg)
 {
-    return (add_task_impl(ctx, name, notify, on_event, std::nullopt, arg));
+    return (add_task_impl(
+        ctx, name, notify, std::move(on_event), std::nullopt, std::move(arg)));
 }
 
 tl::expected<std::string, int>
@@ -212,7 +214,12 @@ client::add_task(workers::context ctx,
                  event_loop::delete_handler on_delete,
                  std::any arg)
 {
-    return (add_task_impl(ctx, name, notify, on_event, on_delete, arg));
+    return (add_task_impl(ctx,
+                          name,
+                          notify,
+                          std::move(on_event),
+                          std::move(on_delete),
+                          std::move(arg)));
 }
 
 tl::expected<void, int> client::del_task(std::string_view task_id)
