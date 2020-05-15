@@ -146,8 +146,8 @@ callback_signature_decoder::callback_signature_decoder(
     , m_port(other.m_port)
 {}
 
-callback_signature_decoder& callback_signature_decoder::operator=(
-    callback_signature_decoder&& other) noexcept
+callback_signature_decoder& callback_signature_decoder::
+operator=(callback_signature_decoder&& other) noexcept
 {
     if (this != &other) {
         m_callbacks = std::move(other.m_callbacks);
