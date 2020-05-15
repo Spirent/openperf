@@ -18,6 +18,8 @@
 #include "swagger/v1/model/CpuInfoResult.h"
 #include "cpu/common.hpp"
 
+#include <zmq.h>
+
 namespace openperf::cpu::api {
 
 using namespace swagger::v1::model;
