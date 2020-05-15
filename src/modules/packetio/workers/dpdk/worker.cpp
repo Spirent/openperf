@@ -60,7 +60,7 @@ class finite_state_machine
 public:
     void dispatch(const EventVariant& event)
     {
-        Derived& child = static_cast<Derived&>(*this);
+        auto& child = static_cast<Derived&>(*this);
         try {
             auto next_state = std::visit(
                 [&](auto& state,

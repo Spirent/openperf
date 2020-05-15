@@ -1,4 +1,4 @@
-#include <string.h>
+#include <cstring>
 #include <stdexcept>
 
 #include <cerrno>
@@ -9,8 +9,7 @@
 
 #include "socket/shared_segment.hpp"
 
-namespace openperf {
-namespace memory {
+namespace openperf::memory {
 
 static void* do_mapping(const std::string_view path, size_t size, int shm_flags)
 {
@@ -85,5 +84,4 @@ shared_segment::~shared_segment()
     shm_unlink(m_path.data());
 }
 
-} // namespace memory
-} // namespace openperf
+} // namespace openperf::memory

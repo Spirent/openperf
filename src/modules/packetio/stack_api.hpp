@@ -5,10 +5,7 @@
 
 #include "json.hpp"
 
-namespace openperf {
-namespace packetio {
-namespace stack {
-namespace api {
+namespace openperf::packetio::stack::api {
 
 enum class request_type { NONE = 0, LIST_STACKS, GET_STACK };
 
@@ -24,8 +21,5 @@ inline std::string json_error(int code, const char* message)
 
 extern const std::string endpoint;
 
-} // namespace api
-} // namespace stack
-} // namespace packetio
-} // namespace openperf
+} // namespace openperf::packetio::stack::api
 #endif /* _OP_PACKETIO_STACK_API_HPP_ */

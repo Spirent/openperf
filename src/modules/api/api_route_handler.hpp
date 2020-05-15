@@ -4,9 +4,7 @@
 #include "pistache/router.h"
 #include "core/op_init_factory.hpp"
 
-namespace openperf {
-namespace api {
-namespace route {
+namespace openperf::api::route {
 
 struct handler
     : openperf::core::init_factory<handler, void*, Pistache::Rest::Router&>
@@ -15,8 +13,6 @@ struct handler
     virtual ~handler() = default;
 };
 
-} // namespace route
-} // namespace api
-} // namespace openperf
+} // namespace openperf::api::route
 
 #endif /* _OP_API_ROUTE_HANDLER_ */

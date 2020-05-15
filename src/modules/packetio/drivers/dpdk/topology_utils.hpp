@@ -7,10 +7,7 @@
 #include "packetio/drivers/dpdk/queue_utils.hpp"
 #include "packetio/drivers/dpdk/model/port_info.hpp"
 
-namespace openperf {
-namespace packetio {
-namespace dpdk {
-namespace topology {
+namespace openperf::packetio::dpdk::topology {
 
 /**
  * Use the currently available ports, cores, and NUMA architecture to
@@ -51,9 +48,6 @@ unsigned get_most_common_numa_node(const Container& port_ids)
     return (max->first);
 }
 
-} // namespace topology
-} // namespace dpdk
-} // namespace packetio
-} // namespace openperf
+} // namespace openperf::packetio::dpdk::topology
 
 #endif /* _OP_PACKETIO_DPDK_TOPOLOGY_UTILS_HPP_ */

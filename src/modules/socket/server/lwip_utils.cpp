@@ -7,9 +7,7 @@
 #include "lwip/priv/tcp_priv.h"
 #include "packetio/stack/netif_utils.h"
 
-namespace openperf {
-namespace socket {
-namespace server {
+namespace openperf::socket::server {
 
 tl::expected<socklen_t, int>
 do_sock_getsockopt(const ip_pcb* pcb, const api::request_getsockopt& getsockopt)
@@ -322,6 +320,4 @@ void get_tcp_info(const tcp_pcb* pcb, tcp_info& info)
     info.tcpi_notsent_bytes = (pcb->unsent ? pcb->unsent->len : 0);
 }
 
-} // namespace server
-} // namespace socket
-} // namespace openperf
+} // namespace openperf::socket::server

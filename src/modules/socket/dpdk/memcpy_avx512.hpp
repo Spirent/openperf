@@ -10,7 +10,7 @@
 #ifndef _OP_SOCKET_DPDK_MEMCPY_AVX512_HPP_
 #define _OP_SOCKET_DPDK_MEMCPY_AVX512_HPP_
 
-#include <stdint.h>
+#include <cstdint>
 #include <x86intrin.h>
 
 namespace dpdk::impl::avx512 {
@@ -137,8 +137,8 @@ static inline void rte_mov512blocks(uint8_t* dst, const uint8_t* src, size_t n)
 
 static inline void* rte_memcpy_generic(void* dst, const void* src, size_t n)
 {
-    uintptr_t dstu = (uintptr_t)dst;
-    uintptr_t srcu = (uintptr_t)src;
+    auto dstu = (uintptr_t)dst;
+    auto srcu = (uintptr_t)src;
     void* ret = dst;
     size_t dstofss;
     size_t bits;

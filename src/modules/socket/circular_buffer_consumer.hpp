@@ -5,8 +5,7 @@
 #include <atomic>
 #include <sys/uio.h>
 
-namespace openperf {
-namespace socket {
+namespace openperf::socket {
 
 template <typename Derived> class circular_buffer_consumer
 {
@@ -42,7 +41,6 @@ public:
     size_t drop(size_t length);
 };
 
-} // namespace socket
-} // namespace openperf
+} // namespace openperf::socket
 
 #endif /* _OP_SOCKET_CIRCULAR_BUFFER_CONSUMER_HPP_ */

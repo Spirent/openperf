@@ -162,8 +162,6 @@ capture_buffer_mem_reader::capture_buffer_mem_reader(capture_buffer_mem& buffer)
     init();
 }
 
-capture_buffer_mem_reader::~capture_buffer_mem_reader() {}
-
 bool capture_buffer_mem_reader::is_done() const { return m_eof; }
 
 uint16_t capture_buffer_mem_reader::read_packets(capture_packet* packets[],
@@ -269,7 +267,7 @@ capture_buffer_mem_wrap::count_packets_and_bytes(uint8_t* start, uint8_t* end)
     auto& [packets, bytes] = result;
     uint8_t* p = start;
     while (p < end) {
-        capture_packet_hdr* hdr = reinterpret_cast<capture_packet_hdr*>(p);
+        auto* hdr = reinterpret_cast<capture_packet_hdr*>(p);
         auto total_len = sizeof(*hdr) + pad_capture_data_len(hdr->captured_len);
         assert(p + total_len <= end);
         ++packets;
@@ -304,7 +302,7 @@ void capture_buffer_mem_wrap::make_space_if_needed(size_t required_size)
             p = m_start_addr;
             break;
         }
-        capture_packet_hdr* hdr = reinterpret_cast<capture_packet_hdr*>(p);
+        auto* hdr = reinterpret_cast<capture_packet_hdr*>(p);
         auto total_len = sizeof(*hdr) + pad_capture_data_len(hdr->captured_len);
         assert(p + total_len <= m_wrap_end_addr);
         available_size += total_len;
@@ -336,8 +334,6 @@ capture_buffer_mem_wrap_reader::capture_buffer_mem_wrap_reader(
 {
     init();
 }
-
-capture_buffer_mem_wrap_reader::~capture_buffer_mem_wrap_reader() {}
 
 bool capture_buffer_mem_wrap_reader::is_done() const { return m_eof; }
 

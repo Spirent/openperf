@@ -7,9 +7,7 @@
 #include "socket/api.hpp"
 #include "socket/server/allocator.hpp"
 
-namespace openperf {
-namespace socket {
-namespace server {
+namespace openperf::socket::server {
 
 class dgram_channel;
 class stream_channel;
@@ -87,8 +85,6 @@ api::io_channel_offset api_channel_offset(channel_variant&, const void* base);
 int client_fd(channel_variant&);
 int server_fd(channel_variant&);
 
-} // namespace server
-} // namespace socket
-} // namespace openperf
+} // namespace openperf::socket::server
 
 #endif /* _OP_SOCKET_SERVER_GENERIC_SOCKET_HPP_ */

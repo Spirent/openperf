@@ -20,7 +20,7 @@ protected:
 
 public:
     file(const model::file& f);
-    ~file();
+    ~file() override;
     tl::expected<int, int> vopen() override;
     void vclose() override;
     uint64_t get_size() const override;
@@ -37,7 +37,7 @@ private:
 
 public:
     file_stack() = default;
-    ~file_stack() = default;
+    ~file_stack() override = default;
     std::vector<block_file_ptr> files_list();
     tl::expected<block_file_ptr, std::string>
     create_block_file(const model::file& block_file);

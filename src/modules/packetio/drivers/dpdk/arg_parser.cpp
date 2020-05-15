@@ -37,7 +37,7 @@ static void add_log_level_arg(enum op_log_level level,
         {OP_LOG_TRACE, "8"}     /* RTE_LOG_DEBUG */
     };
 
-    args.push_back("--log-level");
+    args.emplace_back("--log-level");
     args.push_back(log_level_map[level]);
 }
 
@@ -52,8 +52,8 @@ static bool have_file_prefix_arg(std::vector<std::string>& args)
 static void add_file_prefix_arg(const char* prefix,
                                 std::vector<std::string>& args)
 {
-    args.push_back("--file-prefix");
-    args.push_back(prefix);
+    args.emplace_back("--file-prefix");
+    args.emplace_back(prefix);
 }
 
 static bool have_no_pci_arg(std::vector<std::string>& args)
@@ -66,7 +66,7 @@ static bool have_no_pci_arg(std::vector<std::string>& args)
 
 static void add_no_pci_arg(std::vector<std::string>& args)
 {
-    args.push_back("--no-pci");
+    args.emplace_back("--no-pci");
 }
 
 // Split portX and return just the X part.

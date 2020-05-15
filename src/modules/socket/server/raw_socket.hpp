@@ -19,9 +19,7 @@
 struct raw_pcb;
 struct pbuf;
 
-namespace openperf {
-namespace socket {
-namespace server {
+namespace openperf::socket::server {
 
 struct raw_init
 {};
@@ -135,8 +133,6 @@ protected:
 
 const char* to_string(const raw_socket_state&);
 
-} // namespace server
-} // namespace socket
-} // namespace openperf
+} // namespace openperf::socket::server
 
 #endif /* _OP_SOCKET_SERVER_RAW_SOCKET_HPP_ */

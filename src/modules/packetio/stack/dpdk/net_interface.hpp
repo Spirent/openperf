@@ -13,9 +13,7 @@
 
 struct pbuf;
 
-namespace openperf {
-namespace packetio {
-namespace dpdk {
+namespace openperf::packetio::dpdk {
 
 class net_interface
 {
@@ -72,8 +70,6 @@ private:
 
 const net_interface& to_interface(netif*);
 
-} // namespace dpdk
-} // namespace packetio
-} // namespace openperf
+} // namespace openperf::packetio::dpdk
 
 #endif /* _OP_PACKETIO_STACK_DPDK_NET_INTERFACE_HPP_ */

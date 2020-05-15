@@ -2,8 +2,7 @@
 
 #include "net/ipv6_network.hpp"
 
-namespace openperf {
-namespace net {
+namespace openperf::net {
 
 ipv6_network::ipv6_network(const ipv6_address& addr, uint8_t prefix)
     : m_prefix(prefix)
@@ -36,5 +35,4 @@ int compare(const ipv6_network& lhs, const ipv6_network& rhs)
         return (0);
 }
 
-} // namespace net
-} // namespace openperf
+} // namespace openperf::net

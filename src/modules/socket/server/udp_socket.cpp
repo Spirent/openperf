@@ -12,9 +12,7 @@
 #include "lwip/udp.h"
 #include "utils/overloaded_visitor.hpp"
 
-namespace openperf {
-namespace socket {
-namespace server {
+namespace openperf::socket::server {
 
 const char* to_string(const udp_socket_state& state)
 {
@@ -153,7 +151,7 @@ static tl::expected<socklen_t, int> do_udp_get_name(const ip_addr_t& ip_addr,
 
     switch (IP_GET_TYPE(&ip_addr)) {
     case IPADDR_TYPE_V4: {
-        struct sockaddr_in* sa4 = reinterpret_cast<sockaddr_in*>(&sstorage);
+        auto* sa4 = reinterpret_cast<sockaddr_in*>(&sstorage);
         sa4->sin_family = AF_INET;
         sa4->sin_port = htons(ip_port);
         sa4->sin_addr.s_addr = ip_2_ip4(&ip_addr)->addr;
@@ -163,7 +161,7 @@ static tl::expected<socklen_t, int> do_udp_get_name(const ip_addr_t& ip_addr,
     }
     case IPADDR_TYPE_V6:
     case IPADDR_TYPE_ANY: {
-        struct sockaddr_in6* sa6 = reinterpret_cast<sockaddr_in6*>(&sstorage);
+        auto* sa6 = reinterpret_cast<sockaddr_in6*>(&sstorage);
         sa6->sin6_family = AF_INET6;
         sa6->sin6_port = htons(ip_port);
         std::memcpy(
@@ -289,6 +287,4 @@ udp_socket::on_request(const api::request_getsockname& getsockname,
     return {api::reply_socklen{*result}, std::nullopt};
 }
 
-} // namespace server
-} // namespace socket
-} // namespace openperf
+} // namespace openperf::socket::server

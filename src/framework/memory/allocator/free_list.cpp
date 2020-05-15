@@ -5,9 +5,7 @@
 
 #include "memory/allocator/free_list.hpp"
 
-namespace openperf {
-namespace memory {
-namespace allocator {
+namespace openperf::memory::allocator {
 
 namespace impl {
 
@@ -148,6 +146,4 @@ size_t free_list::size() const noexcept
 
 uintptr_t free_list::base() const noexcept { return (m_lower); }
 
-} // namespace allocator
-} // namespace memory
-} // namespace openperf
+} // namespace openperf::memory::allocator

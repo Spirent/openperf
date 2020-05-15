@@ -6,11 +6,12 @@ namespace openperf::utils::worker {
 template <class T, class U> class task
 {
 public:
-    typedef T config_t;
-    typedef U stat_t;
+    using config_t = T;
+    using stat_t = U;
 
 public:
-    virtual ~task(){};
+    virtual ~task() = default;
+    ;
     virtual void spin() = 0;
 
     virtual void config(const T&) = 0;

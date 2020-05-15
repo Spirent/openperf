@@ -14,7 +14,7 @@ namespace openperf::utils::worker {
 class workable
 {
 public:
-    virtual ~workable() {}
+    virtual ~workable() = default;
 
     virtual void start() = 0;
     virtual void stop() = 0;
@@ -41,8 +41,8 @@ private:
 private:
     constexpr static auto m_endpoint = "inproc://worker-p2p";
 
-    bool m_paused;
-    bool m_stopped;
+    bool m_paused = true;
+    bool m_stopped = true;
     typename T::config_t m_config;
     std::unique_ptr<T> m_task;
     void* m_zmq_context;
@@ -55,7 +55,7 @@ public:
     worker(worker&&);
     worker(const worker&) = delete;
     explicit worker(const typename T::config_t&);
-    ~worker();
+    ~worker() override;
 
     void start() override;
     void stop() override;
@@ -80,9 +80,7 @@ private:
 // Constructors & Destructor
 template <class T>
 worker<T>::worker(std::string_view thread_name)
-    : m_paused(true)
-    , m_stopped(true)
-    , m_task(new T)
+    : m_task(new T)
     , m_zmq_context(zmq_init(0))
     , m_zmq_socket(op_socket_get_server(m_zmq_context, ZMQ_PUSH, m_endpoint))
     , m_thread_name(thread_name)

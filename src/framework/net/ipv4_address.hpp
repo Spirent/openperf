@@ -4,8 +4,7 @@
 #include <cstdint>
 #include <string>
 
-namespace openperf {
-namespace net {
+namespace openperf::net {
 
 class ipv4_address
 {
@@ -59,7 +58,6 @@ inline bool operator>=(const ipv4_address& lhs, const ipv4_address& rhs)
     return compare(lhs, rhs) >= 0;
 }
 
-} // namespace net
-} // namespace openperf
+} // namespace openperf::net
 
 #endif /* _OP_FRAMEWORK_NET_IPV4_ADDRESS_HPP_ */

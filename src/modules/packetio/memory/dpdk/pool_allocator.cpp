@@ -9,9 +9,7 @@
 #include "packetio/memory/dpdk/memp.h"
 #include "packetio/memory/dpdk/pool_allocator.hpp"
 
-namespace openperf {
-namespace packetio {
-namespace dpdk {
+namespace openperf::packetio::dpdk {
 
 /*
  * Per the DPDK documentation, cache size should be a divisor of pool
@@ -156,6 +154,4 @@ rte_mempool* pool_allocator::rx_mempool(unsigned socket_id) const
     return (found == m_default_mpools.end() ? nullptr : found->second.get());
 }
 
-} // namespace dpdk
-} // namespace packetio
-} // namespace openperf
+} // namespace openperf::packetio::dpdk

@@ -11,9 +11,7 @@
 
 struct pbuf;
 
-namespace openperf {
-namespace socket {
-namespace server {
+namespace openperf::socket::server {
 
 class icmp_socket : public raw_socket
 {
@@ -31,12 +29,12 @@ public:
     icmp_socket(icmp_socket&& other) noexcept;
 
     /* getsockopt handlers */
-    tl::expected<socklen_t, int> do_getsockopt(const raw_pcb*,
-                                               const api::request_getsockopt&);
+    tl::expected<socklen_t, int>
+    do_getsockopt(const raw_pcb*, const api::request_getsockopt&) override;
 
     /* setsockopt handlers */
-    tl::expected<void, int> do_setsockopt(raw_pcb*,
-                                          const api::request_setsockopt&);
+    tl::expected<void, int>
+    do_setsockopt(raw_pcb*, const api::request_setsockopt&) override;
 
     bool is_filtered(uint8_t icmp_type) const;
 
@@ -55,8 +53,6 @@ private:
                                                 const api::request_setsockopt&);
 };
 
-} // namespace server
-} // namespace socket
-} // namespace openperf
+} // namespace openperf::socket::server
 
 #endif /* _OP_SOCKET_SERVER_ICMP_SOCKET_HPP_ */

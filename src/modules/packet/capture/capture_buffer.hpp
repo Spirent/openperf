@@ -383,7 +383,7 @@ class capture_buffer_mem_reader : public capture_buffer_reader
 public:
     capture_buffer_mem_reader(capture_buffer_mem& buffer);
     capture_buffer_mem_reader(const capture_buffer_mem_reader&) = delete;
-    virtual ~capture_buffer_mem_reader();
+    virtual ~capture_buffer_mem_reader() = default;
 
     bool is_done() const override;
 
@@ -447,7 +447,7 @@ public:
     capture_buffer_mem_wrap_reader(capture_buffer_mem_wrap& buffer);
     capture_buffer_mem_wrap_reader(const capture_buffer_mem_wrap_reader&) =
         delete;
-    virtual ~capture_buffer_mem_wrap_reader();
+    virtual ~capture_buffer_mem_wrap_reader() = default;
 
     bool is_done() const override;
 

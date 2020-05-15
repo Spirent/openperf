@@ -4,12 +4,14 @@
 
 namespace openperf::timesync::counter {
 
-class system : public timecounter::registrar<system>
+class system final : public timecounter::registrar<system>
 {
     using clock = std::chrono::steady_clock;
 
 public:
-    system(){};
+    system()
+        : timecounter::registrar<system>()
+    {}
 
     std::string_view name() const override { return "system"; }
 

@@ -4,8 +4,7 @@
 
 #include "net/ipv4_address.hpp"
 
-namespace openperf {
-namespace net {
+namespace openperf::net {
 
 ipv4_address::ipv4_address()
     : m_addr(0)
@@ -69,5 +68,4 @@ int compare(const ipv4_address& lhs, const ipv4_address& rhs)
         return (0);
 }
 
-} // namespace net
-} // namespace openperf
+} // namespace openperf::net

@@ -108,7 +108,7 @@ struct thread_wrapper_data
 
 static int thread_wrapper(void* arg)
 {
-    struct thread_wrapper_data* thread_data = (struct thread_wrapper_data*)arg;
+    auto* thread_data = (struct thread_wrapper_data*)arg;
 
     op_thread_setname(thread_data->name);
     thread_data->function(thread_data->arg);

@@ -8,8 +8,7 @@
 
 #include <iostream>
 
-namespace openperf {
-namespace core {
+namespace openperf::core {
 
 /**
  * This class is based on the Unforgettable Factory Registration example
@@ -66,7 +65,8 @@ public:
 private:
     class Key
     {
-        Key(){};
+        Key() = default;
+        ;
         template <class T> friend struct registrar;
     };
 
@@ -105,7 +105,6 @@ template <class T>
 bool init_factory<Base, Args...>::registrar<T>::registered =
     init_factory<Base, Args...>::registrar<T>::registerT();
 
-} // namespace core
-} // namespace openperf
+} // namespace openperf::core
 
 #endif /* _OP_CORE_INIT_FACTORY_HPP_ */

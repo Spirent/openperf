@@ -27,7 +27,8 @@ private:
     block_generator_result_map m_block_results;
 
 public:
-    generator_stack(){};
+    generator_stack() = default;
+    ;
 
     std::vector<block_generator_ptr> block_generators_list() const;
     tl::expected<block_generator_ptr, std::string> create_block_generator(

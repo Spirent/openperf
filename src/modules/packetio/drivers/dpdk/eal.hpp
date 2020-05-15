@@ -11,8 +11,7 @@
 #include "packetio/generic_port.hpp"
 #include "packetio/memory/dpdk/pool_allocator.hpp"
 
-namespace openperf {
-namespace packetio {
+namespace openperf::packetio {
 
 namespace port {
 class generic_port;
@@ -65,7 +64,6 @@ private:
 };
 
 } // namespace dpdk
-} // namespace packetio
-} // namespace openperf
+} // namespace openperf::packetio
 
 #endif /* _OP_PACKETIO_DPDK_EAL_HPP_ */

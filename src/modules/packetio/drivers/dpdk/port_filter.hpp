@@ -66,7 +66,7 @@ class filter_state_machine
 public:
     void handle_event(const EventVariant& event)
     {
-        Derived& child = static_cast<Derived&>(*this);
+        auto& child = static_cast<Derived&>(*this);
         auto next_state = std::visit(
             [&](const auto& action, const auto& state) {
                 return (child.on_event(action, state));

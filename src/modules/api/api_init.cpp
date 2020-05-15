@@ -14,8 +14,7 @@
 #include "api/api_config_file_resources.hpp"
 #include "api/api_route_handler.hpp"
 
-namespace openperf {
-namespace api {
+namespace openperf::api {
 
 static in_port_t service_port = 8080;
 
@@ -60,7 +59,8 @@ int api_configure_self()
 class service
 {
 public:
-    service(){};
+    service() = default;
+    ;
 
     int pre_init()
     {
@@ -125,37 +125,32 @@ private:
     std::unique_ptr<Http::Endpoint> m_server;
 };
 
-} // namespace api
-} // namespace openperf
+} // namespace openperf::api
 
 extern "C" {
 
 int api_service_pre_init(void* context, void* state)
 {
     (void)context;
-    openperf::api::service* s =
-        reinterpret_cast<openperf::api::service*>(state);
+    auto* s = reinterpret_cast<openperf::api::service*>(state);
     return (s->pre_init());
 }
 
 int api_service_post_init(void* context, void* state)
 {
-    openperf::api::service* s =
-        reinterpret_cast<openperf::api::service*>(state);
+    auto* s = reinterpret_cast<openperf::api::service*>(state);
     return (s->post_init(context));
 }
 
 int api_service_start(void* state)
 {
-    openperf::api::service* s =
-        reinterpret_cast<openperf::api::service*>(state);
+    auto* s = reinterpret_cast<openperf::api::service*>(state);
     return (s->start());
 }
 
 void api_service_fini(void* state)
 {
-    openperf::api::service* s =
-        reinterpret_cast<openperf::api::service*>(state);
+    auto* s = reinterpret_cast<openperf::api::service*>(state);
     s->stop();
     delete s;
 }

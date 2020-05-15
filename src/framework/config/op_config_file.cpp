@@ -1,12 +1,14 @@
-#include "core/op_common.h"
-#include "op_config_file.hpp"
+#include <cstdlib>
+#include <cstring>
 #include <iostream>
 #include <numeric>
-#include <unistd.h>
-#include <string.h>
 #include <unordered_map>
-#include <cstdlib>
+
+#include <unistd.h>
+
+#include "core/op_common.h"
 #include "core/op_log.h"
+#include "op_config_file.hpp"
 
 namespace openperf::config::file {
 
@@ -31,7 +33,7 @@ static std::vector<std::string> split_string(std::string_view input,
            != std::string::npos) {
         pos = input.find_first_of(delimiters, beg + 1);
 
-        output.push_back(std::string(input.substr(beg, pos - beg)));
+        output.emplace_back(input.substr(beg, pos - beg));
     }
     return (output);
 }
@@ -218,7 +220,7 @@ static char* find_config_file_option(int argc, char* const argv[])
         }
     }
 
-    return (NULL);
+    return (nullptr);
 }
 
 extern "C" {
@@ -334,7 +336,7 @@ char* op_config_file_get_value_str(const char* param, char* value, int len)
 
     auto val = op_config_get_param<std::string>(param);
 
-    if (!val) { return (NULL); }
+    if (!val) { return (nullptr); }
 
     strncpy(value, (*val).c_str(), len);
 

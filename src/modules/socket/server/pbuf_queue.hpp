@@ -6,17 +6,15 @@
 
 #include "socket/server/pbuf_vec.hpp"
 
-namespace openperf {
-namespace socket {
-namespace server {
+namespace openperf::socket::server {
 
 class pbuf_queue
 {
     std::vector<pbuf_vec> m_queue;
-    size_t m_length;
+    size_t m_length = 0;
 
 public:
-    pbuf_queue();
+    pbuf_queue() = default;
     ~pbuf_queue();
 
     size_t bufs() const;
@@ -27,8 +25,6 @@ public:
     size_t clear(size_t bytes);
 };
 
-} // namespace server
-} // namespace socket
-} // namespace openperf
+} // namespace openperf::socket::server
 
 #endif /* _OP_SOCKET_SERVER_PBUF_BUFFER_HPP_ */

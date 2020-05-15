@@ -1,7 +1,7 @@
 #include <cerrno>
+#include <ctime>
 #include <memory>
 #include <string>
-#include <time.h>
 #include <unistd.h>
 #include <vector>
 

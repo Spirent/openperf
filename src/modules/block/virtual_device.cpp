@@ -70,8 +70,8 @@ void virtual_device::terminate_scrub()
 
 void pseudo_random_fill(void* buffer, size_t length)
 {
-    uint32_t seed = utils::random_uniform<uint32_t>(UINT32_MAX);
-    uint32_t* ptr = (uint32_t*)buffer;
+    auto seed = utils::random_uniform<uint32_t>(UINT32_MAX);
+    auto* ptr = (uint32_t*)buffer;
 
     for (size_t i = 0; i < length / 4; i++) {
         uint32_t temp = (seed << 9) ^ (seed << 14);
@@ -113,7 +113,7 @@ void virtual_device::scrub_worker(size_t start, size_t stop)
             break;
         }
         const struct aiocb* aiocblist[] = {&aio};
-        aio_suspend(aiocblist, 1, NULL);
+        aio_suspend(aiocblist, 1, nullptr);
         if (aio_error(&aio) != 0) { continue; }
         int bytes = aio_return(&aio);
         current += bytes;

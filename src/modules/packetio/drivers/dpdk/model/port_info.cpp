@@ -6,10 +6,7 @@
 #include "packetio/drivers/dpdk/dpdk.h"
 #include "packetio/drivers/dpdk/model/port_info.hpp"
 
-namespace openperf {
-namespace packetio {
-namespace dpdk {
-namespace model {
+namespace openperf::packetio::dpdk::model {
 
 template <typename T>
 static T get_info_field(int id, T rte_eth_dev_info::*field)
@@ -200,7 +197,4 @@ bool port_info::rxq_interrupt() const
     return (!result.value_or(false));
 }
 
-} // namespace model
-} // namespace dpdk
-} // namespace packetio
-} // namespace openperf
+} // namespace openperf::packetio::dpdk::model

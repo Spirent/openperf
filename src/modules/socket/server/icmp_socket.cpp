@@ -17,9 +17,7 @@
 #include "socket/server/compat/linux/icmp.h"
 #include "socket/server/compat/linux/icmp6.h"
 
-namespace openperf {
-namespace socket {
-namespace server {
+namespace openperf::socket::server {
 
 /*
  * XXX: Uses LwIP functions that reference global variables instead of parsing
@@ -104,7 +102,7 @@ icmp_socket::icmp_socket(openperf::socket::server::allocator& allocator,
 
         /* Default to just echo reply to avoid issues with NDP */
         m_filter.set();
-        m_filter[ICMP6_TYPE_EREP] = 0;
+        m_filter[ICMP6_TYPE_EREP] = false;
     }
 }
 
@@ -254,6 +252,4 @@ icmp_socket::do_icmp6_setsockopt(raw_pcb* pcb,
     }
 }
 
-} // namespace server
-} // namespace socket
-} // namespace openperf
+} // namespace openperf::socket::server

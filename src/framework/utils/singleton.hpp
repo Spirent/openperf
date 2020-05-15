@@ -16,7 +16,8 @@ public:
     singleton& operator=(const singleton) = delete;
 
 protected:
-    singleton(){};
+    singleton() = default;
+    ;
 };
 
 } // namespace openperf::utils

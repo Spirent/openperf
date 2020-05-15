@@ -4,8 +4,7 @@
 #include <atomic>
 #include <sys/uio.h>
 
-namespace openperf {
-namespace socket {
+namespace openperf::socket {
 
 template <typename Derived> class circular_buffer_producer
 {
@@ -41,7 +40,6 @@ public:
     write_and_notify(const void* ptr, size_t length, NotifyFunction&& notify);
 };
 
-} // namespace socket
-} // namespace openperf
+} // namespace openperf::socket
 
 #endif /* _OP_SOCKET_CIRCULAR_BUFFER_PRODUCER_HPP_ */

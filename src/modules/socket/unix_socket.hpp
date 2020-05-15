@@ -3,8 +3,7 @@
 
 #include <string>
 
-namespace openperf {
-namespace socket {
+namespace openperf::socket {
 
 class unix_socket
 {
@@ -17,7 +16,6 @@ public:
     int get();
 };
 
-} // namespace socket
-} // namespace openperf
+} // namespace openperf::socket
 
 #endif /* _OP_SOCKET_UNIX_SOCKET_HPP_ */
