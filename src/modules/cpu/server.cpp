@@ -131,7 +131,7 @@ reply_msg server::handle_request(const request_cpu_generator_bulk_stop& request)
 {
     for (auto & id : *request.ids)
         if (!m_generator_stack->generator(id))
-            return to_error(api::error_type::CUSTOM_ERROR, 0,
+            return to_error(api::error_type::NOT_FOUND, 0,
                 "Some generators from the list were not found");
 
     for (auto & id : *request.ids)
@@ -168,8 +168,11 @@ reply_msg server::handle_request(const request_cpu_generator_result_del& request
     if (!config::op_config_validate_id_string(request.id))
         return to_error(error_type::CUSTOM_ERROR, 0, "ID is not valid");
 
-    if (!m_generator_stack->erase_statistics(request.id))
+    if (!m_generator_stack->statistics(request.id))
         return to_error(api::error_type::NOT_FOUND);
+
+    if (!m_generator_stack->erase_statistics(request.id))
+        return to_error(error_type::CUSTOM_ERROR, 0, "Statistics is active");
 
     return reply_ok{};
 }

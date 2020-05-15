@@ -92,7 +92,6 @@ void generator::configure_workers(const model::generator_config& p_conf) {
     m_workers.clear();
     int core_id = -1;
 
-    std::cout << "Configure " << p_conf.cores.size() << std::endl;
     if (static_cast<int32_t>(p_conf.cores.size()) > info::cores_count())
         throw std::runtime_error(
             "Could not configure more cores than available ("
