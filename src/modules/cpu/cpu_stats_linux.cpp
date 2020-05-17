@@ -75,7 +75,7 @@ linux_proc_stats get_cpu_stats()
     throw std::runtime_error("Error fetch CPU stats");
 }
 
-std::chrono::nanoseconds cpu_stats_get_steal_time()
+std::chrono::nanoseconds get_steal_time()
 {
     auto ticks_per_sec = sysconf(_SC_CLK_TCK);
     assert(ticks_per_sec);
@@ -85,7 +85,7 @@ std::chrono::nanoseconds cpu_stats_get_steal_time()
         stats.steal * std::nano::den / ticks_per_sec);
 }
 
-utilization_time get_thread_utilization_time()
+utilization_time get_thread_time()
 {
     auto ru = rusage{};
     getrusage(RUSAGE_THREAD, &ru);
@@ -99,6 +99,8 @@ utilization_time get_thread_utilization_time()
     return utilization_time{
         .user = time_user,
         .system = time_system,
+        .steal = 0ns,
+        .utilization = time_user + time_system
     };
 }
 

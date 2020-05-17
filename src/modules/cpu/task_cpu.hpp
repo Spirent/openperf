@@ -2,7 +2,6 @@
 #define _OP_CPU_TASK_CPU_HPP_
 
 #include <atomic>
-#include <forward_list>
 #include <memory>
 #include <chrono>
 
@@ -10,6 +9,9 @@
 #include "cpu/target.hpp"
 #include "cpu/common.hpp"
 #include "cpu/task_cpu_stat.hpp"
+#include "cpu/cpu_stats.hpp"
+
+#include "timesync/chrono.hpp"
 
 namespace openperf::cpu::internal {
 
@@ -38,7 +40,6 @@ class task_cpu :
 
     struct target_meta {
         uint64_t weight;
-        uint64_t ticks;
         std::chrono::nanoseconds runtime;
         target_ptr target;
     };
@@ -52,10 +53,11 @@ private:
 
     uint64_t m_weights;
     uint64_t m_weight_min;
-    uint64_t m_ticks;
     std::chrono::nanoseconds m_time;
-    std::forward_list<target_meta> m_targets;
-    uint64_t m_targets_count;
+    std::chrono::nanoseconds m_error;
+    timesync::chrono::monotime::time_point m_last_run;
+    utilization_time m_util_time;
+    std::vector<target_meta> m_targets;
     double m_utilization;
 
 public:
@@ -70,6 +72,10 @@ public:
 
     stat_t stat() const override;
     inline void clear_stat() override { m_stat_clear = true; }
+
+private:
+    target_ptr make_target(cpu::instruction_set, cpu::data_type);
+    std::chrono::nanoseconds run_time(std::function<void ()>);
 };
 
 } // namespace openperf::cpu::internal

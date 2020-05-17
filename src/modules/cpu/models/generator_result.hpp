@@ -9,27 +9,30 @@
 namespace openperf::cpu::model {
 
 using time_point = std::chrono::time_point<timesync::chrono::realtime>;
+using namespace std::chrono_literals;
 
 struct generator_target_stats
 {
     uint64_t cycles;
 };
 
+struct generator_common_stats {
+    std::chrono::nanoseconds available = 0ns;
+    std::chrono::nanoseconds utilization = 0ns;
+    std::chrono::nanoseconds system = 0ns;
+    std::chrono::nanoseconds user = 0ns;
+    std::chrono::nanoseconds steal = 0ns;
+    std::chrono::nanoseconds error = 0ns;
+};
+
 struct generator_core_stats
+    : public generator_common_stats
 {
-    uint64_t available;
-    uint64_t utilization;
-    std::chrono::nanoseconds system;
-    std::chrono::nanoseconds user;
-    std::chrono::nanoseconds steal;
-    //uint64_t system;
-    //uint64_t user;
-    //uint64_t steal;
-    uint64_t error;
     std::vector<generator_target_stats> targets;
 };
 
 struct generator_stats
+    : public generator_common_stats
 {
     std::vector<generator_core_stats> cores;
 };

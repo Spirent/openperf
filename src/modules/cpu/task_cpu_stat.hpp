@@ -16,15 +16,14 @@ struct target_cpu_stat {
 };
 
 struct task_cpu_stat {
-    uint64_t available = 0;
-    uint64_t utilization = 0;
+    std::chrono::nanoseconds available = 0ns;
+    std::chrono::nanoseconds utilization = 0ns;
     std::chrono::nanoseconds system = 0ns;
     std::chrono::nanoseconds user = 0ns;
     std::chrono::nanoseconds steal = 0ns;
-    //uint64_t system = 0;
-    //uint64_t user = 0;
-    //uint64_t steal = 0;
-    uint64_t error = 0;
+    std::chrono::nanoseconds error = 0ns;
+    double load = 0.0;
+
     std::vector<target_cpu_stat> targets;
 
     task_cpu_stat() = default;
