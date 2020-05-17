@@ -15,7 +15,7 @@ class target_scalar
 private:
     using square_matrix = std::vector<std::vector<T>>;
 
-    constexpr static size_t size = 50;
+    constexpr static size_t size = 30;
 
     square_matrix matrix1;
     square_matrix matrix2;

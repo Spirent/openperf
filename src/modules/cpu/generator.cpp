@@ -1,10 +1,10 @@
-#include <cstring>
-#include <stdexcept>
-#include "generator.hpp"
+#include "cpu/api.hpp"
+#include "cpu/cpu_info.hpp"
+#include "cpu/cpu_stats.hpp"
+#include "cpu/generator.hpp"
+
 #include "core/op_uuid.hpp"
-#include "api.hpp"
 #include "lib/spirent_pga/instruction_set.h"
-#include "cpu_info.hpp"
 
 namespace openperf::cpu::generator {
 
@@ -58,6 +58,13 @@ model::generator_result generator::statistics() const
     for (auto & worker : m_workers) {
         auto w_stat = worker->stat();
 
+        stats.available += w_stat.available;
+        stats.utilization += w_stat.utilization;
+        stats.system += w_stat.system;
+        stats.user += w_stat.user;
+        stats.steal += w_stat.steal;
+        stats.error += w_stat.error;
+
         model::generator_core_stats core_stat;
         core_stat.available = w_stat.available;
         core_stat.system = w_stat.system;
@@ -70,6 +77,10 @@ model::generator_result generator::statistics() const
             core_stat.targets.push_back({target.cycles});
 
         stats.cores.push_back(core_stat);
+    }
+
+    if (stats.steal == 0ns) {
+        stats.steal = get_steal_time();
     }
 
     auto gen_stat = model::generator_result{};

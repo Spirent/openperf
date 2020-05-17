@@ -4,12 +4,12 @@ namespace openperf::cpu::internal {
 
 using namespace std::chrono_literals;
 
-std::chrono::nanoseconds cpu_stats_get_steal_time()
+std::chrono::nanoseconds get_steal_time()
 {
     return 0ns;
 }
 
-utilization_time get_thread_utilization_time()
+utilization_time get_thread_time()
 {
     return utilization_time{};
 }
