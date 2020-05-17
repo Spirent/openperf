@@ -10,7 +10,7 @@ namespace openperf::cpu::api {
 reply_msg server::handle_request(const request_cpu_generator_list&)
 {
     auto reply = reply_cpu_generators{};
-    for (auto generator : m_generator_stack->list()) {
+    for (auto generator : m_generator_stack.list()) {
         auto reply_generator_model = model::generator(*generator);
         reply.generators.emplace_back(std::make_unique<model::generator>(reply_generator_model));
     }
@@ -21,7 +21,7 @@ reply_msg server::handle_request(const request_cpu_generator_list&)
 
 reply_msg server::handle_request(const request_cpu_generator& request)
 {
-    if (auto gen = m_generator_stack->generator(request.id); gen) {
+    if (auto gen = m_generator_stack.generator(request.id); gen) {
         auto reply = reply_cpu_generators{};
         reply.generators.emplace_back(
             std::make_unique<model::generator>(*gen));
@@ -41,7 +41,7 @@ reply_msg server::handle_request(const request_cpu_generator_add& request)
     else if (!config::op_config_validate_id_string(src->id()))
         return to_error(error_type::CUSTOM_ERROR, 0,  "ID is not valid");
 
-    auto result = m_generator_stack->create(*src);
+    auto result = m_generator_stack.create(*src);
     if (!result)
         return to_error(error_type::CUSTOM_ERROR, 0, result.error());
 
@@ -57,7 +57,7 @@ reply_msg server::handle_request(const request_cpu_generator_del& request)
     if (!config::op_config_validate_id_string(request.id))
         return to_error(error_type::CUSTOM_ERROR, 0, "ID is not valid");
 
-    if (!m_generator_stack->erase(request.id))
+    if (!m_generator_stack.erase(request.id))
         return to_error(api::error_type::NOT_FOUND);
 
     return reply_ok{};
@@ -65,10 +65,10 @@ reply_msg server::handle_request(const request_cpu_generator_del& request)
 
 reply_msg server::handle_request(const request_cpu_generator_start& request)
 {
-    if (!m_generator_stack->generator(request.id))
+    if (!m_generator_stack.generator(request.id))
         return to_error(api::error_type::NOT_FOUND);
 
-    auto result = m_generator_stack->start_generator(request.id);
+    auto result = m_generator_stack.start_generator(request.id);
     if (!result)
         return to_error(api::error_type::CUSTOM_ERROR, 0, result.error());
 
@@ -83,7 +83,7 @@ reply_msg server::handle_request(const request_cpu_generator_stop& request)
     if (!config::op_config_validate_id_string(request.id))
         return (to_error(error_type::CUSTOM_ERROR, 0,  "ID is not valid"));
 
-    if (!m_generator_stack->stop_generator(request.id))
+    if (!m_generator_stack.stop_generator(request.id))
         return to_error(api::error_type::NOT_FOUND);
 
     return reply_ok{};
@@ -95,14 +95,14 @@ reply_msg server::handle_request(const request_cpu_generator_bulk_start& request
     std::forward_list<string_pair> not_runned_before;
     auto rollback = [&not_runned_before,this]() {
         for (auto pair : not_runned_before) {
-            m_generator_stack->stop_generator(pair.first);
-            m_generator_stack->erase_statistics(pair.second);
+            m_generator_stack.stop_generator(pair.first);
+            m_generator_stack.erase_statistics(pair.second);
         }
     };
 
     auto reply = reply_cpu_generator_results{};
     for (auto & id : *request.ids) {
-        auto gen = m_generator_stack->generator(id);
+        auto gen = m_generator_stack.generator(id);
         if (gen == nullptr) {
             rollback();
             return to_error(api::error_type::NOT_FOUND);
@@ -110,7 +110,7 @@ reply_msg server::handle_request(const request_cpu_generator_bulk_start& request
 
         if (gen->running()) continue;
 
-        auto stats = m_generator_stack->start_generator(id);
+        auto stats = m_generator_stack.start_generator(id);
         if (!stats) {
             rollback();
             return to_error(api::error_type::CUSTOM_ERROR, 0,
@@ -130,12 +130,12 @@ reply_msg server::handle_request(const request_cpu_generator_bulk_start& request
 reply_msg server::handle_request(const request_cpu_generator_bulk_stop& request)
 {
     for (auto & id : *request.ids)
-        if (!m_generator_stack->generator(id))
+        if (!m_generator_stack.generator(id))
             return to_error(api::error_type::NOT_FOUND, 0,
                 "Some generators from the list were not found");
 
     for (auto & id : *request.ids)
-        m_generator_stack->stop_generator(id);
+        m_generator_stack.stop_generator(id);
 
     return api::reply_ok{};
 }
@@ -143,7 +143,7 @@ reply_msg server::handle_request(const request_cpu_generator_bulk_stop& request)
 reply_msg server::handle_request(const request_cpu_generator_result_list&)
 {
     auto reply = reply_cpu_generator_results{};
-    for (auto stat : m_generator_stack->list_statistics())
+    for (auto stat : m_generator_stack.list_statistics())
         reply.results.emplace_back(
             std::make_unique<model::generator_result>(stat));
 
@@ -152,7 +152,7 @@ reply_msg server::handle_request(const request_cpu_generator_result_list&)
 
 reply_msg server::handle_request(const request_cpu_generator_result& request)
 {
-    if (auto stat = m_generator_stack->statistics(request.id); stat) {
+    if (auto stat = m_generator_stack.statistics(request.id); stat) {
         auto reply = reply_cpu_generator_results{};
         reply.results.emplace_back(
             std::make_unique<model::generator_result>(stat.value()));
@@ -168,10 +168,10 @@ reply_msg server::handle_request(const request_cpu_generator_result_del& request
     if (!config::op_config_validate_id_string(request.id))
         return to_error(error_type::CUSTOM_ERROR, 0, "ID is not valid");
 
-    if (!m_generator_stack->statistics(request.id))
+    if (!m_generator_stack.statistics(request.id))
         return to_error(api::error_type::NOT_FOUND);
 
-    if (!m_generator_stack->erase_statistics(request.id))
+    if (!m_generator_stack.erase_statistics(request.id))
         return to_error(error_type::CUSTOM_ERROR, 0, "Statistics is active");
 
     return reply_ok{};
@@ -213,7 +213,6 @@ static int _handle_rpc_request(const op_event_data* data, void* arg)
 
 server::server(void* context, openperf::core::event_loop& loop)
     : m_socket(op_socket_get_server(context, ZMQ_REP, endpoint.data()))
-    , m_generator_stack(std::make_unique<generator_stack>())
 {
 
     struct op_event_callbacks callbacks = {
