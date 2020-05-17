@@ -333,6 +333,30 @@ definitions:
     type: object
     description: CPU generator statistics
     properties:
+      available:
+        type: integer
+        description: The total amount of CPU time available
+        format: int64
+      utilization:
+        type: integer
+        description: The amount of CPU time used
+        format: int64
+      system:
+        type: integer
+        description: The amount of system time used, e.g. kernel or system calls
+        format: int64
+      user:
+        type: integer
+        description: The amount of user time used, e.g. openperf code
+        format: int64
+      steal:
+        type: integer
+        description: The amount of time the hypervisor reported our virtual cores were blocked
+        format: int64
+      error:
+        type: integer
+        description: The difference between intended and actual CPU utilization
+        format: int64
       cores:
         type: array
         description: Statistics of the CPU cores (in the order they were specified in generator configuration)
