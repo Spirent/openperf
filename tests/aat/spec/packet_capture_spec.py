@@ -354,7 +354,7 @@ with description('Packet Capture,', 'packet_capture') as self:
                         expect(result.packets).to(be_above_or_equal(4))
 
             with description('duration,'):
-                with it('stops automatically'):
+                with _it('stops automatically'):
                     capture_duration_sec = 3
                     cap = capture_model(self.api.api_client, 'dataplane-server')
                     cap.config.duration = capture_duration_sec * 1000
