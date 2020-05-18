@@ -292,8 +292,7 @@ void handler::create_captures(const request_type& request,
     }
 }
 
-void handler::delete_captures(const request_type& request,
-                              response_type response)
+void handler::delete_captures(const request_type&, response_type response)
 {
     auto api_reply = submit_request(m_socket.get(), request_delete_captures{});
 
@@ -441,7 +440,7 @@ void handler::list_capture_results(const request_type& request,
     }
 }
 
-void handler::delete_capture_results(const request_type& request,
+void handler::delete_capture_results(const request_type&,
                                      response_type response)
 {
     auto api_reply =

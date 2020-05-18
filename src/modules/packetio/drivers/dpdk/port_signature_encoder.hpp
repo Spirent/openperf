@@ -15,8 +15,9 @@ public:
     callback_signature_encoder(uint16_t port_id);
     ~callback_signature_encoder();
 
-    callback_signature_encoder(callback_signature_encoder&&);
-    callback_signature_encoder& operator=(callback_signature_encoder&&);
+    callback_signature_encoder(callback_signature_encoder&&) noexcept;
+    callback_signature_encoder&
+    operator=(callback_signature_encoder&&) noexcept;
 
     uint16_t port_id() const;
 

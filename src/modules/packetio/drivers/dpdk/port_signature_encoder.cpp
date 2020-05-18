@@ -235,13 +235,13 @@ callback_signature_encoder::~callback_signature_encoder()
 }
 
 callback_signature_encoder::callback_signature_encoder(
-    callback_signature_encoder&& other)
+    callback_signature_encoder&& other) noexcept
     : m_callbacks(std::move(other.m_callbacks))
     , m_port(other.m_port)
 {}
 
-callback_signature_encoder&
-callback_signature_encoder::operator=(callback_signature_encoder&& other)
+callback_signature_encoder& callback_signature_encoder::operator=(
+    callback_signature_encoder&& other) noexcept
 {
     if (this != &other) {
         m_callbacks = std::move(other.m_callbacks);
