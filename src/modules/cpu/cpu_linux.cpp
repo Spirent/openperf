@@ -1,8 +1,7 @@
-#include "cpu/cpu.hpp"
+#include "cpu.hpp"
 
 #include <cassert>
 #include <cstdio>
-#include <cinttypes>
 #include <stdexcept>
 
 #include <unistd.h>

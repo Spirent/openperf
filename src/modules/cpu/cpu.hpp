@@ -2,6 +2,7 @@
 #define _OP_CPU_STATS_HPP_
 
 #include <chrono>
+#include <cinttypes>
 #include <string>
 
 namespace openperf::cpu::internal {

@@ -1,9 +1,9 @@
 #ifndef _OP_CPU_TASK_CPU_STAT_HPP_
 #define _OP_CPU_TASK_CPU_STAT_HPP_
 
+#include <chrono>
 #include <cinttypes>
 #include <vector>
-#include <chrono>
 
 namespace openperf::cpu::internal {
 

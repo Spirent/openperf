@@ -1,7 +1,7 @@
 #ifndef _OP_CPU_SERVER_HPP_
 #define _OP_CPU_SERVER_HPP_
 
-#include "core/op_core.h"
+#include <memory>
 
 #include "cpu/api.hpp"
 #include "cpu/generator_stack.hpp"

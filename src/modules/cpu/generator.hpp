@@ -1,6 +1,10 @@
 #ifndef _OP_CPU_GENERATOR_HPP_
 #define _OP_CPU_GENERATOR_HPP_
 
+#include <memory>
+#include <string>
+#include <vector>
+
 #include "models/generator.hpp"
 #include "models/generator_result.hpp"
 #include "utils/worker/worker.hpp"

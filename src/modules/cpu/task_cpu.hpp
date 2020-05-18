@@ -2,16 +2,18 @@
 #define _OP_CPU_TASK_CPU_HPP_
 
 #include <atomic>
-#include <memory>
 #include <chrono>
+#include <cinttypes>
+#include <functional>
+#include <memory>
+#include <vector>
 
-#include "utils/worker/task.hpp"
-#include "cpu/target.hpp"
 #include "cpu/common.hpp"
-#include "cpu/task_cpu_stat.hpp"
 #include "cpu/cpu.hpp"
-
+#include "cpu/target.hpp"
+#include "cpu/task_cpu_stat.hpp"
 #include "timesync/chrono.hpp"
+#include "utils/worker/task.hpp"
 
 namespace openperf::cpu::internal {
 

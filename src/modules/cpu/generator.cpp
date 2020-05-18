@@ -1,6 +1,6 @@
-#include "cpu/cpu.hpp"
-#include "cpu/generator.hpp"
+#include "generator.hpp"
 
+#include "cpu/cpu.hpp"
 #include "core/op_uuid.hpp"
 #include "lib/spirent_pga/instruction_set.h"
 
@@ -116,7 +116,6 @@ void generator::configure_workers(const model::generator_config& p_conf) {
         auto cc = generate_worker_config(core_conf);
         m_workers.push_back(std::make_unique<cpu_worker>(cc));
         m_workers.back()->start(++core_id);
-        //m_workers.back()->config(cc);
     }
 }
 

@@ -1,6 +1,7 @@
 #include <sstream>
 #include <iomanip>
-#include <netdb.h>
+
+#include <zmq.h>
 
 #include "cpu/api.hpp"
 #include "utils/overloaded_visitor.hpp"
@@ -54,9 +55,8 @@ static auto zmq_msg_init(zmq_msg_t* msg,
     }
 
     auto cursor = reinterpret_cast<T**>(zmq_msg_data(msg));
-    std::transform(std::begin(values), std::end(values), cursor, [](auto& ptr) {
-        return ptr.release();
-    });
+    std::transform(std::begin(values), std::end(values), cursor,
+        [](auto& ptr) { return ptr.release(); });
     return 0;
 }
 

@@ -1,4 +1,4 @@
-#include "cpu/cpu.hpp"
+#include "cpu.hpp"
 
 #ifndef ARCH
 #define ARCH "unknown"

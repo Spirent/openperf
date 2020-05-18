@@ -1,10 +1,8 @@
 #ifndef _OP_CPU_TARGET_SCALAR_HPP_
 #define _OP_CPU_TARGET_SCALAR_HPP_
 
-#include "cpu/target.hpp"
-#include <iostream>
 #include <vector>
-#include <algorithm>
+#include "cpu/target.hpp"
 
 namespace openperf::cpu::internal {
 
