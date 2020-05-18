@@ -29,14 +29,8 @@ jobs:
     steps:
       - checkout
       - run:
-          # Use bear to generate the compilation database
-          # Force optimizations to target avx2; all of the CircleCI machines seem
-          # to support it and we don't want to get illegal instruction errors when
-          # we hand these objects off to the acceptance test job.
-          # Some of those build servers are fancy and support AVX512 which the default
-          # compile options will use, if available.
           name: Build and generate compilation database
-          command: bear make -j $(nproc) OP_COPTS="-Os -gline-tables-only -march=core-avx2" all
+          command: .circleci/run_build.sh
       - store_artifacts:
           path: ~/project/build/openperf-linux-x86_64-testing/bin
       - store_artifacts:
@@ -69,7 +63,7 @@ jobs:
       - checkout
       - run:
           name: Run unit tests
-          command: make test_unit -j $(nproc)
+          command: .circleci/run_unit_tests.sh
 
 workflows:
   version: 2
