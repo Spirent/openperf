@@ -1,6 +1,7 @@
 #ifndef _OP_CPU_GENERATOR_MODEL_HPP_
 #define _OP_CPU_GENERATOR_MODEL_HPP_
 
+#include <cinttypes>
 #include <string>
 #include <vector>
 #include "cpu/common.hpp"

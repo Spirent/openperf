@@ -1,13 +1,12 @@
 #ifndef _OP_CPU_API_HPP_
 #define _OP_CPU_API_HPP_
 
-#include <chrono>
+#include <cinttypes>
+#include <memory>
 #include <string>
 #include <variant>
 #include <tl/expected.hpp>
 
-#include "json.hpp"
-#include "timesync/chrono.hpp"
 #include "swagger/v1/model/CpuGenerator.h"
 #include "swagger/v1/model/CpuGeneratorResult.h"
 #include "swagger/v1/model/BulkStartCpuGeneratorsRequest.h"
@@ -16,8 +15,7 @@
 #include "cpu/common.hpp"
 #include "cpu/models/generator.hpp"
 #include "cpu/models/generator_result.hpp"
-
-#include <zmq.h>
+#include "timesync/chrono.hpp"
 
 namespace openperf::cpu::api {
 

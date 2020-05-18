@@ -1,7 +1,7 @@
 #ifndef _OP_CPU_COMMON_HPP_
 #define _OP_CPU_COMMON_HPP_
 
-#include <unordered_map>
+#include <string>
 
 namespace openperf::cpu {
 

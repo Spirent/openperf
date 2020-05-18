@@ -1,5 +1,3 @@
-//#include <memory>
-
 #include <json.hpp>
 #include <zmq.h>
 
@@ -14,8 +12,6 @@ namespace opneperf::cpu {
 using namespace Pistache;
 using namespace swagger::v1::model;
 using json = nlohmann::json;
-using request_type = Pistache::Rest::Request;
-using response_type = Pistache::Http::ResponseWriter;
 
 namespace api = openperf::cpu::api;
 

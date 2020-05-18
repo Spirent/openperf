@@ -1,4 +1,5 @@
 #include "common.hpp"
+#include <unordered_map>
 
 namespace openperf::cpu {
 

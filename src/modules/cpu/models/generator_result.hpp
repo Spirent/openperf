@@ -2,8 +2,10 @@
 #define _OP_CPU_GENERATOR_RESULT_MODEL_HPP_
 
 #include <chrono>
+#include <cinttypes>
 #include <string>
-#include <memory>
+#include <vector>
+
 #include "timesync/chrono.hpp"
 
 namespace openperf::cpu::model {

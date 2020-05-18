@@ -1,4 +1,5 @@
-#include "cpu/task_cpu.hpp"
+#include "task_cpu.hpp"
+
 #include "core/op_log.h"
 #include "cpu/target_scalar.hpp"
 

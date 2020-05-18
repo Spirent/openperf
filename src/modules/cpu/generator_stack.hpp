@@ -1,6 +1,8 @@
 #ifndef _OP_CPU_GENERATOR_STACK_HPP_
 #define _OP_CPU_GENERATOR_STACK_HPP_
 
+#include <memory>
+#include <string>
 #include <unordered_map>
 #include <variant>
 
