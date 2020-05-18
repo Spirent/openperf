@@ -179,10 +179,10 @@ reply_msg server::handle_request(const request_cpu_generator_result_del& request
 
 reply_msg server::handle_request(const request_cpu_info&)
 {
-    auto info = std::make_unique<model::cpu_info>();
-    info->architecture(info::architecture());
-    info->cores(info::cores_count());
-    info->cache_line_size(info::cache_line_size());
+    auto info = std::make_unique<cpu_info_t>();
+    info->architecture = info::architecture();
+    info->cores = info::cores_count();
+    info->cache_line_size = info::cache_line_size();
 
     return reply_cpu_info {
         .info = std::move(info)

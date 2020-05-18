@@ -432,12 +432,12 @@ std::shared_ptr<CpuGeneratorResult> to_swagger(const model::generator_result& p_
     return gen;
 }
 
-std::shared_ptr<CpuInfoResult> to_swagger(const model::cpu_info& p_cpu_info)
+std::shared_ptr<CpuInfoResult> to_swagger(const cpu_info_t& info)
 {
     auto cpu_info = std::make_shared<CpuInfoResult>();
-    cpu_info->setArchitecture(p_cpu_info.architecture());
-    cpu_info->setCacheLineSize(p_cpu_info.cache_line_size());
-    cpu_info->setCores(p_cpu_info.cores());
+    cpu_info->setArchitecture(info.architecture);
+    cpu_info->setCacheLineSize(info.cache_line_size);
+    cpu_info->setCores(info.cores);
     return cpu_info;
 }
 

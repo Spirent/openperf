@@ -16,7 +16,6 @@
 #include "cpu/common.hpp"
 #include "cpu/models/generator.hpp"
 #include "cpu/models/generator_result.hpp"
-#include "cpu/models/cpu_info.hpp"
 
 #include <zmq.h>
 
@@ -33,11 +32,16 @@ const std::string endpoint = "inproc://openperf_cpu";
 
 /* zmq api objects models */
 
+struct cpu_info_t {
+    int32_t cores;
+    int64_t cache_line_size;
+    std::string architecture;
+};
+
 using cpu_generator_t = model::generator;
 using cpu_generator_result_t = model::generator_result;
 using cpu_generator_ptr = std::unique_ptr<cpu_generator_t>;
 using cpu_generator_result_ptr = std::unique_ptr<cpu_generator_result_t>;
-using cpu_info_t = model::cpu_info;
 using cpu_info_ptr = std::unique_ptr<cpu_info_t>;
 
 enum class error_type {
@@ -173,7 +177,7 @@ std::string to_string(const api::typed_error&);
 model::generator from_swagger(const CpuGenerator&);
 std::shared_ptr<CpuGenerator> to_swagger(const model::generator&);
 std::shared_ptr<CpuGeneratorResult> to_swagger(const model::generator_result&);
-std::shared_ptr<CpuInfoResult> to_swagger(const model::cpu_info&);
+std::shared_ptr<CpuInfoResult> to_swagger(const cpu_info_t&);
 
 extern const std::string endpoint;
 
