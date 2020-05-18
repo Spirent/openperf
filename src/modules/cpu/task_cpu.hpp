@@ -9,7 +9,7 @@
 #include "cpu/target.hpp"
 #include "cpu/common.hpp"
 #include "cpu/task_cpu_stat.hpp"
-#include "cpu/cpu_stats.hpp"
+#include "cpu/cpu.hpp"
 
 #include "timesync/chrono.hpp"
 

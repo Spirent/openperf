@@ -1,4 +1,4 @@
-#include "cpu/cpu_stats.hpp"
+#include "cpu/cpu.hpp"
 
 #include <cassert>
 #include <cstdio>
@@ -9,6 +9,10 @@
 
 #include <sys/resource.h>
 #include <sys/time.h>
+
+#ifndef ARCH
+#define ARCH "unknown"
+#endif
 
 namespace openperf::cpu::internal {
 
@@ -23,7 +27,7 @@ struct linux_proc_stats {
     uint64_t steal;
 };
 
-linux_proc_stats get_cpu_stats()
+linux_proc_stats cpu_stats()
 {
     FILE *procstat = NULL;
 
@@ -75,17 +79,17 @@ linux_proc_stats get_cpu_stats()
     throw std::runtime_error("Error fetch CPU stats");
 }
 
-std::chrono::nanoseconds get_steal_time()
+std::chrono::nanoseconds cpu_steal_time()
 {
     auto ticks_per_sec = sysconf(_SC_CLK_TCK);
     assert(ticks_per_sec);
 
-    auto stats = get_cpu_stats();
+    auto stats = cpu_stats();
     return std::chrono::nanoseconds(
         stats.steal * std::nano::den / ticks_per_sec);
 }
 
-utilization_time get_thread_time()
+utilization_time cpu_thread_time()
 {
     auto ru = rusage{};
     getrusage(RUSAGE_THREAD, &ru);
@@ -102,6 +106,21 @@ utilization_time get_thread_time()
         .steal = 0ns,
         .utilization = time_user + time_system
     };
+}
+
+int32_t cpu_cores_count()
+{
+    return sysconf(_SC_NPROCESSORS_CONF);
+}
+
+int64_t cpu_cache_line_size()
+{
+    return sysconf(_SC_LEVEL1_DCACHE_LINESIZE);
+}
+
+std::string cpu_architecture()
+{
+    return ARCH;
 }
 
 } // namespace openperf::cpu::internal

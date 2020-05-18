@@ -12,13 +12,12 @@ CPU_SOURCES += \
 	generator.cpp \
 	generator_stack.cpp \
 	task_cpu.cpp \
-	cpu_info.cpp \
 	common.cpp
 
 ifeq ($(PLATFORM), linux)
-	CPU_SOURCES += cpu_stats_linux.cpp
+	CPU_SOURCES += cpu_linux.cpp
 else ifneq ($(PLATFORM), osv)
-	CPU_SOURCES += cpu_stats.cpp
+	CPU_SOURCES += cpu.cpp
 endif
 
 include $(PGA_SRC_DIR)/ispc/directory.mk

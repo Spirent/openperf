@@ -1,10 +1,12 @@
 #include <zmq.h>
 
 #include "config/op_config_utils.hpp"
-#include "cpu/cpu_info.hpp"
+#include "cpu/cpu.hpp"
 #include "cpu/server.hpp"
 
 namespace openperf::cpu::api {
+
+using namespace openperf::cpu::internal;
 
 reply_msg server::handle_request(const request_cpu_generator_list&)
 {
@@ -180,9 +182,9 @@ reply_msg server::handle_request(const request_cpu_generator_result_del& request
 reply_msg server::handle_request(const request_cpu_info&)
 {
     auto info = std::make_unique<cpu_info_t>();
-    info->architecture = info::architecture();
-    info->cores = info::cores_count();
-    info->cache_line_size = info::cache_line_size();
+    info->architecture = cpu_architecture();
+    info->cores = cpu_cores_count();
+    info->cache_line_size = cpu_cache_line_size();
 
     return reply_cpu_info {
         .info = std::move(info)
@@ -201,7 +203,7 @@ static int _handle_rpc_request(const op_event_data* data, void* arg)
         };
         auto reply = std::visit(request_visitor, *request);
         if (send_message(data->socket, serialize_reply(std::move(reply))) == -1) {
-            reply_errors++;
+            ++reply_errors;
             OP_LOG(OP_LOG_ERROR,
                 "Error sending reply: %s\n", zmq_strerror(errno));
             continue;

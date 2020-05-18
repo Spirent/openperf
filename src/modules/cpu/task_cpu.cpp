@@ -36,7 +36,7 @@ void task_cpu::spin()
 
         m_error = 0ns;
         m_last_run = now();
-        m_util_time = get_thread_time();
+        m_util_time = cpu_thread_time();
     }
 
     auto time_frame = std::max(
@@ -67,7 +67,7 @@ void task_cpu::spin()
         stat.runtime += runtime;
     }
 
-    auto cpu_util = get_thread_time();
+    auto cpu_util = cpu_thread_time();
     auto time_diff = cpu_util - m_util_time;
 
     std::this_thread::sleep_for(
@@ -160,10 +160,10 @@ task_cpu::target_ptr task_cpu::make_target(cpu::instruction_set iset, cpu::data_
 [[clang::optnone]]
 std::chrono::nanoseconds task_cpu::run_time(std::function<void ()> function)
 {
-    auto start_time = get_thread_time();
+    auto start_time = cpu_thread_time();
     auto t1 = now();
     function();
-    auto thread_time = (get_thread_time() - start_time).utilization;
+    auto thread_time = (cpu_thread_time() - start_time).utilization;
     auto time = now() - t1;
 
     // We prefer processor thread time, but sometimes it

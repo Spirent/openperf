@@ -2,6 +2,7 @@
 #define _OP_CPU_STATS_HPP_
 
 #include <chrono>
+#include <string>
 
 namespace openperf::cpu::internal {
 
@@ -48,8 +49,12 @@ struct utilization_time {
     }
 };
 
-utilization_time get_thread_time();
-std::chrono::nanoseconds get_steal_time();
+utilization_time cpu_thread_time();
+std::chrono::nanoseconds cpu_steal_time();
+
+int32_t cpu_cores_count();
+int64_t cpu_cache_line_size();
+std::string cpu_architecture();
 
 } // namespace openperf::cpu::internal
 
