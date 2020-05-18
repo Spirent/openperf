@@ -1,5 +1,4 @@
-#include "cpu/cpu_info.hpp"
-#include "cpu/cpu_stats.hpp"
+#include "cpu/cpu.hpp"
 #include "cpu/generator.hpp"
 
 #include "core/op_uuid.hpp"
@@ -79,7 +78,7 @@ model::generator_result generator::statistics() const
     }
 
     if (stats.steal == 0ns) {
-        stats.steal = get_steal_time();
+        stats.steal = cpu_steal_time();
     }
 
     auto gen_stat = model::generator_result{};
@@ -102,10 +101,10 @@ void generator::configure_workers(const model::generator_config& p_conf) {
     m_workers.clear();
     int core_id = -1;
 
-    if (static_cast<int32_t>(p_conf.cores.size()) > info::cores_count())
+    if (static_cast<int32_t>(p_conf.cores.size()) > cpu_cores_count())
         throw std::runtime_error(
             "Could not configure more cores than available ("
-            + std::to_string(info::cores_count()) + ")?");
+            + std::to_string(cpu_cores_count()) + ")?");
 
     for (auto & core_conf : p_conf.cores) {
         for (auto &target : core_conf.targets)
