@@ -8,11 +8,6 @@ namespace impl {
 template <typename Template, template <typename T> class Strategy>
 class sequence_generator
 {
-protected:
-    using scalar_container = std::vector<unsigned>;
-    scalar_container m_template_sizes;
-    scalar_container m_template_scalars;
-
 public:
     /*
      * This sequence generator combines multiple weighted packet templates
@@ -65,6 +60,21 @@ public:
 
     iterator end() { return (iterator(*this, size())); };
     const_iterator end() const { return (iterator(*this, size())); }
+
+protected:
+    using scalar_container = std::vector<unsigned>;
+    const scalar_container& template_sizes() const
+    {
+        return (m_template_sizes);
+    }
+    const scalar_container& template_scalars() const
+    {
+        return (m_template_scalars);
+    }
+
+private:
+    scalar_container m_template_sizes;
+    scalar_container m_template_scalars;
 };
 
 template <typename Template>
@@ -77,17 +87,17 @@ public:
     round_robin(const definition_container& definitions)
         : parent::sequence_generator(definitions)
     {
-        m_weight_sums.reserve(parent::m_template_scalars.size());
-        std::partial_sum(std::begin(parent::m_template_scalars),
-                         std::end(parent::m_template_scalars),
+        m_weight_sums.reserve(parent::template_scalars().size());
+        std::partial_sum(std::begin(parent::template_scalars()),
+                         std::end(parent::template_scalars()),
                          std::back_inserter(m_weight_sums));
     }
 
     size_t get_size() const
     {
         auto lcm = std::accumulate(
-            std::begin(parent::m_template_sizes),
-            std::end(parent::m_template_sizes),
+            std::begin(parent::template_sizes()),
+            std::end(parent::template_sizes()),
             1UL,
             [](size_t lhs, size_t rhs) { return (std::lcm(lhs, rhs)); });
 
@@ -107,11 +117,11 @@ public:
 
         auto offset = quot * sum
                       + (tmp_idx == 0 ? 0 : m_weight_sums[tmp_idx - 1])
-                      - quot * parent::m_template_scalars[tmp_idx];
+                      - quot * parent::template_scalars()[tmp_idx];
 
         assert(static_cast<size_t>(offset) <= idx);
 
-        return {tmp_idx, (idx - offset) % parent::m_template_sizes[tmp_idx]};
+        return {tmp_idx, (idx - offset) % parent::template_sizes()[tmp_idx]};
     }
 };
 
@@ -126,12 +136,12 @@ public:
     sequential(const definition_container& definitions)
         : parent::sequence_generator(definitions)
     {
-        m_lengths.reserve(parent::m_template_scalars.size());
-        m_lengths_sums.reserve(parent::m_template_scalars.size());
+        m_lengths.reserve(parent::template_scalars().size());
+        m_lengths_sums.reserve(parent::template_scalars().size());
 
-        std::transform(std::begin(parent::m_template_scalars),
-                       std::end(parent::m_template_scalars),
-                       std::begin(parent::m_template_sizes),
+        std::transform(std::begin(parent::template_scalars()),
+                       std::end(parent::template_scalars()),
+                       std::begin(parent::template_sizes()),
                        std::back_inserter(m_lengths),
                        [](unsigned lhs, unsigned rhs) { return (lhs * rhs); });
 
@@ -159,7 +169,7 @@ public:
 
         assert(static_cast<size_t>(offset) <= idx);
 
-        return {tmp_idx, (idx - offset) % parent::m_template_sizes[tmp_idx]};
+        return {tmp_idx, (idx - offset) % parent::template_sizes()[tmp_idx]};
     }
 };
 
