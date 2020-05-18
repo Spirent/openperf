@@ -118,8 +118,8 @@ generator_ptr to_swagger(const source& src)
     return (dst);
 }
 
-traffic::counter
-accumulate_counters(const std::vector<traffic::counter> counters)
+static traffic::counter
+accumulate_counters(const std::vector<traffic::counter>& counters)
 {
     return (std::accumulate(std::begin(counters),
                             std::end(counters),

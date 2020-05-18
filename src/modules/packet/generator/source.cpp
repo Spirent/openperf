@@ -19,7 +19,7 @@ source::source(source_config&& config)
           api::max_transmit_count(*m_config.api_config->getDuration(), m_load))
 {}
 
-source::source(source&& other)
+source::source(source&& other) noexcept
     : m_config(std::move(other.m_config))
     , m_sequence(std::move(other.m_sequence))
     , m_load(other.m_load)
@@ -28,7 +28,7 @@ source::source(source&& other)
     , m_results(other.m_results.exchange(nullptr))
 {}
 
-source& source::operator=(source&& other)
+source& source::operator=(source&& other) noexcept
 {
     if (this != &other) {
         m_config = std::move(other.m_config);

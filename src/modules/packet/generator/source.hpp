@@ -47,8 +47,8 @@ public:
     source(source_config&& config);
     ~source() = default;
 
-    source(source&& other);
-    source& operator=(source&& other);
+    source(source&& other) noexcept;
+    source& operator=(source&& other) noexcept;
 
     std::string id() const;
     std::string target() const;
