@@ -2,21 +2,21 @@
 #define _OP_CPU_API_HPP_
 
 #include <chrono>
-#include <limits.h>
 #include <string>
 #include <variant>
 #include <tl/expected.hpp>
+
 #include "json.hpp"
 #include "timesync/chrono.hpp"
-#include "models/generator.hpp"
-#include "models/generator_result.hpp"
-#include "models/cpu_info.hpp"
 #include "swagger/v1/model/CpuGenerator.h"
 #include "swagger/v1/model/CpuGeneratorResult.h"
 #include "swagger/v1/model/BulkStartCpuGeneratorsRequest.h"
 #include "swagger/v1/model/BulkStopCpuGeneratorsRequest.h"
 #include "swagger/v1/model/CpuInfoResult.h"
 #include "cpu/common.hpp"
+#include "cpu/models/generator.hpp"
+#include "cpu/models/generator_result.hpp"
+#include "cpu/models/cpu_info.hpp"
 
 #include <zmq.h>
 
@@ -169,7 +169,6 @@ int send_message(void* socket, serialized_msg&& msg);
 tl::expected<serialized_msg, int> recv_message(void* socket, int flags = 0);
 
 reply_error to_error(error_type type, int code = 0, const std::string& value = "");
-std::string to_string(const cpu::instruction_set& pattern);
 std::string to_string(const api::typed_error&);
 model::generator from_swagger(const CpuGenerator&);
 std::shared_ptr<CpuGenerator> to_swagger(const model::generator&);

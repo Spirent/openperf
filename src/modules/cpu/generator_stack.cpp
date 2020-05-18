@@ -1,4 +1,5 @@
 #include "generator_stack.hpp"
+
 #include "utils/overloaded_visitor.hpp"
 
 namespace openperf::cpu::generator {
@@ -15,11 +16,10 @@ std::vector<generator_stack::generator_ptr> generator_stack::list() const
 tl::expected<generator_stack::generator_ptr, std::string>
 generator_stack::create(const model::generator& model)
 {
-    if (m_generators.count(model.id())) {
+    if (m_generators.count(model.id()))
         return tl::make_unexpected(
-            "Generator " + static_cast<std::string>(model.id())
+            "Generator with ID " + static_cast<std::string>(model.id())
             + " already exists.");
-    }
 
     try {
         auto generator_ptr = std::make_shared<cpu::generator::generator>(model);

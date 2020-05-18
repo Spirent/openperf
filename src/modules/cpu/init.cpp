@@ -3,7 +3,7 @@
 #include <zmq.h>
 
 #include "core/op_core.h"
-#include "server.hpp"
+#include "cpu/server.hpp"
 
 namespace openperf::cpu {
 
@@ -17,7 +17,7 @@ static int handle_zmq_shutdown(const op_event_data* data,
         op_event_loop_exit(data->loop);
     }
 
-    return (0);
+    return 0;
 }
 
 struct service
@@ -66,7 +66,7 @@ int op_cpu_init(void* context, void* state)
         reinterpret_cast<openperf::cpu::service*>(state);
     s->init(context);
     s->start();
-    return (0);
+    return 0;
 }
 
 void op_cpu_fini(void* state)

@@ -1,21 +1,17 @@
 #ifndef _OP_CPU_SERVER_HPP_
 #define _OP_CPU_SERVER_HPP_
 
-#include "json.hpp"
 #include "core/op_core.h"
 
-#include "api.hpp"
-#include "generator_stack.hpp"
+#include "cpu/api.hpp"
+#include "cpu/generator_stack.hpp"
 
 namespace openperf::cpu::api {
-
-using generator_stack = cpu::generator::generator_stack;
-using json = nlohmann::json;
 
 class server
 {
 private:
-    generator_stack m_generator_stack;
+    cpu::generator::generator_stack m_generator_stack;
     std::unique_ptr<void, op_socket_deleter> m_socket;
 
 public:

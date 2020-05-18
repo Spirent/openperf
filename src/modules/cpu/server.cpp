@@ -1,9 +1,8 @@
 #include <zmq.h>
 
-#include "api.hpp"
-#include "server.hpp"
 #include "config/op_config_utils.hpp"
-#include "cpu_info.hpp"
+#include "cpu/cpu_info.hpp"
+#include "cpu/server.hpp"
 
 namespace openperf::cpu::api {
 
@@ -75,6 +74,7 @@ reply_msg server::handle_request(const request_cpu_generator_start& request)
     auto reply = reply_cpu_generator_results{};
     reply.results.emplace_back(
         std::make_unique<model::generator_result>(result.value()));
+
     return reply;
 }
 
@@ -214,7 +214,6 @@ static int _handle_rpc_request(const op_event_data* data, void* arg)
 server::server(void* context, openperf::core::event_loop& loop)
     : m_socket(op_socket_get_server(context, ZMQ_REP, endpoint.data()))
 {
-
     struct op_event_callbacks callbacks = {
         .on_read = _handle_rpc_request
     };
