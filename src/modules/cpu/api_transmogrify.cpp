@@ -321,64 +321,16 @@ std::string to_string(const api::typed_error& error)
     }
 }
 
-cpu::instruction_set cpu_instruction_set_from_string(const std::string& value)
-{
-    const static std::unordered_map<std::string, cpu::instruction_set>
-        cpu_instruction_sets = {
-            {"scalar", cpu::instruction_set::SCALAR},
-    };
-
-    if (cpu_instruction_sets.count(value))
-        return cpu_instruction_sets.at(value);
-    throw std::runtime_error(
-        "Instruction set \"" + value + "\" is unknown");
-}
-
-std::string to_string(const cpu::instruction_set& pattern)
-{
-    const static std::unordered_map<cpu::instruction_set, std::string>
-        cpu_instruction_set_strings = {
-            {cpu::instruction_set::SCALAR, "scalar"},
-    };
-
-    if (cpu_instruction_set_strings.count(pattern))
-        return cpu_instruction_set_strings.at(pattern);
-    return "unknown";
-}
-
-cpu::data_type cpu_data_type_from_string(const std::string& value)
-{
-    const static std::unordered_map<std::string, cpu::data_type>
-        cpu_data_types = {
-            {"int32", cpu::data_type::INT32},
-            {"int64", cpu::data_type::INT64},
-            {"float32", cpu::data_type::FLOAT32},
-            {"float64", cpu::data_type::FLOAT64},
-    };
-
-    if (cpu_data_types.count(value))
-        return cpu_data_types.at(value);
-    throw std::runtime_error("Instruction set \"" + value + "\" is unknown");
-}
-
-std::string to_string(const cpu::data_type& pattern)
-{
-    const static std::unordered_map<cpu::data_type, std::string>
-        cpu_data_type_strings = {
-            {cpu::data_type::INT32, "int32"},
-            {cpu::data_type::INT64, "int64"},
-            {cpu::data_type::FLOAT32, "float32"},
-            {cpu::data_type::FLOAT64, "float64"},
-    };
-
-    if (cpu_data_type_strings.count(pattern))
-        return cpu_data_type_strings.at(pattern);
-    return "unknown";
-}
-
 reply_error to_error(error_type type, int code, const std::string& value)
 {
-    auto err = reply_error{.info = std::make_unique<typed_error>((typed_error){.type = type, .code = code, .value = value})};
+    auto err = reply_error{
+        .info = std::make_unique<typed_error>(
+            (typed_error){
+                .type = type,
+                .code = code,
+                .value = value
+            }
+        )};
     return err;
 }
 
@@ -387,11 +339,11 @@ std::string to_rfc3339(std::chrono::duration<Rep, Period> from)
 {
     auto tv = openperf::timesync::to_timeval(from);
     std::stringstream os;
-    os << std::put_time(gmtime(&tv.tv_sec), "%FT%T") << "." << std::setfill('0')
-       << std::setw(6) << tv.tv_usec << "Z";
+    os << std::put_time(gmtime(&tv.tv_sec), "%FT%T")
+        << "." << std::setfill('0')
+        << std::setw(6) << tv.tv_usec << "Z";
     return os.str();
 }
-
 
 model::generator from_swagger(const CpuGenerator& p_gen)
 {
@@ -403,8 +355,9 @@ model::generator from_swagger(const CpuGenerator& p_gen)
 
         for (auto p_target : p_conf->getTargets()) {
             core_conf.targets.push_back(model::generator_target_config {
-                .instruction_set = cpu_instruction_set_from_string(p_target->getInstructionSet()),
-                .data_type = cpu_data_type_from_string(p_target->getDataType()),
+                .instruction_set = to_instruction_set(
+                    p_target->getInstructionSet()),
+                .data_type = to_data_type(p_target->getDataType()),
                 .weight = static_cast<uint>(p_target->getWeight())
             });
         }

@@ -12,7 +12,8 @@ CPU_SOURCES += \
 	generator.cpp \
 	generator_stack.cpp \
 	task_cpu.cpp \
-	cpu_info.cpp
+	cpu_info.cpp \
+	common.cpp
 
 ifeq ($(PLATFORM), linux)
 	CPU_SOURCES += cpu_stats_linux.cpp

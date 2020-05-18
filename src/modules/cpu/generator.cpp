@@ -1,4 +1,3 @@
-#include "cpu/api.hpp"
 #include "cpu/cpu_info.hpp"
 #include "cpu/cpu_stats.hpp"
 #include "cpu/generator.hpp"
@@ -112,7 +111,7 @@ void generator::configure_workers(const model::generator_config& p_conf) {
         for (auto &target : core_conf.targets)
             if (!check_instruction_set_supported(target.instruction_set))
                 throw std::runtime_error("Instruction set "
-                    + api::to_string(target.instruction_set)
+                    + to_string(target.instruction_set)
                     + " is not supported");
 
         auto cc = generate_worker_config(core_conf);

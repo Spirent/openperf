@@ -4,8 +4,8 @@
 #include <unordered_map>
 #include <variant>
 
-#include "generator.hpp"
 #include "tl/expected.hpp"
+#include "cpu/generator.hpp"
 
 namespace openperf::cpu::generator {
 
@@ -18,7 +18,6 @@ private:
 private:
     std::unordered_map<std::string, generator_ptr> m_generators;
     std::unordered_map<std::string, statistic_variant> m_statistics;
-    std::unordered_map<std::string, std::string> m_id_map;
 
 public:
     generator_stack() = default;
