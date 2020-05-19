@@ -37,6 +37,7 @@ public:
     virtual ~transfer_context() = default;
     virtual void set_reader(std::unique_ptr<capture_buffer_reader>& reader) = 0;
     virtual bool is_done() const = 0;
+    virtual void set_done_callback(std::function<void()>&& callback) = 0;
 };
 
 namespace api {

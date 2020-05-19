@@ -38,6 +38,24 @@ class server
     /* result id --> result */
     result_map m_results;
 
+    /*
+     * Capture sink and results objects can not be deleted when
+     * a pcap transfer is in progress or cleaning up.
+     * In order to allow the REST API to delete objects in this
+     * state, the objects which can not be deleted are put into
+     * trash buckets grouped by sink ID.  When transfers complete,
+     * the garbage_collect() function is called to delete all objects
+     * which have completed transfers.
+     */
+    struct trash_bucket
+    {
+        std::optional<sink_value_type> sink;
+        std::vector<result_value_ptr> results;
+    };
+    using trash_map = std::map<std::string, std::unique_ptr<trash_bucket>>;
+
+    trash_map m_trash;
+
 public:
     server(void* context, core::event_loop& loop);
 
@@ -61,8 +79,13 @@ public:
 
     int handle_capture_stop_timer(uint32_t timeout_id);
 
+    int garbage_collect();
+
 private:
     bool has_active_transfer(const sink& sink) const;
+
+    void add_trash(sink_value_type& sink);
+    void add_trash(result_value_ptr&& result);
 };
 
 } // namespace openperf::packet::capture::api
