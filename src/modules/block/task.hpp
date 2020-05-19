@@ -13,7 +13,7 @@ namespace openperf::block::worker {
 using worker_pattern = model::block_generation_pattern;
 using time_point = std::chrono::time_point<timesync::chrono::realtime>;
 using ref_clock = timesync::chrono::monotime;
-using duration = std::chrono::duration<uint64_t, std::nano>;
+using duration = std::chrono::duration<int64_t, std::nano>;
 struct task_config_t
 {
     int fd;
@@ -80,13 +80,14 @@ private:
     std::atomic_bool m_reset_stat; // True if statistics have to be reseted
     std::vector<operation_state> m_aio_ops;
     std::vector<uint8_t> m_buf;
-    pattern_generator m_pattern;
+    pattern_generator m_read_pattern, m_write_pattern;
     time_point m_read_timestamp, m_write_timestamp, m_pause_timestamp,
         m_start_timestamp;
 
     size_t worker_spin(int (*queue_aio_op)(aiocb* aiocb),
                        size_t block_size,
                        task_operation_stat_t& op_stat,
+                       pattern_generator& pattern,
                        time_point deadline);
 
 public:
