@@ -97,31 +97,32 @@ void generator::clear_statistics() {
     result_id = core::to_string(core::uuid::random());
 }
 
-void generator::configure_workers(const model::generator_config& p_conf) {
+void generator::configure_workers(const model::generator_config& config) {
     m_workers.clear();
-    int core_id = -1;
 
-    if (static_cast<int32_t>(p_conf.cores.size()) > cpu_cores_count())
+    if (static_cast<int32_t>(config.cores.size()) > cpu_cores_count())
         throw std::runtime_error(
             "Could not configure more cores than available ("
             + std::to_string(cpu_cores_count()) + ")?");
 
-    for (auto & core_conf : p_conf.cores) {
+    for (size_t core = 0; core < config.cores.size(); ++core) {
+        auto core_conf = config.cores.at(core);
         for (auto &target : core_conf.targets)
             if (!check_instruction_set_supported(target.instruction_set))
                 throw std::runtime_error("Instruction set "
                     + to_string(target.instruction_set)
                     + " is not supported");
 
-        auto cc = generate_worker_config(core_conf);
-        m_workers.push_back(std::make_unique<cpu_worker>(cc));
-        m_workers.back()->start(++core_id);
+        m_workers.push_back(std::make_unique<cpu_worker>(
+            generate_worker_config(core_conf)));
+        if (core_conf.utilization > 0.0)
+            m_workers.back()->start(core);
     }
 }
 
 task_cpu_config generator::generate_worker_config(const model::generator_core_config& conf)
 {
-    if (conf.targets.empty())
+    if (conf.targets.empty() && conf.utilization > 0.0)
         throw std::runtime_error("Undefined configuration");
 
     task_cpu_config w_config;

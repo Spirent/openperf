@@ -7,6 +7,8 @@
 #include <variant>
 #include <tl/expected.hpp>
 
+#include <zmq.h>
+
 #include "swagger/v1/model/CpuGenerator.h"
 #include "swagger/v1/model/CpuGeneratorResult.h"
 #include "swagger/v1/model/BulkStartCpuGeneratorsRequest.h"

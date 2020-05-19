@@ -94,6 +94,12 @@ reply_msg server::handle_request(const request_cpu_generator_stop& request)
 
 reply_msg server::handle_request(const request_cpu_generator_bulk_start& request)
 {
+    for (auto & id : *request.ids)
+        if (!m_generator_stack.generator(id))
+            return to_error(api::error_type::NOT_FOUND, 0,
+                "Generator from the list with ID '"
+                + id + "' was not found");
+
     using string_pair = std::pair<std::string, std::string>;
     std::forward_list<string_pair> not_runned_before;
     auto rollback = [&not_runned_before,this]() {
@@ -106,11 +112,6 @@ reply_msg server::handle_request(const request_cpu_generator_bulk_start& request
     auto reply = reply_cpu_generator_results{};
     for (auto & id : *request.ids) {
         auto gen = m_generator_stack.generator(id);
-        if (gen == nullptr) {
-            rollback();
-            return to_error(api::error_type::NOT_FOUND);
-        }
-
         if (gen->running()) continue;
 
         auto stats = m_generator_stack.start_generator(id);
@@ -135,7 +136,8 @@ reply_msg server::handle_request(const request_cpu_generator_bulk_stop& request)
     for (auto & id : *request.ids)
         if (!m_generator_stack.generator(id))
             return to_error(api::error_type::NOT_FOUND, 0,
-                "Some generators from the list were not found");
+                "Generator from the list with ID '"
+                + id + "' was not found");
 
     for (auto & id : *request.ids)
         m_generator_stack.stop_generator(id);
