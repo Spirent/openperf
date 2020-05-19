@@ -116,8 +116,7 @@ public:
     bool is_done() const
     {
         if (!m_reader) return true;
-        if (!m_packets.is_empty()) return false;
-        return m_reader->is_done();
+        return m_packets.is_empty();
     }
 
     bool rewind()
@@ -149,9 +148,7 @@ public:
 
     bool next()
     {
-        assert(m_reader);
         if (m_packets.next()) return true;
-        if (m_reader->is_done()) return false;
         return read_packets();
     }
 
