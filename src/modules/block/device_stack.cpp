@@ -63,9 +63,12 @@ void device_stack::init_device_stack()
         blkdev->set_id(core::to_string(core::uuid::random()));
         blkdev->set_path(std::string(device_dir) + "/"
                          + std::string(entry->d_name));
-        blkdev->set_size(get_block_device_size(entry->d_name));
-        blkdev->set_usable(is_block_device_usable(entry->d_name));
-        blkdev->set_info(get_block_device_info(entry->d_name).value_or(""));
+        if (const auto size = get_block_device_size(entry->d_name)) {
+            blkdev->set_size(size);
+            blkdev->set_usable(true);
+        } else {
+            blkdev->set_usable(false);
+        }
 
         m_block_devices.emplace(blkdev->get_id(), blkdev);
     }
@@ -81,7 +84,8 @@ uint64_t device_stack::get_block_device_size(std::string_view id)
 
     int fd = open(devname, O_RDONLY);
     if (fd < 0) {
-        OP_LOG(OP_LOG_ERROR,
+        const auto log_level = (errno == EACCES ? OP_LOG_DEBUG : OP_LOG_ERROR);
+        OP_LOG(log_level,
                "Could not open device %s: %s\n",
                devname,
                strerror(errno));
@@ -108,11 +112,6 @@ std::optional<std::string> device_stack::get_block_device_info(std::string_view)
     return std::nullopt;
 }
 
-int device_stack::is_block_device_usable(std::string_view id)
-{
-    return get_block_device_size(id) > 0;
-}
-
 bool device_stack::is_raw_device(std::string_view id)
 {
     char devname[PATH_MAX + 1];
@@ -131,8 +130,7 @@ bool device_stack::is_raw_device(std::string_view id)
 
 device_ptr device_stack::get_block_device(const std::string& id) const
 {
-    if (m_block_devices.count(id))
-        return m_block_devices.at(id);
+    if (m_block_devices.count(id)) return m_block_devices.at(id);
     return nullptr;
 }
 
@@ -140,8 +138,7 @@ std::shared_ptr<virtual_device>
 device_stack::get_vdev(const std::string& id) const
 {
     auto dev = get_block_device(id);
-    if (!dev || !dev->is_usable())
-        return nullptr;
+    if (!dev || !dev->is_usable()) return nullptr;
     return dev;
 }
 
