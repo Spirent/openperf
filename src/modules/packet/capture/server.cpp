@@ -211,8 +211,9 @@ reply_msg server::handle_request(const request_list_captures& request)
             [&](const auto& item) {
                 return (item.template get<sink>().source() == source);
             },
-            [](const auto& item) {
-                return (to_swagger(item.template get<sink>()));
+            [&](const auto& item) {
+                auto& s = item.template get<sink>();
+                return (to_swagger(s, has_active_transfer(s)));
             });
     } else {
         /* return all captures */
@@ -220,7 +221,8 @@ reply_msg server::handle_request(const request_list_captures& request)
                        std::end(m_sinks),
                        std::back_inserter(reply.captures),
                        [&](const auto& item) {
-                           return (to_swagger(item.template get<sink>()));
+                           auto& s = item.template get<sink>();
+                           return (to_swagger(s, has_active_transfer(s)));
                        });
     }
 
@@ -289,7 +291,9 @@ reply_msg server::handle_request(const request_create_capture& request)
               });
 
     auto reply = reply_captures{};
-    reply.captures.emplace_back(to_swagger(item.template get<sink>()));
+    reply.captures.emplace_back(
+        to_swagger(item.template get<sink>(),
+                   has_active_transfer(item.template get<sink>())));
     return (reply);
 }
 
@@ -346,7 +350,9 @@ reply_msg server::handle_request(const request_get_capture& request)
     }
 
     auto reply = reply_captures{};
-    reply.captures.emplace_back(to_swagger(result->template get<sink>()));
+    reply.captures.emplace_back(
+        to_swagger(result->template get<sink>(),
+                   has_active_transfer(result->template get<sink>())));
     return (reply);
 }
 

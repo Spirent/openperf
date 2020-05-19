@@ -238,7 +238,7 @@ tl::expected<serialized_msg, int> recv_message(void* socket, int flags = 0);
 
 reply_error to_error(error_type type, int value = 0);
 
-capture_ptr to_swagger(const sink&);
+capture_ptr to_swagger(const sink&, bool transfer_active);
 capture_result_ptr to_swagger(const core::uuid& id, const sink_result& result);
 
 /* Validation routines */

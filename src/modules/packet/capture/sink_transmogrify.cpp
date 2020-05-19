@@ -16,13 +16,14 @@ std::string to_filter_string(void* filter)
     return "";
 }
 
-capture_ptr to_swagger(const sink& src)
+capture_ptr to_swagger(const sink& src, bool transfer_active)
 {
     auto dst = std::make_unique<swagger::v1::model::PacketCapture>();
 
     dst->setId(src.id());
     dst->setSourceId(src.source());
     dst->setActive(src.active());
+    dst->setTransferActive(transfer_active);
 
     auto config = std::make_shared<swagger::v1::model::PacketCaptureConfig>();
     config->setMode(to_string(src.get_capture_mode()));
@@ -53,6 +54,8 @@ capture_result_ptr to_swagger(const core::uuid& id, const sink_result& src)
     auto stats = src.get_stats();
     dst->setPackets(stats.packets);
     dst->setBytes(stats.bytes);
+
+    dst->setTransferActive(src.has_active_transfer());
 
     return (dst);
 }

@@ -105,6 +105,26 @@ def pcap_icmp_echo_request_count(pcap_file):
             count += 1
     return count
 
+def has_active_transfer(api):
+    for cap in api.list_captures():
+        if cap.transfer_active:
+            return True
+    return False
+
+def wait_for_transfers_to_complete(api):
+    wait_count = 0
+
+    # There is a short amount of time after the pcap transfer complets
+    # where the capture thread needs to do some cleanup before it can be deleted.
+    # If the client deletes a capture during this state it will not be allowed.
+    # To avoid this case the client checks the transfer_state on the
+    # capture object to verify the transfer cleanup has completed.
+    while has_active_transfer(api) and wait_count < 5:
+        wait_count += 1
+        time.sleep(1)
+
+    expect(wait_count).to(be_below(5))
+
 with description('Packet Capture,', 'packet_capture') as self:
     with description('REST API,'):
 
@@ -398,6 +418,8 @@ with description('Packet Capture,', 'packet_capture') as self:
 
         with after.each:
             if hasattr(self, 'api'):
+                wait_for_transfers_to_complete(self.api)
+
                 for cap in self.api.list_captures():
                     if cap.active:
                         self.api.stop_capture(cap.id)

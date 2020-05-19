@@ -57,7 +57,7 @@ paths:
         - PacketCaptures
       summary: Delete all packet captures
       description: |
-        Delete all inactive packet captures.
+        Delete all packet captures which are inactive and not being transferred.
         Also deletes captured packets and results associated with the capture.  Idempotent.
       responses:
         204:
@@ -83,7 +83,8 @@ paths:
         - PacketCaptures
       summary: Delete a packet capture
       description: |
-        Delete a stopped packet capture by id.
+        Delete a packet capture by id.  Captures may only be deleted when stopped and
+        the capture data is not being transferred.
         Also deletes results and captured packets associated with the capture. Idempotent.
       parameters:
         - $ref: "#/parameters/id"
@@ -176,8 +177,9 @@ paths:
         - PacketCaptures
       summary: Bulk delete packet captures
       description: |
-        Delete multiple packet captures in a best-effort manner. Captures
-        can only be deleted when inactive. Active or Non-existant capture ids
+        Delete multiple captures in a best-effort manner. Captures
+        may only be deleted when inactive and not being transferred.
+        Active, captures which are being transferred or non-existant capture ids
         do not cause errors.  Also deletes results and captured packets
         associated with the capture. Idempotent.
       parameters:
@@ -304,7 +306,7 @@ paths:
       tags:
         - PacketCaptures
       summary: Delete all capture results
-      description: Delete all inactive packet capture results.
+      description: Delete all packet capture results which are inactive and not being transferred.
         Also deletes captured packets associated with the results.
       responses:
         204:
@@ -330,7 +332,8 @@ paths:
         - PacketCaptures
       summary: Delete a packet capture result
       description: |
-        Delete an inactive packet capture result.
+        Delete a packet capture result by id.
+        Capture results may only be deleted when inactive and not being transferred.
         Also deletes captured packets associated with the results.
       parameters:
         - $ref: "#/parameters/id"
@@ -393,12 +396,16 @@ definitions:
         type: boolean
         description: |
           Indicates whether this object is currently capturing packets or not.
+      transfer_active:
+        type: boolean
+        description: Indicates if the capture is being transferred
       config:
         $ref: "#/definitions/PacketCaptureConfig"
     required:
       - id
       - source_id
       - active
+      - transfer_active
       - config
 
   PacketCaptureConfig:
@@ -482,6 +489,9 @@ definitions:
           - stopped
           - armed
           - running
+      transfer_active:
+        type: boolean
+        description: Indicates if the capture is being transferred
       packets:
         type: integer
         description: Number of packets captured
@@ -495,6 +505,8 @@ definitions:
     required:
       - id
       - capture_id
+      - active
       - state
+      - transfer_active
       - packets
       - bytes

@@ -215,6 +215,8 @@ public:
             transport_exec(*m_transport, [&]() {
                 transport_peer_enable(*m_transport, *m_peer);
             });
+
+            m_done = true;
         });
 
         return promise;
@@ -247,12 +249,10 @@ private:
         if (m_error) {
             // Error writing data
             m_deferred.reject(Pistache::Error("Failed sending pcap data"));
-            m_done = true;
             return;
         }
 
         m_deferred.resolve((ssize_t)m_total_bytes_sent);
-        m_done = true;
     }
 
     bool write_packet(const capture_packet& packet)

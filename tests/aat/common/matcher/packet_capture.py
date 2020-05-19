@@ -10,6 +10,7 @@ class _be_valid_packet_capture(Matcher):
         expect(capture.id).not_to(be_empty)
         expect(capture.source_id).not_to(be_empty)
         expect(capture.active).not_to(be_none)
+        expect(capture.transfer_active).not_to(be_none)
         expect(capture.config).to(be_a(client.models.PacketCaptureConfig))
         return True, ['is valid packet capture']
 
@@ -21,6 +22,7 @@ class _be_valid_packet_capture_result(Matcher):
         expect(result.capture_id).not_to(be_empty)
         expect(result.active).not_to(be_none)
         expect(result.state).not_to(be_none)
+        expect(result.transfer_active).not_to(be_none)
         return True, ['is valid packet capture result']
 
 
