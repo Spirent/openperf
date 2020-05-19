@@ -63,13 +63,16 @@ public:
     /// </summary>
     bool isActive() const;
     void setActive(bool value);
-    bool activeIsSet() const;
-    void unsetActive();
-    /// <summary>
+        /// <summary>
     /// Capture state
     /// </summary>
     std::string getState() const;
     void setState(std::string value);
+        /// <summary>
+    /// Indicates if the capture is being transferred
+    /// </summary>
+    bool isTransferActive() const;
+    void setTransferActive(bool value);
         /// <summary>
     /// Number of packets captured
     /// </summary>
@@ -87,8 +90,10 @@ protected:
     std::string m_Capture_id;
 
     bool m_Active;
-    bool m_ActiveIsSet;
+
     std::string m_State;
+
+    bool m_Transfer_active;
 
     int64_t m_Packets;
 

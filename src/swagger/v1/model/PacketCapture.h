@@ -65,6 +65,11 @@ public:
     bool isActive() const;
     void setActive(bool value);
         /// <summary>
+    /// Indicates if the capture is being transferred
+    /// </summary>
+    bool isTransferActive() const;
+    void setTransferActive(bool value);
+        /// <summary>
     /// 
     /// </summary>
     std::shared_ptr<PacketCaptureConfig> getConfig() const;
@@ -76,6 +81,8 @@ protected:
     std::string m_Source_id;
 
     bool m_Active;
+
+    bool m_Transfer_active;
 
     std::shared_ptr<PacketCaptureConfig> m_Config;
 

@@ -5,8 +5,9 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **id** | **str** | Unique capture result identifier | 
 **capture_id** | **str** | Unique capture identifier that generated this result | 
-**active** | **bool** | Indicates whether this object is currently capturing packets or not.  | [optional] 
+**active** | **bool** | Indicates whether this object is currently capturing packets or not.  | 
 **state** | **str** | Capture state | 
+**transfer_active** | **bool** | Indicates if the capture is being transferred | 
 **packets** | **int** | Number of packets captured | 
 **bytes** | **int** | Number of bytes captured | 
 

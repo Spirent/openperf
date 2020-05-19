@@ -22,8 +22,8 @@ PacketCaptureResult::PacketCaptureResult()
     m_Id = "";
     m_Capture_id = "";
     m_Active = false;
-    m_ActiveIsSet = false;
     m_State = "";
+    m_Transfer_active = false;
     m_Packets = 0L;
     m_Bytes = 0L;
     
@@ -44,11 +44,9 @@ nlohmann::json PacketCaptureResult::toJson() const
 
     val["id"] = ModelBase::toJson(m_Id);
     val["capture_id"] = ModelBase::toJson(m_Capture_id);
-    if(m_ActiveIsSet)
-    {
-        val["active"] = m_Active;
-    }
+    val["active"] = m_Active;
     val["state"] = ModelBase::toJson(m_State);
+    val["transfer_active"] = m_Transfer_active;
     val["packets"] = m_Packets;
     val["bytes"] = m_Bytes;
     
@@ -60,11 +58,9 @@ void PacketCaptureResult::fromJson(nlohmann::json& val)
 {
     setId(val.at("id"));
     setCaptureId(val.at("capture_id"));
-    if(val.find("active") != val.end())
-    {
-        setActive(val.at("active"));
-    }
+    setActive(val.at("active"));
     setState(val.at("state"));
+    setTransferActive(val.at("transfer_active"));
     setPackets(val.at("packets"));
     setBytes(val.at("bytes"));
     
@@ -96,15 +92,7 @@ bool PacketCaptureResult::isActive() const
 void PacketCaptureResult::setActive(bool value)
 {
     m_Active = value;
-    m_ActiveIsSet = true;
-}
-bool PacketCaptureResult::activeIsSet() const
-{
-    return m_ActiveIsSet;
-}
-void PacketCaptureResult::unsetActive()
-{
-    m_ActiveIsSet = false;
+    
 }
 std::string PacketCaptureResult::getState() const
 {
@@ -113,6 +101,15 @@ std::string PacketCaptureResult::getState() const
 void PacketCaptureResult::setState(std::string value)
 {
     m_State = value;
+    
+}
+bool PacketCaptureResult::isTransferActive() const
+{
+    return m_Transfer_active;
+}
+void PacketCaptureResult::setTransferActive(bool value)
+{
+    m_Transfer_active = value;
     
 }
 int64_t PacketCaptureResult::getPackets() const

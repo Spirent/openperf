@@ -22,6 +22,7 @@ PacketCapture::PacketCapture()
     m_Id = "";
     m_Source_id = "";
     m_Active = false;
+    m_Transfer_active = false;
     
 }
 
@@ -41,6 +42,7 @@ nlohmann::json PacketCapture::toJson() const
     val["id"] = ModelBase::toJson(m_Id);
     val["source_id"] = ModelBase::toJson(m_Source_id);
     val["active"] = m_Active;
+    val["transfer_active"] = m_Transfer_active;
     val["config"] = ModelBase::toJson(m_Config);
     
 
@@ -52,6 +54,7 @@ void PacketCapture::fromJson(nlohmann::json& val)
     setId(val.at("id"));
     setSourceId(val.at("source_id"));
     setActive(val.at("active"));
+    setTransferActive(val.at("transfer_active"));
     
 }
 
@@ -81,6 +84,15 @@ bool PacketCapture::isActive() const
 void PacketCapture::setActive(bool value)
 {
     m_Active = value;
+    
+}
+bool PacketCapture::isTransferActive() const
+{
+    return m_Transfer_active;
+}
+void PacketCapture::setTransferActive(bool value)
+{
+    m_Transfer_active = value;
     
 }
 std::shared_ptr<PacketCaptureConfig> PacketCapture::getConfig() const

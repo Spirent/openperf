@@ -35,6 +35,7 @@ class PacketCaptureResult(object):
         'capture_id': 'str',
         'active': 'bool',
         'state': 'str',
+        'transfer_active': 'bool',
         'packets': 'int',
         'bytes': 'int'
     }
@@ -44,26 +45,28 @@ class PacketCaptureResult(object):
         'capture_id': 'capture_id',
         'active': 'active',
         'state': 'state',
+        'transfer_active': 'transfer_active',
         'packets': 'packets',
         'bytes': 'bytes'
     }
 
-    def __init__(self, id=None, capture_id=None, active=None, state=None, packets=None, bytes=None):  # noqa: E501
+    def __init__(self, id=None, capture_id=None, active=None, state=None, transfer_active=None, packets=None, bytes=None):  # noqa: E501
         """PacketCaptureResult - a model defined in Swagger"""  # noqa: E501
 
         self._id = None
         self._capture_id = None
         self._active = None
         self._state = None
+        self._transfer_active = None
         self._packets = None
         self._bytes = None
         self.discriminator = None
 
         self.id = id
         self.capture_id = capture_id
-        if active is not None:
-            self.active = active
+        self.active = active
         self.state = state
+        self.transfer_active = transfer_active
         self.packets = packets
         self.bytes = bytes
 
@@ -154,6 +157,28 @@ class PacketCaptureResult(object):
         :type: str
         """
         self._state = state
+
+    @property
+    def transfer_active(self):
+        """Gets the transfer_active of this PacketCaptureResult.  # noqa: E501
+
+        Indicates if the capture is being transferred  # noqa: E501
+
+        :return: The transfer_active of this PacketCaptureResult.  # noqa: E501
+        :rtype: bool
+        """
+        return self._transfer_active
+
+    @transfer_active.setter
+    def transfer_active(self, transfer_active):
+        """Sets the transfer_active of this PacketCaptureResult.
+
+        Indicates if the capture is being transferred  # noqa: E501
+
+        :param transfer_active: The transfer_active of this PacketCaptureResult.  # noqa: E501
+        :type: bool
+        """
+        self._transfer_active = transfer_active
 
     @property
     def packets(self):

@@ -76,7 +76,7 @@ No authorization required
 
 Bulk delete packet captures
 
-Delete multiple packet captures in a best-effort manner. Captures can only be deleted when inactive. Active or Non-existant capture ids do not cause errors.  Also deletes results and captured packets associated with the capture. Idempotent. 
+Delete multiple captures in a best-effort manner. Captures may only be deleted when inactive and not being transferred. Active, captures which are being transferred or non-existant capture ids do not cause errors.  Also deletes results and captured packets associated with the capture. Idempotent. 
 
 ### Example
 ```python
@@ -266,7 +266,7 @@ No authorization required
 
 Delete a packet capture
 
-Delete a stopped packet capture by id. Also deletes results and captured packets associated with the capture. Idempotent. 
+Delete a packet capture by id.  Captures may only be deleted when stopped and the capture data is not being transferred. Also deletes results and captured packets associated with the capture. Idempotent. 
 
 ### Example
 ```python
@@ -313,7 +313,7 @@ No authorization required
 
 Delete a packet capture result
 
-Delete an inactive packet capture result. Also deletes captured packets associated with the results. 
+Delete a packet capture result by id. Capture results may only be deleted when inactive and not being transferred. Also deletes captured packets associated with the results. 
 
 ### Example
 ```python
@@ -360,7 +360,7 @@ No authorization required
 
 Delete all capture results
 
-Delete all inactive packet capture results. Also deletes captured packets associated with the results.
+Delete all packet capture results which are inactive and not being transferred. Also deletes captured packets associated with the results.
 
 ### Example
 ```python
@@ -403,7 +403,7 @@ No authorization required
 
 Delete all packet captures
 
-Delete all inactive packet captures. Also deletes captured packets and results associated with the capture.  Idempotent. 
+Delete all packet captures which are inactive and not being transferred. Also deletes captured packets and results associated with the capture.  Idempotent. 
 
 ### Example
 ```python

@@ -34,6 +34,7 @@ class PacketCapture(object):
         'id': 'str',
         'source_id': 'str',
         'active': 'bool',
+        'transfer_active': 'bool',
         'config': 'PacketCaptureConfig'
     }
 
@@ -41,21 +42,24 @@ class PacketCapture(object):
         'id': 'id',
         'source_id': 'source_id',
         'active': 'active',
+        'transfer_active': 'transfer_active',
         'config': 'config'
     }
 
-    def __init__(self, id=None, source_id=None, active=None, config=None):  # noqa: E501
+    def __init__(self, id=None, source_id=None, active=None, transfer_active=None, config=None):  # noqa: E501
         """PacketCapture - a model defined in Swagger"""  # noqa: E501
 
         self._id = None
         self._source_id = None
         self._active = None
+        self._transfer_active = None
         self._config = None
         self.discriminator = None
 
         self.id = id
         self.source_id = source_id
         self.active = active
+        self.transfer_active = transfer_active
         self.config = config
 
     @property
@@ -123,6 +127,28 @@ class PacketCapture(object):
         :type: bool
         """
         self._active = active
+
+    @property
+    def transfer_active(self):
+        """Gets the transfer_active of this PacketCapture.  # noqa: E501
+
+        Indicates if the capture is being transferred  # noqa: E501
+
+        :return: The transfer_active of this PacketCapture.  # noqa: E501
+        :rtype: bool
+        """
+        return self._transfer_active
+
+    @transfer_active.setter
+    def transfer_active(self, transfer_active):
+        """Sets the transfer_active of this PacketCapture.
+
+        Indicates if the capture is being transferred  # noqa: E501
+
+        :param transfer_active: The transfer_active of this PacketCapture.  # noqa: E501
+        :type: bool
+        """
+        self._transfer_active = transfer_active
 
     @property
     def config(self):
