@@ -60,17 +60,13 @@ with description('CPU Generator Module', 'cpu') as self:
 
     with after.all:
         try:
-            self.process.terminate()
-            self.process.wait()
-        except AttributeError:
-            pass
-
-    with after.all:
-        try:
-            for gen in self.api.list_cpu_generators():
+            for gen in self._api.list_cpu_generators():
                 if gen.running:
-                    self.api.stop_cpu_generator(gen.id)
-                self.api.delete_cpu_generator(gen.id)
+                    self._api.stop_cpu_generator(gen.id)
+                self._api.delete_cpu_generator(gen.id)
+
+            self._process.terminate()
+            self._process.wait()
         except AttributeError:
             pass
 
@@ -120,9 +116,6 @@ with description('CPU Generator Module', 'cpu') as self:
                         self._result = self._api.create_cpu_generator_with_http_info(
                             self._model, _return_http_data_only=False)
 
-                    with after.all:
-                        self._api.delete_cpu_generator(self._result[0].id)
-
                     with included_context('create generator'):
                         with it('random ID assigned'):
                             expect(self._result[0].id).not_to(be_empty)
@@ -133,9 +126,6 @@ with description('CPU Generator Module', 'cpu') as self:
                             self._api.api_client, id='some-specified-id')
                         self._result = self._api.create_cpu_generator_with_http_info(
                             self._model, _return_http_data_only=False)
-
-                    with after.all:
-                        self._api.delete_cpu_generator(self._result[0].id)
 
                     with included_context('create generator'):
                         pass
@@ -170,9 +160,6 @@ with description('CPU Generator Module', 'cpu') as self:
                 g7r = self._api.create_cpu_generator(model)
                 expect(g7r).to(be_valid_cpu_generator)
                 self._g7r = g7r
-
-            with after.all:
-                self._api.delete_cpu_generator(self._g7r.id)
 
             with context('GET'):
                 with description('by existing ID'):
