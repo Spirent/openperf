@@ -167,8 +167,10 @@ uint16_t source::transform(packetio::packet::packet_buffer* input[],
                      * Conveniently, the per flow packet counter can be used as
                      * the sequence number for our signature frame.
                      */
-                    packetio::packet::signature(
-                        buffer, sig_config->stream_id, counters.packet, 0);
+                    packetio::packet::signature(buffer,
+                                                sig_config->stream_id,
+                                                counters.packet,
+                                                sig_config->flags);
                 }
 
                 traffic::update(counters, pkt_len, now);
