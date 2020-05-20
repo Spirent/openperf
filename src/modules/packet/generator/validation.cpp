@@ -166,7 +166,11 @@ validate_field_modifier(const std::shared_ptr<ModifierType>& field_mod,
 {
     assert(field_mod);
 
-    if (field_mod->listIsSet()) {
+    /*
+     * XXX: Ugh. Swagger doesn't set the listIsSet boolean, even if list
+     * values are present.
+     */
+    if (!field_mod->getList().empty()) {
         validate_field_modifier_list<Field>(field_mod->getList(),
                                             field_name,
                                             def_idx,
@@ -441,7 +445,7 @@ static void validate(const packet_template_ptr& packet,
 template <typename FieldModifier>
 static std::optional<size_t> get_modifier_length(const FieldModifier& mod)
 {
-    if (mod->listIsSet()) {
+    if (!mod->getList().empty()) {
         return (mod->getList().size());
     } else if (mod->sequenceIsSet()) {
         return (mod->getSequence()->getCount());
@@ -574,7 +578,7 @@ static void validate(const length_ptr& length,
                                 + " is greater that maximum frame size of "
                                 + std::to_string(api::max_packet_length) + ".");
         }
-    } else if (length->listIsSet()) {
+    } else if (!length->getList().empty()) {
         const auto& lengths = length->getList();
         if (lengths.empty()) {
             errors.emplace_back("Length list" + id_string(def_idx)

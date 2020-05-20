@@ -63,7 +63,7 @@ def default_traffic_packet_template():
     return template
 
 
-def default_traffic_packet_template_with_modifiers(permute_flag=None):
+def default_traffic_packet_template_with_seq_modifiers(permute_flag=None):
     mac_seq = client.models.TrafficProtocolMacModifierSequence()
     mac_seq.count = 10
     mac_seq.start = "00.00.01.00.00.01"
@@ -94,6 +94,25 @@ def default_traffic_packet_template_with_modifiers(permute_flag=None):
         items=[eth_modifier])
     template.protocols[1].modifiers = client.models.TrafficProtocolModifiers(
         items=[ipv4_src_mod, ipv4_dst_mod])
+
+    return template
+
+
+def default_traffic_packet_template_with_list_modifiers(permute_flag=None):
+    addr_src_mod = client.models.TrafficProtocolIpv4Modifier()
+    addr_src_mod.list = ['198.18.15.1', '198.18.15.2', '198.18.15.3']
+    ipv4_src_mod = client.models.TrafficProtocolModifier(name='source',
+                                                         permute=permute_flag if permute_flag else False,
+                                                         ipv4=addr_src_mod)
+
+    addr_dst_mod = client.models.TrafficProtocolIpv4Modifier()
+    addr_dst_mod.list = ['198.18.16.1', '198.18.16.2', '198.18.16.3']
+    ipv4_dst_mod = client.models.TrafficProtocolModifier(name='destination',
+                                                         permute=permute_flag if permute_flag else False,
+                                                         ipv4=addr_dst_mod)
+
+    template = default_traffic_packet_template()
+    template.protocols[1].modifiers = client.models.TrafficProtocolModifiers(items=[ipv4_src_mod, ipv4_dst_mod])
 
     return template
 
@@ -202,20 +221,37 @@ with description('Packet Generator,', 'packet_generator') as self:
                         expect(result).to(be_valid_packet_generator)
 
                 with description('with modifiers,'):
-                    with it('succeeds'):
-                        template = default_traffic_packet_template_with_modifiers()
-                        gen = generator_model(self.api.api_client)
-                        gen.config.traffic[0].packet = template
-                        result = self.api.create_generator(gen)
-                        expect(result).to(be_valid_packet_generator)
+                    with description('with sequence modifiers'):
+                        with it('succeeds'):
+                            template = default_traffic_packet_template_with_seq_modifiers()
+                            gen = generator_model(self.api.api_client)
+                            gen.config.traffic[0].packet = template
+                            result = self.api.create_generator(gen)
+                            expect(result).to(be_valid_packet_generator)
 
-                with description('with permuted modifiers,'):
-                    with it('succeeds'):
-                        template = default_traffic_packet_template_with_modifiers(permute_flag=True)
-                        gen = generator_model(self.api.api_client)
-                        gen.config.traffic[0].packet = template
-                        result = self.api.create_generator(gen)
-                        expect(result).to(be_valid_packet_generator)
+                    with description('with permuted sequence modifiers,'):
+                        with it('succeeds'):
+                            template = default_traffic_packet_template_with_seq_modifiers(permute_flag=True)
+                            gen = generator_model(self.api.api_client)
+                            gen.config.traffic[0].packet = template
+                            result = self.api.create_generator(gen)
+                            expect(result).to(be_valid_packet_generator)
+
+                    with description('with list modifiers'):
+                        with it('succeeds'):
+                            template = default_traffic_packet_template_with_list_modifiers()
+                            gen = generator_model(self.api.api_client)
+                            gen.config.traffic[0].packet = template
+                            result = self.api.create_generator(gen)
+                            expect(result).to(be_valid_packet_generator)
+
+                    with description('with permuted list modifiers,'):
+                        with it('succeeds'):
+                            template = default_traffic_packet_template_with_list_modifiers(permute_flag=True)
+                            gen = generator_model(self.api.api_client)
+                            gen.config.traffic[0].packet = template
+                            result = self.api.create_generator(gen)
+                            expect(result).to(be_valid_packet_generator)
 
                 with description('with signatures enabled,'):
                     with it('succeeds'):
@@ -365,7 +401,7 @@ with description('Packet Generator,', 'packet_generator') as self:
                         with description('too many flows,'):
                             with it('returns 400'):
                                 # total flows = 65536^3 which exceeds our flow limit of (1 << 48) - 1
-                                template = default_traffic_packet_template_with_modifiers()
+                                template = default_traffic_packet_template_with_seq_modifiers()
                                 template.protocols[0].modifiers.items[0].mac.sequence.count = 65536
                                 template.protocols[1].modifiers.items[0].ipv4.sequence.count = 65536
                                 template.protocols[1].modifiers.items[1].ipv4.sequence.count = 65536
@@ -378,7 +414,7 @@ with description('Packet Generator,', 'packet_generator') as self:
                         with description('too many signature flows,'):
                             with it('returns 400'):
                                 # total flows = 256^2 which exceeds our signature flow limit of 64k - 1
-                                template = default_traffic_packet_template_with_modifiers()
+                                template = default_traffic_packet_template_with_seq_modifiers()
                                 template.protocols[1].modifiers.items[0].ipv4.sequence.count = 256
                                 template.protocols[1].modifiers.items[1].ipv4.sequence.count = 256
                                 template.protocols[1].modifiers.tie = 'cartesian'
