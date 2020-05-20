@@ -6,9 +6,12 @@
 
 namespace openperf::cpu::generator {
 
+static uint16_t serial_counter = 0;
+
 generator::generator(const model::generator& generator_model)
     : model::generator(generator_model)
-    , result_id(core::to_string(core::uuid::random()))
+    , m_result_id(core::to_string(core::uuid::random()))
+    , m_serial_number(++serial_counter)
 {
     configure_workers(config());
 }
@@ -82,7 +85,7 @@ model::generator_result generator::statistics() const
     }
 
     auto gen_stat = model::generator_result{};
-    gen_stat.id(result_id);
+    gen_stat.id(m_result_id);
     gen_stat.generator_id(id());
     gen_stat.active(running());
     gen_stat.timestamp(model::time_point::clock::now());
@@ -94,7 +97,7 @@ void generator::clear_statistics() {
     for (auto & worker : m_workers)
         worker->clear_stat();
 
-    result_id = core::to_string(core::uuid::random());
+    m_result_id = core::to_string(core::uuid::random());
 }
 
 void generator::configure_workers(const model::generator_config& config) {
@@ -114,9 +117,14 @@ void generator::configure_workers(const model::generator_config& config) {
                     + " is not supported");
 
         m_workers.push_back(std::make_unique<cpu_worker>(
-            generate_worker_config(core_conf)));
-        if (core_conf.utilization > 0.0)
+            "cpu" + std::to_string(m_serial_number)
+            + "_" + std::to_string(core)));
+
+        if (core_conf.utilization > 0.0) {
+            m_workers.back()->config(
+                generate_worker_config(core_conf));
             m_workers.back()->start(core);
+        }
     }
 }
 

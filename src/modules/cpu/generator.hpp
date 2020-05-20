@@ -23,11 +23,9 @@ private:
 
 private:
     cpu_worker_vec m_workers;
-    std::string result_id;
+    std::string m_result_id;
 
-    void configure_workers(const model::generator_config& p_conf);
-    bool check_instruction_set_supported(cpu::instruction_set);
-    task_cpu_config generate_worker_config(const model::generator_core_config&);
+    const uint16_t m_serial_number;
 
 public:
     generator(const model::generator& generator_model);
@@ -41,6 +39,11 @@ public:
 
     model::generator_result statistics() const;
     void clear_statistics();
+
+private:
+    void configure_workers(const model::generator_config& p_conf);
+    bool check_instruction_set_supported(cpu::instruction_set);
+    task_cpu_config generate_worker_config(const model::generator_core_config&);
 };
 
 } // namespace openperf::cpu::generator

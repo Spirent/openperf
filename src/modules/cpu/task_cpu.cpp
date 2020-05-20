@@ -105,6 +105,8 @@ void task_cpu::spin()
 void task_cpu::config(const task_cpu::config_t& conf)
 {
     assert(0.0 < conf.utilization && conf.utilization <= 100.0);
+    OP_LOG(OP_LOG_INFO,
+        "CPU Task configuring");
 
     m_stat_clear = true;
     m_utilization = conf.utilization / 100.0;
