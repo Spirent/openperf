@@ -83,10 +83,10 @@ modifier::config to_modifier_list_config(const ModifierList& list)
 template <typename Field, typename FieldModifier>
 modifier::config to_modifier_config(const FieldModifier& modifier)
 {
-    return (modifier.listIsSet()
-                ? to_modifier_list_config<Field>(
-                    const_cast<FieldModifier&>(modifier).getList())
-                : to_modifier_seq_config<Field>(*(modifier.getSequence())));
+    return (modifier.sequenceIsSet()
+                ? to_modifier_seq_config<Field>(*modifier.getSequence())
+                : to_modifier_list_config<Field>(
+                    const_cast<FieldModifier&>(modifier).getList()));
 }
 
 } // namespace detail
@@ -237,18 +237,7 @@ to_length_config(const swagger::v1::model::TrafficLength& length)
     if (length.fixedIsSet()) {
         return (traffic::length_fixed_config{
             static_cast<uint16_t>(length.getFixed())});
-    } else if (length.listIsSet()) {
-        auto config = traffic::length_list_config{};
-        const auto& lengths =
-            const_cast<swagger::v1::model::TrafficLength&>(length).getList();
-        std::transform(
-            std::begin(lengths),
-            std::end(lengths),
-            std::back_inserter(config.items),
-            [](const auto& l) { return (static_cast<uint16_t>(l)); });
-        return (config);
-    } else {
-        assert(length.sequenceIsSet());
+    } else if (length.sequenceIsSet()) {
         const auto& seq = length.getSequence();
         auto config = traffic::length_sequence_config{
             .first = static_cast<uint16_t>(seq->getStart()),
@@ -265,6 +254,16 @@ to_length_config(const swagger::v1::model::TrafficLength& length)
             std::back_inserter(config.skip),
             [](const auto& l) { return (static_cast<uint16_t>(l)); });
 
+        return (config);
+    } else {
+        auto config = traffic::length_list_config{};
+        const auto& lengths =
+            const_cast<swagger::v1::model::TrafficLength&>(length).getList();
+        std::transform(
+            std::begin(lengths),
+            std::end(lengths),
+            std::back_inserter(config.items),
+            [](const auto& l) { return (static_cast<uint16_t>(l)); });
         return (config);
     }
 }
