@@ -18,10 +18,11 @@ using block_result_ptr = std::shared_ptr<model::block_generator_result>;
 class block_generator : public model::block_generator
 {
 private:
-    block_worker_ptr m_worker;
+    block_worker_ptr m_read_worker, m_write_worker;
+    std::string m_statistics_id;
     std::vector<virtual_device_stack*> m_vdev_stack_list;
     std::shared_ptr<virtual_device> m_vdev;
-    task_config_t generate_worker_config(const model::block_generator_config&);
+    task_config_t generate_worker_config(const model::block_generator_config&, task_operation);
     void update_resource(const std::string&);
 
 public:

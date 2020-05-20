@@ -10,18 +10,26 @@ block_generator::block_generator(
     const model::block_generator& generator_model,
     const std::vector<virtual_device_stack*>& vdev_stack_list)
     : model::block_generator(generator_model)
+    , m_statistics_id(core::to_string(core::uuid::random()))
     , m_vdev_stack_list(vdev_stack_list)
 {
     update_resource(get_resource_id());
-    auto config = generate_worker_config(get_config());
-    m_worker = std::make_unique<block_worker>(config);
-    m_worker->start();
-    if (is_running()) m_worker->resume();
+
+    auto read_config = generate_worker_config(get_config(), task_operation::READ);
+    m_read_worker = std::make_unique<block_worker>(read_config);
+
+    auto write_config = generate_worker_config(get_config(), task_operation::WRITE);
+    m_write_worker = std::make_unique<block_worker>(write_config);
+
+    m_read_worker->start();
+    m_write_worker->start();
+    set_running(is_running());
 }
 
 block_generator::~block_generator()
 {
-    m_worker->stop();
+    m_read_worker->stop();
+    m_write_worker->stop();
     m_vdev->vclose();
 }
 
@@ -35,7 +43,8 @@ void block_generator::stop() { set_running(false); }
 
 void block_generator::set_config(const model::block_generator_config& value)
 {
-    m_worker->config(generate_worker_config(value));
+    m_read_worker->config(generate_worker_config(value, task_operation::READ));
+    m_write_worker->config(generate_worker_config(value, task_operation::WRITE));
     model::block_generator::set_config(value);
 }
 
@@ -44,7 +53,7 @@ void block_generator::set_resource_id(const std::string& value)
     auto dev = m_vdev;
     update_resource(value);
     if (dev) m_vdev->vclose();
-    m_worker->config(generate_worker_config(get_config()));
+    set_config(get_config());
     model::block_generator::set_resource_id(value);
 }
 
@@ -70,19 +79,25 @@ void block_generator::update_resource(const std::string& resource_id)
 
 void block_generator::set_running(bool is_running)
 {
-    if (is_running)
-        m_worker->resume();
-    else
-        m_worker->pause();
+    if (is_running) {
+        if (get_config().reads_per_sec > 0)
+            m_read_worker->resume();
+        if (get_config().writes_per_sec > 0)
+            m_write_worker->resume();
+    } else {
+        m_read_worker->pause();
+        m_write_worker->pause();
+    }
 
     model::block_generator::set_running(is_running);
 }
 
 block_result_ptr block_generator::get_statistics() const
 {
-    auto worker_stat = m_worker->stat();
+    auto read_stat = m_read_worker->stat();
+    auto write_stat = m_write_worker->stat();
 
-    auto generate_gen_stat = [](const task_operation_stat_t& task_stat) {
+    auto generate_gen_stat = [](const task_stat_t& task_stat) {
         return model::block_generator_statistics{
             .bytes_actual = static_cast<int64_t>(task_stat.bytes_actual),
             .bytes_target = static_cast<int64_t>(task_stat.bytes_target),
@@ -95,29 +110,32 @@ block_result_ptr block_generator::get_statistics() const
     };
 
     auto gen_stat = std::make_shared<model::block_generator_result>();
-    gen_stat->set_id(worker_stat.id);
+    gen_stat->set_id(m_statistics_id);
     gen_stat->set_generator_id(get_id());
     gen_stat->set_active(is_running());
-    gen_stat->set_read_stats(generate_gen_stat(worker_stat.read));
-    gen_stat->set_write_stats(generate_gen_stat(worker_stat.write));
-    gen_stat->set_timestamp(worker_stat.updated);
+    gen_stat->set_read_stats(generate_gen_stat(read_stat));
+    gen_stat->set_write_stats(generate_gen_stat(write_stat));
+    gen_stat->set_timestamp(std::max(write_stat.updated, read_stat.updated));
     return gen_stat;
 }
 
-void block_generator::clear_statistics() { m_worker->clear_stat(); }
+void block_generator::clear_statistics() {
+    m_read_worker->clear_stat();
+    m_write_worker->clear_stat();
+    m_statistics_id = core::to_string(core::uuid::random());
+}
 
 task_config_t block_generator::generate_worker_config(
-    const model::block_generator_config& p_config)
+    const model::block_generator_config& p_config, task_operation p_operation)
 {
     auto fd = m_vdev->get_fd();
     assert(fd);
 
     task_config_t w_config;
     w_config.queue_depth = p_config.queue_depth;
-    w_config.read_size = p_config.read_size;
-    w_config.reads_per_sec = p_config.reads_per_sec;
-    w_config.write_size = p_config.write_size;
-    w_config.writes_per_sec = p_config.writes_per_sec;
+    w_config.block_size = (p_operation == task_operation::READ) ? p_config.read_size : p_config.write_size;
+    w_config.ops_per_sec = (p_operation == task_operation::READ) ? p_config.reads_per_sec : p_config.writes_per_sec;
+    w_config.operation = p_operation;
     w_config.pattern = p_config.pattern;
     w_config.fd = fd.value();
     w_config.f_size = m_vdev->get_size();
