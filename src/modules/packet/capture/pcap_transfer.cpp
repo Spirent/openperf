@@ -229,6 +229,8 @@ public:
 
         // Send the Capture data from a worker thread
         m_thread = std::make_unique<std::thread>([&]() {
+            op_thread_setname("op_cap_trans");
+
             transfer();
 
             // Exec peer enable in Pistache transport reactor thread

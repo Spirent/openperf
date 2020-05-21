@@ -712,6 +712,7 @@ reply_msg server::handle_request(request_create_capture_transfer& request)
     result->transfer->set_done_callback([&]() {
         // Done callback is called from the transfer thread so need to
         // schedule timer callback to run in server thread
+        OP_LOG(OP_LOG_DEBUG, "Scheduling capture garbage collection");
         auto callbacks =
             op_event_callbacks{.on_timeout = handle_garbage_collect};
         m_loop.add(1, &callbacks, this, nullptr);
