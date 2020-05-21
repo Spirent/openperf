@@ -40,24 +40,18 @@ struct task_cpu_stat {
         , user(other.user)
         , steal(other.steal)
         , error(other.error)
-    {
-        targets.resize(other.targets.size());
-        for (size_t i = 0; i < other.targets.size(); ++i)
-            targets[i] = other.targets[i];
-    }
+        , targets(other.targets)
+    {}
 
-    task_cpu_stat& operator= (const task_cpu_stat& other) {
+    task_cpu_stat& operator= (const task_cpu_stat& other)
+    {
         available = other.available;
         utilization = other.utilization;
         system = other.system;
         user = other.user;
         steal = other.steal;
         error = other.error;
-
-        targets.resize(other.targets.size());
-        for (size_t i = 0; i < other.targets.size(); ++i)
-            targets[i] = other.targets[i];
-
+        targets = other.targets;
         return *this;
     }
 };

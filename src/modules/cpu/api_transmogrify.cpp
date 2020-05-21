@@ -323,15 +323,14 @@ std::string to_string(const api::typed_error& error)
 
 reply_error to_error(error_type type, int code, const std::string& value)
 {
-    auto err = reply_error{
+    return reply_error {
         .info = std::make_unique<typed_error>(
-            (typed_error){
+            typed_error {
                 .type = type,
                 .code = code,
                 .value = value
             }
         )};
-    return err;
 }
 
 template <typename Rep, typename Period>
@@ -345,53 +344,60 @@ std::string to_rfc3339(std::chrono::duration<Rep, Period> from)
     return os.str();
 }
 
-model::generator from_swagger(const CpuGenerator& p_gen)
+model::generator from_swagger(const CpuGenerator& gen)
 {
     model::generator_config config;
-    for (auto p_conf : p_gen.getConfig()->getCores()) {
+    for (const auto & conf : gen.getConfig()->getCores()) {
         model::generator_core_config core_conf {
-            .utilization = p_conf->getUtilization()
+            .utilization = conf->getUtilization()
         };
 
-        for (auto p_target : p_conf->getTargets()) {
+        for (const auto & target : conf->getTargets()) {
             core_conf.targets.push_back(model::generator_target_config {
                 .instruction_set = to_instruction_set(
-                    p_target->getInstructionSet()),
-                .data_type = to_data_type(p_target->getDataType()),
-                .weight = static_cast<uint>(p_target->getWeight())
+                    target->getInstructionSet()),
+                .data_type = to_data_type(target->getDataType()),
+                .weight = static_cast<uint>(target->getWeight())
             });
         }
 
         config.cores.push_back(core_conf);
     }
 
-    model::generator gen;
-    gen.id(p_gen.getId());
-    gen.running(p_gen.isRunning());
-    gen.config(config);
-    return gen;
+    model::generator gen_model;
+    gen_model.id(gen.getId());
+    gen_model.running(gen.isRunning());
+    gen_model.config(config);
+    return gen_model;
 }
 
-std::shared_ptr<CpuGenerator> to_swagger(const model::generator& p_gen)
+std::shared_ptr<CpuGenerator> to_swagger(const model::generator & model)
 {
     auto cpu_config = std::make_shared<CpuGeneratorConfig>();
-    for (auto p_conf : p_gen.config().cores) {
-        auto core_conf = std::make_shared<CpuGeneratorCoreConfig>();
-        for (auto p_target : p_conf.targets) {
-            auto target = std::make_shared<CpuGeneratorCoreConfig_targets>();
-            target->setDataType(to_string(p_target.data_type));
-            target->setInstructionSet(to_string(p_target.instruction_set));
-            target->setWeight(p_target.weight);
-            core_conf->getTargets().push_back(target);
-        }
 
-        cpu_config->getCores().push_back(core_conf);
-        core_conf->setUtilization(p_conf.utilization);
-    }
+    auto cores = model.config().cores;
+    std::transform(cores.begin(), cores.end(),
+        std::back_inserter(cpu_config->getCores()),
+        [](auto & core_config) {
+            auto conf = std::make_shared<CpuGeneratorCoreConfig>();
+            conf->setUtilization(core_config.utilization);
+
+            std::transform(core_config.targets.begin(), core_config.targets.end(),
+                std::back_inserter(conf->getTargets()),
+                [](auto & t) {
+                    auto target = std::make_shared<CpuGeneratorCoreConfig_targets>();
+                    target->setDataType(to_string(t.data_type));
+                    target->setInstructionSet(to_string(t.instruction_set));
+                    target->setWeight(t.weight);
+                    return target;
+                });
+
+            return conf;
+        });
 
     auto gen = std::make_shared<CpuGenerator>();
-    gen->setId(p_gen.id());
-    gen->setRunning(p_gen.running());
+    gen->setId(model.id());
+    gen->setRunning(model.running());
     gen->setConfig(cpu_config);
     return gen;
 }

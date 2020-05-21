@@ -115,7 +115,7 @@ void task_cpu::config(const task_cpu::config_t& conf)
     m_weights = 0;
     m_weight_min = std::numeric_limits<uint64_t>::max();
     m_targets.clear();
-    for (auto& t_conf : conf.targets) {
+    for (const auto & t_conf : conf.targets) {
         auto meta = target_meta{};
         meta.weight = t_conf.weight;
         meta.target = make_target(t_conf.set, t_conf.data_type);

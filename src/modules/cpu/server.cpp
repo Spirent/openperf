@@ -12,10 +12,14 @@ using namespace openperf::cpu::internal;
 reply_msg server::handle_request(const request_cpu_generator_list&)
 {
     auto reply = reply_cpu_generators{};
-    for (auto generator : m_generator_stack.list()) {
-        auto reply_generator_model = model::generator(*generator);
-        reply.generators.emplace_back(std::make_unique<model::generator>(reply_generator_model));
-    }
+
+    auto list = m_generator_stack.list();
+    std::transform(list.begin(), list.end(),
+        std::back_inserter(reply.generators),
+        [](auto & i) {
+            return std::make_unique<model::generator>(
+                model::generator(*i));
+        });
 
     return reply;
 }
@@ -94,7 +98,7 @@ reply_msg server::handle_request(const request_cpu_generator_stop& request)
 
 reply_msg server::handle_request(const request_cpu_generator_bulk_start& request)
 {
-    for (auto & id : *request.ids)
+    for (const auto & id : *request.ids)
         if (!m_generator_stack.generator(id))
             return to_error(api::error_type::NOT_FOUND, 0,
                 "Generator from the list with ID '"
@@ -103,14 +107,14 @@ reply_msg server::handle_request(const request_cpu_generator_bulk_start& request
     using string_pair = std::pair<std::string, std::string>;
     std::forward_list<string_pair> not_runned_before;
     auto rollback = [&not_runned_before,this]() {
-        for (auto pair : not_runned_before) {
+        for (const auto & pair : not_runned_before) {
             m_generator_stack.stop_generator(pair.first);
             m_generator_stack.erase_statistics(pair.second);
         }
     };
 
     auto reply = reply_cpu_generator_results{};
-    for (auto & id : *request.ids) {
+    for (const auto & id : *request.ids) {
         auto gen = m_generator_stack.generator(id);
         if (gen->running()) continue;
 
@@ -133,13 +137,13 @@ reply_msg server::handle_request(const request_cpu_generator_bulk_start& request
 
 reply_msg server::handle_request(const request_cpu_generator_bulk_stop& request)
 {
-    for (auto & id : *request.ids)
+    for (const auto & id : *request.ids)
         if (!m_generator_stack.generator(id))
             return to_error(api::error_type::NOT_FOUND, 0,
                 "Generator from the list with ID '"
                 + id + "' was not found");
 
-    for (auto & id : *request.ids)
+    for (const auto & id : *request.ids)
         m_generator_stack.stop_generator(id);
 
     return api::reply_ok{};
@@ -148,9 +152,13 @@ reply_msg server::handle_request(const request_cpu_generator_bulk_stop& request)
 reply_msg server::handle_request(const request_cpu_generator_result_list&)
 {
     auto reply = reply_cpu_generator_results{};
-    for (auto stat : m_generator_stack.list_statistics())
-        reply.results.emplace_back(
-            std::make_unique<model::generator_result>(stat));
+
+    auto list = m_generator_stack.list_statistics();
+    std::transform(list.begin(), list.end(),
+        std::back_inserter(reply.results),
+        [](auto & i) {
+            return std::make_unique<model::generator_result>(i);
+        });
 
     return reply;
 }

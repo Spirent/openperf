@@ -56,7 +56,7 @@ void generator::set_running(bool is_running)
 model::generator_result generator::statistics() const
 {
     model::generator_stats stats;
-    for (auto & worker : m_workers) {
+    for (const auto & worker : m_workers) {
         auto w_stat = worker->stat();
 
         stats.available += w_stat.available;
@@ -74,15 +74,17 @@ model::generator_result generator::statistics() const
         core_stat.user = w_stat.user;
         core_stat.utilization = w_stat.utilization;
 
-        for (auto & target : w_stat.targets)
-            core_stat.targets.push_back({target.operations});
+        std::transform(w_stat.targets.begin(), w_stat.targets.end(),
+            std::back_inserter(core_stat.targets),
+            [](auto & i) -> model::generator_target_stats {
+                return { .operations = i.operations };
+            });
 
         stats.cores.push_back(core_stat);
     }
 
-    if (stats.steal == 0ns) {
+    if (stats.steal == 0ns)
         stats.steal = cpu_steal_time();
-    }
 
     auto gen_stat = model::generator_result{};
     gen_stat.id(m_result_id);
@@ -110,7 +112,7 @@ void generator::configure_workers(const model::generator_config& config) {
 
     for (size_t core = 0; core < config.cores.size(); ++core) {
         auto core_conf = config.cores.at(core);
-        for (auto &target : core_conf.targets)
+        for (const auto & target : core_conf.targets)
             if (!check_instruction_set_supported(target.instruction_set))
                 throw std::runtime_error("Instruction set "
                     + to_string(target.instruction_set)
@@ -135,13 +137,15 @@ task_cpu_config generator::generate_worker_config(const model::generator_core_co
     task_cpu_config w_config;
     w_config.utilization = conf.utilization;
 
-    for (auto & target : conf.targets) {
-        w_config.targets.push_back(target_config{
-            .set = target.instruction_set,
-            .weight = target.weight,
-            .data_type = target.data_type,
+    std::transform(conf.targets.begin(), conf.targets.end(),
+        std::back_inserter(w_config.targets),
+        [](auto & i) -> target_config {
+            return {
+                .set = i.instruction_set,
+                .weight = i.weight,
+                .data_type = i.data_type,
+            };
         });
-    }
 
     return w_config;
 }

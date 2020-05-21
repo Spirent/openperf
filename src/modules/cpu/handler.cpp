@@ -293,7 +293,7 @@ void handler::bulk_start_generators(const Rest::Request& request,
     api::request_cpu_generator_bulk_start bulk_request{
         std::make_unique<std::vector<std::string>>()
     };
-    for (auto & id : request_model.getIds()) {
+    for (const auto & id : request_model.getIds()) {
         if (auto res = openperf::config::op_config_validate_id_string(id); !res) {
             response.send(Http::Code::Bad_Request, res.error());
             return;
@@ -307,7 +307,7 @@ void handler::bulk_start_generators(const Rest::Request& request,
         auto results = json::array();
         std::transform(std::begin(reply->results), std::end(reply->results),
             std::back_inserter(results), [](const auto& result) {
-                return (api::to_swagger(*result)->toJson());
+                return api::to_swagger(*result)->toJson();
             });
 
         response.headers().add<Http::Header::ContentType>(
@@ -330,7 +330,7 @@ void handler::bulk_stop_generators(const Rest::Request& request,
     api::request_cpu_generator_bulk_stop bulk_request{
         std::make_unique<std::vector<std::string>>()
     };
-    for (auto & id : request_model.getIds()) {
+    for (const auto & id : request_model.getIds()) {
         if (auto res = openperf::config::op_config_validate_id_string(id); !res) {
             response.send(Http::Code::Bad_Request, res.error());
             return;
