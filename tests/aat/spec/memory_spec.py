@@ -1,21 +1,20 @@
-from mamba import description, before, after, it
-from expects import *
-from expects.matchers import Matcher
-
 import os
 import client.api
 import client.models
 
+from mamba import description, before, after, it
+from expects import *
+from expects.matchers import Matcher
 from common import Config, Service
-from common.matcher import (
-    raise_api_exception,
-    be_valid_memory_info,
-    be_valid_memory_generator,
-    be_valid_memory_generator_result
-)
+from common.matcher import (raise_api_exception,
+                            be_valid_memory_info,
+                            be_valid_memory_generator,
+                            be_valid_memory_generator_result)
+
 
 CONFIG = Config(os.path.join(os.path.dirname(__file__),
                 os.environ.get('MAMBA_CONFIG', 'config.yaml')))
+
 
 def generator_model(api_client, running = False, id = ''):
     config = client.models.MemoryGeneratorConfig()
@@ -34,11 +33,13 @@ def generator_model(api_client, running = False, id = ''):
     gen.id = id
     return gen
 
+
 class _has_json_content_type(Matcher):
     def _match(self, request):
         expect(request).to(have_key('Content-Type'))
         expect(request['Content-Type']).to(equal('application/json'))
         return True, ['is JSON content type']
+
 
 class has_location(Matcher):
     def __init__(self, expected):
@@ -48,7 +49,9 @@ class has_location(Matcher):
         expect(subject).to(have_key('Location'))
         return subject['Location'] == self._expected, []
 
+
 has_json_content_type = _has_json_content_type()
+
 
 with description('Memory Generator Module', 'memory') as self:
     with before.all:
