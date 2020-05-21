@@ -31,6 +31,9 @@ tl::expected<void, std::string> op_config_file_process_resources()
     for (auto&& resource : root_node["resources"]) {
         auto [path, id] = op_config_split_path_id(resource.first.Scalar());
 
+        auto ready = utils::check_api_path_ready(path);
+        if (!ready) return (ready);
+
         // Verify we have a valid id.
         auto valid_id = openperf::config::op_config_validate_id_string(id);
         if (!valid_id)
