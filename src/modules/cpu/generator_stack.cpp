@@ -7,8 +7,9 @@ namespace openperf::cpu::generator {
 std::vector<generator_stack::generator_ptr> generator_stack::list() const
 {
     std::vector<generator_ptr> cpu_generators_list;
-    for (auto cpu_generator_pair : m_generators)
-        cpu_generators_list.push_back(cpu_generator_pair.second);
+    std::transform(m_generators.begin(), m_generators.end(),
+        std::back_inserter(cpu_generators_list),
+        [](auto & i) { return i.second; });
 
     return cpu_generators_list;
 }
@@ -31,11 +32,10 @@ generator_stack::create(const model::generator& model)
 
 generator_stack::generator_ptr generator_stack::generator(const std::string& id) const
 {
-    try {
-        return m_generators.at(id);
-    } catch (std::out_of_range) {
-        return nullptr;
-    }
+    if (auto it = m_generators.find(id); it != m_generators.end())
+        return it->second;
+
+    return nullptr;
 }
 
 tl::expected<model::generator_result, std::string>
@@ -52,7 +52,7 @@ generator_stack::statistics(const std::string& id) const
                     return res;
                 }
             ), result);
-    } catch (std::out_of_range) {
+    } catch (const std::out_of_range&) {
         return tl::make_unexpected("Result not found");
     }
 }
@@ -60,7 +60,7 @@ generator_stack::statistics(const std::string& id) const
 std::vector<model::generator_result> generator_stack::list_statistics() const
 {
     std::vector<model::generator_result> result_list;
-    for (auto pair : m_statistics) {
+    for (const auto & pair : m_statistics) {
         std::visit(
             utils::overloaded_visitor(
                 [&](const generator_ptr& generator) {
@@ -83,7 +83,7 @@ bool generator_stack::erase(const std::string& id)
             stop_generator(id);
 
         return m_generators.erase(id);
-    } catch (std::out_of_range) {
+    } catch (const std::out_of_range&) {
         return false;
     }
 }
@@ -96,7 +96,7 @@ bool generator_stack::erase_statistics(const std::string& id)
             return m_statistics.erase(id);
 
         return false;
-    } catch (std::out_of_range) {
+    } catch (const std::out_of_range&) {
         return false;
     }
 }
@@ -114,7 +114,7 @@ generator_stack::start_generator(const std::string& id)
         auto result = gen->statistics();
         m_statistics[result.id()] = gen;
         return result;
-    } catch (std::out_of_range) {
+    } catch (const std::out_of_range&) {
         return tl::make_unexpected("Generator not found");
     }
 }
@@ -131,7 +131,7 @@ bool generator_stack::stop_generator(const std::string& id)
         m_statistics[result.id()] = result;
         gen->clear_statistics();
         return true;
-    } catch (std::out_of_range) {
+    } catch (const std::out_of_range&) {
         return false;
     }
 }
