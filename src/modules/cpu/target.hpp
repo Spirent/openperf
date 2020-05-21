@@ -18,7 +18,7 @@ public:
     virtual ~target() = default;
     virtual uint64_t operation() const = 0;
 
-    inline uint64_t operator()() const { return operation(); }
+    uint64_t operator()() const { return operation(); }
 };
 
 } // namespace openperf::cpu::internal

@@ -84,9 +84,9 @@ public:
     generator::config_t config() const;
     generator::stat_t stat() const;
 
-    inline bool is_stopped() const { return m_stopped; }
-    inline bool is_running() const { return !(m_paused || m_stopped); }
-    inline bool is_paused() const { return m_paused; }
+    bool is_stopped() const { return m_stopped; }
+    bool is_running() const { return !(m_paused || m_stopped); }
+    bool is_paused() const { return m_paused; }
 
 private:
     void free_buffer();

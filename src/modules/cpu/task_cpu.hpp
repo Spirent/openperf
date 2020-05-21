@@ -70,10 +70,10 @@ public:
     void spin() override;
 
     void config(const config_t&) override;
-    inline config_t config() const override { return m_config; }
+    config_t config() const override { return m_config; }
 
     stat_t stat() const override;
-    inline void clear_stat() override { m_stat_clear = true; }
+    void clear_stat() override { m_stat_clear = true; }
 
 private:
     target_ptr make_target(cpu::instruction_set, cpu::data_type);

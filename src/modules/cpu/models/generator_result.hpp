@@ -47,20 +47,20 @@ public:
     generator_result() = default;
     generator_result(const generator_result&) = default;
 
-    inline std::string id() const { return m_id; }
-    inline void id(std::string_view id) { m_id = id; }
+    std::string id() const { return m_id; }
+    void id(std::string_view id) { m_id = id; }
 
-    inline std::string generator_id() const { return m_generator_id; }
-    inline void generator_id(std::string_view id) { m_generator_id = id; }
+    std::string generator_id() const { return m_generator_id; }
+    void generator_id(std::string_view id) { m_generator_id = id; }
 
-    inline bool active() const { return m_active; }
-    inline void active(bool active) { m_active = active; }
+    bool active() const { return m_active; }
+    void active(bool active) { m_active = active; }
 
-    inline time_point timestamp() const { return m_timestamp; }
-    inline void timestamp(const time_point& time) { m_timestamp = time; }
+    time_point timestamp() const { return m_timestamp; }
+    void timestamp(const time_point& time) { m_timestamp = time; }
 
-    inline generator_stats stats() const { return m_stats; }
-    inline void stats(const generator_stats& stats) { m_stats = stats; }
+    generator_stats stats() const { return m_stats; }
+    void stats(const generator_stats& stats) { m_stats = stats; }
 
 protected:
     std::string m_id;

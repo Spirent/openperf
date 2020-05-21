@@ -33,14 +33,14 @@ public:
     generator(const generator&) = default;
     virtual ~generator() = default;
 
-    inline virtual std::string id() const { return m_id; }
-    inline virtual void id(std::string_view id) { m_id = id; }
+    virtual std::string id() const { return m_id; }
+    virtual void id(std::string_view id) { m_id = id; }
 
-    inline virtual generator_config config() const { return m_config; }
-    inline virtual void config(const generator_config& value) { m_config = value; }
+    virtual generator_config config() const { return m_config; }
+    virtual void config(const generator_config& value) { m_config = value; }
 
-    inline virtual bool running() const { return m_running; }
-    inline virtual void running(bool value) { m_running = value; }
+    virtual bool running() const { return m_running; }
+    virtual void running(bool value) { m_running = value; }
 
 protected:
     std::string m_id;
