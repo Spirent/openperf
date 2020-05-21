@@ -104,6 +104,7 @@ void generator::reallocate_workers(generator::workers& wkrs, unsigned num)
     } else {
         for (; size < num; ++size) {
             wkrs.emplace_front(std::make_unique<worker<T>>(
+                task_memory_config{},
                 "mem" + std::to_string(m_serial_number)
                 + "_" + std::to_string(num - size)));
         }
