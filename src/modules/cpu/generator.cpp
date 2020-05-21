@@ -117,12 +117,11 @@ void generator::configure_workers(const model::generator_config& config) {
                     + " is not supported");
 
         m_workers.push_back(std::make_unique<cpu_worker>(
+            generate_worker_config(core_conf),
             "cpu" + std::to_string(m_serial_number)
             + "_" + std::to_string(core)));
 
         if (core_conf.utilization > 0.0) {
-            m_workers.back()->config(
-                generate_worker_config(core_conf));
             m_workers.back()->start(core);
         }
     }

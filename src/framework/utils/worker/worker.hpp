@@ -7,6 +7,7 @@
 #include <forward_list>
 #include <atomic>
 #include <cstring>
+#include <optional>
 
 #include "core/op_core.h"
 #include "core/op_thread.h"
@@ -19,7 +20,8 @@ class workable
 public:
     virtual ~workable() = default;
 
-    virtual void start(int core_id = -1) = 0;
+    virtual void start() = 0;
+    virtual void start(int core) = 0;
     virtual void stop() = 0;
     virtual void pause() = 0;
     virtual void resume() = 0;
@@ -30,15 +32,15 @@ public:
 };
 
 // Worker Template
-template <class T> class worker final : public workable
+template <class T> class worker final
+    : public workable
 {
 private:
     struct message
     {
         bool stop = true;
         bool pause = true;
-        bool reconf = false;
-        typename T::config_t config;
+        std::optional<typename T::config_t> config;
     };
 
 private:
@@ -52,16 +54,17 @@ private:
     std::unique_ptr<void, op_socket_deleter> m_zmq_socket;
     std::thread m_thread;
     std::string m_thread_name;
-    std::atomic_int affinity_core;
+    int16_t m_core;
 
 public:
-    worker(std::string_view thread_name = "worker");
     worker(worker&&);
     worker(const worker&) = delete;
-    explicit worker(const typename T::config_t&);
-    ~worker() override;
+    explicit worker(const typename T::config_t&,
+        std::string_view thread_name = "uworker");
+    ~worker();
 
-    void start(int core_id = -1) override;
+    void start() override;
+    void start(int core_id) override;
     void stop() override;
     void pause() override;
     void resume() override;
@@ -76,7 +79,6 @@ public:
     void config(const typename T::config_t&);
 
 private:
-    void setup_affinity(int core_id);
     void loop();
     void update();
     void send_message(const worker::message&);
@@ -84,11 +86,15 @@ private:
 
 // Constructors & Destructor
 template <class T>
-worker<T>::worker(std::string_view thread_name)
-    : m_task(new T)
+worker<T>::worker(const typename T::config_t& c, std::string_view name)
+    : m_paused(true)
+    , m_stopped(true)
+    , m_config(c)
+    , m_task(new T)
     , m_zmq_context(zmq_init(0))
     , m_zmq_socket(op_socket_get_server(m_zmq_context, ZMQ_PUSH, m_endpoint))
-    , m_thread_name(thread_name)
+    , m_thread_name(name)
+    , m_core(-1)
 {}
 
 template <class T>
@@ -101,14 +107,8 @@ worker<T>::worker(worker&& w)
     , m_zmq_socket(std::move(w.m_zmq_socket))
     , m_thread(std::move(w.m_thread))
     , m_thread_name(std::move(w.m_thread_name))
+    , m_core(w.m_core)
 {}
-
-template <class T>
-worker<T>::worker(const typename T::config_t& c)
-    : worker()
-{
-    m_config = c;
-}
 
 template <class T> worker<T>::~worker()
 {
@@ -127,19 +127,33 @@ template <class T> worker<T>::~worker()
 // Methods : public
 template <class T> void worker<T>::start(int core_id)
 {
+    m_core = core_id;
+    start();
+}
+
+template <class T> void worker<T>::start()
+{
     static std::atomic_uint thread_number = 0;
 
     if (!m_stopped) return;
     m_stopped = false;
 
-    m_thread = std::thread([this, core_id]() {
+    m_thread = std::thread([this]() {
+        // Set Thread name
         op_thread_setname(("op_" + m_thread_name
             + "_" + std::to_string(++thread_number)
             ).c_str());
 
-        setup_affinity(core_id);
+        // Set Thread core affinity, if specified
+        if (m_core >= 0)
+            if (auto err = op_thread_set_affinity(m_core))
+                OP_LOG(OP_LOG_ERROR,
+                    "Cannot set worker thread affinity: %s",
+                    std::strerror(err));
+
         loop();
     });
+
     config(m_config);
 }
 
@@ -170,54 +184,47 @@ template <class T> void worker<T>::config(const typename T::config_t& c)
     m_config = c;
     if (is_finished()) return;
     send_message(worker::message{
-        .stop = m_stopped, .pause = m_paused, .reconf = true, .config = c});
+        .stop = m_stopped,
+        .pause = m_paused,
+        .config = c
+    });
 }
 
 // Methods : private
-template <class T> void worker<T>::setup_affinity(int core_id)
-{
-    if (core_id < 0)
-        return;
-    if (auto err = op_thread_set_affinity(core_id))
-        OP_LOG(OP_LOG_ERROR, "Cannot set worker thread affinity: %s", std::strerror(err));
-}
-
 template <class T> void worker<T>::loop()
 {
-
     auto socket = std::unique_ptr<void, op_socket_deleter>(
         op_socket_get_client(m_zmq_context, ZMQ_PULL, m_endpoint));
 
-    worker::message msg{.stop = false, .pause = true, .reconf = false};
-    bool paused = true;
+    for (bool paused = true;;) {
+        zmq_msg_t zmq_message;
+        zmq_msg_init(&zmq_message);
 
-    for (;;) {
-        zmq_msg_t message;
-        zmq_msg_init(&message);
+        int recv = zmq_msg_recv(&zmq_message,
+            socket.get(), paused ? 0 : ZMQ_NOBLOCK);
 
-        int recv = zmq_msg_recv(&message, socket.get(), paused ? 0 : ZMQ_NOBLOCK);
         if (recv < 0 && errno != EAGAIN) {
-            OP_LOG(OP_LOG_ERROR, "worker thread shutdown");
+            OP_LOG(OP_LOG_ERROR,
+                "Worker thread %s shutdown", m_thread_name.c_str());
             break;
         }
+
         if (recv > 0) {
-            std::unique_ptr<worker::message> ptr;
-            ptr.reset(*reinterpret_cast<worker::message**>(zmq_msg_data(const_cast<zmq_msg_t*>(&message))));
-            msg = *ptr;
+            auto msg = std::unique_ptr<worker::message>(
+                *reinterpret_cast<worker::message**>(
+                    zmq_msg_data(&zmq_message)));
+
+            if (msg->config)
+                m_task->config(msg->config.value());
+
+            if (paused && !(msg->pause || msg->stop)) m_task->resume();
+            if (!paused && (msg->pause || msg->stop)) m_task->pause();
+
+            paused = msg->pause;
+
+            if (msg->stop) break;
+            if (msg->pause) continue;
         }
-
-        if (msg.reconf) {
-            m_task->config(msg.config);
-            msg.reconf = false;
-        }
-
-        if (paused && !(msg.pause || msg.stop)) { m_task->resume(); }
-        if (!paused && (msg.pause || msg.stop)) { m_task->pause(); }
-
-        paused = msg.pause;
-
-        if (msg.stop) { break; }
-        if (msg.pause) { continue; }
 
         m_task->spin();
     }
@@ -237,16 +244,18 @@ template <class T> void worker<T>::send_message(const worker::message& msg)
 {
     if (is_finished()) return;
 
-    zmq_msg_t data;
-    if (auto error = zmq_msg_init_size(&data, sizeof(worker::message*)); error != 0) {
+    zmq_msg_t zmq_message;
+    if (auto e = zmq_msg_init_size(&zmq_message, sizeof(void*)); e != 0) {
+        OP_LOG(OP_LOG_ERROR,
+            "Error during ZMQ message size initializing, code: %d", e);
         return;
     }
 
-    auto value = std::make_unique<worker::message>(msg);
+    auto data_ptr = reinterpret_cast<worker::message**>(
+        zmq_msg_data(&zmq_message));
+    *data_ptr = new worker::message(msg);
 
-    auto ptr = reinterpret_cast<worker::message**>(zmq_msg_data(&data));
-    *ptr = value.release();
-    zmq_msg_send(&data, m_zmq_socket.get(), 0);
+    zmq_msg_send(&zmq_message, m_zmq_socket.get(), 0);
 }
 
 } // namespace openperf::utils::worker
