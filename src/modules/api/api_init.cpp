@@ -83,16 +83,24 @@ public:
          * detach from the thread so we won't be blocked on it when we
          * shutdown ourselves.
          */
-        auto thread = std::thread([this]() { run(service_port); });
+        auto service_thread = std::thread([this]() { run(service_port); });
         OP_LOG(
             OP_LOG_DEBUG, "REST API server listening on port %d", service_port);
-        thread.detach();
+        service_thread.detach();
 
-        auto ret = config::op_config_file_process_resources();
-        if (!ret) {
-            std::cerr << ret.error() << std::endl;
-            return (-1);
-        }
+        /*
+         * Spawn a thread to populate configuration; modules might load after us
+         * and we don't want to block them.
+         */
+        auto config_thread = std::thread([]() {
+            op_thread_setname("op_api_config");
+            auto ret = config::op_config_file_process_resources();
+            if (!ret) {
+                throw std::runtime_error(
+                    "Configuration file processing failed: " + ret.error());
+            }
+        });
+        config_thread.detach();
 
         return (0);
     }

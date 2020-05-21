@@ -64,14 +64,13 @@ static tl::expected<void, std::string> check_api_port()
 }
 
 // Is the API able to retrieve a resource?
-static tl::expected<void, std::string> check_api_resource()
+tl::expected<void, std::string> check_api_path_ready(std::string_view path)
 {
     unsigned int poll_count = 0;
     bool done = false;
 
     for (; (poll_count < max_poll_count) && !done; poll_count++) {
-        auto [code, body] =
-            openperf::api::client::internal_api_get(api_check_resource);
+        auto [code, body] = openperf::api::client::internal_api_get(path);
         if (code == Pistache::Http::Code::Ok) {
             done = true;
             break;
@@ -84,7 +83,7 @@ static tl::expected<void, std::string> check_api_resource()
     if (!done) {
         return (tl::make_unexpected("Error starting up internal API client. "
                                     "Could not retrieve resource: "
-                                    + std::string(api_check_resource)));
+                                    + std::string(path)));
     }
 
     return {};
@@ -95,7 +94,7 @@ tl::expected<void, std::string> check_api_module_running()
     auto result = check_api_port();
     if (!result) return (result);
 
-    result = check_api_resource();
+    result = check_api_path_ready(api_check_resource);
     if (!result) return (result);
 
     return {};
