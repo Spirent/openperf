@@ -44,7 +44,19 @@ public:
 
     bool is_done() const override { return m_done; }
 
-    void set_done(bool done) { m_done = done; }
+    void set_done(bool done)
+    {
+        if (done == m_done) return;
+        m_done = done;
+        if (done && m_done_callback) { m_done_callback(); }
+    }
+
+    void set_done_callback(std::function<void()>&& callback) override
+    {
+        m_done_callback = callback;
+    }
+
+    std::function<void()> get_done_callback() const { return m_done_callback; }
 
     virtual Pistache::Async::Promise<ssize_t> start() = 0;
 
@@ -62,6 +74,7 @@ public:
 private:
     std::unique_ptr<capture_buffer_reader> m_reader;
     Pistache::Async::Deferred<ssize_t> m_deferred;
+    std::function<void()> m_done_callback;
     bool m_done = false;
 };
 
@@ -216,12 +229,16 @@ public:
 
         // Send the Capture data from a worker thread
         m_thread = std::make_unique<std::thread>([&]() {
+            op_thread_setname("op_cap_trans");
+
             transfer();
 
             // Exec peer enable in Pistache transport reactor thread
             transport_exec(*m_transport, [&]() {
                 transport_peer_enable(*m_transport, *m_peer);
             });
+
+            set_done(true);
         });
 
         return promise;
@@ -254,12 +271,10 @@ private:
         if (m_error) {
             // Error writing data
             deferred().reject(Pistache::Error("Failed sending pcap data"));
-            set_done(true);
             return;
         }
 
         deferred().resolve((ssize_t)m_total_bytes_sent);
-        set_done(true);
     }
 
     bool write_packet(const capture_packet& packet)
@@ -503,10 +518,11 @@ private:
                     [&](std::exception_ptr& eptr) {
                         deferred().reject(
                             Pistache::Error("Failed sending pcap data"));
-                        set_done(true);
                         m_error = true;
-                        return Pistache::Async::Promise<ssize_t>::rejected(
-                            eptr);
+                        auto result =
+                            Pistache::Async::Promise<ssize_t>::rejected(eptr);
+                        set_done(true);
+                        return result;
                     });
         } else {
             auto chunk_header_str = get_chunk_header_str(buffer.size());
@@ -523,10 +539,11 @@ private:
                     [&](std::exception_ptr& eptr) {
                         deferred().reject(
                             Pistache::Error("Failed sending chunk header"));
-                        set_done(true);
                         m_error = true;
-                        return Pistache::Async::Promise<ssize_t>::rejected(
-                            eptr);
+                        auto result =
+                            Pistache::Async::Promise<ssize_t>::rejected(eptr);
+                        set_done(true);
+                        return result;
                     })
                 .then(
                     [&](ssize_t) {
@@ -539,19 +556,21 @@ private:
                     [&](std::exception_ptr& eptr) {
                         deferred().reject(
                             Pistache::Error("Failed sending pcap data"));
-                        set_done(true);
                         m_error = true;
-                        return Pistache::Async::Promise<ssize_t>::rejected(
-                            eptr);
+                        auto result =
+                            Pistache::Async::Promise<ssize_t>::rejected(eptr);
+                        set_done(true);
+                        return result;
                     })
                 .then([&](ssize_t) { return transfer(); },
                       [&](std::exception_ptr& eptr) {
                           deferred().reject(
                               Pistache::Error("Failed sending chunk trailer"));
-                          set_done(true);
                           m_error = true;
-                          return Pistache::Async::Promise<ssize_t>::rejected(
-                              eptr);
+                          auto result =
+                              Pistache::Async::Promise<ssize_t>::rejected(eptr);
+                          set_done(true);
+                          return result;
                       });
         }
     }
@@ -564,10 +583,10 @@ private:
             while (!is_done) {
                 auto packet = *(m_burst->get());
                 if (!m_writer->write_packet(packet)) break;
-                is_done = m_burst->next();
+                is_done = !m_burst->next();
             }
 
-            if (reader()->is_done()) {
+            if (m_burst->is_done()) {
                 if (m_writer->write_file_trailer()) { m_wrote_trailer = true; }
             }
 
@@ -598,7 +617,7 @@ private:
     }
 
     using burst_reader_type =
-        capture_burst_reader<capture_buffer_reader*, capture_packet*>;
+        capture_burst_reader<capture_buffer_reader*, const capture_packet*>;
 
     Pistache::Tcp::Transport* m_transport;
     std::shared_ptr<Pistache::Tcp::Peer> m_peer;

@@ -33,6 +33,24 @@ static void erase_if(Container& c, Condition&& op)
     }
 }
 
+template <typename ContainerSrc,
+          typename ContainerDst,
+          typename Condition,
+          typename Move>
+static void
+move_if(ContainerSrc& c, ContainerDst& d, Condition&& op, Move&& move_op)
+{
+    auto cursor = std::begin(c);
+    while (cursor != std::end(c)) {
+        if (op(*cursor)) {
+            move_op(d, *cursor);
+            cursor = c.erase(cursor);
+        } else {
+            ++cursor;
+        }
+    }
+}
+
 template <typename InputIt,
           typename OutputIt,
           typename FilterFn,
@@ -187,15 +205,34 @@ server::server(void* context, core::event_loop& loop)
 
 bool server::has_active_transfer(const sink& sink) const
 {
-    auto found =
-        std::find_if(m_results.begin(), m_results.end(), [&](const auto& pair) {
-            auto& result = pair.second;
-            if (&result->parent == &sink) {
-                if (result->has_active_transfer()) { return true; }
-            }
-            return false;
-        });
-    return (found != m_results.end());
+    // Check all results which have the sink as the parent
+    if (const auto found =
+            std::find_if(m_results.begin(),
+                         m_results.end(),
+                         [&](const auto& pair) {
+                             const auto& result = pair.second;
+                             if (&result->parent == &sink) {
+                                 return result->has_active_transfer();
+                             }
+                             return false;
+                         });
+        found != m_results.end()) {
+        return true;
+    }
+
+    // It is possible that a result may be deleted with an active
+    // transfer, so need to check for transfers in the trash.
+    if (const auto found = m_trash.find(sink.id()); found != m_trash.end()) {
+        const auto& bucket = found->second;
+        const auto& results = bucket->results;
+        const auto found_result =
+            std::find_if(results.begin(), results.end(), [](auto& result) {
+                return result->has_active_transfer();
+            });
+        return found_result != results.end();
+    }
+
+    return false;
 }
 
 reply_msg server::handle_request(const request_list_captures& request)
@@ -211,7 +248,7 @@ reply_msg server::handle_request(const request_list_captures& request)
             [&](const auto& item) {
                 return (item.template get<sink>().source() == source);
             },
-            [](const auto& item) {
+            [&](const auto& item) {
                 return (to_swagger(item.template get<sink>()));
             });
     } else {
@@ -314,14 +351,28 @@ reply_msg server::handle_request(const request_delete_captures&)
     auto cursor = std::stable_partition(
         std::begin(m_sinks), std::end(m_sinks), [&](const auto& item) {
             auto& sink_ref = item.template get<sink>();
-            if (has_active_transfer(sink_ref)) return true;
             return (sink_ref.active());
         });
 
     /* Remove sinks from our workers */
     std::for_each(cursor, std::end(m_sinks), [&](auto& item) {
         remove_sink(m_client, item);
-        // Remove all results for this sink
+    });
+
+    /* Sort deleted items so deferred deletion items are last */
+    auto defer_cursor =
+        std::stable_partition(cursor, std::end(m_sinks), [&](const auto& item) {
+            auto& sink_ref = item.template get<sink>();
+            return !has_active_transfer(sink_ref);
+        });
+    /* Move deferred deletion items to delete list */
+    std::for_each(
+        defer_cursor, std::end(m_sinks), [&](auto& item) { add_trash(item); });
+    /* Erase deferred delete items */
+    m_sinks.erase(defer_cursor, std::end(m_sinks));
+
+    /* Remove all results for this sink */
+    std::for_each(cursor, std::end(m_sinks), [&](auto& item) {
         auto& sink_ref = item.template get<sink>();
         erase_if(m_results, [&](const auto& pair) {
             return (&pair.second->parent == &sink_ref);
@@ -336,36 +387,44 @@ reply_msg server::handle_request(const request_delete_captures&)
 
 reply_msg server::handle_request(const request_get_capture& request)
 {
-    auto result = binary_find(std::begin(m_sinks),
-                              std::end(m_sinks),
-                              request.id,
-                              sink_id_comparator{});
+    auto found = binary_find(std::begin(m_sinks),
+                             std::end(m_sinks),
+                             request.id,
+                             sink_id_comparator{});
 
-    if (result == std::end(m_sinks)) {
+    if (found == std::end(m_sinks)) {
         return (to_error(error_type::NOT_FOUND));
     }
 
     auto reply = reply_captures{};
-    reply.captures.emplace_back(to_swagger(result->template get<sink>()));
+    reply.captures.emplace_back(to_swagger(found->template get<sink>()));
     return (reply);
 }
 
 reply_msg server::handle_request(const request_delete_capture& request)
 {
-    auto result = binary_find(std::begin(m_sinks),
-                              std::end(m_sinks),
-                              request.id,
-                              sink_id_comparator{});
+    auto found = binary_find(std::begin(m_sinks),
+                             std::end(m_sinks),
+                             request.id,
+                             sink_id_comparator{});
 
-    if (result != std::end(m_sinks) && !result->template get<sink>().active()) {
+    if (found != std::end(m_sinks) && !found->template get<sink>().active()) {
         // Remove sink from worker
-        remove_sink(m_client, *result);
-        // Remove all results for this sink
-        erase_if(m_results, [&](const auto& pair) {
-            return (&pair.second->parent == &result->template get<sink>());
-        });
+        remove_sink(m_client, *found);
+
+        auto& sink_ref = found->template get<sink>();
+
+        if (has_active_transfer(sink_ref)) {
+            add_trash(*found);
+        } else {
+            // Remove all results for this sink
+            erase_if(m_results, [&](const auto& pair) {
+                return (&pair.second->parent == &sink_ref);
+            });
+        }
+
         // Delete this capture
-        m_sinks.erase(std::remove(result, std::next(result), *result),
+        m_sinks.erase(std::remove(found, std::next(found), *found),
                       std::end(m_sinks));
     }
 
@@ -411,7 +470,7 @@ static int handle_capture_stop(const struct op_event_data* data, void* arg)
 
 int server::handle_capture_stop_timer(uint32_t timeout_id)
 {
-    OP_LOG(OP_LOG_INFO, "Processing timer id %#" PRIx32, timeout_id);
+    OP_LOG(OP_LOG_DEBUG, "Processing timer id %#" PRIx32, timeout_id);
 
     auto found =
         std::find_if(m_results.begin(), m_results.end(), [&](const auto& pair) {
@@ -427,7 +486,7 @@ int server::handle_capture_stop_timer(uint32_t timeout_id)
     auto& id = found->first;
     auto& result = found->second;
     if (result->state != capture_state::STOPPED) {
-        OP_LOG(OP_LOG_INFO,
+        OP_LOG(OP_LOG_DEBUG,
                "Capture %s stopped due to duration timeout",
                to_string(id).c_str());
         // FIXME: Need to do some cleanup so we don't need a const_cast
@@ -487,7 +546,7 @@ reply_msg server::handle_request(const request_start_capture& request)
         auto timeout =
             std::chrono::duration<uint64_t, std::nano>{duration * 1000000};
         m_loop.add((timeout).count(), &callbacks, this, &result->timeout_id);
-        OP_LOG(OP_LOG_INFO,
+        OP_LOG(OP_LOG_DEBUG,
                "Added capture duration timer id %#" PRIx32 " timeout %" PRId64,
                result->timeout_id,
                timeout.count());
@@ -596,16 +655,23 @@ reply_msg server::handle_request(const request_delete_capture_result& request)
     if (auto id = to_uuid(request.id); id.has_value()) {
         if (auto item = m_results.find(*id); item != std::end(m_results)) {
             auto& result = item->second;
-            if (result->has_active_transfer()) {
-                OP_LOG(OP_LOG_ERROR,
-                       "Can not delete capture when transfer is in progress.");
-                return (to_error(error_type::POSIX, EBUSY));
+            if (!result->parent.active()) {
+                if (result->has_active_transfer()) {
+                    add_trash(std::move(result));
+                }
+                m_results.erase(*id);
             }
-            if (!result->parent.active()) { m_results.erase(*id); }
         }
     }
 
     return (reply_ok{});
+}
+
+static int handle_garbage_collect(const struct op_event_data* data, void* arg)
+{
+    auto srv = reinterpret_cast<server*>(arg);
+    assert(srv);
+    return srv->garbage_collect();
 }
 
 reply_msg server::handle_request(request_create_capture_transfer& request)
@@ -643,6 +709,15 @@ reply_msg server::handle_request(request_create_capture_transfer& request)
         result->transfer->set_reader(reader);
     }
 
+    result->transfer->set_done_callback([&]() {
+        // Done callback is called from the transfer thread so need to
+        // schedule timer callback to run in server thread
+        OP_LOG(OP_LOG_DEBUG, "Scheduling capture garbage collection");
+        auto callbacks =
+            op_event_callbacks{.on_timeout = handle_garbage_collect};
+        m_loop.add(1, &callbacks, this, nullptr);
+    });
+
     return (reply_ok{});
 }
 
@@ -663,6 +738,76 @@ reply_msg server::handle_request(const request_delete_capture_transfer& request)
     }
 
     return (reply_ok{});
+}
+
+void server::add_trash(sink_value_type& item)
+{
+    auto& sink_ref = item.template get<sink>();
+    auto& bucket = m_trash[item.id()];
+    if (!bucket) { bucket = std::make_unique<trash_bucket>(); }
+    OP_LOG(OP_LOG_DEBUG, "Added capture %s to trash.", sink_ref.id().c_str());
+    bucket->sink = item;
+    move_if(
+        m_results,
+        bucket->results,
+        [&](const auto& pair) { return (&pair.second->parent == &sink_ref); },
+        [&](auto& results, auto& pair) {
+            results.emplace_back(std::move(pair.second));
+        });
+}
+
+void server::add_trash(result_value_ptr&& result)
+{
+    auto id = result->parent.id();
+    auto& bucket = m_trash[id];
+    if (!bucket) { bucket = std::make_unique<trash_bucket>(); }
+    OP_LOG(OP_LOG_DEBUG,
+           "Added capture result for capture %s to trash",
+           id.c_str());
+    bucket->results.emplace_back(std::forward<result_value_ptr>(result));
+}
+
+int server::garbage_collect()
+{
+    OP_LOG(OP_LOG_DEBUG, "Starting capture garbage collection");
+
+    // Delete items in the trash without results with active transfers
+    erase_if(m_trash, [&](auto& pair) {
+        auto& item = pair.second;
+        auto found = std::find_if(
+            item->results.begin(), item->results.end(), [](auto& result) {
+                return result->has_active_transfer();
+            });
+        if (found == item->results.end()) {
+            if (item->sink.has_value()) {
+                OP_LOG(OP_LOG_DEBUG,
+                       "Deleting %s capture and %zu results from garbage",
+                       pair.first.c_str(),
+                       item->results.size());
+            } else {
+                OP_LOG(OP_LOG_DEBUG,
+                       "Deleting %s %zu results from garbage",
+                       pair.first.c_str(),
+                       item->results.size());
+            }
+            return true;
+        }
+        return false;
+    });
+
+    // Cleanup any completed transfers
+    std::for_each(m_results.begin(), m_results.end(), [&](auto& pair) {
+        auto& result = pair.second;
+        if (result->transfer && result->transfer->is_done()) {
+            OP_LOG(OP_LOG_DEBUG,
+                   "Deleting capture transfer %s",
+                   to_string(pair.first).c_str());
+            result->transfer.reset();
+        }
+    });
+
+    OP_LOG(OP_LOG_DEBUG, "Completed capture garbage collection");
+    return -1;
 }
 
 } // namespace openperf::packet::capture::api
