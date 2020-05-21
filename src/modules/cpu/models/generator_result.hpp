@@ -10,12 +10,11 @@
 
 namespace openperf::cpu::model {
 
-using time_point = std::chrono::time_point<timesync::chrono::realtime>;
 using namespace std::chrono_literals;
 
 struct generator_target_stats
 {
-    uint64_t cycles;
+    uint64_t operations;
 };
 
 struct generator_common_stats {
@@ -41,6 +40,9 @@ struct generator_stats
 
 class generator_result
 {
+private:
+    using time_point = timesync::chrono::realtime::time_point;
+
 public:
     generator_result() = default;
     generator_result(const generator_result&) = default;

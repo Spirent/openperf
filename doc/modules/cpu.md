@@ -4,7 +4,7 @@ The **CPU** module is a part of OpenPerf, producing CPU load.
 
 ## CPU Generator
 
-Functional unit of OpenPerf CPU module, providing an ability for CPU load generation. CPU generator configuration defines per core loading. Each core configuration has desired `utilization` and chain of `targets`. Utilization can be real value between 0 and 100 (include both).
+Functional unit of OpenPerf CPU module, providing an ability for CPU load generation. CPU generator configuration defines per core loading. Each core configuration has desired `utilization` and chain of `targets`. Utilization can be real value between 0 and 100, inclusive.
 
 ### CPU Generator API Model
 
@@ -83,16 +83,16 @@ CPU generator result represents statistics of CPU I/O operations, unique for eac
                 "utilization": 736169000,
                 "targets": [
                     {
-                        "cycles": 18279000
+                        "operations": 18279000
                     },
                     {
-                        "cycles": 39933000
+                        "operations": 39933000
                     },
                     {
-                        "cycles": 10503000
+                        "operations": 10503000
                     },
                     {
-                        "cycles": 4860000
+                        "operations": 4860000
                     }
                 ]
             }
@@ -120,7 +120,7 @@ CPU generator result represents statistics of CPU I/O operations, unique for eac
         * **user** - same as above, but per core.
         * **utilization** - same as above, but per core.
         * **targets**
-            * **cycles** - number of operations.
+            * **operations** - number of operations.
 
 
 ### Create CPU Generator
@@ -293,9 +293,9 @@ curl --verbose --location --request GET \
                 "utilization": 73941308000,
                 "targets": [
                     {
-                        "cycles": 2367792000
+                        "operations": 2367792000
                     }, {
-                        "cycles": 4501467000
+                        "operations": 4501467000
                     }
                 ]
             }

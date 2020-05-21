@@ -19,7 +19,7 @@ namespace model {
 
 CpuGeneratorTargetStats::CpuGeneratorTargetStats()
 {
-    m_Cycles = 0L;
+    m_Operations = 0L;
     
 }
 
@@ -36,7 +36,7 @@ nlohmann::json CpuGeneratorTargetStats::toJson() const
 {
     nlohmann::json val = nlohmann::json::object();
 
-    val["cycles"] = m_Cycles;
+    val["operations"] = m_Operations;
     
 
     return val;
@@ -44,18 +44,18 @@ nlohmann::json CpuGeneratorTargetStats::toJson() const
 
 void CpuGeneratorTargetStats::fromJson(nlohmann::json& val)
 {
-    setCycles(val.at("cycles"));
+    setOperations(val.at("operations"));
     
 }
 
 
-int64_t CpuGeneratorTargetStats::getCycles() const
+int64_t CpuGeneratorTargetStats::getOperations() const
 {
-    return m_Cycles;
+    return m_Operations;
 }
-void CpuGeneratorTargetStats::setCycles(int64_t value)
+void CpuGeneratorTargetStats::setOperations(int64_t value)
 {
-    m_Cycles = value;
+    m_Operations = value;
     
 }
 

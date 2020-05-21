@@ -10,7 +10,7 @@ namespace openperf::cpu::internal {
 using namespace std::chrono_literals;
 
 struct target_cpu_stat {
-    uint64_t cycles;
+    uint64_t operations;
     uint64_t ticks;
     std::chrono::nanoseconds runtime;
 };

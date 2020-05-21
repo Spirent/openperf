@@ -363,6 +363,11 @@ definitions:
         items:
           $ref: "#/definitions/CpuGeneratorCoreStats"
     required:
+      - available
+      - utilization
+      - system
+      - user
+      - error
       - cores
 
   CpuGeneratorCoreStats:
@@ -412,9 +417,9 @@ definitions:
     type: object
     description: Instruction set statistics
     properties:
-      cycles:
+      operations:
         type: integer
-        description: The total amount of finished instruction set cycles
+        description: The total amount of finished instruction set operations
         format: int64
     required:
-      - cycles
+      - operations

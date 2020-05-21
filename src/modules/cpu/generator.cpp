@@ -75,7 +75,7 @@ model::generator_result generator::statistics() const
         core_stat.utilization = w_stat.utilization;
 
         for (auto & target : w_stat.targets)
-            core_stat.targets.push_back({target.cycles});
+            core_stat.targets.push_back({target.operations});
 
         stats.cores.push_back(core_stat);
     }
@@ -88,7 +88,7 @@ model::generator_result generator::statistics() const
     gen_stat.id(m_result_id);
     gen_stat.generator_id(id());
     gen_stat.active(running());
-    gen_stat.timestamp(model::time_point::clock::now());
+    gen_stat.timestamp(timesync::chrono::realtime::now());
     gen_stat.stats(stats);
     return gen_stat;
 }
@@ -147,10 +147,10 @@ task_cpu_config generator::generate_worker_config(const model::generator_core_co
     return w_config;
 }
 
-bool generator::check_instruction_set_supported(cpu::instruction_set p_iset)
+bool generator::check_instruction_set_supported(cpu::instruction_set iset)
 {
     using namespace pga::instruction_set;
-    switch (p_iset)
+    switch (iset)
     {
     case cpu::instruction_set::SCALAR:
         return available(type::SCALAR);
