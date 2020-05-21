@@ -27,12 +27,25 @@ struct source_config
 
 class source;
 
-struct source_result
+class source_result
 {
-    const source& parent;
-    std::vector<traffic::counter> counters;
+private:
+    const source& m_parent;
+    std::vector<traffic::counter> m_counters;
+    bool m_active = false;
 
+public:
     source_result(const source& p);
+
+    bool active() const;
+    const source& parent() const;
+    const std::vector<traffic::counter>& counters() const;
+
+    traffic::counter& operator[](size_t idx);
+    const traffic::counter& operator[](size_t idx) const;
+
+    void start(size_t nb_counters);
+    void stop();
 };
 
 struct source_load

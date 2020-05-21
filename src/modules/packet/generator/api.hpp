@@ -34,7 +34,7 @@ namespace openperf::packet::generator {
 
 class source;
 struct source_load;
-struct source_result;
+class source_result;
 
 namespace traffic {
 struct counter;

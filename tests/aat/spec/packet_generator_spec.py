@@ -478,6 +478,27 @@ with description('Packet Generator,', 'packet_generator') as self:
                     expect(gen).to(be_valid_packet_generator)
                     expect(gen.active).to(be_false)
 
+                    results = self.api.list_generator_results(generator_id=self.generator.id)
+                    expect(results).not_to(be_empty)
+                    for result in results:
+                        expect(result).to(be_valid_packet_generator_result)
+                        expect(result.active).to(be_false)
+
+            with description('restart generator, '):
+                with it('succeeds'):
+                    self.api.stop_generator(self.generator.id)
+                    result = self.api.start_generator(self.generator.id)
+                    expect(result).to(be_valid_packet_generator_result)
+                    expect(result.active).to(be_true)
+
+                    # We should now have two results: one active, one inactive
+                    results = self.api.list_generator_results(generator_id=self.generator.id)
+                    expect(results).not_to(be_empty)
+                    for result in results:
+                        expect(result).to(be_valid_packet_generator_result)
+                    expect([r for r in results if r.active is True]).not_to(be_empty)
+                    expect([r for r in results if r.active is False]).not_to(be_empty)
+
         with description('list generator results,'):
             with before.each:
                 gen = self.api.create_generator(generator_model(self.api.api_client))

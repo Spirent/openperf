@@ -8,8 +8,36 @@ namespace openperf::packet::generator {
 using packets_per_hour = packetio::packet::packets_per_hour;
 
 source_result::source_result(const source& src)
-    : parent(src)
+    : m_parent(src)
 {}
+
+bool source_result::active() const { return (m_active); }
+
+const source& source_result::parent() const { return (m_parent); }
+
+const std::vector<traffic::counter>& source_result::counters() const
+{
+    return (m_counters);
+}
+
+traffic::counter& source_result::operator[](size_t idx)
+{
+    return (m_counters[idx]);
+}
+
+const traffic::counter& source_result::operator[](size_t idx) const
+{
+    return (m_counters[idx]);
+}
+
+void source_result::start(size_t nb_counters)
+{
+    m_counters.clear();
+    m_counters.resize(nb_counters);
+    m_active = true;
+}
+
+void source_result::stop() { m_active = false; }
 
 source::source(source_config&& config)
     : m_config(config)
@@ -87,13 +115,17 @@ packetio::packet::packets_per_hour source::packet_rate() const
 
 void source::start(source_result* results)
 {
-    results->counters.clear();
-    results->counters.resize(m_sequence.flow_count());
     m_tx_idx = 0;
+    results->start(m_sequence.flow_count());
     m_results.store(results, std::memory_order_release);
 }
 
-void source::stop() { m_results.store(nullptr, std::memory_order_release); }
+void source::stop()
+{
+    auto result = m_results.exchange(nullptr, std::memory_order_acq_rel);
+    result->stop();
+    /* somebody else owns the pointer; we don't need to do anything with it */
+}
 
 static size_t to_send_diff(size_t tx_count, size_t tx_limit)
 {
@@ -160,7 +192,7 @@ uint16_t source::transform(packetio::packet::packet_buffer* input[],
                 /* Set packet type for offloads */
                 packetio::packet::tx_offload(buffer, hdr_lens, hdr_flags);
 
-                auto& counters = results->counters[flow_idx];
+                auto&& flow_counters = (*results)[flow_idx];
 
                 if (sig_config) {
                     /*
@@ -169,11 +201,11 @@ uint16_t source::transform(packetio::packet::packet_buffer* input[],
                      */
                     packetio::packet::signature(buffer,
                                                 sig_config->stream_id,
-                                                counters.packet,
+                                                flow_counters.packet,
                                                 sig_config->flags);
                 }
 
-                traffic::update(counters, pkt_len, now);
+                traffic::update(flow_counters, pkt_len, now);
 
                 return (buffer);
             });

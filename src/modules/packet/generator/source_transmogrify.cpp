@@ -54,18 +54,18 @@ static void populate_flow_counters(
     size_t flow_idx,
     std::shared_ptr<swagger::v1::model::PacketGeneratorFlowCounters>& dst)
 {
-    const auto& src = result.counters[flow_idx];
+    const auto& src = result[flow_idx];
     dst->setOctetsActual(src.octet);
     dst->setPacketsActual(src.packet);
 
     if (src.packet) {
         /* Calculate expected packets/octets */
         auto exp_seq_packets = std::llround(
-            result.parent.packet_rate()
+            result.parent().packet_rate()
             * std::chrono::duration_cast<std::chrono::duration<double>>(
                 src.last_ - src.first_));
 
-        const auto& sequence = result.parent.sequence();
+        const auto& sequence = result.parent().sequence();
         auto exp_octets =
             sequence.sum_flow_packet_lengths(flow_idx, exp_seq_packets);
         auto exp_packets =
@@ -144,7 +144,7 @@ static void populate_remainder(
     if (src->continuousIsSet()) {
         dst->setUnit(api::to_duration_string(api::duration_type::indefinite));
     } else if (src->framesIsSet()) {
-        auto tx_limit = result.parent.tx_limit().value();
+        auto tx_limit = result.parent().tx_limit().value();
         dst->setUnit(api::to_duration_string(api::duration_type::frames));
         dst->setValue(tx_limit > sum.packet ? tx_limit - sum.packet : 0);
     } else {
@@ -169,27 +169,29 @@ generator_result_ptr to_swagger(const core::uuid& id,
     auto dst = std::make_unique<swagger::v1::model::PacketGeneratorResult>();
 
     dst->setId(core::to_string(id));
-    dst->setGeneratorId(result.parent.id());
-    dst->setActive(result.parent.active());
+    dst->setGeneratorId(result.parent().id());
+    dst->setActive(result.active());
 
-    auto sum = accumulate_counters(result.counters);
+    auto sum = accumulate_counters(result.counters());
     auto counters =
         std::make_shared<swagger::v1::model::PacketGeneratorFlowCounters>();
-    populate_counters(
-        sum, counters, result.parent.packet_rate(), result.parent.sequence());
+    populate_counters(sum,
+                      counters,
+                      result.parent().packet_rate(),
+                      result.parent().sequence());
     dst->setFlowCounters(counters);
 
     if (dst->isActive()) {
         auto remainder =
             std::make_shared<swagger::v1::model::DurationRemainder>();
         populate_remainder(
-            result.parent.config()->getDuration(), remainder, result, sum);
+            result.parent().config()->getDuration(), remainder, result, sum);
         dst->setRemaining(remainder);
     }
 
     auto flow_idx = 0U;
     std::generate_n(
-        std::back_inserter(dst->getFlows()), result.counters.size(), [&]() {
+        std::back_inserter(dst->getFlows()), result.counters().size(), [&]() {
             return (core::to_string(tx_flow_id(id, flow_idx++)));
         });
 
@@ -212,7 +214,7 @@ tx_flow_ptr to_swagger(const core::uuid& id,
     dst->setCounters(flow_counters);
 
     if (auto stream_id =
-            result.parent.sequence().get_signature_stream_id(flow_idx)) {
+            result.parent().sequence().get_signature_stream_id(flow_idx)) {
         dst->setStreamId(*stream_id);
     }
 

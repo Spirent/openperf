@@ -265,8 +265,9 @@ static void remove_source(packetio::internal::api::client& client,
 reply_msg server::handle_request(const request_delete_generators&)
 {
     /* Delete all inactive results */
-    erase_if(m_results,
-             [](const auto& pair) { return (!pair.second->parent.active()); });
+    erase_if(m_results, [](const auto& pair) {
+        return (!pair.second->parent().active());
+    });
 
     /*
      * Sort generators into active and inactive ones.  We want to delete
@@ -315,7 +316,7 @@ reply_msg server::handle_request(const request_delete_generator& request)
         && !result->template get<source>().active()) {
         /* Delete this generators result objects */
         erase_if(m_results, [&](const auto& pair) {
-            return (pair.second->parent.id() == request.id);
+            return (pair.second->parent().id() == request.id);
         });
 
         /* Delete this generator */
@@ -389,13 +390,13 @@ reply_msg server::handle_request(const request_list_generator_results& request)
         compare = [&](const auto& item) {
             if (filter.count(filter_type::generator_id)
                 && filter[filter_type::generator_id]
-                       != item.second->parent.id()) {
+                       != item.second->parent().id()) {
                 return (false);
             }
 
             if (filter.count(filter_type::target_id)
                 && filter[filter_type::target_id]
-                       != item.second->parent.target()) {
+                       != item.second->parent().target()) {
                 return (false);
             }
 
@@ -419,8 +420,9 @@ reply_msg server::handle_request(const request_list_generator_results& request)
 reply_msg server::handle_request(const request_delete_generator_results&)
 {
     /* Delete all inactive results */
-    erase_if(m_results,
-             [](const auto& pair) { return (!pair.second->parent.active()); });
+    erase_if(m_results, [](const auto& pair) {
+        return (!pair.second->parent().active());
+    });
 
     return (reply_ok{});
 }
@@ -445,7 +447,7 @@ reply_msg server::handle_request(const request_delete_generator_result& request)
 {
     if (auto id = to_uuid(request.id); id.has_value()) {
         if (auto result = m_results.find(*id); result != std::end(m_results)) {
-            if (!result->second->parent.active()) { m_results.erase(*id); }
+            if (!result->second->parent().active()) { m_results.erase(*id); }
         }
     }
 
@@ -462,13 +464,13 @@ reply_msg server::handle_request(const request_list_tx_flows& request)
         compare = [&](const auto& item) {
             if (filter.count(filter_type::generator_id)
                 && filter[filter_type::generator_id]
-                       != item.second->parent.id()) {
+                       != item.second->parent().id()) {
                 return (false);
             }
 
             if (filter.count(filter_type::target_id)
                 && filter[filter_type::target_id]
-                       != item.second->parent.target()) {
+                       != item.second->parent().target()) {
                 return (false);
             }
 
@@ -485,7 +487,7 @@ reply_msg server::handle_request(const request_list_tx_flows& request)
                   [&](const auto& result_pair) {
                       if (!compare(result_pair)) { return; }
 
-                      const auto& flows = result_pair.second->counters;
+                      const auto& flows = result_pair.second->counters();
                       auto offset = 0U;
                       std::generate_n(
                           std::back_inserter(reply.flows), flows.size(), [&]() {
@@ -513,7 +515,7 @@ reply_msg server::handle_request(const request_get_tx_flow& request)
     if (it == std::end(m_results)) { return (to_error(error_type::NOT_FOUND)); }
 
     const auto& result = it->second;
-    if (flow_idx >= result->counters.size()) {
+    if (flow_idx >= result->counters().size()) {
         return (to_error(error_type::NOT_FOUND));
     }
 
