@@ -69,13 +69,13 @@ public:
     void pause() override;
     void resume() override;
 
-    inline bool is_paused() const override { return m_paused; }
-    inline bool is_running() const override { return !(m_paused || m_stopped); }
-    inline bool is_finished() const override { return m_stopped; }
-    inline typename T::config_t config() const { return m_task->config(); }
-    inline typename T::stat_t stat() const { return m_task->stat(); };
+    bool is_paused() const override { return m_paused; }
+    bool is_running() const override { return !(m_paused || m_stopped); }
+    bool is_finished() const override { return m_stopped; }
+    typename T::config_t config() const { return m_task->config(); }
+    typename T::stat_t stat() const { return m_task->stat(); };
 
-    inline void clear_stat() { m_task->clear_stat(); }
+    void clear_stat() { m_task->clear_stat(); }
     void config(const typename T::config_t&);
 
 private:
