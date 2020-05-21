@@ -140,7 +140,7 @@ libpacket::protocol::tcp to_protocol(const std::shared_ptr<swagger::v1::model::P
         {
             set_tcp_reserved(dst, src->getReserved());
         }
-        if (src->flagsIsSet())
+        if (src->getFlags().size())
         {
             set_tcp_flags(dst, to_tcp_flags(src->getFlags()));
         }

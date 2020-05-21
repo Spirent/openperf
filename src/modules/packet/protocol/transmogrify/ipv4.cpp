@@ -132,7 +132,7 @@ libpacket::protocol::ipv4 to_protocol(const std::shared_ptr<swagger::v1::model::
         {
             set_ipv4_identification(dst, src->getIdentification());
         }
-        if (src->flagsIsSet())
+        if (src->getFlags().size())
         {
             set_ipv4_flags(dst, to_ipv4_flags(src->getFlags()));
         }
