@@ -149,8 +149,8 @@ callback_signature_decoder::callback_signature_decoder(
     , m_port(other.m_port)
 {}
 
-callback_signature_decoder& callback_signature_decoder::
-operator=(callback_signature_decoder&& other) noexcept
+callback_signature_decoder& callback_signature_decoder::operator=(
+    callback_signature_decoder&& other) noexcept
 {
     if (this != &other) {
         m_callbacks = std::move(other.m_callbacks);
@@ -208,6 +208,8 @@ static signature_decoder::variant_type make_signature_decoder(uint16_t port_id)
 
 signature_decoder::signature_decoder(uint16_t port_id)
     : feature(make_signature_decoder(port_id))
-{}
+{
+    pga_init();
+}
 
 } // namespace openperf::packetio::dpdk::port
