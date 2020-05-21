@@ -147,9 +147,15 @@ def is_swagger_bool(props):
     return 'length' in props and props['length'] == 1
 
 
-def to_swagger_checker(field):
+def to_swagger_checker(field, props):
     tokens = field.split('_')
-    return tokens[0] + ''.join(t.capitalize() for t in tokens[1:]) + 'IsSet'
+
+    # XXX: Flags need to have their vector checked for size because the
+    # 'isSet' flag is never actually set in the swagger object!
+    if ('format' in props and props['format'] == 'enumeration' and 'uniqueItems' not in props):
+        return 'get' + ''.join(t.capitalize() for t in tokens) + '().size'
+    else:
+        return tokens[0] + ''.join(t.capitalize() for t in tokens[1:]) + 'IsSet'
 
 
 def to_swagger_getter(field, props):
@@ -272,7 +278,7 @@ def write_to_swagger_impl(output, name, data):
 
 
 def write_set_libpacket_value_default(output, src, dst, name, field, props):
-    output.write('if ({src}->{swagger_fn}())\n'.format(src=src, swagger_fn=to_swagger_checker(field)))
+    output.write('if ({src}->{swagger_fn}())\n'.format(src=src, swagger_fn=to_swagger_checker(field, props)))
     output.write('{\n')
     output.write('    {protocol_fn}({dst}, {src}->{swagger_fn}());\n'
                  .format(protocol_fn=to_libpacket_setter(name, field),
@@ -283,7 +289,7 @@ def write_set_libpacket_value_default(output, src, dst, name, field, props):
 
 
 def write_set_libpacket_value_address(output, src, dst, name, field, props):
-    output.write('if ({src}->{swagger_fn}())\n'.format(src=src, swagger_fn=to_swagger_checker(field)))
+    output.write('if ({src}->{swagger_fn}())\n'.format(src=src, swagger_fn=to_swagger_checker(field, props)))
     output.write('{\n')
     output.write('    {protocol_fn}({dst}, {ns}::type::{kind}_address({src}->{swagger_fn}()));\n'
                  .format(protocol_fn=to_libpacket_setter(name, field),
@@ -296,7 +302,7 @@ def write_set_libpacket_value_address(output, src, dst, name, field, props):
 
 
 def write_set_libpacket_value_enumeration(output, src, dst, name, field, props):
-    output.write('if ({src}->{swagger_fn}())\n'.format(src=src, swagger_fn=to_swagger_checker(field)))
+    output.write('if ({src}->{swagger_fn}())\n'.format(src=src, swagger_fn=to_swagger_checker(field, props)))
     output.write('{\n')
     output.write('    {protocol_fn}({dst}, {conv_fn}({src}->{swagger_fn}()));\n'
                  .format(protocol_fn=to_libpacket_setter(name, field),
