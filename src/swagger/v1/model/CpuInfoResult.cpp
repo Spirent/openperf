@@ -21,7 +21,7 @@ CpuInfoResult::CpuInfoResult()
 {
     m_Cores = 0;
     m_CoresIsSet = false;
-    m_Cache_line_size = 0L;
+    m_Cache_line_size = 0;
     m_Cache_line_sizeIsSet = false;
     m_Architecture = "";
     m_ArchitectureIsSet = false;
@@ -94,11 +94,11 @@ void CpuInfoResult::unsetCores()
 {
     m_CoresIsSet = false;
 }
-int64_t CpuInfoResult::getCacheLineSize() const
+int32_t CpuInfoResult::getCacheLineSize() const
 {
     return m_Cache_line_size;
 }
-void CpuInfoResult::setCacheLineSize(int64_t value)
+void CpuInfoResult::setCacheLineSize(int32_t value)
 {
     m_Cache_line_size = value;
     m_Cache_line_sizeIsSet = true;

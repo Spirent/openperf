@@ -177,7 +177,7 @@ reply_msg server::handle_request(const request_cpu_generator_result_del& request
         return to_error(api::error_type::NOT_FOUND);
 
     if (!m_generator_stack.erase_statistics(request.id))
-        return to_error(error_type::CUSTOM_ERROR, 0, "Statistics is active");
+        return to_error(error_type::CUSTOM_ERROR, 0, "Statistics are active");
 
     return reply_ok{};
 }

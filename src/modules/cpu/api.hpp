@@ -22,7 +22,6 @@
 namespace openperf::cpu::api {
 
 using namespace swagger::v1::model;
-using time_point = std::chrono::time_point<timesync::chrono::realtime>;
 
 const std::string endpoint = "inproc://openperf_cpu";
 
@@ -33,8 +32,8 @@ const std::string endpoint = "inproc://openperf_cpu";
 /* zmq api objects models */
 
 struct cpu_info_t {
-    int32_t cores;
-    int64_t cache_line_size;
+    uint16_t cores;
+    uint16_t cache_line_size;
     std::string architecture;
 };
 

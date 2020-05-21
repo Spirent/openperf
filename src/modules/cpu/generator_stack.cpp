@@ -18,8 +18,7 @@ generator_stack::create(const model::generator& model)
 {
     if (m_generators.count(model.id()))
         return tl::make_unexpected(
-            "Generator with ID " + static_cast<std::string>(model.id())
-            + " already exists.");
+            "Generator with ID " + model.id() + " already exists.");
 
     try {
         auto generator_ptr = std::make_shared<cpu::generator::generator>(model);
@@ -108,7 +107,8 @@ generator_stack::start_generator(const std::string& id)
     try {
         auto gen = m_generators.at(id);
         if (gen->running())
-            return tl::make_unexpected("Generator is already in running state");
+            return tl::make_unexpected(
+                "Generator is already in running state");
 
         gen->start();
         auto result = gen->statistics();
