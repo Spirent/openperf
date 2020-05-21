@@ -223,10 +223,11 @@ paths:
               cores:
                 type: integer
                 description: Number of cores
+                format: int32
               cache_line_size:
                 type: integer
                 description: Processor cache line size
-                format: int64
+                format: int32
               architecture:
                 type: string
                 description: Processor architecture name
