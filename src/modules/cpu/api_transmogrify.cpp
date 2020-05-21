@@ -396,38 +396,39 @@ std::shared_ptr<CpuGenerator> to_swagger(const model::generator& p_gen)
     return gen;
 }
 
-std::shared_ptr<CpuGeneratorResult> to_swagger(const model::generator_result& p_result)
+std::shared_ptr<CpuGeneratorResult> to_swagger(const model::generator_result& result)
 {
+    auto stats = result.stats();
     auto cpu_stats = std::make_shared<CpuGeneratorStats>();
-    cpu_stats->setUtilization(p_result.stats().utilization.count());
-    cpu_stats->setAvailable(p_result.stats().available.count());
-    cpu_stats->setSystem(p_result.stats().system.count());
-    cpu_stats->setUser(p_result.stats().user.count());
-    cpu_stats->setSteal(p_result.stats().steal.count());
-    cpu_stats->setError(p_result.stats().error.count());
+    cpu_stats->setUtilization(stats.utilization.count());
+    cpu_stats->setAvailable(stats.available.count());
+    cpu_stats->setSystem(stats.system.count());
+    cpu_stats->setUser(stats.user.count());
+    cpu_stats->setSteal(stats.steal.count());
+    cpu_stats->setError(stats.error.count());
 
-    for (auto p_stats : p_result.stats().cores) {
+    for (auto & c_stats : stats.cores) {
         auto core_stats = std::make_shared<CpuGeneratorCoreStats>();
-        for (auto p_target : p_stats.targets) {
+        for (auto & c_target : c_stats.targets) {
             auto target = std::make_shared<CpuGeneratorTargetStats>();
-            target->setCycles(p_target.cycles);
+            target->setOperations(c_target.operations);
             core_stats->getTargets().push_back(target);
         }
         cpu_stats->getCores().push_back(core_stats);
 
-        core_stats->setAvailable(p_stats.available.count());
-        core_stats->setError(p_stats.error.count());
-        core_stats->setSteal(p_stats.steal.count());
-        core_stats->setSystem(p_stats.system.count());
-        core_stats->setUser(p_stats.user.count());
-        core_stats->setUtilization(p_stats.utilization.count());
+        core_stats->setAvailable(c_stats.available.count());
+        core_stats->setError(c_stats.error.count());
+        core_stats->setSteal(c_stats.steal.count());
+        core_stats->setSystem(c_stats.system.count());
+        core_stats->setUser(c_stats.user.count());
+        core_stats->setUtilization(c_stats.utilization.count());
     }
 
     auto gen = std::make_shared<CpuGeneratorResult>();
-    gen->setId(p_result.id());
-    gen->setGeneratorId(p_result.generator_id());
-    gen->setActive(p_result.active());
-    gen->setTimestamp(to_rfc3339(p_result.timestamp().time_since_epoch()));
+    gen->setId(result.id());
+    gen->setGeneratorId(result.generator_id());
+    gen->setActive(result.active());
+    gen->setTimestamp(to_rfc3339(result.timestamp().time_since_epoch()));
     gen->setStats(cpu_stats);
     return gen;
 }

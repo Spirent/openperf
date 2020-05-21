@@ -31,42 +31,42 @@ class CpuGeneratorTargetStats(object):
                             and the value is json key in definition.
     """
     swagger_types = {
-        'cycles': 'int'
+        'operations': 'int'
     }
 
     attribute_map = {
-        'cycles': 'cycles'
+        'operations': 'operations'
     }
 
-    def __init__(self, cycles=None):  # noqa: E501
+    def __init__(self, operations=None):  # noqa: E501
         """CpuGeneratorTargetStats - a model defined in Swagger"""  # noqa: E501
 
-        self._cycles = None
+        self._operations = None
         self.discriminator = None
 
-        self.cycles = cycles
+        self.operations = operations
 
     @property
-    def cycles(self):
-        """Gets the cycles of this CpuGeneratorTargetStats.  # noqa: E501
+    def operations(self):
+        """Gets the operations of this CpuGeneratorTargetStats.  # noqa: E501
 
-        The total amount of finished instruction set cycles  # noqa: E501
+        The total amount of finished instruction set operations  # noqa: E501
 
-        :return: The cycles of this CpuGeneratorTargetStats.  # noqa: E501
+        :return: The operations of this CpuGeneratorTargetStats.  # noqa: E501
         :rtype: int
         """
-        return self._cycles
+        return self._operations
 
-    @cycles.setter
-    def cycles(self, cycles):
-        """Sets the cycles of this CpuGeneratorTargetStats.
+    @operations.setter
+    def operations(self, operations):
+        """Sets the operations of this CpuGeneratorTargetStats.
 
-        The total amount of finished instruction set cycles  # noqa: E501
+        The total amount of finished instruction set operations  # noqa: E501
 
-        :param cycles: The cycles of this CpuGeneratorTargetStats.  # noqa: E501
+        :param operations: The operations of this CpuGeneratorTargetStats.  # noqa: E501
         :type: int
         """
-        self._cycles = cycles
+        self._operations = operations
 
     def to_dict(self):
         """Returns the model properties as a dict"""

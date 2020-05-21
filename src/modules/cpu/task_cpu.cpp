@@ -54,17 +54,17 @@ void task_cpu::spin()
         uint64_t calls = time_frame / m_weights
             * target.weight / target.runtime.count();
 
-        uint64_t cycles = 0;
+        uint64_t operations = 0;
         auto runtime = run_time([&](){
             for (uint64_t c = 0; c < calls; ++c)
-                cycles += target.target->operation();
+                operations += target.target->operation();
         });
 
         target.runtime = (target.runtime + runtime / calls) / 2;
         m_time += target.runtime;
 
         auto& stat = m_stat_active.targets[i];
-        stat.cycles += cycles;
+        stat.operations += operations;
         stat.runtime += runtime;
     }
 

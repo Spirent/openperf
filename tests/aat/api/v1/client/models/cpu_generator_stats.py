@@ -62,18 +62,13 @@ class CpuGeneratorStats(object):
         self._cores = None
         self.discriminator = None
 
-        if available is not None:
-            self.available = available
-        if utilization is not None:
-            self.utilization = utilization
-        if system is not None:
-            self.system = system
-        if user is not None:
-            self.user = user
+        self.available = available
+        self.utilization = utilization
+        self.system = system
+        self.user = user
         if steal is not None:
             self.steal = steal
-        if error is not None:
-            self.error = error
+        self.error = error
         self.cores = cores
 
     @property

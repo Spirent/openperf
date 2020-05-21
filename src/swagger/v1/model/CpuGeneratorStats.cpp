@@ -20,17 +20,12 @@ namespace model {
 CpuGeneratorStats::CpuGeneratorStats()
 {
     m_Available = 0L;
-    m_AvailableIsSet = false;
     m_Utilization = 0L;
-    m_UtilizationIsSet = false;
     m_System = 0L;
-    m_SystemIsSet = false;
     m_User = 0L;
-    m_UserIsSet = false;
     m_Steal = 0L;
     m_StealIsSet = false;
     m_Error = 0L;
-    m_ErrorIsSet = false;
     
 }
 
@@ -47,30 +42,15 @@ nlohmann::json CpuGeneratorStats::toJson() const
 {
     nlohmann::json val = nlohmann::json::object();
 
-    if(m_AvailableIsSet)
-    {
-        val["available"] = m_Available;
-    }
-    if(m_UtilizationIsSet)
-    {
-        val["utilization"] = m_Utilization;
-    }
-    if(m_SystemIsSet)
-    {
-        val["system"] = m_System;
-    }
-    if(m_UserIsSet)
-    {
-        val["user"] = m_User;
-    }
+    val["available"] = m_Available;
+    val["utilization"] = m_Utilization;
+    val["system"] = m_System;
+    val["user"] = m_User;
     if(m_StealIsSet)
     {
         val["steal"] = m_Steal;
     }
-    if(m_ErrorIsSet)
-    {
-        val["error"] = m_Error;
-    }
+    val["error"] = m_Error;
     {
         nlohmann::json jsonArray;
         for( auto& item : m_Cores )
@@ -86,30 +66,15 @@ nlohmann::json CpuGeneratorStats::toJson() const
 
 void CpuGeneratorStats::fromJson(nlohmann::json& val)
 {
-    if(val.find("available") != val.end())
-    {
-        setAvailable(val.at("available"));
-    }
-    if(val.find("utilization") != val.end())
-    {
-        setUtilization(val.at("utilization"));
-    }
-    if(val.find("system") != val.end())
-    {
-        setSystem(val.at("system"));
-    }
-    if(val.find("user") != val.end())
-    {
-        setUser(val.at("user"));
-    }
+    setAvailable(val.at("available"));
+    setUtilization(val.at("utilization"));
+    setSystem(val.at("system"));
+    setUser(val.at("user"));
     if(val.find("steal") != val.end())
     {
         setSteal(val.at("steal"));
     }
-    if(val.find("error") != val.end())
-    {
-        setError(val.at("error"));
-    }
+    setError(val.at("error"));
     {
         m_Cores.clear();
         nlohmann::json jsonArray;
@@ -140,15 +105,7 @@ int64_t CpuGeneratorStats::getAvailable() const
 void CpuGeneratorStats::setAvailable(int64_t value)
 {
     m_Available = value;
-    m_AvailableIsSet = true;
-}
-bool CpuGeneratorStats::availableIsSet() const
-{
-    return m_AvailableIsSet;
-}
-void CpuGeneratorStats::unsetAvailable()
-{
-    m_AvailableIsSet = false;
+    
 }
 int64_t CpuGeneratorStats::getUtilization() const
 {
@@ -157,15 +114,7 @@ int64_t CpuGeneratorStats::getUtilization() const
 void CpuGeneratorStats::setUtilization(int64_t value)
 {
     m_Utilization = value;
-    m_UtilizationIsSet = true;
-}
-bool CpuGeneratorStats::utilizationIsSet() const
-{
-    return m_UtilizationIsSet;
-}
-void CpuGeneratorStats::unsetUtilization()
-{
-    m_UtilizationIsSet = false;
+    
 }
 int64_t CpuGeneratorStats::getSystem() const
 {
@@ -174,15 +123,7 @@ int64_t CpuGeneratorStats::getSystem() const
 void CpuGeneratorStats::setSystem(int64_t value)
 {
     m_System = value;
-    m_SystemIsSet = true;
-}
-bool CpuGeneratorStats::systemIsSet() const
-{
-    return m_SystemIsSet;
-}
-void CpuGeneratorStats::unsetSystem()
-{
-    m_SystemIsSet = false;
+    
 }
 int64_t CpuGeneratorStats::getUser() const
 {
@@ -191,15 +132,7 @@ int64_t CpuGeneratorStats::getUser() const
 void CpuGeneratorStats::setUser(int64_t value)
 {
     m_User = value;
-    m_UserIsSet = true;
-}
-bool CpuGeneratorStats::userIsSet() const
-{
-    return m_UserIsSet;
-}
-void CpuGeneratorStats::unsetUser()
-{
-    m_UserIsSet = false;
+    
 }
 int64_t CpuGeneratorStats::getSteal() const
 {
@@ -225,15 +158,7 @@ int64_t CpuGeneratorStats::getError() const
 void CpuGeneratorStats::setError(int64_t value)
 {
     m_Error = value;
-    m_ErrorIsSet = true;
-}
-bool CpuGeneratorStats::errorIsSet() const
-{
-    return m_ErrorIsSet;
-}
-void CpuGeneratorStats::unsetError()
-{
-    m_ErrorIsSet = false;
+    
 }
 std::vector<std::shared_ptr<CpuGeneratorCoreStats>>& CpuGeneratorStats::getCores()
 {
