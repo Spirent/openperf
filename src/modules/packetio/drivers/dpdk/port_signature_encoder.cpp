@@ -299,6 +299,8 @@ static signature_encoder::variant_type make_signature_encoder(uint16_t port_id)
 
 signature_encoder::signature_encoder(uint16_t port_id)
     : feature(make_signature_encoder(port_id))
-{}
+{
+    pga_init();
+}
 
 } // namespace openperf::packetio::dpdk::port
