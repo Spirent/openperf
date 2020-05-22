@@ -7,7 +7,8 @@
 namespace openperf::block::worker {
 
 using realtime = timesync::chrono::realtime;
-constexpr duration TASK_SPIN_THRESHOLD = std::chrono::milliseconds(10);
+using namespace std::chrono_literals;
+constexpr duration TASK_SPIN_THRESHOLD = 10ms;
 
 struct operation_config
 {
@@ -20,27 +21,10 @@ struct operation_config
     int (*queue_aio_op)(aiocb* aiocb);
 };
 
-static off_t get_first_block()
-{
-    return 0;
-}
-
-static off_t get_last_block(size_t file_size, size_t header_size, size_t io_size)
-{
-    assert(io_size);
-    return static_cast<off_t>((file_size - header_size) / io_size);
-}
-
-inline static task_stat_t generate_default_stat()
-{
-    return {ref_clock::now(), {}, {}};
-}
-
 static int submit_aio_op(const operation_config& op_config,
-                         operation_state* op_state)
+                         operation_state& op_state)
 {
-    struct aiocb* aio = &op_state->aiocb;
-    *aio = ((aiocb){
+    op_state.aiocb = ((aiocb){
         .aio_fildes = op_config.fd,
         .aio_offset = static_cast<off_t>(op_config.block_size * op_config.offset + op_config.header_size),
         .aio_buf = op_config.buffer,
@@ -50,16 +34,16 @@ static int submit_aio_op(const operation_config& op_config,
     });
 
     /* Reset stat related variables */
-    op_state->state = PENDING;
-    op_state->start = ref_clock::now();
-    op_state->stop = op_state->start;
-    op_state->io_bytes = 0;
+    op_state.state = PENDING;
+    op_state.start = ref_clock::now();
+    op_state.stop = op_state.start;
+    op_state.io_bytes = 0;
 
     /* Submit operation to the kernel */
-    if (op_config.queue_aio_op(aio) == -1) {
+    if (op_config.queue_aio_op(&op_state.aiocb) == -1) {
         if (errno == EAGAIN) {
             OP_LOG(OP_LOG_WARNING, "AIO queue is full!\n");
-            op_state->state = IDLE;
+            op_state.state = IDLE;
         } else {
             OP_LOG(OP_LOG_ERROR,
                    "Could not queue AIO operation: %s\n",
@@ -103,20 +87,20 @@ static int wait_for_aio_ops(std::vector<operation_state> aio_ops, size_t nb_ops)
     return (error);
 }
 
-static int complete_aio_op(struct operation_state* aio_op)
+static int complete_aio_op(struct operation_state& aio_op)
 {
     int err = 0;
-    struct aiocb* aiocb = &aio_op->aiocb;
+    auto aiocb = &aio_op.aiocb;
 
-    if (aio_op->state != PENDING) return (-1);
+    if (aio_op.state != PENDING) return (-1);
 
     switch ((err = aio_error(aiocb))) {
     case 0: {
         /* AIO operation completed */
         ssize_t nb_bytes = aio_return(aiocb);
-        aio_op->stop = ref_clock::now();
-        aio_op->io_bytes = nb_bytes;
-        aio_op->state = COMPLETE;
+        aio_op.stop = ref_clock::now();
+        aio_op.io_bytes = nb_bytes;
+        aio_op.state = COMPLETE;
         break;
     }
     case EINPROGRESS:
@@ -126,9 +110,9 @@ static int complete_aio_op(struct operation_state* aio_op)
     default:
         /* could be canceled or error; we don't make a distinction */
         aio_return(aiocb); /* free resources */
-        aio_op->stop = ref_clock::now();
-        aio_op->io_bytes = 0;
-        aio_op->state = FAILED;
+        aio_op.stop = ref_clock::now();
+        aio_op.io_bytes = 0;
+        aio_op.state = FAILED;
         err = 0;
     }
 
@@ -136,7 +120,7 @@ static int complete_aio_op(struct operation_state* aio_op)
 }
 
 block_task::block_task()
-    : m_actual_stat(generate_default_stat())
+    : m_actual_stat()
     , m_shared_stat(m_actual_stat)
     , m_at_stat(&m_shared_stat)
     , m_reset_stat(true)
@@ -147,31 +131,32 @@ block_task::block_task()
 
 block_task::~block_task() = default;
 
-size_t block_task::worker_spin(int (*queue_aio_op)(aiocb* aiocb),
-                               size_t block_size,
-                               int32_t queue_depth,
+size_t block_task::worker_spin(task_config_t& op_config,
                                task_stat_t& op_stat,
-                               pattern_generator& pattern,
                                time_point deadline)
 {
-    duration latency_min = duration::max();
-    duration latency_max = duration::zero();
-    int32_t total_ops = 0;
-    int32_t pending_ops = 0;
-    auto op_conf = (operation_config){m_task_config.fd,
-                                      m_task_config.f_size,
-                                      block_size,
-                                      m_buf.data(),
-                                      0,
-                                      m_task_config.header_size,
-                                      queue_aio_op};
+    size_t total_ops = 0;
+    size_t pending_ops = 0;
 
-    for (int32_t i = 0; i < queue_depth; ++i) {
-        auto aio_op = &m_aio_ops[i];
-        op_conf.offset = pattern.generate();
+    auto ops_req = (ref_clock::now() - m_operation_timestamp).count() * op_config.ops_per_sec / std::nano::den + 1;
+    auto queue_depth = std::min(op_config.queue_depth, static_cast<size_t>(ops_req));
+
+    auto op_conf = (operation_config){
+        .fd = op_config.fd,
+        .f_size = op_config.f_size,
+        .block_size = op_config.block_size,
+        .buffer = m_buf.data(),
+        .offset = 0,
+        .header_size = op_config.header_size,
+        .queue_aio_op = (op_config.operation == task_operation::READ) ? aio_read : aio_write
+    };
+
+    for (size_t i = 0; i < queue_depth; ++i) {
+        auto& aio_op = m_aio_ops[i];
+        op_conf.offset = m_pattern.generate();
         if (submit_aio_op(op_conf, aio_op) == 0) {
             pending_ops++;
-        } else if (aio_op->state == FAILED) {
+        } else if (aio_op.state == FAILED) {
             total_ops++;
             op_stat.ops_actual++;
             op_stat.errors++;
@@ -179,7 +164,7 @@ size_t block_task::worker_spin(int (*queue_aio_op)(aiocb* aiocb),
             /* temporary queueing error */
             break;
         }
-        op_conf.buffer += block_size;
+        op_conf.buffer += op_config.block_size;
     }
 
     while (pending_ops) {
@@ -191,7 +176,7 @@ size_t block_task::worker_spin(int (*queue_aio_op)(aiocb* aiocb),
              * 2) aio_cancel not supported
              * We consider either of these conditions to be fatal.
              */
-            if (aio_cancel(m_task_config.fd, nullptr) == -1) {
+            if (aio_cancel(op_config.fd, nullptr) == -1) {
                 OP_LOG(OP_LOG_ERROR,
                        "Could not cancel pending AIO operatons: %s\n",
                        strerror(errno));
@@ -201,20 +186,20 @@ size_t block_task::worker_spin(int (*queue_aio_op)(aiocb* aiocb),
          * Find the completed op and fire off another one to
          * take it's place.
          */
-        for (int32_t i = 0; i < queue_depth; ++i) {
-            auto aio_op = &m_aio_ops[i];
+        for (size_t i = 0; i < queue_depth; ++i) {
+            auto& aio_op = m_aio_ops[i];
             if (complete_aio_op(aio_op) == 0) {
                 /* found it; update stats */
                 total_ops++;
-                switch (aio_op->state) {
+                switch (aio_op.state) {
                 case COMPLETE: {
                     op_stat.ops_actual++;
-                    op_stat.bytes_actual += aio_op->io_bytes;
+                    op_stat.bytes_actual += aio_op.io_bytes;
 
-                    auto op_ns = aio_op->stop - aio_op->start;
+                    auto op_ns = aio_op.stop - aio_op.start;
                     op_stat.latency += op_ns;
-                    if (op_ns < latency_min) { latency_min = op_ns; }
-                    if (op_ns > latency_max) { latency_max = op_ns; }
+                    if (op_ns < op_stat.latency_min) { op_stat.latency_min = op_ns; }
+                    if (op_ns > op_stat.latency_max) { op_stat.latency_max = op_ns; }
                     break;
                 }
                 case FAILED:
@@ -224,7 +209,7 @@ size_t block_task::worker_spin(int (*queue_aio_op)(aiocb* aiocb),
                 default:
                     OP_LOG(OP_LOG_WARNING,
                            "Completed AIO operation in %d state?\n",
-                           aio_op->state);
+                           aio_op.state);
                     break;
                 }
 
@@ -235,7 +220,7 @@ size_t block_task::worker_spin(int (*queue_aio_op)(aiocb* aiocb),
                     || submit_aio_op(op_conf, aio_op) != 0) {
                     // if any condition is true, we have one less pending op
                     pending_ops--;
-                    if (aio_op->state == FAILED) {
+                    if (aio_op.state == FAILED) {
                         total_ops++;
                         op_stat.ops_actual++;
                         op_stat.errors++;
@@ -244,9 +229,6 @@ size_t block_task::worker_spin(int (*queue_aio_op)(aiocb* aiocb),
             }
         }
     }
-
-    op_stat.latency_max = std::max(op_stat.latency_max, latency_max);
-    op_stat.latency_min = std::min(op_stat.latency_min, latency_min);
 
     return (total_ops);
 }
@@ -261,9 +243,8 @@ void block_task::config(const task_config_t& p_config)
     m_buf.resize(buf_len);
     utils::op_pseudo_random_fill(m_buf.data(), m_buf.size());
     m_aio_ops.resize(m_task_config.queue_depth);
-    m_pattern.reset(
-        get_first_block(),
-        get_last_block(m_task_config.f_size, m_task_config.header_size, m_task_config.block_size),
+    m_pattern.reset(0,
+        static_cast<off_t>((m_task_config.f_size - m_task_config.header_size) / m_task_config.block_size),
         m_task_config.pattern);
 }
 
@@ -286,7 +267,7 @@ task_stat_t block_task::stat() const
 
 void block_task::clear_stat()
 {
-    *m_at_stat = generate_default_stat();
+    *m_at_stat = task_stat_t();
     m_reset_stat = true;
 }
 
@@ -313,13 +294,9 @@ void block_task::spin()
 
     while (true) {
         auto cur_time = ref_clock::now();
-        auto ops_req = (cur_time - m_operation_timestamp).count() * m_task_config.ops_per_sec / std::nano::den + 1;
-        auto nb_ops = worker_spin((m_task_config.operation == task_operation::READ) ? aio_read : aio_write,
-                     m_task_config.block_size,
-                     std::min(m_task_config.queue_depth, static_cast<size_t>(ops_req)),
+        auto nb_ops = worker_spin(m_task_config,
                      m_actual_stat,
-                     m_pattern,
-                     ref_clock::now() + std::chrono::seconds(1));
+                     cur_time + 1s);
 
         auto cycles = (cur_time - m_start_timestamp).count() * m_task_config.ops_per_sec / std::nano::den + 1;
         m_actual_stat.ops_target = cycles;
