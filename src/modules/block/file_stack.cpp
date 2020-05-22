@@ -20,31 +20,53 @@ file::file(const model::file& f)
 
 file::~file() { terminate_scrub(); }
 
-tl::expected<int, int> file::vopen()
+tl::expected<virtual_device_descriptors, int> file::vopen()
 {
-    if (m_fd >= 0) return m_fd;
+    auto open_vdev = [&](std::atomic_int& fd) {
+         if (fd > 0)
+            return fd.load();
 
-    if ((m_fd = open(get_path().c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR))
-        < 0) {
+        if ((fd = open(get_path().c_str(), O_RDWR | O_CREAT | O_DIRECT | O_SYNC,
+                        S_IRUSR | S_IWUSR)) < 0) {
+            return -1;
+        }
+
+        /* Disable readahead */
+        posix_fadvise(fd, 0, 1, POSIX_FADV_RANDOM);
+        fcntl(fd, F_SETFL, O_SYNC | O_RSYNC);
+
+        return fd.load();
+    };
+
+    m_read_fd = open_vdev(m_read_fd);
+    m_write_fd = open_vdev(m_write_fd);
+
+    if (m_read_fd < 0 || m_write_fd < 0) {
+        vclose();
         return tl::make_unexpected(errno);
     }
 
-    /* Disable readahead */
-    posix_fadvise(m_fd, 0, 1, POSIX_FADV_RANDOM);
-    fcntl(m_fd, F_SETFL, O_SYNC | O_RSYNC);
-
-    return m_fd;
+    return (virtual_device_descriptors) {m_read_fd, m_write_fd};
 }
 
 void file::vclose()
 {
-    if (auto res = close(m_fd); res < 0) {
-        OP_LOG(OP_LOG_ERROR,
-               "Cannot close file %s: %s",
-               get_path().c_str(),
-               strerror(errno));
-    }
-    m_fd = -1;
+    auto close_vdev = [&](int fd) {
+        if (auto res = close(fd); res < 0) {
+            OP_LOG(OP_LOG_ERROR,
+                "Cannot close file %s: %s",
+                get_path().c_str(),
+                strerror(errno));
+        }
+    };
+
+    if (m_read_fd >= 0)
+        close_vdev(m_read_fd);
+    if (m_write_fd >= 0)
+        close_vdev(m_write_fd);
+
+    m_read_fd = -1;
+    m_write_fd = -1;
 }
 
 uint64_t file::get_size() const { return model::file::get_size(); }

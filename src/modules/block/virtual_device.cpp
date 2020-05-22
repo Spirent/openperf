@@ -10,14 +10,15 @@
 namespace openperf::block {
 
 virtual_device::virtual_device()
-    : m_fd(-1)
+    : m_read_fd(-1)
+    , m_write_fd(-1)
 {}
 
 virtual_device::~virtual_device() { terminate_scrub(); }
 
 int virtual_device::write_header()
 {
-    if (m_fd < 0) return -1;
+    if (m_write_fd < 0) return -1;
     virtual_device_header header = {
         .init_time = timesync::to_bintime(
             timesync::chrono::realtime::now().time_since_epoch()),
@@ -27,7 +28,7 @@ int virtual_device::write_header()
             VIRTUAL_DEVICE_HEADER_TAG,
             VIRTUAL_DEVICE_HEADER_TAG_LENGTH);
 
-    return (pwrite(m_fd, &header, sizeof(header), 0) == sizeof(header) ? 0
+    return (pwrite(m_write_fd, &header, sizeof(header), 0) == sizeof(header) ? 0
                                                                        : -1);
 }
 
@@ -39,7 +40,7 @@ void virtual_device::queue_scrub()
     }
 
     struct virtual_device_header header = {};
-    int read_or_err = pread(m_fd, &header, sizeof(header), 0);
+    int read_or_err = pread(m_write_fd, &header, sizeof(header), 0);
     vclose();
     if (read_or_err == -1) {
         throw std::runtime_error("Cannot read vdev device header: "
@@ -83,7 +84,7 @@ void pseudo_random_fill(void* buffer, size_t length)
 constexpr size_t SCRUB_BUFFER_SIZE = 128 * 1024; /* 128KB */
 void virtual_device::scrub_worker(size_t start, size_t stop)
 {
-    if (m_fd >= 0) {
+    if (m_write_fd >= 0) {
         OP_LOG(OP_LOG_ERROR, "Cannot write scrub to vdev: device is busy\n");
         return;
     }
@@ -101,7 +102,7 @@ void virtual_device::scrub_worker(size_t start, size_t stop)
     while (!m_deleted && current < stop) {
         pseudo_random_fill(buf.data(), SCRUB_BUFFER_SIZE);
         auto aio = ((aiocb){
-            .aio_fildes = m_fd,
+            .aio_fildes = m_write_fd,
             .aio_offset = static_cast<off_t>(current),
             .aio_buf = buf.data(),
             .aio_nbytes = std::min(SCRUB_BUFFER_SIZE, stop - current),

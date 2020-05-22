@@ -20,8 +20,8 @@ protected:
 
 public:
     file(const model::file& f);
-    ~file() override;
-    tl::expected<int, int> vopen() override;
+    ~file();
+    tl::expected<virtual_device_descriptors, int> vopen() override;
     void vclose() override;
     uint64_t get_size() const override;
     uint64_t get_header_size() const override;
