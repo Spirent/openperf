@@ -15,7 +15,7 @@ class device
 {
 public:
     ~device(){};
-    tl::expected<int, int> vopen();
+    tl::expected<virtual_device_descriptors, int> vopen();
     void vclose();
     uint64_t get_size() const;
 };

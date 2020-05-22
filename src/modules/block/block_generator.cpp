@@ -137,7 +137,7 @@ task_config_t block_generator::generate_worker_config(
     w_config.ops_per_sec = (p_operation == task_operation::READ) ? p_config.reads_per_sec : p_config.writes_per_sec;
     w_config.operation = p_operation;
     w_config.pattern = p_config.pattern;
-    w_config.fd = fd.value();
+    w_config.fd = (p_operation == task_operation::READ) ? fd.value().read : fd.value().write;
     w_config.f_size = m_vdev->get_size();
     w_config.header_size = m_vdev->get_header_size();
     return w_config;

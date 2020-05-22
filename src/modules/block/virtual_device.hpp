@@ -23,12 +23,18 @@ struct virtual_device_header
     uint8_t pad[VIRTUAL_DEVICE_HEADER_PAD_LENGTH];
 } __attribute__((packed));
 
+struct virtual_device_descriptors
+{
+    int read = -1;
+    int write = -1;
+};
+
 const size_t block_generator_vdev_header_size = sizeof(virtual_device_header);
 
 class virtual_device
 {
 protected:
-    std::atomic_int m_fd = -1;
+    std::atomic_int m_read_fd = -1, m_write_fd = -1;
     std::thread m_scrub_thread;
     std::atomic_bool m_deleted;
     int write_header();
@@ -39,16 +45,19 @@ protected:
 public:
     virtual_device();
     virtual ~virtual_device();
-    virtual tl::expected<int, int> vopen() = 0;
+    virtual tl::expected<virtual_device_descriptors, int> vopen() = 0;
     virtual void vclose() = 0;
     void queue_scrub();
     void terminate_scrub();
     virtual uint64_t get_size() const = 0;
     virtual uint64_t get_header_size() const { return 0; };
-    std::optional<int> get_fd() const
+    std::optional<virtual_device_descriptors> get_fd() const
     {
-        if (m_fd < 0) return std::nullopt;
-        return m_fd;
+        if (m_read_fd < 0 || m_write_fd < 0) return std::nullopt;
+        return (virtual_device_descriptors){
+            m_read_fd,
+            m_write_fd
+        };
     }
 };
 

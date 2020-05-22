@@ -13,26 +13,50 @@
 
 namespace openperf::block::device {
 
-tl::expected<int, int> device::vopen()
-{
-    if (m_fd >= 0) return m_fd;
 
-    if ((m_fd = open(get_path().c_str(), O_RDWR)) < 0) {
+tl::expected<virtual_device_descriptors, int> device::vopen()
+{
+    auto open_vdev = [&](std::atomic_int& fd) {
+         if (fd > 0)
+            return fd.load();
+
+        if ((fd = open(get_path().c_str(), O_RDWR | O_CREAT | O_DIRECT | O_SYNC,
+                        S_IRUSR | S_IWUSR)) < 0) {
+            return -1;
+        }
+
+        return fd.load();
+    };
+
+    m_read_fd = open_vdev(m_read_fd);
+    m_write_fd = open_vdev(m_write_fd);
+
+    if (m_read_fd < 0 || m_write_fd < 0) {
+        vclose();
         return tl::make_unexpected(errno);
     }
 
-    return m_fd;
+    return (virtual_device_descriptors) {m_read_fd, m_write_fd};
 }
 
 void device::vclose()
 {
-    if (auto res = close(m_fd); res < 0) {
-        OP_LOG(OP_LOG_ERROR,
-               "Cannot close device %s: %s",
-               get_path().c_str(),
-               strerror(errno));
-    }
-    m_fd = -1;
+    auto close_vdev = [&](int fd) {
+        if (auto res = close(fd); res < 0) {
+            OP_LOG(OP_LOG_ERROR,
+                "Cannot close device %s: %s",
+                get_path().c_str(),
+                strerror(errno));
+        }
+    };
+
+    if (m_read_fd > 0)
+        close_vdev(m_read_fd);
+    if (m_write_fd > 0)
+        close_vdev(m_read_fd);
+
+    m_read_fd = -1;
+    m_write_fd = -1;
 }
 
 uint64_t device::get_size() const { return model::device::get_size(); }
