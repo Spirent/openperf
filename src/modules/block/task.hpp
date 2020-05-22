@@ -34,7 +34,7 @@ struct task_config_t
 
 struct task_stat_t
 {
-    time_point updated; /* Date of the last result update */
+    time_point updated = ref_clock::now(); /* Date of the last result update */
     uint_fast64_t ops_target =
         0; /* The intended number of operations performed */
     uint_fast64_t ops_actual =
@@ -81,11 +81,8 @@ private:
     pattern_generator m_pattern;
     time_point m_operation_timestamp, m_pause_timestamp, m_start_timestamp;
 
-    size_t worker_spin(int (*queue_aio_op)(aiocb* aiocb),
-                       size_t block_size,
-                       int32_t queue_depth,
+    size_t worker_spin(task_config_t& op_config,
                        task_stat_t& op_stat,
-                       pattern_generator& pattern,
                        time_point deadline);
 
 public:
