@@ -162,11 +162,13 @@ size_t block_task::worker_spin(int (*queue_aio_op)(aiocb* aiocb),
                                       m_task_config.f_size,
                                       block_size,
                                       m_buf.data(),
-                                      pattern.generate(),
+                                      0,
                                       m_task_config.header_size,
                                       queue_aio_op};
+
     for (int32_t i = 0; i < queue_depth; ++i) {
         auto aio_op = &m_aio_ops[i];
+        op_conf.offset = pattern.generate();
         if (submit_aio_op(op_conf, aio_op) == 0) {
             pending_ops++;
         } else if (aio_op->state == FAILED) {
@@ -179,6 +181,7 @@ size_t block_task::worker_spin(int (*queue_aio_op)(aiocb* aiocb),
         }
         op_conf.buffer += block_size;
     }
+
     while (pending_ops) {
         if (wait_for_aio_ops(m_aio_ops, queue_depth) != 0) {
             /*
@@ -303,14 +306,13 @@ void block_task::spin()
 
     // Reduce the effect of ZMQ operations on total Block I/O operations amount
     auto loop_start_ts = ref_clock::now();
-    while (true) {
-        auto before_sleep_time = ref_clock::now();
-        if (m_operation_timestamp > before_sleep_time)
-            std::this_thread::sleep_for(m_operation_timestamp - before_sleep_time);
+    auto before_sleep_time = ref_clock::now();
+    if (m_operation_timestamp > before_sleep_time) {
+        std::this_thread::sleep_for(m_operation_timestamp - before_sleep_time);
+    }
 
+    while (true) {
         auto cur_time = ref_clock::now();
-        auto rps =
-            (m_task_config.ops_per_sec > 0) ? m_task_config.ops_per_sec : 1;
         auto ops_req = (cur_time - m_operation_timestamp).count() * m_task_config.ops_per_sec / std::nano::den + 1;
         auto nb_ops = worker_spin((m_task_config.operation == task_operation::READ) ? aio_read : aio_write,
                      m_task_config.block_size,
@@ -323,10 +325,10 @@ void block_task::spin()
         m_actual_stat.ops_target = cycles;
         m_actual_stat.bytes_target = cycles * m_task_config.block_size;
 
-        m_operation_timestamp += std::chrono::nanoseconds(std::nano::den / rps) * nb_ops;
-
-        if ((m_operation_timestamp >= loop_start_ts + TASK_SPIN_THRESHOLD) || (ref_clock::now() > loop_start_ts + TASK_SPIN_THRESHOLD))
+        m_operation_timestamp += std::chrono::nanoseconds(std::nano::den / m_task_config.ops_per_sec) * nb_ops;
+        if ((m_operation_timestamp >= ref_clock::now()) || (ref_clock::now() > loop_start_ts + TASK_SPIN_THRESHOLD)){
             break;
+        }
     }
 
     m_actual_stat.updated = realtime::now();
