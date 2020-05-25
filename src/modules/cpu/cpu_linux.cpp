@@ -9,10 +9,6 @@
 #include <sys/resource.h>
 #include <sys/time.h>
 
-#ifndef ARCH
-#define ARCH "unknown"
-#endif
-
 namespace openperf::cpu::internal {
 
 struct linux_proc_stats {
@@ -107,19 +103,21 @@ utilization_time cpu_thread_time()
     };
 }
 
-int32_t cpu_cores_count()
+uint16_t cpu_cores()
 {
     return sysconf(_SC_NPROCESSORS_CONF);
 }
 
-int64_t cpu_cache_line_size()
+uint16_t cpu_cache_line_size()
 {
     return sysconf(_SC_LEVEL1_DCACHE_LINESIZE);
 }
 
 std::string cpu_architecture()
 {
-    return ARCH;
+    if (sizeof(void*) == 8)
+        return "x86_64";
+    return "x86";
 }
 
 } // namespace openperf::cpu::internal

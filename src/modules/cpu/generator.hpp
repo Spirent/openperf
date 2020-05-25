@@ -42,8 +42,8 @@ public:
 
 private:
     void configure_workers(const model::generator_config& p_conf);
-    bool check_instruction_set_supported(cpu::instruction_set);
-    task_cpu_config generate_worker_config(const model::generator_core_config&);
+    bool is_supported(cpu::instruction_set);
+    task_cpu_config to_task_config(const model::generator_core_config&);
 };
 
 } // namespace openperf::cpu::generator

@@ -53,8 +53,8 @@ struct utilization_time {
 utilization_time cpu_thread_time();
 std::chrono::nanoseconds cpu_steal_time();
 
-int32_t cpu_cores_count();
-int64_t cpu_cache_line_size();
+uint16_t cpu_cores();
+uint16_t cpu_cache_line_size();
 std::string cpu_architecture();
 
 } // namespace openperf::cpu::internal

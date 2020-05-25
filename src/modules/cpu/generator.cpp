@@ -2,7 +2,6 @@
 
 #include "cpu/cpu.hpp"
 #include "core/op_uuid.hpp"
-#include "lib/spirent_pga/instruction_set.h"
 
 namespace openperf::cpu::generator {
 
@@ -105,31 +104,31 @@ void generator::clear_statistics() {
 void generator::configure_workers(const model::generator_config& config) {
     m_workers.clear();
 
-    if (static_cast<int32_t>(config.cores.size()) > cpu_cores_count())
+    auto cores_count = cpu_cores();
+    if (static_cast<int32_t>(config.cores.size()) > cores_count)
         throw std::runtime_error(
             "Could not configure more cores than available ("
-            + std::to_string(cpu_cores_count()) + ")?");
+            + std::to_string(cores_count) + ").");
 
     for (size_t core = 0; core < config.cores.size(); ++core) {
         auto core_conf = config.cores.at(core);
         for (const auto & target : core_conf.targets)
-            if (!check_instruction_set_supported(target.instruction_set))
+            if (!is_supported(target.instruction_set))
                 throw std::runtime_error("Instruction set "
                     + to_string(target.instruction_set)
                     + " is not supported");
 
         m_workers.push_back(std::make_unique<cpu_worker>(
-            generate_worker_config(core_conf),
+            to_task_config(core_conf),
             "cpu" + std::to_string(m_serial_number)
             + "_" + std::to_string(core)));
 
-        if (core_conf.utilization > 0.0) {
+        if (core_conf.utilization > 0.0)
             m_workers.back()->start(core);
-        }
     }
 }
 
-task_cpu_config generator::generate_worker_config(const model::generator_core_config& conf)
+task_cpu_config generator::to_task_config(const model::generator_core_config& conf)
 {
     if (conf.targets.empty() && conf.utilization > 0.0)
         throw std::runtime_error("Undefined configuration");
@@ -150,17 +149,12 @@ task_cpu_config generator::generate_worker_config(const model::generator_core_co
     return w_config;
 }
 
-bool generator::check_instruction_set_supported(cpu::instruction_set iset)
+bool generator::is_supported(cpu::instruction_set iset)
 {
-    using namespace pga::instruction_set;
-    switch (iset)
-    {
-    case cpu::instruction_set::SCALAR:
-        return available(type::SCALAR);
-        break;
+    switch (iset) {
+    case cpu::instruction_set::SCALAR: return true;
+    default: return false;
     }
-
-    return false;
 }
 
 } // namespace openperf::cpu::generator

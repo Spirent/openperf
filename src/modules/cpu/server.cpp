@@ -88,7 +88,7 @@ reply_msg server::handle_request(const request_cpu_generator_start& request)
 reply_msg server::handle_request(const request_cpu_generator_stop& request)
 {
     if (!config::op_config_validate_id_string(request.id))
-        return (to_error(error_type::CUSTOM_ERROR, 0,  "ID is not valid"));
+        return to_error(error_type::CUSTOM_ERROR, 0,  "ID is not valid");
 
     if (!m_generator_stack.stop_generator(request.id))
         return to_error(api::error_type::NOT_FOUND);
@@ -194,7 +194,7 @@ reply_msg server::handle_request(const request_cpu_info&)
 {
     auto info = std::make_unique<cpu_info_t>();
     info->architecture = cpu_architecture();
-    info->cores = cpu_cores_count();
+    info->cores = cpu_cores();
     info->cache_line_size = cpu_cache_line_size();
 
     return reply_cpu_info {
@@ -210,7 +210,7 @@ static int _handle_rpc_request(const op_event_data* data, void* arg)
     while (auto request = recv_message(data->socket, ZMQ_DONTWAIT)
                               .and_then(deserialize_request)) {
         auto request_visitor = [&](auto& request) -> reply_msg {
-            return (s->handle_request(request));
+            return s->handle_request(request);
         };
         auto reply = std::visit(request_visitor, *request);
         if (send_message(data->socket, serialize_reply(std::move(reply))) == -1) {

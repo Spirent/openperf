@@ -54,21 +54,17 @@ private:
 
     uint16_t m_serial_number;
 
-    template <typename Function> void for_each_worker(Function&& function)
-    {
-        for (auto&& reader : m_read_workers) { function(reader); }
-        for (auto&& writer : m_write_workers) { function(writer); }
-    }
-
 public:
     // Constructors & Destructor
     generator();
     explicit generator(const generator::config_t&);
     generator(const generator&) = delete;
-    generator& operator=(const generator&) = delete;
     generator(generator&&) noexcept;
-    generator& operator=(generator&&) noexcept;
     ~generator();
+
+    // Operators overloading
+    generator& operator=(generator&&) noexcept;
+    generator& operator=(const generator&) = delete;
 
     // Methods
     void resume();
@@ -95,6 +91,7 @@ private:
     void spread_config(generator::workers&, const task_memory_config&);
 
     template <class T> void reallocate_workers(generator::workers&, unsigned);
+    template <typename Function> void for_each_worker(Function&& function);
 };
 
 template <class T>
@@ -117,6 +114,13 @@ void generator::reallocate_workers(generator::workers& wkrs, unsigned num)
                 + "_" + std::to_string(num - size)));
         }
     }
+}
+
+template <typename Function>
+void generator::for_each_worker(Function&& function)
+{
+    std::for_each(m_read_workers.begin(), m_read_workers.end(), function);
+    std::for_each(m_write_workers.begin(), m_write_workers.end(), function);
 }
 
 } // namespace openperf::memory::internal

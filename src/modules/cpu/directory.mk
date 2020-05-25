@@ -2,7 +2,8 @@
 # Makefile component to specify cpu code
 #
 
-CPU_DEPENDS += api expected framework json pistache swagger_model timesync versions spirent_pga
+CPU_DEPENDS += api expected framework json pistache swagger_model \
+	timesync versions
 
 CPU_SOURCES += \
 	api_transmogrify.cpp \
@@ -16,11 +17,7 @@ CPU_SOURCES += \
 
 ifeq ($(PLATFORM), linux)
 	CPU_SOURCES += cpu_linux.cpp
-else ifneq ($(PLATFORM), osv)
-	CPU_SOURCES += cpu.cpp
 endif
-
-include $(PGA_SRC_DIR)/ispc/directory.mk
 
 CPU_VERSIONED_FILES := init.cpp
 CPU_UNVERSIONED_OBJECTS :=\
