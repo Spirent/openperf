@@ -258,27 +258,27 @@ definitions:
       reads_per_sec:
         type: integer
         description: Number of read operations to perform per second
-        minimum: 1
+        minimum: 0
       read_size:
         type: integer
         description: Number of bytes to use for each read operation
-        minimum: 1
+        minimum: 0
       read_threads:
         type: integer
         description: Number of read worker threads
-        minimum: 1
+        minimum: 0
       writes_per_sec:
         type: integer
         description: Number of write operations to perform per second
-        minimum: 1
+        minimum: 0
       write_size:
         type: integer
         description: Number of bytes to use for each write operation
-        minimum: 1
+        minimum: 0
       write_threads:
         type: integer
         description: Number of write worker threads
-        minimum: 1
+        minimum: 0
       pattern:
         type: string
         description: IO access pattern

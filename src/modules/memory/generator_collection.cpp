@@ -53,7 +53,7 @@ std::string generator_collection::create(const std::string& id,
             throw std::domain_error(id_check.error().c_str());
 
         if (contains(id))
-            throw std::invalid_argument("Memory generator with id '" + id
+            throw std::invalid_argument("Memory generator with ID '" + id
                                         + "' already exists.");
 
         return id;

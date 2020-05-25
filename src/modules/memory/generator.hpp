@@ -4,8 +4,8 @@
 #include <forward_list>
 
 #include "utils/worker/worker.hpp"
-#include "memory/task_memory_read.hpp"
-#include "memory/task_memory_write.hpp"
+#include "memory/task_memory.hpp"
+#include "memory/memory_stat.hpp"
 
 namespace openperf::memory::internal {
 

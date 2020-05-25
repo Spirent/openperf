@@ -2,14 +2,12 @@
 
 #include <algorithm>
 #include <cstdint>
-#include <chrono>
 #include <tuple>
 #include <thread>
 #include <sys/mman.h>
 
 #include "core/op_core.h"
 #include "utils/random.hpp"
-#include "timesync/chrono.hpp"
 
 namespace openperf::memory::internal {
 
@@ -17,7 +15,6 @@ using namespace std::chrono_literals;
 
 using openperf::utils::op_pseudo_random_fill;
 
-auto now = openperf::timesync::chrono::monotime::now;
 
 constexpr auto QUANTA = 10ms;
 constexpr size_t MAX_SPIN_OPS = 5000;
@@ -77,25 +74,6 @@ std::vector<unsigned> index_vector(size_t size, io_pattern pattern)
     return v_index;
 }
 
-static uint64_t _get_cache_line_size()
-{
-    constexpr auto fname =
-        "/sys/devices/system/cpu/cpu0/cache/index0/coherency_line_size";
-
-    uint64_t cachelinesize = 0;
-    if (FILE* f = fopen(fname, "r"); !f) {
-        OP_LOG(OP_LOG_WARNING,
-               "Could not determine cache line size. "
-               "Assuming 64 byte cache lines.\n");
-        cachelinesize = 64;
-    } else {
-        fscanf(f, "%" PRIu64, &cachelinesize);
-        fclose(f);
-    }
-
-    return cachelinesize;
-}
-
 // Constructors & Destructor
 task_memory::task_memory()
     : m_scratch{.ptr = nullptr, .size = 0}
@@ -121,15 +99,16 @@ void task_memory::config(const task_memory_config& msg)
     assert(msg.pattern != io_pattern::NONE);
 
     // io blocks in buffer
-    size_t nb_blocks = (msg.block_size ? msg.buffer.size / msg.block_size : 0);
+    size_t nb_blocks = msg.block_size ? msg.buffer.size / msg.block_size : 0;
 
     /*
      * Need to update our indexes if the number of blocks or the pattern
      * has changed.
      */
-    if (nb_blocks
-        && (nb_blocks != m_indexes.size() || msg.pattern != m_config.pattern)) {
+    auto configuration_changed = nb_blocks != m_indexes.size()
+        || msg.pattern != m_config.pattern;
 
+    if (nb_blocks && configuration_changed) {
         try {
             m_indexes = index_vector(nb_blocks, msg.pattern);
             m_config.pattern = msg.pattern;
@@ -139,19 +118,12 @@ void task_memory::config(const task_memory_config& msg)
                    nb_blocks);
             throw std::exception(e);
         }
-
-        // icp_generator_distribute
-        // m_config.op_per_sec = [](uint64_t total, size_t buckets, size_t n) {
-        //    assert(n < buckets);
-        //    uint64_t base = total / buckets;
-        //    return (n < total % buckets ? base + 1 : base);
-        //} (10, 64, 8);
     } else if (!nb_blocks) {
         m_indexes.clear();
-        m_config.pattern = io_pattern::NONE;
 
-        /* XXX: Can't generate any load without indexes */
+        m_config.pattern = io_pattern::NONE;
         m_config.op_per_sec = 0;
+        return;
     }
 
     m_buffer = reinterpret_cast<uint8_t*>(msg.buffer.ptr);
@@ -172,7 +144,6 @@ void task_memory::config(const task_memory_config& msg)
 void task_memory::spin()
 {
     /* If we have a rate to generate, then we need indexes */
-    assert(m_config.pattern != io_pattern::NONE);
     assert(m_config.op_per_sec == 0 || m_indexes.size() > 0);
 
     if (m_stat_clear) {
@@ -187,21 +158,21 @@ void task_memory::spin()
     auto to_do_ops = std::get<0>(tuple);
 
     if (auto ns_to_sleep = std::get<1>(tuple); ns_to_sleep.count()) {
-        auto t1 = now();
+        auto t1 = chronometer::now();
         std::this_thread::sleep_for(ns_to_sleep);
-        m_total.sleep_time += now() - t1;
+        m_total.sleep_time += chronometer::now() - t1;
     }
     /*
      * Perform load operations in small bursts so that we can update our
      * thread statistics periodically.
      */
     stat_t stat;
-    auto deadline = now() + QUANTA;
-    auto t2 = now();
-    while (to_do_ops && (t2 = now()) < deadline) {
+    auto deadline = chronometer::now() + QUANTA;
+    auto t2 = chronometer::now();
+    while (to_do_ops && (t2 = chronometer::now()) < deadline) {
         size_t spin_ops = std::min(MAX_SPIN_OPS, to_do_ops);
         size_t nb_ops = operation(spin_ops, &op_index);
-        auto run_time = std::max(now() - t2, 1ns); /* prevent divide by 0 */
+        auto run_time = std::max(chronometer::now() - t2, 1ns); /* prevent divide by 0 */
 
         /* Update per thread statistics */
         stat += stat_t{
@@ -218,8 +189,7 @@ void task_memory::spin()
         m_total.run_time += run_time;
         m_total.operations += nb_ops;
         m_total.avg_rate += (nb_ops / (double)run_time.count()
-                             - m_total.avg_rate + 4.0 / run_time.count())
-                            / 5.0;
+            - m_total.avg_rate + 4.0 / run_time.count()) / 5.0;
 
         to_do_ops -= spin_ops;
     }
@@ -234,8 +204,9 @@ void task_memory::scratch_allocate(size_t size)
 {
     if (size == m_scratch.size) return;
 
-    static uint64_t cache_line_size = 0;
-    if (!cache_line_size) cache_line_size = _get_cache_line_size();
+    static uint16_t cache_line_size = 0;
+    if (!cache_line_size)
+        cache_line_size = sysconf(_SC_LEVEL1_DCACHE_LINESIZE);
 
     scratch_free();
     if (size > 0) {
