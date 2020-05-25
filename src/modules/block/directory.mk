@@ -19,6 +19,8 @@ BLOCK_SOURCES += \
 
 include $(BLOCK_SRC_DIR)/models/directory.mk
 
+BLOCK_LDLIBS += -lrt
+
 BLOCK_VERSIONED_FILES := init.cpp
 BLOCK_UNVERSIONED_OBJECTS :=\
 	$(call op_generate_objects,$(filter-out $(BLOCK_VERSIONED_FILES),$(BLOCK_SOURCES)),$(BLOCK_OBJ_DIR))

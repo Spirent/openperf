@@ -22,24 +22,23 @@ file::~file() { terminate_scrub(); }
 
 tl::expected<virtual_device_descriptors, int> file::vopen()
 {
-    auto open_vdev = [&](std::atomic_int& fd) {
+    auto open_vdev = [&](std::atomic_int& fd, int flags) {
          if (fd > 0)
             return fd.load();
 
-        if ((fd = open(get_path().c_str(), O_RDWR | O_CREAT | O_DIRECT | O_SYNC,
+        if ((fd = open(get_path().c_str(), flags,
                         S_IRUSR | S_IWUSR)) < 0) {
             return -1;
         }
 
         /* Disable readahead */
         posix_fadvise(fd, 0, 1, POSIX_FADV_RANDOM);
-        fcntl(fd, F_SETFL, O_SYNC | O_RSYNC);
 
         return fd.load();
     };
 
-    m_read_fd = open_vdev(m_read_fd);
-    m_write_fd = open_vdev(m_write_fd);
+    m_write_fd = open_vdev(m_write_fd, O_WRONLY | O_CREAT | O_DSYNC);
+    m_read_fd = open_vdev(m_read_fd, O_RDONLY);
 
     if (m_read_fd < 0 || m_write_fd < 0) {
         vclose();

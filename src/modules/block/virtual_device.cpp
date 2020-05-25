@@ -40,7 +40,7 @@ void virtual_device::queue_scrub()
     }
 
     struct virtual_device_header header = {};
-    int read_or_err = pread(m_write_fd, &header, sizeof(header), 0);
+    int read_or_err = pread(m_read_fd, &header, sizeof(header), 0);
     vclose();
     if (read_or_err == -1) {
         throw std::runtime_error("Cannot read vdev device header: "

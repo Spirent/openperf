@@ -6,7 +6,6 @@
 
 namespace openperf::block::worker {
 
-using realtime = timesync::chrono::realtime;
 using namespace std::chrono_literals;
 constexpr duration TASK_SPIN_THRESHOLD = 10ms;
 
@@ -147,7 +146,7 @@ size_t block_task::worker_spin(task_config_t& op_config,
         .block_size = op_config.block_size,
         .buffer = m_buf.data(),
         .offset = 0,
-        .header_size = op_config.header_size,
+        .header_size = ((op_config.header_size - 1) /  op_config.block_size + 1) * op_config.block_size,
         .queue_aio_op = (op_config.operation == task_operation::READ) ? aio_read : aio_write
     };
 
@@ -286,12 +285,12 @@ void block_task::spin()
 
 
     // Reduce the effect of ZMQ operations on total Block I/O operations amount
-    auto loop_start_ts = ref_clock::now();
     auto before_sleep_time = ref_clock::now();
     if (m_operation_timestamp > before_sleep_time) {
         std::this_thread::sleep_for(m_operation_timestamp - before_sleep_time);
     }
 
+    auto loop_start_ts = ref_clock::now();
     while (true) {
         auto cur_time = ref_clock::now();
         auto nb_ops = worker_spin(m_task_config,
@@ -307,7 +306,6 @@ void block_task::spin()
             break;
         }
     }
-
     m_actual_stat.updated = realtime::now();
 
     if (m_reset_stat.load()) {

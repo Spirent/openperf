@@ -13,6 +13,7 @@ namespace openperf::block::worker {
 using worker_pattern = model::block_generation_pattern;
 using time_point = std::chrono::time_point<timesync::chrono::realtime>;
 using ref_clock = timesync::chrono::monotime;
+using realtime = timesync::chrono::realtime;
 using duration = std::chrono::duration<int64_t, std::nano>;
 
 enum task_operation {
@@ -34,7 +35,7 @@ struct task_config_t
 
 struct task_stat_t
 {
-    time_point updated = ref_clock::now(); /* Date of the last result update */
+    time_point updated = realtime::now(); /* Date of the last result update */
     uint_fast64_t ops_target =
         0; /* The intended number of operations performed */
     uint_fast64_t ops_actual =
