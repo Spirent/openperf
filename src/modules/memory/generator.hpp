@@ -87,11 +87,13 @@ public:
 private:
     void free_buffer();
     void resize_buffer(size_t);
-    void for_each_worker(std::function<void(worker_ptr&)>);
     void spread_config(generator::workers&, const task_memory_config&);
 
-    template <class T> void reallocate_workers(generator::workers&, unsigned);
-    template <typename Function> void for_each_worker(Function&& function);
+    template <class T>
+    void reallocate_workers(generator::workers&, unsigned);
+
+    template <typename Function>
+    void for_each_worker(Function&& function);
 };
 
 template <class T>

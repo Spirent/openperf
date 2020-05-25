@@ -9,8 +9,6 @@ namespace openperf::cpu::internal {
 
 using namespace std::chrono_literals;
 
-auto now = openperf::timesync::chrono::monotime::now;
-
 constexpr auto QUANTA = 100ms;
 
 task_cpu::task_cpu()
@@ -36,7 +34,7 @@ void task_cpu::spin()
         m_stat_clear = false;
 
         m_error = 0ns;
-        m_last_run = now();
+        m_last_run = chronometer::now();
         m_util_time = cpu_thread_time();
     }
 
@@ -75,7 +73,7 @@ void task_cpu::spin()
         (time_diff.utilization - m_error)
         * (1.0 - m_utilization) / m_utilization);
 
-    auto time_of_run = now();
+    auto time_of_run = chronometer::now();
     auto available = time_of_run - m_last_run;
 
     m_error = std::chrono::nanoseconds(
@@ -158,20 +156,6 @@ task_cpu::target_ptr task_cpu::make_target(cpu::instruction_set iset, cpu::data_
         throw std::runtime_error("Unknown instruction set "
             + std::to_string((int)iset));
     }
-}
-
-[[clang::optnone]]
-std::chrono::nanoseconds task_cpu::run_time(std::function<void ()> function)
-{
-    auto start_time = cpu_thread_time();
-    auto t1 = now();
-    function();
-    auto thread_time = (cpu_thread_time() - start_time).utilization;
-    auto time = now() - t1;
-
-    // We prefer processor thread time, but sometimes it
-    // can returns zero, than we use software time.
-    return (thread_time > 0ns) ? thread_time : time;
 }
 
 } // namespace openperf::cpu::internal

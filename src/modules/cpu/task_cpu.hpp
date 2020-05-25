@@ -39,6 +39,7 @@ class task_cpu :
     public utils::worker::task<task_cpu_config, task_cpu_stat>
 {
     using target_ptr = std::unique_ptr<target>;
+    using chronometer = openperf::timesync::chrono::monotime;
 
     struct target_meta {
         uint64_t weight;
@@ -77,8 +78,24 @@ public:
 
 private:
     target_ptr make_target(cpu::instruction_set, cpu::data_type);
-    std::chrono::nanoseconds run_time(std::function<void ()>);
+
+    template<typename Function>
+    std::chrono::nanoseconds run_time(Function &&);
 };
+
+template<typename Function>
+std::chrono::nanoseconds task_cpu::run_time(Function && function)
+{
+    auto start_time = cpu_thread_time();
+    auto t1 = chronometer::now();
+    function();
+    auto thread_time = (cpu_thread_time() - start_time).utilization;
+    auto time = chronometer::now() - t1;
+
+    // We prefer processor thread time, but sometimes it
+    // can returns zero, than we use software time.
+    return (thread_time > 0ns) ? thread_time : time;
+}
 
 } // namespace openperf::cpu::internal
 
