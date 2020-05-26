@@ -31,9 +31,6 @@ tl::expected<virtual_device_descriptors, int> file::vopen()
             return -1;
         }
 
-        /* Disable readahead */
-        posix_fadvise(fd, 0, 1, POSIX_FADV_RANDOM);
-
         return fd.load();
     };
 
