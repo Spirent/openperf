@@ -13,7 +13,7 @@ Hardware- or pseudo- device, providing an ability for block I/O load generation.
     "id": "83b1ab46-e661-4725-6b91-2318bdbe2b34",
     "info": "",
     "path": "/dev/sdc",
-    "size": 4095989514240,
+    "size": 63999836160,
     "usable": true
 }
 ```
@@ -35,7 +35,7 @@ If the file does not exist or its size differs from the size provided in the cre
 {
     "id": "9f6ef1af-060b-47a8-7f21-b72cf0495aaf",
     "init_percent_complete": 3,
-    "file_size": 63999836160,
+    "file_size": 2147483648,
     "path": "/tmp/foo",
     "state": "init"
 }
@@ -121,7 +121,7 @@ Active generator result cannot be deleted.
         "io_errors": 0,
         "latency": 0,
         "latency_max": 0,
-        "latency_min": -1,
+        "latency_min": 0,
         "ops_actual": 0,
         "ops_target": 0
     }
@@ -151,11 +151,8 @@ Active generator result cannot be deleted.
 curl --location --request POST '<OPENPERF_HOST>:<OPENPERF_PORT>/block-files' \
 --header 'Content-Type: application/json' \
 --data-raw '{
-    "id": "",
-    "file_size": 63999836160,
-    "path": "/tmp/foo",
-    "init_percent_complete": 0,
-    "state": "none"
+    "file_size": 2147483648,
+    "path": "/tmp/foo"
 }'
 ```
 Response:
@@ -165,7 +162,7 @@ Response:
 < Content-Type: application/json
 < Content-Length: 124
 {
-    "file_size":63999836160,
+    "file_size":2147483648,
     "id":"96a41125-3ecc-40f0-5833-5dccf6383dcd",
     "init_percent_complete":0,
     "path":"/tmp/foo",
@@ -178,9 +175,8 @@ Response:
 curl --location --request POST '<OPENPERF_HOST>:<OPENPERF_PORT>/block-generators' \
 --header 'Content-Type: application/json' \
 --data-raw '{
-  "id": "",
   "config": {
-    "queue_depth": 2,
+    "queue_depth": 128,
     "reads_per_sec": 100,
     "read_size": 10485,
     "writes_per_sec": 100,
@@ -200,7 +196,7 @@ Response:
 {
     "config": {
         "pattern":"random",
-        "queue_depth":2,
+        "queue_depth":128,
         "read_size":10485,
         "reads_per_sec":100,
         "write_size":10485,
