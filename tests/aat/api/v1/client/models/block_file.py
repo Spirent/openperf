@@ -56,11 +56,14 @@ class BlockFile(object):
         self._state = None
         self.discriminator = None
 
-        self.id = id
+        if id is not None:
+            self.id = id
         self.file_size = file_size
-        self.init_percent_complete = init_percent_complete
+        if init_percent_complete is not None:
+            self.init_percent_complete = init_percent_complete
         self.path = path
-        self.state = state
+        if state is not None:
+            self.state = state
 
     @property
     def id(self):
