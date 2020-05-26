@@ -53,7 +53,8 @@ class BlockGenerator(object):
         self._running = None
         self.discriminator = None
 
-        self.id = id
+        if id is not None:
+            self.id = id
         self.config = config
         self.resource_id = resource_id
         self.running = running
