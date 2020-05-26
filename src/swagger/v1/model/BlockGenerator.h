@@ -54,7 +54,9 @@ public:
     /// </summary>
     std::string getId() const;
     void setId(std::string value);
-        /// <summary>
+    bool idIsSet() const;
+    void unsetId();
+    /// <summary>
     /// 
     /// </summary>
     std::shared_ptr<BlockGeneratorConfig> getConfig() const;
@@ -72,7 +74,7 @@ public:
     
 protected:
     std::string m_Id;
-
+    bool m_IdIsSet;
     std::shared_ptr<BlockGeneratorConfig> m_Config;
 
     std::string m_Resource_id;
