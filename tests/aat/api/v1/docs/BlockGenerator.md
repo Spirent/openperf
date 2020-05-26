@@ -3,7 +3,7 @@
 ## Properties
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**id** | **str** | Block generator identifier | 
+**id** | **str** | Block generator identifier | [optional] 
 **config** | [**BlockGeneratorConfig**](BlockGeneratorConfig.md) |  | 
 **resource_id** | **str** | Unique device or file identifier | 
 **running** | **bool** | Indicates whether this generator is currently running. | 
