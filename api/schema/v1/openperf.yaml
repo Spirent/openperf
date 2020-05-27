@@ -485,23 +485,23 @@ definitions:
   ###
   # Packet Analyzer definitions
   ###
-  Analyzer:
-    $ref: ./modules/packet/analyzer.yaml#/definitions/Analyzer
+  PacketAnalyzer:
+    $ref: ./modules/packet/analyzer.yaml#/definitions/PacketAnalyzer
 
-  AnalyzerConfig:
-    $ref: ./modules/packet/analyzer.yaml#/definitions/AnalyzerConfig
+  PacketAnalyzerConfig:
+    $ref: ./modules/packet/analyzer.yaml#/definitions/PacketAnalyzerConfig
 
-  AnalyzerResult:
-    $ref: ./modules/packet/analyzer.yaml#/definitions/AnalyzerResult
+  PacketAnalyzerResult:
+    $ref: ./modules/packet/analyzer.yaml#/definitions/PacketAnalyzerResult
 
-  AnalyzerProtocolCounters:
-    $ref: ./modules/packet/analyzer.yaml#/definitions/AnalyzerProtocolCounters
+  PacketAnalyzerProtocolCounters:
+    $ref: ./modules/packet/analyzer.yaml#/definitions/PacketAnalyzerProtocolCounters
 
-  AnalyzerFlowSummaryCounters:
-    $ref: ./modules/packet/analyzer.yaml#/definitions/AnalyzerFlowSummaryCounters
+  PacketAnalyzerFlowSummaryCounters:
+    $ref: ./modules/packet/analyzer.yaml#/definitions/PacketAnalyzerFlowSummaryCounters
 
-  AnalyzerFlowCounters:
-    $ref: ./modules/packet/analyzer.yaml#/definitions/AnalyzerFlowCounters
+  PacketAnalyzerFlowCounters:
+    $ref: ./modules/packet/analyzer.yaml#/definitions/PacketAnalyzerFlowCounters
 
   RxFlow:
     $ref: ./modules/packet/analyzer.yaml#/definitions/RxFlow

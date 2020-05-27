@@ -33,7 +33,7 @@ class RxFlow(object):
     swagger_types = {
         'id': 'str',
         'analyzer_result_id': 'str',
-        'counters': 'AnalyzerFlowCounters'
+        'counters': 'PacketAnalyzerFlowCounters'
     }
 
     attribute_map = {
@@ -104,7 +104,7 @@ class RxFlow(object):
 
 
         :return: The counters of this RxFlow.  # noqa: E501
-        :rtype: AnalyzerFlowCounters
+        :rtype: PacketAnalyzerFlowCounters
         """
         return self._counters
 
@@ -114,7 +114,7 @@ class RxFlow(object):
 
 
         :param counters: The counters of this RxFlow.  # noqa: E501
-        :type: AnalyzerFlowCounters
+        :type: PacketAnalyzerFlowCounters
         """
         self._counters = counters
 

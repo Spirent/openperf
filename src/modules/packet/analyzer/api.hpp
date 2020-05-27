@@ -16,8 +16,8 @@
 
 namespace swagger::v1::model {
 
-class Analyzer;
-class AnalyzerResult;
+class PacketAnalyzer;
+class PacketAnalyzerResult;
 class RxFlow;
 
 } // namespace swagger::v1::model
@@ -49,10 +49,10 @@ using protocol_counters_config =
     openperf::utils::bit_flags<statistics::protocol_flags>;
 using flow_counters_config = openperf::utils::bit_flags<statistics::flow_flags>;
 
-using analyzer_type = swagger::v1::model::Analyzer;
+using analyzer_type = swagger::v1::model::PacketAnalyzer;
 using analyzer_ptr = std::unique_ptr<analyzer_type>;
 
-using analyzer_result_type = swagger::v1::model::AnalyzerResult;
+using analyzer_result_type = swagger::v1::model::PacketAnalyzerResult;
 using analyzer_result_ptr = std::unique_ptr<analyzer_result_type>;
 
 using rx_flow_type = swagger::v1::model::RxFlow;
@@ -254,7 +254,7 @@ bool is_valid(const analyzer_type&, std::vector<std::string>&);
 } // namespace openperf::packet::analyzer
 
 namespace swagger::v1::model {
-void from_json(const nlohmann::json&, swagger::v1::model::Analyzer&);
+void from_json(const nlohmann::json&, swagger::v1::model::PacketAnalyzer&);
 } // namespace swagger::v1::model
 
 #endif

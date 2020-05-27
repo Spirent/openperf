@@ -3,7 +3,7 @@
 #include "packet/analyzer/statistics/generic_flow_counters.hpp"
 #include "packet/analyzer/statistics/generic_protocol_counters.hpp"
 
-#include "swagger/v1/model/Analyzer.h"
+#include "swagger/v1/model/PacketAnalyzer.h"
 
 namespace openperf::packet::analyzer::api {
 

@@ -58,11 +58,11 @@ void BulkCreateAnalyzersRequest::fromJson(nlohmann::json& val)
             
             if(item.is_null())
             {
-                m_Items.push_back( std::shared_ptr<Analyzer>(nullptr) );
+                m_Items.push_back( std::shared_ptr<PacketAnalyzer>(nullptr) );
             }
             else
             {
-                std::shared_ptr<Analyzer> newItem(new Analyzer());
+                std::shared_ptr<PacketAnalyzer> newItem(new PacketAnalyzer());
                 newItem->fromJson(item);
                 m_Items.push_back( newItem );
             }
@@ -73,7 +73,7 @@ void BulkCreateAnalyzersRequest::fromJson(nlohmann::json& val)
 }
 
 
-std::vector<std::shared_ptr<Analyzer>>& BulkCreateAnalyzersRequest::getItems()
+std::vector<std::shared_ptr<PacketAnalyzer>>& BulkCreateAnalyzersRequest::getItems()
 {
     return m_Items;
 }

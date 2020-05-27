@@ -21,8 +21,8 @@
 
 #include "ModelBase.h"
 
-#include "AnalyzerFlowCounters.h"
 #include <string>
+#include "PacketAnalyzerFlowCounters.h"
 
 namespace swagger {
 namespace v1 {
@@ -62,15 +62,15 @@ public:
         /// <summary>
     /// 
     /// </summary>
-    std::shared_ptr<AnalyzerFlowCounters> getCounters() const;
-    void setCounters(std::shared_ptr<AnalyzerFlowCounters> value);
+    std::shared_ptr<PacketAnalyzerFlowCounters> getCounters() const;
+    void setCounters(std::shared_ptr<PacketAnalyzerFlowCounters> value);
     
 protected:
     std::string m_Id;
 
     std::string m_Analyzer_result_id;
 
-    std::shared_ptr<AnalyzerFlowCounters> m_Counters;
+    std::shared_ptr<PacketAnalyzerFlowCounters> m_Counters;
 
 };
 

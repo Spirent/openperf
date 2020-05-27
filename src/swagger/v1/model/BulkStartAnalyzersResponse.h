@@ -21,8 +21,8 @@
 
 #include "ModelBase.h"
 
-#include "AnalyzerResult.h"
 #include <vector>
+#include "PacketAnalyzerResult.h"
 
 namespace swagger {
 namespace v1 {
@@ -52,10 +52,10 @@ public:
     /// <summary>
     /// List of analyzer results
     /// </summary>
-    std::vector<std::shared_ptr<AnalyzerResult>>& getItems();
+    std::vector<std::shared_ptr<PacketAnalyzerResult>>& getItems();
     
 protected:
-    std::vector<std::shared_ptr<AnalyzerResult>> m_Items;
+    std::vector<std::shared_ptr<PacketAnalyzerResult>> m_Items;
 
 };
 
