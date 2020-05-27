@@ -31,7 +31,7 @@ class BulkCreateAnalyzersRequest(object):
                             and the value is json key in definition.
     """
     swagger_types = {
-        'items': 'list[Analyzer]'
+        'items': 'list[PacketAnalyzer]'
     }
 
     attribute_map = {
@@ -53,7 +53,7 @@ class BulkCreateAnalyzersRequest(object):
         List of packet analyzers  # noqa: E501
 
         :return: The items of this BulkCreateAnalyzersRequest.  # noqa: E501
-        :rtype: list[Analyzer]
+        :rtype: list[PacketAnalyzer]
         """
         return self._items
 
@@ -64,7 +64,7 @@ class BulkCreateAnalyzersRequest(object):
         List of packet analyzers  # noqa: E501
 
         :param items: The items of this BulkCreateAnalyzersRequest.  # noqa: E501
-        :type: list[Analyzer]
+        :type: list[PacketAnalyzer]
         """
         self._items = items
 

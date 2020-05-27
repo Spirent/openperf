@@ -5,8 +5,8 @@
 #include "core/op_core.h"
 #include "packet/analyzer/api.hpp"
 
-#include "swagger/v1/model/Analyzer.h"
-#include "swagger/v1/model/AnalyzerResult.h"
+#include "swagger/v1/model/PacketAnalyzer.h"
+#include "swagger/v1/model/PacketAnalyzerResult.h"
 #include "swagger/v1/model/RxFlow.h"
 
 namespace openperf::packet::analyzer::api {
@@ -19,7 +19,7 @@ public:
     using request_type = Pistache::Rest::Request;
     using response_type = Pistache::Http::ResponseWriter;
 
-    /* Analyzer operations */
+    /* PacketAnalyzer operations */
     void list_analyzers(const request_type& request, response_type response);
     void create_analyzers(const request_type& request, response_type response);
     void delete_analyzers(const request_type& request, response_type response);
@@ -38,7 +38,7 @@ public:
     void bulk_stop_analyzers(const request_type& request,
                              response_type response);
 
-    /* Analyzer result operations */
+    /* PacketAnalyzerResult operations */
     void list_analyzer_results(const request_type& request,
                                response_type response);
     void delete_analyzer_results(const request_type& request,
@@ -228,12 +228,12 @@ maybe_get_request_uri(const handler::request_type& request)
     return (std::nullopt);
 }
 
-static tl::expected<swagger::v1::model::Analyzer, std::string>
+static tl::expected<swagger::v1::model::PacketAnalyzer, std::string>
 parse_create_analyzer(const handler::request_type& request)
 {
     try {
         return (nlohmann::json::parse(request.body())
-                    .get<swagger::v1::model::Analyzer>());
+                    .get<swagger::v1::model::PacketAnalyzer>());
     } catch (const nlohmann::json::parse_error& e) {
         return (tl::unexpected(json_error(e.id, e.what())));
     }
@@ -249,7 +249,8 @@ void handler::create_analyzers(const request_type& request,
     }
 
     auto api_request = request_create_analyzer{
-        std::make_unique<swagger::v1::model::Analyzer>(std::move(*analyzer))};
+        std::make_unique<swagger::v1::model::PacketAnalyzer>(
+            std::move(*analyzer))};
 
     /* If the user provided an id, validate it before forwarding the request */
     if (!api_request.analyzer->getId().empty()) {

@@ -5,8 +5,8 @@
 #include "packet/analyzer/sink.hpp"
 #include "packet/analyzer/statistics/protocol/counters.hpp"
 
-#include "swagger/v1/model/Analyzer.h"
-#include "swagger/v1/model/AnalyzerResult.h"
+#include "swagger/v1/model/PacketAnalyzer.h"
+#include "swagger/v1/model/PacketAnalyzerResult.h"
 #include "swagger/v1/model/RxFlow.h"
 
 namespace openperf::packet::analyzer::api {
@@ -35,13 +35,13 @@ static void to_swagger(api::flow_counters_config src,
 
 analyzer_ptr to_swagger(const sink& src)
 {
-    auto dst = std::make_unique<swagger::v1::model::Analyzer>();
+    auto dst = std::make_unique<swagger::v1::model::PacketAnalyzer>();
 
     dst->setId(src.id());
     dst->setSourceId(src.source());
     dst->setActive(src.active());
 
-    auto config = std::make_shared<swagger::v1::model::AnalyzerConfig>();
+    auto config = std::make_shared<swagger::v1::model::PacketAnalyzerConfig>();
     to_swagger(src.protocol_counters(), config->getProtocolCounters());
     to_swagger(src.flow_counters(), config->getFlowCounters());
 
@@ -204,14 +204,14 @@ static void to_swagger(const core::uuid& result_id,
 
 static void populate_counters(
     const statistics::generic_protocol_counters& src,
-    std::shared_ptr<swagger::v1::model::AnalyzerProtocolCounters>& dst)
+    std::shared_ptr<swagger::v1::model::PacketAnalyzerProtocolCounters>& dst)
 {
     using namespace openperf::packet::analyzer::statistics;
 
     if (src.holds<protocol::ethernet>()) {
         const auto& p_src = src.get<protocol::ethernet>();
         auto p_dst = std::make_shared<
-            swagger::v1::model::AnalyzerProtocolCounters_ethernet>();
+            swagger::v1::model::PacketAnalyzerProtocolCounters_ethernet>();
 
         p_dst->setIp(p_src[protocol::ethernet::index::ether]);
         p_dst->setTimesync(p_src[protocol::ethernet::index::timesync]);
@@ -228,8 +228,8 @@ static void populate_counters(
     }
     if (src.holds<protocol::ip>()) {
         const auto& p_src = src.get<protocol::ip>();
-        auto p_dst =
-            std::make_shared<swagger::v1::model::AnalyzerProtocolCounters_ip>();
+        auto p_dst = std::make_shared<
+            swagger::v1::model::PacketAnalyzerProtocolCounters_ip>();
 
         p_dst->setIpv4(p_src[protocol::ip::index::ipv4]);
         p_dst->setIpv4Ext(p_src[protocol::ip::index::ipv4_ext]);
@@ -243,7 +243,7 @@ static void populate_counters(
     if (src.holds<protocol::ip>()) {
         const auto& p_src = src.get<protocol::protocol>();
         auto p_dst = std::make_shared<
-            swagger::v1::model::AnalyzerProtocolCounters_protocol>();
+            swagger::v1::model::PacketAnalyzerProtocolCounters_protocol>();
 
         p_dst->setTcp(p_src[protocol::protocol::index::tcp]);
         p_dst->setUdp(p_src[protocol::protocol::index::udp]);
@@ -258,7 +258,7 @@ static void populate_counters(
     if (src.holds<protocol::tunnel>()) {
         const auto& p_src = src.get<protocol::tunnel>();
         auto p_dst = std::make_shared<
-            swagger::v1::model::AnalyzerProtocolCounters_tunnel>();
+            swagger::v1::model::PacketAnalyzerProtocolCounters_tunnel>();
 
         p_dst->setIp(p_src[protocol::tunnel::index::ip]);
         p_dst->setGre(p_src[protocol::tunnel::index::gre]);
@@ -279,7 +279,7 @@ static void populate_counters(
     if (src.holds<protocol::inner_ethernet>()) {
         const auto& p_src = src.get<protocol::inner_ethernet>();
         auto p_dst = std::make_shared<
-            swagger::v1::model::AnalyzerProtocolCounters_ethernet>();
+            swagger::v1::model::PacketAnalyzerProtocolCounters_ethernet>();
 
         p_dst->setIp(p_src[protocol::inner_ethernet::index::ether]);
         p_dst->setVlan(p_src[protocol::inner_ethernet::index::vlan]);
@@ -289,8 +289,8 @@ static void populate_counters(
     }
     if (src.holds<protocol::inner_ip>()) {
         const auto& p_src = src.get<protocol::inner_ip>();
-        auto p_dst =
-            std::make_shared<swagger::v1::model::AnalyzerProtocolCounters_ip>();
+        auto p_dst = std::make_shared<
+            swagger::v1::model::PacketAnalyzerProtocolCounters_ip>();
 
         p_dst->setIpv4(p_src[protocol::inner_ip::index::ipv4]);
         p_dst->setIpv4Ext(p_src[protocol::inner_ip::index::ipv4_ext]);
@@ -306,7 +306,7 @@ static void populate_counters(
     if (src.holds<protocol::inner_ip>()) {
         const auto& p_src = src.get<protocol::inner_protocol>();
         auto p_dst = std::make_shared<
-            swagger::v1::model::AnalyzerProtocolCounters_protocol>();
+            swagger::v1::model::PacketAnalyzerProtocolCounters_protocol>();
 
         p_dst->setTcp(p_src[protocol::inner_protocol::index::tcp]);
         p_dst->setUdp(p_src[protocol::inner_protocol::index::udp]);
@@ -330,11 +330,11 @@ struct is_duration<std::chrono::duration<Rep, Period>> : std::true_type
 template <typename SummaryTuple>
 std::enable_if_t<
     is_duration<typename SummaryTuple::pop_t>::value,
-    std::shared_ptr<swagger::v1::model::AnalyzerFlowSummaryCounters>>
+    std::shared_ptr<swagger::v1::model::PacketAnalyzerFlowSummaryCounters>>
 to_swagger(const SummaryTuple& src, statistics::stat_t count)
 {
-    auto dst =
-        std::make_shared<swagger::v1::model::AnalyzerFlowSummaryCounters>();
+    auto dst = std::make_shared<
+        swagger::v1::model::PacketAnalyzerFlowSummaryCounters>();
 
     dst->setTotal(src.total.count());
     if (src.total.count()) {
@@ -358,11 +358,11 @@ to_swagger(const SummaryTuple& src, statistics::stat_t count)
 template <typename SummaryTuple>
 std::enable_if_t<
     std::is_arithmetic_v<typename SummaryTuple::pop_t>,
-    std::shared_ptr<swagger::v1::model::AnalyzerFlowSummaryCounters>>
+    std::shared_ptr<swagger::v1::model::PacketAnalyzerFlowSummaryCounters>>
 to_swagger(const SummaryTuple& src, statistics::stat_t count)
 {
-    auto dst =
-        std::make_shared<swagger::v1::model::AnalyzerFlowSummaryCounters>();
+    auto dst = std::make_shared<
+        swagger::v1::model::PacketAnalyzerFlowSummaryCounters>();
 
     dst->setTotal(src.total);
     if (src.total) {
@@ -397,7 +397,7 @@ std::string to_rfc3339(std::chrono::time_point<Clock> from)
 
 static void populate_counters(
     const statistics::generic_flow_counters& src,
-    std::shared_ptr<swagger::v1::model::AnalyzerFlowCounters>& dst)
+    std::shared_ptr<swagger::v1::model::PacketAnalyzerFlowCounters>& dst)
 {
     using namespace openperf::packet::analyzer::statistics;
 
@@ -414,7 +414,7 @@ static void populate_counters(
     if (src.holds<flow::sequencing>()) {
         const auto& s_src = src.get<flow::sequencing>();
         auto s_dst = std::make_shared<
-            swagger::v1::model::AnalyzerFlowCounters_sequence>();
+            swagger::v1::model::PacketAnalyzerFlowCounters_sequence>();
 
         s_dst->setDropped(s_src.dropped);
         s_dst->setDuplicate(s_src.duplicate);
@@ -427,7 +427,7 @@ static void populate_counters(
     }
     if (src.holds<flow::interarrival>()) {
         auto s_dst = std::make_shared<
-            swagger::v1::model::AnalyzerFlowCounters_interarrival>();
+            swagger::v1::model::PacketAnalyzerFlowCounters_interarrival>();
 
         s_dst->setSummary(
             to_swagger(src.get<flow::interarrival>(), frame_count.count - 1));
@@ -437,7 +437,7 @@ static void populate_counters(
     }
     if (src.holds<flow::frame_length>()) {
         auto s_dst = std::make_shared<
-            swagger::v1::model::AnalyzerFlowCounters_frame_length>();
+            swagger::v1::model::PacketAnalyzerFlowCounters_frame_length>();
 
         s_dst->setSummary(
             to_swagger(src.get<flow::frame_length>(), frame_count.count));
@@ -447,7 +447,7 @@ static void populate_counters(
     }
     if (src.holds<flow::jitter_ipdv>()) {
         auto s_dst = std::make_shared<
-            swagger::v1::model::AnalyzerFlowCounters_jitter_ipdv>();
+            swagger::v1::model::PacketAnalyzerFlowCounters_jitter_ipdv>();
 
         s_dst->setSummary(
             to_swagger(src.get<flow::jitter_ipdv>(), frame_count.count));
@@ -457,7 +457,7 @@ static void populate_counters(
     }
     if (src.holds<flow::jitter_rfc>()) {
         auto s_dst = std::make_shared<
-            swagger::v1::model::AnalyzerFlowCounters_jitter_rfc>();
+            swagger::v1::model::PacketAnalyzerFlowCounters_jitter_rfc>();
 
         s_dst->setSummary(
             to_swagger(src.get<flow::jitter_rfc>(), frame_count.count));
@@ -467,7 +467,7 @@ static void populate_counters(
     }
     if (src.holds<flow::latency>()) {
         auto s_dst = std::make_shared<
-            swagger::v1::model::AnalyzerFlowCounters_latency>();
+            swagger::v1::model::PacketAnalyzerFlowCounters_latency>();
 
         s_dst->setSummary(
             to_swagger(src.get<flow::latency>(), frame_count.count));
@@ -479,21 +479,21 @@ static void populate_counters(
 
 analyzer_result_ptr to_swagger(const core::uuid& id, const sink_result& src)
 {
-    auto dst = std::make_unique<swagger::v1::model::AnalyzerResult>();
+    auto dst = std::make_unique<swagger::v1::model::PacketAnalyzerResult>();
 
     dst->setId(core::to_string(id));
     dst->setAnalyzerId(src.parent.id());
     dst->setActive(src.parent.active());
 
     auto protocol_counters =
-        std::make_shared<swagger::v1::model::AnalyzerProtocolCounters>();
+        std::make_shared<swagger::v1::model::PacketAnalyzerProtocolCounters>();
     populate_counters(
         sum_counters(src.parent.protocol_counters(), src.protocols()),
         protocol_counters);
     dst->setProtocolCounters(protocol_counters);
 
     auto flow_counters =
-        std::make_shared<swagger::v1::model::AnalyzerFlowCounters>();
+        std::make_shared<swagger::v1::model::PacketAnalyzerFlowCounters>();
     populate_counters(sum_counters(src.parent.flow_counters(), src.flows()),
                       flow_counters);
     dst->setFlowCounters(flow_counters);
@@ -512,7 +512,7 @@ rx_flow_ptr to_swagger(const core::uuid& id,
     dst->setId(core::to_string(id));
     dst->setAnalyzerResultId(core::to_string(result_id));
     auto flow_counters =
-        std::make_shared<swagger::v1::model::AnalyzerFlowCounters>();
+        std::make_shared<swagger::v1::model::PacketAnalyzerFlowCounters>();
     populate_counters(counters, flow_counters);
     dst->setCounters(flow_counters);
 

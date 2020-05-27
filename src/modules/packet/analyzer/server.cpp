@@ -2,8 +2,8 @@
 
 #include "packet/analyzer/server.hpp"
 
-#include "swagger/v1/model/Analyzer.h"
-#include "swagger/v1/model/AnalyzerResult.h"
+#include "swagger/v1/model/PacketAnalyzer.h"
+#include "swagger/v1/model/PacketAnalyzerResult.h"
 #include "swagger/v1/model/RxFlow.h"
 
 #include "utils/overloaded_visitor.hpp"

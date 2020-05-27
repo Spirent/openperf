@@ -71,11 +71,11 @@ void RxFlow::setAnalyzerResultId(std::string value)
     m_Analyzer_result_id = value;
     
 }
-std::shared_ptr<AnalyzerFlowCounters> RxFlow::getCounters() const
+std::shared_ptr<PacketAnalyzerFlowCounters> RxFlow::getCounters() const
 {
     return m_Counters;
 }
-void RxFlow::setCounters(std::shared_ptr<AnalyzerFlowCounters> value)
+void RxFlow::setCounters(std::shared_ptr<PacketAnalyzerFlowCounters> value)
 {
     m_Counters = value;
     

@@ -3,8 +3,8 @@
 #include "utils/overloaded_visitor.hpp"
 #include "utils/variant_index.hpp"
 
-#include "swagger/v1/model/Analyzer.h"
-#include "swagger/v1/model/AnalyzerResult.h"
+#include "swagger/v1/model/PacketAnalyzer.h"
+#include "swagger/v1/model/PacketAnalyzerResult.h"
 #include "swagger/v1/model/RxFlow.h"
 
 namespace openperf::packet::analyzer::api {
@@ -355,7 +355,7 @@ reply_error to_error(error_type type, int value)
 } // namespace openperf::packet::analyzer::api
 
 namespace swagger::v1::model {
-void from_json(const nlohmann::json& j, Analyzer& analyzer)
+void from_json(const nlohmann::json& j, PacketAnalyzer& analyzer)
 {
     /*
      * We can't call analyzer's fromJson function because the user
@@ -375,7 +375,7 @@ void from_json(const nlohmann::json& j, Analyzer& analyzer)
     }
 
     if (j.find("config") != j.end() && !j["config"].is_null()) {
-        auto config = std::make_shared<AnalyzerConfig>();
+        auto config = std::make_shared<PacketAnalyzerConfig>();
         config->fromJson(const_cast<nlohmann::json&>(j["config"]));
         analyzer.setConfig(config);
     }

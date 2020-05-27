@@ -12,7 +12,7 @@ paths:
     get:
       operationId: ListAnalyzers
       tags:
-        - Analyzers
+        - PacketAnalyzers
       summary: List packet analyzers
       description: |
         The `analyzers` endpoint returns all packet analyzers that are
@@ -29,11 +29,11 @@ paths:
           schema:
             type: array
             items:
-              $ref: "#/definitions/Analyzer"
+              $ref: "#/definitions/PacketAnalyzer"
     post:
       operationId: CreateAnalyzer
       tags:
-        - Analyzers
+        - PacketAnalyzers
       summary: Create a packet analyzer
       description: Create a new packet analyzer.
       parameters:
@@ -42,7 +42,7 @@ paths:
           description: New packet analyzer
           required: true
           schema:
-            $ref: "#/definitions/Analyzer"
+            $ref: "#/definitions/PacketAnalyzer"
       responses:
         201:
           description: Created
@@ -51,11 +51,11 @@ paths:
               description: URI of created analyzer
               type: string
           schema:
-            $ref: "#/definitions/Analyzer"
+            $ref: "#/definitions/PacketAnalyzer"
     delete:
       operationId: DeleteAnalyzers
       tags:
-        - Analyzers
+        - PacketAnalyzers
       summary: Delete all packet analyzers
       description: |
         Delete all inactive packet analyzers and their results. Idempotent.
@@ -67,7 +67,7 @@ paths:
     get:
       operationId: GetAnalyzer
       tags:
-        - Analyzers
+        - PacketAnalyzers
       summary: Get a packet analyzer
       description: Return a packet analyzer by id.
       parameters:
@@ -76,11 +76,11 @@ paths:
         200:
           description: Success
           schema:
-            $ref: "#/definitions/Analyzer"
+            $ref: "#/definitions/PacketAnalyzer"
     delete:
       operationId: DeleteAnalyzer
       tags:
-        - Analyzers
+        - PacketAnalyzers
       summary: Delete a packet analyzer
       description: |
         Delete a stopped packet analyzer by id. Also delete all results
@@ -95,7 +95,7 @@ paths:
     post:
       operationId: StartAnalyzer
       tags:
-        - Analyzers
+        - PacketAnalyzers
       summary: Start analyzing and collecting packet statistics.
       description: |
         Used to start a non-running analyzer. Creates a new analyzer
@@ -110,13 +110,13 @@ paths:
               description: URI to created analyzer result object
               type: string
           schema:
-            $ref: "#/definitions/AnalyzerResult"
+            $ref: "#/definitions/PacketAnalyzerResult"
 
   /analyzers/{id}/stop:
     post:
       operationId: StopAnalyzer
       tags:
-        - Analyzers
+        - PacketAnalyzers
       summary: Stop analyzing and collecting packet statistics
       description: Use to halt a running analyzer. Idempotent.
       parameters:
@@ -129,7 +129,7 @@ paths:
     post:
       operationId: BulkCreateAnalyzers
       tags:
-        - Analyzers
+        - PacketAnalyzers
       summary: Bulk create packet analyzers
       description: |
         Create multiple packet analyzers. Requests are processed in an
@@ -149,7 +149,7 @@ paths:
                 type: array
                 description: List of packet analyzers
                 items:
-                  $ref: "#/definitions/Analyzer"
+                  $ref: "#/definitions/PacketAnalyzer"
                 minItems: 1
             required:
               - items
@@ -164,7 +164,7 @@ paths:
                 type: array
                 description: List of packet analyzers
                 items:
-                  $ref: "#/definitions/Analyzer"
+                  $ref: "#/definitions/PacketAnalyzer"
                 minItems: 1
             required:
               - items
@@ -173,7 +173,7 @@ paths:
     post:
       operationId: BulkDeleteAnalyzers
       tags:
-        - Analyzers
+        - PacketAnalyzers
       summary: Bulk delete packet analyzers
       description: |
         Delete multiple packet analyzers in a best-effort manner. Analyzers
@@ -205,7 +205,7 @@ paths:
     post:
       operationId: BulkStartAnalyzers
       tags:
-        - Analyzers
+        - PacketAnalyzers
       summary: Bulk start packet analyzers
       description: Start multiple packet analyzers simultaneously
       parameters:
@@ -237,7 +237,7 @@ paths:
                 type: array
                 description: List of analyzer results
                 items:
-                  $ref: "#/definitions/AnalyzerResult"
+                  $ref: "#/definitions/PacketAnalyzerResult"
                 minItems: 1
             required:
               - items
@@ -246,7 +246,7 @@ paths:
     post:
       operationId: BulkStopAnalyzers
       tags:
-        - Analyzers
+        - PacketAnalyzers
       summary: Bulk stop packet analyzers
       description: Stop multiple packet analyzers simultaneously
       parameters:
@@ -275,7 +275,7 @@ paths:
     get:
       operationId: ListAnalyzerResults
       tags:
-        - Analyzers
+        - PacketAnalyzers
       summary: List analyzer results
       description: |
         The `analyzer-results` endpoint returns all analyzer results created
@@ -297,11 +297,11 @@ paths:
           schema:
             type: array
             items:
-              $ref: "#/definitions/AnalyzerResult"
+              $ref: "#/definitions/PacketAnalyzerResult"
     delete:
       operationId: DeleteAnalyzerResults
       tags:
-        - Analyzers
+        - PacketAnalyzers
       summary: Delete all analyzer results
       description: Delete all inactive packet analyzer results
       responses:
@@ -312,7 +312,7 @@ paths:
     get:
       operationId: GetAnalyzerResult
       tags:
-        - Analyzers
+        - PacketAnalyzers
       summary: Get a packet analyzer result
       description: Returns results from a packet analyzer by result id.
       parameters:
@@ -321,11 +321,11 @@ paths:
         200:
           description: Success
           schema:
-            $ref: "#/definitions/AnalyzerResult"
+            $ref: "#/definitions/PacketAnalyzerResult"
     delete:
       operationId: DeleteAnalyzerResult
       tags:
-        - Analyzers
+        - PacketAnalyzers
       summary: Delete a packet analyzer result
       description: |
         Delete an inactive packet analyzer result. Also deletes all child
@@ -340,7 +340,7 @@ paths:
     get:
       operationId: ListRxFlows
       tags:
-        - Analyzers
+        - PacketAnalyzers
       summary: List received packet flows
       description: |
         The `rx-flows` endpoint returns all packet flows that have been
@@ -368,7 +368,7 @@ paths:
     get:
       operationId: GetRxFlow
       tags:
-        - Analyzers
+        - PacketAnalyzers
       summary: Get packet flow counters for a single flow
       description: Returns packet flow counters by id.
       parameters:
@@ -380,7 +380,7 @@ paths:
             $ref: "#/definitions/RxFlow"
 
 definitions:
-  Analyzer:
+  PacketAnalyzer:
     type: object
     description: |
       Packet analyzer; analyzers count received traffic and generate statistics
@@ -399,14 +399,14 @@ definitions:
         description: |
           Indicates whether this object is currently analyzing packets or not.
       config:
-        $ref: "#/definitions/AnalyzerConfig"
+        $ref: "#/definitions/PacketAnalyzerConfig"
     required:
       - id
       - source_id
       - active
       - config
 
-  AnalyzerConfig:
+  PacketAnalyzerConfig:
     type: object
     description: |
       Packet analyzer configuration; the configuration specifies what packets
@@ -456,7 +456,7 @@ definitions:
       - protocol_counters
       - flow_counters
 
-  AnalyzerResult:
+  PacketAnalyzerResult:
     type: object
     description: Results collected by a running packet analyzer
     properties:
@@ -470,9 +470,9 @@ definitions:
         type: boolean
         description: Indicates whether the result is currently receiving updates
       protocol_counters:
-        $ref: "#/definitions/AnalyzerProtocolCounters"
+        $ref: "#/definitions/PacketAnalyzerProtocolCounters"
       flow_counters:
-        $ref: "#/definitions/AnalyzerFlowCounters"
+        $ref: "#/definitions/PacketAnalyzerFlowCounters"
       flows:
         type: array
         description: |
@@ -487,7 +487,7 @@ definitions:
       - flow_counters
       - flows
 
-  AnalyzerProtocolCounters:
+  PacketAnalyzerProtocolCounters:
     type: object
     description: Result counters for protocols
     properties:
@@ -833,7 +833,7 @@ definitions:
           - icmp
           - non_fragmented
 
-  AnalyzerFlowSummaryCounters:
+  PacketAnalyzerFlowSummaryCounters:
     type: object
     description: Summary results for per-packet statistics
     properties:
@@ -860,7 +860,7 @@ definitions:
     required:
       - total
 
-  AnalyzerFlowCounters:
+  PacketAnalyzerFlowCounters:
     type: object
     description: Result counters for flows
     properties:
@@ -869,7 +869,7 @@ definitions:
         description: Frame length result counters
         properties:
           summary:
-            $ref: "#/definitions/AnalyzerFlowSummaryCounters"
+            $ref: "#/definitions/PacketAnalyzerFlowSummaryCounters"
           units:
             type: string
             description: Frame length result units
@@ -883,7 +883,7 @@ definitions:
         description: Inter-arrival time result counters
         properties:
           summary:
-            $ref: "#/definitions/AnalyzerFlowSummaryCounters"
+            $ref: "#/definitions/PacketAnalyzerFlowSummaryCounters"
           units:
             type: string
             description: Inter-arrival time measurement units
@@ -897,7 +897,7 @@ definitions:
         description: Jitter (RFC 3393) result counters
         properties:
           summary:
-            $ref: "#/definitions/AnalyzerFlowSummaryCounters"
+            $ref: "#/definitions/PacketAnalyzerFlowSummaryCounters"
           units:
             type: string
             description: Jitter time measurement units
@@ -911,7 +911,7 @@ definitions:
         description: Jitter (RFC 4737) result counters
         properties:
           summary:
-            $ref: "#/definitions/AnalyzerFlowSummaryCounters"
+            $ref: "#/definitions/PacketAnalyzerFlowSummaryCounters"
           units:
             type: string
             description: Jitter time measurement units
@@ -925,7 +925,7 @@ definitions:
         description: Latency result counters
         properties:
           summary:
-            $ref: "#/definitions/AnalyzerFlowSummaryCounters"
+            $ref: "#/definitions/PacketAnalyzerFlowSummaryCounters"
           units:
             type: string
             description: Latency measurement units
@@ -1002,7 +1002,7 @@ definitions:
         type: string
         description: Unique analyzer result identifier that observed this flow
       counters:
-        $ref: "#/definitions/AnalyzerFlowCounters"
+        $ref: "#/definitions/PacketAnalyzerFlowCounters"
     required:
       - id
       - analyzer_result_id

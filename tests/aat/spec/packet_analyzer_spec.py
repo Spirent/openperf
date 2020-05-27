@@ -22,13 +22,13 @@ def get_first_port_id(api_client):
 
 
 def analyzer_model(api_client, protocol_counters = None, flow_counters = None):
-    config = client.models.AnalyzerConfig()
+    config = client.models.PacketAnalyzerConfig()
     if protocol_counters:
         config.protocol_counters = protocol_counters
     if flow_counters:
         config.flow_counters = flow_counters
 
-    ta = client.models.Analyzer()
+    ta = client.models.PacketAnalyzer()
     ta.source_id = get_first_port_id(api_client)
     ta.config = config
 
@@ -41,7 +41,7 @@ with description('Packet Analyzer,', 'packet_analyzer') as self:
         with before.all:
             service = Service(CONFIG.service())
             self.process = service.start()
-            self.api = client.api.AnalyzersApi(service.client())
+            self.api = client.api.PacketAnalyzersApi(service.client())
 
         with description('invalid HTTP methods,'):
             with description('/packet/analyzers,'):

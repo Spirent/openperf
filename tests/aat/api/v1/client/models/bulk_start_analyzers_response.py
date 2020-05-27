@@ -31,7 +31,7 @@ class BulkStartAnalyzersResponse(object):
                             and the value is json key in definition.
     """
     swagger_types = {
-        'items': 'list[AnalyzerResult]'
+        'items': 'list[PacketAnalyzerResult]'
     }
 
     attribute_map = {
@@ -53,7 +53,7 @@ class BulkStartAnalyzersResponse(object):
         List of analyzer results  # noqa: E501
 
         :return: The items of this BulkStartAnalyzersResponse.  # noqa: E501
-        :rtype: list[AnalyzerResult]
+        :rtype: list[PacketAnalyzerResult]
         """
         return self._items
 
@@ -64,7 +64,7 @@ class BulkStartAnalyzersResponse(object):
         List of analyzer results  # noqa: E501
 
         :param items: The items of this BulkStartAnalyzersResponse.  # noqa: E501
-        :type: list[AnalyzerResult]
+        :type: list[PacketAnalyzerResult]
         """
         self._items = items
 

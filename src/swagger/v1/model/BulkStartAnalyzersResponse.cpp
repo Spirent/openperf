@@ -58,11 +58,11 @@ void BulkStartAnalyzersResponse::fromJson(nlohmann::json& val)
             
             if(item.is_null())
             {
-                m_Items.push_back( std::shared_ptr<AnalyzerResult>(nullptr) );
+                m_Items.push_back( std::shared_ptr<PacketAnalyzerResult>(nullptr) );
             }
             else
             {
-                std::shared_ptr<AnalyzerResult> newItem(new AnalyzerResult());
+                std::shared_ptr<PacketAnalyzerResult> newItem(new PacketAnalyzerResult());
                 newItem->fromJson(item);
                 m_Items.push_back( newItem );
             }
@@ -73,7 +73,7 @@ void BulkStartAnalyzersResponse::fromJson(nlohmann::json& val)
 }
 
 
-std::vector<std::shared_ptr<AnalyzerResult>>& BulkStartAnalyzersResponse::getItems()
+std::vector<std::shared_ptr<PacketAnalyzerResult>>& BulkStartAnalyzersResponse::getItems()
 {
     return m_Items;
 }
