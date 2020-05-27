@@ -16,11 +16,11 @@ namespace openperf::block::device {
 
 tl::expected<virtual_device_descriptors, int> device::vopen()
 {
-    auto open_vdev = [this](std::atomic_int& fd) {
+    auto open_vdev = [&](std::atomic_int& fd, int flags) {
          if (fd > 0)
             return fd.load();
 
-        if ((fd = open(get_path().c_str(), O_RDWR | O_CREAT | O_DIRECT | O_SYNC,
+        if ((fd = open(get_path().c_str(), flags,
                         S_IRUSR | S_IWUSR)) < 0) {
             return -1;
         }
@@ -28,8 +28,8 @@ tl::expected<virtual_device_descriptors, int> device::vopen()
         return fd.load();
     };
 
-    m_read_fd = open_vdev(m_read_fd);
-    m_write_fd = open_vdev(m_write_fd);
+    m_write_fd = open_vdev(m_write_fd, O_WRONLY | O_CREAT | O_DSYNC);
+    m_read_fd = open_vdev(m_read_fd, O_RDONLY);
 
     if (m_read_fd < 0 || m_write_fd < 0) {
         vclose();
