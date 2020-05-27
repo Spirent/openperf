@@ -281,7 +281,7 @@ void block_task::spin()
 
     if (!m_task_config.ops_per_sec || !m_task_config.block_size)
         throw std::runtime_error(
-            "Could not spin worker: no block operations was specified");
+            "Could not spin worker: no block operations were specified");
 
 
     // Reduce the effect of ZMQ operations on total Block I/O operations amount
