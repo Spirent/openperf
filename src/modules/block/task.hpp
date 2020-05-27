@@ -14,7 +14,7 @@ using worker_pattern = model::block_generation_pattern;
 using time_point = std::chrono::time_point<timesync::chrono::realtime>;
 using ref_clock = timesync::chrono::monotime;
 using realtime = timesync::chrono::realtime;
-using duration = std::chrono::duration<int64_t, std::nano>;
+using duration = std::chrono::nanoseconds;
 
 enum task_operation {
     READ = 0,
