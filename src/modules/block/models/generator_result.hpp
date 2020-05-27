@@ -9,7 +9,7 @@
 namespace openperf::block::model {
 
 using time_point = std::chrono::time_point<timesync::chrono::realtime>;
-using duration = std::chrono::duration<uint64_t, std::nano>;
+using duration = std::chrono::nanoseconds;
 
 struct block_generator_statistics
 {
