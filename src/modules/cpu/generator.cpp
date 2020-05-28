@@ -75,7 +75,7 @@ model::generator_result generator::statistics() const
 
         std::transform(w_stat.targets.begin(), w_stat.targets.end(),
             std::back_inserter(core_stat.targets),
-            [](auto & i) -> model::generator_target_stats {
+            [](const auto & i) -> model::generator_target_stats {
                 return { .operations = i.operations };
             });
 
@@ -138,7 +138,7 @@ task_cpu_config generator::to_task_config(const model::generator_core_config& co
 
     std::transform(conf.targets.begin(), conf.targets.end(),
         std::back_inserter(w_config.targets),
-        [](auto & i) -> target_config {
+        [](const auto & i) -> target_config {
             return {
                 .set = i.instruction_set,
                 .weight = i.weight,

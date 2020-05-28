@@ -378,13 +378,13 @@ std::shared_ptr<CpuGenerator> to_swagger(const model::generator & model)
     auto cores = model.config().cores;
     std::transform(cores.begin(), cores.end(),
         std::back_inserter(cpu_config->getCores()),
-        [](auto & core_config) {
+        [](const auto & core_config) {
             auto conf = std::make_shared<CpuGeneratorCoreConfig>();
             conf->setUtilization(core_config.utilization);
 
             std::transform(core_config.targets.begin(), core_config.targets.end(),
                 std::back_inserter(conf->getTargets()),
-                [](auto & t) {
+                [](const auto & t) {
                     auto target = std::make_shared<CpuGeneratorCoreConfig_targets>();
                     target->setDataType(to_string(t.data_type));
                     target->setInstructionSet(to_string(t.instruction_set));
@@ -413,9 +413,9 @@ std::shared_ptr<CpuGeneratorResult> to_swagger(const model::generator_result& re
     cpu_stats->setSteal(stats.steal.count());
     cpu_stats->setError(stats.error.count());
 
-    for (auto & c_stats : stats.cores) {
+    for (const auto & c_stats : stats.cores) {
         auto core_stats = std::make_shared<CpuGeneratorCoreStats>();
-        for (auto & c_target : c_stats.targets) {
+        for (const auto & c_target : c_stats.targets) {
             auto target = std::make_shared<CpuGeneratorTargetStats>();
             target->setOperations(c_target.operations);
             core_stats->getTargets().push_back(target);

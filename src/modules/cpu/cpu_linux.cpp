@@ -8,6 +8,7 @@
 
 #include <sys/resource.h>
 #include <sys/time.h>
+#include <sys/utsname.h>
 
 namespace openperf::cpu::internal {
 
@@ -115,9 +116,9 @@ uint16_t cpu_cache_line_size()
 
 std::string cpu_architecture()
 {
-    if (sizeof(void*) == 8)
-        return "x86_64";
-    return "x86";
+    auto info = utsname{};
+    uname(&info);
+    return info.machine;
 }
 
 } // namespace openperf::cpu::internal

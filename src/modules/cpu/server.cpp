@@ -16,7 +16,7 @@ reply_msg server::handle_request(const request_cpu_generator_list&)
     auto list = m_generator_stack.list();
     std::transform(list.begin(), list.end(),
         std::back_inserter(reply.generators),
-        [](auto & i) {
+        [](const auto & i) {
             return std::make_unique<model::generator>(
                 model::generator(*i));
         });
@@ -156,7 +156,7 @@ reply_msg server::handle_request(const request_cpu_generator_result_list&)
     auto list = m_generator_stack.list_statistics();
     std::transform(list.begin(), list.end(),
         std::back_inserter(reply.results),
-        [](auto & i) {
+        [](const auto & i) {
             return std::make_unique<model::generator_result>(i);
         });
 

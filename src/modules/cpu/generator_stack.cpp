@@ -9,7 +9,7 @@ std::vector<generator_stack::generator_ptr> generator_stack::list() const
     std::vector<generator_ptr> cpu_generators_list;
     std::transform(m_generators.begin(), m_generators.end(),
         std::back_inserter(cpu_generators_list),
-        [](auto & i) { return i.second; });
+        [](const auto & i) { return i.second; });
 
     return cpu_generators_list;
 }
