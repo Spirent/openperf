@@ -3,8 +3,8 @@
 
 #include "core/op_core.h"
 #include "config/op_config_file.hpp"
+#include "config/op_config_prefix.hpp"
 #include "packetio/drivers/dpdk/arg_parser.hpp"
-#include "socket/server/api_server_options.h"
 
 #include <iostream>
 
@@ -49,7 +49,7 @@ static bool have_file_prefix_arg(std::vector<std::string>& args)
     return (false);
 }
 
-static void add_file_prefix_arg(const char* prefix,
+static void add_file_prefix_arg(std::string_view prefix,
                                 std::vector<std::string>& args)
 {
     args.emplace_back("--file-prefix");
@@ -178,9 +178,8 @@ std::vector<std::string> dpdk_args()
         add_log_level_arg(op_log_level_get(), to_return);
     }
     if (!have_file_prefix_arg(to_return)) {
-        if (auto prefix = api_server_options_prefix_option_get();
-            prefix != nullptr && prefix[0] != '\0') {
-            add_file_prefix_arg(prefix, to_return);
+        if (auto prefix = config::get_prefix()) {
+            add_file_prefix_arg(*prefix, to_return);
         }
     }
     if (dpdk_test_mode() && !have_no_pci_arg(to_return)) {
