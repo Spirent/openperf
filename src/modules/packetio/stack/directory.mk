@@ -14,6 +14,7 @@ PIO_SOURCES += \
 	stack/netif_wrapper.cpp \
 	stack/tcp_in.c \
 	stack/tcp_out.c \
+	stack/tcp_stubs.c \
 	stack/tcpip.cpp \
 	stack/ipv6_netifapi.c
 
