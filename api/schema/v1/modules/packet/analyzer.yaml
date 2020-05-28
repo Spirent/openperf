@@ -485,7 +485,6 @@ definitions:
       - active
       - protocol_counters
       - flow_counters
-      - flows
 
   AnalyzerProtocolCounters:
     type: object
@@ -986,7 +985,7 @@ definitions:
         format: date-time
       timestamp_last:
         type: string
-        description: Timestamp of last received packed
+        description: Timestamp of last received packet
         format: date-time
     required:
       - frame_count

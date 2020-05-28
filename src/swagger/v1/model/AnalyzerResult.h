@@ -82,7 +82,9 @@ public:
     /// List of unique flow ids included in stats. Individual flow statistics may be queried via the &#x60;rx-flows&#x60; endpoint. 
     /// </summary>
     std::vector<std::string>& getFlows();
-    
+    bool flowsIsSet() const;
+    void unsetFlows();
+
 protected:
     std::string m_Id;
 
@@ -95,7 +97,7 @@ protected:
     std::shared_ptr<AnalyzerFlowCounters> m_Flow_counters;
 
     std::vector<std::string> m_Flows;
-
+    bool m_FlowsIsSet;
 };
 
 }

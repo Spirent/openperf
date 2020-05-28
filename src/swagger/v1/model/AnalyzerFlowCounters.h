@@ -109,7 +109,7 @@ public:
     bool timestampFirstIsSet() const;
     void unsetTimestamp_first();
     /// <summary>
-    /// Timestamp of last received packed
+    /// Timestamp of last received packet
     /// </summary>
     std::string getTimestampLast() const;
     void setTimestampLast(std::string value);

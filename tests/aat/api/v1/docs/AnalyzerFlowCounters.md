@@ -11,7 +11,7 @@ Name | Type | Description | Notes
 **sequence** | [**AnalyzerFlowCountersSequence**](AnalyzerFlowCountersSequence.md) |  | [optional] 
 **frame_count** | **int** | Number of received packets | 
 **timestamp_first** | **datetime** | Timestamp of first received packet | [optional] 
-**timestamp_last** | **datetime** | Timestamp of last received packed | [optional] 
+**timestamp_last** | **datetime** | Timestamp of last received packet | [optional] 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 
