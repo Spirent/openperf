@@ -22,7 +22,8 @@
 #include "socket/server/api_server.hpp"
 #include "core/op_core.h"
 #include "core/op_uuid.hpp"
-#include "op_config_file.hpp"
+#include "config/op_config_file.hpp"
+#include "config/op_config_prefix.hpp"
 
 namespace openperf::socket::api {
 
@@ -43,22 +44,13 @@ bool unlink_stale_files()
     return (result.value_or(false));
 }
 
-std::string prefix_option()
-{
-    auto result = config::file::op_config_get_param<OP_OPTION_TYPE_STRING>(
-        "modules.socket.prefix");
-
-    return (result.value_or(std::string()));
-}
-
 static openperf::memory::shared_segment create_shared_memory(size_t size)
 {
-    auto prefix_name = prefix_option();
+    auto prefix_name = config::get_prefix();
 
     auto shared_segment_name =
-        (prefix_name.length() > 0
-             ? std::string(api::key) + ".memory." + prefix_name
-             : std::string(api::key) + ".memory");
+        (prefix_name ? std::string(api::key) + ".memory." + *prefix_name
+                     : std::string(api::key) + ".memory");
     if (access((std::string(shm_file_prefix) + shared_segment_name).c_str(),
                F_OK)
             != -1
@@ -100,8 +92,8 @@ create_unix_socket(const std::string_view path, int type)
 {
     // Is there a prefix for the path?
     std::string full_path(path);
-    if (auto prefix_name = prefix_option(); prefix_name.length() > 0) {
-        full_path += "." + prefix_name;
+    if (auto prefix_name = config::get_prefix()) {
+        full_path += "." + *prefix_name;
     }
 
     if (access(full_path.c_str(), F_OK) != -1 && unlink_stale_files()) {
@@ -363,12 +355,3 @@ void server::handle_api_error(std::any arg)
 }
 
 } // namespace openperf::socket::api
-
-extern "C" {
-
-const char* api_server_options_prefix_option_get(void)
-{
-    static std::string prefix_opt = openperf::socket::api::prefix_option();
-    return (prefix_opt.c_str());
-}
-}

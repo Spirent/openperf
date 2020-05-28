@@ -6,10 +6,6 @@ MAKE_OPTION_DATA(socket,
                  MAKE_OPT("Force removal of stale files",
                           "modules.socket.force-unlink",
                           'f',
-                          OP_OPTION_TYPE_NONE),
-                 MAKE_OPT("Prefix for running multiple instances",
-                          "modules.socket.prefix",
-                          0,
-                          OP_OPTION_TYPE_STRING), );
+                          OP_OPTION_TYPE_NONE), );
 
 REGISTER_CLI_OPTIONS(socket)
