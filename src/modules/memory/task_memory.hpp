@@ -3,7 +3,9 @@
 
 #include <atomic>
 #include <vector>
+#include <chrono>
 
+#include "timesync/chrono.hpp"
 #include "utils/worker/task.hpp"
 #include "memory/io_pattern.hpp"
 #include "memory/memory_stat.hpp"
@@ -25,6 +27,8 @@ struct task_memory_config
 class task_memory
     : public openperf::utils::worker::task<task_memory_config, memory_stat>
 {
+    using chronometer = openperf::timesync::chrono::monotime;
+
 public:
     struct total_t
     {
