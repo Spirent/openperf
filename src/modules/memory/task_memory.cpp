@@ -11,13 +11,13 @@
 
 namespace openperf::memory::internal {
 
-using namespace std::chrono_literals;
-using openperf::utils::op_pseudo_random_fill;
-
 constexpr auto QUANTA = 10ms;
 constexpr size_t MAX_SPIN_OPS = 5000;
 
-auto calc_ops_and_sleep(const task_memory::total_t& total, size_t ops_per_sec)
+using namespace std::chrono_literals;
+using openperf::utils::op_pseudo_random_fill;
+
+auto calc_ops_and_sleep(const task_memory::stat_t& total, size_t ops_per_sec)
 {
     /*
      * Sleeping is problematic since you can't be sure if or when you'll
@@ -149,26 +149,25 @@ void task_memory::spin()
     assert(m_config.op_per_sec == 0 || m_indexes.size() > 0);
 
     if (m_stat_clear) {
-        m_total = total_t{};
+        m_avg_rate = 100000000;
         m_stat_data = stat_t{};
         m_stat_clear = false;
     }
 
-    auto tuple = calc_ops_and_sleep(m_total, m_config.op_per_sec);
+    auto tuple = calc_ops_and_sleep(m_stat_data, m_config.op_per_sec);
     auto to_do_ops = std::get<0>(tuple);
 
+    stat_t stat {};
     if (auto ns_to_sleep = std::get<1>(tuple); ns_to_sleep.count()) {
         auto start = chronometer::now();
         std::this_thread::sleep_for(ns_to_sleep);
-        m_total.sleep_time += chronometer::now() - start;
+        stat.sleep_time = chronometer::now() - start;
     }
 
     /*
      * Perform load operations in small bursts so that we can update our
      * thread statistics periodically.
      */
-    stat_t stat {};
-
     auto ts = chronometer::now();
     auto deadline = ts + QUANTA;
     while (to_do_ops && (ts = chronometer::now()) < deadline) {
@@ -180,24 +179,21 @@ void task_memory::spin()
         stat += stat_t{
             .operations = nb_ops,
             .bytes = nb_ops * m_config.block_size,
-            .time = run_time,
+            .run_time = run_time,
             .latency_min = run_time,
             .latency_max = run_time,
         };
 
         /* Update local counters */
-        m_total.run_time += run_time;
-        m_total.operations += nb_ops;
-        m_total.avg_rate += (nb_ops / (double)run_time.count()
-                             - m_total.avg_rate + 4.0 / run_time.count())
-                            / 5.0;
+        m_avg_rate += (static_cast<double>(nb_ops) / run_time.count()
+            - m_avg_rate + 4.0 / run_time.count()) / 5.0;
 
         to_do_ops -= spin_ops;
     }
 
     stat += m_stat_data;
     stat.operations_target =
-        (m_total.run_time + m_total.sleep_time).count()
+        (stat.run_time + stat.sleep_time).count()
             * m_config.op_per_sec / std::nano::den;
     stat.bytes_target = stat.operations_target * m_config.block_size;
 

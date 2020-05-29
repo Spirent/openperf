@@ -29,15 +29,6 @@ class task_memory
 {
     using chronometer = openperf::timesync::chrono::monotime;
 
-public:
-    struct total_t
-    {
-        size_t operations = 0;
-        double avg_rate = 100000000;
-        std::chrono::nanoseconds run_time = 0ns;
-        std::chrono::nanoseconds sleep_time = 0ns;
-    };
-
 protected:
     task_memory_config m_config;
     std::vector<unsigned> m_indexes;
@@ -49,11 +40,11 @@ protected:
         size_t size;
     } m_scratch;
 
-    total_t m_total;
     stat_t m_stat_data;
     std::atomic<stat_t*> m_stat;
     std::atomic_bool m_stat_clear;
     size_t m_op_index;
+    double m_avg_rate;
 
 public:
     task_memory();
