@@ -35,7 +35,7 @@ $(call op_include_dependencies,$(CAP_TEST_DEPENDS))
 # Build rules
 ###
 $(eval $(call op_generate_build_rules,$(CAP_TEST_SOURCES),CAP_TEST_SRC_DIR,CAP_TEST_OBJ_DIR,CAP_TEST_DEPENDS))
-$(eval $(call op_generate_clean_rules,packet_capture,CAP_TEST_TARGET,CAP_TEST_OBJECTS))
+$(eval $(call op_generate_clean_rules,packet_capture_test,CAP_TEST_TARGET,CAP_TEST_OBJECTS))
 
 $(CAP_TEST_TARGET): $(CAP_TEST_OBJECTS)
 	$(call op_link_library,$@,$(CAP_TEST_OBJECTS))
