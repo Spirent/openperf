@@ -12,7 +12,6 @@
 namespace openperf::memory::internal {
 
 using namespace std::chrono_literals;
-
 using openperf::utils::op_pseudo_random_fill;
 
 constexpr auto QUANTA = 10ms;
@@ -29,27 +28,29 @@ auto calc_ops_and_sleep(const task_memory::total_t& total, size_t ops_per_sec)
      * 1. (m_total.operations + to_do_ops) /
      *      ((m_total.run_time + m_total.sleep_time)
      *      + (to_do_ops / m_total.avg_rate) + sleep_time = ops_per_ns
-     * 2. to_do_ops / total.avg_rate + sleep_time = quanta
+     * 2. to_do_ops / m_total.avg_rate + sleep_time = quanta
      *
      * We use Cramer's rule to solve for to_do_ops and sleep time.  We are
      * guaranteed a solution because our determinant is always 1.  However,
      * our solution could be negative, so clamp our answers before using.
      */
-    double ops_per_ns = (double)ops_per_sec / std::nano::den;
-    double a[2] = {1 - (ops_per_ns / total.avg_rate), 1.0 / total.avg_rate};
-    double b[2] = {-ops_per_ns, 1};
+    auto quanta_ns = static_cast<double>(
+        std::chrono::duration_cast<std::chrono::nanoseconds>(QUANTA).count());
+    auto ops_per_ns = static_cast<double>(ops_per_sec) / std::nano::den;
+
+    double a[2] = {1.0 - (ops_per_ns / total.avg_rate), 1.0 / total.avg_rate};
+    double b[2] = {-ops_per_ns, 1.0};
     double c[2] = {ops_per_ns * (total.run_time + total.sleep_time).count()
-                       - total.operations,
-                   std::chrono::nanoseconds(QUANTA).count()};
+                       - total.operations, quanta_ns };
 
     // Tuple: to_do_ops, ns_to_sleep
-    return std::make_tuple(
-        static_cast<uint64_t>(std::max(0.0, c[0] * b[1] - b[0] * c[1])),
-        std::chrono::nanoseconds(
-            static_cast<std::chrono::nanoseconds::rep>(std::max(
-                0.0,
-                std::min(a[0] * c[1] - c[0] * a[1],
-                         (double)std::chrono::nanoseconds(QUANTA).count())))));
+    auto to_do_ops = static_cast<uint64_t>(
+        std::max(0.0, c[0]*b[1] - b[0]*c[1]));
+    auto ns_to_sleep = std::chrono::nanoseconds(
+        static_cast<std::chrono::nanoseconds::rep>(
+            std::max(0.0, std::min(a[0]*c[1] - c[0]*a[1], quanta_ns))));
+
+    return std::make_tuple(to_do_ops, ns_to_sleep);
 }
 
 std::vector<unsigned> index_vector(size_t size, io_pattern pattern)
@@ -109,6 +110,7 @@ void task_memory::config(const task_memory_config& msg)
 
     if (nb_blocks && configuration_changed) {
         try {
+            m_op_index = 0;
             m_indexes = index_vector(nb_blocks, msg.pattern);
             m_config.pattern = msg.pattern;
         } catch (const std::exception& e) {
@@ -118,6 +120,7 @@ void task_memory::config(const task_memory_config& msg)
             throw std::exception(e);
         }
     } else if (!nb_blocks) {
+        m_op_index = 0;
         m_indexes.clear();
 
         m_config.pattern = io_pattern::NONE;
@@ -146,40 +149,37 @@ void task_memory::spin()
     assert(m_config.op_per_sec == 0 || m_indexes.size() > 0);
 
     if (m_stat_clear) {
+        m_total = total_t{};
         m_stat_data = stat_t{};
         m_stat_clear = false;
     }
-
-    static __thread size_t op_index = 0;
-    if (op_index >= m_indexes.size()) { op_index = 0; }
 
     auto tuple = calc_ops_and_sleep(m_total, m_config.op_per_sec);
     auto to_do_ops = std::get<0>(tuple);
 
     if (auto ns_to_sleep = std::get<1>(tuple); ns_to_sleep.count()) {
-        auto t1 = chronometer::now();
+        auto start = chronometer::now();
         std::this_thread::sleep_for(ns_to_sleep);
-        m_total.sleep_time += chronometer::now() - t1;
+        m_total.sleep_time += chronometer::now() - start;
     }
+
     /*
      * Perform load operations in small bursts so that we can update our
      * thread statistics periodically.
      */
-    stat_t stat;
-    auto deadline = chronometer::now() + QUANTA;
-    auto t2 = chronometer::now();
-    while (to_do_ops && (t2 = chronometer::now()) < deadline) {
+    stat_t stat {};
+
+    auto ts = chronometer::now();
+    auto deadline = ts + QUANTA;
+    while (to_do_ops && (ts = chronometer::now()) < deadline) {
         size_t spin_ops = std::min(MAX_SPIN_OPS, to_do_ops);
-        size_t nb_ops = operation(spin_ops, &op_index);
-        auto run_time =
-            std::max(chronometer::now() - t2, 1ns); /* prevent divide by 0 */
+        size_t nb_ops = operation(spin_ops);
+        auto run_time = std::max(chronometer::now() - ts, 1ns); /* prevent divide by 0 */
 
         /* Update per thread statistics */
         stat += stat_t{
             .operations = nb_ops,
-            .operations_target = spin_ops,
             .bytes = nb_ops * m_config.block_size,
-            .bytes_target = spin_ops * m_config.block_size,
             .time = run_time,
             .latency_min = run_time,
             .latency_max = run_time,
@@ -196,6 +196,11 @@ void task_memory::spin()
     }
 
     stat += m_stat_data;
+    stat.operations_target =
+        (m_total.run_time + m_total.sleep_time).count()
+            * m_config.op_per_sec / std::nano::den;
+    stat.bytes_target = stat.operations_target * m_config.block_size;
+
     m_stat.store(&stat);
     m_stat_data = stat;
     m_stat.store(&m_stat_data);
