@@ -4,7 +4,7 @@
 #include <map>
 #include <vector>
 
-#include "config/op_config_file.hpp"
+#include "packetio/drivers/dpdk/arg_parser.hpp"
 #include "packetio/drivers/dpdk/model/physical_port.hpp"
 #include "packetio/drivers/dpdk/model/port_info.hpp"
 #include "packetio/drivers/dpdk/queue_utils.hpp"
@@ -131,15 +131,37 @@ static __attribute__((const)) T distribute(T total, U buckets, V n)
     return (static_cast<T>(n < total % buckets ? base + 1 : base));
 }
 
-uint16_t worker_id(const std::vector<worker_config>& workers, uint16_t offset)
+uint16_t offset_bit(const model::core_mask& mask, uint16_t offset)
+{
+    assert(mask.count());
+
+    offset %= mask.count();
+
+    auto idx = 0U;
+    while (idx < mask.size()) {
+        if (mask[idx]) {
+            if (!offset) { break; }
+            offset--;
+        }
+        idx++;
+    }
+
+    return (idx);
+}
+
+uint16_t worker_id(const std::vector<worker_config>& workers,
+                   const model::core_mask& worker_mask,
+                   uint16_t offset)
 {
     assert(workers.size() < std::numeric_limits<uint16_t>::max());
 
     /* First, see if we can find a worker with less queues than the others */
+    const uint16_t bit_offset = offset_bit(worker_mask, offset);
     bool have_candidate = false;
-    uint16_t to_return = offset % workers.size();
+    uint16_t to_return = bit_offset;
     for (size_t i = 0; i < workers.size(); i++) {
-        auto id = (offset + i) % workers.size();
+        auto id = (bit_offset + i) % workers.size();
+        if (!worker_mask[id]) { continue; }
         if (workers[id].queues < workers[to_return].queues) {
             have_candidate = true;
             to_return = id;
@@ -149,10 +171,11 @@ uint16_t worker_id(const std::vector<worker_config>& workers, uint16_t offset)
     if (!have_candidate) {
         /*
          * No obvious candidate based on queue counts; look for a worker with
-         * less load.  Otherwise, just use the offset.
+         * less load. Otherwise, just use the offset.
          */
         for (size_t i = 0; i < workers.size(); i++) {
-            auto id = (offset + i) % workers.size();
+            auto id = (bit_offset + i) % workers.size();
+            if (!worker_mask[id]) { continue; }
             if (workers[id].load < workers[to_return].load) { to_return = id; }
         }
     }
@@ -161,14 +184,15 @@ uint16_t worker_id(const std::vector<worker_config>& workers, uint16_t offset)
 }
 
 static std::vector<descriptor>
-distribute_queues(const std::vector<model::port_info>& port_info)
+distribute_queues(const std::vector<model::port_info>& port_info,
+                  uint16_t worker_id)
 {
     std::vector<descriptor> descriptors;
     descriptors.reserve(port_info.size());
 
     /* Simple case; one worker handling one queue per port */
     for (auto& info : port_info) {
-        descriptors.emplace_back(descriptor{.worker_id = 0,
+        descriptors.emplace_back(descriptor{.worker_id = worker_id,
                                             .port_id = info.id(),
                                             .queue_id = 0,
                                             .mode = queue_mode::RXTX});
@@ -179,116 +203,79 @@ distribute_queues(const std::vector<model::port_info>& port_info)
 
 static std::vector<descriptor>
 distribute_queues(const std::vector<model::port_info>& port_info,
-                  uint16_t rx_workers,
-                  uint16_t tx_workers)
+                  const model::core_mask& worker_mask,
+                  queue_mode mode)
 {
+    assert(mode == queue_mode::RX || mode == queue_mode::TX);
+    assert(worker_mask.any());
+
     /*
-     * Calculate the minimum number of {rx,tx} queues we need based on our
+     * Calculate the minimum number of queues we need based on our
      * suggested queue count.
      */
-    uint16_t rxq_min = std::accumulate(
+    auto q_min = std::accumulate(
         std::begin(port_info),
         std::end(port_info),
-        0,
+        0UL,
         [&](int x, const model::port_info& pi) {
             return (x
-                    + suggested_queue_count(
-                        port_info.size(), pi.rx_queue_default(), rx_workers));
-        });
-    uint16_t txq_min = std::accumulate(
-        std::begin(port_info),
-        std::end(port_info),
-        0,
-        [&](int x, const model::port_info& pi) {
-            return (x
-                    + suggested_queue_count(
-                        port_info.size(), pi.tx_queue_default(), tx_workers));
+                    + suggested_queue_count(port_info.size(),
+                                            mode == queue_mode::RX
+                                                ? pi.rx_queue_default()
+                                                : pi.tx_queue_default(),
+                                            worker_mask.count()));
         });
 
     /*
-     * Compare this count to the number of {rx,tx} workers we have to
-     * generate a count of 'extra' queues we could use if we have available,
-     * unused workers.
+     * Compare this count to the number of workers we have to
+     * generate a count of 'extra' queues we could use if we have
+     * available, unused workers.
      */
-    uint16_t rxq_extra = round_up(rxq_min, rx_workers) - rxq_min;
-    uint16_t txq_extra = round_up(txq_min, tx_workers) - txq_min;
+    uint16_t q_extra = round_up(q_min, worker_mask.count()) - q_min;
 
     /* Figure out if any ports can use these 'bonus' queues */
-    auto queue_bonus = bonus_queue_info(port_info, rxq_extra, txq_extra);
+    auto queue_bonus = mode == queue_mode::RX
+                           ? bonus_queue_info(port_info, q_extra, 0)
+                           : bonus_queue_info(port_info, 0, q_extra);
 
     /*
-     * Generate some record keeping structs.  These contain per worker
+     * Generate some record keeping structs. These contain per worker
      * queue and load data based on our assignments to workers.
      */
-    std::vector<worker_config> rx_workers_config, tx_workers_config;
-    for (uint16_t i = 0; i < rx_workers; i++) {
-        rx_workers_config.emplace_back(worker_config());
-    }
-    for (uint16_t i = 0; i < tx_workers; i++) {
-        tx_workers_config.emplace_back(worker_config());
-    }
+    auto worker_configs = std::vector<worker_config>(worker_mask.size());
 
     /* This is the actual configuration that we will return */
-    std::vector<descriptor> descriptors;
+    auto descriptors = std::vector<descriptor>{};
 
     /*
-     * Begin loop proper; assign {tx, rx} queues to available workers as fairly
+     * Begin loop proper; assign queues to available workers as fairly
      * as possible.
      */
-    for (auto& info : port_info) {
+    for (const auto& info : port_info) {
         auto& bonus = queue_bonus[info.max_speed()];
-        /* Only hand out bonus queues if all ports of the same speed can get one
-         */
-        auto rx_bonus =
-            (bonus.rxq.avail >= bonus.count ? distribute(
-                 bonus.rxq.avail, bonus.rxq.count, bonus.rxq.distributed++)
-                                            : 0);
-        uint16_t rxq_count =
-            (suggested_queue_count(
-                 port_info.size(), info.rx_queue_default(), rx_workers)
-             + rx_bonus);
+        /* Only hand out bonus queues if all ports can get one */
+        auto& bonus_info = mode == queue_mode::RX ? bonus.rxq : bonus.txq;
+        const auto q_bonus =
+            bonus_info.avail > bonus.count ? distribute(
+                bonus_info.avail, bonus_info.count, bonus_info.distributed++)
+                                           : 0;
+        auto q_count = suggested_queue_count(port_info.size(),
+                                             mode == queue_mode::RX
+                                                 ? info.rx_queue_default()
+                                                 : info.tx_queue_default(),
+                                             worker_mask.count())
+                       + q_bonus;
 
-        /* And assign them to workers */
-        for (uint16_t q = 0; q < rxq_count; q++) {
-            descriptors.emplace_back(
-                descriptor{.worker_id = worker_id(rx_workers_config, info.id()),
-                           .port_id = info.id(),
-                           .queue_id = q,
-                           .mode = queue_mode::RX});
+        for (uint16_t q = 0U; q < q_count; q++) {
+            descriptors.emplace_back(descriptor{
+                .worker_id = worker_id(worker_configs, worker_mask, info.id()),
+                .port_id = info.id(),
+                .queue_id = q,
+                .mode = mode});
 
-            auto& last = descriptors.back();
-            rx_workers_config[last.worker_id].load +=
-                info.max_speed() / rxq_count;
-            rx_workers_config[last.worker_id].queues++;
-        }
-
-        /* And we do the same for tx */
-        auto tx_bonus =
-            (bonus.txq.avail >= bonus.count ? distribute(
-                 bonus.txq.avail, bonus.txq.count, bonus.txq.distributed++)
-                                            : 0);
-
-        uint16_t txq_count =
-            (suggested_queue_count(
-                 port_info.size(), info.tx_queue_default(), tx_workers)
-             + tx_bonus);
-
-        for (uint16_t q = 0; q < txq_count; q++) {
-            descriptors.emplace_back(
-                descriptor{.worker_id = worker_id(tx_workers_config, info.id()),
-                           .port_id = info.id(),
-                           .queue_id = q,
-                           .mode = queue_mode::TX});
-
-            auto& last = descriptors.back();
-            tx_workers_config[last.worker_id].load +=
-                info.max_speed() / txq_count;
-            tx_workers_config[last.worker_id].queues++;
-            /*
-             * Offset TX workers by RX workers.  It's easier to it here than
-             * to add (more) complexity to the distribution functions.
-             */
-            last.worker_id += rx_workers;
+            const auto& last = descriptors.back();
+            worker_configs[last.worker_id].load += info.max_speed() / q_count;
+            worker_configs[last.worker_id].queues++;
         }
     }
 
@@ -302,38 +289,61 @@ template <typename T> uint16_t to_u16(T x)
         std::clamp(x, static_cast<T>(1), static_cast<T>(0xffff))));
 }
 
-std::vector<descriptor>
-distribute_queues(const std::vector<model::port_info>& port_info,
-                  uint16_t q_workers)
+static std::pair<model::core_mask, model::core_mask>
+unique_masks(const model::core_mask& mask)
 {
-    /* With only 1 worker, no distribution is necessary */
-    if (q_workers == 1) { return (distribute_queues(port_info)); }
+    /* Check for explicit tx/rx masks that provide cores for the given mask */
+    auto rx_mask = config::rx_core_mask().value_or(model::core_mask{}) & mask;
+    auto tx_mask = config::tx_core_mask().value_or(model::core_mask{}) & mask;
 
-    using namespace config::file;
-    static auto max_rx_queues = op_config_get_param<OP_OPTION_TYPE_LONG>(
-        "modules.packetio.dpdk.max-rx-workers");
-    static auto max_tx_queues = op_config_get_param<OP_OPTION_TYPE_LONG>(
-        "modules.packetio.dpdk.max-tx-workers");
+    /* Figure out which cores still need to be assigned */
+    const auto available = mask & (~rx_mask) & (~tx_mask);
 
-    /* By default, queue workers are evenly distributed between rx and tx
-     * workers */
-    auto rx_q_workers = distribute(q_workers, 2, 0);
-    auto tx_q_workers = distribute(q_workers, 2, 1);
-
-    /* However, if the user has applied constraints, we have to update those
-     * values */
-    if (max_rx_queues && max_tx_queues) {
-        rx_q_workers = std::min(rx_q_workers, to_u16(*max_rx_queues));
-        tx_q_workers = std::min(tx_q_workers, to_u16(*max_tx_queues));
-    } else if (max_rx_queues) {
-        rx_q_workers = std::min(rx_q_workers, to_u16(*max_rx_queues));
-        tx_q_workers = q_workers - rx_q_workers;
-    } else if (max_tx_queues) {
-        tx_q_workers = std::min(tx_q_workers, to_u16(*max_tx_queues));
-        rx_q_workers = q_workers - tx_q_workers;
+    /*
+     * If only one core is available in total, then we need to use it for
+     * both rx and tx.
+     */
+    if (rx_mask.none() && tx_mask.none() && available.count() == 1) {
+        return {available, available};
     }
 
-    return (distribute_queues(port_info, rx_q_workers, tx_q_workers));
+    /* Else, distribute the available cores to rx/tx usage */
+    const auto to_rx = distribute(available.count(), 2U, 0U);
+    auto distributed = 0U;
+    for (auto i = 0U; i < available.size(); i++) {
+        if (!available[i]) { continue; }
+        if (distributed < to_rx) {
+            rx_mask.set(i);
+        } else {
+            tx_mask.set(i);
+        }
+        distributed++;
+    }
+
+    return {rx_mask, tx_mask};
+}
+
+std::vector<descriptor>
+distribute_queues(const std::vector<model::port_info>& port_info,
+                  const model::core_mask& mask)
+{
+    /* With only 1 worker, no distribution is necessary */
+    if (mask.count() == 1) {
+        /* Find the flipped bit, aka the core id */
+        auto idx = 0U;
+        while (idx < mask.size() && !mask[idx]) { ++idx; }
+
+        return (distribute_queues(port_info, idx));
+    }
+
+    const auto [rx_mask, tx_mask] = unique_masks(mask);
+
+    auto queues = distribute_queues(port_info, rx_mask, queue_mode::RX);
+    const auto tx_queues =
+        distribute_queues(port_info, tx_mask, queue_mode::TX);
+    queues.insert(std::end(queues), std::begin(tx_queues), std::end(tx_queues));
+
+    return (queues);
 }
 
 std::map<int, count>

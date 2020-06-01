@@ -5,10 +5,14 @@
 #include <map>
 #include <vector>
 
+#include "packetio/drivers/dpdk/model/core_mask.hpp"
+
 namespace openperf::packetio::dpdk {
+
 namespace model {
 class port_info;
 }
+
 namespace queue {
 
 enum class queue_mode { NONE = 0, RX, TX, RXTX };
@@ -30,14 +34,14 @@ struct descriptor
  *
  * @param[in] port_info
  *   A vector containing a port_info entry for every port
- * @param[in] q_workers
- *   The number of worker available for servicing port queues
+ * @param[in] mask
+ *   bit mask indicating workers available for servicing port queues
  * @return
  *   A vector containing queue assignments for workers
  */
 std::vector<descriptor>
 distribute_queues(const std::vector<model::port_info>& port_info,
-                  uint16_t q_workers);
+                  const model::core_mask& mask);
 
 struct count
 {

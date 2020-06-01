@@ -9,6 +9,7 @@
 #include "lwip/netif.h"
 #include "tl/expected.hpp"
 
+#include "packetio/drivers/dpdk/arg_parser.hpp"
 #include "packetio/drivers/dpdk/dpdk.h"
 #include "packetio/drivers/dpdk/eal.hpp"
 #include "packetio/drivers/dpdk/mbuf_signature.hpp"
@@ -175,9 +176,19 @@ configure_all_ports(const std::map<int, queue::count>& port_queue_counts,
         auto info = model::port_info(port_id);
         auto mempool = allocator->rx_mempool(info.socket_id());
         auto port = model::physical_port(port_id, id_name.at(port_id), mempool);
-        auto result = port.low_level_config(port_queue_counts.at(port_id).rx,
-                                            port_queue_counts.at(port_id).tx);
-        if (!result) { throw std::runtime_error(result.error()); }
+
+        const auto cursor = port_queue_counts.find(port_id);
+        if (cursor == port_queue_counts.end()) {
+            throw std::runtime_error(
+                "No worker threads available for port "
+                + std::to_string(port_id)
+                + ". Do you need to adjust your core mask?\n");
+        }
+        const auto& q_count = cursor->second;
+        if (auto result = port.low_level_config(q_count.rx, q_count.tx);
+            !result) {
+            throw std::runtime_error(result.error());
+        }
     }
 }
 
@@ -206,6 +217,54 @@ static void create_test_portpairs(unsigned test_portpairs)
                    == -1) {
             throw std::runtime_error("Failed to create vdev eth_ring device\n");
         }
+    }
+}
+
+static void sanity_check_environment()
+{
+    if (rte_lcore_count() <= 1) {
+        throw std::runtime_error("No DPDK workers cores are available! "
+                                 "At least 2 CPU cores are required.");
+    }
+
+    const auto misc_mask =
+        config::misc_core_mask().value_or(model::core_mask{});
+    const auto rx_mask = config::rx_core_mask().value_or(model::core_mask{});
+    const auto tx_mask = config::tx_core_mask().value_or(model::core_mask{});
+    const auto user_mask = misc_mask | rx_mask | tx_mask;
+
+    if (user_mask[rte_get_master_lcore()]) {
+        throw std::runtime_error("User specified mask, "
+                                 + model::to_string(user_mask)
+                                 + ", conflicts with DPDK master core "
+                                 + std::to_string(rte_get_master_lcore()));
+    }
+}
+
+static void log_idle_workers(const std::vector<queue::descriptor>& descriptors)
+{
+    /* Generate a mask for all available cores */
+    auto eal_mask = model::core_mask{};
+    unsigned lcore_id = 0;
+    RTE_LCORE_FOREACH_SLAVE (lcore_id) {
+        eal_mask.set(lcore_id);
+    }
+    const auto worker_count = eal_mask.count();
+
+    /* Clear the bits used to support port queues */
+    std::for_each(std::begin(descriptors),
+                  std::end(descriptors),
+                  [&](const auto& d) { eal_mask.reset(d.worker_id); });
+
+    /* Clear the bit used by the stack */
+    eal_mask.reset(topology::get_stack_lcore_id());
+
+    /* Warn if we are unable to use any of our available cores */
+    if (eal_mask.count()) {
+        OP_LOG(OP_LOG_WARNING,
+               "Only utilizing %zu of %zu available workers\n",
+               worker_count - eal_mask.count(),
+               worker_count);
     }
 }
 
@@ -265,9 +324,6 @@ eal::eal(std::vector<std::string>&& args,
         rte_eal_init(static_cast<int>(eal_args.size() - 1), eal_args.data());
     if (parsed_or_err < 0) {
         throw std::runtime_error("Failed to initialize DPDK");
-    } else if (rte_lcore_count() <= 1) {
-        throw std::runtime_error("No DPDK worker cores are available! "
-                                 "At least 2 CPU cores are required.");
     }
 
     /*
@@ -282,6 +338,8 @@ eal::eal(std::vector<std::string>&& args,
                parsed_or_err,
                eal_args.size() - 2);
     }
+
+    sanity_check_environment();
 
     /* Find some space for Spirent test signatures */
     mbuf_signature_init();
@@ -323,6 +381,7 @@ eal::eal(std::vector<std::string>&& args,
      * and cpu topoology.
      */
     auto q_descriptors = topology::queue_distribute(port_info);
+    log_idle_workers(q_descriptors);
     auto q_counts = queue::get_port_queue_counts(q_descriptors);
 
     /* Use the port_info and queue counts to allocate our default memory pools
@@ -451,7 +510,7 @@ eal::create_port(std::string_view id, const port::config_data& config)
     /* Make sure that all ports in the vector actually exist */
     for (const auto& port_id : std::get<port::bond_config>(config).ports) {
         // Verify port id is valid.
-        auto id_check = config::op_config_validate_id_string(port_id);
+        auto id_check = openperf::config::op_config_validate_id_string(port_id);
         if (!id_check) { return tl::make_unexpected(id_check.error()); }
 
         auto idx = port_index(port_id);

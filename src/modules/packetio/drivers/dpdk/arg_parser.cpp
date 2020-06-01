@@ -12,15 +12,17 @@ namespace openperf::packetio::dpdk::config {
 
 using namespace openperf::config;
 
-static constexpr std::string_view program_name = "op_eal";
+inline constexpr std::string_view program_name = "op_eal";
+inline constexpr std::string_view log_level_arg = "--log-level";
+inline constexpr std::string_view file_prefix_arg = "--file-prefix";
+inline constexpr std::string_view no_pci_arg = "--no-pci";
 
-/* Check if the 'log-level' argument has been added to the arguments vector */
-static bool have_log_level_arg(std::vector<std::string>& args)
+template <typename Container, typename Thing>
+bool contains(const Container& c, const Thing& t)
 {
-    for (const auto& s : args) {
-        if (s == "--log-level") { return (true); }
-    }
-    return (false);
+    return (std::any_of(std::begin(c), std::end(c), [&](const auto& item) {
+        return (item == t);
+    }));
 }
 
 static void add_log_level_arg(enum op_log_level level,
@@ -37,36 +39,20 @@ static void add_log_level_arg(enum op_log_level level,
         {OP_LOG_TRACE, "8"}     /* RTE_LOG_DEBUG */
     };
 
-    args.emplace_back("--log-level");
+    args.emplace_back(log_level_arg);
     args.push_back(log_level_map[level]);
-}
-
-static bool have_file_prefix_arg(std::vector<std::string>& args)
-{
-    for (const auto& s : args) {
-        if (s == "--file-prefix") { return (true); }
-    }
-    return (false);
 }
 
 static void add_file_prefix_arg(std::string_view prefix,
                                 std::vector<std::string>& args)
 {
-    args.emplace_back("--file-prefix");
+    args.emplace_back(file_prefix_arg);
     args.emplace_back(prefix);
-}
-
-static bool have_no_pci_arg(std::vector<std::string>& args)
-{
-    for (const auto& s : args) {
-        if (s == "--no-pci") { return (true); }
-    }
-    return (false);
 }
 
 static void add_no_pci_arg(std::vector<std::string>& args)
 {
-    args.emplace_back("--no-pci");
+    args.emplace_back(no_pci_arg);
 }
 
 // Split portX and return just the X part.
@@ -168,21 +154,21 @@ std::vector<std::string> dpdk_args()
     // Get the list from the framework.
     auto arg_list = config::file::op_config_get_param<OP_OPTION_TYPE_LIST>(
         "modules.packetio.dpdk.options");
-    if (!arg_list) { return (to_return); }
-
-    // Walk through it and rebuild the arguments DPDK expects
-    for (auto& v : *arg_list) { add_dpdk_argument(to_return, v); }
+    if (arg_list) {
+        // Walk through it and rebuild the arguments DPDK expects
+        for (auto& v : *arg_list) { add_dpdk_argument(to_return, v); }
+    }
 
     /* Append a log level option if needed */
-    if (!have_log_level_arg(to_return)) {
+    if (!contains(to_return, log_level_arg)) {
         add_log_level_arg(op_log_level_get(), to_return);
     }
-    if (!have_file_prefix_arg(to_return)) {
+    if (!contains(to_return, file_prefix_arg)) {
         if (auto prefix = config::get_prefix()) {
             add_file_prefix_arg(*prefix, to_return);
         }
     }
-    if (dpdk_test_mode() && !have_no_pci_arg(to_return)) {
+    if (dpdk_test_mode() && !contains(to_return, no_pci_arg)) {
         add_no_pci_arg(to_return);
     }
 
@@ -204,6 +190,36 @@ std::unordered_map<int, std::string> dpdk_id_map()
     }
 
     return (to_return);
+}
+
+std::optional<model::core_mask> misc_core_mask()
+{
+    const auto mask = config::file::op_config_get_param<OP_OPTION_TYPE_HEX>(
+        "modules.packetio.dpdk.misc-worker-mask");
+
+    if (mask) { return model::core_mask{*mask}; }
+
+    return (std::nullopt);
+}
+
+std::optional<model::core_mask> rx_core_mask()
+{
+    const auto mask = config::file::op_config_get_param<OP_OPTION_TYPE_HEX>(
+        "modules.packetio.dpdk.rx-worker-mask");
+
+    if (mask) { return model::core_mask{*mask}; }
+
+    return (std::nullopt);
+}
+
+std::optional<model::core_mask> tx_core_mask()
+{
+    const auto mask = config::file::op_config_get_param<OP_OPTION_TYPE_HEX>(
+        "modules.packetio.dpdk.tx-worker-mask");
+
+    if (mask) { return model::core_mask{*mask}; }
+
+    return (std::nullopt);
 }
 
 } /* namespace openperf::packetio::dpdk::config */
