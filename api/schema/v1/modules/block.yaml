@@ -354,8 +354,11 @@ definitions:
           - init
           - ready
     required:
+      - id
       - file_size
+      - init_percent_complete
       - path
+      - state
 
   BlockGenerator:
     type: object
@@ -373,6 +376,7 @@ definitions:
         type: boolean
         description: Indicates whether this generator is currently running.
     required:
+      - id
       - config
       - resource_id
       - running
