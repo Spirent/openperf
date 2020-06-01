@@ -16,6 +16,8 @@
 
 namespace openperf::packetio::dpdk {
 
+using mac_address = libpacket::type::mac_address;
+
 static void launch_workers(void* context,
                            worker::recycler* recycler,
                            const worker::fib* fib)
@@ -475,13 +477,13 @@ void worker_controller::add_interface(
                                  + " is unknown");
     }
 
-    auto mac = net::mac_address(interface.mac_address());
+    auto mac = mac_address(interface.mac_address());
 
     if (m_fib->find_interface(*port_idx, mac)) {
-        throw std::runtime_error("Interface with mac = " + net::to_string(mac)
-                                 + " on port " + std::string(port_id)
-                                 + " (idx = " + std::to_string(*port_idx)
-                                 + ") already exists in FIB");
+        throw std::runtime_error(
+            "Interface with mac = " + libpacket::type::to_string(mac)
+            + " on port " + std::string(port_id) + " (idx = "
+            + std::to_string(*port_idx) + ") already exists in FIB");
     }
 
     auto& filter = get_unique_port_object(m_filters, *port_idx);
@@ -496,7 +498,7 @@ void worker_controller::add_interface(
 
     OP_LOG(OP_LOG_DEBUG,
            "Added interface with mac = %s to port %.*s (idx = %u)\n",
-           net::to_string(mac).c_str(),
+           libpacket::type::to_string(mac).c_str(),
            static_cast<int>(port_id.length()),
            port_id.data(),
            *port_idx);
@@ -508,7 +510,7 @@ void worker_controller::del_interface(
     auto port_idx = m_driver.port_index(port_id);
     if (!port_idx) return;
 
-    auto mac = net::mac_address(interface.mac_address());
+    auto mac = mac_address(interface.mac_address());
     auto to_delete = m_fib->remove_interface(*port_idx, mac);
     m_recycler->writer_add_gc_callback([to_delete]() { delete to_delete; });
 
@@ -518,7 +520,7 @@ void worker_controller::del_interface(
 
     OP_LOG(OP_LOG_DEBUG,
            "Removed interface with mac = %s to port %.*s (idx = %u)\n",
-           net::to_string(mac).c_str(),
+           libpacket::type::to_string(mac).c_str(),
            static_cast<int>(port_id.length()),
            port_id.data(),
            *port_idx);
@@ -613,7 +615,7 @@ tl::expected<void, int> worker_controller::add_sink(std::string_view src_id,
 
     if (auto ifp = m_fib->find_interface(src_id)) {
         auto& interface = dpdk::to_interface(ifp);
-        auto mac = net::mac_address(ifp->hwaddr);
+        auto mac = mac_address(ifp->hwaddr);
 
         auto sinks = m_fib->find_interface_sinks(interface.port_index(), mac);
         if (!sinks) { return (tl::make_unexpected(EINVAL)); }
@@ -660,7 +662,7 @@ void worker_controller::del_sink(std::string_view src_id,
 
     if (auto ifp = m_fib->find_interface(src_id)) {
         auto& interface = dpdk::to_interface(ifp);
-        auto mac = net::mac_address(ifp->hwaddr);
+        auto mac = mac_address(ifp->hwaddr);
 
         auto sinks = m_fib->find_interface_sinks(interface.port_index(), mac);
         if (!sinks) return;

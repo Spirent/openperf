@@ -1,7 +1,7 @@
 #
 # Makefile component to specify PacketIO code
 #
-PIO_DEPENDS += expected libzmq swagger_model versions
+PIO_DEPENDS += expected framework packet swagger_model versions
 
 PIO_SOURCES += \
 	init.cpp \

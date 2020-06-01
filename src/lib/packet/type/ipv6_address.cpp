@@ -47,6 +47,11 @@ ipv6_address::ipv6_address(const uint8_t data[16]) noexcept
            data[15]});
 }
 
+ipv6_address::ipv6_address(const uint32_t data[4]) noexcept
+{
+    store({data[0], data[1], data[2], data[3]});
+}
+
 ipv6_address::ipv6_address(uint64_t value) noexcept
 {
     store({uint64_t{0}, value});

@@ -8,7 +8,7 @@
 #include <unordered_map>
 
 #include "core/op_log.h"
-#include "net/net_types.hpp"
+#include "packet/type/mac_address.hpp"
 #include "packetio/generic_interface.hpp"
 #include "utils/variant_index.hpp"
 
@@ -38,13 +38,13 @@ using filter_state = std::variant<filter_state_ok,
  */
 struct filter_event_add
 {
-    net::mac_address mac;
+    libpacket::type::mac_address mac;
     std::optional<std::function<void()>> on_overflow = std::nullopt;
 };
 
 struct filter_event_del
 {
-    net::mac_address mac;
+    libpacket::type::mac_address mac;
     std::optional<std::function<void()>> on_underflow = std::nullopt;
 };
 
@@ -90,8 +90,8 @@ class flow_filter
 {
     uint16_t m_port;
 
-    std::unordered_map<net::mac_address, rte_flow*> m_flows;
-    std::vector<net::mac_address> m_overflows;
+    std::unordered_map<libpacket::type::mac_address, rte_flow*> m_flows;
+    std::vector<libpacket::type::mac_address> m_overflows;
 
 public:
     flow_filter(uint16_t port_id);
@@ -133,8 +133,8 @@ class mac_filter
     : public filter_state_machine<mac_filter, filter_state, filter_event>
 {
     uint16_t m_port;
-    std::vector<net::mac_address> m_filtered;
-    std::vector<net::mac_address> m_overflowed;
+    std::vector<libpacket::type::mac_address> m_filtered;
+    std::vector<libpacket::type::mac_address> m_overflowed;
 
 public:
     mac_filter(uint16_t port_id);
@@ -187,12 +187,12 @@ public:
     uint16_t port_id() const;
     filter_type type() const;
 
-    void add_mac_address(const net::mac_address& mac);
-    void add_mac_address(const net::mac_address& mac,
+    void add_mac_address(const libpacket::type::mac_address& mac);
+    void add_mac_address(const libpacket::type::mac_address& mac,
                          std::function<void()>&& on_overflow);
 
-    void del_mac_address(const net::mac_address& mac);
-    void del_mac_address(const net::mac_address& mac,
+    void del_mac_address(const libpacket::type::mac_address& mac);
+    void del_mac_address(const libpacket::type::mac_address& mac,
                          std::function<void()>&& on_underflow);
 
     void enable();

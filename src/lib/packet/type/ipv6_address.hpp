@@ -30,6 +30,7 @@ public:
     ipv6_address(const std::string&);
     ipv6_address(std::initializer_list<uint8_t> data);
     ipv6_address(const uint8_t[16]) noexcept;
+    ipv6_address(const uint32_t[4]) noexcept;
     ipv6_address(uint64_t) noexcept;
     ipv6_address(std::pair<uint64_t, uint64_t>) noexcept;
 

@@ -1,12 +1,15 @@
 #include <algorithm>
 #include <cassert>
 
+#include "packet/type/mac_address.hpp"
 #include "packetio/drivers/dpdk/model/port_info.hpp"
 #include "packetio/drivers/dpdk/port_filter.hpp"
 
 namespace openperf::packetio::dpdk::port {
 
-static struct rte_ether_addr* to_dpdk_mac(const net::mac_address& mac)
+using mac_address = libpacket::type::mac_address;
+
+static struct rte_ether_addr* to_dpdk_mac(const mac_address& mac)
 {
     return (
         reinterpret_cast<rte_ether_addr*>(const_cast<uint8_t*>(mac.data())));
@@ -76,7 +79,7 @@ on_error(const filter_event_add& add, uint16_t port_id, int error)
 {
     OP_LOG(OP_LOG_ERROR,
            "Failed to add address %s to port %u: %s\n",
-           net::to_string(add.mac).c_str(),
+           libpacket::type::to_string(add.mac).c_str(),
            port_id,
            strerror(std::abs(error)));
     maybe_enable_promiscuous_mode(port_id);
@@ -88,7 +91,7 @@ on_error(const filter_event_del& del, uint16_t port_id, int error)
 {
     OP_LOG(OP_LOG_ERROR,
            "Failed to remove address %s from port %u: %s\n",
-           net::to_string(del.mac).c_str(),
+           libpacket::type::to_string(del.mac).c_str(),
            port_id,
            strerror(std::abs(error)));
     return (filter_state_error{});
@@ -96,9 +99,9 @@ on_error(const filter_event_del& del, uint16_t port_id, int error)
 
 static std::optional<filter_state_error>
 maybe_delete_mac(uint16_t port_id,
-                 const net::mac_address& mac,
-                 std::vector<net::mac_address>& filtered,
-                 std::vector<net::mac_address>& overflowed)
+                 const mac_address& mac,
+                 std::vector<mac_address>& filtered,
+                 std::vector<mac_address>& overflowed)
 {
     /* Find the MAC in the appropriate list and delete it */
     if (auto item = std::find(std::begin(filtered), std::end(filtered), mac);

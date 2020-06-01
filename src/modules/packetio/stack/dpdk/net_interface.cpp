@@ -262,10 +262,11 @@ static err_t configure_ipv4_interface(
         std::visit(
             utils::overloaded_visitor(
                 [&](const interface::ipv4_static_protocol_config& ipv4) {
-                    ip4_addr address = {htonl(ipv4.address.data())};
+                    ip4_addr address = {htonl(ipv4.address.load<uint32_t>())};
                     ip4_addr netmask = {htonl(to_netmask(ipv4.prefix_length))};
                     ip4_addr gateway = {
-                        ipv4.gateway ? htonl(ipv4.gateway->data()) : 0};
+                        ipv4.gateway ? htonl(ipv4.gateway->load<uint32_t>())
+                                     : 0};
                     netif_error = netifapi_netif_set_addr(
                         &netif, &address, &netmask, &gateway);
                 },
@@ -322,11 +323,13 @@ stop_ipv4_interface(const std::optional<interface::ipv4_protocol_config>& ipv4,
 #if LWIP_IPV6
 
 static err_t configure_ipv6_interface_link_local_address(
-    netif& netif, const std::optional<net::ipv6_address>& addr)
+    netif& netif, const std::optional<libpacket::type::ipv6_address>& addr)
 {
     if (addr) {
         struct ip6_addr ip6_addr;
-        addr->to_net_array(ip6_addr.addr);
+        std::copy_n(addr->data(),
+                    addr->size(),
+                    reinterpret_cast<uint8_t*>(ip6_addr.addr));
         err_t err = netifapi_netif_add_ip6_address(&netif, &ip6_addr, nullptr);
         return err;
     } else {
@@ -350,7 +353,9 @@ static err_t configure_ipv6_interface(
                     if (netif_error != ERR_OK) return;
 
                     struct ip6_addr address;
-                    config.address.to_net_array(address.addr);
+                    std::copy_n(config.address.data(),
+                                config.address.size(),
+                                reinterpret_cast<uint8_t*>(address.addr));
                     netif_error = netifapi_netif_add_ip6_address(
                         &netif, &address, nullptr);
                     // TODO:

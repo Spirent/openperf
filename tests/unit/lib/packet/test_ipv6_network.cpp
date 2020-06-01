@@ -1,9 +1,9 @@
 #include "catch.hpp"
 
-#include "net/ipv6_network.hpp"
+#include "packet/type/ipv6_network.hpp"
 
-using ipv6_address = openperf::net::ipv6_address;
-using ipv6_network = openperf::net::ipv6_network;
+using ipv6_address = libpacket::type::ipv6_address;
+using ipv6_network = libpacket::type::ipv6_network;
 
 TEST_CASE("ipv6_network functionality checks", "[ipv6_network]")
 {

@@ -4,7 +4,6 @@
 #include <any>
 #include <string>
 
-#include "net/net_types.hpp"
 #include "packetio/generic_interface.hpp"
 
 struct netif;
