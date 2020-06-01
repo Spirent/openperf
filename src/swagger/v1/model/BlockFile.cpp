@@ -20,13 +20,10 @@ namespace model {
 BlockFile::BlockFile()
 {
     m_Id = "";
-    m_IdIsSet = false;
     m_File_size = 0L;
     m_Init_percent_complete = 0;
-    m_Init_percent_completeIsSet = false;
     m_Path = "";
     m_State = "";
-    m_StateIsSet = false;
     
 }
 
@@ -43,20 +40,11 @@ nlohmann::json BlockFile::toJson() const
 {
     nlohmann::json val = nlohmann::json::object();
 
-    if(m_IdIsSet)
-    {
-        val["id"] = ModelBase::toJson(m_Id);
-    }
+    val["id"] = ModelBase::toJson(m_Id);
     val["file_size"] = m_File_size;
-    if(m_Init_percent_completeIsSet)
-    {
-        val["init_percent_complete"] = m_Init_percent_complete;
-    }
+    val["init_percent_complete"] = m_Init_percent_complete;
     val["path"] = ModelBase::toJson(m_Path);
-    if(m_StateIsSet)
-    {
-        val["state"] = ModelBase::toJson(m_State);
-    }
+    val["state"] = ModelBase::toJson(m_State);
     
 
     return val;
@@ -64,22 +52,11 @@ nlohmann::json BlockFile::toJson() const
 
 void BlockFile::fromJson(nlohmann::json& val)
 {
-    if(val.find("id") != val.end())
-    {
-        setId(val.at("id"));
-        
-    }
+    setId(val.at("id"));
     setFileSize(val.at("file_size"));
-    if(val.find("init_percent_complete") != val.end())
-    {
-        setInitPercentComplete(val.at("init_percent_complete"));
-    }
+    setInitPercentComplete(val.at("init_percent_complete"));
     setPath(val.at("path"));
-    if(val.find("state") != val.end())
-    {
-        setState(val.at("state"));
-        
-    }
+    setState(val.at("state"));
     
 }
 
@@ -91,15 +68,7 @@ std::string BlockFile::getId() const
 void BlockFile::setId(std::string value)
 {
     m_Id = value;
-    m_IdIsSet = true;
-}
-bool BlockFile::idIsSet() const
-{
-    return m_IdIsSet;
-}
-void BlockFile::unsetId()
-{
-    m_IdIsSet = false;
+    
 }
 int64_t BlockFile::getFileSize() const
 {
@@ -117,15 +86,7 @@ int32_t BlockFile::getInitPercentComplete() const
 void BlockFile::setInitPercentComplete(int32_t value)
 {
     m_Init_percent_complete = value;
-    m_Init_percent_completeIsSet = true;
-}
-bool BlockFile::initPercentCompleteIsSet() const
-{
-    return m_Init_percent_completeIsSet;
-}
-void BlockFile::unsetInit_percent_complete()
-{
-    m_Init_percent_completeIsSet = false;
+    
 }
 std::string BlockFile::getPath() const
 {
@@ -143,15 +104,7 @@ std::string BlockFile::getState() const
 void BlockFile::setState(std::string value)
 {
     m_State = value;
-    m_StateIsSet = true;
-}
-bool BlockFile::stateIsSet() const
-{
-    return m_StateIsSet;
-}
-void BlockFile::unsetState()
-{
-    m_StateIsSet = false;
+    
 }
 
 }
