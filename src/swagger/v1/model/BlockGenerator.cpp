@@ -20,7 +20,6 @@ namespace model {
 BlockGenerator::BlockGenerator()
 {
     m_Id = "";
-    m_IdIsSet = false;
     m_Resource_id = "";
     m_Running = false;
     
@@ -39,10 +38,7 @@ nlohmann::json BlockGenerator::toJson() const
 {
     nlohmann::json val = nlohmann::json::object();
 
-    if(m_IdIsSet)
-    {
-        val["id"] = ModelBase::toJson(m_Id);
-    }
+    val["id"] = ModelBase::toJson(m_Id);
     val["config"] = ModelBase::toJson(m_Config);
     val["resource_id"] = ModelBase::toJson(m_Resource_id);
     val["running"] = m_Running;
@@ -53,11 +49,7 @@ nlohmann::json BlockGenerator::toJson() const
 
 void BlockGenerator::fromJson(nlohmann::json& val)
 {
-    if(val.find("id") != val.end())
-    {
-        setId(val.at("id"));
-        
-    }
+    setId(val.at("id"));
     setResourceId(val.at("resource_id"));
     setRunning(val.at("running"));
     
@@ -71,15 +63,7 @@ std::string BlockGenerator::getId() const
 void BlockGenerator::setId(std::string value)
 {
     m_Id = value;
-    m_IdIsSet = true;
-}
-bool BlockGenerator::idIsSet() const
-{
-    return m_IdIsSet;
-}
-void BlockGenerator::unsetId()
-{
-    m_IdIsSet = false;
+    
 }
 std::shared_ptr<BlockGeneratorConfig> BlockGenerator::getConfig() const
 {
