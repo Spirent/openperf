@@ -115,11 +115,12 @@ pool_allocator::pool_allocator(const std::vector<model::port_info>& info,
             end(info),
             0,
             [&](unsigned lhs, const model::port_info& rhs) {
-                return (rhs.socket_id() == i ? (
-                            lhs
-                            + (q_counts.at(rhs.id()).rx * rhs.rx_desc_count())
-                            + (q_counts.at(rhs.id()).tx * rhs.tx_desc_count()))
-                                             : lhs);
+                const auto& cursor = q_counts.find(rhs.id());
+                if (cursor == q_counts.end() || rhs.socket_id() != i) {
+                    return (lhs);
+                }
+                return (lhs + (cursor->second.rx * rhs.rx_desc_count())
+                        + (cursor->second.tx * rhs.tx_desc_count()));
             });
         if (sum) {
             /*

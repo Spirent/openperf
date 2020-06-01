@@ -4,13 +4,24 @@
 #include <set>
 #include <vector>
 
-#include "packetio/drivers/dpdk/dpdk.h"
+#include "packetio/drivers/dpdk/arg_parser.hpp"
 #include "packetio/drivers/dpdk/topology_utils.hpp"
 #include "core/op_log.h"
 
 namespace openperf::packetio::dpdk::topology {
 
-using cores_by_id = std::unordered_map<unsigned, std::vector<unsigned>>;
+using cores_by_id = std::map<unsigned, model::core_mask>;
+using ports_by_id = std::map<unsigned, std::vector<unsigned>>;
+
+static model::core_mask dpdk_mask()
+{
+    auto mask = model::core_mask{};
+    auto lcore_id = 0U;
+    RTE_LCORE_FOREACH_SLAVE (lcore_id) {
+        mask.set(lcore_id);
+    }
+    return (mask);
+}
 
 /*
  * Distribute port queues to workers while taking into account NUMA
@@ -31,11 +42,13 @@ queue_distribute(const std::vector<model::port_info>& port_info)
      * Generate a node -> core map so that we can easily tell which cores are
      * on which node.
      */
+    const auto mask = config::rx_core_mask().value_or(dpdk_mask())
+                      | config::tx_core_mask().value_or(dpdk_mask());
     cores_by_id nodes;
     unsigned lcore_id = 0;
     RTE_LCORE_FOREACH_SLAVE (lcore_id) {
-        if (lcore_id == stack_lcore) continue;
-        nodes[rte_lcore_to_socket_id(lcore_id)].push_back(lcore_id);
+        if (lcore_id == stack_lcore || !mask[lcore_id]) continue;
+        nodes[rte_lcore_to_socket_id(lcore_id)].set(lcore_id);
     }
 
     /*
@@ -43,7 +56,7 @@ queue_distribute(const std::vector<model::port_info>& port_info)
      * with cores in the same NUMA node.  Unmatched ports contain ports/nodes
      * where we have no associated workers.
      */
-    cores_by_id matched_port_nodes, unmatched_port_nodes;
+    ports_by_id matched_port_nodes, unmatched_port_nodes;
     for (auto& info : port_info) {
         if (nodes.find(info.socket_id()) != nodes.end()) {
             matched_port_nodes[info.socket_id()].push_back(info.id());
@@ -86,7 +99,6 @@ queue_distribute(const std::vector<model::port_info>& port_info)
      */
     std::vector<unsigned> node_ids;
     for (auto& node : nodes) { node_ids.push_back(node.first); }
-    std::sort(begin(node_ids), end(node_ids));
 
     std::vector<queue::descriptor> descriptors;
     for (auto& node : nodes) {
@@ -118,27 +130,38 @@ queue_distribute(const std::vector<model::port_info>& port_info)
 
         /* Now, generate a queue distribution for this set of ports and cores */
         auto node_descriptors =
-            queue::distribute_queues(numa_port_info, node.second.size());
+            queue::distribute_queues(numa_port_info, node.second);
 
-        /*
-         * Finally, update the descriptor so that the worker id points to the
-         * correct core id for that numa node.  Then add it to our final list
-         * of queue descriptors.
-         */
-        std::transform(
-            begin(node_descriptors),
-            end(node_descriptors),
-            std::back_inserter(descriptors),
-            [&](const queue::descriptor& d) -> queue::descriptor {
-                return (queue::descriptor{.worker_id = static_cast<uint16_t>(
-                                              node.second[d.worker_id]),
-                                          .port_id = d.port_id,
-                                          .queue_id = d.queue_id,
-                                          .mode = d.mode});
-            });
+        descriptors.insert(std::end(descriptors),
+                           std::begin(node_descriptors),
+                           std::end(node_descriptors));
     }
 
     return (descriptors);
+}
+
+static model::core_mask get_misc_mask()
+{
+    /* If the user provided explicit cores, then use them */
+    if (auto user_misc_mask = config::misc_core_mask()) {
+        return (user_misc_mask.value());
+    }
+
+    /*
+     * Otherwise, remove any user specified rx/tx cores from the set of all
+     * cores
+     */
+    auto misc_mask = dpdk_mask();
+
+    if (auto rx_mask = config::rx_core_mask()) {
+        misc_mask &= ~rx_mask.value();
+    }
+
+    if (auto tx_mask = config::tx_core_mask()) {
+        misc_mask &= ~tx_mask.value();
+    }
+
+    return (misc_mask);
 }
 
 unsigned get_stack_lcore_id()
@@ -151,25 +174,31 @@ unsigned get_stack_lcore_id()
     }
 
     /* Determine how many cores we can use on each node */
+    const auto misc_mask = get_misc_mask();
     cores_by_id nodes;
     int lcore_id = 0;
     RTE_LCORE_FOREACH_SLAVE (lcore_id) {
-        nodes[rte_lcore_to_socket_id(lcore_id)].push_back(lcore_id);
+        if (!misc_mask[lcore_id]) { continue; }
+        nodes[rte_lcore_to_socket_id(lcore_id)].set(lcore_id);
     }
 
-    assert(!nodes.empty());
+    if (nodes.empty()) {
+        throw std::runtime_error("No cores available for stack thread!");
+    }
 
-    /* Find the numa node with the most cores */
+    /* Find the numa node with the most available cores */
     auto max = std::max_element(
         begin(nodes),
         end(nodes),
         [](const cores_by_id::value_type& a, const cores_by_id::value_type& b) {
-            return (a.second.size() < b.second.size());
+            return (a.second.count() < b.second.count());
         });
 
-    /* Return the first available core */
-    assert(!max->second.empty());
-    return (max->second.front());
+    /* Find and return the first allowed core on the largest NUMA node */
+    const auto& mask = max->second;
+    auto idx = 0U;
+    while (idx < mask.size() && !mask[idx]) { ++idx; }
+    return (idx);
 }
 
 } // namespace openperf::packetio::dpdk::topology
