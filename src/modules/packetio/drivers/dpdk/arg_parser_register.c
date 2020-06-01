@@ -25,13 +25,17 @@ MAKE_OPTION_DATA(
              "modules.packetio.dpdk.no-rx-interrupts",
              0,
              OP_OPTION_TYPE_NONE),
-    MAKE_OPT("maximum number of receive workers per NUMA node",
-             "modules.packetio.dpdk.max-rx-workers",
+    MAKE_OPT("specifies CPU core mask for miscellaneous threads, in hex",
+             "modules.packetio.dpdk.misc-worker-mask",
+             'M',
+             OP_OPTION_TYPE_HEX),
+    MAKE_OPT("specifies CPU core mask for receive threads, in hex",
+             "modules.packetio.dpdk.rx-worker-mask",
              'R',
-             OP_OPTION_TYPE_LONG),
-    MAKE_OPT("maximum number of transmit workers per NUMA node",
-             "modules.packetio.dpdk.max-tx-workers",
+             OP_OPTION_TYPE_HEX),
+    MAKE_OPT("specifies CPU core mask for transmit threads, in hex",
+             "modules.packetio.dpdk.tx-worker-mask",
              'T',
-             OP_OPTION_TYPE_LONG), );
+             OP_OPTION_TYPE_HEX), );
 
 REGISTER_CLI_OPTIONS(dpdk)
