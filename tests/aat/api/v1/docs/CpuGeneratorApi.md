@@ -4,6 +4,8 @@ All URIs are relative to *http://localhost*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
+[**bulk_create_cpu_generators**](CpuGeneratorApi.md#bulk_create_cpu_generators) | **POST** /cpu-generators/x/bulk-create | Bulk create CPU generators
+[**bulk_delete_cpu_generators**](CpuGeneratorApi.md#bulk_delete_cpu_generators) | **POST** /cpu-generators/x/bulk-delete | Bulk delete CPU generators
 [**bulk_start_cpu_generators**](CpuGeneratorApi.md#bulk_start_cpu_generators) | **POST** /cpu-generators/x/bulk-start | Tell multiple CPU generators to start
 [**bulk_stop_cpu_generators**](CpuGeneratorApi.md#bulk_stop_cpu_generators) | **POST** /cpu-generators/x/bulk-stop | Bulk stop CPU generators
 [**cpu_info**](CpuGeneratorApi.md#cpu_info) | **GET** /cpu-info | Get a CPU info
@@ -17,6 +19,101 @@ Method | HTTP request | Description
 [**start_cpu_generator**](CpuGeneratorApi.md#start_cpu_generator) | **POST** /cpu-generators/{id}/start | Start a CPU generator
 [**stop_cpu_generator**](CpuGeneratorApi.md#stop_cpu_generator) | **POST** /cpu-generators/{id}/stop | Stop a CPU generator
 
+
+# **bulk_create_cpu_generators**
+> BulkCreateCpuGeneratorsResponse bulk_create_cpu_generators(create)
+
+Bulk create CPU generators
+
+Create multiple CPU generators. Requests are processed in an all-or-nothing manner, i.e. a single CPU generator creation failure causes all creations for this request to fail. 
+
+### Example
+```python
+from __future__ import print_function
+import time
+import client
+from client.rest import ApiException
+from pprint import pprint
+
+# create an instance of the API class
+api_instance = client.CpuGeneratorApi()
+create = client.BulkCreateCpuGeneratorsRequest() # BulkCreateCpuGeneratorsRequest | Bulk creation
+
+try:
+    # Bulk create CPU generators
+    api_response = api_instance.bulk_create_cpu_generators(create)
+    pprint(api_response)
+except ApiException as e:
+    print("Exception when calling CpuGeneratorApi->bulk_create_cpu_generators: %s\n" % e)
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **create** | [**BulkCreateCpuGeneratorsRequest**](BulkCreateCpuGeneratorsRequest.md)| Bulk creation | 
+
+### Return type
+
+[**BulkCreateCpuGeneratorsResponse**](BulkCreateCpuGeneratorsResponse.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **bulk_delete_cpu_generators**
+> bulk_delete_cpu_generators(delete)
+
+Bulk delete CPU generators
+
+Delete multiple CPU generators in a best-effort manner. Non-existant CPU generators ids do not cause errors. Idempotent. 
+
+### Example
+```python
+from __future__ import print_function
+import time
+import client
+from client.rest import ApiException
+from pprint import pprint
+
+# create an instance of the API class
+api_instance = client.CpuGeneratorApi()
+delete = client.BulkDeleteCpuGeneratorsRequest() # BulkDeleteCpuGeneratorsRequest | Bulk delete
+
+try:
+    # Bulk delete CPU generators
+    api_instance.bulk_delete_cpu_generators(delete)
+except ApiException as e:
+    print("Exception when calling CpuGeneratorApi->bulk_delete_cpu_generators: %s\n" % e)
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **delete** | [**BulkDeleteCpuGeneratorsRequest**](BulkDeleteCpuGeneratorsRequest.md)| Bulk delete | 
+
+### Return type
+
+void (empty response body)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **bulk_start_cpu_generators**
 > list[CpuGeneratorResult] bulk_start_cpu_generators(bulk_start)

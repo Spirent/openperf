@@ -24,6 +24,10 @@ private:
     api_reply handle_request(const request::generator::get&);
     api_reply handle_request(const request::generator::erase&);
     api_reply handle_request(const request::generator::create&);
+
+    api_reply handle_request(const request::generator::bulk::create&);
+    api_reply handle_request(const request::generator::bulk::erase&);
+
     api_reply handle_request(const request::generator::stop&);
     api_reply handle_request(const request::generator::start&);
 

@@ -261,11 +261,23 @@ paths:
   /block-files/{id}:
     $ref: ./modules/block.yaml#/paths/~1block-files~1{id}
 
+  /block-files/x/bulk-create:
+    $ref: ./modules/block.yaml#/paths/~1block-files~1x~1bulk-create
+
+  /block-files/x/bulk-delete:
+    $ref: ./modules/block.yaml#/paths/~1block-files~1x~1bulk-delete
+
   /block-generators:
     $ref: ./modules/block.yaml#/paths/~1block-generators
 
   /block-generators/{id}:
     $ref: ./modules/block.yaml#/paths/~1block-generators~1{id}
+
+  /block-generators/x/bulk-create:
+    $ref: ./modules/block.yaml#/paths/~1block-generators~1x~1bulk-create
+
+  /block-generators/x/bulk-delete:
+    $ref: ./modules/block.yaml#/paths/~1block-generators~1x~1bulk-delete
 
   /block-generators/{id}/start:
     $ref: ./modules/block.yaml#/paths/~1block-generators~1{id}~1start
@@ -293,6 +305,12 @@ paths:
 
   /memory-generators/{id}:
     $ref: ./modules/memory.yaml#/paths/~1memory-generators~1{id}
+
+  /memory-generators/x/bulk-create:
+    $ref: ./modules/memory.yaml#/paths/~1memory-generators~1x~1bulk-create
+
+  /memory-generators/x/bulk-delete:
+    $ref: ./modules/memory.yaml#/paths/~1memory-generators~1x~1bulk-delete
 
   /memory-generators/{id}/start:
     $ref: ./modules/memory.yaml#/paths/~1memory-generators~1{id}~1start
@@ -323,6 +341,13 @@ paths:
 
   /cpu-generators/{id}:
     $ref: ./modules/cpu.yaml#/paths/~1cpu-generators~1{id}
+
+  /cpu-generators/x/bulk-create:
+    $ref: ./modules/cpu.yaml#/paths/~1cpu-generators~1x~1bulk-create
+
+  /cpu-generators/x/bulk-delete:
+    $ref: ./modules/cpu.yaml#/paths/~1cpu-generators~1x~1bulk-delete
+
 
   /cpu-generators/{id}/start:
     $ref: ./modules/cpu.yaml#/paths/~1cpu-generators~1{id}~1start

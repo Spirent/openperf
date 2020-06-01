@@ -14,6 +14,27 @@ namespace model = ::swagger::v1::model;
 using json = nlohmann::json;
 using namespace Pistache;
 
+class bulk_create_block_generators_request : public model::BulkCreateMemoryGeneratorsRequest {
+public:
+    void fromJson(nlohmann::json& val) override
+    {
+        m_Items.clear();
+        nlohmann::json jsonArray;
+        for (auto& item : val["items"]) {
+            if(item.is_null()) {
+                m_Items.push_back( std::shared_ptr<model::MemoryGenerator>(nullptr) );
+            } else {
+                std::shared_ptr<model::MemoryGenerator> newItem(new model::MemoryGenerator());
+                newItem->fromJson(item);
+                auto gc = model::MemoryGeneratorConfig();
+                gc.fromJson(item["config"]);
+                newItem->setConfig(std::make_shared<model::MemoryGeneratorConfig>(gc));
+                m_Items.push_back( newItem );
+            }
+        }
+    }
+};
+
 std::string json_error(std::string_view msg)
 {
     return json{"error", msg}.dump();
@@ -64,6 +85,8 @@ public:
     void stop_generator(const Rest::Request&, Http::ResponseWriter);
 
     // Bulk memory generator actions
+    void bulk_create_generators(const Rest::Request&, Http::ResponseWriter);
+    void bulk_delete_generators(const Rest::Request&, Http::ResponseWriter);
     void bulk_start_generators(const Rest::Request&, Http::ResponseWriter);
     void bulk_stop_generators(const Rest::Request&, Http::ResponseWriter);
 
@@ -92,6 +115,17 @@ handler::handler(void* context, Rest::Router& router)
     Rest::Routes::Delete(router,
                          "/memory-generators/:id",
                          Rest::Routes::bind(&handler::delete_generator, this));
+
+    Rest::Routes::Post(
+        router,
+        "/memory-generators/x/bulk-create",
+        Rest::Routes::bind(&handler::bulk_create_generators, this));
+    Rest::Routes::Post(
+        router,
+        "/memory-generators/x/bulk-delete",
+        Rest::Routes::bind(&handler::bulk_delete_generators, this));
+
+
     Rest::Routes::Post(router,
                        "/memory-generators/:id/start",
                        Rest::Routes::bind(&handler::start_generator, this));
@@ -157,14 +191,14 @@ void handler::create_generator(const Rest::Request& request,
     model::MemoryGenerator model;
     model.fromJson(json_obj);
 
-    request::generator::create::create_data data{
+    request::generator::create_data data{
         .id = model.getId(), .is_running = model.isRunning(), .config = [&]() {
             model::MemoryGeneratorConfig model;
             model.fromJson(json_obj["config"]);
             return from_swagger(model);
         }()};
     auto api_reply = submit_request(request::generator::create{
-        std::make_unique<request::generator::create::create_data>(
+        std::make_unique<request::generator::create_data>(
             std::move(data))});
 
     if (auto item = std::get_if<reply::generator::item>(&api_reply)) {
@@ -286,6 +320,76 @@ void handler::stop_generator(const Rest::Request& request,
 }
 
 // Bulk memory generator actions
+void handler::bulk_create_generators(const Rest::Request& request,
+                                    Http::ResponseWriter response)
+{
+    auto json_obj = json::parse(request.body());
+
+    bulk_create_block_generators_request model;
+    model.fromJson(json_obj);
+
+    auto req = std::make_unique<std::vector<request::generator::create_data>>();
+    std::transform(
+            model.getItems().begin(),
+            model.getItems().end(),
+            std::back_inserter(*req),
+            [](auto item) -> request::generator::create_data {
+                return request::generator::create_data{
+                    .id = item->getId(),
+                    .is_running = item->isRunning(),
+                    .config = from_swagger(*item->getConfig())
+                };
+            });
+
+    auto api_reply = submit_request(request::generator::bulk::create{std::move(req)});
+
+    if (auto list = std::get_if<reply::generator::list>(&api_reply)) {
+        auto array = json::array();
+        std::transform(
+            list->data->begin(),
+            list->data->end(),
+            std::back_inserter(array),
+            [](auto item) -> json { return to_swagger(item).toJson(); });
+
+        response.headers().add<Http::Header::ContentType>(
+            MIME(Application, Json));
+        response.send(Http::Code::Ok, array.dump());
+        return;
+    }
+
+    if (auto error = std::get_if<reply::error>(&api_reply)) {
+        response_error(response, *error);
+        return;
+    }
+
+    response.send(Http::Code::Internal_Server_Error);
+}
+
+void handler::bulk_delete_generators(const Rest::Request& request,
+                                   Http::ResponseWriter response)
+{
+    auto json_obj = json::parse(request.body());
+
+    model::BulkDeleteMemoryGeneratorsRequest model;
+    model.fromJson(json_obj);
+
+    auto api_reply = submit_request(request::generator::bulk::erase{
+        {std::make_unique<std::vector<std::string>>(
+            std::move(model.getIds()))}});
+
+    if (auto ok = std::get_if<reply::ok>(&api_reply)) {
+        response.send(Http::Code::No_Content);
+        return;
+    }
+
+    if (auto error = std::get_if<reply::error>(&api_reply)) {
+        response_error(response, *error);
+        return;
+    }
+
+    response.send(Http::Code::Internal_Server_Error);
+}
+
 void handler::bulk_start_generators(const Rest::Request& request,
                                     Http::ResponseWriter response)
 {

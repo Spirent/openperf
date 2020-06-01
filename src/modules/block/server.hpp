@@ -32,10 +32,14 @@ public:
     reply_msg handle_request(const request_block_file&);
     reply_msg handle_request(const request_block_file_add&);
     reply_msg handle_request(const request_block_file_del&);
+    reply_msg handle_request(const request_block_file_bulk_add&);
+    reply_msg handle_request(const request_block_file_bulk_del&);
     reply_msg handle_request(const request_block_generator_list&);
     reply_msg handle_request(const request_block_generator&);
     reply_msg handle_request(const request_block_generator_add&);
     reply_msg handle_request(const request_block_generator_del&);
+    reply_msg handle_request(const request_block_generator_bulk_add&);
+    reply_msg handle_request(const request_block_generator_bulk_del&);
     reply_msg handle_request(const request_block_generator_start&);
     reply_msg handle_request(const request_block_generator_stop&);
     reply_msg handle_request(const request_block_generator_bulk_start&);

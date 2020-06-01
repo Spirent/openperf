@@ -71,6 +71,81 @@ paths:
         204:
           description: No Content
 
+  /cpu-generators/x/bulk-create:
+    post:
+      operationId: BulkCreateCpuGenerators
+      tags:
+        - CpuGenerator
+      summary: Bulk create CPU generators
+      description: |
+        Create multiple CPU generators. Requests are processed in an
+        all-or-nothing manner, i.e. a single CPU generator creation failure
+        causes all creations for this request to fail.
+      parameters:
+        - name: create
+          in: body
+          description: Bulk creation
+          required: true
+          schema:
+            type: object
+            title: BulkCreateCpuGeneratorsRequest
+            description: Parameters for the bulk create operation
+            properties:
+              items:
+                type: array
+                description: List of CPU generators
+                items:
+                  $ref: "#/definitions/CpuGenerator"
+                minItems: 1
+            required:
+              - items
+      responses:
+        200:
+          description: Success
+          schema:
+            type: object
+            title: BulkCreateCpuGeneratorsResponse
+            properties:
+              items:
+                type: array
+                description: List of created cpu generators
+                items:
+                  $ref: "#/definitions/CpuGenerator"
+                minItems: 1
+            required:
+              - items
+
+  /cpu-generators/x/bulk-delete:
+    post:
+      operationId: BulkDeleteCpuGenerators
+      tags:
+        - CpuGenerator
+      summary: Bulk delete CPU generators
+      description: |
+        Delete multiple CPU generators in a best-effort manner. Non-existant CPU generators ids
+        do not cause errors. Idempotent.
+      parameters:
+        - name: delete
+          in: body
+          description: Bulk delete
+          required: true
+          schema:
+            type: object
+            title: BulkDeleteCpuGeneratorsRequest
+            description: Parameters for the bulk delete operation
+            properties:
+              ids:
+                type: array
+                description: List of CPU generators
+                items:
+                  type: string
+                minItems: 1
+            required:
+              - ids
+      responses:
+        204:
+          description: No Content
+
   /cpu-generators/{id}/start:
     post:
       operationId: StartCpuGenerator
