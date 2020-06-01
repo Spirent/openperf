@@ -53,9 +53,7 @@ public:
     /// </summary>
     std::string getId() const;
     void setId(std::string value);
-    bool idIsSet() const;
-    void unsetId();
-    /// <summary>
+        /// <summary>
     /// Size of test file (in bytes)
     /// </summary>
     int64_t getFileSize() const;
@@ -65,9 +63,7 @@ public:
     /// </summary>
     int32_t getInitPercentComplete() const;
     void setInitPercentComplete(int32_t value);
-    bool initPercentCompleteIsSet() const;
-    void unsetInit_percent_complete();
-    /// <summary>
+        /// <summary>
     /// Resource pathname
     /// </summary>
     std::string getPath() const;
@@ -77,20 +73,18 @@ public:
     /// </summary>
     std::string getState() const;
     void setState(std::string value);
-    bool stateIsSet() const;
-    void unsetState();
-
+    
 protected:
     std::string m_Id;
-    bool m_IdIsSet;
+
     int64_t m_File_size;
 
     int32_t m_Init_percent_complete;
-    bool m_Init_percent_completeIsSet;
+
     std::string m_Path;
 
     std::string m_State;
-    bool m_StateIsSet;
+
 };
 
 }
