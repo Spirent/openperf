@@ -70,6 +70,9 @@ static void set_data_node_value(YAML::Node& node,
     case OP_OPTION_TYPE_STRING:
         node = std::string(opt_data);
         break;
+    case OP_OPTION_TYPE_HEX:
+        node = strtol(opt_data.data(), nullptr, 16);
+        break;
     case OP_OPTION_TYPE_LONG:
         node = strtol(opt_data.data(), nullptr, 10);
         break;

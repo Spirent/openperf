@@ -127,6 +127,10 @@ template <> struct op_option_type_maps<op_option_type::OP_OPTION_TYPE_STRING>
 {
     using type = std::string;
 };
+template <> struct op_option_type_maps<op_option_type::OP_OPTION_TYPE_HEX>
+{
+    using type = unsigned;
+};
 template <> struct op_option_type_maps<op_option_type::OP_OPTION_TYPE_LONG>
 {
     using type = long;
