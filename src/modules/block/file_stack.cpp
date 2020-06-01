@@ -22,7 +22,7 @@ file::~file() { terminate_scrub(); }
 
 tl::expected<virtual_device_descriptors, int> file::vopen()
 {
-    auto open_vdev = [&](std::atomic_int& fd, int flags) {
+    auto open_vdev = [this](std::atomic_int& fd, int flags) {
          if (fd > 0)
             return fd.load();
 
@@ -47,7 +47,7 @@ tl::expected<virtual_device_descriptors, int> file::vopen()
 
 void file::vclose()
 {
-    auto close_vdev = [&](int fd) {
+    auto close_vdev = [this](int fd) {
         if (auto res = close(fd); res < 0) {
             OP_LOG(OP_LOG_ERROR,
                 "Cannot close file %s: %s",

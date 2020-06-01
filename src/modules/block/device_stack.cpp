@@ -16,7 +16,7 @@ namespace openperf::block::device {
 
 tl::expected<virtual_device_descriptors, int> device::vopen()
 {
-    auto open_vdev = [&](std::atomic_int& fd, int flags) {
+    auto open_vdev = [this](std::atomic_int& fd, int flags) {
          if (fd > 0)
             return fd.load();
 
