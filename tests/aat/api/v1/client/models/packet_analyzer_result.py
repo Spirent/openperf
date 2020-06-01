@@ -65,7 +65,8 @@ class PacketAnalyzerResult(object):
         self.active = active
         self.protocol_counters = protocol_counters
         self.flow_counters = flow_counters
-        self.flows = flows
+        if flows is not None:
+            self.flows = flows
 
     @property
     def id(self):

@@ -254,7 +254,7 @@ class PacketAnalyzerFlowCounters(object):
     def timestamp_last(self):
         """Gets the timestamp_last of this PacketAnalyzerFlowCounters.  # noqa: E501
 
-        Timestamp of last received packed  # noqa: E501
+        Timestamp of last received packet  # noqa: E501
 
         :return: The timestamp_last of this PacketAnalyzerFlowCounters.  # noqa: E501
         :rtype: datetime
@@ -265,7 +265,7 @@ class PacketAnalyzerFlowCounters(object):
     def timestamp_last(self, timestamp_last):
         """Sets the timestamp_last of this PacketAnalyzerFlowCounters.
 
-        Timestamp of last received packed  # noqa: E501
+        Timestamp of last received packet  # noqa: E501
 
         :param timestamp_last: The timestamp_last of this PacketAnalyzerFlowCounters.  # noqa: E501
         :type: datetime
