@@ -92,6 +92,53 @@ reply_msg server::handle_request(const request_block_file_del& request)
     return reply_ok{};
 }
 
+reply_msg server::handle_request(const request_block_file_bulk_add& request)
+{
+    auto reply = reply_block_files{};
+
+    auto remove_created_items = [&]() -> auto
+    {
+        for (auto& item : reply.files) {
+            m_file_stack->delete_block_file(item->get_id());
+        }
+    };
+
+    for (auto& source : request.files) {
+        // If user did not specify an id create one for them.
+        if (source->get_id().empty()) {
+            source->set_id(core::to_string(core::uuid::random()));
+        }
+
+        if (auto id_check = config::op_config_validate_id_string(source->get_id()); !id_check) {
+            remove_created_items();
+            return (to_error(error_type::CUSTOM_ERROR, 0, "Id is not valid"));
+        }
+
+        auto result = m_file_stack->create_block_file(*source);
+        if (!result) {
+            remove_created_items();
+            return (to_error(error_type::CUSTOM_ERROR, 0, result.error()));
+        }
+        reply.files.emplace_back(std::make_unique<model::file>(*result.value()));
+    }
+
+    return reply;
+}
+
+reply_msg server::handle_request(const request_block_file_bulk_del& request)
+{
+    bool failed = false;
+    for (auto& id : request.ids) {
+        failed = !m_file_stack->delete_block_file(*id) || failed;
+    }
+    if (failed)
+        return to_error(api::error_type::CUSTOM_ERROR,
+                        0,
+                        "Some files from the list cannot be deleted");
+
+    return api::reply_ok{};
+}
+
 reply_msg server::handle_request(const request_block_generator_list&)
 {
     auto reply = reply_block_generators{};
@@ -146,6 +193,53 @@ reply_msg server::handle_request(const request_block_generator_del& request)
     } else {
         return to_error(api::error_type::NOT_FOUND);
     }
+}
+
+reply_msg server::handle_request(const request_block_generator_bulk_add& request)
+{
+    auto reply = reply_block_generators{};
+
+    auto remove_created_items = [&]() -> auto
+    {
+        for (auto& item : reply.generators) {
+            m_generator_stack->delete_block_generator(item->get_id());
+        }
+    };
+
+    for (auto& source : request.generators) {
+        // If user did not specify an id create one for them.
+        if (source->get_id().empty()) {
+            source->set_id(core::to_string(core::uuid::random()));
+        }
+
+        if (auto id_check = config::op_config_validate_id_string(source->get_id()); !id_check) {
+            remove_created_items();
+            return (to_error(error_type::CUSTOM_ERROR, 0, "Id is not valid"));
+        }
+
+        auto result = m_generator_stack->create_block_generator(*source, {m_file_stack.get(), m_device_stack.get()});
+        if (!result) {
+            remove_created_items();
+            return (to_error(error_type::CUSTOM_ERROR, 0, result.error()));
+        }
+        reply.generators.emplace_back(std::make_unique<model::block_generator>(*result.value()));
+    }
+
+    return reply;
+}
+
+reply_msg server::handle_request(const request_block_generator_bulk_del& request)
+{
+    bool failed = false;
+    for (auto& id : request.ids) {
+        failed = !m_generator_stack->delete_block_generator(*id) || failed;
+    }
+    if (failed)
+        return to_error(api::error_type::CUSTOM_ERROR,
+                        0,
+                        "Some generators from the list cannot be deleted");
+
+    return api::reply_ok{};
 }
 
 reply_msg server::handle_request(const request_block_generator_start& request)
@@ -208,7 +302,7 @@ server::handle_request(const request_block_generator_bulk_stop& request)
 {
     bool failed = false;
     for (auto& id : request.ids) {
-        failed = failed || !m_generator_stack->stop_generator(*id);
+        failed = !m_generator_stack->stop_generator(*id) || failed;
     }
     if (failed)
         return to_error(api::error_type::CUSTOM_ERROR,

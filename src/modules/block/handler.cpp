@@ -41,6 +41,12 @@ public:
     void delete_file(const Rest::Request& request,
                      Http::ResponseWriter response);
 
+    void bulk_create_files(const Rest::Request& request,
+                               Http::ResponseWriter response);
+
+    void bulk_delete_files(const Rest::Request& request,
+                              Http::ResponseWriter response);
+
     void list_generators(const Rest::Request& request,
                          Http::ResponseWriter response);
 
@@ -52,6 +58,12 @@ public:
 
     void delete_generator(const Rest::Request& request,
                           Http::ResponseWriter response);
+
+    void bulk_create_generators(const Rest::Request& request,
+                               Http::ResponseWriter response);
+
+    void bulk_delete_generators(const Rest::Request& request,
+                              Http::ResponseWriter response);
 
     void start_generator(const Rest::Request& request,
                          Http::ResponseWriter response);
@@ -87,6 +99,27 @@ enum Http::Code to_code(const api::reply_error& error)
     }
 }
 
+class bulk_create_block_generators_request : public BulkCreateBlockGeneratorsRequest {
+public:
+    void fromJson(nlohmann::json& val) override
+    {
+        m_Items.clear();
+        nlohmann::json jsonArray;
+        for( auto& item : val["items"]) {
+            if(item.is_null()) {
+                m_Items.push_back( std::shared_ptr<BlockGenerator>(nullptr) );
+            } else {
+                std::shared_ptr<BlockGenerator> newItem(new BlockGenerator());
+                newItem->fromJson(item);
+                auto gc = BlockGeneratorConfig();
+                gc.fromJson(item["config"]);
+                newItem->setConfig(std::make_shared<BlockGeneratorConfig>(gc));
+                m_Items.push_back( newItem );
+            }
+        }
+    }
+};
+
 static std::optional<std::string>
 maybe_get_host_uri(const request_type& request)
 {
@@ -119,6 +152,14 @@ handler::handler(void* context, Rest::Router& router)
     Rest::Routes::Delete(router,
                          "/block-files/:id",
                          Rest::Routes::bind(&handler::delete_file, this));
+    Rest::Routes::Post(
+        router,
+        "/block-files/x/bulk-create",
+        Rest::Routes::bind(&handler::bulk_create_files, this));
+    Rest::Routes::Post(
+        router,
+        "/block-files/x/bulk-delete",
+        Rest::Routes::bind(&handler::bulk_delete_files, this));
     Rest::Routes::Get(router,
                       "/block-generators",
                       Rest::Routes::bind(&handler::list_generators, this));
@@ -131,6 +172,14 @@ handler::handler(void* context, Rest::Router& router)
     Rest::Routes::Delete(router,
                          "/block-generators/:id",
                          Rest::Routes::bind(&handler::delete_generator, this));
+    Rest::Routes::Post(
+        router,
+        "/block-generators/x/bulk-create",
+        Rest::Routes::bind(&handler::bulk_create_generators, this));
+    Rest::Routes::Post(
+        router,
+        "/block-generators/x/bulk-delete",
+        Rest::Routes::bind(&handler::bulk_delete_generators, this));
     Rest::Routes::Post(router,
                        "/block-generators/:id/start",
                        Rest::Routes::bind(&handler::start_generator, this));
@@ -321,6 +370,55 @@ void handler::delete_file(const Rest::Request& request,
     }
 }
 
+void handler::bulk_create_files(const Rest::Request& request,
+                                    Http::ResponseWriter response)
+{
+    auto request_json = json::parse(request.body());
+    BulkCreateBlockFilesRequest request_model;
+    request_model.fromJson(request_json);
+
+    auto api_reply =
+        submit_request(m_socket.get(), api::from_swagger(request_model));
+    if (auto reply =
+            std::get_if<api::reply_block_files>(&api_reply)) {
+        response.headers().add<Http::Header::ContentType>(
+            MIME(Application, Json));
+        auto results = json::array();
+        std::transform(std::begin(reply->files),
+                       std::end(reply->files),
+                       std::back_inserter(results),
+                       [](const auto& result) {
+                           return (api::to_swagger(*result)->toJson());
+                       });
+        response.send(Http::Code::Ok, results.dump());
+    } else if (auto error = std::get_if<api::reply_error>(&api_reply)) {
+        response.send(to_code(*error), api::to_string(error->info));
+    } else {
+        response.send(Http::Code::Internal_Server_Error);
+    }
+}
+
+void handler::bulk_delete_files(const Rest::Request& request,
+                                   Http::ResponseWriter response)
+{
+    auto request_json = json::parse(request.body());
+    BulkDeleteBlockFilesRequest request_model;
+    request_model.fromJson(request_json);
+
+    auto api_reply =
+        submit_request(m_socket.get(), api::from_swagger(request_model));
+    if (std::get_if<api::reply_ok>(&api_reply)) {
+        response.headers().add<Http::Header::ContentType>(
+            MIME(Application, Json));
+        response.send(Http::Code::No_Content);
+    } else if (auto error = std::get_if<api::reply_error>(&api_reply)) {
+        response.send(to_code(*error), api::to_string(error->info));
+    } else {
+        response.send(Http::Code::Internal_Server_Error);
+    }
+}
+
+
 void handler::list_generators(const Rest::Request&,
                               Http::ResponseWriter response)
 {
@@ -416,6 +514,54 @@ void handler::delete_generator(const Rest::Request& request,
     auto api_reply = submit_request(m_socket.get(),
                                     api::request_block_generator_del{id : id});
     if (auto reply = std::get_if<api::reply_ok>(&api_reply)) {
+        response.headers().add<Http::Header::ContentType>(
+            MIME(Application, Json));
+        response.send(Http::Code::No_Content);
+    } else if (auto error = std::get_if<api::reply_error>(&api_reply)) {
+        response.send(to_code(*error), api::to_string(error->info));
+    } else {
+        response.send(Http::Code::Internal_Server_Error);
+    }
+}
+
+void handler::bulk_create_generators(const Rest::Request& request,
+                                    Http::ResponseWriter response)
+{
+    auto request_json = json::parse(request.body());
+    bulk_create_block_generators_request request_model;
+    request_model.fromJson(request_json);
+
+    auto api_reply =
+        submit_request(m_socket.get(), api::from_swagger(request_model));
+    if (auto reply =
+            std::get_if<api::reply_block_generators>(&api_reply)) {
+        response.headers().add<Http::Header::ContentType>(
+            MIME(Application, Json));
+        auto results = json::array();
+        std::transform(std::begin(reply->generators),
+                       std::end(reply->generators),
+                       std::back_inserter(results),
+                       [](const auto& result) {
+                           return (api::to_swagger(*result)->toJson());
+                       });
+        response.send(Http::Code::Ok, results.dump());
+    } else if (auto error = std::get_if<api::reply_error>(&api_reply)) {
+        response.send(to_code(*error), api::to_string(error->info));
+    } else {
+        response.send(Http::Code::Internal_Server_Error);
+    }
+}
+
+void handler::bulk_delete_generators(const Rest::Request& request,
+                                   Http::ResponseWriter response)
+{
+    auto request_json = json::parse(request.body());
+    BulkDeleteBlockGeneratorsRequest request_model;
+    request_model.fromJson(request_json);
+
+    auto api_reply =
+        submit_request(m_socket.get(), api::from_swagger(request_model));
+    if (std::get_if<api::reply_ok>(&api_reply)) {
         response.headers().add<Http::Header::ContentType>(
             MIME(Application, Json));
         response.send(Http::Code::No_Content);

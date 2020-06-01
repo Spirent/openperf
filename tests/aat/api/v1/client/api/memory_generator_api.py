@@ -33,6 +33,204 @@ class MemoryGeneratorApi(object):
             api_client = ApiClient()
         self.api_client = api_client
 
+    def bulk_create_memory_generators(self, create, **kwargs):  # noqa: E501
+        """Bulk create memory generators  # noqa: E501
+
+        Create multiple memory generators. Requests are processed in an all-or-nothing manner, i.e. a single memory generator creation failure causes all creations for this request to fail.   # noqa: E501
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.bulk_create_memory_generators(create, async_req=True)
+        >>> result = thread.get()
+
+        :param async_req bool
+        :param BulkCreateMemoryGeneratorsRequest create: Bulk creation (required)
+        :return: BulkCreateMemoryGeneratorsResponse
+                 If the method is called asynchronously,
+                 returns the request thread.
+        """
+        kwargs['_return_http_data_only'] = True
+        if kwargs.get('async_req'):
+            return self.bulk_create_memory_generators_with_http_info(create, **kwargs)  # noqa: E501
+        else:
+            (data) = self.bulk_create_memory_generators_with_http_info(create, **kwargs)  # noqa: E501
+            return data
+
+    def bulk_create_memory_generators_with_http_info(self, create, **kwargs):  # noqa: E501
+        """Bulk create memory generators  # noqa: E501
+
+        Create multiple memory generators. Requests are processed in an all-or-nothing manner, i.e. a single memory generator creation failure causes all creations for this request to fail.   # noqa: E501
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.bulk_create_memory_generators_with_http_info(create, async_req=True)
+        >>> result = thread.get()
+
+        :param async_req bool
+        :param BulkCreateMemoryGeneratorsRequest create: Bulk creation (required)
+        :return: BulkCreateMemoryGeneratorsResponse
+                 If the method is called asynchronously,
+                 returns the request thread.
+        """
+
+        all_params = ['create']  # noqa: E501
+        all_params.append('async_req')
+        all_params.append('_return_http_data_only')
+        all_params.append('_preload_content')
+        all_params.append('_request_timeout')
+
+        params = locals()
+        for key, val in six.iteritems(params['kwargs']):
+            if key not in all_params:
+                raise TypeError(
+                    "Got an unexpected keyword argument '%s'"
+                    " to method bulk_create_memory_generators" % key
+                )
+            params[key] = val
+        del params['kwargs']
+        # verify the required parameter 'create' is set
+        if ('create' not in params or
+                params['create'] is None):
+            raise ValueError("Missing the required parameter `create` when calling `bulk_create_memory_generators`")  # noqa: E501
+
+        collection_formats = {}
+
+        path_params = {}
+
+        query_params = []
+
+        header_params = {}
+
+        form_params = []
+        local_var_files = {}
+
+        body_params = None
+        if 'create' in params:
+            body_params = params['create']
+        # HTTP header `Accept`
+        header_params['Accept'] = self.api_client.select_header_accept(
+            ['application/json'])  # noqa: E501
+
+        # HTTP header `Content-Type`
+        header_params['Content-Type'] = self.api_client.select_header_content_type(  # noqa: E501
+            ['application/json'])  # noqa: E501
+
+        # Authentication setting
+        auth_settings = []  # noqa: E501
+
+        return self.api_client.call_api(
+            '/memory-generators/x/bulk-create', 'POST',
+            path_params,
+            query_params,
+            header_params,
+            body=body_params,
+            post_params=form_params,
+            files=local_var_files,
+            response_type='BulkCreateMemoryGeneratorsResponse',  # noqa: E501
+            auth_settings=auth_settings,
+            async_req=params.get('async_req'),
+            _return_http_data_only=params.get('_return_http_data_only'),
+            _preload_content=params.get('_preload_content', True),
+            _request_timeout=params.get('_request_timeout'),
+            collection_formats=collection_formats)
+
+    def bulk_delete_memory_generators(self, delete, **kwargs):  # noqa: E501
+        """Bulk delete memory generators  # noqa: E501
+
+        Delete multiple memory generators in a best-effort manner. Non-existant memory generators ids do not cause errors. Idempotent.   # noqa: E501
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.bulk_delete_memory_generators(delete, async_req=True)
+        >>> result = thread.get()
+
+        :param async_req bool
+        :param BulkDeleteMemoryGeneratorsRequest delete: Bulk delete (required)
+        :return: None
+                 If the method is called asynchronously,
+                 returns the request thread.
+        """
+        kwargs['_return_http_data_only'] = True
+        if kwargs.get('async_req'):
+            return self.bulk_delete_memory_generators_with_http_info(delete, **kwargs)  # noqa: E501
+        else:
+            (data) = self.bulk_delete_memory_generators_with_http_info(delete, **kwargs)  # noqa: E501
+            return data
+
+    def bulk_delete_memory_generators_with_http_info(self, delete, **kwargs):  # noqa: E501
+        """Bulk delete memory generators  # noqa: E501
+
+        Delete multiple memory generators in a best-effort manner. Non-existant memory generators ids do not cause errors. Idempotent.   # noqa: E501
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.bulk_delete_memory_generators_with_http_info(delete, async_req=True)
+        >>> result = thread.get()
+
+        :param async_req bool
+        :param BulkDeleteMemoryGeneratorsRequest delete: Bulk delete (required)
+        :return: None
+                 If the method is called asynchronously,
+                 returns the request thread.
+        """
+
+        all_params = ['delete']  # noqa: E501
+        all_params.append('async_req')
+        all_params.append('_return_http_data_only')
+        all_params.append('_preload_content')
+        all_params.append('_request_timeout')
+
+        params = locals()
+        for key, val in six.iteritems(params['kwargs']):
+            if key not in all_params:
+                raise TypeError(
+                    "Got an unexpected keyword argument '%s'"
+                    " to method bulk_delete_memory_generators" % key
+                )
+            params[key] = val
+        del params['kwargs']
+        # verify the required parameter 'delete' is set
+        if ('delete' not in params or
+                params['delete'] is None):
+            raise ValueError("Missing the required parameter `delete` when calling `bulk_delete_memory_generators`")  # noqa: E501
+
+        collection_formats = {}
+
+        path_params = {}
+
+        query_params = []
+
+        header_params = {}
+
+        form_params = []
+        local_var_files = {}
+
+        body_params = None
+        if 'delete' in params:
+            body_params = params['delete']
+        # HTTP header `Accept`
+        header_params['Accept'] = self.api_client.select_header_accept(
+            ['application/json'])  # noqa: E501
+
+        # HTTP header `Content-Type`
+        header_params['Content-Type'] = self.api_client.select_header_content_type(  # noqa: E501
+            ['application/json'])  # noqa: E501
+
+        # Authentication setting
+        auth_settings = []  # noqa: E501
+
+        return self.api_client.call_api(
+            '/memory-generators/x/bulk-delete', 'POST',
+            path_params,
+            query_params,
+            header_params,
+            body=body_params,
+            post_params=form_params,
+            files=local_var_files,
+            response_type=None,  # noqa: E501
+            auth_settings=auth_settings,
+            async_req=params.get('async_req'),
+            _return_http_data_only=params.get('_return_http_data_only'),
+            _preload_content=params.get('_preload_content', True),
+            _request_timeout=params.get('_request_timeout'),
+            collection_formats=collection_formats)
+
     def bulk_start_memory_generators(self, bulk_start, **kwargs):  # noqa: E501
         """Tell multiple memory generators to start  # noqa: E501
 

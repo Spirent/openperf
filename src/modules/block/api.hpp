@@ -12,6 +12,10 @@
 #include "models/generator_result.hpp"
 #include "swagger/v1/model/BlockGenerator.h"
 #include "swagger/v1/model/BlockGeneratorResult.h"
+#include "swagger/v1/model/BulkCreateBlockFilesRequest.h"
+#include "swagger/v1/model/BulkDeleteBlockFilesRequest.h"
+#include "swagger/v1/model/BulkCreateBlockGeneratorsRequest.h"
+#include "swagger/v1/model/BulkDeleteBlockGeneratorsRequest.h"
 #include "swagger/v1/model/BulkStartBlockGeneratorsRequest.h"
 #include "swagger/v1/model/BulkStopBlockGeneratorsRequest.h"
 #include "swagger/v1/model/BlockFile.h"
@@ -74,6 +78,17 @@ struct request_block_file_del
     std::string id;
 };
 
+
+struct request_block_file_bulk_add
+{
+    std::vector<file_ptr> files;
+};
+
+struct request_block_file_bulk_del
+{
+    std::vector<string_ptr> ids;
+};
+
 struct request_block_generator_list
 {};
 
@@ -90,6 +105,16 @@ struct request_block_generator_add
 struct request_block_generator_del
 {
     std::string id;
+};
+
+struct request_block_generator_bulk_add
+{
+    std::vector<generator_ptr> generators;
+};
+
+struct request_block_generator_bulk_del
+{
+    std::vector<string_ptr> ids;
 };
 
 struct request_block_generator_start
@@ -141,6 +166,7 @@ struct reply_block_generators
 {
     std::vector<generator_ptr> generators;
 };
+
 struct reply_block_generator_results
 {
     std::vector<generator_result_ptr> results;
@@ -160,10 +186,14 @@ using request_msg = std::variant<request_block_device_list,
                                  request_block_file,
                                  request_block_file_add,
                                  request_block_file_del,
+                                 request_block_file_bulk_add,
+                                 request_block_file_bulk_del,
                                  request_block_generator_list,
                                  request_block_generator,
                                  request_block_generator_add,
                                  request_block_generator_del,
+                                 request_block_generator_bulk_add,
+                                 request_block_generator_bulk_del,
                                  request_block_generator_start,
                                  request_block_generator_stop,
                                  request_block_generator_bulk_start,
@@ -203,9 +233,13 @@ std::shared_ptr<BlockGenerator> to_swagger(const model::block_generator&);
 std::shared_ptr<BlockGeneratorResult>
 to_swagger(const model::block_generator_result&);
 model::file from_swagger(const BlockFile&);
+
 model::block_generator from_swagger(const BlockGenerator&);
-request_block_generator_bulk_start
-from_swagger(BulkStartBlockGeneratorsRequest&);
+request_block_file_bulk_add from_swagger(BulkCreateBlockFilesRequest&);
+request_block_file_bulk_del from_swagger(BulkDeleteBlockFilesRequest&);
+request_block_generator_bulk_add from_swagger(BulkCreateBlockGeneratorsRequest&);
+request_block_generator_bulk_del from_swagger(BulkDeleteBlockGeneratorsRequest&);
+request_block_generator_bulk_start from_swagger(BulkStartBlockGeneratorsRequest&);
 request_block_generator_bulk_stop from_swagger(BulkStopBlockGeneratorsRequest&);
 
 extern const std::string endpoint;

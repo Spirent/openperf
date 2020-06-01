@@ -97,6 +97,10 @@ serialized_msg serialize(api_request&& msg)
                                return zmq_msg_init(&serialized.data,
                                                    std::move(create.data));
                            },
+                           [&](request::generator::bulk::create& bulk_create) {
+                               return zmq_msg_init(&serialized.data,
+                                                   std::move(bulk_create.data));
+                           },
                            [&](request::generator::bulk::id_list& list) {
                                return zmq_msg_init(&serialized.data,
                                                    std::move(list.data));
@@ -175,7 +179,7 @@ tl::expected<api_request, int> deserialize_request(const serialized_msg& msg)
         if (zmq_msg_size(&msg.data)) {
             request::generator::create request{};
             request.data.reset(
-                *zmq_msg_data<request::generator::create::create_data**>(
+                *zmq_msg_data<request::generator::create_data**>(
                     &msg.data));
             return request;
         }
@@ -188,6 +192,24 @@ tl::expected<api_request, int> deserialize_request(const serialized_msg& msg)
                                    zmq_msg_size(&msg.data))}};
         }
         return request::generator::erase{};
+    }
+    case utils::variant_index<api_request, request::generator::bulk::create>(): {
+        if (zmq_msg_size(&msg.data)) {
+            request::generator::bulk::create request{};
+            request.data.reset(
+                *zmq_msg_data<std::vector<request::generator::create_data>**>(&msg.data));
+            return request;
+        }
+        return request::generator::bulk::start{};
+    }
+    case utils::variant_index<api_request, request::generator::bulk::erase>(): {
+        if (zmq_msg_size(&msg.data)) {
+            request::generator::bulk::erase request{};
+            request.data.reset(
+                *zmq_msg_data<std::vector<std::string>**>(&msg.data));
+            return request;
+        }
+        return request::generator::bulk::stop{};
     }
     case utils::variant_index<api_request, request::generator::start>(): {
         if (zmq_msg_size(&msg.data)) {

@@ -10,9 +10,10 @@
 #include "swagger/v1/model/MemoryGeneratorConfig.h"
 #include "swagger/v1/model/MemoryGeneratorResult.h"
 #include "swagger/v1/model/MemoryGeneratorStats.h"
+#include "swagger/v1/model/BulkCreateMemoryGeneratorsRequest.h"
+#include "swagger/v1/model/BulkDeleteMemoryGeneratorsRequest.h"
 #include "swagger/v1/model/BulkStopMemoryGeneratorsRequest.h"
 #include "swagger/v1/model/BulkStartMemoryGeneratorsRequest.h"
-
 namespace openperf::memory::api {
 
 namespace swagger = ::swagger::v1::model;

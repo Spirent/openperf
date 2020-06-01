@@ -4,6 +4,8 @@ All URIs are relative to *http://localhost*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
+[**bulk_create_memory_generators**](MemoryGeneratorApi.md#bulk_create_memory_generators) | **POST** /memory-generators/x/bulk-create | Bulk create memory generators
+[**bulk_delete_memory_generators**](MemoryGeneratorApi.md#bulk_delete_memory_generators) | **POST** /memory-generators/x/bulk-delete | Bulk delete memory generators
 [**bulk_start_memory_generators**](MemoryGeneratorApi.md#bulk_start_memory_generators) | **POST** /memory-generators/x/bulk-start | Tell multiple memory generators to start
 [**bulk_stop_memory_generators**](MemoryGeneratorApi.md#bulk_stop_memory_generators) | **POST** /memory-generators/x/bulk-stop | Bulk stop memory generators
 [**create_memory_generator**](MemoryGeneratorApi.md#create_memory_generator) | **POST** /memory-generators | Create a memory generator
@@ -17,6 +19,101 @@ Method | HTTP request | Description
 [**start_memory_generator**](MemoryGeneratorApi.md#start_memory_generator) | **POST** /memory-generators/{id}/start | Start a memory generator
 [**stop_memory_generator**](MemoryGeneratorApi.md#stop_memory_generator) | **POST** /memory-generators/{id}/stop | Stop a memory generator
 
+
+# **bulk_create_memory_generators**
+> BulkCreateMemoryGeneratorsResponse bulk_create_memory_generators(create)
+
+Bulk create memory generators
+
+Create multiple memory generators. Requests are processed in an all-or-nothing manner, i.e. a single memory generator creation failure causes all creations for this request to fail. 
+
+### Example
+```python
+from __future__ import print_function
+import time
+import client
+from client.rest import ApiException
+from pprint import pprint
+
+# create an instance of the API class
+api_instance = client.MemoryGeneratorApi()
+create = client.BulkCreateMemoryGeneratorsRequest() # BulkCreateMemoryGeneratorsRequest | Bulk creation
+
+try:
+    # Bulk create memory generators
+    api_response = api_instance.bulk_create_memory_generators(create)
+    pprint(api_response)
+except ApiException as e:
+    print("Exception when calling MemoryGeneratorApi->bulk_create_memory_generators: %s\n" % e)
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **create** | [**BulkCreateMemoryGeneratorsRequest**](BulkCreateMemoryGeneratorsRequest.md)| Bulk creation | 
+
+### Return type
+
+[**BulkCreateMemoryGeneratorsResponse**](BulkCreateMemoryGeneratorsResponse.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **bulk_delete_memory_generators**
+> bulk_delete_memory_generators(delete)
+
+Bulk delete memory generators
+
+Delete multiple memory generators in a best-effort manner. Non-existant memory generators ids do not cause errors. Idempotent. 
+
+### Example
+```python
+from __future__ import print_function
+import time
+import client
+from client.rest import ApiException
+from pprint import pprint
+
+# create an instance of the API class
+api_instance = client.MemoryGeneratorApi()
+delete = client.BulkDeleteMemoryGeneratorsRequest() # BulkDeleteMemoryGeneratorsRequest | Bulk delete
+
+try:
+    # Bulk delete memory generators
+    api_instance.bulk_delete_memory_generators(delete)
+except ApiException as e:
+    print("Exception when calling MemoryGeneratorApi->bulk_delete_memory_generators: %s\n" % e)
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **delete** | [**BulkDeleteMemoryGeneratorsRequest**](BulkDeleteMemoryGeneratorsRequest.md)| Bulk delete | 
+
+### Return type
+
+void (empty response body)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **bulk_start_memory_generators**
 > list[MemoryGeneratorResult] bulk_start_memory_generators(bulk_start)
