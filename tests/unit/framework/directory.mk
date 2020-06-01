@@ -13,11 +13,6 @@ TEST_SOURCES += \
 	framework/test_init_factory.cpp \
 	framework/test_list.cpp \
 	framework/test_logging.cpp \
-	framework/test_mac_address.cpp \
-	framework/test_ipv4_address.cpp \
-	framework/test_ipv4_network.cpp \
-	framework/test_ipv6_address.cpp \
-	framework/test_ipv6_network.cpp \
 	framework/test_offset_ptr.cpp \
 	framework/test_recycle.cpp \
 	framework/test_soa_container.cpp \

@@ -10,7 +10,7 @@
 #include "json.hpp"
 #include "tl/expected.hpp"
 
-#include "net/net_types.hpp"
+#include "packet/type/net_types.hpp"
 
 namespace swagger::v1::model {
 class Interface;
@@ -30,7 +30,7 @@ struct stats_data
 
 struct eth_protocol_config
 {
-    net::mac_address address;
+    libpacket::type::mac_address address;
 };
 
 struct ipv4_auto_protocol_config
@@ -44,8 +44,8 @@ struct ipv4_dhcp_protocol_config
 
 struct ipv4_static_protocol_config
 {
-    std::optional<net::ipv4_address> gateway;
-    net::ipv4_address address;
+    std::optional<libpacket::type::ipv4_address> gateway;
+    libpacket::type::ipv4_address address;
     uint8_t prefix_length;
 };
 
@@ -56,7 +56,7 @@ typedef std::variant<ipv4_auto_protocol_config,
 
 struct ipv6_common_protocol_config
 {
-    std::optional<net::ipv6_address> link_local_address;
+    std::optional<libpacket::type::ipv6_address> link_local_address;
 };
 
 struct ipv6_auto_protocol_config : public ipv6_common_protocol_config
@@ -69,8 +69,8 @@ struct ipv6_dhcp6_protocol_config : public ipv6_common_protocol_config
 
 struct ipv6_static_protocol_config : public ipv6_common_protocol_config
 {
-    std::optional<net::ipv6_address> gateway;
-    net::ipv6_address address;
+    std::optional<libpacket::type::ipv6_address> gateway;
+    libpacket::type::ipv6_address address;
     uint8_t prefix_length;
 };
 

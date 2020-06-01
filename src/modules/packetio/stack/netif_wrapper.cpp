@@ -19,16 +19,28 @@ std::string netif_wrapper::port_id() const { return (m_config.port_id); }
 
 std::string netif_wrapper::mac_address() const
 {
-    return (net::to_string(net::mac_address(m_netif->hwaddr)));
+    return (libpacket::type::to_string(
+        libpacket::type::mac_address(m_netif->hwaddr)));
+}
+
+static libpacket::type::ipv4_address to_ipv4_address(const ip4_addr_t& addr)
+{
+    return (libpacket::type::ipv4_address(ntohl(addr.addr)));
 }
 
 std::optional<std::string> netif_wrapper::ipv4_address() const
 {
     auto addr = ip_2_ip4(&m_netif->ip_addr);
     if (addr->addr) {
-        return net::to_string(net::ipv4_address(ntohl(addr->addr)));
+        return (libpacket::type::to_string(to_ipv4_address(*addr)));
     }
     return {};
+}
+
+static libpacket::type::ipv6_address to_ipv6_address(const ip6_addr_t& addr)
+{
+    return (libpacket::type::ipv6_address(
+        reinterpret_cast<const uint8_t*>(addr.addr)));
 }
 
 std::optional<std::string> netif_wrapper::ipv6_address() const
@@ -37,7 +49,7 @@ std::optional<std::string> netif_wrapper::ipv6_address() const
         if (ip6_addr_isinvalid(netif_ip6_addr_state(m_netif, i))) continue;
         auto addr = netif_ip6_addr(m_netif, i);
         if (ip6_addr_islinklocal(addr)) continue;
-        return net::to_string(net::ipv6_address((const uint8_t*)addr->addr));
+        return (libpacket::type::to_string(to_ipv6_address(*addr)));
     }
     return {};
 }
@@ -48,7 +60,7 @@ std::optional<std::string> netif_wrapper::ipv6_linklocal_address() const
         if (ip6_addr_isinvalid(netif_ip6_addr_state(m_netif, i))) continue;
         auto addr = netif_ip6_addr(m_netif, i);
         if (!ip6_addr_islinklocal(addr)) continue;
-        return net::to_string(net::ipv6_address((const uint8_t*)addr->addr));
+        return (libpacket::type::to_string(to_ipv6_address(*addr)));
     }
     return {};
 }

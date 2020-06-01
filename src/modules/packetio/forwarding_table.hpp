@@ -14,7 +14,7 @@
 #include "immer/flex_vector.hpp"
 #include "immer/map.hpp"
 
-#include "net/net_types.hpp"
+#include "packet/type/mac_address.hpp"
 
 namespace openperf::packetio {
 
@@ -28,36 +28,40 @@ public:
         std::vector<Sink> sinks;
     };
 
-    using interface_map = immer::map<net::mac_address, interface_sinks>;
+    using interface_map =
+        immer::map<libpacket::type::mac_address, interface_sinks>;
     using sink_vector = immer::flex_vector<Sink>;
-    static constexpr unsigned mac_address_length = 6;
+    static constexpr unsigned mac_address_length =
+        libpacket::type::mac_address{}.size();
 
     forwarding_table();
     ~forwarding_table();
 
     interface_map* insert_interface(uint16_t port_idx,
-                                    const net::mac_address& mac,
+                                    const libpacket::type::mac_address& mac,
                                     Interface* ifp);
     interface_map* remove_interface(uint16_t port_idx,
-                                    const net::mac_address& mac);
+                                    const libpacket::type::mac_address& mac);
 
     sink_vector* insert_sink(uint16_t port_idx, Sink sink);
     sink_vector* remove_sink(uint16_t port_idx, Sink sink);
 
-    interface_map* insert_interface_sink(uint16_t port_idx,
-                                         const net::mac_address& mac,
-                                         Interface* ifp,
-                                         Sink sink);
-    interface_map* remove_interface_sink(uint16_t port_idx,
-                                         const net::mac_address& mac,
-                                         Interface* ifp,
-                                         Sink sink);
+    interface_map*
+    insert_interface_sink(uint16_t port_idx,
+                          const libpacket::type::mac_address& mac,
+                          Interface* ifp,
+                          Sink sink);
+    interface_map*
+    remove_interface_sink(uint16_t port_idx,
+                          const libpacket::type::mac_address& mac,
+                          Interface* ifp,
+                          Sink sink);
 
     Interface* find_interface(uint16_t port_idx, std::string_view id) const;
     Interface* find_interface(std::string_view id) const;
 
     Interface* find_interface(uint16_t port_idx,
-                              const net::mac_address& mac) const;
+                              const libpacket::type::mac_address& mac) const;
     Interface* find_interface(uint16_t port_idx,
                               const uint8_t octets[mac_address_length]) const;
 
@@ -67,10 +71,12 @@ public:
 
     bool has_interface_sinks(uint16_t port_idx) const;
     const std::vector<Sink>*
-    find_interface_sinks(uint16_t port_idx, const net::mac_address& mac) const;
+    find_interface_sinks(uint16_t port_idx,
+                         const libpacket::type::mac_address& mac) const;
     const interface_sinks*
     find_interface_and_sinks(uint16_t port_idx,
-                             const net::mac_address& mac) const;
+                             const libpacket::type::mac_address& mac) const;
+
     /**
      * Visit all the interfaces sinks.
      *

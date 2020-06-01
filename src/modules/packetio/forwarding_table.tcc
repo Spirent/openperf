@@ -5,6 +5,8 @@
 
 namespace openperf::packetio {
 
+using mac_address = libpacket::type::mac_address;
+
 template <typename Interface> std::string get_interface_id(Interface* ifp);
 
 template <typename Interface, typename Sink, int MaxPorts>
@@ -29,7 +31,7 @@ forwarding_table<Interface, Sink, MaxPorts>::~forwarding_table()
 template <typename Interface, typename Sink, int MaxPorts>
 typename forwarding_table<Interface, Sink, MaxPorts>::interface_map*
 forwarding_table<Interface, Sink, MaxPorts>::insert_interface(
-    uint16_t port_idx, const net::mac_address& mac, Interface* ifp)
+    uint16_t port_idx, const mac_address& mac, Interface* ifp)
 {
     assert(port_idx < MaxPorts);
 
@@ -42,7 +44,7 @@ forwarding_table<Interface, Sink, MaxPorts>::insert_interface(
 template <typename Interface, typename Sink, int MaxPorts>
 typename forwarding_table<Interface, Sink, MaxPorts>::interface_map*
 forwarding_table<Interface, Sink, MaxPorts>::remove_interface(
-    uint16_t port_idx, const net::mac_address& mac)
+    uint16_t port_idx, const mac_address& mac)
 {
     assert(port_idx < MaxPorts);
 
@@ -84,7 +86,7 @@ forwarding_table<Interface, Sink, MaxPorts>::remove_sink(uint16_t port_idx,
 template <typename Interface, typename Sink, int MaxPorts>
 typename forwarding_table<Interface, Sink, MaxPorts>::interface_map*
 forwarding_table<Interface, Sink, MaxPorts>::insert_interface_sink(
-    uint16_t port_idx, const net::mac_address& mac, Interface* ifp, Sink sink)
+    uint16_t port_idx, const mac_address& mac, Interface* ifp, Sink sink)
 {
     assert(port_idx < MaxPorts);
 
@@ -100,7 +102,7 @@ forwarding_table<Interface, Sink, MaxPorts>::insert_interface_sink(
 template <typename Interface, typename Sink, int MaxPorts>
 typename forwarding_table<Interface, Sink, MaxPorts>::interface_map*
 forwarding_table<Interface, Sink, MaxPorts>::remove_interface_sink(
-    uint16_t port_idx, const net::mac_address& mac, Interface* ifp, Sink sink)
+    uint16_t port_idx, const mac_address& mac, Interface* ifp, Sink sink)
 {
     assert(port_idx < MaxPorts);
 
@@ -154,7 +156,7 @@ Interface* forwarding_table<Interface, Sink, MaxPorts>::find_interface(
 
 template <typename Interface, typename Sink, int MaxPorts>
 Interface* forwarding_table<Interface, Sink, MaxPorts>::find_interface(
-    uint16_t port_idx, const net::mac_address& mac) const
+    uint16_t port_idx, const mac_address& mac) const
 {
     assert(port_idx < MaxPorts);
 
@@ -170,7 +172,7 @@ Interface* forwarding_table<Interface, Sink, MaxPorts>::find_interface(
     assert(port_idx < MaxPorts);
 
     auto map = m_interfaces[port_idx].load(std::memory_order_consume);
-    auto item = map->find(net::mac_address(octets));
+    auto item = map->find(mac_address(octets));
     return (item ? item->ifp : nullptr);
 }
 
@@ -204,7 +206,7 @@ bool forwarding_table<Interface, Sink, MaxPorts>::has_interface_sinks(
 template <typename Interface, typename Sink, int MaxPorts>
 const std::vector<Sink>*
 forwarding_table<Interface, Sink, MaxPorts>::find_interface_sinks(
-    uint16_t port_idx, const net::mac_address& mac) const
+    uint16_t port_idx, const mac_address& mac) const
 {
     assert(port_idx < MaxPorts);
 
@@ -217,7 +219,7 @@ forwarding_table<Interface, Sink, MaxPorts>::find_interface_sinks(
 template <typename Interface, typename Sink, int MaxPorts>
 const typename forwarding_table<Interface, Sink, MaxPorts>::interface_sinks*
 forwarding_table<Interface, Sink, MaxPorts>::find_interface_and_sinks(
-    uint16_t port_idx, const net::mac_address& mac) const
+    uint16_t port_idx, const mac_address& mac) const
 {
     assert(port_idx < MaxPorts);
 

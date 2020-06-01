@@ -1,9 +1,9 @@
 #include "catch.hpp"
 
-#include "net/ipv4_network.hpp"
+#include "packet/type/ipv4_network.hpp"
 
-using ipv4_address = openperf::net::ipv4_address;
-using ipv4_network = openperf::net::ipv4_network;
+using ipv4_address = libpacket::type::ipv4_address;
+using ipv4_network = libpacket::type::ipv4_network;
 
 TEST_CASE("ipv4_network functionality checks", "[ipv4_network]")
 {

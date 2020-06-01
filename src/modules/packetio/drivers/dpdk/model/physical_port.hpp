@@ -1,7 +1,6 @@
 #ifndef _OP_PACKETIO_DPDK_MODEL_PHYSICAL_PORT_HPP_
 #define _OP_PACKETIO_DPDK_MODEL_PHYSICAL_PORT_HPP_
 
-#include "net/net_types.hpp"
 #include "packetio/generic_port.hpp"
 
 struct rte_eth_conf;

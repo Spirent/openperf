@@ -5,7 +5,9 @@ TEST_DEPENDS += packet
 TEST_SOURCES += \
 	lib/packet/test_endian_fields.cpp \
 	lib/packet/test_ipv4_address.cpp \
+	lib/packet/test_ipv4_network.cpp \
 	lib/packet/test_ipv6_address.cpp \
+	lib/packet/test_ipv6_network.cpp \
 	lib/packet/test_mac_address.cpp
 
 ifeq ($(ARCH),x86_64)

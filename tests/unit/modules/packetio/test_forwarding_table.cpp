@@ -32,6 +32,8 @@ template class openperf::packetio::
 using forwarding_table =
     openperf::packetio::forwarding_table<test_interface, test_sink, max_ports>;
 
+using mac_address = libpacket::type::mac_address;
+
 TEST_CASE("forwarding table functionality", "[forwarding table]")
 {
     auto table = forwarding_table();
@@ -39,8 +41,7 @@ TEST_CASE("forwarding table functionality", "[forwarding table]")
     SECTION("insert interface, ")
     {
         auto ifp1 = test_interface{"interface_1"};
-        auto mac1 =
-            openperf::net::mac_address{0x00, 0x01, 0x02, 0x03, 0x04, 0x05};
+        auto mac1 = mac_address{0x00, 0x01, 0x02, 0x03, 0x04, 0x05};
         auto port1 = static_cast<uint16_t>(0);
 
         auto to_delete =
@@ -94,8 +95,8 @@ TEST_CASE("forwarding table functionality", "[forwarding table]")
                     table.find_interface_and_sinks(port1 + 1, mac1);
                 REQUIRE(not_found == nullptr);
 
-                auto wrong_mac = openperf::net::mac_address{
-                    0x00, 0x01, 0x02, 0xbb, 0xaa, 0xdd};
+                auto wrong_mac =
+                    mac_address{0x00, 0x01, 0x02, 0xbb, 0xaa, 0xdd};
                 not_found =
                     table.find_interface_and_sinks(port1 + 1, wrong_mac);
                 REQUIRE(not_found == nullptr);
@@ -159,8 +160,7 @@ TEST_CASE("forwarding table functionality", "[forwarding table]")
         /* Create a map of port, mac --> interfaces and load them into our table
          */
         using vif_map =
-            std::map<std::pair<uint16_t, openperf::net::mac_address>,
-                     test_interface>;
+            std::map<std::pair<uint16_t, mac_address>, test_interface>;
         auto interfaces = vif_map();
 
         auto if_idx = 0;
@@ -169,7 +169,7 @@ TEST_CASE("forwarding table functionality", "[forwarding table]")
             many_interfaces,
             [&]() {
                 auto uuid = openperf::core::uuid::random();
-                auto mac = openperf::net::mac_address(uuid.data());
+                auto mac = mac_address(uuid.data());
                 auto key = std::make_pair(if_idx % many_ports, mac);
                 if_idx++;
                 return (std::make_pair(

@@ -1,8 +1,11 @@
+#include "packet/type/mac_address.hpp"
 #include "packetio/drivers/dpdk/dpdk.h"
 #include "packetio/drivers/dpdk/port_filter.hpp"
 #include "utils/overloaded_visitor.hpp"
 
 namespace openperf::packetio::dpdk::port {
+
+using mac_address = libpacket::type::mac_address;
 
 std::string_view to_string(filter_state& state)
 {
@@ -41,7 +44,7 @@ filter_type filter::type() const
     return (static_cast<filter_type>(m_filter.index()));
 }
 
-void filter::add_mac_address(const net::mac_address& mac)
+void filter::add_mac_address(const mac_address& mac)
 {
     auto add_filter_visitor = [&](auto& filter) {
         auto event = filter_event_add{mac};
@@ -50,7 +53,7 @@ void filter::add_mac_address(const net::mac_address& mac)
     std::visit(add_filter_visitor, m_filter);
 }
 
-void filter::add_mac_address(const net::mac_address& mac,
+void filter::add_mac_address(const mac_address& mac,
                              std::function<void()>&& on_overflow)
 {
     auto add_filter_visitor = [&](auto& filter) {
@@ -61,7 +64,7 @@ void filter::add_mac_address(const net::mac_address& mac,
     std::visit(add_filter_visitor, m_filter);
 }
 
-void filter::del_mac_address(const net::mac_address& mac)
+void filter::del_mac_address(const mac_address& mac)
 {
     auto del_filter_visitor = [&](auto& filter) {
         auto event = filter_event_del{mac};
@@ -70,7 +73,7 @@ void filter::del_mac_address(const net::mac_address& mac)
     std::visit(del_filter_visitor, m_filter);
 }
 
-void filter::del_mac_address(const net::mac_address& mac,
+void filter::del_mac_address(const mac_address& mac,
                              std::function<void()>&& on_underflow)
 {
     auto del_filter_visitor = [&](auto& filter) {

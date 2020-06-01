@@ -3,6 +3,7 @@
 
 #include "tl/expected.hpp"
 
+#include "packet/type/mac_address.hpp"
 #include "packetio/drivers/dpdk/dpdk.h"
 #include "packetio/drivers/dpdk/model/port_info.hpp"
 #include "packetio/drivers/dpdk/port_filter.hpp"
@@ -10,6 +11,8 @@
 struct rte_flow;
 
 namespace openperf::packetio::dpdk::port {
+
+using mac_address = libpacket::type::mac_address;
 
 enum class flow_error_type { validation, addition, deletion };
 
@@ -125,8 +128,8 @@ add_ethernet_flow(uint16_t port_id,
     return (flow);
 }
 
-static tl::expected<rte_flow*, int> add_ethernet_flow(
-    uint16_t port_id, const net::mac_address& mac, rule_action action)
+static tl::expected<rte_flow*, int>
+add_ethernet_flow(uint16_t port_id, const mac_address& mac, rule_action action)
 {
     auto eth_spec = rte_flow_item_eth{
         .dst.addr_bytes = {mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]},
@@ -173,7 +176,7 @@ flow_filter::flow_filter(uint16_t port_id)
         throw std::runtime_error("Could not add broadcast flow rule");
     }
 
-    m_flows.emplace(net::mac_address(broadcast.dst.addr_bytes), *flow);
+    m_flows.emplace(mac_address(broadcast.dst.addr_bytes), *flow);
 
     /* XXX: Add IPv6 multicast rules when IPv6 support is added */
 }
@@ -229,10 +232,10 @@ static bool filter_full(uint16_t port_id)
 /*
  * Attempt to move a MAC from overflows to flow.
  */
-static void maybe_move_overflow_to_filter(
-    uint16_t port_id,
-    std::unordered_map<net::mac_address, rte_flow*>& flows,
-    std::vector<net::mac_address>& overflows)
+static void
+maybe_move_overflow_to_filter(uint16_t port_id,
+                              std::unordered_map<mac_address, rte_flow*>& flows,
+                              std::vector<mac_address>& overflows)
 {
     if (overflows.empty()) return; /* nothing to do */
 
@@ -248,9 +251,9 @@ static void maybe_move_overflow_to_filter(
 }
 
 static bool maybe_disable_promiscuous_mode(
-    uint16_t port_id, std::unordered_map<net::mac_address, rte_flow*>& flows)
+    uint16_t port_id, std::unordered_map<mac_address, rte_flow*>& flows)
 {
-    if (auto item = flows.find(net::mac_address(promiscuous.dst.addr_bytes));
+    if (auto item = flows.find(mac_address(promiscuous.dst.addr_bytes));
         item != flows.end()) {
         if (delete_flow(port_id, item->second)) {
             OP_LOG(OP_LOG_INFO,
@@ -277,7 +280,7 @@ std::optional<filter_state> flow_filter::on_event(const filter_event_add& add,
         return (filter_state_error{});
     } else if (filter_full(m_port)) {
         OP_LOG(OP_LOG_INFO, "Enabling promiscuous mode on port %u\n", m_port);
-        m_flows.emplace(net::mac_address(promiscuous.dst.addr_bytes),
+        m_flows.emplace(mac_address(promiscuous.dst.addr_bytes),
                         *promiscuous_flow);
 
         m_overflows.push_back(add.mac);
@@ -294,7 +297,7 @@ std::optional<filter_state> flow_filter::on_event(const filter_event_add& add,
     /* And destroy the promiscuous rule we don't need */
     if (!delete_flow(m_port, *promiscuous_flow)) {
         /* I guess we keep the pointer? */
-        m_flows.emplace(net::mac_address(promiscuous.dst.addr_bytes),
+        m_flows.emplace(mac_address(promiscuous.dst.addr_bytes),
                         *promiscuous_flow);
         return (filter_state_error{});
     }
@@ -322,8 +325,7 @@ std::optional<filter_state> flow_filter::on_event(const filter_event_disable&,
     if (!promiscuous_flow) { return (filter_state_error{}); }
 
     OP_LOG(OP_LOG_INFO, "Enabling promiscuous mode on port %u\n", m_port);
-    m_flows.emplace(net::mac_address(promiscuous.dst.addr_bytes),
-                    *promiscuous_flow);
+    m_flows.emplace(mac_address(promiscuous.dst.addr_bytes), *promiscuous_flow);
 
     return (filter_state_disabled{});
 }

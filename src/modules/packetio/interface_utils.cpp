@@ -14,17 +14,16 @@
 namespace openperf::packetio::interface {
 
 using namespace swagger::v1::model;
+using namespace libpacket::type;
 
 static void validate(const eth_protocol_config& eth,
                      std::vector<std::string>& errors)
 {
-    if (eth.address.is_broadcast()) {
-        errors.emplace_back("Broadcast MAC address ("
-                            + net::to_string(eth.address)
+    if (is_broadcast(eth.address)) {
+        errors.emplace_back("Broadcast MAC address (" + to_string(eth.address)
                             + ") is not allowed.");
-    } else if (eth.address.is_multicast()) {
-        errors.emplace_back("Multicast MAC address ("
-                            + net::to_string(eth.address)
+    } else if (is_multicast(eth.address)) {
+        errors.emplace_back("Multicast MAC address (" + to_string(eth.address)
                             + ") is not allowed.");
     }
 }
@@ -49,33 +48,28 @@ static void validate(const ipv4_static_protocol_config& ipv4,
                             + std::to_string(ipv4.prefix_length)
                             + ") is too big.");
     }
-    if (ipv4.address.is_loopback()) {
+    if (is_loopback(ipv4.address)) {
         errors.emplace_back("Cannot use loopback address ("
-                            + net::to_string(ipv4.address)
-                            + ") for interface.");
-    } else if (ipv4.address.is_multicast()) {
+                            + to_string(ipv4.address) + ") for interface.");
+    } else if (is_multicast(ipv4.address)) {
         errors.emplace_back("Cannot use multicast address ("
-                            + net::to_string(ipv4.address)
-                            + ") for interface.");
+                            + to_string(ipv4.address) + ") for interface.");
     }
 
     /* check optional gateway */
     if (ipv4.gateway) {
-        if (ipv4.gateway->is_loopback()) {
+        if (is_loopback(*ipv4.gateway)) {
             errors.emplace_back("Cannot use loopback address ("
-                                + net::to_string(*ipv4.gateway)
-                                + ") for gateway.");
-        } else if (ipv4.gateway->is_multicast()) {
+                                + to_string(*ipv4.gateway) + ") for gateway.");
+        } else if (is_multicast(*ipv4.gateway)) {
             errors.emplace_back("Cannot use multicast address ("
-                                + net::to_string(*ipv4.gateway)
-                                + ") for gateway.");
-        } else if (net::ipv4_network(*ipv4.gateway, ipv4.prefix_length)
-                   != net::ipv4_network(ipv4.address, ipv4.prefix_length)) {
+                                + to_string(*ipv4.gateway) + ") for gateway.");
+        } else if (ipv4_network(*ipv4.gateway, ipv4.prefix_length)
+                   != ipv4_network(ipv4.address, ipv4.prefix_length)) {
             errors.emplace_back(
-                "Gateway address (" + net::to_string(*ipv4.gateway)
+                "Gateway address (" + to_string(*ipv4.gateway)
                 + ") is not in the same broadcast domain as interface ("
-                + net::to_string(
-                    net::ipv4_network(ipv4.address, ipv4.prefix_length))
+                + to_string(ipv4_network(ipv4.address, ipv4.prefix_length))
                 + ").");
         }
     }
@@ -103,9 +97,9 @@ static void validate_ipv6_common(const ipv6_common_protocol_config& config,
 {
     /* check optional link local address */
     if (config.link_local_address) {
-        if (!config.link_local_address->is_linklocal()) {
+        if (!is_linklocal(*config.link_local_address)) {
             errors.emplace_back("Cannot use non link local address ("
-                                + net::to_string(*config.link_local_address)
+                                + to_string(*config.link_local_address)
                                 + ") for link local address.");
         }
     }
@@ -127,38 +121,35 @@ static void validate(const ipv6_static_protocol_config& config,
 {
     validate_ipv6_common(config, errors);
 
-    if (config.prefix_length > 128) {
+    if (config.prefix_length > ipv6_network::max_prefix_length) {
         errors.emplace_back("Prefix length ("
                             + std::to_string(config.prefix_length)
                             + ") is too big.");
     }
-    if (config.address.is_loopback()) {
+    if (is_loopback(config.address)) {
         errors.emplace_back("Cannot use loopback address ("
-                            + net::to_string(config.address)
-                            + ") for interface.");
-    } else if (config.address.is_multicast()) {
+                            + to_string(config.address) + ") for interface.");
+    } else if (is_multicast(config.address)) {
         errors.emplace_back("Cannot use multicast address ("
-                            + net::to_string(config.address)
-                            + ") for interface.");
+                            + to_string(config.address) + ") for interface.");
     }
 
     /* check optional gateway */
     if (config.gateway) {
-        if (config.gateway->is_loopback()) {
+        if (is_loopback(*config.gateway)) {
             errors.emplace_back("Cannot use loopback address ("
-                                + net::to_string(*config.gateway)
+                                + to_string(*config.gateway)
                                 + ") for gateway.");
-        } else if (config.gateway->is_multicast()) {
+        } else if (is_multicast(*config.gateway)) {
             errors.emplace_back("Cannot use multicast address ("
-                                + net::to_string(*config.gateway)
+                                + to_string(*config.gateway)
                                 + ") for gateway.");
-        } else if (net::ipv6_network(*config.gateway, config.prefix_length)
-                   != net::ipv6_network(config.address, config.prefix_length)) {
+        } else if (ipv6_network(*config.gateway, config.prefix_length)
+                   != ipv6_network(config.address, config.prefix_length)) {
             errors.emplace_back(
-                "Gateway address (" + net::to_string(*config.gateway)
+                "Gateway address (" + to_string(*config.gateway)
                 + ") is not in the same broadcast domain as interface ("
-                + net::to_string(
-                    net::ipv6_network(config.address, config.prefix_length))
+                + to_string(ipv6_network(config.address, config.prefix_length))
                 + ").");
         }
     }
@@ -276,8 +267,8 @@ static bool is_valid(config_data& config, std::vector<std::string>& errors)
 static eth_protocol_config
 from_swagger(const std::shared_ptr<InterfaceProtocolConfig_eth>& config)
 {
-    return (eth_protocol_config{.address =
-                                    net::mac_address(config->getMacAddress())});
+    return (
+        eth_protocol_config{.address = mac_address(config->getMacAddress())});
 }
 
 static ipv4_dhcp_protocol_config
@@ -303,10 +294,10 @@ from_swagger(const std::shared_ptr<InterfaceProtocolConfig_ipv4_static>& config)
 
     if (config->gatewayIsSet()) {
         to_return.gateway =
-            std::make_optional(net::ipv4_address(config->getGateway()));
+            std::make_optional(ipv4_address(config->getGateway()));
     }
 
-    to_return.address = net::ipv4_address(config->getAddress());
+    to_return.address = ipv4_address(config->getAddress());
     /* XXX: Can't use small ints in swagger, so cut this value down. */
     to_return.prefix_length =
         config->getPrefixLength() & std::numeric_limits<uint8_t>::max();
@@ -357,10 +348,10 @@ from_swagger(const std::shared_ptr<InterfaceProtocolConfig_ipv6_static>& config)
 
     if (config->gatewayIsSet()) {
         to_return.gateway =
-            std::make_optional(net::ipv6_address(config->getGateway()));
+            std::make_optional(ipv6_address(config->getGateway()));
     }
 
-    to_return.address = net::ipv6_address(config->getAddress());
+    to_return.address = ipv6_address(config->getAddress());
     /* XXX: Can't use small ints in swagger, so cut this value down. */
     to_return.prefix_length =
         config->getPrefixLength() & std::numeric_limits<uint8_t>::max();
@@ -372,11 +363,11 @@ static ipv6_protocol_config
 from_swagger(const std::shared_ptr<InterfaceProtocolConfig_ipv6>& config)
 {
     ipv6_protocol_config to_return;
-    std::optional<net::ipv6_address> link_local_address;
+    std::optional<ipv6_address> link_local_address;
 
     if (config->linkLocalAddressIsSet()) {
-        link_local_address = std::make_optional(
-            net::ipv6_address(config->getLinkLocalAddress()));
+        link_local_address =
+            std::make_optional(ipv6_address(config->getLinkLocalAddress()));
     }
 
     if (config->getMethod() == "auto") {
