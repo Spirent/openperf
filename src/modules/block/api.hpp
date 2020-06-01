@@ -185,6 +185,44 @@ struct serialized_msg
     zmq_msg_t data;
 };
 
+namespace swagger {
+
+class file : public BlockFile {
+public:
+    void fromJson(nlohmann::json& val) override {
+        setFileSize(val.at("file_size"));
+        setPath(val.at("path"));
+
+        if(val.find("id") != val.end())
+            setId(val.at("id"));
+
+        if(val.find("init_percent_complete") != val.end())
+            setInitPercentComplete(val.at("init_percent_complete"));
+
+        if(val.find("state") != val.end())
+            setState(val.at("state"));
+    }
+};
+
+class generator : public BlockGenerator
+{
+public:
+    void fromJson(nlohmann::json& val) override {
+        setResourceId(val.at("resource_id"));
+        setRunning(val.at("running"));
+
+        if(val.find("id") != val.end()) {
+            setId(val.at("id"));
+        }
+
+        auto gc = BlockGeneratorConfig();
+        gc.fromJson(val.at("config"));
+        setConfig(std::make_shared<BlockGeneratorConfig>(gc));
+    }
+};
+
+}
+
 serialized_msg serialize_request(request_msg&& request);
 serialized_msg serialize_reply(reply_msg&& reply);
 

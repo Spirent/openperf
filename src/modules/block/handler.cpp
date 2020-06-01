@@ -245,7 +245,7 @@ void handler::create_file(const Rest::Request& request,
 {
     try {
         auto file_json = json::parse(request.body());
-        BlockFile file_model;
+        api::swagger::file file_model;
         file_model.fromJson(file_json);
 
         auto api_reply = submit_request(
@@ -351,11 +351,8 @@ void handler::create_generator(const Rest::Request& request,
 {
     try {
         auto generator_json = json::parse(request.body());
-        BlockGenerator generator_model;
+        api::swagger::generator generator_model;
         generator_model.fromJson(generator_json);
-        auto gc = BlockGeneratorConfig();
-        gc.fromJson(generator_json["config"]);
-        generator_model.setConfig(std::make_shared<BlockGeneratorConfig>(gc));
 
         auto api_reply = submit_request(
             m_socket.get(),
