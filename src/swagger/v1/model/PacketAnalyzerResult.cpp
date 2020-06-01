@@ -23,6 +23,7 @@ PacketAnalyzerResult::PacketAnalyzerResult()
     m_Analyzer_id = "";
     m_Analyzer_idIsSet = false;
     m_Active = false;
+    m_FlowsIsSet = false;
     
 }
 
@@ -53,8 +54,12 @@ nlohmann::json PacketAnalyzerResult::toJson() const
         {
             jsonArray.push_back(ModelBase::toJson(item));
         }
-        val["flows"] = jsonArray;
-            }
+        
+        if(jsonArray.size() > 0)
+        {
+            val["flows"] = jsonArray;
+        }
+    }
     
 
     return val;
@@ -72,10 +77,13 @@ void PacketAnalyzerResult::fromJson(nlohmann::json& val)
     {
         m_Flows.clear();
         nlohmann::json jsonArray;
-                for( auto& item : val["flows"] )
+        if(val.find("flows") != val.end())
+        {
+        for( auto& item : val["flows"] )
         {
             m_Flows.push_back(item);
             
+        }
         }
     }
     
@@ -138,6 +146,14 @@ void PacketAnalyzerResult::setFlowCounters(std::shared_ptr<PacketAnalyzerFlowCou
 std::vector<std::string>& PacketAnalyzerResult::getFlows()
 {
     return m_Flows;
+}
+bool PacketAnalyzerResult::flowsIsSet() const
+{
+    return m_FlowsIsSet;
+}
+void PacketAnalyzerResult::unsetFlows()
+{
+    m_FlowsIsSet = false;
 }
 
 }
