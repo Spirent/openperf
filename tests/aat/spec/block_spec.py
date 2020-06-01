@@ -158,10 +158,11 @@ with description('Block,', 'block') as self:
                     expect(self._result[0]).to(be_valid_block_file)
 
             with description('empty id,'):
-                with it('returns 400'):
+                with it('succeeded'):
                     file = file_model(1024, '/tmp/foo')
                     file.id = None
-                    expect(lambda: self.api.create_block_file(file)).to(raise_api_exception(400))
+                    self._result = self.api.create_block_file_with_http_info(file)
+                    expect(self._result[1]).to(equal(201))
 
             with description('invalid path'):
                 with it('returns 400'):
