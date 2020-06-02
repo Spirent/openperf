@@ -44,7 +44,7 @@ class BlockGeneratorApi(object):
 
         :param async_req bool
         :param BulkCreateBlockFilesRequest create: Bulk creation (required)
-        :return: BulkCreateBlockFilesResponse
+        :return: list[BlockFile]
                  If the method is called asynchronously,
                  returns the request thread.
         """
@@ -66,7 +66,7 @@ class BlockGeneratorApi(object):
 
         :param async_req bool
         :param BulkCreateBlockFilesRequest create: Bulk creation (required)
-        :return: BulkCreateBlockFilesResponse
+        :return: list[BlockFile]
                  If the method is called asynchronously,
                  returns the request thread.
         """
@@ -124,7 +124,7 @@ class BlockGeneratorApi(object):
             body=body_params,
             post_params=form_params,
             files=local_var_files,
-            response_type='BulkCreateBlockFilesResponse',  # noqa: E501
+            response_type='list[BlockFile]',  # noqa: E501
             auth_settings=auth_settings,
             async_req=params.get('async_req'),
             _return_http_data_only=params.get('_return_http_data_only'),
@@ -143,7 +143,7 @@ class BlockGeneratorApi(object):
 
         :param async_req bool
         :param BulkCreateBlockGeneratorsRequest create: Bulk creation (required)
-        :return: BulkCreateBlockGeneratorsResponse
+        :return: list[BlockGenerator]
                  If the method is called asynchronously,
                  returns the request thread.
         """
@@ -165,7 +165,7 @@ class BlockGeneratorApi(object):
 
         :param async_req bool
         :param BulkCreateBlockGeneratorsRequest create: Bulk creation (required)
-        :return: BulkCreateBlockGeneratorsResponse
+        :return: list[BlockGenerator]
                  If the method is called asynchronously,
                  returns the request thread.
         """
@@ -223,7 +223,7 @@ class BlockGeneratorApi(object):
             body=body_params,
             post_params=form_params,
             files=local_var_files,
-            response_type='BulkCreateBlockGeneratorsResponse',  # noqa: E501
+            response_type='list[BlockGenerator]',  # noqa: E501
             auth_settings=auth_settings,
             async_req=params.get('async_req'),
             _return_http_data_only=params.get('_return_http_data_only'),

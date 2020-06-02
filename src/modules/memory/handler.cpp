@@ -167,7 +167,7 @@ void handler::list_generators(const Rest::Request&,
             list->data->begin(),
             list->data->end(),
             std::back_inserter(array),
-            [](auto item) -> json { return to_swagger(item).toJson(); });
+            [](const auto& item) -> json { return to_swagger(item).toJson(); });
 
         response.headers().add<Http::Header::ContentType>(
             MIME(Application, Json));
@@ -333,7 +333,7 @@ void handler::bulk_create_generators(const Rest::Request& request,
             model.getItems().begin(),
             model.getItems().end(),
             std::back_inserter(*req),
-            [](auto item) -> request::generator::create_data {
+            [](const auto& item) -> request::generator::create_data {
                 return request::generator::create_data{
                     .id = item->getId(),
                     .is_running = item->isRunning(),
@@ -349,7 +349,7 @@ void handler::bulk_create_generators(const Rest::Request& request,
             list->data->begin(),
             list->data->end(),
             std::back_inserter(array),
-            [](auto item) -> json { return to_swagger(item).toJson(); });
+            [](const auto& item) -> json { return to_swagger(item).toJson(); });
 
         response.headers().add<Http::Header::ContentType>(
             MIME(Application, Json));
@@ -414,7 +414,7 @@ void handler::bulk_start_generators(const Rest::Request& request,
             list->data->begin(),
             list->data->end(),
             std::back_inserter(array),
-            [](auto item) -> json { return to_swagger(item).toJson(); });
+            [](const auto& item) -> json { return to_swagger(item).toJson(); });
 
         response.headers().add<Http::Header::ContentType>(
             MIME(Application, Json));
@@ -472,7 +472,7 @@ void handler::list_results(const Rest::Request&, Http::ResponseWriter response)
             list->data->begin(),
             list->data->end(),
             std::back_inserter(array),
-            [](auto item) -> json { return to_swagger(item).toJson(); });
+            [](const auto& item) -> json { return to_swagger(item).toJson(); });
 
         response.headers().add<Http::Header::ContentType>(
             MIME(Application, Json));

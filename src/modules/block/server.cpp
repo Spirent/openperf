@@ -98,12 +98,12 @@ reply_msg server::handle_request(const request_block_file_bulk_add& request)
 
     auto remove_created_items = [&]() -> auto
     {
-        for (auto& item : reply.files) {
+        for (const auto& item : reply.files) {
             m_file_stack->delete_block_file(item->get_id());
         }
     };
 
-    for (auto& source : request.files) {
+    for (const auto& source : request.files) {
         // If user did not specify an id create one for them.
         if (source->get_id().empty()) {
             source->set_id(core::to_string(core::uuid::random()));
@@ -128,7 +128,7 @@ reply_msg server::handle_request(const request_block_file_bulk_add& request)
 reply_msg server::handle_request(const request_block_file_bulk_del& request)
 {
     bool failed = false;
-    for (auto& id : request.ids) {
+    for (const auto& id : request.ids) {
         failed = !m_file_stack->delete_block_file(*id) || failed;
     }
     if (failed)
@@ -201,12 +201,12 @@ reply_msg server::handle_request(const request_block_generator_bulk_add& request
 
     auto remove_created_items = [&]() -> auto
     {
-        for (auto& item : reply.generators) {
+        for (const auto& item : reply.generators) {
             m_generator_stack->delete_block_generator(item->get_id());
         }
     };
 
-    for (auto& source : request.generators) {
+    for (const auto& source : request.generators) {
         // If user did not specify an id create one for them.
         if (source->get_id().empty()) {
             source->set_id(core::to_string(core::uuid::random()));
@@ -231,7 +231,7 @@ reply_msg server::handle_request(const request_block_generator_bulk_add& request
 reply_msg server::handle_request(const request_block_generator_bulk_del& request)
 {
     bool failed = false;
-    for (auto& id : request.ids) {
+    for (const auto& id : request.ids) {
         failed = !m_generator_stack->delete_block_generator(*id) || failed;
     }
     if (failed)
@@ -272,10 +272,10 @@ server::handle_request(const request_block_generator_bulk_start& request)
 {
     auto reply = reply_block_generator_results{};
 
-    for (auto& id : request.ids) {
+    for (const auto& id : request.ids) {
         auto stats = m_generator_stack->start_generator(*id);
         if (!stats || !stats.value()) {
-            for (auto& stat : reply.results) {
+            for (const auto& stat : reply.results) {
                 m_generator_stack->stop_generator(stat->get_generator_id());
                 m_generator_stack->delete_statistics(stat->get_id());
             }
@@ -301,7 +301,7 @@ reply_msg
 server::handle_request(const request_block_generator_bulk_stop& request)
 {
     bool failed = false;
-    for (auto& id : request.ids) {
+    for (const auto& id : request.ids) {
         failed = !m_generator_stack->stop_generator(*id) || failed;
     }
     if (failed)
@@ -352,7 +352,7 @@ static int _handle_rpc_request(const op_event_data* data, void* arg)
     auto reply_errors = 0;
     while (auto request = recv_message(data->socket, ZMQ_DONTWAIT)
                               .and_then(deserialize_request)) {
-        auto request_visitor = [&](auto& request) -> reply_msg {
+        auto request_visitor = [&](const auto& request) -> reply_msg {
             return (s->handle_request(request));
         };
         auto reply = std::visit(request_visitor, *request);

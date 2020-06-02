@@ -114,7 +114,7 @@ api_reply server::handle_request(const request::generator::bulk::create& req)
 
     auto remove_created_items = [&]() -> auto
     {
-        for (auto& item : *list.data) {
+        for (const auto& item : *list.data) {
             m_generator_stack->erase(item.id);
         }
     };
@@ -145,7 +145,6 @@ api_reply server::handle_request(const request::generator::bulk::create& req)
 
 api_reply server::handle_request(const request::generator::bulk::erase& req)
 {
-    std::forward_list<std::string> runned_before;
     for (const auto& id : *req.data) {
         if (!m_generator_stack->contains(id))
             continue;

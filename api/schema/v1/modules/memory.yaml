@@ -103,17 +103,11 @@ paths:
         200:
           description: Success
           schema:
-            type: object
-            title: BulkCreateMemoryGeneratorsResponse
-            properties:
-              items:
-                type: array
-                description: List of created memory generators
-                items:
-                  $ref: "#/definitions/MemoryGenerator"
-                minItems: 1
-            required:
-              - items
+            type: array
+            description: List of created memory generators
+            items:
+              $ref: "#/definitions/MemoryGenerator"
+            minItems: 1
 
   /memory-generators/x/bulk-delete:
     post:
@@ -136,7 +130,7 @@ paths:
             properties:
               ids:
                 type: array
-                description: List of memory generators
+                description: List of memory generator ids
                 items:
                   type: string
                 minItems: 1

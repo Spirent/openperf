@@ -21,7 +21,7 @@ Method | HTTP request | Description
 
 
 # **bulk_create_cpu_generators**
-> BulkCreateCpuGeneratorsResponse bulk_create_cpu_generators(create)
+> list[CpuGenerator] bulk_create_cpu_generators(create)
 
 Bulk create CPU generators
 
@@ -55,7 +55,7 @@ Name | Type | Description  | Notes
 
 ### Return type
 
-[**BulkCreateCpuGeneratorsResponse**](BulkCreateCpuGeneratorsResponse.md)
+[**list[CpuGenerator]**](CpuGenerator.md)
 
 ### Authorization
 

@@ -50,7 +50,7 @@ class BulkDeleteMemoryGeneratorsRequest(object):
     def ids(self):
         """Gets the ids of this BulkDeleteMemoryGeneratorsRequest.  # noqa: E501
 
-        List of memory generators  # noqa: E501
+        List of memory generator ids  # noqa: E501
 
         :return: The ids of this BulkDeleteMemoryGeneratorsRequest.  # noqa: E501
         :rtype: list[str]
@@ -61,7 +61,7 @@ class BulkDeleteMemoryGeneratorsRequest(object):
     def ids(self, ids):
         """Sets the ids of this BulkDeleteMemoryGeneratorsRequest.
 
-        List of memory generators  # noqa: E501
+        List of memory generator ids  # noqa: E501
 
         :param ids: The ids of this BulkDeleteMemoryGeneratorsRequest.  # noqa: E501
         :type: list[str]

@@ -54,14 +54,16 @@ bool generator_stack::delete_block_generator(const std::string& id)
     if (!gen) return false;
     if (gen->is_running()) { stop_generator(id); }
 
-    for (const auto& pair : m_block_results) {
+    for (auto it = m_block_results.cbegin(); it != m_block_results.cend(); ) {
+        auto res = (*it).second;
+        ++it;
         std::visit(utils::overloaded_visitor(
-                       [&](const block_generator_ptr& generator) {},
+                       [](const block_generator_ptr& generator) {},
                        [&](const block_generator_result_ptr& result) {
                            if (result->get_generator_id() == id)
                                 delete_statistics(result->get_id());
                        }),
-                   pair.second);
+                   res);
     }
 
     return (m_block_generators.erase(id) > 0);

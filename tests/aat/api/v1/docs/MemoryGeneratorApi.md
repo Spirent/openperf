@@ -21,7 +21,7 @@ Method | HTTP request | Description
 
 
 # **bulk_create_memory_generators**
-> BulkCreateMemoryGeneratorsResponse bulk_create_memory_generators(create)
+> list[MemoryGenerator] bulk_create_memory_generators(create)
 
 Bulk create memory generators
 
@@ -55,7 +55,7 @@ Name | Type | Description  | Notes
 
 ### Return type
 
-[**BulkCreateMemoryGeneratorsResponse**](BulkCreateMemoryGeneratorsResponse.md)
+[**list[MemoryGenerator]**](MemoryGenerator.md)
 
 ### Authorization
 

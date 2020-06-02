@@ -28,7 +28,7 @@ Method | HTTP request | Description
 
 
 # **bulk_create_block_files**
-> BulkCreateBlockFilesResponse bulk_create_block_files(create)
+> list[BlockFile] bulk_create_block_files(create)
 
 Bulk create block files
 
@@ -62,7 +62,7 @@ Name | Type | Description  | Notes
 
 ### Return type
 
-[**BulkCreateBlockFilesResponse**](BulkCreateBlockFilesResponse.md)
+[**list[BlockFile]**](BlockFile.md)
 
 ### Authorization
 
@@ -76,7 +76,7 @@ No authorization required
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **bulk_create_block_generators**
-> BulkCreateBlockGeneratorsResponse bulk_create_block_generators(create)
+> list[BlockGenerator] bulk_create_block_generators(create)
 
 Bulk create block generators
 
@@ -110,7 +110,7 @@ Name | Type | Description  | Notes
 
 ### Return type
 
-[**BulkCreateBlockGeneratorsResponse**](BulkCreateBlockGeneratorsResponse.md)
+[**list[BlockGenerator]**](BlockGenerator.md)
 
 ### Authorization
 
