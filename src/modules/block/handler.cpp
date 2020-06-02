@@ -244,9 +244,7 @@ void handler::create_file(const Rest::Request& request,
                           Http::ResponseWriter response)
 {
     try {
-        auto file_json = json::parse(request.body());
-        api::swagger::file file_model;
-        file_model.fromJson(file_json);
+        auto file_model = json::parse(request.body()).get<BlockFile>();
 
         auto api_reply = submit_request(
             m_socket.get(),
@@ -350,9 +348,7 @@ void handler::create_generator(const Rest::Request& request,
                                Http::ResponseWriter response)
 {
     try {
-        auto generator_json = json::parse(request.body());
-        api::swagger::generator generator_model;
-        generator_model.fromJson(generator_json);
+        auto generator_model = json::parse(request.body()).get<BlockGenerator>();
 
         auto api_reply = submit_request(
             m_socket.get(),
@@ -484,9 +480,7 @@ void handler::stop_generator(const Rest::Request& request,
 void handler::bulk_start_generators(const Rest::Request& request,
                                     Http::ResponseWriter response)
 {
-    auto request_json = json::parse(request.body());
-    BulkStartBlockGeneratorsRequest request_model;
-    request_model.fromJson(request_json);
+    auto request_model = json::parse(request.body()).get<BulkStartBlockGeneratorsRequest>();
 
     auto api_reply =
         submit_request(m_socket.get(), api::from_swagger(request_model));
@@ -512,9 +506,7 @@ void handler::bulk_start_generators(const Rest::Request& request,
 void handler::bulk_stop_generators(const Rest::Request& request,
                                    Http::ResponseWriter response)
 {
-    auto request_json = json::parse(request.body());
-    BulkStopBlockGeneratorsRequest request_model;
-    request_model.fromJson(request_json);
+    auto request_model = json::parse(request.body()).get<BulkStopBlockGeneratorsRequest>();
 
     auto api_reply =
         submit_request(m_socket.get(), api::from_swagger(request_model));
