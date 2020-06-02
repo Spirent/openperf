@@ -10,11 +10,6 @@
 
 namespace openperf::packet::capture::api {
 
-std::string to_filter_string([[maybe_unused]] void* filter)
-{
-    // TODO: Add support for BPF filters
-    return "";
-}
 
 capture_ptr to_swagger(const sink& src)
 {
@@ -30,12 +25,12 @@ capture_ptr to_swagger(const sink& src)
     if (auto packet_size = src.get_max_packet_size(); packet_size != UINT32_MAX)
         config->setPacketSize(packet_size);
     if (auto duration = src.get_duration()) config->setDuration(duration);
-    if (auto filter = src.get_filter())
-        config->setFilter(to_filter_string(filter));
-    if (auto trigger = src.get_start_trigger())
-        config->setStartTrigger(to_filter_string(trigger));
-    if (auto trigger = src.get_stop_trigger())
-        config->setStopTrigger(to_filter_string(trigger));
+    if (auto filter = src.get_filter_str(); !filter.empty())
+        config->setFilter(filter);
+    if (auto trigger = src.get_start_trigger_str(); !trigger.empty())
+        config->setStartTrigger(trigger);
+    if (auto trigger = src.get_stop_trigger_str(); !trigger.empty())
+        config->setStopTrigger(trigger);
     dst->setConfig(config);
 
     return (dst);

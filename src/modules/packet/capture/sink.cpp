@@ -5,9 +5,12 @@
 #include "packetio/internal_client.hpp"
 #include "packetio/internal_worker.hpp"
 #include "packetio/packet_buffer.hpp"
+#include "packetio/bpf/bpf.hpp"
 #include "packet/capture/sink.hpp"
 
 namespace openperf::packet::capture {
+
+constexpr uint16_t max_burst_size = 64;
 
 std::string to_string(const capture_state& state)
 {
@@ -44,8 +47,6 @@ capture_mode capture_mode_from_string(const std::string_view str)
 sink_result::sink_result(const sink& parent_)
     : parent(parent_)
     , state(capture_state::STOPPED)
-    , start_time(0)
-    , stop_time(0)
     , timeout_id(0)
 {}
 
@@ -79,25 +80,40 @@ std::vector<uint8_t> sink::make_indexes(std::vector<unsigned>& ids)
 sink::sink(const sink_config& config, std::vector<unsigned> rx_ids)
     : m_id(config.id)
     , m_source(config.source)
+    , m_filter_str(config.filter)
+    , m_start_trigger_str(config.start_trigger)
+    , m_stop_trigger_str(config.stop_trigger)
     , m_capture_mode(config.capture_mode)
     , m_buffer_wrap(config.buffer_wrap)
     , m_buffer_size(config.buffer_size)
     , m_max_packet_size(config.max_packet_size)
     , m_duration(config.duration)
     , m_indexes(sink::make_indexes(rx_ids))
-{}
+{
+    if (!m_filter_str.empty())
+        m_filter = std::make_unique<openperf::packetio::bpf::bpf>(m_filter_str);
+    if (!m_start_trigger_str.empty())
+        m_start_trigger =
+            std::make_unique<openperf::packetio::bpf::bpf>(m_start_trigger_str);
+    if (!m_stop_trigger_str.empty())
+        m_stop_trigger =
+            std::make_unique<openperf::packetio::bpf::bpf>(m_stop_trigger_str);
+}
 
 sink::sink(sink&& other) noexcept
     : m_id(std::move(other.m_id))
     , m_source(std::move(other.m_source))
+    , m_filter_str(std::move(other.m_filter_str))
+    , m_start_trigger_str(std::move(other.m_start_trigger_str))
+    , m_stop_trigger_str(std::move(other.m_stop_trigger_str))
     , m_capture_mode(other.m_capture_mode)
     , m_buffer_wrap(other.m_buffer_wrap)
     , m_buffer_size(other.m_buffer_size)
     , m_max_packet_size(other.m_max_packet_size)
     , m_duration(other.m_duration)
-    , m_filter(other.m_filter)
-    , m_start_trigger(other.m_start_trigger)
-    , m_stop_trigger(other.m_stop_trigger)
+    , m_filter(std::move(other.m_filter))
+    , m_start_trigger(std::move(other.m_start_trigger))
+    , m_stop_trigger(std::move(other.m_stop_trigger))
     , m_indexes(std::move(other.m_indexes))
     , m_results(other.m_results.load())
 {}
@@ -107,14 +123,17 @@ sink& sink::operator=(sink&& other) noexcept
     if (this != &other) {
         m_id = std::move(other.m_id);
         m_source = std::move(other.m_source);
+        m_filter_str = std::move(other.m_filter_str);
+        m_start_trigger_str = std::move(other.m_start_trigger_str);
+        m_stop_trigger_str = std::move(other.m_stop_trigger_str);
         m_capture_mode = other.m_capture_mode;
         m_buffer_wrap = other.m_buffer_wrap;
         m_buffer_size = other.m_buffer_size;
         m_max_packet_size = other.m_max_packet_size;
         m_duration = other.m_duration;
-        m_filter = other.m_filter;
-        m_start_trigger = other.m_start_trigger;
-        m_stop_trigger = other.m_stop_trigger;
+        m_filter = std::move(other.m_filter);
+        m_start_trigger = std::move(other.m_start_trigger);
+        m_stop_trigger = std::move(other.m_stop_trigger);
         m_indexes = std::move(other.m_indexes);
         m_results.store(other.m_results);
     }
@@ -130,21 +149,10 @@ size_t sink::worker_count() const { return (m_indexes.size()); }
 
 void sink::start(sink_result* results)
 {
-    // TODO: Add support for trigger condition
-    results->state = capture_state::STARTED;
-    results->start_time =
-        std::chrono::duration_cast<std::chrono::milliseconds>(
-            std::chrono::system_clock::now().time_since_epoch())
-            .count();
-    // Set expected stop time
-    // TODO:
-    // Ideally this will be in same time units/base as packet timestamp
-    // so sink can discard packets after stop_time and start trigger
-    // can determine stop_time from duration and packet timestamp.
-    if (m_duration) {
-        results->stop_time = results->start_time + m_duration;
+    if (!m_start_trigger) {
+        set_state(*results, capture_state::STARTED);
     } else {
-        results->stop_time = UINT64_MAX;
+        set_state(*results, capture_state::ARMED);
     }
 
     m_results.store(results, std::memory_order_release);
@@ -164,14 +172,7 @@ void sink::stop()
     auto results = m_results.load(std::memory_order_consume);
 
     if (results) {
-        // TODO: This will not be thread safe when start/stop triggers are added
-        if (results->state != capture_state::STOPPED) {
-            results->state = capture_state::STOPPED;
-            results->stop_time =
-                std::chrono::duration_cast<std::chrono::milliseconds>(
-                    std::chrono::system_clock::now().time_since_epoch())
-                    .count();
-        }
+        set_state(*results, capture_state::STOPPED);
         m_results.store(nullptr, std::memory_order_release);
     }
 }
@@ -193,33 +194,77 @@ bool sink::uses_feature(packetio::packet::sink_feature_flags flags) const
     return (bool(needed & flags));
 }
 
-uint16_t sink::check_start_trigger_condition(
-    [[maybe_unused]] const packetio::packet::packet_buffer* const packets[],
-    [[maybe_unused]] uint16_t packets_length) const
+void sink::set_state(sink_result& results, capture_state state) const noexcept
 {
-    // TODO: Add support for trigger
-    return 0;
+    auto cur_state = results.state.load(std::memory_order_relaxed);
+    if (state == cur_state) return;
+
+    if (results.state.compare_exchange_strong(cur_state, state) == false)
+        return;
+
+    if (state == capture_state::STARTED) {
+        results.start_time = timesync::chrono::realtime::now();
+
+        if (m_duration) {
+            // Set expected stop time
+            m_stop_time =
+                results.start_time
+                + std::chrono::duration<uint64_t, std::milli>{m_duration};
+        } else {
+            m_stop_time = timesync::chrono::realtime::time_point::max();
+        }
+    } else if (state == capture_state::STOPPED) {
+        results.stop_time = timesync::chrono::realtime::now();
+    }
+
+    if (results.state_changed_callback) {
+        results.state_changed_callback(results);
+    }
+}
+
+uint16_t sink::check_start_trigger_condition(
+    const packetio::packet::packet_buffer* const packets[],
+    uint16_t packets_length) const noexcept
+{
+    assert(m_start_trigger);
+    return m_start_trigger->find_next(packets, packets_length);
 }
 
 uint16_t sink::check_stop_trigger_condition(
-    [[maybe_unused]] const packetio::packet::packet_buffer* const packets[],
-    [[maybe_unused]] uint16_t packets_length) const
+    const packetio::packet::packet_buffer* const packets[],
+    uint16_t packets_length) const noexcept
 {
-    // TODO: Add support for trigger
-    return 0;
+    assert(m_stop_trigger);
+    return m_stop_trigger->find_next(packets, packets_length);
 }
 
 uint16_t sink::check_filter_condition(
     const packetio::packet::packet_buffer* const packets[],
     uint16_t packets_length,
-    const packetio::packet::packet_buffer* filtered[]) const
+    const packetio::packet::packet_buffer* filtered[]) const noexcept
 {
-    // TODO: Add support for filter
-    auto end = std::copy_if(packets,
-                            packets + packets_length,
-                            filtered,
-                            [](auto* packet) { return (packet != nullptr); });
-    return std::distance(filtered, end);
+    std::array<uint64_t, max_burst_size> filter_results;
+    uint16_t found = 0;
+
+    assert(m_filter);
+    assert(packets_length <= max_burst_size);
+    m_filter->exec_burst(packets, filter_results.data(), packets_length);
+    for (uint16_t i = 0; i < packets_length; ++i) {
+        if (filter_results[i]) { filtered[found++] = packets[i]; }
+    }
+    return found;
+}
+
+uint16_t sink::check_duration_condition(
+    const openperf::packetio::packet::packet_buffer* const packets[],
+    uint16_t packets_length) const noexcept
+{
+    auto found =
+        std::find_if(packets, packets + packets_length, [&](auto packet) {
+            return (openperf::packetio::packet::rx_timestamp(packet)
+                    > m_stop_time);
+        });
+    return std::distance(packets, found);
 }
 
 uint16_t sink::push(const packetio::packet::packet_buffer* const packets[],
@@ -245,10 +290,10 @@ uint16_t sink::push(const packetio::packet::packet_buffer* const packets[],
                 // Start not triggered yet
                 return packets_length;
             }
-            state = capture_state::STARTED;
-            results->state = state;
             start += trigger_offset;
             length -= trigger_offset;
+            state = capture_state::STARTED;
+            set_state(*results, state);
         } else {
             return packets_length;
         }
@@ -262,8 +307,15 @@ uint16_t sink::push(const packetio::packet::packet_buffer* const packets[],
         }
     }
 
+    if (m_duration) {
+        auto duration_offset = check_duration_condition(packets, length);
+        if (duration_offset < length) {
+            length = duration_offset + 1;
+            stopping = true;
+        }
+    }
+
     if (m_filter) {
-        constexpr uint16_t max_burst_size = 64;
         std::array<const packetio::packet::packet_buffer*, max_burst_size>
             filtered;
         auto remain = length;
@@ -279,7 +331,7 @@ uint16_t sink::push(const packetio::packet::packet_buffer* const packets[],
     }
 
     if (stopping || buffer->is_full()) {
-        results->state = capture_state::STOPPED;
+        set_state(*results, capture_state::STOPPED);
     }
 
     return (packets_length);
