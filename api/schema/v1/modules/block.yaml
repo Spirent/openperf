@@ -133,17 +133,11 @@ paths:
         200:
           description: Success
           schema:
-            type: object
-            title: BulkCreateBlockFilesResponse
-            properties:
-              items:
-                type: array
-                description: List of created block files
-                items:
-                  $ref: "#/definitions/BlockFile"
-                minItems: 1
-            required:
-              - items
+            type: array
+            description: List of created block files
+            items:
+              $ref: "#/definitions/BlockFile"
+            minItems: 1
 
   /block-files/x/bulk-delete:
     post:
@@ -166,7 +160,7 @@ paths:
             properties:
               ids:
                 type: array
-                description: List of block files
+                description: List of block file ids
                 items:
                   type: string
                 minItems: 1
@@ -271,17 +265,10 @@ paths:
         200:
           description: Success
           schema:
-            type: object
-            title: BulkCreateBlockGeneratorsResponse
-            properties:
-              items:
-                type: array
-                description: List of created block generators
-                items:
-                  $ref: "#/definitions/BlockGenerator"
-                minItems: 1
-            required:
-              - items
+            type: array
+            description: List of created block generators
+            items:
+              $ref: "#/definitions/BlockGenerator"
 
   /block-generators/x/bulk-delete:
     post:
@@ -304,7 +291,7 @@ paths:
             properties:
               ids:
                 type: array
-                description: List of block generators
+                description: List of block generator ids
                 items:
                   type: string
                 minItems: 1

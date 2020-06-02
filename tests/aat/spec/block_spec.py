@@ -188,6 +188,70 @@ with description('Block,', 'block') as self:
                 with it('returns 404'):
                     expect(lambda: self.api.delete_block_file('f_oo')).to(raise_api_exception(404))
 
+        with description('bulk create file,'):
+            with description("succeeds,"):
+                with before.all:
+                    self._result = self.api.bulk_create_block_files_with_http_info(
+                        client.models.BulkCreateBlockFilesRequest([
+                            file_model(1024, '/tmp/foo1'),
+                            file_model(1024, '/tmp/foo2'),
+                        ])
+                    )
+
+                with it('succeeded'):
+                    expect(self._result[1]).to(equal(200))
+
+                with it('has a valid block files'):
+                    expect(self._result[0]).not_to(be_empty)
+                    expect(len(self._result[0])).to(equal(2))
+                    for file in self._result[0]:
+                        expect(file).to(be_valid_block_file)
+
+            with description('invalid id,'):
+                with it('returns 400'):
+                    file = file_model(1024, '/tmp/foo')
+                    file.id = "file_1"
+                    expect(lambda: self.api.bulk_create_block_files(
+                        client.models.BulkCreateBlockFilesRequest([
+                            file_model(1024, '/tmp/foo1'),
+                            file,
+                        ])
+                    )).to(raise_api_exception(400))
+
+                with it('all or nothing'):
+                    expect(self.api.list_block_files()).to(be_empty)
+
+            with description('invalid path'):
+                with it('returns 400'):
+                    expect(lambda: self.api.bulk_create_block_files(
+                        client.models.BulkCreateBlockFilesRequest([
+                            file_model(1024, '/tmp/foo1'),
+                            file_model(1024, '/tmp/foo/foo'),
+                        ])
+                    )).to(raise_api_exception(400))
+
+                with it('all or nothing'):
+                    expect(self.api.list_block_files()).to(be_empty)
+
+        with description('bulk delete file,'):
+            with before.each:
+                file = self.api.create_block_file(file_model(1024, '/tmp/foo'))
+                expect(file).to(be_valid_block_file)
+                self.file = file
+
+            with description('by existing id,'):
+                with it('deletes a file'):
+                    self.api.bulk_delete_block_files(client.models.BulkDeleteBlockFilesRequest([self.file.id]))
+                    expect(self.api.list_block_files()).to(be_empty)
+
+            with description('non-existent file,'):
+                with it('returns 400'):
+                    expect(lambda: self.api.bulk_delete_block_files(client.models.BulkDeleteBlockFilesRequest(['foo']))).to(raise_api_exception(400))
+
+            with description('invalid id,'):
+                with it('returns 400'):
+                    expect(lambda: self.api.bulk_delete_block_files(client.models.BulkDeleteBlockFilesRequest(['f_oo']))).to(raise_api_exception(400))
+
         with description('list generators,'):
             with before.each:
                 file = self.api.create_block_file(file_model(1024, '/tmp/foo'))
@@ -198,7 +262,7 @@ with description('Block,', 'block') as self:
                 self.gen = gen
 
             with it('succeeds'):
-                generators = self.api.list_generators()
+                generators = self.api.list_block_generators()
                 expect(generators).not_to(be_empty)
                 for gen in generators:
                     expect(gen).to(be_valid_block_generator)
@@ -283,7 +347,7 @@ with description('Block,', 'block') as self:
 
                 with it('succeeds'):
                     self.api.delete_block_generator(self.gen.id)
-                    generators = self.api.list_generators()
+                    generators = self.api.list_block_generators()
                     expect(generators).to(be_empty)
 
                 with description('non-existent id,'):
@@ -376,7 +440,7 @@ with description('Block,', 'block') as self:
                     expect(lambda: self.api.bulk_start_block_generators(bulk_start_model(['f_oo']))).to(raise_api_exception(400))
 
             with after.each:
-                for gen in self.api.list_generators():
+                for gen in self.api.list_block_generators():
                     if gen.running:
                         self.api.stop_block_generator(gen.id)
 
@@ -408,7 +472,7 @@ with description('Block,', 'block') as self:
                     expect(lambda: self.api.bulk_stop_block_generators(bulk_stop_model(['f_oo']))).to(raise_api_exception(400))
 
             with after.each:
-                for gen in self.api.list_generators():
+                for gen in self.api.list_block_generators():
                     if gen.running:
                         self.api.stop_block_generator(gen.id)
 
@@ -455,7 +519,7 @@ with description('Block,', 'block') as self:
                     expect(lambda: self.api.get_block_generator_result('f_oo')).to(raise_api_exception(404))
 
             with after.each:
-                for gen in self.api.list_generators():
+                for gen in self.api.list_block_generators():
                     if gen.running:
                         self.api.stop_block_generator(gen.id)
 
@@ -485,13 +549,13 @@ with description('Block,', 'block') as self:
                     expect(lambda: self.api.delete_block_generator_result('f_oo')).to(raise_api_exception(404))
 
             with after.each:
-                for gen in self.api.list_generators():
+                for gen in self.api.list_block_generators():
                     if gen.running:
                         self.api.stop_block_generator(gen.id)
 
         with after.each:
             try:
-                for gen in self.api.list_generators():
+                for gen in self.api.list_block_generators():
                     if gen.running:
                         self.api.stop_block_generator(gen.id)
                     self.api.delete_block_generator(gen.id)

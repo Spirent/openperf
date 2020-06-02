@@ -14,6 +14,7 @@
 #include "swagger/v1/model/BulkDeleteMemoryGeneratorsRequest.h"
 #include "swagger/v1/model/BulkStopMemoryGeneratorsRequest.h"
 #include "swagger/v1/model/BulkStartMemoryGeneratorsRequest.h"
+
 namespace openperf::memory::api {
 
 namespace swagger = ::swagger::v1::model;

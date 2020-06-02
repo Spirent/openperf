@@ -618,7 +618,7 @@ model::block_generator from_swagger(const BlockGenerator& p_gen)
 request_block_file_bulk_add from_swagger(BulkCreateBlockFilesRequest& p_request)
 {
     request_block_file_bulk_add request;
-    for (auto& item : p_request.getItems())
+    for (const auto& item : p_request.getItems())
         request.files.emplace_back(std::make_unique<model::file>(from_swagger(*item)));
     return request;
 }
@@ -634,7 +634,7 @@ request_block_file_bulk_del from_swagger(BulkDeleteBlockFilesRequest& p_request)
 request_block_generator_bulk_add from_swagger(BulkCreateBlockGeneratorsRequest& p_request)
 {
     request_block_generator_bulk_add request;
-    for (auto& item : p_request.getItems())
+    for (const auto& item : p_request.getItems())
         request.generators.emplace_back(std::make_unique<model::block_generator>(from_swagger(*item)));
     return request;
 }

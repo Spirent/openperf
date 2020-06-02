@@ -103,17 +103,11 @@ paths:
         200:
           description: Success
           schema:
-            type: object
-            title: BulkCreateCpuGeneratorsResponse
-            properties:
-              items:
-                type: array
-                description: List of created cpu generators
-                items:
-                  $ref: "#/definitions/CpuGenerator"
-                minItems: 1
-            required:
-              - items
+            type: array
+            description: List of created cpu generators
+            items:
+              $ref: "#/definitions/CpuGenerator"
+            minItems: 1
 
   /cpu-generators/x/bulk-delete:
     post:
@@ -136,7 +130,7 @@ paths:
             properties:
               ids:
                 type: array
-                description: List of CPU generators
+                description: List of CPU generator ids
                 items:
                   type: string
                 minItems: 1
