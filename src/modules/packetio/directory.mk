@@ -19,6 +19,7 @@ PIO_SOURCES += \
 	stack_server.cpp \
 	stack_utils.cpp
 
+include $(PIO_SRC_DIR)/bpf/directory.mk
 include $(PIO_SRC_DIR)/drivers/directory.mk
 include $(PIO_SRC_DIR)/memory/directory.mk
 include $(PIO_SRC_DIR)/stack/directory.mk
