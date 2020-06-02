@@ -141,8 +141,10 @@ template <size_t Octets> struct field
     template <typename T>
     std::enable_if_t<Octets <= sizeof(T), T> load() const noexcept
     {
-        const auto ptr = reinterpret_cast<const T*>(octets.data());
-        return (bswap(*ptr) >> ((sizeof(T) - Octets) * CHAR_BIT));
+        T tmp;
+        const auto ptr = octets.data();
+        std::copy_n(ptr, sizeof(T), reinterpret_cast<uint8_t*>(&tmp));
+        return (bswap(tmp) >> ((sizeof(T) - Octets) * CHAR_BIT));
     }
 
     template <typename T> T load(size_type idx) const
@@ -155,8 +157,10 @@ template <size_t Octets> struct field
 
         if (sizeof(T) * (idx + 1) <= Octets) {
             /* All required data is in the array */
-            auto cursor = reinterpret_cast<const T*>(octets.data()) + idx;
-            return (bswap(*cursor));
+            T tmp;
+            const auto ptr = octets.data() + (idx * sizeof(T));
+            std::copy_n(ptr, sizeof(T), reinterpret_cast<uint8_t*>(&tmp));
+            return (bswap(tmp));
         } else {
             /* We need the last few octets of the array presented as type T */
             auto remainder = Octets - (sizeof(T) * idx);

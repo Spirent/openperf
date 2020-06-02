@@ -151,4 +151,26 @@ TEST_CASE("ipv6 address", "[libpacket]")
             == "1011:1213:1415:1617:1819:1a1b:1c1d:1e1f");
         REQUIRE(to_string(ipv6_address("::1")) == "::1");
     }
+
+    SECTION("check unaligned memory access")
+    {
+        struct mtest
+        {
+            uint8_t pad;
+            ipv6_address addr;
+        } __attribute__((packed));
+
+        alignas(16) mtest mt;
+        static_assert(sizeof(mt) == 17);
+        REQUIRE((reinterpret_cast<uintptr_t>(&mt.addr) % 16) != 0);
+
+        mt.addr = ipv6_address("2001::1");
+        REQUIRE(to_string(mt.addr) == "2001::1");
+        auto addr = mt.addr;
+        REQUIRE(to_string(addr) == "2001::1");
+        REQUIRE(mt.addr.load<uint16_t>(0) == 0x2001);
+        REQUIRE(mt.addr.load<uint16_t>(7) == 1);
+        REQUIRE(mt.addr.load<uint64_t>(0) == 0x2001000000000000);
+        REQUIRE(mt.addr.load<uint64_t>(1) == 1);
+    }
 }
