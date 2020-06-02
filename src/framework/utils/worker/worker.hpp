@@ -197,11 +197,9 @@ template <class T> void worker<T>::loop()
         op_socket_get_client(m_zmq_context, ZMQ_PULL, m_endpoint));
 
     for (bool paused = true;;) {
-        zmq_msg_t zmq_message;
-        zmq_msg_init(&zmq_message);
-
-        int recv = zmq_msg_recv(&zmq_message,
-            socket.get(), paused ? 0 : ZMQ_NOBLOCK);
+        void *msg_ptr = nullptr;
+        int recv = zmq_recv(socket.get(), &msg_ptr, sizeof(void*),
+            paused ? 0 : ZMQ_NOBLOCK);
 
         if (recv < 0 && errno != EAGAIN) {
             OP_LOG(OP_LOG_ERROR,
@@ -211,8 +209,7 @@ template <class T> void worker<T>::loop()
 
         if (recv > 0) {
             auto msg = std::unique_ptr<worker::message>(
-                *reinterpret_cast<worker::message**>(
-                    zmq_msg_data(&zmq_message)));
+                reinterpret_cast<worker::message*>(msg_ptr));
 
             if (msg->config)
                 m_task->config(msg->config.value());
@@ -244,18 +241,8 @@ template <class T> void worker<T>::send_message(const worker::message& msg)
 {
     if (is_finished()) return;
 
-    zmq_msg_t zmq_message;
-    if (auto e = zmq_msg_init_size(&zmq_message, sizeof(void*)); e != 0) {
-        OP_LOG(OP_LOG_ERROR,
-            "Error during ZMQ message size initializing, code: %d", e);
-        return;
-    }
-
-    auto data_ptr = reinterpret_cast<worker::message**>(
-        zmq_msg_data(&zmq_message));
-    *data_ptr = new worker::message(msg);
-
-    zmq_msg_send(&zmq_message, m_zmq_socket.get(), 0);
+    auto pointer = new worker::message(msg);
+    zmq_send(m_zmq_socket.get(), &pointer, sizeof(pointer), 0);
 }
 
 } // namespace openperf::utils::worker
