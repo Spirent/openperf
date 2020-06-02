@@ -205,6 +205,8 @@ template <class T> void worker<T>::loop()
         }
 
         if (recv > 0) {
+            // The thread takes ownership of the pointer to the message
+            // and guarantees deleting message after processing.
             auto msg = std::unique_ptr<worker::message>(
                 reinterpret_cast<worker::message*>(msg_ptr));
 
@@ -237,6 +239,9 @@ template <class T> void worker<T>::send_message(const worker::message& msg)
 {
     if (is_finished()) return;
 
+    // A copy of the message is created on the heap and its pointer
+    // is passed through ZMQ to thread. The thread will take ownership of
+    // this message and should delete it after processing.
     auto pointer = new worker::message(msg);
     zmq_send(m_zmq_socket.get(), &pointer, sizeof(pointer), 0);
 }
