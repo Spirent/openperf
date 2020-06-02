@@ -31,3 +31,6 @@
 [submodule "deps/base-n"]
 	path = deps/base-n
 	url = https://github.com/azawadzki/base-n.git
+[submodule "deps/libpcap"]
+	path = deps/libpcap
+	url = https://github.com/the-tcpdump-group/libpcap.git
