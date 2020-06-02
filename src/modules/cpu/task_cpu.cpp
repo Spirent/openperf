@@ -23,8 +23,7 @@ task_cpu::task_cpu(const task_cpu::config_t& conf)
     config(conf);
 }
 
-[[clang::optnone]]
-void task_cpu::spin()
+[[clang::optnone]] void task_cpu::spin()
 {
     if (m_stat_clear) {
         m_stat_active = {};
@@ -49,11 +48,11 @@ void task_cpu::spin()
 
         // Calculate number of calls for available time_frame
         // and weight of target
-        uint64_t calls = time_frame / m_weights
-            * target.weight / target.runtime.count();
+        uint64_t calls =
+            time_frame / m_weights * target.weight / target.runtime.count();
 
         uint64_t operations = 0;
-        auto runtime = run_time([&](){
+        auto runtime = run_time([&]() {
             for (uint64_t c = 0; c < calls; ++c)
                 operations += target.target->operation();
         });
@@ -69,16 +68,15 @@ void task_cpu::spin()
     auto cpu_util = cpu_thread_time();
     auto time_diff = cpu_util - m_util_time;
 
-    std::this_thread::sleep_for(
-        (time_diff.utilization - m_error)
-        * (1.0 - m_utilization) / m_utilization);
+    std::this_thread::sleep_for((time_diff.utilization - m_error)
+                                * (1.0 - m_utilization) / m_utilization);
 
     auto time_of_run = chronometer::now();
     auto available = time_of_run - m_last_run;
 
-    m_error = std::chrono::nanoseconds(
-        (uint64_t)(available.count() * m_utilization))
-            - time_diff.utilization + m_error;
+    m_error =
+        std::chrono::nanoseconds((uint64_t)(available.count() * m_utilization))
+        - time_diff.utilization + m_error;
 
     m_stat_active.system += time_diff.system;
     m_stat_active.user += time_diff.user;
@@ -86,11 +84,11 @@ void task_cpu::spin()
     m_stat_active.utilization += time_diff.utilization;
     m_stat_active.available += available;
 
-    m_stat_active.error = std::chrono::nanoseconds(
-        (uint64_t)(m_stat_active.available.count() * m_utilization))
-            - m_stat_active.utilization;
-    m_stat_active.load = m_stat_active.utilization * 1.0
-        / m_stat_active.available;
+    m_stat_active.error = std::chrono::nanoseconds((uint64_t)(
+                              m_stat_active.available.count() * m_utilization))
+                          - m_stat_active.utilization;
+    m_stat_active.load =
+        m_stat_active.utilization * 1.0 / m_stat_active.available;
 
     m_last_run = time_of_run;
     m_util_time = cpu_util;
@@ -99,12 +97,10 @@ void task_cpu::spin()
     m_stat.store(&m_stat_shared);
 }
 
-[[clang::optnone]]
-void task_cpu::config(const task_cpu::config_t& conf)
+[[clang::optnone]] void task_cpu::config(const task_cpu::config_t& conf)
 {
     assert(0.0 < conf.utilization && conf.utilization <= 100.0);
-    OP_LOG(OP_LOG_DEBUG,
-        "CPU Task configuring");
+    OP_LOG(OP_LOG_DEBUG, "CPU Task configuring");
 
     m_stat_clear = true;
     m_utilization = conf.utilization / 100.0;
@@ -113,17 +109,18 @@ void task_cpu::config(const task_cpu::config_t& conf)
     m_weights = 0;
     m_weight_min = std::numeric_limits<uint64_t>::max();
     m_targets.clear();
-    for (const auto & t_conf : conf.targets) {
+    for (const auto& t_conf : conf.targets) {
         auto meta = target_meta{};
         meta.weight = t_conf.weight;
         meta.target = make_target(t_conf.set, t_conf.data_type);
 
         // Measure the target run time, needed for planning
         auto runs_for_measure = 5;
-        meta.runtime = run_time([&](){
-            for (auto i = 0; i < runs_for_measure; ++i)
-                meta.target.get()->operation();
-        }) / runs_for_measure;
+        meta.runtime = run_time([&]() {
+                           for (auto i = 0; i < runs_for_measure; ++i)
+                               meta.target.get()->operation();
+                       })
+                       / runs_for_measure;
 
         m_time += meta.runtime;
         m_weights += t_conf.weight;
@@ -134,11 +131,11 @@ void task_cpu::config(const task_cpu::config_t& conf)
 
 task_cpu::stat_t task_cpu::stat() const
 {
-    return (m_stat_clear)
-        ? stat_t{} : *m_stat;
+    return (m_stat_clear) ? stat_t{} : *m_stat;
 }
 
-task_cpu::target_ptr task_cpu::make_target(cpu::instruction_set iset, cpu::data_type dtype)
+task_cpu::target_ptr task_cpu::make_target(cpu::instruction_set iset,
+                                           cpu::data_type dtype)
 {
     switch (iset) {
     case cpu::instruction_set::SCALAR:
@@ -154,7 +151,7 @@ task_cpu::target_ptr task_cpu::make_target(cpu::instruction_set iset, cpu::data_
         }
     default:
         throw std::runtime_error("Unknown instruction set "
-            + std::to_string((int)iset));
+                                 + std::to_string((int)iset));
     }
 }
 

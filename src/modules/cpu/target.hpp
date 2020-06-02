@@ -14,7 +14,7 @@ protected:
 public:
     target(cpu::data_type dtype)
         : m_data_type(dtype)
-        {}
+    {}
     virtual ~target() = default;
     virtual uint64_t operation() const = 0;
 

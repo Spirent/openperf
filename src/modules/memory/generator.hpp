@@ -89,11 +89,9 @@ private:
     void resize_buffer(size_t);
     void spread_config(generator::workers&, const task_memory_config&);
 
-    template <class T>
-    void reallocate_workers(generator::workers&, unsigned);
+    template <class T> void reallocate_workers(generator::workers&, unsigned);
 
-    template <typename Function>
-    void for_each_worker(Function&& function);
+    template <typename Function> void for_each_worker(Function&& function);
 };
 
 template <class T>
@@ -112,8 +110,8 @@ void generator::reallocate_workers(generator::workers& wkrs, unsigned num)
         for (; size < num; ++size) {
             wkrs.emplace_front(std::make_unique<worker<T>>(
                 task_memory_config{},
-                "mem" + std::to_string(m_serial_number)
-                + "_" + std::to_string(num - size)));
+                "mem" + std::to_string(m_serial_number) + "_"
+                    + std::to_string(num - size)));
         }
     }
 }

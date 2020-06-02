@@ -15,7 +15,8 @@ class generator_stack
 {
 private:
     using generator_ptr = std::shared_ptr<generator>;
-    using statistic_variant = std::variant<generator_ptr, model::generator_result>;
+    using statistic_variant =
+        std::variant<generator_ptr, model::generator_result>;
 
 private:
     std::unordered_map<std::string, generator_ptr> m_generators;
@@ -30,11 +31,13 @@ public:
     std::vector<generator_ptr> list() const;
     bool erase(const std::string&);
 
-    tl::expected<model::generator_result, std::string> statistics(const std::string&) const;
+    tl::expected<model::generator_result, std::string>
+    statistics(const std::string&) const;
     std::vector<model::generator_result> list_statistics() const;
     bool erase_statistics(const std::string&);
 
-    tl::expected<model::generator_result, std::string> start_generator(const std::string& id);
+    tl::expected<model::generator_result, std::string>
+    start_generator(const std::string& id);
     bool stop_generator(const std::string& id);
 };
 

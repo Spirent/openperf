@@ -32,8 +32,7 @@ public:
 };
 
 // Worker Template
-template <class T> class worker final
-    : public workable
+template <class T> class worker final : public workable
 {
 private:
     struct message
@@ -60,7 +59,7 @@ public:
     worker(worker&&);
     worker(const worker&) = delete;
     explicit worker(const typename T::config_t&,
-        std::string_view thread_name = "uworker");
+                    std::string_view thread_name = "uworker");
     ~worker();
 
     void start() override;
@@ -140,16 +139,16 @@ template <class T> void worker<T>::start()
 
     m_thread = std::thread([this]() {
         // Set Thread name
-        op_thread_setname(("op_" + m_thread_name
-            + "_" + std::to_string(++thread_number)
-            ).c_str());
+        op_thread_setname(
+            ("op_" + m_thread_name + "_" + std::to_string(++thread_number))
+                .c_str());
 
         // Set Thread core affinity, if specified
         if (m_core >= 0)
             if (auto err = op_thread_set_affinity(m_core))
                 OP_LOG(OP_LOG_ERROR,
-                    "Cannot set worker thread affinity: %s",
-                    std::strerror(err));
+                       "Cannot set worker thread affinity: %s",
+                       std::strerror(err));
 
         loop();
     });
@@ -183,11 +182,8 @@ template <class T> void worker<T>::config(const typename T::config_t& c)
 {
     m_config = c;
     if (is_finished()) return;
-    send_message(worker::message{
-        .stop = m_stopped,
-        .pause = m_paused,
-        .config = c
-    });
+    send_message(
+        worker::message{.stop = m_stopped, .pause = m_paused, .config = c});
 }
 
 // Methods : private
@@ -197,13 +193,14 @@ template <class T> void worker<T>::loop()
         op_socket_get_client(m_zmq_context, ZMQ_PULL, m_endpoint));
 
     for (bool paused = true;;) {
-        void *msg_ptr = nullptr;
-        int recv = zmq_recv(socket.get(), &msg_ptr, sizeof(void*),
-            paused ? 0 : ZMQ_NOBLOCK);
+        void* msg_ptr = nullptr;
+        int recv = zmq_recv(
+            socket.get(), &msg_ptr, sizeof(void*), paused ? 0 : ZMQ_NOBLOCK);
 
         if (recv < 0 && errno != EAGAIN) {
             OP_LOG(OP_LOG_ERROR,
-                "Worker thread %s shutdown", m_thread_name.c_str());
+                   "Worker thread %s shutdown",
+                   m_thread_name.c_str());
             break;
         }
 
@@ -211,8 +208,7 @@ template <class T> void worker<T>::loop()
             auto msg = std::unique_ptr<worker::message>(
                 reinterpret_cast<worker::message*>(msg_ptr));
 
-            if (msg->config)
-                m_task->config(msg->config.value());
+            if (msg->config) m_task->config(msg->config.value());
 
             if (paused && !(msg->pause || msg->stop)) m_task->resume();
             if (!paused && (msg->pause || msg->stop)) m_task->pause();

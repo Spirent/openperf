@@ -7,9 +7,10 @@ namespace openperf::cpu::generator {
 std::vector<generator_stack::generator_ptr> generator_stack::list() const
 {
     std::vector<generator_ptr> cpu_generators_list;
-    std::transform(m_generators.begin(), m_generators.end(),
-        std::back_inserter(cpu_generators_list),
-        [](const auto & i) { return i.second; });
+    std::transform(m_generators.begin(),
+                   m_generators.end(),
+                   std::back_inserter(cpu_generators_list),
+                   [](const auto& i) { return i.second; });
 
     return cpu_generators_list;
 }
@@ -18,8 +19,8 @@ tl::expected<generator_stack::generator_ptr, std::string>
 generator_stack::create(const model::generator& model)
 {
     if (m_generators.count(model.id()))
-        return tl::make_unexpected(
-            "Generator with ID " + model.id() + " already exists.");
+        return tl::make_unexpected("Generator with ID " + model.id()
+                                   + " already exists.");
 
     try {
         auto generator_ptr = std::make_shared<cpu::generator::generator>(model);
@@ -30,7 +31,8 @@ generator_stack::create(const model::generator& model)
     }
 }
 
-generator_stack::generator_ptr generator_stack::generator(const std::string& id) const
+generator_stack::generator_ptr
+generator_stack::generator(const std::string& id) const
 {
     if (auto it = m_generators.find(id); it != m_generators.end())
         return it->second;
@@ -48,10 +50,8 @@ generator_stack::statistics(const std::string& id) const
                 [&](const generator_ptr& generator) {
                     return generator->statistics();
                 },
-                [&](const model::generator_result& res) {
-                    return res;
-                }
-            ), result);
+                [&](const model::generator_result& res) { return res; }),
+            result);
     } catch (const std::out_of_range&) {
         return tl::make_unexpected("Result not found");
     }
@@ -60,16 +60,15 @@ generator_stack::statistics(const std::string& id) const
 std::vector<model::generator_result> generator_stack::list_statistics() const
 {
     std::vector<model::generator_result> result_list;
-    for (const auto & pair : m_statistics) {
-        std::visit(
-            utils::overloaded_visitor(
-                [&](const generator_ptr& generator) {
-                    result_list.push_back(generator->statistics());
-                },
-                [&](const model::generator_result& result) {
-                    result_list.push_back(result);
-                }
-            ), pair.second);
+    for (const auto& pair : m_statistics) {
+        std::visit(utils::overloaded_visitor(
+                       [&](const generator_ptr& generator) {
+                           result_list.push_back(generator->statistics());
+                       },
+                       [&](const model::generator_result& result) {
+                           result_list.push_back(result);
+                       }),
+                   pair.second);
     }
 
     return result_list;
@@ -79,8 +78,7 @@ bool generator_stack::erase(const std::string& id)
 {
     try {
         auto gen = m_generators.at(id);
-        if (gen->running())
-            stop_generator(id);
+        if (gen->running()) stop_generator(id);
 
         return m_generators.erase(id);
     } catch (const std::out_of_range&) {
@@ -107,8 +105,7 @@ generator_stack::start_generator(const std::string& id)
     try {
         auto gen = m_generators.at(id);
         if (gen->running())
-            return tl::make_unexpected(
-                "Generator is already in running state");
+            return tl::make_unexpected("Generator is already in running state");
 
         gen->start();
         auto result = gen->statistics();
@@ -123,8 +120,7 @@ bool generator_stack::stop_generator(const std::string& id)
 {
     try {
         auto gen = m_generators.at(id);
-        if (!gen->running())
-            return true;
+        if (!gen->running()) return true;
 
         gen->stop();
         auto result = gen->statistics();

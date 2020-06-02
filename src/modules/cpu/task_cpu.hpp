@@ -17,13 +17,15 @@
 
 namespace openperf::cpu::internal {
 
-struct target_config {
+struct target_config
+{
     cpu::instruction_set set;
     cpu::data_type data_type;
     uint64_t weight;
 };
 
-struct task_cpu_config {
+struct task_cpu_config
+{
     double utilization = 0.0;
     std::vector<target_config> targets;
     task_cpu_config() = default;
@@ -35,13 +37,13 @@ struct task_cpu_config {
     }
 };
 
-class task_cpu :
-    public utils::worker::task<task_cpu_config, task_cpu_stat>
+class task_cpu : public utils::worker::task<task_cpu_config, task_cpu_stat>
 {
     using target_ptr = std::unique_ptr<target>;
     using chronometer = openperf::timesync::chrono::monotime;
 
-    struct target_meta {
+    struct target_meta
+    {
         uint64_t weight;
         std::chrono::nanoseconds runtime;
         target_ptr target;
@@ -79,12 +81,11 @@ public:
 private:
     target_ptr make_target(cpu::instruction_set, cpu::data_type);
 
-    template<typename Function>
-    std::chrono::nanoseconds run_time(Function &&);
+    template <typename Function> std::chrono::nanoseconds run_time(Function&&);
 };
 
-template<typename Function>
-std::chrono::nanoseconds task_cpu::run_time(Function && function)
+template <typename Function>
+std::chrono::nanoseconds task_cpu::run_time(Function&& function)
 {
     auto start_time = cpu_thread_time();
     auto t1 = chronometer::now();
@@ -98,6 +99,5 @@ std::chrono::nanoseconds task_cpu::run_time(Function && function)
 }
 
 } // namespace openperf::cpu::internal
-
 
 #endif // _OP_CPU_TASK_CPU_HPP_

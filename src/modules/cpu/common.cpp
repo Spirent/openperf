@@ -8,12 +8,11 @@ cpu::instruction_set to_instruction_set(const std::string& value)
     const static std::unordered_map<std::string, cpu::instruction_set>
         cpu_instruction_sets = {
             {"scalar", cpu::instruction_set::SCALAR},
-    };
+        };
 
     if (cpu_instruction_sets.count(value))
         return cpu_instruction_sets.at(value);
-    throw std::runtime_error(
-        "Instruction set \"" + value + "\" is unknown");
+    throw std::runtime_error("Instruction set \"" + value + "\" is unknown");
 }
 
 std::string to_string(const cpu::instruction_set& pattern)
@@ -21,7 +20,7 @@ std::string to_string(const cpu::instruction_set& pattern)
     const static std::unordered_map<cpu::instruction_set, std::string>
         cpu_instruction_set_strings = {
             {cpu::instruction_set::SCALAR, "scalar"},
-    };
+        };
 
     if (cpu_instruction_set_strings.count(pattern))
         return cpu_instruction_set_strings.at(pattern);
@@ -36,10 +35,9 @@ cpu::data_type to_data_type(const std::string& value)
             {"int64", cpu::data_type::INT64},
             {"float32", cpu::data_type::FLOAT32},
             {"float64", cpu::data_type::FLOAT64},
-    };
+        };
 
-    if (cpu_data_types.count(value))
-        return cpu_data_types.at(value);
+    if (cpu_data_types.count(value)) return cpu_data_types.at(value);
     throw std::runtime_error("Instruction set \"" + value + "\" is unknown");
 }
 
@@ -51,7 +49,7 @@ std::string to_string(const cpu::data_type& pattern)
             {cpu::data_type::INT64, "int64"},
             {cpu::data_type::FLOAT32, "float32"},
             {cpu::data_type::FLOAT64, "float64"},
-    };
+        };
 
     if (cpu_data_type_strings.count(pattern))
         return cpu_data_type_strings.at(pattern);

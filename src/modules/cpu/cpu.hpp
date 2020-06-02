@@ -9,13 +9,15 @@ namespace openperf::cpu::internal {
 
 using namespace std::chrono_literals;
 
-struct utilization_time {
+struct utilization_time
+{
     std::chrono::nanoseconds user = 0ns;
     std::chrono::nanoseconds system = 0ns;
     std::chrono::nanoseconds steal = 0ns;
     std::chrono::nanoseconds utilization = 0ns;
 
-    utilization_time operator-(const utilization_time& other) const {
+    utilization_time operator-(const utilization_time& other) const
+    {
         return {
             .user = user - other.user,
             .system = system - other.system,
@@ -24,15 +26,17 @@ struct utilization_time {
         };
     }
 
-    utilization_time& operator-=(const utilization_time& other) {
+    utilization_time& operator-=(const utilization_time& other)
+    {
         user -= other.user;
         system -= other.system;
-        steal -=  other.steal;
+        steal -= other.steal;
         utilization -= other.utilization;
         return *this;
     }
 
-    utilization_time operator+(const utilization_time& other) const {
+    utilization_time operator+(const utilization_time& other) const
+    {
         return {
             .user = user + other.user,
             .system = system + other.system,
@@ -41,10 +45,11 @@ struct utilization_time {
         };
     }
 
-    utilization_time& operator+=(const utilization_time& other) {
+    utilization_time& operator+=(const utilization_time& other)
+    {
         user += other.user;
         system += other.system;
-        steal +=  other.steal;
+        steal += other.steal;
         utilization += other.utilization;
         return *this;
     }

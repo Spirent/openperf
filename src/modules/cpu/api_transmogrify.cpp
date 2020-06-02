@@ -55,8 +55,9 @@ static auto zmq_msg_init(zmq_msg_t* msg,
     }
 
     auto cursor = reinterpret_cast<T**>(zmq_msg_data(msg));
-    std::transform(std::begin(values), std::end(values), cursor,
-        [](auto& ptr) { return ptr.release(); });
+    std::transform(std::begin(values), std::end(values), cursor, [](auto& ptr) {
+        return ptr.release();
+    });
     return 0;
 }
 
@@ -116,48 +117,48 @@ serialized_msg serialize_request(request_msg&& msg)
                     },
                     [&](const request_cpu_generator& cpu_generator) {
                         return zmq_msg_init(&serialized.data,
-                            cpu_generator.id.data(),
-                            cpu_generator.id.length());
+                                            cpu_generator.id.data(),
+                                            cpu_generator.id.length());
                     },
                     [&](request_cpu_generator_add& cpu_generator) {
                         return zmq_msg_init(&serialized.data,
-                            std::move(cpu_generator.source));
+                                            std::move(cpu_generator.source));
                     },
                     [&](const request_cpu_generator_del& cpu_generator) {
                         return zmq_msg_init(&serialized.data,
-                            cpu_generator.id.data(),
-                            cpu_generator.id.length());
+                                            cpu_generator.id.data(),
+                                            cpu_generator.id.length());
                     },
                     [&](const request_cpu_generator_start& cpu_generator) {
                         return zmq_msg_init(&serialized.data,
-                            cpu_generator.id.data(),
-                            cpu_generator.id.length());
+                                            cpu_generator.id.data(),
+                                            cpu_generator.id.length());
                     },
                     [&](const request_cpu_generator_stop& cpu_generator) {
                         return zmq_msg_init(&serialized.data,
-                            cpu_generator.id.data(),
-                            cpu_generator.id.length());
+                                            cpu_generator.id.data(),
+                                            cpu_generator.id.length());
                     },
                     [&](request_cpu_generator_bulk_start& request) {
                         return zmq_msg_init(&serialized.data,
-                            std::move(request.ids));
+                                            std::move(request.ids));
                     },
                     [&](request_cpu_generator_bulk_stop& request) {
                         return zmq_msg_init(&serialized.data,
-                            std::move(request.ids));
+                                            std::move(request.ids));
                     },
                     [&](const request_cpu_generator_result_list&) {
                         return zmq_msg_init(&serialized.data);
                     },
                     [&](const request_cpu_generator_result& result) {
                         return zmq_msg_init(&serialized.data,
-                            result.id.data(),
-                            result.id.length());
+                                            result.id.data(),
+                                            result.id.length());
                     },
                     [&](const request_cpu_generator_result_del& result) {
                         return zmq_msg_init(&serialized.data,
-                            result.id.data(),
-                            result.id.length());
+                                            result.id.data(),
+                                            result.id.length());
                     },
                     [&](const request_cpu_info&) {
                         return zmq_msg_init(&serialized.data);
@@ -176,28 +177,24 @@ serialized_msg serialize_reply(reply_msg&& msg)
          || std::visit(
                 utils::overloaded_visitor(
                     [&](reply_cpu_generators& reply) {
-                        return zmq_msg_init(&serialized.data,
-                            reply.generators);
+                        return zmq_msg_init(&serialized.data, reply.generators);
                     },
                     [&](reply_cpu_generator_results& reply) {
-                        return zmq_msg_init(&serialized.data,
-                            reply.results);
+                        return zmq_msg_init(&serialized.data, reply.results);
                     },
                     [&](reply_cpu_info& reply) {
                         return zmq_msg_init(&serialized.data,
-                            std::move(reply.info));
+                                            std::move(reply.info));
                     },
                     [&](const reply_ok&) {
                         return zmq_msg_init(&serialized.data, 0);
                     },
                     [&](reply_error& error) {
                         return zmq_msg_init(&serialized.data,
-                            std::move(error.info));
+                                            std::move(error.info));
                     }),
                 msg));
-    if (error) {
-        throw std::bad_alloc();
-    }
+    if (error) { throw std::bad_alloc(); }
 
     return serialized;
 }
@@ -237,8 +234,7 @@ tl::expected<request_msg, int> deserialize_request(const serialized_msg& msg)
         request.ids.reset(*zmq_msg_data<std::vector<std::string>**>(&msg.data));
         return request;
     }
-    case utils::variant_index<request_msg,
-                              request_cpu_generator_bulk_stop>(): {
+    case utils::variant_index<request_msg, request_cpu_generator_bulk_stop>(): {
         auto request = request_cpu_generator_bulk_stop{};
         request.ids.reset(*zmq_msg_data<std::vector<std::string>**>(&msg.data));
         return request;
@@ -256,11 +252,9 @@ tl::expected<request_msg, int> deserialize_request(const serialized_msg& msg)
         std::string id(zmq_msg_data<char*>(&msg.data), zmq_msg_size(&msg.data));
         return request_cpu_generator_result_del{std::move(id)};
     }
-    case utils::variant_index<request_msg,
-                              request_cpu_info>(): {
+    case utils::variant_index<request_msg, request_cpu_info>(): {
         return request_cpu_info{};
     }
-
     }
 
     return tl::make_unexpected(EINVAL);
@@ -282,7 +276,7 @@ tl::expected<reply_msg, int> deserialize_reply(const serialized_msg& msg)
         return reply;
     }
     case utils::variant_index<reply_msg, reply_cpu_generator_results>(): {
-       auto size = zmq_msg_size(&msg.data) / sizeof(cpu_generator_result_t*);
+        auto size = zmq_msg_size(&msg.data) / sizeof(cpu_generator_result_t*);
         auto data = zmq_msg_data<cpu_generator_result_t**>(&msg.data);
 
         auto reply = reply_cpu_generator_results{};
@@ -323,14 +317,8 @@ std::string to_string(const api::typed_error& error)
 
 reply_error to_error(error_type type, int code, const std::string& value)
 {
-    return reply_error {
-        .info = std::make_unique<typed_error>(
-            typed_error {
-                .type = type,
-                .code = code,
-                .value = value
-            }
-        )};
+    return reply_error{.info = std::make_unique<typed_error>(typed_error{
+                           .type = type, .code = code, .value = value})};
 }
 
 template <typename Rep, typename Period>
@@ -338,27 +326,24 @@ std::string to_rfc3339(std::chrono::duration<Rep, Period> from)
 {
     auto tv = openperf::timesync::to_timeval(from);
     std::stringstream os;
-    os << std::put_time(gmtime(&tv.tv_sec), "%FT%T")
-        << "." << std::setfill('0')
-        << std::setw(6) << tv.tv_usec << "Z";
+    os << std::put_time(gmtime(&tv.tv_sec), "%FT%T") << "." << std::setfill('0')
+       << std::setw(6) << tv.tv_usec << "Z";
     return os.str();
 }
 
 model::generator from_swagger(const CpuGenerator& gen)
 {
     model::generator_config config;
-    for (const auto & conf : gen.getConfig()->getCores()) {
-        model::generator_core_config core_conf {
-            .utilization = conf->getUtilization()
-        };
+    for (const auto& conf : gen.getConfig()->getCores()) {
+        model::generator_core_config core_conf{.utilization =
+                                                   conf->getUtilization()};
 
-        for (const auto & target : conf->getTargets()) {
-            core_conf.targets.push_back(model::generator_target_config {
-                .instruction_set = to_instruction_set(
-                    target->getInstructionSet()),
+        for (const auto& target : conf->getTargets()) {
+            core_conf.targets.push_back(model::generator_target_config{
+                .instruction_set =
+                    to_instruction_set(target->getInstructionSet()),
                 .data_type = to_data_type(target->getDataType()),
-                .weight = static_cast<uint>(target->getWeight())
-            });
+                .weight = static_cast<uint>(target->getWeight())});
         }
 
         config.cores.push_back(core_conf);
@@ -371,21 +356,26 @@ model::generator from_swagger(const CpuGenerator& gen)
     return gen_model;
 }
 
-std::shared_ptr<CpuGenerator> to_swagger(const model::generator & model)
+std::shared_ptr<CpuGenerator> to_swagger(const model::generator& model)
 {
     auto cpu_config = std::make_shared<CpuGeneratorConfig>();
 
     auto cores = model.config().cores;
-    std::transform(cores.begin(), cores.end(),
+    std::transform(
+        cores.begin(),
+        cores.end(),
         std::back_inserter(cpu_config->getCores()),
-        [](const auto & core_config) {
+        [](const auto& core_config) {
             auto conf = std::make_shared<CpuGeneratorCoreConfig>();
             conf->setUtilization(core_config.utilization);
 
-            std::transform(core_config.targets.begin(), core_config.targets.end(),
+            std::transform(
+                core_config.targets.begin(),
+                core_config.targets.end(),
                 std::back_inserter(conf->getTargets()),
-                [](const auto & t) {
-                    auto target = std::make_shared<CpuGeneratorCoreConfig_targets>();
+                [](const auto& t) {
+                    auto target =
+                        std::make_shared<CpuGeneratorCoreConfig_targets>();
                     target->setDataType(to_string(t.data_type));
                     target->setInstructionSet(to_string(t.instruction_set));
                     target->setWeight(t.weight);
@@ -402,7 +392,8 @@ std::shared_ptr<CpuGenerator> to_swagger(const model::generator & model)
     return gen;
 }
 
-std::shared_ptr<CpuGeneratorResult> to_swagger(const model::generator_result& result)
+std::shared_ptr<CpuGeneratorResult>
+to_swagger(const model::generator_result& result)
 {
     auto stats = result.stats();
     auto cpu_stats = std::make_shared<CpuGeneratorStats>();
@@ -413,9 +404,9 @@ std::shared_ptr<CpuGeneratorResult> to_swagger(const model::generator_result& re
     cpu_stats->setSteal(stats.steal.count());
     cpu_stats->setError(stats.error.count());
 
-    for (const auto & c_stats : stats.cores) {
+    for (const auto& c_stats : stats.cores) {
         auto core_stats = std::make_shared<CpuGeneratorCoreStats>();
-        for (const auto & c_target : c_stats.targets) {
+        for (const auto& c_target : c_stats.targets) {
             auto target = std::make_shared<CpuGeneratorTargetStats>();
             target->setOperations(c_target.operations);
             core_stats->getTargets().push_back(target);

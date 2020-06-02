@@ -9,13 +9,15 @@ namespace openperf::cpu::internal {
 
 using namespace std::chrono_literals;
 
-struct target_cpu_stat {
+struct target_cpu_stat
+{
     uint64_t operations;
     uint64_t ticks;
     std::chrono::nanoseconds runtime;
 };
 
-struct task_cpu_stat {
+struct task_cpu_stat
+{
     std::chrono::nanoseconds available = 0ns;
     std::chrono::nanoseconds utilization = 0ns;
     std::chrono::nanoseconds system = 0ns;
@@ -28,10 +30,7 @@ struct task_cpu_stat {
 
     task_cpu_stat() = default;
 
-    task_cpu_stat(int targets_number)
-    {
-        targets.resize(targets_number);
-    }
+    task_cpu_stat(int targets_number) { targets.resize(targets_number); }
 
     task_cpu_stat(const task_cpu_stat& other)
         : available(other.available)
@@ -43,7 +42,7 @@ struct task_cpu_stat {
         , targets(other.targets)
     {}
 
-    task_cpu_stat& operator= (const task_cpu_stat& other)
+    task_cpu_stat& operator=(const task_cpu_stat& other)
     {
         available = other.available;
         utilization = other.utilization;

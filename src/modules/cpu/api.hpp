@@ -31,7 +31,8 @@ const std::string endpoint = "inproc://openperf_cpu";
 
 /* zmq api objects models */
 
-struct cpu_info_t {
+struct cpu_info_t
+{
     uint16_t cores;
     uint16_t cache_line_size;
     std::string architecture;
@@ -43,12 +44,7 @@ using cpu_generator_ptr = std::unique_ptr<cpu_generator_t>;
 using cpu_generator_result_ptr = std::unique_ptr<cpu_generator_result_t>;
 using cpu_info_ptr = std::unique_ptr<cpu_info_t>;
 
-enum class error_type {
-    NONE = 0,
-    NOT_FOUND,
-    ZMQ_ERROR,
-    CUSTOM_ERROR
-};
+enum class error_type { NONE = 0, NOT_FOUND, ZMQ_ERROR, CUSTOM_ERROR };
 
 struct typed_error
 {
@@ -110,7 +106,8 @@ struct request_cpu_generator_result_del
     std::string id;
 };
 
-struct request_cpu_info{};
+struct request_cpu_info
+{};
 
 /* zmq api reply models */
 
@@ -171,7 +168,8 @@ tl::expected<reply_msg, int> deserialize_reply(const serialized_msg& msg);
 int send_message(void* socket, serialized_msg&& msg);
 tl::expected<serialized_msg, int> recv_message(void* socket, int flags = 0);
 
-reply_error to_error(error_type type, int code = 0, const std::string& value = "");
+reply_error
+to_error(error_type type, int code = 0, const std::string& value = "");
 std::string to_string(const api::typed_error&);
 model::generator from_swagger(const CpuGenerator&);
 std::shared_ptr<CpuGenerator> to_swagger(const model::generator&);

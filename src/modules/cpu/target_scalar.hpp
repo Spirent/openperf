@@ -6,9 +6,7 @@
 
 namespace openperf::cpu::internal {
 
-template<class T>
-class target_scalar
-    : public target
+template <class T> class target_scalar : public target
 {
 private:
     using square_matrix = std::vector<std::vector<T>>;
@@ -36,8 +34,8 @@ public:
 
     ~target_scalar() override = default;
 
-    [[clang::optnone]]
-    uint64_t operation() const override {
+    [[clang::optnone]] uint64_t operation() const override
+    {
         for (size_t i = 0; i < size; ++i) {
             for (size_t j = 0; j < size; ++j) {
                 T sum = 0;

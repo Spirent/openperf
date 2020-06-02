@@ -17,7 +17,8 @@ struct generator_target_stats
     uint64_t operations;
 };
 
-struct generator_common_stats {
+struct generator_common_stats
+{
     std::chrono::nanoseconds available = 0ns;
     std::chrono::nanoseconds utilization = 0ns;
     std::chrono::nanoseconds system = 0ns;
@@ -26,14 +27,12 @@ struct generator_common_stats {
     std::chrono::nanoseconds error = 0ns;
 };
 
-struct generator_core_stats
-    : public generator_common_stats
+struct generator_core_stats : public generator_common_stats
 {
     std::vector<generator_target_stats> targets;
 };
 
-struct generator_stats
-    : public generator_common_stats
+struct generator_stats : public generator_common_stats
 {
     std::vector<generator_core_stats> cores;
 };
