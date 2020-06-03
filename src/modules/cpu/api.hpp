@@ -11,6 +11,8 @@
 
 #include "swagger/v1/model/CpuGenerator.h"
 #include "swagger/v1/model/CpuGeneratorResult.h"
+#include "swagger/v1/model/BulkCreateCpuGeneratorsRequest.h"
+#include "swagger/v1/model/BulkDeleteCpuGeneratorsRequest.h"
 #include "swagger/v1/model/BulkStartCpuGeneratorsRequest.h"
 #include "swagger/v1/model/BulkStopCpuGeneratorsRequest.h"
 #include "swagger/v1/model/CpuInfoResult.h"
@@ -71,6 +73,16 @@ struct request_cpu_generator_add
 struct request_cpu_generator_del
 {
     std::string id;
+};
+
+struct request_cpu_generator_bulk_add
+{
+    std::vector<cpu_generator_ptr> generators;
+};
+
+struct request_cpu_generator_bulk_del
+{
+    std::unique_ptr<std::vector<std::string>> ids;
 };
 
 struct request_cpu_generator_start
@@ -138,6 +150,8 @@ using request_msg = std::variant<request_cpu_generator_list,
                                  request_cpu_generator,
                                  request_cpu_generator_add,
                                  request_cpu_generator_del,
+                                 request_cpu_generator_bulk_add,
+                                 request_cpu_generator_bulk_del,
                                  request_cpu_generator_start,
                                  request_cpu_generator_stop,
                                  request_cpu_generator_bulk_start,
@@ -172,6 +186,8 @@ reply_error
 to_error(error_type type, int code = 0, const std::string& value = "");
 std::string to_string(const api::typed_error&);
 model::generator from_swagger(const CpuGenerator&);
+request_cpu_generator_bulk_add from_swagger(BulkCreateCpuGeneratorsRequest&);
+request_cpu_generator_bulk_del from_swagger(BulkDeleteCpuGeneratorsRequest&);
 std::shared_ptr<CpuGenerator> to_swagger(const model::generator&);
 std::shared_ptr<CpuGeneratorResult> to_swagger(const model::generator_result&);
 std::shared_ptr<CpuInfoResult> to_swagger(const cpu_info_t&);

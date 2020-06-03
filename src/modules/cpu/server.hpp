@@ -21,6 +21,8 @@ public:
     reply_msg handle_request(const request_cpu_generator&);
     reply_msg handle_request(const request_cpu_generator_add&);
     reply_msg handle_request(const request_cpu_generator_del&);
+    reply_msg handle_request(const request_cpu_generator_bulk_add&);
+    reply_msg handle_request(const request_cpu_generator_bulk_del&);
     reply_msg handle_request(const request_cpu_generator_start&);
     reply_msg handle_request(const request_cpu_generator_stop&);
     reply_msg handle_request(const request_cpu_generator_bulk_start&);
