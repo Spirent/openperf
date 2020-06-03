@@ -18,6 +18,9 @@ from __future__ import absolute_import
 # import apis into sdk package
 from client.api.block_generator_api import BlockGeneratorApi
 from client.api.cpu_generator_api import CpuGeneratorApi
+from client.api.dynamic_results_api import DynamicResultsApi
+from client.api.dynamic_results_t_digests_api import DynamicResultsTDigestsApi
+from client.api.dynamic_results_thresholds_api import DynamicResultsThresholdsApi
 from client.api.interfaces_api import InterfacesApi
 from client.api.memory_generator_api import MemoryGeneratorApi
 from client.api.modules_api import ModulesApi
@@ -26,6 +29,8 @@ from client.api.packet_captures_api import PacketCapturesApi
 from client.api.packet_generators_api import PacketGeneratorsApi
 from client.api.ports_api import PortsApi
 from client.api.stacks_api import StacksApi
+from client.api.t_digest_api import TDigestApi
+from client.api.threshold_api import ThresholdApi
 from client.api.time_sync_api import TimeSyncApi
 
 # import ApiClient
@@ -142,6 +147,11 @@ from client.models.stack_element_stats import StackElementStats
 from client.models.stack_memory_stats import StackMemoryStats
 from client.models.stack_protocol_stats import StackProtocolStats
 from client.models.stack_stats import StackStats
+from client.models.t_digest_centroid import TDigestCentroid
+from client.models.t_digest_config import TDigestConfig
+from client.models.t_digest_result import TDigestResult
+from client.models.threshold_config import ThresholdConfig
+from client.models.threshold_result import ThresholdResult
 from client.models.time_counter import TimeCounter
 from client.models.time_keeper import TimeKeeper
 from client.models.time_keeper_state import TimeKeeperState

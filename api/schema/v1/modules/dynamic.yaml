@@ -1,0 +1,322 @@
+paratemeters:
+  id:
+    name: id
+    in: path
+    description: Unique resource identifier
+    type: string
+    format: string
+    required: true
+
+paths:
+  /dynamic-results/thresholds:
+    get:
+      operationId: ThresholdList
+      tags:
+        - DynamicResults
+        - Threshold
+      summary: List thresholds
+      description: The endpoint returns all of the configured thresholds
+      responses:
+        200:
+          description: Success
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/ThresholdConfig"
+    post:
+      operationId: CreateThreshold
+      tags:
+        - DynamicResults
+        - Threshold
+      summary: Create a threshold
+      description: Create a new threshold
+      paratemeters:
+        - name: threshold
+          in: body
+          description: Threshold configuration
+          required: true
+          schema:
+            $ref: "#/definitions/ThresholdConfig"
+      responses:
+        201:
+          description: Created
+          headers:
+            Location:
+              description: URI of created threshold
+          schema:
+            $ref: "#/definitions/ThresholdConfig"
+
+  /dynamic-results/thresholds/{id}:
+    get:
+      operationId: GetThreshold
+      tags:
+        - DynamicResults
+        - Threshold
+      summary: Returns the threshold
+      description: Returns the threshold configuration by ID
+      paratemeters:
+        - $ref: "#/paratemeters/id"
+      responses:
+        200:
+          description: Success
+          schema:
+            $ref: "#/definitions/ThresholdConfig"
+    delete:
+      operationId: DeleteThreshold
+      tags:
+        - DynamicResultsThresholds
+      summary: Delete the threshold
+      description: Delete the threshold by ID
+      paratemeters:
+        - $ref: "#/paratemeters/id"
+      responses:
+        204:
+          description: No Content
+
+  /dynamic-results/thresholds/{id}/result:
+    get:
+      operationId: GetThresholdResult
+      tags:
+        - DynamicResults
+        - Threshold
+      summary: Get the threshold result
+      description: Get the threshold result by threshold ID
+      paratemeters:
+        - $ref: "#/paratemeters/id"
+      responses:
+        200:
+          description: Success
+          schema:
+            $ref: "#/definitions/ThresholdResult"
+
+  /dynamic-results/t-digests:
+    get:
+      operationId: TDigestList
+      tags:
+        - DynamicResults
+        - T-Digest
+      summary: List T-Digests
+      description: The endpoint returns all of configured T-Digests
+      responses:
+        200:
+          description: Success
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/TDigestConfig"
+    post:
+      operationId: CreateTDigest
+      tags:
+        - DynamicResults
+        - T-Digest
+      summary: Create T-Digest
+      description: Create a new T-Digest
+      responses:
+        201:
+          description: Created
+          headers:
+            Location:
+              description: URI of created threshold
+          schema:
+            $ref: "#/definitions/TDigestConfig"
+
+  /dynamic-results/t-digests/{id}:
+    get:
+      operationId: GetTDigest
+      tags:
+        - DynamicResults
+        - T-Digest
+      summary: Returns the T-Digest
+      description: Returns the T-Digest configuration by ID
+      paratemeters:
+        - $ref: "#/definitions/TDigestConfig"
+      responses:
+        200:
+          description: Success
+          schema:
+            $ref: "#/definitions/TDigestConfig"
+    delete:
+      operationId: DeleteTDigest
+      tags:
+        - DynamicResultsTDigests
+      summary: Delete the T-Digest
+      description: Delete the T-Digest by ID
+      paratemeters:
+        - $ref: "#/paratemeters/id"
+      responses:
+        204:
+          description: No Content
+
+  /dynamic-results/t-digests/{id}/result:
+    get:
+      operationId: GetTDigestResult
+      tags:
+        - DynamicResults
+        - T-Digest
+      summary: Returns the T-Digest result
+      description: Returns the T-Digest result by T-Digest ID
+      paratemeters:
+        - $ref: "#/definitions/TDigestResult"
+      responses:
+        200:
+          description: Success
+          schema:
+            $ref: "#/definitions/TDigestResult"
+
+definitions:
+  ThresholdConfig:
+    type: object
+    description: Threshold value
+    properties:
+      id:
+        type: string
+        description: Unique threshold identifier
+      generator_type:
+        type: string
+        description: Type of generator
+        enum:
+          - memory
+          - block
+          - cpu
+      generator_id:
+        type: string
+        description: Unique generator identifier
+      value:
+        type: float
+        description: the value of interest
+      function:
+        type: string
+        description: the function to apply to the statistic before evaluating
+        enum:
+          - dx
+          - dxdt
+          - dxdy
+      comparator:
+        type: string
+        description: Value comparator
+        enum:
+          - greater
+          - greater_or_equal
+          - less
+          - less_or_equal
+          - equal
+      stat_x:
+        type: string
+        description: the X statistic to track
+      stat_y:
+        type: string
+        description: the Y statistic to track (when using DXDY function)
+    required:
+      - id
+      - generator_type
+      - generator_id
+      - value
+      - function
+      - comparator
+      - stat_x
+
+  ThresholdResult:
+    type: object
+    description: Threshold result
+    properties:
+      id:
+        type: string
+        description: Threshold unique identifier
+      generator_type:
+        type: string
+        description: Type of generator
+        enum:
+          - memory
+          - block
+          - cpu
+      generator_id:
+        type: string
+        description: Generator unique identifier
+      threshold:
+        type: float
+        description: threshold
+      relation:
+        type: integer
+        description: relation
+      true:
+        type: integer
+        description: condition true
+      false:
+        type: integer
+        description: condition false
+
+  TDigestConfig:
+    type: object
+    description: T-Digest value
+    properties:
+      id:
+        type: string
+        description: T-Digest unique identifier
+      generator_type:
+        type: string
+        description: Type of generator
+        enum:
+          - memory
+          - block
+          - cpu
+      generator_id:
+        type: string
+        description: Unique generator identifier
+      function:
+        type: string
+        description: the function to apply to the statistic before evaluating
+        enum:
+          - dx
+          - dxdt
+          - dxdy
+      stat_x:
+        type: string
+        description: the X statistic to track
+      stat_y:
+        type: string
+        description: the Y statistic to track (when using DXDY function)
+    required:
+      - id
+      - generator_type
+      - generator_id
+      - function
+      - stat_x
+
+  TDigestResult:
+    type: object
+    description: T-Digest result
+    properties:
+      id:
+        type: string
+        description: T-Digest identifier
+      generator_type:
+        type: string
+        description: Type of generator
+        enum:
+          - memory
+          - block
+          - cpu
+      generator_id:
+        type: string
+        description: Unique generator identifier
+      delta:
+        type: float
+        description: The delta value used to initialize the T-Digest struct
+      factor:
+        type: integer
+        description: The compression factor used to initialize the T-Digest struct
+      centroids:
+        type: array
+        items:
+          $ref: "#/definitions/TDigestCentroid"
+
+  TDigestCentroid:
+    type: object
+    description: The data point inside the T-Digest structure
+    properties:
+      mean:
+        type: float
+        description: The average value of this centroid
+      weight:
+        type: integer
+        description: The weight of this centroid
