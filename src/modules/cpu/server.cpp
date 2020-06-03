@@ -67,6 +67,54 @@ reply_msg server::handle_request(const request_cpu_generator_del& request)
     return reply_ok{};
 }
 
+
+reply_msg server::handle_request(const request_cpu_generator_bulk_add& request)
+{
+    auto reply = reply_cpu_generators{};
+
+    auto remove_created_items = [&]() -> auto
+    {
+        for (const auto& item : reply.generators) {
+            m_generator_stack.erase(item->id());
+        }
+    };
+
+    for (const auto& source : request.generators) {
+        // If user did not specify an id create one for them.
+        if (source->id().empty()) {
+            source->id(core::to_string(core::uuid::random()));
+        }
+
+        if (auto id_check = config::op_config_validate_id_string(source->id()); !id_check) {
+            remove_created_items();
+            return (to_error(error_type::CUSTOM_ERROR, 0, "Id is not valid"));
+        }
+
+        auto result = m_generator_stack.create(*source);
+        if (!result) {
+            remove_created_items();
+            return (to_error(error_type::CUSTOM_ERROR, 0, result.error()));
+        }
+        reply.generators.emplace_back(std::make_unique<model::generator>(*result.value()));
+    }
+
+    return reply;
+}
+
+reply_msg server::handle_request(const request_cpu_generator_bulk_del& request)
+{
+    bool failed = false;
+    for (const auto& id : *request.ids) {
+        failed = !m_generator_stack.erase(id) || failed;
+    }
+    if (failed)
+        return to_error(api::error_type::CUSTOM_ERROR,
+                        0,
+                        "Some generators from the list cannot be deleted");
+
+    return api::reply_ok{};
+}
+
 reply_msg server::handle_request(const request_cpu_generator_start& request)
 {
     if (!m_generator_stack.generator(request.id))

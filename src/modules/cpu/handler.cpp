@@ -15,6 +15,27 @@ using json = nlohmann::json;
 
 namespace api = openperf::cpu::api;
 
+class bulk_create_cpu_generators_request : public BulkCreateCpuGeneratorsRequest {
+public:
+    void fromJson(nlohmann::json& val) override
+    {
+        m_Items.clear();
+        nlohmann::json jsonArray;
+        for( auto& item : val["items"]) {
+            if(item.is_null()) {
+                m_Items.push_back( std::shared_ptr<CpuGenerator>(nullptr) );
+            } else {
+                std::shared_ptr<CpuGenerator> newItem(new CpuGenerator());
+                newItem->fromJson(item);
+                auto gc = CpuGeneratorConfig();
+                gc.fromJson(item["config"]);
+                newItem->setConfig(std::make_shared<CpuGeneratorConfig>(gc));
+                m_Items.push_back( newItem );
+            }
+        }
+    }
+};
+
 class handler : public openperf::api::route::handler::registrar<handler>
 {
     std::unique_ptr<void, op_socket_deleter> m_socket;
@@ -33,6 +54,12 @@ public:
 
     void delete_generator(const Rest::Request& request,
                           Http::ResponseWriter response);
+
+    void bulk_create_generators(const Rest::Request& request,
+                               Http::ResponseWriter response);
+
+    void bulk_delete_generators(const Rest::Request& request,
+                              Http::ResponseWriter response);
 
     void start_generator(const Rest::Request& request,
                          Http::ResponseWriter response);
@@ -86,6 +113,14 @@ handler::handler(void* context, Rest::Router& router)
     Rest::Routes::Delete(router,
                          "/cpu-generators/:id",
                          Rest::Routes::bind(&handler::delete_generator, this));
+    Rest::Routes::Post(
+        router,
+        "/cpu-generators/x/bulk-create",
+        Rest::Routes::bind(&handler::bulk_create_generators, this));
+    Rest::Routes::Post(
+        router,
+        "/pu-generators/x/bulk-delete",
+        Rest::Routes::bind(&handler::bulk_delete_generators, this));
     Rest::Routes::Post(router,
                        "/cpu-generators/:id/start",
                        Rest::Routes::bind(&handler::start_generator, this));
@@ -229,6 +264,55 @@ void handler::delete_generator(const Rest::Request& request,
     auto api_reply =
         submit_request(m_socket.get(), api::request_cpu_generator_del{id});
 
+    if (std::get_if<api::reply_ok>(&api_reply)) {
+        response.headers().add<Http::Header::ContentType>(
+            MIME(Application, Json));
+        response.send(Http::Code::No_Content);
+    } else if (auto error = std::get_if<api::reply_error>(&api_reply)) {
+        response.send(to_code(*error), api::to_string(*error->info));
+    } else {
+        response.send(Http::Code::Internal_Server_Error);
+    }
+}
+
+
+void handler::bulk_create_generators(const Rest::Request& request,
+                                    Http::ResponseWriter response)
+{
+    auto request_json = json::parse(request.body());
+    bulk_create_cpu_generators_request request_model;
+    request_model.fromJson(request_json);
+
+    auto api_reply =
+        submit_request(m_socket.get(), api::from_swagger(request_model));
+    if (auto reply =
+            std::get_if<api::reply_cpu_generators>(&api_reply)) {
+        response.headers().add<Http::Header::ContentType>(
+            MIME(Application, Json));
+        auto results = json::array();
+        std::transform(std::begin(reply->generators),
+                       std::end(reply->generators),
+                       std::back_inserter(results),
+                       [](const auto& result) {
+                           return (api::to_swagger(*result)->toJson());
+                       });
+        response.send(Http::Code::Ok, results.dump());
+    } else if (auto error = std::get_if<api::reply_error>(&api_reply)) {
+        response.send(to_code(*error), api::to_string(*error->info));
+    } else {
+        response.send(Http::Code::Internal_Server_Error);
+    }
+}
+
+void handler::bulk_delete_generators(const Rest::Request& request,
+                                   Http::ResponseWriter response)
+{
+    auto request_json = json::parse(request.body());
+    BulkDeleteCpuGeneratorsRequest request_model;
+    request_model.fromJson(request_json);
+
+    auto api_reply =
+        submit_request(m_socket.get(), api::from_swagger(request_model));
     if (std::get_if<api::reply_ok>(&api_reply)) {
         response.headers().add<Http::Header::ContentType>(
             MIME(Application, Json));
