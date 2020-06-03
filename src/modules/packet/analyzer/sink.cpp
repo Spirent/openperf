@@ -167,6 +167,10 @@ bool sink::uses_feature(packetio::packet::sink_feature_flags flags) const
     auto needed = openperf::utils::bit_flags<sink_feature_flags>{
         sink_feature_flags::rx_timestamp};
 
+    if (m_protocol_counters) {
+        needed |= sink_feature_flags::packet_type_decode;
+    }
+
     if (m_flow_counters & signature_stats) {
         needed |= sink_feature_flags::spirent_signature_decode;
     }
