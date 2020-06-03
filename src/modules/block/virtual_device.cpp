@@ -1,6 +1,6 @@
 #include <unistd.h>
 #include <cstring>
-#include <aio.h>
+#include <sys/mman.h>
 #include "virtual_device.hpp"
 #include "timesync/clock.hpp"
 #include "timesync/chrono.hpp"
@@ -95,29 +95,26 @@ void virtual_device::scrub_worker(size_t start, size_t stop)
         return;
     }
 
+    ftruncate(m_write_fd, stop);
     write_header();
 
     auto current = start;
-    std::vector<uint8_t> buf(SCRUB_BUFFER_SIZE, 0);
+    auto page_size = getpagesize();
     while (!m_deleted && current < stop) {
-        pseudo_random_fill(buf.data(), SCRUB_BUFFER_SIZE);
-        auto aio = ((aiocb){
-            .aio_fildes = m_write_fd,
-            .aio_offset = static_cast<off_t>(current),
-            .aio_buf = buf.data(),
-            .aio_nbytes = std::min(SCRUB_BUFFER_SIZE, stop - current),
-            .aio_reqprio = 0,
-            .aio_sigevent.sigev_notify = SIGEV_NONE,
-        });
-        if (aio_write(&aio) == 1) {
-            if (errno == EAGAIN) { continue; }
+        auto buf_len = std::min(SCRUB_BUFFER_SIZE, stop - current);
+        auto file_offset = (current / page_size) * page_size;
+        auto mmap_len = buf_len + current - file_offset;
+
+        void* buf = mmap(nullptr, mmap_len, PROT_WRITE, MAP_SHARED, m_write_fd, file_offset);
+        if (buf == MAP_FAILED) {
+            OP_LOG(OP_LOG_ERROR, "Cannot write scrub to vdev: %s\n", strerror(errno));
             break;
         }
-        const struct aiocb* aiocblist[] = {&aio};
-        aio_suspend(aiocblist, 1, nullptr);
-        if (aio_error(&aio) != 0) { continue; }
-        int bytes = aio_return(&aio);
-        current += bytes;
+        pseudo_random_fill((uint8_t*)buf + current - file_offset, buf_len);
+        msync(buf, mmap_len, MS_SYNC);
+        munmap(buf, mmap_len);
+
+        current += buf_len;
         scrub_update((double)(current - start) / (stop - start));
     }
 

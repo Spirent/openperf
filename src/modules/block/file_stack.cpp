@@ -34,7 +34,7 @@ tl::expected<virtual_device_descriptors, int> file::vopen()
         return fd.load();
     };
 
-    m_write_fd = open_vdev(m_write_fd, O_WRONLY | O_CREAT | O_DSYNC);
+    m_write_fd = open_vdev(m_write_fd, O_RDWR | O_CREAT | O_DSYNC);
     m_read_fd = open_vdev(m_read_fd, O_RDONLY);
 
     if (m_read_fd < 0 || m_write_fd < 0) {
