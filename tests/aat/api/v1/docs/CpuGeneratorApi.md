@@ -114,7 +114,7 @@ No authorization required
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **cpu_info**
-> InlineResponse200 cpu_info()
+> CpuInfoResult cpu_info()
 
 Get a CPU info
 
@@ -144,7 +144,7 @@ This endpoint does not need any parameter.
 
 ### Return type
 
-[**InlineResponse200**](InlineResponse200.md)
+[**CpuInfoResult**](CpuInfoResult.md)
 
 ### Authorization
 

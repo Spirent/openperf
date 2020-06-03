@@ -48,13 +48,13 @@ public:
     /// CpuGeneratorTargetStats members
 
     /// <summary>
-    /// The total amount of finished instruction set cycles
+    /// The total amount of finished instruction set operations
     /// </summary>
-    int64_t getCycles() const;
-    void setCycles(int64_t value);
+    int64_t getOperations() const;
+    void setOperations(int64_t value);
     
 protected:
-    int64_t m_Cycles;
+    int64_t m_Operations;
 
 };
 

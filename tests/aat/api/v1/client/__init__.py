@@ -74,8 +74,8 @@ from client.models.cpu_generator_core_stats import CpuGeneratorCoreStats
 from client.models.cpu_generator_result import CpuGeneratorResult
 from client.models.cpu_generator_stats import CpuGeneratorStats
 from client.models.cpu_generator_target_stats import CpuGeneratorTargetStats
+from client.models.cpu_info_result import CpuInfoResult
 from client.models.duration_remainder import DurationRemainder
-from client.models.inline_response200 import InlineResponse200
 from client.models.interface import Interface
 from client.models.interface_config import InterfaceConfig
 from client.models.interface_protocol_config import InterfaceProtocolConfig

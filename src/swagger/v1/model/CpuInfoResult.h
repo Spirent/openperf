@@ -10,13 +10,13 @@
 * Do not edit the class manually.
 */
 /*
- * Inline_response_200.h
+ * CpuInfoResult.h
  *
  * 
  */
 
-#ifndef Inline_response_200_H_
-#define Inline_response_200_H_
+#ifndef CpuInfoResult_H_
+#define CpuInfoResult_H_
 
 
 #include "ModelBase.h"
@@ -30,12 +30,12 @@ namespace model {
 /// <summary>
 /// 
 /// </summary>
-class  Inline_response_200
+class  CpuInfoResult
     : public ModelBase
 {
 public:
-    Inline_response_200();
-    virtual ~Inline_response_200();
+    CpuInfoResult();
+    virtual ~CpuInfoResult();
 
     /////////////////////////////////////////////
     /// ModelBase overrides
@@ -46,7 +46,7 @@ public:
     void fromJson(nlohmann::json& json) override;
 
     /////////////////////////////////////////////
-    /// Inline_response_200 members
+    /// CpuInfoResult members
 
     /// <summary>
     /// Number of cores
@@ -58,8 +58,8 @@ public:
     /// <summary>
     /// Processor cache line size
     /// </summary>
-    int64_t getCacheLineSize() const;
-    void setCacheLineSize(int64_t value);
+    int32_t getCacheLineSize() const;
+    void setCacheLineSize(int32_t value);
     bool cacheLineSizeIsSet() const;
     void unsetCache_line_size();
     /// <summary>
@@ -73,7 +73,7 @@ public:
 protected:
     int32_t m_Cores;
     bool m_CoresIsSet;
-    int64_t m_Cache_line_size;
+    int32_t m_Cache_line_size;
     bool m_Cache_line_sizeIsSet;
     std::string m_Architecture;
     bool m_ArchitectureIsSet;
@@ -83,4 +83,4 @@ protected:
 }
 }
 
-#endif /* Inline_response_200_H_ */
+#endif /* CpuInfoResult_H_ */

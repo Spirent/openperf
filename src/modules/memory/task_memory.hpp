@@ -61,10 +61,10 @@ public:
 
     void spin() override;
     void config(const config_t&) override;
-    inline void clear_stat() override { m_stat_clear = true; };
+    void clear_stat() override { m_stat_clear = true; };
 
     stat_t stat() const override;
-    inline config_t config() const override { return m_config; }
+    config_t config() const override { return m_config; }
 
 protected:
     virtual size_t operation(uint64_t nb_ops, size_t* op_idx) = 0;

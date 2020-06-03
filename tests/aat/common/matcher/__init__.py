@@ -50,3 +50,8 @@ from common.matcher.block import be_valid_block_file
 from common.matcher.memory import be_valid_memory_generator
 from common.matcher.memory import be_valid_memory_generator_result
 from common.matcher.memory import be_valid_memory_info
+
+# cpu.py
+from common.matcher.cpu import be_valid_cpu_info
+from common.matcher.cpu import be_valid_cpu_generator
+from common.matcher.cpu import be_valid_cpu_generator_result

@@ -54,15 +54,10 @@ public:
     std::string getInstructionSet() const;
     void setInstructionSet(std::string value);
         /// <summary>
-    /// Number of bits to use for data type in chosen instruction set
+    /// CPU load target operation data type, actual for chosen instruction set
     /// </summary>
-    int32_t getDataSize() const;
-    void setDataSize(int32_t value);
-        /// <summary>
-    /// CPU load target operation, actual for chosen instruction set
-    /// </summary>
-    std::string getOperation() const;
-    void setOperation(std::string value);
+    std::string getDataType() const;
+    void setDataType(std::string value);
         /// <summary>
     /// Targeted load ratio
     /// </summary>
@@ -72,9 +67,7 @@ public:
 protected:
     std::string m_Instruction_set;
 
-    int32_t m_Data_size;
-
-    std::string m_Operation;
+    std::string m_Data_type;
 
     int32_t m_Weight;
 

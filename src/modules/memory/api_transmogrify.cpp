@@ -73,7 +73,7 @@ static auto zmq_msg_init(zmq_msg_t* msg, const T* buffer, size_t length)
 
     auto ptr = reinterpret_cast<char*>(zmq_msg_data(msg));
     auto src = reinterpret_cast<const char*>(buffer);
-    std::copy(src, src + length, ptr);
+    std::copy_n(src, length, ptr);
     return 0;
 }
 

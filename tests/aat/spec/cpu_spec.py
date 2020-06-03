@@ -7,9 +7,9 @@ from expects import *
 from expects.matchers import Matcher
 from common import Config, Service
 from common.matcher import (raise_api_exception,
-                            be_valid_memory_info,
-                            be_valid_memory_generator,
-                            be_valid_memory_generator_result)
+                            be_valid_cpu_info,
+                            be_valid_cpu_generator,
+                            be_valid_cpu_generator_result)
 
 
 CONFIG = Config(os.path.join(os.path.dirname(__file__),
@@ -17,17 +17,19 @@ CONFIG = Config(os.path.join(os.path.dirname(__file__),
 
 
 def generator_model(api_client, running = False, id = ''):
-    config = client.models.MemoryGeneratorConfig()
-    config.buffer_size = 1024
-    config.reads_per_sec = 128
-    config.read_size = 8
-    config.read_threads = 1
-    config.writes_per_sec = 128
-    config.write_size = 8
-    config.write_threads = 1
-    config.pattern = 'sequential'
+    core_config_target = client.models.CpuGeneratorCoreConfigTargets()
+    core_config_target.instruction_set = 'scalar'
+    core_config_target.data_type = 'float32';
+    core_config_target.weight = 1
 
-    gen = client.models.MemoryGenerator()
+    core_config = client.models.CpuGeneratorCoreConfig()
+    core_config.utilization = 50.0
+    core_config.targets = [core_config_target]
+
+    config = client.models.CpuGeneratorConfig()
+    config.cores = [core_config]
+
+    gen = client.models.CpuGenerator()
     gen.running = running
     gen.config = config
     gen.id = id
@@ -53,23 +55,28 @@ class has_location(Matcher):
 has_json_content_type = _has_json_content_type()
 
 
-with description('Memory Generator Module', 'memory') as self:
+with description('CPU Generator Module', 'cpu') as self:
     with before.all:
         service = Service(CONFIG.service())
         self._process = service.start()
-        self._api = client.api.MemoryGeneratorApi(service.client())
+        self._api = client.api.CpuGeneratorApi(service.client())
 
     with after.all:
         try:
+            for gen in self._api.list_cpu_generators():
+                if gen.running:
+                    self._api.stop_cpu_generator(gen.id)
+                self._api.delete_cpu_generator(gen.id)
+
             self._process.terminate()
             self._process.wait()
         except AttributeError:
             pass
 
-    with description('/memory-info'):
+    with description('/cpu-info'):
         with context('GET'):
             with before.all:
-                self._result = self._api.memory_info_with_http_info(
+                self._result = self._api.cpu_info_with_http_info(
                     _return_http_data_only=False)
 
             with it('succeeded'):
@@ -78,28 +85,28 @@ with description('Memory Generator Module', 'memory') as self:
             with it('has application/json header'):
                 expect(self._result[2]).to(has_json_content_type)
 
-            with it('valid memory info'):
-                expect(self._result[0]).to(be_valid_memory_info)
+            with it('valid cpu info'):
+                expect(self._result[0]).to(be_valid_cpu_info)
 
-    with description('Memory Generators'):
-        with description('/memory-generators'):
+    with description('CPU Generators'):
+        with description('/cpu-generators'):
             with context('POST'):
                 with shared_context('create generator'):
                     with after.all:
-                        self._api.delete_memory_generator(self._result[0].id)
+                        self._api.delete_cpu_generator(self._result[0].id)
 
                     with it('created'):
                         expect(self._result[1]).to(equal(201))
 
                     with it('has valid Location header'):
                         expect(self._result[2]).to(has_location(
-                            '/memory-generators/' + self._result[0].id))
+                            '/cpu-generators/' + self._result[0].id))
 
                     with it('has Content-Type: application/json header'):
                         expect(self._result[2]).to(has_json_content_type)
 
                     with it('returned valid generator'):
-                        expect(self._result[0]).to(be_valid_memory_generator)
+                        expect(self._result[0]).to(be_valid_cpu_generator)
 
                     with it('has same config'):
                         if (not self._model.id):
@@ -109,7 +116,7 @@ with description('Memory Generator Module', 'memory') as self:
                 with description('with empty ID'):
                     with before.all:
                         self._model = generator_model(self._api.api_client)
-                        self._result = self._api.create_memory_generator_with_http_info(
+                        self._result = self._api.create_cpu_generator_with_http_info(
                             self._model, _return_http_data_only=False)
 
                     with included_context('create generator'):
@@ -120,7 +127,7 @@ with description('Memory Generator Module', 'memory') as self:
                     with before.all:
                         self._model = generator_model(
                             self._api.api_client, id='some-specified-id')
-                        self._result = self._api.create_memory_generator_with_http_info(
+                        self._result = self._api.create_cpu_generator_with_http_info(
                             self._model, _return_http_data_only=False)
 
                     with included_context('create generator'):
@@ -130,13 +137,13 @@ with description('Memory Generator Module', 'memory') as self:
                 with before.all:
                     model = generator_model(
                         self._api.api_client, running = False)
-                    self._g8s = [self._api.create_memory_generator(model) for a in range(3)]
-                    self._result = self._api.list_memory_generators_with_http_info(
+                    self._g8s = [self._api.create_cpu_generator(model) for a in range(3)]
+                    self._result = self._api.list_cpu_generators_with_http_info(
                         _return_http_data_only=False)
 
                 with after.all:
                     for g7r in self._g8s:
-                        self._api.delete_memory_generator(g7r.id)
+                        self._api.delete_cpu_generator(g7r.id)
 
                 with it('succeeded'):
                     expect(self._result[1]).to(equal(200))
@@ -147,20 +154,20 @@ with description('Memory Generator Module', 'memory') as self:
                 with it('return list'):
                     expect(self._result[0]).not_to(be_empty)
                     for gen in self._result[0]:
-                        expect(gen).to(be_valid_memory_generator)
+                        expect(gen).to(be_valid_cpu_generator)
 
-        with description('/memory-generators/{id}'):
+        with description('/cpu-generators/{id}'):
             with before.all:
                 model = generator_model(
                     self._api.api_client, running = False)
-                g7r = self._api.create_memory_generator(model)
-                expect(g7r).to(be_valid_memory_generator)
+                g7r = self._api.create_cpu_generator(model)
+                expect(g7r).to(be_valid_cpu_generator)
                 self._g7r = g7r
 
             with context('GET'):
                 with description('by existing ID'):
                     with before.all:
-                        self._result = self._api.get_memory_generator_with_http_info(
+                        self._result = self._api.get_cpu_generator_with_http_info(
                             self._g7r.id, _return_http_data_only=False)
 
                     with it('succeeded'):
@@ -170,54 +177,54 @@ with description('Memory Generator Module', 'memory') as self:
                         expect(self._result[2]).to(has_json_content_type)
 
                     with it('generator object'):
-                        expect(self._result[0]).to(be_valid_memory_generator)
+                        expect(self._result[0]).to(be_valid_cpu_generator)
 
                 with description('by non-existent ID'):
                     with it('not found (404)'):
-                        expr = lambda: self._api.get_memory_generator('unknown')
+                        expr = lambda: self._api.get_cpu_generator('unknown')
                         expect(expr).to(raise_api_exception(404))
 
                 with description('by invalid ID'):
                     with it('bad request (400)'):
-                        expr = lambda: self._api.get_memory_generator('bad_id')
+                        expr = lambda: self._api.get_cpu_generator('bad_id')
                         expect(expr).to(raise_api_exception(400))
 
             with context('DELETE'):
                 with description('by existing ID'):
                     with it('removed'):
-                        result = self._api.delete_memory_generator_with_http_info(
+                        result = self._api.delete_cpu_generator_with_http_info(
                             self._g7r.id, _return_http_data_only=False)
                         expect(result[1]).to(equal(204))
 
                     with it('not found'):
-                        expr = lambda: self._api.get_memory_generator(self._g7r.id)
+                        expr = lambda: self._api.get_cpu_generator(self._g7r.id)
                         expect(expr).to(raise_api_exception(404))
 
                 with description('by non-existent ID'):
                     with it('not found (404)'):
-                        expr = lambda: self._api.delete_memory_generator('unknown')
+                        expr = lambda: self._api.delete_cpu_generator('unknown')
                         expect(expr).to(raise_api_exception(404))
 
                 with description('by invalid ID'):
                     with it('bad request (400)'):
-                        expr = lambda: self._api.delete_memory_generator('bad_id')
+                        expr = lambda: self._api.delete_cpu_generator('bad_id')
                         expect(expr).to(raise_api_exception(400))
 
-        with description('/memory-generators/{id}/start'):
+        with description('/cpu-generators/{id}/start'):
             with before.all:
                 model = generator_model(
                     self._api.api_client, running = False)
-                g7r = self._api.create_memory_generator(model)
-                expect(g7r).to(be_valid_memory_generator)
+                g7r = self._api.create_cpu_generator(model)
+                expect(g7r).to(be_valid_cpu_generator)
                 self._g7r = g7r
 
             with after.all:
-                self._api.delete_memory_generator(self._g7r.id)
+                self._api.delete_cpu_generator(self._g7r.id)
 
             with context('POST'):
                 with description('by existing ID'):
                     with before.all:
-                        self._result = self._api.start_memory_generator_with_http_info(
+                        self._result = self._api.start_cpu_generator_with_http_info(
                             self._g7r.id, _return_http_data_only=False)
 
                     with it('is not running'):
@@ -228,41 +235,39 @@ with description('Memory Generator Module', 'memory') as self:
 
                     with it('has valid Location header'):
                         expect(self._result[2]).to(has_location(
-                            '/memory-generator-results/' + self._result[0].id))
+                            '/cpu-generator-results/' + self._result[0].id))
 
                     with it('has Content-Type: application/json header'):
                         expect(self._result[2]).to(has_json_content_type)
 
                     with it('returned valid result'):
-                        expect(self._result[0]).to(be_valid_memory_generator_result)
-                        expect(self._result[0].active).to(be_true)
-                        expect(self._result[0].generator_id).to(equal(self._g7r.id))
+                        expect(self._result[0]).to(be_valid_cpu_generator_result)
 
                     with it('is running'):
-                        g7r = self._api.get_memory_generator(self._g7r.id)
-                        expect(g7r).to(be_valid_memory_generator)
+                        g7r = self._api.get_cpu_generator(self._g7r.id)
+                        expect(g7r).to(be_valid_cpu_generator)
                         expect(g7r.running).to(be_true)
 
                 with description('by non-existent ID'):
                     with it('not found (404)'):
-                        expr = lambda: self._api.start_memory_generator('unknown')
+                        expr = lambda: self._api.start_cpu_generator('unknown')
                         expect(expr).to(raise_api_exception(404))
 
                 with description('by invalid ID'):
                     with it('bad request (400)'):
-                        expr = lambda: self._api.start_memory_generator('bad_id')
+                        expr = lambda: self._api.start_cpu_generator('bad_id')
                         expect(expr).to(raise_api_exception(400))
 
-        with description('/memory-generators/{id}/stop'):
+        with description('/cpu-generators/{id}/stop'):
             with before.all:
                 model = generator_model(
                     self._api.api_client, running = True)
-                g7r = self._api.create_memory_generator(model)
-                expect(g7r).to(be_valid_memory_generator)
+                g7r = self._api.create_cpu_generator(model)
+                expect(g7r).to(be_valid_cpu_generator)
                 self._g7r = g7r
 
             with after.all:
-                self._api.delete_memory_generator(self._g7r.id)
+                self._api.delete_cpu_generator(self._g7r.id)
 
             with context('POST'):
                 with description('by existing ID'):
@@ -270,41 +275,41 @@ with description('Memory Generator Module', 'memory') as self:
                         expect(self._g7r.running).to(be_true)
 
                     with it('stopped'):
-                        result = self._api.stop_memory_generator_with_http_info(
+                        result = self._api.stop_cpu_generator_with_http_info(
                             self._g7r.id, _return_http_data_only=False)
                         expect(result[1]).to(equal(204))
 
                     with it('is not running'):
-                        g7r = self._api.get_memory_generator(self._g7r.id)
-                        expect(g7r).to(be_valid_memory_generator)
+                        g7r = self._api.get_cpu_generator(self._g7r.id)
+                        expect(g7r).to(be_valid_cpu_generator)
                         expect(g7r.running).to(be_false)
 
                 with description('by non-existent ID'):
                     with it('not found (404)'):
-                        expr = lambda: self._api.start_memory_generator('unknown')
+                        expr = lambda: self._api.start_cpu_generator('unknown')
                         expect(expr).to(raise_api_exception(404))
 
                 with description('by invalid ID'):
                     with it('bad request (400)'):
-                        expr = lambda: self._api.start_memory_generator('bad_id')
+                        expr = lambda: self._api.start_cpu_generator('bad_id')
                         expect(expr).to(raise_api_exception(400))
 
-        with description('/memory-generators/x/bulk-start'):
+        with description('/cpu-generators/x/bulk-start'):
             with before.all:
                 model = generator_model(
                     self._api.api_client, running = False)
-                self._g8s = [self._api.create_memory_generator(model) for a in range(3)]
+                self._g8s = [self._api.create_cpu_generator(model) for a in range(3)]
 
             with after.all:
                 for g7r in self._g8s:
-                    self._api.delete_memory_generator(g7r.id)
+                    self._api.delete_cpu_generator(g7r.id)
 
             with description('POST'):
                 with description('by existing IDs'):
                     with before.all:
-                        request = client.models.BulkStartMemoryGeneratorsRequest(
+                        request = client.models.BulkStartCpuGeneratorsRequest(
                             [g7r.id for g7r in self._g8s])
-                        self._result = self._api.bulk_start_memory_generators_with_http_info(
+                        self._result = self._api.bulk_start_cpu_generators_with_http_info(
                             request, _return_http_data_only=False)
 
                     with it('is not running'):
@@ -319,64 +324,63 @@ with description('Memory Generator Module', 'memory') as self:
 
                     with it('returned valid results'):
                         for result in self._result[0]:
-                            expect(result).to(be_valid_memory_generator_result)
-                            expect(result.active).to(be_true)
+                            expect(result).to(be_valid_cpu_generator_result)
 
                     with it('is running'):
                         for g7r in self._g8s:
-                            result = self._api.get_memory_generator(g7r.id)
-                            expect(result).to(be_valid_memory_generator)
+                            result = self._api.get_cpu_generator(g7r.id)
+                            expect(result).to(be_valid_cpu_generator)
                             expect(result.running).to(be_true)
 
                 with description('with non-existant ID'):
                     with it('is not running'):
-                        request = client.models.BulkStopMemoryGeneratorsRequest(
+                        request = client.models.BulkStopCpuGeneratorsRequest(
                             [g7r.id for g7r in self._g8s])
-                        self._api.bulk_stop_memory_generators(request)
+                        self._api.bulk_stop_cpu_generators(request)
                         for g7r in self._g8s:
                             expect(g7r.running).to(be_false)
 
                     with it('not found (404)'):
-                        request = client.models.BulkStartMemoryGeneratorsRequest(
+                        request = client.models.BulkStartCpuGeneratorsRequest(
                             [g7r.id for g7r in self._g8s] + ['unknown'])
-                        expr = lambda: self._api.bulk_start_memory_generators(request)
+                        expr = lambda: self._api.bulk_start_cpu_generators(request)
                         expect(expr).to(raise_api_exception(404))
 
                     with it('is not running'):
                         for g7r in self._g8s:
-                            result = self._api.get_memory_generator(g7r.id)
-                            expect(result).to(be_valid_memory_generator)
+                            result = self._api.get_cpu_generator(g7r.id)
+                            expect(result).to(be_valid_cpu_generator)
                             expect(result.running).to(be_false)
 
                 with description('with invalid ID'):
                     with it('is not running'):
-                        request = client.models.BulkStopMemoryGeneratorsRequest(
+                        request = client.models.BulkStopCpuGeneratorsRequest(
                             [g7r.id for g7r in self._g8s])
-                        self._api.bulk_stop_memory_generators(request)
+                        self._api.bulk_stop_cpu_generators(request)
                         for g7r in self._g8s:
                             expect(g7r.running).to(be_false)
 
                     with it('bad request (400)'):
-                        request = client.models.BulkStartMemoryGeneratorsRequest(
+                        request = client.models.BulkStartCpuGeneratorsRequest(
                             [g7r.id for g7r in self._g8s] + ['bad_id'])
-                        expr = lambda: self._api.bulk_start_memory_generators(request)
+                        expr = lambda: self._api.bulk_start_cpu_generators(request)
                         expect(expr).to(raise_api_exception(400))
 
                     with it('is not running'):
                         for g7r in self._g8s:
-                            result = self._api.get_memory_generator(g7r.id)
-                            expect(result).to(be_valid_memory_generator)
+                            result = self._api.get_cpu_generator(g7r.id)
+                            expect(result).to(be_valid_cpu_generator)
                             expect(result.running).to(be_false)
 
-        with description('/memory-generators/x/bulk-stop'):
+        with description('/cpu-generators/x/bulk-stop'):
             with before.all:
                 model = generator_model(
                     self._api.api_client, running = True)
-                self._g8s = [self._api.create_memory_generator(model) for a in range(3)]
+                self._g8s = [self._api.create_cpu_generator(model) for a in range(3)]
 
             with after.all:
                 for g7r in self._g8s:
-                    self._api.delete_memory_generator(g7r.id)
+                    self._api.delete_cpu_generator(g7r.id)
 
             with description('POST'):
                 with description('by existing IDs'):
@@ -385,123 +389,137 @@ with description('Memory Generator Module', 'memory') as self:
                             expect(g7r.running).to(be_true)
 
                     with it('stopped'):
-                        request = client.models.BulkStopMemoryGeneratorsRequest(
+                        request = client.models.BulkStopCpuGeneratorsRequest(
                             [g7r.id for g7r in self._g8s])
-                        expr = lambda: self._api.bulk_stop_memory_generators(request)
-                        expect(expr).not_to(raise_api_exception(204))
+                        result = self._api.bulk_stop_cpu_generators_with_http_info(
+                          request, _return_http_data_only=False)
+                        expect(result[1]).to(equal(204))
 
                     with it('is not running'):
                         for g7r in self._g8s:
-                            result = self._api.get_memory_generator(g7r.id)
-                            expect(result).to(be_valid_memory_generator)
+                            result = self._api.get_cpu_generator(g7r.id)
+                            expect(result).to(be_valid_cpu_generator)
                             expect(result.running).to(be_false)
 
                 with description('with non-existant ID'):
                     with it('is running'):
-                        request = client.models.BulkStartMemoryGeneratorsRequest(
+                        request = client.models.BulkStartCpuGeneratorsRequest(
                             [g7r.id for g7r in self._g8s])
-                        self._api.bulk_start_memory_generators(request)
+                        self._api.bulk_start_cpu_generators(request)
                         for g7r in self._g8s:
                             expect(g7r.running).to(be_true)
 
                     with it('not found (404)'):
-                        request = client.models.BulkStopMemoryGeneratorsRequest(
+                        request = client.models.BulkStopCpuGeneratorsRequest(
                             [g7r.id for g7r in self._g8s] + ['unknown'])
-                        expr = lambda: self._api.bulk_stop_memory_generators(request)
+                        expr = lambda: self._api.bulk_stop_cpu_generators(request)
                         expect(expr).to(raise_api_exception(404))
 
                     with it('is running'):
                         for g7r in self._g8s:
-                            result = self._api.get_memory_generator(g7r.id)
-                            expect(result).to(be_valid_memory_generator)
+                            result = self._api.get_cpu_generator(g7r.id)
+                            expect(result).to(be_valid_cpu_generator)
                             expect(result.running).to(be_true)
 
                 with description('with invalid ID'):
                     with it('is running'):
-                        request = client.models.BulkStartMemoryGeneratorsRequest(
+                        request = client.models.BulkStartCpuGeneratorsRequest(
                             [g7r.id for g7r in self._g8s])
-                        self._api.bulk_start_memory_generators(request)
+                        self._api.bulk_start_cpu_generators(request)
                         for g7r in self._g8s:
                             expect(g7r.running).to(be_true)
 
                     with it('bad request (400)'):
-                        request = client.models.BulkStopMemoryGeneratorsRequest(
+                        request = client.models.BulkStopCpuGeneratorsRequest(
                             [g7r.id for g7r in self._g8s] + ['bad_id'])
-                        expr = lambda: self._api.bulk_stop_memory_generators(request)
+                        expr = lambda: self._api.bulk_stop_cpu_generators(request)
                         expect(expr).to(raise_api_exception(400))
 
                     with it('is running'):
                         for g7r in self._g8s:
-                            result = self._api.get_memory_generator(g7r.id)
-                            expect(result).to(be_valid_memory_generator)
+                            result = self._api.get_cpu_generator(g7r.id)
+                            expect(result).to(be_valid_cpu_generator)
                             expect(result.running).to(be_true)
 
-    with description('Memory Generator Results'):
-        with description('/memory-generator-results'):
+    with description('CPU Generator Results'):
+        with before.all:
+            model = generator_model(self._api.api_client, running = False)
+            g7r = self._api.create_cpu_generator(model)
+            expect(g7r).to(be_valid_cpu_generator)
+            result = self._api.start_cpu_generator(g7r.id)
+            self._g7r = g7r
+            self._result = result
+
+        with after.all:
+            self._api.delete_cpu_generator(self._g7r.id)
+
+        with description('/cpu-generator-results'):
             with context('GET'):
-                with before.all:
-                    self._result = self._api.list_memory_generator_results_with_http_info(
-                        _return_http_data_only=False)
-
-                with it('success'):
-                    expect(self._result[1]).to(equal(200))
-
-                with it('has Content-Type: application/json header'):
-                    expect(self._result[2]).to(has_json_content_type)
-
                 with it('results list'):
-                    expect(self._result[0]).not_to(be_empty)
-                    for result in self._result[0]:
-                        expect(result).to(be_valid_memory_generator_result)
+                    rlist = self._api.list_cpu_generator_results()
+                    expect(rlist).not_to(be_empty)
+                    for result in rlist:
+                        expect(result).to(be_valid_cpu_generator_result)
 
-        with description('/memory-generator-results/{id}'):
-            with before.all:
-                rlist = self._api.list_memory_generator_results()
-                expect(rlist).not_to(be_empty)
-                self._result = rlist[0]
-
+        with description('/cpu-generator-results/{id}'):
             with context('GET'):
                 with description('by existing ID'):
-                    with before.all:
-                        self._get_result = self._api.get_memory_generator_result_with_http_info(
-                            self._result.id, _return_http_data_only=False)
-
                     with it('success'):
-                        expect(self._get_result[1]).to(equal(200))
-
-                    with it('has Content-Type: application/json header'):
-                        expect(self._get_result[2]).to(has_json_content_type)
-
-                    with it('valid result'):
-                        expect(self._get_result[0]).to(be_valid_memory_generator_result)
+                        result = self._api.get_cpu_generator_result(self._result.id)
+                        expect(result).to(be_valid_cpu_generator_result)
 
                 with description('by non-existent ID'):
                     with it('not found (404)'):
-                        expr = lambda: self._api.get_memory_generator_result('unknown')
+                        expr = lambda: self._api.get_cpu_generator_result('unknown')
                         expect(expr).to(raise_api_exception(404))
 
                 with description('by invalid ID'):
                     with it('bad request (400)'):
-                        expr = lambda: self._api.get_memory_generator_result('bad_id')
+                        expr = lambda: self._api.get_cpu_generator_result('bad_id')
                         expect(expr).to(raise_api_exception(400))
 
             with context('DELETE'):
                 with description('by existing ID'):
-                    with it('removed (204)'):
-                        result = self._api.delete_memory_generator_result_with_http_info(
-                            self._result.id, _return_http_data_only=False)
-                        expect(result[1]).to(equal(204))
+                    with description('active result'):
+                        with it('exists'):
+                            result = self._api.get_cpu_generator_result(self._result.id)
+                            expect(result).to(be_valid_cpu_generator_result)
 
-                    with it('not found'):
-                        expr = lambda: self._api.get_memory_generator_result(self._result.id)
-                        expect(expr).to(raise_api_exception(404))
+                        with it('active'):
+                            result = self._api.get_cpu_generator_result(self._result.id)
+                            expect(result).to(be_valid_cpu_generator_result)
+                            expect(result.active).to(be_true)
+
+                        with it('not removed (400)'):
+                            result = lambda: self._api.delete_cpu_generator_result(self._result.id)
+                            expect(result).to(raise_api_exception(400))
+
+                    with description('inactive result'):
+                        with it('exists'):
+                            result = self._api.get_cpu_generator_result(self._result.id)
+                            expect(result).to(be_valid_cpu_generator_result)
+
+                        with it('not active'):
+                            self._api.stop_cpu_generator(self._g7r.id)
+                            result = self._api.get_cpu_generator_result(self._result.id)
+                            expect(result).to(be_valid_cpu_generator_result)
+                            expect(result.active).to(be_false)
+
+                        with it('removed (204)'):
+                            result = self._api.delete_cpu_generator_result_with_http_info(
+                                self._result.id, _return_http_data_only=False)
+                            expect(result[1]).to(equal(204))
+
+                        with it('not found (404)'):
+                            expr = lambda: self._api.get_cpu_generator_result(self._result.id)
+                            expect(expr).to(raise_api_exception(404))
 
                 with description('by non-existent ID'):
                     with it('not found (404)'):
-                        expr = lambda: self._api.delete_memory_generator_result('unknown')
+                        expr = lambda: self._api.delete_cpu_generator_result('unknown')
                         expect(expr).to(raise_api_exception(404))
 
                 with description('by invalid ID'):
                     with it('bad request (400)'):
-                        expr = lambda: self._api.delete_memory_generator_result('bad_id')
+                        expr = lambda: self._api.delete_cpu_generator_result('bad_id')
                         expect(expr).to(raise_api_exception(400))

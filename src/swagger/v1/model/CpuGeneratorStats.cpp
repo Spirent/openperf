@@ -19,6 +19,13 @@ namespace model {
 
 CpuGeneratorStats::CpuGeneratorStats()
 {
+    m_Available = 0L;
+    m_Utilization = 0L;
+    m_System = 0L;
+    m_User = 0L;
+    m_Steal = 0L;
+    m_StealIsSet = false;
+    m_Error = 0L;
     
 }
 
@@ -35,6 +42,15 @@ nlohmann::json CpuGeneratorStats::toJson() const
 {
     nlohmann::json val = nlohmann::json::object();
 
+    val["available"] = m_Available;
+    val["utilization"] = m_Utilization;
+    val["system"] = m_System;
+    val["user"] = m_User;
+    if(m_StealIsSet)
+    {
+        val["steal"] = m_Steal;
+    }
+    val["error"] = m_Error;
     {
         nlohmann::json jsonArray;
         for( auto& item : m_Cores )
@@ -50,6 +66,15 @@ nlohmann::json CpuGeneratorStats::toJson() const
 
 void CpuGeneratorStats::fromJson(nlohmann::json& val)
 {
+    setAvailable(val.at("available"));
+    setUtilization(val.at("utilization"));
+    setSystem(val.at("system"));
+    setUser(val.at("user"));
+    if(val.find("steal") != val.end())
+    {
+        setSteal(val.at("steal"));
+    }
+    setError(val.at("error"));
     {
         m_Cores.clear();
         nlohmann::json jsonArray;
@@ -73,6 +98,68 @@ void CpuGeneratorStats::fromJson(nlohmann::json& val)
 }
 
 
+int64_t CpuGeneratorStats::getAvailable() const
+{
+    return m_Available;
+}
+void CpuGeneratorStats::setAvailable(int64_t value)
+{
+    m_Available = value;
+    
+}
+int64_t CpuGeneratorStats::getUtilization() const
+{
+    return m_Utilization;
+}
+void CpuGeneratorStats::setUtilization(int64_t value)
+{
+    m_Utilization = value;
+    
+}
+int64_t CpuGeneratorStats::getSystem() const
+{
+    return m_System;
+}
+void CpuGeneratorStats::setSystem(int64_t value)
+{
+    m_System = value;
+    
+}
+int64_t CpuGeneratorStats::getUser() const
+{
+    return m_User;
+}
+void CpuGeneratorStats::setUser(int64_t value)
+{
+    m_User = value;
+    
+}
+int64_t CpuGeneratorStats::getSteal() const
+{
+    return m_Steal;
+}
+void CpuGeneratorStats::setSteal(int64_t value)
+{
+    m_Steal = value;
+    m_StealIsSet = true;
+}
+bool CpuGeneratorStats::stealIsSet() const
+{
+    return m_StealIsSet;
+}
+void CpuGeneratorStats::unsetSteal()
+{
+    m_StealIsSet = false;
+}
+int64_t CpuGeneratorStats::getError() const
+{
+    return m_Error;
+}
+void CpuGeneratorStats::setError(int64_t value)
+{
+    m_Error = value;
+    
+}
 std::vector<std::shared_ptr<CpuGeneratorCoreStats>>& CpuGeneratorStats::getCores()
 {
     return m_Cores;

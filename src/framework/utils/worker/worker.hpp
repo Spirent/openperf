@@ -1,12 +1,16 @@
 #ifndef _OP_UTILS_WORKER_HPP_
 #define _OP_UTILS_WORKER_HPP_
 
+#include <memory>
 #include <zmq.h>
 #include <thread>
 #include <forward_list>
 #include <atomic>
+#include <cstring>
+#include <optional>
 
 #include "core/op_core.h"
+#include "core/op_thread.h"
 #include "utils/worker/task.hpp"
 
 namespace openperf::utils::worker {
@@ -17,6 +21,7 @@ public:
     virtual ~workable() = default;
 
     virtual void start() = 0;
+    virtual void start(int core) = 0;
     virtual void stop() = 0;
     virtual void pause() = 0;
     virtual void resume() = 0;
@@ -34,8 +39,7 @@ private:
     {
         bool stop = true;
         bool pause = true;
-        bool reconf = false;
-        typename T::config_t config;
+        std::optional<typename T::config_t> config;
     };
 
 private:
@@ -49,26 +53,28 @@ private:
     std::unique_ptr<void, op_socket_deleter> m_zmq_socket;
     std::thread m_thread;
     std::string m_thread_name;
+    int16_t m_core;
 
 public:
-    worker(std::string_view thread_name = "worker");
     worker(worker&&);
     worker(const worker&) = delete;
-    explicit worker(const typename T::config_t&);
-    ~worker() override;
+    explicit worker(const typename T::config_t&,
+                    std::string_view thread_name = "uworker");
+    ~worker();
 
     void start() override;
+    void start(int core_id) override;
     void stop() override;
     void pause() override;
     void resume() override;
 
-    inline bool is_paused() const override { return m_paused; }
-    inline bool is_running() const override { return !(m_paused || m_stopped); }
-    inline bool is_finished() const override { return m_stopped; }
-    inline typename T::config_t config() const { return m_task->config(); }
-    inline typename T::stat_t stat() const { return m_task->stat(); };
+    bool is_paused() const override { return m_paused; }
+    bool is_running() const override { return !(m_paused || m_stopped); }
+    bool is_finished() const override { return m_stopped; }
+    typename T::config_t config() const { return m_task->config(); }
+    typename T::stat_t stat() const { return m_task->stat(); };
 
-    inline void clear_stat() { m_task->clear_stat(); }
+    void clear_stat() { m_task->clear_stat(); }
     void config(const typename T::config_t&);
 
 private:
@@ -79,11 +85,15 @@ private:
 
 // Constructors & Destructor
 template <class T>
-worker<T>::worker(std::string_view thread_name)
-    : m_task(new T)
+worker<T>::worker(const typename T::config_t& c, std::string_view name)
+    : m_paused(true)
+    , m_stopped(true)
+    , m_config(c)
+    , m_task(new T)
     , m_zmq_context(zmq_init(0))
     , m_zmq_socket(op_socket_get_server(m_zmq_context, ZMQ_PUSH, m_endpoint))
-    , m_thread_name(thread_name)
+    , m_thread_name(name)
+    , m_core(-1)
 {}
 
 template <class T>
@@ -96,14 +106,8 @@ worker<T>::worker(worker&& w)
     , m_zmq_socket(std::move(w.m_zmq_socket))
     , m_thread(std::move(w.m_thread))
     , m_thread_name(std::move(w.m_thread_name))
+    , m_core(w.m_core)
 {}
-
-template <class T>
-worker<T>::worker(const typename T::config_t& c)
-    : worker()
-{
-    m_config = c;
-}
 
 template <class T> worker<T>::~worker()
 {
@@ -120,6 +124,12 @@ template <class T> worker<T>::~worker()
 }
 
 // Methods : public
+template <class T> void worker<T>::start(int core_id)
+{
+    m_core = core_id;
+    start();
+}
+
 template <class T> void worker<T>::start()
 {
     static std::atomic_uint thread_number = 0;
@@ -128,11 +138,21 @@ template <class T> void worker<T>::start()
     m_stopped = false;
 
     m_thread = std::thread([this]() {
+        // Set Thread name
         op_thread_setname(
             ("op_" + m_thread_name + "_" + std::to_string(++thread_number))
                 .c_str());
+
+        // Set Thread core affinity, if specified
+        if (m_core >= 0)
+            if (auto err = op_thread_set_affinity(m_core))
+                OP_LOG(OP_LOG_ERROR,
+                       "Cannot set worker thread affinity: %s",
+                       std::strerror(err));
+
         loop();
     });
+
     config(m_config);
 }
 
@@ -162,41 +182,44 @@ template <class T> void worker<T>::config(const typename T::config_t& c)
 {
     m_config = c;
     if (is_finished()) return;
-    send_message(worker::message{
-        .stop = m_stopped, .pause = m_paused, .reconf = true, .config = c});
+    send_message(
+        worker::message{.stop = m_stopped, .pause = m_paused, .config = c});
 }
 
 // Methods : private
 template <class T> void worker<T>::loop()
 {
-
     auto socket = std::unique_ptr<void, op_socket_deleter>(
         op_socket_get_client(m_zmq_context, ZMQ_PULL, m_endpoint));
 
-    worker::message msg{.stop = false, .pause = true, .reconf = false};
-    bool paused = true;
-
-    for (;;) {
-        int recv =
-            zmq_recv(socket.get(), &msg, sizeof(msg), paused ? 0 : ZMQ_NOBLOCK);
+    for (bool paused = true;;) {
+        void* msg_ptr = nullptr;
+        int recv = zmq_recv(
+            socket.get(), &msg_ptr, sizeof(void*), paused ? 0 : ZMQ_NOBLOCK);
 
         if (recv < 0 && errno != EAGAIN) {
-            OP_LOG(OP_LOG_ERROR, "worker thread shutdown");
+            OP_LOG(OP_LOG_ERROR,
+                   "Worker thread %s shutdown",
+                   m_thread_name.c_str());
             break;
         }
 
-        if (msg.reconf) {
-            m_task->config(msg.config);
-            msg.reconf = false;
+        if (recv > 0) {
+            // The thread takes ownership of the pointer to the message
+            // and guarantees deleting message after processing.
+            auto msg = std::unique_ptr<worker::message>(
+                reinterpret_cast<worker::message*>(msg_ptr));
+
+            if (msg->config) m_task->config(msg->config.value());
+
+            if (paused && !(msg->pause || msg->stop)) m_task->resume();
+            if (!paused && (msg->pause || msg->stop)) m_task->pause();
+
+            paused = msg->pause;
+
+            if (msg->stop) break;
+            if (msg->pause) continue;
         }
-
-        if (paused && !(msg.pause || msg.stop)) { m_task->resume(); }
-        if (!paused && (msg.pause || msg.stop)) { m_task->pause(); }
-
-        paused = msg.pause;
-
-        if (msg.stop) { break; }
-        if (msg.pause) { continue; }
 
         m_task->spin();
     }
@@ -216,7 +239,11 @@ template <class T> void worker<T>::send_message(const worker::message& msg)
 {
     if (is_finished()) return;
 
-    zmq_send(m_zmq_socket.get(), &msg, sizeof(msg), 0);
+    // A copy of the message is created on the heap and its pointer
+    // is passed through ZMQ to thread. The thread will take ownership of
+    // this message and should delete it after processing.
+    auto pointer = new worker::message(msg);
+    zmq_send(m_zmq_socket.get(), &pointer, sizeof(pointer), 0);
 }
 
 } // namespace openperf::utils::worker

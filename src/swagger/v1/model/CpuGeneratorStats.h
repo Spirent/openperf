@@ -50,11 +50,55 @@ public:
     /// CpuGeneratorStats members
 
     /// <summary>
+    /// The total amount of CPU time available
+    /// </summary>
+    int64_t getAvailable() const;
+    void setAvailable(int64_t value);
+        /// <summary>
+    /// The amount of CPU time used
+    /// </summary>
+    int64_t getUtilization() const;
+    void setUtilization(int64_t value);
+        /// <summary>
+    /// The amount of system time used, e.g. kernel or system calls
+    /// </summary>
+    int64_t getSystem() const;
+    void setSystem(int64_t value);
+        /// <summary>
+    /// The amount of user time used, e.g. openperf code
+    /// </summary>
+    int64_t getUser() const;
+    void setUser(int64_t value);
+        /// <summary>
+    /// The amount of time the hypervisor reported our virtual cores were blocked
+    /// </summary>
+    int64_t getSteal() const;
+    void setSteal(int64_t value);
+    bool stealIsSet() const;
+    void unsetSteal();
+    /// <summary>
+    /// The difference between intended and actual CPU utilization
+    /// </summary>
+    int64_t getError() const;
+    void setError(int64_t value);
+        /// <summary>
     /// Statistics of the CPU cores (in the order they were specified in generator configuration)
     /// </summary>
     std::vector<std::shared_ptr<CpuGeneratorCoreStats>>& getCores();
     
 protected:
+    int64_t m_Available;
+
+    int64_t m_Utilization;
+
+    int64_t m_System;
+
+    int64_t m_User;
+
+    int64_t m_Steal;
+    bool m_StealIsSet;
+    int64_t m_Error;
+
     std::vector<std::shared_ptr<CpuGeneratorCoreStats>> m_Cores;
 
 };

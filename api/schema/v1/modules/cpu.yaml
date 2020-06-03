@@ -218,14 +218,16 @@ paths:
           description: Success
           schema:
             type: object
+            title: CpuInfoResult
             properties:
               cores:
                 type: integer
                 description: Number of cores
+                format: int32
               cache_line_size:
                 type: integer
                 description: Processor cache line size
-                format: int64
+                format: int32
               architecture:
                 type: string
                 description: Processor architecture name
@@ -280,26 +282,21 @@ definitions:
               description: CPU load instruction set
               enum:
               - scalar
-            data_size:
-              type: integer
-              description: Number of bits to use for data type in chosen instruction set
-              enum:
-              - 32
-              - 64
-            operation:
+            data_type:
               type: string
-              description: CPU load target operation, actual for chosen instruction set
+              description: CPU load target operation data type, actual for chosen instruction set
               enum:
-              - float
-              - int
+              - int32
+              - int64
+              - float32
+              - float64
             weight:
               type: integer
               description: Targeted load ratio
               minimum: 1
           required:
             - instruction_set
-            - data_size
-            - operation
+            - data_type
             - weight
         description: Instruction set targets (operations)
         minItems: 1
@@ -337,12 +334,41 @@ definitions:
     type: object
     description: CPU generator statistics
     properties:
+      available:
+        type: integer
+        description: The total amount of CPU time available
+        format: int64
+      utilization:
+        type: integer
+        description: The amount of CPU time used
+        format: int64
+      system:
+        type: integer
+        description: The amount of system time used, e.g. kernel or system calls
+        format: int64
+      user:
+        type: integer
+        description: The amount of user time used, e.g. openperf code
+        format: int64
+      steal:
+        type: integer
+        description: The amount of time the hypervisor reported our virtual cores were blocked
+        format: int64
+      error:
+        type: integer
+        description: The difference between intended and actual CPU utilization
+        format: int64
       cores:
         type: array
         description: Statistics of the CPU cores (in the order they were specified in generator configuration)
         items:
           $ref: "#/definitions/CpuGeneratorCoreStats"
     required:
+      - available
+      - utilization
+      - system
+      - user
+      - error
       - cores
 
   CpuGeneratorCoreStats:
@@ -392,9 +418,9 @@ definitions:
     type: object
     description: Instruction set statistics
     properties:
-      cycles:
+      operations:
         type: integer
-        description: The total amount of finished instruction set cycles
+        description: The total amount of finished instruction set operations
         format: int64
     required:
-      - cycles
+      - operations
