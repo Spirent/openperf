@@ -42,7 +42,7 @@ public:
                                       + sizeof(uint32_t)
                                       + sizeof(interface_default_options));
         }
-        static size_t packet_length(uint8_t captured_len)
+        static size_t packet_length(size_t captured_len)
         {
             return pad_block_length(sizeof(enhanced_packet_block)
                                     + sizeof(uint32_t) + captured_len);
