@@ -128,12 +128,16 @@ void block_generator::clear_statistics() {
 task_config_t block_generator::generate_worker_config(
     const model::block_generator_config& p_config, task_operation p_operation)
 {
+    auto block_size = (p_operation == task_operation::READ) ? p_config.read_size : p_config.write_size;
+    if (static_cast<uint64_t>(block_size) + m_vdev->get_header_size() > m_vdev->get_size())
+        throw std::runtime_error("Cannot use resource: resource size is too small");
+
     auto fd = m_vdev->get_fd();
     assert(fd);
 
     task_config_t w_config;
     w_config.queue_depth = p_config.queue_depth;
-    w_config.block_size = (p_operation == task_operation::READ) ? p_config.read_size : p_config.write_size;
+    w_config.block_size = block_size;
     w_config.ops_per_sec = (p_operation == task_operation::READ) ? p_config.reads_per_sec : p_config.writes_per_sec;
     w_config.operation = p_operation;
     w_config.pattern = p_config.pattern;
