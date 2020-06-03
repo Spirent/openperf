@@ -58,6 +58,8 @@ void generator::start()
 
     for_each_worker([](worker_ptr& w) { w->start(); });
     m_stopped = false;
+    m_run_time = 0ms;
+    m_run_time_milestone = std::chrono::system_clock::now();
 }
 
 void generator::stop()
@@ -66,6 +68,7 @@ void generator::stop()
 
     for_each_worker([](worker_ptr& w) { w->stop(); });
     m_stopped = true;
+    m_run_time += std::chrono::system_clock::now() - m_run_time_milestone;
 }
 
 void generator::restart()
@@ -80,6 +83,7 @@ void generator::resume()
 
     for_each_worker([](worker_ptr& w) { w->resume(); });
     m_paused = false;
+    m_run_time_milestone = std::chrono::system_clock::now();
 }
 
 void generator::pause()
@@ -88,6 +92,7 @@ void generator::pause()
 
     for_each_worker([](worker_ptr& w) { w->pause(); });
     m_paused = true;
+    m_run_time += std::chrono::system_clock::now() - m_run_time_milestone;
 }
 
 void generator::reset()
@@ -100,18 +105,36 @@ void generator::reset()
 
 generator::stat_t generator::stat() const
 {
+    auto elapsed_time = m_run_time;
+    if (is_running())
+        elapsed_time += std::chrono::system_clock::now() - m_run_time_milestone;
+
     generator::stat_t result_stat;
 
     auto& rstat = result_stat.read;
-    for (auto& ptr : m_read_workers) {
+    for (const auto& ptr : m_read_workers) {
         auto w = reinterpret_cast<worker<task_memory>*>(ptr.get());
         rstat += w->stat();
     }
 
+    if (rstat.run_time.count()) {
+        rstat.operations_target = elapsed_time.count()
+            * m_config.read.op_per_sec / std::nano::den;
+        rstat.bytes_target = rstat.operations_target
+            * m_config.read.block_size;
+    }
+
     auto& wstat = result_stat.write;
-    for (auto& ptr : m_write_workers) {
+    for (const auto& ptr : m_write_workers) {
         auto w = reinterpret_cast<worker<task_memory>*>(ptr.get());
         wstat += w->stat();
+    }
+
+    if (wstat.run_time.count()) {
+        wstat.operations_target = elapsed_time.count()
+            * m_config.write.op_per_sec / std::nano::den;
+        wstat.bytes_target = wstat.operations_target
+            * m_config.write.block_size;
     }
 
     result_stat.timestamp = std::max(rstat.timestamp, wstat.timestamp);
