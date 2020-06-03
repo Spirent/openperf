@@ -849,6 +849,17 @@ bool need_sink_feature(const worker::fib& fib,
 template <>
 bool need_sink_feature(const worker::fib& fib,
                        size_t port_idx,
+                       const port::packet_type_decoder&)
+{
+    return (sink_find_if(fib, port_idx, [](const packet::generic_sink& sink) {
+        return (
+            sink.uses_feature(packet::sink_feature_flags::packet_type_decode));
+    }));
+}
+
+template <>
+bool need_sink_feature(const worker::fib& fib,
+                       size_t port_idx,
                        const port::signature_decoder&)
 {
     return (sink_find_if(fib, port_idx, [](const packet::generic_sink& sink) {

@@ -16,6 +16,7 @@ enum class sink_feature_flags {
     none = 0,
     rx_timestamp = (1 << 0),
     spirent_signature_decode = (1 << 1),
+    packet_type_decode = (1 << 2),
 };
 
 class generic_sink
