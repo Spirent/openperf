@@ -1,0 +1,198 @@
+parameters:
+  dynamic_results:
+    name: dynamic_results
+    in: body
+    description: Dynamic results configuration
+    required: false
+    schema:
+      $ref: "#/definitions/DynamicResultsConfig"
+
+definitions:
+  DynamicResultsConfig:
+    type: object
+    description: Configurations of dynamic results
+    properties:
+      thresholds:
+        type: array
+        description: Array of Threshold configurations
+        items:
+          $ref: "#/definitions/ThresholdConfig"
+      tdigests:
+        type: array
+        description: Array of T-Digest configurations
+        items:
+          $ref: "#/definitions/TDigestConfig"
+
+  DynamicResults:
+    type: object
+    description: Dynamic results
+    properties:
+      thresholds:
+        type: array
+        description: Array of Threshold results
+        items:
+          $ref: "#/definitions/ThresholdResult"
+      tdigests:
+        type: array
+        description: Array of T-Digest results
+        items:
+          $ref: "#/definitions/TDigestResult"
+
+  ThresholdConfig:
+    type: object
+    description: Threshold value
+    properties:
+      id:
+        type: string
+        description: Unique threshold configuration identifier
+      value:
+        type: number
+        format: double
+        description: The value of interest
+      function:
+        type: string
+        description: The function to apply to the statistic before evaluating
+        enum:
+          - dx
+          - dxdt
+          - dxdy
+      condition:
+        type: string
+        description: The mathematical relation between value and statistic
+        enum:
+          - greater
+          - greater_or_equal
+          - less
+          - less_or_equal
+          - equal
+      stat_x:
+        type: string
+        description: The X statistic to track
+      stat_y:
+        type: string
+        description: The Y statistic to track (when using DXDY function)
+    required:
+      - id
+      - value
+      - function
+      - condition
+      - stat_x
+
+  ThresholdResult:
+    type: object
+    description: Threshold result
+    properties:
+      id:
+        type: string
+        description: Threshold configuration unique identifier
+      value:
+        type: number
+        format: double
+        description: The value of interest
+      function:
+        type: string
+        description: The function to apply to the statistic before evaluating
+        enum:
+          - dx
+          - dxdt
+          - dxdy
+      condition:
+        type: string
+        description: The mathematical relation between value and statistic
+        enum:
+          - greater
+          - greater_or_equal
+          - less
+          - less_or_equal
+          - equal
+      stat_x:
+        type: string
+        description: The X statistic to track
+      stat_y:
+        type: string
+        description: The Y statistic to track (when using DXDY function)
+      condition_true:
+        type: integer
+        description: Counter of true conditions
+      condition_false:
+        type: integer
+        description: Counter of false conditions
+    required:
+      - id
+      - value
+      - function
+      - condition
+      - stat_x
+      - condition_true
+      - condition_false
+
+  TDigestConfig:
+    type: object
+    description: T-Digest value
+    properties:
+      id:
+        type: string
+        description: T-Digest configuration unique identifier
+      function:
+        type: string
+        description: The function to apply to the statistic before evaluating
+        enum:
+          - dx
+          - dxdt
+          - dxdy
+      stat_x:
+        type: string
+        description: The X statistic to track
+      stat_y:
+        type: string
+        description: The Y statistic to track (when using DXDY function)
+    required:
+      - id
+      - function
+      - stat_x
+
+  TDigestResult:
+    type: object
+    description: T-Digest result
+    properties:
+      id:
+        type: string
+        description: T-Digest configuration unique identifier
+      function:
+        type: string
+        description: The function to apply to the statistic before evaluating
+        enum:
+          - dx
+          - dxdt
+          - dxdy
+      stat_x:
+        type: string
+        description: The X statistic to track
+      stat_y:
+        type: string
+        description: The Y statistic to track (when using DXDY function)
+      centroids:
+        type: array
+        description: Array of centroids
+        items:
+          $ref: "#/definitions/TDigestCentroid"
+    required:
+      - id
+      - function
+      - stat_x
+      - centroids
+
+  TDigestCentroid:
+    type: object
+    description: The data point inside the T-Digest structure
+    properties:
+      mean:
+        type: number
+        format: double
+        description: The average value of this centroid
+      weight:
+        type: integer
+        description: The weight of this centroid
+    required:
+      - mean
+      - weight
