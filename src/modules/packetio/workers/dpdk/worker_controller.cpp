@@ -9,6 +9,7 @@
 #include "packetio/drivers/dpdk/topology_utils.hpp"
 #include "packetio/stack/dpdk/net_interface.hpp"
 #include "packetio/workers/dpdk/event_loop_adapter.hpp"
+#include "packetio/workers/dpdk/port_feature_controller.tcc"
 #include "packetio/workers/dpdk/tx_source.hpp"
 #include "packetio/workers/dpdk/worker_tx_functions.hpp"
 #include "packetio/workers/dpdk/worker_queues.hpp"
@@ -236,39 +237,6 @@ worker_controller::worker_controller(void* context,
     /* We need port information to setup our workers, so get it */
     auto port_info = get_port_info();
 
-    /* Setup port filters */
-    std::transform(
-        std::begin(port_info),
-        std::end(port_info),
-        std::back_inserter(m_filters),
-        [](auto& info) { return (std::make_unique<port::filter>(info.id())); });
-
-    /* Setup signature decoders */
-    std::transform(
-        std::begin(port_info),
-        std::end(port_info),
-        std::back_inserter(m_sigdecoders),
-        [](auto& info) {
-            return (std::make_unique<port::signature_decoder>(info.id()));
-        });
-
-    /* Setup signature encoders */
-    std::transform(
-        std::begin(port_info),
-        std::end(port_info),
-        std::back_inserter(m_sigencoders),
-        [](auto& info) {
-            return (std::make_unique<port::signature_encoder>(info.id()));
-        });
-
-    /* Setup timestampers */
-    std::transform(std::begin(port_info),
-                   std::end(port_info),
-                   std::back_inserter(m_timestampers),
-                   [](auto& info) {
-                       return (std::make_unique<port::timestamper>(info.id()));
-                   });
-
     /* Construct our necessary transmit schedulers and metadata */
     for (auto& d : topology::queue_distribute(port_info)) {
         if (d.mode == queue::queue_mode::RX) continue;
@@ -286,8 +254,9 @@ worker_controller::worker_controller(void* context,
 
     /* Update queues to take advantage of port capabilities */
     /* XXX: queues must be setup first! */
+    const auto& filters = m_sink_features.get<port::filter>();
     std::for_each(
-        std::begin(m_filters), std::end(m_filters), [](const auto& filter) {
+        std::begin(filters), std::end(filters), [](const auto& filter) {
             maybe_enable_rxq_tag_detection(*filter);
         });
     std::for_each(std::begin(port_info),
@@ -325,10 +294,8 @@ worker_controller::worker_controller(worker_controller&& other) noexcept
     , m_tx_schedulers(std::move(other.m_tx_schedulers))
     , m_tx_loads(std::move(other.m_tx_loads))
     , m_tx_workers(std::move(other.m_tx_workers))
-    , m_filters(std::move(other.m_filters))
-    , m_sigdecoders(std::move(other.m_sigdecoders))
-    , m_sigencoders(std::move(other.m_sigencoders))
-    , m_timestampers(std::move(other.m_timestampers))
+    , m_sink_features(std::move(other.m_sink_features))
+    , m_source_features(std::move(other.m_source_features))
 {}
 
 worker_controller&
@@ -345,10 +312,8 @@ worker_controller::operator=(worker_controller&& other) noexcept
         m_tx_schedulers = std::move(other.m_tx_schedulers);
         m_tx_loads = std::move(other.m_tx_loads);
         m_tx_workers = std::move(other.m_tx_workers);
-        m_filters = std::move(other.m_filters);
-        m_sigdecoders = std::move(other.m_sigdecoders);
-        m_sigencoders = std::move(other.m_sigencoders);
-        m_timestampers = std::move(other.m_timestampers);
+        m_sink_features = std::move(other.m_sink_features);
+        m_source_features = std::move(other.m_source_features);
     }
     return (*this);
 }
@@ -486,7 +451,7 @@ void worker_controller::add_interface(
             + std::to_string(*port_idx) + ") already exists in FIB");
     }
 
-    auto& filter = get_unique_port_object(m_filters, *port_idx);
+    auto& filter = m_sink_features.get<port::filter>(*port_idx);
     filter.add_mac_address(mac,
                            [&]() { maybe_disable_rxq_tag_detection(filter); });
 
@@ -514,7 +479,7 @@ void worker_controller::del_interface(
     auto to_delete = m_fib->remove_interface(*port_idx, mac);
     m_recycler->writer_add_gc_callback([to_delete]() { delete to_delete; });
 
-    auto& filter = get_unique_port_object(m_filters, *port_idx);
+    auto& filter = m_sink_features.get<port::filter>(*port_idx);
     filter.del_mac_address(mac,
                            [&]() { maybe_enable_rxq_tag_detection(filter); });
 
@@ -532,62 +497,6 @@ bool contains_match(const Vector& vector, const Item& match)
     return (std::any_of(std::begin(vector), std::end(vector), [&](auto& item) {
         return (item == match);
     }));
-}
-
-template <typename ForwardingTable, typename FeatureVector>
-void maybe_toggle_sink_feature(const ForwardingTable& fib,
-                               size_t port_idx,
-                               FeatureVector& features,
-                               packet::sink_feature_flags flags)
-{
-    const auto& sinks = fib->get_sinks(port_idx);
-    bool enabled =
-        std::any_of(std::begin(sinks), std::end(sinks), [&](const auto& sink) {
-            return (sink.uses_feature(flags));
-        });
-    if (!enabled) {
-        fib->visit_interface_sinks(
-            port_idx, [&](netif*, const packet::generic_sink& sink) {
-                if (sink.uses_feature(flags)) {
-                    enabled = true;
-                    return false;
-                }
-                return true;
-            });
-    }
-    if (enabled) {
-        get_unique_port_object(features, port_idx).enable();
-    } else {
-        get_unique_port_object(features, port_idx).disable();
-    }
-}
-
-void worker_controller::maybe_update_sink_features(size_t port_idx)
-{
-    bool has_interface_sinks = false;
-    m_fib->visit_interface_sinks(port_idx,
-                                 [&](netif*, const packet::generic_sink&) {
-                                     has_interface_sinks = true;
-                                     return false;
-                                 });
-    /* Disable the port filter if we have any attached sinks */
-    if (m_fib->get_sinks(port_idx).empty() && !has_interface_sinks) {
-        get_unique_port_object(m_filters, port_idx).enable();
-    } else {
-        get_unique_port_object(m_filters, port_idx).disable();
-    }
-
-    /* Toggle features based on attached sink requirements */
-    maybe_toggle_sink_feature(
-        m_fib,
-        port_idx,
-        m_sigdecoders,
-        packet::sink_feature_flags::spirent_signature_decode);
-
-    maybe_toggle_sink_feature(m_fib,
-                              port_idx,
-                              m_timestampers,
-                              packet::sink_feature_flags::rx_timestamp);
 }
 
 tl::expected<void, int> worker_controller::add_sink(std::string_view src_id,
@@ -608,7 +517,7 @@ tl::expected<void, int> worker_controller::add_sink(std::string_view src_id,
         auto to_delete = m_fib->insert_sink(*port_idx, std::move(sink));
         m_recycler->writer_add_gc_callback([to_delete]() { delete to_delete; });
 
-        maybe_update_sink_features(*port_idx);
+        m_sink_features.update(*m_fib, *port_idx);
 
         return {};
     }
@@ -634,7 +543,7 @@ tl::expected<void, int> worker_controller::add_sink(std::string_view src_id,
             interface.port_index(), mac, ifp, std::move(sink));
         m_recycler->writer_add_gc_callback([to_delete]() { delete to_delete; });
 
-        maybe_update_sink_features(interface.port_index());
+        m_sink_features.update(*m_fib, interface.port_index());
 
         return {};
     }
@@ -656,7 +565,7 @@ void worker_controller::del_sink(std::string_view src_id,
         auto to_delete = m_fib->remove_sink(*port_idx, std::move(sink));
         m_recycler->writer_add_gc_callback([to_delete]() { delete to_delete; });
 
-        maybe_update_sink_features(*port_idx);
+        m_sink_features.update(*m_fib, *port_idx);
         return;
     }
 
@@ -678,7 +587,7 @@ void worker_controller::del_sink(std::string_view src_id,
             interface.port_index(), mac, ifp, std::move(sink));
         m_recycler->writer_add_gc_callback([to_delete]() { delete to_delete; });
 
-        maybe_update_sink_features(interface.port_index());
+        m_sink_features.update(*m_fib, interface.port_index());
         return;
     }
 }
@@ -771,32 +680,6 @@ find_queue(worker::tib& tib, uint16_t port_idx, std::string_view source_id)
     return (std::nullopt);
 }
 
-template <typename TransmitTable, typename FeatureVector>
-void maybe_toggle_source_feature(const TransmitTable& tib,
-                                 size_t port_idx,
-                                 FeatureVector& features,
-                                 packet::source_feature_flags flags)
-{
-    const auto& range = tib->get_sources(port_idx);
-    if (std::any_of(range.first, range.second, [&](const auto& item) {
-            return (item->second.uses_feature(flags));
-        })) {
-        get_unique_port_object(features, port_idx).enable();
-    } else {
-        get_unique_port_object(features, port_idx).disable();
-    }
-}
-
-void worker_controller::maybe_update_source_features(size_t port_idx)
-{
-    /* Toggle features based on attached sink requirements */
-    maybe_toggle_source_feature(
-        m_tib,
-        port_idx,
-        m_sigencoders,
-        packet::source_feature_flags::spirent_signature_encode);
-}
-
 tl::expected<void, int>
 worker_controller::add_source(std::string_view dst_id,
                               packet::generic_source source)
@@ -828,7 +711,7 @@ worker_controller::add_source(std::string_view dst_id,
         *port_idx, queue_idx, tx_source(*port_idx, std::move(source)));
     m_recycler->writer_add_gc_callback([to_delete]() { delete to_delete; });
 
-    maybe_update_source_features(*port_idx);
+    m_source_features.update(*m_tib, *port_idx);
 
     return {};
 }
@@ -863,7 +746,7 @@ void worker_controller::del_source(std::string_view dst_id,
     auto to_delete = m_tib->remove_source(*port_idx, *queue_idx, source.id());
     m_recycler->writer_add_gc_callback([to_delete]() { delete to_delete; });
 
-    maybe_update_source_features(*port_idx);
+    m_source_features.update(*m_tib, *port_idx);
 }
 
 tl::expected<std::string, int> worker_controller::add_task(
@@ -915,6 +798,93 @@ void worker_controller::del_task(std::string_view task_id)
         m_workers->del_descriptors(tasks);
         m_recycler->writer_add_gc_callback([id, this]() { m_tasks.erase(id); });
     }
+}
+
+/***
+ * Logic for enabling/disabling port features
+ ***/
+
+template <typename Function>
+bool port_sink_find_if(const worker::fib& fib,
+                       size_t port_idx,
+                       const Function& filter)
+{
+    const auto& sinks = fib.get_sinks(port_idx);
+    return (std::any_of(std::begin(sinks), std::end(sinks), filter));
+}
+
+template <typename Function>
+bool interface_sink_find_if(const worker::fib& fib,
+                            size_t port_idx,
+                            const Function& filter)
+{
+    bool found = false;
+    fib.visit_interface_sinks(port_idx,
+                              [&](netif*, const packet::generic_sink& sink) {
+                                  if (filter(sink)) { found = true; }
+                                  return (!found);
+                              });
+    return (found);
+}
+
+template <typename Function>
+bool sink_find_if(const worker::fib& fib, size_t port_idx, Function&& filter)
+{
+    return (port_sink_find_if(fib, port_idx, filter)
+            || interface_sink_find_if(fib, port_idx, filter));
+}
+
+template <>
+bool need_sink_feature(const worker::fib& fib,
+                       size_t port_idx,
+                       const port::filter&)
+{
+    /*
+     * Filter logic is reversed from the others; we need to disable the filter
+     * when any sinks are present.
+     */
+    return (!sink_find_if(fib, port_idx, [](const auto&) { return (true); }));
+}
+
+template <>
+bool need_sink_feature(const worker::fib& fib,
+                       size_t port_idx,
+                       const port::signature_decoder&)
+{
+    return (sink_find_if(fib, port_idx, [](const packet::generic_sink& sink) {
+        return (sink.uses_feature(
+            packet::sink_feature_flags::spirent_signature_decode));
+    }));
+}
+
+template <>
+bool need_sink_feature(const worker::fib& fib,
+                       size_t port_idx,
+                       const port::timestamper&)
+{
+    return (sink_find_if(fib, port_idx, [](const packet::generic_sink& sink) {
+        return (sink.uses_feature(packet::sink_feature_flags::rx_timestamp));
+    }));
+}
+
+template <typename Function>
+bool source_find_if(const worker::tib& tib, size_t port_idx, Function&& filter)
+{
+    const auto& range = tib.get_sources(port_idx);
+    return (std::any_of(range.first, range.second, [&](const auto& item) {
+        return (filter(item->second));
+    }));
+}
+
+template <>
+bool need_source_feature(const worker::tib& tib,
+                         size_t port_idx,
+                         const port::signature_encoder&)
+{
+    return (source_find_if(tib, port_idx, [](const dpdk::tx_source& source) {
+        return (source.uses_feature(
+            packet::source_feature_flags::spirent_signature_encode));
+    }));
 }
 
 } // namespace openperf::packetio::dpdk

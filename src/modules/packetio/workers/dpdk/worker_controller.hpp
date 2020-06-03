@@ -15,6 +15,7 @@
 #include "packetio/drivers/dpdk/port_signature_encoder.hpp"
 #include "packetio/drivers/dpdk/port_timestamper.hpp"
 #include "packetio/workers/dpdk/callback.hpp"
+#include "packetio/workers/dpdk/port_feature_controller.hpp"
 #include "packetio/workers/dpdk/tx_scheduler.hpp"
 #include "packetio/workers/dpdk/worker_api.hpp"
 #include "utils/hash_combine.hpp"
@@ -75,21 +76,26 @@ public:
     void del_task(std::string_view task_id);
 
     using load_map = std::unordered_map<unsigned, uint64_t>;
-    using rx_callback_map =
-        std::map<std::pair<uint16_t, uint16_t>, rte_eth_rxtx_callback*>;
     using task_map = std::unordered_map<core::uuid, callback>;
     using worker_map = std::map<std::pair<uint16_t, uint16_t>, unsigned>;
-
     using txsched_ptr = std::unique_ptr<tx_scheduler>;
-    using filter_ptr = std::unique_ptr<port::filter>;
-    using sigdecoder_ptr = std::unique_ptr<port::signature_decoder>;
-    using sigencoder_ptr = std::unique_ptr<port::signature_encoder>;
-    using timestamper_ptr = std::unique_ptr<port::timestamper>;
+
+    /*
+     * XXX: order matters! The DPDK callbacks have no method to
+     * enforce explicit ordering. The order of types in the template
+     * is the order that the callbacks will be added to a linked list
+     * in the DPDK internals. So, if callbacks have dependencies, then
+     * the dependent callback needs to be listed after the independent
+     * callback.
+     */
+    using sink_feature_controller =
+        sink_feature_controller<port::filter,
+                                port::signature_decoder,
+                                port::timestamper>;
+    using source_feature_controller =
+        source_feature_controller<port::signature_encoder>;
 
 private:
-    void maybe_update_sink_features(size_t port_idx);
-    void maybe_update_source_features(size_t port_idx);
-
     void* m_context;                              /* 0MQ context */
     driver::generic_driver& m_driver;             /* generic driver reference */
     std::unique_ptr<worker::client> m_workers;    /* worker command client */
@@ -103,10 +109,8 @@ private:
     load_map m_tx_loads;     /* map from worker id --> worker load */
     worker_map m_tx_workers; /* map from (port id, queue id) --> worker id */
 
-    std::vector<filter_ptr> m_filters;           /* Port filters */
-    std::vector<sigdecoder_ptr> m_sigdecoders;   /* Port signature decoders */
-    std::vector<sigencoder_ptr> m_sigencoders;   /* Port signature encoders */
-    std::vector<timestamper_ptr> m_timestampers; /* Port timestampers */
+    sink_feature_controller m_sink_features;
+    source_feature_controller m_source_features;
 };
 
 } // namespace openperf::packetio::dpdk
