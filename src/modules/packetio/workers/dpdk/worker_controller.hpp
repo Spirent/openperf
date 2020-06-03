@@ -11,6 +11,7 @@
 #include "packetio/generic_event_loop.hpp"
 #include "packetio/generic_workers.hpp"
 #include "packetio/drivers/dpdk/port_filter.hpp"
+#include "packetio/drivers/dpdk/port_packet_type_decoder.hpp"
 #include "packetio/drivers/dpdk/port_signature_decoder.hpp"
 #include "packetio/drivers/dpdk/port_signature_encoder.hpp"
 #include "packetio/drivers/dpdk/port_timestamper.hpp"
@@ -90,6 +91,7 @@ public:
      */
     using sink_feature_controller =
         sink_feature_controller<port::filter,
+                                port::packet_type_decoder,
                                 port::signature_decoder,
                                 port::timestamper>;
     using source_feature_controller =

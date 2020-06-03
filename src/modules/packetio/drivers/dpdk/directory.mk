@@ -9,6 +9,7 @@ PIO_DRIVER_SOURCES += \
 	mac_filter.cpp \
 	mbuf_signature.cpp \
 	port_filter.cpp \
+	port_packet_type_decoder.cpp \
 	port_signature_decoder.cpp \
 	port_signature_encoder.cpp \
 	port_signature_utils.cpp \
