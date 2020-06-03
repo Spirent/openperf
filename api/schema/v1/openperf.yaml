@@ -44,6 +44,7 @@ tags:
   - name: BlockGenerator
   - name: MemoryGenerator
   - name: CpuGenerator
+  - name: DynamicResults
 
 basePath: /
 
@@ -345,6 +346,27 @@ paths:
   /cpu-info:
     $ref: ./modules/cpu.yaml#/paths/~1cpu-info
 
+  ###
+  # Dynamic Results paths
+  ###
+  /dynamic-results/thresholds:
+    $ref: ./modules/dynamic.yaml#/paths/~1dynamic-results~1thresholds
+
+  /dynamic-results/thresholds/{id}:
+    $ref: ./modules/dynamic.yaml#/paths/~1dynamic-results~1thresholds~1{id}
+
+  /dynamic-results/thresholds/{id}/result:
+    $ref: ./modules/dynamic.yaml#/paths/~1dynamic-results~1thresholds~1{id}~1result
+
+  /dynamic-results/t-digests:
+    $ref: ./modules/dynamic.yaml#/paths/~1dynamic-results~1t-digests
+
+  /dynamic-results/t-digests/{id}:
+    $ref: ./modules/dynamic.yaml#/paths/~1dynamic-results~1t-digests~1{id}
+
+  /dynamic-results/t-digests/{id}/result:
+    $ref: ./modules/dynamic.yaml#/paths/~1dynamic-results~1t-digests~1{id}~1result
+
 definitions:
   Module:
     type: object
@@ -623,3 +645,21 @@ definitions:
 
   CpuGeneratorTargetStats:
     $ref: ./modules/cpu.yaml#/definitions/CpuGeneratorTargetStats
+
+  ###
+  # Dynamic Results definitions
+  ###
+  ThresholdConfig:
+    $ref: ./modules/dynamic.yaml#/definitions/ThresholdConfig
+
+  ThresholdResult:
+    $ref: ./modules/dynamic.yaml#/definitions/ThresholdResult
+
+  TDigestConfig:
+    $ref: ./modules/dynamic.yaml#/definitions/TDigestConfig
+
+  TDigestResult:
+    $ref: ./modules/dynamic.yaml#/definitions/TDigestResult
+
+  TDigestCentroid:
+    $ref: ./modules/dynamic.yaml#/definitions/TDigestCentroid
