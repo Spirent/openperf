@@ -34,10 +34,10 @@ const size_t block_generator_vdev_header_size = sizeof(virtual_device_header);
 class virtual_device
 {
 protected:
-    std::atomic_int m_read_fd = -1, m_write_fd = -1;
+    int m_read_fd = -1, m_write_fd = -1;
     std::thread m_scrub_thread;
     std::atomic_bool m_deleted;
-    int write_header();
+    int write_header(int fd);
     void scrub_worker(size_t start, size_t stop);
     virtual void scrub_done(){};
     virtual void scrub_update(double){};
@@ -45,6 +45,8 @@ protected:
 public:
     virtual_device();
     virtual ~virtual_device();
+    virtual int open(int flags) = 0;
+    virtual int close(int fd) = 0;
     virtual tl::expected<virtual_device_descriptors, int> vopen() = 0;
     virtual void vclose() = 0;
     void queue_scrub();

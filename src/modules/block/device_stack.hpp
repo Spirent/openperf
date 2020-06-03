@@ -15,9 +15,11 @@ class device
 {
 public:
     ~device(){};
-    tl::expected<virtual_device_descriptors, int> vopen();
-    void vclose();
-    uint64_t get_size() const;
+    int open(int flags) override;
+    int close(int fd) override;
+    tl::expected<virtual_device_descriptors, int> vopen() override;
+    void vclose() override;
+    uint64_t get_size() const override;
 };
 
 using device_ptr = std::shared_ptr<device>;

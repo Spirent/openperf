@@ -1,6 +1,7 @@
-#include <unistd.h>
 #include <cstring>
+#include <fcntl.h>
 #include <sys/mman.h>
+#include <unistd.h>
 #include "virtual_device.hpp"
 #include "timesync/clock.hpp"
 #include "timesync/chrono.hpp"
@@ -16,9 +17,9 @@ virtual_device::virtual_device()
 
 virtual_device::~virtual_device() { terminate_scrub(); }
 
-int virtual_device::write_header()
+int virtual_device::write_header(int fd)
 {
-    if (m_write_fd < 0) return -1;
+    if (fd < 0) return -1;
     virtual_device_header header = {
         .init_time = timesync::to_bintime(
             timesync::chrono::realtime::now().time_since_epoch()),
@@ -28,8 +29,7 @@ int virtual_device::write_header()
             VIRTUAL_DEVICE_HEADER_TAG,
             VIRTUAL_DEVICE_HEADER_TAG_LENGTH);
 
-    return (pwrite(m_write_fd, &header, sizeof(header), 0) == sizeof(header) ? 0
-                                                                       : -1);
+    return (pwrite(fd, &header, sizeof(header), 0) == sizeof(header) ? 0 : -1);
 }
 
 void virtual_device::queue_scrub()
@@ -84,19 +84,16 @@ void pseudo_random_fill(void* buffer, size_t length)
 constexpr size_t SCRUB_BUFFER_SIZE = 128 * 1024; /* 128KB */
 void virtual_device::scrub_worker(size_t start, size_t stop)
 {
-    if (m_write_fd >= 0) {
-        OP_LOG(OP_LOG_ERROR, "Cannot write scrub to vdev: device is busy\n");
-        return;
-    }
+    int fd = open(O_RDWR | O_CREAT | O_DSYNC);;
 
-    if (auto result = vopen(); !result) {
+    if (fd < 0) {
         OP_LOG(
-            OP_LOG_ERROR, "Cannot open vdev: %s\n", strerror(result.error()));
+            OP_LOG_ERROR, "Cannot open vdev: %s\n", strerror(errno));
         return;
     }
 
-    ftruncate(m_write_fd, stop);
-    write_header();
+    ftruncate(fd, stop);
+    write_header(fd);
 
     auto current = start;
     auto page_size = getpagesize();
@@ -105,7 +102,7 @@ void virtual_device::scrub_worker(size_t start, size_t stop)
         auto file_offset = (current / page_size) * page_size;
         auto mmap_len = buf_len + current - file_offset;
 
-        void* buf = mmap(nullptr, mmap_len, PROT_WRITE, MAP_SHARED, m_write_fd, file_offset);
+        void* buf = mmap(nullptr, mmap_len, PROT_WRITE, MAP_SHARED, fd, file_offset);
         if (buf == MAP_FAILED) {
             OP_LOG(OP_LOG_ERROR, "Cannot write scrub to vdev: %s\n", strerror(errno));
             break;
@@ -118,7 +115,7 @@ void virtual_device::scrub_worker(size_t start, size_t stop)
         scrub_update((double)(current - start) / (stop - start));
     }
 
-    vclose();
+    close(fd);
     scrub_done();
 }
 

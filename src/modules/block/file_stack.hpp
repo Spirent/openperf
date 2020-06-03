@@ -21,6 +21,8 @@ protected:
 public:
     file(const model::file& f);
     ~file();
+    int open(int flags) override;
+    int close(int fd) override;
     tl::expected<virtual_device_descriptors, int> vopen() override;
     void vclose() override;
     uint64_t get_size() const override;

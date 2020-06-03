@@ -13,23 +13,22 @@
 
 namespace openperf::block::device {
 
+int device::open(int flags)
+{
+    return ::open(get_path().c_str(), flags, S_IRUSR | S_IWUSR);
+}
+
+int device::close(int fd)
+{
+    return ::close(fd);
+}
 
 tl::expected<virtual_device_descriptors, int> device::vopen()
 {
-    auto open_vdev = [this](std::atomic_int& fd, int flags) {
-         if (fd > 0)
-            return fd.load();
-
-        if ((fd = open(get_path().c_str(), flags,
-                        S_IRUSR | S_IWUSR)) < 0) {
-            return -1;
-        }
-
-        return fd.load();
-    };
-
-    m_write_fd = open_vdev(m_write_fd, O_WRONLY | O_CREAT | O_DSYNC);
-    m_read_fd = open_vdev(m_read_fd, O_RDONLY);
+    if (m_write_fd < 0)
+        m_write_fd = this->open(O_RDWR | O_CREAT | O_DSYNC);
+    if (m_read_fd < 0)
+        m_read_fd = this->open(O_RDONLY);
 
     if (m_read_fd < 0 || m_write_fd < 0) {
         vclose();
@@ -42,18 +41,18 @@ tl::expected<virtual_device_descriptors, int> device::vopen()
 void device::vclose()
 {
     auto close_vdev = [this](int fd) {
-        if (auto res = close(fd); res < 0) {
+        if (this->close(fd) < 0) {
             OP_LOG(OP_LOG_ERROR,
-                "Cannot close device %s: %s",
+                "Cannot close file %s: %s",
                 get_path().c_str(),
                 strerror(errno));
         }
     };
 
-    if (m_read_fd > 0)
+    if (m_read_fd >= 0)
         close_vdev(m_read_fd);
-    if (m_write_fd > 0)
-        close_vdev(m_read_fd);
+    if (m_write_fd >= 0)
+        close_vdev(m_write_fd);
 
     m_read_fd = -1;
     m_write_fd = -1;
