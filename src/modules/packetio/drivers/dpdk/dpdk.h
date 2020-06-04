@@ -43,5 +43,6 @@
 #include "rte_eth_ring.h"
 #include "rte_flow_driver.h"
 #include "rte_net.h"
+#include "rte_thash.h"
 
 #endif /* _PACKETIO_DRIVER_DPDK_H_ */
