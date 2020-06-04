@@ -12,6 +12,7 @@ PIO_DRIVER_SOURCES += \
 	port/mac_filter.cpp \
 	port/filter.cpp \
 	port/packet_type_decoder.cpp \
+	port/rss_hasher.cpp \
 	port/signature_decoder.cpp \
 	port/signature_encoder.cpp \
 	port/signature_utils.cpp \

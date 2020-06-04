@@ -163,9 +163,9 @@ bool sink::uses_feature(packetio::packet::sink_feature_flags flags) const
          | statistics::flow_flags::jitter_ipdv
          | statistics::flow_flags::jitter_rfc);
 
-    /* We always need rx_timestamps */
-    auto needed = openperf::utils::bit_flags<sink_feature_flags>{
-        sink_feature_flags::rx_timestamp};
+    /* We always need rx_timestamps and RSS hash values */
+    auto needed =
+        sink_feature_flags::rx_timestamp | sink_feature_flags::rss_hash;
 
     if (m_protocol_counters) {
         needed |= sink_feature_flags::packet_type_decode;
