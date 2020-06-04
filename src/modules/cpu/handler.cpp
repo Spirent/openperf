@@ -119,7 +119,7 @@ handler::handler(void* context, Rest::Router& router)
         Rest::Routes::bind(&handler::bulk_create_generators, this));
     Rest::Routes::Post(
         router,
-        "/pu-generators/x/bulk-delete",
+        "/cpu-generators/x/bulk-delete",
         Rest::Routes::bind(&handler::bulk_delete_generators, this));
     Rest::Routes::Post(router,
                        "/cpu-generators/:id/start",
