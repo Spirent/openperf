@@ -1,8 +1,3 @@
-#include <algorithm>
-
-#include "core/op_log.h"
-#include "packetio/drivers/dpdk/dpdk.h"
-#include "packetio/drivers/dpdk/model/port_info.hpp"
 #include "packetio/drivers/dpdk/mbuf_signature.hpp"
 #include "packetio/drivers/dpdk/port/signature_encoder.hpp"
 #include "packetio/drivers/dpdk/port/signature_utils.hpp"
@@ -222,74 +217,20 @@ static uint16_t encode_signatures(uint16_t port_id,
     return (nb_packets);
 }
 
-callback_signature_encoder::callback_signature_encoder(uint16_t port_id)
-    : m_port(port_id)
-{}
-
-callback_signature_encoder::~callback_signature_encoder()
+std::string callback_signature_encoder::description()
 {
-    std::for_each(
-        std::begin(m_callbacks), std::end(m_callbacks), [&](auto& item) {
-            rte_eth_remove_tx_callback(port_id(), item.first, item.second);
-        });
+    return ("Spirent signature encoding");
 }
 
-callback_signature_encoder::callback_signature_encoder(
-    callback_signature_encoder&& other) noexcept
-    : m_callbacks(std::move(other.m_callbacks))
-    , m_port(other.m_port)
-{}
-
-callback_signature_encoder& callback_signature_encoder::operator=(
-    callback_signature_encoder&& other) noexcept
+tx_callback<callback_signature_encoder>::tx_callback_fn
+callback_signature_encoder::callback()
 {
-    if (this != &other) {
-        m_callbacks = std::move(other.m_callbacks);
-        m_port = other.m_port;
-    }
-
-    return (*this);
+    return (encode_signatures);
 }
 
-uint16_t callback_signature_encoder::port_id() const { return (m_port); }
-
-void callback_signature_encoder::enable()
+void* callback_signature_encoder::callback_arg()
 {
-    OP_LOG(OP_LOG_INFO,
-           "Enabling software Spirent signature encoding on port %u\n",
-           m_port);
-
-    auto offset = utils::get_timestamp_epoch_offset();
-
-    auto q = 0U;
-    std::generate_n(std::inserter(m_callbacks, std::begin(m_callbacks)),
-                    model::port_info(port_id()).tx_queue_count(),
-                    [&]() {
-                        auto cb = rte_eth_add_tx_callback(
-                            port_id(),
-                            q,
-                            encode_signatures,
-                            reinterpret_cast<void*>(offset));
-                        if (!cb) {
-                            throw std::runtime_error(
-                                "Cound not add signature encode callback");
-                        }
-                        return (std::make_pair(q++, cb));
-                    });
-}
-
-void callback_signature_encoder::disable()
-{
-    OP_LOG(OP_LOG_INFO,
-           "Disabling software Spirent signature encoding on port %u\n",
-           m_port);
-
-    std::for_each(
-        std::begin(m_callbacks), std::end(m_callbacks), [&](auto& item) {
-            rte_eth_remove_tx_callback(port_id(), item.first, item.second);
-        });
-
-    m_callbacks.clear();
+    return (reinterpret_cast<void*>(utils::get_timestamp_epoch_offset()));
 }
 
 static signature_encoder::variant_type make_signature_encoder(uint16_t port_id)

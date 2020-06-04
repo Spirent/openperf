@@ -71,65 +71,12 @@ static uint16_t timestamp_packets(uint16_t port_id,
     return (nb_packets);
 }
 
-callback_timestamper::callback_timestamper(uint16_t port_id)
-    : m_port(port_id)
-{}
+std::string callback_timestamper::description() { return ("timestamping"); }
 
-callback_timestamper::~callback_timestamper()
+rx_callback<callback_timestamper>::rx_callback_fn
+callback_timestamper::callback()
 {
-    if (m_callbacks.empty()) return;
-
-    std::for_each(
-        std::begin(m_callbacks), std::end(m_callbacks), [&](auto& item) {
-            rte_eth_remove_rx_callback(port_id(), item.first, item.second);
-        });
-}
-
-callback_timestamper::callback_timestamper(
-    callback_timestamper&& other) noexcept
-    : m_callbacks(std::move(other.m_callbacks))
-    , m_port(other.m_port)
-{}
-
-callback_timestamper&
-callback_timestamper::operator=(callback_timestamper&& other) noexcept
-{
-    if (this != &other) {
-        m_callbacks = std::move(other.m_callbacks);
-        m_port = other.m_port;
-    }
-
-    return (*this);
-}
-
-uint16_t callback_timestamper::port_id() const { return (m_port); }
-
-void callback_timestamper::enable()
-{
-    OP_LOG(OP_LOG_INFO,
-           "Enabling software packet timestamps on port %u\n",
-           m_port);
-
-    for (auto q = 0U; q < model::port_info(port_id()).rx_queue_count(); q++) {
-        auto cb = rte_eth_add_first_rx_callback(
-            port_id(), q, timestamp_packets, nullptr);
-        if (!cb) {
-            throw std::runtime_error("Could not add timestamp callback");
-        }
-        m_callbacks.emplace(q, cb);
-    }
-}
-
-void callback_timestamper::disable()
-{
-    OP_LOG(OP_LOG_INFO,
-           "Disabling software packet timestamps on port %u\n",
-           m_port);
-
-    std::for_each(
-        std::begin(m_callbacks), std::end(m_callbacks), [&](auto& item) {
-            rte_eth_remove_rx_callback(port_id(), item.first, item.second);
-        });
+    return (timestamp_packets);
 }
 
 static timestamper::variant_type make_timestamper(uint16_t port_id)
