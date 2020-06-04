@@ -3,7 +3,7 @@
 
 #include <map>
 
-#include "packetio/drivers/dpdk/port_feature_toggle.hpp"
+#include "packetio/drivers/dpdk/port/feature_toggle.hpp"
 
 struct rte_eth_rxtx_callback;
 
@@ -32,9 +32,9 @@ private:
 };
 
 struct signature_encoder
-    : port_feature_toggle<signature_encoder,
-                          callback_signature_encoder,
-                          null_feature>
+    : feature_toggle<signature_encoder,
+                     callback_signature_encoder,
+                     null_feature>
 {
     variant_type feature;
     signature_encoder(uint16_t port_id);

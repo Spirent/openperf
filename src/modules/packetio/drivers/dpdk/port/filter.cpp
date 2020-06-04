@@ -1,6 +1,6 @@
 #include "packet/type/mac_address.hpp"
 #include "packetio/drivers/dpdk/dpdk.h"
-#include "packetio/drivers/dpdk/port_filter.hpp"
+#include "packetio/drivers/dpdk/port/filter.hpp"
 #include "utils/overloaded_visitor.hpp"
 
 namespace openperf::packetio::dpdk::port {

@@ -4,7 +4,7 @@
 #include "core/op_log.h"
 #include "packetio/drivers/dpdk/dpdk.h"
 #include "packetio/drivers/dpdk/model/port_info.hpp"
-#include "packetio/drivers/dpdk/port_packet_type_decoder.hpp"
+#include "packetio/drivers/dpdk/port/packet_type_decoder.hpp"
 
 namespace openperf::packetio::dpdk::port {
 
