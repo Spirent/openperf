@@ -1,4 +1,4 @@
-paratemeters:
+parameters:
   id:
     name: id
     in: path
@@ -30,7 +30,7 @@ paths:
         - Threshold
       summary: Create a threshold
       description: Create a new threshold
-      paratemeters:
+      parameters:
         - name: threshold
           in: body
           description: Threshold configuration
@@ -54,8 +54,8 @@ paths:
         - Threshold
       summary: Returns the threshold
       description: Returns the threshold configuration by ID
-      paratemeters:
-        - $ref: "#/paratemeters/id"
+      parameters:
+        - $ref: "#/parameters/id"
       responses:
         200:
           description: Success
@@ -64,11 +64,12 @@ paths:
     delete:
       operationId: DeleteThreshold
       tags:
-        - DynamicResultsThresholds
+        - DynamicResults
+        - Threshold
       summary: Delete the threshold
       description: Delete the threshold by ID
-      paratemeters:
-        - $ref: "#/paratemeters/id"
+      parameters:
+        - $ref: "#/parameters/id"
       responses:
         204:
           description: No Content
@@ -81,8 +82,8 @@ paths:
         - Threshold
       summary: Get the threshold result
       description: Get the threshold result by threshold ID
-      paratemeters:
-        - $ref: "#/paratemeters/id"
+      parameters:
+        - $ref: "#/parameters/id"
       responses:
         200:
           description: Success
@@ -111,12 +112,19 @@ paths:
         - T-Digest
       summary: Create T-Digest
       description: Create a new T-Digest
+      parameters:
+        - name: tdigest
+          in: body
+          description: T-Digest configuration
+          required: true
+          schema:
+            $ref: "#/definitions/TDigestConfig"
       responses:
         201:
           description: Created
           headers:
             Location:
-              description: URI of created threshold
+              description: URI of created T-Digest
           schema:
             $ref: "#/definitions/TDigestConfig"
 
@@ -128,8 +136,8 @@ paths:
         - T-Digest
       summary: Returns the T-Digest
       description: Returns the T-Digest configuration by ID
-      paratemeters:
-        - $ref: "#/definitions/TDigestConfig"
+      parameters:
+        - $ref: "#/parameters/id"
       responses:
         200:
           description: Success
@@ -138,11 +146,12 @@ paths:
     delete:
       operationId: DeleteTDigest
       tags:
-        - DynamicResultsTDigests
+        - DynamicResults
+        - T-Digest
       summary: Delete the T-Digest
       description: Delete the T-Digest by ID
-      paratemeters:
-        - $ref: "#/paratemeters/id"
+      parameters:
+        - $ref: "#/parameters/id"
       responses:
         204:
           description: No Content
@@ -155,8 +164,8 @@ paths:
         - T-Digest
       summary: Returns the T-Digest result
       description: Returns the T-Digest result by T-Digest ID
-      paratemeters:
-        - $ref: "#/definitions/TDigestResult"
+      parameters:
+        - $ref: "#/parameters/id"
       responses:
         200:
           description: Success
@@ -183,10 +192,10 @@ definitions:
         description: Unique generator identifier
       value:
         type: float
-        description: the value of interest
+        description: The value of interest
       function:
         type: string
-        description: the function to apply to the statistic before evaluating
+        description: The function to apply to the statistic before evaluating
         enum:
           - dx
           - dxdt
@@ -202,10 +211,10 @@ definitions:
           - equal
       stat_x:
         type: string
-        description: the X statistic to track
+        description: The X statistic to track
       stat_y:
         type: string
-        description: the Y statistic to track (when using DXDY function)
+        description: The Y statistic to track (when using DXDY function)
     required:
       - id
       - generator_type
@@ -244,6 +253,14 @@ definitions:
       false:
         type: integer
         description: condition false
+    required:
+      - id
+      - generator_type
+      - generator_id
+      - threshold
+      - relation
+      - true
+      - false
 
   TDigestConfig:
     type: object
@@ -264,17 +281,17 @@ definitions:
         description: Unique generator identifier
       function:
         type: string
-        description: the function to apply to the statistic before evaluating
+        description: The function to apply to the statistic before evaluating
         enum:
           - dx
           - dxdt
           - dxdy
       stat_x:
         type: string
-        description: the X statistic to track
+        description: The X statistic to track
       stat_y:
         type: string
-        description: the Y statistic to track (when using DXDY function)
+        description: The Y statistic to track (when using DXDY function)
     required:
       - id
       - generator_type
@@ -309,6 +326,13 @@ definitions:
         type: array
         items:
           $ref: "#/definitions/TDigestCentroid"
+    required:
+      - id
+      - generator_type
+      - generator_id
+      - delta
+      - factor
+      - centroids
 
   TDigestCentroid:
     type: object
@@ -320,3 +344,6 @@ definitions:
       weight:
         type: integer
         description: The weight of this centroid
+    required:
+      - mean
+      - weight
