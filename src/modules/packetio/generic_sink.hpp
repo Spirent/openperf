@@ -14,9 +14,10 @@ struct packet_buffer;
 
 enum class sink_feature_flags {
     none = 0,
-    rx_timestamp = (1 << 0),
-    spirent_signature_decode = (1 << 1),
-    packet_type_decode = (1 << 2),
+    packet_type_decode = (1 << 0),
+    rss_hash = (1 << 1),
+    rx_timestamp = (1 << 2),
+    spirent_signature_decode = (1 << 3),
 };
 
 class generic_sink
