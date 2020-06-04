@@ -22,7 +22,7 @@ private:
     uint16_t m_port;
 };
 
-template <typename Derived, typename... Feature> class port_feature_toggle
+template <typename Derived, typename... Feature> class feature_toggle
 {
 public:
     using variant_type = std::variant<Feature...>;

@@ -3,7 +3,7 @@
 
 #include <map>
 
-#include "packetio/drivers/dpdk/port_feature_toggle.hpp"
+#include "packetio/drivers/dpdk/port/feature_toggle.hpp"
 
 struct rte_eth_rxtx_callback;
 
@@ -31,7 +31,7 @@ private:
 };
 
 struct timestamper
-    : port_feature_toggle<timestamper, callback_timestamper, null_feature>
+    : feature_toggle<timestamper, callback_timestamper, null_feature>
 {
     variant_type feature;
     timestamper(uint16_t port_id);

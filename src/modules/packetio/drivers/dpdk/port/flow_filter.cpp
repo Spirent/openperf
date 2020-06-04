@@ -6,7 +6,7 @@
 #include "packet/type/mac_address.hpp"
 #include "packetio/drivers/dpdk/dpdk.h"
 #include "packetio/drivers/dpdk/model/port_info.hpp"
-#include "packetio/drivers/dpdk/port_filter.hpp"
+#include "packetio/drivers/dpdk/port/filter.hpp"
 
 struct rte_flow;
 

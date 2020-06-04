@@ -4,8 +4,8 @@
 #include "packetio/drivers/dpdk/dpdk.h"
 #include "packetio/drivers/dpdk/model/port_info.hpp"
 #include "packetio/drivers/dpdk/mbuf_signature.hpp"
-#include "packetio/drivers/dpdk/port_signature_decoder.hpp"
-#include "packetio/drivers/dpdk/port_signature_utils.hpp"
+#include "packetio/drivers/dpdk/port/signature_decoder.hpp"
+#include "packetio/drivers/dpdk/port/signature_utils.hpp"
 #include "spirent_pga/api.h"
 #include "utils/soa_container.hpp"
 
