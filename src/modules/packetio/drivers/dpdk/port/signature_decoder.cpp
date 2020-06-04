@@ -1,8 +1,3 @@
-#include <algorithm>
-
-#include "core/op_log.h"
-#include "packetio/drivers/dpdk/dpdk.h"
-#include "packetio/drivers/dpdk/model/port_info.hpp"
 #include "packetio/drivers/dpdk/mbuf_signature.hpp"
 #include "packetio/drivers/dpdk/port/signature_decoder.hpp"
 #include "packetio/drivers/dpdk/port/signature_utils.hpp"
@@ -131,74 +126,20 @@ static uint16_t detect_signatures([[maybe_unused]] uint16_t port_id,
     return (nb_packets);
 }
 
-callback_signature_decoder::callback_signature_decoder(uint16_t port_id)
-    : m_port(port_id)
-{}
-
-callback_signature_decoder::~callback_signature_decoder()
+std::string callback_signature_decoder::description()
 {
-    std::for_each(
-        std::begin(m_callbacks), std::end(m_callbacks), [&](auto& item) {
-            rte_eth_remove_rx_callback(port_id(), item.first, item.second);
-        });
+    return ("Spirent signature decoding");
 }
 
-callback_signature_decoder::callback_signature_decoder(
-    callback_signature_decoder&& other) noexcept
-    : m_callbacks(std::move(other.m_callbacks))
-    , m_port(other.m_port)
-{}
-
-callback_signature_decoder& callback_signature_decoder::operator=(
-    callback_signature_decoder&& other) noexcept
+rx_callback<callback_signature_decoder>::rx_callback_fn
+callback_signature_decoder::callback()
 {
-    if (this != &other) {
-        m_callbacks = std::move(other.m_callbacks);
-        m_port = other.m_port;
-    }
-
-    return (*this);
+    return (detect_signatures);
 }
 
-uint16_t callback_signature_decoder::port_id() const { return (m_port); }
-
-void callback_signature_decoder::enable()
+void* callback_signature_decoder::callback_arg()
 {
-    OP_LOG(OP_LOG_INFO,
-           "Enabling software Spirent signature detection on port %u\n",
-           m_port);
-
-    auto offset = utils::get_timestamp_epoch_offset();
-
-    auto q = 0U;
-    std::generate_n(std::inserter(m_callbacks, std::begin(m_callbacks)),
-                    model::port_info(port_id()).rx_queue_count(),
-                    [&]() {
-                        auto cb = rte_eth_add_rx_callback(
-                            port_id(),
-                            q,
-                            detect_signatures,
-                            reinterpret_cast<void*>(offset));
-                        if (!cb) {
-                            throw std::runtime_error(
-                                "Could not add signature detection callback");
-                        }
-                        return (std::make_pair(q++, cb));
-                    });
-}
-
-void callback_signature_decoder::disable()
-{
-    OP_LOG(OP_LOG_INFO,
-           "Disabling software Spirent signature detection on port %u\n",
-           m_port);
-
-    std::for_each(
-        std::begin(m_callbacks), std::end(m_callbacks), [&](auto& item) {
-            rte_eth_remove_rx_callback(port_id(), item.first, item.second);
-        });
-
-    m_callbacks.clear();
+    return (reinterpret_cast<void*>(utils::get_timestamp_epoch_offset()));
 }
 
 static signature_decoder::variant_type make_signature_decoder(uint16_t port_id)
