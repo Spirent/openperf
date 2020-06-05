@@ -111,8 +111,8 @@ static uint32_t eth_link_speed_flag(port::link_speed speed,
 static __attribute__((const)) uint64_t filter_rx_offloads(uint64_t rx_capa)
 {
     return (rx_capa
-            & (DEV_RX_OFFLOAD_CHECKSUM | DEV_RX_OFFLOAD_TCP_LRO
-               | DEV_RX_OFFLOAD_SCATTER | DEV_RX_OFFLOAD_KEEP_CRC));
+            & (DEV_RX_OFFLOAD_CHECKSUM | DEV_RX_OFFLOAD_JUMBO_FRAME
+               | DEV_RX_OFFLOAD_SCATTER | DEV_RX_OFFLOAD_TCP_LRO));
 }
 
 static __attribute__((const)) uint64_t filter_tx_offloads(uint64_t tx_capa)
@@ -123,7 +123,7 @@ static __attribute__((const)) uint64_t filter_tx_offloads(uint64_t tx_capa)
                | DEV_TX_OFFLOAD_MULTI_SEGS));
 }
 
-static rte_eth_conf make_rte_eth_conf(port_info& info)
+static rte_eth_conf make_rte_eth_conf(const port_info& info)
 {
     return {.link_speeds = ETH_LINK_SPEED_AUTONEG,
             .rxmode =
