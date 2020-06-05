@@ -18,6 +18,13 @@ using duration = std::chrono::nanoseconds;
 
 enum task_operation { READ = 0, WRITE };
 
+struct task_synchronizer
+{
+    std::atomic_int32_t ratio;
+    std::atomic_int64_t reads_actual = 0;
+    std::atomic_int64_t writes_actual = 0;
+};
+
 struct task_config_t
 {
     int fd;
@@ -28,6 +35,7 @@ struct task_config_t
     int32_t ops_per_sec;
     size_t block_size;
     worker_pattern pattern;
+    task_synchronizer* synchronizer;
 };
 
 struct task_stat_t
@@ -82,7 +90,7 @@ private:
     size_t worker_spin(task_config_t& op_config,
                        task_stat_t& op_stat,
                        time_point deadline);
-
+    void reset_spin_stat();
 public:
     block_task();
     ~block_task();

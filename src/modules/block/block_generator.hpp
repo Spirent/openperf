@@ -19,6 +19,7 @@ class block_generator : public model::block_generator
 {
 private:
     block_worker_ptr m_read_worker, m_write_worker;
+    task_synchronizer m_synchronizer;
     std::string m_statistics_id;
     std::vector<virtual_device_stack*> m_vdev_stack_list;
     std::shared_ptr<virtual_device> m_vdev;

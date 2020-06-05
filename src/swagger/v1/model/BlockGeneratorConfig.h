@@ -74,6 +74,13 @@ public:
     int32_t getWriteSize() const;
     void setWriteSize(int32_t value);
         /// <summary>
+    /// Percentage of a mixed workload operations that should be reads. If value is not given, read to write ratio is not limited.
+    /// </summary>
+    int32_t getReadToWriteRatio() const;
+    void setReadToWriteRatio(int32_t value);
+    bool readToWriteRatioIsSet() const;
+    void unsetRead_to_write_ratio();
+    /// <summary>
     /// IO access pattern
     /// </summary>
     std::string getPattern() const;
@@ -90,6 +97,8 @@ protected:
 
     int32_t m_Write_size;
 
+    int32_t m_Read_to_write_ratio;
+    bool m_Read_to_write_ratioIsSet;
     std::string m_Pattern;
 
 };

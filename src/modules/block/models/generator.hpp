@@ -13,6 +13,8 @@ struct block_generator_config
     int32_t read_size;
     int32_t writes_per_sec;
     int32_t write_size;
+    bool fixed_ratio;
+    int32_t read_to_write_ratio;
     block_generation_pattern pattern;
 };
 class block_generator

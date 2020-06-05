@@ -8,6 +8,7 @@ Name | Type | Description | Notes
 **read_size** | **int** | Number of bytes to use for each read operation | 
 **writes_per_sec** | **int** | Number of write operations to perform per second | 
 **write_size** | **int** | Number of bytes to use for each write operation | 
+**read_to_write_ratio** | **int** | Percentage of a mixed workload operations that should be reads. If value is not given, read to write ratio is not limited. | [optional] 
 **pattern** | **str** | IO access pattern | 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
