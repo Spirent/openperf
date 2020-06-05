@@ -180,13 +180,6 @@ definitions:
       id:
         type: string
         description: Unique threshold identifier
-      generator_type:
-        type: string
-        description: Type of generator
-        enum:
-          - memory
-          - block
-          - cpu
       generator_id:
         type: string
         description: Unique generator identifier
@@ -200,9 +193,9 @@ definitions:
           - dx
           - dxdt
           - dxdy
-      comparator:
+      condition:
         type: string
-        description: Value comparator
+        description: The mathematical relation between value and statistic
         enum:
           - greater
           - greater_or_equal
@@ -217,11 +210,10 @@ definitions:
         description: The Y statistic to track (when using DXDY function)
     required:
       - id
-      - generator_type
       - generator_id
       - value
       - function
-      - comparator
+      - condition
       - stat_x
 
   ThresholdResult:
@@ -231,36 +223,39 @@ definitions:
       id:
         type: string
         description: Threshold unique identifier
-      generator_type:
-        type: string
-        description: Type of generator
-        enum:
-          - memory
-          - block
-          - cpu
       generator_id:
         type: string
         description: Generator unique identifier
-      threshold:
+      timestamp:
+        type: string
+        description: The ISO8601-formatted date of the last result update
+        format: date-time
+      value:
         type: float
-        description: threshold
-      relation:
+        description: The value of interest
+      condition:
+        type: string
+        description: The mathematical relation between value and statistic
+        enum:
+          - greater
+          - greater_or_equal
+          - less
+          - less_or_equal
+          - equal
+      condition_true:
         type: integer
-        description: relation
-      true:
+        description: Counter of true conditions
+      condition_false:
         type: integer
-        description: condition true
-      false:
-        type: integer
-        description: condition false
+        description: Counter of false conditions
     required:
       - id
-      - generator_type
       - generator_id
-      - threshold
-      - relation
-      - true
-      - false
+      - timestamp
+      - value
+      - condition
+      - condition_true
+      - condition_false
 
   TDigestConfig:
     type: object
@@ -269,13 +264,6 @@ definitions:
       id:
         type: string
         description: T-Digest unique identifier
-      generator_type:
-        type: string
-        description: Type of generator
-        enum:
-          - memory
-          - block
-          - cpu
       generator_id:
         type: string
         description: Unique generator identifier
@@ -294,7 +282,6 @@ definitions:
         description: The Y statistic to track (when using DXDY function)
     required:
       - id
-      - generator_type
       - generator_id
       - function
       - stat_x
@@ -306,16 +293,13 @@ definitions:
       id:
         type: string
         description: T-Digest identifier
-      generator_type:
-        type: string
-        description: Type of generator
-        enum:
-          - memory
-          - block
-          - cpu
       generator_id:
         type: string
         description: Unique generator identifier
+      timestamp:
+        type: string
+        description: The ISO8601-formatted date of the last result update
+        format: date-time
       delta:
         type: float
         description: The delta value used to initialize the T-Digest struct
@@ -324,12 +308,13 @@ definitions:
         description: The compression factor used to initialize the T-Digest struct
       centroids:
         type: array
+        description: Array of centroids
         items:
           $ref: "#/definitions/TDigestCentroid"
     required:
       - id
-      - generator_type
       - generator_id
+      - timestamp
       - delta
       - factor
       - centroids
