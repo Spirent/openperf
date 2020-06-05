@@ -11,44 +11,34 @@
 
 namespace openperf::packetio::bpf {
 
+constexpr int BFP_PKTFLAG_SIGNATURE = 0x1;
+
+constexpr int BPF_MEM_PKTFLAGS = 0;
+constexpr int BPF_MEM_STREAM_ID = 1;
+
+inline void bpf_arg_init(bpf_ctx_t& ctx,
+                         bpf_args_t& args,
+                         const packet::packet_buffer* packet)
+{
+    ctx.preinited = BPF_MEMWORD_INIT(BPF_MEM_PKTFLAGS)
+                    | BPF_MEMWORD_INIT(BPF_MEM_STREAM_ID);
+
+    args.buflen = args.wirelen = packet::length(packet);
+    args.pkt = reinterpret_cast<const uint8_t*>(packet::to_data(packet));
+    auto stream_id = packet::signature_stream_id(packet);
+    args.mem[BPF_MEM_PKTFLAGS] = 0;
+    if (stream_id) {
+        args.mem[BPF_MEM_PKTFLAGS] |= BFP_PKTFLAG_SIGNATURE;
+        args.mem[BPF_MEM_STREAM_ID] = stream_id.value();
+    }
+}
+
 uint16_t bpf_all_filter_func(bpf& bpf,
                              const packet::packet_buffer* const packets[],
                              uint64_t results[],
                              uint16_t length)
 {
     std::fill(results, results + length, 1);
-    return length;
-}
-
-uint16_t bpf_jit_filter_func(bpf& bpf,
-                             const packet::packet_buffer* const packets[],
-                             uint64_t results[],
-                             uint16_t length)
-{
-    auto filter_func = bpf.get_filter_func();
-
-    std::transform(packets, packets + length, results, [&](auto packet) {
-        unsigned len = packet::length(packet);
-        auto data = reinterpret_cast<const uint8_t*>(packet::to_data(packet));
-        return op_bpfjit_filter(filter_func, data, len, len);
-    });
-
-    return length;
-}
-
-uint16_t bpf_vm_filter_func(bpf& bpf,
-                            const packet::packet_buffer* const packets[],
-                            uint64_t results[],
-                            uint16_t length)
-{
-    auto insns = &bpf.get_prog()[0];
-
-    std::transform(packets, packets + length, results, [&](auto packet) {
-        unsigned len = packet::length(packet);
-        auto data = reinterpret_cast<const uint8_t*>(packet::to_data(packet));
-        return op_bpf_filter(insns, data, len, len);
-    });
-
     return length;
 }
 
@@ -60,22 +50,26 @@ uint16_t bpf_all_find_next_func(bpf& bpf,
     return offset;
 }
 
-uint16_t bpf_jit_find_next_func(bpf& bpf,
-                                const packet::packet_buffer* const packets[],
-                                uint16_t length,
-                                uint16_t offset)
+uint16_t bpf_vm_filter_func(bpf& bpf,
+                            const packet::packet_buffer* const packets[],
+                            uint64_t results[],
+                            uint16_t length)
 {
-    auto filter_func = bpf.get_filter_func();
+    uint32_t mem[BPF_MEMWORDS];
+    bpf_ctx_t ctx{.copfuncs = nullptr,
+                  .nfuncs = 0,
+                  .extwords = BPF_MEMWORDS,
+                  .preinited = 0};
+    bpf_args_t args{
+        .pkt = nullptr, .wirelen = 0, .buflen = 0, .mem = mem, .arg = nullptr};
+    auto insns = &bpf.get_prog()[0];
 
-    auto found =
-        std::find_if(packets + offset, packets + length, [&](auto packet) {
-            unsigned len = packet::length(packet);
-            auto data =
-                reinterpret_cast<const uint8_t*>(packet::to_data(packet));
-            return (op_bpfjit_filter(filter_func, data, len, len));
-        });
+    std::transform(packets, packets + length, results, [&](auto packet) {
+        bpf_arg_init(ctx, args, packet);
+        return op_bpf_filter_ext(&ctx, insns, &args);
+    });
 
-    return std::distance(packets, found);
+    return length;
 }
 
 uint16_t bpf_vm_find_next_func(bpf& bpf,
@@ -83,14 +77,64 @@ uint16_t bpf_vm_find_next_func(bpf& bpf,
                                uint16_t length,
                                uint16_t offset)
 {
+    uint32_t mem[BPF_MEMWORDS];
+    bpf_ctx_t ctx{.copfuncs = nullptr,
+                  .nfuncs = 0,
+                  .extwords = BPF_MEMWORDS,
+                  .preinited = 0};
+    bpf_args_t args{
+        .pkt = nullptr, .wirelen = 0, .buflen = 0, .mem = mem, .arg = nullptr};
     auto insns = &bpf.get_prog()[0];
 
     auto found =
         std::find_if(packets + offset, packets + length, [&](auto packet) {
-            unsigned len = packet::length(packet);
-            auto data =
-                reinterpret_cast<const uint8_t*>(packet::to_data(packet));
-            return (op_bpf_filter(insns, data, len, len));
+            bpf_arg_init(ctx, args, packet);
+            return (op_bpf_filter_ext(&ctx, insns, &args));
+        });
+
+    return std::distance(packets, found);
+}
+
+uint16_t bpf_jit_filter_func(bpf& bpf,
+                             const packet::packet_buffer* const packets[],
+                             uint64_t results[],
+                             uint16_t length)
+{
+    uint32_t mem[BPF_MEMWORDS];
+    bpf_ctx_t ctx{.copfuncs = nullptr,
+                  .nfuncs = 0,
+                  .extwords = BPF_MEMWORDS,
+                  .preinited = 0};
+    bpf_args_t args{
+        .pkt = nullptr, .wirelen = 0, .buflen = 0, .mem = mem, .arg = nullptr};
+    auto filter_func = bpf.get_filter_func();
+
+    std::transform(packets, packets + length, results, [&](auto packet) {
+        bpf_arg_init(ctx, args, packet);
+        return filter_func(&ctx, &args);
+    });
+
+    return length;
+}
+
+uint16_t bpf_jit_find_next_func(bpf& bpf,
+                                const packet::packet_buffer* const packets[],
+                                uint16_t length,
+                                uint16_t offset)
+{
+    uint32_t mem[BPF_MEMWORDS];
+    bpf_ctx_t ctx{.copfuncs = nullptr,
+                  .nfuncs = 0,
+                  .extwords = BPF_MEMWORDS,
+                  .preinited = 0};
+    bpf_args_t args{
+        .pkt = nullptr, .wirelen = 0, .buflen = 0, .mem = mem, .arg = nullptr};
+    auto filter_func = bpf.get_filter_func();
+
+    auto found =
+        std::find_if(packets + offset, packets + length, [&](auto packet) {
+            bpf_arg_init(ctx, args, packet);
+            return filter_func(&ctx, &args);
         });
 
     return std::distance(packets, found);
@@ -143,18 +187,27 @@ bpf::bpf(const bpf_insn* insns, unsigned int len)
 
 bool bpf::set_prog(const bpf_insn* insns, unsigned int len)
 {
-    if (!op_bpf_validate(insns, len)) {
+    bpf_ctx_t ctx{.copfuncs = nullptr,
+                  .nfuncs = 0,
+                  .extwords = BPF_MEMWORDS,
+                  .preinited = 0};
+
+    ctx.preinited = BPF_MEMWORD_INIT(BPF_MEM_PKTFLAGS)
+                    | BPF_MEMWORD_INIT(BPF_MEM_STREAM_ID);
+
+    if (!op_bpf_validate_ext(&ctx, insns, len)) {
         OP_LOG(OP_LOG_ERROR, "Unable to validate BPF program");
         return false;
     }
 
+    m_insn.resize(0);
     m_insn.reserve(len);
     std::copy(insns, insns + len, std::back_inserter(m_insn));
 
     m_jit = bpf_jit(insns, len);
 
     if (!m_jit) {
-        OP_LOG(OP_LOG_INFO, "Unable to generate BPF JIT code");
+        OP_LOG(OP_LOG_DEBUG, "Unable to generate BPF JIT code");
         m_exec_burst_func = bpf_vm_filter_func;
         m_find_next_func = bpf_vm_find_next_func;
     } else {

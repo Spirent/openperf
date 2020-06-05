@@ -55,7 +55,6 @@ typedef struct bpf_args {
         void *          arg; /* auxiliary argument for a copfunc */
 } bpf_args_t;
 
-#if defined(_KERNEL) || defined(__BPF_PRIVATE)
 
 typedef uint32_t (*bpf_copfunc_t)(const bpf_ctx_t *, bpf_args_t *, uint32_t);
 
@@ -80,13 +79,17 @@ struct bpf_ctx {
          */
         bpf_memword_init_t      preinited;
 };
-#endif
 
 struct bpf_insn;
 
+
 int     op_bpf_validate(const struct bpf_insn * insn, int len);
 
+int     op_bpf_validate_ext(const bpf_ctx_t *bc, const struct bpf_insn * insn, int len);
+
 u_int   op_bpf_filter(const struct bpf_insn * insn, const u_char * data, u_int wirelen, u_int buflen);
+
+u_int   op_bpf_filter_ext(const bpf_ctx_t *bc, const struct bpf_insn * insn, bpf_args_t *args);
 
 typedef unsigned int (*bpfjit_func_t)(const bpf_ctx_t*, bpf_args_t*);
 
