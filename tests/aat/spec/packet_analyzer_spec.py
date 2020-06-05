@@ -247,16 +247,20 @@ with description('Packet Analyzer,', 'packet_analyzer') as self:
                     results = self.api.list_analyzer_results(source_id='bar')
                     expect(results).to(be_empty)
 
-        ###
-        # XXX: Fill these in when we can make some packets
-        ###
         with description('list rx flows,'):
-            with _it('need a way to generate packets'):
-                assert False
+            with description('with no flows,'):
+                with it('returns empty list'):
+                    flows = self.api.list_rx_flows()
+                    expect(flows).to(be_empty)
+
+                with it('accepts any id'):
+                    flows = self.api.list_rx_flows(analyzer_id='foo')
+                    expect(flows).to(be_empty)
 
         with description('get rx flow, '):
-            with _it('need a way to generate packets'):
-                assert False
+            with description('with invalid id, '):
+                with it('returns 404'):
+                    expect(lambda: self.api.get_rx_flow('foo')).to(raise_api_exception(404))
 
         with after.each:
             try:

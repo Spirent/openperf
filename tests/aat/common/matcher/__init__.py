@@ -12,6 +12,7 @@ from common.matcher.module import be_valid_module
 # packet_analyzer.py
 from common.matcher.packet_analyzer import be_valid_packet_analyzer
 from common.matcher.packet_analyzer import be_valid_packet_analyzer_result
+from common.matcher.packet_analyzer import be_valid_receive_flow
 
 # packet_capture.py
 from common.matcher.packet_capture import be_valid_packet_capture
