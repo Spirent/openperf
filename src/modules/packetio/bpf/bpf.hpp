@@ -91,7 +91,7 @@ public:
         return m_find_next_func(*this, packets, length, offset);
     }
 
-    const std::vector<bpf_insn> get_prog() const { return m_insn; }
+    const std::vector<bpf_insn>& get_prog() const { return m_insn; }
     bpfjit_func_t get_filter_func() const { return *m_jit; }
 
 private:

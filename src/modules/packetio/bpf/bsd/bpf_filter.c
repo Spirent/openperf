@@ -243,11 +243,26 @@ bpf_filter(const struct bpf_insn *pc, const u_char *p, u_int wirelen,
 u_int
 op_bpf_filter(const struct bpf_insn *pc, const u_char *p, u_int wirelen,
     u_int buflen)
+{
+	uint32_t mem[BPF_MEMWORDS];
+	bpf_args_t args = {
+		.pkt = p,
+		.wirelen = wirelen,
+		.buflen = buflen,
+		.mem = mem,
+		.arg = NULL
+	};
+
+	return op_bpf_filter_ext(NULL, pc, &args);
+}
+
+u_int
+op_bpf_filter_ext(const bpf_ctx_t *bc, const struct bpf_insn *pc, bpf_args_t *args)
 #endif /* OPENPERF_NETBSD_BPF */
 #endif
 {
 	uint32_t A, X, k;
-#ifndef _KERNEL
+#if !defined(_KERNEL) && !defined(OPENPERF_NETBSD_BPF)
 	uint32_t mem[BPF_MEMWORDS];
 	bpf_args_t args_store = {
 		.pkt = p,
@@ -645,12 +660,18 @@ bpf_validate(const struct bpf_insn *f, int signed_len)
 #else
 int
 op_bpf_validate(const struct bpf_insn *f, int signed_len)
+{
+	return op_bpf_validate_ext(NULL, f, signed_len);
+}
+
+int
+op_bpf_validate_ext(const bpf_ctx_t *bc, const struct bpf_insn *f, int signed_len)
 #endif /* OPENPERF_NETBSD_BPF */
 #endif
 {
 	u_int i, from, len, ok = 0;
 	const struct bpf_insn *p;
-#if defined(KERNEL) || defined(_KERNEL)
+#if defined(KERNEL) || defined(_KERNEL) || defined(OPENPERF_NETBSD_BPF)
 	bpf_memword_init_t *mem, invalid;
 	size_t size;
 	const size_t extwords = bc ? bc->extwords : 0;
@@ -672,14 +693,20 @@ op_bpf_validate(const struct bpf_insn *f, int signed_len)
 		return 0;
 	}
 
-#if defined(KERNEL) || defined(_KERNEL)
+#if defined(KERNEL) || defined(_KERNEL) || defined(OPENPERF_NETBSD_BPF)
 	/* Note: only the pre-initialised is valid on startup */
+#ifndef OPENPERF_NETBSD_BPF
 	mem = kmem_zalloc(size = sizeof(*mem) * len, KM_SLEEP);
+#else
+	mem = calloc(size = sizeof(*mem) * len, 1);
+	if (!mem)
+		return 0;
+#endif
 	invalid = ~preinited;
 #endif
 
 	for (i = 0; i < len; ++i) {
-#if defined(KERNEL) || defined(_KERNEL)
+#if defined(KERNEL) || defined(_KERNEL) || defined(OPENPERF_NETBSD_BPF)
 		/* blend in any invalid bits for current pc */
 		invalid |= mem[i];
 #endif
@@ -697,7 +724,7 @@ op_bpf_validate(const struct bpf_insn *f, int signed_len)
 				 * in userland.  The runtime packet length
 				 * check suffices.
 				 */
-#if defined(KERNEL) || defined(_KERNEL)
+#if defined(KERNEL) || defined(_KERNEL) || defined(OPENPERF_NETBSD_BPF)
 				/*
 				 * More strict check with actual packet length
 				 * is done runtime.
@@ -723,7 +750,7 @@ op_bpf_validate(const struct bpf_insn *f, int signed_len)
 		case BPF_STX:
 			if (p->k >= memwords)
 				goto out;
-#if defined(KERNEL) || defined(_KERNEL)
+#if defined(KERNEL) || defined(_KERNEL) || defined(OPENPERF_NETBSD_BPF)
 			/* validate the memory word */
 			invalid &= ~BPF_MEMWORD_INIT(p->k);
 #endif
@@ -784,7 +811,7 @@ op_bpf_validate(const struct bpf_insn *f, int signed_len)
 			case BPF_JA:
 				if (from + p->k >= len)
 					goto out;
-#if defined(KERNEL) || defined(_KERNEL)
+#if defined(KERNEL) || defined(_KERNEL) || defined(OPENPERF_NETBSD_BPF)
 				if (from + p->k < from)
 					goto out;
 				/*
@@ -801,7 +828,7 @@ op_bpf_validate(const struct bpf_insn *f, int signed_len)
 			case BPF_JSET:
 				if (from + p->jt >= len || from + p->jf >= len)
 					goto out;
-#if defined(KERNEL) || defined(_KERNEL)
+#if defined(KERNEL) || defined(_KERNEL) || defined(OPENPERF_NETBSD_BPF)
 				/*
 				 * mark the currently invalid bits for both
 				 * possible jump destinations
@@ -845,6 +872,9 @@ op_bpf_validate(const struct bpf_insn *f, int signed_len)
 out:
 #if defined(KERNEL) || defined(_KERNEL)
 	kmem_free(mem, size);
+#endif
+#ifdef OPENPERF_NETBSD_BPF
+	free(mem);
 #endif
 	return ok;
 }

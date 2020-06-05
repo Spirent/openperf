@@ -4,6 +4,7 @@
 #include "catch.hpp"
 
 #include "packetio/bpf/bpf.hpp"
+#include "packetio/mock_packet_buffer.hpp"
 #include <pcap.h>
 
 #include "lib/packet/protocol/ethernet.hpp"
@@ -25,11 +26,12 @@ struct ethernet_ipv6
 const uint16_t ETHERTYPE_IP = 0x0800;
 const uint16_t ETHERTYPE_IPV6 = 0x86DD;
 
-void create_ipv4_packet(uint8_t* data, size_t len,
-                        const libpacket::type::mac_address &src_mac,
-                        const libpacket::type::mac_address &dst_mac,
-                        const libpacket::type::ipv4_address &src_ip,
-                        const libpacket::type::ipv4_address &dst_ip)
+void create_ipv4_packet(uint8_t* data,
+                        size_t len,
+                        const libpacket::type::mac_address& src_mac,
+                        const libpacket::type::mac_address& dst_mac,
+                        const libpacket::type::ipv4_address& src_ip,
+                        const libpacket::type::ipv4_address& dst_ip)
 {
     auto* packet = reinterpret_cast<ethernet_ipv4*>(data);
 
@@ -44,11 +46,12 @@ void create_ipv4_packet(uint8_t* data, size_t len,
         len - sizeof(packet->ethernet) - sizeof(uint32_t);
 }
 
-void create_ipv6_packet(uint8_t* data, size_t len,
-                        const libpacket::type::mac_address &src_mac,
-                        const libpacket::type::mac_address &dst_mac,
-                        const libpacket::type::ipv6_address &src_ip,
-                        const libpacket::type::ipv6_address &dst_ip)
+void create_ipv6_packet(uint8_t* data,
+                        size_t len,
+                        const libpacket::type::mac_address& src_mac,
+                        const libpacket::type::mac_address& dst_mac,
+                        const libpacket::type::ipv6_address& src_ip,
+                        const libpacket::type::ipv6_address& dst_ip)
 {
     auto* packet = reinterpret_cast<ethernet_ipv6*>(data);
 
@@ -59,13 +62,39 @@ void create_ipv6_packet(uint8_t* data, size_t len,
     libpacket::protocol::set_ipv6_version(packet->ipv6, 6);
     packet->ipv6.source = src_ip;
     packet->ipv6.destination = dst_ip;
-    packet->ipv6.payload_length =
-        len - sizeof(packet) - sizeof(uint32_t);
+    packet->ipv6.payload_length = len - sizeof(packet) - sizeof(uint32_t);
 }
 
 TEST_CASE("bpf", "[bpf]")
 {
-    SECTION("jit, mac")
+    SECTION("good")
+    {
+        REQUIRE_NOTHROW(openperf::packetio::bpf::bpf("length == 1000"));
+        REQUIRE_NOTHROW(openperf::packetio::bpf::bpf(
+            "ether src 10:0:0:0:0:1 and ether dst 10:0:0:0:0:2"));
+        REQUIRE_NOTHROW(openperf::packetio::bpf::bpf(
+            "ip src 10.0.0.1 and ip dst 10.0.0.2"));
+        REQUIRE_NOTHROW(openperf::packetio::bpf::bpf(
+            "ip6 src 2001::1 and ip6 dst 2001::2"));
+    }
+    SECTION("bad")
+    {
+        REQUIRE_THROWS_AS(
+            openperf::packetio::bpf::bpf("length == BAD_LENGTH_VALUE"),
+            std::invalid_argument);
+        REQUIRE_THROWS_AS(openperf::packetio::bpf::bpf(
+                              "ether src 10:0:0 and ether dst 10:0:0:0:0:2"),
+                          std::invalid_argument);
+        REQUIRE_THROWS_AS(openperf::packetio::bpf::bpf("ip src 2001::1"),
+                          std::invalid_argument);
+        REQUIRE_THROWS_AS(openperf::packetio::bpf::bpf("ip6 src 10.0.0.1"),
+                          std::invalid_argument);
+    }
+}
+
+TEST_CASE("bpf w/ raw data", "[bpf]")
+{
+    SECTION("mac")
     {
         const auto src_mac = libpacket::type::mac_address("10:0:0:0:0:1");
         const auto dst_mac = libpacket::type::mac_address("10:0:0:0:0:2");
@@ -73,10 +102,16 @@ TEST_CASE("bpf", "[bpf]")
         const auto dst_ip = libpacket::type::ipv4_address("1.0.0.2");
 
         // Use libpcap to parse the filter string
-        auto prog = openperf::packetio::bpf::bpf_compile("ether src 10:0:0:0:0:1 and ether dst 10:0:0:0:0:2");
+        auto prog = openperf::packetio::bpf::bpf_compile(
+            "ether src 10:0:0:0:0:1 and ether dst 10:0:0:0:0:2");
         REQUIRE(prog);
 
-        auto jit = openperf::packetio::bpf::bpf_jit(prog->bf_insns, prog->bf_len);
+        // Validate filter program
+        REQUIRE(op_bpf_validate(prog->bf_insns, prog->bf_len));
+
+        // JIT compile the program
+        auto jit =
+            openperf::packetio::bpf::bpf_jit(prog->bf_insns, prog->bf_len);
         REQUIRE(jit);
         auto jit_func = *jit;
 
@@ -84,19 +119,26 @@ TEST_CASE("bpf", "[bpf]")
         std::fill(buf.begin(), buf.end(), 0);
         REQUIRE(op_bpfjit_filter(jit_func, buf.data(), buf.size(), buf.size())
                 == 0);
-        REQUIRE(op_bpf_filter(prog->bf_insns, buf.data(), buf.size(), buf.size())
-                == 0);
+        REQUIRE(
+            op_bpf_filter(prog->bf_insns, buf.data(), buf.size(), buf.size())
+            == 0);
         // Create packet matching filter
-        create_ipv4_packet(buf.data(), buf.size(), src_mac, dst_mac, src_ip, dst_ip);
+        create_ipv4_packet(
+            buf.data(), buf.size(), src_mac, dst_mac, src_ip, dst_ip);
         REQUIRE(op_bpfjit_filter(jit_func, buf.data(), buf.size(), buf.size()));
-        REQUIRE(op_bpf_filter(prog->bf_insns, buf.data(), buf.size(), buf.size()));
+        REQUIRE(
+            op_bpf_filter(prog->bf_insns, buf.data(), buf.size(), buf.size()));
         // Create packet with src/dst reversed
-        create_ipv4_packet(buf.data(), buf.size(), dst_mac, src_mac, dst_ip, src_ip);
-        REQUIRE(op_bpfjit_filter(jit_func, buf.data(), buf.size(), buf.size()) == false);
-        REQUIRE(op_bpf_filter(prog->bf_insns, buf.data(), buf.size(), buf.size()) == false);
+        create_ipv4_packet(
+            buf.data(), buf.size(), dst_mac, src_mac, dst_ip, src_ip);
+        REQUIRE(op_bpfjit_filter(jit_func, buf.data(), buf.size(), buf.size())
+                == false);
+        REQUIRE(
+            op_bpf_filter(prog->bf_insns, buf.data(), buf.size(), buf.size())
+            == false);
     }
 
-    SECTION("jit, ipv4")
+    SECTION("ipv4")
     {
         const auto src_mac = libpacket::type::mac_address("10:0:0:0:0:1");
         const auto dst_mac = libpacket::type::mac_address("10:0:0:0:0:2");
@@ -104,10 +146,16 @@ TEST_CASE("bpf", "[bpf]")
         const auto dst_ip = libpacket::type::ipv4_address("1.0.0.2");
 
         // Use libpcap to parse the filter string
-        auto prog = openperf::packetio::bpf::bpf_compile("ip src 1.0.0.1 and ip dst 1.0.0.2");
+        auto prog = openperf::packetio::bpf::bpf_compile(
+            "ip src 1.0.0.1 and ip dst 1.0.0.2");
         REQUIRE(prog);
 
-        auto jit = openperf::packetio::bpf::bpf_jit(prog->bf_insns, prog->bf_len);
+        // Validate filter program
+        REQUIRE(op_bpf_validate(prog->bf_insns, prog->bf_len));
+
+        // JIT compile the program
+        auto jit =
+            openperf::packetio::bpf::bpf_jit(prog->bf_insns, prog->bf_len);
         REQUIRE(jit);
         auto jit_func = *jit;
 
@@ -115,19 +163,26 @@ TEST_CASE("bpf", "[bpf]")
         std::fill(buf.begin(), buf.end(), 0);
         REQUIRE(op_bpfjit_filter(jit_func, buf.data(), buf.size(), buf.size())
                 == 0);
-        REQUIRE(op_bpf_filter(prog->bf_insns, buf.data(), buf.size(), buf.size())
-                == 0);
+        REQUIRE(
+            op_bpf_filter(prog->bf_insns, buf.data(), buf.size(), buf.size())
+            == 0);
         // Create packet matching filter
-        create_ipv4_packet(buf.data(), buf.size(), src_mac, dst_mac, src_ip, dst_ip);
+        create_ipv4_packet(
+            buf.data(), buf.size(), src_mac, dst_mac, src_ip, dst_ip);
         REQUIRE(op_bpfjit_filter(jit_func, buf.data(), buf.size(), buf.size()));
-        REQUIRE(op_bpf_filter(prog->bf_insns, buf.data(), buf.size(), buf.size()));
+        REQUIRE(
+            op_bpf_filter(prog->bf_insns, buf.data(), buf.size(), buf.size()));
         // Create packet with src/dst reversed
-        create_ipv4_packet(buf.data(), buf.size(), dst_mac, src_mac, dst_ip, src_ip);
-        REQUIRE(op_bpfjit_filter(jit_func, buf.data(), buf.size(), buf.size()) == false);
-        REQUIRE(op_bpf_filter(prog->bf_insns, buf.data(), buf.size(), buf.size()) == false);
+        create_ipv4_packet(
+            buf.data(), buf.size(), dst_mac, src_mac, dst_ip, src_ip);
+        REQUIRE(op_bpfjit_filter(jit_func, buf.data(), buf.size(), buf.size())
+                == false);
+        REQUIRE(
+            op_bpf_filter(prog->bf_insns, buf.data(), buf.size(), buf.size())
+            == false);
     }
 
-    SECTION("jit, ipv6")
+    SECTION("ipv6")
     {
         const auto src_mac = libpacket::type::mac_address("10:0:0:0:0:1");
         const auto dst_mac = libpacket::type::mac_address("10:0:0:0:0:2");
@@ -135,10 +190,16 @@ TEST_CASE("bpf", "[bpf]")
         const auto dst_ip = libpacket::type::ipv6_address("2001::2");
 
         // Use libpcap to parse the filter string
-        auto prog = openperf::packetio::bpf::bpf_compile("ip6 src 2001::1 and ip6 dst 2001::2");
+        auto prog = openperf::packetio::bpf::bpf_compile(
+            "ip6 src 2001::1 and ip6 dst 2001::2");
         REQUIRE(prog);
 
-        auto jit = openperf::packetio::bpf::bpf_jit(prog->bf_insns, prog->bf_len);
+        // Validate filter program
+        REQUIRE(op_bpf_validate(prog->bf_insns, prog->bf_len));
+
+        // JIT compile the program
+        auto jit =
+            openperf::packetio::bpf::bpf_jit(prog->bf_insns, prog->bf_len);
         REQUIRE(jit);
         auto jit_func = *jit;
 
@@ -146,15 +207,121 @@ TEST_CASE("bpf", "[bpf]")
         std::fill(buf.begin(), buf.end(), 0);
         REQUIRE(op_bpfjit_filter(jit_func, buf.data(), buf.size(), buf.size())
                 == 0);
-        REQUIRE(op_bpf_filter(prog->bf_insns, buf.data(), buf.size(), buf.size())
-                == 0);
+        REQUIRE(
+            op_bpf_filter(prog->bf_insns, buf.data(), buf.size(), buf.size())
+            == 0);
         // Create packet matching filter
-        create_ipv6_packet(buf.data(), buf.size(), src_mac, dst_mac, src_ip, dst_ip);
+        create_ipv6_packet(
+            buf.data(), buf.size(), src_mac, dst_mac, src_ip, dst_ip);
         REQUIRE(op_bpfjit_filter(jit_func, buf.data(), buf.size(), buf.size()));
-        REQUIRE(op_bpf_filter(prog->bf_insns, buf.data(), buf.size(), buf.size()));
+        REQUIRE(
+            op_bpf_filter(prog->bf_insns, buf.data(), buf.size(), buf.size()));
         // Create packet with src/dst reversed
-        create_ipv6_packet(buf.data(), buf.size(), dst_mac, src_mac, dst_ip, src_ip);
-        REQUIRE(op_bpfjit_filter(jit_func, buf.data(), buf.size(), buf.size()) == false);
-        REQUIRE(op_bpf_filter(prog->bf_insns, buf.data(), buf.size(), buf.size()) == false);
+        create_ipv6_packet(
+            buf.data(), buf.size(), dst_mac, src_mac, dst_ip, src_ip);
+        REQUIRE(op_bpfjit_filter(jit_func, buf.data(), buf.size(), buf.size())
+                == false);
+        REQUIRE(
+            op_bpf_filter(prog->bf_insns, buf.data(), buf.size(), buf.size())
+            == false);
+    }
+}
+
+TEST_CASE("bpf w/ packet_buffer", "[bpf]")
+{
+    SECTION("mac")
+    {
+        using packet_data_t = std::vector<uint8_t>;
+        const auto src_mac = libpacket::type::mac_address("10:0:0:0:0:1");
+        const auto dst_mac = libpacket::type::mac_address("10:0:0:0:0:2");
+        const auto src_ip = libpacket::type::ipv4_address("1.0.0.1");
+        const auto dst_ip = libpacket::type::ipv4_address("1.0.0.2");
+        const int num_packets = 10;
+
+        openperf::packetio::bpf::bpf bpf(
+            "ether src 10:0:0:0:0:1 and ether dst 10:0:0:0:0:2");
+
+        SECTION("no match")
+        {
+            std::vector<openperf::packetio::packet::packet_buffer*> packets;
+            std::vector<
+                std::unique_ptr<openperf::packetio::packet::mock_packet_buffer>>
+                packets_mock;
+            std::vector<std::unique_ptr<packet_data_t>> packets_data;
+            std::vector<uint64_t> results;
+
+            std::generate_n(std::back_inserter(packets), num_packets, [&]() {
+                packets_data.emplace_back(std::make_unique<packet_data_t>());
+                auto& data = packets_data.back();
+                packets_mock.emplace_back(
+                    std::make_unique<
+                        openperf::packetio::packet::mock_packet_buffer>());
+                auto& mock = packets_mock.back();
+                data->resize(64);
+                // Use reversed src/dst
+                create_ipv4_packet(&(*data)[0],
+                                   data->size(),
+                                   dst_mac,
+                                   src_mac,
+                                   dst_ip,
+                                   src_ip);
+                mock->data = &(*data)[0];
+                mock->length = mock->data_length = data->size();
+                return reinterpret_cast<
+                    openperf::packetio::packet::packet_buffer*>(mock.get());
+            });
+            results.resize(packets.size());
+
+            for (size_t offset = 0; offset < packets.size(); ++offset) {
+                REQUIRE(bpf.find_next(&packets[0], packets.size(), offset)
+                        == packets.size());
+            }
+            REQUIRE(bpf.exec_burst(&packets[0], &results[0], packets.size())
+                    == packets.size());
+            std::for_each(results.begin(), results.end(), [](auto& result) {
+                REQUIRE(result == 0);
+            });
+        }
+
+        SECTION("match all")
+        {
+            std::vector<openperf::packetio::packet::packet_buffer*> packets;
+            std::vector<
+                std::unique_ptr<openperf::packetio::packet::mock_packet_buffer>>
+                packets_mock;
+            std::vector<std::unique_ptr<packet_data_t>> packets_data;
+            std::vector<uint64_t> results;
+
+            std::generate_n(std::back_inserter(packets), num_packets, [&]() {
+                packets_data.emplace_back(std::make_unique<packet_data_t>());
+                auto& data = packets_data.back();
+                packets_mock.emplace_back(
+                    std::make_unique<
+                        openperf::packetio::packet::mock_packet_buffer>());
+                auto& mock = packets_mock.back();
+                data->resize(64);
+                create_ipv4_packet(&(*data)[0],
+                                   data->size(),
+                                   src_mac,
+                                   dst_mac,
+                                   src_ip,
+                                   dst_ip);
+                mock->data = &(*data)[0];
+                mock->length = mock->data_length = data->size();
+                return reinterpret_cast<
+                    openperf::packetio::packet::packet_buffer*>(mock.get());
+            });
+            results.resize(packets.size());
+
+            for (size_t offset = 0; offset < packets.size(); ++offset) {
+                REQUIRE(bpf.find_next(&packets[0], packets.size(), offset)
+                        == offset);
+            }
+            REQUIRE(bpf.exec_burst(&packets[0], &results[0], packets.size())
+                    == packets.size());
+            std::for_each(results.begin(), results.end(), [](auto& result) {
+                REQUIRE(result != 0);
+            });
+        }
     }
 }
