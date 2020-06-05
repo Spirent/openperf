@@ -9,3 +9,6 @@ from common.helper.interface import (empty_interface,
                                      ipv6_interface,
                                      as_interface_protocol,
                                      make_interface_protocols)
+
+# traffic.py
+from common.helper.traffic import make_generator_config

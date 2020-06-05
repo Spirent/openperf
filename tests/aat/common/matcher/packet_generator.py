@@ -78,6 +78,7 @@ class _be_valid_traffic_duration(Matcher):
         if (duration.time):
             expect(duration.time.value).to(be_above(0))
             expect(duration.time.units).not_to(be_empty)
+            has_property = True
         expect(has_property).to(be_true)
         return True, ['is valid traffic duration']
 
