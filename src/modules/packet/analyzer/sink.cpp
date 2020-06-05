@@ -225,7 +225,7 @@ uint16_t sink::push(const packetio::packet::packet_buffer* const packets[],
             flows.first.writer_add_gc_callback(
                 [to_delete]() { delete to_delete; });
         }
-        counters->update(packetio::packet::length(packet),
+        counters->update(packetio::packet::length(packet) + 4,
                          packetio::packet::rx_timestamp(packet),
                          packetio::packet::signature_tx_timestamp(packet),
                          packetio::packet::signature_sequence_number(packet));
