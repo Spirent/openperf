@@ -10,23 +10,43 @@
 
 namespace openperf::block::file {
 
+#define FILE_HEADER_TAG "This is a big, fat OP VDEV header tag!"
+#define FILE_HEADER_TAG_LENGTH 40
+#define FILE_HEADER_PAD_LENGTH                                       \
+    512 - FILE_HEADER_TAG_LENGTH - sizeof(timesync::bintime)         \
+        - sizeof(size_t)
+
+struct file_header
+{
+    char tag[FILE_HEADER_TAG_LENGTH];
+    timesync::bintime init_time;
+    size_t size;
+    uint8_t pad[FILE_HEADER_PAD_LENGTH];
+} __attribute__((packed));
+
 class file
     : public model::file
     , public virtual_device
 {
-protected:
-    void scrub_done() override;
-    void scrub_update(double) override;
+private:
+    std::thread m_scrub_thread;
+    std::atomic_bool m_deleted;
+
+    void scrub_done();
+    void scrub_update(double);
+    void scrub_worker(size_t header_size, size_t file_size);
 
 public:
     file(const model::file& f);
     ~file();
-    int open(int flags) override;
-    int close(int fd) override;
+
     tl::expected<virtual_device_descriptors, int> vopen() override;
     void vclose() override;
     uint64_t get_size() const override;
     uint64_t get_header_size() const override;
+
+    void queue_scrub();
+    void terminate_scrub();
 };
 
 using block_file_ptr = std::shared_ptr<file>;

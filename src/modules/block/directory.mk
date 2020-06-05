@@ -6,7 +6,6 @@ BLOCK_DEPENDS += api expected framework json pistache swagger_model timesync ver
 
 BLOCK_SOURCES += \
 	api_transmogrify.cpp \
-	virtual_device.cpp \
 	file_stack.cpp \
 	device_stack.cpp \
 	block_generator.cpp \
