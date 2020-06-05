@@ -59,7 +59,7 @@ public:
     config_t config() const override { return m_config; }
 
 protected:
-    virtual size_t operation(uint64_t nb_ops) = 0;
+    virtual void operation(uint64_t nb_ops) = 0;
 
 private:
     void scratch_allocate(size_t size);

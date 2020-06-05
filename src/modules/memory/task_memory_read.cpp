@@ -5,7 +5,8 @@
 
 namespace openperf::memory::internal {
 
-size_t task_memory_read::operation(uint64_t nb_ops)
+[[clang::optnone]]
+void task_memory_read::operation(uint64_t nb_ops)
 {
     assert(m_op_index < m_indexes.size());
     for (size_t i = 0; i < nb_ops; ++i) {
@@ -15,8 +16,6 @@ size_t task_memory_read::operation(uint64_t nb_ops)
                     m_config.block_size);
         if (m_op_index == m_indexes.size()) { m_op_index = 0; }
     }
-
-    return nb_ops;
 }
 
 } // namespace openperf::memory::internal

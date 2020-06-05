@@ -172,20 +172,20 @@ void task_memory::spin()
     auto deadline = ts + QUANTA;
     while (to_do_ops && (ts = chronometer::now()) < deadline) {
         size_t spin_ops = std::min(MAX_SPIN_OPS, to_do_ops);
-        size_t nb_ops = operation(spin_ops);
+        operation(spin_ops);
         auto run_time = std::max(chronometer::now() - ts, 1ns); /* prevent divide by 0 */
 
         /* Update per thread statistics */
         stat += stat_t{
-            .operations = nb_ops,
-            .bytes = nb_ops * m_config.block_size,
+            .operations = spin_ops,
+            .bytes = spin_ops * m_config.block_size,
             .run_time = run_time,
             .latency_min = run_time,
             .latency_max = run_time,
         };
 
         /* Update local counters */
-        m_avg_rate += (static_cast<double>(nb_ops) / run_time.count()
+        m_avg_rate += (static_cast<double>(spin_ops) / run_time.count()
             - m_avg_rate + 4.0 / run_time.count()) / 5.0;
 
         to_do_ops -= spin_ops;
