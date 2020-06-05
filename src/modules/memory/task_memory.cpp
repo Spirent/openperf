@@ -17,7 +17,7 @@ constexpr size_t MAX_SPIN_OPS = 5000;
 using namespace std::chrono_literals;
 using openperf::utils::op_pseudo_random_fill;
 
-auto calc_ops_and_sleep(const task_memory::stat_t& total, size_t ops_per_sec)
+auto calc_ops_and_sleep(const task_memory::stat_t& total, size_t ops_per_sec, double avg_rate)
 {
     /*
      * Sleeping is problematic since you can't be sure if or when you'll
@@ -25,10 +25,10 @@ auto calc_ops_and_sleep(const task_memory::stat_t& total, size_t ops_per_sec)
      * operations to perform, to_do_ops, and for a requested time to sleep,
      * sleep time, using the following system of equations:
      *
-     * 1. (m_total.operations + to_do_ops) /
-     *      ((m_total.run_time + m_total.sleep_time)
-     *      + (to_do_ops / m_total.avg_rate) + sleep_time = ops_per_ns
-     * 2. to_do_ops / m_total.avg_rate + sleep_time = quanta
+     * 1. (total.operations + to_do_ops) /
+     *      ((total.run_time + total.sleep_time)
+     *      + (to_do_ops / avg_rate) + sleep_time = ops_per_ns
+     * 2. to_do_ops / avg_rate + sleep_time = quanta
      *
      * We use Cramer's rule to solve for to_do_ops and sleep time.  We are
      * guaranteed a solution because our determinant is always 1.  However,
@@ -38,7 +38,7 @@ auto calc_ops_and_sleep(const task_memory::stat_t& total, size_t ops_per_sec)
         std::chrono::duration_cast<std::chrono::nanoseconds>(QUANTA).count());
     auto ops_per_ns = static_cast<double>(ops_per_sec) / std::nano::den;
 
-    double a[2] = {1.0 - (ops_per_ns / total.avg_rate), 1.0 / total.avg_rate};
+    double a[2] = {1.0 - (ops_per_ns / avg_rate), 1.0 / avg_rate};
     double b[2] = {-ops_per_ns, 1.0};
     double c[2] = {ops_per_ns * (total.run_time + total.sleep_time).count()
                        - total.operations, quanta_ns };
@@ -154,7 +154,7 @@ void task_memory::spin()
         m_stat_clear = false;
     }
 
-    auto tuple = calc_ops_and_sleep(m_stat_data, m_config.op_per_sec);
+    auto tuple = calc_ops_and_sleep(m_stat_data, m_config.op_per_sec, m_avg_rate);
     auto to_do_ops = std::get<0>(tuple);
 
     stat_t stat {};

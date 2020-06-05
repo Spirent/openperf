@@ -118,10 +118,9 @@ generator::stat_t generator::stat() const
     }
 
     if (rstat.run_time.count()) {
-        rstat.operations_target = elapsed_time.count()
-            * m_config.read.op_per_sec / std::nano::den;
-        rstat.bytes_target = rstat.operations_target
-            * m_config.read.block_size;
+        rstat.operations_target =
+            elapsed_time.count() * m_config.read.op_per_sec / std::nano::den;
+        rstat.bytes_target = rstat.operations_target * m_config.read.block_size;
     }
 
     auto& wstat = result_stat.write;
@@ -131,10 +130,10 @@ generator::stat_t generator::stat() const
     }
 
     if (wstat.run_time.count()) {
-        wstat.operations_target = elapsed_time.count()
-            * m_config.write.op_per_sec / std::nano::den;
-        wstat.bytes_target = wstat.operations_target
-            * m_config.write.block_size;
+        wstat.operations_target =
+            elapsed_time.count() * m_config.write.op_per_sec / std::nano::den;
+        wstat.bytes_target =
+            wstat.operations_target * m_config.write.block_size;
     }
 
     result_stat.timestamp = std::max(rstat.timestamp, wstat.timestamp);
@@ -150,7 +149,6 @@ void generator::config(const generator::config_t& cfg)
     resize_buffer(cfg.buffer_size);
 
     reallocate_workers<task_memory_read>(m_read_workers, cfg.read_threads);
-    reallocate_workers<task_memory_write>(m_write_workers, cfg.write_threads);
 
     auto read_rate =
         (!cfg.read_threads) ? 0 : cfg.read.op_per_sec / cfg.read_threads;
@@ -161,6 +159,8 @@ void generator::config(const generator::config_t& cfg)
                       .op_per_sec = read_rate,
                       .pattern = cfg.read.pattern,
                       .buffer = {.ptr = m_buffer.ptr, .size = m_buffer.size}});
+
+    reallocate_workers<task_memory_write>(m_write_workers, cfg.write_threads);
 
     auto write_rate =
         (!cfg.write_threads) ? 0 : cfg.write.op_per_sec / cfg.write_threads;

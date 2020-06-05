@@ -38,7 +38,6 @@ struct memory_stat
     std::chrono::nanoseconds sleep_time = 0ns;
     std::optional<std::chrono::nanoseconds> latency_min;
     std::optional<std::chrono::nanoseconds> latency_max;
-    double avg_rate = 0.0;
     timestamp_t timestamp = std::chrono::system_clock::now();
     uint64_t errors = 0;
 
