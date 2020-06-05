@@ -11,7 +11,7 @@ namespace ip {
 inline constexpr uint8_t icmp = 1;
 inline constexpr uint8_t igmp = 2;
 inline constexpr uint8_t ip_in_ip = 4;
-inline constexpr uint8_t tcp = 7;
+inline constexpr uint8_t tcp = 6;
 inline constexpr uint8_t udp = 17;
 inline constexpr uint8_t ipv6 = 41;
 inline constexpr uint8_t ipv6_route = 43;
