@@ -484,6 +484,8 @@ std::shared_ptr<BlockGenerator> to_swagger(const generator_t& p_gen)
     gen_config->setReadsPerSec(p_gen.get_config().reads_per_sec);
     gen_config->setWriteSize(p_gen.get_config().write_size);
     gen_config->setWritesPerSec(p_gen.get_config().writes_per_sec);
+    if (p_gen.get_config().fixed_ratio)
+        gen_config->setReadToWriteRatio(p_gen.get_config().read_to_write_ratio);
 
     auto gen = std::make_shared<BlockGenerator>();
     gen->setId(p_gen.get_id());
@@ -551,12 +553,14 @@ model::block_generator from_swagger(const BlockGenerator& p_gen)
     gen.set_resource_id(p_gen.getResourceId());
     gen.set_running(p_gen.isRunning());
     gen.set_config((model::block_generator_config){
-        p_gen.getConfig()->getQueueDepth(),
-        p_gen.getConfig()->getReadsPerSec(),
-        p_gen.getConfig()->getReadSize(),
-        p_gen.getConfig()->getWritesPerSec(),
-        p_gen.getConfig()->getWriteSize(),
-        block_generation_pattern_from_string(p_gen.getConfig()->getPattern())});
+        .queue_depth = p_gen.getConfig()->getQueueDepth(),
+        .reads_per_sec = p_gen.getConfig()->getReadsPerSec(),
+        .read_size = p_gen.getConfig()->getReadSize(),
+        .writes_per_sec = p_gen.getConfig()->getWritesPerSec(),
+        .write_size = p_gen.getConfig()->getWriteSize(),
+        .fixed_ratio = p_gen.getConfig()->readToWriteRatioIsSet(),
+        .read_to_write_ratio = p_gen.getConfig()->getReadToWriteRatio(),
+        .pattern = block_generation_pattern_from_string(p_gen.getConfig()->getPattern())});
     return gen;
 }
 

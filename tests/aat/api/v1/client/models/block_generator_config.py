@@ -36,6 +36,7 @@ class BlockGeneratorConfig(object):
         'read_size': 'int',
         'writes_per_sec': 'int',
         'write_size': 'int',
+        'read_to_write_ratio': 'int',
         'pattern': 'str'
     }
 
@@ -45,10 +46,11 @@ class BlockGeneratorConfig(object):
         'read_size': 'read_size',
         'writes_per_sec': 'writes_per_sec',
         'write_size': 'write_size',
+        'read_to_write_ratio': 'read_to_write_ratio',
         'pattern': 'pattern'
     }
 
-    def __init__(self, queue_depth=None, reads_per_sec=None, read_size=None, writes_per_sec=None, write_size=None, pattern=None):  # noqa: E501
+    def __init__(self, queue_depth=None, reads_per_sec=None, read_size=None, writes_per_sec=None, write_size=None, read_to_write_ratio=None, pattern=None):  # noqa: E501
         """BlockGeneratorConfig - a model defined in Swagger"""  # noqa: E501
 
         self._queue_depth = None
@@ -56,6 +58,7 @@ class BlockGeneratorConfig(object):
         self._read_size = None
         self._writes_per_sec = None
         self._write_size = None
+        self._read_to_write_ratio = None
         self._pattern = None
         self.discriminator = None
 
@@ -64,6 +67,8 @@ class BlockGeneratorConfig(object):
         self.read_size = read_size
         self.writes_per_sec = writes_per_sec
         self.write_size = write_size
+        if read_to_write_ratio is not None:
+            self.read_to_write_ratio = read_to_write_ratio
         self.pattern = pattern
 
     @property
@@ -175,6 +180,28 @@ class BlockGeneratorConfig(object):
         :type: int
         """
         self._write_size = write_size
+
+    @property
+    def read_to_write_ratio(self):
+        """Gets the read_to_write_ratio of this BlockGeneratorConfig.  # noqa: E501
+
+        Percentage of a mixed workload operations that should be reads. If value is not given, read to write ratio is not limited.  # noqa: E501
+
+        :return: The read_to_write_ratio of this BlockGeneratorConfig.  # noqa: E501
+        :rtype: int
+        """
+        return self._read_to_write_ratio
+
+    @read_to_write_ratio.setter
+    def read_to_write_ratio(self, read_to_write_ratio):
+        """Sets the read_to_write_ratio of this BlockGeneratorConfig.
+
+        Percentage of a mixed workload operations that should be reads. If value is not given, read to write ratio is not limited.  # noqa: E501
+
+        :param read_to_write_ratio: The read_to_write_ratio of this BlockGeneratorConfig.  # noqa: E501
+        :type: int
+        """
+        self._read_to_write_ratio = read_to_write_ratio
 
     @property
     def pattern(self):

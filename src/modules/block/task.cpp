@@ -282,13 +282,24 @@ void block_task::clear_stat()
     m_reset_stat = true;
 }
 
+void block_task::reset_spin_stat()
+{
+    m_reset_stat = false;
+    m_actual_stat = *m_at_stat;
+    m_start_timestamp = ref_clock::now();
+    m_operation_timestamp = m_start_timestamp;
+    if (m_task_config.synchronizer) {
+        if (m_task_config.operation == task_operation::READ)
+            m_task_config.synchronizer->reads_actual = 0;
+        else
+            m_task_config.synchronizer->writes_actual = 0;
+    }
+}
+
 void block_task::spin()
 {
     if (m_reset_stat.load()) {
-        m_reset_stat = false;
-        m_actual_stat = *m_at_stat;
-        m_start_timestamp = ref_clock::now();
-        m_operation_timestamp = m_start_timestamp;
+        reset_spin_stat();
     }
 
     if (!m_task_config.ops_per_sec || !m_task_config.block_size)
@@ -301,8 +312,29 @@ void block_task::spin()
         std::this_thread::sleep_for(m_operation_timestamp - before_sleep_time);
     }
 
+    // Worker loop
     auto loop_start_ts = ref_clock::now();
-    while (true) {
+    do {
+        // Ratio synchronization
+        if (m_task_config.synchronizer) {
+            if (m_task_config.operation == task_operation::READ)
+                m_task_config.synchronizer->reads_actual = m_actual_stat.ops_actual;
+            else
+                m_task_config.synchronizer->writes_actual = m_actual_stat.ops_actual;
+
+            int64_t reads_actual = m_task_config.synchronizer->reads_actual;
+            int64_t writes_actual = m_task_config.synchronizer->writes_actual;
+            int32_t ratio = m_task_config.synchronizer->ratio;
+
+            // check that ratio difference is less than 0.5%
+            if ((m_task_config.operation == task_operation::READ && (reads_actual * ((100 - ratio) * 2 - 1) > writes_actual * ratio * 2)) ||
+                    (m_task_config.operation == task_operation::WRITE && (writes_actual * (ratio * 2 - 1) > reads_actual * (100 - ratio) * 2))) {
+                // sleep for single iteration and restart spin
+                std::this_thread::sleep_for(std::chrono::nanoseconds(std::nano::den / m_task_config.ops_per_sec));
+                continue;
+            }
+        }
+
         auto cur_time = ref_clock::now();
         auto nb_ops = worker_spin(m_task_config, m_actual_stat, cur_time + 1s);
 
@@ -312,21 +344,12 @@ void block_task::spin()
         m_actual_stat.ops_target = cycles;
         m_actual_stat.bytes_target = cycles * m_task_config.block_size;
 
-        m_operation_timestamp +=
-            std::chrono::nanoseconds(std::nano::den / m_task_config.ops_per_sec)
-            * nb_ops;
-        if ((m_operation_timestamp >= ref_clock::now())
-            || (ref_clock::now() > loop_start_ts + TASK_SPIN_THRESHOLD)) {
-            break;
-        }
-    }
+        m_operation_timestamp += std::chrono::nanoseconds(std::nano::den / m_task_config.ops_per_sec) * nb_ops;
+    } while ((m_operation_timestamp < ref_clock::now()) && (ref_clock::now() <= loop_start_ts + TASK_SPIN_THRESHOLD));
     m_actual_stat.updated = realtime::now();
 
     if (m_reset_stat.load()) {
-        m_reset_stat = false;
-        m_actual_stat = *m_at_stat;
-        m_start_timestamp = ref_clock::now();
-        m_operation_timestamp = m_start_timestamp;
+        reset_spin_stat();
     }
 
     *m_at_stat = m_actual_stat;
