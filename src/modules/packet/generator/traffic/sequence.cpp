@@ -291,6 +291,20 @@ sequence::sequence(definition_container&& definitions, order_type order)
                                     return (std::lcm(lhs.size(), rhs.size()));
                                 });
     }
+
+    /*
+     * Finally, generate an index sequence for the lengths.
+     * The scratch keeps track of our offset into each definition.
+     */
+    auto scratch = std::vector<size_t>(definitions.size());
+    m_length_indexes.reserve(m_size);
+    for (size_t i = 0; i < m_size; i++) {
+        auto pkt_key = m_packet_indexes[i % m_packet_indexes.size()];
+        m_length_indexes.emplace_back(
+            pkt_key.first,
+            scratch[pkt_key.first] % length_templates[pkt_key.first].size());
+        scratch[pkt_key.first]++;
+    }
 }
 
 uint16_t sequence::max_packet_length() const
@@ -595,16 +609,15 @@ uint16_t sequence::unpack(size_t start_idx,
                                  sig_configs[pair.first], pair.second)));
                      });
 
+    auto len_offset = start_idx % m_length_indexes.size();
     const auto& length_templates = m_definitions.get<1>();
-    ring_transform_n(std::begin(m_packet_indexes),
-                     std::end(m_packet_indexes),
-                     std::begin(m_packet_indexes) + pkt_offset,
+    ring_transform_n(std::begin(m_length_indexes),
+                     std::end(m_length_indexes),
+                     std::begin(m_length_indexes) + len_offset,
                      count,
                      pkt_lengths,
                      [&](const auto& pair) {
-                         auto len_idx =
-                             pair.second % length_templates[pair.first].size();
-                         return (length_templates[pair.first][len_idx]);
+                         return (length_templates[pair.first][pair.second]);
                      });
 
     return (count);
@@ -617,7 +630,7 @@ sequence::view_type sequence::operator[](size_t idx) const
     const auto& length_templates = m_definitions.get<1>();
 
     auto pkt_key = m_packet_indexes[idx % m_packet_indexes.size()];
-    auto len_idx = pkt_key.second % length_templates[pkt_key.first].size();
+    auto len_key = m_length_indexes[idx % m_length_indexes.size()];
 
     return (std::make_tuple(m_flow_offsets[pkt_key.first] + pkt_key.second,
                             packet_templates[pkt_key.first][pkt_key.second],
@@ -625,7 +638,7 @@ sequence::view_type sequence::operator[](size_t idx) const
                             packet_templates[pkt_key.first].header_flags(),
                             maybe_update_signature_config(
                                 sig_configs[pkt_key.first], pkt_key.second),
-                            length_templates[pkt_key.first][len_idx]));
+                            length_templates[len_key.first][len_key.second]));
 }
 
 sequence::iterator sequence::begin() { return (iterator(*this)); }

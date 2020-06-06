@@ -99,6 +99,7 @@ private:
     using index_container = std::vector<index_pair>;
 
     index_container m_packet_indexes;
+    index_container m_length_indexes;
     std::vector<size_t> m_flow_offsets;
     size_t m_size;
 };
