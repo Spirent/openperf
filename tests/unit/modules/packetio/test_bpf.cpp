@@ -110,8 +110,8 @@ TEST_CASE("bpf w/ raw data", "[bpf]")
         REQUIRE(op_bpf_validate(prog->bf_insns, prog->bf_len));
 
         // JIT compile the program
-        auto jit =
-            openperf::packetio::bpf::bpf_jit(prog->bf_insns, prog->bf_len);
+        auto jit = openperf::packetio::bpf::bpf_jit(
+            nullptr, prog->bf_insns, prog->bf_len);
         REQUIRE(jit);
         auto jit_func = *jit;
 
@@ -154,8 +154,8 @@ TEST_CASE("bpf w/ raw data", "[bpf]")
         REQUIRE(op_bpf_validate(prog->bf_insns, prog->bf_len));
 
         // JIT compile the program
-        auto jit =
-            openperf::packetio::bpf::bpf_jit(prog->bf_insns, prog->bf_len);
+        auto jit = openperf::packetio::bpf::bpf_jit(
+            nullptr, prog->bf_insns, prog->bf_len);
         REQUIRE(jit);
         auto jit_func = *jit;
 
@@ -198,8 +198,8 @@ TEST_CASE("bpf w/ raw data", "[bpf]")
         REQUIRE(op_bpf_validate(prog->bf_insns, prog->bf_len));
 
         // JIT compile the program
-        auto jit =
-            openperf::packetio::bpf::bpf_jit(prog->bf_insns, prog->bf_len);
+        auto jit = openperf::packetio::bpf::bpf_jit(
+            nullptr, prog->bf_insns, prog->bf_len);
         REQUIRE(jit);
         auto jit_func = *jit;
 
@@ -259,13 +259,13 @@ TEST_CASE("bpf w/ packet_buffer", "[bpf]")
                 auto& mock = packets_mock.back();
                 data->resize(64);
                 // Use reversed src/dst
-                create_ipv4_packet(&(*data)[0],
+                create_ipv4_packet(data->data(),
                                    data->size(),
                                    dst_mac,
                                    src_mac,
                                    dst_ip,
                                    src_ip);
-                mock->data = &(*data)[0];
+                mock->data = data->data();
                 mock->length = mock->data_length = data->size();
                 return reinterpret_cast<
                     openperf::packetio::packet::packet_buffer*>(mock.get());
@@ -273,11 +273,12 @@ TEST_CASE("bpf w/ packet_buffer", "[bpf]")
             results.resize(packets.size());
 
             for (size_t offset = 0; offset < packets.size(); ++offset) {
-                REQUIRE(bpf.find_next(&packets[0], packets.size(), offset)
+                REQUIRE(bpf.find_next(packets.data(), packets.size(), offset)
                         == packets.size());
             }
-            REQUIRE(bpf.exec_burst(&packets[0], &results[0], packets.size())
-                    == packets.size());
+            REQUIRE(
+                bpf.exec_burst(packets.data(), results.data(), packets.size())
+                == packets.size());
             std::for_each(results.begin(), results.end(), [](auto& result) {
                 REQUIRE(result == 0);
             });
@@ -300,13 +301,13 @@ TEST_CASE("bpf w/ packet_buffer", "[bpf]")
                         openperf::packetio::packet::mock_packet_buffer>());
                 auto& mock = packets_mock.back();
                 data->resize(64);
-                create_ipv4_packet(&(*data)[0],
+                create_ipv4_packet(data->data(),
                                    data->size(),
                                    src_mac,
                                    dst_mac,
                                    src_ip,
                                    dst_ip);
-                mock->data = &(*data)[0];
+                mock->data = data->data();
                 mock->length = mock->data_length = data->size();
                 return reinterpret_cast<
                     openperf::packetio::packet::packet_buffer*>(mock.get());
@@ -314,14 +315,519 @@ TEST_CASE("bpf w/ packet_buffer", "[bpf]")
             results.resize(packets.size());
 
             for (size_t offset = 0; offset < packets.size(); ++offset) {
-                REQUIRE(bpf.find_next(&packets[0], packets.size(), offset)
+                REQUIRE(bpf.find_next(packets.data(), packets.size(), offset)
                         == offset);
             }
-            REQUIRE(bpf.exec_burst(&packets[0], &results[0], packets.size())
-                    == packets.size());
+            REQUIRE(
+                bpf.exec_burst(packets.data(), results.data(), packets.size())
+                == packets.size());
             std::for_each(results.begin(), results.end(), [](auto& result) {
                 REQUIRE(result != 0);
             });
         }
+    }
+
+    SECTION("signature")
+    {
+        using packet_data_t = std::vector<uint8_t>;
+        const auto src_mac = libpacket::type::mac_address("10:0:0:0:0:1");
+        const auto dst_mac = libpacket::type::mac_address("10:0:0:0:0:2");
+        const auto src_ip = libpacket::type::ipv4_address("1.0.0.1");
+        const auto dst_ip = libpacket::type::ipv4_address("1.0.0.2");
+        const int num_packets = 10;
+
+        openperf::packetio::bpf::bpf bpf(
+            "signature and ether src 10:0:0:0:0:1 and ether dst 10:0:0:0:0:2");
+
+        SECTION("no match")
+        {
+            std::vector<openperf::packetio::packet::packet_buffer*> packets;
+            std::vector<
+                std::unique_ptr<openperf::packetio::packet::mock_packet_buffer>>
+                packets_mock;
+            std::vector<std::unique_ptr<packet_data_t>> packets_data;
+            std::vector<uint64_t> results;
+
+            std::generate_n(std::back_inserter(packets), num_packets, [&]() {
+                packets_data.emplace_back(std::make_unique<packet_data_t>());
+                auto& data = packets_data.back();
+                packets_mock.emplace_back(
+                    std::make_unique<
+                        openperf::packetio::packet::mock_packet_buffer>());
+                auto& mock = packets_mock.back();
+                data->resize(64);
+                create_ipv4_packet(data->data(),
+                                   data->size(),
+                                   src_mac,
+                                   dst_mac,
+                                   src_ip,
+                                   dst_ip);
+                mock->data = data->data();
+                mock->length = mock->data_length = data->size();
+                return reinterpret_cast<
+                    openperf::packetio::packet::packet_buffer*>(mock.get());
+            });
+            results.resize(packets.size());
+
+            for (size_t offset = 0; offset < packets.size(); ++offset) {
+                REQUIRE(bpf.find_next(packets.data(), packets.size(), offset)
+                        == packets.size());
+            }
+            REQUIRE(
+                bpf.exec_burst(packets.data(), results.data(), packets.size())
+                == packets.size());
+            std::for_each(results.begin(), results.end(), [](auto& result) {
+                REQUIRE(result == 0);
+            });
+        }
+
+        SECTION("match all")
+        {
+            std::vector<openperf::packetio::packet::packet_buffer*> packets;
+            std::vector<
+                std::unique_ptr<openperf::packetio::packet::mock_packet_buffer>>
+                packets_mock;
+            std::vector<std::unique_ptr<packet_data_t>> packets_data;
+            std::vector<uint64_t> results;
+
+            std::generate_n(std::back_inserter(packets), num_packets, [&]() {
+                packets_data.emplace_back(std::make_unique<packet_data_t>());
+                auto& data = packets_data.back();
+                packets_mock.emplace_back(
+                    std::make_unique<
+                        openperf::packetio::packet::mock_packet_buffer>());
+                auto& mock = packets_mock.back();
+                data->resize(64);
+                create_ipv4_packet(data->data(),
+                                   data->size(),
+                                   src_mac,
+                                   dst_mac,
+                                   src_ip,
+                                   dst_ip);
+                mock->data = data->data();
+                mock->length = mock->data_length = data->size();
+                mock->signature_stream_id = 1;
+                return reinterpret_cast<
+                    openperf::packetio::packet::packet_buffer*>(mock.get());
+            });
+            results.resize(packets.size());
+
+            for (size_t offset = 0; offset < packets.size(); ++offset) {
+                REQUIRE(bpf.find_next(packets.data(), packets.size(), offset)
+                        == offset);
+            }
+            REQUIRE(
+                bpf.exec_burst(packets.data(), results.data(), packets.size())
+                == packets.size());
+            std::for_each(results.begin(), results.end(), [](auto& result) {
+                REQUIRE(result != 0);
+            });
+        }
+    }
+
+    SECTION("not signature")
+    {
+        using packet_data_t = std::vector<uint8_t>;
+        const auto src_mac = libpacket::type::mac_address("10:0:0:0:0:1");
+        const auto dst_mac = libpacket::type::mac_address("10:0:0:0:0:2");
+        const auto src_ip = libpacket::type::ipv4_address("1.0.0.1");
+        const auto dst_ip = libpacket::type::ipv4_address("1.0.0.2");
+        const int num_packets = 10;
+
+        openperf::packetio::bpf::bpf bpf(
+            "not signature and "
+            "ether src 10:0:0:0:0:1 and ether dst 10:0:0:0:0:2");
+
+        SECTION("no match")
+        {
+            std::vector<openperf::packetio::packet::packet_buffer*> packets;
+            std::vector<
+                std::unique_ptr<openperf::packetio::packet::mock_packet_buffer>>
+                packets_mock;
+            std::vector<std::unique_ptr<packet_data_t>> packets_data;
+            std::vector<uint64_t> results;
+
+            std::generate_n(std::back_inserter(packets), num_packets, [&]() {
+                packets_data.emplace_back(std::make_unique<packet_data_t>());
+                auto& data = packets_data.back();
+                packets_mock.emplace_back(
+                    std::make_unique<
+                        openperf::packetio::packet::mock_packet_buffer>());
+                auto& mock = packets_mock.back();
+                data->resize(64);
+                create_ipv4_packet(data->data(),
+                                   data->size(),
+                                   src_mac,
+                                   dst_mac,
+                                   src_ip,
+                                   dst_ip);
+                mock->data = data->data();
+                mock->length = mock->data_length = data->size();
+                mock->signature_stream_id = 1;
+                return reinterpret_cast<
+                    openperf::packetio::packet::packet_buffer*>(mock.get());
+            });
+            results.resize(packets.size());
+
+            for (size_t offset = 0; offset < packets.size(); ++offset) {
+                REQUIRE(bpf.find_next(packets.data(), packets.size(), offset)
+                        == packets.size());
+            }
+            REQUIRE(
+                bpf.exec_burst(packets.data(), results.data(), packets.size())
+                == packets.size());
+            std::for_each(results.begin(), results.end(), [](auto& result) {
+                REQUIRE(result == 0);
+            });
+        }
+
+        SECTION("match all")
+        {
+            std::vector<openperf::packetio::packet::packet_buffer*> packets;
+            std::vector<
+                std::unique_ptr<openperf::packetio::packet::mock_packet_buffer>>
+                packets_mock;
+            std::vector<std::unique_ptr<packet_data_t>> packets_data;
+            std::vector<uint64_t> results;
+
+            std::generate_n(std::back_inserter(packets), num_packets, [&]() {
+                packets_data.emplace_back(std::make_unique<packet_data_t>());
+                auto& data = packets_data.back();
+                packets_mock.emplace_back(
+                    std::make_unique<
+                        openperf::packetio::packet::mock_packet_buffer>());
+                auto& mock = packets_mock.back();
+                data->resize(64);
+                create_ipv4_packet(data->data(),
+                                   data->size(),
+                                   src_mac,
+                                   dst_mac,
+                                   src_ip,
+                                   dst_ip);
+                mock->data = data->data();
+                mock->length = mock->data_length = data->size();
+                return reinterpret_cast<
+                    openperf::packetio::packet::packet_buffer*>(mock.get());
+            });
+            results.resize(packets.size());
+
+            for (size_t offset = 0; offset < packets.size(); ++offset) {
+                REQUIRE(bpf.find_next(packets.data(), packets.size(), offset)
+                        == offset);
+            }
+            REQUIRE(
+                bpf.exec_burst(packets.data(), results.data(), packets.size())
+                == packets.size());
+            std::for_each(results.begin(), results.end(), [](auto& result) {
+                REQUIRE(result != 0);
+            });
+        }
+    }
+
+    SECTION("signature streamid 1-5")
+    {
+        using packet_data_t = std::vector<uint8_t>;
+        const auto src_mac = libpacket::type::mac_address("10:0:0:0:0:1");
+        const auto dst_mac = libpacket::type::mac_address("10:0:0:0:0:2");
+        const auto src_ip = libpacket::type::ipv4_address("1.0.0.1");
+        const auto dst_ip = libpacket::type::ipv4_address("1.0.0.2");
+        const int num_packets = 10;
+
+        openperf::packetio::bpf::bpf bpf(
+            "signature streamid 1-5 and ether src 10:0:0:0:0:1 and ether dst "
+            "10:0:0:0:0:2");
+
+        SECTION("no match")
+        {
+            std::vector<openperf::packetio::packet::packet_buffer*> packets;
+            std::vector<
+                std::unique_ptr<openperf::packetio::packet::mock_packet_buffer>>
+                packets_mock;
+            std::vector<std::unique_ptr<packet_data_t>> packets_data;
+            std::vector<uint64_t> results;
+
+            uint32_t ndx = 6;
+            std::generate_n(std::back_inserter(packets), num_packets, [&]() {
+                packets_data.emplace_back(std::make_unique<packet_data_t>());
+                auto& data = packets_data.back();
+                packets_mock.emplace_back(
+                    std::make_unique<
+                        openperf::packetio::packet::mock_packet_buffer>());
+                auto& mock = packets_mock.back();
+                data->resize(64);
+                create_ipv4_packet(data->data(),
+                                   data->size(),
+                                   src_mac,
+                                   dst_mac,
+                                   src_ip,
+                                   dst_ip);
+                mock->data = data->data();
+                mock->length = mock->data_length = data->size();
+                mock->signature_stream_id = ndx++;
+                return reinterpret_cast<
+                    openperf::packetio::packet::packet_buffer*>(mock.get());
+            });
+            results.resize(packets.size());
+
+            for (size_t offset = 0; offset < packets.size(); ++offset) {
+                REQUIRE(bpf.find_next(packets.data(), packets.size(), offset)
+                        == packets.size());
+            }
+            REQUIRE(
+                bpf.exec_burst(packets.data(), results.data(), packets.size())
+                == packets.size());
+            std::for_each(results.begin(), results.end(), [](auto& result) {
+                REQUIRE(result == 0);
+            });
+        }
+
+        SECTION("match some")
+        {
+            std::vector<openperf::packetio::packet::packet_buffer*> packets;
+            std::vector<
+                std::unique_ptr<openperf::packetio::packet::mock_packet_buffer>>
+                packets_mock;
+            std::vector<std::unique_ptr<packet_data_t>> packets_data;
+            std::vector<uint64_t> results;
+
+            uint32_t ndx = 1;
+            std::generate_n(std::back_inserter(packets), num_packets, [&]() {
+                packets_data.emplace_back(std::make_unique<packet_data_t>());
+                auto& data = packets_data.back();
+                packets_mock.emplace_back(
+                    std::make_unique<
+                        openperf::packetio::packet::mock_packet_buffer>());
+                auto& mock = packets_mock.back();
+                data->resize(64);
+                create_ipv4_packet(data->data(),
+                                   data->size(),
+                                   src_mac,
+                                   dst_mac,
+                                   src_ip,
+                                   dst_ip);
+                mock->data = data->data();
+                mock->length = mock->data_length = data->size();
+                mock->signature_stream_id = ndx++;
+                return reinterpret_cast<
+                    openperf::packetio::packet::packet_buffer*>(mock.get());
+            });
+            results.resize(packets.size());
+
+            ndx = 1;
+            for (size_t offset = 0; offset < packets.size(); ++offset) {
+                auto expected = ((ndx++) <= 5) ? offset : packets.size();
+                REQUIRE(bpf.find_next(packets.data(), packets.size(), offset)
+                        == expected);
+            }
+
+            REQUIRE(
+                bpf.exec_burst(packets.data(), results.data(), packets.size())
+                == packets.size());
+            ndx = 1;
+            std::for_each(results.begin(), results.end(), [&](auto& result) {
+                REQUIRE((result != 0) == ((ndx++) <= 5));
+            });
+        }
+    }
+}
+
+TEST_CASE("bpf benchmarks", "[bpf]")
+{
+    using packet_data_t = std::vector<uint8_t>;
+    const auto src_mac = libpacket::type::mac_address("10:0:0:0:0:1");
+    const auto dst_mac = libpacket::type::mac_address("10:0:0:0:0:2");
+    const auto src_ip = libpacket::type::ipv4_address("1.0.0.1");
+    const auto dst_ip = libpacket::type::ipv4_address("1.0.0.2");
+    const int num_packets = 1000;
+
+    std::vector<openperf::packetio::packet::packet_buffer*> packets;
+    std::vector<std::unique_ptr<openperf::packetio::packet::mock_packet_buffer>>
+        packets_mock;
+    std::vector<std::unique_ptr<packet_data_t>> packets_data;
+    std::vector<uint64_t> results;
+
+    std::generate_n(std::back_inserter(packets), num_packets, [&]() {
+        packets_data.emplace_back(std::make_unique<packet_data_t>());
+        auto& data = packets_data.back();
+        packets_mock.emplace_back(
+            std::make_unique<openperf::packetio::packet::mock_packet_buffer>());
+        auto& mock = packets_mock.back();
+        data->resize(64);
+        create_ipv4_packet(
+            data->data(), data->size(), src_mac, dst_mac, src_ip, dst_ip);
+        mock->data = data->data();
+        mock->length = mock->data_length = data->size();
+        return reinterpret_cast<openperf::packetio::packet::packet_buffer*>(
+            mock.get());
+    });
+    results.resize(packets.size());
+
+    {
+        openperf::packetio::bpf::bpf bpf;
+
+        BENCHMARK("all, match")
+        {
+            bpf.exec_burst(packets.data(), results.data(), packets.size());
+        }
+
+        std::for_each(results.begin(), results.end(), [&](auto& result) {
+            REQUIRE(result != 0);
+        });
+    }
+
+    {
+        openperf::packetio::bpf::bpf bpf(
+            "ether src 10:0:0:0:0:1 and ether dst 10:0:0:0:0:2");
+
+        BENCHMARK("ether, match")
+        {
+            bpf.exec_burst(packets.data(), results.data(), packets.size());
+        }
+
+        std::for_each(results.begin(), results.end(), [&](auto& result) {
+            REQUIRE(result != 0);
+        });
+    }
+
+    {
+        openperf::packetio::bpf::bpf bpf(
+            "ether src 10:0:0:0:0:2 and ether dst 10:0:0:0:0:1");
+
+        BENCHMARK("ether, no match")
+        {
+            bpf.exec_burst(packets.data(), results.data(), packets.size());
+        }
+
+        std::for_each(results.begin(), results.end(), [&](auto& result) {
+            REQUIRE(result == 0);
+        });
+    }
+
+    {
+        openperf::packetio::bpf::bpf bpf("ip src 1.0.0.1 and ip dst 1.0.0.2");
+
+        BENCHMARK("ip, match")
+        {
+            bpf.exec_burst(packets.data(), results.data(), packets.size());
+        }
+
+        std::for_each(results.begin(), results.end(), [&](auto& result) {
+            REQUIRE(result != 0);
+        });
+    }
+
+    {
+        openperf::packetio::bpf::bpf bpf("ip src 1.0.0.2 and ip dst 1.0.0.1");
+
+        BENCHMARK("ip, no match")
+        {
+            bpf.exec_burst(packets.data(), results.data(), packets.size());
+        }
+
+        std::for_each(results.begin(), results.end(), [&](auto& result) {
+            REQUIRE(result == 0);
+        });
+    }
+
+    {
+        openperf::packetio::bpf::bpf bpf("signature");
+
+        uint32_t stream_id = 1;
+        for (auto& mock : packets_mock) {
+            mock->signature_stream_id = stream_id++;
+        }
+
+        BENCHMARK("signature, match")
+        {
+            bpf.exec_burst(packets.data(), results.data(), packets.size());
+        }
+        std::for_each(results.begin(), results.end(), [&](auto& result) {
+            REQUIRE(result != 0);
+        });
+
+        for (auto& mock : packets_mock) { mock->signature_stream_id = {}; }
+
+        BENCHMARK("signature, no match")
+        {
+            bpf.exec_burst(packets.data(), results.data(), packets.size());
+        }
+        std::for_each(results.begin(), results.end(), [&](auto& result) {
+            REQUIRE(result == 0);
+        });
+    }
+
+    {
+        openperf::packetio::bpf::bpf bpf("not signature");
+
+        for (auto& mock : packets_mock) { mock->signature_stream_id = {}; }
+
+        BENCHMARK("not signature, match")
+        {
+            bpf.exec_burst(packets.data(), results.data(), packets.size());
+        }
+        std::for_each(results.begin(), results.end(), [&](auto& result) {
+            REQUIRE(result != 0);
+        });
+
+        uint32_t stream_id = 1;
+        for (auto& mock : packets_mock) {
+            mock->signature_stream_id = stream_id++;
+        }
+
+        BENCHMARK("not signature, no match")
+        {
+            bpf.exec_burst(packets.data(), results.data(), packets.size());
+        }
+        std::for_each(results.begin(), results.end(), [&](auto& result) {
+            REQUIRE(result == 0);
+        });
+    }
+
+    {
+        openperf::packetio::bpf::bpf bpf(
+            "not signature and "
+            "ether src 10:0:0:0:0:1 and ether dst 10:0:0:0:0:2");
+
+        for (auto& mock : packets_mock) { mock->signature_stream_id = {}; }
+
+        BENCHMARK("not signature ether, match")
+        {
+            bpf.exec_burst(packets.data(), results.data(), packets.size());
+        }
+
+        std::for_each(results.begin(), results.end(), [&](auto& result) {
+            REQUIRE(result != 0);
+        });
+
+        uint32_t stream_id = 1;
+        for (auto& mock : packets_mock) {
+            mock->signature_stream_id = ++stream_id;
+        }
+
+        BENCHMARK("not signature ether, no match (has sig)")
+        {
+            bpf.exec_burst(packets.data(), results.data(), packets.size());
+        }
+
+        std::for_each(results.begin(), results.end(), [&](auto& result) {
+            REQUIRE(result == 0);
+        });
+    }
+
+    {
+        openperf::packetio::bpf::bpf bpf(
+            "not signature and "
+            "ether src 10:0:0:0:0:2 and ether dst 10:0:0:0:0:1");
+
+        for (auto& mock : packets_mock) { mock->signature_stream_id = {}; }
+
+        BENCHMARK("not signature ether, no match (bad mac)")
+        {
+            bpf.exec_burst(packets.data(), results.data(), packets.size());
+        }
+
+        std::for_each(results.begin(), results.end(), [&](auto& result) {
+            REQUIRE(result == 0);
+        });
     }
 }

@@ -15,9 +15,20 @@ namespace openperf::packetio::bpf {
 
 using bpf_program_ptr = std::unique_ptr<bpf_program, void (*)(bpf_program*)>;
 
+/**
+ * Compiles a libpcap BPF filter expression string int a BPF program.
+ *
+ * @return std::unique_ptr for a BPF program if successful or
+ *         empty std::unique_ptr if fail.
+ */
 bpf_program_ptr bpf_compile(std::string_view filter,
                             int link_type = DLT_EN10MB);
 
+/**
+ * BPF JIT program smart pointer.
+ *
+ * Needed to add class because unique_ptr<> doesn't work with function pointers.
+ */
 class bpf_jit_ptr
 {
 public:
@@ -62,11 +73,19 @@ private:
     bpfjit_func_t m_func;
 };
 
-auto inline bpf_jit(const struct bpf_insn* insns, int len)
+/**
+ * JIT compiles the BPF program.
+ * @return BPF JIT smart pointer if successful, or empty smart pointer if fail.
+ */
+auto inline bpf_jit(bpf_ctx_t* ctx, const struct bpf_insn* insns, int len)
 {
-    return bpf_jit_ptr(op_bpfjit_generate_code(nullptr, insns, len));
+    return bpf_jit_ptr(op_bpfjit_generate_code(ctx, insns, len));
 }
 
+/**
+ * The bpf class provides a simple interfaces for building and executing
+ * BPF programs.
+ */
 class bpf
 {
 public:
