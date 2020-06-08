@@ -5,6 +5,7 @@
 
 #include "packet/protocol/protocols.hpp"
 #include "packet/generator/traffic/modifier.hpp"
+#include "packet/generator/traffic/protocol/custom.hpp"
 
 namespace openperf::packet::generator::traffic::header {
 
@@ -31,13 +32,24 @@ using ipv6_config = config<libpacket::protocol::ipv6>;
 using tcp_config = config<libpacket::protocol::tcp>;
 using udp_config = config<libpacket::protocol::udp>;
 
+struct custom_config
+{
+    using modifier_key_value = std::pair<uint16_t, modifier::config>;
+    using modifier_container = std::vector<modifier_key_value>;
+
+    protocol::custom header;
+    modifier_container modifiers;
+    modifier_mux mux = modifier_mux::none;
+};
+
 using config_instance = std::variant<ethernet_config,
                                      mpls_config,
                                      vlan_config,
                                      ipv4_config,
                                      ipv6_config,
                                      tcp_config,
-                                     udp_config>;
+                                     udp_config,
+                                     custom_config>;
 
 using config_container = std::vector<config_instance>;
 

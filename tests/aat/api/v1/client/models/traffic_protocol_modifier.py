@@ -32,6 +32,7 @@ class TrafficProtocolModifier(object):
     """
     swagger_types = {
         'name': 'str',
+        'offset': 'int',
         'permute': 'bool',
         'field': 'TrafficProtocolFieldModifier',
         'ipv4': 'TrafficProtocolIpv4Modifier',
@@ -41,6 +42,7 @@ class TrafficProtocolModifier(object):
 
     attribute_map = {
         'name': 'name',
+        'offset': 'offset',
         'permute': 'permute',
         'field': 'field',
         'ipv4': 'ipv4',
@@ -48,10 +50,11 @@ class TrafficProtocolModifier(object):
         'mac': 'mac'
     }
 
-    def __init__(self, name=None, permute=None, field=None, ipv4=None, ipv6=None, mac=None):  # noqa: E501
+    def __init__(self, name=None, offset=None, permute=None, field=None, ipv4=None, ipv6=None, mac=None):  # noqa: E501
         """TrafficProtocolModifier - a model defined in Swagger"""  # noqa: E501
 
         self._name = None
+        self._offset = None
         self._permute = None
         self._field = None
         self._ipv4 = None
@@ -60,6 +63,8 @@ class TrafficProtocolModifier(object):
         self.discriminator = None
 
         self.name = name
+        if offset is not None:
+            self.offset = offset
         self.permute = permute
         if field is not None:
             self.field = field
@@ -91,6 +96,28 @@ class TrafficProtocolModifier(object):
         :type: str
         """
         self._name = name
+
+    @property
+    def offset(self):
+        """Gets the offset of this TrafficProtocolModifier.  # noqa: E501
+
+        Specifies the number of octets into the protocol field to write modifier data. Currently only valid for the custom packet protocol \\\"data\\\" field.   # noqa: E501
+
+        :return: The offset of this TrafficProtocolModifier.  # noqa: E501
+        :rtype: int
+        """
+        return self._offset
+
+    @offset.setter
+    def offset(self, offset):
+        """Sets the offset of this TrafficProtocolModifier.
+
+        Specifies the number of octets into the protocol field to write modifier data. Currently only valid for the custom packet protocol \\\"data\\\" field.   # noqa: E501
+
+        :param offset: The offset of this TrafficProtocolModifier.  # noqa: E501
+        :type: int
+        """
+        self._offset = offset
 
     @property
     def permute(self):

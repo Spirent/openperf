@@ -1,10 +1,4 @@
 definitions:
-  # The swagger/pistache code generator does not properly support type = string,
-  # format = byte, so we have to use our own type for this.
-  BinaryString:
-    type: string
-    description: A base64 encoded representation of binary data
-
   DurationRemainder:
     type: object
     description: Specifies how much time remains for an object to be active
@@ -23,12 +17,3 @@ definitions:
         minimum: 0
     required:
       - unit
-
-  PacketProtocolCustom:
-    type: object
-    description: Defines an arbitrary sequence of data
-    properties:
-      data:
-        $ref: "#/definitions/BinaryString"
-    required:
-      - data

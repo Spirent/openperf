@@ -548,6 +548,35 @@ definitions:
       - flow_counters
       - flows
 
+
+  PacketProtocolCustom:
+    type: object
+    description: Defines an arbitrary sequence of data
+    properties:
+      data:
+        type: string
+        description: Base64 encoded binary packet data
+      layer:
+        type: string
+        description: |
+          Indicates which protocol layer this protocol belongs to.
+        enum:
+          - ethernet
+          - ip
+          - protocol
+          - payload
+      protocol_id:
+        type: integer
+        description: |
+          Indicates the value to use for a preceding header that
+          supports a next header type or protocol field. For example,
+          if a custom protocol came immediately after an Ethernet
+          header, then this value would be written to the Ethernet
+          header\'s ether_type field.
+    required:
+      - data
+      - layer
+
   SpirentSignature:
     type: object
     description: Configures Spirent test signature
@@ -793,7 +822,7 @@ definitions:
         required:
           - items
       custom:
-        $ref: ./common.yaml#/definitions/PacketProtocolCustom
+        $ref: "#/definitions/PacketProtocolCustom"
       ethernet:
         $ref: ./protocol.yaml#/definitions/PacketProtocolEthernet
       ipv4:
@@ -818,6 +847,12 @@ definitions:
         description: |
           Packet protocol field to modify. Context determines what field
           names are valid and what data is expected in the modifier.
+      offset:
+        type: integer
+        description: |
+          Specifies the number of octets into the protocol field to write
+          modifier data. Currently only valid for the custom packet protocol
+          \"data\" field.
       permute:
         type: boolean
         description: |

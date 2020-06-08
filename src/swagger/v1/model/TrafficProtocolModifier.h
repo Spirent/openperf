@@ -58,6 +58,13 @@ public:
     std::string getName() const;
     void setName(std::string value);
         /// <summary>
+    /// Specifies the number of octets into the protocol field to write modifier data. Currently only valid for the custom packet protocol \\\&quot;data\\\&quot; field. 
+    /// </summary>
+    int32_t getOffset() const;
+    void setOffset(int32_t value);
+    bool offsetIsSet() const;
+    void unsetOffset();
+    /// <summary>
     /// Specifies whether to pseudo-randomly order the modifier values 
     /// </summary>
     bool isPermute() const;
@@ -94,6 +101,8 @@ public:
 protected:
     std::string m_Name;
 
+    int32_t m_Offset;
+    bool m_OffsetIsSet;
     bool m_Permute;
 
     std::shared_ptr<TrafficProtocolFieldModifier> m_Field;

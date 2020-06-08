@@ -31,28 +31,38 @@ class PacketProtocolCustom(object):
                             and the value is json key in definition.
     """
     swagger_types = {
-        'data': 'BinaryString'
+        'data': 'str',
+        'layer': 'str',
+        'protocol_id': 'int'
     }
 
     attribute_map = {
-        'data': 'data'
+        'data': 'data',
+        'layer': 'layer',
+        'protocol_id': 'protocol_id'
     }
 
-    def __init__(self, data=None):  # noqa: E501
+    def __init__(self, data=None, layer=None, protocol_id=None):  # noqa: E501
         """PacketProtocolCustom - a model defined in Swagger"""  # noqa: E501
 
         self._data = None
+        self._layer = None
+        self._protocol_id = None
         self.discriminator = None
 
         self.data = data
+        self.layer = layer
+        if protocol_id is not None:
+            self.protocol_id = protocol_id
 
     @property
     def data(self):
         """Gets the data of this PacketProtocolCustom.  # noqa: E501
 
+        Base64 encoded binary packet data  # noqa: E501
 
         :return: The data of this PacketProtocolCustom.  # noqa: E501
-        :rtype: BinaryString
+        :rtype: str
         """
         return self._data
 
@@ -60,11 +70,56 @@ class PacketProtocolCustom(object):
     def data(self, data):
         """Sets the data of this PacketProtocolCustom.
 
+        Base64 encoded binary packet data  # noqa: E501
 
         :param data: The data of this PacketProtocolCustom.  # noqa: E501
-        :type: BinaryString
+        :type: str
         """
         self._data = data
+
+    @property
+    def layer(self):
+        """Gets the layer of this PacketProtocolCustom.  # noqa: E501
+
+        Indicates which protocol layer this protocol belongs to.   # noqa: E501
+
+        :return: The layer of this PacketProtocolCustom.  # noqa: E501
+        :rtype: str
+        """
+        return self._layer
+
+    @layer.setter
+    def layer(self, layer):
+        """Sets the layer of this PacketProtocolCustom.
+
+        Indicates which protocol layer this protocol belongs to.   # noqa: E501
+
+        :param layer: The layer of this PacketProtocolCustom.  # noqa: E501
+        :type: str
+        """
+        self._layer = layer
+
+    @property
+    def protocol_id(self):
+        """Gets the protocol_id of this PacketProtocolCustom.  # noqa: E501
+
+        Indicates the value to use for a preceding header that supports a next header type or protocol field. For example, if a custom protocol came immediately after an Ethernet header, then this value would be written to the Ethernet header\\'s ether_type field.   # noqa: E501
+
+        :return: The protocol_id of this PacketProtocolCustom.  # noqa: E501
+        :rtype: int
+        """
+        return self._protocol_id
+
+    @protocol_id.setter
+    def protocol_id(self, protocol_id):
+        """Sets the protocol_id of this PacketProtocolCustom.
+
+        Indicates the value to use for a preceding header that supports a next header type or protocol field. For example, if a custom protocol came immediately after an Ethernet header, then this value would be written to the Ethernet header\\'s ether_type field.   # noqa: E501
+
+        :param protocol_id: The protocol_id of this PacketProtocolCustom.  # noqa: E501
+        :type: int
+        """
+        self._protocol_id = protocol_id
 
     def to_dict(self):
         """Returns the model properties as a dict"""

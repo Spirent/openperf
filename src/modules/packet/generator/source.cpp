@@ -139,10 +139,12 @@ static size_t to_send_diff(size_t tx_count, size_t tx_limit)
 
 inline void copy_header(const uint8_t* __restrict src,
                         packetio::packet::header_lengths hdr_len,
-                        uint8_t* __restrict dst)
+                        uint8_t* __restrict dst,
+                        int pkt_len)
 {
-    const auto len = hdr_len.layer2 + hdr_len.layer3 + hdr_len.layer4;
-    utils::memcpy(dst, src, len);
+    const auto len =
+        hdr_len.layer2 + hdr_len.layer3 + hdr_len.layer4 + hdr_len.payload;
+    utils::memcpy(dst, src, std::min(len, pkt_len));
 }
 
 uint16_t source::transform(packetio::packet::packet_buffer* input[],
@@ -182,9 +184,8 @@ uint16_t source::transform(packetio::packet::packet_buffer* input[],
                     && [flow_idx, hdr_ptr, hdr_lens, hdr_flags, sig_config,
                         pkt_len] = pkt_data;
 
-                assert(hdr_flags.value);
                 auto pkt = packetio::packet::to_data<uint8_t>(buffer);
-                copy_header(hdr_ptr, hdr_lens, pkt);
+                copy_header(hdr_ptr, hdr_lens, pkt, pkt_len);
 
                 /* Set length on both buffer and headers*/
                 packetio::packet::length(buffer, pkt_len - 4);

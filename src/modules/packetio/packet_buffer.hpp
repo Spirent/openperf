@@ -83,7 +83,8 @@ union header_lengths
         uint64_t layer3 : 9;
         uint64_t layer4 : 8;
         uint64_t tso_segsz : 16;
-        uint64_t unused : 24;
+        uint64_t payload : 16;
+        uint64_t unused : 8;
     };
 };
 

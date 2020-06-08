@@ -9,8 +9,8 @@ constexpr auto config_length_visitor = [](const auto& config) {
     return (config.length());
 };
 
-template <typename PacketHeader>
-size_t count_headers_zip(const config<PacketHeader>& config) noexcept
+template <typename PacketHeaderConfig>
+size_t count_headers_zip(const PacketHeaderConfig& config) noexcept
 {
     return (std::accumulate(
         std::begin(config.modifiers),
@@ -22,8 +22,8 @@ size_t count_headers_zip(const config<PacketHeader>& config) noexcept
         }));
 }
 
-template <typename PacketHeader>
-size_t count_headers_cartesian(const config<PacketHeader>& config) noexcept
+template <typename PacketHeaderConfig>
+size_t count_headers_cartesian(const PacketHeaderConfig& config) noexcept
 {
     return (std::accumulate(
         std::begin(config.modifiers),
@@ -35,8 +35,8 @@ size_t count_headers_cartesian(const config<PacketHeader>& config) noexcept
         }));
 }
 
-template <typename PacketHeader>
-size_t count_headers(const config<PacketHeader>& config) noexcept
+template <typename PacketHeaderConfig>
+size_t count_headers(const PacketHeaderConfig& config) noexcept
 {
     assert(!config.modifiers.empty());
 

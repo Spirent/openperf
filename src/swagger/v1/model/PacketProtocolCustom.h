@@ -21,7 +21,7 @@
 
 #include "ModelBase.h"
 
-#include "BinaryString.h"
+#include <string>
 
 namespace swagger {
 namespace v1 {
@@ -49,14 +49,30 @@ public:
     /// PacketProtocolCustom members
 
     /// <summary>
-    /// 
+    /// Base64 encoded binary packet data
     /// </summary>
-    std::shared_ptr<BinaryString> getData() const;
-    void setData(std::shared_ptr<BinaryString> value);
-    
-protected:
-    std::shared_ptr<BinaryString> m_Data;
+    std::string getData() const;
+    void setData(std::string value);
+        /// <summary>
+    /// Indicates which protocol layer this protocol belongs to. 
+    /// </summary>
+    std::string getLayer() const;
+    void setLayer(std::string value);
+        /// <summary>
+    /// Indicates the value to use for a preceding header that supports a next header type or protocol field. For example, if a custom protocol came immediately after an Ethernet header, then this value would be written to the Ethernet header\\&#39;s ether_type field. 
+    /// </summary>
+    int32_t getProtocolId() const;
+    void setProtocolId(int32_t value);
+    bool protocolIdIsSet() const;
+    void unsetProtocol_id();
 
+protected:
+    std::string m_Data;
+
+    std::string m_Layer;
+
+    int32_t m_Protocol_id;
+    bool m_Protocol_idIsSet;
 };
 
 }

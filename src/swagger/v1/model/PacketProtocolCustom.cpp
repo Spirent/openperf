@@ -19,6 +19,10 @@ namespace model {
 
 PacketProtocolCustom::PacketProtocolCustom()
 {
+    m_Data = "";
+    m_Layer = "";
+    m_Protocol_id = 0;
+    m_Protocol_idIsSet = false;
     
 }
 
@@ -36,6 +40,11 @@ nlohmann::json PacketProtocolCustom::toJson() const
     nlohmann::json val = nlohmann::json::object();
 
     val["data"] = ModelBase::toJson(m_Data);
+    val["layer"] = ModelBase::toJson(m_Layer);
+    if(m_Protocol_idIsSet)
+    {
+        val["protocol_id"] = m_Protocol_id;
+    }
     
 
     return val;
@@ -43,18 +52,50 @@ nlohmann::json PacketProtocolCustom::toJson() const
 
 void PacketProtocolCustom::fromJson(nlohmann::json& val)
 {
+    setData(val.at("data"));
+    setLayer(val.at("layer"));
+    if(val.find("protocol_id") != val.end())
+    {
+        setProtocolId(val.at("protocol_id"));
+    }
     
 }
 
 
-std::shared_ptr<BinaryString> PacketProtocolCustom::getData() const
+std::string PacketProtocolCustom::getData() const
 {
     return m_Data;
 }
-void PacketProtocolCustom::setData(std::shared_ptr<BinaryString> value)
+void PacketProtocolCustom::setData(std::string value)
 {
     m_Data = value;
     
+}
+std::string PacketProtocolCustom::getLayer() const
+{
+    return m_Layer;
+}
+void PacketProtocolCustom::setLayer(std::string value)
+{
+    m_Layer = value;
+    
+}
+int32_t PacketProtocolCustom::getProtocolId() const
+{
+    return m_Protocol_id;
+}
+void PacketProtocolCustom::setProtocolId(int32_t value)
+{
+    m_Protocol_id = value;
+    m_Protocol_idIsSet = true;
+}
+bool PacketProtocolCustom::protocolIdIsSet() const
+{
+    return m_Protocol_idIsSet;
+}
+void PacketProtocolCustom::unsetProtocol_id()
+{
+    m_Protocol_idIsSet = false;
 }
 
 }

@@ -126,7 +126,9 @@ struct flags
         : value(value)
     {}
 
-    flags() {}
+    flags()
+        : value(0)
+    {}
 
     constexpr explicit operator bool() const { return (value != 0); }
 

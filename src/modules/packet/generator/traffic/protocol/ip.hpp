@@ -3,6 +3,7 @@
 
 #include "packet/protocol/protocols.hpp"
 #include "packetio/packet_buffer.hpp"
+#include "packet/generator/traffic/protocol/custom.hpp"
 
 namespace openperf::packet::generator::traffic::protocol {
 
@@ -27,11 +28,13 @@ inline constexpr uint8_t mpls_in_ip = 137;
 
 } // namespace ip
 
+void update_context(libpacket::protocol::ipv4&, const custom&) noexcept;
 void update_context(libpacket::protocol::ipv4&,
                     const libpacket::protocol::tcp&) noexcept;
 void update_context(libpacket::protocol::ipv4&,
                     const libpacket::protocol::udp&) noexcept;
 
+void update_context(libpacket::protocol::ipv6&, const custom&) noexcept;
 void update_context(libpacket::protocol::ipv6&,
                     const libpacket::protocol::tcp&) noexcept;
 void update_context(libpacket::protocol::ipv6&,
