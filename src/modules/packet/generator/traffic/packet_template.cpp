@@ -1,4 +1,5 @@
 #include "packet/generator/traffic/packet_template.hpp"
+#include "packet/generator/traffic/header/utils.hpp"
 
 namespace openperf::packet::generator::traffic {
 
@@ -115,9 +116,8 @@ maybe_set_pseudoheader_checksum(uint8_t header[],
 packet_template::packet_template(const header::config_container& configs,
                                  header::modifier_mux mux)
     : m_headers(header::make_headers(configs, mux))
-    , m_hdr_lens(
-          header::to_packet_header_lengths(header::get_config_key(configs)))
-    , m_flags(header::to_packet_type_flags(header::get_config_key(configs)))
+    , m_hdr_lens(header::to_packet_header_lengths(configs))
+    , m_flags(header::to_packet_type_flags(configs))
 {
     std::for_each(
         std::begin(m_headers), std::end(m_headers), [&](const auto& pair) {

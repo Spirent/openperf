@@ -104,50 +104,39 @@ template <size_t... N> auto make_dummy_configs(std::index_sequence<N...>)
 const static auto protocol_configs = make_dummy_configs(
     std::make_index_sequence<std::variant_size_v<config_instance>>{});
 
-config_key get_config_key(const config_container& configs) noexcept
-{
-    /* Turn the configs into a vector of variant indexes */
-    auto indexes = config_key{};
-    std::transform(std::begin(configs),
-                   std::end(configs),
-                   std::back_inserter(indexes),
-                   [](const auto& config) { return (config.index()); });
-
-    return (indexes);
-}
-
 using flags = packetio::packet::packet_type::flags;
-flags to_packet_type_flags(const config_key& indexes) noexcept
+flags to_packet_type_flags(const config_container& configs) noexcept
 {
-    auto type_flags = flags{0};
+    auto type_flags = flags{};
 
-    const auto update_flag_visitor = [&](const auto& config) {
-        using Protocol = decltype(config.header);
-        return (protocol::update_packet_type(type_flags, Protocol{}));
-    };
-
-    std::for_each(std::begin(indexes), std::end(indexes), [&](const auto& idx) {
-        assert(idx < protocol_configs.size());
-        type_flags = std::visit(update_flag_visitor, protocol_configs[idx]);
-    });
+    std::for_each(
+        std::begin(configs), std::end(configs), [&](const auto& instance) {
+            type_flags = std::visit(
+                [&](const auto& config) {
+                    return (protocol::update_packet_type(type_flags,
+                                                         config.header));
+                },
+                instance);
+        });
 
     return (type_flags);
 }
 
 using header_lengths = packetio::packet::header_lengths;
-header_lengths to_packet_header_lengths(const config_key& indexes) noexcept
+header_lengths
+to_packet_header_lengths(const config_container& configs) noexcept
 {
     auto lengths = header_lengths{};
 
-    const auto update_length_visitor = [&](const auto& config) {
-        using Protocol = decltype(config.header);
-        return (protocol::update_header_lengths(lengths, Protocol{}));
-    };
-
-    std::for_each(std::begin(indexes), std::end(indexes), [&](const auto& idx) {
-        assert(idx < protocol_configs.size());
-        lengths = std::visit(update_length_visitor, protocol_configs[idx]);
-    });
+    std::for_each(
+        std::begin(configs), std::end(configs), [&](const auto& instance) {
+            lengths = std::visit(
+                [&](const auto& config) {
+                    return (protocol::update_header_lengths(lengths,
+                                                            config.header));
+                },
+                instance);
+        });
 
     return (lengths);
 }

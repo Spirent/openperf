@@ -20,6 +20,8 @@ namespace model {
 TrafficProtocolModifier::TrafficProtocolModifier()
 {
     m_Name = "";
+    m_Offset = 0;
+    m_OffsetIsSet = false;
     m_Permute = false;
     m_FieldIsSet = false;
     m_Ipv4IsSet = false;
@@ -42,6 +44,10 @@ nlohmann::json TrafficProtocolModifier::toJson() const
     nlohmann::json val = nlohmann::json::object();
 
     val["name"] = ModelBase::toJson(m_Name);
+    if(m_OffsetIsSet)
+    {
+        val["offset"] = m_Offset;
+    }
     val["permute"] = m_Permute;
     if(m_FieldIsSet)
     {
@@ -67,6 +73,10 @@ nlohmann::json TrafficProtocolModifier::toJson() const
 void TrafficProtocolModifier::fromJson(nlohmann::json& val)
 {
     setName(val.at("name"));
+    if(val.find("offset") != val.end())
+    {
+        setOffset(val.at("offset"));
+    }
     setPermute(val.at("permute"));
     if(val.find("field") != val.end())
     {
@@ -120,6 +130,23 @@ void TrafficProtocolModifier::setName(std::string value)
 {
     m_Name = value;
     
+}
+int32_t TrafficProtocolModifier::getOffset() const
+{
+    return m_Offset;
+}
+void TrafficProtocolModifier::setOffset(int32_t value)
+{
+    m_Offset = value;
+    m_OffsetIsSet = true;
+}
+bool TrafficProtocolModifier::offsetIsSet() const
+{
+    return m_OffsetIsSet;
+}
+void TrafficProtocolModifier::unsetOffset()
+{
+    m_OffsetIsSet = false;
 }
 bool TrafficProtocolModifier::isPermute() const
 {

@@ -32,6 +32,14 @@ void update_context(libpacket::protocol::ethernet& eth,
     set_ethernet_ether_type(eth, traffic::protocol::ethernet::ether_type_mpls);
 }
 
+void update_context(libpacket::protocol::ethernet& eth,
+                    const custom& custom) noexcept
+{
+    if (custom.protocol_id) {
+        set_ethernet_ether_type(eth, custom.protocol_id.value());
+    }
+}
+
 flags update_packet_type(flags flags,
                          const libpacket::protocol::ethernet&) noexcept
 {

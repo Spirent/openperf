@@ -319,7 +319,10 @@ template <typename Header> container expand(const config<Header>& config)
              * Since we don't have the functions to expand this header, we just
              * return the base.  But at least we can whine about it!
              */
-            OP_LOG(OP_LOG_ERROR, "Cannot expand header; too many modifiers!\n");
+            OP_LOG(OP_LOG_ERROR,
+                   "Cannot expand %.*s header; too many modifiers!\n",
+                   static_cast<int>(Header::protocol_name.size()),
+                   Header::protocol_name.data());
         }
         auto c = container{};
         c.emplace_back(std::addressof(config.header), Header::protocol_length);

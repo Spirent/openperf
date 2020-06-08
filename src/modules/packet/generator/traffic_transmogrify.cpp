@@ -1,9 +1,13 @@
 #include <typeindex>
 
+#include "basen.hpp"
+
 #include "packet/generator/api.hpp"
-#include "packet/generator/traffic/header/config.hpp"
 #include "packet/generator/traffic/length_config.hpp"
 #include "packet/generator/traffic/signature_config.hpp"
+#include "packet/generator/traffic/header/config.hpp"
+#include "packet/generator/traffic/header/utils.hpp"
+#include "packet/generator/traffic/protocol/custom.hpp"
 #include "packet/protocol/transmogrify/protocols.hpp"
 #include "spirent_pga/api.h"
 
@@ -123,6 +127,32 @@ to_modifier_config(const swagger::v1::model::TrafficProtocolModifier& modifier)
     return (config);
 }
 
+template <>
+modifier::config to_modifier_config<traffic::protocol::custom>(
+    const swagger::v1::model::TrafficProtocolModifier& modifier)
+{
+    auto config = modifier::config{};
+
+    if (modifier.ipv4IsSet()) {
+        config = detail::to_modifier_config<libpacket::type::ipv4_address>(
+            *modifier.getIpv4());
+    } else if (modifier.ipv6IsSet()) {
+        config = detail::to_modifier_config<libpacket::type::ipv6_address>(
+            *modifier.getIpv6());
+    } else if (modifier.macIsSet()) {
+        config = detail::to_modifier_config<libpacket::type::mac_address>(
+            *modifier.getMac());
+    } else {
+        assert(modifier.fieldIsSet());
+        config = detail::to_modifier_config<uint32_t>(*modifier.getField());
+    }
+
+    std::visit([&](auto&& actual) { actual.permute = modifier.isPermute(); },
+               config);
+
+    return (config);
+}
+
 template <typename Protocol>
 auto to_modifier_container(const swagger::v1::model::TrafficProtocol& protocol)
 {
@@ -139,6 +169,28 @@ auto to_modifier_container(const swagger::v1::model::TrafficProtocol& protocol)
                                Protocol::get_field_name(api_mod->getName()),
                                to_modifier_config<Protocol>(*api_mod));
                        });
+    }
+    return (modifiers);
+}
+
+template <>
+auto to_modifier_container<traffic::protocol::custom>(
+    const swagger::v1::model::TrafficProtocol& protocol)
+{
+    using config = header::custom_config;
+    auto modifiers = typename config::modifier_container{};
+    if (protocol.modifiersIsSet()) {
+        const auto& api_mod_config = protocol.getModifiers();
+        const auto& api_modifiers = api_mod_config->getItems();
+        std::transform(
+            std::begin(api_modifiers),
+            std::end(api_modifiers),
+            std::back_inserter(modifiers),
+            [](const auto& api_mod) {
+                return std::make_pair(
+                    api_mod->getOffset(),
+                    to_modifier_config<traffic::protocol::custom>(*api_mod));
+            });
     }
     return (modifiers);
 }
@@ -206,6 +258,33 @@ to_header_config_udp(const swagger::v1::model::TrafficProtocol& protocol)
         to_modifier_mux(protocol)});
 }
 
+traffic::protocol::custom to_custom_protocol(
+    const std::shared_ptr<swagger::v1::model::PacketProtocolCustom>& src)
+{
+    const auto encoded = src->getData();
+
+    auto dst = traffic::protocol::custom{};
+    bn::decode_b64(
+        std::begin(encoded), std::end(encoded), std::back_inserter(dst.data));
+
+    /* XXX: I'm lazy! */
+    dst.layer = static_cast<traffic::protocol::custom::layer_type>(
+        to_layer_type(src->getLayer()));
+
+    if (src->protocolIdIsSet()) { dst.protocol_id = src->getProtocolId(); }
+
+    return (dst);
+}
+
+static header::config_instance
+to_header_config_custom(const swagger::v1::model::TrafficProtocol& protocol)
+{
+    return (header::custom_config{
+        to_custom_protocol(protocol.getCustom()),
+        to_modifier_container<traffic::protocol::custom>(protocol),
+        to_modifier_mux(protocol)});
+}
+
 static header::config_instance
 to_header_config(const swagger::v1::model::TrafficProtocol& protocol)
 {
@@ -221,9 +300,11 @@ to_header_config(const swagger::v1::model::TrafficProtocol& protocol)
         return (to_header_config_ipv6(protocol));
     } else if (protocol.tcpIsSet()) {
         return (to_header_config_tcp(protocol));
-    } else {
-        assert(protocol.udpIsSet());
+    } else if (protocol.udpIsSet()) {
         return (to_header_config_udp(protocol));
+    } else {
+        assert(protocol.customIsSet());
+        return (to_header_config_custom(protocol));
     }
 }
 

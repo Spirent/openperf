@@ -5,6 +5,7 @@
 
 #include "packet/protocol/protocols.hpp"
 #include "packetio/packet_buffer.hpp"
+#include "packet/generator/traffic/protocol/custom.hpp"
 
 namespace openperf::packet::generator::traffic::protocol {
 
@@ -28,6 +29,7 @@ void update_context(libpacket::protocol::ethernet&,
                     const libpacket::protocol::vlan&) noexcept;
 void update_context(libpacket::protocol::ethernet&,
                     const libpacket::protocol::mpls&) noexcept;
+void update_context(libpacket::protocol::ethernet&, const custom&) noexcept;
 
 using flags = packetio::packet::packet_type::flags;
 flags update_packet_type(flags flags,

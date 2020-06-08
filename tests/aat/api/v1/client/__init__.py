@@ -32,7 +32,6 @@ from client.api.time_sync_api import TimeSyncApi
 from client.api_client import ApiClient
 from client.configuration import Configuration
 # import models into sdk package
-from client.models.binary_string import BinaryString
 from client.models.block_device import BlockDevice
 from client.models.block_file import BlockFile
 from client.models.block_generator import BlockGenerator

@@ -16,6 +16,8 @@ container expand(const ipv6_config&);
 container expand(const tcp_config&);
 container expand(const udp_config&);
 
+container expand(const custom_config&);
+
 } // namespace openperf::packet::generator::traffic::header
 
 #endif /* _OP_PACKET_GENERATOR_TRAFFIC_HEADER_EXPAND_HPP_ */

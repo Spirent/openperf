@@ -1,6 +1,7 @@
 #include "catch.hpp"
 
 #include "packet/generator/traffic/sequence.hpp"
+#include "packet/generator/traffic/header/utils.hpp"
 #include "packet/generator/traffic/protocol/all.hpp"
 
 using namespace openperf::packet::generator::traffic;

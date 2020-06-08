@@ -2,7 +2,7 @@
 # Makefile component to build Packet Generator code
 #
 
-PG_DEPENDS += api framework versions packet_protocol range_v3
+PG_DEPENDS += api base_n framework versions packet_protocol range_v3
 
 PG_SOURCES += \
 	api_strings.cpp \
@@ -16,6 +16,7 @@ PG_SOURCES += \
 	traffic/length_template.cpp \
 	traffic/header/explode.cpp \
 	traffic/header/utils.cpp \
+	traffic/header/expand_impl/custom.cpp \
 	traffic/header/expand_impl/ethernet.cpp \
 	traffic/header/expand_impl/mpls.cpp \
 	traffic/header/expand_impl/vlan.cpp \
@@ -24,6 +25,7 @@ PG_SOURCES += \
 	traffic/header/expand_impl/tcp.cpp \
 	traffic/header/expand_impl/udp.cpp \
 	traffic/packet_template.cpp \
+	traffic/protocol/custom.cpp \
 	traffic/protocol/ethernet.cpp \
 	traffic/protocol/ip.cpp \
 	traffic/protocol/mpls.cpp \
@@ -48,6 +50,7 @@ PG_TEST_SOURCES += \
 	traffic/length_template.cpp \
 	traffic/header/explode.cpp \
 	traffic/header/utils.cpp \
+	traffic/header/expand_impl/custom.cpp \
 	traffic/header/expand_impl/ethernet.cpp \
 	traffic/header/expand_impl/mpls.cpp \
 	traffic/header/expand_impl/vlan.cpp \
@@ -56,6 +59,7 @@ PG_TEST_SOURCES += \
 	traffic/header/expand_impl/tcp.cpp \
 	traffic/header/expand_impl/udp.cpp \
 	traffic/packet_template.cpp \
+	traffic/protocol/custom.cpp \
 	traffic/protocol/ethernet.cpp \
 	traffic/protocol/ip.cpp \
 	traffic/protocol/mpls.cpp \

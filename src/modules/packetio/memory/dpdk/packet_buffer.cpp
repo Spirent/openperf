@@ -67,6 +67,18 @@ void tx_offload(packet_buffer* buffer,
                 header_lengths hdr_lens,
                 packet_type::flags flags)
 {
+    /*
+     * Our header lengths structure contains additional data compared
+     * to the equivalent DPDK structure. Generate an explicit mask so that we
+     * can clear any bits that shouldn't be set.
+     */
+    constexpr static auto mask = header_lengths{
+        .layer2 = 0x7f,
+        .layer3 = 0x1ff,
+        .layer4 = 0xff,
+        .tso_segsz = 0xffff,
+    };
+
     uint64_t ol_flags = 0;
     if (flags & packet_type::ip::ipv4) {
         ol_flags |= (PKT_TX_IP_CKSUM | PKT_TX_IPV4);
@@ -77,7 +89,7 @@ void tx_offload(packet_buffer* buffer,
 
     /* Update packet metadata */
     buffer->ol_flags = ol_flags;
-    buffer->tx_offload = hdr_lens.value;
+    buffer->tx_offload = hdr_lens.value & mask.value;
 }
 
 void signature(packet_buffer* buffer,

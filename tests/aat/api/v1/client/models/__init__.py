@@ -15,7 +15,6 @@
 from __future__ import absolute_import
 
 # import models into model package
-from client.models.binary_string import BinaryString
 from client.models.block_device import BlockDevice
 from client.models.block_file import BlockFile
 from client.models.block_generator import BlockGenerator

@@ -3,6 +3,14 @@
 namespace openperf::packet::generator::traffic::protocol {
 
 void update_context(libpacket::protocol::ipv4& ip,
+                    const custom& custom) noexcept
+{
+    if (custom.protocol_id) {
+        set_ipv4_protocol(ip, custom.protocol_id.value());
+    }
+}
+
+void update_context(libpacket::protocol::ipv4& ip,
                     const libpacket::protocol::tcp&) noexcept
 {
     set_ipv4_protocol(ip, traffic::protocol::ip::tcp);
@@ -12,6 +20,14 @@ void update_context(libpacket::protocol::ipv4& ip,
                     const libpacket::protocol::udp&) noexcept
 {
     set_ipv4_protocol(ip, traffic::protocol::ip::udp);
+}
+
+void update_context(libpacket::protocol::ipv6& ip,
+                    const custom& custom) noexcept
+{
+    if (custom.protocol_id) {
+        set_ipv6_next_header(ip, custom.protocol_id.value());
+    }
 }
 
 void update_context(libpacket::protocol::ipv6& ip,

@@ -40,6 +40,13 @@ constexpr auto duration_type_names =
         std::pair("frames", duration_type::frames),
         std::pair("seconds", duration_type::seconds));
 
+constexpr auto layer_type_names =
+    associative_array<std::string_view, layer_type>(
+        std::pair("ethernet", layer_type::ethernet),
+        std::pair("ip", layer_type::ip),
+        std::pair("protocol", layer_type::protocol),
+        std::pair("payload", layer_type::payload));
+
 constexpr auto load_type_names = associative_array<std::string_view, load_type>(
     std::pair("frames", load_type::frames),
     std::pair("octets", load_type::octets));
@@ -72,6 +79,11 @@ constexpr auto signature_latency_type_names =
 /**
  * String -> type functions
  */
+
+layer_type to_layer_type(std::string_view name)
+{
+    return (to_api_type(layer_type_names, name));
+}
 
 load_type to_load_type(std::string_view name)
 {

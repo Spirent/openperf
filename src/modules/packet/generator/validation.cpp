@@ -1,5 +1,9 @@
 #include <iostream>
+
+#include "basen.hpp"
+
 #include "packet/generator/api.hpp"
+#include "packet/generator/traffic/protocol/custom.hpp"
 #include "packet/protocol/transmogrify/protocols.hpp"
 
 #include "swagger/v1/model/PacketGenerator.h"
@@ -66,7 +70,7 @@ template <typename T> inline constexpr bool is_string_v = is_string<T>::value;
 template <typename Field, typename Value>
 std::enable_if_t<!is_string_v<Value>, bool> is_valid(const Value& value)
 {
-    return (value > Value{0});
+    return (value >= Value{0});
 }
 
 template <typename Field, typename Value>
@@ -274,6 +278,66 @@ static void validate_modifier(const modifier_ptr& modifier,
     }
 }
 
+template <>
+void validate_modifier<traffic::protocol::custom>(
+    const modifier_ptr& modifier,
+    const size_t def_idx,
+    const size_t pkt_idx,
+    const size_t proto_idx,
+    const size_t mod_idx,
+    std::vector<std::string>& errors)
+{
+    auto field_name =
+        traffic::protocol::custom::get_field_name(modifier->getName());
+    if (field_name == traffic::protocol::custom::field_name::none) {
+        errors.emplace_back(
+            "Modifier field name, " + modifier->getName() + ", is invalid"
+            + id_string(def_idx, pkt_idx, proto_idx, mod_idx) + ".");
+        return;
+    }
+
+    if (modifier->ipv4IsSet()) {
+        validate_field_modifier<libpacket::type::ipv4_address>(
+            modifier->getIpv4(),
+            modifier->getName(),
+            def_idx,
+            pkt_idx,
+            proto_idx,
+            mod_idx,
+            errors);
+    } else if (modifier->ipv6IsSet()) {
+        validate_field_modifier<libpacket::type::ipv6_address>(
+            modifier->getIpv6(),
+            modifier->getName(),
+            def_idx,
+            pkt_idx,
+            proto_idx,
+            mod_idx,
+            errors);
+    } else if (modifier->macIsSet()) {
+        validate_field_modifier<libpacket::type::mac_address>(
+            modifier->getMac(),
+            modifier->getName(),
+            def_idx,
+            pkt_idx,
+            proto_idx,
+            mod_idx,
+            errors);
+    } else if (modifier->fieldIsSet()) {
+        validate_field_modifier<uint32_t>(modifier->getField(),
+                                          modifier->getName(),
+                                          def_idx,
+                                          pkt_idx,
+                                          proto_idx,
+                                          mod_idx,
+                                          errors);
+    } else {
+        errors.emplace_back("Missing modifier for field " + modifier->getName()
+                            + id_string(def_idx, pkt_idx, proto_idx, mod_idx)
+                            + ".");
+    }
+}
+
 /*
  * XXX: This protocol validation is rather unpleasant.
  * The basic idea is that we have automatically generated code that knows
@@ -284,10 +348,11 @@ static void validate_modifier(const modifier_ptr& modifier,
  *
  * So, in order to validate each specific protocol type, we use a templated
  * function that take a function parameter to retrieve a generic pointer
- * to the specific protocol configuration. We then use our template knowledge
- * to circuitously determine the actual swagger type and cast the base pointer
- * back to the real protocol type. Finally, we try to convert the swagger
- * configuration to the 'on-the-wire' format and catch any errors.
+ * to the specific protocol configuration. We then use our template
+ * knowledge to circuitously determine the actual swagger type and cast the
+ * base pointer back to the real protocol type. Finally, we try to convert
+ * the swagger configuration to the 'on-the-wire' format and catch any
+ * errors.
  *
  * Note: the get_protocol_fn returns the swagger base type so that we
  * have a common type we can store in our protocol handlers array.
@@ -358,6 +423,82 @@ static void validate_protocol(const get_protocol_fn& get_fn,
     }
 }
 
+static uint16_t max_modifier_offset(size_t length, const modifier_ptr& modifier)
+{
+    size_t mod_length =
+        (modifier->ipv4IsSet() || modifier->fieldIsSet()
+             ? 4
+             : modifier->ipv6IsSet() ? 16 : modifier->macIsSet() ? 6 : 0);
+
+    return (mod_length > length ? 0 : length - mod_length);
+}
+
+static void validate_custom_protocol(const get_protocol_fn& get_fn,
+                                     const protocol_ptr& protocol,
+                                     const size_t def_idx,
+                                     const size_t pkt_idx,
+                                     const size_t proto_idx,
+                                     std::vector<std::string>& errors)
+{
+    using swagger_type = swagger::v1::model::PacketProtocolCustom;
+    const auto& custom_protocol =
+        std::static_pointer_cast<swagger_type>(get_fn(protocol));
+
+    /* Verify that the protocol contains valid data */
+    const auto& encoded = custom_protocol->getData();
+    auto data = std::vector<uint8_t>{};
+    bn::decode_b64(
+        std::begin(encoded), std::end(encoded), std::back_inserter(data));
+
+    if (data.empty()) {
+        errors.emplace_back("No data found for custom protocol"
+                            + id_string(def_idx, pkt_idx, proto_idx) + ".");
+    }
+
+    if (to_layer_type(custom_protocol->getLayer()) == layer_type::none) {
+        errors.emplace_back("Layer, " + custom_protocol->getLayer()
+                            + ", is invalid.");
+    }
+
+    if (protocol->modifiersIsSet()) {
+        const auto& modifiers_conf = protocol->getModifiers();
+        const auto& modifiers = modifiers_conf->getItems();
+
+        if (modifiers_conf->tieIsSet()) {
+            if (to_mux_type(modifiers_conf->getTie()) == mux_type::none) {
+                errors.emplace_back("Modifier tie, " + modifiers_conf->getTie()
+                                    + ", is unrecognized"
+                                    + id_string(def_idx, pkt_idx, proto_idx)
+                                    + ".");
+            }
+        } else if (modifiers.size() > 1) {
+            errors.emplace_back(
+                "Modifier tie must be set when multiple modifiers are present"
+                + id_string(def_idx, pkt_idx, proto_idx) + ".");
+        }
+
+        auto mod_idx = 1U;
+        for (const auto& mod : modifiers) {
+            if (!mod->offsetIsSet()) {
+                errors.emplace_back(
+                    "Offset is required for custom protocol modifier"
+                    + id_string(def_idx, pkt_idx, proto_idx, mod_idx) + ".");
+            } else if (mod->getOffset() < 0
+                       || max_modifier_offset(data.size(), mod)
+                              < static_cast<unsigned>(mod->getOffset())) {
+                errors.emplace_back(
+                    "Offset must be within range [0, "
+                    + std::to_string(max_modifier_offset(data.size(), mod))
+                    + ")" + id_string(def_idx, pkt_idx, proto_idx, mod_idx)
+                    + ".");
+            }
+
+            validate_modifier<traffic::protocol::custom>(
+                mod, def_idx, pkt_idx, proto_idx, mod_idx++, errors);
+        }
+    }
+}
+
 template <typename HasFn,
           typename ValidateFn,
           typename GetFn,
@@ -393,7 +534,14 @@ static const auto protocol_handlers =
         MAKE_PROTOCOL_TUPLE(ipv4, Ipv4),
         MAKE_PROTOCOL_TUPLE(ipv6, Ipv6),
         MAKE_PROTOCOL_TUPLE(tcp, Tcp),
-        MAKE_PROTOCOL_TUPLE(udp, Udp));
+        MAKE_PROTOCOL_TUPLE(udp, Udp),
+        std::make_tuple(
+            &swagger::v1::model::TrafficProtocol::customIsSet,
+            &validate_custom_protocol,
+            [](const protocol_ptr& p) {
+                return (std::static_pointer_cast<swagger::v1::model::ModelBase>(
+                    p->getCustom()));
+            }));
 
 #undef MAKE_PROTOCOL_TUPLE
 

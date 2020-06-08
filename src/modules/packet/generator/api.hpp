@@ -123,6 +123,15 @@ order_type to_order_type(std::string_view name);
 enum class mux_type { none = 0, zip, cartesian };
 mux_type to_mux_type(std::string_view name);
 
+enum class layer_type {
+    none = 0,
+    ethernet,
+    ip,
+    protocol,
+    payload,
+};
+layer_type to_layer_type(std::string_view name);
+
 enum class load_type { none = 0, frames, octets };
 load_type to_load_type(std::string_view name);
 

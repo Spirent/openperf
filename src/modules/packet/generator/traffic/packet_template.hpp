@@ -2,7 +2,7 @@
 #define _OP_PACKET_GENERATOR_TRAFFIC_PACKET_TEMPLATE_HPP_
 
 #include "packet/generator/traffic/header/container.hpp"
-#include "packet/generator/traffic/header/utils.hpp"
+#include "packet/generator/traffic/header/config.hpp"
 #include "packet/generator/traffic/view_iterator.hpp"
 
 #include "packetio/packet_buffer.hpp"
