@@ -28,3 +28,6 @@
 [submodule "deps/range-v3"]
 	path = deps/range-v3
 	url = https://github.com/ericniebler/range-v3.git
+[submodule "deps/base-n"]
+	path = deps/base-n
+	url = https://github.com/azawadzki/base-n.git
