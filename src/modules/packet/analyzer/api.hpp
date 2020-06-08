@@ -25,7 +25,7 @@ class RxFlow;
 namespace openperf::packet::analyzer {
 
 class sink;
-struct sink_result;
+class sink_result;
 
 namespace api {
 

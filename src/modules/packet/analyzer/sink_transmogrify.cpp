@@ -482,19 +482,19 @@ analyzer_result_ptr to_swagger(const core::uuid& id, const sink_result& src)
     auto dst = std::make_unique<swagger::v1::model::PacketAnalyzerResult>();
 
     dst->setId(core::to_string(id));
-    dst->setAnalyzerId(src.parent.id());
-    dst->setActive(src.parent.active());
+    dst->setAnalyzerId(src.parent().id());
+    dst->setActive(src.active());
 
     auto protocol_counters =
         std::make_shared<swagger::v1::model::PacketAnalyzerProtocolCounters>();
     populate_counters(
-        sum_counters(src.parent.protocol_counters(), src.protocols()),
+        sum_counters(src.parent().protocol_counters(), src.protocols()),
         protocol_counters);
     dst->setProtocolCounters(protocol_counters);
 
     auto flow_counters =
         std::make_shared<swagger::v1::model::PacketAnalyzerFlowCounters>();
-    populate_counters(sum_counters(src.parent.flow_counters(), src.flows()),
+    populate_counters(sum_counters(src.parent().flow_counters(), src.flows()),
                       flow_counters);
     dst->setFlowCounters(flow_counters);
 

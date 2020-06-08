@@ -307,8 +307,9 @@ static void remove_sink(packetio::internal::api::client& client,
 reply_msg server::handle_request(const request_delete_analyzers&)
 {
     /* Delete all inactive results */
-    erase_if(m_results,
-             [](const auto& pair) { return (!pair.second->parent.active()); });
+    erase_if(m_results, [](const auto& pair) {
+        return (!pair.second->parent().active());
+    });
 
     /*
      * Sort analyzers into active and inactive ones.  We want to delete
@@ -356,7 +357,7 @@ reply_msg server::handle_request(const request_delete_analyzer& request)
     if (result != std::end(m_sinks) && !result->template get<sink>().active()) {
         /* Delete this analyzers result objects */
         erase_if(m_results, [&](const auto& pair) {
-            return (pair.second->parent.id() == request.id);
+            return (pair.second->parent().id() == request.id);
         });
 
         /* Delete this analyzer */
@@ -422,13 +423,13 @@ reply_msg server::handle_request(const request_list_analyzer_results& request)
         compare = [&](const auto& item) {
             if (filter.count(filter_key_type::analyzer_id)
                 && filter[filter_key_type::analyzer_id]
-                       != item.second->parent.id()) {
+                       != item.second->parent().id()) {
                 return (false);
             }
 
             if (filter.count(filter_key_type::source_id)
                 && filter[filter_key_type::source_id]
-                       != item.second->parent.source()) {
+                       != item.second->parent().source()) {
                 return (false);
             }
 
@@ -452,8 +453,9 @@ reply_msg server::handle_request(const request_list_analyzer_results& request)
 reply_msg server::handle_request(const request_delete_analyzer_results&)
 {
     /* Delete all inactive results */
-    erase_if(m_results,
-             [](const auto& pair) { return (!pair.second->parent.active()); });
+    erase_if(m_results, [](const auto& pair) {
+        return (!pair.second->parent().active());
+    });
 
     return (reply_ok{});
 }
@@ -478,7 +480,7 @@ reply_msg server::handle_request(const request_delete_analyzer_result& request)
 {
     if (auto id = to_uuid(request.id); id.has_value()) {
         if (auto result = m_results.find(*id); result != std::end(m_results)) {
-            if (!result->second->parent.active()) { m_results.erase(*id); }
+            if (!result->second->parent().active()) { m_results.erase(*id); }
         }
     }
 
@@ -495,13 +497,13 @@ reply_msg server::handle_request(const request_list_rx_flows& request)
         compare = [&](const auto& item) {
             if (filter.count(filter_key_type::analyzer_id)
                 && filter[filter_key_type::analyzer_id]
-                       != item.second->parent.id()) {
+                       != item.second->parent().id()) {
                 return (false);
             }
 
             if (filter.count(filter_key_type::source_id)
                 && filter[filter_key_type::source_id]
-                       != item.second->parent.source()) {
+                       != item.second->parent().source()) {
                 return (false);
             }
 

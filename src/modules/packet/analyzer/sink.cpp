@@ -16,14 +16,14 @@ template class statistics::flow::counter_map<statistics::generic_flow_counters>;
 
 static std::once_flag flow_counter_factory_init;
 
-sink_result::sink_result(const sink& parent_)
-    : parent(parent_)
-    , flow_shards(parent.worker_count())
+sink_result::sink_result(const sink& parent)
+    : m_parent(parent)
+    , m_flow_shards(parent.worker_count())
 {
     assert(parent.worker_count());
     std::generate_n(
-        std::back_inserter(protocol_shards), parent.worker_count(), [&]() {
-            return (statistics::make_counters(parent.protocol_counters()));
+        std::back_inserter(m_protocol_shards), m_parent.worker_count(), [&]() {
+            return (statistics::make_counters(m_parent.protocol_counters()));
         });
 
     /*
@@ -39,15 +39,33 @@ sink_result::sink_result(const sink& parent_)
     });
 }
 
+bool sink_result::active() const { return (m_active); }
+
+const sink& sink_result::parent() const { return (m_parent); }
+
+sink_result::protocol_shard& sink_result::protocol(size_t idx)
+{
+    return (m_protocol_shards[idx]);
+}
+
 const std::vector<sink_result::protocol_shard>& sink_result::protocols() const
 {
-    return (protocol_shards);
+    return (m_protocol_shards);
+}
+
+sink_result::flow_shard& sink_result::flow(size_t idx)
+{
+    return (m_flow_shards[idx]);
 }
 
 const std::vector<sink_result::flow_shard>& sink_result::flows() const
 {
-    return (flow_shards);
+    return (m_flow_shards);
 }
+
+void sink_result::start() { m_active = true; }
+
+void sink_result::stop() { m_active = false; }
 
 std::vector<uint8_t> sink::make_indexes(std::vector<unsigned>& ids)
 {
@@ -107,6 +125,7 @@ size_t sink::worker_count() const { return (m_indexes.size()); }
 
 void sink::start(sink_result* results)
 {
+    results->start();
     m_results.store(results, std::memory_order_release);
 }
 
@@ -121,7 +140,9 @@ void sink::stop()
      * packets.  I guess the proper solution is to spin on an RCU mechanism
      * here, but that seems like overkill for something so unlikely to happen...
      */
-    m_results.store(nullptr, std::memory_order_release);
+    auto result = m_results.exchange(nullptr, std::memory_order_acq_rel);
+    result->stop();
+    /* since we don't own this pointer, we don't need to do anything with it */
 }
 
 bool sink::active() const
@@ -161,7 +182,7 @@ uint16_t sink::push(const packetio::packet::packet_buffer* const packets[],
     auto results = m_results.load(std::memory_order_consume);
 
     /* Update protocol statistics */
-    auto& protocol = results->protocol_shards[m_indexes[id]];
+    auto& protocol = results->protocol(m_indexes[id]);
     uint16_t start = 0;
     while (start < packets_length) {
         uint16_t end = start + std::min(burst_size, packets_length - start);
@@ -181,7 +202,7 @@ uint16_t sink::push(const packetio::packet::packet_buffer* const packets[],
     }
 
     /* Update flow statistics */
-    auto& flows = results->flow_shards[m_indexes[id]];
+    auto& flows = results->flow(m_indexes[id]);
     auto cache = openperf::utils::flat_memoize<64>(
         [&](uint32_t rss_hash, std::optional<uint32_t> stream_id) {
             return (flows.second.find(rss_hash, stream_id));

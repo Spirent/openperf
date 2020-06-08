@@ -158,6 +158,11 @@ with description('Packet Analyzer,', 'packet_analyzer') as self:
                 with it('succeeds'):
                     result = self.api.start_analyzer(self.analyzer.id)
                     expect(result).to(be_valid_packet_analyzer_result)
+                    expect(result.active).to(be_true)
+
+                    ana = self.api.get_analyzer(self.analyzer.id)
+                    expect(ana).to(be_valid_packet_analyzer)
+                    expect(ana.active).to(be_true)
 
             with description('non-existent analyzer id,'):
                 with it('returns 404'):
@@ -170,6 +175,7 @@ with description('Packet Analyzer,', 'packet_analyzer') as self:
                 self.analyzer = ana
                 result = self.api.start_analyzer(self.analyzer.id)
                 expect(result).to(be_valid_packet_analyzer_result)
+                expect(result.active).to(be_true)
 
             with description('by analyzer id,'):
                 with it('succeeds'):
@@ -182,6 +188,27 @@ with description('Packet Analyzer,', 'packet_analyzer') as self:
                     ana = self.api.get_analyzer(self.analyzer.id)
                     expect(ana).to(be_valid_packet_analyzer)
                     expect(ana.active).to(be_false)
+
+                    results = self.api.list_analyzer_results(analyzer_id=self.analyzer.id)
+                    expect(results).not_to(be_empty)
+                    for result in results:
+                        expect(result).to(be_valid_packet_analyzer_result)
+                        expect(result.active).to(be_false)
+
+            with description('restart analyzer, '):
+                with it('succeeds'):
+                    self.api.stop_analyzer(self.analyzer.id)
+                    result = self.api.start_analyzer(self.analyzer.id)
+                    expect(result).to(be_valid_packet_analyzer_result)
+                    expect(result.active).to(be_true)
+
+                    # We should now have two results: one active, one inactive
+                    results = self.api.list_analyzer_results(analyzer_id=self.analyzer.id)
+                    expect(results).not_to(be_empty)
+                    for result in results:
+                        expect(result).to(be_valid_packet_analyzer_result)
+                    expect([r for r in results if r.active is True]).not_to(be_empty)
+                    expect([r for r in results if r.active is False]).not_to(be_empty)
 
         with description('list analyzer results,'):
             with before.each:

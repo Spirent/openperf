@@ -30,24 +30,34 @@ struct sink_config
         statistics::flow_flags::frame_count;
 };
 
-struct sink_result
+class sink_result
 {
+public:
     using recycler = utils::recycle::depot<1>;
     using flow_counters_container =
         statistics::flow::counter_map<statistics::generic_flow_counters>;
-
     using protocol_shard = statistics::generic_protocol_counters;
     using flow_shard = std::pair<recycler, flow_counters_container>;
 
-    const sink& parent;
+    sink_result(const sink& parent);
 
-    std::vector<protocol_shard> protocol_shards;
-    std::vector<flow_shard> flow_shards;
+    bool active() const;
+    const sink& parent() const;
 
-    sink_result(const sink& p);
-
+    protocol_shard& protocol(size_t idx);
     const std::vector<protocol_shard>& protocols() const;
+
+    flow_shard& flow(size_t idx);
     const std::vector<flow_shard>& flows() const;
+
+    void start();
+    void stop();
+
+private:
+    const sink& m_parent;
+    std::vector<protocol_shard> m_protocol_shards;
+    std::vector<flow_shard> m_flow_shards;
+    bool m_active = false;
 };
 
 class sink
