@@ -1,4 +1,5 @@
 #include <fcntl.h>
+#include <filesystem>
 #include <unistd.h>
 #include <cstring>
 #include <vector>
@@ -82,6 +83,12 @@ file_stack::create_block_file(const model::file& block_file_model)
         return tl::make_unexpected("File " + block_file_model.get_id()
                                    + " already exists.");
 
+    for (const auto& blkfile_pair : m_block_files) {
+        if (std::filesystem::equivalent(block_file_model.get_path(), blkfile_pair.second->get_path()))
+            return tl::make_unexpected("File with path " + block_file_model.get_path()
+                                   + " already exists.");
+    }
+
     if (block_file_model.get_size() <= block_generator_vdev_header_size)
         return tl::make_unexpected(
             "File size less than header size ("
@@ -113,6 +120,8 @@ block_file_ptr file_stack::get_block_file(const std::string& id) const
 
 bool file_stack::delete_block_file(const std::string& id)
 {
+    if (m_block_files.count(id) && m_block_files.at(id)->get_fd())
+        throw std::runtime_error("File " + id + " is in use");;
     return (m_block_files.erase(id) > 0);
 }
 
