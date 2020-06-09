@@ -78,10 +78,14 @@ reply_msg server::handle_request(const request_block_file_add& request)
 
 reply_msg server::handle_request(const request_block_file_del& request)
 {
-    if (m_file_stack->delete_block_file(request.id)) {
-        return reply_ok{};
-    } else {
-        return to_error(api::error_type::NOT_FOUND);
+    try {
+        if (m_file_stack->delete_block_file(request.id)) {
+            return reply_ok{};
+        } else {
+            return to_error(api::error_type::NOT_FOUND);
+        }
+    } catch (const std::runtime_error& e) {
+        return to_error(error_type::CUSTOM_ERROR, 0, e.what());
     }
 }
 
