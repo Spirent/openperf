@@ -67,6 +67,30 @@ LIST_MODIFIER_PACKET = [
     'udp'
 ]
 
+CUSTOM_DATA = "TG9yZW0gaXBzdW0gZG9sb3Igc2l0IGFtZXQsIGNvbnNlY3RldHVyIGFkaXBpc2NpbmcgZWxpdCwg\
+c2VkIGRvIGVpdXNtb2QgdGVtcG9yIGluY2lkaWR1bnQgdXQgbGFib3JlIGV0IGRvbG9yZSBtYWdu\
+YSBhbGlxdWEuIFV0IGVuaW0gYWQgbWluaW0gdmVuaWFtLCBxdWlzIG5vc3RydWQgZXhlcmNpdGF0\
+aW9uIHVsbGFtY28gbGFib3JpcyBuaXNpIHV0IGFsaXF1aXAgZXggZWEgY29tbW9kbyBjb25zZXF1\
+YXQuIER1aXMgYXV0ZSBpcnVyZSBkb2xvciBpbiByZXByZWhlbmRlcml0IGluIHZvbHVwdGF0ZSB2\
+ZWxpdCBlc3NlIGNpbGx1bSBkb2xvcmUgZXUgZnVnaWF0IG51bGxhIHBhcmlhdHVyLiBFeGNlcHRl\
+dXIgc2ludCBvY2NhZWNhdCBjdXBpZGF0YXQgbm9uIHByb2lkZW50LCBzdW50IGluIGN1bHBhIHF1\
+aSBvZmZpY2lhIGRlc2VydW50IG1vbGxpdCBhbmltIGlkIGVzdCBsYWJvcnVtLgo="
+
+CUSTOM_L2_PACKET = [
+    {'custom': {'data': CUSTOM_DATA,
+                'layer': 'ethernet'}}
+]
+
+CUSTOM_PAYLOAD = [
+    {'ethernet': {'source': '10:94:00:00:aa:bb',
+                  'destination': '10:94:00:00:bb:cc'}},
+    {'ipv4': {'source': '198.18.15.10',
+              'destination': '198.18.15.20'}},
+    'udp',
+    {'custom': {'data': CUSTOM_DATA,
+                'layer': 'payload'}}
+]
+
 GENERATOR_CONFIG_DEFAULT = {
     'duration': {'continuous': True},
     'load': {'rate': 10},
@@ -239,6 +263,22 @@ with description('Packet Generator,', 'packet_generator') as self:
                         gen = generator_model(self.api.api_client)
                         gen.config.traffic[0].signature = client.models.SpirentSignature(
                             stream_id=1, latency='start_of_frame')
+                        result = self.api.create_generator(gen)
+                        expect(result).to(be_valid_packet_generator)
+
+                with description('with custom packet,'):
+                    with it('succeeds'):
+                        template = make_traffic_template(CUSTOM_L2_PACKET)
+                        gen = generator_model(self.api.api_client)
+                        gen.config.traffic[0].packet = template
+                        result = self.api.create_generator(gen)
+                        expect(result).to(be_valid_packet_generator)
+
+                with description('with custom payload,'):
+                    with it('succeeds'):
+                        template = make_traffic_template(CUSTOM_PAYLOAD)
+                        gen = generator_model(self.api.api_client)
+                        gen.config.traffic[0].packet = template
                         result = self.api.create_generator(gen)
                         expect(result).to(be_valid_packet_generator)
 
@@ -590,9 +630,9 @@ with description('Packet Generator,', 'packet_generator') as self:
 
         with after.each:
             try:
-                for ana in self.api.list_generators():
-                    if ana.active:
-                        self.api.stop_generator(ana.id)
+                for gen in self.api.list_generators():
+                    if gen.active:
+                        self.api.stop_generator(gen.id)
                 self.api.delete_generators()
             except AttributeError:
                 pass
