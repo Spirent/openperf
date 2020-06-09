@@ -482,3 +482,50 @@ std::shared_ptr<CpuInfoResult> to_swagger(const cpu_info_t& info)
 }
 
 } // namespace openperf::cpu::api
+
+namespace swagger::v1::model {
+
+void from_json(const nlohmann::json& j, CpuGenerator& generator)
+{
+    if(j.find("id") != j.end()) {
+        generator.setId(j.at("id"));
+    }
+
+    generator.setRunning(j.at("running"));
+
+    auto gc = CpuGeneratorConfig();
+    gc.fromJson(const_cast<nlohmann::json&>(j.at("config")));
+    generator.setConfig(std::make_shared<CpuGeneratorConfig>(gc));
+}
+
+void from_json(const nlohmann::json& j, BulkCreateCpuGeneratorsRequest& request)
+{
+    request.getItems().clear();
+    nlohmann::json jsonArray;
+    for( auto& item : const_cast<nlohmann::json&>(j).at("items")) {
+        if(item.is_null()) {
+            request.getItems().push_back( std::shared_ptr<CpuGenerator>(nullptr) );
+        } else {
+            std::shared_ptr<CpuGenerator> newItem(new CpuGenerator());
+            from_json(item, *newItem);
+            request.getItems().push_back( newItem );
+        }
+    }
+}
+
+void from_json(const nlohmann::json& j, BulkDeleteCpuGeneratorsRequest& request)
+{
+    request.fromJson(const_cast<nlohmann::json&>(j));
+}
+
+void from_json(const nlohmann::json& j, BulkStartCpuGeneratorsRequest& request)
+{
+    request.fromJson(const_cast<nlohmann::json&>(j));
+}
+
+void from_json(const nlohmann::json& j, BulkStopCpuGeneratorsRequest& request)
+{
+    request.fromJson(const_cast<nlohmann::json&>(j));
+}
+
+} // namespace swagger::v1::model

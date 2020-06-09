@@ -15,27 +15,6 @@ using json = nlohmann::json;
 
 namespace api = openperf::cpu::api;
 
-class bulk_create_cpu_generators_request : public BulkCreateCpuGeneratorsRequest {
-public:
-    void fromJson(nlohmann::json& val) override
-    {
-        m_Items.clear();
-        nlohmann::json jsonArray;
-        for( auto& item : val["items"]) {
-            if(item.is_null()) {
-                m_Items.push_back( std::shared_ptr<CpuGenerator>(nullptr) );
-            } else {
-                std::shared_ptr<CpuGenerator> newItem(new CpuGenerator());
-                newItem->fromJson(item);
-                auto gc = CpuGeneratorConfig();
-                gc.fromJson(item["config"]);
-                newItem->setConfig(std::make_shared<CpuGeneratorConfig>(gc));
-                m_Items.push_back( newItem );
-            }
-        }
-    }
-};
-
 class handler : public openperf::api::route::handler::registrar<handler>
 {
     std::unique_ptr<void, op_socket_deleter> m_socket;
@@ -191,14 +170,7 @@ void handler::create_generator(const Rest::Request& request,
                                Http::ResponseWriter response)
 {
     try {
-        auto generator_json = json::parse(request.body());
-
-        CpuGeneratorConfig gc;
-        gc.fromJson(generator_json["config"]);
-
-        CpuGenerator generator_model;
-        generator_model.fromJson(generator_json);
-        generator_model.setConfig(std::make_shared<CpuGeneratorConfig>(gc));
+        auto generator_model = json::parse(request.body()).get<CpuGenerator>();
 
         auto api_request = api::request_cpu_generator_add{
             std::make_unique<api::cpu_generator_t>(
@@ -279,9 +251,7 @@ void handler::delete_generator(const Rest::Request& request,
 void handler::bulk_create_generators(const Rest::Request& request,
                                     Http::ResponseWriter response)
 {
-    auto request_json = json::parse(request.body());
-    bulk_create_cpu_generators_request request_model;
-    request_model.fromJson(request_json);
+    auto request_model = json::parse(request.body()).get<BulkCreateCpuGeneratorsRequest>();
 
     auto api_reply =
         submit_request(m_socket.get(), api::from_swagger(request_model));
@@ -307,9 +277,7 @@ void handler::bulk_create_generators(const Rest::Request& request,
 void handler::bulk_delete_generators(const Rest::Request& request,
                                    Http::ResponseWriter response)
 {
-    auto request_json = json::parse(request.body());
-    BulkDeleteCpuGeneratorsRequest request_model;
-    request_model.fromJson(request_json);
+    auto request_model = json::parse(request.body()).get<BulkDeleteCpuGeneratorsRequest>();
 
     auto api_reply =
         submit_request(m_socket.get(), api::from_swagger(request_model));
@@ -377,9 +345,7 @@ void handler::stop_generator(const Rest::Request& request,
 void handler::bulk_start_generators(const Rest::Request& request,
                                     Http::ResponseWriter response)
 {
-    auto request_json = json::parse(request.body());
-    BulkStartCpuGeneratorsRequest request_model;
-    request_model.fromJson(request_json);
+    auto request_model = json::parse(request.body()).get<BulkStartCpuGeneratorsRequest>();
 
     api::request_cpu_generator_bulk_start bulk_request{
         std::make_unique<std::vector<std::string>>()};
@@ -416,9 +382,7 @@ void handler::bulk_start_generators(const Rest::Request& request,
 void handler::bulk_stop_generators(const Rest::Request& request,
                                    Http::ResponseWriter response)
 {
-    auto request_json = json::parse(request.body());
-    BulkStopCpuGeneratorsRequest request_model;
-    request_model.fromJson(request_json);
+    auto request_model = json::parse(request.body()).get<BulkStopCpuGeneratorsRequest>();
 
     api::request_cpu_generator_bulk_stop bulk_request{
         std::make_unique<std::vector<std::string>>()};
