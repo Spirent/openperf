@@ -5,6 +5,8 @@ import os
 import client.api
 import client.models
 from common import Config, Service
+from common.helper import (make_generator_config,
+                           make_traffic_template)
 from common.matcher import (be_valid_packet_generator,
                             be_valid_packet_generator_result,
                             be_valid_transmit_flow,
@@ -15,6 +17,74 @@ CONFIG = Config(os.path.join(os.path.dirname(__file__),
                              os.environ.get('MAMBA_CONFIG', 'config.yaml')))
 
 
+SEQ_MODIFIER_PACKET = [
+    {'ethernet': {'source': '10:94:00:00:aa:bb',
+                  'modifiers': {
+                      'items': [
+                          {'destination': {
+                              'sequence': {'count': 10,
+                                           'start': '00:00:01:00:00:01'}}
+                          }
+                      ]
+                  }}
+    },
+    {'ipv4': {
+        'modifiers': {
+            'items': [
+                {'source': {
+                    'sequence': {'count': 10,
+                                 'start': '198.18.15.1'}}
+                },
+                {'destination': {
+                    'sequence': {'count': 10,
+                                 'start': '198.18.16.1'}}
+                }
+            ],
+            'tie': 'zip'}
+    }},
+    'udp'
+]
+
+LIST_MODIFIER_PACKET = [
+    {'ethernet': {'source': '10:94:00:00:aa:bb',
+                  'destination': '10:94:00:00:bb:cc'}},
+    {'ipv4': {
+        'modifiers': {
+            'items': [
+                {'source': {
+                    'list': ['198.18.15.1',
+                             '198.18.15.3',
+                             '198.18.15.5']
+                }},
+                {'destination': {
+                    'list': ['198.18.16.1',
+                             '198.18.16.3',
+                             '198.18.16.5']
+                }}
+            ],
+            'tie': 'zip'}
+    }},
+    'udp'
+]
+
+GENERATOR_CONFIG_DEFAULT = {
+    'duration': {'continuous': True},
+    'load': {'rate': 10},
+    'traffic': [
+        {
+            'length': {'fixed': 128},
+            'packet': [
+                {'ethernet': {'source': '10:94:00:00:aa:bb',
+                              'destination': '10:94:00:00:bb:cc'}},
+                {'ipv4': {'source': '198.18.15.10',
+                          'destination': '198.18.15.20'}},
+                'udp'
+            ]
+        }
+    ]
+}
+
+
 def get_first_port_id(api_client):
     ports_api = client.api.PortsApi(api_client)
     ports = ports_api.list_ports()
@@ -22,119 +92,30 @@ def get_first_port_id(api_client):
     return ports[0].id
 
 
-def default_traffic_duration():
-    duration = client.models.TrafficDuration()
-    duration.continuous = True
-    return duration
-
-
-def default_traffic_load():
-    rate = client.models.TrafficLoadRate()
-    rate.period = "second"
-    rate.value = 10
-
-    load = client.models.TrafficLoad()
-    load.rate = rate
-    load.units = "frames"
-
-    return load
-
-def default_traffic_packet_template():
-    eth = client.models.PacketProtocolEthernet()
-    eth.source = "10:94:00:01:aa:bb"
-    eth.destination = "10:94:00.02:cc:dd"
-
-    proto_eth = client.models.TrafficProtocol()
-    proto_eth.ethernet = eth
-
-    ip = client.models.PacketProtocolIpv4()
-    ip.source = "198.18.15.10"
-    ip.destination = "198.18.15.20"
-
-    proto_ip = client.models.TrafficProtocol()
-    proto_ip.ipv4 = ip
-
-    udp = client.models.PacketProtocolUdp()
-    proto_udp = client.models.TrafficProtocol()
-    proto_udp.udp = udp
-
-    template = client.models.TrafficPacketTemplate()
-    template.protocols = [proto_eth, proto_ip, proto_udp]
-    return template
-
-
 def default_traffic_packet_template_with_seq_modifiers(permute_flag=None):
-    mac_seq = client.models.TrafficProtocolMacModifierSequence()
-    mac_seq.count = 10
-    mac_seq.start = "00.00.01.00.00.01"
-    mac_seq_mod = client.models.TrafficProtocolMacModifier(sequence=mac_seq)
-    eth_modifier = client.models.TrafficProtocolModifier(name='destination',
-                                                         permute=permute_flag if permute_flag else False,
-                                                         mac=mac_seq_mod)
+    model = make_traffic_template(SEQ_MODIFIER_PACKET)
 
-    addr_src_seq = client.models.TrafficProtocolIpv4ModifierSequence()
-    addr_src_seq.count = 10
-    addr_src_seq.start = '198.18.15.1'
-    addr_src_mod = client.models.TrafficProtocolIpv4Modifier(sequence=addr_src_seq)
-    ipv4_src_mod = client.models.TrafficProtocolModifier(name='source',
-                                                         permute=permute_flag if permute_flag else False,
-                                                         ipv4=addr_src_mod)
+    for protocol in model.protocols:
+        if protocol.modifiers:
+            for modifier in protocol.modifiers.items:
+                modifier.permute = permute_flag if permute_flag else False
 
-    addr_dst_seq = client.models.TrafficProtocolIpv4ModifierSequence()
-    addr_dst_seq.count = 10
-    addr_dst_seq.start = '198.18.15.1'
-    addr_dst_mod = client.models.TrafficProtocolIpv4Modifier(sequence=addr_dst_seq)
-    ipv4_dst_mod = client.models.TrafficProtocolModifier(name='destination',
-                                                         permute=permute_flag if permute_flag else False,
-                                                         ipv4=addr_dst_mod)
-
-
-    template = default_traffic_packet_template()
-    template.protocols[0].modifiers = client.models.TrafficProtocolModifiers(
-        items=[eth_modifier])
-    template.protocols[1].modifiers = client.models.TrafficProtocolModifiers(
-        items=[ipv4_src_mod, ipv4_dst_mod])
-
-    return template
+    return model
 
 
 def default_traffic_packet_template_with_list_modifiers(permute_flag=None):
-    addr_src_mod = client.models.TrafficProtocolIpv4Modifier()
-    addr_src_mod.list = ['198.18.15.1', '198.18.15.2', '198.18.15.3']
-    ipv4_src_mod = client.models.TrafficProtocolModifier(name='source',
-                                                         permute=permute_flag if permute_flag else False,
-                                                         ipv4=addr_src_mod)
+    model = make_traffic_template(LIST_MODIFIER_PACKET)
 
-    addr_dst_mod = client.models.TrafficProtocolIpv4Modifier()
-    addr_dst_mod.list = ['198.18.16.1', '198.18.16.2', '198.18.16.3']
-    ipv4_dst_mod = client.models.TrafficProtocolModifier(name='destination',
-                                                         permute=permute_flag if permute_flag else False,
-                                                         ipv4=addr_dst_mod)
+    for protocol in model.protocols:
+        if protocol.modifiers:
+            for modifier in protocol.modifiers.items:
+                modifier.permute = permute_flag if permute_flag else False
 
-    template = default_traffic_packet_template()
-    template.protocols[1].modifiers = client.models.TrafficProtocolModifiers(items=[ipv4_src_mod, ipv4_dst_mod])
-
-    return template
+    return model
 
 
-def default_traffic_length():
-    length = client.models.TrafficLength()
-    length.fixed = 128
-    return length
-
-
-def default_traffic_definition():
-    definition = client.models.TrafficDefinition()
-    definition.packet = default_traffic_packet_template()
-    definition.length = default_traffic_length()
-    return definition
-
-
-def generator_model(api_client, duration = None, load = None, traffic = None):
-    config = client.models.PacketGeneratorConfig()
-    config.duration = duration if duration else default_traffic_duration()
-    config.load = load if load else default_traffic_load()
-    config.traffic = [traffic if traffic else default_traffic_definition()]
+def generator_model(api_client):
+    config = make_generator_config(**GENERATOR_CONFIG_DEFAULT)
 
     gen = client.models.PacketGenerator()
     gen.target_id = get_first_port_id(api_client)
