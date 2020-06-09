@@ -30,7 +30,7 @@ class file
 {
 private:
     std::thread m_scrub_thread;
-    std::atomic_bool m_deleted;
+    std::atomic_bool m_scrub_aborted;
 
     void scrub_done();
     void scrub_update(double);

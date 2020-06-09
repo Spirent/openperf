@@ -109,7 +109,7 @@ void file::scrub_worker(size_t header_size, size_t file_size)
 
     auto current = header_size;
     auto page_size = getpagesize();
-    while (!m_deleted && current < file_size) {
+    while (!m_scrub_aborted && current < file_size) {
         auto buf_len = std::min(SCRUB_BUFFER_SIZE, file_size - current);
         auto file_offset = (current / page_size) * page_size;
         auto mmap_len = buf_len + current - file_offset;
@@ -164,7 +164,7 @@ void file::queue_scrub()
 
 void file::terminate_scrub()
 {
-    m_deleted = true;
+    m_scrub_aborted = true;
     if (m_scrub_thread.joinable()) m_scrub_thread.join();
 }
 
