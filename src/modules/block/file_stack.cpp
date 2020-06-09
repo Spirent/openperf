@@ -224,7 +224,7 @@ block_file_ptr file_stack::get_block_file(const std::string& id) const
 bool file_stack::delete_block_file(const std::string& id)
 {
     if (m_block_files.count(id) && m_block_files.at(id)->get_fd())
-        throw std::runtime_error("File " + id + " is in use");;
+        throw std::runtime_error("File " + id + " is in use");
     return (m_block_files.erase(id) > 0);
 }
 
