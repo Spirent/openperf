@@ -19,7 +19,7 @@ from expects import *
 ###
 CONFIG = Config(os.path.join(os.path.dirname(__file__),
                              os.environ.get('MAMBA_CONFIG', 'config.yaml')))
-POLL_INTERVAL = 0.01
+POLL_INTERVAL = 0.025
 TIME_FUDGE = datetime.timedelta(milliseconds=5)
 
 ###
@@ -133,6 +133,48 @@ ETH_IPV6_UDP_MODIFIERS_PRODUCT = [
     }}
 ]
 
+CUSTOM_DATA = "TG9yZW0gaXBzdW0gZG9sb3Igc2l0IGFtZXQsIGNvbnNlY3RldHVyIGFkaXBpc2NpbmcgZWxpdCwg\
+c2VkIGRvIGVpdXNtb2QgdGVtcG9yIGluY2lkaWR1bnQgdXQgbGFib3JlIGV0IGRvbG9yZSBtYWdu\
+YSBhbGlxdWEuIFV0IGVuaW0gYWQgbWluaW0gdmVuaWFtLCBxdWlzIG5vc3RydWQgZXhlcmNpdGF0\
+aW9uIHVsbGFtY28gbGFib3JpcyBuaXNpIHV0IGFsaXF1aXAgZXggZWEgY29tbW9kbyBjb25zZXF1\
+YXQuIER1aXMgYXV0ZSBpcnVyZSBkb2xvciBpbiByZXByZWhlbmRlcml0IGluIHZvbHVwdGF0ZSB2\
+ZWxpdCBlc3NlIGNpbGx1bSBkb2xvcmUgZXUgZnVnaWF0IG51bGxhIHBhcmlhdHVyLiBFeGNlcHRl\
+dXIgc2ludCBvY2NhZWNhdCBjdXBpZGF0YXQgbm9uIHByb2lkZW50LCBzdW50IGluIGN1bHBhIHF1\
+aSBvZmZpY2lhIGRlc2VydW50IG1vbGxpdCBhbmltIGlkIGVzdCBsYWJvcnVtLgo="
+
+CUSTOM_L2_PACKET = [
+    {'custom': {'data': CUSTOM_DATA,
+                'layer': 'ethernet'}}
+]
+
+CUSTOM_PROTOCOL_WITH_MODIFIERS = [
+    {'ethernet': {'source': '10:94:00:00:aa:bb',
+                  'destination': '10:94:00:00:bb:cc'}},
+    {'ipv4': {'source': '198.18.15.10',
+              'destination': '198.18.15.20'}},
+    {'custom': {'data': CUSTOM_DATA,
+                'layer': 'protocol',
+                'modifiers': {
+                    'items': [
+                        {'data': {
+                            'offset': 0,
+                            'sequence': {'start': 101,
+                                         'count': 10}
+                        }},
+                        {'data': {
+                            'offset': 12,
+                            'list': ['2001:db8::100:1',
+                                     '2001:db8::100:2',
+                                     '2001:db8::100:3',
+                                     '2001:db8::100:5',
+                                     '2001:db8::100:8']
+                        }}
+                    ],
+                    'tie': 'cartesian'
+                }}
+    }
+]
+
 ###
 # Analyzer configurations
 ###
@@ -150,7 +192,7 @@ ANALYZER_CONFIG_SIGS = {
 ###
 # Generator configurations
 ###
-GENERATOR_CONFIG_1 = {
+GENERATOR_CONFIG_NO_SIGS = {
     'duration': {'frames': 100},
     'load': {'rate': 1000},
     'traffic': [
@@ -161,7 +203,7 @@ GENERATOR_CONFIG_1 = {
     ],
 }
 
-GENERATOR_CONFIG_2 = {
+GENERATOR_CONFIG_SIGS = {
     'duration': {'frames': 1000 },
     'load': {'burst_size': 4,
              'rate': 10000 },
@@ -175,7 +217,7 @@ GENERATOR_CONFIG_2 = {
     ]
 }
 
-GENERATOR_CONFIG_3 = {
+GENERATOR_CONFIG_MULTI_DEFS = {
     'duration': {'frames': 100},
     'load': {'rate': 1000},
     'traffic': [
@@ -192,7 +234,7 @@ GENERATOR_CONFIG_3 = {
     ],
 }
 
-GENERATOR_CONFIG_4 = {
+GENERATOR_CONFIG_ZIP_MODS = {
     'duration': {'frames': 200},
     'load': {'burst_size': 16,
              'rate': 10000},
@@ -204,7 +246,7 @@ GENERATOR_CONFIG_4 = {
     ],
 }
 
-GENERATOR_CONFIG_5 = {
+GENERATOR_CONFIG_PRODUCT_MODS = {
     'duration': {'frames': 200},
     'load': {'burst_size': 32,
              'rate': 10000},
@@ -216,7 +258,7 @@ GENERATOR_CONFIG_5 = {
     ],
 }
 
-GENERATOR_CONFIG_6 = {
+GENERATOR_CONFIG_PxP_MODS = {
     'duration': {'frames': 500},
     'load': {'burst_size': 64,
              'rate': 10000},
@@ -229,6 +271,29 @@ GENERATOR_CONFIG_6 = {
     ],
 }
 
+GENERATOR_CONFIG_CUSTOM_PACKET = {
+    'duration': {'frames': 100},
+    'load': {'rate': 1000},
+    'traffic': [
+        {
+            'length': {'fixed': 128},
+            'packet': CUSTOM_L2_PACKET,
+        }
+    ],
+}
+
+GENERATOR_CONFIG_CUSTOM_MODIFIERS = {
+    'duration': {'frames': 100},
+    'load': {'rate': 1000},
+    'traffic': [
+        {
+            'length': {'fixed': 128},
+            'packet': CUSTOM_PROTOCOL_WITH_MODIFIERS,
+            'signature': {'stream_id': 1,
+                          'latency': 'end_of_frame'}
+        }
+    ],
+}
 
 ###
 # Utility functions
@@ -408,7 +473,9 @@ with description('Packet back to back', 'packet_b2b') as self:
         with description('with single traffic definition,'):
             with description('without signatures,'):
                 with it('succeeds'):
-                    ana_result, gen_result = configure_and_run_test(self.client, ANALYZER_CONFIG_NO_SIGS, GENERATOR_CONFIG_1)
+                    ana_result, gen_result = configure_and_run_test(self.client,
+                                                                    ANALYZER_CONFIG_NO_SIGS,
+                                                                    GENERATOR_CONFIG_NO_SIGS)
 
                     # Validate results
                     exp_flow_count = 1
@@ -416,7 +483,7 @@ with description('Packet back to back', 'packet_b2b') as self:
                     expect(len(gen_result.flows)).to(equal(exp_flow_count))
 
                     # Check analyzer protocol counters
-                    exp_frame_count = GENERATOR_CONFIG_1['duration']['frames']
+                    exp_frame_count = GENERATOR_CONFIG_NO_SIGS['duration']['frames']
                     expect(ana_result.protocol_counters.ethernet.ip).to(equal(0))
                     expect(ana_result.protocol_counters.ethernet.vlan).to(equal(exp_frame_count))
                     expect(ana_result.protocol_counters.ip.ipv4).to(equal(exp_frame_count))
@@ -438,13 +505,15 @@ with description('Packet back to back', 'packet_b2b') as self:
 
                     # Check miscellaneous results
                     validate_durations(ana_result, gen_result)
-                    validate_frame_length(ana_result, GENERATOR_CONFIG_1)
+                    validate_frame_length(ana_result, GENERATOR_CONFIG_NO_SIGS)
                     validate_rx_flows(self.client, ana_result)
                     validate_tx_flows(self.client, gen_result)
 
             with description('with signatures,'):
                 with it('succeeds'):
-                    ana_result, gen_result = configure_and_run_test(self.client, ANALYZER_CONFIG_SIGS, GENERATOR_CONFIG_2)
+                    ana_result, gen_result = configure_and_run_test(self.client,
+                                                                    ANALYZER_CONFIG_SIGS,
+                                                                    GENERATOR_CONFIG_SIGS)
 
                     # Validate results
                     exp_flow_count = 1
@@ -452,7 +521,7 @@ with description('Packet back to back', 'packet_b2b') as self:
                     expect(len(gen_result.flows)).to(equal(exp_flow_count))
 
                     # Check analyzer protocol counters
-                    exp_frame_count = GENERATOR_CONFIG_2['duration']['frames']
+                    exp_frame_count = GENERATOR_CONFIG_SIGS['duration']['frames']
                     expect(ana_result.flow_counters.frame_count).to(equal(exp_frame_count))
                     expect(ana_result.protocol_counters.ethernet.ip).to(equal(exp_frame_count))
                     expect(ana_result.protocol_counters.ethernet.vlan).to(equal(0))
@@ -474,13 +543,51 @@ with description('Packet back to back', 'packet_b2b') as self:
 
                     # Check miscellaneous results
                     validate_durations(ana_result, gen_result)
-                    validate_frame_length(ana_result, GENERATOR_CONFIG_2)
+                    validate_frame_length(ana_result, GENERATOR_CONFIG_SIGS)
+                    validate_rx_flows(self.client, ana_result)
+                    validate_tx_flows(self.client, gen_result)
+
+            with description('with custom packet,'):
+                with it('succeeds'):
+                    ana_result, gen_result = configure_and_run_test(self.client,
+                                                                    ANALYZER_CONFIG_NO_SIGS,
+                                                                    GENERATOR_CONFIG_CUSTOM_PACKET)
+                    # Validate results
+                    exp_flow_count = 1
+                    expect(len(ana_result.flows)).to(equal(exp_flow_count))
+                    expect(len(gen_result.flows)).to(equal(exp_flow_count))
+
+                    # Check analyzer protocol counters
+                    exp_frame_count = GENERATOR_CONFIG_CUSTOM_PACKET['duration']['frames']
+                    expect(ana_result.flow_counters.frame_count).to(equal(exp_frame_count))
+                    expect(ana_result.protocol_counters.ethernet.arp).to(equal(0))
+                    expect(ana_result.protocol_counters.ethernet.fcoe).to(equal(0))
+                    # XXX: Software decoder default to ip for unrecognized traffic
+                    # expect(ana_result.protocol_counters.ethernet.ip).to(equal(0))
+                    expect(ana_result.protocol_counters.ethernet.lldp).to(equal(0))
+                    expect(ana_result.protocol_counters.ethernet.pppoe).to(equal(0))
+                    expect(ana_result.protocol_counters.ethernet.qinq).to(equal(0))
+                    expect(ana_result.protocol_counters.ethernet.vlan).to(equal(0))
+                    expect(ana_result.protocol_counters.ethernet.mpls).to(equal(0))
+                    expect(ana_result.protocol_counters.ip.ipv4).to(equal(0))
+                    expect(ana_result.protocol_counters.ip.ipv6).to(equal(0))
+                    expect(ana_result.protocol_counters.protocol.udp).to(equal(0))
+                    expect(ana_result.protocol_counters.protocol.tcp).to(equal(0))
+
+                    # Check generator flow counters
+                    expect(gen_result.flow_counters.packets_actual).to(equal(exp_frame_count))
+
+                    # Check miscellaneous results
+                    validate_durations(ana_result, gen_result)
+                    validate_frame_length(ana_result, GENERATOR_CONFIG_CUSTOM_PACKET)
                     validate_rx_flows(self.client, ana_result)
                     validate_tx_flows(self.client, gen_result)
 
         with description('with multiple traffic definitions,'):
             with it('succeeds'):
-                ana_result, gen_result = configure_and_run_test(self.client, ANALYZER_CONFIG_NO_SIGS, GENERATOR_CONFIG_3)
+                ana_result, gen_result = configure_and_run_test(self.client,
+                                                                ANALYZER_CONFIG_NO_SIGS,
+                                                                GENERATOR_CONFIG_MULTI_DEFS)
 
                 # Validate results
                 exp_flow_count = 2
@@ -488,7 +595,7 @@ with description('Packet back to back', 'packet_b2b') as self:
                 expect(len(gen_result.flows)).to(equal(exp_flow_count))
 
                 # Check analyzer protocol counters
-                exp_frame_count = GENERATOR_CONFIG_3['duration']['frames']
+                exp_frame_count = GENERATOR_CONFIG_MULTI_DEFS['duration']['frames']
                 exp_flow1_count = exp_frame_count * 4 / 5
                 exp_flow2_count = exp_frame_count / 5
                 expect(ana_result.protocol_counters.ethernet.ip).to(equal(exp_flow2_count))
@@ -506,7 +613,7 @@ with description('Packet back to back', 'packet_b2b') as self:
 
                 # Check miscellaneous results
                 validate_durations(ana_result, gen_result)
-                validate_frame_length(ana_result, GENERATOR_CONFIG_3)
+                validate_frame_length(ana_result, GENERATOR_CONFIG_MULTI_DEFS)
                 validate_rx_flows(self.client, ana_result)
                 validate_tx_flows(self.client, gen_result)
 
@@ -515,7 +622,9 @@ with description('Packet back to back', 'packet_b2b') as self:
         with description('with modifiers,'):
             with description('zip modifiers,'):
                 with it('succeeds'):
-                    ana_result, gen_result = configure_and_run_test(self.client, ANALYZER_CONFIG_NO_SIGS, GENERATOR_CONFIG_4)
+                    ana_result, gen_result = configure_and_run_test(self.client,
+                                                                    ANALYZER_CONFIG_NO_SIGS,
+                                                                    GENERATOR_CONFIG_ZIP_MODS)
 
                     # Validate flow counts
                     exp_flow_count = 20
@@ -523,7 +632,7 @@ with description('Packet back to back', 'packet_b2b') as self:
                     expect(len(gen_result.flows)).to(equal(exp_flow_count))
 
                     # Validate frame count
-                    exp_frame_count = GENERATOR_CONFIG_4['duration']['frames']
+                    exp_frame_count = GENERATOR_CONFIG_ZIP_MODS['duration']['frames']
                     expect(ana_result.flow_counters.frame_count).to(equal(exp_frame_count))
                     expect(gen_result.flow_counters.packets_actual).to(equal(exp_frame_count))
                     validate_rx_flows(self.client, ana_result)
@@ -532,7 +641,9 @@ with description('Packet back to back', 'packet_b2b') as self:
             with description('cartesian modifiers,'):
                 with description('in protocol,'):
                     with it('succeeds'):
-                        ana_result, gen_result = configure_and_run_test(self.client, ANALYZER_CONFIG_NO_SIGS, GENERATOR_CONFIG_5)
+                        ana_result, gen_result = configure_and_run_test(self.client,
+                                                                        ANALYZER_CONFIG_NO_SIGS,
+                                                                        GENERATOR_CONFIG_PRODUCT_MODS)
 
                         # Validate flow counts
                         exp_flow_count = 100
@@ -540,7 +651,27 @@ with description('Packet back to back', 'packet_b2b') as self:
                         expect(len(gen_result.flows)).to(equal(exp_flow_count))
 
                         # Validate frame count
-                        exp_frame_count = GENERATOR_CONFIG_5['duration']['frames']
+                        exp_frame_count = GENERATOR_CONFIG_PRODUCT_MODS['duration']['frames']
+                        expect(ana_result.flow_counters.frame_count).to(equal(exp_frame_count))
+                        expect(gen_result.flow_counters.packets_actual).to(equal(exp_frame_count))
+                        validate_rx_flows(self.client, ana_result)
+                        validate_tx_flows(self.client, gen_result)
+
+                with description('in custom protocol,'):
+                    with it('succeeds'):
+                        # XXX: Need sigs for analyzer to recognize custom protocol flows
+                        ana_result, gen_result = configure_and_run_test(self.client,
+                                                                        ANALYZER_CONFIG_SIGS,
+                                                                        GENERATOR_CONFIG_CUSTOM_MODIFIERS)
+                        #print(ana_result)
+                        # Validate results
+                        # XXX: analyzer doesn't recognize this protocol, so it can't differentiate flows!
+                        exp_flow_count = 50
+                        expect(len(ana_result.flows)).to(equal(exp_flow_count))
+                        expect(len(gen_result.flows)).to(equal(exp_flow_count))
+
+                        # Validate frame count
+                        exp_frame_count = GENERATOR_CONFIG_CUSTOM_MODIFIERS['duration']['frames']
                         expect(ana_result.flow_counters.frame_count).to(equal(exp_frame_count))
                         expect(gen_result.flow_counters.packets_actual).to(equal(exp_frame_count))
                         validate_rx_flows(self.client, ana_result)
@@ -548,7 +679,9 @@ with description('Packet back to back', 'packet_b2b') as self:
 
                 with description('in protocol and packet,'):
                     with it('succeeds'):
-                        ana_result, gen_result = configure_and_run_test(self.client, ANALYZER_CONFIG_NO_SIGS, GENERATOR_CONFIG_6)
+                        ana_result, gen_result = configure_and_run_test(self.client,
+                                                                        ANALYZER_CONFIG_NO_SIGS,
+                                                                        GENERATOR_CONFIG_PxP_MODS)
 
                         # Validate flow counts
                         exp_flow_count = 400
@@ -556,7 +689,7 @@ with description('Packet back to back', 'packet_b2b') as self:
                         expect(len(gen_result.flows)).to(equal(exp_flow_count))
 
                         # Validate frame count
-                        exp_frame_count = GENERATOR_CONFIG_6['duration']['frames']
+                        exp_frame_count = GENERATOR_CONFIG_PxP_MODS['duration']['frames']
                         expect(ana_result.flow_counters.frame_count).to(equal(exp_frame_count))
                         expect(gen_result.flow_counters.packets_actual).to(equal(exp_frame_count))
                         validate_rx_flows(self.client, ana_result)

@@ -58,6 +58,9 @@ def make_traffic_modifiers(mod_config):
 
         mod = client.models.TrafficProtocolModifier(name=name,
                                                     permute=False)
+        if 'offset' in config:
+            mod.offset = config['offset']
+
         setattr(mod, prop, mod_impl)
 
         modifiers.append(mod)
@@ -76,6 +79,19 @@ def make_traffic_template(packet_config):
     for blob in packet_config:
         if type(blob) is str:
             blob = {blob: {}}
+
+        if 'custom' in blob:
+            custom = client.models.PacketProtocolCustom()
+            for key, value in blob['custom'].items():
+                setattr(custom, key, value)
+
+            proto_custom = client.models.TrafficProtocol()
+            proto_custom.custom = custom
+
+            if 'modifiers' in blob['custom']:
+                proto_custom.modifiers = make_traffic_modifiers(blob['custom']['modifiers'])
+
+            template.protocols.append(proto_custom)
 
         if 'ethernet' in blob:
             eth = client.models.PacketProtocolEthernet()

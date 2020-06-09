@@ -32,14 +32,16 @@ class _be_valid_non_zero_summary_statistic(Matcher):
     def _match(self, stats):
         expect(stats.summary).not_to(be_none)
         expect(stats.units).not_to(be_none)
-        expect(stats.summary.max).to(be_above_or_equal(stats.summary.min))
 
-        # Work around jitter_ipdv stat, which can be negative
-        if stats.summary.min > 0:
-            expect(stats.summary.total).to(be_above(0))
-            expect(stats.summary.max).to(be_above(0))
-            if stats.summary.min != stats.summary.max:
-                expect(stats.summary.std_dev).to(be_above(0))
+        if stats.summary.min:
+            expect(stats.summary.max).to(be_above_or_equal(stats.summary.min))
+
+            # Work around jitter_ipdv stat, which can be negative
+            if stats.summary.min > 0:
+                expect(stats.summary.total).to(be_above(0))
+                expect(stats.summary.max).to(be_above(0))
+                if stats.summary.min != stats.summary.max:
+                    expect(stats.summary.std_dev).to(be_above_or_equal(0))
 
         return True, ['is valid non zero summary statistic']
 
