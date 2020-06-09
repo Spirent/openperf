@@ -11,4 +11,5 @@ from common.helper.interface import (empty_interface,
                                      make_interface_protocols)
 
 # traffic.py
-from common.helper.traffic import make_generator_config
+from common.helper.traffic import (make_generator_config,
+                                   make_traffic_template)
