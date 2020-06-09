@@ -226,10 +226,6 @@ definitions:
       generator_id:
         type: string
         description: Generator unique identifier
-      timestamp:
-        type: string
-        description: The ISO8601-formatted date of the last result update
-        format: date-time
       value:
         type: float
         description: The value of interest
@@ -242,20 +238,36 @@ definitions:
           - less
           - less_or_equal
           - equal
-      condition_true:
-        type: integer
-        description: Counter of true conditions
-      condition_false:
-        type: integer
-        description: Counter of false conditions
+      results:
+        type: array
+        description: Array of results
+        items:
+          type: object
+          properties:
+            result_id:
+              type: string
+              description: Unique identifier of result of generator
+            timestamp:
+              type: string
+              description: The ISO8601-formatted date of the last result update
+              format: date-time
+            condition_true:
+              type: integer
+              description: Counter of true conditions
+            condition_false:
+              type: integer
+              description: Counter of false conditions
+          required:
+            - result_id
+            - timestamp
+            - condition_true
+            - condition_false
     required:
       - id
       - generator_id
-      - timestamp
       - value
       - condition
-      - condition_true
-      - condition_false
+      - results
 
   TDigestConfig:
     type: object
@@ -296,28 +308,39 @@ definitions:
       generator_id:
         type: string
         description: Unique generator identifier
-      timestamp:
-        type: string
-        description: The ISO8601-formatted date of the last result update
-        format: date-time
       delta:
         type: float
         description: The delta value used to initialize the T-Digest struct
       factor:
         type: integer
         description: The compression factor used to initialize the T-Digest struct
-      centroids:
+      results:
         type: array
-        description: Array of centroids
         items:
-          $ref: "#/definitions/TDigestCentroid"
+          type: object
+          properties:
+            result_id:
+              type: string
+              description: Unique identifier of result of generator
+            timestamp:
+              type: string
+              description: The ISO8601-formatted date of the last result update
+              format: date-time
+            centroids:
+              type: array
+              description: Array of centroids
+              items:
+                $ref: "#/definitions/TDigestCentroid"
+          required:
+            - result_id
+            - timestamp
+            - centroids
     required:
       - id
       - generator_id
-      - timestamp
       - delta
       - factor
-      - centroids
+      - results
 
   TDigestCentroid:
     type: object
