@@ -76,7 +76,12 @@ std::string source::target() const { return (m_config.target); }
 
 bool source::active() const
 {
-    if (m_tx_limit && m_tx_limit.value() == m_tx_idx) { return (false); }
+    if (m_tx_limit && m_tx_limit.value() == m_tx_idx) {
+        if (auto* results = m_results.load(std::memory_order_relaxed)) {
+            results->stop();
+        }
+        return (false);
+    }
 
     return (m_results.load(std::memory_order_relaxed) != nullptr);
 }
@@ -122,8 +127,8 @@ void source::start(source_result* results)
 
 void source::stop()
 {
-    auto result = m_results.exchange(nullptr, std::memory_order_acq_rel);
-    result->stop();
+    auto* results = m_results.exchange(nullptr, std::memory_order_acq_rel);
+    results->stop();
     /* somebody else owns the pointer; we don't need to do anything with it */
 }
 
