@@ -11,6 +11,12 @@
 #include "memory/info.hpp"
 #include "memory/generator.hpp"
 
+#include "swagger/v1/model/MemoryGenerator.h"
+#include "swagger/v1/model/BulkCreateMemoryGeneratorsRequest.h"
+#include "swagger/v1/model/BulkDeleteMemoryGeneratorsRequest.h"
+#include "swagger/v1/model/BulkStartMemoryGeneratorsRequest.h"
+#include "swagger/v1/model/BulkStopMemoryGeneratorsRequest.h"
+
 namespace openperf::memory::api {
 
 static constexpr auto endpoint = "inproc://openperf_memory";
@@ -183,5 +189,13 @@ tl::expected<api_request, int> deserialize_request(const serialized_msg& msg);
 tl::expected<api_reply, int> deserialize_reply(const serialized_msg& msg);
 
 } // namespace openperf::memory::api
+
+namespace swagger::v1::model {
+void from_json(const nlohmann::json&, MemoryGenerator&);
+void from_json(const nlohmann::json&, BulkCreateMemoryGeneratorsRequest&);
+void from_json(const nlohmann::json&, BulkDeleteMemoryGeneratorsRequest&);
+void from_json(const nlohmann::json&, BulkStartMemoryGeneratorsRequest&);
+void from_json(const nlohmann::json&, BulkStopMemoryGeneratorsRequest&);
+} // namespace swagger::v1::model
 
 #endif // _OP_MEMORY_API_HPP_

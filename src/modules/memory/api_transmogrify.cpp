@@ -322,3 +322,50 @@ tl::expected<api_reply, int> deserialize_reply(const serialized_msg& msg)
 }
 
 } // namespace openperf::memory::api
+
+namespace swagger::v1::model {
+
+void from_json(const nlohmann::json& j, MemoryGenerator& generator)
+{
+    if(j.find("id") != j.end()) {
+        generator.setId(j.at("id"));
+    }
+
+    generator.setRunning(j.at("running"));
+
+    auto gc = MemoryGeneratorConfig();
+    gc.fromJson(const_cast<nlohmann::json&>(j.at("config")));
+    generator.setConfig(std::make_shared<MemoryGeneratorConfig>(gc));
+}
+
+void from_json(const nlohmann::json& j, BulkCreateMemoryGeneratorsRequest& request)
+{
+    request.getItems().clear();
+    nlohmann::json jsonArray;
+    for( auto& item : const_cast<nlohmann::json&>(j).at("items")) {
+        if(item.is_null()) {
+            request.getItems().push_back( std::shared_ptr<MemoryGenerator>(nullptr) );
+        } else {
+            std::shared_ptr<MemoryGenerator> newItem(new MemoryGenerator());
+            from_json(item, *newItem);
+            request.getItems().push_back( newItem );
+        }
+    }
+}
+
+void from_json(const nlohmann::json& j, BulkDeleteMemoryGeneratorsRequest& request)
+{
+    request.fromJson(const_cast<nlohmann::json&>(j));
+}
+
+void from_json(const nlohmann::json& j, BulkStartMemoryGeneratorsRequest& request)
+{
+    request.fromJson(const_cast<nlohmann::json&>(j));
+}
+
+void from_json(const nlohmann::json& j, BulkStopMemoryGeneratorsRequest& request)
+{
+    request.fromJson(const_cast<nlohmann::json&>(j));
+}
+
+} // namespace swagger::v1::model

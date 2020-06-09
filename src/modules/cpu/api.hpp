@@ -196,4 +196,13 @@ extern const std::string endpoint;
 
 } // namespace openperf::cpu::api
 
+
+namespace swagger::v1::model {
+void from_json(const nlohmann::json&, CpuGenerator&);
+void from_json(const nlohmann::json&, BulkCreateCpuGeneratorsRequest&);
+void from_json(const nlohmann::json&, BulkDeleteCpuGeneratorsRequest&);
+void from_json(const nlohmann::json&, BulkStartCpuGeneratorsRequest&);
+void from_json(const nlohmann::json&, BulkStopCpuGeneratorsRequest&);
+} // namespace swagger::v1::model
+
 #endif /* _OP_CPU_API_HPP_ */

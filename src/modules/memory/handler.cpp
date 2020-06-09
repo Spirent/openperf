@@ -14,27 +14,6 @@ namespace model = ::swagger::v1::model;
 using json = nlohmann::json;
 using namespace Pistache;
 
-class bulk_create_block_generators_request : public model::BulkCreateMemoryGeneratorsRequest {
-public:
-    void fromJson(nlohmann::json& val) override
-    {
-        m_Items.clear();
-        nlohmann::json jsonArray;
-        for (auto& item : val["items"]) {
-            if(item.is_null()) {
-                m_Items.push_back( std::shared_ptr<model::MemoryGenerator>(nullptr) );
-            } else {
-                std::shared_ptr<model::MemoryGenerator> newItem(new model::MemoryGenerator());
-                newItem->fromJson(item);
-                auto gc = model::MemoryGeneratorConfig();
-                gc.fromJson(item["config"]);
-                newItem->setConfig(std::make_shared<model::MemoryGeneratorConfig>(gc));
-                m_Items.push_back( newItem );
-            }
-        }
-    }
-};
-
 std::string json_error(std::string_view msg)
 {
     return json{"error", msg}.dump();
@@ -186,16 +165,11 @@ void handler::list_generators(const Rest::Request&,
 void handler::create_generator(const Rest::Request& request,
                                Http::ResponseWriter response)
 {
-    auto json_obj = json::parse(request.body());
-
-    model::MemoryGenerator model;
-    model.fromJson(json_obj);
+    auto model = json::parse(request.body()).get<model::MemoryGenerator>();
 
     request::generator::create_data data{
         .id = model.getId(), .is_running = model.isRunning(), .config = [&]() {
-            model::MemoryGeneratorConfig model;
-            model.fromJson(json_obj["config"]);
-            return from_swagger(model);
+            return from_swagger(*model.getConfig());
         }()};
     auto api_reply = submit_request(request::generator::create{
         std::make_unique<request::generator::create_data>(
@@ -323,10 +297,7 @@ void handler::stop_generator(const Rest::Request& request,
 void handler::bulk_create_generators(const Rest::Request& request,
                                     Http::ResponseWriter response)
 {
-    auto json_obj = json::parse(request.body());
-
-    bulk_create_block_generators_request model;
-    model.fromJson(json_obj);
+    auto model = json::parse(request.body()).get<model::BulkCreateMemoryGeneratorsRequest>();
 
     auto req = std::make_unique<std::vector<request::generator::create_data>>();
     std::transform(
@@ -368,10 +339,7 @@ void handler::bulk_create_generators(const Rest::Request& request,
 void handler::bulk_delete_generators(const Rest::Request& request,
                                    Http::ResponseWriter response)
 {
-    auto json_obj = json::parse(request.body());
-
-    model::BulkDeleteMemoryGeneratorsRequest model;
-    model.fromJson(json_obj);
+    auto model = json::parse(request.body()).get<model::BulkDeleteMemoryGeneratorsRequest>();
 
     auto api_reply = submit_request(request::generator::bulk::erase{
         {std::make_unique<std::vector<std::string>>(
@@ -393,10 +361,8 @@ void handler::bulk_delete_generators(const Rest::Request& request,
 void handler::bulk_start_generators(const Rest::Request& request,
                                     Http::ResponseWriter response)
 {
-    auto json_obj = json::parse(request.body());
+    auto model = json::parse(request.body()).get<model::BulkStartMemoryGeneratorsRequest>();
 
-    model::BulkStartMemoryGeneratorsRequest model;
-    model.fromJson(json_obj);
     for (const auto& id : model.getIds()) {
         if (auto res = config::op_config_validate_id_string(id); !res) {
             response.send(Http::Code::Bad_Request, res.error());
@@ -433,10 +399,8 @@ void handler::bulk_start_generators(const Rest::Request& request,
 void handler::bulk_stop_generators(const Rest::Request& request,
                                    Http::ResponseWriter response)
 {
-    auto json_obj = json::parse(request.body());
+    auto model = json::parse(request.body()).get<model::BulkStopMemoryGeneratorsRequest>();
 
-    model::BulkStopMemoryGeneratorsRequest model;
-    model.fromJson(json_obj);
     for (const auto& id : model.getIds()) {
         if (auto res = config::op_config_validate_id_string(id); !res) {
             response.send(Http::Code::Bad_Request, res.error());

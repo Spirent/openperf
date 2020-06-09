@@ -248,7 +248,11 @@ extern const std::string endpoint;
 
 namespace swagger::v1::model {
 void from_json(const nlohmann::json&, BlockFile&);
+void from_json(const nlohmann::json&, BulkCreateBlockFilesRequest&);
+void from_json(const nlohmann::json&, BulkDeleteBlockFilesRequest&);
 void from_json(const nlohmann::json&, BlockGenerator&);
+void from_json(const nlohmann::json&, BulkCreateBlockGeneratorsRequest&);
+void from_json(const nlohmann::json&, BulkDeleteBlockGeneratorsRequest&);
 void from_json(const nlohmann::json&, BulkStartBlockGeneratorsRequest&);
 void from_json(const nlohmann::json&, BulkStopBlockGeneratorsRequest&);
 } // namespace swagger::v1::model

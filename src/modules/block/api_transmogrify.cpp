@@ -682,6 +682,25 @@ void from_json(const nlohmann::json& j, BlockFile& file)
     if (j.find("state") != j.end()) file.setState(j.at("state"));
 }
 
+void from_json(const nlohmann::json& j, BulkCreateBlockFilesRequest& request)
+{
+    request.getItems().clear();
+    for( auto& item : const_cast<nlohmann::json&>(j).at("items") ) {
+        if(item.is_null()) {
+            request.getItems().push_back( std::shared_ptr<BlockFile>(nullptr) );
+        } else {
+            std::shared_ptr<BlockFile> newItem(new BlockFile());
+            from_json(item, *newItem);
+            request.getItems().push_back( newItem );
+        }
+    }
+}
+
+void from_json(const nlohmann::json& j, BulkDeleteBlockFilesRequest& request)
+{
+    request.fromJson(const_cast<nlohmann::json&>(j));
+}
+
 void from_json(const nlohmann::json& j, BlockGenerator& generator)
 {
     generator.setResourceId(j.at("resource_id"));
@@ -692,6 +711,25 @@ void from_json(const nlohmann::json& j, BlockGenerator& generator)
     auto gc = BlockGeneratorConfig();
     gc.fromJson(const_cast<nlohmann::json&>(j.at("config")));
     generator.setConfig(std::make_shared<BlockGeneratorConfig>(gc));
+}
+
+void from_json(const nlohmann::json& j, BulkCreateBlockGeneratorsRequest& request)
+{
+    request.getItems().clear();
+    for( auto& item : const_cast<nlohmann::json&>(j).at("items") ) {
+        if(item.is_null()) {
+            request.getItems().push_back( std::shared_ptr<BlockGenerator>(nullptr) );
+        } else {
+            std::shared_ptr<BlockGenerator> newItem(new BlockGenerator());
+            from_json(item, *newItem);
+            request.getItems().push_back( newItem );
+        }
+    }
+}
+
+void from_json(const nlohmann::json& j, BulkDeleteBlockGeneratorsRequest& request)
+{
+    request.fromJson(const_cast<nlohmann::json&>(j));
 }
 
 void from_json(const nlohmann::json& j,

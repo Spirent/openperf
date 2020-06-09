@@ -99,27 +99,6 @@ enum Http::Code to_code(const api::reply_error& error)
     }
 }
 
-class bulk_create_block_generators_request : public BulkCreateBlockGeneratorsRequest {
-public:
-    void fromJson(nlohmann::json& val) override
-    {
-        m_Items.clear();
-        nlohmann::json jsonArray;
-        for( auto& item : val["items"]) {
-            if(item.is_null()) {
-                m_Items.push_back( std::shared_ptr<BlockGenerator>(nullptr) );
-            } else {
-                std::shared_ptr<BlockGenerator> newItem(new BlockGenerator());
-                newItem->fromJson(item);
-                auto gc = BlockGeneratorConfig();
-                gc.fromJson(item["config"]);
-                newItem->setConfig(std::make_shared<BlockGeneratorConfig>(gc));
-                m_Items.push_back( newItem );
-            }
-        }
-    }
-};
-
 static std::optional<std::string>
 maybe_get_host_uri(const request_type& request)
 {
@@ -373,9 +352,7 @@ void handler::delete_file(const Rest::Request& request,
 void handler::bulk_create_files(const Rest::Request& request,
                                     Http::ResponseWriter response)
 {
-    auto request_json = json::parse(request.body());
-    BulkCreateBlockFilesRequest request_model;
-    request_model.fromJson(request_json);
+    auto request_model = json::parse(request.body()).get<BulkCreateBlockFilesRequest>();
 
     auto api_reply =
         submit_request(m_socket.get(), api::from_swagger(request_model));
@@ -401,9 +378,7 @@ void handler::bulk_create_files(const Rest::Request& request,
 void handler::bulk_delete_files(const Rest::Request& request,
                                    Http::ResponseWriter response)
 {
-    auto request_json = json::parse(request.body());
-    BulkDeleteBlockFilesRequest request_model;
-    request_model.fromJson(request_json);
+    auto request_model = json::parse(request.body()).get<BulkDeleteBlockFilesRequest>();
 
     auto api_reply =
         submit_request(m_socket.get(), api::from_swagger(request_model));
@@ -527,9 +502,7 @@ void handler::delete_generator(const Rest::Request& request,
 void handler::bulk_create_generators(const Rest::Request& request,
                                     Http::ResponseWriter response)
 {
-    auto request_json = json::parse(request.body());
-    bulk_create_block_generators_request request_model;
-    request_model.fromJson(request_json);
+    auto request_model = json::parse(request.body()).get<BulkCreateBlockGeneratorsRequest>();
 
     auto api_reply =
         submit_request(m_socket.get(), api::from_swagger(request_model));
@@ -555,9 +528,7 @@ void handler::bulk_create_generators(const Rest::Request& request,
 void handler::bulk_delete_generators(const Rest::Request& request,
                                    Http::ResponseWriter response)
 {
-    auto request_json = json::parse(request.body());
-    BulkDeleteBlockGeneratorsRequest request_model;
-    request_model.fromJson(request_json);
+    auto request_model = json::parse(request.body()).get<BulkDeleteBlockGeneratorsRequest>();
 
     auto api_reply =
         submit_request(m_socket.get(), api::from_swagger(request_model));
