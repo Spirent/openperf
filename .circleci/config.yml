@@ -12,7 +12,7 @@ jobs:
           command: docker pull spirentorion/openperf:latest
       - run:
           name: Run containerized build and test
-          command: docker run -it --privileged -v ~/project:/project spirentorion/openperf:latest /bin/bash -c "cd project && make -j$(nproc) test_aat"
+          command: docker run -it --privileged -v ~/project:/root/project spirentorion/openperf:latest /bin/bash -c "cd /root/project/tests/aat && make junit"
       - run:
           name: Collect AAT log
           when: always
@@ -20,6 +20,9 @@ jobs:
             set -xe
             mkdir -p /tmp/log
             cp ~/project/tests/aat/*.log /tmp/log
+            cp ~/project/tests/aat/*.xml /tmp/log
+      - store_test_results:
+          path: /tmp/log
       - store_artifacts:
           path: /tmp/log
 
