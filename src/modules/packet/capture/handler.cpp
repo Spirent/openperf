@@ -286,7 +286,7 @@ void handler::create_captures(const request_type& request,
                 *uri + reply->captures[0]->getId());
         }
 
-        response.send(Http::Code::Ok, reply->captures[0]->toJson().dump());
+        response.send(Http::Code::Created, reply->captures[0]->toJson().dump());
     } else {
         handle_reply_error(api_reply, std::move(response));
     }
@@ -361,7 +361,7 @@ void handler::start_capture(const request_type& request, response_type response)
                 *uri + reply->capture_results[0]->getId());
         }
 
-        response.send(Http::Code::Ok,
+        response.send(Http::Code::Created,
                       reply->capture_results[0]->toJson().dump());
     } else {
         handle_reply_error(api_reply, std::move(response));
