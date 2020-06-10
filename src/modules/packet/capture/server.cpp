@@ -667,7 +667,7 @@ reply_msg server::handle_request(const request_delete_capture_result& request)
     return (reply_ok{});
 }
 
-static int handle_garbage_collect(const struct op_event_data* data, void* arg)
+static int handle_garbage_collect(const struct op_event_data*, void* arg)
 {
     auto srv = reinterpret_cast<server*>(arg);
     assert(srv);

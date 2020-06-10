@@ -189,7 +189,7 @@ void generator::resize_buffer(size_t size)
                m_buffer.size,
                size);
 
-        m_buffer.ptr = mmap(NULL,
+        m_buffer.ptr = mmap(nullptr,
                             size,
                             PROT_READ | PROT_WRITE,
                             MAP_ANONYMOUS | MAP_PRIVATE,
