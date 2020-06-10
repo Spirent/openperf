@@ -221,12 +221,16 @@ block_file_ptr file_stack::get_block_file(const std::string& id) const
     return nullptr;
 }
 
-tl::expected<bool, std::string>
+tl::expected<void, deletion_error_type>
 file_stack::delete_block_file(const std::string& id)
 {
     if (m_block_files.count(id) && m_block_files.at(id)->get_fd())
-        return tl::make_unexpected("File " + id + " is in use");
-    return (m_block_files.erase(id) > 0);
+        return tl::make_unexpected(deletion_error_type::BUSY);
+
+    if (m_block_files.erase(id) <= 0)
+        return tl::make_unexpected(deletion_error_type::NOT_FOUND);
+
+    return {};
 }
 
 } // namespace openperf::block::file

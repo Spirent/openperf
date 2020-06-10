@@ -80,11 +80,14 @@ reply_msg server::handle_request(const request_block_file_del& request)
 {
     auto result = m_file_stack->delete_block_file(request.id);
 
-    if (!result)
-        return to_error(error_type::CUSTOM_ERROR, 0, result.error());
-
-    if (!result.value())
-        return to_error(api::error_type::NOT_FOUND);
+    if (!result) {
+        switch (result.error()) {
+        case block::file::deletion_error_type::NOT_FOUND:
+            return to_error(api::error_type::NOT_FOUND);
+        case block::file::deletion_error_type::BUSY:
+            return to_error(error_type::CUSTOM_ERROR, 0, "File \"" + request.id + "\" is busy");
+        }
+    }
 
     return reply_ok{};
 }
