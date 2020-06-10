@@ -5,7 +5,7 @@ EXIT_CODE=0
 
 # Limit how many tidy jobs the container can run in parallel. CircleCi
 # containers have too little memory to spin up one process per core.
-MEM_JOBS=$(expr $(cat /proc/meminfo | grep MemFree | awk '{print $2}') / 1048576)
+MEM_JOBS=6
 CPU_JOBS=$(nproc)
 if [[ ${MEM_JOBS} -lt ${CPU_JOBS} ]]; then
     export TIDY_JOBS=${MEM_JOBS}
