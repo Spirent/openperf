@@ -198,7 +198,7 @@ static void rx_interface_sink_push_multicast_burst(const fib* fib,
 {
     // Multicast dispatch to all sinks on port
     // This will be slow when there are a lot of interfaces
-    for (auto [idx, entry] : fib->get_interfaces(rxq->port_id())) {
+    for (auto&& [idx, entry] : fib->get_interfaces(rxq->port_id())) {
         auto ifp = entry.ifp;
         for (auto& sink : entry.sinks) {
             if (sink.active()) {
@@ -356,7 +356,7 @@ static void rx_stack_dispatch(const fib* fib,
      * their payload pointers as necessary while parsing the headers.
      */
     std::for_each(nunicast.data(), nunicast_last, [&](auto mbuf) {
-        for (auto [idx, entry] : fib->get_interfaces(rxq->port_id())) {
+        for (auto&& [idx, entry] : fib->get_interfaces(rxq->port_id())) {
             auto ifp = entry.ifp;
 
             OP_LOG(OP_LOG_TRACE,

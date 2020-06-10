@@ -266,11 +266,11 @@ distribute_queues(const std::vector<model::port_info>& port_info,
                                              worker_mask.count())
                        + q_bonus;
 
-        for (uint16_t q = 0U; q < q_count; q++) {
+        for (auto q = 0; q < q_count; q++) {
             descriptors.emplace_back(descriptor{
                 .worker_id = worker_id(worker_configs, worker_mask, info.id()),
                 .port_id = info.id(),
-                .queue_id = q,
+                .queue_id = static_cast<uint16_t>(q),
                 .mode = mode});
 
             const auto& last = descriptors.back();
@@ -310,7 +310,7 @@ unique_masks(const model::core_mask& mask)
     /* Else, distribute the available cores to rx/tx usage */
     const auto to_rx = distribute(available.count(), 2U, 0U);
     auto distributed = 0U;
-    for (auto i = 0U; i < available.size(); i++) {
+    for (size_t i = 0; i < available.size(); i++) {
         if (!available[i]) { continue; }
         if (distributed < to_rx) {
             rx_mask.set(i);

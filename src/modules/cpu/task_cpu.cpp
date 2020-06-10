@@ -37,10 +37,10 @@ task_cpu::task_cpu(const task_cpu::config_t& conf)
         m_util_time = cpu_thread_time();
     }
 
-    auto time_frame = std::max(
-        m_time.count() * (double)m_weights / m_weight_min,
+    auto time_frame = static_cast<uint64_t>(std::max(
+        m_time.count() * static_cast<double>(m_weights) / m_weight_min,
         std::chrono::duration_cast<std::chrono::nanoseconds>(QUANTA).count()
-            * m_utilization);
+            * m_utilization));
 
     m_time = 0ns;
     for (size_t i = 0; i < m_targets.size(); ++i) {

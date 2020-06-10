@@ -48,7 +48,7 @@ linux_proc_stats cpu_stats()
         if (fscanf(procstat, "%" PRIu64 " ", &stats.steal) == EOF) break;
 
         fclose(procstat);
-        procstat = NULL;
+        procstat = nullptr;
 
         return stats;
     }

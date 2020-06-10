@@ -18,8 +18,6 @@ file::file(const model::file& f)
     set_size(f.get_size());
     set_init_percent_complete(0);
     set_state(model::file_state::INIT);
-
-    queue_scrub();
 }
 
 file::~file() { terminate_scrub(); }
@@ -122,8 +120,8 @@ void file::scrub_worker(size_t header_size, size_t file_size)
         munmap(buf, mmap_len);
 
         current += buf_len;
-        scrub_update((double)(current - header_size)
-                     / (file_size - header_size));
+        scrub_update(static_cast<double>(current - header_size)
+                     / static_cast<double>(file_size - header_size));
     }
 
     close(fd);
@@ -189,6 +187,7 @@ file_stack::create_block_file(const model::file& block_file_model)
 
     try {
         auto blkblock_file_ptr = std::make_shared<file>(block_file_model);
+        blkblock_file_ptr->queue_scrub();
         m_block_files.emplace(block_file_model.get_id(), blkblock_file_ptr);
         return blkblock_file_ptr;
     } catch (const std::runtime_error& e) {

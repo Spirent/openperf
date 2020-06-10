@@ -63,8 +63,7 @@ extern "C" {
 
 int op_cpu_init(void* context, void* state)
 {
-    openperf::cpu::service* s =
-        reinterpret_cast<openperf::cpu::service*>(state);
+    auto* s = reinterpret_cast<openperf::cpu::service*>(state);
     s->init(context);
     s->start();
     return 0;
@@ -72,8 +71,7 @@ int op_cpu_init(void* context, void* state)
 
 void op_cpu_fini(void* state)
 {
-    openperf::cpu::service* s =
-        reinterpret_cast<openperf::cpu::service*>(state);
+    auto* s = reinterpret_cast<openperf::cpu::service*>(state);
     delete s;
 }
 
