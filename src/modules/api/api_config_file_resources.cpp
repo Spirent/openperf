@@ -55,6 +55,8 @@ tl::expected<void, std::string> op_config_file_process_resources()
             openperf::api::client::internal_api_post(path, *jsonified_resource);
 
         switch (code) {
+        case Pistache::Http::Code::Created:
+            break;
         case Pistache::Http::Code::Ok:
             break;
         case Pistache::Http::Code::Not_Found:
