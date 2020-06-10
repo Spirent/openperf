@@ -222,7 +222,7 @@ definitions:
     properties:
       id:
         type: string
-        description: Threshold unique identifier
+        description: Threshold configuration unique identifier
       generator_id:
         type: string
         description: Generator unique identifier
@@ -308,9 +308,6 @@ definitions:
       generator_id:
         type: string
         description: Unique generator identifier
-      delta:
-        type: float
-        description: The delta value used to initialize the T-Digest struct
       factor:
         type: integer
         description: The compression factor used to initialize the T-Digest struct
@@ -338,7 +335,6 @@ definitions:
     required:
       - id
       - generator_id
-      - delta
       - factor
       - results
 
