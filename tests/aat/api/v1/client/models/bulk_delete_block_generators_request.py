@@ -50,7 +50,7 @@ class BulkDeleteBlockGeneratorsRequest(object):
     def ids(self):
         """Gets the ids of this BulkDeleteBlockGeneratorsRequest.  # noqa: E501
 
-        List of block generators  # noqa: E501
+        List of block generator ids  # noqa: E501
 
         :return: The ids of this BulkDeleteBlockGeneratorsRequest.  # noqa: E501
         :rtype: list[str]
@@ -61,7 +61,7 @@ class BulkDeleteBlockGeneratorsRequest(object):
     def ids(self, ids):
         """Sets the ids of this BulkDeleteBlockGeneratorsRequest.
 
-        List of block generators  # noqa: E501
+        List of block generator ids  # noqa: E501
 
         :param ids: The ids of this BulkDeleteBlockGeneratorsRequest.  # noqa: E501
         :type: list[str]

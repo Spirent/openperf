@@ -50,7 +50,7 @@ public:
     /// BulkDeleteMemoryGeneratorsRequest members
 
     /// <summary>
-    /// List of memory generators
+    /// List of memory generator ids
     /// </summary>
     std::vector<std::string>& getIds();
     

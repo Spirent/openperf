@@ -50,7 +50,7 @@ public:
     /// BulkDeleteBlockFilesRequest members
 
     /// <summary>
-    /// List of block files
+    /// List of block file ids
     /// </summary>
     std::vector<std::string>& getIds();
     

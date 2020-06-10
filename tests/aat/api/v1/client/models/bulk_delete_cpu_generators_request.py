@@ -50,7 +50,7 @@ class BulkDeleteCpuGeneratorsRequest(object):
     def ids(self):
         """Gets the ids of this BulkDeleteCpuGeneratorsRequest.  # noqa: E501
 
-        List of CPU generators  # noqa: E501
+        List of CPU generator ids  # noqa: E501
 
         :return: The ids of this BulkDeleteCpuGeneratorsRequest.  # noqa: E501
         :rtype: list[str]
@@ -61,7 +61,7 @@ class BulkDeleteCpuGeneratorsRequest(object):
     def ids(self, ids):
         """Sets the ids of this BulkDeleteCpuGeneratorsRequest.
 
-        List of CPU generators  # noqa: E501
+        List of CPU generator ids  # noqa: E501
 
         :param ids: The ids of this BulkDeleteCpuGeneratorsRequest.  # noqa: E501
         :type: list[str]

@@ -50,7 +50,7 @@ public:
     /// BulkDeleteCpuGeneratorsRequest members
 
     /// <summary>
-    /// List of CPU generators
+    /// List of CPU generator ids
     /// </summary>
     std::vector<std::string>& getIds();
     

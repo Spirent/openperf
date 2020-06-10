@@ -50,7 +50,7 @@ class BulkDeleteBlockFilesRequest(object):
     def ids(self):
         """Gets the ids of this BulkDeleteBlockFilesRequest.  # noqa: E501
 
-        List of block files  # noqa: E501
+        List of block file ids  # noqa: E501
 
         :return: The ids of this BulkDeleteBlockFilesRequest.  # noqa: E501
         :rtype: list[str]
@@ -61,7 +61,7 @@ class BulkDeleteBlockFilesRequest(object):
     def ids(self, ids):
         """Sets the ids of this BulkDeleteBlockFilesRequest.
 
-        List of block files  # noqa: E501
+        List of block file ids  # noqa: E501
 
         :param ids: The ids of this BulkDeleteBlockFilesRequest.  # noqa: E501
         :type: list[str]

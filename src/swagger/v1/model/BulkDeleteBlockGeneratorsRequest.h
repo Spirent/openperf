@@ -50,7 +50,7 @@ public:
     /// BulkDeleteBlockGeneratorsRequest members
 
     /// <summary>
-    /// List of block generators
+    /// List of block generator ids
     /// </summary>
     std::vector<std::string>& getIds();
     
