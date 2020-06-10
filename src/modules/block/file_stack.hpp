@@ -66,7 +66,7 @@ public:
     std::shared_ptr<virtual_device>
     get_vdev(const std::string& id) const override;
     block_file_ptr get_block_file(const std::string& id) const;
-    bool delete_block_file(const std::string& id);
+    tl::expected<bool, std::string> delete_block_file(const std::string& id);
 };
 
 } // namespace openperf::block::file
