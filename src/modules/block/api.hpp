@@ -211,4 +211,13 @@ request_block_generator_bulk_stop from_swagger(BulkStopBlockGeneratorsRequest&);
 extern const std::string endpoint;
 
 } // namespace openperf::block::api
+
+
+namespace swagger::v1::model {
+void from_json(const nlohmann::json&, BlockFile&);
+void from_json(const nlohmann::json&, BlockGenerator&);
+void from_json(const nlohmann::json&, BulkStartBlockGeneratorsRequest&);
+void from_json(const nlohmann::json&, BulkStopBlockGeneratorsRequest&);
+} // namespace swagger::v1::model
+
 #endif /* _OP_BLOCK_API_HPP_ */

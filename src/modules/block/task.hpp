@@ -13,22 +13,29 @@ namespace openperf::block::worker {
 using worker_pattern = model::block_generation_pattern;
 using time_point = std::chrono::time_point<timesync::chrono::realtime>;
 using ref_clock = timesync::chrono::monotime;
-using duration = std::chrono::duration<uint64_t, std::nano>;
+using realtime = timesync::chrono::realtime;
+using duration = std::chrono::nanoseconds;
+
+enum task_operation {
+    READ = 0,
+    WRITE
+};
+
 struct task_config_t
 {
     int fd;
     size_t f_size;
     size_t header_size;
     size_t queue_depth;
-    int32_t reads_per_sec;
-    size_t read_size;
-    int32_t writes_per_sec;
-    size_t write_size;
+    task_operation operation;
+    int32_t ops_per_sec;
+    size_t block_size;
     worker_pattern pattern;
 };
 
-struct task_operation_stat_t
+struct task_stat_t
 {
+    time_point updated = realtime::now(); /* Date of the last result update */
     uint_fast64_t ops_target =
         0; /* The intended number of operations performed */
     uint_fast64_t ops_actual =
@@ -45,14 +52,6 @@ struct task_operation_stat_t
         duration::max(); /* The minimum observed latency value */
     duration latency_max =
         duration::zero(); /* The maximum observed latency value */
-};
-
-struct task_stat_t
-{
-    std::string id;
-    time_point updated; /* Date of the last result update */
-    task_operation_stat_t read;
-    task_operation_stat_t write;
 };
 
 enum aio_state {
@@ -81,12 +80,10 @@ private:
     std::vector<operation_state> m_aio_ops;
     std::vector<uint8_t> m_buf;
     pattern_generator m_pattern;
-    time_point m_read_timestamp, m_write_timestamp, m_pause_timestamp,
-        m_start_timestamp;
+    time_point m_operation_timestamp, m_pause_timestamp, m_start_timestamp;
 
-    size_t worker_spin(int (*queue_aio_op)(aiocb* aiocb),
-                       size_t block_size,
-                       task_operation_stat_t& op_stat,
+    size_t worker_spin(task_config_t& op_config,
+                       task_stat_t& op_stat,
                        time_point deadline);
 
 public:

@@ -579,3 +579,47 @@ from_swagger(BulkStopBlockGeneratorsRequest& p_request)
 }
 
 } // namespace openperf::block::api
+
+namespace swagger::v1::model {
+
+void from_json(const nlohmann::json& j, BlockFile& file)
+{
+    file.setFileSize(j.at("file_size"));
+    file.setPath(j.at("path"));
+
+    if(j.find("id") != j.end())
+        file.setId(j.at("id"));
+
+    if(j.find("init_percent_complete") != j.end())
+        file.setInitPercentComplete(j.at("init_percent_complete"));
+
+    if(j.find("state") != j.end())
+        file.setState(j.at("state"));
+}
+
+void from_json(const nlohmann::json& j, BlockGenerator& generator)
+{
+    generator.setResourceId(j.at("resource_id"));
+    generator.setRunning(j.at("running"));
+
+    if(j.find("id") != j.end()) {
+        generator.setId(j.at("id"));
+    }
+
+    auto gc = BlockGeneratorConfig();
+    gc.fromJson(const_cast<nlohmann::json&>(j.at("config")));
+    generator.setConfig(std::make_shared<BlockGeneratorConfig>(gc));
+}
+
+
+void from_json(const nlohmann::json& j, BulkStartBlockGeneratorsRequest& request)
+{
+    request.fromJson(const_cast<nlohmann::json&>(j));
+}
+
+void from_json(const nlohmann::json& j, BulkStopBlockGeneratorsRequest& request)
+{
+    request.fromJson(const_cast<nlohmann::json&>(j));
+}
+
+} // namespace swagger::v1::model
