@@ -77,8 +77,8 @@ public:
 };
 
 handler::handler(void* context, Rest::Router& router)
-    : socket(op_socket_get_client(
-          context, ZMQ_REQ, openperf::memory::api::endpoint))
+    : socket(
+        op_socket_get_client(context, ZMQ_REQ, openperf::memory::api::endpoint))
 {
     Rest::Routes::Get(router,
                       "/memory-generators",

@@ -12,9 +12,8 @@ namespace openperf::block::file {
 
 #define FILE_HEADER_TAG "This is a big, fat OP VDEV header tag!"
 #define FILE_HEADER_TAG_LENGTH 40
-#define FILE_HEADER_PAD_LENGTH                                       \
-    512 - FILE_HEADER_TAG_LENGTH - sizeof(timesync::bintime)         \
-        - sizeof(size_t)
+#define FILE_HEADER_PAD_LENGTH                                                 \
+    512 - FILE_HEADER_TAG_LENGTH - sizeof(timesync::bintime) - sizeof(size_t)
 
 struct file_header
 {

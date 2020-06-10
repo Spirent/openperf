@@ -16,10 +16,7 @@ using ref_clock = timesync::chrono::monotime;
 using realtime = timesync::chrono::realtime;
 using duration = std::chrono::nanoseconds;
 
-enum task_operation {
-    READ = 0,
-    WRITE
-};
+enum task_operation { READ = 0, WRITE };
 
 struct task_config_t
 {

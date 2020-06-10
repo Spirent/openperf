@@ -15,7 +15,6 @@ using namespace std::chrono_literals;
 
 using openperf::utils::op_pseudo_random_fill;
 
-
 constexpr auto QUANTA = 10ms;
 constexpr size_t MAX_SPIN_OPS = 5000;
 
@@ -105,8 +104,8 @@ void task_memory::config(const task_memory_config& msg)
      * Need to update our indexes if the number of blocks or the pattern
      * has changed.
      */
-    auto configuration_changed = nb_blocks != m_indexes.size()
-        || msg.pattern != m_config.pattern;
+    auto configuration_changed =
+        nb_blocks != m_indexes.size() || msg.pattern != m_config.pattern;
 
     if (nb_blocks && configuration_changed) {
         try {
@@ -172,7 +171,8 @@ void task_memory::spin()
     while (to_do_ops && (t2 = chronometer::now()) < deadline) {
         size_t spin_ops = std::min(MAX_SPIN_OPS, to_do_ops);
         size_t nb_ops = operation(spin_ops, &op_index);
-        auto run_time = std::max(chronometer::now() - t2, 1ns); /* prevent divide by 0 */
+        auto run_time =
+            std::max(chronometer::now() - t2, 1ns); /* prevent divide by 0 */
 
         /* Update per thread statistics */
         stat += stat_t{
@@ -189,7 +189,8 @@ void task_memory::spin()
         m_total.run_time += run_time;
         m_total.operations += nb_ops;
         m_total.avg_rate += (nb_ops / (double)run_time.count()
-            - m_total.avg_rate + 4.0 / run_time.count()) / 5.0;
+                             - m_total.avg_rate + 4.0 / run_time.count())
+                            / 5.0;
 
         to_do_ops -= spin_ops;
     }
@@ -205,8 +206,7 @@ void task_memory::scratch_allocate(size_t size)
     if (size == m_scratch.size) return;
 
     static uint16_t cache_line_size = 0;
-    if (!cache_line_size)
-        cache_line_size = sysconf(_SC_LEVEL1_DCACHE_LINESIZE);
+    if (!cache_line_size) cache_line_size = sysconf(_SC_LEVEL1_DCACHE_LINESIZE);
 
     scratch_free();
     if (size > 0) {

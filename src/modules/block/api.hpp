@@ -212,7 +212,6 @@ extern const std::string endpoint;
 
 } // namespace openperf::block::api
 
-
 namespace swagger::v1::model {
 void from_json(const nlohmann::json&, BlockFile&);
 void from_json(const nlohmann::json&, BlockGenerator&);

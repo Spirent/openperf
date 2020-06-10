@@ -27,7 +27,9 @@ file::~file() { terminate_scrub(); }
 tl::expected<virtual_device_descriptors, int> file::vopen()
 {
     if (m_write_fd < 0)
-        m_write_fd = open(get_path().c_str(), O_WRONLY | O_CREAT | O_DSYNC, S_IRUSR | S_IWUSR);
+        m_write_fd = open(get_path().c_str(),
+                          O_WRONLY | O_CREAT | O_DSYNC,
+                          S_IRUSR | S_IWUSR);
     if (m_read_fd < 0)
         m_read_fd = open(get_path().c_str(), O_RDONLY, S_IRUSR | S_IWUSR);
 
@@ -36,7 +38,7 @@ tl::expected<virtual_device_descriptors, int> file::vopen()
         return tl::make_unexpected(errno);
     }
 
-    return (virtual_device_descriptors) {m_read_fd, m_write_fd};
+    return (virtual_device_descriptors){m_read_fd, m_write_fd};
 }
 
 void file::vclose()
@@ -44,16 +46,14 @@ void file::vclose()
     auto close_vdev = [this](int fd) {
         if (close(fd) < 0) {
             OP_LOG(OP_LOG_ERROR,
-                "Cannot close file %s: %s",
-                get_path().c_str(),
-                strerror(errno));
+                   "Cannot close file %s: %s",
+                   get_path().c_str(),
+                   strerror(errno));
         }
     };
 
-    if (m_read_fd >= 0)
-        close_vdev(m_read_fd);
-    if (m_write_fd >= 0)
-        close_vdev(m_write_fd);
+    if (m_read_fd >= 0) close_vdev(m_read_fd);
+    if (m_write_fd >= 0) close_vdev(m_write_fd);
 
     m_read_fd = -1;
     m_write_fd = -1;
@@ -61,10 +61,7 @@ void file::vclose()
 
 uint64_t file::get_size() const { return model::file::get_size(); }
 
-uint64_t file::get_header_size() const
-{
-    return sizeof(file_header);
-};
+uint64_t file::get_header_size() const { return sizeof(file_header); };
 
 void file::scrub_done()
 {
@@ -77,7 +74,6 @@ void file::scrub_update(double p)
     set_init_percent_complete(static_cast<int32_t>(100 * p));
 }
 
-
 int write_header(int fd, uint64_t file_size)
 {
     if (fd < 0) return -1;
@@ -86,9 +82,7 @@ int write_header(int fd, uint64_t file_size)
             timesync::chrono::realtime::now().time_since_epoch()),
         .size = file_size,
     };
-    strncpy(header.tag,
-            FILE_HEADER_TAG,
-            FILE_HEADER_TAG_LENGTH);
+    strncpy(header.tag, FILE_HEADER_TAG, FILE_HEADER_TAG_LENGTH);
 
     return (pwrite(fd, &header, sizeof(header), 0) == sizeof(header) ? 0 : -1);
 }
@@ -96,11 +90,11 @@ int write_header(int fd, uint64_t file_size)
 constexpr size_t SCRUB_BUFFER_SIZE = 128 * 1024; /* 128KB */
 void file::scrub_worker(size_t header_size, size_t file_size)
 {
-    int fd = open(get_path().c_str(), O_RDWR | O_CREAT | O_DSYNC, S_IRUSR | S_IWUSR);
+    int fd =
+        open(get_path().c_str(), O_RDWR | O_CREAT | O_DSYNC, S_IRUSR | S_IWUSR);
 
     if (fd < 0) {
-        OP_LOG(
-            OP_LOG_ERROR, "Cannot open vdev: %s\n", strerror(errno));
+        OP_LOG(OP_LOG_ERROR, "Cannot open vdev: %s\n", strerror(errno));
         return;
     }
 
@@ -114,17 +108,22 @@ void file::scrub_worker(size_t header_size, size_t file_size)
         auto file_offset = (current / page_size) * page_size;
         auto mmap_len = buf_len + current - file_offset;
 
-        void* buf = mmap(nullptr, mmap_len, PROT_WRITE, MAP_SHARED, fd, file_offset);
+        void* buf =
+            mmap(nullptr, mmap_len, PROT_WRITE, MAP_SHARED, fd, file_offset);
         if (buf == MAP_FAILED) {
-            OP_LOG(OP_LOG_ERROR, "Cannot write scrub to vdev: %s\n", strerror(errno));
+            OP_LOG(OP_LOG_ERROR,
+                   "Cannot write scrub to vdev: %s\n",
+                   strerror(errno));
             break;
         }
-        utils::op_pseudo_random_fill((uint8_t*)buf + current - file_offset, buf_len);
+        utils::op_pseudo_random_fill((uint8_t*)buf + current - file_offset,
+                                     buf_len);
         msync(buf, mmap_len, MS_SYNC);
         munmap(buf, mmap_len);
 
         current += buf_len;
-        scrub_update((double)(current - header_size) / (file_size - header_size));
+        scrub_update((double)(current - header_size)
+                     / (file_size - header_size));
     }
 
     close(fd);
@@ -145,9 +144,7 @@ void file::queue_scrub()
                                  + std::string(strerror(errno)));
         return;
     } else if (read_or_err >= (int)sizeof(header)
-               && strncmp(header.tag,
-                          FILE_HEADER_TAG,
-                          FILE_HEADER_TAG_LENGTH)
+               && strncmp(header.tag, FILE_HEADER_TAG, FILE_HEADER_TAG_LENGTH)
                       == 0) {
         if (header.size >= get_size()) {
             // We're done since this vdev is suitable for use
@@ -186,9 +183,9 @@ file_stack::create_block_file(const model::file& block_file_model)
                                    + " already exists.");
 
     if (block_file_model.get_size() <= sizeof(file_header))
-        return tl::make_unexpected(
-            "File size less than header size ("
-            + std::to_string(sizeof(file_header)) + " bytes)");
+        return tl::make_unexpected("File size less than header size ("
+                                   + std::to_string(sizeof(file_header))
+                                   + " bytes)");
 
     try {
         auto blkblock_file_ptr = std::make_shared<file>(block_file_model);

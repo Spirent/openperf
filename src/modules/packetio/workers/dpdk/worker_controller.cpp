@@ -298,8 +298,8 @@ worker_controller::worker_controller(worker_controller&& other) noexcept
     , m_source_features(std::move(other.m_source_features))
 {}
 
-worker_controller&
-worker_controller::operator=(worker_controller&& other) noexcept
+worker_controller& worker_controller::
+operator=(worker_controller&& other) noexcept
 {
     if (this != &other) {
         m_context = other.m_context;

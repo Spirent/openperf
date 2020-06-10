@@ -15,10 +15,12 @@ block_generator::block_generator(
 {
     update_resource(get_resource_id());
 
-    auto read_config = generate_worker_config(get_config(), task_operation::READ);
+    auto read_config =
+        generate_worker_config(get_config(), task_operation::READ);
     m_read_worker = std::make_unique<block_worker>(read_config);
 
-    auto write_config = generate_worker_config(get_config(), task_operation::WRITE);
+    auto write_config =
+        generate_worker_config(get_config(), task_operation::WRITE);
     m_write_worker = std::make_unique<block_worker>(write_config);
 
     m_read_worker->start();
@@ -44,7 +46,8 @@ void block_generator::stop() { set_running(false); }
 void block_generator::set_config(const model::block_generator_config& value)
 {
     m_read_worker->config(generate_worker_config(value, task_operation::READ));
-    m_write_worker->config(generate_worker_config(value, task_operation::WRITE));
+    m_write_worker->config(
+        generate_worker_config(value, task_operation::WRITE));
     model::block_generator::set_config(value);
 }
 
@@ -80,10 +83,8 @@ void block_generator::update_resource(const std::string& resource_id)
 void block_generator::set_running(bool is_running)
 {
     if (is_running) {
-        if (get_config().reads_per_sec > 0)
-            m_read_worker->resume();
-        if (get_config().writes_per_sec > 0)
-            m_write_worker->resume();
+        if (get_config().reads_per_sec > 0) m_read_worker->resume();
+        if (get_config().writes_per_sec > 0) m_write_worker->resume();
     } else {
         m_read_worker->pause();
         m_write_worker->pause();
@@ -119,7 +120,8 @@ block_result_ptr block_generator::get_statistics() const
     return gen_stat;
 }
 
-void block_generator::clear_statistics() {
+void block_generator::clear_statistics()
+{
     m_read_worker->clear_stat();
     m_write_worker->clear_stat();
     m_statistics_id = core::to_string(core::uuid::random());
@@ -128,9 +130,13 @@ void block_generator::clear_statistics() {
 task_config_t block_generator::generate_worker_config(
     const model::block_generator_config& p_config, task_operation p_operation)
 {
-    auto block_size = (p_operation == task_operation::READ) ? p_config.read_size : p_config.write_size;
-    if (static_cast<uint64_t>(block_size) + m_vdev->get_header_size() > m_vdev->get_size())
-        throw std::runtime_error("Cannot use resource: resource size is too small");
+    auto block_size = (p_operation == task_operation::READ)
+                          ? p_config.read_size
+                          : p_config.write_size;
+    if (static_cast<uint64_t>(block_size) + m_vdev->get_header_size()
+        > m_vdev->get_size())
+        throw std::runtime_error(
+            "Cannot use resource: resource size is too small");
 
     auto fd = m_vdev->get_fd();
     assert(fd);
@@ -138,10 +144,13 @@ task_config_t block_generator::generate_worker_config(
     task_config_t w_config;
     w_config.queue_depth = p_config.queue_depth;
     w_config.block_size = block_size;
-    w_config.ops_per_sec = (p_operation == task_operation::READ) ? p_config.reads_per_sec : p_config.writes_per_sec;
+    w_config.ops_per_sec = (p_operation == task_operation::READ)
+                               ? p_config.reads_per_sec
+                               : p_config.writes_per_sec;
     w_config.operation = p_operation;
     w_config.pattern = p_config.pattern;
-    w_config.fd = (p_operation == task_operation::READ) ? fd.value().read : fd.value().write;
+    w_config.fd = (p_operation == task_operation::READ) ? fd.value().read
+                                                        : fd.value().write;
     w_config.f_size = m_vdev->get_size();
     w_config.header_size = m_vdev->get_header_size();
     return w_config;

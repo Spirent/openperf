@@ -178,11 +178,8 @@ uint16_t source::transform(packetio::packet::packet_buffer* input[],
             std::begin(m_packet_scratch),
             output + start,
             [&](auto buffer, auto&& pkt_data) {
-                auto&& [flow_idx,
-                        hdr_ptr,
-                        hdr_lens,
-                        hdr_flags,
-                        sig_config,
+                auto
+                    && [flow_idx, hdr_ptr, hdr_lens, hdr_flags, sig_config,
                         pkt_len] = pkt_data;
 
                 assert(hdr_flags.value);
