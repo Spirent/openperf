@@ -54,7 +54,7 @@ jobs:
           command: docker pull spirentorion/openperf:latest
       - run:
           name: Run static analysis checks
-          command: docker run -it -v ~/project:/project spirentorion/openperf:latest /bin/bash -c "cd project && .circleci/run_clang_tidy.sh"
+          command: docker run -it -v ~/project:/root/project spirentorion/openperf:latest /bin/bash -c "cd /root/project && .circleci/run_clang_tidy.sh"
 
   unit_tests:
     docker:
