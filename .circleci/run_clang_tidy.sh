@@ -3,6 +3,16 @@ set -e
 TIDY_OUTPUT=$(mktemp)
 EXIT_CODE=0
 
+# Limit how many tidy jobs the container can run in parallel. CircleCi
+# containers have too little memory to spin up one process per core.
+MEM_JOBS=$(expr $(cat /proc/meminfo | grep MemFree | awk '{print $2}') / 1048576)
+CPU_JOBS=$(nproc)
+if [[ ${MEM_JOBS} -lt ${CPU_JOBS} ]]; then
+    export TIDY_JOBS=${MEM_JOBS}
+else
+    export TIDY_JOBS=${CPU_JOBS}
+fi
+
 # CirclCi needs constant feedback that it's doing something useful. Any
 # long running command without output could cause the job to fail, so
 # turn the tidy output into a concise series of periods; one per file.
@@ -12,7 +22,7 @@ EXIT_CODE=0
 # unbuffered, otherwise no periods will be printed until the command
 # finishes. This is unnecessary when run from a regular terminal,
 # however.
-echo -n 'Analyzing files'
+echo -n "Analyzing files (TIDY_JOBS=${TIDY_JOBS})"
 make tidy 2> /dev/null | tee ${TIDY_OUTPUT} | grep 'clang-tidy' | stdbuf -o0 awk '{printf "."}'
 echo
 

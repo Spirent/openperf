@@ -93,12 +93,18 @@ pretty-cpp:
 # of this Makefile.  Hence, we make the file a requirement but don't provide
 # a rule to build it.
 .PHONY: tidy
+
+TIDY_ARGS:= -quiet
+ifneq (,$(TIDY_JOBS))
+	TIDY_ARGS+= -j $(TIDY_JOBS)
+endif
+
 tidy: compile_commands.json
 	@find src \
 		-path src/swagger -prune -o \
 		-path src/lib/packet/protocol -prune -o \
 		-path src/modules/packet/protocol/transmogrify -prune -o \
 		-iname \*.cpp -print0 \
-		| xargs -0 run-clang-tidy -quiet \
+		| xargs -0 run-clang-tidy $(strip $(TIDY_ARGS)) \
 			-header-filter='^$(shell pwd)/src/.*hpp,-^$(shell pwd)/src/modules/socket/dpdk/.*hpp' \
 			-extra-arg=-Wno-shadow

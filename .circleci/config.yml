@@ -40,21 +40,15 @@ jobs:
           paths:
             - project
 
-  # Run the static analysis checks in the VM instead of a container.
-  # The analyzer needs the extra memory available in the machine.
-  # Default containers have 4GB, but default machines have 8GB.
   static_analysis:
-    machine:
-      image: circleci/classic:latest
+    docker:
+      - image: spirentorion/openperf:latest
     steps:
       - attach_workspace:
           at: "~"
       - run:
-          name: Download latest openperf container
-          command: docker pull spirentorion/openperf:latest
-      - run:
           name: Run static analysis checks
-          command: docker run -it -v ~/project:/root/project spirentorion/openperf:latest /bin/bash -c "cd /root/project && .circleci/run_clang_tidy.sh"
+          command: .circleci/run_clang_tidy.sh
 
   unit_tests:
     docker:
