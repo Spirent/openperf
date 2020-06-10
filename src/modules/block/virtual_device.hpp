@@ -30,10 +30,7 @@ public:
     std::optional<virtual_device_descriptors> get_fd() const
     {
         if (m_read_fd < 0 || m_write_fd < 0) return std::nullopt;
-        return (virtual_device_descriptors){
-            m_read_fd,
-            m_write_fd
-        };
+        return (virtual_device_descriptors){m_read_fd, m_write_fd};
     }
 };
 

@@ -52,5 +52,5 @@ counter operator+(counter lhs, const counter& rhs)
     return (lhs);
 }
 
-}
+} // namespace openperf::packet::generator::statistics
 #endif /* _OP_PACKET_GENERATOR_FLOW_COUNTERS_HPP_ */

@@ -69,9 +69,8 @@ port_feature_controller<Features...>::port_feature_controller(
 {}
 
 template <typename... Features>
-port_feature_controller<Features...>&
-port_feature_controller<Features...>::operator=(
-    port_feature_controller&& other) noexcept
+port_feature_controller<Features...>& port_feature_controller<Features...>::
+operator=(port_feature_controller&& other) noexcept
 {
     if (this != &other) { m_features = std::move(other.m_features); }
     return (*this);

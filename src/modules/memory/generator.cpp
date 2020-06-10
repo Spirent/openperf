@@ -11,7 +11,7 @@ static uint16_t serial_counter = 0;
 
 // Constructors & Destructor
 generator::generator()
-    : m_buffer{ .ptr = nullptr, .size = 0 }
+    : m_buffer{.ptr = nullptr, .size = 0}
     , m_serial_number(++serial_counter)
 {}
 
@@ -126,38 +126,28 @@ void generator::config(const generator::config_t& cfg)
     pause();
     resize_buffer(cfg.buffer_size);
 
-    reallocate_workers<task_memory_read>(
-        m_read_workers, cfg.read_threads);
-    reallocate_workers<task_memory_write>(
-        m_write_workers, cfg.write_threads);
+    reallocate_workers<task_memory_read>(m_read_workers, cfg.read_threads);
+    reallocate_workers<task_memory_write>(m_write_workers, cfg.write_threads);
 
-    auto read_rate = (!cfg.read_threads) ? 0
-        : cfg.read.op_per_sec / cfg.read_threads;
+    auto read_rate =
+        (!cfg.read_threads) ? 0 : cfg.read.op_per_sec / cfg.read_threads;
 
     spread_config(m_read_workers,
-        task_memory_config{
-            .block_size = cfg.read.block_size,
-            .op_per_sec = read_rate,
-            .pattern = cfg.read.pattern,
-            .buffer = {
-                .ptr = m_buffer.ptr,
-                .size = m_buffer.size
-            }
-        });
+                  task_memory_config{
+                      .block_size = cfg.read.block_size,
+                      .op_per_sec = read_rate,
+                      .pattern = cfg.read.pattern,
+                      .buffer = {.ptr = m_buffer.ptr, .size = m_buffer.size}});
 
-    auto write_rate = (!cfg.write_threads) ? 0
-        : cfg.write.op_per_sec / cfg.write_threads;
+    auto write_rate =
+        (!cfg.write_threads) ? 0 : cfg.write.op_per_sec / cfg.write_threads;
 
     spread_config(m_write_workers,
-        task_memory_config{
-            .block_size = cfg.write.block_size,
-            .op_per_sec = write_rate,
-            .pattern = cfg.write.pattern,
-            .buffer = {
-                .ptr = m_buffer.ptr,
-                .size = m_buffer.size
-            }
-        });
+                  task_memory_config{
+                      .block_size = cfg.write.block_size,
+                      .op_per_sec = write_rate,
+                      .pattern = cfg.write.pattern,
+                      .buffer = {.ptr = m_buffer.ptr, .size = m_buffer.size}});
 
     m_config = cfg;
     resume();
@@ -195,16 +185,21 @@ void generator::resize_buffer(size_t size)
     free_buffer();
     if (size > 0) {
         OP_LOG(OP_LOG_INFO,
-            "Reallocating buffer (%zu => %zu)\n",
-            m_buffer.size, size);
+               "Reallocating buffer (%zu => %zu)\n",
+               m_buffer.size,
+               size);
 
-        m_buffer.ptr = mmap(NULL, size, PROT_READ | PROT_WRITE,
-            MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
+        m_buffer.ptr = mmap(NULL,
+                            size,
+                            PROT_READ | PROT_WRITE,
+                            MAP_ANONYMOUS | MAP_PRIVATE,
+                            -1,
+                            0);
 
         if (m_buffer.ptr == MAP_FAILED) {
             OP_LOG(OP_LOG_ERROR,
-                "Failed to allocate %" PRIu64 " byte memory buffer\n",
-                size);
+                   "Failed to allocate %" PRIu64 " byte memory buffer\n",
+                   size);
             return;
         }
 

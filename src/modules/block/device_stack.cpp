@@ -16,7 +16,8 @@ namespace openperf::block::device {
 tl::expected<virtual_device_descriptors, int> device::vopen()
 {
     if (m_write_fd < 0)
-        m_write_fd = open(get_path().c_str(), O_RDWR | O_CREAT | O_DSYNC, S_IRUSR | S_IWUSR);
+        m_write_fd = open(
+            get_path().c_str(), O_RDWR | O_CREAT | O_DSYNC, S_IRUSR | S_IWUSR);
     if (m_read_fd < 0)
         m_read_fd = open(get_path().c_str(), O_RDONLY, S_IRUSR | S_IWUSR);
 
@@ -25,7 +26,7 @@ tl::expected<virtual_device_descriptors, int> device::vopen()
         return tl::make_unexpected(errno);
     }
 
-    return (virtual_device_descriptors) {m_read_fd, m_write_fd};
+    return (virtual_device_descriptors){m_read_fd, m_write_fd};
 }
 
 void device::vclose()
@@ -33,16 +34,14 @@ void device::vclose()
     auto close_vdev = [this](int fd) {
         if (close(fd) < 0) {
             OP_LOG(OP_LOG_ERROR,
-                "Cannot close file %s: %s",
-                get_path().c_str(),
-                strerror(errno));
+                   "Cannot close file %s: %s",
+                   get_path().c_str(),
+                   strerror(errno));
         }
     };
 
-    if (m_read_fd >= 0)
-        close_vdev(m_read_fd);
-    if (m_write_fd >= 0)
-        close_vdev(m_write_fd);
+    if (m_read_fd >= 0) close_vdev(m_read_fd);
+    if (m_write_fd >= 0) close_vdev(m_write_fd);
 
     m_read_fd = -1;
     m_write_fd = -1;

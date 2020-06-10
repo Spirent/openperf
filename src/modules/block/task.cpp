@@ -25,7 +25,8 @@ static int submit_aio_op(const operation_config& op_config,
 {
     op_state.aiocb = ((aiocb){
         .aio_fildes = op_config.fd,
-        .aio_offset = static_cast<off_t>(op_config.block_size * op_config.offset + op_config.header_size),
+        .aio_offset = static_cast<off_t>(op_config.block_size * op_config.offset
+                                         + op_config.header_size),
         .aio_buf = op_config.buffer,
         .aio_nbytes = op_config.block_size,
         .aio_reqprio = 0,
@@ -137,8 +138,11 @@ size_t block_task::worker_spin(task_config_t& op_config,
     size_t total_ops = 0;
     size_t pending_ops = 0;
 
-    auto ops_req = (ref_clock::now() - m_operation_timestamp).count() * op_config.ops_per_sec / std::nano::den + 1;
-    auto queue_depth = std::min(op_config.queue_depth, static_cast<size_t>(ops_req));
+    auto ops_req = (ref_clock::now() - m_operation_timestamp).count()
+                       * op_config.ops_per_sec / std::nano::den
+                   + 1;
+    auto queue_depth =
+        std::min(op_config.queue_depth, static_cast<size_t>(ops_req));
 
     auto op_conf = (operation_config){
         .fd = op_config.fd,
@@ -146,9 +150,11 @@ size_t block_task::worker_spin(task_config_t& op_config,
         .block_size = op_config.block_size,
         .buffer = m_buf.data(),
         .offset = 0,
-        .header_size = ((op_config.header_size - 1) /  op_config.block_size + 1) * op_config.block_size,
-        .queue_aio_op = (op_config.operation == task_operation::READ) ? aio_read : aio_write
-    };
+        .header_size = ((op_config.header_size - 1) / op_config.block_size + 1)
+                       * op_config.block_size,
+        .queue_aio_op = (op_config.operation == task_operation::READ)
+                            ? aio_read
+                            : aio_write};
 
     for (size_t i = 0; i < queue_depth; ++i) {
         auto& aio_op = m_aio_ops[i];
@@ -197,8 +203,12 @@ size_t block_task::worker_spin(task_config_t& op_config,
 
                     auto op_ns = aio_op.stop - aio_op.start;
                     op_stat.latency += op_ns;
-                    if (op_ns < op_stat.latency_min) { op_stat.latency_min = op_ns; }
-                    if (op_ns > op_stat.latency_max) { op_stat.latency_max = op_ns; }
+                    if (op_ns < op_stat.latency_min) {
+                        op_stat.latency_min = op_ns;
+                    }
+                    if (op_ns > op_stat.latency_max) {
+                        op_stat.latency_max = op_ns;
+                    }
                     break;
                 }
                 case FAILED:
@@ -236,14 +246,14 @@ void block_task::config(const task_config_t& p_config)
 {
     m_task_config = p_config;
 
-    auto buf_len =
-        m_task_config.queue_depth
-        * m_task_config.block_size;
+    auto buf_len = m_task_config.queue_depth * m_task_config.block_size;
     m_buf.resize(buf_len);
     utils::op_pseudo_random_fill(m_buf.data(), m_buf.size());
     m_aio_ops.resize(m_task_config.queue_depth);
-    m_pattern.reset(0,
-        static_cast<off_t>((m_task_config.f_size - m_task_config.header_size) / m_task_config.block_size),
+    m_pattern.reset(
+        0,
+        static_cast<off_t>((m_task_config.f_size - m_task_config.header_size)
+                           / m_task_config.block_size),
         m_task_config.pattern);
 }
 
@@ -260,7 +270,8 @@ void block_task::pause() { m_pause_timestamp = ref_clock::now(); }
 task_stat_t block_task::stat() const
 {
     auto res = *m_at_stat;
-    res.latency_min = (res.latency_min == duration::max()) ? duration::zero() : res.latency_min;
+    res.latency_min = (res.latency_min == duration::max()) ? duration::zero()
+                                                           : res.latency_min;
     return res;
 }
 
@@ -283,7 +294,6 @@ void block_task::spin()
         throw std::runtime_error(
             "Could not spin worker: no block operations were specified");
 
-
     // Reduce the effect of ZMQ operations on total Block I/O operations amount
     auto before_sleep_time = ref_clock::now();
     if (m_operation_timestamp > before_sleep_time) {
@@ -293,16 +303,19 @@ void block_task::spin()
     auto loop_start_ts = ref_clock::now();
     while (true) {
         auto cur_time = ref_clock::now();
-        auto nb_ops = worker_spin(m_task_config,
-                     m_actual_stat,
-                     cur_time + 1s);
+        auto nb_ops = worker_spin(m_task_config, m_actual_stat, cur_time + 1s);
 
-        auto cycles = (cur_time - m_start_timestamp).count() * m_task_config.ops_per_sec / std::nano::den + 1;
+        auto cycles = (cur_time - m_start_timestamp).count()
+                          * m_task_config.ops_per_sec / std::nano::den
+                      + 1;
         m_actual_stat.ops_target = cycles;
         m_actual_stat.bytes_target = cycles * m_task_config.block_size;
 
-        m_operation_timestamp += std::chrono::nanoseconds(std::nano::den / m_task_config.ops_per_sec) * nb_ops;
-        if ((m_operation_timestamp >= ref_clock::now()) || (ref_clock::now() > loop_start_ts + TASK_SPIN_THRESHOLD)){
+        m_operation_timestamp +=
+            std::chrono::nanoseconds(std::nano::den / m_task_config.ops_per_sec)
+            * nb_ops;
+        if ((m_operation_timestamp >= ref_clock::now())
+            || (ref_clock::now() > loop_start_ts + TASK_SPIN_THRESHOLD)) {
             break;
         }
     }

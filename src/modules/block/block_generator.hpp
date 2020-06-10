@@ -22,7 +22,8 @@ private:
     std::string m_statistics_id;
     std::vector<virtual_device_stack*> m_vdev_stack_list;
     std::shared_ptr<virtual_device> m_vdev;
-    task_config_t generate_worker_config(const model::block_generator_config&, task_operation);
+    task_config_t generate_worker_config(const model::block_generator_config&,
+                                         task_operation);
     void update_resource(const std::string&);
 
 public:
