@@ -281,7 +281,8 @@ void handler::create_analyzers(const request_type& request,
                 *uri + reply->analyzers[0]->getId());
         }
 
-        response.send(Http::Code::Ok, reply->analyzers[0]->toJson().dump());
+        response.send(Http::Code::Created,
+                      reply->analyzers[0]->toJson().dump());
     } else {
         handle_reply_error(api_reply, std::move(response));
     }
@@ -358,7 +359,7 @@ void handler::start_analyzer(const request_type& request,
                 *uri + reply->analyzer_results[0]->getId());
         }
 
-        response.send(Http::Code::Ok,
+        response.send(Http::Code::Created,
                       reply->analyzer_results[0]->toJson().dump());
     } else {
         handle_reply_error(api_reply, std::move(response));

@@ -293,7 +293,8 @@ void handler::create_generators(const request_type& request,
                 *uri + reply->generators[0]->getId());
         }
 
-        response.send(Http::Code::Ok, reply->generators[0]->toJson().dump());
+        response.send(Http::Code::Created,
+                      reply->generators[0]->toJson().dump());
     } else {
         handle_reply_error(api_reply, std::move(response));
     }
@@ -371,7 +372,7 @@ void handler::start_generator(const request_type& request,
                 *uri + reply->generator_results[0]->getId());
         }
 
-        response.send(Http::Code::Ok,
+        response.send(Http::Code::Created,
                       reply->generator_results[0]->toJson().dump());
     } else {
         handle_reply_error(api_reply, std::move(response));
