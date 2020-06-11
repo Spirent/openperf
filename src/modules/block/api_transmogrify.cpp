@@ -560,7 +560,8 @@ model::block_generator from_swagger(const BlockGenerator& p_gen)
         .write_size = p_gen.getConfig()->getWriteSize(),
         .fixed_ratio = p_gen.getConfig()->readToWriteRatioIsSet(),
         .read_to_write_ratio = p_gen.getConfig()->getReadToWriteRatio(),
-        .pattern = block_generation_pattern_from_string(p_gen.getConfig()->getPattern())});
+        .pattern = block_generation_pattern_from_string(
+            p_gen.getConfig()->getPattern())});
     return gen;
 }
 

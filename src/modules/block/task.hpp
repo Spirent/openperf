@@ -91,6 +91,7 @@ private:
                        task_stat_t& op_stat,
                        time_point deadline);
     void reset_spin_stat();
+
 public:
     block_task();
     ~block_task();
