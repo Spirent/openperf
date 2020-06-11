@@ -34,7 +34,7 @@ generator_stack::create_block_generator(
         return tl::make_unexpected(
             "Cannot use resource: "
             + static_cast<std::string>(
-                block_generator_model.get_resource_id()));
+                  block_generator_model.get_resource_id()));
     }
 }
 
