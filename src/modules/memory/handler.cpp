@@ -79,8 +79,8 @@ public:
 };
 
 handler::handler(void* context, Rest::Router& router)
-    : socket(
-        op_socket_get_client(context, ZMQ_REQ, openperf::memory::api::endpoint))
+    : socket(op_socket_get_client(
+          context, ZMQ_REQ, openperf::memory::api::endpoint))
 {
     Rest::Routes::Get(router,
                       "/memory-generators",
@@ -103,7 +103,6 @@ handler::handler(void* context, Rest::Router& router)
         router,
         "/memory-generators/x/bulk-delete",
         Rest::Routes::bind(&handler::bulk_delete_generators, this));
-
 
     Rest::Routes::Post(router,
                        "/memory-generators/:id/start",
@@ -172,8 +171,7 @@ void handler::create_generator(const Rest::Request& request,
             return from_swagger(*model.getConfig());
         }()};
     auto api_reply = submit_request(request::generator::create{
-        std::make_unique<request::generator::create_data>(
-            std::move(data))});
+        std::make_unique<request::generator::create_data>(std::move(data))});
 
     if (auto item = std::get_if<reply::generator::item>(&api_reply)) {
         response.headers().add<Http::Header::ContentType>(
@@ -295,24 +293,24 @@ void handler::stop_generator(const Rest::Request& request,
 
 // Bulk memory generator actions
 void handler::bulk_create_generators(const Rest::Request& request,
-                                    Http::ResponseWriter response)
+                                     Http::ResponseWriter response)
 {
-    auto model = json::parse(request.body()).get<model::BulkCreateMemoryGeneratorsRequest>();
+    auto model = json::parse(request.body())
+                     .get<model::BulkCreateMemoryGeneratorsRequest>();
 
     auto req = std::make_unique<std::vector<request::generator::create_data>>();
-    std::transform(
-            model.getItems().begin(),
-            model.getItems().end(),
-            std::back_inserter(*req),
-            [](const auto& item) -> request::generator::create_data {
-                return request::generator::create_data{
-                    .id = item->getId(),
-                    .is_running = item->isRunning(),
-                    .config = from_swagger(*item->getConfig())
-                };
-            });
+    std::transform(model.getItems().begin(),
+                   model.getItems().end(),
+                   std::back_inserter(*req),
+                   [](const auto& item) -> request::generator::create_data {
+                       return request::generator::create_data{
+                           .id = item->getId(),
+                           .is_running = item->isRunning(),
+                           .config = from_swagger(*item->getConfig())};
+                   });
 
-    auto api_reply = submit_request(request::generator::bulk::create{std::move(req)});
+    auto api_reply =
+        submit_request(request::generator::bulk::create{std::move(req)});
 
     if (auto list = std::get_if<reply::generator::list>(&api_reply)) {
         auto array = json::array();
@@ -337,9 +335,10 @@ void handler::bulk_create_generators(const Rest::Request& request,
 }
 
 void handler::bulk_delete_generators(const Rest::Request& request,
-                                   Http::ResponseWriter response)
+                                     Http::ResponseWriter response)
 {
-    auto model = json::parse(request.body()).get<model::BulkDeleteMemoryGeneratorsRequest>();
+    auto model = json::parse(request.body())
+                     .get<model::BulkDeleteMemoryGeneratorsRequest>();
 
     auto api_reply = submit_request(request::generator::bulk::erase{
         {std::make_unique<std::vector<std::string>>(
@@ -361,7 +360,8 @@ void handler::bulk_delete_generators(const Rest::Request& request,
 void handler::bulk_start_generators(const Rest::Request& request,
                                     Http::ResponseWriter response)
 {
-    auto model = json::parse(request.body()).get<model::BulkStartMemoryGeneratorsRequest>();
+    auto model = json::parse(request.body())
+                     .get<model::BulkStartMemoryGeneratorsRequest>();
 
     for (const auto& id : model.getIds()) {
         if (auto res = config::op_config_validate_id_string(id); !res) {
@@ -399,7 +399,8 @@ void handler::bulk_start_generators(const Rest::Request& request,
 void handler::bulk_stop_generators(const Rest::Request& request,
                                    Http::ResponseWriter response)
 {
-    auto model = json::parse(request.body()).get<model::BulkStopMemoryGeneratorsRequest>();
+    auto model = json::parse(request.body())
+                     .get<model::BulkStopMemoryGeneratorsRequest>();
 
     for (const auto& id : model.getIds()) {
         if (auto res = config::op_config_validate_id_string(id); !res) {

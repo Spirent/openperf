@@ -179,8 +179,7 @@ tl::expected<api_request, int> deserialize_request(const serialized_msg& msg)
         if (zmq_msg_size(&msg.data)) {
             request::generator::create request{};
             request.data.reset(
-                *zmq_msg_data<request::generator::create_data**>(
-                    &msg.data));
+                *zmq_msg_data<request::generator::create_data**>(&msg.data));
             return request;
         }
         return request::generator::create{};
@@ -193,11 +192,13 @@ tl::expected<api_request, int> deserialize_request(const serialized_msg& msg)
         }
         return request::generator::erase{};
     }
-    case utils::variant_index<api_request, request::generator::bulk::create>(): {
+    case utils::variant_index<api_request,
+                              request::generator::bulk::create>(): {
         if (zmq_msg_size(&msg.data)) {
             request::generator::bulk::create request{};
             request.data.reset(
-                *zmq_msg_data<std::vector<request::generator::create_data>**>(&msg.data));
+                *zmq_msg_data<std::vector<request::generator::create_data>**>(
+                    &msg.data));
             return request;
         }
         return request::generator::bulk::start{};
@@ -327,9 +328,7 @@ namespace swagger::v1::model {
 
 void from_json(const nlohmann::json& j, MemoryGenerator& generator)
 {
-    if(j.find("id") != j.end()) {
-        generator.setId(j.at("id"));
-    }
+    if (j.find("id") != j.end()) { generator.setId(j.at("id")); }
 
     generator.setRunning(j.at("running"));
 
@@ -338,32 +337,37 @@ void from_json(const nlohmann::json& j, MemoryGenerator& generator)
     generator.setConfig(std::make_shared<MemoryGeneratorConfig>(gc));
 }
 
-void from_json(const nlohmann::json& j, BulkCreateMemoryGeneratorsRequest& request)
+void from_json(const nlohmann::json& j,
+               BulkCreateMemoryGeneratorsRequest& request)
 {
     request.getItems().clear();
     nlohmann::json jsonArray;
-    for( auto& item : const_cast<nlohmann::json&>(j).at("items")) {
-        if(item.is_null()) {
-            request.getItems().push_back( std::shared_ptr<MemoryGenerator>(nullptr) );
+    for (auto& item : const_cast<nlohmann::json&>(j).at("items")) {
+        if (item.is_null()) {
+            request.getItems().push_back(
+                std::shared_ptr<MemoryGenerator>(nullptr));
         } else {
             std::shared_ptr<MemoryGenerator> newItem(new MemoryGenerator());
             from_json(item, *newItem);
-            request.getItems().push_back( newItem );
+            request.getItems().push_back(newItem);
         }
     }
 }
 
-void from_json(const nlohmann::json& j, BulkDeleteMemoryGeneratorsRequest& request)
+void from_json(const nlohmann::json& j,
+               BulkDeleteMemoryGeneratorsRequest& request)
 {
     request.fromJson(const_cast<nlohmann::json&>(j));
 }
 
-void from_json(const nlohmann::json& j, BulkStartMemoryGeneratorsRequest& request)
+void from_json(const nlohmann::json& j,
+               BulkStartMemoryGeneratorsRequest& request)
 {
     request.fromJson(const_cast<nlohmann::json&>(j));
 }
 
-void from_json(const nlohmann::json& j, BulkStopMemoryGeneratorsRequest& request)
+void from_json(const nlohmann::json& j,
+               BulkStopMemoryGeneratorsRequest& request)
 {
     request.fromJson(const_cast<nlohmann::json&>(j));
 }

@@ -30,14 +30,15 @@ generator_stack::create_block_generator(
         m_block_generators.emplace(blkgenerator_ptr->get_id(),
                                    blkgenerator_ptr);
         if (blkgenerator_ptr->is_running()) {
-            m_block_results[blkgenerator_ptr->get_statistics()->get_id()] = blkgenerator_ptr;
+            m_block_results[blkgenerator_ptr->get_statistics()->get_id()] =
+                blkgenerator_ptr;
         }
         return blkgenerator_ptr;
     } catch (const std::runtime_error& e) {
         return tl::make_unexpected(
             "Cannot use resource: "
             + static_cast<std::string>(
-                block_generator_model.get_resource_id()));
+                  block_generator_model.get_resource_id()));
     }
 }
 
@@ -54,14 +55,14 @@ bool generator_stack::delete_block_generator(const std::string& id)
     if (!gen) return false;
     if (gen->is_running()) { stop_generator(id); }
 
-    for (auto it = m_block_results.cbegin(); it != m_block_results.cend(); ) {
+    for (auto it = m_block_results.cbegin(); it != m_block_results.cend();) {
         auto res = (*it).second;
         ++it;
         std::visit(utils::overloaded_visitor(
                        [](const block_generator_ptr& generator) {},
                        [&](const block_generator_result_ptr& result) {
                            if (result->get_generator_id() == id)
-                                delete_statistics(result->get_id());
+                               delete_statistics(result->get_id());
                        }),
                    res);
     }
