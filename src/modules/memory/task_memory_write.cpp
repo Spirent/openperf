@@ -5,8 +5,7 @@
 
 namespace openperf::memory::internal {
 
-[[clang::optnone]]
-void task_memory_write::operation(uint64_t nb_ops)
+[[clang::optnone]] void task_memory_write::operation(uint64_t nb_ops)
 {
     assert(m_op_index < m_indexes.size());
     for (size_t i = 0; i < nb_ops; ++i) {
