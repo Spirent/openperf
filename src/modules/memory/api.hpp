@@ -67,7 +67,8 @@ struct id_list
 {
     std::unique_ptr<std::vector<std::string>> data;
 };
-struct create {
+struct create
+{
     std::unique_ptr<std::vector<create_data>> data;
 };
 struct erase : id_list

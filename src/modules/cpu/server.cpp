@@ -67,7 +67,6 @@ reply_msg server::handle_request(const request_cpu_generator_del& request)
     return reply_ok{};
 }
 
-
 reply_msg server::handle_request(const request_cpu_generator_bulk_add& request)
 {
     auto reply = reply_cpu_generators{};
@@ -85,7 +84,8 @@ reply_msg server::handle_request(const request_cpu_generator_bulk_add& request)
             source->id(core::to_string(core::uuid::random()));
         }
 
-        if (auto id_check = config::op_config_validate_id_string(source->id()); !id_check) {
+        if (auto id_check = config::op_config_validate_id_string(source->id());
+            !id_check) {
             remove_created_items();
             return (to_error(error_type::CUSTOM_ERROR, 0, "Id is not valid"));
         }
@@ -95,7 +95,8 @@ reply_msg server::handle_request(const request_cpu_generator_bulk_add& request)
             remove_created_items();
             return (to_error(error_type::CUSTOM_ERROR, 0, result.error()));
         }
-        reply.generators.emplace_back(std::make_unique<model::generator>(*result.value()));
+        reply.generators.emplace_back(
+            std::make_unique<model::generator>(*result.value()));
     }
 
     return reply;

@@ -42,10 +42,10 @@ public:
                      Http::ResponseWriter response);
 
     void bulk_create_files(const Rest::Request& request,
-                               Http::ResponseWriter response);
+                           Http::ResponseWriter response);
 
     void bulk_delete_files(const Rest::Request& request,
-                              Http::ResponseWriter response);
+                           Http::ResponseWriter response);
 
     void list_generators(const Rest::Request& request,
                          Http::ResponseWriter response);
@@ -60,10 +60,10 @@ public:
                           Http::ResponseWriter response);
 
     void bulk_create_generators(const Rest::Request& request,
-                               Http::ResponseWriter response);
+                                Http::ResponseWriter response);
 
     void bulk_delete_generators(const Rest::Request& request,
-                              Http::ResponseWriter response);
+                                Http::ResponseWriter response);
 
     void start_generator(const Rest::Request& request,
                          Http::ResponseWriter response);
@@ -131,14 +131,12 @@ handler::handler(void* context, Rest::Router& router)
     Rest::Routes::Delete(router,
                          "/block-files/:id",
                          Rest::Routes::bind(&handler::delete_file, this));
-    Rest::Routes::Post(
-        router,
-        "/block-files/x/bulk-create",
-        Rest::Routes::bind(&handler::bulk_create_files, this));
-    Rest::Routes::Post(
-        router,
-        "/block-files/x/bulk-delete",
-        Rest::Routes::bind(&handler::bulk_delete_files, this));
+    Rest::Routes::Post(router,
+                       "/block-files/x/bulk-create",
+                       Rest::Routes::bind(&handler::bulk_create_files, this));
+    Rest::Routes::Post(router,
+                       "/block-files/x/bulk-delete",
+                       Rest::Routes::bind(&handler::bulk_delete_files, this));
     Rest::Routes::Get(router,
                       "/block-generators",
                       Rest::Routes::bind(&handler::list_generators, this));
@@ -350,14 +348,14 @@ void handler::delete_file(const Rest::Request& request,
 }
 
 void handler::bulk_create_files(const Rest::Request& request,
-                                    Http::ResponseWriter response)
+                                Http::ResponseWriter response)
 {
-    auto request_model = json::parse(request.body()).get<BulkCreateBlockFilesRequest>();
+    auto request_model =
+        json::parse(request.body()).get<BulkCreateBlockFilesRequest>();
 
     auto api_reply =
         submit_request(m_socket.get(), api::from_swagger(request_model));
-    if (auto reply =
-            std::get_if<api::reply_block_files>(&api_reply)) {
+    if (auto reply = std::get_if<api::reply_block_files>(&api_reply)) {
         response.headers().add<Http::Header::ContentType>(
             MIME(Application, Json));
         auto results = json::array();
@@ -376,9 +374,10 @@ void handler::bulk_create_files(const Rest::Request& request,
 }
 
 void handler::bulk_delete_files(const Rest::Request& request,
-                                   Http::ResponseWriter response)
+                                Http::ResponseWriter response)
 {
-    auto request_model = json::parse(request.body()).get<BulkDeleteBlockFilesRequest>();
+    auto request_model =
+        json::parse(request.body()).get<BulkDeleteBlockFilesRequest>();
 
     auto api_reply =
         submit_request(m_socket.get(), api::from_swagger(request_model));
@@ -392,7 +391,6 @@ void handler::bulk_delete_files(const Rest::Request& request,
         response.send(Http::Code::Internal_Server_Error);
     }
 }
-
 
 void handler::list_generators(const Rest::Request&,
                               Http::ResponseWriter response)
@@ -500,14 +498,14 @@ void handler::delete_generator(const Rest::Request& request,
 }
 
 void handler::bulk_create_generators(const Rest::Request& request,
-                                    Http::ResponseWriter response)
+                                     Http::ResponseWriter response)
 {
-    auto request_model = json::parse(request.body()).get<BulkCreateBlockGeneratorsRequest>();
+    auto request_model =
+        json::parse(request.body()).get<BulkCreateBlockGeneratorsRequest>();
 
     auto api_reply =
         submit_request(m_socket.get(), api::from_swagger(request_model));
-    if (auto reply =
-            std::get_if<api::reply_block_generators>(&api_reply)) {
+    if (auto reply = std::get_if<api::reply_block_generators>(&api_reply)) {
         response.headers().add<Http::Header::ContentType>(
             MIME(Application, Json));
         auto results = json::array();
@@ -526,9 +524,10 @@ void handler::bulk_create_generators(const Rest::Request& request,
 }
 
 void handler::bulk_delete_generators(const Rest::Request& request,
-                                   Http::ResponseWriter response)
+                                     Http::ResponseWriter response)
 {
-    auto request_model = json::parse(request.body()).get<BulkDeleteBlockGeneratorsRequest>();
+    auto request_model =
+        json::parse(request.body()).get<BulkDeleteBlockGeneratorsRequest>();
 
     auto api_reply =
         submit_request(m_socket.get(), api::from_swagger(request_model));

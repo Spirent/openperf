@@ -123,8 +123,10 @@ api_reply server::handle_request(const request::generator::bulk::create& req)
         try {
             auto id = m_generator_stack->create(data.id, data.config);
             const auto& gnr = m_generator_stack->generator(id);
-            reply::generator::item::item_data item_data{
-                .id = id, .is_running = data.is_running, .config = gnr.config()};
+            reply::generator::item::item_data item_data{.id = id,
+                                                        .is_running =
+                                                            data.is_running,
+                                                        .config = gnr.config()};
             list.data->push_back(item_data);
         } catch (const std::invalid_argument&) {
             remove_created_items();
@@ -136,8 +138,7 @@ api_reply server::handle_request(const request::generator::bulk::create& req)
     }
 
     for (const auto& data : *list.data) {
-        if (data.is_running)
-            m_generator_stack->start(data.id);
+        if (data.is_running) m_generator_stack->start(data.id);
     }
 
     return list;
@@ -146,15 +147,13 @@ api_reply server::handle_request(const request::generator::bulk::create& req)
 api_reply server::handle_request(const request::generator::bulk::erase& req)
 {
     for (const auto& id : *req.data) {
-        if (!m_generator_stack->contains(id))
-            continue;
+        if (!m_generator_stack->contains(id)) continue;
 
         m_generator_stack->erase(id);
     }
 
     return reply::ok{};
 }
-
 
 api_reply server::handle_request(const request::generator::stop& req)
 {

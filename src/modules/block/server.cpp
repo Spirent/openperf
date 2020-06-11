@@ -109,7 +109,9 @@ reply_msg server::handle_request(const request_block_file_bulk_add& request)
             source->set_id(core::to_string(core::uuid::random()));
         }
 
-        if (auto id_check = config::op_config_validate_id_string(source->get_id()); !id_check) {
+        if (auto id_check =
+                config::op_config_validate_id_string(source->get_id());
+            !id_check) {
             remove_created_items();
             return (to_error(error_type::CUSTOM_ERROR, 0, "Id is not valid"));
         }
@@ -119,7 +121,8 @@ reply_msg server::handle_request(const request_block_file_bulk_add& request)
             remove_created_items();
             return (to_error(error_type::CUSTOM_ERROR, 0, result.error()));
         }
-        reply.files.emplace_back(std::make_unique<model::file>(*result.value()));
+        reply.files.emplace_back(
+            std::make_unique<model::file>(*result.value()));
     }
 
     return reply;
@@ -195,7 +198,8 @@ reply_msg server::handle_request(const request_block_generator_del& request)
     }
 }
 
-reply_msg server::handle_request(const request_block_generator_bulk_add& request)
+reply_msg
+server::handle_request(const request_block_generator_bulk_add& request)
 {
     auto reply = reply_block_generators{};
 
@@ -212,23 +216,28 @@ reply_msg server::handle_request(const request_block_generator_bulk_add& request
             source->set_id(core::to_string(core::uuid::random()));
         }
 
-        if (auto id_check = config::op_config_validate_id_string(source->get_id()); !id_check) {
+        if (auto id_check =
+                config::op_config_validate_id_string(source->get_id());
+            !id_check) {
             remove_created_items();
             return (to_error(error_type::CUSTOM_ERROR, 0, "Id is not valid"));
         }
 
-        auto result = m_generator_stack->create_block_generator(*source, {m_file_stack.get(), m_device_stack.get()});
+        auto result = m_generator_stack->create_block_generator(
+            *source, {m_file_stack.get(), m_device_stack.get()});
         if (!result) {
             remove_created_items();
             return (to_error(error_type::CUSTOM_ERROR, 0, result.error()));
         }
-        reply.generators.emplace_back(std::make_unique<model::block_generator>(*result.value()));
+        reply.generators.emplace_back(
+            std::make_unique<model::block_generator>(*result.value()));
     }
 
     return reply;
 }
 
-reply_msg server::handle_request(const request_block_generator_bulk_del& request)
+reply_msg
+server::handle_request(const request_block_generator_bulk_del& request)
 {
     bool failed = false;
     for (const auto& id : request.ids) {

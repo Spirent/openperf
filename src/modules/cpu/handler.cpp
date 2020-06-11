@@ -35,10 +35,10 @@ public:
                           Http::ResponseWriter response);
 
     void bulk_create_generators(const Rest::Request& request,
-                               Http::ResponseWriter response);
+                                Http::ResponseWriter response);
 
     void bulk_delete_generators(const Rest::Request& request,
-                              Http::ResponseWriter response);
+                                Http::ResponseWriter response);
 
     void start_generator(const Rest::Request& request,
                          Http::ResponseWriter response);
@@ -247,16 +247,15 @@ void handler::delete_generator(const Rest::Request& request,
     }
 }
 
-
 void handler::bulk_create_generators(const Rest::Request& request,
-                                    Http::ResponseWriter response)
+                                     Http::ResponseWriter response)
 {
-    auto request_model = json::parse(request.body()).get<BulkCreateCpuGeneratorsRequest>();
+    auto request_model =
+        json::parse(request.body()).get<BulkCreateCpuGeneratorsRequest>();
 
     auto api_reply =
         submit_request(m_socket.get(), api::from_swagger(request_model));
-    if (auto reply =
-            std::get_if<api::reply_cpu_generators>(&api_reply)) {
+    if (auto reply = std::get_if<api::reply_cpu_generators>(&api_reply)) {
         response.headers().add<Http::Header::ContentType>(
             MIME(Application, Json));
         auto results = json::array();
@@ -275,9 +274,10 @@ void handler::bulk_create_generators(const Rest::Request& request,
 }
 
 void handler::bulk_delete_generators(const Rest::Request& request,
-                                   Http::ResponseWriter response)
+                                     Http::ResponseWriter response)
 {
-    auto request_model = json::parse(request.body()).get<BulkDeleteCpuGeneratorsRequest>();
+    auto request_model =
+        json::parse(request.body()).get<BulkDeleteCpuGeneratorsRequest>();
 
     auto api_reply =
         submit_request(m_socket.get(), api::from_swagger(request_model));
@@ -345,7 +345,8 @@ void handler::stop_generator(const Rest::Request& request,
 void handler::bulk_start_generators(const Rest::Request& request,
                                     Http::ResponseWriter response)
 {
-    auto request_model = json::parse(request.body()).get<BulkStartCpuGeneratorsRequest>();
+    auto request_model =
+        json::parse(request.body()).get<BulkStartCpuGeneratorsRequest>();
 
     api::request_cpu_generator_bulk_start bulk_request{
         std::make_unique<std::vector<std::string>>()};
@@ -382,7 +383,8 @@ void handler::bulk_start_generators(const Rest::Request& request,
 void handler::bulk_stop_generators(const Rest::Request& request,
                                    Http::ResponseWriter response)
 {
-    auto request_model = json::parse(request.body()).get<BulkStopCpuGeneratorsRequest>();
+    auto request_model =
+        json::parse(request.body()).get<BulkStopCpuGeneratorsRequest>();
 
     api::request_cpu_generator_bulk_stop bulk_request{
         std::make_unique<std::vector<std::string>>()};
