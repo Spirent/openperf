@@ -369,6 +369,13 @@ reply_msg server::handle_request(const request_delete_analyzer& request)
     return (reply_ok{});
 }
 
+template <typename Map> static core::uuid get_unique_result_id(const Map& map)
+{
+    auto id = api::get_analyzer_result_id();
+    while (map.count(id)) { id = api::get_analyzer_result_id(); }
+    return (id);
+}
+
 reply_msg server::handle_request(const request_start_analyzer& request)
 {
     auto found = binary_find(std::begin(m_sinks),
@@ -383,7 +390,7 @@ reply_msg server::handle_request(const request_start_analyzer& request)
     if (found->active()) { return (to_error(error_type::POSIX, EINVAL)); }
 
     auto& impl = found->template get<sink>();
-    auto item = m_results.emplace(core::uuid::random(),
+    auto item = m_results.emplace(get_unique_result_id(m_results),
                                   std::make_unique<sink_result>(impl));
     assert(item.second); /* sink_result inserted */
 
