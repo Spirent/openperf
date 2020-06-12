@@ -31,6 +31,7 @@ class PacketAnalyzerFlowCounters(object):
                             and the value is json key in definition.
     """
     swagger_types = {
+        'headers': 'list[PacketAnalyzerFlowHeader]',
         'frame_length': 'PacketAnalyzerFlowCountersFrameLength',
         'interarrival': 'PacketAnalyzerFlowCountersInterarrival',
         'jitter_ipdv': 'PacketAnalyzerFlowCountersJitterIpdv',
@@ -43,6 +44,7 @@ class PacketAnalyzerFlowCounters(object):
     }
 
     attribute_map = {
+        'headers': 'headers',
         'frame_length': 'frame_length',
         'interarrival': 'interarrival',
         'jitter_ipdv': 'jitter_ipdv',
@@ -54,9 +56,10 @@ class PacketAnalyzerFlowCounters(object):
         'timestamp_last': 'timestamp_last'
     }
 
-    def __init__(self, frame_length=None, interarrival=None, jitter_ipdv=None, jitter_rfc=None, latency=None, sequence=None, frame_count=None, timestamp_first=None, timestamp_last=None):  # noqa: E501
+    def __init__(self, headers=None, frame_length=None, interarrival=None, jitter_ipdv=None, jitter_rfc=None, latency=None, sequence=None, frame_count=None, timestamp_first=None, timestamp_last=None):  # noqa: E501
         """PacketAnalyzerFlowCounters - a model defined in Swagger"""  # noqa: E501
 
+        self._headers = None
         self._frame_length = None
         self._interarrival = None
         self._jitter_ipdv = None
@@ -68,6 +71,8 @@ class PacketAnalyzerFlowCounters(object):
         self._timestamp_last = None
         self.discriminator = None
 
+        if headers is not None:
+            self.headers = headers
         if frame_length is not None:
             self.frame_length = frame_length
         if interarrival is not None:
@@ -85,6 +90,28 @@ class PacketAnalyzerFlowCounters(object):
             self.timestamp_first = timestamp_first
         if timestamp_last is not None:
             self.timestamp_last = timestamp_last
+
+    @property
+    def headers(self):
+        """Gets the headers of this PacketAnalyzerFlowCounters.  # noqa: E501
+
+        List of protocol headers  # noqa: E501
+
+        :return: The headers of this PacketAnalyzerFlowCounters.  # noqa: E501
+        :rtype: list[PacketAnalyzerFlowHeader]
+        """
+        return self._headers
+
+    @headers.setter
+    def headers(self, headers):
+        """Sets the headers of this PacketAnalyzerFlowCounters.
+
+        List of protocol headers  # noqa: E501
+
+        :param headers: The headers of this PacketAnalyzerFlowCounters.  # noqa: E501
+        :type: list[PacketAnalyzerFlowHeader]
+        """
+        self._headers = headers
 
     @property
     def frame_length(self):

@@ -449,6 +449,7 @@ definitions:
             - jitter_ipdv
             - jitter_rfc
             - prbs
+            - header
           default:
             - frame_count
           uniqueItems: true
@@ -863,6 +864,12 @@ definitions:
     type: object
     description: Result counters for flows
     properties:
+      headers:
+        type: array
+        description: List of protocol headers
+        items:
+          $ref: "#/definitions/PacketAnalyzerFlowHeader"
+        minItems: 1
       frame_length:
         type: object
         description: Frame length result counters
@@ -989,6 +996,28 @@ definitions:
         format: date-time
     required:
       - frame_count
+
+  PacketAnalyzerFlowHeader:
+    type: object
+    description: A decoded protocol header
+    properties:
+      ethernet:
+        $ref: ./protocol.yaml#/definitions/PacketProtocolEthernet
+      ipv4:
+        $ref: ./protocol.yaml#/definitions/PacketProtocolIpv4
+      ipv6:
+        $ref: ./protocol.yaml#/definitions/PacketProtocolIpv6
+      mpls:
+        $ref: ./protocol.yaml#/definitions/PacketProtocolMpls
+      tcp:
+        $ref: ./protocol.yaml#/definitions/PacketProtocolTcp
+      udp:
+        $ref: ./protocol.yaml#/definitions/PacketProtocolUdp
+      vlan:
+        $ref: ./protocol.yaml#/definitions/PacketProtocolVlan
+      unknown:
+        type: string
+        description: Base64 encoded header
 
   RxFlow:
     type: object

@@ -19,6 +19,7 @@ namespace model {
 
 PacketAnalyzerFlowCounters::PacketAnalyzerFlowCounters()
 {
+    m_HeadersIsSet = false;
     m_Frame_lengthIsSet = false;
     m_InterarrivalIsSet = false;
     m_Jitter_ipdvIsSet = false;
@@ -46,6 +47,18 @@ nlohmann::json PacketAnalyzerFlowCounters::toJson() const
 {
     nlohmann::json val = nlohmann::json::object();
 
+    {
+        nlohmann::json jsonArray;
+        for( auto& item : m_Headers )
+        {
+            jsonArray.push_back(ModelBase::toJson(item));
+        }
+        
+        if(jsonArray.size() > 0)
+        {
+            val["headers"] = jsonArray;
+        }
+    }
     if(m_Frame_lengthIsSet)
     {
         val["frame_length"] = ModelBase::toJson(m_Frame_length);
@@ -86,6 +99,28 @@ nlohmann::json PacketAnalyzerFlowCounters::toJson() const
 
 void PacketAnalyzerFlowCounters::fromJson(nlohmann::json& val)
 {
+    {
+        m_Headers.clear();
+        nlohmann::json jsonArray;
+        if(val.find("headers") != val.end())
+        {
+        for( auto& item : val["headers"] )
+        {
+            
+            if(item.is_null())
+            {
+                m_Headers.push_back( std::shared_ptr<PacketAnalyzerFlowHeader>(nullptr) );
+            }
+            else
+            {
+                std::shared_ptr<PacketAnalyzerFlowHeader> newItem(new PacketAnalyzerFlowHeader());
+                newItem->fromJson(item);
+                m_Headers.push_back( newItem );
+            }
+            
+        }
+        }
+    }
     if(val.find("frame_length") != val.end())
     {
         if(!val["frame_length"].is_null())
@@ -161,6 +196,18 @@ void PacketAnalyzerFlowCounters::fromJson(nlohmann::json& val)
 }
 
 
+std::vector<std::shared_ptr<PacketAnalyzerFlowHeader>>& PacketAnalyzerFlowCounters::getHeaders()
+{
+    return m_Headers;
+}
+bool PacketAnalyzerFlowCounters::headersIsSet() const
+{
+    return m_HeadersIsSet;
+}
+void PacketAnalyzerFlowCounters::unsetHeaders()
+{
+    m_HeadersIsSet = false;
+}
 std::shared_ptr<PacketAnalyzerFlowCounters_frame_length> PacketAnalyzerFlowCounters::getFrameLength() const
 {
     return m_Frame_length;

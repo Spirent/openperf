@@ -222,6 +222,11 @@ uint16_t sink::push(const packetio::packet::packet_buffer* const packets[],
 
             counters = cache.retry(hash, stream_id);
             assert(counters);
+
+            counters->set_header(
+                packetio::packet::packet_type_flags(packet),
+                packetio::packet::to_data<const uint8_t>(packet));
+
             flows.first.writer_add_gc_callback(
                 [to_delete]() { delete to_delete; });
         }

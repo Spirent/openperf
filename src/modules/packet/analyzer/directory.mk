@@ -2,7 +2,7 @@
 # Makefile component to build Analyzer code
 #
 
-PA_DEPENDS += immer packetio spirent_pga timesync
+PA_DEPENDS += base_n immer packet_protocol packetio spirent_pga timesync
 
 PA_SOURCES += \
 	api_transmogrify.cpp \
@@ -13,8 +13,11 @@ PA_SOURCES += \
 	sink.cpp \
 	sink_transmogrify.cpp \
 	statistics/common.cpp \
-	statistics/flow/factory.cpp \
 	statistics/flow/counters.cpp \
+	statistics/flow/factory.cpp \
+	statistics/flow/header.cpp \
+	statistics/flow/header_utils.cpp \
+	statistics/flow/header_view.cpp \
 	statistics/flow/utils.cpp \
 	statistics/protocol/factory.cpp \
 	statistics/protocol/counters.cpp \
@@ -36,3 +39,10 @@ $(PA_OBJ_DIR)/init.o: OP_CPPFLAGS += \
 	-DBUILD_COMMIT="\"$(GIT_COMMIT)\"" \
 	-DBUILD_NUMBER="\"$(BUILD_NUMBER)\"" \
 	-DBUILD_TIMESTAMP="\"$(TIMESTAMP)\""
+
+PA_TEST_DEPENDS += packet_protocol spirent_pga timesync_test
+
+PA_TEST_SOURCES += \
+	statistics/flow/header.cpp \
+	statistics/flow/header_utils.cpp \
+	statistics/flow/header_view.cpp
