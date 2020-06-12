@@ -15,7 +15,7 @@ namespace openperf::packet::protocol::transmogrify {
 
 libpacket::protocol::udp to_protocol(const std::shared_ptr<swagger::v1::model::PacketProtocolUdp>&);
 
-std::shared_ptr<swagger::v1::model::PacketProtocolUdp> to_swagger(libpacket::protocol::udp&);
+std::shared_ptr<swagger::v1::model::PacketProtocolUdp> to_swagger(const libpacket::protocol::udp&);
 
 }
 

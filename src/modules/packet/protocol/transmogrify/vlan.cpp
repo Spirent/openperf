@@ -9,7 +9,7 @@
 
 namespace openperf::packet::protocol::transmogrify {
 
-std::shared_ptr<swagger::v1::model::PacketProtocolVlan> to_swagger(libpacket::protocol::vlan& src)
+std::shared_ptr<swagger::v1::model::PacketProtocolVlan> to_swagger(const libpacket::protocol::vlan& src)
 {
     auto dst = std::make_shared<swagger::v1::model::PacketProtocolVlan>();
 

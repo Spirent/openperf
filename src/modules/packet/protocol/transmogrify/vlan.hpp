@@ -15,7 +15,7 @@ namespace openperf::packet::protocol::transmogrify {
 
 libpacket::protocol::vlan to_protocol(const std::shared_ptr<swagger::v1::model::PacketProtocolVlan>&);
 
-std::shared_ptr<swagger::v1::model::PacketProtocolVlan> to_swagger(libpacket::protocol::vlan&);
+std::shared_ptr<swagger::v1::model::PacketProtocolVlan> to_swagger(const libpacket::protocol::vlan&);
 
 }
 

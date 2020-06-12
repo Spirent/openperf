@@ -15,7 +15,7 @@ namespace openperf::packet::protocol::transmogrify {
 
 libpacket::protocol::ipv6 to_protocol(const std::shared_ptr<swagger::v1::model::PacketProtocolIpv6>&);
 
-std::shared_ptr<swagger::v1::model::PacketProtocolIpv6> to_swagger(libpacket::protocol::ipv6&);
+std::shared_ptr<swagger::v1::model::PacketProtocolIpv6> to_swagger(const libpacket::protocol::ipv6&);
 
 }
 

@@ -9,7 +9,7 @@
 
 namespace openperf::packet::protocol::transmogrify {
 
-std::shared_ptr<swagger::v1::model::PacketProtocolMpls> to_swagger(libpacket::protocol::mpls& src)
+std::shared_ptr<swagger::v1::model::PacketProtocolMpls> to_swagger(const libpacket::protocol::mpls& src)
 {
     auto dst = std::make_shared<swagger::v1::model::PacketProtocolMpls>();
 

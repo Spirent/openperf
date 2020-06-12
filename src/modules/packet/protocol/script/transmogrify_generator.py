@@ -115,9 +115,9 @@ def to_swagger_object(name):
 
 
 def to_swagger_declaration(name, arg = None):
-    return '{} to_swagger({}&{})'.format(to_swagger_object(name),
-                                         to_libpacket_object(name),
-                                         ' {}'.format(arg) if arg else '')
+    return '{} to_swagger(const {}&{})'.format(to_swagger_object(name),
+                                               to_libpacket_object(name),
+                                               ' {}'.format(arg) if arg else '')
 
 
 def to_libpacket_declaration(name, arg = None):

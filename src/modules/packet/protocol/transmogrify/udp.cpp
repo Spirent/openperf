@@ -9,7 +9,7 @@
 
 namespace openperf::packet::protocol::transmogrify {
 
-std::shared_ptr<swagger::v1::model::PacketProtocolUdp> to_swagger(libpacket::protocol::udp& src)
+std::shared_ptr<swagger::v1::model::PacketProtocolUdp> to_swagger(const libpacket::protocol::udp& src)
 {
     auto dst = std::make_shared<swagger::v1::model::PacketProtocolUdp>();
 

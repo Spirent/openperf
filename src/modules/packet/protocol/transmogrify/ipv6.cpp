@@ -9,7 +9,7 @@
 
 namespace openperf::packet::protocol::transmogrify {
 
-std::shared_ptr<swagger::v1::model::PacketProtocolIpv6> to_swagger(libpacket::protocol::ipv6& src)
+std::shared_ptr<swagger::v1::model::PacketProtocolIpv6> to_swagger(const libpacket::protocol::ipv6& src)
 {
     auto dst = std::make_shared<swagger::v1::model::PacketProtocolIpv6>();
 
