@@ -519,6 +519,13 @@ rx_flow_ptr to_swagger(const core::uuid& id,
     return (dst);
 }
 
+core::uuid get_analyzer_result_id()
+{
+    auto id = core::uuid::random();
+    std::fill_n(id.data() + 6, 10, 0);
+    return (id);
+}
+
 static constexpr auto signature_stream_id_sentinel =
     std::numeric_limits<uint32_t>::max();
 

@@ -239,6 +239,8 @@ rx_flow_ptr to_swagger(const core::uuid& id,
                        const core::uuid& result_id,
                        const statistics::generic_flow_counters& counters);
 
+core::uuid get_analyzer_result_id();
+
 core::uuid
 rx_flow_id(const core::uuid& result_id,
            uint16_t shard_idx,
