@@ -105,6 +105,8 @@ uint16_t length(const packet_buffer* buffer);
 timesync::chrono::realtime::time_point
 rx_timestamp(const packet_buffer* buffer);
 
+packet_type::flags packet_type_flags(const packet_buffer* buffer);
+
 uint32_t rss_hash(const packet_buffer* buffer);
 
 std::optional<uint32_t> signature_stream_id(const packet_buffer* buffer);

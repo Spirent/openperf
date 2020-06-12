@@ -503,6 +503,9 @@ definitions:
   PacketAnalyzerFlowCounters:
     $ref: ./modules/packet/analyzer.yaml#/definitions/PacketAnalyzerFlowCounters
 
+  PacketAnalyzerFlowHeader:
+    $ref: ./modules/packet/analyzer.yaml#/definitions/PacketAnalyzerFlowHeader
+
   RxFlow:
     $ref: ./modules/packet/analyzer.yaml#/definitions/RxFlow
 

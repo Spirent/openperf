@@ -4,12 +4,15 @@
 #include <memory>
 
 #include "packet/analyzer/statistics/flow/counters.hpp"
+#include "packet/analyzer/statistics/flow/header.hpp"
 #include "utils/enum_flags.hpp"
 
 namespace openperf::packet::analyzer::statistics {
 
 class generic_flow_counters
 {
+    using packet_type_flags = flow::header::packet_type_flags;
+
 public:
     template <typename StatsTuple>
     generic_flow_counters(StatsTuple tuple)
@@ -39,6 +42,11 @@ public:
         m_self->update(length, rx, tx, seq_num);
     }
 
+    void set_header(packet_type_flags flags, const uint8_t pkt[]) const
+    {
+        m_self->set_header(flags, pkt);
+    }
+
     void dump(std::ostream& os) const { m_self->dump(os); }
 
 private:
@@ -64,6 +72,9 @@ private:
                             std::optional<counter::timestamp> tx,
                             std::optional<uint32_t> seq_num) const = 0;
 
+        virtual void set_header(packet_type_flags flags,
+                                const uint8_t pkt[]) const = 0;
+
         virtual void dump(std::ostream& os) const = 0;
 
     protected:
@@ -77,6 +88,7 @@ private:
         virtual const flow::jitter_rfc& get(tag<flow::jitter_rfc>&&) const = 0;
         virtual const flow::jitter_ipdv&
         get(tag<flow::jitter_ipdv>&&) const = 0;
+        virtual const flow::header& get(tag<flow::header>&&) const = 0;
 
         virtual bool holds(tag<counter>&&) const = 0;
         virtual bool holds(tag<flow::sequencing>&&) const = 0;
@@ -85,6 +97,7 @@ private:
         virtual bool holds(tag<flow::latency>&&) const = 0;
         virtual bool holds(tag<flow::jitter_rfc>&&) const = 0;
         virtual bool holds(tag<flow::jitter_ipdv>&&) const = 0;
+        virtual bool holds(tag<flow::header>&&) const = 0;
     };
 
     template <typename StatsTuple> struct stats_model final : stats_concept
@@ -128,6 +141,11 @@ private:
             return (get_counter<flow::jitter_ipdv, StatsTuple>(m_data));
         }
 
+        const flow::header& get(tag<flow::header>&&) const override
+        {
+            return (get_counter<flow::header, StatsTuple>(m_data));
+        }
+
         bool holds(tag<counter>&&) const override
         {
             return (holds_stat<counter, StatsTuple>(m_data));
@@ -163,12 +181,23 @@ private:
             return (holds_stat<flow::jitter_ipdv, StatsTuple>(m_data));
         }
 
+        bool holds(tag<flow::header>&&) const override
+        {
+            return (holds_stat<flow::header, StatsTuple>(m_data));
+        }
+
         void update(uint16_t length,
                     counter::timestamp rx,
                     std::optional<counter::timestamp> tx,
                     std::optional<uint32_t> seq_num) const override
         {
             flow::update(m_data, length, rx, tx, seq_num);
+        }
+
+        void set_header(packet_type_flags flags,
+                        const uint8_t pkt[]) const override
+        {
+            flow::set_header(m_data, flags, pkt);
         }
 
         void dump(std::ostream& os) const override { flow::dump(os, m_data); }
@@ -188,7 +217,8 @@ enum class flow_flags {
     latency = (1 << 4),
     jitter_ipdv = (1 << 5),
     jitter_rfc = (1 << 6),
-    prbs = (1 << 7),
+    header = (1 << 7),
+    prbs = (1 << 8),
 };
 
 generic_flow_counters
@@ -205,7 +235,7 @@ namespace openperf::packet::analyzer::statistics {
 inline constexpr auto all_flow_counters =
     (flow_flags::frame_count | flow_flags::frame_length | flow_flags::latency
      | flow_flags::sequencing | flow_flags::interarrival
-     | flow_flags::jitter_ipdv | flow_flags::jitter_rfc);
+     | flow_flags::jitter_ipdv | flow_flags::jitter_rfc | flow_flags::header);
 }
 
 #endif /* _OP_ANALYZER_STATISTICS_GENERIC_FLOW_COUNTERS_HPP_ */

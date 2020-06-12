@@ -27,7 +27,9 @@
 #include "PacketAnalyzerFlowCounters_interarrival.h"
 #include <string>
 #include "PacketAnalyzerFlowCounters_latency.h"
+#include "PacketAnalyzerFlowHeader.h"
 #include "PacketAnalyzerFlowCounters_frame_length.h"
+#include <vector>
 
 namespace swagger {
 namespace v1 {
@@ -54,6 +56,12 @@ public:
     /////////////////////////////////////////////
     /// PacketAnalyzerFlowCounters members
 
+    /// <summary>
+    /// List of protocol headers
+    /// </summary>
+    std::vector<std::shared_ptr<PacketAnalyzerFlowHeader>>& getHeaders();
+    bool headersIsSet() const;
+    void unsetHeaders();
     /// <summary>
     /// 
     /// </summary>
@@ -117,6 +125,8 @@ public:
     void unsetTimestamp_last();
 
 protected:
+    std::vector<std::shared_ptr<PacketAnalyzerFlowHeader>> m_Headers;
+    bool m_HeadersIsSet;
     std::shared_ptr<PacketAnalyzerFlowCounters_frame_length> m_Frame_length;
     bool m_Frame_lengthIsSet;
     std::shared_ptr<PacketAnalyzerFlowCounters_interarrival> m_Interarrival;

@@ -1,13 +1,19 @@
 #include <iomanip>
 #include <sstream>
 
+#include "basen.hpp"
+
 #include "packet/analyzer/api.hpp"
 #include "packet/analyzer/sink.hpp"
+#include "packet/analyzer/statistics/flow/header_view.hpp"
 #include "packet/analyzer/statistics/protocol/counters.hpp"
+#include "packet/protocol/transmogrify/protocols.hpp"
 
 #include "swagger/v1/model/PacketAnalyzer.h"
 #include "swagger/v1/model/PacketAnalyzerResult.h"
 #include "swagger/v1/model/RxFlow.h"
+
+#include "utils/overloaded_visitor.hpp"
 
 namespace openperf::packet::analyzer::api {
 
@@ -133,6 +139,8 @@ inline void copy_flow_counters(const statistics::generic_flow_counters& src,
         maybe_copy_counter_tuple<flow::jitter_rfc>(src, dst);
         maybe_copy_counter_tuple<flow::latency>(src, dst);
     } while (dst.get<counter>().count != frame_count.count);
+
+    maybe_copy_counter_tuple<flow::header>(src, dst);
 }
 
 inline void add_flow_counters(const statistics::generic_flow_counters& x,
@@ -395,6 +403,59 @@ std::string to_rfc3339(std::chrono::time_point<Clock> from)
     return (os.str());
 }
 
+static std::shared_ptr<swagger::v1::model::PacketAnalyzerFlowHeader>
+to_swagger(const statistics::flow::header_view::header_variant& variant)
+{
+    auto dst = std::make_shared<swagger::v1::model::PacketAnalyzerFlowHeader>();
+
+    /*
+     * Translate data to headers
+     * Note: we strip out length and checksum, as those are packet specific.
+     */
+    std::visit(
+        utils::overloaded_visitor(
+            [&](const libpacket::protocol::ethernet* eth) {
+                dst->setEthernet(protocol::transmogrify::to_swagger(*eth));
+            },
+            [&](const libpacket::protocol::ipv4* ipv4) {
+                auto&& tmp = protocol::transmogrify::to_swagger(*ipv4);
+                tmp->unsetChecksum();
+                tmp->unsetTotal_length();
+                dst->setIpv4(std::move(tmp));
+            },
+            [&](const libpacket::protocol::ipv6* ipv6) {
+                auto&& tmp = protocol::transmogrify::to_swagger(*ipv6);
+                tmp->unsetPayload_length();
+                dst->setIpv6(std::move(tmp));
+            },
+            [&](const libpacket::protocol::mpls* mpls) {
+                dst->setMpls(protocol::transmogrify::to_swagger(*mpls));
+            },
+            [&](const libpacket::protocol::tcp* tcp) {
+                auto&& tmp = protocol::transmogrify::to_swagger(*tcp);
+                tmp->unsetChecksum();
+                dst->setTcp(std::move(tmp));
+            },
+            [&](const libpacket::protocol::udp* udp) {
+                auto&& tmp = protocol::transmogrify::to_swagger(*udp);
+                tmp->unsetChecksum();
+                tmp->unsetLength();
+                dst->setUdp(std::move(tmp));
+            },
+            [&](const libpacket::protocol::vlan* vlan) {
+                dst->setVlan(protocol::transmogrify::to_swagger(*vlan));
+            },
+            [&](const std::basic_string_view<uint8_t>& sv) {
+                auto data = std::string{};
+                bn::encode_b64(
+                    std::begin(sv), std::end(sv), std::back_inserter(data));
+                dst->setUnknown(data);
+            }),
+        variant);
+
+    return (dst);
+}
+
 static void populate_counters(
     const statistics::generic_flow_counters& src,
     std::shared_ptr<swagger::v1::model::PacketAnalyzerFlowCounters>& dst)
@@ -475,6 +536,15 @@ static void populate_counters(
 
         dst->setLatency(s_dst);
     }
+    if (src.holds<flow::header>()) {
+        auto view = flow::header_view(src.get<flow::header>());
+        auto&& s_dst = dst->getHeaders();
+
+        std::transform(std::begin(view),
+                       std::end(view),
+                       std::back_inserter(s_dst),
+                       [](const auto& item) { return (to_swagger(item)); });
+    }
 }
 
 analyzer_result_ptr to_swagger(const core::uuid& id, const sink_result& src)
@@ -496,6 +566,10 @@ analyzer_result_ptr to_swagger(const core::uuid& id, const sink_result& src)
         std::make_shared<swagger::v1::model::PacketAnalyzerFlowCounters>();
     populate_counters(sum_counters(src.parent().flow_counters(), src.flows()),
                       flow_counters);
+
+    /* XXX: always remove headers from the top level result */
+    flow_counters->getHeaders().clear();
+
     dst->setFlowCounters(flow_counters);
 
     to_swagger(id, src.flows(), dst->getFlows());
