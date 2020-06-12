@@ -15,7 +15,7 @@ namespace openperf::packet::protocol::transmogrify {
 
 libpacket::protocol::mpls to_protocol(const std::shared_ptr<swagger::v1::model::PacketProtocolMpls>&);
 
-std::shared_ptr<swagger::v1::model::PacketProtocolMpls> to_swagger(libpacket::protocol::mpls&);
+std::shared_ptr<swagger::v1::model::PacketProtocolMpls> to_swagger(const libpacket::protocol::mpls&);
 
 }
 

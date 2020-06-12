@@ -15,7 +15,7 @@ namespace openperf::packet::protocol::transmogrify {
 
 libpacket::protocol::ethernet to_protocol(const std::shared_ptr<swagger::v1::model::PacketProtocolEthernet>&);
 
-std::shared_ptr<swagger::v1::model::PacketProtocolEthernet> to_swagger(libpacket::protocol::ethernet&);
+std::shared_ptr<swagger::v1::model::PacketProtocolEthernet> to_swagger(const libpacket::protocol::ethernet&);
 
 }
 

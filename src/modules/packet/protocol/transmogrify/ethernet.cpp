@@ -9,7 +9,7 @@
 
 namespace openperf::packet::protocol::transmogrify {
 
-std::shared_ptr<swagger::v1::model::PacketProtocolEthernet> to_swagger(libpacket::protocol::ethernet& src)
+std::shared_ptr<swagger::v1::model::PacketProtocolEthernet> to_swagger(const libpacket::protocol::ethernet& src)
 {
     auto dst = std::make_shared<swagger::v1::model::PacketProtocolEthernet>();
 

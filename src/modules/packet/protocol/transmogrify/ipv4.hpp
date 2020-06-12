@@ -15,7 +15,7 @@ namespace openperf::packet::protocol::transmogrify {
 
 libpacket::protocol::ipv4 to_protocol(const std::shared_ptr<swagger::v1::model::PacketProtocolIpv4>&);
 
-std::shared_ptr<swagger::v1::model::PacketProtocolIpv4> to_swagger(libpacket::protocol::ipv4&);
+std::shared_ptr<swagger::v1::model::PacketProtocolIpv4> to_swagger(const libpacket::protocol::ipv4&);
 
 }
 
