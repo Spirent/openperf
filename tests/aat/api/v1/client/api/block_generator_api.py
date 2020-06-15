@@ -1393,13 +1393,13 @@ class BlockGeneratorApi(object):
             _request_timeout=params.get('_request_timeout'),
             collection_formats=collection_formats)
 
-    def list_generators(self, **kwargs):  # noqa: E501
+    def list_block_generators(self, **kwargs):  # noqa: E501
         """List block generators  # noqa: E501
 
         The `block-generators` endpoint returns all of the configured block generators.  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.list_generators(async_req=True)
+        >>> thread = api.list_block_generators(async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
@@ -1409,18 +1409,18 @@ class BlockGeneratorApi(object):
         """
         kwargs['_return_http_data_only'] = True
         if kwargs.get('async_req'):
-            return self.list_generators_with_http_info(**kwargs)  # noqa: E501
+            return self.list_block_generators_with_http_info(**kwargs)  # noqa: E501
         else:
-            (data) = self.list_generators_with_http_info(**kwargs)  # noqa: E501
+            (data) = self.list_block_generators_with_http_info(**kwargs)  # noqa: E501
             return data
 
-    def list_generators_with_http_info(self, **kwargs):  # noqa: E501
+    def list_block_generators_with_http_info(self, **kwargs):  # noqa: E501
         """List block generators  # noqa: E501
 
         The `block-generators` endpoint returns all of the configured block generators.  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.list_generators_with_http_info(async_req=True)
+        >>> thread = api.list_block_generators_with_http_info(async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
@@ -1440,7 +1440,7 @@ class BlockGeneratorApi(object):
             if key not in all_params:
                 raise TypeError(
                     "Got an unexpected keyword argument '%s'"
-                    " to method list_generators" % key
+                    " to method list_block_generators" % key
                 )
             params[key] = val
         del params['kwargs']

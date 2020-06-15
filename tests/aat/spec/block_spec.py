@@ -198,7 +198,7 @@ with description('Block,', 'block') as self:
                 self.gen = gen
 
             with it('succeeds'):
-                generators = self.api.list_generators()
+                generators = self.api.list_block_generators()
                 expect(generators).not_to(be_empty)
                 for gen in generators:
                     expect(gen).to(be_valid_block_generator)
@@ -283,7 +283,7 @@ with description('Block,', 'block') as self:
 
                 with it('succeeds'):
                     self.api.delete_block_generator(self.gen.id)
-                    generators = self.api.list_generators()
+                    generators = self.api.list_block_generators()
                     expect(generators).to(be_empty)
 
                 with description('non-existent id,'):
@@ -376,7 +376,7 @@ with description('Block,', 'block') as self:
                     expect(lambda: self.api.bulk_start_block_generators(bulk_start_model(['f_oo']))).to(raise_api_exception(400))
 
             with after.each:
-                for gen in self.api.list_generators():
+                for gen in self.api.list_block_generators():
                     if gen.running:
                         self.api.stop_block_generator(gen.id)
 
@@ -408,7 +408,7 @@ with description('Block,', 'block') as self:
                     expect(lambda: self.api.bulk_stop_block_generators(bulk_stop_model(['f_oo']))).to(raise_api_exception(400))
 
             with after.each:
-                for gen in self.api.list_generators():
+                for gen in self.api.list_block_generators():
                     if gen.running:
                         self.api.stop_block_generator(gen.id)
 
@@ -455,7 +455,7 @@ with description('Block,', 'block') as self:
                     expect(lambda: self.api.get_block_generator_result('f_oo')).to(raise_api_exception(404))
 
             with after.each:
-                for gen in self.api.list_generators():
+                for gen in self.api.list_block_generators():
                     if gen.running:
                         self.api.stop_block_generator(gen.id)
 
@@ -485,13 +485,13 @@ with description('Block,', 'block') as self:
                     expect(lambda: self.api.delete_block_generator_result('f_oo')).to(raise_api_exception(404))
 
             with after.each:
-                for gen in self.api.list_generators():
+                for gen in self.api.list_block_generators():
                     if gen.running:
                         self.api.stop_block_generator(gen.id)
 
         with after.each:
             try:
-                for gen in self.api.list_generators():
+                for gen in self.api.list_block_generators():
                     if gen.running:
                         self.api.stop_block_generator(gen.id)
                     self.api.delete_block_generator(gen.id)

@@ -103,7 +103,7 @@ paths:
 
   /block-generators:
     get:
-      operationId: ListGenerators
+      operationId: ListBlockGenerators
       tags:
         - BlockGenerator
       summary: List block generators

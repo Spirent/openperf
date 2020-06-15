@@ -18,7 +18,7 @@ Method | HTTP request | Description
 [**list_block_devices**](BlockGeneratorApi.md#list_block_devices) | **GET** /block-devices | List block devices
 [**list_block_files**](BlockGeneratorApi.md#list_block_files) | **GET** /block-files | List block files
 [**list_block_generator_results**](BlockGeneratorApi.md#list_block_generator_results) | **GET** /block-generator-results | List block generator results
-[**list_generators**](BlockGeneratorApi.md#list_generators) | **GET** /block-generators | List block generators
+[**list_block_generators**](BlockGeneratorApi.md#list_block_generators) | **GET** /block-generators | List block generators
 [**start_block_generator**](BlockGeneratorApi.md#start_block_generator) | **POST** /block-generators/{id}/start | Start a block generator
 [**stop_block_generator**](BlockGeneratorApi.md#stop_block_generator) | **POST** /block-generators/{id}/stop | Stop a block generator
 
@@ -677,8 +677,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **list_generators**
-> list[BlockGenerator] list_generators()
+# **list_block_generators**
+> list[BlockGenerator] list_block_generators()
 
 List block generators
 
@@ -697,10 +697,10 @@ api_instance = client.BlockGeneratorApi()
 
 try:
     # List block generators
-    api_response = api_instance.list_generators()
+    api_response = api_instance.list_block_generators()
     pprint(api_response)
 except ApiException as e:
-    print("Exception when calling BlockGeneratorApi->list_generators: %s\n" % e)
+    print("Exception when calling BlockGeneratorApi->list_block_generators: %s\n" % e)
 ```
 
 ### Parameters
