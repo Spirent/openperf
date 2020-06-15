@@ -10,18 +10,18 @@
 * Do not edit the class manually.
 */
 /*
- * BulkCreateCapturesRequest.h
+ * BulkDeletePacketCapturesRequest.h
  *
- * Parameters for the bulk create operation
+ * Parameters for the bulk delete operation
  */
 
-#ifndef BulkCreateCapturesRequest_H_
-#define BulkCreateCapturesRequest_H_
+#ifndef BulkDeletePacketCapturesRequest_H_
+#define BulkDeletePacketCapturesRequest_H_
 
 
 #include "ModelBase.h"
 
-#include "PacketCapture.h"
+#include <string>
 #include <vector>
 
 namespace swagger {
@@ -29,14 +29,14 @@ namespace v1 {
 namespace model {
 
 /// <summary>
-/// Parameters for the bulk create operation
+/// Parameters for the bulk delete operation
 /// </summary>
-class  BulkCreateCapturesRequest
+class  BulkDeletePacketCapturesRequest
     : public ModelBase
 {
 public:
-    BulkCreateCapturesRequest();
-    virtual ~BulkCreateCapturesRequest();
+    BulkDeletePacketCapturesRequest();
+    virtual ~BulkDeletePacketCapturesRequest();
 
     /////////////////////////////////////////////
     /// ModelBase overrides
@@ -47,15 +47,15 @@ public:
     void fromJson(nlohmann::json& json) override;
 
     /////////////////////////////////////////////
-    /// BulkCreateCapturesRequest members
+    /// BulkDeletePacketCapturesRequest members
 
     /// <summary>
     /// List of packet captures
     /// </summary>
-    std::vector<std::shared_ptr<PacketCapture>>& getItems();
+    std::vector<std::string>& getIds();
     
 protected:
-    std::vector<std::shared_ptr<PacketCapture>> m_Items;
+    std::vector<std::string> m_Ids;
 
 };
 
@@ -63,4 +63,4 @@ protected:
 }
 }
 
-#endif /* BulkCreateCapturesRequest_H_ */
+#endif /* BulkDeletePacketCapturesRequest_H_ */

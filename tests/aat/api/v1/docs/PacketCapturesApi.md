@@ -4,27 +4,27 @@ All URIs are relative to *http://localhost*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**bulk_create_captures**](PacketCapturesApi.md#bulk_create_captures) | **POST** /packet/captures/x/bulk-create | Bulk create packet captures
-[**bulk_delete_captures**](PacketCapturesApi.md#bulk_delete_captures) | **POST** /packet/captures/x/bulk-delete | Bulk delete packet captures
-[**bulk_start_captures**](PacketCapturesApi.md#bulk_start_captures) | **POST** /packet/captures/x/bulk-start | Bulk start packet captures
-[**bulk_stop_captures**](PacketCapturesApi.md#bulk_stop_captures) | **POST** /packet/captures/x/bulk-stop | Bulk stop packet captures
-[**create_capture**](PacketCapturesApi.md#create_capture) | **POST** /packet/captures | Create a packet capture
-[**delete_capture**](PacketCapturesApi.md#delete_capture) | **DELETE** /packet/captures/{id} | Delete a packet capture
-[**delete_capture_result**](PacketCapturesApi.md#delete_capture_result) | **DELETE** /packet/capture-results/{id} | Delete a packet capture result
-[**delete_capture_results**](PacketCapturesApi.md#delete_capture_results) | **DELETE** /packet/capture-results | Delete all capture results
-[**delete_captures**](PacketCapturesApi.md#delete_captures) | **DELETE** /packet/captures | Delete all packet captures
-[**get_capture**](PacketCapturesApi.md#get_capture) | **GET** /packet/captures/{id} | Get a packet capture
-[**get_capture_live**](PacketCapturesApi.md#get_capture_live) | **GET** /packet/capture-results/{id}/live | Get live capture packet data as a pcap file
-[**get_capture_pcap**](PacketCapturesApi.md#get_capture_pcap) | **GET** /packet/capture-results/{id}/pcap | Get a packet data as a pcap file
-[**get_capture_result**](PacketCapturesApi.md#get_capture_result) | **GET** /packet/capture-results/{id} | Get a packet capture result
-[**list_capture_results**](PacketCapturesApi.md#list_capture_results) | **GET** /packet/capture-results | List capture results
-[**list_captures**](PacketCapturesApi.md#list_captures) | **GET** /packet/captures | List packet capture
-[**start_capture**](PacketCapturesApi.md#start_capture) | **POST** /packet/captures/{id}/start | Start packet capture.
-[**stop_capture**](PacketCapturesApi.md#stop_capture) | **POST** /packet/captures/{id}/stop | Stop packet capture.
+[**bulk_create_packet_captures**](PacketCapturesApi.md#bulk_create_packet_captures) | **POST** /packet/captures/x/bulk-create | Bulk create packet captures
+[**bulk_delete_packet_captures**](PacketCapturesApi.md#bulk_delete_packet_captures) | **POST** /packet/captures/x/bulk-delete | Bulk delete packet captures
+[**bulk_start_packet_captures**](PacketCapturesApi.md#bulk_start_packet_captures) | **POST** /packet/captures/x/bulk-start | Bulk start packet captures
+[**bulk_stop_packet_captures**](PacketCapturesApi.md#bulk_stop_packet_captures) | **POST** /packet/captures/x/bulk-stop | Bulk stop packet captures
+[**create_packet_capture**](PacketCapturesApi.md#create_packet_capture) | **POST** /packet/captures | Create a packet capture
+[**delete_packet_capture**](PacketCapturesApi.md#delete_packet_capture) | **DELETE** /packet/captures/{id} | Delete a packet capture
+[**delete_packet_capture_result**](PacketCapturesApi.md#delete_packet_capture_result) | **DELETE** /packet/capture-results/{id} | Delete a packet capture result
+[**delete_packet_capture_results**](PacketCapturesApi.md#delete_packet_capture_results) | **DELETE** /packet/capture-results | Delete all capture results
+[**delete_packet_captures**](PacketCapturesApi.md#delete_packet_captures) | **DELETE** /packet/captures | Delete all packet captures
+[**get_packet_capture**](PacketCapturesApi.md#get_packet_capture) | **GET** /packet/captures/{id} | Get a packet capture
+[**get_packet_capture_live**](PacketCapturesApi.md#get_packet_capture_live) | **GET** /packet/capture-results/{id}/live | Get live capture packet data as a pcap file
+[**get_packet_capture_pcap**](PacketCapturesApi.md#get_packet_capture_pcap) | **GET** /packet/capture-results/{id}/pcap | Get a packet data as a pcap file
+[**get_packet_capture_result**](PacketCapturesApi.md#get_packet_capture_result) | **GET** /packet/capture-results/{id} | Get a packet capture result
+[**list_packet_capture_results**](PacketCapturesApi.md#list_packet_capture_results) | **GET** /packet/capture-results | List capture results
+[**list_packet_captures**](PacketCapturesApi.md#list_packet_captures) | **GET** /packet/captures | List packet capture
+[**start_packet_capture**](PacketCapturesApi.md#start_packet_capture) | **POST** /packet/captures/{id}/start | Start packet capture.
+[**stop_packet_capture**](PacketCapturesApi.md#stop_packet_capture) | **POST** /packet/captures/{id}/stop | Stop packet capture.
 
 
-# **bulk_create_captures**
-> BulkCreateCapturesResponse bulk_create_captures(create)
+# **bulk_create_packet_captures**
+> BulkCreatePacketCapturesResponse bulk_create_packet_captures(create)
 
 Bulk create packet captures
 
@@ -40,25 +40,25 @@ from pprint import pprint
 
 # create an instance of the API class
 api_instance = client.PacketCapturesApi()
-create = client.BulkCreateCapturesRequest() # BulkCreateCapturesRequest | Bulk creation
+create = client.BulkCreatePacketCapturesRequest() # BulkCreatePacketCapturesRequest | Bulk creation
 
 try:
     # Bulk create packet captures
-    api_response = api_instance.bulk_create_captures(create)
+    api_response = api_instance.bulk_create_packet_captures(create)
     pprint(api_response)
 except ApiException as e:
-    print("Exception when calling PacketCapturesApi->bulk_create_captures: %s\n" % e)
+    print("Exception when calling PacketCapturesApi->bulk_create_packet_captures: %s\n" % e)
 ```
 
 ### Parameters
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **create** | [**BulkCreateCapturesRequest**](BulkCreateCapturesRequest.md)| Bulk creation | 
+ **create** | [**BulkCreatePacketCapturesRequest**](BulkCreatePacketCapturesRequest.md)| Bulk creation | 
 
 ### Return type
 
-[**BulkCreateCapturesResponse**](BulkCreateCapturesResponse.md)
+[**BulkCreatePacketCapturesResponse**](BulkCreatePacketCapturesResponse.md)
 
 ### Authorization
 
@@ -71,8 +71,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **bulk_delete_captures**
-> bulk_delete_captures(delete)
+# **bulk_delete_packet_captures**
+> bulk_delete_packet_captures(delete)
 
 Bulk delete packet captures
 
@@ -88,20 +88,20 @@ from pprint import pprint
 
 # create an instance of the API class
 api_instance = client.PacketCapturesApi()
-delete = client.BulkDeleteCapturesRequest() # BulkDeleteCapturesRequest | Bulk delete
+delete = client.BulkDeletePacketCapturesRequest() # BulkDeletePacketCapturesRequest | Bulk delete
 
 try:
     # Bulk delete packet captures
-    api_instance.bulk_delete_captures(delete)
+    api_instance.bulk_delete_packet_captures(delete)
 except ApiException as e:
-    print("Exception when calling PacketCapturesApi->bulk_delete_captures: %s\n" % e)
+    print("Exception when calling PacketCapturesApi->bulk_delete_packet_captures: %s\n" % e)
 ```
 
 ### Parameters
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **delete** | [**BulkDeleteCapturesRequest**](BulkDeleteCapturesRequest.md)| Bulk delete | 
+ **delete** | [**BulkDeletePacketCapturesRequest**](BulkDeletePacketCapturesRequest.md)| Bulk delete | 
 
 ### Return type
 
@@ -118,8 +118,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **bulk_start_captures**
-> BulkStartCapturesResponse bulk_start_captures(start)
+# **bulk_start_packet_captures**
+> BulkStartPacketCapturesResponse bulk_start_packet_captures(start)
 
 Bulk start packet captures
 
@@ -135,25 +135,25 @@ from pprint import pprint
 
 # create an instance of the API class
 api_instance = client.PacketCapturesApi()
-start = client.BulkStartCapturesRequest() # BulkStartCapturesRequest | Bulk start
+start = client.BulkStartPacketCapturesRequest() # BulkStartPacketCapturesRequest | Bulk start
 
 try:
     # Bulk start packet captures
-    api_response = api_instance.bulk_start_captures(start)
+    api_response = api_instance.bulk_start_packet_captures(start)
     pprint(api_response)
 except ApiException as e:
-    print("Exception when calling PacketCapturesApi->bulk_start_captures: %s\n" % e)
+    print("Exception when calling PacketCapturesApi->bulk_start_packet_captures: %s\n" % e)
 ```
 
 ### Parameters
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **start** | [**BulkStartCapturesRequest**](BulkStartCapturesRequest.md)| Bulk start | 
+ **start** | [**BulkStartPacketCapturesRequest**](BulkStartPacketCapturesRequest.md)| Bulk start | 
 
 ### Return type
 
-[**BulkStartCapturesResponse**](BulkStartCapturesResponse.md)
+[**BulkStartPacketCapturesResponse**](BulkStartPacketCapturesResponse.md)
 
 ### Authorization
 
@@ -166,8 +166,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **bulk_stop_captures**
-> bulk_stop_captures(stop)
+# **bulk_stop_packet_captures**
+> bulk_stop_packet_captures(stop)
 
 Bulk stop packet captures
 
@@ -183,20 +183,20 @@ from pprint import pprint
 
 # create an instance of the API class
 api_instance = client.PacketCapturesApi()
-stop = client.BulkStopCapturesRequest() # BulkStopCapturesRequest | Bulk stop
+stop = client.BulkStopPacketCapturesRequest() # BulkStopPacketCapturesRequest | Bulk stop
 
 try:
     # Bulk stop packet captures
-    api_instance.bulk_stop_captures(stop)
+    api_instance.bulk_stop_packet_captures(stop)
 except ApiException as e:
-    print("Exception when calling PacketCapturesApi->bulk_stop_captures: %s\n" % e)
+    print("Exception when calling PacketCapturesApi->bulk_stop_packet_captures: %s\n" % e)
 ```
 
 ### Parameters
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **stop** | [**BulkStopCapturesRequest**](BulkStopCapturesRequest.md)| Bulk stop | 
+ **stop** | [**BulkStopPacketCapturesRequest**](BulkStopPacketCapturesRequest.md)| Bulk stop | 
 
 ### Return type
 
@@ -213,8 +213,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **create_capture**
-> PacketCapture create_capture(capture)
+# **create_packet_capture**
+> PacketCapture create_packet_capture(capture)
 
 Create a packet capture
 
@@ -234,10 +234,10 @@ capture = client.PacketCapture() # PacketCapture | New packet capture
 
 try:
     # Create a packet capture
-    api_response = api_instance.create_capture(capture)
+    api_response = api_instance.create_packet_capture(capture)
     pprint(api_response)
 except ApiException as e:
-    print("Exception when calling PacketCapturesApi->create_capture: %s\n" % e)
+    print("Exception when calling PacketCapturesApi->create_packet_capture: %s\n" % e)
 ```
 
 ### Parameters
@@ -261,8 +261,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **delete_capture**
-> delete_capture(id)
+# **delete_packet_capture**
+> delete_packet_capture(id)
 
 Delete a packet capture
 
@@ -282,9 +282,9 @@ id = 'id_example' # str | Unique resource identifier
 
 try:
     # Delete a packet capture
-    api_instance.delete_capture(id)
+    api_instance.delete_packet_capture(id)
 except ApiException as e:
-    print("Exception when calling PacketCapturesApi->delete_capture: %s\n" % e)
+    print("Exception when calling PacketCapturesApi->delete_packet_capture: %s\n" % e)
 ```
 
 ### Parameters
@@ -308,8 +308,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **delete_capture_result**
-> delete_capture_result(id)
+# **delete_packet_capture_result**
+> delete_packet_capture_result(id)
 
 Delete a packet capture result
 
@@ -329,9 +329,9 @@ id = 'id_example' # str | Unique resource identifier
 
 try:
     # Delete a packet capture result
-    api_instance.delete_capture_result(id)
+    api_instance.delete_packet_capture_result(id)
 except ApiException as e:
-    print("Exception when calling PacketCapturesApi->delete_capture_result: %s\n" % e)
+    print("Exception when calling PacketCapturesApi->delete_packet_capture_result: %s\n" % e)
 ```
 
 ### Parameters
@@ -355,8 +355,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **delete_capture_results**
-> delete_capture_results()
+# **delete_packet_capture_results**
+> delete_packet_capture_results()
 
 Delete all capture results
 
@@ -375,9 +375,9 @@ api_instance = client.PacketCapturesApi()
 
 try:
     # Delete all capture results
-    api_instance.delete_capture_results()
+    api_instance.delete_packet_capture_results()
 except ApiException as e:
-    print("Exception when calling PacketCapturesApi->delete_capture_results: %s\n" % e)
+    print("Exception when calling PacketCapturesApi->delete_packet_capture_results: %s\n" % e)
 ```
 
 ### Parameters
@@ -398,8 +398,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **delete_captures**
-> delete_captures()
+# **delete_packet_captures**
+> delete_packet_captures()
 
 Delete all packet captures
 
@@ -418,9 +418,9 @@ api_instance = client.PacketCapturesApi()
 
 try:
     # Delete all packet captures
-    api_instance.delete_captures()
+    api_instance.delete_packet_captures()
 except ApiException as e:
-    print("Exception when calling PacketCapturesApi->delete_captures: %s\n" % e)
+    print("Exception when calling PacketCapturesApi->delete_packet_captures: %s\n" % e)
 ```
 
 ### Parameters
@@ -441,8 +441,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **get_capture**
-> PacketCapture get_capture(id)
+# **get_packet_capture**
+> PacketCapture get_packet_capture(id)
 
 Get a packet capture
 
@@ -462,10 +462,10 @@ id = 'id_example' # str | Unique resource identifier
 
 try:
     # Get a packet capture
-    api_response = api_instance.get_capture(id)
+    api_response = api_instance.get_packet_capture(id)
     pprint(api_response)
 except ApiException as e:
-    print("Exception when calling PacketCapturesApi->get_capture: %s\n" % e)
+    print("Exception when calling PacketCapturesApi->get_packet_capture: %s\n" % e)
 ```
 
 ### Parameters
@@ -489,8 +489,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **get_capture_live**
-> file get_capture_live(id)
+# **get_packet_capture_live**
+> file get_packet_capture_live(id)
 
 Get live capture packet data as a pcap file
 
@@ -510,10 +510,10 @@ id = 'id_example' # str | Unique resource identifier
 
 try:
     # Get live capture packet data as a pcap file
-    api_response = api_instance.get_capture_live(id)
+    api_response = api_instance.get_packet_capture_live(id)
     pprint(api_response)
 except ApiException as e:
-    print("Exception when calling PacketCapturesApi->get_capture_live: %s\n" % e)
+    print("Exception when calling PacketCapturesApi->get_packet_capture_live: %s\n" % e)
 ```
 
 ### Parameters
@@ -537,8 +537,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **get_capture_pcap**
-> file get_capture_pcap(id)
+# **get_packet_capture_pcap**
+> file get_packet_capture_pcap(id)
 
 Get a packet data as a pcap file
 
@@ -558,10 +558,10 @@ id = 'id_example' # str | Unique resource identifier
 
 try:
     # Get a packet data as a pcap file
-    api_response = api_instance.get_capture_pcap(id)
+    api_response = api_instance.get_packet_capture_pcap(id)
     pprint(api_response)
 except ApiException as e:
-    print("Exception when calling PacketCapturesApi->get_capture_pcap: %s\n" % e)
+    print("Exception when calling PacketCapturesApi->get_packet_capture_pcap: %s\n" % e)
 ```
 
 ### Parameters
@@ -585,8 +585,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **get_capture_result**
-> PacketCaptureResult get_capture_result(id)
+# **get_packet_capture_result**
+> PacketCaptureResult get_packet_capture_result(id)
 
 Get a packet capture result
 
@@ -606,10 +606,10 @@ id = 'id_example' # str | Unique resource identifier
 
 try:
     # Get a packet capture result
-    api_response = api_instance.get_capture_result(id)
+    api_response = api_instance.get_packet_capture_result(id)
     pprint(api_response)
 except ApiException as e:
-    print("Exception when calling PacketCapturesApi->get_capture_result: %s\n" % e)
+    print("Exception when calling PacketCapturesApi->get_packet_capture_result: %s\n" % e)
 ```
 
 ### Parameters
@@ -633,8 +633,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **list_capture_results**
-> list[PacketCaptureResult] list_capture_results(capture_id=capture_id, source_id=source_id)
+# **list_packet_capture_results**
+> list[PacketCaptureResult] list_packet_capture_results(capture_id=capture_id, source_id=source_id)
 
 List capture results
 
@@ -655,10 +655,10 @@ source_id = 'source_id_example' # str | Filter by receive port or interface id (
 
 try:
     # List capture results
-    api_response = api_instance.list_capture_results(capture_id=capture_id, source_id=source_id)
+    api_response = api_instance.list_packet_capture_results(capture_id=capture_id, source_id=source_id)
     pprint(api_response)
 except ApiException as e:
-    print("Exception when calling PacketCapturesApi->list_capture_results: %s\n" % e)
+    print("Exception when calling PacketCapturesApi->list_packet_capture_results: %s\n" % e)
 ```
 
 ### Parameters
@@ -683,8 +683,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **list_captures**
-> list[PacketCapture] list_captures(source_id=source_id)
+# **list_packet_captures**
+> list[PacketCapture] list_packet_captures(source_id=source_id)
 
 List packet capture
 
@@ -704,10 +704,10 @@ source_id = 'source_id_example' # str | Filter by source id (optional)
 
 try:
     # List packet capture
-    api_response = api_instance.list_captures(source_id=source_id)
+    api_response = api_instance.list_packet_captures(source_id=source_id)
     pprint(api_response)
 except ApiException as e:
-    print("Exception when calling PacketCapturesApi->list_captures: %s\n" % e)
+    print("Exception when calling PacketCapturesApi->list_packet_captures: %s\n" % e)
 ```
 
 ### Parameters
@@ -731,8 +731,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **start_capture**
-> PacketCaptureResult start_capture(id)
+# **start_packet_capture**
+> PacketCaptureResult start_packet_capture(id)
 
 Start packet capture.
 
@@ -752,10 +752,10 @@ id = 'id_example' # str | Unique resource identifier
 
 try:
     # Start packet capture.
-    api_response = api_instance.start_capture(id)
+    api_response = api_instance.start_packet_capture(id)
     pprint(api_response)
 except ApiException as e:
-    print("Exception when calling PacketCapturesApi->start_capture: %s\n" % e)
+    print("Exception when calling PacketCapturesApi->start_packet_capture: %s\n" % e)
 ```
 
 ### Parameters
@@ -779,8 +779,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **stop_capture**
-> stop_capture(id)
+# **stop_packet_capture**
+> stop_packet_capture(id)
 
 Stop packet capture.
 
@@ -800,9 +800,9 @@ id = 'id_example' # str | Unique resource identifier
 
 try:
     # Stop packet capture.
-    api_instance.stop_capture(id)
+    api_instance.stop_packet_capture(id)
 except ApiException as e:
-    print("Exception when calling PacketCapturesApi->stop_capture: %s\n" % e)
+    print("Exception when calling PacketCapturesApi->stop_packet_capture: %s\n" % e)
 ```
 
 ### Parameters

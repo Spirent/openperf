@@ -1,9 +1,9 @@
-# BulkStopCapturesRequest
+# BulkStartPacketCapturesResponse
 
 ## Properties
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**ids** | **list[str]** | List of capture identifiers | 
+**items** | [**list[PacketCaptureResult]**](PacketCaptureResult.md) | List of capture results | 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

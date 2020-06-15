@@ -1,4 +1,4 @@
-# BulkCreateCapturesRequest
+# BulkCreatePacketCapturesRequest
 
 ## Properties
 Name | Type | Description | Notes
