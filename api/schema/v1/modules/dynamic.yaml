@@ -238,7 +238,8 @@ definitions:
         type: string
         description: Unique generator identifier
       value:
-        type: float
+        type: number
+        format: double
         description: The value of interest
       function:
         type: string
@@ -356,7 +357,8 @@ definitions:
     description: The data point inside the T-Digest structure
     properties:
       mean:
-        type: float
+        type: number
+        format: double
         description: The average value of this centroid
       weight:
         type: integer
