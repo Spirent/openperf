@@ -11,27 +11,27 @@
 */
 
 
-#include "BulkStartCapturesResponse.h"
+#include "BulkStartPacketCapturesResponse.h"
 
 namespace swagger {
 namespace v1 {
 namespace model {
 
-BulkStartCapturesResponse::BulkStartCapturesResponse()
+BulkStartPacketCapturesResponse::BulkStartPacketCapturesResponse()
 {
     
 }
 
-BulkStartCapturesResponse::~BulkStartCapturesResponse()
+BulkStartPacketCapturesResponse::~BulkStartPacketCapturesResponse()
 {
 }
 
-void BulkStartCapturesResponse::validate()
+void BulkStartPacketCapturesResponse::validate()
 {
     // TODO: implement validation
 }
 
-nlohmann::json BulkStartCapturesResponse::toJson() const
+nlohmann::json BulkStartPacketCapturesResponse::toJson() const
 {
     nlohmann::json val = nlohmann::json::object();
 
@@ -48,7 +48,7 @@ nlohmann::json BulkStartCapturesResponse::toJson() const
     return val;
 }
 
-void BulkStartCapturesResponse::fromJson(nlohmann::json& val)
+void BulkStartPacketCapturesResponse::fromJson(nlohmann::json& val)
 {
     {
         m_Items.clear();
@@ -73,7 +73,7 @@ void BulkStartCapturesResponse::fromJson(nlohmann::json& val)
 }
 
 
-std::vector<std::shared_ptr<PacketCaptureResult>>& BulkStartCapturesResponse::getItems()
+std::vector<std::shared_ptr<PacketCaptureResult>>& BulkStartPacketCapturesResponse::getItems()
 {
     return m_Items;
 }

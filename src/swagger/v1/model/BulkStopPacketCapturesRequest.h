@@ -10,13 +10,13 @@
 * Do not edit the class manually.
 */
 /*
- * BulkStartCapturesRequest.h
+ * BulkStopPacketCapturesRequest.h
  *
- * Parameters for the bulk start operation
+ * Parameters for the bulk stop operation
  */
 
-#ifndef BulkStartCapturesRequest_H_
-#define BulkStartCapturesRequest_H_
+#ifndef BulkStopPacketCapturesRequest_H_
+#define BulkStopPacketCapturesRequest_H_
 
 
 #include "ModelBase.h"
@@ -29,14 +29,14 @@ namespace v1 {
 namespace model {
 
 /// <summary>
-/// Parameters for the bulk start operation
+/// Parameters for the bulk stop operation
 /// </summary>
-class  BulkStartCapturesRequest
+class  BulkStopPacketCapturesRequest
     : public ModelBase
 {
 public:
-    BulkStartCapturesRequest();
-    virtual ~BulkStartCapturesRequest();
+    BulkStopPacketCapturesRequest();
+    virtual ~BulkStopPacketCapturesRequest();
 
     /////////////////////////////////////////////
     /// ModelBase overrides
@@ -47,7 +47,7 @@ public:
     void fromJson(nlohmann::json& json) override;
 
     /////////////////////////////////////////////
-    /// BulkStartCapturesRequest members
+    /// BulkStopPacketCapturesRequest members
 
     /// <summary>
     /// List of capture identifiers
@@ -63,4 +63,4 @@ protected:
 }
 }
 
-#endif /* BulkStartCapturesRequest_H_ */
+#endif /* BulkStopPacketCapturesRequest_H_ */

@@ -11,27 +11,27 @@
 */
 
 
-#include "BulkStopCapturesRequest.h"
+#include "BulkDeletePacketCapturesRequest.h"
 
 namespace swagger {
 namespace v1 {
 namespace model {
 
-BulkStopCapturesRequest::BulkStopCapturesRequest()
+BulkDeletePacketCapturesRequest::BulkDeletePacketCapturesRequest()
 {
     
 }
 
-BulkStopCapturesRequest::~BulkStopCapturesRequest()
+BulkDeletePacketCapturesRequest::~BulkDeletePacketCapturesRequest()
 {
 }
 
-void BulkStopCapturesRequest::validate()
+void BulkDeletePacketCapturesRequest::validate()
 {
     // TODO: implement validation
 }
 
-nlohmann::json BulkStopCapturesRequest::toJson() const
+nlohmann::json BulkDeletePacketCapturesRequest::toJson() const
 {
     nlohmann::json val = nlohmann::json::object();
 
@@ -48,7 +48,7 @@ nlohmann::json BulkStopCapturesRequest::toJson() const
     return val;
 }
 
-void BulkStopCapturesRequest::fromJson(nlohmann::json& val)
+void BulkDeletePacketCapturesRequest::fromJson(nlohmann::json& val)
 {
     {
         m_Ids.clear();
@@ -63,7 +63,7 @@ void BulkStopCapturesRequest::fromJson(nlohmann::json& val)
 }
 
 
-std::vector<std::string>& BulkStopCapturesRequest::getIds()
+std::vector<std::string>& BulkDeletePacketCapturesRequest::getIds()
 {
     return m_Ids;
 }

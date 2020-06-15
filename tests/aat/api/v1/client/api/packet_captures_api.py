@@ -33,40 +33,40 @@ class PacketCapturesApi(object):
             api_client = ApiClient()
         self.api_client = api_client
 
-    def bulk_create_captures(self, create, **kwargs):  # noqa: E501
+    def bulk_create_packet_captures(self, create, **kwargs):  # noqa: E501
         """Bulk create packet captures  # noqa: E501
 
         Create multiple packet captures. Requests are processed in an all-or-nothing manner, i.e. a single capture creation failure causes all capture creations for this request to fail.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.bulk_create_captures(create, async_req=True)
+        >>> thread = api.bulk_create_packet_captures(create, async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
-        :param BulkCreateCapturesRequest create: Bulk creation (required)
-        :return: BulkCreateCapturesResponse
+        :param BulkCreatePacketCapturesRequest create: Bulk creation (required)
+        :return: BulkCreatePacketCapturesResponse
                  If the method is called asynchronously,
                  returns the request thread.
         """
         kwargs['_return_http_data_only'] = True
         if kwargs.get('async_req'):
-            return self.bulk_create_captures_with_http_info(create, **kwargs)  # noqa: E501
+            return self.bulk_create_packet_captures_with_http_info(create, **kwargs)  # noqa: E501
         else:
-            (data) = self.bulk_create_captures_with_http_info(create, **kwargs)  # noqa: E501
+            (data) = self.bulk_create_packet_captures_with_http_info(create, **kwargs)  # noqa: E501
             return data
 
-    def bulk_create_captures_with_http_info(self, create, **kwargs):  # noqa: E501
+    def bulk_create_packet_captures_with_http_info(self, create, **kwargs):  # noqa: E501
         """Bulk create packet captures  # noqa: E501
 
         Create multiple packet captures. Requests are processed in an all-or-nothing manner, i.e. a single capture creation failure causes all capture creations for this request to fail.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.bulk_create_captures_with_http_info(create, async_req=True)
+        >>> thread = api.bulk_create_packet_captures_with_http_info(create, async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
-        :param BulkCreateCapturesRequest create: Bulk creation (required)
-        :return: BulkCreateCapturesResponse
+        :param BulkCreatePacketCapturesRequest create: Bulk creation (required)
+        :return: BulkCreatePacketCapturesResponse
                  If the method is called asynchronously,
                  returns the request thread.
         """
@@ -82,14 +82,14 @@ class PacketCapturesApi(object):
             if key not in all_params:
                 raise TypeError(
                     "Got an unexpected keyword argument '%s'"
-                    " to method bulk_create_captures" % key
+                    " to method bulk_create_packet_captures" % key
                 )
             params[key] = val
         del params['kwargs']
         # verify the required parameter 'create' is set
         if ('create' not in params or
                 params['create'] is None):
-            raise ValueError("Missing the required parameter `create` when calling `bulk_create_captures`")  # noqa: E501
+            raise ValueError("Missing the required parameter `create` when calling `bulk_create_packet_captures`")  # noqa: E501
 
         collection_formats = {}
 
@@ -124,7 +124,7 @@ class PacketCapturesApi(object):
             body=body_params,
             post_params=form_params,
             files=local_var_files,
-            response_type='BulkCreateCapturesResponse',  # noqa: E501
+            response_type='BulkCreatePacketCapturesResponse',  # noqa: E501
             auth_settings=auth_settings,
             async_req=params.get('async_req'),
             _return_http_data_only=params.get('_return_http_data_only'),
@@ -132,39 +132,39 @@ class PacketCapturesApi(object):
             _request_timeout=params.get('_request_timeout'),
             collection_formats=collection_formats)
 
-    def bulk_delete_captures(self, delete, **kwargs):  # noqa: E501
+    def bulk_delete_packet_captures(self, delete, **kwargs):  # noqa: E501
         """Bulk delete packet captures  # noqa: E501
 
         Delete multiple packet captures in a best-effort manner. Captures can only be deleted when inactive. Active or Non-existant capture ids do not cause errors.  Also deletes results and captured packets associated with the capture. Idempotent.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.bulk_delete_captures(delete, async_req=True)
+        >>> thread = api.bulk_delete_packet_captures(delete, async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
-        :param BulkDeleteCapturesRequest delete: Bulk delete (required)
+        :param BulkDeletePacketCapturesRequest delete: Bulk delete (required)
         :return: None
                  If the method is called asynchronously,
                  returns the request thread.
         """
         kwargs['_return_http_data_only'] = True
         if kwargs.get('async_req'):
-            return self.bulk_delete_captures_with_http_info(delete, **kwargs)  # noqa: E501
+            return self.bulk_delete_packet_captures_with_http_info(delete, **kwargs)  # noqa: E501
         else:
-            (data) = self.bulk_delete_captures_with_http_info(delete, **kwargs)  # noqa: E501
+            (data) = self.bulk_delete_packet_captures_with_http_info(delete, **kwargs)  # noqa: E501
             return data
 
-    def bulk_delete_captures_with_http_info(self, delete, **kwargs):  # noqa: E501
+    def bulk_delete_packet_captures_with_http_info(self, delete, **kwargs):  # noqa: E501
         """Bulk delete packet captures  # noqa: E501
 
         Delete multiple packet captures in a best-effort manner. Captures can only be deleted when inactive. Active or Non-existant capture ids do not cause errors.  Also deletes results and captured packets associated with the capture. Idempotent.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.bulk_delete_captures_with_http_info(delete, async_req=True)
+        >>> thread = api.bulk_delete_packet_captures_with_http_info(delete, async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
-        :param BulkDeleteCapturesRequest delete: Bulk delete (required)
+        :param BulkDeletePacketCapturesRequest delete: Bulk delete (required)
         :return: None
                  If the method is called asynchronously,
                  returns the request thread.
@@ -181,14 +181,14 @@ class PacketCapturesApi(object):
             if key not in all_params:
                 raise TypeError(
                     "Got an unexpected keyword argument '%s'"
-                    " to method bulk_delete_captures" % key
+                    " to method bulk_delete_packet_captures" % key
                 )
             params[key] = val
         del params['kwargs']
         # verify the required parameter 'delete' is set
         if ('delete' not in params or
                 params['delete'] is None):
-            raise ValueError("Missing the required parameter `delete` when calling `bulk_delete_captures`")  # noqa: E501
+            raise ValueError("Missing the required parameter `delete` when calling `bulk_delete_packet_captures`")  # noqa: E501
 
         collection_formats = {}
 
@@ -231,40 +231,40 @@ class PacketCapturesApi(object):
             _request_timeout=params.get('_request_timeout'),
             collection_formats=collection_formats)
 
-    def bulk_start_captures(self, start, **kwargs):  # noqa: E501
+    def bulk_start_packet_captures(self, start, **kwargs):  # noqa: E501
         """Bulk start packet captures  # noqa: E501
 
         Start multiple packet captures simultaneously  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.bulk_start_captures(start, async_req=True)
+        >>> thread = api.bulk_start_packet_captures(start, async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
-        :param BulkStartCapturesRequest start: Bulk start (required)
-        :return: BulkStartCapturesResponse
+        :param BulkStartPacketCapturesRequest start: Bulk start (required)
+        :return: BulkStartPacketCapturesResponse
                  If the method is called asynchronously,
                  returns the request thread.
         """
         kwargs['_return_http_data_only'] = True
         if kwargs.get('async_req'):
-            return self.bulk_start_captures_with_http_info(start, **kwargs)  # noqa: E501
+            return self.bulk_start_packet_captures_with_http_info(start, **kwargs)  # noqa: E501
         else:
-            (data) = self.bulk_start_captures_with_http_info(start, **kwargs)  # noqa: E501
+            (data) = self.bulk_start_packet_captures_with_http_info(start, **kwargs)  # noqa: E501
             return data
 
-    def bulk_start_captures_with_http_info(self, start, **kwargs):  # noqa: E501
+    def bulk_start_packet_captures_with_http_info(self, start, **kwargs):  # noqa: E501
         """Bulk start packet captures  # noqa: E501
 
         Start multiple packet captures simultaneously  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.bulk_start_captures_with_http_info(start, async_req=True)
+        >>> thread = api.bulk_start_packet_captures_with_http_info(start, async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
-        :param BulkStartCapturesRequest start: Bulk start (required)
-        :return: BulkStartCapturesResponse
+        :param BulkStartPacketCapturesRequest start: Bulk start (required)
+        :return: BulkStartPacketCapturesResponse
                  If the method is called asynchronously,
                  returns the request thread.
         """
@@ -280,14 +280,14 @@ class PacketCapturesApi(object):
             if key not in all_params:
                 raise TypeError(
                     "Got an unexpected keyword argument '%s'"
-                    " to method bulk_start_captures" % key
+                    " to method bulk_start_packet_captures" % key
                 )
             params[key] = val
         del params['kwargs']
         # verify the required parameter 'start' is set
         if ('start' not in params or
                 params['start'] is None):
-            raise ValueError("Missing the required parameter `start` when calling `bulk_start_captures`")  # noqa: E501
+            raise ValueError("Missing the required parameter `start` when calling `bulk_start_packet_captures`")  # noqa: E501
 
         collection_formats = {}
 
@@ -322,7 +322,7 @@ class PacketCapturesApi(object):
             body=body_params,
             post_params=form_params,
             files=local_var_files,
-            response_type='BulkStartCapturesResponse',  # noqa: E501
+            response_type='BulkStartPacketCapturesResponse',  # noqa: E501
             auth_settings=auth_settings,
             async_req=params.get('async_req'),
             _return_http_data_only=params.get('_return_http_data_only'),
@@ -330,39 +330,39 @@ class PacketCapturesApi(object):
             _request_timeout=params.get('_request_timeout'),
             collection_formats=collection_formats)
 
-    def bulk_stop_captures(self, stop, **kwargs):  # noqa: E501
+    def bulk_stop_packet_captures(self, stop, **kwargs):  # noqa: E501
         """Bulk stop packet captures  # noqa: E501
 
         Stop multiple packet captures simultaneously  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.bulk_stop_captures(stop, async_req=True)
+        >>> thread = api.bulk_stop_packet_captures(stop, async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
-        :param BulkStopCapturesRequest stop: Bulk stop (required)
+        :param BulkStopPacketCapturesRequest stop: Bulk stop (required)
         :return: None
                  If the method is called asynchronously,
                  returns the request thread.
         """
         kwargs['_return_http_data_only'] = True
         if kwargs.get('async_req'):
-            return self.bulk_stop_captures_with_http_info(stop, **kwargs)  # noqa: E501
+            return self.bulk_stop_packet_captures_with_http_info(stop, **kwargs)  # noqa: E501
         else:
-            (data) = self.bulk_stop_captures_with_http_info(stop, **kwargs)  # noqa: E501
+            (data) = self.bulk_stop_packet_captures_with_http_info(stop, **kwargs)  # noqa: E501
             return data
 
-    def bulk_stop_captures_with_http_info(self, stop, **kwargs):  # noqa: E501
+    def bulk_stop_packet_captures_with_http_info(self, stop, **kwargs):  # noqa: E501
         """Bulk stop packet captures  # noqa: E501
 
         Stop multiple packet captures simultaneously  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.bulk_stop_captures_with_http_info(stop, async_req=True)
+        >>> thread = api.bulk_stop_packet_captures_with_http_info(stop, async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
-        :param BulkStopCapturesRequest stop: Bulk stop (required)
+        :param BulkStopPacketCapturesRequest stop: Bulk stop (required)
         :return: None
                  If the method is called asynchronously,
                  returns the request thread.
@@ -379,14 +379,14 @@ class PacketCapturesApi(object):
             if key not in all_params:
                 raise TypeError(
                     "Got an unexpected keyword argument '%s'"
-                    " to method bulk_stop_captures" % key
+                    " to method bulk_stop_packet_captures" % key
                 )
             params[key] = val
         del params['kwargs']
         # verify the required parameter 'stop' is set
         if ('stop' not in params or
                 params['stop'] is None):
-            raise ValueError("Missing the required parameter `stop` when calling `bulk_stop_captures`")  # noqa: E501
+            raise ValueError("Missing the required parameter `stop` when calling `bulk_stop_packet_captures`")  # noqa: E501
 
         collection_formats = {}
 
@@ -429,13 +429,13 @@ class PacketCapturesApi(object):
             _request_timeout=params.get('_request_timeout'),
             collection_formats=collection_formats)
 
-    def create_capture(self, capture, **kwargs):  # noqa: E501
+    def create_packet_capture(self, capture, **kwargs):  # noqa: E501
         """Create a packet capture  # noqa: E501
 
         Create a new packet capture.  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.create_capture(capture, async_req=True)
+        >>> thread = api.create_packet_capture(capture, async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
@@ -446,18 +446,18 @@ class PacketCapturesApi(object):
         """
         kwargs['_return_http_data_only'] = True
         if kwargs.get('async_req'):
-            return self.create_capture_with_http_info(capture, **kwargs)  # noqa: E501
+            return self.create_packet_capture_with_http_info(capture, **kwargs)  # noqa: E501
         else:
-            (data) = self.create_capture_with_http_info(capture, **kwargs)  # noqa: E501
+            (data) = self.create_packet_capture_with_http_info(capture, **kwargs)  # noqa: E501
             return data
 
-    def create_capture_with_http_info(self, capture, **kwargs):  # noqa: E501
+    def create_packet_capture_with_http_info(self, capture, **kwargs):  # noqa: E501
         """Create a packet capture  # noqa: E501
 
         Create a new packet capture.  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.create_capture_with_http_info(capture, async_req=True)
+        >>> thread = api.create_packet_capture_with_http_info(capture, async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
@@ -478,14 +478,14 @@ class PacketCapturesApi(object):
             if key not in all_params:
                 raise TypeError(
                     "Got an unexpected keyword argument '%s'"
-                    " to method create_capture" % key
+                    " to method create_packet_capture" % key
                 )
             params[key] = val
         del params['kwargs']
         # verify the required parameter 'capture' is set
         if ('capture' not in params or
                 params['capture'] is None):
-            raise ValueError("Missing the required parameter `capture` when calling `create_capture`")  # noqa: E501
+            raise ValueError("Missing the required parameter `capture` when calling `create_packet_capture`")  # noqa: E501
 
         collection_formats = {}
 
@@ -528,13 +528,13 @@ class PacketCapturesApi(object):
             _request_timeout=params.get('_request_timeout'),
             collection_formats=collection_formats)
 
-    def delete_capture(self, id, **kwargs):  # noqa: E501
+    def delete_packet_capture(self, id, **kwargs):  # noqa: E501
         """Delete a packet capture  # noqa: E501
 
         Delete a stopped packet capture by id. Also deletes results and captured packets associated with the capture. Idempotent.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.delete_capture(id, async_req=True)
+        >>> thread = api.delete_packet_capture(id, async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
@@ -545,18 +545,18 @@ class PacketCapturesApi(object):
         """
         kwargs['_return_http_data_only'] = True
         if kwargs.get('async_req'):
-            return self.delete_capture_with_http_info(id, **kwargs)  # noqa: E501
+            return self.delete_packet_capture_with_http_info(id, **kwargs)  # noqa: E501
         else:
-            (data) = self.delete_capture_with_http_info(id, **kwargs)  # noqa: E501
+            (data) = self.delete_packet_capture_with_http_info(id, **kwargs)  # noqa: E501
             return data
 
-    def delete_capture_with_http_info(self, id, **kwargs):  # noqa: E501
+    def delete_packet_capture_with_http_info(self, id, **kwargs):  # noqa: E501
         """Delete a packet capture  # noqa: E501
 
         Delete a stopped packet capture by id. Also deletes results and captured packets associated with the capture. Idempotent.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.delete_capture_with_http_info(id, async_req=True)
+        >>> thread = api.delete_packet_capture_with_http_info(id, async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
@@ -577,14 +577,14 @@ class PacketCapturesApi(object):
             if key not in all_params:
                 raise TypeError(
                     "Got an unexpected keyword argument '%s'"
-                    " to method delete_capture" % key
+                    " to method delete_packet_capture" % key
                 )
             params[key] = val
         del params['kwargs']
         # verify the required parameter 'id' is set
         if ('id' not in params or
                 params['id'] is None):
-            raise ValueError("Missing the required parameter `id` when calling `delete_capture`")  # noqa: E501
+            raise ValueError("Missing the required parameter `id` when calling `delete_packet_capture`")  # noqa: E501
 
         collection_formats = {}
 
@@ -627,13 +627,13 @@ class PacketCapturesApi(object):
             _request_timeout=params.get('_request_timeout'),
             collection_formats=collection_formats)
 
-    def delete_capture_result(self, id, **kwargs):  # noqa: E501
+    def delete_packet_capture_result(self, id, **kwargs):  # noqa: E501
         """Delete a packet capture result  # noqa: E501
 
         Delete an inactive packet capture result. Also deletes captured packets associated with the results.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.delete_capture_result(id, async_req=True)
+        >>> thread = api.delete_packet_capture_result(id, async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
@@ -644,18 +644,18 @@ class PacketCapturesApi(object):
         """
         kwargs['_return_http_data_only'] = True
         if kwargs.get('async_req'):
-            return self.delete_capture_result_with_http_info(id, **kwargs)  # noqa: E501
+            return self.delete_packet_capture_result_with_http_info(id, **kwargs)  # noqa: E501
         else:
-            (data) = self.delete_capture_result_with_http_info(id, **kwargs)  # noqa: E501
+            (data) = self.delete_packet_capture_result_with_http_info(id, **kwargs)  # noqa: E501
             return data
 
-    def delete_capture_result_with_http_info(self, id, **kwargs):  # noqa: E501
+    def delete_packet_capture_result_with_http_info(self, id, **kwargs):  # noqa: E501
         """Delete a packet capture result  # noqa: E501
 
         Delete an inactive packet capture result. Also deletes captured packets associated with the results.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.delete_capture_result_with_http_info(id, async_req=True)
+        >>> thread = api.delete_packet_capture_result_with_http_info(id, async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
@@ -676,14 +676,14 @@ class PacketCapturesApi(object):
             if key not in all_params:
                 raise TypeError(
                     "Got an unexpected keyword argument '%s'"
-                    " to method delete_capture_result" % key
+                    " to method delete_packet_capture_result" % key
                 )
             params[key] = val
         del params['kwargs']
         # verify the required parameter 'id' is set
         if ('id' not in params or
                 params['id'] is None):
-            raise ValueError("Missing the required parameter `id` when calling `delete_capture_result`")  # noqa: E501
+            raise ValueError("Missing the required parameter `id` when calling `delete_packet_capture_result`")  # noqa: E501
 
         collection_formats = {}
 
@@ -726,13 +726,13 @@ class PacketCapturesApi(object):
             _request_timeout=params.get('_request_timeout'),
             collection_formats=collection_formats)
 
-    def delete_capture_results(self, **kwargs):  # noqa: E501
+    def delete_packet_capture_results(self, **kwargs):  # noqa: E501
         """Delete all capture results  # noqa: E501
 
         Delete all inactive packet capture results. Also deletes captured packets associated with the results.  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.delete_capture_results(async_req=True)
+        >>> thread = api.delete_packet_capture_results(async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
@@ -742,18 +742,18 @@ class PacketCapturesApi(object):
         """
         kwargs['_return_http_data_only'] = True
         if kwargs.get('async_req'):
-            return self.delete_capture_results_with_http_info(**kwargs)  # noqa: E501
+            return self.delete_packet_capture_results_with_http_info(**kwargs)  # noqa: E501
         else:
-            (data) = self.delete_capture_results_with_http_info(**kwargs)  # noqa: E501
+            (data) = self.delete_packet_capture_results_with_http_info(**kwargs)  # noqa: E501
             return data
 
-    def delete_capture_results_with_http_info(self, **kwargs):  # noqa: E501
+    def delete_packet_capture_results_with_http_info(self, **kwargs):  # noqa: E501
         """Delete all capture results  # noqa: E501
 
         Delete all inactive packet capture results. Also deletes captured packets associated with the results.  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.delete_capture_results_with_http_info(async_req=True)
+        >>> thread = api.delete_packet_capture_results_with_http_info(async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
@@ -773,7 +773,7 @@ class PacketCapturesApi(object):
             if key not in all_params:
                 raise TypeError(
                     "Got an unexpected keyword argument '%s'"
-                    " to method delete_capture_results" % key
+                    " to method delete_packet_capture_results" % key
                 )
             params[key] = val
         del params['kwargs']
@@ -817,13 +817,13 @@ class PacketCapturesApi(object):
             _request_timeout=params.get('_request_timeout'),
             collection_formats=collection_formats)
 
-    def delete_captures(self, **kwargs):  # noqa: E501
+    def delete_packet_captures(self, **kwargs):  # noqa: E501
         """Delete all packet captures  # noqa: E501
 
         Delete all inactive packet captures. Also deletes captured packets and results associated with the capture.  Idempotent.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.delete_captures(async_req=True)
+        >>> thread = api.delete_packet_captures(async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
@@ -833,18 +833,18 @@ class PacketCapturesApi(object):
         """
         kwargs['_return_http_data_only'] = True
         if kwargs.get('async_req'):
-            return self.delete_captures_with_http_info(**kwargs)  # noqa: E501
+            return self.delete_packet_captures_with_http_info(**kwargs)  # noqa: E501
         else:
-            (data) = self.delete_captures_with_http_info(**kwargs)  # noqa: E501
+            (data) = self.delete_packet_captures_with_http_info(**kwargs)  # noqa: E501
             return data
 
-    def delete_captures_with_http_info(self, **kwargs):  # noqa: E501
+    def delete_packet_captures_with_http_info(self, **kwargs):  # noqa: E501
         """Delete all packet captures  # noqa: E501
 
         Delete all inactive packet captures. Also deletes captured packets and results associated with the capture.  Idempotent.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.delete_captures_with_http_info(async_req=True)
+        >>> thread = api.delete_packet_captures_with_http_info(async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
@@ -864,7 +864,7 @@ class PacketCapturesApi(object):
             if key not in all_params:
                 raise TypeError(
                     "Got an unexpected keyword argument '%s'"
-                    " to method delete_captures" % key
+                    " to method delete_packet_captures" % key
                 )
             params[key] = val
         del params['kwargs']
@@ -908,13 +908,13 @@ class PacketCapturesApi(object):
             _request_timeout=params.get('_request_timeout'),
             collection_formats=collection_formats)
 
-    def get_capture(self, id, **kwargs):  # noqa: E501
+    def get_packet_capture(self, id, **kwargs):  # noqa: E501
         """Get a packet capture  # noqa: E501
 
         Return a packet capture by id.  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.get_capture(id, async_req=True)
+        >>> thread = api.get_packet_capture(id, async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
@@ -925,18 +925,18 @@ class PacketCapturesApi(object):
         """
         kwargs['_return_http_data_only'] = True
         if kwargs.get('async_req'):
-            return self.get_capture_with_http_info(id, **kwargs)  # noqa: E501
+            return self.get_packet_capture_with_http_info(id, **kwargs)  # noqa: E501
         else:
-            (data) = self.get_capture_with_http_info(id, **kwargs)  # noqa: E501
+            (data) = self.get_packet_capture_with_http_info(id, **kwargs)  # noqa: E501
             return data
 
-    def get_capture_with_http_info(self, id, **kwargs):  # noqa: E501
+    def get_packet_capture_with_http_info(self, id, **kwargs):  # noqa: E501
         """Get a packet capture  # noqa: E501
 
         Return a packet capture by id.  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.get_capture_with_http_info(id, async_req=True)
+        >>> thread = api.get_packet_capture_with_http_info(id, async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
@@ -957,14 +957,14 @@ class PacketCapturesApi(object):
             if key not in all_params:
                 raise TypeError(
                     "Got an unexpected keyword argument '%s'"
-                    " to method get_capture" % key
+                    " to method get_packet_capture" % key
                 )
             params[key] = val
         del params['kwargs']
         # verify the required parameter 'id' is set
         if ('id' not in params or
                 params['id'] is None):
-            raise ValueError("Missing the required parameter `id` when calling `get_capture`")  # noqa: E501
+            raise ValueError("Missing the required parameter `id` when calling `get_packet_capture`")  # noqa: E501
 
         collection_formats = {}
 
@@ -1007,13 +1007,13 @@ class PacketCapturesApi(object):
             _request_timeout=params.get('_request_timeout'),
             collection_formats=collection_formats)
 
-    def get_capture_live(self, id, **kwargs):  # noqa: E501
+    def get_packet_capture_live(self, id, **kwargs):  # noqa: E501
         """Get live capture packet data as a pcap file  # noqa: E501
 
         Returns a pcap file of the captured data.  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.get_capture_live(id, async_req=True)
+        >>> thread = api.get_packet_capture_live(id, async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
@@ -1024,18 +1024,18 @@ class PacketCapturesApi(object):
         """
         kwargs['_return_http_data_only'] = True
         if kwargs.get('async_req'):
-            return self.get_capture_live_with_http_info(id, **kwargs)  # noqa: E501
+            return self.get_packet_capture_live_with_http_info(id, **kwargs)  # noqa: E501
         else:
-            (data) = self.get_capture_live_with_http_info(id, **kwargs)  # noqa: E501
+            (data) = self.get_packet_capture_live_with_http_info(id, **kwargs)  # noqa: E501
             return data
 
-    def get_capture_live_with_http_info(self, id, **kwargs):  # noqa: E501
+    def get_packet_capture_live_with_http_info(self, id, **kwargs):  # noqa: E501
         """Get live capture packet data as a pcap file  # noqa: E501
 
         Returns a pcap file of the captured data.  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.get_capture_live_with_http_info(id, async_req=True)
+        >>> thread = api.get_packet_capture_live_with_http_info(id, async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
@@ -1056,14 +1056,14 @@ class PacketCapturesApi(object):
             if key not in all_params:
                 raise TypeError(
                     "Got an unexpected keyword argument '%s'"
-                    " to method get_capture_live" % key
+                    " to method get_packet_capture_live" % key
                 )
             params[key] = val
         del params['kwargs']
         # verify the required parameter 'id' is set
         if ('id' not in params or
                 params['id'] is None):
-            raise ValueError("Missing the required parameter `id` when calling `get_capture_live`")  # noqa: E501
+            raise ValueError("Missing the required parameter `id` when calling `get_packet_capture_live`")  # noqa: E501
 
         collection_formats = {}
 
@@ -1106,13 +1106,13 @@ class PacketCapturesApi(object):
             _request_timeout=params.get('_request_timeout'),
             collection_formats=collection_formats)
 
-    def get_capture_pcap(self, id, **kwargs):  # noqa: E501
+    def get_packet_capture_pcap(self, id, **kwargs):  # noqa: E501
         """Get a packet data as a pcap file  # noqa: E501
 
         Returns a pcap file of the captured data.  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.get_capture_pcap(id, async_req=True)
+        >>> thread = api.get_packet_capture_pcap(id, async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
@@ -1123,18 +1123,18 @@ class PacketCapturesApi(object):
         """
         kwargs['_return_http_data_only'] = True
         if kwargs.get('async_req'):
-            return self.get_capture_pcap_with_http_info(id, **kwargs)  # noqa: E501
+            return self.get_packet_capture_pcap_with_http_info(id, **kwargs)  # noqa: E501
         else:
-            (data) = self.get_capture_pcap_with_http_info(id, **kwargs)  # noqa: E501
+            (data) = self.get_packet_capture_pcap_with_http_info(id, **kwargs)  # noqa: E501
             return data
 
-    def get_capture_pcap_with_http_info(self, id, **kwargs):  # noqa: E501
+    def get_packet_capture_pcap_with_http_info(self, id, **kwargs):  # noqa: E501
         """Get a packet data as a pcap file  # noqa: E501
 
         Returns a pcap file of the captured data.  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.get_capture_pcap_with_http_info(id, async_req=True)
+        >>> thread = api.get_packet_capture_pcap_with_http_info(id, async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
@@ -1155,14 +1155,14 @@ class PacketCapturesApi(object):
             if key not in all_params:
                 raise TypeError(
                     "Got an unexpected keyword argument '%s'"
-                    " to method get_capture_pcap" % key
+                    " to method get_packet_capture_pcap" % key
                 )
             params[key] = val
         del params['kwargs']
         # verify the required parameter 'id' is set
         if ('id' not in params or
                 params['id'] is None):
-            raise ValueError("Missing the required parameter `id` when calling `get_capture_pcap`")  # noqa: E501
+            raise ValueError("Missing the required parameter `id` when calling `get_packet_capture_pcap`")  # noqa: E501
 
         collection_formats = {}
 
@@ -1205,13 +1205,13 @@ class PacketCapturesApi(object):
             _request_timeout=params.get('_request_timeout'),
             collection_formats=collection_formats)
 
-    def get_capture_result(self, id, **kwargs):  # noqa: E501
+    def get_packet_capture_result(self, id, **kwargs):  # noqa: E501
         """Get a packet capture result  # noqa: E501
 
         Returns results from a packet capture by result id.  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.get_capture_result(id, async_req=True)
+        >>> thread = api.get_packet_capture_result(id, async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
@@ -1222,18 +1222,18 @@ class PacketCapturesApi(object):
         """
         kwargs['_return_http_data_only'] = True
         if kwargs.get('async_req'):
-            return self.get_capture_result_with_http_info(id, **kwargs)  # noqa: E501
+            return self.get_packet_capture_result_with_http_info(id, **kwargs)  # noqa: E501
         else:
-            (data) = self.get_capture_result_with_http_info(id, **kwargs)  # noqa: E501
+            (data) = self.get_packet_capture_result_with_http_info(id, **kwargs)  # noqa: E501
             return data
 
-    def get_capture_result_with_http_info(self, id, **kwargs):  # noqa: E501
+    def get_packet_capture_result_with_http_info(self, id, **kwargs):  # noqa: E501
         """Get a packet capture result  # noqa: E501
 
         Returns results from a packet capture by result id.  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.get_capture_result_with_http_info(id, async_req=True)
+        >>> thread = api.get_packet_capture_result_with_http_info(id, async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
@@ -1254,14 +1254,14 @@ class PacketCapturesApi(object):
             if key not in all_params:
                 raise TypeError(
                     "Got an unexpected keyword argument '%s'"
-                    " to method get_capture_result" % key
+                    " to method get_packet_capture_result" % key
                 )
             params[key] = val
         del params['kwargs']
         # verify the required parameter 'id' is set
         if ('id' not in params or
                 params['id'] is None):
-            raise ValueError("Missing the required parameter `id` when calling `get_capture_result`")  # noqa: E501
+            raise ValueError("Missing the required parameter `id` when calling `get_packet_capture_result`")  # noqa: E501
 
         collection_formats = {}
 
@@ -1304,13 +1304,13 @@ class PacketCapturesApi(object):
             _request_timeout=params.get('_request_timeout'),
             collection_formats=collection_formats)
 
-    def list_capture_results(self, **kwargs):  # noqa: E501
+    def list_packet_capture_results(self, **kwargs):  # noqa: E501
         """List capture results  # noqa: E501
 
         The `capture-results` endpoint returns all capture results created by capture instances.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.list_capture_results(async_req=True)
+        >>> thread = api.list_packet_capture_results(async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
@@ -1322,18 +1322,18 @@ class PacketCapturesApi(object):
         """
         kwargs['_return_http_data_only'] = True
         if kwargs.get('async_req'):
-            return self.list_capture_results_with_http_info(**kwargs)  # noqa: E501
+            return self.list_packet_capture_results_with_http_info(**kwargs)  # noqa: E501
         else:
-            (data) = self.list_capture_results_with_http_info(**kwargs)  # noqa: E501
+            (data) = self.list_packet_capture_results_with_http_info(**kwargs)  # noqa: E501
             return data
 
-    def list_capture_results_with_http_info(self, **kwargs):  # noqa: E501
+    def list_packet_capture_results_with_http_info(self, **kwargs):  # noqa: E501
         """List capture results  # noqa: E501
 
         The `capture-results` endpoint returns all capture results created by capture instances.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.list_capture_results_with_http_info(async_req=True)
+        >>> thread = api.list_packet_capture_results_with_http_info(async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
@@ -1355,7 +1355,7 @@ class PacketCapturesApi(object):
             if key not in all_params:
                 raise TypeError(
                     "Got an unexpected keyword argument '%s'"
-                    " to method list_capture_results" % key
+                    " to method list_packet_capture_results" % key
                 )
             params[key] = val
         del params['kwargs']
@@ -1403,13 +1403,13 @@ class PacketCapturesApi(object):
             _request_timeout=params.get('_request_timeout'),
             collection_formats=collection_formats)
 
-    def list_captures(self, **kwargs):  # noqa: E501
+    def list_packet_captures(self, **kwargs):  # noqa: E501
         """List packet capture  # noqa: E501
 
         The `captures` endpoint returns all configured packet captures.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.list_captures(async_req=True)
+        >>> thread = api.list_packet_captures(async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
@@ -1420,18 +1420,18 @@ class PacketCapturesApi(object):
         """
         kwargs['_return_http_data_only'] = True
         if kwargs.get('async_req'):
-            return self.list_captures_with_http_info(**kwargs)  # noqa: E501
+            return self.list_packet_captures_with_http_info(**kwargs)  # noqa: E501
         else:
-            (data) = self.list_captures_with_http_info(**kwargs)  # noqa: E501
+            (data) = self.list_packet_captures_with_http_info(**kwargs)  # noqa: E501
             return data
 
-    def list_captures_with_http_info(self, **kwargs):  # noqa: E501
+    def list_packet_captures_with_http_info(self, **kwargs):  # noqa: E501
         """List packet capture  # noqa: E501
 
         The `captures` endpoint returns all configured packet captures.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.list_captures_with_http_info(async_req=True)
+        >>> thread = api.list_packet_captures_with_http_info(async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
@@ -1452,7 +1452,7 @@ class PacketCapturesApi(object):
             if key not in all_params:
                 raise TypeError(
                     "Got an unexpected keyword argument '%s'"
-                    " to method list_captures" % key
+                    " to method list_packet_captures" % key
                 )
             params[key] = val
         del params['kwargs']
@@ -1498,13 +1498,13 @@ class PacketCapturesApi(object):
             _request_timeout=params.get('_request_timeout'),
             collection_formats=collection_formats)
 
-    def start_capture(self, id, **kwargs):  # noqa: E501
+    def start_packet_capture(self, id, **kwargs):  # noqa: E501
         """Start packet capture.  # noqa: E501
 
         Used to start a non-running capture. Creates a new capture. result on success.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.start_capture(id, async_req=True)
+        >>> thread = api.start_packet_capture(id, async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
@@ -1515,18 +1515,18 @@ class PacketCapturesApi(object):
         """
         kwargs['_return_http_data_only'] = True
         if kwargs.get('async_req'):
-            return self.start_capture_with_http_info(id, **kwargs)  # noqa: E501
+            return self.start_packet_capture_with_http_info(id, **kwargs)  # noqa: E501
         else:
-            (data) = self.start_capture_with_http_info(id, **kwargs)  # noqa: E501
+            (data) = self.start_packet_capture_with_http_info(id, **kwargs)  # noqa: E501
             return data
 
-    def start_capture_with_http_info(self, id, **kwargs):  # noqa: E501
+    def start_packet_capture_with_http_info(self, id, **kwargs):  # noqa: E501
         """Start packet capture.  # noqa: E501
 
         Used to start a non-running capture. Creates a new capture. result on success.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.start_capture_with_http_info(id, async_req=True)
+        >>> thread = api.start_packet_capture_with_http_info(id, async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
@@ -1547,14 +1547,14 @@ class PacketCapturesApi(object):
             if key not in all_params:
                 raise TypeError(
                     "Got an unexpected keyword argument '%s'"
-                    " to method start_capture" % key
+                    " to method start_packet_capture" % key
                 )
             params[key] = val
         del params['kwargs']
         # verify the required parameter 'id' is set
         if ('id' not in params or
                 params['id'] is None):
-            raise ValueError("Missing the required parameter `id` when calling `start_capture`")  # noqa: E501
+            raise ValueError("Missing the required parameter `id` when calling `start_packet_capture`")  # noqa: E501
 
         collection_formats = {}
 
@@ -1597,13 +1597,13 @@ class PacketCapturesApi(object):
             _request_timeout=params.get('_request_timeout'),
             collection_formats=collection_formats)
 
-    def stop_capture(self, id, **kwargs):  # noqa: E501
+    def stop_packet_capture(self, id, **kwargs):  # noqa: E501
         """Stop packet capture.  # noqa: E501
 
         Use to halt a running capture. Idempotent.  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.stop_capture(id, async_req=True)
+        >>> thread = api.stop_packet_capture(id, async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
@@ -1614,18 +1614,18 @@ class PacketCapturesApi(object):
         """
         kwargs['_return_http_data_only'] = True
         if kwargs.get('async_req'):
-            return self.stop_capture_with_http_info(id, **kwargs)  # noqa: E501
+            return self.stop_packet_capture_with_http_info(id, **kwargs)  # noqa: E501
         else:
-            (data) = self.stop_capture_with_http_info(id, **kwargs)  # noqa: E501
+            (data) = self.stop_packet_capture_with_http_info(id, **kwargs)  # noqa: E501
             return data
 
-    def stop_capture_with_http_info(self, id, **kwargs):  # noqa: E501
+    def stop_packet_capture_with_http_info(self, id, **kwargs):  # noqa: E501
         """Stop packet capture.  # noqa: E501
 
         Use to halt a running capture. Idempotent.  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.stop_capture_with_http_info(id, async_req=True)
+        >>> thread = api.stop_packet_capture_with_http_info(id, async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
@@ -1646,14 +1646,14 @@ class PacketCapturesApi(object):
             if key not in all_params:
                 raise TypeError(
                     "Got an unexpected keyword argument '%s'"
-                    " to method stop_capture" % key
+                    " to method stop_packet_capture" % key
                 )
             params[key] = val
         del params['kwargs']
         # verify the required parameter 'id' is set
         if ('id' not in params or
                 params['id'] is None):
-            raise ValueError("Missing the required parameter `id` when calling `stop_capture`")  # noqa: E501
+            raise ValueError("Missing the required parameter `id` when calling `stop_packet_capture`")  # noqa: E501
 
         collection_formats = {}
 

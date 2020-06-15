@@ -10,33 +10,33 @@
 * Do not edit the class manually.
 */
 /*
- * BulkStopCapturesRequest.h
+ * BulkStartPacketCapturesResponse.h
  *
- * Parameters for the bulk stop operation
+ * 
  */
 
-#ifndef BulkStopCapturesRequest_H_
-#define BulkStopCapturesRequest_H_
+#ifndef BulkStartPacketCapturesResponse_H_
+#define BulkStartPacketCapturesResponse_H_
 
 
 #include "ModelBase.h"
 
-#include <string>
 #include <vector>
+#include "PacketCaptureResult.h"
 
 namespace swagger {
 namespace v1 {
 namespace model {
 
 /// <summary>
-/// Parameters for the bulk stop operation
+/// 
 /// </summary>
-class  BulkStopCapturesRequest
+class  BulkStartPacketCapturesResponse
     : public ModelBase
 {
 public:
-    BulkStopCapturesRequest();
-    virtual ~BulkStopCapturesRequest();
+    BulkStartPacketCapturesResponse();
+    virtual ~BulkStartPacketCapturesResponse();
 
     /////////////////////////////////////////////
     /// ModelBase overrides
@@ -47,15 +47,15 @@ public:
     void fromJson(nlohmann::json& json) override;
 
     /////////////////////////////////////////////
-    /// BulkStopCapturesRequest members
+    /// BulkStartPacketCapturesResponse members
 
     /// <summary>
-    /// List of capture identifiers
+    /// List of capture results
     /// </summary>
-    std::vector<std::string>& getIds();
+    std::vector<std::shared_ptr<PacketCaptureResult>>& getItems();
     
 protected:
-    std::vector<std::string> m_Ids;
+    std::vector<std::shared_ptr<PacketCaptureResult>> m_Items;
 
 };
 
@@ -63,4 +63,4 @@ protected:
 }
 }
 
-#endif /* BulkStopCapturesRequest_H_ */
+#endif /* BulkStartPacketCapturesResponse_H_ */

@@ -10,13 +10,13 @@
 * Do not edit the class manually.
 */
 /*
- * BulkCreateCapturesResponse.h
+ * BulkCreatePacketCapturesResponse.h
  *
  * 
  */
 
-#ifndef BulkCreateCapturesResponse_H_
-#define BulkCreateCapturesResponse_H_
+#ifndef BulkCreatePacketCapturesResponse_H_
+#define BulkCreatePacketCapturesResponse_H_
 
 
 #include "ModelBase.h"
@@ -31,12 +31,12 @@ namespace model {
 /// <summary>
 /// 
 /// </summary>
-class  BulkCreateCapturesResponse
+class  BulkCreatePacketCapturesResponse
     : public ModelBase
 {
 public:
-    BulkCreateCapturesResponse();
-    virtual ~BulkCreateCapturesResponse();
+    BulkCreatePacketCapturesResponse();
+    virtual ~BulkCreatePacketCapturesResponse();
 
     /////////////////////////////////////////////
     /// ModelBase overrides
@@ -47,7 +47,7 @@ public:
     void fromJson(nlohmann::json& json) override;
 
     /////////////////////////////////////////////
-    /// BulkCreateCapturesResponse members
+    /// BulkCreatePacketCapturesResponse members
 
     /// <summary>
     /// List of packet captures
@@ -63,4 +63,4 @@ protected:
 }
 }
 
-#endif /* BulkCreateCapturesResponse_H_ */
+#endif /* BulkCreatePacketCapturesResponse_H_ */
