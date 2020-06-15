@@ -20,7 +20,6 @@ namespace model {
 TDigestCentroid::TDigestCentroid()
 {
     m_Weight = 0;
-    m_WeightIsSet = false;
     
 }
 
@@ -37,10 +36,7 @@ nlohmann::json TDigestCentroid::toJson() const
 {
     nlohmann::json val = nlohmann::json::object();
 
-    if(m_WeightIsSet)
-    {
-        val["weight"] = m_Weight;
-    }
+    val["weight"] = m_Weight;
     
 
     return val;
@@ -48,10 +44,7 @@ nlohmann::json TDigestCentroid::toJson() const
 
 void TDigestCentroid::fromJson(nlohmann::json& val)
 {
-    if(val.find("weight") != val.end())
-    {
-        setWeight(val.at("weight"));
-    }
+    setWeight(val.at("weight"));
     
 }
 
@@ -63,15 +56,7 @@ int32_t TDigestCentroid::getWeight() const
 void TDigestCentroid::setWeight(int32_t value)
 {
     m_Weight = value;
-    m_WeightIsSet = true;
-}
-bool TDigestCentroid::weightIsSet() const
-{
-    return m_WeightIsSet;
-}
-void TDigestCentroid::unsetWeight()
-{
-    m_WeightIsSet = false;
+    
 }
 
 }

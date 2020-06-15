@@ -31,134 +31,104 @@ class TDigestResult(object):
                             and the value is json key in definition.
     """
     swagger_types = {
-        'id': 'str',
-        'generator_type': 'str',
-        'generator_id': 'str',
-        'factor': 'int',
+        'result_id': 'str',
+        'tdigest_id': 'str',
+        'timestamp': 'datetime',
         'centroids': 'list[TDigestCentroid]'
     }
 
     attribute_map = {
-        'id': 'id',
-        'generator_type': 'generator_type',
-        'generator_id': 'generator_id',
-        'factor': 'factor',
+        'result_id': 'result_id',
+        'tdigest_id': 'tdigest_id',
+        'timestamp': 'timestamp',
         'centroids': 'centroids'
     }
 
-    def __init__(self, id=None, generator_type=None, generator_id=None, factor=None, centroids=None):  # noqa: E501
+    def __init__(self, result_id=None, tdigest_id=None, timestamp=None, centroids=None):  # noqa: E501
         """TDigestResult - a model defined in Swagger"""  # noqa: E501
 
-        self._id = None
-        self._generator_type = None
-        self._generator_id = None
-        self._factor = None
+        self._result_id = None
+        self._tdigest_id = None
+        self._timestamp = None
         self._centroids = None
         self.discriminator = None
 
-        if id is not None:
-            self.id = id
-        if generator_type is not None:
-            self.generator_type = generator_type
-        if generator_id is not None:
-            self.generator_id = generator_id
-        if factor is not None:
-            self.factor = factor
-        if centroids is not None:
-            self.centroids = centroids
+        self.result_id = result_id
+        self.tdigest_id = tdigest_id
+        self.timestamp = timestamp
+        self.centroids = centroids
 
     @property
-    def id(self):
-        """Gets the id of this TDigestResult.  # noqa: E501
+    def result_id(self):
+        """Gets the result_id of this TDigestResult.  # noqa: E501
 
-        T-Digest identifier  # noqa: E501
+        Unique identifier of result of generator  # noqa: E501
 
-        :return: The id of this TDigestResult.  # noqa: E501
+        :return: The result_id of this TDigestResult.  # noqa: E501
         :rtype: str
         """
-        return self._id
+        return self._result_id
 
-    @id.setter
-    def id(self, id):
-        """Sets the id of this TDigestResult.
+    @result_id.setter
+    def result_id(self, result_id):
+        """Sets the result_id of this TDigestResult.
 
-        T-Digest identifier  # noqa: E501
+        Unique identifier of result of generator  # noqa: E501
 
-        :param id: The id of this TDigestResult.  # noqa: E501
+        :param result_id: The result_id of this TDigestResult.  # noqa: E501
         :type: str
         """
-        self._id = id
+        self._result_id = result_id
 
     @property
-    def generator_type(self):
-        """Gets the generator_type of this TDigestResult.  # noqa: E501
+    def tdigest_id(self):
+        """Gets the tdigest_id of this TDigestResult.  # noqa: E501
 
-        Type of generator  # noqa: E501
+        T-Digest configuration identifier  # noqa: E501
 
-        :return: The generator_type of this TDigestResult.  # noqa: E501
+        :return: The tdigest_id of this TDigestResult.  # noqa: E501
         :rtype: str
         """
-        return self._generator_type
+        return self._tdigest_id
 
-    @generator_type.setter
-    def generator_type(self, generator_type):
-        """Sets the generator_type of this TDigestResult.
+    @tdigest_id.setter
+    def tdigest_id(self, tdigest_id):
+        """Sets the tdigest_id of this TDigestResult.
 
-        Type of generator  # noqa: E501
+        T-Digest configuration identifier  # noqa: E501
 
-        :param generator_type: The generator_type of this TDigestResult.  # noqa: E501
+        :param tdigest_id: The tdigest_id of this TDigestResult.  # noqa: E501
         :type: str
         """
-        self._generator_type = generator_type
+        self._tdigest_id = tdigest_id
 
     @property
-    def generator_id(self):
-        """Gets the generator_id of this TDigestResult.  # noqa: E501
+    def timestamp(self):
+        """Gets the timestamp of this TDigestResult.  # noqa: E501
 
-        Unique generator identifier  # noqa: E501
+        The ISO8601-formatted date of the last result update  # noqa: E501
 
-        :return: The generator_id of this TDigestResult.  # noqa: E501
-        :rtype: str
+        :return: The timestamp of this TDigestResult.  # noqa: E501
+        :rtype: datetime
         """
-        return self._generator_id
+        return self._timestamp
 
-    @generator_id.setter
-    def generator_id(self, generator_id):
-        """Sets the generator_id of this TDigestResult.
+    @timestamp.setter
+    def timestamp(self, timestamp):
+        """Sets the timestamp of this TDigestResult.
 
-        Unique generator identifier  # noqa: E501
+        The ISO8601-formatted date of the last result update  # noqa: E501
 
-        :param generator_id: The generator_id of this TDigestResult.  # noqa: E501
-        :type: str
+        :param timestamp: The timestamp of this TDigestResult.  # noqa: E501
+        :type: datetime
         """
-        self._generator_id = generator_id
-
-    @property
-    def factor(self):
-        """Gets the factor of this TDigestResult.  # noqa: E501
-
-        The compression factor used to initialize the T-Digest struct  # noqa: E501
-
-        :return: The factor of this TDigestResult.  # noqa: E501
-        :rtype: int
-        """
-        return self._factor
-
-    @factor.setter
-    def factor(self, factor):
-        """Sets the factor of this TDigestResult.
-
-        The compression factor used to initialize the T-Digest struct  # noqa: E501
-
-        :param factor: The factor of this TDigestResult.  # noqa: E501
-        :type: int
-        """
-        self._factor = factor
+        self._timestamp = timestamp
 
     @property
     def centroids(self):
         """Gets the centroids of this TDigestResult.  # noqa: E501
 
+        Array of centroids  # noqa: E501
 
         :return: The centroids of this TDigestResult.  # noqa: E501
         :rtype: list[TDigestCentroid]
@@ -169,6 +139,7 @@ class TDigestResult(object):
     def centroids(self, centroids):
         """Sets the centroids of this TDigestResult.
 
+        Array of centroids  # noqa: E501
 
         :param centroids: The centroids of this TDigestResult.  # noqa: E501
         :type: list[TDigestCentroid]

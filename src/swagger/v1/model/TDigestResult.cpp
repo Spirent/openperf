@@ -19,15 +19,9 @@ namespace model {
 
 TDigestResult::TDigestResult()
 {
-    m_Id = "";
-    m_IdIsSet = false;
-    m_Generator_type = "";
-    m_Generator_typeIsSet = false;
-    m_Generator_id = "";
-    m_Generator_idIsSet = false;
-    m_Factor = 0;
-    m_FactorIsSet = false;
-    m_CentroidsIsSet = false;
+    m_Result_id = "";
+    m_Tdigest_id = "";
+    m_Timestamp = "";
     
 }
 
@@ -44,34 +38,17 @@ nlohmann::json TDigestResult::toJson() const
 {
     nlohmann::json val = nlohmann::json::object();
 
-    if(m_IdIsSet)
-    {
-        val["id"] = ModelBase::toJson(m_Id);
-    }
-    if(m_Generator_typeIsSet)
-    {
-        val["generator_type"] = ModelBase::toJson(m_Generator_type);
-    }
-    if(m_Generator_idIsSet)
-    {
-        val["generator_id"] = ModelBase::toJson(m_Generator_id);
-    }
-    if(m_FactorIsSet)
-    {
-        val["factor"] = m_Factor;
-    }
+    val["result_id"] = ModelBase::toJson(m_Result_id);
+    val["tdigest_id"] = ModelBase::toJson(m_Tdigest_id);
+    val["timestamp"] = ModelBase::toJson(m_Timestamp);
     {
         nlohmann::json jsonArray;
         for( auto& item : m_Centroids )
         {
             jsonArray.push_back(ModelBase::toJson(item));
         }
-        
-        if(jsonArray.size() > 0)
-        {
-            val["centroids"] = jsonArray;
-        }
-    }
+        val["centroids"] = jsonArray;
+            }
     
 
     return val;
@@ -79,31 +56,13 @@ nlohmann::json TDigestResult::toJson() const
 
 void TDigestResult::fromJson(nlohmann::json& val)
 {
-    if(val.find("id") != val.end())
-    {
-        setId(val.at("id"));
-        
-    }
-    if(val.find("generator_type") != val.end())
-    {
-        setGeneratorType(val.at("generator_type"));
-        
-    }
-    if(val.find("generator_id") != val.end())
-    {
-        setGeneratorId(val.at("generator_id"));
-        
-    }
-    if(val.find("factor") != val.end())
-    {
-        setFactor(val.at("factor"));
-    }
+    setResultId(val.at("result_id"));
+    setTdigestId(val.at("tdigest_id"));
+    setTimestamp(val.at("timestamp"));
     {
         m_Centroids.clear();
         nlohmann::json jsonArray;
-        if(val.find("centroids") != val.end())
-        {
-        for( auto& item : val["centroids"] )
+                for( auto& item : val["centroids"] )
         {
             
             if(item.is_null())
@@ -118,91 +77,41 @@ void TDigestResult::fromJson(nlohmann::json& val)
             }
             
         }
-        }
     }
     
 }
 
 
-std::string TDigestResult::getId() const
+std::string TDigestResult::getResultId() const
 {
-    return m_Id;
+    return m_Result_id;
 }
-void TDigestResult::setId(std::string value)
+void TDigestResult::setResultId(std::string value)
 {
-    m_Id = value;
-    m_IdIsSet = true;
+    m_Result_id = value;
+    
 }
-bool TDigestResult::idIsSet() const
+std::string TDigestResult::getTdigestId() const
 {
-    return m_IdIsSet;
+    return m_Tdigest_id;
 }
-void TDigestResult::unsetId()
+void TDigestResult::setTdigestId(std::string value)
 {
-    m_IdIsSet = false;
+    m_Tdigest_id = value;
+    
 }
-std::string TDigestResult::getGeneratorType() const
+std::string TDigestResult::getTimestamp() const
 {
-    return m_Generator_type;
+    return m_Timestamp;
 }
-void TDigestResult::setGeneratorType(std::string value)
+void TDigestResult::setTimestamp(std::string value)
 {
-    m_Generator_type = value;
-    m_Generator_typeIsSet = true;
-}
-bool TDigestResult::generatorTypeIsSet() const
-{
-    return m_Generator_typeIsSet;
-}
-void TDigestResult::unsetGenerator_type()
-{
-    m_Generator_typeIsSet = false;
-}
-std::string TDigestResult::getGeneratorId() const
-{
-    return m_Generator_id;
-}
-void TDigestResult::setGeneratorId(std::string value)
-{
-    m_Generator_id = value;
-    m_Generator_idIsSet = true;
-}
-bool TDigestResult::generatorIdIsSet() const
-{
-    return m_Generator_idIsSet;
-}
-void TDigestResult::unsetGenerator_id()
-{
-    m_Generator_idIsSet = false;
-}
-int32_t TDigestResult::getFactor() const
-{
-    return m_Factor;
-}
-void TDigestResult::setFactor(int32_t value)
-{
-    m_Factor = value;
-    m_FactorIsSet = true;
-}
-bool TDigestResult::factorIsSet() const
-{
-    return m_FactorIsSet;
-}
-void TDigestResult::unsetFactor()
-{
-    m_FactorIsSet = false;
+    m_Timestamp = value;
+    
 }
 std::vector<std::shared_ptr<TDigestCentroid>>& TDigestResult::getCentroids()
 {
     return m_Centroids;
-}
-bool TDigestResult::centroidsIsSet() const
-{
-    return m_CentroidsIsSet;
-}
-void TDigestResult::unsetCentroids()
-{
-    m_CentroidsIsSet = false;
 }
 
 }

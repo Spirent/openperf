@@ -31,178 +31,146 @@ class ThresholdResult(object):
                             and the value is json key in definition.
     """
     swagger_types = {
-        'id': 'str',
-        'generator_type': 'str',
-        'generator_id': 'str',
-        'relation': 'int',
-        '_true': 'int',
-        '_false': 'int'
+        'result_id': 'str',
+        'threshold_id': 'str',
+        'timestamp': 'datetime',
+        'condition_true': 'int',
+        'condition_false': 'int'
     }
 
     attribute_map = {
-        'id': 'id',
-        'generator_type': 'generator_type',
-        'generator_id': 'generator_id',
-        'relation': 'relation',
-        '_true': 'true',
-        '_false': 'false'
+        'result_id': 'result_id',
+        'threshold_id': 'threshold_id',
+        'timestamp': 'timestamp',
+        'condition_true': 'condition_true',
+        'condition_false': 'condition_false'
     }
 
-    def __init__(self, id=None, generator_type=None, generator_id=None, relation=None, _true=None, _false=None):  # noqa: E501
+    def __init__(self, result_id=None, threshold_id=None, timestamp=None, condition_true=None, condition_false=None):  # noqa: E501
         """ThresholdResult - a model defined in Swagger"""  # noqa: E501
 
-        self._id = None
-        self._generator_type = None
-        self._generator_id = None
-        self._relation = None
-        self.__true = None
-        self.__false = None
+        self._result_id = None
+        self._threshold_id = None
+        self._timestamp = None
+        self._condition_true = None
+        self._condition_false = None
         self.discriminator = None
 
-        if id is not None:
-            self.id = id
-        if generator_type is not None:
-            self.generator_type = generator_type
-        if generator_id is not None:
-            self.generator_id = generator_id
-        if relation is not None:
-            self.relation = relation
-        if _true is not None:
-            self._true = _true
-        if _false is not None:
-            self._false = _false
+        self.result_id = result_id
+        self.threshold_id = threshold_id
+        self.timestamp = timestamp
+        self.condition_true = condition_true
+        self.condition_false = condition_false
 
     @property
-    def id(self):
-        """Gets the id of this ThresholdResult.  # noqa: E501
+    def result_id(self):
+        """Gets the result_id of this ThresholdResult.  # noqa: E501
 
-        Threshold unique identifier  # noqa: E501
+        Unique identifier of result of generator  # noqa: E501
 
-        :return: The id of this ThresholdResult.  # noqa: E501
+        :return: The result_id of this ThresholdResult.  # noqa: E501
         :rtype: str
         """
-        return self._id
+        return self._result_id
 
-    @id.setter
-    def id(self, id):
-        """Sets the id of this ThresholdResult.
+    @result_id.setter
+    def result_id(self, result_id):
+        """Sets the result_id of this ThresholdResult.
 
-        Threshold unique identifier  # noqa: E501
+        Unique identifier of result of generator  # noqa: E501
 
-        :param id: The id of this ThresholdResult.  # noqa: E501
+        :param result_id: The result_id of this ThresholdResult.  # noqa: E501
         :type: str
         """
-        self._id = id
+        self._result_id = result_id
 
     @property
-    def generator_type(self):
-        """Gets the generator_type of this ThresholdResult.  # noqa: E501
+    def threshold_id(self):
+        """Gets the threshold_id of this ThresholdResult.  # noqa: E501
 
-        Type of generator  # noqa: E501
+        Threshold configuration unique identifier  # noqa: E501
 
-        :return: The generator_type of this ThresholdResult.  # noqa: E501
+        :return: The threshold_id of this ThresholdResult.  # noqa: E501
         :rtype: str
         """
-        return self._generator_type
+        return self._threshold_id
 
-    @generator_type.setter
-    def generator_type(self, generator_type):
-        """Sets the generator_type of this ThresholdResult.
+    @threshold_id.setter
+    def threshold_id(self, threshold_id):
+        """Sets the threshold_id of this ThresholdResult.
 
-        Type of generator  # noqa: E501
+        Threshold configuration unique identifier  # noqa: E501
 
-        :param generator_type: The generator_type of this ThresholdResult.  # noqa: E501
+        :param threshold_id: The threshold_id of this ThresholdResult.  # noqa: E501
         :type: str
         """
-        self._generator_type = generator_type
+        self._threshold_id = threshold_id
 
     @property
-    def generator_id(self):
-        """Gets the generator_id of this ThresholdResult.  # noqa: E501
+    def timestamp(self):
+        """Gets the timestamp of this ThresholdResult.  # noqa: E501
 
-        Generator unique identifier  # noqa: E501
+        The ISO8601-formatted date of the last result update  # noqa: E501
 
-        :return: The generator_id of this ThresholdResult.  # noqa: E501
-        :rtype: str
+        :return: The timestamp of this ThresholdResult.  # noqa: E501
+        :rtype: datetime
         """
-        return self._generator_id
+        return self._timestamp
 
-    @generator_id.setter
-    def generator_id(self, generator_id):
-        """Sets the generator_id of this ThresholdResult.
+    @timestamp.setter
+    def timestamp(self, timestamp):
+        """Sets the timestamp of this ThresholdResult.
 
-        Generator unique identifier  # noqa: E501
+        The ISO8601-formatted date of the last result update  # noqa: E501
 
-        :param generator_id: The generator_id of this ThresholdResult.  # noqa: E501
-        :type: str
+        :param timestamp: The timestamp of this ThresholdResult.  # noqa: E501
+        :type: datetime
         """
-        self._generator_id = generator_id
+        self._timestamp = timestamp
 
     @property
-    def relation(self):
-        """Gets the relation of this ThresholdResult.  # noqa: E501
+    def condition_true(self):
+        """Gets the condition_true of this ThresholdResult.  # noqa: E501
 
-        relation  # noqa: E501
+        Counter of true conditions  # noqa: E501
 
-        :return: The relation of this ThresholdResult.  # noqa: E501
+        :return: The condition_true of this ThresholdResult.  # noqa: E501
         :rtype: int
         """
-        return self._relation
+        return self._condition_true
 
-    @relation.setter
-    def relation(self, relation):
-        """Sets the relation of this ThresholdResult.
+    @condition_true.setter
+    def condition_true(self, condition_true):
+        """Sets the condition_true of this ThresholdResult.
 
-        relation  # noqa: E501
+        Counter of true conditions  # noqa: E501
 
-        :param relation: The relation of this ThresholdResult.  # noqa: E501
+        :param condition_true: The condition_true of this ThresholdResult.  # noqa: E501
         :type: int
         """
-        self._relation = relation
+        self._condition_true = condition_true
 
     @property
-    def _true(self):
-        """Gets the _true of this ThresholdResult.  # noqa: E501
+    def condition_false(self):
+        """Gets the condition_false of this ThresholdResult.  # noqa: E501
 
-        condition true  # noqa: E501
+        Counter of false conditions  # noqa: E501
 
-        :return: The _true of this ThresholdResult.  # noqa: E501
+        :return: The condition_false of this ThresholdResult.  # noqa: E501
         :rtype: int
         """
-        return self.__true
+        return self._condition_false
 
-    @_true.setter
-    def _true(self, _true):
-        """Sets the _true of this ThresholdResult.
+    @condition_false.setter
+    def condition_false(self, condition_false):
+        """Sets the condition_false of this ThresholdResult.
 
-        condition true  # noqa: E501
+        Counter of false conditions  # noqa: E501
 
-        :param _true: The _true of this ThresholdResult.  # noqa: E501
+        :param condition_false: The condition_false of this ThresholdResult.  # noqa: E501
         :type: int
         """
-        self.__true = _true
-
-    @property
-    def _false(self):
-        """Gets the _false of this ThresholdResult.  # noqa: E501
-
-        condition false  # noqa: E501
-
-        :return: The _false of this ThresholdResult.  # noqa: E501
-        :rtype: int
-        """
-        return self.__false
-
-    @_false.setter
-    def _false(self, _false):
-        """Sets the _false of this ThresholdResult.
-
-        condition false  # noqa: E501
-
-        :param _false: The _false of this ThresholdResult.  # noqa: E501
-        :type: int
-        """
-        self.__false = _false
+        self._condition_false = condition_false
 
     def to_dict(self):
         """Returns the model properties as a dict"""

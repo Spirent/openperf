@@ -49,61 +49,42 @@ public:
     /// ThresholdResult members
 
     /// <summary>
-    /// Threshold unique identifier
+    /// Unique identifier of result of generator
     /// </summary>
-    std::string getId() const;
-    void setId(std::string value);
-    bool idIsSet() const;
-    void unsetId();
-    /// <summary>
-    /// Type of generator
+    std::string getResultId() const;
+    void setResultId(std::string value);
+        /// <summary>
+    /// Threshold configuration unique identifier
     /// </summary>
-    std::string getGeneratorType() const;
-    void setGeneratorType(std::string value);
-    bool generatorTypeIsSet() const;
-    void unsetGenerator_type();
-    /// <summary>
-    /// Generator unique identifier
+    std::string getThresholdId() const;
+    void setThresholdId(std::string value);
+        /// <summary>
+    /// The ISO8601-formatted date of the last result update
     /// </summary>
-    std::string getGeneratorId() const;
-    void setGeneratorId(std::string value);
-    bool generatorIdIsSet() const;
-    void unsetGenerator_id();
-    /// <summary>
-    /// relation
+    std::string getTimestamp() const;
+    void setTimestamp(std::string value);
+        /// <summary>
+    /// Counter of true conditions
     /// </summary>
-    int32_t getRelation() const;
-    void setRelation(int32_t value);
-    bool relationIsSet() const;
-    void unsetRelation();
-    /// <summary>
-    /// condition true
+    int32_t getConditionTrue() const;
+    void setConditionTrue(int32_t value);
+        /// <summary>
+    /// Counter of false conditions
     /// </summary>
-    int32_t getTrue() const;
-    void setTrue(int32_t value);
-    bool trueIsSet() const;
-    void unsetTrue();
-    /// <summary>
-    /// condition false
-    /// </summary>
-    int32_t getFalse() const;
-    void setFalse(int32_t value);
-    bool falseIsSet() const;
-    void unsetFalse();
-
+    int32_t getConditionFalse() const;
+    void setConditionFalse(int32_t value);
+    
 protected:
-    std::string m_Id;
-    bool m_IdIsSet;
-    std::string m_Generator_type;
-    bool m_Generator_typeIsSet;
-    std::string m_Generator_id;
-    bool m_Generator_idIsSet;
-    int32_t m_Relation;
-    bool m_RelationIsSet;
-    int32_t m_True;
-    bool m_TrueIsSet;
-    int32_t m_False;
-    bool m_FalseIsSet;
+    std::string m_Result_id;
+
+    std::string m_Threshold_id;
+
+    std::string m_Timestamp;
+
+    int32_t m_Condition_true;
+
+    int32_t m_Condition_false;
+
 };
 
 }

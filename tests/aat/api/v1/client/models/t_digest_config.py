@@ -32,7 +32,6 @@ class TDigestConfig(object):
     """
     swagger_types = {
         'id': 'str',
-        'generator_type': 'str',
         'generator_id': 'str',
         'function': 'str',
         'stat_x': 'str',
@@ -41,18 +40,16 @@ class TDigestConfig(object):
 
     attribute_map = {
         'id': 'id',
-        'generator_type': 'generator_type',
         'generator_id': 'generator_id',
         'function': 'function',
         'stat_x': 'stat_x',
         'stat_y': 'stat_y'
     }
 
-    def __init__(self, id=None, generator_type=None, generator_id=None, function=None, stat_x=None, stat_y=None):  # noqa: E501
+    def __init__(self, id=None, generator_id=None, function=None, stat_x=None, stat_y=None):  # noqa: E501
         """TDigestConfig - a model defined in Swagger"""  # noqa: E501
 
         self._id = None
-        self._generator_type = None
         self._generator_id = None
         self._function = None
         self._stat_x = None
@@ -60,7 +57,6 @@ class TDigestConfig(object):
         self.discriminator = None
 
         self.id = id
-        self.generator_type = generator_type
         self.generator_id = generator_id
         self.function = function
         self.stat_x = stat_x
@@ -71,7 +67,7 @@ class TDigestConfig(object):
     def id(self):
         """Gets the id of this TDigestConfig.  # noqa: E501
 
-        T-Digest unique identifier  # noqa: E501
+        T-Digest configuration unique identifier  # noqa: E501
 
         :return: The id of this TDigestConfig.  # noqa: E501
         :rtype: str
@@ -82,34 +78,12 @@ class TDigestConfig(object):
     def id(self, id):
         """Sets the id of this TDigestConfig.
 
-        T-Digest unique identifier  # noqa: E501
+        T-Digest configuration unique identifier  # noqa: E501
 
         :param id: The id of this TDigestConfig.  # noqa: E501
         :type: str
         """
         self._id = id
-
-    @property
-    def generator_type(self):
-        """Gets the generator_type of this TDigestConfig.  # noqa: E501
-
-        Type of generator  # noqa: E501
-
-        :return: The generator_type of this TDigestConfig.  # noqa: E501
-        :rtype: str
-        """
-        return self._generator_type
-
-    @generator_type.setter
-    def generator_type(self, generator_type):
-        """Sets the generator_type of this TDigestConfig.
-
-        Type of generator  # noqa: E501
-
-        :param generator_type: The generator_type of this TDigestConfig.  # noqa: E501
-        :type: str
-        """
-        self._generator_type = generator_type
 
     @property
     def generator_id(self):
@@ -137,7 +111,7 @@ class TDigestConfig(object):
     def function(self):
         """Gets the function of this TDigestConfig.  # noqa: E501
 
-        the function to apply to the statistic before evaluating  # noqa: E501
+        The function to apply to the statistic before evaluating  # noqa: E501
 
         :return: The function of this TDigestConfig.  # noqa: E501
         :rtype: str
@@ -148,7 +122,7 @@ class TDigestConfig(object):
     def function(self, function):
         """Sets the function of this TDigestConfig.
 
-        the function to apply to the statistic before evaluating  # noqa: E501
+        The function to apply to the statistic before evaluating  # noqa: E501
 
         :param function: The function of this TDigestConfig.  # noqa: E501
         :type: str
@@ -159,7 +133,7 @@ class TDigestConfig(object):
     def stat_x(self):
         """Gets the stat_x of this TDigestConfig.  # noqa: E501
 
-        the X statistic to track  # noqa: E501
+        The X statistic to track  # noqa: E501
 
         :return: The stat_x of this TDigestConfig.  # noqa: E501
         :rtype: str
@@ -170,7 +144,7 @@ class TDigestConfig(object):
     def stat_x(self, stat_x):
         """Sets the stat_x of this TDigestConfig.
 
-        the X statistic to track  # noqa: E501
+        The X statistic to track  # noqa: E501
 
         :param stat_x: The stat_x of this TDigestConfig.  # noqa: E501
         :type: str
@@ -181,7 +155,7 @@ class TDigestConfig(object):
     def stat_y(self):
         """Gets the stat_y of this TDigestConfig.  # noqa: E501
 
-        the Y statistic to track (when using DXDY function)  # noqa: E501
+        The Y statistic to track (when using DXDY function)  # noqa: E501
 
         :return: The stat_y of this TDigestConfig.  # noqa: E501
         :rtype: str
@@ -192,7 +166,7 @@ class TDigestConfig(object):
     def stat_y(self, stat_y):
         """Sets the stat_y of this TDigestConfig.
 
-        the Y statistic to track (when using DXDY function)  # noqa: E501
+        The Y statistic to track (when using DXDY function)  # noqa: E501
 
         :param stat_y: The stat_y of this TDigestConfig.  # noqa: E501
         :type: str

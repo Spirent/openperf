@@ -349,23 +349,29 @@ paths:
   ###
   # Dynamic Results paths
   ###
-  /dynamic-results/thresholds:
-    $ref: ./modules/dynamic.yaml#/paths/~1dynamic-results~1thresholds
+  /thresholds:
+    $ref: ./modules/dynamic.yaml#/paths/~1thresholds
 
-  /dynamic-results/thresholds/{id}:
-    $ref: ./modules/dynamic.yaml#/paths/~1dynamic-results~1thresholds~1{id}
+  /thresholds/{id}:
+    $ref: ./modules/dynamic.yaml#/paths/~1thresholds~1{id}
 
-  /dynamic-results/thresholds/{id}/result:
-    $ref: ./modules/dynamic.yaml#/paths/~1dynamic-results~1thresholds~1{id}~1result
+  /threshold-results:
+    $ref: ./modules/dynamic.yaml#/paths/~1threshold-results
 
-  /dynamic-results/t-digests:
-    $ref: ./modules/dynamic.yaml#/paths/~1dynamic-results~1t-digests
+  /threshold-results/{id}:
+    $ref: ./modules/dynamic.yaml#/paths/~1threshold-results~1{id}
 
-  /dynamic-results/t-digests/{id}:
-    $ref: ./modules/dynamic.yaml#/paths/~1dynamic-results~1t-digests~1{id}
+  /tdigests:
+    $ref: ./modules/dynamic.yaml#/paths/~1tdigests
 
-  /dynamic-results/t-digests/{id}/result:
-    $ref: ./modules/dynamic.yaml#/paths/~1dynamic-results~1t-digests~1{id}~1result
+  /tdigests/{id}:
+    $ref: ./modules/dynamic.yaml#/paths/~1tdigests~1{id}
+
+  /tdigest-results:
+    $ref: ./modules/dynamic.yaml#/paths/~1tdigest-results
+
+  /tdigest-results/{id}:
+    $ref: ./modules/dynamic.yaml#/paths/~1tdigest-results~1{id}
 
 definitions:
   Module:
