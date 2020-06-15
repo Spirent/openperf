@@ -11,27 +11,27 @@
 */
 
 
-#include "BulkDeleteGeneratorsRequest.h"
+#include "BulkDeletePacketGeneratorsRequest.h"
 
 namespace swagger {
 namespace v1 {
 namespace model {
 
-BulkDeleteGeneratorsRequest::BulkDeleteGeneratorsRequest()
+BulkDeletePacketGeneratorsRequest::BulkDeletePacketGeneratorsRequest()
 {
     
 }
 
-BulkDeleteGeneratorsRequest::~BulkDeleteGeneratorsRequest()
+BulkDeletePacketGeneratorsRequest::~BulkDeletePacketGeneratorsRequest()
 {
 }
 
-void BulkDeleteGeneratorsRequest::validate()
+void BulkDeletePacketGeneratorsRequest::validate()
 {
     // TODO: implement validation
 }
 
-nlohmann::json BulkDeleteGeneratorsRequest::toJson() const
+nlohmann::json BulkDeletePacketGeneratorsRequest::toJson() const
 {
     nlohmann::json val = nlohmann::json::object();
 
@@ -48,7 +48,7 @@ nlohmann::json BulkDeleteGeneratorsRequest::toJson() const
     return val;
 }
 
-void BulkDeleteGeneratorsRequest::fromJson(nlohmann::json& val)
+void BulkDeletePacketGeneratorsRequest::fromJson(nlohmann::json& val)
 {
     {
         m_Ids.clear();
@@ -63,7 +63,7 @@ void BulkDeleteGeneratorsRequest::fromJson(nlohmann::json& val)
 }
 
 
-std::vector<std::string>& BulkDeleteGeneratorsRequest::getIds()
+std::vector<std::string>& BulkDeletePacketGeneratorsRequest::getIds()
 {
     return m_Ids;
 }

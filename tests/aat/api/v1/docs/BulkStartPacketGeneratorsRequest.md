@@ -1,4 +1,4 @@
-# BulkStopGeneratorsRequest
+# BulkStartPacketGeneratorsRequest
 
 ## Properties
 Name | Type | Description | Notes

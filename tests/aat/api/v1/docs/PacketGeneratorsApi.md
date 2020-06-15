@@ -4,28 +4,28 @@ All URIs are relative to *http://localhost*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**bulk_create_generators**](PacketGeneratorsApi.md#bulk_create_generators) | **POST** /packet/generators/x/bulk-create | Bulk create packet generators
-[**bulk_delete_generators**](PacketGeneratorsApi.md#bulk_delete_generators) | **POST** /packet/generators/x/bulk-delete | Bulk delete packet generators
-[**bulk_start_generators**](PacketGeneratorsApi.md#bulk_start_generators) | **POST** /packet/generators/x/bulk-start | Bulk start packet generators
-[**bulk_stop_generators**](PacketGeneratorsApi.md#bulk_stop_generators) | **POST** /packet/generators/x/bulk-stop | Bulk stop packet generators
-[**create_generator**](PacketGeneratorsApi.md#create_generator) | **POST** /packet/generators | Create a new packet generator
-[**delete_generator**](PacketGeneratorsApi.md#delete_generator) | **DELETE** /packet/generators/{id} | Delete a packet generator
-[**delete_generator_result**](PacketGeneratorsApi.md#delete_generator_result) | **DELETE** /packet/generator-results/{id} | Delete a packet generator result
-[**delete_generator_results**](PacketGeneratorsApi.md#delete_generator_results) | **DELETE** /packet/generator-results | Delete all generator results
-[**delete_generators**](PacketGeneratorsApi.md#delete_generators) | **DELETE** /packet/generators | Delete all packet generators
-[**get_generator**](PacketGeneratorsApi.md#get_generator) | **GET** /packet/generators/{id} | Get a packet generator
-[**get_generator_result**](PacketGeneratorsApi.md#get_generator_result) | **GET** /packet/generator-results/{id} | Get a packet generator result
+[**bulk_create_packet_generators**](PacketGeneratorsApi.md#bulk_create_packet_generators) | **POST** /packet/generators/x/bulk-create | Bulk create packet generators
+[**bulk_delete_packet_generators**](PacketGeneratorsApi.md#bulk_delete_packet_generators) | **POST** /packet/generators/x/bulk-delete | Bulk delete packet generators
+[**bulk_start_packet_generators**](PacketGeneratorsApi.md#bulk_start_packet_generators) | **POST** /packet/generators/x/bulk-start | Bulk start packet generators
+[**bulk_stop_packet_generators**](PacketGeneratorsApi.md#bulk_stop_packet_generators) | **POST** /packet/generators/x/bulk-stop | Bulk stop packet generators
+[**create_packet_generator**](PacketGeneratorsApi.md#create_packet_generator) | **POST** /packet/generators | Create a new packet generator
+[**delete_packet_generator**](PacketGeneratorsApi.md#delete_packet_generator) | **DELETE** /packet/generators/{id} | Delete a packet generator
+[**delete_packet_generator_result**](PacketGeneratorsApi.md#delete_packet_generator_result) | **DELETE** /packet/generator-results/{id} | Delete a packet generator result
+[**delete_packet_generator_results**](PacketGeneratorsApi.md#delete_packet_generator_results) | **DELETE** /packet/generator-results | Delete all generator results
+[**delete_packet_generators**](PacketGeneratorsApi.md#delete_packet_generators) | **DELETE** /packet/generators | Delete all packet generators
+[**get_packet_generator**](PacketGeneratorsApi.md#get_packet_generator) | **GET** /packet/generators/{id} | Get a packet generator
+[**get_packet_generator_result**](PacketGeneratorsApi.md#get_packet_generator_result) | **GET** /packet/generator-results/{id} | Get a packet generator result
 [**get_tx_flow**](PacketGeneratorsApi.md#get_tx_flow) | **GET** /packet/tx-flows/{id} | Get a transmit packet flow
-[**list_generator_results**](PacketGeneratorsApi.md#list_generator_results) | **GET** /packet/generator-results | List generator results
-[**list_generators**](PacketGeneratorsApi.md#list_generators) | **GET** /packet/generators | List packet generators
+[**list_packet_generator_results**](PacketGeneratorsApi.md#list_packet_generator_results) | **GET** /packet/generator-results | List generator results
+[**list_packet_generators**](PacketGeneratorsApi.md#list_packet_generators) | **GET** /packet/generators | List packet generators
 [**list_tx_flows**](PacketGeneratorsApi.md#list_tx_flows) | **GET** /packet/tx-flows | List packet generator transmit flows
-[**start_generator**](PacketGeneratorsApi.md#start_generator) | **POST** /packet/generators/{id}/start | Start generating packets
-[**stop_generator**](PacketGeneratorsApi.md#stop_generator) | **POST** /packet/generators/{id}/stop | Stop generating packets.
-[**toggle_generators**](PacketGeneratorsApi.md#toggle_generators) | **POST** /packet/generators/x/toggle | Replace a running generator with a stopped generator
+[**start_packet_generator**](PacketGeneratorsApi.md#start_packet_generator) | **POST** /packet/generators/{id}/start | Start generating packets
+[**stop_packet_generator**](PacketGeneratorsApi.md#stop_packet_generator) | **POST** /packet/generators/{id}/stop | Stop generating packets.
+[**toggle_packet_generators**](PacketGeneratorsApi.md#toggle_packet_generators) | **POST** /packet/generators/x/toggle | Replace a running generator with a stopped generator
 
 
-# **bulk_create_generators**
-> BulkCreateGeneratorsResponse bulk_create_generators(create)
+# **bulk_create_packet_generators**
+> BulkCreatePacketGeneratorsResponse bulk_create_packet_generators(create)
 
 Bulk create packet generators
 
@@ -41,25 +41,25 @@ from pprint import pprint
 
 # create an instance of the API class
 api_instance = client.PacketGeneratorsApi()
-create = client.BulkCreateGeneratorsRequest() # BulkCreateGeneratorsRequest | Bulk creation
+create = client.BulkCreatePacketGeneratorsRequest() # BulkCreatePacketGeneratorsRequest | Bulk creation
 
 try:
     # Bulk create packet generators
-    api_response = api_instance.bulk_create_generators(create)
+    api_response = api_instance.bulk_create_packet_generators(create)
     pprint(api_response)
 except ApiException as e:
-    print("Exception when calling PacketGeneratorsApi->bulk_create_generators: %s\n" % e)
+    print("Exception when calling PacketGeneratorsApi->bulk_create_packet_generators: %s\n" % e)
 ```
 
 ### Parameters
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **create** | [**BulkCreateGeneratorsRequest**](BulkCreateGeneratorsRequest.md)| Bulk creation | 
+ **create** | [**BulkCreatePacketGeneratorsRequest**](BulkCreatePacketGeneratorsRequest.md)| Bulk creation | 
 
 ### Return type
 
-[**BulkCreateGeneratorsResponse**](BulkCreateGeneratorsResponse.md)
+[**BulkCreatePacketGeneratorsResponse**](BulkCreatePacketGeneratorsResponse.md)
 
 ### Authorization
 
@@ -72,8 +72,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **bulk_delete_generators**
-> bulk_delete_generators(delete)
+# **bulk_delete_packet_generators**
+> bulk_delete_packet_generators(delete)
 
 Bulk delete packet generators
 
@@ -89,20 +89,20 @@ from pprint import pprint
 
 # create an instance of the API class
 api_instance = client.PacketGeneratorsApi()
-delete = client.BulkDeleteGeneratorsRequest() # BulkDeleteGeneratorsRequest | Bulk delete
+delete = client.BulkDeletePacketGeneratorsRequest() # BulkDeletePacketGeneratorsRequest | Bulk delete
 
 try:
     # Bulk delete packet generators
-    api_instance.bulk_delete_generators(delete)
+    api_instance.bulk_delete_packet_generators(delete)
 except ApiException as e:
-    print("Exception when calling PacketGeneratorsApi->bulk_delete_generators: %s\n" % e)
+    print("Exception when calling PacketGeneratorsApi->bulk_delete_packet_generators: %s\n" % e)
 ```
 
 ### Parameters
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **delete** | [**BulkDeleteGeneratorsRequest**](BulkDeleteGeneratorsRequest.md)| Bulk delete | 
+ **delete** | [**BulkDeletePacketGeneratorsRequest**](BulkDeletePacketGeneratorsRequest.md)| Bulk delete | 
 
 ### Return type
 
@@ -119,8 +119,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **bulk_start_generators**
-> BulkStartGeneratorsResponse bulk_start_generators(start)
+# **bulk_start_packet_generators**
+> BulkStartPacketGeneratorsResponse bulk_start_packet_generators(start)
 
 Bulk start packet generators
 
@@ -136,25 +136,25 @@ from pprint import pprint
 
 # create an instance of the API class
 api_instance = client.PacketGeneratorsApi()
-start = client.BulkStartGeneratorsRequest() # BulkStartGeneratorsRequest | Bulk start
+start = client.BulkStartPacketGeneratorsRequest() # BulkStartPacketGeneratorsRequest | Bulk start
 
 try:
     # Bulk start packet generators
-    api_response = api_instance.bulk_start_generators(start)
+    api_response = api_instance.bulk_start_packet_generators(start)
     pprint(api_response)
 except ApiException as e:
-    print("Exception when calling PacketGeneratorsApi->bulk_start_generators: %s\n" % e)
+    print("Exception when calling PacketGeneratorsApi->bulk_start_packet_generators: %s\n" % e)
 ```
 
 ### Parameters
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **start** | [**BulkStartGeneratorsRequest**](BulkStartGeneratorsRequest.md)| Bulk start | 
+ **start** | [**BulkStartPacketGeneratorsRequest**](BulkStartPacketGeneratorsRequest.md)| Bulk start | 
 
 ### Return type
 
-[**BulkStartGeneratorsResponse**](BulkStartGeneratorsResponse.md)
+[**BulkStartPacketGeneratorsResponse**](BulkStartPacketGeneratorsResponse.md)
 
 ### Authorization
 
@@ -167,8 +167,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **bulk_stop_generators**
-> bulk_stop_generators(stop)
+# **bulk_stop_packet_generators**
+> bulk_stop_packet_generators(stop)
 
 Bulk stop packet generators
 
@@ -184,20 +184,20 @@ from pprint import pprint
 
 # create an instance of the API class
 api_instance = client.PacketGeneratorsApi()
-stop = client.BulkStopGeneratorsRequest() # BulkStopGeneratorsRequest | Bulk stop
+stop = client.BulkStopPacketGeneratorsRequest() # BulkStopPacketGeneratorsRequest | Bulk stop
 
 try:
     # Bulk stop packet generators
-    api_instance.bulk_stop_generators(stop)
+    api_instance.bulk_stop_packet_generators(stop)
 except ApiException as e:
-    print("Exception when calling PacketGeneratorsApi->bulk_stop_generators: %s\n" % e)
+    print("Exception when calling PacketGeneratorsApi->bulk_stop_packet_generators: %s\n" % e)
 ```
 
 ### Parameters
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **stop** | [**BulkStopGeneratorsRequest**](BulkStopGeneratorsRequest.md)| Bulk stop | 
+ **stop** | [**BulkStopPacketGeneratorsRequest**](BulkStopPacketGeneratorsRequest.md)| Bulk stop | 
 
 ### Return type
 
@@ -214,8 +214,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **create_generator**
-> PacketGenerator create_generator(generator)
+# **create_packet_generator**
+> PacketGenerator create_packet_generator(generator)
 
 Create a new packet generator
 
@@ -233,10 +233,10 @@ generator = client.PacketGenerator() # PacketGenerator | New packet generator
 
 try:
     # Create a new packet generator
-    api_response = api_instance.create_generator(generator)
+    api_response = api_instance.create_packet_generator(generator)
     pprint(api_response)
 except ApiException as e:
-    print("Exception when calling PacketGeneratorsApi->create_generator: %s\n" % e)
+    print("Exception when calling PacketGeneratorsApi->create_packet_generator: %s\n" % e)
 ```
 
 ### Parameters
@@ -260,8 +260,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **delete_generator**
-> delete_generator(id)
+# **delete_packet_generator**
+> delete_packet_generator(id)
 
 Delete a packet generator
 
@@ -281,9 +281,9 @@ id = 'id_example' # str | Unique resource identifier
 
 try:
     # Delete a packet generator
-    api_instance.delete_generator(id)
+    api_instance.delete_packet_generator(id)
 except ApiException as e:
-    print("Exception when calling PacketGeneratorsApi->delete_generator: %s\n" % e)
+    print("Exception when calling PacketGeneratorsApi->delete_packet_generator: %s\n" % e)
 ```
 
 ### Parameters
@@ -307,8 +307,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **delete_generator_result**
-> delete_generator_result(id)
+# **delete_packet_generator_result**
+> delete_packet_generator_result(id)
 
 Delete a packet generator result
 
@@ -328,9 +328,9 @@ id = 'id_example' # str | Unique resource identifier
 
 try:
     # Delete a packet generator result
-    api_instance.delete_generator_result(id)
+    api_instance.delete_packet_generator_result(id)
 except ApiException as e:
-    print("Exception when calling PacketGeneratorsApi->delete_generator_result: %s\n" % e)
+    print("Exception when calling PacketGeneratorsApi->delete_packet_generator_result: %s\n" % e)
 ```
 
 ### Parameters
@@ -354,8 +354,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **delete_generator_results**
-> delete_generator_results()
+# **delete_packet_generator_results**
+> delete_packet_generator_results()
 
 Delete all generator results
 
@@ -374,9 +374,9 @@ api_instance = client.PacketGeneratorsApi()
 
 try:
     # Delete all generator results
-    api_instance.delete_generator_results()
+    api_instance.delete_packet_generator_results()
 except ApiException as e:
-    print("Exception when calling PacketGeneratorsApi->delete_generator_results: %s\n" % e)
+    print("Exception when calling PacketGeneratorsApi->delete_packet_generator_results: %s\n" % e)
 ```
 
 ### Parameters
@@ -397,8 +397,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **delete_generators**
-> delete_generators()
+# **delete_packet_generators**
+> delete_packet_generators()
 
 Delete all packet generators
 
@@ -417,9 +417,9 @@ api_instance = client.PacketGeneratorsApi()
 
 try:
     # Delete all packet generators
-    api_instance.delete_generators()
+    api_instance.delete_packet_generators()
 except ApiException as e:
-    print("Exception when calling PacketGeneratorsApi->delete_generators: %s\n" % e)
+    print("Exception when calling PacketGeneratorsApi->delete_packet_generators: %s\n" % e)
 ```
 
 ### Parameters
@@ -440,8 +440,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **get_generator**
-> PacketGenerator get_generator(id)
+# **get_packet_generator**
+> PacketGenerator get_packet_generator(id)
 
 Get a packet generator
 
@@ -461,10 +461,10 @@ id = 'id_example' # str | Unique resource identifier
 
 try:
     # Get a packet generator
-    api_response = api_instance.get_generator(id)
+    api_response = api_instance.get_packet_generator(id)
     pprint(api_response)
 except ApiException as e:
-    print("Exception when calling PacketGeneratorsApi->get_generator: %s\n" % e)
+    print("Exception when calling PacketGeneratorsApi->get_packet_generator: %s\n" % e)
 ```
 
 ### Parameters
@@ -488,8 +488,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **get_generator_result**
-> PacketGeneratorResult get_generator_result(id)
+# **get_packet_generator_result**
+> PacketGeneratorResult get_packet_generator_result(id)
 
 Get a packet generator result
 
@@ -509,10 +509,10 @@ id = 'id_example' # str | Unique resource identifier
 
 try:
     # Get a packet generator result
-    api_response = api_instance.get_generator_result(id)
+    api_response = api_instance.get_packet_generator_result(id)
     pprint(api_response)
 except ApiException as e:
-    print("Exception when calling PacketGeneratorsApi->get_generator_result: %s\n" % e)
+    print("Exception when calling PacketGeneratorsApi->get_packet_generator_result: %s\n" % e)
 ```
 
 ### Parameters
@@ -584,8 +584,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **list_generator_results**
-> list[PacketGeneratorResult] list_generator_results(generator_id=generator_id, target_id=target_id)
+# **list_packet_generator_results**
+> list[PacketGeneratorResult] list_packet_generator_results(generator_id=generator_id, target_id=target_id)
 
 List generator results
 
@@ -606,10 +606,10 @@ target_id = 'target_id_example' # str | Filter by target port or interface id (o
 
 try:
     # List generator results
-    api_response = api_instance.list_generator_results(generator_id=generator_id, target_id=target_id)
+    api_response = api_instance.list_packet_generator_results(generator_id=generator_id, target_id=target_id)
     pprint(api_response)
 except ApiException as e:
-    print("Exception when calling PacketGeneratorsApi->list_generator_results: %s\n" % e)
+    print("Exception when calling PacketGeneratorsApi->list_packet_generator_results: %s\n" % e)
 ```
 
 ### Parameters
@@ -634,8 +634,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **list_generators**
-> list[PacketGenerator] list_generators(target_id=target_id)
+# **list_packet_generators**
+> list[PacketGenerator] list_packet_generators(target_id=target_id)
 
 List packet generators
 
@@ -655,10 +655,10 @@ target_id = 'target_id_example' # str | Filter by target id (optional)
 
 try:
     # List packet generators
-    api_response = api_instance.list_generators(target_id=target_id)
+    api_response = api_instance.list_packet_generators(target_id=target_id)
     pprint(api_response)
 except ApiException as e:
-    print("Exception when calling PacketGeneratorsApi->list_generators: %s\n" % e)
+    print("Exception when calling PacketGeneratorsApi->list_packet_generators: %s\n" % e)
 ```
 
 ### Parameters
@@ -732,8 +732,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **start_generator**
-> PacketGeneratorResult start_generator(id)
+# **start_packet_generator**
+> PacketGeneratorResult start_packet_generator(id)
 
 Start generating packets
 
@@ -753,10 +753,10 @@ id = 'id_example' # str | Unique resource identifier
 
 try:
     # Start generating packets
-    api_response = api_instance.start_generator(id)
+    api_response = api_instance.start_packet_generator(id)
     pprint(api_response)
 except ApiException as e:
-    print("Exception when calling PacketGeneratorsApi->start_generator: %s\n" % e)
+    print("Exception when calling PacketGeneratorsApi->start_packet_generator: %s\n" % e)
 ```
 
 ### Parameters
@@ -780,8 +780,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **stop_generator**
-> stop_generator(id)
+# **stop_packet_generator**
+> stop_packet_generator(id)
 
 Stop generating packets.
 
@@ -801,9 +801,9 @@ id = 'id_example' # str | Unique resource identifier
 
 try:
     # Stop generating packets.
-    api_instance.stop_generator(id)
+    api_instance.stop_packet_generator(id)
 except ApiException as e:
-    print("Exception when calling PacketGeneratorsApi->stop_generator: %s\n" % e)
+    print("Exception when calling PacketGeneratorsApi->stop_packet_generator: %s\n" % e)
 ```
 
 ### Parameters
@@ -827,8 +827,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **toggle_generators**
-> PacketGeneratorResult toggle_generators(toggle)
+# **toggle_packet_generators**
+> PacketGeneratorResult toggle_packet_generators(toggle)
 
 Replace a running generator with a stopped generator
 
@@ -844,21 +844,21 @@ from pprint import pprint
 
 # create an instance of the API class
 api_instance = client.PacketGeneratorsApi()
-toggle = client.ToggleGeneratorsRequest() # ToggleGeneratorsRequest | Generator toggle
+toggle = client.TogglePacketGeneratorsRequest() # TogglePacketGeneratorsRequest | Generator toggle
 
 try:
     # Replace a running generator with a stopped generator
-    api_response = api_instance.toggle_generators(toggle)
+    api_response = api_instance.toggle_packet_generators(toggle)
     pprint(api_response)
 except ApiException as e:
-    print("Exception when calling PacketGeneratorsApi->toggle_generators: %s\n" % e)
+    print("Exception when calling PacketGeneratorsApi->toggle_packet_generators: %s\n" % e)
 ```
 
 ### Parameters
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **toggle** | [**ToggleGeneratorsRequest**](ToggleGeneratorsRequest.md)| Generator toggle | 
+ **toggle** | [**TogglePacketGeneratorsRequest**](TogglePacketGeneratorsRequest.md)| Generator toggle | 
 
 ### Return type
 

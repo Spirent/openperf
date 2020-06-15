@@ -33,40 +33,40 @@ class PacketGeneratorsApi(object):
             api_client = ApiClient()
         self.api_client = api_client
 
-    def bulk_create_generators(self, create, **kwargs):  # noqa: E501
+    def bulk_create_packet_generators(self, create, **kwargs):  # noqa: E501
         """Bulk create packet generators  # noqa: E501
 
         Create multiple packet generators. Requests are processed in an all-or-nothing manner, i.e. a single generator creation failure causes all generator creations for this request to fail.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.bulk_create_generators(create, async_req=True)
+        >>> thread = api.bulk_create_packet_generators(create, async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
-        :param BulkCreateGeneratorsRequest create: Bulk creation (required)
-        :return: BulkCreateGeneratorsResponse
+        :param BulkCreatePacketGeneratorsRequest create: Bulk creation (required)
+        :return: BulkCreatePacketGeneratorsResponse
                  If the method is called asynchronously,
                  returns the request thread.
         """
         kwargs['_return_http_data_only'] = True
         if kwargs.get('async_req'):
-            return self.bulk_create_generators_with_http_info(create, **kwargs)  # noqa: E501
+            return self.bulk_create_packet_generators_with_http_info(create, **kwargs)  # noqa: E501
         else:
-            (data) = self.bulk_create_generators_with_http_info(create, **kwargs)  # noqa: E501
+            (data) = self.bulk_create_packet_generators_with_http_info(create, **kwargs)  # noqa: E501
             return data
 
-    def bulk_create_generators_with_http_info(self, create, **kwargs):  # noqa: E501
+    def bulk_create_packet_generators_with_http_info(self, create, **kwargs):  # noqa: E501
         """Bulk create packet generators  # noqa: E501
 
         Create multiple packet generators. Requests are processed in an all-or-nothing manner, i.e. a single generator creation failure causes all generator creations for this request to fail.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.bulk_create_generators_with_http_info(create, async_req=True)
+        >>> thread = api.bulk_create_packet_generators_with_http_info(create, async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
-        :param BulkCreateGeneratorsRequest create: Bulk creation (required)
-        :return: BulkCreateGeneratorsResponse
+        :param BulkCreatePacketGeneratorsRequest create: Bulk creation (required)
+        :return: BulkCreatePacketGeneratorsResponse
                  If the method is called asynchronously,
                  returns the request thread.
         """
@@ -82,14 +82,14 @@ class PacketGeneratorsApi(object):
             if key not in all_params:
                 raise TypeError(
                     "Got an unexpected keyword argument '%s'"
-                    " to method bulk_create_generators" % key
+                    " to method bulk_create_packet_generators" % key
                 )
             params[key] = val
         del params['kwargs']
         # verify the required parameter 'create' is set
         if ('create' not in params or
                 params['create'] is None):
-            raise ValueError("Missing the required parameter `create` when calling `bulk_create_generators`")  # noqa: E501
+            raise ValueError("Missing the required parameter `create` when calling `bulk_create_packet_generators`")  # noqa: E501
 
         collection_formats = {}
 
@@ -124,7 +124,7 @@ class PacketGeneratorsApi(object):
             body=body_params,
             post_params=form_params,
             files=local_var_files,
-            response_type='BulkCreateGeneratorsResponse',  # noqa: E501
+            response_type='BulkCreatePacketGeneratorsResponse',  # noqa: E501
             auth_settings=auth_settings,
             async_req=params.get('async_req'),
             _return_http_data_only=params.get('_return_http_data_only'),
@@ -132,39 +132,39 @@ class PacketGeneratorsApi(object):
             _request_timeout=params.get('_request_timeout'),
             collection_formats=collection_formats)
 
-    def bulk_delete_generators(self, delete, **kwargs):  # noqa: E501
+    def bulk_delete_packet_generators(self, delete, **kwargs):  # noqa: E501
         """Bulk delete packet generators  # noqa: E501
 
         Delete multiple packet generators in a best-effort manner. Generators can only be deleted when inactive. Active or Non-existant generator ids do not cause errors. Idempotent.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.bulk_delete_generators(delete, async_req=True)
+        >>> thread = api.bulk_delete_packet_generators(delete, async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
-        :param BulkDeleteGeneratorsRequest delete: Bulk delete (required)
+        :param BulkDeletePacketGeneratorsRequest delete: Bulk delete (required)
         :return: None
                  If the method is called asynchronously,
                  returns the request thread.
         """
         kwargs['_return_http_data_only'] = True
         if kwargs.get('async_req'):
-            return self.bulk_delete_generators_with_http_info(delete, **kwargs)  # noqa: E501
+            return self.bulk_delete_packet_generators_with_http_info(delete, **kwargs)  # noqa: E501
         else:
-            (data) = self.bulk_delete_generators_with_http_info(delete, **kwargs)  # noqa: E501
+            (data) = self.bulk_delete_packet_generators_with_http_info(delete, **kwargs)  # noqa: E501
             return data
 
-    def bulk_delete_generators_with_http_info(self, delete, **kwargs):  # noqa: E501
+    def bulk_delete_packet_generators_with_http_info(self, delete, **kwargs):  # noqa: E501
         """Bulk delete packet generators  # noqa: E501
 
         Delete multiple packet generators in a best-effort manner. Generators can only be deleted when inactive. Active or Non-existant generator ids do not cause errors. Idempotent.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.bulk_delete_generators_with_http_info(delete, async_req=True)
+        >>> thread = api.bulk_delete_packet_generators_with_http_info(delete, async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
-        :param BulkDeleteGeneratorsRequest delete: Bulk delete (required)
+        :param BulkDeletePacketGeneratorsRequest delete: Bulk delete (required)
         :return: None
                  If the method is called asynchronously,
                  returns the request thread.
@@ -181,14 +181,14 @@ class PacketGeneratorsApi(object):
             if key not in all_params:
                 raise TypeError(
                     "Got an unexpected keyword argument '%s'"
-                    " to method bulk_delete_generators" % key
+                    " to method bulk_delete_packet_generators" % key
                 )
             params[key] = val
         del params['kwargs']
         # verify the required parameter 'delete' is set
         if ('delete' not in params or
                 params['delete'] is None):
-            raise ValueError("Missing the required parameter `delete` when calling `bulk_delete_generators`")  # noqa: E501
+            raise ValueError("Missing the required parameter `delete` when calling `bulk_delete_packet_generators`")  # noqa: E501
 
         collection_formats = {}
 
@@ -231,40 +231,40 @@ class PacketGeneratorsApi(object):
             _request_timeout=params.get('_request_timeout'),
             collection_formats=collection_formats)
 
-    def bulk_start_generators(self, start, **kwargs):  # noqa: E501
+    def bulk_start_packet_generators(self, start, **kwargs):  # noqa: E501
         """Bulk start packet generators  # noqa: E501
 
         Start multiple packet generators simultaneously  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.bulk_start_generators(start, async_req=True)
+        >>> thread = api.bulk_start_packet_generators(start, async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
-        :param BulkStartGeneratorsRequest start: Bulk start (required)
-        :return: BulkStartGeneratorsResponse
+        :param BulkStartPacketGeneratorsRequest start: Bulk start (required)
+        :return: BulkStartPacketGeneratorsResponse
                  If the method is called asynchronously,
                  returns the request thread.
         """
         kwargs['_return_http_data_only'] = True
         if kwargs.get('async_req'):
-            return self.bulk_start_generators_with_http_info(start, **kwargs)  # noqa: E501
+            return self.bulk_start_packet_generators_with_http_info(start, **kwargs)  # noqa: E501
         else:
-            (data) = self.bulk_start_generators_with_http_info(start, **kwargs)  # noqa: E501
+            (data) = self.bulk_start_packet_generators_with_http_info(start, **kwargs)  # noqa: E501
             return data
 
-    def bulk_start_generators_with_http_info(self, start, **kwargs):  # noqa: E501
+    def bulk_start_packet_generators_with_http_info(self, start, **kwargs):  # noqa: E501
         """Bulk start packet generators  # noqa: E501
 
         Start multiple packet generators simultaneously  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.bulk_start_generators_with_http_info(start, async_req=True)
+        >>> thread = api.bulk_start_packet_generators_with_http_info(start, async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
-        :param BulkStartGeneratorsRequest start: Bulk start (required)
-        :return: BulkStartGeneratorsResponse
+        :param BulkStartPacketGeneratorsRequest start: Bulk start (required)
+        :return: BulkStartPacketGeneratorsResponse
                  If the method is called asynchronously,
                  returns the request thread.
         """
@@ -280,14 +280,14 @@ class PacketGeneratorsApi(object):
             if key not in all_params:
                 raise TypeError(
                     "Got an unexpected keyword argument '%s'"
-                    " to method bulk_start_generators" % key
+                    " to method bulk_start_packet_generators" % key
                 )
             params[key] = val
         del params['kwargs']
         # verify the required parameter 'start' is set
         if ('start' not in params or
                 params['start'] is None):
-            raise ValueError("Missing the required parameter `start` when calling `bulk_start_generators`")  # noqa: E501
+            raise ValueError("Missing the required parameter `start` when calling `bulk_start_packet_generators`")  # noqa: E501
 
         collection_formats = {}
 
@@ -322,7 +322,7 @@ class PacketGeneratorsApi(object):
             body=body_params,
             post_params=form_params,
             files=local_var_files,
-            response_type='BulkStartGeneratorsResponse',  # noqa: E501
+            response_type='BulkStartPacketGeneratorsResponse',  # noqa: E501
             auth_settings=auth_settings,
             async_req=params.get('async_req'),
             _return_http_data_only=params.get('_return_http_data_only'),
@@ -330,39 +330,39 @@ class PacketGeneratorsApi(object):
             _request_timeout=params.get('_request_timeout'),
             collection_formats=collection_formats)
 
-    def bulk_stop_generators(self, stop, **kwargs):  # noqa: E501
+    def bulk_stop_packet_generators(self, stop, **kwargs):  # noqa: E501
         """Bulk stop packet generators  # noqa: E501
 
         Stop multiple packet generators simultaneously  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.bulk_stop_generators(stop, async_req=True)
+        >>> thread = api.bulk_stop_packet_generators(stop, async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
-        :param BulkStopGeneratorsRequest stop: Bulk stop (required)
+        :param BulkStopPacketGeneratorsRequest stop: Bulk stop (required)
         :return: None
                  If the method is called asynchronously,
                  returns the request thread.
         """
         kwargs['_return_http_data_only'] = True
         if kwargs.get('async_req'):
-            return self.bulk_stop_generators_with_http_info(stop, **kwargs)  # noqa: E501
+            return self.bulk_stop_packet_generators_with_http_info(stop, **kwargs)  # noqa: E501
         else:
-            (data) = self.bulk_stop_generators_with_http_info(stop, **kwargs)  # noqa: E501
+            (data) = self.bulk_stop_packet_generators_with_http_info(stop, **kwargs)  # noqa: E501
             return data
 
-    def bulk_stop_generators_with_http_info(self, stop, **kwargs):  # noqa: E501
+    def bulk_stop_packet_generators_with_http_info(self, stop, **kwargs):  # noqa: E501
         """Bulk stop packet generators  # noqa: E501
 
         Stop multiple packet generators simultaneously  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.bulk_stop_generators_with_http_info(stop, async_req=True)
+        >>> thread = api.bulk_stop_packet_generators_with_http_info(stop, async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
-        :param BulkStopGeneratorsRequest stop: Bulk stop (required)
+        :param BulkStopPacketGeneratorsRequest stop: Bulk stop (required)
         :return: None
                  If the method is called asynchronously,
                  returns the request thread.
@@ -379,14 +379,14 @@ class PacketGeneratorsApi(object):
             if key not in all_params:
                 raise TypeError(
                     "Got an unexpected keyword argument '%s'"
-                    " to method bulk_stop_generators" % key
+                    " to method bulk_stop_packet_generators" % key
                 )
             params[key] = val
         del params['kwargs']
         # verify the required parameter 'stop' is set
         if ('stop' not in params or
                 params['stop'] is None):
-            raise ValueError("Missing the required parameter `stop` when calling `bulk_stop_generators`")  # noqa: E501
+            raise ValueError("Missing the required parameter `stop` when calling `bulk_stop_packet_generators`")  # noqa: E501
 
         collection_formats = {}
 
@@ -429,12 +429,12 @@ class PacketGeneratorsApi(object):
             _request_timeout=params.get('_request_timeout'),
             collection_formats=collection_formats)
 
-    def create_generator(self, generator, **kwargs):  # noqa: E501
+    def create_packet_generator(self, generator, **kwargs):  # noqa: E501
         """Create a new packet generator  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.create_generator(generator, async_req=True)
+        >>> thread = api.create_packet_generator(generator, async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
@@ -445,17 +445,17 @@ class PacketGeneratorsApi(object):
         """
         kwargs['_return_http_data_only'] = True
         if kwargs.get('async_req'):
-            return self.create_generator_with_http_info(generator, **kwargs)  # noqa: E501
+            return self.create_packet_generator_with_http_info(generator, **kwargs)  # noqa: E501
         else:
-            (data) = self.create_generator_with_http_info(generator, **kwargs)  # noqa: E501
+            (data) = self.create_packet_generator_with_http_info(generator, **kwargs)  # noqa: E501
             return data
 
-    def create_generator_with_http_info(self, generator, **kwargs):  # noqa: E501
+    def create_packet_generator_with_http_info(self, generator, **kwargs):  # noqa: E501
         """Create a new packet generator  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.create_generator_with_http_info(generator, async_req=True)
+        >>> thread = api.create_packet_generator_with_http_info(generator, async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
@@ -476,14 +476,14 @@ class PacketGeneratorsApi(object):
             if key not in all_params:
                 raise TypeError(
                     "Got an unexpected keyword argument '%s'"
-                    " to method create_generator" % key
+                    " to method create_packet_generator" % key
                 )
             params[key] = val
         del params['kwargs']
         # verify the required parameter 'generator' is set
         if ('generator' not in params or
                 params['generator'] is None):
-            raise ValueError("Missing the required parameter `generator` when calling `create_generator`")  # noqa: E501
+            raise ValueError("Missing the required parameter `generator` when calling `create_packet_generator`")  # noqa: E501
 
         collection_formats = {}
 
@@ -526,13 +526,13 @@ class PacketGeneratorsApi(object):
             _request_timeout=params.get('_request_timeout'),
             collection_formats=collection_formats)
 
-    def delete_generator(self, id, **kwargs):  # noqa: E501
+    def delete_packet_generator(self, id, **kwargs):  # noqa: E501
         """Delete a packet generator  # noqa: E501
 
         Delete a stopped packet generator by id. Also delete all results created by this generator. Idempotent.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.delete_generator(id, async_req=True)
+        >>> thread = api.delete_packet_generator(id, async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
@@ -543,18 +543,18 @@ class PacketGeneratorsApi(object):
         """
         kwargs['_return_http_data_only'] = True
         if kwargs.get('async_req'):
-            return self.delete_generator_with_http_info(id, **kwargs)  # noqa: E501
+            return self.delete_packet_generator_with_http_info(id, **kwargs)  # noqa: E501
         else:
-            (data) = self.delete_generator_with_http_info(id, **kwargs)  # noqa: E501
+            (data) = self.delete_packet_generator_with_http_info(id, **kwargs)  # noqa: E501
             return data
 
-    def delete_generator_with_http_info(self, id, **kwargs):  # noqa: E501
+    def delete_packet_generator_with_http_info(self, id, **kwargs):  # noqa: E501
         """Delete a packet generator  # noqa: E501
 
         Delete a stopped packet generator by id. Also delete all results created by this generator. Idempotent.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.delete_generator_with_http_info(id, async_req=True)
+        >>> thread = api.delete_packet_generator_with_http_info(id, async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
@@ -575,14 +575,14 @@ class PacketGeneratorsApi(object):
             if key not in all_params:
                 raise TypeError(
                     "Got an unexpected keyword argument '%s'"
-                    " to method delete_generator" % key
+                    " to method delete_packet_generator" % key
                 )
             params[key] = val
         del params['kwargs']
         # verify the required parameter 'id' is set
         if ('id' not in params or
                 params['id'] is None):
-            raise ValueError("Missing the required parameter `id` when calling `delete_generator`")  # noqa: E501
+            raise ValueError("Missing the required parameter `id` when calling `delete_packet_generator`")  # noqa: E501
 
         collection_formats = {}
 
@@ -625,13 +625,13 @@ class PacketGeneratorsApi(object):
             _request_timeout=params.get('_request_timeout'),
             collection_formats=collection_formats)
 
-    def delete_generator_result(self, id, **kwargs):  # noqa: E501
+    def delete_packet_generator_result(self, id, **kwargs):  # noqa: E501
         """Delete a packet generator result  # noqa: E501
 
         Delete an inactive packet generator result. Also deletes all child tx-flow objects. Idempotent.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.delete_generator_result(id, async_req=True)
+        >>> thread = api.delete_packet_generator_result(id, async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
@@ -642,18 +642,18 @@ class PacketGeneratorsApi(object):
         """
         kwargs['_return_http_data_only'] = True
         if kwargs.get('async_req'):
-            return self.delete_generator_result_with_http_info(id, **kwargs)  # noqa: E501
+            return self.delete_packet_generator_result_with_http_info(id, **kwargs)  # noqa: E501
         else:
-            (data) = self.delete_generator_result_with_http_info(id, **kwargs)  # noqa: E501
+            (data) = self.delete_packet_generator_result_with_http_info(id, **kwargs)  # noqa: E501
             return data
 
-    def delete_generator_result_with_http_info(self, id, **kwargs):  # noqa: E501
+    def delete_packet_generator_result_with_http_info(self, id, **kwargs):  # noqa: E501
         """Delete a packet generator result  # noqa: E501
 
         Delete an inactive packet generator result. Also deletes all child tx-flow objects. Idempotent.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.delete_generator_result_with_http_info(id, async_req=True)
+        >>> thread = api.delete_packet_generator_result_with_http_info(id, async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
@@ -674,14 +674,14 @@ class PacketGeneratorsApi(object):
             if key not in all_params:
                 raise TypeError(
                     "Got an unexpected keyword argument '%s'"
-                    " to method delete_generator_result" % key
+                    " to method delete_packet_generator_result" % key
                 )
             params[key] = val
         del params['kwargs']
         # verify the required parameter 'id' is set
         if ('id' not in params or
                 params['id'] is None):
-            raise ValueError("Missing the required parameter `id` when calling `delete_generator_result`")  # noqa: E501
+            raise ValueError("Missing the required parameter `id` when calling `delete_packet_generator_result`")  # noqa: E501
 
         collection_formats = {}
 
@@ -724,13 +724,13 @@ class PacketGeneratorsApi(object):
             _request_timeout=params.get('_request_timeout'),
             collection_formats=collection_formats)
 
-    def delete_generator_results(self, **kwargs):  # noqa: E501
+    def delete_packet_generator_results(self, **kwargs):  # noqa: E501
         """Delete all generator results  # noqa: E501
 
         Delete all inactive generator results  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.delete_generator_results(async_req=True)
+        >>> thread = api.delete_packet_generator_results(async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
@@ -740,18 +740,18 @@ class PacketGeneratorsApi(object):
         """
         kwargs['_return_http_data_only'] = True
         if kwargs.get('async_req'):
-            return self.delete_generator_results_with_http_info(**kwargs)  # noqa: E501
+            return self.delete_packet_generator_results_with_http_info(**kwargs)  # noqa: E501
         else:
-            (data) = self.delete_generator_results_with_http_info(**kwargs)  # noqa: E501
+            (data) = self.delete_packet_generator_results_with_http_info(**kwargs)  # noqa: E501
             return data
 
-    def delete_generator_results_with_http_info(self, **kwargs):  # noqa: E501
+    def delete_packet_generator_results_with_http_info(self, **kwargs):  # noqa: E501
         """Delete all generator results  # noqa: E501
 
         Delete all inactive generator results  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.delete_generator_results_with_http_info(async_req=True)
+        >>> thread = api.delete_packet_generator_results_with_http_info(async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
@@ -771,7 +771,7 @@ class PacketGeneratorsApi(object):
             if key not in all_params:
                 raise TypeError(
                     "Got an unexpected keyword argument '%s'"
-                    " to method delete_generator_results" % key
+                    " to method delete_packet_generator_results" % key
                 )
             params[key] = val
         del params['kwargs']
@@ -815,13 +815,13 @@ class PacketGeneratorsApi(object):
             _request_timeout=params.get('_request_timeout'),
             collection_formats=collection_formats)
 
-    def delete_generators(self, **kwargs):  # noqa: E501
+    def delete_packet_generators(self, **kwargs):  # noqa: E501
         """Delete all packet generators  # noqa: E501
 
         Delete all inactive packet generators and their results. Idempotent.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.delete_generators(async_req=True)
+        >>> thread = api.delete_packet_generators(async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
@@ -831,18 +831,18 @@ class PacketGeneratorsApi(object):
         """
         kwargs['_return_http_data_only'] = True
         if kwargs.get('async_req'):
-            return self.delete_generators_with_http_info(**kwargs)  # noqa: E501
+            return self.delete_packet_generators_with_http_info(**kwargs)  # noqa: E501
         else:
-            (data) = self.delete_generators_with_http_info(**kwargs)  # noqa: E501
+            (data) = self.delete_packet_generators_with_http_info(**kwargs)  # noqa: E501
             return data
 
-    def delete_generators_with_http_info(self, **kwargs):  # noqa: E501
+    def delete_packet_generators_with_http_info(self, **kwargs):  # noqa: E501
         """Delete all packet generators  # noqa: E501
 
         Delete all inactive packet generators and their results. Idempotent.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.delete_generators_with_http_info(async_req=True)
+        >>> thread = api.delete_packet_generators_with_http_info(async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
@@ -862,7 +862,7 @@ class PacketGeneratorsApi(object):
             if key not in all_params:
                 raise TypeError(
                     "Got an unexpected keyword argument '%s'"
-                    " to method delete_generators" % key
+                    " to method delete_packet_generators" % key
                 )
             params[key] = val
         del params['kwargs']
@@ -906,13 +906,13 @@ class PacketGeneratorsApi(object):
             _request_timeout=params.get('_request_timeout'),
             collection_formats=collection_formats)
 
-    def get_generator(self, id, **kwargs):  # noqa: E501
+    def get_packet_generator(self, id, **kwargs):  # noqa: E501
         """Get a packet generator  # noqa: E501
 
         Return a packet generator, by id.  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.get_generator(id, async_req=True)
+        >>> thread = api.get_packet_generator(id, async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
@@ -923,18 +923,18 @@ class PacketGeneratorsApi(object):
         """
         kwargs['_return_http_data_only'] = True
         if kwargs.get('async_req'):
-            return self.get_generator_with_http_info(id, **kwargs)  # noqa: E501
+            return self.get_packet_generator_with_http_info(id, **kwargs)  # noqa: E501
         else:
-            (data) = self.get_generator_with_http_info(id, **kwargs)  # noqa: E501
+            (data) = self.get_packet_generator_with_http_info(id, **kwargs)  # noqa: E501
             return data
 
-    def get_generator_with_http_info(self, id, **kwargs):  # noqa: E501
+    def get_packet_generator_with_http_info(self, id, **kwargs):  # noqa: E501
         """Get a packet generator  # noqa: E501
 
         Return a packet generator, by id.  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.get_generator_with_http_info(id, async_req=True)
+        >>> thread = api.get_packet_generator_with_http_info(id, async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
@@ -955,14 +955,14 @@ class PacketGeneratorsApi(object):
             if key not in all_params:
                 raise TypeError(
                     "Got an unexpected keyword argument '%s'"
-                    " to method get_generator" % key
+                    " to method get_packet_generator" % key
                 )
             params[key] = val
         del params['kwargs']
         # verify the required parameter 'id' is set
         if ('id' not in params or
                 params['id'] is None):
-            raise ValueError("Missing the required parameter `id` when calling `get_generator`")  # noqa: E501
+            raise ValueError("Missing the required parameter `id` when calling `get_packet_generator`")  # noqa: E501
 
         collection_formats = {}
 
@@ -1005,13 +1005,13 @@ class PacketGeneratorsApi(object):
             _request_timeout=params.get('_request_timeout'),
             collection_formats=collection_formats)
 
-    def get_generator_result(self, id, **kwargs):  # noqa: E501
+    def get_packet_generator_result(self, id, **kwargs):  # noqa: E501
         """Get a packet generator result  # noqa: E501
 
         Returns results from a packet generator by result id.  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.get_generator_result(id, async_req=True)
+        >>> thread = api.get_packet_generator_result(id, async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
@@ -1022,18 +1022,18 @@ class PacketGeneratorsApi(object):
         """
         kwargs['_return_http_data_only'] = True
         if kwargs.get('async_req'):
-            return self.get_generator_result_with_http_info(id, **kwargs)  # noqa: E501
+            return self.get_packet_generator_result_with_http_info(id, **kwargs)  # noqa: E501
         else:
-            (data) = self.get_generator_result_with_http_info(id, **kwargs)  # noqa: E501
+            (data) = self.get_packet_generator_result_with_http_info(id, **kwargs)  # noqa: E501
             return data
 
-    def get_generator_result_with_http_info(self, id, **kwargs):  # noqa: E501
+    def get_packet_generator_result_with_http_info(self, id, **kwargs):  # noqa: E501
         """Get a packet generator result  # noqa: E501
 
         Returns results from a packet generator by result id.  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.get_generator_result_with_http_info(id, async_req=True)
+        >>> thread = api.get_packet_generator_result_with_http_info(id, async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
@@ -1054,14 +1054,14 @@ class PacketGeneratorsApi(object):
             if key not in all_params:
                 raise TypeError(
                     "Got an unexpected keyword argument '%s'"
-                    " to method get_generator_result" % key
+                    " to method get_packet_generator_result" % key
                 )
             params[key] = val
         del params['kwargs']
         # verify the required parameter 'id' is set
         if ('id' not in params or
                 params['id'] is None):
-            raise ValueError("Missing the required parameter `id` when calling `get_generator_result`")  # noqa: E501
+            raise ValueError("Missing the required parameter `id` when calling `get_packet_generator_result`")  # noqa: E501
 
         collection_formats = {}
 
@@ -1203,13 +1203,13 @@ class PacketGeneratorsApi(object):
             _request_timeout=params.get('_request_timeout'),
             collection_formats=collection_formats)
 
-    def list_generator_results(self, **kwargs):  # noqa: E501
+    def list_packet_generator_results(self, **kwargs):  # noqa: E501
         """List generator results  # noqa: E501
 
         The `generator-results` endpoint returns all generator results created by generator instances.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.list_generator_results(async_req=True)
+        >>> thread = api.list_packet_generator_results(async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
@@ -1221,18 +1221,18 @@ class PacketGeneratorsApi(object):
         """
         kwargs['_return_http_data_only'] = True
         if kwargs.get('async_req'):
-            return self.list_generator_results_with_http_info(**kwargs)  # noqa: E501
+            return self.list_packet_generator_results_with_http_info(**kwargs)  # noqa: E501
         else:
-            (data) = self.list_generator_results_with_http_info(**kwargs)  # noqa: E501
+            (data) = self.list_packet_generator_results_with_http_info(**kwargs)  # noqa: E501
             return data
 
-    def list_generator_results_with_http_info(self, **kwargs):  # noqa: E501
+    def list_packet_generator_results_with_http_info(self, **kwargs):  # noqa: E501
         """List generator results  # noqa: E501
 
         The `generator-results` endpoint returns all generator results created by generator instances.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.list_generator_results_with_http_info(async_req=True)
+        >>> thread = api.list_packet_generator_results_with_http_info(async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
@@ -1254,7 +1254,7 @@ class PacketGeneratorsApi(object):
             if key not in all_params:
                 raise TypeError(
                     "Got an unexpected keyword argument '%s'"
-                    " to method list_generator_results" % key
+                    " to method list_packet_generator_results" % key
                 )
             params[key] = val
         del params['kwargs']
@@ -1302,13 +1302,13 @@ class PacketGeneratorsApi(object):
             _request_timeout=params.get('_request_timeout'),
             collection_formats=collection_formats)
 
-    def list_generators(self, **kwargs):  # noqa: E501
+    def list_packet_generators(self, **kwargs):  # noqa: E501
         """List packet generators  # noqa: E501
 
         The `generators` endpoint returns all packet generators that are configured to transmit test traffic.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.list_generators(async_req=True)
+        >>> thread = api.list_packet_generators(async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
@@ -1319,18 +1319,18 @@ class PacketGeneratorsApi(object):
         """
         kwargs['_return_http_data_only'] = True
         if kwargs.get('async_req'):
-            return self.list_generators_with_http_info(**kwargs)  # noqa: E501
+            return self.list_packet_generators_with_http_info(**kwargs)  # noqa: E501
         else:
-            (data) = self.list_generators_with_http_info(**kwargs)  # noqa: E501
+            (data) = self.list_packet_generators_with_http_info(**kwargs)  # noqa: E501
             return data
 
-    def list_generators_with_http_info(self, **kwargs):  # noqa: E501
+    def list_packet_generators_with_http_info(self, **kwargs):  # noqa: E501
         """List packet generators  # noqa: E501
 
         The `generators` endpoint returns all packet generators that are configured to transmit test traffic.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.list_generators_with_http_info(async_req=True)
+        >>> thread = api.list_packet_generators_with_http_info(async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
@@ -1351,7 +1351,7 @@ class PacketGeneratorsApi(object):
             if key not in all_params:
                 raise TypeError(
                     "Got an unexpected keyword argument '%s'"
-                    " to method list_generators" % key
+                    " to method list_packet_generators" % key
                 )
             params[key] = val
         del params['kwargs']
@@ -1496,13 +1496,13 @@ class PacketGeneratorsApi(object):
             _request_timeout=params.get('_request_timeout'),
             collection_formats=collection_formats)
 
-    def start_generator(self, id, **kwargs):  # noqa: E501
+    def start_packet_generator(self, id, **kwargs):  # noqa: E501
         """Start generating packets  # noqa: E501
 
         Used to start a non-running generator. Creates a new generator result upon success.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.start_generator(id, async_req=True)
+        >>> thread = api.start_packet_generator(id, async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
@@ -1513,18 +1513,18 @@ class PacketGeneratorsApi(object):
         """
         kwargs['_return_http_data_only'] = True
         if kwargs.get('async_req'):
-            return self.start_generator_with_http_info(id, **kwargs)  # noqa: E501
+            return self.start_packet_generator_with_http_info(id, **kwargs)  # noqa: E501
         else:
-            (data) = self.start_generator_with_http_info(id, **kwargs)  # noqa: E501
+            (data) = self.start_packet_generator_with_http_info(id, **kwargs)  # noqa: E501
             return data
 
-    def start_generator_with_http_info(self, id, **kwargs):  # noqa: E501
+    def start_packet_generator_with_http_info(self, id, **kwargs):  # noqa: E501
         """Start generating packets  # noqa: E501
 
         Used to start a non-running generator. Creates a new generator result upon success.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.start_generator_with_http_info(id, async_req=True)
+        >>> thread = api.start_packet_generator_with_http_info(id, async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
@@ -1545,14 +1545,14 @@ class PacketGeneratorsApi(object):
             if key not in all_params:
                 raise TypeError(
                     "Got an unexpected keyword argument '%s'"
-                    " to method start_generator" % key
+                    " to method start_packet_generator" % key
                 )
             params[key] = val
         del params['kwargs']
         # verify the required parameter 'id' is set
         if ('id' not in params or
                 params['id'] is None):
-            raise ValueError("Missing the required parameter `id` when calling `start_generator`")  # noqa: E501
+            raise ValueError("Missing the required parameter `id` when calling `start_packet_generator`")  # noqa: E501
 
         collection_formats = {}
 
@@ -1595,13 +1595,13 @@ class PacketGeneratorsApi(object):
             _request_timeout=params.get('_request_timeout'),
             collection_formats=collection_formats)
 
-    def stop_generator(self, id, **kwargs):  # noqa: E501
+    def stop_packet_generator(self, id, **kwargs):  # noqa: E501
         """Stop generating packets.  # noqa: E501
 
         Use to halt a running generator. Idempotent.  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.stop_generator(id, async_req=True)
+        >>> thread = api.stop_packet_generator(id, async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
@@ -1612,18 +1612,18 @@ class PacketGeneratorsApi(object):
         """
         kwargs['_return_http_data_only'] = True
         if kwargs.get('async_req'):
-            return self.stop_generator_with_http_info(id, **kwargs)  # noqa: E501
+            return self.stop_packet_generator_with_http_info(id, **kwargs)  # noqa: E501
         else:
-            (data) = self.stop_generator_with_http_info(id, **kwargs)  # noqa: E501
+            (data) = self.stop_packet_generator_with_http_info(id, **kwargs)  # noqa: E501
             return data
 
-    def stop_generator_with_http_info(self, id, **kwargs):  # noqa: E501
+    def stop_packet_generator_with_http_info(self, id, **kwargs):  # noqa: E501
         """Stop generating packets.  # noqa: E501
 
         Use to halt a running generator. Idempotent.  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.stop_generator_with_http_info(id, async_req=True)
+        >>> thread = api.stop_packet_generator_with_http_info(id, async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
@@ -1644,14 +1644,14 @@ class PacketGeneratorsApi(object):
             if key not in all_params:
                 raise TypeError(
                     "Got an unexpected keyword argument '%s'"
-                    " to method stop_generator" % key
+                    " to method stop_packet_generator" % key
                 )
             params[key] = val
         del params['kwargs']
         # verify the required parameter 'id' is set
         if ('id' not in params or
                 params['id'] is None):
-            raise ValueError("Missing the required parameter `id` when calling `stop_generator`")  # noqa: E501
+            raise ValueError("Missing the required parameter `id` when calling `stop_packet_generator`")  # noqa: E501
 
         collection_formats = {}
 
@@ -1694,39 +1694,39 @@ class PacketGeneratorsApi(object):
             _request_timeout=params.get('_request_timeout'),
             collection_formats=collection_formats)
 
-    def toggle_generators(self, toggle, **kwargs):  # noqa: E501
+    def toggle_packet_generators(self, toggle, **kwargs):  # noqa: E501
         """Replace a running generator with a stopped generator  # noqa: E501
 
         Atomically swap a running generator with an idle generator. Upon success, the idle generator will be in the run state and the previously running generator will be stopped.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.toggle_generators(toggle, async_req=True)
+        >>> thread = api.toggle_packet_generators(toggle, async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
-        :param ToggleGeneratorsRequest toggle: Generator toggle (required)
+        :param TogglePacketGeneratorsRequest toggle: Generator toggle (required)
         :return: PacketGeneratorResult
                  If the method is called asynchronously,
                  returns the request thread.
         """
         kwargs['_return_http_data_only'] = True
         if kwargs.get('async_req'):
-            return self.toggle_generators_with_http_info(toggle, **kwargs)  # noqa: E501
+            return self.toggle_packet_generators_with_http_info(toggle, **kwargs)  # noqa: E501
         else:
-            (data) = self.toggle_generators_with_http_info(toggle, **kwargs)  # noqa: E501
+            (data) = self.toggle_packet_generators_with_http_info(toggle, **kwargs)  # noqa: E501
             return data
 
-    def toggle_generators_with_http_info(self, toggle, **kwargs):  # noqa: E501
+    def toggle_packet_generators_with_http_info(self, toggle, **kwargs):  # noqa: E501
         """Replace a running generator with a stopped generator  # noqa: E501
 
         Atomically swap a running generator with an idle generator. Upon success, the idle generator will be in the run state and the previously running generator will be stopped.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.toggle_generators_with_http_info(toggle, async_req=True)
+        >>> thread = api.toggle_packet_generators_with_http_info(toggle, async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
-        :param ToggleGeneratorsRequest toggle: Generator toggle (required)
+        :param TogglePacketGeneratorsRequest toggle: Generator toggle (required)
         :return: PacketGeneratorResult
                  If the method is called asynchronously,
                  returns the request thread.
@@ -1743,14 +1743,14 @@ class PacketGeneratorsApi(object):
             if key not in all_params:
                 raise TypeError(
                     "Got an unexpected keyword argument '%s'"
-                    " to method toggle_generators" % key
+                    " to method toggle_packet_generators" % key
                 )
             params[key] = val
         del params['kwargs']
         # verify the required parameter 'toggle' is set
         if ('toggle' not in params or
                 params['toggle'] is None):
-            raise ValueError("Missing the required parameter `toggle` when calling `toggle_generators`")  # noqa: E501
+            raise ValueError("Missing the required parameter `toggle` when calling `toggle_packet_generators`")  # noqa: E501
 
         collection_formats = {}
 

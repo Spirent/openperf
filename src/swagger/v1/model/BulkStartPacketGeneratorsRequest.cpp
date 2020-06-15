@@ -11,27 +11,27 @@
 */
 
 
-#include "BulkStartGeneratorsRequest.h"
+#include "BulkStartPacketGeneratorsRequest.h"
 
 namespace swagger {
 namespace v1 {
 namespace model {
 
-BulkStartGeneratorsRequest::BulkStartGeneratorsRequest()
+BulkStartPacketGeneratorsRequest::BulkStartPacketGeneratorsRequest()
 {
     
 }
 
-BulkStartGeneratorsRequest::~BulkStartGeneratorsRequest()
+BulkStartPacketGeneratorsRequest::~BulkStartPacketGeneratorsRequest()
 {
 }
 
-void BulkStartGeneratorsRequest::validate()
+void BulkStartPacketGeneratorsRequest::validate()
 {
     // TODO: implement validation
 }
 
-nlohmann::json BulkStartGeneratorsRequest::toJson() const
+nlohmann::json BulkStartPacketGeneratorsRequest::toJson() const
 {
     nlohmann::json val = nlohmann::json::object();
 
@@ -48,7 +48,7 @@ nlohmann::json BulkStartGeneratorsRequest::toJson() const
     return val;
 }
 
-void BulkStartGeneratorsRequest::fromJson(nlohmann::json& val)
+void BulkStartPacketGeneratorsRequest::fromJson(nlohmann::json& val)
 {
     {
         m_Ids.clear();
@@ -63,7 +63,7 @@ void BulkStartGeneratorsRequest::fromJson(nlohmann::json& val)
 }
 
 
-std::vector<std::string>& BulkStartGeneratorsRequest::getIds()
+std::vector<std::string>& BulkStartPacketGeneratorsRequest::getIds()
 {
     return m_Ids;
 }

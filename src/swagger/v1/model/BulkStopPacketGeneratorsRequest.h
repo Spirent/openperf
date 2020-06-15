@@ -10,13 +10,13 @@
 * Do not edit the class manually.
 */
 /*
- * BulkStopGeneratorsRequest.h
+ * BulkStopPacketGeneratorsRequest.h
  *
  * Parameters for the bulk stop operation
  */
 
-#ifndef BulkStopGeneratorsRequest_H_
-#define BulkStopGeneratorsRequest_H_
+#ifndef BulkStopPacketGeneratorsRequest_H_
+#define BulkStopPacketGeneratorsRequest_H_
 
 
 #include "ModelBase.h"
@@ -31,12 +31,12 @@ namespace model {
 /// <summary>
 /// Parameters for the bulk stop operation
 /// </summary>
-class  BulkStopGeneratorsRequest
+class  BulkStopPacketGeneratorsRequest
     : public ModelBase
 {
 public:
-    BulkStopGeneratorsRequest();
-    virtual ~BulkStopGeneratorsRequest();
+    BulkStopPacketGeneratorsRequest();
+    virtual ~BulkStopPacketGeneratorsRequest();
 
     /////////////////////////////////////////////
     /// ModelBase overrides
@@ -47,7 +47,7 @@ public:
     void fromJson(nlohmann::json& json) override;
 
     /////////////////////////////////////////////
-    /// BulkStopGeneratorsRequest members
+    /// BulkStopPacketGeneratorsRequest members
 
     /// <summary>
     /// List of packet generator identifiers
@@ -63,4 +63,4 @@ protected:
 }
 }
 
-#endif /* BulkStopGeneratorsRequest_H_ */
+#endif /* BulkStopPacketGeneratorsRequest_H_ */

@@ -11,27 +11,27 @@
 */
 
 
-#include "BulkStopGeneratorsRequest.h"
+#include "BulkStopPacketGeneratorsRequest.h"
 
 namespace swagger {
 namespace v1 {
 namespace model {
 
-BulkStopGeneratorsRequest::BulkStopGeneratorsRequest()
+BulkStopPacketGeneratorsRequest::BulkStopPacketGeneratorsRequest()
 {
     
 }
 
-BulkStopGeneratorsRequest::~BulkStopGeneratorsRequest()
+BulkStopPacketGeneratorsRequest::~BulkStopPacketGeneratorsRequest()
 {
 }
 
-void BulkStopGeneratorsRequest::validate()
+void BulkStopPacketGeneratorsRequest::validate()
 {
     // TODO: implement validation
 }
 
-nlohmann::json BulkStopGeneratorsRequest::toJson() const
+nlohmann::json BulkStopPacketGeneratorsRequest::toJson() const
 {
     nlohmann::json val = nlohmann::json::object();
 
@@ -48,7 +48,7 @@ nlohmann::json BulkStopGeneratorsRequest::toJson() const
     return val;
 }
 
-void BulkStopGeneratorsRequest::fromJson(nlohmann::json& val)
+void BulkStopPacketGeneratorsRequest::fromJson(nlohmann::json& val)
 {
     {
         m_Ids.clear();
@@ -63,7 +63,7 @@ void BulkStopGeneratorsRequest::fromJson(nlohmann::json& val)
 }
 
 
-std::vector<std::string>& BulkStopGeneratorsRequest::getIds()
+std::vector<std::string>& BulkStopPacketGeneratorsRequest::getIds()
 {
     return m_Ids;
 }

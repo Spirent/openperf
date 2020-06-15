@@ -342,7 +342,7 @@ def wait_until_done(gen_client, result_id, initial_sleep = None):
         time.sleep(initial_sleep)
 
     while True:
-        result = gen_client.get_generator_result(result_id)
+        result = gen_client.get_packet_generator_result(result_id)
         expect(result).to(be_valid_packet_generator_result)
         if not result.active:
             break;
@@ -358,7 +358,7 @@ def configure_and_run_test(api_client, ana_config, gen_config):
     analyzer = ana_api.create_analyzer(get_analyzer_model(api_client, ana_config))
     expect(analyzer).to(be_valid_packet_analyzer)
 
-    generator = gen_api.create_generator(get_generator_model(api_client, gen_config))
+    generator = gen_api.create_packet_generator(get_generator_model(api_client, gen_config))
     expect(generator).to(be_valid_packet_generator)
 
     # Start both objects and wait until done...
@@ -367,7 +367,7 @@ def configure_and_run_test(api_client, ana_config, gen_config):
     expect(ana_result.active).to(be_true)
     expect(ana_result.analyzer_id).to(equal(analyzer.id))
 
-    gen_result = gen_api.start_generator(generator.id)
+    gen_result = gen_api.start_packet_generator(generator.id)
     expect(gen_result).to(be_valid_packet_generator_result)
     expect(gen_result.active).to(be_true)
     expect(gen_result.generator_id).to(equal(generator.id))
@@ -380,7 +380,7 @@ def configure_and_run_test(api_client, ana_config, gen_config):
     expect(ana_result).to(be_valid_packet_analyzer_result)
     expect(ana_result.active).to(be_false)
 
-    gen_result = gen_api.get_generator_result(gen_result.id)
+    gen_result = gen_api.get_packet_generator_result(gen_result.id)
     expect(gen_result).to(be_valid_packet_generator_result)
     expect(gen_result.active).to(be_false)
     expect(gen_result.remaining).to(be_none)
@@ -697,10 +697,10 @@ with description('Packet back to back', 'packet_b2b') as self:
 
         with after.each:
             try:
-                for gen in self.generator_api.list_generators():
+                for gen in self.generator_api.list_packet_generators():
                     if gen.active:
-                        self.generator_api.stop_generator(gen.id)
-                self.generator_api.delete_generators()
+                        self.generator_api.stop_packet_generator(gen.id)
+                self.generator_api.delete_packet_generators()
             except AttributeError:
                 pass
 
