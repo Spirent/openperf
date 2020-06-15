@@ -4,27 +4,27 @@ All URIs are relative to *http://localhost*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**bulk_create_analyzers**](PacketAnalyzersApi.md#bulk_create_analyzers) | **POST** /packet/analyzers/x/bulk-create | Bulk create packet analyzers
-[**bulk_delete_analyzers**](PacketAnalyzersApi.md#bulk_delete_analyzers) | **POST** /packet/analyzers/x/bulk-delete | Bulk delete packet analyzers
-[**bulk_start_analyzers**](PacketAnalyzersApi.md#bulk_start_analyzers) | **POST** /packet/analyzers/x/bulk-start | Bulk start packet analyzers
-[**bulk_stop_analyzers**](PacketAnalyzersApi.md#bulk_stop_analyzers) | **POST** /packet/analyzers/x/bulk-stop | Bulk stop packet analyzers
-[**create_analyzer**](PacketAnalyzersApi.md#create_analyzer) | **POST** /packet/analyzers | Create a packet analyzer
-[**delete_analyzer**](PacketAnalyzersApi.md#delete_analyzer) | **DELETE** /packet/analyzers/{id} | Delete a packet analyzer
-[**delete_analyzer_result**](PacketAnalyzersApi.md#delete_analyzer_result) | **DELETE** /packet/analyzer-results/{id} | Delete a packet analyzer result
-[**delete_analyzer_results**](PacketAnalyzersApi.md#delete_analyzer_results) | **DELETE** /packet/analyzer-results | Delete all analyzer results
-[**delete_analyzers**](PacketAnalyzersApi.md#delete_analyzers) | **DELETE** /packet/analyzers | Delete all packet analyzers
-[**get_analyzer**](PacketAnalyzersApi.md#get_analyzer) | **GET** /packet/analyzers/{id} | Get a packet analyzer
-[**get_analyzer_result**](PacketAnalyzersApi.md#get_analyzer_result) | **GET** /packet/analyzer-results/{id} | Get a packet analyzer result
+[**bulk_create_packet_analyzers**](PacketAnalyzersApi.md#bulk_create_packet_analyzers) | **POST** /packet/analyzers/x/bulk-create | Bulk create packet analyzers
+[**bulk_delete_packet_analyzers**](PacketAnalyzersApi.md#bulk_delete_packet_analyzers) | **POST** /packet/analyzers/x/bulk-delete | Bulk delete packet analyzers
+[**bulk_start_packet_analyzers**](PacketAnalyzersApi.md#bulk_start_packet_analyzers) | **POST** /packet/analyzers/x/bulk-start | Bulk start packet analyzers
+[**bulk_stop_packet_analyzers**](PacketAnalyzersApi.md#bulk_stop_packet_analyzers) | **POST** /packet/analyzers/x/bulk-stop | Bulk stop packet analyzers
+[**create_packet_analyzer**](PacketAnalyzersApi.md#create_packet_analyzer) | **POST** /packet/analyzers | Create a packet analyzer
+[**delete_packet_analyzer**](PacketAnalyzersApi.md#delete_packet_analyzer) | **DELETE** /packet/analyzers/{id} | Delete a packet analyzer
+[**delete_packet_analyzer_result**](PacketAnalyzersApi.md#delete_packet_analyzer_result) | **DELETE** /packet/analyzer-results/{id} | Delete a packet analyzer result
+[**delete_packet_analyzer_results**](PacketAnalyzersApi.md#delete_packet_analyzer_results) | **DELETE** /packet/analyzer-results | Delete all analyzer results
+[**delete_packet_analyzers**](PacketAnalyzersApi.md#delete_packet_analyzers) | **DELETE** /packet/analyzers | Delete all packet analyzers
+[**get_packet_analyzer**](PacketAnalyzersApi.md#get_packet_analyzer) | **GET** /packet/analyzers/{id} | Get a packet analyzer
+[**get_packet_analyzer_result**](PacketAnalyzersApi.md#get_packet_analyzer_result) | **GET** /packet/analyzer-results/{id} | Get a packet analyzer result
 [**get_rx_flow**](PacketAnalyzersApi.md#get_rx_flow) | **GET** /packet/rx-flows/{id} | Get packet flow counters for a single flow
-[**list_analyzer_results**](PacketAnalyzersApi.md#list_analyzer_results) | **GET** /packet/analyzer-results | List analyzer results
-[**list_analyzers**](PacketAnalyzersApi.md#list_analyzers) | **GET** /packet/analyzers | List packet analyzers
+[**list_packet_analyzer_results**](PacketAnalyzersApi.md#list_packet_analyzer_results) | **GET** /packet/analyzer-results | List analyzer results
+[**list_packet_analyzers**](PacketAnalyzersApi.md#list_packet_analyzers) | **GET** /packet/analyzers | List packet analyzers
 [**list_rx_flows**](PacketAnalyzersApi.md#list_rx_flows) | **GET** /packet/rx-flows | List received packet flows
-[**start_analyzer**](PacketAnalyzersApi.md#start_analyzer) | **POST** /packet/analyzers/{id}/start | Start analyzing and collecting packet statistics.
-[**stop_analyzer**](PacketAnalyzersApi.md#stop_analyzer) | **POST** /packet/analyzers/{id}/stop | Stop analyzing and collecting packet statistics
+[**start_packet_analyzer**](PacketAnalyzersApi.md#start_packet_analyzer) | **POST** /packet/analyzers/{id}/start | Start analyzing and collecting packet statistics.
+[**stop_packet_analyzer**](PacketAnalyzersApi.md#stop_packet_analyzer) | **POST** /packet/analyzers/{id}/stop | Stop analyzing and collecting packet statistics
 
 
-# **bulk_create_analyzers**
-> BulkCreateAnalyzersResponse bulk_create_analyzers(create)
+# **bulk_create_packet_analyzers**
+> BulkCreatePacketAnalyzersResponse bulk_create_packet_analyzers(create)
 
 Bulk create packet analyzers
 
@@ -40,25 +40,25 @@ from pprint import pprint
 
 # create an instance of the API class
 api_instance = client.PacketAnalyzersApi()
-create = client.BulkCreateAnalyzersRequest() # BulkCreateAnalyzersRequest | Bulk creation
+create = client.BulkCreatePacketAnalyzersRequest() # BulkCreatePacketAnalyzersRequest | Bulk creation
 
 try:
     # Bulk create packet analyzers
-    api_response = api_instance.bulk_create_analyzers(create)
+    api_response = api_instance.bulk_create_packet_analyzers(create)
     pprint(api_response)
 except ApiException as e:
-    print("Exception when calling PacketAnalyzersApi->bulk_create_analyzers: %s\n" % e)
+    print("Exception when calling PacketAnalyzersApi->bulk_create_packet_analyzers: %s\n" % e)
 ```
 
 ### Parameters
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **create** | [**BulkCreateAnalyzersRequest**](BulkCreateAnalyzersRequest.md)| Bulk creation | 
+ **create** | [**BulkCreatePacketAnalyzersRequest**](BulkCreatePacketAnalyzersRequest.md)| Bulk creation | 
 
 ### Return type
 
-[**BulkCreateAnalyzersResponse**](BulkCreateAnalyzersResponse.md)
+[**BulkCreatePacketAnalyzersResponse**](BulkCreatePacketAnalyzersResponse.md)
 
 ### Authorization
 
@@ -71,8 +71,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **bulk_delete_analyzers**
-> bulk_delete_analyzers(delete)
+# **bulk_delete_packet_analyzers**
+> bulk_delete_packet_analyzers(delete)
 
 Bulk delete packet analyzers
 
@@ -88,20 +88,20 @@ from pprint import pprint
 
 # create an instance of the API class
 api_instance = client.PacketAnalyzersApi()
-delete = client.BulkDeleteAnalyzersRequest() # BulkDeleteAnalyzersRequest | Bulk delete
+delete = client.BulkDeletePacketAnalyzersRequest() # BulkDeletePacketAnalyzersRequest | Bulk delete
 
 try:
     # Bulk delete packet analyzers
-    api_instance.bulk_delete_analyzers(delete)
+    api_instance.bulk_delete_packet_analyzers(delete)
 except ApiException as e:
-    print("Exception when calling PacketAnalyzersApi->bulk_delete_analyzers: %s\n" % e)
+    print("Exception when calling PacketAnalyzersApi->bulk_delete_packet_analyzers: %s\n" % e)
 ```
 
 ### Parameters
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **delete** | [**BulkDeleteAnalyzersRequest**](BulkDeleteAnalyzersRequest.md)| Bulk delete | 
+ **delete** | [**BulkDeletePacketAnalyzersRequest**](BulkDeletePacketAnalyzersRequest.md)| Bulk delete | 
 
 ### Return type
 
@@ -118,8 +118,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **bulk_start_analyzers**
-> BulkStartAnalyzersResponse bulk_start_analyzers(start)
+# **bulk_start_packet_analyzers**
+> BulkStartPacketAnalyzersResponse bulk_start_packet_analyzers(start)
 
 Bulk start packet analyzers
 
@@ -135,25 +135,25 @@ from pprint import pprint
 
 # create an instance of the API class
 api_instance = client.PacketAnalyzersApi()
-start = client.BulkStartAnalyzersRequest() # BulkStartAnalyzersRequest | Bulk start
+start = client.BulkStartPacketAnalyzersRequest() # BulkStartPacketAnalyzersRequest | Bulk start
 
 try:
     # Bulk start packet analyzers
-    api_response = api_instance.bulk_start_analyzers(start)
+    api_response = api_instance.bulk_start_packet_analyzers(start)
     pprint(api_response)
 except ApiException as e:
-    print("Exception when calling PacketAnalyzersApi->bulk_start_analyzers: %s\n" % e)
+    print("Exception when calling PacketAnalyzersApi->bulk_start_packet_analyzers: %s\n" % e)
 ```
 
 ### Parameters
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **start** | [**BulkStartAnalyzersRequest**](BulkStartAnalyzersRequest.md)| Bulk start | 
+ **start** | [**BulkStartPacketAnalyzersRequest**](BulkStartPacketAnalyzersRequest.md)| Bulk start | 
 
 ### Return type
 
-[**BulkStartAnalyzersResponse**](BulkStartAnalyzersResponse.md)
+[**BulkStartPacketAnalyzersResponse**](BulkStartPacketAnalyzersResponse.md)
 
 ### Authorization
 
@@ -166,8 +166,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **bulk_stop_analyzers**
-> bulk_stop_analyzers(stop)
+# **bulk_stop_packet_analyzers**
+> bulk_stop_packet_analyzers(stop)
 
 Bulk stop packet analyzers
 
@@ -183,20 +183,20 @@ from pprint import pprint
 
 # create an instance of the API class
 api_instance = client.PacketAnalyzersApi()
-stop = client.BulkStopAnalyzersRequest() # BulkStopAnalyzersRequest | Bulk stop
+stop = client.BulkStopPacketAnalyzersRequest() # BulkStopPacketAnalyzersRequest | Bulk stop
 
 try:
     # Bulk stop packet analyzers
-    api_instance.bulk_stop_analyzers(stop)
+    api_instance.bulk_stop_packet_analyzers(stop)
 except ApiException as e:
-    print("Exception when calling PacketAnalyzersApi->bulk_stop_analyzers: %s\n" % e)
+    print("Exception when calling PacketAnalyzersApi->bulk_stop_packet_analyzers: %s\n" % e)
 ```
 
 ### Parameters
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **stop** | [**BulkStopAnalyzersRequest**](BulkStopAnalyzersRequest.md)| Bulk stop | 
+ **stop** | [**BulkStopPacketAnalyzersRequest**](BulkStopPacketAnalyzersRequest.md)| Bulk stop | 
 
 ### Return type
 
@@ -213,8 +213,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **create_analyzer**
-> PacketAnalyzer create_analyzer(analyzer)
+# **create_packet_analyzer**
+> PacketAnalyzer create_packet_analyzer(analyzer)
 
 Create a packet analyzer
 
@@ -234,10 +234,10 @@ analyzer = client.PacketAnalyzer() # PacketAnalyzer | New packet analyzer
 
 try:
     # Create a packet analyzer
-    api_response = api_instance.create_analyzer(analyzer)
+    api_response = api_instance.create_packet_analyzer(analyzer)
     pprint(api_response)
 except ApiException as e:
-    print("Exception when calling PacketAnalyzersApi->create_analyzer: %s\n" % e)
+    print("Exception when calling PacketAnalyzersApi->create_packet_analyzer: %s\n" % e)
 ```
 
 ### Parameters
@@ -261,8 +261,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **delete_analyzer**
-> delete_analyzer(id)
+# **delete_packet_analyzer**
+> delete_packet_analyzer(id)
 
 Delete a packet analyzer
 
@@ -282,9 +282,9 @@ id = 'id_example' # str | Unique resource identifier
 
 try:
     # Delete a packet analyzer
-    api_instance.delete_analyzer(id)
+    api_instance.delete_packet_analyzer(id)
 except ApiException as e:
-    print("Exception when calling PacketAnalyzersApi->delete_analyzer: %s\n" % e)
+    print("Exception when calling PacketAnalyzersApi->delete_packet_analyzer: %s\n" % e)
 ```
 
 ### Parameters
@@ -308,8 +308,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **delete_analyzer_result**
-> delete_analyzer_result(id)
+# **delete_packet_analyzer_result**
+> delete_packet_analyzer_result(id)
 
 Delete a packet analyzer result
 
@@ -329,9 +329,9 @@ id = 'id_example' # str | Unique resource identifier
 
 try:
     # Delete a packet analyzer result
-    api_instance.delete_analyzer_result(id)
+    api_instance.delete_packet_analyzer_result(id)
 except ApiException as e:
-    print("Exception when calling PacketAnalyzersApi->delete_analyzer_result: %s\n" % e)
+    print("Exception when calling PacketAnalyzersApi->delete_packet_analyzer_result: %s\n" % e)
 ```
 
 ### Parameters
@@ -355,8 +355,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **delete_analyzer_results**
-> delete_analyzer_results()
+# **delete_packet_analyzer_results**
+> delete_packet_analyzer_results()
 
 Delete all analyzer results
 
@@ -375,9 +375,9 @@ api_instance = client.PacketAnalyzersApi()
 
 try:
     # Delete all analyzer results
-    api_instance.delete_analyzer_results()
+    api_instance.delete_packet_analyzer_results()
 except ApiException as e:
-    print("Exception when calling PacketAnalyzersApi->delete_analyzer_results: %s\n" % e)
+    print("Exception when calling PacketAnalyzersApi->delete_packet_analyzer_results: %s\n" % e)
 ```
 
 ### Parameters
@@ -398,8 +398,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **delete_analyzers**
-> delete_analyzers()
+# **delete_packet_analyzers**
+> delete_packet_analyzers()
 
 Delete all packet analyzers
 
@@ -418,9 +418,9 @@ api_instance = client.PacketAnalyzersApi()
 
 try:
     # Delete all packet analyzers
-    api_instance.delete_analyzers()
+    api_instance.delete_packet_analyzers()
 except ApiException as e:
-    print("Exception when calling PacketAnalyzersApi->delete_analyzers: %s\n" % e)
+    print("Exception when calling PacketAnalyzersApi->delete_packet_analyzers: %s\n" % e)
 ```
 
 ### Parameters
@@ -441,8 +441,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **get_analyzer**
-> PacketAnalyzer get_analyzer(id)
+# **get_packet_analyzer**
+> PacketAnalyzer get_packet_analyzer(id)
 
 Get a packet analyzer
 
@@ -462,10 +462,10 @@ id = 'id_example' # str | Unique resource identifier
 
 try:
     # Get a packet analyzer
-    api_response = api_instance.get_analyzer(id)
+    api_response = api_instance.get_packet_analyzer(id)
     pprint(api_response)
 except ApiException as e:
-    print("Exception when calling PacketAnalyzersApi->get_analyzer: %s\n" % e)
+    print("Exception when calling PacketAnalyzersApi->get_packet_analyzer: %s\n" % e)
 ```
 
 ### Parameters
@@ -489,8 +489,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **get_analyzer_result**
-> PacketAnalyzerResult get_analyzer_result(id)
+# **get_packet_analyzer_result**
+> PacketAnalyzerResult get_packet_analyzer_result(id)
 
 Get a packet analyzer result
 
@@ -510,10 +510,10 @@ id = 'id_example' # str | Unique resource identifier
 
 try:
     # Get a packet analyzer result
-    api_response = api_instance.get_analyzer_result(id)
+    api_response = api_instance.get_packet_analyzer_result(id)
     pprint(api_response)
 except ApiException as e:
-    print("Exception when calling PacketAnalyzersApi->get_analyzer_result: %s\n" % e)
+    print("Exception when calling PacketAnalyzersApi->get_packet_analyzer_result: %s\n" % e)
 ```
 
 ### Parameters
@@ -585,8 +585,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **list_analyzer_results**
-> list[PacketAnalyzerResult] list_analyzer_results(analyzer_id=analyzer_id, source_id=source_id)
+# **list_packet_analyzer_results**
+> list[PacketAnalyzerResult] list_packet_analyzer_results(analyzer_id=analyzer_id, source_id=source_id)
 
 List analyzer results
 
@@ -607,10 +607,10 @@ source_id = 'source_id_example' # str | Filter by receive port or interface id (
 
 try:
     # List analyzer results
-    api_response = api_instance.list_analyzer_results(analyzer_id=analyzer_id, source_id=source_id)
+    api_response = api_instance.list_packet_analyzer_results(analyzer_id=analyzer_id, source_id=source_id)
     pprint(api_response)
 except ApiException as e:
-    print("Exception when calling PacketAnalyzersApi->list_analyzer_results: %s\n" % e)
+    print("Exception when calling PacketAnalyzersApi->list_packet_analyzer_results: %s\n" % e)
 ```
 
 ### Parameters
@@ -635,8 +635,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **list_analyzers**
-> list[PacketAnalyzer] list_analyzers(source_id=source_id)
+# **list_packet_analyzers**
+> list[PacketAnalyzer] list_packet_analyzers(source_id=source_id)
 
 List packet analyzers
 
@@ -656,10 +656,10 @@ source_id = 'source_id_example' # str | Filter by source id (optional)
 
 try:
     # List packet analyzers
-    api_response = api_instance.list_analyzers(source_id=source_id)
+    api_response = api_instance.list_packet_analyzers(source_id=source_id)
     pprint(api_response)
 except ApiException as e:
-    print("Exception when calling PacketAnalyzersApi->list_analyzers: %s\n" % e)
+    print("Exception when calling PacketAnalyzersApi->list_packet_analyzers: %s\n" % e)
 ```
 
 ### Parameters
@@ -733,8 +733,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **start_analyzer**
-> PacketAnalyzerResult start_analyzer(id)
+# **start_packet_analyzer**
+> PacketAnalyzerResult start_packet_analyzer(id)
 
 Start analyzing and collecting packet statistics.
 
@@ -754,10 +754,10 @@ id = 'id_example' # str | Unique resource identifier
 
 try:
     # Start analyzing and collecting packet statistics.
-    api_response = api_instance.start_analyzer(id)
+    api_response = api_instance.start_packet_analyzer(id)
     pprint(api_response)
 except ApiException as e:
-    print("Exception when calling PacketAnalyzersApi->start_analyzer: %s\n" % e)
+    print("Exception when calling PacketAnalyzersApi->start_packet_analyzer: %s\n" % e)
 ```
 
 ### Parameters
@@ -781,8 +781,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **stop_analyzer**
-> stop_analyzer(id)
+# **stop_packet_analyzer**
+> stop_packet_analyzer(id)
 
 Stop analyzing and collecting packet statistics
 
@@ -802,9 +802,9 @@ id = 'id_example' # str | Unique resource identifier
 
 try:
     # Stop analyzing and collecting packet statistics
-    api_instance.stop_analyzer(id)
+    api_instance.stop_packet_analyzer(id)
 except ApiException as e:
-    print("Exception when calling PacketAnalyzersApi->stop_analyzer: %s\n" % e)
+    print("Exception when calling PacketAnalyzersApi->stop_packet_analyzer: %s\n" % e)
 ```
 
 ### Parameters

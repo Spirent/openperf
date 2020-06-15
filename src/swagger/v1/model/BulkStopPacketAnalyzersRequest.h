@@ -10,13 +10,13 @@
 * Do not edit the class manually.
 */
 /*
- * BulkDeleteAnalyzersRequest.h
+ * BulkStopPacketAnalyzersRequest.h
  *
- * Parameters for the bulk delete operation
+ * Parameters for the bulk stop operation
  */
 
-#ifndef BulkDeleteAnalyzersRequest_H_
-#define BulkDeleteAnalyzersRequest_H_
+#ifndef BulkStopPacketAnalyzersRequest_H_
+#define BulkStopPacketAnalyzersRequest_H_
 
 
 #include "ModelBase.h"
@@ -29,14 +29,14 @@ namespace v1 {
 namespace model {
 
 /// <summary>
-/// Parameters for the bulk delete operation
+/// Parameters for the bulk stop operation
 /// </summary>
-class  BulkDeleteAnalyzersRequest
+class  BulkStopPacketAnalyzersRequest
     : public ModelBase
 {
 public:
-    BulkDeleteAnalyzersRequest();
-    virtual ~BulkDeleteAnalyzersRequest();
+    BulkStopPacketAnalyzersRequest();
+    virtual ~BulkStopPacketAnalyzersRequest();
 
     /////////////////////////////////////////////
     /// ModelBase overrides
@@ -47,10 +47,10 @@ public:
     void fromJson(nlohmann::json& json) override;
 
     /////////////////////////////////////////////
-    /// BulkDeleteAnalyzersRequest members
+    /// BulkStopPacketAnalyzersRequest members
 
     /// <summary>
-    /// List of packet analyzers
+    /// List of analyzer identifiers
     /// </summary>
     std::vector<std::string>& getIds();
     
@@ -63,4 +63,4 @@ protected:
 }
 }
 
-#endif /* BulkDeleteAnalyzersRequest_H_ */
+#endif /* BulkStopPacketAnalyzersRequest_H_ */

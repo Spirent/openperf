@@ -33,40 +33,40 @@ class PacketAnalyzersApi(object):
             api_client = ApiClient()
         self.api_client = api_client
 
-    def bulk_create_analyzers(self, create, **kwargs):  # noqa: E501
+    def bulk_create_packet_analyzers(self, create, **kwargs):  # noqa: E501
         """Bulk create packet analyzers  # noqa: E501
 
         Create multiple packet analyzers. Requests are processed in an all-or-nothing manner, i.e. a single analyzer creation failure causes all analyzer creations for this request to fail.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.bulk_create_analyzers(create, async_req=True)
+        >>> thread = api.bulk_create_packet_analyzers(create, async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
-        :param BulkCreateAnalyzersRequest create: Bulk creation (required)
-        :return: BulkCreateAnalyzersResponse
+        :param BulkCreatePacketAnalyzersRequest create: Bulk creation (required)
+        :return: BulkCreatePacketAnalyzersResponse
                  If the method is called asynchronously,
                  returns the request thread.
         """
         kwargs['_return_http_data_only'] = True
         if kwargs.get('async_req'):
-            return self.bulk_create_analyzers_with_http_info(create, **kwargs)  # noqa: E501
+            return self.bulk_create_packet_analyzers_with_http_info(create, **kwargs)  # noqa: E501
         else:
-            (data) = self.bulk_create_analyzers_with_http_info(create, **kwargs)  # noqa: E501
+            (data) = self.bulk_create_packet_analyzers_with_http_info(create, **kwargs)  # noqa: E501
             return data
 
-    def bulk_create_analyzers_with_http_info(self, create, **kwargs):  # noqa: E501
+    def bulk_create_packet_analyzers_with_http_info(self, create, **kwargs):  # noqa: E501
         """Bulk create packet analyzers  # noqa: E501
 
         Create multiple packet analyzers. Requests are processed in an all-or-nothing manner, i.e. a single analyzer creation failure causes all analyzer creations for this request to fail.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.bulk_create_analyzers_with_http_info(create, async_req=True)
+        >>> thread = api.bulk_create_packet_analyzers_with_http_info(create, async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
-        :param BulkCreateAnalyzersRequest create: Bulk creation (required)
-        :return: BulkCreateAnalyzersResponse
+        :param BulkCreatePacketAnalyzersRequest create: Bulk creation (required)
+        :return: BulkCreatePacketAnalyzersResponse
                  If the method is called asynchronously,
                  returns the request thread.
         """
@@ -82,14 +82,14 @@ class PacketAnalyzersApi(object):
             if key not in all_params:
                 raise TypeError(
                     "Got an unexpected keyword argument '%s'"
-                    " to method bulk_create_analyzers" % key
+                    " to method bulk_create_packet_analyzers" % key
                 )
             params[key] = val
         del params['kwargs']
         # verify the required parameter 'create' is set
         if ('create' not in params or
                 params['create'] is None):
-            raise ValueError("Missing the required parameter `create` when calling `bulk_create_analyzers`")  # noqa: E501
+            raise ValueError("Missing the required parameter `create` when calling `bulk_create_packet_analyzers`")  # noqa: E501
 
         collection_formats = {}
 
@@ -124,7 +124,7 @@ class PacketAnalyzersApi(object):
             body=body_params,
             post_params=form_params,
             files=local_var_files,
-            response_type='BulkCreateAnalyzersResponse',  # noqa: E501
+            response_type='BulkCreatePacketAnalyzersResponse',  # noqa: E501
             auth_settings=auth_settings,
             async_req=params.get('async_req'),
             _return_http_data_only=params.get('_return_http_data_only'),
@@ -132,39 +132,39 @@ class PacketAnalyzersApi(object):
             _request_timeout=params.get('_request_timeout'),
             collection_formats=collection_formats)
 
-    def bulk_delete_analyzers(self, delete, **kwargs):  # noqa: E501
+    def bulk_delete_packet_analyzers(self, delete, **kwargs):  # noqa: E501
         """Bulk delete packet analyzers  # noqa: E501
 
         Delete multiple packet analyzers in a best-effort manner. Analyzers can only be deleted when inactive. Active or Non-existant analyzer ids do not cause errors. Idempotent.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.bulk_delete_analyzers(delete, async_req=True)
+        >>> thread = api.bulk_delete_packet_analyzers(delete, async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
-        :param BulkDeleteAnalyzersRequest delete: Bulk delete (required)
+        :param BulkDeletePacketAnalyzersRequest delete: Bulk delete (required)
         :return: None
                  If the method is called asynchronously,
                  returns the request thread.
         """
         kwargs['_return_http_data_only'] = True
         if kwargs.get('async_req'):
-            return self.bulk_delete_analyzers_with_http_info(delete, **kwargs)  # noqa: E501
+            return self.bulk_delete_packet_analyzers_with_http_info(delete, **kwargs)  # noqa: E501
         else:
-            (data) = self.bulk_delete_analyzers_with_http_info(delete, **kwargs)  # noqa: E501
+            (data) = self.bulk_delete_packet_analyzers_with_http_info(delete, **kwargs)  # noqa: E501
             return data
 
-    def bulk_delete_analyzers_with_http_info(self, delete, **kwargs):  # noqa: E501
+    def bulk_delete_packet_analyzers_with_http_info(self, delete, **kwargs):  # noqa: E501
         """Bulk delete packet analyzers  # noqa: E501
 
         Delete multiple packet analyzers in a best-effort manner. Analyzers can only be deleted when inactive. Active or Non-existant analyzer ids do not cause errors. Idempotent.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.bulk_delete_analyzers_with_http_info(delete, async_req=True)
+        >>> thread = api.bulk_delete_packet_analyzers_with_http_info(delete, async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
-        :param BulkDeleteAnalyzersRequest delete: Bulk delete (required)
+        :param BulkDeletePacketAnalyzersRequest delete: Bulk delete (required)
         :return: None
                  If the method is called asynchronously,
                  returns the request thread.
@@ -181,14 +181,14 @@ class PacketAnalyzersApi(object):
             if key not in all_params:
                 raise TypeError(
                     "Got an unexpected keyword argument '%s'"
-                    " to method bulk_delete_analyzers" % key
+                    " to method bulk_delete_packet_analyzers" % key
                 )
             params[key] = val
         del params['kwargs']
         # verify the required parameter 'delete' is set
         if ('delete' not in params or
                 params['delete'] is None):
-            raise ValueError("Missing the required parameter `delete` when calling `bulk_delete_analyzers`")  # noqa: E501
+            raise ValueError("Missing the required parameter `delete` when calling `bulk_delete_packet_analyzers`")  # noqa: E501
 
         collection_formats = {}
 
@@ -231,40 +231,40 @@ class PacketAnalyzersApi(object):
             _request_timeout=params.get('_request_timeout'),
             collection_formats=collection_formats)
 
-    def bulk_start_analyzers(self, start, **kwargs):  # noqa: E501
+    def bulk_start_packet_analyzers(self, start, **kwargs):  # noqa: E501
         """Bulk start packet analyzers  # noqa: E501
 
         Start multiple packet analyzers simultaneously  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.bulk_start_analyzers(start, async_req=True)
+        >>> thread = api.bulk_start_packet_analyzers(start, async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
-        :param BulkStartAnalyzersRequest start: Bulk start (required)
-        :return: BulkStartAnalyzersResponse
+        :param BulkStartPacketAnalyzersRequest start: Bulk start (required)
+        :return: BulkStartPacketAnalyzersResponse
                  If the method is called asynchronously,
                  returns the request thread.
         """
         kwargs['_return_http_data_only'] = True
         if kwargs.get('async_req'):
-            return self.bulk_start_analyzers_with_http_info(start, **kwargs)  # noqa: E501
+            return self.bulk_start_packet_analyzers_with_http_info(start, **kwargs)  # noqa: E501
         else:
-            (data) = self.bulk_start_analyzers_with_http_info(start, **kwargs)  # noqa: E501
+            (data) = self.bulk_start_packet_analyzers_with_http_info(start, **kwargs)  # noqa: E501
             return data
 
-    def bulk_start_analyzers_with_http_info(self, start, **kwargs):  # noqa: E501
+    def bulk_start_packet_analyzers_with_http_info(self, start, **kwargs):  # noqa: E501
         """Bulk start packet analyzers  # noqa: E501
 
         Start multiple packet analyzers simultaneously  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.bulk_start_analyzers_with_http_info(start, async_req=True)
+        >>> thread = api.bulk_start_packet_analyzers_with_http_info(start, async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
-        :param BulkStartAnalyzersRequest start: Bulk start (required)
-        :return: BulkStartAnalyzersResponse
+        :param BulkStartPacketAnalyzersRequest start: Bulk start (required)
+        :return: BulkStartPacketAnalyzersResponse
                  If the method is called asynchronously,
                  returns the request thread.
         """
@@ -280,14 +280,14 @@ class PacketAnalyzersApi(object):
             if key not in all_params:
                 raise TypeError(
                     "Got an unexpected keyword argument '%s'"
-                    " to method bulk_start_analyzers" % key
+                    " to method bulk_start_packet_analyzers" % key
                 )
             params[key] = val
         del params['kwargs']
         # verify the required parameter 'start' is set
         if ('start' not in params or
                 params['start'] is None):
-            raise ValueError("Missing the required parameter `start` when calling `bulk_start_analyzers`")  # noqa: E501
+            raise ValueError("Missing the required parameter `start` when calling `bulk_start_packet_analyzers`")  # noqa: E501
 
         collection_formats = {}
 
@@ -322,7 +322,7 @@ class PacketAnalyzersApi(object):
             body=body_params,
             post_params=form_params,
             files=local_var_files,
-            response_type='BulkStartAnalyzersResponse',  # noqa: E501
+            response_type='BulkStartPacketAnalyzersResponse',  # noqa: E501
             auth_settings=auth_settings,
             async_req=params.get('async_req'),
             _return_http_data_only=params.get('_return_http_data_only'),
@@ -330,39 +330,39 @@ class PacketAnalyzersApi(object):
             _request_timeout=params.get('_request_timeout'),
             collection_formats=collection_formats)
 
-    def bulk_stop_analyzers(self, stop, **kwargs):  # noqa: E501
+    def bulk_stop_packet_analyzers(self, stop, **kwargs):  # noqa: E501
         """Bulk stop packet analyzers  # noqa: E501
 
         Stop multiple packet analyzers simultaneously  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.bulk_stop_analyzers(stop, async_req=True)
+        >>> thread = api.bulk_stop_packet_analyzers(stop, async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
-        :param BulkStopAnalyzersRequest stop: Bulk stop (required)
+        :param BulkStopPacketAnalyzersRequest stop: Bulk stop (required)
         :return: None
                  If the method is called asynchronously,
                  returns the request thread.
         """
         kwargs['_return_http_data_only'] = True
         if kwargs.get('async_req'):
-            return self.bulk_stop_analyzers_with_http_info(stop, **kwargs)  # noqa: E501
+            return self.bulk_stop_packet_analyzers_with_http_info(stop, **kwargs)  # noqa: E501
         else:
-            (data) = self.bulk_stop_analyzers_with_http_info(stop, **kwargs)  # noqa: E501
+            (data) = self.bulk_stop_packet_analyzers_with_http_info(stop, **kwargs)  # noqa: E501
             return data
 
-    def bulk_stop_analyzers_with_http_info(self, stop, **kwargs):  # noqa: E501
+    def bulk_stop_packet_analyzers_with_http_info(self, stop, **kwargs):  # noqa: E501
         """Bulk stop packet analyzers  # noqa: E501
 
         Stop multiple packet analyzers simultaneously  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.bulk_stop_analyzers_with_http_info(stop, async_req=True)
+        >>> thread = api.bulk_stop_packet_analyzers_with_http_info(stop, async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
-        :param BulkStopAnalyzersRequest stop: Bulk stop (required)
+        :param BulkStopPacketAnalyzersRequest stop: Bulk stop (required)
         :return: None
                  If the method is called asynchronously,
                  returns the request thread.
@@ -379,14 +379,14 @@ class PacketAnalyzersApi(object):
             if key not in all_params:
                 raise TypeError(
                     "Got an unexpected keyword argument '%s'"
-                    " to method bulk_stop_analyzers" % key
+                    " to method bulk_stop_packet_analyzers" % key
                 )
             params[key] = val
         del params['kwargs']
         # verify the required parameter 'stop' is set
         if ('stop' not in params or
                 params['stop'] is None):
-            raise ValueError("Missing the required parameter `stop` when calling `bulk_stop_analyzers`")  # noqa: E501
+            raise ValueError("Missing the required parameter `stop` when calling `bulk_stop_packet_analyzers`")  # noqa: E501
 
         collection_formats = {}
 
@@ -429,13 +429,13 @@ class PacketAnalyzersApi(object):
             _request_timeout=params.get('_request_timeout'),
             collection_formats=collection_formats)
 
-    def create_analyzer(self, analyzer, **kwargs):  # noqa: E501
+    def create_packet_analyzer(self, analyzer, **kwargs):  # noqa: E501
         """Create a packet analyzer  # noqa: E501
 
         Create a new packet analyzer.  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.create_analyzer(analyzer, async_req=True)
+        >>> thread = api.create_packet_analyzer(analyzer, async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
@@ -446,18 +446,18 @@ class PacketAnalyzersApi(object):
         """
         kwargs['_return_http_data_only'] = True
         if kwargs.get('async_req'):
-            return self.create_analyzer_with_http_info(analyzer, **kwargs)  # noqa: E501
+            return self.create_packet_analyzer_with_http_info(analyzer, **kwargs)  # noqa: E501
         else:
-            (data) = self.create_analyzer_with_http_info(analyzer, **kwargs)  # noqa: E501
+            (data) = self.create_packet_analyzer_with_http_info(analyzer, **kwargs)  # noqa: E501
             return data
 
-    def create_analyzer_with_http_info(self, analyzer, **kwargs):  # noqa: E501
+    def create_packet_analyzer_with_http_info(self, analyzer, **kwargs):  # noqa: E501
         """Create a packet analyzer  # noqa: E501
 
         Create a new packet analyzer.  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.create_analyzer_with_http_info(analyzer, async_req=True)
+        >>> thread = api.create_packet_analyzer_with_http_info(analyzer, async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
@@ -478,14 +478,14 @@ class PacketAnalyzersApi(object):
             if key not in all_params:
                 raise TypeError(
                     "Got an unexpected keyword argument '%s'"
-                    " to method create_analyzer" % key
+                    " to method create_packet_analyzer" % key
                 )
             params[key] = val
         del params['kwargs']
         # verify the required parameter 'analyzer' is set
         if ('analyzer' not in params or
                 params['analyzer'] is None):
-            raise ValueError("Missing the required parameter `analyzer` when calling `create_analyzer`")  # noqa: E501
+            raise ValueError("Missing the required parameter `analyzer` when calling `create_packet_analyzer`")  # noqa: E501
 
         collection_formats = {}
 
@@ -528,13 +528,13 @@ class PacketAnalyzersApi(object):
             _request_timeout=params.get('_request_timeout'),
             collection_formats=collection_formats)
 
-    def delete_analyzer(self, id, **kwargs):  # noqa: E501
+    def delete_packet_analyzer(self, id, **kwargs):  # noqa: E501
         """Delete a packet analyzer  # noqa: E501
 
         Delete a stopped packet analyzer by id. Also delete all results created by this analyzer. Idempotent.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.delete_analyzer(id, async_req=True)
+        >>> thread = api.delete_packet_analyzer(id, async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
@@ -545,18 +545,18 @@ class PacketAnalyzersApi(object):
         """
         kwargs['_return_http_data_only'] = True
         if kwargs.get('async_req'):
-            return self.delete_analyzer_with_http_info(id, **kwargs)  # noqa: E501
+            return self.delete_packet_analyzer_with_http_info(id, **kwargs)  # noqa: E501
         else:
-            (data) = self.delete_analyzer_with_http_info(id, **kwargs)  # noqa: E501
+            (data) = self.delete_packet_analyzer_with_http_info(id, **kwargs)  # noqa: E501
             return data
 
-    def delete_analyzer_with_http_info(self, id, **kwargs):  # noqa: E501
+    def delete_packet_analyzer_with_http_info(self, id, **kwargs):  # noqa: E501
         """Delete a packet analyzer  # noqa: E501
 
         Delete a stopped packet analyzer by id. Also delete all results created by this analyzer. Idempotent.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.delete_analyzer_with_http_info(id, async_req=True)
+        >>> thread = api.delete_packet_analyzer_with_http_info(id, async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
@@ -577,14 +577,14 @@ class PacketAnalyzersApi(object):
             if key not in all_params:
                 raise TypeError(
                     "Got an unexpected keyword argument '%s'"
-                    " to method delete_analyzer" % key
+                    " to method delete_packet_analyzer" % key
                 )
             params[key] = val
         del params['kwargs']
         # verify the required parameter 'id' is set
         if ('id' not in params or
                 params['id'] is None):
-            raise ValueError("Missing the required parameter `id` when calling `delete_analyzer`")  # noqa: E501
+            raise ValueError("Missing the required parameter `id` when calling `delete_packet_analyzer`")  # noqa: E501
 
         collection_formats = {}
 
@@ -627,13 +627,13 @@ class PacketAnalyzersApi(object):
             _request_timeout=params.get('_request_timeout'),
             collection_formats=collection_formats)
 
-    def delete_analyzer_result(self, id, **kwargs):  # noqa: E501
+    def delete_packet_analyzer_result(self, id, **kwargs):  # noqa: E501
         """Delete a packet analyzer result  # noqa: E501
 
         Delete an inactive packet analyzer result. Also deletes all child rx-flow objects. Idempotent.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.delete_analyzer_result(id, async_req=True)
+        >>> thread = api.delete_packet_analyzer_result(id, async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
@@ -644,18 +644,18 @@ class PacketAnalyzersApi(object):
         """
         kwargs['_return_http_data_only'] = True
         if kwargs.get('async_req'):
-            return self.delete_analyzer_result_with_http_info(id, **kwargs)  # noqa: E501
+            return self.delete_packet_analyzer_result_with_http_info(id, **kwargs)  # noqa: E501
         else:
-            (data) = self.delete_analyzer_result_with_http_info(id, **kwargs)  # noqa: E501
+            (data) = self.delete_packet_analyzer_result_with_http_info(id, **kwargs)  # noqa: E501
             return data
 
-    def delete_analyzer_result_with_http_info(self, id, **kwargs):  # noqa: E501
+    def delete_packet_analyzer_result_with_http_info(self, id, **kwargs):  # noqa: E501
         """Delete a packet analyzer result  # noqa: E501
 
         Delete an inactive packet analyzer result. Also deletes all child rx-flow objects. Idempotent.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.delete_analyzer_result_with_http_info(id, async_req=True)
+        >>> thread = api.delete_packet_analyzer_result_with_http_info(id, async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
@@ -676,14 +676,14 @@ class PacketAnalyzersApi(object):
             if key not in all_params:
                 raise TypeError(
                     "Got an unexpected keyword argument '%s'"
-                    " to method delete_analyzer_result" % key
+                    " to method delete_packet_analyzer_result" % key
                 )
             params[key] = val
         del params['kwargs']
         # verify the required parameter 'id' is set
         if ('id' not in params or
                 params['id'] is None):
-            raise ValueError("Missing the required parameter `id` when calling `delete_analyzer_result`")  # noqa: E501
+            raise ValueError("Missing the required parameter `id` when calling `delete_packet_analyzer_result`")  # noqa: E501
 
         collection_formats = {}
 
@@ -726,13 +726,13 @@ class PacketAnalyzersApi(object):
             _request_timeout=params.get('_request_timeout'),
             collection_formats=collection_formats)
 
-    def delete_analyzer_results(self, **kwargs):  # noqa: E501
+    def delete_packet_analyzer_results(self, **kwargs):  # noqa: E501
         """Delete all analyzer results  # noqa: E501
 
         Delete all inactive packet analyzer results  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.delete_analyzer_results(async_req=True)
+        >>> thread = api.delete_packet_analyzer_results(async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
@@ -742,18 +742,18 @@ class PacketAnalyzersApi(object):
         """
         kwargs['_return_http_data_only'] = True
         if kwargs.get('async_req'):
-            return self.delete_analyzer_results_with_http_info(**kwargs)  # noqa: E501
+            return self.delete_packet_analyzer_results_with_http_info(**kwargs)  # noqa: E501
         else:
-            (data) = self.delete_analyzer_results_with_http_info(**kwargs)  # noqa: E501
+            (data) = self.delete_packet_analyzer_results_with_http_info(**kwargs)  # noqa: E501
             return data
 
-    def delete_analyzer_results_with_http_info(self, **kwargs):  # noqa: E501
+    def delete_packet_analyzer_results_with_http_info(self, **kwargs):  # noqa: E501
         """Delete all analyzer results  # noqa: E501
 
         Delete all inactive packet analyzer results  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.delete_analyzer_results_with_http_info(async_req=True)
+        >>> thread = api.delete_packet_analyzer_results_with_http_info(async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
@@ -773,7 +773,7 @@ class PacketAnalyzersApi(object):
             if key not in all_params:
                 raise TypeError(
                     "Got an unexpected keyword argument '%s'"
-                    " to method delete_analyzer_results" % key
+                    " to method delete_packet_analyzer_results" % key
                 )
             params[key] = val
         del params['kwargs']
@@ -817,13 +817,13 @@ class PacketAnalyzersApi(object):
             _request_timeout=params.get('_request_timeout'),
             collection_formats=collection_formats)
 
-    def delete_analyzers(self, **kwargs):  # noqa: E501
+    def delete_packet_analyzers(self, **kwargs):  # noqa: E501
         """Delete all packet analyzers  # noqa: E501
 
         Delete all inactive packet analyzers and their results. Idempotent.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.delete_analyzers(async_req=True)
+        >>> thread = api.delete_packet_analyzers(async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
@@ -833,18 +833,18 @@ class PacketAnalyzersApi(object):
         """
         kwargs['_return_http_data_only'] = True
         if kwargs.get('async_req'):
-            return self.delete_analyzers_with_http_info(**kwargs)  # noqa: E501
+            return self.delete_packet_analyzers_with_http_info(**kwargs)  # noqa: E501
         else:
-            (data) = self.delete_analyzers_with_http_info(**kwargs)  # noqa: E501
+            (data) = self.delete_packet_analyzers_with_http_info(**kwargs)  # noqa: E501
             return data
 
-    def delete_analyzers_with_http_info(self, **kwargs):  # noqa: E501
+    def delete_packet_analyzers_with_http_info(self, **kwargs):  # noqa: E501
         """Delete all packet analyzers  # noqa: E501
 
         Delete all inactive packet analyzers and their results. Idempotent.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.delete_analyzers_with_http_info(async_req=True)
+        >>> thread = api.delete_packet_analyzers_with_http_info(async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
@@ -864,7 +864,7 @@ class PacketAnalyzersApi(object):
             if key not in all_params:
                 raise TypeError(
                     "Got an unexpected keyword argument '%s'"
-                    " to method delete_analyzers" % key
+                    " to method delete_packet_analyzers" % key
                 )
             params[key] = val
         del params['kwargs']
@@ -908,13 +908,13 @@ class PacketAnalyzersApi(object):
             _request_timeout=params.get('_request_timeout'),
             collection_formats=collection_formats)
 
-    def get_analyzer(self, id, **kwargs):  # noqa: E501
+    def get_packet_analyzer(self, id, **kwargs):  # noqa: E501
         """Get a packet analyzer  # noqa: E501
 
         Return a packet analyzer by id.  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.get_analyzer(id, async_req=True)
+        >>> thread = api.get_packet_analyzer(id, async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
@@ -925,18 +925,18 @@ class PacketAnalyzersApi(object):
         """
         kwargs['_return_http_data_only'] = True
         if kwargs.get('async_req'):
-            return self.get_analyzer_with_http_info(id, **kwargs)  # noqa: E501
+            return self.get_packet_analyzer_with_http_info(id, **kwargs)  # noqa: E501
         else:
-            (data) = self.get_analyzer_with_http_info(id, **kwargs)  # noqa: E501
+            (data) = self.get_packet_analyzer_with_http_info(id, **kwargs)  # noqa: E501
             return data
 
-    def get_analyzer_with_http_info(self, id, **kwargs):  # noqa: E501
+    def get_packet_analyzer_with_http_info(self, id, **kwargs):  # noqa: E501
         """Get a packet analyzer  # noqa: E501
 
         Return a packet analyzer by id.  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.get_analyzer_with_http_info(id, async_req=True)
+        >>> thread = api.get_packet_analyzer_with_http_info(id, async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
@@ -957,14 +957,14 @@ class PacketAnalyzersApi(object):
             if key not in all_params:
                 raise TypeError(
                     "Got an unexpected keyword argument '%s'"
-                    " to method get_analyzer" % key
+                    " to method get_packet_analyzer" % key
                 )
             params[key] = val
         del params['kwargs']
         # verify the required parameter 'id' is set
         if ('id' not in params or
                 params['id'] is None):
-            raise ValueError("Missing the required parameter `id` when calling `get_analyzer`")  # noqa: E501
+            raise ValueError("Missing the required parameter `id` when calling `get_packet_analyzer`")  # noqa: E501
 
         collection_formats = {}
 
@@ -1007,13 +1007,13 @@ class PacketAnalyzersApi(object):
             _request_timeout=params.get('_request_timeout'),
             collection_formats=collection_formats)
 
-    def get_analyzer_result(self, id, **kwargs):  # noqa: E501
+    def get_packet_analyzer_result(self, id, **kwargs):  # noqa: E501
         """Get a packet analyzer result  # noqa: E501
 
         Returns results from a packet analyzer by result id.  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.get_analyzer_result(id, async_req=True)
+        >>> thread = api.get_packet_analyzer_result(id, async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
@@ -1024,18 +1024,18 @@ class PacketAnalyzersApi(object):
         """
         kwargs['_return_http_data_only'] = True
         if kwargs.get('async_req'):
-            return self.get_analyzer_result_with_http_info(id, **kwargs)  # noqa: E501
+            return self.get_packet_analyzer_result_with_http_info(id, **kwargs)  # noqa: E501
         else:
-            (data) = self.get_analyzer_result_with_http_info(id, **kwargs)  # noqa: E501
+            (data) = self.get_packet_analyzer_result_with_http_info(id, **kwargs)  # noqa: E501
             return data
 
-    def get_analyzer_result_with_http_info(self, id, **kwargs):  # noqa: E501
+    def get_packet_analyzer_result_with_http_info(self, id, **kwargs):  # noqa: E501
         """Get a packet analyzer result  # noqa: E501
 
         Returns results from a packet analyzer by result id.  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.get_analyzer_result_with_http_info(id, async_req=True)
+        >>> thread = api.get_packet_analyzer_result_with_http_info(id, async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
@@ -1056,14 +1056,14 @@ class PacketAnalyzersApi(object):
             if key not in all_params:
                 raise TypeError(
                     "Got an unexpected keyword argument '%s'"
-                    " to method get_analyzer_result" % key
+                    " to method get_packet_analyzer_result" % key
                 )
             params[key] = val
         del params['kwargs']
         # verify the required parameter 'id' is set
         if ('id' not in params or
                 params['id'] is None):
-            raise ValueError("Missing the required parameter `id` when calling `get_analyzer_result`")  # noqa: E501
+            raise ValueError("Missing the required parameter `id` when calling `get_packet_analyzer_result`")  # noqa: E501
 
         collection_formats = {}
 
@@ -1205,13 +1205,13 @@ class PacketAnalyzersApi(object):
             _request_timeout=params.get('_request_timeout'),
             collection_formats=collection_formats)
 
-    def list_analyzer_results(self, **kwargs):  # noqa: E501
+    def list_packet_analyzer_results(self, **kwargs):  # noqa: E501
         """List analyzer results  # noqa: E501
 
         The `analyzer-results` endpoint returns all analyzer results created by analyzer instances.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.list_analyzer_results(async_req=True)
+        >>> thread = api.list_packet_analyzer_results(async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
@@ -1223,18 +1223,18 @@ class PacketAnalyzersApi(object):
         """
         kwargs['_return_http_data_only'] = True
         if kwargs.get('async_req'):
-            return self.list_analyzer_results_with_http_info(**kwargs)  # noqa: E501
+            return self.list_packet_analyzer_results_with_http_info(**kwargs)  # noqa: E501
         else:
-            (data) = self.list_analyzer_results_with_http_info(**kwargs)  # noqa: E501
+            (data) = self.list_packet_analyzer_results_with_http_info(**kwargs)  # noqa: E501
             return data
 
-    def list_analyzer_results_with_http_info(self, **kwargs):  # noqa: E501
+    def list_packet_analyzer_results_with_http_info(self, **kwargs):  # noqa: E501
         """List analyzer results  # noqa: E501
 
         The `analyzer-results` endpoint returns all analyzer results created by analyzer instances.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.list_analyzer_results_with_http_info(async_req=True)
+        >>> thread = api.list_packet_analyzer_results_with_http_info(async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
@@ -1256,7 +1256,7 @@ class PacketAnalyzersApi(object):
             if key not in all_params:
                 raise TypeError(
                     "Got an unexpected keyword argument '%s'"
-                    " to method list_analyzer_results" % key
+                    " to method list_packet_analyzer_results" % key
                 )
             params[key] = val
         del params['kwargs']
@@ -1304,13 +1304,13 @@ class PacketAnalyzersApi(object):
             _request_timeout=params.get('_request_timeout'),
             collection_formats=collection_formats)
 
-    def list_analyzers(self, **kwargs):  # noqa: E501
+    def list_packet_analyzers(self, **kwargs):  # noqa: E501
         """List packet analyzers  # noqa: E501
 
         The `analyzers` endpoint returns all packet analyzers that are configured to collect and report port and flow statistics.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.list_analyzers(async_req=True)
+        >>> thread = api.list_packet_analyzers(async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
@@ -1321,18 +1321,18 @@ class PacketAnalyzersApi(object):
         """
         kwargs['_return_http_data_only'] = True
         if kwargs.get('async_req'):
-            return self.list_analyzers_with_http_info(**kwargs)  # noqa: E501
+            return self.list_packet_analyzers_with_http_info(**kwargs)  # noqa: E501
         else:
-            (data) = self.list_analyzers_with_http_info(**kwargs)  # noqa: E501
+            (data) = self.list_packet_analyzers_with_http_info(**kwargs)  # noqa: E501
             return data
 
-    def list_analyzers_with_http_info(self, **kwargs):  # noqa: E501
+    def list_packet_analyzers_with_http_info(self, **kwargs):  # noqa: E501
         """List packet analyzers  # noqa: E501
 
         The `analyzers` endpoint returns all packet analyzers that are configured to collect and report port and flow statistics.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.list_analyzers_with_http_info(async_req=True)
+        >>> thread = api.list_packet_analyzers_with_http_info(async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
@@ -1353,7 +1353,7 @@ class PacketAnalyzersApi(object):
             if key not in all_params:
                 raise TypeError(
                     "Got an unexpected keyword argument '%s'"
-                    " to method list_analyzers" % key
+                    " to method list_packet_analyzers" % key
                 )
             params[key] = val
         del params['kwargs']
@@ -1498,13 +1498,13 @@ class PacketAnalyzersApi(object):
             _request_timeout=params.get('_request_timeout'),
             collection_formats=collection_formats)
 
-    def start_analyzer(self, id, **kwargs):  # noqa: E501
+    def start_packet_analyzer(self, id, **kwargs):  # noqa: E501
         """Start analyzing and collecting packet statistics.  # noqa: E501
 
         Used to start a non-running analyzer. Creates a new analyzer result on success.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.start_analyzer(id, async_req=True)
+        >>> thread = api.start_packet_analyzer(id, async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
@@ -1515,18 +1515,18 @@ class PacketAnalyzersApi(object):
         """
         kwargs['_return_http_data_only'] = True
         if kwargs.get('async_req'):
-            return self.start_analyzer_with_http_info(id, **kwargs)  # noqa: E501
+            return self.start_packet_analyzer_with_http_info(id, **kwargs)  # noqa: E501
         else:
-            (data) = self.start_analyzer_with_http_info(id, **kwargs)  # noqa: E501
+            (data) = self.start_packet_analyzer_with_http_info(id, **kwargs)  # noqa: E501
             return data
 
-    def start_analyzer_with_http_info(self, id, **kwargs):  # noqa: E501
+    def start_packet_analyzer_with_http_info(self, id, **kwargs):  # noqa: E501
         """Start analyzing and collecting packet statistics.  # noqa: E501
 
         Used to start a non-running analyzer. Creates a new analyzer result on success.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.start_analyzer_with_http_info(id, async_req=True)
+        >>> thread = api.start_packet_analyzer_with_http_info(id, async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
@@ -1547,14 +1547,14 @@ class PacketAnalyzersApi(object):
             if key not in all_params:
                 raise TypeError(
                     "Got an unexpected keyword argument '%s'"
-                    " to method start_analyzer" % key
+                    " to method start_packet_analyzer" % key
                 )
             params[key] = val
         del params['kwargs']
         # verify the required parameter 'id' is set
         if ('id' not in params or
                 params['id'] is None):
-            raise ValueError("Missing the required parameter `id` when calling `start_analyzer`")  # noqa: E501
+            raise ValueError("Missing the required parameter `id` when calling `start_packet_analyzer`")  # noqa: E501
 
         collection_formats = {}
 
@@ -1597,13 +1597,13 @@ class PacketAnalyzersApi(object):
             _request_timeout=params.get('_request_timeout'),
             collection_formats=collection_formats)
 
-    def stop_analyzer(self, id, **kwargs):  # noqa: E501
+    def stop_packet_analyzer(self, id, **kwargs):  # noqa: E501
         """Stop analyzing and collecting packet statistics  # noqa: E501
 
         Use to halt a running analyzer. Idempotent.  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.stop_analyzer(id, async_req=True)
+        >>> thread = api.stop_packet_analyzer(id, async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
@@ -1614,18 +1614,18 @@ class PacketAnalyzersApi(object):
         """
         kwargs['_return_http_data_only'] = True
         if kwargs.get('async_req'):
-            return self.stop_analyzer_with_http_info(id, **kwargs)  # noqa: E501
+            return self.stop_packet_analyzer_with_http_info(id, **kwargs)  # noqa: E501
         else:
-            (data) = self.stop_analyzer_with_http_info(id, **kwargs)  # noqa: E501
+            (data) = self.stop_packet_analyzer_with_http_info(id, **kwargs)  # noqa: E501
             return data
 
-    def stop_analyzer_with_http_info(self, id, **kwargs):  # noqa: E501
+    def stop_packet_analyzer_with_http_info(self, id, **kwargs):  # noqa: E501
         """Stop analyzing and collecting packet statistics  # noqa: E501
 
         Use to halt a running analyzer. Idempotent.  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.stop_analyzer_with_http_info(id, async_req=True)
+        >>> thread = api.stop_packet_analyzer_with_http_info(id, async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
@@ -1646,14 +1646,14 @@ class PacketAnalyzersApi(object):
             if key not in all_params:
                 raise TypeError(
                     "Got an unexpected keyword argument '%s'"
-                    " to method stop_analyzer" % key
+                    " to method stop_packet_analyzer" % key
                 )
             params[key] = val
         del params['kwargs']
         # verify the required parameter 'id' is set
         if ('id' not in params or
                 params['id'] is None):
-            raise ValueError("Missing the required parameter `id` when calling `stop_analyzer`")  # noqa: E501
+            raise ValueError("Missing the required parameter `id` when calling `stop_packet_analyzer`")  # noqa: E501
 
         collection_formats = {}
 

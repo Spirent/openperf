@@ -1,4 +1,4 @@
-# BulkDeleteAnalyzersRequest
+# BulkDeletePacketAnalyzersRequest
 
 ## Properties
 Name | Type | Description | Notes

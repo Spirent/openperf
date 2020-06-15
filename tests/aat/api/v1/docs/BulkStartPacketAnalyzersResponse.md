@@ -1,4 +1,4 @@
-# BulkStartAnalyzersResponse
+# BulkStartPacketAnalyzersResponse
 
 ## Properties
 Name | Type | Description | Notes

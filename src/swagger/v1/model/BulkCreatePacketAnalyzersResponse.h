@@ -10,13 +10,13 @@
 * Do not edit the class manually.
 */
 /*
- * BulkCreateAnalyzersResponse.h
+ * BulkCreatePacketAnalyzersResponse.h
  *
  * 
  */
 
-#ifndef BulkCreateAnalyzersResponse_H_
-#define BulkCreateAnalyzersResponse_H_
+#ifndef BulkCreatePacketAnalyzersResponse_H_
+#define BulkCreatePacketAnalyzersResponse_H_
 
 
 #include "ModelBase.h"
@@ -31,12 +31,12 @@ namespace model {
 /// <summary>
 /// 
 /// </summary>
-class  BulkCreateAnalyzersResponse
+class  BulkCreatePacketAnalyzersResponse
     : public ModelBase
 {
 public:
-    BulkCreateAnalyzersResponse();
-    virtual ~BulkCreateAnalyzersResponse();
+    BulkCreatePacketAnalyzersResponse();
+    virtual ~BulkCreatePacketAnalyzersResponse();
 
     /////////////////////////////////////////////
     /// ModelBase overrides
@@ -47,7 +47,7 @@ public:
     void fromJson(nlohmann::json& json) override;
 
     /////////////////////////////////////////////
-    /// BulkCreateAnalyzersResponse members
+    /// BulkCreatePacketAnalyzersResponse members
 
     /// <summary>
     /// List of packet analyzers
@@ -63,4 +63,4 @@ protected:
 }
 }
 
-#endif /* BulkCreateAnalyzersResponse_H_ */
+#endif /* BulkCreatePacketAnalyzersResponse_H_ */

@@ -11,27 +11,27 @@
 */
 
 
-#include "BulkDeleteAnalyzersRequest.h"
+#include "BulkStartPacketAnalyzersRequest.h"
 
 namespace swagger {
 namespace v1 {
 namespace model {
 
-BulkDeleteAnalyzersRequest::BulkDeleteAnalyzersRequest()
+BulkStartPacketAnalyzersRequest::BulkStartPacketAnalyzersRequest()
 {
     
 }
 
-BulkDeleteAnalyzersRequest::~BulkDeleteAnalyzersRequest()
+BulkStartPacketAnalyzersRequest::~BulkStartPacketAnalyzersRequest()
 {
 }
 
-void BulkDeleteAnalyzersRequest::validate()
+void BulkStartPacketAnalyzersRequest::validate()
 {
     // TODO: implement validation
 }
 
-nlohmann::json BulkDeleteAnalyzersRequest::toJson() const
+nlohmann::json BulkStartPacketAnalyzersRequest::toJson() const
 {
     nlohmann::json val = nlohmann::json::object();
 
@@ -48,7 +48,7 @@ nlohmann::json BulkDeleteAnalyzersRequest::toJson() const
     return val;
 }
 
-void BulkDeleteAnalyzersRequest::fromJson(nlohmann::json& val)
+void BulkStartPacketAnalyzersRequest::fromJson(nlohmann::json& val)
 {
     {
         m_Ids.clear();
@@ -63,7 +63,7 @@ void BulkDeleteAnalyzersRequest::fromJson(nlohmann::json& val)
 }
 
 
-std::vector<std::string>& BulkDeleteAnalyzersRequest::getIds()
+std::vector<std::string>& BulkStartPacketAnalyzersRequest::getIds()
 {
     return m_Ids;
 }

@@ -10,7 +10,7 @@ parameters:
 paths:
   /analyzers:
     get:
-      operationId: ListAnalyzers
+      operationId: ListPacketAnalyzers
       tags:
         - PacketAnalyzers
       summary: List packet analyzers
@@ -31,7 +31,7 @@ paths:
             items:
               $ref: "#/definitions/PacketAnalyzer"
     post:
-      operationId: CreateAnalyzer
+      operationId: CreatePacketAnalyzer
       tags:
         - PacketAnalyzers
       summary: Create a packet analyzer
@@ -53,7 +53,7 @@ paths:
           schema:
             $ref: "#/definitions/PacketAnalyzer"
     delete:
-      operationId: DeleteAnalyzers
+      operationId: DeletePacketAnalyzers
       tags:
         - PacketAnalyzers
       summary: Delete all packet analyzers
@@ -65,7 +65,7 @@ paths:
 
   /analyzers/{id}:
     get:
-      operationId: GetAnalyzer
+      operationId: GetPacketAnalyzer
       tags:
         - PacketAnalyzers
       summary: Get a packet analyzer
@@ -78,7 +78,7 @@ paths:
           schema:
             $ref: "#/definitions/PacketAnalyzer"
     delete:
-      operationId: DeleteAnalyzer
+      operationId: DeletePacketAnalyzer
       tags:
         - PacketAnalyzers
       summary: Delete a packet analyzer
@@ -93,7 +93,7 @@ paths:
 
   /analyzers/{id}/start:
     post:
-      operationId: StartAnalyzer
+      operationId: StartPacketAnalyzer
       tags:
         - PacketAnalyzers
       summary: Start analyzing and collecting packet statistics.
@@ -114,7 +114,7 @@ paths:
 
   /analyzers/{id}/stop:
     post:
-      operationId: StopAnalyzer
+      operationId: StopPacketAnalyzer
       tags:
         - PacketAnalyzers
       summary: Stop analyzing and collecting packet statistics
@@ -127,7 +127,7 @@ paths:
 
   /analyzers/x/bulk-create:
     post:
-      operationId: BulkCreateAnalyzers
+      operationId: BulkCreatePacketAnalyzers
       tags:
         - PacketAnalyzers
       summary: Bulk create packet analyzers
@@ -142,7 +142,7 @@ paths:
           required: true
           schema:
             type: object
-            title: BulkCreateAnalyzersRequest
+            title: BulkCreatePacketAnalyzersRequest
             description: Parameters for the bulk create operation
             properties:
               items:
@@ -158,7 +158,7 @@ paths:
           description: Success
           schema:
             type: object
-            title: BulkCreateAnalyzersResponse
+            title: BulkCreatePacketAnalyzersResponse
             properties:
               items:
                 type: array
@@ -171,7 +171,7 @@ paths:
 
   /analyzers/x/bulk-delete:
     post:
-      operationId: BulkDeleteAnalyzers
+      operationId: BulkDeletePacketAnalyzers
       tags:
         - PacketAnalyzers
       summary: Bulk delete packet analyzers
@@ -186,7 +186,7 @@ paths:
           required: true
           schema:
             type: object
-            title: BulkDeleteAnalyzersRequest
+            title: BulkDeletePacketAnalyzersRequest
             description: Parameters for the bulk delete operation
             properties:
               ids:
@@ -203,7 +203,7 @@ paths:
 
   /analyzers/x/bulk-start:
     post:
-      operationId: BulkStartAnalyzers
+      operationId: BulkStartPacketAnalyzers
       tags:
         - PacketAnalyzers
       summary: Bulk start packet analyzers
@@ -215,7 +215,7 @@ paths:
           required: true
           schema:
             type: object
-            title: BulkStartAnalyzersRequest
+            title: BulkStartPacketAnalyzersRequest
             description: Parameters for the bulk start operation
             properties:
               ids:
@@ -231,7 +231,7 @@ paths:
           description: Success
           schema:
             type: object
-            title: BulkStartAnalyzersResponse
+            title: BulkStartPacketAnalyzersResponse
             properties:
               items:
                 type: array
@@ -244,7 +244,7 @@ paths:
 
   /analyzers/x/bulk-stop:
     post:
-      operationId: BulkStopAnalyzers
+      operationId: BulkStopPacketAnalyzers
       tags:
         - PacketAnalyzers
       summary: Bulk stop packet analyzers
@@ -256,7 +256,7 @@ paths:
           required: true
           schema:
             type: object
-            title: BulkStopAnalyzersRequest
+            title: BulkStopPacketAnalyzersRequest
             description: Parameters for the bulk stop operation
             properties:
               ids:
@@ -273,7 +273,7 @@ paths:
 
   /analyzer-results:
     get:
-      operationId: ListAnalyzerResults
+      operationId: ListPacketAnalyzerResults
       tags:
         - PacketAnalyzers
       summary: List analyzer results
@@ -299,7 +299,7 @@ paths:
             items:
               $ref: "#/definitions/PacketAnalyzerResult"
     delete:
-      operationId: DeleteAnalyzerResults
+      operationId: DeletePacketAnalyzerResults
       tags:
         - PacketAnalyzers
       summary: Delete all analyzer results
@@ -310,7 +310,7 @@ paths:
 
   /analyzer-results/{id}:
     get:
-      operationId: GetAnalyzerResult
+      operationId: GetPacketAnalyzerResult
       tags:
         - PacketAnalyzers
       summary: Get a packet analyzer result
@@ -323,7 +323,7 @@ paths:
           schema:
             $ref: "#/definitions/PacketAnalyzerResult"
     delete:
-      operationId: DeleteAnalyzerResult
+      operationId: DeletePacketAnalyzerResult
       tags:
         - PacketAnalyzers
       summary: Delete a packet analyzer result

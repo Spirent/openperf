@@ -10,18 +10,18 @@
 * Do not edit the class manually.
 */
 /*
- * BulkStartAnalyzersRequest.h
+ * BulkCreatePacketAnalyzersRequest.h
  *
- * Parameters for the bulk start operation
+ * Parameters for the bulk create operation
  */
 
-#ifndef BulkStartAnalyzersRequest_H_
-#define BulkStartAnalyzersRequest_H_
+#ifndef BulkCreatePacketAnalyzersRequest_H_
+#define BulkCreatePacketAnalyzersRequest_H_
 
 
 #include "ModelBase.h"
 
-#include <string>
+#include "PacketAnalyzer.h"
 #include <vector>
 
 namespace swagger {
@@ -29,14 +29,14 @@ namespace v1 {
 namespace model {
 
 /// <summary>
-/// Parameters for the bulk start operation
+/// Parameters for the bulk create operation
 /// </summary>
-class  BulkStartAnalyzersRequest
+class  BulkCreatePacketAnalyzersRequest
     : public ModelBase
 {
 public:
-    BulkStartAnalyzersRequest();
-    virtual ~BulkStartAnalyzersRequest();
+    BulkCreatePacketAnalyzersRequest();
+    virtual ~BulkCreatePacketAnalyzersRequest();
 
     /////////////////////////////////////////////
     /// ModelBase overrides
@@ -47,15 +47,15 @@ public:
     void fromJson(nlohmann::json& json) override;
 
     /////////////////////////////////////////////
-    /// BulkStartAnalyzersRequest members
+    /// BulkCreatePacketAnalyzersRequest members
 
     /// <summary>
-    /// List of analyzer identifiers
+    /// List of packet analyzers
     /// </summary>
-    std::vector<std::string>& getIds();
+    std::vector<std::shared_ptr<PacketAnalyzer>>& getItems();
     
 protected:
-    std::vector<std::string> m_Ids;
+    std::vector<std::shared_ptr<PacketAnalyzer>> m_Items;
 
 };
 
@@ -63,4 +63,4 @@ protected:
 }
 }
 
-#endif /* BulkStartAnalyzersRequest_H_ */
+#endif /* BulkCreatePacketAnalyzersRequest_H_ */

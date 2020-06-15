@@ -1,9 +1,9 @@
-# BulkStartAnalyzersRequest
+# BulkCreatePacketAnalyzersRequest
 
 ## Properties
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**ids** | **list[str]** | List of analyzer identifiers | 
+**items** | [**list[PacketAnalyzer]**](PacketAnalyzer.md) | List of packet analyzers | 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 
