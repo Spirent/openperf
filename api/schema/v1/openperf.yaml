@@ -372,10 +372,7 @@ definitions:
         description: Path to module binary (dynamically-loaded modules only).
         readOnly: true
     required:
-      - id
-      - description
       - version
-      - linkage
 
   ModuleVersion:
     type: object
@@ -399,8 +396,6 @@ definitions:
         type: string
         description: Module version control revision
         readOnly: true
-    required:
-      - version
 
   ###
   # Module model definitions go here

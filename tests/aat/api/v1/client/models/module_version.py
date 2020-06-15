@@ -53,7 +53,8 @@ class ModuleVersion(object):
         self._source_commit = None
         self.discriminator = None
 
-        self.version = version
+        if version is not None:
+            self.version = version
         if build_number is not None:
             self.build_number = build_number
         if build_date is not None:

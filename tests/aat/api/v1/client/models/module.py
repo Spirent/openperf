@@ -56,10 +56,13 @@ class Module(object):
         self._path = None
         self.discriminator = None
 
-        self.id = id
-        self.description = description
+        if id is not None:
+            self.id = id
+        if description is not None:
+            self.description = description
         self.version = version
-        self.linkage = linkage
+        if linkage is not None:
+            self.linkage = linkage
         if path is not None:
             self.path = path
 

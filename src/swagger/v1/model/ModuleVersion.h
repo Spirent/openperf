@@ -53,7 +53,9 @@ public:
     /// </summary>
     int32_t getVersion() const;
     void setVersion(int32_t value);
-        /// <summary>
+    bool versionIsSet() const;
+    void unsetVersion();
+    /// <summary>
     /// Module build number
     /// </summary>
     std::string getBuildNumber() const;
@@ -77,7 +79,7 @@ public:
 
 protected:
     int32_t m_Version;
-
+    bool m_VersionIsSet;
     std::string m_Build_number;
     bool m_Build_numberIsSet;
     std::string m_Build_date;

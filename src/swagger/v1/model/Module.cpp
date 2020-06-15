@@ -20,8 +20,11 @@ namespace model {
 Module::Module()
 {
     m_Id = "";
+    m_IdIsSet = false;
     m_Description = "";
+    m_DescriptionIsSet = false;
     m_Linkage = "";
+    m_LinkageIsSet = false;
     m_Path = "";
     m_PathIsSet = false;
     
@@ -40,10 +43,19 @@ nlohmann::json Module::toJson() const
 {
     nlohmann::json val = nlohmann::json::object();
 
-    val["id"] = ModelBase::toJson(m_Id);
-    val["description"] = ModelBase::toJson(m_Description);
+    if(m_IdIsSet)
+    {
+        val["id"] = ModelBase::toJson(m_Id);
+    }
+    if(m_DescriptionIsSet)
+    {
+        val["description"] = ModelBase::toJson(m_Description);
+    }
     val["version"] = ModelBase::toJson(m_Version);
-    val["linkage"] = ModelBase::toJson(m_Linkage);
+    if(m_LinkageIsSet)
+    {
+        val["linkage"] = ModelBase::toJson(m_Linkage);
+    }
     if(m_PathIsSet)
     {
         val["path"] = ModelBase::toJson(m_Path);
@@ -55,9 +67,21 @@ nlohmann::json Module::toJson() const
 
 void Module::fromJson(nlohmann::json& val)
 {
-    setId(val.at("id"));
-    setDescription(val.at("description"));
-    setLinkage(val.at("linkage"));
+    if(val.find("id") != val.end())
+    {
+        setId(val.at("id"));
+        
+    }
+    if(val.find("description") != val.end())
+    {
+        setDescription(val.at("description"));
+        
+    }
+    if(val.find("linkage") != val.end())
+    {
+        setLinkage(val.at("linkage"));
+        
+    }
     if(val.find("path") != val.end())
     {
         setPath(val.at("path"));
@@ -74,7 +98,15 @@ std::string Module::getId() const
 void Module::setId(std::string value)
 {
     m_Id = value;
-    
+    m_IdIsSet = true;
+}
+bool Module::idIsSet() const
+{
+    return m_IdIsSet;
+}
+void Module::unsetId()
+{
+    m_IdIsSet = false;
 }
 std::string Module::getDescription() const
 {
@@ -83,7 +115,15 @@ std::string Module::getDescription() const
 void Module::setDescription(std::string value)
 {
     m_Description = value;
-    
+    m_DescriptionIsSet = true;
+}
+bool Module::descriptionIsSet() const
+{
+    return m_DescriptionIsSet;
+}
+void Module::unsetDescription()
+{
+    m_DescriptionIsSet = false;
 }
 std::shared_ptr<ModuleVersion> Module::getVersion() const
 {
@@ -101,7 +141,15 @@ std::string Module::getLinkage() const
 void Module::setLinkage(std::string value)
 {
     m_Linkage = value;
-    
+    m_LinkageIsSet = true;
+}
+bool Module::linkageIsSet() const
+{
+    return m_LinkageIsSet;
+}
+void Module::unsetLinkage()
+{
+    m_LinkageIsSet = false;
 }
 std::string Module::getPath() const
 {

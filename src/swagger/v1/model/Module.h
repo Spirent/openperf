@@ -54,12 +54,16 @@ public:
     /// </summary>
     std::string getId() const;
     void setId(std::string value);
-        /// <summary>
+    bool idIsSet() const;
+    void unsetId();
+    /// <summary>
     /// Description of module functionality
     /// </summary>
     std::string getDescription() const;
     void setDescription(std::string value);
-        /// <summary>
+    bool descriptionIsSet() const;
+    void unsetDescription();
+    /// <summary>
     /// 
     /// </summary>
     std::shared_ptr<ModuleVersion> getVersion() const;
@@ -69,7 +73,9 @@ public:
     /// </summary>
     std::string getLinkage() const;
     void setLinkage(std::string value);
-        /// <summary>
+    bool linkageIsSet() const;
+    void unsetLinkage();
+    /// <summary>
     /// Path to module binary (dynamically-loaded modules only).
     /// </summary>
     std::string getPath() const;
@@ -79,13 +85,13 @@ public:
 
 protected:
     std::string m_Id;
-
+    bool m_IdIsSet;
     std::string m_Description;
-
+    bool m_DescriptionIsSet;
     std::shared_ptr<ModuleVersion> m_Version;
 
     std::string m_Linkage;
-
+    bool m_LinkageIsSet;
     std::string m_Path;
     bool m_PathIsSet;
 };

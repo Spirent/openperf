@@ -20,6 +20,7 @@ namespace model {
 ModuleVersion::ModuleVersion()
 {
     m_Version = 0;
+    m_VersionIsSet = false;
     m_Build_number = "";
     m_Build_numberIsSet = false;
     m_Build_date = "";
@@ -42,7 +43,10 @@ nlohmann::json ModuleVersion::toJson() const
 {
     nlohmann::json val = nlohmann::json::object();
 
-    val["version"] = m_Version;
+    if(m_VersionIsSet)
+    {
+        val["version"] = m_Version;
+    }
     if(m_Build_numberIsSet)
     {
         val["build_number"] = ModelBase::toJson(m_Build_number);
@@ -62,7 +66,10 @@ nlohmann::json ModuleVersion::toJson() const
 
 void ModuleVersion::fromJson(nlohmann::json& val)
 {
-    setVersion(val.at("version"));
+    if(val.find("version") != val.end())
+    {
+        setVersion(val.at("version"));
+    }
     if(val.find("build_number") != val.end())
     {
         setBuildNumber(val.at("build_number"));
@@ -89,7 +96,15 @@ int32_t ModuleVersion::getVersion() const
 void ModuleVersion::setVersion(int32_t value)
 {
     m_Version = value;
-    
+    m_VersionIsSet = true;
+}
+bool ModuleVersion::versionIsSet() const
+{
+    return m_VersionIsSet;
+}
+void ModuleVersion::unsetVersion()
+{
+    m_VersionIsSet = false;
 }
 std::string ModuleVersion::getBuildNumber() const
 {
