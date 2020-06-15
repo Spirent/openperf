@@ -11,27 +11,27 @@
 */
 
 
-#include "BulkStartAnalyzersResponse.h"
+#include "BulkCreatePacketAnalyzersRequest.h"
 
 namespace swagger {
 namespace v1 {
 namespace model {
 
-BulkStartAnalyzersResponse::BulkStartAnalyzersResponse()
+BulkCreatePacketAnalyzersRequest::BulkCreatePacketAnalyzersRequest()
 {
     
 }
 
-BulkStartAnalyzersResponse::~BulkStartAnalyzersResponse()
+BulkCreatePacketAnalyzersRequest::~BulkCreatePacketAnalyzersRequest()
 {
 }
 
-void BulkStartAnalyzersResponse::validate()
+void BulkCreatePacketAnalyzersRequest::validate()
 {
     // TODO: implement validation
 }
 
-nlohmann::json BulkStartAnalyzersResponse::toJson() const
+nlohmann::json BulkCreatePacketAnalyzersRequest::toJson() const
 {
     nlohmann::json val = nlohmann::json::object();
 
@@ -48,7 +48,7 @@ nlohmann::json BulkStartAnalyzersResponse::toJson() const
     return val;
 }
 
-void BulkStartAnalyzersResponse::fromJson(nlohmann::json& val)
+void BulkCreatePacketAnalyzersRequest::fromJson(nlohmann::json& val)
 {
     {
         m_Items.clear();
@@ -58,11 +58,11 @@ void BulkStartAnalyzersResponse::fromJson(nlohmann::json& val)
             
             if(item.is_null())
             {
-                m_Items.push_back( std::shared_ptr<PacketAnalyzerResult>(nullptr) );
+                m_Items.push_back( std::shared_ptr<PacketAnalyzer>(nullptr) );
             }
             else
             {
-                std::shared_ptr<PacketAnalyzerResult> newItem(new PacketAnalyzerResult());
+                std::shared_ptr<PacketAnalyzer> newItem(new PacketAnalyzer());
                 newItem->fromJson(item);
                 m_Items.push_back( newItem );
             }
@@ -73,7 +73,7 @@ void BulkStartAnalyzersResponse::fromJson(nlohmann::json& val)
 }
 
 
-std::vector<std::shared_ptr<PacketAnalyzerResult>>& BulkStartAnalyzersResponse::getItems()
+std::vector<std::shared_ptr<PacketAnalyzer>>& BulkCreatePacketAnalyzersRequest::getItems()
 {
     return m_Items;
 }

@@ -11,27 +11,27 @@
 */
 
 
-#include "BulkStartAnalyzersRequest.h"
+#include "BulkStopPacketAnalyzersRequest.h"
 
 namespace swagger {
 namespace v1 {
 namespace model {
 
-BulkStartAnalyzersRequest::BulkStartAnalyzersRequest()
+BulkStopPacketAnalyzersRequest::BulkStopPacketAnalyzersRequest()
 {
     
 }
 
-BulkStartAnalyzersRequest::~BulkStartAnalyzersRequest()
+BulkStopPacketAnalyzersRequest::~BulkStopPacketAnalyzersRequest()
 {
 }
 
-void BulkStartAnalyzersRequest::validate()
+void BulkStopPacketAnalyzersRequest::validate()
 {
     // TODO: implement validation
 }
 
-nlohmann::json BulkStartAnalyzersRequest::toJson() const
+nlohmann::json BulkStopPacketAnalyzersRequest::toJson() const
 {
     nlohmann::json val = nlohmann::json::object();
 
@@ -48,7 +48,7 @@ nlohmann::json BulkStartAnalyzersRequest::toJson() const
     return val;
 }
 
-void BulkStartAnalyzersRequest::fromJson(nlohmann::json& val)
+void BulkStopPacketAnalyzersRequest::fromJson(nlohmann::json& val)
 {
     {
         m_Ids.clear();
@@ -63,7 +63,7 @@ void BulkStartAnalyzersRequest::fromJson(nlohmann::json& val)
 }
 
 
-std::vector<std::string>& BulkStartAnalyzersRequest::getIds()
+std::vector<std::string>& BulkStopPacketAnalyzersRequest::getIds()
 {
     return m_Ids;
 }

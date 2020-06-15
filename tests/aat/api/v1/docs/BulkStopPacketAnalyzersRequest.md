@@ -1,4 +1,4 @@
-# BulkStopAnalyzersRequest
+# BulkStopPacketAnalyzersRequest
 
 ## Properties
 Name | Type | Description | Notes

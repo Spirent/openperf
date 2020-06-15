@@ -10,33 +10,33 @@
 * Do not edit the class manually.
 */
 /*
- * BulkStartAnalyzersResponse.h
+ * BulkDeletePacketAnalyzersRequest.h
  *
- * 
+ * Parameters for the bulk delete operation
  */
 
-#ifndef BulkStartAnalyzersResponse_H_
-#define BulkStartAnalyzersResponse_H_
+#ifndef BulkDeletePacketAnalyzersRequest_H_
+#define BulkDeletePacketAnalyzersRequest_H_
 
 
 #include "ModelBase.h"
 
+#include <string>
 #include <vector>
-#include "PacketAnalyzerResult.h"
 
 namespace swagger {
 namespace v1 {
 namespace model {
 
 /// <summary>
-/// 
+/// Parameters for the bulk delete operation
 /// </summary>
-class  BulkStartAnalyzersResponse
+class  BulkDeletePacketAnalyzersRequest
     : public ModelBase
 {
 public:
-    BulkStartAnalyzersResponse();
-    virtual ~BulkStartAnalyzersResponse();
+    BulkDeletePacketAnalyzersRequest();
+    virtual ~BulkDeletePacketAnalyzersRequest();
 
     /////////////////////////////////////////////
     /// ModelBase overrides
@@ -47,15 +47,15 @@ public:
     void fromJson(nlohmann::json& json) override;
 
     /////////////////////////////////////////////
-    /// BulkStartAnalyzersResponse members
+    /// BulkDeletePacketAnalyzersRequest members
 
     /// <summary>
-    /// List of analyzer results
+    /// List of packet analyzers
     /// </summary>
-    std::vector<std::shared_ptr<PacketAnalyzerResult>>& getItems();
+    std::vector<std::string>& getIds();
     
 protected:
-    std::vector<std::shared_ptr<PacketAnalyzerResult>> m_Items;
+    std::vector<std::string> m_Ids;
 
 };
 
@@ -63,4 +63,4 @@ protected:
 }
 }
 
-#endif /* BulkStartAnalyzersResponse_H_ */
+#endif /* BulkDeletePacketAnalyzersRequest_H_ */

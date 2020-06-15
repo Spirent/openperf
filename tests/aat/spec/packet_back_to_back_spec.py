@@ -355,14 +355,14 @@ def configure_and_run_test(api_client, ana_config, gen_config):
     gen_api = client.api.PacketGeneratorsApi(api_client)
 
     # Create analyzer/generator objects
-    analyzer = ana_api.create_analyzer(get_analyzer_model(api_client, ana_config))
+    analyzer = ana_api.create_packet_analyzer(get_analyzer_model(api_client, ana_config))
     expect(analyzer).to(be_valid_packet_analyzer)
 
     generator = gen_api.create_packet_generator(get_generator_model(api_client, gen_config))
     expect(generator).to(be_valid_packet_generator)
 
     # Start both objects and wait until done...
-    ana_result = ana_api.start_analyzer(analyzer.id)
+    ana_result = ana_api.start_packet_analyzer(analyzer.id)
     expect(ana_result).to(be_valid_packet_analyzer_result)
     expect(ana_result.active).to(be_true)
     expect(ana_result.analyzer_id).to(equal(analyzer.id))
@@ -373,10 +373,10 @@ def configure_and_run_test(api_client, ana_config, gen_config):
     expect(gen_result.generator_id).to(equal(generator.id))
 
     wait_until_done(gen_api, gen_result.id)
-    ana_api.stop_analyzer(analyzer.id)
+    ana_api.stop_packet_analyzer(analyzer.id)
 
     # Retrieve and return final results
-    ana_result = ana_api.get_analyzer_result(ana_result.id)
+    ana_result = ana_api.get_packet_analyzer_result(ana_result.id)
     expect(ana_result).to(be_valid_packet_analyzer_result)
     expect(ana_result.active).to(be_false)
 
@@ -705,10 +705,10 @@ with description('Packet back to back', 'packet_b2b') as self:
                 pass
 
             try:
-                for ana in self.analyzer_api.list_analyzers():
+                for ana in self.analyzer_api.list_packet_analyzers():
                     if ana.active:
-                        self.analyzer_api.stop_analyzer(ana.id)
-                self.analyzer_api.delete_analyzers()
+                        self.analyzer_api.stop_packet_analyzer(ana.id)
+                self.analyzer_api.delete_packet_analyzers()
             except AttributeError:
                 pass
 
