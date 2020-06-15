@@ -20,10 +20,9 @@ namespace model {
 ThresholdConfig::ThresholdConfig()
 {
     m_Id = "";
-    m_Generator_type = "";
     m_Generator_id = "";
     m_Function = "";
-    m_Comparator = "";
+    m_Condition = "";
     m_Stat_x = "";
     m_Stat_y = "";
     m_Stat_yIsSet = false;
@@ -44,10 +43,9 @@ nlohmann::json ThresholdConfig::toJson() const
     nlohmann::json val = nlohmann::json::object();
 
     val["id"] = ModelBase::toJson(m_Id);
-    val["generator_type"] = ModelBase::toJson(m_Generator_type);
     val["generator_id"] = ModelBase::toJson(m_Generator_id);
     val["function"] = ModelBase::toJson(m_Function);
-    val["comparator"] = ModelBase::toJson(m_Comparator);
+    val["condition"] = ModelBase::toJson(m_Condition);
     val["stat_x"] = ModelBase::toJson(m_Stat_x);
     if(m_Stat_yIsSet)
     {
@@ -61,10 +59,9 @@ nlohmann::json ThresholdConfig::toJson() const
 void ThresholdConfig::fromJson(nlohmann::json& val)
 {
     setId(val.at("id"));
-    setGeneratorType(val.at("generator_type"));
     setGeneratorId(val.at("generator_id"));
     setFunction(val.at("function"));
-    setComparator(val.at("comparator"));
+    setCondition(val.at("condition"));
     setStatX(val.at("stat_x"));
     if(val.find("stat_y") != val.end())
     {
@@ -82,15 +79,6 @@ std::string ThresholdConfig::getId() const
 void ThresholdConfig::setId(std::string value)
 {
     m_Id = value;
-    
-}
-std::string ThresholdConfig::getGeneratorType() const
-{
-    return m_Generator_type;
-}
-void ThresholdConfig::setGeneratorType(std::string value)
-{
-    m_Generator_type = value;
     
 }
 std::string ThresholdConfig::getGeneratorId() const
@@ -111,13 +99,13 @@ void ThresholdConfig::setFunction(std::string value)
     m_Function = value;
     
 }
-std::string ThresholdConfig::getComparator() const
+std::string ThresholdConfig::getCondition() const
 {
-    return m_Comparator;
+    return m_Condition;
 }
-void ThresholdConfig::setComparator(std::string value)
+void ThresholdConfig::setCondition(std::string value)
 {
-    m_Comparator = value;
+    m_Condition = value;
     
 }
 std::string ThresholdConfig::getStatX() const

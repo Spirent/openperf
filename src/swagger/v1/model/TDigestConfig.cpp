@@ -20,7 +20,6 @@ namespace model {
 TDigestConfig::TDigestConfig()
 {
     m_Id = "";
-    m_Generator_type = "";
     m_Generator_id = "";
     m_Function = "";
     m_Stat_x = "";
@@ -43,7 +42,6 @@ nlohmann::json TDigestConfig::toJson() const
     nlohmann::json val = nlohmann::json::object();
 
     val["id"] = ModelBase::toJson(m_Id);
-    val["generator_type"] = ModelBase::toJson(m_Generator_type);
     val["generator_id"] = ModelBase::toJson(m_Generator_id);
     val["function"] = ModelBase::toJson(m_Function);
     val["stat_x"] = ModelBase::toJson(m_Stat_x);
@@ -59,7 +57,6 @@ nlohmann::json TDigestConfig::toJson() const
 void TDigestConfig::fromJson(nlohmann::json& val)
 {
     setId(val.at("id"));
-    setGeneratorType(val.at("generator_type"));
     setGeneratorId(val.at("generator_id"));
     setFunction(val.at("function"));
     setStatX(val.at("stat_x"));
@@ -79,15 +76,6 @@ std::string TDigestConfig::getId() const
 void TDigestConfig::setId(std::string value)
 {
     m_Id = value;
-    
-}
-std::string TDigestConfig::getGeneratorType() const
-{
-    return m_Generator_type;
-}
-void TDigestConfig::setGeneratorType(std::string value)
-{
-    m_Generator_type = value;
     
 }
 std::string TDigestConfig::getGeneratorId() const

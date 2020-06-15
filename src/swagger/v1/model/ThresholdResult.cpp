@@ -19,18 +19,11 @@ namespace model {
 
 ThresholdResult::ThresholdResult()
 {
-    m_Id = "";
-    m_IdIsSet = false;
-    m_Generator_type = "";
-    m_Generator_typeIsSet = false;
-    m_Generator_id = "";
-    m_Generator_idIsSet = false;
-    m_Relation = 0;
-    m_RelationIsSet = false;
-    m_True = 0;
-    m_TrueIsSet = false;
-    m_False = 0;
-    m_FalseIsSet = false;
+    m_Result_id = "";
+    m_Threshold_id = "";
+    m_Timestamp = "";
+    m_Condition_true = 0;
+    m_Condition_false = 0;
     
 }
 
@@ -47,30 +40,11 @@ nlohmann::json ThresholdResult::toJson() const
 {
     nlohmann::json val = nlohmann::json::object();
 
-    if(m_IdIsSet)
-    {
-        val["id"] = ModelBase::toJson(m_Id);
-    }
-    if(m_Generator_typeIsSet)
-    {
-        val["generator_type"] = ModelBase::toJson(m_Generator_type);
-    }
-    if(m_Generator_idIsSet)
-    {
-        val["generator_id"] = ModelBase::toJson(m_Generator_id);
-    }
-    if(m_RelationIsSet)
-    {
-        val["relation"] = m_Relation;
-    }
-    if(m_TrueIsSet)
-    {
-        val["true"] = m_True;
-    }
-    if(m_FalseIsSet)
-    {
-        val["false"] = m_False;
-    }
+    val["result_id"] = ModelBase::toJson(m_Result_id);
+    val["threshold_id"] = ModelBase::toJson(m_Threshold_id);
+    val["timestamp"] = ModelBase::toJson(m_Timestamp);
+    val["condition_true"] = m_Condition_true;
+    val["condition_false"] = m_Condition_false;
     
 
     return val;
@@ -78,138 +52,59 @@ nlohmann::json ThresholdResult::toJson() const
 
 void ThresholdResult::fromJson(nlohmann::json& val)
 {
-    if(val.find("id") != val.end())
-    {
-        setId(val.at("id"));
-        
-    }
-    if(val.find("generator_type") != val.end())
-    {
-        setGeneratorType(val.at("generator_type"));
-        
-    }
-    if(val.find("generator_id") != val.end())
-    {
-        setGeneratorId(val.at("generator_id"));
-        
-    }
-    if(val.find("relation") != val.end())
-    {
-        setRelation(val.at("relation"));
-    }
-    if(val.find("true") != val.end())
-    {
-        setTrue(val.at("true"));
-    }
-    if(val.find("false") != val.end())
-    {
-        setFalse(val.at("false"));
-    }
+    setResultId(val.at("result_id"));
+    setThresholdId(val.at("threshold_id"));
+    setTimestamp(val.at("timestamp"));
+    setConditionTrue(val.at("condition_true"));
+    setConditionFalse(val.at("condition_false"));
     
 }
 
 
-std::string ThresholdResult::getId() const
+std::string ThresholdResult::getResultId() const
 {
-    return m_Id;
+    return m_Result_id;
 }
-void ThresholdResult::setId(std::string value)
+void ThresholdResult::setResultId(std::string value)
 {
-    m_Id = value;
-    m_IdIsSet = true;
+    m_Result_id = value;
+    
 }
-bool ThresholdResult::idIsSet() const
+std::string ThresholdResult::getThresholdId() const
 {
-    return m_IdIsSet;
+    return m_Threshold_id;
 }
-void ThresholdResult::unsetId()
+void ThresholdResult::setThresholdId(std::string value)
 {
-    m_IdIsSet = false;
+    m_Threshold_id = value;
+    
 }
-std::string ThresholdResult::getGeneratorType() const
+std::string ThresholdResult::getTimestamp() const
 {
-    return m_Generator_type;
+    return m_Timestamp;
 }
-void ThresholdResult::setGeneratorType(std::string value)
+void ThresholdResult::setTimestamp(std::string value)
 {
-    m_Generator_type = value;
-    m_Generator_typeIsSet = true;
+    m_Timestamp = value;
+    
 }
-bool ThresholdResult::generatorTypeIsSet() const
+int32_t ThresholdResult::getConditionTrue() const
 {
-    return m_Generator_typeIsSet;
+    return m_Condition_true;
 }
-void ThresholdResult::unsetGenerator_type()
+void ThresholdResult::setConditionTrue(int32_t value)
 {
-    m_Generator_typeIsSet = false;
+    m_Condition_true = value;
+    
 }
-std::string ThresholdResult::getGeneratorId() const
+int32_t ThresholdResult::getConditionFalse() const
 {
-    return m_Generator_id;
+    return m_Condition_false;
 }
-void ThresholdResult::setGeneratorId(std::string value)
+void ThresholdResult::setConditionFalse(int32_t value)
 {
-    m_Generator_id = value;
-    m_Generator_idIsSet = true;
-}
-bool ThresholdResult::generatorIdIsSet() const
-{
-    return m_Generator_idIsSet;
-}
-void ThresholdResult::unsetGenerator_id()
-{
-    m_Generator_idIsSet = false;
-}
-int32_t ThresholdResult::getRelation() const
-{
-    return m_Relation;
-}
-void ThresholdResult::setRelation(int32_t value)
-{
-    m_Relation = value;
-    m_RelationIsSet = true;
-}
-bool ThresholdResult::relationIsSet() const
-{
-    return m_RelationIsSet;
-}
-void ThresholdResult::unsetRelation()
-{
-    m_RelationIsSet = false;
-}
-int32_t ThresholdResult::getTrue() const
-{
-    return m_True;
-}
-void ThresholdResult::setTrue(int32_t value)
-{
-    m_True = value;
-    m_TrueIsSet = true;
-}
-bool ThresholdResult::trueIsSet() const
-{
-    return m_TrueIsSet;
-}
-void ThresholdResult::unsetTrue()
-{
-    m_TrueIsSet = false;
-}
-int32_t ThresholdResult::getFalse() const
-{
-    return m_False;
-}
-void ThresholdResult::setFalse(int32_t value)
-{
-    m_False = value;
-    m_FalseIsSet = true;
-}
-bool ThresholdResult::falseIsSet() const
-{
-    return m_FalseIsSet;
-}
-void ThresholdResult::unsetFalse()
-{
-    m_FalseIsSet = false;
+    m_Condition_false = value;
+    
 }
 
 }

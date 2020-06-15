@@ -52,12 +52,10 @@ public:
     /// </summary>
     int32_t getWeight() const;
     void setWeight(int32_t value);
-    bool weightIsSet() const;
-    void unsetWeight();
-
+    
 protected:
     int32_t m_Weight;
-    bool m_WeightIsSet;
+
 };
 
 }

@@ -49,32 +49,27 @@ public:
     /// TDigestConfig members
 
     /// <summary>
-    /// T-Digest unique identifier
+    /// T-Digest configuration unique identifier
     /// </summary>
     std::string getId() const;
     void setId(std::string value);
-        /// <summary>
-    /// Type of generator
-    /// </summary>
-    std::string getGeneratorType() const;
-    void setGeneratorType(std::string value);
         /// <summary>
     /// Unique generator identifier
     /// </summary>
     std::string getGeneratorId() const;
     void setGeneratorId(std::string value);
         /// <summary>
-    /// the function to apply to the statistic before evaluating
+    /// The function to apply to the statistic before evaluating
     /// </summary>
     std::string getFunction() const;
     void setFunction(std::string value);
         /// <summary>
-    /// the X statistic to track
+    /// The X statistic to track
     /// </summary>
     std::string getStatX() const;
     void setStatX(std::string value);
         /// <summary>
-    /// the Y statistic to track (when using DXDY function)
+    /// The Y statistic to track (when using DXDY function)
     /// </summary>
     std::string getStatY() const;
     void setStatY(std::string value);
@@ -83,8 +78,6 @@ public:
 
 protected:
     std::string m_Id;
-
-    std::string m_Generator_type;
 
     std::string m_Generator_id;
 

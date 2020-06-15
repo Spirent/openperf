@@ -51,51 +51,34 @@ public:
     /// TDigestResult members
 
     /// <summary>
-    /// T-Digest identifier
+    /// Unique identifier of result of generator
     /// </summary>
-    std::string getId() const;
-    void setId(std::string value);
-    bool idIsSet() const;
-    void unsetId();
-    /// <summary>
-    /// Type of generator
+    std::string getResultId() const;
+    void setResultId(std::string value);
+        /// <summary>
+    /// T-Digest configuration identifier
     /// </summary>
-    std::string getGeneratorType() const;
-    void setGeneratorType(std::string value);
-    bool generatorTypeIsSet() const;
-    void unsetGenerator_type();
-    /// <summary>
-    /// Unique generator identifier
+    std::string getTdigestId() const;
+    void setTdigestId(std::string value);
+        /// <summary>
+    /// The ISO8601-formatted date of the last result update
     /// </summary>
-    std::string getGeneratorId() const;
-    void setGeneratorId(std::string value);
-    bool generatorIdIsSet() const;
-    void unsetGenerator_id();
-    /// <summary>
-    /// The compression factor used to initialize the T-Digest struct
-    /// </summary>
-    int32_t getFactor() const;
-    void setFactor(int32_t value);
-    bool factorIsSet() const;
-    void unsetFactor();
-    /// <summary>
-    /// 
+    std::string getTimestamp() const;
+    void setTimestamp(std::string value);
+        /// <summary>
+    /// Array of centroids
     /// </summary>
     std::vector<std::shared_ptr<TDigestCentroid>>& getCentroids();
-    bool centroidsIsSet() const;
-    void unsetCentroids();
-
+    
 protected:
-    std::string m_Id;
-    bool m_IdIsSet;
-    std::string m_Generator_type;
-    bool m_Generator_typeIsSet;
-    std::string m_Generator_id;
-    bool m_Generator_idIsSet;
-    int32_t m_Factor;
-    bool m_FactorIsSet;
+    std::string m_Result_id;
+
+    std::string m_Tdigest_id;
+
+    std::string m_Timestamp;
+
     std::vector<std::shared_ptr<TDigestCentroid>> m_Centroids;
-    bool m_CentroidsIsSet;
+
 };
 
 }

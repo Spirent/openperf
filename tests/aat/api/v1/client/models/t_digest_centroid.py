@@ -44,8 +44,7 @@ class TDigestCentroid(object):
         self._weight = None
         self.discriminator = None
 
-        if weight is not None:
-            self.weight = weight
+        self.weight = weight
 
     @property
     def weight(self):

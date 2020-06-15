@@ -32,41 +32,37 @@ class ThresholdConfig(object):
     """
     swagger_types = {
         'id': 'str',
-        'generator_type': 'str',
         'generator_id': 'str',
         'function': 'str',
-        'comparator': 'str',
+        'condition': 'str',
         'stat_x': 'str',
         'stat_y': 'str'
     }
 
     attribute_map = {
         'id': 'id',
-        'generator_type': 'generator_type',
         'generator_id': 'generator_id',
         'function': 'function',
-        'comparator': 'comparator',
+        'condition': 'condition',
         'stat_x': 'stat_x',
         'stat_y': 'stat_y'
     }
 
-    def __init__(self, id=None, generator_type=None, generator_id=None, function=None, comparator=None, stat_x=None, stat_y=None):  # noqa: E501
+    def __init__(self, id=None, generator_id=None, function=None, condition=None, stat_x=None, stat_y=None):  # noqa: E501
         """ThresholdConfig - a model defined in Swagger"""  # noqa: E501
 
         self._id = None
-        self._generator_type = None
         self._generator_id = None
         self._function = None
-        self._comparator = None
+        self._condition = None
         self._stat_x = None
         self._stat_y = None
         self.discriminator = None
 
         self.id = id
-        self.generator_type = generator_type
         self.generator_id = generator_id
         self.function = function
-        self.comparator = comparator
+        self.condition = condition
         self.stat_x = stat_x
         if stat_y is not None:
             self.stat_y = stat_y
@@ -75,7 +71,7 @@ class ThresholdConfig(object):
     def id(self):
         """Gets the id of this ThresholdConfig.  # noqa: E501
 
-        Unique threshold identifier  # noqa: E501
+        Unique threshold configuration identifier  # noqa: E501
 
         :return: The id of this ThresholdConfig.  # noqa: E501
         :rtype: str
@@ -86,34 +82,12 @@ class ThresholdConfig(object):
     def id(self, id):
         """Sets the id of this ThresholdConfig.
 
-        Unique threshold identifier  # noqa: E501
+        Unique threshold configuration identifier  # noqa: E501
 
         :param id: The id of this ThresholdConfig.  # noqa: E501
         :type: str
         """
         self._id = id
-
-    @property
-    def generator_type(self):
-        """Gets the generator_type of this ThresholdConfig.  # noqa: E501
-
-        Type of generator  # noqa: E501
-
-        :return: The generator_type of this ThresholdConfig.  # noqa: E501
-        :rtype: str
-        """
-        return self._generator_type
-
-    @generator_type.setter
-    def generator_type(self, generator_type):
-        """Sets the generator_type of this ThresholdConfig.
-
-        Type of generator  # noqa: E501
-
-        :param generator_type: The generator_type of this ThresholdConfig.  # noqa: E501
-        :type: str
-        """
-        self._generator_type = generator_type
 
     @property
     def generator_id(self):
@@ -141,7 +115,7 @@ class ThresholdConfig(object):
     def function(self):
         """Gets the function of this ThresholdConfig.  # noqa: E501
 
-        the function to apply to the statistic before evaluating  # noqa: E501
+        The function to apply to the statistic before evaluating  # noqa: E501
 
         :return: The function of this ThresholdConfig.  # noqa: E501
         :rtype: str
@@ -152,7 +126,7 @@ class ThresholdConfig(object):
     def function(self, function):
         """Sets the function of this ThresholdConfig.
 
-        the function to apply to the statistic before evaluating  # noqa: E501
+        The function to apply to the statistic before evaluating  # noqa: E501
 
         :param function: The function of this ThresholdConfig.  # noqa: E501
         :type: str
@@ -160,32 +134,32 @@ class ThresholdConfig(object):
         self._function = function
 
     @property
-    def comparator(self):
-        """Gets the comparator of this ThresholdConfig.  # noqa: E501
+    def condition(self):
+        """Gets the condition of this ThresholdConfig.  # noqa: E501
 
-        Value comparator  # noqa: E501
+        The mathematical relation between value and statistic  # noqa: E501
 
-        :return: The comparator of this ThresholdConfig.  # noqa: E501
+        :return: The condition of this ThresholdConfig.  # noqa: E501
         :rtype: str
         """
-        return self._comparator
+        return self._condition
 
-    @comparator.setter
-    def comparator(self, comparator):
-        """Sets the comparator of this ThresholdConfig.
+    @condition.setter
+    def condition(self, condition):
+        """Sets the condition of this ThresholdConfig.
 
-        Value comparator  # noqa: E501
+        The mathematical relation between value and statistic  # noqa: E501
 
-        :param comparator: The comparator of this ThresholdConfig.  # noqa: E501
+        :param condition: The condition of this ThresholdConfig.  # noqa: E501
         :type: str
         """
-        self._comparator = comparator
+        self._condition = condition
 
     @property
     def stat_x(self):
         """Gets the stat_x of this ThresholdConfig.  # noqa: E501
 
-        the X statistic to track  # noqa: E501
+        The X statistic to track  # noqa: E501
 
         :return: The stat_x of this ThresholdConfig.  # noqa: E501
         :rtype: str
@@ -196,7 +170,7 @@ class ThresholdConfig(object):
     def stat_x(self, stat_x):
         """Sets the stat_x of this ThresholdConfig.
 
-        the X statistic to track  # noqa: E501
+        The X statistic to track  # noqa: E501
 
         :param stat_x: The stat_x of this ThresholdConfig.  # noqa: E501
         :type: str
@@ -207,7 +181,7 @@ class ThresholdConfig(object):
     def stat_y(self):
         """Gets the stat_y of this ThresholdConfig.  # noqa: E501
 
-        the Y statistic to track (when using DXDY function)  # noqa: E501
+        The Y statistic to track (when using DXDY function)  # noqa: E501
 
         :return: The stat_y of this ThresholdConfig.  # noqa: E501
         :rtype: str
@@ -218,7 +192,7 @@ class ThresholdConfig(object):
     def stat_y(self, stat_y):
         """Sets the stat_y of this ThresholdConfig.
 
-        the Y statistic to track (when using DXDY function)  # noqa: E501
+        The Y statistic to track (when using DXDY function)  # noqa: E501
 
         :param stat_y: The stat_y of this ThresholdConfig.  # noqa: E501
         :type: str

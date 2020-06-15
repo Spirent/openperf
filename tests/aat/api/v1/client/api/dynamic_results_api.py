@@ -33,43 +33,45 @@ class DynamicResultsApi(object):
             api_client = ApiClient()
         self.api_client = api_client
 
-    def create_t_digest(self, **kwargs):  # noqa: E501
+    def create_t_digest(self, tdigest, **kwargs):  # noqa: E501
         """Create T-Digest  # noqa: E501
 
         Create a new T-Digest  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.create_t_digest(async_req=True)
+        >>> thread = api.create_t_digest(tdigest, async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
+        :param TDigestConfig tdigest: T-Digest configuration (required)
         :return: TDigestConfig
                  If the method is called asynchronously,
                  returns the request thread.
         """
         kwargs['_return_http_data_only'] = True
         if kwargs.get('async_req'):
-            return self.create_t_digest_with_http_info(**kwargs)  # noqa: E501
+            return self.create_t_digest_with_http_info(tdigest, **kwargs)  # noqa: E501
         else:
-            (data) = self.create_t_digest_with_http_info(**kwargs)  # noqa: E501
+            (data) = self.create_t_digest_with_http_info(tdigest, **kwargs)  # noqa: E501
             return data
 
-    def create_t_digest_with_http_info(self, **kwargs):  # noqa: E501
+    def create_t_digest_with_http_info(self, tdigest, **kwargs):  # noqa: E501
         """Create T-Digest  # noqa: E501
 
         Create a new T-Digest  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.create_t_digest_with_http_info(async_req=True)
+        >>> thread = api.create_t_digest_with_http_info(tdigest, async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
+        :param TDigestConfig tdigest: T-Digest configuration (required)
         :return: TDigestConfig
                  If the method is called asynchronously,
                  returns the request thread.
         """
 
-        all_params = []  # noqa: E501
+        all_params = ['tdigest']  # noqa: E501
         all_params.append('async_req')
         all_params.append('_return_http_data_only')
         all_params.append('_preload_content')
@@ -84,6 +86,10 @@ class DynamicResultsApi(object):
                 )
             params[key] = val
         del params['kwargs']
+        # verify the required parameter 'tdigest' is set
+        if ('tdigest' not in params or
+                params['tdigest'] is None):
+            raise ValueError("Missing the required parameter `tdigest` when calling `create_t_digest`")  # noqa: E501
 
         collection_formats = {}
 
@@ -97,6 +103,8 @@ class DynamicResultsApi(object):
         local_var_files = {}
 
         body_params = None
+        if 'tdigest' in params:
+            body_params = params['tdigest']
         # HTTP header `Accept`
         header_params['Accept'] = self.api_client.select_header_accept(
             ['application/json'])  # noqa: E501
@@ -109,7 +117,7 @@ class DynamicResultsApi(object):
         auth_settings = []  # noqa: E501
 
         return self.api_client.call_api(
-            '/dynamic-results/t-digests', 'POST',
+            '/tdigests', 'POST',
             path_params,
             query_params,
             header_params,
@@ -124,43 +132,45 @@ class DynamicResultsApi(object):
             _request_timeout=params.get('_request_timeout'),
             collection_formats=collection_formats)
 
-    def create_threshold(self, **kwargs):  # noqa: E501
+    def create_threshold(self, threshold, **kwargs):  # noqa: E501
         """Create a threshold  # noqa: E501
 
         Create a new threshold  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.create_threshold(async_req=True)
+        >>> thread = api.create_threshold(threshold, async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
+        :param ThresholdConfig threshold: Threshold configuration (required)
         :return: ThresholdConfig
                  If the method is called asynchronously,
                  returns the request thread.
         """
         kwargs['_return_http_data_only'] = True
         if kwargs.get('async_req'):
-            return self.create_threshold_with_http_info(**kwargs)  # noqa: E501
+            return self.create_threshold_with_http_info(threshold, **kwargs)  # noqa: E501
         else:
-            (data) = self.create_threshold_with_http_info(**kwargs)  # noqa: E501
+            (data) = self.create_threshold_with_http_info(threshold, **kwargs)  # noqa: E501
             return data
 
-    def create_threshold_with_http_info(self, **kwargs):  # noqa: E501
+    def create_threshold_with_http_info(self, threshold, **kwargs):  # noqa: E501
         """Create a threshold  # noqa: E501
 
         Create a new threshold  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.create_threshold_with_http_info(async_req=True)
+        >>> thread = api.create_threshold_with_http_info(threshold, async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
+        :param ThresholdConfig threshold: Threshold configuration (required)
         :return: ThresholdConfig
                  If the method is called asynchronously,
                  returns the request thread.
         """
 
-        all_params = []  # noqa: E501
+        all_params = ['threshold']  # noqa: E501
         all_params.append('async_req')
         all_params.append('_return_http_data_only')
         all_params.append('_preload_content')
@@ -175,10 +185,115 @@ class DynamicResultsApi(object):
                 )
             params[key] = val
         del params['kwargs']
+        # verify the required parameter 'threshold' is set
+        if ('threshold' not in params or
+                params['threshold'] is None):
+            raise ValueError("Missing the required parameter `threshold` when calling `create_threshold`")  # noqa: E501
 
         collection_formats = {}
 
         path_params = {}
+
+        query_params = []
+
+        header_params = {}
+
+        form_params = []
+        local_var_files = {}
+
+        body_params = None
+        if 'threshold' in params:
+            body_params = params['threshold']
+        # HTTP header `Accept`
+        header_params['Accept'] = self.api_client.select_header_accept(
+            ['application/json'])  # noqa: E501
+
+        # HTTP header `Content-Type`
+        header_params['Content-Type'] = self.api_client.select_header_content_type(  # noqa: E501
+            ['application/json'])  # noqa: E501
+
+        # Authentication setting
+        auth_settings = []  # noqa: E501
+
+        return self.api_client.call_api(
+            '/thresholds', 'POST',
+            path_params,
+            query_params,
+            header_params,
+            body=body_params,
+            post_params=form_params,
+            files=local_var_files,
+            response_type='ThresholdConfig',  # noqa: E501
+            auth_settings=auth_settings,
+            async_req=params.get('async_req'),
+            _return_http_data_only=params.get('_return_http_data_only'),
+            _preload_content=params.get('_preload_content', True),
+            _request_timeout=params.get('_request_timeout'),
+            collection_formats=collection_formats)
+
+    def delete_t_digest(self, id, **kwargs):  # noqa: E501
+        """Delete the T-Digest  # noqa: E501
+
+        Delete the T-Digest by ID  # noqa: E501
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.delete_t_digest(id, async_req=True)
+        >>> result = thread.get()
+
+        :param async_req bool
+        :param str id: Unique resource identifier (required)
+        :return: None
+                 If the method is called asynchronously,
+                 returns the request thread.
+        """
+        kwargs['_return_http_data_only'] = True
+        if kwargs.get('async_req'):
+            return self.delete_t_digest_with_http_info(id, **kwargs)  # noqa: E501
+        else:
+            (data) = self.delete_t_digest_with_http_info(id, **kwargs)  # noqa: E501
+            return data
+
+    def delete_t_digest_with_http_info(self, id, **kwargs):  # noqa: E501
+        """Delete the T-Digest  # noqa: E501
+
+        Delete the T-Digest by ID  # noqa: E501
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.delete_t_digest_with_http_info(id, async_req=True)
+        >>> result = thread.get()
+
+        :param async_req bool
+        :param str id: Unique resource identifier (required)
+        :return: None
+                 If the method is called asynchronously,
+                 returns the request thread.
+        """
+
+        all_params = ['id']  # noqa: E501
+        all_params.append('async_req')
+        all_params.append('_return_http_data_only')
+        all_params.append('_preload_content')
+        all_params.append('_request_timeout')
+
+        params = locals()
+        for key, val in six.iteritems(params['kwargs']):
+            if key not in all_params:
+                raise TypeError(
+                    "Got an unexpected keyword argument '%s'"
+                    " to method delete_t_digest" % key
+                )
+            params[key] = val
+        del params['kwargs']
+        # verify the required parameter 'id' is set
+        if ('id' not in params or
+                params['id'] is None):
+            raise ValueError("Missing the required parameter `id` when calling `delete_t_digest`")  # noqa: E501
+
+        collection_formats = {}
+
+        path_params = {}
+        if 'id' in params:
+            path_params['id'] = params['id']  # noqa: E501
 
         query_params = []
 
@@ -200,14 +315,14 @@ class DynamicResultsApi(object):
         auth_settings = []  # noqa: E501
 
         return self.api_client.call_api(
-            '/dynamic-results/thresholds', 'POST',
+            '/tdigests/{id}', 'DELETE',
             path_params,
             query_params,
             header_params,
             body=body_params,
             post_params=form_params,
             files=local_var_files,
-            response_type='ThresholdConfig',  # noqa: E501
+            response_type=None,  # noqa: E501
             auth_settings=auth_settings,
             async_req=params.get('async_req'),
             _return_http_data_only=params.get('_return_http_data_only'),
@@ -215,43 +330,338 @@ class DynamicResultsApi(object):
             _request_timeout=params.get('_request_timeout'),
             collection_formats=collection_formats)
 
-    def get_t_digest(self, **kwargs):  # noqa: E501
+    def delete_t_digest_result(self, id, **kwargs):  # noqa: E501
+        """Delete the T-Digest result  # noqa: E501
+
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.delete_t_digest_result(id, async_req=True)
+        >>> result = thread.get()
+
+        :param async_req bool
+        :param str id: Unique resource identifier (required)
+        :return: None
+                 If the method is called asynchronously,
+                 returns the request thread.
+        """
+        kwargs['_return_http_data_only'] = True
+        if kwargs.get('async_req'):
+            return self.delete_t_digest_result_with_http_info(id, **kwargs)  # noqa: E501
+        else:
+            (data) = self.delete_t_digest_result_with_http_info(id, **kwargs)  # noqa: E501
+            return data
+
+    def delete_t_digest_result_with_http_info(self, id, **kwargs):  # noqa: E501
+        """Delete the T-Digest result  # noqa: E501
+
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.delete_t_digest_result_with_http_info(id, async_req=True)
+        >>> result = thread.get()
+
+        :param async_req bool
+        :param str id: Unique resource identifier (required)
+        :return: None
+                 If the method is called asynchronously,
+                 returns the request thread.
+        """
+
+        all_params = ['id']  # noqa: E501
+        all_params.append('async_req')
+        all_params.append('_return_http_data_only')
+        all_params.append('_preload_content')
+        all_params.append('_request_timeout')
+
+        params = locals()
+        for key, val in six.iteritems(params['kwargs']):
+            if key not in all_params:
+                raise TypeError(
+                    "Got an unexpected keyword argument '%s'"
+                    " to method delete_t_digest_result" % key
+                )
+            params[key] = val
+        del params['kwargs']
+        # verify the required parameter 'id' is set
+        if ('id' not in params or
+                params['id'] is None):
+            raise ValueError("Missing the required parameter `id` when calling `delete_t_digest_result`")  # noqa: E501
+
+        collection_formats = {}
+
+        path_params = {}
+        if 'id' in params:
+            path_params['id'] = params['id']  # noqa: E501
+
+        query_params = []
+
+        header_params = {}
+
+        form_params = []
+        local_var_files = {}
+
+        body_params = None
+        # HTTP header `Accept`
+        header_params['Accept'] = self.api_client.select_header_accept(
+            ['application/json'])  # noqa: E501
+
+        # HTTP header `Content-Type`
+        header_params['Content-Type'] = self.api_client.select_header_content_type(  # noqa: E501
+            ['application/json'])  # noqa: E501
+
+        # Authentication setting
+        auth_settings = []  # noqa: E501
+
+        return self.api_client.call_api(
+            '/tdigest-results/{id}', 'DELETE',
+            path_params,
+            query_params,
+            header_params,
+            body=body_params,
+            post_params=form_params,
+            files=local_var_files,
+            response_type=None,  # noqa: E501
+            auth_settings=auth_settings,
+            async_req=params.get('async_req'),
+            _return_http_data_only=params.get('_return_http_data_only'),
+            _preload_content=params.get('_preload_content', True),
+            _request_timeout=params.get('_request_timeout'),
+            collection_formats=collection_formats)
+
+    def delete_threshold(self, id, **kwargs):  # noqa: E501
+        """Delete the threshold  # noqa: E501
+
+        Delete the threshold by ID  # noqa: E501
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.delete_threshold(id, async_req=True)
+        >>> result = thread.get()
+
+        :param async_req bool
+        :param str id: Unique resource identifier (required)
+        :return: None
+                 If the method is called asynchronously,
+                 returns the request thread.
+        """
+        kwargs['_return_http_data_only'] = True
+        if kwargs.get('async_req'):
+            return self.delete_threshold_with_http_info(id, **kwargs)  # noqa: E501
+        else:
+            (data) = self.delete_threshold_with_http_info(id, **kwargs)  # noqa: E501
+            return data
+
+    def delete_threshold_with_http_info(self, id, **kwargs):  # noqa: E501
+        """Delete the threshold  # noqa: E501
+
+        Delete the threshold by ID  # noqa: E501
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.delete_threshold_with_http_info(id, async_req=True)
+        >>> result = thread.get()
+
+        :param async_req bool
+        :param str id: Unique resource identifier (required)
+        :return: None
+                 If the method is called asynchronously,
+                 returns the request thread.
+        """
+
+        all_params = ['id']  # noqa: E501
+        all_params.append('async_req')
+        all_params.append('_return_http_data_only')
+        all_params.append('_preload_content')
+        all_params.append('_request_timeout')
+
+        params = locals()
+        for key, val in six.iteritems(params['kwargs']):
+            if key not in all_params:
+                raise TypeError(
+                    "Got an unexpected keyword argument '%s'"
+                    " to method delete_threshold" % key
+                )
+            params[key] = val
+        del params['kwargs']
+        # verify the required parameter 'id' is set
+        if ('id' not in params or
+                params['id'] is None):
+            raise ValueError("Missing the required parameter `id` when calling `delete_threshold`")  # noqa: E501
+
+        collection_formats = {}
+
+        path_params = {}
+        if 'id' in params:
+            path_params['id'] = params['id']  # noqa: E501
+
+        query_params = []
+
+        header_params = {}
+
+        form_params = []
+        local_var_files = {}
+
+        body_params = None
+        # HTTP header `Accept`
+        header_params['Accept'] = self.api_client.select_header_accept(
+            ['application/json'])  # noqa: E501
+
+        # HTTP header `Content-Type`
+        header_params['Content-Type'] = self.api_client.select_header_content_type(  # noqa: E501
+            ['application/json'])  # noqa: E501
+
+        # Authentication setting
+        auth_settings = []  # noqa: E501
+
+        return self.api_client.call_api(
+            '/thresholds/{id}', 'DELETE',
+            path_params,
+            query_params,
+            header_params,
+            body=body_params,
+            post_params=form_params,
+            files=local_var_files,
+            response_type=None,  # noqa: E501
+            auth_settings=auth_settings,
+            async_req=params.get('async_req'),
+            _return_http_data_only=params.get('_return_http_data_only'),
+            _preload_content=params.get('_preload_content', True),
+            _request_timeout=params.get('_request_timeout'),
+            collection_formats=collection_formats)
+
+    def delete_threshold_result(self, id, **kwargs):  # noqa: E501
+        """Delete the threshold result  # noqa: E501
+
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.delete_threshold_result(id, async_req=True)
+        >>> result = thread.get()
+
+        :param async_req bool
+        :param str id: Unique resource identifier (required)
+        :return: None
+                 If the method is called asynchronously,
+                 returns the request thread.
+        """
+        kwargs['_return_http_data_only'] = True
+        if kwargs.get('async_req'):
+            return self.delete_threshold_result_with_http_info(id, **kwargs)  # noqa: E501
+        else:
+            (data) = self.delete_threshold_result_with_http_info(id, **kwargs)  # noqa: E501
+            return data
+
+    def delete_threshold_result_with_http_info(self, id, **kwargs):  # noqa: E501
+        """Delete the threshold result  # noqa: E501
+
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.delete_threshold_result_with_http_info(id, async_req=True)
+        >>> result = thread.get()
+
+        :param async_req bool
+        :param str id: Unique resource identifier (required)
+        :return: None
+                 If the method is called asynchronously,
+                 returns the request thread.
+        """
+
+        all_params = ['id']  # noqa: E501
+        all_params.append('async_req')
+        all_params.append('_return_http_data_only')
+        all_params.append('_preload_content')
+        all_params.append('_request_timeout')
+
+        params = locals()
+        for key, val in six.iteritems(params['kwargs']):
+            if key not in all_params:
+                raise TypeError(
+                    "Got an unexpected keyword argument '%s'"
+                    " to method delete_threshold_result" % key
+                )
+            params[key] = val
+        del params['kwargs']
+        # verify the required parameter 'id' is set
+        if ('id' not in params or
+                params['id'] is None):
+            raise ValueError("Missing the required parameter `id` when calling `delete_threshold_result`")  # noqa: E501
+
+        collection_formats = {}
+
+        path_params = {}
+        if 'id' in params:
+            path_params['id'] = params['id']  # noqa: E501
+
+        query_params = []
+
+        header_params = {}
+
+        form_params = []
+        local_var_files = {}
+
+        body_params = None
+        # HTTP header `Accept`
+        header_params['Accept'] = self.api_client.select_header_accept(
+            ['application/json'])  # noqa: E501
+
+        # HTTP header `Content-Type`
+        header_params['Content-Type'] = self.api_client.select_header_content_type(  # noqa: E501
+            ['application/json'])  # noqa: E501
+
+        # Authentication setting
+        auth_settings = []  # noqa: E501
+
+        return self.api_client.call_api(
+            '/threshold-results/{id}', 'DELETE',
+            path_params,
+            query_params,
+            header_params,
+            body=body_params,
+            post_params=form_params,
+            files=local_var_files,
+            response_type=None,  # noqa: E501
+            auth_settings=auth_settings,
+            async_req=params.get('async_req'),
+            _return_http_data_only=params.get('_return_http_data_only'),
+            _preload_content=params.get('_preload_content', True),
+            _request_timeout=params.get('_request_timeout'),
+            collection_formats=collection_formats)
+
+    def get_t_digest(self, id, **kwargs):  # noqa: E501
         """Returns the T-Digest  # noqa: E501
 
         Returns the T-Digest configuration by ID  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.get_t_digest(async_req=True)
+        >>> thread = api.get_t_digest(id, async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
+        :param str id: Unique resource identifier (required)
         :return: TDigestConfig
                  If the method is called asynchronously,
                  returns the request thread.
         """
         kwargs['_return_http_data_only'] = True
         if kwargs.get('async_req'):
-            return self.get_t_digest_with_http_info(**kwargs)  # noqa: E501
+            return self.get_t_digest_with_http_info(id, **kwargs)  # noqa: E501
         else:
-            (data) = self.get_t_digest_with_http_info(**kwargs)  # noqa: E501
+            (data) = self.get_t_digest_with_http_info(id, **kwargs)  # noqa: E501
             return data
 
-    def get_t_digest_with_http_info(self, **kwargs):  # noqa: E501
+    def get_t_digest_with_http_info(self, id, **kwargs):  # noqa: E501
         """Returns the T-Digest  # noqa: E501
 
         Returns the T-Digest configuration by ID  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.get_t_digest_with_http_info(async_req=True)
+        >>> thread = api.get_t_digest_with_http_info(id, async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
+        :param str id: Unique resource identifier (required)
         :return: TDigestConfig
                  If the method is called asynchronously,
                  returns the request thread.
         """
 
-        all_params = []  # noqa: E501
+        all_params = ['id']  # noqa: E501
         all_params.append('async_req')
         all_params.append('_return_http_data_only')
         all_params.append('_preload_content')
@@ -266,10 +676,16 @@ class DynamicResultsApi(object):
                 )
             params[key] = val
         del params['kwargs']
+        # verify the required parameter 'id' is set
+        if ('id' not in params or
+                params['id'] is None):
+            raise ValueError("Missing the required parameter `id` when calling `get_t_digest`")  # noqa: E501
 
         collection_formats = {}
 
         path_params = {}
+        if 'id' in params:
+            path_params['id'] = params['id']  # noqa: E501
 
         query_params = []
 
@@ -291,7 +707,7 @@ class DynamicResultsApi(object):
         auth_settings = []  # noqa: E501
 
         return self.api_client.call_api(
-            '/dynamic-results/t-digests/{id}', 'GET',
+            '/tdigests/{id}', 'GET',
             path_params,
             query_params,
             header_params,
@@ -306,43 +722,45 @@ class DynamicResultsApi(object):
             _request_timeout=params.get('_request_timeout'),
             collection_formats=collection_formats)
 
-    def get_t_digest_result(self, **kwargs):  # noqa: E501
-        """Returns the T-Digest result  # noqa: E501
+    def get_t_digest_result(self, id, **kwargs):  # noqa: E501
+        """Return the T-Digest result  # noqa: E501
 
-        Returns the T-Digest result by T-Digest ID  # noqa: E501
+        Return the T-Digest result by T-Digest ID  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.get_t_digest_result(async_req=True)
+        >>> thread = api.get_t_digest_result(id, async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
+        :param str id: Unique resource identifier (required)
         :return: TDigestResult
                  If the method is called asynchronously,
                  returns the request thread.
         """
         kwargs['_return_http_data_only'] = True
         if kwargs.get('async_req'):
-            return self.get_t_digest_result_with_http_info(**kwargs)  # noqa: E501
+            return self.get_t_digest_result_with_http_info(id, **kwargs)  # noqa: E501
         else:
-            (data) = self.get_t_digest_result_with_http_info(**kwargs)  # noqa: E501
+            (data) = self.get_t_digest_result_with_http_info(id, **kwargs)  # noqa: E501
             return data
 
-    def get_t_digest_result_with_http_info(self, **kwargs):  # noqa: E501
-        """Returns the T-Digest result  # noqa: E501
+    def get_t_digest_result_with_http_info(self, id, **kwargs):  # noqa: E501
+        """Return the T-Digest result  # noqa: E501
 
-        Returns the T-Digest result by T-Digest ID  # noqa: E501
+        Return the T-Digest result by T-Digest ID  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.get_t_digest_result_with_http_info(async_req=True)
+        >>> thread = api.get_t_digest_result_with_http_info(id, async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
+        :param str id: Unique resource identifier (required)
         :return: TDigestResult
                  If the method is called asynchronously,
                  returns the request thread.
         """
 
-        all_params = []  # noqa: E501
+        all_params = ['id']  # noqa: E501
         all_params.append('async_req')
         all_params.append('_return_http_data_only')
         all_params.append('_preload_content')
@@ -357,10 +775,16 @@ class DynamicResultsApi(object):
                 )
             params[key] = val
         del params['kwargs']
+        # verify the required parameter 'id' is set
+        if ('id' not in params or
+                params['id'] is None):
+            raise ValueError("Missing the required parameter `id` when calling `get_t_digest_result`")  # noqa: E501
 
         collection_formats = {}
 
         path_params = {}
+        if 'id' in params:
+            path_params['id'] = params['id']  # noqa: E501
 
         query_params = []
 
@@ -382,7 +806,7 @@ class DynamicResultsApi(object):
         auth_settings = []  # noqa: E501
 
         return self.api_client.call_api(
-            '/dynamic-results/t-digests/{id}/result', 'GET',
+            '/tdigest-results/{id}', 'GET',
             path_params,
             query_params,
             header_params,
@@ -397,43 +821,45 @@ class DynamicResultsApi(object):
             _request_timeout=params.get('_request_timeout'),
             collection_formats=collection_formats)
 
-    def get_threshold(self, **kwargs):  # noqa: E501
-        """Returns the threshold  # noqa: E501
+    def get_threshold(self, id, **kwargs):  # noqa: E501
+        """Return the threshold  # noqa: E501
 
-        Returns the threshold configuration by ID  # noqa: E501
+        The endpoint returns the threshold configuration by ID  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.get_threshold(async_req=True)
+        >>> thread = api.get_threshold(id, async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
+        :param str id: Unique resource identifier (required)
         :return: ThresholdConfig
                  If the method is called asynchronously,
                  returns the request thread.
         """
         kwargs['_return_http_data_only'] = True
         if kwargs.get('async_req'):
-            return self.get_threshold_with_http_info(**kwargs)  # noqa: E501
+            return self.get_threshold_with_http_info(id, **kwargs)  # noqa: E501
         else:
-            (data) = self.get_threshold_with_http_info(**kwargs)  # noqa: E501
+            (data) = self.get_threshold_with_http_info(id, **kwargs)  # noqa: E501
             return data
 
-    def get_threshold_with_http_info(self, **kwargs):  # noqa: E501
-        """Returns the threshold  # noqa: E501
+    def get_threshold_with_http_info(self, id, **kwargs):  # noqa: E501
+        """Return the threshold  # noqa: E501
 
-        Returns the threshold configuration by ID  # noqa: E501
+        The endpoint returns the threshold configuration by ID  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.get_threshold_with_http_info(async_req=True)
+        >>> thread = api.get_threshold_with_http_info(id, async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
+        :param str id: Unique resource identifier (required)
         :return: ThresholdConfig
                  If the method is called asynchronously,
                  returns the request thread.
         """
 
-        all_params = []  # noqa: E501
+        all_params = ['id']  # noqa: E501
         all_params.append('async_req')
         all_params.append('_return_http_data_only')
         all_params.append('_preload_content')
@@ -448,10 +874,16 @@ class DynamicResultsApi(object):
                 )
             params[key] = val
         del params['kwargs']
+        # verify the required parameter 'id' is set
+        if ('id' not in params or
+                params['id'] is None):
+            raise ValueError("Missing the required parameter `id` when calling `get_threshold`")  # noqa: E501
 
         collection_formats = {}
 
         path_params = {}
+        if 'id' in params:
+            path_params['id'] = params['id']  # noqa: E501
 
         query_params = []
 
@@ -473,7 +905,7 @@ class DynamicResultsApi(object):
         auth_settings = []  # noqa: E501
 
         return self.api_client.call_api(
-            '/dynamic-results/thresholds/{id}', 'GET',
+            '/thresholds/{id}', 'GET',
             path_params,
             query_params,
             header_params,
@@ -488,43 +920,45 @@ class DynamicResultsApi(object):
             _request_timeout=params.get('_request_timeout'),
             collection_formats=collection_formats)
 
-    def get_threshold_result(self, **kwargs):  # noqa: E501
+    def get_threshold_result(self, id, **kwargs):  # noqa: E501
         """Get the threshold result  # noqa: E501
 
         Get the threshold result by threshold ID  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.get_threshold_result(async_req=True)
+        >>> thread = api.get_threshold_result(id, async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
+        :param str id: Unique resource identifier (required)
         :return: ThresholdResult
                  If the method is called asynchronously,
                  returns the request thread.
         """
         kwargs['_return_http_data_only'] = True
         if kwargs.get('async_req'):
-            return self.get_threshold_result_with_http_info(**kwargs)  # noqa: E501
+            return self.get_threshold_result_with_http_info(id, **kwargs)  # noqa: E501
         else:
-            (data) = self.get_threshold_result_with_http_info(**kwargs)  # noqa: E501
+            (data) = self.get_threshold_result_with_http_info(id, **kwargs)  # noqa: E501
             return data
 
-    def get_threshold_result_with_http_info(self, **kwargs):  # noqa: E501
+    def get_threshold_result_with_http_info(self, id, **kwargs):  # noqa: E501
         """Get the threshold result  # noqa: E501
 
         Get the threshold result by threshold ID  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.get_threshold_result_with_http_info(async_req=True)
+        >>> thread = api.get_threshold_result_with_http_info(id, async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
+        :param str id: Unique resource identifier (required)
         :return: ThresholdResult
                  If the method is called asynchronously,
                  returns the request thread.
         """
 
-        all_params = []  # noqa: E501
+        all_params = ['id']  # noqa: E501
         all_params.append('async_req')
         all_params.append('_return_http_data_only')
         all_params.append('_preload_content')
@@ -539,10 +973,16 @@ class DynamicResultsApi(object):
                 )
             params[key] = val
         del params['kwargs']
+        # verify the required parameter 'id' is set
+        if ('id' not in params or
+                params['id'] is None):
+            raise ValueError("Missing the required parameter `id` when calling `get_threshold_result`")  # noqa: E501
 
         collection_formats = {}
 
         path_params = {}
+        if 'id' in params:
+            path_params['id'] = params['id']  # noqa: E501
 
         query_params = []
 
@@ -564,7 +1004,7 @@ class DynamicResultsApi(object):
         auth_settings = []  # noqa: E501
 
         return self.api_client.call_api(
-            '/dynamic-results/thresholds/{id}/result', 'GET',
+            '/threshold-results/{id}', 'GET',
             path_params,
             query_params,
             header_params,
@@ -579,38 +1019,38 @@ class DynamicResultsApi(object):
             _request_timeout=params.get('_request_timeout'),
             collection_formats=collection_formats)
 
-    def t_digest_list(self, **kwargs):  # noqa: E501
-        """List T-Digests  # noqa: E501
+    def list_t_digest_results(self, **kwargs):  # noqa: E501
+        """List T-Digest results  # noqa: E501
 
-        The endpoint returns all of configured T-Digests  # noqa: E501
+        Return the list of T-Digest results  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.t_digest_list(async_req=True)
+        >>> thread = api.list_t_digest_results(async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
-        :return: list[TDigestConfig]
+        :return: list[TDigestResult]
                  If the method is called asynchronously,
                  returns the request thread.
         """
         kwargs['_return_http_data_only'] = True
         if kwargs.get('async_req'):
-            return self.t_digest_list_with_http_info(**kwargs)  # noqa: E501
+            return self.list_t_digest_results_with_http_info(**kwargs)  # noqa: E501
         else:
-            (data) = self.t_digest_list_with_http_info(**kwargs)  # noqa: E501
+            (data) = self.list_t_digest_results_with_http_info(**kwargs)  # noqa: E501
             return data
 
-    def t_digest_list_with_http_info(self, **kwargs):  # noqa: E501
-        """List T-Digests  # noqa: E501
+    def list_t_digest_results_with_http_info(self, **kwargs):  # noqa: E501
+        """List T-Digest results  # noqa: E501
 
-        The endpoint returns all of configured T-Digests  # noqa: E501
+        Return the list of T-Digest results  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.t_digest_list_with_http_info(async_req=True)
+        >>> thread = api.list_t_digest_results_with_http_info(async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
-        :return: list[TDigestConfig]
+        :return: list[TDigestResult]
                  If the method is called asynchronously,
                  returns the request thread.
         """
@@ -626,7 +1066,7 @@ class DynamicResultsApi(object):
             if key not in all_params:
                 raise TypeError(
                     "Got an unexpected keyword argument '%s'"
-                    " to method t_digest_list" % key
+                    " to method list_t_digest_results" % key
                 )
             params[key] = val
         del params['kwargs']
@@ -655,7 +1095,98 @@ class DynamicResultsApi(object):
         auth_settings = []  # noqa: E501
 
         return self.api_client.call_api(
-            '/dynamic-results/t-digests', 'GET',
+            '/tdigest-results', 'GET',
+            path_params,
+            query_params,
+            header_params,
+            body=body_params,
+            post_params=form_params,
+            files=local_var_files,
+            response_type='list[TDigestResult]',  # noqa: E501
+            auth_settings=auth_settings,
+            async_req=params.get('async_req'),
+            _return_http_data_only=params.get('_return_http_data_only'),
+            _preload_content=params.get('_preload_content', True),
+            _request_timeout=params.get('_request_timeout'),
+            collection_formats=collection_formats)
+
+    def list_t_digests(self, **kwargs):  # noqa: E501
+        """List T-Digests  # noqa: E501
+
+        Return all of configured T-Digests  # noqa: E501
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.list_t_digests(async_req=True)
+        >>> result = thread.get()
+
+        :param async_req bool
+        :return: list[TDigestConfig]
+                 If the method is called asynchronously,
+                 returns the request thread.
+        """
+        kwargs['_return_http_data_only'] = True
+        if kwargs.get('async_req'):
+            return self.list_t_digests_with_http_info(**kwargs)  # noqa: E501
+        else:
+            (data) = self.list_t_digests_with_http_info(**kwargs)  # noqa: E501
+            return data
+
+    def list_t_digests_with_http_info(self, **kwargs):  # noqa: E501
+        """List T-Digests  # noqa: E501
+
+        Return all of configured T-Digests  # noqa: E501
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.list_t_digests_with_http_info(async_req=True)
+        >>> result = thread.get()
+
+        :param async_req bool
+        :return: list[TDigestConfig]
+                 If the method is called asynchronously,
+                 returns the request thread.
+        """
+
+        all_params = []  # noqa: E501
+        all_params.append('async_req')
+        all_params.append('_return_http_data_only')
+        all_params.append('_preload_content')
+        all_params.append('_request_timeout')
+
+        params = locals()
+        for key, val in six.iteritems(params['kwargs']):
+            if key not in all_params:
+                raise TypeError(
+                    "Got an unexpected keyword argument '%s'"
+                    " to method list_t_digests" % key
+                )
+            params[key] = val
+        del params['kwargs']
+
+        collection_formats = {}
+
+        path_params = {}
+
+        query_params = []
+
+        header_params = {}
+
+        form_params = []
+        local_var_files = {}
+
+        body_params = None
+        # HTTP header `Accept`
+        header_params['Accept'] = self.api_client.select_header_accept(
+            ['application/json'])  # noqa: E501
+
+        # HTTP header `Content-Type`
+        header_params['Content-Type'] = self.api_client.select_header_content_type(  # noqa: E501
+            ['application/json'])  # noqa: E501
+
+        # Authentication setting
+        auth_settings = []  # noqa: E501
+
+        return self.api_client.call_api(
+            '/tdigests', 'GET',
             path_params,
             query_params,
             header_params,
@@ -670,38 +1201,38 @@ class DynamicResultsApi(object):
             _request_timeout=params.get('_request_timeout'),
             collection_formats=collection_formats)
 
-    def threshold_list(self, **kwargs):  # noqa: E501
-        """List thresholds  # noqa: E501
+    def list_threshold_results(self, **kwargs):  # noqa: E501
+        """List threshold results  # noqa: E501
 
-        The endpoint returns all of the configured thresholds  # noqa: E501
+        Get the list of threshold results  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.threshold_list(async_req=True)
+        >>> thread = api.list_threshold_results(async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
-        :return: list[ThresholdConfig]
+        :return: list[ThresholdResult]
                  If the method is called asynchronously,
                  returns the request thread.
         """
         kwargs['_return_http_data_only'] = True
         if kwargs.get('async_req'):
-            return self.threshold_list_with_http_info(**kwargs)  # noqa: E501
+            return self.list_threshold_results_with_http_info(**kwargs)  # noqa: E501
         else:
-            (data) = self.threshold_list_with_http_info(**kwargs)  # noqa: E501
+            (data) = self.list_threshold_results_with_http_info(**kwargs)  # noqa: E501
             return data
 
-    def threshold_list_with_http_info(self, **kwargs):  # noqa: E501
-        """List thresholds  # noqa: E501
+    def list_threshold_results_with_http_info(self, **kwargs):  # noqa: E501
+        """List threshold results  # noqa: E501
 
-        The endpoint returns all of the configured thresholds  # noqa: E501
+        Get the list of threshold results  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.threshold_list_with_http_info(async_req=True)
+        >>> thread = api.list_threshold_results_with_http_info(async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
-        :return: list[ThresholdConfig]
+        :return: list[ThresholdResult]
                  If the method is called asynchronously,
                  returns the request thread.
         """
@@ -717,7 +1248,7 @@ class DynamicResultsApi(object):
             if key not in all_params:
                 raise TypeError(
                     "Got an unexpected keyword argument '%s'"
-                    " to method threshold_list" % key
+                    " to method list_threshold_results" % key
                 )
             params[key] = val
         del params['kwargs']
@@ -746,7 +1277,98 @@ class DynamicResultsApi(object):
         auth_settings = []  # noqa: E501
 
         return self.api_client.call_api(
-            '/dynamic-results/thresholds', 'GET',
+            '/threshold-results', 'GET',
+            path_params,
+            query_params,
+            header_params,
+            body=body_params,
+            post_params=form_params,
+            files=local_var_files,
+            response_type='list[ThresholdResult]',  # noqa: E501
+            auth_settings=auth_settings,
+            async_req=params.get('async_req'),
+            _return_http_data_only=params.get('_return_http_data_only'),
+            _preload_content=params.get('_preload_content', True),
+            _request_timeout=params.get('_request_timeout'),
+            collection_formats=collection_formats)
+
+    def list_thresholds(self, **kwargs):  # noqa: E501
+        """List thresholds  # noqa: E501
+
+        The endpoint returns all of the configured thresholds  # noqa: E501
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.list_thresholds(async_req=True)
+        >>> result = thread.get()
+
+        :param async_req bool
+        :return: list[ThresholdConfig]
+                 If the method is called asynchronously,
+                 returns the request thread.
+        """
+        kwargs['_return_http_data_only'] = True
+        if kwargs.get('async_req'):
+            return self.list_thresholds_with_http_info(**kwargs)  # noqa: E501
+        else:
+            (data) = self.list_thresholds_with_http_info(**kwargs)  # noqa: E501
+            return data
+
+    def list_thresholds_with_http_info(self, **kwargs):  # noqa: E501
+        """List thresholds  # noqa: E501
+
+        The endpoint returns all of the configured thresholds  # noqa: E501
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.list_thresholds_with_http_info(async_req=True)
+        >>> result = thread.get()
+
+        :param async_req bool
+        :return: list[ThresholdConfig]
+                 If the method is called asynchronously,
+                 returns the request thread.
+        """
+
+        all_params = []  # noqa: E501
+        all_params.append('async_req')
+        all_params.append('_return_http_data_only')
+        all_params.append('_preload_content')
+        all_params.append('_request_timeout')
+
+        params = locals()
+        for key, val in six.iteritems(params['kwargs']):
+            if key not in all_params:
+                raise TypeError(
+                    "Got an unexpected keyword argument '%s'"
+                    " to method list_thresholds" % key
+                )
+            params[key] = val
+        del params['kwargs']
+
+        collection_formats = {}
+
+        path_params = {}
+
+        query_params = []
+
+        header_params = {}
+
+        form_params = []
+        local_var_files = {}
+
+        body_params = None
+        # HTTP header `Accept`
+        header_params['Accept'] = self.api_client.select_header_accept(
+            ['application/json'])  # noqa: E501
+
+        # HTTP header `Content-Type`
+        header_params['Content-Type'] = self.api_client.select_header_content_type(  # noqa: E501
+            ['application/json'])  # noqa: E501
+
+        # Authentication setting
+        auth_settings = []  # noqa: E501
+
+        return self.api_client.call_api(
+            '/thresholds', 'GET',
             path_params,
             query_params,
             header_params,
