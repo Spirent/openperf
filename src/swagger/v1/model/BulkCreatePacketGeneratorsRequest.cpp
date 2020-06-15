@@ -11,27 +11,27 @@
 */
 
 
-#include "BulkCreateGeneratorsResponse.h"
+#include "BulkCreatePacketGeneratorsRequest.h"
 
 namespace swagger {
 namespace v1 {
 namespace model {
 
-BulkCreateGeneratorsResponse::BulkCreateGeneratorsResponse()
+BulkCreatePacketGeneratorsRequest::BulkCreatePacketGeneratorsRequest()
 {
     
 }
 
-BulkCreateGeneratorsResponse::~BulkCreateGeneratorsResponse()
+BulkCreatePacketGeneratorsRequest::~BulkCreatePacketGeneratorsRequest()
 {
 }
 
-void BulkCreateGeneratorsResponse::validate()
+void BulkCreatePacketGeneratorsRequest::validate()
 {
     // TODO: implement validation
 }
 
-nlohmann::json BulkCreateGeneratorsResponse::toJson() const
+nlohmann::json BulkCreatePacketGeneratorsRequest::toJson() const
 {
     nlohmann::json val = nlohmann::json::object();
 
@@ -48,7 +48,7 @@ nlohmann::json BulkCreateGeneratorsResponse::toJson() const
     return val;
 }
 
-void BulkCreateGeneratorsResponse::fromJson(nlohmann::json& val)
+void BulkCreatePacketGeneratorsRequest::fromJson(nlohmann::json& val)
 {
     {
         m_Items.clear();
@@ -73,7 +73,7 @@ void BulkCreateGeneratorsResponse::fromJson(nlohmann::json& val)
 }
 
 
-std::vector<std::shared_ptr<PacketGenerator>>& BulkCreateGeneratorsResponse::getItems()
+std::vector<std::shared_ptr<PacketGenerator>>& BulkCreatePacketGeneratorsRequest::getItems()
 {
     return m_Items;
 }

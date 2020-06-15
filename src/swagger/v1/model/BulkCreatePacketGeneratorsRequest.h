@@ -10,13 +10,13 @@
 * Do not edit the class manually.
 */
 /*
- * BulkCreateGeneratorsRequest.h
+ * BulkCreatePacketGeneratorsRequest.h
  *
  * Parameters for the bulk create operation
  */
 
-#ifndef BulkCreateGeneratorsRequest_H_
-#define BulkCreateGeneratorsRequest_H_
+#ifndef BulkCreatePacketGeneratorsRequest_H_
+#define BulkCreatePacketGeneratorsRequest_H_
 
 
 #include "ModelBase.h"
@@ -31,12 +31,12 @@ namespace model {
 /// <summary>
 /// Parameters for the bulk create operation
 /// </summary>
-class  BulkCreateGeneratorsRequest
+class  BulkCreatePacketGeneratorsRequest
     : public ModelBase
 {
 public:
-    BulkCreateGeneratorsRequest();
-    virtual ~BulkCreateGeneratorsRequest();
+    BulkCreatePacketGeneratorsRequest();
+    virtual ~BulkCreatePacketGeneratorsRequest();
 
     /////////////////////////////////////////////
     /// ModelBase overrides
@@ -47,7 +47,7 @@ public:
     void fromJson(nlohmann::json& json) override;
 
     /////////////////////////////////////////////
-    /// BulkCreateGeneratorsRequest members
+    /// BulkCreatePacketGeneratorsRequest members
 
     /// <summary>
     /// List of packet generators
@@ -63,4 +63,4 @@ protected:
 }
 }
 
-#endif /* BulkCreateGeneratorsRequest_H_ */
+#endif /* BulkCreatePacketGeneratorsRequest_H_ */

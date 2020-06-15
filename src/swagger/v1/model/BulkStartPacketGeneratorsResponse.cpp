@@ -11,27 +11,27 @@
 */
 
 
-#include "BulkCreateGeneratorsRequest.h"
+#include "BulkStartPacketGeneratorsResponse.h"
 
 namespace swagger {
 namespace v1 {
 namespace model {
 
-BulkCreateGeneratorsRequest::BulkCreateGeneratorsRequest()
+BulkStartPacketGeneratorsResponse::BulkStartPacketGeneratorsResponse()
 {
     
 }
 
-BulkCreateGeneratorsRequest::~BulkCreateGeneratorsRequest()
+BulkStartPacketGeneratorsResponse::~BulkStartPacketGeneratorsResponse()
 {
 }
 
-void BulkCreateGeneratorsRequest::validate()
+void BulkStartPacketGeneratorsResponse::validate()
 {
     // TODO: implement validation
 }
 
-nlohmann::json BulkCreateGeneratorsRequest::toJson() const
+nlohmann::json BulkStartPacketGeneratorsResponse::toJson() const
 {
     nlohmann::json val = nlohmann::json::object();
 
@@ -48,7 +48,7 @@ nlohmann::json BulkCreateGeneratorsRequest::toJson() const
     return val;
 }
 
-void BulkCreateGeneratorsRequest::fromJson(nlohmann::json& val)
+void BulkStartPacketGeneratorsResponse::fromJson(nlohmann::json& val)
 {
     {
         m_Items.clear();
@@ -58,11 +58,11 @@ void BulkCreateGeneratorsRequest::fromJson(nlohmann::json& val)
             
             if(item.is_null())
             {
-                m_Items.push_back( std::shared_ptr<PacketGenerator>(nullptr) );
+                m_Items.push_back( std::shared_ptr<PacketGeneratorResult>(nullptr) );
             }
             else
             {
-                std::shared_ptr<PacketGenerator> newItem(new PacketGenerator());
+                std::shared_ptr<PacketGeneratorResult> newItem(new PacketGeneratorResult());
                 newItem->fromJson(item);
                 m_Items.push_back( newItem );
             }
@@ -73,7 +73,7 @@ void BulkCreateGeneratorsRequest::fromJson(nlohmann::json& val)
 }
 
 
-std::vector<std::shared_ptr<PacketGenerator>>& BulkCreateGeneratorsRequest::getItems()
+std::vector<std::shared_ptr<PacketGeneratorResult>>& BulkStartPacketGeneratorsResponse::getItems()
 {
     return m_Items;
 }

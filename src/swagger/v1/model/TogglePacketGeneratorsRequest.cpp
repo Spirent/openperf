@@ -11,29 +11,29 @@
 */
 
 
-#include "ToggleGeneratorsRequest.h"
+#include "TogglePacketGeneratorsRequest.h"
 
 namespace swagger {
 namespace v1 {
 namespace model {
 
-ToggleGeneratorsRequest::ToggleGeneratorsRequest()
+TogglePacketGeneratorsRequest::TogglePacketGeneratorsRequest()
 {
     m_Replace = "";
     m_With = "";
     
 }
 
-ToggleGeneratorsRequest::~ToggleGeneratorsRequest()
+TogglePacketGeneratorsRequest::~TogglePacketGeneratorsRequest()
 {
 }
 
-void ToggleGeneratorsRequest::validate()
+void TogglePacketGeneratorsRequest::validate()
 {
     // TODO: implement validation
 }
 
-nlohmann::json ToggleGeneratorsRequest::toJson() const
+nlohmann::json TogglePacketGeneratorsRequest::toJson() const
 {
     nlohmann::json val = nlohmann::json::object();
 
@@ -44,7 +44,7 @@ nlohmann::json ToggleGeneratorsRequest::toJson() const
     return val;
 }
 
-void ToggleGeneratorsRequest::fromJson(nlohmann::json& val)
+void TogglePacketGeneratorsRequest::fromJson(nlohmann::json& val)
 {
     setReplace(val.at("replace"));
     setWith(val.at("with"));
@@ -52,20 +52,20 @@ void ToggleGeneratorsRequest::fromJson(nlohmann::json& val)
 }
 
 
-std::string ToggleGeneratorsRequest::getReplace() const
+std::string TogglePacketGeneratorsRequest::getReplace() const
 {
     return m_Replace;
 }
-void ToggleGeneratorsRequest::setReplace(std::string value)
+void TogglePacketGeneratorsRequest::setReplace(std::string value)
 {
     m_Replace = value;
     
 }
-std::string ToggleGeneratorsRequest::getWith() const
+std::string TogglePacketGeneratorsRequest::getWith() const
 {
     return m_With;
 }
-void ToggleGeneratorsRequest::setWith(std::string value)
+void TogglePacketGeneratorsRequest::setWith(std::string value)
 {
     m_With = value;
     

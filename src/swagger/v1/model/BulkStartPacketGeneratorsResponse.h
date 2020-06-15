@@ -10,18 +10,18 @@
 * Do not edit the class manually.
 */
 /*
- * BulkStartGeneratorsRequest.h
+ * BulkStartPacketGeneratorsResponse.h
  *
- * Parameters for the bulk start operation
+ * 
  */
 
-#ifndef BulkStartGeneratorsRequest_H_
-#define BulkStartGeneratorsRequest_H_
+#ifndef BulkStartPacketGeneratorsResponse_H_
+#define BulkStartPacketGeneratorsResponse_H_
 
 
 #include "ModelBase.h"
 
-#include <string>
+#include "PacketGeneratorResult.h"
 #include <vector>
 
 namespace swagger {
@@ -29,14 +29,14 @@ namespace v1 {
 namespace model {
 
 /// <summary>
-/// Parameters for the bulk start operation
+/// 
 /// </summary>
-class  BulkStartGeneratorsRequest
+class  BulkStartPacketGeneratorsResponse
     : public ModelBase
 {
 public:
-    BulkStartGeneratorsRequest();
-    virtual ~BulkStartGeneratorsRequest();
+    BulkStartPacketGeneratorsResponse();
+    virtual ~BulkStartPacketGeneratorsResponse();
 
     /////////////////////////////////////////////
     /// ModelBase overrides
@@ -47,15 +47,15 @@ public:
     void fromJson(nlohmann::json& json) override;
 
     /////////////////////////////////////////////
-    /// BulkStartGeneratorsRequest members
+    /// BulkStartPacketGeneratorsResponse members
 
     /// <summary>
-    /// List of packet generator identifiers
+    /// List of packet generator results
     /// </summary>
-    std::vector<std::string>& getIds();
+    std::vector<std::shared_ptr<PacketGeneratorResult>>& getItems();
     
 protected:
-    std::vector<std::string> m_Ids;
+    std::vector<std::shared_ptr<PacketGeneratorResult>> m_Items;
 
 };
 
@@ -63,4 +63,4 @@ protected:
 }
 }
 
-#endif /* BulkStartGeneratorsRequest_H_ */
+#endif /* BulkStartPacketGeneratorsResponse_H_ */

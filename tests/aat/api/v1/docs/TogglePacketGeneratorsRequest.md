@@ -1,4 +1,4 @@
-# ToggleGeneratorsRequest
+# TogglePacketGeneratorsRequest
 
 ## Properties
 Name | Type | Description | Notes

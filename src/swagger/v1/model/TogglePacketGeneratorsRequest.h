@@ -10,13 +10,13 @@
 * Do not edit the class manually.
 */
 /*
- * ToggleGeneratorsRequest.h
+ * TogglePacketGeneratorsRequest.h
  *
  * Parameters for the toggle operation
  */
 
-#ifndef ToggleGeneratorsRequest_H_
-#define ToggleGeneratorsRequest_H_
+#ifndef TogglePacketGeneratorsRequest_H_
+#define TogglePacketGeneratorsRequest_H_
 
 
 #include "ModelBase.h"
@@ -30,12 +30,12 @@ namespace model {
 /// <summary>
 /// Parameters for the toggle operation
 /// </summary>
-class  ToggleGeneratorsRequest
+class  TogglePacketGeneratorsRequest
     : public ModelBase
 {
 public:
-    ToggleGeneratorsRequest();
-    virtual ~ToggleGeneratorsRequest();
+    TogglePacketGeneratorsRequest();
+    virtual ~TogglePacketGeneratorsRequest();
 
     /////////////////////////////////////////////
     /// ModelBase overrides
@@ -46,7 +46,7 @@ public:
     void fromJson(nlohmann::json& json) override;
 
     /////////////////////////////////////////////
-    /// ToggleGeneratorsRequest members
+    /// TogglePacketGeneratorsRequest members
 
     /// <summary>
     /// The unique id of the running generator
@@ -70,4 +70,4 @@ protected:
 }
 }
 
-#endif /* ToggleGeneratorsRequest_H_ */
+#endif /* TogglePacketGeneratorsRequest_H_ */

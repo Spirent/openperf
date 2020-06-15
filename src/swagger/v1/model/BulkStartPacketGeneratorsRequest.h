@@ -10,13 +10,13 @@
 * Do not edit the class manually.
 */
 /*
- * BulkDeleteGeneratorsRequest.h
+ * BulkStartPacketGeneratorsRequest.h
  *
- * Parameters for the bulk delete operation
+ * Parameters for the bulk start operation
  */
 
-#ifndef BulkDeleteGeneratorsRequest_H_
-#define BulkDeleteGeneratorsRequest_H_
+#ifndef BulkStartPacketGeneratorsRequest_H_
+#define BulkStartPacketGeneratorsRequest_H_
 
 
 #include "ModelBase.h"
@@ -29,14 +29,14 @@ namespace v1 {
 namespace model {
 
 /// <summary>
-/// Parameters for the bulk delete operation
+/// Parameters for the bulk start operation
 /// </summary>
-class  BulkDeleteGeneratorsRequest
+class  BulkStartPacketGeneratorsRequest
     : public ModelBase
 {
 public:
-    BulkDeleteGeneratorsRequest();
-    virtual ~BulkDeleteGeneratorsRequest();
+    BulkStartPacketGeneratorsRequest();
+    virtual ~BulkStartPacketGeneratorsRequest();
 
     /////////////////////////////////////////////
     /// ModelBase overrides
@@ -47,10 +47,10 @@ public:
     void fromJson(nlohmann::json& json) override;
 
     /////////////////////////////////////////////
-    /// BulkDeleteGeneratorsRequest members
+    /// BulkStartPacketGeneratorsRequest members
 
     /// <summary>
-    /// List of packet generators
+    /// List of packet generator identifiers
     /// </summary>
     std::vector<std::string>& getIds();
     
@@ -63,4 +63,4 @@ protected:
 }
 }
 
-#endif /* BulkDeleteGeneratorsRequest_H_ */
+#endif /* BulkStartPacketGeneratorsRequest_H_ */

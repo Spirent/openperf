@@ -1,4 +1,4 @@
-# BulkStartGeneratorsResponse
+# BulkStartPacketGeneratorsResponse
 
 ## Properties
 Name | Type | Description | Notes

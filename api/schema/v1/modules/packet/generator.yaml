@@ -10,7 +10,7 @@ parameters:
 paths:
   /generators:
     get:
-      operationId: ListGenerators
+      operationId: ListPacketGenerators
       tags:
         - PacketGenerators
       summary: List packet generators
@@ -31,7 +31,7 @@ paths:
             items:
               $ref: "#/definitions/PacketGenerator"
     post:
-      operationId: CreateGenerator
+      operationId: CreatePacketGenerator
       tags:
         - PacketGenerators
       summary: Create a new packet generator
@@ -52,7 +52,7 @@ paths:
           schema:
             $ref: "#/definitions/PacketGenerator"
     delete:
-      operationId: DeleteGenerators
+      operationId: DeletePacketGenerators
       tags:
         - PacketGenerators
       summary: Delete all packet generators
@@ -64,7 +64,7 @@ paths:
 
   /generators/{id}:
     get:
-      operationId: GetGenerator
+      operationId: GetPacketGenerator
       tags:
         - PacketGenerators
       summary: Get a packet generator
@@ -77,7 +77,7 @@ paths:
           schema:
             $ref: "#/definitions/PacketGenerator"
     delete:
-      operationId: DeleteGenerator
+      operationId: DeletePacketGenerator
       tags:
         - PacketGenerators
       summary: Delete a packet generator
@@ -92,7 +92,7 @@ paths:
 
   /generators/{id}/start:
     post:
-      operationId: StartGenerator
+      operationId: StartPacketGenerator
       tags:
         - PacketGenerators
       summary: Start generating packets
@@ -113,7 +113,7 @@ paths:
 
   /generators/{id}/stop:
     post:
-      operationId: StopGenerator
+      operationId: StopPacketGenerator
       tags:
         - PacketGenerators
       summary: Stop generating packets.
@@ -126,7 +126,7 @@ paths:
 
   /generators/x/bulk-create:
     post:
-      operationId: BulkCreateGenerators
+      operationId: BulkCreatePacketGenerators
       tags:
         - PacketGenerators
       summary: Bulk create packet generators
@@ -141,7 +141,7 @@ paths:
           required: true
           schema:
             type: object
-            title: BulkCreateGeneratorsRequest
+            title: BulkCreatePacketGeneratorsRequest
             description: Parameters for the bulk create operation
             properties:
               items:
@@ -157,7 +157,7 @@ paths:
           description: Success
           schema:
             type: object
-            title: BulkCreateGeneratorsResponse
+            title: BulkCreatePacketGeneratorsResponse
             properties:
               items:
                 type: array
@@ -170,7 +170,7 @@ paths:
 
   /generators/x/bulk-delete:
     post:
-      operationId: BulkDeleteGenerators
+      operationId: BulkDeletePacketGenerators
       tags:
         - PacketGenerators
       summary: Bulk delete packet generators
@@ -185,7 +185,7 @@ paths:
           required: true
           schema:
             type: object
-            title: BulkDeleteGeneratorsRequest
+            title: BulkDeletePacketGeneratorsRequest
             description: Parameters for the bulk delete operation
             properties:
               ids:
@@ -202,7 +202,7 @@ paths:
 
   /generators/x/bulk-start:
     post:
-      operationId: BulkStartGenerators
+      operationId: BulkStartPacketGenerators
       tags:
         - PacketGenerators
       summary: Bulk start packet generators
@@ -214,7 +214,7 @@ paths:
           required: true
           schema:
             type: object
-            title: BulkStartGeneratorsRequest
+            title: BulkStartPacketGeneratorsRequest
             description: Parameters for the bulk start operation
             properties:
               ids:
@@ -230,7 +230,7 @@ paths:
           description: Success
           schema:
             type: object
-            title: BulkStartGeneratorsResponse
+            title: BulkStartPacketGeneratorsResponse
             properties:
               items:
                 type: array
@@ -243,7 +243,7 @@ paths:
 
   /generators/x/bulk-stop:
     post:
-      operationId: BulkStopGenerators
+      operationId: BulkStopPacketGenerators
       tags:
         - PacketGenerators
       summary: Bulk stop packet generators
@@ -255,7 +255,7 @@ paths:
           required: true
           schema:
             type: object
-            title: BulkStopGeneratorsRequest
+            title: BulkStopPacketGeneratorsRequest
             description: Parameters for the bulk stop operation
             properties:
               ids:
@@ -272,7 +272,7 @@ paths:
 
   /generators/x/toggle:
     post:
-      operationId: ToggleGenerators
+      operationId: TogglePacketGenerators
       tags:
         - PacketGenerators
       summary: Replace a running generator with a stopped generator
@@ -287,7 +287,7 @@ paths:
           required: true
           schema:
             type: object
-            title: ToggleGeneratorsRequest
+            title: TogglePacketGeneratorsRequest
             description: Parameters for the toggle operation
             properties:
               replace:
@@ -311,7 +311,7 @@ paths:
 
   /generator-results:
     get:
-      operationId: ListGeneratorResults
+      operationId: ListPacketGeneratorResults
       tags:
         - PacketGenerators
       summary: List generator results
@@ -337,7 +337,7 @@ paths:
             items:
               $ref: "#/definitions/PacketGeneratorResult"
     delete:
-      operationId: DeleteGeneratorResults
+      operationId: DeletePacketGeneratorResults
       tags:
         - PacketGenerators
       summary: Delete all generator results
@@ -348,7 +348,7 @@ paths:
 
   /generator-results/{id}:
     get:
-      operationId: GetGeneratorResult
+      operationId: GetPacketGeneratorResult
       tags:
         - PacketGenerators
       summary: Get a packet generator result
@@ -361,7 +361,7 @@ paths:
           schema:
             $ref: "#/definitions/PacketGeneratorResult"
     delete:
-      operationId: DeleteGeneratorResult
+      operationId: DeletePacketGeneratorResult
       tags:
         - PacketGenerators
       summary: Delete a packet generator result
