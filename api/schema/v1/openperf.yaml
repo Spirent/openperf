@@ -455,9 +455,6 @@ definitions:
   DurationRemainder:
     $ref: ./modules/packet/common.yaml#/definitions/DurationRemainder
 
-  PacketProtocolCustom:
-    $ref: ./modules/packet/common.yaml#/definitions/PacketProtocolCustom
-
   ###
   # Packet Module protocol definitions
   ###
@@ -520,6 +517,9 @@ definitions:
 
   PacketGeneratorResult:
     $ref: ./modules/packet/generator.yaml#/definitions/PacketGeneratorResult
+
+  PacketProtocolCustom:
+    $ref: ./modules/packet/generator.yaml#/definitions/PacketProtocolCustom
 
   SpirentSignature:
     $ref: ./modules/packet/generator.yaml#/definitions/SpirentSignature
