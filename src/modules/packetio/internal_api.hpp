@@ -50,6 +50,19 @@ struct request_source_del
     source_data data;
 };
 
+struct source_swap_data
+{
+    char dst_id[name_length_max];
+    packet::generic_source outgoing;
+    packet::generic_source incoming;
+    std::optional<workers::source_swap_function> action;
+};
+
+struct request_source_swap
+{
+    source_swap_data data;
+};
+
 struct task_data
 {
     char name[name_length_max];
@@ -102,6 +115,7 @@ using request_msg = std::variant<request_sink_add,
                                  request_sink_del,
                                  request_source_add,
                                  request_source_del,
+                                 request_source_swap,
                                  request_task_add,
                                  request_task_del,
                                  request_worker_rx_ids,

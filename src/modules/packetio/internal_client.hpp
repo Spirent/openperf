@@ -10,6 +10,7 @@
 #include "packetio/generic_sink.hpp"
 #include "packetio/generic_source.hpp"
 #include "packetio/generic_workers.hpp"
+#include "packetio/internal_api.hpp"
 
 namespace openperf::packetio::internal::api {
 
@@ -24,6 +25,12 @@ class client
                   event_loop::event_handler&& on_event,
                   std::optional<event_loop::delete_handler>&& on_delete,
                   std::any&& arg);
+
+    tl::expected<void, int> swap_source_impl(
+        std::string_view dst_id,
+        packet::generic_source&& outgoing,
+        packet::generic_source&& incoming,
+        std::optional<workers::source_swap_function>&& swap_function);
 
 public:
     client(void* context);
@@ -40,10 +47,19 @@ public:
                                      packet::generic_sink sink);
     tl::expected<void, int> del_sink(std::string_view src_id,
                                      packet::generic_sink sink);
+
     tl::expected<void, int> add_source(std::string_view dst_id,
                                        packet::generic_source source);
     tl::expected<void, int> del_source(std::string_view dst_id,
                                        packet::generic_source source);
+    tl::expected<void, int> swap_source(std::string_view dst_id,
+                                        packet::generic_source outgoing,
+                                        packet::generic_source incoming);
+    tl::expected<void, int>
+    swap_source(std::string_view dst_id,
+                packet::generic_source outgoing,
+                packet::generic_source incoming,
+                workers::source_swap_function&& swap_function);
 
     tl::expected<std::string, int> add_task(workers::context ctx,
                                             std::string_view name,
