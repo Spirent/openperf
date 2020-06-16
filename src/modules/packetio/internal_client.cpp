@@ -157,6 +157,61 @@ tl::expected<void, int> client::del_source(std::string_view dst_id,
     return (tl::make_unexpected(EBADMSG));
 }
 
+tl::expected<void, int> client::swap_source_impl(
+    std::string_view dst_id,
+    packet::generic_source&& outgoing,
+    packet::generic_source&& incoming,
+    std::optional<workers::source_swap_function>&& swap_function)
+{
+    if (dst_id.length() > name_length_max) {
+        OP_LOG(OP_LOG_ERROR,
+               "Destination ID, %.*s, is too big\n",
+               static_cast<int>(dst_id.length()),
+               dst_id.data());
+        return (tl::make_unexpected(ENOMEM));
+    }
+
+    auto request = request_source_swap{
+        .data = {.outgoing = std::forward<packet::generic_source>(outgoing),
+                 .incoming = std::forward<packet::generic_source>(incoming),
+                 .action =
+                     std::forward<std::optional<workers::source_swap_function>>(
+                         swap_function)}};
+    std::copy_n(dst_id.data(), dst_id.length(), request.data.dst_id);
+
+    auto reply = do_request(m_socket.get(), request);
+    if (!reply) { return (tl::make_unexpected(reply.error())); }
+
+    if (auto success = std::get_if<reply_ok>(&reply.value())) {
+        return {};
+    } else if (auto error = std::get_if<reply_error>(&reply.value())) {
+        return (tl::make_unexpected(error->value));
+    }
+
+    return (tl::make_unexpected(EBADMSG));
+}
+
+tl::expected<void, int> client::swap_source(std::string_view dst_id,
+                                            packet::generic_source outgoing,
+                                            packet::generic_source incoming)
+{
+    return (swap_source_impl(
+        dst_id, std::move(outgoing), std::move(incoming), std::nullopt));
+}
+
+tl::expected<void, int>
+client::swap_source(std::string_view dst_id,
+                    packet::generic_source outgoing,
+                    packet::generic_source incoming,
+                    workers::source_swap_function&& swap_function)
+{
+    return (swap_source_impl(
+        dst_id,
+        std::move(outgoing),
+        std::move(incoming),
+        std::forward<workers::source_swap_function>(swap_function)));
+}
+
 tl::expected<std::string, int>
 client::add_task_impl(workers::context ctx,
                       std::string_view name,

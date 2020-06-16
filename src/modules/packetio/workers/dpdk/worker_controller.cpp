@@ -140,7 +140,8 @@ static void setup_recycler_callback(openperf::core::event_loop& loop,
     using namespace std::chrono_literals;
     std::chrono::duration<uint64_t, std::nano> timeout = 5s;
 
-    struct op_event_callbacks callbacks = {.on_read = handle_recycler_timeout};
+    struct op_event_callbacks callbacks = {.on_timeout =
+                                               handle_recycler_timeout};
 
     loop.add(timeout.count(), &callbacks, recycler);
 }
@@ -298,8 +299,8 @@ worker_controller::worker_controller(worker_controller&& other) noexcept
     , m_source_features(std::move(other.m_source_features))
 {}
 
-worker_controller& worker_controller::
-operator=(worker_controller&& other) noexcept
+worker_controller&
+worker_controller::operator=(worker_controller&& other) noexcept
 {
     if (this != &other) {
         m_context = other.m_context;
@@ -749,6 +750,66 @@ void worker_controller::del_source(std::string_view dst_id,
     m_source_features.update(*m_tib, *port_idx);
 }
 
+tl::expected<void, int> worker_controller::swap_source(
+    std::string_view dst_id,
+    const packet::generic_source& outgoing,
+    packet::generic_source incoming,
+    std::optional<workers::source_swap_function>&& swap_action)
+{
+    /* Only support port sources for now */
+    const auto port_idx = m_driver.port_index(dst_id);
+    if (!port_idx) { return (tl::make_unexpected(EINVAL)); }
+
+    if (find_queue(*m_tib, *port_idx, incoming.id())) {
+        return (tl::make_unexpected(EALREADY));
+    }
+
+    const auto out_queue_idx = find_queue(*m_tib, *port_idx, outgoing.id());
+    if (!out_queue_idx) { return (tl::make_unexpected(ENODEV)); }
+
+    /*
+     * Figure out which queue/worker to send the incoming source to
+     * *after* we remove the outgoing source's load.
+     */
+    const auto out_worker_idx =
+        m_tx_workers[std::make_pair(*port_idx, *out_queue_idx)];
+    auto& worker_load = m_tx_loads[out_worker_idx];
+    const auto load = get_source_load(outgoing);
+    if (worker_load > load) worker_load -= load;
+
+    const auto [in_queue_idx, in_worker_idx] =
+        get_queue_and_worker_idx(m_tx_workers, m_tx_loads, *port_idx);
+    m_tx_loads[in_worker_idx] += get_source_load(incoming);
+
+    OP_LOG(OP_LOG_DEBUG,
+           "Swapping source %s with %s on port %.*s "
+           "(idx = %u; queue = %u, worker %u --> queue = %u, worker = %u)\n",
+           outgoing.id().c_str(),
+           incoming.id().c_str(),
+           static_cast<int>(dst_id.length()),
+           dst_id.data(),
+           *port_idx,
+           *out_queue_idx,
+           out_worker_idx,
+           in_queue_idx,
+           in_worker_idx);
+
+    /* Perform the swap. */
+    auto to_delete1 =
+        m_tib->remove_source(*port_idx, *out_queue_idx, outgoing.id());
+    if (swap_action) { (*swap_action)(outgoing, incoming); }
+    auto to_delete2 = m_tib->insert_source(
+        *port_idx, in_queue_idx, tx_source(*port_idx, std::move(incoming)));
+    m_recycler->writer_add_gc_callback([to_delete1, to_delete2]() {
+        delete to_delete1;
+        delete to_delete2;
+    });
+
+    m_source_features.update(*m_tib, *port_idx);
+
+    return {};
+}
+
 tl::expected<std::string, int> worker_controller::add_task(
     workers::context ctx,
     std::string_view name,
@@ -840,8 +901,8 @@ bool need_sink_feature(const worker::fib& fib,
                        const port::filter&)
 {
     /*
-     * Filter logic is reversed from the others; we need to disable the filter
-     * when any sinks are present.
+     * Filter logic is reversed from the others; we need to disable the
+     * filter when any sinks are present.
      */
     return (!sink_find_if(fib, port_idx, [](const auto&) { return (true); }));
 }

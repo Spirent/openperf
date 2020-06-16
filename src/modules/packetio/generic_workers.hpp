@@ -27,6 +27,9 @@ using transmit_function = uint16_t (*)(int id,
 
 enum class context { NONE = 0, STACK };
 
+using source_swap_function = std::function<void(
+    const packet::generic_source& outgoing, packet::generic_source& incoming)>;
+
 class generic_workers
 {
 public:
@@ -86,6 +89,25 @@ public:
         m_self->del_source(dst_id, source);
     }
 
+    tl::expected<void, int> swap_source(std::string_view dst_id,
+                                        packet::generic_source outgoing,
+                                        packet::generic_source incoming)
+    {
+        return (m_self->swap_source(
+            dst_id, std::move(outgoing), std::move(incoming), std::nullopt));
+    }
+
+    tl::expected<void, int> swap_source(std::string_view dst_id,
+                                        packet::generic_source outgoing,
+                                        packet::generic_source incoming,
+                                        source_swap_function swap_action)
+    {
+        return (m_self->swap_source(dst_id,
+                                    std::move(outgoing),
+                                    std::move(incoming),
+                                    std::move(swap_action)));
+    }
+
     tl::expected<std::string, int> add_task(context ctx,
                                             std::string_view name,
                                             event_loop::event_notifier notify,
@@ -140,6 +162,11 @@ private:
         add_source(std::string_view dst_id, packet::generic_source source) = 0;
         virtual void del_source(std::string_view dst_id,
                                 packet::generic_source source) = 0;
+        virtual tl::expected<void, int>
+        swap_source(std::string_view dst_id,
+                    packet::generic_source outgoing,
+                    packet::generic_source incoming,
+                    std::optional<source_swap_function> swap_action) = 0;
         virtual tl::expected<std::string, int>
         add_task(context ctx,
                  std::string_view name,
@@ -209,6 +236,16 @@ private:
                         packet::generic_source source) override
         {
             m_workers.del_source(dst_id, source);
+        }
+
+        tl::expected<void, int>
+        swap_source(std::string_view dst_id,
+                    packet::generic_source outgoing,
+                    packet::generic_source incoming,
+                    std::optional<source_swap_function> swap_action) override
+        {
+            return (m_workers.swap_source(
+                dst_id, outgoing, std::move(incoming), std::move(swap_action)));
         }
 
         tl::expected<std::string, int>

@@ -44,6 +44,25 @@ reply_msg handle_request(workers::generic_workers& workers,
 }
 
 reply_msg handle_request(workers::generic_workers& workers,
+                         const request_source_swap& request)
+{
+    auto result = (request.data.action.has_value()
+                       ? workers.swap_source(request.data.dst_id,
+                                             request.data.outgoing,
+                                             request.data.incoming,
+                                             request.data.action.value())
+                       : workers.swap_source(request.data.dst_id,
+                                             request.data.outgoing,
+                                             request.data.incoming));
+
+    if (!result) {
+        return (reply_error{result.error()});
+    } else {
+        return (reply_ok{});
+    }
+}
+
+reply_msg handle_request(workers::generic_workers& workers,
                          const request_task_add& request)
 {
     auto result = (request.data.on_delete.has_value()
@@ -90,12 +109,12 @@ static std::string to_string(request_msg& request)
     return (std::visit(
         utils::overloaded_visitor(
             [](const request_sink_add& msg) {
-                return ("add sink " + std::string(msg.data.sink.id())
-                        + " to source " + std::string(msg.data.src_id));
+                return ("add sink " + msg.data.sink.id() + " to source "
+                        + std::string(msg.data.src_id));
             },
             [](const request_sink_del& msg) {
-                return ("delete sink " + std::string(msg.data.sink.id())
-                        + " from source " + std::string(msg.data.src_id));
+                return ("delete sink " + msg.data.sink.id() + " from source "
+                        + std::string(msg.data.src_id));
             },
             [](const request_source_add& msg) {
                 return ("add source " + std::string(msg.data.source.id())
@@ -104,6 +123,11 @@ static std::string to_string(request_msg& request)
             [](const request_source_del& msg) {
                 return ("delete source " + std::string(msg.data.source.id())
                         + " from destination " + std::string(msg.data.dst_id));
+            },
+            [](const request_source_swap& msg) {
+                return ("swap source " + msg.data.outgoing.id() + " with "
+                        + msg.data.incoming.id() + " on destination "
+                        + std::string(msg.data.dst_id));
             },
             [](const request_task_add& msg) {
                 return ("add task " + std::string(msg.data.name));

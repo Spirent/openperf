@@ -44,6 +44,12 @@ serialized_msg serialize_request(const request_msg& msg)
                                                std::addressof(source_del.data),
                                                sizeof(source_del.data)));
                  },
+                 [&](const request_source_swap& source_swap) {
+                     return (
+                         message::zmq_msg_init(&serialized.data,
+                                               std::addressof(source_swap.data),
+                                               sizeof(source_swap.data)));
+                 },
                  [&](const request_task_add& task_add) {
                      return (
                          message::zmq_msg_init(&serialized.data,
@@ -129,6 +135,9 @@ tl::expected<request_msg, int> deserialize_request(const serialized_msg& msg)
     case utils::variant_index<request_msg, request_source_del>():
         return (request_source_del{
             *(message::zmq_msg_data<source_data*>(&msg.data))});
+    case utils::variant_index<request_msg, request_source_swap>():
+        return (request_source_swap{
+            *(message::zmq_msg_data<source_swap_data*>(&msg.data))});
     case utils::variant_index<request_msg, request_task_add>():
         return (
             request_task_add{*(message::zmq_msg_data<task_data*>(&msg.data))});

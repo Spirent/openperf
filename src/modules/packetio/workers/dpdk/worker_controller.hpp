@@ -67,6 +67,11 @@ public:
                                        packet::generic_source source);
     void del_source(std::string_view dst_id,
                     const packet::generic_source& source);
+    tl::expected<void, int>
+    swap_source(std::string_view dst_id,
+                const packet::generic_source& outgoing,
+                packet::generic_source incoming,
+                std::optional<workers::source_swap_function>&& swap_action);
 
     tl::expected<std::string, int>
     add_task(workers::context ctx,
