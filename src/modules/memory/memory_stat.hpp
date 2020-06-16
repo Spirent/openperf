@@ -34,7 +34,8 @@ struct memory_stat
     uint64_t operations_target = 0;
     uint64_t bytes = 0;
     uint64_t bytes_target = 0;
-    std::chrono::nanoseconds time = 0ns;
+    std::chrono::nanoseconds run_time = 0ns;
+    std::chrono::nanoseconds sleep_time = 0ns;
     std::optional<std::chrono::nanoseconds> latency_min;
     std::optional<std::chrono::nanoseconds> latency_max;
     timestamp_t timestamp = std::chrono::system_clock::now();
@@ -47,7 +48,8 @@ struct memory_stat
         errors += st.errors;
         operations += st.operations;
         operations_target += st.operations_target;
-        time += st.time;
+        run_time += st.run_time;
+        sleep_time += st.sleep_time;
         timestamp = std::max(timestamp, st.timestamp);
 
         latency_min = bind_binary<std::chrono::nanoseconds>(

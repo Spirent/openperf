@@ -11,7 +11,7 @@ public:
     using task_memory::task_memory;
 
 private:
-    size_t operation(uint64_t nb_ops, size_t* op_idx) override;
+    void operation(uint64_t nb_ops) override;
 };
 
 } // namespace openperf::memory::internal

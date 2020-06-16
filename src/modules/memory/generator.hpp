@@ -38,6 +38,7 @@ public:
 private:
     using worker_ptr = std::unique_ptr<workable>;
     using workers = std::forward_list<worker_ptr>;
+    using time_point = std::chrono::system_clock::time_point;
 
 private:
     bool m_stopped = true;
@@ -53,6 +54,8 @@ private:
     } m_buffer;
 
     uint16_t m_serial_number;
+    std::chrono::nanoseconds m_run_time;
+    time_point m_run_time_milestone;
 
 public:
     // Constructors & Destructor
