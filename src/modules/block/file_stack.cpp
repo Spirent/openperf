@@ -1,4 +1,5 @@
 #include <fcntl.h>
+#include <filesystem>
 #include <unistd.h>
 #include <cstring>
 #include <sys/mman.h>
@@ -180,6 +181,12 @@ file_stack::create_block_file(const model::file& block_file_model)
         return tl::make_unexpected("File " + block_file_model.get_id()
                                    + " already exists.");
 
+    for (const auto& blkfile_pair : m_block_files) {
+        if (std::filesystem::equivalent(block_file_model.get_path(), blkfile_pair.second->get_path()))
+            return tl::make_unexpected("File with path " + block_file_model.get_path()
+                                   + " already exists.");
+    }
+
     if (block_file_model.get_size() <= sizeof(file_header))
         return tl::make_unexpected("File size less than header size ("
                                    + std::to_string(sizeof(file_header))
@@ -210,9 +217,16 @@ block_file_ptr file_stack::get_block_file(const std::string& id) const
     return nullptr;
 }
 
-bool file_stack::delete_block_file(const std::string& id)
+tl::expected<void, deletion_error_type>
+file_stack::delete_block_file(const std::string& id)
 {
-    return (m_block_files.erase(id) > 0);
+    if (m_block_files.count(id) && m_block_files.at(id)->get_fd())
+        return tl::make_unexpected(deletion_error_type::BUSY);
+
+    if (m_block_files.erase(id) <= 0)
+        return tl::make_unexpected(deletion_error_type::NOT_FOUND);
+
+    return {};
 }
 
 } // namespace openperf::block::file

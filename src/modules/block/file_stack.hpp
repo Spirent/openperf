@@ -51,6 +51,8 @@ public:
 using block_file_ptr = std::shared_ptr<file>;
 using block_file_map = std::unordered_map<std::string, block_file_ptr>;
 
+enum class deletion_error_type { NOT_FOUND, BUSY };
+
 class file_stack : public virtual_device_stack
 {
 private:
@@ -65,7 +67,7 @@ public:
     std::shared_ptr<virtual_device>
     get_vdev(const std::string& id) const override;
     block_file_ptr get_block_file(const std::string& id) const;
-    bool delete_block_file(const std::string& id);
+    tl::expected<void, deletion_error_type> delete_block_file(const std::string& id);
 };
 
 } // namespace openperf::block::file
