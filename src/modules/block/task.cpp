@@ -54,7 +54,8 @@ static int submit_aio_op(const operation_config& op_config,
     return 0;
 }
 
-static int wait_for_aio_ops(std::vector<operation_state> aio_ops, size_t nb_ops)
+static int wait_for_aio_ops(std::vector<operation_state>& aio_ops,
+                            size_t nb_ops)
 {
 
     const aiocb* aiocblist[nb_ops];
