@@ -112,26 +112,28 @@ generator::stat_t generator::stat() const
     generator::stat_t result_stat;
 
     auto& rstat = result_stat.read;
-    for (const auto& ptr : m_read_workers) {
-        auto w = reinterpret_cast<worker<task_memory>*>(ptr.get());
-        rstat += w->stat();
-    }
+    if (!m_read_workers.empty()) {
+        for (const auto& ptr : m_read_workers) {
+            auto w = reinterpret_cast<worker<task_memory>*>(ptr.get());
+            rstat += w->stat();
+        }
 
-    if (rstat.run_time.count()) {
         rstat.operations_target =
-            elapsed_time.count() * m_config.read.op_per_sec / std::nano::den;
+            elapsed_time.count() * m_config.read.op_per_sec
+            * std::min(m_config.read.block_size, 1UL) / std::nano::den;
         rstat.bytes_target = rstat.operations_target * m_config.read.block_size;
     }
 
     auto& wstat = result_stat.write;
-    for (const auto& ptr : m_write_workers) {
-        auto w = reinterpret_cast<worker<task_memory>*>(ptr.get());
-        wstat += w->stat();
-    }
+    if (!m_write_workers.empty()) {
+        for (const auto& ptr : m_write_workers) {
+            auto w = reinterpret_cast<worker<task_memory>*>(ptr.get());
+            wstat += w->stat();
+        }
 
-    if (wstat.run_time.count()) {
         wstat.operations_target =
-            elapsed_time.count() * m_config.write.op_per_sec / std::nano::den;
+            elapsed_time.count() * m_config.write.op_per_sec
+            * std::min(m_config.write.block_size, 1UL) / std::nano::den;
         wstat.bytes_target =
             wstat.operations_target * m_config.write.block_size;
     }
