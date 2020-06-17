@@ -162,92 +162,92 @@ serialized_msg serialize_request(request_msg&& msg)
     auto error =
         (zmq_msg_init(&serialized.type, msg.index())
          || std::visit(
-                utils::overloaded_visitor(
-                    [&](const request_block_device_list&) {
-                        return (zmq_msg_init(&serialized.data));
-                    },
-                    [&](const request_block_device& blkdevice) {
-                        return (zmq_msg_init(&serialized.data,
-                                             blkdevice.id.data(),
-                                             blkdevice.id.length()));
-                    },
-                    [&](const request_block_file_list&) {
-                        return (zmq_msg_init(&serialized.data));
-                    },
-                    [&](const request_block_file& blkfile) {
-                        return (zmq_msg_init(&serialized.data,
-                                             blkfile.id.data(),
-                                             blkfile.id.length()));
-                    },
-                    [&](request_block_file_add& blkfile) {
-                        return (zmq_msg_init(&serialized.data,
-                                             std::move(blkfile.source)));
-                    },
-                    [&](const request_block_file_del& blkfile) {
-                        return (zmq_msg_init(&serialized.data,
-                                             blkfile.id.data(),
-                                             blkfile.id.length()));
-                    },
-                    [&](request_block_file_bulk_add& request) {
-                        return (zmq_msg_init(&serialized.data, request.files));
-                    },
-                    [&](request_block_file_bulk_del& request) {
-                        return (zmq_msg_init(&serialized.data, request.ids));
-                    },
-                    [&](const request_block_generator_list&) {
-                        return (zmq_msg_init(&serialized.data));
-                    },
-                    [&](const request_block_generator& blkgenerator) {
-                        return (zmq_msg_init(&serialized.data,
-                                             blkgenerator.id.data(),
-                                             blkgenerator.id.length()));
-                    },
-                    [&](request_block_generator_add& blkgenerator) {
-                        return (zmq_msg_init(&serialized.data,
-                                             std::move(blkgenerator.source)));
-                    },
-                    [&](const request_block_generator_del& blkgenerator) {
-                        return (zmq_msg_init(&serialized.data,
-                                             blkgenerator.id.data(),
-                                             blkgenerator.id.length()));
-                    },
-                    [&](request_block_generator_bulk_add& request) {
-                        return (
-                            zmq_msg_init(&serialized.data, request.generators));
-                    },
-                    [&](request_block_generator_bulk_del& request) {
-                        return (zmq_msg_init(&serialized.data, request.ids));
-                    },
-                    [&](const request_block_generator_start& blkgenerator) {
-                        return (zmq_msg_init(&serialized.data,
-                                             blkgenerator.id.data(),
-                                             blkgenerator.id.length()));
-                    },
-                    [&](const request_block_generator_stop& blkgenerator) {
-                        return (zmq_msg_init(&serialized.data,
-                                             blkgenerator.id.data(),
-                                             blkgenerator.id.length()));
-                    },
-                    [&](request_block_generator_bulk_start& request) {
-                        return (zmq_msg_init(&serialized.data, request.ids));
-                    },
-                    [&](request_block_generator_bulk_stop& request) {
-                        return (zmq_msg_init(&serialized.data, request.ids));
-                    },
-                    [&](const request_block_generator_result_list&) {
-                        return (zmq_msg_init(&serialized.data));
-                    },
-                    [&](const request_block_generator_result& result) {
-                        return (zmq_msg_init(&serialized.data,
-                                             result.id.data(),
-                                             result.id.length()));
-                    },
-                    [&](const request_block_generator_result_del& result) {
-                        return (zmq_msg_init(&serialized.data,
-                                             result.id.data(),
-                                             result.id.length()));
-                    }),
-                msg));
+             utils::overloaded_visitor(
+                 [&](const request_block_device_list&) {
+                     return (zmq_msg_init(&serialized.data));
+                 },
+                 [&](const request_block_device& blkdevice) {
+                     return (zmq_msg_init(&serialized.data,
+                                          blkdevice.id.data(),
+                                          blkdevice.id.length()));
+                 },
+                 [&](const request_block_file_list&) {
+                     return (zmq_msg_init(&serialized.data));
+                 },
+                 [&](const request_block_file& blkfile) {
+                     return (zmq_msg_init(&serialized.data,
+                                          blkfile.id.data(),
+                                          blkfile.id.length()));
+                 },
+                 [&](request_block_file_add& blkfile) {
+                     return (zmq_msg_init(&serialized.data,
+                                          std::move(blkfile.source)));
+                 },
+                 [&](const request_block_file_del& blkfile) {
+                     return (zmq_msg_init(&serialized.data,
+                                          blkfile.id.data(),
+                                          blkfile.id.length()));
+                 },
+                 [&](request_block_file_bulk_add& request) {
+                     return (zmq_msg_init(&serialized.data, request.files));
+                 },
+                 [&](request_block_file_bulk_del& request) {
+                     return (zmq_msg_init(&serialized.data, request.ids));
+                 },
+                 [&](const request_block_generator_list&) {
+                     return (zmq_msg_init(&serialized.data));
+                 },
+                 [&](const request_block_generator& blkgenerator) {
+                     return (zmq_msg_init(&serialized.data,
+                                          blkgenerator.id.data(),
+                                          blkgenerator.id.length()));
+                 },
+                 [&](request_block_generator_add& blkgenerator) {
+                     return (zmq_msg_init(&serialized.data,
+                                          std::move(blkgenerator.source)));
+                 },
+                 [&](const request_block_generator_del& blkgenerator) {
+                     return (zmq_msg_init(&serialized.data,
+                                          blkgenerator.id.data(),
+                                          blkgenerator.id.length()));
+                 },
+                 [&](request_block_generator_bulk_add& request) {
+                     return (
+                         zmq_msg_init(&serialized.data, request.generators));
+                 },
+                 [&](request_block_generator_bulk_del& request) {
+                     return (zmq_msg_init(&serialized.data, request.ids));
+                 },
+                 [&](const request_block_generator_start& blkgenerator) {
+                     return (zmq_msg_init(&serialized.data,
+                                          blkgenerator.id.data(),
+                                          blkgenerator.id.length()));
+                 },
+                 [&](const request_block_generator_stop& blkgenerator) {
+                     return (zmq_msg_init(&serialized.data,
+                                          blkgenerator.id.data(),
+                                          blkgenerator.id.length()));
+                 },
+                 [&](request_block_generator_bulk_start& request) {
+                     return (zmq_msg_init(&serialized.data, request.ids));
+                 },
+                 [&](request_block_generator_bulk_stop& request) {
+                     return (zmq_msg_init(&serialized.data, request.ids));
+                 },
+                 [&](const request_block_generator_result_list&) {
+                     return (zmq_msg_init(&serialized.data));
+                 },
+                 [&](const request_block_generator_result& result) {
+                     return (zmq_msg_init(&serialized.data,
+                                          result.id.data(),
+                                          result.id.length()));
+                 },
+                 [&](const request_block_generator_result_del& result) {
+                     return (zmq_msg_init(&serialized.data,
+                                          result.id.data(),
+                                          result.id.length()));
+                 }),
+             msg));
     if (error) { throw std::bad_alloc(); }
 
     return (serialized);
@@ -259,27 +259,26 @@ serialized_msg serialize_reply(reply_msg&& msg)
     auto error =
         (zmq_msg_init(&serialized.type, msg.index())
          || std::visit(
-                utils::overloaded_visitor(
-                    [&](reply_block_devices& reply) {
-                        return (zmq_msg_init(&serialized.data, reply.devices));
-                    },
-                    [&](reply_block_files& reply) {
-                        return (zmq_msg_init(&serialized.data, reply.files));
-                    },
-                    [&](reply_block_generators& reply) {
-                        return (
-                            zmq_msg_init(&serialized.data, reply.generators));
-                    },
-                    [&](reply_block_generator_results& reply) {
-                        return (zmq_msg_init(&serialized.data, reply.results));
-                    },
-                    [&](const reply_ok&) {
-                        return (zmq_msg_init(&serialized.data, 0));
-                    },
-                    [&](const reply_error& error) {
-                        return (zmq_msg_init(&serialized.data, error.info));
-                    }),
-                msg));
+             utils::overloaded_visitor(
+                 [&](reply_block_devices& reply) {
+                     return (zmq_msg_init(&serialized.data, reply.devices));
+                 },
+                 [&](reply_block_files& reply) {
+                     return (zmq_msg_init(&serialized.data, reply.files));
+                 },
+                 [&](reply_block_generators& reply) {
+                     return (zmq_msg_init(&serialized.data, reply.generators));
+                 },
+                 [&](reply_block_generator_results& reply) {
+                     return (zmq_msg_init(&serialized.data, reply.results));
+                 },
+                 [&](const reply_ok&) {
+                     return (zmq_msg_init(&serialized.data, 0));
+                 },
+                 [&](const reply_error& error) {
+                     return (zmq_msg_init(&serialized.data, error.info));
+                 }),
+             msg));
     if (error) { throw std::bad_alloc(); }
 
     return (serialized);
@@ -692,7 +691,7 @@ void from_json(const nlohmann::json& j, BulkCreateBlockFilesRequest& request)
     request.getItems().clear();
     for (auto& item : const_cast<nlohmann::json&>(j).at("items")) {
         if (item.is_null()) {
-            request.getItems().push_back(std::shared_ptr<BlockFile>(nullptr));
+            continue;
         } else {
             std::shared_ptr<BlockFile> newItem(new BlockFile());
             from_json(item, *newItem);
@@ -724,8 +723,7 @@ void from_json(const nlohmann::json& j,
     request.getItems().clear();
     for (auto& item : const_cast<nlohmann::json&>(j).at("items")) {
         if (item.is_null()) {
-            request.getItems().push_back(
-                std::shared_ptr<BlockGenerator>(nullptr));
+            continue;
         } else {
             std::shared_ptr<BlockGenerator> newItem(new BlockGenerator());
             from_json(item, *newItem);

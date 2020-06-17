@@ -344,8 +344,7 @@ void from_json(const nlohmann::json& j,
     nlohmann::json jsonArray;
     for (auto& item : const_cast<nlohmann::json&>(j).at("items")) {
         if (item.is_null()) {
-            request.getItems().push_back(
-                std::shared_ptr<MemoryGenerator>(nullptr));
+            continue;
         } else {
             std::shared_ptr<MemoryGenerator> newItem(new MemoryGenerator());
             from_json(item, *newItem);
