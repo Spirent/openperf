@@ -153,8 +153,10 @@ task_config_t block_generator::generate_worker_config(
                                                         : fd.value().write;
     w_config.f_size = m_vdev->get_size();
     w_config.header_size = m_vdev->get_header_size();
-    w_config.synchronizer = (p_config.fixed_ratio) ? &m_synchronizer : nullptr;
-    m_synchronizer.ratio = p_config.read_to_write_ratio;
+    if (p_config.read_to_write_ratio) {
+        w_config.synchronizer = &m_synchronizer;
+        m_synchronizer.ratio = p_config.read_to_write_ratio.value();
+    }
 
     return w_config;
 }
