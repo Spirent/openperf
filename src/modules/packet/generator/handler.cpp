@@ -7,6 +7,7 @@
 
 #include "swagger/v1/model/PacketGenerator.h"
 #include "swagger/v1/model/PacketGeneratorResult.h"
+#include "swagger/v1/model/TogglePacketGeneratorsRequest.h"
 #include "swagger/v1/model/TxFlow.h"
 
 namespace openperf::packet::generator::api {
@@ -234,10 +235,23 @@ maybe_get_request_uri(const handler::request_type& request)
          * matter.
          */
         return ("http://" + host_header->host() + ":"
-                + host_header->port().toString() + request.resource());
+                + host_header->port().toString() + request.resource() + "/");
     }
 
     return (std::nullopt);
+}
+
+template <typename T>
+tl::expected<T, std::string> parse_request(const handler::request_type& request)
+{
+    try {
+        auto obj = std::make_shared<T>();
+        auto j = nlohmann::json::parse(request.body());
+        obj->fromJson(j);
+        return (*obj);
+    } catch (const nlohmann::json::exception& e) {
+        return (tl::unexpected(json_error(e.id, e.what())));
+    }
 }
 
 static tl::expected<swagger::v1::model::PacketGenerator, std::string>
@@ -419,9 +433,37 @@ void handler::bulk_stop_generators(const request_type&, response_type response)
     response.send(Http::Code::Not_Implemented);
 }
 
-void handler::toggle_generators(const request_type&, response_type response)
+void handler::toggle_generators(const request_type& request,
+                                response_type response)
 {
-    response.send(Http::Code::Not_Implemented);
+    auto toggle =
+        parse_request<swagger::v1::model::TogglePacketGeneratorsRequest>(
+            request);
+    if (!toggle) {
+        response.send(Http::Code::Bad_Request, toggle.error());
+        return;
+    }
+
+    auto ids = std::make_unique<std::pair<std::string, std::string>>(
+        toggle->getReplace(), toggle->getWith());
+
+    auto api_reply = submit_request(m_socket.get(),
+                                    request_toggle_generator{std::move(ids)});
+
+    if (auto reply = std::get_if<reply_generator_results>(&api_reply)) {
+        assert(reply->generator_results.size() == 1);
+        response.headers().add<Http::Header::ContentType>(
+            MIME(Application, Json));
+        if (auto uri = maybe_get_request_uri(request); uri.has_value()) {
+            response.headers().add<Http::Header::Location>(
+                *uri + reply->generator_results[0]->getId());
+        }
+
+        response.send(Http::Code::Created,
+                      reply->generator_results[0]->toJson().dump());
+    } else {
+        handle_reply_error(api_reply, std::move(response));
+    }
 }
 
 void handler::list_generator_results(const request_type& request,

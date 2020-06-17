@@ -145,6 +145,10 @@ serialized_msg serialize_request(request_msg&& msg)
                                                     request.id.data(),
                                                     request.id.length()));
                            },
+                           [&](request_toggle_generator& request) {
+                               return (zmq_msg_init(&serialized.data,
+                                                    std::move(request.ids)));
+                           },
                            [&](request_list_generator_results& request) {
                                return (zmq_msg_init(&serialized.data,
                                                     std::move(request.filter)));
@@ -242,6 +246,12 @@ tl::expected<request_msg, int> deserialize_request(const serialized_msg& msg)
         auto id = std::string(zmq_msg_data<char*>(&msg.data),
                               zmq_msg_size(&msg.data));
         return (request_stop_generator{std::move(id)});
+    }
+    case utils::variant_index<request_msg, request_toggle_generator>(): {
+        auto request = request_toggle_generator{};
+        using ptr = decltype(request_toggle_generator::ids)::pointer;
+        request.ids.reset(*zmq_msg_data<ptr*>(&msg.data));
+        return (request);
     }
     case utils::variant_index<request_msg, request_list_generator_results>(): {
         auto request = request_list_generator_results{};

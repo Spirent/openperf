@@ -2,11 +2,10 @@
 #define _OP_PACKET_GENERATOR_SOURCE_HPP_
 
 #include "core/op_core.h"
+#include "packet/generator/api.hpp"
 #include "packet/generator/traffic/counter.hpp"
 #include "packet/generator/traffic/sequence.hpp"
 #include "packetio/generic_source.hpp"
-#include "swagger/v1/model/PacketGeneratorConfig.h"
-#include "units/rate.hpp"
 #include "utils/soa_container.hpp"
 
 namespace openperf::packet::generator {
@@ -78,7 +77,14 @@ public:
     packetio::packet::packets_per_hour packet_rate() const;
 
     void start(source_result* results);
-    void stop();
+
+    /*
+     * Provide a start method that allows callers to specify explicit
+     * offsets for signature flows.
+     */
+    void start(source_result* results,
+               const std::map<uint32_t, traffic::stat_t>& sig_stream_offsets);
+    source_result* stop();
 
     uint16_t transform(packetio::packet::packet_buffer* input[],
                        uint16_t input_length,
@@ -89,9 +95,11 @@ private:
     traffic::sequence m_sequence;
     source_load m_load;
     std::optional<size_t> m_tx_limit;
+    std::vector<traffic::stat_t> m_offsets;
 
     mutable size_t m_tx_idx = 0;
     mutable std::atomic<source_result*> m_results = nullptr;
+    mutable std::atomic_flag m_busy = ATOMIC_FLAG_INIT;
 
     /* Transform packets in chunks of this size */
     static constexpr size_t chunk_size = 64U;
