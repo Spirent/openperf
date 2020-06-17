@@ -128,7 +128,7 @@ No authorization required
 
 Bulk delete block files
 
-Delete multiple block files in a best-effort manner. Non-existant block file ids do not cause errors. Idempotent. 
+Delete multiple block files in a best-effort manner. Non-existant block file ids do not cause errors. If the file is used by generator it cannot be deleted. Idempotent. 
 
 ### Example
 ```python
@@ -413,7 +413,7 @@ No authorization required
 
 Delete a block file
 
-Deletes an existing block file. Idempotent.
+Deletes an existing block file. If the file is used by generator it cannot be deleted. Idempotent.
 
 ### Example
 ```python

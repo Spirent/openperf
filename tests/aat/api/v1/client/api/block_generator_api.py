@@ -234,7 +234,7 @@ class BlockGeneratorApi(object):
     def bulk_delete_block_files(self, delete, **kwargs):  # noqa: E501
         """Bulk delete block files  # noqa: E501
 
-        Delete multiple block files in a best-effort manner. Non-existant block file ids do not cause errors. Idempotent.   # noqa: E501
+        Delete multiple block files in a best-effort manner. Non-existant block file ids do not cause errors. If the file is used by generator it cannot be deleted. Idempotent.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
         >>> thread = api.bulk_delete_block_files(delete, async_req=True)
@@ -256,7 +256,7 @@ class BlockGeneratorApi(object):
     def bulk_delete_block_files_with_http_info(self, delete, **kwargs):  # noqa: E501
         """Bulk delete block files  # noqa: E501
 
-        Delete multiple block files in a best-effort manner. Non-existant block file ids do not cause errors. Idempotent.   # noqa: E501
+        Delete multiple block files in a best-effort manner. Non-existant block file ids do not cause errors. If the file is used by generator it cannot be deleted. Idempotent.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
         >>> thread = api.bulk_delete_block_files_with_http_info(delete, async_req=True)
@@ -828,7 +828,7 @@ class BlockGeneratorApi(object):
     def delete_block_file(self, id, **kwargs):  # noqa: E501
         """Delete a block file  # noqa: E501
 
-        Deletes an existing block file. Idempotent.  # noqa: E501
+        Deletes an existing block file. If the file is used by generator it cannot be deleted. Idempotent.  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
         >>> thread = api.delete_block_file(id, async_req=True)
@@ -850,7 +850,7 @@ class BlockGeneratorApi(object):
     def delete_block_file_with_http_info(self, id, **kwargs):  # noqa: E501
         """Delete a block file  # noqa: E501
 
-        Deletes an existing block file. Idempotent.  # noqa: E501
+        Deletes an existing block file. If the file is used by generator it cannot be deleted. Idempotent.  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
         >>> thread = api.delete_block_file_with_http_info(id, async_req=True)
