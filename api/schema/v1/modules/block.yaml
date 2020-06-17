@@ -94,7 +94,7 @@ paths:
       tags:
         - BlockGenerator
       summary: Delete a block file
-      description: Deletes an existing block file. Idempotent.
+      description: Deletes an existing block file. If the file is used by generator it cannot be deleted. Idempotent.
       parameters:
         - $ref: "#/parameters/id"
       responses:
@@ -147,7 +147,7 @@ paths:
       summary: Bulk delete block files
       description: |
         Delete multiple block files in a best-effort manner. Non-existant block file ids
-        do not cause errors. Idempotent.
+        do not cause errors. If the file is used by generator it cannot be deleted. Idempotent.
       parameters:
         - name: delete
           in: body
