@@ -130,11 +130,11 @@ reply_msg server::handle_request(const request_block_file_bulk_add& request)
 
 reply_msg server::handle_request(const request_block_file_bulk_del& request)
 {
-    bool failed = false;
-    for (const auto& id : request.ids) {
-        failed = !m_file_stack->delete_block_file(*id) || failed;
-    }
-    if (failed)
+    if (auto failed = std::count_if(
+            request.ids.begin(),
+            request.ids.end(),
+            [&](auto& id) { return !m_file_stack->delete_block_file(*id); });
+        failed > 0)
         return to_error(api::error_type::CUSTOM_ERROR,
                         0,
                         "Some files from the list cannot be deleted");
