@@ -351,7 +351,8 @@ void from_json(const nlohmann::json& j,
         if (item.is_null()) {
             continue;
         } else {
-            std::shared_ptr<MemoryGenerator> newItem(new MemoryGenerator());
+            std::shared_ptr<MemoryGenerator> newItem =
+                std::make_shared<MemoryGenerator>();
             from_json(item, *newItem);
             request.getItems().push_back(newItem);
         }
