@@ -75,6 +75,7 @@ public:
     api::protocol_counters_config protocol_counters() const;
     api::flow_counters_config flow_counters() const;
 
+    sink_result* reset(sink_result* results);
     void start(sink_result* results);
     void stop();
 
