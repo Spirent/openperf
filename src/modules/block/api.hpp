@@ -10,16 +10,19 @@
 #include "models/file.hpp"
 #include "models/generator.hpp"
 #include "models/generator_result.hpp"
-#include "swagger/v1/model/BlockGenerator.h"
-#include "swagger/v1/model/BlockGeneratorResult.h"
-#include "swagger/v1/model/BulkCreateBlockFilesRequest.h"
-#include "swagger/v1/model/BulkDeleteBlockFilesRequest.h"
-#include "swagger/v1/model/BulkCreateBlockGeneratorsRequest.h"
-#include "swagger/v1/model/BulkDeleteBlockGeneratorsRequest.h"
-#include "swagger/v1/model/BulkStartBlockGeneratorsRequest.h"
-#include "swagger/v1/model/BulkStopBlockGeneratorsRequest.h"
-#include "swagger/v1/model/BlockFile.h"
-#include "swagger/v1/model/BlockDevice.h"
+
+namespace swagger::v1::model {
+class BlockGenerator;
+class BlockGeneratorResult;
+class BulkCreateBlockFilesRequest;
+class BulkDeleteBlockFilesRequest;
+class BulkCreateBlockGeneratorsRequest;
+class BulkDeleteBlockGeneratorsRequest;
+class BulkStartBlockGeneratorsRequest;
+class BulkStopBlockGeneratorsRequest;
+class BlockFile;
+class BlockDevice;
+} // namespace swagger::v1::model
 
 namespace openperf::block::api {
 

@@ -6,20 +6,23 @@
 #include <string>
 #include <variant>
 #include <tl/expected.hpp>
-
 #include <zmq.h>
+#include <json.hpp>
 
-#include "swagger/v1/model/CpuGenerator.h"
-#include "swagger/v1/model/CpuGeneratorResult.h"
-#include "swagger/v1/model/BulkCreateCpuGeneratorsRequest.h"
-#include "swagger/v1/model/BulkDeleteCpuGeneratorsRequest.h"
-#include "swagger/v1/model/BulkStartCpuGeneratorsRequest.h"
-#include "swagger/v1/model/BulkStopCpuGeneratorsRequest.h"
-#include "swagger/v1/model/CpuInfoResult.h"
 #include "cpu/common.hpp"
 #include "cpu/models/generator.hpp"
 #include "cpu/models/generator_result.hpp"
 #include "timesync/chrono.hpp"
+
+namespace swagger::v1::model {
+class CpuGenerator;
+class CpuGeneratorResult;
+class BulkCreateCpuGeneratorsRequest;
+class BulkDeleteCpuGeneratorsRequest;
+class BulkStartCpuGeneratorsRequest;
+class BulkStopCpuGeneratorsRequest;
+class CpuInfoResult;
+} // namespace swagger::v1::model
 
 namespace openperf::cpu::api {
 

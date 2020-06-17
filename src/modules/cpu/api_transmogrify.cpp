@@ -1,11 +1,18 @@
 #include <sstream>
 #include <iomanip>
-
 #include <zmq.h>
 
 #include "cpu/api.hpp"
 #include "utils/overloaded_visitor.hpp"
 #include "utils/variant_index.hpp"
+
+#include "swagger/v1/model/CpuGenerator.h"
+#include "swagger/v1/model/CpuGeneratorResult.h"
+#include "swagger/v1/model/BulkCreateCpuGeneratorsRequest.h"
+#include "swagger/v1/model/BulkDeleteCpuGeneratorsRequest.h"
+#include "swagger/v1/model/BulkStartCpuGeneratorsRequest.h"
+#include "swagger/v1/model/BulkStopCpuGeneratorsRequest.h"
+#include "swagger/v1/model/CpuInfoResult.h"
 
 namespace openperf::cpu::api {
 

@@ -2,6 +2,12 @@
 #include "utils/variant_index.hpp"
 #include "utils/overloaded_visitor.hpp"
 
+#include "swagger/v1/model/MemoryGenerator.h"
+#include "swagger/v1/model/BulkCreateMemoryGeneratorsRequest.h"
+#include "swagger/v1/model/BulkDeleteMemoryGeneratorsRequest.h"
+#include "swagger/v1/model/BulkStartMemoryGeneratorsRequest.h"
+#include "swagger/v1/model/BulkStopMemoryGeneratorsRequest.h"
+
 namespace openperf::memory::api {
 
 static void close(serialized_msg& msg)

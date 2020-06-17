@@ -11,11 +11,13 @@
 #include "memory/info.hpp"
 #include "memory/generator.hpp"
 
-#include "swagger/v1/model/MemoryGenerator.h"
-#include "swagger/v1/model/BulkCreateMemoryGeneratorsRequest.h"
-#include "swagger/v1/model/BulkDeleteMemoryGeneratorsRequest.h"
-#include "swagger/v1/model/BulkStartMemoryGeneratorsRequest.h"
-#include "swagger/v1/model/BulkStopMemoryGeneratorsRequest.h"
+namespace swagger::v1::model {
+class MemoryGenerator;
+class BulkCreateMemoryGeneratorsRequest;
+class BulkDeleteMemoryGeneratorsRequest;
+class BulkStartMemoryGeneratorsRequest;
+class BulkStopMemoryGeneratorsRequest;
+} // namespace swagger::v1::model
 
 namespace openperf::memory::api {
 
