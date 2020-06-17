@@ -45,16 +45,14 @@ OutputIt transform_if(InputIt first,
 
 struct source_id_comparator
 {
-    bool operator()(const packetio::packet::generic_source& left,
-                    std::string_view right)
+    bool operator()(const server::source_item& left, std::string_view right)
     {
-        return (left.id() < right);
+        return (left.first.id() < right);
     }
 
-    bool operator()(std::string_view left,
-                    const packetio::packet::generic_source& right)
+    bool operator()(std::string_view left, const server::source_item& right)
     {
-        return (left < right.id());
+        return (left < right.first.id());
     }
 };
 
@@ -98,6 +96,10 @@ static std::string to_string(const request_msg& request)
                            },
                            [](const request_stop_generator& request) {
                                return ("stop generator " + request.id);
+                           },
+                           [](const request_toggle_generator& request) {
+                               return ("toggle generator: " + request.ids->first
+                                       + " --> " + request.ids->second);
                            },
                            [](const request_list_generator_results&) {
                                return (std::string("list generator results"));
@@ -186,10 +188,10 @@ reply_msg server::handle_request(const request_list_generators& request)
             std::end(m_sources),
             std::back_inserter(reply.generators),
             [&](const auto& item) {
-                return (item.template get<source>().target() == target);
+                return (item.first.template get<source>().target() == target);
             },
             [](const auto& item) {
-                return (to_swagger(item.template get<source>()));
+                return (to_swagger(item.first.template get<source>()));
             });
     } else {
         /* return all generators */
@@ -197,11 +199,78 @@ reply_msg server::handle_request(const request_list_generators& request)
                        std::end(m_sources),
                        std::back_inserter(reply.generators),
                        [&](const auto& item) {
-                           return (to_swagger(item.template get<source>()));
+                           return (
+                               to_swagger(item.first.template get<source>()));
                        });
     }
 
     return (reply);
+}
+
+static tl::expected<void, api::reply_error>
+add_source(packetio::internal::api::client& client, server::source_item& to_add)
+{
+    if (to_add.second == server::source_state::active) { return {}; }
+
+    if (auto success = client.add_source(
+            to_add.first.template get<source>().target(), to_add.first);
+        !success) {
+        OP_LOG(OP_LOG_ERROR,
+               "Failed to add generator %s to packetio workers!\n",
+               to_add.first.id().c_str());
+        return (
+            tl::make_unexpected(to_error(error_type::POSIX, success.error())));
+    }
+
+    to_add.second = server::source_state::active;
+
+    return {};
+}
+
+static void remove_source(packetio::internal::api::client& client,
+                          server::source_item& to_del)
+{
+    if (to_del.second != server::source_state::active) { return; }
+
+    if (auto success = client.del_source(
+            to_del.first.template get<source>().target(), to_del.first);
+        !success) {
+        OP_LOG(OP_LOG_ERROR,
+               "Failed to remove generator %s from packetio workers!\n",
+               to_del.first.id().c_str());
+    }
+
+    to_del.second = server::source_state::idle;
+}
+
+static tl::expected<void, api::reply_error>
+swap_source(packetio::internal::api::client& client,
+            server::source_item& to_del,
+            server::source_item& to_add,
+            packetio::workers::source_swap_function&& action)
+{
+    assert(to_del.second == server::source_state::active);
+    assert(to_add.second == server::source_state::idle);
+
+    if (auto success =
+            client.swap_source(to_del.first.template get<source>().target(),
+                               to_del.first,
+                               to_add.first,
+                               std::forward<decltype(action)>(action));
+        !success) {
+        OP_LOG(OP_LOG_ERROR,
+               "Failed to swap generator %s for generator %s in packetio "
+               "workers!\n",
+               to_del.first.id().c_str(),
+               to_add.first.id().c_str());
+        return (
+            tl::make_unexpected(to_error(error_type::POSIX, success.error())));
+    }
+
+    to_del.second = server::source_state::idle;
+    to_add.second = server::source_state::active;
+
+    return {};
 }
 
 reply_msg server::handle_request(const request_create_generator& request)
@@ -227,39 +296,22 @@ reply_msg server::handle_request(const request_create_generator& request)
         return (to_error(error_type::POSIX, EINVAL));
     }
 
-    auto& item = m_sources.emplace_back(source(std::move(config)));
+    auto& item =
+        m_sources.emplace_back(source(std::move(config)), source_state::idle);
 
-    /* Try to add source to the back-end workers */
-    if (auto success =
-            m_client.add_source(request.generator->getTargetId(), item);
-        !success) {
-        /* Delete the item we just added to the back of the vector */
-        m_sources.erase(std::prev(std::end(m_sources)));
-        return (to_error(error_type::POSIX, success.error()));
-    }
+    /* Grab a reference before we invalidate the iterator */
+    const auto& impl = item.first.template get<source>();
 
     /* Success; sort sources and return */
     std::sort(std::begin(m_sources),
               std::end(m_sources),
               [](const auto& left, const auto& right) {
-                  return (left.id() < right.id());
+                  return (left.first.id() < right.first.id());
               });
 
     auto reply = reply_generators{};
-    reply.generators.emplace_back(to_swagger(item.template get<source>()));
+    reply.generators.emplace_back(to_swagger(impl));
     return (reply);
-}
-
-static void remove_source(packetio::internal::api::client& client,
-                          packetio::packet::generic_source& to_del)
-{
-    if (auto success =
-            client.del_source(to_del.template get<source>().target(), to_del);
-        !success) {
-        OP_LOG(OP_LOG_ERROR,
-               "Failed to remove generator %s from packetio workers!\n",
-               to_del.id().c_str());
-    }
 }
 
 reply_msg server::handle_request(const request_delete_generators&)
@@ -275,7 +327,7 @@ reply_msg server::handle_request(const request_delete_generators&)
      */
     auto cursor = std::stable_partition(
         std::begin(m_sources), std::end(m_sources), [](const auto& item) {
-            return (item.template get<source>().active());
+            return (item.first.template get<source>().active());
         });
 
     /* Remove sinks from our workers */
@@ -301,7 +353,8 @@ reply_msg server::handle_request(const request_get_generator& request)
     }
 
     auto reply = reply_generators{};
-    reply.generators.emplace_back(to_swagger(result->template get<source>()));
+    reply.generators.emplace_back(
+        to_swagger(result->first.template get<source>()));
     return (reply);
 }
 
@@ -313,7 +366,7 @@ reply_msg server::handle_request(const request_delete_generator& request)
                               source_id_comparator{});
 
     if (result != std::end(m_sources)
-        && !result->template get<source>().active()) {
+        && !result->first.template get<source>().active()) {
         /* Delete this generators result objects */
         erase_if(m_results, [&](const auto& pair) {
             return (pair.second->parent().id() == request.id);
@@ -346,9 +399,9 @@ reply_msg server::handle_request(const request_start_generator& request)
         return (to_error(error_type::NOT_FOUND));
     }
 
-    if (found->active()) { return (to_error(error_type::POSIX, EINVAL)); }
+    if (found->first.active()) { return (to_error(error_type::POSIX, EINVAL)); }
 
-    auto& impl = found->template get<source>();
+    auto& impl = found->first.template get<source>();
 
     auto item = m_results.emplace(get_unique_result_id(m_results),
                                   std::make_unique<source_result>(impl));
@@ -358,6 +411,12 @@ reply_msg server::handle_request(const request_start_generator& request)
     auto& result = item.first->second;
 
     impl.start(result.get());
+
+    if (auto success = add_source(m_client, *found); !success) {
+        impl.stop();
+        m_results.erase(id);
+        return (success.error());
+    }
 
     auto reply = reply_generator_results{};
     reply.generator_results.emplace_back(to_swagger(id, *result));
@@ -371,11 +430,86 @@ reply_msg server::handle_request(const request_stop_generator& request)
                                  request.id,
                                  source_id_comparator{});
         found != std::end(m_sources)) {
-        auto& impl = found->template get<source>();
+        auto& impl = found->first.template get<source>();
         impl.stop();
     }
 
     return (reply_ok{});
+}
+
+static void do_source_swap(const packetio::packet::generic_source& outgoing,
+                           packetio::packet::generic_source& incoming,
+                           server::result_value_type* result)
+{
+    using sig_config_type = std::optional<traffic::signature_config>;
+
+    auto& out_source = outgoing.template get<source>();
+    auto& in_source = incoming.template get<source>();
+
+    auto out_results = out_source.stop();
+
+    /* Generate offset map for signature flows */
+    auto sig_offsets = std::map<uint32_t, traffic::stat_t>{};
+    const auto& out_sequence = out_source.sequence();
+    std::for_each(std::begin(out_sequence),
+                  std::end(out_sequence),
+                  [&](const auto& tuple) {
+                      const auto& sig_config = std::get<sig_config_type>(tuple);
+                      if (sig_config) {
+                          sig_offsets[sig_config->stream_id] =
+                              (*out_results)[std::get<0>(tuple)].packet;
+                      }
+                  });
+
+    in_source.start(result, sig_offsets);
+}
+
+reply_msg server::handle_request(const request_toggle_generator& request)
+{
+    auto out_found = binary_find(std::begin(m_sources),
+                                 std::end(m_sources),
+                                 request.ids->first,
+                                 source_id_comparator{});
+    auto in_found = binary_find(std::begin(m_sources),
+                                std::end(m_sources),
+                                request.ids->second,
+                                source_id_comparator{});
+
+    if (out_found == std::end(m_sources) || in_found == std::end(m_sources)) {
+        return (to_error(error_type::NOT_FOUND));
+    }
+
+    if (out_found->second == source_state::idle
+        || in_found->second == source_state::active) {
+        return (to_error(error_type::POSIX, EINVAL));
+    }
+
+    auto& in_impl = in_found->first.template get<source>();
+    auto item = m_results.emplace(get_unique_result_id(m_results),
+                                  std::make_unique<source_result>(in_impl));
+    assert(item.second);
+
+    auto& id = item.first->first;
+    auto& result = item.first->second;
+
+    /* Now; do the swap */
+    auto success =
+        swap_source(m_client,
+                    *out_found,
+                    *in_found,
+                    [&](const auto& outgoing, auto& incoming) {
+                        do_source_swap(outgoing, incoming, result.get());
+                    });
+    if (!success) {
+        in_impl.stop();
+        m_results.erase(id);
+        return (success.error());
+    }
+
+    /* Return the new result to the user */
+    auto reply = reply_generator_results{};
+    reply.generator_results.emplace_back(to_swagger(id, *result));
+    return (reply);
 }
 
 reply_msg server::handle_request(const request_list_generator_results& request)
