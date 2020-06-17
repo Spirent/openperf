@@ -174,6 +174,11 @@ struct request_stop_generator
     std::string id;
 };
 
+struct request_toggle_generator
+{
+    std::unique_ptr<std::pair<std::string, std::string>> ids;
+};
+
 struct request_list_generator_results
 {
     filter_map_ptr filter;
@@ -224,6 +229,7 @@ using request_msg = std::variant<request_list_generators,
                                  request_delete_generator,
                                  request_start_generator,
                                  request_stop_generator,
+                                 request_toggle_generator,
                                  request_list_generator_results,
                                  request_delete_generator_results,
                                  request_get_generator_result,

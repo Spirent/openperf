@@ -520,6 +520,41 @@ with description('Packet Generator,', 'packet_generator') as self:
                     expect([r for r in results if r.active is True]).not_to(be_empty)
                     expect([r for r in results if r.active is False]).not_to(be_empty)
 
+        with description('toggle generators,'):
+            with before.each:
+                gen = self.api.create_packet_generator(generator_model(self.api.api_client))
+                expect(gen).to(be_valid_packet_generator)
+                self.generator = gen
+                result = self.api.start_packet_generator(self.generator.id)
+                expect(result).to(be_valid_packet_generator_result)
+                expect(result.active).to(be_true)
+                self.result = result
+
+            with description('two valid generators,'):
+                with it('succeeds'):
+                    newgen = self.api.create_packet_generator(generator_model(self.api.api_client))
+                    expect(newgen).to(be_valid_packet_generator)
+                    expect(newgen.id).not_to(equal(self.generator.id))
+
+                    toggle = client.models.TogglePacketGeneratorsRequest()
+                    toggle.replace = self.generator.id
+                    toggle._with = newgen.id
+
+                    result1 = self.api.toggle_packet_generators(toggle)
+                    expect(result1).to(be_valid_packet_generator_result)
+                    expect(result1.active).to(be_true)
+
+                    result2 = self.api.get_packet_generator_result(self.result.id)
+                    expect(result2).to(be_valid_packet_generator_result)
+                    expect(result2.active).to(be_false)
+
+            with description('non-existent generator,'):
+                with it('returns 400'):
+                    toggle = client.models.TogglePacketGeneratorsRequest()
+                    toggle.replace = self.generator.id
+                    toggle._with = 'foo'
+                    expect(lambda: self.api.toggle_packet_generators(toggle)).to(raise_api_exception(404))
+
         with description('list generator results,'):
             with before.each:
                 gen = self.api.create_packet_generator(generator_model(self.api.api_client))
