@@ -708,9 +708,9 @@ void from_json(const nlohmann::json& j, BulkDeleteBlockFilesRequest& request)
 void from_json(const nlohmann::json& j, BlockGenerator& generator)
 {
     generator.setResourceId(j.at("resource_id"));
-    generator.setRunning(j.at("running"));
 
     if (j.find("id") != j.end()) { generator.setId(j.at("id")); }
+    if (j.find("running") != j.end()) { generator.setRunning(j.at("running")); }
 
     auto gc = BlockGeneratorConfig();
     gc.fromJson(const_cast<nlohmann::json&>(j.at("config")));

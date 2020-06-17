@@ -487,8 +487,7 @@ namespace swagger::v1::model {
 void from_json(const nlohmann::json& j, CpuGenerator& generator)
 {
     if (j.find("id") != j.end()) { generator.setId(j.at("id")); }
-
-    generator.setRunning(j.at("running"));
+    if (j.find("running") != j.end()) { generator.setRunning(j.at("running")); }
 
     auto gc = CpuGeneratorConfig();
     gc.fromJson(const_cast<nlohmann::json&>(j.at("config")));
