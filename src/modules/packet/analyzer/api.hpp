@@ -127,6 +127,11 @@ struct request_delete_analyzer
     std::string id;
 };
 
+struct request_reset_analyzer
+{
+    std::string id;
+};
+
 struct request_start_analyzer
 {
     std::string id;
@@ -185,6 +190,7 @@ using request_msg = std::variant<request_list_analyzers,
                                  request_delete_analyzers,
                                  request_get_analyzer,
                                  request_delete_analyzer,
+                                 request_reset_analyzer,
                                  request_start_analyzer,
                                  request_stop_analyzer,
                                  request_list_analyzer_results,
@@ -259,4 +265,4 @@ namespace swagger::v1::model {
 void from_json(const nlohmann::json&, swagger::v1::model::PacketAnalyzer&);
 } // namespace swagger::v1::model
 
-#endif
+#endif /* _OP_PACKET_ANALYZER_API_HPP_ */

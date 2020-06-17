@@ -19,6 +19,7 @@ Method | HTTP request | Description
 [**list_packet_analyzer_results**](PacketAnalyzersApi.md#list_packet_analyzer_results) | **GET** /packet/analyzer-results | List analyzer results
 [**list_packet_analyzers**](PacketAnalyzersApi.md#list_packet_analyzers) | **GET** /packet/analyzers | List packet analyzers
 [**list_rx_flows**](PacketAnalyzersApi.md#list_rx_flows) | **GET** /packet/rx-flows | List received packet flows
+[**reset_packet_analyzer**](PacketAnalyzersApi.md#reset_packet_analyzer) | **POST** /packet/analyzers/{id}/reset | Reset a running analyzer.
 [**start_packet_analyzer**](PacketAnalyzersApi.md#start_packet_analyzer) | **POST** /packet/analyzers/{id}/start | Start analyzing and collecting packet statistics.
 [**stop_packet_analyzer**](PacketAnalyzersApi.md#stop_packet_analyzer) | **POST** /packet/analyzers/{id}/stop | Stop analyzing and collecting packet statistics
 
@@ -721,6 +722,54 @@ Name | Type | Description  | Notes
 ### Return type
 
 [**list[RxFlow]**](RxFlow.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **reset_packet_analyzer**
+> PacketAnalyzerResult reset_packet_analyzer(id)
+
+Reset a running analyzer.
+
+Used to generate a new result for a running analyzer. This method effective resets all analyzer counters to zero. Note that the new analyzer result will not contain any flow results until packets are received after the reset event. Creates a new analyzer result on success. 
+
+### Example
+```python
+from __future__ import print_function
+import time
+import client
+from client.rest import ApiException
+from pprint import pprint
+
+# create an instance of the API class
+api_instance = client.PacketAnalyzersApi()
+id = 'id_example' # str | Unique resource identifier
+
+try:
+    # Reset a running analyzer.
+    api_response = api_instance.reset_packet_analyzer(id)
+    pprint(api_response)
+except ApiException as e:
+    print("Exception when calling PacketAnalyzersApi->reset_packet_analyzer: %s\n" % e)
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **id** | **str**| Unique resource identifier | 
+
+### Return type
+
+[**PacketAnalyzerResult**](PacketAnalyzerResult.md)
 
 ### Authorization
 

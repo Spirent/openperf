@@ -25,6 +25,7 @@ public:
     void delete_analyzers(const request_type& request, response_type response);
     void get_analyzer(const request_type& request, response_type response);
     void delete_analyzer(const request_type& request, response_type response);
+    void reset_analyzer(const request_type& request, response_type response);
     void start_analyzer(const request_type& request, response_type response);
     void stop_analyzer(const request_type& request, response_type response);
 
@@ -69,6 +70,9 @@ handler::handler(void* context, Pistache::Rest::Router& router)
     Delete(
         router, "/packet/analyzers/:id", bind(&handler::delete_analyzer, this));
 
+    Post(router,
+         "/packet/analyzers/:id/reset",
+         bind(&handler::reset_analyzer, this));
     Post(router,
          "/packet/analyzers/:id/start",
          bind(&handler::start_analyzer, this));
@@ -222,7 +226,7 @@ maybe_get_request_uri(const handler::request_type& request)
          * matter.
          */
         return ("http://" + host_header->host() + ":"
-                + host_header->port().toString() + request.resource());
+                + host_header->port().toString() + request.resource() + "/");
     }
 
     return (std::nullopt);
@@ -333,6 +337,34 @@ void handler::delete_analyzer(const request_type& request,
 
     if (auto reply = std::get_if<reply_ok>(&api_reply)) {
         response.send(Http::Code::No_Content);
+    } else {
+        handle_reply_error(api_reply, std::move(response));
+    }
+}
+
+void handler::reset_analyzer(const request_type& request,
+                             response_type response)
+{
+    auto id = request.param(":id").as<std::string>();
+    if (auto res = config::op_config_validate_id_string(id); !res) {
+        response.send(Http::Code::Not_Found, res.error());
+        return;
+    }
+
+    auto api_reply = submit_request(m_socket.get(), request_reset_analyzer{id});
+
+    if (auto reply = std::get_if<reply_analyzer_results>(&api_reply)) {
+        assert(reply->analyzer_results.size() == 1);
+        response.headers().add<Http::Header::ContentType>(
+            MIME(Application, Json));
+
+        if (auto uri = maybe_get_request_uri(request); uri.has_value()) {
+            response.headers().add<Http::Header::Location>(
+                *uri + reply->analyzer_results[0]->getId());
+        }
+
+        response.send(Http::Code::Created,
+                      reply->analyzer_results[0]->toJson().dump());
     } else {
         handle_reply_error(api_reply, std::move(response));
     }

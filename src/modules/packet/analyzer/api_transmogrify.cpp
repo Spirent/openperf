@@ -135,6 +135,11 @@ serialized_msg serialize_request(request_msg&& msg)
                                                     request.id.data(),
                                                     request.id.length()));
                            },
+                           [&](request_reset_analyzer& request) {
+                               return (zmq_msg_init(&serialized.data,
+                                                    request.id.data(),
+                                                    request.id.length()));
+                           },
                            [&](request_start_analyzer& request) {
                                return (zmq_msg_init(&serialized.data,
                                                     request.id.data(),
@@ -232,6 +237,11 @@ tl::expected<request_msg, int> deserialize_request(const serialized_msg& msg)
         auto id = std::string(zmq_msg_data<char*>(&msg.data),
                               zmq_msg_size(&msg.data));
         return (request_delete_analyzer{std::move(id)});
+    }
+    case utils::variant_index<request_msg, request_reset_analyzer>(): {
+        auto id = std::string(zmq_msg_data<char*>(&msg.data),
+                              zmq_msg_size(&msg.data));
+        return (request_reset_analyzer{std::move(id)});
     }
     case utils::variant_index<request_msg, request_start_analyzer>(): {
         auto id = std::string(zmq_msg_data<char*>(&msg.data),

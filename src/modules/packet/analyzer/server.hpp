@@ -48,6 +48,7 @@ public:
     reply_msg handle_request(const request_get_analyzer&);
     reply_msg handle_request(const request_delete_analyzer&);
 
+    reply_msg handle_request(const request_reset_analyzer&);
     reply_msg handle_request(const request_start_analyzer&);
     reply_msg handle_request(const request_stop_analyzer&);
 
