@@ -210,6 +210,35 @@ with description('Packet Analyzer,', 'packet_analyzer') as self:
                     expect([r for r in results if r.active is True]).not_to(be_empty)
                     expect([r for r in results if r.active is False]).not_to(be_empty)
 
+        with description('reset analyzer,'):
+            with before.each:
+                ana = self.api.create_packet_analyzer(analyzer_model(self.api.api_client))
+                expect(ana).to(be_valid_packet_analyzer)
+                self.analyzer = ana
+
+            with description('running,'):
+                with it('succeeds'):
+                    result1 = self.api.start_packet_analyzer(self.analyzer.id)
+                    expect(result1).to(be_valid_packet_analyzer_result)
+                    expect(result1.active).to(be_true)
+
+                    result2 = self.api.reset_packet_analyzer(self.analyzer.id)
+                    expect(result2).to(be_valid_packet_analyzer_result)
+                    expect(result2.active).to(be_true)
+
+                    # Make sure original result is no longer active
+                    result3 = self.api.get_packet_analyzer_result(result1.id)
+                    expect(result3).to(be_valid_packet_analyzer_result)
+                    expect(result3.active).to(be_false)
+
+            with description('stopped,'):
+                with it('returns 400'):
+                    expect(lambda: self.api.reset_packet_analyzer(self.analyzer.id)).to(raise_api_exception(400))
+
+            with description('invalid,'):
+                with it('returns 404'):
+                    expect(lambda: self.api.reset_packet_analyzer('baz')).to(raise_api_exception(404))
+
         with description('list analyzer results,'):
             with before.each:
                 ana = self.api.create_packet_analyzer(analyzer_model(self.api.api_client))

@@ -91,6 +91,30 @@ paths:
         204:
           description: No Content
 
+  /analyzers/{id}/reset:
+    post:
+      operationId: ResetPacketAnalyzer
+      tags:
+        - PacketAnalyzers
+      summary: Reset a running analyzer.
+      description: |
+        Used to generate a new result for a running analyzer. This
+        method effective resets all analyzer counters to zero. Note
+        that the new analyzer result will not contain any flow results
+        until packets are received after the reset event. Creates a
+        new analyzer result on success.
+      parameters:
+        - $ref: "#/parameters/id"
+      responses:
+        201:
+          description: Created
+          headers:
+            Location:
+              description: URI to created analyzer result object
+              type: string
+          schema:
+            $ref: "#/definitions/PacketAnalyzerResult"
+
   /analyzers/{id}/start:
     post:
       operationId: StartPacketAnalyzer

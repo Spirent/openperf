@@ -117,6 +117,9 @@ paths:
   /packet/analyzers/{id}:
     $ref: ./modules/packet/analyzer.yaml#/paths/~1analyzers~1{id}
 
+  /packet/analyzers/{id}/reset:
+    $ref: ./modules/packet/analyzer.yaml#/paths/~1analyzers~1{id}~1reset
+
   /packet/analyzers/{id}/start:
     $ref: ./modules/packet/analyzer.yaml#/paths/~1analyzers~1{id}~1start
 

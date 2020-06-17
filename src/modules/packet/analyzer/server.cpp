@@ -102,6 +102,9 @@ static std::string to_string(const request_msg& request)
                            [](const request_delete_analyzer& request) {
                                return ("delete analyzer " + request.id);
                            },
+                           [](const request_reset_analyzer& request) {
+                               return ("reset analyzer " + request.id);
+                           },
                            [](const request_start_analyzer& request) {
                                return ("start analyzer " + request.id);
                            },
@@ -367,6 +370,34 @@ reply_msg server::handle_request(const request_delete_analyzer& request)
     }
 
     return (reply_ok{});
+}
+
+reply_msg server::handle_request(const request_reset_analyzer& request)
+{
+    const auto found = binary_find(std::begin(m_sinks),
+                                   std::end(m_sinks),
+                                   request.id,
+                                   sink_id_comparator{});
+
+    if (found == std::end(m_sinks)) {
+        return (to_error(error_type::NOT_FOUND));
+    }
+
+    if (!found->active()) { return (to_error(error_type::POSIX, EINVAL)); }
+
+    auto& impl = found->template get<sink>();
+    const auto item = m_results.emplace(core::uuid::random(),
+                                        std::make_unique<sink_result>(impl));
+    assert(item.second); /* sink_result inserted */
+
+    const auto& id = item.first->first;
+    const auto& result = item.first->second;
+
+    impl.reset(result.get());
+
+    auto reply = reply_analyzer_results{};
+    reply.analyzer_results.emplace_back(to_swagger(id, *result));
+    return (reply);
 }
 
 reply_msg server::handle_request(const request_start_analyzer& request)

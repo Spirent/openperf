@@ -123,6 +123,14 @@ api::flow_counters_config sink::flow_counters() const
 
 size_t sink::worker_count() const { return (m_indexes.size()); }
 
+sink_result* sink::reset(sink_result* results)
+{
+    results->start();
+    auto stopped = m_results.exchange(results, std::memory_order_acq_rel);
+    stopped->stop();
+    return (stopped);
+}
+
 void sink::start(sink_result* results)
 {
     results->start();
