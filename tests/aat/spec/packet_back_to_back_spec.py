@@ -295,6 +295,48 @@ GENERATOR_CONFIG_CUSTOM_MODIFIERS = {
     ],
 }
 
+# Not sure if the CI system can actually handle this, but we
+# want the reset/toggle tests to generate traffic as fast as
+# possible.
+FAST_LOAD = {
+    'burst_size': 32,
+    'rate': 1000000
+}
+
+GENERATOR_CONFIG_CONTINUOUS_A = {
+    'duration': {'continuous': True},
+    'load': FAST_LOAD,
+    'traffic': [
+        {
+            'length': {'fixed': 128},
+            'packet': ETH_IPV4_UDP,
+            'signature': {'stream_id': 1,
+                          'latency': 'end_of_frame'}
+        }
+    ],
+}
+
+GENERATOR_CONFIG_CONTINUOUS_B = {
+    'duration': {'continuous': True},
+    'load': FAST_LOAD,
+    'traffic': [
+        {
+            'length': {'fixed': 128},
+            'packet': ETH_IPV4_UDP,
+            'signature': {'stream_id': 1,
+                          'latency': 'end_of_frame'},
+            'weight': 1
+        },
+        {
+            'length': {'fixed': 512},
+            'packet': ETH_IPV6_TCP,
+            'signature': {'stream_id': 2,
+                          'latency': 'end_of_frame'},
+            'weight': 1
+        }
+    ],
+}
+
 ###
 # Utility functions
 ###
@@ -347,6 +389,15 @@ def wait_until_done(gen_client, result_id, initial_sleep = None):
         if not result.active:
             break;
         time.sleep(POLL_INTERVAL)
+
+
+def wait_until_more_generator_results(gen_client, result_id, tx_threshold = None):
+    min_tx = tx_threshold if tx_threshold else 0
+    while True:
+        time.sleep(POLL_INTERVAL)
+        result = gen_client.get_packet_generator_result(result_id)
+        if result.flow_counters.packets_actual > min_tx:
+            break
 
 
 def configure_and_run_test(api_client, ana_config, gen_config):
@@ -694,6 +745,137 @@ with description('Packet back to back', 'packet_b2b') as self:
                         expect(gen_result.flow_counters.packets_actual).to(equal(exp_frame_count))
                         validate_rx_flows(self.client, ana_result)
                         validate_tx_flows(self.client, gen_result)
+
+            with description('analyzer reset,'):
+                with it('succeeds'):
+                    ana_api = client.api.PacketAnalyzersApi(self.client)
+                    gen_api = client.api.PacketGeneratorsApi(self.client)
+
+                    # Create analyzer/generator objects
+                    analyzer = ana_api.create_packet_analyzer(get_analyzer_model(self.client,
+                                                                                 ANALYZER_CONFIG_SIGS))
+                    expect(analyzer).to(be_valid_packet_analyzer)
+
+                    generator = gen_api.create_packet_generator(get_generator_model(self.client,
+                                                                                    GENERATOR_CONFIG_CONTINUOUS_A))
+                    expect(generator).to(be_valid_packet_generator)
+
+                    # Start both objects
+                    ana_result1 = ana_api.start_packet_analyzer(analyzer.id)
+                    expect(ana_result1).to(be_valid_packet_analyzer_result)
+                    expect(ana_result1.active).to(be_true)
+                    expect(ana_result1.analyzer_id).to(equal(analyzer.id))
+
+                    gen_result = gen_api.start_packet_generator(generator.id)
+                    expect(gen_result).to(be_valid_packet_generator_result)
+                    expect(gen_result.active).to(be_true)
+                    expect(gen_result.generator_id).to(equal(generator.id))
+
+                    # Wait until we transmit some packets
+                    wait_until_more_generator_results(gen_api, gen_result.id)
+
+                    # Reset the analyzer results
+                    ana_result2 = ana_api.reset_packet_analyzer(analyzer.id)
+
+                    # Now wait until the generator transmit some more
+                    gen_curr = gen_api.get_packet_generator_result(gen_result.id)
+                    wait_until_more_generator_results(gen_api, gen_result.id, gen_curr.flow_counters.packets_actual)
+
+                    gen_api.stop_packet_generator(generator.id)
+                    ana_api.stop_packet_analyzer(analyzer.id)
+
+                    # Retrieve final results
+                    ana_result1 = ana_api.get_packet_analyzer_result(ana_result1.id)
+                    expect(ana_result1).to(be_valid_packet_analyzer_result)
+                    expect(ana_result1.active).to(be_false)
+                    ana_result2 = ana_api.get_packet_analyzer_result(ana_result2.id)
+                    expect(ana_result2).to(be_valid_packet_analyzer_result)
+                    expect(ana_result2.active).to(be_false)
+
+                    gen_result = gen_api.get_packet_generator_result(gen_result.id)
+                    expect(gen_result).to(be_valid_packet_generator_result)
+                    expect(gen_result.active).to(be_false)
+                    expect(gen_result.remaining).to(be_none)
+
+                    # Sanity check results; we want the total rx
+                    # packet count from both results to match the
+                    # transmit count.
+                    tx_pkt_count = gen_result.flow_counters.packets_actual
+                    rx_pkt_count = ana_result1.flow_counters.frame_count + ana_result2.flow_counters.frame_count
+                    expect(tx_pkt_count).to(equal(rx_pkt_count))
+
+            with description('generator toggle,'):
+                with it('succeeds'):
+                    ana_api = client.api.PacketAnalyzersApi(self.client)
+                    gen_api = client.api.PacketGeneratorsApi(self.client)
+
+                    # Create analyzer/generator objects
+                    analyzer = ana_api.create_packet_analyzer(get_analyzer_model(self.client,
+                                                                                 ANALYZER_CONFIG_SIGS))
+                    expect(analyzer).to(be_valid_packet_analyzer)
+
+                    generator1 = gen_api.create_packet_generator(get_generator_model(self.client,
+                                                                                     GENERATOR_CONFIG_CONTINUOUS_A))
+                    expect(generator1).to(be_valid_packet_generator)
+
+                    # Start both objects
+                    ana_result = ana_api.start_packet_analyzer(analyzer.id)
+                    expect(ana_result).to(be_valid_packet_analyzer_result)
+                    expect(ana_result.active).to(be_true)
+                    expect(ana_result.analyzer_id).to(equal(analyzer.id))
+
+                    gen_result1 = gen_api.start_packet_generator(generator1.id)
+                    expect(gen_result1).to(be_valid_packet_generator_result)
+                    expect(gen_result1.active).to(be_true)
+                    expect(gen_result1.generator_id).to(equal(generator1.id))
+
+                    # Wait until we transmit some packets
+                    wait_until_more_generator_results(gen_api, gen_result1.id)
+
+                    # Create a new generator and switch to it
+                    generator2 = gen_api.create_packet_generator(get_generator_model(self.client,
+                                                                                     GENERATOR_CONFIG_CONTINUOUS_B))
+                    expect(generator2).to(be_valid_packet_generator)
+
+                    toggle = client.models.TogglePacketGeneratorsRequest()
+                    toggle.replace = generator1.id
+                    toggle._with = generator2.id
+
+                    gen_result2 = gen_api.toggle_packet_generators(toggle)
+                    expect(gen_result2).to(be_valid_packet_generator_result)
+                    expect(gen_result2.active).to(be_true)
+                    expect(gen_result2.generator_id).to(equal(generator2.id))
+
+                    # Now wait for generator2 to transmit some packets
+                    wait_until_more_generator_results(gen_api, gen_result2.id)
+
+                    # Finally, stop objects and check results
+                    gen_api.stop_packet_generator(generator2.id)
+                    ana_api.stop_packet_analyzer(analyzer.id)
+
+                    # Retrieve final results
+                    ana_result = ana_api.get_packet_analyzer_result(ana_result.id)
+                    expect(ana_result).to(be_valid_packet_analyzer_result)
+                    expect(ana_result.active).to(be_false)
+
+                    gen_result1 = gen_api.get_packet_generator_result(gen_result1.id)
+                    expect(gen_result1).to(be_valid_packet_generator_result)
+                    expect(gen_result1.active).to(be_false)
+                    gen_result2 = gen_api.get_packet_generator_result(gen_result2.id)
+                    expect(gen_result2).to(be_valid_packet_generator_result)
+                    expect(gen_result2.active).to(be_false)
+
+                    # Check results.  The total tx/rx counts should be
+                    # the same.
+                    tx_pkt_count = gen_result1.flow_counters.packets_actual + gen_result2.flow_counters.packets_actual
+                    rx_pkt_count = ana_result.flow_counters.frame_count
+                    expect(tx_pkt_count).to(equal(rx_pkt_count))
+
+                    # Additionally, the analyzer should show
+                    # 2 streams with no dropped packets in the
+                    # sequence stats.
+                    expect(len(ana_result.flows)).to(equal(2))
+                    expect(ana_result.flow_counters.frame_count).to(equal(ana_result.flow_counters.sequence.in_order))
 
         with after.each:
             try:
