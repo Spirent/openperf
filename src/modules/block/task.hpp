@@ -20,7 +20,8 @@ enum task_operation { READ = 0, WRITE };
 
 struct task_synchronizer
 {
-    std::atomic_int32_t ratio;
+    std::atomic_int32_t ratio_reads;
+    std::atomic_int32_t ratio_writes;
     std::atomic_int64_t reads_actual = 0;
     std::atomic_int64_t writes_actual = 0;
 };
@@ -35,7 +36,7 @@ struct task_config_t
     int32_t ops_per_sec;
     size_t block_size;
     worker_pattern pattern;
-    task_synchronizer* synchronizer;
+    task_synchronizer* synchronizer = nullptr;
 };
 
 struct task_stat_t

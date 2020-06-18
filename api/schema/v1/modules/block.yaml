@@ -405,11 +405,17 @@ definitions:
         type: integer
         description: Number of bytes to use for each write operation
         minimum: 1
-      read_to_write_ratio:
-        type: integer
-        description: Percentage of a mixed workload operations that should be reads. If value is not given, read to write ratio is not limited.
-        minimum: 1
-        maximum: 99
+      ratio:
+        type: object
+        description: Relative amount of a mixed workload operations that should be performed. If value is not given, ratio is not limited.
+        title: BlockGeneratorReadWriteRatio
+        properties:
+          writes:
+            type: integer
+            minimum: 1
+          reads:
+            type: integer
+            minimum: 1
       pattern:
         type: string
         description: IO access pattern

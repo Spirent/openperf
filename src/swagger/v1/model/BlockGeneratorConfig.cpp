@@ -24,8 +24,7 @@ BlockGeneratorConfig::BlockGeneratorConfig()
     m_Read_size = 0;
     m_Writes_per_sec = 0;
     m_Write_size = 0;
-    m_Read_to_write_ratio = 0;
-    m_Read_to_write_ratioIsSet = false;
+    m_RatioIsSet = false;
     m_Pattern = "";
     
 }
@@ -48,9 +47,9 @@ nlohmann::json BlockGeneratorConfig::toJson() const
     val["read_size"] = m_Read_size;
     val["writes_per_sec"] = m_Writes_per_sec;
     val["write_size"] = m_Write_size;
-    if(m_Read_to_write_ratioIsSet)
+    if(m_RatioIsSet)
     {
-        val["read_to_write_ratio"] = m_Read_to_write_ratio;
+        val["ratio"] = ModelBase::toJson(m_Ratio);
     }
     val["pattern"] = ModelBase::toJson(m_Pattern);
     
@@ -65,9 +64,15 @@ void BlockGeneratorConfig::fromJson(nlohmann::json& val)
     setReadSize(val.at("read_size"));
     setWritesPerSec(val.at("writes_per_sec"));
     setWriteSize(val.at("write_size"));
-    if(val.find("read_to_write_ratio") != val.end())
+    if(val.find("ratio") != val.end())
     {
-        setReadToWriteRatio(val.at("read_to_write_ratio"));
+        if(!val["ratio"].is_null())
+        {
+            std::shared_ptr<BlockGeneratorReadWriteRatio> newItem(new BlockGeneratorReadWriteRatio());
+            newItem->fromJson(val["ratio"]);
+            setRatio( newItem );
+        }
+        
     }
     setPattern(val.at("pattern"));
     
@@ -119,22 +124,22 @@ void BlockGeneratorConfig::setWriteSize(int32_t value)
     m_Write_size = value;
     
 }
-int32_t BlockGeneratorConfig::getReadToWriteRatio() const
+std::shared_ptr<BlockGeneratorReadWriteRatio> BlockGeneratorConfig::getRatio() const
 {
-    return m_Read_to_write_ratio;
+    return m_Ratio;
 }
-void BlockGeneratorConfig::setReadToWriteRatio(int32_t value)
+void BlockGeneratorConfig::setRatio(std::shared_ptr<BlockGeneratorReadWriteRatio> value)
 {
-    m_Read_to_write_ratio = value;
-    m_Read_to_write_ratioIsSet = true;
+    m_Ratio = value;
+    m_RatioIsSet = true;
 }
-bool BlockGeneratorConfig::readToWriteRatioIsSet() const
+bool BlockGeneratorConfig::ratioIsSet() const
 {
-    return m_Read_to_write_ratioIsSet;
+    return m_RatioIsSet;
 }
-void BlockGeneratorConfig::unsetRead_to_write_ratio()
+void BlockGeneratorConfig::unsetRatio()
 {
-    m_Read_to_write_ratioIsSet = false;
+    m_RatioIsSet = false;
 }
 std::string BlockGeneratorConfig::getPattern() const
 {
