@@ -8,8 +8,8 @@ namespace openperf::packetio::dpdk {
 
 using namespace std::literals::chrono_literals;
 static constexpr auto block_poll = 100ns;
-static constexpr auto idle_poll = 1s;
-static constexpr auto link_poll = 100ms;
+static constexpr auto idle_poll = 100ms;
+static constexpr auto link_poll = 100us;
 static constexpr auto min_poll = 1ns;
 static constexpr auto schedule_poll = idle_poll;
 
