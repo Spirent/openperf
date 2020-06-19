@@ -111,6 +111,18 @@ static std::string to_string(const request_msg& request)
                            [](const request_stop_analyzer& request) {
                                return ("stop analyzer " + request.id);
                            },
+                           [](const request_bulk_create_analyzers&) {
+                               return (std::string("bulk create analyzers"));
+                           },
+                           [](const request_bulk_delete_analyzers&) {
+                               return (std::string("bulk delete analyzers"));
+                           },
+                           [](const request_bulk_start_analyzers&) {
+                               return (std::string("bulk start analyzers"));
+                           },
+                           [](const request_bulk_stop_analyzers&) {
+                               return (std::string("bulk stop analyzers"));
+                           },
                            [](const request_list_analyzer_results&) {
                                return (std::string("list analyzer results"));
                            },
@@ -283,7 +295,10 @@ reply_msg server::handle_request(const request_create_analyzer& request)
         return (to_error(error_type::POSIX, success.error()));
     }
 
-    /* Otherwise, sort our sinks and return */
+    /* Grab a reference before we invalidate the iterator */
+    const auto& impl = item.template get<sink>();
+
+    /* Success; sort our sinks and return */
     std::sort(std::begin(m_sinks),
               std::end(m_sinks),
               [](const auto& left, const auto& right) {
@@ -291,7 +306,7 @@ reply_msg server::handle_request(const request_create_analyzer& request)
               });
 
     auto reply = reply_analyzers{};
-    reply.analyzers.emplace_back(to_swagger(item.template get<sink>()));
+    reply.analyzers.emplace_back(to_swagger(impl));
     return (reply);
 }
 
@@ -445,6 +460,96 @@ reply_msg server::handle_request(const request_stop_analyzer& request)
         auto& impl = found->template get<sink>();
         impl.stop();
     }
+
+    return (reply_ok{});
+}
+
+reply_msg server::handle_request(const request_bulk_create_analyzers& request)
+{
+    auto bulk_reply = reply_analyzers{};
+    auto bulk_errors = std::vector<reply_error>{};
+
+    std::for_each(
+        std::begin(request.analyzers),
+        std::end(request.analyzers),
+        [&](const auto& analyzer) {
+            auto api_reply = handle_request(request_create_analyzer{
+                std::make_unique<analyzer_type>(*analyzer)});
+            if (auto reply = std::get_if<reply_analyzers>(&api_reply)) {
+                assert(reply->analyzers.size() == 1);
+                std::move(std::begin(reply->analyzers),
+                          std::end(reply->analyzers),
+                          std::back_inserter(bulk_reply.analyzers));
+            } else {
+                assert(std::holds_alternative<reply_error>(api_reply));
+                bulk_errors.emplace_back(std::get<reply_error>(api_reply));
+            }
+        });
+
+    if (!bulk_errors.empty()) {
+        /* Roll back! */
+        std::for_each(std::begin(bulk_reply.analyzers),
+                      std::end(bulk_reply.analyzers),
+                      [&](const auto& analyzer) {
+                          handle_request(
+                              request_delete_analyzer{analyzer->getId()});
+                      });
+        return (bulk_errors.front());
+    }
+
+    return (bulk_reply);
+}
+
+reply_msg server::handle_request(const request_bulk_delete_analyzers& request)
+{
+    std::for_each(
+        std::begin(request.ids), std::end(request.ids), [&](const auto& id) {
+            handle_request(request_delete_analyzer{*id});
+        });
+
+    return (reply_ok{});
+}
+
+reply_msg server::handle_request(const request_bulk_start_analyzers& request)
+{
+    auto bulk_reply = reply_analyzer_results{};
+    auto bulk_errors = std::vector<reply_error>{};
+
+    std::for_each(
+        std::begin(request.ids), std::end(request.ids), [&](const auto& id) {
+            auto api_reply = handle_request(request_start_analyzer{*id});
+            if (auto reply = std::get_if<reply_analyzer_results>(&api_reply)) {
+                assert(reply->analyzer_results.size() == 1);
+                std::move(std::begin(reply->analyzer_results),
+                          std::end(reply->analyzer_results),
+                          std::back_inserter(bulk_reply.analyzer_results));
+            } else {
+                assert(std::holds_alternative<reply_error>(api_reply));
+                bulk_errors.emplace_back(std::get<reply_error>(api_reply));
+            }
+        });
+
+    if (!bulk_errors.empty()) {
+        /* Undo what we have done */
+        std::for_each(
+            std::begin(bulk_reply.analyzer_results),
+            std::end(bulk_reply.analyzer_results),
+            [&](const auto& result) {
+                handle_request(request_stop_analyzer{result->getAnalyzerId()});
+                handle_request(request_delete_analyzer_result{result->getId()});
+            });
+        return (bulk_errors.front());
+    }
+
+    return (bulk_reply);
+}
+
+reply_msg server::handle_request(const request_bulk_stop_analyzers& request)
+{
+    std::for_each(
+        std::begin(request.ids), std::end(request.ids), [&](const auto& id) {
+            handle_request(request_stop_analyzer{*id});
+        });
 
     return (reply_ok{});
 }

@@ -5,6 +5,11 @@
 #include "core/op_core.h"
 #include "packet/analyzer/api.hpp"
 
+#include "swagger/v1/model/BulkCreatePacketAnalyzersResponse.h"
+#include "swagger/v1/model/BulkDeletePacketAnalyzersRequest.h"
+#include "swagger/v1/model/BulkStartPacketAnalyzersRequest.h"
+#include "swagger/v1/model/BulkStartPacketAnalyzersResponse.h"
+#include "swagger/v1/model/BulkStopPacketAnalyzersRequest.h"
 #include "swagger/v1/model/PacketAnalyzer.h"
 #include "swagger/v1/model/PacketAnalyzerResult.h"
 #include "swagger/v1/model/RxFlow.h"
@@ -238,7 +243,7 @@ parse_create_analyzer(const handler::request_type& request)
     try {
         return (nlohmann::json::parse(request.body())
                     .get<swagger::v1::model::PacketAnalyzer>());
-    } catch (const nlohmann::json::parse_error& e) {
+    } catch (const nlohmann::json::exception& e) {
         return (tl::unexpected(json_error(e.id, e.what())));
     }
 }
@@ -415,32 +420,229 @@ void handler::stop_analyzer(const request_type& request, response_type response)
     }
 }
 
+static tl::expected<request_bulk_create_analyzers, std::string>
+parse_bulk_create_analyzers(const handler::request_type& request)
+{
+    auto bulk_request = request_bulk_create_analyzers{};
+    try {
+        const auto j = nlohmann::json::parse(request.body());
+        for (auto&& item : j["items"]) {
+            bulk_request.analyzers.emplace_back(
+                std::make_unique<analyzer_type>(item.get<analyzer_type>()));
+        }
+        return (bulk_request);
+    } catch (const nlohmann::json::exception& e) {
+        return (tl::unexpected(json_error(e.id, e.what())));
+    }
+}
+
 void handler::bulk_create_analyzers(const request_type& request,
                                     response_type response)
 {
-    (void)request;
-    response.send(Http::Code::Not_Implemented);
+    auto api_request = parse_bulk_create_analyzers(request);
+    if (!api_request) {
+        response.send(Http::Code::Bad_Request, api_request.error());
+        return;
+    }
+
+    /* Verify that all user provided id's are valid */
+    std::vector<std::string> id_errors;
+    std::for_each(std::begin(api_request->analyzers),
+                  std::end(api_request->analyzers),
+                  [&](const auto& analyzer) {
+                      if (!analyzer->getId().empty()) {
+                          if (auto res = config::op_config_validate_id_string(
+                                  analyzer->getId());
+                              !res) {
+                              id_errors.emplace_back(res.error());
+                          }
+                      }
+                  });
+    if (!id_errors.empty()) {
+        response.send(Http::Code::Not_Found, concatenate(id_errors));
+        return;
+    }
+
+    /* Validate all analzyer objects before forwarding to the server */
+    std::vector<std::string> validation_errors;
+    std::for_each(
+        std::begin(api_request->analyzers),
+        std::end(api_request->analyzers),
+        [&](const auto& analyzer) { is_valid(*analyzer, validation_errors); });
+    if (!validation_errors.empty()) {
+        response.send(Http::Code::Bad_Request, concatenate(validation_errors));
+        return;
+    }
+
+    auto api_reply = submit_request(m_socket.get(), std::move(*api_request));
+
+    if (auto reply = std::get_if<reply_analyzers>(&api_reply)) {
+        response.headers().add<Http::Header::ContentType>(
+            MIME(Application, Json));
+
+        auto swagger_reply =
+            swagger::v1::model::BulkCreatePacketAnalyzersResponse{};
+        std::move(std::begin(reply->analyzers),
+                  std::end(reply->analyzers),
+                  std::back_inserter(swagger_reply.getItems()));
+
+        response.send(Http::Code::Ok, swagger_reply.toJson().dump());
+    } else {
+        handle_reply_error(api_reply, std::move(response));
+    }
+}
+
+template <typename T>
+tl::expected<T, std::string> parse_request(const handler::request_type& request)
+{
+    try {
+        auto obj = T{};
+        auto j = nlohmann::json::parse(request.body());
+        obj.fromJson(j);
+        return (obj);
+    } catch (const nlohmann::json::exception& e) {
+        return (tl::unexpected(json_error(e.id, e.what())));
+    }
 }
 
 void handler::bulk_delete_analyzers(const request_type& request,
                                     response_type response)
 {
-    (void)request;
-    response.send(Http::Code::Not_Implemented);
+    auto swagger_request =
+        parse_request<swagger::v1::model::BulkDeletePacketAnalyzersRequest>(
+            request);
+    if (!swagger_request) {
+        response.send(Http::Code::Bad_Request, swagger_request.error());
+        return;
+    }
+
+    const auto& ids = swagger_request->getIds();
+
+    /* Verify that all user provided id's are valid */
+    std::vector<std::string> id_errors;
+    std::for_each(std::begin(ids), std::end(ids), [&](const auto& id) {
+        if (!id.empty()) {
+            if (auto res = config::op_config_validate_id_string(id); !res) {
+                id_errors.emplace_back(res.error());
+            }
+        }
+    });
+    if (!id_errors.empty()) {
+        response.send(Http::Code::Not_Found, concatenate(id_errors));
+        return;
+    }
+
+    auto api_request = request_bulk_delete_analyzers{};
+
+    std::transform(
+        std::begin(ids),
+        std::end(ids),
+        std::back_inserter(api_request.ids),
+        [](const auto& id) { return (std::make_unique<std::string>(id)); });
+
+    auto api_reply = submit_request(m_socket.get(), std::move(api_request));
+
+    if (auto reply = std::get_if<reply_ok>(&api_reply)) {
+        response.send(Http::Code::No_Content);
+    } else {
+        handle_reply_error(api_reply, std::move(response));
+    }
 }
 
 void handler::bulk_start_analyzers(const request_type& request,
                                    response_type response)
 {
-    (void)request;
-    response.send(Http::Code::Not_Implemented);
+    auto swagger_request =
+        parse_request<swagger::v1::model::BulkStartPacketAnalyzersRequest>(
+            request);
+    if (!swagger_request) {
+        response.send(Http::Code::Bad_Request, swagger_request.error());
+        return;
+    }
+
+    const auto& ids = swagger_request->getIds();
+
+    /* Verify that all user provided id's are valid */
+    std::vector<std::string> id_errors;
+    std::for_each(std::begin(ids), std::end(ids), [&](const auto& id) {
+        if (!id.empty()) {
+            if (auto res = config::op_config_validate_id_string(id); !res) {
+                id_errors.emplace_back(res.error());
+            }
+        }
+    });
+    if (!id_errors.empty()) {
+        response.send(Http::Code::Not_Found, concatenate(id_errors));
+        return;
+    }
+
+    auto api_request = request_bulk_start_analyzers{};
+
+    std::transform(
+        std::begin(ids),
+        std::end(ids),
+        std::back_inserter(api_request.ids),
+        [](const auto& id) { return (std::make_unique<std::string>(id)); });
+
+    auto api_reply = submit_request(m_socket.get(), std::move(api_request));
+
+    if (auto reply = std::get_if<reply_analyzer_results>(&api_reply)) {
+        response.headers().add<Http::Header::ContentType>(
+            MIME(Application, Json));
+
+        auto swagger_reply =
+            swagger::v1::model::BulkStartPacketAnalyzersResponse{};
+        std::move(std::begin(reply->analyzer_results),
+                  std::end(reply->analyzer_results),
+                  std::back_inserter(swagger_reply.getItems()));
+
+        response.send(Http::Code::Ok, swagger_reply.toJson().dump());
+    } else {
+        handle_reply_error(api_reply, std::move(response));
+    }
 }
 
 void handler::bulk_stop_analyzers(const request_type& request,
                                   response_type response)
 {
-    (void)request;
-    response.send(Http::Code::Not_Implemented);
+    auto swagger_request =
+        parse_request<swagger::v1::model::BulkStopPacketAnalyzersRequest>(
+            request);
+    if (!swagger_request) {
+        response.send(Http::Code::Bad_Request, swagger_request.error());
+    }
+
+    const auto& ids = swagger_request->getIds();
+
+    /* Verify that all user provided id's are valid */
+    std::vector<std::string> id_errors;
+    std::for_each(std::begin(ids), std::end(ids), [&](const auto& id) {
+        if (!id.empty()) {
+            if (auto res = config::op_config_validate_id_string(id); !res) {
+                id_errors.emplace_back(res.error());
+            }
+        }
+    });
+    if (!id_errors.empty()) {
+        response.send(Http::Code::Not_Found, concatenate(id_errors));
+        return;
+    }
+
+    auto api_request = request_bulk_stop_analyzers{};
+
+    std::transform(
+        std::begin(ids),
+        std::end(ids),
+        std::back_inserter(api_request.ids),
+        [](const auto& id) { return (std::make_unique<std::string>(id)); });
+
+    auto api_reply = submit_request(m_socket.get(), std::move(api_request));
+
+    if (auto reply = std::get_if<reply_ok>(&api_reply)) {
+        response.send(Http::Code::No_Content);
+    } else {
+        handle_reply_error(api_reply, std::move(response));
+    }
 }
 
 void handler::list_analyzer_results(const request_type& request,

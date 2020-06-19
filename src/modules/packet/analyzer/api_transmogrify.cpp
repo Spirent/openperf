@@ -112,71 +112,83 @@ serialized_msg serialize_request(request_msg&& msg)
     serialized_msg serialized;
     auto error =
         (zmq_msg_init(&serialized.type, msg.index())
-         || std::visit(utils::overloaded_visitor(
-                           [&](request_list_analyzers& request) {
-                               return (zmq_msg_init(&serialized.data,
-                                                    std::move(request.filter)));
-                           },
-                           [&](request_create_analyzer& request) {
-                               return (
-                                   zmq_msg_init(&serialized.data,
-                                                std::move(request.analyzer)));
-                           },
-                           [&](const request_delete_analyzers&) {
-                               return (zmq_msg_init(&serialized.data, 0));
-                           },
-                           [&](const request_get_analyzer& request) {
-                               return (zmq_msg_init(&serialized.data,
-                                                    request.id.data(),
-                                                    request.id.length()));
-                           },
-                           [&](const request_delete_analyzer& request) {
-                               return (zmq_msg_init(&serialized.data,
-                                                    request.id.data(),
-                                                    request.id.length()));
-                           },
-                           [&](request_reset_analyzer& request) {
-                               return (zmq_msg_init(&serialized.data,
-                                                    request.id.data(),
-                                                    request.id.length()));
-                           },
-                           [&](request_start_analyzer& request) {
-                               return (zmq_msg_init(&serialized.data,
-                                                    request.id.data(),
-                                                    request.id.length()));
-                           },
-                           [&](const request_stop_analyzer& request) {
-                               return (zmq_msg_init(&serialized.data,
-                                                    request.id.data(),
-                                                    request.id.length()));
-                           },
-                           [&](request_list_analyzer_results& request) {
-                               return (zmq_msg_init(&serialized.data,
-                                                    std::move(request.filter)));
-                           },
-                           [&](const request_delete_analyzer_results&) {
-                               return (zmq_msg_init(&serialized.data, 0));
-                           },
-                           [&](const request_get_analyzer_result& request) {
-                               return (zmq_msg_init(&serialized.data,
-                                                    request.id.data(),
-                                                    request.id.length()));
-                           },
-                           [&](const request_delete_analyzer_result& request) {
-                               return (zmq_msg_init(&serialized.data,
-                                                    request.id.data(),
-                                                    request.id.length()));
-                           },
-                           [&](request_list_rx_flows& request) {
-                               return (zmq_msg_init(&serialized.data,
-                                                    std::move(request.filter)));
-                           },
-                           [&](const request_get_rx_flow& request) {
-                               return (zmq_msg_init(&serialized.data,
-                                                    request.id.data(),
-                                                    request.id.length()));
-                           }),
-                       msg));
+         || std::visit(
+             utils::overloaded_visitor(
+                 [&](request_list_analyzers& request) {
+                     return (zmq_msg_init(&serialized.data,
+                                          std::move(request.filter)));
+                 },
+                 [&](request_create_analyzer& request) {
+                     return (zmq_msg_init(&serialized.data,
+                                          std::move(request.analyzer)));
+                 },
+                 [&](const request_delete_analyzers&) {
+                     return (zmq_msg_init(&serialized.data, 0));
+                 },
+                 [&](const request_get_analyzer& request) {
+                     return (zmq_msg_init(&serialized.data,
+                                          request.id.data(),
+                                          request.id.length()));
+                 },
+                 [&](const request_delete_analyzer& request) {
+                     return (zmq_msg_init(&serialized.data,
+                                          request.id.data(),
+                                          request.id.length()));
+                 },
+                 [&](const request_reset_analyzer& request) {
+                     return (zmq_msg_init(&serialized.data,
+                                          request.id.data(),
+                                          request.id.length()));
+                 },
+                 [&](const request_start_analyzer& request) {
+                     return (zmq_msg_init(&serialized.data,
+                                          request.id.data(),
+                                          request.id.length()));
+                 },
+                 [&](const request_stop_analyzer& request) {
+                     return (zmq_msg_init(&serialized.data,
+                                          request.id.data(),
+                                          request.id.length()));
+                 },
+                 [&](request_bulk_create_analyzers& request) {
+                     return (zmq_msg_init(&serialized.data, request.analyzers));
+                 },
+                 [&](request_bulk_delete_analyzers& request) {
+                     return (zmq_msg_init(&serialized.data, request.ids));
+                 },
+                 [&](request_bulk_start_analyzers& request) {
+                     return (zmq_msg_init(&serialized.data, request.ids));
+                 },
+                 [&](request_bulk_stop_analyzers& request) {
+                     return (zmq_msg_init(&serialized.data, request.ids));
+                 },
+                 [&](request_list_analyzer_results& request) {
+                     return (zmq_msg_init(&serialized.data,
+                                          std::move(request.filter)));
+                 },
+                 [&](const request_delete_analyzer_results&) {
+                     return (zmq_msg_init(&serialized.data, 0));
+                 },
+                 [&](const request_get_analyzer_result& request) {
+                     return (zmq_msg_init(&serialized.data,
+                                          request.id.data(),
+                                          request.id.length()));
+                 },
+                 [&](const request_delete_analyzer_result& request) {
+                     return (zmq_msg_init(&serialized.data,
+                                          request.id.data(),
+                                          request.id.length()));
+                 },
+                 [&](request_list_rx_flows& request) {
+                     return (zmq_msg_init(&serialized.data,
+                                          std::move(request.filter)));
+                 },
+                 [&](const request_get_rx_flow& request) {
+                     return (zmq_msg_init(&serialized.data,
+                                          request.id.data(),
+                                          request.id.length()));
+                 }),
+             msg));
     if (error) { throw std::bad_alloc(); }
 
     return (serialized);
@@ -252,6 +264,46 @@ tl::expected<request_msg, int> deserialize_request(const serialized_msg& msg)
         auto id = std::string(zmq_msg_data<char*>(&msg.data),
                               zmq_msg_size(&msg.data));
         return (request_stop_analyzer{std::move(id)});
+    }
+    case utils::variant_index<request_msg, request_bulk_create_analyzers>(): {
+        auto size = zmq_msg_size(&msg.data) / sizeof(analyzer_type*);
+        auto data = zmq_msg_data<analyzer_type**>(&msg.data);
+
+        auto request = request_bulk_create_analyzers{};
+        std::for_each(data, data + size, [&](const auto& ptr) {
+            request.analyzers.emplace_back(ptr);
+        });
+        return (request);
+    }
+    case utils::variant_index<request_msg, request_bulk_delete_analyzers>(): {
+        auto size = zmq_msg_size(&msg.data) / sizeof(std::string*);
+        auto data = zmq_msg_data<std::string**>(&msg.data);
+
+        auto request = request_bulk_delete_analyzers{};
+        std::for_each(data, data + size, [&](const auto& ptr) {
+            request.ids.emplace_back(ptr);
+        });
+        return (request);
+    }
+    case utils::variant_index<request_msg, request_bulk_start_analyzers>(): {
+        auto size = zmq_msg_size(&msg.data) / sizeof(std::string*);
+        auto data = zmq_msg_data<std::string**>(&msg.data);
+
+        auto request = request_bulk_start_analyzers{};
+        std::for_each(data, data + size, [&](const auto& ptr) {
+            request.ids.emplace_back(ptr);
+        });
+        return (request);
+    }
+    case utils::variant_index<request_msg, request_bulk_stop_analyzers>(): {
+        auto size = zmq_msg_size(&msg.data) / sizeof(std::string*);
+        auto data = zmq_msg_data<std::string**>(&msg.data);
+
+        auto request = request_bulk_stop_analyzers{};
+        std::for_each(data, data + size, [&](const auto& ptr) {
+            request.ids.emplace_back(ptr);
+        });
+        return (request);
     }
     case utils::variant_index<request_msg, request_list_analyzer_results>(): {
         auto request = request_list_analyzer_results{};
