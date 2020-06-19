@@ -31,76 +31,129 @@ class TDigestResult(object):
                             and the value is json key in definition.
     """
     swagger_types = {
-        'result_id': 'str',
-        'tdigest_id': 'str',
+        'id': 'str',
+        'function': 'str',
+        'stat_x': 'str',
+        'stat_y': 'str',
         'timestamp': 'datetime',
         'centroids': 'list[TDigestCentroid]'
     }
 
     attribute_map = {
-        'result_id': 'result_id',
-        'tdigest_id': 'tdigest_id',
+        'id': 'id',
+        'function': 'function',
+        'stat_x': 'stat_x',
+        'stat_y': 'stat_y',
         'timestamp': 'timestamp',
         'centroids': 'centroids'
     }
 
-    def __init__(self, result_id=None, tdigest_id=None, timestamp=None, centroids=None):  # noqa: E501
+    def __init__(self, id=None, function=None, stat_x=None, stat_y=None, timestamp=None, centroids=None):  # noqa: E501
         """TDigestResult - a model defined in Swagger"""  # noqa: E501
 
-        self._result_id = None
-        self._tdigest_id = None
+        self._id = None
+        self._function = None
+        self._stat_x = None
+        self._stat_y = None
         self._timestamp = None
         self._centroids = None
         self.discriminator = None
 
-        self.result_id = result_id
-        self.tdigest_id = tdigest_id
+        self.id = id
+        self.function = function
+        self.stat_x = stat_x
+        if stat_y is not None:
+            self.stat_y = stat_y
         self.timestamp = timestamp
         self.centroids = centroids
 
     @property
-    def result_id(self):
-        """Gets the result_id of this TDigestResult.  # noqa: E501
+    def id(self):
+        """Gets the id of this TDigestResult.  # noqa: E501
 
-        Unique identifier of result of generator  # noqa: E501
+        T-Digest configuration unique identifier  # noqa: E501
 
-        :return: The result_id of this TDigestResult.  # noqa: E501
+        :return: The id of this TDigestResult.  # noqa: E501
         :rtype: str
         """
-        return self._result_id
+        return self._id
 
-    @result_id.setter
-    def result_id(self, result_id):
-        """Sets the result_id of this TDigestResult.
+    @id.setter
+    def id(self, id):
+        """Sets the id of this TDigestResult.
 
-        Unique identifier of result of generator  # noqa: E501
+        T-Digest configuration unique identifier  # noqa: E501
 
-        :param result_id: The result_id of this TDigestResult.  # noqa: E501
+        :param id: The id of this TDigestResult.  # noqa: E501
         :type: str
         """
-        self._result_id = result_id
+        self._id = id
 
     @property
-    def tdigest_id(self):
-        """Gets the tdigest_id of this TDigestResult.  # noqa: E501
+    def function(self):
+        """Gets the function of this TDigestResult.  # noqa: E501
 
-        T-Digest configuration identifier  # noqa: E501
+        The function to apply to the statistic before evaluating  # noqa: E501
 
-        :return: The tdigest_id of this TDigestResult.  # noqa: E501
+        :return: The function of this TDigestResult.  # noqa: E501
         :rtype: str
         """
-        return self._tdigest_id
+        return self._function
 
-    @tdigest_id.setter
-    def tdigest_id(self, tdigest_id):
-        """Sets the tdigest_id of this TDigestResult.
+    @function.setter
+    def function(self, function):
+        """Sets the function of this TDigestResult.
 
-        T-Digest configuration identifier  # noqa: E501
+        The function to apply to the statistic before evaluating  # noqa: E501
 
-        :param tdigest_id: The tdigest_id of this TDigestResult.  # noqa: E501
+        :param function: The function of this TDigestResult.  # noqa: E501
         :type: str
         """
-        self._tdigest_id = tdigest_id
+        self._function = function
+
+    @property
+    def stat_x(self):
+        """Gets the stat_x of this TDigestResult.  # noqa: E501
+
+        The X statistic to track  # noqa: E501
+
+        :return: The stat_x of this TDigestResult.  # noqa: E501
+        :rtype: str
+        """
+        return self._stat_x
+
+    @stat_x.setter
+    def stat_x(self, stat_x):
+        """Sets the stat_x of this TDigestResult.
+
+        The X statistic to track  # noqa: E501
+
+        :param stat_x: The stat_x of this TDigestResult.  # noqa: E501
+        :type: str
+        """
+        self._stat_x = stat_x
+
+    @property
+    def stat_y(self):
+        """Gets the stat_y of this TDigestResult.  # noqa: E501
+
+        The Y statistic to track (when using DXDY function)  # noqa: E501
+
+        :return: The stat_y of this TDigestResult.  # noqa: E501
+        :rtype: str
+        """
+        return self._stat_y
+
+    @stat_y.setter
+    def stat_y(self, stat_y):
+        """Sets the stat_y of this TDigestResult.
+
+        The Y statistic to track (when using DXDY function)  # noqa: E501
+
+        :param stat_y: The stat_y of this TDigestResult.  # noqa: E501
+        :type: str
+        """
+        self._stat_y = stat_y
 
     @property
     def timestamp(self):

@@ -20,7 +20,7 @@ namespace model {
 ThresholdConfig::ThresholdConfig()
 {
     m_Id = "";
-    m_Generator_id = "";
+    m_Value = 0.0;
     m_Function = "";
     m_Condition = "";
     m_Stat_x = "";
@@ -43,7 +43,7 @@ nlohmann::json ThresholdConfig::toJson() const
     nlohmann::json val = nlohmann::json::object();
 
     val["id"] = ModelBase::toJson(m_Id);
-    val["generator_id"] = ModelBase::toJson(m_Generator_id);
+    val["value"] = m_Value;
     val["function"] = ModelBase::toJson(m_Function);
     val["condition"] = ModelBase::toJson(m_Condition);
     val["stat_x"] = ModelBase::toJson(m_Stat_x);
@@ -59,7 +59,7 @@ nlohmann::json ThresholdConfig::toJson() const
 void ThresholdConfig::fromJson(nlohmann::json& val)
 {
     setId(val.at("id"));
-    setGeneratorId(val.at("generator_id"));
+    setValue(val.at("value"));
     setFunction(val.at("function"));
     setCondition(val.at("condition"));
     setStatX(val.at("stat_x"));
@@ -81,13 +81,13 @@ void ThresholdConfig::setId(std::string value)
     m_Id = value;
     
 }
-std::string ThresholdConfig::getGeneratorId() const
+double ThresholdConfig::getValue() const
 {
-    return m_Generator_id;
+    return m_Value;
 }
-void ThresholdConfig::setGeneratorId(std::string value)
+void ThresholdConfig::setValue(double value)
 {
-    m_Generator_id = value;
+    m_Value = value;
     
 }
 std::string ThresholdConfig::getFunction() const

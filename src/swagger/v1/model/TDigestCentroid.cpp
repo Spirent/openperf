@@ -19,6 +19,7 @@ namespace model {
 
 TDigestCentroid::TDigestCentroid()
 {
+    m_Mean = 0.0;
     m_Weight = 0;
     
 }
@@ -36,6 +37,7 @@ nlohmann::json TDigestCentroid::toJson() const
 {
     nlohmann::json val = nlohmann::json::object();
 
+    val["mean"] = m_Mean;
     val["weight"] = m_Weight;
     
 
@@ -44,11 +46,21 @@ nlohmann::json TDigestCentroid::toJson() const
 
 void TDigestCentroid::fromJson(nlohmann::json& val)
 {
+    setMean(val.at("mean"));
     setWeight(val.at("weight"));
     
 }
 
 
+double TDigestCentroid::getMean() const
+{
+    return m_Mean;
+}
+void TDigestCentroid::setMean(double value)
+{
+    m_Mean = value;
+    
+}
 int32_t TDigestCentroid::getWeight() const
 {
     return m_Weight;

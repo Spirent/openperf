@@ -4,7 +4,7 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **id** | **str** | Unique threshold configuration identifier | 
-**generator_id** | **str** | Unique generator identifier | 
+**value** | **float** | The value of interest | 
 **function** | **str** | The function to apply to the statistic before evaluating | 
 **condition** | **str** | The mathematical relation between value and statistic | 
 **stat_x** | **str** | The X statistic to track | 

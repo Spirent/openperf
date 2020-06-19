@@ -4,7 +4,6 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **id** | **str** | T-Digest configuration unique identifier | 
-**generator_id** | **str** | Unique generator identifier | 
 **function** | **str** | The function to apply to the statistic before evaluating | 
 **stat_x** | **str** | The X statistic to track | 
 **stat_y** | **str** | The Y statistic to track (when using DXDY function) | [optional] 

@@ -48,12 +48,19 @@ public:
     /// TDigestCentroid members
 
     /// <summary>
+    /// The average value of this centroid
+    /// </summary>
+    double getMean() const;
+    void setMean(double value);
+        /// <summary>
     /// The weight of this centroid
     /// </summary>
     int32_t getWeight() const;
     void setWeight(int32_t value);
     
 protected:
+    double m_Mean;
+
     int32_t m_Weight;
 
 };

@@ -32,7 +32,7 @@ class ThresholdConfig(object):
     """
     swagger_types = {
         'id': 'str',
-        'generator_id': 'str',
+        'value': 'float',
         'function': 'str',
         'condition': 'str',
         'stat_x': 'str',
@@ -41,18 +41,18 @@ class ThresholdConfig(object):
 
     attribute_map = {
         'id': 'id',
-        'generator_id': 'generator_id',
+        'value': 'value',
         'function': 'function',
         'condition': 'condition',
         'stat_x': 'stat_x',
         'stat_y': 'stat_y'
     }
 
-    def __init__(self, id=None, generator_id=None, function=None, condition=None, stat_x=None, stat_y=None):  # noqa: E501
+    def __init__(self, id=None, value=None, function=None, condition=None, stat_x=None, stat_y=None):  # noqa: E501
         """ThresholdConfig - a model defined in Swagger"""  # noqa: E501
 
         self._id = None
-        self._generator_id = None
+        self._value = None
         self._function = None
         self._condition = None
         self._stat_x = None
@@ -60,7 +60,7 @@ class ThresholdConfig(object):
         self.discriminator = None
 
         self.id = id
-        self.generator_id = generator_id
+        self.value = value
         self.function = function
         self.condition = condition
         self.stat_x = stat_x
@@ -90,26 +90,26 @@ class ThresholdConfig(object):
         self._id = id
 
     @property
-    def generator_id(self):
-        """Gets the generator_id of this ThresholdConfig.  # noqa: E501
+    def value(self):
+        """Gets the value of this ThresholdConfig.  # noqa: E501
 
-        Unique generator identifier  # noqa: E501
+        The value of interest  # noqa: E501
 
-        :return: The generator_id of this ThresholdConfig.  # noqa: E501
-        :rtype: str
+        :return: The value of this ThresholdConfig.  # noqa: E501
+        :rtype: float
         """
-        return self._generator_id
+        return self._value
 
-    @generator_id.setter
-    def generator_id(self, generator_id):
-        """Sets the generator_id of this ThresholdConfig.
+    @value.setter
+    def value(self, value):
+        """Sets the value of this ThresholdConfig.
 
-        Unique generator identifier  # noqa: E501
+        The value of interest  # noqa: E501
 
-        :param generator_id: The generator_id of this ThresholdConfig.  # noqa: E501
-        :type: str
+        :param value: The value of this ThresholdConfig.  # noqa: E501
+        :type: float
         """
-        self._generator_id = generator_id
+        self._value = value
 
     @property
     def function(self):

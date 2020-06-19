@@ -19,8 +19,13 @@ namespace model {
 
 ThresholdResult::ThresholdResult()
 {
-    m_Result_id = "";
-    m_Threshold_id = "";
+    m_Id = "";
+    m_Value = 0.0;
+    m_Function = "";
+    m_Condition = "";
+    m_Stat_x = "";
+    m_Stat_y = "";
+    m_Stat_yIsSet = false;
     m_Timestamp = "";
     m_Condition_true = 0;
     m_Condition_false = 0;
@@ -40,8 +45,15 @@ nlohmann::json ThresholdResult::toJson() const
 {
     nlohmann::json val = nlohmann::json::object();
 
-    val["result_id"] = ModelBase::toJson(m_Result_id);
-    val["threshold_id"] = ModelBase::toJson(m_Threshold_id);
+    val["id"] = ModelBase::toJson(m_Id);
+    val["value"] = m_Value;
+    val["function"] = ModelBase::toJson(m_Function);
+    val["condition"] = ModelBase::toJson(m_Condition);
+    val["stat_x"] = ModelBase::toJson(m_Stat_x);
+    if(m_Stat_yIsSet)
+    {
+        val["stat_y"] = ModelBase::toJson(m_Stat_y);
+    }
     val["timestamp"] = ModelBase::toJson(m_Timestamp);
     val["condition_true"] = m_Condition_true;
     val["condition_false"] = m_Condition_false;
@@ -52,8 +64,16 @@ nlohmann::json ThresholdResult::toJson() const
 
 void ThresholdResult::fromJson(nlohmann::json& val)
 {
-    setResultId(val.at("result_id"));
-    setThresholdId(val.at("threshold_id"));
+    setId(val.at("id"));
+    setValue(val.at("value"));
+    setFunction(val.at("function"));
+    setCondition(val.at("condition"));
+    setStatX(val.at("stat_x"));
+    if(val.find("stat_y") != val.end())
+    {
+        setStatY(val.at("stat_y"));
+        
+    }
     setTimestamp(val.at("timestamp"));
     setConditionTrue(val.at("condition_true"));
     setConditionFalse(val.at("condition_false"));
@@ -61,23 +81,67 @@ void ThresholdResult::fromJson(nlohmann::json& val)
 }
 
 
-std::string ThresholdResult::getResultId() const
+std::string ThresholdResult::getId() const
 {
-    return m_Result_id;
+    return m_Id;
 }
-void ThresholdResult::setResultId(std::string value)
+void ThresholdResult::setId(std::string value)
 {
-    m_Result_id = value;
+    m_Id = value;
     
 }
-std::string ThresholdResult::getThresholdId() const
+double ThresholdResult::getValue() const
 {
-    return m_Threshold_id;
+    return m_Value;
 }
-void ThresholdResult::setThresholdId(std::string value)
+void ThresholdResult::setValue(double value)
 {
-    m_Threshold_id = value;
+    m_Value = value;
     
+}
+std::string ThresholdResult::getFunction() const
+{
+    return m_Function;
+}
+void ThresholdResult::setFunction(std::string value)
+{
+    m_Function = value;
+    
+}
+std::string ThresholdResult::getCondition() const
+{
+    return m_Condition;
+}
+void ThresholdResult::setCondition(std::string value)
+{
+    m_Condition = value;
+    
+}
+std::string ThresholdResult::getStatX() const
+{
+    return m_Stat_x;
+}
+void ThresholdResult::setStatX(std::string value)
+{
+    m_Stat_x = value;
+    
+}
+std::string ThresholdResult::getStatY() const
+{
+    return m_Stat_y;
+}
+void ThresholdResult::setStatY(std::string value)
+{
+    m_Stat_y = value;
+    m_Stat_yIsSet = true;
+}
+bool ThresholdResult::statYIsSet() const
+{
+    return m_Stat_yIsSet;
+}
+void ThresholdResult::unsetStat_y()
+{
+    m_Stat_yIsSet = false;
 }
 std::string ThresholdResult::getTimestamp() const
 {

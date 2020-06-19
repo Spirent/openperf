@@ -80,6 +80,7 @@ paths:
       description: Start an existing memory generator.
       parameters:
         - $ref: "#/parameters/id"
+        - $ref: "modules/dynamic.yaml#/parameters/dynamic_results"
       responses:
         201:
           description: Created
@@ -126,6 +127,8 @@ paths:
                 items:
                   type: string
                 minItems: 1
+              dynamic_results:
+                $ref: "dynamic.yaml#/definitions/DynamicResultsConfig"
             required:
               - ids
       responses:
@@ -317,6 +320,8 @@ definitions:
         $ref: "#/definitions/MemoryGeneratorStats"
       write:
         $ref: "#/definitions/MemoryGeneratorStats"
+      dynamic_results:
+        $ref: "dynamic.yaml#/definitions/DynamicResults"
     required:
       - id
       - active

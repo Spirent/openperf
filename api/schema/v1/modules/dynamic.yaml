@@ -1,232 +1,43 @@
 parameters:
-  id:
-    name: id
-    in: path
-    description: Unique resource identifier
-    type: string
-    format: string
-    required: true
-
-paths:
-  /thresholds:
-    get:
-      operationId: ListThresholds
-      tags:
-        - DynamicResults
-        - Threshold
-      summary: List thresholds
-      description: The endpoint returns all of the configured thresholds
-      responses:
-        200:
-          description: Success
-          schema:
-            type: array
-            items:
-              $ref: "#/definitions/ThresholdConfig"
-    post:
-      operationId: CreateThreshold
-      tags:
-        - DynamicResults
-        - Threshold
-      summary: Create a threshold
-      description: Create a new threshold
-      parameters:
-        - name: threshold
-          in: body
-          description: Threshold configuration
-          required: true
-          schema:
-            $ref: "#/definitions/ThresholdConfig"
-      responses:
-        201:
-          description: Created
-          headers:
-            Location:
-              description: URI of created threshold
-          schema:
-            $ref: "#/definitions/ThresholdConfig"
-
-  /thresholds/{id}:
-    get:
-      operationId: GetThreshold
-      tags:
-        - DynamicResults
-        - Threshold
-      summary: Return the threshold
-      description: The endpoint returns the threshold configuration by ID
-      parameters:
-        - $ref: "#/parameters/id"
-      responses:
-        200:
-          description: Success
-          schema:
-            $ref: "#/definitions/ThresholdConfig"
-    delete:
-      operationId: DeleteThreshold
-      tags:
-        - DynamicResults
-        - Threshold
-      summary: Delete the threshold
-      description: Delete the threshold by ID
-      parameters:
-        - $ref: "#/parameters/id"
-      responses:
-        204:
-          description: No Content
-
-  /threshold-results:
-    get:
-      operationId: ListThresholdResults
-      tags:
-        - DynamicResults
-        - Threshold
-      summary: List threshold results
-      description: Get the list of threshold results
-      responses:
-        200:
-          description: Success
-          schema:
-            type: array
-            items:
-              $ref: "#/definitions/ThresholdResult"
-
-  /threshold-results/{id}:
-    get:
-      operationId: GetThresholdResult
-      tags:
-        - DynamicResults
-        - Threshold
-      summary: Get the threshold result
-      description: Get the threshold result by threshold ID
-      parameters:
-        - $ref: "#/parameters/id"
-      responses:
-        200:
-          description: Success
-          schema:
-            $ref: "#/definitions/ThresholdResult"
-    delete:
-      operationId: DeleteThresholdResult
-      tags:
-        - DynamicResults
-        - threshold
-      summary: Delete the threshold result
-      parameters:
-        - $ref: "#/parameters/id"
-      responses:
-        204:
-          description: No Content
-
-  /tdigests:
-    get:
-      operationId: ListTDigests
-      tags:
-        - DynamicResults
-        - T-Digest
-      summary: List T-Digests
-      description: Return all of configured T-Digests
-      responses:
-        200:
-          description: Success
-          schema:
-            type: array
-            items:
-              $ref: "#/definitions/TDigestConfig"
-    post:
-      operationId: CreateTDigest
-      tags:
-        - DynamicResults
-        - T-Digest
-      summary: Create T-Digest
-      description: Create a new T-Digest
-      parameters:
-        - name: tdigest
-          in: body
-          description: T-Digest configuration
-          required: true
-          schema:
-            $ref: "#/definitions/TDigestConfig"
-      responses:
-        201:
-          description: Created
-          headers:
-            Location:
-              description: URI of created T-Digest
-          schema:
-            $ref: "#/definitions/TDigestConfig"
-
-  /tdigests/{id}:
-    get:
-      operationId: GetTDigest
-      tags:
-        - DynamicResults
-        - T-Digest
-      summary: Returns the T-Digest
-      description: Returns the T-Digest configuration by ID
-      parameters:
-        - $ref: "#/parameters/id"
-      responses:
-        200:
-          description: Success
-          schema:
-            $ref: "#/definitions/TDigestConfig"
-    delete:
-      operationId: DeleteTDigest
-      tags:
-        - DynamicResults
-        - T-Digest
-      summary: Delete the T-Digest
-      description: Delete the T-Digest by ID
-      parameters:
-        - $ref: "#/parameters/id"
-      responses:
-        204:
-          description: No Content
-
-  /tdigest-results:
-    get:
-      operationId: ListTDigestResults
-      tags:
-        - DynamicResults
-        - T-Digest
-      summary: List T-Digest results
-      description: Return the list of T-Digest results
-      responses:
-        200:
-          description: Success
-          schema:
-            type: array
-            items:
-              $ref: "#/definitions/TDigestResult"
-
-  /tdigest-results/{id}:
-    get:
-      operationId: GetTDigestResult
-      tags:
-        - DynamicResults
-        - T-Digest
-      summary: Return the T-Digest result
-      description: Return the T-Digest result by T-Digest ID
-      parameters:
-        - $ref: "#/parameters/id"
-      responses:
-        200:
-          description: Success
-          schema:
-            $ref: "#/definitions/TDigestResult"
-    delete:
-      operationId: DeleteTDigestResult
-      tags:
-        - DynamicResults
-        - T-Digest
-      summary: Delete the T-Digest result
-      parameters:
-        - $ref: "#/parameters/id"
-      responses:
-        204:
-          description: No Content
+  dynamic_results:
+    name: dynamic_results
+    in: body
+    description: Dynamic results configuration
+    required: false
+    schema:
+      $ref: "#/defiitions/DynamicResultsConfig"
 
 definitions:
+  DynamicResultsConfig:
+    type: object
+    description: Configurations of dynamic results
+    properties:
+      threshods:
+        type: array
+        description: Array of Threshold configurations
+        items:
+          $ref: "#/definitions/ThresholdConfig"
+      tdigests:
+        type: array
+        description: Array of T-Digest configurations
+        items:
+          $ref: "#/definitions/TDigestConfig"
+
+  DynamicResults:
+    type: object
+    description: Dynamic results
+    properties:
+      threshods:
+        type: array
+        description: Array of Threshold results
+        items:
+          $ref: "#/definitions/ThresholdResult"
+      tdigests:
+        type: array
+        description: Array of T-Digest results
+        items:
+          $ref: "#/definitions/TDigestResult"
+
   ThresholdConfig:
     type: object
     description: Threshold value
@@ -234,9 +45,6 @@ definitions:
       id:
         type: string
         description: Unique threshold configuration identifier
-      generator_id:
-        type: string
-        description: Unique generator identifier
       value:
         type: number
         format: double
@@ -265,7 +73,6 @@ definitions:
         description: The Y statistic to track (when using DXDY function)
     required:
       - id
-      - generator_id
       - value
       - function
       - condition
@@ -275,12 +82,35 @@ definitions:
     type: object
     description: Threshold result
     properties:
-      result_id:
-        type: string
-        description: Unique identifier of result of generator
-      threshold_id:
+      id:
         type: string
         description: Threshold configuration unique identifier
+      value:
+        type: number
+        format: double
+        description: The value of interest
+      function:
+        type: string
+        description: The function to apply to the statistic before evaluating
+        enum:
+          - dx
+          - dxdt
+          - dxdy
+      condition:
+        type: string
+        description: The mathematical relation between value and statistic
+        enum:
+          - greater
+          - greater_or_equal
+          - less
+          - less_or_equal
+          - equal
+      stat_x:
+        type: string
+        description: The X statistic to track
+      stat_y:
+        type: string
+        description: The Y statistic to track (when using DXDY function)
       timestamp:
         type: string
         description: The ISO8601-formatted date of the last result update
@@ -292,8 +122,11 @@ definitions:
         type: integer
         description: Counter of false conditions
     required:
-      - result_id
-      - threshold_id
+      - id
+      - value
+      - function
+      - condition
+      - stat_x
       - timestamp
       - condition_true
       - condition_false
@@ -305,9 +138,6 @@ definitions:
       id:
         type: string
         description: T-Digest configuration unique identifier
-      generator_id:
-        type: string
-        description: Unique generator identifier
       function:
         type: string
         description: The function to apply to the statistic before evaluating
@@ -323,7 +153,6 @@ definitions:
         description: The Y statistic to track (when using DXDY function)
     required:
       - id
-      - generator_id
       - function
       - stat_x
 
@@ -331,12 +160,22 @@ definitions:
     type: object
     description: T-Digest result
     properties:
-      result_id:
+      id:
         type: string
-        description: Unique identifier of result of generator
-      tdigest_id:
+        description: T-Digest configuration unique identifier
+      function:
         type: string
-        description: T-Digest configuration identifier
+        description: The function to apply to the statistic before evaluating
+        enum:
+          - dx
+          - dxdt
+          - dxdy
+      stat_x:
+        type: string
+        description: The X statistic to track
+      stat_y:
+        type: string
+        description: The Y statistic to track (when using DXDY function)
       timestamp:
         type: string
         description: The ISO8601-formatted date of the last result update
@@ -347,8 +186,9 @@ definitions:
         items:
           $ref: "#/definitions/TDigestCentroid"
     required:
-      - result_id
-      - tdigest_id
+      - id
+      - function
+      - stat_x
       - timestamp
       - centroids
 

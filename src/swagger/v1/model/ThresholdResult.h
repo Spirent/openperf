@@ -49,16 +49,38 @@ public:
     /// ThresholdResult members
 
     /// <summary>
-    /// Unique identifier of result of generator
-    /// </summary>
-    std::string getResultId() const;
-    void setResultId(std::string value);
-        /// <summary>
     /// Threshold configuration unique identifier
     /// </summary>
-    std::string getThresholdId() const;
-    void setThresholdId(std::string value);
+    std::string getId() const;
+    void setId(std::string value);
         /// <summary>
+    /// The value of interest
+    /// </summary>
+    double getValue() const;
+    void setValue(double value);
+        /// <summary>
+    /// The function to apply to the statistic before evaluating
+    /// </summary>
+    std::string getFunction() const;
+    void setFunction(std::string value);
+        /// <summary>
+    /// The mathematical relation between value and statistic
+    /// </summary>
+    std::string getCondition() const;
+    void setCondition(std::string value);
+        /// <summary>
+    /// The X statistic to track
+    /// </summary>
+    std::string getStatX() const;
+    void setStatX(std::string value);
+        /// <summary>
+    /// The Y statistic to track (when using DXDY function)
+    /// </summary>
+    std::string getStatY() const;
+    void setStatY(std::string value);
+    bool statYIsSet() const;
+    void unsetStat_y();
+    /// <summary>
     /// The ISO8601-formatted date of the last result update
     /// </summary>
     std::string getTimestamp() const;
@@ -75,10 +97,18 @@ public:
     void setConditionFalse(int32_t value);
     
 protected:
-    std::string m_Result_id;
+    std::string m_Id;
 
-    std::string m_Threshold_id;
+    double m_Value;
 
+    std::string m_Function;
+
+    std::string m_Condition;
+
+    std::string m_Stat_x;
+
+    std::string m_Stat_y;
+    bool m_Stat_yIsSet;
     std::string m_Timestamp;
 
     int32_t m_Condition_true;

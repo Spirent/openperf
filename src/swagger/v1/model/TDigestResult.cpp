@@ -19,8 +19,11 @@ namespace model {
 
 TDigestResult::TDigestResult()
 {
-    m_Result_id = "";
-    m_Tdigest_id = "";
+    m_Id = "";
+    m_Function = "";
+    m_Stat_x = "";
+    m_Stat_y = "";
+    m_Stat_yIsSet = false;
     m_Timestamp = "";
     
 }
@@ -38,8 +41,13 @@ nlohmann::json TDigestResult::toJson() const
 {
     nlohmann::json val = nlohmann::json::object();
 
-    val["result_id"] = ModelBase::toJson(m_Result_id);
-    val["tdigest_id"] = ModelBase::toJson(m_Tdigest_id);
+    val["id"] = ModelBase::toJson(m_Id);
+    val["function"] = ModelBase::toJson(m_Function);
+    val["stat_x"] = ModelBase::toJson(m_Stat_x);
+    if(m_Stat_yIsSet)
+    {
+        val["stat_y"] = ModelBase::toJson(m_Stat_y);
+    }
     val["timestamp"] = ModelBase::toJson(m_Timestamp);
     {
         nlohmann::json jsonArray;
@@ -56,8 +64,14 @@ nlohmann::json TDigestResult::toJson() const
 
 void TDigestResult::fromJson(nlohmann::json& val)
 {
-    setResultId(val.at("result_id"));
-    setTdigestId(val.at("tdigest_id"));
+    setId(val.at("id"));
+    setFunction(val.at("function"));
+    setStatX(val.at("stat_x"));
+    if(val.find("stat_y") != val.end())
+    {
+        setStatY(val.at("stat_y"));
+        
+    }
     setTimestamp(val.at("timestamp"));
     {
         m_Centroids.clear();
@@ -82,23 +96,49 @@ void TDigestResult::fromJson(nlohmann::json& val)
 }
 
 
-std::string TDigestResult::getResultId() const
+std::string TDigestResult::getId() const
 {
-    return m_Result_id;
+    return m_Id;
 }
-void TDigestResult::setResultId(std::string value)
+void TDigestResult::setId(std::string value)
 {
-    m_Result_id = value;
+    m_Id = value;
     
 }
-std::string TDigestResult::getTdigestId() const
+std::string TDigestResult::getFunction() const
 {
-    return m_Tdigest_id;
+    return m_Function;
 }
-void TDigestResult::setTdigestId(std::string value)
+void TDigestResult::setFunction(std::string value)
 {
-    m_Tdigest_id = value;
+    m_Function = value;
     
+}
+std::string TDigestResult::getStatX() const
+{
+    return m_Stat_x;
+}
+void TDigestResult::setStatX(std::string value)
+{
+    m_Stat_x = value;
+    
+}
+std::string TDigestResult::getStatY() const
+{
+    return m_Stat_y;
+}
+void TDigestResult::setStatY(std::string value)
+{
+    m_Stat_y = value;
+    m_Stat_yIsSet = true;
+}
+bool TDigestResult::statYIsSet() const
+{
+    return m_Stat_yIsSet;
+}
+void TDigestResult::unsetStat_y()
+{
+    m_Stat_yIsSet = false;
 }
 std::string TDigestResult::getTimestamp() const
 {

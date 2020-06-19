@@ -482,7 +482,7 @@ No authorization required
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **start_memory_generator**
-> MemoryGeneratorResult start_memory_generator(id)
+> MemoryGeneratorResult start_memory_generator(id, dynamic_results=dynamic_results)
 
 Start a memory generator
 
@@ -499,10 +499,11 @@ from pprint import pprint
 # create an instance of the API class
 api_instance = client.MemoryGeneratorApi()
 id = 'id_example' # str | Unique resource identifier
+dynamic_results = client.DynamicResultsConfig() # DynamicResultsConfig | Dynamic results configuration (optional)
 
 try:
     # Start a memory generator
-    api_response = api_instance.start_memory_generator(id)
+    api_response = api_instance.start_memory_generator(id, dynamic_results=dynamic_results)
     pprint(api_response)
 except ApiException as e:
     print("Exception when calling MemoryGeneratorApi->start_memory_generator: %s\n" % e)
@@ -513,6 +514,7 @@ except ApiException as e:
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **id** | **str**| Unique resource identifier | 
+ **dynamic_results** | [**DynamicResultsConfig**](DynamicResultsConfig.md)| Dynamic results configuration | [optional] 
 
 ### Return type
 

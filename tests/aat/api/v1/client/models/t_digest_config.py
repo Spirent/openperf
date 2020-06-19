@@ -32,7 +32,6 @@ class TDigestConfig(object):
     """
     swagger_types = {
         'id': 'str',
-        'generator_id': 'str',
         'function': 'str',
         'stat_x': 'str',
         'stat_y': 'str'
@@ -40,24 +39,21 @@ class TDigestConfig(object):
 
     attribute_map = {
         'id': 'id',
-        'generator_id': 'generator_id',
         'function': 'function',
         'stat_x': 'stat_x',
         'stat_y': 'stat_y'
     }
 
-    def __init__(self, id=None, generator_id=None, function=None, stat_x=None, stat_y=None):  # noqa: E501
+    def __init__(self, id=None, function=None, stat_x=None, stat_y=None):  # noqa: E501
         """TDigestConfig - a model defined in Swagger"""  # noqa: E501
 
         self._id = None
-        self._generator_id = None
         self._function = None
         self._stat_x = None
         self._stat_y = None
         self.discriminator = None
 
         self.id = id
-        self.generator_id = generator_id
         self.function = function
         self.stat_x = stat_x
         if stat_y is not None:
@@ -84,28 +80,6 @@ class TDigestConfig(object):
         :type: str
         """
         self._id = id
-
-    @property
-    def generator_id(self):
-        """Gets the generator_id of this TDigestConfig.  # noqa: E501
-
-        Unique generator identifier  # noqa: E501
-
-        :return: The generator_id of this TDigestConfig.  # noqa: E501
-        :rtype: str
-        """
-        return self._generator_id
-
-    @generator_id.setter
-    def generator_id(self, generator_id):
-        """Sets the generator_id of this TDigestConfig.
-
-        Unique generator identifier  # noqa: E501
-
-        :param generator_id: The generator_id of this TDigestConfig.  # noqa: E501
-        :type: str
-        """
-        self._generator_id = generator_id
 
     @property
     def function(self):

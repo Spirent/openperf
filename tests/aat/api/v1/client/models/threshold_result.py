@@ -31,80 +31,185 @@ class ThresholdResult(object):
                             and the value is json key in definition.
     """
     swagger_types = {
-        'result_id': 'str',
-        'threshold_id': 'str',
+        'id': 'str',
+        'value': 'float',
+        'function': 'str',
+        'condition': 'str',
+        'stat_x': 'str',
+        'stat_y': 'str',
         'timestamp': 'datetime',
         'condition_true': 'int',
         'condition_false': 'int'
     }
 
     attribute_map = {
-        'result_id': 'result_id',
-        'threshold_id': 'threshold_id',
+        'id': 'id',
+        'value': 'value',
+        'function': 'function',
+        'condition': 'condition',
+        'stat_x': 'stat_x',
+        'stat_y': 'stat_y',
         'timestamp': 'timestamp',
         'condition_true': 'condition_true',
         'condition_false': 'condition_false'
     }
 
-    def __init__(self, result_id=None, threshold_id=None, timestamp=None, condition_true=None, condition_false=None):  # noqa: E501
+    def __init__(self, id=None, value=None, function=None, condition=None, stat_x=None, stat_y=None, timestamp=None, condition_true=None, condition_false=None):  # noqa: E501
         """ThresholdResult - a model defined in Swagger"""  # noqa: E501
 
-        self._result_id = None
-        self._threshold_id = None
+        self._id = None
+        self._value = None
+        self._function = None
+        self._condition = None
+        self._stat_x = None
+        self._stat_y = None
         self._timestamp = None
         self._condition_true = None
         self._condition_false = None
         self.discriminator = None
 
-        self.result_id = result_id
-        self.threshold_id = threshold_id
+        self.id = id
+        self.value = value
+        self.function = function
+        self.condition = condition
+        self.stat_x = stat_x
+        if stat_y is not None:
+            self.stat_y = stat_y
         self.timestamp = timestamp
         self.condition_true = condition_true
         self.condition_false = condition_false
 
     @property
-    def result_id(self):
-        """Gets the result_id of this ThresholdResult.  # noqa: E501
+    def id(self):
+        """Gets the id of this ThresholdResult.  # noqa: E501
 
-        Unique identifier of result of generator  # noqa: E501
+        Threshold configuration unique identifier  # noqa: E501
 
-        :return: The result_id of this ThresholdResult.  # noqa: E501
+        :return: The id of this ThresholdResult.  # noqa: E501
         :rtype: str
         """
-        return self._result_id
+        return self._id
 
-    @result_id.setter
-    def result_id(self, result_id):
-        """Sets the result_id of this ThresholdResult.
+    @id.setter
+    def id(self, id):
+        """Sets the id of this ThresholdResult.
 
-        Unique identifier of result of generator  # noqa: E501
+        Threshold configuration unique identifier  # noqa: E501
 
-        :param result_id: The result_id of this ThresholdResult.  # noqa: E501
+        :param id: The id of this ThresholdResult.  # noqa: E501
         :type: str
         """
-        self._result_id = result_id
+        self._id = id
 
     @property
-    def threshold_id(self):
-        """Gets the threshold_id of this ThresholdResult.  # noqa: E501
+    def value(self):
+        """Gets the value of this ThresholdResult.  # noqa: E501
 
-        Threshold configuration unique identifier  # noqa: E501
+        The value of interest  # noqa: E501
 
-        :return: The threshold_id of this ThresholdResult.  # noqa: E501
+        :return: The value of this ThresholdResult.  # noqa: E501
+        :rtype: float
+        """
+        return self._value
+
+    @value.setter
+    def value(self, value):
+        """Sets the value of this ThresholdResult.
+
+        The value of interest  # noqa: E501
+
+        :param value: The value of this ThresholdResult.  # noqa: E501
+        :type: float
+        """
+        self._value = value
+
+    @property
+    def function(self):
+        """Gets the function of this ThresholdResult.  # noqa: E501
+
+        The function to apply to the statistic before evaluating  # noqa: E501
+
+        :return: The function of this ThresholdResult.  # noqa: E501
         :rtype: str
         """
-        return self._threshold_id
+        return self._function
 
-    @threshold_id.setter
-    def threshold_id(self, threshold_id):
-        """Sets the threshold_id of this ThresholdResult.
+    @function.setter
+    def function(self, function):
+        """Sets the function of this ThresholdResult.
 
-        Threshold configuration unique identifier  # noqa: E501
+        The function to apply to the statistic before evaluating  # noqa: E501
 
-        :param threshold_id: The threshold_id of this ThresholdResult.  # noqa: E501
+        :param function: The function of this ThresholdResult.  # noqa: E501
         :type: str
         """
-        self._threshold_id = threshold_id
+        self._function = function
+
+    @property
+    def condition(self):
+        """Gets the condition of this ThresholdResult.  # noqa: E501
+
+        The mathematical relation between value and statistic  # noqa: E501
+
+        :return: The condition of this ThresholdResult.  # noqa: E501
+        :rtype: str
+        """
+        return self._condition
+
+    @condition.setter
+    def condition(self, condition):
+        """Sets the condition of this ThresholdResult.
+
+        The mathematical relation between value and statistic  # noqa: E501
+
+        :param condition: The condition of this ThresholdResult.  # noqa: E501
+        :type: str
+        """
+        self._condition = condition
+
+    @property
+    def stat_x(self):
+        """Gets the stat_x of this ThresholdResult.  # noqa: E501
+
+        The X statistic to track  # noqa: E501
+
+        :return: The stat_x of this ThresholdResult.  # noqa: E501
+        :rtype: str
+        """
+        return self._stat_x
+
+    @stat_x.setter
+    def stat_x(self, stat_x):
+        """Sets the stat_x of this ThresholdResult.
+
+        The X statistic to track  # noqa: E501
+
+        :param stat_x: The stat_x of this ThresholdResult.  # noqa: E501
+        :type: str
+        """
+        self._stat_x = stat_x
+
+    @property
+    def stat_y(self):
+        """Gets the stat_y of this ThresholdResult.  # noqa: E501
+
+        The Y statistic to track (when using DXDY function)  # noqa: E501
+
+        :return: The stat_y of this ThresholdResult.  # noqa: E501
+        :rtype: str
+        """
+        return self._stat_y
+
+    @stat_y.setter
+    def stat_y(self, stat_y):
+        """Sets the stat_y of this ThresholdResult.
+
+        The Y statistic to track (when using DXDY function)  # noqa: E501
+
+        :param stat_y: The stat_y of this ThresholdResult.  # noqa: E501
+        :type: str
+        """
+        self._stat_y = stat_y
 
     @property
     def timestamp(self):

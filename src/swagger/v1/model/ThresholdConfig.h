@@ -54,10 +54,10 @@ public:
     std::string getId() const;
     void setId(std::string value);
         /// <summary>
-    /// Unique generator identifier
+    /// The value of interest
     /// </summary>
-    std::string getGeneratorId() const;
-    void setGeneratorId(std::string value);
+    double getValue() const;
+    void setValue(double value);
         /// <summary>
     /// The function to apply to the statistic before evaluating
     /// </summary>
@@ -84,7 +84,7 @@ public:
 protected:
     std::string m_Id;
 
-    std::string m_Generator_id;
+    double m_Value;
 
     std::string m_Function;
 

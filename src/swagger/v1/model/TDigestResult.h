@@ -51,16 +51,28 @@ public:
     /// TDigestResult members
 
     /// <summary>
-    /// Unique identifier of result of generator
+    /// T-Digest configuration unique identifier
     /// </summary>
-    std::string getResultId() const;
-    void setResultId(std::string value);
+    std::string getId() const;
+    void setId(std::string value);
         /// <summary>
-    /// T-Digest configuration identifier
+    /// The function to apply to the statistic before evaluating
     /// </summary>
-    std::string getTdigestId() const;
-    void setTdigestId(std::string value);
+    std::string getFunction() const;
+    void setFunction(std::string value);
         /// <summary>
+    /// The X statistic to track
+    /// </summary>
+    std::string getStatX() const;
+    void setStatX(std::string value);
+        /// <summary>
+    /// The Y statistic to track (when using DXDY function)
+    /// </summary>
+    std::string getStatY() const;
+    void setStatY(std::string value);
+    bool statYIsSet() const;
+    void unsetStat_y();
+    /// <summary>
     /// The ISO8601-formatted date of the last result update
     /// </summary>
     std::string getTimestamp() const;
@@ -71,10 +83,14 @@ public:
     std::vector<std::shared_ptr<TDigestCentroid>>& getCentroids();
     
 protected:
-    std::string m_Result_id;
+    std::string m_Id;
 
-    std::string m_Tdigest_id;
+    std::string m_Function;
 
+    std::string m_Stat_x;
+
+    std::string m_Stat_y;
+    bool m_Stat_yIsSet;
     std::string m_Timestamp;
 
     std::vector<std::shared_ptr<TDigestCentroid>> m_Centroids;
