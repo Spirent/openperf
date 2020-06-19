@@ -19,13 +19,15 @@ also depends on some 3rd party components:
 
 * [DPDK](https://www.dpdk.org) - used for network drivers and packet buffers
 * [expected](https://github.com/TartanLlama/expected) - a std::expected implementation
+* [immer](https://sinusoid.es/immer/index.html) - a library of persistent and immutable data structures written in C++.
 * [json](https://github.com/nlohmann/json) - a modern JSON library for C++
-* [ZeroMQ](http://zeromq.org) - a distributed messaging library
+* [libpcap](https://www.tcpdump.org/) - a packet capture library
 * [lwip](https://savannah.nongnu.org/projects/lwip/) - a lightweight IP stack
 * [pistache](http://pistache.io) - a C++ REST framework with [Swagger](https://swagger.io)
   support
+* [sljit](http://sljit.sourceforge.net/) - a platform independent JIT compiler used to compile BPF programs to machine code
 * [yaml-cpp](https://github.com/jbeder/yaml-cpp) - a YAML parser and emitter in C++ matching the YAML 1.2 spec.
-* [immer](https://sinusoid.es/immer/index.html) - a library of persistent and immutable data structures written in C++.
+* [ZeroMQ](http://zeromq.org) - a distributed messaging library
 
 Unit tests are written with [catch2](https://github.com/catchorg/Catch2), a modern C++
 unit testing framework.  Additionally, build acceptance tests are run with
