@@ -58,6 +58,8 @@ using analyzer_result_ptr = std::unique_ptr<analyzer_result_type>;
 using rx_flow_type = swagger::v1::model::RxFlow;
 using rx_flow_ptr = std::unique_ptr<rx_flow_type>;
 
+using id_ptr = std::unique_ptr<std::string>;
+
 enum class filter_key_type { none, analyzer_id, source_id };
 using filter_map_type = std::map<filter_key_type, std::string>;
 using filter_map_ptr = std::unique_ptr<filter_map_type>;
@@ -142,6 +144,26 @@ struct request_stop_analyzer
     std::string id;
 };
 
+struct request_bulk_create_analyzers
+{
+    std::vector<analyzer_ptr> analyzers;
+};
+
+struct request_bulk_delete_analyzers
+{
+    std::vector<id_ptr> ids;
+};
+
+struct request_bulk_start_analyzers
+{
+    std::vector<id_ptr> ids;
+};
+
+struct request_bulk_stop_analyzers
+{
+    std::vector<id_ptr> ids;
+};
+
 struct request_list_analyzer_results
 {
     filter_map_ptr filter;
@@ -193,6 +215,10 @@ using request_msg = std::variant<request_list_analyzers,
                                  request_reset_analyzer,
                                  request_start_analyzer,
                                  request_stop_analyzer,
+                                 request_bulk_create_analyzers,
+                                 request_bulk_delete_analyzers,
+                                 request_bulk_start_analyzers,
+                                 request_bulk_stop_analyzers,
                                  request_list_analyzer_results,
                                  request_delete_analyzer_results,
                                  request_get_analyzer_result,

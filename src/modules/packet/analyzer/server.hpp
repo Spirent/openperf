@@ -52,6 +52,11 @@ public:
     reply_msg handle_request(const request_start_analyzer&);
     reply_msg handle_request(const request_stop_analyzer&);
 
+    reply_msg handle_request(const request_bulk_create_analyzers&);
+    reply_msg handle_request(const request_bulk_delete_analyzers&);
+    reply_msg handle_request(const request_bulk_start_analyzers&);
+    reply_msg handle_request(const request_bulk_stop_analyzers&);
+
     reply_msg handle_request(const request_list_analyzer_results&);
     reply_msg handle_request(const request_delete_analyzer_results&);
     reply_msg handle_request(const request_get_analyzer_result&);

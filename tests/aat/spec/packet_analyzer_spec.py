@@ -21,6 +21,13 @@ def get_first_port_id(api_client):
     return ports[0].id
 
 
+def get_second_port_id(api_client):
+    ports_api = client.api.PortsApi(api_client)
+    ports = ports_api.list_ports()
+    expect(len(ports)).to(be_above(1))
+    return ports[1].id
+
+
 def analyzer_model(api_client, protocol_counters = None, flow_counters = None):
     config = client.models.PacketAnalyzerConfig()
     if protocol_counters:
@@ -33,6 +40,13 @@ def analyzer_model(api_client, protocol_counters = None, flow_counters = None):
     ta.config = config
 
     return ta
+
+
+def analyzer_models(api_client, protocol_counters = None, flow_counters = None):
+    ana1 = analyzer_model(api_client, protocol_counters, flow_counters)
+    ana2 = analyzer_model(api_client, protocol_counters, flow_counters)
+    ana2.source_id = get_second_port_id(api_client)
+    return [ana1, ana2]
 
 
 with description('Packet Analyzer,', 'packet_analyzer') as self:
@@ -290,6 +304,145 @@ with description('Packet Analyzer,', 'packet_analyzer') as self:
             with description('with invalid id, '):
                 with it('returns 404'):
                     expect(lambda: self.api.get_rx_flow('foo')).to(raise_api_exception(404))
+
+        with description('bulk operations,'):
+            with description('bulk create,'):
+                with description('valid request,'):
+                    with it('succeeds'):
+                        request = client.models.BulkCreatePacketAnalyzersRequest()
+                        request.items = analyzer_models(self.api.api_client)
+                        reply = self.api.bulk_create_packet_analyzers(request)
+                        expect(reply.items).to(have_len(len(request.items)))
+                        for item in reply.items:
+                            expect(item).to(be_valid_packet_analyzer)
+
+                with description('invalid requests,'):
+                    with it('returns 400 for invalid config'):
+                        request = client.models.BulkCreatePacketAnalyzersRequest()
+                        request.items = analyzer_models(self.api.api_client)
+                        request.items[-1].config.flow_counters = ['invalid']
+                        expect(lambda: self.api.bulk_create_packet_analyzers(request)).to(raise_api_exception(400))
+                        expect(self.api.list_packet_analyzers()).to(be_empty)
+
+                    with it('returns 404 for invalid id'):
+                        request = client.models.BulkCreatePacketAnalyzersRequest()
+                        request.items = analyzer_models(self.api.api_client)
+                        request.items[-1].id = 'cool::name'
+                        expect(lambda: self.api.bulk_create_packet_analyzers(request)).to(raise_api_exception(404))
+                        expect(self.api.list_packet_analyzers()).to(be_empty)
+
+            with description('bulk delete,'):
+                with before.each:
+                    request = client.models.BulkCreatePacketAnalyzersRequest()
+                    request.items = analyzer_models(self.api.api_client)
+                    reply = self.api.bulk_create_packet_analyzers(request)
+                    expect(reply.items).to(have_len(len(request.items)))
+                    for item in reply.items:
+                        expect(item).to(be_valid_packet_analyzer)
+
+                with description('valid request,'):
+                    with it('succeeds'):
+                        self.api.bulk_delete_packet_analyzers(
+                            client.models.BulkDeletePacketAnalyzersRequest(
+                                [ana.id for ana in self.api.list_packet_analyzers()]))
+                        expect(self.api.list_packet_analyzers()).to(be_empty)
+
+                with description('invalid requests,'):
+                    with it('succeeds with a non-existent id'):
+                        self.api.bulk_delete_packet_analyzers(
+                            client.models.BulkDeletePacketAnalyzersRequest(
+                                [ana.id for ana in self.api.list_packet_analyzers()] + ['foo']))
+                        expect(self.api.list_packet_analyzers()).to(be_empty)
+
+                    with it('returns 404 for an invalid id'):
+                        expect(lambda: self.api.bulk_delete_packet_analyzers(
+                            client.models.BulkDeletePacketAnalyzersRequest(
+                                [ana.id for ana in self.api.list_packet_analyzers()] + ['::bar']))).to(
+                                    raise_api_exception(404))
+                        expect(self.api.list_packet_analyzers()).not_to(be_empty)
+
+            with description('bulk start,'):
+                with before.each:
+                    request = client.models.BulkCreatePacketAnalyzersRequest()
+                    request.items = analyzer_models(self.api.api_client)
+                    reply = self.api.bulk_create_packet_analyzers(request)
+                    expect(reply.items).to(have_len(len(request.items)))
+                    for item in reply.items:
+                        expect(item).to(be_valid_packet_analyzer)
+
+                with description('valid request'):
+                    with it('succeeds'):
+                        reply = self.api.bulk_start_packet_analyzers(
+                            client.models.BulkStartPacketAnalyzersRequest(
+                                [ana.id for ana in self.api.list_packet_analyzers()]))
+                        expect(reply.items).to(have_len(len(self.api.list_packet_analyzers())))
+                        for item in reply.items:
+                            expect(item).to(be_valid_packet_analyzer_result)
+                            expect(item.active).to(be_true)
+
+                with description('invalid requests,'):
+                    with it('returns 404 for non-existing id'):
+                        expect(lambda: self.api.bulk_start_packet_analyzers(
+                            client.models.BulkStartPacketAnalyzersRequest(
+                                [ana.id for ana in self.api.list_packet_analyzers()] + ['foo']))).to(
+                                    raise_api_exception(404))
+                        for ana in self.api.list_packet_analyzers():
+                            expect(ana.active).to(be_false)
+
+                    with it('returns 404 for invalid id'):
+                        expect(lambda: self.api.bulk_start_packet_analyzers(
+                            client.models.BulkStartPacketAnalyzersRequest(
+                                [ana.id for ana in self.api.list_packet_analyzers()] + ['::bar']))).to(
+                                    raise_api_exception(404))
+                        for ana in self.api.list_packet_analyzers():
+                            expect(ana.active).to(be_false)
+
+            with description('bulk stop,'):
+                with before.each:
+                    create_request = client.models.BulkCreatePacketAnalyzersRequest()
+                    create_request.items = analyzer_models(self.api.api_client)
+                    create_reply = self.api.bulk_create_packet_analyzers(create_request)
+                    expect(create_reply.items).to(have_len(len(create_request.items)))
+                    for item in create_reply.items:
+                        expect(item).to(be_valid_packet_analyzer)
+                    start_reply = self.api.bulk_start_packet_analyzers(
+                        client.models.BulkStartPacketAnalyzersRequest(
+                            [ana.id for ana in create_reply.items]))
+                    expect(start_reply.items).to(have_len(len(create_request.items)))
+                    for item in start_reply.items:
+                        expect(item).to(be_valid_packet_analyzer_result)
+                        expect(item.active).to(be_true)
+
+                with description('valid request,'):
+                    with it('succeeds'):
+                        self.api.bulk_stop_packet_analyzers(
+                            client.models.BulkStopPacketAnalyzersRequest(
+                                [ana.id for ana in self.api.list_packet_analyzers()]))
+                        analyzers = self.api.list_packet_analyzers()
+                        expect(analyzers).not_to(be_empty)
+                        for ana in analyzers:
+                            expect(ana.active).to(be_false)
+
+                with description('invalid requests,'):
+                    with it('succeeds with a non-existent id'):
+                        self.api.bulk_stop_packet_analyzers(
+                            client.models.BulkStopPacketAnalyzersRequest(
+                                [ana.id for ana in self.api.list_packet_analyzers()] + ['foo']))
+                        analyzers = self.api.list_packet_analyzers()
+                        expect(analyzers).not_to(be_empty)
+                        for ana in analyzers:
+                            expect(ana.active).to(be_false)
+
+                    with it('returns 404 for an invalid id'):
+                        expect(lambda: self.api.bulk_stop_packet_analyzers(
+                            client.models.BulkStopPacketAnalyzersRequest(
+                                [ana.id for ana in self.api.list_packet_analyzers()] + ['::bar']))).to(
+                                    raise_api_exception(404))
+                        analyzers = self.api.list_packet_analyzers()
+                        expect(analyzers).not_to(be_empty)
+                        for ana in analyzers:
+                            expect(ana.active).to(be_true)
+
 
         with after.each:
             try:
