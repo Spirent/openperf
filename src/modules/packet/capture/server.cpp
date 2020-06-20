@@ -289,7 +289,7 @@ reply_msg server::handle_request(const request_list_captures& request)
     return (reply);
 }
 
-tl::expected<void, int> validate_filter(const std::string& filter_str)
+tl::expected<void, int> validate_filter(std::string_view filter_str)
 {
     try {
         openperf::packetio::bpf::bpf bpf(filter_str);
@@ -303,7 +303,7 @@ reply_msg server::handle_request(const request_create_capture& request)
 {
     auto config = sink_config{.source = request.capture->getSourceId(),
                               .max_packet_size = UINT32_MAX,
-                              .duration = 0};
+                              .duration = {}};
 
     auto user_config = request.capture->getConfig();
     assert(user_config);
@@ -313,7 +313,8 @@ reply_msg server::handle_request(const request_create_capture& request)
     if (user_config->packetSizeIsSet())
         config.max_packet_size = user_config->getPacketSize();
     if (user_config->durationIsSet())
-        config.duration = user_config->getDuration();
+        config.duration = std::chrono::duration<uint64_t, std::milli>(
+            user_config->getDuration());
     if (user_config->filterIsSet()) {
         config.filter = user_config->getFilter();
         if (auto success = validate_filter(config.filter); !success) {
@@ -489,14 +490,16 @@ create_capture_buffer([[maybe_unused]] const core::uuid& id,
                       [[maybe_unused]] const sink& sink,
                       [[maybe_unused]] int worker)
 {
-    switch (sink.get_capture_mode()) {
+    auto& config = sink.get_config();
+
+    switch (config.capture_mode) {
     case capture_mode::BUFFER: {
-        if (sink.get_buffer_wrap()) {
+        if (config.buffer_wrap) {
             return std::unique_ptr<capture_buffer>(new capture_buffer_mem_wrap(
-                sink.get_buffer_size(), sink.get_max_packet_size()));
+                config.buffer_size, config.max_packet_size));
         }
-        return std::unique_ptr<capture_buffer>(new capture_buffer_mem(
-            sink.get_buffer_size(), sink.get_max_packet_size()));
+        return std::unique_ptr<capture_buffer>(
+            new capture_buffer_mem(config.buffer_size, config.max_packet_size));
     }
     case capture_mode::LIVE: {
         // TODO: Add support for live capture mode
@@ -509,7 +512,7 @@ create_capture_buffer([[maybe_unused]] const core::uuid& id,
         return std::unique_ptr<capture_buffer>(
             new capture_buffer_file(filename,
                                     capture_buffer_file::keep_file::disabled,
-                                    sink.get_max_packet_size()));
+                                    config.max_packet_size));
     }
     }
 }
@@ -573,8 +576,9 @@ void server::add_capture_start_trigger(const core::uuid& id,
                to_string(id).c_str(),
                (int)state);
         if (state == capture_state::STARTED) {
-            if (auto duration = result->parent.get_duration())
-                srv->add_capture_stop_timer(*result, duration);
+            auto& config = result->parent.get_config();
+            if (config.duration.count())
+                srv->add_capture_stop_timer(*result, config.duration);
         } else if (state == capture_state::STOPPED) {
             // Worker shouldn't touch result in stopped state
             // so it is safe to remove the callback
@@ -594,17 +598,17 @@ void server::add_capture_start_trigger(const core::uuid& id,
     add_event_trigger(event);
 }
 
-void server::add_capture_stop_timer(result_value_type& result,
-                                    uint64_t duration)
+void server::add_capture_stop_timer(
+    result_value_type& result,
+    std::chrono::duration<uint64_t, std::nano> duration)
 {
     auto callbacks = op_event_callbacks{.on_timeout = handle_capture_stop};
-    auto timeout =
-        std::chrono::duration<uint64_t, std::nano>{duration * 1000000};
-    m_loop.add((timeout).count(), &callbacks, this, &result.timeout_id);
+    auto timeout = duration.count();
+    m_loop.add(timeout, &callbacks, this, &result.timeout_id);
     OP_LOG(OP_LOG_DEBUG,
            "Added capture duration timer id %#" PRIx32 " timeout %" PRId64,
            result.timeout_id,
-           timeout.count());
+           timeout);
 }
 
 reply_msg server::handle_request(const request_start_capture& request)
@@ -645,9 +649,10 @@ reply_msg server::handle_request(const request_start_capture& request)
         return (to_error(error_type::POSIX, ENOMEM));
     }
 
-    if (auto duration = impl.get_duration()) {
-        add_capture_start_trigger(id, *result);
-    }
+    // If capture duration is being used then need to add a callback to
+    // be called when capture is started to handle the duration timeout.
+    auto& config = impl.get_config();
+    if (config.duration.count()) { add_capture_start_trigger(id, *result); }
 
     impl.start(result.get());
 

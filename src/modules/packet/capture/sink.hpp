@@ -35,12 +35,12 @@ struct sink_config
     std::string id = core::to_string(core::uuid::random());
     std::string source;
     uint64_t buffer_size;
-    uint64_t duration;
     uint32_t max_packet_size;
-    capture_mode capture_mode;
     std::string filter;
     std::string start_trigger;
     std::string stop_trigger;
+    std::chrono::duration<uint64_t, std::nano> duration;
+    capture_mode capture_mode;
     bool buffer_wrap;
 };
 
@@ -77,14 +77,7 @@ public:
     std::string id() const;
     std::string source() const;
 
-    capture_mode get_capture_mode() const { return m_capture_mode; }
-    bool get_buffer_wrap() const { return m_buffer_wrap; }
-    uint64_t get_buffer_size() const { return m_buffer_size; }
-    uint32_t get_max_packet_size() const { return m_max_packet_size; }
-    uint64_t get_duration() const { return m_duration; }
-    std::string get_filter_str() const { return m_filter_str; }
-    std::string get_start_trigger_str() const { return m_start_trigger_str; }
-    std::string get_stop_trigger_str() const { return m_stop_trigger_str; }
+    const sink_config& get_config() const { return m_config; }
 
     size_t worker_count() const;
 
@@ -127,17 +120,7 @@ private:
         const openperf::packetio::packet::packet_buffer* const packets[],
         uint16_t packets_length) const noexcept;
 
-    std::string m_id;
-    std::string m_source;
-    std::string m_filter_str;
-    std::string m_start_trigger_str;
-    std::string m_stop_trigger_str;
-
-    capture_mode m_capture_mode;
-    bool m_buffer_wrap;
-    uint64_t m_buffer_size;
-    uint32_t m_max_packet_size;
-    uint64_t m_duration;
+    sink_config m_config;
 
     std::unique_ptr<openperf::packetio::bpf::bpf> m_filter;
     std::unique_ptr<openperf::packetio::bpf::bpf> m_start_trigger;
@@ -145,7 +128,7 @@ private:
 
     std::vector<uint8_t> m_indexes;
     mutable std::atomic<sink_result*> m_results = nullptr;
-    mutable timesync::chrono::realtime::time_point m_stop_time;
+    mutable std::optional<timesync::chrono::realtime::time_point> m_stop_time;
 };
 
 } // namespace openperf::packet::capture

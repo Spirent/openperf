@@ -10,28 +10,34 @@
 
 namespace openperf::packet::capture::api {
 
-
 capture_ptr to_swagger(const sink& src)
 {
+    auto& src_config = src.get_config();
     auto dst = std::make_unique<swagger::v1::model::PacketCapture>();
 
     dst->setId(src.id());
     dst->setSourceId(src.source());
     dst->setActive(src.active());
 
-    auto config = std::make_shared<swagger::v1::model::PacketCaptureConfig>();
-    config->setMode(to_string(src.get_capture_mode()));
-    config->setBufferWrap(src.get_buffer_wrap());
-    if (auto packet_size = src.get_max_packet_size(); packet_size != UINT32_MAX)
-        config->setPacketSize(packet_size);
-    if (auto duration = src.get_duration()) config->setDuration(duration);
-    if (auto filter = src.get_filter_str(); !filter.empty())
-        config->setFilter(filter);
-    if (auto trigger = src.get_start_trigger_str(); !trigger.empty())
-        config->setStartTrigger(trigger);
-    if (auto trigger = src.get_stop_trigger_str(); !trigger.empty())
-        config->setStopTrigger(trigger);
-    dst->setConfig(config);
+    auto dst_config =
+        std::make_shared<swagger::v1::model::PacketCaptureConfig>();
+    dst_config->setMode(to_string(src_config.capture_mode));
+    dst_config->setBufferWrap(src_config.buffer_wrap);
+    if (src_config.max_packet_size != UINT32_MAX)
+        dst_config->setPacketSize(src_config.max_packet_size);
+    if (src_config.duration.count()) {
+        auto duration_msec =
+            std::chrono::duration_cast<std::chrono::milliseconds>(
+                src_config.duration)
+                .count();
+        dst_config->setDuration(duration_msec);
+    }
+    if (!src_config.filter.empty()) dst_config->setFilter(src_config.filter);
+    if (!src_config.start_trigger.empty())
+        dst_config->setStartTrigger(src_config.start_trigger);
+    if (!src_config.stop_trigger.empty())
+        dst_config->setStopTrigger(src_config.stop_trigger);
+    dst->setConfig(dst_config);
 
     return (dst);
 }

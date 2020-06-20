@@ -78,72 +78,48 @@ std::vector<uint8_t> sink::make_indexes(std::vector<unsigned>& ids)
 }
 
 sink::sink(const sink_config& config, std::vector<unsigned> rx_ids)
-    : m_id(config.id)
-    , m_source(config.source)
-    , m_filter_str(config.filter)
-    , m_start_trigger_str(config.start_trigger)
-    , m_stop_trigger_str(config.stop_trigger)
-    , m_capture_mode(config.capture_mode)
-    , m_buffer_wrap(config.buffer_wrap)
-    , m_buffer_size(config.buffer_size)
-    , m_max_packet_size(config.max_packet_size)
-    , m_duration(config.duration)
+    : m_config(config)
     , m_indexes(sink::make_indexes(rx_ids))
 {
-    if (!m_filter_str.empty())
-        m_filter = std::make_unique<openperf::packetio::bpf::bpf>(m_filter_str);
-    if (!m_start_trigger_str.empty())
-        m_start_trigger =
-            std::make_unique<openperf::packetio::bpf::bpf>(m_start_trigger_str);
-    if (!m_stop_trigger_str.empty())
-        m_stop_trigger =
-            std::make_unique<openperf::packetio::bpf::bpf>(m_stop_trigger_str);
+    if (!m_config.filter.empty())
+        m_filter =
+            std::make_unique<openperf::packetio::bpf::bpf>(m_config.filter);
+    if (!m_config.start_trigger.empty())
+        m_start_trigger = std::make_unique<openperf::packetio::bpf::bpf>(
+            m_config.start_trigger);
+    if (!m_config.stop_trigger.empty())
+        m_stop_trigger = std::make_unique<openperf::packetio::bpf::bpf>(
+            m_config.stop_trigger);
 }
 
 sink::sink(sink&& other) noexcept
-    : m_id(std::move(other.m_id))
-    , m_source(std::move(other.m_source))
-    , m_filter_str(std::move(other.m_filter_str))
-    , m_start_trigger_str(std::move(other.m_start_trigger_str))
-    , m_stop_trigger_str(std::move(other.m_stop_trigger_str))
-    , m_capture_mode(other.m_capture_mode)
-    , m_buffer_wrap(other.m_buffer_wrap)
-    , m_buffer_size(other.m_buffer_size)
-    , m_max_packet_size(other.m_max_packet_size)
-    , m_duration(other.m_duration)
+    : m_config(std::move(other.m_config))
     , m_filter(std::move(other.m_filter))
     , m_start_trigger(std::move(other.m_start_trigger))
     , m_stop_trigger(std::move(other.m_stop_trigger))
     , m_indexes(std::move(other.m_indexes))
     , m_results(other.m_results.load())
+    , m_stop_time(other.m_stop_time)
 {}
 
 sink& sink::operator=(sink&& other) noexcept
 {
     if (this != &other) {
-        m_id = std::move(other.m_id);
-        m_source = std::move(other.m_source);
-        m_filter_str = std::move(other.m_filter_str);
-        m_start_trigger_str = std::move(other.m_start_trigger_str);
-        m_stop_trigger_str = std::move(other.m_stop_trigger_str);
-        m_capture_mode = other.m_capture_mode;
-        m_buffer_wrap = other.m_buffer_wrap;
-        m_buffer_size = other.m_buffer_size;
-        m_max_packet_size = other.m_max_packet_size;
-        m_duration = other.m_duration;
+        m_config = std::move(other.m_config);
         m_filter = std::move(other.m_filter);
         m_start_trigger = std::move(other.m_start_trigger);
         m_stop_trigger = std::move(other.m_stop_trigger);
         m_indexes = std::move(other.m_indexes);
         m_results.store(other.m_results);
+        m_stop_time = other.m_stop_time;
     }
 
     return (*this);
 }
 
-std::string sink::id() const { return (m_id); }
+std::string sink::id() const { return (m_config.id); }
 
-std::string sink::source() const { return (m_source); }
+std::string sink::source() const { return (m_config.source); }
 
 size_t sink::worker_count() const { return (m_indexes.size()); }
 
@@ -205,13 +181,11 @@ void sink::set_state(sink_result& results, capture_state state) const noexcept
     if (state == capture_state::STARTED) {
         results.start_time = timesync::chrono::realtime::now();
 
-        if (m_duration) {
+        if (m_config.duration.count()) {
             // Set expected stop time
-            m_stop_time =
-                results.start_time
-                + std::chrono::duration<uint64_t, std::milli>{m_duration};
+            m_stop_time = results.start_time + m_config.duration;
         } else {
-            m_stop_time = timesync::chrono::realtime::time_point::max();
+            m_stop_time = {};
         }
     } else if (state == capture_state::STOPPED) {
         results.stop_time = timesync::chrono::realtime::now();
@@ -259,10 +233,12 @@ uint16_t sink::check_duration_condition(
     const openperf::packetio::packet::packet_buffer* const packets[],
     uint16_t packets_length) const noexcept
 {
-    auto found =
-        std::find_if(packets, packets + packets_length, [&](auto packet) {
+    auto found = std::find_if(
+        packets,
+        packets + packets_length,
+        [stop_time = m_stop_time.value()](auto packet) {
             return (openperf::packetio::packet::rx_timestamp(packet)
-                    > m_stop_time);
+                    > stop_time);
         });
     return std::distance(packets, found);
 }
@@ -307,7 +283,7 @@ uint16_t sink::push(const packetio::packet::packet_buffer* const packets[],
         }
     }
 
-    if (m_duration) {
+    if (m_stop_time) {
         auto duration_offset = check_duration_condition(packets, length);
         if (duration_offset < length) {
             length = duration_offset + 1;

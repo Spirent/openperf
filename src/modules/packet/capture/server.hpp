@@ -101,7 +101,9 @@ public:
 private:
     void add_capture_start_trigger(const core::uuid& id,
                                    result_value_type& result);
-    void add_capture_stop_timer(result_value_type& result, uint64_t duration);
+    void
+    add_capture_stop_timer(result_value_type& result,
+                           std::chrono::duration<uint64_t, std::nano> duration);
 
     bool has_active_transfer(const sink& sink) const;
 
