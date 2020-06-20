@@ -35,7 +35,7 @@ parameters:
     required: true
 
   dynamic_results:
-    $ref: ./modules/dynamic.yaml#/parameters/dynamic_results
+    $ref: ./dynamic.yaml#/parameters/dynamic_results
 
 tags:
   - name: Interfaces
@@ -631,22 +631,22 @@ definitions:
   # Dynamic Results definitions
   ###
   DynamicResultsConfig:
-    $ref: ./modules/dynamic.yaml#/definitions/DynamicResultsConfig
+    $ref: ./dynamic.yaml#/definitions/DynamicResultsConfig
 
   DynamicResults:
-    $ref: ./modules/dynamic.yaml#/definitions/DynamicResults
+    $ref: ./dynamic.yaml#/definitions/DynamicResults
 
   ThresholdConfig:
-    $ref: ./modules/dynamic.yaml#/definitions/ThresholdConfig
+    $ref: ./dynamic.yaml#/definitions/ThresholdConfig
 
   ThresholdResult:
-    $ref: ./modules/dynamic.yaml#/definitions/ThresholdResult
+    $ref: ./dynamic.yaml#/definitions/ThresholdResult
 
   TDigestConfig:
-    $ref: ./modules/dynamic.yaml#/definitions/TDigestConfig
+    $ref: ./dynamic.yaml#/definitions/TDigestConfig
 
   TDigestResult:
-    $ref: ./modules/dynamic.yaml#/definitions/TDigestResult
+    $ref: ./dynamic.yaml#/definitions/TDigestResult
 
   TDigestCentroid:
-    $ref: ./modules/dynamic.yaml#/definitions/TDigestCentroid
+    $ref: ./dynamic.yaml#/definitions/TDigestCentroid
