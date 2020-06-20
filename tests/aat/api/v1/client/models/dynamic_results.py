@@ -31,48 +31,48 @@ class DynamicResults(object):
                             and the value is json key in definition.
     """
     swagger_types = {
-        'threshods': 'list[ThresholdResult]',
+        'thresholds': 'list[ThresholdResult]',
         'tdigests': 'list[TDigestResult]'
     }
 
     attribute_map = {
-        'threshods': 'threshods',
+        'thresholds': 'thresholds',
         'tdigests': 'tdigests'
     }
 
-    def __init__(self, threshods=None, tdigests=None):  # noqa: E501
+    def __init__(self, thresholds=None, tdigests=None):  # noqa: E501
         """DynamicResults - a model defined in Swagger"""  # noqa: E501
 
-        self._threshods = None
+        self._thresholds = None
         self._tdigests = None
         self.discriminator = None
 
-        if threshods is not None:
-            self.threshods = threshods
+        if thresholds is not None:
+            self.thresholds = thresholds
         if tdigests is not None:
             self.tdigests = tdigests
 
     @property
-    def threshods(self):
-        """Gets the threshods of this DynamicResults.  # noqa: E501
+    def thresholds(self):
+        """Gets the thresholds of this DynamicResults.  # noqa: E501
 
         Array of Threshold results  # noqa: E501
 
-        :return: The threshods of this DynamicResults.  # noqa: E501
+        :return: The thresholds of this DynamicResults.  # noqa: E501
         :rtype: list[ThresholdResult]
         """
-        return self._threshods
+        return self._thresholds
 
-    @threshods.setter
-    def threshods(self, threshods):
-        """Sets the threshods of this DynamicResults.
+    @thresholds.setter
+    def thresholds(self, thresholds):
+        """Sets the thresholds of this DynamicResults.
 
         Array of Threshold results  # noqa: E501
 
-        :param threshods: The threshods of this DynamicResults.  # noqa: E501
+        :param thresholds: The thresholds of this DynamicResults.  # noqa: E501
         :type: list[ThresholdResult]
         """
-        self._threshods = threshods
+        self._thresholds = thresholds
 
     @property
     def tdigests(self):

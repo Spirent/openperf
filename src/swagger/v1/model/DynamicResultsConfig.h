@@ -53,9 +53,9 @@ public:
     /// <summary>
     /// Array of Threshold configurations
     /// </summary>
-    std::vector<std::shared_ptr<ThresholdConfig>>& getThreshods();
-    bool threshodsIsSet() const;
-    void unsetThreshods();
+    std::vector<std::shared_ptr<ThresholdConfig>>& getThresholds();
+    bool thresholdsIsSet() const;
+    void unsetThresholds();
     /// <summary>
     /// Array of T-Digest configurations
     /// </summary>
@@ -64,8 +64,8 @@ public:
     void unsetTdigests();
 
 protected:
-    std::vector<std::shared_ptr<ThresholdConfig>> m_Threshods;
-    bool m_ThreshodsIsSet;
+    std::vector<std::shared_ptr<ThresholdConfig>> m_Thresholds;
+    bool m_ThresholdsIsSet;
     std::vector<std::shared_ptr<TDigestConfig>> m_Tdigests;
     bool m_TdigestsIsSet;
 };

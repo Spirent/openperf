@@ -35,7 +35,6 @@ class TDigestResult(object):
         'function': 'str',
         'stat_x': 'str',
         'stat_y': 'str',
-        'timestamp': 'datetime',
         'centroids': 'list[TDigestCentroid]'
     }
 
@@ -44,18 +43,16 @@ class TDigestResult(object):
         'function': 'function',
         'stat_x': 'stat_x',
         'stat_y': 'stat_y',
-        'timestamp': 'timestamp',
         'centroids': 'centroids'
     }
 
-    def __init__(self, id=None, function=None, stat_x=None, stat_y=None, timestamp=None, centroids=None):  # noqa: E501
+    def __init__(self, id=None, function=None, stat_x=None, stat_y=None, centroids=None):  # noqa: E501
         """TDigestResult - a model defined in Swagger"""  # noqa: E501
 
         self._id = None
         self._function = None
         self._stat_x = None
         self._stat_y = None
-        self._timestamp = None
         self._centroids = None
         self.discriminator = None
 
@@ -64,7 +61,6 @@ class TDigestResult(object):
         self.stat_x = stat_x
         if stat_y is not None:
             self.stat_y = stat_y
-        self.timestamp = timestamp
         self.centroids = centroids
 
     @property
@@ -154,28 +150,6 @@ class TDigestResult(object):
         :type: str
         """
         self._stat_y = stat_y
-
-    @property
-    def timestamp(self):
-        """Gets the timestamp of this TDigestResult.  # noqa: E501
-
-        The ISO8601-formatted date of the last result update  # noqa: E501
-
-        :return: The timestamp of this TDigestResult.  # noqa: E501
-        :rtype: datetime
-        """
-        return self._timestamp
-
-    @timestamp.setter
-    def timestamp(self, timestamp):
-        """Sets the timestamp of this TDigestResult.
-
-        The ISO8601-formatted date of the last result update  # noqa: E501
-
-        :param timestamp: The timestamp of this TDigestResult.  # noqa: E501
-        :type: datetime
-        """
-        self._timestamp = timestamp
 
     @property
     def centroids(self):

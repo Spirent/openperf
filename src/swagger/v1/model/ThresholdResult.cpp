@@ -26,7 +26,6 @@ ThresholdResult::ThresholdResult()
     m_Stat_x = "";
     m_Stat_y = "";
     m_Stat_yIsSet = false;
-    m_Timestamp = "";
     m_Condition_true = 0;
     m_Condition_false = 0;
     
@@ -54,7 +53,6 @@ nlohmann::json ThresholdResult::toJson() const
     {
         val["stat_y"] = ModelBase::toJson(m_Stat_y);
     }
-    val["timestamp"] = ModelBase::toJson(m_Timestamp);
     val["condition_true"] = m_Condition_true;
     val["condition_false"] = m_Condition_false;
     
@@ -74,7 +72,6 @@ void ThresholdResult::fromJson(nlohmann::json& val)
         setStatY(val.at("stat_y"));
         
     }
-    setTimestamp(val.at("timestamp"));
     setConditionTrue(val.at("condition_true"));
     setConditionFalse(val.at("condition_false"));
     
@@ -142,15 +139,6 @@ bool ThresholdResult::statYIsSet() const
 void ThresholdResult::unsetStat_y()
 {
     m_Stat_yIsSet = false;
-}
-std::string ThresholdResult::getTimestamp() const
-{
-    return m_Timestamp;
-}
-void ThresholdResult::setTimestamp(std::string value)
-{
-    m_Timestamp = value;
-    
 }
 int32_t ThresholdResult::getConditionTrue() const
 {

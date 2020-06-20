@@ -73,11 +73,6 @@ public:
     bool statYIsSet() const;
     void unsetStat_y();
     /// <summary>
-    /// The ISO8601-formatted date of the last result update
-    /// </summary>
-    std::string getTimestamp() const;
-    void setTimestamp(std::string value);
-        /// <summary>
     /// Array of centroids
     /// </summary>
     std::vector<std::shared_ptr<TDigestCentroid>>& getCentroids();
@@ -91,8 +86,6 @@ protected:
 
     std::string m_Stat_y;
     bool m_Stat_yIsSet;
-    std::string m_Timestamp;
-
     std::vector<std::shared_ptr<TDigestCentroid>> m_Centroids;
 
 };

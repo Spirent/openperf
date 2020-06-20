@@ -19,7 +19,7 @@ namespace model {
 
 DynamicResults::DynamicResults()
 {
-    m_ThreshodsIsSet = false;
+    m_ThresholdsIsSet = false;
     m_TdigestsIsSet = false;
     
 }
@@ -39,14 +39,14 @@ nlohmann::json DynamicResults::toJson() const
 
     {
         nlohmann::json jsonArray;
-        for( auto& item : m_Threshods )
+        for( auto& item : m_Thresholds )
         {
             jsonArray.push_back(ModelBase::toJson(item));
         }
         
         if(jsonArray.size() > 0)
         {
-            val["threshods"] = jsonArray;
+            val["thresholds"] = jsonArray;
         }
     }
     {
@@ -69,22 +69,22 @@ nlohmann::json DynamicResults::toJson() const
 void DynamicResults::fromJson(nlohmann::json& val)
 {
     {
-        m_Threshods.clear();
+        m_Thresholds.clear();
         nlohmann::json jsonArray;
-        if(val.find("threshods") != val.end())
+        if(val.find("thresholds") != val.end())
         {
-        for( auto& item : val["threshods"] )
+        for( auto& item : val["thresholds"] )
         {
             
             if(item.is_null())
             {
-                m_Threshods.push_back( std::shared_ptr<ThresholdResult>(nullptr) );
+                m_Thresholds.push_back( std::shared_ptr<ThresholdResult>(nullptr) );
             }
             else
             {
                 std::shared_ptr<ThresholdResult> newItem(new ThresholdResult());
                 newItem->fromJson(item);
-                m_Threshods.push_back( newItem );
+                m_Thresholds.push_back( newItem );
             }
             
         }
@@ -116,17 +116,17 @@ void DynamicResults::fromJson(nlohmann::json& val)
 }
 
 
-std::vector<std::shared_ptr<ThresholdResult>>& DynamicResults::getThreshods()
+std::vector<std::shared_ptr<ThresholdResult>>& DynamicResults::getThresholds()
 {
-    return m_Threshods;
+    return m_Thresholds;
 }
-bool DynamicResults::threshodsIsSet() const
+bool DynamicResults::thresholdsIsSet() const
 {
-    return m_ThreshodsIsSet;
+    return m_ThresholdsIsSet;
 }
-void DynamicResults::unsetThreshods()
+void DynamicResults::unsetThresholds()
 {
-    m_ThreshodsIsSet = false;
+    m_ThresholdsIsSet = false;
 }
 std::vector<std::shared_ptr<TDigestResult>>& DynamicResults::getTdigests()
 {

@@ -5,14 +5,14 @@ parameters:
     description: Dynamic results configuration
     required: false
     schema:
-      $ref: "#/defiitions/DynamicResultsConfig"
+      $ref: "#/definitions/DynamicResultsConfig"
 
 definitions:
   DynamicResultsConfig:
     type: object
     description: Configurations of dynamic results
     properties:
-      threshods:
+      thresholds:
         type: array
         description: Array of Threshold configurations
         items:
@@ -27,7 +27,7 @@ definitions:
     type: object
     description: Dynamic results
     properties:
-      threshods:
+      thresholds:
         type: array
         description: Array of Threshold results
         items:
@@ -111,10 +111,6 @@ definitions:
       stat_y:
         type: string
         description: The Y statistic to track (when using DXDY function)
-      timestamp:
-        type: string
-        description: The ISO8601-formatted date of the last result update
-        format: date-time
       condition_true:
         type: integer
         description: Counter of true conditions
@@ -127,7 +123,6 @@ definitions:
       - function
       - condition
       - stat_x
-      - timestamp
       - condition_true
       - condition_false
 
@@ -176,10 +171,6 @@ definitions:
       stat_y:
         type: string
         description: The Y statistic to track (when using DXDY function)
-      timestamp:
-        type: string
-        description: The ISO8601-formatted date of the last result update
-        format: date-time
       centroids:
         type: array
         description: Array of centroids
@@ -189,7 +180,6 @@ definitions:
       - id
       - function
       - stat_x
-      - timestamp
       - centroids
 
   TDigestCentroid:

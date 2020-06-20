@@ -37,7 +37,6 @@ class ThresholdResult(object):
         'condition': 'str',
         'stat_x': 'str',
         'stat_y': 'str',
-        'timestamp': 'datetime',
         'condition_true': 'int',
         'condition_false': 'int'
     }
@@ -49,12 +48,11 @@ class ThresholdResult(object):
         'condition': 'condition',
         'stat_x': 'stat_x',
         'stat_y': 'stat_y',
-        'timestamp': 'timestamp',
         'condition_true': 'condition_true',
         'condition_false': 'condition_false'
     }
 
-    def __init__(self, id=None, value=None, function=None, condition=None, stat_x=None, stat_y=None, timestamp=None, condition_true=None, condition_false=None):  # noqa: E501
+    def __init__(self, id=None, value=None, function=None, condition=None, stat_x=None, stat_y=None, condition_true=None, condition_false=None):  # noqa: E501
         """ThresholdResult - a model defined in Swagger"""  # noqa: E501
 
         self._id = None
@@ -63,7 +61,6 @@ class ThresholdResult(object):
         self._condition = None
         self._stat_x = None
         self._stat_y = None
-        self._timestamp = None
         self._condition_true = None
         self._condition_false = None
         self.discriminator = None
@@ -75,7 +72,6 @@ class ThresholdResult(object):
         self.stat_x = stat_x
         if stat_y is not None:
             self.stat_y = stat_y
-        self.timestamp = timestamp
         self.condition_true = condition_true
         self.condition_false = condition_false
 
@@ -210,28 +206,6 @@ class ThresholdResult(object):
         :type: str
         """
         self._stat_y = stat_y
-
-    @property
-    def timestamp(self):
-        """Gets the timestamp of this ThresholdResult.  # noqa: E501
-
-        The ISO8601-formatted date of the last result update  # noqa: E501
-
-        :return: The timestamp of this ThresholdResult.  # noqa: E501
-        :rtype: datetime
-        """
-        return self._timestamp
-
-    @timestamp.setter
-    def timestamp(self, timestamp):
-        """Sets the timestamp of this ThresholdResult.
-
-        The ISO8601-formatted date of the last result update  # noqa: E501
-
-        :param timestamp: The timestamp of this ThresholdResult.  # noqa: E501
-        :type: datetime
-        """
-        self._timestamp = timestamp
 
     @property
     def condition_true(self):

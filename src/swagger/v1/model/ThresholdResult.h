@@ -81,11 +81,6 @@ public:
     bool statYIsSet() const;
     void unsetStat_y();
     /// <summary>
-    /// The ISO8601-formatted date of the last result update
-    /// </summary>
-    std::string getTimestamp() const;
-    void setTimestamp(std::string value);
-        /// <summary>
     /// Counter of true conditions
     /// </summary>
     int32_t getConditionTrue() const;
@@ -109,8 +104,6 @@ protected:
 
     std::string m_Stat_y;
     bool m_Stat_yIsSet;
-    std::string m_Timestamp;
-
     int32_t m_Condition_true;
 
     int32_t m_Condition_false;

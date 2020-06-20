@@ -9,7 +9,6 @@ Name | Type | Description | Notes
 **condition** | **str** | The mathematical relation between value and statistic | 
 **stat_x** | **str** | The X statistic to track | 
 **stat_y** | **str** | The Y statistic to track (when using DXDY function) | [optional] 
-**timestamp** | **datetime** | The ISO8601-formatted date of the last result update | 
 **condition_true** | **int** | Counter of true conditions | 
 **condition_false** | **int** | Counter of false conditions | 
 

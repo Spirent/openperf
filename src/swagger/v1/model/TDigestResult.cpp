@@ -24,7 +24,6 @@ TDigestResult::TDigestResult()
     m_Stat_x = "";
     m_Stat_y = "";
     m_Stat_yIsSet = false;
-    m_Timestamp = "";
     
 }
 
@@ -48,7 +47,6 @@ nlohmann::json TDigestResult::toJson() const
     {
         val["stat_y"] = ModelBase::toJson(m_Stat_y);
     }
-    val["timestamp"] = ModelBase::toJson(m_Timestamp);
     {
         nlohmann::json jsonArray;
         for( auto& item : m_Centroids )
@@ -72,7 +70,6 @@ void TDigestResult::fromJson(nlohmann::json& val)
         setStatY(val.at("stat_y"));
         
     }
-    setTimestamp(val.at("timestamp"));
     {
         m_Centroids.clear();
         nlohmann::json jsonArray;
@@ -139,15 +136,6 @@ bool TDigestResult::statYIsSet() const
 void TDigestResult::unsetStat_y()
 {
     m_Stat_yIsSet = false;
-}
-std::string TDigestResult::getTimestamp() const
-{
-    return m_Timestamp;
-}
-void TDigestResult::setTimestamp(std::string value)
-{
-    m_Timestamp = value;
-    
 }
 std::vector<std::shared_ptr<TDigestCentroid>>& TDigestResult::getCentroids()
 {
