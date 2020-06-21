@@ -39,11 +39,17 @@ clean:
 # Targets for Docker image
 #
 
+DOCKER_IMAGE=openperf-contrib
+
 include mk/versions.mk
 
 .PHONY: image
 image: deps
-	@docker build -f contrib/docker/Dockerfile -t openperf --build-arg GIT_COMMIT=${GIT_COMMIT} --build-arg GIT_VERSION=${GIT_VERSION} --build-arg BUILD_NUMBER=${BUILD_NUMBER}  .
+	@docker build -f contrib/docker/Dockerfile -t ${DOCKER_IMAGE} --build-arg GIT_COMMIT=${GIT_COMMIT} --build-arg GIT_VERSION=${GIT_VERSION} --build-arg BUILD_NUMBER=${BUILD_NUMBER}  .
+
+.PHONY: image_pack
+image_pack: image
+	@docker save -o openperf-${GIT_VERSION}.tar ${DOCKER_IMAGE}
 
 # Generate code from schema definitions
 # Since generated code is stored in the repo, manual generation is only required
