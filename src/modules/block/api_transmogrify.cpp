@@ -6,6 +6,17 @@
 #include "utils/overloaded_visitor.hpp"
 #include "utils/variant_index.hpp"
 
+#include "swagger/v1/model/BlockGenerator.h"
+#include "swagger/v1/model/BlockGeneratorResult.h"
+#include "swagger/v1/model/BulkCreateBlockFilesRequest.h"
+#include "swagger/v1/model/BulkDeleteBlockFilesRequest.h"
+#include "swagger/v1/model/BulkCreateBlockGeneratorsRequest.h"
+#include "swagger/v1/model/BulkDeleteBlockGeneratorsRequest.h"
+#include "swagger/v1/model/BulkStartBlockGeneratorsRequest.h"
+#include "swagger/v1/model/BulkStopBlockGeneratorsRequest.h"
+#include "swagger/v1/model/BlockFile.h"
+#include "swagger/v1/model/BlockDevice.h"
+
 namespace openperf::block::api {
 
 template <typename T> static auto zmq_msg_init(zmq_msg_t* msg, const T& value)
@@ -188,6 +199,12 @@ serialized_msg serialize_request(request_msg&& msg)
                                           blkfile.id.data(),
                                           blkfile.id.length()));
                  },
+                 [&](request_block_file_bulk_add& request) {
+                     return (zmq_msg_init(&serialized.data, request.files));
+                 },
+                 [&](request_block_file_bulk_del& request) {
+                     return (zmq_msg_init(&serialized.data, request.ids));
+                 },
                  [&](const request_block_generator_list&) {
                      return (zmq_msg_init(&serialized.data));
                  },
@@ -204,6 +221,13 @@ serialized_msg serialize_request(request_msg&& msg)
                      return (zmq_msg_init(&serialized.data,
                                           blkgenerator.id.data(),
                                           blkgenerator.id.length()));
+                 },
+                 [&](request_block_generator_bulk_add& request) {
+                     return (
+                         zmq_msg_init(&serialized.data, request.generators));
+                 },
+                 [&](request_block_generator_bulk_del& request) {
+                     return (zmq_msg_init(&serialized.data, request.ids));
                  },
                  [&](const request_block_generator_start& blkgenerator) {
                      return (zmq_msg_init(&serialized.data,
@@ -299,6 +323,26 @@ tl::expected<request_msg, int> deserialize_request(const serialized_msg& msg)
         std::string id(zmq_msg_data<char*>(&msg.data), zmq_msg_size(&msg.data));
         return (request_block_file_del{std::move(id)});
     }
+    case utils::variant_index<request_msg, request_block_file_bulk_add>(): {
+        auto size = zmq_msg_size(&msg.data) / sizeof(file_t*);
+        auto data = zmq_msg_data<file_t**>(&msg.data);
+
+        auto request = request_block_file_bulk_add{};
+        std::for_each(data, data + size, [&](const auto& ptr) {
+            request.files.emplace_back(ptr);
+        });
+        return (request);
+    }
+    case utils::variant_index<request_msg, request_block_file_bulk_del>(): {
+        auto size = zmq_msg_size(&msg.data) / sizeof(string_t*);
+        auto data = zmq_msg_data<string_t**>(&msg.data);
+
+        auto request = request_block_file_bulk_del{};
+        std::for_each(data, data + size, [&](const auto& ptr) {
+            request.ids.emplace_back(ptr);
+        });
+        return (request);
+    }
     case utils::variant_index<request_msg, request_block_generator_list>(): {
         return (request_block_generator_list{});
     }
@@ -314,6 +358,28 @@ tl::expected<request_msg, int> deserialize_request(const serialized_msg& msg)
     case utils::variant_index<request_msg, request_block_generator_del>(): {
         std::string id(zmq_msg_data<char*>(&msg.data), zmq_msg_size(&msg.data));
         return (request_block_generator_del{std::move(id)});
+    }
+    case utils::variant_index<request_msg,
+                              request_block_generator_bulk_add>(): {
+        auto size = zmq_msg_size(&msg.data) / sizeof(generator_t*);
+        auto data = zmq_msg_data<generator_t**>(&msg.data);
+
+        auto request = request_block_generator_bulk_add{};
+        std::for_each(data, data + size, [&](const auto& ptr) {
+            request.generators.emplace_back(ptr);
+        });
+        return (request);
+    }
+    case utils::variant_index<request_msg,
+                              request_block_generator_bulk_del>(): {
+        auto size = zmq_msg_size(&msg.data) / sizeof(string_t*);
+        auto data = zmq_msg_data<string_t**>(&msg.data);
+
+        auto request = request_block_generator_bulk_del{};
+        std::for_each(data, data + size, [&](const auto& ptr) {
+            request.ids.emplace_back(ptr);
+        });
+        return (request);
     }
     case utils::variant_index<request_msg, request_block_generator_start>(): {
         std::string id(zmq_msg_data<char*>(&msg.data), zmq_msg_size(&msg.data));
@@ -379,7 +445,7 @@ tl::expected<reply_msg, int> deserialize_reply(const serialized_msg& msg)
         return (reply);
     }
     case utils::variant_index<reply_msg, reply_block_files>(): {
-        auto size = zmq_msg_size(&msg.data) / sizeof(device_t*);
+        auto size = zmq_msg_size(&msg.data) / sizeof(file_t*);
         auto data = zmq_msg_data<file_t**>(&msg.data);
 
         auto reply = reply_block_files{};
@@ -389,7 +455,7 @@ tl::expected<reply_msg, int> deserialize_reply(const serialized_msg& msg)
         return (reply);
     }
     case utils::variant_index<reply_msg, reply_block_generators>(): {
-        auto size = zmq_msg_size(&msg.data) / sizeof(device_t*);
+        auto size = zmq_msg_size(&msg.data) / sizeof(generator_t*);
         auto data = zmq_msg_data<generator_t**>(&msg.data);
 
         auto reply = reply_block_generators{};
@@ -399,7 +465,7 @@ tl::expected<reply_msg, int> deserialize_reply(const serialized_msg& msg)
         return (reply);
     }
     case utils::variant_index<reply_msg, reply_block_generator_results>(): {
-        auto size = zmq_msg_size(&msg.data) / sizeof(device_t*);
+        auto size = zmq_msg_size(&msg.data) / sizeof(generator_result_t*);
         auto data = zmq_msg_data<generator_result_t**>(&msg.data);
 
         auto reply = reply_block_generator_results{};
@@ -560,6 +626,42 @@ model::block_generator from_swagger(const BlockGenerator& p_gen)
     return gen;
 }
 
+request_block_file_bulk_add from_swagger(BulkCreateBlockFilesRequest& p_request)
+{
+    request_block_file_bulk_add request;
+    for (const auto& item : p_request.getItems())
+        request.files.emplace_back(
+            std::make_unique<model::file>(from_swagger(*item)));
+    return request;
+}
+
+request_block_file_bulk_del from_swagger(BulkDeleteBlockFilesRequest& p_request)
+{
+    request_block_file_bulk_del request;
+    for (auto& id : p_request.getIds())
+        request.ids.emplace_back(std::make_unique<string_t>(id));
+    return request;
+}
+
+request_block_generator_bulk_add
+from_swagger(BulkCreateBlockGeneratorsRequest& p_request)
+{
+    request_block_generator_bulk_add request;
+    for (const auto& item : p_request.getItems())
+        request.generators.emplace_back(
+            std::make_unique<model::block_generator>(from_swagger(*item)));
+    return request;
+}
+
+request_block_generator_bulk_del
+from_swagger(BulkDeleteBlockGeneratorsRequest& p_request)
+{
+    request_block_generator_bulk_del request;
+    for (auto& id : p_request.getIds())
+        request.ids.emplace_back(std::make_unique<string_t>(id));
+    return request;
+}
+
 request_block_generator_bulk_start
 from_swagger(BulkStartBlockGeneratorsRequest& p_request)
 {
@@ -595,16 +697,56 @@ void from_json(const nlohmann::json& j, BlockFile& file)
     if (j.find("state") != j.end()) file.setState(j.at("state"));
 }
 
+void from_json(const nlohmann::json& j, BulkCreateBlockFilesRequest& request)
+{
+    request.getItems().clear();
+    for (auto& item : const_cast<nlohmann::json&>(j).at("items")) {
+        if (item.is_null()) {
+            continue;
+        } else {
+            std::shared_ptr<BlockFile> newItem(new BlockFile());
+            from_json(item, *newItem);
+            request.getItems().push_back(newItem);
+        }
+    }
+}
+
+void from_json(const nlohmann::json& j, BulkDeleteBlockFilesRequest& request)
+{
+    request.fromJson(const_cast<nlohmann::json&>(j));
+}
+
 void from_json(const nlohmann::json& j, BlockGenerator& generator)
 {
     generator.setResourceId(j.at("resource_id"));
-    generator.setRunning(j.at("running"));
 
     if (j.find("id") != j.end()) { generator.setId(j.at("id")); }
+    if (j.find("running") != j.end()) { generator.setRunning(j.at("running")); }
 
     auto gc = BlockGeneratorConfig();
     gc.fromJson(const_cast<nlohmann::json&>(j.at("config")));
     generator.setConfig(std::make_shared<BlockGeneratorConfig>(gc));
+}
+
+void from_json(const nlohmann::json& j,
+               BulkCreateBlockGeneratorsRequest& request)
+{
+    request.getItems().clear();
+    for (auto& item : const_cast<nlohmann::json&>(j).at("items")) {
+        if (item.is_null()) {
+            continue;
+        } else {
+            std::shared_ptr<BlockGenerator> newItem(new BlockGenerator());
+            from_json(item, *newItem);
+            request.getItems().push_back(newItem);
+        }
+    }
+}
+
+void from_json(const nlohmann::json& j,
+               BulkDeleteBlockGeneratorsRequest& request)
+{
+    request.fromJson(const_cast<nlohmann::json&>(j));
 }
 
 void from_json(const nlohmann::json& j,

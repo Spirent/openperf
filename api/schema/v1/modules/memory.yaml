@@ -71,6 +71,75 @@ paths:
         204:
           description: No Content
 
+  /memory-generators/x/bulk-create:
+    post:
+      operationId: BulkCreateMemoryGenerators
+      tags:
+        - MemoryGenerator
+      summary: Bulk create memory generators
+      description: |
+        Create multiple memory generators. Requests are processed in an
+        all-or-nothing manner, i.e. a single memory generator creation failure
+        causes all creations for this request to fail.
+      parameters:
+        - name: create
+          in: body
+          description: Bulk creation
+          required: true
+          schema:
+            type: object
+            title: BulkCreateMemoryGeneratorsRequest
+            description: Parameters for the bulk create operation
+            properties:
+              items:
+                type: array
+                description: List of memory generators
+                items:
+                  $ref: "#/definitions/MemoryGenerator"
+                minItems: 1
+            required:
+              - items
+      responses:
+        200:
+          description: Success
+          schema:
+            type: array
+            description: List of created memory generators
+            items:
+              $ref: "#/definitions/MemoryGenerator"
+            minItems: 1
+
+  /memory-generators/x/bulk-delete:
+    post:
+      operationId: BulkDeleteMemoryGenerators
+      tags:
+        - MemoryGenerator
+      summary: Bulk delete memory generators
+      description: |
+        Delete multiple memory generators in a best-effort manner. Non-existant memory generators ids
+        do not cause errors. Idempotent.
+      parameters:
+        - name: delete
+          in: body
+          description: Bulk delete
+          required: true
+          schema:
+            type: object
+            title: BulkDeleteMemoryGeneratorsRequest
+            description: Parameters for the bulk delete operation
+            properties:
+              ids:
+                type: array
+                description: List of memory generator ids
+                items:
+                  type: string
+                minItems: 1
+            required:
+              - ids
+      responses:
+        204:
+          description: No Content
+
   /memory-generators/{id}/start:
     post:
       operationId: StartMemoryGenerator

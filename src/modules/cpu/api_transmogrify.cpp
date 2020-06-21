@@ -1,11 +1,18 @@
 #include <sstream>
 #include <iomanip>
-
 #include <zmq.h>
 
 #include "cpu/api.hpp"
 #include "utils/overloaded_visitor.hpp"
 #include "utils/variant_index.hpp"
+
+#include "swagger/v1/model/CpuGenerator.h"
+#include "swagger/v1/model/CpuGeneratorResult.h"
+#include "swagger/v1/model/BulkCreateCpuGeneratorsRequest.h"
+#include "swagger/v1/model/BulkDeleteCpuGeneratorsRequest.h"
+#include "swagger/v1/model/BulkStartCpuGeneratorsRequest.h"
+#include "swagger/v1/model/BulkStopCpuGeneratorsRequest.h"
+#include "swagger/v1/model/CpuInfoResult.h"
 
 namespace openperf::cpu::api {
 
@@ -129,6 +136,13 @@ serialized_msg serialize_request(request_msg&& msg)
                                          cpu_generator.id.data(),
                                          cpu_generator.id.length());
                  },
+                 [&](request_cpu_generator_bulk_add& request) {
+                     return zmq_msg_init(&serialized.data, request.generators);
+                 },
+                 [&](request_cpu_generator_bulk_del& request) {
+                     return zmq_msg_init(&serialized.data,
+                                         std::move(request.ids));
+                 },
                  [&](const request_cpu_generator_start& cpu_generator) {
                      return zmq_msg_init(&serialized.data,
                                          cpu_generator.id.data(),
@@ -219,6 +233,21 @@ tl::expected<request_msg, int> deserialize_request(const serialized_msg& msg)
     case utils::variant_index<request_msg, request_cpu_generator_del>(): {
         std::string id(zmq_msg_data<char*>(&msg.data), zmq_msg_size(&msg.data));
         return request_cpu_generator_del{std::move(id)};
+    }
+    case utils::variant_index<request_msg, request_cpu_generator_bulk_add>(): {
+        auto size = zmq_msg_size(&msg.data) / sizeof(cpu_generator_t*);
+        auto data = zmq_msg_data<cpu_generator_t**>(&msg.data);
+
+        auto request = request_cpu_generator_bulk_add{};
+        std::for_each(data, data + size, [&](const auto& ptr) {
+            request.generators.emplace_back(ptr);
+        });
+        return (request);
+    }
+    case utils::variant_index<request_msg, request_cpu_generator_bulk_del>(): {
+        auto request = request_cpu_generator_bulk_del{};
+        request.ids.reset(*zmq_msg_data<std::vector<std::string>**>(&msg.data));
+        return request;
     }
     case utils::variant_index<request_msg, request_cpu_generator_start>(): {
         std::string id(zmq_msg_data<char*>(&msg.data), zmq_msg_size(&msg.data));
@@ -356,6 +385,25 @@ model::generator from_swagger(const CpuGenerator& gen)
     return gen_model;
 }
 
+request_cpu_generator_bulk_add
+from_swagger(BulkCreateCpuGeneratorsRequest& p_request)
+{
+    request_cpu_generator_bulk_add request;
+    for (const auto& item : p_request.getItems())
+        request.generators.emplace_back(
+            std::make_unique<model::generator>(from_swagger(*item)));
+    return request;
+}
+
+request_cpu_generator_bulk_del
+from_swagger(BulkDeleteCpuGeneratorsRequest& p_request)
+{
+    request_cpu_generator_bulk_del request{
+        std::make_unique<std::vector<std::string>>()};
+    for (auto& id : p_request.getIds()) request.ids->push_back(id);
+    return request;
+}
+
 std::shared_ptr<CpuGenerator> to_swagger(const model::generator& model)
 {
     auto cpu_config = std::make_shared<CpuGeneratorConfig>();
@@ -440,3 +488,47 @@ std::shared_ptr<CpuInfoResult> to_swagger(const cpu_info_t& info)
 }
 
 } // namespace openperf::cpu::api
+
+namespace swagger::v1::model {
+
+void from_json(const nlohmann::json& j, CpuGenerator& generator)
+{
+    if (j.find("id") != j.end()) { generator.setId(j.at("id")); }
+    if (j.find("running") != j.end()) { generator.setRunning(j.at("running")); }
+
+    auto gc = CpuGeneratorConfig();
+    gc.fromJson(const_cast<nlohmann::json&>(j.at("config")));
+    generator.setConfig(std::make_shared<CpuGeneratorConfig>(gc));
+}
+
+void from_json(const nlohmann::json& j, BulkCreateCpuGeneratorsRequest& request)
+{
+    request.getItems().clear();
+    nlohmann::json jsonArray;
+    for (auto& item : const_cast<nlohmann::json&>(j).at("items")) {
+        if (item.is_null()) {
+            continue;
+        } else {
+            std::shared_ptr<CpuGenerator> newItem(new CpuGenerator());
+            from_json(item, *newItem);
+            request.getItems().push_back(newItem);
+        }
+    }
+}
+
+void from_json(const nlohmann::json& j, BulkDeleteCpuGeneratorsRequest& request)
+{
+    request.fromJson(const_cast<nlohmann::json&>(j));
+}
+
+void from_json(const nlohmann::json& j, BulkStartCpuGeneratorsRequest& request)
+{
+    request.fromJson(const_cast<nlohmann::json&>(j));
+}
+
+void from_json(const nlohmann::json& j, BulkStopCpuGeneratorsRequest& request)
+{
+    request.fromJson(const_cast<nlohmann::json&>(j));
+}
+
+} // namespace swagger::v1::model

@@ -107,6 +107,54 @@ api_reply server::handle_request(const request::generator::create& req)
     }
 }
 
+api_reply server::handle_request(const request::generator::bulk::create& req)
+{
+    reply::generator::list list{
+        std::make_unique<std::vector<reply::generator::item::item_data>>()};
+
+    auto remove_created_items = [&]() -> auto
+    {
+        for (const auto& item : *list.data) {
+            m_generator_stack->erase(item.id);
+        }
+    };
+
+    for (const auto& data : *req.data) {
+        try {
+            auto id = m_generator_stack->create(data.id, data.config);
+            const auto& gnr = m_generator_stack->generator(id);
+            reply::generator::item::item_data item_data{.id = id,
+                                                        .is_running =
+                                                            data.is_running,
+                                                        .config = gnr.config()};
+            list.data->push_back(item_data);
+        } catch (const std::invalid_argument&) {
+            remove_created_items();
+            return reply::error{.type = reply::error::EXISTS};
+        } catch (const std::domain_error&) {
+            remove_created_items();
+            return reply::error{.type = reply::error::INVALID_ID};
+        }
+    }
+
+    for (const auto& data : *list.data) {
+        if (data.is_running) m_generator_stack->start(data.id);
+    }
+
+    return list;
+}
+
+api_reply server::handle_request(const request::generator::bulk::erase& req)
+{
+    for (const auto& id : *req.data) {
+        if (!m_generator_stack->contains(id)) continue;
+
+        m_generator_stack->erase(id);
+    }
+
+    return reply::ok{};
+}
+
 api_reply server::handle_request(const request::generator::stop& req)
 {
     if (m_generator_stack->contains(req.id)) {

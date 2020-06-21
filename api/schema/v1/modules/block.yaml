@@ -94,9 +94,78 @@ paths:
       tags:
         - BlockGenerator
       summary: Delete a block file
-      description: Deletes an existing block file. Idempotent.
+      description: Deletes an existing block file. If the file is used by generator it cannot be deleted. Idempotent.
       parameters:
         - $ref: "#/parameters/id"
+      responses:
+        204:
+          description: No Content
+
+  /block-files/x/bulk-create:
+    post:
+      operationId: BulkCreateBlockFiles
+      tags:
+        - BlockGenerator
+      summary: Bulk create block files
+      description: |
+        Create multiple block files. Requests are processed in an
+        all-or-nothing manner, i.e. a single block file creation failure
+        causes all creations for this request to fail.
+      parameters:
+        - name: create
+          in: body
+          description: Bulk creation
+          required: true
+          schema:
+            type: object
+            title: BulkCreateBlockFilesRequest
+            description: Parameters for the bulk create operation
+            properties:
+              items:
+                type: array
+                description: List of block files
+                items:
+                  $ref: "#/definitions/BlockFile"
+                minItems: 1
+            required:
+              - items
+      responses:
+        200:
+          description: Success
+          schema:
+            type: array
+            description: List of created block files
+            items:
+              $ref: "#/definitions/BlockFile"
+            minItems: 1
+
+  /block-files/x/bulk-delete:
+    post:
+      operationId: BulkDeleteBlockFiles
+      tags:
+        - BlockGenerator
+      summary: Bulk delete block files
+      description: |
+        Delete multiple block files in a best-effort manner. Non-existant block file ids
+        do not cause errors. If the file is used by generator it cannot be deleted. Idempotent.
+      parameters:
+        - name: delete
+          in: body
+          description: Bulk delete
+          required: true
+          schema:
+            type: object
+            title: BulkDeleteBlockFilesRequest
+            description: Parameters for the bulk delete operation
+            properties:
+              ids:
+                type: array
+                description: List of block file ids
+                items:
+                  type: string
+                minItems: 1
+            required:
+              - ids
       responses:
         204:
           description: No Content
@@ -160,6 +229,74 @@ paths:
       description: Deletes an existing block generator. Idempotent.
       parameters:
         - $ref: "#/parameters/id"
+      responses:
+        204:
+          description: No Content
+
+  /block-generators/x/bulk-create:
+    post:
+      operationId: BulkCreateBlockGenerators
+      tags:
+        - BlockGenerator
+      summary: Bulk create block generators
+      description: |
+        Create multiple block generators. Requests are processed in an
+        all-or-nothing manner, i.e. a single block generator creation failure
+        causes all creations for this request to fail.
+      parameters:
+        - name: create
+          in: body
+          description: Bulk creation
+          required: true
+          schema:
+            type: object
+            title: BulkCreateBlockGeneratorsRequest
+            description: Parameters for the bulk create operation
+            properties:
+              items:
+                type: array
+                description: List of block generators
+                items:
+                  $ref: "#/definitions/BlockGenerator"
+                minItems: 1
+            required:
+              - items
+      responses:
+        200:
+          description: Success
+          schema:
+            type: array
+            description: List of created block generators
+            items:
+              $ref: "#/definitions/BlockGenerator"
+
+  /block-generators/x/bulk-delete:
+    post:
+      operationId: BulkDeleteBlockGenerators
+      tags:
+        - BlockGenerator
+      summary: Bulk delete block generators
+      description: |
+        Delete multiple block generators in a best-effort manner. Non-existant block generators ids
+        do not cause errors. Idempotent.
+      parameters:
+        - name: delete
+          in: body
+          description: Bulk delete
+          required: true
+          schema:
+            type: object
+            title: BulkDeleteBlockGeneratorsRequest
+            description: Parameters for the bulk delete operation
+            properties:
+              ids:
+                type: array
+                description: List of block generator ids
+                items:
+                  type: string
+                minItems: 1
+            required:
+              - ids
       responses:
         204:
           description: No Content

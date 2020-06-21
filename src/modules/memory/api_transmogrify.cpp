@@ -2,6 +2,12 @@
 #include "utils/variant_index.hpp"
 #include "utils/overloaded_visitor.hpp"
 
+#include "swagger/v1/model/MemoryGenerator.h"
+#include "swagger/v1/model/BulkCreateMemoryGeneratorsRequest.h"
+#include "swagger/v1/model/BulkDeleteMemoryGeneratorsRequest.h"
+#include "swagger/v1/model/BulkStartMemoryGeneratorsRequest.h"
+#include "swagger/v1/model/BulkStopMemoryGeneratorsRequest.h"
+
 namespace openperf::memory::api {
 
 static void close(serialized_msg& msg)
@@ -97,6 +103,10 @@ serialized_msg serialize(api_request&& msg)
                                return zmq_msg_init(&serialized.data,
                                                    std::move(create.data));
                            },
+                           [&](request::generator::bulk::create& bulk_create) {
+                               return zmq_msg_init(&serialized.data,
+                                                   std::move(bulk_create.data));
+                           },
                            [&](request::generator::bulk::id_list& list) {
                                return zmq_msg_init(&serialized.data,
                                                    std::move(list.data));
@@ -175,8 +185,7 @@ tl::expected<api_request, int> deserialize_request(const serialized_msg& msg)
         if (zmq_msg_size(&msg.data)) {
             request::generator::create request{};
             request.data.reset(
-                *zmq_msg_data<request::generator::create::create_data**>(
-                    &msg.data));
+                *zmq_msg_data<request::generator::create_data**>(&msg.data));
             return request;
         }
         return request::generator::create{};
@@ -188,6 +197,26 @@ tl::expected<api_request, int> deserialize_request(const serialized_msg& msg)
                                    zmq_msg_size(&msg.data))}};
         }
         return request::generator::erase{};
+    }
+    case utils::variant_index<api_request,
+                              request::generator::bulk::create>(): {
+        if (zmq_msg_size(&msg.data)) {
+            request::generator::bulk::create request{};
+            request.data.reset(
+                *zmq_msg_data<std::vector<request::generator::create_data>**>(
+                    &msg.data));
+            return request;
+        }
+        return request::generator::bulk::start{};
+    }
+    case utils::variant_index<api_request, request::generator::bulk::erase>(): {
+        if (zmq_msg_size(&msg.data)) {
+            request::generator::bulk::erase request{};
+            request.data.reset(
+                *zmq_msg_data<std::vector<std::string>**>(&msg.data));
+            return request;
+        }
+        return request::generator::bulk::stop{};
     }
     case utils::variant_index<api_request, request::generator::start>(): {
         if (zmq_msg_size(&msg.data)) {
@@ -300,3 +329,52 @@ tl::expected<api_reply, int> deserialize_reply(const serialized_msg& msg)
 }
 
 } // namespace openperf::memory::api
+
+namespace swagger::v1::model {
+
+void from_json(const nlohmann::json& j, MemoryGenerator& generator)
+{
+    if (j.find("id") != j.end()) { generator.setId(j.at("id")); }
+    if (j.find("running") != j.end()) { generator.setRunning(j.at("running")); }
+
+    auto gc = MemoryGeneratorConfig();
+    gc.fromJson(const_cast<nlohmann::json&>(j.at("config")));
+    generator.setConfig(std::make_shared<MemoryGeneratorConfig>(gc));
+}
+
+void from_json(const nlohmann::json& j,
+               BulkCreateMemoryGeneratorsRequest& request)
+{
+    request.getItems().clear();
+    nlohmann::json jsonArray;
+    for (auto& item : const_cast<nlohmann::json&>(j).at("items")) {
+        if (item.is_null()) {
+            continue;
+        } else {
+            std::shared_ptr<MemoryGenerator> newItem =
+                std::make_shared<MemoryGenerator>();
+            from_json(item, *newItem);
+            request.getItems().push_back(newItem);
+        }
+    }
+}
+
+void from_json(const nlohmann::json& j,
+               BulkDeleteMemoryGeneratorsRequest& request)
+{
+    request.fromJson(const_cast<nlohmann::json&>(j));
+}
+
+void from_json(const nlohmann::json& j,
+               BulkStartMemoryGeneratorsRequest& request)
+{
+    request.fromJson(const_cast<nlohmann::json&>(j));
+}
+
+void from_json(const nlohmann::json& j,
+               BulkStopMemoryGeneratorsRequest& request)
+{
+    request.fromJson(const_cast<nlohmann::json&>(j));
+}
+
+} // namespace swagger::v1::model

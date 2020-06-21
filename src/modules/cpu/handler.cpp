@@ -5,7 +5,14 @@
 #include "config/op_config_utils.hpp"
 #include "core/op_core.h"
 #include "cpu/api.hpp"
+
 #include "swagger/v1/model/CpuGenerator.h"
+#include "swagger/v1/model/CpuGeneratorResult.h"
+#include "swagger/v1/model/BulkCreateCpuGeneratorsRequest.h"
+#include "swagger/v1/model/BulkDeleteCpuGeneratorsRequest.h"
+#include "swagger/v1/model/BulkStartCpuGeneratorsRequest.h"
+#include "swagger/v1/model/BulkStopCpuGeneratorsRequest.h"
+#include "swagger/v1/model/CpuInfoResult.h"
 
 namespace opneperf::cpu {
 
@@ -33,6 +40,12 @@ public:
 
     void delete_generator(const Rest::Request& request,
                           Http::ResponseWriter response);
+
+    void bulk_create_generators(const Rest::Request& request,
+                                Http::ResponseWriter response);
+
+    void bulk_delete_generators(const Rest::Request& request,
+                                Http::ResponseWriter response);
 
     void start_generator(const Rest::Request& request,
                          Http::ResponseWriter response);
@@ -86,6 +99,14 @@ handler::handler(void* context, Rest::Router& router)
     Rest::Routes::Delete(router,
                          "/cpu-generators/:id",
                          Rest::Routes::bind(&handler::delete_generator, this));
+    Rest::Routes::Post(
+        router,
+        "/cpu-generators/x/bulk-create",
+        Rest::Routes::bind(&handler::bulk_create_generators, this));
+    Rest::Routes::Post(
+        router,
+        "/cpu-generators/x/bulk-delete",
+        Rest::Routes::bind(&handler::bulk_delete_generators, this));
     Rest::Routes::Post(router,
                        "/cpu-generators/:id/start",
                        Rest::Routes::bind(&handler::start_generator, this));
@@ -156,14 +177,7 @@ void handler::create_generator(const Rest::Request& request,
                                Http::ResponseWriter response)
 {
     try {
-        auto generator_json = json::parse(request.body());
-
-        CpuGeneratorConfig gc;
-        gc.fromJson(generator_json["config"]);
-
-        CpuGenerator generator_model;
-        generator_model.fromJson(generator_json);
-        generator_model.setConfig(std::make_shared<CpuGeneratorConfig>(gc));
+        auto generator_model = json::parse(request.body()).get<CpuGenerator>();
 
         auto api_request = api::request_cpu_generator_add{
             std::make_unique<api::cpu_generator_t>(
@@ -240,6 +254,51 @@ void handler::delete_generator(const Rest::Request& request,
     }
 }
 
+void handler::bulk_create_generators(const Rest::Request& request,
+                                     Http::ResponseWriter response)
+{
+    auto request_model =
+        json::parse(request.body()).get<BulkCreateCpuGeneratorsRequest>();
+
+    auto api_reply =
+        submit_request(m_socket.get(), api::from_swagger(request_model));
+    if (auto reply = std::get_if<api::reply_cpu_generators>(&api_reply)) {
+        response.headers().add<Http::Header::ContentType>(
+            MIME(Application, Json));
+        auto results = json::array();
+        std::transform(std::begin(reply->generators),
+                       std::end(reply->generators),
+                       std::back_inserter(results),
+                       [](const auto& result) {
+                           return (api::to_swagger(*result)->toJson());
+                       });
+        response.send(Http::Code::Ok, results.dump());
+    } else if (auto error = std::get_if<api::reply_error>(&api_reply)) {
+        response.send(to_code(*error), api::to_string(*error->info));
+    } else {
+        response.send(Http::Code::Internal_Server_Error);
+    }
+}
+
+void handler::bulk_delete_generators(const Rest::Request& request,
+                                     Http::ResponseWriter response)
+{
+    auto request_model =
+        json::parse(request.body()).get<BulkDeleteCpuGeneratorsRequest>();
+
+    auto api_reply =
+        submit_request(m_socket.get(), api::from_swagger(request_model));
+    if (std::get_if<api::reply_ok>(&api_reply)) {
+        response.headers().add<Http::Header::ContentType>(
+            MIME(Application, Json));
+        response.send(Http::Code::No_Content);
+    } else if (auto error = std::get_if<api::reply_error>(&api_reply)) {
+        response.send(to_code(*error), api::to_string(*error->info));
+    } else {
+        response.send(Http::Code::Internal_Server_Error);
+    }
+}
+
 void handler::start_generator(const Rest::Request& request,
                               Http::ResponseWriter response)
 {
@@ -293,9 +352,8 @@ void handler::stop_generator(const Rest::Request& request,
 void handler::bulk_start_generators(const Rest::Request& request,
                                     Http::ResponseWriter response)
 {
-    auto request_json = json::parse(request.body());
-    BulkStartCpuGeneratorsRequest request_model;
-    request_model.fromJson(request_json);
+    auto request_model =
+        json::parse(request.body()).get<BulkStartCpuGeneratorsRequest>();
 
     api::request_cpu_generator_bulk_start bulk_request{
         std::make_unique<std::vector<std::string>>()};
@@ -332,9 +390,8 @@ void handler::bulk_start_generators(const Rest::Request& request,
 void handler::bulk_stop_generators(const Rest::Request& request,
                                    Http::ResponseWriter response)
 {
-    auto request_json = json::parse(request.body());
-    BulkStopCpuGeneratorsRequest request_model;
-    request_model.fromJson(request_json);
+    auto request_model =
+        json::parse(request.body()).get<BulkStopCpuGeneratorsRequest>();
 
     api::request_cpu_generator_bulk_stop bulk_request{
         std::make_unique<std::vector<std::string>>()};

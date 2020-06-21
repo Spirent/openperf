@@ -4,6 +4,10 @@ All URIs are relative to *http://localhost*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
+[**bulk_create_block_files**](BlockGeneratorApi.md#bulk_create_block_files) | **POST** /block-files/x/bulk-create | Bulk create block files
+[**bulk_create_block_generators**](BlockGeneratorApi.md#bulk_create_block_generators) | **POST** /block-generators/x/bulk-create | Bulk create block generators
+[**bulk_delete_block_files**](BlockGeneratorApi.md#bulk_delete_block_files) | **POST** /block-files/x/bulk-delete | Bulk delete block files
+[**bulk_delete_block_generators**](BlockGeneratorApi.md#bulk_delete_block_generators) | **POST** /block-generators/x/bulk-delete | Bulk delete block generators
 [**bulk_start_block_generators**](BlockGeneratorApi.md#bulk_start_block_generators) | **POST** /block-generators/x/bulk-start | Tell multiple block generators to start
 [**bulk_stop_block_generators**](BlockGeneratorApi.md#bulk_stop_block_generators) | **POST** /block-generators/x/bulk-stop | Bulk stop block generators
 [**create_block_file**](BlockGeneratorApi.md#create_block_file) | **POST** /block-files | Create a block file
@@ -22,6 +26,196 @@ Method | HTTP request | Description
 [**start_block_generator**](BlockGeneratorApi.md#start_block_generator) | **POST** /block-generators/{id}/start | Start a block generator
 [**stop_block_generator**](BlockGeneratorApi.md#stop_block_generator) | **POST** /block-generators/{id}/stop | Stop a block generator
 
+
+# **bulk_create_block_files**
+> list[BlockFile] bulk_create_block_files(create)
+
+Bulk create block files
+
+Create multiple block files. Requests are processed in an all-or-nothing manner, i.e. a single block file creation failure causes all creations for this request to fail. 
+
+### Example
+```python
+from __future__ import print_function
+import time
+import client
+from client.rest import ApiException
+from pprint import pprint
+
+# create an instance of the API class
+api_instance = client.BlockGeneratorApi()
+create = client.BulkCreateBlockFilesRequest() # BulkCreateBlockFilesRequest | Bulk creation
+
+try:
+    # Bulk create block files
+    api_response = api_instance.bulk_create_block_files(create)
+    pprint(api_response)
+except ApiException as e:
+    print("Exception when calling BlockGeneratorApi->bulk_create_block_files: %s\n" % e)
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **create** | [**BulkCreateBlockFilesRequest**](BulkCreateBlockFilesRequest.md)| Bulk creation | 
+
+### Return type
+
+[**list[BlockFile]**](BlockFile.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **bulk_create_block_generators**
+> list[BlockGenerator] bulk_create_block_generators(create)
+
+Bulk create block generators
+
+Create multiple block generators. Requests are processed in an all-or-nothing manner, i.e. a single block generator creation failure causes all creations for this request to fail. 
+
+### Example
+```python
+from __future__ import print_function
+import time
+import client
+from client.rest import ApiException
+from pprint import pprint
+
+# create an instance of the API class
+api_instance = client.BlockGeneratorApi()
+create = client.BulkCreateBlockGeneratorsRequest() # BulkCreateBlockGeneratorsRequest | Bulk creation
+
+try:
+    # Bulk create block generators
+    api_response = api_instance.bulk_create_block_generators(create)
+    pprint(api_response)
+except ApiException as e:
+    print("Exception when calling BlockGeneratorApi->bulk_create_block_generators: %s\n" % e)
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **create** | [**BulkCreateBlockGeneratorsRequest**](BulkCreateBlockGeneratorsRequest.md)| Bulk creation | 
+
+### Return type
+
+[**list[BlockGenerator]**](BlockGenerator.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **bulk_delete_block_files**
+> bulk_delete_block_files(delete)
+
+Bulk delete block files
+
+Delete multiple block files in a best-effort manner. Non-existant block file ids do not cause errors. If the file is used by generator it cannot be deleted. Idempotent. 
+
+### Example
+```python
+from __future__ import print_function
+import time
+import client
+from client.rest import ApiException
+from pprint import pprint
+
+# create an instance of the API class
+api_instance = client.BlockGeneratorApi()
+delete = client.BulkDeleteBlockFilesRequest() # BulkDeleteBlockFilesRequest | Bulk delete
+
+try:
+    # Bulk delete block files
+    api_instance.bulk_delete_block_files(delete)
+except ApiException as e:
+    print("Exception when calling BlockGeneratorApi->bulk_delete_block_files: %s\n" % e)
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **delete** | [**BulkDeleteBlockFilesRequest**](BulkDeleteBlockFilesRequest.md)| Bulk delete | 
+
+### Return type
+
+void (empty response body)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **bulk_delete_block_generators**
+> bulk_delete_block_generators(delete)
+
+Bulk delete block generators
+
+Delete multiple block generators in a best-effort manner. Non-existant block generators ids do not cause errors. Idempotent. 
+
+### Example
+```python
+from __future__ import print_function
+import time
+import client
+from client.rest import ApiException
+from pprint import pprint
+
+# create an instance of the API class
+api_instance = client.BlockGeneratorApi()
+delete = client.BulkDeleteBlockGeneratorsRequest() # BulkDeleteBlockGeneratorsRequest | Bulk delete
+
+try:
+    # Bulk delete block generators
+    api_instance.bulk_delete_block_generators(delete)
+except ApiException as e:
+    print("Exception when calling BlockGeneratorApi->bulk_delete_block_generators: %s\n" % e)
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **delete** | [**BulkDeleteBlockGeneratorsRequest**](BulkDeleteBlockGeneratorsRequest.md)| Bulk delete | 
+
+### Return type
+
+void (empty response body)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **bulk_start_block_generators**
 > list[BlockGeneratorResult] bulk_start_block_generators(bulk_start)
@@ -219,7 +413,7 @@ No authorization required
 
 Delete a block file
 
-Deletes an existing block file. Idempotent.
+Deletes an existing block file. If the file is used by generator it cannot be deleted. Idempotent.
 
 ### Example
 ```python

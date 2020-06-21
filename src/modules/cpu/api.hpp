@@ -6,18 +6,23 @@
 #include <string>
 #include <variant>
 #include <tl/expected.hpp>
-
 #include <zmq.h>
+#include <json.hpp>
 
-#include "swagger/v1/model/CpuGenerator.h"
-#include "swagger/v1/model/CpuGeneratorResult.h"
-#include "swagger/v1/model/BulkStartCpuGeneratorsRequest.h"
-#include "swagger/v1/model/BulkStopCpuGeneratorsRequest.h"
-#include "swagger/v1/model/CpuInfoResult.h"
 #include "cpu/common.hpp"
 #include "cpu/models/generator.hpp"
 #include "cpu/models/generator_result.hpp"
 #include "timesync/chrono.hpp"
+
+namespace swagger::v1::model {
+class CpuGenerator;
+class CpuGeneratorResult;
+class BulkCreateCpuGeneratorsRequest;
+class BulkDeleteCpuGeneratorsRequest;
+class BulkStartCpuGeneratorsRequest;
+class BulkStopCpuGeneratorsRequest;
+class CpuInfoResult;
+} // namespace swagger::v1::model
 
 namespace openperf::cpu::api {
 
@@ -71,6 +76,16 @@ struct request_cpu_generator_add
 struct request_cpu_generator_del
 {
     std::string id;
+};
+
+struct request_cpu_generator_bulk_add
+{
+    std::vector<cpu_generator_ptr> generators;
+};
+
+struct request_cpu_generator_bulk_del
+{
+    std::unique_ptr<std::vector<std::string>> ids;
 };
 
 struct request_cpu_generator_start
@@ -138,6 +153,8 @@ using request_msg = std::variant<request_cpu_generator_list,
                                  request_cpu_generator,
                                  request_cpu_generator_add,
                                  request_cpu_generator_del,
+                                 request_cpu_generator_bulk_add,
+                                 request_cpu_generator_bulk_del,
                                  request_cpu_generator_start,
                                  request_cpu_generator_stop,
                                  request_cpu_generator_bulk_start,
@@ -172,6 +189,8 @@ reply_error
 to_error(error_type type, int code = 0, const std::string& value = "");
 std::string to_string(const api::typed_error&);
 model::generator from_swagger(const CpuGenerator&);
+request_cpu_generator_bulk_add from_swagger(BulkCreateCpuGeneratorsRequest&);
+request_cpu_generator_bulk_del from_swagger(BulkDeleteCpuGeneratorsRequest&);
 std::shared_ptr<CpuGenerator> to_swagger(const model::generator&);
 std::shared_ptr<CpuGeneratorResult> to_swagger(const model::generator_result&);
 std::shared_ptr<CpuInfoResult> to_swagger(const cpu_info_t&);
@@ -179,5 +198,13 @@ std::shared_ptr<CpuInfoResult> to_swagger(const cpu_info_t&);
 extern const std::string endpoint;
 
 } // namespace openperf::cpu::api
+
+namespace swagger::v1::model {
+void from_json(const nlohmann::json&, CpuGenerator&);
+void from_json(const nlohmann::json&, BulkCreateCpuGeneratorsRequest&);
+void from_json(const nlohmann::json&, BulkDeleteCpuGeneratorsRequest&);
+void from_json(const nlohmann::json&, BulkStartCpuGeneratorsRequest&);
+void from_json(const nlohmann::json&, BulkStopCpuGeneratorsRequest&);
+} // namespace swagger::v1::model
 
 #endif /* _OP_CPU_API_HPP_ */
