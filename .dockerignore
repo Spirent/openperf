@@ -1,0 +1,11 @@
+# Ignore all
+*
+
+# ... except these
+!.circleci
+!conf
+!deps
+!mk
+!src
+!targets
+!contrib/docker/config.yaml

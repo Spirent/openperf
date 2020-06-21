@@ -35,6 +35,16 @@ clean:
 	@cd tests/unit && $(MAKE) clean
 	@rm -f compile_commands.json
 
+#
+# Targets for Docker image
+#
+
+include mk/versions.mk
+
+.PHONY: image
+image: deps
+	@docker build -f contrib/docker/Dockerfile -t openperf --build-arg GIT_COMMIT=${GIT_COMMIT} --build-arg GIT_VERSION=${GIT_VERSION} --build-arg BUILD_NUMBER=${BUILD_NUMBER}  .
+
 # Generate code from schema definitions
 # Since generated code is stored in the repo, manual generation is only required
 # when the schema files are updated.  Commit any schema changes and resulting

@@ -6,13 +6,18 @@
 #   TIMESTAMP - Current time in format set by organization.
 
 # Tag the build with the git commit
-GIT_COMMIT := $(shell git rev-parse --verify HEAD)
-# If working tree is dirty, append dirty flag
-ifneq ($(strip $(shell git status --porcelain 2>/dev/null)),)
-	GIT_COMMIT := $(GIT_COMMIT)-dirty
+ifeq ($(GIT_COMMIT),)
+	GIT_COMMIT := $(shell git rev-parse --verify HEAD)
+	# If working tree is dirty, append dirty flag
+	ifneq ($(strip $(shell git status --porcelain 2>/dev/null)),)
+		GIT_COMMIT := $(GIT_COMMIT)-dirty
+	endif
 endif
 
-GIT_VERSION := $(shell git describe --always --tags)
+
+ifeq ($(GIT_VERSION),)
+	GIT_VERSION := $(shell git describe --always --tags)
+endif
 
 # Jenkins sets BUILD_NUMBER explicitly.  If we're running under CirclCI,
 # then use that, otherwise just use the git hash as the build number
