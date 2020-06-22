@@ -47,6 +47,10 @@ include mk/versions.mk
 image: deps
 	@docker build -f contrib/docker/Dockerfile -t ${DOCKER_IMAGE} --build-arg GIT_COMMIT=${GIT_COMMIT} --build-arg GIT_VERSION=${GIT_VERSION} --build-arg BUILD_NUMBER=${BUILD_NUMBER}  .
 
+.PHONY: image_test_aat
+image_test_aat: image
+	@cd tests/aat && $(MAKE) progress_docker
+
 .PHONY: image_pack
 image_pack: image
 	@docker save -o openperf-${GIT_VERSION}.tar ${DOCKER_IMAGE}

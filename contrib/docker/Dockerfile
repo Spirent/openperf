@@ -21,4 +21,5 @@ RUN apt-get clean && \
 COPY --from=devimg /root/project/build/openperf-linux-x86_64-testing/bin/openperf /usr/local/bin/openperf
 COPY --from=devimg /root/project/contrib/docker/config.yaml /etc/openperf/config.yaml
 
+EXPOSE 9000
 CMD /usr/local/bin/openperf -c /etc/openperf/config.yaml

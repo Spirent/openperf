@@ -1,0 +1,15 @@
+---
+services:
+  default:
+    # NOTE: --force-unlink will NOT verify if another copy of openperf is running.
+    # FIXME: Remove --force-unlink. This is a hacky, temporary workaround for reliability.
+    command: "docker run --rm --privileged --name openperf-contrib -p 9000:9000  -it openperf-contrib:latest >> openperf.log 2>&1"
+    stop_command: "docker stop openperf-contrib > /dev/null 2>&1"
+    base_url: http://127.0.0.1:9000
+    init_url: http://127.0.0.1:9000/version
+    init_timeout: 30s
+
+shims:
+  default:
+    path: "../../build/libopenperf-shim-linux-x86_64-testing/lib/libopenperf-shim.so"
+    trace: 0

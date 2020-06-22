@@ -49,6 +49,7 @@ class ServiceConfig(object):
         setters = {
             'command': set_str,
             'command_args': set_str,
+            'stop_command': set_str,
             'base_url': set_url,
             'init_url': set_url,
             'init_timeout': set_duration,

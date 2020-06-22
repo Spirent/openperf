@@ -3,6 +3,7 @@ API_SUBDIR		= api/v1
 ENV_SUBDIR		= env
 ENV_REQUIREMENTS	= requirements.txt
 SPEC_SUBDIRS		= spec
+SPEC_DOCKER_SUBDIRS	= spec_docker
 LOG_FILE		= openperf.log
 XML_FILE		= results.xml
 
@@ -20,6 +21,14 @@ junit: setup
 progress: setup
 	@rm -f $(LOG_FILE)
 	$(ENV_SUBDIR)/bin/mamba $(SPEC_SUBDIRS)
+
+junit_docker: setup
+	@rm -f $(LOG_FILE) $(XML_FILE)
+	$(ENV_SUBDIR)/bin/mamba $(SPEC_DOCKER_SUBDIRS) --format junit > $(XML_FILE)
+
+progress_docker: setup
+	@rm -f $(LOG_FILE)
+	$(ENV_SUBDIR)/bin/mamba $(SPEC_DOCKER_SUBDIRS)
 
 setup: $(ENV_SUBDIR)/
 

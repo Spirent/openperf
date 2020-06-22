@@ -30,6 +30,20 @@ class Service(object):
 
         return p
 
+    def stop(self):
+        # Run stop service command as a subprocess
+        p = subprocess.Popen("exec " + self.config.stop_command, shell=True)
+
+        # Wait for command to initialize
+        try:
+            self._wait()
+        except:
+            p.kill()
+            p.wait()
+            raise
+
+        return p
+
     def _wait(self):
         # Create an API client using the service's init URL (falling back to
         # the base URL when there is no init URL set)
