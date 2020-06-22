@@ -148,6 +148,19 @@ def generator_model(api_client):
     return gen
 
 
+def generator_models(api_client):
+    ports_api = client.api.PortsApi(api_client)
+    ports = ports_api.list_ports()
+    expect(ports).to(have_len(be_above(1)))
+
+    gen1 = generator_model(api_client)
+    gen1.target_id = ports[0].id
+    gen2 = generator_model(api_client)
+    gen2.target_id = ports[1].id
+
+    return [gen1, gen2]
+
+
 with description('Packet Generator,', 'packet_generator') as self:
     with description('REST API'):
 
@@ -662,6 +675,144 @@ with description('Packet Generator,', 'packet_generator') as self:
             with description('invalid generator id,'):
                 with it('returns 404'):
                     expect(lambda: self.api.get_packet_generator(':bar:')).to(raise_api_exception(404))
+
+        with description('bulk operations,'):
+            with description('bulk create,'):
+                with description('valid request,'):
+                    with it('succeeds'):
+                        request = client.models.BulkCreatePacketGeneratorsRequest()
+                        request.items = generator_models(self.api.api_client)
+                        reply = self.api.bulk_create_packet_generators(request)
+                        expect(reply.items).to(have_len(len(request.items)))
+                        for item in reply.items:
+                            expect(item).to(be_valid_packet_generator)
+
+                with description('invalid requests,'):
+                    with it('returns 400 for invalid config'):
+                        request = client.models.BulkCreatePacketGeneratorsRequest()
+                        request.items = generator_models(self.api.api_client)
+                        request.items[-1].config.load.rate.value = -1
+                        expect(lambda: self.api.bulk_create_packet_generators(request)).to(raise_api_exception(400))
+                        expect(self.api.list_packet_generators()).to(be_empty)
+
+                    with it('returns 404 for invalid id'):
+                        request = client.models.BulkCreatePacketGeneratorsRequest()
+                        request.items = generator_models(self.api.api_client)
+                        request.items[-1].id = ':foo'
+                        expect(lambda: self.api.bulk_create_packet_generators(request)).to(raise_api_exception(404))
+                        expect(self.api.list_packet_generators()).to(be_empty)
+
+            with description('bulk delete,'):
+                with before.each:
+                    request = client.models.BulkCreatePacketGeneratorsRequest()
+                    request.items = generator_models(self.api.api_client)
+                    reply = self.api.bulk_create_packet_generators(request)
+                    expect(reply.items).to(have_len(len(request.items)))
+                    for item in reply.items:
+                        expect(item).to(be_valid_packet_generator)
+
+                with description('valid request,'):
+                    with it('succeeds'):
+                        self.api.bulk_delete_packet_generators(
+                            client.models.BulkDeletePacketGeneratorsRequest(
+                            [gen.id for gen in self.api.list_packet_generators()]))
+                        expect(self.api.list_packet_generators()).to(be_empty)
+
+                with description('invalid requests,'):
+                    with it('succeeds with a non-existent id'):
+                        self.api.bulk_delete_packet_generators(
+                            client.models.BulkDeletePacketGeneratorsRequest(
+                                [gen.id for gen in self.api.list_packet_generators()] + ['foo']))
+                        expect(self.api.list_packet_generators()).to(be_empty)
+
+                    with it('returns 404 for an invalid id'):
+                        expect(lambda: self.api.bulk_delete_packet_generators(
+                            client.models.BulkDeletePacketGeneratorsRequest(
+                                [gen.id for gen in self.api.list_packet_generators()] + [':bar']))).to(
+                                    raise_api_exception(404))
+                        expect(self.api.list_packet_generators()).not_to(be_empty)
+
+            with description('bulk start,'):
+                with before.each:
+                    request = client.models.BulkCreatePacketGeneratorsRequest()
+                    request.items = generator_models(self.api.api_client)
+                    reply = self.api.bulk_create_packet_generators(request)
+                    expect(reply.items).to(have_len(len(request.items)))
+                    for item in reply.items:
+                        expect(item).to(be_valid_packet_generator)
+
+                with description('valid request,'):
+                    with it('succeeds'):
+                        reply = self.api.bulk_start_packet_generators(
+                            client.models.BulkStartPacketAnalyzersRequest(
+                            [gen.id for gen in self.api.list_packet_generators()]))
+                        expect(reply.items).to(have_len(len(self.api.list_packet_generators())))
+                        for item in reply.items:
+                            expect(item).to(be_valid_packet_generator_result)
+                            expect(item.active).to(be_true)
+
+                with description('invalid requests,'):
+                    with it('returns 404 for non-existent id'):
+                        expect(lambda: self.api.bulk_start_packet_generators(
+                            client.models.BulkStartPacketGeneratorsRequest(
+                                [ana.id for ana in self.api.list_packet_generators()] + ['foo']))).to(
+                                    raise_api_exception(404))
+                        for ana in self.api.list_packet_generators():
+                            expect(ana.active).to(be_false)
+
+                    with it('returns 404 for invalid id'):
+                        expect(lambda: self.api.bulk_start_packet_generators(
+                            client.models.BulkStartPacketGeneratorsRequest(
+                                [ana.id for ana in self.api.list_packet_generators()] + [':bar']))).to(
+                                    raise_api_exception(404))
+                        for ana in self.api.list_packet_generators():
+                            expect(ana.active).to(be_false)
+
+            with description('bulk stop,'):
+                with before.each:
+                    create_request = client.models.BulkCreatePacketGeneratorsRequest()
+                    create_request.items = generator_models(self.api.api_client)
+                    create_reply = self.api.bulk_create_packet_generators(create_request)
+                    expect(create_reply.items).to(have_len(len(create_request.items)))
+                    for item in create_reply.items:
+                        expect(item).to(be_valid_packet_generator)
+                    start_reply = self.api.bulk_start_packet_generators(
+                        client.models.BulkStartPacketGeneratorsRequest(
+                            [gen.id for gen in create_reply.items]))
+                    expect(start_reply.items).to(have_len(len(create_request.items)))
+                    for item in start_reply.items:
+                        expect(item).to(be_valid_packet_generator_result)
+                        expect(item.active).to(be_true)
+
+                with description('valid request,'):
+                    with it('succeeds'):
+                        self.api.bulk_stop_packet_generators(
+                            client.models.BulkStopPacketGeneratorsRequest(
+                                [gen.id for gen in self.api.list_packet_generators()]))
+                        generators = self.api.list_packet_generators()
+                        expect(generators).not_to(be_empty)
+                        for gen in generators:
+                            expect(gen.active).to(be_false)
+
+                with description('invalid requests,'):
+                    with it('succeeds with a non-existent id'):
+                        self.api.bulk_stop_packet_generators(
+                            client.models.BulkStopPacketGeneratorsRequest(
+                                [gen.id for gen in self.api.list_packet_generators()] + ['foo']))
+                        generators = self.api.list_packet_generators()
+                        expect(generators).not_to(be_empty)
+                        for gen in generators:
+                            expect(gen.active).to(be_false)
+
+                    with it('returns 404 for an invalid id'):
+                        expect(lambda: self.api.bulk_stop_packet_generators(
+                            client.models.BulkStopPacketGeneratorsRequest(
+                                [gen.id for gen in self.api.list_packet_generators()] + [':bar']))).to(
+                                   raise_api_exception(404))
+                        generators = self.api.list_packet_generators()
+                        expect(generators).not_to(be_empty)
+                        for gen in generators:
+                            expect(gen.active).to(be_true)
 
         with after.each:
             try:
