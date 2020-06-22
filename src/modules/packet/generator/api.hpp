@@ -61,6 +61,8 @@ using tx_rate = openperf::units::rate<uint64_t, std::ratio<1, 3600>>;
 using tx_flow_type = swagger::v1::model::TxFlow;
 using tx_flow_ptr = std::unique_ptr<tx_flow_type>;
 
+using id_ptr = std::unique_ptr<std::string>;
+
 enum class filter_type { none, generator_id, target_id };
 using filter_map_type = std::map<filter_type, std::string>;
 using filter_map_ptr = std::unique_ptr<filter_map_type>;
@@ -179,6 +181,26 @@ struct request_toggle_generator
     std::unique_ptr<std::pair<std::string, std::string>> ids;
 };
 
+struct request_bulk_create_generators
+{
+    std::vector<generator_ptr> generators;
+};
+
+struct request_bulk_delete_generators
+{
+    std::vector<id_ptr> ids;
+};
+
+struct request_bulk_start_generators
+{
+    std::vector<id_ptr> ids;
+};
+
+struct request_bulk_stop_generators
+{
+    std::vector<id_ptr> ids;
+};
+
 struct request_list_generator_results
 {
     filter_map_ptr filter;
@@ -229,6 +251,10 @@ using request_msg = std::variant<request_list_generators,
                                  request_delete_generator,
                                  request_start_generator,
                                  request_stop_generator,
+                                 request_bulk_create_generators,
+                                 request_bulk_delete_generators,
+                                 request_bulk_start_generators,
+                                 request_bulk_stop_generators,
                                  request_toggle_generator,
                                  request_list_generator_results,
                                  request_delete_generator_results,

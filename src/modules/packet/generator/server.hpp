@@ -26,6 +26,11 @@ public:
     reply_msg handle_request(const request_start_generator&);
     reply_msg handle_request(const request_stop_generator&);
 
+    reply_msg handle_request(const request_bulk_create_generators&);
+    reply_msg handle_request(const request_bulk_delete_generators&);
+    reply_msg handle_request(const request_bulk_start_generators&);
+    reply_msg handle_request(const request_bulk_stop_generators&);
+
     reply_msg handle_request(const request_toggle_generator&);
 
     reply_msg handle_request(const request_list_generator_results&);
