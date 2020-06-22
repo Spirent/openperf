@@ -97,6 +97,18 @@ static std::string to_string(const request_msg& request)
                            [](const request_stop_generator& request) {
                                return ("stop generator " + request.id);
                            },
+                           [](const request_bulk_create_generators&) {
+                               return (std::string("bulk create generators"));
+                           },
+                           [](const request_bulk_delete_generators&) {
+                               return (std::string("bulk delete generators"));
+                           },
+                           [](const request_bulk_start_generators&) {
+                               return (std::string("bulk start generators"));
+                           },
+                           [](const request_bulk_stop_generators&) {
+                               return (std::string("bulk stop generators"));
+                           },
                            [](const request_toggle_generator& request) {
                                return ("toggle generator: " + request.ids->first
                                        + " --> " + request.ids->second);
@@ -433,6 +445,98 @@ reply_msg server::handle_request(const request_stop_generator& request)
         auto& impl = found->first.template get<source>();
         impl.stop();
     }
+
+    return (reply_ok{});
+}
+
+reply_msg server::handle_request(const request_bulk_create_generators& request)
+{
+    auto bulk_reply = reply_generators{};
+    auto bulk_errors = std::vector<reply_error>{};
+
+    /* XXX: making a copy due to a bad choice in function signature */
+    std::for_each(
+        std::begin(request.generators),
+        std::end(request.generators),
+        [&](const auto& generator) {
+            auto api_reply = handle_request(request_create_generator{
+                std::make_unique<generator_type>(*generator)});
+            if (auto reply = std::get_if<reply_generators>(&api_reply)) {
+                assert(reply->generators.size() == 1);
+                std::move(std::begin(reply->generators),
+                          std::end(reply->generators),
+                          std::back_inserter(bulk_reply.generators));
+            } else {
+                assert(std::holds_alternative<reply_error>(api_reply));
+                bulk_errors.emplace_back(std::get<reply_error>(api_reply));
+            }
+        });
+
+    if (!bulk_errors.empty()) {
+        /* Roll back */
+        std::for_each(std::begin(bulk_reply.generators),
+                      std::end(bulk_reply.generators),
+                      [&](const auto& generator) {
+                          handle_request(
+                              request_delete_generator{generator->getId()});
+                      });
+        return (bulk_errors.front());
+    }
+
+    return (bulk_reply);
+}
+
+reply_msg server::handle_request(const request_bulk_delete_generators& request)
+{
+    std::for_each(
+        std::begin(request.ids), std::end(request.ids), [&](const auto& id) {
+            handle_request(request_delete_generator{*id});
+        });
+
+    return (reply_ok{});
+}
+
+reply_msg server::handle_request(const request_bulk_start_generators& request)
+{
+    auto bulk_reply = reply_generator_results{};
+    auto bulk_errors = std::vector<reply_error>{};
+
+    std::for_each(
+        std::begin(request.ids), std::end(request.ids), [&](const auto& id) {
+            auto api_reply = handle_request(request_start_generator{*id});
+            if (auto reply = std::get_if<reply_generator_results>(&api_reply)) {
+                assert(reply->generator_results.size() == 1);
+                std::move(std::begin(reply->generator_results),
+                          std::end(reply->generator_results),
+                          std::back_inserter(bulk_reply.generator_results));
+            } else {
+                assert(std::holds_alternative<reply_error>(api_reply));
+                bulk_errors.emplace_back(std::get<reply_error>(api_reply));
+            }
+        });
+
+    if (!bulk_errors.empty()) {
+        /* Undo! */
+        std::for_each(std::begin(bulk_reply.generator_results),
+                      std::end(bulk_reply.generator_results),
+                      [&](const auto& result) {
+                          handle_request(
+                              request_stop_generator{result->getGeneratorId()});
+                          handle_request(
+                              request_delete_generator_result{result->getId()});
+                      });
+        return (bulk_errors.front());
+    }
+
+    return (bulk_reply);
+}
+
+reply_msg server::handle_request(const request_bulk_stop_generators& request)
+{
+    std::for_each(
+        std::begin(request.ids), std::end(request.ids), [&](const auto& id) {
+            handle_request(request_stop_generator{*id});
+        });
 
     return (reply_ok{});
 }

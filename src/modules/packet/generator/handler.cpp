@@ -5,6 +5,11 @@
 #include "core/op_core.h"
 #include "packet/generator/api.hpp"
 
+#include "swagger/v1/model/BulkCreatePacketGeneratorsResponse.h"
+#include "swagger/v1/model/BulkDeletePacketGeneratorsRequest.h"
+#include "swagger/v1/model/BulkStartPacketGeneratorsRequest.h"
+#include "swagger/v1/model/BulkStartPacketGeneratorsResponse.h"
+#include "swagger/v1/model/BulkStopPacketGeneratorsRequest.h"
 #include "swagger/v1/model/PacketGenerator.h"
 #include "swagger/v1/model/PacketGeneratorResult.h"
 #include "swagger/v1/model/TogglePacketGeneratorsRequest.h"
@@ -241,19 +246,6 @@ maybe_get_request_uri(const handler::request_type& request)
     return (std::nullopt);
 }
 
-template <typename T>
-tl::expected<T, std::string> parse_request(const handler::request_type& request)
-{
-    try {
-        auto obj = std::make_shared<T>();
-        auto j = nlohmann::json::parse(request.body());
-        obj->fromJson(j);
-        return (*obj);
-    } catch (const nlohmann::json::exception& e) {
-        return (tl::unexpected(json_error(e.id, e.what())));
-    }
-}
-
 static tl::expected<swagger::v1::model::PacketGenerator, std::string>
 parse_create_generator_request(const handler::request_type& request)
 {
@@ -411,26 +403,229 @@ void handler::stop_generator(const request_type& request,
     }
 }
 
-void handler::bulk_create_generators(const request_type&,
+static tl::expected<request_bulk_create_generators, std::string>
+parse_bulk_create_generators(const handler::request_type& request)
+{
+    auto bulk_request = request_bulk_create_generators{};
+    try {
+        const auto j = nlohmann::json::parse(request.body());
+        for (const auto& item : j["items"]) {
+            bulk_request.generators.emplace_back(
+                std::make_unique<generator_type>(item.get<generator_type>()));
+        }
+        return (bulk_request);
+    } catch (const nlohmann::json::exception& e) {
+        return (tl::unexpected(json_error(e.id, e.what())));
+    }
+}
+
+void handler::bulk_create_generators(const request_type& request,
                                      response_type response)
 {
-    response.send(Http::Code::Not_Implemented);
+    auto api_request = parse_bulk_create_generators(request);
+    if (!api_request) {
+        response.send(Http::Code::Bad_Request, api_request.error());
+        return;
+    }
+
+    /* Verify that all user provided id's are valid */
+    std::vector<std::string> id_errors;
+    std::for_each(std::begin(api_request->generators),
+                  std::end(api_request->generators),
+                  [&](const auto& generator) {
+                      if (!generator->getId().empty()) {
+                          if (auto res = config::op_config_validate_id_string(
+                                  generator->getId());
+                              !res) {
+                              id_errors.emplace_back(res.error());
+                          }
+                      }
+                  });
+    if (!id_errors.empty()) {
+        response.send(Http::Code::Not_Found, concatenate(id_errors));
+        return;
+    }
+
+    /* Validate all generator objects before forwarding to the server */
+    std::vector<std::string> validation_errors;
+    std::for_each(std::begin(api_request->generators),
+                  std::end(api_request->generators),
+                  [&](const auto& generator) {
+                      is_valid(*generator, validation_errors);
+                  });
+    if (!validation_errors.empty()) {
+        response.send(Http::Code::Bad_Request, concatenate(validation_errors));
+        return;
+    }
+
+    auto api_reply = submit_request(m_socket.get(), std::move(*api_request));
+
+    if (auto reply = std::get_if<reply_generators>(&api_reply)) {
+        response.headers().add<Http::Header::ContentType>(
+            MIME(Application, Json));
+
+        auto swagger_reply =
+            swagger::v1::model::BulkCreatePacketGeneratorsResponse{};
+        std::move(std::begin(reply->generators),
+                  std::end(reply->generators),
+                  std::back_inserter(swagger_reply.getItems()));
+
+        response.send(Http::Code::Ok, swagger_reply.toJson().dump());
+    } else {
+        handle_reply_error(api_reply, std::move(response));
+    }
 }
 
-void handler::bulk_delete_generators(const request_type&,
+template <typename T>
+tl::expected<T, std::string> parse_request(const handler::request_type& request)
+{
+    try {
+        auto obj = T{};
+        auto j = nlohmann::json::parse(request.body());
+        obj.fromJson(j);
+        return (obj);
+    } catch (const nlohmann::json::exception& e) {
+        return (tl::unexpected(json_error(e.id, e.what())));
+    }
+}
+
+void handler::bulk_delete_generators(const request_type& request,
                                      response_type response)
 {
-    response.send(Http::Code::Not_Implemented);
+    auto swagger_request =
+        parse_request<swagger::v1::model::BulkDeletePacketGeneratorsRequest>(
+            request);
+    if (!swagger_request) {
+        response.send(Http::Code::Bad_Request, swagger_request.error());
+        return;
+    }
+
+    const auto& ids = swagger_request->getIds();
+
+    /* Verify that all user provided id's are valid */
+    std::vector<std::string> id_errors;
+    std::for_each(std::begin(ids), std::end(ids), [&](const auto& id) {
+        if (!id.empty()) {
+            if (auto res = config::op_config_validate_id_string(id); !res) {
+                id_errors.emplace_back(res.error());
+            }
+        }
+    });
+    if (!id_errors.empty()) {
+        response.send(Http::Code::Not_Found, concatenate(id_errors));
+        return;
+    }
+
+    auto api_request = request_bulk_delete_generators{};
+
+    std::transform(
+        std::begin(ids),
+        std::end(ids),
+        std::back_inserter(api_request.ids),
+        [](const auto& id) { return (std::make_unique<std::string>(id)); });
+
+    auto api_reply = submit_request(m_socket.get(), std::move(api_request));
+
+    if (auto reply = std::get_if<reply_ok>(&api_reply)) {
+        response.send(Http::Code::No_Content);
+    } else {
+        handle_reply_error(api_reply, std::move(response));
+    }
 }
 
-void handler::bulk_start_generators(const request_type&, response_type response)
+void handler::bulk_start_generators(const request_type& request,
+                                    response_type response)
 {
-    response.send(Http::Code::Not_Implemented);
+    auto swagger_request =
+        parse_request<swagger::v1::model::BulkStartPacketGeneratorsRequest>(
+            request);
+    if (!swagger_request) {
+        response.send(Http::Code::Bad_Request, swagger_request.error());
+        return;
+    }
+
+    const auto& ids = swagger_request->getIds();
+
+    /* Verify that all user provided id's are valid */
+    std::vector<std::string> id_errors;
+    std::for_each(std::begin(ids), std::end(ids), [&](const auto& id) {
+        if (!id.empty()) {
+            if (auto res = config::op_config_validate_id_string(id); !res) {
+                id_errors.emplace_back(res.error());
+            }
+        }
+    });
+    if (!id_errors.empty()) {
+        response.send(Http::Code::Not_Found, concatenate(id_errors));
+        return;
+    }
+
+    auto api_request = request_bulk_start_generators{};
+
+    std::transform(
+        std::begin(ids),
+        std::end(ids),
+        std::back_inserter(api_request.ids),
+        [](const auto& id) { return (std::make_unique<std::string>(id)); });
+
+    auto api_reply = submit_request(m_socket.get(), std::move(api_request));
+
+    if (auto reply = std::get_if<reply_generator_results>(&api_reply)) {
+        response.headers().add<Http::Header::ContentType>(
+            MIME(Application, Json));
+        auto swagger_reply =
+            swagger::v1::model::BulkStartPacketGeneratorsResponse{};
+        std::move(std::begin(reply->generator_results),
+                  std::end(reply->generator_results),
+                  std::back_inserter(swagger_reply.getItems()));
+        response.send(Http::Code::Ok, swagger_reply.toJson().dump());
+    } else {
+        handle_reply_error(api_reply, std::move(response));
+    }
 }
 
-void handler::bulk_stop_generators(const request_type&, response_type response)
+void handler::bulk_stop_generators(const request_type& request,
+                                   response_type response)
 {
-    response.send(Http::Code::Not_Implemented);
+    auto swagger_request =
+        parse_request<swagger::v1::model::BulkStopPacketGeneratorsRequest>(
+            request);
+    if (!swagger_request) {
+        response.send(Http::Code::Bad_Request, swagger_request.error());
+        return;
+    }
+
+    const auto& ids = swagger_request->getIds();
+
+    /* Verify that all user provided id's are valid */
+    std::vector<std::string> id_errors;
+    std::for_each(std::begin(ids), std::end(ids), [&](const auto& id) {
+        if (!id.empty()) {
+            if (auto res = config::op_config_validate_id_string(id); !res) {
+                id_errors.emplace_back(res.error());
+            }
+        }
+    });
+    if (!id_errors.empty()) {
+        response.send(Http::Code::Not_Found, concatenate(id_errors));
+        return;
+    }
+
+    auto api_request = request_bulk_stop_generators{};
+
+    std::transform(
+        std::begin(ids),
+        std::end(ids),
+        std::back_inserter(api_request.ids),
+        [](const auto& id) { return (std::make_unique<std::string>(id)); });
+
+    auto api_reply = submit_request(m_socket.get(), std::move(api_request));
+
+    if (auto reply = std::get_if<reply_ok>(&api_reply)) {
+        response.send(Http::Code::No_Content);
+    } else {
+        handle_reply_error(api_reply, std::move(response));
+    }
 }
 
 void handler::toggle_generators(const request_type& request,
