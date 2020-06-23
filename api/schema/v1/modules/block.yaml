@@ -457,12 +457,25 @@ definitions:
       usable:
         type: boolean
         description: Indicates whether it is safe to use this device for block I/O load generation
+      init_percent_complete:
+        type: integer
+        description: Percentage of initialization completed so far
+        format: int32
+      state:
+        type: string
+        description: State of resource initialization
+        enum:
+          - none
+          - init
+          - ready
     required:
       - id
       - path
       - size
       - info
       - usable
+      - init_percent_complete
+      - state
 
   BlockFile:
     type: object

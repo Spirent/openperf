@@ -63,6 +63,12 @@ struct request_block_device
 {
     std::string id;
 };
+
+struct request_block_device_init
+{
+    std::string id;
+};
+
 struct request_block_file_list
 {};
 
@@ -184,6 +190,7 @@ struct reply_error
 
 using request_msg = std::variant<request_block_device_list,
                                  request_block_device,
+                                 request_block_device_init,
                                  request_block_file_list,
                                  request_block_file,
                                  request_block_file_add,

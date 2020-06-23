@@ -6,20 +6,21 @@
 
 namespace openperf::block::model {
 
-enum file_state {
-    NONE = 0,
-    INIT,
-    READY,
-};
-
 class file
 {
+public:
+    enum state {
+        NONE = 0,
+        INIT,
+        READY,
+    };
+
 protected:
     std::string m_id;
     std::atomic_int64_t m_size;
     std::atomic_int32_t m_init_percent_complete;
     std::string m_path;
-    std::atomic<file_state> m_state;
+    std::atomic<state> m_state;
 
 public:
     file() = default;
@@ -37,8 +38,8 @@ public:
     std::string get_path() const;
     void set_path(std::string_view value);
 
-    file_state get_state() const;
-    void set_state(const file_state& value);
+    state get_state() const;
+    void set_state(const state& value);
 };
 } // namespace openperf::block::model
 

@@ -24,6 +24,8 @@ BlockDevice::BlockDevice()
     m_Size = 0L;
     m_Info = "";
     m_Usable = false;
+    m_Init_percent_complete = 0;
+    m_State = "";
     
 }
 
@@ -45,6 +47,8 @@ nlohmann::json BlockDevice::toJson() const
     val["size"] = m_Size;
     val["info"] = ModelBase::toJson(m_Info);
     val["usable"] = m_Usable;
+    val["init_percent_complete"] = m_Init_percent_complete;
+    val["state"] = ModelBase::toJson(m_State);
     
 
     return val;
@@ -57,6 +61,8 @@ void BlockDevice::fromJson(nlohmann::json& val)
     setSize(val.at("size"));
     setInfo(val.at("info"));
     setUsable(val.at("usable"));
+    setInitPercentComplete(val.at("init_percent_complete"));
+    setState(val.at("state"));
     
 }
 
@@ -104,6 +110,24 @@ bool BlockDevice::isUsable() const
 void BlockDevice::setUsable(bool value)
 {
     m_Usable = value;
+    
+}
+int32_t BlockDevice::getInitPercentComplete() const
+{
+    return m_Init_percent_complete;
+}
+void BlockDevice::setInitPercentComplete(int32_t value)
+{
+    m_Init_percent_complete = value;
+    
+}
+std::string BlockDevice::getState() const
+{
+    return m_State;
+}
+void BlockDevice::setState(std::string value)
+{
+    m_State = value;
     
 }
 

@@ -2,21 +2,31 @@
 #define _OP_BLOCK_DEVICE_MODEL_HPP_
 
 #include <string>
+#include <atomic>
 
 namespace openperf::block::model {
 
 class device
 {
+public:
+    enum state {
+        NONE = 0,
+        INIT,
+        READY,
+    };
+
 protected:
     std::string m_id;
     std::string m_path;
     int64_t m_size;
     std::string m_info;
     bool m_usable;
+    std::atomic_int32_t m_init_percent_complete;
+    std::atomic<state> m_state;
 
 public:
     device() = default;
-    device(const device&) = default;
+    device(const device&);
 
     std::string get_id() const;
     void set_id(std::string_view value);
@@ -32,6 +42,12 @@ public:
 
     bool is_usable() const;
     void set_usable(const bool value);
+
+    int32_t get_init_percent_complete() const;
+    void set_init_percent_complete(const int32_t value);
+
+    state get_state() const;
+    void set_state(const state& value);
 };
 
 } // namespace openperf::block::model

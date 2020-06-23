@@ -35,7 +35,9 @@ class BlockDevice(object):
         'path': 'str',
         'size': 'int',
         'info': 'str',
-        'usable': 'bool'
+        'usable': 'bool',
+        'init_percent_complete': 'int',
+        'state': 'str'
     }
 
     attribute_map = {
@@ -43,10 +45,12 @@ class BlockDevice(object):
         'path': 'path',
         'size': 'size',
         'info': 'info',
-        'usable': 'usable'
+        'usable': 'usable',
+        'init_percent_complete': 'init_percent_complete',
+        'state': 'state'
     }
 
-    def __init__(self, id=None, path=None, size=None, info=None, usable=None):  # noqa: E501
+    def __init__(self, id=None, path=None, size=None, info=None, usable=None, init_percent_complete=None, state=None):  # noqa: E501
         """BlockDevice - a model defined in Swagger"""  # noqa: E501
 
         self._id = None
@@ -54,6 +58,8 @@ class BlockDevice(object):
         self._size = None
         self._info = None
         self._usable = None
+        self._init_percent_complete = None
+        self._state = None
         self.discriminator = None
 
         self.id = id
@@ -61,6 +67,8 @@ class BlockDevice(object):
         self.size = size
         self.info = info
         self.usable = usable
+        self.init_percent_complete = init_percent_complete
+        self.state = state
 
     @property
     def id(self):
@@ -171,6 +179,50 @@ class BlockDevice(object):
         :type: bool
         """
         self._usable = usable
+
+    @property
+    def init_percent_complete(self):
+        """Gets the init_percent_complete of this BlockDevice.  # noqa: E501
+
+        Percentage of initialization completed so far  # noqa: E501
+
+        :return: The init_percent_complete of this BlockDevice.  # noqa: E501
+        :rtype: int
+        """
+        return self._init_percent_complete
+
+    @init_percent_complete.setter
+    def init_percent_complete(self, init_percent_complete):
+        """Sets the init_percent_complete of this BlockDevice.
+
+        Percentage of initialization completed so far  # noqa: E501
+
+        :param init_percent_complete: The init_percent_complete of this BlockDevice.  # noqa: E501
+        :type: int
+        """
+        self._init_percent_complete = init_percent_complete
+
+    @property
+    def state(self):
+        """Gets the state of this BlockDevice.  # noqa: E501
+
+        State of resource initialization  # noqa: E501
+
+        :return: The state of this BlockDevice.  # noqa: E501
+        :rtype: str
+        """
+        return self._state
+
+    @state.setter
+    def state(self, state):
+        """Sets the state of this BlockDevice.
+
+        State of resource initialization  # noqa: E501
+
+        :param state: The state of this BlockDevice.  # noqa: E501
+        :type: str
+        """
+        self._state = state
 
     def to_dict(self):
         """Returns the model properties as a dict"""
