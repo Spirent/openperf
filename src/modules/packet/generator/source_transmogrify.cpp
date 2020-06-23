@@ -137,7 +137,7 @@ accumulate_counters(const std::vector<traffic::counter>& counters)
 
 static void populate_remainder(
     const std::shared_ptr<swagger::v1::model::TrafficDuration>& src,
-    std::shared_ptr<swagger::v1::model::DurationRemainder>& dst,
+    std::shared_ptr<swagger::v1::model::TrafficDurationRemainder>& dst,
     const source_result& result,
     const traffic::counter& sum)
 {
@@ -183,7 +183,7 @@ generator_result_ptr to_swagger(const core::uuid& id,
 
     if (dst->isActive()) {
         auto remainder =
-            std::make_shared<swagger::v1::model::DurationRemainder>();
+            std::make_shared<swagger::v1::model::TrafficDurationRemainder>();
         populate_remainder(
             result.parent().config()->getDuration(), remainder, result, sum);
         dst->setRemaining(remainder);

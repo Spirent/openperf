@@ -10,13 +10,13 @@
 * Do not edit the class manually.
 */
 /*
- * DurationRemainder.h
+ * TrafficDurationRemainder.h
  *
  * Specifies how much time remains for an object to be active
  */
 
-#ifndef DurationRemainder_H_
-#define DurationRemainder_H_
+#ifndef TrafficDurationRemainder_H_
+#define TrafficDurationRemainder_H_
 
 
 #include "ModelBase.h"
@@ -30,12 +30,12 @@ namespace model {
 /// <summary>
 /// Specifies how much time remains for an object to be active
 /// </summary>
-class  DurationRemainder
+class  TrafficDurationRemainder
     : public ModelBase
 {
 public:
-    DurationRemainder();
-    virtual ~DurationRemainder();
+    TrafficDurationRemainder();
+    virtual ~TrafficDurationRemainder();
 
     /////////////////////////////////////////////
     /// ModelBase overrides
@@ -46,7 +46,7 @@ public:
     void fromJson(nlohmann::json& json) override;
 
     /////////////////////////////////////////////
-    /// DurationRemainder members
+    /// TrafficDurationRemainder members
 
     /// <summary>
     /// Specifies how the duration is measured
@@ -56,15 +56,15 @@ public:
         /// <summary>
     /// Specifies the remaining duration for definite durations
     /// </summary>
-    int64_t getValue() const;
-    void setValue(int64_t value);
+    int32_t getValue() const;
+    void setValue(int32_t value);
     bool valueIsSet() const;
     void unsetValue();
 
 protected:
     std::string m_Unit;
 
-    int64_t m_Value;
+    int32_t m_Value;
     bool m_ValueIsSet;
 };
 
@@ -72,4 +72,4 @@ protected:
 }
 }
 
-#endif /* DurationRemainder_H_ */
+#endif /* TrafficDurationRemainder_H_ */

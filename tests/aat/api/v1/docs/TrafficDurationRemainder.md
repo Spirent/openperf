@@ -1,4 +1,4 @@
-# DurationRemainder
+# TrafficDurationRemainder
 
 ## Properties
 Name | Type | Description | Notes
