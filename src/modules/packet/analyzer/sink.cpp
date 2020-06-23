@@ -23,7 +23,8 @@ sink_result::sink_result(const sink& parent)
     assert(parent.worker_count());
     std::generate_n(
         std::back_inserter(m_protocol_shards), m_parent.worker_count(), [&]() {
-            return (statistics::make_counters(m_parent.protocol_counters()));
+            return (packet::statistics::make_counters(
+                m_parent.protocol_counters()));
         });
 
     /*
@@ -200,7 +201,8 @@ uint16_t sink::push(const packetio::packet::packet_buffer* const packets[],
         uint16_t end = start + std::min(burst_size, packets_length - start);
         uint16_t count = end - start;
 
-        auto packet_types = std::array<uint32_t, burst_size>{};
+        auto packet_types =
+            std::array<packetio::packet::packet_type::flags, burst_size>{};
         std::transform(packets + start,
                        packets + end,
                        packet_types.data(),

@@ -3,7 +3,7 @@
 
 #include <array>
 
-#include "packet/analyzer/statistics/common.hpp"
+#include "packet/statistics/tuple_utils.hpp"
 #include "packetio/packet_type.hpp"
 #include "utils/memcpy.hpp"
 
@@ -45,9 +45,11 @@ void set_header(StatsTuple& tuple,
                 header::packet_type_flags flags,
                 const uint8_t pkt[])
 {
-    if constexpr (!has_type<header, StatsTuple>::value) { return; }
+    if constexpr (!packet::statistics::has_type<header, StatsTuple>::value) {
+        return;
+    }
 
-    auto& h = get_counter<header, StatsTuple>(tuple);
+    auto& h = packet::statistics::get_counter<header, StatsTuple>(tuple);
     h.flags = flags;
     utils::memcpy(
         h.data.data(), pkt, header_length(flags, pkt, max_header_length));

@@ -235,7 +235,7 @@ protocol_counters_config to_protocol_counters(std::vector<std::string>& names)
     auto counters = protocol_counters_config{0};
 
     std::for_each(std::begin(names), std::end(names), [&](const auto& name) {
-        counters |= statistics::to_protocol_flag(name);
+        counters |= packet::statistics::to_protocol_flag(name);
     });
 
     return (counters);

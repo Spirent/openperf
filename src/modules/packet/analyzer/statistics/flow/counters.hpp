@@ -3,9 +3,13 @@
 
 #include <iostream>
 
-#include "packet/analyzer/statistics/common.hpp"
+#include "packet/statistics/frame_counter.hpp"
+#include "packet/statistics/tuple_utils.hpp"
 
 namespace openperf::packet::analyzer::statistics::flow {
+
+using frame_counter = packet::statistics::frame_counter;
+using stat_t = uint64_t;
 
 struct sequencing
 {
@@ -186,7 +190,7 @@ template <typename SummaryStat>
 inline std::enable_if_t<std::is_arithmetic_v<typename SummaryStat::pop_t>, void>
 update(SummaryStat& stat,
        typename SummaryStat::pop_t value,
-       statistics::stat_t count) noexcept
+       stat_t count) noexcept
 {
     if (value < stat.min) { stat.min = value; }
     if (value > stat.max) { stat.max = value; }
@@ -222,7 +226,7 @@ template <typename SummaryStat>
 inline std::enable_if_t<is_duration<typename SummaryStat::pop_t>::value, void>
 update(SummaryStat& stat,
        typename SummaryStat::pop_t value,
-       statistics::stat_t count) noexcept
+       stat_t count) noexcept
 {
     if (value < stat.min) { stat.min = value; }
     if (value > stat.max) { stat.max = value; }
@@ -238,9 +242,8 @@ update(SummaryStat& stat,
     }
 }
 
-inline void update(latency& stat,
-                   typename latency::pop_t value,
-                   statistics::stat_t count) noexcept
+inline void
+update(latency& stat, typename latency::pop_t value, stat_t count) noexcept
 {
     stat.last_ = value;
     update<latency>(stat, value, count);
@@ -248,10 +251,10 @@ inline void update(latency& stat,
 
 template <typename SumType, typename VarianceType>
 std::enable_if_t<std::is_arithmetic_v<VarianceType>, VarianceType>
-add_variance(statistics::stat_t x_count,
+add_variance(stat_t x_count,
              SumType x_total,
              VarianceType x_m2,
-             statistics::stat_t y_count,
+             stat_t y_count,
              SumType y_total,
              VarianceType y_m2)
 {
@@ -268,10 +271,10 @@ add_variance(statistics::stat_t x_count,
 
 template <typename SumType, typename VarianceType>
 std::enable_if_t<is_duration<VarianceType>::value, VarianceType>
-add_variance(statistics::stat_t x_count,
+add_variance(stat_t x_count,
              SumType x_total,
              VarianceType x_m2,
-             statistics::stat_t y_count,
+             stat_t y_count,
              SumType y_total,
              VarianceType y_m2)
 {
@@ -296,13 +299,15 @@ add_variance(statistics::stat_t x_count,
 template <typename StatsTuple>
 void update(StatsTuple& tuple,
             uint16_t length,
-            counter::timestamp rx,
-            std::optional<counter::timestamp> tx,
+            frame_counter::timestamp rx,
+            std::optional<frame_counter::timestamp> tx,
             std::optional<uint32_t> seq_num)
 {
-    static_assert(has_type<counter, StatsTuple>::value);
+    using namespace openperf::packet::statistics;
 
-    auto& frames = get_counter<counter, StatsTuple>(tuple);
+    static_assert(has_type<frame_counter, StatsTuple>::value);
+
+    auto& frames = get_counter<frame_counter, StatsTuple>(tuple);
     auto last_rx = frames.last();
     update(frames, 1, rx);
     if constexpr (has_type<interarrival, StatsTuple>::value) {
@@ -371,11 +376,21 @@ void dump(std::ostream& os, const latency& stat);
 template <typename StatsTuple>
 void dump(std::ostream& os, const StatsTuple& tuple)
 {
+    using namespace openperf::packet::statistics;
+
     os << __PRETTY_FUNCTION__ << std::endl;
 
-    if constexpr (has_type<counter, StatsTuple>::value) {
-        dump(os, get_counter<counter, StatsTuple>(tuple), "Frames");
+    static_assert(has_type<frame_counter, StatsTuple>::value);
+
+    const auto& frames = get_counter<frame_counter, StatsTuple>(tuple);
+    os << "Frames:" << std::endl;
+    if (frames.count) {
+        os << " first: " << frames.first()->time_since_epoch().count()
+           << std::endl;
+        os << " last: " << frames.last()->time_since_epoch().count()
+           << std::endl;
     }
+    os << " count: " << frames.count << std::endl;
 
     if constexpr (has_type<sequencing, StatsTuple>::value) {
         dump(os, get_counter<sequencing, StatsTuple>(tuple));
@@ -407,7 +422,7 @@ void dump(std::ostream& os, const StatsTuple& tuple)
  * This is totally a self imposed limit, but let's now blow
  * past it without a good reason to do so.
  */
-static_assert(sizeof(std::tuple<counter,
+static_assert(sizeof(std::tuple<frame_counter,
                                 frame_length,
                                 interarrival,
                                 sequencing,

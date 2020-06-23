@@ -21,13 +21,13 @@
 
 #include "ModelBase.h"
 
-#include "PacketAnalyzerProtocolCounters_inner_ip.h"
-#include "PacketAnalyzerProtocolCounters_inner_protocol.h"
-#include "PacketAnalyzerProtocolCounters_tunnel.h"
-#include "PacketAnalyzerProtocolCounters_ethernet.h"
-#include "PacketAnalyzerProtocolCounters_inner_ethernet.h"
-#include "PacketAnalyzerProtocolCounters_ip.h"
-#include "PacketAnalyzerProtocolCounters_protocol.h"
+#include "PacketIpProtocolCounters.h"
+#include "PacketEthernetProtocolCounters.h"
+#include "PacketInnerIpProtocolCounters.h"
+#include "PacketTransportProtocolCounters.h"
+#include "PacketTunnelProtocolCounters.h"
+#include "PacketInnerTransportProtocolCounters.h"
+#include "PacketInnerEthernetProtocolCounters.h"
 
 namespace swagger {
 namespace v1 {
@@ -57,68 +57,68 @@ public:
     /// <summary>
     /// 
     /// </summary>
-    std::shared_ptr<PacketAnalyzerProtocolCounters_ethernet> getEthernet() const;
-    void setEthernet(std::shared_ptr<PacketAnalyzerProtocolCounters_ethernet> value);
+    std::shared_ptr<PacketEthernetProtocolCounters> getEthernet() const;
+    void setEthernet(std::shared_ptr<PacketEthernetProtocolCounters> value);
     bool ethernetIsSet() const;
     void unsetEthernet();
     /// <summary>
     /// 
     /// </summary>
-    std::shared_ptr<PacketAnalyzerProtocolCounters_ip> getIp() const;
-    void setIp(std::shared_ptr<PacketAnalyzerProtocolCounters_ip> value);
+    std::shared_ptr<PacketIpProtocolCounters> getIp() const;
+    void setIp(std::shared_ptr<PacketIpProtocolCounters> value);
     bool ipIsSet() const;
     void unsetIp();
     /// <summary>
     /// 
     /// </summary>
-    std::shared_ptr<PacketAnalyzerProtocolCounters_protocol> getProtocol() const;
-    void setProtocol(std::shared_ptr<PacketAnalyzerProtocolCounters_protocol> value);
-    bool protocolIsSet() const;
-    void unsetProtocol();
+    std::shared_ptr<PacketTransportProtocolCounters> getTransport() const;
+    void setTransport(std::shared_ptr<PacketTransportProtocolCounters> value);
+    bool transportIsSet() const;
+    void unsetTransport();
     /// <summary>
     /// 
     /// </summary>
-    std::shared_ptr<PacketAnalyzerProtocolCounters_tunnel> getTunnel() const;
-    void setTunnel(std::shared_ptr<PacketAnalyzerProtocolCounters_tunnel> value);
+    std::shared_ptr<PacketTunnelProtocolCounters> getTunnel() const;
+    void setTunnel(std::shared_ptr<PacketTunnelProtocolCounters> value);
     bool tunnelIsSet() const;
     void unsetTunnel();
     /// <summary>
     /// 
     /// </summary>
-    std::shared_ptr<PacketAnalyzerProtocolCounters_inner_ethernet> getInnerEthernet() const;
-    void setInnerEthernet(std::shared_ptr<PacketAnalyzerProtocolCounters_inner_ethernet> value);
+    std::shared_ptr<PacketInnerEthernetProtocolCounters> getInnerEthernet() const;
+    void setInnerEthernet(std::shared_ptr<PacketInnerEthernetProtocolCounters> value);
     bool innerEthernetIsSet() const;
     void unsetInner_ethernet();
     /// <summary>
     /// 
     /// </summary>
-    std::shared_ptr<PacketAnalyzerProtocolCounters_inner_ip> getInnerIp() const;
-    void setInnerIp(std::shared_ptr<PacketAnalyzerProtocolCounters_inner_ip> value);
+    std::shared_ptr<PacketInnerIpProtocolCounters> getInnerIp() const;
+    void setInnerIp(std::shared_ptr<PacketInnerIpProtocolCounters> value);
     bool innerIpIsSet() const;
     void unsetInner_ip();
     /// <summary>
     /// 
     /// </summary>
-    std::shared_ptr<PacketAnalyzerProtocolCounters_inner_protocol> getInnerProtocol() const;
-    void setInnerProtocol(std::shared_ptr<PacketAnalyzerProtocolCounters_inner_protocol> value);
-    bool innerProtocolIsSet() const;
-    void unsetInner_protocol();
+    std::shared_ptr<PacketInnerTransportProtocolCounters> getInnerTransport() const;
+    void setInnerTransport(std::shared_ptr<PacketInnerTransportProtocolCounters> value);
+    bool innerTransportIsSet() const;
+    void unsetInner_transport();
 
 protected:
-    std::shared_ptr<PacketAnalyzerProtocolCounters_ethernet> m_Ethernet;
+    std::shared_ptr<PacketEthernetProtocolCounters> m_Ethernet;
     bool m_EthernetIsSet;
-    std::shared_ptr<PacketAnalyzerProtocolCounters_ip> m_Ip;
+    std::shared_ptr<PacketIpProtocolCounters> m_Ip;
     bool m_IpIsSet;
-    std::shared_ptr<PacketAnalyzerProtocolCounters_protocol> m_Protocol;
-    bool m_ProtocolIsSet;
-    std::shared_ptr<PacketAnalyzerProtocolCounters_tunnel> m_Tunnel;
+    std::shared_ptr<PacketTransportProtocolCounters> m_Transport;
+    bool m_TransportIsSet;
+    std::shared_ptr<PacketTunnelProtocolCounters> m_Tunnel;
     bool m_TunnelIsSet;
-    std::shared_ptr<PacketAnalyzerProtocolCounters_inner_ethernet> m_Inner_ethernet;
+    std::shared_ptr<PacketInnerEthernetProtocolCounters> m_Inner_ethernet;
     bool m_Inner_ethernetIsSet;
-    std::shared_ptr<PacketAnalyzerProtocolCounters_inner_ip> m_Inner_ip;
+    std::shared_ptr<PacketInnerIpProtocolCounters> m_Inner_ip;
     bool m_Inner_ipIsSet;
-    std::shared_ptr<PacketAnalyzerProtocolCounters_inner_protocol> m_Inner_protocol;
-    bool m_Inner_protocolIsSet;
+    std::shared_ptr<PacketInnerTransportProtocolCounters> m_Inner_transport;
+    bool m_Inner_transportIsSet;
 };
 
 }
