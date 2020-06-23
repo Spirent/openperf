@@ -36,7 +36,7 @@ class PacketGeneratorResult(object):
         'active': 'bool',
         'flow_counters': 'PacketGeneratorFlowCounters',
         'flows': 'list[str]',
-        'remaining': 'DurationRemainder'
+        'remaining': 'TrafficDurationRemainder'
     }
 
     attribute_map = {
@@ -182,7 +182,7 @@ class PacketGeneratorResult(object):
 
 
         :return: The remaining of this PacketGeneratorResult.  # noqa: E501
-        :rtype: DurationRemainder
+        :rtype: TrafficDurationRemainder
         """
         return self._remaining
 
@@ -192,7 +192,7 @@ class PacketGeneratorResult(object):
 
 
         :param remaining: The remaining of this PacketGeneratorResult.  # noqa: E501
-        :type: DurationRemainder
+        :type: TrafficDurationRemainder
         """
         self._remaining = remaining
 

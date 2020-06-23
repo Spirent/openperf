@@ -82,7 +82,6 @@ from client.models.cpu_generator_result import CpuGeneratorResult
 from client.models.cpu_generator_stats import CpuGeneratorStats
 from client.models.cpu_generator_target_stats import CpuGeneratorTargetStats
 from client.models.cpu_info_result import CpuInfoResult
-from client.models.duration_remainder import DurationRemainder
 from client.models.interface import Interface
 from client.models.interface_config import InterfaceConfig
 from client.models.interface_protocol_config import InterfaceProtocolConfig
@@ -163,6 +162,7 @@ from client.models.time_source_stats_ntp import TimeSourceStatsNtp
 from client.models.toggle_packet_generators_request import TogglePacketGeneratorsRequest
 from client.models.traffic_definition import TrafficDefinition
 from client.models.traffic_duration import TrafficDuration
+from client.models.traffic_duration_remainder import TrafficDurationRemainder
 from client.models.traffic_duration_time import TrafficDurationTime
 from client.models.traffic_length import TrafficLength
 from client.models.traffic_length_sequence import TrafficLengthSequence
