@@ -66,24 +66,6 @@ std::string trim(const std::string& s)
     return std::string(start, end + 1);
 }
 
-std::string to_string(compare_op op)
-{
-    switch (op) {
-    case compare_op::EQ:
-        return "==";
-    case compare_op::NEQ:
-        return "!=";
-    case compare_op::LT:
-        return "<";
-    case compare_op::LTE:
-        return "<=";
-    case compare_op::GT:
-        return ">";
-    case compare_op::GTE:
-        return ">=";
-    }
-}
-
 std::string to_string(binary_logical_op op)
 {
     switch (op) {
@@ -102,10 +84,7 @@ std::string to_string(unary_logical_op op)
     }
 }
 
-std::string generic_match_expr::to_string() const
-{
-    return "(" + field->to_string() + ")";
-}
+std::string generic_match_expr::to_string() const { return "(" + str + ")"; }
 
 std::string valid_match_expr::to_string() const
 {
@@ -145,12 +124,6 @@ std::string signature_match_expr::to_string() const
     }
     str += std::string(")");
     return str;
-}
-
-std::string compare_match_expr::to_string() const
-{
-    return "(" + lhs->to_string() + " " + bpf::to_string(op) + " "
-           + rhs->to_string() + ")";
 }
 
 std::string unary_logical_expr::to_string() const
@@ -296,26 +269,6 @@ bool is_compare_op(const token_type& t)
     return (t == token_type::EQ || t == token_type::NEQ || t == token_type::GT
             || t == token_type::GTE || t == token_type::LT
             || t == token_type::LTE);
-}
-
-compare_op to_compare_op(const token_type& t)
-{
-    switch (t) {
-    case token_type::EQ:
-        return compare_op::EQ;
-    case token_type::NEQ:
-        return compare_op::NEQ;
-    case token_type::GT:
-        return compare_op::GT;
-    case token_type::GTE:
-        return compare_op::GTE;
-    case token_type::LT:
-        return compare_op::LT;
-    case token_type::LTE:
-        return compare_op::LTE;
-    default:
-        throw std::runtime_error("Can not convert token to compare_op");
-    }
 }
 
 void expr_accum(std::unique_ptr<expr>& accum,
@@ -519,7 +472,7 @@ private:
         return std::make_unique<signature_match_expr>(stream_id);
     }
 
-    std::unique_ptr<value> parse_match_expr_term()
+    std::string parse_match_expr_term()
     {
         std::string term_str;
         bool done = false;
@@ -539,14 +492,14 @@ private:
                     throw std::runtime_error("Missing )");
                 }
                 --m_paren_level;
-                term_str.append("(" + sub_expr->to_string() + ")");
+                term_str.append("(" + sub_expr + ")");
                 consume();
             } break;
             case token_type::RPAREN: {
                 if (m_paren_level <= 0) {
                     throw std::runtime_error("Mismatched parenthesis");
                 }
-                return std::make_unique<value>(term_str);
+                return term_str;
             } break;
             case token_type::AND:
             case token_type::OR:
@@ -572,20 +525,20 @@ private:
         if (term_str.empty()) {
             throw std::runtime_error("Error parsing match expr term");
         }
-        return std::make_unique<value>(term_str);
+        return term_str;
     }
 
     std::unique_ptr<expr> parse_match_expr()
     {
         auto lhs = parse_match_expr_term();
         if (is_compare_op(m_token.type)) {
-            auto op = to_compare_op(m_token.type);
+            auto op = m_token.value;
             consume();
             auto rhs = parse_match_expr_term();
-            return std::make_unique<compare_match_expr>(
-                std::move(lhs), std::move(rhs), op);
+            return std::make_unique<generic_match_expr>(lhs + " " + op + " "
+                                                        + rhs);
         }
-        return std::make_unique<generic_match_expr>(std::move(lhs));
+        return std::make_unique<generic_match_expr>(lhs);
     }
 
     void consume() { m_token = m_tokenizer.get_next(); }
@@ -603,48 +556,48 @@ std::unique_ptr<expr> bpf_parse_string(std::string_view str)
     return parser.parse();
 }
 
-bool is_special_term(const term* t)
+bool is_special(const expr* e)
 {
-    return (dynamic_cast<const valid_match_expr*>(t)
-            || dynamic_cast<const signature_match_expr*>(t));
+    return (dynamic_cast<const valid_match_expr*>(e)
+            || dynamic_cast<const signature_match_expr*>(e));
 }
 
-bool has_special_terms(const term* t)
+bool has_special(const expr* e)
 {
-    if (is_special_term(t)) return true;
+    if (is_special(e)) return true;
 
-    for (auto child : t->get_children()) {
-        if (has_special_terms(child)) return true;
+    for (auto child : e->get_children()) {
+        if (has_special(child)) return true;
     }
     return false;
 }
 
-bool has_all_special_terms(const term* t)
+bool has_all_special(const expr* e)
 {
-    if (is_special_term(t)) return true;
+    if (is_special(e)) return true;
 
-    auto children = t->get_children();
+    auto children = e->get_children();
     if (children.empty()) return false;
 
     for (auto child : children) {
-        if (!has_all_special_terms(child)) return false;
+        if (!has_all_special(child)) return false;
     }
     return true;
 }
 
-bool is_logical_expr(term* t)
+bool is_logical_expr(const expr* e)
 {
-    return (dynamic_cast<logical_expr*>(t) != nullptr);
+    return (dynamic_cast<const logical_expr*>(e) != nullptr);
 }
 
-void expr_move_target_to_lhs(binary_logical_expr& expr, term* target)
+void expr_move_target_to_lhs(binary_logical_expr& bexpr, expr* target)
 {
-    if (expr.rhs.get() == target) { std::swap(expr.lhs, expr.rhs); }
+    if (bexpr.rhs.get() == target) { std::swap(bexpr.lhs, bexpr.rhs); }
 }
 
-void expr_move_target_to_rhs(binary_logical_expr& expr, term* target)
+void expr_move_target_to_rhs(binary_logical_expr& bexpr, expr* target)
 {
-    if (expr.lhs.get() == target) { std::swap(expr.lhs, expr.rhs); }
+    if (bexpr.lhs.get() == target) { std::swap(bexpr.lhs, bexpr.rhs); }
 }
 
 void expr_toggle_binary_op(binary_logical_expr& expr)
@@ -656,13 +609,13 @@ void expr_toggle_binary_op(binary_logical_expr& expr)
 bool expr_is_special_ok(expr* ex)
 {
     if (auto bexpr = dynamic_cast<binary_logical_expr*>(ex)) {
-        bool lhs_has_special = has_special_terms(bexpr->lhs.get());
-        bool rhs_has_special = has_special_terms(bexpr->rhs.get());
+        bool lhs_has_special = has_special(bexpr->lhs.get());
+        bool rhs_has_special = has_special(bexpr->rhs.get());
 
         if (!lhs_has_special && !rhs_has_special)
             return true; // All normal expressions
 
-        bool lhs_has_all_special = has_all_special_terms(bexpr->lhs.get());
+        bool lhs_has_all_special = has_all_special(bexpr->lhs.get());
         if (!lhs_has_all_special)
             return false; // LHS has special and normal expressions
 
@@ -670,15 +623,15 @@ bool expr_is_special_ok(expr* ex)
             return true; // LHS has all special and RHS has no special
                          // expressions
 
-        bool rhs_has_all_special = has_all_special_terms(bexpr->rhs.get());
+        bool rhs_has_all_special = has_all_special(bexpr->rhs.get());
         if (!rhs_has_all_special)
             return false; // RHS has special and normal expressions
 
         return true;
     }
     if (auto uexpr = dynamic_cast<unary_logical_expr*>(ex)) {
-        if (has_special_terms(uexpr->expr.get())
-            && !has_all_special_terms(uexpr->expr.get())) {
+        if (has_special(uexpr->expr.get())
+            && !has_all_special(uexpr->expr.get())) {
             return false;
         }
         return true;
@@ -744,19 +697,19 @@ std::unique_ptr<expr> bpf_split_special(std::unique_ptr<expr>&& ex)
     }
 
     if (auto bexpr = dynamic_cast<binary_logical_expr*>(result.get())) {
-        bool lhs_has_special = has_special_terms(bexpr->lhs.get());
-        bool rhs_has_special = has_special_terms(bexpr->rhs.get());
+        bool lhs_has_special = has_special(bexpr->lhs.get());
+        bool rhs_has_special = has_special(bexpr->rhs.get());
         if (rhs_has_special && !lhs_has_special) {
             std::swap(bexpr->lhs, bexpr->rhs);
             std::swap(lhs_has_special, rhs_has_special);
         }
-        if (lhs_has_special && !has_all_special_terms(bexpr->lhs.get())) {
+        if (lhs_has_special && !has_all_special(bexpr->lhs.get())) {
             // Split normal terms into RHS of child LHS expression
             bexpr->lhs = bpf_split_special(std::move(bexpr->lhs));
             bexpr->lhs->parent = bexpr;
             if (auto bexpr_child =
                     dynamic_cast<binary_logical_expr*>(bexpr->lhs.get())) {
-                if (has_special_terms(bexpr_child->rhs.get())) {
+                if (has_special(bexpr_child->rhs.get())) {
                     throw std::runtime_error(split_err_str);
                 }
                 if (bexpr->op != bexpr_child->op) {

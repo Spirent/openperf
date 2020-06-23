@@ -8,35 +8,18 @@
 
 namespace openperf::packetio::bpf {
 
-class term
+class expr
 {
 public:
-    virtual ~term() = default;
-    virtual term* get_parent() const { return parent; }
-    virtual std::vector<term*> get_children() const
+    virtual ~expr() = default;
+    virtual expr* get_parent() const { return parent; }
+    virtual std::vector<expr*> get_children() const
     {
-        return std::vector<term*>();
+        return std::vector<expr*>();
     }
     virtual std::string to_string() const = 0;
 
-    term* parent = nullptr;
-};
-
-class value : public term
-{
-public:
-    value(std::string_view v)
-        : str(v)
-    {}
-
-    std::string to_string() const override { return str; }
-
-    std::string str;
-};
-
-class expr : public term
-{
-public:
+    expr* parent = nullptr;
 };
 
 class match_expr : public expr
@@ -45,17 +28,13 @@ class match_expr : public expr
 class generic_match_expr : public match_expr
 {
 public:
-    generic_match_expr(std::unique_ptr<value>&& f)
-        : field(std::forward<std::unique_ptr<value>>(f))
-    {
-        if (field) field->parent = this;
-    }
-
-    std::vector<term*> get_children() const override { return {field.get()}; }
+    generic_match_expr(std::string_view v)
+        : str(v)
+    {}
 
     std::string to_string() const override;
 
-    std::unique_ptr<value> field;
+    std::string str;
 };
 
 class valid_match_expr : public match_expr
@@ -94,35 +73,8 @@ public:
     std::optional<stream_id_range> stream_id;
 };
 
-enum class compare_op { EQ, NEQ, LT, LTE, GT, GTE };
 enum class binary_logical_op { AND, OR };
 enum class unary_logical_op { NOT };
-
-class compare_match_expr : public match_expr
-{
-public:
-    compare_match_expr(std::unique_ptr<value>&& l,
-                       std::unique_ptr<value>&& r,
-                       compare_op o)
-        : lhs(std::forward<std::unique_ptr<value>>(l))
-        , rhs(std::forward<std::unique_ptr<value>>(r))
-        , op(o)
-    {
-        if (lhs) lhs->parent = this;
-        if (rhs) rhs->parent = this;
-    }
-
-    std::vector<term*> get_children() const override
-    {
-        return {lhs.get(), rhs.get()};
-    }
-
-    std::string to_string() const override;
-
-    std::unique_ptr<value> lhs;
-    std::unique_ptr<value> rhs;
-    compare_op op; /* ==, !=, <, <=, >, >= */
-};
 
 class logical_expr : public expr
 {};
@@ -137,7 +89,7 @@ public:
         if (expr) expr->parent = this;
     }
 
-    std::vector<term*> get_children() const override { return {expr.get()}; }
+    std::vector<expr*> get_children() const override { return {expr.get()}; }
 
     std::string to_string() const override;
 
@@ -159,7 +111,7 @@ public:
         if (rhs) rhs->parent = this;
     }
 
-    std::vector<term*> get_children() const override
+    std::vector<expr*> get_children() const override
     {
         return {lhs.get(), rhs.get()};
     }
@@ -175,9 +127,11 @@ std::unique_ptr<expr> bpf_parse_string(std::string_view str);
 
 std::unique_ptr<expr> bpf_split_special(std::unique_ptr<expr>&& expr);
 
-bool is_special_term(const term* t);
+bool is_special(const expr* e);
 
-bool has_special_terms(const term* t);
+bool has_special(const expr* e);
+
+bool has_all_special(const expr* e);
 
 } // namespace openperf::packetio::bpf
 

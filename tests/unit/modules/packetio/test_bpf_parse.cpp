@@ -77,7 +77,7 @@ TEST_CASE("bpf_split_special", "[bpf]")
                     ->to_string()
                 == "(signature)");
         REQUIRE(bpf_split_special(
-                    bpf_parse_string("not not signature and length = 1000"))
+                    bpf_parse_string("not not signature and length == 1000"))
                     ->to_string()
                 == "((signature) && (length == 1000))");
         REQUIRE(bpf_split_special(
