@@ -473,12 +473,6 @@ definitions:
     $ref: ./modules/packetio.yaml#/definitions/StackStats
 
   ###
-  # Packet Module shared definitions
-  ###
-  DurationRemainder:
-    $ref: ./modules/packet/common.yaml#/definitions/DurationRemainder
-
-  ###
   # Packet Module protocol definitions
   ###
   PacketProtocolEthernet:
@@ -552,6 +546,12 @@ definitions:
 
   TrafficDefinition:
     $ref: ./modules/packet/generator.yaml#/definitions/TrafficDefinition
+
+  TrafficDuration:
+    $ref: ./modules/packet/generator.yaml#/definitions/TrafficDuration
+
+  TrafficDurationRemainder:
+    $ref: ./modules/packet/generator.yaml#/definitions/TrafficDurationRemainder
 
   TrafficLength:
     $ref: ./modules/packet/generator.yaml#/definitions/TrafficLength

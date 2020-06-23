@@ -11,30 +11,30 @@
 */
 
 
-#include "DurationRemainder.h"
+#include "TrafficDurationRemainder.h"
 
 namespace swagger {
 namespace v1 {
 namespace model {
 
-DurationRemainder::DurationRemainder()
+TrafficDurationRemainder::TrafficDurationRemainder()
 {
     m_Unit = "";
-    m_Value = 0L;
+    m_Value = 0;
     m_ValueIsSet = false;
     
 }
 
-DurationRemainder::~DurationRemainder()
+TrafficDurationRemainder::~TrafficDurationRemainder()
 {
 }
 
-void DurationRemainder::validate()
+void TrafficDurationRemainder::validate()
 {
     // TODO: implement validation
 }
 
-nlohmann::json DurationRemainder::toJson() const
+nlohmann::json TrafficDurationRemainder::toJson() const
 {
     nlohmann::json val = nlohmann::json::object();
 
@@ -48,7 +48,7 @@ nlohmann::json DurationRemainder::toJson() const
     return val;
 }
 
-void DurationRemainder::fromJson(nlohmann::json& val)
+void TrafficDurationRemainder::fromJson(nlohmann::json& val)
 {
     setUnit(val.at("unit"));
     if(val.find("value") != val.end())
@@ -59,29 +59,29 @@ void DurationRemainder::fromJson(nlohmann::json& val)
 }
 
 
-std::string DurationRemainder::getUnit() const
+std::string TrafficDurationRemainder::getUnit() const
 {
     return m_Unit;
 }
-void DurationRemainder::setUnit(std::string value)
+void TrafficDurationRemainder::setUnit(std::string value)
 {
     m_Unit = value;
     
 }
-int64_t DurationRemainder::getValue() const
+int32_t TrafficDurationRemainder::getValue() const
 {
     return m_Value;
 }
-void DurationRemainder::setValue(int64_t value)
+void TrafficDurationRemainder::setValue(int32_t value)
 {
     m_Value = value;
     m_ValueIsSet = true;
 }
-bool DurationRemainder::valueIsSet() const
+bool TrafficDurationRemainder::valueIsSet() const
 {
     return m_ValueIsSet;
 }
-void DurationRemainder::unsetValue()
+void TrafficDurationRemainder::unsetValue()
 {
     m_ValueIsSet = false;
 }

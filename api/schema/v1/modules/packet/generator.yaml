@@ -541,7 +541,7 @@ definitions:
         items:
           type: string
       remaining:
-        $ref: ./common.yaml#/definitions/DurationRemainder
+        $ref: "#/definitions/TrafficDurationRemainder"
     required:
       - id
       - active
@@ -679,6 +679,25 @@ definitions:
         required:
           - value
           - units
+
+  TrafficDurationRemainder:
+    type: object
+    description: Specifies how much time remains for an object to be active
+    properties:
+      unit:
+        type: string
+        description: Specifies how the duration is measured
+        enum:
+          - indefinite
+          - frames
+          - seconds
+      value:
+        type: integer
+        description: Specifies the remaining duration for definite durations
+        format: int32
+        minimum: 0
+    required:
+      - unit
 
   TrafficLength:
     type: object

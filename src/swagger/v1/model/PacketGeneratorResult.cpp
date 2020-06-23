@@ -86,7 +86,7 @@ void PacketGeneratorResult::fromJson(nlohmann::json& val)
     {
         if(!val["remaining"].is_null())
         {
-            std::shared_ptr<DurationRemainder> newItem(new DurationRemainder());
+            std::shared_ptr<TrafficDurationRemainder> newItem(new TrafficDurationRemainder());
             newItem->fromJson(val["remaining"]);
             setRemaining( newItem );
         }
@@ -144,11 +144,11 @@ std::vector<std::string>& PacketGeneratorResult::getFlows()
 {
     return m_Flows;
 }
-std::shared_ptr<DurationRemainder> PacketGeneratorResult::getRemaining() const
+std::shared_ptr<TrafficDurationRemainder> PacketGeneratorResult::getRemaining() const
 {
     return m_Remaining;
 }
-void PacketGeneratorResult::setRemaining(std::shared_ptr<DurationRemainder> value)
+void PacketGeneratorResult::setRemaining(std::shared_ptr<TrafficDurationRemainder> value)
 {
     m_Remaining = value;
     m_RemainingIsSet = true;
