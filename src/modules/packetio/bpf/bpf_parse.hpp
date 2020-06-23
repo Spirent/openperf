@@ -12,14 +12,11 @@ class expr
 {
 public:
     virtual ~expr() = default;
-    virtual expr* get_parent() const { return parent; }
     virtual std::vector<expr*> get_children() const
     {
         return std::vector<expr*>();
     }
     virtual std::string to_string() const = 0;
-
-    expr* parent = nullptr;
 };
 
 class match_expr : public expr
@@ -85,9 +82,7 @@ public:
     unary_logical_expr(std::unique_ptr<expr>&& e, unary_logical_op o)
         : expr(std::forward<std::unique_ptr<class expr>>(e))
         , op(o)
-    {
-        if (expr) expr->parent = this;
-    }
+    {}
 
     std::vector<expr*> get_children() const override { return {expr.get()}; }
 
@@ -106,10 +101,7 @@ public:
         : lhs(std::forward<std::unique_ptr<expr>>(l))
         , rhs(std::forward<std::unique_ptr<expr>>(r))
         , op(o)
-    {
-        if (lhs) lhs->parent = this;
-        if (rhs) rhs->parent = this;
-    }
+    {}
 
     std::vector<expr*> get_children() const override
     {

@@ -650,9 +650,7 @@ std::unique_ptr<expr> expr_remove_double_not(std::unique_ptr<expr>&& ex)
             if (uexpr->op == unary_logical_op::NOT
                 && uexpr_child->op == unary_logical_op::NOT) {
                 // Get rid of double NOT
-                auto parent = result->parent;
                 result = std::move(uexpr_child->expr);
-                result->parent = parent;
                 return expr_remove_double_not(std::move(result));
             }
         }
@@ -661,9 +659,7 @@ std::unique_ptr<expr> expr_remove_double_not(std::unique_ptr<expr>&& ex)
     }
     if (auto bexpr = dynamic_cast<binary_logical_expr*>(result.get())) {
         bexpr->lhs = expr_remove_double_not(std::move(bexpr->lhs));
-        bexpr->lhs->parent = bexpr;
         bexpr->rhs = expr_remove_double_not(std::move(bexpr->rhs));
-        bexpr->rhs->parent = bexpr;
     }
     return result;
 }
@@ -688,9 +684,7 @@ std::unique_ptr<expr> bpf_split_special(std::unique_ptr<expr>&& ex)
                 std::move(bexpr->lhs), unary_logical_op::NOT);
             bexpr->rhs = std::make_unique<unary_logical_expr>(
                 std::move(bexpr->rhs), unary_logical_op::NOT);
-            auto parent = result->parent;
             result = std::move(uexpr->expr);
-            result->parent = parent;
             return bpf_split_special(std::move(result));
         }
         throw std::runtime_error(split_err_str);
@@ -706,7 +700,6 @@ std::unique_ptr<expr> bpf_split_special(std::unique_ptr<expr>&& ex)
         if (lhs_has_special && !has_all_special(bexpr->lhs.get())) {
             // Split normal terms into RHS of child LHS expression
             bexpr->lhs = bpf_split_special(std::move(bexpr->lhs));
-            bexpr->lhs->parent = bexpr;
             if (auto bexpr_child =
                     dynamic_cast<binary_logical_expr*>(bexpr->lhs.get())) {
                 if (has_special(bexpr_child->rhs.get())) {
@@ -726,7 +719,6 @@ std::unique_ptr<expr> bpf_split_special(std::unique_ptr<expr>&& ex)
         if (rhs_has_special) {
             // Split special terms into LHS of child RHS expression
             bexpr->rhs = bpf_split_special(std::move(bexpr->rhs));
-            bexpr->rhs->parent = bexpr;
             if (auto bexpr_child =
                     dynamic_cast<binary_logical_expr*>(bexpr->rhs.get())) {
                 if (bexpr->op != bexpr_child->op) {
