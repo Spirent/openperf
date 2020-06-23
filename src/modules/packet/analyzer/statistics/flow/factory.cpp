@@ -38,34 +38,34 @@ constexpr auto to_value(openperf::utils::bit_flags<flow_flags> flags)
 template <int FlagValue> auto make_counter_tuple()
 {
     /* Basic stats are always required */
-    auto t1 = std::tuple<counter>{};
+    auto t1 = std::tuple<frame_counter>{};
 
-    auto t2 = maybe_tuple_cat<static_cast<bool>(
+    auto t2 = packet::statistics::maybe_tuple_cat<static_cast<bool>(
         FlagValue & to_value(flow_flags::interarrival))>(
         t1, std::tuple<interarrival>{});
 
-    auto t3 = maybe_tuple_cat<static_cast<bool>(
+    auto t3 = packet::statistics::maybe_tuple_cat<static_cast<bool>(
         FlagValue & to_value(flow_flags::frame_length))>(
         t2, std::tuple<frame_length>{});
 
-    auto t4 = maybe_tuple_cat<static_cast<bool>(
+    auto t4 = packet::statistics::maybe_tuple_cat<static_cast<bool>(
         FlagValue & to_value(flow_flags::sequencing))>(
         t3, std::tuple<sequencing>{});
 
-    auto t5 = maybe_tuple_cat<static_cast<bool>(
+    auto t5 = packet::statistics::maybe_tuple_cat<static_cast<bool>(
         FlagValue & to_value(flow_flags::latency))>(t4, std::tuple<latency>{});
 
     /* RFC jitter stats require latency stats as well */
-    auto t6 = maybe_tuple_cat<static_cast<bool>(
+    auto t6 = packet::statistics::maybe_tuple_cat<static_cast<bool>(
         FlagValue & to_value(flow_flags::jitter_rfc))>(
         t5, std::tuple<latency, jitter_rfc>{});
 
     /* IPDV jitter stats require both latency and sequencing */
-    auto t7 = maybe_tuple_cat<static_cast<bool>(
+    auto t7 = packet::statistics::maybe_tuple_cat<static_cast<bool>(
         FlagValue & to_value(flow_flags::jitter_ipdv))>(
         t6, std::tuple<sequencing, latency, jitter_ipdv>{});
 
-    auto t8 = maybe_tuple_cat<static_cast<bool>(
+    auto t8 = packet::statistics::maybe_tuple_cat<static_cast<bool>(
         FlagValue & to_value(flow_flags::header))>(t7, std::tuple<header>{});
 
     /*

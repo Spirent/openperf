@@ -179,12 +179,12 @@ CUSTOM_PROTOCOL_WITH_MODIFIERS = [
 # Analyzer configurations
 ###
 ANALYZER_CONFIG_NO_SIGS = {
-    'protocol': ['ethernet', 'ip', 'protocol'],
+    'protocol': ['ethernet', 'ip', 'transport'],
     'flow': ['frame_count', 'frame_length', 'interarrival_time']
 }
 
 ANALYZER_CONFIG_SIGS = {
-    'protocol': ['ethernet', 'ip', 'protocol'],
+    'protocol': ['ethernet', 'ip', 'transport'],
     'flow': ['frame_count', 'frame_length', 'interarrival_time',
              'jitter_ipdv', 'jitter_rfc', 'latency', 'advanced_sequencing']
 }
@@ -539,8 +539,8 @@ with description('Packet back to back', 'packet_b2b') as self:
                     expect(ana_result.protocol_counters.ethernet.vlan).to(equal(exp_frame_count))
                     expect(ana_result.protocol_counters.ip.ipv4).to(equal(exp_frame_count))
                     expect(ana_result.protocol_counters.ip.ipv6).to(equal(0))
-                    expect(ana_result.protocol_counters.protocol.udp).to(equal(exp_frame_count))
-                    expect(ana_result.protocol_counters.protocol.tcp).to(equal(0))
+                    expect(ana_result.protocol_counters.transport.udp).to(equal(exp_frame_count))
+                    expect(ana_result.protocol_counters.transport.tcp).to(equal(0))
 
                     # Check analyzer flow counters
                     expect(ana_result.flow_counters.frame_count).to(equal(exp_frame_count))
@@ -578,8 +578,8 @@ with description('Packet back to back', 'packet_b2b') as self:
                     expect(ana_result.protocol_counters.ethernet.vlan).to(equal(0))
                     expect(ana_result.protocol_counters.ip.ipv4).to(equal(exp_frame_count))
                     expect(ana_result.protocol_counters.ip.ipv6).to(equal(0))
-                    expect(ana_result.protocol_counters.protocol.udp).to(equal(exp_frame_count))
-                    expect(ana_result.protocol_counters.protocol.tcp).to(equal(0))
+                    expect(ana_result.protocol_counters.transport.udp).to(equal(exp_frame_count))
+                    expect(ana_result.protocol_counters.transport.tcp).to(equal(0))
 
                     # Check analyzer flow counters; all stats should be present
                     expect(ana_result.flow_counters.frame_count).to(equal(exp_frame_count))
@@ -622,8 +622,8 @@ with description('Packet back to back', 'packet_b2b') as self:
                     expect(ana_result.protocol_counters.ethernet.mpls).to(equal(0))
                     expect(ana_result.protocol_counters.ip.ipv4).to(equal(0))
                     expect(ana_result.protocol_counters.ip.ipv6).to(equal(0))
-                    expect(ana_result.protocol_counters.protocol.udp).to(equal(0))
-                    expect(ana_result.protocol_counters.protocol.tcp).to(equal(0))
+                    expect(ana_result.protocol_counters.transport.udp).to(equal(0))
+                    expect(ana_result.protocol_counters.transport.tcp).to(equal(0))
 
                     # Check generator flow counters
                     expect(gen_result.flow_counters.packets_actual).to(equal(exp_frame_count))
@@ -653,8 +653,8 @@ with description('Packet back to back', 'packet_b2b') as self:
                 expect(ana_result.protocol_counters.ethernet.vlan).to(equal(exp_flow1_count))
                 expect(ana_result.protocol_counters.ip.ipv4).to(equal(exp_flow1_count))
                 expect(ana_result.protocol_counters.ip.ipv6).to(equal(exp_flow2_count))
-                expect(ana_result.protocol_counters.protocol.udp).to(equal(exp_flow1_count))
-                expect(ana_result.protocol_counters.protocol.tcp).to(equal(exp_flow2_count))
+                expect(ana_result.protocol_counters.transport.udp).to(equal(exp_flow1_count))
+                expect(ana_result.protocol_counters.transport.tcp).to(equal(exp_flow2_count))
 
                 # Check analyzer flow counters
                 expect(ana_result.flow_counters.frame_count).to(equal(exp_frame_count))

@@ -1,7 +1,7 @@
 #include "packet/analyzer/api.hpp"
 
 #include "packet/analyzer/statistics/generic_flow_counters.hpp"
-#include "packet/analyzer/statistics/generic_protocol_counters.hpp"
+#include "packet/statistics/generic_protocol_counters.hpp"
 
 #include "swagger/v1/model/PacketAnalyzer.h"
 
@@ -24,8 +24,8 @@ bool is_valid(const analyzer_type& analyzer, std::vector<std::string>& errors)
     assert(config);
 
     for (auto& item : config->getProtocolCounters()) {
-        if (statistics::to_protocol_flag(item)
-            == statistics::protocol_flags::none) {
+        if (packet::statistics::to_protocol_flag(item)
+            == packet::statistics::protocol_flags::none) {
             errors.emplace_back("Protocol counter (" + item
                                 + ") is not recognized.");
         }
