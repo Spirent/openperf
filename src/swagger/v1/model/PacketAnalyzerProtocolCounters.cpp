@@ -21,11 +21,11 @@ PacketAnalyzerProtocolCounters::PacketAnalyzerProtocolCounters()
 {
     m_EthernetIsSet = false;
     m_IpIsSet = false;
-    m_ProtocolIsSet = false;
+    m_TransportIsSet = false;
     m_TunnelIsSet = false;
     m_Inner_ethernetIsSet = false;
     m_Inner_ipIsSet = false;
-    m_Inner_protocolIsSet = false;
+    m_Inner_transportIsSet = false;
     
 }
 
@@ -50,9 +50,9 @@ nlohmann::json PacketAnalyzerProtocolCounters::toJson() const
     {
         val["ip"] = ModelBase::toJson(m_Ip);
     }
-    if(m_ProtocolIsSet)
+    if(m_TransportIsSet)
     {
-        val["protocol"] = ModelBase::toJson(m_Protocol);
+        val["transport"] = ModelBase::toJson(m_Transport);
     }
     if(m_TunnelIsSet)
     {
@@ -66,9 +66,9 @@ nlohmann::json PacketAnalyzerProtocolCounters::toJson() const
     {
         val["inner_ip"] = ModelBase::toJson(m_Inner_ip);
     }
-    if(m_Inner_protocolIsSet)
+    if(m_Inner_transportIsSet)
     {
-        val["inner_protocol"] = ModelBase::toJson(m_Inner_protocol);
+        val["inner_transport"] = ModelBase::toJson(m_Inner_transport);
     }
     
 
@@ -81,7 +81,7 @@ void PacketAnalyzerProtocolCounters::fromJson(nlohmann::json& val)
     {
         if(!val["ethernet"].is_null())
         {
-            std::shared_ptr<PacketAnalyzerProtocolCounters_ethernet> newItem(new PacketAnalyzerProtocolCounters_ethernet());
+            std::shared_ptr<PacketEthernetProtocolCounters> newItem(new PacketEthernetProtocolCounters());
             newItem->fromJson(val["ethernet"]);
             setEthernet( newItem );
         }
@@ -91,19 +91,19 @@ void PacketAnalyzerProtocolCounters::fromJson(nlohmann::json& val)
     {
         if(!val["ip"].is_null())
         {
-            std::shared_ptr<PacketAnalyzerProtocolCounters_ip> newItem(new PacketAnalyzerProtocolCounters_ip());
+            std::shared_ptr<PacketIpProtocolCounters> newItem(new PacketIpProtocolCounters());
             newItem->fromJson(val["ip"]);
             setIp( newItem );
         }
         
     }
-    if(val.find("protocol") != val.end())
+    if(val.find("transport") != val.end())
     {
-        if(!val["protocol"].is_null())
+        if(!val["transport"].is_null())
         {
-            std::shared_ptr<PacketAnalyzerProtocolCounters_protocol> newItem(new PacketAnalyzerProtocolCounters_protocol());
-            newItem->fromJson(val["protocol"]);
-            setProtocol( newItem );
+            std::shared_ptr<PacketTransportProtocolCounters> newItem(new PacketTransportProtocolCounters());
+            newItem->fromJson(val["transport"]);
+            setTransport( newItem );
         }
         
     }
@@ -111,7 +111,7 @@ void PacketAnalyzerProtocolCounters::fromJson(nlohmann::json& val)
     {
         if(!val["tunnel"].is_null())
         {
-            std::shared_ptr<PacketAnalyzerProtocolCounters_tunnel> newItem(new PacketAnalyzerProtocolCounters_tunnel());
+            std::shared_ptr<PacketTunnelProtocolCounters> newItem(new PacketTunnelProtocolCounters());
             newItem->fromJson(val["tunnel"]);
             setTunnel( newItem );
         }
@@ -121,7 +121,7 @@ void PacketAnalyzerProtocolCounters::fromJson(nlohmann::json& val)
     {
         if(!val["inner_ethernet"].is_null())
         {
-            std::shared_ptr<PacketAnalyzerProtocolCounters_inner_ethernet> newItem(new PacketAnalyzerProtocolCounters_inner_ethernet());
+            std::shared_ptr<PacketInnerEthernetProtocolCounters> newItem(new PacketInnerEthernetProtocolCounters());
             newItem->fromJson(val["inner_ethernet"]);
             setInnerEthernet( newItem );
         }
@@ -131,19 +131,19 @@ void PacketAnalyzerProtocolCounters::fromJson(nlohmann::json& val)
     {
         if(!val["inner_ip"].is_null())
         {
-            std::shared_ptr<PacketAnalyzerProtocolCounters_inner_ip> newItem(new PacketAnalyzerProtocolCounters_inner_ip());
+            std::shared_ptr<PacketInnerIpProtocolCounters> newItem(new PacketInnerIpProtocolCounters());
             newItem->fromJson(val["inner_ip"]);
             setInnerIp( newItem );
         }
         
     }
-    if(val.find("inner_protocol") != val.end())
+    if(val.find("inner_transport") != val.end())
     {
-        if(!val["inner_protocol"].is_null())
+        if(!val["inner_transport"].is_null())
         {
-            std::shared_ptr<PacketAnalyzerProtocolCounters_inner_protocol> newItem(new PacketAnalyzerProtocolCounters_inner_protocol());
-            newItem->fromJson(val["inner_protocol"]);
-            setInnerProtocol( newItem );
+            std::shared_ptr<PacketInnerTransportProtocolCounters> newItem(new PacketInnerTransportProtocolCounters());
+            newItem->fromJson(val["inner_transport"]);
+            setInnerTransport( newItem );
         }
         
     }
@@ -151,11 +151,11 @@ void PacketAnalyzerProtocolCounters::fromJson(nlohmann::json& val)
 }
 
 
-std::shared_ptr<PacketAnalyzerProtocolCounters_ethernet> PacketAnalyzerProtocolCounters::getEthernet() const
+std::shared_ptr<PacketEthernetProtocolCounters> PacketAnalyzerProtocolCounters::getEthernet() const
 {
     return m_Ethernet;
 }
-void PacketAnalyzerProtocolCounters::setEthernet(std::shared_ptr<PacketAnalyzerProtocolCounters_ethernet> value)
+void PacketAnalyzerProtocolCounters::setEthernet(std::shared_ptr<PacketEthernetProtocolCounters> value)
 {
     m_Ethernet = value;
     m_EthernetIsSet = true;
@@ -168,11 +168,11 @@ void PacketAnalyzerProtocolCounters::unsetEthernet()
 {
     m_EthernetIsSet = false;
 }
-std::shared_ptr<PacketAnalyzerProtocolCounters_ip> PacketAnalyzerProtocolCounters::getIp() const
+std::shared_ptr<PacketIpProtocolCounters> PacketAnalyzerProtocolCounters::getIp() const
 {
     return m_Ip;
 }
-void PacketAnalyzerProtocolCounters::setIp(std::shared_ptr<PacketAnalyzerProtocolCounters_ip> value)
+void PacketAnalyzerProtocolCounters::setIp(std::shared_ptr<PacketIpProtocolCounters> value)
 {
     m_Ip = value;
     m_IpIsSet = true;
@@ -185,28 +185,28 @@ void PacketAnalyzerProtocolCounters::unsetIp()
 {
     m_IpIsSet = false;
 }
-std::shared_ptr<PacketAnalyzerProtocolCounters_protocol> PacketAnalyzerProtocolCounters::getProtocol() const
+std::shared_ptr<PacketTransportProtocolCounters> PacketAnalyzerProtocolCounters::getTransport() const
 {
-    return m_Protocol;
+    return m_Transport;
 }
-void PacketAnalyzerProtocolCounters::setProtocol(std::shared_ptr<PacketAnalyzerProtocolCounters_protocol> value)
+void PacketAnalyzerProtocolCounters::setTransport(std::shared_ptr<PacketTransportProtocolCounters> value)
 {
-    m_Protocol = value;
-    m_ProtocolIsSet = true;
+    m_Transport = value;
+    m_TransportIsSet = true;
 }
-bool PacketAnalyzerProtocolCounters::protocolIsSet() const
+bool PacketAnalyzerProtocolCounters::transportIsSet() const
 {
-    return m_ProtocolIsSet;
+    return m_TransportIsSet;
 }
-void PacketAnalyzerProtocolCounters::unsetProtocol()
+void PacketAnalyzerProtocolCounters::unsetTransport()
 {
-    m_ProtocolIsSet = false;
+    m_TransportIsSet = false;
 }
-std::shared_ptr<PacketAnalyzerProtocolCounters_tunnel> PacketAnalyzerProtocolCounters::getTunnel() const
+std::shared_ptr<PacketTunnelProtocolCounters> PacketAnalyzerProtocolCounters::getTunnel() const
 {
     return m_Tunnel;
 }
-void PacketAnalyzerProtocolCounters::setTunnel(std::shared_ptr<PacketAnalyzerProtocolCounters_tunnel> value)
+void PacketAnalyzerProtocolCounters::setTunnel(std::shared_ptr<PacketTunnelProtocolCounters> value)
 {
     m_Tunnel = value;
     m_TunnelIsSet = true;
@@ -219,11 +219,11 @@ void PacketAnalyzerProtocolCounters::unsetTunnel()
 {
     m_TunnelIsSet = false;
 }
-std::shared_ptr<PacketAnalyzerProtocolCounters_inner_ethernet> PacketAnalyzerProtocolCounters::getInnerEthernet() const
+std::shared_ptr<PacketInnerEthernetProtocolCounters> PacketAnalyzerProtocolCounters::getInnerEthernet() const
 {
     return m_Inner_ethernet;
 }
-void PacketAnalyzerProtocolCounters::setInnerEthernet(std::shared_ptr<PacketAnalyzerProtocolCounters_inner_ethernet> value)
+void PacketAnalyzerProtocolCounters::setInnerEthernet(std::shared_ptr<PacketInnerEthernetProtocolCounters> value)
 {
     m_Inner_ethernet = value;
     m_Inner_ethernetIsSet = true;
@@ -236,11 +236,11 @@ void PacketAnalyzerProtocolCounters::unsetInner_ethernet()
 {
     m_Inner_ethernetIsSet = false;
 }
-std::shared_ptr<PacketAnalyzerProtocolCounters_inner_ip> PacketAnalyzerProtocolCounters::getInnerIp() const
+std::shared_ptr<PacketInnerIpProtocolCounters> PacketAnalyzerProtocolCounters::getInnerIp() const
 {
     return m_Inner_ip;
 }
-void PacketAnalyzerProtocolCounters::setInnerIp(std::shared_ptr<PacketAnalyzerProtocolCounters_inner_ip> value)
+void PacketAnalyzerProtocolCounters::setInnerIp(std::shared_ptr<PacketInnerIpProtocolCounters> value)
 {
     m_Inner_ip = value;
     m_Inner_ipIsSet = true;
@@ -253,22 +253,22 @@ void PacketAnalyzerProtocolCounters::unsetInner_ip()
 {
     m_Inner_ipIsSet = false;
 }
-std::shared_ptr<PacketAnalyzerProtocolCounters_inner_protocol> PacketAnalyzerProtocolCounters::getInnerProtocol() const
+std::shared_ptr<PacketInnerTransportProtocolCounters> PacketAnalyzerProtocolCounters::getInnerTransport() const
 {
-    return m_Inner_protocol;
+    return m_Inner_transport;
 }
-void PacketAnalyzerProtocolCounters::setInnerProtocol(std::shared_ptr<PacketAnalyzerProtocolCounters_inner_protocol> value)
+void PacketAnalyzerProtocolCounters::setInnerTransport(std::shared_ptr<PacketInnerTransportProtocolCounters> value)
 {
-    m_Inner_protocol = value;
-    m_Inner_protocolIsSet = true;
+    m_Inner_transport = value;
+    m_Inner_transportIsSet = true;
 }
-bool PacketAnalyzerProtocolCounters::innerProtocolIsSet() const
+bool PacketAnalyzerProtocolCounters::innerTransportIsSet() const
 {
-    return m_Inner_protocolIsSet;
+    return m_Inner_transportIsSet;
 }
-void PacketAnalyzerProtocolCounters::unsetInner_protocol()
+void PacketAnalyzerProtocolCounters::unsetInner_transport()
 {
-    m_Inner_protocolIsSet = false;
+    m_Inner_transportIsSet = false;
 }
 
 }

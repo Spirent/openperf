@@ -31,51 +31,51 @@ class PacketAnalyzerProtocolCounters(object):
                             and the value is json key in definition.
     """
     swagger_types = {
-        'ethernet': 'PacketAnalyzerProtocolCountersEthernet',
-        'ip': 'PacketAnalyzerProtocolCountersIp',
-        'protocol': 'PacketAnalyzerProtocolCountersProtocol',
-        'tunnel': 'PacketAnalyzerProtocolCountersTunnel',
-        'inner_ethernet': 'PacketAnalyzerProtocolCountersInnerEthernet',
-        'inner_ip': 'PacketAnalyzerProtocolCountersInnerIp',
-        'inner_protocol': 'PacketAnalyzerProtocolCountersInnerProtocol'
+        'ethernet': 'PacketEthernetProtocolCounters',
+        'ip': 'PacketIpProtocolCounters',
+        'transport': 'PacketTransportProtocolCounters',
+        'tunnel': 'PacketTunnelProtocolCounters',
+        'inner_ethernet': 'PacketInnerEthernetProtocolCounters',
+        'inner_ip': 'PacketInnerIpProtocolCounters',
+        'inner_transport': 'PacketInnerTransportProtocolCounters'
     }
 
     attribute_map = {
         'ethernet': 'ethernet',
         'ip': 'ip',
-        'protocol': 'protocol',
+        'transport': 'transport',
         'tunnel': 'tunnel',
         'inner_ethernet': 'inner_ethernet',
         'inner_ip': 'inner_ip',
-        'inner_protocol': 'inner_protocol'
+        'inner_transport': 'inner_transport'
     }
 
-    def __init__(self, ethernet=None, ip=None, protocol=None, tunnel=None, inner_ethernet=None, inner_ip=None, inner_protocol=None):  # noqa: E501
+    def __init__(self, ethernet=None, ip=None, transport=None, tunnel=None, inner_ethernet=None, inner_ip=None, inner_transport=None):  # noqa: E501
         """PacketAnalyzerProtocolCounters - a model defined in Swagger"""  # noqa: E501
 
         self._ethernet = None
         self._ip = None
-        self._protocol = None
+        self._transport = None
         self._tunnel = None
         self._inner_ethernet = None
         self._inner_ip = None
-        self._inner_protocol = None
+        self._inner_transport = None
         self.discriminator = None
 
         if ethernet is not None:
             self.ethernet = ethernet
         if ip is not None:
             self.ip = ip
-        if protocol is not None:
-            self.protocol = protocol
+        if transport is not None:
+            self.transport = transport
         if tunnel is not None:
             self.tunnel = tunnel
         if inner_ethernet is not None:
             self.inner_ethernet = inner_ethernet
         if inner_ip is not None:
             self.inner_ip = inner_ip
-        if inner_protocol is not None:
-            self.inner_protocol = inner_protocol
+        if inner_transport is not None:
+            self.inner_transport = inner_transport
 
     @property
     def ethernet(self):
@@ -83,7 +83,7 @@ class PacketAnalyzerProtocolCounters(object):
 
 
         :return: The ethernet of this PacketAnalyzerProtocolCounters.  # noqa: E501
-        :rtype: PacketAnalyzerProtocolCountersEthernet
+        :rtype: PacketEthernetProtocolCounters
         """
         return self._ethernet
 
@@ -93,7 +93,7 @@ class PacketAnalyzerProtocolCounters(object):
 
 
         :param ethernet: The ethernet of this PacketAnalyzerProtocolCounters.  # noqa: E501
-        :type: PacketAnalyzerProtocolCountersEthernet
+        :type: PacketEthernetProtocolCounters
         """
         self._ethernet = ethernet
 
@@ -103,7 +103,7 @@ class PacketAnalyzerProtocolCounters(object):
 
 
         :return: The ip of this PacketAnalyzerProtocolCounters.  # noqa: E501
-        :rtype: PacketAnalyzerProtocolCountersIp
+        :rtype: PacketIpProtocolCounters
         """
         return self._ip
 
@@ -113,29 +113,29 @@ class PacketAnalyzerProtocolCounters(object):
 
 
         :param ip: The ip of this PacketAnalyzerProtocolCounters.  # noqa: E501
-        :type: PacketAnalyzerProtocolCountersIp
+        :type: PacketIpProtocolCounters
         """
         self._ip = ip
 
     @property
-    def protocol(self):
-        """Gets the protocol of this PacketAnalyzerProtocolCounters.  # noqa: E501
+    def transport(self):
+        """Gets the transport of this PacketAnalyzerProtocolCounters.  # noqa: E501
 
 
-        :return: The protocol of this PacketAnalyzerProtocolCounters.  # noqa: E501
-        :rtype: PacketAnalyzerProtocolCountersProtocol
+        :return: The transport of this PacketAnalyzerProtocolCounters.  # noqa: E501
+        :rtype: PacketTransportProtocolCounters
         """
-        return self._protocol
+        return self._transport
 
-    @protocol.setter
-    def protocol(self, protocol):
-        """Sets the protocol of this PacketAnalyzerProtocolCounters.
+    @transport.setter
+    def transport(self, transport):
+        """Sets the transport of this PacketAnalyzerProtocolCounters.
 
 
-        :param protocol: The protocol of this PacketAnalyzerProtocolCounters.  # noqa: E501
-        :type: PacketAnalyzerProtocolCountersProtocol
+        :param transport: The transport of this PacketAnalyzerProtocolCounters.  # noqa: E501
+        :type: PacketTransportProtocolCounters
         """
-        self._protocol = protocol
+        self._transport = transport
 
     @property
     def tunnel(self):
@@ -143,7 +143,7 @@ class PacketAnalyzerProtocolCounters(object):
 
 
         :return: The tunnel of this PacketAnalyzerProtocolCounters.  # noqa: E501
-        :rtype: PacketAnalyzerProtocolCountersTunnel
+        :rtype: PacketTunnelProtocolCounters
         """
         return self._tunnel
 
@@ -153,7 +153,7 @@ class PacketAnalyzerProtocolCounters(object):
 
 
         :param tunnel: The tunnel of this PacketAnalyzerProtocolCounters.  # noqa: E501
-        :type: PacketAnalyzerProtocolCountersTunnel
+        :type: PacketTunnelProtocolCounters
         """
         self._tunnel = tunnel
 
@@ -163,7 +163,7 @@ class PacketAnalyzerProtocolCounters(object):
 
 
         :return: The inner_ethernet of this PacketAnalyzerProtocolCounters.  # noqa: E501
-        :rtype: PacketAnalyzerProtocolCountersInnerEthernet
+        :rtype: PacketInnerEthernetProtocolCounters
         """
         return self._inner_ethernet
 
@@ -173,7 +173,7 @@ class PacketAnalyzerProtocolCounters(object):
 
 
         :param inner_ethernet: The inner_ethernet of this PacketAnalyzerProtocolCounters.  # noqa: E501
-        :type: PacketAnalyzerProtocolCountersInnerEthernet
+        :type: PacketInnerEthernetProtocolCounters
         """
         self._inner_ethernet = inner_ethernet
 
@@ -183,7 +183,7 @@ class PacketAnalyzerProtocolCounters(object):
 
 
         :return: The inner_ip of this PacketAnalyzerProtocolCounters.  # noqa: E501
-        :rtype: PacketAnalyzerProtocolCountersInnerIp
+        :rtype: PacketInnerIpProtocolCounters
         """
         return self._inner_ip
 
@@ -193,29 +193,29 @@ class PacketAnalyzerProtocolCounters(object):
 
 
         :param inner_ip: The inner_ip of this PacketAnalyzerProtocolCounters.  # noqa: E501
-        :type: PacketAnalyzerProtocolCountersInnerIp
+        :type: PacketInnerIpProtocolCounters
         """
         self._inner_ip = inner_ip
 
     @property
-    def inner_protocol(self):
-        """Gets the inner_protocol of this PacketAnalyzerProtocolCounters.  # noqa: E501
+    def inner_transport(self):
+        """Gets the inner_transport of this PacketAnalyzerProtocolCounters.  # noqa: E501
 
 
-        :return: The inner_protocol of this PacketAnalyzerProtocolCounters.  # noqa: E501
-        :rtype: PacketAnalyzerProtocolCountersInnerProtocol
+        :return: The inner_transport of this PacketAnalyzerProtocolCounters.  # noqa: E501
+        :rtype: PacketInnerTransportProtocolCounters
         """
-        return self._inner_protocol
+        return self._inner_transport
 
-    @inner_protocol.setter
-    def inner_protocol(self, inner_protocol):
-        """Sets the inner_protocol of this PacketAnalyzerProtocolCounters.
+    @inner_transport.setter
+    def inner_transport(self, inner_transport):
+        """Sets the inner_transport of this PacketAnalyzerProtocolCounters.
 
 
-        :param inner_protocol: The inner_protocol of this PacketAnalyzerProtocolCounters.  # noqa: E501
-        :type: PacketAnalyzerProtocolCountersInnerProtocol
+        :param inner_transport: The inner_transport of this PacketAnalyzerProtocolCounters.  # noqa: E501
+        :type: PacketInnerTransportProtocolCounters
         """
-        self._inner_protocol = inner_protocol
+        self._inner_transport = inner_transport
 
     def to_dict(self):
         """Returns the model properties as a dict"""

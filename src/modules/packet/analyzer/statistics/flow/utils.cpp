@@ -2,6 +2,13 @@
 
 namespace openperf::packet::analyzer::statistics {
 
+template <typename Key, typename Value, typename... Pairs>
+constexpr auto associative_array(Pairs&&... pairs)
+    -> std::array<std::pair<Key, Value>, sizeof...(pairs)>
+{
+    return {{std::forward<Pairs>(pairs)...}};
+}
+
 static constexpr auto flag_names =
     associative_array<flow_flags, std::string_view>(
         std::pair(flow_flags::frame_count, "frame_count"),

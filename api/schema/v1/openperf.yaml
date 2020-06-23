@@ -572,6 +572,30 @@ definitions:
     $ref: ./modules/packet/generator.yaml#/definitions/TxFlow
 
   ###
+  # Packet Protocol Counter definitions
+  ###
+  PacketEthernetProtocolCounters:
+    $ref: ./modules/packet/protocol_counters.yaml#/definitions/PacketEthernetProtocolCounters
+
+  PacketIpProtocolCounters:
+    $ref: ./modules/packet/protocol_counters.yaml#/definitions/PacketIpProtocolCounters
+
+  PacketTransportProtocolCounters:
+    $ref: ./modules/packet/protocol_counters.yaml#/definitions/PacketTransportProtocolCounters
+
+  PacketTunnelProtocolCounters:
+    $ref: ./modules/packet/protocol_counters.yaml#/definitions/PacketTunnelProtocolCounters
+
+  PacketInnerEthernetProtocolCounters:
+    $ref: ./modules/packet/protocol_counters.yaml#/definitions/PacketInnerEthernetProtocolCounters
+
+  PacketInnerIpProtocolCounters:
+    $ref: ./modules/packet/protocol_counters.yaml#/definitions/PacketInnerIpProtocolCounters
+
+  PacketInnerTransportProtocolCounters:
+    $ref: ./modules/packet/protocol_counters.yaml#/definitions/PacketInnerTransportProtocolCounters
+
+  ###
   # Timesync definitions
   ###
   TimeCounter:
