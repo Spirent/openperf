@@ -17,6 +17,11 @@ public:
         return std::vector<expr*>();
     }
     virtual std::string to_string() const = 0;
+
+    virtual bool is_special() const { return false; }
+
+    bool has_special() const;
+    bool has_all_special() const;
 };
 
 class match_expr : public expr
@@ -49,6 +54,8 @@ public:
 
     std::string to_string() const override;
 
+    bool is_special() const override { return true; }
+
     uint32_t flags;
 };
 
@@ -66,6 +73,8 @@ public:
     {}
 
     std::string to_string() const override;
+
+    bool is_special() const override { return true; }
 
     std::optional<stream_id_range> stream_id;
 };
@@ -118,12 +127,6 @@ public:
 std::unique_ptr<expr> bpf_parse_string(std::string_view str);
 
 std::unique_ptr<expr> bpf_split_special(std::unique_ptr<expr>&& expr);
-
-bool is_special(const expr* e);
-
-bool has_special(const expr* e);
-
-bool has_all_special(const expr* e);
 
 } // namespace openperf::packetio::bpf
 

@@ -335,7 +335,7 @@ bool bpf::parse(std::string_view filter_str, int link_type)
         return false;
     }
 
-    if (expr && has_special(expr.get())) {
+    if (expr && expr->has_special()) {
         std::vector<bpf_insn> bf_insns;
         try {
             expr = bpf_split_special(std::move(expr));
@@ -363,7 +363,7 @@ bool bpf::parse(std::string_view filter_str, int link_type)
             }
         }
         if (auto bexpr = dynamic_cast<binary_logical_expr*>(expr.get())) {
-            if (!has_special(bexpr->rhs.get())) {
+            if (!bexpr->rhs->has_special()) {
                 auto lhs_flags = bpf_get_filter_flags(bexpr->lhs.get());
                 if (lhs_flags
                         == (BPF_FILTER_FLAGS_SIGNATURE | BPF_FILTER_FLAGS_NOT)

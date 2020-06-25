@@ -84,6 +84,29 @@ std::string to_string(unary_logical_op op)
     }
 }
 
+bool expr::has_special() const
+{
+    if (is_special()) return true;
+
+    for (auto child : get_children()) {
+        if (child->has_special()) return true;
+    }
+    return false;
+}
+
+bool expr::has_all_special() const
+{
+    if (is_special()) return true;
+
+    auto children = get_children();
+    if (children.empty()) return false;
+
+    for (auto child : children) {
+        if (!child->has_all_special()) return false;
+    }
+    return true;
+}
+
 std::string generic_match_expr::to_string() const { return "(" + str + ")"; }
 
 std::string valid_match_expr::to_string() const
@@ -556,40 +579,6 @@ std::unique_ptr<expr> bpf_parse_string(std::string_view str)
     return parser.parse();
 }
 
-bool is_special(const expr* e)
-{
-    return (dynamic_cast<const valid_match_expr*>(e)
-            || dynamic_cast<const signature_match_expr*>(e));
-}
-
-bool has_special(const expr* e)
-{
-    if (is_special(e)) return true;
-
-    for (auto child : e->get_children()) {
-        if (has_special(child)) return true;
-    }
-    return false;
-}
-
-bool has_all_special(const expr* e)
-{
-    if (is_special(e)) return true;
-
-    auto children = e->get_children();
-    if (children.empty()) return false;
-
-    for (auto child : children) {
-        if (!has_all_special(child)) return false;
-    }
-    return true;
-}
-
-bool is_logical_expr(const expr* e)
-{
-    return (dynamic_cast<const logical_expr*>(e) != nullptr);
-}
-
 void expr_move_target_to_lhs(binary_logical_expr& bexpr, expr* target)
 {
     if (bexpr.rhs.get() == target) { std::swap(bexpr.lhs, bexpr.rhs); }
@@ -606,16 +595,16 @@ void expr_toggle_binary_op(binary_logical_expr& expr)
                                                   : binary_logical_op::AND;
 }
 
-bool expr_is_special_ok(expr* ex)
+bool expr_is_special_ok(const expr* ex)
 {
-    if (auto bexpr = dynamic_cast<binary_logical_expr*>(ex)) {
-        bool lhs_has_special = has_special(bexpr->lhs.get());
-        bool rhs_has_special = has_special(bexpr->rhs.get());
+    if (auto bexpr = dynamic_cast<const binary_logical_expr*>(ex)) {
+        bool lhs_has_special = bexpr->lhs->has_special();
+        bool rhs_has_special = bexpr->rhs->has_special();
 
         if (!lhs_has_special && !rhs_has_special)
             return true; // All normal expressions
 
-        bool lhs_has_all_special = has_all_special(bexpr->lhs.get());
+        bool lhs_has_all_special = bexpr->lhs->has_all_special();
         if (!lhs_has_all_special)
             return false; // LHS has special and normal expressions
 
@@ -623,15 +612,14 @@ bool expr_is_special_ok(expr* ex)
             return true; // LHS has all special and RHS has no special
                          // expressions
 
-        bool rhs_has_all_special = has_all_special(bexpr->rhs.get());
+        bool rhs_has_all_special = bexpr->rhs->has_all_special();
         if (!rhs_has_all_special)
             return false; // RHS has special and normal expressions
 
         return true;
     }
-    if (auto uexpr = dynamic_cast<unary_logical_expr*>(ex)) {
-        if (has_special(uexpr->expr.get())
-            && !has_all_special(uexpr->expr.get())) {
+    if (auto uexpr = dynamic_cast<const unary_logical_expr*>(ex)) {
+        if (uexpr->expr->has_special() && !uexpr->expr->has_all_special()) {
             return false;
         }
         return true;
@@ -691,18 +679,18 @@ std::unique_ptr<expr> bpf_split_special(std::unique_ptr<expr>&& ex)
     }
 
     if (auto bexpr = dynamic_cast<binary_logical_expr*>(result.get())) {
-        bool lhs_has_special = has_special(bexpr->lhs.get());
-        bool rhs_has_special = has_special(bexpr->rhs.get());
+        bool lhs_has_special = bexpr->lhs->has_special();
+        bool rhs_has_special = bexpr->rhs->has_special();
         if (rhs_has_special && !lhs_has_special) {
             std::swap(bexpr->lhs, bexpr->rhs);
             std::swap(lhs_has_special, rhs_has_special);
         }
-        if (lhs_has_special && !has_all_special(bexpr->lhs.get())) {
+        if (lhs_has_special && !bexpr->lhs->has_all_special()) {
             // Split normal terms into RHS of child LHS expression
             bexpr->lhs = bpf_split_special(std::move(bexpr->lhs));
             if (auto bexpr_child =
                     dynamic_cast<binary_logical_expr*>(bexpr->lhs.get())) {
-                if (has_special(bexpr_child->rhs.get())) {
+                if (bexpr_child->rhs->has_special()) {
                     throw std::runtime_error(split_err_str);
                 }
                 if (bexpr->op != bexpr_child->op) {
