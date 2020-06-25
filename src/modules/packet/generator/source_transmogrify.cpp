@@ -3,6 +3,7 @@
 
 #include "packet/generator/api.hpp"
 #include "packet/generator/source.hpp"
+#include "packet/statistics/api_transmogrify.hpp"
 
 #include "swagger/v1/model/PacketGenerator.h"
 #include "swagger/v1/model/PacketGeneratorResult.h"
@@ -172,14 +173,20 @@ generator_result_ptr to_swagger(const core::uuid& id,
     dst->setGeneratorId(result.parent().id());
     dst->setActive(result.active());
 
-    auto sum = accumulate_counters(result.counters());
-    auto counters =
+    auto sum = accumulate_counters(result.flows());
+    auto flow_counters =
         std::make_shared<swagger::v1::model::PacketGeneratorFlowCounters>();
     populate_counters(sum,
-                      counters,
+                      flow_counters,
                       result.parent().packet_rate(),
                       result.parent().sequence());
-    dst->setFlowCounters(counters);
+    dst->setFlowCounters(flow_counters);
+
+    auto protocol_counters =
+        std::make_shared<swagger::v1::model::PacketGeneratorProtocolCounters>();
+    packet::statistics::api::populate_counters(result.protocols(),
+                                               protocol_counters);
+    dst->setProtocolCounters(protocol_counters);
 
     if (dst->isActive()) {
         auto remainder =
@@ -191,7 +198,7 @@ generator_result_ptr to_swagger(const core::uuid& id,
 
     auto flow_idx = 0U;
     std::generate_n(
-        std::back_inserter(dst->getFlows()), result.counters().size(), [&]() {
+        std::back_inserter(dst->getFlows()), result.flows().size(), [&]() {
             return (core::to_string(tx_flow_id(id, flow_idx++)));
         });
 

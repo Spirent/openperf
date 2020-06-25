@@ -77,6 +77,12 @@ public:
     bool orderIsSet() const;
     void unsetOrder();
     /// <summary>
+    /// List of protocol counters to update per transmitted packet. 
+    /// </summary>
+    std::vector<std::string>& getProtocolCounters();
+    bool protocolCountersIsSet() const;
+    void unsetProtocol_counters();
+    /// <summary>
     /// List of traffic definitions
     /// </summary>
     std::vector<std::shared_ptr<TrafficDefinition>>& getTraffic();
@@ -90,6 +96,8 @@ protected:
 
     std::string m_Order;
     bool m_OrderIsSet;
+    std::vector<std::string> m_Protocol_counters;
+    bool m_Protocol_countersIsSet;
     std::vector<std::shared_ptr<TrafficDefinition>> m_Traffic;
 
 };

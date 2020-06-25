@@ -463,6 +463,21 @@ definitions:
         enum:
           - round-robin
           - sequential
+      protocol_counters:
+        type: array
+        description: |
+          List of protocol counters to update per transmitted packet.
+        items:
+          type: string
+          enum:
+            - ethernet
+            - ip
+            - transport
+            - tunnel
+            - inner_ethernet
+            - inner_ip
+            - inner_transport
+          uniqueItems: true
       traffic:
         type: array
         description: List of traffic definitions
@@ -476,7 +491,7 @@ definitions:
 
   PacketGeneratorFlowCounters:
     type: object
-    description: Packet generator statistics
+    description: Packet generator flow statistics
     properties:
       errors:
         type: integer
@@ -518,6 +533,25 @@ definitions:
       - packets_actual
       - packets_intended
 
+  PacketGeneratorProtocolCounters:
+    type: object
+    description: Packet generator protocol statistics
+    properties:
+      ethernet:
+        $ref: ./protocol_counters.yaml#/definitions/PacketEthernetProtocolCounters
+      ip:
+        $ref: ./protocol_counters.yaml#/definitions/PacketIpProtocolCounters
+      transport:
+        $ref: ./protocol_counters.yaml#/definitions/PacketTransportProtocolCounters
+      tunnel:
+        $ref: ./protocol_counters.yaml#/definitions/PacketTunnelProtocolCounters
+      inner_ethernet:
+        $ref: ./protocol_counters.yaml#/definitions/PacketInnerEthernetProtocolCounters
+      inner_ip:
+        $ref: ./protocol_counters.yaml#/definitions/PacketInnerIpProtocolCounters
+      inner_transport:
+        $ref: ./protocol_counters.yaml#/definitions/PacketInnerTransportProtocolCounters
+
   PacketGeneratorResult:
     type: object
     description: Results produced by a packet generator
@@ -540,6 +574,8 @@ definitions:
           statistics may be queried via the `tx-flows` endpoint.
         items:
           type: string
+      protocol_counters:
+        $ref: "#/definitions/PacketGeneratorProtocolCounters"
       remaining:
         $ref: "#/definitions/TrafficDurationRemainder"
     required:
@@ -547,6 +583,7 @@ definitions:
       - active
       - flow_counters
       - flows
+      - protocol_counters
 
 
   PacketProtocolCustom:

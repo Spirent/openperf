@@ -16,6 +16,7 @@ struct source_config
 {
     std::string id = core::to_string(core::uuid::random());
     std::string target;
+
     /**
      * Unfortunately, transforming a packet generator config into a traffic
      * sequence is a one-way transformation.  Hence, we store the original
@@ -30,20 +31,27 @@ class source_result
 {
 private:
     const source& m_parent;
-    std::vector<traffic::counter> m_counters;
+    std::vector<traffic::counter> m_flows;
+
+    using protocol_counters = packet::statistics::generic_protocol_counters;
+    protocol_counters m_protocols;
+
     bool m_active = false;
 
 public:
-    source_result(const source& p);
+    source_result(const source& src);
 
     bool active() const;
     const source& parent() const;
-    const std::vector<traffic::counter>& counters() const;
 
+    const std::vector<traffic::counter>& flows() const;
     traffic::counter& operator[](size_t idx);
     const traffic::counter& operator[](size_t idx) const;
 
-    void start(size_t nb_counters);
+    const protocol_counters& protocols() const;
+    protocol_counters& protocols();
+
+    void start(size_t nb_flows);
     void stop();
 };
 
@@ -64,6 +72,8 @@ public:
 
     std::string id() const;
     std::string target() const;
+    api::protocol_counters_config protocol_counters() const;
+
     bool active() const;
     bool uses_feature(packetio::packet::source_feature_flags flags) const;
 
@@ -94,6 +104,8 @@ private:
     source_config m_config;
     traffic::sequence m_sequence;
     source_load m_load;
+    api::protocol_counters_config m_protocols =
+        packet::statistics::protocol_flags::none;
     std::optional<size_t> m_tx_limit;
     std::vector<traffic::stat_t> m_offsets;
 

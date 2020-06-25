@@ -52,6 +52,7 @@ class _be_valid_packet_generator_result(Matcher):
         expect(result.generator_id).not_to(be_empty)
         expect(result.active).not_to(be_none)
         expect(result.flow_counters).to(be_a(client.models.PacketGeneratorFlowCounters))
+        expect(result.protocol_counters).to(be_a(client.models.PacketGeneratorProtocolCounters))
         if (result.active):
             expect(result.remaining).to(be_a(client.models.TrafficDurationRemainder))
         return True, ['is valid packet generator result']

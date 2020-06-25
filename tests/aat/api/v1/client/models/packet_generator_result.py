@@ -36,6 +36,7 @@ class PacketGeneratorResult(object):
         'active': 'bool',
         'flow_counters': 'PacketGeneratorFlowCounters',
         'flows': 'list[str]',
+        'protocol_counters': 'PacketGeneratorProtocolCounters',
         'remaining': 'TrafficDurationRemainder'
     }
 
@@ -45,10 +46,11 @@ class PacketGeneratorResult(object):
         'active': 'active',
         'flow_counters': 'flow_counters',
         'flows': 'flows',
+        'protocol_counters': 'protocol_counters',
         'remaining': 'remaining'
     }
 
-    def __init__(self, id=None, generator_id=None, active=None, flow_counters=None, flows=None, remaining=None):  # noqa: E501
+    def __init__(self, id=None, generator_id=None, active=None, flow_counters=None, flows=None, protocol_counters=None, remaining=None):  # noqa: E501
         """PacketGeneratorResult - a model defined in Swagger"""  # noqa: E501
 
         self._id = None
@@ -56,6 +58,7 @@ class PacketGeneratorResult(object):
         self._active = None
         self._flow_counters = None
         self._flows = None
+        self._protocol_counters = None
         self._remaining = None
         self.discriminator = None
 
@@ -65,6 +68,7 @@ class PacketGeneratorResult(object):
         self.active = active
         self.flow_counters = flow_counters
         self.flows = flows
+        self.protocol_counters = protocol_counters
         if remaining is not None:
             self.remaining = remaining
 
@@ -175,6 +179,26 @@ class PacketGeneratorResult(object):
         :type: list[str]
         """
         self._flows = flows
+
+    @property
+    def protocol_counters(self):
+        """Gets the protocol_counters of this PacketGeneratorResult.  # noqa: E501
+
+
+        :return: The protocol_counters of this PacketGeneratorResult.  # noqa: E501
+        :rtype: PacketGeneratorProtocolCounters
+        """
+        return self._protocol_counters
+
+    @protocol_counters.setter
+    def protocol_counters(self, protocol_counters):
+        """Sets the protocol_counters of this PacketGeneratorResult.
+
+
+        :param protocol_counters: The protocol_counters of this PacketGeneratorResult.  # noqa: E501
+        :type: PacketGeneratorProtocolCounters
+        """
+        self._protocol_counters = protocol_counters
 
     @property
     def remaining(self):

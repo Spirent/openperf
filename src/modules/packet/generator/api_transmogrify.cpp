@@ -474,6 +474,15 @@ void from_json(const nlohmann::json& j, PacketGeneratorConfig& config)
         config.setOrder(jorder->get<std::string>());
     }
 
+    if (auto jcounters = find_key(j, "protocol_counters")) {
+        std::transform(std::begin(*jcounters),
+                       std::end(*jcounters),
+                       std::back_inserter(config.getProtocolCounters()),
+                       [](const auto& j_counter) {
+                           return (j_counter.template get<std::string>());
+                       });
+    }
+
     std::transform(std::begin(j["traffic"]),
                    std::end(j["traffic"]),
                    std::back_inserter(config.getTraffic()),

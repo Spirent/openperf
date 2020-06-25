@@ -94,6 +94,7 @@ CUSTOM_PAYLOAD = [
 GENERATOR_CONFIG_DEFAULT = {
     'duration': {'continuous': True},
     'load': {'rate': 10},
+    'protocol_counters': ['ethernet', 'ip', 'transport'],
     'traffic': [
         {
             'length': {'fixed': 128},
@@ -744,7 +745,7 @@ with description('Packet Generator,', 'packet_generator') as self:
                 with description('valid request,'):
                     with it('succeeds'):
                         reply = self.api.bulk_start_packet_generators(
-                            client.models.BulkStartPacketAnalyzersRequest(
+                            client.models.BulkStartPacketGeneratorsRequest(
                             [gen.id for gen in self.api.list_packet_generators()]))
                         expect(reply.items).to(have_len(len(self.api.list_packet_generators())))
                         for item in reply.items:

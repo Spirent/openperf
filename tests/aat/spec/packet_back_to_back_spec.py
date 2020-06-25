@@ -195,6 +195,7 @@ ANALYZER_CONFIG_SIGS = {
 GENERATOR_CONFIG_NO_SIGS = {
     'duration': {'frames': 100},
     'load': {'rate': 1000},
+    'protocol_counters': ['ethernet', 'ip', 'transport'],
     'traffic': [
         {
             'length': {'fixed': 128},
@@ -207,6 +208,7 @@ GENERATOR_CONFIG_SIGS = {
     'duration': {'frames': 1000 },
     'load': {'burst_size': 4,
              'rate': 10000 },
+    'protocol_counters': ['ethernet', 'ip', 'transport'],
     'traffic': [
         {
             'length': {'list': [64, 128, 256, 512, 1024, 1280, 1518]},
@@ -217,9 +219,22 @@ GENERATOR_CONFIG_SIGS = {
     ]
 }
 
+GENERATOR_CONFIG_CUSTOM_PACKET = {
+    'duration': {'frames': 100},
+    'load': {'rate': 1000},
+    'protocol_counters': ['ethernet', 'ip', 'transport'],
+    'traffic': [
+        {
+            'length': {'fixed': 128},
+            'packet': CUSTOM_L2_PACKET,
+        }
+    ],
+}
+
 GENERATOR_CONFIG_MULTI_DEFS = {
     'duration': {'frames': 100},
     'load': {'rate': 1000},
+    'protocol_counters': ['ethernet', 'ip', 'transport'],
     'traffic': [
         {
             'length': {'fixed': 128},
@@ -267,17 +282,6 @@ GENERATOR_CONFIG_PxP_MODS = {
             'length': {'fixed': 128},
             'packet': ETH_IPV6_UDP_MODIFIERS_PRODUCT,
             'tie': 'cartesian'
-        }
-    ],
-}
-
-GENERATOR_CONFIG_CUSTOM_PACKET = {
-    'duration': {'frames': 100},
-    'load': {'rate': 1000},
-    'traffic': [
-        {
-            'length': {'fixed': 128},
-            'packet': CUSTOM_L2_PACKET,
         }
     ],
 }
@@ -554,6 +558,14 @@ with description('Packet back to back', 'packet_b2b') as self:
                     # Check generator flow counters
                     expect(gen_result.flow_counters.packets_actual).to(equal(exp_frame_count))
 
+                    # Check generator protocol counters
+                    expect(gen_result.protocol_counters.ethernet.ip).to(equal(0))
+                    expect(gen_result.protocol_counters.ethernet.vlan).to(equal(exp_frame_count))
+                    expect(gen_result.protocol_counters.ip.ipv4).to(equal(exp_frame_count))
+                    expect(gen_result.protocol_counters.ip.ipv6).to(equal(0))
+                    expect(gen_result.protocol_counters.transport.udp).to(equal(exp_frame_count))
+                    expect(gen_result.protocol_counters.transport.tcp).to(equal(0))
+
                     # Check miscellaneous results
                     validate_durations(ana_result, gen_result)
                     validate_frame_length(ana_result, GENERATOR_CONFIG_NO_SIGS)
@@ -573,7 +585,6 @@ with description('Packet back to back', 'packet_b2b') as self:
 
                     # Check analyzer protocol counters
                     exp_frame_count = GENERATOR_CONFIG_SIGS['duration']['frames']
-                    expect(ana_result.flow_counters.frame_count).to(equal(exp_frame_count))
                     expect(ana_result.protocol_counters.ethernet.ip).to(equal(exp_frame_count))
                     expect(ana_result.protocol_counters.ethernet.vlan).to(equal(0))
                     expect(ana_result.protocol_counters.ip.ipv4).to(equal(exp_frame_count))
@@ -591,6 +602,14 @@ with description('Packet back to back', 'packet_b2b') as self:
 
                     # Check generator flow counters
                     expect(gen_result.flow_counters.packets_actual).to(equal(exp_frame_count))
+
+                    # Check generator protocol counters
+                    expect(gen_result.protocol_counters.ethernet.ip).to(equal(exp_frame_count))
+                    expect(gen_result.protocol_counters.ethernet.vlan).to(equal(0))
+                    expect(gen_result.protocol_counters.ip.ipv4).to(equal(exp_frame_count))
+                    expect(gen_result.protocol_counters.ip.ipv6).to(equal(0))
+                    expect(gen_result.protocol_counters.transport.udp).to(equal(exp_frame_count))
+                    expect(gen_result.protocol_counters.transport.tcp).to(equal(0))
 
                     # Check miscellaneous results
                     validate_durations(ana_result, gen_result)
@@ -628,6 +647,20 @@ with description('Packet back to back', 'packet_b2b') as self:
                     # Check generator flow counters
                     expect(gen_result.flow_counters.packets_actual).to(equal(exp_frame_count))
 
+                    # Check generator protocol counters
+                    expect(gen_result.protocol_counters.ethernet.arp).to(equal(0))
+                    expect(gen_result.protocol_counters.ethernet.fcoe).to(equal(0))
+                    expect(gen_result.protocol_counters.ethernet.ip).to(equal(0))
+                    expect(gen_result.protocol_counters.ethernet.lldp).to(equal(0))
+                    expect(gen_result.protocol_counters.ethernet.pppoe).to(equal(0))
+                    expect(gen_result.protocol_counters.ethernet.qinq).to(equal(0))
+                    expect(gen_result.protocol_counters.ethernet.vlan).to(equal(0))
+                    expect(gen_result.protocol_counters.ethernet.mpls).to(equal(0))
+                    expect(gen_result.protocol_counters.ip.ipv4).to(equal(0))
+                    expect(gen_result.protocol_counters.ip.ipv6).to(equal(0))
+                    expect(gen_result.protocol_counters.transport.udp).to(equal(0))
+                    expect(gen_result.protocol_counters.transport.tcp).to(equal(0))
+
                     # Check miscellaneous results
                     validate_durations(ana_result, gen_result)
                     validate_frame_length(ana_result, GENERATOR_CONFIG_CUSTOM_PACKET)
@@ -661,6 +694,14 @@ with description('Packet back to back', 'packet_b2b') as self:
 
                 # Check generator flow counters
                 expect(gen_result.flow_counters.packets_actual).to(equal(exp_frame_count))
+
+                # Check generator protocol counters
+                expect(gen_result.protocol_counters.ethernet.ip).to(equal(exp_flow2_count))
+                expect(gen_result.protocol_counters.ethernet.vlan).to(equal(exp_flow1_count))
+                expect(gen_result.protocol_counters.ip.ipv4).to(equal(exp_flow1_count))
+                expect(gen_result.protocol_counters.ip.ipv6).to(equal(exp_flow2_count))
+                expect(gen_result.protocol_counters.transport.udp).to(equal(exp_flow1_count))
+                expect(gen_result.protocol_counters.transport.tcp).to(equal(exp_flow2_count))
 
                 # Check miscellaneous results
                 validate_durations(ana_result, gen_result)

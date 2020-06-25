@@ -22,6 +22,7 @@
 #include "ModelBase.h"
 
 #include "TrafficDurationRemainder.h"
+#include "PacketGeneratorProtocolCounters.h"
 #include <string>
 #include "PacketGeneratorFlowCounters.h"
 #include <vector>
@@ -80,6 +81,11 @@ public:
         /// <summary>
     /// 
     /// </summary>
+    std::shared_ptr<PacketGeneratorProtocolCounters> getProtocolCounters() const;
+    void setProtocolCounters(std::shared_ptr<PacketGeneratorProtocolCounters> value);
+        /// <summary>
+    /// 
+    /// </summary>
     std::shared_ptr<TrafficDurationRemainder> getRemaining() const;
     void setRemaining(std::shared_ptr<TrafficDurationRemainder> value);
     bool remainingIsSet() const;
@@ -95,6 +101,8 @@ protected:
     std::shared_ptr<PacketGeneratorFlowCounters> m_Flow_counters;
 
     std::vector<std::string> m_Flows;
+
+    std::shared_ptr<PacketGeneratorProtocolCounters> m_Protocol_counters;
 
     std::shared_ptr<TrafficDurationRemainder> m_Remaining;
     bool m_RemainingIsSet;

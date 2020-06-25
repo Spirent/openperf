@@ -14,6 +14,7 @@
 
 #include "core/op_uuid.hpp"
 #include "packet/generator/traffic/sequence.hpp"
+#include "packet/statistics/generic_protocol_counters.hpp"
 #include "units/rate.hpp"
 
 namespace swagger::v1::model {
@@ -21,6 +22,7 @@ namespace swagger::v1::model {
 class PacketGenerator;
 class PacketGeneratorResult;
 class PacketGeneratorConfig;
+class PacketGeneratorProtocolCountersConfig;
 class SpirentSignature;
 class TrafficDefinition;
 class TrafficDuration;
@@ -48,6 +50,8 @@ inline constexpr std::string_view endpoint =
 /**
  * Provide some sane typedefs for the swagger types we deal with.
  */
+using protocol_counters_config =
+    openperf::utils::bit_flags<packet::statistics::protocol_flags>;
 
 using generator_type = swagger::v1::model::PacketGenerator;
 using generator_ptr = std::unique_ptr<generator_type>;
@@ -334,6 +338,9 @@ source_load to_load(const swagger::v1::model::TrafficLoad&,
 std::optional<size_t>
 max_transmit_count(const swagger::v1::model::TrafficDuration&,
                    const source_load&);
+
+protocol_counters_config
+to_protocol_counters_config(const std::vector<std::string>&);
 
 /* Validation routines */
 bool is_valid(const generator_type&, std::vector<std::string>&);

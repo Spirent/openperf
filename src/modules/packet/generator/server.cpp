@@ -725,7 +725,7 @@ reply_msg server::handle_request(const request_list_tx_flows& request)
                   [&](const auto& result_pair) {
                       if (!compare(result_pair)) { return; }
 
-                      const auto& flows = result_pair.second->counters();
+                      const auto& flows = result_pair.second->flows();
                       auto offset = 0U;
                       std::generate_n(
                           std::back_inserter(reply.flows), flows.size(), [&]() {
@@ -753,7 +753,7 @@ reply_msg server::handle_request(const request_get_tx_flow& request)
     if (it == std::end(m_results)) { return (to_error(error_type::NOT_FOUND)); }
 
     const auto& result = it->second;
-    if (flow_idx >= result->counters().size()) {
+    if (flow_idx >= result->flows().size()) {
         return (to_error(error_type::NOT_FOUND));
     }
 
