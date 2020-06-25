@@ -8,6 +8,22 @@
 
 namespace openperf::packet::bpf {
 
+class generic_match_expr;
+class valid_match_expr;
+class signature_match_expr;
+class unary_logical_expr;
+class binary_logical_expr;
+
+class expr_visitor
+{
+public:
+    virtual void visit(const generic_match_expr& expr) = 0;
+    virtual void visit(const valid_match_expr& expr) = 0;
+    virtual void visit(const signature_match_expr& expr) = 0;
+    virtual void visit(const unary_logical_expr& expr) = 0;
+    virtual void visit(const binary_logical_expr& expr) = 0;
+};
+
 class expr
 {
 public:
@@ -21,14 +37,22 @@ public:
     virtual bool is_special() const { return false; }
     virtual bool is_buildable() const { return true; }
 
+    virtual void accept(expr_visitor& visitor) const = 0;
+
     bool has_special() const;
     bool has_all_special() const;
 };
 
-class match_expr : public expr
-{};
+template <class T> class expr_base : public expr
+{
+public:
+    void accept(expr_visitor& visitor) const override
+    {
+        visitor.visit(static_cast<const T&>(*this));
+    }
+};
 
-class generic_match_expr : public match_expr
+class generic_match_expr : public expr_base<generic_match_expr>
 {
 public:
     generic_match_expr(std::string_view v)
@@ -40,7 +64,7 @@ public:
     std::string str;
 };
 
-class valid_match_expr : public match_expr
+class valid_match_expr : public expr_base<valid_match_expr>
 {
 public:
     enum class flag_type {
@@ -60,7 +84,7 @@ public:
     uint32_t flags;
 };
 
-class signature_match_expr : public match_expr
+class signature_match_expr : public expr_base<signature_match_expr>
 {
 public:
     struct stream_id_range
@@ -83,10 +107,7 @@ public:
 enum class binary_logical_op { AND, OR };
 enum class unary_logical_op { NOT };
 
-class logical_expr : public expr
-{};
-
-class unary_logical_expr : public logical_expr
+class unary_logical_expr : public expr_base<unary_logical_expr>
 {
 public:
     unary_logical_expr(std::unique_ptr<expr>&& e, unary_logical_op o)
@@ -104,7 +125,7 @@ public:
     unary_logical_op op; /* not */
 };
 
-class binary_logical_expr : public logical_expr
+class binary_logical_expr : public expr_base<binary_logical_expr>
 {
 public:
     binary_logical_expr(std::unique_ptr<expr>&& l,
