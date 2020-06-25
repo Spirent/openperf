@@ -156,10 +156,39 @@ std::string unary_logical_expr::to_string() const
     return bpf::to_string(op) + "(" + str + ")";
 }
 
+bool unary_logical_expr::is_buildable() const
+{
+    if (expr->has_special() && !expr->has_all_special()) { return false; }
+    return true;
+}
+
 std::string binary_logical_expr::to_string() const
 {
     return "(" + lhs->to_string() + " " + bpf::to_string(op) + " "
            + rhs->to_string() + ")";
+}
+
+bool binary_logical_expr::is_buildable() const
+{
+    bool lhs_has_special = lhs->has_special();
+    bool rhs_has_special = rhs->has_special();
+
+    if (!lhs_has_special && !rhs_has_special)
+        return true; // All normal expressions
+
+    bool lhs_has_all_special = lhs->has_all_special();
+    if (!lhs_has_all_special)
+        return false; // LHS has special and normal expressions
+
+    if (!rhs_has_special)
+        return true; // LHS has all special and RHS has no special
+                     // expressions
+
+    bool rhs_has_all_special = rhs->has_all_special();
+    if (!rhs_has_all_special)
+        return false; // RHS has special and normal expressions
+
+    return true;
 }
 
 class tokenizer
@@ -595,40 +624,6 @@ void expr_toggle_binary_op(binary_logical_expr& expr)
                                                   : binary_logical_op::AND;
 }
 
-bool expr_is_special_ok(const expr* ex)
-{
-    if (auto bexpr = dynamic_cast<const binary_logical_expr*>(ex)) {
-        bool lhs_has_special = bexpr->lhs->has_special();
-        bool rhs_has_special = bexpr->rhs->has_special();
-
-        if (!lhs_has_special && !rhs_has_special)
-            return true; // All normal expressions
-
-        bool lhs_has_all_special = bexpr->lhs->has_all_special();
-        if (!lhs_has_all_special)
-            return false; // LHS has special and normal expressions
-
-        if (!rhs_has_special)
-            return true; // LHS has all special and RHS has no special
-                         // expressions
-
-        bool rhs_has_all_special = bexpr->rhs->has_all_special();
-        if (!rhs_has_all_special)
-            return false; // RHS has special and normal expressions
-
-        return true;
-    }
-    if (auto uexpr = dynamic_cast<const unary_logical_expr*>(ex)) {
-        if (uexpr->expr->has_special() && !uexpr->expr->has_all_special()) {
-            return false;
-        }
-        return true;
-    }
-
-    // Either a normal or special expression by itself is OK
-    return true;
-}
-
 std::unique_ptr<expr> expr_remove_double_not(std::unique_ptr<expr>&& ex)
 {
     std::unique_ptr<expr> result = std::forward<std::unique_ptr<expr>>(ex);
@@ -661,7 +656,7 @@ std::unique_ptr<expr> bpf_split_special(std::unique_ptr<expr>&& ex)
     // Get rid of double NOT to simplify expression parsing
     result = expr_remove_double_not(std::move(result));
 
-    if (expr_is_special_ok(result.get())) { return result; }
+    if (result->is_buildable()) { return result; }
 
     if (auto uexpr = dynamic_cast<unary_logical_expr*>(result.get())) {
         if (auto bexpr =

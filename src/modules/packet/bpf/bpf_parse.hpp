@@ -19,6 +19,7 @@ public:
     virtual std::string to_string() const = 0;
 
     virtual bool is_special() const { return false; }
+    virtual bool is_buildable() const { return true; }
 
     bool has_special() const;
     bool has_all_special() const;
@@ -97,6 +98,8 @@ public:
 
     std::string to_string() const override;
 
+    bool is_buildable() const override;
+
     std::unique_ptr<expr> expr;
     unary_logical_op op; /* not */
 };
@@ -118,6 +121,8 @@ public:
     }
 
     std::string to_string() const override;
+
+    bool is_buildable() const override;
 
     std::unique_ptr<expr> lhs;
     std::unique_ptr<expr> rhs;
