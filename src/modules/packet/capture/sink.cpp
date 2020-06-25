@@ -5,7 +5,7 @@
 #include "packetio/internal_client.hpp"
 #include "packetio/internal_worker.hpp"
 #include "packetio/packet_buffer.hpp"
-#include "packetio/bpf/bpf.hpp"
+#include "packet/bpf/bpf.hpp"
 #include "packet/capture/sink.hpp"
 
 namespace openperf::packet::capture {
@@ -83,13 +83,13 @@ sink::sink(const sink_config& config, std::vector<unsigned> rx_ids)
 {
     if (!m_config.filter.empty())
         m_filter =
-            std::make_unique<openperf::packetio::bpf::bpf>(m_config.filter);
+            std::make_unique<openperf::packet::bpf::bpf>(m_config.filter);
     if (!m_config.start_trigger.empty())
-        m_start_trigger = std::make_unique<openperf::packetio::bpf::bpf>(
+        m_start_trigger = std::make_unique<openperf::packet::bpf::bpf>(
             m_config.start_trigger);
     if (!m_config.stop_trigger.empty())
-        m_stop_trigger = std::make_unique<openperf::packetio::bpf::bpf>(
-            m_config.stop_trigger);
+        m_stop_trigger =
+            std::make_unique<openperf::packet::bpf::bpf>(m_config.stop_trigger);
 }
 
 sink::sink(sink&& other) noexcept

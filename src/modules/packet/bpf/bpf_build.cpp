@@ -6,10 +6,10 @@
 #include <memory>
 
 #include "core/op_log.h"
-#include "packetio/bpf/bpf.hpp"
-#include "packetio/bpf/bpf_build.hpp"
+#include "packet/bpf/bpf.hpp"
+#include "packet/bpf/bpf_build.hpp"
 
-namespace openperf::packetio::bpf {
+namespace openperf::packet::bpf {
 
 void bpf_resolve_jmp(std::vector<bpf_insn>& bf_insns,
                      std::map<size_t, bpf_insn_jmp_info>& jmp_map,
@@ -305,4 +305,4 @@ uint32_t bpf_get_filter_flags(const expr* e)
     return BPF_FILTER_FLAGS_BPF;
 }
 
-} // namespace openperf::packetio::bpf
+} // namespace openperf::packet::bpf

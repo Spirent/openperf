@@ -3,7 +3,7 @@
 
 #include "catch.hpp"
 
-#include "packetio/bpf/bpf.hpp"
+#include "packet/bpf/bpf.hpp"
 #include "packetio/mock_packet_buffer.hpp"
 #include <pcap.h>
 
@@ -69,25 +69,25 @@ TEST_CASE("bpf", "[bpf]")
 {
     SECTION("good")
     {
-        REQUIRE_NOTHROW(openperf::packetio::bpf::bpf("length == 1000"));
-        REQUIRE_NOTHROW(openperf::packetio::bpf::bpf(
+        REQUIRE_NOTHROW(openperf::packet::bpf::bpf("length == 1000"));
+        REQUIRE_NOTHROW(openperf::packet::bpf::bpf(
             "ether src 10:0:0:0:0:1 and ether dst 10:0:0:0:0:2"));
-        REQUIRE_NOTHROW(openperf::packetio::bpf::bpf(
-            "ip src 10.0.0.1 and ip dst 10.0.0.2"));
-        REQUIRE_NOTHROW(openperf::packetio::bpf::bpf(
-            "ip6 src 2001::1 and ip6 dst 2001::2"));
+        REQUIRE_NOTHROW(
+            openperf::packet::bpf::bpf("ip src 10.0.0.1 and ip dst 10.0.0.2"));
+        REQUIRE_NOTHROW(
+            openperf::packet::bpf::bpf("ip6 src 2001::1 and ip6 dst 2001::2"));
     }
     SECTION("bad")
     {
         REQUIRE_THROWS_AS(
-            openperf::packetio::bpf::bpf("length == BAD_LENGTH_VALUE"),
+            openperf::packet::bpf::bpf("length == BAD_LENGTH_VALUE"),
             std::invalid_argument);
-        REQUIRE_THROWS_AS(openperf::packetio::bpf::bpf(
+        REQUIRE_THROWS_AS(openperf::packet::bpf::bpf(
                               "ether src 10:0:0 and ether dst 10:0:0:0:0:2"),
                           std::invalid_argument);
-        REQUIRE_THROWS_AS(openperf::packetio::bpf::bpf("ip src 2001::1"),
+        REQUIRE_THROWS_AS(openperf::packet::bpf::bpf("ip src 2001::1"),
                           std::invalid_argument);
-        REQUIRE_THROWS_AS(openperf::packetio::bpf::bpf("ip6 src 10.0.0.1"),
+        REQUIRE_THROWS_AS(openperf::packet::bpf::bpf("ip6 src 10.0.0.1"),
                           std::invalid_argument);
     }
 }
@@ -102,7 +102,7 @@ TEST_CASE("bpf w/ raw data", "[bpf]")
         const auto dst_ip = libpacket::type::ipv4_address("1.0.0.2");
 
         // Use libpcap to parse the filter string
-        auto prog = openperf::packetio::bpf::bpf_compile(
+        auto prog = openperf::packet::bpf::bpf_compile(
             "ether src 10:0:0:0:0:1 and ether dst 10:0:0:0:0:2");
         REQUIRE(prog);
 
@@ -110,7 +110,7 @@ TEST_CASE("bpf w/ raw data", "[bpf]")
         REQUIRE(op_bpf_validate(prog->bf_insns, prog->bf_len));
 
         // JIT compile the program
-        auto jit = openperf::packetio::bpf::bpf_jit(
+        auto jit = openperf::packet::bpf::bpf_jit(
             nullptr, prog->bf_insns, prog->bf_len);
         REQUIRE(jit);
         auto jit_func = *jit;
@@ -146,7 +146,7 @@ TEST_CASE("bpf w/ raw data", "[bpf]")
         const auto dst_ip = libpacket::type::ipv4_address("1.0.0.2");
 
         // Use libpcap to parse the filter string
-        auto prog = openperf::packetio::bpf::bpf_compile(
+        auto prog = openperf::packet::bpf::bpf_compile(
             "ip src 1.0.0.1 and ip dst 1.0.0.2");
         REQUIRE(prog);
 
@@ -154,7 +154,7 @@ TEST_CASE("bpf w/ raw data", "[bpf]")
         REQUIRE(op_bpf_validate(prog->bf_insns, prog->bf_len));
 
         // JIT compile the program
-        auto jit = openperf::packetio::bpf::bpf_jit(
+        auto jit = openperf::packet::bpf::bpf_jit(
             nullptr, prog->bf_insns, prog->bf_len);
         REQUIRE(jit);
         auto jit_func = *jit;
@@ -190,7 +190,7 @@ TEST_CASE("bpf w/ raw data", "[bpf]")
         const auto dst_ip = libpacket::type::ipv6_address("2001::2");
 
         // Use libpcap to parse the filter string
-        auto prog = openperf::packetio::bpf::bpf_compile(
+        auto prog = openperf::packet::bpf::bpf_compile(
             "ip6 src 2001::1 and ip6 dst 2001::2");
         REQUIRE(prog);
 
@@ -198,7 +198,7 @@ TEST_CASE("bpf w/ raw data", "[bpf]")
         REQUIRE(op_bpf_validate(prog->bf_insns, prog->bf_len));
 
         // JIT compile the program
-        auto jit = openperf::packetio::bpf::bpf_jit(
+        auto jit = openperf::packet::bpf::bpf_jit(
             nullptr, prog->bf_insns, prog->bf_len);
         REQUIRE(jit);
         auto jit_func = *jit;
@@ -238,7 +238,7 @@ TEST_CASE("bpf w/ packet_buffer", "[bpf]")
         const auto dst_ip = libpacket::type::ipv4_address("1.0.0.2");
         const int num_packets = 10;
 
-        openperf::packetio::bpf::bpf bpf(
+        openperf::packet::bpf::bpf bpf(
             "ether src 10:0:0:0:0:1 and ether dst 10:0:0:0:0:2");
 
         SECTION("no match")
@@ -336,7 +336,7 @@ TEST_CASE("bpf w/ packet_buffer", "[bpf]")
         const auto dst_ip = libpacket::type::ipv4_address("1.0.0.2");
         const int num_packets = 10;
 
-        openperf::packetio::bpf::bpf bpf(
+        openperf::packet::bpf::bpf bpf(
             "signature and ether src 10:0:0:0:0:1 and ether dst 10:0:0:0:0:2");
 
         SECTION("no match")
@@ -434,7 +434,7 @@ TEST_CASE("bpf w/ packet_buffer", "[bpf]")
         const auto dst_ip = libpacket::type::ipv4_address("1.0.0.2");
         const int num_packets = 10;
 
-        openperf::packetio::bpf::bpf bpf(
+        openperf::packet::bpf::bpf bpf(
             "not signature and "
             "ether src 10:0:0:0:0:1 and ether dst 10:0:0:0:0:2");
 
@@ -533,7 +533,7 @@ TEST_CASE("bpf w/ packet_buffer", "[bpf]")
         const auto dst_ip = libpacket::type::ipv4_address("1.0.0.2");
         const int num_packets = 10;
 
-        openperf::packetio::bpf::bpf bpf(
+        openperf::packet::bpf::bpf bpf(
             "signature streamid 1-5 and ether src 10:0:0:0:0:1 and ether dst "
             "10:0:0:0:0:2");
 
@@ -663,7 +663,7 @@ TEST_CASE("bpf benchmarks", "[bpf]")
     results.resize(packets.size());
 
     {
-        openperf::packetio::bpf::bpf bpf;
+        openperf::packet::bpf::bpf bpf;
 
         BENCHMARK("all, match")
         {
@@ -676,7 +676,7 @@ TEST_CASE("bpf benchmarks", "[bpf]")
     }
 
     {
-        openperf::packetio::bpf::bpf bpf(
+        openperf::packet::bpf::bpf bpf(
             "ether src 10:0:0:0:0:1 and ether dst 10:0:0:0:0:2");
 
         BENCHMARK("ether, match")
@@ -690,7 +690,7 @@ TEST_CASE("bpf benchmarks", "[bpf]")
     }
 
     {
-        openperf::packetio::bpf::bpf bpf(
+        openperf::packet::bpf::bpf bpf(
             "ether src 10:0:0:0:0:2 and ether dst 10:0:0:0:0:1");
 
         BENCHMARK("ether, no match")
@@ -704,7 +704,7 @@ TEST_CASE("bpf benchmarks", "[bpf]")
     }
 
     {
-        openperf::packetio::bpf::bpf bpf("ip src 1.0.0.1 and ip dst 1.0.0.2");
+        openperf::packet::bpf::bpf bpf("ip src 1.0.0.1 and ip dst 1.0.0.2");
 
         BENCHMARK("ip, match")
         {
@@ -717,7 +717,7 @@ TEST_CASE("bpf benchmarks", "[bpf]")
     }
 
     {
-        openperf::packetio::bpf::bpf bpf("ip src 1.0.0.2 and ip dst 1.0.0.1");
+        openperf::packet::bpf::bpf bpf("ip src 1.0.0.2 and ip dst 1.0.0.1");
 
         BENCHMARK("ip, no match")
         {
@@ -730,7 +730,7 @@ TEST_CASE("bpf benchmarks", "[bpf]")
     }
 
     {
-        openperf::packetio::bpf::bpf bpf("signature");
+        openperf::packet::bpf::bpf bpf("signature");
 
         uint32_t stream_id = 1;
         for (auto& mock : packets_mock) {
@@ -757,7 +757,7 @@ TEST_CASE("bpf benchmarks", "[bpf]")
     }
 
     {
-        openperf::packetio::bpf::bpf bpf("not signature");
+        openperf::packet::bpf::bpf bpf("not signature");
 
         for (auto& mock : packets_mock) { mock->signature_stream_id = {}; }
 
@@ -784,7 +784,7 @@ TEST_CASE("bpf benchmarks", "[bpf]")
     }
 
     {
-        openperf::packetio::bpf::bpf bpf(
+        openperf::packet::bpf::bpf bpf(
             "not signature and "
             "ether src 10:0:0:0:0:1 and ether dst 10:0:0:0:0:2");
 
@@ -815,7 +815,7 @@ TEST_CASE("bpf benchmarks", "[bpf]")
     }
 
     {
-        openperf::packetio::bpf::bpf bpf(
+        openperf::packet::bpf::bpf bpf(
             "not signature and "
             "ether src 10:0:0:0:0:2 and ether dst 10:0:0:0:0:1");
 

@@ -10,7 +10,7 @@
 #include "packetio/generic_sink.hpp"
 #include "utils/recycle.hpp"
 
-namespace openperf::packetio::bpf {
+namespace openperf::packet::bpf {
 class bpf;
 }
 
@@ -122,9 +122,9 @@ private:
 
     sink_config m_config;
 
-    std::unique_ptr<openperf::packetio::bpf::bpf> m_filter;
-    std::unique_ptr<openperf::packetio::bpf::bpf> m_start_trigger;
-    std::unique_ptr<openperf::packetio::bpf::bpf> m_stop_trigger;
+    std::unique_ptr<openperf::packet::bpf::bpf> m_filter;
+    std::unique_ptr<openperf::packet::bpf::bpf> m_start_trigger;
+    std::unique_ptr<openperf::packet::bpf::bpf> m_stop_trigger;
 
     std::vector<uint8_t> m_indexes;
     mutable std::atomic<sink_result*> m_results = nullptr;

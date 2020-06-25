@@ -6,9 +6,9 @@
 #include <list>
 #include <cassert>
 
-#include "packetio/bpf/bpf_parse.hpp"
+#include "packet/bpf/bpf_parse.hpp"
 
-namespace openperf::packetio::bpf {
+namespace openperf::packet::bpf {
 
 enum class token_type {
     NONE,
@@ -724,4 +724,4 @@ std::unique_ptr<expr> bpf_split_special(std::unique_ptr<expr>&& ex)
     return result;
 }
 
-} // namespace openperf::packetio::bpf
+} // namespace openperf::packet::bpf

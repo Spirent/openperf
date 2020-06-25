@@ -1,12 +1,12 @@
-#ifndef _OP_PACKETIO_BPF_PARSE_HPP_
-#define _OP_PACKETIO_BPF_PARSE_HPP_
+#ifndef _OP_PACKET_BPF_PARSE_HPP_
+#define _OP_PACKET_BPF_PARSE_HPP_
 
 #include <string>
 #include <vector>
 #include <memory>
 #include <optional>
 
-namespace openperf::packetio::bpf {
+namespace openperf::packet::bpf {
 
 class expr
 {
@@ -128,6 +128,6 @@ std::unique_ptr<expr> bpf_parse_string(std::string_view str);
 
 std::unique_ptr<expr> bpf_split_special(std::unique_ptr<expr>&& expr);
 
-} // namespace openperf::packetio::bpf
+} // namespace openperf::packet::bpf
 
-#endif // _OP_PACKETIO_BPF_PARSE_HPP_
+#endif // _OP_PACKET_BPF_PARSE_HPP_

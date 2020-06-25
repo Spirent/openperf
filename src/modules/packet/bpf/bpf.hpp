@@ -1,17 +1,19 @@
-#ifndef _OP_PACKETIO_BPF_HPP_
-#define _OP_PACKETIO_BPF_HPP_
+#ifndef _OP_PACKET_BPF_HPP_
+#define _OP_PACKET_BPF_HPP_
 
 #include <cstdint>
 #include <string>
+#include <memory>
+#include <vector>
 
 #include <pcap.h>
-#include "packetio/bpf/bsd/bpf.h"
+#include "packet/bpf/bsd/bpf.h"
 
 namespace openperf::packetio::packet {
 struct packet_buffer;
 }
 
-namespace openperf::packetio::bpf {
+namespace openperf::packet::bpf {
 
 using bpf_program_ptr = std::unique_ptr<bpf_program, void (*)(bpf_program*)>;
 
@@ -132,6 +134,6 @@ private:
         uint16_t offset);
 };
 
-} // namespace openperf::packetio::bpf
+} // namespace openperf::packet::bpf
 
-#endif //_OP_PACKETIO_BPF_HPP_
+#endif //_OP_PACKET_BPF_HPP_

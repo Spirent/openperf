@@ -2,11 +2,11 @@
 #include <zmq.h>
 #include <sys/eventfd.h>
 
+#include "packet/bpf/bpf.hpp"
 #include "packet/capture/server.hpp"
 #include "swagger/v1/model/PacketCapture.h"
 #include "swagger/v1/model/PacketCaptureResult.h"
 #include "utils/overloaded_visitor.hpp"
-#include "packetio/bpf/bpf.hpp"
 
 namespace openperf::packet::capture::api {
 
@@ -292,7 +292,7 @@ reply_msg server::handle_request(const request_list_captures& request)
 tl::expected<void, int> validate_filter(std::string_view filter_str)
 {
     try {
-        openperf::packetio::bpf::bpf bpf(filter_str);
+        openperf::packet::bpf::bpf bpf(filter_str);
     } catch (const std::exception& e) {
         return tl::make_unexpected(EINVAL);
     }

@@ -2,7 +2,7 @@
 # Makefile component to build Capture code
 #
 
-CAP_DEPENDS += immer packetio spirent_pga timesync
+CAP_DEPENDS += immer packetio packet_bpf spirent_pga timesync
 
 CAP_SOURCES += \
         api_transmogrify.cpp \

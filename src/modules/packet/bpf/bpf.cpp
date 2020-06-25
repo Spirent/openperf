@@ -6,12 +6,12 @@
 #include <sstream>
 
 #include "core/op_log.h"
-#include "packetio/bpf/bpf.hpp"
-#include "packetio/bpf/bpf_parse.hpp"
-#include "packetio/bpf/bpf_build.hpp"
+#include "packet/bpf/bpf.hpp"
+#include "packet/bpf/bpf_parse.hpp"
+#include "packet/bpf/bpf_build.hpp"
 #include "packetio/packet_buffer.hpp"
 
-namespace openperf::packetio::bpf {
+namespace openperf::packet::bpf {
 
 constexpr bpf_memword_init_t bpf_ctx_preinited()
 {
@@ -19,11 +19,13 @@ constexpr bpf_memword_init_t bpf_ctx_preinited()
            | BPF_MEMWORD_INIT(BPF_MEM_STREAM_ID);
 }
 
-inline void bpf_arg_init(bpf_args_t& args, const packet::packet_buffer* packet)
+inline void bpf_arg_init(bpf_args_t& args,
+                         const packetio::packet::packet_buffer* packet)
 {
-    args.buflen = args.wirelen = packet::length(packet);
-    args.pkt = reinterpret_cast<const uint8_t*>(packet::to_data(packet));
-    auto stream_id = packet::signature_stream_id(packet);
+    args.buflen = args.wirelen = packetio::packet::length(packet);
+    args.pkt =
+        reinterpret_cast<const uint8_t*>(packetio::packet::to_data(packet));
+    auto stream_id = packetio::packet::signature_stream_id(packet);
     args.mem[BPF_MEM_PKTFLAGS] = 0;
     if (stream_id.has_value()) {
         args.mem[BPF_MEM_PKTFLAGS] |= BPF_PKTFLAG_SIGNATURE;
@@ -38,7 +40,7 @@ inline void bpf_arg_init(bpf_args_t& args, const packet::packet_buffer* packet)
 }
 
 uint16_t bpf_all_filter_func(bpf&,
-                             const packet::packet_buffer* const[],
+                             const packetio::packet::packet_buffer* const[],
                              uint64_t results[],
                              uint16_t length)
 {
@@ -47,17 +49,18 @@ uint16_t bpf_all_filter_func(bpf&,
 }
 
 uint16_t bpf_all_find_next_func(bpf&,
-                                const packet::packet_buffer* const[],
+                                const packetio::packet::packet_buffer* const[],
                                 uint16_t,
                                 uint16_t offset)
 {
     return offset;
 }
 
-uint16_t bpf_vm_filter_func(bpf& bpf,
-                            const packet::packet_buffer* const packets[],
-                            uint64_t results[],
-                            uint16_t length)
+uint16_t
+bpf_vm_filter_func(bpf& bpf,
+                   const packetio::packet::packet_buffer* const packets[],
+                   uint64_t results[],
+                   uint16_t length)
 {
     uint32_t mem[BPF_MEMWORDS];
     bpf_ctx_t ctx{.copfuncs = nullptr,
@@ -76,10 +79,11 @@ uint16_t bpf_vm_filter_func(bpf& bpf,
     return length;
 }
 
-uint16_t bpf_vm_find_next_func(bpf& bpf,
-                               const packet::packet_buffer* const packets[],
-                               uint16_t length,
-                               uint16_t offset)
+uint16_t
+bpf_vm_find_next_func(bpf& bpf,
+                      const packetio::packet::packet_buffer* const packets[],
+                      uint16_t length,
+                      uint16_t offset)
 {
     uint32_t mem[BPF_MEMWORDS];
     bpf_ctx_t ctx{.copfuncs = nullptr,
@@ -99,10 +103,11 @@ uint16_t bpf_vm_find_next_func(bpf& bpf,
     return std::distance(packets, found);
 }
 
-uint16_t bpf_jit_filter_func(bpf& bpf,
-                             const packet::packet_buffer* const packets[],
-                             uint64_t results[],
-                             uint16_t length)
+uint16_t
+bpf_jit_filter_func(bpf& bpf,
+                    const packetio::packet::packet_buffer* const packets[],
+                    uint64_t results[],
+                    uint16_t length)
 {
     uint32_t mem[BPF_MEMWORDS];
     bpf_ctx_t ctx{.copfuncs = nullptr,
@@ -121,10 +126,11 @@ uint16_t bpf_jit_filter_func(bpf& bpf,
     return length;
 }
 
-uint16_t bpf_jit_find_next_func(bpf& bpf,
-                                const packet::packet_buffer* const packets[],
-                                uint16_t length,
-                                uint16_t offset)
+uint16_t
+bpf_jit_find_next_func(bpf& bpf,
+                       const packetio::packet::packet_buffer* const packets[],
+                       uint16_t length,
+                       uint16_t offset)
 {
     uint32_t mem[BPF_MEMWORDS];
     bpf_ctx_t ctx{.copfuncs = nullptr,
@@ -144,61 +150,65 @@ uint16_t bpf_jit_find_next_func(bpf& bpf,
     return std::distance(packets, found);
 }
 
-uint16_t bpf_sig_filter_func(bpf&,
-                             const packet::packet_buffer* const packets[],
-                             uint64_t results[],
-                             uint16_t length)
+uint16_t
+bpf_sig_filter_func(bpf&,
+                    const packetio::packet::packet_buffer* const packets[],
+                    uint64_t results[],
+                    uint16_t length)
 {
     std::transform(packets, packets + length, results, [&](auto packet) {
-        auto stream_id = packet::signature_stream_id(packet);
+        auto stream_id = packetio::packet::signature_stream_id(packet);
         return stream_id.has_value();
     });
     return length;
 }
 
-uint16_t bpf_sig_find_next_func(bpf&,
-                                const packet::packet_buffer* const packets[],
-                                uint16_t length,
-                                uint16_t offset)
+uint16_t
+bpf_sig_find_next_func(bpf&,
+                       const packetio::packet::packet_buffer* const packets[],
+                       uint16_t length,
+                       uint16_t offset)
 {
     auto found =
         std::find_if(packets + offset, packets + length, [&](auto packet) {
-            auto stream_id = packet::signature_stream_id(packet);
+            auto stream_id = packetio::packet::signature_stream_id(packet);
             return stream_id.has_value();
         });
     return std::distance(packets, found);
 }
 
-uint16_t bpf_no_sig_filter_func(bpf&,
-                                const packet::packet_buffer* const packets[],
-                                uint64_t results[],
-                                uint16_t length)
+uint16_t
+bpf_no_sig_filter_func(bpf&,
+                       const packetio::packet::packet_buffer* const packets[],
+                       uint64_t results[],
+                       uint16_t length)
 {
     std::transform(packets, packets + length, results, [&](auto packet) {
-        auto stream_id = packet::signature_stream_id(packet);
+        auto stream_id = packetio::packet::signature_stream_id(packet);
         return !stream_id.has_value();
     });
     return length;
 }
 
-uint16_t bpf_no_sig_find_next_func(bpf&,
-                                   const packet::packet_buffer* const packets[],
-                                   uint16_t length,
-                                   uint16_t offset)
+uint16_t bpf_no_sig_find_next_func(
+    bpf&,
+    const packetio::packet::packet_buffer* const packets[],
+    uint16_t length,
+    uint16_t offset)
 {
     auto found =
         std::find_if(packets + offset, packets + length, [&](auto packet) {
-            auto stream_id = packet::signature_stream_id(packet);
+            auto stream_id = packetio::packet::signature_stream_id(packet);
             return !stream_id.has_value();
         });
     return std::distance(packets, found);
 }
 
-uint16_t
-bpf_no_sig_and_bpf_jit_filter_func(bpf& bpf,
-                                   const packet::packet_buffer* const packets[],
-                                   uint64_t results[],
-                                   uint16_t length)
+uint16_t bpf_no_sig_and_bpf_jit_filter_func(
+    bpf& bpf,
+    const packetio::packet::packet_buffer* const packets[],
+    uint64_t results[],
+    uint16_t length)
 {
     uint32_t mem[BPF_MEMWORDS];
     bpf_ctx_t ctx{.copfuncs = nullptr,
@@ -210,7 +220,7 @@ bpf_no_sig_and_bpf_jit_filter_func(bpf& bpf,
     auto filter_func = bpf.get_filter_func();
 
     std::transform(packets, packets + length, results, [&](auto packet) {
-        auto stream_id = packet::signature_stream_id(packet);
+        auto stream_id = packetio::packet::signature_stream_id(packet);
         if (stream_id.has_value()) return false;
         bpf_arg_init(args, packet);
         return filter_func(&ctx, &args) != 0;
@@ -221,7 +231,7 @@ bpf_no_sig_and_bpf_jit_filter_func(bpf& bpf,
 
 uint16_t bpf_no_sig_and_bpf_jit_find_next_func(
     bpf& bpf,
-    const packet::packet_buffer* const packets[],
+    const packetio::packet::packet_buffer* const packets[],
     uint16_t length,
     uint16_t offset)
 {
@@ -236,7 +246,7 @@ uint16_t bpf_no_sig_and_bpf_jit_find_next_func(
 
     auto found =
         std::find_if(packets + offset, packets + length, [&](auto packet) {
-            auto stream_id = packet::signature_stream_id(packet);
+            auto stream_id = packetio::packet::signature_stream_id(packet);
             if (stream_id.has_value()) return false;
             bpf_arg_init(args, packet);
             return filter_func(&ctx, &args) != 0;
@@ -425,4 +435,4 @@ bool bpf::parse(std::string_view filter_str, int link_type)
     }
 }
 
-} // namespace openperf::packetio::bpf
+} // namespace openperf::packet::bpf

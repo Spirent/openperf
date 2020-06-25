@@ -1,13 +1,13 @@
-#ifndef _OP_PACKETIO_BPF_BUILD_HPP_
-#define _OP_PACKETIO_BPF_BUILD_HPP_
+#ifndef _OP_PACKET_BPF_BUILD_HPP_
+#define _OP_PACKET_BPF_BUILD_HPP_
 
 #include <optional>
 #include <map>
-#include "packetio/bpf/bpf_parse.hpp"
+#include "packet/bpf/bpf_parse.hpp"
 
 struct bpf_insn;
 
-namespace openperf::packetio::bpf {
+namespace openperf::packet::bpf {
 
 constexpr int BPF_MEM_PKTFLAGS = 0;
 constexpr int BPF_MEM_STREAM_ID = 1;
@@ -76,6 +76,6 @@ bool bpf_build_prog_mixed(const binary_logical_expr* e,
 
 uint32_t bpf_get_filter_flags(const expr* e);
 
-} // namespace openperf::packetio::bpf
+} // namespace openperf::packet::bpf
 
-#endif // _OP_PACKETIO_BPF_BUILD_HPP_
+#endif // _OP_PACKET_BPF_BUILD_HPP_

@@ -3,9 +3,9 @@
 
 #include "catch.hpp"
 
-#include "packetio/bpf/bpf_parse.hpp"
+#include "packet/bpf/bpf_parse.hpp"
 
-using namespace openperf::packetio::bpf;
+using namespace openperf::packet::bpf;
 
 TEST_CASE("bpf_parse", "[bpf]")
 {
