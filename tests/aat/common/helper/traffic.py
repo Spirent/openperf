@@ -277,5 +277,6 @@ def make_generator_config(**kwargs):
     config.load = make_traffic_load(load_config)
     config.traffic = list(map(make_traffic_definition, packet_config))
     config.order = kwargs['order'] if 'order' in kwargs else 'round-robin'
+    config.protocol_counters = kwargs['protocol_counters'] if 'protocol_counters' in kwargs else None
 
     return config

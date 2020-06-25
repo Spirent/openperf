@@ -43,31 +43,42 @@ struct flag_lock
 
 source_result::source_result(const source& src)
     : m_parent(src)
+    , m_protocols(packet::statistics::make_counters(src.protocol_counters()))
 {}
 
 bool source_result::active() const { return (m_active); }
 
 const source& source_result::parent() const { return (m_parent); }
 
-const std::vector<traffic::counter>& source_result::counters() const
+const std::vector<traffic::counter>& source_result::flows() const
 {
-    return (m_counters);
+    return (m_flows);
 }
 
 traffic::counter& source_result::operator[](size_t idx)
 {
-    return (m_counters[idx]);
+    return (m_flows[idx]);
 }
 
 const traffic::counter& source_result::operator[](size_t idx) const
 {
-    return (m_counters[idx]);
+    return (m_flows[idx]);
 }
 
-void source_result::start(size_t nb_counters)
+const source_result::protocol_counters& source_result::protocols() const
 {
-    m_counters.clear();
-    m_counters.resize(nb_counters);
+    return (m_protocols);
+}
+
+source_result::protocol_counters& source_result::protocols()
+{
+    return (m_protocols);
+}
+
+void source_result::start(size_t nb_flows)
+{
+    m_flows.clear();
+    m_flows.resize(nb_flows);
     m_active = true;
 }
 
@@ -77,6 +88,8 @@ source::source(source_config&& config)
     : m_config(config)
     , m_sequence(api::to_sequence(*m_config.api_config))
     , m_load(api::to_load(*m_config.api_config->getLoad(), m_sequence))
+    , m_protocols(api::to_protocol_counters_config(
+          m_config.api_config->getProtocolCounters()))
     , m_tx_limit(
           api::max_transmit_count(*m_config.api_config->getDuration(), m_load))
 {}
@@ -85,6 +98,7 @@ source::source(source&& other) noexcept
     : m_config(std::move(other.m_config))
     , m_sequence(std::move(other.m_sequence))
     , m_load(other.m_load)
+    , m_protocols(other.m_protocols)
     , m_tx_limit(other.m_tx_limit)
     , m_tx_idx(other.m_tx_idx)
     , m_results(other.m_results.exchange(nullptr))
@@ -96,6 +110,7 @@ source& source::operator=(source&& other) noexcept
         m_config = std::move(other.m_config);
         m_sequence = std::move(other.m_sequence);
         m_load = other.m_load;
+        m_protocols = other.m_protocols;
         m_tx_limit = other.m_tx_limit;
         m_tx_idx = other.m_tx_idx;
         m_results.store(other.m_results.exchange(nullptr));
@@ -107,6 +122,11 @@ source& source::operator=(source&& other) noexcept
 std::string source::id() const { return (m_config.id); }
 
 std::string source::target() const { return (m_config.target); }
+
+api::protocol_counters_config source::protocol_counters() const
+{
+    return (m_protocols);
+}
 
 bool source::active() const
 {
@@ -240,6 +260,8 @@ uint16_t source::transform(packetio::packet::packet_buffer* input[],
                               m_packet_scratch.data<3>(), /* header flags */
                               m_packet_scratch.data<4>(), /* signature config */
                               m_packet_scratch.data<5>()); /* pkt len */
+
+        results->protocols().update(m_packet_scratch.data<3>(), end - start);
 
         std::transform(
             input + start,

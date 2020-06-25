@@ -200,6 +200,9 @@ make_counters(openperf::utils::bit_flags<protocol_flags> flags);
 enum protocol_flags to_protocol_flag(std::string_view name);
 std::string_view to_name(enum protocol_flags);
 
+openperf::utils::bit_flags<protocol_flags>
+to_protocol_flags(const generic_protocol_counters&);
+
 } // namespace openperf::packet::statistics
 
 declare_enum_flags(openperf::packet::statistics::protocol_flags);
@@ -209,6 +212,7 @@ inline constexpr auto all_protocol_counters =
     (protocol_flags::ethernet | protocol_flags::ip | protocol_flags::transport
      | protocol_flags::tunnel | protocol_flags::inner_ethernet
      | protocol_flags::inner_ip | protocol_flags::inner_transport);
+
 }
 
 #endif /* _OP_PACKET_PROTOCOL_STATISTICS_GENERIC_PROTOCOL_COUNTERS_HPP_ */
