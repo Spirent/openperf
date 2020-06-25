@@ -32,6 +32,10 @@ class TxFlow;
 
 } // namespace swagger::v1::model
 
+namespace openperf::message {
+struct serialized_message;
+}
+
 namespace openperf::packet::generator {
 
 class source;
@@ -70,6 +74,8 @@ using id_ptr = std::unique_ptr<std::string>;
 enum class filter_type { none, generator_id, target_id };
 using filter_map_type = std::map<filter_type, std::string>;
 using filter_map_ptr = std::unique_ptr<filter_map_type>;
+
+using serialized_msg = openperf::message::serialized_message;
 
 /* XXX: What should the min/max be? */
 inline constexpr uint16_t min_packet_length = 64;
@@ -289,20 +295,11 @@ using reply_msg = std::variant<reply_generators,
                                reply_ok,
                                reply_error>;
 
-struct serialized_msg
-{
-    zmq_msg_t type;
-    zmq_msg_t data;
-};
-
 serialized_msg serialize_request(request_msg&& request);
 serialized_msg serialize_reply(reply_msg&& reply);
 
-tl::expected<request_msg, int> deserialize_request(const serialized_msg& msg);
-tl::expected<reply_msg, int> deserialize_reply(const serialized_msg& msg);
-
-int send_message(void* socket, serialized_msg&& msg);
-tl::expected<serialized_msg, int> recv_message(void* socket, int flags = 0);
+tl::expected<request_msg, int> deserialize_request(serialized_msg&& msg);
+tl::expected<reply_msg, int> deserialize_reply(serialized_msg&& msg);
 
 reply_error to_error(error_type type, int value = 0);
 
