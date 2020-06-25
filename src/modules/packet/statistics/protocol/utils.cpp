@@ -44,4 +44,36 @@ std::string_view to_name(enum protocol_flags flag)
     return ("none");
 }
 
+openperf::utils::bit_flags<protocol_flags>
+to_protocol_flags(const generic_protocol_counters& counters)
+{
+    auto flags = openperf::utils::bit_flags<protocol_flags>{};
+
+    if (counters.holds<protocol::ethernet>()) {
+        flags |= protocol_flags::ethernet;
+    }
+
+    if (counters.holds<protocol::ip>()) { flags |= protocol_flags::ip; }
+
+    if (counters.holds<protocol::transport>()) {
+        flags |= protocol_flags::transport;
+    }
+
+    if (counters.holds<protocol::tunnel>()) { flags |= protocol_flags::tunnel; }
+
+    if (counters.holds<protocol::inner_ethernet>()) {
+        flags |= protocol_flags::inner_ethernet;
+    }
+
+    if (counters.holds<protocol::inner_ip>()) {
+        flags |= protocol_flags::inner_ip;
+    }
+
+    if (counters.holds<protocol::inner_transport>()) {
+        flags |= protocol_flags::inner_transport;
+    }
+
+    return (flags);
+}
+
 } // namespace openperf::packet::statistics

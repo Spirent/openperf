@@ -535,6 +535,9 @@ definitions:
   PacketGeneratorFlowCounters:
     $ref: ./modules/packet/generator.yaml#/definitions/PacketGeneratorFlowCounters
 
+  PacketGeneratorProtocolCounters:
+    $ref: ./modules/packet/generator.yaml#/definitions/PacketGeneratorProtocolCounters
+
   PacketGeneratorResult:
     $ref: ./modules/packet/generator.yaml#/definitions/PacketGeneratorResult
 

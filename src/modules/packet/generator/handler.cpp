@@ -246,6 +246,22 @@ maybe_get_request_uri(const handler::request_type& request)
     return (std::nullopt);
 }
 
+template <typename T>
+tl::expected<T, std::string> parse_request(const handler::request_type& request)
+{
+    auto obj = T{};
+    const auto& body = request.body();
+    if (body.empty()) return (obj);
+
+    try {
+        auto j = nlohmann::json::parse(body);
+        obj.fromJson(j);
+        return (obj);
+    } catch (const nlohmann::json::exception& e) {
+        return (tl::unexpected(json_error(e.id, e.what())));
+    }
+}
+
 static tl::expected<swagger::v1::model::PacketGenerator, std::string>
 parse_create_generator_request(const handler::request_type& request)
 {
@@ -473,19 +489,6 @@ void handler::bulk_create_generators(const request_type& request,
         response.send(Http::Code::Ok, swagger_reply.toJson().dump());
     } else {
         handle_reply_error(api_reply, std::move(response));
-    }
-}
-
-template <typename T>
-tl::expected<T, std::string> parse_request(const handler::request_type& request)
-{
-    try {
-        auto obj = T{};
-        auto j = nlohmann::json::parse(request.body());
-        obj.fromJson(j);
-        return (obj);
-    } catch (const nlohmann::json::exception& e) {
-        return (tl::unexpected(json_error(e.id, e.what())));
     }
 }
 

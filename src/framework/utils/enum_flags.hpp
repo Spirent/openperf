@@ -49,6 +49,8 @@ template <typename Enum> struct bit_flags
     using enum_type = std::underlying_type_t<Enum>;
     enum_type value;
 
+    constexpr bit_flags() = default;
+
     constexpr bit_flags(const Enum& value)
         : value(static_cast<enum_type>(value))
     {}

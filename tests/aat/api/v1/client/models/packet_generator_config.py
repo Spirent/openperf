@@ -35,6 +35,7 @@ class PacketGeneratorConfig(object):
         'flow_count': 'int',
         'load': 'TrafficLoad',
         'order': 'str',
+        'protocol_counters': 'list[str]',
         'traffic': 'list[TrafficDefinition]'
     }
 
@@ -43,16 +44,18 @@ class PacketGeneratorConfig(object):
         'flow_count': 'flow_count',
         'load': 'load',
         'order': 'order',
+        'protocol_counters': 'protocol_counters',
         'traffic': 'traffic'
     }
 
-    def __init__(self, duration=None, flow_count=None, load=None, order=None, traffic=None):  # noqa: E501
+    def __init__(self, duration=None, flow_count=None, load=None, order=None, protocol_counters=None, traffic=None):  # noqa: E501
         """PacketGeneratorConfig - a model defined in Swagger"""  # noqa: E501
 
         self._duration = None
         self._flow_count = None
         self._load = None
         self._order = None
+        self._protocol_counters = None
         self._traffic = None
         self.discriminator = None
 
@@ -62,6 +65,8 @@ class PacketGeneratorConfig(object):
         self.load = load
         if order is not None:
             self.order = order
+        if protocol_counters is not None:
+            self.protocol_counters = protocol_counters
         self.traffic = traffic
 
     @property
@@ -147,6 +152,28 @@ class PacketGeneratorConfig(object):
         :type: str
         """
         self._order = order
+
+    @property
+    def protocol_counters(self):
+        """Gets the protocol_counters of this PacketGeneratorConfig.  # noqa: E501
+
+        List of protocol counters to update per transmitted packet.   # noqa: E501
+
+        :return: The protocol_counters of this PacketGeneratorConfig.  # noqa: E501
+        :rtype: list[str]
+        """
+        return self._protocol_counters
+
+    @protocol_counters.setter
+    def protocol_counters(self, protocol_counters):
+        """Sets the protocol_counters of this PacketGeneratorConfig.
+
+        List of protocol counters to update per transmitted packet.   # noqa: E501
+
+        :param protocol_counters: The protocol_counters of this PacketGeneratorConfig.  # noqa: E501
+        :type: list[str]
+        """
+        self._protocol_counters = protocol_counters
 
     @property
     def traffic(self):

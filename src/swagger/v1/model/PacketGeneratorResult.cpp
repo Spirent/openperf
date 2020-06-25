@@ -55,6 +55,7 @@ nlohmann::json PacketGeneratorResult::toJson() const
         }
         val["flows"] = jsonArray;
             }
+    val["protocol_counters"] = ModelBase::toJson(m_Protocol_counters);
     if(m_RemainingIsSet)
     {
         val["remaining"] = ModelBase::toJson(m_Remaining);
@@ -143,6 +144,15 @@ void PacketGeneratorResult::setFlowCounters(std::shared_ptr<PacketGeneratorFlowC
 std::vector<std::string>& PacketGeneratorResult::getFlows()
 {
     return m_Flows;
+}
+std::shared_ptr<PacketGeneratorProtocolCounters> PacketGeneratorResult::getProtocolCounters() const
+{
+    return m_Protocol_counters;
+}
+void PacketGeneratorResult::setProtocolCounters(std::shared_ptr<PacketGeneratorProtocolCounters> value)
+{
+    m_Protocol_counters = value;
+    
 }
 std::shared_ptr<TrafficDurationRemainder> PacketGeneratorResult::getRemaining() const
 {

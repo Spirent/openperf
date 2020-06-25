@@ -12,7 +12,7 @@
 /*
  * PacketGeneratorFlowCounters.h
  *
- * Packet generator statistics
+ * Packet generator flow statistics
  */
 
 #ifndef PacketGeneratorFlowCounters_H_
@@ -28,7 +28,7 @@ namespace v1 {
 namespace model {
 
 /// <summary>
-/// Packet generator statistics
+/// Packet generator flow statistics
 /// </summary>
 class  PacketGeneratorFlowCounters
     : public ModelBase

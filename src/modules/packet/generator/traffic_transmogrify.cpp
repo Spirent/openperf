@@ -412,4 +412,21 @@ to_packet_template(const swagger::v1::model::TrafficDefinition& definition)
         to_modifier_mux(*pkt)));
 }
 
+/*
+ * Protocol counter config translation
+ */
+
+api::protocol_counters_config
+to_protocol_counters_config(const std::vector<std::string>& counters)
+{
+    auto flags = api::protocol_counters_config{0};
+
+    std::for_each(
+        std::begin(counters), std::end(counters), [&](const auto& counter) {
+            flags |= packet::statistics::to_protocol_flag(counter);
+        });
+
+    return (flags);
+}
+
 } // namespace openperf::packet::generator::api

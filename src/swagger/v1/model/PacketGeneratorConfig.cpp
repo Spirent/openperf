@@ -23,6 +23,7 @@ PacketGeneratorConfig::PacketGeneratorConfig()
     m_Flow_countIsSet = false;
     m_Order = "";
     m_OrderIsSet = false;
+    m_Protocol_countersIsSet = false;
     
 }
 
@@ -51,6 +52,18 @@ nlohmann::json PacketGeneratorConfig::toJson() const
     }
     {
         nlohmann::json jsonArray;
+        for( auto& item : m_Protocol_counters )
+        {
+            jsonArray.push_back(ModelBase::toJson(item));
+        }
+        
+        if(jsonArray.size() > 0)
+        {
+            val["protocol_counters"] = jsonArray;
+        }
+    }
+    {
+        nlohmann::json jsonArray;
         for( auto& item : m_Traffic )
         {
             jsonArray.push_back(ModelBase::toJson(item));
@@ -72,6 +85,18 @@ void PacketGeneratorConfig::fromJson(nlohmann::json& val)
     {
         setOrder(val.at("order"));
         
+    }
+    {
+        m_Protocol_counters.clear();
+        nlohmann::json jsonArray;
+        if(val.find("protocol_counters") != val.end())
+        {
+        for( auto& item : val["protocol_counters"] )
+        {
+            m_Protocol_counters.push_back(item);
+            
+        }
+        }
     }
     {
         m_Traffic.clear();
@@ -147,6 +172,18 @@ bool PacketGeneratorConfig::orderIsSet() const
 void PacketGeneratorConfig::unsetOrder()
 {
     m_OrderIsSet = false;
+}
+std::vector<std::string>& PacketGeneratorConfig::getProtocolCounters()
+{
+    return m_Protocol_counters;
+}
+bool PacketGeneratorConfig::protocolCountersIsSet() const
+{
+    return m_Protocol_countersIsSet;
+}
+void PacketGeneratorConfig::unsetProtocol_counters()
+{
+    m_Protocol_countersIsSet = false;
 }
 std::vector<std::shared_ptr<TrafficDefinition>>& PacketGeneratorConfig::getTraffic()
 {

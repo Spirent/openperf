@@ -26,6 +26,8 @@ $(SWAGGER_DEF): $(PKT_DEFS) | $(ENV_DIR)/
 .PHONY: source
 source: $(SRC_DIR) $(HEADERS) $(PROTOCOL_HDR)
 
+$(info $(HEADERS))
+
 $(SRC_DIR):
 	@mkdir -p $(SRC_DIR)
 
