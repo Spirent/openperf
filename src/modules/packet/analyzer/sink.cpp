@@ -203,12 +203,13 @@ uint16_t sink::push(const packetio::packet::packet_buffer* const packets[],
 
         auto packet_types =
             std::array<packetio::packet::packet_type::flags, burst_size>{};
-        std::transform(packets + start,
-                       packets + end,
-                       packet_types.data(),
-                       [](const auto& packet) {
-                           return (packetio::packet::type(packet).value);
-                       });
+        std::transform(
+            packets + start,
+            packets + end,
+            packet_types.data(),
+            [](const auto& packet) {
+                return (packetio::packet::packet_type_flags(packet).value);
+            });
 
         protocol.update(packet_types.data(), count);
 

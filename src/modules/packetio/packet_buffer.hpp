@@ -16,7 +16,7 @@ struct packet_buffer;
  * Common functions
  */
 uint16_t max_length(const packet_buffer* buffer);
-packet_type::flags type(const packet_buffer* buffer);
+packet_type::flags packet_type_flags(const packet_buffer* buffer);
 
 void* to_data(packet_buffer* buffer);
 const void* to_data(const packet_buffer* buffer);
@@ -102,12 +102,21 @@ void signature(packet_buffer* buffer,
  */
 uint16_t length(const packet_buffer* buffer);
 
+/* Length of packet + L2 frame check sequence */
+uint16_t frame_length(const packet_buffer* buffer);
+
 timesync::chrono::realtime::time_point
 rx_timestamp(const packet_buffer* buffer);
 
 packet_type::flags packet_type_flags(const packet_buffer* buffer);
 
 uint32_t rss_hash(const packet_buffer* buffer);
+
+bool ipv4_checksum_error(const packet_buffer* buffer);
+
+bool tcp_checksum_error(const packet_buffer* buffer);
+
+bool udp_checksum_error(const packet_buffer* buffer);
 
 std::optional<uint32_t> signature_stream_id(const packet_buffer* buffer);
 
