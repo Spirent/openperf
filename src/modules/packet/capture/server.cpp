@@ -2,6 +2,7 @@
 #include <zmq.h>
 #include <sys/eventfd.h>
 
+#include "message/serialized_message.hpp"
 #include "packet/bpf/bpf.hpp"
 #include "packet/capture/server.hpp"
 #include "swagger/v1/model/PacketCapture.h"
@@ -162,7 +163,7 @@ static int handle_rpc_request(const op_event_data* data, void* arg)
     auto s = reinterpret_cast<server*>(arg);
 
     auto reply_errors = 0;
-    while (auto request = recv_message(data->socket, ZMQ_DONTWAIT)
+    while (auto request = message::recv(data->socket, ZMQ_DONTWAIT)
                               .and_then(deserialize_request)) {
 
         OP_LOG(OP_LOG_TRACE,
@@ -179,7 +180,7 @@ static int handle_rpc_request(const op_event_data* data, void* arg)
                to_string(*request).c_str(),
                to_string(reply).c_str());
 
-        if (send_message(data->socket, serialize_reply(std::move(reply)))
+        if (message::send(data->socket, serialize_reply(std::move(reply)))
             == -1) {
             reply_errors++;
             OP_LOG(
