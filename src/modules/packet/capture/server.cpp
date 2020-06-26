@@ -1,6 +1,8 @@
 #include <cinttypes>
 #include <zmq.h>
+#include <sys/eventfd.h>
 
+#include "packet/bpf/bpf.hpp"
 #include "packet/capture/server.hpp"
 #include "swagger/v1/model/PacketCapture.h"
 #include "swagger/v1/model/PacketCaptureResult.h"
@@ -189,6 +191,29 @@ static int handle_rpc_request(const op_event_data* data, void* arg)
     return ((reply_errors || errno == ETERM) ? -1 : 0);
 }
 
+server::event_trigger::event_trigger(
+    std::function<void(const event_trigger&)>&& cb)
+    : callback(cb)
+{
+    fd = eventfd(0, EFD_NONBLOCK);
+    if (fd < 0) { throw std::runtime_error("Unable to create eventfd"); }
+}
+
+server::event_trigger::~event_trigger() { close(fd); }
+
+int server::event_trigger::trigger()
+{
+    uint64_t val = 1;
+
+    OP_LOG(OP_LOG_DEBUG, "Event trigger triggered fd %d", fd);
+
+    if (write(fd, &val, sizeof(val)) != sizeof(val)) {
+        OP_LOG(OP_LOG_ERROR, "Unable to write to event trigger fd %d", fd);
+        return -1;
+    }
+    return 0;
+}
+
 /**
  * Implementation
  **/
@@ -264,11 +289,21 @@ reply_msg server::handle_request(const request_list_captures& request)
     return (reply);
 }
 
+tl::expected<void, int> validate_filter(std::string_view filter_str)
+{
+    try {
+        openperf::packet::bpf::bpf bpf(filter_str);
+    } catch (const std::exception& e) {
+        return tl::make_unexpected(EINVAL);
+    }
+    return {};
+}
+
 reply_msg server::handle_request(const request_create_capture& request)
 {
     auto config = sink_config{.source = request.capture->getSourceId(),
                               .max_packet_size = UINT32_MAX,
-                              .duration = 0};
+                              .duration = {}};
 
     auto user_config = request.capture->getConfig();
     assert(user_config);
@@ -278,15 +313,34 @@ reply_msg server::handle_request(const request_create_capture& request)
     if (user_config->packetSizeIsSet())
         config.max_packet_size = user_config->getPacketSize();
     if (user_config->durationIsSet())
-        config.duration = user_config->getDuration();
+        config.duration = std::chrono::duration<uint64_t, std::milli>(
+            user_config->getDuration());
     if (user_config->filterIsSet()) {
-        // TODO: user_config->getFilter();
+        config.filter = user_config->getFilter();
+        if (auto success = validate_filter(config.filter); !success) {
+            OP_LOG(OP_LOG_ERROR,
+                   "Capture filter %s is not valid",
+                   config.filter.c_str());
+            return (to_error(error_type::POSIX, success.error()));
+        }
     }
     if (user_config->startTriggerIsSet()) {
-        // TODO: user_config->getStartTrigger();
+        config.start_trigger = user_config->getStartTrigger();
+        if (auto success = validate_filter(config.start_trigger); !success) {
+            OP_LOG(OP_LOG_ERROR,
+                   "Capture start trigger %s is not valid",
+                   config.start_trigger.c_str());
+            return (to_error(error_type::POSIX, success.error()));
+        }
     }
     if (user_config->stopTriggerIsSet()) {
-        // TODO: user_config->getStopTrigger();
+        config.stop_trigger = user_config->getStopTrigger();
+        if (auto success = validate_filter(config.stop_trigger); !success) {
+            OP_LOG(OP_LOG_ERROR,
+                   "Capture stop trigger %s is not valid",
+                   config.stop_trigger.c_str());
+            return (to_error(error_type::POSIX, success.error()));
+        }
     }
     if (!request.capture->getId().empty()) {
         config.id = request.capture->getId();
@@ -436,14 +490,16 @@ create_capture_buffer([[maybe_unused]] const core::uuid& id,
                       [[maybe_unused]] const sink& sink,
                       [[maybe_unused]] int worker)
 {
-    switch (sink.get_capture_mode()) {
+    auto& config = sink.get_config();
+
+    switch (config.capture_mode) {
     case capture_mode::BUFFER: {
-        if (sink.get_buffer_wrap()) {
+        if (config.buffer_wrap) {
             return std::unique_ptr<capture_buffer>(new capture_buffer_mem_wrap(
-                sink.get_buffer_size(), sink.get_max_packet_size()));
+                config.buffer_size, config.max_packet_size));
         }
-        return std::unique_ptr<capture_buffer>(new capture_buffer_mem(
-            sink.get_buffer_size(), sink.get_max_packet_size()));
+        return std::unique_ptr<capture_buffer>(
+            new capture_buffer_mem(config.buffer_size, config.max_packet_size));
     }
     case capture_mode::LIVE: {
         // TODO: Add support for live capture mode
@@ -456,7 +512,7 @@ create_capture_buffer([[maybe_unused]] const core::uuid& id,
         return std::unique_ptr<capture_buffer>(
             new capture_buffer_file(filename,
                                     capture_buffer_file::keep_file::disabled,
-                                    sink.get_max_packet_size()));
+                                    config.max_packet_size));
     }
     }
 }
@@ -498,6 +554,63 @@ int server::handle_capture_stop_timer(uint32_t timeout_id)
     return 0;
 }
 
+void server::add_capture_start_trigger(const core::uuid& id,
+                                       result_value_type& result)
+{
+    auto event = std::make_shared<event_trigger>([srv = this, id](auto evt) {
+        // This code will be called from the server thread
+        auto found = srv->m_results.find(id);
+        if (found == srv->m_results.end()) {
+            // Result was already deleted so just remove the trigger
+            OP_LOG(OP_LOG_DEBUG,
+                   "Capture result %s state changed but result not found",
+                   to_string(id).c_str());
+            srv->remove_event_trigger(evt.fd);
+            return;
+        }
+        auto& result = found->second;
+        capture_state state = result->state;
+        OP_LOG(OP_LOG_DEBUG,
+               "Capture %s result %s state changed to %d",
+               result->parent.id().c_str(),
+               to_string(id).c_str(),
+               (int)state);
+        if (state == capture_state::STARTED) {
+            auto& config = result->parent.get_config();
+            if (config.duration.count())
+                srv->add_capture_stop_timer(*result, config.duration);
+        } else if (state == capture_state::STOPPED) {
+            // Worker shouldn't touch result in stopped state
+            // so it is safe to remove the callback
+            result->state_changed_callback = nullptr;
+            srv->remove_event_trigger(evt.fd);
+        }
+    });
+
+    result.state_changed_callback = [event]([[maybe_unused]] auto& result) {
+        // State change callback may be called from either server thread
+        // or worker thread so need to trigger event to run in server thread
+        OP_LOG(OP_LOG_DEBUG,
+               "Capture %s state changed",
+               result.parent.id().c_str());
+        event->trigger();
+    };
+    add_event_trigger(event);
+}
+
+void server::add_capture_stop_timer(
+    result_value_type& result,
+    std::chrono::duration<uint64_t, std::nano> duration)
+{
+    auto callbacks = op_event_callbacks{.on_timeout = handle_capture_stop};
+    auto timeout = duration.count();
+    m_loop.add(timeout, &callbacks, this, &result.timeout_id);
+    OP_LOG(OP_LOG_DEBUG,
+           "Added capture duration timer id %#" PRIx32 " timeout %" PRId64,
+           result.timeout_id,
+           timeout);
+}
+
 reply_msg server::handle_request(const request_start_capture& request)
 {
     auto found = binary_find(std::begin(m_sinks),
@@ -536,21 +649,12 @@ reply_msg server::handle_request(const request_start_capture& request)
         return (to_error(error_type::POSIX, ENOMEM));
     }
 
-    impl.start(result.get());
+    // If capture duration is being used then need to add a callback to
+    // be called when capture is started to handle the duration timeout.
+    auto& config = impl.get_config();
+    if (config.duration.count()) { add_capture_start_trigger(id, *result); }
 
-    if (auto duration = impl.get_duration()) {
-        // Setup a timer to check for capture completion
-        // TODO: When trigger is enabled this should actually only start when
-        // trigger occurs
-        auto callbacks = op_event_callbacks{.on_timeout = handle_capture_stop};
-        auto timeout =
-            std::chrono::duration<uint64_t, std::nano>{duration * 1000000};
-        m_loop.add((timeout).count(), &callbacks, this, &result->timeout_id);
-        OP_LOG(OP_LOG_DEBUG,
-               "Added capture duration timer id %#" PRIx32 " timeout %" PRId64,
-               result->timeout_id,
-               timeout.count());
-    }
+    impl.start(result.get());
 
     auto reply = reply_capture_results{};
     reply.capture_results.emplace_back(to_swagger(id, *result));
@@ -667,13 +771,6 @@ reply_msg server::handle_request(const request_delete_capture_result& request)
     return (reply_ok{});
 }
 
-static int handle_garbage_collect(const struct op_event_data*, void* arg)
-{
-    auto srv = reinterpret_cast<server*>(arg);
-    assert(srv);
-    return srv->garbage_collect();
-}
-
 reply_msg server::handle_request(request_create_capture_transfer& request)
 {
     auto id = to_uuid(request.id);
@@ -709,13 +806,17 @@ reply_msg server::handle_request(request_create_capture_transfer& request)
         result->transfer->set_reader(reader);
     }
 
-    result->transfer->set_done_callback([&]() {
-        // Done callback is called from the transfer thread so need to
-        // schedule timer callback to run in server thread
+    auto event = std::make_shared<event_trigger>([srv = this](const auto& evt) {
+        srv->garbage_collect();
+        srv->remove_event_trigger(evt.fd);
+    });
+    add_event_trigger(event);
+
+    result->transfer->set_done_callback([event]() {
+        // Transfer done callback is called from the transfer thread so need to
+        // trigger event for server thread to do garbage collection
         OP_LOG(OP_LOG_DEBUG, "Scheduling capture garbage collection");
-        auto callbacks =
-            op_event_callbacks{.on_timeout = handle_garbage_collect};
-        m_loop.add(1, &callbacks, this, nullptr);
+        event->trigger();
     });
 
     return (reply_ok{});
@@ -808,6 +909,44 @@ int server::garbage_collect()
 
     OP_LOG(OP_LOG_DEBUG, "Completed capture garbage collection");
     return -1;
+}
+
+static int handle_event_trigger_callback(const op_event_data* data, void* arg)
+{
+    auto s = reinterpret_cast<server*>(arg);
+    return s->handle_event_trigger(data->fd);
+}
+
+void server::add_event_trigger(const std::shared_ptr<event_trigger>& trigger)
+{
+    OP_LOG(OP_LOG_DEBUG, "Event trigger add fd %d", trigger->fd);
+    m_triggers[trigger->fd] = trigger;
+    op_event_callbacks callbacks{.on_read = handle_event_trigger_callback};
+    m_loop.add(trigger->fd, &callbacks, this);
+}
+
+void server::remove_event_trigger(int fd)
+{
+    OP_LOG(OP_LOG_DEBUG, "Event trigger remove fd %d", fd);
+    auto found = m_triggers.find(fd);
+    if (found == m_triggers.end()) return;
+    m_loop.del(fd);
+    found->second.reset();
+    m_triggers.erase(found);
+}
+
+int server::handle_event_trigger(int fd)
+{
+    OP_LOG(OP_LOG_DEBUG, "Event trigger handler invoked for fd %d", fd);
+    uint64_t val;
+
+    read(fd, &val, sizeof(val));
+
+    auto found = m_triggers.find(fd);
+    if (found == m_triggers.end()) return -1;
+    auto trigger = found->second;
+    trigger->callback(*trigger);
+    return 0;
 }
 
 } // namespace openperf::packet::capture::api

@@ -56,6 +56,21 @@ class server
 
     trash_map m_trash;
 
+    struct event_trigger
+    {
+        event_trigger(
+            std::function<void(const event_trigger& trigger)>&& callback);
+        ~event_trigger();
+
+        int trigger();
+
+        int fd;
+        std::function<void(const event_trigger&)> callback;
+    };
+
+    using event_trigger_map = std::map<int, std::shared_ptr<event_trigger>>;
+    event_trigger_map m_triggers;
+
 public:
     server(void* context, core::event_loop& loop);
 
@@ -81,11 +96,22 @@ public:
 
     int garbage_collect();
 
+    int handle_event_trigger(int fd);
+
 private:
+    void add_capture_start_trigger(const core::uuid& id,
+                                   result_value_type& result);
+    void
+    add_capture_stop_timer(result_value_type& result,
+                           std::chrono::duration<uint64_t, std::nano> duration);
+
     bool has_active_transfer(const sink& sink) const;
 
     void add_trash(sink_value_type& sink);
     void add_trash(result_value_ptr&& result);
+
+    void add_event_trigger(const std::shared_ptr<event_trigger>& trigger);
+    void remove_event_trigger(int fd);
 };
 
 } // namespace openperf::packet::capture::api

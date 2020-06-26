@@ -25,6 +25,7 @@ include $(TEST_SRC_DIR)/lib/spirent_pga/directory.mk
 include $(TEST_SRC_DIR)/modules/api/directory.mk
 include $(TEST_SRC_DIR)/modules/block/directory.mk
 include $(TEST_SRC_DIR)/modules/packet/analyzer/directory.mk
+include $(TEST_SRC_DIR)/modules/packet/bpf/directory.mk
 include $(TEST_SRC_DIR)/modules/packet/capture/directory.mk
 include $(TEST_SRC_DIR)/modules/packet/generator/directory.mk
 include $(TEST_SRC_DIR)/modules/packetio/directory.mk
