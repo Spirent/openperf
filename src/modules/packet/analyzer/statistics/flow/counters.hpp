@@ -3,9 +3,18 @@
 
 #include <iostream>
 
+#include "packetio/packet_buffer.hpp"
 #include "packet/analyzer/statistics/common.hpp"
 
 namespace openperf::packet::analyzer::statistics::flow {
+
+struct errors
+{
+    stat_t fcs = 0;
+    stat_t ipv4_checksum = 0;
+    stat_t tcp_checksum = 0;
+    stat_t udp_checksum = 0;
+};
 
 struct sequencing
 {
@@ -137,6 +146,15 @@ struct latency final : summary<short_duration, long_duration>
 /**
  * Update functions for stat structures
  **/
+
+inline void update(errors& stat, const packetio::packet::packet_buffer* pkt)
+{
+    using namespace openperf::packetio::packet;
+
+    if (ipv4_checksum_error(pkt)) { stat.ipv4_checksum++; }
+    if (tcp_checksum_error(pkt)) { stat.tcp_checksum++; }
+    if (udp_checksum_error(pkt)) { stat.udp_checksum++; }
+}
 
 inline void
 update(sequencing& stat, uint32_t seq_num, uint32_t late_threshold) noexcept
@@ -294,13 +312,11 @@ add_variance(statistics::stat_t x_count,
  **/
 
 template <typename StatsTuple>
-void update(StatsTuple& tuple,
-            uint16_t length,
-            counter::timestamp rx,
-            std::optional<counter::timestamp> tx,
-            std::optional<uint32_t> seq_num)
+void update(StatsTuple& tuple, const packetio::packet::packet_buffer* pkt)
 {
     static_assert(has_type<counter, StatsTuple>::value);
+
+    const auto rx = packetio::packet::rx_timestamp(pkt);
 
     auto& frames = get_counter<counter, StatsTuple>(tuple);
     auto last_rx = frames.last();
@@ -313,19 +329,25 @@ void update(StatsTuple& tuple,
         }
     }
 
+    if constexpr (has_type<errors, StatsTuple>::value) {
+        update(get_counter<errors, StatsTuple>(tuple), pkt);
+    }
+
     if constexpr (has_type<frame_length, StatsTuple>::value) {
-        update(
-            get_counter<frame_length, StatsTuple>(tuple), length, frames.count);
+        update(get_counter<frame_length, StatsTuple>(tuple),
+               packetio::packet::frame_length(pkt),
+               frames.count);
     }
 
     if constexpr (has_type<sequencing, StatsTuple>::value) {
-        if (seq_num) {
+        if (const auto seq_num =
+                packetio::packet::signature_sequence_number(pkt)) {
             update(get_counter<sequencing, StatsTuple>(tuple), *seq_num, 1000);
         }
     }
 
     if constexpr (has_type<latency, StatsTuple>::value) {
-        if (tx) {
+        if (const auto tx = packetio::packet::signature_tx_timestamp(pkt)) {
             auto& latency_stats = get_counter<latency, StatsTuple>(tuple);
             auto last_delay = latency_stats.last();
             auto delay = rx - *tx;
@@ -361,6 +383,7 @@ void update(StatsTuple& tuple,
  * Debug methods
  **/
 
+void dump(std::ostream& os, const errors& stat);
 void dump(std::ostream& os, const sequencing& stat);
 void dump(std::ostream& os, const frame_length& stat);
 void dump(std::ostream& os, const interarrival& stat);
@@ -375,6 +398,10 @@ void dump(std::ostream& os, const StatsTuple& tuple)
 
     if constexpr (has_type<counter, StatsTuple>::value) {
         dump(os, get_counter<counter, StatsTuple>(tuple), "Frames");
+    }
+
+    if constexpr (has_type<errors, StatsTuple>::value) {
+        dump(os, get_counter<errors, StatsTuple>(tuple));
     }
 
     if constexpr (has_type<sequencing, StatsTuple>::value) {

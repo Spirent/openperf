@@ -2,6 +2,15 @@
 
 namespace openperf::packet::analyzer::statistics::flow {
 
+void dump(std::ostream& os, const errors& stat)
+{
+    os << "Errors:" << std::endl;
+    os << " fcs:" << stat.fcs << std::endl;
+    os << " ipv4 checksum:" << stat.ipv4_checksum << std::endl;
+    os << " tcp checksum:" << stat.tcp_checksum << std::endl;
+    os << " udp checksum:" << stat.udp_checksum << std::endl;
+}
+
 void dump(std::ostream& os, const sequencing& stat)
 {
     os << "Sequencing:" << std::endl;

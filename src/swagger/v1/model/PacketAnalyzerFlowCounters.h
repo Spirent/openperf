@@ -23,6 +23,7 @@
 
 #include "PacketAnalyzerFlowCounters_jitter_ipdv.h"
 #include "PacketAnalyzerFlowCounters_sequence.h"
+#include "PacketAnalyzerFlowCounters_errors.h"
 #include "PacketAnalyzerFlowCounters_jitter_rfc.h"
 #include "PacketAnalyzerFlowCounters_interarrival.h"
 #include <string>
@@ -56,6 +57,13 @@ public:
     /////////////////////////////////////////////
     /// PacketAnalyzerFlowCounters members
 
+    /// <summary>
+    /// 
+    /// </summary>
+    std::shared_ptr<PacketAnalyzerFlowCounters_errors> getErrors() const;
+    void setErrors(std::shared_ptr<PacketAnalyzerFlowCounters_errors> value);
+    bool errorsIsSet() const;
+    void unsetErrors();
     /// <summary>
     /// List of protocol headers
     /// </summary>
@@ -125,6 +133,8 @@ public:
     void unsetTimestamp_last();
 
 protected:
+    std::shared_ptr<PacketAnalyzerFlowCounters_errors> m_Errors;
+    bool m_ErrorsIsSet;
     std::vector<std::shared_ptr<PacketAnalyzerFlowHeader>> m_Headers;
     bool m_HeadersIsSet;
     std::shared_ptr<PacketAnalyzerFlowCounters_frame_length> m_Frame_length;
