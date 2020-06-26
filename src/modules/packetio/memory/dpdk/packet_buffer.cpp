@@ -17,11 +17,6 @@ uint16_t max_length(const packet_buffer* buffer)
     return (rte_pktmbuf_data_len(buffer));
 }
 
-packet_type::flags type(const packet_buffer* buffer)
-{
-    return (packet_type::flags(buffer->packet_type));
-}
-
 void* to_data(packet_buffer* buffer)
 {
     return (rte_pktmbuf_mtod(buffer, void*));
@@ -100,7 +95,7 @@ void signature(packet_buffer* buffer,
     dpdk::mbuf_signature_tx_set(buffer, stream_id, seq_num, flags);
 }
 
-void type(packet_buffer* buffer, packet_type::flags flags)
+void packet_type_flags(packet_buffer* buffer, packet_type::flags flags)
 {
     buffer->packet_type = flags.value;
 }
@@ -108,6 +103,12 @@ void type(packet_buffer* buffer, packet_type::flags flags)
 uint16_t length(const packet_buffer* buffer)
 {
     return (rte_pktmbuf_pkt_len(buffer));
+}
+
+uint16_t frame_length(const packet_buffer* buffer)
+{
+    /* I guess this is true for every driver? ¯\_(ツ)_/¯ */
+    return (rte_pktmbuf_pkt_len(buffer) + RTE_ETHER_CRC_LEN);
 }
 
 timesync::chrono::realtime::time_point rx_timestamp(const packet_buffer* buffer)
@@ -122,6 +123,29 @@ packet_type::flags packet_type_flags(const packet_buffer* buffer)
 }
 
 uint32_t rss_hash(const packet_buffer* buffer) { return (buffer->hash.rss); }
+
+bool ipv4_checksum_error(const packet_buffer* buffer)
+{
+    return ((buffer->ol_flags & PKT_RX_IP_CKSUM_MASK) == PKT_RX_IP_CKSUM_BAD);
+}
+
+bool tcp_checksum_error(const packet_buffer* buffer)
+{
+    const auto is_tcp =
+        packet_type::flags(buffer->packet_type) & packet_type::protocol::tcp;
+    return (is_tcp.value
+            && (buffer->ol_flags & PKT_RX_L4_CKSUM_MASK)
+                   == PKT_RX_L4_CKSUM_BAD);
+}
+
+bool udp_checksum_error(const packet_buffer* buffer)
+{
+    const auto is_udp =
+        packet_type::flags(buffer->packet_type) & packet_type::protocol::udp;
+    return (is_udp.value
+            && (buffer->ol_flags & PKT_RX_L4_CKSUM_MASK)
+                   == PKT_RX_L4_CKSUM_BAD);
+}
 
 std::optional<uint32_t> signature_stream_id(const packet_buffer* buffer)
 {
