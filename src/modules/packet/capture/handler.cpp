@@ -4,6 +4,7 @@
 #include "api/api_route_handler.hpp"
 #include "config/op_config_utils.hpp"
 #include "core/op_core.h"
+#include "message/serialized_message.hpp"
 #include "packet/capture/api.hpp"
 #include "packet/capture/pcap_transfer.hpp"
 
@@ -152,13 +153,13 @@ static void handle_reply_error(const reply_msg& reply,
 
 static reply_msg submit_request(void* socket, request_msg&& request)
 {
-    if (auto error = send_message(
+    if (auto error = message::send(
             socket, api::serialize_request(std::forward<request_msg>(request)));
         error != 0) {
         return (to_error(error_type::ZMQ_ERROR, error));
     }
 
-    auto reply = recv_message(socket).and_then(api::deserialize_reply);
+    auto reply = message::recv(socket).and_then(api::deserialize_reply);
     if (!reply) { return (to_error(error_type::ZMQ_ERROR, reply.error())); }
 
     return (std::move(*reply));
