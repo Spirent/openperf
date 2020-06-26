@@ -18,6 +18,14 @@ OP_INC_DIRS += $(LIBPCAP_INC_DIR)
 OP_LIB_DIRS += $(LIBPCAP_LIB_DIR)
 OP_LDLIBS += -lpcap
 
+LIBPCAP_CONFIG_OPTS += \
+	--enable-usb=no \
+	--enable-netmap=no \
+	--enable-bluetooth=no \
+	--enable-dbus=no \
+	--enable-rdma=no \
+	--enable-shared=no
+
 ###
 # Build rules
 ###
@@ -27,7 +35,7 @@ $(LIBPCAP_SRC_DIR)/configure:
 $(LIBPCAP_OBJ_DIR)/Makefile: $(LIBPCAP_SRC_DIR)/configure
 	@mkdir -p $(LIBPCAP_OBJ_DIR)
 	cd $(LIBPCAP_OBJ_DIR) && $(LIBPCAP_SRC_DIR)/configure $(OP_CONFIG_OPTS) \
-		--prefix="$(LIBPCAP_BLD_DIR)" \
+		$(LIBPCAP_CONFIG_OPTS) --prefix="$(LIBPCAP_BLD_DIR)" \
 		CC="$(CC)" CFLAGS="$(OP_COPTS)" \
 		CXX="$(CXX)" CXXFLAGS="$(OP_CXXOPTS)"
 
@@ -37,12 +45,12 @@ $(LIBPCAP_OBJ_DIR)/Makefile: $(LIBPCAP_SRC_DIR)/configure
 LIBPCAP_STRIP_CONFLICTING_SYMBOLS := \
 	objcopy --strip-symbol bpf_validate $(LIBPCAP_LIB_DIR)/libpcap.a
 
-$(LIBPCAP_LIB_DIR)/libpcap.la: $(LIBPCAP_OBJ_DIR)/Makefile
+$(LIBPCAP_LIB_DIR)/libpcap.a: $(LIBPCAP_OBJ_DIR)/Makefile
 	cd $(LIBPCAP_OBJ_DIR) && $(MAKE) install && \
 	$(LIBPCAP_STRIP_CONFLICTING_SYMBOLS)
 
 .PHONY: libpcap
-libpcap: $(LIBPCAP_LIB_DIR)/libpcap.la
+libpcap: $(LIBPCAP_LIB_DIR)/libpcap.a
 
 .PHONY: libpcap_clean
 libpcap_clean:
