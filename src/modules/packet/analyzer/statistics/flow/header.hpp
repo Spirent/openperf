@@ -4,7 +4,7 @@
 #include <array>
 
 #include "packet/statistics/tuple_utils.hpp"
-#include "packetio/packet_type.hpp"
+#include "packetio/packet_buffer.hpp"
 #include "utils/memcpy.hpp"
 
 namespace openperf::packet::analyzer::statistics::flow {
@@ -40,19 +40,23 @@ inline uint16_t header_length(const header& header)
         header_length(header.flags, header.data.data(), header.data.size()));
 }
 
-template <typename StatsTuple>
-void set_header(StatsTuple& tuple,
-                header::packet_type_flags flags,
-                const uint8_t pkt[])
+inline void
+set_header(header& stat, header::packet_type_flags flags, const uint8_t pkt[])
 {
-    if constexpr (!packet::statistics::has_type<header, StatsTuple>::value) {
-        return;
-    }
+    stat.flags = flags;
+    utils::memcpy(stat.data.data(),
+                  pkt,
+                  header_length(stat.flags, pkt, max_header_length));
+}
 
-    auto& h = packet::statistics::get_counter<header, StatsTuple>(tuple);
-    h.flags = flags;
-    utils::memcpy(
-        h.data.data(), pkt, header_length(flags, pkt, max_header_length));
+template <typename StatsTuple>
+void set_header(StatsTuple& tuple, const packetio::packet::packet_buffer* pkt)
+{
+    if constexpr (packet::statistics::has_type<header, StatsTuple>::value) {
+        set_header(packet::statistics::get_counter<header, StatsTuple>(tuple),
+                   packetio::packet::packet_type_flags(pkt),
+                   packetio::packet::to_data<const uint8_t>(pkt));
+    }
 }
 
 /**

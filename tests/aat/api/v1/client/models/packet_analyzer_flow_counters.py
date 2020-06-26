@@ -31,6 +31,7 @@ class PacketAnalyzerFlowCounters(object):
                             and the value is json key in definition.
     """
     swagger_types = {
+        'errors': 'PacketAnalyzerFlowCountersErrors',
         'headers': 'list[PacketAnalyzerFlowHeader]',
         'frame_length': 'PacketAnalyzerFlowCountersFrameLength',
         'interarrival': 'PacketAnalyzerFlowCountersInterarrival',
@@ -44,6 +45,7 @@ class PacketAnalyzerFlowCounters(object):
     }
 
     attribute_map = {
+        'errors': 'errors',
         'headers': 'headers',
         'frame_length': 'frame_length',
         'interarrival': 'interarrival',
@@ -56,9 +58,10 @@ class PacketAnalyzerFlowCounters(object):
         'timestamp_last': 'timestamp_last'
     }
 
-    def __init__(self, headers=None, frame_length=None, interarrival=None, jitter_ipdv=None, jitter_rfc=None, latency=None, sequence=None, frame_count=None, timestamp_first=None, timestamp_last=None):  # noqa: E501
+    def __init__(self, errors=None, headers=None, frame_length=None, interarrival=None, jitter_ipdv=None, jitter_rfc=None, latency=None, sequence=None, frame_count=None, timestamp_first=None, timestamp_last=None):  # noqa: E501
         """PacketAnalyzerFlowCounters - a model defined in Swagger"""  # noqa: E501
 
+        self._errors = None
         self._headers = None
         self._frame_length = None
         self._interarrival = None
@@ -71,6 +74,8 @@ class PacketAnalyzerFlowCounters(object):
         self._timestamp_last = None
         self.discriminator = None
 
+        if errors is not None:
+            self.errors = errors
         if headers is not None:
             self.headers = headers
         if frame_length is not None:
@@ -90,6 +95,26 @@ class PacketAnalyzerFlowCounters(object):
             self.timestamp_first = timestamp_first
         if timestamp_last is not None:
             self.timestamp_last = timestamp_last
+
+    @property
+    def errors(self):
+        """Gets the errors of this PacketAnalyzerFlowCounters.  # noqa: E501
+
+
+        :return: The errors of this PacketAnalyzerFlowCounters.  # noqa: E501
+        :rtype: PacketAnalyzerFlowCountersErrors
+        """
+        return self._errors
+
+    @errors.setter
+    def errors(self, errors):
+        """Sets the errors of this PacketAnalyzerFlowCounters.
+
+
+        :param errors: The errors of this PacketAnalyzerFlowCounters.  # noqa: E501
+        :type: PacketAnalyzerFlowCountersErrors
+        """
+        self._errors = errors
 
     @property
     def headers(self):

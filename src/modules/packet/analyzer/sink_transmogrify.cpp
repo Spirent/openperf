@@ -134,6 +134,7 @@ inline void copy_flow_counters(const statistics::generic_flow_counters& src,
 
     do {
         dst.get<frame_counter>() = src_frames;
+        maybe_copy_counter_tuple<errors>(src, dst);
         maybe_copy_counter_tuple<sequencing>(src, dst);
         maybe_copy_counter_tuple<frame_length>(src, dst);
         maybe_copy_counter_tuple<interarrival>(src, dst);
@@ -149,6 +150,16 @@ inline void add_flow_counters(const statistics::generic_flow_counters& x,
                               statistics::generic_flow_counters& sum)
 {
     using namespace openperf::packet::analyzer::statistics;
+
+    if (x.holds<flow::errors>()) {
+        auto& sum_errors = sum.get<flow::errors>();
+        const auto& x_errors = x.get<flow::errors>();
+
+        sum_errors.fcs += x_errors.fcs;
+        sum_errors.ipv4_checksum += x_errors.ipv4_checksum;
+        sum_errors.tcp_checksum += x_errors.tcp_checksum;
+        sum_errors.udp_checksum += x_errors.udp_checksum;
+    }
 
     if (x.holds<flow::sequencing>()) {
         auto& sum_seq = sum.get<flow::sequencing>();
@@ -356,6 +367,16 @@ static void populate_counters(
         dst->setTimestampLast(to_rfc3339(frame_count.last_));
     }
 
+    if (src.holds<flow::errors>()) {
+        const auto& s_src = src.get<flow::errors>();
+        auto s_dst = std::make_shared<
+            swagger::v1::model::PacketAnalyzerFlowCounters_errors>();
+
+        s_dst->setFcs(s_src.fcs);
+        s_dst->setIpv4Checksum(s_src.ipv4_checksum);
+        s_dst->setTcpChecksum(s_src.tcp_checksum);
+        s_dst->setUdpChecksum(s_src.udp_checksum);
+    }
     if (src.holds<flow::sequencing>()) {
         const auto& s_src = src.get<flow::sequencing>();
         auto s_dst = std::make_shared<
