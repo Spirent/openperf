@@ -22,6 +22,10 @@ class RxFlow;
 
 } // namespace swagger::v1::model
 
+namespace openperf::message {
+struct serialized_message;
+}
+
 namespace openperf::packet::analyzer {
 
 class sink;
@@ -63,6 +67,8 @@ using id_ptr = std::unique_ptr<std::string>;
 enum class filter_key_type { none, analyzer_id, source_id };
 using filter_map_type = std::map<filter_key_type, std::string>;
 using filter_map_ptr = std::unique_ptr<filter_map_type>;
+
+using serialized_msg = openperf::message::serialized_message;
 
 /*
  * Provide a mechanism for associating type information with
@@ -248,20 +254,11 @@ using reply_msg = std::variant<reply_analyzers,
                                reply_ok,
                                reply_error>;
 
-struct serialized_msg
-{
-    zmq_msg_t type;
-    zmq_msg_t data;
-};
-
 serialized_msg serialize_request(request_msg&& request);
 serialized_msg serialize_reply(reply_msg&& reply);
 
-tl::expected<request_msg, int> deserialize_request(const serialized_msg& msg);
-tl::expected<reply_msg, int> deserialize_reply(const serialized_msg& msg);
-
-int send_message(void* socket, serialized_msg&& msg);
-tl::expected<serialized_msg, int> recv_message(void* socket, int flags = 0);
+tl::expected<request_msg, int> deserialize_request(serialized_msg&& msg);
+tl::expected<reply_msg, int> deserialize_reply(serialized_msg&& msg);
 
 reply_error to_error(error_type type, int value = 0);
 
