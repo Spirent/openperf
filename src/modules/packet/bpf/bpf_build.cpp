@@ -267,7 +267,7 @@ bool bpf_build_prog_mixed(const binary_logical_expr* e,
     // Resolve other jmp instructions in lhs block which jump to a return result
     resolved = bpf_invert_branch_type(resolved);
     auto ret_index = bpf_find_ret(bf_insns, rhs_block_start, resolved);
-    if (ret_index > bf_insns.size()) {
+    if (ret_index >= bf_insns.size()) {
         // Normally a matching BPF_RET should be found, so this case
         // should never happen...
         uint32_t ret_val = (resolved == bpf_branch_type::PASS) ? 0x00040000 : 0;
