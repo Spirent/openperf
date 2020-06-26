@@ -561,6 +561,31 @@ definitions:
     type: object
     description: Result counters for flows
     properties:
+      errors:
+        type: object
+        description: Error counters
+        properties:
+          fcs:
+            type: integer
+            description: Number of Frame Check Sequence errors
+            format: int64
+          ipv4_checksum:
+            type: integer
+            description: Number of IPv4 checksum errors
+            format: int64
+          tcp_checksum:
+            type: integer
+            description: Number of TCP checksum errors
+            format: int64
+          udp_checksum:
+            type: integer
+            description: Number of UDP checksum errors
+            format: int64
+        required:
+          - fcs
+          - ipv4_checksum
+          - tcp_checksum
+          - udp_checksum
       headers:
         type: array
         description: List of protocol headers

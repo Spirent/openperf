@@ -234,17 +234,12 @@ uint16_t sink::push(const packetio::packet::packet_buffer* const packets[],
             counters = cache.retry(hash, stream_id);
             assert(counters);
 
-            counters->set_header(
-                packetio::packet::packet_type_flags(packet),
-                packetio::packet::to_data<const uint8_t>(packet));
+            counters->set_header(packet);
 
             flows.first.writer_add_gc_callback(
                 [to_delete]() { delete to_delete; });
         }
-        counters->update(packetio::packet::length(packet) + 4,
-                         packetio::packet::rx_timestamp(packet),
-                         packetio::packet::signature_tx_timestamp(packet),
-                         packetio::packet::signature_sequence_number(packet));
+        counters->update(packet);
     });
 
     flows.first.writer_process_gc_callbacks();

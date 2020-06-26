@@ -34,17 +34,14 @@ public:
         return (m_self->holds<StatsType>());
     }
 
-    void update(uint16_t length,
-                flow::frame_counter::timestamp rx,
-                std::optional<flow::frame_counter::timestamp> tx = std::nullopt,
-                std::optional<uint32_t> seq_num = std::nullopt) const
+    void update(const packetio::packet::packet_buffer* pkt) const
     {
-        m_self->update(length, rx, tx, seq_num);
+        m_self->update(pkt);
     }
 
-    void set_header(packet_type_flags flags, const uint8_t pkt[]) const
+    void set_header(const packetio::packet::packet_buffer* pkt) const
     {
-        m_self->set_header(flags, pkt);
+        m_self->set_header(pkt);
     }
 
     void dump(std::ostream& os) const { m_self->dump(os); }
@@ -67,13 +64,11 @@ private:
             return (holds(tag<StatsType>{}));
         }
 
-        virtual void update(uint16_t length,
-                            flow::frame_counter::timestamp rx,
-                            std::optional<flow::frame_counter::timestamp> tx,
-                            std::optional<uint32_t> seq_num) const = 0;
+        virtual void
+        update(const packetio::packet::packet_buffer* pkt) const = 0;
 
-        virtual void set_header(packet_type_flags flags,
-                                const uint8_t pkt[]) const = 0;
+        virtual void
+        set_header(const packetio::packet::packet_buffer* pkt) const = 0;
 
         virtual void dump(std::ostream& os) const = 0;
 
@@ -90,6 +85,7 @@ private:
         virtual const flow::jitter_ipdv&
         get(tag<flow::jitter_ipdv>&&) const = 0;
         virtual const flow::header& get(tag<flow::header>&&) const = 0;
+        virtual const flow::errors& get(tag<flow::errors>&&) const = 0;
 
         virtual bool holds(tag<flow::frame_counter>&&) const = 0;
         virtual bool holds(tag<flow::sequencing>&&) const = 0;
@@ -99,6 +95,7 @@ private:
         virtual bool holds(tag<flow::jitter_rfc>&&) const = 0;
         virtual bool holds(tag<flow::jitter_ipdv>&&) const = 0;
         virtual bool holds(tag<flow::header>&&) const = 0;
+        virtual bool holds(tag<flow::errors>&&) const = 0;
     };
 
     template <typename StatsTuple> struct stats_model final : stats_concept
@@ -161,6 +158,12 @@ private:
                 m_data));
         }
 
+        const flow::errors& get(tag<flow::errors>&&) const override
+        {
+            return (packet::statistics::get_counter<flow::errors, StatsTuple>(
+                m_data));
+        }
+
         bool holds(tag<flow::frame_counter>&&) const override
         {
             return (
@@ -215,18 +218,21 @@ private:
                 m_data));
         }
 
-        void update(uint16_t length,
-                    flow::frame_counter::timestamp rx,
-                    std::optional<flow::frame_counter::timestamp> tx,
-                    std::optional<uint32_t> seq_num) const override
+        bool holds(tag<flow::errors>&&) const override
         {
-            flow::update(m_data, length, rx, tx, seq_num);
+            return (packet::statistics::holds_stat<flow::errors, StatsTuple>(
+                m_data));
         }
 
-        void set_header(packet_type_flags flags,
-                        const uint8_t pkt[]) const override
+        void update(const packetio::packet::packet_buffer* pkt) const override
         {
-            flow::set_header(m_data, flags, pkt);
+            flow::update(m_data, pkt);
+        }
+
+        void
+        set_header(const packetio::packet::packet_buffer* pkt) const override
+        {
+            flow::set_header(m_data, pkt);
         }
 
         void dump(std::ostream& os) const override { flow::dump(os, m_data); }
@@ -247,7 +253,8 @@ enum class flow_flags {
     jitter_ipdv = (1 << 5),
     jitter_rfc = (1 << 6),
     header = (1 << 7),
-    prbs = (1 << 8),
+    errors = (1 << 8),
+    prbs = (1 << 9),
 };
 
 generic_flow_counters
@@ -264,7 +271,8 @@ namespace openperf::packet::analyzer::statistics {
 inline constexpr auto all_flow_counters =
     (flow_flags::frame_count | flow_flags::frame_length | flow_flags::latency
      | flow_flags::sequencing | flow_flags::interarrival
-     | flow_flags::jitter_ipdv | flow_flags::jitter_rfc | flow_flags::header);
+     | flow_flags::jitter_ipdv | flow_flags::jitter_rfc | flow_flags::header
+     | flow_flags::errors);
 }
 
 #endif /* _OP_ANALYZER_STATISTICS_GENERIC_FLOW_COUNTERS_HPP_ */

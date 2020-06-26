@@ -80,11 +80,11 @@ TEST_CASE("flow headers", "[packet_analyzer]")
 
     SECTION("views")
     {
-        auto tuple = std::tuple<flow::header>{};
+        auto header = flow::header{};
         auto tp1 = get_test_packet_one();
-        set_header(tuple, test_packet_one_type, to_pointer(tp1));
+        set_header(header, test_packet_one_type, to_pointer(tp1));
 
-        auto view1 = flow::header_view(std::get<flow::header>(tuple));
+        auto view1 = flow::header_view(header);
         REQUIRE(view1.size() == 3);
         REQUIRE_NOTHROW(
             std::get<const libpacket::protocol::ethernet*>(view1[0]));
@@ -99,9 +99,9 @@ TEST_CASE("flow headers", "[packet_analyzer]")
         /* We need to know where the header cutoff is to validate the decode */
         static_assert(flow::max_header_length == 124, "Update me!");
         auto tp2 = get_test_packet_two(true);
-        set_header(tuple, test_packet_two_type, to_pointer(tp2));
+        set_header(header, test_packet_two_type, to_pointer(tp2));
 
-        auto view2 = flow::header_view(std::get<flow::header>(tuple));
+        auto view2 = flow::header_view(header);
         REQUIRE(view2.size() == 5);
         REQUIRE_NOTHROW(
             std::get<const libpacket::protocol::ethernet*>(view2[0]));
@@ -126,9 +126,9 @@ TEST_CASE("flow headers", "[packet_analyzer]")
                                     flow::max_header_length)
                 == flow::max_header_length);
 
-        auto tuple = std::tuple<flow::header>{};
-        set_header(tuple, test_packet_two_type, to_pointer(tp));
-        auto view = flow::header_view(std::get<flow::header>(tuple));
+        auto header = flow::header{};
+        set_header(header, test_packet_two_type, to_pointer(tp));
+        auto view = flow::header_view(header);
 
         /*
          * Since the bottom of stack isn't set; the parser doesn't
