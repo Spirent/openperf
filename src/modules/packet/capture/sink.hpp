@@ -110,12 +110,6 @@ private:
         const openperf::packetio::packet::packet_buffer* const packets[],
         uint16_t packets_length) const noexcept;
 
-    uint16_t check_filter_condition(
-        const openperf::packetio::packet::packet_buffer* const packets[],
-        uint16_t packets_length,
-        const openperf::packetio::packet::packet_buffer* filtered[]) const
-        noexcept;
-
     uint16_t check_duration_condition(
         const openperf::packetio::packet::packet_buffer* const packets[],
         uint16_t packets_length) const noexcept;
