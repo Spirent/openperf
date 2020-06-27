@@ -3,16 +3,47 @@
 #include "memory/task_memory_write.hpp"
 
 #include <cinttypes>
+#include <string_view>
 #include <sys/mman.h>
 
 namespace openperf::memory::internal {
 
 static uint16_t serial_counter = 0;
 
+double get_field(std::string_view name, const generator::stat_t& stat)
+{
+    if (name == "read.ops_target") return stat.read.operations_target;
+    if (name == "read.ops_actual") return stat.read.operations;
+    if (name == "read.bytes_target") return stat.read.bytes_target;
+    if (name == "read.bytes_actual") return stat.read.bytes;
+    if (name == "read.io_errors") return stat.read.errors;
+    if (name == "read.latency") return stat.read.run_time.count();
+
+    if (name == "read.latency_min")
+        return stat.read.latency_min.value().count();
+    if (name == "read.latency_max")
+        return stat.read.latency_max.value().count();
+
+    if (name == "write.ops_target") return stat.write.operations_target;
+    if (name == "write.ops_actual") return stat.write.operations;
+    if (name == "write.bytes_target") return stat.write.bytes_target;
+    if (name == "write.bytes_actual") return stat.write.bytes;
+    if (name == "write.io_errors") return stat.write.errors;
+    if (name == "write.latency") return stat.write.run_time.count();
+
+    if (name == "write.latency_min")
+        return stat.write.latency_min.value().count();
+    if (name == "write.latency_max")
+        return stat.write.latency_max.value().count();
+
+    return 0.0;
+}
+
 // Constructors & Destructor
 generator::generator()
     : m_buffer{.ptr = nullptr, .size = 0}
     , m_serial_number(++serial_counter)
+    , m_dynamic([this]() -> stat_t { return stat(); }, get_field)
 {}
 
 generator::generator(generator&& g) noexcept
@@ -62,6 +93,15 @@ void generator::start()
     m_run_time_milestone = std::chrono::system_clock::now();
 }
 
+void generator::start(const dynamic::configuration& cfg)
+{
+    if (!m_stopped) return;
+
+    start();
+    m_dynamic.config(cfg.thresholds);
+    m_dynamic.start();
+}
+
 void generator::stop()
 {
     if (m_stopped) return;
@@ -69,6 +109,7 @@ void generator::stop()
     for_each_worker([](worker_ptr& w) { w->stop(); });
     m_stopped = true;
     m_run_time += std::chrono::system_clock::now() - m_run_time_milestone;
+    m_dynamic.stop();
 }
 
 void generator::restart()
@@ -84,6 +125,7 @@ void generator::resume()
     for_each_worker([](worker_ptr& w) { w->resume(); });
     m_paused = false;
     m_run_time_milestone = std::chrono::system_clock::now();
+    m_dynamic.start();
 }
 
 void generator::pause()
@@ -93,10 +135,12 @@ void generator::pause()
     for_each_worker([](worker_ptr& w) { w->pause(); });
     m_paused = true;
     m_run_time += std::chrono::system_clock::now() - m_run_time_milestone;
+    m_dynamic.stop();
 }
 
 void generator::reset()
 {
+    m_dynamic.reset();
     for_each_worker([](worker_ptr& w) {
         auto wtm = reinterpret_cast<worker<task_memory>*>(w.get());
         wtm->clear_stat();
@@ -143,7 +187,10 @@ generator::stat_t generator::stat() const
     return result_stat;
 }
 
-generator::config_t generator::config() const { return m_config; }
+dynamic::results generator::dynamic_results() const
+{
+    return dynamic::results{.thresholds = m_dynamic.result()};
+}
 
 void generator::config(const generator::config_t& cfg)
 {

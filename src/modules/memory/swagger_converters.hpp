@@ -3,6 +3,7 @@
 
 #include <iomanip>
 
+#include "dynamic/api.hpp"
 #include "memory/info.hpp"
 #include "memory/generator.hpp"
 #include "swagger/v1/model/MemoryInfoResult.h"
@@ -150,6 +151,8 @@ to_swagger(const reply::statistic::item::item_data& i)
         to_swagger(i.stat.read)));
     model.setWrite(std::make_shared<swagger::MemoryGeneratorStats>(
         to_swagger(i.stat.write)));
+    model.setDynamicResults(std::make_shared<swagger::DynamicResults>(
+        to_swagger(i.dynamic_results)));
 
     return model;
 }

@@ -4,6 +4,7 @@
 #include <variant>
 
 #include "memory/generator.hpp"
+#include "dynamic/api.hpp"
 
 namespace openperf::memory {
 
@@ -17,6 +18,7 @@ public:
         std::string id;
         std::string generator_id;
         generator::stat_t stat;
+        dynamic::results dynamic_results;
     };
 
     using stat_list = std::forward_list<stat_t>;
@@ -37,6 +39,7 @@ public:
 
     void start();
     void start(const std::string& id);
+    void start(const std::string& id, const dynamic::configuration& cfg);
     void stop();
     void stop(const std::string& id);
     void pause();
@@ -55,11 +58,8 @@ public:
     bool contains_stat(const std::string& id) const;
 
     const class generator& generator(const std::string& id) const;
-    // class generator& generator(const std::string& id);
     bool contains(const std::string& id) const;
     id_list ids() const;
-
-private:
 };
 
 } // namespace openperf::memory

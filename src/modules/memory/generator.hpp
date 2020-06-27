@@ -6,6 +6,7 @@
 #include "utils/worker/worker.hpp"
 #include "memory/task_memory.hpp"
 #include "memory/memory_stat.hpp"
+#include "dynamic/pool.hpp"
 
 namespace openperf::memory::internal {
 
@@ -57,6 +58,8 @@ private:
     std::chrono::nanoseconds m_run_time;
     time_point m_run_time_milestone;
 
+    dynamic::pool<stat_t> m_dynamic;
+
 public:
     // Constructors & Destructor
     generator();
@@ -74,14 +77,16 @@ public:
     void pause();
 
     void start();
+    void start(const dynamic::configuration&);
     void stop();
     void restart();
     void reset();
 
     void config(const generator::config_t&);
 
-    generator::config_t config() const;
+    generator::config_t config() const { return m_config; }
     generator::stat_t stat() const;
+    dynamic::results dynamic_results() const;
 
     bool is_stopped() const { return m_stopped; }
     bool is_running() const { return !(m_paused || m_stopped); }
