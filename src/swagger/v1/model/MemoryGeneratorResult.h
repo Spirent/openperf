@@ -23,6 +23,7 @@
 
 #include "MemoryGeneratorStats.h"
 #include <string>
+#include "DynamicResults.h"
 
 namespace swagger {
 namespace v1 {
@@ -81,7 +82,14 @@ public:
     /// </summary>
     std::shared_ptr<MemoryGeneratorStats> getWrite() const;
     void setWrite(std::shared_ptr<MemoryGeneratorStats> value);
-    
+        /// <summary>
+    /// 
+    /// </summary>
+    std::shared_ptr<DynamicResults> getDynamicResults() const;
+    void setDynamicResults(std::shared_ptr<DynamicResults> value);
+    bool dynamicResultsIsSet() const;
+    void unsetDynamic_results();
+
 protected:
     std::string m_Id;
 
@@ -95,6 +103,8 @@ protected:
 
     std::shared_ptr<MemoryGeneratorStats> m_Write;
 
+    std::shared_ptr<DynamicResults> m_Dynamic_results;
+    bool m_Dynamic_resultsIsSet;
 };
 
 }
