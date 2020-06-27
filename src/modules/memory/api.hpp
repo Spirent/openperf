@@ -12,6 +12,8 @@
 #include "generator.hpp"
 #include "memory_stat.hpp"
 
+#include "framework/dynamic/api.hpp"
+
 namespace swagger::v1::model {
 class MemoryGenerator;
 class BulkCreateMemoryGeneratorsRequest;
@@ -66,8 +68,16 @@ struct create
 };
 struct stop : id_message
 {};
-struct start : id_message
-{};
+struct start
+{
+    struct start_data
+    {
+        std::string id;
+        dynamic::configuration dynamic_results;
+    };
+
+    std::unique_ptr<start_data> data;
+};
 
 namespace bulk {
 
@@ -75,16 +85,29 @@ struct id_list
 {
     std::unique_ptr<std::vector<std::string>> data;
 };
+
+struct start
+{
+    struct start_data
+    {
+        std::vector<std::string> ids;
+        dynamic::configuration dynamic_results;
+    };
+
+    std::unique_ptr<start_data> data;
+};
+
+struct stop : id_list
+{};
+
+struct erase : id_list
+{};
+
 struct create
 {
     std::unique_ptr<std::vector<create_data>> data;
 };
-struct erase : id_list
-{};
-struct start : id_list
-{};
-struct stop : id_list
-{};
+
 } // namespace bulk
 } // namespace generator
 
@@ -146,6 +169,7 @@ struct item
         std::string id;
         std::string generator_id;
         internal::memory_stat stat;
+        dynamic::results dynamic_results;
     };
 
     using data_ptr = std::unique_ptr<item_data>;

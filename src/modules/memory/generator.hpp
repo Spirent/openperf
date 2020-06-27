@@ -8,6 +8,7 @@
 #include "task_memory.hpp"
 
 #include "framework/generator/controller.hpp"
+#include "framework/dynamic/pool.hpp"
 
 namespace openperf::memory::internal {
 
@@ -87,6 +88,7 @@ public:
 
     generator::config_t config() const;
     memory_stat stat() const;
+    dynamic::results dynamic_results() const;
     int32_t init_percent_complete() const { return m_init_percent_complete; }
 
     bool is_initialized() const { return init_percent_complete() == 100; }

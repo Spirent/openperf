@@ -168,10 +168,11 @@ void handler::create_generator(const Rest::Request& request,
 {
     auto model = json::parse(request.body()).get<model::MemoryGenerator>();
 
-    request::generator::create_data data{
-        .id = model.getId(), .is_running = model.isRunning(), .config = [&]() {
-            return from_swagger(*model.getConfig());
-        }()};
+    request::generator::create_data data{.id = model.getId(),
+                                         .is_running = model.isRunning(),
+                                         .config =
+                                             from_swagger(*model.getConfig())};
+
     auto api_reply = submit_request(request::generator::create{
         std::make_unique<request::generator::create_data>(std::move(data))});
 
@@ -251,7 +252,20 @@ void handler::start_generator(const Rest::Request& request,
         return;
     }
 
-    auto api_reply = submit_request(request::generator::start{{.id = id}});
+    request::generator::start::start_data data{.id = id};
+
+    if (!request.body().empty()) {
+        auto json_obj = json::parse(request.body());
+        model::DynamicResultsConfig model;
+        model.fromJson(json_obj);
+
+        data.dynamic_results = dynamic::from_swagger(model);
+    }
+
+    auto api_reply = submit_request(request::generator::start{
+        std::make_unique<request::generator::start::start_data>(
+            std::move(data))});
+
     if (auto item = std::get_if<reply::statistic::item>(&api_reply)) {
         auto model = to_swagger(*item->data);
         response.headers().add<Http::Header::ContentType>(
@@ -372,9 +386,16 @@ void handler::bulk_start_generators(const Rest::Request& request,
         }
     }
 
+    request::generator::bulk::start::start_data data{
+        .ids = std::move(model.getIds())};
+
+    if (model.dynamicResultsIsSet())
+        data.dynamic_results =
+            dynamic::from_swagger(*model.getDynamicResults().get());
+
     auto api_reply = submit_request(request::generator::bulk::start{
-        {std::make_unique<std::vector<std::string>>(
-            std::move(model.getIds()))}});
+        std::make_unique<request::generator::bulk::start::start_data>(
+            std::move(data))});
 
     if (auto list = std::get_if<reply::statistic::list>(&api_reply)) {
         auto array = json::array();

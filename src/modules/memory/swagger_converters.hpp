@@ -14,6 +14,7 @@
 #include "swagger/v1/model/BulkDeleteMemoryGeneratorsRequest.h"
 #include "swagger/v1/model/BulkStopMemoryGeneratorsRequest.h"
 #include "swagger/v1/model/BulkStartMemoryGeneratorsRequest.h"
+#include "framework/dynamic/api.hpp"
 
 namespace openperf::memory::api {
 
@@ -151,6 +152,8 @@ to_swagger(const reply::statistic::item::item_data& i)
         to_swagger(i.stat.read)));
     model.setWrite(std::make_shared<swagger::MemoryGeneratorStats>(
         to_swagger(i.stat.write)));
+    model.setDynamicResults(std::make_shared<swagger::DynamicResults>(
+        to_swagger(i.dynamic_results)));
 
     return model;
 }

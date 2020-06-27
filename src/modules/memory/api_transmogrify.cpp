@@ -104,9 +104,17 @@ serialized_msg serialize(api_request&& msg)
                                return zmq_msg_init(&serialized.data,
                                                    std::move(create.data));
                            },
+                           [&](request::generator::start& start) {
+                               return zmq_msg_init(&serialized.data,
+                                                   std::move(start.data));
+                           },
                            [&](request::generator::bulk::create& bulk_create) {
                                return zmq_msg_init(&serialized.data,
                                                    std::move(bulk_create.data));
+                           },
+                           [&](request::generator::bulk::start& start) {
+                               return zmq_msg_init(&serialized.data,
+                                                   std::move(start.data));
                            },
                            [&](request::generator::bulk::id_list& list) {
                                return zmq_msg_init(&serialized.data,
@@ -221,9 +229,11 @@ tl::expected<api_request, int> deserialize_request(const serialized_msg& msg)
     }
     case utils::variant_index<api_request, request::generator::start>(): {
         if (zmq_msg_size(&msg.data)) {
-            return request::generator::start{
-                {.id = std::string(zmq_msg_data<char*>(&msg.data),
-                                   zmq_msg_size(&msg.data))}};
+            request::generator::start request{};
+            request.data.reset(
+                *zmq_msg_data<request::generator::start::start_data**>(
+                    &msg.data));
+            return request;
         }
         return request::generator::start{};
     }
@@ -239,7 +249,8 @@ tl::expected<api_request, int> deserialize_request(const serialized_msg& msg)
         if (zmq_msg_size(&msg.data)) {
             request::generator::bulk::start request{};
             request.data.reset(
-                *zmq_msg_data<std::vector<std::string>**>(&msg.data));
+                *zmq_msg_data<request::generator::bulk::start::start_data**>(
+                    &msg.data));
             return request;
         }
         return request::generator::bulk::start{};
