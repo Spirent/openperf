@@ -9,6 +9,7 @@ Name | Type | Description | Notes
 **timestamp** | **datetime** | The ISO8601-formatted date of the last result update | 
 **read** | [**MemoryGeneratorStats**](MemoryGeneratorStats.md) |  | 
 **write** | [**MemoryGeneratorStats**](MemoryGeneratorStats.md) |  | 
+**dynamic_results** | [**DynamicResults**](DynamicResults.md) |  | [optional] 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 
