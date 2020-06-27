@@ -212,23 +212,6 @@ uint16_t sink::check_stop_trigger_condition(
     return m_stop_trigger->find_next(packets, packets_length);
 }
 
-uint16_t sink::check_filter_condition(
-    const packetio::packet::packet_buffer* const packets[],
-    uint16_t packets_length,
-    const packetio::packet::packet_buffer* filtered[]) const noexcept
-{
-    std::array<uint64_t, max_burst_size> filter_results;
-    uint16_t found = 0;
-
-    assert(m_filter);
-    assert(packets_length <= max_burst_size);
-    m_filter->exec_burst(packets, filter_results.data(), packets_length);
-    for (uint16_t i = 0; i < packets_length; ++i) {
-        if (filter_results[i]) { filtered[found++] = packets[i]; }
-    }
-    return found;
-}
-
 uint16_t sink::check_duration_condition(
     const openperf::packetio::packet::packet_buffer* const packets[],
     uint16_t packets_length) const noexcept
@@ -297,7 +280,7 @@ uint16_t sink::push(const packetio::packet::packet_buffer* const packets[],
         auto remain = length;
         while (remain) {
             auto burst_size = std::min(max_burst_size, remain);
-            length = check_filter_condition(start, burst_size, filtered.data());
+            length = m_filter->filter_burst(start, filtered.data(), burst_size);
             if (length) buffer->write_packets(filtered.data(), length);
             start += burst_size;
             remain -= burst_size;

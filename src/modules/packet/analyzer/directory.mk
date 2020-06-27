@@ -2,7 +2,7 @@
 # Makefile component to build Analyzer code
 #
 
-PA_DEPENDS += base_n immer packet_protocol packetio spirent_pga timesync
+PA_DEPENDS += base_n immer packet_protocol packetio packet_bpf spirent_pga timesync
 
 PA_SOURCES += \
 	api_transmogrify.cpp \
