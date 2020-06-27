@@ -41,17 +41,22 @@ static void to_swagger(api::flow_counters_config src,
 
 analyzer_ptr to_swagger(const sink& src)
 {
+    auto& src_config = src.get_config();
     auto dst = std::make_unique<swagger::v1::model::PacketAnalyzer>();
 
     dst->setId(src.id());
     dst->setSourceId(src.source());
     dst->setActive(src.active());
 
-    auto config = std::make_shared<swagger::v1::model::PacketAnalyzerConfig>();
-    to_swagger(src.protocol_counters(), config->getProtocolCounters());
-    to_swagger(src.flow_counters(), config->getFlowCounters());
+    auto dst_config =
+        std::make_shared<swagger::v1::model::PacketAnalyzerConfig>();
+    to_swagger(src_config.protocol_counters, dst_config->getProtocolCounters());
+    to_swagger(src_config.flow_counters, dst_config->getFlowCounters());
+    if (!src_config.filter.empty()) {
+        dst_config->setFilter(src_config.filter);
+    }
 
-    dst->setConfig(config);
+    dst->setConfig(dst_config);
 
     return (dst);
 }
