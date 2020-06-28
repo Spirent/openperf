@@ -43,7 +43,7 @@ double get_field(std::string_view name, const generator::stat_t& stat)
 generator::generator()
     : m_buffer{.ptr = nullptr, .size = 0}
     , m_serial_number(++serial_counter)
-    , m_dynamic([this]() -> stat_t { return stat(); }, get_field)
+    , m_dynamic([this]() { return std::make_unique<stat_t>(stat()); })
 {}
 
 generator::generator(generator&& g) noexcept
@@ -98,8 +98,7 @@ void generator::start(const dynamic::configuration& cfg)
     if (!m_stopped) return;
 
     start();
-    m_dynamic.config(cfg.thresholds);
-    m_dynamic.start();
+    m_dynamic.start(cfg.thresholds);
 }
 
 void generator::stop()
@@ -182,7 +181,7 @@ generator::stat_t generator::stat() const
             wstat.operations_target * m_config.write.block_size;
     }
 
-    result_stat.timestamp = std::max(rstat.timestamp, wstat.timestamp);
+    result_stat.time_stamp = std::max(rstat.timestamp, wstat.timestamp);
     result_stat.active = is_running();
     return result_stat;
 }

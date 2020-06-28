@@ -146,7 +146,7 @@ to_swagger(const reply::statistic::item::item_data& i)
     model.setId(i.id);
     model.setActive(i.stat.active);
     model.setGeneratorId(i.generator_id);
-    model.setTimestamp(to_iso8601(i.stat.timestamp));
+    model.setTimestamp(to_iso8601(i.stat.time_stamp));
     model.setRead(std::make_shared<swagger::MemoryGeneratorStats>(
         to_swagger(i.stat.read)));
     model.setWrite(std::make_shared<swagger::MemoryGeneratorStats>(
