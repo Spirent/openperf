@@ -18,7 +18,7 @@ private:
     void scrub_done() override;
 
 public:
-    ~device();
+    ~device() override;
     tl::expected<virtual_device_descriptors, int> vopen() override;
     void vclose() override;
     uint64_t get_size() const override;

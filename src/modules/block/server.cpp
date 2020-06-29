@@ -40,9 +40,8 @@ reply_msg server::handle_request(const request_block_device_init& request)
     auto blkdev = m_device_stack->get_block_device(request.id);
     if (!blkdev) return to_error(api::error_type::NOT_FOUND);
 
-    auto result = m_device_stack->initialize_device(request.id);
-    if (!result)
-        return to_error(api::error_type::CUSTOM_ERROR, 0, result.error());
+    if (auto r = m_device_stack->initialize_device(request.id); !r)
+        return to_error(api::error_type::CUSTOM_ERROR, 0, r.error());
 
     return reply_ok{};
 }
