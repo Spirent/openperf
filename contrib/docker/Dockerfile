@@ -12,11 +12,11 @@ ENV BUILD_NUMBER=${BUILD_NUMBER}
 
 RUN cd targets/openperf && make
 
-FROM debian:buster as runtime
+FROM debian:buster-slim as runtime
 
 RUN apt-get clean && \
     apt-get update && \
-    apt-get install -y --no-install-recommends libnuma1
+    apt-get install -y --no-install-recommends libnuma1 libcap2
 
 COPY --from=devimg /root/project/build/openperf-linux-x86_64-testing/bin/openperf /usr/local/bin/openperf
 COPY --from=devimg /root/project/contrib/docker/config.yaml /etc/openperf/config.yaml
