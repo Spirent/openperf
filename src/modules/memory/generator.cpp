@@ -3,41 +3,11 @@
 #include "memory/task_memory_write.hpp"
 
 #include <cinttypes>
-#include <string_view>
 #include <sys/mman.h>
 
 namespace openperf::memory::internal {
 
 static uint16_t serial_counter = 0;
-
-double get_field(std::string_view name, const generator::stat_t& stat)
-{
-    if (name == "read.ops_target") return stat.read.operations_target;
-    if (name == "read.ops_actual") return stat.read.operations;
-    if (name == "read.bytes_target") return stat.read.bytes_target;
-    if (name == "read.bytes_actual") return stat.read.bytes;
-    if (name == "read.io_errors") return stat.read.errors;
-    if (name == "read.latency") return stat.read.run_time.count();
-
-    if (name == "read.latency_min")
-        return stat.read.latency_min.value().count();
-    if (name == "read.latency_max")
-        return stat.read.latency_max.value().count();
-
-    if (name == "write.ops_target") return stat.write.operations_target;
-    if (name == "write.ops_actual") return stat.write.operations;
-    if (name == "write.bytes_target") return stat.write.bytes_target;
-    if (name == "write.bytes_actual") return stat.write.bytes;
-    if (name == "write.io_errors") return stat.write.errors;
-    if (name == "write.latency") return stat.write.run_time.count();
-
-    if (name == "write.latency_min")
-        return stat.write.latency_min.value().count();
-    if (name == "write.latency_max")
-        return stat.write.latency_max.value().count();
-
-    return 0.0;
-}
 
 // Constructors & Destructor
 generator::generator()
