@@ -19,7 +19,7 @@ RUN apt-get clean && \
     apt-get install -y --no-install-recommends libnuma1 libcap2
 
 COPY --from=devimg /root/project/build/openperf-linux-x86_64-testing/bin/openperf /usr/local/bin/openperf
-COPY --from=devimg /root/project/contrib/docker/config.yaml /etc/openperf/config.yaml
+COPY --from=devimg /root/project/config.yaml /etc/openperf/config.yaml
 
 EXPOSE 9000
 CMD /usr/local/bin/openperf -c /etc/openperf/config.yaml

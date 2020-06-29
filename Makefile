@@ -45,7 +45,8 @@ include mk/versions.mk
 
 .PHONY: image
 image: deps
-	@docker build -f contrib/docker/Dockerfile -t ${DOCKER_IMAGE} --build-arg GIT_COMMIT=${GIT_COMMIT} --build-arg GIT_VERSION=${GIT_VERSION} --build-arg BUILD_NUMBER=${BUILD_NUMBER}  .
+	@DOCKER_IMAGE=${DOCKER_IMAGE} GIT_COMMIT=${GIT_COMMIT} GIT_VERSION=${GIT_VERSION} BUILD_NUMBER=${BUILD_NUMBER} \
+	bash contrib/docker/build.sh
 
 .PHONY: image_test_aat
 image_test_aat: image
