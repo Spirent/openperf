@@ -1,25 +1,25 @@
-#include "inspector.hpp"
+#include "poller.hpp"
 
 #include <set>
 #include <functional>
 
 namespace openperf::dynamic {
 
-inspector::inspector()
-    : inspector(nullptr)
+poller::poller()
+    : poller(nullptr)
 {}
 
-inspector::inspector(poll_function&& function)
+poller::poller(poll_function&& function)
     : m_stop(true)
     , m_poll(function)
 {}
 
-void inspector::configure(const config_list& config)
+void poller::configure(const dynamic::configuration& config)
 {
     std::set<std::string> ids;
 
     m_thresholds.clear();
-    for (const auto& item : config) {
+    for (const auto& item : config.thresholds) {
         auto id = item.id;
         if (id.empty()) id = core::to_string(core::uuid::random());
         if (auto check = config::op_config_validate_id_string(id); !check)
@@ -37,13 +37,13 @@ void inspector::configure(const config_list& config)
     }
 }
 
-inspector::config_list inspector::config() const
+dynamic::configuration poller::config() const
 {
-    config_list list;
+    dynamic::configuration conf;
     std::transform(m_thresholds.begin(),
                    m_thresholds.end(),
-                   std::back_inserter(list),
-                   [](const auto& i) -> config_t {
+                   std::back_inserter(conf.thresholds),
+                   [](const auto& i) -> configuration::threshold {
                        return {
                            .argument = i.argument,
                            .id = i.id,
@@ -51,17 +51,17 @@ inspector::config_list inspector::config() const
                            .condition = i.threshold.condition(),
                        };
                    });
-    return list;
+    return conf;
 }
 
-void inspector::reset()
+void poller::reset()
 {
     std::for_each(m_thresholds.begin(), m_thresholds.end(), [](auto& x) {
         x.threshold.reset();
     });
 }
 
-void inspector::start(const config_list& config)
+void poller::start(const dynamic::configuration& config)
 {
     if (!m_stop) return;
 
@@ -69,7 +69,7 @@ void inspector::start(const config_list& config)
     start();
 }
 
-void inspector::start()
+void poller::start()
 {
     if (!m_stop) return;
     if (m_thresholds.empty()) return;
@@ -77,9 +77,14 @@ void inspector::start()
     m_thread = std::thread([this]() { loop(); });
 }
 
-void inspector::loop()
+dynamic::results poller::result() const
 {
-    using chronometer = std::chrono::system_clock;
+    return dynamic::results{.thresholds = m_thresholds};
+}
+
+void poller::loop()
+{
+    using chronometer = openperf::timesync::chrono::monotime;
 
     m_stop = false;
     m_last_stat = m_poll();
@@ -91,7 +96,7 @@ void inspector::loop()
     }
 }
 
-void inspector::spin()
+void poller::spin()
 {
     auto stat = m_poll();
     for (auto& th : m_thresholds)
@@ -100,11 +105,11 @@ void inspector::spin()
     m_last_stat = std::move(stat);
 }
 
-int inspector::weight(const dynamic_argument& arg, const inspectable& stat)
+int poller::weight(const dynamic::argument& arg, const pollable& stat)
 {
     uint64_t weight = 1;
     switch (arg.function) {
-    case dynamic_argument::DXDY: {
+    case dynamic::argument::DXDY: {
         auto y = stat.field(arg.y);
         auto last_y = m_last_stat->field(arg.y);
         weight = y - last_y;
@@ -117,7 +122,7 @@ int inspector::weight(const dynamic_argument& arg, const inspectable& stat)
     return weight;
 }
 
-double inspector::delta(const dynamic_argument& arg, const inspectable& stat)
+double poller::delta(const dynamic::argument& arg, const pollable& stat)
 {
     auto x = stat.field(arg.x);
     auto last_x = m_last_stat->field(arg.x);
@@ -125,18 +130,18 @@ double inspector::delta(const dynamic_argument& arg, const inspectable& stat)
 
     double delta = 0;
     switch (arg.function) {
-    case dynamic_argument::DX: {
+    case dynamic::argument::DX: {
         delta = delta_x;
         break;
     }
-    case dynamic_argument::DXDT: {
+    case dynamic::argument::DXDT: {
         auto t = stat.timestamp();
         auto last_t = m_last_stat->timestamp();
         auto delta_t = t - last_t;
         delta = (delta_t != 0ns) ? delta_x / delta_t.count() : 0.0;
         break;
     }
-    case dynamic_argument::DXDY: {
+    case dynamic::argument::DXDY: {
         auto y = stat.field(arg.y);
         auto last_y = m_last_stat->field(arg.y);
         auto delta_y = y - last_y;
