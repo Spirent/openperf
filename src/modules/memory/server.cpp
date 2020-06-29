@@ -169,10 +169,11 @@ api_reply server::handle_request(const request::generator::start& req)
     if (m_generator_stack->contains(req.data->id)) {
         m_generator_stack->start(req.data->id, req.data->dynamic_results);
         auto stat = m_generator_stack->stat(req.data->id);
-        reply::statistic::item::item_data data{.id = stat.id,
-                                               .generator_id =
-                                                   stat.generator_id,
-                                               .stat = stat.stat};
+        reply::statistic::item::item_data data{
+            .id = stat.id,
+            .generator_id = stat.generator_id,
+            .stat = stat.stat,
+            .dynamic_results = stat.dynamic_results};
         return reply::statistic::item{
             std::make_unique<reply::statistic::item::item_data>(
                 std::move(data))};
