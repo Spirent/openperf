@@ -8,6 +8,7 @@ Name | Type | Description | Notes
 **active** | **bool** | Indicates whether the result is currently being updated | 
 **timestamp** | **datetime** | The ISO8601-formatted date of the last result update | 
 **stats** | [**CpuGeneratorStats**](CpuGeneratorStats.md) |  | 
+**dynamic_results** | [**DynamicResults**](DynamicResults.md) |  | [optional] 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

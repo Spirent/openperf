@@ -19,6 +19,7 @@ namespace model {
 
 BulkStartCpuGeneratorsRequest::BulkStartCpuGeneratorsRequest()
 {
+    m_Dynamic_resultsIsSet = false;
     
 }
 
@@ -43,6 +44,10 @@ nlohmann::json BulkStartCpuGeneratorsRequest::toJson() const
         }
         val["ids"] = jsonArray;
             }
+    if(m_Dynamic_resultsIsSet)
+    {
+        val["dynamic_results"] = ModelBase::toJson(m_Dynamic_results);
+    }
     
 
     return val;
@@ -59,6 +64,16 @@ void BulkStartCpuGeneratorsRequest::fromJson(nlohmann::json& val)
             
         }
     }
+    if(val.find("dynamic_results") != val.end())
+    {
+        if(!val["dynamic_results"].is_null())
+        {
+            std::shared_ptr<DynamicResultsConfig> newItem(new DynamicResultsConfig());
+            newItem->fromJson(val["dynamic_results"]);
+            setDynamicResults( newItem );
+        }
+        
+    }
     
 }
 
@@ -66,6 +81,23 @@ void BulkStartCpuGeneratorsRequest::fromJson(nlohmann::json& val)
 std::vector<std::string>& BulkStartCpuGeneratorsRequest::getIds()
 {
     return m_Ids;
+}
+std::shared_ptr<DynamicResultsConfig> BulkStartCpuGeneratorsRequest::getDynamicResults() const
+{
+    return m_Dynamic_results;
+}
+void BulkStartCpuGeneratorsRequest::setDynamicResults(std::shared_ptr<DynamicResultsConfig> value)
+{
+    m_Dynamic_results = value;
+    m_Dynamic_resultsIsSet = true;
+}
+bool BulkStartCpuGeneratorsRequest::dynamicResultsIsSet() const
+{
+    return m_Dynamic_resultsIsSet;
+}
+void BulkStartCpuGeneratorsRequest::unsetDynamic_results()
+{
+    m_Dynamic_resultsIsSet = false;
 }
 
 }

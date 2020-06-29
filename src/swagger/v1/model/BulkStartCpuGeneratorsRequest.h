@@ -22,6 +22,7 @@
 #include "ModelBase.h"
 
 #include <string>
+#include "DynamicResultsConfig.h"
 #include <vector>
 
 namespace swagger {
@@ -53,10 +54,19 @@ public:
     /// List of CPU generator identifiers
     /// </summary>
     std::vector<std::string>& getIds();
-    
+        /// <summary>
+    /// 
+    /// </summary>
+    std::shared_ptr<DynamicResultsConfig> getDynamicResults() const;
+    void setDynamicResults(std::shared_ptr<DynamicResultsConfig> value);
+    bool dynamicResultsIsSet() const;
+    void unsetDynamic_results();
+
 protected:
     std::vector<std::string> m_Ids;
 
+    std::shared_ptr<DynamicResultsConfig> m_Dynamic_results;
+    bool m_Dynamic_resultsIsSet;
 };
 
 }

@@ -24,6 +24,7 @@ CpuGeneratorResult::CpuGeneratorResult()
     m_Generator_idIsSet = false;
     m_Active = false;
     m_Timestamp = "";
+    m_Dynamic_resultsIsSet = false;
     
 }
 
@@ -48,6 +49,10 @@ nlohmann::json CpuGeneratorResult::toJson() const
     val["active"] = m_Active;
     val["timestamp"] = ModelBase::toJson(m_Timestamp);
     val["stats"] = ModelBase::toJson(m_Stats);
+    if(m_Dynamic_resultsIsSet)
+    {
+        val["dynamic_results"] = ModelBase::toJson(m_Dynamic_results);
+    }
     
 
     return val;
@@ -63,6 +68,16 @@ void CpuGeneratorResult::fromJson(nlohmann::json& val)
     }
     setActive(val.at("active"));
     setTimestamp(val.at("timestamp"));
+    if(val.find("dynamic_results") != val.end())
+    {
+        if(!val["dynamic_results"].is_null())
+        {
+            std::shared_ptr<DynamicResults> newItem(new DynamicResults());
+            newItem->fromJson(val["dynamic_results"]);
+            setDynamicResults( newItem );
+        }
+        
+    }
     
 }
 
@@ -119,6 +134,23 @@ void CpuGeneratorResult::setStats(std::shared_ptr<CpuGeneratorStats> value)
 {
     m_Stats = value;
     
+}
+std::shared_ptr<DynamicResults> CpuGeneratorResult::getDynamicResults() const
+{
+    return m_Dynamic_results;
+}
+void CpuGeneratorResult::setDynamicResults(std::shared_ptr<DynamicResults> value)
+{
+    m_Dynamic_results = value;
+    m_Dynamic_resultsIsSet = true;
+}
+bool CpuGeneratorResult::dynamicResultsIsSet() const
+{
+    return m_Dynamic_resultsIsSet;
+}
+void CpuGeneratorResult::unsetDynamic_results()
+{
+    m_Dynamic_resultsIsSet = false;
 }
 
 }
