@@ -35,19 +35,19 @@ public:
     void set_path(std::string_view value);
 
     uint64_t get_size() const;
-    void set_size(const uint64_t value);
+    void set_size(uint64_t value);
 
     std::string get_info() const;
     void set_info(std::string_view value);
 
     bool is_usable() const;
-    void set_usable(const bool value);
+    void set_usable(bool value);
 
     int32_t get_init_percent_complete() const;
-    void set_init_percent_complete(const int32_t value);
+    void set_init_percent_complete(int32_t value);
 
     state get_state() const;
-    void set_state(const state& value);
+    void set_state(state value);
 };
 
 } // namespace openperf::block::model

@@ -22,7 +22,7 @@ void device::set_path(std::string_view value) { m_path = value; }
 
 uint64_t device::get_size() const { return m_size; }
 
-void device::set_size(const uint64_t value) { m_size = value; }
+void device::set_size(uint64_t value) { m_size = value; }
 
 std::string device::get_info() const { return m_info; }
 
@@ -30,19 +30,19 @@ void device::set_info(std::string_view value) { m_info = value; }
 
 bool device::is_usable() const { return m_usable; }
 
-void device::set_usable(const bool value) { m_usable = value; }
+void device::set_usable(bool value) { m_usable = value; }
 
 int32_t device::get_init_percent_complete() const
 {
     return m_init_percent_complete;
 }
-void device::set_init_percent_complete(const int32_t value)
+void device::set_init_percent_complete(int32_t value)
 {
     m_init_percent_complete = value;
 }
 
 device::state device::get_state() const { return m_state; }
 
-void device::set_state(const device::state& value) { m_state = value; }
+void device::set_state(device::state value) { m_state = value; }
 
 } // namespace openperf::block::model
