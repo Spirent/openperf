@@ -97,23 +97,17 @@ void copy_string(std::string_view str, char* ch_arr, size_t max_length)
     ch_arr[std::min(str.length(), max_length - 1)] = '\0';
 }
 
-const static std::unordered_map<std::string, model::block_generation_pattern>
-    block_generation_patterns = {
-        {"random", model::block_generation_pattern::RANDOM},
-        {"sequential", model::block_generation_pattern::SEQUENTIAL},
-        {"reverse", model::block_generation_pattern::REVERSE},
-};
-
-const static std::unordered_map<model::block_generation_pattern, std::string>
-    block_generation_pattern_strings = {
-        {model::block_generation_pattern::RANDOM, "random"},
-        {model::block_generation_pattern::SEQUENTIAL, "sequential"},
-        {model::block_generation_pattern::REVERSE, "reverse"},
-};
-
 model::block_generation_pattern
 block_generation_pattern_from_string(const std::string& value)
 {
+    const static std::unordered_map<std::string,
+                                    model::block_generation_pattern>
+        block_generation_patterns = {
+            {"random", model::block_generation_pattern::RANDOM},
+            {"sequential", model::block_generation_pattern::SEQUENTIAL},
+            {"reverse", model::block_generation_pattern::REVERSE},
+        };
+
     if (block_generation_patterns.count(value))
         return block_generation_patterns.at(value);
     throw std::runtime_error("Pattern \"" + value + "\" is unknown");
@@ -121,49 +115,56 @@ block_generation_pattern_from_string(const std::string& value)
 
 std::string to_string(const model::block_generation_pattern& pattern)
 {
-    if (block_generation_pattern_strings.count(pattern))
-        return block_generation_pattern_strings.at(pattern);
+    const static std::unordered_map<model::block_generation_pattern,
+                                    std::string>
+        block_generation_patterns = {
+            {model::block_generation_pattern::RANDOM, "random"},
+            {model::block_generation_pattern::SEQUENTIAL, "sequential"},
+            {model::block_generation_pattern::REVERSE, "reverse"},
+        };
+
+    if (block_generation_patterns.count(pattern))
+        return block_generation_patterns.at(pattern);
     return "unknown";
 }
-
-const static std::unordered_map<model::device::state, std::string>
-    block_device_state_strings = {
-        {model::device::state::NONE, "none"},
-        {model::device::state::INIT, "init"},
-        {model::device::state::READY, "ready"},
-};
 
 std::string to_string(const model::device::state& state)
 {
-    if (block_device_state_strings.count(state))
-        return block_device_state_strings.at(state);
+    const static std::unordered_map<model::device::state, std::string>
+        block_device_states = {
+            {model::device::state::NONE, "none"},
+            {model::device::state::INIT, "init"},
+            {model::device::state::READY, "ready"},
+        };
+
+    if (block_device_states.count(state)) return block_device_states.at(state);
     return "unknown";
 }
 
-const static std::unordered_map<std::string, model::file::state>
-    block_file_states = {
-        {"none", model::file::state::NONE},
-        {"init", model::file::state::INIT},
-        {"ready", model::file::state::READY},
-};
-
-const static std::unordered_map<model::file::state, std::string>
-    block_file_state_strings = {
-        {model::file::state::NONE, "none"},
-        {model::file::state::INIT, "init"},
-        {model::file::state::READY, "ready"},
-};
-
 model::file::state block_file_state_from_string(const std::string& value)
 {
+    const static std::unordered_map<std::string, model::file::state>
+        block_file_states = {
+            {"none", model::file::state::NONE},
+            {"init", model::file::state::INIT},
+            {"ready", model::file::state::READY},
+        };
+
     if (block_file_states.count(value)) return block_file_states.at(value);
     throw std::runtime_error("Pattern \"" + value + "\" is unknown");
 }
 
 std::string to_string(const model::file::state& state)
 {
-    if (block_file_state_strings.count(state))
-        return block_file_state_strings.at(state);
+
+    const static std::unordered_map<model::file::state, std::string>
+        block_file_states = {
+            {model::file::state::NONE, "none"},
+            {model::file::state::INIT, "init"},
+            {model::file::state::READY, "ready"},
+        };
+
+    if (block_file_states.count(state)) return block_file_states.at(state);
     return "unknown";
 }
 
