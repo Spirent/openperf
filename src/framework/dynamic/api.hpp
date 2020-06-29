@@ -23,14 +23,14 @@ struct results
 {
     struct threshold_result
     {
-        dynamic_argument argument;
+        dynamic::argument argument;
         std::string id;
         threshold threshold;
     };
 
     struct tdigest_result
     {
-        dynamic_argument argument;
+        dynamic::argument argument;
         std::string id;
         tdigest tdigest;
     };
@@ -43,7 +43,7 @@ struct configuration
 {
     struct threshold
     {
-        dynamic_argument argument;
+        dynamic::argument argument;
         std::string id;
         double value;
         comparator condition;
@@ -51,7 +51,7 @@ struct configuration
 
     struct tdigest
     {
-        dynamic_argument argument;
+        dynamic::argument argument;
         std::string id;
     };
 
@@ -88,27 +88,27 @@ inline std::string to_string(const comparator& pattern)
     return "unknown";
 }
 
-inline dynamic_argument::function_t
+inline dynamic::argument::function_t
 to_dynamic_function(const std::string& value)
 {
-    static const std::unordered_map<std::string, dynamic_argument::function_t>
+    static const std::unordered_map<std::string, dynamic::argument::function_t>
         smap = {
-            {"dx", dynamic_argument::DX},
-            {"dxdy", dynamic_argument::DXDY},
-            {"dxdt", dynamic_argument::DXDT},
+            {"dx", dynamic::argument::DX},
+            {"dxdy", dynamic::argument::DXDY},
+            {"dxdt", dynamic::argument::DXDT},
         };
 
     if (smap.count(value)) return smap.at(value);
     throw std::runtime_error("Function \"" + value + "\" is unknown");
 }
 
-inline std::string to_string(const dynamic_argument::function_t& f)
+inline std::string to_string(const dynamic::argument::function_t& f)
 {
-    static const std::unordered_map<dynamic_argument::function_t, std::string>
+    static const std::unordered_map<dynamic::argument::function_t, std::string>
         fmap = {
-            {dynamic_argument::DX, "dx"},
-            {dynamic_argument::DXDY, "dxdy"},
-            {dynamic_argument::DXDT, "dxdt"},
+            {dynamic::argument::DX, "dx"},
+            {dynamic::argument::DXDY, "dxdy"},
+            {dynamic::argument::DXDT, "dxdt"},
         };
 
     if (fmap.count(f)) return fmap.at(f);
@@ -166,7 +166,7 @@ to_swagger(const dynamic::results::threshold_result& r)
     result.setFunction(to_string(r.argument.function));
     result.setStatX(r.argument.x);
 
-    if (r.argument.function == dynamic_argument::DXDY)
+    if (r.argument.function == dynamic::argument::DXDY)
         result.setStatY(r.argument.y);
 
     result.setValue(r.threshold.value());

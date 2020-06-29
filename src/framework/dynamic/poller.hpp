@@ -5,6 +5,7 @@
 #include "dynamic/threshold.hpp"
 #include "framework/core/op_uuid.hpp"
 #include "framework/config/op_config_utils.hpp"
+#include "modules/timesync/chrono.hpp"
 
 #include <atomic>
 #include <chrono>
@@ -16,27 +17,26 @@ namespace openperf::dynamic {
 
 using namespace std::chrono_literals;
 
-class inspectable
+class pollable
 {
 public:
-    using timestamp_t = std::chrono::system_clock::time_point;
+    using timestamp_t = openperf::timesync::chrono::realtime::time_point;
 
-    virtual ~inspectable() {}
+    virtual ~pollable() {}
     virtual double field(std::string_view) const = 0;
+    virtual bool has_field(std::string_view) const = 0;
     virtual timestamp_t timestamp() const = 0;
 };
 
-class inspector
+class poller
 {
 public:
-    using inspectable_ptr = std::unique_ptr<inspectable>;
-    using poll_function = std::function<inspectable_ptr(void)>;
-
-    using config_t = dynamic::configuration::threshold;
-    using config_list = std::vector<config_t>;
-    using result_t = dynamic::results::threshold_result;
-    using result_list = std::vector<result_t>;
+    using pollable_ptr = std::unique_ptr<pollable>;
+    using poll_function = std::function<pollable_ptr(void)>;
     using duration = std::chrono::milliseconds;
+
+    using threshold_result = dynamic::results::threshold_result;
+    using threshold_result_list = std::vector<threshold_result>;
 
 private:
     // Attributes
@@ -46,32 +46,31 @@ private:
     poll_function m_poll;
     std::thread m_thread;
 
-    result_list m_thresholds;
-    inspectable_ptr m_last_stat = nullptr;
+    threshold_result_list m_thresholds;
+    pollable_ptr m_last_stat = nullptr;
 
 public:
-    inspector();
-    inspector(poll_function&&);
+    poller();
+    poller(poll_function&&);
+
+    dynamic::configuration config() const;
+    dynamic::results result() const;
 
     duration interval() const { return m_interval; }
     void interval(const duration& i) { m_interval = i; }
 
-    config_list config() const;
-
     void reset();
     void stop() { m_stop = true; }
-    void start(const config_list&);
+    void start(const dynamic::configuration&);
     void start();
-
-    result_list result() const { return m_thresholds; }
 
 private:
     void loop();
     void spin();
-    void configure(const config_list&);
+    void configure(const dynamic::configuration&);
 
-    int weight(const dynamic_argument&, const inspectable&);
-    double delta(const dynamic_argument&, const inspectable&);
+    int weight(const dynamic::argument&, const pollable&);
+    double delta(const dynamic::argument&, const pollable&);
 };
 
 } // namespace openperf::dynamic

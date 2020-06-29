@@ -3,4 +3,4 @@
 #
 
 FW_SOURCES += \
-	dynamic/inspector.cpp
+	dynamic/poller.cpp
