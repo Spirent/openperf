@@ -2,11 +2,12 @@
 #define _OP_MEMORY_GENERATOR_HPP_
 
 #include <forward_list>
+#include <set>
 
 #include "utils/worker/worker.hpp"
 #include "memory/task_memory.hpp"
 #include "memory/memory_stat.hpp"
-#include "dynamic/inspector.hpp"
+#include "framework/dynamic/poller.hpp"
 
 namespace openperf::memory::internal {
 
@@ -28,7 +29,7 @@ public:
         } read, write;
     };
 
-    struct stat_t : public dynamic::inspectable
+    struct stat_t : public dynamic::pollable
     {
         bool active;
         memory_stat::timestamp_t time_stamp;
@@ -64,10 +65,29 @@ public:
             return 0.0;
         }
 
-        inspectable::timestamp_t timestamp() const override
+        bool has_field(std::string_view name) const override
         {
-            return time_stamp;
+            static std::set<std::string> fields = {"read.ops_target",
+                                                   "read.ops_actual",
+                                                   "read.bytes_target",
+                                                   "read.bytes_actual",
+                                                   "read.io_errors",
+                                                   "read.latency",
+                                                   "read.latency_min",
+                                                   "read.latency_max",
+                                                   "write.ops_target",
+                                                   "write.ops_actual",
+                                                   "write.bytes_target",
+                                                   "write.bytes_actual",
+                                                   "write.io_errors",
+                                                   "write.latency",
+                                                   "write.latency_min",
+                                                   "write.latency_max"};
+
+            return fields.count(std::string(name));
         }
+
+        pollable::timestamp_t timestamp() const override { return time_stamp; }
     };
 
 private:
@@ -92,7 +112,7 @@ private:
     std::chrono::nanoseconds m_run_time;
     time_point m_run_time_milestone;
 
-    dynamic::inspector m_dynamic;
+    dynamic::poller m_dynamic;
 
 public:
     // Constructors & Destructor

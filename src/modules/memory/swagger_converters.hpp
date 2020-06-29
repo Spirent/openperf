@@ -129,7 +129,7 @@ static swagger::MemoryGeneratorStats to_swagger(const memory_stat& stat)
 
 static std::string to_iso8601(const memory_stat::timestamp_t& ts)
 {
-    auto t = std::chrono::system_clock::to_time_t(ts);
+    auto t = openperf::timesync::chrono::realtime::to_time_t(ts);
     auto nanos = std::chrono::time_point_cast<std::chrono::nanoseconds>(ts)
                  - std::chrono::time_point_cast<std::chrono::seconds>(ts);
     std::stringstream os;
