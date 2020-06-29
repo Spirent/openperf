@@ -119,16 +119,6 @@ void device_stack::init_device_stack()
         m_block_devices.emplace(blkdev->get_id(), blkdev);
     }
 
-    auto blkdev = std::make_shared<device>();
-    blkdev->set_id(core::to_string(core::uuid::random()));
-    blkdev->set_path("/tmp/foo_dev");
-    blkdev->set_size(3000000000);
-    blkdev->set_info("qwe");
-    blkdev->set_usable(true);
-    blkdev->set_init_percent_complete(0);
-    blkdev->set_state(device::state::NONE);
-    m_block_devices.emplace(blkdev->get_id(), blkdev);
-
     closedir(dir);
 }
 
