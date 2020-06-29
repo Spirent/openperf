@@ -32,21 +32,21 @@ void openperf_shim_init()
     }
 }
 
-template <class T> void expand(std::initializer_list<T>) {}
-
-template <typename Function, typename Object, typename... Args>
+template <typename Function, typename Object, typename Arg, typename... Args>
 auto call_and_log_function(const char* function_name,
                            Function&& f,
                            Object&& o,
+                           Arg&& arg,
                            Args&&... args)
 {
-    std::cerr << function_name << "(";
-    expand({(std::cerr << args << ",", 0)...});
-    std::cerr << std::flush;
+    std::cerr << function_name << "(" << arg;
+    ((std::cerr << ", " << args), ...);
+    std::cerr << ") = " << std::flush;
     auto result = std::invoke(std::forward<Function>(f),
                               std::forward<Object>(o),
+                              std::forward<Arg>(arg),
                               std::forward<Args>(args)...);
-    std::cerr << ") = " << result;
+    std::cerr << result;
 
     if (result < 0) { std::cerr << " (errno = " << errno << ")"; }
 
