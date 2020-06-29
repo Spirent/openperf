@@ -84,6 +84,11 @@ public:
     reply_msg handle_request(const request_start_capture&);
     reply_msg handle_request(const request_stop_capture&);
 
+    reply_msg handle_request(const request_bulk_create_captures&);
+    reply_msg handle_request(const request_bulk_delete_captures&);
+    reply_msg handle_request(const request_bulk_start_captures&);
+    reply_msg handle_request(const request_bulk_stop_captures&);
+
     reply_msg handle_request(const request_list_capture_results&);
     reply_msg handle_request(const request_delete_capture_results&);
     reply_msg handle_request(const request_get_capture_result&);

@@ -18,7 +18,12 @@ bool is_valid(const capture_type& capture, std::vector<std::string>& errors)
         return (false);
     }
 
-    assert(config);
+    if (config->getBufferSize()
+        < static_cast<int64_t>(capture_buffer_size_min)) {
+        errors.emplace_back("Capture buffer minimum size is "
+                            + std::to_string(capture_buffer_size_min)
+                            + " bytes.");
+    }
 
     return (errors.size() == init_errors);
 }

@@ -8,6 +8,11 @@
 #include "packet/capture/api.hpp"
 #include "packet/capture/pcap_transfer.hpp"
 
+#include "swagger/v1/model/BulkCreatePacketCapturesResponse.h"
+#include "swagger/v1/model/BulkDeletePacketCapturesRequest.h"
+#include "swagger/v1/model/BulkStartPacketCapturesRequest.h"
+#include "swagger/v1/model/BulkStartPacketCapturesResponse.h"
+#include "swagger/v1/model/BulkStopPacketCapturesRequest.h"
 #include "swagger/v1/model/PacketCapture.h"
 #include "swagger/v1/model/PacketCaptureResult.h"
 
@@ -386,32 +391,233 @@ void handler::stop_capture(const request_type& request, response_type response)
     }
 }
 
+static tl::expected<request_bulk_create_captures, std::string>
+parse_bulk_create_captures(const handler::request_type& request)
+{
+    auto bulk_request = request_bulk_create_captures{};
+    try {
+        const auto j = nlohmann::json::parse(request.body());
+        for (auto&& item : j["items"]) {
+            bulk_request.captures.emplace_back(
+                std::make_unique<capture_type>(item.get<capture_type>()));
+        }
+        return (bulk_request);
+    } catch (const nlohmann::json::exception& e) {
+        return (tl::unexpected(json_error(e.id, e.what())));
+    }
+}
+
 void handler::bulk_create_captures(const request_type& request,
                                    response_type response)
 {
-    (void)request;
-    response.send(Http::Code::Not_Implemented);
+    auto api_request = parse_bulk_create_captures(request);
+    if (!api_request) {
+        response.send(Http::Code::Bad_Request, api_request.error());
+        return;
+    }
+
+    /* Verify that all user provided id's are valid */
+    std::vector<std::string> id_errors;
+    std::for_each(std::begin(api_request->captures),
+                  std::end(api_request->captures),
+                  [&](const auto& capture) {
+                      if (!capture->getId().empty()) {
+                          if (auto res = config::op_config_validate_id_string(
+                                  capture->getId());
+                              !res) {
+                              id_errors.emplace_back(res.error());
+                          }
+                      }
+                      OP_LOG(OP_LOG_ERROR,
+                             "bulk_create_captures() id=%s source=%s",
+                             capture->getId().c_str(),
+                             capture->getSourceId().c_str());
+                  });
+    if (!id_errors.empty()) {
+        response.send(Http::Code::Not_Found, concatenate(id_errors));
+        return;
+    }
+
+    /* Validate all capture objects before forwarding to the server */
+    std::vector<std::string> validation_errors;
+    std::for_each(
+        std::begin(api_request->captures),
+        std::end(api_request->captures),
+        [&](const auto& capture) { is_valid(*capture, validation_errors); });
+    if (!validation_errors.empty()) {
+        response.send(Http::Code::Bad_Request, concatenate(validation_errors));
+        return;
+    }
+
+    auto api_reply = submit_request(m_socket.get(), std::move(*api_request));
+
+    if (auto reply = std::get_if<reply_captures>(&api_reply)) {
+        response.headers().add<Http::Header::ContentType>(
+            MIME(Application, Json));
+
+        auto swagger_reply =
+            swagger::v1::model::BulkCreatePacketCapturesResponse{};
+        std::move(std::begin(reply->captures),
+                  std::end(reply->captures),
+                  std::back_inserter(swagger_reply.getItems()));
+
+        response.send(Http::Code::Ok, swagger_reply.toJson().dump());
+    } else {
+        handle_reply_error(api_reply, std::move(response));
+    }
+}
+
+template <typename T>
+tl::expected<T, std::string> parse_request(const handler::request_type& request)
+{
+    try {
+        auto obj = T{};
+        auto j = nlohmann::json::parse(request.body());
+        obj.fromJson(j);
+        return (obj);
+    } catch (const nlohmann::json::exception& e) {
+        return (tl::unexpected(json_error(e.id, e.what())));
+    }
 }
 
 void handler::bulk_delete_captures(const request_type& request,
                                    response_type response)
 {
-    (void)request;
-    response.send(Http::Code::Not_Implemented);
+    auto swagger_request =
+        parse_request<swagger::v1::model::BulkDeletePacketCapturesRequest>(
+            request);
+    if (!swagger_request) {
+        response.send(Http::Code::Bad_Request, swagger_request.error());
+        return;
+    }
+
+    const auto& ids = swagger_request->getIds();
+
+    /* Verify that all user provided id's are valid */
+    std::vector<std::string> id_errors;
+    std::for_each(std::begin(ids), std::end(ids), [&](const auto& id) {
+        if (!id.empty()) {
+            if (auto res = config::op_config_validate_id_string(id); !res) {
+                id_errors.emplace_back(res.error());
+            }
+        }
+    });
+    if (!id_errors.empty()) {
+        response.send(Http::Code::Not_Found, concatenate(id_errors));
+        return;
+    }
+
+    auto api_request = request_bulk_delete_captures{};
+
+    std::transform(
+        std::begin(ids),
+        std::end(ids),
+        std::back_inserter(api_request.ids),
+        [](const auto& id) { return (std::make_unique<std::string>(id)); });
+
+    auto api_reply = submit_request(m_socket.get(), std::move(api_request));
+
+    if (auto reply = std::get_if<reply_ok>(&api_reply)) {
+        response.send(Http::Code::No_Content);
+    } else {
+        handle_reply_error(api_reply, std::move(response));
+    }
 }
 
 void handler::bulk_start_captures(const request_type& request,
                                   response_type response)
 {
-    (void)request;
-    response.send(Http::Code::Not_Implemented);
+    auto swagger_request =
+        parse_request<swagger::v1::model::BulkStartPacketCapturesRequest>(
+            request);
+    if (!swagger_request) {
+        response.send(Http::Code::Bad_Request, swagger_request.error());
+        return;
+    }
+
+    const auto& ids = swagger_request->getIds();
+
+    /* Verify that all user provided id's are valid */
+    std::vector<std::string> id_errors;
+    std::for_each(std::begin(ids), std::end(ids), [&](const auto& id) {
+        if (!id.empty()) {
+            if (auto res = config::op_config_validate_id_string(id); !res) {
+                id_errors.emplace_back(res.error());
+            }
+        }
+    });
+    if (!id_errors.empty()) {
+        response.send(Http::Code::Not_Found, concatenate(id_errors));
+        return;
+    }
+
+    auto api_request = request_bulk_start_captures{};
+
+    std::transform(
+        std::begin(ids),
+        std::end(ids),
+        std::back_inserter(api_request.ids),
+        [](const auto& id) { return (std::make_unique<std::string>(id)); });
+
+    auto api_reply = submit_request(m_socket.get(), std::move(api_request));
+
+    if (auto reply = std::get_if<reply_capture_results>(&api_reply)) {
+        response.headers().add<Http::Header::ContentType>(
+            MIME(Application, Json));
+
+        auto swagger_reply =
+            swagger::v1::model::BulkStartPacketCapturesResponse{};
+        std::move(std::begin(reply->capture_results),
+                  std::end(reply->capture_results),
+                  std::back_inserter(swagger_reply.getItems()));
+
+        response.send(Http::Code::Ok, swagger_reply.toJson().dump());
+    } else {
+        handle_reply_error(api_reply, std::move(response));
+    }
 }
 
 void handler::bulk_stop_captures(const request_type& request,
                                  response_type response)
 {
-    (void)request;
-    response.send(Http::Code::Not_Implemented);
+    auto swagger_request =
+        parse_request<swagger::v1::model::BulkStopPacketCapturesRequest>(
+            request);
+    if (!swagger_request) {
+        response.send(Http::Code::Bad_Request, swagger_request.error());
+    }
+
+    const auto& ids = swagger_request->getIds();
+
+    /* Verify that all user provided id's are valid */
+    std::vector<std::string> id_errors;
+    std::for_each(std::begin(ids), std::end(ids), [&](const auto& id) {
+        if (!id.empty()) {
+            if (auto res = config::op_config_validate_id_string(id); !res) {
+                id_errors.emplace_back(res.error());
+            }
+        }
+    });
+    if (!id_errors.empty()) {
+        response.send(Http::Code::Not_Found, concatenate(id_errors));
+        return;
+    }
+
+    auto api_request = request_bulk_stop_captures{};
+
+    std::transform(
+        std::begin(ids),
+        std::end(ids),
+        std::back_inserter(api_request.ids),
+        [](const auto& id) { return (std::make_unique<std::string>(id)); });
+
+    auto api_reply = submit_request(m_socket.get(), std::move(api_request));
+
+    if (auto reply = std::get_if<reply_ok>(&api_reply)) {
+        response.send(Http::Code::No_Content);
+    } else {
+        handle_reply_error(api_reply, std::move(response));
+    }
 }
 
 void handler::list_capture_results(const request_type& request,
