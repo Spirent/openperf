@@ -3,13 +3,13 @@
 namespace openperf::block::model {
 
 device::device(const device& f)
-    : m_id(f.get_id())
-    , m_path(f.get_path())
-    , m_size(f.get_size())
-    , m_info(f.get_info())
-    , m_usable(f.is_usable())
-    , m_init_percent_complete(f.get_init_percent_complete())
-    , m_state(f.get_state())
+    : m_id(f.m_id)
+    , m_path(f.m_path)
+    , m_size(f.m_size)
+    , m_info(f.m_info)
+    , m_usable(f.m_usable)
+    , m_init_percent_complete(f.m_init_percent_complete.load())
+    , m_state(f.m_state.load())
 {}
 
 std::string device::get_id() const { return m_id; }
