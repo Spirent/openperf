@@ -65,6 +65,8 @@ from client.models.cpu_generator_result import CpuGeneratorResult
 from client.models.cpu_generator_stats import CpuGeneratorStats
 from client.models.cpu_generator_target_stats import CpuGeneratorTargetStats
 from client.models.cpu_info_result import CpuInfoResult
+from client.models.dynamic_results import DynamicResults
+from client.models.dynamic_results_config import DynamicResultsConfig
 from client.models.interface import Interface
 from client.models.interface_config import InterfaceConfig
 from client.models.interface_protocol_config import InterfaceProtocolConfig
@@ -134,6 +136,11 @@ from client.models.stack_element_stats import StackElementStats
 from client.models.stack_memory_stats import StackMemoryStats
 from client.models.stack_protocol_stats import StackProtocolStats
 from client.models.stack_stats import StackStats
+from client.models.t_digest_centroid import TDigestCentroid
+from client.models.t_digest_config import TDigestConfig
+from client.models.t_digest_result import TDigestResult
+from client.models.threshold_config import ThresholdConfig
+from client.models.threshold_result import ThresholdResult
 from client.models.time_counter import TimeCounter
 from client.models.time_keeper import TimeKeeper
 from client.models.time_keeper_state import TimeKeeperState

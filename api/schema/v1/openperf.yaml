@@ -34,6 +34,9 @@ parameters:
     format: string
     required: true
 
+  dynamic_results:
+    $ref: ./dynamic.yaml#/parameters/dynamic_results
+
 tags:
   - name: Interfaces
   - name: Modules
@@ -681,3 +684,27 @@ definitions:
 
   CpuGeneratorTargetStats:
     $ref: ./modules/cpu.yaml#/definitions/CpuGeneratorTargetStats
+
+  ###
+  # Dynamic Results definitions
+  ###
+  DynamicResultsConfig:
+    $ref: ./dynamic.yaml#/definitions/DynamicResultsConfig
+
+  DynamicResults:
+    $ref: ./dynamic.yaml#/definitions/DynamicResults
+
+  ThresholdConfig:
+    $ref: ./dynamic.yaml#/definitions/ThresholdConfig
+
+  ThresholdResult:
+    $ref: ./dynamic.yaml#/definitions/ThresholdResult
+
+  TDigestConfig:
+    $ref: ./dynamic.yaml#/definitions/TDigestConfig
+
+  TDigestResult:
+    $ref: ./dynamic.yaml#/definitions/TDigestResult
+
+  TDigestCentroid:
+    $ref: ./dynamic.yaml#/definitions/TDigestCentroid
