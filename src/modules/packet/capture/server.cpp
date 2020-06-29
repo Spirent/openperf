@@ -127,6 +127,18 @@ static std::string to_string(const request_msg& request)
                            [](const request_stop_capture& request) {
                                return ("stop capture " + request.id);
                            },
+                           [](const request_bulk_create_captures& request) {
+                               return (std::string("bulk create captures"));
+                           },
+                           [](const request_bulk_delete_captures& request) {
+                               return (std::string("bulk delete captures"));
+                           },
+                           [](const request_bulk_start_captures& request) {
+                               return (std::string("bulk start captures"));
+                           },
+                           [](const request_bulk_stop_captures& request) {
+                               return (std::string("bulk stop captures"));
+                           },
                            [](const request_list_capture_results&) {
                                return (std::string("list capture results"));
                            },
@@ -363,6 +375,9 @@ reply_msg server::handle_request(const request_create_capture& request)
         return (to_error(error_type::POSIX, success.error()));
     }
 
+    /* Grab a reference before we invalidate the iterator */
+    const auto& impl = item.template get<sink>();
+
     /* Otherwise, sort our sinks and return */
     std::sort(std::begin(m_sinks),
               std::end(m_sinks),
@@ -371,7 +386,7 @@ reply_msg server::handle_request(const request_create_capture& request)
               });
 
     auto reply = reply_captures{};
-    reply.captures.emplace_back(to_swagger(item.template get<sink>()));
+    reply.captures.emplace_back(to_swagger(impl));
     return (reply);
 }
 
@@ -610,10 +625,18 @@ reply_msg server::handle_request(const request_start_capture& request)
                              sink_id_comparator{});
 
     if (found == std::end(m_sinks)) {
+        OP_LOG(OP_LOG_ERROR,
+               "Capture start failed.  Unable to find capture %s.",
+               request.id.c_str());
         return (to_error(error_type::NOT_FOUND));
     }
 
-    if (found->active()) { return (to_error(error_type::POSIX, EINVAL)); }
+    if (found->active()) {
+        OP_LOG(OP_LOG_ERROR,
+               "Capture start failed.  Capture %s is already running.",
+               request.id.c_str());
+        return (to_error(error_type::POSIX, EINVAL));
+    }
 
     auto& impl = found->template get<sink>();
     auto item = m_results.emplace(core::uuid::random(),
@@ -673,6 +696,98 @@ reply_msg server::handle_request(const request_stop_capture& request)
         }
         impl.stop();
     }
+
+    return (reply_ok{});
+}
+
+reply_msg server::handle_request(const request_bulk_create_captures& request)
+{
+    auto bulk_reply = reply_captures{};
+    auto bulk_errors = std::vector<reply_error>{};
+
+    std::for_each(
+        std::begin(request.captures),
+        std::end(request.captures),
+        [&](const auto& capture) {
+            auto api_reply = handle_request(request_create_capture{
+                std::make_unique<capture_type>(*capture)});
+            if (auto reply = std::get_if<reply_captures>(&api_reply)) {
+                auto id = reply->captures[0]->getId();
+                auto source = reply->captures[0]->getSourceId();
+                assert(reply->captures.size() == 1);
+                std::move(std::begin(reply->captures),
+                          std::end(reply->captures),
+                          std::back_inserter(bulk_reply.captures));
+            } else {
+                assert(std::holds_alternative<reply_error>(api_reply));
+                bulk_errors.emplace_back(std::get<reply_error>(api_reply));
+            }
+        });
+
+    if (!bulk_errors.empty()) {
+        /* Roll back! */
+        std::for_each(std::begin(bulk_reply.captures),
+                      std::end(bulk_reply.captures),
+                      [&](const auto& capture) {
+                          handle_request(
+                              request_delete_capture{capture->getId()});
+                      });
+        return (bulk_errors.front());
+    }
+
+    return (bulk_reply);
+}
+
+reply_msg server::handle_request(const request_bulk_delete_captures& request)
+{
+    std::for_each(
+        std::begin(request.ids), std::end(request.ids), [&](const auto& id) {
+            handle_request(request_delete_capture{*id});
+        });
+
+    return (reply_ok{});
+}
+
+reply_msg server::handle_request(const request_bulk_start_captures& request)
+{
+    auto bulk_reply = reply_capture_results{};
+    auto bulk_errors = std::vector<reply_error>{};
+
+    std::for_each(
+        std::begin(request.ids), std::end(request.ids), [&](const auto& id) {
+            auto api_reply = handle_request(request_start_capture{*id});
+            if (auto reply = std::get_if<reply_capture_results>(&api_reply)) {
+                assert(reply->capture_results.size() == 1);
+                std::move(std::begin(reply->capture_results),
+                          std::end(reply->capture_results),
+                          std::back_inserter(bulk_reply.capture_results));
+            } else {
+                assert(std::holds_alternative<reply_error>(api_reply));
+                bulk_errors.emplace_back(std::get<reply_error>(api_reply));
+            }
+        });
+
+    if (!bulk_errors.empty()) {
+        /* Undo what we have done */
+        std::for_each(
+            std::begin(bulk_reply.capture_results),
+            std::end(bulk_reply.capture_results),
+            [&](const auto& result) {
+                handle_request(request_stop_capture{result->getCaptureId()});
+                handle_request(request_delete_capture_result{result->getId()});
+            });
+        return (bulk_errors.front());
+    }
+
+    return (bulk_reply);
+}
+
+reply_msg server::handle_request(const request_bulk_stop_captures& request)
+{
+    std::for_each(
+        std::begin(request.ids), std::end(request.ids), [&](const auto& id) {
+            handle_request(request_stop_capture{*id});
+        });
 
     return (reply_ok{});
 }

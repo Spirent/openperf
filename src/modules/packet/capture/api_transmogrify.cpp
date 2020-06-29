@@ -43,6 +43,18 @@ serialized_msg serialize_request(request_msg&& msg)
                      return (message::push(
                          serialized, request.id.data(), request.id.length()));
                  },
+                 [&](request_bulk_create_captures& request) {
+                     return (message::push(serialized, request.captures));
+                 },
+                 [&](request_bulk_delete_captures& request) {
+                     return (message::push(serialized, request.ids));
+                 },
+                 [&](request_bulk_start_captures& request) {
+                     return (message::push(serialized, request.ids));
+                 },
+                 [&](request_bulk_stop_captures& request) {
+                     return (message::push(serialized, request.ids));
+                 },
                  [&](request_list_capture_results& request) {
                      return (
                          message::push(serialized, std::move(request.filter)));
@@ -127,6 +139,22 @@ tl::expected<request_msg, int> deserialize_request(serialized_msg&& msg)
     }
     case utils::variant_index<request_msg, request_stop_capture>(): {
         return (request_stop_capture{message::pop_string(msg)});
+    }
+    case utils::variant_index<request_msg, request_bulk_create_captures>(): {
+        return (request_bulk_create_captures{
+            message::pop_unique_vector<capture_type>(msg)});
+    }
+    case utils::variant_index<request_msg, request_bulk_delete_captures>(): {
+        return (request_bulk_delete_captures{
+            message::pop_unique_vector<std::string>(msg)});
+    }
+    case utils::variant_index<request_msg, request_bulk_start_captures>(): {
+        return (request_bulk_start_captures{
+            message::pop_unique_vector<std::string>(msg)});
+    }
+    case utils::variant_index<request_msg, request_bulk_stop_captures>(): {
+        return (request_bulk_stop_captures{
+            message::pop_unique_vector<std::string>(msg)});
     }
     case utils::variant_index<request_msg, request_list_capture_results>(): {
         auto request = request_list_capture_results{};

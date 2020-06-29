@@ -67,11 +67,15 @@ using capture_ptr = std::unique_ptr<capture_type>;
 using capture_result_type = swagger::v1::model::PacketCaptureResult;
 using capture_result_ptr = std::unique_ptr<capture_result_type>;
 
+using id_ptr = std::unique_ptr<std::string>;
+
 enum class filter_key_type { none, capture_id, source_id };
 using filter_map_type = std::map<filter_key_type, std::string>;
 using filter_map_ptr = std::unique_ptr<filter_map_type>;
 
 using serialized_msg = openperf::message::serialized_message;
+
+constexpr size_t capture_buffer_size_min = 4096;
 
 /*
  * Provide a mechanism for associating type information with
@@ -148,6 +152,26 @@ struct request_stop_capture
     std::string id;
 };
 
+struct request_bulk_create_captures
+{
+    std::vector<capture_ptr> captures;
+};
+
+struct request_bulk_delete_captures
+{
+    std::vector<id_ptr> ids;
+};
+
+struct request_bulk_start_captures
+{
+    std::vector<id_ptr> ids;
+};
+
+struct request_bulk_stop_captures
+{
+    std::vector<id_ptr> ids;
+};
+
 struct request_list_capture_results
 {
     filter_map_ptr filter;
@@ -202,6 +226,10 @@ using request_msg = std::variant<request_list_captures,
                                  request_delete_capture,
                                  request_start_capture,
                                  request_stop_capture,
+                                 request_bulk_create_captures,
+                                 request_bulk_delete_captures,
+                                 request_bulk_start_captures,
+                                 request_bulk_stop_captures,
                                  request_list_capture_results,
                                  request_delete_capture_results,
                                  request_get_capture_result,
