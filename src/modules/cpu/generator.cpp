@@ -70,9 +70,16 @@ void generator::config(const generator_config& config)
     if (m_running) m_controller.resume();
 }
 
-dynamic::results generator::dynamic_results() const
+model::generator_result generator::statistics() const
 {
-    return m_dynamic.result();
+
+    auto gen_stat = model::generator_result{};
+    gen_stat.id(m_result_id);
+    gen_stat.generator_id(id());
+    gen_stat.active(running());
+    gen_stat.stats(internal_statistics());
+    gen_stat.dynamic_results(m_dynamic.result());
+    return gen_stat;
 }
 
 void generator::start(const dynamic::configuration& cfg)
@@ -95,11 +102,6 @@ void generator::stop()
 {
     m_controller.pause();
     m_running = false;
-}
-
-void generator::stop()
-{
-    set_running(false);
     m_dynamic.stop();
 }
 
