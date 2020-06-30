@@ -118,10 +118,11 @@ reply_msg server::handle_request(const request_cpu_generator_bulk_del& request)
 
 reply_msg server::handle_request(const request_cpu_generator_start& request)
 {
-    if (!m_generator_stack.generator(request.id))
+    if (!m_generator_stack.generator(request.data->id))
         return to_error(api::error_type::NOT_FOUND);
 
-    auto result = m_generator_stack.start_generator(request.id);
+    auto result = m_generator_stack.start_generator(
+        request.data->id, request.data->dynamic_results);
     if (!result)
         return to_error(api::error_type::CUSTOM_ERROR, 0, result.error());
 
@@ -146,8 +147,8 @@ reply_msg server::handle_request(const request_cpu_generator_stop& request)
 reply_msg
 server::handle_request(const request_cpu_generator_bulk_start& request)
 {
-    for (const auto& id : request.ids)
-        if (!m_generator_stack.generator(*id))
+    for (const auto& id : request.data->ids)
+        if (!m_generator_stack.generator(id))
             return to_error(api::error_type::NOT_FOUND,
                             0,
                             "Generator from the list with ID '" + *id
@@ -163,11 +164,12 @@ server::handle_request(const request_cpu_generator_bulk_start& request)
     };
 
     auto reply = reply_cpu_generator_results{};
-    for (const auto& id : request.ids) {
-        auto gen = m_generator_stack.generator(*id);
+    for (const auto& id : request.data->ids) {
+        auto gen = m_generator_stack.generator(id);
         if (gen->running()) continue;
 
-        auto stats = m_generator_stack.start_generator(*id);
+        auto stats = m_generator_stack.start_generator(
+            id, request.data->dynamic_results);
         if (!stats) {
             rollback();
             return to_error(api::error_type::CUSTOM_ERROR, 0, stats.error());

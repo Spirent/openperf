@@ -32,6 +32,69 @@ public:
     cpu_stat stats() const { return m_stats; }
     void stats(const cpu_stat& stats) { m_stats = stats; }
 
+    double field(std::string_view name) const
+    {
+        if (name == "available") return m_stats.available.count();
+        if (name == "utilization") return m_stats.utilization.count();
+        if (name == "system") return m_stats.system.count();
+        if (name == "user") return m_stats.user.count();
+        if (name == "steal") return m_stats.steal.count();
+        if (name == "error") return m_stats.error.count();
+
+        constexpr auto prefix = "cores[";
+        auto prefix_size = std::strlen(prefix);
+        if (name.substr(0, prefix_size) == prefix) {
+            auto core_number = std::stoul(std::string(name.substr(
+                prefix_size,
+                name.find_first_of(']', prefix_size) - prefix_size)));
+
+            if (core_number < m_stats.cores.size()) {
+                auto field_name =
+                    name.substr(name.find_first_of('.', prefix_size) + 1);
+
+                if (field_name == "available")
+                    return m_stats.cores[core_number].available.count();
+                if (field_name == "utilization")
+                    return m_stats.cores[core_number].utilization.count();
+                if (field_name == "system")
+                    return m_stats.cores[core_number].system.count();
+                if (field_name == "user")
+                    return m_stats.cores[core_number].user.count();
+                if (field_name == "steal")
+                    return m_stats.cores[core_number].steal.count();
+                if (field_name == "error")
+                    return m_stats.cores[core_number].error.count();
+            }
+        }
+
+        return 0.0;
+    }
+
+    bool has_field(std::string_view name) const
+    {
+        const std::set<std::string> fields = {
+            "available", "utilization", "system", "user", "steal", "error"};
+
+        if (fields.count(std::string(name))) return true;
+
+        constexpr auto prefix = "cores[";
+        auto prefix_size = std::strlen(prefix);
+        if (name.substr(0, prefix_size) == prefix) {
+            auto core_number = std::stoul(std::string(name.substr(
+                prefix_size,
+                name.find_first_of(']', prefix_size) - prefix_size)));
+
+            if (core_number >= m_stats.cores.size()) return false;
+
+            auto field_name = std::string(
+                name.substr(name.find_first_of('.', prefix_size) + 1));
+
+            return fields.count(field_name);
+        }
+
+        return false;
+    }
+
 protected:
     std::string m_id;
     std::string m_generator_id;

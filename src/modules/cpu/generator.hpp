@@ -4,6 +4,7 @@
 #include <atomic>
 
 #include "framework/generator/controller.hpp"
+#include "framework/dynamic/poller.hpp"
 
 #include "task_cpu.hpp"
 #include "models/generator.hpp"
@@ -23,18 +24,22 @@ private:
     cpu_stat m_stat;
     std::atomic<cpu_stat*> m_stat_ptr;
 
+    dynamic::poller m_dynamic;
+
 public:
     generator(const model::generator&);
     ~generator() override;
 
     void config(const generator_config&) override;
     void start();
+    void start(const dynamic::configuration&);
     void stop();
     void reset();
 
     void running(bool) override;
     bool running() const override { return model::generator::running(); }
 
+    dynamic::results dynamic_results() const;
     model::generator_result statistics() const;
 
 private:
