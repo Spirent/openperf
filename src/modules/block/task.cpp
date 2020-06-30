@@ -134,16 +134,14 @@ block_task::~block_task() = default;
 
 size_t block_task::worker_spin(task_config_t& op_config,
                                task_stat_t& op_stat,
+                               uint64_t nb_ops,
                                time_point deadline)
 {
     size_t total_ops = 0;
     size_t pending_ops = 0;
 
-    auto ops_req = (ref_clock::now() - m_operation_timestamp).count()
-                       * op_config.ops_per_sec / std::nano::den
-                   + 1;
     auto queue_depth =
-        std::min(op_config.queue_depth, static_cast<size_t>(ops_req));
+        std::min(op_config.queue_depth, static_cast<size_t>(nb_ops));
 
     auto op_conf = (operation_config){
         .fd = op_config.fd,
@@ -299,6 +297,45 @@ void block_task::reset_spin_stat()
     }
 }
 
+int32_t block_task::calculate_rate()
+{
+    if (!m_task_config.synchronizer) return m_task_config.ops_per_sec;
+
+    if (m_task_config.operation == task_operation::READ)
+        m_task_config.synchronizer->reads_actual.store(
+            m_actual_stat.ops_actual, std::memory_order_relaxed);
+    else
+        m_task_config.synchronizer->writes_actual.store(
+            m_actual_stat.ops_actual, std::memory_order_relaxed);
+
+    int64_t reads_actual = m_task_config.synchronizer->reads_actual.load(
+        std::memory_order_relaxed);
+    int64_t writes_actual = m_task_config.synchronizer->writes_actual.load(
+        std::memory_order_relaxed);
+
+    int32_t ratio_reads =
+        m_task_config.synchronizer->ratio_reads.load(std::memory_order_relaxed);
+    int32_t ratio_writes = m_task_config.synchronizer->ratio_writes.load(
+        std::memory_order_relaxed);
+
+    switch (m_task_config.operation) {
+    case task_operation::READ: {
+        auto reads_expected = writes_actual * ratio_reads / ratio_writes;
+        return std::min(
+            std::max(reads_expected + m_task_config.ops_per_sec - reads_actual,
+                     1L),
+            static_cast<long>(m_task_config.ops_per_sec));
+    }
+    case task_operation::WRITE: {
+        auto writes_expected = reads_actual * ratio_writes / ratio_reads;
+        return std::min(
+            std::max(writes_expected + m_task_config.ops_per_sec - reads_actual,
+                     1L),
+            static_cast<long>(m_task_config.ops_per_sec));
+    }
+    }
+}
+
 void block_task::spin()
 {
     if (m_reset_stat.load()) { reset_spin_stat(); }
@@ -313,71 +350,28 @@ void block_task::spin()
         std::this_thread::sleep_for(m_operation_timestamp - before_sleep_time);
     }
 
-    auto check_synchronization = [&]() {
-        if (!m_task_config.synchronizer) return false;
-
-        if (m_task_config.operation == task_operation::READ)
-            m_task_config.synchronizer->reads_actual.store(
-                m_actual_stat.ops_actual, std::memory_order_relaxed);
-        else
-            m_task_config.synchronizer->writes_actual.store(
-                m_actual_stat.ops_actual, std::memory_order_relaxed);
-
-        int64_t reads_actual = m_task_config.synchronizer->reads_actual.load(
-            std::memory_order_relaxed);
-        int64_t writes_actual = m_task_config.synchronizer->writes_actual.load(
-            std::memory_order_relaxed);
-
-        int32_t ratio_reads = m_task_config.synchronizer->ratio_reads.load(
-            std::memory_order_relaxed);
-        int32_t ratio_writes = m_task_config.synchronizer->ratio_writes.load(
-            std::memory_order_relaxed);
-
-        switch (m_task_config.operation) {
-        case task_operation::READ: {
-            auto reads_expected = writes_actual * ratio_reads / ratio_writes;
-            return reads_expected
-                   < reads_actual
-                         - std::max(
-                             m_task_config.ops_per_sec * TASK_SPIN_THRESHOLD
-                                 / 1s,
-                             static_cast<int64_t>(m_task_config.queue_depth));
-        }
-        case task_operation::WRITE: {
-            auto writes_expected = reads_actual * ratio_writes / ratio_reads;
-            return writes_expected
-                   < writes_actual
-                         - std::max(
-                             m_task_config.ops_per_sec * TASK_SPIN_THRESHOLD
-                                 / 1s,
-                             static_cast<int64_t>(m_task_config.queue_depth));
-        }
-        }
-    };
-
-    // Ratio synchronization
-    if (check_synchronization()) {
-        // sleep for single iteration
-        std::this_thread::sleep_for(std::chrono::nanoseconds(
-            std::nano::den / m_task_config.ops_per_sec));
-        return;
-    }
+    // Prepare for ratio synchronization
+    auto ops_per_sec = calculate_rate();
 
     // Worker loop
     auto loop_start_ts = ref_clock::now();
     do {
         auto cur_time = ref_clock::now();
-        auto nb_ops = worker_spin(m_task_config, m_actual_stat, cur_time + 1s);
+
+        auto ops_req = (cur_time - m_operation_timestamp).count() * ops_per_sec
+                           / std::nano::den
+                       + 1;
+        auto nb_ops =
+            worker_spin(m_task_config, m_actual_stat, ops_req, cur_time + 1s);
+
+        m_operation_timestamp +=
+            std::chrono::nanoseconds(std::nano::den / ops_per_sec) * nb_ops;
 
         auto cycles = (cur_time - m_start_timestamp).count()
                           * m_task_config.ops_per_sec / std::nano::den
                       + 1;
         m_actual_stat.ops_target = cycles;
         m_actual_stat.bytes_target = cycles * m_task_config.block_size;
-
-        m_operation_timestamp +=
-            std::chrono::nanoseconds(std::nano::den / m_task_config.ops_per_sec)
-            * nb_ops;
     } while ((m_operation_timestamp < ref_clock::now())
              && (ref_clock::now() <= loop_start_ts + TASK_SPIN_THRESHOLD));
     m_actual_stat.updated = realtime::now();

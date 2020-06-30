@@ -90,8 +90,10 @@ private:
 
     size_t worker_spin(task_config_t& op_config,
                        task_stat_t& op_stat,
+                       uint64_t nb_ops,
                        time_point deadline);
     void reset_spin_stat();
+    int32_t calculate_rate();
 
 public:
     block_task();
