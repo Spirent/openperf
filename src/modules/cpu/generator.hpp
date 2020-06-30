@@ -39,7 +39,6 @@ public:
     void running(bool) override;
     bool running() const override { return model::generator::running(); }
 
-    dynamic::results dynamic_results() const;
     model::generator_result statistics() const;
 
 private:
