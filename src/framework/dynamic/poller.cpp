@@ -105,14 +105,14 @@ void poller::spin()
     m_last_stat = std::move(stat);
 }
 
-int poller::weight(const dynamic::argument& arg, const pollable& stat)
+int poller::weight(const dynamic::argument_t& arg, const pollable& stat)
 {
-    uint64_t weight = 1;
+    int weight = 1;
     switch (arg.function) {
-    case dynamic::argument::DXDY: {
+    case dynamic::argument_t::DXDY: {
         auto y = stat.field(arg.y);
         auto last_y = m_last_stat->field(arg.y);
-        weight = y - last_y;
+        weight = static_cast<int>(y - last_y);
         break;
     }
     default:
@@ -122,7 +122,7 @@ int poller::weight(const dynamic::argument& arg, const pollable& stat)
     return weight;
 }
 
-double poller::delta(const dynamic::argument& arg, const pollable& stat)
+double poller::delta(const dynamic::argument_t& arg, const pollable& stat)
 {
     auto x = stat.field(arg.x);
     auto last_x = m_last_stat->field(arg.x);
@@ -130,18 +130,18 @@ double poller::delta(const dynamic::argument& arg, const pollable& stat)
 
     double delta = 0;
     switch (arg.function) {
-    case dynamic::argument::DX: {
+    case dynamic::argument_t::DX: {
         delta = delta_x;
         break;
     }
-    case dynamic::argument::DXDT: {
+    case dynamic::argument_t::DXDT: {
         auto t = stat.timestamp();
         auto last_t = m_last_stat->timestamp();
         auto delta_t = t - last_t;
         delta = (delta_t != 0ns) ? delta_x / delta_t.count() : 0.0;
         break;
     }
-    case dynamic::argument::DXDY: {
+    case dynamic::argument_t::DXDY: {
         auto y = stat.field(arg.y);
         auto last_y = m_last_stat->field(arg.y);
         auto delta_y = y - last_y;
