@@ -445,6 +445,58 @@ tl::expected<serialized_msg, int> recv_message(void* socket, int flags)
     return (msg);
 }
 
+bool is_valid(const BlockFile& file, std::vector<std::string>& errors)
+{
+    auto init_errors = errors.size();
+
+    if (file.getFileSize() < 0) {
+        errors.emplace_back("File size is not valid.");
+    }
+
+    return (errors.size() == init_errors);
+}
+
+bool is_valid(const BlockGenerator& generator, std::vector<std::string>& errors)
+{
+    auto init_errors = errors.size();
+
+    if (generator.getResourceId().empty()) {
+        errors.emplace_back("Generator resource id is required.");
+    }
+
+    auto config = generator.getConfig();
+    if (!config) {
+        errors.emplace_back("Generator configuration is required.");
+        return (false);
+    }
+
+    if (config->getQueueDepth() < 1)
+        errors.emplace_back("Queue Depth value is not valid.");
+    if (config->getReadSize() < 1)
+        errors.emplace_back("Read Size value is not valid.");
+    if (config->getReadsPerSec() < 0)
+        errors.emplace_back("Reads Per Sec value is not valid.");
+    if (config->getWriteSize() < 1)
+        errors.emplace_back("Write Size value is not valid.");
+    if (config->getWritesPerSec() < 0)
+        errors.emplace_back("Writes Per Sec value is not valid.");
+    if (config->ratioIsSet()) {
+        if (config->getRatio()->getReads() < 1)
+            errors.emplace_back("Ratio Reads value is not valid.");
+        if (config->getRatio()->getWrites() < 1)
+            errors.emplace_back("Ratio Writes value is not valid.");
+    }
+    if (config->getReadsPerSec() < 1 && config->getWritesPerSec() < 1)
+        errors.emplace_back("No operations were specified.");
+    if (config->ratioIsSet()
+        && (config->getReadsPerSec() < 1 || config->getWritesPerSec() < 1))
+        errors.emplace_back("Ratio is specified for empty load generation.");
+
+    assert(config);
+
+    return (errors.size() == init_errors);
+}
+
 reply_error to_error(error_type type, int code, const std::string& value)
 {
     auto err = reply_error{.info = typed_error{.type = type, .code = code}};

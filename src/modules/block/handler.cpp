@@ -99,6 +99,17 @@ maybe_get_host_uri(const request_type& request)
     return (std::nullopt);
 }
 
+static std::string concatenate(const std::vector<std::string>& strings)
+{
+    return (std::accumulate(
+        std::begin(strings),
+        std::end(strings),
+        std::string{},
+        [](std::string& lhs, const std::string& rhs) -> decltype(auto) {
+            return (lhs += ((lhs.empty() ? "" : " ") + rhs));
+        }));
+}
+
 handler::handler(void* context, Rest::Router& router)
     : m_socket(op_socket_get_client(context, ZMQ_REQ, api::endpoint.data()))
 {
@@ -246,6 +257,13 @@ void handler::create_file(const Rest::Request& request,
     try {
         auto file_model = json::parse(request.body()).get<BlockFile>();
 
+        /* Make sure the object is valid before submitting request */
+        std::vector<std::string> errors;
+        if (!api::is_valid(file_model, errors)) {
+            response.send(Http::Code::Bad_Request, concatenate(errors));
+            return;
+        }
+
         auto api_reply = submit_request(
             m_socket.get(),
             api::request_block_file_add{
@@ -350,6 +368,13 @@ void handler::create_generator(const Rest::Request& request,
     try {
         auto generator_model =
             json::parse(request.body()).get<BlockGenerator>();
+
+        /* Make sure the object is valid before submitting request */
+        std::vector<std::string> errors;
+        if (!api::is_valid(generator_model, errors)) {
+            response.send(Http::Code::Bad_Request, concatenate(errors));
+            return;
+        }
 
         auto api_reply = submit_request(
             m_socket.get(),
