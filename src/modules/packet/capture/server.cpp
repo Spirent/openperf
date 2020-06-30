@@ -320,30 +320,12 @@ reply_msg server::handle_request(const request_create_capture& request)
             user_config->getDuration());
     if (user_config->filterIsSet()) {
         config.filter = user_config->getFilter();
-        if (!bpf::bpf_validate_filter(config.filter)) {
-            OP_LOG(OP_LOG_ERROR,
-                   "Capture filter %s is not valid",
-                   config.filter.c_str());
-            return (to_error(error_type::POSIX, EINVAL));
-        }
     }
     if (user_config->startTriggerIsSet()) {
         config.start_trigger = user_config->getStartTrigger();
-        if (!bpf::bpf_validate_filter(config.start_trigger)) {
-            OP_LOG(OP_LOG_ERROR,
-                   "Capture start trigger %s is not valid",
-                   config.start_trigger.c_str());
-            return (to_error(error_type::POSIX, EINVAL));
-        }
     }
     if (user_config->stopTriggerIsSet()) {
         config.stop_trigger = user_config->getStopTrigger();
-        if (!bpf::bpf_validate_filter(config.stop_trigger)) {
-            OP_LOG(OP_LOG_ERROR,
-                   "Capture stop trigger %s is not valid",
-                   config.stop_trigger.c_str());
-            return (to_error(error_type::POSIX, EINVAL));
-        }
     }
     if (!request.capture->getId().empty()) {
         config.id = request.capture->getId();
