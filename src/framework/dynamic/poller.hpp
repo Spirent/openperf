@@ -2,7 +2,6 @@
 #define _OP_DYNAMIC_POOL_HPP_
 
 #include "dynamic/api.hpp"
-#include "dynamic/threshold.hpp"
 #include "framework/core/op_uuid.hpp"
 #include "framework/config/op_config_utils.hpp"
 #include "modules/timesync/chrono.hpp"
@@ -35,7 +34,7 @@ public:
     using poll_function = std::function<pollable_ptr(void)>;
     using duration = std::chrono::milliseconds;
 
-    using threshold_result = dynamic::results::threshold_result;
+    using threshold_result = dynamic::results::threshold;
     using threshold_result_list = std::vector<threshold_result>;
 
 private:
@@ -69,8 +68,8 @@ private:
     void spin();
     void configure(const dynamic::configuration&);
 
-    int weight(const dynamic::argument&, const pollable&);
-    double delta(const dynamic::argument&, const pollable&);
+    int weight(const dynamic::argument_t&, const pollable&);
+    double delta(const dynamic::argument_t&, const pollable&);
 };
 
 } // namespace openperf::dynamic

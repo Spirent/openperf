@@ -3,8 +3,6 @@
 
 #include <cinttypes>
 
-#include "dynamic/common.hpp"
-
 namespace openperf::dynamic {
 
 enum class comparator {

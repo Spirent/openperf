@@ -3,4 +3,5 @@
 #
 
 FW_SOURCES += \
-	dynamic/poller.cpp
+	dynamic/poller.cpp \
+	dynamic/converters.cpp
