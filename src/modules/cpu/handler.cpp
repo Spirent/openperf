@@ -3,7 +3,7 @@
 
 #include "framework/config/op_config_utils.hpp"
 #include "framework/core/op_core.h"
-#include "framework/message/serialized_message.hpp"
+#include "framework/dynamic/api.hpp"
 #include "modules/api/api_route_handler.hpp"
 
 namespace opneperf::cpu {
@@ -12,6 +12,7 @@ using namespace Pistache;
 using namespace swagger::v1::model;
 using json = nlohmann::json;
 
+namespace dynamic = openperf::dynamic;
 namespace api = openperf::cpu::api;
 
 class handler : public openperf::api::route::handler::registrar<handler>
@@ -301,8 +302,22 @@ void handler::start_generator(const Rest::Request& request,
         return;
     }
 
-    auto api_reply =
-        submit_request(m_socket.get(), api::request_cpu_generator_start{id});
+    api::request_cpu_generator_start::start_data data{.id = id};
+
+    if (!request.body().empty()) {
+        auto json_obj = json::parse(request.body());
+        DynamicResultsConfig model;
+        model.fromJson(json_obj);
+
+        data.dynamic_results = dynamic::from_swagger(model);
+    }
+
+    auto api_reply = submit_request(
+        m_socket.get(),
+        api::request_cpu_generator_start{
+            std::make_unique<api::request_cpu_generator_start::start_data>(
+                std::move(data))});
+
     if (auto reply =
             std::get_if<api::reply_cpu_generator_results>(&api_reply)) {
         assert(!reply->results.empty());
@@ -348,17 +363,26 @@ void handler::bulk_start_generators(const Rest::Request& request,
     auto request_model =
         json::parse(request.body()).get<BulkStartCpuGeneratorsRequest>();
 
-    api::request_cpu_generator_bulk_start bulk_request{};
     for (const auto& id : request_model.getIds()) {
-        if (auto res = openperf::config::op_config_validate_id_string(id);
-            !res) {
-            response.send(Http::Code::Bad_Request, res.error());
+        if (auto r = openperf::config::op_config_validate_id_string(id); !r) {
+            response.send(Http::Code::Bad_Request, r.error());
             return;
         }
-        bulk_request.ids.push_back(std::make_unique<std::string>(id));
     }
 
-    auto api_reply = submit_request(m_socket.get(), std::move(bulk_request));
+    api::request_cpu_generator_bulk_start::start_data data{
+        .ids = std::move(request_model.getIds())};
+
+    if (request_model.dynamicResultsIsSet())
+        data.dynamic_results =
+            dynamic::from_swagger(*request_model.getDynamicResults().get());
+
+    auto api_reply = submit_request(
+        m_socket.get(),
+        api::request_cpu_generator_bulk_start{
+            std::make_unique<api::request_cpu_generator_bulk_start::start_data>(
+                std::move(data))});
+
     if (auto reply =
             std::get_if<api::reply_cpu_generator_results>(&api_reply)) {
         auto results = json::array();
@@ -387,9 +411,8 @@ void handler::bulk_stop_generators(const Rest::Request& request,
 
     api::request_cpu_generator_bulk_stop bulk_request{};
     for (const auto& id : request_model.getIds()) {
-        if (auto res = openperf::config::op_config_validate_id_string(id);
-            !res) {
-            response.send(Http::Code::Bad_Request, res.error());
+        if (auto r = openperf::config::op_config_validate_id_string(id); !r) {
+            response.send(Http::Code::Bad_Request, r.error());
             return;
         }
         bulk_request.ids.push_back(std::make_unique<std::string>(id));

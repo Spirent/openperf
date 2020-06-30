@@ -10,6 +10,8 @@
 
 #include "generator.hpp"
 
+#include "framework/dynamic/api.hpp"
+
 namespace openperf::cpu::generator {
 
 class generator_stack
@@ -39,6 +41,8 @@ public:
 
     tl::expected<model::generator_result, std::string>
     start_generator(const std::string& id);
+    tl::expected<model::generator_result, std::string>
+    start_generator(const std::string& id, const dynamic::configuration&);
     bool stop_generator(const std::string& id);
 };
 

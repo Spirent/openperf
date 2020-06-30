@@ -116,6 +116,24 @@ generator_stack::start_generator(const std::string& id)
     }
 }
 
+tl::expected<model::generator_result, std::string>
+generator_stack::start_generator(const std::string& id,
+                                 const dynamic::configuration& cfg)
+{
+    try {
+        auto gen = m_generators.at(id);
+        if (gen->running())
+            return tl::make_unexpected("Generator is already in running state");
+
+        gen->start(cfg);
+        auto result = gen->statistics();
+        m_statistics[result.id()] = gen;
+        return result;
+    } catch (const std::out_of_range&) {
+        return tl::make_unexpected("Generator not found");
+    }
+}
+
 bool generator_stack::stop_generator(const std::string& id)
 {
     try {

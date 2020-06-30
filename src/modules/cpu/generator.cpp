@@ -70,6 +70,17 @@ void generator::config(const generator_config& config)
     if (m_running) m_controller.resume();
 }
 
+dynamic::results generator::dynamic_results() const
+{
+    return m_dynamic.result();
+}
+
+void generator::start(const dynamic::configuration& cfg)
+{
+    start();
+    m_dynamic.start(cfg);
+}
+
 void generator::start()
 {
     if (m_running) return;
@@ -77,12 +88,19 @@ void generator::start()
     reset();
     m_controller.resume();
     m_running = true;
+    m_dynamic.reset();
 }
 
 void generator::stop()
 {
     m_controller.pause();
     m_running = false;
+}
+
+void generator::stop()
+{
+    set_running(false);
+    m_dynamic.stop();
 }
 
 void generator::running(bool is_running)
