@@ -13,6 +13,10 @@
 #include "utils/recycle.hpp"
 #include "utils/soa_container.hpp"
 
+namespace openperf::packet::bpf {
+class bpf;
+}
+
 namespace openperf::packetio::packets {
 struct packet_buffer;
 }
@@ -23,6 +27,7 @@ struct sink_config
 {
     std::string id = core::to_string(core::uuid::random());
     std::string source;
+    std::string filter;
     api::protocol_counters_config protocol_counters =
         (packet::statistics::protocol_flags::ethernet
          | packet::statistics::protocol_flags::ip
@@ -72,6 +77,9 @@ public:
 
     std::string id() const;
     std::string source() const;
+
+    const sink_config& get_config() const { return m_config; }
+
     size_t worker_count() const;
     api::protocol_counters_config protocol_counters() const;
     api::flow_counters_config flow_counters() const;
@@ -90,11 +98,20 @@ public:
 private:
     static std::vector<uint8_t> make_indexes(std::vector<unsigned>& ids);
 
-    std::string m_id;
-    std::string m_source;
+    uint16_t push_all(sink_result& results,
+                      uint8_t index,
+                      const packetio::packet::packet_buffer* const packets[],
+                      uint16_t packets_length) const;
+
+    uint16_t
+    push_filtered(sink_result& results,
+                  uint8_t index,
+                  const packetio::packet::packet_buffer* const packets[],
+                  uint16_t packets_length) const;
+
+    sink_config m_config;
     std::vector<uint8_t> m_indexes;
-    api::flow_counters_config m_flow_counters;
-    api::protocol_counters_config m_protocol_counters;
+    std::unique_ptr<openperf::packet::bpf::bpf> m_filter;
 
     mutable std::atomic<sink_result*> m_results = nullptr;
 };

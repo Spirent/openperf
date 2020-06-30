@@ -2,6 +2,7 @@
 
 #include "message/serialized_message.hpp"
 #include "packet/analyzer/server.hpp"
+#include "packet/bpf/bpf.hpp"
 
 #include "swagger/v1/model/PacketAnalyzer.h"
 #include "swagger/v1/model/PacketAnalyzerResult.h"
@@ -268,6 +269,9 @@ reply_msg server::handle_request(const request_create_analyzer& request)
     }
     if (!request.analyzer->getId().empty()) {
         config.id = request.analyzer->getId();
+    }
+    if (user_config->filterIsSet()) {
+        config.filter = user_config->getFilter();
     }
 
     /* Check if id already exists in map */

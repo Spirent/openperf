@@ -85,6 +85,34 @@ auto inline bpf_jit(bpf_ctx_t* ctx, const struct bpf_insn* insns, int len)
 }
 
 /**
+ * Validate BPF filter string.
+ * @return true if OK, false if error
+ */
+bool bpf_validate_filter(std::string_view filter_str,
+                         int link_type = DLT_EN10MB);
+
+class bpf;
+
+struct bpf_funcs
+{
+    uint16_t (*m_filter_burst_func)(
+        bpf& bpf,
+        const openperf::packetio::packet::packet_buffer* const packets[],
+        const openperf::packetio::packet::packet_buffer* results[],
+        uint16_t length);
+    uint16_t (*m_exec_burst_func)(
+        bpf& bpf,
+        const openperf::packetio::packet::packet_buffer* const packets[],
+        uint64_t results[],
+        uint16_t length);
+    uint16_t (*m_find_next_func)(
+        bpf& bpf,
+        const openperf::packetio::packet::packet_buffer* const packets[],
+        uint16_t length,
+        uint16_t offset);
+};
+
+/**
  * The bpf class provides a simple interfaces for building and executing
  * BPF programs.
  */
@@ -96,42 +124,62 @@ public:
     bpf(const bpf_insn* insns, unsigned int len);
     bpf(const bpf& bpf) = delete;
 
+    /**
+     * Runs the filter program and returns the results in the results array.
+     * @param[in] packets The packets to run the filter on
+     * @param[out] results The packets which matched the filter
+     * @param[in] length The length of the packets and results array
+     * @return The number of packets which matche
+     */
+    uint16_t filter_burst(
+        const openperf::packetio::packet::packet_buffer* const packets[],
+        const openperf::packetio::packet::packet_buffer* results[],
+        uint16_t length)
+    {
+        return m_funcs.m_filter_burst_func(*this, packets, results, length);
+    }
+
+    /**
+     * Runs the filter program and returns the results in the results array.
+     * @param[in] packets The packets to run the filter on
+     * @param[out] results The BPF filter program results
+     * @param[in] length The length of the packets and results array
+     * @return The number of packets which were processed
+     */
     uint16_t
     exec_burst(const openperf::packetio::packet::packet_buffer* const packets[],
                uint64_t results[],
                uint16_t length)
     {
-        return m_exec_burst_func(*this, packets, results, length);
+        return m_funcs.m_exec_burst_func(*this, packets, results, length);
     }
 
+    /**
+     * Finds the index of the next packet which matches the filter.
+     * @param[in] packets The packets to run the filter on
+     * @param[in] length The length of the packets and results array
+     * @param[in] offset The starting offset
+     * @return The index of the first packet which matched the filter
+     */
     uint16_t
     find_next(const openperf::packetio::packet::packet_buffer* const packets[],
               uint16_t length,
               uint16_t offset = 0)
     {
-        return m_find_next_func(*this, packets, length, offset);
+        return m_funcs.m_find_next_func(*this, packets, length, offset);
     }
 
     const std::vector<bpf_insn>& get_prog() const { return m_insn; }
     bpfjit_func_t get_filter_func() const { return *m_jit; }
 
+    bool parse(std::string_view filter_str, int link_type);
+
 private:
     bool set_prog(const bpf_insn* insns, unsigned int len);
-    bool parse(std::string_view filter_str, int link_type);
 
     std::vector<bpf_insn> m_insn;
     bpf_jit_ptr m_jit;
-
-    uint16_t (*m_exec_burst_func)(
-        bpf& bpf,
-        const openperf::packetio::packet::packet_buffer* const packets[],
-        uint64_t results[],
-        uint16_t length);
-    uint16_t (*m_find_next_func)(
-        bpf& bpf,
-        const openperf::packetio::packet::packet_buffer* const packets[],
-        uint16_t length,
-        uint16_t offset);
+    bpf_funcs m_funcs;
 };
 
 } // namespace openperf::packet::bpf

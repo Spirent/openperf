@@ -4,12 +4,15 @@
 #include "packetio/internal_client.hpp"
 #include "packetio/internal_worker.hpp"
 #include "packetio/packet_buffer.hpp"
+#include "packet/bpf/bpf.hpp"
 #include "packet/analyzer/sink.hpp"
 #include "packet/analyzer/statistics/flow/counter_map.tcc"
 #include "spirent_pga/api.h"
 #include "utils/flat_memoize.hpp"
 
 namespace openperf::packet::analyzer {
+
+constexpr uint16_t burst_size_max = 64;
 
 /* Instantiate our templatized data structures */
 template class statistics::flow::counter_map<statistics::generic_flow_counters>;
@@ -78,48 +81,45 @@ std::vector<uint8_t> sink::make_indexes(std::vector<unsigned>& ids)
 }
 
 sink::sink(const sink_config& config, std::vector<unsigned> rx_ids)
-    : m_id(config.id)
-    , m_source(config.source)
+    : m_config(config)
     , m_indexes(sink::make_indexes(rx_ids))
-    , m_flow_counters(config.flow_counters)
-    , m_protocol_counters(config.protocol_counters)
-{}
+{
+    if (!m_config.filter.empty())
+        m_filter =
+            std::make_unique<openperf::packet::bpf::bpf>(m_config.filter);
+}
 
 sink::sink(sink&& other) noexcept
-    : m_id(std::move(other.m_id))
-    , m_source(std::move(other.m_source))
+    : m_config(std::move(other.m_config))
     , m_indexes(std::move(other.m_indexes))
-    , m_flow_counters(other.m_flow_counters)
-    , m_protocol_counters(other.m_protocol_counters)
+    , m_filter(std::move(other.m_filter))
     , m_results(other.m_results.load())
 {}
 
 sink& sink::operator=(sink&& other) noexcept
 {
     if (this != &other) {
-        m_id = std::move(other.m_id);
-        m_source = std::move(other.m_source);
+        m_config = std::move(other.m_config);
         m_indexes = std::move(other.m_indexes);
-        m_flow_counters = other.m_flow_counters;
-        m_protocol_counters = other.m_protocol_counters;
+        m_filter = std::move(other.m_filter);
         m_results.store(other.m_results);
     }
 
     return (*this);
 }
 
-std::string sink::id() const { return (m_id); }
+std::string sink::id() const { return (m_config.id); }
 
-std::string sink::source() const { return (m_source); }
+std::string sink::source() const { return (m_config.source); }
 
 api::protocol_counters_config sink::protocol_counters() const
 {
-    return (m_protocol_counters);
+    return (m_config.protocol_counters);
 }
 
 api::flow_counters_config sink::flow_counters() const
 {
-    return (m_flow_counters);
+    return (m_config.flow_counters);
 }
 
 size_t sink::worker_count() const { return (m_indexes.size()); }
@@ -176,33 +176,33 @@ bool sink::uses_feature(packetio::packet::sink_feature_flags flags) const
     auto needed =
         sink_feature_flags::rx_timestamp | sink_feature_flags::rss_hash;
 
-    if (m_protocol_counters) {
+    if (m_config.protocol_counters) {
         needed |= sink_feature_flags::packet_type_decode;
     }
 
-    if (m_flow_counters & signature_stats) {
+    if (m_config.flow_counters & signature_stats) {
         needed |= sink_feature_flags::spirent_signature_decode;
     }
 
     return (bool(needed & flags));
 }
 
-uint16_t sink::push(const packetio::packet::packet_buffer* const packets[],
-                    uint16_t packets_length) const
+uint16_t sink::push_all(sink_result& results,
+                        uint8_t index,
+                        const packetio::packet::packet_buffer* const packets[],
+                        uint16_t packets_length) const
 {
-    static constexpr int burst_size = 64;
-    const auto id = packetio::internal::worker::get_id();
-    auto results = m_results.load(std::memory_order_consume);
-
     /* Update protocol statistics */
-    auto& protocol = results->protocol(m_indexes[id]);
+    auto& protocol = results.protocol(index);
     uint16_t start = 0;
     while (start < packets_length) {
-        uint16_t end = start + std::min(burst_size, packets_length - start);
+        uint16_t end = start
+                       + std::min(static_cast<int>(burst_size_max),
+                                  packets_length - start);
         uint16_t count = end - start;
 
         auto packet_types =
-            std::array<packetio::packet::packet_type::flags, burst_size>{};
+            std::array<packetio::packet::packet_type::flags, burst_size_max>{};
         std::transform(
             packets + start,
             packets + end,
@@ -217,7 +217,7 @@ uint16_t sink::push(const packetio::packet::packet_buffer* const packets[],
     }
 
     /* Update flow statistics */
-    auto& flows = results->flow(m_indexes[id]);
+    auto& flows = results.flow(index);
     auto cache = openperf::utils::flat_memoize<64>(
         [&](uint32_t rss_hash, std::optional<uint32_t> stream_id) {
             return (flows.second.find(rss_hash, stream_id));
@@ -229,7 +229,9 @@ uint16_t sink::push(const packetio::packet::packet_buffer* const packets[],
         auto counters = cache(hash, stream_id);
         if (!counters) { /* New flow; create stats */
             auto to_delete = flows.second.insert(
-                hash, stream_id, statistics::make_counters(m_flow_counters));
+                hash,
+                stream_id,
+                statistics::make_counters(m_config.flow_counters));
 
             counters = cache.retry(hash, stream_id);
             assert(counters);
@@ -245,6 +247,41 @@ uint16_t sink::push(const packetio::packet::packet_buffer* const packets[],
     flows.first.writer_process_gc_callbacks();
 
     return (packets_length);
+}
+
+uint16_t
+sink::push_filtered(sink_result& results,
+                    uint8_t index,
+                    const packetio::packet::packet_buffer* const packets[],
+                    uint16_t packets_length) const
+{
+    const packetio::packet::packet_buffer* const* start = packets;
+    std::array<const packetio::packet::packet_buffer*, burst_size_max> filtered;
+    auto remain = packets_length;
+
+    while (remain) {
+        auto burst_size = std::min(burst_size_max, remain);
+        auto length =
+            m_filter->filter_burst(start, filtered.data(), burst_size);
+        push_all(results, index, filtered.data(), length);
+        start += burst_size;
+        remain -= burst_size;
+    }
+
+    return packets_length;
+}
+
+uint16_t sink::push(const packetio::packet::packet_buffer* const packets[],
+                    uint16_t packets_length) const
+{
+    auto results = m_results.load(std::memory_order_consume);
+    const auto index = m_indexes[packetio::internal::worker::get_id()];
+
+    if (m_filter) {
+        return push_filtered(*results, index, packets, packets_length);
+    }
+
+    return push_all(*results, index, packets, packets_length);
 }
 
 } // namespace openperf::packet::analyzer

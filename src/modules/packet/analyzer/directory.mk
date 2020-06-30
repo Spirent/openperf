@@ -5,6 +5,7 @@
 PA_DEPENDS += \
 	base_n \
 	immer \
+	packet_bpf \
 	packet_protocol \
 	packet_statistics \
 	packetio \

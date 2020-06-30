@@ -244,6 +244,8 @@ TEST_CASE("bpf w/ packet_buffer", "[bpf]")
         SECTION("no match")
         {
             std::vector<openperf::packetio::packet::packet_buffer*> packets;
+            std::vector<const openperf::packetio::packet::packet_buffer*>
+                filtered_packets;
             std::vector<
                 std::unique_ptr<openperf::packetio::packet::mock_packet_buffer>>
                 packets_mock;
@@ -270,6 +272,7 @@ TEST_CASE("bpf w/ packet_buffer", "[bpf]")
                 return reinterpret_cast<
                     openperf::packetio::packet::packet_buffer*>(mock.get());
             });
+            filtered_packets.resize(packets.size());
             results.resize(packets.size());
 
             for (size_t offset = 0; offset < packets.size(); ++offset) {
@@ -282,11 +285,19 @@ TEST_CASE("bpf w/ packet_buffer", "[bpf]")
             std::for_each(results.begin(), results.end(), [](auto& result) {
                 REQUIRE(result == 0);
             });
+            REQUIRE(bpf.filter_burst(
+                        packets.data(), filtered_packets.data(), packets.size())
+                    == 0);
+            std::for_each(filtered_packets.begin(),
+                          filtered_packets.end(),
+                          [](auto& packet) { REQUIRE(packet == nullptr); });
         }
 
         SECTION("match all")
         {
             std::vector<openperf::packetio::packet::packet_buffer*> packets;
+            std::vector<const openperf::packetio::packet::packet_buffer*>
+                filtered_packets;
             std::vector<
                 std::unique_ptr<openperf::packetio::packet::mock_packet_buffer>>
                 packets_mock;
@@ -312,6 +323,7 @@ TEST_CASE("bpf w/ packet_buffer", "[bpf]")
                 return reinterpret_cast<
                     openperf::packetio::packet::packet_buffer*>(mock.get());
             });
+            filtered_packets.resize(packets.size());
             results.resize(packets.size());
 
             for (size_t offset = 0; offset < packets.size(); ++offset) {
@@ -324,6 +336,12 @@ TEST_CASE("bpf w/ packet_buffer", "[bpf]")
             std::for_each(results.begin(), results.end(), [](auto& result) {
                 REQUIRE(result != 0);
             });
+            REQUIRE(bpf.filter_burst(
+                        packets.data(), filtered_packets.data(), packets.size())
+                    == packets.size());
+            for (size_t i = 0; i < packets.size(); ++i) {
+                REQUIRE(packets[i] == filtered_packets[i]);
+            }
         }
     }
 
@@ -342,6 +360,8 @@ TEST_CASE("bpf w/ packet_buffer", "[bpf]")
         SECTION("no match")
         {
             std::vector<openperf::packetio::packet::packet_buffer*> packets;
+            std::vector<const openperf::packetio::packet::packet_buffer*>
+                filtered_packets;
             std::vector<
                 std::unique_ptr<openperf::packetio::packet::mock_packet_buffer>>
                 packets_mock;
@@ -367,6 +387,7 @@ TEST_CASE("bpf w/ packet_buffer", "[bpf]")
                 return reinterpret_cast<
                     openperf::packetio::packet::packet_buffer*>(mock.get());
             });
+            filtered_packets.resize(packets.size());
             results.resize(packets.size());
 
             for (size_t offset = 0; offset < packets.size(); ++offset) {
@@ -379,11 +400,19 @@ TEST_CASE("bpf w/ packet_buffer", "[bpf]")
             std::for_each(results.begin(), results.end(), [](auto& result) {
                 REQUIRE(result == 0);
             });
+            REQUIRE(bpf.filter_burst(
+                        packets.data(), filtered_packets.data(), packets.size())
+                    == 0);
+            std::for_each(filtered_packets.begin(),
+                          filtered_packets.end(),
+                          [](auto& packet) { REQUIRE(packet == nullptr); });
         }
 
         SECTION("match all")
         {
             std::vector<openperf::packetio::packet::packet_buffer*> packets;
+            std::vector<const openperf::packetio::packet::packet_buffer*>
+                filtered_packets;
             std::vector<
                 std::unique_ptr<openperf::packetio::packet::mock_packet_buffer>>
                 packets_mock;
@@ -410,6 +439,7 @@ TEST_CASE("bpf w/ packet_buffer", "[bpf]")
                 return reinterpret_cast<
                     openperf::packetio::packet::packet_buffer*>(mock.get());
             });
+            filtered_packets.resize(packets.size());
             results.resize(packets.size());
 
             for (size_t offset = 0; offset < packets.size(); ++offset) {
@@ -422,6 +452,12 @@ TEST_CASE("bpf w/ packet_buffer", "[bpf]")
             std::for_each(results.begin(), results.end(), [](auto& result) {
                 REQUIRE(result != 0);
             });
+            REQUIRE(bpf.filter_burst(
+                        packets.data(), filtered_packets.data(), packets.size())
+                    == packets.size());
+            for (size_t i = 0; i < packets.size(); ++i) {
+                REQUIRE(packets[i] == filtered_packets[i]);
+            }
         }
     }
 
@@ -441,6 +477,8 @@ TEST_CASE("bpf w/ packet_buffer", "[bpf]")
         SECTION("no match")
         {
             std::vector<openperf::packetio::packet::packet_buffer*> packets;
+            std::vector<const openperf::packetio::packet::packet_buffer*>
+                filtered_packets;
             std::vector<
                 std::unique_ptr<openperf::packetio::packet::mock_packet_buffer>>
                 packets_mock;
@@ -467,6 +505,7 @@ TEST_CASE("bpf w/ packet_buffer", "[bpf]")
                 return reinterpret_cast<
                     openperf::packetio::packet::packet_buffer*>(mock.get());
             });
+            filtered_packets.resize(packets.size());
             results.resize(packets.size());
 
             for (size_t offset = 0; offset < packets.size(); ++offset) {
@@ -479,11 +518,19 @@ TEST_CASE("bpf w/ packet_buffer", "[bpf]")
             std::for_each(results.begin(), results.end(), [](auto& result) {
                 REQUIRE(result == 0);
             });
+            REQUIRE(bpf.filter_burst(
+                        packets.data(), filtered_packets.data(), packets.size())
+                    == 0);
+            std::for_each(filtered_packets.begin(),
+                          filtered_packets.end(),
+                          [](auto& packet) { REQUIRE(packet == nullptr); });
         }
 
         SECTION("match all")
         {
             std::vector<openperf::packetio::packet::packet_buffer*> packets;
+            std::vector<const openperf::packetio::packet::packet_buffer*>
+                filtered_packets;
             std::vector<
                 std::unique_ptr<openperf::packetio::packet::mock_packet_buffer>>
                 packets_mock;
@@ -509,6 +556,7 @@ TEST_CASE("bpf w/ packet_buffer", "[bpf]")
                 return reinterpret_cast<
                     openperf::packetio::packet::packet_buffer*>(mock.get());
             });
+            filtered_packets.resize(packets.size());
             results.resize(packets.size());
 
             for (size_t offset = 0; offset < packets.size(); ++offset) {
@@ -521,6 +569,12 @@ TEST_CASE("bpf w/ packet_buffer", "[bpf]")
             std::for_each(results.begin(), results.end(), [](auto& result) {
                 REQUIRE(result != 0);
             });
+            REQUIRE(bpf.filter_burst(
+                        packets.data(), filtered_packets.data(), packets.size())
+                    == packets.size());
+            for (size_t i = 0; i < packets.size(); ++i) {
+                REQUIRE(packets[i] == filtered_packets[i]);
+            }
         }
     }
 
@@ -540,6 +594,8 @@ TEST_CASE("bpf w/ packet_buffer", "[bpf]")
         SECTION("no match")
         {
             std::vector<openperf::packetio::packet::packet_buffer*> packets;
+            std::vector<const openperf::packetio::packet::packet_buffer*>
+                filtered_packets;
             std::vector<
                 std::unique_ptr<openperf::packetio::packet::mock_packet_buffer>>
                 packets_mock;
@@ -567,6 +623,7 @@ TEST_CASE("bpf w/ packet_buffer", "[bpf]")
                 return reinterpret_cast<
                     openperf::packetio::packet::packet_buffer*>(mock.get());
             });
+            filtered_packets.resize(packets.size());
             results.resize(packets.size());
 
             for (size_t offset = 0; offset < packets.size(); ++offset) {
@@ -579,11 +636,19 @@ TEST_CASE("bpf w/ packet_buffer", "[bpf]")
             std::for_each(results.begin(), results.end(), [](auto& result) {
                 REQUIRE(result == 0);
             });
+            REQUIRE(bpf.filter_burst(
+                        packets.data(), filtered_packets.data(), packets.size())
+                    == 0);
+            std::for_each(filtered_packets.begin(),
+                          filtered_packets.end(),
+                          [](auto& result) { REQUIRE(result == nullptr); });
         }
 
         SECTION("match some")
         {
             std::vector<openperf::packetio::packet::packet_buffer*> packets;
+            std::vector<const openperf::packetio::packet::packet_buffer*>
+                filtered_packets;
             std::vector<
                 std::unique_ptr<openperf::packetio::packet::mock_packet_buffer>>
                 packets_mock;
@@ -611,6 +676,7 @@ TEST_CASE("bpf w/ packet_buffer", "[bpf]")
                 return reinterpret_cast<
                     openperf::packetio::packet::packet_buffer*>(mock.get());
             });
+            filtered_packets.resize(packets.size());
             results.resize(packets.size());
 
             ndx = 1;
@@ -627,6 +693,19 @@ TEST_CASE("bpf w/ packet_buffer", "[bpf]")
             std::for_each(results.begin(), results.end(), [&](auto& result) {
                 REQUIRE((result != 0) == ((ndx++) <= 5));
             });
+
+            REQUIRE(bpf.filter_burst(
+                        packets.data(), filtered_packets.data(), packets.size())
+                    == 5);
+            std::for_each(
+                filtered_packets.begin(),
+                filtered_packets.begin() + 5,
+                [&](auto& packet) {
+                    auto stream_id =
+                        openperf::packetio::packet::signature_stream_id(packet);
+                    REQUIRE(stream_id.has_value());
+                    REQUIRE((*stream_id <= 5));
+                });
         }
     }
 }

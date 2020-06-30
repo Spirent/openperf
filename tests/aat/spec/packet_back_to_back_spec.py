@@ -2,6 +2,7 @@ import client.api
 import datetime
 import os
 import time
+import copy
 
 from common import Config, Service
 from common.helper import make_generator_config
@@ -189,6 +190,13 @@ ANALYZER_CONFIG_SIGS = {
              'jitter_ipdv', 'jitter_rfc', 'latency', 'advanced_sequencing']
 }
 
+ANALYZER_CONFIG_NO_SIGS_FILTER_UDP = {
+    'protocol': ['ethernet', 'ip', 'transport'],
+    'flow': ['frame_count', 'frame_length', 'interarrival_time'],
+    # This filter acepts both non-VLAN and VLAN UDP packet
+    'filter': 'udp or (vlan and udp)'
+}
+
 ###
 # Generator configurations
 ###
@@ -365,6 +373,8 @@ def get_analyzer_model(api_client, analyzer_config):
         config.protocol_counters = analyzer_config['protocol']
     if 'flow' in analyzer_config:
         config.flow_counters = analyzer_config['flow']
+    if 'filter' in analyzer_config:
+        config.filter = analyzer_config['filter']
 
     analyzer = client.models.PacketAnalyzer()
     analyzer.source_id = get_analyzer_port_id(api_client)
@@ -706,6 +716,47 @@ with description('Packet back to back', 'packet_b2b') as self:
                 # Check miscellaneous results
                 validate_durations(ana_result, gen_result)
                 validate_frame_length(ana_result, GENERATOR_CONFIG_MULTI_DEFS)
+                validate_rx_flows(self.client, ana_result)
+                validate_tx_flows(self.client, gen_result)
+
+
+        with description('with multiple traffic definitions and filter udp,'):
+            with it('succeeds'):
+                ana_result, gen_result = configure_and_run_test(self.client,
+                                                                ANALYZER_CONFIG_NO_SIGS_FILTER_UDP,
+                                                                GENERATOR_CONFIG_MULTI_DEFS)
+                # Only UDP is allowed so shouldn't see the TCP IPv6 stream (flow 2)
+
+                # Validate results
+                exp_ana_flow_count = 1
+                exp_gen_flow_count = 2
+                expect(len(ana_result.flows)).to(equal(exp_ana_flow_count))
+                expect(len(gen_result.flows)).to(equal(exp_gen_flow_count))
+
+                # Check analyzer protocol counters
+                exp_frame_count = GENERATOR_CONFIG_MULTI_DEFS['duration']['frames']
+                exp_flow1_count = exp_frame_count * 4 / 5
+                exp_flow2_count = 0 # Analyzer shouldn't see any frames from 2nd flow
+                expect(ana_result.protocol_counters.ethernet.ip).to(equal(exp_flow2_count))
+                expect(ana_result.protocol_counters.ethernet.vlan).to(equal(exp_flow1_count))
+                expect(ana_result.protocol_counters.ip.ipv4).to(equal(exp_flow1_count))
+                expect(ana_result.protocol_counters.ip.ipv6).to(equal(exp_flow2_count))
+                expect(ana_result.protocol_counters.transport.udp).to(equal(exp_flow1_count))
+                expect(ana_result.protocol_counters.transport.tcp).to(equal(exp_flow2_count))
+
+                # Check analyzer flow counters
+                expect(ana_result.flow_counters.frame_count).to(equal(exp_flow1_count))
+
+                # Check generator flow counters
+                expect(gen_result.flow_counters.packets_actual).to(equal(exp_frame_count))
+
+                # Analyzer shouldn't see the 2nd traffic flow so remove it for validation checks
+                filtered_config = copy.deepcopy(GENERATOR_CONFIG_MULTI_DEFS)
+                del filtered_config['traffic'][1]
+
+                # Check miscellaneous results
+                validate_durations(ana_result, gen_result)
+                validate_frame_length(ana_result, filtered_config)
                 validate_rx_flows(self.client, ana_result)
                 validate_tx_flows(self.client, gen_result)
 
