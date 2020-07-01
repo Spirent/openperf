@@ -162,13 +162,14 @@ TEST_CASE("PRBS functions", "[spirent-pga]")
         SECTION("unaligned start")
         {
             for (auto offset : {1, 2, 3}) {
-                auto ptr = &buffer[offset];
+                auto* ptr = &buffer[offset];
                 uint16_t length = buffer_size - offset;
 
                 pga_fill_prbs(&ptr, &length, 1, seed);
 
                 uint32_t bit_errors = 0;
-                auto errors = pga_verify_prbs(&ptr, &length, 1, &bit_errors);
+                auto errors = pga_verify_prbs(
+                    const_cast<const uint8_t**>(&ptr), &length, 1, &bit_errors);
                 REQUIRE(bit_errors == 0);
                 REQUIRE(errors == false);
             }
@@ -183,7 +184,8 @@ TEST_CASE("PRBS functions", "[spirent-pga]")
                 pga_fill_prbs(&ptr, &length, 1, seed);
 
                 uint32_t bit_errors = 0;
-                auto errors = pga_verify_prbs(&ptr, &length, 1, &bit_errors);
+                auto errors = pga_verify_prbs(
+                    const_cast<const uint8_t**>(&ptr), &length, 1, &bit_errors);
                 REQUIRE(bit_errors == 0);
                 REQUIRE(errors == false);
             }

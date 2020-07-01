@@ -1,3 +1,5 @@
+#include "inet.h"
+
 /*
  * The masks for the various prbs_xorshift_nextN() and prbs_xorshift_stepN()
  * functions below are generated from the companion matrix of the
@@ -352,7 +354,7 @@ export uniform unsigned int32 fill_prbs_aligned(uniform unsigned int32 payload[]
          * Blend the current and next lane-wide seed values to create the
          * payload data.
          */
-        base += packed_store_active(&payload[base], to_payload(curr_seed, next_seed));
+        base += packed_store_active(&payload[base], htonl(to_payload(curr_seed, next_seed)));
         curr_seed = next_seed;
         next_seed = prbs_step(next_seed);
     }
@@ -390,7 +392,7 @@ export uniform unsigned int64 verify_prbs_aligned(const uniform unsigned int32 p
 
     foreach (i = 0 ... length ) {
         /* XOR the expected payload with our actual payload to determine bit errors */
-        int loop_errors = popcount32(to_payload(curr_seed, next_seed) ^ payload[i]);
+        int loop_errors = popcount32(to_payload(curr_seed, next_seed) ^ ntohl(payload[i]));
         bit_errors += loop_errors;
 
         /*
@@ -409,8 +411,8 @@ export uniform unsigned int64 verify_prbs_aligned(const uniform unsigned int32 p
         cif (!prbs_sync) {
             uniform int base = reduce_max(i) + 1;
             if (base < length) {
-                curr_seed = ~payload[base];
-                next_seed = prbs_next(~payload[base], programIndex);
+                curr_seed = ~ntohl(payload[base]);
+                next_seed = prbs_next(~ntohl(payload[base]), programIndex);
             }
         } else {
             curr_seed = next_seed;

@@ -176,7 +176,7 @@ uint32_t pga_fill_prbs(uint8_t* payloads[],
     return (seed);
 }
 
-bool pga_verify_prbs(uint8_t* payloads[],
+bool pga_verify_prbs(const uint8_t* payloads[],
                      uint16_t lengths[],
                      uint16_t count,
                      uint32_t bit_errors[])
