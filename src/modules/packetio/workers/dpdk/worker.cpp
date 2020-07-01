@@ -135,7 +135,7 @@ static std::pair<uint16_t, uint16_t> rx_resolve_interfaces(const fib* fib,
      * with pending data.
      */
 
-    prefetch_for_each(
+    utils::prefetch_for_each(
         incoming,
         incoming + n,
         [](auto mbuf) {
@@ -249,7 +249,7 @@ rx_interface_sink_dispatch(const fib* fib,
      * with pending data.
      */
 
-    prefetch_for_each(
+    utils::prefetch_for_each(
         incoming,
         incoming + n,
         [](auto mbuf) {

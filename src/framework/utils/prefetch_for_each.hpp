@@ -1,5 +1,10 @@
-#ifndef _PREFETCH_FOR_EACH_HPP_
-#define _PREFETCH_FOR_EACH_HPP_
+#ifndef _OP_UTILS_PREFETCH_FOR_EACH_HPP_
+#define _OP_UTILS_PREFETCH_FOR_EACH_HPP_
+
+#include <algorithm>
+#include <iterator>
+
+namespace openperf::utils {
 
 /**
  * Algorigthm for iterating over an array and prefetch a few elements ahead.
@@ -36,4 +41,6 @@ void prefetch_for_each(InputIterator first,
     for (; it != last; ++it) { func(*it); }
 }
 
-#endif // _PREFETCH_FOR_EACH_HPP_
+} // namespace openperf::utils
+
+#endif // _OP_UTILS_PREFETCH_FOR_EACH_HPP_
