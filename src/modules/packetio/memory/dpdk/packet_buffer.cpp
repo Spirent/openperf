@@ -1,6 +1,8 @@
 #include "packetio/drivers/dpdk/dpdk.h"
+#include "packetio/drivers/dpdk/mbuf_rx_prbs.hpp"
 #include "packetio/drivers/dpdk/mbuf_signature.hpp"
 #include "packetio/packet_buffer.hpp"
+#include "spirent_pga/api.h"
 
 namespace openperf::packetio::packet {
 
@@ -145,6 +147,20 @@ bool udp_checksum_error(const packet_buffer* buffer)
     return (is_udp.value
             && (buffer->ol_flags & PKT_RX_L4_CKSUM_MASK)
                    == PKT_RX_L4_CKSUM_BAD);
+}
+
+std::optional<uint32_t> prbs_octets(const packet_buffer* buffer)
+{
+    return (dpdk::mbuf_rx_prbs_avail(buffer)
+                ? std::make_optional(dpdk::mbuf_rx_prbs_octets(buffer))
+                : std::nullopt);
+}
+
+std::optional<uint32_t> prbs_bit_errors(const packet_buffer* buffer)
+{
+    return (dpdk::mbuf_rx_prbs_avail(buffer)
+                ? std::make_optional(dpdk::mbuf_rx_prbs_bit_errors(buffer))
+                : std::nullopt);
 }
 
 std::optional<uint32_t> signature_stream_id(const packet_buffer* buffer)
