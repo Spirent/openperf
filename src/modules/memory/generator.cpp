@@ -67,8 +67,8 @@ void generator::start(const dynamic::configuration& cfg)
 {
     if (!m_stopped) return;
 
-    start();
     m_dynamic.start(cfg);
+    start();
 }
 
 void generator::stop()
