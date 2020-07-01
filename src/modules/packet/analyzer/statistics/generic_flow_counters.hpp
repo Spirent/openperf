@@ -34,14 +34,14 @@ public:
         return (m_self->holds<StatsType>());
     }
 
-    void update(const packetio::packet::packet_buffer* pkt) const
-    {
-        m_self->update(pkt);
-    }
-
     void set_header(const packetio::packet::packet_buffer* pkt) const
     {
         m_self->set_header(pkt);
+    }
+
+    void update(const packetio::packet::packet_buffer* pkt) const
+    {
+        m_self->update(pkt);
     }
 
     void dump(std::ostream& os) const { m_self->dump(os); }
@@ -65,37 +65,39 @@ private:
         }
 
         virtual void
-        update(const packetio::packet::packet_buffer* pkt) const = 0;
+        set_header(const packetio::packet::packet_buffer* pkt) const = 0;
 
         virtual void
-        set_header(const packetio::packet::packet_buffer* pkt) const = 0;
+        update(const packetio::packet::packet_buffer* pkt) const = 0;
 
         virtual void dump(std::ostream& os) const = 0;
 
     protected:
+        virtual const flow::errors& get(tag<flow::errors>&&) const = 0;
         virtual const flow::frame_counter&
         get(tag<flow::frame_counter>&&) const = 0;
-        virtual const flow::sequencing& get(tag<flow::sequencing>&&) const = 0;
         virtual const flow::frame_length&
         get(tag<flow::frame_length>&&) const = 0;
+        virtual const flow::header& get(tag<flow::header>&&) const = 0;
         virtual const flow::interarrival&
         get(tag<flow::interarrival>&&) const = 0;
-        virtual const flow::latency& get(tag<flow::latency>&&) const = 0;
-        virtual const flow::jitter_rfc& get(tag<flow::jitter_rfc>&&) const = 0;
         virtual const flow::jitter_ipdv&
         get(tag<flow::jitter_ipdv>&&) const = 0;
-        virtual const flow::header& get(tag<flow::header>&&) const = 0;
-        virtual const flow::errors& get(tag<flow::errors>&&) const = 0;
+        virtual const flow::jitter_rfc& get(tag<flow::jitter_rfc>&&) const = 0;
+        virtual const flow::latency& get(tag<flow::latency>&&) const = 0;
+        virtual const flow::prbs& get(tag<flow::prbs>&&) const = 0;
+        virtual const flow::sequencing& get(tag<flow::sequencing>&&) const = 0;
 
+        virtual bool holds(tag<flow::errors>&&) const = 0;
         virtual bool holds(tag<flow::frame_counter>&&) const = 0;
-        virtual bool holds(tag<flow::sequencing>&&) const = 0;
         virtual bool holds(tag<flow::frame_length>&&) const = 0;
+        virtual bool holds(tag<flow::header>&&) const = 0;
         virtual bool holds(tag<flow::interarrival>&&) const = 0;
         virtual bool holds(tag<flow::latency>&&) const = 0;
         virtual bool holds(tag<flow::jitter_rfc>&&) const = 0;
         virtual bool holds(tag<flow::jitter_ipdv>&&) const = 0;
-        virtual bool holds(tag<flow::header>&&) const = 0;
-        virtual bool holds(tag<flow::errors>&&) const = 0;
+        virtual bool holds(tag<flow::prbs>&&) const = 0;
+        virtual bool holds(tag<flow::sequencing>&&) const = 0;
     };
 
     template <typename StatsTuple> struct stats_model final : stats_concept
@@ -104,18 +106,17 @@ private:
             : m_data(std::move(tuple))
         {}
 
+        const flow::errors& get(tag<flow::errors>&&) const override
+        {
+            return (packet::statistics::get_counter<flow::errors, StatsTuple>(
+                m_data));
+        }
+
         const flow::frame_counter&
         get(tag<flow::frame_counter>&&) const override
         {
             return (packet::statistics::get_counter<flow::frame_counter,
                                                     StatsTuple>(m_data));
-        }
-
-        const flow::sequencing& get(tag<flow::sequencing>&&) const override
-        {
-            return (
-                packet::statistics::get_counter<flow::sequencing, StatsTuple>(
-                    m_data));
         }
 
         const flow::frame_length& get(tag<flow::frame_length>&&) const override
@@ -125,23 +126,16 @@ private:
                     m_data));
         }
 
+        const flow::header& get(tag<flow::header>&&) const override
+        {
+            return (packet::statistics::get_counter<flow::header, StatsTuple>(
+                m_data));
+        }
+
         const flow::interarrival& get(tag<flow::interarrival>&&) const override
         {
             return (
                 packet::statistics::get_counter<flow::interarrival, StatsTuple>(
-                    m_data));
-        }
-
-        const flow::latency& get(tag<flow::latency>&&) const override
-        {
-            return (packet::statistics::get_counter<flow::latency, StatsTuple>(
-                m_data));
-        }
-
-        const flow::jitter_rfc& get(tag<flow::jitter_rfc>&&) const override
-        {
-            return (
-                packet::statistics::get_counter<flow::jitter_rfc, StatsTuple>(
                     m_data));
         }
 
@@ -152,15 +146,35 @@ private:
                     m_data));
         }
 
-        const flow::header& get(tag<flow::header>&&) const override
+        const flow::jitter_rfc& get(tag<flow::jitter_rfc>&&) const override
         {
-            return (packet::statistics::get_counter<flow::header, StatsTuple>(
+            return (
+                packet::statistics::get_counter<flow::jitter_rfc, StatsTuple>(
+                    m_data));
+        }
+
+        const flow::latency& get(tag<flow::latency>&&) const override
+        {
+            return (packet::statistics::get_counter<flow::latency, StatsTuple>(
                 m_data));
         }
 
-        const flow::errors& get(tag<flow::errors>&&) const override
+        const flow::prbs& get(tag<flow::prbs>&&) const override
         {
-            return (packet::statistics::get_counter<flow::errors, StatsTuple>(
+            return (packet::statistics::get_counter<flow::prbs, StatsTuple>(
+                m_data));
+        }
+
+        const flow::sequencing& get(tag<flow::sequencing>&&) const override
+        {
+            return (
+                packet::statistics::get_counter<flow::sequencing, StatsTuple>(
+                    m_data));
+        }
+
+        bool holds(tag<flow::errors>&&) const override
+        {
+            return (packet::statistics::holds_stat<flow::errors, StatsTuple>(
                 m_data));
         }
 
@@ -171,13 +185,6 @@ private:
                     m_data));
         }
 
-        bool holds(tag<flow::sequencing>&&) const override
-        {
-            return (
-                packet::statistics::holds_stat<flow::sequencing, StatsTuple>(
-                    m_data));
-        }
-
         bool holds(tag<flow::frame_length>&&) const override
         {
             return (
@@ -185,23 +192,16 @@ private:
                     m_data));
         }
 
+        bool holds(tag<flow::header>&&) const override
+        {
+            return (packet::statistics::holds_stat<flow::header, StatsTuple>(
+                m_data));
+        }
+
         bool holds(tag<flow::interarrival>&&) const override
         {
             return (
                 packet::statistics::holds_stat<flow::interarrival, StatsTuple>(
-                    m_data));
-        }
-
-        bool holds(tag<flow::latency>&&) const override
-        {
-            return (packet::statistics::holds_stat<flow::latency, StatsTuple>(
-                m_data));
-        }
-
-        bool holds(tag<flow::jitter_rfc>&&) const override
-        {
-            return (
-                packet::statistics::holds_stat<flow::jitter_rfc, StatsTuple>(
                     m_data));
         }
 
@@ -212,27 +212,41 @@ private:
                     m_data));
         }
 
-        bool holds(tag<flow::header>&&) const override
+        bool holds(tag<flow::jitter_rfc>&&) const override
         {
-            return (packet::statistics::holds_stat<flow::header, StatsTuple>(
+            return (
+                packet::statistics::holds_stat<flow::jitter_rfc, StatsTuple>(
+                    m_data));
+        }
+
+        bool holds(tag<flow::latency>&&) const override
+        {
+            return (packet::statistics::holds_stat<flow::latency, StatsTuple>(
                 m_data));
         }
 
-        bool holds(tag<flow::errors>&&) const override
+        bool holds(tag<flow::prbs>&&) const override
         {
-            return (packet::statistics::holds_stat<flow::errors, StatsTuple>(
-                m_data));
+            return (
+                packet::statistics::holds_stat<flow::prbs, StatsTuple>(m_data));
         }
 
-        void update(const packetio::packet::packet_buffer* pkt) const override
+        bool holds(tag<flow::sequencing>&&) const override
         {
-            flow::update(m_data, pkt);
+            return (
+                packet::statistics::holds_stat<flow::sequencing, StatsTuple>(
+                    m_data));
         }
 
         void
         set_header(const packetio::packet::packet_buffer* pkt) const override
         {
             flow::set_header(m_data, pkt);
+        }
+
+        void update(const packetio::packet::packet_buffer* pkt) const override
+        {
+            flow::update(m_data, pkt);
         }
 
         void dump(std::ostream& os) const override { flow::dump(os, m_data); }
@@ -252,9 +266,9 @@ enum class flow_flags {
     latency = (1 << 4),
     jitter_ipdv = (1 << 5),
     jitter_rfc = (1 << 6),
-    header = (1 << 7),
+    prbs = (1 << 7),
     errors = (1 << 8),
-    prbs = (1 << 9),
+    header = (1 << 9),
 };
 
 generic_flow_counters
@@ -271,8 +285,8 @@ namespace openperf::packet::analyzer::statistics {
 inline constexpr auto all_flow_counters =
     (flow_flags::frame_count | flow_flags::frame_length | flow_flags::latency
      | flow_flags::sequencing | flow_flags::interarrival
-     | flow_flags::jitter_ipdv | flow_flags::jitter_rfc | flow_flags::header
-     | flow_flags::errors);
+     | flow_flags::jitter_ipdv | flow_flags::jitter_rfc | flow_flags::prbs
+     | flow_flags::errors | flow_flags::header);
 }
 
 #endif /* _OP_ANALYZER_STATISTICS_GENERIC_FLOW_COUNTERS_HPP_ */

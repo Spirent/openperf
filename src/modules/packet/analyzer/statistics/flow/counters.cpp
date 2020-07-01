@@ -11,6 +11,14 @@ void dump(std::ostream& os, const errors& stat)
     os << " udp checksum:" << stat.udp_checksum << std::endl;
 }
 
+void dump(std::ostream& os, const prbs& stat)
+{
+    os << "PRBS:" << std::endl;
+    os << " bit_errors:" << stat.bit_errors << std::endl;
+    os << " frame_errors:" << stat.frame_errors << std::endl;
+    os << " octets:" << stat.octets << std::endl;
+}
+
 void dump(std::ostream& os, const sequencing& stat)
 {
     os << "Sequencing:" << std::endl;

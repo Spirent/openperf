@@ -176,12 +176,21 @@ bool sink::uses_feature(packetio::packet::sink_feature_flags flags) const
     auto needed =
         sink_feature_flags::rx_timestamp | sink_feature_flags::rss_hash;
 
-    if (m_config.protocol_counters) {
+    if (protocol_counters()) {
         needed |= sink_feature_flags::packet_type_decode;
     }
 
-    if (m_config.flow_counters & signature_stats) {
+    if (flow_counters() & signature_stats) {
         needed |= sink_feature_flags::spirent_signature_decode;
+    }
+
+    if (flow_counters() & statistics::flow_flags::prbs) {
+        /*
+         * We need the signature in order to check the bit that
+         * indicates that PRBS data is present.
+         */
+        needed |= (sink_feature_flags::spirent_signature_decode
+                   | sink_feature_flags::spirent_prbs_error_detect);
     }
 
     return (bool(needed & flags));
