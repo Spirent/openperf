@@ -5,6 +5,8 @@
 
 namespace openperf::packetio::dpdk::port::utils {
 
+inline constexpr auto signature_length = 20U;
+
 /*
  * Convenience type for Spirent signature timestamps, which consist of
  * 2.5 ns ticks.
