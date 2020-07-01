@@ -66,13 +66,19 @@ template <int FlagValue> auto make_counter_tuple()
         t6, std::tuple<sequencing, latency, jitter_ipdv>{});
 
     auto t8 = packet::statistics::maybe_tuple_cat<static_cast<bool>(
-        FlagValue & to_value(flow_flags::header))>(t7, std::tuple<header>{});
+        FlagValue & to_value(flow_flags::prbs))>(t7, std::tuple<prbs>{});
+
+    auto t9 = packet::statistics::maybe_tuple_cat<static_cast<bool>(
+        FlagValue & to_value(flow_flags::errors))>(t8, std::tuple<errors>{});
+
+    auto t10 = packet::statistics::maybe_tuple_cat<static_cast<bool>(
+        FlagValue & to_value(flow_flags::header))>(t9, std::tuple<header>{});
 
     /*
      * Since we might have added duplicate results to our tuple, filter out any
      * dups.
      */
-    return (unique_tuple_t<decltype(t8)>{});
+    return (unique_tuple_t<decltype(t10)>{});
 }
 
 template <size_t I> constexpr auto make_counters_constructor()

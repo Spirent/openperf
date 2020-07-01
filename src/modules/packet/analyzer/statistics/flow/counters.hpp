@@ -20,6 +20,13 @@ struct errors
     stat_t udp_checksum = 0;
 };
 
+struct prbs
+{
+    stat_t bit_errors = 0;
+    stat_t frame_errors = 0;
+    stat_t octets = 0;
+};
+
 struct sequencing
 {
     stat_t dropped = 0;
@@ -158,6 +165,20 @@ inline void update(errors& stat, const packetio::packet::packet_buffer* pkt)
     if (ipv4_checksum_error(pkt)) { stat.ipv4_checksum++; }
     if (tcp_checksum_error(pkt)) { stat.tcp_checksum++; }
     if (udp_checksum_error(pkt)) { stat.udp_checksum++; }
+}
+
+inline void update(prbs& stat, const packetio::packet::packet_buffer* pkt)
+{
+    using namespace openperf::packetio::packet;
+
+    if (auto octets = prbs_octets(pkt)) {
+        stat.octets += *octets;
+        /* Can't have one without the other... */
+        if (auto bit_errors = prbs_bit_errors(pkt).value()) {
+            stat.bit_errors += bit_errors;
+            stat.frame_errors++;
+        }
+    }
 }
 
 inline void
@@ -338,6 +359,10 @@ void update(StatsTuple& tuple, const packetio::packet::packet_buffer* pkt)
         update(get_counter<errors, StatsTuple>(tuple), pkt);
     }
 
+    if constexpr (has_type<prbs, StatsTuple>::value) {
+        update(get_counter<prbs, StatsTuple>(tuple), pkt);
+    }
+
     if constexpr (has_type<frame_length, StatsTuple>::value) {
         update(get_counter<frame_length, StatsTuple>(tuple),
                packetio::packet::frame_length(pkt),
@@ -389,6 +414,7 @@ void update(StatsTuple& tuple, const packetio::packet::packet_buffer* pkt)
  **/
 
 void dump(std::ostream& os, const errors& stat);
+void dump(std::ostream& os, const prbs& stat);
 void dump(std::ostream& os, const sequencing& stat);
 void dump(std::ostream& os, const frame_length& stat);
 void dump(std::ostream& os, const interarrival& stat);
@@ -417,6 +443,10 @@ void dump(std::ostream& os, const StatsTuple& tuple)
 
     if constexpr (has_type<errors, StatsTuple>::value) {
         dump(os, get_counter<errors, StatsTuple>(tuple));
+    }
+
+    if constexpr (has_type<prbs, StatsTuple>::value) {
+        dump(os, get_counter<prbs, StatsTuple>(tuple));
     }
 
     if constexpr (has_type<sequencing, StatsTuple>::value) {
