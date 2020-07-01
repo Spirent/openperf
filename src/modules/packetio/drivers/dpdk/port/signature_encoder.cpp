@@ -10,7 +10,6 @@
 namespace openperf::packetio::dpdk::port {
 
 static constexpr auto chunk_size = 64U;
-static constexpr auto signature_size = 20U;
 static constexpr auto ethernet_overhead = 24U;
 static constexpr auto ethernet_octets = 8U;
 
@@ -34,7 +33,7 @@ static bool is_runt_ipv4_udp(const rte_mbuf* mbuf)
 template <typename T> static T* to_signature(rte_mbuf* mbuf)
 {
     return (rte_pktmbuf_mtod_offset(mbuf, T*, rte_pktmbuf_pkt_len(mbuf))
-            - signature_size);
+            - utils::signature_length);
 }
 
 static uint32_t get_link_speed_safe(uint16_t port_id)

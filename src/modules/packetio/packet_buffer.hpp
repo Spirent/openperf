@@ -118,6 +118,10 @@ bool tcp_checksum_error(const packet_buffer* buffer);
 
 bool udp_checksum_error(const packet_buffer* buffer);
 
+std::optional<uint32_t> prbs_octets(const packet_buffer* buffer);
+
+std::optional<uint32_t> prbs_bit_errors(const packet_buffer* buffer);
+
 std::optional<uint32_t> signature_stream_id(const packet_buffer* buffer);
 
 std::optional<uint32_t> signature_sequence_number(const packet_buffer* buffer);

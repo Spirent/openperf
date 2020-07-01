@@ -18,6 +18,7 @@ enum class sink_feature_flags {
     rss_hash = (1 << 1),
     rx_timestamp = (1 << 2),
     spirent_signature_decode = (1 << 3),
+    spirent_prbs_error_detect = (1 << 4),
 };
 
 class generic_sink

@@ -9,7 +9,6 @@
 namespace openperf::packetio::dpdk::port {
 
 static constexpr auto chunk_size = 32U;
-static constexpr auto signature_size = 20U;
 
 template <typename T> using chunk_array = std::array<T, chunk_size>;
 
@@ -78,17 +77,18 @@ static uint16_t detect_signatures([[maybe_unused]] uint16_t port_id,
          * The spirent signature should start 20 bytes before the end of the
          * packet, so generate an array of expected locations to check.
          */
-        std::transform(packets + start,
-                       packets + end,
-                       payloads.data<1>(), /* storage */
-                       payloads.data<0>(), /* pointer */
-                       [&](const auto& mbuf, auto& storage) {
-                           return (static_cast<const uint8_t*>(rte_pktmbuf_read(
-                               mbuf,
-                               rte_pktmbuf_pkt_len(mbuf) - signature_size,
-                               signature_size,
-                               storage)));
-                       });
+        std::transform(
+            packets + start,
+            packets + end,
+            payloads.data<1>(), /* storage */
+            payloads.data<0>(), /* pointer */
+            [&](const auto& mbuf, auto& storage) {
+                return (static_cast<const uint8_t*>(rte_pktmbuf_read(
+                    mbuf,
+                    rte_pktmbuf_pkt_len(mbuf) - utils::signature_length,
+                    utils::signature_length,
+                    storage)));
+            });
 
         /* Look for signature candidates */
         if (pga_signatures_crc_filter(
