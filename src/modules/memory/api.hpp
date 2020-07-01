@@ -125,18 +125,27 @@ namespace reply {
 
 struct ok : message
 {};
-struct error : message
+struct error
 {
-    enum {
+    enum type_t {
         NONE = 0,
         ACTIVE_STAT,
         NOT_FOUND,
         EXISTS,
         INVALID_ID,
         NOT_INITIALIZED,
-        ZMQ_ERROR
-    } type = NONE;
-    int value = 0;
+        ZMQ_ERROR,
+        CUSTOM
+    };
+
+    struct error_data
+    {
+        type_t type = NONE;
+        int value = 0;
+        std::string message;
+    };
+
+    std::unique_ptr<error_data> data;
 };
 using info = memory_info::info_t;
 

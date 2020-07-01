@@ -132,9 +132,8 @@ void generator::start(const dynamic::configuration& cfg)
 {
     if (!m_stopped) return;
 
+    m_dynamic.start(cfg);
     start();
-    m_dynamic.config(cfg.thresholds);
-    m_dynamic.start();
 }
 
 void generator::stop()

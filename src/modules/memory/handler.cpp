@@ -13,12 +13,12 @@ using namespace Pistache;
 
 std::string json_error(std::string_view msg)
 {
-    return json{"error", msg}.dump();
+    return json{{"error", msg}}.dump();
 }
 
-void response_error(Http::ResponseWriter& rsp, reply::error error)
+void response_error(Http::ResponseWriter& rsp, const reply::error& error)
 {
-    switch (error.type) {
+    switch (error.data->type) {
     case reply::error::NOT_FOUND:
         rsp.send(Http::Code::Not_Found);
         break;
@@ -40,6 +40,9 @@ void response_error(Http::ResponseWriter& rsp, reply::error error)
         rsp.headers().add<Http::Header::ContentType>(MIME(Application, Json));
         rsp.send(Http::Code::Bad_Request,
                  json_error("Trying to start uninitialized generator"));
+    case reply::error::CUSTOM:
+        rsp.headers().add<Http::Header::ContentType>(MIME(Application, Json));
+        rsp.send(Http::Code::Bad_Request, json_error(error.data->message));
         break;
     default:
         rsp.send(Http::Code::Internal_Server_Error);
@@ -544,15 +547,21 @@ api::api_reply handler::submit_request(api::api_request&& request)
     if (auto error = api::send_message(
             socket.get(), api::serialize(std::forward<api_request>(request)));
         error != 0) {
-        return api::reply::error{.type = api::reply::error::ZMQ_ERROR,
-                                 .value = error};
+        api::reply::error::error_data data{.type = api::reply::error::ZMQ_ERROR,
+                                           .value = error};
+
+        return api::reply::error{
+            std::make_unique<api::reply::error::error_data>(std::move(data))};
     }
 
     auto reply =
         api::recv_message(socket.get()).and_then(api::deserialize_reply);
     if (!reply) {
-        return api::reply::error{.type = api::reply::error::ZMQ_ERROR,
-                                 .value = reply.error()};
+        api::reply::error::error_data data{.type = api::reply::error::ZMQ_ERROR,
+                                           .value = reply.error()};
+
+        return api::reply::error{
+            std::make_unique<api::reply::error::error_data>(std::move(data))};
     }
 
     return std::move(*reply);

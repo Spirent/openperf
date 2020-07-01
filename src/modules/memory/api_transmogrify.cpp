@@ -156,13 +156,13 @@ serialized_msg serialize(api_reply&& msg)
                                return zmq_msg_init(&serialized.data,
                                                    std::move(item.data));
                            },
+                           [&](reply::error& error) {
+                               return zmq_msg_init(&serialized.data,
+                                                   std::move(error.data));
+                           },
                            [&](const reply::info& info) {
                                return zmq_msg_init(
                                    &serialized.data, &info, sizeof(info));
-                           },
-                           [&](const reply::error& error) {
-                               return zmq_msg_init(
-                                   &serialized.data, &error, sizeof(error));
                            },
                            [&](const message&) {
                                return zmq_msg_init(&serialized.data);
@@ -294,10 +294,17 @@ tl::expected<api_reply, int> deserialize_reply(const serialized_msg& msg)
     switch (idx) {
     case utils::variant_index<api_reply, reply::ok>():
         return reply::ok{};
-    case utils::variant_index<api_reply, reply::error>():
-        return *zmq_msg_data<reply::error*>(&msg.data);
     case utils::variant_index<api_reply, reply::info>():
         return *zmq_msg_data<reply::info*>(&msg.data);
+    case utils::variant_index<api_reply, reply::error>(): {
+        if (zmq_msg_size(&msg.data)) {
+            reply::error reply{};
+            reply.data.reset(
+                *zmq_msg_data<reply::error::error_data**>(&msg.data));
+            return reply;
+        }
+        return reply::error{};
+    }
     case utils::variant_index<api_reply, reply::generator::item>(): {
         if (zmq_msg_size(&msg.data)) {
             reply::generator::item reply{};
