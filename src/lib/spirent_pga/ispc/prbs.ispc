@@ -386,38 +386,48 @@ export uniform unsigned int64 verify_prbs_aligned(const uniform unsigned int32 p
 {
     unsigned int32 bit_errors = 0;
 
-    bool prbs_sync = false;
+    uniform bool prbs_sync = false;
     unsigned int32 curr_seed = expected;
     unsigned int32 next_seed = prbs_next(expected, programIndex);
+    uniform int offset = 0;
 
-    foreach (i = 0 ... length ) {
-        /* XOR the expected payload with our actual payload to determine bit errors */
-        int loop_errors = popcount32(to_payload(curr_seed, next_seed) ^ ntohl(payload[i]));
-        bit_errors += loop_errors;
+    /* Attempt to sync to the payload data */
+    do {
+        int index = offset + programIndex;
+        cif (index < length) {
+            /* XOR the expected payload with our actual payload to determine bit errors */
+            int loop_errors = popcount32(to_payload(curr_seed, next_seed) ^ ntohl(payload[index]));
+            bit_errors += loop_errors;
 
-        /*
-         * We assume we have found the proper PRBS sequence when our payload
-         * matches the expected data for all lanes.
-         */
-        cif (!prbs_sync) {
-            prbs_sync = none(loop_errors);
-        }
+            offset += programCount;
 
-        /*
-         * If we haven't found the proper PRBS pattern yet, use the payload
-         * data as the seed value.  Otherwise, crank the existing seed through
-         * the PRBS machinery.
-         */
-        cif (!prbs_sync) {
-            uniform int base = reduce_max(i) + 1;
-            if (base < length) {
-                curr_seed = ~ntohl(payload[base]);
-                next_seed = prbs_next(~ntohl(payload[base]), programIndex);
+            /*
+             * We assume we have found the proper PRBS sequence when
+             * our payload matches the expected data for all lanes.
+             *
+             * However, if we haven't found a matching PRBS pattern
+             * yet continue to use the payload as the seed
+             * value. Otherwise, crank the matching seed through the
+             * PRBS machinery to get the next values.
+             */
+            if (!(prbs_sync = none(loop_errors))) {
+                uniform int base = reduce_max(index) + 1;
+                if (base < length) {
+                    curr_seed = ~ntohl(payload[base]);
+                    next_seed = prbs_next(~ntohl(payload[base]), programIndex);
+                }
+            } else {
+                curr_seed = next_seed;
+                next_seed = prbs_step(next_seed);
             }
-        } else {
-            curr_seed = next_seed;
-            next_seed = prbs_step(next_seed);
         }
+    } while (!prbs_sync && offset < length);
+
+    /* Once we are synced, we can blast through the remaining payload */
+    foreach (i = offset ... length ) {
+        bit_errors += popcount32(to_payload(curr_seed, next_seed) ^ ntohl(payload[i]));
+        curr_seed = next_seed;
+        next_seed = prbs_step(next_seed);
     }
 
     /* The last active lane contains the seed we need to return. */
