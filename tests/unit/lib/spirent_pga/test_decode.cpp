@@ -6,44 +6,83 @@
 
 /*
  * Verify that we can decode data captured from Spirent hardware.
- * Note: the signature encode and decode tests verify that the decoded
- * data matches the encoded data and that all implementations match each
- * other. Hence, this single test is sufficient to verify that all of the
- * encode/decode functions work correctly (via transitivity).
  */
 TEST_CASE("FPGA decode", "[spirent-pga]")
 {
-    constexpr uint8_t sig1[] = {0xe7, 0x0a, 0xfe, 0x2f, 0x4a, 0x96, 0x3d,
-                                0xa5, 0x34, 0x27, 0x5e, 0xd9, 0xab, 0x7f,
-                                0xb0, 0x5b, 0x7d, 0x5e, 0x99, 0xcf};
-    constexpr uint8_t sig2[] = {0xe6, 0x7b, 0x20, 0x03, 0x92, 0xef, 0xff,
-                                0x1a, 0xff, 0xf5, 0xd9, 0x34, 0x42, 0xd2,
-                                0xd5, 0x0a, 0x36, 0x87, 0x2c, 0x93};
-    constexpr uint8_t sig3[] = {0xe5, 0xe9, 0x42, 0x76, 0xfa, 0x65, 0xb8,
-                                0xda, 0xa3, 0x82, 0x51, 0x02, 0x28, 0x75,
-                                0x7b, 0xf8, 0xe2, 0x09, 0x52, 0xa4};
+    /*
+     * Note: the signature encode and decode tests verify that the
+     * decoded data matches the encoded data and that all
+     * implementations match each other. Hence, this single test is
+     * sufficient to verify that all of the encode/decode functions
+     * work correctly (via transitivity).
+     */
+    SECTION("signatures")
+    {
+        constexpr uint8_t sig1[] = {0xe7, 0x0a, 0xfe, 0x2f, 0x4a, 0x96, 0x3d,
+                                    0xa5, 0x34, 0x27, 0x5e, 0xd9, 0xab, 0x7f,
+                                    0xb0, 0x5b, 0x7d, 0x5e, 0x99, 0xcf};
+        constexpr uint8_t sig2[] = {0xe6, 0x7b, 0x20, 0x03, 0x92, 0xef, 0xff,
+                                    0x1a, 0xff, 0xf5, 0xd9, 0x34, 0x42, 0xd2,
+                                    0xd5, 0x0a, 0x36, 0x87, 0x2c, 0x93};
+        constexpr uint8_t sig3[] = {0xe5, 0xe9, 0x42, 0x76, 0xfa, 0x65, 0xb8,
+                                    0xda, 0xa3, 0x82, 0x51, 0x02, 0x28, 0x75,
+                                    0x7b, 0xf8, 0xe2, 0x09, 0x52, 0xa4};
 
-    constexpr auto nb_sigs = 3;
-    auto signatures = std::array<const uint8_t*, nb_sigs>{sig1, sig2, sig3};
+        constexpr auto nb_sigs = 3;
+        auto signatures = std::array<const uint8_t*, nb_sigs>{sig1, sig2, sig3};
 
-    auto matches = std::array<int, nb_sigs>{};
+        auto matches = std::array<int, nb_sigs>{};
 
-    auto nb_matches =
-        pga_signatures_crc_filter(signatures.data(), nb_sigs, matches.data());
+        auto nb_matches = pga_signatures_crc_filter(
+            signatures.data(), nb_sigs, matches.data());
 
-    REQUIRE(nb_matches == nb_sigs);
+        REQUIRE(nb_matches == nb_sigs);
 
-    auto stream_ids = std::array<uint32_t, nb_sigs>{};
-    auto sequence_numbers = std::array<uint32_t, nb_sigs>{};
-    auto timestamps = std::array<uint64_t, nb_sigs>{};
-    auto flags = std::array<int, nb_sigs>{};
+        auto stream_ids = std::array<uint32_t, nb_sigs>{};
+        auto sequence_numbers = std::array<uint32_t, nb_sigs>{};
+        auto timestamps = std::array<uint64_t, nb_sigs>{};
+        auto flags = std::array<int, nb_sigs>{};
 
-    auto nb_decodes = pga_signatures_decode(signatures.data(),
-                                            nb_sigs,
-                                            stream_ids.data(),
-                                            sequence_numbers.data(),
-                                            timestamps.data(),
-                                            flags.data());
+        auto nb_decodes = pga_signatures_decode(signatures.data(),
+                                                nb_sigs,
+                                                stream_ids.data(),
+                                                sequence_numbers.data(),
+                                                timestamps.data(),
+                                                flags.data());
 
-    REQUIRE(nb_decodes == nb_sigs);
+        REQUIRE(nb_decodes == nb_sigs);
+    }
+
+    /* Same note applies to this PRBS test. */
+    SECTION("PRBS")
+    {
+        constexpr uint8_t payload1[] = {
+            0xab, 0x25, 0xe2, 0x60, 0xcc, 0xa3, 0x0d, 0x4e, 0x7a, 0xb6,
+            0xfd, 0xa7, 0x2d, 0x6d, 0x7a, 0xfe, 0x7b, 0xb5, 0x9d, 0xe5,
+            0xf3, 0xbd, 0x48, 0xf7, 0xd7, 0x53, 0xe5, 0x85, 0xa1, 0x55,
+            0x9c, 0xe8, 0x33, 0xfc, 0x23, 0x67, 0x0f, 0x60, 0xf2, 0x39,
+            0x02, 0x95, 0xcd, 0x5f, 0xa7, 0x32, 0xa9, 0x7d, 0x30, 0xf2,
+            0x49, 0xa2, 0x89, 0x04, 0x18, 0xac, 0xf1, 0xe5, 0x9a, 0x65,
+            0x52, 0x52, 0x61, 0xcf, 0xc3, 0x4f, 0x90, 0xaa, 0x84, 0xf4};
+
+        constexpr uint8_t payload2[] = {
+            0x7b, 0xaa, 0x59, 0xe2, 0x3d, 0x34, 0xb4, 0xc8, 0xbb, 0xa4,
+            0x40, 0x61, 0xa7, 0x67, 0x55, 0x68, 0xe4, 0x0f, 0x17, 0x34,
+            0x24, 0x1c, 0x9e, 0xb0, 0xe1, 0x6e, 0xa6, 0x66, 0x8b, 0x2a,
+            0x90, 0x23, 0x0e, 0xd7, 0x7a, 0x57, 0x8f, 0x9e, 0xb3, 0x07,
+            0x6e, 0x58, 0x2a, 0xb5, 0x45, 0x07, 0xc4, 0x34, 0x01, 0x7a,
+            0x97, 0xa3, 0xaf, 0x38, 0x53, 0x6f, 0x9b, 0x82, 0xc6, 0x28,
+            0x4b, 0xf9, 0xbd, 0x96, 0x63, 0xe1, 0x4b, 0xc0, 0x6f, 0x98};
+
+        constexpr auto nb_payloads = 2;
+        auto payloads =
+            std::array<const uint8_t*, nb_payloads>{payload1, payload2};
+        auto lengths = std::array<uint16_t, nb_payloads>{sizeof(payload1),
+                                                         sizeof(payload2)};
+        auto bit_errors = std::array<uint32_t, nb_payloads>{};
+
+        auto errors = pga_verify_prbs(
+            payloads.data(), lengths.data(), nb_payloads, bit_errors.data());
+        REQUIRE(!errors);
+    }
 }

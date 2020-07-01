@@ -30,33 +30,25 @@ uint32_t prbs(const uint8_t payload[], uint16_t length)
      * some of the leading unaligned data to help generate the seed value.
      */
     uint16_t idx = 0;
-    uint32_t seed = 0;
+    uint32_t seed =
+        ~(payload[0] << 24 | payload[1] << 16 | payload[2] << 8 | payload[3]);
 
     switch (reinterpret_cast<uintptr_t>(payload) & 0x3) {
-    case 0: {
-        seed = ~(payload[3] << 24 | payload[2] << 16 | payload[1] << 8
-                 | payload[0]);
-        break;
-    }
+    case 0:
+        break; /* nothing to do */
     case 1: {
-        seed = ~(payload[2] << 24 | payload[1] << 16 | payload[0] << 8
-                 | payload[6]);
         auto next = prbs::step(seed);
         seed = seed << 24 | next >> 8;
         idx += 3;
         break;
     }
     case 2: {
-        seed = ~(payload[1] << 24 | payload[0] << 16 | payload[5] << 8
-                 | payload[4]);
         auto next = prbs::step(seed);
         seed = seed << 16 | next >> 16;
         idx += 2;
         break;
     }
     case 3: {
-        seed = ~(payload[0] << 24 | payload[4] << 16 | payload[3] << 8
-                 | payload[2]);
         auto next = prbs::step(seed);
         seed = seed << 8 | next >> 24;
         idx += 1;
@@ -76,18 +68,20 @@ uint32_t prbs(const uint8_t payload[], uint16_t length)
      */
     idx += aligned_length * 4;
     switch ((length - idx) & 0x3) {
+    case 0:
+        break; /* nothing to do */
     case 1:
         results.bit_errors +=
-            __builtin_popcount((~results.seed & 0xff) ^ payload[idx]);
+            __builtin_popcount((~results.seed >> 24) ^ payload[idx]);
         break;
     case 2:
         results.bit_errors += __builtin_popcount(
-            (~results.seed & 0xffff) ^ (payload[idx] | payload[idx + 1] << 8));
+            (~results.seed >> 16) ^ (payload[idx] << 8 | payload[idx + 1]));
         break;
     case 3:
         results.bit_errors += __builtin_popcount(
-            (~results.seed & 0xffffff)
-            ^ (payload[idx] | payload[idx + 1] << 8 | payload[idx + 2] << 16));
+            (~results.seed >> 8)
+            ^ (payload[idx] << 16 | payload[idx + 1] << 8 | payload[idx + 2]));
         break;
     }
 
