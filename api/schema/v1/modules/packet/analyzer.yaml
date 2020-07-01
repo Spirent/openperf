@@ -662,6 +662,29 @@ definitions:
         required:
           - summary
           - units
+      prbs:
+        type: object
+        description: PRBS bit error results
+        properties:
+          bit_errors:
+            type: integer
+            description: Number of PRBS bit errors detected
+            format: int64
+            minimum: 0
+          frame_errors:
+            type: integer
+            description: Number of packets with PRBS bit errors detected
+            format: int64
+            minimum: 0
+          octets:
+            type: integer
+            description: Number of PRBS octets checked
+            format: int64
+            minimum: 0
+        required:
+          - frames
+          - octets
+          - bit_errors
       sequence:
         type: object
         description: Advanced Sequencing result counters

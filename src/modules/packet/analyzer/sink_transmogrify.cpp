@@ -140,12 +140,13 @@ inline void copy_flow_counters(const statistics::generic_flow_counters& src,
     do {
         dst.get<frame_counter>() = src_frames;
         maybe_copy_counter_tuple<errors>(src, dst);
-        maybe_copy_counter_tuple<sequencing>(src, dst);
         maybe_copy_counter_tuple<frame_length>(src, dst);
         maybe_copy_counter_tuple<interarrival>(src, dst);
         maybe_copy_counter_tuple<jitter_ipdv>(src, dst);
         maybe_copy_counter_tuple<jitter_rfc>(src, dst);
         maybe_copy_counter_tuple<latency>(src, dst);
+        maybe_copy_counter_tuple<prbs>(src, dst);
+        maybe_copy_counter_tuple<sequencing>(src, dst);
     } while (dst.get<frame_counter>().count != src_frames.count);
 
     maybe_copy_counter_tuple<header>(src, dst);
@@ -164,6 +165,15 @@ inline void add_flow_counters(const statistics::generic_flow_counters& x,
         sum_errors.ipv4_checksum += x_errors.ipv4_checksum;
         sum_errors.tcp_checksum += x_errors.tcp_checksum;
         sum_errors.udp_checksum += x_errors.udp_checksum;
+    }
+
+    if (x.holds<flow::prbs>()) {
+        auto& sum_prbs = sum.get<flow::prbs>();
+        const auto& x_prbs = x.get<flow::prbs>();
+
+        sum_prbs.bit_errors += x_prbs.bit_errors;
+        sum_prbs.frame_errors += x_prbs.frame_errors;
+        sum_prbs.octets += x_prbs.octets;
     }
 
     if (x.holds<flow::sequencing>()) {
@@ -382,19 +392,24 @@ static void populate_counters(
         s_dst->setTcpChecksum(s_src.tcp_checksum);
         s_dst->setUdpChecksum(s_src.udp_checksum);
     }
-    if (src.holds<flow::sequencing>()) {
-        const auto& s_src = src.get<flow::sequencing>();
+    if (src.holds<flow::frame_length>()) {
         auto s_dst = std::make_shared<
-            swagger::v1::model::PacketAnalyzerFlowCounters_sequence>();
+            swagger::v1::model::PacketAnalyzerFlowCounters_frame_length>();
 
-        s_dst->setDropped(s_src.dropped);
-        s_dst->setDuplicate(s_src.duplicate);
-        s_dst->setLate(s_src.late);
-        s_dst->setReordered(s_src.reordered);
-        s_dst->setInOrder(s_src.in_order);
-        s_dst->setRunLength(s_src.run_length);
+        s_dst->setSummary(
+            to_swagger(src.get<flow::frame_length>(), frame_count.count));
+        s_dst->setUnits(octets);
 
-        dst->setSequence(s_dst);
+        dst->setFrameLength(s_dst);
+    }
+    if (src.holds<flow::header>()) {
+        auto view = flow::header_view(src.get<flow::header>());
+        auto&& s_dst = dst->getHeaders();
+
+        std::transform(std::begin(view),
+                       std::end(view),
+                       std::back_inserter(s_dst),
+                       [](const auto& item) { return (to_swagger(item)); });
     }
     if (src.holds<flow::interarrival>()) {
         auto s_dst = std::make_shared<
@@ -405,16 +420,6 @@ static void populate_counters(
         s_dst->setUnits(ns);
 
         dst->setInterarrival(s_dst);
-    }
-    if (src.holds<flow::frame_length>()) {
-        auto s_dst = std::make_shared<
-            swagger::v1::model::PacketAnalyzerFlowCounters_frame_length>();
-
-        s_dst->setSummary(
-            to_swagger(src.get<flow::frame_length>(), frame_count.count));
-        s_dst->setUnits(octets);
-
-        dst->setFrameLength(s_dst);
     }
     if (src.holds<flow::jitter_ipdv>()) {
         auto s_dst = std::make_shared<
@@ -446,14 +451,30 @@ static void populate_counters(
 
         dst->setLatency(s_dst);
     }
-    if (src.holds<flow::header>()) {
-        auto view = flow::header_view(src.get<flow::header>());
-        auto&& s_dst = dst->getHeaders();
+    if (src.holds<flow::prbs>()) {
+        const auto& s_src = src.get<flow::prbs>();
+        auto s_dst = std::make_shared<
+            swagger::v1::model::PacketAnalyzerFlowCounters_prbs>();
 
-        std::transform(std::begin(view),
-                       std::end(view),
-                       std::back_inserter(s_dst),
-                       [](const auto& item) { return (to_swagger(item)); });
+        s_dst->setBitErrors(s_src.bit_errors);
+        s_dst->setFrameErrors(s_src.frame_errors);
+        s_dst->setOctets(s_src.octets);
+
+        dst->setPrbs(s_dst);
+    }
+    if (src.holds<flow::sequencing>()) {
+        const auto& s_src = src.get<flow::sequencing>();
+        auto s_dst = std::make_shared<
+            swagger::v1::model::PacketAnalyzerFlowCounters_sequence>();
+
+        s_dst->setDropped(s_src.dropped);
+        s_dst->setDuplicate(s_src.duplicate);
+        s_dst->setLate(s_src.late);
+        s_dst->setReordered(s_src.reordered);
+        s_dst->setInOrder(s_src.in_order);
+        s_dst->setRunLength(s_src.run_length);
+
+        dst->setSequence(s_dst);
     }
 }
 

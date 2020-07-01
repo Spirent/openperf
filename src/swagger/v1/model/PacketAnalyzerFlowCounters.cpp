@@ -26,6 +26,7 @@ PacketAnalyzerFlowCounters::PacketAnalyzerFlowCounters()
     m_Jitter_ipdvIsSet = false;
     m_Jitter_rfcIsSet = false;
     m_LatencyIsSet = false;
+    m_PrbsIsSet = false;
     m_SequenceIsSet = false;
     m_Frame_count = 0L;
     m_Timestamp_first = "";
@@ -83,6 +84,10 @@ nlohmann::json PacketAnalyzerFlowCounters::toJson() const
     if(m_LatencyIsSet)
     {
         val["latency"] = ModelBase::toJson(m_Latency);
+    }
+    if(m_PrbsIsSet)
+    {
+        val["prbs"] = ModelBase::toJson(m_Prbs);
     }
     if(m_SequenceIsSet)
     {
@@ -183,6 +188,16 @@ void PacketAnalyzerFlowCounters::fromJson(nlohmann::json& val)
             std::shared_ptr<PacketAnalyzerFlowCounters_latency> newItem(new PacketAnalyzerFlowCounters_latency());
             newItem->fromJson(val["latency"]);
             setLatency( newItem );
+        }
+        
+    }
+    if(val.find("prbs") != val.end())
+    {
+        if(!val["prbs"].is_null())
+        {
+            std::shared_ptr<PacketAnalyzerFlowCounters_prbs> newItem(new PacketAnalyzerFlowCounters_prbs());
+            newItem->fromJson(val["prbs"]);
+            setPrbs( newItem );
         }
         
     }
@@ -324,6 +339,23 @@ bool PacketAnalyzerFlowCounters::latencyIsSet() const
 void PacketAnalyzerFlowCounters::unsetLatency()
 {
     m_LatencyIsSet = false;
+}
+std::shared_ptr<PacketAnalyzerFlowCounters_prbs> PacketAnalyzerFlowCounters::getPrbs() const
+{
+    return m_Prbs;
+}
+void PacketAnalyzerFlowCounters::setPrbs(std::shared_ptr<PacketAnalyzerFlowCounters_prbs> value)
+{
+    m_Prbs = value;
+    m_PrbsIsSet = true;
+}
+bool PacketAnalyzerFlowCounters::prbsIsSet() const
+{
+    return m_PrbsIsSet;
+}
+void PacketAnalyzerFlowCounters::unsetPrbs()
+{
+    m_PrbsIsSet = false;
 }
 std::shared_ptr<PacketAnalyzerFlowCounters_sequence> PacketAnalyzerFlowCounters::getSequence() const
 {

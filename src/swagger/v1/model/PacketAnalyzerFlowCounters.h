@@ -24,6 +24,7 @@
 #include "PacketAnalyzerFlowCounters_jitter_ipdv.h"
 #include "PacketAnalyzerFlowCounters_sequence.h"
 #include "PacketAnalyzerFlowCounters_errors.h"
+#include "PacketAnalyzerFlowCounters_prbs.h"
 #include "PacketAnalyzerFlowCounters_jitter_rfc.h"
 #include "PacketAnalyzerFlowCounters_interarrival.h"
 #include <string>
@@ -108,6 +109,13 @@ public:
     /// <summary>
     /// 
     /// </summary>
+    std::shared_ptr<PacketAnalyzerFlowCounters_prbs> getPrbs() const;
+    void setPrbs(std::shared_ptr<PacketAnalyzerFlowCounters_prbs> value);
+    bool prbsIsSet() const;
+    void unsetPrbs();
+    /// <summary>
+    /// 
+    /// </summary>
     std::shared_ptr<PacketAnalyzerFlowCounters_sequence> getSequence() const;
     void setSequence(std::shared_ptr<PacketAnalyzerFlowCounters_sequence> value);
     bool sequenceIsSet() const;
@@ -147,6 +155,8 @@ protected:
     bool m_Jitter_rfcIsSet;
     std::shared_ptr<PacketAnalyzerFlowCounters_latency> m_Latency;
     bool m_LatencyIsSet;
+    std::shared_ptr<PacketAnalyzerFlowCounters_prbs> m_Prbs;
+    bool m_PrbsIsSet;
     std::shared_ptr<PacketAnalyzerFlowCounters_sequence> m_Sequence;
     bool m_SequenceIsSet;
     int64_t m_Frame_count;

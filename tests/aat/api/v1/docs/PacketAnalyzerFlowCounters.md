@@ -10,6 +10,7 @@ Name | Type | Description | Notes
 **jitter_ipdv** | [**PacketAnalyzerFlowCountersJitterIpdv**](PacketAnalyzerFlowCountersJitterIpdv.md) |  | [optional] 
 **jitter_rfc** | [**PacketAnalyzerFlowCountersJitterRfc**](PacketAnalyzerFlowCountersJitterRfc.md) |  | [optional] 
 **latency** | [**PacketAnalyzerFlowCountersLatency**](PacketAnalyzerFlowCountersLatency.md) |  | [optional] 
+**prbs** | [**PacketAnalyzerFlowCountersPrbs**](PacketAnalyzerFlowCountersPrbs.md) |  | [optional] 
 **sequence** | [**PacketAnalyzerFlowCountersSequence**](PacketAnalyzerFlowCountersSequence.md) |  | [optional] 
 **frame_count** | **int** | Number of received packets | 
 **timestamp_first** | **datetime** | Timestamp of first received packet | [optional] 

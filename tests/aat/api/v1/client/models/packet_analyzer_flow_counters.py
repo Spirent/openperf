@@ -38,6 +38,7 @@ class PacketAnalyzerFlowCounters(object):
         'jitter_ipdv': 'PacketAnalyzerFlowCountersJitterIpdv',
         'jitter_rfc': 'PacketAnalyzerFlowCountersJitterRfc',
         'latency': 'PacketAnalyzerFlowCountersLatency',
+        'prbs': 'PacketAnalyzerFlowCountersPrbs',
         'sequence': 'PacketAnalyzerFlowCountersSequence',
         'frame_count': 'int',
         'timestamp_first': 'datetime',
@@ -52,13 +53,14 @@ class PacketAnalyzerFlowCounters(object):
         'jitter_ipdv': 'jitter_ipdv',
         'jitter_rfc': 'jitter_rfc',
         'latency': 'latency',
+        'prbs': 'prbs',
         'sequence': 'sequence',
         'frame_count': 'frame_count',
         'timestamp_first': 'timestamp_first',
         'timestamp_last': 'timestamp_last'
     }
 
-    def __init__(self, errors=None, headers=None, frame_length=None, interarrival=None, jitter_ipdv=None, jitter_rfc=None, latency=None, sequence=None, frame_count=None, timestamp_first=None, timestamp_last=None):  # noqa: E501
+    def __init__(self, errors=None, headers=None, frame_length=None, interarrival=None, jitter_ipdv=None, jitter_rfc=None, latency=None, prbs=None, sequence=None, frame_count=None, timestamp_first=None, timestamp_last=None):  # noqa: E501
         """PacketAnalyzerFlowCounters - a model defined in Swagger"""  # noqa: E501
 
         self._errors = None
@@ -68,6 +70,7 @@ class PacketAnalyzerFlowCounters(object):
         self._jitter_ipdv = None
         self._jitter_rfc = None
         self._latency = None
+        self._prbs = None
         self._sequence = None
         self._frame_count = None
         self._timestamp_first = None
@@ -88,6 +91,8 @@ class PacketAnalyzerFlowCounters(object):
             self.jitter_rfc = jitter_rfc
         if latency is not None:
             self.latency = latency
+        if prbs is not None:
+            self.prbs = prbs
         if sequence is not None:
             self.sequence = sequence
         self.frame_count = frame_count
@@ -237,6 +242,26 @@ class PacketAnalyzerFlowCounters(object):
         :type: PacketAnalyzerFlowCountersLatency
         """
         self._latency = latency
+
+    @property
+    def prbs(self):
+        """Gets the prbs of this PacketAnalyzerFlowCounters.  # noqa: E501
+
+
+        :return: The prbs of this PacketAnalyzerFlowCounters.  # noqa: E501
+        :rtype: PacketAnalyzerFlowCountersPrbs
+        """
+        return self._prbs
+
+    @prbs.setter
+    def prbs(self, prbs):
+        """Sets the prbs of this PacketAnalyzerFlowCounters.
+
+
+        :param prbs: The prbs of this PacketAnalyzerFlowCounters.  # noqa: E501
+        :type: PacketAnalyzerFlowCountersPrbs
+        """
+        self._prbs = prbs
 
     @property
     def sequence(self):
