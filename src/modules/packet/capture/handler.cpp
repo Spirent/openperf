@@ -428,10 +428,6 @@ void handler::bulk_create_captures(const request_type& request,
                               id_errors.emplace_back(res.error());
                           }
                       }
-                      OP_LOG(OP_LOG_ERROR,
-                             "bulk_create_captures() id=%s source=%s",
-                             capture->getId().c_str(),
-                             capture->getSourceId().c_str());
                   });
     if (!id_errors.empty()) {
         response.send(Http::Code::Not_Found, concatenate(id_errors));
