@@ -45,6 +45,11 @@ def capture_model(api_client, id = None, buffer_size=16*1024*1024):
 
     return capture
 
+def capture_models(api_client, buffer_size=16*1024*1024):
+    cap1 = capture_model(api_client, get_nth_port_id(api_client, 0), buffer_size)
+    cap2 = capture_model(api_client, get_nth_port_id(api_client, 1), buffer_size)
+    return [cap1, cap2]
+
 def get_interface_address(api_client, interface_id, domain):
     intf = api_client.get_interface(interface_id)
     if domain == socket.AF_INET:
@@ -532,6 +537,144 @@ with description('Packet Capture,', 'packet_capture') as self:
             with description('live,'):
                 with _it('TODO'):
                     assert False
+
+        with description('bulk operations,'):
+            with description('bulk create,'):
+                with description('valid request,'):
+                    with it('succeeds'):
+                        request = client.models.BulkCreatePacketCapturesRequest()
+                        request.items = capture_models(self.api.api_client)
+                        reply = self.api.bulk_create_packet_captures(request)
+                        expect(reply.items).to(have_len(len(request.items)))
+                        for item in reply.items:
+                            expect(item).to(be_valid_packet_capture)
+
+                with description('invalid requests,'):
+                    with it('returns 400 for invalid config'):
+                        request = client.models.BulkCreatePacketCapturesRequest()
+                        request.items = capture_models(self.api.api_client)
+                        request.items[-1].config.buffer_size = 1
+                        expect(lambda: self.api.bulk_create_packet_captures(request)).to(raise_api_exception(400))
+                        expect(self.api.list_packet_captures()).to(be_empty)
+
+                    with it('returns 404 for invalid id'):
+                        request = client.models.BulkCreatePacketCapturesRequest()
+                        request.items = capture_models(self.api.api_client)
+                        request.items[-1].id = 'cool::name'
+                        expect(lambda: self.api.bulk_create_packet_captures(request)).to(raise_api_exception(404))
+                        expect(self.api.list_packet_captures()).to(be_empty)
+
+            with description('bulk delete,'):
+                with before.each:
+                    request = client.models.BulkCreatePacketCapturesRequest()
+                    request.items = capture_models(self.api.api_client)
+                    reply = self.api.bulk_create_packet_captures(request)
+                    expect(reply.items).to(have_len(len(request.items)))
+                    for item in reply.items:
+                        expect(item).to(be_valid_packet_capture)
+
+                with description('valid request,'):
+                    with it('succeeds'):
+                        self.api.bulk_delete_packet_captures(
+                            client.models.BulkDeletePacketCapturesRequest(
+                                [cap.id for cap in self.api.list_packet_captures()]))
+                        expect(self.api.list_packet_captures()).to(be_empty)
+
+                with description('invalid requests,'):
+                    with it('succeeds with a non-existent id'):
+                        self.api.bulk_delete_packet_captures(
+                            client.models.BulkDeletePacketCapturesRequest(
+                                [cap.id for cap in self.api.list_packet_captures()] + ['foo']))
+                        expect(self.api.list_packet_captures()).to(be_empty)
+
+                    with it('returns 404 for an invalid id'):
+                        expect(lambda: self.api.bulk_delete_packet_captures(
+                            client.models.BulkDeletePacketCapturesRequest(
+                                [cap.id for cap in self.api.list_packet_captures()] + ['::bar']))).to(
+                                    raise_api_exception(404))
+                        expect(self.api.list_packet_captures()).not_to(be_empty)
+
+            with description('bulk start,'):
+                with before.each:
+                    request = client.models.BulkCreatePacketCapturesRequest()
+                    request.items = capture_models(self.api.api_client)
+                    reply = self.api.bulk_create_packet_captures(request)
+                    expect(reply.items).to(have_len(len(request.items)))
+                    for item in reply.items:
+                        expect(item).to(be_valid_packet_capture)
+
+                with description('valid request'):
+                    with it('succeeds'):
+                        reply = self.api.bulk_start_packet_captures(
+                            client.models.BulkStartPacketCapturesRequest(
+                                [cap.id for cap in self.api.list_packet_captures()]))
+                        expect(reply.items).to(have_len(len(self.api.list_packet_captures())))
+                        for item in reply.items:
+                            expect(item).to(be_valid_packet_capture_result)
+                            expect(item.active).to(be_true)
+
+                with description('invalid requests,'):
+                    with it('returns 404 for non-existing id'):
+                        expect(lambda: self.api.bulk_start_packet_captures(
+                            client.models.BulkStartPacketCapturesRequest(
+                                [cap.id for cap in self.api.list_packet_captures()] + ['foo']))).to(
+                                    raise_api_exception(404))
+                        for cap in self.api.list_packet_captures():
+                            expect(cap.active).to(be_false)
+
+                    with it('returns 404 for invalid id'):
+                        expect(lambda: self.api.bulk_start_packet_captures(
+                            client.models.BulkStartPacketCapturesRequest(
+                                [cap.id for cap in self.api.list_packet_captures()] + ['::bar']))).to(
+                                    raise_api_exception(404))
+                        for cap in self.api.list_packet_captures():
+                            expect(cap.active).to(be_false)
+
+            with description('bulk stop,'):
+                with before.each:
+                    create_request = client.models.BulkCreatePacketCapturesRequest()
+                    create_request.items = capture_models(self.api.api_client)
+                    create_reply = self.api.bulk_create_packet_captures(create_request)
+                    expect(create_reply.items).to(have_len(len(create_request.items)))
+                    for item in create_reply.items:
+                        expect(item).to(be_valid_packet_capture)
+                    start_reply = self.api.bulk_start_packet_captures(
+                        client.models.BulkStartPacketCapturesRequest(
+                            [cap.id for cap in create_reply.items]))
+                    expect(start_reply.items).to(have_len(len(create_request.items)))
+                    for item in start_reply.items:
+                        expect(item).to(be_valid_packet_capture_result)
+                        expect(item.active).to(be_true)
+
+                with description('valid request,'):
+                    with it('succeeds'):
+                        self.api.bulk_stop_packet_captures(
+                            client.models.BulkStopPacketCapturesRequest(
+                                [cap.id for cap in self.api.list_packet_captures()]))
+                        captures = self.api.list_packet_captures()
+                        expect(captures).not_to(be_empty)
+                        for cap in captures:
+                            expect(cap.active).to(be_false)
+
+                with description('invalid requests,'):
+                    with it('succeeds with a non-existent id'):
+                        self.api.bulk_stop_packet_captures(
+                            client.models.BulkStopPacketCapturesRequest(
+                                [cap.id for cap in self.api.list_packet_captures()] + ['foo']))
+                        captures = self.api.list_packet_captures()
+                        expect(captures).not_to(be_empty)
+                        for cap in captures:
+                            expect(cap.active).to(be_false)
+
+                    with it('returns 404 for an invalid id'):
+                        expect(lambda: self.api.bulk_stop_packet_captures(
+                            client.models.BulkStopPacketCapturesRequest(
+                                [cap.id for cap in self.api.list_packet_captures()] + ['::bar']))).to(
+                                    raise_api_exception(404))
+                        captures = self.api.list_packet_captures()
+                        expect(captures).not_to(be_empty)
+                        for cap in captures:
+                            expect(cap.active).to(be_true)
 
         with after.each:
             if hasattr(self, 'api'):
