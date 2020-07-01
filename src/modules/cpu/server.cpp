@@ -121,16 +121,18 @@ reply_msg server::handle_request(const request_cpu_generator_start& request)
     if (!m_generator_stack.generator(request.data->id))
         return to_error(api::error_type::NOT_FOUND);
 
-    auto result = m_generator_stack.start_generator(
-        request.data->id, request.data->dynamic_results);
-    if (!result)
-        return to_error(api::error_type::CUSTOM_ERROR, 0, result.error());
+    try {
+        auto result = m_generator_stack.start_generator(
+            request.data->id, request.data->dynamic_results);
+        if (!result) throw std::runtime_error(result.error());
 
-    auto reply = reply_cpu_generator_results{};
-    reply.results.emplace_back(
-        std::make_unique<model::generator_result>(result.value()));
-
-    return reply;
+        auto reply = reply_cpu_generator_results{};
+        reply.results.emplace_back(
+            std::make_unique<model::generator_result>(result.value()));
+        return reply;
+    } catch (std::exception& e) {
+        return to_error(error_type::CUSTOM_ERROR, 0, e.what());
+    }
 }
 
 reply_msg server::handle_request(const request_cpu_generator_stop& request)
@@ -163,25 +165,26 @@ server::handle_request(const request_cpu_generator_bulk_start& request)
         }
     };
 
-    auto reply = reply_cpu_generator_results{};
-    for (const auto& id : request.data->ids) {
-        auto gen = m_generator_stack.generator(id);
-        if (gen->running()) continue;
+    try {
+        auto reply = reply_cpu_generator_results{};
+        for (const auto& id : request.data->ids) {
+            auto gen = m_generator_stack.generator(id);
+            if (gen->running()) continue;
 
-        auto stats = m_generator_stack.start_generator(
-            id, request.data->dynamic_results);
-        if (!stats) {
-            rollback();
-            return to_error(api::error_type::CUSTOM_ERROR, 0, stats.error());
+            auto stats = m_generator_stack.start_generator(
+                id, request.data->dynamic_results);
+            if (!stats) throw std::runtime_error(stats.error());
+
+            not_runned_before.push_front(std::make_pair(id, stats->id()));
+
+            reply.results.emplace_back(
+                std::make_unique<model::generator_result>(stats.value()));
         }
-
-        not_runned_before.push_front(std::make_pair(*id, stats->id()));
-
-        reply.results.emplace_back(
-            std::make_unique<model::generator_result>(stats.value()));
+        return reply;
+    } catch (std::exception& e) {
+        rollback();
+        return to_error(error_type::CUSTOM_ERROR, 0, e.what());
     }
-
-    return reply;
 }
 
 reply_msg server::handle_request(const request_cpu_generator_bulk_stop& request)

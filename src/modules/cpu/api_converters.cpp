@@ -155,6 +155,9 @@ to_swagger(const model::generator_result& result)
     gen->setActive(result.active());
     gen->setTimestamp(to_rfc3339(result.timestamp().time_since_epoch()));
     gen->setStats(cpu_stats);
+    gen->setDynamicResults(std::make_shared<swagger::DynamicResults>(
+        dynamic::to_swagger(result.dynamic_results())));
+
     return gen;
 }
 

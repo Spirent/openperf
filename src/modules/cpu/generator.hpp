@@ -4,7 +4,7 @@
 #include <atomic>
 
 #include "framework/generator/controller.hpp"
-#include "framework/dynamic/poller.hpp"
+#include "framework/dynamic/spool.hpp"
 
 #include "task_cpu.hpp"
 #include "models/generator.hpp"
@@ -24,7 +24,7 @@ private:
     cpu_stat m_stat;
     std::atomic<cpu_stat*> m_stat_ptr;
 
-    dynamic::poller m_dynamic;
+    dynamic::spool<cpu_stat> m_dynamic;
 
 public:
     generator(const model::generator&);
