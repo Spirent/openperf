@@ -16,10 +16,22 @@ poller::poller(poll_function&& function)
 
 void poller::configure(const dynamic::configuration& config)
 {
-    std::set<std::string> ids;
-
+    auto pollable = m_poll();
     m_thresholds.clear();
+    std::set<std::string> ids;
     for (const auto& item : config.thresholds) {
+        if (!item.argument.x.empty()) {
+            if (!pollable->has_field(item.argument.x))
+                throw std::domain_error("Argument x with name '"
+                                        + item.argument.x + "' not exists.");
+        }
+
+        if (!item.argument.y.empty()) {
+            if (!pollable->has_field(item.argument.y))
+                throw std::domain_error("Argument y with name '"
+                                        + item.argument.y + "' not exists.");
+        }
+
         auto id = item.id;
         if (id.empty()) id = core::to_string(core::uuid::random());
         if (auto check = config::op_config_validate_id_string(id); !check)
