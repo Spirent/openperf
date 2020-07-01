@@ -416,14 +416,6 @@ static void rx_interface_dispatch(const fib* fib,
         nb_to_stack = std::distance(to_stack.data(), to_stack_last);
         nb_to_free = std::distance(to_free.data(), to_free_last);
 
-        /*
-         * If we don't have hardware LRO support, try to coalesce some
-         * packets before handing them up the stack.
-         */
-        if (!(rxq->flags() & rx_feature_flags::hardware_lro)) {
-            nb_to_stack = rte_gro_reassemble_burst(
-                to_stack.data(), nb_to_stack, &gro_params);
-        }
     } else {
         auto [to_stack_last, to_free_last] =
             std::partition_copy(incoming,
@@ -447,15 +439,6 @@ static void rx_interface_dispatch(const fib* fib,
         nb_to_stack = std::distance(to_stack.data(), to_stack_last);
         nb_to_free = std::distance(to_free.data(), to_free_last);
 
-        /*
-         * If we don't have hardware LRO support, try to coalesce some
-         * packets before handing them up the stack.
-         */
-        if (!(rxq->flags() & rx_feature_flags::hardware_lro)) {
-            nb_to_stack = rte_gro_reassemble_burst(
-                to_stack.data(), nb_to_stack, &gro_params);
-        }
-
         // Resolve interface for packets
         auto [nb_resolved, nb_unresolved] =
             rx_resolve_interfaces(fib,
@@ -470,6 +453,15 @@ static void rx_interface_dispatch(const fib* fib,
 
     /* Hand any stack packets off to the stack... */
     if (nb_to_stack) {
+        /*
+         * If we don't have hardware LRO support, try to coalesce some
+         * packets before handing them up the stack.
+         */
+        if (!(rxq->flags() & rx_feature_flags::hardware_lro)) {
+            nb_to_stack = rte_gro_reassemble_burst(
+                to_stack.data(), nb_to_stack, &gro_params);
+        }
+
         rx_stack_dispatch(fib, rxq, to_stack.data(), nb_to_stack);
     }
 
