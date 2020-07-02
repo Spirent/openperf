@@ -86,14 +86,10 @@ static uint16_t detect_prbs_errors([[maybe_unused]] uint16_t port_id,
                                    rte_mbuf* packets[],
                                    uint16_t nb_packets,
                                    [[maybe_unused]] uint16_t max_packets,
-                                   [[maybe_unused]] void* user_param)
+                                   void* user_param)
 {
-    using prbs_container = openperf::utils::soa_container<
-        chunk_array,
-        std::tuple<const uint8_t*, uint16_t, uint32_t>>;
-
-    auto prbs_packets = chunk_array<rte_mbuf*>{};
-    auto prbs_segments = prbs_container{};
+    auto* scratch =
+        reinterpret_cast<callback_prbs_error_detector::scratch_t*>(user_param);
 
     auto start = 0U;
     while (start < nb_packets) {
@@ -105,9 +101,10 @@ static uint16_t detect_prbs_errors([[maybe_unused]] uint16_t port_id,
         const auto prbs_end = std::copy_if(
             packets + start,
             packets + end,
-            prbs_packets.data(),
+            scratch->prbs_packets.data(),
             [](const auto* mbuf) { return (has_prbs_payload(mbuf)); });
-        const auto nb_prbs_pkts = std::distance(prbs_packets.data(), prbs_end);
+        const auto nb_prbs_pkts =
+            std::distance(scratch->prbs_packets.data(), prbs_end);
 
         /*
          * Find all the payload data in the PRBS packets we found. Since we
@@ -116,8 +113,8 @@ static uint16_t detect_prbs_errors([[maybe_unused]] uint16_t port_id,
          */
         auto nb_prbs_segs = 0U;
         openperf::utils::prefetch_for_each(
-            prbs_packets.data(),
-            prbs_packets.data() + nb_prbs_pkts,
+            scratch->prbs_packets.data(),
+            scratch->prbs_packets.data() + nb_prbs_pkts,
             [](const auto* mbuf) {
                 rte_prefetch0(rte_pktmbuf_mtod(mbuf, void*));
             },
@@ -128,7 +125,7 @@ static uint16_t detect_prbs_errors([[maybe_unused]] uint16_t port_id,
                  */
                 const auto offset = get_payload_offset(mbuf);
 
-                prbs_segments.set(
+                scratch->prbs_segments.set(
                     nb_prbs_segs++,
                     {rte_pktmbuf_mtod_offset(mbuf, const uint8_t*, offset),
                      get_payload_length(mbuf, offset),
@@ -140,27 +137,28 @@ static uint16_t detect_prbs_errors([[maybe_unused]] uint16_t port_id,
                  */
                 while (mbuf->next != nullptr) {
                     mbuf = mbuf->next;
-                    prbs_segments.set(nb_prbs_segs++,
-                                      {rte_pktmbuf_mtod(mbuf, const uint8_t*),
-                                       get_payload_length(mbuf),
-                                       0});
+                    scratch->prbs_segments.set(
+                        nb_prbs_segs++,
+                        {rte_pktmbuf_mtod(mbuf, const uint8_t*),
+                         get_payload_length(mbuf),
+                         0});
                 }
             },
             prefetch_lookahead);
 
         /* Now check the prbs data */
-        pga_verify_prbs(prbs_segments.data<0>(),
-                        prbs_segments.data<1>(),
+        pga_verify_prbs(scratch->prbs_segments.data<0>(),
+                        scratch->prbs_segments.data<1>(),
                         nb_prbs_segs,
-                        prbs_segments.data<2>());
+                        scratch->prbs_segments.data<2>());
 
         /* And update the packet metadata. */
         auto seg_idx = 0U;
-        const auto& lengths = prbs_segments.data<1>();
-        const auto& errors = prbs_segments.data<2>();
+        const auto& lengths = scratch->prbs_segments.data<1>();
+        const auto& errors = scratch->prbs_segments.data<2>();
         std::for_each(
-            prbs_packets.data(),
-            prbs_packets.data() + nb_prbs_pkts,
+            scratch->prbs_packets.data(),
+            scratch->prbs_packets.data() + nb_prbs_pkts,
             [&](auto* mbuf) {
                 auto nb_segments = mbuf_segment_count(mbuf);
                 auto bit_errors = std::accumulate(
@@ -186,6 +184,11 @@ rx_callback<callback_prbs_error_detector>::rx_callback_fn
 callback_prbs_error_detector::callback()
 {
     return (detect_prbs_errors);
+}
+
+void* callback_prbs_error_detector::callback_arg() const
+{
+    return (std::addressof(scratch));
 }
 
 static prbs_error_detector::variant_type

@@ -3,6 +3,8 @@
 
 #include "packetio/drivers/dpdk/port/callback.hpp"
 #include "packetio/drivers/dpdk/port/feature_toggle.hpp"
+#include "packetio/drivers/dpdk/port/signature_utils.hpp"
+#include "utils/soa_container.hpp"
 
 namespace openperf::packetio::dpdk::port {
 
@@ -14,7 +16,25 @@ struct callback_signature_encoder
     using parent_type::tx_callback;
     static std::string description();
     static parent_type::tx_callback_fn callback();
-    static void* callback_arg();
+    void* callback_arg() const;
+
+    using sig_container = openperf::utils::soa_container<
+        utils::chunk_array,
+        std::tuple<uint8_t*, uint32_t, uint32_t, uint64_t, int>>;
+
+    using runt_container = openperf::utils::soa_container<
+        utils::chunk_array,
+        std::tuple<const uint8_t*, utils::spirent_signature*>>;
+
+    struct scratch_t
+    {
+        time_t epoch_offset;
+        sig_container signatures;
+        std::array<uint32_t, utils::chunk_size> checksums;
+        runt_container runts;
+    };
+
+    mutable scratch_t scratch;
 };
 
 struct signature_encoder
