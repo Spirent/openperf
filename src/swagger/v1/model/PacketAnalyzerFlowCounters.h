@@ -63,9 +63,7 @@ public:
     /// </summary>
     std::shared_ptr<PacketAnalyzerFlowCounters_errors> getErrors() const;
     void setErrors(std::shared_ptr<PacketAnalyzerFlowCounters_errors> value);
-    bool errorsIsSet() const;
-    void unsetErrors();
-    /// <summary>
+        /// <summary>
     /// List of protocol headers
     /// </summary>
     std::vector<std::shared_ptr<PacketAnalyzerFlowHeader>>& getHeaders();
@@ -142,7 +140,7 @@ public:
 
 protected:
     std::shared_ptr<PacketAnalyzerFlowCounters_errors> m_Errors;
-    bool m_ErrorsIsSet;
+
     std::vector<std::shared_ptr<PacketAnalyzerFlowHeader>> m_Headers;
     bool m_HeadersIsSet;
     std::shared_ptr<PacketAnalyzerFlowCounters_frame_length> m_Frame_length;

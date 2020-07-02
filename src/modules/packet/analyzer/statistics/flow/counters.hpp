@@ -3,21 +3,66 @@
 
 #include <iostream>
 
-#include "packet/statistics/frame_counter.hpp"
 #include "packet/statistics/tuple_utils.hpp"
 #include "packetio/packet_buffer.hpp"
 
 namespace openperf::packet::analyzer::statistics::flow {
 
-using frame_counter = packet::statistics::frame_counter;
 using stat_t = uint64_t;
+using half_stat_t = uint32_t;
 
-struct errors
+using clock_t = openperf::timesync::chrono::realtime;
+
+/**
+ * Simple counter implementation that tracks the first/last
+ * time the counter is updated and errors.
+ */
+template <typename Clock> struct timestamp_clock
 {
-    stat_t fcs = 0;
-    stat_t ipv4_checksum = 0;
-    stat_t tcp_checksum = 0;
-    stat_t udp_checksum = 0;
+    using timestamp = std::chrono::time_point<Clock>;
+};
+
+struct frame_counter : timestamp_clock<clock_t>
+{
+    stat_t count = 0;
+    timestamp first_ = timestamp::max();
+    timestamp last_ = timestamp::min();
+    struct
+    {
+        half_stat_t fcs = 0;
+        half_stat_t ipv4_checksum = 0;
+        half_stat_t tcp_checksum = 0;
+        half_stat_t udp_checksum = 0;
+    } errors;
+
+    std::optional<timestamp> first() const
+    {
+        return (count ? std::optional<timestamp>{first_} : std::nullopt);
+    }
+
+    std::optional<timestamp> last() const
+    {
+        return (count ? std::optional<timestamp>{last_} : std::nullopt);
+    }
+
+    frame_counter& operator+=(const frame_counter& rhs)
+    {
+        count += rhs.count;
+        first_ = std::min(first_, rhs.first_);
+        last_ = std::max(first_, rhs.last_);
+        errors.fcs += rhs.errors.fcs;
+        errors.ipv4_checksum += rhs.errors.ipv4_checksum;
+        errors.tcp_checksum += rhs.errors.tcp_checksum;
+        errors.udp_checksum += rhs.errors.udp_checksum;
+
+        return (*this);
+    }
+
+    friend frame_counter operator+(frame_counter lhs, const frame_counter& rhs)
+    {
+        lhs += rhs;
+        return (lhs);
+    }
 };
 
 struct prbs
@@ -29,10 +74,10 @@ struct prbs
 
 struct sequencing
 {
-    stat_t dropped = 0;
-    stat_t duplicate = 0;
-    stat_t late = 0;
-    stat_t reordered = 0;
+    half_stat_t dropped = 0;
+    half_stat_t duplicate = 0;
+    half_stat_t late = 0;
+    half_stat_t reordered = 0;
 
     stat_t in_order = 0;
     stat_t run_length = 0;
@@ -158,13 +203,20 @@ struct latency final : summary<short_duration, long_duration>
  * Update functions for stat structures
  **/
 
-inline void update(errors& stat, const packetio::packet::packet_buffer* pkt)
+template <typename FrameCounter>
+inline void update(FrameCounter& frames,
+                   typename FrameCounter::timestamp rx,
+                   const packetio::packet::packet_buffer* pkt) noexcept
 {
+    if (!frames.first()) { frames.first_ = rx; }
+    frames.count++;
+    frames.last_ = rx;
+
     using namespace openperf::packetio::packet;
 
-    if (ipv4_checksum_error(pkt)) { stat.ipv4_checksum++; }
-    if (tcp_checksum_error(pkt)) { stat.tcp_checksum++; }
-    if (udp_checksum_error(pkt)) { stat.udp_checksum++; }
+    if (ipv4_checksum_error(pkt)) { frames.errors.ipv4_checksum++; }
+    if (tcp_checksum_error(pkt)) { frames.errors.tcp_checksum++; }
+    if (udp_checksum_error(pkt)) { frames.errors.udp_checksum++; }
 }
 
 inline void update(prbs& stat, const packetio::packet::packet_buffer* pkt)
@@ -346,21 +398,13 @@ void update(StatsTuple& tuple, const packetio::packet::packet_buffer* pkt)
 
     auto& frames = get_counter<frame_counter, StatsTuple>(tuple);
     auto last_rx = frames.last();
-    update(frames, 1, rx);
+    update(frames, rx, pkt);
     if constexpr (has_type<interarrival, StatsTuple>::value) {
         if (last_rx) {
             update(get_counter<interarrival, StatsTuple>(tuple),
                    rx - *last_rx,
                    frames.count - 1);
         }
-    }
-
-    if constexpr (has_type<errors, StatsTuple>::value) {
-        update(get_counter<errors, StatsTuple>(tuple), pkt);
-    }
-
-    if constexpr (has_type<prbs, StatsTuple>::value) {
-        update(get_counter<prbs, StatsTuple>(tuple), pkt);
     }
 
     if constexpr (has_type<frame_length, StatsTuple>::value) {
@@ -407,20 +451,24 @@ void update(StatsTuple& tuple, const packetio::packet::packet_buffer* pkt)
             }
         }
     }
+
+    if constexpr (has_type<prbs, StatsTuple>::value) {
+        update(get_counter<prbs, StatsTuple>(tuple), pkt);
+    }
 }
 
 /**
  * Debug methods
  **/
 
-void dump(std::ostream& os, const errors& stat);
-void dump(std::ostream& os, const prbs& stat);
+void dump(std::ostream& os, const frame_counter& stat);
 void dump(std::ostream& os, const sequencing& stat);
 void dump(std::ostream& os, const frame_length& stat);
 void dump(std::ostream& os, const interarrival& stat);
 void dump(std::ostream& os, const jitter_ipdv& stat);
 void dump(std::ostream& os, const jitter_rfc& stat);
 void dump(std::ostream& os, const latency& stat);
+void dump(std::ostream& os, const prbs& stat);
 
 template <typename StatsTuple>
 void dump(std::ostream& os, const StatsTuple& tuple)
@@ -431,23 +479,7 @@ void dump(std::ostream& os, const StatsTuple& tuple)
 
     static_assert(has_type<frame_counter, StatsTuple>::value);
 
-    const auto& frames = get_counter<frame_counter, StatsTuple>(tuple);
-    os << "Frames:" << std::endl;
-    if (frames.count) {
-        os << " first: " << frames.first()->time_since_epoch().count()
-           << std::endl;
-        os << " last: " << frames.last()->time_since_epoch().count()
-           << std::endl;
-    }
-    os << " count: " << frames.count << std::endl;
-
-    if constexpr (has_type<errors, StatsTuple>::value) {
-        dump(os, get_counter<errors, StatsTuple>(tuple));
-    }
-
-    if constexpr (has_type<prbs, StatsTuple>::value) {
-        dump(os, get_counter<prbs, StatsTuple>(tuple));
-    }
+    dump(os, get_counter<frame_counter, StatsTuple>(tuple));
 
     if constexpr (has_type<sequencing, StatsTuple>::value) {
         dump(os, get_counter<sequencing, StatsTuple>(tuple));
@@ -471,6 +503,10 @@ void dump(std::ostream& os, const StatsTuple& tuple)
 
     if constexpr (has_type<latency, StatsTuple>::value) {
         dump(os, get_counter<latency, StatsTuple>(tuple));
+    }
+
+    if constexpr (has_type<prbs, StatsTuple>::value) {
+        dump(os, get_counter<prbs, StatsTuple>(tuple));
     }
 }
 
