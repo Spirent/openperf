@@ -9,14 +9,11 @@
 
 namespace openperf::packetio::dpdk::port {
 
-static constexpr auto chunk_size = 64U;
 static constexpr auto ethernet_overhead = 24U;
 static constexpr auto ethernet_octets = 8U;
 
 /* sizeof(ipv4) + sizeof(udp) + sizeof(signature) */
 static constexpr auto min_ipv4_udp_payload_size = 48U;
-
-template <typename T> using chunk_array = std::array<T, chunk_size>;
 
 static bool is_runt_ipv4_udp(const rte_mbuf* mbuf)
 {
@@ -32,8 +29,8 @@ static bool is_runt_ipv4_udp(const rte_mbuf* mbuf)
 
 template <typename T> static T* to_signature(rte_mbuf* mbuf)
 {
-    return (rte_pktmbuf_mtod_offset(mbuf, T*, rte_pktmbuf_pkt_len(mbuf))
-            - utils::signature_length);
+    return (rte_pktmbuf_mtod_offset(
+        mbuf, T*, rte_pktmbuf_pkt_len(mbuf) - utils::signature_length));
 }
 
 static uint32_t get_link_speed_safe(uint16_t port_id)
@@ -52,14 +49,6 @@ static uint32_t get_link_speed_safe(uint16_t port_id)
                 ? link.link_speed
                 : model::port_info(port_id).max_speed());
 }
-
-/* We need access to the crc and cheater fields. */
-struct spirent_signature
-{
-    uint32_t data[4];
-    uint16_t crc;
-    uint16_t cheater;
-} __attribute__((packed));
 
 using picoseconds = std::chrono::duration<int64_t, std::pico>;
 
@@ -94,11 +83,6 @@ static uint16_t encode_signatures(uint16_t port_id,
                                   uint16_t nb_packets,
                                   void* user_param)
 {
-    using sig_container = openperf::utils::soa_container<
-        chunk_array,
-        std::tuple<uint8_t*, uint32_t, uint32_t, uint64_t, int>>;
-    auto signatures = sig_container{};
-
     /*
      * Since octets take less than 1 nanosecond as 100G speeds, we
      * calculate offsets in picoseconds.
@@ -108,19 +92,22 @@ static uint16_t encode_signatures(uint16_t port_id,
         units::to_duration<picoseconds>(mbps(get_link_speed_safe(port_id)))
         * ethernet_octets;
 
+    auto* scratch =
+        reinterpret_cast<callback_signature_encoder::scratch_t*>(user_param);
+
     /*
      * Given the epoch offset, find the current time as a 38 bit, 2.5ns
      * timestamp field.
      */
     using clock = openperf::timesync::chrono::realtime;
-    const auto epoch_offset =
-        std::chrono::seconds{reinterpret_cast<time_t>(user_param)};
-    const auto now = get_phxtime<clock>(epoch_offset);
+    const auto now =
+        get_phxtime<clock>(std::chrono::seconds{scratch->epoch_offset});
 
     auto tx_octets = 0U;
     auto start = 0U;
     while (start < nb_packets) {
-        const auto end = start + std::min(chunk_size, nb_packets - start);
+        const auto end =
+            start + std::min(utils::chunk_size, nb_packets - start);
 
         /*
          * Look for packets that have signature data; they should have
@@ -145,21 +132,21 @@ static uint16_t encode_signatures(uint16_t port_id,
                          : to_phxtime(
                              now, tx_octets + mbuf_octets, ps_per_octet));
 
-                signatures.set(nb_sigs++,
-                               {to_signature<uint8_t>(m),
-                                sig.sig_stream_id,
-                                sig.sig_seq_num,
-                                ts,
-                                sig.tx.flags});
+                scratch->signatures.set(nb_sigs++,
+                                        {to_signature<uint8_t>(m),
+                                         sig.sig_stream_id,
+                                         sig.sig_seq_num,
+                                         ts,
+                                         sig.tx.flags});
             }
             tx_octets += mbuf_octets;
         });
 
-        pga_signatures_encode(signatures.data<0>(), /* payload */
-                              signatures.data<1>(), /* stream id */
-                              signatures.data<2>(), /* sequence num */
-                              signatures.data<3>(), /* timestamp */
-                              signatures.data<4>(), /* flags */
+        pga_signatures_encode(scratch->signatures.data<0>(), /* payload */
+                              scratch->signatures.data<1>(), /* stream id */
+                              scratch->signatures.data<2>(), /* sequence num */
+                              scratch->signatures.data<3>(), /* timestamp */
+                              scratch->signatures.data<4>(), /* flags */
                               nb_sigs);
 
         /*
@@ -174,11 +161,6 @@ static uint16_t encode_signatures(uint16_t port_id,
                 [](const auto& mbuf) { return (is_runt_ipv4_udp(mbuf)); });
             cursor != packets + end) {
 
-            using runt_container = openperf::utils::soa_container<
-                chunk_array,
-                std::tuple<const uint8_t*, spirent_signature*>>;
-            auto runts = runt_container{};
-
             /* Generate the data we need in a compact format */
             auto nb_runts = 0U;
             std::for_each(cursor, packets + end, [&](const auto& mbuf) {
@@ -190,24 +172,25 @@ static uint16_t encode_signatures(uint16_t port_id,
                      * Store data for checksum calculating and
                      * updating.
                      */
-                    runts.set(nb_runts++,
-                              {rte_pktmbuf_mtod_offset(
-                                   mbuf, const uint8_t*, mbuf->l2_len),
-                               to_signature<spirent_signature>(mbuf)});
+                    scratch->runts.set(
+                        nb_runts++,
+                        {rte_pktmbuf_mtod_offset(
+                             mbuf, const uint8_t*, mbuf->l2_len),
+                         to_signature<utils::spirent_signature>(mbuf)});
                 }
             });
 
             /* Then crunch the checksums */
-            auto checksums = std::array<uint32_t, chunk_size>{};
             pga_checksum_ipv4_tcpudp(
-                runts.data<0>(), nb_runts, checksums.data());
+                scratch->runts.data<0>(), nb_runts, scratch->checksums.data());
 
             /* And write them into the signature field */
             auto idx = 0U;
-            std::for_each(
-                runts.data<1>(),
-                runts.data<1>() + nb_runts,
-                [&](const auto& sig) { sig->cheater = checksums[idx++]; });
+            std::for_each(scratch->runts.data<1>(),
+                          scratch->runts.data<1>() + nb_runts,
+                          [&](const auto& sig) {
+                              sig->cheater = scratch->checksums[idx++];
+                          });
         }
 
         start = end;
@@ -227,9 +210,10 @@ callback_signature_encoder::callback()
     return (encode_signatures);
 }
 
-void* callback_signature_encoder::callback_arg()
+void* callback_signature_encoder::callback_arg() const
 {
-    return (reinterpret_cast<void*>(utils::get_timestamp_epoch_offset()));
+    scratch.epoch_offset = utils::get_timestamp_epoch_offset();
+    return (std::addressof(scratch));
 }
 
 static signature_encoder::variant_type make_signature_encoder(uint16_t port_id)
