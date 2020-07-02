@@ -328,10 +328,10 @@ int32_t block_task::calculate_rate()
     }
     case task_operation::WRITE: {
         auto writes_expected = reads_actual * ratio_writes / ratio_reads;
-        return std::min(
-            std::max(writes_expected + m_task_config.ops_per_sec - reads_actual,
-                     1L),
-            static_cast<long>(m_task_config.ops_per_sec));
+        return std::min(std::max(writes_expected + m_task_config.ops_per_sec
+                                     - writes_actual,
+                                 1L),
+                        static_cast<long>(m_task_config.ops_per_sec));
     }
     }
 }
@@ -355,14 +355,15 @@ void block_task::spin()
 
     // Worker loop
     auto loop_start_ts = ref_clock::now();
+    auto cur_time = ref_clock::now();
     do {
-        auto cur_time = ref_clock::now();
-
         auto ops_req = (cur_time - m_operation_timestamp).count() * ops_per_sec
                            / std::nano::den
                        + 1;
         auto nb_ops =
             worker_spin(m_task_config, m_actual_stat, ops_req, cur_time + 1s);
+
+        cur_time = ref_clock::now();
 
         m_operation_timestamp +=
             std::chrono::nanoseconds(std::nano::den / ops_per_sec) * nb_ops;
@@ -372,8 +373,8 @@ void block_task::spin()
                       + 1;
         m_actual_stat.ops_target = cycles;
         m_actual_stat.bytes_target = cycles * m_task_config.block_size;
-    } while ((m_operation_timestamp < ref_clock::now())
-             && (ref_clock::now() <= loop_start_ts + TASK_SPIN_THRESHOLD));
+    } while ((m_operation_timestamp < cur_time)
+             && (cur_time <= loop_start_ts + TASK_SPIN_THRESHOLD));
     m_actual_stat.updated = realtime::now();
 
     if (m_reset_stat.load()) { reset_spin_stat(); }
