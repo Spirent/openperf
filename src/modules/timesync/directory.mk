@@ -33,6 +33,7 @@ $(TS_OBJ_DIR)/init.o: OP_CPPFLAGS += \
 TS_TEST_DEPENDS += digestible expected framework
 
 TS_TEST_SOURCES += \
+	chrono.cpp \
 	clock.cpp \
 	counter_system.cpp \
 	history.cpp

@@ -6,7 +6,9 @@ using memory_stat = openperf::memory::internal::memory_stat;
 
 memory_stat random_memory_stat()
 {
-    auto stat = memory_stat{};
+    auto stat =
+        memory_stat{.timestamp = memory_stat::timestamp_t(
+                        std::chrono::system_clock::now().time_since_epoch())};
     stat.bytes = random();
     stat.bytes_target = random();
     stat.operations = random();
@@ -49,7 +51,9 @@ TEST_CASE("memory stat addition", "[memory]")
 
     SECTION("random + empty")
     {
-        auto st1 = memory_stat();
+        auto st1 = memory_stat{
+            .timestamp = memory_stat::timestamp_t(
+                std::chrono::system_clock::now().time_since_epoch())};
         auto st2 = random_memory_stat();
         auto st = st1 + st2;
 

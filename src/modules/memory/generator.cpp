@@ -13,7 +13,10 @@ static uint16_t serial_counter = 0;
 generator::generator()
     : m_buffer{.ptr = nullptr, .size = 0}
     , m_serial_number(++serial_counter)
-    , m_dynamic([this]() { return std::make_unique<stat_t>(stat()); })
+    , m_dynamic([this]() -> dynamic::poller::pollable_ptr {
+        auto ptr = std::make_unique<stat_t>(stat());
+        return std::move(ptr);
+    })
 {}
 
 generator::generator(generator&& g) noexcept

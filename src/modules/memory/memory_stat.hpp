@@ -6,6 +6,8 @@
 #include <optional>
 #include <functional>
 
+#include "timesync/chrono.hpp"
+
 namespace openperf::memory::internal {
 
 using namespace std::chrono_literals;
@@ -21,7 +23,8 @@ bind_binary(std::function<T(T, T)> f, std::optional<T> v1, std::optional<T> v2)
 
 struct memory_stat
 {
-    using timestamp_t = openperf::timesync::chrono::realtime::time_point;
+    using clock = openperf::timesync::chrono::realtime;
+    using timestamp_t = clock::time_point;
 
     /**
      * operations - The number of operations performed
@@ -38,7 +41,7 @@ struct memory_stat
     std::chrono::nanoseconds sleep_time = 0ns;
     std::optional<std::chrono::nanoseconds> latency_min;
     std::optional<std::chrono::nanoseconds> latency_max;
-    timestamp_t timestamp = openperf::timesync::chrono::realtime::now();
+    timestamp_t timestamp = clock::now();
     uint64_t errors = 0;
 
     memory_stat& operator+=(const memory_stat& st)
