@@ -339,7 +339,6 @@ inline unsigned int32 to_payload(unsigned int32 current, unsigned int32 next)
                        : programCount + programIndex - 1))));
 }
 
-
 export uniform unsigned int32 fill_prbs_aligned(uniform unsigned int32 payload[],
                                                 uniform unsigned int16 length,
                                                 uniform unsigned int32 seed)
@@ -364,20 +363,23 @@ export uniform unsigned int32 fill_prbs_aligned(uniform unsigned int32 payload[]
 }
 
 /*
- * Note: ISPC provides access to the x86 popcnt instruction via it's standard
- * library function, popcnt().  However, that hardware instruction can only
- * process one lane at a time, so it compiles into a popcount and extract
- * for each lane in use!  This implementation is a 32 bit version of the
- * "Efficient implementation" described in the wikipedia Hamming weight entry,
- * https://en.wikipedia.org/wiki/Hamming_weight#Efficient_implementation,
- * and ends up being faster for our use case.
+ * Note: ISPC provides access to the x86 popcnt instruction via it's
+ * standard library function, popcnt().  However, that hardware
+ * instruction can only process one lane at a time, so it compiles
+ * into a popcount instruction for every lane in use.
+ *
+ * This approach, taken from the Hamming weight entry on wikipedia,
+ * https://en.wikipedia.org/wiki/Hamming_weight, is noticeably faster
+ * for our common use case, where we expect 0 bit errors. One loop
+ * iteration is required to count each set bit.
  */
 inline unsigned int32 popcount32(unsigned int32 value)
 {
-    value = value - ((value >> 1) & 0x55555555);
-    value = (value & 0x33333333) + ((value >> 2) & 0x33333333);
-    value = (value + (value >> 4) & 0x0f0f0f0f);
-    return ((value * 0x01010101) >> 24);
+    unsigned int32 count = 0;
+    for (; value; count++) {
+        value &= value - 1;
+    }
+    return (count);
 }
 
 export uniform unsigned int64 verify_prbs_aligned(const uniform unsigned int32 payload[],
