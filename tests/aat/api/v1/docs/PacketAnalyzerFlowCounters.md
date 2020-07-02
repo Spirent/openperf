@@ -3,7 +3,7 @@
 ## Properties
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**errors** | [**PacketAnalyzerFlowCountersErrors**](PacketAnalyzerFlowCountersErrors.md) |  | [optional] 
+**errors** | [**PacketAnalyzerFlowCountersErrors**](PacketAnalyzerFlowCountersErrors.md) |  | 
 **headers** | [**list[PacketAnalyzerFlowHeader]**](PacketAnalyzerFlowHeader.md) | List of protocol headers | [optional] 
 **frame_length** | [**PacketAnalyzerFlowCountersFrameLength**](PacketAnalyzerFlowCountersFrameLength.md) |  | [optional] 
 **interarrival** | [**PacketAnalyzerFlowCountersInterarrival**](PacketAnalyzerFlowCountersInterarrival.md) |  | [optional] 

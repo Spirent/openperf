@@ -73,7 +73,6 @@ private:
         virtual void dump(std::ostream& os) const = 0;
 
     protected:
-        virtual const flow::errors& get(tag<flow::errors>&&) const = 0;
         virtual const flow::frame_counter&
         get(tag<flow::frame_counter>&&) const = 0;
         virtual const flow::frame_length&
@@ -88,7 +87,6 @@ private:
         virtual const flow::prbs& get(tag<flow::prbs>&&) const = 0;
         virtual const flow::sequencing& get(tag<flow::sequencing>&&) const = 0;
 
-        virtual bool holds(tag<flow::errors>&&) const = 0;
         virtual bool holds(tag<flow::frame_counter>&&) const = 0;
         virtual bool holds(tag<flow::frame_length>&&) const = 0;
         virtual bool holds(tag<flow::header>&&) const = 0;
@@ -105,12 +103,6 @@ private:
         stats_model(StatsTuple tuple)
             : m_data(std::move(tuple))
         {}
-
-        const flow::errors& get(tag<flow::errors>&&) const override
-        {
-            return (packet::statistics::get_counter<flow::errors, StatsTuple>(
-                m_data));
-        }
 
         const flow::frame_counter&
         get(tag<flow::frame_counter>&&) const override
@@ -170,12 +162,6 @@ private:
             return (
                 packet::statistics::get_counter<flow::sequencing, StatsTuple>(
                     m_data));
-        }
-
-        bool holds(tag<flow::errors>&&) const override
-        {
-            return (packet::statistics::holds_stat<flow::errors, StatsTuple>(
-                m_data));
         }
 
         bool holds(tag<flow::frame_counter>&&) const override
@@ -267,8 +253,7 @@ enum class flow_flags {
     jitter_ipdv = (1 << 5),
     jitter_rfc = (1 << 6),
     prbs = (1 << 7),
-    errors = (1 << 8),
-    header = (1 << 9),
+    header = (1 << 8),
 };
 
 generic_flow_counters
@@ -286,7 +271,7 @@ inline constexpr auto all_flow_counters =
     (flow_flags::frame_count | flow_flags::frame_length | flow_flags::latency
      | flow_flags::sequencing | flow_flags::interarrival
      | flow_flags::jitter_ipdv | flow_flags::jitter_rfc | flow_flags::prbs
-     | flow_flags::errors | flow_flags::header);
+     | flow_flags::header);
 }
 
 #endif /* _OP_ANALYZER_STATISTICS_GENERIC_FLOW_COUNTERS_HPP_ */

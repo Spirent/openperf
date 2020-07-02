@@ -11,7 +11,6 @@ constexpr auto associative_array(Pairs&&... pairs)
 
 static constexpr auto flag_names =
     associative_array<flow_flags, std::string_view>(
-        std::pair(flow_flags::errors, "errors"),
         std::pair(flow_flags::frame_count, "frame_count"),
         std::pair(flow_flags::frame_length, "frame_length"),
         std::pair(flow_flags::header, "header"),

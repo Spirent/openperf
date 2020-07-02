@@ -19,7 +19,6 @@ namespace model {
 
 PacketAnalyzerFlowCounters::PacketAnalyzerFlowCounters()
 {
-    m_ErrorsIsSet = false;
     m_HeadersIsSet = false;
     m_Frame_lengthIsSet = false;
     m_InterarrivalIsSet = false;
@@ -49,10 +48,7 @@ nlohmann::json PacketAnalyzerFlowCounters::toJson() const
 {
     nlohmann::json val = nlohmann::json::object();
 
-    if(m_ErrorsIsSet)
-    {
-        val["errors"] = ModelBase::toJson(m_Errors);
-    }
+    val["errors"] = ModelBase::toJson(m_Errors);
     {
         nlohmann::json jsonArray;
         for( auto& item : m_Headers )
@@ -109,16 +105,6 @@ nlohmann::json PacketAnalyzerFlowCounters::toJson() const
 
 void PacketAnalyzerFlowCounters::fromJson(nlohmann::json& val)
 {
-    if(val.find("errors") != val.end())
-    {
-        if(!val["errors"].is_null())
-        {
-            std::shared_ptr<PacketAnalyzerFlowCounters_errors> newItem(new PacketAnalyzerFlowCounters_errors());
-            newItem->fromJson(val["errors"]);
-            setErrors( newItem );
-        }
-        
-    }
     {
         m_Headers.clear();
         nlohmann::json jsonArray;
@@ -233,15 +219,7 @@ std::shared_ptr<PacketAnalyzerFlowCounters_errors> PacketAnalyzerFlowCounters::g
 void PacketAnalyzerFlowCounters::setErrors(std::shared_ptr<PacketAnalyzerFlowCounters_errors> value)
 {
     m_Errors = value;
-    m_ErrorsIsSet = true;
-}
-bool PacketAnalyzerFlowCounters::errorsIsSet() const
-{
-    return m_ErrorsIsSet;
-}
-void PacketAnalyzerFlowCounters::unsetErrors()
-{
-    m_ErrorsIsSet = false;
+    
 }
 std::vector<std::shared_ptr<PacketAnalyzerFlowHeader>>& PacketAnalyzerFlowCounters::getHeaders()
 {
