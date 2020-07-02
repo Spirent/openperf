@@ -28,7 +28,7 @@ test_unit: deps
 	@cd tests/unit && $(MAKE)
 
 .PHONY: clean
-clean:
+clean: image_clean
 	@cd targets/openperf && $(MAKE) clean
 	@cd targets/libopenperf-shim && $(MAKE) clean
 	@cd tests/aat && $(MAKE) clean
@@ -55,6 +55,11 @@ image_test_aat: image
 .PHONY: image_pack
 image_pack: image
 	@docker save -o openperf-${GIT_VERSION}.tar ${DOCKER_IMAGE}
+
+.PHONY: image_clean
+image_clean:
+	@docker image rm -f ${DOCKER_IMAGE}
+	@docker image prune -f
 
 # Generate code from schema definitions
 # Since generated code is stored in the repo, manual generation is only required
