@@ -2,21 +2,20 @@
 
 namespace openperf::packet::analyzer::statistics::flow {
 
-void dump(std::ostream& os, const errors& stat)
+void dump(std::ostream& os, const frame_counter& stat)
 {
-    os << "Errors:" << std::endl;
-    os << " fcs:" << stat.fcs << std::endl;
-    os << " ipv4 checksum:" << stat.ipv4_checksum << std::endl;
-    os << " tcp checksum:" << stat.tcp_checksum << std::endl;
-    os << " udp checksum:" << stat.udp_checksum << std::endl;
-}
-
-void dump(std::ostream& os, const prbs& stat)
-{
-    os << "PRBS:" << std::endl;
-    os << " bit_errors:" << stat.bit_errors << std::endl;
-    os << " frame_errors:" << stat.frame_errors << std::endl;
-    os << " octets:" << stat.octets << std::endl;
+    os << "Frames:" << std::endl;
+    if (stat.count) {
+        os << " first: " << stat.first()->time_since_epoch().count()
+           << std::endl;
+        os << " last: " << stat.last()->time_since_epoch().count() << std::endl;
+    }
+    os << " count: " << stat.count << std::endl;
+    os << " Errors:" << std::endl;
+    os << "  fcs:" << stat.errors.fcs << std::endl;
+    os << "  ipv4 checksum:" << stat.errors.ipv4_checksum << std::endl;
+    os << "  tcp checksum:" << stat.errors.tcp_checksum << std::endl;
+    os << "  udp checksum:" << stat.errors.udp_checksum << std::endl;
 }
 
 void dump(std::ostream& os, const sequencing& stat)
@@ -75,6 +74,14 @@ void dump(std::ostream& os, const latency& stat)
     os << "Latency:" << std::endl;
     dump_duration_stat(os, stat);
     if (stat.last()) { os << " last: " << stat.last()->count() << std::endl; }
+}
+
+void dump(std::ostream& os, const prbs& stat)
+{
+    os << "PRBS:" << std::endl;
+    os << " bit_errors:" << stat.bit_errors << std::endl;
+    os << " frame_errors:" << stat.frame_errors << std::endl;
+    os << " octets:" << stat.octets << std::endl;
 }
 
 } // namespace openperf::packet::analyzer::statistics::flow

@@ -741,6 +741,7 @@ definitions:
         format: date-time
     required:
       - frame_count
+      - errors
 
   PacketAnalyzerFlowHeader:
     type: object

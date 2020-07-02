@@ -77,8 +77,7 @@ class PacketAnalyzerFlowCounters(object):
         self._timestamp_last = None
         self.discriminator = None
 
-        if errors is not None:
-            self.errors = errors
+        self.errors = errors
         if headers is not None:
             self.headers = headers
         if frame_length is not None:
