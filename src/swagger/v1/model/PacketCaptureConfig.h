@@ -100,6 +100,13 @@ public:
     void setDuration(int64_t value);
     bool durationIsSet() const;
     void unsetDuration();
+    /// <summary>
+    /// Maximum number of packets to capture. 
+    /// </summary>
+    int64_t getPacketCount() const;
+    void setPacketCount(int64_t value);
+    bool packetCountIsSet() const;
+    void unsetPacket_count();
 
 protected:
     std::string m_Mode;
@@ -118,6 +125,8 @@ protected:
     bool m_Stop_triggerIsSet;
     int64_t m_Duration;
     bool m_DurationIsSet;
+    int64_t m_Packet_count;
+    bool m_Packet_countIsSet;
 };
 
 }

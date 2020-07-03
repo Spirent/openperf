@@ -11,6 +11,7 @@ Name | Type | Description | Notes
 **start_trigger** | **str** | Berkley Packet Filter (BPF) rules used to trigger the start of packet capture.  When a trigger condition is specified, the capture start command puts capture into an armed state and capture will only begin when the trigger condition occurs.  | [optional] 
 **stop_trigger** | **str** | Berkley Packet Filter (BPF) rules used to trigger the stop of packet capture.  | [optional] 
 **duration** | **int** | Maximum time duration for the capture in msec.  | [optional] 
+**packet_count** | **int** | Maximum number of packets to capture.  | [optional] 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 
