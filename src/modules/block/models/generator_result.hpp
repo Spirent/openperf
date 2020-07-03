@@ -5,6 +5,7 @@
 #include <memory>
 #include <string>
 
+#include "framework/dynamic/api.hpp"
 #include "modules/timesync/chrono.hpp"
 
 namespace openperf::block::model {
@@ -35,6 +36,7 @@ protected:
     time_point m_timestamp;
     statistics_t m_read;
     statistics_t m_write;
+    dynamic::results m_dynamic_results;
 
 public:
     block_generator_result() = default;
@@ -46,6 +48,7 @@ public:
     time_point timestamp() const { return m_timestamp; }
     statistics_t read_stats() const { return m_read; }
     statistics_t write_stats() const { return m_write; }
+    dynamic::results dynamic_results() const { return m_dynamic_results; }
 
     void id(std::string_view id) { m_id = id; }
     void generator_id(std::string_view id) { m_generator_id = id; }
@@ -53,6 +56,7 @@ public:
     void timestamp(const time_point& value) { m_timestamp = value; }
     void read_stats(const statistics_t& s) { m_read = s; }
     void write_stats(const statistics_t& s) { m_write = s; }
+    void dynamic_results(const dynamic::results& d) { m_dynamic_results = d; }
 };
 
 } // namespace openperf::block::model

@@ -268,18 +268,21 @@ server::handle_request(const request_block_generator_bulk_del& request)
 
 reply_msg server::handle_request(const request_block_generator_start& request)
 {
-    auto result = m_generator_stack->start_generator(request.id);
+    try {
+        auto result = m_generator_stack->start_generator(
+            request.data->id, request.data->dynamic_results);
 
-    if (!result) {
-        return to_error(api::error_type::CUSTOM_ERROR, 0, result.error());
+        if (!result) throw std::logic_error(result.error());
+        if (!result.value()) return to_error(api::error_type::NOT_FOUND);
+
+        auto reply = reply_block_generator_results{};
+        reply.results.emplace_back(
+            std::make_unique<model::block_generator_result>(*result.value()));
+
+        return reply;
+    } catch (const std::logic_error& e) {
+        return to_error(api::error_type::CUSTOM_ERROR, 0, e.what());
     }
-
-    if (!result.value()) { return to_error(api::error_type::NOT_FOUND); }
-
-    auto reply = reply_block_generator_results{};
-    reply.results.emplace_back(
-        std::make_unique<model::block_generator_result>(*result.value()));
-    return reply;
 }
 
 reply_msg server::handle_request(const request_block_generator_stop& request)
@@ -296,29 +299,30 @@ server::handle_request(const request_block_generator_bulk_start& request)
 {
     auto reply = reply_block_generator_results{};
 
-    for (const auto& id : request.ids) {
-        auto stats = m_generator_stack->start_generator(*id);
-        if (!stats || !stats.value()) {
-            for (const auto& stat : reply.results) {
-                m_generator_stack->stop_generator(stat->generator_id());
-                m_generator_stack->delete_statistics(stat->id());
+    try {
+        for (const auto& id : request.data->ids) {
+            auto stats = m_generator_stack->start_generator(
+                id, request.data->dynamic_results);
+
+            if (!stats) throw std::logic_error(stats.error());
+            if (!stats.value()) {
+                throw std::logic_error("Generator " + id + " not found");
             }
-            if (!stats) {
-                return to_error(api::error_type::CUSTOM_ERROR,
-                                0,
-                                "Generator " + *id + " not found");
-            } else {
-                return to_error(
-                    api::error_type::CUSTOM_ERROR, 0, stats.error());
-            }
+
+            reply.results.emplace_back(
+                std::make_unique<model::block_generator_result>(
+                    *stats.value()));
         }
 
-        auto reply_model = model::block_generator_result(*stats.value());
-        reply.results.emplace_back(
-            std::make_unique<model::block_generator_result>(reply_model));
-    }
+        return reply;
+    } catch (const std::logic_error& e) {
+        for (const auto& stat : reply.results) {
+            m_generator_stack->stop_generator(stat->generator_id());
+            m_generator_stack->delete_statistics(stat->id());
+        }
 
-    return reply;
+        return to_error(api::error_type::CUSTOM_ERROR, 0, e.what());
+    }
 }
 
 reply_msg

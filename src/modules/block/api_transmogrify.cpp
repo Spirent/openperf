@@ -56,14 +56,15 @@ message::serialized_message serialize_request(request_msg&& msg)
                  [&](request_block_generator_bulk_del& request) {
                      return (message::push(serialized, request.ids));
                  },
-                 [&](const request_block_generator_start& blkgenerator) {
-                     return (message::push(serialized, blkgenerator.id));
+                 [&](request_block_generator_start& start) {
+                     return (message::push(serialized, std::move(start.data)));
                  },
                  [&](const request_block_generator_stop& blkgenerator) {
                      return (message::push(serialized, blkgenerator.id));
                  },
                  [&](request_block_generator_bulk_start& request) {
-                     return (message::push(serialized, request.ids));
+                     return (
+                         message::push(serialized, std::move(request.data)));
                  },
                  [&](request_block_generator_bulk_stop& request) {
                      return (message::push(serialized, request.ids));
@@ -174,15 +175,20 @@ deserialize_request(message::serialized_message&& msg)
             message::pop_unique_vector<std::string>(msg)});
     }
     case utils::variant_index<request_msg, request_block_generator_start>(): {
-        return (request_block_generator_start{message::pop_string(msg)});
+        request_block_generator_start request{};
+        request.data.reset(
+            message::pop<request_block_generator_start::start_data*>(msg));
+        return (request);
     }
     case utils::variant_index<request_msg, request_block_generator_stop>(): {
         return (request_block_generator_stop{message::pop_string(msg)});
     }
     case utils::variant_index<request_msg,
                               request_block_generator_bulk_start>(): {
-        return (request_block_generator_bulk_start{
-            message::pop_unique_vector<std::string>(msg)});
+        request_block_generator_bulk_start request{};
+        request.data.reset(
+            message::pop<request_block_generator_bulk_start::start_data*>(msg));
+        return (request);
     }
     case utils::variant_index<request_msg,
                               request_block_generator_bulk_stop>(): {
