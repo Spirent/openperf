@@ -916,7 +916,7 @@ No authorization required
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **start_block_generator**
-> BlockGeneratorResult start_block_generator(id)
+> BlockGeneratorResult start_block_generator(id, dynamic_results=dynamic_results)
 
 Start a block generator
 
@@ -933,10 +933,11 @@ from pprint import pprint
 # create an instance of the API class
 api_instance = client.BlockGeneratorApi()
 id = 'id_example' # str | Unique resource identifier
+dynamic_results = client.DynamicResultsConfig() # DynamicResultsConfig | Dynamic results configuration (optional)
 
 try:
     # Start a block generator
-    api_response = api_instance.start_block_generator(id)
+    api_response = api_instance.start_block_generator(id, dynamic_results=dynamic_results)
     pprint(api_response)
 except ApiException as e:
     print("Exception when calling BlockGeneratorApi->start_block_generator: %s\n" % e)
@@ -947,6 +948,7 @@ except ApiException as e:
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **id** | **str**| Unique resource identifier | 
+ **dynamic_results** | [**DynamicResultsConfig**](DynamicResultsConfig.md)| Dynamic results configuration | [optional] 
 
 ### Return type
 
