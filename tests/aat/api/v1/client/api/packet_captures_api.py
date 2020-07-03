@@ -1117,6 +1117,8 @@ class PacketCapturesApi(object):
 
         :param async_req bool
         :param str id: Unique resource identifier (required)
+        :param int packet_start: The packet offset in the capture buffer to start reading (0 based)
+        :param int packet_end: The packet offset in the capture buffer to end reading (0 based)
         :return: file
                  If the method is called asynchronously,
                  returns the request thread.
@@ -1139,12 +1141,14 @@ class PacketCapturesApi(object):
 
         :param async_req bool
         :param str id: Unique resource identifier (required)
+        :param int packet_start: The packet offset in the capture buffer to start reading (0 based)
+        :param int packet_end: The packet offset in the capture buffer to end reading (0 based)
         :return: file
                  If the method is called asynchronously,
                  returns the request thread.
         """
 
-        all_params = ['id']  # noqa: E501
+        all_params = ['id', 'packet_start', 'packet_end']  # noqa: E501
         all_params.append('async_req')
         all_params.append('_return_http_data_only')
         all_params.append('_preload_content')
@@ -1164,6 +1168,10 @@ class PacketCapturesApi(object):
                 params['id'] is None):
             raise ValueError("Missing the required parameter `id` when calling `get_packet_capture_pcap`")  # noqa: E501
 
+        if 'packet_start' in params and params['packet_start'] < 0:  # noqa: E501
+            raise ValueError("Invalid value for parameter `packet_start` when calling `get_packet_capture_pcap`, must be a value greater than or equal to `0`")  # noqa: E501
+        if 'packet_end' in params and params['packet_end'] < 0:  # noqa: E501
+            raise ValueError("Invalid value for parameter `packet_end` when calling `get_packet_capture_pcap`, must be a value greater than or equal to `0`")  # noqa: E501
         collection_formats = {}
 
         path_params = {}
@@ -1171,6 +1179,10 @@ class PacketCapturesApi(object):
             path_params['id'] = params['id']  # noqa: E501
 
         query_params = []
+        if 'packet_start' in params:
+            query_params.append(('packet_start', params['packet_start']))  # noqa: E501
+        if 'packet_end' in params:
+            query_params.append(('packet_end', params['packet_end']))  # noqa: E501
 
         header_params = {}
 

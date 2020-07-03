@@ -33,6 +33,8 @@ PacketCaptureConfig::PacketCaptureConfig()
     m_Stop_triggerIsSet = false;
     m_Duration = 0L;
     m_DurationIsSet = false;
+    m_Packet_count = 0L;
+    m_Packet_countIsSet = false;
     
 }
 
@@ -75,6 +77,10 @@ nlohmann::json PacketCaptureConfig::toJson() const
     {
         val["duration"] = m_Duration;
     }
+    if(m_Packet_countIsSet)
+    {
+        val["packet_count"] = m_Packet_count;
+    }
     
 
     return val;
@@ -110,6 +116,10 @@ void PacketCaptureConfig::fromJson(nlohmann::json& val)
     if(val.find("duration") != val.end())
     {
         setDuration(val.at("duration"));
+    }
+    if(val.find("packet_count") != val.end())
+    {
+        setPacketCount(val.at("packet_count"));
     }
     
 }
@@ -234,6 +244,23 @@ bool PacketCaptureConfig::durationIsSet() const
 void PacketCaptureConfig::unsetDuration()
 {
     m_DurationIsSet = false;
+}
+int64_t PacketCaptureConfig::getPacketCount() const
+{
+    return m_Packet_count;
+}
+void PacketCaptureConfig::setPacketCount(int64_t value)
+{
+    m_Packet_count = value;
+    m_Packet_countIsSet = true;
+}
+bool PacketCaptureConfig::packetCountIsSet() const
+{
+    return m_Packet_countIsSet;
+}
+void PacketCaptureConfig::unsetPacket_count()
+{
+    m_Packet_countIsSet = false;
 }
 
 }

@@ -38,7 +38,8 @@ class PacketCaptureConfig(object):
         'filter': 'str',
         'start_trigger': 'str',
         'stop_trigger': 'str',
-        'duration': 'int'
+        'duration': 'int',
+        'packet_count': 'int'
     }
 
     attribute_map = {
@@ -49,10 +50,11 @@ class PacketCaptureConfig(object):
         'filter': 'filter',
         'start_trigger': 'start_trigger',
         'stop_trigger': 'stop_trigger',
-        'duration': 'duration'
+        'duration': 'duration',
+        'packet_count': 'packet_count'
     }
 
-    def __init__(self, mode='buffer', buffer_wrap=False, buffer_size=16777216, packet_size=None, filter=None, start_trigger=None, stop_trigger=None, duration=None):  # noqa: E501
+    def __init__(self, mode='buffer', buffer_wrap=False, buffer_size=16777216, packet_size=None, filter=None, start_trigger=None, stop_trigger=None, duration=None, packet_count=None):  # noqa: E501
         """PacketCaptureConfig - a model defined in Swagger"""  # noqa: E501
 
         self._mode = None
@@ -63,6 +65,7 @@ class PacketCaptureConfig(object):
         self._start_trigger = None
         self._stop_trigger = None
         self._duration = None
+        self._packet_count = None
         self.discriminator = None
 
         self.mode = mode
@@ -79,6 +82,8 @@ class PacketCaptureConfig(object):
             self.stop_trigger = stop_trigger
         if duration is not None:
             self.duration = duration
+        if packet_count is not None:
+            self.packet_count = packet_count
 
     @property
     def mode(self):
@@ -255,6 +260,28 @@ class PacketCaptureConfig(object):
         :type: int
         """
         self._duration = duration
+
+    @property
+    def packet_count(self):
+        """Gets the packet_count of this PacketCaptureConfig.  # noqa: E501
+
+        Maximum number of packets to capture.   # noqa: E501
+
+        :return: The packet_count of this PacketCaptureConfig.  # noqa: E501
+        :rtype: int
+        """
+        return self._packet_count
+
+    @packet_count.setter
+    def packet_count(self, packet_count):
+        """Sets the packet_count of this PacketCaptureConfig.
+
+        Maximum number of packets to capture.   # noqa: E501
+
+        :param packet_count: The packet_count of this PacketCaptureConfig.  # noqa: E501
+        :type: int
+        """
+        self._packet_count = packet_count
 
     def to_dict(self):
         """Returns the model properties as a dict"""
