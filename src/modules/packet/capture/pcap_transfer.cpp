@@ -19,15 +19,21 @@ namespace openperf::packet::capture::pcap {
 
 const std::string PCAPNG_MIME_TYPE = "application/x-pcapng";
 
-size_t calc_pcap_file_length(capture_buffer_reader& reader)
+size_t calc_pcap_file_length(capture_buffer_reader& reader,
+                             uint64_t packet_start,
+                             uint64_t packet_end)
 {
     size_t length = pcap_buffer_writer::traits::file_header_length()
                     + pcap_buffer_writer::traits::file_trailer_length();
-
+    uint64_t packet_index = 0;
     reader.rewind();
     for (auto& packet : reader) {
-        length +=
-            pcap_buffer_writer::traits::packet_length(packet.hdr.captured_len);
+        if (packet_index > packet_end) break;
+        if (packet_index >= packet_start) {
+            length += pcap_buffer_writer::traits::packet_length(
+                packet.hdr.captured_len);
+        }
+        ++packet_index;
     };
     reader.rewind();
 
@@ -185,10 +191,15 @@ class pcap_thread_transfer_context final : public pcap_transfer_context
 public:
     pcap_thread_transfer_context(std::shared_ptr<Pistache::Tcp::Peer> peer,
                                  Pistache::Tcp::Transport* transport,
+                                 uint64_t packet_start,
+                                 uint64_t packet_end,
                                  bool chunked = false)
         : m_transport(transport)
         , m_peer(std::move(peer))
         , m_writer(std::make_unique<pcap_buffer_writer>())
+        , m_packet_start(packet_start)
+        , m_packet_end(packet_end)
+        , m_packet_index(0)
         , m_buffer_sent(0)
         , m_total_bytes_sent(0)
         , m_chunked(chunked)
@@ -207,7 +218,7 @@ public:
     {
         // Currently code will enable chunk encoding if returned length is 0
         if (m_chunked) return 0;
-        return calc_pcap_file_length(*reader());
+        return calc_pcap_file_length(*reader(), m_packet_start, m_packet_end);
     }
 
     Pistache::Async::Promise<ssize_t> start() override
@@ -217,6 +228,7 @@ public:
                 set_deferred(std::move(deferred));
             });
 
+        m_packet_index = 0;
         m_total_bytes_sent = 0;
         m_buffer_sent = 0;
         m_error = false;
@@ -250,11 +262,28 @@ private:
         m_writer->write_file_header();
 
         std::array<capture_packet*, 16> packets;
-        while (!reader()->is_done() && !m_error) {
-            auto n = reader()->read_packets(packets.data(), packets.size());
+
+        // Skip over packets before start of range
+        while (m_packet_index < m_packet_start && !reader()->is_done()) {
+            auto count =
+                std::min(m_packet_start - m_packet_index, packets.size());
+            auto n = reader()->read_packets(packets.data(), count);
+            m_packet_index += n;
+        }
+
+        while (m_packet_index <= m_packet_end && !reader()->is_done()
+               && !m_error) {
+            auto count = (m_packet_end - m_packet_index + 1);
+            if (!count) {
+                count = packets.size(); // Arithmetic overflow
+            } else {
+                count = std::min(count, packets.size());
+            }
+            auto n = reader()->read_packets(packets.data(), count);
             std::for_each(packets.data(),
                           packets.data() + n,
                           [&](auto& packet) { write_packet(*packet); });
+            m_packet_index += n;
         }
 
         if (!m_error) {
@@ -447,6 +476,9 @@ private:
     Pistache::Tcp::Transport* m_transport;
     std::shared_ptr<Pistache::Tcp::Peer> m_peer;
     std::unique_ptr<pcap_buffer_writer> m_writer;
+    uint64_t m_packet_start;
+    uint64_t m_packet_end;
+    uint64_t m_packet_index;
     size_t m_buffer_sent;
     size_t m_total_bytes_sent;
     bool m_chunked;
@@ -458,10 +490,15 @@ class pcap_async_transfer_context final : public pcap_transfer_context
 public:
     pcap_async_transfer_context(std::shared_ptr<Pistache::Tcp::Peer> peer,
                                 Pistache::Tcp::Transport* transport,
+                                uint64_t packet_start,
+                                uint64_t packet_end,
                                 bool chunked = false)
         : m_transport(transport)
         , m_peer(std::move(peer))
         , m_writer(std::make_unique<pcap_buffer_writer>())
+        , m_packet_start(packet_start)
+        , m_packet_end(packet_end)
+        , m_packet_index(0)
         , m_total_bytes_sent(0)
         , m_chunked(chunked)
         , m_error(false)
@@ -474,7 +511,7 @@ public:
     {
         // Currently code will enable chunk encoding if returned length is 0
         if (m_chunked) return 0;
-        return calc_pcap_file_length(*reader());
+        return calc_pcap_file_length(*reader(), m_packet_start, m_packet_end);
     }
 
     Pistache::Async::Promise<ssize_t> start() override
@@ -484,6 +521,7 @@ public:
                 set_deferred(std::move(deferred));
             });
 
+        m_packet_index = 0;
         m_total_bytes_sent = 0;
         m_error = false;
         m_wrote_trailer = false;
@@ -492,6 +530,13 @@ public:
         m_burst = std::make_unique<burst_reader_type>(reader());
 
         m_writer->write_file_header();
+
+        // Skip to start of range
+        while (m_packet_index < m_packet_start) {
+            if (!m_burst->next()) break;
+            ++m_packet_index;
+        }
+
         transfer();
 
         return promise;
@@ -577,16 +622,18 @@ private:
 
     Pistache::Async::Promise<ssize_t> transfer()
     {
-        bool is_done = m_burst->is_done();
+        bool is_done = (m_packet_index > m_packet_end) || m_burst->is_done();
         if (!is_done) {
             // Fill the buffer
             while (!is_done) {
                 auto packet = *(m_burst->get());
                 if (!m_writer->write_packet(packet)) break;
                 is_done = !m_burst->next();
+                ++m_packet_index;
+                if (m_packet_index > m_packet_end) is_done = true;
             }
 
-            if (m_burst->is_done()) {
+            if (is_done) {
                 if (m_writer->write_file_trailer()) { m_wrote_trailer = true; }
             }
 
@@ -623,6 +670,9 @@ private:
     std::shared_ptr<Pistache::Tcp::Peer> m_peer;
     std::unique_ptr<pcap_buffer_writer> m_writer;
     std::unique_ptr<burst_reader_type> m_burst;
+    uint64_t m_packet_start;
+    uint64_t m_packet_end;
+    uint64_t m_packet_index;
     ssize_t m_total_bytes_sent;
     bool m_chunked;
     bool m_error;
@@ -630,14 +680,16 @@ private:
 };
 
 std::unique_ptr<transfer_context>
-create_pcap_transfer_context(Pistache::Http::ResponseWriter& response)
+create_pcap_transfer_context(Pistache::Http::ResponseWriter& response,
+                             uint64_t packet_start,
+                             uint64_t packet_end)
 {
 #if 1
     std::unique_ptr<transfer_context> context{new pcap_thread_transfer_context(
-        response.peer(), get_transport(response))};
+        response.peer(), get_transport(response), packet_start, packet_end)};
 #else
     std::unique_ptr<transfer_context> context{new pcap_async_transfer_context(
-        response.peer(), get_transport(response))};
+        response.peer(), get_transport(response), packet_start, packet_end)};
 #endif
     return context;
 }

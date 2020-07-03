@@ -306,7 +306,8 @@ reply_msg server::handle_request(const request_create_capture& request)
 {
     auto config = sink_config{.source = request.capture->getSourceId(),
                               .max_packet_size = UINT32_MAX,
-                              .duration = {}};
+                              .duration = {},
+                              .packet_count = 0};
 
     auto user_config = request.capture->getConfig();
     assert(user_config);
@@ -318,6 +319,9 @@ reply_msg server::handle_request(const request_create_capture& request)
     if (user_config->durationIsSet())
         config.duration = std::chrono::duration<uint64_t, std::milli>(
             user_config->getDuration());
+    if (user_config->packetCountIsSet()) {
+        config.packet_count = user_config->getPacketCount();
+    }
     if (user_config->filterIsSet()) {
         config.filter = user_config->getFilter();
     }

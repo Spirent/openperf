@@ -32,6 +32,9 @@ capture_ptr to_swagger(const sink& src)
                 .count();
         dst_config->setDuration(duration_msec);
     }
+    if (src_config.packet_count) {
+        dst_config->setPacketCount(src_config.packet_count);
+    }
     if (!src_config.filter.empty()) dst_config->setFilter(src_config.filter);
     if (!src_config.start_trigger.empty())
         dst_config->setStartTrigger(src_config.start_trigger);
