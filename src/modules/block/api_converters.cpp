@@ -291,6 +291,8 @@ to_swagger(const model::block_generator_result& p_gen_result)
 
     gen_res->setRead(to_statistics_t(p_gen_result.read_stats()));
     gen_res->setWrite(to_statistics_t(p_gen_result.write_stats()));
+    gen_res->setDynamicResults(std::make_shared<DynamicResults>(
+        dynamic::to_swagger(p_gen_result.dynamic_results())));
 
     return gen_res;
 }
@@ -377,8 +379,12 @@ request_block_generator_bulk_start
 from_swagger(BulkStartBlockGeneratorsRequest& p_request)
 {
     request_block_generator_bulk_start request;
-    for (auto& id : p_request.getIds())
-        request.ids.emplace_back(std::make_unique<std::string>(id));
+    for (auto& id : p_request.getIds()) request.data->ids.emplace_back(id);
+
+    if (p_request.dynamicResultsIsSet())
+        request.data->dynamic_results =
+            dynamic::from_swagger(*p_request.getDynamicResults());
+
     return request;
 }
 

@@ -35,6 +35,8 @@ public:
 
     tl::expected<block_generator_result_ptr, std::string>
     start_generator(const std::string& id);
+    tl::expected<block_generator_result_ptr, std::string>
+    start_generator(const std::string& id, const dynamic::configuration&);
     bool stop_generator(const std::string& id);
 
     std::vector<block_generator_ptr> block_generators_list() const;

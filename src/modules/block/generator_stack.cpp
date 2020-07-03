@@ -81,6 +81,22 @@ generator_stack::start_generator(const std::string& id)
     return result;
 }
 
+tl::expected<generator_stack::block_generator_result_ptr, std::string>
+generator_stack::start_generator(const std::string& id,
+                                 const dynamic::configuration& cfg)
+{
+    auto gen = block_generator(id);
+    if (!gen) return nullptr;
+
+    if (gen->is_running()) {
+        return tl::make_unexpected("Generator is already in running state");
+    }
+
+    auto result = gen->start(cfg);
+    m_block_results[result->id()] = gen;
+    return result;
+}
+
 bool generator_stack::stop_generator(const std::string& id)
 {
     auto gen = block_generator(id);

@@ -7,6 +7,8 @@
 #include "models/generator_result.hpp"
 
 #include "framework/generator/controller.hpp"
+#include "framework/dynamic/spool.hpp"
+
 #include "modules/timesync/chrono.hpp"
 
 namespace openperf::block::generator {
@@ -33,6 +35,8 @@ private:
     task_stat_t m_read, m_write;
     chronometer::time_point m_start_time;
 
+    dynamic::spool<model::block_generator_result> m_dynamic;
+
 public:
     block_generator(const model::block_generator& generator_model,
                     const std::vector<virtual_device_stack*>& vdev_stack_list);
@@ -40,6 +44,7 @@ public:
 
     void reset();
     block_result_ptr start();
+    block_result_ptr start(const dynamic::configuration&);
     void stop();
 
     void config(const model::block_generator_config&) override;
