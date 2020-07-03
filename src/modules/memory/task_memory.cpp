@@ -68,7 +68,13 @@ std::vector<unsigned> index_vector(size_t size, io_pattern pattern)
         std::reverse(v_index.begin(), v_index.end());
         break;
     case io_pattern::RANDOM:
-        std::shuffle(v_index.begin(), v_index.end(), std::random_device());
+        // Use A Mersenne Twister pseudo-random generator to provide fast vector
+        // shuffling
+        {
+            std::random_device rd;
+            std::mt19937_64 g(rd());
+            std::shuffle(v_index.begin(), v_index.end(), g);
+        }
         break;
     default:
         OP_LOG(OP_LOG_ERROR, "Unrecognized generator pattern: %d\n", pattern);
