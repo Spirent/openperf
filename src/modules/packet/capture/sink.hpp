@@ -35,6 +35,7 @@ struct sink_config
     std::string id = core::to_string(core::uuid::random());
     std::string source;
     uint64_t buffer_size;
+    uint64_t packet_count;
     uint32_t max_packet_size;
     std::string filter;
     std::string start_trigger;
@@ -114,6 +115,16 @@ private:
         const openperf::packetio::packet::packet_buffer* const packets[],
         uint16_t packets_length) const noexcept;
 
+    uint16_t write_packets(
+        capture_buffer& buffer,
+        const openperf::packetio::packet::packet_buffer* const packets[],
+        uint16_t packets_length) const noexcept;
+
+    uint16_t write_filtered_packets(
+        capture_buffer& buffer,
+        const openperf::packetio::packet::packet_buffer* const packets[],
+        uint16_t packets_length) const noexcept;
+
     sink_config m_config;
 
     std::unique_ptr<openperf::packet::bpf::bpf> m_filter;
@@ -123,6 +134,7 @@ private:
     std::vector<uint8_t> m_indexes;
     mutable std::atomic<sink_result*> m_results = nullptr;
     mutable std::optional<timesync::chrono::realtime::time_point> m_stop_time;
+    mutable std::atomic<uint64_t> m_packet_count;
 };
 
 } // namespace openperf::packet::capture

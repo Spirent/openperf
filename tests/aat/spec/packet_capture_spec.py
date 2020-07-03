@@ -95,9 +95,15 @@ def do_ping(api_client, ping_binary, src_id, dst_id, domain, count=1, payload_si
         p.wait()
         expect(p.returncode).to(equal(0))
 
-def get_pcap(api, id, out_file):
+def get_pcap(api, id, out_file, packet_start=None, packet_end=None):
+    kwargs = dict()
     # Need to use _preload_content to avoid issues with binary data
-    resp = api.get_packet_capture_pcap(id=id, _preload_content=False)
+    kwargs['_preload_content'] = False
+    if packet_start:
+        kwargs['packet_start'] = packet_start
+    if packet_end:
+        kwargs['packet_end'] = packet_end
+    resp = api.get_packet_capture_pcap(id=id, **kwargs)
     with open(out_file, 'wb') as fdst:
         shutil.copyfileobj(resp, fdst)
 
@@ -124,6 +130,16 @@ def pcap_icmp_echo_request_lengths(pcap_file):
         if 'ICMP' in packet and packet['ICMP'].type == icmp_type:
             lengths.append(len(packet))
     return lengths
+
+def pcap_icmp_echo_request_seq(pcap_file):
+    seq = []
+    icmp_type = scapy.all.ICMP(type='echo-request').type
+    for packet in scapy.all.rdpcap(pcap_file):
+        if 'ICMP' in packet:
+            icmp = packet['ICMP']
+            if icmp.type == icmp_type:
+                seq.append(icmp.seq)
+    return seq
 
 
 with description('Packet Capture,', 'packet_capture') as self:
@@ -413,6 +429,36 @@ with description('Packet Capture,', 'packet_capture') as self:
                     expect(pcap_icmp_echo_request_count(out_file)).to(equal(4))
                     os.remove(out_file)
 
+            with description('packet_count,'):
+                with it('stops automatically'):
+                    packet_count = 3
+                    cap = capture_model(self.api.api_client, 'dataplane-server')
+                    cap.config.packet_count = packet_count
+                    cap = self.api.create_packet_capture(cap)
+                    expect(cap).to(be_valid_packet_capture)
+                    self.capture = cap
+
+                    start_time = datetime.datetime.now()
+                    self.result = self.api.start_packet_capture(self.capture.id)
+                    expect(self.result).to(be_valid_packet_capture_result)
+                    expect(self.result.state == 'started')
+                    do_ping(self.intf_api, self.temp_ping,
+                            'dataplane-client', 'dataplane-server',
+                            socket.AF_INET, 5)
+                    now = datetime.datetime.now()
+                    while (now - start_time).total_seconds() < 5:
+                        result = self.api.get_packet_capture_result(id=self.result.id)
+                        if result.state == 'stopped':
+                            break
+                        time.sleep(.1)
+                        now = datetime.datetime.now()
+                    if result.state != 'stopped':
+                        # If it didn't stop this is an error
+                        self.api.stop_packet_capture(self.capture.id)
+                        expect(result.state == 'stopped')
+                    expect(result.id).to(equal(self.result.id))
+                    expect(result.packets).to(equal(packet_count))
+
             with description('filter,'):
                 with it('filters w/ icmp and length == 1000'):
                     packet_len = 1000
@@ -448,6 +494,65 @@ with description('Packet Capture,', 'packet_capture') as self:
                     expect(len(lengths)).to(equal(2))
                     for length in lengths:
                         expect(length).to(equal(packet_len))
+                    os.remove(out_file)
+
+            with description('partial pcap read,'):
+                with it('succeeds'):
+                    packet_count = 8
+                    cap = capture_model(self.api.api_client, 'dataplane-server')
+                    # Set filter to only all ICMP to make it easier to know what the packets are
+                    cap.config.filter = 'icmp'
+                    cap = self.api.create_packet_capture(cap)
+                    expect(cap).to(be_valid_packet_capture)
+                    self.capture = cap
+
+                    self.result = self.api.start_packet_capture(self.capture.id)
+                    expect(self.result).to(be_valid_packet_capture_result)
+                    expect(self.result.state == 'started')
+
+                    do_ping(self.intf_api, self.temp_ping,
+                            'dataplane-client', 'dataplane-server',
+                            socket.AF_INET, packet_count)
+                    self.api.stop_packet_capture(self.capture.id)
+                    result = self.api.get_packet_capture_result(id=self.result.id)
+                    expect(result.state == 'stopped')
+                    expect(result.id).to(equal(self.result.id))
+                    expect(result.packets).to(be_above_or_equal(2))
+
+                    out_file = os.path.join(self.temp_dir, 'test.pcapng')
+
+                    expected_seq = list(range(1, packet_count + 1))
+
+                    # Retrieve entire PCAP file
+                    get_pcap(self.api, self.result.id, out_file)
+                    expect(os.path.exists(out_file)).to(equal(True))
+                    seq = pcap_icmp_echo_request_seq(out_file)
+                    expect(len(seq)).to(equal(8))
+                    expect(seq).to(equal(expected_seq))
+                    os.remove(out_file)
+
+                    # Retrieve PCAP range 0 - 3
+                    get_pcap(self.api, self.result.id, out_file, 0, 3)
+                    expect(os.path.exists(out_file)).to(equal(True))
+                    seq = pcap_icmp_echo_request_seq(out_file)
+                    expect(len(seq)).to(equal(4))
+                    expect(seq).to(equal(expected_seq[0:4]))
+                    os.remove(out_file)
+
+                    # Retrieve PCAP range 3 - 6
+                    get_pcap(self.api, self.result.id, out_file, 3, 6)
+                    expect(os.path.exists(out_file)).to(equal(True))
+                    seq = pcap_icmp_echo_request_seq(out_file)
+                    expect(len(seq)).to(equal(4))
+                    expect(seq).to(equal(expected_seq[3:7]))
+                    os.remove(out_file)
+
+                    # Retrieve PCAP range 4 - 7
+                    get_pcap(self.api, self.result.id, out_file, 4, 7)
+                    expect(os.path.exists(out_file)).to(equal(True))
+                    seq = pcap_icmp_echo_request_seq(out_file)
+                    expect(len(seq)).to(equal(4))
+                    expect(seq).to(equal(expected_seq[4:8]))
                     os.remove(out_file)
 
             with description('start trigger,'):

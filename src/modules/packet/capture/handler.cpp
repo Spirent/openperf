@@ -701,13 +701,27 @@ void handler::delete_capture_result(const request_type& request,
 void handler::get_capture_result_pcap(const request_type& request,
                                       response_type response)
 {
+    uint64_t packet_start = 0, packet_end = UINT64_MAX;
     auto id = request.param(":id").as<std::string>();
     if (auto res = config::op_config_validate_id_string(id); !res) {
         response.send(Http::Code::Not_Found, res.error());
         return;
     }
 
-    auto transfer_ptr = pcap::create_pcap_transfer_context(response);
+    if (auto query = request.query().get("packet_start"); !query.isEmpty()) {
+        packet_start = strtoull(query.get().c_str(), nullptr, 10);
+    }
+    if (auto query = request.query().get("packet_end"); !query.isEmpty()) {
+        packet_end = strtoull(query.get().c_str(), nullptr, 10);
+    }
+    if (packet_start > packet_end) {
+        auto err_msg = "packet start > end (" + std::to_string(packet_start)
+                       + " > " + std::to_string(packet_end) + ")";
+        response.send(Http::Code::Bad_Request, err_msg);
+    }
+
+    auto transfer_ptr =
+        pcap::create_pcap_transfer_context(response, packet_start, packet_end);
 
     auto api_reply =
         submit_request(m_socket.get(),

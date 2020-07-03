@@ -10,7 +10,9 @@ class transfer_context;
 namespace openperf::packet::capture::pcap {
 
 std::unique_ptr<transfer_context>
-create_pcap_transfer_context(Pistache::Http::ResponseWriter& response);
+create_pcap_transfer_context(Pistache::Http::ResponseWriter& response,
+                             uint64_t packet_start = 0,
+                             uint64_t packet_end = UINT64_MAX);
 
 Pistache::Async::Promise<ssize_t>
 send_pcap_response_header(Pistache::Http::ResponseWriter& response,
