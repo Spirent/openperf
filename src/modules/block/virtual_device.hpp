@@ -58,7 +58,7 @@ public:
     }
 
     void terminate_scrub();
-    void queue_scrub();
+    tl::expected<void, std::string> queue_scrub();
 };
 
 class virtual_device_stack

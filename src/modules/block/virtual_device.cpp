@@ -62,20 +62,20 @@ void virtual_device::scrub_worker(int fd, size_t header_size, size_t file_size)
     }
 }
 
-void virtual_device::queue_scrub()
+tl::expected<void, std::string> virtual_device::queue_scrub()
 {
     int fd =
         open(get_path().c_str(), O_RDWR | O_CREAT | O_DSYNC, S_IRUSR | S_IWUSR);
 
-    if (fd < 0) { throw std::runtime_error("Wrong file descriptor"); }
+    if (fd < 0) { return tl::make_unexpected("Wrong file descriptor"); }
 
     struct virtual_device_header header = {};
     int read_or_err = pread(fd, &header, sizeof(header), 0);
 
     if (read_or_err == -1) {
         close(fd);
-        throw std::runtime_error("Cannot read header: "
-                                 + std::string(strerror(errno)));
+        return tl::make_unexpected("Cannot read header: "
+                                   + std::string(strerror(errno)));
     } else if (read_or_err >= (int)sizeof(header)
                && strncmp(header.tag,
                           VIRTUAL_DEVICE_HEADER_TAG,
@@ -85,7 +85,7 @@ void virtual_device::queue_scrub()
             // We're done since this vdev is suitable for use
             close(fd);
             scrub_done();
-            return;
+            return {};
         }
     }
 
@@ -94,6 +94,7 @@ void virtual_device::queue_scrub()
         close(fd);
         scrub_done();
     });
+    return {};
 }
 
 void virtual_device::terminate_scrub()

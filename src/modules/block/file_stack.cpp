@@ -99,16 +99,13 @@ file_stack::create_block_file(const model::file& block_file_model)
             "File size less than header size ("
             + std::to_string(sizeof(virtual_device_header)) + " bytes)");
 
-    try {
-        auto blkblock_file_ptr = std::make_shared<file>(block_file_model);
+    auto blkblock_file_ptr = std::make_shared<file>(block_file_model);
 
-        blkblock_file_ptr->queue_scrub();
-        m_block_files.emplace(block_file_model.get_id(), blkblock_file_ptr);
-        return blkblock_file_ptr;
-    } catch (const std::runtime_error& e) {
+    if (auto res = blkblock_file_ptr->queue_scrub(); !res)
         return tl::make_unexpected("Cannot create file: "
-                                   + std::string(e.what()));
-    }
+                                   + std::string(res.error()));
+    m_block_files.emplace(block_file_model.get_id(), blkblock_file_ptr);
+    return blkblock_file_ptr;
 }
 
 std::shared_ptr<virtual_device>

@@ -64,21 +64,23 @@ void device::scrub_update(double p)
     set_init_percent_complete(static_cast<int32_t>(100 * p));
 }
 
-void device::initialize()
+tl::expected<void, std::string> device::initialize()
 {
     if (!is_usable())
-        throw std::runtime_error("Cannot initialize unusable device");
+        return tl::make_unexpected("Cannot initialize unusable device");
 
     if (get_size() <= sizeof(virtual_device_header))
-        throw std::runtime_error("Device size less than header size ("
-                                 + std::to_string(sizeof(virtual_device_header))
-                                 + " bytes)");
+        return tl::make_unexpected(
+            "Device size less than header size ("
+            + std::to_string(sizeof(virtual_device_header)) + " bytes)");
 
     if (get_state() != state::NONE)
-        throw std::runtime_error("Device is already initialized");
+        return tl::make_unexpected("Device is already initialized");
 
-    queue_scrub();
+    if (auto res = queue_scrub(); !res) return res;
+
     if (get_state() == state::NONE) set_state(state::INIT);
+    return {};
 }
 
 device_stack::device_stack() { init_device_stack(); }
@@ -205,13 +207,10 @@ device_stack::initialize_device(const std::string& id)
 
     if (!blkdev) return tl::make_unexpected("Unknown device: " + id);
 
-    try {
-        blkdev->initialize();
-        return {};
-    } catch (const std::runtime_error& e) {
+    if (auto res = blkdev->initialize(); !res)
         return tl::make_unexpected("Cannot initialize device: "
-                                   + std::string(e.what()));
-    }
+                                   + std::string(res.error()));
+    return {};
 }
 
 } // namespace openperf::block::device

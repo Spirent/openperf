@@ -23,7 +23,7 @@ public:
     void vclose() override;
     uint64_t get_size() const override;
     std::string get_path() const override;
-    void initialize();
+    tl::expected<void, std::string> initialize();
 };
 
 using device_ptr = std::shared_ptr<device>;
