@@ -19,7 +19,7 @@ public:
         size_t buffer_size = 0;
         size_t read_threads = 0;
         size_t write_threads = 0;
-        struct
+        struct operation_config
         {
             size_t block_size = 0;
             size_t op_per_sec = 0;
@@ -55,6 +55,8 @@ private:
         void* ptr;
         size_t size;
     } m_buffer;
+
+    std::vector<unsigned> m_read_indexes, m_write_indexes;
 
     uint16_t m_serial_number;
     std::chrono::nanoseconds m_run_time;

@@ -56,33 +56,6 @@ auto calc_ops_and_sleep(const task_memory::stat_t& total,
     return std::make_tuple(to_do_ops, ns_to_sleep);
 }
 
-std::vector<unsigned> index_vector(size_t size, io_pattern pattern)
-{
-    std::vector<unsigned> v_index(size);
-    std::iota(v_index.begin(), v_index.end(), 0);
-
-    switch (pattern) {
-    case io_pattern::SEQUENTIAL:
-        break;
-    case io_pattern::REVERSE:
-        std::reverse(v_index.begin(), v_index.end());
-        break;
-    case io_pattern::RANDOM:
-        // Use A Mersenne Twister pseudo-random generator to provide fast vector
-        // shuffling
-        {
-            std::random_device rd;
-            std::mt19937_64 g(rd());
-            std::shuffle(v_index.begin(), v_index.end(), g);
-        }
-        break;
-    default:
-        OP_LOG(OP_LOG_ERROR, "Unrecognized generator pattern: %d\n", pattern);
-    }
-
-    return v_index;
-}
-
 // Constructors & Destructor
 task_memory::task_memory()
     : m_scratch{.ptr = nullptr, .size = 0}
@@ -107,35 +80,8 @@ void task_memory::config(const task_memory_config& msg)
 {
     assert(msg.pattern != io_pattern::NONE);
 
-    // io blocks in buffer
-    size_t nb_blocks = msg.block_size ? msg.buffer.size / msg.block_size : 0;
-
-    /*
-     * Need to update our indexes if the number of blocks or the pattern
-     * has changed.
-     */
-    auto configuration_changed =
-        nb_blocks != m_indexes.size() || msg.pattern != m_config.pattern;
-
-    if (nb_blocks && configuration_changed) {
-        try {
-            m_op_index = 0;
-            m_indexes = index_vector(nb_blocks, msg.pattern);
-            m_config.pattern = msg.pattern;
-        } catch (const std::exception& e) {
-            OP_LOG(OP_LOG_ERROR,
-                   "Could not allocate %zu element index array\n",
-                   nb_blocks);
-            throw std::exception(e);
-        }
-    } else if (!nb_blocks) {
-        m_op_index = 0;
-        m_indexes.clear();
-
-        m_config.pattern = io_pattern::NONE;
-        m_config.op_per_sec = 0;
-        return;
-    }
+    m_op_index = utils::random_uniform(msg.indexes->size());
+    m_config.pattern = msg.pattern;
 
     m_buffer = reinterpret_cast<uint8_t*>(msg.buffer.ptr);
 
@@ -150,12 +96,12 @@ void task_memory::config(const task_memory_config& msg)
     }
 
     m_config = msg;
-}
+} // namespace openperf::memory::internal
 
 void task_memory::spin()
 {
     /* If we have a rate to generate, then we need indexes */
-    assert(m_config.op_per_sec == 0 || m_indexes.size() > 0);
+    assert(m_config.op_per_sec == 0 || m_config.indexes->size() > 0);
 
     if (m_stat_clear) {
         m_avg_rate = 100000000;

@@ -165,6 +165,33 @@ void generator::scrub_worker()
     }
 }
 
+void index_vector(std::vector<unsigned>& indexes,
+                  size_t size,
+                  io_pattern pattern)
+{
+    indexes.resize(size, 0);
+    std::iota(indexes.begin(), indexes.end(), 0);
+
+    switch (pattern) {
+    case io_pattern::SEQUENTIAL:
+        break;
+    case io_pattern::REVERSE:
+        std::reverse(indexes.begin(), indexes.end());
+        break;
+    case io_pattern::RANDOM:
+        // Use A Mersenne Twister pseudo-random generator to provide fast vector
+        // shuffling
+        {
+            std::random_device rd;
+            std::mt19937_64 g(rd());
+            std::shuffle(indexes.begin(), indexes.end(), g);
+        }
+        break;
+    default:
+        OP_LOG(OP_LOG_ERROR, "Unrecognized generator pattern: %d\n", pattern);
+    }
+}
+
 void generator::config(const generator::config_t& cfg)
 {
     pause();
@@ -180,29 +207,33 @@ void generator::config(const generator::config_t& cfg)
         m_scrub_aborted.store(false);
     });
 
+    auto configure_workers = [this](workers& w,
+                                    std::vector<unsigned>& indexes,
+                                    const config_t::operation_config& op_cfg,
+                                    size_t threads) {
+        // io blocks in buffer
+        size_t nb_blocks =
+            op_cfg.block_size ? m_buffer.size / op_cfg.block_size : 0;
+        index_vector(indexes, nb_blocks, op_cfg.pattern);
+
+        auto rate = (!threads) ? 0 : op_cfg.op_per_sec / threads;
+
+        spread_config(w,
+                      task_memory_config{.block_size = op_cfg.block_size,
+                                         .op_per_sec = rate,
+                                         .pattern = op_cfg.pattern,
+                                         .buffer = {.ptr = m_buffer.ptr,
+                                                    .size = m_buffer.size},
+                                         .indexes = &indexes});
+    };
+
     reallocate_workers<task_memory_read>(m_read_workers, cfg.read_threads);
-
-    auto read_rate =
-        (!cfg.read_threads) ? 0 : cfg.read.op_per_sec / cfg.read_threads;
-
-    spread_config(m_read_workers,
-                  task_memory_config{
-                      .block_size = cfg.read.block_size,
-                      .op_per_sec = read_rate,
-                      .pattern = cfg.read.pattern,
-                      .buffer = {.ptr = m_buffer.ptr, .size = m_buffer.size}});
+    configure_workers(
+        m_read_workers, m_read_indexes, cfg.read, cfg.read_threads);
 
     reallocate_workers<task_memory_write>(m_write_workers, cfg.write_threads);
-
-    auto write_rate =
-        (!cfg.write_threads) ? 0 : cfg.write.op_per_sec / cfg.write_threads;
-
-    spread_config(m_write_workers,
-                  task_memory_config{
-                      .block_size = cfg.write.block_size,
-                      .op_per_sec = write_rate,
-                      .pattern = cfg.write.pattern,
-                      .buffer = {.ptr = m_buffer.ptr, .size = m_buffer.size}});
+    configure_workers(
+        m_write_workers, m_write_indexes, cfg.write, cfg.write_threads);
 
     m_config = cfg;
     resume();
