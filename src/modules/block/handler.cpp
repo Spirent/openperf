@@ -42,7 +42,7 @@ public:
                     Http::ResponseWriter response);
 
     void init_device(const Rest::Request& request,
-                    Http::ResponseWriter response);
+                     Http::ResponseWriter response);
 
     void list_files(const Rest::Request& request,
                     Http::ResponseWriter response);
@@ -135,8 +135,8 @@ handler::handler(void* context, Rest::Router& router)
                       "/block-devices/:id",
                       Rest::Routes::bind(&handler::get_device, this));
     Rest::Routes::Post(router,
-                      "/block-devices/:id/initialize",
-                      Rest::Routes::bind(&handler::init_device, this));
+                       "/block-devices/:id/initialize",
+                       Rest::Routes::bind(&handler::init_device, this));
     Rest::Routes::Get(
         router, "/block-files", Rest::Routes::bind(&handler::list_files, this));
     Rest::Routes::Post(router,
@@ -261,9 +261,8 @@ void handler::get_device(const Rest::Request& request,
     }
 }
 
-
 void handler::init_device(const Rest::Request& request,
-                         Http::ResponseWriter response)
+                          Http::ResponseWriter response)
 {
     auto id = request.param(":id").as<std::string>();
     if (auto res = openperf::config::op_config_validate_id_string(id); !res) {
