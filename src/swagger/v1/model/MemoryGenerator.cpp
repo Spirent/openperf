@@ -21,6 +21,7 @@ MemoryGenerator::MemoryGenerator()
 {
     m_Id = "";
     m_Running = false;
+    m_Init_percent_complete = 0;
     
 }
 
@@ -40,6 +41,7 @@ nlohmann::json MemoryGenerator::toJson() const
     val["id"] = ModelBase::toJson(m_Id);
     val["config"] = ModelBase::toJson(m_Config);
     val["running"] = m_Running;
+    val["init_percent_complete"] = m_Init_percent_complete;
     
 
     return val;
@@ -49,6 +51,7 @@ void MemoryGenerator::fromJson(nlohmann::json& val)
 {
     setId(val.at("id"));
     setRunning(val.at("running"));
+    setInitPercentComplete(val.at("init_percent_complete"));
     
 }
 
@@ -78,6 +81,15 @@ bool MemoryGenerator::isRunning() const
 void MemoryGenerator::setRunning(bool value)
 {
     m_Running = value;
+    
+}
+int32_t MemoryGenerator::getInitPercentComplete() const
+{
+    return m_Init_percent_complete;
+}
+void MemoryGenerator::setInitPercentComplete(int32_t value)
+{
+    m_Init_percent_complete = value;
     
 }
 

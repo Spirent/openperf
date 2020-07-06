@@ -30,6 +30,20 @@ inline void op_pseudo_random_fill(void* buffer, size_t length)
     }
 }
 
+inline void op_pseudo_random_fill(uint32_t* seedp, void* buffer, size_t length)
+{
+    uint32_t seed = *seedp;
+    uint32_t* ptr = reinterpret_cast<uint32_t*>(buffer);
+
+    for (size_t i = 0; i < length / 4; i++) {
+        uint32_t temp = (seed << 9) ^ (seed << 14);
+        seed = temp ^ (temp >> 23) ^ (temp >> 18);
+        *(ptr + i) = temp;
+    }
+
+    *seedp = seed;
+}
+
 } // namespace openperf::utils
 
 #endif // _OP_UTILS_RANDOM_HPP_

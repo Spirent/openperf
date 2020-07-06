@@ -104,6 +104,7 @@ struct error : message
         NOT_FOUND,
         EXISTS,
         INVALID_ID,
+        NOT_INITIALIZED,
         ZMQ_ERROR
     } type = NONE;
     int value = 0;
@@ -118,6 +119,7 @@ struct item
         std::string id;
         bool is_running;
         config_t config;
+        int32_t init_percent_complete;
     };
 
     std::unique_ptr<item_data> data;

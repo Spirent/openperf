@@ -46,7 +46,10 @@ api_reply server::handle_request(const request::generator::list&)
     {
         const auto& gnr = m_generator_stack->generator(id);
         return reply::generator::item::item_data{
-            .id = id, .is_running = gnr.is_running(), .config = gnr.config()};
+            .id = id,
+            .is_running = gnr.is_running(),
+            .config = gnr.config(),
+            .init_percent_complete = gnr.init_percent_complete()};
     };
 
     reply::generator::list list{
@@ -66,8 +69,11 @@ api_reply server::handle_request(const request::generator::get& req)
     if (m_generator_stack->contains(req.id)) {
         const auto& gnr = m_generator_stack->generator(req.id);
 
-        reply::generator::item::item_data data{
-            req.id, .is_running = gnr.is_running(), .config = gnr.config()};
+        reply::generator::item::item_data data{req.id,
+                                               .is_running = gnr.is_running(),
+                                               .config = gnr.config(),
+                                               .init_percent_complete =
+                                                   gnr.init_percent_complete()};
         reply::generator::item reply{
             std::make_unique<reply::generator::item::item_data>(
                 std::move(data))};
@@ -75,7 +81,7 @@ api_reply server::handle_request(const request::generator::get& req)
     }
 
     return reply::error{.type = reply::error::NOT_FOUND};
-}
+} // namespace openperf::memory::api
 
 api_reply server::handle_request(const request::generator::erase& req)
 {
@@ -91,11 +97,16 @@ api_reply server::handle_request(const request::generator::create& req)
 {
     try {
         auto id = m_generator_stack->create(req.data->id, req.data->config);
-        if (req.data->is_running) { m_generator_stack->start(id); }
+        if (req.data->is_running && !req.data->config.pre_allocate_buffer) {
+            m_generator_stack->start(id);
+        }
 
         const auto& gnr = m_generator_stack->generator(id);
-        reply::generator::item::item_data data{
-            .id = id, .is_running = gnr.is_running(), .config = gnr.config()};
+        reply::generator::item::item_data data{.id = id,
+                                               .is_running = gnr.is_running(),
+                                               .config = gnr.config(),
+                                               .init_percent_complete =
+                                                   gnr.init_percent_complete()};
         auto reply = reply::generator::item{
             std::make_unique<reply::generator::item::item_data>(
                 std::move(data))};
@@ -123,10 +134,12 @@ api_reply server::handle_request(const request::generator::bulk::create& req)
         try {
             auto id = m_generator_stack->create(data.id, data.config);
             const auto& gnr = m_generator_stack->generator(id);
-            reply::generator::item::item_data item_data{.id = id,
-                                                        .is_running =
-                                                            data.is_running,
-                                                        .config = gnr.config()};
+            reply::generator::item::item_data item_data{
+                .id = id,
+                .is_running =
+                    data.is_running && !data.config.pre_allocate_buffer,
+                .config = gnr.config(),
+                .init_percent_complete = gnr.init_percent_complete()};
             list.data->push_back(item_data);
         } catch (const std::invalid_argument&) {
             remove_created_items();
@@ -138,11 +151,12 @@ api_reply server::handle_request(const request::generator::bulk::create& req)
     }
 
     for (const auto& data : *list.data) {
-        if (data.is_running) m_generator_stack->start(data.id);
+        if (data.is_running && !data.config.pre_allocate_buffer)
+            m_generator_stack->start(data.id);
     }
 
     return list;
-}
+} // namespace openperf::memory::api
 
 api_reply server::handle_request(const request::generator::bulk::erase& req)
 {
@@ -167,18 +181,21 @@ api_reply server::handle_request(const request::generator::stop& req)
 
 api_reply server::handle_request(const request::generator::start& req)
 {
-    if (m_generator_stack->contains(req.id)) {
-        m_generator_stack->start(req.id);
-        auto stat = m_generator_stack->stat(req.id);
-        reply::statistic::item::item_data data{.id = stat.id,
-                                               .generator_id =
-                                                   stat.generator_id,
-                                               .stat = stat.stat};
-        return reply::statistic::item{
-            std::make_unique<reply::statistic::item::item_data>(
-                std::move(data))};
+    try {
+        if (m_generator_stack->contains(req.id)) {
+            m_generator_stack->start(req.id);
+            auto stat = m_generator_stack->stat(req.id);
+            reply::statistic::item::item_data data{.id = stat.id,
+                                                   .generator_id =
+                                                       stat.generator_id,
+                                                   .stat = stat.stat};
+            return reply::statistic::item{
+                std::make_unique<reply::statistic::item::item_data>(
+                    std::move(data))};
+        }
+    } catch (const std::runtime_error&) {
+        return reply::error{.type = reply::error::NOT_INITIALIZED};
     }
-
     return reply::error{.type = reply::error::NOT_FOUND};
 }
 
