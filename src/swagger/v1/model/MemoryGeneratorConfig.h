@@ -54,6 +54,11 @@ public:
     int32_t getBufferSize() const;
     void setBufferSize(int32_t value);
         /// <summary>
+    /// Initialize allocation procces for the memory buffer
+    /// </summary>
+    bool isPreAllocateBuffer() const;
+    void setPreAllocateBuffer(bool value);
+        /// <summary>
     /// Number of read operations to perform per second
     /// </summary>
     int32_t getReadsPerSec() const;
@@ -91,6 +96,8 @@ public:
     
 protected:
     int32_t m_Buffer_size;
+
+    bool m_Pre_allocate_buffer;
 
     int32_t m_Reads_per_sec;
 

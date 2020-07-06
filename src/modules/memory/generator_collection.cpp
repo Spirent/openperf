@@ -80,7 +80,7 @@ void generator_collection::start()
 {
     for (auto& entry : m_generators) {
         auto& g7r = entry.second;
-        if (g7r.is_stopped()) {
+        if (g7r.is_stopped() && g7r.init_percent_complete() == 100) {
             auto stat_id = core::to_string(core::uuid::random());
             m_stats.emplace(stat_id, generator_ref(g7r));
             m_id_map.insert_or_assign(entry.first, stat_id);
@@ -93,6 +93,11 @@ void generator_collection::start()
 void generator_collection::start(const std::string& id)
 {
     auto& g7r = m_generators.at(id);
+
+    if (g7r.init_percent_complete() < 100)
+        throw std::runtime_error(
+            "Cannot start not initialized generator with id '" + id + "'.");
+
     if (g7r.is_stopped()) {
         auto stat_id = core::to_string(core::uuid::random());
         m_stats.emplace(stat_id, generator_ref(g7r));

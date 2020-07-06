@@ -311,10 +311,15 @@ definitions:
       running:
         type: boolean
         description: Indicates whether this generator is currently running.
+      init_percent_complete:
+          type: integer
+          description: Percentage of initialization completed so far
+          format: int32
     required:
       - id
       - config
       - running
+      - init_percent_complete
 
   MemoryGeneratorConfig:
     type: object
@@ -324,6 +329,9 @@ definitions:
         type: integer
         description: Memory size constraint. The buffer can never be larger than the value specified (in bytes)
         minimum: 64
+      pre_allocate_buffer:
+          type: boolean
+          description: Initialize allocation procces for the memory buffer
       reads_per_sec:
         type: integer
         description: Number of read operations to perform per second
@@ -357,6 +365,7 @@ definitions:
           - reverse
     required:
       - buffer_size
+      - pre_allocate_buffer
       - reads_per_sec
       - read_size
       - read_threads

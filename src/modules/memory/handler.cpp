@@ -39,6 +39,11 @@ void response_error(Http::ResponseWriter& rsp, reply::error error)
         rsp.send(Http::Code::Bad_Request,
                  json_error("Trying to remove active statistics"));
         break;
+    case reply::error::NOT_INITIALIZED:
+        rsp.headers().add<Http::Header::ContentType>(MIME(Application, Json));
+        rsp.send(Http::Code::Bad_Request,
+                 json_error("Trying to start not initialized generator"));
+        break;
     default:
         rsp.send(Http::Code::Internal_Server_Error);
     }
@@ -79,8 +84,8 @@ public:
 };
 
 handler::handler(void* context, Rest::Router& router)
-    : socket(op_socket_get_client(
-          context, ZMQ_REQ, openperf::memory::api::endpoint))
+    : socket(
+        op_socket_get_client(context, ZMQ_REQ, openperf::memory::api::endpoint))
 {
     Rest::Routes::Get(router,
                       "/memory-generators",

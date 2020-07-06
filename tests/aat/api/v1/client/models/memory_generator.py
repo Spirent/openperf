@@ -33,26 +33,30 @@ class MemoryGenerator(object):
     swagger_types = {
         'id': 'str',
         'config': 'MemoryGeneratorConfig',
-        'running': 'bool'
+        'running': 'bool',
+        'init_percent_complete': 'int'
     }
 
     attribute_map = {
         'id': 'id',
         'config': 'config',
-        'running': 'running'
+        'running': 'running',
+        'init_percent_complete': 'init_percent_complete'
     }
 
-    def __init__(self, id=None, config=None, running=None):  # noqa: E501
+    def __init__(self, id=None, config=None, running=None, init_percent_complete=None):  # noqa: E501
         """MemoryGenerator - a model defined in Swagger"""  # noqa: E501
 
         self._id = None
         self._config = None
         self._running = None
+        self._init_percent_complete = None
         self.discriminator = None
 
         self.id = id
         self.config = config
         self.running = running
+        self.init_percent_complete = init_percent_complete
 
     @property
     def id(self):
@@ -117,6 +121,28 @@ class MemoryGenerator(object):
         :type: bool
         """
         self._running = running
+
+    @property
+    def init_percent_complete(self):
+        """Gets the init_percent_complete of this MemoryGenerator.  # noqa: E501
+
+        Percentage of initialization completed so far  # noqa: E501
+
+        :return: The init_percent_complete of this MemoryGenerator.  # noqa: E501
+        :rtype: int
+        """
+        return self._init_percent_complete
+
+    @init_percent_complete.setter
+    def init_percent_complete(self, init_percent_complete):
+        """Sets the init_percent_complete of this MemoryGenerator.
+
+        Percentage of initialization completed so far  # noqa: E501
+
+        :param init_percent_complete: The init_percent_complete of this MemoryGenerator.  # noqa: E501
+        :type: int
+        """
+        self._init_percent_complete = init_percent_complete
 
     def to_dict(self):
         """Returns the model properties as a dict"""
