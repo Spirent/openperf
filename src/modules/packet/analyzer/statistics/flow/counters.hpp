@@ -6,7 +6,7 @@
 #include "packet/statistics/tuple_utils.hpp"
 #include "packetio/packet_buffer.hpp"
 
-namespace openperf::packet::analyzer::statistics::flow {
+namespace openperf::packet::analyzer::statistics::flow::counter {
 
 using stat_t = uint64_t;
 using half_stat_t = uint32_t;
@@ -524,6 +524,6 @@ static_assert(sizeof(std::tuple<frame_counter,
                   <= 192,
               "Flow count structures are too large!");
 
-} // namespace openperf::packet::analyzer::statistics::flow
+} // namespace openperf::packet::analyzer::statistics::flow::counter
 
 #endif /* _OP_ANALYZER_STATISTICS_FLOW_COUNTERS_HPP_ */

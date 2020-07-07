@@ -58,7 +58,8 @@ inline constexpr auto result_reader_id = 0;
 
 using protocol_counters_config =
     openperf::utils::bit_flags<packet::statistics::protocol_flags>;
-using flow_counters_config = openperf::utils::bit_flags<statistics::flow_flags>;
+using flow_counters_config =
+    openperf::utils::bit_flags<statistics::flow_counter_flags>;
 
 using analyzer_type = swagger::v1::model::PacketAnalyzer;
 using analyzer_ptr = std::unique_ptr<analyzer_type>;

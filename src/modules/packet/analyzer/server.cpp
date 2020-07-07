@@ -245,10 +245,11 @@ protocol_counters_config to_protocol_counters(std::vector<std::string>& names)
 
 flow_counters_config to_flow_counters(std::vector<std::string>& names)
 {
-    auto counters = flow_counters_config{statistics::flow_flags::frame_count};
+    auto counters =
+        flow_counters_config{statistics::flow_counter_flags::frame_count};
 
     std::for_each(std::begin(names), std::end(names), [&](const auto& name) {
-        counters |= statistics::to_flow_flag(name);
+        counters |= statistics::to_flow_counter_flag(name);
     });
 
     return (counters);

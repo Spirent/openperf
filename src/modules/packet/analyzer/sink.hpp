@@ -6,7 +6,7 @@
 
 #include "core/op_core.h"
 #include "packet/analyzer/api.hpp"
-#include "packet/analyzer/statistics/flow/counter_map.hpp"
+#include "packet/analyzer/statistics/flow/map.hpp"
 #include "packet/analyzer/statistics/generic_flow_counters.hpp"
 #include "packet/statistics/generic_protocol_counters.hpp"
 #include "packetio/generic_sink.hpp"
@@ -33,7 +33,7 @@ struct sink_config
          | packet::statistics::protocol_flags::ip
          | packet::statistics::protocol_flags::transport);
     api::flow_counters_config flow_counters =
-        statistics::flow_flags::frame_count;
+        statistics::flow_counter_flags::frame_count;
 };
 
 class sink_result
@@ -41,7 +41,7 @@ class sink_result
 public:
     using recycler = utils::recycle::depot<1>;
     using flow_counters_container =
-        statistics::flow::counter_map<statistics::generic_flow_counters>;
+        statistics::flow::map<statistics::generic_flow_counters>;
     using protocol_shard = packet::statistics::generic_protocol_counters;
     using flow_shard = std::pair<recycler, flow_counters_container>;
 
