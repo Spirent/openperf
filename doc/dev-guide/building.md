@@ -55,3 +55,31 @@ You will be able to see the following logs:
 	      ✓ it returns 405
 	    invalid module name,
 	      ✓ it returns 400
+
+# Build and run Openperf contribution docker image
+
+## Build the docker image
+```
+make image
+```
+
+## Run the tests
+```
+make image_test_aat
+```
+
+## Make a tar archive with Openperf image
+```
+make image_pack
+```
+
+## Run Openperf as docker image
+```
+docker run -it -p 9000:9000 --privileged openperf-contrib:latest
+```
+Configuration file is located at `/etc/openperf/config.yaml`. It can be replaced using `-v` option of `docker run` command or analogues.
+
+## Clean docker from Openperf and intermediate images
+```
+make image_clean
+```
