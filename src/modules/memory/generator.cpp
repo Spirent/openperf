@@ -52,6 +52,9 @@ generator::~generator()
 {
     m_scrub_aborted.store(true);
     if (m_scrub_thread.joinable()) m_scrub_thread.join();
+    if (m_read_future.valid()) m_read_future.wait();
+    if (m_write_future.valid()) m_write_future.wait();
+
     stop();
     free_buffer();
 }
@@ -60,6 +63,8 @@ generator::~generator()
 void generator::start()
 {
     if (!m_stopped) return;
+    if (m_read_future.valid()) m_read_future.wait();
+    if (m_write_future.valid()) m_write_future.wait();
 
     for_each_worker([](worker_ptr& w) { w->start(); });
     m_stopped = false;
@@ -210,30 +215,42 @@ void generator::config(const generator::config_t& cfg)
     auto configure_workers = [this](workers& w,
                                     std::vector<unsigned>& indexes,
                                     const config_t::operation_config& op_cfg,
-                                    size_t threads) {
+                                    size_t threads,
+                                    std::future<void>& future) {
         // io blocks in buffer
         size_t nb_blocks =
             op_cfg.block_size ? m_buffer.size / op_cfg.block_size : 0;
-        index_vector(indexes, nb_blocks, op_cfg.pattern);
+        auto pattern = op_cfg.pattern;
+
+        if (future.valid()) future.wait();
+        future = std::async(std::launch::async, [&indexes, nb_blocks, pattern] {
+            index_vector(indexes, nb_blocks, pattern);
+        });
 
         auto rate = (!threads) ? 0 : op_cfg.op_per_sec / threads;
 
         spread_config(w,
                       task_memory_config{.block_size = op_cfg.block_size,
                                          .op_per_sec = rate,
-                                         .pattern = op_cfg.pattern,
+                                         .pattern = pattern,
                                          .buffer = {.ptr = m_buffer.ptr,
                                                     .size = m_buffer.size},
                                          .indexes = &indexes});
     };
 
     reallocate_workers<task_memory_read>(m_read_workers, cfg.read_threads);
-    configure_workers(
-        m_read_workers, m_read_indexes, cfg.read, cfg.read_threads);
+    configure_workers(m_read_workers,
+                      m_read_indexes,
+                      cfg.read,
+                      cfg.read_threads,
+                      m_read_future);
 
     reallocate_workers<task_memory_write>(m_write_workers, cfg.write_threads);
-    configure_workers(
-        m_write_workers, m_write_indexes, cfg.write, cfg.write_threads);
+    configure_workers(m_write_workers,
+                      m_write_indexes,
+                      cfg.write,
+                      cfg.write_threads,
+                      m_write_future);
 
     m_config = cfg;
     resume();

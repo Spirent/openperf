@@ -2,6 +2,7 @@
 #define _OP_MEMORY_GENERATOR_HPP_
 
 #include <forward_list>
+#include <future>
 
 #include "utils/worker/worker.hpp"
 #include "memory/task_memory.hpp"
@@ -57,6 +58,7 @@ private:
     } m_buffer;
 
     std::vector<unsigned> m_read_indexes, m_write_indexes;
+    std::future<void> m_read_future, m_write_future;
 
     uint16_t m_serial_number;
     std::chrono::nanoseconds m_run_time;
