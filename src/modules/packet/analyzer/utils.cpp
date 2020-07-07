@@ -33,7 +33,8 @@ bool is_valid(const analyzer_type& analyzer, std::vector<std::string>& errors)
     }
 
     for (auto& item : config->getFlowCounters()) {
-        if (statistics::to_flow_flag(item) == statistics::flow_flags::none) {
+        if (statistics::to_flow_counter_flag(item)
+            == statistics::flow_counter_flags::none) {
             errors.emplace_back("Flow counter (" + item
                                 + ") is not recognized.");
         }

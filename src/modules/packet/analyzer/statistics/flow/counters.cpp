@@ -1,6 +1,6 @@
 #include "packet/analyzer/statistics/flow/counters.hpp"
 
-namespace openperf::packet::analyzer::statistics::flow {
+namespace openperf::packet::analyzer::statistics::flow::counter {
 
 void dump(std::ostream& os, const frame_counter& stat)
 {
@@ -84,4 +84,4 @@ void dump(std::ostream& os, const prbs& stat)
     os << " octets:" << stat.octets << std::endl;
 }
 
-} // namespace openperf::packet::analyzer::statistics::flow
+} // namespace openperf::packet::analyzer::statistics::flow::counter

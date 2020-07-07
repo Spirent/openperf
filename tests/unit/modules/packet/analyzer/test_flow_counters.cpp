@@ -19,7 +19,7 @@ TEST_CASE("flow counters", "[packet_analyzer]")
      */
     SECTION("sequence stats, ")
     {
-        auto seq = flow::sequencing{};
+        auto seq = flow::counter::sequencing{};
         static constexpr auto late_threshold = 1000;
 
         SECTION("sequece one, ")
@@ -38,9 +38,9 @@ TEST_CASE("flow counters", "[packet_analyzer]")
 
             auto test = [&](uint32_t offset) {
                 for (auto idx : test_seq) {
-                    flow::update(seq,
-                                 static_cast<uint32_t>(offset + idx),
-                                 late_threshold);
+                    flow::counter::update(seq,
+                                          static_cast<uint32_t>(offset + idx),
+                                          late_threshold);
                 }
                 verify(offset + max);
             };
@@ -83,9 +83,9 @@ TEST_CASE("flow counters", "[packet_analyzer]")
 
             auto test = [&](uint32_t offset) {
                 for (auto idx : test_seq) {
-                    flow::update(seq,
-                                 static_cast<uint32_t>(offset + idx),
-                                 late_threshold);
+                    flow::counter::update(seq,
+                                          static_cast<uint32_t>(offset + idx),
+                                          late_threshold);
                 }
                 verify(offset + max);
             };
@@ -132,9 +132,9 @@ TEST_CASE("flow counters", "[packet_analyzer]")
 
             auto test = [&](uint32_t offset) {
                 for (auto idx : test_seq) {
-                    flow::update(seq,
-                                 static_cast<uint32_t>(offset + idx),
-                                 test_threshold);
+                    flow::counter::update(seq,
+                                          static_cast<uint32_t>(offset + idx),
+                                          test_threshold);
                 }
                 verify(offset + max);
             };
@@ -175,9 +175,9 @@ TEST_CASE("flow counters", "[packet_analyzer]")
 
             auto test = [&](uint32_t offset) {
                 for (auto idx : test_seq) {
-                    flow::update(seq,
-                                 static_cast<uint32_t>(offset + idx),
-                                 late_threshold);
+                    flow::counter::update(seq,
+                                          static_cast<uint32_t>(offset + idx),
+                                          late_threshold);
                 }
                 verify(offset + max);
             };
@@ -215,7 +215,8 @@ TEST_CASE("flow counters", "[packet_analyzer]")
 
             SECTION("double values, ")
             {
-                using test_summary_type = flow::summary<double, double>;
+                using test_summary_type =
+                    flow::counter::summary<double, double>;
 
                 SECTION("verify stats, ")
                 {
@@ -246,7 +247,7 @@ TEST_CASE("flow counters", "[packet_analyzer]")
                     update(sum2, 7, 1);
                     update(sum2, 38, 2);
 
-                    auto m2 = flow::add_variance(
+                    auto m2 = flow::counter::add_variance(
                         3, sum1.total, sum1.m2, 2, sum2.total, sum2.m2);
                     REQUIRE(m2 == m2_exp);
                 }
@@ -254,7 +255,7 @@ TEST_CASE("flow counters", "[packet_analyzer]")
 
             SECTION("integer values, ")
             {
-                using test_summary_type = flow::summary<int, int>;
+                using test_summary_type = flow::counter::summary<int, int>;
                 auto test_summary = test_summary_type{};
 
                 auto idx = 0;
@@ -277,8 +278,8 @@ TEST_CASE("flow counters", "[packet_analyzer]")
             SECTION("duration values, ")
             {
                 using test_summary_type =
-                    flow::summary<std::chrono::nanoseconds,
-                                  std::chrono::nanoseconds>;
+                    flow::counter::summary<std::chrono::nanoseconds,
+                                           std::chrono::nanoseconds>;
                 SECTION("verify stats, ")
                 {
                     auto test_summary = test_summary_type{};
@@ -312,7 +313,7 @@ TEST_CASE("flow counters", "[packet_analyzer]")
                     update(sum2, 7ns, 1);
                     update(sum2, 38ns, 2);
 
-                    auto m2 = flow::add_variance(
+                    auto m2 = flow::counter::add_variance(
                         3, sum1.total, sum1.m2, 2, sum2.total, sum2.m2);
                     REQUIRE(m2.count() == m2_exp);
                 }

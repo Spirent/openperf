@@ -7,7 +7,7 @@
 #include "packet/bpf/bpf.hpp"
 #include "packet/bpf/bpf_sink.hpp"
 #include "packet/analyzer/sink.hpp"
-#include "packet/analyzer/statistics/flow/counter_map.tcc"
+#include "packet/analyzer/statistics/flow/map.tcc"
 #include "spirent_pga/api.h"
 #include "utils/flat_memoize.hpp"
 
@@ -16,7 +16,7 @@ namespace openperf::packet::analyzer {
 constexpr uint16_t burst_size_max = 64;
 
 /* Instantiate our templatized data structures */
-template class statistics::flow::counter_map<statistics::generic_flow_counters>;
+template class statistics::flow::map<statistics::generic_flow_counters>;
 
 static std::once_flag flow_counter_factory_init;
 
@@ -46,7 +46,7 @@ sink_result::sink_result(const sink& parent)
      */
     std::call_once(flow_counter_factory_init, []() {
         [[maybe_unused]] auto flow_counters =
-            statistics::make_counters(statistics::all_flow_counters);
+            statistics::make_flow_counters(statistics::all_flow_counters);
     });
 }
 
@@ -184,9 +184,10 @@ bool sink::uses_feature(packetio::packet::sink_feature_flags flags) const
      * flow statistics configuration.
      */
     constexpr auto signature_stats =
-        (statistics::flow_flags::sequencing | statistics::flow_flags::latency
-         | statistics::flow_flags::jitter_ipdv
-         | statistics::flow_flags::jitter_rfc);
+        (statistics::flow_counter_flags::sequencing
+         | statistics::flow_counter_flags::latency
+         | statistics::flow_counter_flags::jitter_ipdv
+         | statistics::flow_counter_flags::jitter_rfc);
 
     /* We always need rx_timestamps and RSS hash values */
     auto needed =
@@ -200,7 +201,7 @@ bool sink::uses_feature(packetio::packet::sink_feature_flags flags) const
         needed |= sink_feature_flags::spirent_signature_decode;
     }
 
-    if (flow_counters() & statistics::flow_flags::prbs) {
+    if (flow_counters() & statistics::flow_counter_flags::prbs) {
         /*
          * We need the signature in order to check the bit that
          * indicates that PRBS data is present.
@@ -259,7 +260,7 @@ uint16_t sink::push_all(sink_result& results,
             auto to_delete = flows.second.insert(
                 hash,
                 stream_id,
-                statistics::make_counters(m_config.flow_counters));
+                statistics::make_flow_counters(m_config.flow_counters));
 
             counters = cache.retry(hash, stream_id);
             assert(counters);

@@ -7,7 +7,7 @@
 
 namespace openperf::packet::analyzer::statistics {
 
-namespace flow {
+namespace detail {
 
 /* Equivalent to std::type_identity from c++20 */
 template <class T> struct type_identity
@@ -30,46 +30,52 @@ struct filter_duplicates<std::tuple<Ts...>, std::tuple<U, Us...>>
 template <typename... Ts>
 using unique_tuple_t = typename filter_duplicates<std::tuple<>, Ts...>::type;
 
-constexpr auto to_value(openperf::utils::bit_flags<flow_flags> flags)
+constexpr auto to_value(openperf::utils::bit_flags<flow_counter_flags> flags)
 {
     return (flags.value);
 }
 
-template <int FlagValue> auto make_counter_tuple()
+template <int FlagValue> auto make_flow_counters_tuple()
 {
     /* Basic stats are always required */
-    auto t1 = std::tuple<frame_counter>{};
+    auto t1 = std::tuple<flow::counter::frame_counter>{};
 
     auto t2 = packet::statistics::maybe_tuple_cat<static_cast<bool>(
-        FlagValue & to_value(flow_flags::interarrival))>(
-        t1, std::tuple<interarrival>{});
+        FlagValue & to_value(flow_counter_flags::interarrival))>(
+        t1, std::tuple<flow::counter::interarrival>{});
 
     auto t3 = packet::statistics::maybe_tuple_cat<static_cast<bool>(
-        FlagValue & to_value(flow_flags::frame_length))>(
-        t2, std::tuple<frame_length>{});
+        FlagValue & to_value(flow_counter_flags::frame_length))>(
+        t2, std::tuple<flow::counter::frame_length>{});
 
     auto t4 = packet::statistics::maybe_tuple_cat<static_cast<bool>(
-        FlagValue & to_value(flow_flags::sequencing))>(
-        t3, std::tuple<sequencing>{});
+        FlagValue & to_value(flow_counter_flags::sequencing))>(
+        t3, std::tuple<flow::counter::sequencing>{});
 
     auto t5 = packet::statistics::maybe_tuple_cat<static_cast<bool>(
-        FlagValue & to_value(flow_flags::latency))>(t4, std::tuple<latency>{});
+        FlagValue & to_value(flow_counter_flags::latency))>(
+        t4, std::tuple<flow::counter::latency>{});
 
     /* RFC jitter stats require latency stats as well */
     auto t6 = packet::statistics::maybe_tuple_cat<static_cast<bool>(
-        FlagValue & to_value(flow_flags::jitter_rfc))>(
-        t5, std::tuple<latency, jitter_rfc>{});
+        FlagValue & to_value(flow_counter_flags::jitter_rfc))>(
+        t5, std::tuple<flow::counter::latency, flow::counter::jitter_rfc>{});
 
     /* IPDV jitter stats require both latency and sequencing */
     auto t7 = packet::statistics::maybe_tuple_cat<static_cast<bool>(
-        FlagValue & to_value(flow_flags::jitter_ipdv))>(
-        t6, std::tuple<sequencing, latency, jitter_ipdv>{});
+        FlagValue & to_value(flow_counter_flags::jitter_ipdv))>(
+        t6,
+        std::tuple<flow::counter::sequencing,
+                   flow::counter::latency,
+                   flow::counter::jitter_ipdv>{});
 
     auto t8 = packet::statistics::maybe_tuple_cat<static_cast<bool>(
-        FlagValue & to_value(flow_flags::prbs))>(t7, std::tuple<prbs>{});
+        FlagValue & to_value(flow_counter_flags::prbs))>(
+        t7, std::tuple<flow::counter::prbs>{});
 
     auto t9 = packet::statistics::maybe_tuple_cat<static_cast<bool>(
-        FlagValue & to_value(flow_flags::header))>(t8, std::tuple<header>{});
+        FlagValue & to_value(flow_counter_flags::header))>(
+        t8, std::tuple<flow::header>{});
 
     /*
      * Since we might have added duplicate results to our tuple, filter out any
@@ -78,20 +84,22 @@ template <int FlagValue> auto make_counter_tuple()
     return (unique_tuple_t<decltype(t9)>{});
 }
 
-template <size_t I> constexpr auto make_counters_constructor()
+template <size_t I> constexpr auto make_flow_counters_constructor()
 {
-    return ([]() { return (generic_flow_counters(make_counter_tuple<I>())); });
+    return ([]() {
+        return (generic_flow_counters(make_flow_counters_tuple<I>()));
+    });
 }
 
 template <size_t... I>
-auto make_counters_constructor_index(std::index_sequence<I...>)
+auto make_flow_counters_constructor_index(std::index_sequence<I...>)
 {
-    auto m = std::vector<std::function<generic_flow_counters()>>{};
-    (m.emplace_back(make_counters_constructor<I>()), ...);
-    return (m);
+    auto constructors = std::vector<std::function<generic_flow_counters()>>{};
+    (constructors.emplace_back(make_flow_counters_constructor<I>()), ...);
+    return (constructors);
 }
 
-} // namespace flow
+} // namespace detail
 
 /*
  * Since our possible flag values range from [0, all_flow_counters],
@@ -101,11 +109,13 @@ auto make_counters_constructor_index(std::index_sequence<I...>)
  * 0 to n-1.
  */
 generic_flow_counters
-make_counters(openperf::utils::bit_flags<flow_flags> flags)
+make_flow_counters(openperf::utils::bit_flags<flow_counter_flags> flags)
 {
-    const static auto constructors = flow::make_counters_constructor_index(
-        std::make_index_sequence<flow::to_value(all_flow_counters) + 1>{});
-    return (constructors[flow::to_value(flags)]());
+    const static auto constructors =
+        detail::make_flow_counters_constructor_index(
+            std::make_index_sequence<detail::to_value(all_flow_counters)
+                                     + 1>{});
+    return (constructors[detail::to_value(flags)]());
 }
 
 } // namespace openperf::packet::analyzer::statistics
