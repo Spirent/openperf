@@ -80,7 +80,7 @@ void generator_collection::start()
 {
     for (auto& entry : m_generators) {
         auto& g7r = entry.second;
-        if (g7r.is_stopped() && g7r.init_percent_complete() == 100) {
+        if (g7r.is_stopped() && g7r.is_initialized()) {
             auto stat_id = core::to_string(core::uuid::random());
             m_stats.emplace(stat_id, generator_ref(g7r));
             m_id_map.insert_or_assign(entry.first, stat_id);
