@@ -93,6 +93,8 @@ public:
         return m_init_percent_complete.load();
     }
 
+    bool is_initialized() const { return init_percent_complete() == 100; }
+
     bool is_stopped() const { return m_stopped; }
     bool is_running() const { return !(m_paused || m_stopped); }
     bool is_paused() const { return m_paused; }
