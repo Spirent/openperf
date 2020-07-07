@@ -449,7 +449,7 @@ bool is_valid(const BlockFile& file, std::vector<std::string>& errors)
 {
     auto init_errors = errors.size();
 
-    if (file.getFileSize() < 0) {
+    if (file.getFileSize() <= 0) {
         errors.emplace_back("File size is not valid.");
     }
 
