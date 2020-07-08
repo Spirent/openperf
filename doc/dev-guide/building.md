@@ -56,9 +56,11 @@ You will be able to see the following logs:
 	    invalid module name,
 	      ✓ it returns 400
 
-# Build and run Openperf contribution docker image
+# Build and run OpenPerf contribution Docker image
 
-## Build the docker image
+OpenPerf contribution Docker image is a lightweight image based on debian:buster-slim distribution and contains only OpenPerf executable with minimum dependencies. It uses multi-stage build to reduce the size of the image.
+
+## Build the Docker image
 ```
 make image
 ```
@@ -68,18 +70,18 @@ make image
 make image_test_aat
 ```
 
-## Make a tar archive with Openperf image
+## Make a tar archive with OpenPerf image
 ```
 make image_pack
 ```
 
-## Run Openperf as docker image
+## Run OpenPerf as Docker image
 ```
 docker run -it -p 9000:9000 --privileged openperf-contrib:latest
 ```
 Configuration file is located at `/etc/openperf/config.yaml`. It can be replaced using `-v` option of `docker run` command or analogues.
 
-## Clean docker from Openperf and intermediate images
+## Clean Docker from OpenPerf and intermediate images
 ```
 make image_clean
 ```
