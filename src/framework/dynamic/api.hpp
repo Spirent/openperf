@@ -5,7 +5,7 @@
 #include <vector>
 
 #include "dynamic/threshold.hpp"
-#include "dynamic/tdigest.hpp"
+#include "digestible/digestible.h"
 
 #include "swagger/v1/model/DynamicResultsConfig.h"
 #include "swagger/v1/model/DynamicResults.h"
@@ -18,6 +18,9 @@ namespace openperf::dynamic {
 
 namespace model = ::swagger::v1::model;
 
+using tdigest = digestible::tdigest<double, uint32_t>;
+using centroid = digestible::centroid<double, uint32_t>;
+
 struct argument_t
 {
     enum function_t { DX = 1, DXDY, DXDT };
@@ -28,6 +31,8 @@ struct argument_t
 
 struct results
 {
+    using tdigest_ptr = std::shared_ptr<tdigest>;
+
     struct threshold
     {
         dynamic::argument_t argument;
@@ -39,7 +44,8 @@ struct results
     {
         dynamic::argument_t argument;
         std::string id;
-        dynamic::tdigest tdigest;
+        uint32_t compression;
+        tdigest_ptr tdigest;
     };
 
     std::vector<results::threshold> thresholds;
@@ -60,6 +66,7 @@ struct configuration
     {
         dynamic::argument_t argument;
         std::string id;
+        uint32_t compression;
     };
 
     std::vector<threshold> thresholds;
@@ -77,6 +84,8 @@ configuration from_swagger(model::DynamicResultsConfig&);
 configuration::tdigest from_swagger(const model::TDigestConfig&);
 configuration::threshold from_swagger(const model::ThresholdConfig&);
 model::DynamicResults to_swagger(const dynamic::results&);
+model::TDigestCentroid to_swagger(const dynamic::centroid&);
+model::TDigestResult to_swagger(const dynamic::results::tdigest&);
 model::ThresholdResult to_swagger(const dynamic::results::threshold&);
 
 } // namespace openperf::dynamic

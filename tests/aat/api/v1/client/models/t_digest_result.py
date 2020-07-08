@@ -35,6 +35,7 @@ class TDigestResult(object):
         'function': 'str',
         'stat_x': 'str',
         'stat_y': 'str',
+        'compression': 'int',
         'centroids': 'list[TDigestCentroid]'
     }
 
@@ -43,16 +44,18 @@ class TDigestResult(object):
         'function': 'function',
         'stat_x': 'stat_x',
         'stat_y': 'stat_y',
+        'compression': 'compression',
         'centroids': 'centroids'
     }
 
-    def __init__(self, id=None, function=None, stat_x=None, stat_y=None, centroids=None):  # noqa: E501
+    def __init__(self, id=None, function=None, stat_x=None, stat_y=None, compression=None, centroids=None):  # noqa: E501
         """TDigestResult - a model defined in Swagger"""  # noqa: E501
 
         self._id = None
         self._function = None
         self._stat_x = None
         self._stat_y = None
+        self._compression = None
         self._centroids = None
         self.discriminator = None
 
@@ -61,6 +64,7 @@ class TDigestResult(object):
         self.stat_x = stat_x
         if stat_y is not None:
             self.stat_y = stat_y
+        self.compression = compression
         self.centroids = centroids
 
     @property
@@ -150,6 +154,28 @@ class TDigestResult(object):
         :type: str
         """
         self._stat_y = stat_y
+
+    @property
+    def compression(self):
+        """Gets the compression of this TDigestResult.  # noqa: E501
+
+        The compression factor of T-Digest  # noqa: E501
+
+        :return: The compression of this TDigestResult.  # noqa: E501
+        :rtype: int
+        """
+        return self._compression
+
+    @compression.setter
+    def compression(self, compression):
+        """Sets the compression of this TDigestResult.
+
+        The compression factor of T-Digest  # noqa: E501
+
+        :param compression: The compression of this TDigestResult.  # noqa: E501
+        :type: int
+        """
+        self._compression = compression
 
     @property
     def centroids(self):

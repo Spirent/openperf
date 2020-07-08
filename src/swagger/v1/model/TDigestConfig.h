@@ -70,7 +70,12 @@ public:
     void setStatY(std::string value);
     bool statYIsSet() const;
     void unsetStat_y();
-
+    /// <summary>
+    /// The compression factor of T-Digest
+    /// </summary>
+    int32_t getCompression() const;
+    void setCompression(int32_t value);
+    
 protected:
     std::string m_Id;
 
@@ -80,6 +85,8 @@ protected:
 
     std::string m_Stat_y;
     bool m_Stat_yIsSet;
+    int32_t m_Compression;
+
 };
 
 }

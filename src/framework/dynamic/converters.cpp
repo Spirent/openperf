@@ -80,12 +80,13 @@ configuration::tdigest from_swagger(const model::TDigestConfig& m)
         .argument = {.x = m.getStatX(),
                      .y = m.getStatY(),
                      .function = to_argument_function(m.getFunction())},
-        .id = m.getId()};
+        .id = m.getId(),
+        .compression = static_cast<uint32_t>(m.getCompression())};
 }
 
 configuration from_swagger(model::DynamicResultsConfig& m)
 {
-    configuration config{};
+    configuration config;
 
     const auto& thresholds = m.getThresholds();
     std::transform(thresholds.begin(),
@@ -125,19 +126,62 @@ model::ThresholdResult to_swagger(const dynamic::results::threshold& r)
     return result;
 }
 
+model::TDigestResult to_swagger(const dynamic::results::tdigest& r)
+{
+    model::TDigestResult result;
+
+    result.setId(r.id);
+    result.setFunction(to_string(r.argument.function));
+    result.setStatX(r.argument.x);
+
+    if (r.argument.function == dynamic::argument_t::DXDY)
+        result.setStatY(r.argument.y);
+
+    result.setCompression(r.compression);
+
+    auto centroids = r.tdigest->get();
+    std::transform(centroids.begin(),
+                   centroids.end(),
+                   std::back_inserter(result.getCentroids()),
+                   [](const auto& x) {
+                       return std::make_shared<model::TDigestCentroid>(
+                           to_swagger({x.first, x.second}));
+                   });
+
+    return result;
+}
+
+model::TDigestCentroid to_swagger(const dynamic::centroid& c)
+{
+    model::TDigestCentroid centroid;
+
+    centroid.setMean(c.mean);
+    centroid.setWeight(c.weight);
+
+    return centroid;
+}
+
 model::DynamicResults to_swagger(const dynamic::results& r)
 {
+    model::DynamicResults result;
+
     auto vector = std::vector<std::shared_ptr<model::ThresholdResult>>();
     std::transform(r.thresholds.begin(),
                    r.thresholds.end(),
-                   std::back_inserter(vector),
+                   std::back_inserter(result.getThresholds()),
                    [](const auto& x) {
                        return std::make_shared<model::ThresholdResult>(
                            to_swagger(x));
                    });
 
-    model::DynamicResults result;
-    result.getThresholds() = vector;
+    std::transform(r.tdigests.begin(),
+                   r.tdigests.end(),
+                   std::back_inserter(result.getTdigests()),
+                   [](const auto& x) {
+                       return std::make_shared<model::TDigestResult>(
+                           to_swagger(x));
+                   });
+
     return result;
 }
 
