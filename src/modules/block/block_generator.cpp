@@ -153,6 +153,14 @@ task_config_t block_generator::generate_worker_config(
                                                         : fd.value().write;
     w_config.f_size = m_vdev->get_size();
     w_config.header_size = m_vdev->get_header_size();
+    if (p_config.ratio) {
+        w_config.synchronizer = &m_synchronizer;
+        m_synchronizer.ratio_reads.store(p_config.ratio.value().reads,
+                                         std::memory_order_relaxed);
+        m_synchronizer.ratio_writes.store(p_config.ratio.value().writes,
+                                          std::memory_order_relaxed);
+    }
+
     return w_config;
 }
 

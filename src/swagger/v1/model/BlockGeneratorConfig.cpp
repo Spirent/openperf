@@ -24,6 +24,7 @@ BlockGeneratorConfig::BlockGeneratorConfig()
     m_Read_size = 0;
     m_Writes_per_sec = 0;
     m_Write_size = 0;
+    m_RatioIsSet = false;
     m_Pattern = "";
     
 }
@@ -46,6 +47,10 @@ nlohmann::json BlockGeneratorConfig::toJson() const
     val["read_size"] = m_Read_size;
     val["writes_per_sec"] = m_Writes_per_sec;
     val["write_size"] = m_Write_size;
+    if(m_RatioIsSet)
+    {
+        val["ratio"] = ModelBase::toJson(m_Ratio);
+    }
     val["pattern"] = ModelBase::toJson(m_Pattern);
     
 
@@ -59,6 +64,16 @@ void BlockGeneratorConfig::fromJson(nlohmann::json& val)
     setReadSize(val.at("read_size"));
     setWritesPerSec(val.at("writes_per_sec"));
     setWriteSize(val.at("write_size"));
+    if(val.find("ratio") != val.end())
+    {
+        if(!val["ratio"].is_null())
+        {
+            std::shared_ptr<BlockGeneratorReadWriteRatio> newItem(new BlockGeneratorReadWriteRatio());
+            newItem->fromJson(val["ratio"]);
+            setRatio( newItem );
+        }
+        
+    }
     setPattern(val.at("pattern"));
     
 }
@@ -108,6 +123,23 @@ void BlockGeneratorConfig::setWriteSize(int32_t value)
 {
     m_Write_size = value;
     
+}
+std::shared_ptr<BlockGeneratorReadWriteRatio> BlockGeneratorConfig::getRatio() const
+{
+    return m_Ratio;
+}
+void BlockGeneratorConfig::setRatio(std::shared_ptr<BlockGeneratorReadWriteRatio> value)
+{
+    m_Ratio = value;
+    m_RatioIsSet = true;
+}
+bool BlockGeneratorConfig::ratioIsSet() const
+{
+    return m_RatioIsSet;
+}
+void BlockGeneratorConfig::unsetRatio()
+{
+    m_RatioIsSet = false;
 }
 std::string BlockGeneratorConfig::getPattern() const
 {

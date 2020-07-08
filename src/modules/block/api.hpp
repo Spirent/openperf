@@ -226,6 +226,10 @@ tl::expected<reply_msg, int> deserialize_reply(const serialized_msg& msg);
 int send_message(void* socket, serialized_msg&& msg);
 tl::expected<serialized_msg, int> recv_message(void* socket, int flags = 0);
 
+bool is_valid(const BlockFile& generator, std::vector<std::string>& errors);
+bool is_valid(const BlockGenerator& generator,
+              std::vector<std::string>& errors);
+
 reply_error
 to_error(error_type type, int code = 0, const std::string& value = "");
 const char* to_string(const api::typed_error&);

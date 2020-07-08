@@ -305,6 +305,31 @@ with description('Block,', 'block') as self:
                 with it('has a valid block generator'):
                     expect(self._result[0]).to(be_valid_block_generator)
 
+                with it('ratio empty'):
+                    expect(self._result[0].config.ratio).to(be_none)
+
+            with description("with ratio,"):
+                with before.all:
+                    file = self.api.create_block_file(file_model(1024, '/tmp/foo'))
+                    expect(file).to(be_valid_block_file)
+                    generator = generator_model(file.id)
+                    generator.config.ratio = client.models.BlockGeneratorReadWriteRatio()
+                    generator.config.ratio.reads = 1
+                    generator.config.ratio.writes = 1
+                    self._result = self.api.create_block_generator_with_http_info(generator)
+
+                with it('succeeded'):
+                    expect(self._result[1]).to(equal(201))
+
+                with it('has a valid block generator'):
+                    expect(self._result[0]).to(be_valid_block_generator)
+
+                with it('ratio configured'):
+                    expect(self._result[0].config.ratio).not_to(be_none)
+                    expect(self._result[0].config.ratio.reads).to(be(1))
+                    expect(self._result[0].config.ratio.writes).to(be(1))
+
+
             with description('empty source id,'):
                 with it('returns 400'):
                     gen = generator_model()

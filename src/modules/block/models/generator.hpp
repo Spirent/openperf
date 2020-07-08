@@ -1,18 +1,27 @@
 #ifndef _OP_BLOCK_GENERATOR_MODEL_HPP_
 #define _OP_BLOCK_GENERATOR_MODEL_HPP_
 
+#include <optional>
 #include <string>
 
 namespace openperf::block::model {
 
 enum class block_generation_pattern { RANDOM, SEQUENTIAL, REVERSE };
+
+struct block_generator_ratio
+{
+    uint32_t reads;
+    uint32_t writes;
+};
+
 struct block_generator_config
 {
-    int32_t queue_depth;
-    int32_t reads_per_sec;
-    int32_t read_size;
-    int32_t writes_per_sec;
-    int32_t write_size;
+    uint32_t queue_depth;
+    uint32_t reads_per_sec;
+    uint32_t read_size;
+    uint32_t writes_per_sec;
+    uint32_t write_size;
+    std::optional<block_generator_ratio> ratio;
     block_generation_pattern pattern;
 };
 class block_generator

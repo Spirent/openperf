@@ -36,6 +36,7 @@ from client.models.block_device import BlockDevice
 from client.models.block_file import BlockFile
 from client.models.block_generator import BlockGenerator
 from client.models.block_generator_config import BlockGeneratorConfig
+from client.models.block_generator_read_write_ratio import BlockGeneratorReadWriteRatio
 from client.models.block_generator_result import BlockGeneratorResult
 from client.models.block_generator_stats import BlockGeneratorStats
 from client.models.bulk_create_block_files_request import BulkCreateBlockFilesRequest

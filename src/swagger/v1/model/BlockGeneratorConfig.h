@@ -22,6 +22,7 @@
 #include "ModelBase.h"
 
 #include <string>
+#include "BlockGeneratorReadWriteRatio.h"
 
 namespace swagger {
 namespace v1 {
@@ -74,6 +75,13 @@ public:
     int32_t getWriteSize() const;
     void setWriteSize(int32_t value);
         /// <summary>
+    /// 
+    /// </summary>
+    std::shared_ptr<BlockGeneratorReadWriteRatio> getRatio() const;
+    void setRatio(std::shared_ptr<BlockGeneratorReadWriteRatio> value);
+    bool ratioIsSet() const;
+    void unsetRatio();
+    /// <summary>
     /// IO access pattern
     /// </summary>
     std::string getPattern() const;
@@ -90,6 +98,8 @@ protected:
 
     int32_t m_Write_size;
 
+    std::shared_ptr<BlockGeneratorReadWriteRatio> m_Ratio;
+    bool m_RatioIsSet;
     std::string m_Pattern;
 
 };

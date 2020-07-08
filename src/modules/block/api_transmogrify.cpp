@@ -511,6 +511,58 @@ tl::expected<serialized_msg, int> recv_message(void* socket, int flags)
     return (msg);
 }
 
+bool is_valid(const BlockFile& file, std::vector<std::string>& errors)
+{
+    auto init_errors = errors.size();
+
+    if (file.getFileSize() <= 0) {
+        errors.emplace_back("File size is not valid.");
+    }
+
+    return (errors.size() == init_errors);
+}
+
+bool is_valid(const BlockGenerator& generator, std::vector<std::string>& errors)
+{
+    auto init_errors = errors.size();
+
+    if (generator.getResourceId().empty()) {
+        errors.emplace_back("Generator resource id is required.");
+    }
+
+    auto config = generator.getConfig();
+    if (!config) {
+        errors.emplace_back("Generator configuration is required.");
+        return (false);
+    }
+
+    if (config->getQueueDepth() < 1)
+        errors.emplace_back("Queue Depth value is not valid.");
+    if (config->getReadSize() < 1)
+        errors.emplace_back("Read Size value is not valid.");
+    if (config->getReadsPerSec() < 0)
+        errors.emplace_back("Reads Per Sec value is not valid.");
+    if (config->getWriteSize() < 1)
+        errors.emplace_back("Write Size value is not valid.");
+    if (config->getWritesPerSec() < 0)
+        errors.emplace_back("Writes Per Sec value is not valid.");
+    if (config->ratioIsSet()) {
+        if (config->getRatio()->getReads() < 1)
+            errors.emplace_back("Ratio Reads value is not valid.");
+        if (config->getRatio()->getWrites() < 1)
+            errors.emplace_back("Ratio Writes value is not valid.");
+    }
+    if (config->getReadsPerSec() < 1 && config->getWritesPerSec() < 1)
+        errors.emplace_back("No operations were specified.");
+    if (config->ratioIsSet()
+        && (config->getReadsPerSec() < 1 || config->getWritesPerSec() < 1))
+        errors.emplace_back("Ratio is specified for empty load generation.");
+
+    assert(config);
+
+    return (errors.size() == init_errors);
+}
+
 reply_error to_error(error_type type, int code, const std::string& value)
 {
     auto err = reply_error{.info = typed_error{.type = type, .code = code}};
@@ -550,6 +602,12 @@ std::shared_ptr<BlockGenerator> to_swagger(const generator_t& p_gen)
     gen_config->setReadsPerSec(p_gen.get_config().reads_per_sec);
     gen_config->setWriteSize(p_gen.get_config().write_size);
     gen_config->setWritesPerSec(p_gen.get_config().writes_per_sec);
+    if (p_gen.get_config().ratio) {
+        auto ratio = std::make_shared<BlockGeneratorReadWriteRatio>();
+        ratio->setReads(p_gen.get_config().ratio.value().reads);
+        ratio->setWrites(p_gen.get_config().ratio.value().writes);
+        gen_config->setRatio(ratio);
+    }
 
     auto gen = std::make_shared<BlockGenerator>();
     gen->setId(p_gen.get_id());
@@ -616,13 +674,28 @@ model::block_generator from_swagger(const BlockGenerator& p_gen)
     gen.set_id(p_gen.getId());
     gen.set_resource_id(p_gen.getResourceId());
     gen.set_running(p_gen.isRunning());
-    gen.set_config((model::block_generator_config){
-        p_gen.getConfig()->getQueueDepth(),
-        p_gen.getConfig()->getReadsPerSec(),
-        p_gen.getConfig()->getReadSize(),
-        p_gen.getConfig()->getWritesPerSec(),
-        p_gen.getConfig()->getWriteSize(),
-        block_generation_pattern_from_string(p_gen.getConfig()->getPattern())});
+
+    auto conf = model::block_generator_config{
+        .queue_depth =
+            static_cast<uint32_t>(p_gen.getConfig()->getQueueDepth()),
+        .reads_per_sec =
+            static_cast<uint32_t>(p_gen.getConfig()->getReadsPerSec()),
+        .read_size = static_cast<uint32_t>(p_gen.getConfig()->getReadSize()),
+        .writes_per_sec =
+            static_cast<uint32_t>(p_gen.getConfig()->getWritesPerSec()),
+        .write_size = static_cast<uint32_t>(p_gen.getConfig()->getWriteSize()),
+        .pattern = block_generation_pattern_from_string(
+            p_gen.getConfig()->getPattern())};
+    if (p_gen.getConfig()->ratioIsSet()) {
+        conf.ratio = model::block_generator_ratio{
+            .reads = static_cast<uint32_t>(
+                p_gen.getConfig()->getRatio()->getReads()),
+            .writes = static_cast<uint32_t>(
+                p_gen.getConfig()->getRatio()->getWrites()),
+        };
+        ;
+    }
+    gen.set_config(conf);
     return gen;
 }
 
