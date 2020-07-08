@@ -28,12 +28,38 @@ test_unit: deps
 	@cd tests/unit && $(MAKE)
 
 .PHONY: clean
-clean:
+clean: image_clean
 	@cd targets/openperf && $(MAKE) clean
 	@cd targets/libopenperf-shim && $(MAKE) clean
 	@cd tests/aat && $(MAKE) clean
 	@cd tests/unit && $(MAKE) clean
 	@rm -f compile_commands.json
+
+#
+# Targets for Docker image
+#
+
+DOCKER_IMAGE=openperf-contrib
+
+include mk/versions.mk
+
+.PHONY: image
+image: deps
+	@DOCKER_IMAGE=${DOCKER_IMAGE} GIT_COMMIT=${GIT_COMMIT} GIT_VERSION=${GIT_VERSION} BUILD_NUMBER=${BUILD_NUMBER} \
+	bash contrib/docker/build.sh
+
+.PHONY: image_test_aat
+image_test_aat: image
+	@cd tests/aat && $(MAKE) progress_docker
+
+.PHONY: image_pack
+image_pack: image
+	@docker save -o openperf-${GIT_VERSION}.tar ${DOCKER_IMAGE}
+
+.PHONY: image_clean
+image_clean:
+	@docker image rm -f ${DOCKER_IMAGE}
+	@docker image prune -f
 
 # Generate code from schema definitions
 # Since generated code is stored in the repo, manual generation is only required

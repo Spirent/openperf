@@ -1,0 +1,20 @@
+core:
+  log:
+    level: debug
+
+modules:
+  api:
+    port: 9000
+
+  socket:
+    force-unlink: true
+
+  packetio:
+    dpdk:
+      options:
+        - "-m256m"
+        - "--no-huge"
+      test-mode: true
+      port-ids:
+        port0: port0
+        port1: port1
