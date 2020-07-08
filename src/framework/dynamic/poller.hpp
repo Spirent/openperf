@@ -36,6 +36,8 @@ public:
 
     using threshold_result = dynamic::results::threshold;
     using threshold_result_list = std::vector<threshold_result>;
+    using tdigest_result = dynamic::results::tdigest;
+    using tdigest_result_list = std::vector<tdigest_result>;
 
 private:
     // Attributes
@@ -46,6 +48,7 @@ private:
     std::thread m_thread;
 
     threshold_result_list m_thresholds;
+    tdigest_result_list m_tdigests;
     pollable_ptr m_last_stat = nullptr;
 
 public:
@@ -59,7 +62,7 @@ public:
     void interval(const duration& i) { m_interval = i; }
 
     void reset();
-    void stop() { m_stop = true; }
+    void stop();
     void start(const dynamic::configuration&);
     void start();
 
@@ -70,6 +73,8 @@ private:
 
     int weight(const dynamic::argument_t&, const pollable&);
     double delta(const dynamic::argument_t&, const pollable&);
+
+    void argument_check(const dynamic::argument_t&) const;
 };
 
 } // namespace openperf::dynamic
