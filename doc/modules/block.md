@@ -26,8 +26,8 @@ Hardware- or pseudo- device, providing an ability for block I/O load generation.
 * **size** - resource size (in bytes)
 * **usable** - indicates whether it is safe to use this device for block I/O load generation
 * **state** - initialization status of the block device
-    * **none** - device is not initialized
-    * **init** - device initialization is in progress state
+    * **uninitialized** - device is not initialized
+    * **initializing** - device initialization is in progress state
     * **ready** - device is ready for I/O load generation
 * **init_percent_complete** - percentage of initialization completed so far
 

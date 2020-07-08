@@ -74,12 +74,12 @@ tl::expected<void, std::string> device::initialize()
             "Device size less than header size ("
             + std::to_string(sizeof(virtual_device_header)) + " bytes)");
 
-    if (get_state() != state::NONE)
+    if (get_state() != state::UNINIT)
         return tl::make_unexpected("Device is already initialized");
 
     if (auto res = queue_scrub(); !res) return res;
 
-    if (get_state() == state::NONE) set_state(state::INIT);
+    if (get_state() == state::UNINIT) set_state(state::INIT);
     return {};
 }
 
@@ -115,7 +115,7 @@ void device_stack::init_device_stack()
         } else {
             blkdev->set_usable(false);
         }
-        blkdev->set_state(device::state::NONE);
+        blkdev->set_state(device::state::UNINIT);
         blkdev->set_init_percent_complete(0);
 
         m_block_devices.emplace(blkdev->get_id(), blkdev);

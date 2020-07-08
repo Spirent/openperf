@@ -465,8 +465,8 @@ definitions:
         type: string
         description: State of resource initialization
         enum:
-          - none
-          - init
+          - uninitialized
+          - initializing
           - ready
     required:
       - id

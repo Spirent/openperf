@@ -132,8 +132,8 @@ std::string to_string(const model::device::state& state)
 {
     const static std::unordered_map<model::device::state, std::string>
         block_device_states = {
-            {model::device::state::NONE, "none"},
-            {model::device::state::INIT, "init"},
+            {model::device::state::UNINIT, "uninitialized"},
+            {model::device::state::INIT, "initializing"},
             {model::device::state::READY, "ready"},
         };
 

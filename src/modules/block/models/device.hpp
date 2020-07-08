@@ -10,7 +10,7 @@ class device
 {
 public:
     enum state {
-        NONE = 0,
+        UNINIT = 0,
         INIT,
         READY,
     };
