@@ -2,12 +2,18 @@ import client.api
 import datetime
 import os
 import time
+import tempfile
 import copy
 
 from common import Config, Service
-from common.helper import make_generator_config
+from common.helper import (make_generator_config,
+                           make_capture_config,
+                           get_capture_pcap,
+                           get_pcap_packet_count)
 from common.matcher import (be_valid_packet_analyzer,
                             be_valid_packet_analyzer_result,
+                            be_valid_packet_capture,
+                            be_valid_packet_capture_result,
                             be_valid_packet_generator,
                             be_valid_packet_generator_result,
                             be_valid_receive_flow,
@@ -197,6 +203,21 @@ ANALYZER_CONFIG_NO_SIGS_FILTER_UDP = {
     'filter': 'udp or (vlan and udp)'
 }
 
+ANALYZER_CONFIG_NO_SIGS_FILTER_NOT_SIG = {
+    'protocol': ['ethernet', 'ip', 'transport'],
+    'flow': ['frame_count', 'frame_length', 'interarrival_time'],
+    'filter': 'not signature'
+}
+
+CAPTURE_CONFIG = {
+    'buffer_size':  2*1024*1024
+}
+
+CAPTURE_CONFIG_FILTER_NOT_SIG = {
+    'buffer_size':  2*1024*1024,
+    'filter': 'not signature'
+}
+
 ###
 # Generator configurations
 ###
@@ -307,6 +328,26 @@ GENERATOR_CONFIG_CUSTOM_MODIFIERS = {
     ],
 }
 
+GENERATOR_CONFIG_MULTI_SIG_AND_NOSIG_DEFS = {
+    'duration': {'frames': 100},
+    'load': {'rate': 1000},
+    'protocol_counters': ['ethernet', 'ip', 'transport'],
+    'traffic': [
+        {
+            'length': {'fixed': 128},
+            'packet': ETH_VLAN_IPV4_UDP,
+            'weight': 1,
+            'signature': {'stream_id': 1,
+                          'latency': 'end_of_frame'}
+        },
+        {
+            'length': {'fixed': 128},
+            'packet': ETH_VLAN_IPV4_UDP,
+            'weight': 3
+        }
+    ],
+}
+
 # Not sure if the CI system can actually handle this, but we
 # want the reset/toggle tests to generate traffic as fast as
 # possible.
@@ -393,6 +434,17 @@ def get_generator_model(api_client, generator_config):
     return generator
 
 
+def get_capture_model(api_client, capture_config):
+    config = make_capture_config(**capture_config)
+
+    capture = client.models.PacketCapture()
+    # Capture uses same port as analyzer because both need to rx
+    capture.source_id = get_analyzer_port_id(api_client)
+    capture.config = config
+
+    return capture
+
+
 def wait_until_done(gen_client, result_id, initial_sleep = None):
     if (initial_sleep):
         time.sleep(initial_sleep)
@@ -416,41 +468,77 @@ def wait_until_more_generator_results(gen_client, result_id, tx_threshold = None
 
 def configure_and_run_test(api_client, ana_config, gen_config):
     """Build the specified config; start it, return the final results"""
-    ana_api = client.api.PacketAnalyzersApi(api_client)
-    gen_api = client.api.PacketGeneratorsApi(api_client)
-
-    # Create analyzer/generator objects
-    analyzer = ana_api.create_packet_analyzer(get_analyzer_model(api_client, ana_config))
-    expect(analyzer).to(be_valid_packet_analyzer)
-
-    generator = gen_api.create_packet_generator(get_generator_model(api_client, gen_config))
-    expect(generator).to(be_valid_packet_generator)
-
-    # Start both objects and wait until done...
-    ana_result = ana_api.start_packet_analyzer(analyzer.id)
-    expect(ana_result).to(be_valid_packet_analyzer_result)
-    expect(ana_result.active).to(be_true)
-    expect(ana_result.analyzer_id).to(equal(analyzer.id))
-
-    gen_result = gen_api.start_packet_generator(generator.id)
-    expect(gen_result).to(be_valid_packet_generator_result)
-    expect(gen_result.active).to(be_true)
-    expect(gen_result.generator_id).to(equal(generator.id))
-
-    wait_until_done(gen_api, gen_result.id)
-    ana_api.stop_packet_analyzer(analyzer.id)
-
-    # Retrieve and return final results
-    ana_result = ana_api.get_packet_analyzer_result(ana_result.id)
-    expect(ana_result).to(be_valid_packet_analyzer_result)
-    expect(ana_result.active).to(be_false)
-
-    gen_result = gen_api.get_packet_generator_result(gen_result.id)
-    expect(gen_result).to(be_valid_packet_generator_result)
-    expect(gen_result.active).to(be_false)
-    expect(gen_result.remaining).to(be_none)
-
+    ana_result, gen_result, cap_result = configure_and_run_capture_test(api_client, ana_config, gen_config, None)
     return ana_result, gen_result
+
+
+def configure_and_run_capture_test(api_client, ana_config, gen_config, cap_config):
+    """Build the specified config; start it, return the final results"""
+    ana_result = None
+    gen_result = None
+    cap_result = None
+
+    if ana_config:
+        ana_api = client.api.PacketAnalyzersApi(api_client)
+        analyzer = ana_api.create_packet_analyzer(get_analyzer_model(api_client, ana_config))
+        expect(analyzer).to(be_valid_packet_analyzer)
+
+    if cap_config:
+        cap_api = client.api.PacketCapturesApi(api_client)
+        capture = cap_api.create_packet_capture(get_capture_model(api_client, cap_config))
+        expect(capture).to(be_valid_packet_capture)
+
+    if gen_config:
+        gen_api = client.api.PacketGeneratorsApi(api_client)
+        generator = gen_api.create_packet_generator(get_generator_model(api_client, gen_config))
+        expect(generator).to(be_valid_packet_generator)
+
+    # Start objects
+    if ana_config:
+        ana_result = ana_api.start_packet_analyzer(analyzer.id)
+        expect(ana_result).to(be_valid_packet_analyzer_result)
+        expect(ana_result.active).to(be_true)
+        expect(ana_result.analyzer_id).to(equal(analyzer.id))
+
+    if cap_config:
+        cap_result = cap_api.start_packet_capture(capture.id)
+        expect(cap_result).to(be_valid_packet_capture_result)
+        expect(cap_result.active).to(be_true)
+        expect(cap_result.capture_id).to(equal(capture.id))
+
+    if gen_config:
+        gen_result = gen_api.start_packet_generator(generator.id)
+        expect(gen_result).to(be_valid_packet_generator_result)
+        expect(gen_result.active).to(be_true)
+        expect(gen_result.generator_id).to(equal(generator.id))
+
+    #  Wait until generator is done and collect final results
+    if gen_config:
+        wait_until_done(gen_api, gen_result.id)
+
+        gen_result = gen_api.get_packet_generator_result(gen_result.id)
+        expect(gen_result).to(be_valid_packet_generator_result)
+        expect(gen_result.active).to(be_false)
+        expect(gen_result.remaining).to(be_none)
+
+    # Stop capture and collect final results
+    if cap_config:
+        cap_api.stop_packet_capture(capture.id)
+
+        cap_result = cap_api.get_packet_capture_result(cap_result.id)
+        expect(cap_result).to(be_valid_packet_capture_result)
+        expect(cap_result.active).to(be_false)
+
+    # Stop analyzer and collect final results
+    if ana_config:
+        ana_api.stop_packet_analyzer(analyzer.id)
+
+        ana_result = ana_api.get_packet_analyzer_result(ana_result.id)
+        expect(ana_result).to(be_valid_packet_analyzer_result)
+        expect(ana_result.active).to(be_false)
+
+
+    return ana_result, gen_result, cap_result
 
 
 def validate_durations(ana_result, gen_result):
@@ -533,6 +621,7 @@ with description('Packet back to back', 'packet_b2b') as self:
             self.process = service.start()
             self.client = service.client()
             self.analyzer_api = client.api.PacketAnalyzersApi(service.client())
+            self.capture_api = client.api.PacketCapturesApi(service.client())
             self.generator_api = client.api.PacketGeneratorsApi(service.client())
 
         with description('with single traffic definition,'):
@@ -760,6 +849,168 @@ with description('Packet back to back', 'packet_b2b') as self:
                 validate_rx_flows(self.client, ana_result)
                 validate_tx_flows(self.client, gen_result)
 
+        with description('with multiple traffic definitions and filter not sig,'):
+            with it('succeeds'):
+                ana_result, gen_result = configure_and_run_test(self.client,
+                                                                ANALYZER_CONFIG_NO_SIGS_FILTER_NOT_SIG,
+                                                                GENERATOR_CONFIG_MULTI_SIG_AND_NOSIG_DEFS)
+                # Only non signature is allowed so shouldn't see the signature stream (flow 1)
+
+                # Validate results
+                exp_ana_flow_count = 1
+                exp_gen_flow_count = 2
+                expect(len(ana_result.flows)).to(equal(exp_ana_flow_count))
+                expect(len(gen_result.flows)).to(equal(exp_gen_flow_count))
+
+                # Check analyzer protocol counters
+                exp_frame_count = GENERATOR_CONFIG_MULTI_SIG_AND_NOSIG_DEFS['duration']['frames']
+                exp_flow1_count = 0 # Analyzer shouldn't see any frames from 1st flow
+                exp_flow2_count = exp_frame_count * 3 / 4
+                expect(ana_result.protocol_counters.ethernet.ip).to(equal(0))
+                expect(ana_result.protocol_counters.ethernet.vlan).to(equal(exp_flow2_count))
+                expect(ana_result.protocol_counters.ip.ipv4).to(equal(exp_flow2_count))
+                expect(ana_result.protocol_counters.transport.udp).to(equal(exp_flow2_count))
+
+                # Check analyzer flow counters
+                expect(ana_result.flow_counters.frame_count).to(equal(exp_flow2_count))
+
+                # Check generator flow counters
+                expect(gen_result.flow_counters.packets_actual).to(equal(exp_frame_count))
+
+                # Analyzer shouldn't see the 1st traffic flow so remove it for validation checks
+                filtered_config = copy.deepcopy(GENERATOR_CONFIG_MULTI_SIG_AND_NOSIG_DEFS)
+                del filtered_config['traffic'][0]
+
+                # Check miscellaneous results
+                validate_durations(ana_result, gen_result)
+                validate_frame_length(ana_result, filtered_config)
+                validate_rx_flows(self.client, ana_result)
+                validate_tx_flows(self.client, gen_result)
+
+        with description('with multiple traffic definitions and cap,'):
+            with it('succeeds'):
+                ana_result, gen_result, cap_result = configure_and_run_capture_test(self.client,
+                                                                                    ANALYZER_CONFIG_NO_SIGS,
+                                                                                    GENERATOR_CONFIG_MULTI_SIG_AND_NOSIG_DEFS,
+                                                                                    CAPTURE_CONFIG)
+                # Only non signature is allowed so shouldn't see the signature stream (flow 1)
+
+                # Validate results
+                exp_ana_flow_count = 2
+                exp_gen_flow_count = 2
+                expect(len(ana_result.flows)).to(equal(exp_ana_flow_count))
+                expect(len(gen_result.flows)).to(equal(exp_gen_flow_count))
+
+                # Check analyzer protocol counters
+                exp_frame_count = GENERATOR_CONFIG_MULTI_SIG_AND_NOSIG_DEFS['duration']['frames']
+                exp_flow1_count = exp_frame_count * 1 / 4
+                exp_flow2_count = exp_frame_count * 3 / 4
+                expect(ana_result.protocol_counters.ethernet.ip).to(equal(0))
+                expect(ana_result.protocol_counters.ethernet.vlan).to(equal(exp_frame_count))
+                expect(ana_result.protocol_counters.ip.ipv4).to(equal(exp_frame_count))
+                expect(ana_result.protocol_counters.transport.udp).to(equal(exp_frame_count))
+
+                # Check analyzer flow counters
+                expect(ana_result.flow_counters.frame_count).to(equal(exp_frame_count))
+
+                # Check generator flow counters
+                expect(gen_result.flow_counters.packets_actual).to(equal(exp_frame_count))
+
+                # Check miscellaneous results
+                validate_durations(ana_result, gen_result)
+                validate_frame_length(ana_result, GENERATOR_CONFIG_MULTI_SIG_AND_NOSIG_DEFS)
+                validate_rx_flows(self.client, ana_result)
+                validate_tx_flows(self.client, gen_result)
+
+                # Validate capture results
+                expect(cap_result.packets).to(equal(exp_frame_count))
+                expect(cap_result.bytes).to(equal(exp_frame_count * 124))  # Capture doesn't include FCS
+
+                # Validate capture file
+                with tempfile.TemporaryDirectory() as tmp_dir:
+                    out_file = os.path.join(tmp_dir, 'test.pcap')
+                    get_capture_pcap(self.capture_api, cap_result.id, out_file)
+                    expect(get_pcap_packet_count(out_file)).to(equal(cap_result.packets))
+
+        with description('with multiple traffic definitions and cap filter not sig,'):
+            with it('succeeds'):
+                ana_result, gen_result, cap_result = configure_and_run_capture_test(self.client,
+                                                                                    ANALYZER_CONFIG_NO_SIGS,
+                                                                                    GENERATOR_CONFIG_MULTI_SIG_AND_NOSIG_DEFS,
+                                                                                    CAPTURE_CONFIG_FILTER_NOT_SIG,)
+                # Only non signature is allowed so shouldn't see the signature stream (flow 1)
+
+                # Validate results
+                exp_ana_flow_count = 2
+                exp_gen_flow_count = 2
+                expect(len(ana_result.flows)).to(equal(exp_ana_flow_count))
+                expect(len(gen_result.flows)).to(equal(exp_gen_flow_count))
+
+                # Check analyzer protocol counters
+                exp_frame_count = GENERATOR_CONFIG_MULTI_SIG_AND_NOSIG_DEFS['duration']['frames']
+                exp_flow1_count = exp_frame_count * 1 / 4
+                exp_flow2_count = exp_frame_count * 3 / 4
+                expect(ana_result.protocol_counters.ethernet.ip).to(equal(0))
+                expect(ana_result.protocol_counters.ethernet.vlan).to(equal(exp_frame_count))
+                expect(ana_result.protocol_counters.ip.ipv4).to(equal(exp_frame_count))
+                expect(ana_result.protocol_counters.transport.udp).to(equal(exp_frame_count))
+
+                # Check analyzer flow counters
+                expect(ana_result.flow_counters.frame_count).to(equal(exp_frame_count))
+
+                # Check generator flow counters
+                expect(gen_result.flow_counters.packets_actual).to(equal(exp_frame_count))
+
+                # Check miscellaneous results
+                validate_durations(ana_result, gen_result)
+                validate_frame_length(ana_result, GENERATOR_CONFIG_MULTI_SIG_AND_NOSIG_DEFS)
+                validate_rx_flows(self.client, ana_result)
+                validate_tx_flows(self.client, gen_result)
+
+                # Validate capture results
+                expect(cap_result.packets).to(equal(exp_flow2_count))
+                expect(cap_result.bytes).to(equal(exp_flow2_count * 124))  # Capture doesn't include FCS
+
+                # Validate capture file
+                with tempfile.TemporaryDirectory() as tmp_dir:
+                    out_file = os.path.join(tmp_dir, 'test.pcap')
+                    get_capture_pcap(self.capture_api, cap_result.id, out_file)
+                    expect(get_pcap_packet_count(out_file)).to(equal(cap_result.packets))
+
+        with description('with multiple traffic definitions, no ana and cap filter not sig,'):
+            with it('succeeds'):
+                ana_result, gen_result, cap_result = configure_and_run_capture_test(self.client,
+                                                                                    None,
+                                                                                    GENERATOR_CONFIG_MULTI_SIG_AND_NOSIG_DEFS,
+                                                                                    CAPTURE_CONFIG_FILTER_NOT_SIG)
+                # Only non signature is allowed so shouldn't see the signature stream (flow 1)
+
+                # Validate results
+                exp_gen_flow_count = 2
+                expect(ana_result).to(equal(None))
+                expect(len(gen_result.flows)).to(equal(exp_gen_flow_count))
+
+                # Check analyzer protocol counters
+                exp_frame_count = GENERATOR_CONFIG_MULTI_SIG_AND_NOSIG_DEFS['duration']['frames']
+                exp_flow1_count = exp_frame_count * 1 / 4
+                exp_flow2_count = exp_frame_count * 3 / 4
+
+                # Check generator flow counters
+                expect(gen_result.flow_counters.packets_actual).to(equal(exp_frame_count))
+
+                # Check miscellaneous results
+                validate_tx_flows(self.client, gen_result)
+
+                # Validate capture results
+                expect(cap_result.packets).to(equal(exp_flow2_count))
+                expect(cap_result.bytes).to(equal(exp_flow2_count * 124))  # Capture doesn't include FCS
+
+                # Validate capture file
+                with tempfile.TemporaryDirectory() as tmp_dir:
+                    out_file = os.path.join(tmp_dir, 'test.pcap')
+                    get_capture_pcap(self.capture_api, cap_result.id, out_file)
+                    expect(get_pcap_packet_count(out_file)).to(equal(cap_result.packets))
+
         # Note: For the modifier tests, we're really only checking the flow/frame counts
         # to make sure they are correct.
         with description('with modifiers,'):
@@ -983,6 +1234,14 @@ with description('Packet back to back', 'packet_b2b') as self:
                     if ana.active:
                         self.analyzer_api.stop_packet_analyzer(ana.id)
                 self.analyzer_api.delete_packet_analyzers()
+            except AttributeError:
+                pass
+
+            try:
+                for cap in self.capture_api.list_packet_captures():
+                    if cap.active:
+                        self.capture_api.stop_packet_capture(cap.id)
+                self.capture_api.delete_packet_captures()
             except AttributeError:
                 pass
 

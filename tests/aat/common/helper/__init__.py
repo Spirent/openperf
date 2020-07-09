@@ -13,3 +13,8 @@ from common.helper.interface import (empty_interface,
 # traffic.py
 from common.helper.traffic import (make_generator_config,
                                    make_traffic_template)
+
+# capture.py
+from common.helper.capture import (make_capture_config,
+                                   get_capture_pcap,
+                                   get_pcap_packet_count)

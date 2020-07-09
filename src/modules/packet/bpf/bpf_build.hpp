@@ -13,18 +13,24 @@ constexpr int BPF_MEM_PKTFLAGS = 0;
 constexpr int BPF_MEM_STREAM_ID = 1;
 
 constexpr uint32_t BPF_PKTFLAG_FCS_ERROR = 0x01;
-constexpr uint32_t BPF_PKTFLAG_CHKSUM_ERROR = 0x02;
-constexpr uint32_t BPF_PKTFLAG_PRBS_ERROR = 0x04;
-constexpr uint32_t BPF_PKTFLAG_SIGNATURE = 0x08;
+constexpr uint32_t BPF_PKTFLAG_IP_CHKSUM_ERROR = 0x02;
+constexpr uint32_t BPF_PKTFLAG_TCP_CHKSUM_ERROR = 0x04;
+constexpr uint32_t BPF_PKTFLAG_UDP_CHKSUM_ERROR = 0x08;
+constexpr uint32_t BPF_PKTFLAG_ICMP_CHKSUM_ERROR = 0x10;
+constexpr uint32_t BPF_PKTFLAG_PRBS_ERROR = 0x20;
+constexpr uint32_t BPF_PKTFLAG_SIGNATURE = 0x40;
 
 constexpr uint32_t BPF_FILTER_FLAGS_FCS_ERROR = 0x01;
-constexpr uint32_t BPF_FILTER_FLAGS_CHKSUM_ERROR = 0x02;
-constexpr uint32_t BPF_FILTER_FLAGS_PRBS_ERROR = 0x04;
-constexpr uint32_t BPF_FILTER_FLAGS_SIGNATURE = 0x08;
-constexpr uint32_t BPF_FILTER_FLAGS_SIGNATURE_STREAM_ID = 0x10;
-constexpr uint32_t BPF_FILTER_FLAGS_AND = 0x20;
-constexpr uint32_t BPF_FILTER_FLAGS_OR = 0x40;
-constexpr uint32_t BPF_FILTER_FLAGS_NOT = 0x80;
+constexpr uint32_t BPF_FILTER_FLAGS_IP_CHKSUM_ERROR = 0x02;
+constexpr uint32_t BPF_FILTER_FLAGS_TCP_CHKSUM_ERROR = 0x04;
+constexpr uint32_t BPF_FILTER_FLAGS_UDP_CHKSUM_ERROR = 0x08;
+constexpr uint32_t BPF_FILTER_FLAGS_ICMP_CHKSUM_ERROR = 0x10;
+constexpr uint32_t BPF_FILTER_FLAGS_PRBS_ERROR = 0x20;
+constexpr uint32_t BPF_FILTER_FLAGS_SIGNATURE = 0x40;
+constexpr uint32_t BPF_FILTER_FLAGS_SIGNATURE_STREAM_ID = 0x100;
+constexpr uint32_t BPF_FILTER_FLAGS_AND = 0x200;
+constexpr uint32_t BPF_FILTER_FLAGS_OR = 0x400;
+constexpr uint32_t BPF_FILTER_FLAGS_NOT = 0x800;
 constexpr uint32_t BPF_FILTER_FLAGS_BPF = 0x80000000;
 
 enum class bpf_branch_type { PASS, FAIL };

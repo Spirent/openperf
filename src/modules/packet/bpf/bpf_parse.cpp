@@ -116,10 +116,31 @@ std::string valid_match_expr::to_string() const
     if (flags & static_cast<uint32_t>(valid_match_expr::flag_type::ETH_FCS)) {
         valid_str = "fcs";
     }
-    if (flags
-        & static_cast<uint32_t>(valid_match_expr::flag_type::TCPUDP_CHKSUM)) {
+
+    if ((flags & all_chksum_flags) == all_chksum_flags) {
         if (!valid_str.empty()) valid_str += " ";
         valid_str += "chksum";
+    } else {
+        if (flags
+            & static_cast<uint32_t>(valid_match_expr::flag_type::IP_CHKSUM)) {
+            if (!valid_str.empty()) valid_str += " ";
+            valid_str += "ip chksum";
+        }
+        if (flags
+            & static_cast<uint32_t>(valid_match_expr::flag_type::TCP_CHKSUM)) {
+            if (!valid_str.empty()) valid_str += " ";
+            valid_str += "tcp chksum";
+        }
+        if (flags
+            & static_cast<uint32_t>(valid_match_expr::flag_type::UDP_CHKSUM)) {
+            if (!valid_str.empty()) valid_str += " ";
+            valid_str += "udp chksum";
+        }
+        if (flags
+            & static_cast<uint32_t>(valid_match_expr::flag_type::ICMP_CHKSUM)) {
+            if (!valid_str.empty()) valid_str += " ";
+            valid_str += "icmp chksum";
+        }
     }
     if (flags
         & static_cast<uint32_t>(valid_match_expr::flag_type::SIGNATURE_PRBS)) {
@@ -424,6 +445,7 @@ private:
     {
         uint32_t flags = 0;
         bool done = false;
+        std::string chksum_type;
 
         assert(m_token.type == token_type::VALID);
         consume();
@@ -434,9 +456,34 @@ private:
                 if (m_token.value == "fcs") {
                     flags |= static_cast<uint32_t>(
                         valid_match_expr::flag_type::ETH_FCS);
+                } else if (m_token.value == "ip" || m_token.value == "tcp"
+                           || m_token.value == "udp"
+                           || m_token.value == "icmp") {
+                    if (!chksum_type.empty()) {
+                        throw std::runtime_error("Unexpected valid expr token "
+                                                 + m_token.value);
+                    }
+                    chksum_type = m_token.value;
                 } else if (m_token.value == "chksum") {
-                    flags |= static_cast<uint32_t>(
-                        valid_match_expr::flag_type::TCPUDP_CHKSUM);
+                    if (chksum_type == "ip") {
+                        flags |= static_cast<uint32_t>(
+                            valid_match_expr::flag_type::IP_CHKSUM);
+
+                    } else if (chksum_type == "tcp") {
+                        flags |= static_cast<uint32_t>(
+                            valid_match_expr::flag_type::TCP_CHKSUM);
+
+                    } else if (chksum_type == "udp") {
+                        flags |= static_cast<uint32_t>(
+                            valid_match_expr::flag_type::UDP_CHKSUM);
+
+                    } else if (chksum_type == "icmp") {
+                        flags |= static_cast<uint32_t>(
+                            valid_match_expr::flag_type::ICMP_CHKSUM);
+                    } else {
+                        flags |= valid_match_expr::all_chksum_flags;
+                    }
+                    chksum_type.clear();
                 } else if (m_token.value == "prbs") {
                     flags |= static_cast<uint32_t>(
                         valid_match_expr::flag_type::SIGNATURE_PRBS);
@@ -450,6 +497,9 @@ private:
                 done = true;
             } break;
             }
+        }
+        if (!chksum_type.empty()) {
+            throw std::runtime_error("Missing chksum token");
         }
         if (flags == 0) {
             throw std::runtime_error("Unexpected valid expr missing fields");

@@ -11,6 +11,7 @@ import time
 import client.api
 import client.models
 from common import Config, Service
+from common.helper import get_capture_pcap
 from common.matcher import (be_valid_packet_capture,
                             be_valid_packet_capture_result,
                             raise_api_exception)
@@ -94,18 +95,6 @@ def do_ping(api_client, ping_binary, src_id, dst_id, domain, count=1, payload_si
                                   'OP_BINDTODEVICE': src_id})
         p.wait()
         expect(p.returncode).to(equal(0))
-
-def get_pcap(api, id, out_file, packet_start=None, packet_end=None):
-    kwargs = dict()
-    # Need to use _preload_content to avoid issues with binary data
-    kwargs['_preload_content'] = False
-    if packet_start:
-        kwargs['packet_start'] = packet_start
-    if packet_end:
-        kwargs['packet_end'] = packet_end
-    resp = api.get_packet_capture_pcap(id=id, **kwargs)
-    with open(out_file, 'wb') as fdst:
-        shutil.copyfileobj(resp, fdst)
 
 def get_pcap_with_wget(id, out_file):
     base_url = CONFIG.service('dataplane').base_url
@@ -374,7 +363,7 @@ with description('Packet Capture,', 'packet_capture') as self:
                         out_file = os.path.join(self.temp_dir, 'test.pcapng')
 
                         # Retrieve PCAP using python API
-                        get_pcap(self.api, self.result.id, out_file)
+                        get_capture_pcap(self.api, self.result.id, out_file)
                         expect(os.path.exists(out_file)).to(equal(True))
                         expect(pcap_icmp_echo_request_count(out_file)).to(equal(4))
                         os.remove(out_file)
@@ -424,7 +413,7 @@ with description('Packet Capture,', 'packet_capture') as self:
                     out_file = os.path.join(self.temp_dir, 'test.pcapng')
 
                     # Retrieve PCAP using python API
-                    get_pcap(self.api, self.result.id, out_file)
+                    get_capture_pcap(self.api, self.result.id, out_file)
                     expect(os.path.exists(out_file)).to(equal(True))
                     expect(pcap_icmp_echo_request_count(out_file)).to(equal(4))
                     os.remove(out_file)
@@ -488,7 +477,7 @@ with description('Packet Capture,', 'packet_capture') as self:
                     out_file = os.path.join(self.temp_dir, 'test.pcapng')
 
                     # Retrieve PCAP using python API
-                    get_pcap(self.api, self.result.id, out_file)
+                    get_capture_pcap(self.api, self.result.id, out_file)
                     expect(os.path.exists(out_file)).to(equal(True))
                     lengths = pcap_icmp_echo_request_lengths(out_file)
                     expect(len(lengths)).to(equal(2))
@@ -524,7 +513,7 @@ with description('Packet Capture,', 'packet_capture') as self:
                     expected_seq = list(range(1, packet_count + 1))
 
                     # Retrieve entire PCAP file
-                    get_pcap(self.api, self.result.id, out_file)
+                    get_capture_pcap(self.api, self.result.id, out_file)
                     expect(os.path.exists(out_file)).to(equal(True))
                     seq = pcap_icmp_echo_request_seq(out_file)
                     expect(len(seq)).to(equal(8))
@@ -532,7 +521,7 @@ with description('Packet Capture,', 'packet_capture') as self:
                     os.remove(out_file)
 
                     # Retrieve PCAP range 0 - 3
-                    get_pcap(self.api, self.result.id, out_file, 0, 3)
+                    get_capture_pcap(self.api, self.result.id, out_file, 0, 3)
                     expect(os.path.exists(out_file)).to(equal(True))
                     seq = pcap_icmp_echo_request_seq(out_file)
                     expect(len(seq)).to(equal(4))
@@ -540,7 +529,7 @@ with description('Packet Capture,', 'packet_capture') as self:
                     os.remove(out_file)
 
                     # Retrieve PCAP range 3 - 6
-                    get_pcap(self.api, self.result.id, out_file, 3, 6)
+                    get_capture_pcap(self.api, self.result.id, out_file, 3, 6)
                     expect(os.path.exists(out_file)).to(equal(True))
                     seq = pcap_icmp_echo_request_seq(out_file)
                     expect(len(seq)).to(equal(4))
@@ -548,7 +537,7 @@ with description('Packet Capture,', 'packet_capture') as self:
                     os.remove(out_file)
 
                     # Retrieve PCAP range 4 - 7
-                    get_pcap(self.api, self.result.id, out_file, 4, 7)
+                    get_capture_pcap(self.api, self.result.id, out_file, 4, 7)
                     expect(os.path.exists(out_file)).to(equal(True))
                     seq = pcap_icmp_echo_request_seq(out_file)
                     expect(len(seq)).to(equal(4))
@@ -584,7 +573,7 @@ with description('Packet Capture,', 'packet_capture') as self:
                     out_file = os.path.join(self.temp_dir, 'test.pcapng')
 
                     # Retrieve PCAP using python API
-                    get_pcap(self.api, self.result.id, out_file)
+                    get_capture_pcap(self.api, self.result.id, out_file)
                     expect(os.path.exists(out_file)).to(equal(True))
                     lengths = pcap_icmp_echo_request_lengths(out_file)
                     expect(len(lengths)).to(equal(2))
@@ -630,7 +619,7 @@ with description('Packet Capture,', 'packet_capture') as self:
                     out_file = os.path.join(self.temp_dir, 'test.pcapng')
 
                     # Retrieve PCAP using python API
-                    get_pcap(self.api, self.result.id, out_file)
+                    get_capture_pcap(self.api, self.result.id, out_file)
                     expect(os.path.exists(out_file)).to(equal(True))
                     lengths = pcap_icmp_echo_request_lengths(out_file)
                     expect(len(lengths)).to(equal(3))

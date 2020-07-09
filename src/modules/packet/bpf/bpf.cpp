@@ -30,13 +30,20 @@ inline void bpf_arg_init(bpf_args_t& args,
     if (stream_id.has_value()) {
         args.mem[BPF_MEM_PKTFLAGS] |= BPF_PKTFLAG_SIGNATURE;
         args.mem[BPF_MEM_STREAM_ID] = stream_id.value();
+        if (packetio::packet::prbs_bit_errors(packet))
+            args.mem[BPF_MEM_PKTFLAGS] |= BPF_PKTFLAG_PRBS_ERROR;
     }
+
     // TODO: Add packet_buffer support for FCS error
     // args.mem[BPF_MEM_PKTFLAGS] |= BPF_PKTFLAG_FCS_ERROR;
-    // TODO: Add packet_buffer support for TCP/UDP/ICMP checksum error
-    // args.mem[BPF_MEM_PKTFLAGS] |= BPF_PKTFLAG_CHKSUM_ERROR;
-    // TODO: Add packet_buffer support for PRBS error
-    // args.mem[BPF_MEM_PKTFLAGS] |= BPF_PKTFLAG_PRBS_ERROR;
+    // TODO: Add packet_buffer support for ICMP checksum error
+    // args.mem[BPF_MEM_PKTFLAGS] |= BPF_PKTFLAG_ICMP_CHKSUM_ERROR;
+    if (packetio::packet::ipv4_checksum_error(packet))
+        args.mem[BPF_MEM_PKTFLAGS] |= BPF_PKTFLAG_IP_CHKSUM_ERROR;
+    if (packetio::packet::tcp_checksum_error(packet))
+        args.mem[BPF_MEM_PKTFLAGS] |= BPF_PKTFLAG_TCP_CHKSUM_ERROR;
+    if (packetio::packet::udp_checksum_error(packet))
+        args.mem[BPF_MEM_PKTFLAGS] |= BPF_PKTFLAG_UDP_CHKSUM_ERROR;
 }
 
 uint16_t
@@ -414,11 +421,13 @@ bool bpf_validate_filter(std::string_view filter_str, int link_type)
 }
 
 bpf::bpf()
-    : m_funcs(bpf_all_funcs)
+    : m_flags(0)
+    , m_funcs(bpf_all_funcs)
 {}
 
 bpf::bpf(std::string_view filter_str, int link_type)
-    : m_funcs(bpf_all_funcs)
+    : m_flags(0)
+    , m_funcs(bpf_all_funcs)
 {
     if (!parse(filter_str, link_type)) {
         std::ostringstream os;
@@ -427,15 +436,16 @@ bpf::bpf(std::string_view filter_str, int link_type)
     }
 }
 
-bpf::bpf(const bpf_insn* insns, unsigned int len)
-    : m_funcs(bpf_all_funcs)
+bpf::bpf(const bpf_insn* insns, unsigned int len, uint32_t flags)
+    : m_flags(0)
+    , m_funcs(bpf_all_funcs)
 {
-    if (!set_prog(insns, len)) {
+    if (!set_prog(insns, len, flags)) {
         throw std::invalid_argument("BPF insns not valid");
     }
 }
 
-bool bpf::set_prog(const bpf_insn* insns, unsigned int len)
+bool bpf::set_prog(const bpf_insn* insns, unsigned int len, uint32_t flags)
 {
     bpf_ctx_t ctx{.copfuncs = nullptr,
                   .nfuncs = 0,
@@ -459,6 +469,7 @@ bool bpf::set_prog(const bpf_insn* insns, unsigned int len)
     } else {
         m_funcs = bpf_jit_funcs;
     }
+    m_flags = flags;
     return true;
 }
 
@@ -495,10 +506,12 @@ bool bpf::parse(std::string_view filter_str, int link_type)
             // Handle simple cases without using BPF
             if (flags == BPF_FILTER_FLAGS_SIGNATURE) {
                 m_funcs = bpf_sig_funcs;
+                m_flags = flags;
                 return true;
             }
             if (flags == (BPF_FILTER_FLAGS_SIGNATURE | BPF_FILTER_FLAGS_NOT)) {
                 m_funcs = bpf_no_sig_funcs;
+                m_flags = flags;
                 return true;
             }
         }
@@ -519,7 +532,7 @@ bool bpf::parse(std::string_view filter_str, int link_type)
                                rhs_filter_str.c_str());
                         return false;
                     }
-                    if (set_prog(prog->bf_insns, prog->bf_len)) {
+                    if (set_prog(prog->bf_insns, prog->bf_len, flags)) {
                         // If BPF compiles, use specialized functions
                         // Otherwise fallthrough and use mixed BPF program
                         if (m_jit) {
@@ -536,7 +549,7 @@ bool bpf::parse(std::string_view filter_str, int link_type)
                            filter_str.data());
                     return false;
                 }
-                return set_prog(&bf_insns[0], bf_insns.size());
+                return set_prog(&bf_insns[0], bf_insns.size(), flags);
             }
         }
         // All special
@@ -548,7 +561,7 @@ bool bpf::parse(std::string_view filter_str, int link_type)
                 filter_str.data());
             return false;
         }
-        return set_prog(&bf_insns[0], bf_insns.size());
+        return set_prog(&bf_insns[0], bf_insns.size(), flags);
     } else {
         auto prog = bpf_compile(filter_str, link_type);
         if (!prog) {
@@ -558,7 +571,7 @@ bool bpf::parse(std::string_view filter_str, int link_type)
                    filter_str.data());
             return false;
         }
-        return set_prog(prog->bf_insns, prog->bf_len);
+        return set_prog(prog->bf_insns, prog->bf_len, 0);
     }
 }
 
