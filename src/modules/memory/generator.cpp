@@ -215,7 +215,6 @@ void generator::config(const generator::config_t& cfg)
     auto configure_workers = [this](workers& w,
                                     std::vector<unsigned>& indexes,
                                     const config_t::operation_config& op_cfg,
-                                    size_t threads,
                                     std::future<void>& future) {
         // io blocks in buffer
         size_t nb_blocks =
@@ -227,7 +226,7 @@ void generator::config(const generator::config_t& cfg)
                                 index_vector(indexes, nb_blocks, pattern);
                             });
 
-        auto rate = (!threads) ? 0 : op_cfg.op_per_sec / threads;
+        auto rate = (!op_cfg.threads) ? 0 : op_cfg.op_per_sec / op_cfg.threads;
 
         spread_config(w,
                       task_memory_config{.block_size = op_cfg.block_size,
@@ -238,19 +237,12 @@ void generator::config(const generator::config_t& cfg)
                                          .indexes = &indexes});
     };
 
-    reallocate_workers<task_memory_read>(m_read_workers, cfg.read_threads);
-    configure_workers(m_read_workers,
-                      m_read_indexes,
-                      cfg.read,
-                      cfg.read_threads,
-                      m_read_future);
+    reallocate_workers<task_memory_read>(m_read_workers, cfg.read.threads);
+    configure_workers(m_read_workers, m_read_indexes, cfg.read, m_read_future);
 
-    reallocate_workers<task_memory_write>(m_write_workers, cfg.write_threads);
-    configure_workers(m_write_workers,
-                      m_write_indexes,
-                      cfg.write,
-                      cfg.write_threads,
-                      m_write_future);
+    reallocate_workers<task_memory_write>(m_write_workers, cfg.write.threads);
+    configure_workers(
+        m_write_workers, m_write_indexes, cfg.write, m_write_future);
 
     m_config = cfg;
     resume();

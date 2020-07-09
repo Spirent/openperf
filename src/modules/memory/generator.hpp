@@ -18,12 +18,11 @@ public:
     struct config_t
     {
         size_t buffer_size = 0;
-        size_t read_threads = 0;
-        size_t write_threads = 0;
         struct operation_config
         {
             size_t block_size = 0;
             size_t op_per_sec = 0;
+            size_t threads = 0;
             io_pattern pattern = io_pattern::NONE;
         } read, write;
     };
