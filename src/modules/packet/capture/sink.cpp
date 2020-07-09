@@ -84,9 +84,18 @@ sink::sink(const sink_config& config, std::vector<unsigned> rx_ids)
     : m_config(config)
     , m_indexes(sink::make_indexes(rx_ids))
 {
-    if (!m_config.filter.empty())
+    if (!m_config.filter.empty()) {
         m_filter =
             std::make_unique<openperf::packet::bpf::bpf>(m_config.filter);
+
+        auto bpf_filter_flags = m_filter->get_filter_flags();
+        auto bpf_features = bpf::bpf_sink_feature_flags(bpf_filter_flags);
+        OP_LOG(OP_LOG_DEBUG,
+               "Capture BPF filter '%s' flags %#x sink_features %#x",
+               m_config.filter.c_str(),
+               bpf_filter_flags,
+               bpf_features.value);
+    }
     if (!m_config.start_trigger.empty())
         m_start_trigger = std::make_unique<openperf::packet::bpf::bpf>(
             m_config.start_trigger);
