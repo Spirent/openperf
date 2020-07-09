@@ -69,9 +69,18 @@ class valid_match_expr : public expr_base<valid_match_expr>
 public:
     enum class flag_type {
         ETH_FCS = 0x01,
-        TCPUDP_CHKSUM = 0x02,
-        SIGNATURE_PRBS = 0x04
+        IP_CHKSUM = 0x2,
+        TCP_CHKSUM = 0x04,
+        UDP_CHKSUM = 0x08,
+        ICMP_CHKSUM = 0x10,
+        SIGNATURE_PRBS = 0x20
     };
+
+    static constexpr uint32_t all_chksum_flags =
+        static_cast<uint32_t>(valid_match_expr::flag_type::IP_CHKSUM)
+        | static_cast<uint32_t>(valid_match_expr::flag_type::TCP_CHKSUM)
+        | static_cast<uint32_t>(valid_match_expr::flag_type::UDP_CHKSUM)
+        | static_cast<uint32_t>(valid_match_expr::flag_type::ICMP_CHKSUM);
 
     valid_match_expr(uint32_t f)
         : flags(f)

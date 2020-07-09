@@ -95,8 +95,17 @@ public:
             & static_cast<uint32_t>(valid_match_expr::flag_type::ETH_FCS))
             flags |= BPF_PKTFLAG_FCS_ERROR;
         if (expr.flags
-            & static_cast<uint32_t>(valid_match_expr::flag_type::TCPUDP_CHKSUM))
-            flags |= BPF_PKTFLAG_CHKSUM_ERROR;
+            & static_cast<uint32_t>(valid_match_expr::flag_type::IP_CHKSUM))
+            flags |= BPF_PKTFLAG_IP_CHKSUM_ERROR;
+        if (expr.flags
+            & static_cast<uint32_t>(valid_match_expr::flag_type::TCP_CHKSUM))
+            flags |= BPF_PKTFLAG_TCP_CHKSUM_ERROR;
+        if (expr.flags
+            & static_cast<uint32_t>(valid_match_expr::flag_type::UDP_CHKSUM))
+            flags |= BPF_PKTFLAG_UDP_CHKSUM_ERROR;
+        if (expr.flags
+            & static_cast<uint32_t>(valid_match_expr::flag_type::ICMP_CHKSUM))
+            flags |= BPF_PKTFLAG_ICMP_CHKSUM_ERROR;
         if (expr.flags
             & static_cast<uint32_t>(
                 valid_match_expr::flag_type::SIGNATURE_PRBS))
@@ -304,12 +313,22 @@ public:
             & static_cast<uint32_t>(valid_match_expr::flag_type::ETH_FCS))
             m_flags |= BPF_FILTER_FLAGS_FCS_ERROR;
         if (expr.flags
-            & static_cast<uint32_t>(valid_match_expr::flag_type::TCPUDP_CHKSUM))
-            m_flags |= BPF_FILTER_FLAGS_CHKSUM_ERROR;
+            & static_cast<uint32_t>(valid_match_expr::flag_type::IP_CHKSUM))
+            m_flags |= BPF_FILTER_FLAGS_IP_CHKSUM_ERROR;
+        if (expr.flags
+            & static_cast<uint32_t>(valid_match_expr::flag_type::TCP_CHKSUM))
+            m_flags |= BPF_FILTER_FLAGS_TCP_CHKSUM_ERROR;
+        if (expr.flags
+            & static_cast<uint32_t>(valid_match_expr::flag_type::UDP_CHKSUM))
+            m_flags |= BPF_FILTER_FLAGS_UDP_CHKSUM_ERROR;
+        if (expr.flags
+            & static_cast<uint32_t>(valid_match_expr::flag_type::ICMP_CHKSUM))
+            m_flags |= BPF_FILTER_FLAGS_ICMP_CHKSUM_ERROR;
         if (expr.flags
             & static_cast<uint32_t>(
-                valid_match_expr::flag_type::SIGNATURE_PRBS))
-            m_flags |= BPF_FILTER_FLAGS_PRBS_ERROR;
+                valid_match_expr::flag_type::SIGNATURE_PRBS)) {
+            m_flags |= BPF_FILTER_FLAGS_SIGNATURE | BPF_FILTER_FLAGS_PRBS_ERROR;
+        }
     }
 
     void visit(const signature_match_expr& expr) override

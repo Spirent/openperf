@@ -6,6 +6,7 @@
 #include "packetio/internal_worker.hpp"
 #include "packetio/packet_buffer.hpp"
 #include "packet/bpf/bpf.hpp"
+#include "packet/bpf/bpf_sink.hpp"
 #include "packet/capture/sink.hpp"
 
 namespace openperf::packet::capture {
@@ -166,6 +167,16 @@ bool sink::uses_feature(packetio::packet::sink_feature_flags flags) const
     /* We always need rx_timestamps */
     auto needed = openperf::utils::bit_flags<sink_feature_flags>{
         sink_feature_flags::rx_timestamp};
+
+    /* Get features required for all filters */
+    if (m_filter)
+        needed |= openperf::packet::bpf::bpf_sink_feature_flags(*m_filter);
+    if (m_start_trigger)
+        needed |=
+            openperf::packet::bpf::bpf_sink_feature_flags(*m_start_trigger);
+    if (m_stop_trigger)
+        needed |=
+            openperf::packet::bpf::bpf_sink_feature_flags(*m_stop_trigger);
 
     return (bool(needed & flags));
 }

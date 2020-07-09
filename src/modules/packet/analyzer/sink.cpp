@@ -5,6 +5,7 @@
 #include "packetio/internal_worker.hpp"
 #include "packetio/packet_buffer.hpp"
 #include "packet/bpf/bpf.hpp"
+#include "packet/bpf/bpf_sink.hpp"
 #include "packet/analyzer/sink.hpp"
 #include "packet/analyzer/statistics/flow/counter_map.tcc"
 #include "spirent_pga/api.h"
@@ -192,6 +193,9 @@ bool sink::uses_feature(packetio::packet::sink_feature_flags flags) const
         needed |= (sink_feature_flags::spirent_signature_decode
                    | sink_feature_flags::spirent_prbs_error_detect);
     }
+
+    /* Get features required by the filter */
+    if (m_filter) { needed |= bpf::bpf_sink_feature_flags(*m_filter); }
 
     return (bool(needed & flags));
 }
