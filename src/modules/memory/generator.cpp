@@ -220,19 +220,19 @@ void generator::config(const generator::config_t& cfg)
         // io blocks in buffer
         size_t nb_blocks =
             op_cfg.block_size ? m_buffer.size / op_cfg.block_size : 0;
-        auto pattern = op_cfg.pattern;
 
         if (future.valid()) future.wait();
-        future = std::async(std::launch::async, [&indexes, nb_blocks, pattern] {
-            index_vector(indexes, nb_blocks, pattern);
-        });
+        future = std::async(std::launch::async,
+                            [&indexes, nb_blocks, pattern = op_cfg.pattern] {
+                                index_vector(indexes, nb_blocks, pattern);
+                            });
 
         auto rate = (!threads) ? 0 : op_cfg.op_per_sec / threads;
 
         spread_config(w,
                       task_memory_config{.block_size = op_cfg.block_size,
                                          .op_per_sec = rate,
-                                         .pattern = pattern,
+                                         .pattern = op_cfg.pattern,
                                          .buffer = {.ptr = m_buffer.ptr,
                                                     .size = m_buffer.size},
                                          .indexes = &indexes});
