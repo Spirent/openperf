@@ -222,9 +222,10 @@ void generator::config(const generator::config_t& cfg)
 
         if (future.valid()) future.wait();
         future = std::async(std::launch::async,
-                            [&indexes, nb_blocks, pattern = op_cfg.pattern] {
-                                index_vector(indexes, nb_blocks, pattern);
-                            });
+                            index_vector,
+                            std::ref(indexes),
+                            nb_blocks,
+                            op_cfg.pattern);
 
         auto rate = (!op_cfg.threads) ? 0 : op_cfg.op_per_sec / op_cfg.threads;
 
