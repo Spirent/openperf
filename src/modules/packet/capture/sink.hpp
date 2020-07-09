@@ -58,7 +58,7 @@ struct sink_result
     timesync::chrono::realtime::time_point stop_time;
 
     std::vector<std::unique_ptr<capture_buffer>> buffers;
-    std::unique_ptr<transfer_context> transfer;
+    std::vector<std::unique_ptr<transfer_context>> transfers;
 
     std::function<void(sink_result&)> state_changed_callback;
     uint32_t timeout_id;

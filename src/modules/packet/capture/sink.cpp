@@ -66,7 +66,9 @@ capture_buffer_stats sink_result::get_stats() const
 
 bool sink_result::has_active_transfer() const
 {
-    return (transfer.get() && !transfer->is_done());
+    return std::any_of(transfers.begin(), transfers.end(), [](auto& transfer) {
+        return (!transfer->is_done());
+    });
 }
 
 std::vector<uint8_t> sink::make_indexes(std::vector<unsigned>& ids)
