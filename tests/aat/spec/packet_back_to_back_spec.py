@@ -334,7 +334,7 @@ GENERATOR_CONFIG_MULTI_SIG_AND_NOSIG_DEFS = {
     'protocol_counters': ['ethernet', 'ip', 'transport'],
     'traffic': [
         {
-            'length': {'fixed': 128},
+            'length': {'fixed': 384},
             'packet': ETH_VLAN_IPV4_UDP,
             'weight': 1,
             'signature': {'stream_id': 1,
@@ -924,7 +924,7 @@ with description('Packet back to back', 'packet_b2b') as self:
 
                 # Validate capture results
                 expect(cap_result.packets).to(equal(exp_frame_count))
-                expect(cap_result.bytes).to(equal(exp_frame_count * 124))  # Capture doesn't include FCS
+                expect(cap_result.bytes).to(equal((exp_flow1_count * 380) + (exp_flow2_count * 124)))  # Capture doesn't include FCS
 
                 # Validate capture file
                 with tempfile.TemporaryDirectory() as tmp_dir:
