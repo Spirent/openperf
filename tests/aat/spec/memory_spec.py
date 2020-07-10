@@ -19,6 +19,7 @@ CONFIG = Config(os.path.join(os.path.dirname(__file__),
 def generator_model(api_client, running = False, id = ''):
     config = client.models.MemoryGeneratorConfig()
     config.buffer_size = 1024
+    config.pre_allocate_buffer = False
     config.reads_per_sec = 128
     config.read_size = 8
     config.read_threads = 1
@@ -31,6 +32,7 @@ def generator_model(api_client, running = False, id = ''):
     gen.running = running
     gen.config = config
     gen.id = id
+    gen.init_percent_complete = 100
     return gen
 
 
