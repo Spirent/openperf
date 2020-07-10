@@ -5,7 +5,9 @@
 #include "memory/io_pattern.hpp"
 
 namespace openperf::memory::internal {
-std::vector<unsigned> index_vector(size_t size, io_pattern pattern);
+void index_vector(std::vector<unsigned>& indexes,
+                  size_t size,
+                  io_pattern pattern);
 }
 
 TEST_CASE("Memory Generator Task", "[memory]")
@@ -18,30 +20,33 @@ TEST_CASE("Memory Generator Task", "[memory]")
 
         SECTION("Pattern: SEQUENTIAL")
         {
-            auto v_idx = index_vector(test_size, io_pattern::SEQUENTIAL);
+            std::vector<unsigned> indexes;
+            index_vector(indexes, test_size, io_pattern::SEQUENTIAL);
 
-            REQUIRE(v_idx.size() == test_size);
-            REQUIRE(std::is_sorted(v_idx.begin(), v_idx.end()));
+            REQUIRE(indexes.size() == test_size);
+            REQUIRE(std::is_sorted(indexes.begin(), indexes.end()));
         }
 
         SECTION("Pattern: REVERSE")
         {
-            auto v_idx = index_vector(test_size, io_pattern::REVERSE);
-            std::reverse(v_idx.begin(), v_idx.end());
+            std::vector<unsigned> indexes;
+            index_vector(indexes, test_size, io_pattern::REVERSE);
+            std::reverse(indexes.begin(), indexes.end());
 
-            REQUIRE(v_idx.size() == test_size);
-            REQUIRE(std::is_sorted(v_idx.begin(), v_idx.end()));
+            REQUIRE(indexes.size() == test_size);
+            REQUIRE(std::is_sorted(indexes.begin(), indexes.end()));
         }
 
         SECTION("Pattern: RANDOM")
         {
-            auto v_idx = index_vector(test_size, io_pattern::RANDOM);
+            std::vector<unsigned> indexes;
+            index_vector(indexes, test_size, io_pattern::RANDOM);
 
-            REQUIRE(v_idx.size() == test_size);
-            REQUIRE(!std::is_sorted(v_idx.begin(), v_idx.end()));
+            REQUIRE(indexes.size() == test_size);
+            REQUIRE(!std::is_sorted(indexes.begin(), indexes.end()));
 
-            std::reverse(v_idx.begin(), v_idx.end());
-            REQUIRE(!std::is_sorted(v_idx.begin(), v_idx.end()));
+            std::reverse(indexes.begin(), indexes.end());
+            REQUIRE(!std::is_sorted(indexes.begin(), indexes.end()));
         }
     }
 }
