@@ -29,4 +29,7 @@ $(MEMORY_OBJ_DIR)/init.o: OP_CPPFLAGS += \
 MEMORY_TEST_DEPENDS += framework
 
 MEMORY_TEST_SOURCES += \
-	task_memory.cpp
+	task_memory.cpp \
+	generator.cpp \
+	task_memory_read.cpp \
+	task_memory_write.cpp
