@@ -538,7 +538,7 @@ No authorization required
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **get_packet_capture_pcap**
-> file get_packet_capture_pcap(id)
+> file get_packet_capture_pcap(id, packet_start=packet_start, packet_end=packet_end)
 
 Get a packet data as a pcap file
 
@@ -555,10 +555,12 @@ from pprint import pprint
 # create an instance of the API class
 api_instance = client.PacketCapturesApi()
 id = 'id_example' # str | Unique resource identifier
+packet_start = 789 # int | The packet offset in the capture buffer to start reading (0 based) (optional)
+packet_end = 789 # int | The packet offset in the capture buffer to end reading (0 based) (optional)
 
 try:
     # Get a packet data as a pcap file
-    api_response = api_instance.get_packet_capture_pcap(id)
+    api_response = api_instance.get_packet_capture_pcap(id, packet_start=packet_start, packet_end=packet_end)
     pprint(api_response)
 except ApiException as e:
     print("Exception when calling PacketCapturesApi->get_packet_capture_pcap: %s\n" % e)
@@ -569,6 +571,8 @@ except ApiException as e:
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **id** | **str**| Unique resource identifier | 
+ **packet_start** | **int**| The packet offset in the capture buffer to start reading (0 based) | [optional] 
+ **packet_end** | **int**| The packet offset in the capture buffer to end reading (0 based) | [optional] 
 
 ### Return type
 

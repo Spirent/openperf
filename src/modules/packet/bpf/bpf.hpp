@@ -121,7 +121,7 @@ class bpf
 public:
     bpf();
     bpf(std::string_view filter_str, int link_type = DLT_EN10MB);
-    bpf(const bpf_insn* insns, unsigned int len);
+    bpf(const bpf_insn* insns, unsigned int len, uint32_t flags = 0);
     bpf(const bpf& bpf) = delete;
 
     /**
@@ -169,14 +169,17 @@ public:
         return m_funcs.m_find_next_func(*this, packets, length, offset);
     }
 
+    uint32_t get_filter_flags() const { return m_flags; }
+
     const std::vector<bpf_insn>& get_prog() const { return m_insn; }
     bpfjit_func_t get_filter_func() const { return *m_jit; }
 
     bool parse(std::string_view filter_str, int link_type);
 
 private:
-    bool set_prog(const bpf_insn* insns, unsigned int len);
+    bool set_prog(const bpf_insn* insns, unsigned int len, uint32_t flags);
 
+    uint32_t m_flags;
     std::vector<bpf_insn> m_insn;
     bpf_jit_ptr m_jit;
     bpf_funcs m_funcs;

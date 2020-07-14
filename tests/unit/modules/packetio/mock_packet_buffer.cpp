@@ -35,6 +35,38 @@ packet_type::flags type(const packet_buffer* buffer)
     return (packet_type::flags(m->type));
 }
 
+bool ipv4_checksum_error(const packet_buffer* buffer)
+{
+    auto* m = reinterpret_cast<const mock_packet_buffer*>(buffer);
+    return (m->ip_chksum_bad);
+}
+
+bool tcp_checksum_error(const packet_buffer* buffer)
+{
+    auto* m = reinterpret_cast<const mock_packet_buffer*>(buffer);
+    const auto is_tcp = type(buffer) & packet_type::protocol::tcp;
+    return (is_tcp.value && m->l4_chksum_bad);
+}
+
+bool udp_checksum_error(const packet_buffer* buffer)
+{
+    auto* m = reinterpret_cast<const mock_packet_buffer*>(buffer);
+    const auto is_udp = type(buffer) & packet_type::protocol::udp;
+    return (is_udp.value && m->l4_chksum_bad);
+}
+
+std::optional<uint32_t> prbs_octets(const packet_buffer* buffer)
+{
+    auto* m = reinterpret_cast<const mock_packet_buffer*>(buffer);
+    return m->prbs_octets;
+}
+
+std::optional<uint32_t> prbs_bit_errors(const packet_buffer* buffer)
+{
+    auto* m = reinterpret_cast<const mock_packet_buffer*>(buffer);
+    return m->prbs_bit_errors;
+}
+
 std::optional<uint32_t> signature_stream_id(const packet_buffer* buffer)
 {
     return reinterpret_cast<const mock_packet_buffer*>(buffer)

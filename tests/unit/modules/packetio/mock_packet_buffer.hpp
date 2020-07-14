@@ -15,6 +15,10 @@ struct mock_packet_buffer
     std::optional<uint32_t> signature_sequence_number;
     std::optional<timesync::chrono::realtime::time_point>
         signature_tx_timestamp;
+    std::optional<uint32_t> prbs_octets;
+    std::optional<uint32_t> prbs_bit_errors;
+    uint8_t ip_chksum_bad : 1;
+    uint8_t l4_chksum_bad : 1;
 
     uint16_t data_length = 0;
     void* data = nullptr;

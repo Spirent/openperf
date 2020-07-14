@@ -306,7 +306,8 @@ reply_msg server::handle_request(const request_create_capture& request)
 {
     auto config = sink_config{.source = request.capture->getSourceId(),
                               .max_packet_size = UINT32_MAX,
-                              .duration = {}};
+                              .duration = {},
+                              .packet_count = 0};
 
     auto user_config = request.capture->getConfig();
     assert(user_config);
@@ -318,6 +319,9 @@ reply_msg server::handle_request(const request_create_capture& request)
     if (user_config->durationIsSet())
         config.duration = std::chrono::duration<uint64_t, std::milli>(
             user_config->getDuration());
+    if (user_config->packetCountIsSet()) {
+        config.packet_count = user_config->getPacketCount();
+    }
     if (user_config->filterIsSet()) {
         config.filter = user_config->getFilter();
     }
@@ -814,13 +818,43 @@ reply_msg server::handle_request(const request_list_capture_results& request)
 
 reply_msg server::handle_request(const request_delete_capture_results&)
 {
-    /* Delete all inactive results */
-    erase_if(m_results, [](const auto& pair) {
-        auto& result = pair.second;
-        if (result->transfer.get() && !result->transfer->is_done()) {
-            return false;
-        }
-        return (!result->parent.active());
+    std::vector<result_value_ptr> del_list;
+    /* Move all inactive results to del_list */
+    move_if(
+        m_results,
+        del_list,
+        [&](const auto& pair) {
+            auto& result = pair.second;
+            return (!result->parent.active());
+        },
+        [&](auto& results, auto& pair) {
+            results.emplace_back(std::move(pair.second));
+        });
+
+    /* Sort results in del_list so deferred deletes are last */
+    auto cursor = std::stable_partition(
+        std::begin(del_list), std::end(del_list), [&](const auto& result) {
+            return !(result->has_active_transfer());
+        });
+    /* Add deferred deletes to trash */
+    std::for_each(cursor, std::end(del_list), [&](auto& result) {
+        add_trash(std::move(result));
+    });
+    /* Erase deferred deletes */
+    del_list.erase(cursor, std::end(del_list));
+
+    /* Remaining results in del_list will be deleted when it goes out of scope
+     */
+    std::for_each(del_list.begin(), del_list.end(), [](auto& result) {
+        std::for_each(result->transfers.begin(),
+                      result->transfers.end(),
+                      [&result](auto& transfer) {
+                          auto id = result->parent.id();
+                          OP_LOG(OP_LOG_DEBUG,
+                                 "Deleting capture transfer %p capture %s",
+                                 static_cast<void*>(transfer.get()),
+                                 id.c_str());
+                      });
     });
 
     return (reply_ok{});
@@ -870,19 +904,17 @@ reply_msg server::handle_request(request_create_capture_transfer& request)
     }
     auto& result = item->second;
 
-    if (result->transfer && !result->transfer->is_done()) {
-        // Only support 1 active transfer per capture result
-        OP_LOG(OP_LOG_ERROR,
-               "Capture pcap transfer request for id %s rejected.  "
-               "Another transfer is still in progress.",
-               request.id.c_str());
-        return (to_error(error_type::POSIX, EEXIST));
-    }
+    result->transfers.emplace_back(request.transfer);
+    auto& transfer = result->transfers.back();
 
-    result->transfer.reset(request.transfer);
+    OP_LOG(OP_LOG_DEBUG,
+           "Adding capture transfer %p capture %s",
+           static_cast<void*>(transfer.get()),
+           result->parent.id().c_str());
+
     if (result->buffers.size() == 1) {
         auto reader = result->buffers[0]->create_reader();
-        result->transfer->set_reader(reader);
+        transfer->set_reader(reader);
     } else {
         std::vector<std::unique_ptr<capture_buffer_reader>> readers;
         std::transform(result->buffers.begin(),
@@ -891,7 +923,7 @@ reply_msg server::handle_request(request_create_capture_transfer& request)
                        [&](auto& buffer) { return buffer->create_reader(); });
         auto reader = std::unique_ptr<capture_buffer_reader>(
             new multi_capture_buffer_reader(std::move(readers)));
-        result->transfer->set_reader(reader);
+        transfer->set_reader(reader);
     }
 
     auto event = std::make_shared<event_trigger>([srv = this](const auto& evt) {
@@ -900,7 +932,7 @@ reply_msg server::handle_request(request_create_capture_transfer& request)
     });
     add_event_trigger(event);
 
-    result->transfer->set_done_callback([event]() {
+    transfer->set_done_callback([event]() {
         // Transfer done callback is called from the transfer thread so need to
         // trigger event for server thread to do garbage collection
         OP_LOG(OP_LOG_DEBUG, "Scheduling capture garbage collection");
@@ -922,7 +954,7 @@ reply_msg server::handle_request(const request_delete_capture_transfer& request)
                     "Can not delete capture transfer when it is in progress.");
                 return (to_error(error_type::POSIX, EBUSY));
             }
-            result->transfer.reset();
+            result->transfers.clear();
         }
     }
 
@@ -967,32 +999,50 @@ int server::garbage_collect()
             item->results.begin(), item->results.end(), [](auto& result) {
                 return result->has_active_transfer();
             });
-        if (found == item->results.end()) {
-            if (item->sink.has_value()) {
-                OP_LOG(OP_LOG_DEBUG,
-                       "Deleting %s capture and %zu results from garbage",
-                       pair.first.c_str(),
-                       item->results.size());
-            } else {
-                OP_LOG(OP_LOG_DEBUG,
-                       "Deleting %s %zu results from garbage",
-                       pair.first.c_str(),
-                       item->results.size());
-            }
-            return true;
+        if (found != item->results.end()) return false;
+
+        if (item->sink.has_value()) {
+            OP_LOG(OP_LOG_DEBUG,
+                   "Deleting %s capture and %zu results from garbage",
+                   pair.first.c_str(),
+                   item->results.size());
+        } else {
+            OP_LOG(OP_LOG_DEBUG,
+                   "Deleting %s %zu results from garbage",
+                   pair.first.c_str(),
+                   item->results.size());
         }
-        return false;
+        std::for_each(
+            item->results.begin(), item->results.end(), [](auto& result) {
+                std::for_each(result->transfers.begin(),
+                              result->transfers.end(),
+                              [&result](auto& transfer) {
+                                  OP_LOG(
+                                      OP_LOG_DEBUG,
+                                      "Deleting capture transfer %p capture %s",
+                                      static_cast<void*>(transfer.get()),
+                                      result->parent.id().c_str());
+                              });
+            });
+        return true;
     });
 
     // Cleanup any completed transfers
     std::for_each(m_results.begin(), m_results.end(), [&](auto& pair) {
         auto& result = pair.second;
-        if (result->transfer && result->transfer->is_done()) {
-            OP_LOG(OP_LOG_DEBUG,
-                   "Deleting capture transfer %s",
-                   to_string(pair.first).c_str());
-            result->transfer.reset();
-        }
+        auto& transfers = result->transfers;
+        transfers.erase(
+            std::remove_if(transfers.begin(),
+                           transfers.end(),
+                           [&result](auto& transfer) {
+                               if (!transfer->is_done()) return false;
+                               OP_LOG(OP_LOG_DEBUG,
+                                      "Deleting capture transfer %p capture %s",
+                                      static_cast<void*>(transfer.get()),
+                                      result->parent.id().c_str());
+                               return true;
+                           }),
+            transfers.end());
     });
 
     OP_LOG(OP_LOG_DEBUG, "Completed capture garbage collection");

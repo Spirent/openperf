@@ -347,6 +347,20 @@ paths:
       description: Returns a pcap file of the captured data.
       parameters:
         - $ref: "#/parameters/id"
+        - name: packet_start
+          in : query
+          description: The packet offset in the capture buffer to start reading (0 based)
+          required: false
+          type: integer
+          format: int64
+          minimum: 0
+        - name: packet_end
+          in : query
+          description: The packet offset in the capture buffer to end reading (0 based)
+          required: false
+          type: integer
+          format: int64
+          minimum: 0
       produces:
         - application/x-pcapng
       responses:
@@ -455,6 +469,12 @@ definitions:
         type: integer
         description: |
           Maximum time duration for the capture in msec.
+        format: int64
+        minimum: 1
+      packet_count:
+        type: integer
+        description: |
+          Maximum number of packets to capture.
         format: int64
         minimum: 1
     required:

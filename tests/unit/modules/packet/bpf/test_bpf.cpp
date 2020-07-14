@@ -4,6 +4,8 @@
 #include "catch.hpp"
 
 #include "packet/bpf/bpf.hpp"
+#include "packet/bpf/bpf_build.hpp"
+#include "packet/bpf/bpf_sink.hpp"
 #include "packetio/mock_packet_buffer.hpp"
 #include <pcap.h>
 
@@ -67,16 +69,136 @@ void create_ipv6_packet(uint8_t* data,
 
 TEST_CASE("bpf", "[bpf]")
 {
-    SECTION("good")
+    SECTION("empty")
     {
-        REQUIRE_NOTHROW(openperf::packet::bpf::bpf("length == 1000"));
-        REQUIRE_NOTHROW(openperf::packet::bpf::bpf(
-            "ether src 10:0:0:0:0:1 and ether dst 10:0:0:0:0:2"));
-        REQUIRE_NOTHROW(
-            openperf::packet::bpf::bpf("ip src 10.0.0.1 and ip dst 10.0.0.2"));
-        REQUIRE_NOTHROW(
-            openperf::packet::bpf::bpf("ip6 src 2001::1 and ip6 dst 2001::2"));
+        {
+            openperf::packet::bpf::bpf bpf;
+            REQUIRE(bpf.get_filter_flags() == 0);
+        }
     }
+
+    SECTION("libpcap")
+    {
+        {
+            openperf::packet::bpf::bpf bpf("length == 1000");
+            REQUIRE(bpf.get_filter_flags() == 0);
+        }
+        {
+            openperf::packet::bpf::bpf bpf(
+                "ether src 10:0:0:0:0:1 and ether dst 10:0:0:0:0:2");
+            REQUIRE(bpf.get_filter_flags() == 0);
+        }
+        {
+            openperf::packet::bpf::bpf bpf(
+                "ip src 10.0.0.1 and ip dst 10.0.0.2");
+            REQUIRE(bpf.get_filter_flags() == 0);
+        }
+        {
+            openperf::packet::bpf::bpf bpf(
+                "ip src 10.0.0.1 and ip dst 10.0.0.2");
+            REQUIRE(bpf.get_filter_flags() == 0);
+        }
+        {
+            openperf::packet::bpf::bpf bpf(
+                "ip6 src 2001::1 and ip6 dst 2001::2");
+            REQUIRE(bpf.get_filter_flags() == 0);
+        }
+    }
+
+    SECTION("signature")
+    {
+        {
+            openperf::packet::bpf::bpf bpf("signature");
+            REQUIRE(bpf.get_filter_flags()
+                    == openperf::packet::bpf::BPF_FILTER_FLAGS_SIGNATURE);
+        }
+        {
+            openperf::packet::bpf::bpf bpf("signature streamid 1");
+            REQUIRE(bpf.get_filter_flags()
+                    == (openperf::packet::bpf::BPF_FILTER_FLAGS_SIGNATURE
+                        | openperf::packet::bpf::
+                            BPF_FILTER_FLAGS_SIGNATURE_STREAM_ID));
+        }
+    }
+
+    SECTION("valid")
+    {
+        {
+            openperf::packet::bpf::bpf bpf("valid ip chksum");
+            REQUIRE(bpf.get_filter_flags()
+                    == openperf::packet::bpf::BPF_FILTER_FLAGS_IP_CHKSUM_ERROR);
+        }
+        {
+            openperf::packet::bpf::bpf bpf("valid tcp chksum");
+            REQUIRE(
+                bpf.get_filter_flags()
+                == openperf::packet::bpf::BPF_FILTER_FLAGS_TCP_CHKSUM_ERROR);
+        }
+        {
+            openperf::packet::bpf::bpf bpf("valid udp chksum");
+            REQUIRE(
+                bpf.get_filter_flags()
+                == openperf::packet::bpf::BPF_FILTER_FLAGS_UDP_CHKSUM_ERROR);
+        }
+        {
+            openperf::packet::bpf::bpf bpf("valid icmp chksum");
+            REQUIRE(
+                bpf.get_filter_flags()
+                == openperf::packet::bpf::BPF_FILTER_FLAGS_ICMP_CHKSUM_ERROR);
+        }
+        {
+            openperf::packet::bpf::bpf bpf("valid tcp chksum udp chksum");
+            REQUIRE(bpf.get_filter_flags()
+                    == (openperf::packet::bpf::BPF_FILTER_FLAGS_TCP_CHKSUM_ERROR
+                        | openperf::packet::bpf::
+                            BPF_FILTER_FLAGS_UDP_CHKSUM_ERROR));
+        }
+        {
+            openperf::packet::bpf::bpf bpf(
+                "valid tcp chksum and valid udp chksum");
+            REQUIRE(
+                bpf.get_filter_flags()
+                == (openperf::packet::bpf::BPF_FILTER_FLAGS_AND
+                    | openperf::packet::bpf::BPF_FILTER_FLAGS_TCP_CHKSUM_ERROR
+                    | openperf::packet::bpf::
+                        BPF_FILTER_FLAGS_UDP_CHKSUM_ERROR));
+        }
+        {
+            openperf::packet::bpf::bpf bpf("valid chksum");
+            REQUIRE(
+                bpf.get_filter_flags()
+                == (openperf::packet::bpf::BPF_FILTER_FLAGS_IP_CHKSUM_ERROR
+                    | openperf::packet::bpf::BPF_FILTER_FLAGS_TCP_CHKSUM_ERROR
+                    | openperf::packet::bpf::BPF_FILTER_FLAGS_UDP_CHKSUM_ERROR
+                    | openperf::packet::bpf::
+                        BPF_FILTER_FLAGS_ICMP_CHKSUM_ERROR));
+        }
+        {
+            openperf::packet::bpf::bpf bpf("valid prbs");
+            REQUIRE(bpf.get_filter_flags()
+                    == (openperf::packet::bpf::BPF_FILTER_FLAGS_SIGNATURE
+                        | openperf::packet::bpf::BPF_FILTER_FLAGS_PRBS_ERROR));
+        }
+        {
+            openperf::packet::bpf::bpf bpf("not valid chksum");
+            REQUIRE(
+                bpf.get_filter_flags()
+                == (openperf::packet::bpf::BPF_FILTER_FLAGS_NOT
+                    | openperf::packet::bpf::BPF_FILTER_FLAGS_IP_CHKSUM_ERROR
+                    | openperf::packet::bpf::BPF_FILTER_FLAGS_TCP_CHKSUM_ERROR
+                    | openperf::packet::bpf::BPF_FILTER_FLAGS_UDP_CHKSUM_ERROR
+                    | openperf::packet::bpf::
+                        BPF_FILTER_FLAGS_ICMP_CHKSUM_ERROR));
+        }
+        {
+            openperf::packet::bpf::bpf bpf("not valid prbs");
+            REQUIRE(bpf.get_filter_flags()
+                    == (openperf::packet::bpf::BPF_FILTER_FLAGS_NOT
+                        | openperf::packet::bpf::BPF_FILTER_FLAGS_SIGNATURE
+                        | openperf::packet::bpf::BPF_FILTER_FLAGS_PRBS_ERROR));
+        }
+    }
+
     SECTION("bad")
     {
         REQUIRE_THROWS_AS(
@@ -89,6 +211,114 @@ TEST_CASE("bpf", "[bpf]")
                           std::invalid_argument);
         REQUIRE_THROWS_AS(openperf::packet::bpf::bpf("ip6 src 10.0.0.1"),
                           std::invalid_argument);
+    }
+}
+
+TEST_CASE("bpf sink_feature_flags", "[bpf]")
+{
+    SECTION("none")
+    {
+        REQUIRE(openperf::packet::bpf::bpf_sink_feature_flags(0).value == 0);
+    }
+
+    SECTION("packet_type_decode")
+    {
+        auto expected = static_cast<uint32_t>(
+            openperf::packetio::packet::sink_feature_flags::packet_type_decode);
+
+        REQUIRE(openperf::packet::bpf::bpf_sink_feature_flags(
+                    openperf::packet::bpf::BPF_FILTER_FLAGS_IP_CHKSUM_ERROR)
+                    .value
+                == expected);
+        REQUIRE(openperf::packet::bpf::bpf_sink_feature_flags(
+                    openperf::packet::bpf::BPF_FILTER_FLAGS_TCP_CHKSUM_ERROR)
+                    .value
+                == expected);
+        REQUIRE(openperf::packet::bpf::bpf_sink_feature_flags(
+                    openperf::packet::bpf::BPF_FILTER_FLAGS_UDP_CHKSUM_ERROR)
+                    .value
+                == expected);
+        REQUIRE(openperf::packet::bpf::bpf_sink_feature_flags(
+                    openperf::packet::bpf::BPF_FILTER_FLAGS_ICMP_CHKSUM_ERROR)
+                    .value
+                == expected);
+        REQUIRE(openperf::packet::bpf::bpf_sink_feature_flags(
+                    openperf::packet::bpf::BPF_FILTER_FLAGS_IP_CHKSUM_ERROR
+                    | openperf::packet::bpf::BPF_FILTER_FLAGS_TCP_CHKSUM_ERROR
+                    | openperf::packet::bpf::BPF_FILTER_FLAGS_UDP_CHKSUM_ERROR
+                    | openperf::packet::bpf::BPF_FILTER_FLAGS_ICMP_CHKSUM_ERROR)
+                    .value
+                == expected);
+    }
+
+    SECTION("spirent_signature_decode")
+    {
+        auto expected = static_cast<uint32_t>(
+            openperf::packetio::packet::sink_feature_flags::
+                spirent_signature_decode);
+
+        REQUIRE(openperf::packet::bpf::bpf_sink_feature_flags(
+                    openperf::packet::bpf::BPF_FILTER_FLAGS_SIGNATURE)
+                    .value
+                == expected);
+    }
+
+    SECTION("spirent_prbs_error_decode")
+    {
+        auto expected = (openperf::packetio::packet::sink_feature_flags::
+                             spirent_signature_decode
+                         | openperf::packetio::packet::sink_feature_flags::
+                             spirent_prbs_error_detect);
+
+        REQUIRE(openperf::packet::bpf::bpf_sink_feature_flags(
+                    openperf::packet::bpf::BPF_FILTER_FLAGS_SIGNATURE
+                    | openperf::packet::bpf::BPF_FILTER_FLAGS_PRBS_ERROR)
+                    .value
+                == expected.value);
+    }
+
+    SECTION("packet_type_decode and spirent_prbs_error_decode")
+    {
+        auto expected =
+            (openperf::packetio::packet::sink_feature_flags::packet_type_decode
+             | openperf::packetio::packet::sink_feature_flags::
+                 spirent_signature_decode
+             | openperf::packetio::packet::sink_feature_flags::
+                 spirent_prbs_error_detect);
+
+        REQUIRE(openperf::packet::bpf::bpf_sink_feature_flags(
+                    openperf::packet::bpf::BPF_FILTER_FLAGS_SIGNATURE
+                    | openperf::packet::bpf::BPF_FILTER_FLAGS_PRBS_ERROR
+                    | openperf::packet::bpf::BPF_FILTER_FLAGS_IP_CHKSUM_ERROR)
+                    .value
+                == expected.value);
+        REQUIRE(openperf::packet::bpf::bpf_sink_feature_flags(
+                    openperf::packet::bpf::BPF_FILTER_FLAGS_SIGNATURE
+                    | openperf::packet::bpf::BPF_FILTER_FLAGS_PRBS_ERROR
+                    | openperf::packet::bpf::BPF_FILTER_FLAGS_TCP_CHKSUM_ERROR)
+                    .value
+                == expected.value);
+        REQUIRE(openperf::packet::bpf::bpf_sink_feature_flags(
+                    openperf::packet::bpf::BPF_FILTER_FLAGS_SIGNATURE
+                    | openperf::packet::bpf::BPF_FILTER_FLAGS_PRBS_ERROR
+                    | openperf::packet::bpf::BPF_FILTER_FLAGS_UDP_CHKSUM_ERROR)
+                    .value
+                == expected.value);
+        REQUIRE(openperf::packet::bpf::bpf_sink_feature_flags(
+                    openperf::packet::bpf::BPF_FILTER_FLAGS_SIGNATURE
+                    | openperf::packet::bpf::BPF_FILTER_FLAGS_PRBS_ERROR
+                    | openperf::packet::bpf::BPF_FILTER_FLAGS_ICMP_CHKSUM_ERROR)
+                    .value
+                == expected.value);
+        REQUIRE(openperf::packet::bpf::bpf_sink_feature_flags(
+                    openperf::packet::bpf::BPF_FILTER_FLAGS_SIGNATURE
+                    | openperf::packet::bpf::BPF_FILTER_FLAGS_PRBS_ERROR
+                    | openperf::packet::bpf::BPF_FILTER_FLAGS_IP_CHKSUM_ERROR
+                    | openperf::packet::bpf::BPF_FILTER_FLAGS_TCP_CHKSUM_ERROR
+                    | openperf::packet::bpf::BPF_FILTER_FLAGS_UDP_CHKSUM_ERROR
+                    | openperf::packet::bpf::BPF_FILTER_FLAGS_ICMP_CHKSUM_ERROR)
+                    .value
+                == expected.value);
     }
 }
 
