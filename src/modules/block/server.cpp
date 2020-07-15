@@ -33,6 +33,19 @@ reply_msg server::handle_request(const request_block_device& request)
     return reply;
 }
 
+reply_msg server::handle_request(const request_block_device_init& request)
+{
+    auto reply = reply_block_devices{};
+
+    auto blkdev = m_device_stack->get_block_device(request.id);
+    if (!blkdev) return to_error(api::error_type::NOT_FOUND);
+
+    if (auto r = m_device_stack->initialize_device(request.id); !r)
+        return to_error(api::error_type::CUSTOM_ERROR, 0, r.error());
+
+    return reply_ok{};
+}
+
 reply_msg server::handle_request(const request_block_file_list&)
 {
     auto reply = reply_block_files{};
@@ -85,7 +98,9 @@ reply_msg server::handle_request(const request_block_file_del& request)
         case block::file::deletion_error_type::NOT_FOUND:
             return to_error(api::error_type::NOT_FOUND);
         case block::file::deletion_error_type::BUSY:
-            return to_error(error_type::CUSTOM_ERROR, 0, "File \"" + request.id + "\" is busy");
+            return to_error(error_type::CUSTOM_ERROR,
+                            0,
+                            "File \"" + request.id + "\" is busy");
         }
     }
 

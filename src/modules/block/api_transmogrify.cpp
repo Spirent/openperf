@@ -97,23 +97,17 @@ void copy_string(std::string_view str, char* ch_arr, size_t max_length)
     ch_arr[std::min(str.length(), max_length - 1)] = '\0';
 }
 
-const static std::unordered_map<std::string, model::block_generation_pattern>
-    block_generation_patterns = {
-        {"random", model::block_generation_pattern::RANDOM},
-        {"sequential", model::block_generation_pattern::SEQUENTIAL},
-        {"reverse", model::block_generation_pattern::REVERSE},
-};
-
-const static std::unordered_map<model::block_generation_pattern, std::string>
-    block_generation_pattern_strings = {
-        {model::block_generation_pattern::RANDOM, "random"},
-        {model::block_generation_pattern::SEQUENTIAL, "sequential"},
-        {model::block_generation_pattern::REVERSE, "reverse"},
-};
-
 model::block_generation_pattern
 block_generation_pattern_from_string(const std::string& value)
 {
+    const static std::unordered_map<std::string,
+                                    model::block_generation_pattern>
+        block_generation_patterns = {
+            {"random", model::block_generation_pattern::RANDOM},
+            {"sequential", model::block_generation_pattern::SEQUENTIAL},
+            {"reverse", model::block_generation_pattern::REVERSE},
+        };
+
     if (block_generation_patterns.count(value))
         return block_generation_patterns.at(value);
     throw std::runtime_error("Pattern \"" + value + "\" is unknown");
@@ -121,35 +115,56 @@ block_generation_pattern_from_string(const std::string& value)
 
 std::string to_string(const model::block_generation_pattern& pattern)
 {
-    if (block_generation_pattern_strings.count(pattern))
-        return block_generation_pattern_strings.at(pattern);
+    const static std::unordered_map<model::block_generation_pattern,
+                                    std::string>
+        block_generation_patterns = {
+            {model::block_generation_pattern::RANDOM, "random"},
+            {model::block_generation_pattern::SEQUENTIAL, "sequential"},
+            {model::block_generation_pattern::REVERSE, "reverse"},
+        };
+
+    if (block_generation_patterns.count(pattern))
+        return block_generation_patterns.at(pattern);
     return "unknown";
 }
 
-const static std::unordered_map<std::string, model::file_state>
-    block_file_states = {
-        {"none", model::file_state::NONE},
-        {"init", model::file_state::INIT},
-        {"ready", model::file_state::READY},
-};
-
-const static std::unordered_map<model::file_state, std::string>
-    block_file_state_strings = {
-        {model::file_state::NONE, "none"},
-        {model::file_state::INIT, "init"},
-        {model::file_state::READY, "ready"},
-};
-
-model::file_state block_file_state_from_string(const std::string& value)
+std::string to_string(const model::device::state& state)
 {
+    const static std::unordered_map<model::device::state, std::string>
+        block_device_states = {
+            {model::device::state::UNINIT, "uninitialized"},
+            {model::device::state::INIT, "initializing"},
+            {model::device::state::READY, "ready"},
+        };
+
+    if (block_device_states.count(state)) return block_device_states.at(state);
+    return "unknown";
+}
+
+model::file::state block_file_state_from_string(const std::string& value)
+{
+    const static std::unordered_map<std::string, model::file::state>
+        block_file_states = {
+            {"none", model::file::state::NONE},
+            {"init", model::file::state::INIT},
+            {"ready", model::file::state::READY},
+        };
+
     if (block_file_states.count(value)) return block_file_states.at(value);
     throw std::runtime_error("Pattern \"" + value + "\" is unknown");
 }
 
-std::string to_string(const model::file_state& pattern)
+std::string to_string(const model::file::state& state)
 {
-    if (block_file_state_strings.count(pattern))
-        return block_file_state_strings.at(pattern);
+
+    const static std::unordered_map<model::file::state, std::string>
+        block_file_states = {
+            {model::file::state::NONE, "none"},
+            {model::file::state::INIT, "init"},
+            {model::file::state::READY, "ready"},
+        };
+
+    if (block_file_states.count(state)) return block_file_states.at(state);
     return "unknown";
 }
 
@@ -178,6 +193,11 @@ serialized_msg serialize_request(request_msg&& msg)
                      return (zmq_msg_init(&serialized.data));
                  },
                  [&](const request_block_device& blkdevice) {
+                     return (zmq_msg_init(&serialized.data,
+                                          blkdevice.id.data(),
+                                          blkdevice.id.length()));
+                 },
+                 [&](const request_block_device_init& blkdevice) {
                      return (zmq_msg_init(&serialized.data,
                                           blkdevice.id.data(),
                                           blkdevice.id.length()));
@@ -306,6 +326,10 @@ tl::expected<request_msg, int> deserialize_request(const serialized_msg& msg)
     case utils::variant_index<request_msg, request_block_device>(): {
         std::string id(zmq_msg_data<char*>(&msg.data), zmq_msg_size(&msg.data));
         return (request_block_device{std::move(id)});
+    }
+    case utils::variant_index<request_msg, request_block_device_init>(): {
+        std::string id(zmq_msg_data<char*>(&msg.data), zmq_msg_size(&msg.data));
+        return (request_block_device_init{std::move(id)});
     }
     case utils::variant_index<request_msg, request_block_file_list>(): {
         return (request_block_file_list{});
@@ -579,6 +603,8 @@ std::shared_ptr<BlockDevice> to_swagger(const device_t& p_device)
     device->setPath(p_device.get_path());
     device->setSize(p_device.get_size());
     device->setUsable(p_device.is_usable());
+    device->setInitPercentComplete(p_device.get_init_percent_complete());
+    device->setState(to_string(p_device.get_state()));
     return device;
 }
 

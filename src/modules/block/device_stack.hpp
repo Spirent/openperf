@@ -13,11 +13,17 @@ class device
     : public model::device
     , public virtual_device
 {
+private:
+    void scrub_update(double) override;
+    void scrub_done() override;
+
 public:
-    ~device(){};
+    ~device() override;
     tl::expected<virtual_device_descriptors, int> vopen() override;
     void vclose() override;
     uint64_t get_size() const override;
+    std::string get_path() const override;
+    tl::expected<void, std::string> initialize();
 };
 
 using device_ptr = std::shared_ptr<device>;
@@ -41,6 +47,7 @@ public:
     std::shared_ptr<virtual_device>
     get_vdev(const std::string& id) const override;
     std::vector<device_ptr> block_devices_list();
+    tl::expected<void, std::string> initialize_device(const std::string& id);
 };
 
 } // namespace openperf::block::device

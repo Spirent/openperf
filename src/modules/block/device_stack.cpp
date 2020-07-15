@@ -13,6 +13,8 @@
 
 namespace openperf::block::device {
 
+device::~device() { terminate_scrub(); }
+
 tl::expected<virtual_device_descriptors, int> device::vopen()
 {
     if (m_write_fd < 0)
@@ -49,6 +51,38 @@ void device::vclose()
 
 uint64_t device::get_size() const { return model::device::get_size(); }
 
+std::string device::get_path() const { return model::device::get_path(); }
+
+void device::scrub_done()
+{
+    set_state(model::device::state::READY);
+    set_init_percent_complete(100);
+}
+
+void device::scrub_update(double p)
+{
+    set_init_percent_complete(static_cast<int32_t>(100 * p));
+}
+
+tl::expected<void, std::string> device::initialize()
+{
+    if (!is_usable())
+        return tl::make_unexpected("Cannot initialize unusable device");
+
+    if (get_size() <= sizeof(virtual_device_header))
+        return tl::make_unexpected(
+            "Device size less than header size ("
+            + std::to_string(sizeof(virtual_device_header)) + " bytes)");
+
+    if (get_state() != state::UNINIT)
+        return tl::make_unexpected("Device is already initialized");
+
+    if (auto res = queue_scrub(); !res) return res;
+
+    if (get_state() == state::UNINIT) set_state(state::INIT);
+    return {};
+}
+
 device_stack::device_stack() { init_device_stack(); }
 
 void device_stack::init_device_stack()
@@ -81,6 +115,8 @@ void device_stack::init_device_stack()
         } else {
             blkdev->set_usable(false);
         }
+        blkdev->set_state(device::state::UNINIT);
+        blkdev->set_init_percent_complete(0);
 
         m_block_devices.emplace(blkdev->get_id(), blkdev);
     }
@@ -162,6 +198,19 @@ std::vector<device_ptr> device_stack::block_devices_list()
     }
 
     return blkdevice_list;
+}
+
+tl::expected<void, std::string>
+device_stack::initialize_device(const std::string& id)
+{
+    auto blkdev = get_block_device(id);
+
+    if (!blkdev) return tl::make_unexpected("Unknown device: " + id);
+
+    if (auto res = blkdev->initialize(); !res)
+        return tl::make_unexpected("Cannot initialize device: "
+                                   + std::string(res.error()));
+    return {};
 }
 
 } // namespace openperf::block::device

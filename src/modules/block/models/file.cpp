@@ -28,8 +28,8 @@ void file::set_init_percent_complete(const int32_t value)
 std::string file::get_path() const { return m_path; }
 void file::set_path(std::string_view value) { m_path = value; }
 
-file_state file::get_state() const { return m_state; }
+file::state file::get_state() const { return m_state; }
 
-void file::set_state(const file_state& value) { m_state = value; }
+void file::set_state(const file::state& value) { m_state = value; }
 
 } // namespace openperf::block::model

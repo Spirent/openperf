@@ -2,13 +2,9 @@
 #include <filesystem>
 #include <unistd.h>
 #include <cstring>
-#include <sys/mman.h>
 #include <vector>
 #include "block/file_stack.hpp"
 #include "core/op_log.h"
-#include "timesync/clock.hpp"
-#include "timesync/chrono.hpp"
-#include "utils/random.hpp"
 
 namespace openperf::block::file {
 
@@ -18,7 +14,7 @@ file::file(const model::file& f)
     set_path(f.get_path());
     set_size(f.get_size());
     set_init_percent_complete(0);
-    set_state(model::file_state::INIT);
+    set_state(model::file::state::INIT);
 }
 
 file::~file() { terminate_scrub(); }
@@ -60,108 +56,17 @@ void file::vclose()
 
 uint64_t file::get_size() const { return model::file::get_size(); }
 
-uint64_t file::get_header_size() const { return sizeof(file_header); };
+std::string file::get_path() const { return model::file::get_path(); }
 
 void file::scrub_done()
 {
-    set_state(model::file_state::READY);
+    set_state(model::file::state::READY);
     set_init_percent_complete(100);
 }
 
 void file::scrub_update(double p)
 {
     set_init_percent_complete(static_cast<int32_t>(100 * p));
-}
-
-int write_header(int fd, uint64_t file_size)
-{
-    if (fd < 0) return -1;
-    file_header header = {
-        .init_time = timesync::to_bintime(
-            timesync::chrono::realtime::now().time_since_epoch()),
-        .size = file_size,
-    };
-    strncpy(header.tag, FILE_HEADER_TAG, FILE_HEADER_TAG_LENGTH);
-
-    return (pwrite(fd, &header, sizeof(header), 0) == sizeof(header) ? 0 : -1);
-}
-
-constexpr size_t SCRUB_BUFFER_SIZE = 128 * 1024; /* 128KB */
-void file::scrub_worker(size_t header_size, size_t file_size)
-{
-    int fd =
-        open(get_path().c_str(), O_RDWR | O_CREAT | O_DSYNC, S_IRUSR | S_IWUSR);
-
-    if (fd < 0) {
-        OP_LOG(OP_LOG_ERROR, "Cannot open vdev: %s\n", strerror(errno));
-        return;
-    }
-
-    ftruncate(fd, file_size);
-    write_header(fd, file_size);
-
-    auto current = header_size;
-    auto page_size = getpagesize();
-    while (!m_scrub_aborted && current < file_size) {
-        auto buf_len = std::min(SCRUB_BUFFER_SIZE, file_size - current);
-        auto file_offset = (current / page_size) * page_size;
-        auto mmap_len = buf_len + current - file_offset;
-
-        void* buf =
-            mmap(nullptr, mmap_len, PROT_WRITE, MAP_SHARED, fd, file_offset);
-        if (buf == MAP_FAILED) {
-            OP_LOG(OP_LOG_ERROR,
-                   "Cannot write scrub to vdev: %s\n",
-                   strerror(errno));
-            break;
-        }
-        utils::op_pseudo_random_fill((uint8_t*)buf + current - file_offset,
-                                     buf_len);
-        msync(buf, mmap_len, MS_SYNC);
-        munmap(buf, mmap_len);
-
-        current += buf_len;
-        scrub_update(static_cast<double>(current - header_size)
-                     / static_cast<double>(file_size - header_size));
-    }
-
-    close(fd);
-}
-
-void file::queue_scrub()
-{
-    if (auto result = vopen(); !result) {
-        throw std::runtime_error("Cannot open vdev device to generate scrub: "
-                                 + std::string(strerror(result.error())));
-    }
-
-    struct file_header header = {};
-    int read_or_err = pread(m_read_fd, &header, sizeof(header), 0);
-    vclose();
-    if (read_or_err == -1) {
-        throw std::runtime_error("Cannot read vdev device header: "
-                                 + std::string(strerror(errno)));
-        return;
-    } else if (read_or_err >= (int)sizeof(header)
-               && strncmp(header.tag, FILE_HEADER_TAG, FILE_HEADER_TAG_LENGTH)
-                      == 0) {
-        if (header.size >= get_size()) {
-            // We're done since this vdev is suitable for use
-            scrub_done();
-            return;
-        }
-    }
-
-    m_scrub_thread = std::thread([this]() {
-        scrub_worker(get_header_size(), get_size());
-        scrub_done();
-    });
-}
-
-void file::terminate_scrub()
-{
-    m_scrub_aborted = true;
-    if (m_scrub_thread.joinable()) m_scrub_thread.join();
 }
 
 std::vector<block_file_ptr> file_stack::files_list()
@@ -182,32 +87,32 @@ file_stack::create_block_file(const model::file& block_file_model)
                                    + " already exists.");
 
     for (const auto& blkfile_pair : m_block_files) {
-        if (std::filesystem::equivalent(block_file_model.get_path(), blkfile_pair.second->get_path()))
-            return tl::make_unexpected("File with path " + block_file_model.get_path()
-                                   + " already exists.");
+        if (std::filesystem::equivalent(block_file_model.get_path(),
+                                        blkfile_pair.second->get_path()))
+            return tl::make_unexpected("File with path "
+                                       + block_file_model.get_path()
+                                       + " already exists.");
     }
 
-    if (block_file_model.get_size() <= sizeof(file_header))
-        return tl::make_unexpected("File size less than header size ("
-                                   + std::to_string(sizeof(file_header))
-                                   + " bytes)");
+    if (block_file_model.get_size() <= sizeof(virtual_device_header))
+        return tl::make_unexpected(
+            "File size less than header size ("
+            + std::to_string(sizeof(virtual_device_header)) + " bytes)");
 
-    try {
-        auto blkblock_file_ptr = std::make_shared<file>(block_file_model);
-        blkblock_file_ptr->queue_scrub();
-        m_block_files.emplace(block_file_model.get_id(), blkblock_file_ptr);
-        return blkblock_file_ptr;
-    } catch (const std::runtime_error& e) {
+    auto blkblock_file_ptr = std::make_shared<file>(block_file_model);
+
+    if (auto res = blkblock_file_ptr->queue_scrub(); !res)
         return tl::make_unexpected("Cannot create file: "
-                                   + std::string(e.what()));
-    }
+                                   + std::string(res.error()));
+    m_block_files.emplace(block_file_model.get_id(), blkblock_file_ptr);
+    return blkblock_file_ptr;
 }
 
 std::shared_ptr<virtual_device>
 file_stack::get_vdev(const std::string& id) const
 {
     auto f = get_block_file(id);
-    if (!f || f->get_state() != model::file_state::READY) return nullptr;
+    if (!f || f->get_state() != model::file::state::READY) return nullptr;
     return f;
 }
 

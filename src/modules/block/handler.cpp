@@ -41,6 +41,9 @@ public:
     void get_device(const Rest::Request& request,
                     Http::ResponseWriter response);
 
+    void init_device(const Rest::Request& request,
+                     Http::ResponseWriter response);
+
     void list_files(const Rest::Request& request,
                     Http::ResponseWriter response);
 
@@ -142,6 +145,9 @@ handler::handler(void* context, Rest::Router& router)
     Rest::Routes::Get(router,
                       "/block-devices/:id",
                       Rest::Routes::bind(&handler::get_device, this));
+    Rest::Routes::Post(router,
+                       "/block-devices/:id/initialize",
+                       Rest::Routes::bind(&handler::init_device, this));
     Rest::Routes::Get(
         router, "/block-files", Rest::Routes::bind(&handler::list_files, this));
     Rest::Routes::Post(router,
@@ -259,6 +265,28 @@ void handler::get_device(const Rest::Request& request,
             MIME(Application, Json));
         response.send(Http::Code::Ok,
                       api::to_swagger(*reply->devices.at(0))->toJson().dump());
+    } else if (auto error = std::get_if<api::reply_error>(&api_reply)) {
+        response.send(to_code(*error), api::to_string(error->info));
+    } else {
+        response.send(Http::Code::Internal_Server_Error);
+    }
+}
+
+void handler::init_device(const Rest::Request& request,
+                          Http::ResponseWriter response)
+{
+    auto id = request.param(":id").as<std::string>();
+    if (auto res = openperf::config::op_config_validate_id_string(id); !res) {
+        response.send(Http::Code::Not_Found, res.error());
+        return;
+    }
+
+    auto api_reply =
+        submit_request(m_socket.get(), api::request_block_device_init{id : id});
+    if (auto reply = std::get_if<api::reply_ok>(&api_reply)) {
+        response.headers().add<Http::Header::ContentType>(
+            MIME(Application, Json));
+        response.send(Http::Code::No_Content);
     } else if (auto error = std::get_if<api::reply_error>(&api_reply)) {
         response.send(to_code(*error), api::to_string(error->info));
     } else {

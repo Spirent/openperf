@@ -73,6 +73,16 @@ public:
     /// </summary>
     bool isUsable() const;
     void setUsable(bool value);
+        /// <summary>
+    /// Percentage of initialization completed so far
+    /// </summary>
+    int32_t getInitPercentComplete() const;
+    void setInitPercentComplete(int32_t value);
+        /// <summary>
+    /// State of resource initialization
+    /// </summary>
+    std::string getState() const;
+    void setState(std::string value);
     
 protected:
     std::string m_Id;
@@ -84,6 +94,10 @@ protected:
     std::string m_Info;
 
     bool m_Usable;
+
+    int32_t m_Init_percent_complete;
+
+    std::string m_State;
 
 };
 

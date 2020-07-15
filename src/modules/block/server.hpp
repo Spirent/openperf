@@ -28,6 +28,7 @@ public:
 
     reply_msg handle_request(const request_block_device&);
     reply_msg handle_request(const request_block_device_list&);
+    reply_msg handle_request(const request_block_device_init&);
     reply_msg handle_request(const request_block_file_list&);
     reply_msg handle_request(const request_block_file&);
     reply_msg handle_request(const request_block_file_add&);
