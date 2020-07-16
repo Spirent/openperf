@@ -6,10 +6,12 @@ namespace openperf::framework::generator {
 worker::worker(worker&& w)
     : m_paused(w.m_paused.load())
     , m_finished(w.m_finished.load())
-    , m_context(w.m_context)
+    , m_context(std::move(w.m_context))
     , m_stats_socket(std::move(w.m_stats_socket))
     , m_thread_name(std::move(w.m_thread_name))
-{}
+{
+    w.m_finished = true;
+}
 
 worker::worker(const std::weak_ptr<void>& context, const std::string& name)
     : m_paused(true)
@@ -21,7 +23,7 @@ worker::worker(const std::weak_ptr<void>& context, const std::string& name)
 {}
 
 // Methods : public
-void worker::stop() {}
+void worker::stop() { m_finished = true; }
 
 void worker::pause()
 {
