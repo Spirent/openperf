@@ -270,9 +270,9 @@ void generator::config(const generator::config_t& cfg)
                 },
         });
 
-        m_controller.create_worker(std::move(task),
-                                   NAME_PREFIX + std::to_string(m_serial_number)
-                                       + "_r" + std::to_string(i + 1));
+        m_controller.add(std::move(task),
+                         NAME_PREFIX + std::to_string(m_serial_number) + "_r"
+                             + std::to_string(i + 1));
     }
 
     for (size_t i = 0; i < cfg.write_threads; i++) {
@@ -287,9 +287,9 @@ void generator::config(const generator::config_t& cfg)
                 },
         });
 
-        m_controller.create_worker(std::move(task),
-                                   NAME_PREFIX + std::to_string(m_serial_number)
-                                       + "_w" + std::to_string(i + 1));
+        m_controller.add(std::move(task),
+                         NAME_PREFIX + std::to_string(m_serial_number) + "_w"
+                             + std::to_string(i + 1));
     }
 
     if (!was_paused) resume();
