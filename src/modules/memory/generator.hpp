@@ -1,15 +1,13 @@
 #ifndef _OP_MEMORY_GENERATOR_HPP_
 #define _OP_MEMORY_GENERATOR_HPP_
 
-#include <forward_list>
+#include <atomic>
 
-#include "utils/worker/worker.hpp"
 #include "memory/task_memory.hpp"
 #include "memory/memory_stat.hpp"
+#include "framework/generator/controller.hpp"
 
 namespace openperf::memory::internal {
-
-using namespace openperf::utils::worker;
 
 class generator
 {
@@ -27,24 +25,12 @@ public:
         } read, write;
     };
 
-    struct stat_t
-    {
-        bool active;
-        memory_stat::timestamp_t timestamp;
-        memory_stat read;
-        memory_stat write;
-    };
-
-private:
-    using worker_ptr = std::unique_ptr<workable>;
-    using workers = std::forward_list<worker_ptr>;
     using time_point = std::chrono::system_clock::time_point;
+    using controller = openperf::framework::generator::controller<memory_stat>;
 
 private:
     bool m_stopped = true;
     bool m_paused = true;
-    workers m_read_workers;
-    workers m_write_workers;
     config_t m_config;
 
     struct
@@ -56,6 +42,10 @@ private:
     uint16_t m_serial_number;
     std::chrono::nanoseconds m_run_time;
     time_point m_run_time_milestone;
+
+    controller m_controller;
+    memory_stat m_stat;
+    std::atomic<memory_stat*> m_stat_ptr;
 
 public:
     // Constructors & Destructor
@@ -80,8 +70,8 @@ public:
 
     void config(const generator::config_t&);
 
-    generator::config_t config() const;
-    generator::stat_t stat() const;
+    generator::config_t config() const { return m_config; }
+    memory_stat stat() const;
 
     bool is_stopped() const { return m_stopped; }
     bool is_running() const { return !(m_paused || m_stopped); }
@@ -90,41 +80,7 @@ public:
 private:
     void free_buffer();
     void resize_buffer(size_t);
-    void spread_config(generator::workers&, const task_memory_config&);
-
-    template <class T> void reallocate_workers(generator::workers&, unsigned);
-
-    template <typename Function> void for_each_worker(Function&& function);
 };
-
-template <class T>
-void generator::reallocate_workers(generator::workers& wkrs, unsigned num)
-{
-    assert(num >= 0);
-    if (num == 0) {
-        wkrs.clear();
-        return;
-    }
-
-    auto size = std::distance(wkrs.begin(), wkrs.end());
-    if (num < size) {
-        for (; size > num; --size) { wkrs.pop_front(); }
-    } else {
-        for (; size < num; ++size) {
-            wkrs.emplace_front(std::make_unique<worker<T>>(
-                task_memory_config{},
-                "mem" + std::to_string(m_serial_number) + "_"
-                    + std::to_string(num - size)));
-        }
-    }
-}
-
-template <typename Function>
-void generator::for_each_worker(Function&& function)
-{
-    std::for_each(m_read_workers.begin(), m_read_workers.end(), function);
-    std::for_each(m_write_workers.begin(), m_write_workers.end(), function);
-}
 
 } // namespace openperf::memory::internal
 

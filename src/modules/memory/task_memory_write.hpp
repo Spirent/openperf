@@ -10,6 +10,8 @@ class task_memory_write : public task_memory
 public:
     using task_memory::task_memory;
 
+    memory_stat spin() override;
+
 private:
     void operation(uint64_t nb_ops) override;
 };

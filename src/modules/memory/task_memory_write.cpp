@@ -17,4 +17,11 @@ void task_memory_write::operation(uint64_t nb_ops)
     }
 }
 
+memory_stat task_memory_write::spin()
+{
+    auto result = memory_stat{};
+    result.write = common_spin();
+    return result;
+}
+
 } // namespace openperf::memory::internal
