@@ -42,7 +42,7 @@ void response_error(Http::ResponseWriter& rsp, reply::error error)
     case reply::error::NOT_INITIALIZED:
         rsp.headers().add<Http::Header::ContentType>(MIME(Application, Json));
         rsp.send(Http::Code::Bad_Request,
-                 json_error("Trying to start not initialized generator"));
+                 json_error("Trying to start uninitialized generator"));
         break;
     default:
         rsp.send(Http::Code::Internal_Server_Error);

@@ -96,7 +96,7 @@ void generator_collection::start(const std::string& id)
 
     if (g7r.init_percent_complete() < 100)
         throw std::runtime_error(
-            "Cannot start not initialized generator with id '" + id + "'.");
+            "Cannot start uninitialized generator with id '" + id + "'.");
 
     if (g7r.is_stopped()) {
         auto stat_id = core::to_string(core::uuid::random());

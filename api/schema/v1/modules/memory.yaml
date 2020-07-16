@@ -331,7 +331,7 @@ definitions:
         minimum: 64
       pre_allocate_buffer:
           type: boolean
-          description: Initialize allocation procces for the memory buffer
+          description: Initialize allocation process for the memory buffer
       reads_per_sec:
         type: integer
         description: Number of read operations to perform per second
