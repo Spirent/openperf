@@ -54,7 +54,7 @@ public:
     int32_t getBufferSize() const;
     void setBufferSize(int32_t value);
         /// <summary>
-    /// Initialize allocation procces for the memory buffer
+    /// Initialize allocation process for the memory buffer
     /// </summary>
     bool isPreAllocateBuffer() const;
     void setPreAllocateBuffer(bool value);

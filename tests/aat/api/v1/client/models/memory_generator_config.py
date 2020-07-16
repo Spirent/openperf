@@ -104,7 +104,7 @@ class MemoryGeneratorConfig(object):
     def pre_allocate_buffer(self):
         """Gets the pre_allocate_buffer of this MemoryGeneratorConfig.  # noqa: E501
 
-        Initialize allocation procces for the memory buffer  # noqa: E501
+        Initialize allocation process for the memory buffer  # noqa: E501
 
         :return: The pre_allocate_buffer of this MemoryGeneratorConfig.  # noqa: E501
         :rtype: bool
@@ -115,7 +115,7 @@ class MemoryGeneratorConfig(object):
     def pre_allocate_buffer(self, pre_allocate_buffer):
         """Sets the pre_allocate_buffer of this MemoryGeneratorConfig.
 
-        Initialize allocation procces for the memory buffer  # noqa: E501
+        Initialize allocation process for the memory buffer  # noqa: E501
 
         :param pre_allocate_buffer: The pre_allocate_buffer of this MemoryGeneratorConfig.  # noqa: E501
         :type: bool
