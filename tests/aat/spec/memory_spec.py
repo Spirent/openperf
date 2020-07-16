@@ -16,10 +16,10 @@ CONFIG = Config(os.path.join(os.path.dirname(__file__),
                 os.environ.get('MAMBA_CONFIG', 'config.yaml')))
 
 
-def generator_model(api_client, running = False, id = ''):
+def generator_model(api_client, running = False, id = '', pre_allocate_buffer = False):
     config = client.models.MemoryGeneratorConfig()
     config.buffer_size = 1024
-    config.pre_allocate_buffer = False
+    config.pre_allocate_buffer = pre_allocate_buffer
     config.reads_per_sec = 128
     config.read_size = 8
     config.read_threads = 1
@@ -32,7 +32,7 @@ def generator_model(api_client, running = False, id = ''):
     gen.running = running
     gen.config = config
     gen.id = id
-    gen.init_percent_complete = 100
+    gen.init_percent_complete = 0 if pre_allocate_buffer else 100
     return gen
 
 
@@ -126,7 +126,19 @@ with description('Memory Generator Module', 'memory') as self:
                             self._model, _return_http_data_only=False)
 
                     with included_context('create generator'):
-                        pass
+                        with it('not buffer initialization required'):
+                            expect(self._result[0].init_percent_complete).to(be(100))
+
+                with description('with pre allocated buffer'):
+                    with before.all:
+                        self._model = generator_model(
+                            self._api.api_client, id='some-specified-id', pre_allocate_buffer = True)
+                        self._result = self._api.create_memory_generator_with_http_info(
+                            self._model, _return_http_data_only=False)
+
+                    with included_context('create generator'):
+                        with it('buffer initialization started'):
+                            expect(self._result[0].init_percent_complete).to(be(0))
 
             with context('GET'):
                 with before.all:
