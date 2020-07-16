@@ -69,7 +69,7 @@ api_reply server::handle_request(const request::generator::get& req)
     if (m_generator_stack->contains(req.id)) {
         const auto& gnr = m_generator_stack->generator(req.id);
 
-        reply::generator::item::item_data data{req.id,
+        reply::generator::item::item_data data{.id = req.id,
                                                .is_running = gnr.is_running(),
                                                .config = gnr.config(),
                                                .init_percent_complete =
@@ -81,7 +81,7 @@ api_reply server::handle_request(const request::generator::get& req)
     }
 
     return reply::error{.type = reply::error::NOT_FOUND};
-} // namespace openperf::memory::api
+}
 
 api_reply server::handle_request(const request::generator::erase& req)
 {
@@ -156,7 +156,7 @@ api_reply server::handle_request(const request::generator::bulk::create& req)
     }
 
     return list;
-} // namespace openperf::memory::api
+}
 
 api_reply server::handle_request(const request::generator::bulk::erase& req)
 {
