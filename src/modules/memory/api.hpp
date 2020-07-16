@@ -10,6 +10,7 @@
 
 #include "memory/info.hpp"
 #include "memory/generator.hpp"
+#include "memory/memory_stat.hpp"
 
 namespace swagger::v1::model {
 class MemoryGenerator;
@@ -25,7 +26,6 @@ static constexpr auto endpoint = "inproc://openperf_memory";
 
 // ZMQ message structs
 using config_t = openperf::memory::internal::generator::config_t;
-using stat_t = openperf::memory::internal::generator::stat_t;
 
 struct message
 {};
@@ -139,7 +139,7 @@ struct item
     {
         std::string id;
         std::string generator_id;
-        stat_t stat;
+        internal::memory_stat stat;
     };
 
     using data_ptr = std::unique_ptr<item_data>;

@@ -17,4 +17,11 @@ void task_memory_read::operation(uint64_t nb_ops)
     }
 }
 
+memory_stat task_memory_read::spin()
+{
+    auto result = memory_stat{};
+    result.read = common_spin();
+    return result;
+}
+
 } // namespace openperf::memory::internal

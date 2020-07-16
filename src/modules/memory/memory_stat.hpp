@@ -4,24 +4,18 @@
 #include <cinttypes>
 #include <chrono>
 #include <optional>
-#include <functional>
+
+#include "timesync/chrono.hpp"
 
 namespace openperf::memory::internal {
 
 using namespace std::chrono_literals;
 
-template <class T>
-std::optional<T>
-bind_binary(std::function<T(T, T)> f, std::optional<T> v1, std::optional<T> v2)
+struct task_memory_stat
 {
-    if (v1.has_value() && v2.has_value()) return f(v1.value(), v2.value());
-
-    return (v1.has_value()) ? v1 : v2;
-}
-
-struct memory_stat
-{
-    using timestamp_t = std::chrono::system_clock::time_point;
+    using clock = openperf::timesync::chrono::realtime;
+    using timestamp_t = clock::time_point;
+    using optional_time_t = std::optional<std::chrono::nanoseconds>;
 
     /**
      * operations - The number of operations performed
@@ -36,40 +30,22 @@ struct memory_stat
     uint64_t bytes_target = 0;
     std::chrono::nanoseconds run_time = 0ns;
     std::chrono::nanoseconds sleep_time = 0ns;
-    std::optional<std::chrono::nanoseconds> latency_min;
-    std::optional<std::chrono::nanoseconds> latency_max;
-    timestamp_t timestamp = std::chrono::system_clock::now();
+    optional_time_t latency_min;
+    optional_time_t latency_max;
+    timestamp_t timestamp = clock::now();
     uint64_t errors = 0;
 
-    memory_stat& operator+=(const memory_stat& st)
-    {
-        bytes += st.bytes;
-        bytes_target += st.bytes_target;
-        errors += st.errors;
-        operations += st.operations;
-        operations_target += st.operations_target;
-        run_time += st.run_time;
-        sleep_time += st.sleep_time;
-        timestamp = std::max(timestamp, st.timestamp);
+    task_memory_stat& operator+=(const task_memory_stat& st);
+    task_memory_stat operator+(const task_memory_stat& st);
+};
 
-        latency_min = bind_binary<std::chrono::nanoseconds>(
-            [](auto a, auto b) { return std::min(a, b); },
-            latency_min,
-            st.latency_min);
+struct memory_stat
+{
+    bool active;
+    task_memory_stat read;
+    task_memory_stat write;
 
-        latency_max = bind_binary<std::chrono::nanoseconds>(
-            [](auto a, auto b) { return std::max(a, b); },
-            latency_max,
-            st.latency_max);
-
-        return *this;
-    }
-
-    memory_stat operator+(const memory_stat& st)
-    {
-        memory_stat stat(*this);
-        return stat += st;
-    }
+    task_memory_stat::timestamp_t timestamp() const;
 };
 
 } // namespace openperf::memory::internal

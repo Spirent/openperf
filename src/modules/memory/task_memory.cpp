@@ -17,7 +17,7 @@ constexpr size_t MAX_SPIN_OPS = 5000;
 using namespace std::chrono_literals;
 using openperf::utils::op_prbs23_fill;
 
-auto calc_ops_and_sleep(const task_memory::stat_t& total,
+auto calc_ops_and_sleep(const task_memory_stat& total,
                         size_t ops_per_sec,
                         double avg_rate)
 {
@@ -57,24 +57,28 @@ auto calc_ops_and_sleep(const task_memory::stat_t& total,
 }
 
 // Constructors & Destructor
-task_memory::task_memory()
-    : m_scratch{.ptr = nullptr, .size = 0}
-    , m_stat(&m_stat_data)
-    , m_stat_clear(true)
-{}
+task_memory::task_memory(task_memory&& t)
+    : m_config(std::move(t.m_config))
+    , m_indexes(std::move(t.m_indexes))
+    , m_buffer(t.m_buffer)
+    , m_scratch(std::move(t.m_scratch))
+    , m_stat(std::move(t.m_stat))
+    , m_op_index(t.m_op_index)
+    , m_avg_rate(t.m_avg_rate)
+{
+    // t.m_buffer = nullptr;
+    // t.m_config.buffer = {nullptr, 0};
+    t.m_scratch = {nullptr, 0};
+    t.reset();
+}
 
 task_memory::task_memory(const task_memory_config& conf)
-    : task_memory()
+    : m_scratch{.ptr = nullptr, .size = 0}
 {
     config(conf);
 }
 
 task_memory::~task_memory() { scratch_free(); }
-
-task_memory::stat_t task_memory::stat() const
-{
-    return (m_stat_clear) ? stat_t{} : *m_stat.load();
-}
 
 void task_memory::config(const task_memory_config& msg)
 {
@@ -98,22 +102,21 @@ void task_memory::config(const task_memory_config& msg)
     m_config = msg;
 } // namespace openperf::memory::internal
 
-void task_memory::spin()
+void task_memory::reset()
+{
+    m_avg_rate = 100000000;
+    m_stat = {};
+}
+
+task_memory_stat task_memory::common_spin()
 {
     /* If we have a rate to generate, then we need indexes */
     assert(m_config.op_per_sec == 0 || m_config.indexes->size() > 0);
 
-    if (m_stat_clear) {
-        m_avg_rate = 100000000;
-        m_stat_data = stat_t{};
-        m_stat_clear = false;
-    }
-
-    auto tuple =
-        calc_ops_and_sleep(m_stat_data, m_config.op_per_sec, m_avg_rate);
+    auto tuple = calc_ops_and_sleep(m_stat, m_config.op_per_sec, m_avg_rate);
     auto to_do_ops = std::get<0>(tuple);
 
-    stat_t stat{};
+    task_memory_stat stat{};
     if (auto ns_to_sleep = std::get<1>(tuple); ns_to_sleep.count()) {
         auto start = chronometer::now();
         std::this_thread::sleep_for(ns_to_sleep);
@@ -133,7 +136,7 @@ void task_memory::spin()
             std::max(chronometer::now() - ts, 1ns); /* prevent divide by 0 */
 
         /* Update per thread statistics */
-        stat += stat_t{
+        stat += task_memory_stat{
             .operations = spin_ops,
             .bytes = spin_ops * m_config.block_size,
             .run_time = run_time,
@@ -149,14 +152,12 @@ void task_memory::spin()
         to_do_ops -= spin_ops;
     }
 
-    stat += m_stat_data;
     stat.operations_target = (stat.run_time + stat.sleep_time).count()
                              * m_config.op_per_sec / std::nano::den;
     stat.bytes_target = stat.operations_target * m_config.block_size;
+    m_stat += stat;
 
-    m_stat.store(&stat);
-    m_stat_data = stat;
-    m_stat.store(&m_stat_data);
+    return stat;
 }
 
 void task_memory::scratch_allocate(size_t size)
