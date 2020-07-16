@@ -18,19 +18,7 @@ static T random_uniform(T max = std::numeric_limits<T>::max())
     return random_uniform(T(0), max);
 }
 
-inline void op_pseudo_random_fill(void* buffer, size_t length)
-{
-    auto seed = random_uniform<uint32_t>();
-    auto* ptr = reinterpret_cast<uint32_t*>(buffer);
-
-    for (size_t i = 0; i < length / sizeof(uint32_t); ++i) {
-        uint32_t temp = (seed << 9) ^ (seed << 14);
-        seed = temp ^ (temp >> 23) ^ (temp >> 18);
-        *(ptr + i) = temp;
-    }
-}
-
-inline void op_pseudo_random_fill(uint32_t* seedp, void* buffer, size_t length)
+inline void op_prbs23_fill(uint32_t* seedp, void* buffer, size_t length)
 {
     uint32_t seed = *seedp;
     uint32_t* ptr = reinterpret_cast<uint32_t*>(buffer);
@@ -42,6 +30,12 @@ inline void op_pseudo_random_fill(uint32_t* seedp, void* buffer, size_t length)
     }
 
     *seedp = seed;
+}
+
+inline void op_prbs23_fill(void* buffer, size_t length)
+{
+    auto seed = random_uniform<uint32_t>();
+    op_prbs23_fill(&seed, buffer, length);
 }
 
 } // namespace openperf::utils

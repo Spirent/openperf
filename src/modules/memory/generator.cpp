@@ -159,8 +159,7 @@ void generator::scrub_worker()
     while (!m_scrub_aborted.load() && current < m_buffer.size) {
         auto buf_len =
             std::min(static_cast<size_t>(block_size), m_buffer.size - current);
-        utils::op_pseudo_random_fill(
-            &seed, (uint8_t*)m_buffer.ptr + current, buf_len);
+        utils::op_prbs23_fill(&seed, (uint8_t*)m_buffer.ptr + current, buf_len);
         current += buf_len;
         m_init_percent_complete.store(current * 100 / m_buffer.size);
     }
