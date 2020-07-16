@@ -68,8 +68,7 @@ public:
     void resume() { send_command(operation_t::RESUME); }
     void reset() { send_command(operation_t::RESET); }
 
-    template <typename T>
-    void create_worker(T&& t, const std::string& name = "");
+    template <typename T> void add(T&& t, const std::string& name = "");
     template <typename T> void processor(T&& processor);
     void clear() { m_workers.clear(); }
 
@@ -128,7 +127,7 @@ void controller<S>::processor(T&& processor)
 
 template <typename S>
 template <typename T>
-void controller<S>::create_worker(T&& t, const std::string& name)
+void controller<S>::add(T&& t, const std::string& name)
 {
     m_workers.emplace_front(m_context, name);
     m_workers.front().start(std::forward<T>(t));

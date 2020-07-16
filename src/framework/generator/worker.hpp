@@ -46,11 +46,10 @@ public:
     void resume();
 
     bool is_paused() const { return m_paused; }
-    bool is_running() const { return !(m_paused || m_finished); }
     bool is_finished() const { return m_finished; }
 
 private:
-    template <typename T> void loop(T);
+    template <typename T> void run(task<T>&);
     template <typename T> void send(const T&);
 };
 
@@ -60,7 +59,7 @@ template <typename T> void worker::start(T&& task, int core_id)
     if (!m_finished) return;
 
     m_finished = false;
-    m_thread = std::thread([this, task = T(std::move(task)), core_id]() {
+    m_thread = std::thread([this, task = std::move(task), core_id]() mutable {
         // Set Thread name
         op_thread_setname(m_thread_name.c_str());
 
@@ -74,20 +73,19 @@ template <typename T> void worker::start(T&& task, int core_id)
 
         OP_LOG(OP_LOG_DEBUG, "Worker thread started");
 
-        // loop(std::forward<T>(task));
-        loop(std::move(const_cast<T&>(task)));
+        run(task);
     });
 }
 
 // Methods : private
-template <typename T> void worker::loop(T task)
+template <typename T> void worker::run(task<T>& task)
 {
     constexpr int ZMQ_BLOCK = 0;
     auto socket = std::unique_ptr<void, op_socket_deleter>(
         op_socket_get_client_subscription(
             m_context.lock().get(), CONTROL_ENDPOINT, ""));
 
-    for (m_paused = true;;) {
+    for (m_paused = true; !m_finished;) {
         auto operation = operation_t::NOOP;
         auto recv = zmq_recv(socket.get(),
                              &operation,
@@ -112,17 +110,17 @@ template <typename T> void worker::loop(T task)
         case operation_t::STOP:
             task.pause();
             m_finished = true;
-            return;
-        case operation_t::PAUSE:
-            m_paused = true;
-            task.pause();
             break;
-        case operation_t::RESUME:
-            m_paused = false;
-            task.resume();
+        case operation_t::PAUSE:
+            if (!m_paused) task.pause();
+            m_paused = true;
             break;
         case operation_t::RESET:
             task.reset();
+            [[fallthrough]];
+        case operation_t::RESUME:
+            if (m_paused) task.resume();
+            m_paused = false;
             [[fallthrough]];
         case operation_t::NOOP:
             [[fallthrough]];
