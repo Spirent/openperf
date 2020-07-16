@@ -170,9 +170,9 @@ void generator::scrub_worker()
     }
 }
 
-void index_vector(std::vector<unsigned>& indexes,
-                  size_t size,
-                  io_pattern pattern)
+void generator::update_index_vector(std::vector<unsigned>& indexes,
+                                    size_t size,
+                                    io_pattern pattern)
 {
     indexes.resize(size, 0);
     std::iota(indexes.begin(), indexes.end(), 0);
@@ -222,7 +222,7 @@ void generator::config(const generator::config_t& cfg)
 
         if (future.valid()) future.wait();
         future = std::async(std::launch::async,
-                            index_vector,
+                            update_index_vector,
                             std::ref(indexes),
                             nb_blocks,
                             op_cfg.pattern);

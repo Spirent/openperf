@@ -101,6 +101,10 @@ public:
     bool is_running() const { return !(m_paused || m_stopped); }
     bool is_paused() const { return m_paused; }
 
+    static void update_index_vector(std::vector<unsigned>& indexes,
+                                    size_t size,
+                                    io_pattern pattern);
+
 private:
     void free_buffer();
     void resize_buffer(size_t);
