@@ -3,4 +3,5 @@
 #
 
 FW_SOURCES += \
-	generator/worker.cpp
+	generator/worker.cpp \
+	generator/server.cpp
