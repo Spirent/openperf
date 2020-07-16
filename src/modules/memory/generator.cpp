@@ -2,6 +2,7 @@
 #include "memory/task_memory_read.hpp"
 #include "memory/task_memory_write.hpp"
 #include "utils/random.hpp"
+#include "utils/memcpy.hpp"
 
 #include <cinttypes>
 #include <sys/mman.h>
@@ -63,8 +64,18 @@ generator::~generator()
 void generator::start()
 {
     if (!m_stopped) return;
-    if (m_read_future.valid()) m_read_future.wait();
-    if (m_write_future.valid()) m_write_future.wait();
+    if (m_read_future.valid()) {
+        auto res = m_read_future.get();
+        assert(res.size() == m_read_indexes.size());
+        utils::memcpy(
+            m_read_indexes.data(), res.data(), sizeof(index_t) * res.size());
+    }
+    if (m_write_future.valid()) {
+        auto res = m_write_future.get();
+        assert(res.size() == m_write_indexes.size());
+        utils::memcpy(
+            m_write_indexes.data(), res.data(), sizeof(index_t) * res.size());
+    };
 
     for_each_worker([](worker_ptr& w) { w->start(); });
     m_stopped = false;
@@ -170,11 +181,9 @@ void generator::scrub_worker()
     }
 }
 
-void generator::update_index_vector(std::vector<unsigned>& indexes,
-                                    size_t size,
-                                    io_pattern pattern)
+index_vector generator::fill_index_vector(size_t size, io_pattern pattern)
 {
-    indexes.resize(size, 0);
+    index_vector indexes(size);
     std::iota(indexes.begin(), indexes.end(), 0);
 
     switch (pattern) {
@@ -184,8 +193,8 @@ void generator::update_index_vector(std::vector<unsigned>& indexes,
         std::reverse(indexes.begin(), indexes.end());
         break;
     case io_pattern::RANDOM:
-        // Use A Mersenne Twister pseudo-random generator to provide fast vector
-        // shuffling
+        // Use A Mersenne Twister pseudo-random generator to provide fast
+        // vector shuffling
         {
             std::random_device rd;
             std::mt19937_64 g(rd());
@@ -195,6 +204,8 @@ void generator::update_index_vector(std::vector<unsigned>& indexes,
     default:
         OP_LOG(OP_LOG_ERROR, "Unrecognized generator pattern: %d\n", pattern);
     }
+
+    return indexes;
 }
 
 void generator::config(const generator::config_t& cfg)
@@ -213,19 +224,17 @@ void generator::config(const generator::config_t& cfg)
     });
 
     auto configure_workers = [this](workers& w,
-                                    std::vector<unsigned>& indexes,
+                                    std::vector<uint64_t>& indexes,
                                     const config_t::operation_config& op_cfg,
-                                    std::future<void>& future) {
+                                    std::future<index_vector>& future) {
         // io blocks in buffer
         size_t nb_blocks =
             op_cfg.block_size ? m_buffer.size / op_cfg.block_size : 0;
 
         if (future.valid()) future.wait();
-        future = std::async(std::launch::async,
-                            update_index_vector,
-                            std::ref(indexes),
-                            nb_blocks,
-                            op_cfg.pattern);
+        indexes.resize(nb_blocks);
+        future = std::async(
+            std::launch::async, fill_index_vector, nb_blocks, op_cfg.pattern);
 
         auto rate = (!op_cfg.threads) ? 0 : op_cfg.op_per_sec / op_cfg.threads;
 
@@ -273,10 +282,11 @@ void generator::resize_buffer(size_t size)
 
     /*
      * We use mmap/munmap here instead of the standard allocation functions
-     * because we expect this buffer to be relatively large, and OSv currently
-     * can only allocate non-contiguous chunks of memory with mmap.
-     * The buffer contents don't currently matter, so there is no reason to
-     * initialize new buffers or shuffle contents between old and new ones.
+     * because we expect this buffer to be relatively large, and OSv
+     * currently can only allocate non-contiguous chunks of memory with
+     * mmap. The buffer contents don't currently matter, so there is no
+     * reason to initialize new buffers or shuffle contents between old and
+     * new ones.
      */
     free_buffer();
     if (size > 0) {

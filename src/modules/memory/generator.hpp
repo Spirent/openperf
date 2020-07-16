@@ -11,6 +11,8 @@
 namespace openperf::memory::internal {
 
 using namespace openperf::utils::worker;
+using index_t = uint64_t;
+using index_vector = std::vector<index_t>;
 
 class generator
 {
@@ -56,8 +58,8 @@ private:
         size_t size;
     } m_buffer;
 
-    std::vector<unsigned> m_read_indexes, m_write_indexes;
-    std::future<void> m_read_future, m_write_future;
+    index_vector m_read_indexes, m_write_indexes;
+    std::future<index_vector> m_read_future, m_write_future;
 
     uint16_t m_serial_number;
     std::chrono::nanoseconds m_run_time;
@@ -101,9 +103,7 @@ public:
     bool is_running() const { return !(m_paused || m_stopped); }
     bool is_paused() const { return m_paused; }
 
-    static void update_index_vector(std::vector<unsigned>& indexes,
-                                    size_t size,
-                                    io_pattern pattern);
+    static index_vector fill_index_vector(size_t size, io_pattern pattern);
 
 private:
     void free_buffer();
