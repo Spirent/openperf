@@ -96,17 +96,17 @@ public:
     bool active() const { return m_active; }
 
     bool uses_feature([
-        [maybe_unused]] openperf::packetio::packets::sink_feature_flags
+        [maybe_unused]] openperf::packetio::packet::sink_feature_flags
                           sink_feature_flags) const
     {
         return false;
     }
 
-    uint16_t push(openperf::packetio::packets::packet_buffer* const packets[],
+    uint16_t push(openperf::packetio::packet::packet_buffer* const packets[],
                   uint16_t length) const
     {
         for (uint16_t i = 0; i < length; i++) {
-            m_counter->add(openperf::packetio::packets::length(packets[i]));
+            m_counter->add(openperf::packetio::packet::length(packets[i]));
         }
         return (length);
     }
@@ -116,7 +116,7 @@ void test_sinks(void* context)
 {
     auto client = openperf::packetio::internal::api::client(context);
 
-    auto sink0 = openperf::packetio::packets::generic_sink(test_sink(0));
+    auto sink0 = openperf::packetio::packet::generic_sink(test_sink(0));
     auto success = client.add_sink("port0", sink0);
     if (!success) { throw std::runtime_error("Could not add sink to port0"); }
 }
