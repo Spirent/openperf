@@ -10,10 +10,9 @@ class task_memory_read : public openperf::memory::internal::task_memory
 public:
     using task_memory::task_memory;
 
-    memory_stat spin() override;
-
 private:
     void operation(uint64_t nb_ops) override;
+    memory_stat make_stat(const task_memory_stat&) override;
 };
 
 } // namespace openperf::memory::internal

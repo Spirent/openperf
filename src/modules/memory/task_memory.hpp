@@ -52,12 +52,12 @@ public:
     void reset() override;
 
     task_memory_config config() const { return m_config; }
+    memory_stat spin() override;
 
 protected:
     void config(const task_memory_config&);
-    task_memory_stat common_spin();
-
     virtual void operation(uint64_t nb_ops) = 0;
+    virtual memory_stat make_stat(const task_memory_stat&) = 0;
 
 private:
     void scratch_allocate(size_t size);

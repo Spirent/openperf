@@ -26,7 +26,7 @@ public:
     };
 
     using time_point = std::chrono::system_clock::time_point;
-    using controller = openperf::framework::generator::controller<memory_stat>;
+    using controller = openperf::framework::generator::controller;
 
 private:
     bool m_stopped = true;
@@ -52,11 +52,9 @@ public:
     generator();
     explicit generator(const generator::config_t&);
     generator(const generator&) = delete;
-    generator(generator&&) noexcept;
     ~generator();
 
     // Operators overloading
-    generator& operator=(generator&&) noexcept;
     generator& operator=(const generator&) = delete;
 
     // Methods
