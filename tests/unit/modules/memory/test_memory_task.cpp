@@ -15,8 +15,8 @@ TEST_CASE("Memory Generator Task", "[memory]")
 
         SECTION("Pattern: SEQUENTIAL")
         {
-            auto indexes =
-                generator::fill_index_vector(test_size, io_pattern::SEQUENTIAL);
+            auto indexes = generator::generate_index_vector(
+                test_size, io_pattern::SEQUENTIAL);
 
             REQUIRE(indexes.size() == test_size);
             REQUIRE(std::is_sorted(indexes.begin(), indexes.end()));
@@ -24,8 +24,8 @@ TEST_CASE("Memory Generator Task", "[memory]")
 
         SECTION("Pattern: REVERSE")
         {
-            auto indexes =
-                generator::fill_index_vector(test_size, io_pattern::REVERSE);
+            auto indexes = generator::generate_index_vector(
+                test_size, io_pattern::REVERSE);
             std::reverse(indexes.begin(), indexes.end());
 
             REQUIRE(indexes.size() == test_size);
@@ -35,7 +35,7 @@ TEST_CASE("Memory Generator Task", "[memory]")
         SECTION("Pattern: RANDOM")
         {
             auto indexes =
-                generator::fill_index_vector(test_size, io_pattern::RANDOM);
+                generator::generate_index_vector(test_size, io_pattern::RANDOM);
 
             REQUIRE(indexes.size() == test_size);
             REQUIRE(!std::is_sorted(indexes.begin(), indexes.end()));
