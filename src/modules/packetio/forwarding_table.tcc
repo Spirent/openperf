@@ -14,7 +14,8 @@ forwarding_table<Interface, Sink, MaxPorts>::forwarding_table()
 {
     for (int i = 0; i < MaxPorts; i++) {
         m_interfaces[i].store(new interface_map());
-        m_port_sinks[i].store(new sink_vector());
+        m_port_rx_sinks[i].store(new sink_vector());
+        m_port_tx_sinks[i].store(new sink_vector());
         m_port_interface_sink_count[i].store(0);
     }
 }
@@ -24,7 +25,8 @@ forwarding_table<Interface, Sink, MaxPorts>::~forwarding_table()
 {
     for (int i = 0; i < MaxPorts; i++) {
         delete m_interfaces[i].exchange(nullptr);
-        delete m_port_sinks[i].exchange(nullptr);
+        delete m_port_rx_sinks[i].exchange(nullptr);
+        delete m_port_tx_sinks[i].exchange(nullptr);
     }
 }
 
@@ -58,30 +60,36 @@ forwarding_table<Interface, Sink, MaxPorts>::remove_interface(
 template <typename Interface, typename Sink, int MaxPorts>
 typename forwarding_table<Interface, Sink, MaxPorts>::sink_vector*
 forwarding_table<Interface, Sink, MaxPorts>::insert_sink(uint16_t port_idx,
+                                                         direction dir,
                                                          Sink sink)
 {
     assert(port_idx < MaxPorts);
 
-    auto original = m_port_sinks[port_idx].load(std::memory_order_relaxed);
+    auto& port_sinks = (dir == direction::RX) ? m_port_rx_sinks[port_idx]
+                                              : m_port_tx_sinks[port_idx];
+
+    auto original = port_sinks.load(std::memory_order_relaxed);
     auto updated = new sink_vector(std::move(original->push_back(sink)));
-    return (
-        m_port_sinks[port_idx].exchange(updated, std::memory_order_release));
+    return (port_sinks.exchange(updated, std::memory_order_release));
 }
 
 template <typename Interface, typename Sink, int MaxPorts>
 typename forwarding_table<Interface, Sink, MaxPorts>::sink_vector*
 forwarding_table<Interface, Sink, MaxPorts>::remove_sink(uint16_t port_idx,
+                                                         direction dir,
                                                          Sink sink)
 {
     assert(port_idx < MaxPorts);
 
-    auto original = m_port_sinks[port_idx].load(std::memory_order_relaxed);
+    auto& port_sinks = (dir == direction::RX) ? m_port_rx_sinks[port_idx]
+                                              : m_port_tx_sinks[port_idx];
+
+    auto original = port_sinks.load(std::memory_order_relaxed);
     auto found = std::find(original->begin(), original->end(), sink);
     if (found == original->end()) return (nullptr); /* not found */
     auto updated = new sink_vector(
         std::move(original->erase(std::distance(original->begin(), found))));
-    return (
-        m_port_sinks[port_idx].exchange(updated, std::memory_order_release));
+    return (port_sinks.exchange(updated, std::memory_order_release));
 }
 
 template <typename Interface, typename Sink, int MaxPorts>
@@ -197,10 +205,14 @@ forwarding_table<Interface, Sink, MaxPorts>::get_interfaces(
 
 template <typename Interface, typename Sink, int MaxPorts>
 typename forwarding_table<Interface, Sink, MaxPorts>::sink_vector&
-forwarding_table<Interface, Sink, MaxPorts>::get_sinks(uint16_t port_idx) const
+forwarding_table<Interface, Sink, MaxPorts>::get_sinks(uint16_t port_idx,
+                                                       direction dir) const
 {
     assert(port_idx < MaxPorts);
-    return (*m_port_sinks[port_idx].load(std::memory_order_consume));
+    auto& port_sinks = (dir == direction::RX) ? m_port_rx_sinks[port_idx]
+                                              : m_port_tx_sinks[port_idx];
+
+    return (*port_sinks.load(std::memory_order_consume));
 }
 
 template <typename Interface, typename Sink, int MaxPorts>
