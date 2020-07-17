@@ -181,7 +181,7 @@ void generator::scrub_worker()
     }
 }
 
-index_vector generator::fill_index_vector(size_t size, io_pattern pattern)
+index_vector generator::generate_index_vector(size_t size, io_pattern pattern)
 {
     index_vector indexes(size);
     std::iota(indexes.begin(), indexes.end(), 0);
@@ -233,8 +233,10 @@ void generator::config(const generator::config_t& cfg)
 
         if (future.valid()) future.wait();
         indexes.resize(nb_blocks);
-        future = std::async(
-            std::launch::async, fill_index_vector, nb_blocks, op_cfg.pattern);
+        future = std::async(std::launch::async,
+                            generate_index_vector,
+                            nb_blocks,
+                            op_cfg.pattern);
 
         auto rate = (!op_cfg.threads) ? 0 : op_cfg.op_per_sec / op_cfg.threads;
 

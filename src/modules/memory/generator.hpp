@@ -103,7 +103,7 @@ public:
     bool is_running() const { return !(m_paused || m_stopped); }
     bool is_paused() const { return m_paused; }
 
-    static index_vector fill_index_vector(size_t size, io_pattern pattern);
+    static index_vector generate_index_vector(size_t size, io_pattern pattern);
 
 private:
     void free_buffer();
