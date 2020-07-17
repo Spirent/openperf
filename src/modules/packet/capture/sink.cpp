@@ -13,6 +13,29 @@ namespace openperf::packet::capture {
 
 constexpr uint16_t max_burst_size = 64;
 
+std::string to_string(const packetio::packet::traffic_direction& direction)
+{
+    switch (direction) {
+    case packetio::packet::traffic_direction::RX:
+        return "rx";
+    case packetio::packet::traffic_direction::TX:
+        return "tx";
+    case packetio::packet::traffic_direction::RXTX:
+        return "rx_and_tx";
+    }
+}
+
+tl::expected<packetio::packet::traffic_direction, int>
+capture_direction_from_string(const std::string_view str)
+{
+    if (str == "rx") { return packetio::packet::traffic_direction::RX; }
+    if (str == "tx") { return packetio::packet::traffic_direction::TX; }
+    if (str == "rx_and_tx") {
+        return packetio::packet::traffic_direction::RXTX;
+    }
+    return tl::make_unexpected(EINVAL);
+}
+
 std::string to_string(const capture_state& state)
 {
     switch (state) {
@@ -37,12 +60,13 @@ std::string to_string(const capture_mode mode)
     }
 }
 
-capture_mode capture_mode_from_string(const std::string_view str)
+tl::expected<capture_mode, int>
+capture_mode_from_string(const std::string_view str)
 {
     if (str == "buffer") { return capture_mode::BUFFER; }
     if (str == "live") { return capture_mode::LIVE; }
     if (str == "file") { return capture_mode::FILE; }
-    return capture_mode::BUFFER;
+    return tl::make_unexpected(EINVAL);
 }
 
 sink_result::sink_result(const sink& parent_)
@@ -80,9 +104,9 @@ std::vector<uint8_t> sink::make_indexes(std::vector<unsigned>& ids)
     return (indexes);
 }
 
-sink::sink(const sink_config& config, std::vector<unsigned> rx_ids)
+sink::sink(const sink_config& config, std::vector<unsigned> worker_ids)
     : m_config(config)
-    , m_indexes(sink::make_indexes(rx_ids))
+    , m_indexes(sink::make_indexes(worker_ids))
 {
     if (!m_config.filter.empty()) {
         m_filter =
@@ -132,6 +156,11 @@ sink& sink::operator=(sink&& other) noexcept
 std::string sink::id() const { return (m_config.id); }
 
 std::string sink::source() const { return (m_config.source); }
+
+packetio::packet::traffic_direction sink::direction() const
+{
+    return (m_config.direction);
+}
 
 size_t sink::worker_count() const { return (m_indexes.size()); }
 

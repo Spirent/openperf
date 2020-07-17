@@ -15,6 +15,13 @@ struct pbuf;
 
 namespace openperf::packetio::dpdk {
 
+class net_interface;
+
+using tx_sink_callback = void (*)(net_interface& interface,
+                                  struct rte_mbuf** pkts,
+                                  uint16_t pkts_len,
+                                  void* cbdata);
+
 class net_interface
 {
 public:
@@ -50,6 +57,9 @@ public:
 
     err_t handle_tx(struct pbuf*);
 
+    void set_tx_sink_callback(tx_sink_callback callback);
+    void set_tx_sink_data(void* data);
+
     using rx_strategy =
         std::variant<netif_rx_strategy::direct, netif_rx_strategy::queueing>;
 
@@ -62,6 +72,8 @@ private:
     const unsigned m_max_gso_length;
     const interface::config_data m_config;
     const driver::tx_burst m_transmit;
+    tx_sink_callback m_tx_sink_callback;
+    void* m_tx_sink_data;
 
     rx_strategy m_receive;
 

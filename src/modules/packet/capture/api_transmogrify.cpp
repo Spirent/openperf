@@ -227,6 +227,10 @@ void from_json(const nlohmann::json& j, PacketCapture& capture)
         capture.setSourceId(j["source_id"]);
     }
 
+    if (j.find("direction") != j.end() && !j["direction"].is_null()) {
+        capture.setDirection(j["direction"]);
+    }
+
     if (j.find("active") != j.end() && !j["active"].is_null()) {
         capture.setActive(j["active"]);
     }

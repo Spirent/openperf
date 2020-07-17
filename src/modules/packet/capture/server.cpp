@@ -309,9 +309,26 @@ reply_msg server::handle_request(const request_create_capture& request)
                               .duration = {},
                               .packet_count = 0};
 
+    auto direction =
+        capture_direction_from_string(request.capture->getDirection());
+    if (!direction) {
+        OP_LOG(OP_LOG_ERROR,
+               "Invalid capture direction (%s)",
+               request.capture->getDirection().c_str());
+        return (to_error(error_type::POSIX, direction.error()));
+    }
+    config.direction = *direction;
+
     auto user_config = request.capture->getConfig();
     assert(user_config);
-    config.capture_mode = capture_mode_from_string(user_config->getMode());
+    auto capture_mode = capture_mode_from_string(user_config->getMode());
+    if (!capture_mode) {
+        OP_LOG(OP_LOG_ERROR,
+               "Invalid capture mode (%s)",
+               user_config->getMode().c_str());
+        return (to_error(error_type::POSIX, capture_mode.error()));
+    }
+    config.capture_mode = *capture_mode;
     config.buffer_wrap = user_config->isBufferWrap();
     config.buffer_size = user_config->getBufferSize();
     if (user_config->packetSizeIsSet())
@@ -340,18 +357,19 @@ reply_msg server::handle_request(const request_create_capture& request)
                            std::end(m_sinks),
                            config.id,
                            sink_id_comparator{})) {
+        OP_LOG(OP_LOG_ERROR, "Sink id %s is already used", config.id.c_str());
         return (to_error(error_type::POSIX, EEXIST));
     }
 
-    auto rx_ids = m_client.get_worker_rx_ids(config.source);
-    if (!rx_ids || rx_ids->empty()) {
+    auto worker_ids = m_client.get_worker_ids(config.source, config.direction);
+    if (!worker_ids || worker_ids->empty()) {
         return (to_error(error_type::POSIX, EINVAL));
     }
 
-    auto& item = m_sinks.emplace_back(sink(config, *rx_ids));
+    auto& item = m_sinks.emplace_back(sink(config, *worker_ids));
 
     /* Try to add the new sink to the backend workers */
-    auto success = m_client.add_sink(config.source, item);
+    auto success = m_client.add_sink(config.source, config.direction, item);
     if (!success) {
         /*
          * Luckily, we failed adding the last item in the vector,
@@ -377,14 +395,14 @@ reply_msg server::handle_request(const request_create_capture& request)
 }
 
 static void remove_sink(packetio::internal::api::client& client,
-                        packetio::packet::generic_sink& to_add)
+                        packetio::packet::generic_sink& to_del)
 {
-    if (auto success =
-            client.del_sink(to_add.template get<sink>().source(), to_add);
+    auto& impl = to_del.template get<sink>();
+    if (auto success = client.del_sink(impl.source(), impl.direction(), to_del);
         !success) {
         OP_LOG(OP_LOG_ERROR,
                "Failed to remove capture %s from packetio workers!\n",
-               to_add.id().c_str());
+               to_del.id().c_str());
     }
 }
 

@@ -200,7 +200,7 @@ static void rx_interface_sink_push_multicast_burst(const fib* fib,
     // This will be slow when there are a lot of interfaces
     for (auto&& [idx, entry] : fib->get_interfaces(rxq->port_id())) {
         auto ifp = entry.ifp;
-        for (auto& sink : entry.sinks) {
+        for (auto& sink : entry.rx_sinks) {
             if (sink.active()) {
                 OP_LOG(OP_LOG_TRACE,
                        "Dispatching packets to interface %c%c%u sink %s\n",
@@ -301,7 +301,7 @@ rx_interface_sink_dispatch(const fib* fib,
         auto entry = std::get<IFP_SINKS>(tuple);
         if (entry) {
             rx_interface_sink_push_unicast_burst(entry->ifp,
-                                                 entry->sinks,
+                                                 entry->rx_sinks,
                                                  to_stack
                                                      + std::get<START>(tuple),
                                                  std::get<COUNT>(tuple));

@@ -16,11 +16,18 @@ class bpf;
 
 namespace openperf::packetio::packet {
 struct packet_buffer;
-}
+enum class traffic_direction;
+} // namespace openperf::packetio::packet
 
 namespace openperf::packet::capture {
 
 enum class capture_state { STOPPED, ARMED, STARTED };
+
+std::string
+to_string(const packetio::packet::traffic_direction& direction);
+
+tl::expected<packetio::packet::traffic_direction, int>
+capture_direction_from_string(const std::string_view str);
 
 std::string to_string(const capture_state& state);
 
@@ -28,12 +35,15 @@ enum class capture_mode { BUFFER, LIVE, FILE };
 
 std::string to_string(const capture_mode mode);
 
-capture_mode capture_mode_from_string(const std::string_view str);
+tl::expected<capture_mode, int>
+capture_mode_from_string(const std::string_view str);
 
 struct sink_config
 {
     std::string id = core::to_string(core::uuid::random());
     std::string source;
+    packetio::packet::traffic_direction direction;
+
     uint64_t buffer_size;
     uint64_t packet_count;
     uint32_t max_packet_size;
@@ -67,7 +77,7 @@ struct sink_result
 class sink
 {
 public:
-    sink(const sink_config& config, std::vector<unsigned> rx_ids);
+    sink(const sink_config& config, std::vector<unsigned> worker_ids);
     ~sink() = default;
 
     sink(sink&& other) noexcept;
@@ -77,6 +87,7 @@ public:
 
     std::string id() const;
     std::string source() const;
+    packetio::packet::traffic_direction direction() const;
 
     const sink_config& get_config() const { return m_config; }
 

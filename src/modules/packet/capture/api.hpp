@@ -262,9 +262,6 @@ serialized_msg serialize_reply(reply_msg&& reply);
 tl::expected<request_msg, int> deserialize_request(serialized_msg&& msg);
 tl::expected<reply_msg, int> deserialize_reply(serialized_msg&& msg);
 
-int send_message(void* socket, serialized_msg&& msg);
-tl::expected<serialized_msg, int> recv_message(void* socket, int flags = 0);
-
 reply_error to_error(error_type type, int value = 0);
 
 capture_ptr to_swagger(const sink&);

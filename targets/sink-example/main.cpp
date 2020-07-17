@@ -117,7 +117,8 @@ void test_sinks(void* context)
     auto client = openperf::packetio::internal::api::client(context);
 
     auto sink0 = openperf::packetio::packet::generic_sink(test_sink(0));
-    auto success = client.add_sink("port0", sink0);
+    auto success = client.add_sink(
+        "port0", openperf::packetio::packet::traffic_direction::RX, sink0);
     if (!success) { throw std::runtime_error("Could not add sink to port0"); }
 }
 

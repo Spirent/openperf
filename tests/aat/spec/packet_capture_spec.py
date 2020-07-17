@@ -112,6 +112,14 @@ def pcap_icmp_echo_request_count(pcap_file):
             count += 1
     return count
 
+def pcap_icmp_echo_reply_count(pcap_file):
+    count = 0
+    icmp_type = scapy.all.ICMP(type='echo-reply').type
+    for packet in scapy.all.rdpcap(pcap_file):
+        if 'ICMP' in packet and packet['ICMP'].type == icmp_type:
+            count += 1
+    return count
+
 def pcap_icmp_echo_request_lengths(pcap_file):
     lengths = []
     icmp_type = scapy.all.ICMP(type='echo-request').type
@@ -626,6 +634,36 @@ with description('Packet Capture,', 'packet_capture') as self:
                     for length in lengths[0:-1]:
                         expect(length).not_to(equal(packet_len))
                     expect(lengths[-1]).to(equal(packet_len))
+                    os.remove(out_file)
+
+            with description('rx_and_tx capture,'):
+                with it('succeeds'):
+                    cap = capture_model(self.api.api_client, 'dataplane-server', 1*1024*1024)
+                    cap.direction = 'rx_and_tx'
+                    cap = self.api.create_packet_capture(cap)
+                    expect(cap).to(be_valid_packet_capture)
+                    self.capture = cap
+
+                    self.result = self.api.start_packet_capture(self.capture.id)
+                    expect(self.result).to(be_valid_packet_capture_result)
+                    expect(self.result.state == 'started')
+                    do_ping(self.intf_api, self.temp_ping,
+                            'dataplane-client', 'dataplane-server',
+                            socket.AF_INET, 2)
+                    self.api.stop_packet_capture(self.capture.id)
+                    result = self.api.get_packet_capture_result(id=self.result.id)
+                    expect(result.state == 'stopped')
+                    expect(result.id).to(equal(self.result.id))
+                    expect(result.packets).to(be_above_or_equal(4))
+
+                    out_file = os.path.join(self.temp_dir, 'test.pcapng')
+
+                    # Retrieve PCAP using python API
+                    get_capture_pcap(self.api, self.result.id, out_file)
+                    expect(pcap_icmp_echo_request_count(out_file)).to(equal(2))
+                    expect(pcap_icmp_echo_reply_count(out_file)).to(equal(2))
+                    expect(os.path.exists(out_file)).to(equal(True))
+
                     os.remove(out_file)
 
             with description('live,'):

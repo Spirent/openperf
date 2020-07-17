@@ -75,8 +75,12 @@ TEST_CASE("forwarding table functionality", "[forwarding table]")
             REQUIRE(!table.has_interface_sinks(port1));
 
             auto sink1 = test_sink{"sink_1"};
-            auto to_delete = table.insert_interface_sink(
-                port1, mac1, std::addressof(ifp1), sink1);
+            auto to_delete =
+                table.insert_interface_sink(port1,
+                                            mac1,
+                                            std::addressof(ifp1),
+                                            forwarding_table::direction::RX,
+                                            sink1);
             REQUIRE(to_delete);
             delete to_delete;
 
@@ -87,9 +91,9 @@ TEST_CASE("forwarding table functionality", "[forwarding table]")
             {
                 auto found = table.find_interface_and_sinks(port1, mac1);
                 REQUIRE(found != nullptr);
-                REQUIRE(found->sinks.size() == 1);
-                REQUIRE(found->sinks.size() == 1);
-                REQUIRE(found->sinks[0].id == sink1.id);
+                REQUIRE(found->rx_sinks.size() == 1);
+                REQUIRE(found->rx_sinks.size() == 1);
+                REQUIRE(found->rx_sinks[0].id == sink1.id);
 
                 auto not_found =
                     table.find_interface_and_sinks(port1 + 1, mac1);
@@ -106,13 +110,17 @@ TEST_CASE("forwarding table functionality", "[forwarding table]")
                     REQUIRE(table.has_interface_sinks(port1));
 
                     to_delete = table.remove_interface_sink(
-                        port1, mac1, std::addressof(ifp1), sink1);
+                        port1,
+                        mac1,
+                        std::addressof(ifp1),
+                        forwarding_table::direction::RX,
+                        sink1);
                     REQUIRE(to_delete);
                     delete to_delete;
 
                     found = table.find_interface_and_sinks(port1, mac1);
                     REQUIRE(found);
-                    REQUIRE(found->sinks.empty());
+                    REQUIRE(found->rx_sinks.empty());
 
                     REQUIRE(!table.has_interface_sinks(port1));
                 }
@@ -226,7 +234,11 @@ TEST_CASE("forwarding table functionality", "[forwarding table]")
                     auto uuid = openperf::core::uuid::random();
                     sink.id = openperf::core::to_string(uuid);
                     auto to_delete = table.insert_interface_sink(
-                        key.first, key.second, std::addressof(value), sink);
+                        key.first,
+                        key.second,
+                        std::addressof(value),
+                        forwarding_table::direction::RX,
+                        sink);
                     delete to_delete;
                 }
             }
@@ -242,9 +254,9 @@ TEST_CASE("forwarding table functionality", "[forwarding table]")
                     auto found =
                         table.find_interface_and_sinks(key.first, key.second);
                     REQUIRE(found != nullptr);
-                    REQUIRE(sinks.size() == found->sinks.size());
+                    REQUIRE(sinks.size() == found->rx_sinks.size());
                     for (size_t i = 0; i < sinks.size(); ++i) {
-                        REQUIRE(sinks[i].id == found->sinks[i].id);
+                        REQUIRE(sinks[i].id == found->rx_sinks[i].id);
                     }
                 }
             }
@@ -254,7 +266,9 @@ TEST_CASE("forwarding table functionality", "[forwarding table]")
                 for (unsigned port_id = 0; port_id < many_ports; ++port_id) {
                     std::map<test_interface*, unsigned> interface_sink_counts;
                     table.visit_interface_sinks(
-                        0, [&](auto ifp, const auto& sink) {
+                        0,
+                        forwarding_table::direction::RX,
+                        [&](auto ifp, const auto& sink) {
                             ++interface_sink_counts[ifp];
                             return true;
                         });
@@ -274,7 +288,9 @@ TEST_CASE("forwarding table functionality", "[forwarding table]")
                 for (unsigned port_id = 0; port_id < many_ports; ++port_id) {
                     unsigned visited = 0;
                     table.visit_interface_sinks(
-                        0, [&](test_interface*, const test_sink&) {
+                        0,
+                        forwarding_table::direction::RX,
+                        [&](test_interface*, const test_sink&) {
                             ++visited;
                             return (visited != 3);
                         });
@@ -289,7 +305,11 @@ TEST_CASE("forwarding table functionality", "[forwarding table]")
                     auto& sinks = interface_sinks[value.id];
                     for (const auto& sink : sinks) {
                         auto to_delete = table.remove_interface_sink(
-                            key.first, key.second, std::addressof(value), sink);
+                            key.first,
+                            key.second,
+                            std::addressof(value),
+                            forwarding_table::direction::RX,
+                            sink);
                         REQUIRE(to_delete);
                         delete to_delete;
                     }

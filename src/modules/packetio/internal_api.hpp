@@ -12,7 +12,13 @@
 #include "packetio/generic_source.hpp"
 #include "packetio/generic_workers.hpp"
 
+namespace openperf::message {
+struct serialized_message;
+}
+
 namespace openperf::packetio::internal::api {
+
+using serialized_msg = openperf::message::serialized_message;
 
 constexpr size_t name_length_max = 64;
 
@@ -21,6 +27,7 @@ extern std::string_view endpoint;
 struct sink_data
 {
     char src_id[name_length_max];
+    packet::traffic_direction direction;
     packet::generic_sink sink;
 };
 
@@ -83,6 +90,12 @@ struct request_task_del
     std::string task_id;
 };
 
+struct request_worker_ids
+{
+    std::optional<std::string> object_id = std::nullopt;
+    packet::traffic_direction direction;
+};
+
 struct request_worker_rx_ids
 {
     std::optional<std::string> object_id = std::nullopt;
@@ -118,26 +131,18 @@ using request_msg = std::variant<request_sink_add,
                                  request_source_swap,
                                  request_task_add,
                                  request_task_del,
+                                 request_worker_ids,
                                  request_worker_rx_ids,
                                  request_worker_tx_ids>;
 
 using reply_msg =
     std::variant<reply_task_add, reply_worker_ids, reply_ok, reply_error>;
 
-struct serialized_msg
-{
-    zmq_msg_t type;
-    zmq_msg_t data;
-};
+serialized_msg serialize_request(request_msg&& request);
+serialized_msg serialize_reply(reply_msg&& reply);
 
-serialized_msg serialize_request(const request_msg& request);
-serialized_msg serialize_reply(const reply_msg& reply);
-
-tl::expected<request_msg, int> deserialize_request(const serialized_msg& msg);
-tl::expected<reply_msg, int> deserialize_reply(const serialized_msg& msg);
-
-int send_message(void* socket, serialized_msg&& msg);
-tl::expected<serialized_msg, int> recv_message(void* socket, int flags = 0);
+tl::expected<request_msg, int> deserialize_request(serialized_msg&& msg);
+tl::expected<reply_msg, int> deserialize_reply(serialized_msg&& msg);
 
 } // namespace openperf::packetio::internal::api
 

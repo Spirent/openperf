@@ -403,6 +403,14 @@ definitions:
         description: |
           Specifies the unique source of packets for this capture. This
           id may refer to either a port or an interface.
+      direction:
+        type: string
+        description: Packet capture direction
+        enum:
+          - rx
+          - tx
+          - rx_and_tx
+        default: rx
       active:
         type: boolean
         description: |
@@ -412,6 +420,7 @@ definitions:
     required:
       - id
       - source_id
+      - direction
       - active
       - config
 

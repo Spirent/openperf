@@ -21,6 +21,7 @@ PacketCapture::PacketCapture()
 {
     m_Id = "";
     m_Source_id = "";
+    m_Direction = "";
     m_Active = false;
     
 }
@@ -40,6 +41,7 @@ nlohmann::json PacketCapture::toJson() const
 
     val["id"] = ModelBase::toJson(m_Id);
     val["source_id"] = ModelBase::toJson(m_Source_id);
+    val["direction"] = ModelBase::toJson(m_Direction);
     val["active"] = m_Active;
     val["config"] = ModelBase::toJson(m_Config);
     
@@ -51,6 +53,7 @@ void PacketCapture::fromJson(nlohmann::json& val)
 {
     setId(val.at("id"));
     setSourceId(val.at("source_id"));
+    setDirection(val.at("direction"));
     setActive(val.at("active"));
     
 }
@@ -72,6 +75,15 @@ std::string PacketCapture::getSourceId() const
 void PacketCapture::setSourceId(std::string value)
 {
     m_Source_id = value;
+    
+}
+std::string PacketCapture::getDirection() const
+{
+    return m_Direction;
+}
+void PacketCapture::setDirection(std::string value)
+{
+    m_Direction = value;
     
 }
 bool PacketCapture::isActive() const

@@ -22,10 +22,13 @@ template <typename Interface, typename Sink, int MaxPorts>
 class forwarding_table
 {
 public:
+    enum class direction { RX, TX };
+
     struct interface_sinks
     {
         Interface* ifp;
-        std::vector<Sink> sinks;
+        std::vector<Sink> rx_sinks;
+        std::vector<Sink> tx_sinks;
     };
 
     using interface_map =
@@ -50,11 +53,13 @@ public:
     insert_interface_sink(uint16_t port_idx,
                           const libpacket::type::mac_address& mac,
                           Interface* ifp,
+                          direction dir,
                           Sink sink);
     interface_map*
     remove_interface_sink(uint16_t port_idx,
                           const libpacket::type::mac_address& mac,
                           Interface* ifp,
+                          direction dir,
                           Sink sink);
 
     Interface* find_interface(uint16_t port_idx, std::string_view id) const;
@@ -72,7 +77,8 @@ public:
     bool has_interface_sinks(uint16_t port_idx) const;
     const std::vector<Sink>*
     find_interface_sinks(uint16_t port_idx,
-                         const libpacket::type::mac_address& mac) const;
+                         const libpacket::type::mac_address& mac,
+                         direction dir) const;
     const interface_sinks*
     find_interface_and_sinks(uint16_t port_idx,
                              const libpacket::type::mac_address& mac) const;
@@ -86,6 +92,7 @@ public:
      */
     void visit_interface_sinks(
         uint16_t port_idx,
+        direction direction,
         std::function<bool(Interface* ifp, const Sink& sink)>&& visitor) const;
 
 private:
