@@ -133,26 +133,31 @@ TEST_CASE("forwarding table functionality", "[forwarding table]")
         auto sink1 = test_sink{"sink_1"};
         auto port1 = static_cast<uint16_t>(3);
 
-        auto to_delete = table.insert_sink(port1, sink1);
+        auto to_delete =
+            table.insert_sink(port1, forwarding_table::direction::RX, sink1);
         REQUIRE(to_delete);
         delete to_delete;
 
         SECTION("find sink, ")
         {
-            auto sink_vec = table.get_sinks(port1);
+            auto sink_vec =
+                table.get_sinks(port1, forwarding_table::direction::RX);
             REQUIRE(sink_vec.size() == 1);
             REQUIRE(sink_vec[0].id == sink1.id);
 
-            auto sink_vec2 = table.get_sinks(port1 + 1);
+            auto sink_vec2 =
+                table.get_sinks(port1 + 1, forwarding_table::direction::RX);
             REQUIRE(sink_vec2.empty());
 
             SECTION("remove sink, ")
             {
-                to_delete = table.remove_sink(port1, sink1);
+                to_delete = table.remove_sink(
+                    port1, forwarding_table::direction::RX, sink1);
                 REQUIRE(to_delete);
                 delete to_delete;
 
-                auto sink_vec3 = table.get_sinks(port1);
+                auto sink_vec3 =
+                    table.get_sinks(port1, forwarding_table::direction::RX);
                 REQUIRE(sink_vec3.empty());
             }
         }
@@ -341,20 +346,23 @@ TEST_CASE("forwarding table functionality", "[forwarding table]")
         });
 
         for (const auto& sink : port0_sinks) {
-            auto to_delete = table.insert_sink(port0, sink);
+            auto to_delete =
+                table.insert_sink(port0, forwarding_table::direction::RX, sink);
             REQUIRE(to_delete);
             delete to_delete;
         }
 
         for (const auto& sink : port1_sinks) {
-            auto to_delete = table.insert_sink(port1, sink);
+            auto to_delete =
+                table.insert_sink(port1, forwarding_table::direction::RX, sink);
             REQUIRE(to_delete);
             delete to_delete;
         }
 
         SECTION("find many sinks, ")
         {
-            auto table_port0_sinks = table.get_sinks(port0);
+            auto table_port0_sinks =
+                table.get_sinks(port0, forwarding_table::direction::RX);
             REQUIRE(table_port0_sinks.size() == many_sinks);
             std::vector<test_sink> difference;
             std::set_difference(std::begin(port0_sinks),
@@ -367,7 +375,8 @@ TEST_CASE("forwarding table functionality", "[forwarding table]")
                                 });
             REQUIRE(difference.empty());
 
-            auto table_port1_sinks = table.get_sinks(port1);
+            auto table_port1_sinks =
+                table.get_sinks(port1, forwarding_table::direction::RX);
             REQUIRE(table_port1_sinks.size() == many_sinks);
 
             std::set_difference(std::begin(port1_sinks),
@@ -382,24 +391,32 @@ TEST_CASE("forwarding table functionality", "[forwarding table]")
 
             SECTION("remove many sinks, ")
             {
-                REQUIRE(table.get_sinks(port0).size() == many_sinks);
-                REQUIRE(table.get_sinks(port1).size() == many_sinks);
+                REQUIRE(table.get_sinks(port0, forwarding_table::direction::RX)
+                            .size()
+                        == many_sinks);
+                REQUIRE(table.get_sinks(port1, forwarding_table::direction::RX)
+                            .size()
+                        == many_sinks);
 
                 for (const auto& sink : port0_sinks) {
-                    auto to_delete = table.remove_sink(port0, sink);
+                    auto to_delete = table.remove_sink(
+                        port0, forwarding_table::direction::RX, sink);
                     REQUIRE(to_delete);
                     delete to_delete;
                 }
 
-                REQUIRE(table.get_sinks(port0).empty());
+                REQUIRE(table.get_sinks(port0, forwarding_table::direction::RX)
+                            .empty());
 
                 for (const auto& sink : port1_sinks) {
-                    auto to_delete = table.remove_sink(port1, sink);
+                    auto to_delete = table.remove_sink(
+                        port1, forwarding_table::direction::RX, sink);
                     REQUIRE(to_delete);
                     delete to_delete;
                 }
 
-                REQUIRE(table.get_sinks(port1).empty());
+                REQUIRE(table.get_sinks(port1, forwarding_table::direction::RX)
+                            .empty());
             }
         }
     }

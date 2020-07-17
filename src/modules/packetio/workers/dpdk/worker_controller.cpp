@@ -210,16 +210,23 @@ static void maybe_update_rxq_lro_mode(const model::port_info& info)
     }
 }
 
-static void handle_tx_sink(net_interface& interface,
-                           struct rte_mbuf** pkts,
-                           uint16_t pkts_len,
-                           void* cbdata)
+static void interface_tx_sink_dispatch(net_interface& interface,
+                                       struct rte_mbuf** pkts,
+                                       uint16_t pkts_len,
+                                       void* cbdata)
 {
     auto fib = reinterpret_cast<worker::fib*>(cbdata);
-    auto sinks = fib->find_interface_sinks(interface.port_index(),
-                                           interface.data()->hwaddr,
-                                           worker::fib::direction::TX);
-    if (sinks) {
+    auto port_index = interface.port_index();
+
+    // Dispatch to port level Tx sinks
+    auto& port_sinks = fib->get_sinks(port_index, worker::fib::direction::TX);
+    for (auto& sink : port_sinks) {
+        sink.push(reinterpret_cast<packet::packet_buffer**>(pkts), pkts_len);
+    }
+
+    // Dispatch to interface level Tx sinks
+    if (auto sinks = fib->find_interface_sinks(
+            port_index, interface.data()->hwaddr, worker::fib::direction::TX)) {
         for (auto& sink : *sinks) {
             sink.push(reinterpret_cast<packet::packet_buffer**>(pkts),
                       pkts_len);
@@ -512,8 +519,9 @@ void worker_controller::add_interface(
     auto to_delete = m_fib->insert_interface(*port_idx, mac, ifp);
     m_recycler->writer_add_gc_callback([to_delete]() { delete to_delete; });
 
-    const_cast<net_interface&>(dpdk::to_interface(ifp))
-        .set_tx_sink_callback(handle_tx_sink);
+    auto& net_ifc = const_cast<net_interface&>(dpdk::to_interface(ifp));
+    net_ifc.set_tx_sink_callback(interface_tx_sink_dispatch);
+    net_ifc.set_tx_sink_data(m_fib.get());
 
     OP_LOG(OP_LOG_DEBUG,
            "Added interface with mac = %s to port %.*s (idx = %u)\n",
@@ -561,7 +569,9 @@ worker_controller::add_sink(std::string_view src_id,
     if (auto port_idx = m_driver.port_index(src_id)) {
         if (direction == packet::traffic_direction::RX
             || direction == packet::traffic_direction::RXTX) {
-            if (contains_match(m_fib->get_sinks(*port_idx), sink)) {
+            if (contains_match(
+                    m_fib->get_sinks(*port_idx, worker::fib::direction::RX),
+                    sink)) {
                 return (tl::make_unexpected(EALREADY));
             }
 
@@ -572,7 +582,8 @@ worker_controller::add_sink(std::string_view src_id,
                    src_id.data(),
                    *port_idx);
 
-            auto to_delete = m_fib->insert_sink(*port_idx, sink);
+            auto to_delete =
+                m_fib->insert_sink(*port_idx, worker::fib::direction::RX, sink);
             m_recycler->writer_add_gc_callback(
                 [to_delete]() { delete to_delete; });
 
@@ -580,19 +591,27 @@ worker_controller::add_sink(std::string_view src_id,
         }
         if (direction == packet::traffic_direction::TX
             || direction == packet::traffic_direction::RXTX) {
-            // TODO:
-            OP_LOG(
-                OP_LOG_ERROR,
-                "Adding tx sink %s to port %.*s (idx = %u).  Not supported.\n",
-                sink.id().c_str(),
-                static_cast<int>(src_id.length()),
-                src_id.data(),
-                *port_idx);
-            if (direction == packet::traffic_direction::RXTX) {
-                // Remove the Rx sink if error adding Tx sink
-                del_sink(src_id, packet::traffic_direction::RX, sink);
+            if (contains_match(
+                    m_fib->get_sinks(*port_idx, worker::fib::direction::TX),
+                    sink)) {
+                if (direction == packet::traffic_direction::RXTX) {
+                    // Remove the Rx sink if error adding Tx sink
+                    del_sink(src_id, packet::traffic_direction::RX, sink);
+                }
+                return (tl::make_unexpected(EALREADY));
             }
-            return (tl::make_unexpected(EINVAL));
+
+            OP_LOG(OP_LOG_ERROR,
+                   "Adding tx sink %s to port %.*s (idx = %u)\n",
+                   sink.id().c_str(),
+                   static_cast<int>(src_id.length()),
+                   src_id.data(),
+                   *port_idx);
+
+            auto to_delete =
+                m_fib->insert_sink(*port_idx, worker::fib::direction::TX, sink);
+            m_recycler->writer_add_gc_callback(
+                [to_delete]() { delete to_delete; });
         }
 
         return {};
@@ -662,8 +681,6 @@ worker_controller::add_sink(std::string_view src_id,
                                              sink);
             m_recycler->writer_add_gc_callback(
                 [to_delete]() { delete to_delete; });
-
-            const_cast<net_interface&>(interface).set_tx_sink_data(m_fib.get());
         }
         return {};
     }
@@ -685,7 +702,8 @@ void worker_controller::del_sink(std::string_view src_id,
                    src_id.data(),
                    *port_idx);
 
-            auto to_delete = m_fib->remove_sink(*port_idx, std::move(sink));
+            auto to_delete =
+                m_fib->remove_sink(*port_idx, worker::fib::direction::RX, sink);
             m_recycler->writer_add_gc_callback(
                 [to_delete]() { delete to_delete; });
 
@@ -693,7 +711,17 @@ void worker_controller::del_sink(std::string_view src_id,
         }
         if (direction == packet::traffic_direction::TX
             || direction == packet::traffic_direction::RXTX) {
-            // TODO:
+            OP_LOG(OP_LOG_DEBUG,
+                   "Deleting tx sink %s from port %.*s (idx = %u)\n",
+                   sink.id().c_str(),
+                   static_cast<int>(src_id.length()),
+                   src_id.data(),
+                   *port_idx);
+
+            auto to_delete =
+                m_fib->remove_sink(*port_idx, worker::fib::direction::TX, sink);
+            m_recycler->writer_add_gc_callback(
+                [to_delete]() { delete to_delete; });
         }
         return;
     }
@@ -1031,9 +1059,10 @@ void worker_controller::del_task(std::string_view task_id)
 template <typename Function>
 bool port_sink_find_if(const worker::fib& fib,
                        size_t port_idx,
+                       worker::fib::direction dir,
                        const Function& filter)
 {
-    const auto& sinks = fib.get_sinks(port_idx);
+    const auto& sinks = fib.get_sinks(port_idx, dir);
     return (std::any_of(std::begin(sinks), std::end(sinks), filter));
 }
 
@@ -1058,7 +1087,7 @@ bool sink_find_if(const worker::fib& fib,
                   worker::fib::direction dir,
                   Function&& filter)
 {
-    return (port_sink_find_if(fib, port_idx, filter)
+    return (port_sink_find_if(fib, port_idx, dir, filter)
             || interface_sink_find_if(fib, port_idx, dir, filter));
 }
 

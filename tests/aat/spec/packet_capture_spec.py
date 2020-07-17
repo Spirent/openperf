@@ -138,6 +138,21 @@ def pcap_icmp_echo_request_seq(pcap_file):
                 seq.append(icmp.seq)
     return seq
 
+def pcap_packet_timestamps(pcap_file):
+    timestamps = []
+    for packet in scapy.all.rdpcap(pcap_file):
+        timestamps.append(packet.time)
+    return timestamps
+
+def validate_pcap_timestamps(pacp_file):
+    timestamps = pcap_packet_timestamps(pacp_file)
+    prev_ts = None
+    for ts in timestamps:
+        expect(ts).to(be_above(0))
+        if (prev_ts):
+            expect(ts).to(be_above_or_equal(prev_ts))
+        prev_ts = ts
+
 
 with description('Packet Capture,', 'packet_capture') as self:
     with description('REST API,'):
@@ -636,7 +651,40 @@ with description('Packet Capture,', 'packet_capture') as self:
                     expect(lengths[-1]).to(equal(packet_len))
                     os.remove(out_file)
 
-            with description('rx_and_tx capture,'):
+            with description('interface tx capture,'):
+                with it('succeeds'):
+                    cap = capture_model(self.api.api_client, 'dataplane-server', 1*1024*1024)
+                    cap.direction = 'tx'
+                    cap = self.api.create_packet_capture(cap)
+                    expect(cap).to(be_valid_packet_capture)
+                    self.capture = cap
+
+                    self.result = self.api.start_packet_capture(self.capture.id)
+                    expect(self.result).to(be_valid_packet_capture_result)
+                    expect(self.result.state == 'started')
+                    do_ping(self.intf_api, self.temp_ping,
+                            'dataplane-client', 'dataplane-server',
+                            socket.AF_INET, 2)
+                    self.api.stop_packet_capture(self.capture.id)
+                    result = self.api.get_packet_capture_result(id=self.result.id)
+                    expect(result.state == 'stopped')
+                    expect(result.id).to(equal(self.result.id))
+                    expect(result.packets).to(be_above_or_equal(2))
+
+                    out_file = os.path.join(self.temp_dir, 'test.pcapng')
+
+                    # Retrieve PCAP using python API
+                    get_capture_pcap(self.api, self.result.id, out_file)
+                    expect(pcap_icmp_echo_request_count(out_file)).to(equal(0))
+                    expect(pcap_icmp_echo_reply_count(out_file)).to(equal(2))
+                    expect(os.path.exists(out_file)).to(equal(True))
+
+                    validate_pcap_timestamps(out_file)
+
+                    os.remove(out_file)
+
+
+            with description('interface rx_and_tx capture,'):
                 with it('succeeds'):
                     cap = capture_model(self.api.api_client, 'dataplane-server', 1*1024*1024)
                     cap.direction = 'rx_and_tx'
@@ -663,6 +711,41 @@ with description('Packet Capture,', 'packet_capture') as self:
                     expect(pcap_icmp_echo_request_count(out_file)).to(equal(2))
                     expect(pcap_icmp_echo_reply_count(out_file)).to(equal(2))
                     expect(os.path.exists(out_file)).to(equal(True))
+
+                    validate_pcap_timestamps(out_file)
+
+                    os.remove(out_file)
+
+            with description('port rx_and_tx capture,'):
+                with it('succeeds'):
+                    # dataplane-server is on port0
+                    cap = capture_model(self.api.api_client, 'port0', 1*1024*1024)
+                    cap.direction = 'rx_and_tx'
+                    cap = self.api.create_packet_capture(cap)
+                    expect(cap).to(be_valid_packet_capture)
+                    self.capture = cap
+
+                    self.result = self.api.start_packet_capture(self.capture.id)
+                    expect(self.result).to(be_valid_packet_capture_result)
+                    expect(self.result.state == 'started')
+                    do_ping(self.intf_api, self.temp_ping,
+                            'dataplane-client', 'dataplane-server',
+                            socket.AF_INET, 2)
+                    self.api.stop_packet_capture(self.capture.id)
+                    result = self.api.get_packet_capture_result(id=self.result.id)
+                    expect(result.state == 'stopped')
+                    expect(result.id).to(equal(self.result.id))
+                    expect(result.packets).to(be_above_or_equal(4))
+
+                    out_file = os.path.join(self.temp_dir, 'test.pcapng')
+
+                    # Retrieve PCAP using python API
+                    get_capture_pcap(self.api, self.result.id, out_file)
+                    expect(pcap_icmp_echo_request_count(out_file)).to(equal(2))
+                    expect(pcap_icmp_echo_reply_count(out_file)).to(equal(2))
+                    expect(os.path.exists(out_file)).to(equal(True))
+
+                    validate_pcap_timestamps(out_file)
 
                     os.remove(out_file)
 
@@ -705,6 +788,8 @@ with description('Packet Capture,', 'packet_capture') as self:
                     expect(pcap_icmp_echo_request_count(out_file)).to(equal(2))
                     expect(pcap_icmp_echo_reply_count(out_file)).to(equal(2))
                     expect(os.path.exists(out_file)).to(equal(True))
+
+                    validate_pcap_timestamps(out_file)
 
                     os.remove(out_file)
 

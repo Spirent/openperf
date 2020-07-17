@@ -46,8 +46,8 @@ public:
     interface_map* remove_interface(uint16_t port_idx,
                                     const libpacket::type::mac_address& mac);
 
-    sink_vector* insert_sink(uint16_t port_idx, Sink sink);
-    sink_vector* remove_sink(uint16_t port_idx, Sink sink);
+    sink_vector* insert_sink(uint16_t port_idx, direction dir, Sink sink);
+    sink_vector* remove_sink(uint16_t port_idx, direction dir, Sink sink);
 
     interface_map*
     insert_interface_sink(uint16_t port_idx,
@@ -72,7 +72,7 @@ public:
 
     interface_map& get_interfaces(uint16_t port_idx) const;
 
-    sink_vector& get_sinks(uint16_t port_idx) const;
+    sink_vector& get_sinks(uint16_t port_idx, direction dir) const;
 
     bool has_interface_sinks(uint16_t port_idx) const;
     const std::vector<Sink>*
@@ -97,7 +97,8 @@ public:
 
 private:
     std::array<std::atomic<interface_map*>, MaxPorts> m_interfaces;
-    std::array<std::atomic<sink_vector*>, MaxPorts> m_port_sinks;
+    std::array<std::atomic<sink_vector*>, MaxPorts> m_port_rx_sinks;
+    std::array<std::atomic<sink_vector*>, MaxPorts> m_port_tx_sinks;
     std::array<std::atomic<int>, MaxPorts> m_port_interface_sink_count;
 };
 
