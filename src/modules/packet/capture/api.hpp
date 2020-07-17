@@ -200,13 +200,13 @@ struct request_delete_capture_result
  */
 struct request_create_capture_transfer
 {
-    std::string id;
+    std::vector<id_ptr> ids;
     transfer_context* transfer;
 };
 
 struct request_delete_capture_transfer
 {
-    std::string id;
+    transfer_context* transfer;
 };
 
 struct reply_captures

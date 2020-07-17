@@ -23,8 +23,7 @@ namespace openperf::packet::capture {
 
 enum class capture_state { STOPPED, ARMED, STARTED };
 
-std::string
-to_string(const packetio::packet::traffic_direction& direction);
+std::string to_string(const packetio::packet::traffic_direction& direction);
 
 tl::expected<packetio::packet::traffic_direction, int>
 capture_direction_from_string(const std::string_view str);
@@ -60,7 +59,6 @@ struct sink_result
     sink_result(const sink& p);
 
     capture_buffer_stats get_stats() const;
-    bool has_active_transfer() const;
 
     const sink& parent;
     std::atomic<capture_state> state = capture_state::STOPPED;
@@ -68,7 +66,6 @@ struct sink_result
     timesync::chrono::realtime::time_point stop_time;
 
     std::vector<std::unique_ptr<capture_buffer>> buffers;
-    std::vector<std::unique_ptr<transfer_context>> transfers;
 
     std::function<void(sink_result&)> state_changed_callback;
     uint32_t timeout_id;

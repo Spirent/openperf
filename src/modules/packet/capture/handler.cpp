@@ -13,6 +13,7 @@
 #include "swagger/v1/model/BulkStartPacketCapturesRequest.h"
 #include "swagger/v1/model/BulkStartPacketCapturesResponse.h"
 #include "swagger/v1/model/BulkStopPacketCapturesRequest.h"
+#include "swagger/v1/model/GetPacketCapturesPcapConfig.h"
 #include "swagger/v1/model/PacketCapture.h"
 #include "swagger/v1/model/PacketCaptureResult.h"
 
@@ -60,6 +61,10 @@ public:
                                  response_type response);
     void get_capture_result_live(const request_type& request,
                                  response_type response);
+
+    /* Merged pcap retrieval */
+    void merge_captures_pcap(const request_type& request,
+                             response_type response);
 
 private:
     std::unique_ptr<void, op_socket_deleter> m_socket;
@@ -118,6 +123,10 @@ handler::handler(void* context, Pistache::Rest::Router& router)
     Get(router,
         "/packet/capture-results/:id/live",
         bind(&handler::get_capture_result_live, this));
+
+    Post(router,
+         "/packet/captures/x/merge",
+         bind(&handler::merge_captures_pcap, this));
 }
 
 using namespace Pistache;
@@ -746,15 +755,22 @@ void handler::get_capture_result_pcap(const request_type& request,
     auto transfer_ptr =
         pcap::create_pcap_transfer_context(response, packet_start, packet_end);
 
-    auto api_reply =
-        submit_request(m_socket.get(),
-                       request_create_capture_transfer{id, transfer_ptr.get()});
+    std::vector<id_ptr> ids;
+    ids.emplace_back(std::make_unique<std::string>(id));
+
+    auto api_reply = submit_request(
+        m_socket.get(),
+        request_create_capture_transfer{std::move(ids), transfer_ptr.get()});
 
     if (auto reply = std::get_if<reply_ok>(&api_reply)) {
         // Request was successful so no longer own the transfer object
         auto transfer = transfer_ptr.release();
         auto result = pcap::send_pcap_response_header(response, *transfer);
-        if (result.isRejected()) return;
+        if (result.isRejected()) {
+            submit_request(m_socket.get(),
+                           request_delete_capture_transfer{transfer});
+            return;
+        }
         assert(result.isFulfilled());
 
         pcap::serve_capture_pcap(*transfer);
@@ -774,15 +790,22 @@ void handler::get_capture_result_live(const request_type& request,
 
     auto transfer_ptr = pcap::create_pcap_transfer_context(response);
 
-    auto api_reply =
-        submit_request(m_socket.get(),
-                       request_create_capture_transfer{id, transfer_ptr.get()});
+    std::vector<id_ptr> ids;
+    ids.emplace_back(std::make_unique<std::string>(id));
+
+    auto api_reply = submit_request(
+        m_socket.get(),
+        request_create_capture_transfer{std::move(ids), transfer_ptr.get()});
 
     if (auto reply = std::get_if<reply_ok>(&api_reply)) {
         // Request was successful so no longer own the transfer object
         auto transfer = transfer_ptr.release();
         auto result = pcap::send_pcap_response_header(response, *transfer);
-        if (result.isRejected()) return;
+        if (result.isRejected()) {
+            submit_request(m_socket.get(),
+                           request_delete_capture_transfer{transfer});
+            return;
+        }
         assert(result.isFulfilled());
 
         pcap::serve_capture_pcap(*transfer);
@@ -791,4 +814,74 @@ void handler::get_capture_result_live(const request_type& request,
     }
 }
 
+void handler::merge_captures_pcap(const request_type& request,
+                                  response_type response)
+{
+    auto swagger_request =
+        parse_request<swagger::v1::model::GetPacketCapturesPcapConfig>(request);
+    if (!swagger_request) {
+        response.send(Http::Code::Bad_Request, swagger_request.error());
+    }
+
+    const auto& ids = swagger_request->getIds();
+
+    /* Verify that all user provided id's are valid */
+    std::vector<std::string> id_errors;
+    std::for_each(std::begin(ids), std::end(ids), [&](const auto& id) {
+        if (!id.empty()) {
+            if (auto res = config::op_config_validate_id_string(id); !res) {
+                id_errors.emplace_back(res.error());
+            }
+        }
+    });
+    if (!id_errors.empty()) {
+        response.send(Http::Code::Not_Found, concatenate(id_errors));
+        return;
+    }
+
+    uint64_t packet_start = 0, packet_end = UINT64_MAX;
+
+    if (swagger_request->packetStartIsSet()) {
+        packet_start = swagger_request->getPacketStart();
+    }
+    if (swagger_request->packetEndIsSet()) {
+        packet_end = swagger_request->getPacketEnd();
+    }
+    if (packet_start > packet_end) {
+        auto err_msg = "packet start > end (" + std::to_string(packet_start)
+                       + " > " + std::to_string(packet_end) + ")";
+        response.send(Http::Code::Bad_Request, err_msg);
+        return;
+    }
+
+    auto transfer_ptr =
+        pcap::create_pcap_transfer_context(response, packet_start, packet_end);
+
+    request_create_capture_transfer api_request{};
+    api_request.transfer = transfer_ptr.get();
+
+    std::transform(
+        std::begin(ids),
+        std::end(ids),
+        std::back_inserter(api_request.ids),
+        [](const auto& id) { return (std::make_unique<std::string>(id)); });
+
+    auto api_reply = submit_request(m_socket.get(), std::move(api_request));
+
+    if (auto reply = std::get_if<reply_ok>(&api_reply)) {
+        // Request was successful so no longer own the transfer object
+        auto transfer = transfer_ptr.release();
+        auto result = pcap::send_pcap_response_header(response, *transfer);
+        if (result.isRejected()) {
+            submit_request(m_socket.get(),
+                           request_delete_capture_transfer{transfer});
+            return;
+        }
+        assert(result.isFulfilled());
+
+        pcap::serve_capture_pcap(*transfer);
+    } else {
+        handle_reply_error(api_reply, std::move(response));
+    }
+}
 } // namespace openperf::packet::capture::api

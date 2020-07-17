@@ -17,4 +17,5 @@ from common.helper.traffic import (make_generator_config,
 # capture.py
 from common.helper.capture import (make_capture_config,
                                    get_capture_pcap,
+                                   get_merged_capture_pcap,
                                    get_pcap_packet_count)
