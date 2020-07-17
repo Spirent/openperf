@@ -54,7 +54,6 @@ static config_t from_swagger(const swagger::MemoryGeneratorConfig& m)
         .buffer_size = static_cast<size_t>(m.getBufferSize()),
         .read_threads = static_cast<size_t>(m.getReadThreads()),
         .write_threads = static_cast<size_t>(m.getWriteThreads()),
-        .pre_allocate_buffer = m.isPreAllocateBuffer(),
         .read =
             {
                 .block_size = static_cast<size_t>(m.getReadSize()),
@@ -72,7 +71,6 @@ static swagger::MemoryGeneratorConfig to_swagger(const config_t& config)
 {
     swagger::MemoryGeneratorConfig model;
     model.setBufferSize(config.buffer_size);
-    model.setPreAllocateBuffer(config.pre_allocate_buffer);
     model.setReadThreads(config.read_threads);
     model.setWriteThreads(config.write_threads);
 

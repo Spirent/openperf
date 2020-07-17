@@ -97,9 +97,6 @@ api_reply server::handle_request(const request::generator::create& req)
 {
     try {
         auto id = m_generator_stack->create(req.data->id, req.data->config);
-        if (req.data->is_running && !req.data->config.pre_allocate_buffer) {
-            m_generator_stack->start(id);
-        }
 
         const auto& gnr = m_generator_stack->generator(id);
         reply::generator::item::item_data data{.id = id,
@@ -136,8 +133,7 @@ api_reply server::handle_request(const request::generator::bulk::create& req)
             const auto& gnr = m_generator_stack->generator(id);
             reply::generator::item::item_data item_data{
                 .id = id,
-                .is_running =
-                    data.is_running && !data.config.pre_allocate_buffer,
+                .is_running = false,
                 .config = gnr.config(),
                 .init_percent_complete = gnr.init_percent_complete()};
             list.data->push_back(item_data);
@@ -148,11 +144,6 @@ api_reply server::handle_request(const request::generator::bulk::create& req)
             remove_created_items();
             return reply::error{.type = reply::error::INVALID_ID};
         }
-    }
-
-    for (const auto& data : *list.data) {
-        if (data.is_running && !data.config.pre_allocate_buffer)
-            m_generator_stack->start(data.id);
     }
 
     return list;

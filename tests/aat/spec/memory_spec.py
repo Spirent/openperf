@@ -16,10 +16,9 @@ CONFIG = Config(os.path.join(os.path.dirname(__file__),
                 os.environ.get('MAMBA_CONFIG', 'config.yaml')))
 
 
-def generator_model(api_client, running = False, id = '', pre_allocate_buffer = False):
+def generator_model(api_client, id = ''):
     config = client.models.MemoryGeneratorConfig()
     config.buffer_size = 1024
-    config.pre_allocate_buffer = pre_allocate_buffer
     config.reads_per_sec = 128
     config.read_size = 8
     config.read_threads = 1
@@ -29,10 +28,10 @@ def generator_model(api_client, running = False, id = '', pre_allocate_buffer = 
     config.pattern = 'sequential'
 
     gen = client.models.MemoryGenerator()
-    gen.running = running
+    gen.running = False
     gen.config = config
     gen.id = id
-    gen.init_percent_complete = 0 if pre_allocate_buffer else 100
+    gen.init_percent_complete = 0
     return gen
 
 
@@ -108,6 +107,9 @@ with description('Memory Generator Module', 'memory') as self:
                             self._model.id = self._result[0].id
                         expect(self._result[0]).to(equal(self._model))
 
+                    with it('buffer initialization started'):
+                        expect(self._result[0].init_percent_complete).to(be(0))
+
                 with description('with empty ID'):
                     with before.all:
                         self._model = generator_model(self._api.api_client)
@@ -126,24 +128,11 @@ with description('Memory Generator Module', 'memory') as self:
                             self._model, _return_http_data_only=False)
 
                     with included_context('create generator'):
-                        with it('not buffer initialization required'):
-                            expect(self._result[0].init_percent_complete).to(be(100))
-
-                with description('with pre allocated buffer'):
-                    with before.all:
-                        self._model = generator_model(
-                            self._api.api_client, id='some-specified-id', pre_allocate_buffer = True)
-                        self._result = self._api.create_memory_generator_with_http_info(
-                            self._model, _return_http_data_only=False)
-
-                    with included_context('create generator'):
-                        with it('buffer initialization started'):
-                            expect(self._result[0].init_percent_complete).to(be(0))
+                        pass
 
             with context('GET'):
                 with before.all:
-                    model = generator_model(
-                        self._api.api_client, running = False)
+                    model = generator_model(self._api.api_client)
                     self._g8s = [self._api.create_memory_generator(model) for a in range(3)]
                     self._result = self._api.list_memory_generators_with_http_info(
                         _return_http_data_only=False)
@@ -165,8 +154,7 @@ with description('Memory Generator Module', 'memory') as self:
 
         with description('/memory-generators/{id}'):
             with before.all:
-                model = generator_model(
-                    self._api.api_client, running = False)
+                model = generator_model(self._api.api_client)
                 g7r = self._api.create_memory_generator(model)
                 expect(g7r).to(be_valid_memory_generator)
                 self._g7r = g7r
@@ -219,11 +207,12 @@ with description('Memory Generator Module', 'memory') as self:
 
         with description('/memory-generators/{id}/start'):
             with before.all:
-                model = generator_model(
-                    self._api.api_client, running = False)
+                model = generator_model(self._api.api_client)
                 g7r = self._api.create_memory_generator(model)
                 expect(g7r).to(be_valid_memory_generator)
                 self._g7r = g7r
+                # Wait for initialization process done
+                time.sleep(.1)
 
             with after.all:
                 self._api.delete_memory_generator(self._g7r.id)
@@ -269,9 +258,17 @@ with description('Memory Generator Module', 'memory') as self:
 
         with description('/memory-generators/{id}/stop'):
             with before.all:
-                model = generator_model(
-                    self._api.api_client, running = True)
+                model = generator_model(self._api.api_client)
                 g7r = self._api.create_memory_generator(model)
+                expect(g7r).to(be_valid_memory_generator)
+
+                # Wait for initialization process done
+                time.sleep(.1)
+
+                start_result = self._api.start_memory_generator_with_http_info(g7r.id)
+                expect(start_result[1]).to(equal(201))
+
+                g7r = self._api.get_memory_generator(g7r.id)
                 expect(g7r).to(be_valid_memory_generator)
                 self._g7r = g7r
 
@@ -305,9 +302,11 @@ with description('Memory Generator Module', 'memory') as self:
 
         with description('/memory-generators/x/bulk-start'):
             with before.all:
-                model = generator_model(
-                    self._api.api_client, running = False)
+                model = generator_model(self._api.api_client)
                 self._g8s = [self._api.create_memory_generator(model) for a in range(3)]
+
+                # Wait for initialization process done
+                time.sleep(.1)
 
             with after.all:
                 for g7r in self._g8s:
@@ -385,8 +384,18 @@ with description('Memory Generator Module', 'memory') as self:
         with description('/memory-generators/x/bulk-stop'):
             with before.all:
                 model = generator_model(
-                    self._api.api_client, running = True)
-                self._g8s = [self._api.create_memory_generator(model) for a in range(3)]
+                    self._api.api_client)
+                g8s = [self._api.create_memory_generator(model) for a in range(3)]
+
+                # Wait for initialization process done
+                time.sleep(.1)
+
+                for a in range(3):
+                    result = self._api.start_memory_generator_with_http_info(g8s[a].id)
+                    expect(result[1]).to(equal(201))
+
+                self._g8s = self._api.list_memory_generators()
+                expect(len(self._g8s)).to(equal(3))
 
             with after.all:
                 for g7r in self._g8s:
@@ -519,3 +528,17 @@ with description('Memory Generator Module', 'memory') as self:
                     with it('bad request (400)'):
                         expr = lambda: self._api.delete_memory_generator_result('bad_id')
                         expect(expr).to(raise_api_exception(400))
+        with after.each:
+            try:
+                for gen in self.api.list_memory_generators():
+                    if gen.running:
+                        self.api.stop_memory_generator(gen.id)
+                    self.api.delete_memory_generator(gen.id)
+            except AttributeError:
+                pass
+
+            try:
+                for file in self.api.list_memory_generator_results():
+                    self.api.delete_memory_generator_result(file.id)
+            except AttributeError:
+                pass

@@ -32,7 +32,6 @@ class MemoryGeneratorConfig(object):
     """
     swagger_types = {
         'buffer_size': 'int',
-        'pre_allocate_buffer': 'bool',
         'reads_per_sec': 'int',
         'read_size': 'int',
         'read_threads': 'int',
@@ -44,7 +43,6 @@ class MemoryGeneratorConfig(object):
 
     attribute_map = {
         'buffer_size': 'buffer_size',
-        'pre_allocate_buffer': 'pre_allocate_buffer',
         'reads_per_sec': 'reads_per_sec',
         'read_size': 'read_size',
         'read_threads': 'read_threads',
@@ -54,11 +52,10 @@ class MemoryGeneratorConfig(object):
         'pattern': 'pattern'
     }
 
-    def __init__(self, buffer_size=None, pre_allocate_buffer=None, reads_per_sec=None, read_size=None, read_threads=None, writes_per_sec=None, write_size=None, write_threads=None, pattern=None):  # noqa: E501
+    def __init__(self, buffer_size=None, reads_per_sec=None, read_size=None, read_threads=None, writes_per_sec=None, write_size=None, write_threads=None, pattern=None):  # noqa: E501
         """MemoryGeneratorConfig - a model defined in Swagger"""  # noqa: E501
 
         self._buffer_size = None
-        self._pre_allocate_buffer = None
         self._reads_per_sec = None
         self._read_size = None
         self._read_threads = None
@@ -69,7 +66,6 @@ class MemoryGeneratorConfig(object):
         self.discriminator = None
 
         self.buffer_size = buffer_size
-        self.pre_allocate_buffer = pre_allocate_buffer
         self.reads_per_sec = reads_per_sec
         self.read_size = read_size
         self.read_threads = read_threads
@@ -99,28 +95,6 @@ class MemoryGeneratorConfig(object):
         :type: int
         """
         self._buffer_size = buffer_size
-
-    @property
-    def pre_allocate_buffer(self):
-        """Gets the pre_allocate_buffer of this MemoryGeneratorConfig.  # noqa: E501
-
-        Initialize allocation process for the memory buffer  # noqa: E501
-
-        :return: The pre_allocate_buffer of this MemoryGeneratorConfig.  # noqa: E501
-        :rtype: bool
-        """
-        return self._pre_allocate_buffer
-
-    @pre_allocate_buffer.setter
-    def pre_allocate_buffer(self, pre_allocate_buffer):
-        """Sets the pre_allocate_buffer of this MemoryGeneratorConfig.
-
-        Initialize allocation process for the memory buffer  # noqa: E501
-
-        :param pre_allocate_buffer: The pre_allocate_buffer of this MemoryGeneratorConfig.  # noqa: E501
-        :type: bool
-        """
-        self._pre_allocate_buffer = pre_allocate_buffer
 
     @property
     def reads_per_sec(self):

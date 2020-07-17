@@ -20,7 +20,6 @@ namespace model {
 MemoryGeneratorConfig::MemoryGeneratorConfig()
 {
     m_Buffer_size = 0;
-    m_Pre_allocate_buffer = false;
     m_Reads_per_sec = 0;
     m_Read_size = 0;
     m_Read_threads = 0;
@@ -45,7 +44,6 @@ nlohmann::json MemoryGeneratorConfig::toJson() const
     nlohmann::json val = nlohmann::json::object();
 
     val["buffer_size"] = m_Buffer_size;
-    val["pre_allocate_buffer"] = m_Pre_allocate_buffer;
     val["reads_per_sec"] = m_Reads_per_sec;
     val["read_size"] = m_Read_size;
     val["read_threads"] = m_Read_threads;
@@ -61,7 +59,6 @@ nlohmann::json MemoryGeneratorConfig::toJson() const
 void MemoryGeneratorConfig::fromJson(nlohmann::json& val)
 {
     setBufferSize(val.at("buffer_size"));
-    setPreAllocateBuffer(val.at("pre_allocate_buffer"));
     setReadsPerSec(val.at("reads_per_sec"));
     setReadSize(val.at("read_size"));
     setReadThreads(val.at("read_threads"));
@@ -80,15 +77,6 @@ int32_t MemoryGeneratorConfig::getBufferSize() const
 void MemoryGeneratorConfig::setBufferSize(int32_t value)
 {
     m_Buffer_size = value;
-    
-}
-bool MemoryGeneratorConfig::isPreAllocateBuffer() const
-{
-    return m_Pre_allocate_buffer;
-}
-void MemoryGeneratorConfig::setPreAllocateBuffer(bool value)
-{
-    m_Pre_allocate_buffer = value;
     
 }
 int32_t MemoryGeneratorConfig::getReadsPerSec() const

@@ -169,20 +169,16 @@ void generator::config(const generator::config_t& cfg)
 {
     pause();
     resize_buffer(cfg.buffer_size);
-    if (cfg.pre_allocate_buffer) {
-        m_scrub_aborted.store(true);
-        if (m_scrub_thread.joinable()) m_scrub_thread.join();
-        m_scrub_aborted.store(false);
+    m_scrub_aborted.store(true);
+    if (m_scrub_thread.joinable()) m_scrub_thread.join();
+    m_scrub_aborted.store(false);
 
-        m_init_percent_complete.store(0);
-        m_scrub_thread = std::thread([this]() {
-            scrub_worker();
-            m_init_percent_complete.store(100);
-            m_scrub_aborted.store(false);
-        });
-    } else {
+    m_init_percent_complete.store(0);
+    m_scrub_thread = std::thread([this]() {
+        scrub_worker();
         m_init_percent_complete.store(100);
-    }
+        m_scrub_aborted.store(false);
+    });
 
     reallocate_workers<task_memory_read>(m_read_workers, cfg.read_threads);
 

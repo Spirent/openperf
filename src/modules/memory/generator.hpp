@@ -17,7 +17,6 @@ public:
     struct config_t
     {
         size_t buffer_size = 0;
-        bool pre_allocate_buffer = false;
         size_t read_threads = 0;
         size_t write_threads = 0;
         struct
