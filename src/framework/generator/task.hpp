@@ -1,5 +1,5 @@
-#ifndef _OP_UTILS_WORKER_TASK_HPP_
-#define _OP_UTILS_WORKER_TASK_HPP_
+#ifndef _OP_FRAMEWORK_GENERATOR_TASK_HPP_
+#define _OP_FRAMEWORK_GENERATOR_TASK_HPP_
 
 namespace openperf::framework::generator {
 
@@ -10,11 +10,8 @@ public:
 
     virtual S spin() = 0;
     virtual void reset() = 0;
-
-    virtual void resume(){};
-    virtual void pause(){};
 };
 
-} // namespace openperf::generator
+} // namespace openperf::framework::generator
 
-#endif // _OP_UTILS_WORKER_TASK_HPP_
+#endif // _OP_FRAMEWORK_GENERATOR_TASK_HPP_

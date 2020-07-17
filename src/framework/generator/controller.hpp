@@ -1,16 +1,17 @@
-#ifndef _OP_FRAMEWORK_UTILS_GENERATOR_CONTROLLER_HPP_
-#define _OP_FRAMEWORK_UTILS_GENERATOR_CONTROLLER_HPP_
+#ifndef _OP_FRAMEWORK_GENERATOR_CONTROLLER_HPP_
+#define _OP_FRAMEWORK_GENERATOR_CONTROLLER_HPP_
 
 #include <functional>
 #include <forward_list>
 #include <memory>
+#include <optional>
 #include <string>
 #include <thread>
-#include <vector>
 #include <zmq.h>
-#include "framework/core/op_thread.h"
-#include "framework/core/op_socket.h"
+
 #include "framework/core/op_log.h"
+#include "framework/core/op_socket.h"
+#include "framework/core/op_thread.h"
 #include "framework/message/serialized_message.hpp"
 
 #include "worker.hpp"
@@ -29,7 +30,8 @@ namespace openperf::framework::generator {
  *     STATISTICS
  */
 
-template <typename S> class controller
+// template <typename S> class controller
+class controller final
 {
 private:
     // Internal Types
@@ -44,157 +46,101 @@ private:
 
 private:
     // Attributes
-    internal::server m_server;
-    // std::shared_ptr<void> m_context;
-    // std::unique_ptr<void, op_socket_deleter> m_control_socket;
+    std::unique_ptr<void, zmq_ctx_deleter> m_context;
+    std::string m_control_endpoint;
+    std::string m_statistics_endpoint;
+    std::unique_ptr<void, op_socket_deleter> m_control_socket;
+    std::unique_ptr<void, op_socket_deleter> m_statistics_socket;
 
     std::string m_thread_name;
     std::thread m_thread;
     std::atomic_bool m_stop;
-    std::function<void(const S&)> m_processor;
 
     std::forward_list<internal::worker> m_workers;
 
 public:
     // Constructors & Destructor
-    controller(controller&& c);
     controller(const controller&) = delete;
-    explicit controller(const std::string& name = "op_ctl");
+    explicit controller(const std::string& name = "controller");
     ~controller();
 
     // Methods : public
-    void pause() { m_server.send(internal::server::operation_t::PAUSE); }
-    void resume() { m_server.send(internal::server::operation_t::RESUME); }
-    void reset() { m_server.send(internal::server::operation_t::RESET); }
-
-    template <typename T> void add(T&& t, const std::string& name = "");
-    template <typename T> void processor(T&& processor);
+    void pause() { send(internal::operation_t::PAUSE); }
+    void resume() { send(internal::operation_t::RESUME); }
+    void reset() { send(internal::operation_t::RESET); }
     void clear() { m_workers.clear(); }
+
+    template <typename T>
+    void add(T&& t, const std::string& name = "", int core = -1);
+    template <typename T>
+    void process(const std::function<void(const T&)>& processor);
 
 private:
     // Methods : private
-    void loop();
-    // void send_command(operation_t op);
+    void send(internal::operation_t);
+    template <typename S> std::optional<S> next_statistics(bool wait = false);
 };
 
-// Constructors & Destructor
-template <typename S>
-controller<S>::controller(controller&& c)
-    : m_server(std::move(c.m_server))
-    //: m_context(std::move(c.m_context))
-    //, m_control_socket(std::move(c.m_control_socket))
-    , m_thread_name(std::move(c.m_thread_name))
-    , m_thread(std::move(c.m_thread))
-    , m_stop(c.m_stop.load())
-    , m_processor(std::move(c.m_processor))
-    , m_workers(std::move(c.m_workers))
-{}
+//
+// Implementation
+//
 
-template <typename S>
-controller<S>::controller(const std::string& name)
-    : m_server(name)
-    //: m_context(zmq_ctx_new(), zmq_ctx_deleter())
-    //, m_control_socket(
-    //      op_socket_get_server(m_context.get(), ZMQ_PUB, CONTROL_ENDPOINT))
-    , m_thread_name(name)
+// Methods : public
+template <typename T>
+void controller::process(const std::function<void(const T&)>& processor)
 {
     m_stop = false;
-    m_thread = std::thread([this] {
+    m_thread = std::thread([this, processor] {
         // Set the thread name
         op_thread_setname(m_thread_name.c_str());
 
-        OP_LOG(OP_LOG_DEBUG, "Control thread started");
+        OP_LOG(
+            OP_LOG_DEBUG, "Control thread %s started", m_thread_name.c_str());
 
         // Run the loop of the thread
         while (!m_stop) {
-            auto stats = m_server.next_statistics<S>(true);
-            if (stats.has_value()) m_processor(stats.value());
+            if (auto stats = next_statistics<T>(true)) processor(stats.value());
         }
-        // loop();
     });
 }
 
-template <typename S> controller<S>::~controller()
-{
-    // send_command(operation_t::STOP);
-    m_server.send(internal::server::operation_t::STOP);
-
-    m_stop = true;
-    if (m_thread.joinable()) m_thread.join();
-}
-
-// Methods : public
-template <typename S>
 template <typename T>
-void controller<S>::processor(T&& processor)
+void controller::add(T&& task, const std::string& name, int core)
 {
-    m_processor = processor;
-}
+    auto control = std::unique_ptr<void, op_socket_deleter>(
+        op_socket_get_client_subscription(
+            m_context.get(), m_control_endpoint.c_str(), ""));
+    auto stats = std::unique_ptr<void, op_socket_deleter>(op_socket_get_client(
+        m_context.get(), ZMQ_PUB, m_statistics_endpoint.c_str()));
 
-template <typename S>
-template <typename T>
-void controller<S>::add(T&& t, const std::string& name)
-{
-    m_workers.emplace_front(m_server.make_client(), name);
-    m_workers.front().start(std::forward<T>(t));
+    m_workers.emplace_front(control.release(), stats.release(), name);
+    m_workers.front().start(std::forward<T>(task), core);
 }
 
 // Methods : private
-// template <typename S> void controller<S>::loop()
-//{
-//     auto socket = std::unique_ptr<void, op_socket_deleter>(
-//        op_socket_get_server(m_context.get(), ZMQ_SUB, STATISTICS_ENDPOINT));
-//
-//     if (zmq_setsockopt(socket.get(), ZMQ_SUBSCRIBE, nullptr, 0) != 0) {
-//        OP_LOG(OP_LOG_ERROR,
-//               "Controller ZMQ subscribtion error: %s",
-//               zmq_strerror(errno));
-//        return;
-//    }
-//
-//    while (!m_stop) {
-//         auto recv = message::recv(socket.get(), ZMQ_NOBLOCK);
-//
-//         if (!recv && recv.error() != EAGAIN) {
-//            if (errno == ETERM) {
-//                OP_LOG(OP_LOG_DEBUG,
-//                       "Generator controller thread %s terminated",
-//                       m_thread_name.c_str());
-//            } else {
-//                OP_LOG(OP_LOG_ERROR,
-//                       "Generator controller thread %s receive with error:
-//                       %s", m_thread_name.c_str(),
-//                       zmq_strerror(recv.error()));
-//            }
-//        }
-//
-//         if (recv) {
-//            auto stat = message::pop<S>(recv.value());
-//            m_processor(stat);
-//        }
-//
-//    }
-//};
+template <typename S> std::optional<S> controller::next_statistics(bool wait)
+{
+    constexpr int ZMQ_BLOCK = 0;
+    auto recv = message::recv(m_statistics_socket.get(),
+                              (wait) ? ZMQ_BLOCK : ZMQ_NOBLOCK);
 
-// template <typename S> void controller<S>::send_command(operation_t op)
-//{
-//    auto result =
-//        zmq_send(m_control_socket.get(), &op, sizeof(op), ZMQ_DONTWAIT);
-//
-//    if (result < 0 && errno != EAGAIN) {
-//        if (errno == ETERM) {
-//            OP_LOG(OP_LOG_DEBUG,
-//                   "Worker thread %s terminated",
-//                   m_thread_name.c_str());
-//        } else {
-//            OP_LOG(OP_LOG_ERROR,
-//                   "Worker thread %s send with error: %s",
-//                   m_thread_name.c_str(),
-//                   zmq_strerror(errno));
-//        }
-//    }
-//}
+    if (!recv && recv.error() != EAGAIN) {
+        if (errno == ETERM) {
+            OP_LOG(OP_LOG_DEBUG,
+                   "ZMQ server socket %s terminated",
+                   m_statistics_endpoint.c_str());
+        } else {
+            OP_LOG(OP_LOG_ERROR,
+                   "ZMQ server socket %s receive with error: %s",
+                   m_statistics_endpoint.c_str(),
+                   zmq_strerror(recv.error()));
+        }
+    }
+
+    return (recv) ? std::optional<S>(message::pop<S>(recv.value()))
+                  : std::nullopt;
+}
 
 } // namespace openperf::framework::generator
 
-#endif // _OP_FRAMEWORK_UTILS_GENERATOR_CONTROLLER_HPP_
+#endif // _OP_FRAMEWORK_GENERATOR_CONTROLLER_HPP_
