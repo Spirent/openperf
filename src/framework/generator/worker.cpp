@@ -2,41 +2,44 @@
 
 namespace openperf::framework::generator::internal {
 
-// Constructors & Destructor
-worker::worker(worker&& w)
-    : m_paused(w.m_paused.load())
-    , m_finished(w.m_finished.load())
-    , m_client(std::move(w.m_client))
-    //, m_context(std::move(w.m_context))
-    //, m_stats_socket(std::move(w.m_stats_socket))
-    , m_thread_name(std::move(w.m_thread_name))
-{
-    w.m_finished = true;
-}
+/**
+ * Note: It is advisable to replace ZMQ_PUB/ZMQ_SUB to
+ * ZMQ_RADIO/ZMQ_DISH when the latter gets the stable status.
+ */
 
-worker::worker(internal::server::client&& client, const std::string& name)
-    : m_paused(true)
-    , m_finished(true)
-    , m_client(std::move(client))
-    //, m_context(context)
-    //, m_stats_socket(op_socket_get_client(
-    //      m_context.lock().get(), ZMQ_PUB, STATISTICS_ENDPOINT))
+// Constructors & Destructor
+worker::worker(
+    void* /*std::unique_ptr<void, op_socket_deleter>&&*/ control_socket,
+    void* /*std::unique_ptr<void, op_socket_deleter>&&*/ statistics_socket,
+    const std::string& name)
+    : m_control_socket(control_socket)
+    , m_statistics_socket(statistics_socket)
     , m_thread_name(name)
+    , m_finished(true)
 {}
 
-// Methods : public
-void worker::stop() { m_finished = true; }
-
-void worker::pause()
+// Methods : private
+operation_t worker::next_command(bool wait) noexcept
 {
-    if (m_finished) return;
-    m_paused = true;
-}
+    constexpr int ZMQ_BLOCK = 0;
+    auto operation = operation_t::NOOP;
+    auto recv = zmq_recv(m_control_socket.get(),
+                         &operation,
+                         sizeof(operation),
+                         wait ? ZMQ_BLOCK : ZMQ_NOBLOCK);
 
-void worker::resume()
-{
-    if (m_finished) return;
-    m_paused = false;
+    if (recv < 0 && errno != EAGAIN) {
+        operation = operation_t::STOP;
+        if (errno == ETERM) {
+            OP_LOG(OP_LOG_DEBUG, "Worker ZMQ socket terminated");
+        } else {
+            OP_LOG(OP_LOG_ERROR,
+                   "Worker ZMQ socket receive with error: %s",
+                   zmq_strerror(errno));
+        }
+    }
+
+    return operation;
 }
 
 } // namespace openperf::framework::generator::internal
