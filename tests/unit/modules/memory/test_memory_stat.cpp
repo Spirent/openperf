@@ -1,23 +1,26 @@
 
+#include <random>
 #include "catch.hpp"
 #include "memory/memory_stat.hpp"
 
-using memory_stat = openperf::memory::internal::memory_stat;
+using openperf::memory::internal::task_memory_stat;
 
-memory_stat random_memory_stat()
+auto random_memory_stat()
 {
-    auto stat = memory_stat{};
-    stat.bytes = random();
-    stat.bytes_target = random();
-    stat.operations = random();
-    stat.operations_target = random();
-    stat.latency_max = std::chrono::nanoseconds(random());
-    stat.latency_min = std::chrono::nanoseconds(random());
-    stat.run_time = std::chrono::nanoseconds(random());
-    stat.sleep_time = std::chrono::nanoseconds(random());
-    stat.errors = random();
-
-    return stat;
+    static auto rnd = std::mt19937_64{};
+    return task_memory_stat{
+        .timestamp = task_memory_stat::timestamp_t(
+            std::chrono::system_clock::now().time_since_epoch()),
+        .bytes = rnd(),
+        .bytes_target = rnd(),
+        .operations = rnd(),
+        .operations_target = rnd(),
+        .latency_max = std::chrono::nanoseconds(rnd()),
+        .latency_min = std::chrono::nanoseconds(rnd()),
+        .run_time = std::chrono::nanoseconds(rnd()),
+        .sleep_time = std::chrono::nanoseconds(rnd()),
+        .errors = rnd(),
+    };
 }
 
 TEST_CASE("memory stat addition", "[memory]")
@@ -49,7 +52,9 @@ TEST_CASE("memory stat addition", "[memory]")
 
     SECTION("random + empty")
     {
-        auto st1 = memory_stat();
+        auto st1 = task_memory_stat{
+            .timestamp = task_memory_stat::timestamp_t(
+                std::chrono::system_clock::now().time_since_epoch())};
         auto st2 = random_memory_stat();
         auto st = st1 + st2;
 

@@ -66,8 +66,6 @@ task_memory::task_memory(task_memory&& t)
     , m_op_index(t.m_op_index)
     , m_avg_rate(t.m_avg_rate)
 {
-    // t.m_buffer = nullptr;
-    // t.m_config.buffer = {nullptr, 0};
     t.m_scratch = {nullptr, 0};
     t.reset();
 }
@@ -108,7 +106,7 @@ void task_memory::reset()
     m_stat = {};
 }
 
-task_memory_stat task_memory::common_spin()
+memory_stat task_memory::spin()
 {
     /* If we have a rate to generate, then we need indexes */
     assert(m_config.op_per_sec == 0 || m_config.indexes->size() > 0);
@@ -157,7 +155,7 @@ task_memory_stat task_memory::common_spin()
     stat.bytes_target = stat.operations_target * m_config.block_size;
     m_stat += stat;
 
-    return stat;
+    return make_stat(stat);
 }
 
 void task_memory::scratch_allocate(size_t size)

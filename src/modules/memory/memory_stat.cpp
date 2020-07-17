@@ -34,7 +34,7 @@ task_memory_stat& task_memory_stat::operator+=(const task_memory_stat& st)
 
 task_memory_stat task_memory_stat::operator+(const task_memory_stat& st)
 {
-    task_memory_stat stat(*this);
+    auto stat = *this;
     return stat += st;
 }
 

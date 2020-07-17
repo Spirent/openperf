@@ -19,7 +19,7 @@ generator::generator()
     , m_controller(NAME_PREFIX + std::to_string(m_serial_number) + "_ctl")
     , m_stat_ptr(&m_stat)
 {
-    m_controller.processor([this](const memory_stat& stat) {
+    m_controller.process<memory_stat>([this](const memory_stat& stat) {
         auto elapsed_time = m_run_time;
         elapsed_time += std::chrono::system_clock::now() - m_run_time_milestone;
 
@@ -29,49 +29,27 @@ generator::generator()
         m_stat.read += stat.read;
         m_stat.write += stat.write;
 
-        auto& rstat = m_stat.read;
-        rstat.operations_target =
-            elapsed_time.count() * m_config.read.op_per_sec
-            * std::min(m_config.read.block_size, 1UL) / std::nano::den;
-        rstat.bytes_target = rstat.operations_target * m_config.read.block_size;
+        // Calculate really target values from start time of the generator
+        if (m_config.read_threads) {
+            auto& rstat = m_stat.read;
+            rstat.operations_target =
+                elapsed_time.count() * m_config.read.op_per_sec
+                * std::min(m_config.read.block_size, 1UL) / std::nano::den;
+            rstat.bytes_target =
+                rstat.operations_target * m_config.read.block_size;
+        }
 
-        auto& wstat = m_stat.write;
-        wstat.operations_target =
-            elapsed_time.count() * m_config.write.op_per_sec
-            * std::min(m_config.write.block_size, 1UL) / std::nano::den;
-        wstat.bytes_target =
-            wstat.operations_target * m_config.write.block_size;
+        if (m_config.write_threads) {
+            auto& wstat = m_stat.write;
+            wstat.operations_target =
+                elapsed_time.count() * m_config.write.op_per_sec
+                * std::min(m_config.write.block_size, 1UL) / std::nano::den;
+            wstat.bytes_target =
+                wstat.operations_target * m_config.write.block_size;
+        }
 
         m_stat_ptr = &m_stat;
     });
-}
-
-generator::generator(generator&& g) noexcept
-    : m_stopped(g.m_stopped)
-    , m_paused(g.m_paused)
-    , m_config(g.m_config)
-    , m_buffer{.ptr = nullptr, .size = 0}
-    , m_serial_number(g.m_serial_number)
-<<<<<<< HEAD
-    , m_init_percent_complete(0)
-=======
-    , m_controller(std::move(g.m_controller))
-    , m_stat(std::move(g.m_stat))
-    , m_stat_ptr(&m_stat)
->>>>>>> aeef6bb0... Migrate Memory Generator to Framework
-{}
-
-generator& generator::operator=(generator&& g) noexcept
-{
-    if (this != &g) {
-        m_stopped = g.m_stopped;
-        m_paused = g.m_paused;
-        m_config = g.m_config;
-        m_buffer = {.ptr = nullptr, .size = 0};
-        m_serial_number = g.m_serial_number;
-        m_init_percent_complete = 0;
-    }
-    return (*this);
 }
 
 generator::generator(const generator::config_t& c)
@@ -108,8 +86,10 @@ void generator::start()
             m_write_indexes.data(), res.data(), sizeof(index_t) * res.size());
     };
 
+    reset();
     m_controller.resume();
     m_stopped = false;
+    m_paused = false;
     m_run_time = 0ms;
     m_run_time_milestone = std::chrono::system_clock::now();
 }
@@ -147,7 +127,13 @@ void generator::pause()
     m_run_time += std::chrono::system_clock::now() - m_run_time_milestone;
 }
 
-void generator::reset() { m_controller.reset(); }
+void generator::reset()
+{
+    m_controller.pause();
+    m_controller.reset();
+    m_stat = {};
+    m_controller.resume();
+}
 
 memory_stat generator::stat() const
 {

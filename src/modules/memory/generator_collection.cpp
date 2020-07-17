@@ -32,11 +32,6 @@ const generator& generator_collection::generator(const std::string& id) const
     return m_generators.at(id);
 }
 
-// generator& generator_collection::generator(const std::string& id)
-//{
-//    return m_generators.at(id);
-//}
-
 void generator_collection::erase(const std::string& id)
 {
     stop(id);
