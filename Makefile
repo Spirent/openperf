@@ -28,7 +28,8 @@ test_unit: deps
 	@cd tests/unit && $(MAKE)
 
 .PHONY: clean
-clean: image_clean
+clean:
+	@$(MAKE) image_clean || /bin/true
 	@cd targets/openperf && $(MAKE) clean
 	@cd targets/libopenperf-shim && $(MAKE) clean
 	@cd tests/aat && $(MAKE) clean
