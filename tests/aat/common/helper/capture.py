@@ -15,6 +15,7 @@ def make_capture_config(**kwargs):
         config.stop_trigger = kwargs['stop_trigger']
     return config
 
+
 def get_capture_pcap(capture_api, result_id, pcap_file, packet_start=None, packet_end=None):
     kwargs = dict()
     # Need to use _preload_content to avoid issues with binary data
@@ -25,6 +26,17 @@ def get_capture_pcap(capture_api, result_id, pcap_file, packet_start=None, packe
         kwargs['packet_end'] = packet_end
 
     resp = capture_api.get_packet_capture_pcap(id=result_id, **kwargs)
+    with open(pcap_file, 'wb') as fdst:
+        shutil.copyfileobj(resp, fdst)
+
+def get_merged_capture_pcap(capture_api, results_ids, pcap_file, packet_start=None, packet_end=None):
+    kwargs = dict()
+    # Need to use _preload_content to avoid issues with binary data
+    kwargs['_preload_content'] = False
+
+    config = client.models.GetPacketCapturesPcapConfig(ids=results_ids, packet_start=packet_start, packet_end=packet_end)
+
+    resp = capture_api.get_packet_captures_pcap(config=config, **kwargs)
     with open(pcap_file, 'wb') as fdst:
         shutil.copyfileobj(resp, fdst)
 
