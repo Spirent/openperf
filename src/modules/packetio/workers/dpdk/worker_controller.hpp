@@ -66,10 +66,10 @@ public:
 
     tl::expected<void, int> add_sink(std::string_view src_id,
                                      packet::traffic_direction direction,
-                                     packet::generic_sink sink);
+                                     const packet::generic_sink& sink);
     void del_sink(std::string_view src_id,
                   packet::traffic_direction direction,
-                  packet::generic_sink sink);
+                  const packet::generic_sink& sink);
 
     tl::expected<void, int> add_source(std::string_view dst_id,
                                        packet::generic_source source);

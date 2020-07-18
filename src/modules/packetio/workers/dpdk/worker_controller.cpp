@@ -564,7 +564,7 @@ bool contains_match(const Vector& vector, const Item& match)
 tl::expected<void, int>
 worker_controller::add_sink(std::string_view src_id,
                             packet::traffic_direction direction,
-                            packet::generic_sink sink)
+                            const packet::generic_sink& sink)
 {
     if (auto port_idx = m_driver.port_index(src_id)) {
         if (direction == packet::traffic_direction::RX
@@ -690,7 +690,7 @@ worker_controller::add_sink(std::string_view src_id,
 
 void worker_controller::del_sink(std::string_view src_id,
                                  packet::traffic_direction direction,
-                                 packet::generic_sink sink)
+                                 const packet::generic_sink& sink)
 {
     if (auto port_idx = m_driver.port_index(src_id)) {
         if (direction == packet::traffic_direction::RX
