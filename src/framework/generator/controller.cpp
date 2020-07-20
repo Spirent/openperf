@@ -15,7 +15,7 @@ controller::controller(const std::string& name)
 {
     if (zmq_setsockopt(m_statistics_socket.get(), ZMQ_SUBSCRIBE, "", 0)) {
         OP_LOG(OP_LOG_ERROR,
-               "Controller ZMQ socket %s subscribtion error: %s",
+               "Controller ZMQ statistics socket %s subscribtion error: %s",
                m_statistics_endpoint.c_str(),
                zmq_strerror(errno));
     }
@@ -25,7 +25,13 @@ controller::~controller()
 {
     send(internal::operation_t::STOP);
     m_stop = true;
-    if (m_thread.joinable()) m_thread.join();
+}
+
+// Methods : public
+void controller::clear()
+{
+    send(internal::operation_t::STOP);
+    m_workers.clear();
 }
 
 // Methods : private
@@ -37,11 +43,11 @@ void controller::send(internal::operation_t operation)
     if (result < 0 && errno != EAGAIN) {
         if (errno == ETERM) {
             OP_LOG(OP_LOG_DEBUG,
-                   "Controller ZMQ socket %s terminated",
+                   "Controller ZMQ control socket %s terminated",
                    m_control_endpoint.c_str());
         } else {
             OP_LOG(OP_LOG_ERROR,
-                   "Controller ZMQ socket %s send with error: %s",
+                   "Controller ZMQ control socket %s send with error: %s",
                    m_control_endpoint.c_str(),
                    zmq_strerror(errno));
         }

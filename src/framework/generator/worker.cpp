@@ -8,12 +8,11 @@ namespace openperf::framework::generator::internal {
  */
 
 // Constructors & Destructor
-worker::worker(
-    void* /*std::unique_ptr<void, op_socket_deleter>&&*/ control_socket,
-    void* /*std::unique_ptr<void, op_socket_deleter>&&*/ statistics_socket,
-    const std::string& name)
-    : m_control_socket(control_socket)
-    , m_statistics_socket(statistics_socket)
+worker::worker(socket_pointer&& control_socket,
+               socket_pointer&& statistics_socket,
+               const std::string& name)
+    : m_control_socket(std::move(control_socket))
+    , m_statistics_socket(std::move(statistics_socket))
     , m_thread_name(name)
     , m_finished(true)
 {}
@@ -31,10 +30,10 @@ operation_t worker::next_command(bool wait) noexcept
     if (recv < 0 && errno != EAGAIN) {
         operation = operation_t::STOP;
         if (errno == ETERM) {
-            OP_LOG(OP_LOG_DEBUG, "Worker ZMQ socket terminated");
+            OP_LOG(OP_LOG_DEBUG, "Worker ZMQ control socket terminated");
         } else {
             OP_LOG(OP_LOG_ERROR,
-                   "Worker ZMQ socket receive with error: %s",
+                   "Worker ZMQ control socket receive with error: %s",
                    zmq_strerror(errno));
         }
     }

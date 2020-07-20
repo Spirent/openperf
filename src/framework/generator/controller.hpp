@@ -64,13 +64,13 @@ public:
     ~controller();
 
     // Methods : public
+    void clear();
     void pause() { send(internal::operation_t::PAUSE); }
     void resume() { send(internal::operation_t::RESUME); }
     void reset() { send(internal::operation_t::RESET); }
-    void clear() { m_workers.clear(); }
 
     template <typename T>
-    void add(T&& t, const std::string& name = "", int core = -1);
+    void add(T&& task, const std::string& name = "", int core = -1);
     template <typename S, typename T> void process(T&& processor);
 
 private:
@@ -104,13 +104,13 @@ template <typename S, typename T> void controller::process(T&& processor)
 template <typename T>
 void controller::add(T&& task, const std::string& name, int core)
 {
-    auto control = std::unique_ptr<void, op_socket_deleter>(
-        op_socket_get_client_subscription(
+    auto control =
+        internal::worker::socket_pointer(op_socket_get_client_subscription(
             m_context.get(), m_control_endpoint.c_str(), ""));
-    auto stats = std::unique_ptr<void, op_socket_deleter>(op_socket_get_client(
+    auto stats = internal::worker::socket_pointer(op_socket_get_client(
         m_context.get(), ZMQ_PUB, m_statistics_endpoint.c_str()));
 
-    m_workers.emplace_front(control.release(), stats.release(), name);
+    m_workers.emplace_front(std::move(control), std::move(stats), name);
     m_workers.front().start(std::forward<T>(task), core);
 }
 
@@ -124,11 +124,11 @@ template <typename S> std::optional<S> controller::next_statistics(bool wait)
     if (!recv && recv.error() != EAGAIN) {
         if (errno == ETERM) {
             OP_LOG(OP_LOG_DEBUG,
-                   "ZMQ server socket %s terminated",
+                   "Controller ZMQ statistics socket %s terminated",
                    m_statistics_endpoint.c_str());
         } else {
             OP_LOG(OP_LOG_ERROR,
-                   "ZMQ server socket %s receive with error: %s",
+                   "Controller ZMQ statistics socket %s receive with error: %s",
                    m_statistics_endpoint.c_str(),
                    zmq_strerror(recv.error()));
         }
