@@ -44,7 +44,7 @@ protected:
 
 public:
     task_memory() = delete;
-    task_memory(task_memory&&);
+    task_memory(task_memory&&) noexcept;
     task_memory(const task_memory&) = delete;
     explicit task_memory(const task_memory_config&);
     ~task_memory() override;

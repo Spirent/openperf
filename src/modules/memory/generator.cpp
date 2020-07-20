@@ -19,7 +19,7 @@ generator::generator()
     , m_controller(NAME_PREFIX + std::to_string(m_serial_number) + "_ctl")
     , m_stat_ptr(&m_stat)
 {
-    m_controller.process<memory_stat>([this](const memory_stat& stat) {
+    m_controller.start<memory_stat>([this](const memory_stat& stat) {
         auto elapsed_time = m_run_time;
         elapsed_time += std::chrono::system_clock::now() - m_run_time_milestone;
 
@@ -66,6 +66,7 @@ generator::~generator()
     if (m_write_future.valid()) m_write_future.wait();
 
     stop();
+    m_controller.clear();
     free_buffer();
 }
 
