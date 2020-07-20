@@ -78,12 +78,12 @@ std::vector<unsigned> index_vector(size_t size, io_pattern pattern)
 }
 
 // Constructors & Destructor
-task_memory::task_memory(task_memory&& t)
-    : m_config(std::move(t.m_config))
+task_memory::task_memory(task_memory&& t) noexcept
+    : m_config(t.m_config)
     , m_indexes(std::move(t.m_indexes))
     , m_buffer(t.m_buffer)
-    , m_scratch(std::move(t.m_scratch))
-    , m_stat(std::move(t.m_stat))
+    , m_scratch(t.m_scratch)
+    , m_stat(t.m_stat)
     , m_op_index(t.m_op_index)
     , m_avg_rate(t.m_avg_rate)
 {
@@ -152,6 +152,7 @@ void task_memory::reset()
 {
     m_avg_rate = 100000000;
     m_stat = {};
+    m_op_index = 0;
 }
 
 memory_stat task_memory::spin()
