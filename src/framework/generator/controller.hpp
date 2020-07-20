@@ -1,7 +1,6 @@
 #ifndef _OP_FRAMEWORK_GENERATOR_CONTROLLER_HPP_
 #define _OP_FRAMEWORK_GENERATOR_CONTROLLER_HPP_
 
-#include <functional>
 #include <forward_list>
 #include <memory>
 #include <optional>
@@ -72,8 +71,7 @@ public:
 
     template <typename T>
     void add(T&& t, const std::string& name = "", int core = -1);
-    template <typename T>
-    void process(const std::function<void(const T&)>& processor);
+    template <typename S, typename T> void process(T&& processor);
 
 private:
     // Methods : private
@@ -86,11 +84,10 @@ private:
 //
 
 // Methods : public
-template <typename T>
-void controller::process(const std::function<void(const T&)>& processor)
+template <typename S, typename T> void controller::process(T&& processor)
 {
     m_stop = false;
-    m_thread = std::thread([this, processor] {
+    m_thread = std::thread([this, processor = std::move(processor)] {
         // Set the thread name
         op_thread_setname(m_thread_name.c_str());
 
@@ -99,7 +96,7 @@ void controller::process(const std::function<void(const T&)>& processor)
 
         // Run the loop of the thread
         while (!m_stop) {
-            if (auto stats = next_statistics<T>(true)) processor(stats.value());
+            if (auto stats = next_statistics<S>(true)) processor(stats.value());
         }
     });
 }
