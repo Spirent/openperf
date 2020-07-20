@@ -21,9 +21,12 @@ enum class operation_t { NOOP = 0, PAUSE, RESUME, RESET, STOP };
 
 class worker final
 {
+public:
+    using socket_pointer = std::unique_ptr<void, op_socket_deleter>;
+
 private:
-    std::unique_ptr<void, op_socket_deleter> m_control_socket;
-    std::unique_ptr<void, op_socket_deleter> m_statistics_socket;
+    socket_pointer m_control_socket;
+    socket_pointer m_statistics_socket;
 
     std::thread m_thread;
     std::string m_thread_name;
@@ -31,10 +34,9 @@ private:
 
 public:
     worker(const worker&) = delete;
-    worker(
-        /*std::unique_ptr<void, op_socket_deleter>&&*/ void* control_socket,
-        /*std::unique_ptr<void, op_socket_deleter>&&*/ void* statistics_socket,
-        const std::string& name = "worker");
+    worker(socket_pointer&& control_socket,
+           socket_pointer&& statistics_socket,
+           const std::string& name = "worker");
 
     template <typename T> void start(T&&, int core_id = -1);
     bool is_finished() const { return m_finished; }
@@ -81,7 +83,7 @@ template <typename T> void worker::send(const T& stat)
 
     if (auto r = message::send(m_statistics_socket.get(), std::move(msg)); r) {
         OP_LOG(OP_LOG_ERROR,
-               "Worker statistics send with error: %s",
+               "Worker ZMQ statistics socket send with error: %s",
                zmq_strerror(r));
     }
 }
