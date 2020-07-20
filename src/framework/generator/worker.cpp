@@ -17,6 +17,11 @@ worker::worker(socket_pointer&& control_socket,
     , m_finished(true)
 {}
 
+worker::~worker()
+{
+    if (m_thread.joinable()) m_thread.join();
+}
+
 // Methods : private
 operation_t worker::next_command(bool wait) noexcept
 {

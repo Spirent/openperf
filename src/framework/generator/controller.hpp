@@ -71,7 +71,7 @@ public:
 
     template <typename T>
     void add(T&& task, const std::string& name = "", int core = -1);
-    template <typename S, typename T> void process(T&& processor);
+    template <typename S, typename T> void start(T&& processor);
 
 private:
     // Methods : private
@@ -84,7 +84,7 @@ private:
 //
 
 // Methods : public
-template <typename S, typename T> void controller::process(T&& processor)
+template <typename S, typename T> void controller::start(T&& processor)
 {
     m_stop = false;
     m_thread = std::thread([this, processor = std::move(processor)] {
@@ -96,7 +96,12 @@ template <typename S, typename T> void controller::process(T&& processor)
 
         // Run the loop of the thread
         while (!m_stop) {
-            if (auto stats = next_statistics<S>(true)) processor(stats.value());
+            try {
+                if (auto stats = next_statistics<S>(true); stats)
+                    processor(stats.value());
+            } catch (const std::runtime_error& e) {
+                if (!m_stop) throw e;
+            }
         }
     });
 }
@@ -119,7 +124,7 @@ template <typename S> std::optional<S> controller::next_statistics(bool wait)
 {
     constexpr int ZMQ_BLOCK = 0;
     auto recv = message::recv(m_statistics_socket.get(),
-                              (wait) ? ZMQ_BLOCK : ZMQ_NOBLOCK);
+                              wait ? ZMQ_BLOCK : ZMQ_NOBLOCK);
 
     if (!recv && recv.error() != EAGAIN) {
         if (errno == ETERM) {
@@ -132,10 +137,12 @@ template <typename S> std::optional<S> controller::next_statistics(bool wait)
                    m_statistics_endpoint.c_str(),
                    zmq_strerror(recv.error()));
         }
+
+        throw std::runtime_error(zmq_strerror(recv.error()));
     }
 
-    return (recv) ? std::optional<S>(message::pop<S>(recv.value()))
-                  : std::nullopt;
+    return recv ? std::optional<S>(message::pop<S>(recv.value()))
+                : std::nullopt;
 }
 
 } // namespace openperf::framework::generator
