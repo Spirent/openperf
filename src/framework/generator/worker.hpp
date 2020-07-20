@@ -29,7 +29,6 @@ private:
     std::string m_thread_name;
     std::atomic_bool m_finished;
 
-private:
 public:
     worker(const worker&) = delete;
     worker(
@@ -47,7 +46,7 @@ private:
 };
 
 //
-// Template Methods Implementation
+// Implementation
 //
 
 // Methods : public
