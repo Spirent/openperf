@@ -37,6 +37,7 @@ public:
     worker(socket_pointer&& control_socket,
            socket_pointer&& statistics_socket,
            const std::string& name = "worker");
+    ~worker();
 
     template <typename T> void start(T&&, int core_id = -1);
     bool is_finished() const { return m_finished; }

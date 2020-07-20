@@ -23,8 +23,10 @@ controller::controller(const std::string& name)
 
 controller::~controller()
 {
-    send(internal::operation_t::STOP);
+    clear();
     m_stop = true;
+    zmq_ctx_shutdown(m_context.get());
+    if (m_thread.joinable()) m_thread.join();
 }
 
 // Methods : public
