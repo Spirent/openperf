@@ -58,8 +58,7 @@ image_pack: image
 
 .PHONY: image_clean
 image_clean:
-	@docker image rm -f ${DOCKER_IMAGE}
-	@docker image prune -f
+	@docker image rm -f ${DOCKER_IMAGE}; docker image prune -f; true
 
 # Generate code from schema definitions
 # Since generated code is stored in the repo, manual generation is only required
