@@ -93,7 +93,7 @@ auto push(serialized_message& msg, const T* buffer, size_t length)
 
     auto ptr = reinterpret_cast<char*>(zmq_msg_data(&part));
     auto src = reinterpret_cast<const char*>(buffer);
-    std::copy(src, src + length, ptr);
+    std::copy_n(src, length, ptr);
     return (0);
 }
 
@@ -119,7 +119,7 @@ push(serialized_message& msg, std::vector<T>& values)
     // zmq data may not be aligned to type so safer to byte copy
     auto ptr = reinterpret_cast<char*>(zmq_msg_data(&part));
     auto src = reinterpret_cast<const char*>(values.data());
-    std::copy(src, src + length, ptr);
+    std::copy_n(src, length, ptr);
     return (0);
 }
 
@@ -190,7 +190,7 @@ pop_vector(serialized_message& msg)
     // zmq data may not be aligned to type so safer to byte copy
     auto src = reinterpret_cast<const char*>(zmq_msg_data(&front));
     auto ptr = reinterpret_cast<char*>(vec.data());
-    std::copy(src, src + length, ptr);
+    std::copy_n(src, length, ptr);
 
     pop_front(msg);
     return (vec);
