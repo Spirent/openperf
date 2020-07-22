@@ -11,6 +11,7 @@
 #include <array>
 #include <atomic>
 
+#include "immer/box.hpp"
 #include "immer/flex_vector.hpp"
 #include "immer/map.hpp"
 
@@ -31,8 +32,9 @@ public:
         std::vector<Sink> tx_sinks;
     };
 
+    using interface_sink_entry = immer::box<interface_sinks>;
     using interface_map =
-        immer::map<libpacket::type::mac_address, interface_sinks>;
+        immer::map<libpacket::type::mac_address, interface_sink_entry>;
     using sink_vector = immer::flex_vector<Sink>;
     static constexpr unsigned mac_address_length =
         libpacket::type::mac_address{}.size();
@@ -72,13 +74,17 @@ public:
 
     interface_map& get_interfaces(uint16_t port_idx) const;
 
-    sink_vector& get_sinks(uint16_t port_idx, direction dir) const;
+    sink_vector& get_rx_sinks(uint16_t port_idx) const;
+
+    sink_vector& get_tx_sinks(uint16_t port_idx) const;
 
     bool has_interface_sinks(uint16_t port_idx) const;
     const std::vector<Sink>*
-    find_interface_sinks(uint16_t port_idx,
-                         const libpacket::type::mac_address& mac,
-                         direction dir) const;
+    find_interface_tx_sinks(uint16_t port_idx,
+                            const libpacket::type::mac_address& mac) const;
+    const std::vector<Sink>*
+    find_interface_rx_sinks(uint16_t port_idx,
+                            const libpacket::type::mac_address& mac) const;
     const interface_sinks*
     find_interface_and_sinks(uint16_t port_idx,
                              const libpacket::type::mac_address& mac) const;

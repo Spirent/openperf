@@ -219,14 +219,14 @@ static void interface_tx_sink_dispatch(net_interface& interface,
     auto port_index = interface.port_index();
 
     // Dispatch to port level Tx sinks
-    auto& port_sinks = fib->get_sinks(port_index, worker::fib::direction::TX);
+    auto& port_sinks = fib->get_tx_sinks(port_index);
     for (auto& sink : port_sinks) {
         sink.push(reinterpret_cast<packet::packet_buffer**>(pkts), pkts_len);
     }
 
     // Dispatch to interface level Tx sinks
-    if (auto sinks = fib->find_interface_sinks(
-            port_index, interface.data()->hwaddr, worker::fib::direction::TX)) {
+    if (auto sinks = fib->find_interface_tx_sinks(port_index,
+                                                  interface.data()->hwaddr)) {
         for (auto& sink : *sinks) {
             sink.push(reinterpret_cast<packet::packet_buffer**>(pkts),
                       pkts_len);
@@ -569,9 +569,7 @@ worker_controller::add_sink(std::string_view src_id,
     if (auto port_idx = m_driver.port_index(src_id)) {
         if (direction == packet::traffic_direction::RX
             || direction == packet::traffic_direction::RXTX) {
-            if (contains_match(
-                    m_fib->get_sinks(*port_idx, worker::fib::direction::RX),
-                    sink)) {
+            if (contains_match(m_fib->get_rx_sinks(*port_idx), sink)) {
                 return (tl::make_unexpected(EALREADY));
             }
 
@@ -591,9 +589,7 @@ worker_controller::add_sink(std::string_view src_id,
         }
         if (direction == packet::traffic_direction::TX
             || direction == packet::traffic_direction::RXTX) {
-            if (contains_match(
-                    m_fib->get_sinks(*port_idx, worker::fib::direction::TX),
-                    sink)) {
+            if (contains_match(m_fib->get_tx_sinks(*port_idx), sink)) {
                 if (direction == packet::traffic_direction::RXTX) {
                     // Remove the Rx sink if error adding Tx sink
                     del_sink(src_id, packet::traffic_direction::RX, sink);
@@ -622,8 +618,8 @@ worker_controller::add_sink(std::string_view src_id,
         auto mac = mac_address(ifp->hwaddr);
         if (direction == packet::traffic_direction::RX
             || direction == packet::traffic_direction::RXTX) {
-            auto sinks = m_fib->find_interface_sinks(
-                interface.port_index(), mac, worker::fib::direction::RX);
+            auto sinks =
+                m_fib->find_interface_rx_sinks(interface.port_index(), mac);
             if (!sinks) { return (tl::make_unexpected(EINVAL)); }
             if (contains_match(*sinks, sink)) {
                 return (tl::make_unexpected(EALREADY));
@@ -650,8 +646,8 @@ worker_controller::add_sink(std::string_view src_id,
         }
         if (direction == packet::traffic_direction::TX
             || direction == packet::traffic_direction::RXTX) {
-            auto sinks = m_fib->find_interface_sinks(
-                interface.port_index(), mac, worker::fib::direction::TX);
+            auto sinks =
+                m_fib->find_interface_tx_sinks(interface.port_index(), mac);
             if (!sinks) {
                 if (direction == packet::traffic_direction::RXTX) {
                     // Remove the Rx sink if error adding Tx sink
@@ -732,8 +728,8 @@ void worker_controller::del_sink(std::string_view src_id,
 
         if (direction == packet::traffic_direction::RX
             || direction == packet::traffic_direction::RXTX) {
-            auto sinks = m_fib->find_interface_sinks(
-                interface.port_index(), mac, worker::fib::direction::RX);
+            auto sinks =
+                m_fib->find_interface_rx_sinks(interface.port_index(), mac);
             if (sinks && contains_match(*sinks, sink)) {
                 OP_LOG(OP_LOG_DEBUG,
                        "Deleting rx sink %s from port %s (idx = %u) interface "
@@ -757,8 +753,8 @@ void worker_controller::del_sink(std::string_view src_id,
         }
         if (direction == packet::traffic_direction::TX
             || direction == packet::traffic_direction::RXTX) {
-            auto sinks = m_fib->find_interface_sinks(
-                interface.port_index(), mac, worker::fib::direction::TX);
+            auto sinks =
+                m_fib->find_interface_tx_sinks(interface.port_index(), mac);
             if (sinks && contains_match(*sinks, sink)) {
                 OP_LOG(OP_LOG_DEBUG,
                        "Deleting tx sink %s from port %s (idx = %u) interface "
@@ -1062,7 +1058,9 @@ bool port_sink_find_if(const worker::fib& fib,
                        worker::fib::direction dir,
                        const Function& filter)
 {
-    const auto& sinks = fib.get_sinks(port_idx, dir);
+    const auto& sinks = (dir == worker::fib::direction::RX)
+                            ? fib.get_rx_sinks(port_idx)
+                            : fib.get_tx_sinks(port_idx);
     return (std::any_of(std::begin(sinks), std::end(sinks), filter));
 }
 
