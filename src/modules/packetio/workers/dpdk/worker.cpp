@@ -16,6 +16,7 @@
 #include "packetio/drivers/dpdk/mbuf_signature.hpp"
 #include "packetio/drivers/dpdk/queue_utils.hpp"
 #include "packetio/memory/dpdk/pbuf_utils.h"
+#include "packetio/memory/dpdk/tx_mbuf.hpp"
 #include "packetio/workers/dpdk/callback.hpp"
 #include "packetio/workers/dpdk/epoll_poller.hpp"
 #include "packetio/workers/dpdk/event_loop_adapter.hpp"
@@ -231,12 +232,10 @@ rx_interface_sink_dispatch(const fib* fib,
                            rte_mbuf* to_free[])
 {
     constexpr int START = 0, COUNT = 1, IFP_SINKS = 2;
-    std::array<
-        std::tuple<uint16_t, uint16_t, const worker::fib::interface_sinks*>,
-        pkt_burst_size>
-        bursts;
-    std::tuple<uint16_t, uint16_t, const worker::fib::interface_sinks*>* burst =
-        nullptr;
+    using burst_tuple =
+        std::tuple<uint16_t, uint16_t, const worker::fib::interface_sinks*>;
+    std::array<burst_tuple, pkt_burst_size> bursts;
+    burst_tuple* burst = nullptr;
     uint16_t nbursts = 0;
     uint16_t nb_to_stack = 0, nb_to_free = 0;
 
@@ -512,7 +511,79 @@ static uint16_t rx_burst(const fib* fib, const rx_queue* rxq)
     return (n);
 }
 
-static uint16_t tx_burst(const tx_queue* txq)
+static void tx_interface_sink_dispatch(const fib* fib,
+                                       const tx_queue* txq,
+                                       rte_mbuf* const outgoing[],
+                                       uint16_t n)
+{
+    constexpr int START = 0, COUNT = 1, SINKS = 2;
+    using burst_tuple = std::tuple<uint16_t,
+                                   uint16_t,
+                                   decltype(fib->find_interface_tx_sinks(
+                                       0, libpacket::type::mac_address{}))>;
+    std::array<burst_tuple, pkt_burst_size> bursts;
+    burst_tuple* burst = nullptr;
+    uint16_t nbursts = 0;
+
+    auto port_id = txq->port_id();
+    rte_ether_addr burst_hw_addr{};
+    uint16_t processed = 0;
+
+    // Create bursts of contiguous packets to the same interface
+    std::for_each(outgoing, outgoing + n, [&](auto mbuf) {
+        rte_ether_addr hw_addr;
+        tx_mbuf_get_hwaddr(mbuf, hw_addr.addr_bytes);
+        if (!rte_is_same_ether_addr(&hw_addr, &burst_hw_addr)) {
+            auto sinks =
+                fib->find_interface_tx_sinks(port_id, hw_addr.addr_bytes);
+            if (sinks) {
+                // Start a new burst
+                assert(nbursts < bursts.size());
+                burst = &bursts[nbursts++];
+                *burst = {processed, 1, sinks};
+            } else {
+                // No sinks found, so can skip this burst
+                burst = nullptr;
+            }
+            burst_hw_addr = hw_addr;
+        } else {
+            // Extend the current burst
+            if (burst) { ++std::get<COUNT>(*burst); }
+        }
+        ++processed;
+    });
+
+    // Push the bursts to the sinks
+    std::for_each(bursts.data(), bursts.data() + nbursts, [&](auto& burst) {
+        auto& sinks = std::get<SINKS>(burst);
+        std::for_each(std::begin(*sinks), std::end(*sinks), [&](auto& sink) {
+            sink.push(reinterpret_cast<packet::packet_buffer* const*>(outgoing)
+                          + std::get<START>(burst),
+                      std::get<COUNT>(burst));
+        });
+    });
+}
+
+static void tx_sink_dispatch(const fib* fib,
+                             const tx_queue* txq,
+                             rte_mbuf* const outgoing[],
+                             uint16_t n)
+{
+    auto port_id = txq->port_id();
+
+    // Dispatch to port level Tx sinks
+    auto& port_sinks = fib->get_tx_sinks(port_id);
+    for (auto& sink : port_sinks) {
+        sink.push(reinterpret_cast<packet::packet_buffer* const*>(outgoing), n);
+    }
+
+    // Dispatch to interface level Tx sinks
+    if (fib->has_interface_sinks(port_id)) {
+        tx_interface_sink_dispatch(fib, txq, outgoing, n);
+    }
+}
+
+static uint16_t tx_burst(const fib* fib, const tx_queue* txq)
 {
     std::array<rte_mbuf*, pkt_burst_size> outgoing;
 
@@ -553,6 +624,8 @@ static uint16_t tx_burst(const tx_queue* txq)
                txq->queue_id());
     }
 
+    if (sent) { tx_sink_dispatch(fib, txq, outgoing.data(), sent); }
+
     return (sent);
 }
 
@@ -568,8 +641,8 @@ static uint16_t service_event(event_loop::generic_event_loop& loop,
                            [&](const rx_queue* rxq) -> uint16_t {
                                return (rx_burst(fib, rxq));
                            },
-                           [](const tx_queue* txq) -> uint16_t {
-                               auto nb_pkts = tx_burst(txq);
+                           [&](const tx_queue* txq) -> uint16_t {
+                               auto nb_pkts = tx_burst(fib, txq);
                                const_cast<tx_queue*>(txq)->enable();
                                return (nb_pkts);
                            },
@@ -677,8 +750,8 @@ static void run_pollable(run_args&& args)
                                 rxq->enable();
                             } while (rx_burst(args.fib, rxq));
                         },
-                        [](tx_queue* txq) {
-                            while (tx_burst(txq) == pkt_burst_size) {
+                        [&](tx_queue* txq) {
+                            while (tx_burst(args.fib, txq) == pkt_burst_size) {
                                 rte_pause();
                             }
                             txq->enable();

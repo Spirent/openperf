@@ -210,30 +210,6 @@ static void maybe_update_rxq_lro_mode(const model::port_info& info)
     }
 }
 
-static void interface_tx_sink_dispatch(net_interface& interface,
-                                       struct rte_mbuf** pkts,
-                                       uint16_t pkts_len,
-                                       void* cbdata)
-{
-    auto fib = reinterpret_cast<worker::fib*>(cbdata);
-    auto port_index = interface.port_index();
-
-    // Dispatch to port level Tx sinks
-    auto& port_sinks = fib->get_tx_sinks(port_index);
-    for (auto& sink : port_sinks) {
-        sink.push(reinterpret_cast<packet::packet_buffer**>(pkts), pkts_len);
-    }
-
-    // Dispatch to interface level Tx sinks
-    if (auto sinks = fib->find_interface_tx_sinks(port_index,
-                                                  interface.data()->hwaddr)) {
-        for (auto& sink : *sinks) {
-            sink.push(reinterpret_cast<packet::packet_buffer**>(pkts),
-                      pkts_len);
-        }
-    }
-}
-
 worker_controller::worker_controller(void* context,
                                      openperf::core::event_loop& loop,
                                      driver::generic_driver& driver)
@@ -518,10 +494,6 @@ void worker_controller::add_interface(
         const_cast<netif*>(std::any_cast<const netif*>(interface.data()));
     auto to_delete = m_fib->insert_interface(*port_idx, mac, ifp);
     m_recycler->writer_add_gc_callback([to_delete]() { delete to_delete; });
-
-    auto& net_ifc = const_cast<net_interface&>(dpdk::to_interface(ifp));
-    net_ifc.set_tx_sink_callback(interface_tx_sink_dispatch);
-    net_ifc.set_tx_sink_data(m_fib.get());
 
     OP_LOG(OP_LOG_DEBUG,
            "Added interface with mac = %s to port %.*s (idx = %u)\n",

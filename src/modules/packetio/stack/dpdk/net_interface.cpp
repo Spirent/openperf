@@ -12,6 +12,7 @@
 #include "packetio/drivers/dpdk/dpdk.h"
 #include "packetio/drivers/dpdk/model/port_info.hpp"
 #include "packetio/memory/dpdk/pbuf_utils.h"
+#include "packetio/memory/dpdk/tx_mbuf.hpp"
 #include "packetio/stack/dpdk/net_interface.hpp"
 #include "packetio/stack/dpdk/offload_utils.hpp"
 #if LWIP_IPV6
@@ -435,8 +436,6 @@ net_interface::net_interface(std::string_view id,
     , m_max_gso_length(net_interface_max_gso_length(port_index))
     , m_config(config)
     , m_transmit(tx)
-    , m_tx_sink_callback(nullptr)
-    , m_tx_sink_data(nullptr)
 {
     m_netif.state = this;
 
@@ -606,15 +605,14 @@ err_t net_interface::handle_tx(struct pbuf* p)
         set_tx_offload_metadata(m_head, m_netif.mtu);
     }
 
+    /* Store the interface hwaddr in the mbuf so tx capture can use it */
+    tx_mbuf_set_hwaddr(m_head, m_netif.hwaddr);
+
     rte_mbuf* pkts[] = {m_head};
     if (m_transmit(port_index(), 0, reinterpret_cast<void**>(pkts), 1) != 1) {
         return ERR_BUF;
     }
 
-    /* Dispatch packet to interface sinks */
-    if (m_tx_sink_data && m_tx_sink_callback) {
-        m_tx_sink_callback(*this, pkts, 1, m_tx_sink_data);
-    }
     return ERR_OK;
 }
 
@@ -636,13 +634,6 @@ const netif* net_interface::data() const { return (&m_netif); }
 unsigned net_interface::max_gso_length() const { return (m_max_gso_length); }
 
 interface::config_data net_interface::config() const { return (m_config); }
-
-void net_interface::set_tx_sink_callback(tx_sink_callback callback)
-{
-    m_tx_sink_callback = callback;
-}
-
-void net_interface::set_tx_sink_data(void* data) { m_tx_sink_data = data; }
 
 const net_interface& to_interface(netif* ifp)
 {
