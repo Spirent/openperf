@@ -4,6 +4,7 @@
 #include <atomic>
 #include <cstring>
 #include <memory>
+#include <optional>
 #include <string>
 #include <thread>
 #include <zmq.h>
@@ -39,7 +40,8 @@ public:
            const std::string& name = "worker");
     ~worker();
 
-    template <typename T> void start(T&&, int core_id = -1);
+    template <typename T>
+    void start(T&&, std::optional<uint16_t> core_id = std::nullopt);
     bool is_finished() const { return m_finished; }
 
 private:
@@ -53,7 +55,8 @@ private:
 //
 
 // Methods : public
-template <typename T> void worker::start(T&& task, int core_id)
+template <typename T>
+void worker::start(T&& task, std::optional<uint16_t> core_id)
 {
     if (!m_finished) return;
 
@@ -63,11 +66,12 @@ template <typename T> void worker::start(T&& task, int core_id)
         op_thread_setname(m_thread_name.c_str());
 
         // Set Thread core affinity, if specified
-        if (core_id >= 0) {
-            if (auto err = op_thread_set_affinity(core_id))
+        if (core_id) {
+            if (auto err = op_thread_set_affinity(core_id.value())) {
                 OP_LOG(OP_LOG_ERROR,
                        "Cannot set worker thread affinity: %s",
                        std::strerror(err));
+            }
         }
 
         OP_LOG(OP_LOG_DEBUG, "Worker thread started");
