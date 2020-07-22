@@ -34,6 +34,13 @@ def generator_model(api_client, id = ''):
     gen.init_percent_complete = 0
     return gen
 
+def wait_for_buffer_initialization_done(api_client, generator_id, timeout):
+    for i in range(timeout * 10):
+        g7r = api_client.get_memory_generator(generator_id)
+        if g7r.init_percent_complete == 100:
+            return True
+        time.sleep(.1)
+    return False
 
 class _has_json_content_type(Matcher):
     def _match(self, request):
@@ -211,8 +218,7 @@ with description('Memory Generator Module', 'memory') as self:
                 g7r = self._api.create_memory_generator(model)
                 expect(g7r).to(be_valid_memory_generator)
                 self._g7r = g7r
-                # Wait for initialization process done
-                time.sleep(.1)
+                expect(wait_for_buffer_initialization_done(self._api, g7r.id, 10)).to(be_true)
 
             with after.all:
                 self._api.delete_memory_generator(self._g7r.id)
@@ -262,8 +268,7 @@ with description('Memory Generator Module', 'memory') as self:
                 g7r = self._api.create_memory_generator(model)
                 expect(g7r).to(be_valid_memory_generator)
 
-                # Wait for initialization process done
-                time.sleep(.1)
+                expect(wait_for_buffer_initialization_done(self._api, g7r.id, 10)).to(be_true)
 
                 start_result = self._api.start_memory_generator_with_http_info(g7r.id)
                 expect(start_result[1]).to(equal(201))
@@ -305,8 +310,8 @@ with description('Memory Generator Module', 'memory') as self:
                 model = generator_model(self._api.api_client)
                 self._g8s = [self._api.create_memory_generator(model) for a in range(3)]
 
-                # Wait for initialization process done
-                time.sleep(.1)
+                for a in range(3):
+                    expect(wait_for_buffer_initialization_done(self._api, self._g8s[a].id, 10)).to(be_true)
 
             with after.all:
                 for g7r in self._g8s:
@@ -387,10 +392,8 @@ with description('Memory Generator Module', 'memory') as self:
                     self._api.api_client)
                 g8s = [self._api.create_memory_generator(model) for a in range(3)]
 
-                # Wait for initialization process done
-                time.sleep(.1)
-
                 for a in range(3):
+                    expect(wait_for_buffer_initialization_done(self._api, g8s[a].id, 10)).to(be_true)
                     result = self._api.start_memory_generator_with_http_info(g8s[a].id)
                     expect(result[1]).to(equal(201))
 
