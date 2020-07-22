@@ -3,6 +3,14 @@
 #include <unordered_map>
 #include <functional>
 
+#include "swagger/v1/model/DynamicResultsConfig.h"
+#include "swagger/v1/model/DynamicResults.h"
+#include "swagger/v1/model/ThresholdConfig.h"
+#include "swagger/v1/model/ThresholdResult.h"
+#include "swagger/v1/model/TDigestConfig.h"
+#include "swagger/v1/model/TDigestResult.h"
+#include "swagger/v1/model/TDigestCentroid.h"
+
 namespace openperf::dynamic {
 
 // Enum Conversions
@@ -34,28 +42,26 @@ std::string to_string(const comparator& pattern)
     return "unknown";
 }
 
-dynamic::argument_t::function_t to_argument_function(const std::string& value)
+argument_t::function_t to_argument_function(const std::string& value)
 {
-    static const std::unordered_map<std::string,
-                                    dynamic::argument_t::function_t>
-        smap = {
-            {"dx", dynamic::argument_t::DX},
-            {"dxdy", dynamic::argument_t::DXDY},
-            {"dxdt", dynamic::argument_t::DXDT},
+    static const std::unordered_map<std::string, argument_t::function_t> smap =
+        {
+            {"dx", argument_t::DX},
+            {"dxdy", argument_t::DXDY},
+            {"dxdt", argument_t::DXDT},
         };
 
     if (smap.count(value)) return smap.at(value);
     throw std::runtime_error("Function \"" + value + "\" is unknown");
 }
 
-std::string to_string(const dynamic::argument_t::function_t& f)
+std::string to_string(const argument_t::function_t& f)
 {
-    static const std::unordered_map<dynamic::argument_t::function_t,
-                                    std::string>
-        fmap = {
-            {dynamic::argument_t::DX, "dx"},
-            {dynamic::argument_t::DXDY, "dxdy"},
-            {dynamic::argument_t::DXDT, "dxdt"},
+    static const std::unordered_map<argument_t::function_t, std::string> fmap =
+        {
+            {argument_t::DX, "dx"},
+            {argument_t::DXDY, "dxdy"},
+            {argument_t::DXDT, "dxdt"},
         };
 
     if (fmap.count(f)) return fmap.at(f);
@@ -107,7 +113,7 @@ configuration from_swagger(model::DynamicResultsConfig& m)
     return config;
 }
 
-model::ThresholdResult to_swagger(const dynamic::results::threshold& r)
+model::ThresholdResult to_swagger(const results::threshold& r)
 {
     model::ThresholdResult result;
 
@@ -115,18 +121,18 @@ model::ThresholdResult to_swagger(const dynamic::results::threshold& r)
     result.setFunction(to_string(r.argument.function));
     result.setStatX(r.argument.x);
 
-    if (r.argument.function == dynamic::argument_t::DXDY)
-        result.setStatY(r.argument.y);
+    if (r.argument.function == argument_t::DXDY) result.setStatY(r.argument.y);
 
-    result.setValue(r.threshold.value());
-    result.setCondition(to_string(r.threshold.condition()));
-    result.setConditionTrue(r.threshold.trues());
-    result.setConditionFalse(r.threshold.falses());
+    auto& threshold = r.threshold;
+    result.setValue(threshold.value());
+    result.setCondition(to_string(threshold.condition()));
+    result.setConditionTrue(threshold.trues());
+    result.setConditionFalse(threshold.falses());
 
     return result;
 }
 
-model::TDigestResult to_swagger(const dynamic::results::tdigest& r)
+model::TDigestResult to_swagger(const results::tdigest& r)
 {
     model::TDigestResult result;
 
@@ -134,34 +140,27 @@ model::TDigestResult to_swagger(const dynamic::results::tdigest& r)
     result.setFunction(to_string(r.argument.function));
     result.setStatX(r.argument.x);
 
-    if (r.argument.function == dynamic::argument_t::DXDY)
-        result.setStatY(r.argument.y);
+    if (r.argument.function == argument_t::DXDY) result.setStatY(r.argument.y);
 
     result.setCompression(r.compression);
 
-    auto centroids = r.tdigest->get();
+    auto centroids = r.centroids;
     std::transform(centroids.begin(),
                    centroids.end(),
                    std::back_inserter(result.getCentroids()),
                    [](const auto& x) {
+                       model::TDigestCentroid centroid;
+                       centroid.setMean(x.first);
+                       centroid.setWeight(x.second);
+
                        return std::make_shared<model::TDigestCentroid>(
-                           to_swagger({x.first, x.second}));
+                           centroid);
                    });
 
     return result;
 }
 
-model::TDigestCentroid to_swagger(const dynamic::centroid& c)
-{
-    model::TDigestCentroid centroid;
-
-    centroid.setMean(c.mean);
-    centroid.setWeight(c.weight);
-
-    return centroid;
-}
-
-model::DynamicResults to_swagger(const dynamic::results& r)
+model::DynamicResults to_swagger(const results& r)
 {
     model::DynamicResults result;
 

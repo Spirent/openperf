@@ -2,24 +2,23 @@
 #define _OP_DYNAMIC_API_HPP_
 
 #include <string>
+#include <memory>
 #include <vector>
 
 #include "dynamic/threshold.hpp"
-#include "digestible/digestible.h"
 
-#include "swagger/v1/model/DynamicResultsConfig.h"
-#include "swagger/v1/model/DynamicResults.h"
-#include "swagger/v1/model/ThresholdConfig.h"
-#include "swagger/v1/model/ThresholdResult.h"
-#include "swagger/v1/model/TDigestConfig.h"
-#include "swagger/v1/model/TDigestResult.h"
+namespace swagger::v1::model {
+class DynamicResultsConfig;
+class DynamicResults;
+class ThresholdConfig;
+class ThresholdResult;
+class TDigestConfig;
+class TDigestResult;
+} // namespace swagger::v1::model
 
 namespace openperf::dynamic {
 
 namespace model = ::swagger::v1::model;
-
-using tdigest = digestible::tdigest<double, uint32_t>;
-using centroid = digestible::centroid<double, uint32_t>;
 
 struct argument_t
 {
@@ -31,21 +30,21 @@ struct argument_t
 
 struct results
 {
-    using tdigest_ptr = std::shared_ptr<tdigest>;
+    using centroid = std::pair<double, uint32_t>;
 
     struct threshold
     {
-        dynamic::argument_t argument;
+        argument_t argument;
         std::string id;
         dynamic::threshold threshold;
     };
 
     struct tdigest
     {
-        dynamic::argument_t argument;
+        argument_t argument;
         std::string id;
         uint32_t compression;
-        tdigest_ptr tdigest;
+        std::vector<centroid> centroids;
     };
 
     std::vector<results::threshold> thresholds;
@@ -56,7 +55,7 @@ struct configuration
 {
     struct threshold
     {
-        dynamic::argument_t argument;
+        argument_t argument;
         std::string id;
         double value;
         comparator condition;
@@ -64,7 +63,7 @@ struct configuration
 
     struct tdigest
     {
-        dynamic::argument_t argument;
+        argument_t argument;
         std::string id;
         uint32_t compression;
     };
@@ -75,18 +74,17 @@ struct configuration
 
 // Enum Conversions
 comparator to_comparator(const std::string&);
-dynamic::argument_t::function_t to_argument_function(const std::string&);
+argument_t::function_t to_argument_function(const std::string&);
 std::string to_string(const comparator&);
-std::string to_string(const dynamic::argument_t::function_t&);
+std::string to_string(const argument_t::function_t&);
 
 // Swagger Model Conversions
 configuration from_swagger(model::DynamicResultsConfig&);
 configuration::tdigest from_swagger(const model::TDigestConfig&);
 configuration::threshold from_swagger(const model::ThresholdConfig&);
-model::DynamicResults to_swagger(const dynamic::results&);
-model::TDigestCentroid to_swagger(const dynamic::centroid&);
-model::TDigestResult to_swagger(const dynamic::results::tdigest&);
-model::ThresholdResult to_swagger(const dynamic::results::threshold&);
+model::DynamicResults to_swagger(const results&);
+model::TDigestResult to_swagger(const results::tdigest&);
+model::ThresholdResult to_swagger(const results::threshold&);
 
 } // namespace openperf::dynamic
 

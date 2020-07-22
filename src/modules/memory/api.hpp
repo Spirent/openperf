@@ -2,11 +2,12 @@
 #define _OP_MEMORY_API_HPP_
 
 #include <string>
+#include <memory>
 #include <variant>
 
 #include <json.hpp>
-#include <zmq.h>
 #include <tl/expected.hpp>
+#include <zmq.h>
 
 #include "info.hpp"
 #include "generator.hpp"

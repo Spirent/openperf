@@ -65,6 +65,8 @@ private:
     memory_stat m_stat;
     std::atomic<memory_stat*> m_stat_ptr;
 
+    dynamic::spool<memory_stat> m_dynamic;
+
 public:
     // Constructors & Destructor
     generator();
@@ -80,6 +82,7 @@ public:
     void pause();
 
     void start();
+    void start(const dynamic::configuration&);
     void stop();
     void restart();
     void reset();
