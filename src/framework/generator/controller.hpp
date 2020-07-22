@@ -60,7 +60,7 @@ private:
 public:
     // Constructors & Destructor
     controller(const controller&) = delete;
-    explicit controller(const std::string& name = "controller");
+    explicit controller(const std::string& name);
     ~controller();
 
     // Methods : public
@@ -70,7 +70,9 @@ public:
     void reset() { send(internal::operation_t::RESET); }
 
     template <typename T>
-    void add(T&& task, const std::string& name = "", int core = -1);
+    void add(T&& task,
+             const std::string& name,
+             std::optional<uint16_t> core = std::nullopt);
     template <typename S, typename T> void start(T&& processor);
 
 private:
@@ -107,7 +109,9 @@ template <typename S, typename T> void controller::start(T&& processor)
 }
 
 template <typename T>
-void controller::add(T&& task, const std::string& name, int core)
+void controller::add(T&& task,
+                     const std::string& name,
+                     std::optional<uint16_t> core)
 {
     auto control =
         internal::worker::socket_pointer(op_socket_get_client_subscription(
