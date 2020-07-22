@@ -51,25 +51,13 @@ client::get_worker_ids(std::optional<std::string_view> obj_id,
 tl::expected<std::vector<unsigned>, int>
 client::get_worker_rx_ids(std::optional<std::string_view> obj_id)
 {
-    auto request = request_worker_rx_ids{};
-    if (obj_id) { request.object_id = std::string(*obj_id); }
-
-    auto reply = do_request(m_socket.get(), request);
-    if (!reply) { return (tl::make_unexpected(reply.error())); }
-
-    return (std::get<reply_worker_ids>(reply.value()).worker_ids);
+    return get_worker_ids(obj_id, packet::traffic_direction::RX);
 }
 
 tl::expected<std::vector<unsigned>, int>
 client::get_worker_tx_ids(std::optional<std::string_view> obj_id)
 {
-    auto request = request_worker_tx_ids{};
-    if (obj_id) { request.object_id = std::string(*obj_id); }
-
-    auto reply = do_request(m_socket.get(), request);
-    if (!reply) { return (tl::make_unexpected(reply.error())); }
-
-    return (std::get<reply_worker_ids>(reply.value()).worker_ids);
+    return get_worker_ids(obj_id, packet::traffic_direction::TX);
 }
 
 tl::expected<void, int> client::add_sink(std::string_view src_id,

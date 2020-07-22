@@ -102,18 +102,6 @@ reply_msg handle_request(workers::generic_workers& workers,
         workers.get_worker_ids(request.object_id, request.direction)});
 }
 
-reply_msg handle_request(workers::generic_workers& workers,
-                         const request_worker_rx_ids& rx_ids)
-{
-    return (reply_worker_ids{workers.get_rx_worker_ids(rx_ids.object_id)});
-}
-
-reply_msg handle_request(workers::generic_workers& workers,
-                         const request_worker_tx_ids& tx_ids)
-{
-    return (reply_worker_ids{workers.get_tx_worker_ids(tx_ids.object_id)});
-}
-
 static std::string to_string(request_msg& request)
 {
     return (std::visit(
@@ -161,16 +149,6 @@ static std::string to_string(request_msg& request)
                 return (
                     "get worker " + direction_str + " ids for "
                     + (msg.object_id ? *msg.object_id : std::string("ALL")));
-            },
-            [](const request_worker_rx_ids& rx_ids) {
-                return ("get worker RX ids for "
-                        + (rx_ids.object_id ? *rx_ids.object_id
-                                            : std::string("ALL")));
-            },
-            [](const request_worker_tx_ids& tx_ids) {
-                return ("get worker TX ids for "
-                        + (tx_ids.object_id ? *tx_ids.object_id
-                                            : std::string("ALL")));
             }),
         request));
 }

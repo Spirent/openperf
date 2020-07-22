@@ -54,16 +54,6 @@ serialized_msg serialize_request(request_msg&& msg)
                                     serialized, worker_ids.object_id.value())
                                                      : message::push(serialized,
                                                                      0));
-                 },
-                 [&](request_worker_rx_ids& rx_ids) {
-                     return (rx_ids.object_id) ? message::push(
-                                serialized, rx_ids.object_id.value())
-                                               : message::push(serialized, 0);
-                 },
-                 [&](request_worker_tx_ids& tx_ids) {
-                     return (tx_ids.object_id) ? message::push(
-                                serialized, tx_ids.object_id.value())
-                                               : message::push(serialized, 0);
                  }),
              msg));
     if (error) { throw std::bad_alloc(); }
@@ -141,18 +131,6 @@ tl::expected<request_msg, int> deserialize_request(serialized_msg&& msg)
     case utils::variant_index<request_msg, request_worker_ids>(): {
         auto request = request_worker_ids{};
         request.direction = message::pop<packet::traffic_direction>(msg);
-        auto object_id = message::pop_string(msg);
-        if (!object_id.empty()) request.object_id = object_id;
-        return request;
-    }
-    case utils::variant_index<request_msg, request_worker_rx_ids>(): {
-        auto request = request_worker_rx_ids{};
-        auto object_id = message::pop_string(msg);
-        if (!object_id.empty()) request.object_id = object_id;
-        return request;
-    }
-    case utils::variant_index<request_msg, request_worker_tx_ids>(): {
-        auto request = request_worker_tx_ids{};
         auto object_id = message::pop_string(msg);
         if (!object_id.empty()) request.object_id = object_id;
         return request;

@@ -96,16 +96,6 @@ struct request_worker_ids
     packet::traffic_direction direction;
 };
 
-struct request_worker_rx_ids
-{
-    std::optional<std::string> object_id = std::nullopt;
-};
-
-struct request_worker_tx_ids
-{
-    std::optional<std::string> object_id = std::nullopt;
-};
-
 struct reply_task_add
 {
     std::string task_id;
@@ -131,9 +121,7 @@ using request_msg = std::variant<request_sink_add,
                                  request_source_swap,
                                  request_task_add,
                                  request_task_del,
-                                 request_worker_ids,
-                                 request_worker_rx_ids,
-                                 request_worker_tx_ids>;
+                                 request_worker_ids>;
 
 using reply_msg =
     std::variant<reply_task_add, reply_worker_ids, reply_ok, reply_error>;
