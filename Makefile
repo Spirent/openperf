@@ -23,6 +23,10 @@ test: test_unit test_aat
 test_aat: openperf libopenperf-shim
 	@cd tests/aat && $(MAKE)
 
+.PHONY: test_aat_%
+test_aat_%: openperf libopenperf-shim
+	@cd tests/aat && $(MAKE) progress_$*
+
 .PHONY: test_unit
 test_unit: deps
 	@cd tests/unit && $(MAKE)

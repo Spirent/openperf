@@ -18,9 +18,17 @@ junit: setup
 	@rm -f $(LOG_FILE) $(XML_FILE)
 	$(ENV_SUBDIR)/bin/mamba $(SPEC_SUBDIRS) --format junit > $(XML_FILE)
 
+junit_%: setup
+	@rm -f $(LOG_FILE) $(XML_FILE)
+	$(ENV_SUBDIR)/bin/mamba $(SPEC_SUBDIRS) -t $* --format junit > $(XML_FILE)
+
 progress: setup
 	@rm -f $(LOG_FILE)
 	$(ENV_SUBDIR)/bin/mamba $(SPEC_SUBDIRS)
+
+progress_%: setup
+	@rm -f $(LOG_FILE)
+	$(ENV_SUBDIR)/bin/mamba $(SPEC_SUBDIRS) -t $*
 
 junit_docker: setup
 	@rm -f $(LOG_FILE) $(XML_FILE)
