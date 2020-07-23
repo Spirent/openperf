@@ -251,7 +251,7 @@ worker_controller::worker_controller(void* context,
     /* Construct our necessary port queues */
     auto q_descriptors = get_queue_descriptors(port_info);
     auto& queues = worker::port_queues::instance();
-    queues.setup(q_descriptors);
+    queues.setup(m_fib.get(), q_descriptors);
 
     /* Update queues to take advantage of port capabilities */
     /* XXX: queues must be setup first! */

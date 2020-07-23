@@ -17,6 +17,7 @@
  */
 
 #include <cstdint>
+#include <any>
 
 #include "packetio/drivers/dpdk/queue_utils.hpp"
 #include "packetio/workers/dpdk/rxtx_queue_container.hpp"
@@ -31,14 +32,17 @@ namespace openperf::packetio::dpdk::worker {
 class port_queues : public utils::singleton<port_queues>
 {
 public:
-    void setup(const std::vector<queue::descriptor>& descriptors);
+    void setup(std::any fib, const std::vector<queue::descriptor>& descriptors);
     void unset();
 
     using queue_container = rxtx_queue_container<rx_queue, tx_queue>;
     const queue_container& operator[](int x) const;
 
+    template <typename T> auto fib() { return std::any_cast<T>(m_fib); }
+
 private:
     std::vector<queue_container> m_queues;
+    std::any m_fib;
 };
 
 } // namespace openperf::packetio::dpdk::worker

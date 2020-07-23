@@ -2,6 +2,7 @@
 #include "packetio/drivers/dpdk/dpdk.h"
 #include "packetio/workers/dpdk/worker_queues.hpp"
 #include "packetio/workers/dpdk/worker_tx_functions.hpp"
+#include "packetio/workers/dpdk/worker_api.hpp"
 
 namespace openperf::packetio::dpdk::worker {
 
@@ -67,7 +68,8 @@ static rte_mbuf* eal_mbuf_copy_chain(const rte_mbuf* src_head)
     return (dst_head);
 }
 
-static uint16_t transmit(uint16_t port_idx,
+static uint16_t transmit(worker::fib* fib,
+                         uint16_t port_idx,
                          uint16_t queue_idx,
                          struct rte_mbuf* mbufs[],
                          uint16_t nb_mbufs)
@@ -82,6 +84,8 @@ static uint16_t transmit(uint16_t port_idx,
            port_idx,
            queue_idx);
 
+    tx_sink_dispatch(fib, port_idx, mbufs, sent);
+
     return (sent);
 }
 
@@ -90,7 +94,11 @@ uint16_t tx_copy_direct(int port_idx,
                         struct rte_mbuf* mbufs[],
                         uint16_t nb_mbufs)
 {
+    auto& queues = worker::port_queues::instance();
+    auto fib = queues.fib<worker::fib*>();
     uint16_t sent = 0;
+
+    assert(fib);
 
     for (uint16_t i = 0; i < nb_mbufs; i++) {
         /*
@@ -99,7 +107,7 @@ uint16_t tx_copy_direct(int port_idx,
          */
         auto copy = eal_mbuf_copy_chain(mbufs[i]);
         rte_pktmbuf_free(mbufs[i]);
-        if (!copy || !transmit(port_idx, 0, &copy, 1)) { return (sent); }
+        if (!copy || !transmit(fib, port_idx, 0, &copy, 1)) { return (sent); }
         sent++;
     }
 
@@ -133,7 +141,12 @@ uint16_t tx_copy_queued(int port_idx,
 uint16_t
 tx_direct(int port_idx, uint32_t, struct rte_mbuf* mbufs[], uint16_t nb_mbufs)
 {
-    return (transmit(port_idx, 0, mbufs, nb_mbufs));
+    auto& queues = worker::port_queues::instance();
+    auto fib = queues.fib<worker::fib*>();
+
+    assert(fib);
+
+    return (transmit(fib, port_idx, 0, mbufs, nb_mbufs));
 }
 
 uint16_t tx_queued(int port_idx,

@@ -512,7 +512,7 @@ static uint16_t rx_burst(const fib* fib, const rx_queue* rxq)
 }
 
 static void tx_interface_sink_dispatch(const fib* fib,
-                                       const tx_queue* txq,
+                                       uint16_t port_id,
                                        rte_mbuf* const outgoing[],
                                        uint16_t n)
 {
@@ -525,7 +525,6 @@ static void tx_interface_sink_dispatch(const fib* fib,
     burst_tuple* burst = nullptr;
     uint16_t nbursts = 0;
 
-    auto port_id = txq->port_id();
     rte_ether_addr burst_hw_addr{};
     uint16_t processed = 0;
 
@@ -564,13 +563,11 @@ static void tx_interface_sink_dispatch(const fib* fib,
     });
 }
 
-static void tx_sink_dispatch(const fib* fib,
-                             const tx_queue* txq,
-                             rte_mbuf* const outgoing[],
-                             uint16_t n)
+void tx_sink_dispatch(const fib* fib,
+                      uint16_t port_id,
+                      rte_mbuf* const outgoing[],
+                      uint16_t n)
 {
-    auto port_id = txq->port_id();
-
     // Dispatch to port level Tx sinks
     auto& port_sinks = fib->get_tx_sinks(port_id);
     for (auto& sink : port_sinks) {
@@ -579,7 +576,7 @@ static void tx_sink_dispatch(const fib* fib,
 
     // Dispatch to interface level Tx sinks
     if (fib->has_interface_sinks(port_id)) {
-        tx_interface_sink_dispatch(fib, txq, outgoing, n);
+        tx_interface_sink_dispatch(fib, port_id, outgoing, n);
     }
 }
 
@@ -624,7 +621,7 @@ static uint16_t tx_burst(const fib* fib, const tx_queue* txq)
                txq->queue_id());
     }
 
-    if (sent) { tx_sink_dispatch(fib, txq, outgoing.data(), sent); }
+    if (sent) { tx_sink_dispatch(fib, txq->port_id(), outgoing.data(), sent); }
 
     return (sent);
 }
