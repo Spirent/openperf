@@ -18,3 +18,6 @@ from common.helper.traffic import (make_generator_config,
 from common.helper.capture import (make_capture_config,
                                    get_capture_pcap,
                                    get_pcap_packet_count)
+
+# modules.py
+from common.helper.modules import (check_modules_exists)

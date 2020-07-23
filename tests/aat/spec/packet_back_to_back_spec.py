@@ -18,6 +18,7 @@ from common.matcher import (be_valid_packet_analyzer,
                             be_valid_packet_generator_result,
                             be_valid_receive_flow,
                             be_valid_transmit_flow)
+from common.helper import check_modules_exists
 from expects import *
 
 
@@ -623,6 +624,8 @@ with description('Packet back to back', 'packet_b2b') as self:
             self.analyzer_api = client.api.PacketAnalyzersApi(service.client())
             self.capture_api = client.api.PacketCapturesApi(service.client())
             self.generator_api = client.api.PacketGeneratorsApi(service.client())
+            if not check_modules_exists(service.client(), 'packet-analyzer', 'packet-capture', 'packet-generator'):
+                self.skip()
 
         with description('with single traffic definition,'):
             with description('without signatures,'):

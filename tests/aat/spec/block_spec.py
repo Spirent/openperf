@@ -11,6 +11,7 @@ from common.matcher import (be_valid_block_device,
                             be_valid_block_generator,
                             be_valid_block_generator_result,
                             raise_api_exception)
+from common.helper import check_modules_exists
 
 
 CONFIG = Config(os.path.join(os.path.dirname(__file__),
@@ -67,6 +68,8 @@ with description('Block,', 'block') as self:
             service = Service(CONFIG.service())
             self.process = service.start()
             self.api = client.api.BlockGeneratorApi(service.client())
+            if not check_modules_exists(service.client(), 'block'):
+                self.skip()
 
         with description('invalid HTTP methods,'):
             with description('/block-devices,'):

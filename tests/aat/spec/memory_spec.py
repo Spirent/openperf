@@ -10,6 +10,7 @@ from common.matcher import (raise_api_exception,
                             be_valid_memory_info,
                             be_valid_memory_generator,
                             be_valid_memory_generator_result)
+from common.helper import check_modules_exists
 
 
 CONFIG = Config(os.path.join(os.path.dirname(__file__),
@@ -58,6 +59,8 @@ with description('Memory Generator Module', 'memory') as self:
         service = Service(CONFIG.service())
         self._process = service.start()
         self._api = client.api.MemoryGeneratorApi(service.client())
+        if not check_modules_exists(service.client(), 'memory'):
+            self.skip()
 
     with after.all:
         try:

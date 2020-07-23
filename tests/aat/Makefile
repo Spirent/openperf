@@ -10,33 +10,35 @@ XML_FILE		= results.xml
 API_FILES = $(API_SUBDIR)/requirements.txt
 API_FILES += $(shell find $(API_SUBDIR)/ -type f -name '*.py')
 
+TEST_TOOL_CMD = $(ENV_SUBDIR)/bin/python test_tool/cli.py
+
 .PHONY: clean junit progress setup
 
 all: progress
 
 junit: setup
 	@rm -f $(LOG_FILE) $(XML_FILE)
-	$(ENV_SUBDIR)/bin/mamba $(SPEC_SUBDIRS) --format junit > $(XML_FILE)
+	$(TEST_TOOL_CMD) $(SPEC_SUBDIRS) --format junit > $(XML_FILE)
 
 junit_%: setup
 	@rm -f $(LOG_FILE) $(XML_FILE)
-	$(ENV_SUBDIR)/bin/mamba $(SPEC_SUBDIRS) -t $* --format junit > $(XML_FILE)
+	$(TEST_TOOL_CMD) $(SPEC_SUBDIRS) -t $* --format junit > $(XML_FILE)
 
 progress: setup
 	@rm -f $(LOG_FILE)
-	$(ENV_SUBDIR)/bin/mamba $(SPEC_SUBDIRS)
+	$(TEST_TOOL_CMD) $(SPEC_SUBDIRS)
 
 progress_%: setup
 	@rm -f $(LOG_FILE)
-	$(ENV_SUBDIR)/bin/mamba $(SPEC_SUBDIRS) -t $*
+	$(TEST_TOOL_CMD) $(SPEC_SUBDIRS) -t $*
 
 junit_docker: setup
 	@rm -f $(LOG_FILE) $(XML_FILE)
-	$(ENV_SUBDIR)/bin/mamba $(SPEC_DOCKER_SUBDIRS) --format junit > $(XML_FILE)
+	$(TEST_TOOL_CMD) $(SPEC_DOCKER_SUBDIRS) --format junit > $(XML_FILE)
 
 progress_docker: setup
 	@rm -f $(LOG_FILE)
-	$(ENV_SUBDIR)/bin/mamba $(SPEC_DOCKER_SUBDIRS)
+	$(TEST_TOOL_CMD) $(SPEC_DOCKER_SUBDIRS)
 
 setup: $(ENV_SUBDIR)/
 

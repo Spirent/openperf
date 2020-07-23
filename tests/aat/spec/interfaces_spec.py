@@ -13,6 +13,7 @@ from common.helper import (empty_interface,
                            ipv6_interface,
                            make_interface_protocols)
 from common.matcher import be_valid_interface, raise_api_exception
+from common.helper import check_modules_exists
 
 
 CONFIG = Config(os.path.join(os.path.dirname(__file__), os.environ.get('MAMBA_CONFIG', 'config.yaml')))
@@ -26,6 +27,8 @@ with description('Interfaces,', 'interfaces') as self:
             service = Service(CONFIG.service())
             self.process = service.start()
             self.api = client.api.InterfacesApi(service.client())
+            if not check_modules_exists(service.client(), 'packetio'):
+                sself.skip()
 
         with description('list,'):
             with description('Eth,'):

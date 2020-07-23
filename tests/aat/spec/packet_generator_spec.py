@@ -11,6 +11,7 @@ from common.matcher import (be_valid_packet_generator,
                             be_valid_packet_generator_result,
                             be_valid_transmit_flow,
                             raise_api_exception)
+from common.helper import check_modules_exists
 
 
 CONFIG = Config(os.path.join(os.path.dirname(__file__),
@@ -169,6 +170,8 @@ with description('Packet Generator,', 'packet_generator') as self:
             service = Service(CONFIG.service())
             self.process = service.start()
             self.api = client.api.PacketGeneratorsApi(service.client())
+            if not check_modules_exists(service.client(), 'packet-generator'):
+                self.skip()
 
         with description('invalid HTTP methods,'):
             with description('/packet/generators,'):
