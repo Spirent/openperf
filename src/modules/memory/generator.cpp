@@ -1,6 +1,7 @@
 #include "memory/generator.hpp"
 #include "memory/task_memory_read.hpp"
 #include "memory/task_memory_write.hpp"
+#include "utils/random.hpp"
 
 #include <cinttypes>
 #include <sys/mman.h>
@@ -23,6 +24,7 @@ generator::generator(generator&& g) noexcept
     , m_config(g.m_config)
     , m_buffer{.ptr = nullptr, .size = 0}
     , m_serial_number(g.m_serial_number)
+    , m_init_percent_complete(0)
 {}
 
 generator& generator::operator=(generator&& g) noexcept
@@ -35,6 +37,7 @@ generator& generator::operator=(generator&& g) noexcept
         m_config = g.m_config;
         m_buffer = {.ptr = nullptr, .size = 0};
         m_serial_number = g.m_serial_number;
+        m_init_percent_complete = 0;
     }
     return (*this);
 }
@@ -47,6 +50,8 @@ generator::generator(const generator::config_t& c)
 
 generator::~generator()
 {
+    m_scrub_aborted.store(true);
+    if (m_scrub_thread.joinable()) m_scrub_thread.join();
     stop();
     free_buffer();
 }
@@ -145,10 +150,35 @@ generator::stat_t generator::stat() const
 
 generator::config_t generator::config() const { return m_config; }
 
+void generator::scrub_worker()
+{
+    size_t current = 0;
+    auto block_size =
+        ((m_buffer.size / 100 - 1) / getpagesize() + 1) * getpagesize();
+    auto seed = utils::random_uniform<uint32_t>();
+    while (!m_scrub_aborted.load() && current < m_buffer.size) {
+        auto buf_len =
+            std::min(static_cast<size_t>(block_size), m_buffer.size - current);
+        utils::op_prbs23_fill(&seed, (uint8_t*)m_buffer.ptr + current, buf_len);
+        current += buf_len;
+        m_init_percent_complete.store(current * 100 / m_buffer.size);
+    }
+}
+
 void generator::config(const generator::config_t& cfg)
 {
     pause();
     resize_buffer(cfg.buffer_size);
+    m_scrub_aborted.store(true);
+    if (m_scrub_thread.joinable()) m_scrub_thread.join();
+    m_scrub_aborted.store(false);
+
+    m_init_percent_complete.store(0);
+    m_scrub_thread = std::thread([this]() {
+        scrub_worker();
+        m_init_percent_complete.store(100);
+        m_scrub_aborted.store(false);
+    });
 
     reallocate_workers<task_memory_read>(m_read_workers, cfg.read_threads);
 

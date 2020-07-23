@@ -51,8 +51,7 @@ void virtual_device::scrub_worker(int fd, size_t header_size, size_t file_size)
                    strerror(errno));
             break;
         }
-        utils::op_pseudo_random_fill((uint8_t*)buf + current - file_offset,
-                                     buf_len);
+        utils::op_prbs23_fill((uint8_t*)buf + current - file_offset, buf_len);
         msync(buf, mmap_len, MS_SYNC);
         munmap(buf, mmap_len);
 

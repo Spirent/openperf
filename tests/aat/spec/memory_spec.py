@@ -16,7 +16,7 @@ CONFIG = Config(os.path.join(os.path.dirname(__file__),
                 os.environ.get('MAMBA_CONFIG', 'config.yaml')))
 
 
-def generator_model(api_client, running = False, id = ''):
+def generator_model(api_client, id = ''):
     config = client.models.MemoryGeneratorConfig()
     config.buffer_size = 1024
     config.reads_per_sec = 128
@@ -28,11 +28,19 @@ def generator_model(api_client, running = False, id = ''):
     config.pattern = 'sequential'
 
     gen = client.models.MemoryGenerator()
-    gen.running = running
+    gen.running = False
     gen.config = config
     gen.id = id
+    gen.init_percent_complete = 0
     return gen
 
+def wait_for_buffer_initialization_done(api_client, generator_id, timeout):
+    for i in range(timeout * 10):
+        g7r = api_client.get_memory_generator(generator_id)
+        if g7r.init_percent_complete == 100:
+            return True
+        time.sleep(.1)
+    return False
 
 class _has_json_content_type(Matcher):
     def _match(self, request):
@@ -106,6 +114,9 @@ with description('Memory Generator Module', 'memory') as self:
                             self._model.id = self._result[0].id
                         expect(self._result[0]).to(equal(self._model))
 
+                    with it('buffer initialization started'):
+                        expect(self._result[0].init_percent_complete).to(be(0))
+
                 with description('with empty ID'):
                     with before.all:
                         self._model = generator_model(self._api.api_client)
@@ -128,8 +139,7 @@ with description('Memory Generator Module', 'memory') as self:
 
             with context('GET'):
                 with before.all:
-                    model = generator_model(
-                        self._api.api_client, running = False)
+                    model = generator_model(self._api.api_client)
                     self._g8s = [self._api.create_memory_generator(model) for a in range(3)]
                     self._result = self._api.list_memory_generators_with_http_info(
                         _return_http_data_only=False)
@@ -151,8 +161,7 @@ with description('Memory Generator Module', 'memory') as self:
 
         with description('/memory-generators/{id}'):
             with before.all:
-                model = generator_model(
-                    self._api.api_client, running = False)
+                model = generator_model(self._api.api_client)
                 g7r = self._api.create_memory_generator(model)
                 expect(g7r).to(be_valid_memory_generator)
                 self._g7r = g7r
@@ -205,11 +214,11 @@ with description('Memory Generator Module', 'memory') as self:
 
         with description('/memory-generators/{id}/start'):
             with before.all:
-                model = generator_model(
-                    self._api.api_client, running = False)
+                model = generator_model(self._api.api_client)
                 g7r = self._api.create_memory_generator(model)
                 expect(g7r).to(be_valid_memory_generator)
                 self._g7r = g7r
+                expect(wait_for_buffer_initialization_done(self._api, g7r.id, 10)).to(be_true)
 
             with after.all:
                 self._api.delete_memory_generator(self._g7r.id)
@@ -255,9 +264,16 @@ with description('Memory Generator Module', 'memory') as self:
 
         with description('/memory-generators/{id}/stop'):
             with before.all:
-                model = generator_model(
-                    self._api.api_client, running = True)
+                model = generator_model(self._api.api_client)
                 g7r = self._api.create_memory_generator(model)
+                expect(g7r).to(be_valid_memory_generator)
+
+                expect(wait_for_buffer_initialization_done(self._api, g7r.id, 10)).to(be_true)
+
+                start_result = self._api.start_memory_generator_with_http_info(g7r.id)
+                expect(start_result[1]).to(equal(201))
+
+                g7r = self._api.get_memory_generator(g7r.id)
                 expect(g7r).to(be_valid_memory_generator)
                 self._g7r = g7r
 
@@ -291,9 +307,11 @@ with description('Memory Generator Module', 'memory') as self:
 
         with description('/memory-generators/x/bulk-start'):
             with before.all:
-                model = generator_model(
-                    self._api.api_client, running = False)
+                model = generator_model(self._api.api_client)
                 self._g8s = [self._api.create_memory_generator(model) for a in range(3)]
+
+                for a in range(3):
+                    expect(wait_for_buffer_initialization_done(self._api, self._g8s[a].id, 10)).to(be_true)
 
             with after.all:
                 for g7r in self._g8s:
@@ -371,8 +389,16 @@ with description('Memory Generator Module', 'memory') as self:
         with description('/memory-generators/x/bulk-stop'):
             with before.all:
                 model = generator_model(
-                    self._api.api_client, running = True)
-                self._g8s = [self._api.create_memory_generator(model) for a in range(3)]
+                    self._api.api_client)
+                g8s = [self._api.create_memory_generator(model) for a in range(3)]
+
+                for a in range(3):
+                    expect(wait_for_buffer_initialization_done(self._api, g8s[a].id, 10)).to(be_true)
+                    result = self._api.start_memory_generator_with_http_info(g8s[a].id)
+                    expect(result[1]).to(equal(201))
+
+                self._g8s = self._api.list_memory_generators()
+                expect(len(self._g8s)).to(equal(3))
 
             with after.all:
                 for g7r in self._g8s:
@@ -505,3 +531,17 @@ with description('Memory Generator Module', 'memory') as self:
                     with it('bad request (400)'):
                         expr = lambda: self._api.delete_memory_generator_result('bad_id')
                         expect(expr).to(raise_api_exception(400))
+        with after.each:
+            try:
+                for gen in self.api.list_memory_generators():
+                    if gen.running:
+                        self.api.stop_memory_generator(gen.id)
+                    self.api.delete_memory_generator(gen.id)
+            except AttributeError:
+                pass
+
+            try:
+                for file in self.api.list_memory_generator_results():
+                    self.api.delete_memory_generator_result(file.id)
+            except AttributeError:
+                pass

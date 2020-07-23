@@ -311,10 +311,15 @@ definitions:
       running:
         type: boolean
         description: Indicates whether this generator is currently running.
+      init_percent_complete:
+          type: integer
+          description: Percentage of initialization completed so far
+          format: int32
     required:
       - id
       - config
       - running
+      - init_percent_complete
 
   MemoryGeneratorConfig:
     type: object

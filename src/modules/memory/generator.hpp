@@ -47,6 +47,9 @@ private:
     workers m_write_workers;
     config_t m_config;
 
+    std::thread m_scrub_thread;
+    std::atomic_bool m_scrub_aborted;
+
     struct
     {
         void* ptr;
@@ -56,6 +59,7 @@ private:
     uint16_t m_serial_number;
     std::chrono::nanoseconds m_run_time;
     time_point m_run_time_milestone;
+    std::atomic_int32_t m_init_percent_complete;
 
 public:
     // Constructors & Destructor
@@ -83,6 +87,13 @@ public:
     generator::config_t config() const;
     generator::stat_t stat() const;
 
+    int32_t init_percent_complete() const
+    {
+        return m_init_percent_complete.load();
+    }
+
+    bool is_initialized() const { return init_percent_complete() == 100; }
+
     bool is_stopped() const { return m_stopped; }
     bool is_running() const { return !(m_paused || m_stopped); }
     bool is_paused() const { return m_paused; }
@@ -90,6 +101,7 @@ public:
 private:
     void free_buffer();
     void resize_buffer(size_t);
+    void scrub_worker();
     void spread_config(generator::workers&, const task_memory_config&);
 
     template <class T> void reallocate_workers(generator::workers&, unsigned);

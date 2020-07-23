@@ -64,6 +64,11 @@ public:
     /// </summary>
     bool isRunning() const;
     void setRunning(bool value);
+        /// <summary>
+    /// Percentage of initialization completed so far
+    /// </summary>
+    int32_t getInitPercentComplete() const;
+    void setInitPercentComplete(int32_t value);
     
 protected:
     std::string m_Id;
@@ -71,6 +76,8 @@ protected:
     std::shared_ptr<MemoryGeneratorConfig> m_Config;
 
     bool m_Running;
+
+    int32_t m_Init_percent_complete;
 
 };
 

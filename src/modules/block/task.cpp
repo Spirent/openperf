@@ -247,7 +247,7 @@ void block_task::config(const task_config_t& p_config)
 
     auto buf_len = m_task_config.queue_depth * m_task_config.block_size;
     m_buf.resize(buf_len);
-    utils::op_pseudo_random_fill(m_buf.data(), m_buf.size());
+    utils::op_prbs23_fill(m_buf.data(), m_buf.size());
     m_aio_ops.resize(m_task_config.queue_depth);
     m_pattern.reset(
         0,

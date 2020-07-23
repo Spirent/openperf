@@ -15,7 +15,7 @@ constexpr auto QUANTA = 10ms;
 constexpr size_t MAX_SPIN_OPS = 5000;
 
 using namespace std::chrono_literals;
-using openperf::utils::op_pseudo_random_fill;
+using openperf::utils::op_prbs23_fill;
 
 auto calc_ops_and_sleep(const task_memory::stat_t& total,
                         size_t ops_per_sec,
@@ -140,7 +140,7 @@ void task_memory::config(const task_memory_config& msg)
                msg.block_size);
         scratch_allocate(msg.block_size);
         assert(m_scratch.ptr);
-        op_pseudo_random_fill(m_scratch.ptr, m_scratch.size);
+        op_prbs23_fill(m_scratch.ptr, m_scratch.size);
     }
 
     m_config = msg;

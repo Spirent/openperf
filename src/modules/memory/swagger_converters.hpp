@@ -91,6 +91,7 @@ to_swagger(const reply::generator::item::item_data& g)
     swagger::MemoryGenerator model;
     model.setId(g.id);
     model.setRunning(g.is_running);
+    model.setInitPercentComplete(g.init_percent_complete);
     model.setConfig(
         std::make_shared<swagger::MemoryGeneratorConfig>(to_swagger(g.config)));
 
