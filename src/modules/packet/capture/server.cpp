@@ -448,7 +448,11 @@ reply_msg server::handle_request(const request_delete_captures&)
     std::for_each(cursor, std::end(m_sinks), [&](auto& item) {
         auto& sink_ref = item.template get<sink>();
         erase_if(m_results, [&](const auto& pair) {
-            return (&pair.second->parent == &sink_ref);
+            if (&pair.second->parent == &sink_ref) {
+                cancel_capture_timer(*pair.second);
+                return true;
+            }
+            return false;
         });
     });
 
@@ -492,7 +496,11 @@ reply_msg server::handle_request(const request_delete_capture& request)
         } else {
             // Remove all results for this sink
             erase_if(m_results, [&](const auto& pair) {
-                return (&pair.second->parent == &sink_ref);
+                if (&pair.second->parent == &sink_ref) {
+                    cancel_capture_timer(*pair.second);
+                    return true;
+                }
+                return false;
             });
         }
 
@@ -602,6 +610,7 @@ void server::add_capture_start_trigger(const core::uuid& id,
             // Worker shouldn't touch result in stopped state
             // so it is safe to remove the callback
             result->state_changed_callback = nullptr;
+            srv->cancel_capture_timer(*result);
             srv->remove_event_trigger(evt.fd);
         }
     });
@@ -628,6 +637,18 @@ void server::add_capture_stop_timer(
            "Added capture duration timer id %#" PRIx32 " timeout %" PRId64,
            result.timeout_id,
            timeout);
+}
+
+void server::cancel_capture_timer(result_value_type& result)
+{
+    if (result.timeout_id) {
+        if (m_loop.disable(result.timeout_id) < 0) {
+            OP_LOG(OP_LOG_ERROR,
+                   "Failed to disable capture duration timer %#" PRIx32,
+                   result.timeout_id);
+        }
+        result.timeout_id = 0;
+    }
 }
 
 reply_msg server::handle_request(const request_start_capture& request)
@@ -697,16 +718,7 @@ reply_msg server::handle_request(const request_stop_capture& request)
         found != std::end(m_sinks)) {
         auto& impl = found->template get<sink>();
 
-        if (auto result = impl.get_result()) {
-            if (result->timeout_id) {
-                if (m_loop.disable(result->timeout_id) < 0) {
-                    OP_LOG(OP_LOG_ERROR,
-                           "Failed to disable capture duration timer %#" PRIx32,
-                           result->timeout_id);
-                }
-                result->timeout_id = 0;
-            }
-        }
+        if (auto result = impl.get_result()) { cancel_capture_timer(*result); }
         impl.stop();
     }
 
@@ -898,6 +910,7 @@ reply_msg server::handle_request(const request_delete_capture_result& request)
         if (auto item = m_results.find(*id); item != std::end(m_results)) {
             auto& result = item->second;
             if (!result->parent.active()) {
+                cancel_capture_timer(*result);
                 if (has_transfer(*result)) { add_trash(std::move(result)); }
                 m_results.erase(*id);
             }

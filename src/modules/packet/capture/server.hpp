@@ -116,6 +116,7 @@ private:
     void
     add_capture_stop_timer(result_value_type& result,
                            std::chrono::duration<uint64_t, std::nano> duration);
+    void cancel_capture_timer(result_value_type& result);
 
     bool has_transfer(const sink& sink) const;
     bool has_transfer(const sink_result& result) const;
