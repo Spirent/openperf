@@ -37,7 +37,7 @@ public:
     worker(const worker&) = delete;
     worker(socket_pointer&& control_socket,
            socket_pointer&& statistics_socket,
-           const std::string& name = "worker");
+           const std::string& name);
     ~worker();
 
     template <typename T>
