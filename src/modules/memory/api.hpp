@@ -18,6 +18,12 @@ class BulkCreateMemoryGeneratorsRequest;
 class BulkDeleteMemoryGeneratorsRequest;
 class BulkStartMemoryGeneratorsRequest;
 class BulkStopMemoryGeneratorsRequest;
+
+void from_json(const nlohmann::json&, MemoryGenerator&);
+void from_json(const nlohmann::json&, BulkCreateMemoryGeneratorsRequest&);
+void from_json(const nlohmann::json&, BulkDeleteMemoryGeneratorsRequest&);
+void from_json(const nlohmann::json&, BulkStartMemoryGeneratorsRequest&);
+void from_json(const nlohmann::json&, BulkStopMemoryGeneratorsRequest&);
 } // namespace swagger::v1::model
 
 namespace openperf::memory::api {
@@ -194,13 +200,5 @@ tl::expected<api_request, int> deserialize_request(const serialized_msg& msg);
 tl::expected<api_reply, int> deserialize_reply(const serialized_msg& msg);
 
 } // namespace openperf::memory::api
-
-namespace swagger::v1::model {
-void from_json(const nlohmann::json&, MemoryGenerator&);
-void from_json(const nlohmann::json&, BulkCreateMemoryGeneratorsRequest&);
-void from_json(const nlohmann::json&, BulkDeleteMemoryGeneratorsRequest&);
-void from_json(const nlohmann::json&, BulkStartMemoryGeneratorsRequest&);
-void from_json(const nlohmann::json&, BulkStopMemoryGeneratorsRequest&);
-} // namespace swagger::v1::model
 
 #endif // _OP_MEMORY_API_HPP_

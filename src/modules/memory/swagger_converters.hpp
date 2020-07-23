@@ -25,7 +25,7 @@ using info_t = memory::memory_info::info_t;
 using io_pattern = memory::internal::io_pattern;
 
 namespace {
-static io_pattern from_string(std::string_view str)
+constexpr io_pattern from_string(std::string_view str)
 {
     if (str == "random") return io_pattern::RANDOM;
     if (str == "sequential") return io_pattern::SEQUENTIAL;
@@ -33,7 +33,7 @@ static io_pattern from_string(std::string_view str)
     return io_pattern::NONE;
 }
 
-static std::string to_string(io_pattern pattern)
+constexpr std::string_view to_string(io_pattern pattern)
 {
     switch (pattern) {
     case io_pattern::RANDOM:
@@ -80,7 +80,7 @@ static swagger::MemoryGeneratorConfig to_swagger(const config_t& config)
     model.setWritesPerSec(config.write.op_per_sec);
     model.setWriteThreads(config.write.threads);
 
-    model.setPattern(to_string(config.read.pattern));
+    model.setPattern(std::string(to_string(config.read.pattern)));
 
     return model;
 }

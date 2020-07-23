@@ -119,8 +119,9 @@ void controller::add(T&& task,
     auto stats = internal::worker::socket_pointer(op_socket_get_client(
         m_context.get(), ZMQ_PUB, m_statistics_endpoint.c_str()));
 
-    m_workers.emplace_front(std::move(control), std::move(stats), name);
-    m_workers.front().start(std::forward<T>(task), core);
+    auto& worker =
+        m_workers.emplace_front(std::move(control), std::move(stats), name);
+    worker.start(std::forward<T>(task), core);
 }
 
 // Methods : private
