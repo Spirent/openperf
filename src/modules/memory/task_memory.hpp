@@ -22,7 +22,7 @@ struct task_memory_config
         void* ptr = nullptr;
         size_t size = 0;
     } buffer;
-    std::vector<uint64_t>* indexes;
+    std::vector<uint64_t>* indexes = nullptr;
 };
 
 class task_memory
