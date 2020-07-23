@@ -35,9 +35,20 @@ client& client::operator=(client&& other) noexcept
     return (*this);
 }
 
+tl::expected<std::vector<unsigned>, int> client::get_worker_ids()
+{
+    return get_worker_ids(packet::traffic_direction::RXTX, std::nullopt);
+}
+
 tl::expected<std::vector<unsigned>, int>
-client::get_worker_ids(std::optional<std::string_view> obj_id,
-                       packet::traffic_direction direction)
+client::get_worker_ids(packet::traffic_direction direction)
+{
+    return get_worker_ids(direction, std::nullopt);
+}
+
+tl::expected<std::vector<unsigned>, int>
+client::get_worker_ids(packet::traffic_direction direction,
+                       std::optional<std::string_view> obj_id)
 {
     auto request = request_worker_ids{.direction = direction};
     if (obj_id) { request.object_id = std::string(*obj_id); }
@@ -51,17 +62,17 @@ client::get_worker_ids(std::optional<std::string_view> obj_id,
 tl::expected<std::vector<unsigned>, int>
 client::get_worker_rx_ids(std::optional<std::string_view> obj_id)
 {
-    return get_worker_ids(obj_id, packet::traffic_direction::RX);
+    return get_worker_ids(packet::traffic_direction::RX, obj_id);
 }
 
 tl::expected<std::vector<unsigned>, int>
 client::get_worker_tx_ids(std::optional<std::string_view> obj_id)
 {
-    return get_worker_ids(obj_id, packet::traffic_direction::TX);
+    return get_worker_ids(packet::traffic_direction::TX, obj_id);
 }
 
-tl::expected<void, int> client::add_sink(std::string_view src_id,
-                                         packet::traffic_direction direction,
+tl::expected<void, int> client::add_sink(packet::traffic_direction direction,
+                                         std::string_view src_id,
                                          packet::generic_sink sink)
 {
     if (src_id.length() > name_length_max) {
@@ -88,8 +99,8 @@ tl::expected<void, int> client::add_sink(std::string_view src_id,
     return (tl::make_unexpected(EBADMSG));
 }
 
-tl::expected<void, int> client::del_sink(std::string_view src_id,
-                                         packet::traffic_direction direction,
+tl::expected<void, int> client::del_sink(packet::traffic_direction direction,
+                                         std::string_view src_id,
                                          packet::generic_sink sink)
 {
     if (src_id.length() > name_length_max) {

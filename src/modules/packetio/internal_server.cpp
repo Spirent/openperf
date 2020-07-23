@@ -11,7 +11,7 @@ reply_msg handle_request(workers::generic_workers& workers,
                          const request_sink_add& request)
 {
     auto result = workers.add_sink(
-        request.data.src_id, request.data.direction, request.data.sink);
+        request.data.direction, request.data.src_id, request.data.sink);
     if (!result) {
         return (reply_error{result.error()});
     } else {
@@ -23,7 +23,7 @@ reply_msg handle_request(workers::generic_workers& workers,
                          const request_sink_del& request)
 {
     workers.del_sink(
-        request.data.src_id, request.data.direction, request.data.sink);
+        request.data.direction, request.data.src_id, request.data.sink);
     return (reply_ok{});
 }
 
@@ -99,7 +99,7 @@ reply_msg handle_request(workers::generic_workers& workers,
                          const request_worker_ids& request)
 {
     return (reply_worker_ids{
-        workers.get_worker_ids(request.object_id, request.direction)});
+        workers.get_worker_ids(request.direction, request.object_id)});
 }
 
 static std::string to_string(request_msg& request)
@@ -136,6 +136,9 @@ static std::string to_string(request_msg& request)
             [](const request_worker_ids& msg) {
                 std::string direction_str;
                 switch (msg.direction) {
+                case packet::traffic_direction::NONE:
+                    direction_str = "NONE";
+                    break;
                 case packet::traffic_direction::RX:
                     direction_str = "RX";
                     break;

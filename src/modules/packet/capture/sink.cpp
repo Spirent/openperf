@@ -16,6 +16,8 @@ constexpr uint16_t max_burst_size = 64;
 std::string to_string(const packetio::packet::traffic_direction& direction)
 {
     switch (direction) {
+    case packetio::packet::traffic_direction::NONE:
+        return "none";
     case packetio::packet::traffic_direction::RX:
         return "rx";
     case packetio::packet::traffic_direction::TX:

@@ -259,7 +259,7 @@ sink_data_pair create_sink(void* context, std::string_view port_id)
         test_sink(openperf::core::uuid::random(), *rx_ids));
     auto counters = sink.get<test_sink>().counters();
     auto success = client.add_sink(
-        port_id, openperf::packetio::packet::traffic_direction::RX, sink);
+        openperf::packetio::packet::traffic_direction::RX, port_id, sink);
     if (!success) {
         throw std::runtime_error("Could not add sink to " + std::string(port_id)
                                  + ".  Does that port exist?");
@@ -274,7 +274,7 @@ void delete_sink(void* context,
 {
     auto client = openperf::packetio::internal::api::client(context);
     client.del_sink(
-        port_id, openperf::packetio::packet::traffic_direction::RX, sink);
+        openperf::packetio::packet::traffic_direction::RX, port_id, sink);
 }
 
 /***

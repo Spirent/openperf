@@ -394,6 +394,8 @@ static int get_port_index(std::string_view id,
 static queue::queue_mode to_queue_mode(packet::traffic_direction direction)
 {
     switch (direction) {
+    case packet::traffic_direction::NONE:
+        return queue::queue_mode::NONE;
     case packet::traffic_direction::RX:
         return queue::queue_mode::RX;
     case packet::traffic_direction::TX:
@@ -404,32 +406,14 @@ static queue::queue_mode to_queue_mode(packet::traffic_direction direction)
 }
 
 std::vector<unsigned>
-worker_controller::get_worker_ids(std::optional<std::string_view> obj_id,
-                                  packet::traffic_direction direction) const
+worker_controller::get_worker_ids(packet::traffic_direction direction,
+                                  std::optional<std::string_view> obj_id) const
 {
     auto mode = to_queue_mode(direction);
 
     return (obj_id ? get_queue_worker_ids(
                 mode, get_port_index(*obj_id, m_driver, m_fib.get()))
                    : get_queue_worker_ids(mode));
-}
-
-std::vector<unsigned> worker_controller::get_rx_worker_ids(
-    std::optional<std::string_view> obj_id) const
-{
-    return (obj_id ? get_queue_worker_ids(
-                queue::queue_mode::RX,
-                get_port_index(*obj_id, m_driver, m_fib.get()))
-                   : get_queue_worker_ids(queue::queue_mode::RX));
-}
-
-std::vector<unsigned> worker_controller::get_tx_worker_ids(
-    std::optional<std::string_view> obj_id) const
-{
-    return (obj_id ? get_queue_worker_ids(
-                queue::queue_mode::TX,
-                get_port_index(*obj_id, m_driver, m_fib.get()))
-                   : get_queue_worker_ids(queue::queue_mode::TX));
 }
 
 template <typename T>
@@ -534,8 +518,8 @@ bool contains_match(const Vector& vector, const Item& match)
 }
 
 tl::expected<void, int>
-worker_controller::add_sink(std::string_view src_id,
-                            packet::traffic_direction direction,
+worker_controller::add_sink(packet::traffic_direction direction,
+                            std::string_view src_id,
                             const packet::generic_sink& sink)
 {
     if (auto port_idx = m_driver.port_index(src_id)) {
@@ -564,7 +548,7 @@ worker_controller::add_sink(std::string_view src_id,
             if (contains_match(m_fib->get_tx_sinks(*port_idx), sink)) {
                 if (direction == packet::traffic_direction::RXTX) {
                     // Remove the Rx sink if error adding Tx sink
-                    del_sink(src_id, packet::traffic_direction::RX, sink);
+                    del_sink(packet::traffic_direction::RX, src_id, sink);
                 }
                 return (tl::make_unexpected(EALREADY));
             }
@@ -623,14 +607,14 @@ worker_controller::add_sink(std::string_view src_id,
             if (!sinks) {
                 if (direction == packet::traffic_direction::RXTX) {
                     // Remove the Rx sink if error adding Tx sink
-                    del_sink(src_id, packet::traffic_direction::RX, sink);
+                    del_sink(packet::traffic_direction::RX, src_id, sink);
                 }
                 return (tl::make_unexpected(EINVAL));
             }
             if (contains_match(*sinks, sink)) {
                 if (direction == packet::traffic_direction::RXTX) {
                     // Remove the Rx sink if error adding Tx sink
-                    del_sink(src_id, packet::traffic_direction::RX, sink);
+                    del_sink(packet::traffic_direction::RX, src_id, sink);
                 }
                 return (tl::make_unexpected(EALREADY));
             }
@@ -656,8 +640,8 @@ worker_controller::add_sink(std::string_view src_id,
     return (tl::make_unexpected(EINVAL));
 }
 
-void worker_controller::del_sink(std::string_view src_id,
-                                 packet::traffic_direction direction,
+void worker_controller::del_sink(packet::traffic_direction direction,
+                                 std::string_view src_id,
                                  const packet::generic_sink& sink)
 {
     if (auto port_idx = m_driver.port_index(src_id)) {
