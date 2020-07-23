@@ -14,58 +14,58 @@
 namespace openperf::dynamic {
 
 // Enum Conversions
-comparator to_comparator(const std::string& value)
+constexpr comparator to_comparator(std::string_view value)
 {
-    static const std::unordered_map<std::string, comparator> smap = {
-        {"equal", comparator::EQUAL},
-        {"greater", comparator::GREATER_THAN},
-        {"greater_or_equal", comparator::GREATER_OR_EQUAL},
-        {"less", comparator::LESS_THAN},
-        {"less_or_equal", comparator::LESS_OR_EQUAL},
+    if (value == "equal") return comparator::EQUAL;
+    if (value == "greater") return comparator::GREATER_THAN;
+    if (value == "greater_or_equal") return comparator::GREATER_OR_EQUAL;
+    if (value == "less") return comparator::LESS_THAN;
+    if (value == "less_or_equal") return comparator::LESS_OR_EQUAL;
+
+    throw std::runtime_error(
+        "Error from string to comparator conversion: illegal string value");
+}
+
+constexpr std::string_view to_string(const comparator& pattern)
+{
+    switch (pattern) {
+    case comparator::EQUAL:
+        return "equal";
+    case comparator::GREATER_THAN:
+        return "greater";
+    case comparator::GREATER_OR_EQUAL:
+        return "greater_or_equal";
+    case comparator::LESS_THAN:
+        return "less";
+    case comparator::LESS_OR_EQUAL:
+        return "less_or_equal";
+    default:
+        return "unknown";
     };
-
-    if (smap.count(value)) return smap.at(value);
-    throw std::runtime_error("Condition \"" + value + "\" is unknown");
 }
 
-std::string to_string(const comparator& pattern)
+constexpr argument_t::function_t to_argument_function(std::string_view value)
 {
-    static const std::unordered_map<comparator, std::string> fmap = {
-        {comparator::EQUAL, "equal"},
-        {comparator::GREATER_THAN, "greater"},
-        {comparator::GREATER_OR_EQUAL, "greater_or_equal"},
-        {comparator::LESS_THAN, "less"},
-        {comparator::LESS_OR_EQUAL, "less_or_equal"},
+    if (value == "dx") return argument_t::DX;
+    if (value == "dxdy") return argument_t::DXDY;
+    if (value == "dxdt") return argument_t::DXDT;
+
+    throw std::runtime_error(
+        "Error from string to function_t conversion: illegal string value");
+}
+
+constexpr std::string_view to_string(const argument_t::function_t& value)
+{
+    switch (value) {
+    case argument_t::DX:
+        return "dx";
+    case argument_t::DXDY:
+        return "dxdy";
+    case argument_t::DXDT:
+        return "dxdt";
+    default:
+        return "unknown";
     };
-
-    if (fmap.count(pattern)) return fmap.at(pattern);
-    return "unknown";
-}
-
-argument_t::function_t to_argument_function(const std::string& value)
-{
-    static const std::unordered_map<std::string, argument_t::function_t> smap =
-        {
-            {"dx", argument_t::DX},
-            {"dxdy", argument_t::DXDY},
-            {"dxdt", argument_t::DXDT},
-        };
-
-    if (smap.count(value)) return smap.at(value);
-    throw std::runtime_error("Function \"" + value + "\" is unknown");
-}
-
-std::string to_string(const argument_t::function_t& f)
-{
-    static const std::unordered_map<argument_t::function_t, std::string> fmap =
-        {
-            {argument_t::DX, "dx"},
-            {argument_t::DXDY, "dxdy"},
-            {argument_t::DXDT, "dxdt"},
-        };
-
-    if (fmap.count(f)) return fmap.at(f);
-    return "unknown";
 }
 
 // Swagger Model Conversions
@@ -118,14 +118,14 @@ model::ThresholdResult to_swagger(const results::threshold& r)
     model::ThresholdResult result;
 
     result.setId(r.id);
-    result.setFunction(to_string(r.argument.function));
+    result.setFunction(std::string(to_string(r.argument.function)));
     result.setStatX(r.argument.x);
 
     if (r.argument.function == argument_t::DXDY) result.setStatY(r.argument.y);
 
     auto& threshold = r.threshold;
     result.setValue(threshold.value());
-    result.setCondition(to_string(threshold.condition()));
+    result.setCondition(std::string(to_string(threshold.condition())));
     result.setConditionTrue(threshold.trues());
     result.setConditionFalse(threshold.falses());
 
@@ -137,7 +137,7 @@ model::TDigestResult to_swagger(const results::tdigest& r)
     model::TDigestResult result;
 
     result.setId(r.id);
-    result.setFunction(to_string(r.argument.function));
+    result.setFunction(std::string(to_string(r.argument.function)));
     result.setStatX(r.argument.x);
 
     if (r.argument.function == argument_t::DXDY) result.setStatY(r.argument.y);

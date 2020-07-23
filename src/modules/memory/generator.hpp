@@ -8,7 +8,7 @@
 #include "task_memory.hpp"
 
 #include "framework/generator/controller.hpp"
-#include "framework/dynamic/pool.hpp"
+#include "framework/dynamic/spool.hpp"
 
 namespace openperf::memory::internal {
 

@@ -191,7 +191,7 @@ api_reply server::handle_request(const request::generator::start& req)
                     std::move(data))};
         }
     } catch (const std::runtime_error&) {
-        return reply::error{.type = reply::error::NOT_INITIALIZED};
+        return error_message({.type = reply::error::NOT_INITIALIZED});
     } catch (const std::exception& e) {
         return error_message(
             {.type = reply::error::CUSTOM, .message = e.what()});

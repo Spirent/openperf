@@ -2,6 +2,7 @@
 #define _OP_DYNAMIC_API_HPP_
 
 #include <string>
+#include <string_view>
 #include <memory>
 #include <vector>
 
@@ -73,10 +74,10 @@ struct configuration
 };
 
 // Enum Conversions
-comparator to_comparator(const std::string&);
-argument_t::function_t to_argument_function(const std::string&);
-std::string to_string(const comparator&);
-std::string to_string(const argument_t::function_t&);
+constexpr comparator to_comparator(std::string_view);
+constexpr argument_t::function_t to_argument_function(std::string_view);
+constexpr std::string_view to_string(const comparator&);
+constexpr std::string_view to_string(const argument_t::function_t&);
 
 // Swagger Model Conversions
 configuration from_swagger(model::DynamicResultsConfig&);
