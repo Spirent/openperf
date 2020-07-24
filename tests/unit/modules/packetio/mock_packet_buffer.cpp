@@ -86,6 +86,11 @@ signature_tx_timestamp(const packet_buffer* buffer)
         ->signature_tx_timestamp;
 }
 
+bool tx_flag(const packet_buffer* buffer)
+{
+    return reinterpret_cast<const mock_packet_buffer*>(buffer)->tx;
+}
+
 void* to_data(packet_buffer* buffer)
 {
     return reinterpret_cast<mock_packet_buffer*>(buffer)->data;

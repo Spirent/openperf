@@ -14,6 +14,7 @@
 #include "packetio/drivers/dpdk/eal.hpp"
 #include "packetio/drivers/dpdk/mbuf_rx_prbs.hpp"
 #include "packetio/drivers/dpdk/mbuf_signature.hpp"
+#include "packetio/drivers/dpdk/mbuf_tx.hpp"
 #include "packetio/drivers/dpdk/topology_utils.hpp"
 #include "packetio/drivers/dpdk/model/physical_port.hpp"
 #include "packetio/generic_port.hpp"
@@ -345,6 +346,7 @@ eal::eal(std::vector<std::string>&& args,
     /* Find some space for Spirent test signatures and PRBS data */
     mbuf_signature_init();
     mbuf_rx_prbs_init();
+    mbuf_tx_init();
 
     if (test_portpairs > 0) { create_test_portpairs(test_portpairs); }
 

@@ -18,11 +18,14 @@ namespace openperf::packet::capture {
 
 using clock = openperf::timesync::chrono::realtime;
 
+const uint64_t CAPTURE_FLAG_TX = 0x01;
+
 struct capture_packet_hdr
 {
     clock::time_point timestamp;
     uint32_t captured_len;
     uint32_t packet_len;
+    uint64_t flags;
 };
 
 struct capture_packet

@@ -16,7 +16,8 @@ forwarding_table<Interface, Sink, MaxPorts>::forwarding_table()
         m_interfaces[i].store(new interface_map());
         m_port_rx_sinks[i].store(new sink_vector());
         m_port_tx_sinks[i].store(new sink_vector());
-        m_port_interface_sink_count[i].store(0);
+        m_port_interface_rx_sink_count[i].store(0);
+        m_port_interface_tx_sink_count[i].store(0);
     }
 }
 
@@ -105,9 +106,15 @@ forwarding_table<Interface, Sink, MaxPorts>::insert_interface_sink(
 
     auto original = m_interfaces[port_idx].load(std::memory_order_relaxed);
     auto entry = *((*original)[mac]);
-    auto& sinks = (dir == direction::RX) ? entry.rx_sinks : entry.tx_sinks;
-    sinks.push_back(sink);
-    m_port_interface_sink_count[port_idx]++;
+
+    if (dir == direction::RX) {
+        entry.rx_sinks.push_back(sink);
+        m_port_interface_rx_sink_count[port_idx]++;
+    } else {
+        entry.tx_sinks.push_back(sink);
+        m_port_interface_tx_sink_count[port_idx]++;
+    }
+
     auto updated = new interface_map(std::move(original->set(mac, entry)));
     return (
         m_interfaces[port_idx].exchange(updated, std::memory_order_release));
@@ -128,13 +135,21 @@ forwarding_table<Interface, Sink, MaxPorts>::remove_interface_sink(
     auto entry_ptr = original->find(mac);
     if (!entry_ptr) return nullptr;
     auto entry = *(*entry_ptr);
-    auto& sinks = (dir == direction::RX) ? entry.rx_sinks : entry.tx_sinks;
 
-    auto found = std::find(sinks.begin(), sinks.end(), sink);
-    if (found == sinks.end()) return (nullptr); /* not found */
+    if (dir == direction::RX) {
+        auto& sinks = entry.rx_sinks;
+        auto found = std::find(sinks.begin(), sinks.end(), sink);
+        if (found == sinks.end()) return (nullptr); /* not found */
+        sinks.erase(found);
+        m_port_interface_rx_sink_count[port_idx]--;
+    } else {
+        auto& sinks = entry.tx_sinks;
+        auto found = std::find(sinks.begin(), sinks.end(), sink);
+        if (found == sinks.end()) return (nullptr); /* not found */
+        sinks.erase(found);
+        m_port_interface_tx_sink_count[port_idx]--;
+    }
 
-    m_port_interface_sink_count[port_idx]--;
-    sinks.erase(found);
     auto updated = new interface_map(std::move(original->set(mac, entry)));
     return (
         m_interfaces[port_idx].exchange(updated, std::memory_order_release));
@@ -222,12 +237,22 @@ forwarding_table<Interface, Sink, MaxPorts>::get_tx_sinks(
 }
 
 template <typename Interface, typename Sink, int MaxPorts>
-bool forwarding_table<Interface, Sink, MaxPorts>::has_interface_sinks(
+bool forwarding_table<Interface, Sink, MaxPorts>::has_interface_rx_sinks(
     uint16_t port_idx) const
 {
     assert(port_idx < MaxPorts);
-    auto count =
-        m_port_interface_sink_count[port_idx].load(std::memory_order_consume);
+    auto count = m_port_interface_rx_sink_count[port_idx].load(
+        std::memory_order_consume);
+    return (count > 0);
+}
+
+template <typename Interface, typename Sink, int MaxPorts>
+bool forwarding_table<Interface, Sink, MaxPorts>::has_interface_tx_sinks(
+    uint16_t port_idx) const
+{
+    assert(port_idx < MaxPorts);
+    auto count = m_port_interface_tx_sink_count[port_idx].load(
+        std::memory_order_consume);
     return (count > 0);
 }
 

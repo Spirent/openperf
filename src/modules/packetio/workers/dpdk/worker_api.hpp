@@ -112,7 +112,7 @@ std::optional<command_msg> recv_message(void* socket, int flags = 0);
 
 void tx_sink_dispatch(const fib* fib,
                       uint16_t port_id,
-                      rte_mbuf* const outgoing[],
+                      rte_mbuf* outgoing[],
                       uint16_t n);
 
 } // namespace worker

@@ -11,8 +11,8 @@
 
 #include "packetio/drivers/dpdk/dpdk.h"
 #include "packetio/drivers/dpdk/model/port_info.hpp"
+#include "packetio/drivers/dpdk/mbuf_tx.hpp"
 #include "packetio/memory/dpdk/pbuf_utils.h"
-#include "packetio/memory/dpdk/tx_mbuf.hpp"
 #include "packetio/stack/dpdk/net_interface.hpp"
 #include "packetio/stack/dpdk/offload_utils.hpp"
 #if LWIP_IPV6
@@ -606,7 +606,8 @@ err_t net_interface::handle_tx(struct pbuf* p)
     }
 
     /* Store the interface hwaddr in the mbuf so tx capture can use it */
-    tx_mbuf_set_hwaddr(m_head, m_netif.hwaddr);
+    mbuf_tx_set(m_head);
+    mbuf_tx_set_hwaddr(m_head, m_netif.hwaddr);
 
     rte_mbuf* pkts[] = {m_head};
     if (m_transmit(port_index(), 0, reinterpret_cast<void**>(pkts), 1) != 1) {

@@ -72,7 +72,7 @@ TEST_CASE("forwarding table functionality", "[forwarding table]")
 
         SECTION("insert sink, ")
         {
-            REQUIRE(!table.has_interface_sinks(port1));
+            REQUIRE(!table.has_interface_rx_sinks(port1));
 
             auto sink1 = test_sink{"sink_1"};
             auto to_delete =
@@ -84,8 +84,8 @@ TEST_CASE("forwarding table functionality", "[forwarding table]")
             REQUIRE(to_delete);
             delete to_delete;
 
-            REQUIRE(table.has_interface_sinks(port1));
-            REQUIRE(!table.has_interface_sinks(port1 + 1));
+            REQUIRE(table.has_interface_rx_sinks(port1));
+            REQUIRE(!table.has_interface_rx_sinks(port1 + 1));
 
             SECTION("find sink, ")
             {
@@ -107,7 +107,7 @@ TEST_CASE("forwarding table functionality", "[forwarding table]")
 
                 SECTION("remove sink, ")
                 {
-                    REQUIRE(table.has_interface_sinks(port1));
+                    REQUIRE(table.has_interface_rx_sinks(port1));
 
                     to_delete = table.remove_interface_sink(
                         port1,
@@ -122,7 +122,7 @@ TEST_CASE("forwarding table functionality", "[forwarding table]")
                     REQUIRE(found);
                     REQUIRE(found->rx_sinks.empty());
 
-                    REQUIRE(!table.has_interface_sinks(port1));
+                    REQUIRE(!table.has_interface_rx_sinks(port1));
                 }
             }
         }
@@ -227,7 +227,7 @@ TEST_CASE("forwarding table functionality", "[forwarding table]")
                 interface_sinks;
 
             for (unsigned port_id = 0; port_id < many_ports; ++port_id) {
-                REQUIRE(!table.has_interface_sinks(port_id));
+                REQUIRE(!table.has_interface_rx_sinks(port_id));
             }
 
             for (auto& [key, value] : interfaces) {
@@ -246,7 +246,7 @@ TEST_CASE("forwarding table functionality", "[forwarding table]")
             }
 
             for (unsigned port_id = 0; port_id < many_ports; ++port_id) {
-                REQUIRE(table.has_interface_sinks(port_id));
+                REQUIRE(table.has_interface_rx_sinks(port_id));
             }
 
             SECTION("find sinks, ")
@@ -318,7 +318,7 @@ TEST_CASE("forwarding table functionality", "[forwarding table]")
                 }
 
                 for (unsigned port_id = 0; port_id < many_ports; ++port_id) {
-                    REQUIRE(!table.has_interface_sinks(port_id));
+                    REQUIRE(!table.has_interface_rx_sinks(port_id));
                 }
             }
         }

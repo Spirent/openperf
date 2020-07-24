@@ -78,7 +78,10 @@ public:
 
     sink_vector& get_tx_sinks(uint16_t port_idx) const;
 
-    bool has_interface_sinks(uint16_t port_idx) const;
+    bool has_interface_rx_sinks(uint16_t port_idx) const;
+
+    bool has_interface_tx_sinks(uint16_t port_idx) const;
+
     const std::vector<Sink>*
     find_interface_tx_sinks(uint16_t port_idx,
                             const libpacket::type::mac_address& mac) const;
@@ -105,7 +108,8 @@ private:
     std::array<std::atomic<interface_map*>, MaxPorts> m_interfaces;
     std::array<std::atomic<sink_vector*>, MaxPorts> m_port_rx_sinks;
     std::array<std::atomic<sink_vector*>, MaxPorts> m_port_tx_sinks;
-    std::array<std::atomic<int>, MaxPorts> m_port_interface_sink_count;
+    std::array<std::atomic<int>, MaxPorts> m_port_interface_rx_sink_count;
+    std::array<std::atomic<int>, MaxPorts> m_port_interface_tx_sink_count;
 };
 
 } // namespace openperf::packetio

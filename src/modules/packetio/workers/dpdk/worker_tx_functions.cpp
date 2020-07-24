@@ -1,5 +1,6 @@
 #include "core/op_log.h"
 #include "packetio/drivers/dpdk/dpdk.h"
+#include "packetio/drivers/dpdk/mbuf_tx.hpp"
 #include "packetio/workers/dpdk/worker_queues.hpp"
 #include "packetio/workers/dpdk/worker_tx_functions.hpp"
 #include "packetio/workers/dpdk/worker_api.hpp"
@@ -84,8 +85,6 @@ static uint16_t transmit(worker::fib* fib,
            port_idx,
            queue_idx);
 
-    tx_sink_dispatch(fib, port_idx, mbufs, sent);
-
     return (sent);
 }
 
@@ -99,6 +98,12 @@ uint16_t tx_copy_direct(int port_idx,
     uint16_t sent = 0;
 
     assert(fib);
+
+    // Need to do the Tx sink dispatch before sending the packets
+    // The driver could possibly free the mbuf or when packets are
+    // sent using a ring driver, modify the packet data before
+    // the packet gets pushed to the sink.
+    tx_sink_dispatch(fib, port_idx, mbufs, nb_mbufs);
 
     for (uint16_t i = 0; i < nb_mbufs; i++) {
         /*
@@ -145,6 +150,12 @@ tx_direct(int port_idx, uint32_t, struct rte_mbuf* mbufs[], uint16_t nb_mbufs)
     auto fib = queues.fib<worker::fib*>();
 
     assert(fib);
+
+    // Need to do the Tx sink dispatch before sending the packets
+    // The driver could possibly free the mbuf or when packets are
+    // sent using a ring driver, modify the packet data before
+    // the packet gets pushed to the sink.
+    tx_sink_dispatch(fib, port_idx, mbufs, nb_mbufs);
 
     return (transmit(fib, port_idx, 0, mbufs, nb_mbufs));
 }
