@@ -4,8 +4,8 @@
 #include <future>
 #include <atomic>
 
-#include "io_pattern.hpp"
 #include "memory_stat.hpp"
+#include "task_memory.hpp"
 
 #include "framework/generator/controller.hpp"
 
@@ -13,17 +13,22 @@ namespace openperf::memory::internal {
 
 class generator
 {
+    // Constants
+    static constexpr auto NAME_PREFIX = "op_mem";
+
 public:
+    struct operation_config
+    {
+        size_t block_size = 0;
+        size_t op_per_sec = 0;
+        size_t threads = 0;
+        io_pattern pattern = io_pattern::NONE;
+    };
+
     struct config_t
     {
         size_t buffer_size = 0;
-        struct operation_config
-        {
-            size_t block_size = 0;
-            size_t op_per_sec = 0;
-            size_t threads = 0;
-            io_pattern pattern = io_pattern::NONE;
-        } read, write;
+        operation_config read, write;
     };
 
     using index_vector = std::vector<uint64_t>;
@@ -33,19 +38,22 @@ public:
 private:
     bool m_stopped = true;
     bool m_paused = true;
-    config_t m_config;
 
     std::thread m_scrub_thread;
     std::atomic_bool m_scrub_aborted;
 
-    struct
+    struct buffer_t
     {
         void* ptr;
         size_t size;
     } m_buffer;
 
-    index_vector m_read_indexes, m_write_indexes;
-    std::future<index_vector> m_read_future, m_write_future;
+    struct operation_data
+    {
+        operation_config config;
+        index_vector indexes;
+        std::future<index_vector> future;
+    } m_read, m_write;
 
     uint16_t m_serial_number;
     std::chrono::nanoseconds m_run_time;
@@ -77,23 +85,67 @@ public:
 
     void config(const generator::config_t&);
 
-    generator::config_t config() const { return m_config; }
+    generator::config_t config() const;
     memory_stat stat() const;
     int32_t init_percent_complete() const { return m_init_percent_complete; }
 
     bool is_initialized() const { return init_percent_complete() == 100; }
-
     bool is_stopped() const { return m_stopped; }
     bool is_running() const { return !(m_paused || m_stopped); }
     bool is_paused() const { return m_paused; }
-
-    static index_vector generate_index_vector(size_t size, io_pattern pattern);
 
 private:
     void free_buffer();
     void resize_buffer(size_t);
     void scrub_worker();
+
+    template <typename TaskType>
+    void configure_tasks(operation_data&,
+                         const operation_config&,
+                         const std::string& thread_suffix);
+
+private:
+    static index_vector generate_index_vector(size_t size, io_pattern pattern);
 };
+
+//
+// Implementation
+//
+
+// Methods : private
+template <typename TaskType>
+void generator::configure_tasks(operation_data& op,
+                                const operation_config& conf,
+                                const std::string& thread_suffix)
+{
+    op.config = conf;
+
+    if (op.future.valid()) op.future.wait();
+    op.indexes.resize(
+        op.config.block_size ? m_buffer.size / op.config.block_size : 0);
+    op.future = std::async(std::launch::async,
+                           generate_index_vector,
+                           op.indexes.size(),
+                           op.config.pattern);
+
+    for (size_t i = 0; i < op.config.threads; i++) {
+        auto task = TaskType(task_memory_config{
+            .block_size = op.config.block_size,
+            .op_per_sec = op.config.op_per_sec / op.config.threads,
+            .pattern = op.config.pattern,
+            .buffer =
+                {
+                    .ptr = m_buffer.ptr,
+                    .size = m_buffer.size,
+                },
+            .indexes = &op.indexes,
+        });
+
+        m_controller.add(std::move(task),
+                         NAME_PREFIX + std::to_string(m_serial_number)
+                             + thread_suffix + std::to_string(i + 1));
+    }
+}
 
 } // namespace openperf::memory::internal
 

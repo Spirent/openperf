@@ -12,7 +12,6 @@
 namespace openperf::memory::internal {
 
 static uint16_t serial_counter = 0;
-constexpr auto NAME_PREFIX = "op_mem";
 
 // Constructors & Destructor
 generator::generator()
@@ -32,22 +31,22 @@ generator::generator()
         m_stat.write += stat.write;
 
         // Calculate really target values from start time of the generator
-        if (m_config.read.threads) {
+        if (m_read.config.threads) {
             auto& rstat = m_stat.read;
             rstat.operations_target =
-                elapsed_time.count() * m_config.read.op_per_sec
-                * std::min(m_config.read.block_size, 1UL) / std::nano::den;
+                elapsed_time.count() * m_read.config.op_per_sec
+                * std::min(m_read.config.block_size, 1UL) / std::nano::den;
             rstat.bytes_target =
-                rstat.operations_target * m_config.read.block_size;
+                rstat.operations_target * m_read.config.block_size;
         }
 
-        if (m_config.write.threads) {
+        if (m_write.config.threads) {
             auto& wstat = m_stat.write;
             wstat.operations_target =
-                elapsed_time.count() * m_config.write.op_per_sec
-                * std::min(m_config.write.block_size, 1UL) / std::nano::den;
+                elapsed_time.count() * m_write.config.op_per_sec
+                * std::min(m_write.config.block_size, 1UL) / std::nano::den;
             wstat.bytes_target =
-                wstat.operations_target * m_config.write.block_size;
+                wstat.operations_target * m_write.config.block_size;
         }
 
         m_stat_ptr = &m_stat;
@@ -64,8 +63,8 @@ generator::~generator()
 {
     m_scrub_aborted.store(true);
     if (m_scrub_thread.joinable()) m_scrub_thread.join();
-    if (m_read_future.valid()) m_read_future.wait();
-    if (m_write_future.valid()) m_write_future.wait();
+    if (m_read.future.valid()) m_read.future.wait();
+    if (m_write.future.valid()) m_write.future.wait();
 
     stop();
     m_controller.clear();
@@ -77,18 +76,18 @@ void generator::start()
 {
     if (!m_stopped) return;
 
-    if (m_read_future.valid()) {
-        auto res = m_read_future.get();
-        assert(res.size() == m_read_indexes.size());
-        utils::memcpy(m_read_indexes.data(),
+    if (m_read.future.valid()) {
+        auto res = m_read.future.get();
+        assert(res.size() == m_read.indexes.size());
+        utils::memcpy(m_read.indexes.data(),
                       res.data(),
                       sizeof(index_vector::value_type) * res.size());
     }
 
-    if (m_write_future.valid()) {
-        auto res = m_write_future.get();
-        assert(res.size() == m_write_indexes.size());
-        utils::memcpy(m_write_indexes.data(),
+    if (m_write.future.valid()) {
+        auto res = m_write.future.get();
+        assert(res.size() == m_write.indexes.size());
+        utils::memcpy(m_write.indexes.data(),
                       res.data(),
                       sizeof(index_vector::value_type) * res.size());
     };
@@ -157,7 +156,6 @@ void generator::config(const generator::config_t& cfg)
     auto was_paused = m_paused;
     pause();
 
-    m_config = cfg;
     m_controller.clear();
 
     resize_buffer(cfg.buffer_size);
@@ -173,59 +171,19 @@ void generator::config(const generator::config_t& cfg)
         m_scrub_aborted.store(false);
     });
 
-    if (m_read_future.valid()) m_read_future.wait();
-    m_read_indexes.resize(
-        cfg.read.block_size ? m_buffer.size / cfg.read.block_size : 0);
-    m_read_future = std::async(std::launch::async,
-                               generate_index_vector,
-                               m_read_indexes.size(),
-                               cfg.read.pattern);
-
-    for (size_t i = 0; i < cfg.read.threads; i++) {
-        auto task = task_memory_read(task_memory_config{
-            .block_size = cfg.read.block_size,
-            .op_per_sec = cfg.read.op_per_sec / cfg.read.threads,
-            .pattern = cfg.read.pattern,
-            .buffer =
-                {
-                    .ptr = m_buffer.ptr,
-                    .size = m_buffer.size,
-                },
-            .indexes = &m_write_indexes,
-        });
-
-        m_controller.add(std::move(task),
-                         NAME_PREFIX + std::to_string(m_serial_number) + "_r"
-                             + std::to_string(i + 1));
-    }
-
-    if (m_write_future.valid()) m_write_future.wait();
-    m_write_indexes.resize(
-        cfg.write.block_size ? m_buffer.size / cfg.write.block_size : 0);
-    m_write_future = std::async(std::launch::async,
-                                generate_index_vector,
-                                m_write_indexes.size(),
-                                cfg.write.pattern);
-
-    for (size_t i = 0; i < cfg.write.threads; i++) {
-        auto task = task_memory_write(task_memory_config{
-            .block_size = cfg.write.block_size,
-            .op_per_sec = cfg.write.op_per_sec / cfg.write.threads,
-            .pattern = cfg.write.pattern,
-            .buffer =
-                {
-                    .ptr = m_buffer.ptr,
-                    .size = m_buffer.size,
-                },
-            .indexes = &m_write_indexes,
-        });
-
-        m_controller.add(std::move(task),
-                         NAME_PREFIX + std::to_string(m_serial_number) + "_w"
-                             + std::to_string(i + 1));
-    }
+    configure_tasks<task_memory_read>(m_read, cfg.read, "_r");
+    configure_tasks<task_memory_write>(m_write, cfg.write, "_w");
 
     if (!was_paused) resume();
+}
+
+generator::config_t generator::config() const
+{
+    return {
+        .buffer_size = m_buffer.size,
+        .read = m_read.config,
+        .write = m_write.config,
+    };
 }
 
 // Methods : private
@@ -289,6 +247,7 @@ void generator::scrub_worker()
     auto block_size =
         ((m_buffer.size / 100 - 1) / getpagesize() + 1) * getpagesize();
     auto seed = utils::random_uniform<uint32_t>();
+
     while (!m_scrub_aborted.load() && current < m_buffer.size) {
         auto buf_len =
             std::min(static_cast<size_t>(block_size), m_buffer.size - current);
