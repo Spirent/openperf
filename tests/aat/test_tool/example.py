@@ -3,16 +3,10 @@
 from datetime import datetime
 
 import runnable
+from mamba.example import Example as MambaExample
 
 
-class Example(runnable.Runnable):
-
-    # TODO: Remove parent parameter, it's only used for testing purposes
-    def __init__(self, test, parent=None, tags=None, module=None):
-        super(Example, self).__init__(parent=parent, tags=tags)
-        self.module = module
-        self.test = test
-        self.was_run = False
+class Example(MambaExample, runnable.Runnable):
 
     def execute(self, reporter, execution_context, tags=None):
         assert self.parent is not None
@@ -31,10 +25,6 @@ class Example(runnable.Runnable):
             self.parent.execute_hook('after_each', execution_context)
 
         self._finish(reporter)
-
-    def _start(self, reporter):
-        self._begin = datetime.utcnow()
-        reporter.example_started(self)
 
     def _execute_test(self, execution_context):
         try:
@@ -57,20 +47,3 @@ class Example(runnable.Runnable):
             reporter.example_failed(self)
         else:
             reporter.example_passed(self)
-
-    @property
-    def name(self):
-        return self.test._example_name
-
-    @property
-    def file(self):
-        return self.module.__file__
-
-    @property
-    def classname(self):
-        return self.module.__name__.replace('/', '.')
-
-
-class PendingExample(Example):
-    def execute(self, reporter, execution_context, tags=None):
-        reporter.example_pending(self)
