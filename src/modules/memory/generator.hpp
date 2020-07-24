@@ -99,13 +99,12 @@ private:
     void resize_buffer(size_t);
     void scrub_worker();
 
+    void init_index(operation_data& op);
+
     template <typename TaskType>
     void configure_tasks(operation_data&,
                          const operation_config&,
                          const std::string& thread_suffix);
-
-private:
-    static index_vector generate_index_vector(size_t size, io_pattern pattern);
 };
 
 //
@@ -120,13 +119,7 @@ void generator::configure_tasks(operation_data& op,
 {
     op.config = conf;
 
-    if (op.future.valid()) op.future.wait();
-    op.indexes.resize(
-        op.config.block_size ? m_buffer.size / op.config.block_size : 0);
-    op.future = std::async(std::launch::async,
-                           generate_index_vector,
-                           op.indexes.size(),
-                           op.config.pattern);
+    init_index(op);
 
     for (size_t i = 0; i < op.config.threads; i++) {
         auto task = TaskType(task_memory_config{

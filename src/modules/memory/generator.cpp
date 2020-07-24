@@ -13,6 +13,33 @@ namespace openperf::memory::internal {
 
 static uint16_t serial_counter = 0;
 
+// Functions
+generator::index_vector generate_index_vector(size_t size, io_pattern pattern)
+{
+    generator::index_vector indexes(size);
+    std::iota(indexes.begin(), indexes.end(), 0);
+
+    switch (pattern) {
+    case io_pattern::SEQUENTIAL:
+        break;
+    case io_pattern::REVERSE:
+        std::reverse(indexes.begin(), indexes.end());
+        break;
+    case io_pattern::RANDOM: {
+        // Use A Mersenne Twister pseudo-random generator to provide fast
+        // vector shuffling
+        std::random_device rd;
+        std::mt19937_64 g(rd());
+        std::shuffle(indexes.begin(), indexes.end(), g);
+        break;
+    }
+    default:
+        OP_LOG(OP_LOG_ERROR, "Unrecognized generator pattern: %d\n", pattern);
+    }
+
+    return indexes;
+}
+
 // Constructors & Destructor
 generator::generator()
     : m_buffer{.ptr = nullptr, .size = 0}
@@ -258,32 +285,19 @@ void generator::scrub_worker()
     }
 }
 
-// Methods : static
-generator::index_vector generator::generate_index_vector(size_t size,
-                                                         io_pattern pattern)
+void generator::init_index(operation_data& op)
 {
-    index_vector indexes(size);
-    std::iota(indexes.begin(), indexes.end(), 0);
+    if (op.future.valid()) op.future.wait();
 
-    switch (pattern) {
-    case io_pattern::SEQUENTIAL:
-        break;
-    case io_pattern::REVERSE:
-        std::reverse(indexes.begin(), indexes.end());
-        break;
-    case io_pattern::RANDOM: {
-        // Use A Mersenne Twister pseudo-random generator to provide fast
-        // vector shuffling
-        std::random_device rd;
-        std::mt19937_64 g(rd());
-        std::shuffle(indexes.begin(), indexes.end(), g);
-        break;
-    }
-    default:
-        OP_LOG(OP_LOG_ERROR, "Unrecognized generator pattern: %d\n", pattern);
-    }
+    // Resize index vector, because it will be passed to task configuration
+    // and should has the valid size.
+    op.indexes.resize(
+        op.config.block_size ? m_buffer.size / op.config.block_size : 0);
 
-    return indexes;
+    op.future = std::async(std::launch::async,
+                           generate_index_vector,
+                           op.indexes.size(),
+                           op.config.pattern);
 }
 
 } // namespace openperf::memory::internal
