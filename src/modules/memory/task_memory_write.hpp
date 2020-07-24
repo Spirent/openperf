@@ -1,7 +1,7 @@
 #ifndef _OP_MEMORY_TASK_MEMORY_WRITE_HPP_
 #define _OP_MEMORY_TASK_MEMORY_WRITE_HPP_
 
-#include "memory/task_memory.hpp"
+#include "task_memory.hpp"
 
 namespace openperf::memory::internal {
 
@@ -12,6 +12,7 @@ public:
 
 private:
     void operation(uint64_t nb_ops) override;
+    memory_stat make_stat(const task_memory_stat&) override;
 };
 
 } // namespace openperf::memory::internal

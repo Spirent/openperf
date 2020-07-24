@@ -1,9 +1,11 @@
 #ifndef _MEMORY_GENERATOR_STACK_HPP_
 #define _MEMORY_GENERATOR_STACK_HPP_
 
+#include <forward_list>
 #include <variant>
+#include <unordered_map>
 
-#include "memory/generator.hpp"
+#include "generator.hpp"
 
 namespace openperf::memory {
 
@@ -16,7 +18,7 @@ public:
     {
         std::string id;
         std::string generator_id;
-        generator::stat_t stat;
+        internal::memory_stat stat;
     };
 
     using stat_list = std::forward_list<stat_t>;
@@ -55,11 +57,8 @@ public:
     bool contains_stat(const std::string& id) const;
 
     const class generator& generator(const std::string& id) const;
-    // class generator& generator(const std::string& id);
     bool contains(const std::string& id) const;
     id_list ids() const;
-
-private:
 };
 
 } // namespace openperf::memory

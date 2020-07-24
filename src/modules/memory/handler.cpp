@@ -1,12 +1,9 @@
-#include <zmq.h>
-#include <json.hpp>
-
 #include "api.hpp"
-#include "api/api_route_handler.hpp"
+#include "swagger_converters.hpp"
 
-#include "core/op_core.h"
-#include "config/op_config_utils.hpp"
-#include "memory/swagger_converters.hpp"
+#include "framework/core/op_core.h"
+#include "framework/config/op_config_utils.hpp"
+#include "modules/api/api_route_handler.hpp"
 
 namespace openperf::memory::api {
 

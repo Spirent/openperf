@@ -34,5 +34,6 @@ TS_TEST_DEPENDS += digestible expected framework
 
 TS_TEST_SOURCES += \
 	clock.cpp \
+	chrono.cpp \
 	counter_system.cpp \
 	history.cpp

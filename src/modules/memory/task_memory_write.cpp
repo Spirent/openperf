@@ -1,4 +1,4 @@
-#include "memory/task_memory_write.hpp"
+#include "task_memory_write.hpp"
 
 #include <cassert>
 #include <cstring>
@@ -15,6 +15,11 @@ void task_memory_write::operation(uint64_t nb_ops)
                     m_config.block_size);
         if (m_op_index == m_config.indexes->size()) { m_op_index = 0; }
     }
+}
+
+memory_stat task_memory_write::make_stat(const task_memory_stat& stat)
+{
+    return {.write = stat};
 }
 
 } // namespace openperf::memory::internal

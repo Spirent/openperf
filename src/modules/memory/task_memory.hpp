@@ -1,14 +1,14 @@
 #ifndef _OP_MEMORY_TASK_MEMORY_HPP_
 #define _OP_MEMORY_TASK_MEMORY_HPP_
 
-#include <atomic>
 #include <vector>
 #include <chrono>
 
-#include "timesync/chrono.hpp"
-#include "utils/worker/task.hpp"
-#include "memory/io_pattern.hpp"
-#include "memory/memory_stat.hpp"
+#include "framework/generator/task.hpp"
+#include "modules/timesync/chrono.hpp"
+
+#include "io_pattern.hpp"
+#include "memory_stat.hpp"
 
 namespace openperf::memory::internal {
 
@@ -25,8 +25,7 @@ struct task_memory_config
     std::vector<uint64_t>* indexes = nullptr;
 };
 
-class task_memory
-    : public openperf::utils::worker::task<task_memory_config, memory_stat>
+class task_memory : public openperf::framework::generator::task<memory_stat>
 {
     using chronometer = openperf::timesync::chrono::monotime;
 
@@ -40,26 +39,26 @@ protected:
         size_t size;
     } m_scratch;
 
-    stat_t m_stat_data;
-    std::atomic<stat_t*> m_stat;
-    std::atomic_bool m_stat_clear;
+    task_memory_stat m_stat;
     size_t m_op_index;
     double m_avg_rate;
 
 public:
-    task_memory();
+    task_memory() = delete;
+    task_memory(task_memory&&) noexcept;
+    task_memory(const task_memory&) = delete;
     explicit task_memory(const task_memory_config&);
     ~task_memory() override;
 
-    void spin() override;
-    void config(const config_t&) override;
-    void clear_stat() override { m_stat_clear = true; };
+    void reset() override;
 
-    stat_t stat() const override;
-    config_t config() const override { return m_config; }
+    task_memory_config config() const { return m_config; }
+    memory_stat spin() override;
 
 protected:
+    void config(const task_memory_config&);
     virtual void operation(uint64_t nb_ops) = 0;
+    virtual memory_stat make_stat(const task_memory_stat&) = 0;
 
 private:
     void scratch_allocate(size_t size);

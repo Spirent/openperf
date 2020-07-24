@@ -1,46 +1,83 @@
-#include "memory/generator.hpp"
-#include "memory/task_memory_read.hpp"
-#include "memory/task_memory_write.hpp"
-#include "utils/random.hpp"
-#include "utils/memcpy.hpp"
+#include "generator.hpp"
+#include "task_memory_read.hpp"
+#include "task_memory_write.hpp"
+
+#include "framework/utils/random.hpp"
+#include "framework/utils/memcpy.hpp"
 
 #include <cinttypes>
+#include <unistd.h>
 #include <sys/mman.h>
 
 namespace openperf::memory::internal {
 
 static uint16_t serial_counter = 0;
 
+// Functions
+generator::index_vector generate_index_vector(size_t size, io_pattern pattern)
+{
+    generator::index_vector indexes(size);
+    std::iota(indexes.begin(), indexes.end(), 0);
+
+    switch (pattern) {
+    case io_pattern::SEQUENTIAL:
+        break;
+    case io_pattern::REVERSE:
+        std::reverse(indexes.begin(), indexes.end());
+        break;
+    case io_pattern::RANDOM: {
+        // Use A Mersenne Twister pseudo-random generator to provide fast
+        // vector shuffling
+        std::random_device rd;
+        std::mt19937_64 g(rd());
+        std::shuffle(indexes.begin(), indexes.end(), g);
+        break;
+    }
+    default:
+        OP_LOG(OP_LOG_ERROR, "Unrecognized generator pattern: %d\n", pattern);
+    }
+
+    return indexes;
+}
+
 // Constructors & Destructor
 generator::generator()
     : m_buffer{.ptr = nullptr, .size = 0}
     , m_serial_number(++serial_counter)
-{}
-
-generator::generator(generator&& g) noexcept
-    : m_stopped(g.m_stopped)
-    , m_paused(g.m_paused)
-    , m_read_workers(std::move(g.m_read_workers))
-    , m_write_workers(std::move(g.m_write_workers))
-    , m_config(g.m_config)
-    , m_buffer{.ptr = nullptr, .size = 0}
-    , m_serial_number(g.m_serial_number)
-    , m_init_percent_complete(0)
-{}
-
-generator& generator::operator=(generator&& g) noexcept
+    , m_controller(NAME_PREFIX + std::to_string(m_serial_number) + "_ctl")
+    , m_stat_ptr(&m_stat)
 {
-    if (this != &g) {
-        m_stopped = g.m_stopped;
-        m_paused = g.m_paused;
-        m_read_workers = std::move(g.m_read_workers);
-        m_write_workers = std::move(g.m_write_workers);
-        m_config = g.m_config;
-        m_buffer = {.ptr = nullptr, .size = 0};
-        m_serial_number = g.m_serial_number;
-        m_init_percent_complete = 0;
-    }
-    return (*this);
+    m_controller.start<memory_stat>([this](const memory_stat& stat) {
+        auto elapsed_time = m_run_time;
+        elapsed_time += std::chrono::system_clock::now() - m_run_time_milestone;
+
+        auto stat_copy = m_stat;
+        m_stat_ptr = &stat_copy;
+
+        m_stat.read += stat.read;
+        m_stat.write += stat.write;
+
+        // Calculate really target values from start time of the generator
+        if (m_read.config.threads) {
+            auto& rstat = m_stat.read;
+            rstat.operations_target =
+                elapsed_time.count() * m_read.config.op_per_sec
+                * std::min(m_read.config.block_size, 1UL) / std::nano::den;
+            rstat.bytes_target =
+                rstat.operations_target * m_read.config.block_size;
+        }
+
+        if (m_write.config.threads) {
+            auto& wstat = m_stat.write;
+            wstat.operations_target =
+                elapsed_time.count() * m_write.config.op_per_sec
+                * std::min(m_write.config.block_size, 1UL) / std::nano::den;
+            wstat.bytes_target =
+                wstat.operations_target * m_write.config.block_size;
+        }
+
+        m_stat_ptr = &m_stat;
+    });
 }
 
 generator::generator(const generator::config_t& c)
@@ -53,10 +90,11 @@ generator::~generator()
 {
     m_scrub_aborted.store(true);
     if (m_scrub_thread.joinable()) m_scrub_thread.join();
-    if (m_read_future.valid()) m_read_future.wait();
-    if (m_write_future.valid()) m_write_future.wait();
+    if (m_read.future.valid()) m_read.future.wait();
+    if (m_write.future.valid()) m_write.future.wait();
 
     stop();
+    m_controller.clear();
     free_buffer();
 }
 
@@ -64,21 +102,27 @@ generator::~generator()
 void generator::start()
 {
     if (!m_stopped) return;
-    if (m_read_future.valid()) {
-        auto res = m_read_future.get();
-        assert(res.size() == m_read_indexes.size());
-        utils::memcpy(
-            m_read_indexes.data(), res.data(), sizeof(index_t) * res.size());
+
+    if (m_read.future.valid()) {
+        auto res = m_read.future.get();
+        assert(res.size() == m_read.indexes.size());
+        utils::memcpy(m_read.indexes.data(),
+                      res.data(),
+                      sizeof(index_vector::value_type) * res.size());
     }
-    if (m_write_future.valid()) {
-        auto res = m_write_future.get();
-        assert(res.size() == m_write_indexes.size());
-        utils::memcpy(
-            m_write_indexes.data(), res.data(), sizeof(index_t) * res.size());
+
+    if (m_write.future.valid()) {
+        auto res = m_write.future.get();
+        assert(res.size() == m_write.indexes.size());
+        utils::memcpy(m_write.indexes.data(),
+                      res.data(),
+                      sizeof(index_vector::value_type) * res.size());
     };
 
-    for_each_worker([](worker_ptr& w) { w->start(); });
+    reset();
+    m_controller.resume();
     m_stopped = false;
+    m_paused = false;
     m_run_time = 0ms;
     m_run_time_milestone = std::chrono::system_clock::now();
 }
@@ -87,7 +131,7 @@ void generator::stop()
 {
     if (m_stopped) return;
 
-    for_each_worker([](worker_ptr& w) { w->stop(); });
+    m_controller.pause();
     m_stopped = true;
     m_run_time += std::chrono::system_clock::now() - m_run_time_milestone;
 }
@@ -102,7 +146,7 @@ void generator::resume()
 {
     if (!m_paused) return;
 
-    for_each_worker([](worker_ptr& w) { w->resume(); });
+    m_controller.resume();
     m_paused = false;
     m_run_time_milestone = std::chrono::system_clock::now();
 }
@@ -111,107 +155,38 @@ void generator::pause()
 {
     if (m_paused) return;
 
-    for_each_worker([](worker_ptr& w) { w->pause(); });
+    m_controller.pause();
     m_paused = true;
     m_run_time += std::chrono::system_clock::now() - m_run_time_milestone;
 }
 
 void generator::reset()
 {
-    for_each_worker([](worker_ptr& w) {
-        auto wtm = reinterpret_cast<worker<task_memory>*>(w.get());
-        wtm->clear_stat();
-    });
+    auto was_paused = m_paused;
+    m_controller.pause();
+    m_controller.reset();
+    m_stat = {};
+
+    if (!was_paused) m_controller.resume();
 }
 
-generator::stat_t generator::stat() const
+memory_stat generator::stat() const
 {
-    auto elapsed_time = m_run_time;
-    if (is_running())
-        elapsed_time += std::chrono::system_clock::now() - m_run_time_milestone;
+    auto stat = *m_stat_ptr;
+    stat.active = is_running();
 
-    generator::stat_t result_stat;
-
-    auto& rstat = result_stat.read;
-    if (!m_read_workers.empty()) {
-        for (const auto& ptr : m_read_workers) {
-            auto w = reinterpret_cast<worker<task_memory>*>(ptr.get());
-            rstat += w->stat();
-        }
-
-        rstat.operations_target =
-            elapsed_time.count() * m_config.read.op_per_sec
-            * std::min(m_config.read.block_size, 1UL) / std::nano::den;
-        rstat.bytes_target = rstat.operations_target * m_config.read.block_size;
-    }
-
-    auto& wstat = result_stat.write;
-    if (!m_write_workers.empty()) {
-        for (const auto& ptr : m_write_workers) {
-            auto w = reinterpret_cast<worker<task_memory>*>(ptr.get());
-            wstat += w->stat();
-        }
-
-        wstat.operations_target =
-            elapsed_time.count() * m_config.write.op_per_sec
-            * std::min(m_config.write.block_size, 1UL) / std::nano::den;
-        wstat.bytes_target =
-            wstat.operations_target * m_config.write.block_size;
-    }
-
-    result_stat.timestamp = std::max(rstat.timestamp, wstat.timestamp);
-    result_stat.active = is_running();
-    return result_stat;
-}
-
-generator::config_t generator::config() const { return m_config; }
-
-void generator::scrub_worker()
-{
-    size_t current = 0;
-    auto block_size =
-        ((m_buffer.size / 100 - 1) / getpagesize() + 1) * getpagesize();
-    auto seed = utils::random_uniform<uint32_t>();
-    while (!m_scrub_aborted.load() && current < m_buffer.size) {
-        auto buf_len =
-            std::min(static_cast<size_t>(block_size), m_buffer.size - current);
-        utils::op_prbs23_fill(&seed, (uint8_t*)m_buffer.ptr + current, buf_len);
-        current += buf_len;
-        m_init_percent_complete.store(current * 100 / m_buffer.size);
-    }
-}
-
-index_vector generator::generate_index_vector(size_t size, io_pattern pattern)
-{
-    index_vector indexes(size);
-    std::iota(indexes.begin(), indexes.end(), 0);
-
-    switch (pattern) {
-    case io_pattern::SEQUENTIAL:
-        break;
-    case io_pattern::REVERSE:
-        std::reverse(indexes.begin(), indexes.end());
-        break;
-    case io_pattern::RANDOM:
-        // Use A Mersenne Twister pseudo-random generator to provide fast
-        // vector shuffling
-        {
-            std::random_device rd;
-            std::mt19937_64 g(rd());
-            std::shuffle(indexes.begin(), indexes.end(), g);
-        }
-        break;
-    default:
-        OP_LOG(OP_LOG_ERROR, "Unrecognized generator pattern: %d\n", pattern);
-    }
-
-    return indexes;
+    return stat;
 }
 
 void generator::config(const generator::config_t& cfg)
 {
+    auto was_paused = m_paused;
     pause();
+
+    m_controller.clear();
+
     resize_buffer(cfg.buffer_size);
+
     m_scrub_aborted.store(true);
     if (m_scrub_thread.joinable()) m_scrub_thread.join();
     m_scrub_aborted.store(false);
@@ -223,41 +198,19 @@ void generator::config(const generator::config_t& cfg)
         m_scrub_aborted.store(false);
     });
 
-    auto configure_workers = [this](workers& w,
-                                    std::vector<uint64_t>& indexes,
-                                    const config_t::operation_config& op_cfg,
-                                    std::future<index_vector>& future) {
-        // io blocks in buffer
-        size_t nb_blocks =
-            op_cfg.block_size ? m_buffer.size / op_cfg.block_size : 0;
+    configure_tasks<task_memory_read>(m_read, cfg.read, "_r");
+    configure_tasks<task_memory_write>(m_write, cfg.write, "_w");
 
-        if (future.valid()) future.wait();
-        indexes.resize(nb_blocks);
-        future = std::async(std::launch::async,
-                            generate_index_vector,
-                            nb_blocks,
-                            op_cfg.pattern);
+    if (!was_paused) resume();
+}
 
-        auto rate = (!op_cfg.threads) ? 0 : op_cfg.op_per_sec / op_cfg.threads;
-
-        spread_config(w,
-                      task_memory_config{.block_size = op_cfg.block_size,
-                                         .op_per_sec = rate,
-                                         .pattern = op_cfg.pattern,
-                                         .buffer = {.ptr = m_buffer.ptr,
-                                                    .size = m_buffer.size},
-                                         .indexes = &indexes});
+generator::config_t generator::config() const
+{
+    return {
+        .buffer_size = m_buffer.size,
+        .read = m_read.config,
+        .write = m_write.config,
     };
-
-    reallocate_workers<task_memory_read>(m_read_workers, cfg.read.threads);
-    configure_workers(m_read_workers, m_read_indexes, cfg.read, m_read_future);
-
-    reallocate_workers<task_memory_write>(m_write_workers, cfg.write.threads);
-    configure_workers(
-        m_write_workers, m_write_indexes, cfg.write, m_write_future);
-
-    m_config = cfg;
-    resume();
 }
 
 // Methods : private
@@ -315,13 +268,36 @@ void generator::resize_buffer(size_t size)
     }
 }
 
-void generator::spread_config(generator::workers& wkrs,
-                              const task_memory_config& config)
+void generator::scrub_worker()
 {
-    for (auto& w : wkrs) {
-        auto wt = reinterpret_cast<worker<task_memory>*>(w.get());
-        wt->config(config);
+    size_t current = 0;
+    auto block_size =
+        ((m_buffer.size / 100 - 1) / getpagesize() + 1) * getpagesize();
+    auto seed = utils::random_uniform<uint32_t>();
+
+    while (!m_scrub_aborted.load() && current < m_buffer.size) {
+        auto buf_len =
+            std::min(static_cast<size_t>(block_size), m_buffer.size - current);
+        utils::op_prbs23_fill(
+            &seed, reinterpret_cast<uint8_t*>(m_buffer.ptr) + current, buf_len);
+        current += buf_len;
+        m_init_percent_complete.store(current * 100 / m_buffer.size);
     }
+}
+
+void generator::init_index(operation_data& op)
+{
+    if (op.future.valid()) op.future.wait();
+
+    // Resize index vector, because it will be passed to task configuration
+    // and should has the valid size.
+    op.indexes.resize(
+        op.config.block_size ? m_buffer.size / op.config.block_size : 0);
+
+    op.future = std::async(std::launch::async,
+                           generate_index_vector,
+                           op.indexes.size(),
+                           op.config.pattern);
 }
 
 } // namespace openperf::memory::internal

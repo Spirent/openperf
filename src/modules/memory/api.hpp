@@ -3,13 +3,14 @@
 
 #include <string>
 #include <variant>
-#include <json.hpp>
 
+#include <json.hpp>
 #include <zmq.h>
 #include <tl/expected.hpp>
 
-#include "memory/info.hpp"
-#include "memory/generator.hpp"
+#include "info.hpp"
+#include "generator.hpp"
+#include "memory_stat.hpp"
 
 namespace swagger::v1::model {
 class MemoryGenerator;
@@ -17,6 +18,12 @@ class BulkCreateMemoryGeneratorsRequest;
 class BulkDeleteMemoryGeneratorsRequest;
 class BulkStartMemoryGeneratorsRequest;
 class BulkStopMemoryGeneratorsRequest;
+
+void from_json(const nlohmann::json&, MemoryGenerator&);
+void from_json(const nlohmann::json&, BulkCreateMemoryGeneratorsRequest&);
+void from_json(const nlohmann::json&, BulkDeleteMemoryGeneratorsRequest&);
+void from_json(const nlohmann::json&, BulkStartMemoryGeneratorsRequest&);
+void from_json(const nlohmann::json&, BulkStopMemoryGeneratorsRequest&);
 } // namespace swagger::v1::model
 
 namespace openperf::memory::api {
@@ -25,7 +32,6 @@ static constexpr auto endpoint = "inproc://openperf_memory";
 
 // ZMQ message structs
 using config_t = openperf::memory::internal::generator::config_t;
-using stat_t = openperf::memory::internal::generator::stat_t;
 
 struct message
 {};
@@ -139,7 +145,7 @@ struct item
     {
         std::string id;
         std::string generator_id;
-        stat_t stat;
+        internal::memory_stat stat;
     };
 
     using data_ptr = std::unique_ptr<item_data>;
@@ -194,13 +200,5 @@ tl::expected<api_request, int> deserialize_request(const serialized_msg& msg);
 tl::expected<api_reply, int> deserialize_reply(const serialized_msg& msg);
 
 } // namespace openperf::memory::api
-
-namespace swagger::v1::model {
-void from_json(const nlohmann::json&, MemoryGenerator&);
-void from_json(const nlohmann::json&, BulkCreateMemoryGeneratorsRequest&);
-void from_json(const nlohmann::json&, BulkDeleteMemoryGeneratorsRequest&);
-void from_json(const nlohmann::json&, BulkStartMemoryGeneratorsRequest&);
-void from_json(const nlohmann::json&, BulkStopMemoryGeneratorsRequest&);
-} // namespace swagger::v1::model
 
 #endif // _OP_MEMORY_API_HPP_

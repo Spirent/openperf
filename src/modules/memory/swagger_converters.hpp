@@ -3,8 +3,8 @@
 
 #include <iomanip>
 
-#include "memory/info.hpp"
-#include "memory/generator.hpp"
+#include "info.hpp"
+#include "generator.hpp"
 #include "swagger/v1/model/MemoryInfoResult.h"
 #include "swagger/v1/model/MemoryGenerator.h"
 #include "swagger/v1/model/MemoryGeneratorConfig.h"
@@ -19,13 +19,13 @@ namespace openperf::memory::api {
 
 namespace swagger = ::swagger::v1::model;
 using config_t = memory::internal::generator::config_t;
-using stat_t = memory::internal::generator::stat_t;
 using memory_stat = memory::internal::memory_stat;
+using task_memory_stat = memory::internal::task_memory_stat;
 using info_t = memory::memory_info::info_t;
 using io_pattern = memory::internal::io_pattern;
 
 namespace {
-static io_pattern from_string(std::string_view str)
+constexpr io_pattern from_string(std::string_view str)
 {
     if (str == "random") return io_pattern::RANDOM;
     if (str == "sequential") return io_pattern::SEQUENTIAL;
@@ -33,7 +33,7 @@ static io_pattern from_string(std::string_view str)
     return io_pattern::NONE;
 }
 
-static std::string to_string(io_pattern pattern)
+constexpr std::string_view to_string(io_pattern pattern)
 {
     switch (pattern) {
     case io_pattern::RANDOM:
@@ -80,7 +80,7 @@ static swagger::MemoryGeneratorConfig to_swagger(const config_t& config)
     model.setWritesPerSec(config.write.op_per_sec);
     model.setWriteThreads(config.write.threads);
 
-    model.setPattern(to_string(config.read.pattern));
+    model.setPattern(std::string(to_string(config.read.pattern)));
 
     return model;
 }
@@ -98,7 +98,7 @@ to_swagger(const reply::generator::item::item_data& g)
     return model;
 }
 
-static swagger::MemoryGeneratorStats to_swagger(const memory_stat& stat)
+static swagger::MemoryGeneratorStats to_swagger(const task_memory_stat& stat)
 {
     swagger::MemoryGeneratorStats model;
     model.setBytesActual(stat.bytes);
@@ -127,9 +127,9 @@ static swagger::MemoryGeneratorStats to_swagger(const memory_stat& stat)
     return model;
 }
 
-static std::string to_iso8601(const memory_stat::timestamp_t& ts)
+static std::string to_iso8601(const task_memory_stat::timestamp_t& ts)
 {
-    auto t = std::chrono::system_clock::to_time_t(ts);
+    auto t = task_memory_stat::clock::to_time_t(ts);
     auto nanos = std::chrono::time_point_cast<std::chrono::nanoseconds>(ts)
                  - std::chrono::time_point_cast<std::chrono::seconds>(ts);
     std::stringstream os;
@@ -146,7 +146,7 @@ to_swagger(const reply::statistic::item::item_data& i)
     model.setId(i.id);
     model.setActive(i.stat.active);
     model.setGeneratorId(i.generator_id);
-    model.setTimestamp(to_iso8601(i.stat.timestamp));
+    model.setTimestamp(to_iso8601(i.stat.timestamp()));
     model.setRead(std::make_shared<swagger::MemoryGeneratorStats>(
         to_swagger(i.stat.read)));
     model.setWrite(std::make_shared<swagger::MemoryGeneratorStats>(

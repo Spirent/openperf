@@ -12,6 +12,7 @@ MEMORY_SOURCES += \
 	generator_collection.cpp \
 	info.cpp \
 	generator.cpp \
+	memory_stat.cpp \
 	task_memory.cpp \
 	task_memory_read.cpp \
 	task_memory_write.cpp
@@ -32,4 +33,5 @@ MEMORY_TEST_SOURCES += \
 	task_memory.cpp \
 	generator.cpp \
 	task_memory_read.cpp \
-	task_memory_write.cpp
+	task_memory_write.cpp \
+	memory_stat.cpp

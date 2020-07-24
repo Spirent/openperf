@@ -1,10 +1,10 @@
 #ifndef _OP_MEMORY_SERVER_H_
 #define _OP_MEMORY_SERVER_H_
 
-#include "core/op_core.h"
+#include "api.hpp"
+#include "generator_collection.hpp"
 
-#include "memory/api.hpp"
-#include "memory/generator_collection.hpp"
+#include "framework/core/op_core.h"
 
 namespace openperf::memory::api {
 

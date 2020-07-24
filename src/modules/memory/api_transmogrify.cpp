@@ -1,6 +1,7 @@
-#include "memory/api.hpp"
-#include "utils/variant_index.hpp"
-#include "utils/overloaded_visitor.hpp"
+#include "api.hpp"
+
+#include "framework/utils/variant_index.hpp"
+#include "framework/utils/overloaded_visitor.hpp"
 
 #include "swagger/v1/model/MemoryGenerator.h"
 #include "swagger/v1/model/BulkCreateMemoryGeneratorsRequest.h"

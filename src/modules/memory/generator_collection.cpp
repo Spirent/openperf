@@ -1,7 +1,8 @@
-#include "memory/generator_collection.hpp"
-#include "memory/generator.hpp"
-#include "core/op_core.h"
-#include "config/op_config_utils.hpp"
+#include "generator.hpp"
+#include "generator_collection.hpp"
+
+#include "framework/core/op_core.h"
+#include "framework/config/op_config_utils.hpp"
 
 namespace openperf::memory {
 
@@ -31,11 +32,6 @@ const generator& generator_collection::generator(const std::string& id) const
 {
     return m_generators.at(id);
 }
-
-// generator& generator_collection::generator(const std::string& id)
-//{
-//    return m_generators.at(id);
-//}
 
 void generator_collection::erase(const std::string& id)
 {
