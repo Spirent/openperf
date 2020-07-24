@@ -1,19 +1,15 @@
 #ifndef _OP_MEMORY_GENERATOR_HPP_
 #define _OP_MEMORY_GENERATOR_HPP_
 
-#include <forward_list>
 #include <future>
 #include <atomic>
 
-#include "memory/task_memory.hpp"
-#include "memory/memory_stat.hpp"
+#include "io_pattern.hpp"
+#include "memory_stat.hpp"
+
 #include "framework/generator/controller.hpp"
 
 namespace openperf::memory::internal {
-
-using namespace openperf::utils::worker;
-using index_t = uint64_t;
-using index_vector = std::vector<index_t>;
 
 class generator
 {
@@ -30,6 +26,7 @@ public:
         } read, write;
     };
 
+    using index_vector = std::vector<uint64_t>;
     using time_point = std::chrono::system_clock::time_point;
     using controller = openperf::framework::generator::controller;
 
@@ -82,11 +79,7 @@ public:
 
     generator::config_t config() const { return m_config; }
     memory_stat stat() const;
-
-    int32_t init_percent_complete() const
-    {
-        return m_init_percent_complete.load();
-    }
+    int32_t init_percent_complete() const { return m_init_percent_complete; }
 
     bool is_initialized() const { return init_percent_complete() == 100; }
 
@@ -100,11 +93,6 @@ private:
     void free_buffer();
     void resize_buffer(size_t);
     void scrub_worker();
-    void spread_config(generator::workers&, const task_memory_config&);
-
-    template <class T> void reallocate_workers(generator::workers&, unsigned);
-
-    template <typename Function> void for_each_worker(Function&& function);
 };
 
 } // namespace openperf::memory::internal

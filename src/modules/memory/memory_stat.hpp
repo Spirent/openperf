@@ -5,7 +5,7 @@
 #include <chrono>
 #include <optional>
 
-#include "timesync/chrono.hpp"
+#include "modules/timesync/chrono.hpp"
 
 namespace openperf::memory::internal {
 

@@ -1,10 +1,12 @@
-#include "memory/generator.hpp"
-#include "memory/task_memory_read.hpp"
-#include "memory/task_memory_write.hpp"
-#include "utils/random.hpp"
-#include "utils/memcpy.hpp"
+#include "generator.hpp"
+#include "task_memory_read.hpp"
+#include "task_memory_write.hpp"
+
+#include "framework/utils/random.hpp"
+#include "framework/utils/memcpy.hpp"
 
 #include <cinttypes>
+#include <unistd.h>
 #include <sys/mman.h>
 
 namespace openperf::memory::internal {
@@ -30,7 +32,7 @@ generator::generator()
         m_stat.write += stat.write;
 
         // Calculate really target values from start time of the generator
-        if (m_config.read_threads) {
+        if (m_config.read.threads) {
             auto& rstat = m_stat.read;
             rstat.operations_target =
                 elapsed_time.count() * m_config.read.op_per_sec
@@ -39,7 +41,7 @@ generator::generator()
                 rstat.operations_target * m_config.read.block_size;
         }
 
-        if (m_config.write_threads) {
+        if (m_config.write.threads) {
             auto& wstat = m_stat.write;
             wstat.operations_target =
                 elapsed_time.count() * m_config.write.op_per_sec
@@ -74,17 +76,21 @@ generator::~generator()
 void generator::start()
 {
     if (!m_stopped) return;
+
     if (m_read_future.valid()) {
         auto res = m_read_future.get();
         assert(res.size() == m_read_indexes.size());
-        utils::memcpy(
-            m_read_indexes.data(), res.data(), sizeof(index_t) * res.size());
+        utils::memcpy(m_read_indexes.data(),
+                      res.data(),
+                      sizeof(index_vector::value_type) * res.size());
     }
+
     if (m_write_future.valid()) {
         auto res = m_write_future.get();
         assert(res.size() == m_write_indexes.size());
-        utils::memcpy(
-            m_write_indexes.data(), res.data(), sizeof(index_t) * res.size());
+        utils::memcpy(m_write_indexes.data(),
+                      res.data(),
+                      sizeof(index_vector::value_type) * res.size());
     };
 
     reset();
@@ -130,10 +136,12 @@ void generator::pause()
 
 void generator::reset()
 {
+    auto was_paused = m_paused;
     m_controller.pause();
     m_controller.reset();
     m_stat = {};
-    m_controller.resume();
+
+    if (!was_paused) m_controller.resume();
 }
 
 memory_stat generator::stat() const
@@ -144,53 +152,16 @@ memory_stat generator::stat() const
     return stat;
 }
 
-void generator::scrub_worker()
-{
-    size_t current = 0;
-    auto block_size =
-        ((m_buffer.size / 100 - 1) / getpagesize() + 1) * getpagesize();
-    auto seed = utils::random_uniform<uint32_t>();
-    while (!m_scrub_aborted.load() && current < m_buffer.size) {
-        auto buf_len =
-            std::min(static_cast<size_t>(block_size), m_buffer.size - current);
-        utils::op_prbs23_fill(&seed, (uint8_t*)m_buffer.ptr + current, buf_len);
-        current += buf_len;
-        m_init_percent_complete.store(current * 100 / m_buffer.size);
-    }
-}
-
-index_vector generator::generate_index_vector(size_t size, io_pattern pattern)
-{
-    index_vector indexes(size);
-    std::iota(indexes.begin(), indexes.end(), 0);
-
-    switch (pattern) {
-    case io_pattern::SEQUENTIAL:
-        break;
-    case io_pattern::REVERSE:
-        std::reverse(indexes.begin(), indexes.end());
-        break;
-    case io_pattern::RANDOM:
-        // Use A Mersenne Twister pseudo-random generator to provide fast
-        // vector shuffling
-        {
-            std::random_device rd;
-            std::mt19937_64 g(rd());
-            std::shuffle(indexes.begin(), indexes.end(), g);
-        }
-        break;
-    default:
-        OP_LOG(OP_LOG_ERROR, "Unrecognized generator pattern: %d\n", pattern);
-    }
-
-    return indexes;
-}
-
-/*
 void generator::config(const generator::config_t& cfg)
 {
+    auto was_paused = m_paused;
     pause();
+
+    m_config = cfg;
+    m_controller.clear();
+
     resize_buffer(cfg.buffer_size);
+
     m_scrub_aborted.store(true);
     if (m_scrub_thread.joinable()) m_scrub_thread.join();
     m_scrub_aborted.store(false);
@@ -202,59 +173,25 @@ void generator::config(const generator::config_t& cfg)
         m_scrub_aborted.store(false);
     });
 
-    auto configure_workers = [this](workers& w,
-                                    std::vector<uint64_t>& indexes,
-                                    const config_t::operation_config& op_cfg,
-                                    std::future<index_vector>& future) {
-        // io blocks in buffer
-        size_t nb_blocks =
-            op_cfg.block_size ? m_buffer.size / op_cfg.block_size : 0;
+    if (m_read_future.valid()) m_read_future.wait();
+    m_read_indexes.resize(
+        cfg.read.block_size ? m_buffer.size / cfg.read.block_size : 0);
+    m_read_future = std::async(std::launch::async,
+                               generate_index_vector,
+                               m_read_indexes.size(),
+                               cfg.read.pattern);
 
-        if (future.valid()) future.wait();
-        indexes.resize(nb_blocks);
-        future = std::async(std::launch::async,
-                            generate_index_vector,
-                            nb_blocks,
-                            op_cfg.pattern);
-
-        auto rate = (!op_cfg.threads) ? 0 : op_cfg.op_per_sec / op_cfg.threads;
-
-        spread_config(w,
-                      task_memory_config{.block_size = op_cfg.block_size,
-                                         .op_per_sec = rate,
-                                         .pattern = op_cfg.pattern,
-                                         .buffer = {.ptr = m_buffer.ptr,
-                                                    .size = m_buffer.size},
-                                         .indexes = &indexes});
-    };
-
-    reallocate_workers<task_memory_read>(m_read_workers, cfg.read.threads);
-    configure_workers(m_read_workers, m_read_indexes, cfg.read, m_read_future);
-
-    reallocate_workers<task_memory_write>(m_write_workers, cfg.write.threads);
-    configure_workers(
-        m_write_workers, m_write_indexes, cfg.write, m_write_future);
-*/
-void generator::config(const generator::config_t& cfg)
-{
-    auto was_paused = m_paused;
-    pause();
-
-    m_config = cfg;
-    m_controller.clear();
-
-    resize_buffer(cfg.buffer_size);
-
-    for (size_t i = 0; i < cfg.read_threads; i++) {
+    for (size_t i = 0; i < cfg.read.threads; i++) {
         auto task = task_memory_read(task_memory_config{
             .block_size = cfg.read.block_size,
-            .op_per_sec = cfg.read.op_per_sec / cfg.read_threads,
+            .op_per_sec = cfg.read.op_per_sec / cfg.read.threads,
             .pattern = cfg.read.pattern,
             .buffer =
                 {
                     .ptr = m_buffer.ptr,
                     .size = m_buffer.size,
                 },
+            .indexes = &m_write_indexes,
         });
 
         m_controller.add(std::move(task),
@@ -262,16 +199,25 @@ void generator::config(const generator::config_t& cfg)
                              + std::to_string(i + 1));
     }
 
-    for (size_t i = 0; i < cfg.write_threads; i++) {
+    if (m_write_future.valid()) m_write_future.wait();
+    m_write_indexes.resize(
+        cfg.write.block_size ? m_buffer.size / cfg.write.block_size : 0);
+    m_write_future = std::async(std::launch::async,
+                                generate_index_vector,
+                                m_write_indexes.size(),
+                                cfg.write.pattern);
+
+    for (size_t i = 0; i < cfg.write.threads; i++) {
         auto task = task_memory_write(task_memory_config{
             .block_size = cfg.write.block_size,
-            .op_per_sec = cfg.write.op_per_sec / cfg.write_threads,
+            .op_per_sec = cfg.write.op_per_sec / cfg.write.threads,
             .pattern = cfg.write.pattern,
             .buffer =
                 {
                     .ptr = m_buffer.ptr,
                     .size = m_buffer.size,
                 },
+            .indexes = &m_write_indexes,
         });
 
         m_controller.add(std::move(task),
@@ -335,6 +281,50 @@ void generator::resize_buffer(size_t size)
 
         m_buffer.size = size;
     }
+}
+
+void generator::scrub_worker()
+{
+    size_t current = 0;
+    auto block_size =
+        ((m_buffer.size / 100 - 1) / getpagesize() + 1) * getpagesize();
+    auto seed = utils::random_uniform<uint32_t>();
+    while (!m_scrub_aborted.load() && current < m_buffer.size) {
+        auto buf_len =
+            std::min(static_cast<size_t>(block_size), m_buffer.size - current);
+        utils::op_prbs23_fill(
+            &seed, reinterpret_cast<uint8_t*>(m_buffer.ptr) + current, buf_len);
+        current += buf_len;
+        m_init_percent_complete.store(current * 100 / m_buffer.size);
+    }
+}
+
+// Methods : static
+generator::index_vector generator::generate_index_vector(size_t size,
+                                                         io_pattern pattern)
+{
+    index_vector indexes(size);
+    std::iota(indexes.begin(), indexes.end(), 0);
+
+    switch (pattern) {
+    case io_pattern::SEQUENTIAL:
+        break;
+    case io_pattern::REVERSE:
+        std::reverse(indexes.begin(), indexes.end());
+        break;
+    case io_pattern::RANDOM: {
+        // Use A Mersenne Twister pseudo-random generator to provide fast
+        // vector shuffling
+        std::random_device rd;
+        std::mt19937_64 g(rd());
+        std::shuffle(indexes.begin(), indexes.end(), g);
+        break;
+    }
+    default:
+        OP_LOG(OP_LOG_ERROR, "Unrecognized generator pattern: %d\n", pattern);
+    }
+
+    return indexes;
 }
 
 } // namespace openperf::memory::internal

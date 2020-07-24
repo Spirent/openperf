@@ -1,6 +1,6 @@
-#include "memory/server.hpp"
-#include "memory/api.hpp"
-#include "memory/info.hpp"
+#include "server.hpp"
+#include "api.hpp"
+#include "info.hpp"
 
 namespace openperf::memory::api {
 

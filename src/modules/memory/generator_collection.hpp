@@ -5,7 +5,7 @@
 #include <variant>
 #include <unordered_map>
 
-#include "memory/generator.hpp"
+#include "generator.hpp"
 
 namespace openperf::memory {
 

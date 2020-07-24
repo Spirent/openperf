@@ -1,7 +1,7 @@
 #include <sys/sysinfo.h>
 
-#include "memory/info.hpp"
-#include "core/op_core.h"
+#include "info.hpp"
+#include "framework/core/op_core.h"
 
 namespace openperf::memory {
 

@@ -3,14 +3,14 @@
 
 #include <string>
 #include <variant>
-#include <json.hpp>
 
+#include <json.hpp>
 #include <zmq.h>
 #include <tl/expected.hpp>
 
-#include "memory/info.hpp"
-#include "memory/generator.hpp"
-#include "memory/memory_stat.hpp"
+#include "info.hpp"
+#include "generator.hpp"
+#include "memory_stat.hpp"
 
 namespace swagger::v1::model {
 class MemoryGenerator;

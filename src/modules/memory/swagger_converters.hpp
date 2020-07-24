@@ -3,8 +3,8 @@
 
 #include <iomanip>
 
-#include "memory/info.hpp"
-#include "memory/generator.hpp"
+#include "info.hpp"
+#include "generator.hpp"
 #include "swagger/v1/model/MemoryInfoResult.h"
 #include "swagger/v1/model/MemoryGenerator.h"
 #include "swagger/v1/model/MemoryGeneratorConfig.h"

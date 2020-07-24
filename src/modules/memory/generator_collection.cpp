@@ -1,7 +1,8 @@
-#include "memory/generator_collection.hpp"
-#include "memory/generator.hpp"
-#include "core/op_core.h"
-#include "config/op_config_utils.hpp"
+#include "generator.hpp"
+#include "generator_collection.hpp"
+
+#include "framework/core/op_core.h"
+#include "framework/config/op_config_utils.hpp"
 
 namespace openperf::memory {
 

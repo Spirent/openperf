@@ -1,7 +1,7 @@
 #ifndef _OP_MEMORY_TASK_MEMORY_READ_HPP_
 #define _OP_MEMORY_TASK_MEMORY_READ_HPP_
 
-#include "memory/task_memory.hpp"
+#include "task_memory.hpp"
 
 namespace openperf::memory::internal {
 

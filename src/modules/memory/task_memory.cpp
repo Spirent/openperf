@@ -1,13 +1,13 @@
-#include "memory/task_memory.hpp"
-
 #include <algorithm>
 #include <cstdint>
 #include <tuple>
 #include <thread>
 #include <sys/mman.h>
 
-#include "core/op_core.h"
-#include "utils/random.hpp"
+#include "framework/core/op_core.h"
+#include "framework/utils/random.hpp"
+
+#include "memory/task_memory.hpp"
 
 namespace openperf::memory::internal {
 
@@ -59,7 +59,6 @@ auto calc_ops_and_sleep(const task_memory_stat& total,
 // Constructors & Destructor
 task_memory::task_memory(task_memory&& t) noexcept
     : m_config(t.m_config)
-    , m_indexes(std::move(t.m_indexes))
     , m_buffer(t.m_buffer)
     , m_scratch(t.m_scratch)
     , m_stat(t.m_stat)

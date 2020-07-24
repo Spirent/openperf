@@ -5,9 +5,10 @@
 #include <chrono>
 
 #include "framework/generator/task.hpp"
-#include "timesync/chrono.hpp"
-#include "memory/io_pattern.hpp"
-#include "memory/memory_stat.hpp"
+#include "modules/timesync/chrono.hpp"
+
+#include "io_pattern.hpp"
+#include "memory_stat.hpp"
 
 namespace openperf::memory::internal {
 
