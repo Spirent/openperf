@@ -52,17 +52,17 @@ static config_t from_swagger(const swagger::MemoryGeneratorConfig& m)
 {
     return config_t{
         .buffer_size = static_cast<size_t>(m.getBufferSize()),
-        .read_threads = static_cast<size_t>(m.getReadThreads()),
-        .write_threads = static_cast<size_t>(m.getWriteThreads()),
         .read =
             {
                 .block_size = static_cast<size_t>(m.getReadSize()),
                 .op_per_sec = static_cast<size_t>(m.getReadsPerSec()),
+                .threads = static_cast<size_t>(m.getReadThreads()),
                 .pattern = from_string(m.getPattern()),
             },
         .write = {
             .block_size = static_cast<size_t>(m.getWriteSize()),
             .op_per_sec = static_cast<size_t>(m.getWritesPerSec()),
+            .threads = static_cast<size_t>(m.getWriteThreads()),
             .pattern = from_string(m.getPattern()),
         }};
 }
@@ -71,14 +71,14 @@ static swagger::MemoryGeneratorConfig to_swagger(const config_t& config)
 {
     swagger::MemoryGeneratorConfig model;
     model.setBufferSize(config.buffer_size);
-    model.setReadThreads(config.read_threads);
-    model.setWriteThreads(config.write_threads);
 
     model.setReadSize(config.read.block_size);
     model.setReadsPerSec(config.read.op_per_sec);
+    model.setReadThreads(config.read.threads);
 
     model.setWriteSize(config.write.block_size);
     model.setWritesPerSec(config.write.op_per_sec);
+    model.setWriteThreads(config.write.threads);
 
     model.setPattern(to_string(config.read.pattern));
 

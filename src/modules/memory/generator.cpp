@@ -2,6 +2,7 @@
 #include "memory/task_memory_read.hpp"
 #include "memory/task_memory_write.hpp"
 #include "utils/random.hpp"
+#include "utils/memcpy.hpp"
 
 #include <cinttypes>
 #include <sys/mman.h>
@@ -52,6 +53,9 @@ generator::~generator()
 {
     m_scrub_aborted.store(true);
     if (m_scrub_thread.joinable()) m_scrub_thread.join();
+    if (m_read_future.valid()) m_read_future.wait();
+    if (m_write_future.valid()) m_write_future.wait();
+
     stop();
     free_buffer();
 }
@@ -60,6 +64,18 @@ generator::~generator()
 void generator::start()
 {
     if (!m_stopped) return;
+    if (m_read_future.valid()) {
+        auto res = m_read_future.get();
+        assert(res.size() == m_read_indexes.size());
+        utils::memcpy(
+            m_read_indexes.data(), res.data(), sizeof(index_t) * res.size());
+    }
+    if (m_write_future.valid()) {
+        auto res = m_write_future.get();
+        assert(res.size() == m_write_indexes.size());
+        utils::memcpy(
+            m_write_indexes.data(), res.data(), sizeof(index_t) * res.size());
+    };
 
     for_each_worker([](worker_ptr& w) { w->start(); });
     m_stopped = false;
@@ -165,6 +181,33 @@ void generator::scrub_worker()
     }
 }
 
+index_vector generator::generate_index_vector(size_t size, io_pattern pattern)
+{
+    index_vector indexes(size);
+    std::iota(indexes.begin(), indexes.end(), 0);
+
+    switch (pattern) {
+    case io_pattern::SEQUENTIAL:
+        break;
+    case io_pattern::REVERSE:
+        std::reverse(indexes.begin(), indexes.end());
+        break;
+    case io_pattern::RANDOM:
+        // Use A Mersenne Twister pseudo-random generator to provide fast
+        // vector shuffling
+        {
+            std::random_device rd;
+            std::mt19937_64 g(rd());
+            std::shuffle(indexes.begin(), indexes.end(), g);
+        }
+        break;
+    default:
+        OP_LOG(OP_LOG_ERROR, "Unrecognized generator pattern: %d\n", pattern);
+    }
+
+    return indexes;
+}
+
 void generator::config(const generator::config_t& cfg)
 {
     pause();
@@ -180,29 +223,38 @@ void generator::config(const generator::config_t& cfg)
         m_scrub_aborted.store(false);
     });
 
-    reallocate_workers<task_memory_read>(m_read_workers, cfg.read_threads);
+    auto configure_workers = [this](workers& w,
+                                    std::vector<uint64_t>& indexes,
+                                    const config_t::operation_config& op_cfg,
+                                    std::future<index_vector>& future) {
+        // io blocks in buffer
+        size_t nb_blocks =
+            op_cfg.block_size ? m_buffer.size / op_cfg.block_size : 0;
 
-    auto read_rate =
-        (!cfg.read_threads) ? 0 : cfg.read.op_per_sec / cfg.read_threads;
+        if (future.valid()) future.wait();
+        indexes.resize(nb_blocks);
+        future = std::async(std::launch::async,
+                            generate_index_vector,
+                            nb_blocks,
+                            op_cfg.pattern);
 
-    spread_config(m_read_workers,
-                  task_memory_config{
-                      .block_size = cfg.read.block_size,
-                      .op_per_sec = read_rate,
-                      .pattern = cfg.read.pattern,
-                      .buffer = {.ptr = m_buffer.ptr, .size = m_buffer.size}});
+        auto rate = (!op_cfg.threads) ? 0 : op_cfg.op_per_sec / op_cfg.threads;
 
-    reallocate_workers<task_memory_write>(m_write_workers, cfg.write_threads);
+        spread_config(w,
+                      task_memory_config{.block_size = op_cfg.block_size,
+                                         .op_per_sec = rate,
+                                         .pattern = op_cfg.pattern,
+                                         .buffer = {.ptr = m_buffer.ptr,
+                                                    .size = m_buffer.size},
+                                         .indexes = &indexes});
+    };
 
-    auto write_rate =
-        (!cfg.write_threads) ? 0 : cfg.write.op_per_sec / cfg.write_threads;
+    reallocate_workers<task_memory_read>(m_read_workers, cfg.read.threads);
+    configure_workers(m_read_workers, m_read_indexes, cfg.read, m_read_future);
 
-    spread_config(m_write_workers,
-                  task_memory_config{
-                      .block_size = cfg.write.block_size,
-                      .op_per_sec = write_rate,
-                      .pattern = cfg.write.pattern,
-                      .buffer = {.ptr = m_buffer.ptr, .size = m_buffer.size}});
+    reallocate_workers<task_memory_write>(m_write_workers, cfg.write.threads);
+    configure_workers(
+        m_write_workers, m_write_indexes, cfg.write, m_write_future);
 
     m_config = cfg;
     resume();
@@ -232,10 +284,11 @@ void generator::resize_buffer(size_t size)
 
     /*
      * We use mmap/munmap here instead of the standard allocation functions
-     * because we expect this buffer to be relatively large, and OSv currently
-     * can only allocate non-contiguous chunks of memory with mmap.
-     * The buffer contents don't currently matter, so there is no reason to
-     * initialize new buffers or shuffle contents between old and new ones.
+     * because we expect this buffer to be relatively large, and OSv
+     * currently can only allocate non-contiguous chunks of memory with
+     * mmap. The buffer contents don't currently matter, so there is no
+     * reason to initialize new buffers or shuffle contents between old and
+     * new ones.
      */
     free_buffer();
     if (size > 0) {

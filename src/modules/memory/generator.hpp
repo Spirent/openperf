@@ -2,6 +2,7 @@
 #define _OP_MEMORY_GENERATOR_HPP_
 
 #include <forward_list>
+#include <future>
 
 #include "utils/worker/worker.hpp"
 #include "memory/task_memory.hpp"
@@ -10,6 +11,8 @@
 namespace openperf::memory::internal {
 
 using namespace openperf::utils::worker;
+using index_t = uint64_t;
+using index_vector = std::vector<index_t>;
 
 class generator
 {
@@ -17,12 +20,11 @@ public:
     struct config_t
     {
         size_t buffer_size = 0;
-        size_t read_threads = 0;
-        size_t write_threads = 0;
-        struct
+        struct operation_config
         {
             size_t block_size = 0;
             size_t op_per_sec = 0;
+            size_t threads = 0;
             io_pattern pattern = io_pattern::NONE;
         } read, write;
     };
@@ -55,6 +57,9 @@ private:
         void* ptr;
         size_t size;
     } m_buffer;
+
+    index_vector m_read_indexes, m_write_indexes;
+    std::future<index_vector> m_read_future, m_write_future;
 
     uint16_t m_serial_number;
     std::chrono::nanoseconds m_run_time;
@@ -97,6 +102,8 @@ public:
     bool is_stopped() const { return m_stopped; }
     bool is_running() const { return !(m_paused || m_stopped); }
     bool is_paused() const { return m_paused; }
+
+    static index_vector generate_index_vector(size_t size, io_pattern pattern);
 
 private:
     void free_buffer();
