@@ -111,10 +111,8 @@ bool pcap_buffer_writer::write_packet(const capture_packet& packet)
     options.opt_end.hdr.option_code =
         pcap::enhanced_packet_block_option_type::OPT_END;
     options.opt_end.hdr.option_length = 0;
-    if (packet.hdr.flags & CAPTURE_FLAG_TX)
-        options.flags.flags.set_direction(pcap::packet_direction::OUTBOUND);
-    else
-        options.flags.flags.set_direction(pcap::packet_direction::INBOUND);
+    options.flags.flags.set_direction(
+        static_cast<pcap::packet_direction>(packet.hdr.dir));
 
     return write_packet_block(
         block_hdr, packet.data, &options, sizeof(options));

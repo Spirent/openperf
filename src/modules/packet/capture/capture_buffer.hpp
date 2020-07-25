@@ -18,14 +18,23 @@ namespace openperf::packet::capture {
 
 using clock = openperf::timesync::chrono::realtime;
 
-const uint64_t CAPTURE_FLAG_TX = 0x01;
-
 struct capture_packet_hdr
 {
+    // Direction bits must match PCAP enhanced packet incoming/outgoing
+    enum class direction { NONE, RX, TX };
+
     clock::time_point timestamp;
     uint32_t captured_len;
     uint32_t packet_len;
-    uint64_t flags;
+    union
+    {
+        struct
+        {
+            uint64_t dir : 2;
+            uint64_t pad : 62;
+        };
+        uint64_t flags;
+    };
 };
 
 struct capture_packet

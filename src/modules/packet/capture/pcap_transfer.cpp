@@ -333,10 +333,8 @@ private:
         options.opt_end.hdr.option_code =
             pcap::enhanced_packet_block_option_type::OPT_END;
         options.opt_end.hdr.option_length = 0;
-        if (packet.hdr.flags & CAPTURE_FLAG_TX)
-            options.flags.flags.set_direction(pcap::packet_direction::OUTBOUND);
-        else
-            options.flags.flags.set_direction(pcap::packet_direction::INBOUND);
+        options.flags.flags.set_direction(
+            static_cast<pcap::packet_direction>(packet.hdr.dir));
 
         if (block_hdr.block_total_length > m_writer->get_available_length()) {
             if (!flush()) { return false; }

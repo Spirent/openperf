@@ -109,8 +109,8 @@ fill_capture_packet_hdr(capture_packet_hdr& hdr,
     hdr.packet_len = openperf::packetio::packet::length(packet);
     hdr.captured_len = std::min(hdr.packet_len, max_packet_size);
     hdr.flags = 0;
-    if (openperf::packetio::packet::tx_flag(packet))
-        hdr.flags |= CAPTURE_FLAG_TX;
+    // RX = 1, TX = 2
+    hdr.dir = 1 << openperf::packetio::packet::tx_flag(packet);
 }
 
 uint16_t capture_buffer_mem::write_packets(
@@ -837,9 +837,8 @@ uint16_t capture_buffer_file_reader::read_packets(capture_packet* packets[],
                 m_eof = true;
                 break;
             }
-            if (options.flags.flags.get_direction()
-                == pcap::packet_direction::OUTBOUND)
-                m_packets[i].hdr.flags = CAPTURE_FLAG_TX;
+            m_packets[i].hdr.dir =
+                static_cast<int>(options.flags.flags.get_direction());
         } else {
             if (fseek(m_fp_read, block_remain, SEEK_CUR) != 0) {
                 OP_LOG(OP_LOG_ERROR,
