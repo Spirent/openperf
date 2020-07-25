@@ -69,8 +69,7 @@ static rte_mbuf* eal_mbuf_copy_chain(const rte_mbuf* src_head)
     return (dst_head);
 }
 
-static uint16_t transmit(worker::fib* fib,
-                         uint16_t port_idx,
+static uint16_t transmit(uint16_t port_idx,
                          uint16_t queue_idx,
                          struct rte_mbuf* mbufs[],
                          uint16_t nb_mbufs)
@@ -112,7 +111,7 @@ uint16_t tx_copy_direct(int port_idx,
          */
         auto copy = eal_mbuf_copy_chain(mbufs[i]);
         rte_pktmbuf_free(mbufs[i]);
-        if (!copy || !transmit(fib, port_idx, 0, &copy, 1)) { return (sent); }
+        if (!copy || !transmit(port_idx, 0, &copy, 1)) { return (sent); }
         sent++;
     }
 
@@ -157,7 +156,7 @@ tx_direct(int port_idx, uint32_t, struct rte_mbuf* mbufs[], uint16_t nb_mbufs)
     // the packet gets pushed to the sink.
     tx_sink_dispatch(fib, port_idx, mbufs, nb_mbufs);
 
-    return (transmit(fib, port_idx, 0, mbufs, nb_mbufs));
+    return (transmit(port_idx, 0, mbufs, nb_mbufs));
 }
 
 uint16_t tx_queued(int port_idx,

@@ -596,6 +596,9 @@ err_t net_interface::handle_tx(struct pbuf* p)
      * mbufs to be freed with it.
      */
     auto m_head = packetio_memory_mbuf_synchronize(p);
+
+    if (!m_head) { return ERR_BUF; }
+
     for (auto m = m_head; m != nullptr; m = m->next) {
         rte_mbuf_refcnt_update(m, 1);
     }
