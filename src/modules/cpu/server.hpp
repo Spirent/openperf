@@ -3,8 +3,9 @@
 
 #include <memory>
 
-#include "cpu/api.hpp"
-#include "cpu/generator_stack.hpp"
+#include "framework/core/op_core.h"
+#include "api.hpp"
+#include "generator_stack.hpp"
 
 namespace openperf::cpu::api {
 

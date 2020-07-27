@@ -1,17 +1,17 @@
 #include <sstream>
 #include <iomanip>
-#include <zmq.h>
 
-#include "cpu/api.hpp"
-#include "utils/overloaded_visitor.hpp"
-#include "utils/variant_index.hpp"
+#include "api.hpp"
 
-#include "swagger/v1/model/CpuGenerator.h"
-#include "swagger/v1/model/CpuGeneratorResult.h"
+#include "framework/utils/overloaded_visitor.hpp"
+#include "framework/utils/variant_index.hpp"
+
 #include "swagger/v1/model/BulkCreateCpuGeneratorsRequest.h"
 #include "swagger/v1/model/BulkDeleteCpuGeneratorsRequest.h"
 #include "swagger/v1/model/BulkStartCpuGeneratorsRequest.h"
 #include "swagger/v1/model/BulkStopCpuGeneratorsRequest.h"
+#include "swagger/v1/model/CpuGenerator.h"
+#include "swagger/v1/model/CpuGeneratorResult.h"
 #include "swagger/v1/model/CpuInfoResult.h"
 
 namespace openperf::cpu::api {
@@ -360,27 +360,39 @@ std::string to_rfc3339(std::chrono::duration<Rep, Period> from)
     return os.str();
 }
 
-model::generator from_swagger(const CpuGenerator& gen)
+model::generator from_swagger(const CpuGenerator& generator)
 {
     model::generator_config config;
-    for (const auto& conf : gen.getConfig()->getCores()) {
-        model::generator_core_config core_conf{.utilization =
-                                                   conf->getUtilization()};
 
-        for (const auto& target : conf->getTargets()) {
-            core_conf.targets.push_back(model::generator_target_config{
-                .instruction_set =
-                    to_instruction_set(target->getInstructionSet()),
-                .data_type = to_data_type(target->getDataType()),
-                .weight = static_cast<uint>(target->getWeight())});
-        }
+    auto& configuration = generator.getConfig()->getCores();
+    std::transform(
+        configuration.begin(),
+        configuration.end(),
+        std::back_inserter(config.cores),
+        [](const auto& conf) {
+            task_cpu_config task_conf{
+                .utilization = conf->getUtilization(),
+            };
 
-        config.cores.push_back(core_conf);
-    }
+            auto& targets = conf->getTargets();
+            std::transform(
+                targets.begin(),
+                targets.end(),
+                std::back_inserter(task_conf.targets),
+                [](const auto& t) {
+                    return target_config{
+                        .set = to_instruction_set(t->getInstructionSet()),
+                        .data_type = to_data_type(t->getDataType()),
+                        .weight = static_cast<uint>(t->getWeight()),
+                    };
+                });
+
+            return task_conf;
+        });
 
     model::generator gen_model;
-    gen_model.id(gen.getId());
-    gen_model.running(gen.isRunning());
+    gen_model.id(generator.getId());
+    gen_model.running(generator.isRunning());
     gen_model.config(config);
     return gen_model;
 }
@@ -424,8 +436,8 @@ std::shared_ptr<CpuGenerator> to_swagger(const model::generator& model)
                 [](const auto& t) {
                     auto target =
                         std::make_shared<CpuGeneratorCoreConfig_targets>();
-                    target->setDataType(to_string(t.data_type));
-                    target->setInstructionSet(to_string(t.instruction_set));
+                    target->setDataType(std::string(to_string(t.data_type)));
+                    target->setInstructionSet(std::string(to_string(t.set)));
                     target->setWeight(t.weight);
                     return target;
                 });
@@ -452,22 +464,33 @@ to_swagger(const model::generator_result& result)
     cpu_stats->setSteal(stats.steal.count());
     cpu_stats->setError(stats.error.count());
 
-    for (const auto& c_stats : stats.cores) {
-        auto core_stats = std::make_shared<CpuGeneratorCoreStats>();
-        for (const auto& c_target : c_stats.targets) {
-            auto target = std::make_shared<CpuGeneratorTargetStats>();
-            target->setOperations(c_target.operations);
-            core_stats->getTargets().push_back(target);
-        }
-        cpu_stats->getCores().push_back(core_stats);
+    auto& cores = stats.cores;
+    std::transform(cores.begin(),
+                   cores.end(),
+                   std::back_inserter(cpu_stats->getCores()),
+                   [](const auto& c_stats) {
+                       auto stats = std::make_shared<CpuGeneratorCoreStats>();
+                       stats->setAvailable(c_stats.available.count());
+                       stats->setError(c_stats.error.count());
+                       stats->setSteal(c_stats.steal.count());
+                       stats->setSystem(c_stats.system.count());
+                       stats->setUser(c_stats.user.count());
+                       stats->setUtilization(c_stats.utilization.count());
 
-        core_stats->setAvailable(c_stats.available.count());
-        core_stats->setError(c_stats.error.count());
-        core_stats->setSteal(c_stats.steal.count());
-        core_stats->setSystem(c_stats.system.count());
-        core_stats->setUser(c_stats.user.count());
-        core_stats->setUtilization(c_stats.utilization.count());
-    }
+                       auto& targets = c_stats.targets;
+                       std::transform(
+                           targets.begin(),
+                           targets.end(),
+                           std::back_inserter(stats->getTargets()),
+                           [](const auto& t_stats) {
+                               auto target =
+                                   std::make_shared<CpuGeneratorTargetStats>();
+                               target->setOperations(t_stats.operations);
+                               return target;
+                           });
+
+                       return stats;
+                   });
 
     auto gen = std::make_shared<CpuGeneratorResult>();
     gen->setId(result.id());

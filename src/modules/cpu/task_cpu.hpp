@@ -1,43 +1,25 @@
 #ifndef _OP_CPU_TASK_CPU_HPP_
 #define _OP_CPU_TASK_CPU_HPP_
 
-#include <atomic>
 #include <chrono>
 #include <cinttypes>
 #include <functional>
 #include <memory>
 #include <vector>
 
-#include "cpu/common.hpp"
-#include "cpu/cpu.hpp"
-#include "cpu/target.hpp"
-#include "cpu/task_cpu_stat.hpp"
-#include "timesync/chrono.hpp"
-#include "utils/worker/task.hpp"
+#include "framework/generator/task.hpp"
+#include "modules/timesync/chrono.hpp"
+
+#include "common.hpp"
+#include "cpu.hpp"
+#include "target.hpp"
+#include "cpu_stat.hpp"
 
 namespace openperf::cpu::internal {
 
-struct target_config
-{
-    cpu::instruction_set set;
-    cpu::data_type data_type;
-    uint64_t weight;
-};
+using task_cpu_stat_ptr = std::unique_ptr<task_cpu_stat>;
 
-struct task_cpu_config
-{
-    double utilization = 0.0;
-    std::vector<target_config> targets;
-    task_cpu_config() = default;
-    task_cpu_config(const task_cpu_config& other)
-        : utilization(other.utilization)
-    {
-        for (size_t i = 0; i < other.targets.size(); ++i)
-            targets.push_back(other.targets[i]);
-    }
-};
-
-class task_cpu : public utils::worker::task<task_cpu_config, task_cpu_stat>
+class task_cpu : public openperf::framework::generator::task<task_cpu_stat_ptr>
 {
     using target_ptr = std::unique_ptr<target>;
     using chronometer = openperf::timesync::chrono::monotime;
@@ -50,11 +32,7 @@ class task_cpu : public utils::worker::task<task_cpu_config, task_cpu_stat>
     };
 
 private:
-    config_t m_config;
-    stat_t m_stat_shared, m_stat_active;
-
-    std::atomic<stat_t*> m_stat;
-    std::atomic_bool m_stat_clear;
+    task_cpu_config m_config;
 
     uint64_t m_weights;
     uint64_t m_weight_min;
@@ -66,24 +44,28 @@ private:
     double m_utilization;
 
 public:
-    task_cpu();
-    explicit task_cpu(const config_t&);
+    task_cpu() = delete;
+    task_cpu(task_cpu&&) noexcept;
+    task_cpu(const task_cpu&) = delete;
+    explicit task_cpu(const task_cpu_config&);
     ~task_cpu() override = default;
 
-    void spin() override;
+    void reset() override;
+    task_cpu_stat_ptr spin() override;
 
-    void config(const config_t&) override;
-    config_t config() const override { return m_config; }
-
-    stat_t stat() const override;
-    void clear_stat() override { m_stat_clear = true; }
+    task_cpu_config config() const { return m_config; }
 
 private:
+    void config(const task_cpu_config&);
     target_ptr make_target(cpu::instruction_set, cpu::data_type);
-
     template <typename Function> std::chrono::nanoseconds run_time(Function&&);
 };
 
+//
+// Implementation
+//
+
+// Methods : private
 template <typename Function>
 std::chrono::nanoseconds task_cpu::run_time(Function&& function)
 {

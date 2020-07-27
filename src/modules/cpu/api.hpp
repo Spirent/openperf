@@ -5,14 +5,16 @@
 #include <memory>
 #include <string>
 #include <variant>
-#include <tl/expected.hpp>
-#include <zmq.h>
-#include <json.hpp>
 
-#include "cpu/common.hpp"
-#include "cpu/models/generator.hpp"
-#include "cpu/models/generator_result.hpp"
-#include "timesync/chrono.hpp"
+#include <tl/expected.hpp>
+#include <json.hpp>
+#include <zmq.h>
+
+#include "modules/timesync/chrono.hpp"
+
+#include "common.hpp"
+#include "models/generator.hpp"
+#include "models/generator_result.hpp"
 
 namespace swagger::v1::model {
 class CpuGenerator;
@@ -22,6 +24,12 @@ class BulkDeleteCpuGeneratorsRequest;
 class BulkStartCpuGeneratorsRequest;
 class BulkStopCpuGeneratorsRequest;
 class CpuInfoResult;
+
+void from_json(const nlohmann::json&, CpuGenerator&);
+void from_json(const nlohmann::json&, BulkCreateCpuGeneratorsRequest&);
+void from_json(const nlohmann::json&, BulkDeleteCpuGeneratorsRequest&);
+void from_json(const nlohmann::json&, BulkStartCpuGeneratorsRequest&);
+void from_json(const nlohmann::json&, BulkStopCpuGeneratorsRequest&);
 } // namespace swagger::v1::model
 
 namespace openperf::cpu::api {
@@ -198,13 +206,5 @@ std::shared_ptr<CpuInfoResult> to_swagger(const cpu_info_t&);
 extern const std::string endpoint;
 
 } // namespace openperf::cpu::api
-
-namespace swagger::v1::model {
-void from_json(const nlohmann::json&, CpuGenerator&);
-void from_json(const nlohmann::json&, BulkCreateCpuGeneratorsRequest&);
-void from_json(const nlohmann::json&, BulkDeleteCpuGeneratorsRequest&);
-void from_json(const nlohmann::json&, BulkStartCpuGeneratorsRequest&);
-void from_json(const nlohmann::json&, BulkStopCpuGeneratorsRequest&);
-} // namespace swagger::v1::model
 
 #endif /* _OP_CPU_API_HPP_ */

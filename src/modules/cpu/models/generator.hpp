@@ -4,26 +4,14 @@
 #include <cinttypes>
 #include <string>
 #include <vector>
+
 #include "cpu/common.hpp"
 
 namespace openperf::cpu::model {
 
-struct generator_target_config
-{
-    cpu::instruction_set instruction_set;
-    cpu::data_type data_type;
-    uint64_t weight;
-};
-
-struct generator_core_config
-{
-    double utilization;
-    std::vector<generator_target_config> targets;
-};
-
 struct generator_config
 {
-    std::vector<generator_core_config> cores;
+    std::vector<task_cpu_config> cores;
 };
 
 class generator

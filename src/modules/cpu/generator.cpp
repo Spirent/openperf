@@ -1,104 +1,44 @@
 #include "generator.hpp"
 
-#include "cpu/cpu.hpp"
-#include "core/op_uuid.hpp"
+#include "framework/core/op_uuid.hpp"
+#include "cpu.hpp"
 
 namespace openperf::cpu::generator {
 
 static uint16_t serial_counter = 0;
+constexpr auto NAME_PREFIX = "op_cpu";
 
+// Constructors & Destructor
 generator::generator(const model::generator& generator_model)
     : model::generator(generator_model)
     , m_result_id(core::to_string(core::uuid::random()))
     , m_serial_number(++serial_counter)
+    , m_controller(NAME_PREFIX + std::to_string(m_serial_number) + "_ctl")
+    , m_stat_ptr(&m_stat)
 {
-    configure_workers(config());
+    config(generator_model.config());
+    m_controller.start<task_cpu_stat*>([this](const task_cpu_stat& stat) {
+        auto stat_copy = m_stat;
+        m_stat_ptr = &stat_copy;
+        m_stat += stat;
+
+        if (m_stat.steal == 0ns) m_stat.steal = cpu_steal_time();
+
+        m_stat_ptr = &m_stat;
+    });
 }
 
 generator::~generator()
 {
-    for (auto& worker : m_workers) worker->stop();
+    stop();
+    m_controller.clear();
 }
 
-void generator::start() { set_running(true); }
-
-void generator::stop() { set_running(false); }
-
-void generator::set_config(const model::generator_config& p_conf)
+// Methods : public
+void generator::config(const model::generator_config& config)
 {
-    if (running())
-        throw std::runtime_error("Cannot change config of running generator");
-
-    for (auto& worker : m_workers) worker->stop();
-
-    configure_workers(p_conf);
-    model::generator::config(p_conf);
-}
-
-void generator::set_running(bool is_running)
-{
-    for (auto& worker : m_workers) {
-        if (is_running)
-            worker->resume();
-        else
-            worker->pause();
-    }
-
-    model::generator::running(is_running);
-}
-
-model::generator_result generator::statistics() const
-{
-    model::generator_stats stats;
-    for (const auto& worker : m_workers) {
-        auto w_stat = worker->stat();
-
-        stats.available += w_stat.available;
-        stats.utilization += w_stat.utilization;
-        stats.system += w_stat.system;
-        stats.user += w_stat.user;
-        stats.steal += w_stat.steal;
-        stats.error += w_stat.error;
-
-        model::generator_core_stats core_stat;
-        core_stat.available = w_stat.available;
-        core_stat.system = w_stat.system;
-        core_stat.steal = w_stat.steal;
-        core_stat.error = w_stat.error;
-        core_stat.user = w_stat.user;
-        core_stat.utilization = w_stat.utilization;
-
-        std::transform(w_stat.targets.begin(),
-                       w_stat.targets.end(),
-                       std::back_inserter(core_stat.targets),
-                       [](const auto& i) -> model::generator_target_stats {
-                           return {.operations = i.operations};
-                       });
-
-        stats.cores.push_back(core_stat);
-    }
-
-    if (stats.steal == 0ns) stats.steal = cpu_steal_time();
-
-    auto gen_stat = model::generator_result{};
-    gen_stat.id(m_result_id);
-    gen_stat.generator_id(id());
-    gen_stat.active(running());
-    gen_stat.timestamp(timesync::chrono::realtime::now());
-    gen_stat.stats(stats);
-    return gen_stat;
-}
-
-void generator::clear_statistics()
-{
-    for (auto& worker : m_workers) worker->clear_stat();
-
-    m_result_id = core::to_string(core::uuid::random());
-}
-
-void generator::configure_workers(const model::generator_config& config)
-{
-    m_workers.clear();
+    auto was_running = running();
+    m_controller.pause();
 
     auto cores_count = cpu_cores();
     if (static_cast<int32_t>(config.cores.size()) > cores_count)
@@ -106,46 +46,76 @@ void generator::configure_workers(const model::generator_config& config)
             "Could not configure more cores than available ("
             + std::to_string(cores_count) + ").");
 
+    m_stat = {config.cores.size()};
+
     for (size_t core = 0; core < config.cores.size(); ++core) {
         auto core_conf = config.cores.at(core);
         for (const auto& target : core_conf.targets)
-            if (!is_supported(target.instruction_set))
+            if (!is_supported(target.set))
                 throw std::runtime_error("Instruction set "
-                                         + to_string(target.instruction_set)
+                                         + std::string(to_string(target.set))
                                          + " is not supported");
 
-        m_workers.push_back(
-            std::make_unique<cpu_worker>(to_task_config(core_conf),
-                                         "cpu" + std::to_string(m_serial_number)
-                                             + "_" + std::to_string(core)));
+        if (core_conf.utilization == 0.0) continue;
 
-        if (core_conf.utilization > 0.0) m_workers.back()->start(core);
+        core_conf.core = core;
+        auto task = task_cpu(core_conf);
+        m_controller.add(std::move(task),
+                         NAME_PREFIX + std::to_string(m_serial_number) + "_c"
+                             + std::to_string(core + 1),
+                         core);
     }
+
+    model::generator::config(config);
+
+    if (was_running) m_controller.resume();
 }
 
-task_cpu_config
-generator::to_task_config(const model::generator_core_config& conf)
+void generator::start()
 {
-    if (conf.targets.empty() && conf.utilization > 0.0)
-        throw std::runtime_error("Undefined configuration");
-
-    task_cpu_config w_config;
-    w_config.utilization = conf.utilization;
-
-    std::transform(conf.targets.begin(),
-                   conf.targets.end(),
-                   std::back_inserter(w_config.targets),
-                   [](const auto& i) -> target_config {
-                       return {
-                           .set = i.instruction_set,
-                           .weight = i.weight,
-                           .data_type = i.data_type,
-                       };
-                   });
-
-    return w_config;
+    reset();
+    m_controller.resume();
+    model::generator::running(true);
 }
 
+void generator::stop()
+{
+    m_controller.pause();
+    model::generator::running(false);
+}
+
+void generator::running(bool is_running)
+{
+    if (is_running)
+        start();
+    else
+        stop();
+}
+
+model::generator_result generator::statistics() const
+{
+    auto stat = model::generator_result{};
+    stat.id(m_result_id);
+    stat.generator_id(id());
+    stat.active(running());
+    stat.timestamp(timesync::chrono::realtime::now());
+    stat.stats(*m_stat_ptr);
+
+    return stat;
+}
+
+void generator::reset()
+{
+    auto was_running = running();
+    m_controller.pause();
+    m_controller.reset();
+    m_stat = {m_stat.cores.size()};
+    m_result_id = core::to_string(core::uuid::random());
+
+    if (was_running) m_controller.resume();
+}
+
+// Methods : private
 bool generator::is_supported(cpu::instruction_set iset)
 {
     switch (iset) {

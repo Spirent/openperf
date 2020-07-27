@@ -2,7 +2,7 @@
 #define _OP_CPU_TARGET_SCALAR_HPP_
 
 #include <vector>
-#include "cpu/target.hpp"
+#include "target.hpp"
 
 namespace openperf::cpu::internal {
 

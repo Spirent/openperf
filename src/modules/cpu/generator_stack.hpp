@@ -7,7 +7,7 @@
 #include <variant>
 
 #include "tl/expected.hpp"
-#include "cpu/generator.hpp"
+#include "generator.hpp"
 
 namespace openperf::cpu::generator {
 

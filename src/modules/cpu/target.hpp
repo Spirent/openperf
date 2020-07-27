@@ -2,7 +2,7 @@
 #define _OP_CPU_TARGET_HPP_
 
 #include <cinttypes>
-#include "cpu/common.hpp"
+#include "common.hpp"
 
 namespace openperf::cpu::internal {
 
