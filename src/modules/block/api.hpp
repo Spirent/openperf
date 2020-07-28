@@ -4,33 +4,18 @@
 #include <climits>
 #include <string>
 #include <variant>
+
 #include <tl/expected.hpp>
-#include "json.hpp"
+#include <zmq.h>
+
 #include "models/device.hpp"
 #include "models/file.hpp"
 #include "models/generator.hpp"
 #include "models/generator_result.hpp"
 
-namespace swagger::v1::model {
-class BlockGenerator;
-class BlockGeneratorResult;
-class BulkCreateBlockFilesRequest;
-class BulkDeleteBlockFilesRequest;
-class BulkCreateBlockGeneratorsRequest;
-class BulkDeleteBlockGeneratorsRequest;
-class BulkStartBlockGeneratorsRequest;
-class BulkStopBlockGeneratorsRequest;
-class BlockFile;
-class BlockDevice;
-} // namespace swagger::v1::model
-
-namespace openperf::message {
-struct serialized_message;
-}
+#include "framework/message/serialized_message.hpp"
 
 namespace openperf::block::api {
-
-using namespace swagger::v1::model;
 
 const std::string endpoint = "inproc://openperf_block";
 
@@ -230,44 +215,10 @@ serialized_msg serialize_reply(reply_msg&& reply);
 tl::expected<request_msg, int> deserialize_request(serialized_msg&& msg);
 tl::expected<reply_msg, int> deserialize_reply(serialized_msg&& msg);
 
-bool is_valid(const BlockFile& generator, std::vector<std::string>& errors);
-bool is_valid(const BlockGenerator& generator,
-              std::vector<std::string>& errors);
-
 reply_error
 to_error(error_type type, int code = 0, const std::string& value = "");
 const char* to_string(const api::typed_error&);
-std::shared_ptr<BlockDevice> to_swagger(const model::device&);
-std::shared_ptr<BlockFile> to_swagger(const model::file&);
-std::shared_ptr<BlockGenerator> to_swagger(const model::block_generator&);
-std::shared_ptr<BlockGeneratorResult>
-to_swagger(const model::block_generator_result&);
-model::file from_swagger(const BlockFile&);
-
-model::block_generator from_swagger(const BlockGenerator&);
-request_block_file_bulk_add from_swagger(BulkCreateBlockFilesRequest&);
-request_block_file_bulk_del from_swagger(BulkDeleteBlockFilesRequest&);
-request_block_generator_bulk_add
-from_swagger(BulkCreateBlockGeneratorsRequest&);
-request_block_generator_bulk_del
-from_swagger(BulkDeleteBlockGeneratorsRequest&);
-request_block_generator_bulk_start
-from_swagger(BulkStartBlockGeneratorsRequest&);
-request_block_generator_bulk_stop from_swagger(BulkStopBlockGeneratorsRequest&);
-
-extern const std::string endpoint;
 
 } // namespace openperf::block::api
-
-namespace swagger::v1::model {
-void from_json(const nlohmann::json&, BlockFile&);
-void from_json(const nlohmann::json&, BulkCreateBlockFilesRequest&);
-void from_json(const nlohmann::json&, BulkDeleteBlockFilesRequest&);
-void from_json(const nlohmann::json&, BlockGenerator&);
-void from_json(const nlohmann::json&, BulkCreateBlockGeneratorsRequest&);
-void from_json(const nlohmann::json&, BulkDeleteBlockGeneratorsRequest&);
-void from_json(const nlohmann::json&, BulkStartBlockGeneratorsRequest&);
-void from_json(const nlohmann::json&, BulkStopBlockGeneratorsRequest&);
-} // namespace swagger::v1::model
 
 #endif /* _OP_BLOCK_API_HPP_ */

@@ -1,24 +1,9 @@
-#include <memory>
+#include "framework/config/op_config_utils.hpp"
+#include "framework/core/op_core.h"
+#include "modules/api/api_route_handler.hpp"
 
-#include <json.hpp>
-#include <zmq.h>
-
-#include "api/api_route_handler.hpp"
-#include "config/op_config_utils.hpp"
-#include "core/op_core.h"
-#include "message/serialized_message.hpp"
 #include "api.hpp"
-
-#include "swagger/v1/model/BlockGenerator.h"
-#include "swagger/v1/model/BlockGeneratorResult.h"
-#include "swagger/v1/model/BulkCreateBlockFilesRequest.h"
-#include "swagger/v1/model/BulkDeleteBlockFilesRequest.h"
-#include "swagger/v1/model/BulkCreateBlockGeneratorsRequest.h"
-#include "swagger/v1/model/BulkDeleteBlockGeneratorsRequest.h"
-#include "swagger/v1/model/BulkStartBlockGeneratorsRequest.h"
-#include "swagger/v1/model/BulkStopBlockGeneratorsRequest.h"
-#include "swagger/v1/model/BlockFile.h"
-#include "swagger/v1/model/BlockDevice.h"
+#include "api_converters.hpp"
 
 namespace opneperf::block {
 
