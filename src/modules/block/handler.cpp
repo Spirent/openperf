@@ -484,7 +484,7 @@ void handler::create_generator(const Rest::Request& request,
             if (auto uri = maybe_get_host_uri(request); uri.has_value()) {
                 response.headers().add<Http::Header::Location>(
                     *uri + request.resource() + "/"
-                    + reply->generators.front()->get_id());
+                    + reply->generators.front()->id());
             }
             response.send(
                 Http::Code::Created,

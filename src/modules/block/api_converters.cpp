@@ -235,22 +235,22 @@ std::shared_ptr<BlockFile> to_swagger(const file_t& p_file)
 std::shared_ptr<BlockGenerator> to_swagger(const generator_t& p_gen)
 {
     auto gen_config = std::make_shared<BlockGeneratorConfig>();
-    gen_config->setPattern(to_string(p_gen.get_config().pattern));
-    gen_config->setQueueDepth(p_gen.get_config().queue_depth);
-    gen_config->setReadSize(p_gen.get_config().read_size);
-    gen_config->setReadsPerSec(p_gen.get_config().reads_per_sec);
-    gen_config->setWriteSize(p_gen.get_config().write_size);
-    gen_config->setWritesPerSec(p_gen.get_config().writes_per_sec);
-    if (p_gen.get_config().ratio) {
+    gen_config->setPattern(to_string(p_gen.config().pattern));
+    gen_config->setQueueDepth(p_gen.config().queue_depth);
+    gen_config->setReadSize(p_gen.config().read_size);
+    gen_config->setReadsPerSec(p_gen.config().reads_per_sec);
+    gen_config->setWriteSize(p_gen.config().write_size);
+    gen_config->setWritesPerSec(p_gen.config().writes_per_sec);
+    if (p_gen.config().ratio) {
         auto ratio = std::make_shared<BlockGeneratorReadWriteRatio>();
-        ratio->setReads(p_gen.get_config().ratio.value().reads);
-        ratio->setWrites(p_gen.get_config().ratio.value().writes);
+        ratio->setReads(p_gen.config().ratio.value().reads);
+        ratio->setWrites(p_gen.config().ratio.value().writes);
         gen_config->setRatio(ratio);
     }
 
     auto gen = std::make_shared<BlockGenerator>();
-    gen->setId(p_gen.get_id());
-    gen->setResourceId(p_gen.get_resource_id());
+    gen->setId(p_gen.id());
+    gen->setResourceId(p_gen.resource_id());
     gen->setRunning(p_gen.is_running());
     gen->setConfig(gen_config);
 
@@ -310,9 +310,9 @@ model::file from_swagger(const BlockFile& p_file)
 model::block_generator from_swagger(const BlockGenerator& p_gen)
 {
     model::block_generator gen;
-    gen.set_id(p_gen.getId());
-    gen.set_resource_id(p_gen.getResourceId());
-    gen.set_running(p_gen.isRunning());
+    gen.id(p_gen.getId());
+    gen.resource_id(p_gen.getResourceId());
+    gen.running(p_gen.isRunning());
 
     auto conf = model::block_generator_config{
         .queue_depth =
@@ -324,7 +324,9 @@ model::block_generator from_swagger(const BlockGenerator& p_gen)
             static_cast<uint32_t>(p_gen.getConfig()->getWritesPerSec()),
         .write_size = static_cast<uint32_t>(p_gen.getConfig()->getWriteSize()),
         .pattern = block_generation_pattern_from_string(
-            p_gen.getConfig()->getPattern())};
+            p_gen.getConfig()->getPattern()),
+    };
+
     if (p_gen.getConfig()->ratioIsSet()) {
         conf.ratio = model::block_generator_ratio{
             .reads = static_cast<uint32_t>(
@@ -332,9 +334,9 @@ model::block_generator from_swagger(const BlockGenerator& p_gen)
             .writes = static_cast<uint32_t>(
                 p_gen.getConfig()->getRatio()->getWrites()),
         };
-        ;
     }
-    gen.set_config(conf);
+
+    gen.config(conf);
     return gen;
 }
 

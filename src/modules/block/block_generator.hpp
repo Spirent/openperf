@@ -23,23 +23,26 @@ private:
     std::string m_statistics_id;
     std::vector<virtual_device_stack*> m_vdev_stack_list;
     std::shared_ptr<virtual_device> m_vdev;
-    task_config_t generate_worker_config(const model::block_generator_config&,
-                                         task_operation);
-    void update_resource(const std::string&);
 
 public:
-    ~block_generator();
     block_generator(const model::block_generator& generator_model,
                     const std::vector<virtual_device_stack*>& vdev_stack_list);
+    ~block_generator();
+
+    void clear_statistics();
     block_result_ptr start();
     void stop();
 
-    void set_config(const model::block_generator_config&);
-    void set_resource_id(const std::string&);
-    void set_running(bool);
+    void config(const model::block_generator_config&) override;
+    void resource_id(std::string_view) override;
+    void running(bool) override;
 
-    block_result_ptr get_statistics() const;
-    void clear_statistics();
+    block_result_ptr statistics() const;
+
+private:
+    void update_resource(const std::string&);
+    task_config_t generate_worker_config(const model::block_generator_config&,
+                                         task_operation);
 };
 
 } // namespace openperf::block::generator

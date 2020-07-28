@@ -37,18 +37,17 @@ protected:
 public:
     block_generator() = default;
     block_generator(const block_generator&) = default;
+    virtual ~block_generator() = default;
 
-    std::string get_id() const { return m_id; }
-    void set_id(std::string_view value) { m_id = value; }
+    virtual std::string id() const { return m_id; }
+    virtual block_generator_config config() const { return m_config; }
+    virtual std::string resource_id() const { return m_resource_id; }
+    virtual bool is_running() const { return m_running; }
 
-    block_generator_config get_config() const { return m_config; }
-    void set_config(const block_generator_config& value) { m_config = value; }
-
-    std::string get_resource_id() const { return m_resource_id; }
-    void set_resource_id(std::string_view value) { m_resource_id = value; }
-
-    bool is_running() const { return m_running; }
-    void set_running(bool value) { m_running = value; }
+    virtual void id(std::string_view value) { m_id = value; }
+    virtual void config(const block_generator_config& conf) { m_config = conf; }
+    virtual void resource_id(std::string_view value) { m_resource_id = value; }
+    virtual void running(bool value) { m_running = value; }
 };
 
 } // namespace openperf::block::model

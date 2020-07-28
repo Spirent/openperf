@@ -19,26 +19,23 @@ generator_stack::create_block_generator(
     const model::block_generator& block_generator_model,
     const std::vector<virtual_device_stack*>& vdev_stack_list)
 {
-    if (get_block_generator(block_generator_model.get_id()))
+    if (get_block_generator(block_generator_model.id()))
         return tl::make_unexpected(
-            "Generator "
-            + static_cast<std::string>(block_generator_model.get_id())
+            "Generator " + static_cast<std::string>(block_generator_model.id())
             + " already exists.");
     try {
         auto blkgenerator_ptr = std::make_shared<block_generator>(
             block_generator_model, vdev_stack_list);
-        m_block_generators.emplace(blkgenerator_ptr->get_id(),
-                                   blkgenerator_ptr);
+        m_block_generators.emplace(blkgenerator_ptr->id(), blkgenerator_ptr);
         if (blkgenerator_ptr->is_running()) {
-            m_block_results[blkgenerator_ptr->get_statistics()->get_id()] =
+            m_block_results[blkgenerator_ptr->statistics()->get_id()] =
                 blkgenerator_ptr;
         }
         return blkgenerator_ptr;
     } catch (const std::runtime_error& e) {
         return tl::make_unexpected(
             "Cannot use resource: "
-            + static_cast<std::string>(
-                  block_generator_model.get_resource_id()));
+            + static_cast<std::string>(block_generator_model.resource_id()));
     }
 }
 
@@ -93,7 +90,7 @@ bool generator_stack::stop_generator(const std::string& id)
     if (!gen->is_running()) { return true; }
 
     gen->stop();
-    auto result = gen->get_statistics();
+    auto result = gen->statistics();
     m_block_results[result->get_id()] = result;
     gen->clear_statistics();
     return true;
@@ -105,7 +102,7 @@ std::vector<block_generator_result_ptr> generator_stack::list_statistics() const
     for (const auto& pair : m_block_results) {
         std::visit(utils::overloaded_visitor(
                        [&](const block_generator_ptr& generator) {
-                           result_list.push_back(generator->get_statistics());
+                           result_list.push_back(generator->statistics());
                        },
                        [&](const block_generator_result_ptr& result) {
                            result_list.push_back(result);
@@ -125,7 +122,7 @@ generator_stack::get_statistics(const std::string& id) const
     auto stat = std::visit(
         utils::overloaded_visitor(
             [&](const block_generator_ptr& generator) {
-                return generator->get_statistics();
+                return generator->statistics();
             },
             [&](const block_generator_result_ptr& res) { return res; }),
         result);
