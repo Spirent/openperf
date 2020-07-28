@@ -284,6 +284,12 @@ definitions:
     type: object
     description: TVLP Result
     properties:
+      id:
+        type: string
+        description: Unique TVLP result identifier
+      tvlp_id:
+        type: string
+        description: TVLP configuration identifier that generated this result
       memory:
         type: array
         items:
