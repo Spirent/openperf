@@ -1,4 +1,5 @@
 #include "api.hpp"
+#include "api_converters.hpp"
 
 #include "framework/config/op_config_utils.hpp"
 #include "framework/core/op_core.h"

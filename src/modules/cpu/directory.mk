@@ -6,14 +6,15 @@ CPU_DEPENDS += api expected framework json pistache swagger_model \
 	timesync versions
 
 CPU_SOURCES += \
+	api_converters.cpp \
 	api_transmogrify.cpp \
-	init.cpp \
-	handler.cpp \
-	server.cpp \
+	cpu_stat.cpp \
 	generator.cpp \
 	generator_stack.cpp \
-	task_cpu.cpp \
-	cpu_stat.cpp
+	handler.cpp \
+	init.cpp \
+	server.cpp \
+	task_cpu.cpp
 
 ifeq ($(PLATFORM), linux)
 	CPU_SOURCES += cpu_linux.cpp

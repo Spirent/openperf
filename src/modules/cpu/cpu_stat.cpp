@@ -38,10 +38,6 @@ cpu_stat::cpu_stat(size_t cores_number)
 
 cpu_stat& cpu_stat::operator+=(const task_cpu_stat& task)
 {
-    // if (task.core >= cores.size())
-    //
-    // std::cout << "WARNING: " << task.core << " " << cores.size() <<
-    // std::endl;
     assert(task.core < cores.size());
 
     available += task.available;

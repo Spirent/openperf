@@ -84,8 +84,7 @@ public:
 private:
     // Methods : private
     void send(internal::operation_t);
-    // template <typename S> std::optional<S> next_statistics(bool wait =
-    // false);
+
     template <typename S>
     std::enable_if_t<!std::is_pointer_v<S>, std::optional<S>>
     next_statistics(bool wait = false);
