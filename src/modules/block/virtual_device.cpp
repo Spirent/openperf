@@ -102,4 +102,10 @@ void virtual_device::terminate_scrub()
     if (m_scrub_thread.joinable()) m_scrub_thread.join();
 }
 
+std::optional<virtual_device_descriptors> virtual_device::get_fd() const
+{
+    if (m_read_fd < 0 || m_write_fd < 0) return std::nullopt;
+    return (virtual_device_descriptors){m_read_fd, m_write_fd};
+}
+
 } // namespace openperf::block
