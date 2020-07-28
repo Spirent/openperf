@@ -7,13 +7,13 @@ parameters:
     format: string
     required: true
 
-  start:
-    name: id
-    in: path
-    description: time to start profile replay
-    type: string
-    format: string
-    required: true
+  start_time:
+    name: time
+    in: query
+    description: Time to start profile replay
+    type: integer
+    format: int64
+    required: false
 
 paths:
   /tvlp:
@@ -88,6 +88,7 @@ paths:
       description: Start an existing TVLP configuration.
       parameters:
         - $ref: "#/parameters/id"
+        - $ref: "#/parameters/start_time"
       responses:
         201:
           description: Created
