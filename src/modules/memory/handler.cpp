@@ -1,8 +1,8 @@
 #include "api.hpp"
-#include "swagger_converters.hpp"
+#include "api_converters.hpp"
 
-#include "framework/core/op_core.h"
 #include "framework/config/op_config_utils.hpp"
+#include "framework/core/op_core.h"
 #include "modules/api/api_route_handler.hpp"
 
 namespace openperf::memory::api {

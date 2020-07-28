@@ -5,29 +5,11 @@
 #include <memory>
 #include <variant>
 
-#include <json.hpp>
 #include <tl/expected.hpp>
 #include <zmq.h>
 
-#include "info.hpp"
 #include "generator.hpp"
-#include "memory_stat.hpp"
-
-#include "framework/dynamic/api.hpp"
-
-namespace swagger::v1::model {
-class MemoryGenerator;
-class BulkCreateMemoryGeneratorsRequest;
-class BulkDeleteMemoryGeneratorsRequest;
-class BulkStartMemoryGeneratorsRequest;
-class BulkStopMemoryGeneratorsRequest;
-
-void from_json(const nlohmann::json&, MemoryGenerator&);
-void from_json(const nlohmann::json&, BulkCreateMemoryGeneratorsRequest&);
-void from_json(const nlohmann::json&, BulkDeleteMemoryGeneratorsRequest&);
-void from_json(const nlohmann::json&, BulkStartMemoryGeneratorsRequest&);
-void from_json(const nlohmann::json&, BulkStopMemoryGeneratorsRequest&);
-} // namespace swagger::v1::model
+#include "info.hpp"
 
 namespace openperf::memory::api {
 

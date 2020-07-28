@@ -1,20 +1,6 @@
-#ifndef _OP_MEMORY_SWAGGER_CONVERTERS_HPP_
-#define _OP_MEMORY_SWAGGER_CONVERTERS_HPP_
+#include "api_converters.hpp"
 
 #include <iomanip>
-
-#include "info.hpp"
-#include "generator.hpp"
-#include "swagger/v1/model/MemoryInfoResult.h"
-#include "swagger/v1/model/MemoryGenerator.h"
-#include "swagger/v1/model/MemoryGeneratorConfig.h"
-#include "swagger/v1/model/MemoryGeneratorResult.h"
-#include "swagger/v1/model/MemoryGeneratorStats.h"
-#include "swagger/v1/model/BulkCreateMemoryGeneratorsRequest.h"
-#include "swagger/v1/model/BulkDeleteMemoryGeneratorsRequest.h"
-#include "swagger/v1/model/BulkStopMemoryGeneratorsRequest.h"
-#include "swagger/v1/model/BulkStartMemoryGeneratorsRequest.h"
-#include "framework/dynamic/api.hpp"
 
 namespace openperf::memory::api {
 
@@ -25,7 +11,6 @@ using task_memory_stat = memory::internal::task_memory_stat;
 using info_t = memory::memory_info::info_t;
 using io_pattern = memory::internal::io_pattern;
 
-namespace {
 constexpr io_pattern from_string(std::string_view str)
 {
     if (str == "random") return io_pattern::RANDOM;
@@ -47,9 +32,20 @@ constexpr std::string_view to_string(io_pattern pattern)
         return "";
     }
 }
-} // namespace
 
-static config_t from_swagger(const swagger::MemoryGeneratorConfig& m)
+std::string to_iso8601(const task_memory_stat::timestamp_t& ts)
+{
+    auto t = task_memory_stat::clock::to_time_t(ts);
+    auto nanos = std::chrono::time_point_cast<std::chrono::nanoseconds>(ts)
+                 - std::chrono::time_point_cast<std::chrono::seconds>(ts);
+    std::stringstream os;
+    os << std::put_time(gmtime(&t), "%FT%T") << "." << std::setfill('0')
+       << std::setw(6) << nanos.count() << "Z";
+
+    return os.str();
+}
+
+config_t from_swagger(const swagger::MemoryGeneratorConfig& m)
 {
     return config_t{
         .buffer_size = static_cast<size_t>(m.getBufferSize()),
@@ -68,7 +64,7 @@ static config_t from_swagger(const swagger::MemoryGeneratorConfig& m)
         }};
 }
 
-static swagger::MemoryGeneratorConfig to_swagger(const config_t& config)
+swagger::MemoryGeneratorConfig to_swagger(const config_t& config)
 {
     swagger::MemoryGeneratorConfig model;
     model.setBufferSize(config.buffer_size);
@@ -86,8 +82,7 @@ static swagger::MemoryGeneratorConfig to_swagger(const config_t& config)
     return model;
 }
 
-static swagger::MemoryGenerator
-to_swagger(const reply::generator::item::item_data& g)
+swagger::MemoryGenerator to_swagger(const reply::generator::item::item_data& g)
 {
     swagger::MemoryGenerator model;
     model.setId(g.id);
@@ -99,7 +94,7 @@ to_swagger(const reply::generator::item::item_data& g)
     return model;
 }
 
-static swagger::MemoryGeneratorStats to_swagger(const task_memory_stat& stat)
+swagger::MemoryGeneratorStats to_swagger(const task_memory_stat& stat)
 {
     swagger::MemoryGeneratorStats model;
     model.setBytesActual(stat.bytes);
@@ -128,19 +123,7 @@ static swagger::MemoryGeneratorStats to_swagger(const task_memory_stat& stat)
     return model;
 }
 
-static std::string to_iso8601(const task_memory_stat::timestamp_t& ts)
-{
-    auto t = task_memory_stat::clock::to_time_t(ts);
-    auto nanos = std::chrono::time_point_cast<std::chrono::nanoseconds>(ts)
-                 - std::chrono::time_point_cast<std::chrono::seconds>(ts);
-    std::stringstream os;
-    os << std::put_time(gmtime(&t), "%FT%T") << "." << std::setfill('0')
-       << std::setw(6) << nanos.count() << "Z";
-
-    return os.str();
-}
-
-static swagger::MemoryGeneratorResult
+swagger::MemoryGeneratorResult
 to_swagger(const reply::statistic::item::item_data& i)
 {
     swagger::MemoryGeneratorResult model;
@@ -152,13 +135,11 @@ to_swagger(const reply::statistic::item::item_data& i)
         to_swagger(i.stat.read)));
     model.setWrite(std::make_shared<swagger::MemoryGeneratorStats>(
         to_swagger(i.stat.write)));
-    model.setDynamicResults(std::make_shared<swagger::DynamicResults>(
-        to_swagger(i.dynamic_results)));
 
     return model;
 }
 
-static swagger::MemoryInfoResult to_swagger(const info_t& info)
+swagger::MemoryInfoResult to_swagger(const info_t& info)
 {
     swagger::MemoryInfoResult model;
     model.setFreeMemory(info.free);
@@ -168,5 +149,3 @@ static swagger::MemoryInfoResult to_swagger(const info_t& info)
 }
 
 } // namespace openperf::memory::api
-
-#endif // _OP_MEMORY_SWAGGER_CONVERTERS_HPP_
