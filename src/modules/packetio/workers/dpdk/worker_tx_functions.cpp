@@ -92,17 +92,7 @@ uint16_t tx_copy_direct(int port_idx,
                         struct rte_mbuf* mbufs[],
                         uint16_t nb_mbufs)
 {
-    auto& queues = worker::port_queues::instance();
-    auto fib = queues.fib<worker::fib*>();
     uint16_t sent = 0;
-
-    assert(fib);
-
-    // Need to do the Tx sink dispatch before sending the packets
-    // The driver could possibly free the mbuf or when packets are
-    // sent using a ring driver, modify the packet data before
-    // the packet gets pushed to the sink.
-    tx_sink_dispatch(fib, port_idx, mbufs, nb_mbufs);
 
     for (uint16_t i = 0; i < nb_mbufs; i++) {
         /*
@@ -145,17 +135,6 @@ uint16_t tx_copy_queued(int port_idx,
 uint16_t
 tx_direct(int port_idx, uint32_t, struct rte_mbuf* mbufs[], uint16_t nb_mbufs)
 {
-    auto& queues = worker::port_queues::instance();
-    auto fib = queues.fib<worker::fib*>();
-
-    assert(fib);
-
-    // Need to do the Tx sink dispatch before sending the packets
-    // The driver could possibly free the mbuf or when packets are
-    // sent using a ring driver, modify the packet data before
-    // the packet gets pushed to the sink.
-    tx_sink_dispatch(fib, port_idx, mbufs, nb_mbufs);
-
     return (transmit(port_idx, 0, mbufs, nb_mbufs));
 }
 

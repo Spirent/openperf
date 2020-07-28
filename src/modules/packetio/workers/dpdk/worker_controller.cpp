@@ -210,6 +210,13 @@ static void maybe_update_rxq_lro_mode(const model::port_info& info)
     }
 }
 
+bool always_has_tx_sink(const model::port_info& info)
+{
+    // Always need tx sink callback when using net_ring driver
+    // This is used to clear the mbuf tx_sink flag so it is not seen on rx
+    return (std::strcmp(info.driver_name(), "net_ring") == 0);
+}
+
 worker_controller::worker_controller(void* context,
                                      openperf::core::event_loop& loop,
                                      driver::generic_driver& driver)
@@ -263,6 +270,15 @@ worker_controller::worker_controller(void* context,
     std::for_each(std::begin(port_info),
                   std::end(port_info),
                   [](const auto& info) { maybe_update_rxq_lro_mode(info); });
+
+    /* Set the global tx sink callback */
+    port::tx_sink::set_callback(worker::tx_sink_burst_dispatch);
+    std::for_each(
+        std::begin(port_info), std::end(port_info), [&](const auto& info) {
+            if (always_has_tx_sink(info)) {
+                m_sink_features.update(*m_fib, info.id());
+            }
+        });
 
     /* Distribute queues and schedulers to workers */
     m_workers->add_descriptors(to_worker_descriptors(
@@ -540,8 +556,6 @@ worker_controller::add_sink(packet::traffic_direction direction,
                 m_fib->insert_sink(*port_idx, worker::fib::direction::RX, sink);
             m_recycler->writer_add_gc_callback(
                 [to_delete]() { delete to_delete; });
-
-            m_sink_features.update(*m_fib, *port_idx);
         }
         if (direction == packet::traffic_direction::TX
             || direction == packet::traffic_direction::RXTX) {
@@ -565,6 +579,8 @@ worker_controller::add_sink(packet::traffic_direction direction,
             m_recycler->writer_add_gc_callback(
                 [to_delete]() { delete to_delete; });
         }
+
+        m_sink_features.update(*m_fib, *port_idx);
 
         return {};
     }
@@ -597,8 +613,6 @@ worker_controller::add_sink(packet::traffic_direction direction,
 
             m_recycler->writer_add_gc_callback(
                 [to_delete]() { delete to_delete; });
-
-            m_sink_features.update(*m_fib, interface.port_index());
         }
         if (direction == packet::traffic_direction::TX
             || direction == packet::traffic_direction::RXTX) {
@@ -634,6 +648,9 @@ worker_controller::add_sink(packet::traffic_direction direction,
             m_recycler->writer_add_gc_callback(
                 [to_delete]() { delete to_delete; });
         }
+
+        m_sink_features.update(*m_fib, interface.port_index());
+
         return {};
     }
 
@@ -1131,6 +1148,21 @@ bool need_sink_feature(const worker::fib& fib,
                              return (sink.uses_feature(
                                  packet::sink_feature_flags::rx_timestamp));
                          }));
+}
+
+template <>
+bool need_sink_feature(const worker::fib& fib,
+                       size_t port_idx,
+                       const port::tx_sink&)
+{
+    auto info = model::port_info(port_idx);
+    if (always_has_tx_sink(info)) return true;
+
+    return (
+        sink_find_if(fib,
+                     port_idx,
+                     worker::fib::direction::TX,
+                     [](const packet::generic_sink& sink) { return (true); }));
 }
 
 template <typename Function>

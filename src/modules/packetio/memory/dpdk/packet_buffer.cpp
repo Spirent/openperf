@@ -188,9 +188,6 @@ signature_tx_timestamp(const packet_buffer* buffer)
                 : std::nullopt);
 }
 
-bool tx_flag(const packet_buffer* buffer)
-{
-    return dpdk::mbuf_tx_value(buffer);
-}
+bool tx_sink(const packet_buffer* buffer) { return dpdk::mbuf_tx_sink(buffer); }
 
 } // namespace openperf::packetio::packet

@@ -129,7 +129,7 @@ std::optional<uint32_t> signature_sequence_number(const packet_buffer* buffer);
 std::optional<timesync::chrono::realtime::time_point>
 signature_tx_timestamp(const packet_buffer* buffer);
 
-bool tx_flag(const packet_buffer* buffer);
+bool tx_sink(const packet_buffer* buffer);
 
 } // namespace openperf::packetio::packet
 

@@ -609,8 +609,8 @@ err_t net_interface::handle_tx(struct pbuf* p)
     }
 
     /* Store the interface hwaddr in the mbuf so tx capture can use it */
-    mbuf_tx_set(m_head);
-    mbuf_tx_set_hwaddr(m_head, m_netif.hwaddr);
+    mbuf_set_tx_sink(m_head);
+    mbuf_set_tx_hwaddr(m_head, m_netif.hwaddr);
 
     rte_mbuf* pkts[] = {m_head};
     if (m_transmit(port_index(), 0, reinterpret_cast<void**>(pkts), 1) != 1) {

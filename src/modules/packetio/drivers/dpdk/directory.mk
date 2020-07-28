@@ -20,6 +20,7 @@ PIO_DRIVER_SOURCES += \
 	port/signature_encoder.cpp \
 	port/signature_utils.cpp \
 	port/timestamper.cpp \
+	port/tx_sink.cpp \
 	queue_utils.cpp \
 	topology_utils.cpp
 
