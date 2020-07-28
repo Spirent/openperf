@@ -18,8 +18,6 @@ BLOCK_SOURCES += \
 	task.cpp \
 	virtual_device.cpp
 
-include $(BLOCK_SRC_DIR)/models/directory.mk
-
 BLOCK_LDLIBS += -lrt
 
 BLOCK_VERSIONED_FILES := init.cpp

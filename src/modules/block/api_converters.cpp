@@ -116,40 +116,40 @@ std::string to_string(const model::block_generation_pattern& pattern)
     return "unknown";
 }
 
-std::string to_string(const model::device::state& state)
+std::string to_string(const model::device::state_t& state)
 {
-    const static std::unordered_map<model::device::state, std::string>
+    const static std::unordered_map<model::device::state_t, std::string>
         block_device_states = {
-            {model::device::state::UNINIT, "uninitialized"},
-            {model::device::state::INIT, "initializing"},
-            {model::device::state::READY, "ready"},
+            {model::device::state_t::UNINIT, "uninitialized"},
+            {model::device::state_t::INIT, "initializing"},
+            {model::device::state_t::READY, "ready"},
         };
 
     if (block_device_states.count(state)) return block_device_states.at(state);
     return "unknown";
 }
 
-model::file::state block_file_state_from_string(const std::string& value)
+model::file::state_t block_file_state_from_string(const std::string& value)
 {
-    const static std::unordered_map<std::string, model::file::state>
+    const static std::unordered_map<std::string, model::file::state_t>
         block_file_states = {
-            {"none", model::file::state::NONE},
-            {"init", model::file::state::INIT},
-            {"ready", model::file::state::READY},
+            {"none", model::file::state_t::NONE},
+            {"init", model::file::state_t::INIT},
+            {"ready", model::file::state_t::READY},
         };
 
     if (block_file_states.count(value)) return block_file_states.at(value);
     throw std::runtime_error("Pattern \"" + value + "\" is unknown");
 }
 
-std::string to_string(const model::file::state& state)
+std::string to_string(const model::file::state_t& state)
 {
 
-    const static std::unordered_map<model::file::state, std::string>
+    const static std::unordered_map<model::file::state_t, std::string>
         block_file_states = {
-            {model::file::state::NONE, "none"},
-            {model::file::state::INIT, "init"},
-            {model::file::state::READY, "ready"},
+            {model::file::state_t::NONE, "none"},
+            {model::file::state_t::INIT, "init"},
+            {model::file::state_t::READY, "ready"},
         };
 
     if (block_file_states.count(state)) return block_file_states.at(state);

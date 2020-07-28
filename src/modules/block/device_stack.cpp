@@ -55,7 +55,7 @@ std::string device::get_path() const { return model::device::get_path(); }
 
 void device::scrub_done()
 {
-    set_state(model::device::state::READY);
+    set_state(model::device::state_t::READY);
     set_init_percent_complete(100);
 }
 
@@ -74,12 +74,12 @@ tl::expected<void, std::string> device::initialize()
             "Device size less than header size ("
             + std::to_string(sizeof(virtual_device_header)) + " bytes)");
 
-    if (get_state() != state::UNINIT)
+    if (get_state() != state_t::UNINIT)
         return tl::make_unexpected("Device is already initialized");
 
     if (auto res = queue_scrub(); !res) return res;
 
-    if (get_state() == state::UNINIT) set_state(state::INIT);
+    if (get_state() == state_t::UNINIT) set_state(state_t::INIT);
     return {};
 }
 
@@ -115,7 +115,7 @@ void device_stack::init_device_stack()
         } else {
             blkdev->set_usable(false);
         }
-        blkdev->set_state(device::state::UNINIT);
+        blkdev->set_state(device::state_t::UNINIT);
         blkdev->set_init_percent_complete(0);
 
         m_block_devices.emplace(blkdev->get_id(), blkdev);

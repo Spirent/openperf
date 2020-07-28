@@ -14,7 +14,7 @@ file::file(const model::file& f)
     set_path(f.get_path());
     set_size(f.get_size());
     set_init_percent_complete(0);
-    set_state(model::file::state::INIT);
+    set_state(model::file::state_t::INIT);
 }
 
 file::~file() { terminate_scrub(); }
@@ -60,7 +60,7 @@ std::string file::get_path() const { return model::file::get_path(); }
 
 void file::scrub_done()
 {
-    set_state(model::file::state::READY);
+    set_state(model::file::state_t::READY);
     set_init_percent_complete(100);
 }
 
@@ -112,7 +112,7 @@ std::shared_ptr<virtual_device>
 file_stack::get_vdev(const std::string& id) const
 {
     auto f = get_block_file(id);
-    if (!f || f->get_state() != model::file::state::READY) return nullptr;
+    if (!f || f->get_state() != model::file::state_t::READY) return nullptr;
     return f;
 }
 
