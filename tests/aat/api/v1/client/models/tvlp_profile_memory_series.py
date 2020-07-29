@@ -32,24 +32,24 @@ class TvlpProfileMemorySeries(object):
     """
     swagger_types = {
         'offset': 'int',
-        'data': 'MemoryGeneratorConfig'
+        'config': 'MemoryGeneratorConfig'
     }
 
     attribute_map = {
         'offset': 'offset',
-        'data': 'data'
+        'config': 'config'
     }
 
-    def __init__(self, offset=None, data=None):  # noqa: E501
+    def __init__(self, offset=None, config=None):  # noqa: E501
         """TvlpProfileMemorySeries - a model defined in Swagger"""  # noqa: E501
 
         self._offset = None
-        self._data = None
+        self._config = None
         self.discriminator = None
 
         if offset is not None:
             self.offset = offset
-        self.data = data
+        self.config = config
 
     @property
     def offset(self):
@@ -74,24 +74,24 @@ class TvlpProfileMemorySeries(object):
         self._offset = offset
 
     @property
-    def data(self):
-        """Gets the data of this TvlpProfileMemorySeries.  # noqa: E501
+    def config(self):
+        """Gets the config of this TvlpProfileMemorySeries.  # noqa: E501
 
 
-        :return: The data of this TvlpProfileMemorySeries.  # noqa: E501
+        :return: The config of this TvlpProfileMemorySeries.  # noqa: E501
         :rtype: MemoryGeneratorConfig
         """
-        return self._data
+        return self._config
 
-    @data.setter
-    def data(self, data):
-        """Sets the data of this TvlpProfileMemorySeries.
+    @config.setter
+    def config(self, config):
+        """Sets the config of this TvlpProfileMemorySeries.
 
 
-        :param data: The data of this TvlpProfileMemorySeries.  # noqa: E501
+        :param config: The config of this TvlpProfileMemorySeries.  # noqa: E501
         :type: MemoryGeneratorConfig
         """
-        self._data = data
+        self._config = config
 
     def to_dict(self):
         """Returns the model properties as a dict"""

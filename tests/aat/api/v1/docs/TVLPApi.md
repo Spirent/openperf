@@ -340,7 +340,7 @@ No authorization required
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **start_tvlp_configuration**
-> TvlpResult start_tvlp_configuration(id)
+> TvlpResult start_tvlp_configuration(id, time=time)
 
 Start a TVLP configuration
 
@@ -357,10 +357,11 @@ from pprint import pprint
 # create an instance of the API class
 api_instance = client.TVLPApi()
 id = 'id_example' # str | Unique resource identifier
+time = 789 # int | Time to start profile replay (optional)
 
 try:
     # Start a TVLP configuration
-    api_response = api_instance.start_tvlp_configuration(id)
+    api_response = api_instance.start_tvlp_configuration(id, time=time)
     pprint(api_response)
 except ApiException as e:
     print("Exception when calling TVLPApi->start_tvlp_configuration: %s\n" % e)
@@ -371,6 +372,7 @@ except ApiException as e:
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **id** | **str**| Unique resource identifier | 
+ **time** | **int**| Time to start profile replay | [optional] 
 
 ### Return type
 
