@@ -173,7 +173,7 @@ reply_msg server::handle_request(const request_block_generator_list&)
 reply_msg server::handle_request(const request_block_generator& request)
 {
     auto reply = reply_block_generators{};
-    auto blkgenerator = m_generator_stack->get_block_generator(request.id);
+    auto blkgenerator = m_generator_stack->block_generator(request.id);
 
     if (!blkgenerator) { return to_error(api::error_type::NOT_FOUND); }
     reply.generators.emplace_back(
@@ -350,7 +350,7 @@ reply_msg server::handle_request(const request_block_generator_result_list&)
 reply_msg server::handle_request(const request_block_generator_result& request)
 {
     auto reply = reply_block_generator_results{};
-    auto stat = m_generator_stack->get_statistics(request.id);
+    auto stat = m_generator_stack->statistics(request.id);
 
     if (!stat) { return to_error(api::error_type::NOT_FOUND); }
     reply.results.emplace_back(
