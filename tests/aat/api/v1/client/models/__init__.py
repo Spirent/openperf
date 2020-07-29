@@ -68,6 +68,7 @@ from client.models.cpu_generator_target_stats import CpuGeneratorTargetStats
 from client.models.cpu_info_result import CpuInfoResult
 from client.models.dynamic_results import DynamicResults
 from client.models.dynamic_results_config import DynamicResultsConfig
+from client.models.get_packet_captures_pcap_config import GetPacketCapturesPcapConfig
 from client.models.interface import Interface
 from client.models.interface_config import InterfaceConfig
 from client.models.interface_protocol_config import InterfaceProtocolConfig

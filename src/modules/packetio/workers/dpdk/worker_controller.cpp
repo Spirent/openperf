@@ -210,6 +210,13 @@ static void maybe_update_rxq_lro_mode(const model::port_info& info)
     }
 }
 
+bool always_has_tx_sink(const model::port_info& info)
+{
+    // Always need tx sink callback when using net_ring driver
+    // This is used to clear the mbuf tx_sink flag so it is not seen on rx
+    return (std::strcmp(info.driver_name(), "net_ring") == 0);
+}
+
 worker_controller::worker_controller(void* context,
                                      openperf::core::event_loop& loop,
                                      driver::generic_driver& driver)
@@ -251,7 +258,7 @@ worker_controller::worker_controller(void* context,
     /* Construct our necessary port queues */
     auto q_descriptors = get_queue_descriptors(port_info);
     auto& queues = worker::port_queues::instance();
-    queues.setup(q_descriptors);
+    queues.setup(m_fib.get(), q_descriptors);
 
     /* Update queues to take advantage of port capabilities */
     /* XXX: queues must be setup first! */
@@ -263,6 +270,15 @@ worker_controller::worker_controller(void* context,
     std::for_each(std::begin(port_info),
                   std::end(port_info),
                   [](const auto& info) { maybe_update_rxq_lro_mode(info); });
+
+    /* Set the global tx sink callback */
+    port::tx_sink::set_callback(worker::tx_sink_burst_dispatch);
+    std::for_each(
+        std::begin(port_info), std::end(port_info), [&](const auto& info) {
+            if (always_has_tx_sink(info)) {
+                m_sink_features.update(*m_fib, info.id());
+            }
+        });
 
     /* Distribute queues and schedulers to workers */
     m_workers->add_descriptors(to_worker_descriptors(
@@ -320,8 +336,8 @@ worker_controller::operator=(worker_controller&& other) noexcept
 }
 
 static std::vector<unsigned>
-get_worker_ids(queue::queue_mode type,
-               std::optional<int> port_id = std::nullopt)
+get_queue_worker_ids(queue::queue_mode type,
+                     std::optional<int> port_id = std::nullopt)
 {
     auto port_info = get_port_info();
     auto q_descriptors = topology::queue_distribute(port_info);
@@ -344,10 +360,21 @@ get_worker_ids(queue::queue_mode type,
     std::vector<unsigned> workers;
     std::for_each(
         std::begin(q_descriptors), std::end(q_descriptors), [&](auto& d) {
-            auto match =
-                (type == queue::queue_mode::NONE
-                     ? (d.mode == queue::queue_mode::NONE)
-                     : (d.mode == queue::queue_mode::RXTX || d.mode == type));
+            bool match = false;
+            switch (type) {
+            case queue::queue_mode::NONE:
+                match = (d.mode == type);
+                break;
+            case queue::queue_mode::TX:
+            case queue::queue_mode::RX:
+                match = (d.mode == type) || (d.mode == queue::queue_mode::RXTX);
+                break;
+            case queue::queue_mode::RXTX:
+                match = (d.mode == queue::queue_mode::RX)
+                        || (d.mode == queue::queue_mode::TX)
+                        || (d.mode == queue::queue_mode::RXTX);
+                break;
+            }
             if (match) workers.push_back(d.worker_id);
         });
 
@@ -380,22 +407,29 @@ static int get_port_index(std::string_view id,
     return (-1);
 }
 
-std::vector<unsigned> worker_controller::get_rx_worker_ids(
-    std::optional<std::string_view> obj_id) const
+static queue::queue_mode to_queue_mode(packet::traffic_direction direction)
 {
-    return (obj_id
-                ? get_worker_ids(queue::queue_mode::RX,
-                                 get_port_index(*obj_id, m_driver, m_fib.get()))
-                : get_worker_ids(queue::queue_mode::RX));
+    switch (direction) {
+    case packet::traffic_direction::NONE:
+        return queue::queue_mode::NONE;
+    case packet::traffic_direction::RX:
+        return queue::queue_mode::RX;
+    case packet::traffic_direction::TX:
+        return queue::queue_mode::TX;
+    case packet::traffic_direction::RXTX:
+        return queue::queue_mode::RXTX;
+    }
 }
 
-std::vector<unsigned> worker_controller::get_tx_worker_ids(
-    std::optional<std::string_view> obj_id) const
+std::vector<unsigned>
+worker_controller::get_worker_ids(packet::traffic_direction direction,
+                                  std::optional<std::string_view> obj_id) const
 {
-    return (obj_id
-                ? get_worker_ids(queue::queue_mode::TX,
-                                 get_port_index(*obj_id, m_driver, m_fib.get()))
-                : get_worker_ids(queue::queue_mode::TX));
+    auto mode = to_queue_mode(direction);
+
+    return (obj_id ? get_queue_worker_ids(
+                mode, get_port_index(*obj_id, m_driver, m_fib.get()))
+                   : get_queue_worker_ids(mode));
 }
 
 template <typename T>
@@ -456,10 +490,9 @@ void worker_controller::add_interface(
     filter.add_mac_address(mac,
                            [&]() { maybe_disable_rxq_tag_detection(filter); });
 
-    auto to_delete = m_fib->insert_interface(
-        *port_idx,
-        mac,
-        const_cast<netif*>(std::any_cast<const netif*>(interface.data())));
+    auto ifp =
+        const_cast<netif*>(std::any_cast<const netif*>(interface.data()));
+    auto to_delete = m_fib->insert_interface(*port_idx, mac, ifp);
     m_recycler->writer_add_gc_callback([to_delete]() { delete to_delete; });
 
     OP_LOG(OP_LOG_DEBUG,
@@ -500,23 +533,52 @@ bool contains_match(const Vector& vector, const Item& match)
     }));
 }
 
-tl::expected<void, int> worker_controller::add_sink(std::string_view src_id,
-                                                    packet::generic_sink sink)
+tl::expected<void, int>
+worker_controller::add_sink(packet::traffic_direction direction,
+                            std::string_view src_id,
+                            const packet::generic_sink& sink)
 {
     if (auto port_idx = m_driver.port_index(src_id)) {
-        if (contains_match(m_fib->get_sinks(*port_idx), sink)) {
-            return (tl::make_unexpected(EALREADY));
+        if (direction == packet::traffic_direction::RX
+            || direction == packet::traffic_direction::RXTX) {
+            if (contains_match(m_fib->get_rx_sinks(*port_idx), sink)) {
+                return (tl::make_unexpected(EALREADY));
+            }
+
+            OP_LOG(OP_LOG_DEBUG,
+                   "Adding rx sink %s to port %.*s (idx = %u)\n",
+                   sink.id().c_str(),
+                   static_cast<int>(src_id.length()),
+                   src_id.data(),
+                   *port_idx);
+
+            auto to_delete =
+                m_fib->insert_sink(*port_idx, worker::fib::direction::RX, sink);
+            m_recycler->writer_add_gc_callback(
+                [to_delete]() { delete to_delete; });
         }
+        if (direction == packet::traffic_direction::TX
+            || direction == packet::traffic_direction::RXTX) {
+            if (contains_match(m_fib->get_tx_sinks(*port_idx), sink)) {
+                if (direction == packet::traffic_direction::RXTX) {
+                    // Remove the Rx sink if error adding Tx sink
+                    del_sink(packet::traffic_direction::RX, src_id, sink);
+                }
+                return (tl::make_unexpected(EALREADY));
+            }
 
-        OP_LOG(OP_LOG_DEBUG,
-               "Adding sink %s to port %.*s (idx = %u)\n",
-               sink.id().c_str(),
-               static_cast<int>(src_id.length()),
-               src_id.data(),
-               *port_idx);
+            OP_LOG(OP_LOG_ERROR,
+                   "Adding tx sink %s to port %.*s (idx = %u)\n",
+                   sink.id().c_str(),
+                   static_cast<int>(src_id.length()),
+                   src_id.data(),
+                   *port_idx);
 
-        auto to_delete = m_fib->insert_sink(*port_idx, std::move(sink));
-        m_recycler->writer_add_gc_callback([to_delete]() { delete to_delete; });
+            auto to_delete =
+                m_fib->insert_sink(*port_idx, worker::fib::direction::TX, sink);
+            m_recycler->writer_add_gc_callback(
+                [to_delete]() { delete to_delete; });
+        }
 
         m_sink_features.update(*m_fib, *port_idx);
 
@@ -526,23 +588,66 @@ tl::expected<void, int> worker_controller::add_sink(std::string_view src_id,
     if (auto ifp = m_fib->find_interface(src_id)) {
         auto& interface = dpdk::to_interface(ifp);
         auto mac = mac_address(ifp->hwaddr);
+        if (direction == packet::traffic_direction::RX
+            || direction == packet::traffic_direction::RXTX) {
+            auto sinks =
+                m_fib->find_interface_rx_sinks(interface.port_index(), mac);
+            if (!sinks) { return (tl::make_unexpected(EINVAL)); }
+            if (contains_match(*sinks, sink)) {
+                return (tl::make_unexpected(EALREADY));
+            }
 
-        auto sinks = m_fib->find_interface_sinks(interface.port_index(), mac);
-        if (!sinks) { return (tl::make_unexpected(EINVAL)); }
-        if (contains_match(*sinks, sink)) {
-            return (tl::make_unexpected(EALREADY));
+            OP_LOG(OP_LOG_DEBUG,
+                   "Adding rx sink %s to port %s (idx = %u) interface=%s\n",
+                   sink.id().c_str(),
+                   interface.port_id().c_str(),
+                   interface.port_index(),
+                   interface.id().c_str());
+
+            auto to_delete =
+                m_fib->insert_interface_sink(interface.port_index(),
+                                             mac,
+                                             ifp,
+                                             worker::fib::direction::RX,
+                                             sink);
+
+            m_recycler->writer_add_gc_callback(
+                [to_delete]() { delete to_delete; });
         }
+        if (direction == packet::traffic_direction::TX
+            || direction == packet::traffic_direction::RXTX) {
+            auto sinks =
+                m_fib->find_interface_tx_sinks(interface.port_index(), mac);
+            if (!sinks) {
+                if (direction == packet::traffic_direction::RXTX) {
+                    // Remove the Rx sink if error adding Tx sink
+                    del_sink(packet::traffic_direction::RX, src_id, sink);
+                }
+                return (tl::make_unexpected(EINVAL));
+            }
+            if (contains_match(*sinks, sink)) {
+                if (direction == packet::traffic_direction::RXTX) {
+                    // Remove the Rx sink if error adding Tx sink
+                    del_sink(packet::traffic_direction::RX, src_id, sink);
+                }
+                return (tl::make_unexpected(EALREADY));
+            }
+            OP_LOG(OP_LOG_DEBUG,
+                   "Adding tx sink %s to port %s (idx = %u) interface=%s\n",
+                   sink.id().c_str(),
+                   interface.port_id().c_str(),
+                   interface.port_index(),
+                   interface.id().c_str());
 
-        OP_LOG(OP_LOG_DEBUG,
-               "Adding sink %s to port %s (idx = %u) interface=%s\n",
-               sink.id().c_str(),
-               interface.port_id().c_str(),
-               interface.port_index(),
-               interface.id().c_str());
-
-        auto to_delete = m_fib->insert_interface_sink(
-            interface.port_index(), mac, ifp, std::move(sink));
-        m_recycler->writer_add_gc_callback([to_delete]() { delete to_delete; });
+            auto to_delete =
+                m_fib->insert_interface_sink(interface.port_index(),
+                                             mac,
+                                             ifp,
+                                             worker::fib::direction::TX,
+                                             sink);
+            m_recycler->writer_add_gc_callback(
+                [to_delete]() { delete to_delete; });
+        }
 
         m_sink_features.update(*m_fib, interface.port_index());
 
@@ -552,21 +657,41 @@ tl::expected<void, int> worker_controller::add_sink(std::string_view src_id,
     return (tl::make_unexpected(EINVAL));
 }
 
-void worker_controller::del_sink(std::string_view src_id,
-                                 packet::generic_sink sink)
+void worker_controller::del_sink(packet::traffic_direction direction,
+                                 std::string_view src_id,
+                                 const packet::generic_sink& sink)
 {
     if (auto port_idx = m_driver.port_index(src_id)) {
-        OP_LOG(OP_LOG_DEBUG,
-               "Deleting sink %s from port %.*s (idx = %u)\n",
-               sink.id().c_str(),
-               static_cast<int>(src_id.length()),
-               src_id.data(),
-               *port_idx);
+        if (direction == packet::traffic_direction::RX
+            || direction == packet::traffic_direction::RXTX) {
+            OP_LOG(OP_LOG_DEBUG,
+                   "Deleting rx sink %s from port %.*s (idx = %u)\n",
+                   sink.id().c_str(),
+                   static_cast<int>(src_id.length()),
+                   src_id.data(),
+                   *port_idx);
 
-        auto to_delete = m_fib->remove_sink(*port_idx, std::move(sink));
-        m_recycler->writer_add_gc_callback([to_delete]() { delete to_delete; });
+            auto to_delete =
+                m_fib->remove_sink(*port_idx, worker::fib::direction::RX, sink);
+            m_recycler->writer_add_gc_callback(
+                [to_delete]() { delete to_delete; });
 
-        m_sink_features.update(*m_fib, *port_idx);
+            m_sink_features.update(*m_fib, *port_idx);
+        }
+        if (direction == packet::traffic_direction::TX
+            || direction == packet::traffic_direction::RXTX) {
+            OP_LOG(OP_LOG_DEBUG,
+                   "Deleting tx sink %s from port %.*s (idx = %u)\n",
+                   sink.id().c_str(),
+                   static_cast<int>(src_id.length()),
+                   src_id.data(),
+                   *port_idx);
+
+            auto to_delete =
+                m_fib->remove_sink(*port_idx, worker::fib::direction::TX, sink);
+            m_recycler->writer_add_gc_callback(
+                [to_delete]() { delete to_delete; });
+        }
         return;
     }
 
@@ -574,21 +699,56 @@ void worker_controller::del_sink(std::string_view src_id,
         auto& interface = dpdk::to_interface(ifp);
         auto mac = mac_address(ifp->hwaddr);
 
-        auto sinks = m_fib->find_interface_sinks(interface.port_index(), mac);
-        if (!sinks) return;
+        if (direction == packet::traffic_direction::RX
+            || direction == packet::traffic_direction::RXTX) {
+            auto sinks =
+                m_fib->find_interface_rx_sinks(interface.port_index(), mac);
+            if (sinks && contains_match(*sinks, sink)) {
+                OP_LOG(OP_LOG_DEBUG,
+                       "Deleting rx sink %s from port %s (idx = %u) interface "
+                       "%s\n",
+                       sink.id().c_str(),
+                       interface.port_id().c_str(),
+                       interface.port_index(),
+                       interface.id().c_str());
 
-        OP_LOG(OP_LOG_DEBUG,
-               "Deleting sink %s from port %s (idx = %u) interface %s\n",
-               sink.id().c_str(),
-               interface.port_id().c_str(),
-               interface.port_index(),
-               interface.id().c_str());
+                auto to_delete =
+                    m_fib->remove_interface_sink(interface.port_index(),
+                                                 mac,
+                                                 ifp,
+                                                 worker::fib::direction::RX,
+                                                 sink);
+                m_recycler->writer_add_gc_callback(
+                    [to_delete]() { delete to_delete; });
 
-        auto to_delete = m_fib->remove_interface_sink(
-            interface.port_index(), mac, ifp, std::move(sink));
-        m_recycler->writer_add_gc_callback([to_delete]() { delete to_delete; });
+                m_sink_features.update(*m_fib, interface.port_index());
+            }
+        }
+        if (direction == packet::traffic_direction::TX
+            || direction == packet::traffic_direction::RXTX) {
+            auto sinks =
+                m_fib->find_interface_tx_sinks(interface.port_index(), mac);
+            if (sinks && contains_match(*sinks, sink)) {
+                OP_LOG(OP_LOG_DEBUG,
+                       "Deleting tx sink %s from port %s (idx = %u) interface "
+                       "%s\n",
+                       sink.id().c_str(),
+                       interface.port_id().c_str(),
+                       interface.port_index(),
+                       interface.id().c_str());
 
-        m_sink_features.update(*m_fib, interface.port_index());
+                auto to_delete =
+                    m_fib->remove_interface_sink(interface.port_index(),
+                                                 mac,
+                                                 ifp,
+                                                 worker::fib::direction::TX,
+                                                 sink);
+
+                m_recycler->writer_add_gc_callback(
+                    [to_delete]() { delete to_delete; });
+            }
+        }
+
         return;
     }
 }
@@ -868,31 +1028,38 @@ void worker_controller::del_task(std::string_view task_id)
 template <typename Function>
 bool port_sink_find_if(const worker::fib& fib,
                        size_t port_idx,
+                       worker::fib::direction dir,
                        const Function& filter)
 {
-    const auto& sinks = fib.get_sinks(port_idx);
+    const auto& sinks = (dir == worker::fib::direction::RX)
+                            ? fib.get_rx_sinks(port_idx)
+                            : fib.get_tx_sinks(port_idx);
     return (std::any_of(std::begin(sinks), std::end(sinks), filter));
 }
 
 template <typename Function>
 bool interface_sink_find_if(const worker::fib& fib,
                             size_t port_idx,
+                            worker::fib::direction dir,
                             const Function& filter)
 {
     bool found = false;
-    fib.visit_interface_sinks(port_idx,
-                              [&](netif*, const packet::generic_sink& sink) {
-                                  if (filter(sink)) { found = true; }
-                                  return (!found);
-                              });
+    fib.visit_interface_sinks(
+        port_idx, dir, [&](netif*, const packet::generic_sink& sink) {
+            if (filter(sink)) { found = true; }
+            return (!found);
+        });
     return (found);
 }
 
 template <typename Function>
-bool sink_find_if(const worker::fib& fib, size_t port_idx, Function&& filter)
+bool sink_find_if(const worker::fib& fib,
+                  size_t port_idx,
+                  worker::fib::direction dir,
+                  Function&& filter)
 {
-    return (port_sink_find_if(fib, port_idx, filter)
-            || interface_sink_find_if(fib, port_idx, filter));
+    return (port_sink_find_if(fib, port_idx, dir, filter)
+            || interface_sink_find_if(fib, port_idx, dir, filter));
 }
 
 template <>
@@ -904,7 +1071,10 @@ bool need_sink_feature(const worker::fib& fib,
      * Filter logic is reversed from the others; we need to disable the
      * filter when any sinks are present.
      */
-    return (!sink_find_if(fib, port_idx, [](const auto&) { return (true); }));
+    return (!sink_find_if(
+        fib, port_idx, worker::fib::direction::RX, [](const auto&) {
+            return (true);
+        }));
 }
 
 template <>
@@ -912,10 +1082,14 @@ bool need_sink_feature(const worker::fib& fib,
                        size_t port_idx,
                        const port::packet_type_decoder&)
 {
-    return (sink_find_if(fib, port_idx, [](const packet::generic_sink& sink) {
-        return (
-            sink.uses_feature(packet::sink_feature_flags::packet_type_decode));
-    }));
+    return (
+        sink_find_if(fib,
+                     port_idx,
+                     worker::fib::direction::RX,
+                     [](const packet::generic_sink& sink) {
+                         return (sink.uses_feature(
+                             packet::sink_feature_flags::packet_type_decode));
+                     }));
 }
 
 template <>
@@ -923,9 +1097,13 @@ bool need_sink_feature(const worker::fib& fib,
                        size_t port_idx,
                        const port::rss_hasher&)
 {
-    return (sink_find_if(fib, port_idx, [](const packet::generic_sink& sink) {
-        return (sink.uses_feature(packet::sink_feature_flags::rss_hash));
-    }));
+    return (sink_find_if(fib,
+                         port_idx,
+                         worker::fib::direction::RX,
+                         [](const packet::generic_sink& sink) {
+                             return (sink.uses_feature(
+                                 packet::sink_feature_flags::rss_hash));
+                         }));
 }
 
 template <>
@@ -933,10 +1111,14 @@ bool need_sink_feature(const worker::fib& fib,
                        size_t port_idx,
                        const port::prbs_error_detector&)
 {
-    return (sink_find_if(fib, port_idx, [](const packet::generic_sink& sink) {
-        return (sink.uses_feature(
-            packet::sink_feature_flags::spirent_prbs_error_detect));
-    }));
+    return (sink_find_if(
+        fib,
+        port_idx,
+        worker::fib::direction::RX,
+        [](const packet::generic_sink& sink) {
+            return (sink.uses_feature(
+                packet::sink_feature_flags::spirent_prbs_error_detect));
+        }));
 }
 
 template <>
@@ -944,10 +1126,14 @@ bool need_sink_feature(const worker::fib& fib,
                        size_t port_idx,
                        const port::signature_decoder&)
 {
-    return (sink_find_if(fib, port_idx, [](const packet::generic_sink& sink) {
-        return (sink.uses_feature(
-            packet::sink_feature_flags::spirent_signature_decode));
-    }));
+    return (sink_find_if(
+        fib,
+        port_idx,
+        worker::fib::direction::RX,
+        [](const packet::generic_sink& sink) {
+            return (sink.uses_feature(
+                packet::sink_feature_flags::spirent_signature_decode));
+        }));
 }
 
 template <>
@@ -955,9 +1141,28 @@ bool need_sink_feature(const worker::fib& fib,
                        size_t port_idx,
                        const port::timestamper&)
 {
-    return (sink_find_if(fib, port_idx, [](const packet::generic_sink& sink) {
-        return (sink.uses_feature(packet::sink_feature_flags::rx_timestamp));
-    }));
+    return (sink_find_if(fib,
+                         port_idx,
+                         worker::fib::direction::RX,
+                         [](const packet::generic_sink& sink) {
+                             return (sink.uses_feature(
+                                 packet::sink_feature_flags::rx_timestamp));
+                         }));
+}
+
+template <>
+bool need_sink_feature(const worker::fib& fib,
+                       size_t port_idx,
+                       const port::tx_sink&)
+{
+    auto info = model::port_info(port_idx);
+    if (always_has_tx_sink(info)) return true;
+
+    return (
+        sink_find_if(fib,
+                     port_idx,
+                     worker::fib::direction::TX,
+                     [](const packet::generic_sink& sink) { return (true); }));
 }
 
 template <typename Function>

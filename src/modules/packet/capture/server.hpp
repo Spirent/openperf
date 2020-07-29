@@ -71,6 +71,13 @@ class server
     using event_trigger_map = std::map<int, std::shared_ptr<event_trigger>>;
     event_trigger_map m_triggers;
 
+    struct transfer
+    {
+        std::unique_ptr<transfer_context> context;
+        std::vector<sink_result*> results;
+    };
+    std::vector<transfer> m_transfers;
+
 public:
     server(void* context, core::event_loop& loop);
 
@@ -95,7 +102,7 @@ public:
     reply_msg handle_request(const request_delete_capture_result&);
 
     reply_msg handle_request(request_create_capture_transfer&);
-    reply_msg handle_request(const request_delete_capture_transfer&);
+    reply_msg handle_request(request_delete_capture_transfer&);
 
     int handle_capture_stop_timer(uint32_t timeout_id);
 
@@ -109,8 +116,10 @@ private:
     void
     add_capture_stop_timer(result_value_type& result,
                            std::chrono::duration<uint64_t, std::nano> duration);
+    void cancel_capture_timer(result_value_type& result);
 
-    bool has_active_transfer(const sink& sink) const;
+    bool has_transfer(const sink& sink) const;
+    bool has_transfer(const sink_result& result) const;
 
     void add_trash(sink_value_type& sink);
     void add_trash(result_value_ptr&& result);

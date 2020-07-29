@@ -180,6 +180,9 @@ paths:
   /packet/captures/x/bulk-stop:
     $ref: ./modules/packet/capture.yaml#/paths/~1captures~1x~1bulk-stop
 
+  /packet/captures/x/merge:
+    $ref: ./modules/packet/capture.yaml#/paths/~1captures~1x~1merge
+
   /packet/capture-results:
     $ref: ./modules/packet/capture.yaml#/paths/~1capture-results
 

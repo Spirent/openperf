@@ -1,6 +1,7 @@
 #include "packetio/internal_api.hpp"
 #include "packetio/internal_server.hpp"
 #include "utils/overloaded_visitor.hpp"
+#include "message/serialized_message.hpp"
 
 namespace openperf::packetio::internal::api {
 
@@ -9,7 +10,8 @@ std::string_view endpoint = "inproc://op_packetio_internal";
 reply_msg handle_request(workers::generic_workers& workers,
                          const request_sink_add& request)
 {
-    auto result = workers.add_sink(request.data.src_id, request.data.sink);
+    auto result = workers.add_sink(
+        request.data.direction, request.data.src_id, request.data.sink);
     if (!result) {
         return (reply_error{result.error()});
     } else {
@@ -20,7 +22,8 @@ reply_msg handle_request(workers::generic_workers& workers,
 reply_msg handle_request(workers::generic_workers& workers,
                          const request_sink_del& request)
 {
-    workers.del_sink(request.data.src_id, request.data.sink);
+    workers.del_sink(
+        request.data.direction, request.data.src_id, request.data.sink);
     return (reply_ok{});
 }
 
@@ -93,15 +96,10 @@ reply_msg handle_request(workers::generic_workers& workers,
 }
 
 reply_msg handle_request(workers::generic_workers& workers,
-                         const request_worker_rx_ids& rx_ids)
+                         const request_worker_ids& request)
 {
-    return (reply_worker_ids{workers.get_rx_worker_ids(rx_ids.object_id)});
-}
-
-reply_msg handle_request(workers::generic_workers& workers,
-                         const request_worker_tx_ids& tx_ids)
-{
-    return (reply_worker_ids{workers.get_tx_worker_ids(tx_ids.object_id)});
+    return (reply_worker_ids{
+        workers.get_worker_ids(request.direction, request.object_id)});
 }
 
 static std::string to_string(request_msg& request)
@@ -135,15 +133,25 @@ static std::string to_string(request_msg& request)
             [](const request_task_del& msg) {
                 return ("delete task " + std::string(msg.task_id));
             },
-            [](const request_worker_rx_ids& rx_ids) {
-                return ("get worker RX ids for "
-                        + (rx_ids.object_id ? *rx_ids.object_id
-                                            : std::string("ALL")));
-            },
-            [](const request_worker_tx_ids& tx_ids) {
-                return ("get worker TX ids for "
-                        + (tx_ids.object_id ? *tx_ids.object_id
-                                            : std::string("ALL")));
+            [](const request_worker_ids& msg) {
+                std::string direction_str;
+                switch (msg.direction) {
+                case packet::traffic_direction::NONE:
+                    direction_str = "NONE";
+                    break;
+                case packet::traffic_direction::RX:
+                    direction_str = "RX";
+                    break;
+                case packet::traffic_direction::TX:
+                    direction_str = "TX";
+                    break;
+                case packet::traffic_direction::RXTX:
+                    direction_str = "RX and TX";
+                    break;
+                }
+                return (
+                    "get worker " + direction_str + " ids for "
+                    + (msg.object_id ? *msg.object_id : std::string("ALL")));
             }),
         request));
 }
@@ -151,25 +159,18 @@ static std::string to_string(request_msg& request)
 static int handle_rpc_request(const op_event_data* data, void* arg)
 {
     auto server = reinterpret_cast<internal::api::server*>(arg);
-    unsigned tx_errors = 0;
+    auto reply_errors = 0;
 
-    while (auto request = recv_message(data->socket, ZMQ_DONTWAIT)
+    while (auto request = message::recv(data->socket, ZMQ_DONTWAIT)
                               .and_then(deserialize_request)) {
         OP_LOG(OP_LOG_TRACE,
                "Received request to %s\n",
                to_string(*request).c_str());
 
-        auto handle_visitor = [&](auto& request_msg) -> reply_msg {
+        auto request_visitor = [&](auto& request_msg) -> reply_msg {
             return (handle_request(server->workers(), request_msg));
         };
-        auto reply = std::visit(handle_visitor, *request);
-
-        if (send_message(data->socket, serialize_reply(reply)) == -1) {
-            tx_errors++;
-            OP_LOG(
-                OP_LOG_ERROR, "Error sending reply: %s\n", zmq_strerror(errno));
-            continue;
-        }
+        auto reply = std::visit(request_visitor, *request);
 
         if (auto error = std::get_if<reply_error>(&reply)) {
             OP_LOG(OP_LOG_TRACE,
@@ -181,9 +182,17 @@ static int handle_rpc_request(const op_event_data* data, void* arg)
                    "Request to %s succeeded\n",
                    to_string(*request).c_str());
         }
+
+        if (message::send(data->socket, serialize_reply(std::move(reply)))
+            == -1) {
+            reply_errors++;
+            OP_LOG(
+                OP_LOG_ERROR, "Error sending reply: %s\n", zmq_strerror(errno));
+            continue;
+        }
     }
 
-    return ((tx_errors || errno == ETERM) ? -1 : 0);
+    return ((reply_errors || errno == ETERM) ? -1 : 0);
 }
 
 server::server(void* context,

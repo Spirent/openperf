@@ -1,6 +1,7 @@
 #include "packetio/drivers/dpdk/dpdk.h"
 #include "packetio/drivers/dpdk/mbuf_rx_prbs.hpp"
 #include "packetio/drivers/dpdk/mbuf_signature.hpp"
+#include "packetio/drivers/dpdk/mbuf_tx.hpp"
 #include "packetio/packet_buffer.hpp"
 #include "spirent_pga/api.h"
 
@@ -186,5 +187,7 @@ signature_tx_timestamp(const packet_buffer* buffer)
                     dpdk::mbuf_signature_timestamp_get(buffer)}})
                 : std::nullopt);
 }
+
+bool tx_sink(const packet_buffer* buffer) { return dpdk::mbuf_tx_sink(buffer); }
 
 } // namespace openperf::packetio::packet

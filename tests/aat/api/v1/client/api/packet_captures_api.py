@@ -1316,6 +1316,105 @@ class PacketCapturesApi(object):
             _request_timeout=params.get('_request_timeout'),
             collection_formats=collection_formats)
 
+    def get_packet_captures_pcap(self, config, **kwargs):  # noqa: E501
+        """Get merged packet data from multiple captures  # noqa: E501
+
+        Get merged packet data from multiple captures as a pcap file  # noqa: E501
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.get_packet_captures_pcap(config, async_req=True)
+        >>> result = thread.get()
+
+        :param async_req bool
+        :param GetPacketCapturesPcapConfig config: Packet capture data retrieval configuration (required)
+        :return: file
+                 If the method is called asynchronously,
+                 returns the request thread.
+        """
+        kwargs['_return_http_data_only'] = True
+        if kwargs.get('async_req'):
+            return self.get_packet_captures_pcap_with_http_info(config, **kwargs)  # noqa: E501
+        else:
+            (data) = self.get_packet_captures_pcap_with_http_info(config, **kwargs)  # noqa: E501
+            return data
+
+    def get_packet_captures_pcap_with_http_info(self, config, **kwargs):  # noqa: E501
+        """Get merged packet data from multiple captures  # noqa: E501
+
+        Get merged packet data from multiple captures as a pcap file  # noqa: E501
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.get_packet_captures_pcap_with_http_info(config, async_req=True)
+        >>> result = thread.get()
+
+        :param async_req bool
+        :param GetPacketCapturesPcapConfig config: Packet capture data retrieval configuration (required)
+        :return: file
+                 If the method is called asynchronously,
+                 returns the request thread.
+        """
+
+        all_params = ['config']  # noqa: E501
+        all_params.append('async_req')
+        all_params.append('_return_http_data_only')
+        all_params.append('_preload_content')
+        all_params.append('_request_timeout')
+
+        params = locals()
+        for key, val in six.iteritems(params['kwargs']):
+            if key not in all_params:
+                raise TypeError(
+                    "Got an unexpected keyword argument '%s'"
+                    " to method get_packet_captures_pcap" % key
+                )
+            params[key] = val
+        del params['kwargs']
+        # verify the required parameter 'config' is set
+        if ('config' not in params or
+                params['config'] is None):
+            raise ValueError("Missing the required parameter `config` when calling `get_packet_captures_pcap`")  # noqa: E501
+
+        collection_formats = {}
+
+        path_params = {}
+
+        query_params = []
+
+        header_params = {}
+
+        form_params = []
+        local_var_files = {}
+
+        body_params = None
+        if 'config' in params:
+            body_params = params['config']
+        # HTTP header `Accept`
+        header_params['Accept'] = self.api_client.select_header_accept(
+            ['application/x-pcapng'])  # noqa: E501
+
+        # HTTP header `Content-Type`
+        header_params['Content-Type'] = self.api_client.select_header_content_type(  # noqa: E501
+            ['application/json'])  # noqa: E501
+
+        # Authentication setting
+        auth_settings = []  # noqa: E501
+
+        return self.api_client.call_api(
+            '/packet/captures/x/merge', 'POST',
+            path_params,
+            query_params,
+            header_params,
+            body=body_params,
+            post_params=form_params,
+            files=local_var_files,
+            response_type='file',  # noqa: E501
+            auth_settings=auth_settings,
+            async_req=params.get('async_req'),
+            _return_http_data_only=params.get('_return_http_data_only'),
+            _preload_content=params.get('_preload_content', True),
+            _request_timeout=params.get('_request_timeout'),
+            collection_formats=collection_formats)
+
     def list_packet_capture_results(self, **kwargs):  # noqa: E501
         """List capture results  # noqa: E501
 

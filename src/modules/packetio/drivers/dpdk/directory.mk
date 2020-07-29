@@ -7,6 +7,7 @@ PIO_DRIVER_SOURCES += \
 	eal.cpp \
 	mbuf_rx_prbs.cpp \
 	mbuf_signature.cpp \
+	mbuf_tx.cpp \
 	model/physical_port.cpp \
 	model/port_info.cpp \
 	port/flow_filter.cpp \
@@ -19,9 +20,11 @@ PIO_DRIVER_SOURCES += \
 	port/signature_encoder.cpp \
 	port/signature_utils.cpp \
 	port/timestamper.cpp \
+	port/tx_sink.cpp \
 	queue_utils.cpp \
 	topology_utils.cpp
 
 # Needed to use the "experimental" API for DPDK's dynamic mbufs
 $(PIO_OBJ_DIR)/drivers/dpdk/mbuf_rx_prbs.o: OP_CPPFLAGS += -Wno-deprecated-declarations
 $(PIO_OBJ_DIR)/drivers/dpdk/mbuf_signature.o: OP_CPPFLAGS += -Wno-deprecated-declarations
+$(PIO_OBJ_DIR)/drivers/dpdk/mbuf_tx.o: OP_CPPFLAGS += -Wno-deprecated-declarations

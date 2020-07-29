@@ -290,7 +290,8 @@ reply_msg server::handle_request(const request_create_analyzer& request)
     auto& item = m_sinks.emplace_back(sink(config, *rx_ids));
 
     /* Try to add the new sink to the backend workers */
-    auto success = m_client.add_sink(config.source, item);
+    auto success = m_client.add_sink(
+        packetio::packet::traffic_direction::RX, config.source, item);
     if (!success) {
         /*
          * Luckily, we failed adding the last item in the vector,
@@ -318,8 +319,9 @@ reply_msg server::handle_request(const request_create_analyzer& request)
 static void remove_sink(packetio::internal::api::client& client,
                         packetio::packet::generic_sink& to_del)
 {
-    if (auto success =
-            client.del_sink(to_del.template get<sink>().source(), to_del);
+    if (auto success = client.del_sink(packetio::packet::traffic_direction::RX,
+                                       to_del.template get<sink>().source(),
+                                       to_del);
         !success) {
         OP_LOG(OP_LOG_ERROR,
                "Failed to remove analyzer %s from packetio workers!\n",

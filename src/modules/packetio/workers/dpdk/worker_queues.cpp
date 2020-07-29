@@ -4,8 +4,11 @@
 
 namespace openperf::packetio::dpdk::worker {
 
-void port_queues::setup(const std::vector<queue::descriptor>& descriptors)
+void port_queues::setup(std::any fib,
+                        const std::vector<queue::descriptor>& descriptors)
 {
+    m_fib = std::move(fib);
+
     assert(m_queues.empty());
     m_queues.reserve(RTE_MAX_ETHPORTS);
 

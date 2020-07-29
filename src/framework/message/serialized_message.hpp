@@ -35,6 +35,16 @@ struct serialized_message
     }
 };
 
+template <typename T>
+std::enable_if_t<std::is_pointer_v<T>, T>
+front_msg_data(serialized_message& msg)
+{
+    if (msg.parts.empty()) { return (nullptr); }
+
+    auto& front = msg.parts.front();
+    return (reinterpret_cast<T>(zmq_msg_data(&front)));
+}
+
 inline void pop_front(serialized_message& msg)
 {
     auto& front = msg.parts.front();
@@ -83,7 +93,33 @@ auto push(serialized_message& msg, const T* buffer, size_t length)
 
     auto ptr = reinterpret_cast<char*>(zmq_msg_data(&part));
     auto src = reinterpret_cast<const char*>(buffer);
-    std::copy(src, src + length, ptr);
+    std::copy_n(src, length, ptr);
+    return (0);
+}
+
+// Need to use std::string here because other template functions
+// can take precedence when std::string_view is used.
+inline auto push(serialized_message& msg, const std::string& str)
+{
+    return push(msg, str.data(), str.size());
+}
+
+template <typename T>
+std::enable_if_t<std::is_fundamental<T>::value || std::is_enum<T>::value, int>
+push(serialized_message& msg, std::vector<T>& values)
+{
+    auto& part = msg.parts.emplace_back();
+    auto length = sizeof(T) * values.size();
+
+    if (auto error = zmq_msg_init_size(&part, length); error != 0) {
+        msg.parts.pop_back();
+        return (error);
+    }
+
+    // zmq data may not be aligned to type so safer to byte copy
+    auto ptr = reinterpret_cast<char*>(zmq_msg_data(&part));
+    auto src = reinterpret_cast<const char*>(values.data());
+    std::copy_n(src, length, ptr);
     return (0);
 }
 
@@ -136,6 +172,28 @@ inline std::string pop_string(serialized_message& msg)
                            zmq_msg_size(&front));
     pop_front(msg);
     return (str);
+}
+
+template <typename T>
+std::enable_if_t<std::is_fundamental<T>::value || std::is_enum<T>::value,
+                 std::vector<T>>
+pop_vector(serialized_message& msg)
+{
+    if (msg.parts.empty()) { return {}; }
+
+    auto& front = msg.parts.front();
+    auto length = zmq_msg_size(&front);
+    auto size = length / sizeof(T);
+    auto vec = std::vector<T>{};
+    vec.resize(size);
+
+    // zmq data may not be aligned to type so safer to byte copy
+    auto src = reinterpret_cast<const char*>(zmq_msg_data(&front));
+    auto ptr = reinterpret_cast<char*>(vec.data());
+    std::copy_n(src, length, ptr);
+
+    pop_front(msg);
+    return (vec);
 }
 
 template <typename T>

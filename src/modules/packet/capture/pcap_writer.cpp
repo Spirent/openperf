@@ -87,6 +87,7 @@ bool pcap_buffer_writer::write_file_header()
 bool pcap_buffer_writer::write_packet(const capture_packet& packet)
 {
     enhanced_packet_block block_hdr;
+    pcap::enhanced_packet_block_default_options options;
 
     auto timestamp = std::chrono::time_point_cast<std::chrono::nanoseconds>(
                          packet.hdr.timestamp)
@@ -99,29 +100,60 @@ bool pcap_buffer_writer::write_packet(const capture_packet& packet)
     block_hdr.timestamp_low = timestamp;
     block_hdr.captured_len = packet.hdr.captured_len;
     block_hdr.packet_len = packet.hdr.packet_len;
-    block_hdr.block_total_length = pad_block_length(
-        sizeof(block_hdr) + sizeof(uint32_t) + packet.hdr.captured_len);
+    block_hdr.block_total_length =
+        sizeof(block_hdr) + pad_block_length(packet.hdr.captured_len)
+        + sizeof(options) + sizeof(block_hdr.block_total_length);
 
-    return write_packet_block(block_hdr, packet.data);
+    options.flags.hdr.option_code =
+        pcap::enhanced_packet_block_option_type::FLAGS;
+    options.flags.hdr.option_length = 4;
+    options.flags.flags.value = 0;
+    options.opt_end.hdr.option_code =
+        pcap::enhanced_packet_block_option_type::OPT_END;
+    options.opt_end.hdr.option_length = 0;
+    options.flags.flags.set_direction(
+        static_cast<pcap::packet_direction>(packet.hdr.dir));
+
+    return write_packet_block(
+        block_hdr, packet.data, &options, sizeof(options));
 }
 
 bool pcap_buffer_writer::write_packet_block(
-    const enhanced_packet_block& block_hdr, const uint8_t* block_data)
+    const enhanced_packet_block& block_hdr,
+    const uint8_t* block_data,
+    const void* options_data,
+    size_t options_length)
 {
-    uint8_t* ptr = m_buffer.data();
-
     if (block_hdr.block_total_length > get_available_length()) { return false; }
 
-    std::copy_n(reinterpret_cast<const uint8_t*>(&block_hdr),
-                sizeof(block_hdr),
-                ptr + m_buffer_length);
-    std::copy_n(block_data,
-                block_hdr.captured_len,
-                ptr + m_buffer_length + sizeof(block_hdr));
-    m_buffer_length += block_hdr.block_total_length;
+    auto ptr = m_buffer.data() + m_buffer_length;
+    auto pad_len =
+        pad_block_length(block_hdr.captured_len) - block_hdr.captured_len;
+
+    // Copy block header
+    std::copy_n(
+        reinterpret_cast<const uint8_t*>(&block_hdr), sizeof(block_hdr), ptr);
+    ptr += sizeof(block_hdr);
+
+    // Copy packet data
+    std::copy_n(block_data, block_hdr.captured_len, ptr);
+    ptr += block_hdr.captured_len;
+
+    // Skip pad bytes
+    if (pad_len) { ptr += pad_len; }
+
+    // Copy options data
+    std::copy_n(
+        reinterpret_cast<const uint8_t*>(options_data), options_length, ptr);
+    ptr += options_length;
+
+    // Copy block total length trailer
     std::copy_n(reinterpret_cast<const uint8_t*>(&block_hdr.block_total_length),
                 sizeof(block_hdr.block_total_length),
-                ptr + m_buffer_length - sizeof(block_hdr.block_total_length));
+                ptr);
+    ptr += sizeof(block_hdr.block_total_length);
+    m_buffer_length += block_hdr.block_total_length;
+    assert(m_buffer.data() + m_buffer_length == ptr);
     return true;
 }
 

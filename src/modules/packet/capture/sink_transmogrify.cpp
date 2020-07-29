@@ -17,6 +17,7 @@ capture_ptr to_swagger(const sink& src)
 
     dst->setId(src.id());
     dst->setSourceId(src.source());
+    dst->setDirection(to_string(src.direction()));
     dst->setActive(src.active());
 
     auto dst_config =

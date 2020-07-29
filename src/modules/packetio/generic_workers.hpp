@@ -18,6 +18,10 @@ namespace openperf::core {
 class event_loop;
 }
 
+namespace openperf::packetio::packet {
+enum class traffic_direction { NONE, RX, TX, RXTX };
+}
+
 namespace openperf::packetio::workers {
 
 using transmit_function = uint16_t (*)(int id,
@@ -38,16 +42,35 @@ public:
         : m_self(std::make_unique<workers_model<Workers>>(std::move(s)))
     {}
 
+    std::vector<unsigned> get_worker_ids() const
+    {
+        return (m_self->get_worker_ids(packet::traffic_direction::RXTX,
+                                       std::nullopt));
+    }
+
+    std::vector<unsigned>
+    get_worker_ids(packet::traffic_direction direction) const
+    {
+        return (m_self->get_worker_ids(direction, std::nullopt));
+    }
+
+    std::vector<unsigned>
+    get_worker_ids(packet::traffic_direction direction,
+                   std::optional<std::string_view> obj_id) const
+    {
+        return (m_self->get_worker_ids(direction, obj_id));
+    }
+
     std::vector<unsigned> get_rx_worker_ids(
         std::optional<std::string_view> obj_id = std::nullopt) const
     {
-        return (m_self->get_rx_worker_ids(obj_id));
+        return (m_self->get_worker_ids(packet::traffic_direction::RX, obj_id));
     }
 
     std::vector<unsigned> get_tx_worker_ids(
         std::optional<std::string_view> obj_id = std::nullopt) const
     {
-        return (m_self->get_tx_worker_ids(obj_id));
+        return (m_self->get_worker_ids(packet::traffic_direction::TX, obj_id));
     }
 
     transmit_function get_transmit_function(std::string_view port_id) const
@@ -67,15 +90,18 @@ public:
         m_self->del_interface(port_id, interface);
     }
 
-    tl::expected<void, int> add_sink(std::string_view src_id,
+    tl::expected<void, int> add_sink(packet::traffic_direction direction,
+                                     std::string_view src_id,
                                      packet::generic_sink sink)
     {
-        return (m_self->add_sink(src_id, sink));
+        return (m_self->add_sink(direction, src_id, sink));
     }
 
-    void del_sink(std::string_view src_id, packet::generic_sink sink)
+    void del_sink(packet::traffic_direction direction,
+                  std::string_view src_id,
+                  packet::generic_sink sink)
     {
-        m_self->del_sink(src_id, sink);
+        m_self->del_sink(direction, src_id, sink);
     }
 
     tl::expected<void, int> add_source(std::string_view dst_id,
@@ -145,18 +171,20 @@ private:
     {
         virtual ~workers_concept() = default;
         virtual std::vector<unsigned>
-        get_rx_worker_ids(std::optional<std::string_view> obj_id) const = 0;
-        virtual std::vector<unsigned>
-        get_tx_worker_ids(std::optional<std::string_view> obj_id) const = 0;
+        get_worker_ids(packet::traffic_direction direction,
+                       std::optional<std::string_view> obj_id) const = 0;
         virtual transmit_function
         get_transmit_function(std::string_view port_id) const = 0;
         virtual void add_interface(std::string_view port_id,
                                    interface::generic_interface interface) = 0;
         virtual void del_interface(std::string_view port_id,
                                    interface::generic_interface interface) = 0;
-        virtual tl::expected<void, int> add_sink(std::string_view src_id,
-                                                 packet::generic_sink sink) = 0;
-        virtual void del_sink(std::string_view src_id,
+        virtual tl::expected<void, int>
+        add_sink(packet::traffic_direction direction,
+                 std::string_view src_id,
+                 packet::generic_sink sink) = 0;
+        virtual void del_sink(packet::traffic_direction direction,
+                              std::string_view src_id,
                               packet::generic_sink sink) = 0;
         virtual tl::expected<void, int>
         add_source(std::string_view dst_id, packet::generic_source source) = 0;
@@ -184,15 +212,10 @@ private:
         {}
 
         std::vector<unsigned>
-        get_rx_worker_ids(std::optional<std::string_view> obj_id) const override
+        get_worker_ids(packet::traffic_direction direction,
+                       std::optional<std::string_view> obj_id) const override
         {
-            return (m_workers.get_rx_worker_ids(obj_id));
-        }
-
-        std::vector<unsigned>
-        get_tx_worker_ids(std::optional<std::string_view> obj_id) const override
-        {
-            return (m_workers.get_tx_worker_ids(obj_id));
+            return (m_workers.get_worker_ids(direction, obj_id));
         }
 
         transmit_function
@@ -213,16 +236,18 @@ private:
             m_workers.del_interface(port_id, interface);
         }
 
-        tl::expected<void, int> add_sink(std::string_view src_id,
+        tl::expected<void, int> add_sink(packet::traffic_direction direction,
+                                         std::string_view src_id,
                                          packet::generic_sink sink) override
         {
-            return (m_workers.add_sink(src_id, sink));
+            return (m_workers.add_sink(direction, src_id, sink));
         }
 
-        void del_sink(std::string_view src_id,
+        void del_sink(packet::traffic_direction direction,
+                      std::string_view src_id,
                       packet::generic_sink sink) override
         {
-            m_workers.del_sink(src_id, sink);
+            m_workers.del_sink(direction, src_id, sink);
         }
 
         tl::expected<void, int>

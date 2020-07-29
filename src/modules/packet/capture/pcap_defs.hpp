@@ -24,6 +24,13 @@ enum class interface_option_type : uint16_t {
     IF_HARDWARE = 15,
 };
 
+enum class enhanced_packet_block_option_type : uint16_t {
+    OPT_END = 0,
+    FLAGS = 2,
+    HASH = 3,
+    DROPCOUNT = 4,
+};
+
 struct __attribute__((packed)) option_header
 {
     uint16_t option_code;
@@ -33,6 +40,12 @@ struct __attribute__((packed)) option_header
 struct __attribute__((packed)) interface_option_header
 {
     interface_option_type option_code;
+    uint16_t option_length;
+};
+
+struct __attribute__((packed)) enhanced_packet_block_option_header
+{
+    enhanced_packet_block_option_type option_code;
     uint16_t option_length;
 };
 
@@ -104,6 +117,38 @@ struct enhanced_packet_block
     uint32_t timestamp_low;
     uint32_t captured_len;
     uint32_t packet_len;
+} __attribute__((packed));
+
+enum class packet_direction { NONE, INBOUND, OUTBOUND };
+
+struct enhanced_packet_block_flags
+{
+    uint32_t value;
+
+    void set_direction(packet_direction dir)
+    {
+        value = (value & (~0x3)) | static_cast<uint32_t>(dir);
+    }
+
+    packet_direction get_direction() const
+    {
+        return static_cast<packet_direction>(value & 0x3);
+    }
+};
+
+static_assert(sizeof(enhanced_packet_block_flags) == 4);
+
+struct enhanced_packet_block_default_options
+{
+    struct
+    {
+        enhanced_packet_block_option_header hdr;
+        enhanced_packet_block_flags flags;
+    } flags;
+    struct
+    {
+        enhanced_packet_block_option_header hdr;
+    } opt_end;
 } __attribute__((packed));
 
 } // namespace openperf::packet::capture::pcap

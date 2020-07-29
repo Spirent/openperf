@@ -17,6 +17,7 @@ Method | HTTP request | Description
 [**get_packet_capture_live**](PacketCapturesApi.md#get_packet_capture_live) | **GET** /packet/capture-results/{id}/live | Get live capture packet data as a pcap file
 [**get_packet_capture_pcap**](PacketCapturesApi.md#get_packet_capture_pcap) | **GET** /packet/capture-results/{id}/pcap | Get a packet data as a pcap file
 [**get_packet_capture_result**](PacketCapturesApi.md#get_packet_capture_result) | **GET** /packet/capture-results/{id} | Get a packet capture result
+[**get_packet_captures_pcap**](PacketCapturesApi.md#get_packet_captures_pcap) | **POST** /packet/captures/x/merge | Get merged packet data from multiple captures
 [**list_packet_capture_results**](PacketCapturesApi.md#list_packet_capture_results) | **GET** /packet/capture-results | List capture results
 [**list_packet_captures**](PacketCapturesApi.md#list_packet_captures) | **GET** /packet/captures | List packet capture
 [**start_packet_capture**](PacketCapturesApi.md#start_packet_capture) | **POST** /packet/captures/{id}/start | Start packet capture.
@@ -634,6 +635,54 @@ No authorization required
 
  - **Content-Type**: application/json
  - **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **get_packet_captures_pcap**
+> file get_packet_captures_pcap(config)
+
+Get merged packet data from multiple captures
+
+Get merged packet data from multiple captures as a pcap file
+
+### Example
+```python
+from __future__ import print_function
+import time
+import client
+from client.rest import ApiException
+from pprint import pprint
+
+# create an instance of the API class
+api_instance = client.PacketCapturesApi()
+config = client.GetPacketCapturesPcapConfig() # GetPacketCapturesPcapConfig | Packet capture data retrieval configuration
+
+try:
+    # Get merged packet data from multiple captures
+    api_response = api_instance.get_packet_captures_pcap(config)
+    pprint(api_response)
+except ApiException as e:
+    print("Exception when calling PacketCapturesApi->get_packet_captures_pcap: %s\n" % e)
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **config** | [**GetPacketCapturesPcapConfig**](GetPacketCapturesPcapConfig.md)| Packet capture data retrieval configuration | 
+
+### Return type
+
+[**file**](file.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/x-pcapng
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 

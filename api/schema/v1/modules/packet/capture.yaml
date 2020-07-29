@@ -272,6 +272,50 @@ paths:
         204:
           description: No Content
 
+  /captures/x/merge:
+    post:
+      operationId: GetPacketCapturesPcap
+      tags:
+        - PacketCaptures
+      summary: Get merged packet data from multiple captures
+      description: Get merged packet data from multiple captures as a pcap file
+      parameters:
+        - name: config
+          in: body
+          description: Packet capture data retrieval configuration
+          required: true
+          schema:
+            type: object
+            title: GetPacketCapturesPcapConfig
+            description: Parameters for the capture data retrieval
+            properties:
+              ids:
+                type: array
+                description: List of capture results identifiers
+                items:
+                  type: string
+                minItems: 1
+              packet_start:
+                description: The packet offset in the capture buffer to start reading (0 based)
+                type: integer
+                format: int64
+                minimum: 0
+              packet_end:
+                description: The packet offset in the capture buffer to end reading (0 based)
+                type: integer
+                format: int64
+                minimum: 0
+            required:
+              - ids
+      produces:
+        - application/x-pcapng
+      responses:
+        200:
+          description: Success
+          schema:
+            type: file
+            format: binary
+
   /capture-results:
     get:
       operationId: ListPacketCaptureResults
@@ -403,6 +447,14 @@ definitions:
         description: |
           Specifies the unique source of packets for this capture. This
           id may refer to either a port or an interface.
+      direction:
+        type: string
+        description: Packet capture direction
+        enum:
+          - rx
+          - tx
+          - rx_and_tx
+        default: rx
       active:
         type: boolean
         description: |
@@ -412,6 +464,7 @@ definitions:
     required:
       - id
       - source_id
+      - direction
       - active
       - config
 

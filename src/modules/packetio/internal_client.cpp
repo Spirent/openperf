@@ -1,18 +1,24 @@
 #include <cerrno>
 
+#include "message/serialized_message.hpp"
 #include "packetio/internal_api.hpp"
 #include "packetio/internal_client.hpp"
 
 namespace openperf::packetio::internal::api {
 
 static tl::expected<reply_msg, int> do_request(void* socket,
-                                               const request_msg& request)
+                                               request_msg&& request)
 {
-    if (send_message(socket, serialize_request(request)) != 0) {
-        return (tl::make_unexpected(errno));
+    if (auto error = message::send(
+            socket, serialize_request(std::forward<request_msg>(request)));
+        error != 0) {
+        return tl::make_unexpected(error);
     }
 
-    return (recv_message(socket).and_then(deserialize_reply));
+    auto reply = message::recv(socket).and_then(deserialize_reply);
+    if (!reply) { return (tl::make_unexpected(reply.error())); }
+
+    return (std::move(*reply));
 }
 
 client::client(void* context)
@@ -29,31 +35,44 @@ client& client::operator=(client&& other) noexcept
     return (*this);
 }
 
-tl::expected<std::vector<unsigned>, int>
-client::get_worker_rx_ids(std::optional<std::string_view> obj_id)
+tl::expected<std::vector<unsigned>, int> client::get_worker_ids()
 {
-    auto request = request_worker_rx_ids{};
+    return get_worker_ids(packet::traffic_direction::RXTX, std::nullopt);
+}
+
+tl::expected<std::vector<unsigned>, int>
+client::get_worker_ids(packet::traffic_direction direction)
+{
+    return get_worker_ids(direction, std::nullopt);
+}
+
+tl::expected<std::vector<unsigned>, int>
+client::get_worker_ids(packet::traffic_direction direction,
+                       std::optional<std::string_view> obj_id)
+{
+    auto request = request_worker_ids{.direction = direction};
     if (obj_id) { request.object_id = std::string(*obj_id); }
 
     auto reply = do_request(m_socket.get(), request);
     if (!reply) { return (tl::make_unexpected(reply.error())); }
 
     return (std::get<reply_worker_ids>(reply.value()).worker_ids);
+}
+
+tl::expected<std::vector<unsigned>, int>
+client::get_worker_rx_ids(std::optional<std::string_view> obj_id)
+{
+    return get_worker_ids(packet::traffic_direction::RX, obj_id);
 }
 
 tl::expected<std::vector<unsigned>, int>
 client::get_worker_tx_ids(std::optional<std::string_view> obj_id)
 {
-    auto request = request_worker_tx_ids{};
-    if (obj_id) { request.object_id = std::string(*obj_id); }
-
-    auto reply = do_request(m_socket.get(), request);
-    if (!reply) { return (tl::make_unexpected(reply.error())); }
-
-    return (std::get<reply_worker_ids>(reply.value()).worker_ids);
+    return get_worker_ids(packet::traffic_direction::TX, obj_id);
 }
 
-tl::expected<void, int> client::add_sink(std::string_view src_id,
+tl::expected<void, int> client::add_sink(packet::traffic_direction direction,
+                                         std::string_view src_id,
                                          packet::generic_sink sink)
 {
     if (src_id.length() > name_length_max) {
@@ -64,7 +83,8 @@ tl::expected<void, int> client::add_sink(std::string_view src_id,
         return (tl::make_unexpected(ENOMEM));
     }
 
-    auto request = request_sink_add{.data = {.sink = std::move(sink)}};
+    auto request = request_sink_add{
+        .data = {.direction = direction, .sink = std::move(sink)}};
     std::copy_n(src_id.data(), src_id.length(), request.data.src_id);
 
     auto reply = do_request(m_socket.get(), request);
@@ -79,7 +99,8 @@ tl::expected<void, int> client::add_sink(std::string_view src_id,
     return (tl::make_unexpected(EBADMSG));
 }
 
-tl::expected<void, int> client::del_sink(std::string_view src_id,
+tl::expected<void, int> client::del_sink(packet::traffic_direction direction,
+                                         std::string_view src_id,
                                          packet::generic_sink sink)
 {
     if (src_id.length() > name_length_max) {
@@ -90,7 +111,8 @@ tl::expected<void, int> client::del_sink(std::string_view src_id,
         return (tl::make_unexpected(ENOMEM));
     }
 
-    auto request = request_sink_del{.data = {.sink = std::move(sink)}};
+    auto request = request_sink_del{
+        .data = {.direction = direction, .sink = std::move(sink)}};
     std::copy_n(src_id.data(), src_id.length(), request.data.src_id);
 
     auto reply = do_request(m_socket.get(), request);

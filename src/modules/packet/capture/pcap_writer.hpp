@@ -21,7 +21,9 @@ public:
     bool write_packet(const capture_packet& packet);
 
     bool write_packet_block(const enhanced_packet_block& block_hdr,
-                            const uint8_t* block_data);
+                            const uint8_t* block_data,
+                            const void* options_data,
+                            size_t options_length);
 
     bool write_file_trailer() { return true; }
 
@@ -44,8 +46,10 @@ public:
         }
         static size_t packet_length(size_t captured_len)
         {
-            return pad_block_length(sizeof(enhanced_packet_block)
-                                    + sizeof(uint32_t) + captured_len);
+            return (sizeof(enhanced_packet_block)
+                    + pad_block_length(captured_len)
+                    + sizeof(enhanced_packet_block_default_options)
+                    + sizeof(uint32_t));
         }
         static size_t file_trailer_length() { return 0; }
     };

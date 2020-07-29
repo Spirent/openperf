@@ -18,6 +18,7 @@
 #include "packetio/drivers/dpdk/port/signature_decoder.hpp"
 #include "packetio/drivers/dpdk/port/signature_encoder.hpp"
 #include "packetio/drivers/dpdk/port/timestamper.hpp"
+#include "packetio/drivers/dpdk/port/tx_sink.hpp"
 #include "packetio/workers/dpdk/port_feature_controller.hpp"
 #include "packetio/workers/dpdk/tx_scheduler.hpp"
 #include "packetio/workers/dpdk/worker_api.hpp"
@@ -47,9 +48,8 @@ public:
     worker_controller(const worker_controller&) = delete;
     worker_controller& operator=(const worker_controller&&) = delete;
 
-    std::vector<unsigned> get_rx_worker_ids(
-        std::optional<std::string_view> obj_id = std::nullopt) const;
-    std::vector<unsigned> get_tx_worker_ids(
+    std::vector<unsigned> get_worker_ids(
+        packet::traffic_direction direction = packet::traffic_direction::RXTX,
         std::optional<std::string_view> obj_id = std::nullopt) const;
 
     workers::transmit_function
@@ -60,9 +60,12 @@ public:
     void del_interface(std::string_view port_id,
                        const interface::generic_interface& interface);
 
-    tl::expected<void, int> add_sink(std::string_view src_id,
-                                     packet::generic_sink sink);
-    void del_sink(std::string_view src_id, packet::generic_sink sink);
+    tl::expected<void, int> add_sink(packet::traffic_direction direction,
+                                     std::string_view src_id,
+                                     const packet::generic_sink& sink);
+    void del_sink(packet::traffic_direction direction,
+                  std::string_view src_id,
+                  const packet::generic_sink& sink);
 
     tl::expected<void, int> add_source(std::string_view dst_id,
                                        packet::generic_source source);
@@ -102,7 +105,8 @@ public:
                                 port::packet_type_decoder,
                                 port::rss_hasher,
                                 port::signature_decoder,
-                                port::prbs_error_detector>;
+                                port::prbs_error_detector,
+                                port::tx_sink>;
     using source_feature_controller =
         source_feature_controller<port::signature_encoder>;
 

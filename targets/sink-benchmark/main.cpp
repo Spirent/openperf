@@ -80,7 +80,7 @@ public:
     bool active() const { return m_active; }
 
     bool uses_feature([
-        [maybe_unused]] openperf::packetio::packets::sink_feature_flags
+        [maybe_unused]] openperf::packetio::packet::sink_feature_flags
                           sink_feature_flags) const
     {
         return false;
@@ -98,7 +98,7 @@ public:
     }
 
     uint16_t
-    push(const openperf::packetio::packets::packet_buffer* const packets[],
+    push(const openperf::packetio::packet::packet_buffer* const packets[],
          uint16_t count) const
     {
         using namespace openperf::packetio;
@@ -109,7 +109,7 @@ public:
 #if 0
         auto octets = std::accumulate(packets, packets + count, 0UL,
                                       [](auto& sum, auto& packet) {
-                                          return (sum + packets::length(packet) + 24);
+                                          return (sum + packet::length(packet) + 24);
                                       });
         data.counter.add(count, octets);
 #endif
@@ -124,7 +124,7 @@ public:
 #endif
             if (mbuf->packet_type & RTE_PTYPE_L4_UDP) {
                 udp_packets++;
-                udp_octets += packets::length(packet) + 24;
+                udp_octets += packet::length(packet) + 24;
             }
         });
 
@@ -247,7 +247,7 @@ log_counter_totals(const counter_sums& total, rusage& start, rusage& stop)
  * Analyzer creation/deltion code
  ***/
 
-using sink_data_pair = std::pair<openperf::packetio::packets::generic_sink,
+using sink_data_pair = std::pair<openperf::packetio::packet::generic_sink,
                                  std::vector<packet_counter*>>;
 
 sink_data_pair create_sink(void* context, std::string_view port_id)
@@ -255,10 +255,11 @@ sink_data_pair create_sink(void* context, std::string_view port_id)
     auto client = openperf::packetio::internal::api::client(context);
 
     auto rx_ids = client.get_worker_rx_ids(port_id);
-    auto sink = openperf::packetio::packets::generic_sink(
+    auto sink = openperf::packetio::packet::generic_sink(
         test_sink(openperf::core::uuid::random(), *rx_ids));
     auto counters = sink.get<test_sink>().counters();
-    auto success = client.add_sink(port_id, sink);
+    auto success = client.add_sink(
+        openperf::packetio::packet::traffic_direction::RX, port_id, sink);
     if (!success) {
         throw std::runtime_error("Could not add sink to " + std::string(port_id)
                                  + ".  Does that port exist?");
@@ -269,10 +270,11 @@ sink_data_pair create_sink(void* context, std::string_view port_id)
 
 void delete_sink(void* context,
                  std::string_view port_id,
-                 openperf::packetio::packets::generic_sink& sink)
+                 openperf::packetio::packet::generic_sink& sink)
 {
     auto client = openperf::packetio::internal::api::client(context);
-    client.del_sink(port_id, sink);
+    client.del_sink(
+        openperf::packetio::packet::traffic_direction::RX, port_id, sink);
 }
 
 /***

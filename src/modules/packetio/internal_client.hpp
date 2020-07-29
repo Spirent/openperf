@@ -38,14 +38,22 @@ public:
     client(client&& other) noexcept;
     client& operator=(client&& other) noexcept;
 
+    tl::expected<std::vector<unsigned>, int> get_worker_ids();
+    tl::expected<std::vector<unsigned>, int>
+    get_worker_ids(packet::traffic_direction direction);
+    tl::expected<std::vector<unsigned>, int>
+    get_worker_ids(packet::traffic_direction direction,
+                   std::optional<std::string_view> obj_id);
     tl::expected<std::vector<unsigned>, int>
     get_worker_rx_ids(std::optional<std::string_view> obj_id = std::nullopt);
     tl::expected<std::vector<unsigned>, int>
     get_worker_tx_ids(std::optional<std::string_view> obj_id = std::nullopt);
 
-    tl::expected<void, int> add_sink(std::string_view src_id,
+    tl::expected<void, int> add_sink(packet::traffic_direction direction,
+                                     std::string_view src_id,
                                      packet::generic_sink sink);
-    tl::expected<void, int> del_sink(std::string_view src_id,
+    tl::expected<void, int> del_sink(packet::traffic_direction direction,
+                                     std::string_view src_id,
                                      packet::generic_sink sink);
 
     tl::expected<void, int> add_source(std::string_view dst_id,

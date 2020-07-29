@@ -71,14 +71,11 @@ serialized_msg serialize_request(request_msg&& msg)
                          serialized, request.id.data(), request.id.length()));
                  },
                  [&](request_create_capture_transfer& request) -> int {
-                     return (message::push(serialized,
-                                           request.id.data(),
-                                           request.id.length())
+                     return (message::push(serialized, request.ids)
                              || message::push(serialized, request.transfer));
                  },
                  [&](const request_delete_capture_transfer& request) {
-                     return (message::push(
-                         serialized, request.id.data(), request.id.length()));
+                     return (message::push(serialized, request.transfer));
                  }),
              msg));
     if (error) { throw std::bad_alloc(); }
@@ -171,12 +168,14 @@ tl::expected<request_msg, int> deserialize_request(serialized_msg&& msg)
     }
     case utils::variant_index<request_msg, request_create_capture_transfer>(): {
         auto request = request_create_capture_transfer{
-            .id = message::pop_string(msg),
+            .ids = message::pop_unique_vector<std::string>(msg),
             .transfer = message::pop<transfer_context*>(msg)};
         return (request);
     }
     case utils::variant_index<request_msg, request_delete_capture_transfer>(): {
-        return (request_delete_capture_transfer{message::pop_string(msg)});
+        auto request = request_delete_capture_transfer{
+            .transfer = message::pop<transfer_context*>(msg)};
+        return (request);
     }
     }
 
@@ -225,6 +224,10 @@ void from_json(const nlohmann::json& j, PacketCapture& capture)
 
     if (j.find("source_id") != j.end() && !j["source_id"].is_null()) {
         capture.setSourceId(j["source_id"]);
+    }
+
+    if (j.find("direction") != j.end() && !j["direction"].is_null()) {
+        capture.setDirection(j["direction"]);
     }
 
     if (j.find("active") != j.end() && !j["active"].is_null()) {

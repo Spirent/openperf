@@ -60,6 +60,11 @@ public:
     std::string getSourceId() const;
     void setSourceId(std::string value);
         /// <summary>
+    /// Packet capture direction
+    /// </summary>
+    std::string getDirection() const;
+    void setDirection(std::string value);
+        /// <summary>
     /// Indicates whether this object is currently capturing packets or not. 
     /// </summary>
     bool isActive() const;
@@ -74,6 +79,8 @@ protected:
     std::string m_Id;
 
     std::string m_Source_id;
+
+    std::string m_Direction;
 
     bool m_Active;
 

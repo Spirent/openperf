@@ -33,6 +33,7 @@ class PacketCapture(object):
     swagger_types = {
         'id': 'str',
         'source_id': 'str',
+        'direction': 'str',
         'active': 'bool',
         'config': 'PacketCaptureConfig'
     }
@@ -40,21 +41,24 @@ class PacketCapture(object):
     attribute_map = {
         'id': 'id',
         'source_id': 'source_id',
+        'direction': 'direction',
         'active': 'active',
         'config': 'config'
     }
 
-    def __init__(self, id=None, source_id=None, active=None, config=None):  # noqa: E501
+    def __init__(self, id=None, source_id=None, direction='rx', active=None, config=None):  # noqa: E501
         """PacketCapture - a model defined in Swagger"""  # noqa: E501
 
         self._id = None
         self._source_id = None
+        self._direction = None
         self._active = None
         self._config = None
         self.discriminator = None
 
         self.id = id
         self.source_id = source_id
+        self.direction = direction
         self.active = active
         self.config = config
 
@@ -101,6 +105,28 @@ class PacketCapture(object):
         :type: str
         """
         self._source_id = source_id
+
+    @property
+    def direction(self):
+        """Gets the direction of this PacketCapture.  # noqa: E501
+
+        Packet capture direction  # noqa: E501
+
+        :return: The direction of this PacketCapture.  # noqa: E501
+        :rtype: str
+        """
+        return self._direction
+
+    @direction.setter
+    def direction(self, direction):
+        """Sets the direction of this PacketCapture.
+
+        Packet capture direction  # noqa: E501
+
+        :param direction: The direction of this PacketCapture.  # noqa: E501
+        :type: str
+        """
+        self._direction = direction
 
     @property
     def active(self):

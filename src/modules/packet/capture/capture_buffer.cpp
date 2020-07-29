@@ -108,6 +108,9 @@ fill_capture_packet_hdr(capture_packet_hdr& hdr,
     hdr.timestamp = openperf::packetio::packet::rx_timestamp(packet);
     hdr.packet_len = openperf::packetio::packet::length(packet);
     hdr.captured_len = std::min(hdr.packet_len, max_packet_size);
+    hdr.flags = 0;
+    // RX = 1, TX = 2
+    hdr.dir = 1 << openperf::packetio::packet::tx_sink(packet);
 }
 
 uint16_t capture_buffer_mem::write_packets(
@@ -298,7 +301,7 @@ void capture_buffer_mem_wrap::make_space_if_needed(size_t required_size)
             // Reached end of buffer
             assert(p < m_end_addr);
             available_size += (m_end_addr - p);
-            assert(available_size > required_size);
+            assert(available_size >= required_size);
             p = m_start_addr;
             break;
         }
@@ -562,6 +565,15 @@ uint16_t capture_buffer_file::write_packets(
     block_hdr.block_type = pcap::block_type::ENHANCED_PACKET;
     block_hdr.interface_id = 0;
 
+    pcap::enhanced_packet_block_default_options options;
+    options.flags.hdr.option_code =
+        pcap::enhanced_packet_block_option_type::FLAGS;
+    options.flags.hdr.option_length = 4;
+    options.flags.flags.value = 0;
+    options.opt_end.hdr.option_code =
+        pcap::enhanced_packet_block_option_type::OPT_END;
+    options.opt_end.hdr.option_length = 0;
+
     if (m_full) { return 0; }
     for (uint16_t i = 0; i < packets_length; ++i) {
         auto packet = packets[i];
@@ -581,10 +593,15 @@ uint16_t capture_buffer_file::write_packets(
         block_hdr.timestamp_high = (ts >> 32);
         block_hdr.timestamp_low = ts;
 
-        auto unpadded_block_length =
-            sizeof(block_hdr) + block_hdr.captured_len + sizeof(uint32_t);
-        auto block_length = pcap::pad_block_length(unpadded_block_length);
-        auto pad_length = block_length - unpadded_block_length;
+        if (openperf::packetio::packet::tx_sink(packet))
+            options.flags.flags.set_direction(pcap::packet_direction::OUTBOUND);
+        else
+            options.flags.flags.set_direction(pcap::packet_direction::INBOUND);
+
+        auto pad_length = pcap::pad_block_length(block_hdr.captured_len)
+                          - block_hdr.captured_len;
+        auto block_length = sizeof(block_hdr) + block_hdr.captured_len
+                            + pad_length + sizeof(options) + sizeof(uint32_t);
 
         block_hdr.block_total_length = block_length;
 
@@ -610,6 +627,12 @@ uint16_t capture_buffer_file::write_packets(
                 m_full = true;
                 return i;
             }
+        }
+        if (fwrite(&options, sizeof(options), 1, m_fp_write) != 1) {
+            OP_LOG(OP_LOG_ERROR,
+                   "Failed writing enhanced packet block data options");
+            m_full = true;
+            return i;
         }
         if (fwrite(&block_hdr.block_total_length,
                    sizeof(block_hdr.block_total_length),
@@ -734,6 +757,8 @@ uint16_t capture_buffer_file_reader::read_packets(capture_packet* packets[],
 
     uint8_t* data_ptr = &m_packet_data[0];
     pcap::enhanced_packet_block block_hdr;
+    pcap::enhanced_packet_block_default_options options;
+
     uint16_t i = 0;
     while (i < count) {
         if (fread(&block_hdr, sizeof(block_hdr), 1, m_fp_read) != 1) {
@@ -769,44 +794,60 @@ uint16_t capture_buffer_file_reader::read_packets(capture_packet* packets[],
         m_packets[i].hdr.captured_len = block_hdr.captured_len;
         m_packets[i].hdr.packet_len = block_hdr.packet_len;
         m_packets[i].data = data_ptr;
+        m_packets[i].hdr.flags = 0;
 
-        if (block_remain < MAX_PACKET_SIZE) {
-            // Read the packet data and trailing size  if there is enough space
-            if (fread(data_ptr, block_remain, 1, m_fp_read) != 1) {
-                OP_LOG(OP_LOG_ERROR,
-                       "Failed reading PCAP enhanced packet block data %zu",
-                       block_remain);
-                m_eof = true;
-                break;
-            }
-            m_read_offset += block_remain;
-        } else {
-            // Data is too large to all fit in the buffer so read as much as
-            // possible and skip over the rest
-            if (block_hdr.captured_len > MAX_PACKET_SIZE) {
-                // Not an error when just skipping trailing size bytes
-                OP_LOG(OP_LOG_ERROR,
-                       "Unexepcted PCAP block too large %" PRIu32,
-                       block_hdr.block_total_length);
-                block_hdr.captured_len = MAX_PACKET_SIZE;
-            }
-            if (fread(data_ptr, MAX_PACKET_SIZE, 1, m_fp_read) != 1) {
-                OP_LOG(OP_LOG_ERROR,
-                       "Failed reading PCAP enhanced packet block data %zu",
-                       MAX_PACKET_SIZE);
-                m_eof = true;
-                break;
-            }
-            m_read_offset += MAX_PACKET_SIZE;
-            block_remain -= MAX_PACKET_SIZE;
-            if (fseek(m_fp_read, block_remain, SEEK_CUR) != 0) {
+        size_t pad_length = pcap::pad_block_length(block_hdr.captured_len)
+                            - block_hdr.captured_len;
+
+        // Data is too large to all fit in the buffer so read as much as
+        // possible and skip over the rest
+        if (block_hdr.captured_len > MAX_PACKET_SIZE) {
+            // Not an error when just skipping trailing size bytes
+            OP_LOG(OP_LOG_ERROR,
+                   "Unexepcted PCAP block too large %" PRIu32,
+                   block_hdr.block_total_length);
+            block_hdr.captured_len = MAX_PACKET_SIZE;
+        }
+        if (fread(data_ptr, block_hdr.captured_len, 1, m_fp_read) != 1) {
+            OP_LOG(OP_LOG_ERROR,
+                   "Failed reading PCAP enhanced packet block data %" PRIu32,
+                   block_hdr.captured_len);
+            m_eof = true;
+            break;
+        }
+        m_read_offset += block_hdr.captured_len;
+        block_remain -= block_hdr.captured_len;
+        if (pad_length) {
+            if (fseek(m_fp_read, pad_length, SEEK_CUR) != 0) {
                 OP_LOG(OP_LOG_ERROR,
                        "Failed skipping PCAP enhanced packet block data %zu",
+                       pad_length);
+                m_eof = true;
+                break;
+            }
+            m_read_offset += pad_length;
+            block_remain -= pad_length;
+        }
+
+        if (block_remain == sizeof(options)) {
+            if (fread(&options, sizeof(options), 1, m_fp_read) != 1) {
+                OP_LOG(OP_LOG_ERROR,
+                       "Failed reading PCAP enhanced packet block options %zu",
+                       sizeof(options));
+                m_eof = true;
+                break;
+            }
+            m_packets[i].hdr.dir =
+                static_cast<int>(options.flags.flags.get_direction());
+        } else {
+            if (fseek(m_fp_read, block_remain, SEEK_CUR) != 0) {
+                OP_LOG(OP_LOG_ERROR,
+                       "Failed skipping PCAP enhanced packet block remaining "
+                       "data %zu",
                        block_remain);
                 m_eof = true;
                 break;
             }
-            m_read_offset += block_remain;
         }
         data_ptr += pad_capture_data_len(block_hdr.captured_len);
         packets[i] = &m_packets[i];

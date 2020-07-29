@@ -309,6 +309,7 @@ private:
     bool write_packet(const capture_packet& packet)
     {
         enhanced_packet_block block_hdr;
+        pcap::enhanced_packet_block_default_options options;
 
         auto timestamp = std::chrono::time_point_cast<std::chrono::nanoseconds>(
                              packet.hdr.timestamp)
@@ -321,8 +322,19 @@ private:
         block_hdr.timestamp_low = timestamp;
         block_hdr.captured_len = packet.hdr.captured_len;
         block_hdr.packet_len = packet.hdr.packet_len;
-        block_hdr.block_total_length = pad_block_length(
-            sizeof(block_hdr) + sizeof(uint32_t) + packet.hdr.captured_len);
+        block_hdr.block_total_length =
+            sizeof(block_hdr) + pad_block_length(packet.hdr.captured_len)
+            + sizeof(options) + sizeof(block_hdr.block_total_length);
+
+        options.flags.hdr.option_code =
+            pcap::enhanced_packet_block_option_type::FLAGS;
+        options.flags.hdr.option_length = 4;
+        options.flags.flags.value = 0;
+        options.opt_end.hdr.option_code =
+            pcap::enhanced_packet_block_option_type::OPT_END;
+        options.opt_end.hdr.option_length = 0;
+        options.flags.flags.set_direction(
+            static_cast<pcap::packet_direction>(packet.hdr.dir));
 
         if (block_hdr.block_total_length > m_writer->get_available_length()) {
             if (!flush()) { return false; }
@@ -333,10 +345,13 @@ private:
                     reinterpret_cast<uint8_t*>(&block_hdr),
                     sizeof(block_hdr),
                     packet.data,
-                    packet.hdr.captured_len);
+                    packet.hdr.captured_len,
+                    &options,
+                    sizeof(options));
             }
         }
-        return m_writer->write_packet_block(block_hdr, packet.data);
+        return m_writer->write_packet_block(
+            block_hdr, packet.data, &options, sizeof(options));
     }
 
     bool write_chunk_end()
@@ -410,13 +425,16 @@ private:
         return false;
     }
 
-    bool send_header_and_data(const uint8_t* hdr,
+    bool send_header_and_data(const void* hdr,
                               size_t hdr_len,
-                              const uint8_t* data,
-                              size_t data_len)
+                              const void* data,
+                              size_t data_len,
+                              const void* options,
+                              size_t options_len)
     {
-        uint32_t total_block_len = pad_block_length(hdr_len + data_len);
-        auto pad_len = (total_block_len - hdr_len - data_len);
+        auto pad_len = pad_block_length(data_len) - data_len;
+        uint32_t total_block_len = hdr_len + pad_block_length(data_len)
+                                   + pad_len + options_len + sizeof(uint32_t);
 
         if (m_chunked) {
             auto chunk_header_str = get_chunk_header_str(total_block_len);
@@ -430,13 +448,13 @@ private:
             }
         }
 
-        if (send_to_peer_timeout(*m_peer, (void*)hdr, hdr_len, MSG_MORE)
+        if (send_to_peer_timeout(*m_peer, hdr, hdr_len, MSG_MORE)
             != (ssize_t)hdr_len) {
             m_error = true;
             return false;
         }
         m_total_bytes_sent += hdr_len;
-        if (send_to_peer_timeout(*m_peer, (void*)data, data_len, 0)
+        if (send_to_peer_timeout(*m_peer, data, data_len, 0)
             != (ssize_t)data_len) {
             m_error = true;
             return false;
@@ -444,7 +462,15 @@ private:
         m_total_bytes_sent += data_len;
         if (pad_len) {
             uint64_t pad = 0;
-            if (send_to_peer_timeout(*m_peer, (void*)&pad, pad_len, MSG_MORE)
+            if (send_to_peer_timeout(*m_peer, &pad, pad_len, MSG_MORE)
+                != (ssize_t)pad_len) {
+                m_error = true;
+                return false;
+            }
+            m_total_bytes_sent += pad_len;
+        }
+        if (options_len) {
+            if (send_to_peer_timeout(*m_peer, options, options_len, MSG_MORE)
                 != (ssize_t)pad_len) {
                 m_error = true;
                 return false;
@@ -452,7 +478,7 @@ private:
             m_total_bytes_sent += pad_len;
         }
         if (send_to_peer_timeout(
-                *m_peer, (void*)&total_block_len, sizeof(total_block_len), 0)
+                *m_peer, &total_block_len, sizeof(total_block_len), 0)
             != (ssize_t)sizeof(total_block_len)) {
             m_error = true;
             return false;
