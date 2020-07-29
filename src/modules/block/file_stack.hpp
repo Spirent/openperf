@@ -11,8 +11,8 @@
 namespace openperf::block::file {
 
 class file
-    : public model::file
-    , public virtual_device
+    : public virtual_device
+    , public model::file
 {
 private:
     void scrub_update(double) override;
@@ -20,12 +20,15 @@ private:
 
 public:
     file(const model::file& f);
-    ~file();
+    ~file() override;
 
     tl::expected<virtual_device_descriptors, int> vopen() override;
     void vclose() override;
-    uint64_t get_size() const override;
-    std::string get_path() const override;
+
+    uint64_t size() const override { return model::file::size(); };
+    std::string path() const override { return model::file::path(); };
+    void size(uint64_t size) override { model::file::size(size); };
+    void path(std::string_view path) override { model::file::path(path); };
 };
 
 using block_file_ptr = std::shared_ptr<file>;

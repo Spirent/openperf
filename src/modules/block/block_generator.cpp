@@ -136,12 +136,12 @@ task_config_t block_generator::generate_worker_config(
     auto block_size = (p_operation == task_operation::READ)
                           ? p_config.read_size
                           : p_config.write_size;
-    if (static_cast<uint64_t>(block_size) + m_vdev->get_header_size()
-        > m_vdev->get_size())
+    if (static_cast<uint64_t>(block_size) + m_vdev->header_size()
+        > m_vdev->size())
         throw std::runtime_error(
             "Cannot use resource: resource size is too small");
 
-    auto fd = m_vdev->get_fd();
+    auto fd = m_vdev->fd();
     assert(fd);
 
     task_config_t w_config;
@@ -154,8 +154,8 @@ task_config_t block_generator::generate_worker_config(
     w_config.pattern = p_config.pattern;
     w_config.fd = (p_operation == task_operation::READ) ? fd.value().read
                                                         : fd.value().write;
-    w_config.f_size = m_vdev->get_size();
-    w_config.header_size = m_vdev->get_header_size();
+    w_config.f_size = m_vdev->size();
+    w_config.header_size = m_vdev->header_size();
     if (p_config.ratio) {
         w_config.synchronizer = &m_synchronizer;
         m_synchronizer.ratio_reads.store(p_config.ratio.value().reads,

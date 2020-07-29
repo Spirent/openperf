@@ -71,12 +71,12 @@ reply_msg server::handle_request(const request_block_file& request)
 reply_msg server::handle_request(const request_block_file_add& request)
 {
     // If user did not specify an id create one for them.
-    if (request.source->get_id().empty()) {
-        request.source->set_id(core::to_string(core::uuid::random()));
+    if (request.source->id().empty()) {
+        request.source->id(core::to_string(core::uuid::random()));
     }
 
     if (auto id_check =
-            config::op_config_validate_id_string(request.source->get_id());
+            config::op_config_validate_id_string(request.source->id());
         !id_check)
         return (to_error(error_type::CUSTOM_ERROR, 0, "Id is not valid"));
 
@@ -115,18 +115,17 @@ reply_msg server::handle_request(const request_block_file_bulk_add& request)
     auto remove_created_items = [&]() -> auto
     {
         for (const auto& item : reply.files) {
-            m_file_stack->delete_block_file(item->get_id());
+            m_file_stack->delete_block_file(item->id());
         }
     };
 
     for (const auto& source : request.files) {
         // If user did not specify an id create one for them.
-        if (source->get_id().empty()) {
-            source->set_id(core::to_string(core::uuid::random()));
+        if (source->id().empty()) {
+            source->id(core::to_string(core::uuid::random()));
         }
 
-        if (auto id_check =
-                config::op_config_validate_id_string(source->get_id());
+        if (auto id_check = config::op_config_validate_id_string(source->id());
             !id_check) {
             remove_created_items();
             return (to_error(error_type::CUSTOM_ERROR, 0, "Id is not valid"));

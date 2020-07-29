@@ -18,10 +18,10 @@ device::~device() { terminate_scrub(); }
 tl::expected<virtual_device_descriptors, int> device::vopen()
 {
     if (m_write_fd < 0)
-        m_write_fd = open(
-            get_path().c_str(), O_RDWR | O_CREAT | O_DSYNC, S_IRUSR | S_IWUSR);
+        m_write_fd =
+            open(m_path.c_str(), O_RDWR | O_CREAT | O_DSYNC, S_IRUSR | S_IWUSR);
     if (m_read_fd < 0)
-        m_read_fd = open(get_path().c_str(), O_RDONLY, S_IRUSR | S_IWUSR);
+        m_read_fd = open(m_path.c_str(), O_RDONLY, S_IRUSR | S_IWUSR);
 
     if (m_read_fd < 0 || m_write_fd < 0) {
         vclose();
@@ -37,7 +37,7 @@ void device::vclose()
         if (close(fd) < 0) {
             OP_LOG(OP_LOG_ERROR,
                    "Cannot close file %s: %s",
-                   get_path().c_str(),
+                   m_path.c_str(),
                    strerror(errno));
         }
     };
@@ -49,19 +49,15 @@ void device::vclose()
     m_write_fd = -1;
 }
 
-uint64_t device::get_size() const { return model::device::get_size(); }
-
-std::string device::get_path() const { return model::device::get_path(); }
-
 void device::scrub_done()
 {
-    set_state(model::device::state_t::READY);
-    set_init_percent_complete(100);
+    m_state = model::device::state_t::READY;
+    m_init_percent = 100;
 }
 
 void device::scrub_update(double p)
 {
-    set_init_percent_complete(static_cast<int32_t>(100 * p));
+    m_init_percent = static_cast<int32_t>(100 * p);
 }
 
 tl::expected<void, std::string> device::initialize()
@@ -69,17 +65,17 @@ tl::expected<void, std::string> device::initialize()
     if (!is_usable())
         return tl::make_unexpected("Cannot initialize unusable device");
 
-    if (get_size() <= sizeof(virtual_device_header))
+    if (m_size <= sizeof(virtual_device_header))
         return tl::make_unexpected(
             "Device size less than header size ("
             + std::to_string(sizeof(virtual_device_header)) + " bytes)");
 
-    if (get_state() != state_t::UNINIT)
+    if (m_state != state_t::UNINIT)
         return tl::make_unexpected("Device is already initialized");
 
     if (auto res = queue_scrub(); !res) return res;
 
-    if (get_state() == state_t::UNINIT) set_state(state_t::INIT);
+    if (m_state == state_t::UNINIT) m_state = state_t::INIT;
     return {};
 }
 
@@ -106,19 +102,21 @@ void device_stack::init_device_stack()
         if (!is_raw_device(entry->d_name)) continue;
 
         auto blkdev = std::make_shared<device>();
-        blkdev->set_id(core::to_string(core::uuid::random()));
-        blkdev->set_path(std::string(device_dir) + "/"
-                         + std::string(entry->d_name));
-        if (const auto size = get_block_device_size(entry->d_name)) {
-            blkdev->set_size(size);
-            blkdev->set_usable(true);
-        } else {
-            blkdev->set_usable(false);
-        }
-        blkdev->set_state(device::state_t::UNINIT);
-        blkdev->set_init_percent_complete(0);
+        blkdev->id(core::to_string(core::uuid::random()));
+        blkdev->path(std::string(device_dir) + "/"
+                     + std::string(entry->d_name));
 
-        m_block_devices.emplace(blkdev->get_id(), blkdev);
+        if (auto size = get_block_device_size(entry->d_name)) {
+            blkdev->size(size);
+            blkdev->usable(true);
+        } else {
+            blkdev->usable(false);
+        }
+
+        blkdev->state(device::state_t::UNINIT);
+        blkdev->init_percent_complete(0);
+
+        m_block_devices.emplace(blkdev->id(), blkdev);
     }
 
     closedir(dir);

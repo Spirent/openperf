@@ -44,11 +44,11 @@ public:
 
     virtual tl::expected<virtual_device_descriptors, int> vopen() = 0;
     virtual void vclose() = 0;
-    virtual uint64_t get_size() const = 0;
-    virtual std::string get_path() const = 0;
+    virtual uint64_t size() const = 0;
+    virtual std::string path() const = 0;
 
-    virtual uint64_t get_header_size() const;
-    std::optional<virtual_device_descriptors> get_fd() const;
+    virtual uint64_t header_size() const;
+    std::optional<virtual_device_descriptors> fd() const;
 
     void terminate_scrub();
     tl::expected<void, std::string> queue_scrub();

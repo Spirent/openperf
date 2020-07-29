@@ -32,21 +32,19 @@ public:
         , m_path(other.m_path)
         , m_state(other.m_state.load())
     {}
+    virtual ~file() = default;
 
-    std::string get_id() const { return m_id; }
-    void set_id(std::string_view value) { m_id = value; }
+    virtual void id(std::string_view value) { m_id = value; }
+    virtual void size(uint64_t value) { m_size = value; }
+    virtual void init_percent_complete(int32_t p) { m_init_percent = p; }
+    virtual void path(std::string_view value) { m_path = value; }
+    virtual void state(state_t value) { m_state = value; }
 
-    uint64_t get_size() const { return m_size; }
-    void set_size(uint64_t value) { m_size = value; }
-
-    int32_t get_init_percent_complete() const { return m_init_percent; }
-    void set_init_percent_complete(int32_t value) { m_init_percent = value; }
-
-    std::string get_path() const { return m_path; }
-    void set_path(std::string_view value) { m_path = value; }
-
-    state_t get_state() const { return m_state; }
-    void set_state(state_t value) { m_state = value; }
+    virtual std::string id() const { return m_id; }
+    virtual uint64_t size() const { return m_size; }
+    virtual int32_t init_percent_complete() const { return m_init_percent; }
+    virtual std::string path() const { return m_path; }
+    virtual state_t state() const { return m_state; }
 };
 } // namespace openperf::block::model
 

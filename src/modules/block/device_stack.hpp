@@ -10,8 +10,8 @@
 namespace openperf::block::device {
 
 class device
-    : public model::device
-    , public virtual_device
+    : public virtual_device
+    , public model::device
 {
 private:
     void scrub_update(double) override;
@@ -19,10 +19,15 @@ private:
 
 public:
     ~device() override;
+
     tl::expected<virtual_device_descriptors, int> vopen() override;
     void vclose() override;
-    uint64_t get_size() const override;
-    std::string get_path() const override;
+    uint64_t size() const override { return model::device::size(); }
+    std::string path() const override { return model::device::path(); }
+
+    void size(uint64_t s) override { model::device::size(s); }
+    void path(std::string_view p) override { return model::device::path(p); }
+
     tl::expected<void, std::string> initialize();
 };
 

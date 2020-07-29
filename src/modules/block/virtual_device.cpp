@@ -10,7 +10,7 @@
 
 namespace openperf::block {
 
-uint64_t virtual_device::get_header_size() const
+uint64_t virtual_device::header_size() const
 {
     return sizeof(virtual_device_header);
 }
@@ -64,7 +64,7 @@ void virtual_device::scrub_worker(int fd, size_t header_size, size_t file_size)
 tl::expected<void, std::string> virtual_device::queue_scrub()
 {
     int fd =
-        open(get_path().c_str(), O_RDWR | O_CREAT | O_DSYNC, S_IRUSR | S_IWUSR);
+        open(path().c_str(), O_RDWR | O_CREAT | O_DSYNC, S_IRUSR | S_IWUSR);
 
     if (fd < 0) { return tl::make_unexpected("Wrong file descriptor"); }
 
@@ -80,7 +80,7 @@ tl::expected<void, std::string> virtual_device::queue_scrub()
                           VIRTUAL_DEVICE_HEADER_TAG,
                           VIRTUAL_DEVICE_HEADER_TAG_LENGTH)
                       == 0) {
-        if (header.size >= get_size()) {
+        if (header.size >= size()) {
             // We're done since this vdev is suitable for use
             close(fd);
             scrub_done();
@@ -89,7 +89,7 @@ tl::expected<void, std::string> virtual_device::queue_scrub()
     }
 
     m_scrub_thread = std::thread([this, fd]() {
-        scrub_worker(fd, get_header_size(), get_size());
+        scrub_worker(fd, header_size(), size());
         close(fd);
         scrub_done();
     });
@@ -102,7 +102,7 @@ void virtual_device::terminate_scrub()
     if (m_scrub_thread.joinable()) m_scrub_thread.join();
 }
 
-std::optional<virtual_device_descriptors> virtual_device::get_fd() const
+std::optional<virtual_device_descriptors> virtual_device::fd() const
 {
     if (m_read_fd < 0 || m_write_fd < 0) return std::nullopt;
     return (virtual_device_descriptors){m_read_fd, m_write_fd};

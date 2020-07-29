@@ -327,7 +327,7 @@ void handler::create_file(const Rest::Request& request,
             if (auto uri = maybe_get_host_uri(request); uri.has_value()) {
                 response.headers().add<Http::Header::Location>(
                     *uri + request.resource() + "/"
-                    + reply->files.front()->get_id());
+                    + reply->files.front()->id());
             }
             response.send(
                 Http::Code::Created,

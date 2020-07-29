@@ -211,24 +211,24 @@ bool is_valid(const BlockGenerator& generator, std::vector<std::string>& errors)
 std::shared_ptr<BlockDevice> to_swagger(const device_t& p_device)
 {
     auto device = std::make_shared<BlockDevice>();
-    device->setId(p_device.get_id());
-    device->setInfo(p_device.get_info());
-    device->setPath(p_device.get_path());
-    device->setSize(p_device.get_size());
+    device->setId(p_device.id());
+    device->setInfo(p_device.info());
+    device->setPath(p_device.path());
+    device->setSize(p_device.size());
     device->setUsable(p_device.is_usable());
-    device->setInitPercentComplete(p_device.get_init_percent_complete());
-    device->setState(to_string(p_device.get_state()));
+    device->setInitPercentComplete(p_device.init_percent_complete());
+    device->setState(to_string(p_device.state()));
     return device;
 }
 
 std::shared_ptr<BlockFile> to_swagger(const file_t& p_file)
 {
     auto blkfile = std::make_shared<BlockFile>();
-    blkfile->setId(p_file.get_id());
-    blkfile->setPath(p_file.get_path());
-    blkfile->setFileSize(p_file.get_size());
-    blkfile->setInitPercentComplete(p_file.get_init_percent_complete());
-    blkfile->setState(to_string(p_file.get_state()));
+    blkfile->setId(p_file.id());
+    blkfile->setPath(p_file.path());
+    blkfile->setFileSize(p_file.size());
+    blkfile->setInitPercentComplete(p_file.init_percent_complete());
+    blkfile->setState(to_string(p_file.state()));
     return blkfile;
 }
 
@@ -300,10 +300,10 @@ to_swagger(const generator_result_t& p_gen_result)
 model::file from_swagger(const BlockFile& p_file)
 {
     model::file f;
-    f.set_id(p_file.getId());
-    f.set_path(p_file.getPath());
-    f.set_size(p_file.getFileSize());
-    f.set_init_percent_complete(p_file.getInitPercentComplete());
+    f.id(p_file.getId());
+    f.path(p_file.getPath());
+    f.size(p_file.getFileSize());
+    f.init_percent_complete(p_file.getInitPercentComplete());
     return f;
 }
 
