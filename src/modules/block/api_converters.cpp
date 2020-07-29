@@ -271,11 +271,11 @@ std::shared_ptr<BlockGeneratorResult>
 to_swagger(const generator_result_t& p_gen_result)
 {
     auto gen_res = std::make_shared<BlockGeneratorResult>();
-    gen_res->setId(p_gen_result.get_id());
-    gen_res->setGeneratorId(p_gen_result.get_generator_id());
+    gen_res->setId(p_gen_result.id());
+    gen_res->setGeneratorId(p_gen_result.generator_id());
     gen_res->setActive(p_gen_result.is_active());
     gen_res->setTimestamp(
-        to_rfc3339(p_gen_result.get_timestamp().time_since_epoch()));
+        to_rfc3339(p_gen_result.timestamp().time_since_epoch()));
 
     auto generate_gen_stat =
         [](const model::block_generator_statistics& gen_stat) {
@@ -291,8 +291,8 @@ to_swagger(const generator_result_t& p_gen_result)
             return stat;
         };
 
-    gen_res->setRead(generate_gen_stat(p_gen_result.get_read_stats()));
-    gen_res->setWrite(generate_gen_stat(p_gen_result.get_write_stats()));
+    gen_res->setRead(generate_gen_stat(p_gen_result.read_stats()));
+    gen_res->setWrite(generate_gen_stat(p_gen_result.write_stats()));
 
     return gen_res;
 }

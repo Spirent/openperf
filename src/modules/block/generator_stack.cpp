@@ -28,7 +28,7 @@ generator_stack::create_block_generator(
             block_generator_model, vdev_stack_list);
         m_block_generators.emplace(blkgenerator_ptr->id(), blkgenerator_ptr);
         if (blkgenerator_ptr->is_running()) {
-            m_block_results[blkgenerator_ptr->statistics()->get_id()] =
+            m_block_results[blkgenerator_ptr->statistics()->id()] =
                 blkgenerator_ptr;
         }
         return blkgenerator_ptr;
@@ -58,8 +58,8 @@ bool generator_stack::delete_block_generator(const std::string& id)
         std::visit(utils::overloaded_visitor(
                        [](const block_generator_ptr& generator) {},
                        [&](const block_generator_result_ptr& result) {
-                           if (result->get_generator_id() == id)
-                               delete_statistics(result->get_id());
+                           if (result->generator_id() == id)
+                               delete_statistics(result->id());
                        }),
                    res);
     }
@@ -78,7 +78,7 @@ generator_stack::start_generator(const std::string& id)
     }
 
     auto result = gen->start();
-    m_block_results[result->get_id()] = gen;
+    m_block_results[result->id()] = gen;
     return result;
 }
 
@@ -91,7 +91,7 @@ bool generator_stack::stop_generator(const std::string& id)
 
     gen->stop();
     auto result = gen->statistics();
-    m_block_results[result->get_id()] = result;
+    m_block_results[result->id()] = result;
     gen->clear_statistics();
     return true;
 }

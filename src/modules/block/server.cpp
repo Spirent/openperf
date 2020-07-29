@@ -300,8 +300,8 @@ server::handle_request(const request_block_generator_bulk_start& request)
         auto stats = m_generator_stack->start_generator(*id);
         if (!stats || !stats.value()) {
             for (const auto& stat : reply.results) {
-                m_generator_stack->stop_generator(stat->get_generator_id());
-                m_generator_stack->delete_statistics(stat->get_id());
+                m_generator_stack->stop_generator(stat->generator_id());
+                m_generator_stack->delete_statistics(stat->id());
             }
             if (!stats) {
                 return to_error(api::error_type::CUSTOM_ERROR,

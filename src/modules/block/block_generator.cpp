@@ -114,12 +114,12 @@ block_result_ptr block_generator::statistics() const
     };
 
     auto gen_stat = std::make_shared<model::block_generator_result>();
-    gen_stat->set_id(m_statistics_id);
-    gen_stat->set_generator_id(m_id);
-    gen_stat->set_active(m_running);
-    gen_stat->set_read_stats(generate_gen_stat(read_stat));
-    gen_stat->set_write_stats(generate_gen_stat(write_stat));
-    gen_stat->set_timestamp(std::max(write_stat.updated, read_stat.updated));
+    gen_stat->id(m_statistics_id);
+    gen_stat->generator_id(m_id);
+    gen_stat->active(m_running);
+    gen_stat->read_stats(generate_gen_stat(read_stat));
+    gen_stat->write_stats(generate_gen_stat(write_stat));
+    gen_stat->timestamp(std::max(write_stat.updated, read_stat.updated));
     return gen_stat;
 }
 
