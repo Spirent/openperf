@@ -1,7 +1,7 @@
 #include "api_converters.hpp"
 
-#include <sstream>
 #include <iomanip>
+#include <sstream>
 
 namespace swagger::v1::model {
 

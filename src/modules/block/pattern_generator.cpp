@@ -1,7 +1,9 @@
 #include <cassert>
 #include <unordered_map>
+
 #include "pattern_generator.hpp"
-#include "utils/random.hpp"
+
+#include "framework/utils/random.hpp"
 
 namespace openperf::block::worker {
 

@@ -3,10 +3,11 @@
 #include <unistd.h>
 
 #include "virtual_device.hpp"
-#include "core/op_log.h"
-#include "timesync/clock.hpp"
-#include "timesync/chrono.hpp"
-#include "utils/random.hpp"
+
+#include "framework/core/op_log.h"
+#include "framework/utils/random.hpp"
+#include "modules/timesync/clock.hpp"
+#include "modules/timesync/chrono.hpp"
 
 namespace openperf::block {
 

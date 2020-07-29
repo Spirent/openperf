@@ -3,9 +3,11 @@
 
 #include <vector>
 #include <unordered_map>
-#include "models/device.hpp"
+
 #include "virtual_device.hpp"
-#include "utils/singleton.hpp"
+#include "models/device.hpp"
+
+#include "framework/utils/singleton.hpp"
 
 namespace openperf::block::device {
 

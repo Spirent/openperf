@@ -2,9 +2,10 @@
 #define _OP_BLOCK_GENERATOR_RESULT_MODEL_HPP_
 
 #include <chrono>
-#include <string>
 #include <memory>
-#include "timesync/chrono.hpp"
+#include <string>
+
+#include "modules/timesync/chrono.hpp"
 
 namespace openperf::block::model {
 

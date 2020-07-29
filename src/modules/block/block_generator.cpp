@@ -1,8 +1,9 @@
 #include <cstring>
 #include <stdexcept>
+
 #include "block_generator.hpp"
-#include "file_stack.hpp"
 #include "device_stack.hpp"
+#include "file_stack.hpp"
 
 namespace openperf::block::generator {
 

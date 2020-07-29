@@ -1,12 +1,15 @@
 #ifndef _OP_BLOCK_GENERATOR_TASK_HPP_
 #define _OP_BLOCK_GENERATOR_TASK_HPP_
 
-#include <aio.h>
 #include <atomic>
 #include <chrono>
+
+#include <aio.h>
+
 #include "pattern_generator.hpp"
-#include "utils/worker/task.hpp"
-#include "timesync/chrono.hpp"
+
+#include "framework/utils/worker/task.hpp"
+#include "modules/timesync/chrono.hpp"
 
 namespace openperf::block::worker {
 

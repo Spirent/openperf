@@ -1,14 +1,15 @@
 #include <zmq.h>
 
-#include "block/api.hpp"
-#include "block/server.hpp"
-#include "config/op_config_utils.hpp"
-#include "block/block_generator.hpp"
-#include "message/serialized_message.hpp"
+#include "api.hpp"
+#include "block_generator.hpp"
+#include "server.hpp"
 #include "models/device.hpp"
 #include "models/file.hpp"
 #include "models/generator.hpp"
 #include "models/generator_result.hpp"
+
+#include "framework/config/op_config_utils.hpp"
+#include "framework/message/serialized_message.hpp"
 
 namespace openperf::block::api {
 
@@ -393,9 +394,9 @@ static int _handle_rpc_request(const op_event_data* data, void* arg)
 
 server::server(void* context, openperf::core::event_loop& loop)
     : m_socket(op_socket_get_server(context, ZMQ_REP, endpoint.data()))
-    , m_device_stack(std::make_unique<device_stack>())
-    , m_file_stack(std::make_unique<file_stack>())
-    , m_generator_stack(std::make_unique<generator_stack>())
+    , m_device_stack(std::make_unique<device::device_stack>())
+    , m_file_stack(std::make_unique<file::file_stack>())
+    , m_generator_stack(std::make_unique<generator::generator_stack>())
 {
 
     struct op_event_callbacks callbacks = {.on_read = _handle_rpc_request};

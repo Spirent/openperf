@@ -5,7 +5,8 @@
 #include "virtual_device.hpp"
 #include "models/generator.hpp"
 #include "models/generator_result.hpp"
-#include "utils/worker/worker.hpp"
+
+#include "framework/utils/worker/worker.hpp"
 
 namespace openperf::block::generator {
 

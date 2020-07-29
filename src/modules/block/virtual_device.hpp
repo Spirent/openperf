@@ -1,8 +1,8 @@
 #ifndef _OP_BLOCK_VIRTUAL_DEVICE_HPP_
 #define _OP_BLOCK_VIRTUAL_DEVICE_HPP_
 
-#include <stdexcept>
 #include <atomic>
+#include <stdexcept>
 #include <thread>
 
 #include <tl/expected.hpp>

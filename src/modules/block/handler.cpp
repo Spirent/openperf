@@ -1,9 +1,9 @@
+#include "api.hpp"
+#include "api_converters.hpp"
+
 #include "framework/config/op_config_utils.hpp"
 #include "framework/core/op_core.h"
 #include "modules/api/api_route_handler.hpp"
-
-#include "api.hpp"
-#include "api_converters.hpp"
 
 namespace opneperf::block {
 
