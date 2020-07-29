@@ -85,75 +85,78 @@ void from_json(const nlohmann::json& j, BulkStopBlockGeneratorsRequest& request)
 
 namespace openperf::block::api {
 
-model::block_generation_pattern
-block_generation_pattern_from_string(const std::string& value)
+template <typename Rep, typename Period>
+std::string to_rfc3339(std::chrono::duration<Rep, Period> from)
 {
-    const static std::unordered_map<std::string,
-                                    model::block_generation_pattern>
-        block_generation_patterns = {
-            {"random", model::block_generation_pattern::RANDOM},
-            {"sequential", model::block_generation_pattern::SEQUENTIAL},
-            {"reverse", model::block_generation_pattern::REVERSE},
-        };
-
-    if (block_generation_patterns.count(value))
-        return block_generation_patterns.at(value);
-    throw std::runtime_error("Pattern \"" + value + "\" is unknown");
+    auto tv = openperf::timesync::to_timeval(from);
+    std::stringstream os;
+    os << std::put_time(gmtime(&tv.tv_sec), "%FT%T") << "." << std::setfill('0')
+       << std::setw(6) << tv.tv_usec << "Z";
+    return (os.str());
 }
 
-std::string to_string(const model::block_generation_pattern& pattern)
+constexpr model::block_generation_pattern
+to_block_generation_pattern(std::string_view value)
 {
-    const static std::unordered_map<model::block_generation_pattern,
-                                    std::string>
-        block_generation_patterns = {
-            {model::block_generation_pattern::RANDOM, "random"},
-            {model::block_generation_pattern::SEQUENTIAL, "sequential"},
-            {model::block_generation_pattern::REVERSE, "reverse"},
-        };
+    if (value == "random") return model::block_generation_pattern::RANDOM;
+    if (value == "sequential")
+        return model::block_generation_pattern::SEQUENTIAL;
+    if (value == "reverse") return model::block_generation_pattern::REVERSE;
 
-    if (block_generation_patterns.count(pattern))
-        return block_generation_patterns.at(pattern);
-    return "unknown";
+    throw std::runtime_error("Pattern \"" + std::string(value)
+                             + "\" is unknown");
 }
 
-std::string to_string(const model::device::state_t& state)
+constexpr std::string_view to_string(model::block_generation_pattern pattern)
 {
-    const static std::unordered_map<model::device::state_t, std::string>
-        block_device_states = {
-            {model::device::state_t::UNINIT, "uninitialized"},
-            {model::device::state_t::INIT, "initializing"},
-            {model::device::state_t::READY, "ready"},
-        };
-
-    if (block_device_states.count(state)) return block_device_states.at(state);
-    return "unknown";
+    switch (pattern) {
+    case model::block_generation_pattern::RANDOM:
+        return "random";
+    case model::block_generation_pattern::SEQUENTIAL:
+        return "sequential";
+    case model::block_generation_pattern::REVERSE:
+        return "reverse";
+    default:
+        return "unknown";
+    };
 }
 
-model::file::state_t block_file_state_from_string(const std::string& value)
+constexpr std::string_view to_string(model::device::state_t state)
 {
-    const static std::unordered_map<std::string, model::file::state_t>
-        block_file_states = {
-            {"none", model::file::state_t::NONE},
-            {"init", model::file::state_t::INIT},
-            {"ready", model::file::state_t::READY},
-        };
-
-    if (block_file_states.count(value)) return block_file_states.at(value);
-    throw std::runtime_error("Pattern \"" + value + "\" is unknown");
+    switch (state) {
+    case model::device::state_t::UNINIT:
+        return "uninitialized";
+    case model::device::state_t::INIT:
+        return "initializing";
+    case model::device::state_t::READY:
+        return "ready";
+    default:
+        return "unknown";
+    }
 }
 
-std::string to_string(const model::file::state_t& state)
+constexpr model::file::state_t to_block_file_state(std::string_view value)
 {
+    if (value == "none") return model::file::state_t::NONE;
+    if (value == "init") return model::file::state_t::INIT;
+    if (value == "ready") return model::file::state_t::READY;
 
-    const static std::unordered_map<model::file::state_t, std::string>
-        block_file_states = {
-            {model::file::state_t::NONE, "none"},
-            {model::file::state_t::INIT, "init"},
-            {model::file::state_t::READY, "ready"},
-        };
+    throw std::runtime_error("Pattern \"" + std::string(value)
+                             + "\" is unknown");
+}
 
-    if (block_file_states.count(state)) return block_file_states.at(state);
-    return "unknown";
+constexpr std::string_view to_string(model::file::state_t state)
+{
+    switch (state) {
+    case model::file::state_t::NONE:
+        return "none";
+    case model::file::state_t::INIT:
+        return "init";
+    case model::file::state_t::READY:
+        return "ready";
+    default:
+        return "unknown";
+    };
 }
 
 bool is_valid(const BlockFile& file, std::vector<std::string>& errors)
@@ -217,7 +220,7 @@ std::shared_ptr<BlockDevice> to_swagger(const device_t& p_device)
     device->setSize(p_device.size());
     device->setUsable(p_device.is_usable());
     device->setInitPercentComplete(p_device.init_percent_complete());
-    device->setState(to_string(p_device.state()));
+    device->setState(std::string(to_string(p_device.state())));
     return device;
 }
 
@@ -228,14 +231,14 @@ std::shared_ptr<BlockFile> to_swagger(const file_t& p_file)
     blkfile->setPath(p_file.path());
     blkfile->setFileSize(p_file.size());
     blkfile->setInitPercentComplete(p_file.init_percent_complete());
-    blkfile->setState(to_string(p_file.state()));
+    blkfile->setState(std::string(to_string(p_file.state())));
     return blkfile;
 }
 
 std::shared_ptr<BlockGenerator> to_swagger(const generator_t& p_gen)
 {
     auto gen_config = std::make_shared<BlockGeneratorConfig>();
-    gen_config->setPattern(to_string(p_gen.config().pattern));
+    gen_config->setPattern(std::string(to_string(p_gen.config().pattern)));
     gen_config->setQueueDepth(p_gen.config().queue_depth);
     gen_config->setReadSize(p_gen.config().read_size);
     gen_config->setReadsPerSec(p_gen.config().reads_per_sec);
@@ -255,16 +258,6 @@ std::shared_ptr<BlockGenerator> to_swagger(const generator_t& p_gen)
     gen->setConfig(gen_config);
 
     return gen;
-}
-
-template <typename Rep, typename Period>
-std::string to_rfc3339(std::chrono::duration<Rep, Period> from)
-{
-    auto tv = openperf::timesync::to_timeval(from);
-    std::stringstream os;
-    os << std::put_time(gmtime(&tv.tv_sec), "%FT%T") << "." << std::setfill('0')
-       << std::setw(6) << tv.tv_usec << "Z";
-    return (os.str());
 }
 
 std::shared_ptr<BlockGeneratorResult>
@@ -323,8 +316,7 @@ model::block_generator from_swagger(const BlockGenerator& p_gen)
         .writes_per_sec =
             static_cast<uint32_t>(p_gen.getConfig()->getWritesPerSec()),
         .write_size = static_cast<uint32_t>(p_gen.getConfig()->getWriteSize()),
-        .pattern = block_generation_pattern_from_string(
-            p_gen.getConfig()->getPattern()),
+        .pattern = to_block_generation_pattern(p_gen.getConfig()->getPattern()),
     };
 
     if (p_gen.getConfig()->ratioIsSet()) {
