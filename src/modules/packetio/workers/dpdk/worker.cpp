@@ -579,14 +579,11 @@ static void tx_timestamp_packets(rte_mbuf* packets[], uint16_t n)
     });
 }
 
-static void
-tx_sink_dispatch(uint16_t port_id, rte_mbuf* packets[], uint16_t nb_packets)
+static void tx_sink_dispatch(const fib* fib,
+                             uint16_t port_id,
+                             rte_mbuf* packets[],
+                             uint16_t nb_packets)
 {
-    auto& queues = worker::port_queues::instance();
-    auto fib = queues.fib<worker::fib*>();
-
-    assert(fib);
-
     auto& port_sinks = fib->get_tx_sinks(port_id);
     auto interface_sinks = fib->has_interface_tx_sinks(port_id);
 
@@ -606,20 +603,12 @@ tx_sink_dispatch(uint16_t port_id, rte_mbuf* packets[], uint16_t nb_packets)
             tx_interface_sink_dispatch(fib, port_id, packets, nb_packets);
         }
     }
-
-    /* Clear sink flags so packets are not processed by tx sinks again and
-     * so rte_ring ports don't see tx flags
-     */
-    std::for_each(packets, packets + nb_packets, [](auto mbuf) {
-        mbuf_clear_tx_sink(mbuf);
-    });
 }
 
-uint16_t tx_sink_burst_dispatch(uint16_t port_id,
-                                [[maybe_unused]] uint16_t queue_id,
-                                rte_mbuf* packets[],
-                                uint16_t nb_packets,
-                                [[maybe_unused]] void* user_param)
+static void tx_sink_burst_dispatch(const fib* fib,
+                                   uint16_t port_id,
+                                   rte_mbuf* packets[],
+                                   uint16_t nb_packets)
 {
     uint16_t idx = 0;
     uint16_t burst_start = 0;
@@ -631,19 +620,54 @@ uint16_t tx_sink_burst_dispatch(uint16_t port_id,
             ++burst_count;
         } else {
             if (burst_count) {
-                tx_sink_dispatch(port_id, packets, burst_count);
+                tx_sink_dispatch(fib, port_id, packets, burst_count);
                 burst_count = 0;
             }
         }
         ++idx;
     });
 
-    if (burst_count) { tx_sink_dispatch(port_id, packets, burst_count); }
-
-    return (nb_packets);
+    if (burst_count) { tx_sink_dispatch(fib, port_id, packets, burst_count); }
 }
 
-static uint16_t tx_burst(const tx_queue* txq)
+uint16_t worker_transmit(const fib* fib,
+                         uint16_t port_id,
+                         uint16_t queue_id,
+                         rte_mbuf* packets[],
+                         uint16_t nb_packets)
+{
+    tx_sink_burst_dispatch(fib, port_id, packets, nb_packets);
+
+    auto sent = rte_eth_tx_burst(port_id, queue_id, packets, nb_packets);
+
+    OP_LOG(OP_LOG_TRACE,
+           "Transmitted %u of %u packet%s on %u:%u\n",
+           sent,
+           nb_packets,
+           sent > 1 ? "s" : "",
+           port_id,
+           queue_id);
+
+    size_t retries = 0;
+    while (sent < nb_packets) {
+        rte_pause();
+        retries++;
+        sent += rte_eth_tx_burst(
+            port_id, queue_id, packets + sent, nb_packets - sent);
+    }
+
+    if (retries) {
+        OP_LOG(OP_LOG_DEBUG,
+               "Transmission required %zu retries on %u:%u\n",
+               retries,
+               port_id,
+               queue_id);
+    }
+
+    return (sent);
+}
+
+static uint16_t tx_burst(const fib* fib, const tx_queue* txq)
 {
     std::array<rte_mbuf*, pkt_burst_size> outgoing;
 
@@ -655,36 +679,8 @@ static uint16_t tx_burst(const tx_queue* txq)
 
     if (!to_send) return (0);
 
-    auto sent = rte_eth_tx_burst(
-        txq->port_id(), txq->queue_id(), outgoing.data(), to_send);
-
-    OP_LOG(OP_LOG_TRACE,
-           "Transmitted %u of %u packet%s on %u:%u\n",
-           sent,
-           to_send,
-           sent > 1 ? "s" : "",
-           txq->port_id(),
-           txq->queue_id());
-
-    size_t retries = 0;
-    while (sent < to_send) {
-        rte_pause();
-        retries++;
-        sent += rte_eth_tx_burst(txq->port_id(),
-                                 txq->queue_id(),
-                                 outgoing.data() + sent,
-                                 to_send - sent);
-    }
-
-    if (retries) {
-        OP_LOG(OP_LOG_DEBUG,
-               "Transmission required %zu retries on %u:%u\n",
-               retries,
-               txq->port_id(),
-               txq->queue_id());
-    }
-
-    return (sent);
+    return (worker_transmit(
+        fib, txq->port_id(), txq->queue_id(), outgoing.data(), to_send));
 }
 
 static uint16_t service_event(event_loop::generic_event_loop& loop,
@@ -700,7 +696,7 @@ static uint16_t service_event(event_loop::generic_event_loop& loop,
                                return (rx_burst(fib, rxq));
                            },
                            [&](const tx_queue* txq) -> uint16_t {
-                               auto nb_pkts = tx_burst(txq);
+                               auto nb_pkts = tx_burst(fib, txq);
                                const_cast<tx_queue*>(txq)->enable();
                                return (nb_pkts);
                            },
@@ -809,7 +805,7 @@ static void run_pollable(run_args&& args)
                             } while (rx_burst(args.fib, rxq));
                         },
                         [&](tx_queue* txq) {
-                            while (tx_burst(txq) == pkt_burst_size) {
+                            while (tx_burst(args.fib, txq) == pkt_burst_size) {
                                 rte_pause();
                             }
                             txq->enable();

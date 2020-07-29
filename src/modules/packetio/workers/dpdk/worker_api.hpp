@@ -110,11 +110,11 @@ int main(void*);
 int send_message(void* socket, const command_msg& msg);
 std::optional<command_msg> recv_message(void* socket, int flags = 0);
 
-uint16_t tx_sink_burst_dispatch(uint16_t port_id,
-                                uint16_t queue_id,
-                                rte_mbuf* packets[],
-                                uint16_t nb_packets,
-                                void* user_param);
+uint16_t worker_transmit(const fib* fib,
+                         uint16_t port_id,
+                         uint16_t queue_id,
+                         rte_mbuf* packets[],
+                         uint16_t nb_packets);
 
 } // namespace worker
 } // namespace openperf::packetio::dpdk

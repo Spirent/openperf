@@ -10,9 +10,10 @@ PIO_DRIVER_SOURCES += \
 	mbuf_tx.cpp \
 	model/physical_port.cpp \
 	model/port_info.cpp \
+	port/filter.cpp \
 	port/flow_filter.cpp \
 	port/mac_filter.cpp \
-	port/filter.cpp \
+	port/net_ring_fixup.cpp \
 	port/packet_type_decoder.cpp \
 	port/prbs_error_detector.cpp \
 	port/rss_hasher.cpp \
@@ -20,7 +21,6 @@ PIO_DRIVER_SOURCES += \
 	port/signature_encoder.cpp \
 	port/signature_utils.cpp \
 	port/timestamper.cpp \
-	port/tx_sink.cpp \
 	queue_utils.cpp \
 	topology_utils.cpp
 
