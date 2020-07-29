@@ -41,7 +41,7 @@ nlohmann::json TvlpProfile_memory_series::toJson() const
     {
         val["offset"] = m_Offset;
     }
-    val["data"] = ModelBase::toJson(m_Data);
+    val["config"] = ModelBase::toJson(m_Config);
     
 
     return val;
@@ -74,13 +74,13 @@ void TvlpProfile_memory_series::unsetOffset()
 {
     m_OffsetIsSet = false;
 }
-std::shared_ptr<MemoryGeneratorConfig> TvlpProfile_memory_series::getData() const
+std::shared_ptr<MemoryGeneratorConfig> TvlpProfile_memory_series::getConfig() const
 {
-    return m_Data;
+    return m_Config;
 }
-void TvlpProfile_memory_series::setData(std::shared_ptr<MemoryGeneratorConfig> value)
+void TvlpProfile_memory_series::setConfig(std::shared_ptr<MemoryGeneratorConfig> value)
 {
-    m_Data = value;
+    m_Config = value;
     
 }
 

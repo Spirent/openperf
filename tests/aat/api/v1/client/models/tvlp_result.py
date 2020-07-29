@@ -31,6 +31,8 @@ class TvlpResult(object):
                             and the value is json key in definition.
     """
     swagger_types = {
+        'id': 'str',
+        'tvlp_id': 'str',
         'memory': 'list[MemoryGeneratorResult]',
         'block': 'list[BlockGeneratorResult]',
         'cpu': 'list[CpuGeneratorResult]',
@@ -38,21 +40,29 @@ class TvlpResult(object):
     }
 
     attribute_map = {
+        'id': 'id',
+        'tvlp_id': 'tvlp_id',
         'memory': 'memory',
         'block': 'block',
         'cpu': 'cpu',
         'packet': 'packet'
     }
 
-    def __init__(self, memory=None, block=None, cpu=None, packet=None):  # noqa: E501
+    def __init__(self, id=None, tvlp_id=None, memory=None, block=None, cpu=None, packet=None):  # noqa: E501
         """TvlpResult - a model defined in Swagger"""  # noqa: E501
 
+        self._id = None
+        self._tvlp_id = None
         self._memory = None
         self._block = None
         self._cpu = None
         self._packet = None
         self.discriminator = None
 
+        if id is not None:
+            self.id = id
+        if tvlp_id is not None:
+            self.tvlp_id = tvlp_id
         if memory is not None:
             self.memory = memory
         if block is not None:
@@ -61,6 +71,50 @@ class TvlpResult(object):
             self.cpu = cpu
         if packet is not None:
             self.packet = packet
+
+    @property
+    def id(self):
+        """Gets the id of this TvlpResult.  # noqa: E501
+
+        Unique TVLP result identifier  # noqa: E501
+
+        :return: The id of this TvlpResult.  # noqa: E501
+        :rtype: str
+        """
+        return self._id
+
+    @id.setter
+    def id(self, id):
+        """Sets the id of this TvlpResult.
+
+        Unique TVLP result identifier  # noqa: E501
+
+        :param id: The id of this TvlpResult.  # noqa: E501
+        :type: str
+        """
+        self._id = id
+
+    @property
+    def tvlp_id(self):
+        """Gets the tvlp_id of this TvlpResult.  # noqa: E501
+
+        TVLP configuration identifier that generated this result  # noqa: E501
+
+        :return: The tvlp_id of this TvlpResult.  # noqa: E501
+        :rtype: str
+        """
+        return self._tvlp_id
+
+    @tvlp_id.setter
+    def tvlp_id(self, tvlp_id):
+        """Sets the tvlp_id of this TvlpResult.
+
+        TVLP configuration identifier that generated this result  # noqa: E501
+
+        :param tvlp_id: The tvlp_id of this TvlpResult.  # noqa: E501
+        :type: str
+        """
+        self._tvlp_id = tvlp_id
 
     @property
     def memory(self):

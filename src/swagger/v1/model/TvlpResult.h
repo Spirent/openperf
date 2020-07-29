@@ -12,7 +12,7 @@
 /*
  * TvlpResult.h
  *
- * TVLP Result
+ * TVLP Result. Contains arrays of generators result for each TVLP configuration step.
  */
 
 #ifndef TvlpResult_H_
@@ -22,6 +22,7 @@
 #include "ModelBase.h"
 
 #include "BlockGeneratorResult.h"
+#include <string>
 #include "MemoryGeneratorResult.h"
 #include "PacketGeneratorResult.h"
 #include <vector>
@@ -32,7 +33,7 @@ namespace v1 {
 namespace model {
 
 /// <summary>
-/// TVLP Result
+/// TVLP Result. Contains arrays of generators result for each TVLP configuration step.
 /// </summary>
 class  TvlpResult
     : public ModelBase
@@ -52,6 +53,20 @@ public:
     /////////////////////////////////////////////
     /// TvlpResult members
 
+    /// <summary>
+    /// Unique TVLP result identifier
+    /// </summary>
+    std::string getId() const;
+    void setId(std::string value);
+    bool idIsSet() const;
+    void unsetId();
+    /// <summary>
+    /// TVLP configuration identifier that generated this result
+    /// </summary>
+    std::string getTvlpId() const;
+    void setTvlpId(std::string value);
+    bool tvlpIdIsSet() const;
+    void unsetTvlp_id();
     /// <summary>
     /// 
     /// </summary>
@@ -78,6 +93,10 @@ public:
     void unsetPacket();
 
 protected:
+    std::string m_Id;
+    bool m_IdIsSet;
+    std::string m_Tvlp_id;
+    bool m_Tvlp_idIsSet;
     std::vector<std::shared_ptr<MemoryGeneratorResult>> m_Memory;
     bool m_MemoryIsSet;
     std::vector<std::shared_ptr<BlockGeneratorResult>> m_Block;
