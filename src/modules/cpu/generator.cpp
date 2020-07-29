@@ -1,7 +1,7 @@
 #include "generator.hpp"
+#include "cpu.hpp"
 
 #include "framework/core/op_uuid.hpp"
-#include "cpu.hpp"
 
 namespace openperf::cpu::generator {
 
@@ -22,7 +22,7 @@ generator::generator(const model::generator& generator_model)
         m_stat_ptr = &stat_copy;
         m_stat += stat;
 
-        if (m_stat.steal == 0ns) m_stat.steal = cpu_steal_time();
+        if (m_stat.steal == 0ns) m_stat.steal = internal::cpu_steal_time();
 
         m_stat_ptr = &m_stat;
     });
@@ -35,12 +35,11 @@ generator::~generator()
 }
 
 // Methods : public
-void generator::config(const model::generator_config& config)
+void generator::config(const generator_config& config)
 {
-    auto was_running = running();
     m_controller.pause();
 
-    auto cores_count = cpu_cores();
+    auto cores_count = internal::cpu_cores();
     if (static_cast<int32_t>(config.cores.size()) > cores_count)
         throw std::runtime_error(
             "Could not configure more cores than available ("
@@ -59,29 +58,31 @@ void generator::config(const model::generator_config& config)
         if (core_conf.utilization == 0.0) continue;
 
         core_conf.core = core;
-        auto task = task_cpu(core_conf);
+        auto task = internal::task_cpu{core_conf};
         m_controller.add(std::move(task),
                          NAME_PREFIX + std::to_string(m_serial_number) + "_c"
                              + std::to_string(core + 1),
                          core);
     }
 
-    model::generator::config(config);
+    m_config = config;
 
-    if (was_running) m_controller.resume();
+    if (m_running) m_controller.resume();
 }
 
 void generator::start()
 {
+    if (m_running) return;
+
     reset();
     m_controller.resume();
-    model::generator::running(true);
+    m_running = true;
 }
 
 void generator::stop()
 {
     m_controller.pause();
-    model::generator::running(false);
+    m_running = false;
 }
 
 void generator::running(bool is_running)
@@ -96,8 +97,8 @@ model::generator_result generator::statistics() const
 {
     auto stat = model::generator_result{};
     stat.id(m_result_id);
-    stat.generator_id(id());
-    stat.active(running());
+    stat.generator_id(m_id);
+    stat.active(m_running);
     stat.timestamp(timesync::chrono::realtime::now());
     stat.stats(*m_stat_ptr);
 
@@ -106,13 +107,12 @@ model::generator_result generator::statistics() const
 
 void generator::reset()
 {
-    auto was_running = running();
     m_controller.pause();
     m_controller.reset();
     m_stat = {m_stat.cores.size()};
     m_result_id = core::to_string(core::uuid::random());
 
-    if (was_running) m_controller.resume();
+    if (m_running) m_controller.resume();
 }
 
 // Methods : private

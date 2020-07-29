@@ -23,6 +23,11 @@ struct task_cpu_config
     std::vector<target_config> targets;
 };
 
+struct generator_config
+{
+    std::vector<task_cpu_config> cores;
+};
+
 constexpr cpu::instruction_set to_instruction_set(std::string_view value)
 {
     if (value == "scalar") return cpu::instruction_set::SCALAR;

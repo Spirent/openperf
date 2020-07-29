@@ -9,11 +9,6 @@
 
 namespace openperf::cpu::model {
 
-struct generator_config
-{
-    std::vector<task_cpu_config> cores;
-};
-
 class generator
 {
 public:

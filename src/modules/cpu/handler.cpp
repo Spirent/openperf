@@ -5,14 +5,6 @@
 #include "framework/core/op_core.h"
 #include "modules/api/api_route_handler.hpp"
 
-#include "swagger/v1/model/BulkCreateCpuGeneratorsRequest.h"
-#include "swagger/v1/model/BulkDeleteCpuGeneratorsRequest.h"
-#include "swagger/v1/model/BulkStartCpuGeneratorsRequest.h"
-#include "swagger/v1/model/BulkStopCpuGeneratorsRequest.h"
-#include "swagger/v1/model/CpuGenerator.h"
-#include "swagger/v1/model/CpuGeneratorResult.h"
-#include "swagger/v1/model/CpuInfoResult.h"
-
 namespace opneperf::cpu {
 
 using namespace Pistache;

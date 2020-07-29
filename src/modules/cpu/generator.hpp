@@ -5,13 +5,11 @@
 
 #include "framework/generator/controller.hpp"
 
+#include "task_cpu.hpp"
 #include "models/generator.hpp"
 #include "models/generator_result.hpp"
-#include "task_cpu.hpp"
 
 namespace openperf::cpu::generator {
-
-using namespace openperf::cpu::internal;
 
 class generator : public model::generator
 {
@@ -29,7 +27,7 @@ public:
     generator(const model::generator&);
     ~generator() override;
 
-    void config(const model::generator_config&) override;
+    void config(const generator_config&) override;
     void start();
     void stop();
     void reset();

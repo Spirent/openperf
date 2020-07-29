@@ -4,6 +4,7 @@
 #include <memory>
 
 #include "framework/core/op_core.h"
+
 #include "api.hpp"
 #include "generator_stack.hpp"
 

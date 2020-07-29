@@ -6,7 +6,8 @@
 #include <unordered_map>
 #include <variant>
 
-#include "tl/expected.hpp"
+#include <tl/expected.hpp>
+
 #include "generator.hpp"
 
 namespace openperf::cpu::generator {

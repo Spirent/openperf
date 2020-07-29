@@ -1,6 +1,7 @@
 #include "api_converters.hpp"
 
 #include <iomanip>
+#include <sstream>
 
 namespace openperf::cpu::api {
 
@@ -16,7 +17,7 @@ std::string to_rfc3339(std::chrono::duration<Rep, Period> from)
 
 model::generator from_swagger(const swagger::CpuGenerator& generator)
 {
-    model::generator_config config;
+    generator_config config;
 
     auto& configuration = generator.getConfig()->getCores();
     std::transform(
