@@ -8,9 +8,10 @@
 #include <zmq.h>
 #include <tl/expected.hpp>
 
-#include "generator.hpp"
+#include "model/tvlp_config.hpp"
 
 namespace swagger::v1::model {
+
 class TvlpConfiguration;
 
 void from_json(const nlohmann::json&, TvlpConfiguration&);
@@ -19,6 +20,9 @@ void from_json(const nlohmann::json&, TvlpConfiguration&);
 namespace openperf::tvlp::api {
 
 static constexpr auto endpoint = "inproc://openperf_tvlp";
+
+using tvlp_config_t = model::tvlp_configuration_t;
+using tvlp_config_ptr = std::unique_ptr<tvlp_config_t>;
 
 struct message
 {};
@@ -29,24 +33,17 @@ struct id_message : message
 
 namespace request {
 
-struct info : message
-{};
-
 namespace tvlp {
 
-struct create_data
-{
-    std::string id;
-};
 struct list : message
 {};
 struct get : id_message
 {};
 struct erase : id_message
 {};
-struct create
+struct create : message
 {
-    std::unique_ptr<create_data> data;
+    std::unique_ptr<tvlp_config_t> data;
 };
 struct stop : id_message
 {};
@@ -67,49 +64,30 @@ struct error : message
 };
 
 namespace tvlp {
-struct item
+struct item : message
 {
-    struct item_data
-    {
-        std::string id;
-    };
-
-    std::unique_ptr<item_data> data;
+    tvlp_config_ptr data;
 };
 
-struct list
+struct list : message
 {
-    std::unique_ptr<std::vector<item::item_data>> data;
+    std::unique_ptr<std::vector<tvlp_config_t>> data;
 };
 
 } // namespace tvlp
 
-namespace statistic {
-struct item
-{
-    struct item_data
-    {
-        std::string id;
-        std::string generator_id;
-    };
-
-    using data_ptr = std::unique_ptr<item_data>;
-    data_ptr data;
-};
-
-struct list
-{
-    std::unique_ptr<std::vector<item::item_data>> data;
-};
-
-} // namespace statistic
-
 } // namespace reply
 
 // Variant types
-using api_request = std::variant<message>;
+using api_request = std::variant<request::tvlp::list,
+                                 request::tvlp::get,
+                                 request::tvlp::erase,
+                                 request::tvlp::create,
+                                 request::tvlp::start,
+                                 request::tvlp::stop>;
 
-using api_reply = std::variant<reply::ok, reply::error>;
+using api_reply =
+    std::variant<reply::ok, reply::error, reply::tvlp::list, reply::tvlp::item>;
 
 struct serialized_msg
 {
