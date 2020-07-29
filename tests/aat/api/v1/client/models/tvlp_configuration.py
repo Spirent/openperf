@@ -90,7 +90,7 @@ class TvlpConfiguration(object):
     def state(self):
         """Gets the state of this TvlpConfiguration.  # noqa: E501
 
-        TVLP configuration state - ready - TVLP contains a valid configuration - countdown - TVLP has been given a start time in the future and is waiting to start replaying a profile - running - TVLP is replaying a profile - error - TVLP encountered a runtime error   # noqa: E501
+        TVLP configuration state - ready - TVLP contains a valid configuration and ready to be started - countdown - TVLP has been given a start time in the future and is waiting to start replaying a profile - running - TVLP is replaying a profile - error - TVLP encountered a runtime error   # noqa: E501
 
         :return: The state of this TvlpConfiguration.  # noqa: E501
         :rtype: str
@@ -101,7 +101,7 @@ class TvlpConfiguration(object):
     def state(self, state):
         """Sets the state of this TvlpConfiguration.
 
-        TVLP configuration state - ready - TVLP contains a valid configuration - countdown - TVLP has been given a start time in the future and is waiting to start replaying a profile - running - TVLP is replaying a profile - error - TVLP encountered a runtime error   # noqa: E501
+        TVLP configuration state - ready - TVLP contains a valid configuration and ready to be started - countdown - TVLP has been given a start time in the future and is waiting to start replaying a profile - running - TVLP is replaying a profile - error - TVLP encountered a runtime error   # noqa: E501
 
         :param state: The state of this TvlpConfiguration.  # noqa: E501
         :type: str

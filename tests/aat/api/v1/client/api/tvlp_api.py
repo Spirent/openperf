@@ -719,6 +719,7 @@ class TVLPApi(object):
 
         :param async_req bool
         :param str id: Unique resource identifier (required)
+        :param int time: Time to start profile replay
         :return: TvlpResult
                  If the method is called asynchronously,
                  returns the request thread.
@@ -741,12 +742,13 @@ class TVLPApi(object):
 
         :param async_req bool
         :param str id: Unique resource identifier (required)
+        :param int time: Time to start profile replay
         :return: TvlpResult
                  If the method is called asynchronously,
                  returns the request thread.
         """
 
-        all_params = ['id']  # noqa: E501
+        all_params = ['id', 'time']  # noqa: E501
         all_params.append('async_req')
         all_params.append('_return_http_data_only')
         all_params.append('_preload_content')
@@ -773,6 +775,8 @@ class TVLPApi(object):
             path_params['id'] = params['id']  # noqa: E501
 
         query_params = []
+        if 'time' in params:
+            query_params.append(('time', params['time']))  # noqa: E501
 
         header_params = {}
 
