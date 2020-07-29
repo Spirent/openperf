@@ -58,13 +58,13 @@ public:
     /// <summary>
     /// 
     /// </summary>
-    std::shared_ptr<MemoryGeneratorConfig> getData() const;
-    void setData(std::shared_ptr<MemoryGeneratorConfig> value);
+    std::shared_ptr<MemoryGeneratorConfig> getConfig() const;
+    void setConfig(std::shared_ptr<MemoryGeneratorConfig> value);
     
 protected:
     int64_t m_Offset;
     bool m_OffsetIsSet;
-    std::shared_ptr<MemoryGeneratorConfig> m_Data;
+    std::shared_ptr<MemoryGeneratorConfig> m_Config;
 
 };
 

@@ -37,6 +37,9 @@ parameters:
   dynamic_results:
     $ref: ./modules/dynamic.yaml#/parameters/dynamic_results
 
+  start_time:
+    $ref: ./modules/tvlp.yaml#/parameters/start_time
+
 tags:
   - name: Interfaces
   - name: Modules
