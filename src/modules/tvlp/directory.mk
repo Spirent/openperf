@@ -8,7 +8,7 @@ TVLP_SOURCES += \
 	init.cpp \
 	handler.cpp \
 	server.cpp \
-	generator.cpp
+	api_transmogrify.cpp
 
 TVLP_VERSIONED_FILES := init.cpp
 TVLP_UNVERSIONED_OBJECTS := \

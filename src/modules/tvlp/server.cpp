@@ -4,7 +4,7 @@
 namespace openperf::tvlp::api {
 
 server::server(void* context, openperf::core::event_loop& loop)
-    : m_socket(op_socket_get_server(context, ZMQ_REP, endpoint)))
+    : m_socket(op_socket_get_server(context, ZMQ_REP, endpoint))
 {
     // Setup event loop
     struct op_event_callbacks callbacks = {
@@ -38,6 +38,31 @@ int server::handle_rpc_request(const op_event_data* data)
     return ((reply_errors || errno == ETERM) ? -1 : 0);
 }
 
-api_reply server::handle_request(const message&) { return reply::ok{}; }
+api_reply server::handle_request(const request::tvlp::list&)
+{
+    printf("1\n");
+    return reply::tvlp::list{};
+}
+
+api_reply server::handle_request(const request::tvlp::get&)
+{
+    return reply::ok{};
+}
+api_reply server::handle_request(const request::tvlp::erase&)
+{
+    return reply::ok{};
+}
+api_reply server::handle_request(const request::tvlp::create&)
+{
+    return reply::ok{};
+}
+api_reply server::handle_request(const request::tvlp::start&)
+{
+    return reply::ok{};
+}
+api_reply server::handle_request(const request::tvlp::stop&)
+{
+    return reply::ok{};
+}
 
 } // namespace openperf::tvlp::api
