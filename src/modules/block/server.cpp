@@ -26,7 +26,7 @@ reply_msg server::handle_request(const request_block_device_list&)
 reply_msg server::handle_request(const request_block_device& request)
 {
     auto reply = reply_block_devices{};
-    auto blkdev = m_device_stack->get_block_device(request.id);
+    auto blkdev = m_device_stack->block_device(request.id);
 
     if (!blkdev) { return to_error(api::error_type::NOT_FOUND); }
     reply.devices.emplace_back(std::make_unique<model::device>(*blkdev));
@@ -38,7 +38,7 @@ reply_msg server::handle_request(const request_block_device_init& request)
 {
     auto reply = reply_block_devices{};
 
-    auto blkdev = m_device_stack->get_block_device(request.id);
+    auto blkdev = m_device_stack->block_device(request.id);
     if (!blkdev) return to_error(api::error_type::NOT_FOUND);
 
     if (auto r = m_device_stack->initialize_device(request.id); !r)
@@ -60,7 +60,7 @@ reply_msg server::handle_request(const request_block_file_list&)
 reply_msg server::handle_request(const request_block_file& request)
 {
     auto reply = reply_block_files{};
-    auto blkfile = m_file_stack->get_block_file(request.id);
+    auto blkfile = m_file_stack->block_file(request.id);
 
     if (!blkfile) { return to_error(api::error_type::NOT_FOUND); }
     reply.files.emplace_back(std::make_unique<model::file>(*blkfile));
@@ -96,9 +96,9 @@ reply_msg server::handle_request(const request_block_file_del& request)
 
     if (!result) {
         switch (result.error()) {
-        case block::file::deletion_error_type::NOT_FOUND:
+        case block::file::file_stack::deletion_error_type::NOT_FOUND:
             return to_error(api::error_type::NOT_FOUND);
-        case block::file::deletion_error_type::BUSY:
+        case block::file::file_stack::deletion_error_type::BUSY:
             return to_error(error_type::CUSTOM_ERROR,
                             0,
                             "File \"" + request.id + "\" is busy");

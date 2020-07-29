@@ -62,7 +62,7 @@ void file::scrub_update(double p)
     m_init_percent = static_cast<int32_t>(100 * p);
 }
 
-std::vector<block_file_ptr> file_stack::files_list()
+std::vector<file_stack::block_file_ptr> file_stack::files_list()
 {
     std::vector<block_file_ptr> blkfiles_list;
     for (const auto& blkfile_pair : m_block_files) {
@@ -72,10 +72,10 @@ std::vector<block_file_ptr> file_stack::files_list()
     return blkfiles_list;
 }
 
-tl::expected<block_file_ptr, std::string>
+tl::expected<file_stack::block_file_ptr, std::string>
 file_stack::create_block_file(const model::file& block_file_model)
 {
-    if (get_block_file(block_file_model.id()))
+    if (block_file(block_file_model.id()))
         return tl::make_unexpected("File " + block_file_model.id()
                                    + " already exists.");
 
@@ -104,21 +104,20 @@ file_stack::create_block_file(const model::file& block_file_model)
     return blkblock_file_ptr;
 }
 
-std::shared_ptr<virtual_device>
-file_stack::get_vdev(const std::string& id) const
+std::shared_ptr<virtual_device> file_stack::vdev(const std::string& id) const
 {
-    auto f = get_block_file(id);
+    auto f = block_file(id);
     if (!f || f->state() != model::file::state_t::READY) return nullptr;
     return f;
 }
 
-block_file_ptr file_stack::get_block_file(const std::string& id) const
+file_stack::block_file_ptr file_stack::block_file(const std::string& id) const
 {
     if (m_block_files.count(id)) return m_block_files.at(id);
     return nullptr;
 }
 
-tl::expected<void, deletion_error_type>
+tl::expected<void, file_stack::deletion_error_type>
 file_stack::delete_block_file(const std::string& id)
 {
     if (m_block_files.count(id) && m_block_files.at(id)->fd())

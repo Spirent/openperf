@@ -66,7 +66,7 @@ void block_generator::update_resource(const std::string& resource_id)
 {
     std::shared_ptr<virtual_device> vdev_ptr;
     for (auto vdev_stack : m_vdev_stack_list) {
-        if (auto vdev = vdev_stack->get_vdev(resource_id)) {
+        if (auto vdev = vdev_stack->vdev(resource_id)) {
             vdev_ptr = vdev;
             break;
         }

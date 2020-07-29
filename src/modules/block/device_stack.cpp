@@ -106,7 +106,7 @@ void device_stack::init_device_stack()
         blkdev->path(std::string(device_dir) + "/"
                      + std::string(entry->d_name));
 
-        if (auto size = get_block_device_size(entry->d_name)) {
+        if (auto size = block_device_size(entry->d_name)) {
             blkdev->size(size);
             blkdev->usable(true);
         } else {
@@ -122,7 +122,7 @@ void device_stack::init_device_stack()
     closedir(dir);
 }
 
-uint64_t device_stack::get_block_device_size(std::string_view id)
+uint64_t device_stack::block_device_size(std::string_view id)
 {
     off_t nb_blocks = 0;
     char devname[PATH_MAX + 1];
@@ -153,7 +153,7 @@ uint64_t device_stack::get_block_device_size(std::string_view id)
     return (nb_blocks << 9);
 }
 
-std::optional<std::string> device_stack::get_block_device_info(std::string_view)
+std::optional<std::string> device_stack::block_device_info(std::string_view)
 {
     return std::nullopt;
 }
@@ -174,21 +174,20 @@ bool device_stack::is_raw_device(std::string_view id)
     return (true);
 }
 
-device_ptr device_stack::get_block_device(const std::string& id) const
+device_stack::device_ptr device_stack::block_device(const std::string& id) const
 {
     if (m_block_devices.count(id)) return m_block_devices.at(id);
     return nullptr;
 }
 
-std::shared_ptr<virtual_device>
-device_stack::get_vdev(const std::string& id) const
+std::shared_ptr<virtual_device> device_stack::vdev(const std::string& id) const
 {
-    auto dev = get_block_device(id);
+    auto dev = block_device(id);
     if (!dev || !dev->is_usable()) return nullptr;
     return dev;
 }
 
-std::vector<device_ptr> device_stack::block_devices_list()
+std::vector<device_stack::device_ptr> device_stack::block_devices_list()
 {
     std::vector<device_ptr> blkdevice_list;
     for (const auto& blkdevice_pair : m_block_devices) {
@@ -201,7 +200,7 @@ std::vector<device_ptr> device_stack::block_devices_list()
 tl::expected<void, std::string>
 device_stack::initialize_device(const std::string& id)
 {
-    auto blkdev = get_block_device(id);
+    auto blkdev = block_device(id);
 
     if (!blkdev) return tl::make_unexpected("Unknown device: " + id);
 

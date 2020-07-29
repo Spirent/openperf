@@ -31,27 +31,28 @@ public:
     void path(std::string_view path) override { model::file::path(path); };
 };
 
-using block_file_ptr = std::shared_ptr<file>;
-using block_file_map = std::unordered_map<std::string, block_file_ptr>;
-
-enum class deletion_error_type { NOT_FOUND, BUSY };
-
 class file_stack : public virtual_device_stack
 {
+public:
+    using block_file_ptr = std::shared_ptr<file>;
+
+    enum class deletion_error_type { NOT_FOUND, BUSY };
+
 private:
-    block_file_map m_block_files;
+    std::unordered_map<std::string, block_file_ptr> m_block_files;
 
 public:
     file_stack() = default;
     ~file_stack() override = default;
+
     std::vector<block_file_ptr> files_list();
     tl::expected<block_file_ptr, std::string>
     create_block_file(const model::file& block_file);
-    std::shared_ptr<virtual_device>
-    get_vdev(const std::string& id) const override;
-    block_file_ptr get_block_file(const std::string& id) const;
     tl::expected<void, deletion_error_type>
     delete_block_file(const std::string& id);
+
+    std::shared_ptr<virtual_device> vdev(const std::string& id) const override;
+    block_file_ptr block_file(const std::string& id) const;
 };
 
 } // namespace openperf::block::file
