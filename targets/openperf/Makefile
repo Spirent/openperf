@@ -24,7 +24,8 @@ BUILD_DEPS := \
 	packet_capture \
 	packet_generator \
 	socket_server \
-	timesync
+	timesync \
+	tvlp
 
 OP_PACKETIO_DRIVER ?= dpdk
 

@@ -18,7 +18,12 @@ public:
     int handle_rpc_request(const op_event_data* data);
 
 private:
-    api_reply handle_request(const message&);
+    api_reply handle_request(const request::tvlp::list&);
+    api_reply handle_request(const request::tvlp::get&);
+    api_reply handle_request(const request::tvlp::erase&);
+    api_reply handle_request(const request::tvlp::create&);
+    api_reply handle_request(const request::tvlp::start&);
+    api_reply handle_request(const request::tvlp::stop&);
 };
 
 } // namespace openperf::tvlp::api
