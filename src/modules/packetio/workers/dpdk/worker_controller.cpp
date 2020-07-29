@@ -271,15 +271,6 @@ worker_controller::worker_controller(void* context,
                   std::end(port_info),
                   [](const auto& info) { maybe_update_rxq_lro_mode(info); });
 
-    /* Set the global tx sink callback */
-    port::tx_sink::set_callback(worker::tx_sink_burst_dispatch);
-    std::for_each(
-        std::begin(port_info), std::end(port_info), [&](const auto& info) {
-            if (always_has_tx_sink(info)) {
-                m_sink_features.update(*m_fib, info.id());
-            }
-        });
-
     /* Distribute queues and schedulers to workers */
     m_workers->add_descriptors(to_worker_descriptors(
         q_descriptors, m_tx_schedulers, m_tx_workers, queues));
@@ -1078,6 +1069,15 @@ bool need_sink_feature(const worker::fib& fib,
 }
 
 template <>
+bool need_sink_feature(const worker::fib&,
+                       size_t port_idx,
+                       const port::net_ring_fixup&)
+{
+    return (std::strcmp(model::port_info(port_idx).driver_name(), "net_ring")
+            == 0);
+}
+
+template <>
 bool need_sink_feature(const worker::fib& fib,
                        size_t port_idx,
                        const port::packet_type_decoder&)
@@ -1148,21 +1148,6 @@ bool need_sink_feature(const worker::fib& fib,
                              return (sink.uses_feature(
                                  packet::sink_feature_flags::rx_timestamp));
                          }));
-}
-
-template <>
-bool need_sink_feature(const worker::fib& fib,
-                       size_t port_idx,
-                       const port::tx_sink&)
-{
-    auto info = model::port_info(port_idx);
-    if (always_has_tx_sink(info)) return true;
-
-    return (
-        sink_find_if(fib,
-                     port_idx,
-                     worker::fib::direction::TX,
-                     [](const packet::generic_sink& sink) { return (true); }));
 }
 
 template <typename Function>

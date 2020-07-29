@@ -12,13 +12,13 @@
 #include "packetio/generic_workers.hpp"
 #include "packetio/workers/dpdk/callback.hpp"
 #include "packetio/drivers/dpdk/port/filter.hpp"
+#include "packetio/drivers/dpdk/port/net_ring_fixup.hpp"
 #include "packetio/drivers/dpdk/port/packet_type_decoder.hpp"
 #include "packetio/drivers/dpdk/port/prbs_error_detector.hpp"
 #include "packetio/drivers/dpdk/port/rss_hasher.hpp"
 #include "packetio/drivers/dpdk/port/signature_decoder.hpp"
 #include "packetio/drivers/dpdk/port/signature_encoder.hpp"
 #include "packetio/drivers/dpdk/port/timestamper.hpp"
-#include "packetio/drivers/dpdk/port/tx_sink.hpp"
 #include "packetio/workers/dpdk/port_feature_controller.hpp"
 #include "packetio/workers/dpdk/tx_scheduler.hpp"
 #include "packetio/workers/dpdk/worker_api.hpp"
@@ -100,13 +100,13 @@ public:
      * callback.
      */
     using sink_feature_controller =
-        sink_feature_controller<port::filter,
+        sink_feature_controller<port::net_ring_fixup,
+                                port::filter,
                                 port::timestamper,
                                 port::packet_type_decoder,
                                 port::rss_hasher,
                                 port::signature_decoder,
-                                port::prbs_error_detector,
-                                port::tx_sink>;
+                                port::prbs_error_detector>;
     using source_feature_controller =
         source_feature_controller<port::signature_encoder>;
 
