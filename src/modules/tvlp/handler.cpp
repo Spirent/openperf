@@ -123,14 +123,15 @@ void handler::create_tvlp(const Rest::Request& request,
 {
     auto model = json::parse(request.body()).get<model::TvlpConfiguration>();
 
-    auto api_reply = submit_request(request::tvlp::create{
-        .data = std::make_unique<config_t>(from_swagger(model))});
+    auto m = from_swagger(model);
+    auto api_reply = submit_request(
+        request::tvlp::create{.data = std::make_unique<tvlp_config_t>(m)});
 
     if (auto item = std::get_if<reply::tvlp::item>(&api_reply)) {
         response.headers().add<Http::Header::ContentType>(
             MIME(Application, Json));
         response.headers().add<Http::Header::Location>("/tvlp/"
-                                                       + item->data->get_id());
+                                                       + item->data->id());
         response.send(Http::Code::Created,
                       to_swagger(*item->data).toJson().dump());
         return;
