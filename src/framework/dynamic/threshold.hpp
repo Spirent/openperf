@@ -22,7 +22,7 @@ private:
     uint64_t m_false = 0;
 
 public:
-    threshold(double value = 0.0, comparator cmp = comparator::EQUAL)
+    threshold(double value, comparator cmp)
         : m_comparator(cmp)
         , m_value(value)
     {}

@@ -192,7 +192,7 @@ api_reply server::handle_request(const request::generator::start& req)
         }
     } catch (const std::runtime_error&) {
         return error_message({.type = reply::error::NOT_INITIALIZED});
-    } catch (const std::exception& e) {
+    } catch (const std::logic_error& e) {
         return error_message(
             {.type = reply::error::CUSTOM, .message = e.what()});
     }
@@ -233,7 +233,7 @@ api_reply server::handle_request(const request::generator::bulk::start& req)
 
             list.data->push_back(stat_transformer(m_generator_stack->stat(id)));
         }
-    } catch (const std::exception& e) {
+    } catch (const std::logic_error& e) {
         for (auto& rollback_id : not_runned_before)
             m_generator_stack->stop(rollback_id);
 

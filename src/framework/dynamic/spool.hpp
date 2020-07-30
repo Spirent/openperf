@@ -257,19 +257,20 @@ template <typename T> void spool<T>::argument_check(const argument_t& arg) const
 {
     if (!m_extractor(m_last_stat, arg.x)) {
         throw std::domain_error("Argument x with name '" + arg.x
-                                + "' not exists.");
+                                + "' does not exist.");
     }
 
     switch (arg.function) {
     case argument_t::DXDY:
         if (!m_extractor(m_last_stat, arg.y)) {
             throw std::domain_error("Argument y with name '" + arg.y
-                                    + "' not exists.");
+                                    + "' does not exist.");
         }
         break;
     case argument_t::DXDT:
         if (!m_extractor(m_last_stat, "timestamp")) {
-            throw std::domain_error("Field with name 'timestamp' not exists.");
+            throw std::domain_error(
+                "Field with name 'timestamp' does not exist.");
         }
         break;
     default:
