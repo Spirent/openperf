@@ -19,7 +19,6 @@ namespace model {
 
 TvlpProfile_memory::TvlpProfile_memory()
 {
-    m_SeriesIsSet = false;
     
 }
 
@@ -42,12 +41,8 @@ nlohmann::json TvlpProfile_memory::toJson() const
         {
             jsonArray.push_back(ModelBase::toJson(item));
         }
-        
-        if(jsonArray.size() > 0)
-        {
-            val["series"] = jsonArray;
-        }
-    }
+        val["series"] = jsonArray;
+            }
     
 
     return val;
@@ -58,9 +53,7 @@ void TvlpProfile_memory::fromJson(nlohmann::json& val)
     {
         m_Series.clear();
         nlohmann::json jsonArray;
-        if(val.find("series") != val.end())
-        {
-        for( auto& item : val["series"] )
+                for( auto& item : val["series"] )
         {
             
             if(item.is_null())
@@ -75,7 +68,6 @@ void TvlpProfile_memory::fromJson(nlohmann::json& val)
             }
             
         }
-        }
     }
     
 }
@@ -84,14 +76,6 @@ void TvlpProfile_memory::fromJson(nlohmann::json& val)
 std::vector<std::shared_ptr<TvlpProfile_memory_series>>& TvlpProfile_memory::getSeries()
 {
     return m_Series;
-}
-bool TvlpProfile_memory::seriesIsSet() const
-{
-    return m_SeriesIsSet;
-}
-void TvlpProfile_memory::unsetSeries()
-{
-    m_SeriesIsSet = false;
 }
 
 }

@@ -21,7 +21,6 @@ TvlpConfiguration::TvlpConfiguration()
 {
     m_Id = "";
     m_State = "";
-    m_TimeIsSet = false;
     m_Error = "";
     m_ErrorIsSet = false;
     
@@ -42,10 +41,7 @@ nlohmann::json TvlpConfiguration::toJson() const
 
     val["id"] = ModelBase::toJson(m_Id);
     val["state"] = ModelBase::toJson(m_State);
-    if(m_TimeIsSet)
-    {
-        val["time"] = ModelBase::toJson(m_Time);
-    }
+    val["time"] = ModelBase::toJson(m_Time);
     val["profile"] = ModelBase::toJson(m_Profile);
     if(m_ErrorIsSet)
     {
@@ -60,16 +56,6 @@ void TvlpConfiguration::fromJson(nlohmann::json& val)
 {
     setId(val.at("id"));
     setState(val.at("state"));
-    if(val.find("time") != val.end())
-    {
-        if(!val["time"].is_null())
-        {
-            std::shared_ptr<TvlpConfiguration_time> newItem(new TvlpConfiguration_time());
-            newItem->fromJson(val["time"]);
-            setTime( newItem );
-        }
-        
-    }
     if(val.find("error") != val.end())
     {
         setError(val.at("error"));
@@ -104,15 +90,7 @@ std::shared_ptr<TvlpConfiguration_time> TvlpConfiguration::getTime() const
 void TvlpConfiguration::setTime(std::shared_ptr<TvlpConfiguration_time> value)
 {
     m_Time = value;
-    m_TimeIsSet = true;
-}
-bool TvlpConfiguration::timeIsSet() const
-{
-    return m_TimeIsSet;
-}
-void TvlpConfiguration::unsetTime()
-{
-    m_TimeIsSet = false;
+    
 }
 std::shared_ptr<TvlpProfile> TvlpConfiguration::getProfile() const
 {

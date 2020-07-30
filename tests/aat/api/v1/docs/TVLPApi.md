@@ -256,7 +256,7 @@ No authorization required
 
 List TVLP configurations
 
-The `tvlp` endpoint returns all of TVLP configurations.
+The `tvlp` endpoint returns all of the TVLP configurations.
 
 ### Example
 ```python
@@ -357,7 +357,7 @@ from pprint import pprint
 # create an instance of the API class
 api_instance = client.TVLPApi()
 id = 'id_example' # str | Unique resource identifier
-time = 789 # int | Time to start profile replay (optional)
+time = '2013-10-20T19:20:30+01:00' # datetime | The ISO8601-formatted date and time to start profile replay (optional)
 
 try:
     # Start a TVLP configuration
@@ -372,7 +372,7 @@ except ApiException as e:
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **id** | **str**| Unique resource identifier | 
- **time** | **int**| Time to start profile replay | [optional] 
+ **time** | **datetime**| The ISO8601-formatted date and time to start profile replay | [optional] 
 
 ### Return type
 
