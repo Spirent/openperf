@@ -31,47 +31,46 @@ class TvlpProfileCpuSeries(object):
                             and the value is json key in definition.
     """
     swagger_types = {
-        'offset': 'int',
+        'length': 'int',
         'config': 'CpuGeneratorConfig'
     }
 
     attribute_map = {
-        'offset': 'offset',
+        'length': 'length',
         'config': 'config'
     }
 
-    def __init__(self, offset=None, config=None):  # noqa: E501
+    def __init__(self, length=None, config=None):  # noqa: E501
         """TvlpProfileCpuSeries - a model defined in Swagger"""  # noqa: E501
 
-        self._offset = None
+        self._length = None
         self._config = None
         self.discriminator = None
 
-        if offset is not None:
-            self.offset = offset
+        self.length = length
         self.config = config
 
     @property
-    def offset(self):
-        """Gets the offset of this TvlpProfileCpuSeries.  # noqa: E501
+    def length(self):
+        """Gets the length of this TvlpProfileCpuSeries.  # noqa: E501
 
-        Delay after previous operation  # noqa: E501
+        Length of a current operation in ns  # noqa: E501
 
-        :return: The offset of this TvlpProfileCpuSeries.  # noqa: E501
+        :return: The length of this TvlpProfileCpuSeries.  # noqa: E501
         :rtype: int
         """
-        return self._offset
+        return self._length
 
-    @offset.setter
-    def offset(self, offset):
-        """Sets the offset of this TvlpProfileCpuSeries.
+    @length.setter
+    def length(self, length):
+        """Sets the length of this TvlpProfileCpuSeries.
 
-        Delay after previous operation  # noqa: E501
+        Length of a current operation in ns  # noqa: E501
 
-        :param offset: The offset of this TvlpProfileCpuSeries.  # noqa: E501
+        :param length: The length of this TvlpProfileCpuSeries.  # noqa: E501
         :type: int
         """
-        self._offset = offset
+        self._length = length
 
     @property
     def config(self):

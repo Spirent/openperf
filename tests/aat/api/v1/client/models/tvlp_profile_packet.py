@@ -31,48 +31,20 @@ class TvlpProfilePacket(object):
                             and the value is json key in definition.
     """
     swagger_types = {
-        'target_id': 'str',
         'series': 'list[TvlpProfilePacketSeries]'
     }
 
     attribute_map = {
-        'target_id': 'target_id',
         'series': 'series'
     }
 
-    def __init__(self, target_id=None, series=None):  # noqa: E501
+    def __init__(self, series=None):  # noqa: E501
         """TvlpProfilePacket - a model defined in Swagger"""  # noqa: E501
 
-        self._target_id = None
         self._series = None
         self.discriminator = None
 
-        if target_id is not None:
-            self.target_id = target_id
-        if series is not None:
-            self.series = series
-
-    @property
-    def target_id(self):
-        """Gets the target_id of this TvlpProfilePacket.  # noqa: E501
-
-        Specifies the unique target for packets from this generator. This id may refer to either a port or an interface id.   # noqa: E501
-
-        :return: The target_id of this TvlpProfilePacket.  # noqa: E501
-        :rtype: str
-        """
-        return self._target_id
-
-    @target_id.setter
-    def target_id(self, target_id):
-        """Sets the target_id of this TvlpProfilePacket.
-
-        Specifies the unique target for packets from this generator. This id may refer to either a port or an interface id.   # noqa: E501
-
-        :param target_id: The target_id of this TvlpProfilePacket.  # noqa: E501
-        :type: str
-        """
-        self._target_id = target_id
+        self.series = series
 
     @property
     def series(self):

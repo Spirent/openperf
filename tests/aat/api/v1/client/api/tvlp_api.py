@@ -529,7 +529,7 @@ class TVLPApi(object):
     def list_tvlp_configurations(self, **kwargs):  # noqa: E501
         """List TVLP configurations  # noqa: E501
 
-        The `tvlp` endpoint returns all of TVLP configurations.  # noqa: E501
+        The `tvlp` endpoint returns all of the TVLP configurations.  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
         >>> thread = api.list_tvlp_configurations(async_req=True)
@@ -550,7 +550,7 @@ class TVLPApi(object):
     def list_tvlp_configurations_with_http_info(self, **kwargs):  # noqa: E501
         """List TVLP configurations  # noqa: E501
 
-        The `tvlp` endpoint returns all of TVLP configurations.  # noqa: E501
+        The `tvlp` endpoint returns all of the TVLP configurations.  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
         >>> thread = api.list_tvlp_configurations_with_http_info(async_req=True)
@@ -719,7 +719,7 @@ class TVLPApi(object):
 
         :param async_req bool
         :param str id: Unique resource identifier (required)
-        :param int time: Time to start profile replay
+        :param datetime time: The ISO8601-formatted date and time to start profile replay
         :return: TvlpResult
                  If the method is called asynchronously,
                  returns the request thread.
@@ -742,7 +742,7 @@ class TVLPApi(object):
 
         :param async_req bool
         :param str id: Unique resource identifier (required)
-        :param int time: Time to start profile replay
+        :param datetime time: The ISO8601-formatted date and time to start profile replay
         :return: TvlpResult
                  If the method is called asynchronously,
                  returns the request thread.

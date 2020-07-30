@@ -22,6 +22,7 @@
 #include "ModelBase.h"
 
 #include "BlockGeneratorConfig.h"
+#include <string>
 
 namespace swagger {
 namespace v1 {
@@ -49,21 +50,26 @@ public:
     /// TvlpProfile_block_series members
 
     /// <summary>
-    /// Delay after previous operation
+    /// Unique device or file identifier
     /// </summary>
-    int64_t getOffset() const;
-    void setOffset(int64_t value);
-    bool offsetIsSet() const;
-    void unsetOffset();
-    /// <summary>
+    std::string getResourceId() const;
+    void setResourceId(std::string value);
+        /// <summary>
+    /// Length of a current operation in ns
+    /// </summary>
+    int64_t getLength() const;
+    void setLength(int64_t value);
+        /// <summary>
     /// 
     /// </summary>
     std::shared_ptr<BlockGeneratorConfig> getConfig() const;
     void setConfig(std::shared_ptr<BlockGeneratorConfig> value);
     
 protected:
-    int64_t m_Offset;
-    bool m_OffsetIsSet;
+    std::string m_Resource_id;
+
+    int64_t m_Length;
+
     std::shared_ptr<BlockGeneratorConfig> m_Config;
 
 };

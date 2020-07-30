@@ -19,8 +19,7 @@ namespace model {
 
 TvlpProfile_memory_series::TvlpProfile_memory_series()
 {
-    m_Offset = 0L;
-    m_OffsetIsSet = false;
+    m_Length = 0L;
     
 }
 
@@ -37,10 +36,7 @@ nlohmann::json TvlpProfile_memory_series::toJson() const
 {
     nlohmann::json val = nlohmann::json::object();
 
-    if(m_OffsetIsSet)
-    {
-        val["offset"] = m_Offset;
-    }
+    val["length"] = m_Length;
     val["config"] = ModelBase::toJson(m_Config);
     
 
@@ -49,30 +45,19 @@ nlohmann::json TvlpProfile_memory_series::toJson() const
 
 void TvlpProfile_memory_series::fromJson(nlohmann::json& val)
 {
-    if(val.find("offset") != val.end())
-    {
-        setOffset(val.at("offset"));
-    }
+    setLength(val.at("length"));
     
 }
 
 
-int64_t TvlpProfile_memory_series::getOffset() const
+int64_t TvlpProfile_memory_series::getLength() const
 {
-    return m_Offset;
+    return m_Length;
 }
-void TvlpProfile_memory_series::setOffset(int64_t value)
+void TvlpProfile_memory_series::setLength(int64_t value)
 {
-    m_Offset = value;
-    m_OffsetIsSet = true;
-}
-bool TvlpProfile_memory_series::offsetIsSet() const
-{
-    return m_OffsetIsSet;
-}
-void TvlpProfile_memory_series::unsetOffset()
-{
-    m_OffsetIsSet = false;
+    m_Length = value;
+    
 }
 std::shared_ptr<MemoryGeneratorConfig> TvlpProfile_memory_series::getConfig() const
 {

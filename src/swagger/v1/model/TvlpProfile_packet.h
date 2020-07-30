@@ -22,7 +22,6 @@
 #include "ModelBase.h"
 
 #include "TvlpProfile_packet_series.h"
-#include <string>
 #include <vector>
 
 namespace swagger {
@@ -51,24 +50,13 @@ public:
     /// TvlpProfile_packet members
 
     /// <summary>
-    /// Specifies the unique target for packets from this generator. This id may refer to either a port or an interface id. 
-    /// </summary>
-    std::string getTargetId() const;
-    void setTargetId(std::string value);
-    bool targetIdIsSet() const;
-    void unsetTarget_id();
-    /// <summary>
     /// 
     /// </summary>
     std::vector<std::shared_ptr<TvlpProfile_packet_series>>& getSeries();
-    bool seriesIsSet() const;
-    void unsetSeries();
-
+    
 protected:
-    std::string m_Target_id;
-    bool m_Target_idIsSet;
     std::vector<std::shared_ptr<TvlpProfile_packet_series>> m_Series;
-    bool m_SeriesIsSet;
+
 };
 
 }

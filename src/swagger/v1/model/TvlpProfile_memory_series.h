@@ -49,21 +49,19 @@ public:
     /// TvlpProfile_memory_series members
 
     /// <summary>
-    /// Delay after previous operation
+    /// Length of the current operation in ns
     /// </summary>
-    int64_t getOffset() const;
-    void setOffset(int64_t value);
-    bool offsetIsSet() const;
-    void unsetOffset();
-    /// <summary>
+    int64_t getLength() const;
+    void setLength(int64_t value);
+        /// <summary>
     /// 
     /// </summary>
     std::shared_ptr<MemoryGeneratorConfig> getConfig() const;
     void setConfig(std::shared_ptr<MemoryGeneratorConfig> value);
     
 protected:
-    int64_t m_Offset;
-    bool m_OffsetIsSet;
+    int64_t m_Length;
+
     std::shared_ptr<MemoryGeneratorConfig> m_Config;
 
 };
