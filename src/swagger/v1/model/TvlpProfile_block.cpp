@@ -19,9 +19,6 @@ namespace model {
 
 TvlpProfile_block::TvlpProfile_block()
 {
-    m_Resource_id = "";
-    m_Resource_idIsSet = false;
-    m_SeriesIsSet = false;
     
 }
 
@@ -38,22 +35,14 @@ nlohmann::json TvlpProfile_block::toJson() const
 {
     nlohmann::json val = nlohmann::json::object();
 
-    if(m_Resource_idIsSet)
-    {
-        val["resource_id"] = ModelBase::toJson(m_Resource_id);
-    }
     {
         nlohmann::json jsonArray;
         for( auto& item : m_Series )
         {
             jsonArray.push_back(ModelBase::toJson(item));
         }
-        
-        if(jsonArray.size() > 0)
-        {
-            val["series"] = jsonArray;
-        }
-    }
+        val["series"] = jsonArray;
+            }
     
 
     return val;
@@ -61,17 +50,10 @@ nlohmann::json TvlpProfile_block::toJson() const
 
 void TvlpProfile_block::fromJson(nlohmann::json& val)
 {
-    if(val.find("resource_id") != val.end())
-    {
-        setResourceId(val.at("resource_id"));
-        
-    }
     {
         m_Series.clear();
         nlohmann::json jsonArray;
-        if(val.find("series") != val.end())
-        {
-        for( auto& item : val["series"] )
+                for( auto& item : val["series"] )
         {
             
             if(item.is_null())
@@ -86,40 +68,14 @@ void TvlpProfile_block::fromJson(nlohmann::json& val)
             }
             
         }
-        }
     }
     
 }
 
 
-std::string TvlpProfile_block::getResourceId() const
-{
-    return m_Resource_id;
-}
-void TvlpProfile_block::setResourceId(std::string value)
-{
-    m_Resource_id = value;
-    m_Resource_idIsSet = true;
-}
-bool TvlpProfile_block::resourceIdIsSet() const
-{
-    return m_Resource_idIsSet;
-}
-void TvlpProfile_block::unsetResource_id()
-{
-    m_Resource_idIsSet = false;
-}
 std::vector<std::shared_ptr<TvlpProfile_block_series>>& TvlpProfile_block::getSeries()
 {
     return m_Series;
-}
-bool TvlpProfile_block::seriesIsSet() const
-{
-    return m_SeriesIsSet;
-}
-void TvlpProfile_block::unsetSeries()
-{
-    m_SeriesIsSet = false;
 }
 
 }

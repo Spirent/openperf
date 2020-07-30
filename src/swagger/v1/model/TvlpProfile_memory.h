@@ -53,12 +53,10 @@ public:
     /// 
     /// </summary>
     std::vector<std::shared_ptr<TvlpProfile_memory_series>>& getSeries();
-    bool seriesIsSet() const;
-    void unsetSeries();
-
+    
 protected:
     std::vector<std::shared_ptr<TvlpProfile_memory_series>> m_Series;
-    bool m_SeriesIsSet;
+
 };
 
 }

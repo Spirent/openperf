@@ -20,9 +20,7 @@ namespace model {
 TvlpResult::TvlpResult()
 {
     m_Id = "";
-    m_IdIsSet = false;
     m_Tvlp_id = "";
-    m_Tvlp_idIsSet = false;
     m_MemoryIsSet = false;
     m_BlockIsSet = false;
     m_CpuIsSet = false;
@@ -43,14 +41,8 @@ nlohmann::json TvlpResult::toJson() const
 {
     nlohmann::json val = nlohmann::json::object();
 
-    if(m_IdIsSet)
-    {
-        val["id"] = ModelBase::toJson(m_Id);
-    }
-    if(m_Tvlp_idIsSet)
-    {
-        val["tvlp_id"] = ModelBase::toJson(m_Tvlp_id);
-    }
+    val["id"] = ModelBase::toJson(m_Id);
+    val["tvlp_id"] = ModelBase::toJson(m_Tvlp_id);
     {
         nlohmann::json jsonArray;
         for( auto& item : m_Memory )
@@ -106,16 +98,8 @@ nlohmann::json TvlpResult::toJson() const
 
 void TvlpResult::fromJson(nlohmann::json& val)
 {
-    if(val.find("id") != val.end())
-    {
-        setId(val.at("id"));
-        
-    }
-    if(val.find("tvlp_id") != val.end())
-    {
-        setTvlpId(val.at("tvlp_id"));
-        
-    }
+    setId(val.at("id"));
+    setTvlpId(val.at("tvlp_id"));
     {
         m_Memory.clear();
         nlohmann::json jsonArray;
@@ -215,15 +199,7 @@ std::string TvlpResult::getId() const
 void TvlpResult::setId(std::string value)
 {
     m_Id = value;
-    m_IdIsSet = true;
-}
-bool TvlpResult::idIsSet() const
-{
-    return m_IdIsSet;
-}
-void TvlpResult::unsetId()
-{
-    m_IdIsSet = false;
+    
 }
 std::string TvlpResult::getTvlpId() const
 {
@@ -232,15 +208,7 @@ std::string TvlpResult::getTvlpId() const
 void TvlpResult::setTvlpId(std::string value)
 {
     m_Tvlp_id = value;
-    m_Tvlp_idIsSet = true;
-}
-bool TvlpResult::tvlpIdIsSet() const
-{
-    return m_Tvlp_idIsSet;
-}
-void TvlpResult::unsetTvlp_id()
-{
-    m_Tvlp_idIsSet = false;
+    
 }
 std::vector<std::shared_ptr<MemoryGeneratorResult>>& TvlpResult::getMemory()
 {

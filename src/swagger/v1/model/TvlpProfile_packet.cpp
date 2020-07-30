@@ -19,9 +19,6 @@ namespace model {
 
 TvlpProfile_packet::TvlpProfile_packet()
 {
-    m_Target_id = "";
-    m_Target_idIsSet = false;
-    m_SeriesIsSet = false;
     
 }
 
@@ -38,22 +35,14 @@ nlohmann::json TvlpProfile_packet::toJson() const
 {
     nlohmann::json val = nlohmann::json::object();
 
-    if(m_Target_idIsSet)
-    {
-        val["target_id"] = ModelBase::toJson(m_Target_id);
-    }
     {
         nlohmann::json jsonArray;
         for( auto& item : m_Series )
         {
             jsonArray.push_back(ModelBase::toJson(item));
         }
-        
-        if(jsonArray.size() > 0)
-        {
-            val["series"] = jsonArray;
-        }
-    }
+        val["series"] = jsonArray;
+            }
     
 
     return val;
@@ -61,17 +50,10 @@ nlohmann::json TvlpProfile_packet::toJson() const
 
 void TvlpProfile_packet::fromJson(nlohmann::json& val)
 {
-    if(val.find("target_id") != val.end())
-    {
-        setTargetId(val.at("target_id"));
-        
-    }
     {
         m_Series.clear();
         nlohmann::json jsonArray;
-        if(val.find("series") != val.end())
-        {
-        for( auto& item : val["series"] )
+                for( auto& item : val["series"] )
         {
             
             if(item.is_null())
@@ -86,40 +68,14 @@ void TvlpProfile_packet::fromJson(nlohmann::json& val)
             }
             
         }
-        }
     }
     
 }
 
 
-std::string TvlpProfile_packet::getTargetId() const
-{
-    return m_Target_id;
-}
-void TvlpProfile_packet::setTargetId(std::string value)
-{
-    m_Target_id = value;
-    m_Target_idIsSet = true;
-}
-bool TvlpProfile_packet::targetIdIsSet() const
-{
-    return m_Target_idIsSet;
-}
-void TvlpProfile_packet::unsetTarget_id()
-{
-    m_Target_idIsSet = false;
-}
 std::vector<std::shared_ptr<TvlpProfile_packet_series>>& TvlpProfile_packet::getSeries()
 {
     return m_Series;
-}
-bool TvlpProfile_packet::seriesIsSet() const
-{
-    return m_SeriesIsSet;
-}
-void TvlpProfile_packet::unsetSeries()
-{
-    m_SeriesIsSet = false;
 }
 
 }

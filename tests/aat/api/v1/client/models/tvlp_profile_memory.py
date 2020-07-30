@@ -44,8 +44,7 @@ class TvlpProfileMemory(object):
         self._series = None
         self.discriminator = None
 
-        if series is not None:
-            self.series = series
+        self.series = series
 
     @property
     def series(self):

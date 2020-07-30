@@ -31,47 +31,72 @@ class TvlpProfilePacketSeries(object):
                             and the value is json key in definition.
     """
     swagger_types = {
-        'offset': 'int',
+        'target_id': 'str',
+        'length': 'int',
         'config': 'PacketGeneratorConfig'
     }
 
     attribute_map = {
-        'offset': 'offset',
+        'target_id': 'target_id',
+        'length': 'length',
         'config': 'config'
     }
 
-    def __init__(self, offset=None, config=None):  # noqa: E501
+    def __init__(self, target_id=None, length=None, config=None):  # noqa: E501
         """TvlpProfilePacketSeries - a model defined in Swagger"""  # noqa: E501
 
-        self._offset = None
+        self._target_id = None
+        self._length = None
         self._config = None
         self.discriminator = None
 
-        if offset is not None:
-            self.offset = offset
+        self.target_id = target_id
+        self.length = length
         self.config = config
 
     @property
-    def offset(self):
-        """Gets the offset of this TvlpProfilePacketSeries.  # noqa: E501
+    def target_id(self):
+        """Gets the target_id of this TvlpProfilePacketSeries.  # noqa: E501
 
-        Delay after previous operation  # noqa: E501
+        Specifies the unique target for packets from this generator. This id may refer to either a port or an interface id.   # noqa: E501
 
-        :return: The offset of this TvlpProfilePacketSeries.  # noqa: E501
+        :return: The target_id of this TvlpProfilePacketSeries.  # noqa: E501
+        :rtype: str
+        """
+        return self._target_id
+
+    @target_id.setter
+    def target_id(self, target_id):
+        """Sets the target_id of this TvlpProfilePacketSeries.
+
+        Specifies the unique target for packets from this generator. This id may refer to either a port or an interface id.   # noqa: E501
+
+        :param target_id: The target_id of this TvlpProfilePacketSeries.  # noqa: E501
+        :type: str
+        """
+        self._target_id = target_id
+
+    @property
+    def length(self):
+        """Gets the length of this TvlpProfilePacketSeries.  # noqa: E501
+
+        Length of a current operation in ns  # noqa: E501
+
+        :return: The length of this TvlpProfilePacketSeries.  # noqa: E501
         :rtype: int
         """
-        return self._offset
+        return self._length
 
-    @offset.setter
-    def offset(self, offset):
-        """Sets the offset of this TvlpProfilePacketSeries.
+    @length.setter
+    def length(self, length):
+        """Sets the length of this TvlpProfilePacketSeries.
 
-        Delay after previous operation  # noqa: E501
+        Length of a current operation in ns  # noqa: E501
 
-        :param offset: The offset of this TvlpProfilePacketSeries.  # noqa: E501
+        :param length: The length of this TvlpProfilePacketSeries.  # noqa: E501
         :type: int
         """
-        self._offset = offset
+        self._length = length
 
     @property
     def config(self):

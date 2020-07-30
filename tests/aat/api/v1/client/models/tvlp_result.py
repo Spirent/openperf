@@ -59,10 +59,8 @@ class TvlpResult(object):
         self._packet = None
         self.discriminator = None
 
-        if id is not None:
-            self.id = id
-        if tvlp_id is not None:
-            self.tvlp_id = tvlp_id
+        self.id = id
+        self.tvlp_id = tvlp_id
         if memory is not None:
             self.memory = memory
         if block is not None:

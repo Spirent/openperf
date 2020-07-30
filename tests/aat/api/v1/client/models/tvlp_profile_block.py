@@ -31,48 +31,20 @@ class TvlpProfileBlock(object):
                             and the value is json key in definition.
     """
     swagger_types = {
-        'resource_id': 'str',
         'series': 'list[TvlpProfileBlockSeries]'
     }
 
     attribute_map = {
-        'resource_id': 'resource_id',
         'series': 'series'
     }
 
-    def __init__(self, resource_id=None, series=None):  # noqa: E501
+    def __init__(self, series=None):  # noqa: E501
         """TvlpProfileBlock - a model defined in Swagger"""  # noqa: E501
 
-        self._resource_id = None
         self._series = None
         self.discriminator = None
 
-        if resource_id is not None:
-            self.resource_id = resource_id
-        if series is not None:
-            self.series = series
-
-    @property
-    def resource_id(self):
-        """Gets the resource_id of this TvlpProfileBlock.  # noqa: E501
-
-        Unique device or file identifier  # noqa: E501
-
-        :return: The resource_id of this TvlpProfileBlock.  # noqa: E501
-        :rtype: str
-        """
-        return self._resource_id
-
-    @resource_id.setter
-    def resource_id(self, resource_id):
-        """Sets the resource_id of this TvlpProfileBlock.
-
-        Unique device or file identifier  # noqa: E501
-
-        :param resource_id: The resource_id of this TvlpProfileBlock.  # noqa: E501
-        :type: str
-        """
-        self._resource_id = resource_id
+        self.series = series
 
     @property
     def series(self):

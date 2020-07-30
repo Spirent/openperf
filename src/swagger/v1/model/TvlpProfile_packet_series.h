@@ -22,6 +22,7 @@
 #include "ModelBase.h"
 
 #include "PacketGeneratorConfig.h"
+#include <string>
 
 namespace swagger {
 namespace v1 {
@@ -49,21 +50,26 @@ public:
     /// TvlpProfile_packet_series members
 
     /// <summary>
-    /// Delay after previous operation
+    /// Specifies the unique target for packets from this generator. This id may refer to either a port or an interface id. 
     /// </summary>
-    int64_t getOffset() const;
-    void setOffset(int64_t value);
-    bool offsetIsSet() const;
-    void unsetOffset();
-    /// <summary>
+    std::string getTargetId() const;
+    void setTargetId(std::string value);
+        /// <summary>
+    /// Length of a current operation in ns
+    /// </summary>
+    int64_t getLength() const;
+    void setLength(int64_t value);
+        /// <summary>
     /// 
     /// </summary>
     std::shared_ptr<PacketGeneratorConfig> getConfig() const;
     void setConfig(std::shared_ptr<PacketGeneratorConfig> value);
     
 protected:
-    int64_t m_Offset;
-    bool m_OffsetIsSet;
+    std::string m_Target_id;
+
+    int64_t m_Length;
+
     std::shared_ptr<PacketGeneratorConfig> m_Config;
 
 };

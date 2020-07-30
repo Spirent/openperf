@@ -56,7 +56,7 @@ public:
     bool startIsSet() const;
     void unsetStart();
     /// <summary>
-    /// length of current tvlp profile in ns
+    /// length of the current tvlp profile in ns
     /// </summary>
     int64_t getLength() const;
     void setLength(int64_t value);

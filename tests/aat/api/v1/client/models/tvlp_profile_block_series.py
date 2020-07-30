@@ -31,47 +31,72 @@ class TvlpProfileBlockSeries(object):
                             and the value is json key in definition.
     """
     swagger_types = {
-        'offset': 'int',
+        'resource_id': 'str',
+        'length': 'int',
         'config': 'BlockGeneratorConfig'
     }
 
     attribute_map = {
-        'offset': 'offset',
+        'resource_id': 'resource_id',
+        'length': 'length',
         'config': 'config'
     }
 
-    def __init__(self, offset=None, config=None):  # noqa: E501
+    def __init__(self, resource_id=None, length=None, config=None):  # noqa: E501
         """TvlpProfileBlockSeries - a model defined in Swagger"""  # noqa: E501
 
-        self._offset = None
+        self._resource_id = None
+        self._length = None
         self._config = None
         self.discriminator = None
 
-        if offset is not None:
-            self.offset = offset
+        self.resource_id = resource_id
+        self.length = length
         self.config = config
 
     @property
-    def offset(self):
-        """Gets the offset of this TvlpProfileBlockSeries.  # noqa: E501
+    def resource_id(self):
+        """Gets the resource_id of this TvlpProfileBlockSeries.  # noqa: E501
 
-        Delay after previous operation  # noqa: E501
+        Unique device or file identifier  # noqa: E501
 
-        :return: The offset of this TvlpProfileBlockSeries.  # noqa: E501
+        :return: The resource_id of this TvlpProfileBlockSeries.  # noqa: E501
+        :rtype: str
+        """
+        return self._resource_id
+
+    @resource_id.setter
+    def resource_id(self, resource_id):
+        """Sets the resource_id of this TvlpProfileBlockSeries.
+
+        Unique device or file identifier  # noqa: E501
+
+        :param resource_id: The resource_id of this TvlpProfileBlockSeries.  # noqa: E501
+        :type: str
+        """
+        self._resource_id = resource_id
+
+    @property
+    def length(self):
+        """Gets the length of this TvlpProfileBlockSeries.  # noqa: E501
+
+        Length of a current operation in ns  # noqa: E501
+
+        :return: The length of this TvlpProfileBlockSeries.  # noqa: E501
         :rtype: int
         """
-        return self._offset
+        return self._length
 
-    @offset.setter
-    def offset(self, offset):
-        """Sets the offset of this TvlpProfileBlockSeries.
+    @length.setter
+    def length(self, length):
+        """Sets the length of this TvlpProfileBlockSeries.
 
-        Delay after previous operation  # noqa: E501
+        Length of a current operation in ns  # noqa: E501
 
-        :param offset: The offset of this TvlpProfileBlockSeries.  # noqa: E501
+        :param length: The length of this TvlpProfileBlockSeries.  # noqa: E501
         :type: int
         """
-        self._offset = offset
+        self._length = length
 
     @property
     def config(self):

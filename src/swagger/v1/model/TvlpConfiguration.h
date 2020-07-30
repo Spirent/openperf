@@ -56,7 +56,7 @@ public:
     std::string getId() const;
     void setId(std::string value);
         /// <summary>
-    /// TVLP configuration state - ready - TVLP contains a valid configuration and ready to be started - countdown - TVLP has been given a start time in the future and is waiting to start replaying a profile - running - TVLP is replaying a profile - error - TVLP encountered a runtime error 
+    /// TVLP configuration state - ready - TVLP contains a valid configuration and is ready to be started - countdown - TVLP has been given a start time in the future and is waiting to start replaying a profile - running - TVLP is replaying a profile - error - TVLP encountered a runtime error 
     /// </summary>
     std::string getState() const;
     void setState(std::string value);
@@ -65,9 +65,7 @@ public:
     /// </summary>
     std::shared_ptr<TvlpConfiguration_time> getTime() const;
     void setTime(std::shared_ptr<TvlpConfiguration_time> value);
-    bool timeIsSet() const;
-    void unsetTime();
-    /// <summary>
+        /// <summary>
     /// 
     /// </summary>
     std::shared_ptr<TvlpProfile> getProfile() const;
@@ -86,7 +84,7 @@ protected:
     std::string m_State;
 
     std::shared_ptr<TvlpConfiguration_time> m_Time;
-    bool m_TimeIsSet;
+
     std::shared_ptr<TvlpProfile> m_Profile;
 
     std::string m_Error;

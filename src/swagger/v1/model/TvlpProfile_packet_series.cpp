@@ -19,8 +19,8 @@ namespace model {
 
 TvlpProfile_packet_series::TvlpProfile_packet_series()
 {
-    m_Offset = 0L;
-    m_OffsetIsSet = false;
+    m_Target_id = "";
+    m_Length = 0L;
     
 }
 
@@ -37,10 +37,8 @@ nlohmann::json TvlpProfile_packet_series::toJson() const
 {
     nlohmann::json val = nlohmann::json::object();
 
-    if(m_OffsetIsSet)
-    {
-        val["offset"] = m_Offset;
-    }
+    val["target_id"] = ModelBase::toJson(m_Target_id);
+    val["length"] = m_Length;
     val["config"] = ModelBase::toJson(m_Config);
     
 
@@ -49,30 +47,29 @@ nlohmann::json TvlpProfile_packet_series::toJson() const
 
 void TvlpProfile_packet_series::fromJson(nlohmann::json& val)
 {
-    if(val.find("offset") != val.end())
-    {
-        setOffset(val.at("offset"));
-    }
+    setTargetId(val.at("target_id"));
+    setLength(val.at("length"));
     
 }
 
 
-int64_t TvlpProfile_packet_series::getOffset() const
+std::string TvlpProfile_packet_series::getTargetId() const
 {
-    return m_Offset;
+    return m_Target_id;
 }
-void TvlpProfile_packet_series::setOffset(int64_t value)
+void TvlpProfile_packet_series::setTargetId(std::string value)
 {
-    m_Offset = value;
-    m_OffsetIsSet = true;
+    m_Target_id = value;
+    
 }
-bool TvlpProfile_packet_series::offsetIsSet() const
+int64_t TvlpProfile_packet_series::getLength() const
 {
-    return m_OffsetIsSet;
+    return m_Length;
 }
-void TvlpProfile_packet_series::unsetOffset()
+void TvlpProfile_packet_series::setLength(int64_t value)
 {
-    m_OffsetIsSet = false;
+    m_Length = value;
+    
 }
 std::shared_ptr<PacketGeneratorConfig> TvlpProfile_packet_series::getConfig() const
 {

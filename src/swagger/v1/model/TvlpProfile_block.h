@@ -21,7 +21,6 @@
 
 #include "ModelBase.h"
 
-#include <string>
 #include <vector>
 #include "TvlpProfile_block_series.h"
 
@@ -51,24 +50,13 @@ public:
     /// TvlpProfile_block members
 
     /// <summary>
-    /// Unique device or file identifier
-    /// </summary>
-    std::string getResourceId() const;
-    void setResourceId(std::string value);
-    bool resourceIdIsSet() const;
-    void unsetResource_id();
-    /// <summary>
     /// 
     /// </summary>
     std::vector<std::shared_ptr<TvlpProfile_block_series>>& getSeries();
-    bool seriesIsSet() const;
-    void unsetSeries();
-
+    
 protected:
-    std::string m_Resource_id;
-    bool m_Resource_idIsSet;
     std::vector<std::shared_ptr<TvlpProfile_block_series>> m_Series;
-    bool m_SeriesIsSet;
+
 };
 
 }
