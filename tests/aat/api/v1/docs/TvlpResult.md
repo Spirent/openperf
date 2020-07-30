@@ -3,8 +3,8 @@
 ## Properties
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**id** | **str** | Unique TVLP result identifier | [optional] 
-**tvlp_id** | **str** | TVLP configuration identifier that generated this result | [optional] 
+**id** | **str** | Unique TVLP result identifier | 
+**tvlp_id** | **str** | TVLP configuration identifier that generated this result | 
 **memory** | [**list[MemoryGeneratorResult]**](MemoryGeneratorResult.md) |  | [optional] 
 **block** | [**list[BlockGeneratorResult]**](BlockGeneratorResult.md) |  | [optional] 
 **cpu** | [**list[CpuGeneratorResult]**](CpuGeneratorResult.md) |  | [optional] 

@@ -31,7 +31,7 @@ class TvlpConfigurationTime(object):
                             and the value is json key in definition.
     """
     swagger_types = {
-        'start': 'str',
+        'start': 'datetime',
         'length': 'int',
         'offset': 'int'
     }
@@ -63,7 +63,7 @@ class TvlpConfigurationTime(object):
         The ISO8601-formatted date to start TVLP profile (only available when countdown)  # noqa: E501
 
         :return: The start of this TvlpConfigurationTime.  # noqa: E501
-        :rtype: str
+        :rtype: datetime
         """
         return self._start
 
@@ -74,7 +74,7 @@ class TvlpConfigurationTime(object):
         The ISO8601-formatted date to start TVLP profile (only available when countdown)  # noqa: E501
 
         :param start: The start of this TvlpConfigurationTime.  # noqa: E501
-        :type: str
+        :type: datetime
         """
         self._start = start
 
@@ -82,7 +82,7 @@ class TvlpConfigurationTime(object):
     def length(self):
         """Gets the length of this TvlpConfigurationTime.  # noqa: E501
 
-        length of current tvlp profile in ns  # noqa: E501
+        length of the current tvlp profile in ns  # noqa: E501
 
         :return: The length of this TvlpConfigurationTime.  # noqa: E501
         :rtype: int
@@ -93,7 +93,7 @@ class TvlpConfigurationTime(object):
     def length(self, length):
         """Sets the length of this TvlpConfigurationTime.
 
-        length of current tvlp profile in ns  # noqa: E501
+        length of the current tvlp profile in ns  # noqa: E501
 
         :param length: The length of this TvlpConfigurationTime.  # noqa: E501
         :type: int

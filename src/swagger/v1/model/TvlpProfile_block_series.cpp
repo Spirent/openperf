@@ -19,8 +19,8 @@ namespace model {
 
 TvlpProfile_block_series::TvlpProfile_block_series()
 {
-    m_Offset = 0L;
-    m_OffsetIsSet = false;
+    m_Resource_id = "";
+    m_Length = 0L;
     
 }
 
@@ -37,10 +37,8 @@ nlohmann::json TvlpProfile_block_series::toJson() const
 {
     nlohmann::json val = nlohmann::json::object();
 
-    if(m_OffsetIsSet)
-    {
-        val["offset"] = m_Offset;
-    }
+    val["resource_id"] = ModelBase::toJson(m_Resource_id);
+    val["length"] = m_Length;
     val["config"] = ModelBase::toJson(m_Config);
     
 
@@ -49,30 +47,29 @@ nlohmann::json TvlpProfile_block_series::toJson() const
 
 void TvlpProfile_block_series::fromJson(nlohmann::json& val)
 {
-    if(val.find("offset") != val.end())
-    {
-        setOffset(val.at("offset"));
-    }
+    setResourceId(val.at("resource_id"));
+    setLength(val.at("length"));
     
 }
 
 
-int64_t TvlpProfile_block_series::getOffset() const
+std::string TvlpProfile_block_series::getResourceId() const
 {
-    return m_Offset;
+    return m_Resource_id;
 }
-void TvlpProfile_block_series::setOffset(int64_t value)
+void TvlpProfile_block_series::setResourceId(std::string value)
 {
-    m_Offset = value;
-    m_OffsetIsSet = true;
+    m_Resource_id = value;
+    
 }
-bool TvlpProfile_block_series::offsetIsSet() const
+int64_t TvlpProfile_block_series::getLength() const
 {
-    return m_OffsetIsSet;
+    return m_Length;
 }
-void TvlpProfile_block_series::unsetOffset()
+void TvlpProfile_block_series::setLength(int64_t value)
 {
-    m_OffsetIsSet = false;
+    m_Length = value;
+    
 }
 std::shared_ptr<BlockGeneratorConfig> TvlpProfile_block_series::getConfig() const
 {
