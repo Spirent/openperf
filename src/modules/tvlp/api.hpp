@@ -8,7 +8,7 @@
 #include <zmq.h>
 #include <tl/expected.hpp>
 
-#include "model/tvlp_config.hpp"
+#include "models/tvlp_config.hpp"
 
 namespace swagger::v1::model {
 

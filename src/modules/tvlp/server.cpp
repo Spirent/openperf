@@ -40,8 +40,8 @@ int server::handle_rpc_request(const op_event_data* data)
 
 api_reply server::handle_request(const request::tvlp::list&)
 {
-    printf("1\n");
-    return reply::tvlp::list{};
+    return reply::tvlp::list{
+        .data = std::make_unique<std::vector<tvlp_config_t>>()};
 }
 
 api_reply server::handle_request(const request::tvlp::get&)
@@ -52,9 +52,10 @@ api_reply server::handle_request(const request::tvlp::erase&)
 {
     return reply::ok{};
 }
-api_reply server::handle_request(const request::tvlp::create&)
+api_reply server::handle_request(const request::tvlp::create& request)
 {
-    return reply::ok{};
+    return reply::tvlp::item{
+        .data = std::make_unique<tvlp_config_t>(*request.data)};
 }
 api_reply server::handle_request(const request::tvlp::start&)
 {
