@@ -124,6 +124,10 @@ serialized_msg serialize(api_reply&& msg)
                                return (zmq_msg_init(&serialized.data,
                                                     std::move(reply.data)));
                            },
+                           [&](reply::tvlp::item& reply) {
+                               return (zmq_msg_init(&serialized.data,
+                                                    std::move(reply.data)));
+                           },
                            [&](const reply::error& error) {
                                return zmq_msg_init(
                                    &serialized.data, &error, sizeof(error));
@@ -225,7 +229,11 @@ namespace swagger::v1::model {
 
 void from_json(const nlohmann::json& j, TvlpConfiguration& generator)
 {
-    if (j.find("id") != j.end()) { generator.setId(j.at("id")); }
+    generator.fromJson(const_cast<nlohmann::json&>(j));
+
+    generator.setProfile(std::make_shared<TvlpProfile>());
+    generator.getProfile()->fromJson(
+        const_cast<nlohmann::json&>(j.at("profile")));
 }
 
 } // namespace swagger::v1::model
