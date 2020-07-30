@@ -17,13 +17,19 @@
 #include "swagger/v1/model/TimeKeeper.h"
 #include "swagger/v1/model/TimeSource.h"
 
+namespace openperf::message {
+struct serialized_message;
+}
+
 namespace openperf::timesync::api {
 
-constexpr std::string_view endpoint = "inproc://openperf_timesync";
+inline constexpr std::string_view endpoint = "inproc://openperf_timesync";
 
 static constexpr size_t id_max_length = 64;
 static constexpr size_t name_max_length = NI_MAXHOST;
 static constexpr size_t port_max_length = NI_MAXSERV;
+
+using serialized_msg = openperf::message::serialized_message;
 
 struct time_counter
 {
@@ -160,20 +166,11 @@ using reply_msg = std::variant<reply_time_counters,
                                reply_ok,
                                reply_error>;
 
-struct serialized_msg
-{
-    zmq_msg_t type;
-    zmq_msg_t data;
-};
+serialized_msg serialize_request(request_msg&& request);
+serialized_msg serialize_reply(reply_msg&& reply);
 
-serialized_msg serialize_request(const request_msg& request);
-serialized_msg serialize_reply(const reply_msg& reply);
-
-tl::expected<request_msg, int> deserialize_request(const serialized_msg& msg);
-tl::expected<reply_msg, int> deserialize_reply(const serialized_msg& msg);
-
-int send_message(void* socket, serialized_msg&& msg);
-tl::expected<serialized_msg, int> recv_message(void* socket, int flags = 0);
+tl::expected<request_msg, int> deserialize_request(serialized_msg&& msg);
+tl::expected<reply_msg, int> deserialize_reply(serialized_msg&& msg);
 
 std::shared_ptr<swagger::v1::model::TimeCounter>
 to_swagger(const time_counter&);

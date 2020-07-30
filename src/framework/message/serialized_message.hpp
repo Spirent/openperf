@@ -105,8 +105,8 @@ inline auto push(serialized_message& msg, const std::string& str)
 }
 
 template <typename T>
-std::enable_if_t<std::is_fundamental<T>::value || std::is_enum<T>::value, int>
-push(serialized_message& msg, std::vector<T>& values)
+std::enable_if_t<std::is_trivially_copyable<T>::value, int>
+push(serialized_message& msg, const std::vector<T>& values)
 {
     auto& part = msg.parts.emplace_back();
     auto length = sizeof(T) * values.size();
@@ -175,8 +175,7 @@ inline std::string pop_string(serialized_message& msg)
 }
 
 template <typename T>
-std::enable_if_t<std::is_fundamental<T>::value || std::is_enum<T>::value,
-                 std::vector<T>>
+std::enable_if_t<std::is_trivially_copyable<T>::value, std::vector<T>>
 pop_vector(serialized_message& msg)
 {
     if (msg.parts.empty()) { return {}; }

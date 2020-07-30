@@ -3,6 +3,7 @@
 
 #include <arpa/inet.h>
 
+#include "message/serialized_message.hpp"
 #include "timesync/api.hpp"
 #include "timesync/chrono.hpp"
 #include "timesync/ntp.hpp"
@@ -319,14 +320,15 @@ static int handle_rpc_request(const op_event_data* data, void* arg)
     auto s = reinterpret_cast<server*>(arg);
 
     auto reply_errors = 0;
-    while (auto request = recv_message(data->socket, ZMQ_DONTWAIT)
+    while (auto request = message::recv(data->socket, ZMQ_DONTWAIT)
                               .and_then(deserialize_request)) {
         auto request_visitor = [&](auto& request) -> reply_msg {
             return (s->handle_request(request));
         };
         auto reply = std::visit(request_visitor, *request);
 
-        if (send_message(data->socket, serialize_reply(reply)) == -1) {
+        if (message::send(data->socket, serialize_reply(std::move(reply)))
+            == -1) {
             reply_errors++;
             OP_LOG(
                 OP_LOG_ERROR, "Error sending reply: %s\n", zmq_strerror(errno));
