@@ -12,12 +12,12 @@ namespace openperf::block::generator {
 
 using namespace openperf::block::worker;
 
-using block_worker = utils::worker::worker<block_task>;
-using block_worker_ptr = std::unique_ptr<block_worker>;
-using block_result_ptr = std::shared_ptr<model::block_generator_result>;
-
 class block_generator : public model::block_generator
 {
+    using block_worker = utils::worker::worker<block_task>;
+    using block_worker_ptr = std::unique_ptr<block_worker>;
+    using block_result_ptr = std::shared_ptr<model::block_generator_result>;
+
 private:
     block_worker_ptr m_read_worker, m_write_worker;
     task_synchronizer m_synchronizer;

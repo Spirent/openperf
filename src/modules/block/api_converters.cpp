@@ -211,7 +211,7 @@ bool is_valid(const BlockGenerator& generator, std::vector<std::string>& errors)
     return (errors.size() == init_errors);
 }
 
-std::shared_ptr<BlockDevice> to_swagger(const device_t& p_device)
+std::shared_ptr<BlockDevice> to_swagger(const model::device& p_device)
 {
     auto device = std::make_shared<BlockDevice>();
     device->setId(p_device.id());
@@ -224,7 +224,7 @@ std::shared_ptr<BlockDevice> to_swagger(const device_t& p_device)
     return device;
 }
 
-std::shared_ptr<BlockFile> to_swagger(const file_t& p_file)
+std::shared_ptr<BlockFile> to_swagger(const model::file& p_file)
 {
     auto blkfile = std::make_shared<BlockFile>();
     blkfile->setId(p_file.id());
@@ -235,7 +235,7 @@ std::shared_ptr<BlockFile> to_swagger(const file_t& p_file)
     return blkfile;
 }
 
-std::shared_ptr<BlockGenerator> to_swagger(const generator_t& p_gen)
+std::shared_ptr<BlockGenerator> to_swagger(const model::block_generator& p_gen)
 {
     auto gen_config = std::make_shared<BlockGeneratorConfig>();
     gen_config->setPattern(std::string(to_string(p_gen.config().pattern)));
@@ -261,7 +261,7 @@ std::shared_ptr<BlockGenerator> to_swagger(const generator_t& p_gen)
 }
 
 std::shared_ptr<BlockGeneratorResult>
-to_swagger(const generator_result_t& p_gen_result)
+to_swagger(const model::block_generator_result& p_gen_result)
 {
     auto gen_res = std::make_shared<BlockGeneratorResult>();
     gen_res->setId(p_gen_result.id());
@@ -345,7 +345,7 @@ request_block_file_bulk_del from_swagger(BulkDeleteBlockFilesRequest& p_request)
 {
     request_block_file_bulk_del request;
     for (auto& id : p_request.getIds())
-        request.ids.emplace_back(std::make_unique<string_t>(id));
+        request.ids.emplace_back(std::make_unique<std::string>(id));
     return request;
 }
 
@@ -364,7 +364,7 @@ from_swagger(BulkDeleteBlockGeneratorsRequest& p_request)
 {
     request_block_generator_bulk_del request;
     for (auto& id : p_request.getIds())
-        request.ids.emplace_back(std::make_unique<string_t>(id));
+        request.ids.emplace_back(std::make_unique<std::string>(id));
     return request;
 }
 
@@ -373,7 +373,7 @@ from_swagger(BulkStartBlockGeneratorsRequest& p_request)
 {
     request_block_generator_bulk_start request;
     for (auto& id : p_request.getIds())
-        request.ids.emplace_back(std::make_unique<string_t>(id));
+        request.ids.emplace_back(std::make_unique<std::string>(id));
     return request;
 }
 
@@ -382,7 +382,7 @@ from_swagger(BulkStopBlockGeneratorsRequest& p_request)
 {
     request_block_generator_bulk_stop request;
     for (auto& id : p_request.getIds())
-        request.ids.emplace_back(std::make_unique<string_t>(id));
+        request.ids.emplace_back(std::make_unique<std::string>(id));
     return request;
 }
 

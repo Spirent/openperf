@@ -5,7 +5,8 @@
 
 namespace openperf::block::generator {
 
-std::vector<block_generator_ptr> generator_stack::block_generators_list() const
+std::vector<generator_stack::block_generator_ptr>
+generator_stack::block_generators_list() const
 {
     std::vector<block_generator_ptr> blkgenerators_list;
     for (const auto& blkgenerator_pair : m_block_generators) {
@@ -15,7 +16,7 @@ std::vector<block_generator_ptr> generator_stack::block_generators_list() const
     return blkgenerators_list;
 }
 
-tl::expected<block_generator_ptr, std::string>
+tl::expected<generator_stack::block_generator_ptr, std::string>
 generator_stack::create_block_generator(
     const model::block_generator& block_generator_model,
     const std::vector<virtual_device_stack*>& vdev_stack_list)
@@ -43,7 +44,7 @@ generator_stack::create_block_generator(
     }
 }
 
-block_generator_ptr
+generator_stack::block_generator_ptr
 generator_stack::block_generator(const std::string& id) const
 {
     if (m_block_generators.count(id)) return m_block_generators.at(id);
@@ -66,7 +67,7 @@ bool generator_stack::delete_block_generator(const std::string& id)
     return (m_block_generators.erase(id) > 0);
 }
 
-tl::expected<block_generator_result_ptr, std::string>
+tl::expected<generator_stack::block_generator_result_ptr, std::string>
 generator_stack::start_generator(const std::string& id)
 {
     auto gen = block_generator(id);
@@ -94,7 +95,8 @@ bool generator_stack::stop_generator(const std::string& id)
     return true;
 }
 
-std::vector<block_generator_result_ptr> generator_stack::list_statistics() const
+std::vector<generator_stack::block_generator_result_ptr>
+generator_stack::list_statistics() const
 {
     std::vector<block_generator_result_ptr> result_list;
     for (const auto& pair : m_block_results) {
@@ -111,7 +113,7 @@ std::vector<block_generator_result_ptr> generator_stack::list_statistics() const
     return result_list;
 }
 
-block_generator_result_ptr
+generator_stack::block_generator_result_ptr
 generator_stack::statistics(const std::string& id) const
 {
     if (!m_block_results.count(id)) return nullptr;

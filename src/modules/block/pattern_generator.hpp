@@ -5,10 +5,10 @@
 
 namespace openperf::block::worker {
 
-using generation_pattern = model::block_generation_pattern;
-
 class pattern_generator
 {
+    using generation_pattern = model::block_generation_pattern;
+
 private:
     typedef off_t (pattern_generator::*generation_method_t)();
 

@@ -13,10 +13,9 @@
 
 namespace openperf::block::worker {
 
-using worker_pattern = model::block_generation_pattern;
-using time_point = std::chrono::time_point<timesync::chrono::realtime>;
 using ref_clock = timesync::chrono::monotime;
 using realtime = timesync::chrono::realtime;
+using time_point = realtime::time_point;
 using duration = std::chrono::nanoseconds;
 
 enum task_operation { READ = 0, WRITE };
@@ -38,7 +37,7 @@ struct task_config_t
     task_operation operation;
     int32_t ops_per_sec;
     size_t block_size;
-    worker_pattern pattern;
+    model::block_generation_pattern pattern;
     task_synchronizer* synchronizer = nullptr;
 };
 

@@ -35,7 +35,7 @@ block_generator::~block_generator()
     m_vdev->vclose();
 }
 
-block_result_ptr block_generator::start()
+block_generator::block_result_ptr block_generator::start()
 {
     running(true);
     return statistics();
@@ -97,7 +97,7 @@ void block_generator::running(bool is_running)
     m_running = is_running;
 }
 
-block_result_ptr block_generator::statistics() const
+block_generator::block_result_ptr block_generator::statistics() const
 {
     auto read_stat = m_read_worker->stat();
     auto write_stat = m_write_worker->stat();

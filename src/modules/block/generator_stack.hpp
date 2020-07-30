@@ -11,13 +11,12 @@
 
 namespace openperf::block::generator {
 
-using block_generator_result_ptr =
-    std::shared_ptr<model::block_generator_result>;
-using block_generator_ptr = std::shared_ptr<block_generator>;
-
 class generator_stack
 {
 private:
+    using block_generator_result_ptr =
+        std::shared_ptr<model::block_generator_result>;
+    using block_generator_ptr = std::shared_ptr<block_generator>;
     using block_result_variant =
         std::variant<block_generator_ptr, block_generator_result_ptr>;
 

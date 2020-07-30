@@ -19,20 +19,11 @@ namespace openperf::block::api {
 
 const std::string endpoint = "inproc://openperf_block";
 
-using device_t = model::device;
-using device_ptr = std::unique_ptr<device_t>;
-
-using file_t = model::file;
-using file_ptr = std::unique_ptr<file_t>;
-
-using generator_t = model::block_generator;
-using generator_ptr = std::unique_ptr<generator_t>;
-
-using generator_result_t = model::block_generator_result;
-using generator_result_ptr = std::unique_ptr<generator_result_t>;
-
-using string_t = std::string;
-using string_ptr = std::unique_ptr<string_t>;
+using device_ptr = std::unique_ptr<model::device>;
+using file_ptr = std::unique_ptr<model::file>;
+using generator_ptr = std::unique_ptr<model::block_generator>;
+using generator_result_ptr = std::unique_ptr<model::block_generator_result>;
+using string_ptr = std::unique_ptr<std::string>;
 
 using serialized_msg = openperf::message::serialized_message;
 

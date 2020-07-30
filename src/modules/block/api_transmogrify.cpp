@@ -130,7 +130,7 @@ tl::expected<request_msg, int> deserialize_request(serialized_msg&& msg)
     }
     case utils::variant_index<request_msg, request_block_file_add>(): {
         auto request = request_block_file_add{};
-        request.source.reset(message::pop<file_t*>(msg));
+        request.source.reset(message::pop<model::file*>(msg));
         return (request);
     }
     case utils::variant_index<request_msg, request_block_file>(): {
@@ -141,7 +141,7 @@ tl::expected<request_msg, int> deserialize_request(serialized_msg&& msg)
     }
     case utils::variant_index<request_msg, request_block_file_bulk_add>(): {
         return (request_block_file_bulk_add{
-            message::pop_unique_vector<file_t>(msg)});
+            message::pop_unique_vector<model::file>(msg)});
     }
     case utils::variant_index<request_msg, request_block_file_bulk_del>(): {
         return (request_block_file_bulk_del{
@@ -152,7 +152,7 @@ tl::expected<request_msg, int> deserialize_request(serialized_msg&& msg)
     }
     case utils::variant_index<request_msg, request_block_generator_add>(): {
         auto request = request_block_generator_add{};
-        request.source.reset(message::pop<generator_t*>(msg));
+        request.source.reset(message::pop<model::block_generator*>(msg));
         return (request);
     }
     case utils::variant_index<request_msg, request_block_generator>(): {
@@ -164,7 +164,7 @@ tl::expected<request_msg, int> deserialize_request(serialized_msg&& msg)
     case utils::variant_index<request_msg,
                               request_block_generator_bulk_add>(): {
         return (request_block_generator_bulk_add{
-            message::pop_unique_vector<generator_t>(msg)});
+            message::pop_unique_vector<model::block_generator>(msg)});
     }
     case utils::variant_index<request_msg,
                               request_block_generator_bulk_del>(): {
@@ -209,18 +209,20 @@ tl::expected<reply_msg, int> deserialize_reply(serialized_msg&& msg)
     auto idx = message::pop<index_type>(msg);
     switch (idx) {
     case utils::variant_index<reply_msg, reply_block_devices>(): {
-        return (reply_block_devices{message::pop_unique_vector<device_t>(msg)});
+        return (reply_block_devices{
+            message::pop_unique_vector<model::device>(msg)});
     }
     case utils::variant_index<reply_msg, reply_block_files>(): {
-        return (reply_block_files{message::pop_unique_vector<file_t>(msg)});
+        return (
+            reply_block_files{message::pop_unique_vector<model::file>(msg)});
     }
     case utils::variant_index<reply_msg, reply_block_generators>(): {
         return (reply_block_generators{
-            message::pop_unique_vector<generator_t>(msg)});
+            message::pop_unique_vector<model::block_generator>(msg)});
     }
     case utils::variant_index<reply_msg, reply_block_generator_results>(): {
         return (reply_block_generator_results{
-            message::pop_unique_vector<generator_result_t>(msg)});
+            message::pop_unique_vector<model::block_generator_result>(msg)});
     }
     case utils::variant_index<reply_msg, reply_ok>():
         return (reply_ok{});
