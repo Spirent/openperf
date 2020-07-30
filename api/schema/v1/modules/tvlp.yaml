@@ -184,7 +184,7 @@ definitions:
           length:
             type: integer
             format: int64
-            description: length of current tvlp profile in ns
+            description: length of the current tvlp profile in ns
           offset:
             type: integer
             format: int64
@@ -199,6 +199,7 @@ definitions:
     required:
       - id
       - state
+      - time
       - profile
 
   TvlpProfile:
@@ -217,7 +218,7 @@ definitions:
                 length:
                   type: integer
                   format: int64
-                  description: Length of a current operation in ns
+                  description: Length of the current operation in ns
                 config:
                   $ref: ./memory.yaml#/definitions/MemoryGeneratorConfig
               required:
@@ -308,3 +309,6 @@ definitions:
         type: array
         items:
           $ref: "./packet/generator.yaml#/definitions/PacketGeneratorResult"
+    required:
+      - id
+      - tvlp_id
