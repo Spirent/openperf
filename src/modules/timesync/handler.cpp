@@ -6,6 +6,7 @@
 #include "api/api_route_handler.hpp"
 #include "config/op_config_utils.hpp"
 #include "core/op_core.h"
+#include "message/serialized_message.hpp"
 #include "timesync/api.hpp"
 
 namespace opneperf::timesync {
@@ -39,7 +40,7 @@ public:
                             Http::ResponseWriter response);
 };
 
-enum Http::Code to_code(const api::reply_error& error)
+static enum Http::Code to_code(const api::reply_error& error)
 {
     switch (error.info.type) {
     case api::error_type::NOT_FOUND:
@@ -51,7 +52,7 @@ enum Http::Code to_code(const api::reply_error& error)
     }
 }
 
-const char* to_string(const api::reply_error& error)
+static const char* to_string(const api::reply_error& error)
 {
     switch (error.info.type) {
     case api::error_type::NOT_FOUND:
@@ -65,19 +66,22 @@ const char* to_string(const api::reply_error& error)
     }
 }
 
-api::reply_msg submit_request(void* socket, const api::request_msg& request)
+static api::reply_msg submit_request(void* socket, api::request_msg&& request)
 {
-    if (auto error = api::send_message(socket, api::serialize_request(request));
+    if (auto error = openperf::message::send(
+            socket,
+            api::serialize_request(std::forward<api::request_msg>(request)));
         error != 0) {
         return (to_error(api::error_type::ZMQ_ERROR, error));
     }
 
-    auto reply = api::recv_message(socket).and_then(api::deserialize_reply);
+    auto reply =
+        openperf::message::recv(socket).and_then(api::deserialize_reply);
     if (!reply) {
         return (to_error(api::error_type::ZMQ_ERROR, reply.error()));
     }
 
-    return (*reply);
+    return (std::move(*reply));
 }
 
 handler::handler(void* context, Rest::Router& router)

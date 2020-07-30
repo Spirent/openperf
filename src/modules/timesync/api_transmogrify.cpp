@@ -8,81 +8,40 @@
 #include "timesync/bintime.hpp"
 #include "timesync/chrono.hpp"
 #include "timesync/counter.hpp"
+#include "message/serialized_message.hpp"
 #include "utils/overloaded_visitor.hpp"
 #include "utils/variant_index.hpp"
 
 namespace openperf::timesync::api {
 
-template <typename T> static auto zmq_msg_init(zmq_msg_t* msg, const T& value)
-{
-    if (auto error = zmq_msg_init_size(msg, sizeof(T)); error != 0) {
-        return (error);
-    }
-
-    auto ptr = reinterpret_cast<T*>(zmq_msg_data(msg));
-    *ptr = value;
-    return (0);
-}
-
-template <typename T>
-static auto zmq_msg_init(zmq_msg_t* msg, const T* buffer, size_t length)
-{
-    if (auto error = zmq_msg_init_size(msg, length); error != 0) {
-        return (error);
-    }
-
-    auto ptr = reinterpret_cast<char*>(zmq_msg_data(msg));
-    auto src = reinterpret_cast<const char*>(buffer);
-    std::copy(src, src + length, ptr);
-    return (0);
-}
-
-template <typename T> static T zmq_msg_data(const zmq_msg_t* msg)
-{
-    return (reinterpret_cast<T>(zmq_msg_data(const_cast<zmq_msg_t*>(msg))));
-}
-
-template <typename T> static size_t zmq_msg_size(const zmq_msg_t* msg)
-{
-    return (zmq_msg_size(const_cast<zmq_msg_t*>(msg)) / sizeof(T));
-}
-
-static void close(serialized_msg& msg)
-{
-    zmq_close(&msg.type);
-    zmq_close(&msg.data);
-}
-
-serialized_msg serialize_request(const request_msg& msg)
+serialized_msg serialize_request(request_msg&& msg)
 {
     serialized_msg serialized;
     auto error =
-        (zmq_msg_init(&serialized.type, msg.index())
+        (message::push(serialized, msg.index())
          || std::visit(
              utils::overloaded_visitor(
                  [&](const request_time_counters& counters) {
-                     return (counters.id ? zmq_msg_init(&serialized.data,
-                                                        counters.id->data(),
-                                                        counters.id->length())
-                                         : zmq_msg_init(&serialized.data));
+                     return (
+                         counters.id.has_value()
+                             ? message::push(serialized, counters.id.value())
+                             : message::push(serialized,
+                                             std::string())); // empty string
                  },
-                 [&](const request_time_keeper&) {
-                     return (zmq_msg_init(&serialized.data));
-                 },
+                 [&](const request_time_keeper&) { return (0); },
                  [&](const request_time_sources& sources) {
-                     return (sources.id ? zmq_msg_init(&serialized.data,
-                                                       sources.id->data(),
-                                                       sources.id->length())
-                                        : zmq_msg_init(&serialized.data));
+                     return (
+                         sources.id.has_value()
+                             ? message::push(serialized, sources.id.value())
+                             : message::push(serialized,
+                                             std::string())); // empty string
                  },
                  [&](const request_time_source_add& add) {
-                     return (zmq_msg_init(&serialized.data,
-                                          std::addressof(add.source),
-                                          sizeof(add.source)));
+                     return (message::push(serialized, add.source));
                  },
                  [&](const request_time_source_del& del) {
-                     return (zmq_msg_init(
-                         &serialized.data, del.id.data(), del.id.length()));
+                     return (message::push(
+                         serialized, del.id.data(), del.id.length()));
                  }),
              msg));
     if (error) { throw std::bad_alloc(); }
@@ -90,39 +49,25 @@ serialized_msg serialize_request(const request_msg& msg)
     return (serialized);
 }
 
-serialized_msg serialize_reply(const reply_msg& msg)
+serialized_msg serialize_reply(reply_msg&& msg)
 {
     serialized_msg serialized;
     auto error =
-        (zmq_msg_init(&serialized.type, msg.index())
+        (message::push(serialized, msg.index())
          || std::visit(
              utils::overloaded_visitor(
                  [&](const reply_time_counters& counters) {
-                     /*
-                      * ZMQ wants the length in bytes, so we have to scale the
-                      * length of the vector up to match.
-                      */
-                     auto scalar =
-                         sizeof(decltype(counters.counters)::value_type);
-                     return (zmq_msg_init(&serialized.data,
-                                          counters.counters.data(),
-                                          scalar * counters.counters.size()));
+                     return (message::push(serialized, counters.counters));
                  },
                  [&](const reply_time_keeper& keeper) {
-                     return (zmq_msg_init(&serialized.data, keeper.keeper));
+                     return (message::push(serialized, keeper.keeper));
                  },
                  [&](const reply_time_sources& sources) {
-                     auto scalar =
-                         sizeof(decltype(sources.sources)::value_type);
-                     return (zmq_msg_init(&serialized.data,
-                                          sources.sources.data(),
-                                          scalar * sources.sources.size()));
+                     return (message::push(serialized, sources.sources));
                  },
-                 [&](const reply_ok&) {
-                     return (zmq_msg_init(&serialized.data, 0));
-                 },
+                 [&](const reply_ok&) { return (0); },
                  [&](const reply_error& error) {
-                     return (zmq_msg_init(&serialized.data, error.info));
+                     return (message::push(serialized, error.info));
                  }),
              msg));
     if (error) { throw std::bad_alloc(); }
@@ -130,95 +75,53 @@ serialized_msg serialize_reply(const reply_msg& msg)
     return (serialized);
 }
 
-tl::expected<request_msg, int> deserialize_request(const serialized_msg& msg)
+tl::expected<request_msg, int> deserialize_request(serialized_msg&& msg)
 {
     using index_type = decltype(std::declval<request_msg>().index());
-    auto idx = *(zmq_msg_data<index_type*>(&msg.type));
+    auto idx = message::pop<index_type>(msg);
     switch (idx) {
     case utils::variant_index<request_msg, request_time_counters>(): {
-        if (zmq_msg_size(&msg.data)) {
-            std::string id(zmq_msg_data<char*>(&msg.data),
-                           zmq_msg_size(&msg.data));
-            return (request_time_counters{std::move(id)});
-        }
+        auto id = message::pop_string(msg);
+        if (!id.empty()) { return (request_time_counters{std::move(id)}); }
         return (request_time_counters{});
     }
     case utils::variant_index<request_msg, request_time_keeper>():
         return (request_time_keeper{});
     case utils::variant_index<request_msg, request_time_sources>(): {
-        if (zmq_msg_size(&msg.data)) {
-            std::string id(zmq_msg_data<char*>(&msg.data),
-                           zmq_msg_size(&msg.data));
-            return (request_time_sources{std::move(id)});
-        }
+        auto id = message::pop_string(msg);
+        if (!id.empty()) { return (request_time_sources{std::move(id)}); }
         return (request_time_sources{});
     }
     case utils::variant_index<request_msg, request_time_source_add>():
-        return (
-            request_time_source_add{*(zmq_msg_data<time_source*>(&msg.data))});
+        return (request_time_source_add{message::pop<time_source>(msg)});
     case utils::variant_index<request_msg, request_time_source_del>(): {
-        std::string id(zmq_msg_data<char*>(&msg.data), zmq_msg_size(&msg.data));
-        return (request_time_source_del{std::move(id)});
+        return (request_time_source_del{message::pop_string(msg)});
     }
     }
 
     return (tl::make_unexpected(EINVAL));
 }
 
-tl::expected<reply_msg, int> deserialize_reply(const serialized_msg& msg)
+tl::expected<reply_msg, int> deserialize_reply(serialized_msg&& msg)
 {
     using index_type = decltype(std::declval<request_msg>().index());
-    auto idx = *(zmq_msg_data<index_type*>(&msg.type));
+    auto idx = message::pop<index_type>(msg);
     switch (idx) {
     case utils::variant_index<reply_msg, reply_time_counters>(): {
-        auto data = zmq_msg_data<time_counter*>(&msg.data);
-        std::vector<time_counter> counters(
-            data, data + zmq_msg_size<time_counter>(&msg.data));
-        return (reply_time_counters{std::move(counters)});
+        return (reply_time_counters{message::pop_vector<time_counter>(msg)});
     }
     case utils::variant_index<reply_msg, reply_time_keeper>():
-        return (reply_time_keeper{*(zmq_msg_data<time_keeper*>(&msg.data))});
+        return (reply_time_keeper{message::pop<time_keeper>(msg)});
     case utils::variant_index<reply_msg, reply_time_sources>(): {
-        auto data = zmq_msg_data<time_source*>(&msg.data);
-        std::vector<time_source> sources(
-            data, data + zmq_msg_size<time_source>(&msg.data));
-        return (reply_time_sources{std::move(sources)});
+        return (reply_time_sources{message::pop_vector<time_source>(msg)});
     }
     case utils::variant_index<reply_msg, reply_ok>():
         return (reply_ok{});
     case utils::variant_index<reply_msg, reply_error>():
-        return (reply_error{*(zmq_msg_data<typed_error*>(&msg.data))});
+        return (reply_error{message::pop<typed_error>(msg)});
     }
 
     return (tl::make_unexpected(EINVAL));
-}
-
-int send_message(void* socket, serialized_msg&& msg)
-{
-    if (zmq_msg_send(&msg.type, socket, ZMQ_SNDMORE) == -1
-        || zmq_msg_send(&msg.data, socket, 0) == -1) {
-        close(msg);
-        return (errno);
-    }
-
-    return (0);
-}
-
-tl::expected<serialized_msg, int> recv_message(void* socket, int flags)
-{
-    serialized_msg msg;
-    if (zmq_msg_init(&msg.type) == -1 || zmq_msg_init(&msg.data) == -1) {
-        close(msg);
-        return (tl::make_unexpected(ENOMEM));
-    }
-
-    if (zmq_msg_recv(&msg.type, socket, flags) == -1
-        || zmq_msg_recv(&msg.data, socket, flags) == -1) {
-        close(msg);
-        return (tl::make_unexpected(errno));
-    }
-
-    return (msg);
 }
 
 std::shared_ptr<swagger::v1::model::TimeCounter>
