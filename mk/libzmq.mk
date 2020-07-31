@@ -24,10 +24,15 @@ OP_LDLIBS += -lzmq
 $(LIBZMQ_SRC_DIR)/configure:
 	cd $(LIBZMQ_SRC_DIR) && ./autogen.sh
 
+LIBZMQ_CONFIG_OPTS :=
+ifeq ($(MODE),debug)
+	LIBZMQ_CONFIG_OPTS += --enable-debug
+endif
+
 $(LIBZMQ_OBJ_DIR)/Makefile: $(LIBZMQ_SRC_DIR)/configure
 	@mkdir -p $(LIBZMQ_OBJ_DIR)
 	cd $(LIBZMQ_OBJ_DIR) && $(LIBZMQ_SRC_DIR)/configure $(OP_CONFIG_OPTS) \
-		--enable-drafts=no --prefix="$(LIBZMQ_BLD_DIR)" \
+		$(LIBZMQ_CONFIG_OPTS) --enable-drafts=no --prefix="$(LIBZMQ_BLD_DIR)" \
 		CC="$(CC)" CFLAGS="$(OP_COPTS)" \
 		CXX="$(CXX)" CXXFLAGS="$(OP_CXXOPTS)"
 
@@ -39,5 +44,5 @@ libzmq: $(LIBZMQ_LIB_DIR)/libzmq.la
 
 .PHONY: libzmq_clean
 libzmq_clean:
-	@rm -rf $(LIBZMQ_OBJ_DIR) $(LIBZMQ_BLD_DIR)
+	@rm -rf $(LIBZMQ_OBJ_DIR) $(LIBZMQ_BLD_DIR) $(LIBZMQ_SRC_DIR)/configure
 clean: libzmq_clean
