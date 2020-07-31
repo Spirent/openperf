@@ -99,7 +99,7 @@ private:
 
 public:
     block_task();
-    ~block_task();
+    ~block_task() override;
 
     void spin() override;
     void resume() override;

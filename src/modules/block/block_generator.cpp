@@ -25,7 +25,7 @@ block_generator::block_generator(
     m_read_worker->start();
     m_write_worker->start();
 
-    running(m_running);
+    block_generator::running(m_running);
 }
 
 block_generator::~block_generator()

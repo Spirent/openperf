@@ -14,8 +14,8 @@ namespace openperf::block {
 #define VIRTUAL_DEVICE_HEADER_TAG "This is a big, fat OP VDEV header tag!"
 #define VIRTUAL_DEVICE_HEADER_TAG_LENGTH 40
 #define VIRTUAL_DEVICE_HEADER_PAD_LENGTH                                       \
-    512 - VIRTUAL_DEVICE_HEADER_TAG_LENGTH - sizeof(timesync::bintime)         \
-        - sizeof(size_t)
+    (512 - VIRTUAL_DEVICE_HEADER_TAG_LENGTH - sizeof(timesync::bintime)        \
+     - sizeof(size_t))
 
 struct virtual_device_header
 {
