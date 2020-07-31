@@ -229,15 +229,15 @@ definitions:
       block:
         type: object
         properties:
-          resource_id:
-            type: string
-            description: Unique device or file identifier
           series:
             type: array
             items:
               type: object
               description: TVLP Profile for Block generators configuration
               properties:
+                resource_id:
+                  type: string
+                  description: Unique device or file identifier
                 length:
                   type: integer
                   format: int64
@@ -245,10 +245,10 @@ definitions:
                 config:
                   $ref: ./block.yaml#/definitions/BlockGeneratorConfig
               required:
+                - resource_id
                 - length
                 - config
         required:
-          - resource_id
           - series
       cpu:
         type: object
@@ -273,17 +273,17 @@ definitions:
       packet:
         type: object
         properties:
-          target_id:
-            type: string
-            description: |
-              Specifies the unique target for packets from this generator. This
-              id may refer to either a port or an interface id.
           series:
             type: array
             items:
               type: object
               description: TVLP Profile for Packet generators configuration
               properties:
+                target_id:
+                  type: string
+                  description: |
+                    Specifies the unique target for packets from this generator. This
+                    id may refer to either a port or an interface id.
                 length:
                   type: integer
                   format: int64
@@ -291,10 +291,10 @@ definitions:
                 config:
                   $ref: ./packet/generator.yaml#/definitions/PacketGeneratorConfig
               required:
+                - target_id
                 - length
                 - config
         required:
-          - target_id
           - series
 
   TvlpResult:
