@@ -11,7 +11,6 @@ PIO_SOURCES += \
 	internal_client.cpp \
 	internal_transmogrify.cpp \
 	internal_server.cpp \
-	json_transmogrify.cpp \
 	port_handler.cpp \
 	port_server.cpp \
 	port_utils.cpp \

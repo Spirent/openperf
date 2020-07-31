@@ -6,6 +6,7 @@
 #include "message/serialized_message.hpp"
 #include "packet/generator/api.hpp"
 
+#include "swagger/v1/converters/packet_generator.hpp"
 #include "swagger/v1/model/BulkCreatePacketGeneratorsResponse.h"
 #include "swagger/v1/model/BulkDeletePacketGeneratorsRequest.h"
 #include "swagger/v1/model/BulkStartPacketGeneratorsRequest.h"
