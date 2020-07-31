@@ -6,6 +6,7 @@
 #include <unordered_map>
 
 #include "generator.hpp"
+#include "framework/dynamic/api.hpp"
 
 namespace openperf::memory {
 
@@ -19,6 +20,7 @@ public:
         std::string id;
         std::string generator_id;
         internal::memory_stat stat;
+        dynamic::results dynamic_results;
     };
 
     using stat_list = std::forward_list<stat_t>;
@@ -39,6 +41,7 @@ public:
 
     void start();
     void start(const std::string& id);
+    void start(const std::string& id, const dynamic::configuration& cfg);
     void stop();
     void stop(const std::string& id);
     void pause();

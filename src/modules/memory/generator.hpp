@@ -8,6 +8,7 @@
 #include "task_memory.hpp"
 
 #include "framework/generator/controller.hpp"
+#include "framework/dynamic/spool.hpp"
 
 namespace openperf::memory::internal {
 
@@ -64,6 +65,8 @@ private:
     memory_stat m_stat;
     std::atomic<memory_stat*> m_stat_ptr;
 
+    dynamic::spool<memory_stat> m_dynamic;
+
 public:
     // Constructors & Destructor
     generator();
@@ -79,6 +82,7 @@ public:
     void pause();
 
     void start();
+    void start(const dynamic::configuration&);
     void stop();
     void restart();
     void reset();
@@ -87,6 +91,7 @@ public:
 
     generator::config_t config() const;
     memory_stat stat() const;
+    dynamic::results dynamic_results() const;
     int32_t init_percent_complete() const { return m_init_percent_complete; }
 
     bool is_initialized() const { return init_percent_complete() == 100; }

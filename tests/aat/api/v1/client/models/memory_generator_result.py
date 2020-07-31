@@ -36,7 +36,8 @@ class MemoryGeneratorResult(object):
         'active': 'bool',
         'timestamp': 'datetime',
         'read': 'MemoryGeneratorStats',
-        'write': 'MemoryGeneratorStats'
+        'write': 'MemoryGeneratorStats',
+        'dynamic_results': 'DynamicResults'
     }
 
     attribute_map = {
@@ -45,10 +46,11 @@ class MemoryGeneratorResult(object):
         'active': 'active',
         'timestamp': 'timestamp',
         'read': 'read',
-        'write': 'write'
+        'write': 'write',
+        'dynamic_results': 'dynamic_results'
     }
 
-    def __init__(self, id=None, generator_id=None, active=None, timestamp=None, read=None, write=None):  # noqa: E501
+    def __init__(self, id=None, generator_id=None, active=None, timestamp=None, read=None, write=None, dynamic_results=None):  # noqa: E501
         """MemoryGeneratorResult - a model defined in Swagger"""  # noqa: E501
 
         self._id = None
@@ -57,6 +59,7 @@ class MemoryGeneratorResult(object):
         self._timestamp = None
         self._read = None
         self._write = None
+        self._dynamic_results = None
         self.discriminator = None
 
         self.id = id
@@ -66,6 +69,8 @@ class MemoryGeneratorResult(object):
         self.timestamp = timestamp
         self.read = read
         self.write = write
+        if dynamic_results is not None:
+            self.dynamic_results = dynamic_results
 
     @property
     def id(self):
@@ -194,6 +199,26 @@ class MemoryGeneratorResult(object):
         :type: MemoryGeneratorStats
         """
         self._write = write
+
+    @property
+    def dynamic_results(self):
+        """Gets the dynamic_results of this MemoryGeneratorResult.  # noqa: E501
+
+
+        :return: The dynamic_results of this MemoryGeneratorResult.  # noqa: E501
+        :rtype: DynamicResults
+        """
+        return self._dynamic_results
+
+    @dynamic_results.setter
+    def dynamic_results(self, dynamic_results):
+        """Sets the dynamic_results of this MemoryGeneratorResult.
+
+
+        :param dynamic_results: The dynamic_results of this MemoryGeneratorResult.  # noqa: E501
+        :type: DynamicResults
+        """
+        self._dynamic_results = dynamic_results
 
     def to_dict(self):
         """Returns the model properties as a dict"""

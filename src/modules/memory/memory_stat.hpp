@@ -7,6 +7,8 @@
 
 #include "modules/timesync/chrono.hpp"
 
+#include "timesync/chrono.hpp"
+
 namespace openperf::memory::internal {
 
 using namespace std::chrono_literals;

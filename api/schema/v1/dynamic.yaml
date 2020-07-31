@@ -146,10 +146,14 @@ definitions:
       stat_y:
         type: string
         description: The Y statistic to track (when using DXDY function)
+      compression:
+        type: integer
+        description: The compression factor of T-Digest
     required:
       - id
       - function
       - stat_x
+      - compression
 
   TDigestResult:
     type: object
@@ -171,6 +175,9 @@ definitions:
       stat_y:
         type: string
         description: The Y statistic to track (when using DXDY function)
+      compression:
+        type: integer
+        description: The compression factor of T-Digest
       centroids:
         type: array
         description: Array of centroids
@@ -180,6 +187,7 @@ definitions:
       - id
       - function
       - stat_x
+      - compression
       - centroids
 
   TDigestCentroid:

@@ -24,6 +24,7 @@ TDigestResult::TDigestResult()
     m_Stat_x = "";
     m_Stat_y = "";
     m_Stat_yIsSet = false;
+    m_Compression = 0;
     
 }
 
@@ -47,6 +48,7 @@ nlohmann::json TDigestResult::toJson() const
     {
         val["stat_y"] = ModelBase::toJson(m_Stat_y);
     }
+    val["compression"] = m_Compression;
     {
         nlohmann::json jsonArray;
         for( auto& item : m_Centroids )
@@ -70,6 +72,7 @@ void TDigestResult::fromJson(nlohmann::json& val)
         setStatY(val.at("stat_y"));
         
     }
+    setCompression(val.at("compression"));
     {
         m_Centroids.clear();
         nlohmann::json jsonArray;
@@ -136,6 +139,15 @@ bool TDigestResult::statYIsSet() const
 void TDigestResult::unsetStat_y()
 {
     m_Stat_yIsSet = false;
+}
+int32_t TDigestResult::getCompression() const
+{
+    return m_Compression;
+}
+void TDigestResult::setCompression(int32_t value)
+{
+    m_Compression = value;
+    
 }
 std::vector<std::shared_ptr<TDigestCentroid>>& TDigestResult::getCentroids()
 {

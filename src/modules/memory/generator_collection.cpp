@@ -103,6 +103,19 @@ void generator_collection::start(const std::string& id)
     }
 }
 
+void generator_collection::start(const std::string& id,
+                                 const dynamic::configuration& cfg)
+{
+    auto& g7r = m_generators.at(id);
+    if (g7r.is_stopped()) {
+        auto stat_id = core::to_string(core::uuid::random());
+        m_stats.emplace(stat_id, generator_ref(g7r));
+        m_id_map.insert_or_assign(id, stat_id);
+        m_id_map.insert_or_assign(stat_id, id);
+        g7r.start(cfg);
+    }
+}
+
 void generator_collection::stop()
 {
     for (auto& entry : m_generators) {
@@ -110,10 +123,12 @@ void generator_collection::stop()
         if (!g7r.is_stopped()) {
             auto stat_id = m_id_map.at(entry.first);
             g7r.stop();
-            m_stats.insert_or_assign(stat_id,
-                                     stat_t{.id = stat_id,
-                                            .generator_id = entry.first,
-                                            .stat = g7r.stat()});
+            m_stats.insert_or_assign(
+                stat_id,
+                stat_t{.id = stat_id,
+                       .generator_id = entry.first,
+                       .stat = g7r.stat(),
+                       .dynamic_results = g7r.dynamic_results()});
             m_id_map.erase(entry.first);
             g7r.reset();
         }
@@ -128,7 +143,10 @@ void generator_collection::stop(const std::string& id)
         g7r.stop();
         m_stats.insert_or_assign(
             stat_id,
-            stat_t{.id = stat_id, .generator_id = id, .stat = g7r.stat()});
+            stat_t{.id = stat_id,
+                   .generator_id = id,
+                   .stat = g7r.stat(),
+                   .dynamic_results = g7r.dynamic_results()});
         m_id_map.erase(id);
         g7r.reset();
     }
@@ -162,15 +180,18 @@ generator_collection::stat(const std::string& id) const
         if (auto g7r = std::get_if<generator_ref>(&stat)) {
             return stat_t{.id = id,
                           .generator_id = m_id_map.at(id),
-                          .stat = g7r->get().stat()};
+                          .stat = g7r->get().stat(),
+                          .dynamic_results = g7r->get().dynamic_results()};
         }
 
         return std::get<stat_t>(stat);
     }
 
     auto& g7r = m_generators.at(id);
-    return stat_t{
-        .id = m_id_map.at(id), .generator_id = id, .stat = g7r.stat()};
+    return stat_t{.id = m_id_map.at(id),
+                  .generator_id = id,
+                  .stat = g7r.stat(),
+                  .dynamic_results = g7r.dynamic_results()};
 }
 
 generator_collection::stat_list generator_collection::stats() const
@@ -179,7 +200,8 @@ generator_collection::stat_list generator_collection::stats() const
         if (auto g7r = std::get_if<generator_ref>(&pair.second)) {
             return stat_t{.id = pair.first,
                           .generator_id = m_id_map.at(pair.first),
-                          .stat = g7r->get().stat()};
+                          .stat = g7r->get().stat(),
+                          .dynamic_results = g7r->get().dynamic_results()};
         }
 
         return std::get<stat_t>(pair.second);

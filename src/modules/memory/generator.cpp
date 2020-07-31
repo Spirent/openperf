@@ -6,6 +6,7 @@
 #include "framework/utils/memcpy.hpp"
 
 #include <cinttypes>
+#include <string_view>
 #include <unistd.h>
 #include <sys/mman.h>
 
@@ -40,12 +41,45 @@ generator::index_vector generate_index_vector(size_t size, io_pattern pattern)
     return indexes;
 }
 
+// Functions
+std::optional<double> get_field(const memory_stat& stat, std::string_view name)
+{
+    if (name == "read.ops_target") return stat.read.operations_target;
+    if (name == "read.ops_actual") return stat.read.operations;
+    if (name == "read.bytes_target") return stat.read.bytes_target;
+    if (name == "read.bytes_actual") return stat.read.bytes;
+    if (name == "read.io_errors") return stat.read.errors;
+    if (name == "read.latency") return stat.read.run_time.count();
+
+    if (name == "read.latency_min")
+        return stat.read.latency_min.value().count();
+    if (name == "read.latency_max")
+        return stat.read.latency_max.value().count();
+
+    if (name == "write.ops_target") return stat.write.operations_target;
+    if (name == "write.ops_actual") return stat.write.operations;
+    if (name == "write.bytes_target") return stat.write.bytes_target;
+    if (name == "write.bytes_actual") return stat.write.bytes;
+    if (name == "write.io_errors") return stat.write.errors;
+    if (name == "write.latency") return stat.write.run_time.count();
+
+    if (name == "write.latency_min")
+        return stat.write.latency_min.value().count();
+    if (name == "write.latency_max")
+        return stat.write.latency_max.value().count();
+
+    if (name == "timestamp") return stat.timestamp().time_since_epoch().count();
+
+    return std::nullopt;
+}
+
 // Constructors & Destructor
 generator::generator()
     : m_buffer{.ptr = nullptr, .size = 0}
     , m_serial_number(++serial_counter)
     , m_controller(NAME_PREFIX + std::to_string(m_serial_number) + "_ctl")
     , m_stat_ptr(&m_stat)
+    , m_dynamic(get_field)
 {
     m_controller.start<memory_stat>([this](const memory_stat& stat) {
         auto elapsed_time = m_run_time;
@@ -76,6 +110,7 @@ generator::generator()
                 wstat.operations_target * m_write.config.block_size;
         }
 
+        m_dynamic.add(m_stat);
         m_stat_ptr = &m_stat;
     });
 }
@@ -127,6 +162,14 @@ void generator::start()
     m_run_time_milestone = std::chrono::system_clock::now();
 }
 
+void generator::start(const dynamic::configuration& cfg)
+{
+    if (!m_stopped) return;
+
+    m_dynamic.configure(cfg);
+    start();
+}
+
 void generator::stop()
 {
     if (m_stopped) return;
@@ -165,6 +208,7 @@ void generator::reset()
     auto was_paused = m_paused;
     m_controller.pause();
     m_controller.reset();
+    m_dynamic.reset();
     m_stat = {};
 
     if (!was_paused) m_controller.resume();
@@ -176,6 +220,11 @@ memory_stat generator::stat() const
     stat.active = is_running();
 
     return stat;
+}
+
+dynamic::results generator::dynamic_results() const
+{
+    return m_dynamic.result();
 }
 
 void generator::config(const generator::config_t& cfg)

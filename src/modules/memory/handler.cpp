@@ -1,8 +1,8 @@
 #include "api.hpp"
-#include "swagger_converters.hpp"
+#include "api_converters.hpp"
 
-#include "framework/core/op_core.h"
 #include "framework/config/op_config_utils.hpp"
+#include "framework/core/op_core.h"
 #include "modules/api/api_route_handler.hpp"
 
 namespace openperf::memory::api {
@@ -13,12 +13,12 @@ using namespace Pistache;
 
 std::string json_error(std::string_view msg)
 {
-    return json{"error", msg}.dump();
+    return json{{"error", msg}}.dump();
 }
 
-void response_error(Http::ResponseWriter& rsp, reply::error error)
+void response_error(Http::ResponseWriter& rsp, const reply::error& error)
 {
-    switch (error.type) {
+    switch (error.data->type) {
     case reply::error::NOT_FOUND:
         rsp.send(Http::Code::Not_Found);
         break;
@@ -40,6 +40,9 @@ void response_error(Http::ResponseWriter& rsp, reply::error error)
         rsp.headers().add<Http::Header::ContentType>(MIME(Application, Json));
         rsp.send(Http::Code::Bad_Request,
                  json_error("Trying to start uninitialized generator"));
+    case reply::error::CUSTOM:
+        rsp.headers().add<Http::Header::ContentType>(MIME(Application, Json));
+        rsp.send(Http::Code::Bad_Request, json_error(error.data->message));
         break;
     default:
         rsp.send(Http::Code::Internal_Server_Error);
@@ -168,10 +171,11 @@ void handler::create_generator(const Rest::Request& request,
 {
     auto model = json::parse(request.body()).get<model::MemoryGenerator>();
 
-    request::generator::create_data data{
-        .id = model.getId(), .is_running = model.isRunning(), .config = [&]() {
-            return from_swagger(*model.getConfig());
-        }()};
+    request::generator::create_data data{.id = model.getId(),
+                                         .is_running = model.isRunning(),
+                                         .config =
+                                             from_swagger(*model.getConfig())};
+
     auto api_reply = submit_request(request::generator::create{
         std::make_unique<request::generator::create_data>(std::move(data))});
 
@@ -251,7 +255,20 @@ void handler::start_generator(const Rest::Request& request,
         return;
     }
 
-    auto api_reply = submit_request(request::generator::start{{.id = id}});
+    request::generator::start::start_data data{.id = id};
+
+    if (!request.body().empty()) {
+        auto json_obj = json::parse(request.body());
+        model::DynamicResultsConfig model;
+        model.fromJson(json_obj);
+
+        data.dynamic_results = dynamic::from_swagger(model);
+    }
+
+    auto api_reply = submit_request(request::generator::start{
+        std::make_unique<request::generator::start::start_data>(
+            std::move(data))});
+
     if (auto item = std::get_if<reply::statistic::item>(&api_reply)) {
         auto model = to_swagger(*item->data);
         response.headers().add<Http::Header::ContentType>(
@@ -372,9 +389,16 @@ void handler::bulk_start_generators(const Rest::Request& request,
         }
     }
 
+    request::generator::bulk::start::start_data data{
+        .ids = std::move(model.getIds())};
+
+    if (model.dynamicResultsIsSet())
+        data.dynamic_results =
+            dynamic::from_swagger(*model.getDynamicResults().get());
+
     auto api_reply = submit_request(request::generator::bulk::start{
-        {std::make_unique<std::vector<std::string>>(
-            std::move(model.getIds()))}});
+        std::make_unique<request::generator::bulk::start::start_data>(
+            std::move(data))});
 
     if (auto list = std::get_if<reply::statistic::list>(&api_reply)) {
         auto array = json::array();
@@ -523,15 +547,21 @@ api::api_reply handler::submit_request(api::api_request&& request)
     if (auto error = api::send_message(
             socket.get(), api::serialize(std::forward<api_request>(request)));
         error != 0) {
-        return api::reply::error{.type = api::reply::error::ZMQ_ERROR,
-                                 .value = error};
+        api::reply::error::error_data data{.type = api::reply::error::ZMQ_ERROR,
+                                           .value = error};
+
+        return api::reply::error{
+            std::make_unique<api::reply::error::error_data>(std::move(data))};
     }
 
     auto reply =
         api::recv_message(socket.get()).and_then(api::deserialize_reply);
     if (!reply) {
-        return api::reply::error{.type = api::reply::error::ZMQ_ERROR,
-                                 .value = reply.error()};
+        api::reply::error::error_data data{.type = api::reply::error::ZMQ_ERROR,
+                                           .value = reply.error()};
+
+        return api::reply::error{
+            std::make_unique<api::reply::error::error_data>(std::move(data))};
     }
 
     return std::move(*reply);

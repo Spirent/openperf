@@ -5,14 +5,15 @@
 MEMORY_DEPENDS += api framework pistache swagger_model json versions timesync
 
 MEMORY_SOURCES += \
+	api_converters.cpp \
 	api_transmogrify.cpp \
-	init.cpp \
-	handler.cpp \
-	server.cpp \
-	generator_collection.cpp \
-	info.cpp \
 	generator.cpp \
+	generator_collection.cpp \
+	handler.cpp \
+	info.cpp \
+	init.cpp \
 	memory_stat.cpp \
+	server.cpp \
 	task_memory.cpp \
 	task_memory_read.cpp \
 	task_memory_write.cpp
@@ -27,11 +28,11 @@ $(MEMORY_OBJ_DIR)/init.o: OP_CPPFLAGS += \
 	-DBUILD_NUMBER="\"$(BUILD_NUMBER)\"" \
 	-DBUILD_TIMESTAMP="\"$(TIMESTAMP)\""
 
-MEMORY_TEST_DEPENDS += framework
+MEMORY_TEST_DEPENDS += framework timesync_test
 
 MEMORY_TEST_SOURCES += \
-	task_memory.cpp \
 	generator.cpp \
+	memory_stat.cpp \
+	task_memory.cpp \
 	task_memory_read.cpp \
-	task_memory_write.cpp \
-	memory_stat.cpp
+	task_memory_write.cpp

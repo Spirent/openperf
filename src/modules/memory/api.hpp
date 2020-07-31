@@ -2,29 +2,14 @@
 #define _OP_MEMORY_API_HPP_
 
 #include <string>
+#include <memory>
 #include <variant>
 
-#include <json.hpp>
-#include <zmq.h>
 #include <tl/expected.hpp>
+#include <zmq.h>
 
-#include "info.hpp"
 #include "generator.hpp"
-#include "memory_stat.hpp"
-
-namespace swagger::v1::model {
-class MemoryGenerator;
-class BulkCreateMemoryGeneratorsRequest;
-class BulkDeleteMemoryGeneratorsRequest;
-class BulkStartMemoryGeneratorsRequest;
-class BulkStopMemoryGeneratorsRequest;
-
-void from_json(const nlohmann::json&, MemoryGenerator&);
-void from_json(const nlohmann::json&, BulkCreateMemoryGeneratorsRequest&);
-void from_json(const nlohmann::json&, BulkDeleteMemoryGeneratorsRequest&);
-void from_json(const nlohmann::json&, BulkStartMemoryGeneratorsRequest&);
-void from_json(const nlohmann::json&, BulkStopMemoryGeneratorsRequest&);
-} // namespace swagger::v1::model
+#include "info.hpp"
 
 namespace openperf::memory::api {
 
@@ -66,8 +51,16 @@ struct create
 };
 struct stop : id_message
 {};
-struct start : id_message
-{};
+struct start
+{
+    struct start_data
+    {
+        std::string id;
+        dynamic::configuration dynamic_results;
+    };
+
+    std::unique_ptr<start_data> data;
+};
 
 namespace bulk {
 
@@ -75,16 +68,29 @@ struct id_list
 {
     std::unique_ptr<std::vector<std::string>> data;
 };
+
+struct start
+{
+    struct start_data
+    {
+        std::vector<std::string> ids;
+        dynamic::configuration dynamic_results;
+    };
+
+    std::unique_ptr<start_data> data;
+};
+
+struct stop : id_list
+{};
+
+struct erase : id_list
+{};
+
 struct create
 {
     std::unique_ptr<std::vector<create_data>> data;
 };
-struct erase : id_list
-{};
-struct start : id_list
-{};
-struct stop : id_list
-{};
+
 } // namespace bulk
 } // namespace generator
 
@@ -102,18 +108,27 @@ namespace reply {
 
 struct ok : message
 {};
-struct error : message
+struct error
 {
-    enum {
+    enum type_t {
         NONE = 0,
         ACTIVE_STAT,
         NOT_FOUND,
         EXISTS,
         INVALID_ID,
         NOT_INITIALIZED,
-        ZMQ_ERROR
-    } type = NONE;
-    int value = 0;
+        ZMQ_ERROR,
+        CUSTOM
+    };
+
+    struct error_data
+    {
+        type_t type = NONE;
+        int value = 0;
+        std::string message;
+    };
+
+    std::unique_ptr<error_data> data;
 };
 using info = memory_info::info_t;
 
@@ -146,6 +161,7 @@ struct item
         std::string id;
         std::string generator_id;
         internal::memory_stat stat;
+        dynamic::results dynamic_results;
     };
 
     using data_ptr = std::unique_ptr<item_data>;

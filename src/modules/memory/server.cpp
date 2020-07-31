@@ -4,6 +4,11 @@
 
 namespace openperf::memory::api {
 
+reply::error error_message(reply::error::error_data data)
+{
+    return {std::make_unique<reply::error::error_data>(std::move(data))};
+}
+
 server::server(void* context, openperf::core::event_loop& loop)
     : m_socket(op_socket_get_server(context, ZMQ_REP, endpoint))
     , m_generator_stack(std::make_unique<memory::generator_collection>())
@@ -80,7 +85,7 @@ api_reply server::handle_request(const request::generator::get& req)
         return reply;
     }
 
-    return reply::error{.type = reply::error::NOT_FOUND};
+    return error_message({.type = reply::error::NOT_FOUND});
 }
 
 api_reply server::handle_request(const request::generator::erase& req)
@@ -90,7 +95,7 @@ api_reply server::handle_request(const request::generator::erase& req)
         return reply::ok{};
     }
 
-    return reply::error{.type = reply::error::NOT_FOUND};
+    return error_message({.type = reply::error::NOT_FOUND});
 }
 
 api_reply server::handle_request(const request::generator::create& req)
@@ -109,9 +114,9 @@ api_reply server::handle_request(const request::generator::create& req)
                 std::move(data))};
         return reply;
     } catch (const std::invalid_argument&) {
-        return reply::error{.type = reply::error::EXISTS};
+        return error_message({.type = reply::error::EXISTS});
     } catch (const std::domain_error&) {
-        return reply::error{.type = reply::error::INVALID_ID};
+        return error_message({.type = reply::error::INVALID_ID});
     }
 }
 
@@ -120,8 +125,7 @@ api_reply server::handle_request(const request::generator::bulk::create& req)
     reply::generator::list list{
         std::make_unique<std::vector<reply::generator::item::item_data>>()};
 
-    auto remove_created_items = [&]() -> auto
-    {
+    auto remove_created_items = [&]() {
         for (const auto& item : *list.data) {
             m_generator_stack->erase(item.id);
         }
@@ -139,10 +143,10 @@ api_reply server::handle_request(const request::generator::bulk::create& req)
             list.data->push_back(item_data);
         } catch (const std::invalid_argument&) {
             remove_created_items();
-            return reply::error{.type = reply::error::EXISTS};
+            return error_message({.type = reply::error::EXISTS});
         } catch (const std::domain_error&) {
             remove_created_items();
-            return reply::error{.type = reply::error::INVALID_ID};
+            return error_message({.type = reply::error::INVALID_ID});
         }
     }
 
@@ -167,63 +171,74 @@ api_reply server::handle_request(const request::generator::stop& req)
         return reply::ok{};
     }
 
-    return reply::error{.type = reply::error::NOT_FOUND};
+    return error_message({.type = reply::error::NOT_FOUND});
 }
 
 api_reply server::handle_request(const request::generator::start& req)
 {
     try {
-        if (m_generator_stack->contains(req.id)) {
-            m_generator_stack->start(req.id);
-            auto stat = m_generator_stack->stat(req.id);
-            reply::statistic::item::item_data data{.id = stat.id,
-                                                   .generator_id =
-                                                       stat.generator_id,
-                                                   .stat = stat.stat};
+        if (m_generator_stack->contains(req.data->id)) {
+            m_generator_stack->start(req.data->id, req.data->dynamic_results);
+            auto stat = m_generator_stack->stat(req.data->id);
+            reply::statistic::item::item_data data{
+                .id = stat.id,
+                .generator_id = stat.generator_id,
+                .stat = stat.stat,
+                .dynamic_results = stat.dynamic_results};
+
             return reply::statistic::item{
                 std::make_unique<reply::statistic::item::item_data>(
                     std::move(data))};
         }
     } catch (const std::runtime_error&) {
-        return reply::error{.type = reply::error::NOT_INITIALIZED};
+        return error_message({.type = reply::error::NOT_INITIALIZED});
+    } catch (const std::logic_error& e) {
+        return error_message(
+            {.type = reply::error::CUSTOM, .message = e.what()});
     }
-    return reply::error{.type = reply::error::NOT_FOUND};
+
+    return error_message({.type = reply::error::NOT_FOUND});
 }
 
 api_reply server::handle_request(const request::generator::bulk::start& req)
 {
     if (std::any_of(
-            std::begin(*req.data), std::end(*req.data), [&](const auto& id) {
+            req.data->ids.begin(), req.data->ids.end(), [&](const auto& id) {
                 return (m_generator_stack->contains(id) == false);
             })) {
-        return reply::error{.type = reply::error::NOT_FOUND};
+        return error_message({.type = reply::error::NOT_FOUND});
     }
 
-    auto stat_transformer = [](const auto& stat) -> auto
-    {
-        return reply::statistic::item::item_data{.id = stat.id,
-                                                 .generator_id =
-                                                     stat.generator_id,
-                                                 .stat = stat.stat};
+    auto stat_transformer = [](const auto& stat) {
+        return reply::statistic::item::item_data{
+            .id = stat.id,
+            .generator_id = stat.generator_id,
+            .stat = stat.stat,
+            .dynamic_results = stat.dynamic_results};
     };
 
     reply::statistic::list list{
         std::make_unique<std::vector<reply::statistic::item::item_data>>()};
 
     std::forward_list<std::string> not_runned_before;
-    for (const auto& id : *req.data) {
-        const auto& gnr = m_generator_stack->generator(id);
-        if (!gnr.is_running()) not_runned_before.emplace_front(id);
+    try {
+        for (const auto& id : req.data->ids) {
+            const auto& gnr = m_generator_stack->generator(id);
+            if (!gnr.is_running()) not_runned_before.emplace_front(id);
 
-        m_generator_stack->start(id);
-        if (!gnr.is_running()) {
-            for (auto& rollback_id : not_runned_before) {
-                m_generator_stack->stop(rollback_id);
-            }
-            return reply::error{};
+            m_generator_stack->start(id, req.data->dynamic_results);
+            if (!gnr.is_running())
+                throw std::runtime_error("Generator with ID '" + id
+                                         + "' start error.");
+
+            list.data->push_back(stat_transformer(m_generator_stack->stat(id)));
         }
+    } catch (const std::logic_error& e) {
+        for (auto& rollback_id : not_runned_before)
+            m_generator_stack->stop(rollback_id);
 
-        list.data->push_back(stat_transformer(m_generator_stack->stat(id)));
+        return error_message(
+            {.type = reply::error::CUSTOM, .message = e.what()});
     }
 
     return list;
@@ -235,7 +250,7 @@ api_reply server::handle_request(const request::generator::bulk::stop& req)
             std::begin(*req.data), std::end(*req.data), [&](const auto& id) {
                 return (m_generator_stack->contains(id) == false);
             })) {
-        return reply::error{.type = reply::error::NOT_FOUND};
+        return error_message({.type = reply::error::NOT_FOUND});
     }
 
     std::forward_list<std::string> runned_before;
@@ -248,7 +263,7 @@ api_reply server::handle_request(const request::generator::bulk::stop& req)
             for (auto& rollback_id : runned_before) {
                 m_generator_stack->start(rollback_id);
             }
-            return reply::error{};
+            return error_message({});
         }
     }
 
@@ -257,12 +272,12 @@ api_reply server::handle_request(const request::generator::bulk::stop& req)
 
 api_reply server::handle_request(const request::statistic::list&)
 {
-    auto stat_transformer = [](const auto& stat) -> auto
-    {
-        return reply::statistic::item::item_data{.id = stat.id,
-                                                 .generator_id =
-                                                     stat.generator_id,
-                                                 .stat = stat.stat};
+    auto stat_transformer = [](const auto& stat) {
+        return reply::statistic::item::item_data{
+            .id = stat.id,
+            .generator_id = stat.generator_id,
+            .stat = stat.stat,
+            .dynamic_results = stat.dynamic_results};
     };
 
     reply::statistic::list list{
@@ -281,16 +296,17 @@ api_reply server::handle_request(const request::statistic::get& req)
 {
     if (m_generator_stack->contains_stat(req.id)) {
         auto stat = m_generator_stack->stat(req.id);
-        reply::statistic::item::item_data data{.id = stat.id,
-                                               .generator_id =
-                                                   stat.generator_id,
-                                               .stat = stat.stat};
+        reply::statistic::item::item_data data{
+            .id = stat.id,
+            .generator_id = stat.generator_id,
+            .stat = stat.stat,
+            .dynamic_results = stat.dynamic_results};
         return reply::statistic::item{
             std::make_unique<reply::statistic::item::item_data>(
                 std::move(data))};
     }
 
-    return reply::error{.type = reply::error::NOT_FOUND};
+    return error_message({.type = reply::error::NOT_FOUND});
 }
 
 api_reply server::handle_request(const request::statistic::erase& req)
@@ -298,10 +314,10 @@ api_reply server::handle_request(const request::statistic::erase& req)
     if (m_generator_stack->contains_stat(req.id)) {
         if (m_generator_stack->erase_stat(req.id)) return reply::ok{};
 
-        return reply::error{.type = reply::error::ACTIVE_STAT};
+        return error_message({.type = reply::error::ACTIVE_STAT});
     }
 
-    return reply::error{.type = reply::error::NOT_FOUND};
+    return error_message({.type = reply::error::NOT_FOUND});
 }
 
 api_reply server::handle_request(const request::info&)

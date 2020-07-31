@@ -24,6 +24,7 @@ TDigestConfig::TDigestConfig()
     m_Stat_x = "";
     m_Stat_y = "";
     m_Stat_yIsSet = false;
+    m_Compression = 0;
     
 }
 
@@ -47,6 +48,7 @@ nlohmann::json TDigestConfig::toJson() const
     {
         val["stat_y"] = ModelBase::toJson(m_Stat_y);
     }
+    val["compression"] = m_Compression;
     
 
     return val;
@@ -62,6 +64,7 @@ void TDigestConfig::fromJson(nlohmann::json& val)
         setStatY(val.at("stat_y"));
         
     }
+    setCompression(val.at("compression"));
     
 }
 
@@ -109,6 +112,15 @@ bool TDigestConfig::statYIsSet() const
 void TDigestConfig::unsetStat_y()
 {
     m_Stat_yIsSet = false;
+}
+int32_t TDigestConfig::getCompression() const
+{
+    return m_Compression;
+}
+void TDigestConfig::setCompression(int32_t value)
+{
+    m_Compression = value;
+    
 }
 
 }
