@@ -3,6 +3,7 @@
 #include <iomanip>
 #include <netdb.h>
 #include "block/api.hpp"
+#include "message/serialized_message.hpp"
 #include "utils/overloaded_visitor.hpp"
 #include "utils/variant_index.hpp"
 
@@ -18,78 +19,6 @@
 #include "swagger/v1/model/BlockDevice.h"
 
 namespace openperf::block::api {
-
-template <typename T> static auto zmq_msg_init(zmq_msg_t* msg, const T& value)
-{
-    if (auto error = zmq_msg_init_size(msg, sizeof(T)); error != 0) {
-        return (error);
-    }
-
-    auto ptr = reinterpret_cast<T*>(zmq_msg_data(msg));
-    *ptr = value;
-    return (0);
-}
-
-template <typename T>
-static auto zmq_msg_init(zmq_msg_t* msg, std::unique_ptr<T> value)
-{
-    if (auto error = zmq_msg_init_size(msg, sizeof(T*)); error != 0) {
-        return (error);
-    }
-
-    auto ptr = reinterpret_cast<T**>(zmq_msg_data(msg));
-    *ptr = value.release();
-    return (0);
-}
-
-template <typename T>
-static auto zmq_msg_init(zmq_msg_t* msg, const T* buffer, size_t length)
-{
-    if (auto error = zmq_msg_init_size(msg, length); error != 0) {
-        return (error);
-    }
-
-    auto ptr = reinterpret_cast<char*>(zmq_msg_data(msg));
-    auto src = reinterpret_cast<const char*>(buffer);
-    std::copy(src, src + length, ptr);
-    return (0);
-}
-
-template <typename T>
-static auto zmq_msg_init(zmq_msg_t* msg,
-                         std::vector<std::unique_ptr<T>>& values)
-{
-    if (auto error = zmq_msg_init_size(msg, sizeof(T*) * values.size());
-        error != 0) {
-        return (error);
-    }
-
-    auto cursor = reinterpret_cast<T**>(zmq_msg_data(msg));
-    std::transform(std::begin(values), std::end(values), cursor, [](auto& ptr) {
-        return (ptr.release());
-    });
-    return (0);
-}
-
-template <typename T>
-static std::enable_if_t<!std::is_pointer_v<T>, T>
-zmq_msg_data(const zmq_msg_t* msg)
-{
-    return *(reinterpret_cast<T*>(zmq_msg_data(const_cast<zmq_msg_t*>(msg))));
-}
-
-template <typename T>
-static std::enable_if_t<std::is_pointer_v<T>, T>
-zmq_msg_data(const zmq_msg_t* msg)
-{
-    return (reinterpret_cast<T>(zmq_msg_data(const_cast<zmq_msg_t*>(msg))));
-}
-
-static void close(serialized_msg& msg)
-{
-    zmq_close(&msg.type);
-    zmq_close(&msg.data);
-}
 
 void copy_string(std::string_view str, char* ch_arr, size_t max_length)
 {
@@ -186,97 +115,70 @@ serialized_msg serialize_request(request_msg&& msg)
 {
     serialized_msg serialized;
     auto error =
-        (zmq_msg_init(&serialized.type, msg.index())
+        (message::push(serialized, msg.index())
          || std::visit(
              utils::overloaded_visitor(
-                 [&](const request_block_device_list&) {
-                     return (zmq_msg_init(&serialized.data));
-                 },
+                 [&](const request_block_device_list&) { return (0); },
                  [&](const request_block_device& blkdevice) {
-                     return (zmq_msg_init(&serialized.data,
-                                          blkdevice.id.data(),
-                                          blkdevice.id.length()));
+                     return (message::push(serialized, blkdevice.id));
                  },
                  [&](const request_block_device_init& blkdevice) {
-                     return (zmq_msg_init(&serialized.data,
-                                          blkdevice.id.data(),
-                                          blkdevice.id.length()));
+                     return (message::push(serialized, blkdevice.id));
                  },
-                 [&](const request_block_file_list&) {
-                     return (zmq_msg_init(&serialized.data));
-                 },
+                 [&](const request_block_file_list&) { return (0); },
                  [&](const request_block_file& blkfile) {
-                     return (zmq_msg_init(&serialized.data,
-                                          blkfile.id.data(),
-                                          blkfile.id.length()));
+                     return (message::push(serialized, blkfile.id));
                  },
                  [&](request_block_file_add& blkfile) {
-                     return (zmq_msg_init(&serialized.data,
-                                          std::move(blkfile.source)));
+                     return (
+                         message::push(serialized, std::move(blkfile.source)));
                  },
                  [&](const request_block_file_del& blkfile) {
-                     return (zmq_msg_init(&serialized.data,
-                                          blkfile.id.data(),
-                                          blkfile.id.length()));
+                     return (message::push(serialized, blkfile.id));
                  },
                  [&](request_block_file_bulk_add& request) {
-                     return (zmq_msg_init(&serialized.data, request.files));
+                     return (message::push(serialized, request.files));
                  },
                  [&](request_block_file_bulk_del& request) {
-                     return (zmq_msg_init(&serialized.data, request.ids));
+                     return (message::push(serialized, request.ids));
                  },
-                 [&](const request_block_generator_list&) {
-                     return (zmq_msg_init(&serialized.data));
-                 },
+                 [&](const request_block_generator_list&) { return (0); },
                  [&](const request_block_generator& blkgenerator) {
-                     return (zmq_msg_init(&serialized.data,
-                                          blkgenerator.id.data(),
-                                          blkgenerator.id.length()));
+                     return (message::push(serialized, blkgenerator.id));
                  },
                  [&](request_block_generator_add& blkgenerator) {
-                     return (zmq_msg_init(&serialized.data,
-                                          std::move(blkgenerator.source)));
+                     return (message::push(serialized,
+                                           std::move(blkgenerator.source)));
                  },
                  [&](const request_block_generator_del& blkgenerator) {
-                     return (zmq_msg_init(&serialized.data,
-                                          blkgenerator.id.data(),
-                                          blkgenerator.id.length()));
+                     return (message::push(serialized, blkgenerator.id));
                  },
                  [&](request_block_generator_bulk_add& request) {
-                     return (
-                         zmq_msg_init(&serialized.data, request.generators));
+                     return (message::push(serialized, request.generators));
                  },
                  [&](request_block_generator_bulk_del& request) {
-                     return (zmq_msg_init(&serialized.data, request.ids));
+                     return (message::push(serialized, request.ids));
                  },
                  [&](const request_block_generator_start& blkgenerator) {
-                     return (zmq_msg_init(&serialized.data,
-                                          blkgenerator.id.data(),
-                                          blkgenerator.id.length()));
+                     return (message::push(serialized, blkgenerator.id));
                  },
                  [&](const request_block_generator_stop& blkgenerator) {
-                     return (zmq_msg_init(&serialized.data,
-                                          blkgenerator.id.data(),
-                                          blkgenerator.id.length()));
+                     return (message::push(serialized, blkgenerator.id));
                  },
                  [&](request_block_generator_bulk_start& request) {
-                     return (zmq_msg_init(&serialized.data, request.ids));
+                     return (message::push(serialized, request.ids));
                  },
                  [&](request_block_generator_bulk_stop& request) {
-                     return (zmq_msg_init(&serialized.data, request.ids));
+                     return (message::push(serialized, request.ids));
                  },
                  [&](const request_block_generator_result_list&) {
-                     return (zmq_msg_init(&serialized.data));
+                     return (0);
                  },
                  [&](const request_block_generator_result& result) {
-                     return (zmq_msg_init(&serialized.data,
-                                          result.id.data(),
-                                          result.id.length()));
+                     return (message::push(serialized, result.id));
                  },
                  [&](const request_block_generator_result_del& result) {
-                     return (zmq_msg_init(&serialized.data,
-                                          result.id.data(),
-                                          result.id.length()));
+                     return (message::push(serialized, result.id));
                  }),
              msg));
     if (error) { throw std::bad_alloc(); }
@@ -288,26 +190,24 @@ serialized_msg serialize_reply(reply_msg&& msg)
 {
     serialized_msg serialized;
     auto error =
-        (zmq_msg_init(&serialized.type, msg.index())
+        (message::push(serialized, msg.index())
          || std::visit(
              utils::overloaded_visitor(
                  [&](reply_block_devices& reply) {
-                     return (zmq_msg_init(&serialized.data, reply.devices));
+                     return (message::push(serialized, reply.devices));
                  },
                  [&](reply_block_files& reply) {
-                     return (zmq_msg_init(&serialized.data, reply.files));
+                     return (message::push(serialized, reply.files));
                  },
                  [&](reply_block_generators& reply) {
-                     return (zmq_msg_init(&serialized.data, reply.generators));
+                     return (message::push(serialized, reply.generators));
                  },
                  [&](reply_block_generator_results& reply) {
-                     return (zmq_msg_init(&serialized.data, reply.results));
+                     return (message::push(serialized, reply.results));
                  },
-                 [&](const reply_ok&) {
-                     return (zmq_msg_init(&serialized.data, 0));
-                 },
+                 [&](const reply_ok&) { return (0); },
                  [&](const reply_error& error) {
-                     return (zmq_msg_init(&serialized.data, error.info));
+                     return (message::push(serialized, error.info));
                  }),
              msg));
     if (error) { throw std::bad_alloc(); }
@@ -315,224 +215,124 @@ serialized_msg serialize_reply(reply_msg&& msg)
     return (serialized);
 }
 
-tl::expected<request_msg, int> deserialize_request(const serialized_msg& msg)
+tl::expected<request_msg, int> deserialize_request(serialized_msg&& msg)
 {
     using index_type = decltype(std::declval<request_msg>().index());
-    auto idx = *(zmq_msg_data<index_type*>(&msg.type));
+    auto idx = message::pop<index_type>(msg);
     switch (idx) {
     case utils::variant_index<request_msg, request_block_device_list>(): {
         return (request_block_device_list{});
     }
     case utils::variant_index<request_msg, request_block_device>(): {
-        std::string id(zmq_msg_data<char*>(&msg.data), zmq_msg_size(&msg.data));
-        return (request_block_device{std::move(id)});
+        return (request_block_device{message::pop_string(msg)});
     }
     case utils::variant_index<request_msg, request_block_device_init>(): {
-        std::string id(zmq_msg_data<char*>(&msg.data), zmq_msg_size(&msg.data));
-        return (request_block_device_init{std::move(id)});
+        return (request_block_device_init{message::pop_string(msg)});
     }
     case utils::variant_index<request_msg, request_block_file_list>(): {
         return (request_block_file_list{});
     }
     case utils::variant_index<request_msg, request_block_file_add>(): {
         auto request = request_block_file_add{};
-        request.source.reset(*zmq_msg_data<file_t**>(&msg.data));
+        request.source.reset(message::pop<file_t*>(msg));
         return (request);
     }
     case utils::variant_index<request_msg, request_block_file>(): {
-        std::string id(zmq_msg_data<char*>(&msg.data), zmq_msg_size(&msg.data));
-        return (request_block_file{std::move(id)});
+        return (request_block_file{message::pop_string(msg)});
     }
     case utils::variant_index<request_msg, request_block_file_del>(): {
-        std::string id(zmq_msg_data<char*>(&msg.data), zmq_msg_size(&msg.data));
-        return (request_block_file_del{std::move(id)});
+        return (request_block_file_del{message::pop_string(msg)});
     }
     case utils::variant_index<request_msg, request_block_file_bulk_add>(): {
-        auto size = zmq_msg_size(&msg.data) / sizeof(file_t*);
-        auto data = zmq_msg_data<file_t**>(&msg.data);
-
-        auto request = request_block_file_bulk_add{};
-        std::for_each(data, data + size, [&](const auto& ptr) {
-            request.files.emplace_back(ptr);
-        });
-        return (request);
+        return (request_block_file_bulk_add{
+            message::pop_unique_vector<file_t>(msg)});
     }
     case utils::variant_index<request_msg, request_block_file_bulk_del>(): {
-        auto size = zmq_msg_size(&msg.data) / sizeof(string_t*);
-        auto data = zmq_msg_data<string_t**>(&msg.data);
-
-        auto request = request_block_file_bulk_del{};
-        std::for_each(data, data + size, [&](const auto& ptr) {
-            request.ids.emplace_back(ptr);
-        });
-        return (request);
+        return (request_block_file_bulk_del{
+            message::pop_unique_vector<std::string>(msg)});
     }
     case utils::variant_index<request_msg, request_block_generator_list>(): {
         return (request_block_generator_list{});
     }
     case utils::variant_index<request_msg, request_block_generator_add>(): {
         auto request = request_block_generator_add{};
-        request.source.reset(*zmq_msg_data<generator_t**>(&msg.data));
+        request.source.reset(message::pop<generator_t*>(msg));
         return (request);
     }
     case utils::variant_index<request_msg, request_block_generator>(): {
-        std::string id(zmq_msg_data<char*>(&msg.data), zmq_msg_size(&msg.data));
-        return (request_block_generator{std::move(id)});
+        return (request_block_generator{message::pop_string(msg)});
     }
     case utils::variant_index<request_msg, request_block_generator_del>(): {
-        std::string id(zmq_msg_data<char*>(&msg.data), zmq_msg_size(&msg.data));
-        return (request_block_generator_del{std::move(id)});
+        return (request_block_generator_del{message::pop_string(msg)});
     }
     case utils::variant_index<request_msg,
                               request_block_generator_bulk_add>(): {
-        auto size = zmq_msg_size(&msg.data) / sizeof(generator_t*);
-        auto data = zmq_msg_data<generator_t**>(&msg.data);
-
-        auto request = request_block_generator_bulk_add{};
-        std::for_each(data, data + size, [&](const auto& ptr) {
-            request.generators.emplace_back(ptr);
-        });
-        return (request);
+        return (request_block_generator_bulk_add{
+            message::pop_unique_vector<generator_t>(msg)});
     }
     case utils::variant_index<request_msg,
                               request_block_generator_bulk_del>(): {
-        auto size = zmq_msg_size(&msg.data) / sizeof(string_t*);
-        auto data = zmq_msg_data<string_t**>(&msg.data);
-
-        auto request = request_block_generator_bulk_del{};
-        std::for_each(data, data + size, [&](const auto& ptr) {
-            request.ids.emplace_back(ptr);
-        });
-        return (request);
+        return (request_block_generator_bulk_del{
+            message::pop_unique_vector<std::string>(msg)});
     }
     case utils::variant_index<request_msg, request_block_generator_start>(): {
-        std::string id(zmq_msg_data<char*>(&msg.data), zmq_msg_size(&msg.data));
-        return (request_block_generator_start{std::move(id)});
+        return (request_block_generator_start{message::pop_string(msg)});
     }
     case utils::variant_index<request_msg, request_block_generator_stop>(): {
-        std::string id(zmq_msg_data<char*>(&msg.data), zmq_msg_size(&msg.data));
-        return (request_block_generator_stop{std::move(id)});
+        return (request_block_generator_stop{message::pop_string(msg)});
     }
     case utils::variant_index<request_msg,
                               request_block_generator_bulk_start>(): {
-        auto size = zmq_msg_size(&msg.data) / sizeof(string_t*);
-        auto data = zmq_msg_data<string_t**>(&msg.data);
-
-        auto request = request_block_generator_bulk_start{};
-        std::for_each(data, data + size, [&](const auto& ptr) {
-            request.ids.emplace_back(ptr);
-        });
-        return (request);
+        return (request_block_generator_bulk_start{
+            message::pop_unique_vector<std::string>(msg)});
     }
     case utils::variant_index<request_msg,
                               request_block_generator_bulk_stop>(): {
-        auto size = zmq_msg_size(&msg.data) / sizeof(device_t*);
-        auto data = zmq_msg_data<string_t**>(&msg.data);
-
-        auto request = request_block_generator_bulk_stop{};
-        std::for_each(data, data + size, [&](const auto& ptr) {
-            request.ids.emplace_back(ptr);
-        });
-        return (request);
+        return (request_block_generator_bulk_stop{
+            message::pop_unique_vector<std::string>(msg)});
     }
     case utils::variant_index<request_msg,
                               request_block_generator_result_list>(): {
         return (request_block_generator_result_list{});
     }
     case utils::variant_index<request_msg, request_block_generator_result>(): {
-        std::string id(zmq_msg_data<char*>(&msg.data), zmq_msg_size(&msg.data));
-        return (request_block_generator_result{std::move(id)});
+        return (request_block_generator_result{message::pop_string(msg)});
     }
     case utils::variant_index<request_msg,
                               request_block_generator_result_del>(): {
-        std::string id(zmq_msg_data<char*>(&msg.data), zmq_msg_size(&msg.data));
-        return (request_block_generator_result_del{std::move(id)});
+        return (request_block_generator_result_del{message::pop_string(msg)});
     }
     }
 
     return (tl::make_unexpected(EINVAL));
 }
 
-tl::expected<reply_msg, int> deserialize_reply(const serialized_msg& msg)
+tl::expected<reply_msg, int> deserialize_reply(serialized_msg&& msg)
 {
     using index_type = decltype(std::declval<request_msg>().index());
-    auto idx = *(zmq_msg_data<index_type*>(&msg.type));
+    auto idx = message::pop<index_type>(msg);
     switch (idx) {
     case utils::variant_index<reply_msg, reply_block_devices>(): {
-        auto size = zmq_msg_size(&msg.data) / sizeof(device_t*);
-        auto data = zmq_msg_data<device_t**>(&msg.data);
-
-        auto reply = reply_block_devices{};
-        std::for_each(data, data + size, [&](const auto& ptr) {
-            reply.devices.emplace_back(ptr);
-        });
-        return (reply);
+        return (reply_block_devices{message::pop_unique_vector<device_t>(msg)});
     }
     case utils::variant_index<reply_msg, reply_block_files>(): {
-        auto size = zmq_msg_size(&msg.data) / sizeof(file_t*);
-        auto data = zmq_msg_data<file_t**>(&msg.data);
-
-        auto reply = reply_block_files{};
-        std::for_each(data, data + size, [&](const auto& ptr) {
-            reply.files.emplace_back(ptr);
-        });
-        return (reply);
+        return (reply_block_files{message::pop_unique_vector<file_t>(msg)});
     }
     case utils::variant_index<reply_msg, reply_block_generators>(): {
-        auto size = zmq_msg_size(&msg.data) / sizeof(generator_t*);
-        auto data = zmq_msg_data<generator_t**>(&msg.data);
-
-        auto reply = reply_block_generators{};
-        std::for_each(data, data + size, [&](const auto& ptr) {
-            reply.generators.emplace_back(ptr);
-        });
-        return (reply);
+        return (reply_block_generators{
+            message::pop_unique_vector<generator_t>(msg)});
     }
     case utils::variant_index<reply_msg, reply_block_generator_results>(): {
-        auto size = zmq_msg_size(&msg.data) / sizeof(generator_result_t*);
-        auto data = zmq_msg_data<generator_result_t**>(&msg.data);
-
-        auto reply = reply_block_generator_results{};
-        std::for_each(data, data + size, [&](const auto& ptr) {
-            reply.results.emplace_back(ptr);
-        });
-        return (reply);
+        return (reply_block_generator_results{
+            message::pop_unique_vector<generator_result_t>(msg)});
     }
     case utils::variant_index<reply_msg, reply_ok>():
         return (reply_ok{});
     case utils::variant_index<reply_msg, reply_error>():
-        return (reply_error{*(zmq_msg_data<typed_error*>(&msg.data))});
+        return (reply_error{message::pop<typed_error>(msg)});
     }
 
     return (tl::make_unexpected(EINVAL));
-}
-
-int send_message(void* socket, serialized_msg&& msg)
-{
-    if (zmq_msg_send(&msg.type, socket, ZMQ_SNDMORE) == -1
-        || zmq_msg_send(&msg.data, socket, 0) == -1) {
-        close(msg);
-        return (errno);
-    }
-
-    return (0);
-}
-
-tl::expected<serialized_msg, int> recv_message(void* socket, int flags)
-{
-    serialized_msg msg;
-    if (zmq_msg_init(&msg.type) == -1 || zmq_msg_init(&msg.data) == -1) {
-        close(msg);
-        return (tl::make_unexpected(ENOMEM));
-    }
-
-    if (zmq_msg_recv(&msg.type, socket, flags) == -1
-        || zmq_msg_recv(&msg.data, socket, flags) == -1) {
-        close(msg);
-        return (tl::make_unexpected(errno));
-    }
-
-    return (msg);
 }
 
 bool is_valid(const BlockFile& file, std::vector<std::string>& errors)

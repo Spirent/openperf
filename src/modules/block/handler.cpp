@@ -6,6 +6,7 @@
 #include "api/api_route_handler.hpp"
 #include "config/op_config_utils.hpp"
 #include "core/op_core.h"
+#include "message/serialized_message.hpp"
 #include "api.hpp"
 
 #include "swagger/v1/model/BlockGenerator.h"
@@ -214,13 +215,14 @@ handler::handler(void* context, Rest::Router& router)
 
 api::reply_msg submit_request(void* socket, api::request_msg&& request)
 {
-    if (auto error = api::send_message(
+    if (auto error = openperf::message::send(
             socket,
             api::serialize_request(std::forward<api::request_msg>(request)));
         error != 0) {
         return (to_error(api::error_type::ZMQ_ERROR, error));
     }
-    auto reply = api::recv_message(socket).and_then(api::deserialize_reply);
+    auto reply =
+        openperf::message::recv(socket).and_then(api::deserialize_reply);
     if (!reply) {
         return (to_error(api::error_type::ZMQ_ERROR, reply.error()));
     }

@@ -24,6 +24,10 @@ class BlockFile;
 class BlockDevice;
 } // namespace swagger::v1::model
 
+namespace openperf::message {
+struct serialized_message;
+}
+
 namespace openperf::block::api {
 
 using namespace swagger::v1::model;
@@ -44,6 +48,8 @@ using generator_result_ptr = std::unique_ptr<generator_result_t>;
 
 using string_t = std::string;
 using string_ptr = std::unique_ptr<string_t>;
+
+using serialized_msg = openperf::message::serialized_message;
 
 static constexpr size_t err_max_length = 256;
 enum class error_type { NONE = 0, NOT_FOUND, ZMQ_ERROR, CUSTOM_ERROR };
@@ -218,20 +224,11 @@ using reply_msg = std::variant<reply_block_devices,
                                reply_ok,
                                reply_error>;
 
-struct serialized_msg
-{
-    zmq_msg_t type;
-    zmq_msg_t data;
-};
-
 serialized_msg serialize_request(request_msg&& request);
 serialized_msg serialize_reply(reply_msg&& reply);
 
-tl::expected<request_msg, int> deserialize_request(const serialized_msg& msg);
-tl::expected<reply_msg, int> deserialize_reply(const serialized_msg& msg);
-
-int send_message(void* socket, serialized_msg&& msg);
-tl::expected<serialized_msg, int> recv_message(void* socket, int flags = 0);
+tl::expected<request_msg, int> deserialize_request(serialized_msg&& msg);
+tl::expected<reply_msg, int> deserialize_reply(serialized_msg&& msg);
 
 bool is_valid(const BlockFile& generator, std::vector<std::string>& errors);
 bool is_valid(const BlockGenerator& generator,
