@@ -74,6 +74,33 @@ static swagger::TvlpConfiguration to_swagger(const config_t& config)
         }
         model.getProfile()->setBlock(block);
     }
+    if (config.profile().memory) {
+        auto memory = std::make_shared<swagger::TvlpProfile_memory>();
+        for (auto memory_entry : config.profile().memory.value()) {
+            auto entry = std::make_shared<swagger::TvlpProfile_memory_series>();
+            entry->setLength(memory_entry.length);
+            memory->getSeries().push_back(entry);
+        }
+        model.getProfile()->setMemory(memory);
+    }
+    if (config.profile().cpu) {
+        auto cpu = std::make_shared<swagger::TvlpProfile_cpu>();
+        for (auto cpu_entry : config.profile().cpu.value()) {
+            auto entry = std::make_shared<swagger::TvlpProfile_cpu_series>();
+            entry->setLength(cpu_entry.length);
+            cpu->getSeries().push_back(entry);
+        }
+        model.getProfile()->setCpu(cpu);
+    }
+    if (config.profile().packet) {
+        auto packet = std::make_shared<swagger::TvlpProfile_packet>();
+        for (auto packet_entry : config.profile().packet.value()) {
+            auto entry = std::make_shared<swagger::TvlpProfile_packet_series>();
+            entry->setLength(packet_entry.length);
+            packet->getSeries().push_back(entry);
+        }
+        model.getProfile()->setPacket(packet);
+    }
 
     return model;
 }
