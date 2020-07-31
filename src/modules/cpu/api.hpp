@@ -15,7 +15,13 @@
 #include "models/generator.hpp"
 #include "models/generator_result.hpp"
 
+namespace openperf::message {
+struct serialized_message;
+}
+
 namespace openperf::cpu::api {
+
+using serialized_msg = openperf::message::serialized_message;
 
 const std::string endpoint = "inproc://openperf_cpu";
 
@@ -37,6 +43,7 @@ using cpu_generator_result_t = model::generator_result;
 using cpu_generator_ptr = std::unique_ptr<cpu_generator_t>;
 using cpu_generator_result_ptr = std::unique_ptr<cpu_generator_result_t>;
 using cpu_info_ptr = std::unique_ptr<cpu_info_t>;
+using id_ptr = std::unique_ptr<std::string>;
 
 enum class error_type { NONE = 0, NOT_FOUND, ZMQ_ERROR, CUSTOM_ERROR };
 
@@ -74,7 +81,7 @@ struct request_cpu_generator_bulk_add
 
 struct request_cpu_generator_bulk_del
 {
-    std::unique_ptr<std::vector<std::string>> ids;
+    std::vector<id_ptr> ids;
 };
 
 struct request_cpu_generator_start
@@ -89,12 +96,12 @@ struct request_cpu_generator_stop
 
 struct request_cpu_generator_bulk_start
 {
-    std::unique_ptr<std::vector<std::string>> ids;
+    std::vector<id_ptr> ids;
 };
 
 struct request_cpu_generator_bulk_stop
 {
-    std::unique_ptr<std::vector<std::string>> ids;
+    std::vector<id_ptr> ids;
 };
 
 struct request_cpu_generator_result_list
@@ -159,20 +166,11 @@ using reply_msg = std::variant<reply_cpu_generators,
                                reply_ok,
                                reply_error>;
 
-struct serialized_msg
-{
-    zmq_msg_t type;
-    zmq_msg_t data;
-};
-
 serialized_msg serialize_request(request_msg&& request);
 serialized_msg serialize_reply(reply_msg&& reply);
 
-tl::expected<request_msg, int> deserialize_request(const serialized_msg& msg);
-tl::expected<reply_msg, int> deserialize_reply(const serialized_msg& msg);
-
-int send_message(void* socket, serialized_msg&& msg);
-tl::expected<serialized_msg, int> recv_message(void* socket, int flags = 0);
+tl::expected<request_msg, int> deserialize_request(serialized_msg&& msg);
+tl::expected<reply_msg, int> deserialize_reply(serialized_msg&& msg);
 
 std::string to_string(const api::typed_error& error);
 reply_error

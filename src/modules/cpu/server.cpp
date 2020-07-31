@@ -1,9 +1,9 @@
+#include <zmq.h>
+
 #include "server.hpp"
 #include "cpu.hpp"
-
 #include "framework/config/op_config_utils.hpp"
-
-#include <zmq.h>
+#include "framework/message/serialized_message.hpp"
 
 namespace openperf::cpu::api {
 
@@ -105,8 +105,8 @@ reply_msg server::handle_request(const request_cpu_generator_bulk_add& request)
 reply_msg server::handle_request(const request_cpu_generator_bulk_del& request)
 {
     bool failed = false;
-    for (const auto& id : *request.ids) {
-        failed = !m_generator_stack.erase(id) || failed;
+    for (const auto& id : request.ids) {
+        failed = !m_generator_stack.erase(*id) || failed;
     }
     if (failed)
         return to_error(api::error_type::CUSTOM_ERROR,
@@ -146,11 +146,11 @@ reply_msg server::handle_request(const request_cpu_generator_stop& request)
 reply_msg
 server::handle_request(const request_cpu_generator_bulk_start& request)
 {
-    for (const auto& id : *request.ids)
-        if (!m_generator_stack.generator(id))
+    for (const auto& id : request.ids)
+        if (!m_generator_stack.generator(*id))
             return to_error(api::error_type::NOT_FOUND,
                             0,
-                            "Generator from the list with ID '" + id
+                            "Generator from the list with ID '" + *id
                                 + "' was not found");
 
     using string_pair = std::pair<std::string, std::string>;
@@ -163,17 +163,17 @@ server::handle_request(const request_cpu_generator_bulk_start& request)
     };
 
     auto reply = reply_cpu_generator_results{};
-    for (const auto& id : *request.ids) {
-        auto gen = m_generator_stack.generator(id);
+    for (const auto& id : request.ids) {
+        auto gen = m_generator_stack.generator(*id);
         if (gen->running()) continue;
 
-        auto stats = m_generator_stack.start_generator(id);
+        auto stats = m_generator_stack.start_generator(*id);
         if (!stats) {
             rollback();
             return to_error(api::error_type::CUSTOM_ERROR, 0, stats.error());
         }
 
-        not_runned_before.push_front(std::make_pair(id, stats->id()));
+        not_runned_before.push_front(std::make_pair(*id, stats->id()));
 
         reply.results.emplace_back(
             std::make_unique<model::generator_result>(stats.value()));
@@ -184,14 +184,14 @@ server::handle_request(const request_cpu_generator_bulk_start& request)
 
 reply_msg server::handle_request(const request_cpu_generator_bulk_stop& request)
 {
-    for (const auto& id : *request.ids)
-        if (!m_generator_stack.generator(id))
+    for (const auto& id : request.ids)
+        if (!m_generator_stack.generator(*id))
             return to_error(api::error_type::NOT_FOUND,
                             0,
-                            "Generator from the list with ID '" + id
+                            "Generator from the list with ID '" + *id
                                 + "' was not found");
 
-    for (const auto& id : *request.ids) m_generator_stack.stop_generator(id);
+    for (const auto& id : request.ids) m_generator_stack.stop_generator(*id);
 
     return api::reply_ok{};
 }
@@ -254,13 +254,13 @@ static int _handle_rpc_request(const op_event_data* data, void* arg)
     auto s = reinterpret_cast<server*>(arg);
 
     auto reply_errors = 0;
-    while (auto request = recv_message(data->socket, ZMQ_DONTWAIT)
+    while (auto request = message::recv(data->socket, ZMQ_DONTWAIT)
                               .and_then(deserialize_request)) {
         auto request_visitor = [&](auto& request) -> reply_msg {
             return s->handle_request(request);
         };
         auto reply = std::visit(request_visitor, *request);
-        if (send_message(data->socket, serialize_reply(std::move(reply)))
+        if (message::send(data->socket, serialize_reply(std::move(reply)))
             == -1) {
             ++reply_errors;
             OP_LOG(
