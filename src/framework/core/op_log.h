@@ -130,6 +130,11 @@ int op_vlog(enum op_log_level level,
  */
 int op_log_init(void* context, const char* logging_endpoint);
 
+/**
+ * Cleanly release all remaining logging resources
+ */
+void op_log_finish();
+
 #ifdef __cplusplus
 }
 #endif

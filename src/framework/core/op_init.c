@@ -86,5 +86,6 @@ void op_halt(void* context)
 {
     zmq_ctx_shutdown(context);
     op_modules_finish();
+    op_log_finish();
     zmq_ctx_term(context);
 }
