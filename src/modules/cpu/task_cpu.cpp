@@ -19,7 +19,7 @@ task_cpu::task_cpu(const task_cpu_config& conf)
 }
 
 task_cpu::task_cpu(task_cpu&& other) noexcept
-    : m_config(other.m_config)
+    : m_config(std::move(other.m_config))
     , m_weights(other.m_weights)
     , m_weight_min(other.m_weight_min)
     , m_time(other.m_time)
@@ -102,7 +102,13 @@ void task_cpu::reset()
     m_last_run = time_of_run;
     m_util_time = cpu_util;
 
-    return std::make_unique<task_cpu_stat>(stat);
+    // NOTE: clang-tidy static analysis cause an error when used simply:
+    // return std::make_unique<task_cpu_stat>();
+    //
+    // Link: https://bugs.llvm.org/show_bug.cgi?id=38176
+    // should be fixed in clang 8 or newer
+    auto return_value = std::make_unique<task_cpu_stat>(stat);
+    return return_value;
 }
 
 // Methods : private

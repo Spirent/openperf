@@ -27,7 +27,7 @@ public:
             matrix2[i].resize(size);
             for (size_t j = 0; j < size; ++j) {
                 matrix1[i][j] = i * j;
-                matrix2[i][j] = size * size / (i * j + 1);
+                matrix2[i][j] = static_cast<T>(size * size) / (i * j + 1);
             }
         }
     }

@@ -16,7 +16,7 @@ generator::generator(const model::generator& generator_model)
     , m_controller(NAME_PREFIX + std::to_string(m_serial_number) + "_ctl")
     , m_stat_ptr(&m_stat)
 {
-    config(generator_model.config());
+    generator::config(generator_model.config());
     m_controller.start<task_cpu_stat*>([this](const task_cpu_stat& stat) {
         auto stat_copy = m_stat;
         m_stat_ptr = &stat_copy;
