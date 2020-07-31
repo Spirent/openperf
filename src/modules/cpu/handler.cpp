@@ -7,6 +7,8 @@
 #include "framework/message/serialized_message.hpp"
 #include "modules/api/api_route_handler.hpp"
 
+#include "swagger/v1/converters/cpu.hpp"
+
 namespace opneperf::cpu {
 
 using namespace Pistache;

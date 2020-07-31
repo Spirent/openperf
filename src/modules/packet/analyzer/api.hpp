@@ -284,8 +284,4 @@ bool is_valid(const analyzer_type&, std::vector<std::string>&);
 } // namespace api
 } // namespace openperf::packet::analyzer
 
-namespace swagger::v1::model {
-void from_json(const nlohmann::json&, swagger::v1::model::PacketAnalyzer&);
-} // namespace swagger::v1::model
-
 #endif /* _OP_PACKET_ANALYZER_API_HPP_ */
