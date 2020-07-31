@@ -65,9 +65,10 @@ from_swagger(swagger::BulkCreateCpuGeneratorsRequest& p_request)
 request_cpu_generator_bulk_del
 from_swagger(swagger::BulkDeleteCpuGeneratorsRequest& p_request)
 {
-    request_cpu_generator_bulk_del request{
-        std::make_unique<std::vector<std::string>>()};
-    for (auto& id : p_request.getIds()) request.ids->push_back(id);
+    request_cpu_generator_bulk_del request{};
+    for (auto& id : p_request.getIds()) {
+        request.ids.push_back(std::make_unique<std::string>(id));
+    }
     return request;
 }
 
