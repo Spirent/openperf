@@ -7,7 +7,12 @@
 
 struct zmq_context_deleter
 {
-    void operator()(void* context) const { zmq_ctx_term(context); }
+    void operator()(void* context) const
+    {
+        zmq_ctx_shutdown(context);
+        op_log_finish();
+        zmq_ctx_term(context);
+    }
 };
 
 TEST_CASE("check log level setter/getter", "[logging]")

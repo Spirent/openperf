@@ -470,7 +470,6 @@ void* op_log_task(void* void_args)
 
     atomic_store(&_log_thread_ready, false);
 
-    op_list_free(&_thread_log_sockets);
     zmq_close(messages);
     if (external) zmq_close(external);
 
@@ -533,6 +532,8 @@ int op_log_init(void* context, const char* logging_endpoint)
 
     return (0);
 }
+
+void op_log_finish() { op_list_free(&_thread_log_sockets); }
 
 /*
  * Register the log-level option.
