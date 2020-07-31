@@ -1,3 +1,4 @@
+#include "message/serialized_message.hpp"
 #include "server.hpp"
 #include "api.hpp"
 #include "info.hpp"
@@ -25,15 +26,15 @@ server::server(void* context, openperf::core::event_loop& loop)
 int server::handle_rpc_request(const op_event_data* data)
 {
     auto reply_errors = 0;
-    while (auto request = recv_message(data->socket, ZMQ_DONTWAIT)
+    while (auto request = openperf::message::recv(data->socket, ZMQ_DONTWAIT)
                               .and_then(deserialize_request)) {
         auto request_visitor = [&](auto& request) -> api_reply {
             return (handle_request(request));
         };
         auto reply = std::visit(request_visitor, *request);
 
-        if (send_message(data->socket,
-                         serialize(std::forward<api_reply>(reply)))
+        if (openperf::message::send(data->socket,
+                                    serialize(std::forward<api_reply>(reply)))
             == -1) {
             reply_errors++;
             OP_LOG(
