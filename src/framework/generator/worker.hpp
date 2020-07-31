@@ -47,6 +47,7 @@ public:
 private:
     template <typename T> void run(task<T>&);
     template <typename T> void send(const T&);
+    template <typename T> void send(std::unique_ptr<T> stat);
     operation_t next_command(bool wait = false) noexcept;
 };
 
@@ -85,6 +86,18 @@ template <typename T> void worker::send(const T& stat)
 {
     auto msg = message::serialized_message{};
     message::push(msg, stat);
+
+    if (auto r = message::send(m_statistics_socket.get(), std::move(msg)); r) {
+        OP_LOG(OP_LOG_ERROR,
+               "Worker ZMQ statistics socket send with error: %s",
+               zmq_strerror(r));
+    }
+}
+
+template <typename T> void worker::send(std::unique_ptr<T> stat)
+{
+    auto msg = message::serialized_message{};
+    message::push(msg, stat.release());
 
     if (auto r = message::send(m_statistics_socket.get(), std::move(msg)); r) {
         OP_LOG(OP_LOG_ERROR,

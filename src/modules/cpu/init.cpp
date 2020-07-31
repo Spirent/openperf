@@ -3,8 +3,8 @@
 
 #include <zmq.h>
 
-#include "core/op_core.h"
-#include "cpu/server.hpp"
+#include "framework/core/op_core.h"
+#include "server.hpp"
 
 namespace openperf::cpu {
 

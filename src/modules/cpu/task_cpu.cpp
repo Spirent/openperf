@@ -1,7 +1,7 @@
 #include "task_cpu.hpp"
+#include "target_scalar.hpp"
 
-#include "core/op_log.h"
-#include "cpu/target_scalar.hpp"
+#include "framework/core/op_log.h"
 
 #include <thread>
 
@@ -11,28 +11,35 @@ using namespace std::chrono_literals;
 
 constexpr auto QUANTA = 100ms;
 
-task_cpu::task_cpu()
-    : m_stat(&m_stat_shared)
-    , m_stat_clear(true)
-    , m_utilization(0.0)
-{}
-
-task_cpu::task_cpu(const task_cpu::config_t& conf)
-    : task_cpu()
+// Constructors & Destructor
+task_cpu::task_cpu(const task_cpu_config& conf)
+    : m_utilization(0.0)
 {
     config(conf);
 }
 
-[[clang::optnone]] void task_cpu::spin()
-{
-    if (m_stat_clear) {
-        m_stat_active = {};
-        m_stat_shared = {};
-        m_stat_active.targets.resize(m_targets.size());
-        m_stat_shared.targets.resize(m_targets.size());
-        m_stat_clear = false;
+task_cpu::task_cpu(task_cpu&& other) noexcept
+    : m_config(std::move(other.m_config))
+    , m_weights(other.m_weights)
+    , m_weight_min(other.m_weight_min)
+    , m_time(other.m_time)
+    , m_error(other.m_error)
+    , m_last_run(other.m_last_run)
+    , m_util_time(other.m_util_time)
+    , m_targets(std::move(other.m_targets))
+    , m_utilization(other.m_utilization)
+{}
 
-        m_error = 0ns;
+void task_cpu::reset()
+{
+    m_error = 0ns;
+    m_last_run = chronometer::time_point();
+}
+
+// Methods : public
+[[clang::optnone]] task_cpu_stat_ptr task_cpu::spin()
+{
+    if (m_last_run.time_since_epoch() == 0ns) {
         m_last_run = chronometer::now();
         m_util_time = cpu_thread_time();
     }
@@ -41,6 +48,8 @@ task_cpu::task_cpu(const task_cpu::config_t& conf)
         m_time.count() * static_cast<double>(m_weights) / m_weight_min,
         std::chrono::duration_cast<std::chrono::nanoseconds>(QUANTA).count()
             * m_utilization));
+
+    auto stat = task_cpu_stat{m_targets.size()};
 
     m_time = 0ns;
     for (size_t i = 0; i < m_targets.size(); ++i) {
@@ -60,9 +69,9 @@ task_cpu::task_cpu(const task_cpu::config_t& conf)
         target.runtime = (target.runtime + runtime / calls) / 2;
         m_time += target.runtime;
 
-        auto& stat = m_stat_active.targets[i];
-        stat.operations += operations;
-        stat.runtime += runtime;
+        auto& tgt_stat = stat.targets[i];
+        tgt_stat.operations += operations;
+        tgt_stat.runtime += runtime;
     }
 
     auto cpu_util = cpu_thread_time();
@@ -78,36 +87,42 @@ task_cpu::task_cpu(const task_cpu::config_t& conf)
         std::chrono::nanoseconds((uint64_t)(available.count() * m_utilization))
         - time_diff.utilization + m_error;
 
-    m_stat_active.system += time_diff.system;
-    m_stat_active.user += time_diff.user;
-    m_stat_active.steal += time_diff.steal;
-    m_stat_active.utilization += time_diff.utilization;
-    m_stat_active.available += available;
+    stat.available = available;
+    stat.utilization = time_diff.utilization;
+    stat.system = time_diff.system;
+    stat.user = time_diff.user;
+    stat.steal = time_diff.steal;
+    stat.core = m_config.core;
 
-    m_stat_active.error = std::chrono::nanoseconds((uint64_t)(
-                              m_stat_active.available.count() * m_utilization))
-                          - m_stat_active.utilization;
-    m_stat_active.load =
-        m_stat_active.utilization * 1.0 / m_stat_active.available;
+    stat.error = std::chrono::nanoseconds(
+                     (uint64_t)(stat.available.count() * m_utilization))
+                 - stat.utilization;
+    stat.load = stat.utilization * 1.0 / stat.available;
 
     m_last_run = time_of_run;
     m_util_time = cpu_util;
-    m_stat.store(&m_stat_active);
-    m_stat_shared = m_stat_active;
-    m_stat.store(&m_stat_shared);
+
+    // NOTE: clang-tidy static analysis cause an error when used simply:
+    // return std::make_unique<task_cpu_stat>();
+    //
+    // Link: https://bugs.llvm.org/show_bug.cgi?id=38176
+    // should be fixed in clang 8 or newer
+    auto return_value = std::make_unique<task_cpu_stat>(stat);
+    return return_value;
 }
 
-[[clang::optnone]] void task_cpu::config(const task_cpu::config_t& conf)
+// Methods : private
+[[clang::optnone]] void task_cpu::config(const task_cpu_config& conf)
 {
     assert(0.0 < conf.utilization && conf.utilization <= 100.0);
     OP_LOG(OP_LOG_DEBUG, "CPU Task configuring");
 
-    m_stat_clear = true;
-    m_utilization = conf.utilization / 100.0;
-
     m_time = 0ns;
     m_weights = 0;
     m_weight_min = std::numeric_limits<uint64_t>::max();
+    m_utilization = conf.utilization / 100.0;
+    m_config = conf;
+
     m_targets.clear();
     for (const auto& t_conf : conf.targets) {
         auto meta = target_meta{};
@@ -127,11 +142,6 @@ task_cpu::task_cpu(const task_cpu::config_t& conf)
         m_weight_min = std::min(m_weight_min, meta.weight);
         m_targets.emplace_back(std::move(meta));
     }
-}
-
-task_cpu::stat_t task_cpu::stat() const
-{
-    return (m_stat_clear) ? stat_t{} : *m_stat;
 }
 
 task_cpu::target_ptr task_cpu::make_target(cpu::instruction_set iset,

@@ -1,9 +1,9 @@
 #include "server.hpp"
+#include "cpu.hpp"
+
+#include "framework/config/op_config_utils.hpp"
 
 #include <zmq.h>
-
-#include "config/op_config_utils.hpp"
-#include "cpu/cpu.hpp"
 
 namespace openperf::cpu::api {
 

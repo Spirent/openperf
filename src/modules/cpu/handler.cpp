@@ -1,18 +1,9 @@
-#include <json.hpp>
-#include <zmq.h>
+#include "api.hpp"
+#include "api_converters.hpp"
 
-#include "api/api_route_handler.hpp"
-#include "config/op_config_utils.hpp"
-#include "core/op_core.h"
-#include "cpu/api.hpp"
-
-#include "swagger/v1/model/CpuGenerator.h"
-#include "swagger/v1/model/CpuGeneratorResult.h"
-#include "swagger/v1/model/BulkCreateCpuGeneratorsRequest.h"
-#include "swagger/v1/model/BulkDeleteCpuGeneratorsRequest.h"
-#include "swagger/v1/model/BulkStartCpuGeneratorsRequest.h"
-#include "swagger/v1/model/BulkStopCpuGeneratorsRequest.h"
-#include "swagger/v1/model/CpuInfoResult.h"
+#include "framework/config/op_config_utils.hpp"
+#include "framework/core/op_core.h"
+#include "modules/api/api_route_handler.hpp"
 
 namespace opneperf::cpu {
 

@@ -1,6 +1,6 @@
 #include "generator_stack.hpp"
 
-#include "utils/overloaded_visitor.hpp"
+#include "framework/utils/overloaded_visitor.hpp"
 
 namespace openperf::cpu::generator {
 
@@ -125,7 +125,7 @@ bool generator_stack::stop_generator(const std::string& id)
         gen->stop();
         auto result = gen->statistics();
         m_statistics[result.id()] = result;
-        gen->clear_statistics();
+        gen->reset();
         return true;
     } catch (const std::out_of_range&) {
         return false;

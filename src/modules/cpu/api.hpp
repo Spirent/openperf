@@ -5,28 +5,17 @@
 #include <memory>
 #include <string>
 #include <variant>
+
 #include <tl/expected.hpp>
 #include <zmq.h>
-#include <json.hpp>
 
-#include "cpu/common.hpp"
-#include "cpu/models/generator.hpp"
-#include "cpu/models/generator_result.hpp"
-#include "timesync/chrono.hpp"
+#include "modules/timesync/chrono.hpp"
 
-namespace swagger::v1::model {
-class CpuGenerator;
-class CpuGeneratorResult;
-class BulkCreateCpuGeneratorsRequest;
-class BulkDeleteCpuGeneratorsRequest;
-class BulkStartCpuGeneratorsRequest;
-class BulkStopCpuGeneratorsRequest;
-class CpuInfoResult;
-} // namespace swagger::v1::model
+#include "common.hpp"
+#include "models/generator.hpp"
+#include "models/generator_result.hpp"
 
 namespace openperf::cpu::api {
-
-using namespace swagger::v1::model;
 
 const std::string endpoint = "inproc://openperf_cpu";
 
@@ -185,26 +174,10 @@ tl::expected<reply_msg, int> deserialize_reply(const serialized_msg& msg);
 int send_message(void* socket, serialized_msg&& msg);
 tl::expected<serialized_msg, int> recv_message(void* socket, int flags = 0);
 
+std::string to_string(const api::typed_error& error);
 reply_error
 to_error(error_type type, int code = 0, const std::string& value = "");
-std::string to_string(const api::typed_error&);
-model::generator from_swagger(const CpuGenerator&);
-request_cpu_generator_bulk_add from_swagger(BulkCreateCpuGeneratorsRequest&);
-request_cpu_generator_bulk_del from_swagger(BulkDeleteCpuGeneratorsRequest&);
-std::shared_ptr<CpuGenerator> to_swagger(const model::generator&);
-std::shared_ptr<CpuGeneratorResult> to_swagger(const model::generator_result&);
-std::shared_ptr<CpuInfoResult> to_swagger(const cpu_info_t&);
-
-extern const std::string endpoint;
 
 } // namespace openperf::cpu::api
-
-namespace swagger::v1::model {
-void from_json(const nlohmann::json&, CpuGenerator&);
-void from_json(const nlohmann::json&, BulkCreateCpuGeneratorsRequest&);
-void from_json(const nlohmann::json&, BulkDeleteCpuGeneratorsRequest&);
-void from_json(const nlohmann::json&, BulkStartCpuGeneratorsRequest&);
-void from_json(const nlohmann::json&, BulkStopCpuGeneratorsRequest&);
-} // namespace swagger::v1::model
 
 #endif /* _OP_CPU_API_HPP_ */
