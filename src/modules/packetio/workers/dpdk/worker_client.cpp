@@ -35,6 +35,8 @@ void client::start(void* context, unsigned nb_workers)
 {
     auto syncpoint = random_endpoint();
     auto sync = op_task_sync_socket(context, syncpoint.c_str());
+    assert(sync);
+
     if (auto error = send_message(m_socket.get(), start_msg{syncpoint});
         error && error != ETERM) {
         throw std::runtime_error("Could not send start message to workers: "
@@ -53,6 +55,8 @@ void client::stop(void* context, unsigned nb_workers)
 {
     auto syncpoint = random_endpoint();
     auto sync = op_task_sync_socket(context, syncpoint.c_str());
+    if (!sync) { return; }
+
     if (auto error = send_message(m_socket.get(), stop_msg{syncpoint});
         error && error != ETERM) {
         throw std::runtime_error("Could not send stop message to workers: "
