@@ -5,6 +5,7 @@
 #include "config/op_config_utils.hpp"
 #include "core/op_core.h"
 #include "cpu/api.hpp"
+#include "message/serialized_message.hpp"
 
 #include "swagger/v1/model/CpuGenerator.h"
 #include "swagger/v1/model/CpuGeneratorResult.h"
@@ -138,13 +139,14 @@ handler::handler(void* context, Rest::Router& router)
 
 api::reply_msg submit_request(void* socket, api::request_msg&& request)
 {
-    if (auto error = api::send_message(
+    if (auto error = openperf::message::send(
             socket,
             api::serialize_request(std::forward<api::request_msg>(request)));
         error != 0) {
         return to_error(api::error_type::ZMQ_ERROR, error);
     }
-    auto reply = api::recv_message(socket).and_then(api::deserialize_reply);
+    auto reply =
+        openperf::message::recv(socket).and_then(api::deserialize_reply);
     if (!reply) { return to_error(api::error_type::ZMQ_ERROR, reply.error()); }
     return std::move(*reply);
 }
@@ -355,15 +357,14 @@ void handler::bulk_start_generators(const Rest::Request& request,
     auto request_model =
         json::parse(request.body()).get<BulkStartCpuGeneratorsRequest>();
 
-    api::request_cpu_generator_bulk_start bulk_request{
-        std::make_unique<std::vector<std::string>>()};
+    api::request_cpu_generator_bulk_start bulk_request{};
     for (const auto& id : request_model.getIds()) {
         if (auto res = openperf::config::op_config_validate_id_string(id);
             !res) {
             response.send(Http::Code::Bad_Request, res.error());
             return;
         }
-        bulk_request.ids->push_back(id);
+        bulk_request.ids.push_back(std::make_unique<std::string>(id));
     }
 
     auto api_reply = submit_request(m_socket.get(), std::move(bulk_request));
@@ -393,15 +394,14 @@ void handler::bulk_stop_generators(const Rest::Request& request,
     auto request_model =
         json::parse(request.body()).get<BulkStopCpuGeneratorsRequest>();
 
-    api::request_cpu_generator_bulk_stop bulk_request{
-        std::make_unique<std::vector<std::string>>()};
+    api::request_cpu_generator_bulk_stop bulk_request{};
     for (const auto& id : request_model.getIds()) {
         if (auto res = openperf::config::op_config_validate_id_string(id);
             !res) {
             response.send(Http::Code::Bad_Request, res.error());
             return;
         }
-        bulk_request.ids->push_back(id);
+        bulk_request.ids.push_back(std::make_unique<std::string>(id));
     }
 
     auto api_reply = submit_request(m_socket.get(), std::move(bulk_request));
