@@ -222,7 +222,10 @@ definitions:
                 config:
                   $ref: ./memory.yaml#/definitions/MemoryGeneratorConfig
               required:
+                - length
                 - config
+        required:
+          - series
       block:
         type: object
         properties:
@@ -242,7 +245,11 @@ definitions:
                 config:
                   $ref: ./block.yaml#/definitions/BlockGeneratorConfig
               required:
+                - length
                 - config
+        required:
+          - resource_id
+          - series
       cpu:
         type: object
         properties:
@@ -259,7 +266,10 @@ definitions:
                 config:
                   $ref: ./cpu.yaml#/definitions/CpuGeneratorConfig
               required:
+                - length
                 - config
+        required:
+          - series
       packet:
         type: object
         properties:
@@ -281,7 +291,11 @@ definitions:
                 config:
                   $ref: ./packet/generator.yaml#/definitions/PacketGeneratorConfig
               required:
+                - length
                 - config
+        required:
+          - target_id
+          - series
 
   TvlpResult:
     type: object
