@@ -183,8 +183,4 @@ reply_error to_error(error_type type, int value = 0);
 
 } // namespace openperf::timesync::api
 
-namespace swagger::v1::model {
-void from_json(const nlohmann::json&, swagger::v1::model::TimeSource&);
-}
-
 #endif /* _OP_TIMESYNC_API_HPP_ */

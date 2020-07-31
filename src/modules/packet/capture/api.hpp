@@ -273,8 +273,4 @@ bool is_valid(const capture_type&, std::vector<std::string>&);
 } // namespace api
 } // namespace openperf::packet::capture
 
-namespace swagger::v1::model {
-void from_json(const nlohmann::json&, swagger::v1::model::PacketCapture&);
-} // namespace swagger::v1::model
-
 #endif

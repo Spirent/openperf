@@ -10,13 +10,6 @@
 
 #include "models/tvlp_config.hpp"
 
-namespace swagger::v1::model {
-
-class TvlpConfiguration;
-
-void from_json(const nlohmann::json&, TvlpConfiguration&);
-} // namespace swagger::v1::model
-
 namespace openperf::tvlp::api {
 
 static constexpr auto endpoint = "inproc://openperf_tvlp";

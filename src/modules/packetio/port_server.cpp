@@ -8,7 +8,7 @@
 #include "core/op_uuid.hpp"
 #include "config/op_config_utils.hpp"
 #include "swagger/v1/model/Port.h"
-#include "packetio/json_transmogrify.hpp"
+#include "swagger/v1/converters/packetio.hpp"
 #include "packetio/port_api.hpp"
 #include "packetio/port_server.hpp"
 

@@ -345,8 +345,4 @@ bool is_valid(const generator_type&, std::vector<std::string>&);
 } // namespace api
 } // namespace openperf::packet::generator
 
-namespace swagger::v1::model {
-void from_json(const nlohmann::json&, swagger::v1::model::PacketGenerator&);
-}
-
 #endif /* _OP_PACKET_GENERATOR_API_HPP_ */

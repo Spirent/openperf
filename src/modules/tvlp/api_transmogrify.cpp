@@ -3,8 +3,6 @@
 #include "framework/utils/variant_index.hpp"
 #include "framework/utils/overloaded_visitor.hpp"
 
-#include "swagger/v1/model/TvlpConfiguration.h"
-
 namespace openperf::tvlp::api {
 
 static void close(serialized_msg& msg)
@@ -224,16 +222,3 @@ tl::expected<api_reply, int> deserialize_reply(const serialized_msg& msg)
 }
 
 } // namespace openperf::tvlp::api
-
-namespace swagger::v1::model {
-
-void from_json(const nlohmann::json& j, TvlpConfiguration& generator)
-{
-    generator.fromJson(const_cast<nlohmann::json&>(j));
-
-    generator.setProfile(std::make_shared<TvlpProfile>());
-    generator.getProfile()->fromJson(
-        const_cast<nlohmann::json&>(j.at("profile")));
-}
-
-} // namespace swagger::v1::model
