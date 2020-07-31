@@ -11,12 +11,17 @@
 #include "generator.hpp"
 #include "info.hpp"
 
+namespace openperf::memory {
+struct serialized_message;
+}
+
 namespace openperf::memory::api {
 
 static constexpr auto endpoint = "inproc://openperf_memory";
 
 // ZMQ message structs
 using config_t = openperf::memory::internal::generator::config_t;
+using serialized_msg = openperf::message::serialized_message;
 
 struct message
 {};
@@ -200,20 +205,11 @@ using api_reply = std::variant<reply::ok,
                                reply::statistic::list,
                                reply::statistic::item>;
 
-struct serialized_msg
-{
-    zmq_msg_t type;
-    zmq_msg_t data;
-};
-
-int send_message(void* socket, serialized_msg&& msg);
-tl::expected<serialized_msg, int> recv_message(void* socket, int flags = 0);
-
 serialized_msg serialize(api_request&& request);
 serialized_msg serialize(api_reply&& reply);
 
-tl::expected<api_request, int> deserialize_request(const serialized_msg& msg);
-tl::expected<api_reply, int> deserialize_reply(const serialized_msg& msg);
+tl::expected<api_request, int> deserialize_request(serialized_msg&& msg);
+tl::expected<api_reply, int> deserialize_reply(serialized_msg&& msg);
 
 } // namespace openperf::memory::api
 

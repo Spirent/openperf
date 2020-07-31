@@ -3,6 +3,7 @@
 
 #include "framework/config/op_config_utils.hpp"
 #include "framework/core/op_core.h"
+#include "framework/message/serialized_message.hpp"
 #include "modules/api/api_route_handler.hpp"
 
 namespace openperf::memory::api {
@@ -544,7 +545,7 @@ void handler::get_info(const Rest::Request&, Http::ResponseWriter response)
 // Methods : private
 api::api_reply handler::submit_request(api::api_request&& request)
 {
-    if (auto error = api::send_message(
+    if (auto error = openperf::message::send(
             socket.get(), api::serialize(std::forward<api_request>(request)));
         error != 0) {
         api::reply::error::error_data data{.type = api::reply::error::ZMQ_ERROR,
@@ -555,7 +556,7 @@ api::api_reply handler::submit_request(api::api_request&& request)
     }
 
     auto reply =
-        api::recv_message(socket.get()).and_then(api::deserialize_reply);
+        openperf::message::recv(socket.get()).and_then(api::deserialize_reply);
     if (!reply) {
         api::reply::error::error_data data{.type = api::reply::error::ZMQ_ERROR,
                                            .value = reply.error()};
