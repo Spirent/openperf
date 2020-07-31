@@ -4,6 +4,7 @@
 #include "block/server.hpp"
 #include "config/op_config_utils.hpp"
 #include "block/block_generator.hpp"
+#include "message/serialized_message.hpp"
 #include "models/device.hpp"
 #include "models/file.hpp"
 #include "models/generator.hpp"
@@ -374,13 +375,13 @@ static int _handle_rpc_request(const op_event_data* data, void* arg)
     auto s = reinterpret_cast<server*>(arg);
 
     auto reply_errors = 0;
-    while (auto request = recv_message(data->socket, ZMQ_DONTWAIT)
+    while (auto request = message::recv(data->socket, ZMQ_DONTWAIT)
                               .and_then(deserialize_request)) {
         auto request_visitor = [&](const auto& request) -> reply_msg {
             return (s->handle_request(request));
         };
         auto reply = std::visit(request_visitor, *request);
-        if (send_message(data->socket, serialize_reply(std::move(reply)))
+        if (message::send(data->socket, serialize_reply(std::move(reply)))
             == -1) {
             reply_errors++;
             OP_LOG(
