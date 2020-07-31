@@ -22,8 +22,8 @@ private:
 public:
     ~device() override;
 
-    tl::expected<virtual_device_descriptors, int> vopen() override;
-    void vclose() override;
+    tl::expected<virtual_device_descriptors, int> open() override;
+    void close() override;
     uint64_t size() const override { return model::device::size(); }
     std::string path() const override { return model::device::path(); }
 

@@ -15,26 +15,26 @@ namespace openperf::block::device {
 
 device::~device() { terminate_scrub(); }
 
-tl::expected<virtual_device_descriptors, int> device::vopen()
+tl::expected<virtual_device_descriptors, int> device::open()
 {
     if (m_write_fd < 0)
-        m_write_fd =
-            open(m_path.c_str(), O_RDWR | O_CREAT | O_DSYNC, S_IRUSR | S_IWUSR);
+        m_write_fd = ::open(
+            m_path.c_str(), O_RDWR | O_CREAT | O_DSYNC, S_IRUSR | S_IWUSR);
     if (m_read_fd < 0)
-        m_read_fd = open(m_path.c_str(), O_RDONLY, S_IRUSR | S_IWUSR);
+        m_read_fd = ::open(m_path.c_str(), O_RDONLY, S_IRUSR | S_IWUSR);
 
     if (m_read_fd < 0 || m_write_fd < 0) {
-        vclose();
+        close();
         return tl::make_unexpected(errno);
     }
 
     return (virtual_device_descriptors){m_read_fd, m_write_fd};
 }
 
-void device::vclose()
+void device::close()
 {
     auto close_vdev = [this](int fd) {
-        if (close(fd) < 0) {
+        if (::close(fd) < 0) {
             OP_LOG(OP_LOG_ERROR,
                    "Cannot close file %s: %s",
                    m_path.c_str(),

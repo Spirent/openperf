@@ -19,11 +19,13 @@ uint64_t virtual_device::header_size() const
 int virtual_device::write_header(int fd, uint64_t file_size)
 {
     if (fd < 0) return -1;
+
     virtual_device_header header = {
         .init_time = timesync::to_bintime(
             timesync::chrono::realtime::now().time_since_epoch()),
         .size = file_size,
     };
+
     strncpy(header.tag,
             VIRTUAL_DEVICE_HEADER_TAG,
             VIRTUAL_DEVICE_HEADER_TAG_LENGTH);
@@ -52,6 +54,7 @@ void virtual_device::scrub_worker(int fd, size_t header_size, size_t file_size)
                    strerror(errno));
             break;
         }
+
         utils::op_prbs23_fill((uint8_t*)buf + current - file_offset, buf_len);
         msync(buf, mmap_len, MS_SYNC);
         munmap(buf, mmap_len);
@@ -65,7 +68,7 @@ void virtual_device::scrub_worker(int fd, size_t header_size, size_t file_size)
 tl::expected<void, std::string> virtual_device::queue_scrub()
 {
     int fd =
-        open(path().c_str(), O_RDWR | O_CREAT | O_DSYNC, S_IRUSR | S_IWUSR);
+        ::open(path().c_str(), O_RDWR | O_CREAT | O_DSYNC, S_IRUSR | S_IWUSR);
 
     if (fd < 0) { return tl::make_unexpected("Wrong file descriptor"); }
 
@@ -73,7 +76,7 @@ tl::expected<void, std::string> virtual_device::queue_scrub()
     int read_or_err = pread(fd, &header, sizeof(header), 0);
 
     if (read_or_err == -1) {
-        close(fd);
+        ::close(fd);
         return tl::make_unexpected("Cannot read header: "
                                    + std::string(strerror(errno)));
     } else if (read_or_err >= (int)sizeof(header)
@@ -83,7 +86,7 @@ tl::expected<void, std::string> virtual_device::queue_scrub()
                       == 0) {
         if (header.size >= size()) {
             // We're done since this vdev is suitable for use
-            close(fd);
+            ::close(fd);
             scrub_done();
             return {};
         }
@@ -91,7 +94,7 @@ tl::expected<void, std::string> virtual_device::queue_scrub()
 
     m_scrub_thread = std::thread([this, fd]() {
         scrub_worker(fd, header_size(), size());
-        close(fd);
+        ::close(fd);
         scrub_done();
     });
     return {};

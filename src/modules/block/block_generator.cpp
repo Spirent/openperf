@@ -32,7 +32,7 @@ block_generator::~block_generator()
 {
     m_read_worker->stop();
     m_write_worker->stop();
-    m_vdev->vclose();
+    m_vdev->close();
 }
 
 block_generator::block_result_ptr block_generator::start()
@@ -56,7 +56,7 @@ void block_generator::resource_id(std::string_view value)
 {
     auto dev = m_vdev;
     update_resource(std::string(value));
-    if (dev) m_vdev->vclose();
+    if (dev) m_vdev->close();
 
     config(m_config);
 
@@ -77,7 +77,7 @@ void block_generator::update_resource(const std::string& resource_id)
         throw std::runtime_error("Unknown or unusable resource: "
                                  + resource_id);
 
-    if (auto result = vdev_ptr->vopen(); !result)
+    if (auto result = vdev_ptr->open(); !result)
         throw std::runtime_error("Cannot open resource: "
                                  + std::string(std::strerror(result.error())));
 

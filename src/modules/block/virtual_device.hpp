@@ -42,8 +42,8 @@ public:
     virtual_device() = default;
     virtual ~virtual_device() = default;
 
-    virtual tl::expected<virtual_device_descriptors, int> vopen() = 0;
-    virtual void vclose() = 0;
+    virtual tl::expected<virtual_device_descriptors, int> open() = 0;
+    virtual void close() = 0;
     virtual uint64_t size() const = 0;
     virtual std::string path() const = 0;
 
