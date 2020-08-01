@@ -135,6 +135,8 @@ to_swagger(const reply::statistic::item::item_data& i)
         to_swagger(i.stat.read)));
     model.setWrite(std::make_shared<swagger::MemoryGeneratorStats>(
         to_swagger(i.stat.write)));
+    model.setDynamicResults(std::make_shared<swagger::DynamicResults>(
+        dynamic::to_swagger(i.dynamic_results)));
 
     return model;
 }
