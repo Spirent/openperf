@@ -82,12 +82,16 @@ public:
     /// </summary>
     int64_t getLatencyMin() const;
     void setLatencyMin(int64_t value);
-        /// <summary>
+    bool latencyMinIsSet() const;
+    void unsetLatency_min();
+    /// <summary>
     /// The maximum observed latency value (in nanoseconds)
     /// </summary>
     int64_t getLatencyMax() const;
     void setLatencyMax(int64_t value);
-    
+    bool latencyMaxIsSet() const;
+    void unsetLatency_max();
+
 protected:
     int64_t m_Ops_target;
 
@@ -102,9 +106,9 @@ protected:
     int64_t m_Latency;
 
     int64_t m_Latency_min;
-
+    bool m_Latency_minIsSet;
     int64_t m_Latency_max;
-
+    bool m_Latency_maxIsSet;
 };
 
 }

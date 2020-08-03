@@ -33,8 +33,19 @@ task_stat_t& task_stat_t::operator+=(const task_stat_t& stat)
     bytes_actual += stat.bytes_actual;
     latency += stat.latency;
 
-    latency_min = std::min(latency_min, stat.latency_min);
-    latency_max = std::max(latency_max, stat.latency_max);
+    latency_min = [&]() -> optional_time_t {
+        if (latency_min.has_value() && stat.latency_min.has_value())
+            return std::min(latency_min.value(), stat.latency_min.value());
+
+        return latency_min.has_value() ? latency_min : stat.latency_min;
+    }();
+
+    latency_max = [&]() -> optional_time_t {
+        if (latency_max.has_value() && stat.latency_max.has_value())
+            return std::max(latency_max.value(), stat.latency_max.value());
+
+        return latency_max.has_value() ? latency_max : stat.latency_max;
+    }();
 
     return *this;
 }
@@ -279,8 +290,14 @@ task_stat_t block_task::worker_spin(uint64_t nb_ops,
 
                     auto op_ns = aio_op.stop - aio_op.start;
                     stat.latency += op_ns;
-                    stat.latency_min = std::min(stat.latency_min, op_ns);
-                    stat.latency_max = std::max(stat.latency_max, op_ns);
+                    stat.latency_min =
+                        (stat.latency_min.has_value())
+                            ? std::min(stat.latency_min.value(), op_ns)
+                            : op_ns;
+                    stat.latency_max =
+                        (stat.latency_max.has_value())
+                            ? std::max(stat.latency_max.value(), op_ns)
+                            : op_ns;
                     break;
                 }
                 case FAILED:

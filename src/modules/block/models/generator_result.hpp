@@ -14,6 +14,7 @@ class block_generator_result
 public:
     using time_point = timesync::chrono::realtime::time_point;
     using duration = std::chrono::nanoseconds;
+    using optional_time_t = std::optional<duration>;
 
     struct statistics_t
     {
@@ -23,8 +24,8 @@ public:
         uint64_t bytes_actual;
         uint64_t io_errors;
         duration latency;
-        duration latency_min;
-        duration latency_max;
+        optional_time_t latency_min;
+        optional_time_t latency_max;
     };
 
 protected:

@@ -43,6 +43,7 @@ struct task_config_t
 
 struct task_stat_t
 {
+    using optional_time_t = std::optional<duration>;
     /**
      * updated      - Date of the last result update
      * ops_target   - The intended number of operations performed
@@ -63,8 +64,8 @@ struct task_stat_t
     uint_fast64_t bytes_actual = 0;
     uint_fast64_t errors = 0;
     duration latency = duration::zero();
-    duration latency_min = duration::max();
-    duration latency_max = duration::zero();
+    optional_time_t latency_min;
+    optional_time_t latency_max;
 
     task_stat_t& operator+=(const task_stat_t&);
 };

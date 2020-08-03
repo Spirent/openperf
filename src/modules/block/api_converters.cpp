@@ -279,8 +279,13 @@ to_swagger(const model::block_generator_result& p_gen_result)
             stat->setOpsActual(gen_stat.ops_actual);
             stat->setOpsTarget(gen_stat.ops_target);
             stat->setLatency(gen_stat.latency.count());
-            stat->setLatencyMin(gen_stat.latency_min.count());
-            stat->setLatencyMax(gen_stat.latency_max.count());
+
+            if (gen_stat.latency_max.has_value())
+                stat->setLatencyMin(gen_stat.latency_min.value().count());
+
+            if (gen_stat.latency_min.has_value())
+                stat->setLatencyMax(gen_stat.latency_max.value().count());
+
             return stat;
         };
 

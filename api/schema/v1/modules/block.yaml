@@ -652,5 +652,3 @@ definitions:
       - bytes_actual
       - io_errors
       - latency
-      - latency_min
-      - latency_max
