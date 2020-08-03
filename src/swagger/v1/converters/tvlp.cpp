@@ -33,7 +33,7 @@ void from_json(const nlohmann::json& j, TvlpProfile_block_series& block_series)
 {
     auto val = const_cast<nlohmann::json&>(j);
 
-    block_profile.setResourceId(val.at("resource_id"));
+    block_series.setResourceId(val.at("resource_id"));
     block_series.setLength(val.at("length"));
 
     auto gc = std::make_shared<BlockGeneratorConfig>();
@@ -84,7 +84,7 @@ void from_json(const nlohmann::json& j,
 {
     auto val = const_cast<nlohmann::json&>(j);
 
-    packet_profile.setTargetId(val.at("target_id"));
+    packet_series.setTargetId(val.at("target_id"));
     packet_series.setLength(val.at("length"));
 
     auto gc = std::make_shared<PacketGeneratorConfig>();

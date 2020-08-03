@@ -3,12 +3,15 @@
 
 #include <optional>
 #include <string>
+#include "json.hpp"
 
 namespace openperf::tvlp::model {
 
 struct tvlp_profile_entry_t
 {
     uint64_t length = 0;
+    std::optional<std::string> resource_id;
+    nlohmann::json config;
 };
 
 struct tvlp_profile_t
