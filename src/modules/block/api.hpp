@@ -28,7 +28,13 @@ using string_ptr = std::unique_ptr<std::string>;
 using serialized_msg = openperf::message::serialized_message;
 
 static constexpr size_t err_max_length = 256;
-enum class error_type { NONE = 0, NOT_FOUND, ZMQ_ERROR, CUSTOM_ERROR };
+enum class error_type : uint8_t {
+    NONE = 0,
+    NOT_FOUND,
+    ZMQ_ERROR,
+    CUSTOM_ERROR
+};
+
 struct typed_error
 {
     error_type type = error_type::NONE;

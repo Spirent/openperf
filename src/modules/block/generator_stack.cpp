@@ -91,7 +91,7 @@ bool generator_stack::stop_generator(const std::string& id)
     gen->stop();
     auto result = gen->statistics();
     m_block_results[result->id()] = result;
-    gen->clear_statistics();
+    gen->reset();
     return true;
 }
 

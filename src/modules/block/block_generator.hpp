@@ -6,7 +6,8 @@
 #include "models/generator.hpp"
 #include "models/generator_result.hpp"
 
-#include "framework/utils/worker/worker.hpp"
+#include "framework/generator/controller.hpp"
+#include "modules/timesync/chrono.hpp"
 
 namespace openperf::block::generator {
 
@@ -14,23 +15,30 @@ using namespace openperf::block::worker;
 
 class block_generator : public model::block_generator
 {
-    using block_worker = utils::worker::worker<block_task>;
-    using block_worker_ptr = std::unique_ptr<block_worker>;
     using block_result_ptr = std::shared_ptr<model::block_generator_result>;
+    using chronometer = openperf::timesync::chrono::realtime;
 
 private:
-    block_worker_ptr m_read_worker, m_write_worker;
+    static constexpr auto NAME_PREFIX = "op_block";
+
+private:
+    uint16_t m_serial_number;
+    framework::generator::controller m_controller;
+
     task_synchronizer m_synchronizer;
     std::string m_statistics_id;
     std::vector<virtual_device_stack*> m_vdev_stack_list;
     std::shared_ptr<virtual_device> m_vdev;
+
+    task_stat_t m_read, m_write;
+    chronometer::time_point m_start_time;
 
 public:
     block_generator(const model::block_generator& generator_model,
                     const std::vector<virtual_device_stack*>& vdev_stack_list);
     ~block_generator() override;
 
-    void clear_statistics();
+    void reset();
     block_result_ptr start();
     void stop();
 
@@ -42,8 +50,8 @@ public:
 
 private:
     void update_resource(const std::string&);
-    task_config_t generate_worker_config(const model::block_generator_config&,
-                                         task_operation);
+    task_config_t make_task_config(const model::block_generator_config&,
+                                   task_operation);
 };
 
 } // namespace openperf::block::generator

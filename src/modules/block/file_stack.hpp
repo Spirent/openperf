@@ -39,7 +39,7 @@ class file_stack : public virtual_device_stack
 public:
     using block_file_ptr = std::shared_ptr<file>;
 
-    enum class deletion_error_type { NOT_FOUND, BUSY };
+    enum class deletion_error_type : uint8_t { NOT_FOUND, BUSY };
 
 private:
     std::unordered_map<std::string, block_file_ptr> m_block_files;

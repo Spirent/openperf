@@ -270,8 +270,8 @@ to_swagger(const model::block_generator_result& p_gen_result)
     gen_res->setTimestamp(
         to_rfc3339(p_gen_result.timestamp().time_since_epoch()));
 
-    auto generate_gen_stat =
-        [](const model::block_generator_statistics& gen_stat) {
+    auto to_statistics_t =
+        [](const model::block_generator_result::statistics_t& gen_stat) {
             auto stat = std::make_shared<BlockGeneratorStats>();
             stat->setBytesActual(gen_stat.bytes_actual);
             stat->setBytesTarget(gen_stat.bytes_target);
@@ -284,8 +284,8 @@ to_swagger(const model::block_generator_result& p_gen_result)
             return stat;
         };
 
-    gen_res->setRead(generate_gen_stat(p_gen_result.read_stats()));
-    gen_res->setWrite(generate_gen_stat(p_gen_result.write_stats()));
+    gen_res->setRead(to_statistics_t(p_gen_result.read_stats()));
+    gen_res->setWrite(to_statistics_t(p_gen_result.write_stats()));
 
     return gen_res;
 }
