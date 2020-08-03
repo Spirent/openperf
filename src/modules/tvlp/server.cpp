@@ -5,6 +5,7 @@ namespace openperf::tvlp::api {
 
 server::server(void* context, openperf::core::event_loop& loop)
     : m_socket(op_socket_get_server(context, ZMQ_REP, endpoint))
+    , m_controller_stack(std::make_unique<internal::controller_stack>())
 {
     // Setup event loop
     struct op_event_callbacks callbacks = {
