@@ -5,9 +5,11 @@
 
 namespace pga::fill {
 
-void decr(uint8_t payload[], uint16_t length, uint8_t base);
-void fixed(uint8_t payload[], uint16_t length, uint8_t base);
-void incr(uint8_t payload[], uint16_t length, uint8_t base);
+void fixed(uint8_t payload[], uint16_t length, uint16_t value);
+
+void decr(uint8_t payload[], uint16_t length, uint8_t value);
+void incr(uint8_t payload[], uint16_t length, uint8_t value);
+
 uint32_t prbs(uint8_t payload[], uint16_t length, uint32_t seed);
 
 } // namespace pga::fill

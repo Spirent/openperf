@@ -137,30 +137,30 @@ void pga_signatures_encode(uint8_t* destinations[],
 void pga_fill_const(uint8_t* payloads[],
                     uint16_t lengths[],
                     uint16_t count,
-                    uint8_t base)
+                    uint16_t constants[])
 {
     for (uint16_t i = 0; i < count; i++) {
-        pga::fill::fixed(payloads[i], lengths[i], base);
+        pga::fill::fixed(payloads[i], lengths[i], constants[i]);
     }
 }
 
 void pga_fill_decr(uint8_t* payloads[],
                    uint16_t lengths[],
                    uint16_t count,
-                   uint8_t base)
+                   uint8_t bases[])
 {
     for (uint16_t i = 0; i < count; i++) {
-        pga::fill::decr(payloads[i], lengths[i], base);
+        pga::fill::decr(payloads[i], lengths[i], bases[i]);
     }
 }
 
 void pga_fill_incr(uint8_t* payloads[],
                    uint16_t lengths[],
                    uint16_t count,
-                   uint8_t base)
+                   uint8_t bases[])
 {
     for (uint16_t i = 0; i < count; i++) {
-        pga::fill::incr(payloads[i], lengths[i], base);
+        pga::fill::incr(payloads[i], lengths[i], bases[i]);
     }
 }
 

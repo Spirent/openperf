@@ -207,13 +207,13 @@ void pga_signatures_encode(uint8_t* destinations[],
  *   the number of octets to write to each payload pointer
  * @param[in] count
  *   the number of payloads
- * @param[in] base
- *   the value to write to payloads
+ * @param[in] constants
+ *   array of constant values to write to payloads
  */
 void pga_fill_const(uint8_t* payloads[],
                     uint16_t lengths[],
                     uint16_t count,
-                    uint8_t base);
+                    uint16_t constants[]);
 
 /**
  * Write decrementing octets to payloads.  Each subsequent octet written to
@@ -226,13 +226,13 @@ void pga_fill_const(uint8_t* payloads[],
  * @param[in] count
  *   the number of payloads
  * @param[in] base
- *   the initial value to write to each payload, e.g. the value of
+ *   array of initial values to write to each payload, e.g. the value of
  *   payloads[i][0]
  */
 void pga_fill_decr(uint8_t* payloads[],
                    uint16_t lengths[],
                    uint16_t count,
-                   uint8_t base);
+                   uint8_t bases[]);
 
 /**
  * Write incrementing octets to paylods.  Each subsequent octet written to
@@ -245,13 +245,13 @@ void pga_fill_decr(uint8_t* payloads[],
  * @param[in] count
  *   the number of payloads
  * @param[in] base
- *   the initial value to write to each payload, e.g. the value of
+ *   array of initial values to write to each payload, e.g. the value of
  *   payloads[i][0]
  */
 void pga_fill_incr(uint8_t* payloads[],
                    uint16_t lengths[],
                    uint16_t count,
-                   uint8_t base);
+                   uint8_t bases[]);
 
 /**
  * Write PRBS data to payloads.  The PRBS sequence will continue across

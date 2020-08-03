@@ -19,7 +19,7 @@ TEST_CASE("fill functions", "[spirent-pga]")
             unsigned const_tests = 0;
             for (auto instruction_set : pga::test::instruction_sets()) {
                 auto fill_fn = pga::test::get_function(
-                    functions.fill_step_aligned_impl, instruction_set);
+                    functions.fill_constant_aligned_impl, instruction_set);
 
                 if (!(fill_fn
                       && pga::instruction_set::available(instruction_set))) {
@@ -34,7 +34,7 @@ TEST_CASE("fill functions", "[spirent-pga]")
                 /* Fill the buffer with incorrect data before use */
                 std::fill(std::begin(buffer), std::end(buffer), 0x55);
 
-                fill_fn(buffer.data(), buffer.size(), 0x00, 0x00);
+                fill_fn(buffer.data(), buffer.size(), 0x0);
 
                 /* Sum of all 0's is 0 */
                 auto sum =

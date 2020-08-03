@@ -119,6 +119,13 @@ void initialize_decode_signatures(
                  out_flags.data());
 }
 
+void initialize_fill_constant(
+    function_wrapper<fill_constant_aligned_fn>& wrapper)
+{
+    std::array<uint32_t, fill_buffer_length> buffer;
+    wrapper.init(buffer.data(), buffer.size(), 0xdeadbeef);
+}
+
 void initialize_fill_step(function_wrapper<fill_step_aligned_fn>& wrapper)
 {
     std::array<uint32_t, fill_buffer_length> buffer;
@@ -172,6 +179,7 @@ functions::functions()
     initialize_checksum_data(checksum_data_aligned_impl);
     initialize_decode_signatures(decode_signatures_impl);
     initialize_encode_signatures(encode_signatures_impl);
+    initialize_fill_constant(fill_constant_aligned_impl);
     initialize_fill_step(fill_step_aligned_impl);
     initialize_fill_prbs(fill_prbs_aligned_impl);
     initialize_verify_prbs(verify_prbs_aligned_impl);
