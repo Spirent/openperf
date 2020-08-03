@@ -72,6 +72,10 @@ ISPC_FUNCTION_WRAPPER_INIT(uint16_t,
                            uint32_t[],
                            int[]);
 
+using fill_constant_aligned_fn = void (*)(uint32_t[], uint16_t, uint32_t);
+ISPC_FUNCTION_WRAPPER_INIT(
+    void, fill_constant_aligned, uint32_t[], uint16_t, uint32_t);
+
 using fill_step_aligned_fn = uint8_t (*)(uint32_t[], uint16_t, uint8_t, int8_t);
 ISPC_FUNCTION_WRAPPER_INIT(
     uint8_t, fill_step_aligned, uint32_t[], uint16_t, uint8_t, int8_t);
@@ -138,8 +142,10 @@ struct functions : singleton<functions>
     function_wrapper<decode_signatures_fn> decode_signatures_impl = {
         "signature decodes", nullptr};
 
+    function_wrapper<fill_constant_aligned_fn> fill_constant_aligned_impl = {
+        "constant payload fills", nullptr};
     function_wrapper<fill_step_aligned_fn> fill_step_aligned_impl = {
-        "payload fills", nullptr};
+        "stepped payload fills", nullptr};
     function_wrapper<fill_prbs_aligned_fn> fill_prbs_aligned_impl = {
         "PRBS generation", nullptr};
 
