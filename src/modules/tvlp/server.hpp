@@ -2,7 +2,7 @@
 #define _OP_TVLP_SERVER_H_
 
 #include "api.hpp"
-
+#include "controller_stack.hpp"
 #include "framework/core/op_core.h"
 
 namespace openperf::tvlp::api {
@@ -11,6 +11,7 @@ class server
 {
 private:
     std::unique_ptr<void, op_socket_deleter> m_socket;
+    std::unique_ptr<internal::controller_stack> m_controller_stack;
 
 public:
     server(void* context, core::event_loop& loop);
