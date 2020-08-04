@@ -24,8 +24,11 @@ public:
     std::vector<tvlp_controller_ptr> list() const;
     tl::expected<tvlp_controller_ptr, std::string>
     create(const model::tvlp_configuration_t&);
-    tvlp_controller_ptr get(const std::string& id) const;
+    tl::expected<tvlp_controller_ptr, std::string>
+    get(const std::string& id) const;
     bool erase(const std::string& id);
+
+    tl::expected<void, std::string> start(const std::string&);
 };
 
 } // namespace openperf::tvlp::internal
