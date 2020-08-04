@@ -1,6 +1,7 @@
 #include "controller_stack.hpp"
 
 namespace openperf::tvlp::internal {
+
 std::vector<tvlp_controller_ptr> controller_stack::list() const
 {
     std::vector<tvlp_controller_ptr> controllers_list;
@@ -10,14 +11,47 @@ std::vector<tvlp_controller_ptr> controller_stack::list() const
 
     return controllers_list;
 }
+
 tl::expected<tvlp_controller_ptr, std::string>
 controller_stack::create(const model::tvlp_configuration_t& model)
 {
-    return tl::make_unexpected("Generator " + model.id() + " already exists.");
+    if (get(model.id()))
+        return tl::make_unexpected("TVLP configuration with id \""
+                                   + static_cast<std::string>(model.id())
+                                   + "\" already exists.");
+    try {
+        auto controller = std::make_shared<controller_t>(model);
+        m_controllers.emplace(controller->id(), controller);
+        return controller;
+    } catch (const std::runtime_error& e) {
+        return tl::make_unexpected(e.what());
+    }
 }
-tvlp_controller_ptr controller_stack::get(const std::string& id) const
+
+tl::expected<tvlp_controller_ptr, std::string>
+controller_stack::get(const std::string& id) const
 {
-    return nullptr;
+    if (m_controllers.count(id)) return m_controllers.at(id);
+    return tl::make_unexpected("TVLP configuration with id \"" + id
+                               + "\" not found.");
 }
 bool controller_stack::erase(const std::string& id) { return false; }
+
+tl::expected<void, std::string> controller_stack::start(const std::string& id)
+{
+    auto controller = get(id);
+    if (!controller) return tl::make_unexpected(controller.error());
+
+    /*if (gen.value()->is_running()) {
+        return tl::make_unexpected("Generator is already in running state");
+    }*/
+
+    controller.value()->start();
+
+    // auto result = controller.value()->start();
+    // m_block_results[result->get_id()] = gen;
+    // return result;
+    return {};
+}
+
 } // namespace openperf::tvlp::internal

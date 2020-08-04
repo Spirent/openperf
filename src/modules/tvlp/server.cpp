@@ -1,6 +1,8 @@
 #include "server.hpp"
 #include "api.hpp"
 
+#include "config/op_config_utils.hpp"
+
 namespace openperf::tvlp::api {
 
 server::server(void* context, openperf::core::event_loop& loop)
@@ -39,24 +41,61 @@ int server::handle_rpc_request(const op_event_data* data)
     return ((reply_errors || errno == ETERM) ? -1 : 0);
 }
 
-api_reply server::handle_request(const request::tvlp::list&)
+reply::error
+to_error(reply::error::type_t type, int code, const std::string& value)
 {
-    return reply::tvlp::list{
-        .data = std::make_unique<std::vector<tvlp_config_t>>()};
+    auto err = reply::error{.type = type, .code = code};
+    value.copy(err.value, reply::err_max_length - 1);
+    err.value[std::min(value.length(), reply::err_max_length - 1)] = '\0';
+    return err;
 }
 
-api_reply server::handle_request(const request::tvlp::get&)
+api_reply server::handle_request(const request::tvlp::list&)
 {
-    return reply::ok{};
+    auto reply = reply::tvlp::list{
+        .data = std::make_unique<std::vector<tvlp_config_t>>()};
+    auto list = m_controller_stack->list();
+    std::for_each(std::begin(list), std::end(list), [&](const auto& c) {
+        reply.data->push_back(tvlp_config_t(*c));
+    });
+    return reply;
 }
+
+api_reply server::handle_request(const request::tvlp::get& request)
+{
+    auto controller = m_controller_stack->get(request.id);
+
+    if (!controller) { return reply::error{.type = reply::error::NOT_FOUND}; }
+    auto reply = reply::tvlp::item{
+        .data = std::make_unique<tvlp_config_t>(*controller.value())};
+
+    return reply;
+}
+
 api_reply server::handle_request(const request::tvlp::erase&)
 {
     return reply::ok{};
 }
+
 api_reply server::handle_request(const request::tvlp::create& request)
 {
-    return reply::tvlp::item{
-        .data = std::make_unique<tvlp_config_t>(*request.data)};
+    // If user did not specify an id create one for them.
+    if (request.data->id().empty()) {
+        request.data->id(core::to_string(core::uuid::random()));
+    }
+
+    if (auto id_check =
+            config::op_config_validate_id_string(request.data->id());
+        !id_check)
+        return reply::error{.type = reply::error::INVALID_ID};
+
+    auto result = m_controller_stack->create(*request.data);
+    if (!result) {
+        return (to_error(reply::error::BAD_REQUEST_ERROR, 0, result.error()));
+    }
+    auto reply = reply::tvlp::item{
+        .data = std::make_unique<tvlp_config_t>(*result.value())};
+    return reply;
 }
 api_reply server::handle_request(const request::tvlp::start&)
 {
