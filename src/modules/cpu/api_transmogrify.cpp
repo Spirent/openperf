@@ -112,16 +112,20 @@ tl::expected<request_msg, int> deserialize_request(serialized_msg&& msg)
             message::pop_unique_vector<std::string>(msg)};
     }
     case utils::variant_index<request_msg, request_cpu_generator_start>(): {
-        return request_cpu_generator_start{
-            message::pop<request_cpu_generator_start::start_data*>(msg)};
+        auto request = request_cpu_generator_start{};
+        request.data.reset(
+            message::pop<request_cpu_generator_start::start_data*>(msg));
+        return request;
     }
     case utils::variant_index<request_msg, request_cpu_generator_stop>(): {
         return request_cpu_generator_stop{message::pop_string(msg)};
     }
     case utils::variant_index<request_msg,
                               request_cpu_generator_bulk_start>(): {
-        return request_cpu_generator_bulk_start{
-            message::pop<request_cpu_generator_bulk_start::start_data*>(msg)};
+        auto request = request_cpu_generator_bulk_start{};
+        request.data.reset(
+            message::pop<request_cpu_generator_bulk_start::start_data*>(msg));
+        return request;
     }
     case utils::variant_index<request_msg, request_cpu_generator_bulk_stop>(): {
         return request_cpu_generator_bulk_stop{
