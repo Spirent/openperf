@@ -50,10 +50,19 @@ namespace reply {
 
 struct ok : message
 {};
+static constexpr size_t err_max_length = 256;
 struct error : message
 {
-    enum { NONE = 0, NOT_FOUND, EXISTS, INVALID_ID, ZMQ_ERROR } type = NONE;
-    int value = 0;
+    enum type_t {
+        NONE = 0,
+        NOT_FOUND,
+        EXISTS,
+        INVALID_ID,
+        ZMQ_ERROR,
+        BAD_REQUEST_ERROR
+    } type = NONE;
+    int code = 0;
+    char value[err_max_length];
 };
 
 namespace tvlp {
