@@ -124,13 +124,13 @@ reply_msg server::handle_request(const request_cpu_generator_start& request)
     try {
         auto result = m_generator_stack.start_generator(
             request.data->id, request.data->dynamic_results);
-        if (!result) throw std::runtime_error(result.error());
+        if (!result) throw std::logic_error(result.error());
 
         auto reply = reply_cpu_generator_results{};
         reply.results.emplace_back(
             std::make_unique<model::generator_result>(result.value()));
         return reply;
-    } catch (std::exception& e) {
+    } catch (const std::logic_error& e) {
         return to_error(error_type::CUSTOM_ERROR, 0, e.what());
     }
 }
@@ -153,7 +153,7 @@ server::handle_request(const request_cpu_generator_bulk_start& request)
         if (!m_generator_stack.generator(id))
             return to_error(api::error_type::NOT_FOUND,
                             0,
-                            "Generator from the list with ID '" + *id
+                            "Generator from the list with ID '" + id
                                 + "' was not found");
 
     using string_pair = std::pair<std::string, std::string>;
@@ -173,7 +173,7 @@ server::handle_request(const request_cpu_generator_bulk_start& request)
 
             auto stats = m_generator_stack.start_generator(
                 id, request.data->dynamic_results);
-            if (!stats) throw std::runtime_error(stats.error());
+            if (!stats) throw std::logic_error(stats.error());
 
             not_runned_before.push_front(std::make_pair(id, stats->id()));
 
@@ -181,7 +181,7 @@ server::handle_request(const request_cpu_generator_bulk_start& request)
                 std::make_unique<model::generator_result>(stats.value()));
         }
         return reply;
-    } catch (std::exception& e) {
+    } catch (const std::logic_error& e) {
         rollback();
         return to_error(error_type::CUSTOM_ERROR, 0, e.what());
     }
