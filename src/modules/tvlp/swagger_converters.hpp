@@ -70,6 +70,19 @@ static swagger::TvlpConfiguration to_swagger(const config_t& config)
     if (config.state() == config_t::RUNNING)
         model.getTime()->setOffset(config.current_offset());
     if (config.state() == config_t::ERROR) model.setError(config.error());
+    switch (config.state()) {
+    case (config_t::READY):
+        model.setState("ready");
+        break;
+    case (config_t::COUNTDOWN):
+        model.setState("countdown");
+        break;
+    case (config_t::RUNNING):
+        model.setState("running");
+        break;
+    case (config_t::ERROR):
+        model.setState("error");
+    }
 
     model.setProfile(std::make_shared<swagger::TvlpProfile>());
     if (config.profile().block) {

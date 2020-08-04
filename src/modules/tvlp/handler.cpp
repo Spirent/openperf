@@ -32,6 +32,10 @@ void response_error(Http::ResponseWriter& rsp, reply::error error)
         rsp.headers().add<Http::Header::ContentType>(MIME(Application, Json));
         rsp.send(Http::Code::Bad_Request, json_error("Invalid ID format"));
         break;
+    case reply::error::BAD_REQUEST_ERROR:
+        rsp.headers().add<Http::Header::ContentType>(MIME(Application, Json));
+        rsp.send(Http::Code::Bad_Request, json_error(error.value));
+        break;
     default:
         rsp.send(Http::Code::Internal_Server_Error);
     }
@@ -324,14 +328,14 @@ api::api_reply handler::submit_request(api::api_request&& request)
             socket.get(), api::serialize(std::forward<api_request>(request)));
         error != 0) {
         return api::reply::error{.type = api::reply::error::ZMQ_ERROR,
-                                 .value = error};
+                                 .code = error};
     }
 
     auto reply =
         api::recv_message(socket.get()).and_then(api::deserialize_reply);
     if (!reply) {
         return api::reply::error{.type = api::reply::error::ZMQ_ERROR,
-                                 .value = reply.error()};
+                                 .code = reply.error()};
     }
 
     return std::move(*reply);
