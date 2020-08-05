@@ -19,6 +19,7 @@ PIO_DRIVER_SOURCES += \
 	port/rss_hasher.cpp \
 	port/signature_decoder.cpp \
 	port/signature_encoder.cpp \
+	port/signature_payload_filler.cpp \
 	port/signature_utils.cpp \
 	port/timestamper.cpp \
 	queue_utils.cpp \

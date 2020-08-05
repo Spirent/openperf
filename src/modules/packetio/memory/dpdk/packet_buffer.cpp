@@ -98,6 +98,28 @@ void signature(packet_buffer* buffer,
     dpdk::mbuf_signature_tx_set(buffer, stream_id, seq_num, flags);
 }
 
+void signature_fill_const(packet_buffer* buffer,
+                          uint16_t offset,
+                          uint16_t value)
+{
+    dpdk::mbuf_signature_tx_set_fill_const(buffer, offset, value);
+}
+
+void signature_fill_decr(packet_buffer* buffer, uint16_t offset, uint8_t value)
+{
+    dpdk::mbuf_signature_tx_set_fill_decr(buffer, offset, value);
+}
+
+void signature_fill_incr(packet_buffer* buffer, uint16_t offset, uint8_t value)
+{
+    dpdk::mbuf_signature_tx_set_fill_incr(buffer, offset, value);
+}
+
+void signature_fill_prbs(packet_buffer* buffer, uint16_t offset)
+{
+    dpdk::mbuf_signature_tx_set_fill_prbs(buffer, offset);
+}
+
 void packet_type_flags(packet_buffer* buffer, packet_type::flags flags)
 {
     buffer->packet_type = flags.value;

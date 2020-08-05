@@ -97,6 +97,17 @@ void signature(packet_buffer* buffer,
                uint32_t seq_num,
                int flags);
 
+/* Payload fill settings */
+void signature_fill_const(packet_buffer* buffer,
+                          uint16_t offset,
+                          uint16_t value);
+
+void signature_fill_decr(packet_buffer* buffer, uint16_t offset, uint8_t value);
+
+void signature_fill_incr(packet_buffer* buffer, uint16_t offset, uint8_t value);
+
+void signature_fill_prbs(packet_buffer* buffer, uint16_t offset);
+
 /**
  * Rx functions; some values are only set on receive path
  */

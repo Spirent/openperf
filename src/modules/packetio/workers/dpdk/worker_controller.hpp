@@ -18,6 +18,7 @@
 #include "packetio/drivers/dpdk/port/rss_hasher.hpp"
 #include "packetio/drivers/dpdk/port/signature_decoder.hpp"
 #include "packetio/drivers/dpdk/port/signature_encoder.hpp"
+#include "packetio/drivers/dpdk/port/signature_payload_filler.hpp"
 #include "packetio/drivers/dpdk/port/timestamper.hpp"
 #include "packetio/workers/dpdk/port_feature_controller.hpp"
 #include "packetio/workers/dpdk/tx_scheduler.hpp"
@@ -108,7 +109,8 @@ public:
                                 port::signature_decoder,
                                 port::prbs_error_detector>;
     using source_feature_controller =
-        source_feature_controller<port::signature_encoder>;
+        source_feature_controller<port::signature_encoder,
+                                  port::signature_payload_filler>;
 
 private:
     void* m_context;                              /* 0MQ context */
