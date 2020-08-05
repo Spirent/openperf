@@ -11,12 +11,12 @@ struct signature_const_fill
     uint16_t value;
 };
 
-struct signature_dec_fill
+struct signature_decr_fill
 {
     uint8_t value;
 };
 
-struct signature_inc_fill
+struct signature_incr_fill
 {
     uint8_t value;
 };
@@ -26,8 +26,8 @@ struct signature_prbs_fill
 
 using signature_fill = std::variant<std::monostate,
                                     signature_const_fill,
-                                    signature_dec_fill,
-                                    signature_inc_fill,
+                                    signature_decr_fill,
+                                    signature_incr_fill,
                                     signature_prbs_fill>;
 
 struct signature_config

@@ -53,6 +53,12 @@ public:
      */
     bool has_signature_config() const;
 
+    /*
+     * Indicates that at least one packet in the sequence contains a
+     * payload fill directive.
+     */
+    bool has_signature_payload_fill() const;
+
     /* Retrieve the stream if for the specified flow, if available. */
     std::optional<uint32_t> get_signature_stream_id(unsigned flow_idx) const;
 

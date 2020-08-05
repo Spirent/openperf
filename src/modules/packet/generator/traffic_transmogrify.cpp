@@ -372,12 +372,13 @@ to_signature_config(const swagger::v1::model::SpirentSignature& signature)
             config.fill = traffic::signature_const_fill{
                 static_cast<uint16_t>(fill->getConstant())};
         } else if (fill->decrementIsSet()) {
-            config.fill = traffic::signature_dec_fill{
+            config.fill = traffic::signature_decr_fill{
                 static_cast<uint8_t>(fill->getDecrement())};
         } else if (fill->incrementIsSet()) {
-            config.fill = traffic::signature_inc_fill{
+            config.fill = traffic::signature_incr_fill{
                 static_cast<uint8_t>(fill->getIncrement())};
         } else if (fill->prbsIsSet()) {
+            config.fill = traffic::signature_prbs_fill{};
             prbs = pga_signature_prbs::enable;
         }
     }

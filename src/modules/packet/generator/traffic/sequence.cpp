@@ -414,6 +414,17 @@ bool sequence::has_signature_config() const
                         [](const auto& item) { return (item.has_value()); }));
 }
 
+bool sequence::has_signature_payload_fill() const
+{
+    const auto& signature_configs = m_definitions.get<3>();
+    return (std::any_of(std::begin(signature_configs),
+                        std::end(signature_configs),
+                        [](const auto& item) {
+                            return (std::get_if<std::monostate>(&item->fill)
+                                    == nullptr);
+                        }));
+}
+
 inline uint32_t to_stream_id(uint16_t stream_id, uint16_t flow_id)
 {
     return (stream_id << 16 | flow_id + 1);
