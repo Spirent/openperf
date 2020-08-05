@@ -3,6 +3,12 @@ from __future__ import absolute_import
 # api_exception.py
 from common.matcher.api_exception import raise_api_exception
 
+# dynamic.py
+from common.matcher.dynamic import be_valid_dynamic_results
+from common.matcher.dynamic import be_valid_centroid
+from common.matcher.dynamic import be_valid_threshold
+from common.matcher.dynamic import be_valid_tdigest
+
 # interface.py
 from common.matcher.interface import be_valid_interface
 
