@@ -19,7 +19,7 @@ struct mbuf_signature
         constant,
         increment,
         decrement,
-        prbs
+        prbs,
     };
 
     union
@@ -38,9 +38,14 @@ struct mbuf_signature
         struct
         {
             uint32_t flags : 2;
-            uint32_t unused : 22;
+            uint32_t unused : 6;
             uint32_t fill : 8;
-            uint32_t value;
+            uint32_t offset : 16;
+            union
+            {
+                uint8_t u8;
+                uint16_t u16;
+            } value;
         } tx;
     };
 
@@ -66,67 +71,88 @@ inline void mbuf_signature_tx_set(rte_mbuf* mbuf,
                        .tx.flags = flags};
 }
 
-#if 0
-inline void mbuf_signature_tx_set_const(rte_mbuf* mbuf,
-                                        uint32_t stream_id,
-                                        uint32_t seq_num,
-                                        uint16_t fill_value,
-                                        int flags)
+template <typename Enum>
+std::underlying_type_t<Enum> to_underlying_type(const Enum& e)
 {
-    mbuf->ol_flags |= mbuf_signature_flag;
-    *(RTE_MBUF_DYNFIELD(mbuf, mbuf_signature_offset, mbuf_signature*)) =
-        mbuf_signature{.sig_stream_id = stream_id,
-                       .sig_seq_num = seq_num,
-                       .tx = {.fill = mbuf_signature::fill_type::constant,
-                              .value = fill_value,
-                              .flags = flags}};
+    return (static_cast<std::underlying_type_t<Enum>>(e));
 }
 
-inline void mbuf_signature_tx_set_decr(rte_mbuf* mbuf,
-                                       uint32_t stream_id,
-                                       uint32_t seq_num,
-                                       uint8_t fill_value,
-                                       int flags)
+inline void mbuf_signature_tx_set_fill_const(rte_mbuf* mbuf,
+                                             uint16_t offset,
+                                             uint16_t value)
 {
-    mbuf->ol_flags |= mbuf_signature_flag;
-    *(RTE_MBUF_DYNFIELD(mbuf, mbuf_signature_offset, mbuf_signature*)) =
-        mbuf_signature{.sig_stream_id = stream_id,
-                       .sig_seq_num = seq_num,
-                       .tx = {.fill = mbuf_signature::fill_type::decrement,
-                              .value = fill_value,
-                              .flags = flags}};
+    auto* mbuf_sig =
+        RTE_MBUF_DYNFIELD(mbuf, mbuf_signature_offset, mbuf_signature*);
+    mbuf_sig->tx.fill = to_underlying_type(mbuf_signature::fill_type::constant);
+    mbuf_sig->tx.offset = offset;
+    mbuf_sig->tx.value.u16 = value;
 }
 
-inline void mbuf_signature_tx_set_incr(rte_mbuf* mbuf,
-                                       uint32_t stream_id,
-                                       uint32_t seq_num,
-                                       uint8_t fill_value,
-                                       int flags)
+inline void
+mbuf_signature_tx_set_fill_decr(rte_mbuf* mbuf, uint16_t offset, uint8_t value)
 {
-    mbuf->ol_flags |= mbuf_signature_flag;
-    *(RTE_MBUF_DYNFIELD(mbuf, mbuf_signature_offset, mbuf_signature*)) =
-        mbuf_signature{.sig_stream_id = stream_id,
-                       .sig_seq_num = seq_num,
-                       .tx = {.fill = mbuf_signature::fill_type::increment,
-                              .value = fill_value,
-                              .flags = flags}};
+    auto* mbuf_sig =
+        RTE_MBUF_DYNFIELD(mbuf, mbuf_signature_offset, mbuf_signature*);
+    mbuf_sig->tx.fill =
+        to_underlying_type(mbuf_signature::fill_type::decrement);
+    mbuf_sig->tx.offset = offset;
+    mbuf_sig->tx.value.u8 = value;
 }
 
-inline void mbuf_signature_tx_set_prbs(rte_mbuf* mbuf,
-                                       uint32_t stream_id,
-                                       uint32_t seq_num,
-                                       uint32_t seed,
-                                       int flags)
+inline void
+mbuf_signature_tx_set_fill_incr(rte_mbuf* mbuf, uint16_t offset, uint8_t value)
 {
-    mbuf->ol_flags |= mbuf_signature_flag;
-    *(RTE_MBUF_DYNFIELD(mbuf, mbuf_signature_offset, mbuf_signature*)) =
-        mbuf_signature{.sig_stream_id = stream_id,
-                       .sig_seq_num = seq_num,
-                       .tx = {.fill = mbuf_signature::fill_type::prbs,
-                              .value = seed,
-                              .flags = flags}};
+    auto* mbuf_sig =
+        RTE_MBUF_DYNFIELD(mbuf, mbuf_signature_offset, mbuf_signature*);
+    mbuf_sig->tx.fill =
+        to_underlying_type(mbuf_signature::fill_type::increment);
+    mbuf_sig->tx.offset = offset;
+    mbuf_sig->tx.value.u8 = value;
 }
-#endif
+
+inline void mbuf_signature_tx_set_fill_prbs(rte_mbuf* mbuf, uint16_t offset)
+{
+    auto* mbuf_sig =
+        RTE_MBUF_DYNFIELD(mbuf, mbuf_signature_offset, mbuf_signature*);
+    mbuf_sig->tx.fill = to_underlying_type(mbuf_signature::fill_type::prbs);
+    mbuf_sig->tx.offset = offset;
+}
+
+inline mbuf_signature::fill_type
+mbuf_signature_tx_get_fill_type(const rte_mbuf* mbuf)
+{
+    const auto* mbuf_sig =
+        RTE_MBUF_DYNFIELD(mbuf, mbuf_signature_offset, mbuf_signature*);
+    return (static_cast<mbuf_signature::fill_type>(mbuf_sig->tx.fill));
+}
+
+inline uint16_t mbuf_signature_tx_get_fill_offset(const rte_mbuf* mbuf)
+{
+    const auto* mbuf_sig =
+        RTE_MBUF_DYNFIELD(mbuf, mbuf_signature_offset, mbuf_signature*);
+    return (mbuf_sig->tx.offset);
+}
+
+inline uint16_t mbuf_signature_tx_get_fill_const(const rte_mbuf* mbuf)
+{
+    const auto* mbuf_sig =
+        RTE_MBUF_DYNFIELD(mbuf, mbuf_signature_offset, mbuf_signature*);
+    return (mbuf_sig->tx.value.u16);
+}
+
+inline uint8_t mbuf_signature_tx_get_fill_incr(const rte_mbuf* mbuf)
+{
+    const auto* mbuf_sig =
+        RTE_MBUF_DYNFIELD(mbuf, mbuf_signature_offset, mbuf_signature*);
+    return (mbuf_sig->tx.value.u8);
+}
+
+inline uint8_t mbuf_signature_tx_get_fill_decr(const rte_mbuf* mbuf)
+{
+    const auto* mbuf_sig =
+        RTE_MBUF_DYNFIELD(mbuf, mbuf_signature_offset, mbuf_signature*);
+    return (mbuf_sig->tx.value.u8);
+}
 
 inline void mbuf_signature_rx_set(rte_mbuf* mbuf,
                                   uint32_t stream_id,
@@ -139,8 +165,8 @@ inline void mbuf_signature_rx_set(rte_mbuf* mbuf,
         mbuf_signature{
             .sig_stream_id = stream_id,
             .sig_seq_num = seq_num,
-            .rx = {.timestamp = timestamp & mbuf_signature::timestamp_mask,
-                   .flags = flags}};
+            .rx = {.flags = flags,
+                   .timestamp = timestamp & mbuf_signature::timestamp_mask}};
 }
 
 inline bool mbuf_signature_avail(const rte_mbuf* mbuf)
