@@ -77,32 +77,38 @@ void pga_log_info(FILE* output)
             functions.unpack_and_sum_indexicals_impl)));
 }
 
+constexpr int bit(int x) { return (1 << x); }
+
+constexpr int ts_bit = bit(0);
+constexpr int prbs_bit = bit(1);
+constexpr int status_bit = bit(2);
+
 int pga_signature_flag(enum pga_signature_prbs prbs,
                        enum pga_signature_timestamp ts)
 {
     int flags = 0;
-    if (prbs == pga_signature_prbs::enable) { flags += (1 << 1); }
-    if (ts == pga_signature_timestamp::last) { flags += (1 << 0); }
+    if (prbs == pga_signature_prbs::enable) { flags |= prbs_bit; }
+    if (ts == pga_signature_timestamp::last) { flags |= ts_bit; }
 
     return (flags);
 }
 
 enum pga_signature_prbs pga_prbs_flag(int flags)
 {
-    return (flags & (1 << 1) ? pga_signature_prbs::enable
+    return (flags & prbs_bit ? pga_signature_prbs::enable
                              : pga_signature_prbs::disable);
 }
 
 enum pga_signature_timestamp pga_timestamp_flag(int flags)
 {
-    return (flags & (1 << 0) ? pga_signature_timestamp::last
-                             : pga_signature_timestamp::first);
+    return (flags & ts_bit ? pga_signature_timestamp::last
+                           : pga_signature_timestamp::first);
 }
 
 enum pga_signature_status pga_status_flag(int flags)
 {
-    return (flags & (1 << 2) ? pga_signature_status::valid
-                             : pga_signature_status::invalid);
+    return (flags & status_bit ? pga_signature_status::valid
+                               : pga_signature_status::invalid);
 }
 
 uint16_t pga_signatures_crc_filter(const uint8_t* payloads[],
