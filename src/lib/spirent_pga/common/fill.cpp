@@ -20,16 +20,16 @@ uint32_t prbs(uint8_t payload[], uint16_t length, uint32_t seed)
         break; /* no-op */
     case 1: {
         auto next = prbs::step(seed);
-        payload[idx++] = (~seed >> 8) & 0xff;
-        payload[idx++] = (~seed >> 16) & 0xff;
         payload[idx++] = (~seed >> 24) & 0xff;
+        payload[idx++] = (~seed >> 16) & 0xff;
+        payload[idx++] = (~seed >> 8) & 0xff;
         seed = seed << 24 | next >> 8;
         break;
     }
     case 2: {
         auto next = prbs::step(seed);
-        payload[idx++] = (~seed >> 16) & 0xff;
         payload[idx++] = (~seed >> 24) & 0xff;
+        payload[idx++] = (~seed >> 16) & 0xff;
         seed = seed << 16 | next >> 16;
         break;
     }

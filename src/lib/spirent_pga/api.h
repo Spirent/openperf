@@ -63,8 +63,8 @@ uint16_t pga_checksum_udp(const uint8_t payload[],
  * These enums define specific signature bit field values.
  */
 enum pga_signature_prbs {
-    enable, /**< Payload contains PRBS data */
-    disable /**< Payload does not contain PRBS data */
+    disable, /**< Payload does not contain PRBS data */
+    enable   /**< Payload contains PRBS data */
 };
 
 enum pga_signature_timestamp {
