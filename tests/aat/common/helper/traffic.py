@@ -212,6 +212,12 @@ def make_traffic_signature(signature_config):
 
     signature.latency = signature_config['latency'] if 'latency' in signature_config else 'end_of_frame'
 
+    if 'fill' in signature_config:
+        fill = client.models.SpirentSignatureFill()
+        for key, value in signature_config['fill'].items():
+            setattr(fill, key, value)
+        signature.fill = fill
+
     return signature
 
 
