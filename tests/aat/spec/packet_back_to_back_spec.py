@@ -209,6 +209,14 @@ ANALYZER_CONFIG_NO_SIGS_FILTER_NOT_SIG = {
     'filter': 'not signature'
 }
 
+ANALYZER_CONFIG_SIGS_PRBS = {
+    'protocol': ['ethernet', 'ip', 'transport'],
+    'flow': ['frame_count', 'frame_length', 'prbs' ]
+}
+
+###
+# Capture configurations
+###
 CAPTURE_CONFIG = {
     'buffer_size':  2*1024*1024
 }
@@ -244,6 +252,22 @@ GENERATOR_CONFIG_SIGS = {
             'packet': ETH_IPV4_UDP,
             'signature': {'stream_id': 1,
                           'latency': 'end_of_frame'}
+        }
+    ]
+}
+
+GENERATOR_CONFIG_SIGS_PRBS = {
+    'duration': {'frames': 1000 },
+    'load': {'burst_size': 4,
+             'rate': 10000 },
+    'protocol_counters': ['ethernet', 'ip', 'transport'],
+    'traffic': [
+        {
+            'length': {'list': [64, 1518]},
+            'packet': ETH_IPV4_UDP,
+            'signature': {'stream_id': 1,
+                          'latency': 'end_of_frame',
+                          'fill': {"prbs": True}}
         }
     ]
 }
@@ -716,6 +740,40 @@ with description('Packet back to back', 'packet_b2b') as self:
                     validate_rx_flows(self.client, ana_result)
                     validate_tx_flows(self.client, gen_result)
 
+            with description('with PRBS payload'):
+                with it('succeeds'):
+                    ana_result, gen_result = configure_and_run_test(self.client,
+                                                                    ANALYZER_CONFIG_SIGS_PRBS,
+                                                                    GENERATOR_CONFIG_SIGS_PRBS)
+
+                    # Validate results
+                    exp_flow_count = 1
+                    expect(len(ana_result.flows)).to(equal(exp_flow_count))
+                    expect(len(gen_result.flows)).to(equal(exp_flow_count))
+
+                    # Check analyzer flow counters
+                    exp_frame_count = GENERATOR_CONFIG_SIGS['duration']['frames']
+                    expect(ana_result.flow_counters.frame_count).to(equal(exp_frame_count))
+                    expect(ana_result.flow_counters.frame_length).not_to(be_none)
+                    expect(ana_result.flow_counters.prbs).not_to(be_none)
+
+                    # Verify PRBS stats */
+                    # Only the 1518 byte frames carry PRBS data.
+                    # 1452 = 1518 - 18 (Ethernet) - 20 (IPv4) - 8 (UDP) - 20 (signature)
+                    exp_octet_count = exp_frame_count / 2 * 1452
+                    expect(ana_result.flow_counters.prbs.octets).to(equal(exp_octet_count))
+                    expect(ana_result.flow_counters.prbs.bit_errors).to(equal(0))
+                    expect(ana_result.flow_counters.prbs.frame_errors).to(equal(0))
+
+                    # Check generator flow counters
+                    expect(gen_result.flow_counters.packets_actual).to(equal(exp_frame_count))
+
+                    # Check miscellaneous results
+                    validate_durations(ana_result, gen_result)
+                    validate_frame_length(ana_result, GENERATOR_CONFIG_SIGS_PRBS)
+                    validate_rx_flows(self.client, ana_result)
+                    validate_tx_flows(self.client, gen_result)
+
             with description('with custom packet,'):
                 with it('succeeds'):
                     ana_result, gen_result = configure_and_run_test(self.client,
@@ -1089,6 +1147,7 @@ with description('Packet back to back', 'packet_b2b') as self:
                         validate_rx_flows(self.client, ana_result)
                         validate_tx_flows(self.client, gen_result)
 
+        with description('miscellaneous functionality'):
             with description('analyzer reset,'):
                 with it('succeeds'):
                     ana_api = client.api.PacketAnalyzersApi(self.client)
