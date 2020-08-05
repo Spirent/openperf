@@ -3,6 +3,7 @@
 #include "packetio/packet_buffer.hpp"
 #include "swagger/v1/model/PacketGeneratorConfig.h"
 #include "utils/memcpy.hpp"
+#include "utils/overloaded_visitor.hpp"
 
 namespace openperf::packet::generator {
 
@@ -149,6 +150,10 @@ bool source::uses_feature(packetio::packet::source_feature_flags flags) const
 
     if (m_sequence.has_signature_config()) {
         needed |= source_feature_flags::spirent_signature_encode;
+
+        if (m_sequence.has_signature_payload_fill()) {
+            needed |= source_feature_flags::spirent_payload_fill;
+        }
     }
 
     return (bool(needed & flags));
@@ -222,14 +227,11 @@ static size_t to_send_diff(size_t tx_count, size_t tx_limit)
     return (tx_count >= tx_limit ? 0 : tx_limit - tx_count);
 }
 
-inline void copy_header(const uint8_t* __restrict src,
-                        packetio::packet::header_lengths hdr_len,
-                        uint8_t* __restrict dst,
-                        int pkt_len)
+static uint16_t
+get_header_length(const packetio::packet::header_lengths& hdr_lens)
 {
-    const auto len =
-        hdr_len.layer2 + hdr_len.layer3 + hdr_len.layer4 + hdr_len.payload;
-    utils::memcpy(dst, src, std::min(len, pkt_len));
+    return (hdr_lens.layer2 + hdr_lens.layer3 + hdr_lens.layer4
+            + hdr_lens.payload);
 }
 
 uint16_t source::transform(packetio::packet::packet_buffer* input[],
@@ -276,8 +278,10 @@ uint16_t source::transform(packetio::packet::packet_buffer* input[],
                         sig_config,
                         pkt_len] = pkt_data;
 
-                auto pkt = packetio::packet::to_data<uint8_t>(buffer);
-                copy_header(hdr_ptr, hdr_lens, pkt, pkt_len);
+                /* Copy header into place */
+                const auto hdr_len = get_header_length(hdr_lens);
+                auto* pkt = packetio::packet::to_data<uint8_t>(buffer);
+                utils::memcpy(pkt, hdr_ptr, std::min(hdr_len, pkt_len));
 
                 /* Set length on both buffer and headers*/
                 packetio::packet::length(buffer, pkt_len - 4);
@@ -299,6 +303,28 @@ uint16_t source::transform(packetio::packet::packet_buffer* input[],
                                                 m_offsets[flow_idx]
                                                     + flow_counters.packet,
                                                 sig_config->flags);
+
+                    /* Set optional payload fill */
+                    std::visit(
+                        utils::overloaded_visitor(
+                            [](const std::monostate&) { /* no-op */ },
+                            [&](const traffic::signature_const_fill& fill) {
+                                packetio::packet::signature_fill_const(
+                                    buffer, hdr_len, fill.value);
+                            },
+                            [&](const traffic::signature_incr_fill& fill) {
+                                packetio::packet::signature_fill_incr(
+                                    buffer, hdr_len, fill.value);
+                            },
+                            [&](const traffic::signature_decr_fill& fill) {
+                                packetio::packet::signature_fill_decr(
+                                    buffer, hdr_len, fill.value);
+                            },
+                            [&](const traffic::signature_prbs_fill&) {
+                                packetio::packet::signature_fill_prbs(buffer,
+                                                                      hdr_len);
+                            }),
+                        sig_config->fill);
                 }
 
                 traffic::update(flow_counters, pkt_len, now);
