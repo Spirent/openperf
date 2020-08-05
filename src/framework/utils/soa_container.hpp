@@ -152,6 +152,7 @@ public:
     using adapter = typename Container::adapter;
     using difference_type = std::ptrdiff_t;
     using value_type = typename adapter::value_type;
+    using pointer = void;
     using reference = value_type&;
     using iterator_category = std::bidirectional_iterator_tag;
 
@@ -204,6 +205,7 @@ public:
 
     void operator++() { operator+=(1); }
     void operator--() { operator-=(1); }
+
     operator bool() const
     {
         return (m_container && m_idx >= m_container->size());
