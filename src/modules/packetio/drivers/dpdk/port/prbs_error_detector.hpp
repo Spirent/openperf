@@ -18,14 +18,18 @@ struct callback_prbs_error_detector
     static parent_type::rx_callback_fn callback();
     void* callback_arg() const;
 
-    using prbs_container = openperf::utils::soa_container<
+    using prbs_packets =
+        openperf::utils::soa_container<utils::chunk_array,
+                                       std::tuple<rte_mbuf*, uint16_t>>;
+
+    using prbs_segments = openperf::utils::soa_container<
         utils::chunk_array,
         std::tuple<const uint8_t*, uint16_t, uint32_t>>;
 
     struct scratch_t
     {
-        utils::chunk_array<rte_mbuf*> prbs_packets;
-        prbs_container prbs_segments;
+        prbs_packets packets;
+        prbs_segments segments;
     };
 
     mutable scratch_t scratch;

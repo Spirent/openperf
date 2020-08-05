@@ -97,35 +97,40 @@ static uint16_t detect_prbs_errors([[maybe_unused]] uint16_t port_id,
                    + packet_count_for_segment_limit(
                        packets + start, nb_packets - start, chunk_size);
 
-        /* Copy all of the packets we need to check into a consecutive block */
-        const auto prbs_end = std::copy_if(
+        /*
+         * Copy all of the packets we need to check into a consecutive block.
+         * Since we parse headers to determine offsets, pre-fetch the header
+         * data as we go so that we minimize cache stalls.
+         */
+        auto nb_prbs_pkts = 0U;
+        openperf::utils::prefetch_for_each(
             packets + start,
             packets + end,
-            scratch->prbs_packets.data(),
-            [](const auto* mbuf) { return (has_prbs_payload(mbuf)); });
-        const auto nb_prbs_pkts =
-            std::distance(scratch->prbs_packets.data(), prbs_end);
-
-        /*
-         * Find all the payload data in the PRBS packets we found. Since we
-         * need to parse headers, perform pre-fetching as we go to minimize our
-         * stalling on the packet data.
-         */
-        auto nb_prbs_segs = 0U;
-        openperf::utils::prefetch_for_each(
-            scratch->prbs_packets.data(),
-            scratch->prbs_packets.data() + nb_prbs_pkts,
             [](const auto* mbuf) {
                 rte_prefetch0(rte_pktmbuf_mtod(mbuf, void*));
             },
             [&](auto* mbuf) {
-                /*
-                 * We need to find the payload offset for the first
-                 * segment.
-                 */
+                if (!has_prbs_payload(mbuf)) { return; }
                 const auto offset = get_payload_offset(mbuf);
+                if (rte_pktmbuf_pkt_len(mbuf)
+                    <= offset + utils::signature_length) {
+                    return;
+                }
+                scratch->packets.set(nb_prbs_pkts++, {mbuf, offset});
+            },
+            prefetch_lookahead);
 
-                scratch->prbs_segments.set(
+        /* Find all of the payload data in the PRBS packets we found. */
+        auto nb_prbs_segs = 0U;
+        std::for_each(
+            std::begin(scratch->packets),
+            std::next(std::begin(scratch->packets), nb_prbs_pkts),
+            [&](const auto& item) {
+                const auto* mbuf = std::get<0>(item);
+                const auto offset = std::get<1>(item);
+
+                rte_pktmbuf_dump(stderr, mbuf, offset + 20);
+                scratch->segments.set(
                     nb_prbs_segs++,
                     {rte_pktmbuf_mtod_offset(mbuf, const uint8_t*, offset),
                      get_payload_length(mbuf, offset),
@@ -137,28 +142,27 @@ static uint16_t detect_prbs_errors([[maybe_unused]] uint16_t port_id,
                  */
                 while (mbuf->next != nullptr) {
                     mbuf = mbuf->next;
-                    scratch->prbs_segments.set(
+                    scratch->segments.set(
                         nb_prbs_segs++,
                         {rte_pktmbuf_mtod(mbuf, const uint8_t*),
                          get_payload_length(mbuf),
                          0});
                 }
-            },
-            prefetch_lookahead);
+            });
 
         /* Now check the prbs data */
-        pga_verify_prbs(scratch->prbs_segments.data<0>(),
-                        scratch->prbs_segments.data<1>(),
+        pga_verify_prbs(scratch->segments.data<0>(),
+                        scratch->segments.data<1>(),
                         nb_prbs_segs,
-                        scratch->prbs_segments.data<2>());
+                        scratch->segments.data<2>());
 
         /* And update the packet metadata. */
         auto seg_idx = 0U;
-        const auto& lengths = scratch->prbs_segments.data<1>();
-        const auto& errors = scratch->prbs_segments.data<2>();
+        const auto& lengths = scratch->segments.data<1>();
+        const auto& errors = scratch->segments.data<2>();
         std::for_each(
-            scratch->prbs_packets.data(),
-            scratch->prbs_packets.data() + nb_prbs_pkts,
+            scratch->packets.data<0>(),
+            scratch->packets.data<0>() + nb_prbs_pkts,
             [&](auto* mbuf) {
                 auto nb_segments = mbuf_segment_count(mbuf);
                 auto bit_errors = std::accumulate(
