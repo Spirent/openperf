@@ -17,24 +17,24 @@ std::string json_error(std::string_view msg)
     return json{"error", msg}.dump();
 }
 
-void response_error(Http::ResponseWriter& rsp, reply::error error)
+void response_error(Http::ResponseWriter& rsp, const reply::error& error)
 {
-    switch (error.type) {
-    case reply::error::NOT_FOUND:
+    switch (error.data->type) {
+    case reply::error_data::NOT_FOUND:
         rsp.send(Http::Code::Not_Found);
         break;
-    case reply::error::EXISTS:
+    case reply::error_data::EXISTS:
         rsp.headers().add<Http::Header::ContentType>(MIME(Application, Json));
         rsp.send(Http::Code::Bad_Request,
                  json_error("Item with such ID already existst"));
         break;
-    case reply::error::INVALID_ID:
+    case reply::error_data::INVALID_ID:
         rsp.headers().add<Http::Header::ContentType>(MIME(Application, Json));
         rsp.send(Http::Code::Bad_Request, json_error("Invalid ID format"));
         break;
-    case reply::error::BAD_REQUEST_ERROR:
+    case reply::error_data::BAD_REQUEST_ERROR:
         rsp.headers().add<Http::Header::ContentType>(MIME(Application, Json));
-        rsp.send(Http::Code::Bad_Request, json_error(error.value));
+        rsp.send(Http::Code::Bad_Request, json_error(error.data->value));
         break;
     default:
         rsp.send(Http::Code::Internal_Server_Error);
@@ -329,18 +329,24 @@ void handler::delete_result(const Rest::Request& request,
 // Methods : private
 api::api_reply handler::submit_request(api::api_request&& request)
 {
-    if (auto error = api::send_message(
+    if (auto error = openperf::message::send(
             socket.get(), api::serialize(std::forward<api_request>(request)));
         error != 0) {
-        return api::reply::error{.type = api::reply::error::ZMQ_ERROR,
-                                 .code = error};
+        api::reply::error_data data{.type = api::reply::error_data::ZMQ_ERROR,
+                                    .code = error};
+
+        return api::reply::error{
+            .data = std::make_unique<api::reply::error_data>(std::move(data))};
     }
 
     auto reply =
-        api::recv_message(socket.get()).and_then(api::deserialize_reply);
+        openperf::message::recv(socket.get()).and_then(api::deserialize_reply);
     if (!reply) {
-        return api::reply::error{.type = api::reply::error::ZMQ_ERROR,
-                                 .code = reply.error()};
+        api::reply::error_data data{.type = api::reply::error_data::ZMQ_ERROR,
+                                    .code = reply.error()};
+
+        return api::reply::error{
+            .data = std::make_unique<api::reply::error_data>(std::move(data))};
     }
 
     return std::move(*reply);

@@ -21,15 +21,15 @@ server::server(void* context, openperf::core::event_loop& loop)
 int server::handle_rpc_request(const op_event_data* data)
 {
     auto reply_errors = 0;
-    while (auto request = recv_message(data->socket, ZMQ_DONTWAIT)
+    while (auto request = openperf::message::recv(data->socket, ZMQ_DONTWAIT)
                               .and_then(deserialize_request)) {
         auto request_visitor = [&](auto& request) -> api_reply {
             return (handle_request(request));
         };
         auto reply = std::visit(request_visitor, *request);
 
-        if (send_message(data->socket,
-                         serialize(std::forward<api_reply>(reply)))
+        if (openperf::message::send(data->socket,
+                                    serialize(std::forward<api_reply>(reply)))
             == -1) {
             reply_errors++;
             OP_LOG(
@@ -41,13 +41,12 @@ int server::handle_rpc_request(const op_event_data* data)
     return ((reply_errors || errno == ETERM) ? -1 : 0);
 }
 
-reply::error
-to_error(reply::error::type_t type, int code, const std::string& value)
+reply::error to_error(reply::error_data::type_t type,
+                      int code = 0,
+                      const std::string& value = "")
 {
-    auto err = reply::error{.type = type, .code = code};
-    value.copy(err.value, reply::err_max_length - 1);
-    err.value[std::min(value.length(), reply::err_max_length - 1)] = '\0';
-    return err;
+    return {.data = std::make_unique<reply::error_data>(
+                reply::error_data{.type = type, .code = code, .value = value})};
 }
 
 api_reply server::handle_request(const request::tvlp::list&)
@@ -65,7 +64,7 @@ api_reply server::handle_request(const request::tvlp::get& request)
 {
     auto controller = m_controller_stack->get(request.id);
 
-    if (!controller) { return reply::error{.type = reply::error::NOT_FOUND}; }
+    if (!controller) { return to_error(reply::error_data::NOT_FOUND); }
     auto reply = reply::tvlp::item{
         .data = std::make_unique<tvlp_config_t>(*controller.value())};
 
@@ -87,11 +86,12 @@ api_reply server::handle_request(const request::tvlp::create& request)
     if (auto id_check =
             config::op_config_validate_id_string(request.data->id());
         !id_check)
-        return reply::error{.type = reply::error::INVALID_ID};
+        return to_error(reply::error_data::INVALID_ID);
 
     auto result = m_controller_stack->create(*request.data);
     if (!result) {
-        return (to_error(reply::error::BAD_REQUEST_ERROR, 0, result.error()));
+        return (
+            to_error(reply::error_data::BAD_REQUEST_ERROR, 0, result.error()));
     }
     auto reply = reply::tvlp::item{
         .data = std::make_unique<tvlp_config_t>(*result.value())};
@@ -101,13 +101,14 @@ api_reply server::handle_request(const request::tvlp::create& request)
 api_reply server::handle_request(const request::tvlp::start& request)
 {
     auto controller = m_controller_stack->get(request.id);
-    if (!controller) { return reply::error{.type = reply::error::NOT_FOUND}; }
+    if (!controller) { return to_error(reply::error_data::NOT_FOUND); }
     auto reply = reply::tvlp::item{
         .data = std::make_unique<tvlp_config_t>(*controller.value())};
 
     auto result = m_controller_stack->start(request.id);
     if (!result) {
-        return to_error(reply::error::BAD_REQUEST_ERROR, 0, result.error());
+        return to_error(
+            reply::error_data::BAD_REQUEST_ERROR, 0, result.error());
     }
 
     return reply::ok{};
