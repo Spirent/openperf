@@ -199,9 +199,12 @@ task_stat_t block_task::spin()
     auto loop_start_ts = ref_clock::now();
     auto cur_time = ref_clock::now();
     do {
+        // +1 need here to start spin at beginning of each time frame
         auto ops_req = (cur_time - m_operation_timestamp).count() * ops_per_sec
-                       / std::nano::den;
+                           / std::nano::den
+                       + 1;
 
+        assert(ops_req);
         auto worker_spin_stat = worker_spin(ops_req, cur_time + 1s);
         stat += worker_spin_stat;
 
