@@ -208,6 +208,11 @@ void handler::start_tvlp(const Rest::Request& request,
         return;
     }
 
+    if (request.query().has("time"))
+        printf("%s\n", request.query().get("time").get().c_str());
+    else
+        printf("NOPE\n");
+
     auto api_reply = submit_request(request::tvlp::start{{.id = id}});
     // if (auto item = std::get_if<reply::statistic::item>(&api_reply)) {
     //     auto model = to_swagger(*item->data);

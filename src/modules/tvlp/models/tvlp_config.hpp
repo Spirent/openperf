@@ -14,12 +14,14 @@ struct tvlp_profile_entry_t
     nlohmann::json config;
 };
 
+using tvlp_module_profile_t = std::vector<tvlp_profile_entry_t>;
+
 struct tvlp_profile_t
 {
-    std::optional<std::vector<tvlp_profile_entry_t>> block;
-    std::optional<std::vector<tvlp_profile_entry_t>> cpu;
-    std::optional<std::vector<tvlp_profile_entry_t>> memory;
-    std::optional<std::vector<tvlp_profile_entry_t>> packet;
+    std::optional<tvlp_module_profile_t> block;
+    std::optional<tvlp_module_profile_t> cpu;
+    std::optional<tvlp_module_profile_t> memory;
+    std::optional<tvlp_module_profile_t> packet;
 };
 
 class tvlp_configuration_t

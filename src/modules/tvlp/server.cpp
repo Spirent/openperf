@@ -97,10 +97,22 @@ api_reply server::handle_request(const request::tvlp::create& request)
         .data = std::make_unique<tvlp_config_t>(*result.value())};
     return reply;
 }
-api_reply server::handle_request(const request::tvlp::start&)
+
+api_reply server::handle_request(const request::tvlp::start& request)
 {
+    auto controller = m_controller_stack->get(request.id);
+    if (!controller) { return reply::error{.type = reply::error::NOT_FOUND}; }
+    auto reply = reply::tvlp::item{
+        .data = std::make_unique<tvlp_config_t>(*controller.value())};
+
+    auto result = m_controller_stack->start(request.id);
+    if (!result) {
+        return to_error(reply::error::BAD_REQUEST_ERROR, 0, result.error());
+    }
+
     return reply::ok{};
 }
+
 api_reply server::handle_request(const request::tvlp::stop&)
 {
     return reply::ok{};
