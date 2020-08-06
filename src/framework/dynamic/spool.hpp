@@ -165,8 +165,9 @@ template <typename T> void spool<T>::add(const T& stat)
 
     for (auto& td : m_tdigests) {
         auto& data = td.second;
-        data.tdigest.insert(delta(data.argument, stat),
-                            weight(data.argument, stat));
+        // Digestible library doesn't allows zero weight
+        if (auto w = weight(data.argument, stat))
+            data.tdigest.insert(delta(data.argument, stat), w);
     }
 
     m_last_stat = stat;
