@@ -229,8 +229,8 @@ api_reply server::handle_request(const request::generator::bulk::start& req)
 
             m_generator_stack->start(id, req.data->dynamic_results);
             if (!gnr.is_running())
-                throw std::runtime_error("Generator with ID '" + id
-                                         + "' start error.");
+                throw std::logic_error("Generator with ID '" + id
+                                       + "' start error.");
 
             list.data->push_back(stat_transformer(m_generator_stack->stat(id)));
         }

@@ -52,9 +52,9 @@ std::optional<double> get_field(const memory_stat& stat, std::string_view name)
     if (name == "read.latency") return stat.read.run_time.count();
 
     if (name == "read.latency_min")
-        return stat.read.latency_min.value().count();
+        return stat.read.latency_min.value_or(0ns).count();
     if (name == "read.latency_max")
-        return stat.read.latency_max.value().count();
+        return stat.read.latency_max.value_or(0ns).count();
 
     if (name == "write.ops_target") return stat.write.operations_target;
     if (name == "write.ops_actual") return stat.write.operations;
@@ -64,9 +64,9 @@ std::optional<double> get_field(const memory_stat& stat, std::string_view name)
     if (name == "write.latency") return stat.write.run_time.count();
 
     if (name == "write.latency_min")
-        return stat.write.latency_min.value().count();
+        return stat.write.latency_min.value_or(0ns).count();
     if (name == "write.latency_max")
-        return stat.write.latency_max.value().count();
+        return stat.write.latency_max.value_or(0ns).count();
 
     if (name == "timestamp") return stat.timestamp().time_since_epoch().count();
 
