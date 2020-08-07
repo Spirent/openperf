@@ -1,0 +1,5 @@
+# Since clang-format doesn't recognize ISPC's syntax, disable formatting files
+# in this directory.
+
+DisableFormat: true
+SortIncludes: false
