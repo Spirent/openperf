@@ -1,28 +1,12 @@
 
-inline static unsigned int rotate_left(unsigned int value,
-                                       uniform unsigned int8 count)
+inline unsigned int rotate_left(unsigned int value,
+                                uniform unsigned int count)
 {
-    assert(count > 0 && count < 8);
-    switch (count) {
-    case 1:
-        return (value << 1 | value >> 31);
-    case 2:
-        return (value << 2 | value >> 30);
-    case 3:
-        return (value << 3 | value >> 29);
-    case 4:
-        return (value << 4 | value >> 28);
-    case 5:
-        return (value << 5 | value >> 27);
-    case 6:
-        return (value << 6 | value >> 26);
-    case 7:
-        return (value << 7 | value >> 25);
-    }
+    return (value << count | value >> (32 - count));
 }
 
-inline static unsigned int scamble(unsigned int byte,
-                                   uniform unsigned int index)
+inline unsigned int scamble(unsigned int byte,
+                            uniform unsigned int index)
 {
     static const uniform int masks[][4] = {
         {0xffff8404, 0x7807807b, 0x87807c7b, 0x838003ff},
@@ -36,7 +20,8 @@ inline static unsigned int scamble(unsigned int byte,
 
     unsigned int base = byte << 24 | byte << 16 | byte << 8 | byte;
 
-    return ((base & masks[0][index]) ^ (rotate_left(base, 1) & masks[1][index])
+    return ((base & masks[0][index])
+            ^ (rotate_left(base, 1) & masks[1][index])
             ^ (rotate_left(base, 2) & masks[2][index])
             ^ (rotate_left(base, 3) & masks[3][index])
             ^ (rotate_left(base, 4) & masks[4][index])
@@ -45,7 +30,7 @@ inline static unsigned int scamble(unsigned int byte,
             ^ (rotate_left(base, 7) & masks[7][index]));
 }
 
-inline static void get_scramble_mask(unsigned int8 seed, unsigned int<4>& mask)
+inline void get_scramble_mask(unsigned int seed, unsigned int<4>& mask)
 {
     mask[0] = scamble(seed, 0);
     mask[1] = scamble(seed, 1);
