@@ -24,7 +24,8 @@ LIBPCAP_CONFIG_OPTS += \
 	--enable-bluetooth=no \
 	--enable-dbus=no \
 	--enable-rdma=no \
-	--enable-shared=no
+	--enable-shared=no \
+	--without-libnl
 
 ###
 # Build rules
