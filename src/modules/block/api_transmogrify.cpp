@@ -4,12 +4,13 @@
 
 #include "framework/utils/overloaded_visitor.hpp"
 #include "framework/utils/variant_index.hpp"
+#include "framework/message/serialized_message.hpp"
 
 namespace openperf::block::api {
 
-serialized_msg serialize_request(request_msg&& msg)
+message::serialized_message serialize_request(request_msg&& msg)
 {
-    serialized_msg serialized;
+    message::serialized_message serialized;
     auto error =
         (message::push(serialized, msg.index())
          || std::visit(
@@ -82,9 +83,9 @@ serialized_msg serialize_request(request_msg&& msg)
     return (serialized);
 }
 
-serialized_msg serialize_reply(reply_msg&& msg)
+message::serialized_message serialize_reply(reply_msg&& msg)
 {
-    serialized_msg serialized;
+    message::serialized_message serialized;
     auto error =
         (message::push(serialized, msg.index())
          || std::visit(
@@ -111,7 +112,8 @@ serialized_msg serialize_reply(reply_msg&& msg)
     return (serialized);
 }
 
-tl::expected<request_msg, int> deserialize_request(serialized_msg&& msg)
+tl::expected<request_msg, int>
+deserialize_request(message::serialized_message&& msg)
 {
     using index_type = decltype(std::declval<request_msg>().index());
     auto idx = message::pop<index_type>(msg);
@@ -203,7 +205,8 @@ tl::expected<request_msg, int> deserialize_request(serialized_msg&& msg)
     return (tl::make_unexpected(EINVAL));
 }
 
-tl::expected<reply_msg, int> deserialize_reply(serialized_msg&& msg)
+tl::expected<reply_msg, int>
+deserialize_reply(message::serialized_message&& msg)
 {
     using index_type = decltype(std::declval<request_msg>().index());
     auto idx = message::pop<index_type>(msg);

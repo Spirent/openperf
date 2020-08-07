@@ -13,19 +13,20 @@
 #include "models/generator.hpp"
 #include "models/generator_result.hpp"
 
-#include "framework/message/serialized_message.hpp"
+namespace openperf::message {
+struct serialized_message;
+};
 
 namespace openperf::block::api {
 
 const std::string endpoint = "inproc://openperf_block";
 
+using openperf::message::serialized_message;
 using device_ptr = std::unique_ptr<model::device>;
 using file_ptr = std::unique_ptr<model::file>;
 using generator_ptr = std::unique_ptr<model::block_generator>;
 using generator_result_ptr = std::unique_ptr<model::block_generator_result>;
 using string_ptr = std::unique_ptr<std::string>;
-
-using serialized_msg = openperf::message::serialized_message;
 
 static constexpr size_t err_max_length = 256;
 enum class error_type : uint8_t {
@@ -206,11 +207,11 @@ using reply_msg = std::variant<reply_block_devices,
                                reply_ok,
                                reply_error>;
 
-serialized_msg serialize_request(request_msg&& request);
-serialized_msg serialize_reply(reply_msg&& reply);
+serialized_message serialize_request(request_msg&&);
+serialized_message serialize_reply(reply_msg&&);
 
-tl::expected<request_msg, int> deserialize_request(serialized_msg&& msg);
-tl::expected<reply_msg, int> deserialize_reply(serialized_msg&& msg);
+tl::expected<request_msg, int> deserialize_request(serialized_message&&);
+tl::expected<reply_msg, int> deserialize_reply(serialized_message&&);
 
 reply_error
 to_error(error_type type, int code = 0, const std::string& value = "");

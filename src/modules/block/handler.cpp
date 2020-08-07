@@ -3,16 +3,18 @@
 
 #include "framework/config/op_config_utils.hpp"
 #include "framework/core/op_core.h"
+#include "framework/message/serialized_message.hpp"
+
 #include "modules/api/api_route_handler.hpp"
 
 namespace opneperf::block {
 
+namespace api = openperf::block::api;
 using namespace swagger::v1::model;
 using namespace Pistache;
 using request_type = Pistache::Rest::Request;
 using response_type = Pistache::Http::ResponseWriter;
 using json = nlohmann::json;
-namespace api = openperf::block::api;
 
 class handler : public openperf::api::route::handler::registrar<handler>
 {
