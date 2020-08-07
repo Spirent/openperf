@@ -55,7 +55,7 @@ Memory generator result represents statistics of memory I/O operations, unique f
         "bytes_actual": 80,
         "bytes_target": 80,
         "io_errors": 0,
-        "latency": 12652,
+        "latency_total": 12652,
         "latency_max": 12652,
         "latency_min": 12652,
         "ops_actual": 10,
@@ -66,7 +66,7 @@ Memory generator result represents statistics of memory I/O operations, unique f
         "bytes_actual": 0,
         "bytes_target": 0,
         "io_errors": 0,
-        "latency": 0,
+        "latency_total": 0,
         "ops_actual": 0,
         "ops_target": 0
     }
@@ -81,7 +81,7 @@ Memory generator result represents statistics of memory I/O operations, unique f
     * **bytes_actual** - the actual number of bytes read or written.
     * **bytes_target** - the intented number of bytes read of written.
     * **io_errors** - the number of I/O errors.
-    * **latency** - the total amount of time required to perform all operations (in nanoseconds).
+    * **latency_total** - the total amount of time required to perform all operations (in nanoseconds).
     * **latency_max** - the maximum observed latency value (in nanoseconds). Field is absent if latency was not measured yet.
     * **latency_min** - the minimum observed latency value (in nanoseconds). Field is absent if latency was not measured yet.
     * **ops_actual** - the actual number of operations performed
@@ -228,7 +228,7 @@ curl --verbose --location --request GET \
         "bytes_actual": 31142712,
         "bytes_target": 31142712,
         "io_errors": 0,
-        "latency": 223961887,
+        "latency_total": 223961887,
         "latency_max": 375318,
         "latency_min": 205,
         "ops_actual": 3892839,
@@ -238,7 +238,7 @@ curl --verbose --location --request GET \
         "bytes_actual": 12457256,
         "bytes_target": 12457256,
         "io_errors": 0,
-        "latency": 66308851,
+        "latency_total": 66308851,
         "latency_max": 634180,
         "latency_min": 136,
         "ops_actual": 1557157,

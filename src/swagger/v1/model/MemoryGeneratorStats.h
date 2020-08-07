@@ -75,8 +75,8 @@ public:
         /// <summary>
     /// The total amount of time required to perform all operations (in nanoseconds)
     /// </summary>
-    int64_t getLatency() const;
-    void setLatency(int64_t value);
+    int64_t getLatencyTotal() const;
+    void setLatencyTotal(int64_t value);
         /// <summary>
     /// The minimum observed latency value (in nanoseconds)
     /// </summary>
@@ -103,7 +103,7 @@ protected:
 
     int64_t m_Io_errors;
 
-    int64_t m_Latency;
+    int64_t m_Latency_total;
 
     int64_t m_Latency_min;
     bool m_Latency_minIsSet;

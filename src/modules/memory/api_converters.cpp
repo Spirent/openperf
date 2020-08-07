@@ -99,7 +99,7 @@ swagger::MemoryGeneratorStats to_swagger(const task_memory_stat& stat)
     swagger::MemoryGeneratorStats model;
     model.setBytesActual(stat.bytes);
     model.setBytesTarget(stat.bytes_target);
-    model.setLatency(
+    model.setLatencyTotal(
         std::chrono::duration_cast<std::chrono::nanoseconds>(stat.run_time)
             .count());
     model.setOpsActual(stat.operations);
