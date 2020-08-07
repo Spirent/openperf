@@ -19,7 +19,7 @@ decode_signatures(const unsigned int8* const uniform payloads[],
     unsigned int<4> mask;
     unsigned int<4> signature;
 
-    uniform unsigned int16 nb_sigs = 0;
+    unsigned int nb_sigs = 0;
 
     foreach(i = 0 ... count)
     {
@@ -44,29 +44,25 @@ decode_signatures(const unsigned int8* const uniform payloads[],
 
         /* Verify that the scramble_key and byte10 are complements */
         unsigned int8 byte10 = (signature[2] >> 8) & 0xff;
-        cif(scramble_key != byte10)
-        {
-            flags[i] = 0;
-            continue;
-        }
 
         /* Perform enhanced detection check */
         unsigned int16 edm1 = ~(signature[1] >> 8) & 0xffff;
         unsigned int16 edm2 = (signature[1] << 8 | signature[2] >> 24) & 0xffff;
-        cif(edm1 != edm2)
-        {
-            flags[i] = 0;
-            continue;
-        }
 
+        /* Determine which signatures are valid */
+        bool valid_sig = and(scramble_key == byte10, edm1 == edm2);
+
+        /* Copy data out; mark valid data as such */
         /* Valid signature found; copy data out */
         stream_ids[i] = signature[0] << 8 | signature[1] >> 24;
         sequence_numbers[i] = signature[1] << 24 | signature[2] >> 8;
         timestamps_lo[i] = signature[2] << 24 | signature[3] >> 8;
         timestamps_hi[i] = (signature[3] >> 2) & 0x3f;
-        flags[i] = is_valid | (signature[3] & 0x3);
-        nb_sigs += reduce_add(1); /* add the number of active lanes */
+        flags[i] = valid_sig ? is_valid | (signature[3] & 0x3) : 0;
+
+        /* Keep track of the number of valid signatures */
+        nb_sigs += valid_sig;
     }
 
-    return (nb_sigs);
+    return (reduce_add(nb_sigs));
 }
