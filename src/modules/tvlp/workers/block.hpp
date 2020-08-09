@@ -1,3 +1,6 @@
+#ifndef _OP_TVLP_BLOCK_WORKER_HPP_
+#define _OP_TVLP_BLOCK_WORKER_HPP_
+
 #include "tvlp/worker.hpp"
 #include "api/api_internal_client.hpp"
 
@@ -21,3 +24,5 @@ protected:
 };
 
 } // namespace openperf::tvlp::internal::worker
+
+#endif

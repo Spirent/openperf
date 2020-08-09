@@ -14,14 +14,6 @@
 #include "swagger/v1/model/CpuGeneratorResult.h"
 #include "swagger/v1/model/CpuInfoResult.h"
 
-namespace swagger::v1::model {
-void from_json(const nlohmann::json&, CpuGenerator&);
-void from_json(const nlohmann::json&, BulkCreateCpuGeneratorsRequest&);
-void from_json(const nlohmann::json&, BulkDeleteCpuGeneratorsRequest&);
-void from_json(const nlohmann::json&, BulkStartCpuGeneratorsRequest&);
-void from_json(const nlohmann::json&, BulkStopCpuGeneratorsRequest&);
-} // namespace swagger::v1::model
-
 namespace openperf::cpu::api {
 
 namespace swagger = ::swagger::v1::model;

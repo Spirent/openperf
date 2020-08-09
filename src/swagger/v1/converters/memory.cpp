@@ -5,6 +5,7 @@
 #include "swagger/v1/model/BulkDeleteMemoryGeneratorsRequest.h"
 #include "swagger/v1/model/BulkStartMemoryGeneratorsRequest.h"
 #include "swagger/v1/model/BulkStopMemoryGeneratorsRequest.h"
+#include "swagger/v1/model/MemoryGeneratorResult.h"
 
 namespace swagger::v1::model {
 
@@ -51,6 +52,11 @@ void from_json(const nlohmann::json& j,
                BulkStopMemoryGeneratorsRequest& request)
 {
     request.fromJson(const_cast<nlohmann::json&>(j));
+}
+
+void from_json(const nlohmann::json& j, MemoryGeneratorResult& generator)
+{
+    generator.fromJson(const_cast<nlohmann::json&>(j));
 }
 
 } // namespace swagger::v1::model
