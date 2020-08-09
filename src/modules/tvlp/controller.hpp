@@ -11,6 +11,7 @@
 namespace openperf::tvlp::internal {
 
 using framework_controller = openperf::framework::generator::controller;
+using duration = std::chrono::nanoseconds;
 
 class controller_t : public model::tvlp_configuration_t
 {

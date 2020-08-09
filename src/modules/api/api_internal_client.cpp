@@ -65,4 +65,16 @@ std::pair<Http::Code, std::string> internal_api_post(std::string_view resource,
     return result;
 }
 
+std::pair<Http::Code, std::string> internal_api_del(std::string_view resource)
+{
+    Http::Client client;
+    client.init();
+    auto rb = client.del(make_full_uri(resource));
+    auto result = internal_api_request(rb, "");
+
+    client.shutdown();
+
+    return result;
+}
+
 } // namespace openperf::api::client
