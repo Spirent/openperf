@@ -8,6 +8,7 @@
 #include "swagger/v1/model/BulkDeleteBlockGeneratorsRequest.h"
 #include "swagger/v1/model/BulkStartBlockGeneratorsRequest.h"
 #include "swagger/v1/model/BulkStopBlockGeneratorsRequest.h"
+#include "swagger/v1/model/BlockGeneratorResult.h"
 #include "swagger/v1/model/BlockFile.h"
 
 namespace swagger::v1::model {
@@ -86,6 +87,11 @@ void from_json(const nlohmann::json& j,
 void from_json(const nlohmann::json& j, BulkStopBlockGeneratorsRequest& request)
 {
     request.fromJson(const_cast<nlohmann::json&>(j));
+}
+
+void from_json(const nlohmann::json& j, BlockGeneratorResult& generator)
+{
+    generator.fromJson(const_cast<nlohmann::json&>(j));
 }
 
 } // namespace swagger::v1::model

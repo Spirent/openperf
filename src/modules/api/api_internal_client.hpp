@@ -18,5 +18,11 @@ internal_api_get(std::string_view resource);
 std::pair<Pistache::Http::Code, std::string>
 internal_api_post(std::string_view resource, const std::string& body);
 
+// Send a DELETE request to the REST API.
+// @param resource - REST API resource perform DELETE operation on.
+// @returns Pair of Http reponse code and response body.
+std::pair<Pistache::Http::Code, std::string>
+internal_api_del(std::string_view resource);
+
 } // namespace openperf::api::client
 #endif

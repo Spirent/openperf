@@ -13,6 +13,8 @@ TVLP_SOURCES += \
 	controller_stack.cpp \
 	worker.cpp
 
+include $(TVLP_SRC_DIR)/workers/directory.mk
+
 TVLP_VERSIONED_FILES := init.cpp
 TVLP_UNVERSIONED_OBJECTS := \
 	$(call op_generate_objects,$(filter-out $(TVLP_VERSIONED_FILES),$(TVLP_SOURCES)),$(TVLP_OBJ_DIR))
