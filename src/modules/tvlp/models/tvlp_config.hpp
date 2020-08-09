@@ -3,13 +3,18 @@
 
 #include <optional>
 #include <string>
+#include <chrono>
 #include "json.hpp"
+#include "modules/timesync/chrono.hpp"
 
 namespace openperf::tvlp::model {
 
+using duration = std::chrono::nanoseconds;
+using time_point = std::chrono::time_point<timesync::chrono::realtime>;
+
 struct tvlp_profile_entry_t
 {
-    uint64_t length = 0;
+    duration length;
     std::optional<std::string> resource_id;
     nlohmann::json config;
 };
@@ -24,11 +29,11 @@ struct tvlp_profile_t
     std::optional<tvlp_module_profile_t> packet;
 };
 
+enum tvlp_state_t { READY = 0, COUNTDOWN, RUNNING, ERROR };
+
 class tvlp_configuration_t
 {
 public:
-    enum state { READY = 0, COUNTDOWN, RUNNING, ERROR };
-
     tvlp_configuration_t() = default;
     tvlp_configuration_t(const tvlp_configuration_t&) = default;
 
@@ -38,20 +43,20 @@ public:
     inline tvlp_profile_t profile() const { return m_profile; };
     inline void profile(const tvlp_profile_t& value) { m_profile = value; };
 
-    inline state state() const { return m_state; };
-    inline std::string start_time() const { return m_start_time; };
-    inline uint64_t total_length() const { return m_total_length; };
-    inline uint64_t current_offset() const { return m_current_offset; };
+    inline tvlp_state_t state() const { return m_state; };
+    inline time_point start_time() const { return m_start_time; };
+    inline duration total_length() const { return m_total_length; };
+    inline duration current_offset() const { return m_current_offset; };
 
     inline std::string error() const { return m_error; };
 
 protected:
     std::string m_id = "";
-    enum state m_state = READY;
+    tvlp_state_t m_state = READY;
 
-    std::string m_start_time = "";
-    uint64_t m_total_length = 0;
-    uint64_t m_current_offset = 0;
+    time_point m_start_time = time_point::min();
+    duration m_total_length = duration::zero();
+    duration m_current_offset = duration::zero();
 
     tvlp_profile_t m_profile;
     std::string m_error = "";

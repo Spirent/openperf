@@ -12,6 +12,7 @@ class BulkCreateBlockGeneratorsRequest;
 class BulkDeleteBlockGeneratorsRequest;
 class BulkStartBlockGeneratorsRequest;
 class BulkStopBlockGeneratorsRequest;
+class BlockGeneratorResult;
 class BlockFile;
 
 void from_json(const nlohmann::json&, BlockFile&);
@@ -22,6 +23,7 @@ void from_json(const nlohmann::json&, BulkCreateBlockGeneratorsRequest&);
 void from_json(const nlohmann::json&, BulkDeleteBlockGeneratorsRequest&);
 void from_json(const nlohmann::json&, BulkStartBlockGeneratorsRequest&);
 void from_json(const nlohmann::json&, BulkStopBlockGeneratorsRequest&);
+void from_json(const nlohmann::json&, BlockGeneratorResult&);
 
 } // namespace swagger::v1::model
 
