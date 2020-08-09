@@ -5,6 +5,7 @@
 #include "swagger/v1/model/BulkDeleteCpuGeneratorsRequest.h"
 #include "swagger/v1/model/BulkStartCpuGeneratorsRequest.h"
 #include "swagger/v1/model/BulkStopCpuGeneratorsRequest.h"
+#include "swagger/v1/model/CpuGeneratorResult.h"
 
 namespace swagger::v1::model {
 
@@ -46,6 +47,11 @@ void from_json(const nlohmann::json& j, BulkStartCpuGeneratorsRequest& request)
 void from_json(const nlohmann::json& j, BulkStopCpuGeneratorsRequest& request)
 {
     request.fromJson(const_cast<nlohmann::json&>(j));
+}
+
+void from_json(const nlohmann::json& j, CpuGeneratorResult& generator)
+{
+    generator.fromJson(const_cast<nlohmann::json&>(j));
 }
 
 } // namespace swagger::v1::model
