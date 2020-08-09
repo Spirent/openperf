@@ -1,6 +1,7 @@
 #include "packet_generator.hpp"
 
 #include "swagger/v1/model/PacketGenerator.h"
+#include "swagger/v1/model/PacketGeneratorResult.h"
 
 namespace swagger::v1::model {
 
@@ -102,6 +103,11 @@ void from_json(const nlohmann::json& j, PacketGenerator& generator)
         *config = j["config"].get<PacketGeneratorConfig>();
         generator.setConfig(config);
     }
+}
+
+void from_json(const nlohmann::json& j, PacketGeneratorResult& generator)
+{
+    generator.fromJson(const_cast<nlohmann::json&>(j));
 }
 
 } // namespace swagger::v1::model
