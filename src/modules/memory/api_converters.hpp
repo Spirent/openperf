@@ -15,14 +15,6 @@
 #include "swagger/v1/model/MemoryGeneratorStats.h"
 #include "swagger/v1/model/MemoryInfoResult.h"
 
-namespace swagger::v1::model {
-void from_json(const nlohmann::json&, MemoryGenerator&);
-void from_json(const nlohmann::json&, BulkCreateMemoryGeneratorsRequest&);
-void from_json(const nlohmann::json&, BulkDeleteMemoryGeneratorsRequest&);
-void from_json(const nlohmann::json&, BulkStartMemoryGeneratorsRequest&);
-void from_json(const nlohmann::json&, BulkStopMemoryGeneratorsRequest&);
-} // namespace swagger::v1::model
-
 namespace openperf::memory::api {
 
 namespace swagger = ::swagger::v1::model;
