@@ -633,7 +633,7 @@ definitions:
         type: integer
         description: The number of io_errors observed during reading or writing
         format: int64
-      latency:
+      latency_total:
         type: integer
         description: The total amount of time required to perform all operations (in nanoseconds)
         format: int64
@@ -651,6 +651,4 @@ definitions:
       - bytes_target
       - bytes_actual
       - io_errors
-      - latency
-      - latency_min
-      - latency_max
+      - latency_total

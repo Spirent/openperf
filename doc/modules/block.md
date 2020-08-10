@@ -20,16 +20,16 @@ Hardware- or pseudo- device, providing an ability for block I/O load generation.
 }
 ```
 
-* **id** - automatically generated unique device identificator. Unique for each openperf launch
-* **info** - any info related to the current block device
-* **path** - resource pathname
-* **size** - resource size (in bytes)
-* **usable** - indicates whether it is safe to use this device for block I/O load generation
-* **state** - initialization status of the block device
-    * **uninitialized** - device is not initialized
-    * **initializing** - device initialization is in progress state
-    * **ready** - device is ready for I/O load generation
-* **init_percent_complete** - percentage of initialization completed so far
+* **id** - automatically generated unique device identificator. Unique for each openperf launch.
+* **info** - any info related to the current block device.
+* **path** - resource pathname.
+* **size** - resource size (in bytes).
+* **usable** - indicates whether it is safe to use this device for block I/O load generation.
+* **state** - initialization status of the block device.
+    * **uninitialized** - device is not initialized.
+    * **initializing** - device initialization is in progress state.
+    * **ready** - device is ready for I/O load generation.
+* **init_percent_complete** - percentage of initialization completed so far.
 
 ## Block file
 
@@ -48,14 +48,14 @@ If the file does not exist or its size differs from the size provided in the cre
 }
 ```
 
-* **id** - unique file identificator. Leave field empty to generate unique file identificator
-* **init_percent_complete** - percentage of initialization completed so far
-* **file_size** - size of test file (in bytes)
-* **path** - resource pathname
-* **state** - initialization status of the block file
-    * **none** - file initialization is in failed state
-    * **init** - file initialization is in progress state
-    * **ready** - file is ready for I/O load generation
+* **id** - unique file identificator. Leave field empty to generate unique file identificator.
+* **init_percent_complete** - percentage of initialization completed so far.
+* **file_size** - size of test file (in bytes).
+* **path** - resource pathname.
+* **state** - initialization status of the block file.
+    * **none** - file initialization is in failed state.
+    * **init** - file initialization is in progress state.
+    * **ready** - file is ready for I/O load generation.
 
 ## Block generator
 
@@ -79,21 +79,21 @@ Component of Openperf core, providing an ability for block I/O load generation. 
 }
 ```
 
-* **id** - unique block generator identifier. Leave field empty to generate unique file identificator
-* **resource_id** - unique device or file identifier chosen for I/O load generation
-* **running** - indicates whether this generator is currently running
-* **config** - configuration of block I/O load generation
-    * **queue_depth** - maximum number of simultaneous (asynchronous) operations
-    * **read_size** - number of bytes to use for each read operation
-    * **reads_per_sec** - number of read operations to perform per second
-    * **write_size** - number of bytes to use for each write operation
-    * **writes_per_sec** - number of write operations to perform per second
-    * **pattern** - I/O access pattern
-        * **random** - access to the random point of the resource
-        * **sequential** - sequential access to the resource from the beginning to the end
-        * **reverse** - sequential reverse access to the resource from the end to the beginning
+* **id** - unique block generator identifier. Leave field empty to generate unique file identificator.
+* **resource_id** - unique device or file identifier chosen for I/O load generation.
+* **running** - indicates whether this generator is currently running.
+* **config** - configuration of block I/O load generation.
+    * **queue_depth** - maximum number of simultaneous (asynchronous) operations.
+    * **read_size** - number of bytes to use for each read operation.
+    * **reads_per_sec** - number of read operations to perform per second.
+    * **write_size** - number of bytes to use for each write operation.
+    * **writes_per_sec** - number of write operations to perform per second.
+    * **pattern** - I/O access pattern.
+        * **random** - access to the random point of the resource.
+        * **sequential** - sequential access to the resource from the beginning to the end.
+        * **reverse** - sequential reverse access to the resource from the end to the beginning.
 
-Leave *reads_per_sec* or *writes_per_sec* as zero value to ignore operation while I/O load generation
+Leave *reads_per_sec* or *writes_per_sec* as zero value to ignore operation while I/O load generation.
 
 ### Start block generator
 
@@ -112,43 +112,41 @@ Active generator result cannot be deleted.
     "generator_id": "3f79937d-53ce-4411-435c-3139ea4a954c",
     "id": "24554373-e8df-4ad5-582c-21030e1d4cce",
     "read": {
-        "bytes_actual": 0,
-        "bytes_target": 0,
+        "bytes_actual": 80,
+        "bytes_target": 80,
         "io_errors": 0,
-        "latency": 0,
-        "latency_max": 0,
-        "latency_min": 0,
-        "ops_actual": 0,
-        "ops_target": 0
+        "latency_total": 12652,
+        "latency_max": 12652,
+        "latency_min": 12652,
+        "ops_actual": 10,
+        "ops_target": 10
     },
     "timestamp": "1970-01-13T00:48:40.283877Z",
     "write": {
         "bytes_actual": 0,
         "bytes_target": 0,
         "io_errors": 0,
-        "latency": 0,
-        "latency_max": 0,
-        "latency_min": 0,
+        "latency_total": 0,
         "ops_actual": 0,
         "ops_target": 0
     }
 }
 ```
 
-* **id** - unique block generator result identifier
-* **generator_id** - block generator identifier that generated this result
-* **active** - indicates whether the result is currently being updated
-* **timestamp** - the ISO8601-formatted date of the last result update
-* **read** - read block I/O operation statistics
-* **write** - write block I/O operation statistics
-    * **bytes_actual** - the actual number of bytes read or written
-    * **bytes_target** - the intended number of bytes read or written
-    * **io_errors** - the number of io_errors observed during reading or writing
-    * **latency** - the total amount of time required to perform all operations (in nanoseconds)
-    * **latency_max** - the maximum observed latency value (in nanoseconds)
-    * **latency_min** - the minimum observed latency value (in nanoseconds)
-    * **ops_actual** - the actual number of operations performed
-    * **ops_target** - the intended number of operations performed
+* **id** - unique block generator result identifier.
+* **generator_id** - block generator identifier that generated this result.
+* **active** - indicates whether the result is currently being updated.
+* **timestamp** - the ISO8601-formatted date of the last result update.
+* **read** - read block I/O operation statistics.
+* **write** - write block I/O operation statistics.
+    * **bytes_actual** - the actual number of bytes read or written.
+    * **bytes_target** - the intended number of bytes read or written.
+    * **io_errors** - the number of io_errors observed during reading or writing.
+    * **latency_total** - the total amount of time required to perform all operations (in nanoseconds).
+    * **latency_max** - the maximum observed latency value (in nanoseconds). Field is absent if latency was not measured yet.
+    * **latency_min** - the minimum observed latency value (in nanoseconds).Field is absent if latency was not measured yet.
+    * **ops_actual** - the actual number of operations performed.
+    * **ops_target** - the intended number of operations performed.
 
 ## Commands flow
 
@@ -162,6 +160,7 @@ curl --location --request POST '<OPENPERF_HOST>:<OPENPERF_PORT>/block-files' \
     "path": "/tmp/foo"
 }'
 ```
+
 Response:
 ```
 < HTTP/1.1 201 Created
@@ -194,6 +193,7 @@ curl --location --request POST '<OPENPERF_HOST>:<OPENPERF_PORT>/block-generators
   "running": false
 }'
 ```
+
 Response:
 ```
 < HTTP/1.1 201 Created
@@ -214,12 +214,13 @@ Response:
     "running":false
 }
 ```
-ss
+
 ### Start existing Block Generator
 
 ```bash
 curl --location --request POST '<OPENPERF_HOST>:<OPENPERF_PORT>/block-generators/e57815f4-a56c-4286-5799-bace8f1125f7/start'
 ```
+
 Response:
 ```
 < HTTP/1.1 201 Created
@@ -234,9 +235,7 @@ Response:
         "bytes_actual":0,
         "bytes_target":0,
         "io_errors":0,
-        "latency":0,
-        "latency_max":0,
-        "latency_min":0,
+        "latency_total":0,
         "ops_actual":0,
         "ops_target":0
     },
@@ -245,22 +244,19 @@ Response:
         "bytes_actual":0,
         "bytes_target":0,
         "io_errors":0,
-        "latency":0,
-        "latency_max":0,
-        "latency_min":0,
+        "latency_total":0,
         "ops_actual":0,
         "ops_target":0
     }
 }
 ```
 
-
-
 ### Stop Block Generator
 
 ```bash
 curl --location --request POST '<OPENPERF_HOST>:<OPENPERF_PORT>/block-generators/e57815f4-a56c-4286-5799-bace8f1125f7/stop'
 ```
+
 Response:
 ```
 < HTTP/1.1 204 No Content
@@ -273,6 +269,7 @@ Response:
 ```bash
 curl --location --request GET '<OPENPERF_HOST>:<OPENPERF_PORT>/block-generator-results/3d03c5d7-6a5a-45d6-7711-5c8e7e26f66d'
 ```
+
 Response:
 ```
 < HTTP/1.1 200 OK
@@ -286,7 +283,7 @@ Response:
         "bytes_actual": 2862405,
         "bytes_target": 2862405,
         "io_errors": 0,
-        "latency": 78215989,
+        "latency_total": 78215989,
         "latency_max": 3665760,
         "latency_min": 9887,
         "ops_actual": 546,
@@ -297,7 +294,7 @@ Response:
         "bytes_actual": 2862405,
         "bytes_target": 2862405,
         "io_errors": 0,
-        "latency": 47406175,
+        "latency_total": 47406175,
         "latency_max": 1135615,
         "latency_min": 24579,
         "ops_actual": 546,

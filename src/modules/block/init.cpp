@@ -3,8 +3,10 @@
 
 #include <zmq.h>
 
-#include "core/op_core.h"
-#include "block/server.hpp"
+#include "server.hpp"
+
+#include "framework/core/op_core.h"
+
 namespace openperf::block {
 
 static constexpr int module_version = 1;
