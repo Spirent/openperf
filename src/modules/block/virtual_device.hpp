@@ -1,19 +1,21 @@
 #ifndef _OP_BLOCK_VIRTUAL_DEVICE_HPP_
 #define _OP_BLOCK_VIRTUAL_DEVICE_HPP_
 
-#include <stdexcept>
 #include <atomic>
+#include <stdexcept>
 #include <thread>
+
 #include <tl/expected.hpp>
-#include "timesync/bintime.hpp"
+
+#include "modules/timesync/bintime.hpp"
 
 namespace openperf::block {
 
 #define VIRTUAL_DEVICE_HEADER_TAG "This is a big, fat OP VDEV header tag!"
 #define VIRTUAL_DEVICE_HEADER_TAG_LENGTH 40
 #define VIRTUAL_DEVICE_HEADER_PAD_LENGTH                                       \
-    512 - VIRTUAL_DEVICE_HEADER_TAG_LENGTH - sizeof(timesync::bintime)         \
-        - sizeof(size_t)
+    (512 - VIRTUAL_DEVICE_HEADER_TAG_LENGTH - sizeof(timesync::bintime)        \
+     - sizeof(size_t))
 
 struct virtual_device_header
 {
@@ -36,37 +38,36 @@ protected:
     std::atomic_bool m_scrub_aborted;
     std::thread m_scrub_thread;
 
-    void check_header(int fd, uint64_t file_size);
-    int write_header(int fd, uint64_t file_size);
-    void scrub_worker(int fd, size_t header_size, size_t file_size);
-    virtual void scrub_update(double p){};
-    virtual void scrub_done(){};
-
 public:
-    virtual_device(){};
-    virtual ~virtual_device(){};
-    virtual tl::expected<virtual_device_descriptors, int> vopen() = 0;
-    virtual void vclose() = 0;
-    virtual uint64_t get_size() const = 0;
-    virtual uint64_t get_header_size() const;
-    virtual std::string get_path() const = 0;
+    virtual_device() = default;
+    virtual ~virtual_device() = default;
 
-    std::optional<virtual_device_descriptors> get_fd() const
-    {
-        if (m_read_fd < 0 || m_write_fd < 0) return std::nullopt;
-        return (virtual_device_descriptors){m_read_fd, m_write_fd};
-    }
+    virtual tl::expected<virtual_device_descriptors, int> open() = 0;
+    virtual void close() = 0;
+    virtual uint64_t size() const = 0;
+    virtual std::string path() const = 0;
+
+    virtual uint64_t header_size() const;
+    std::optional<virtual_device_descriptors> fd() const;
 
     void terminate_scrub();
     tl::expected<void, std::string> queue_scrub();
+
+protected:
+    void check_header(int fd, uint64_t file_size);
+    void scrub_worker(int fd, size_t header_size, size_t file_size);
+    int write_header(int fd, uint64_t file_size);
+
+    virtual void scrub_update(double p){};
+    virtual void scrub_done(){};
 };
 
 class virtual_device_stack
 {
 public:
     virtual ~virtual_device_stack() = default;
-    virtual std::shared_ptr<virtual_device>
-    get_vdev(const std::string&) const = 0;
+
+    virtual std::shared_ptr<virtual_device> vdev(const std::string&) const = 0;
 };
 
 } // namespace openperf::block
