@@ -36,7 +36,7 @@ class MemoryGeneratorStats(object):
         'bytes_target': 'int',
         'bytes_actual': 'int',
         'io_errors': 'int',
-        'latency': 'int',
+        'latency_total': 'int',
         'latency_min': 'int',
         'latency_max': 'int'
     }
@@ -47,12 +47,12 @@ class MemoryGeneratorStats(object):
         'bytes_target': 'bytes_target',
         'bytes_actual': 'bytes_actual',
         'io_errors': 'io_errors',
-        'latency': 'latency',
+        'latency_total': 'latency_total',
         'latency_min': 'latency_min',
         'latency_max': 'latency_max'
     }
 
-    def __init__(self, ops_target=None, ops_actual=None, bytes_target=None, bytes_actual=None, io_errors=None, latency=None, latency_min=None, latency_max=None):  # noqa: E501
+    def __init__(self, ops_target=None, ops_actual=None, bytes_target=None, bytes_actual=None, io_errors=None, latency_total=None, latency_min=None, latency_max=None):  # noqa: E501
         """MemoryGeneratorStats - a model defined in Swagger"""  # noqa: E501
 
         self._ops_target = None
@@ -60,7 +60,7 @@ class MemoryGeneratorStats(object):
         self._bytes_target = None
         self._bytes_actual = None
         self._io_errors = None
-        self._latency = None
+        self._latency_total = None
         self._latency_min = None
         self._latency_max = None
         self.discriminator = None
@@ -70,7 +70,7 @@ class MemoryGeneratorStats(object):
         self.bytes_target = bytes_target
         self.bytes_actual = bytes_actual
         self.io_errors = io_errors
-        self.latency = latency
+        self.latency_total = latency_total
         if latency_min is not None:
             self.latency_min = latency_min
         if latency_max is not None:
@@ -187,26 +187,26 @@ class MemoryGeneratorStats(object):
         self._io_errors = io_errors
 
     @property
-    def latency(self):
-        """Gets the latency of this MemoryGeneratorStats.  # noqa: E501
+    def latency_total(self):
+        """Gets the latency_total of this MemoryGeneratorStats.  # noqa: E501
 
         The total amount of time required to perform all operations (in nanoseconds)  # noqa: E501
 
-        :return: The latency of this MemoryGeneratorStats.  # noqa: E501
+        :return: The latency_total of this MemoryGeneratorStats.  # noqa: E501
         :rtype: int
         """
-        return self._latency
+        return self._latency_total
 
-    @latency.setter
-    def latency(self, latency):
-        """Sets the latency of this MemoryGeneratorStats.
+    @latency_total.setter
+    def latency_total(self, latency_total):
+        """Sets the latency_total of this MemoryGeneratorStats.
 
         The total amount of time required to perform all operations (in nanoseconds)  # noqa: E501
 
-        :param latency: The latency of this MemoryGeneratorStats.  # noqa: E501
+        :param latency_total: The latency_total of this MemoryGeneratorStats.  # noqa: E501
         :type: int
         """
-        self._latency = latency
+        self._latency_total = latency_total
 
     @property
     def latency_min(self):

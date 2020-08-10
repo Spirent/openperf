@@ -24,7 +24,7 @@ MemoryGeneratorStats::MemoryGeneratorStats()
     m_Bytes_target = 0L;
     m_Bytes_actual = 0L;
     m_Io_errors = 0L;
-    m_Latency = 0L;
+    m_Latency_total = 0L;
     m_Latency_min = 0L;
     m_Latency_minIsSet = false;
     m_Latency_max = 0L;
@@ -50,7 +50,7 @@ nlohmann::json MemoryGeneratorStats::toJson() const
     val["bytes_target"] = m_Bytes_target;
     val["bytes_actual"] = m_Bytes_actual;
     val["io_errors"] = m_Io_errors;
-    val["latency"] = m_Latency;
+    val["latency_total"] = m_Latency_total;
     if(m_Latency_minIsSet)
     {
         val["latency_min"] = m_Latency_min;
@@ -71,7 +71,7 @@ void MemoryGeneratorStats::fromJson(nlohmann::json& val)
     setBytesTarget(val.at("bytes_target"));
     setBytesActual(val.at("bytes_actual"));
     setIoErrors(val.at("io_errors"));
-    setLatency(val.at("latency"));
+    setLatencyTotal(val.at("latency_total"));
     if(val.find("latency_min") != val.end())
     {
         setLatencyMin(val.at("latency_min"));
@@ -129,13 +129,13 @@ void MemoryGeneratorStats::setIoErrors(int64_t value)
     m_Io_errors = value;
     
 }
-int64_t MemoryGeneratorStats::getLatency() const
+int64_t MemoryGeneratorStats::getLatencyTotal() const
 {
-    return m_Latency;
+    return m_Latency_total;
 }
-void MemoryGeneratorStats::setLatency(int64_t value)
+void MemoryGeneratorStats::setLatencyTotal(int64_t value)
 {
-    m_Latency = value;
+    m_Latency_total = value;
     
 }
 int64_t MemoryGeneratorStats::getLatencyMin() const
