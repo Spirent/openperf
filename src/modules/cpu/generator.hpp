@@ -4,6 +4,7 @@
 #include <atomic>
 
 #include "framework/generator/controller.hpp"
+#include "framework/dynamic/spool.hpp"
 
 #include "task_cpu.hpp"
 #include "models/generator.hpp"
@@ -23,12 +24,15 @@ private:
     cpu_stat m_stat;
     std::atomic<cpu_stat*> m_stat_ptr;
 
+    dynamic::spool<cpu_stat> m_dynamic;
+
 public:
     generator(const model::generator&);
     ~generator() override;
 
     void config(const generator_config&) override;
     void start();
+    void start(const dynamic::configuration&);
     void stop();
     void reset();
 

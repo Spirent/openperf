@@ -8,6 +8,43 @@ namespace openperf::cpu::generator {
 static uint16_t serial_counter = 0;
 constexpr auto NAME_PREFIX = "op_cpu";
 
+std::optional<double> get_field(const cpu_stat& stat, std::string_view name)
+{
+    if (name == "available") return stat.available.count();
+    if (name == "utilization") return stat.utilization.count();
+    if (name == "system") return stat.system.count();
+    if (name == "user") return stat.user.count();
+    if (name == "steal") return stat.steal.count();
+    if (name == "error") return stat.error.count();
+
+    constexpr auto prefix = "cores[";
+    auto prefix_size = std::strlen(prefix);
+    if (name.substr(0, prefix_size) == prefix) {
+        auto core_number = std::stoul(std::string(name.substr(
+            prefix_size, name.find_first_of(']', prefix_size) - prefix_size)));
+
+        if (core_number < stat.cores.size()) {
+            auto field_name =
+                name.substr(name.find_first_of('.', prefix_size) + 1);
+
+            if (field_name == "available")
+                return stat.cores[core_number].available.count();
+            if (field_name == "utilization")
+                return stat.cores[core_number].utilization.count();
+            if (field_name == "system")
+                return stat.cores[core_number].system.count();
+            if (field_name == "user")
+                return stat.cores[core_number].user.count();
+            if (field_name == "steal")
+                return stat.cores[core_number].steal.count();
+            if (field_name == "error")
+                return stat.cores[core_number].error.count();
+        }
+    }
+
+    return std::nullopt;
+}
+
 // Constructors & Destructor
 generator::generator(const model::generator& generator_model)
     : model::generator(generator_model)
@@ -15,6 +52,7 @@ generator::generator(const model::generator& generator_model)
     , m_serial_number(++serial_counter)
     , m_controller(NAME_PREFIX + std::to_string(m_serial_number) + "_ctl")
     , m_stat_ptr(&m_stat)
+    , m_dynamic(get_field)
 {
     generator::config(generator_model.config());
     m_controller.start<task_cpu_stat*>([this](const task_cpu_stat& stat) {
@@ -24,6 +62,7 @@ generator::generator(const model::generator& generator_model)
 
         if (m_stat.steal == 0ns) m_stat.steal = internal::cpu_steal_time();
 
+        m_dynamic.add(m_stat);
         m_stat_ptr = &m_stat;
     });
 }
@@ -70,6 +109,27 @@ void generator::config(const generator_config& config)
     if (m_running) m_controller.resume();
 }
 
+model::generator_result generator::statistics() const
+{
+    auto stat = model::generator_result{};
+    stat.id(m_result_id);
+    stat.generator_id(m_id);
+    stat.active(m_running);
+    stat.timestamp(timesync::chrono::realtime::now());
+    stat.stats(*m_stat_ptr);
+    stat.dynamic_results(m_dynamic.result());
+
+    return stat;
+}
+
+void generator::start(const dynamic::configuration& cfg)
+{
+    if (m_running) return;
+
+    m_dynamic.configure(cfg, m_stat);
+    start();
+}
+
 void generator::start()
 {
     if (m_running) return;
@@ -77,6 +137,7 @@ void generator::start()
     reset();
     m_controller.resume();
     m_running = true;
+    m_dynamic.reset();
 }
 
 void generator::stop()
@@ -91,18 +152,6 @@ void generator::running(bool is_running)
         start();
     else
         stop();
-}
-
-model::generator_result generator::statistics() const
-{
-    auto stat = model::generator_result{};
-    stat.id(m_result_id);
-    stat.generator_id(m_id);
-    stat.active(m_running);
-    stat.timestamp(timesync::chrono::realtime::now());
-    stat.stats(*m_stat_ptr);
-
-    return stat;
 }
 
 void generator::reset()

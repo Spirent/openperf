@@ -9,6 +9,7 @@
 #include <tl/expected.hpp>
 #include <zmq.h>
 
+#include "framework/dynamic/api.hpp"
 #include "modules/timesync/chrono.hpp"
 
 #include "common.hpp"
@@ -86,7 +87,13 @@ struct request_cpu_generator_bulk_del
 
 struct request_cpu_generator_start
 {
-    std::string id;
+    struct start_data
+    {
+        std::string id;
+        dynamic::configuration dynamic_results;
+    };
+
+    std::unique_ptr<start_data> data;
 };
 
 struct request_cpu_generator_stop
@@ -96,7 +103,13 @@ struct request_cpu_generator_stop
 
 struct request_cpu_generator_bulk_start
 {
-    std::vector<id_ptr> ids;
+    struct start_data
+    {
+        std::vector<std::string> ids;
+        dynamic::configuration dynamic_results;
+    };
+
+    std::unique_ptr<start_data> data;
 };
 
 struct request_cpu_generator_bulk_stop

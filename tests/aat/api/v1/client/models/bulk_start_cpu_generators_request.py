@@ -31,20 +31,25 @@ class BulkStartCpuGeneratorsRequest(object):
                             and the value is json key in definition.
     """
     swagger_types = {
-        'ids': 'list[str]'
+        'ids': 'list[str]',
+        'dynamic_results': 'DynamicResultsConfig'
     }
 
     attribute_map = {
-        'ids': 'ids'
+        'ids': 'ids',
+        'dynamic_results': 'dynamic_results'
     }
 
-    def __init__(self, ids=None):  # noqa: E501
+    def __init__(self, ids=None, dynamic_results=None):  # noqa: E501
         """BulkStartCpuGeneratorsRequest - a model defined in Swagger"""  # noqa: E501
 
         self._ids = None
+        self._dynamic_results = None
         self.discriminator = None
 
         self.ids = ids
+        if dynamic_results is not None:
+            self.dynamic_results = dynamic_results
 
     @property
     def ids(self):
@@ -67,6 +72,26 @@ class BulkStartCpuGeneratorsRequest(object):
         :type: list[str]
         """
         self._ids = ids
+
+    @property
+    def dynamic_results(self):
+        """Gets the dynamic_results of this BulkStartCpuGeneratorsRequest.  # noqa: E501
+
+
+        :return: The dynamic_results of this BulkStartCpuGeneratorsRequest.  # noqa: E501
+        :rtype: DynamicResultsConfig
+        """
+        return self._dynamic_results
+
+    @dynamic_results.setter
+    def dynamic_results(self, dynamic_results):
+        """Sets the dynamic_results of this BulkStartCpuGeneratorsRequest.
+
+
+        :param dynamic_results: The dynamic_results of this BulkStartCpuGeneratorsRequest.  # noqa: E501
+        :type: DynamicResultsConfig
+        """
+        self._dynamic_results = dynamic_results
 
     def to_dict(self):
         """Returns the model properties as a dict"""

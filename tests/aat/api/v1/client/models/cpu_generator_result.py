@@ -35,7 +35,8 @@ class CpuGeneratorResult(object):
         'generator_id': 'str',
         'active': 'bool',
         'timestamp': 'datetime',
-        'stats': 'CpuGeneratorStats'
+        'stats': 'CpuGeneratorStats',
+        'dynamic_results': 'DynamicResults'
     }
 
     attribute_map = {
@@ -43,10 +44,11 @@ class CpuGeneratorResult(object):
         'generator_id': 'generator_id',
         'active': 'active',
         'timestamp': 'timestamp',
-        'stats': 'stats'
+        'stats': 'stats',
+        'dynamic_results': 'dynamic_results'
     }
 
-    def __init__(self, id=None, generator_id=None, active=None, timestamp=None, stats=None):  # noqa: E501
+    def __init__(self, id=None, generator_id=None, active=None, timestamp=None, stats=None, dynamic_results=None):  # noqa: E501
         """CpuGeneratorResult - a model defined in Swagger"""  # noqa: E501
 
         self._id = None
@@ -54,6 +56,7 @@ class CpuGeneratorResult(object):
         self._active = None
         self._timestamp = None
         self._stats = None
+        self._dynamic_results = None
         self.discriminator = None
 
         self.id = id
@@ -62,6 +65,8 @@ class CpuGeneratorResult(object):
         self.active = active
         self.timestamp = timestamp
         self.stats = stats
+        if dynamic_results is not None:
+            self.dynamic_results = dynamic_results
 
     @property
     def id(self):
@@ -170,6 +175,26 @@ class CpuGeneratorResult(object):
         :type: CpuGeneratorStats
         """
         self._stats = stats
+
+    @property
+    def dynamic_results(self):
+        """Gets the dynamic_results of this CpuGeneratorResult.  # noqa: E501
+
+
+        :return: The dynamic_results of this CpuGeneratorResult.  # noqa: E501
+        :rtype: DynamicResults
+        """
+        return self._dynamic_results
+
+    @dynamic_results.setter
+    def dynamic_results(self, dynamic_results):
+        """Sets the dynamic_results of this CpuGeneratorResult.
+
+
+        :param dynamic_results: The dynamic_results of this CpuGeneratorResult.  # noqa: E501
+        :type: DynamicResults
+        """
+        self._dynamic_results = dynamic_results
 
     def to_dict(self):
         """Returns the model properties as a dict"""

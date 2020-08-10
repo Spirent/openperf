@@ -32,14 +32,14 @@ serialized_msg serialize_request(request_msg&& msg)
                  [&](request_cpu_generator_bulk_del& request) {
                      return message::push(serialized, request.ids);
                  },
-                 [&](const request_cpu_generator_start& cpu_generator) {
-                     return message::push(serialized, cpu_generator.id);
+                 [&](request_cpu_generator_start& request) {
+                     return message::push(serialized, std::move(request.data));
                  },
                  [&](const request_cpu_generator_stop& cpu_generator) {
                      return message::push(serialized, cpu_generator.id);
                  },
                  [&](request_cpu_generator_bulk_start& request) {
-                     return message::push(serialized, request.ids);
+                     return message::push(serialized, std::move(request.data));
                  },
                  [&](request_cpu_generator_bulk_stop& request) {
                      return message::push(serialized, request.ids);
@@ -112,15 +112,20 @@ tl::expected<request_msg, int> deserialize_request(serialized_msg&& msg)
             message::pop_unique_vector<std::string>(msg)};
     }
     case utils::variant_index<request_msg, request_cpu_generator_start>(): {
-        return request_cpu_generator_start{message::pop_string(msg)};
+        auto request = request_cpu_generator_start{};
+        request.data.reset(
+            message::pop<request_cpu_generator_start::start_data*>(msg));
+        return request;
     }
     case utils::variant_index<request_msg, request_cpu_generator_stop>(): {
         return request_cpu_generator_stop{message::pop_string(msg)};
     }
     case utils::variant_index<request_msg,
                               request_cpu_generator_bulk_start>(): {
-        return request_cpu_generator_bulk_start{
-            message::pop_unique_vector<std::string>(msg)};
+        auto request = request_cpu_generator_bulk_start{};
+        request.data.reset(
+            message::pop<request_cpu_generator_bulk_start::start_data*>(msg));
+        return request;
     }
     case utils::variant_index<request_msg, request_cpu_generator_bulk_stop>(): {
         return request_cpu_generator_bulk_stop{

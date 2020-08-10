@@ -6,6 +6,8 @@
 #include "modules/timesync/chrono.hpp"
 #include "cpu/cpu_stat.hpp"
 
+#include "framework/dynamic/api.hpp"
+
 namespace openperf::cpu::model {
 
 class generator_result
@@ -13,31 +15,31 @@ class generator_result
 private:
     using time_point = timesync::chrono::realtime::time_point;
 
-public:
-    generator_result() = default;
-    generator_result(const generator_result&) = default;
-
-    std::string id() const { return m_id; }
-    void id(std::string_view id) { m_id = id; }
-
-    std::string generator_id() const { return m_generator_id; }
-    void generator_id(std::string_view id) { m_generator_id = id; }
-
-    bool active() const { return m_active; }
-    void active(bool active) { m_active = active; }
-
-    time_point timestamp() const { return m_timestamp; }
-    void timestamp(const time_point& time) { m_timestamp = time; }
-
-    cpu_stat stats() const { return m_stats; }
-    void stats(const cpu_stat& stats) { m_stats = stats; }
-
 protected:
     std::string m_id;
     std::string m_generator_id;
     bool m_active;
     time_point m_timestamp;
     cpu_stat m_stats;
+    dynamic::results m_dynamic_results;
+
+public:
+    generator_result() = default;
+    generator_result(const generator_result&) = default;
+
+    std::string id() const { return m_id; }
+    std::string generator_id() const { return m_generator_id; }
+    bool active() const { return m_active; }
+    cpu_stat stats() const { return m_stats; }
+    time_point timestamp() const { return m_timestamp; }
+    dynamic::results dynamic_results() const { return m_dynamic_results; }
+
+    void id(std::string_view id) { m_id = id; }
+    void generator_id(std::string_view id) { m_generator_id = id; }
+    void active(bool active) { m_active = active; }
+    void stats(const cpu_stat& stats) { m_stats = stats; }
+    void timestamp(const time_point& time) { m_timestamp = time; }
+    void dynamic_results(const dynamic::results& r) { m_dynamic_results = r; }
 };
 
 } // namespace openperf::cpu::model

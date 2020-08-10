@@ -23,6 +23,7 @@
 
 #include <string>
 #include "CpuGeneratorStats.h"
+#include "DynamicResults.h"
 
 namespace swagger {
 namespace v1 {
@@ -76,7 +77,14 @@ public:
     /// </summary>
     std::shared_ptr<CpuGeneratorStats> getStats() const;
     void setStats(std::shared_ptr<CpuGeneratorStats> value);
-    
+        /// <summary>
+    /// 
+    /// </summary>
+    std::shared_ptr<DynamicResults> getDynamicResults() const;
+    void setDynamicResults(std::shared_ptr<DynamicResults> value);
+    bool dynamicResultsIsSet() const;
+    void unsetDynamic_results();
+
 protected:
     std::string m_Id;
 
@@ -88,6 +96,8 @@ protected:
 
     std::shared_ptr<CpuGeneratorStats> m_Stats;
 
+    std::shared_ptr<DynamicResults> m_Dynamic_results;
+    bool m_Dynamic_resultsIsSet;
 };
 
 }

@@ -46,7 +46,7 @@ public:
     results result() const;
 
     void reset();
-    void configure(const configuration&);
+    void configure(const configuration&, const T& = {});
     void add(const T& stat);
 
 private:
@@ -66,8 +66,11 @@ spool<T>::spool(spool::extractor&& f)
 {}
 
 // Methods : public
-template <typename T> void spool<T>::configure(const configuration& config)
+template <typename T>
+void spool<T>::configure(const configuration& config, const T& stat)
 {
+    m_last_stat = stat;
+
     auto get_id = [](const std::string& s) {
         auto id = s;
         if (id.empty()) id = core::to_string(core::uuid::random());
@@ -111,8 +114,6 @@ template <typename T> void spool<T>::configure(const configuration& config)
                                .tdigest = tdigest(cfg.compression),
                            });
     }
-
-    m_last_stat = {};
 }
 
 template <typename T> configuration spool<T>::config() const
@@ -164,8 +165,9 @@ template <typename T> void spool<T>::add(const T& stat)
 
     for (auto& td : m_tdigests) {
         auto& data = td.second;
-        data.tdigest.insert(delta(data.argument, stat),
-                            weight(data.argument, stat));
+        // Digestible library doesn't allows zero weight
+        if (auto w = weight(data.argument, stat))
+            data.tdigest.insert(delta(data.argument, stat), w);
     }
 
     m_last_stat = stat;
