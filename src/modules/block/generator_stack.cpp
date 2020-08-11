@@ -55,13 +55,19 @@ bool generator_stack::delete_block_generator(const std::string& id)
 {
     auto gen = block_generator(id);
     if (!gen) return false;
-    if (gen->is_running()) stop_generator(id);
+    if (gen->is_running()) gen->stop();
 
-    for (const auto& pair : m_block_results) {
-        if (auto ptr = std::get_if<block_generator_result_ptr>(&pair.second)) {
+    for (auto it = m_block_results.begin(); it != m_block_results.end();) {
+        auto& value = (*it).second;
+        if (auto ptr = std::get_if<block_generator_result_ptr>(&value)) {
             auto result = ptr->get();
-            if (result->generator_id() == id) delete_statistics(result->id());
+            if (result->generator_id() == id) {
+                it = m_block_results.erase(it);
+                continue;
+            }
         }
+
+        it++;
     }
 
     return (m_block_generators.erase(id) > 0);
@@ -101,7 +107,6 @@ bool generator_stack::stop_generator(const std::string& id)
 {
     auto gen = block_generator(id);
     if (!gen) return false;
-
     if (!gen->is_running()) return true;
 
     gen->stop();
