@@ -3,6 +3,63 @@
 
 static const int is_valid = (1 << 2);
 
+#if TARGET_WIDTH == 4
+
+/*
+ * When using a width of four, we can easily optimize the signature copy
+ * because the signature fits in one SIMD register. Here we use all lanes
+ * to copy signature data to the scratch area.
+ */
+void read_signatures(const uniform unsigned int8* const uniform signatures[],
+                     varying unsigned int* uniform v0,
+                     varying unsigned int* uniform v1,
+                     varying unsigned int* uniform v2,
+                     varying unsigned int* uniform v3)
+{
+    uniform int scratch[4 * programCount];
+
+    /* Efficiently copy each signature into our scratch area */
+    foreach_active(index) {
+        uniform int* uniform src = (uniform int* uniform)signatures[index];
+        unmasked {
+            scratch[4 * index + programIndex] = src[programIndex];
+        }
+    }
+
+    /* And shuffle the data into place */
+    aos_to_soa4((uniform int* uniform)&scratch[0],
+                (varying int*)v0,
+                (varying int*)v1,
+                (varying int*)v2,
+                (varying int*)v3);
+}
+
+#else
+
+void read_signatures(const uniform unsigned int8* const uniform signatures[],
+                     varying unsigned int* uniform v0,
+                     varying unsigned int* uniform v1,
+                     varying unsigned int* uniform v2,
+                     varying unsigned int* uniform v3)
+{
+    uniform int32 scratch[4 * programCount];
+
+    /* Copy each signature into our scratch area */
+    foreach_active(index) {
+        uniform int* uniform src = (uniform int* uniform)signatures[index];
+        memcpy(&scratch[4 * index], src, 16);
+    }
+
+    /* And shuffle the data into place */
+    aos_to_soa4((uniform int* uniform)&scratch[0],
+                (varying int*)v0,
+                (varying int*)v1,
+                (varying int*)v2,
+                (varying int*)v3);
+}
+
+#endif
+
 export uniform unsigned int16
 decode_signatures(const unsigned int8* const uniform payloads[],
                   uniform unsigned int16 count,
@@ -23,16 +80,7 @@ decode_signatures(const unsigned int8* const uniform payloads[],
 
     foreach(i = 0 ... count)
     {
-        /* Copy the payloads into a linear array  */
-        memcpy(
-            &scratch[programIndex * 4], (unsigned int8* const)payloads[i], 16);
-
-        /* and transform the array data into a SIMD friendly format */
-        aos_to_soa4(&scratch[0],
-                    (varying int*)&data[0],
-                    (varying int*)&data[1],
-                    (varying int*)&data[2],
-                    (varying int*)&data[3]);
+        read_signatures(&payloads[extract(i, 0)], &data[0], &data[1], &data[2], &data[3]);
 
         /* Descramble the signature data */
         unsigned int8 scramble_key = ~(data[0] & 0xff);
@@ -58,7 +106,7 @@ decode_signatures(const unsigned int8* const uniform payloads[],
         sequence_numbers[i] = signature[1] << 24 | signature[2] >> 8;
         timestamps_lo[i] = signature[2] << 24 | signature[3] >> 8;
         timestamps_hi[i] = (signature[3] >> 2) & 0x3f;
-        flags[i] = valid_sig ? is_valid | (signature[3] & 0x3) : 0;
+        flags[i] = select(valid_sig, is_valid | (signature[3] & 0x3), 0);
 
         /* Keep track of the number of valid signatures */
         nb_sigs += valid_sig;

@@ -1,6 +1,62 @@
 #include "inet.h"
 #include "signature_scramble.h"
 
+#if TARGET_WIDTH == 4
+
+/*
+ * When using a width of four, we can easily optimize the signature copy
+ * because the signature fits in one SIMD register. Here we use all lanes
+ * to copy the scratch data into the destination array.
+ */
+inline void write_signatures(unsigned int32 s0,
+                             unsigned int32 s1,
+                             unsigned int32 s2,
+                             unsigned int32 s3,
+                             uniform unsigned int8* uniform signatures[])
+{
+    uniform int scratch[4 * programCount];
+
+    /* Shuffle the signature data into a linear array */
+    soa_to_aos4((int)s0,
+                (int)s1,
+                (int)s2,
+                (int)s3,
+                scratch);
+
+    /* And efficiently copy each signature into place */
+    foreach_active(index) {
+        uniform int* uniform dst = (uniform int* uniform)signatures[index];
+        unmasked {
+            dst[programIndex] = scratch[4 * index + programIndex];
+        }
+    }
+}
+
+#else
+
+inline void write_signatures(unsigned int32 s0,
+                             unsigned int32 s1,
+                             unsigned int32 s2,
+                             unsigned int32 s3,
+                             uniform unsigned int8* uniform signatures[])
+{
+    uniform int scratch[4 * programCount];
+
+    /* Shuffle the signature data into a linear array */
+    soa_to_aos4((int)s0,
+                (int)s1,
+                (int)s2,
+                (int)s3,
+                scratch);
+
+    /* And copy each signature into place */
+    foreach_active(index) {
+        memcpy(signatures[index], &scratch[4 * index], 16);
+    }
+}
+
+#endif
+
 export void encode_signatures(unsigned int8* uniform destinations[],
                               unsigned int32 const uniform stream_ids[],
                               unsigned int32 const uniform sequence_numbers[],
@@ -9,8 +65,6 @@ export void encode_signatures(unsigned int8* uniform destinations[],
                               unsigned int const uniform flags[],
                               uniform unsigned int16 count)
 {
-    uniform int scratch[4 * programCount];
-
     /* We treat the signature as 4 x 32 bit integers */
     unsigned int<4> data;
     unsigned int<4> mask;
@@ -42,14 +96,11 @@ export void encode_signatures(unsigned int8* uniform destinations[],
         signature[2] = htonl(data[2] ^ mask[2]);
         signature[3] = htonl(data[3] ^ mask[3]);
 
-        /* Write signature data out as an array of structs in our scratch area */
-        soa_to_aos4((int)signature[0],
-                    (int)signature[1],
-                    (int)signature[2],
-                    (int)signature[3],
-                    scratch);
-
-        /* And scatter the signatures into place */
-        memcpy(destinations[i], &scratch[programIndex * 4], 16);
+        /* Write signature data to destinations */
+        write_signatures(signature[0],
+                         signature[1],
+                         signature[2],
+                         signature[3],
+                         &destinations[extract(i, 0)]);
     }
 }
