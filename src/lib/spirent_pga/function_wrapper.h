@@ -156,16 +156,17 @@ template <typename FunctionType, typename Tag = void> struct function_wrapper
                                                 return (x.first < y.first);
                                             })
                                ->first.count();
-            /* Integer code ftw! */
-            auto speedup_100x = scalar_ns * 100 / best_ns;
+
             std::cerr << " Picking the "
                       << instruction_set::to_string(
                              get_instruction_set(functions, best))
                       << " version";
 
-            if (speedup_100x > 100) {
-                std::cerr << " (" << speedup_100x / 100 << "."
-                          << speedup_100x % 100 << "x speedup)";
+            auto speedup = static_cast<double>(scalar_ns) / best_ns;
+            if (speedup > 1) {
+                std::cerr << std::fixed;
+                std::cerr.precision(2);
+                std::cerr << " (" << speedup << "x speedup)";
             }
 
             std::cerr << std::endl;
